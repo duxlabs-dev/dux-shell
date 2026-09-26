@@ -536,14 +536,7 @@ function eventMatchesCombo(event, combo) {
     return event.key === qtKeyFromName(keyName);
 }
 
-const KEY_GLYPH_MAP = {
-    "shift": "⇧",
-    "ctrl": "⌃",
-    "control": "⌃",
-    "alt": "⌥",
-    "super": "⌘",
-    "meta": "⌘",
-    "win": "⌘",
+const KEY_GLYPH_MAP_COMMON = {
     "shift_l": "⇧ L",
     "shift_r": "⇧ R",
     "control_l": "⌃ L",
@@ -563,10 +556,6 @@ const KEY_GLYPH_MAP = {
     "down": "↓",
     "left": "←",
     "right": "→",
-    "page_up": "⇞",
-    "pageup": "⇞",
-    "page_down": "⇟",
-    "pagedown": "⇟",
     "home": "Home",
     "end": "End",
     "delete": "Del",
@@ -655,7 +644,50 @@ const KEY_GLYPH_MAP = {
     "launch1": "PrtSc"
 };
 
-function formatKeyTokens(keyString, modKey, modSymbol) {
+const MAC_MODIFIERS = {
+    "shift": "⇧",
+    "ctrl": "⌃",
+    "control": "⌃",
+    "alt": "⌥",
+    "mod": "⌘",
+    "super": "⌘",
+    "meta": "⌘",
+    "win": "⌘",
+    "return": "⏎",
+    "enter": "⏎",
+    "tab": "⇥",
+    "backspace": "⌫",
+    "space": "␣",
+    "page_up": "⇞",
+    "pageup": "⇞",
+    "page_down": "⇟",
+    "pagedown": "⇟"
+};
+
+const WIN_MODIFIERS = {
+    "shift": "Shift",
+    "ctrl": "Ctrl",
+    "control": "Ctrl",
+    "alt": "Alt",
+    "mod": "Mod",
+    "super": "Mod",
+    "meta": "Mod",
+    "win": "Mod",
+    "return": "Enter",
+    "enter": "Enter",
+    "tab": "Tab",
+    "backspace": "⌫",
+    "space": "Space",
+    "page_up": "PgUp",
+    "pageup": "PgUp",
+    "page_down": "PgDn",
+    "pagedown": "PgDn"
+};
+
+const KEY_GLYPH_MAP_MAC = Object.assign({}, KEY_GLYPH_MAP_COMMON, MAC_MODIFIERS);
+const KEY_GLYPH_MAP_WIN = Object.assign({}, KEY_GLYPH_MAP_COMMON, WIN_MODIFIERS);
+
+function formatKeyTokens(keyString, modKey, modSymbol, style) {
     if (!keyString)
         return [];
     var symbol = (modSymbol || "mod").toLowerCase();
@@ -668,6 +700,7 @@ function formatKeyTokens(keyString, modKey, modSymbol) {
     }
     var parts = str.split("+");
     var tokens = [];
+    var map = style === "mac" ? KEY_GLYPH_MAP_MAC : KEY_GLYPH_MAP_WIN;
     for (var i = 0; i < parts.length; i++) {
         var part = parts[i].trim();
         if (!part)
@@ -675,8 +708,8 @@ function formatKeyTokens(keyString, modKey, modSymbol) {
         var lower = part.toLowerCase();
         if (lower === symbol)
             lower = resolvedMod;
-        if (KEY_GLYPH_MAP[lower] !== undefined) {
-            tokens.push(KEY_GLYPH_MAP[lower]);
+        if (map[lower] !== undefined) {
+            tokens.push(map[lower]);
         } else if (part.length === 1) {
             tokens.push(part.toUpperCase());
         } else {
