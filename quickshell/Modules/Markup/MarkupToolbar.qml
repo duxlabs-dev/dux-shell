@@ -40,14 +40,14 @@ Row {
                 label: I18n.tr("Eraser", "screenshot markup tool, removes a whole annotation")
             }
         })
-    readonly property var swatches: [Theme.error, Theme.warning, Theme.success, Theme.info, Theme.primary, Theme.surfaceText, Theme.background]
+    readonly property var swatches: [Theme.primary, Theme.error, Theme.warning, Theme.info, Theme.secondary, Theme.surfaceContainerHighest, Theme.surfaceText, Theme.surface]
     readonly property var sizeLabels: [I18n.tr("Small", "screenshot markup stroke and text size"), I18n.tr("Medium", "screenshot markup stroke and text size"), I18n.tr("Large", "screenshot markup stroke and text size")]
 
     spacing: Theme.spacingXS
 
     component Separator: Rectangle {
         width: 1
-        height: Theme.buttonHeightXS
+        height: 20
         anchors.verticalCenter: parent?.verticalCenter
         color: Theme.outlineVariant
     }
@@ -60,7 +60,7 @@ Row {
             readonly property bool selected: root.target.tool === modelData
 
             iconName: root.allTools[modelData].icon
-            iconSize: Theme.iconSizeSmall
+            iconSize: Theme.chipIconSize
             iconColor: selected ? Theme.onPrimaryContainer : Theme.surfaceText
             backgroundColor: selected ? Theme.primaryContainer : "transparent"
             tooltipText: root.allTools[modelData].label
@@ -82,13 +82,14 @@ Row {
             required property color modelData
             readonly property bool selected: Qt.colorEqual(root.target.strokeColor, modelData)
 
-            width: Theme.buttonHeightXS
-            height: Theme.buttonHeightXS
+            width: 24
+            height: 24
+            anchors.verticalCenter: parent?.verticalCenter
 
             Rectangle {
                 anchors.centerIn: parent
-                width: parent.width - Theme.spacingXS
-                height: width
+                width: 22
+                height: 22
                 radius: width / 2
                 color: "transparent"
                 border.color: Theme.primary
@@ -98,8 +99,8 @@ Row {
 
             DankColorSwatch {
                 anchors.centerIn: parent
-                width: parent.width - Theme.spacingM
-                height: width
+                width: 16
+                height: 16
                 swatchColor: swatch.modelData
             }
 
@@ -114,10 +115,19 @@ Row {
     Separator {}
 
     DankActionButton {
-        iconName: "line_weight"
-        iconSize: Theme.iconSizeSmall
-        iconColor: Theme.surfaceText
+        id: sizeButton
+
+        readonly property var sizeCodes: ["S", "M", "L"]
+
         tooltipText: I18n.tr("Size", "screenshot markup size button tooltip, followed by the current size") + ": " + root.sizeLabels[root.target.sizeLevel]
         onClicked: root.target.sizeLevel = (root.target.sizeLevel + 1) % root.sizeLabels.length
+
+        StyledText {
+            anchors.centerIn: parent
+            text: sizeButton.sizeCodes[root.target.sizeLevel]
+            font.pixelSize: Theme.fontSizeSmall
+            font.weight: Font.Bold
+            color: Theme.surfaceText
+        }
     }
 }

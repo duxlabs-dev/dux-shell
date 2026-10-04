@@ -100,7 +100,7 @@ Item {
             return;
         commit(shapes.concat([{
                 type: "text",
-                color: strokeColor,
+                color: root.strokeColor.toString(),
                 size: fontSize,
                 text: text,
                 x: anchor.x,
@@ -142,20 +142,79 @@ Item {
 
     function outline(shape) {
         const pts = shape.points;
-        if (shape.type !== "rect")
-            return shape.type === "arrow" ? [pts[0], pts[pts.length - 1]] : pts;
-        const a = pts[0];
-        const b = pts[pts.length - 1];
-        return [a, Qt.point(b.x, a.y), b, Qt.point(a.x, b.y), a];
+        if (shape.type === "rect") {
+            const a = pts[0];
+            const b = pts[pts.length - 1];
+            return [a, Qt.point(b.x, a.y), b, Qt.point(a.x, b.y), a];
+        }
+        if (shape.type === "arrow") {
+            const a = pts[0];
+            const b = pts[pts.length - 1];
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const len = Math.hypot(dx, dy);
+            if (len <= 0)
+                return [a, b];
+            const spread = Math.PI / 7;
+            const headLen = Math.max(15 / root.viewScale, shape.width * 4);
+            const offset = headLen * Math.cos(spread);
+            const shaftLen = Math.max(0, len - offset);
+            const angle = Math.atan2(dy, dx);
+            const endX = a.x + shaftLen * Math.cos(angle);
+            const endY = a.y + shaftLen * Math.sin(angle);
+            return [a, Qt.point(endX, endY)];
+        }
+        return pts;
     }
+
+
 
     function arrowHead(shape) {
         const a = shape.points[0];
         const b = shape.points[shape.points.length - 1];
-        const angle = Math.atan2(b.y - a.y, b.x - a.x);
-        const len = shape.width * 4;
-        const spread = Math.PI / 7;
-        return [Qt.point(b.x - len * Math.cos(angle - spread), b.y - len * Math.sin(angle - spread)), b, Qt.point(b.x - len * Math.cos(angle + spread), b.y - len * Math.sin(angle + spread))];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        if (Math.hypot(dx, dy) <= 0)
+            return [];
+        const angle = Math.atan2(dy, dx);
+        const headLength = Math.max(15 / root.viewScale, shape.width * 4);
+        const spreadAngle = Math.PI / 7;
+        const strokeWidth = shape.width;
+
+        const tipRadius = Math.max(1.5, Math.min(strokeWidth * 0.5, headLength * 0.15));
+        const sinHalf = Math.sin(spreadAngle);
+        const tipApexInset = tipRadius * (1 / sinHalf - 1);
+        const effectiveTipX = b.x + tipApexInset * Math.cos(angle);
+        const effectiveTipY = b.y + tipApexInset * Math.sin(angle);
+
+        const v1 = Qt.point(effectiveTipX, effectiveTipY);
+        const v2 = Qt.point(b.x - headLength * Math.cos(angle - spreadAngle), b.y - headLength * Math.sin(angle - spreadAngle));
+        const v3 = Qt.point(b.x - headLength * Math.cos(angle + spreadAngle), b.y - headLength * Math.sin(angle + spreadAngle));
+
+        return [v1, v2, v3, v1];
+    }
+
+    function snapPointToAngle(point, fixed) {
+        const dx = point.x - fixed.x;
+        const dy = point.y - fixed.y;
+        const length = Math.hypot(dx, dy);
+        if (length === 0)
+            return point;
+        const snapStep = Math.PI / 12; // 15 degrees
+        const angle = Math.atan2(dy, dx);
+        const snapped = Math.round(angle / snapStep) * snapStep;
+        return Qt.point(fixed.x + length * Math.cos(snapped), fixed.y + length * Math.sin(snapped));
+    }
+
+    function constrainSquarePoint(start, point) {
+        if (!start || !point)
+            return point || Qt.point(0, 0);
+        const dx = point.x - start.x;
+        const dy = point.y - start.y;
+        const size = Math.max(Math.abs(dx), Math.abs(dy));
+        const sx = dx < 0 ? -1 : 1;
+        const sy = dy < 0 ? -1 : 1;
+        return Qt.point(start.x + sx * size, start.y + sy * size);
     }
 
     function normalizedRect(a, b) {
@@ -175,11 +234,25 @@ Item {
 
         required property var shape
         readonly property bool isText: shape.type === "text"
-        readonly property var points: isText || !shape.points?.length ? [] : root.outline(shape)
+        readonly property bool isRect: shape.type === "rect"
+        readonly property var points: isText || isRect || !shape.points?.length ? [] : root.outline(shape)
+        readonly property real headRounding: Math.max(2, (shape.width ?? 1) * 0.6)
+
+        Rectangle {
+            visible: annotation.isRect && (annotation.shape.points?.length ?? 0) >= 2
+            x: Math.min(annotation.shape.points?.[0]?.x ?? 0, annotation.shape.points?.[annotation.shape.points?.length - 1]?.x ?? 0)
+            y: Math.min(annotation.shape.points?.[0]?.y ?? 0, annotation.shape.points?.[annotation.shape.points?.length - 1]?.y ?? 0)
+            width: Math.abs((annotation.shape.points?.[annotation.shape.points?.length - 1]?.x ?? 0) - (annotation.shape.points?.[0]?.x ?? 0))
+            height: Math.abs((annotation.shape.points?.[annotation.shape.points?.length - 1]?.y ?? 0) - (annotation.shape.points?.[0]?.y ?? 0))
+            color: "transparent"
+            border.color: annotation.shape.color ?? "transparent"
+            border.width: annotation.shape.width ?? 1
+            radius: Math.min((Theme.cornerRadius + (annotation.shape.width ?? 1) / 2) / root.viewScale, Math.min(width, height) / 2)
+        }
 
         Shape {
             anchors.fill: parent
-            visible: !annotation.isText
+            visible: !annotation.isText && !annotation.isRect
             preferredRendererType: Shape.CurveRenderer
             opacity: annotation.shape.type === "highlighter" ? 0.4 : 1
 
@@ -196,10 +269,11 @@ Item {
             }
 
             ShapePath {
-                strokeColor: annotation.shape.type === "arrow" ? annotation.shape.color : "transparent"
-                strokeWidth: annotation.shape.width ?? 1
-                fillColor: strokeColor
+                strokeColor: annotation.shape.type === "arrow" ? (annotation.shape.color ?? "transparent") : "transparent"
+                strokeWidth: annotation.headRounding
+                fillColor: annotation.shape.type === "arrow" ? (annotation.shape.color ?? "transparent") : "transparent"
                 joinStyle: ShapePath.RoundJoin
+                capStyle: ShapePath.RoundCap
 
                 PathPolyline {
                     path: annotation.shape.type === "arrow" ? root.arrowHead(annotation.shape) : []
@@ -287,14 +361,14 @@ Item {
             }
             root.draft = {
                 type: root.tool,
-                color: root.strokeColor,
+                color: root.strokeColor.toString(),
                 width: root.tool === "highlighter" ? root.strokeWidth * 4 : root.strokeWidth,
                 points: [p]
             };
         }
 
         onPositionChanged: mouse => {
-            const p = Qt.point(mouse.x, mouse.y);
+            let p = Qt.point(mouse.x, mouse.y);
             if (root.tool === "eraser") {
                 root.eraseAt(p);
                 return;
@@ -302,19 +376,42 @@ Item {
             if (!root.draft)
                 return;
             const pts = root.draft.points;
-            const last = pts[pts.length - 1];
-            const freehand = root.draft.type === "pen" || root.draft.type === "highlighter";
-            if (freehand && Math.hypot(p.x - last.x, p.y - last.y) < 1.5 / root.viewScale)
+            const first = pts[0];
+            const isShift = mouse.modifiers & Qt.ShiftModifier;
+
+            if (root.draft.type === "pen") {
+                if (isShift) {
+                    root.draft = Object.assign({}, root.draft, {
+                        points: [first, root.snapPointToAngle(p, first)]
+                    });
+                    return;
+                }
+                const last = pts[pts.length - 1];
+                if (Math.hypot(p.x - last.x, p.y - last.y) < 1.5 / root.viewScale)
+                    return;
+                root.draft = Object.assign({}, root.draft, {
+                    points: pts.concat([p])
+                });
                 return;
+            }
+
+            if (isShift) {
+                if (root.draft.type === "arrow" || root.draft.type === "highlighter") {
+                    p = root.snapPointToAngle(p, first);
+                } else if (root.draft.type === "rect") {
+                    p = root.constrainSquarePoint(first, p);
+                }
+            }
+
             root.draft = Object.assign({}, root.draft, {
-                points: freehand ? pts.concat([p]) : [pts[0], p]
+                points: [first, p]
             });
         }
 
-        onReleased: {
+        onReleased: mouse => {
             if (!root.draft)
                 return;
-            const shape = root.draft;
+            let shape = root.draft;
             root.draft = null;
             root.commit(root.shapes.concat([shape]), root.crop);
         }

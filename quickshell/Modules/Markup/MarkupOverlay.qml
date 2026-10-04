@@ -171,7 +171,11 @@ Scope {
 
                         anchors.fill: parent
                         enabled: win.ready
-                        cursorShape: moving ? Qt.ClosedHandCursor : Qt.CrossCursor
+                        cursorShape: {
+                            if (layer.tool === "select" && layer.crop !== null)
+                                return moving || pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor;
+                            return moving ? Qt.ClosedHandCursor : Qt.CrossCursor;
+                        }
 
                         onPressed: mouse => {
                             root.claim(win);
@@ -208,7 +212,7 @@ Scope {
                         id: layer
 
                         anchors.fill: parent
-                        enabled: win.isOwner && layer.crop !== null && win.pendingSelection === null
+                        enabled: win.isOwner && layer.crop !== null && win.pendingSelection === null && layer.tool !== "select"
                         drawArea: layer.crop
                         tool: "pen"
                     }
@@ -287,11 +291,12 @@ Scope {
                 readonly property var sel: layer.crop
                 readonly property real gap: Theme.spacingS
                 readonly property bool fitsBelow: sel !== null && sel.y + sel.height + gap + height <= win.height
+                readonly property real totalWidth: width + gap + closeButtonCard.width
 
                 visible: win.isOwner && sel !== null && win.pendingSelection === null && !root.exporting
                 width: toolbarRow.implicitWidth + Theme.spacingS * 2
                 height: toolbarRow.implicitHeight + Theme.spacingS * 2
-                x: Math.max(gap, Math.min(win.width - width - gap, (sel?.x ?? 0) + (sel?.width ?? 0) / 2 - width / 2))
+                x: Math.max(gap, Math.min(win.width - totalWidth - gap, (sel?.x ?? 0) + (sel?.width ?? 0) / 2 - totalWidth / 2))
                 y: {
                     if (!sel)
                         return 0;
@@ -303,6 +308,12 @@ Scope {
                 }
                 radius: Theme.cornerRadius
                 color: Theme.surfaceContainer
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.AllButtons
+                    onPressed: mouse => mouse.accepted = true
+                }
 
                 Row {
                     id: toolbarRow
@@ -316,14 +327,14 @@ Scope {
 
                     Rectangle {
                         width: 1
-                        height: Theme.buttonHeightXS
+                        height: 20
                         anchors.verticalCenter: parent.verticalCenter
                         color: Theme.outlineVariant
                     }
 
                     DankActionButton {
                         iconName: "undo"
-                        iconSize: Theme.iconSizeSmall
+                        iconSize: Theme.chipIconSize
                         iconColor: Theme.surfaceText
                         enabled: layer.canUndo
                         tooltipText: I18n.tr("Undo", "screenshot markup, reverts the last edit")
@@ -332,7 +343,7 @@ Scope {
 
                     DankActionButton {
                         iconName: "redo"
-                        iconSize: Theme.iconSizeSmall
+                        iconSize: Theme.chipIconSize
                         iconColor: Theme.surfaceText
                         enabled: layer.canRedo
                         tooltipText: I18n.tr("Redo", "screenshot markup, reapplies the last undone edit")
@@ -341,7 +352,7 @@ Scope {
 
                     DankActionButton {
                         iconName: "content_copy"
-                        iconSize: Theme.iconSizeSmall
+                        iconSize: Theme.chipIconSize
                         iconColor: Theme.surfaceText
                         tooltipText: I18n.tr("Copy", "screenshot markup, copies the annotated image to the clipboard")
                         onClicked: root.finish("copy")
@@ -349,7 +360,7 @@ Scope {
 
                     DankActionButton {
                         iconName: "save"
-                        iconSize: Theme.iconSizeSmall
+                        iconSize: Theme.chipIconSize
                         iconColor: Theme.surfaceText
                         tooltipText: I18n.tr("Save", "screenshot markup, saves the annotated image to a file")
                         onClicked: root.finish("save")
@@ -357,27 +368,38 @@ Scope {
 
                     DankActionButton {
                         iconName: "check"
-                        iconSize: Theme.iconSizeSmall
-                        iconColor: Theme.onPrimary
-                        backgroundColor: Theme.primary
+                        iconSize: Theme.chipIconSize
+                        iconColor: Theme.primary
                         tooltipText: I18n.tr("Finish", "screenshot draw, captures the selection")
                         onClicked: root.finish("confirm")
                     }
+                }
+            }
 
-                    Rectangle {
-                        width: 1
-                        height: Theme.buttonHeightXS
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: Theme.outlineVariant
-                    }
+            Rectangle {
+                id: closeButtonCard
 
-                    DankActionButton {
-                        iconName: "close"
-                        iconSize: Theme.iconSizeSmall
-                        iconColor: Theme.surfaceText
-                        tooltipText: I18n.tr("Cancel", "screenshot draw, closes without capturing")
-                        onClicked: root.dismiss()
-                    }
+                visible: toolbar.visible
+                width: toolbar.height
+                height: toolbar.height
+                x: toolbar.x + toolbar.width + toolbar.gap
+                y: toolbar.y
+                radius: Theme.cornerRadius
+                color: Theme.surfaceContainer
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.AllButtons
+                    onPressed: mouse => mouse.accepted = true
+                }
+
+                DankActionButton {
+                    anchors.centerIn: parent
+                    iconName: "close"
+                    iconSize: Theme.chipIconSize
+                    iconColor: Theme.error
+                    tooltipText: I18n.tr("Cancel", "screenshot draw, closes without capturing")
+                    onClicked: root.dismiss()
                 }
             }
         }
