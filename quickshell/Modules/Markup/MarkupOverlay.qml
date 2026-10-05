@@ -24,6 +24,9 @@ Scope {
     }
 
     function dismiss() {
+        owner?.layer.reset();
+        owner = null;
+        options = ({});
         PopoutManager.screenshotActive = false;
         dismissed();
     }
@@ -166,44 +169,26 @@ Scope {
                         id: selector
 
                         property point start
-                        property var startSelection: null
-                        property bool moving: false
 
                         anchors.fill: parent
-                        enabled: win.ready
-                        cursorShape: {
-                            if (layer.tool === "select" && layer.crop !== null)
-                                return moving || pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor;
-                            return moving ? Qt.ClosedHandCursor : Qt.CrossCursor;
-                        }
+                        enabled: win.ready && layer.crop === null
+                        cursorShape: Qt.CrossCursor
 
                         onPressed: mouse => {
                             root.claim(win);
                             layer.commitText();
                             start = Qt.point(mouse.x, mouse.y);
-                            startSelection = layer.crop;
-                            moving = layer.tool === "select" && layer.contains(layer.crop, start);
-                            win.pendingSelection = moving ? layer.crop : Qt.rect(start.x, start.y, 0, 0);
+                            win.pendingSelection = Qt.rect(start.x, start.y, 0, 0);
                         }
 
                         onPositionChanged: mouse => {
-                            if (!moving) {
-                                win.pendingSelection = layer.normalizedRect(start, Qt.point(mouse.x, mouse.y));
-                                return;
-                            }
-                            const s = startSelection;
-                            const x = Math.max(0, Math.min(win.width - s.width, s.x + mouse.x - start.x));
-                            const y = Math.max(0, Math.min(win.height - s.height, s.y + mouse.y - start.y));
-                            win.pendingSelection = Qt.rect(x, y, s.width, s.height);
+                            win.pendingSelection = layer.normalizedRect(start, Qt.point(mouse.x, mouse.y));
                         }
 
                         onReleased: {
                             const sel = win.pendingSelection;
                             win.pendingSelection = null;
-                            moving = false;
-                            const s = startSelection;
-                            const unchanged = s && sel && sel.x === s.x && sel.y === s.y && sel.width === s.width && sel.height === s.height;
-                            if (sel && sel.width >= 4 && sel.height >= 4 && !unchanged)
+                            if (sel && sel.width >= 4 && sel.height >= 4)
                                 layer.commit(layer.shapes, sel);
                         }
                     }
@@ -212,7 +197,7 @@ Scope {
                         id: layer
 
                         anchors.fill: parent
-                        enabled: win.isOwner && layer.crop !== null && win.pendingSelection === null && layer.tool !== "select"
+                        enabled: win.isOwner && layer.crop !== null && win.pendingSelection === null
                         drawArea: layer.crop
                         tool: "pen"
                     }
@@ -281,6 +266,80 @@ Scope {
                             if (sel && sel.width >= 4 && sel.height >= 4)
                                 layer.commit(layer.shapes, sel);
                         }
+                    }
+                }
+            }
+
+            Rectangle {
+                id: regionDragHandle
+
+                readonly property var sel: win.selection
+                readonly property real gap: Theme.spacingXS
+                readonly property bool fitsAbove: sel !== null && sel.y - height - gap >= 0
+                readonly property bool fitsBelow: sel !== null && sel.y + sel.height + height + gap <= win.height
+                readonly property bool toolbarIsBelow: sel !== null && sel.y + sel.height + Theme.spacingS + toolbar.height <= win.height
+
+                visible: sel !== null && win.isOwner && !root.exporting
+                x: Math.max(Theme.spacingS, Math.min(win.width - width - Theme.spacingS, (sel?.x ?? 0) + (sel?.width ?? 0) / 2 - width / 2))
+                y: {
+                    if (!sel)
+                        return 0;
+                    if (fitsAbove)
+                        return sel.y - height - gap;
+                    // If toolbar is placed below the region, put the drag handle inside the top border of the region
+                    if (toolbarIsBelow || !fitsBelow)
+                        return sel.y + gap;
+                    return sel.y + sel.height + gap;
+                }
+                width: 32
+                height: 24
+                radius: Theme.cornerRadiusSmall
+                color: Theme.surfaceContainer
+                border.color: Theme.outlineVariant
+                border.width: 1
+
+                DankIcon {
+                    anchors.centerIn: parent
+                    name: "drag_pan"
+                    size: 16
+                    color: Theme.surfaceText
+                }
+
+                MouseArea {
+                    id: regionDragArea
+
+                    property point start
+                    property var startSelection: null
+
+                    anchors.fill: parent
+                    cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+
+                    onPressed: mouse => {
+                        layer.commitText();
+                        start = mapToItem(content, mouse.x, mouse.y);
+                        startSelection = layer.crop;
+                    }
+
+                    onPositionChanged: mouse => {
+                        if (!startSelection)
+                            return;
+                        const p = mapToItem(content, mouse.x, mouse.y);
+                        const dx = p.x - start.x;
+                        const dy = p.y - start.y;
+                        const s = startSelection;
+                        const nx = Math.max(0, Math.min(win.width - s.width, s.x + dx));
+                        const ny = Math.max(0, Math.min(win.height - s.height, s.y + dy));
+                        win.pendingSelection = Qt.rect(nx, ny, s.width, s.height);
+                    }
+
+                    onReleased: {
+                        const sel = win.pendingSelection;
+                        win.pendingSelection = null;
+                        const s = startSelection;
+                        startSelection = null;
+                        const unchanged = s && sel && sel.x === s.x && sel.y === s.y && sel.width === s.width && sel.height === s.height;
+                        if (sel && sel.width >= 4 && sel.height >= 4 && !unchanged)
+                            layer.commit(layer.shapes, sel);
                     }
                 }
             }

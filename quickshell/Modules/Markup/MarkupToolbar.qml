@@ -12,8 +12,8 @@ Row {
 
     readonly property var allTools: ({
             "select": {
-                icon: "highlight_alt",
-                label: I18n.tr("Select", "screenshot draw tool, moves the selected region")
+                icon: "arrow_selector_tool",
+                label: I18n.tr("Select", "screenshot draw tool, select and move annotations")
             },
             "pen": {
                 icon: "stylus",
@@ -41,7 +41,6 @@ Row {
             }
         })
     readonly property var swatches: [Theme.primary, Theme.error, Theme.warning, Theme.info, Theme.secondary, Theme.surfaceContainerHighest, Theme.surfaceText, Theme.surface]
-    readonly property var sizeLabels: [I18n.tr("Small", "screenshot markup stroke and text size"), I18n.tr("Medium", "screenshot markup stroke and text size"), I18n.tr("Large", "screenshot markup stroke and text size")]
 
     spacing: Theme.spacingXS
 
@@ -114,20 +113,7 @@ Row {
 
     Separator {}
 
-    DankActionButton {
-        id: sizeButton
-
-        readonly property var sizeCodes: ["S", "M", "L"]
-
-        tooltipText: I18n.tr("Size", "screenshot markup size button tooltip, followed by the current size") + ": " + root.sizeLabels[root.target.sizeLevel]
-        onClicked: root.target.sizeLevel = (root.target.sizeLevel + 1) % root.sizeLabels.length
-
-        StyledText {
-            anchors.centerIn: parent
-            text: sizeButton.sizeCodes[root.target.sizeLevel]
-            font.pixelSize: Theme.fontSizeSmall
-            font.weight: Font.Bold
-            color: Theme.surfaceText
-        }
+    MarkupSizeSlider {
+        target: root.target
     }
 }

@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Shapes
 import qs.Common
+import "MarkupHelpers.js" as Helpers
 
 // Drawing surface sized to the content in content units. Hosts supply the content and handle export.
 Item {
@@ -10,7 +11,7 @@ Item {
 
     property string tool: "pen"
     property color strokeColor: Theme.error
-    property int sizeLevel: 1
+    property real strokeSize: 4
     // On-screen pixels per content unit, so sizes and hit slop stay constant on screen.
     property real viewScale: 1
     // Presses outside this rect fall through to whatever is beneath; null accepts everywhere.
@@ -26,18 +27,88 @@ Item {
 
     property var draft: null
     property var textAnchor: null
+    property int selectedIndex: -1
 
     readonly property bool dirty: revision !== savedRevision
     readonly property bool editingText: textAnchor !== null
     readonly property bool canUndo: undoStack.length > 0
     readonly property bool canRedo: redoStack.length > 0
-    readonly property bool drawingTool: ["pen", "highlighter", "arrow", "rect", "text", "eraser"].includes(tool)
-    readonly property real strokeWidth: [2, 4, 8][sizeLevel] / viewScale
-    readonly property real fontSize: [14, 20, 32][sizeLevel] / viewScale
+    readonly property bool drawingTool: ["select", "pen", "highlighter", "arrow", "rect", "text", "eraser"].includes(tool)
+    readonly property real strokeWidth: strokeSize / viewScale
+    readonly property real fontSize: Math.max(12, strokeSize * 4) / viewScale
+    readonly property var selectedShape: selectedIndex >= 0 && selectedIndex < shapes.length ? shapes[selectedIndex] : null
+    readonly property var selectionBox: shapeBounds(selectedShape)
+
+    function changeStrokeSize(delta) {
+        strokeSize = Math.max(1, Math.min(32, strokeSize + delta));
+    }
+
+    property bool syncingSelection: false
+
+    onStrokeSizeChanged: {
+        if (syncingSelection)
+            return;
+        if (draft) {
+            draft = Object.assign({}, draft, {
+                width: draft.type === "highlighter" ? strokeWidth * 4 : strokeWidth
+            });
+        }
+        if (tool === "select" && selectedIndex >= 0 && selectedIndex < shapes.length) {
+            const shape = shapes[selectedIndex];
+            const targetWidth = shape.type === "highlighter" ? strokeWidth * 4 : strokeWidth;
+            if (shape.width !== targetWidth) {
+                const updated = Object.assign({}, shape, {
+                    width: targetWidth
+                });
+                const newShapes = shapes.slice();
+                newShapes[selectedIndex] = updated;
+                shapes = newShapes;
+            }
+        }
+    }
+
+    onStrokeColorChanged: {
+        if (syncingSelection)
+            return;
+        if (tool === "select" && selectedIndex >= 0 && selectedIndex < shapes.length) {
+            const shape = shapes[selectedIndex];
+            const updated = Object.assign({}, shape, {
+                color: strokeColor.toString()
+            });
+            const newShapes = shapes.slice();
+            newShapes[selectedIndex] = updated;
+            commit(newShapes, crop);
+        }
+    }
+
+    onToolChanged: {
+        if (tool === "select") {
+            selectedIndex = shapes.length > 0 ? shapes.length - 1 : -1;
+        } else {
+            selectedIndex = -1;
+        }
+    }
+
+    onSelectedIndexChanged: {
+        if (tool === "select" && selectedIndex >= 0 && selectedIndex < shapes.length) {
+            const shape = shapes[selectedIndex];
+            syncingSelection = true;
+            if (shape.width !== undefined) {
+                const baseWidth = shape.type === "highlighter" ? shape.width / 4 : shape.width;
+                strokeSize = Math.max(1, Math.min(32, baseWidth * viewScale));
+            }
+            if (shape.color) {
+                strokeColor = shape.color;
+            }
+            syncingSelection = false;
+        }
+    }
 
     function reset() {
+        tool = "pen";
         textAnchor = null;
         draft = null;
+        selectedIndex = -1;
         shapes = [];
         crop = null;
         undoStack = [];
@@ -111,118 +182,64 @@ Item {
     }
 
     function distanceToSegment(p, a, b) {
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const len2 = dx * dx + dy * dy;
-        const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2));
-        return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+        return Helpers.distanceToSegment(p, a, b);
     }
 
     function hits(shape, p, tolerance) {
-        if (shape.type === "text")
-            return p.x >= shape.x - tolerance && p.x <= shape.x + shape.w + tolerance && p.y >= shape.y - tolerance && p.y <= shape.y + shape.h + tolerance;
-        const pts = outline(shape);
-        const reach = shape.width / 2 + tolerance;
-        for (let i = 1; i < pts.length; i++) {
-            if (distanceToSegment(p, pts[i - 1], pts[i]) <= reach)
-                return true;
+        return Helpers.hits(shape, p, tolerance, viewScale);
+    }
+
+    function shapeBounds(shape) {
+        const b = Helpers.shapeBounds(shape, viewScale, fontSize);
+        return b ? Qt.rect(b.x, b.y, b.width, b.height) : null;
+    }
+
+    function translateShape(shape, dx, dy) {
+        return Helpers.translateShape(shape, dx, dy);
+    }
+
+    function resizeShape(shape, origBox, newBox) {
+        return Helpers.resizeShape(shape, origBox, newBox, fontSize);
+    }
+
+    function hitIndexAt(p) {
+        const tolerance = 6 / viewScale;
+        for (let i = shapes.length - 1; i >= 0; i--) {
+            if (hits(shapes[i], p, tolerance))
+                return i;
         }
-        return pts.length === 1 && Math.hypot(p.x - pts[0].x, p.y - pts[0].y) <= reach;
+        return -1;
     }
 
     function eraseAt(p) {
-        const tolerance = 6 / viewScale;
-        for (let i = shapes.length - 1; i >= 0; i--) {
-            if (!hits(shapes[i], p, tolerance))
-                continue;
+        const i = hitIndexAt(p);
+        if (i !== -1)
             commit(shapes.slice(0, i).concat(shapes.slice(i + 1)), crop);
-            return;
-        }
     }
 
     function outline(shape) {
-        const pts = shape.points;
-        if (shape.type === "rect") {
-            const a = pts[0];
-            const b = pts[pts.length - 1];
-            return [a, Qt.point(b.x, a.y), b, Qt.point(a.x, b.y), a];
-        }
-        if (shape.type === "arrow") {
-            const a = pts[0];
-            const b = pts[pts.length - 1];
-            const dx = b.x - a.x;
-            const dy = b.y - a.y;
-            const len = Math.hypot(dx, dy);
-            if (len <= 0)
-                return [a, b];
-            const spread = Math.PI / 7;
-            const headLen = Math.max(15 / root.viewScale, shape.width * 4);
-            const offset = headLen * Math.cos(spread);
-            const shaftLen = Math.max(0, len - offset);
-            const angle = Math.atan2(dy, dx);
-            const endX = a.x + shaftLen * Math.cos(angle);
-            const endY = a.y + shaftLen * Math.sin(angle);
-            return [a, Qt.point(endX, endY)];
-        }
-        return pts;
+        const pts = Helpers.outline(shape, viewScale);
+        return pts.map(p => Qt.point(p.x, p.y));
     }
 
-
-
     function arrowHead(shape) {
-        const a = shape.points[0];
-        const b = shape.points[shape.points.length - 1];
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        if (Math.hypot(dx, dy) <= 0)
-            return [];
-        const angle = Math.atan2(dy, dx);
-        const headLength = Math.max(15 / root.viewScale, shape.width * 4);
-        const spreadAngle = Math.PI / 7;
-        const strokeWidth = shape.width;
-
-        const tipRadius = Math.max(1.5, Math.min(strokeWidth * 0.5, headLength * 0.15));
-        const sinHalf = Math.sin(spreadAngle);
-        const tipApexInset = tipRadius * (1 / sinHalf - 1);
-        const effectiveTipX = b.x + tipApexInset * Math.cos(angle);
-        const effectiveTipY = b.y + tipApexInset * Math.sin(angle);
-
-        const v1 = Qt.point(effectiveTipX, effectiveTipY);
-        const v2 = Qt.point(b.x - headLength * Math.cos(angle - spreadAngle), b.y - headLength * Math.sin(angle - spreadAngle));
-        const v3 = Qt.point(b.x - headLength * Math.cos(angle + spreadAngle), b.y - headLength * Math.sin(angle + spreadAngle));
-
-        return [v1, v2, v3, v1];
+        const pts = Helpers.arrowHead(shape, viewScale);
+        return pts.map(p => Qt.point(p.x, p.y));
     }
 
     function snapPointToAngle(point, fixed) {
-        const dx = point.x - fixed.x;
-        const dy = point.y - fixed.y;
-        const length = Math.hypot(dx, dy);
-        if (length === 0)
-            return point;
-        const snapStep = Math.PI / 12; // 15 degrees
-        const angle = Math.atan2(dy, dx);
-        const snapped = Math.round(angle / snapStep) * snapStep;
-        return Qt.point(fixed.x + length * Math.cos(snapped), fixed.y + length * Math.sin(snapped));
+        const pt = Helpers.snapPointToAngle(point, fixed);
+        return Qt.point(pt.x, pt.y);
     }
 
     function constrainSquarePoint(start, point) {
-        if (!start || !point)
-            return point || Qt.point(0, 0);
-        const dx = point.x - start.x;
-        const dy = point.y - start.y;
-        const size = Math.max(Math.abs(dx), Math.abs(dy));
-        const sx = dx < 0 ? -1 : 1;
-        const sy = dy < 0 ? -1 : 1;
-        return Qt.point(start.x + sx * size, start.y + sy * size);
+        const pt = Helpers.constrainSquarePoint(start, point);
+        return Qt.point(pt.x, pt.y);
     }
 
     function normalizedRect(a, b) {
-        const x1 = Math.max(0, Math.min(a.x, b.x));
-        const y1 = Math.max(0, Math.min(a.y, b.y));
-        const x2 = Math.min(width, Math.max(a.x, b.x));
-        const y2 = Math.min(height, Math.max(a.y, b.y));
-        return Qt.rect(x1, y1, Math.max(0, x2 - x1), Math.max(0, y2 - y1));
+        const r = Helpers.normalizedRect(a, b, width, height);
+        return Qt.rect(r.x, r.y, r.width, r.height);
     }
 
     function contains(area, p) {
@@ -334,12 +351,124 @@ Item {
         }
     }
 
+    Rectangle {
+        id: selectionIndicator
+
+        readonly property var box: root.selectionBox
+
+        visible: box !== null && root.tool === "select"
+        x: box?.x ?? 0
+        y: box?.y ?? 0
+        width: box?.width ?? 0
+        height: box?.height ?? 0
+        color: "transparent"
+        border.color: Theme.primary
+        border.width: 1.5 / root.viewScale
+        radius: 3 / root.viewScale
+        z: 20
+
+        // 4 corner resize handles
+        Repeater {
+            model: [Qt.point(0, 0), Qt.point(1, 0), Qt.point(0, 1), Qt.point(1, 1)]
+            delegate: Rectangle {
+                id: cornerHandle
+                required property point modelData
+
+                x: modelData.x * parent.width - width / 2
+                y: modelData.y * parent.height - height / 2
+                width: 10 / root.viewScale
+                height: 10 / root.viewScale
+                radius: width / 2
+                color: Theme.primary
+                border.color: Theme.onPrimary
+                border.width: 1.5 / root.viewScale
+
+                MouseArea {
+                    property var startShape: null
+                    property var startBox: null
+
+                    anchors.fill: parent
+                    anchors.margins: -4 / root.viewScale
+                    cursorShape: (cornerHandle.modelData.x === cornerHandle.modelData.y) ? Qt.SizeFDiagCursor : Qt.SizeBDiagCursor
+
+                    onPressed: mouse => {
+                        mouse.accepted = true;
+                        if (root.selectedIndex >= 0 && root.selectedIndex < root.shapes.length) {
+                            startShape = JSON.parse(JSON.stringify(root.shapes[root.selectedIndex]));
+                            startBox = root.shapeBounds(startShape);
+                        }
+                    }
+
+                    onPositionChanged: mouse => {
+                        if (!startShape || !startBox)
+                            return;
+                        const p = mapToItem(root, mouse.x, mouse.y);
+                        const f = cornerHandle.modelData;
+                        const left = f.x === 0 ? p.x : startBox.x;
+                        const right = f.x === 1 ? p.x : startBox.x + startBox.width;
+                        const top = f.y === 0 ? p.y : startBox.y;
+                        const bottom = f.y === 1 ? p.y : startBox.y + startBox.height;
+                        const newBox = root.normalizedRect(Qt.point(left, top), Qt.point(right, bottom));
+
+                        if (newBox.width >= 4 && newBox.height >= 4) {
+                            const resized = root.resizeShape(startShape, startBox, newBox);
+                            const newShapes = root.shapes.slice();
+                            newShapes[root.selectedIndex] = resized;
+                            root.shapes = newShapes;
+                        }
+                    }
+
+                    onReleased: {
+                        if (startShape && startBox) {
+                            const curShapes = root.shapes.slice();
+                            const beforeShapes = curShapes.slice();
+                            beforeShapes[root.selectedIndex] = startShape;
+                            root.undoStack = root.undoStack.concat([{
+                                shapes: beforeShapes,
+                                crop: root.crop
+                            }]);
+                            root.redoStack = [];
+                            root.revision++;
+                        }
+                        startShape = null;
+                        startBox = null;
+                    }
+                }
+            }
+        }
+    }
+
     MouseArea {
         property point start
+        property var dragStartShape: null
+        property bool draggingShape: false
 
         anchors.fill: parent
         enabled: root.drawingTool
-        cursorShape: root.tool === "text" ? Qt.IBeamCursor : (root.tool === "eraser" ? Qt.PointingHandCursor : Qt.CrossCursor)
+        hoverEnabled: true
+
+        onWheel: wheel => {
+            const p = Qt.point(wheel.x, wheel.y);
+            if (!root.contains(root.drawArea, p)) {
+                wheel.accepted = false;
+                return;
+            }
+            if (wheel.angleDelta.y === 0)
+                return;
+            const step = wheel.angleDelta.y > 0 ? 1 : -1;
+            root.changeStrokeSize(step);
+            wheel.accepted = true;
+        }
+
+        cursorShape: {
+            if (root.tool === "text")
+                return Qt.IBeamCursor;
+            if (root.tool === "eraser")
+                return Qt.PointingHandCursor;
+            if (root.tool === "select")
+                return draggingShape ? Qt.ClosedHandCursor : (root.selectedIndex !== -1 ? Qt.OpenHandCursor : Qt.ArrowCursor);
+            return Qt.CrossCursor;
+        }
 
         onPressed: mouse => {
             const p = Qt.point(mouse.x, mouse.y);
@@ -349,6 +478,26 @@ Item {
             }
             root.commitText();
             start = p;
+            if (root.tool === "select") {
+                // If clicked on currently selected shape or its bounding box
+                if (root.selectedIndex !== -1) {
+                    const selBox = root.selectionBox;
+                    const onBox = selBox && p.x >= selBox.x && p.x <= selBox.x + selBox.width && p.y >= selBox.y && p.y <= selBox.y + selBox.height;
+                    const hitIdx = root.hitIndexAt(p);
+                    if (hitIdx === root.selectedIndex || (hitIdx === -1 && onBox)) {
+                        draggingShape = true;
+                        dragStartShape = JSON.parse(JSON.stringify(root.shapes[root.selectedIndex]));
+                        return;
+                    }
+                }
+                const hit = root.hitIndexAt(p);
+                root.selectedIndex = hit;
+                if (hit !== -1) {
+                    draggingShape = true;
+                    dragStartShape = JSON.parse(JSON.stringify(root.shapes[hit]));
+                }
+                return;
+            }
             switch (root.tool) {
             case "text":
                 textInput.text = "";
@@ -369,6 +518,17 @@ Item {
 
         onPositionChanged: mouse => {
             let p = Qt.point(mouse.x, mouse.y);
+            if (root.tool === "select") {
+                if (draggingShape && dragStartShape && root.selectedIndex !== -1) {
+                    const dx = p.x - start.x;
+                    const dy = p.y - start.y;
+                    const moved = root.translateShape(dragStartShape, dx, dy);
+                    const newShapes = root.shapes.slice();
+                    newShapes[root.selectedIndex] = moved;
+                    root.shapes = newShapes;
+                }
+                return;
+            }
             if (root.tool === "eraser") {
                 root.eraseAt(p);
                 return;
@@ -379,17 +539,26 @@ Item {
             const first = pts[0];
             const isShift = mouse.modifiers & Qt.ShiftModifier;
 
+            const currentWidth = root.draft.type === "highlighter" ? root.strokeWidth * 4 : root.strokeWidth;
             if (root.draft.type === "pen") {
                 if (isShift) {
                     root.draft = Object.assign({}, root.draft, {
+                        width: currentWidth,
                         points: [first, root.snapPointToAngle(p, first)]
                     });
                     return;
                 }
                 const last = pts[pts.length - 1];
-                if (Math.hypot(p.x - last.x, p.y - last.y) < 1.5 / root.viewScale)
+                if (Math.hypot(p.x - last.x, p.y - last.y) < 1.5 / root.viewScale) {
+                    if (root.draft.width !== currentWidth) {
+                        root.draft = Object.assign({}, root.draft, {
+                            width: currentWidth
+                        });
+                    }
                     return;
+                }
                 root.draft = Object.assign({}, root.draft, {
+                    width: currentWidth,
                     points: pts.concat([p])
                 });
                 return;
@@ -404,11 +573,32 @@ Item {
             }
 
             root.draft = Object.assign({}, root.draft, {
+                width: currentWidth,
                 points: [first, p]
             });
         }
 
         onReleased: mouse => {
+            if (root.tool === "select") {
+                if (draggingShape) {
+                    draggingShape = false;
+                    const p = Qt.point(mouse.x, mouse.y);
+                    if (Math.hypot(p.x - start.x, p.y - start.y) > 1) {
+                        const curShapes = root.shapes.slice();
+                        // Rollback state in undoStack by committing the change
+                        const beforeShapes = curShapes.slice();
+                        beforeShapes[root.selectedIndex] = dragStartShape;
+                        root.undoStack = root.undoStack.concat([{
+                            shapes: beforeShapes,
+                            crop: root.crop
+                        }]);
+                        root.redoStack = [];
+                        root.revision++;
+                    }
+                    dragStartShape = null;
+                }
+                return;
+            }
             if (!root.draft)
                 return;
             let shape = root.draft;
