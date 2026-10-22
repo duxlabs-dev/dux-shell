@@ -9,6 +9,7 @@ Each skill is a directory with a `SKILL.md` entrypoint, optional reference docs,
 | Skill | Description |
 |-------|-------------|
 | [dms-plugin-dev](dms-plugin-dev/) | Develop plugins for Dux Shell - covers all 4 plugin types (widget, daemon, launcher, desktop), manifest creation, QML components, settings UI, data persistence, theme integration, and PopoutService usage. |
+| [dms-sandbox-theme](dms-sandbox-theme/) | Test theme generation (`dms matugen generate`) from a local build in an isolated sandbox that leaves the live desktop untouched, and diff generated app configs against an upstream ref. |
 
 ## Installation
 

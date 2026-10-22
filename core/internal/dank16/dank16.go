@@ -401,6 +401,82 @@ func EnsureContrastDPSLstar(hexColor, hexBg string, minLc float64, isLightMode b
 	return hexColor
 }
 
+// EnsureContrastLstar is the WCAG, multi-background EnsureContrastDPSLstar. It tries away from
+// bgs[0] first, then the other way, and returns the best ratio reached when neither clears minRatio.
+func EnsureContrastLstar(hexColor string, bgs []string, minRatio float64) string {
+	if len(bgs) == 0 || minContrast(hexColor, bgs) >= minRatio {
+		return hexColor
+	}
+	fg := HexToRGB(hexColor)
+	L0, a, b := colorful.Color{R: fg.R, G: fg.G, B: fg.B}.Lab()
+	L0 *= 100.0
+	first := 1.0
+	if Luminance(hexColor) < Luminance(bgs[0]) {
+		first = -1.0
+	}
+
+	best, bestRatio := hexColor, minContrast(hexColor, bgs)
+	for _, dir := range []float64{first, -first} {
+		// Clamped so the last step is pure black or white, whatever L0 is.
+		for L := L0; ; {
+			L = math.Max(0, math.Min(100, L+dir*0.5))
+			cand := labToHex(L, a, b)
+			r := minContrast(cand, bgs)
+			if r >= minRatio {
+				return cand
+			}
+			if r > bestRatio {
+				best, bestRatio = cand, r
+			}
+			if L == 0 || L == 100 {
+				break
+			}
+		}
+	}
+	return best
+}
+
+// MatchContrastLstar moves hexColor along L* to exactly ratio against bgs. Lowering stops at the
+// last step still at or above ratio, so a color set to a recommended value never reads as just below it.
+func MatchContrastLstar(hexColor string, bgs []string, ratio float64) string {
+	if len(bgs) == 0 {
+		return hexColor
+	}
+	if minContrast(hexColor, bgs) < ratio {
+		return EnsureContrastLstar(hexColor, bgs, ratio)
+	}
+
+	fg := HexToRGB(hexColor)
+	L, a, b := colorful.Color{R: fg.R, G: fg.G, B: fg.B}.Lab()
+	L *= 100.0
+	bgL := getLstar(bgs[0])
+	dir := 1.0
+	if L > bgL {
+		dir = -1.0
+	}
+
+	best := hexColor
+	for {
+		L += dir * 0.25
+		if L < 0 || L > 100 || (dir < 0 && L <= bgL) || (dir > 0 && L >= bgL) {
+			return best
+		}
+		cand := labToHex(L, a, b)
+		if minContrast(cand, bgs) < ratio {
+			return best
+		}
+		best = cand
+	}
+}
+
+func minContrast(hexColor string, bgs []string) float64 {
+	lowest := math.Inf(1)
+	for _, bg := range bgs {
+		lowest = math.Min(lowest, ContrastRatio(hexColor, bg))
+	}
+	return lowest
+}
+
 // Bidirectional contrast - tries both lighter and darker, picks closest to original
 func EnsureContrastDPSBidirectional(hexColor, hexBg string, minLc float64, isLightMode bool) string {
 	current := DeltaPhiStarContrast(hexColor, hexBg, isLightMode)
@@ -761,6 +837,24 @@ type VariantOptions struct {
 	UseDPS          bool
 	IsLightMode     bool
 	Profile         string
+}
+
+func (p *VariantPalette) Slots() [16]*VariantColorInfo {
+	return [16]*VariantColorInfo{
+		&p.Color0, &p.Color1, &p.Color2, &p.Color3, &p.Color4, &p.Color5, &p.Color6, &p.Color7,
+		&p.Color8, &p.Color9, &p.Color10, &p.Color11, &p.Color12, &p.Color13, &p.Color14, &p.Color15,
+	}
+}
+
+// Variant picks "dark", "light" or "default", the names templates use.
+func (v *VariantColorInfo) Variant(name string) *ColorInfo {
+	switch name {
+	case "dark":
+		return &v.Dark
+	case "light":
+		return &v.Light
+	}
+	return &v.Default
 }
 
 func mergeColorInfo(dark, light ColorInfo, isLightMode bool) VariantColorInfo {

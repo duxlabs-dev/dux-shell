@@ -926,3 +926,128 @@ func TestGenerateVariantPaletteProfile(t *testing.T) {
 		t.Error("light color1 unchanged by high profile")
 	}
 }
+
+func TestEnsureContrastLstarKeepsHue(t *testing.T) {
+	tests := []struct {
+		name   string
+		fg     string
+		bgs    []string
+		ratio  float64
+		darker bool
+	}{
+		{"bru color5 on surface and background", "#55461b", []string{"#26211c", "#1c1814"}, 4.5, false},
+		{"bru color8 dim", "#565348", []string{"#1c1814"}, 3.0, false},
+		{"violet container dark", "#4b3e76", []string{"#141318"}, 4.5, false},
+		{"pale green light", "#b9f0b8", []string{"#f7fbf2"}, 4.5, true},
+		{"amber light enhanced", "#805610", []string{"#fff8f4"}, 7.0, true},
+		{"dark text on bright container in dark mode", "#5a4a2a", []string{"#dbb32d"}, 4.5, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := EnsureContrastLstar(tt.fg, tt.bgs, tt.ratio)
+			for _, bg := range tt.bgs {
+				if r := ContrastRatio(got, bg); r < tt.ratio {
+					t.Errorf("%s on %s ratio %.2f, expected >= %.2f", got, bg, r, tt.ratio)
+				}
+			}
+			if d := num.DifferenceDegrees(hctHue(got), hctHue(tt.fg)); d > 3 {
+				t.Errorf("hue moved %.1f degrees (%s -> %s)", d, tt.fg, got)
+			}
+			if darkened := getLstar(got) < getLstar(tt.fg); darkened != tt.darker {
+				t.Errorf("%s -> %s darkened=%v, expected %v", tt.fg, got, darkened, tt.darker)
+			}
+		})
+	}
+}
+
+func TestEnsureContrastLstarLeavesPassingColor(t *testing.T) {
+	if got := EnsureContrastLstar("#dbb32d", []string{"#1c1814", "#26211c"}, 4.5); got != "#dbb32d" {
+		t.Errorf("passing color changed to %s", got)
+	}
+}
+
+func TestMatchContrastLstar(t *testing.T) {
+	tests := []struct {
+		name  string
+		fg    string
+		bgs   []string
+		ratio float64
+	}{
+		{"raise bru color5", "#55461b", []string{"#26211c", "#1c1814"}, 4.5},
+		{"lower bright text on dark", "#f5e8c7", []string{"#1c1814"}, 7.0},
+		{"lower dark text on light", "#3a2f22", []string{"#faf3e0"}, 5.0},
+		{"lower text on bright container in dark mode", "#1c1814", []string{"#dbb32d"}, 4.5},
+		{"set dim gray to recommended dim", "#565348", []string{"#1c1814"}, 2.0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := MatchContrastLstar(tt.fg, tt.bgs, tt.ratio)
+			r := minContrast(got, tt.bgs)
+			if r < tt.ratio || r > tt.ratio+0.15 {
+				t.Errorf("%s -> %s ratio %.3f, expected %.2f (at or just above)", tt.fg, got, r, tt.ratio)
+			}
+			if d := num.DifferenceDegrees(hctHue(got), hctHue(tt.fg)); d > 3 {
+				t.Errorf("hue moved %.1f degrees (%s -> %s)", d, tt.fg, got)
+			}
+		})
+	}
+}
+
+func TestMatchContrastLstarKeepsPolarity(t *testing.T) {
+	// Asking for less contrast than any same-side color can give must not flip text to the other side of the background.
+	got := MatchContrastLstar("#f5e8c7", []string{"#1c1814"}, 1.0)
+	if Luminance(got) <= Luminance("#1c1814") {
+		t.Errorf("light text became %s, at or below the background's luminance", got)
+	}
+}
+
+func TestEnsureContrastLstarUnreachableTargets(t *testing.T) {
+	const midGray = "#858585"
+	t.Run("crosses to the other side when only that side gets there", func(t *testing.T) {
+		got := EnsureContrastLstar("#8c8c8c", []string{midGray}, 5)
+		if r := ContrastRatio(got, midGray); r < 5 {
+			t.Errorf("%s on %s ratio %.2f, expected >= 5 (darker text reaches it)", got, midGray, r)
+		}
+		if Luminance(got) >= Luminance(midGray) {
+			t.Errorf("%s should have gone darker than the background", got)
+		}
+	})
+	t.Run("returns the best it can when nothing reaches the target", func(t *testing.T) {
+		const fg = "#8c8c8c"
+		got := EnsureContrastLstar(fg, []string{midGray}, 12)
+		if got == fg {
+			t.Fatalf("color left unchanged although a higher ratio is reachable")
+		}
+		if r := ContrastRatio(got, midGray); r < 5.5 {
+			t.Errorf("%s ratio %.2f, expected the highest this hue reaches (~5.6)", got, r)
+		}
+	})
+}
+
+func TestEnsureContrastLstarCrossingStopsAtTarget(t *testing.T) {
+	// Near-black text on a mid accent: black tops out near 4.0:1, so it crosses to light text,
+	// which should stop as soon as it reaches the target rather than run to white.
+	const accent = "#856800"
+	got := EnsureContrastLstar("#1c1814", []string{accent}, 4.5)
+	r := ContrastRatio(got, accent)
+	if r < 4.5 || r > 4.65 {
+		t.Errorf("%s on %s ratio %.2f, expected just above 4.5", got, accent, r)
+	}
+	if Luminance(got) <= Luminance(accent) {
+		t.Errorf("%s should be lighter than %s", got, accent)
+	}
+}
+
+func TestEnsureContrastLstarReachesTheEndsOfTheRange(t *testing.T) {
+	// #777777 sits at L* 50.03, so 0.5 steps from it never land on exactly 0 or 100.
+	for _, tt := range []struct{ name, bg, want string }{
+		{"white on black", "#000000", "#ffffff"},
+		{"black on white", "#ffffff", "#000000"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := EnsureContrastLstar("#777777", []string{tt.bg}, 21); got != tt.want {
+				t.Errorf("got %s (%.2f:1), want %s", got, ContrastRatio(got, tt.bg), tt.want)
+			}
+		})
+	}
+}
