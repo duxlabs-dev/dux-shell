@@ -209,14 +209,14 @@ MediaChromeBase {
                             height: elapsed.implicitHeight
                             opacity: root.hasSeekbar ? 1 : 0
 
-                            TimeLabel {
+                            MediaTimeLabel {
                                 id: elapsed
                                 anchors.left: parent.left
                                 text: Format.formatDuration(seekbar.value * (root.presentation?.length ?? 0))
                                 reserveText: duration.text.replace(/\d/g, "8")
                             }
 
-                            TimeLabel {
+                            MediaTimeLabel {
                                 id: duration
                                 anchors.right: parent.right
                                 horizontalAlignment: Text.AlignRight
@@ -243,13 +243,5 @@ MediaChromeBase {
                 }
             }
         }
-    }
-
-    component TimeLabel: NumericText {
-        width: Math.ceil(reservedWidth)
-        isMonospace: false
-        color: Theme.onSurfaceVariant
-        font.pixelSize: Theme.fontSizeSmall
-        font.weight: Theme.fontWeightMedium
     }
 }

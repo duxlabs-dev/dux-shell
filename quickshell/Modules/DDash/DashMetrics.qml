@@ -183,6 +183,14 @@ Singleton {
     readonly property real overviewArtFrame: gridRowUnit
     readonly property real overviewArtHero: gridRowUnit * 1.5 + Theme.spacingL
     readonly property real overviewSeekHeight: Theme.sliderTrackHeightS
+    readonly property real overviewSeekExpressiveHeight: 20
+    readonly property real overviewSeekLineWidth: 3
+    readonly property real overviewSeekAmplitude: 1.4
+    readonly property real overviewSeekWavelength: 18
+    readonly property real overviewSeekHandleSize: 12
+    readonly property real overviewSeekHandleDragWidth: 4
+    readonly property real overviewSeekHandleDragHeight: 20
+    readonly property real overviewSeekHandleGap: 5
     readonly property real overviewSideButtonSize: Theme.iconButtonSize
     readonly property real overviewPlaySize: Theme.iconButtonSize
     readonly property real overviewTransportWidth: overviewPlayWidth + (overviewSideButtonSize + Theme.spacingXS) * 2

@@ -9,6 +9,7 @@ import qs.Widgets
 import qs.Modules.DDash
 import qs.Modules.DDash.Media
 import "../../../DCommon/Common/FocusNavigation.js" as FocusNavigation
+import "../../../Common/Format.js" as Format
 
 Card {
     id: root
@@ -28,6 +29,7 @@ Card {
     readonly property color accent: MediaAccentService.accent
     readonly property bool showSeekbar: options.seekbar !== false && !tiny
     readonly property bool bento: options.playerStyle === "bento"
+    readonly property bool showTimes: bento && showArtwork && showSeekbar
     readonly property bool inlineMetadata: compact && titleLabel.implicitHeight + artistLabel.implicitHeight + trackText.spacing > transport.y - Theme.spacingXS
     readonly property var playbackFocusTargets: [playButton, previousButton, nextButton].concat(seekbar.canSeek ? [seekbar] : [])
 
@@ -127,8 +129,10 @@ Card {
                 text: root.inlineMetadata ? root.titleText + " · " + root.artistText : root.titleText
                 fontToken: root.options.titleFont ?? MediaOptions.defaultTitleFont
                 font.pixelSize: root.compact ? Theme.fontSizeMedium : Theme.fontSizeLarge
-                font.weight: Theme.fontWeightMedium
-                color: root.contentColor
+                // The regular weight selects the variable font, so the title axes apply, see BentoChrome.
+                font.weight: root.bento ? Font.Normal : Theme.fontWeightMedium
+                font.variableAxes: root.bento ? DashMetrics.mediaTitleFontAxes : ({})
+                color: root.bento ? MediaAccentService.highlight : root.contentColor
                 elide: Text.ElideRight
                 maximumLineCount: root.showArtwork ? 2 : 1
                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
@@ -152,20 +156,69 @@ Card {
             anchors.right: root.compact && !root.tiny ? transport.left : parent.right
             anchors.rightMargin: root.compact && !root.tiny ? Theme.spacingS : 0
             y: root.compact ? transport.y + (transport.height - height) / 2 : transport.y - height - Theme.spacingS
-            height: DashMetrics.overviewSeekHeight
+            height: seekbar.height + (root.showTimes ? elapsed.height + Theme.spacingXXS : 0)
             visible: root.showSeekbar
+            LayoutMirroring.enabled: false
+            LayoutMirroring.childrenInherit: true
 
             DSeekbar {
                 id: seekbar
                 focusRingColor: MediaAccentService.focusRing
-                anchors.fill: parent
+                width: parent.width
+                height: root.bento ? DashMetrics.overviewSeekExpressiveHeight : DashMetrics.overviewSeekHeight
                 activePlayer: root.activePlayer
                 stableLength: MprisController.activePlayerStableLength
                 accentColor: root.accent
-                accentTrackColor: MediaAccentService.accentTrack
+                accentTrackColor: root.bento ? MediaAccentService.accentRail : MediaAccentService.accentTrack
                 accentSubtleColor: MediaAccentService.accentSubtle
+                showHandle: root.bento
+                handleSize: DashMetrics.overviewSeekHandleSize
+                handleDragWidth: DashMetrics.overviewSeekHandleDragWidth
+                handleDragHeight: DashMetrics.overviewSeekHandleDragHeight
+                handleGap: DashMetrics.overviewSeekHandleGap
                 isSeeking: root.isSeeking
                 onIsSeekingChanged: root.isSeeking = isSeeking
+            }
+
+            // Bento's wave only; the other style keeps the seekbar's own defaults.
+            Binding {
+                target: seekbar
+                property: "waveLineWidth"
+                value: DashMetrics.overviewSeekLineWidth
+                when: root.bento
+            }
+
+            Binding {
+                target: seekbar
+                property: "waveAmplitude"
+                value: DashMetrics.overviewSeekAmplitude
+                when: root.bento
+            }
+
+            Binding {
+                target: seekbar
+                property: "wavelength"
+                value: DashMetrics.overviewSeekWavelength
+                when: root.bento
+            }
+
+            MediaTimeLabel {
+                id: elapsed
+                anchors.left: parent.left
+                anchors.bottom: parent.bottom
+                visible: root.showTimes
+                text: Format.formatDuration(seekbar.value * MprisController.activePlayerStableLength)
+                reserveText: duration.text.replace(/\d/g, "8")
+            }
+
+            MediaTimeLabel {
+                id: duration
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                horizontalAlignment: Text.AlignRight
+                visible: root.showTimes
+                text: Format.formatDuration(MprisController.activePlayerStableLength)
+                reserveText: text.replace(/\d/g, "8")
             }
         }
 
@@ -199,13 +252,13 @@ Card {
                 round: false
                 checkable: true
                 checked: root.playing
-                iconFilled: false
+                iconFilled: root.bento
                 radius: Theme.buttonRadius(width, height, buttonSize, pressed, !root.bento && checked)
                 iconName: root.playing ? "pause" : "play_arrow"
                 Accessible.name: root.playing ? I18n.tr("Pause") : I18n.tr("Play")
                 enabled: !!root.activePlayer?.canTogglePlaying
-                contentColor: MediaAccentService.onAccentContainer
-                containerColor: MediaAccentService.accentContainer
+                contentColor: root.bento ? MediaAccentService.onAccentSecondaryContainer : MediaAccentService.onAccentContainer
+                containerColor: root.bento ? MediaAccentService.accentSecondaryContainer : MediaAccentService.accentContainer
                 onClicked: root.activePlayer.togglePlaying()
             }
 
@@ -218,8 +271,9 @@ Card {
                 variant: root.bento ? "tonal" : "standard"
                 round: !root.bento
                 radius: Theme.buttonRadius(width, height, buttonSize, pressed, round)
-                containerColor: MediaAccentService.accentSecondaryContainer
-                contentColor: root.bento ? MediaAccentService.onAccentSecondaryContainer : Theme.onSecondaryContainer
+                containerColor: root.bento ? MediaAccentService.accentContainer : MediaAccentService.accentSecondaryContainer
+                contentColor: root.bento ? MediaAccentService.onAccentContainer : Theme.onSecondaryContainer
+                iconFilled: root.bento
                 iconName: "skip_previous"
                 Accessible.name: I18n.tr("Previous")
                 enabled: !!root.activePlayer?.canGoPrevious || (!!root.activePlayer?.canSeek && root.activePlayer.position > 8)
@@ -238,6 +292,7 @@ Card {
                 radius: Theme.buttonRadius(width, height, buttonSize, pressed, round)
                 containerColor: previousButton.containerColor
                 contentColor: previousButton.contentColor
+                iconFilled: previousButton.iconFilled
                 iconName: "skip_next"
                 Accessible.name: I18n.tr("Next")
                 enabled: !!root.activePlayer?.canGoNext
