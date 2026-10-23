@@ -404,6 +404,7 @@ BasePill {
                             color: root.contentColor
                             font.pixelSize: mediaText.font.pixelSize
                             live: root.surfaceLive
+                            sweep: SettingsData.widgetOption("music", root.widgetData, "mediaSmoothLyrics")
                         }
 
                         MouseArea {

@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
+import "../../DDash/Media/LyricsModel.js" as LyricsModel
 
 Item {
     id: root
@@ -12,6 +13,8 @@ Item {
     property alias font: measure.font
     property color color: Theme.surfaceText
     property bool live: true
+    // Fills each word across its sung time instead of at once, like the dash's smooth highlight.
+    property bool sweep: false
 
     readonly property int revision: controller.wordRevision
     readonly property string fontKey: measure.font.family + "/" + measure.font.pixelSize + "/" + measure.font.weight
@@ -27,6 +30,8 @@ Item {
     onVisibleChanged: place()
     onWidthChanged: place()
     onFontKeyChanged: place()
+    onLiveChanged: place()
+    onSweepChanged: place()
     Component.onCompleted: place()
 
     function flat(value) {
@@ -39,6 +44,7 @@ Item {
     }
 
     function place() {
+        sweepMotion.stop();
         const parts = visible ? (controller.lines[controller.activeIndex]?.parts ?? []) : [];
         const at = controller.currentTime();
         const next = parts.find(candidate => !candidate.background && at >= candidate.t && at < candidate.e) ?? parts.find(candidate => !candidate.background) ?? parts[0] ?? null;
@@ -64,7 +70,21 @@ Item {
         const index = lastStarted(line.w, at);
         const page = pages.find(candidate => index <= candidate.last) ?? pages[pages.length - 1];
         const sung = index < page.first ? 0 : widthOf(flat(line.w.slice(page.first, index + 1).map(word => word.x).join("")));
-        turnTo(key + "/" + page.first, page.text, sung);
+        if (!sweep || index < page.first) {
+            turnTo(key + "/" + page.first, page.text, sung);
+            return;
+        }
+        const before = index === page.first ? 0 : widthOf(flat(line.w.slice(page.first, index).map(word => word.x).join("")));
+        const span = LyricsModel.cueSpans(line)[index];
+        const duration = span.e - span.t;
+        const progress = Number.isFinite(duration) && duration > 0 ? Math.max(0, Math.min(1, (at - span.t) / duration)) : 1;
+        turnTo(key + "/" + page.first, page.text, before + (sung - before) * progress);
+        if (progress >= 1 || !live || !controller.playing || controller.rate <= 0 || SettingsData.reduceMotion)
+            return;
+        // One linear run per word: the controller wakes this at each cue, nothing ticks per frame in between.
+        sweepMotion.to = sung;
+        sweepMotion.duration = Math.max(1, Math.min(2147483647, (span.e - at) * 1000 / controller.rate));
+        sweepMotion.start();
     }
 
     function placeLine(key, line, at) {
@@ -149,6 +169,7 @@ Item {
 
     function clearLine() {
         nextPage.stop();
+        sweepMotion.stop();
         slide.stop();
         pagedKey = "";
         pageKey = "";
@@ -181,6 +202,12 @@ Item {
         onFinished: outgoing.text = ""
     }
 
+    NumberAnimation {
+        id: sweepMotion
+        target: current
+        property: "fill"
+    }
+
     StyledText {
         id: measure
         visible: false
@@ -197,7 +224,7 @@ Item {
         height: root.height
 
         Behavior on fill {
-            enabled: root.live && !root.snapping && !SettingsData.reduceMotion
+            enabled: root.live && !root.snapping && !root.sweep && !SettingsData.reduceMotion
             NumberAnimation {
                 duration: Theme.shortDuration
                 easing.type: Easing.BezierSpline
