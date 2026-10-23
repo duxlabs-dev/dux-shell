@@ -230,7 +230,7 @@ Singleton {
     readonly property real mediaSheetFadeThreshold: 0.35
     readonly property real mediaSheetSettleProgress: 0.002
     readonly property var mediaTitleFontAxes: ({
-            "wght": 758,
+            "wght": 700,
             "wdth": 25,
             "ROND": 100,
             "GRAD": 100
