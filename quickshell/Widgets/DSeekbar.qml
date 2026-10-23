@@ -96,13 +96,13 @@ Item {
     property real waveLineWidth: 2
     property real waveAmplitude: 1.6
     property real wavelength: 20
-    // The round handle keeps half its size from the ends, so the track maps onto the span between them.
+    // The handle keeps half its current width from the ends, so the track maps onto the span between them.
     property bool showHandle: false
     property real handleSize: 0
     property real handleDragWidth: 0
     property real handleDragHeight: 0
     property real handleGap: 0
-    readonly property real handleInset: showHandle ? handleSize / 2 : 0
+    readonly property real handleInset: showHandle ? handleWidth / 2 : 0
     readonly property real handleTravel: Math.max(1, width - handleInset * 2)
     property real handleWidth: isSeeking ? handleDragWidth : handleSize
     property real handleHeight: isSeeking ? handleDragHeight : handleSize
@@ -260,7 +260,8 @@ Item {
             M3WaveProgress {
                 value: root.trackValue(root.value)
                 actualValue: root.trackValue(root.playerValue)
-                showActualPlaybackState: root.isSeeking
+                // The handle carries the played wave with it, so there is no separate preview of the drag.
+                showActualPlaybackState: root.isSeeking && !root.showHandle
                 lineWidth: root.waveLineWidth
                 amp: root.waveAmplitude
                 wavelength: root.wavelength
