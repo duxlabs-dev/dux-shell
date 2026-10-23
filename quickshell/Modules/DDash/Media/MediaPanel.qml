@@ -11,12 +11,12 @@ DBottomSheet {
 
     required property var player
     property string displayedPanel: ""
+    property var inlinePanels: []
     readonly property string requestedPanel: player.panel
     readonly property var sinks: root.active ? AudioService.getAvailableSinks() : []
     readonly property var players: root.active ? root.player.selectablePlayers() : []
 
-    // The playback panel is a popup of its own, see MediaPlaybackPopup.
-    readonly property bool sheetPanel: ["volume", "devices", "players"].includes(requestedPanel)
+    readonly property bool sheetPanel: ["volume", "devices", "players"].includes(requestedPanel) && !inlinePanels.includes(requestedPanel)
 
     opened: root.player.live && sheetPanel
     initialFocusItem: panelLoader.item?.focusTarget ?? null

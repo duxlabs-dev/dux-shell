@@ -225,7 +225,10 @@ Singleton {
     readonly property real mediaSeekbarExpressiveAmplitude: 1.8
     readonly property real mediaSeekbarExpressiveWavelength: 22
     readonly property real mediaTransportMaxHeight: 70
-    readonly property real mediaPopupWidth: 360
+    // Material's shared axis transition: 30dp of travel, with the outgoing side gone by 35% of it.
+    readonly property real mediaSheetSlideDistance: 30
+    readonly property real mediaSheetFadeThreshold: 0.35
+    readonly property real mediaSheetSettleProgress: 0.002
     readonly property var mediaTitleFontAxes: ({
             "wght": 758,
             "wdth": 25,

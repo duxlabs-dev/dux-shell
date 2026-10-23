@@ -31,6 +31,8 @@ MediaChromeBase {
     focusTargets: [playerButton].concat(seekbar.canSeek && root.hasSeekbar ? [seekbar] : [], transport.focusTargets, actionRow.focusTargets)
     panelButtons: [playerButton].concat(actionRow.panelButtons)
     inlineVolume: true
+    inlinePanels: ["players", "devices"]
+    inlinePanel: playbackSheet
 
     MediaArtView {
         id: stage
@@ -79,7 +81,7 @@ MediaChromeBase {
                 DButton {
                     id: playerButton
 
-                    readonly property string panelId: "playback"
+                    readonly property string panelId: "players"
 
                     anchors.verticalCenter: parent.verticalCenter
                     maximumWidth: Math.max(0, sourceRow.width - sourceLabel.width - parent.spacing)
@@ -108,6 +110,12 @@ MediaChromeBase {
                 y: root.deckInset
                 width: parent.width - root.deckInset * 2
                 spacing: Theme.spacingXL
+                opacity: playbackSheet.controlsOpacity
+                visible: opacity > 0 || !playbackSheet.opened
+                enabled: !playbackSheet.opened
+                transform: Translate {
+                    x: playbackSheet.controlsShift
+                }
 
                 Column {
                     id: titleBlock
@@ -241,6 +249,14 @@ MediaChromeBase {
                         player: root.player
                     }
                 }
+            }
+
+            // Takes the controls' place, so opening it never moves the deck or the artwork.
+            MediaPlaybackSheet {
+                id: playbackSheet
+                anchors.fill: parent
+                player: root.player
+                returnFocusItem: root.buttonForPanel(shownPanel)
             }
         }
     }

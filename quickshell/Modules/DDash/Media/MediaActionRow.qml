@@ -53,7 +53,7 @@ RowLayout {
     DIconButton {
         id: outputButton
 
-        readonly property string panelId: "playback"
+        readonly property string panelId: "devices"
 
         width: buttonSize
         variant: "tonal"
@@ -62,12 +62,5 @@ RowLayout {
         contentColor: MediaAccentService.onAccentSecondaryContainer
         tooltipText: I18n.tr("Devices", "Media player output device picker") + ": " + AudioService.displayName(AudioService.sink)
         onClicked: root.player.togglePanel(panelId, outputButton)
-
-        MediaVolumeWheel {
-            player: root.player
-            button: outputButton
-        }
-
-        MediaSinkMute {}
     }
 }
