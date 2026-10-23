@@ -7,6 +7,7 @@ import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.DDash
 import "../../../Common/Format.js" as Format
+import "../../../DCommon/Common/FocusNavigation.js" as FocusNavigation
 
 MediaChromeBase {
     id: root
@@ -20,7 +21,7 @@ MediaChromeBase {
     readonly property bool boxed: root.player.controlsContainer
     readonly property real deckInset: boxed ? Theme.spacingXL : 0
     // The transport takes what the artwork leaves over, so both columns end up about as tall.
-    readonly property real deckFixedHeight: sourceRow.height + titleBlock.height + seekBlock.height + actionRow.implicitHeight + deckInset * 2 + Theme.spacingXL * 2 + Theme.spacingL * 2
+    readonly property real deckFixedHeight: sourceRow.height + titleBlock.height + seekBlock.height + optionRow.height + deckInset * 2 + Theme.spacingXL * 2 + Theme.spacingL * 2
     readonly property real transportSize: Math.round(Math.max(Theme.buttonHeightM, Math.min(DashMetrics.mediaTransportMaxHeight, artworkSize - deckFixedHeight)))
     readonly property real stageWidth: lyricsShown && !compact ? artColumnWidth : artworkSize
     readonly property real stageHeight: lyricsShown && !compact ? Math.max(artworkSize, deck.height) : artworkSize
@@ -28,9 +29,8 @@ MediaChromeBase {
 
     surfaceColor: Theme.foregroundColor(Theme.hostSurface)
     baseHeight: Math.max(DashMetrics.tabMinHeight, padding * 2 + columnHeight)
-    focusTargets: [playerButton].concat(seekbar.canSeek && root.hasSeekbar ? [seekbar] : [], transport.focusTargets, actionRow.focusTargets)
-    panelButtons: [playerButton].concat(actionRow.panelButtons)
-    inlineVolume: true
+    focusTargets: [playerButton].concat(seekbar.canSeek && root.hasSeekbar ? [seekbar] : [], transport.focusTargets, optionRow.focusTargets)
+    panelButtons: [playerButton, outputButton]
     inlinePanels: ["players", "devices"]
     inlinePanel: playbackSheet
 
@@ -171,7 +171,7 @@ MediaChromeBase {
                         width: parent.width
                         text: [root.artist, root.album].filter(Boolean).join(" · ") || " "
                         color: Theme.onSurfaceVariant
-                        font.pixelSize: Theme.fontSizeSmall
+                        font.pixelSize: Theme.fontSizeMedium
                         horizontalAlignment: Text.AlignHCenter
                         active: root.scrolling
                         loop: true
@@ -243,10 +243,53 @@ MediaChromeBase {
                         visible: hasControls
                     }
 
-                    MediaActionRow {
-                        id: actionRow
-                        width: parent.width
-                        player: root.player
+                    Row {
+                        id: optionRow
+
+                        readonly property var focusTargets: [lyricsButton, shuffleButton.button, repeatButton.button, outputButton]
+
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: Theme.groupedListGap
+                        LayoutMirroring.enabled: false
+                        LayoutMirroring.childrenInherit: true
+
+                        Keys.onPressed: event => event.accepted = FocusNavigation.handleHorizontalKey(event, focusTargets, false)
+
+                        GroupButton {
+                            id: lyricsButton
+
+                            groupStart: true
+                            visible: root.player.lyricsEnabled
+                            enabled: !!root.presentation
+                            iconName: "lyrics"
+                            checkable: true
+                            checked: root.player.lyricsOpen
+                            tooltipText: I18n.tr("Lyrics", "Media player lyrics button")
+                            onClicked: root.player.toggleLyrics(lyricsButton)
+                        }
+
+                        ModeButton {
+                            id: shuffleButton
+                            mediaAction: "shuffle"
+                            groupStart: !lyricsButton.visible
+                        }
+
+                        ModeButton {
+                            id: repeatButton
+                            mediaAction: "repeat"
+                        }
+
+                        GroupButton {
+                            id: outputButton
+
+                            readonly property string panelId: "devices"
+
+                            groupStart: !lyricsButton.visible && !root.presentation
+                            groupEnd: true
+                            iconName: AudioService.sinkIcon(AudioService.sink)
+                            tooltipText: I18n.tr("Devices", "Media player output device picker") + ": " + AudioService.displayName(AudioService.sink)
+                            onClicked: root.player.togglePanel(panelId, outputButton)
+                        }
                     }
                 }
             }
@@ -258,6 +301,70 @@ MediaChromeBase {
                 player: root.player
                 returnFocusItem: root.buttonForPanel(shownPanel)
             }
+        }
+    }
+
+    // A connected group: the outer ends stay round, the inner corners follow radius so its Behavior
+    // animates press and toggle. ModeButton repeats this because it needs MediaTransportButton's logic.
+    component GroupButton: DIconButton {
+        property bool groupStart: false
+        property bool groupEnd: false
+        readonly property real outerRadius: Theme.fullRadius(width, height)
+
+        widthMode: "wide"
+        variant: "tonal"
+        iconFilled: checked
+        radius: pressed ? Theme.cornerRadiusXS : (checked ? outerRadius : Theme.cornerRadiusS)
+        topLeftRadius: groupStart ? outerRadius : radius
+        bottomLeftRadius: groupStart ? outerRadius : radius
+        topRightRadius: groupEnd ? outerRadius : radius
+        bottomRightRadius: groupEnd ? outerRadius : radius
+        containerColor: checked ? MediaAccentService.accent : Theme.surfaceContainerHighest
+        contentColor: checked ? MediaAccentService.onAccent : Theme.onSurfaceVariant
+    }
+
+    // Shown even when unsupported. A disabled button takes no hover, so a sibling area drives the tooltip.
+    component ModeButton: Item {
+        id: mode
+
+        property string mediaAction: ""
+        property bool groupStart: false
+        readonly property alias button: modeButton
+
+        implicitWidth: modeButton.width
+        implicitHeight: modeButton.height
+        visible: !!root.presentation
+
+        MediaTransportButton {
+            id: modeButton
+
+            readonly property real outerRadius: Theme.fullRadius(width, height)
+
+            player: root.player
+            mediaAction: mode.mediaAction
+            visible: true
+            widthMode: "wide"
+            variant: "tonal"
+            iconFilled: checked
+            radius: pressed ? Theme.cornerRadiusXS : (checked ? outerRadius : Theme.cornerRadiusS)
+            topLeftRadius: mode.groupStart ? outerRadius : radius
+            bottomLeftRadius: mode.groupStart ? outerRadius : radius
+            containerColor: checked ? MediaAccentService.accent : Theme.surfaceContainerHighest
+            contentColor: checked ? MediaAccentService.onAccent : Theme.onSurfaceVariant
+        }
+
+        MouseArea {
+            id: unsupportedHover
+            anchors.fill: parent
+            enabled: !modeButton.enabled
+            hoverEnabled: true
+            acceptedButtons: Qt.NoButton
+        }
+
+        DTooltipHost {
+            target: modeButton
+            hoverArea: unsupportedHover
+            text: modeButton.enabled ? "" : I18n.tr("Not supported by this player", "Tooltip on a disabled media shuffle or repeat button")
         }
     }
 }

@@ -235,8 +235,7 @@ Singleton {
             "ROND": 100,
             "GRAD": 100
         })
-    readonly property real mediaPlayWidthRatio: 1.5
-    readonly property real mediaPlayWidthStep: 0.75
+    readonly property real mediaPlayWidthRatio: 2
     readonly property real mediaTransportPressScale: 1.2
     readonly property real mediaDeviceNameWidthRatio: 0.42
     readonly property real accentSelectedAlpha: 0.2
