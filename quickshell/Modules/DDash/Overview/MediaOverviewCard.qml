@@ -249,11 +249,10 @@ Card {
                     return (parent.width - transport.spacing * 2) / 2;
                 }
                 variant: "filled"
-                round: false
                 checkable: true
                 checked: root.playing
                 iconFilled: root.bento
-                radius: Theme.buttonRadius(width, height, buttonSize, pressed, !root.bento && checked)
+                radius: Theme.buttonRadius(width, height, buttonSize, pressed, true)
                 iconName: root.playing ? "pause" : "play_arrow"
                 Accessible.name: root.playing ? I18n.tr("Pause") : I18n.tr("Play")
                 enabled: !!root.activePlayer?.canTogglePlaying
@@ -269,8 +268,7 @@ Card {
                 size: transport.medium ? "m" : "s"
                 width: transport.stacked ? (parent.width - transport.spacing) / 2 : (parent.width - playButton.width - transport.spacing * 2) / 2
                 variant: root.bento ? "tonal" : "standard"
-                round: !root.bento
-                radius: Theme.buttonRadius(width, height, buttonSize, pressed, round)
+                radius: Theme.buttonRadius(width, height, buttonSize, pressed, true)
                 containerColor: root.bento ? MediaAccentService.accentContainer : MediaAccentService.accentSecondaryContainer
                 contentColor: root.bento ? MediaAccentService.onAccentContainer : Theme.onSecondaryContainer
                 iconFilled: root.bento
@@ -289,7 +287,7 @@ Card {
                 width: previousButton.width
                 variant: previousButton.variant
                 round: previousButton.round
-                radius: Theme.buttonRadius(width, height, buttonSize, pressed, round)
+                radius: Theme.buttonRadius(width, height, buttonSize, pressed, true)
                 containerColor: previousButton.containerColor
                 contentColor: previousButton.contentColor
                 iconFilled: previousButton.iconFilled
