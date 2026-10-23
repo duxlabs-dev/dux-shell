@@ -99,7 +99,10 @@ Card {
             anchors.top: parent.top
             width: root.showArtwork ? Math.max(0, Math.min(DashMetrics.overviewArtHero, parent.width / 3, seekBlock.y - Theme.spacingM)) : 0
             height: width
-            artStyle: root.options.artStyle ?? "rounded"
+            artStyle: root.options.artStyle
+            playing: root.playing
+            live: root.live
+            rotate: root.options.rotateArt
             visible: root.showArtwork
 
             MediaArtwork {

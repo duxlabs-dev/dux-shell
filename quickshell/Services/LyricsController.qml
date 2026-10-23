@@ -34,12 +34,13 @@ QtObject {
     property string attributionUrl: ""
     property string attributionText: ""
     property int activeIndex: -1
-    property real wordTime: -1
-    property real wordEnd: -1
+    // Moves to the next line a little before it starts, so the line is centred when it is sung.
+    property int followIndex: -1
+    // Set while a seek or a position correction moves the clock, so views can tell a jump from playback.
+    property bool jumping: false
     property int wordRevision: 0
     property real sampleTime: 0
     property var cueTimes: []
-    property var focusedGroups: []
     property string state: "idle"
     readonly property bool pending: state === "loading" || (state === "idle" && enabled && requestDelay.running)
     property string requestedKey: ""
@@ -196,10 +197,8 @@ QtObject {
         attributionUrl = "";
         attributionText = "";
         activeIndex = -1;
-        wordTime = -1;
-        wordEnd = -1;
+        followIndex = -1;
         cueTimes = [];
-        focusedGroups = [];
         probe = null;
         wordRevision++;
         shownSong = "";
@@ -327,7 +326,6 @@ QtObject {
                 t: part.t,
                 next
             });
-            part.cues = cues;
             const voice = voices[part.voice];
             const singerIndex = singers.indexOf(part.voice);
             part.voiceIndex = Math.max(0, singerIndex);
@@ -391,16 +389,17 @@ QtObject {
         state = "ready";
     }
 
-    function seekToLine(index) {
-        if (!synced || duration <= 0 || !player?.canSeek)
+    function seekToTime(time) {
+        if (!canSeekLines || !Number.isFinite(time))
             return false;
-        const line = lines[index];
-        if (!line || !Number.isFinite(line.t))
-            return false;
-        player.position = Math.max(0.1, Math.min(line.t, duration * 0.99));
+        player.position = Math.max(0.1, Math.min(time, duration * 0.99));
         positionTrusted = true;
         reanchor();
         return true;
+    }
+
+    function seekToLine(index) {
+        return seekToTime(lines[index]?.t);
     }
 
     function currentTime() {
@@ -418,7 +417,10 @@ QtObject {
         anchorWall = Date.now();
         anchorPlaying = playing;
         anchorRate = rate;
-        resync();
+        if (pendingSeek)
+            jump();
+        else
+            resync();
     }
 
     // Quickshell fetches Position only on track, state and seek events and extrapolates from there,
@@ -453,7 +455,7 @@ QtObject {
         anchorWall = wall;
         anchorPlaying = playing;
         anchorRate = rate;
-        resync();
+        jump();
     }
 
     // pear-desktop floors Position to whole seconds on pause, resume and track events.
@@ -484,8 +486,14 @@ QtObject {
         anchorWall = Date.now();
         anchorPlaying = playing;
         anchorRate = rate;
-        resync();
+        jump();
         return true;
+    }
+
+    function jump() {
+        jumping = true;
+        resync();
+        jumping = false;
     }
 
     function resync() {
@@ -495,40 +503,15 @@ QtObject {
         const at = currentTime();
         sampleTime = at;
         const nextIndex = indexFor(at, lines);
-        const focused = [];
-        for (let i = 0; i <= nextIndex; i++) {
-            if (i === nextIndex || lines[i].parts.some(part => part.t <= at && at < part.e))
-                focused.push(i);
-        }
-        if (focused.join() !== focusedGroups.join())
-            focusedGroups = focused;
         activeIndex = nextIndex;
-        const parts = lines[activeIndex]?.parts ?? [];
-        const lead = parts.find(part => !part.background && part.t <= at);
-        const timing = wordTiming(lead ?? lines[activeIndex]?.parts[0], at);
-        wordTime = timing.t;
-        wordEnd = timing.e;
-        const next = cueTimes[indexFor(at, cueTimes) + 1]?.t ?? Infinity;
+        const leadIn = (lines[nextIndex + 1]?.t ?? Infinity) - DashMetrics.lyricsLineLeadIn;
+        followIndex = at >= leadIn ? nextIndex + 1 : nextIndex;
+        const next = Math.min(cueTimes[indexFor(at, cueTimes) + 1]?.t ?? Infinity, leadIn > at ? leadIn : Infinity);
         wordRevision++;
         if (!playing || rate <= 0 || !Number.isFinite(next))
             return;
         tick.interval = Math.max(1, Math.min(2147483647, (next - at) * 1000 / rate));
         tick.start();
-    }
-
-    function wordTiming(part, at) {
-        const cues = part?.cues ?? [];
-        const index = indexFor(at, cues);
-        const word = cues[index];
-        if (!word)
-            return {
-                t: -1,
-                e: -1
-            };
-        return {
-            t: word.t,
-            e: Math.min(part.e, cues[index + 1]?.t ?? Infinity, word.e)
-        };
     }
 
     function indexFor(at, timeline) {

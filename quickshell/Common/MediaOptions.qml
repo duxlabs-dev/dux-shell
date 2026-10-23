@@ -15,10 +15,12 @@ Singleton {
             animatedArt: false,
             lyrics: true,
             smoothLyrics: true,
-            deviceName: true
+            controlsContainer: false,
+            rotateArt: false
         })
 
     readonly property string defaultPlayerStyle: "bento"
+    readonly property string defaultArtStyle: "expressive"
     readonly property var playerStyles: [
         {
             "value": "bento",
@@ -31,7 +33,7 @@ Singleton {
     ]
 
     readonly property var titleFontDefaults: ({
-            bento: "Notable",
+            bento: "ui",
             material: "ui"
         })
 

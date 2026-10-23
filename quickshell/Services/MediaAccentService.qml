@@ -13,10 +13,13 @@ Singleton {
 
     readonly property bool hasAccent: MediaOptions.albumArtAccent ? _accent !== null : true
     readonly property color accent: MediaOptions.albumArtAccent && _accent !== null ? _accent : Theme.primary
+    readonly property color highlight: MediaOptions.albumArtAccent && _accent !== null ? _accent : Theme.tertiary
     property int lyricsConsumers: 0
     readonly property bool lyricsLive: lyricsConsumers > 0
     readonly property var lyricsHues: lyricsLive ? _lyricsHues() : [Theme.primary, Theme.tertiary, Theme.secondary]
     readonly property var lyricsAccents: lyricsLive ? lyricsHues.map(color => _readableLyricColor(color)) : lyricsHues
+    // The first voice is the highlight made readable, so solo lines and a duet's first singer match.
+    readonly property color lyricsLead: lyricsAccents[0]
     readonly property color lyricsGroupAccent: lyricsLive ? _readableLyricColor(_mixHues(lyricsHues[0], lyricsHues[1], lyricsHues[2])) : Theme.primary
     readonly property real lyricsChromaMin: 36
     readonly property real lyricsContrast: 4.5
@@ -64,6 +67,8 @@ Singleton {
     readonly property color accentPressed: Theme.withAlpha(accent, Theme.transparentBlurLayers ? 0.24 : 0.16)
 
     readonly property color accentTrack: Theme.withAlpha(accent, 0.28)
+    // An opaque rail for tracks that have to read on any surface, unlike the faint accentTrack.
+    readonly property color accentRail: Theme.blend(Theme.outline, accent, 0.3)
     readonly property color accentSubtle: Theme.withAlpha(accent, 0.55)
     // A ring colour the user changed from primary wins over the accent.
     readonly property color focusRing: Qt.colorEqual(Theme.focusRingColor, Theme.primary) ? accent : Theme.focusRingColor
@@ -72,13 +77,14 @@ Singleton {
     property var _accent: _pickAccent(TrackArtService.artwork.colors)
 
     function _lyricsHues() {
-        if (!MediaOptions.albumArtAccent)
-            return [Theme.primary, Theme.tertiary, Theme.secondary];
-        const base = accent;
+        if (!MediaOptions.albumArtAccent || _accent === null)
+            return [Theme.tertiary, Theme.primary, Theme.secondary];
+        const base = highlight;
         const neutral = base.hsvSaturation < 0.18 || base.hsvHue < 0;
         const hue = neutral ? Theme.tertiary.hsvHue : base.hsvHue;
         const saturation = Math.max(0.28, Math.min(0.6, base.hsvSaturation));
         const value = Math.max(0.78, base.hsvValue);
+        // A grey highlight has no hue to keep readable, so its voice takes tertiary's hue.
         const lead = neutral ? Qt.hsva(hue, saturation, value, 1) : base;
         let companion = Qt.hsva((Math.max(0, hue) + 1 / 3) % 1, saturation, value, 1);
         let score = 0;

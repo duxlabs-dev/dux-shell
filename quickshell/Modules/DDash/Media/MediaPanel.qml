@@ -13,9 +13,12 @@ DBottomSheet {
     property string displayedPanel: ""
     readonly property string requestedPanel: player.panel
     readonly property var sinks: root.active ? AudioService.getAvailableSinks() : []
-    readonly property var players: root.active ? (root.player.allPlayers || []).filter(p => p && (p === root.player.activePlayer || !MprisController.isIdle(p))) : []
+    readonly property var players: root.active ? root.player.selectablePlayers() : []
 
-    opened: root.player.live && requestedPanel !== ""
+    // The playback panel is a popup of its own, see MediaPlaybackPopup.
+    readonly property bool sheetPanel: ["volume", "devices", "players"].includes(requestedPanel)
+
+    opened: root.player.live && sheetPanel
     initialFocusItem: panelLoader.item?.focusTarget ?? null
     maximumWidth: DashMetrics.optionSheetWidth
     title: {
@@ -30,7 +33,7 @@ DBottomSheet {
         return "";
     }
     onRequestedPanelChanged: {
-        if (requestedPanel !== "")
+        if (sheetPanel)
             displayedPanel = requestedPanel;
     }
     onDismissRequested: root.player.panel = ""
@@ -117,7 +120,7 @@ DBottomSheet {
                     width: parent.width
                     node: modelData
                     selected: modelData === AudioService.sink
-                    playing: !!root.player.presentation?.playing
+                    subtitle: root.player.outputStatus(modelData)
                     onActivated: AudioService.setSink(modelData)
                 }
             }

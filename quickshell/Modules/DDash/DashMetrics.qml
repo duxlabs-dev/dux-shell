@@ -204,7 +204,26 @@ Singleton {
     readonly property real mediaInnerRadius: Math.max(Theme.cornerRadiusXS, surfaceRadius - mediaCardMargin - Theme.layerOutlineWidth)
     readonly property real mediaArtSoftRadiusRatio: 0.3
     readonly property real mediaArtPlaceholderIcon: Theme.buttonHeightM
+    readonly property real mediaArtColumnRatio: 5 / 11
+    readonly property real mediaArtLyricsScale: 0.88
+    readonly property int mediaArtRotationDuration: 30000
     readonly property real mediaSeekbarHeight: 22
+    readonly property real mediaSeekbarHandleSize: 16
+    readonly property real mediaSeekbarHandleDragWidth: 5
+    readonly property real mediaSeekbarHandleDragHeight: 28
+    readonly property real mediaSeekbarHandleGap: 7
+    readonly property real mediaSeekbarExpressiveHeight: 30
+    readonly property real mediaSeekbarExpressiveLineWidth: 4
+    readonly property real mediaSeekbarExpressiveAmplitude: 1.8
+    readonly property real mediaSeekbarExpressiveWavelength: 22
+    readonly property real mediaTransportMaxHeight: 70
+    readonly property real mediaPopupWidth: 360
+    readonly property var mediaTitleFontAxes: ({
+            "wght": 758,
+            "wdth": 25,
+            "ROND": 100,
+            "GRAD": 100
+        })
     readonly property real mediaPlayWidthRatio: 1.5
     readonly property real mediaPlayWidthStep: 0.75
     readonly property real mediaTransportPressScale: 1.2
@@ -226,9 +245,28 @@ Singleton {
     readonly property real mediaLyricsPositionProbeThreshold: 1
     readonly property int mediaLyricsPositionSettleInterval: 1000
     readonly property real mediaLyricsTrackStartSlack: 5
-    readonly property real lyricsNearOpacity: 0.55
-    readonly property real lyricsFarOpacity: 0.3
-    readonly property real lyricsLineHeight: 1.25
+    readonly property real lyricsLineInactiveScale: 0.8
+    readonly property real lyricsLineInactiveAlpha: 0.4
+    readonly property real lyricsRestAlpha: 0.35
+    readonly property int lyricsLineFadeDuration: 600
+    readonly property int lyricsLineScaleDuration: 700
+    readonly property int lyricsLineLinger: 500
+    // Seconds before a line starts that the track moves it into the centre.
+    readonly property real lyricsLineLeadIn: 0.25
+    readonly property int lyricsTrackMoveDuration: 850
+    // Critically damped and tuned to arrive with lyricsTrackMoveDuration on a long scroll.
+    readonly property real lyricsScrollStiffness: 139
+    readonly property real lyricsScrollDamping: 23.6
+    // Below half a pixel the rounded position no longer moves, so the spring stops there.
+    readonly property real lyricsScrollSettleDistance: 0.5
+    readonly property real lyricsScrollSettleSpeed: 10
+    readonly property int lyricsTrackPushStep: 20
+    readonly property int lyricsTrackMaxPush: 5
+    readonly property var lyricsTrackCurve: [0.22, 0.9, 0.2, 1, 1, 1]
+    readonly property real lyricsBreakGap: 5
+    readonly property real lyricsBreakIndicatorScale: 1.2
+    readonly property real lyricsEdgeFadeRatio: 0.2
+    readonly property real lyricsEdgeFadeMax: Theme.spacingXL * 2
     readonly property real lyricsLeadHeightDivisor: 12
     readonly property real lyricsLeadWidthDivisor: 11
     readonly property int wheelNotch: 120
