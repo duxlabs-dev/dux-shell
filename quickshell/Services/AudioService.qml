@@ -191,13 +191,18 @@ Singleton {
         }
     }
 
+    function isSinkAvailable(node) {
+        const ports = sinkPorts[node?.name]?.ports;
+        return !ports?.length || ports.some(port => port.availability !== "no");
+    }
+
     function getAvailableSinks() {
         if (freebsdAudio) {
             const hidden = SessionData.hiddenOutputDeviceNames ?? [];
             return nativeSinks.filter(node => !hidden.includes(node.name));
         }
         const hidden = SessionData.hiddenOutputDeviceNames ?? [];
-        return root.pipewireNodes.filter(node => node.audio && node.isSink && (SettingsData.audioShowStreamDevices || !node.isStream) && !hidden.includes(node.name));
+        return root.pipewireNodes.filter(node => node.audio && node.isSink && (SettingsData.audioShowStreamDevices || !node.isStream) && !hidden.includes(node.name) && isSinkAvailable(node));
     }
 
     property var typedSinks: []
@@ -280,6 +285,19 @@ Singleton {
                 return setSource(node);
         }
         return false;
+    }
+
+    Process {
+        running: root.pipewireReady
+        command: ["env", "LC_ALL=C", "pactl", "subscribe"]
+        onStarted: root.refreshSinkPorts()
+        onExited: root.sinkPorts = ({})
+        stdout: SplitParser {
+            onRead: line => {
+                if (line.includes(" on card #"))
+                    Qt.callLater(root.refreshSinkPorts);
+            }
+        }
     }
 
     function refreshSinkPorts(callback) {
@@ -636,11 +654,11 @@ Singleton {
 
     function cycleAudioOutputDirection(forward) {
         const sinks = getAvailableSinks();
-        if (sinks.length < 2)
-            return null;
-
         const currentName = root.sink?.name ?? "";
         const currentIndex = sinks.findIndex(s => s.name === currentName);
+        if (sinks.length === 0 || (sinks.length === 1 && currentIndex === 0))
+            return null;
+
         let nextIndex;
         if (forward) {
             nextIndex = (currentIndex + 1) % sinks.length;
