@@ -133,36 +133,46 @@ DPopout {
             Qt.callLater(openModal);
     }
 
+    component ActionLabel: Row {
+        id: actionLabel
+
+        property string iconName: ""
+        property string text: ""
+        property color color
+
+        anchors.fill: parent
+        anchors.leftMargin: Theme.spacingL
+        anchors.rightMargin: Theme.spacingL
+        spacing: Theme.spacingS
+
+        DIcon {
+            name: actionLabel.iconName
+            size: Theme.iconSizeSmall
+            color: actionLabel.color
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        StyledText {
+            width: parent.width - Theme.iconSizeSmall - Theme.spacingS
+            text: actionLabel.text
+            color: actionLabel.color
+            font.pixelSize: Theme.fontSizeSmall
+            elide: Text.ElideRight
+            anchors.verticalCenter: parent.verticalCenter
+        }
+    }
+
     component ActionItem: DListItem {
         id: actionItem
 
         property string iconName: ""
-        property color tint: contentColor
-        readonly property color itemColor: enabled ? tint : contentColor
 
         Accessible.name: text
 
-        Row {
-            anchors.fill: parent
-            anchors.leftMargin: Theme.spacingL
-            anchors.rightMargin: Theme.spacingL
-            spacing: Theme.spacingS
-
-            DIcon {
-                name: actionItem.iconName
-                size: Theme.iconSizeSmall
-                color: actionItem.itemColor
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            StyledText {
-                width: parent.width - Theme.iconSizeSmall - Theme.spacingS
-                text: actionItem.text
-                color: actionItem.itemColor
-                font.pixelSize: Theme.fontSizeSmall
-                elide: Text.ElideRight
-                anchors.verticalCenter: parent.verticalCenter
-            }
+        ActionLabel {
+            iconName: actionItem.iconName
+            text: actionItem.text
+            color: actionItem.contentColor
         }
     }
 
@@ -328,8 +338,7 @@ DPopout {
                             }
                             if (CompositorService.supportsWindowRules) {
                                 items.push({
-                                    icon: root.hasMatchingRule ? "edit" : "rule",
-                                    text: root.hasMatchingRule ? I18n.tr("Edit Window Rule") : I18n.tr("Add window rule"),
+                                    isRule: true,
                                     run: () => root.openWindowRule()
                                 });
                             }
@@ -343,20 +352,41 @@ DPopout {
                             width: contentColumn.width
                             firstInGroup: index === 0
                             lastInGroup: index === actionRepeater.count - 1
-                            iconName: modelData.icon
-                            text: modelData.text
+                            // The rule lookup resolves after opening; binding here keeps the model, and the hovered row, intact.
+                            iconName: modelData.isRule ? (root.hasMatchingRule ? "edit" : "rule") : modelData.icon
+                            text: modelData.isRule ? (root.hasMatchingRule ? I18n.tr("Edit Window Rule") : I18n.tr("Add window rule")) : modelData.text
                             onClicked: modelData.run()
                         }
                     }
                 }
 
-                ActionItem {
+                StyledButton {
+                    id: killItem
+
+                    readonly property color itemColor: enabled ? Theme.error : Theme.onSurface_38
+
                     width: parent.width
+                    implicitHeight: Theme.listItemHeight
                     enabled: root.pid > 0
-                    tint: Theme.error
-                    iconName: "close"
                     text: I18n.tr("Kill Process")
+                    Accessible.name: text
+                    color: Theme.foregroundColor(Theme.cardSurface, Theme.isFloatingWindow(killItem))
+                    border.width: Theme.layerOutlineWidth
+                    border.color: Theme.outlineMedium
+                    radius: Theme.groupedListOuterRadius
                     onClicked: root.killWindow()
+
+                    StateLayer {
+                        control: killItem
+                        disabled: !killItem.enabled
+                        stateColor: Theme.error
+                    }
+
+                    ActionLabel {
+                        iconName: "close"
+                        text: killItem.text
+                        color: killItem.itemColor
+                    }
                 }
             }
         }
