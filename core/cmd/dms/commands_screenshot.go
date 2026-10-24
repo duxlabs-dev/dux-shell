@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -86,7 +87,8 @@ Examples:
   dms screenshot --allow-multiple    # Skip the one-selector-at-a-time guard
   dms screenshot -g                  # Print selected region geometry (X,Y WxH) to stdout
   dms screenshot scroll              # Scroll capture, Enter finishes / Esc cancels
-  dms screenshot scroll --interval 250`,
+  dms screenshot scroll --interval 250
+  dms screenshot draw                # Freeze the screen, select a region and draw on it`,
 }
 
 var ssRegionCmd = &cobra.Command{
@@ -151,6 +153,17 @@ Rotated outputs are not supported.`,
 	Run: runScreenshotScroll,
 }
 
+var ssDrawCmd = &cobra.Command{
+	Use:   "draw",
+	Short: "Select a region and draw on it on screen",
+	Long: `Freeze the screen, select a region, then annotate it in place. Resize the
+region with its handles, move it with the select tool, or drag outside it to
+start over. Enter finishes using the usual clipboard/file/notify flags, Ctrl+C
+copies only, Ctrl+S saves only, Esc cancels. Requires a running DMS shell;
+falls back to the plain region selector otherwise.`,
+	Run: runScreenshotDraw,
+}
+
 var ssListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available outputs",
@@ -194,6 +207,7 @@ func init() {
 	screenshotCmd.AddCommand(ssLastCmd)
 	screenshotCmd.AddCommand(ssWindowCmd)
 	screenshotCmd.AddCommand(ssListCmd)
+	screenshotCmd.AddCommand(ssDrawCmd)
 
 	screenshotCmd.Run = runScreenshotRegion
 }
@@ -602,6 +616,49 @@ func runScreenshotLast(cmd *cobra.Command, args []string) {
 func runScreenshotWindow(cmd *cobra.Command, args []string) {
 	config := getScreenshotConfig(screenshot.ModeWindow)
 	runScreenshot(config)
+}
+
+func runScreenshotDraw(cmd *cobra.Command, args []string) {
+	config := getScreenshotConfig(screenshot.ModeRegion)
+	if err := openDrawOverlay(config); err != nil {
+		fmt.Fprintf(os.Stderr, "Draw overlay unavailable, using region select: %v\n", err)
+		runScreenshot(config)
+	}
+}
+
+func openDrawOverlay(config screenshot.Config) error {
+	pid, ok := shellApp.SessionPID()
+	if !ok {
+		return errors.New("DMS shell is not running")
+	}
+	outputDir := config.OutputDir
+	if outputDir == "" {
+		outputDir = screenshot.GetOutputDir()
+	}
+	filename := config.Filename
+	if filename == "" {
+		filename = screenshot.GenerateFilename(config.Format)
+	}
+	opts, err := json.Marshal(map[string]any{
+		"path":      filepath.Join(outputDir, filename),
+		"file":      config.SaveFile,
+		"clipboard": config.Clipboard,
+		"notify":    config.Notify,
+	})
+	if err != nil {
+		return err
+	}
+	res, _, err := qsipc.Call(qsipc.SocketPathForPID(pid), "screenshot", "draw", []string{string(opts)})
+	switch {
+	case err != nil:
+		return err
+	case res == "DRAW_BUSY":
+		// Already open: a second Print press should not stack a plain selector on top.
+		return nil
+	case res != "DRAW_OPENED":
+		return fmt.Errorf("shell could not open the draw overlay: %s", res)
+	}
+	return nil
 }
 
 func runScreenshotList(cmd *cobra.Command, args []string) {
