@@ -9869,14 +9869,6 @@
     "optionFile": "ClockOptions.qml"
   },
   {
-    "section": "barWidgetOption:FocusedWindowOptions.qml:1",
-    "label": "Compact mode",
-    "tabIndex": 22,
-    "keywords": [],
-    "runtimeType": "barWidgetOption",
-    "optionFile": "FocusedWindowOptions.qml"
-  },
-  {
     "section": "barWidgetOption:KeyboardLayoutOptions.qml:1",
     "label": "Compact mode",
     "tabIndex": 22,
@@ -10469,6 +10461,14 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
+    "section": "barWidgetOption:FocusedWindowOptions.qml:1",
+    "label": "Show app name",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "FocusedWindowOptions.qml"
+  },
+  {
     "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:7",
     "label": "Show apps",
     "tabIndex": 22,
@@ -10501,7 +10501,7 @@
     "optionFile": "BatteryOptions.qml"
   },
   {
-    "section": "barWidgetOption:FocusedWindowOptions.qml:2",
+    "section": "barWidgetOption:FocusedWindowOptions.qml:3",
     "label": "Show icon",
     "tabIndex": 22,
     "keywords": [],
@@ -10573,6 +10573,14 @@
     "optionFile": "SystemMonitorOptions.qml"
   },
   {
+    "section": "barWidgetOption:FocusedWindowOptions.qml:2",
+    "label": "Show window title",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "FocusedWindowOptions.qml"
+  },
+  {
     "section": "barWidgetOption:SystemTrayOptions.qml:2",
     "label": "Single-line popup",
     "tabIndex": 22,
@@ -10581,7 +10589,7 @@
     "optionFile": "SystemTrayOptions.qml"
   },
   {
-    "section": "barWidgetOption:FocusedWindowOptions.qml:3",
+    "section": "barWidgetOption:FocusedWindowOptions.qml:4",
     "label": "Size",
     "tabIndex": 22,
     "keywords": [],
