@@ -94,6 +94,50 @@ Singleton {
     property int windowStateRevision: 0
     onToplevelsChanged: windowStateRevision++
     onWorkspaceStateChanged: windowStateRevision++
+
+    // Hyprland emits no event for a pure move/resize (verified via socket2,
+    // see issue #3168), so smart auto-hide overlap goes stale until the next
+    // workspace switch. Only floating windows can enter or leave the dock edge
+    // that way: tiled layouts always reach the screen edge, and their changes
+    // come with events. So poll only while a floating window is on a visible
+    // workspace: compare the geometry from the previous refresh, bump the
+    // revision only on change, then request the next refresh (async, so its
+    // result is read on the following tick).
+    property string _hyprlandGeometryKey: ""
+    readonly property bool _dockSmartAutoHideActive: SettingsData.dockConfigs.some(config => config?.enabled && config?.smartAutoHide)
+    readonly property bool _hyprlandFloatingOnVisibleWorkspace: {
+        if (!isHyprland || !_dockSmartAutoHideActive)
+            return false;
+        windowStateRevision;
+        const visible = new Set((Hyprland.monitors?.values ?? []).map(m => m.activeWorkspace?.id));
+        return (Hyprland.toplevels?.values ?? []).some(t => {
+            const ipc = t.lastIpcObject;
+            if (!ipc?.floating)
+                return false;
+            const ws = ipc.workspace;
+            return visible.has(t.workspace?.id ?? ws?.id) || (ws?.name ?? "").startsWith("special");
+        });
+    }
+
+    Timer {
+        interval: 1000
+        repeat: true
+        running: root._hyprlandFloatingOnVisibleWorkspace
+        onTriggered: {
+            const toplevels = Hyprland.toplevels?.values ?? [];
+            const key = toplevels.map(t => {
+                const ipc = t.lastIpcObject;
+                return ipc ? `${ipc.address}:${ipc.at}:${ipc.size}:${ipc.workspace?.id}` : "";
+            }).join("|");
+            if (key !== root._hyprlandGeometryKey) {
+                root._hyprlandGeometryKey = key;
+                root.windowStateRevision++;
+            }
+            try {
+                Hyprland.refreshToplevels();
+            } catch (e) {}
+        }
+    }
     readonly property var _edgePositions: ({
             top: SettingsData.Position.Top,
             bottom: SettingsData.Position.Bottom,
