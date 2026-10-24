@@ -14,20 +14,26 @@ Column {
         settingKey: "barWidgetFocusedWindow"
 
         SettingsToggleRow {
+            id: appNameToggle
             text: I18n.tr("Show app name", "focused window bar widget option")
             checked: root.page.value("focusedWindowShowAppName")
+            enabled: !checked || titleToggle.checked || iconToggle.checked
             onToggled: checked => root.page.set("focusedWindowShowAppName", checked)
         }
 
         SettingsToggleRow {
+            id: titleToggle
             text: I18n.tr("Show window title", "focused window bar widget option")
             checked: root.page.value("focusedWindowShowWindowTitle")
+            enabled: !checked || appNameToggle.checked || iconToggle.checked
             onToggled: checked => root.page.set("focusedWindowShowWindowTitle", checked)
         }
 
         SettingsToggleRow {
+            id: iconToggle
             text: I18n.tr("Show icon")
             checked: root.page.value("focusedWindowShowIcon")
+            enabled: !checked || appNameToggle.checked || titleToggle.checked
             onToggled: checked => root.page.set("focusedWindowShowIcon", checked)
         }
 
