@@ -143,6 +143,12 @@ var LOCAL_SPEC = {
         def: -1,
         onChange: "updateCompositorLayout"
     },
+    niriOverviewBackgroundEnabled: {
+        def: false
+    },
+    niriActiveWindowColorEnabled: {
+        def: false
+    },
     hyprlandLayoutGapsOverride: {
         def: -1,
         onChange: "updateCompositorLayout"

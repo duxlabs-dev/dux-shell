@@ -1,5 +1,27 @@
 [
   {
+    "section": "niriActiveWindowColorEnabled",
+    "label": "Active window outline",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "accent",
+      "active",
+      "border",
+      "focus",
+      "interface",
+      "niri",
+      "outline",
+      "palette",
+      "primary",
+      "style",
+      "window"
+    ],
+    "page": "theme_surfaces",
+    "description": "Use Primary from the DMS palette",
+    "conditionKey": "isNiri"
+  },
+  {
     "section": "wallpaperAdvanced",
     "label": "Advanced",
     "tabIndex": -1,
@@ -1831,6 +1853,27 @@
     "page": "theme_surfaces"
   },
   {
+    "section": "niriOverviewBackgroundEnabled",
+    "label": "Overview background",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "backdrop",
+      "background",
+      "container",
+      "highest",
+      "interface",
+      "niri",
+      "overview",
+      "palette",
+      "style",
+      "surface"
+    ],
+    "page": "theme_surfaces",
+    "description": "Use Surface Container Highest from the DMS palette",
+    "conditionKey": "isNiri"
+  },
+  {
     "section": "paletteStyleNav",
     "label": "Palette style",
     "tabIndex": -1,
@@ -2645,6 +2688,24 @@
     ],
     "page": "theme_surfaces",
     "conditionKey": "isHyprlandOrNiri"
+  },
+  {
+    "section": "niriThemeIntegration",
+    "label": "niri integration",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "focus",
+      "integration",
+      "interface",
+      "niri",
+      "overview",
+      "palette",
+      "style",
+      "window"
+    ],
+    "page": "theme_surfaces",
+    "conditionKey": "isNiri"
   },
   {
     "section": "_hub_personalization",

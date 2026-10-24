@@ -201,6 +201,8 @@ Singleton {
     property int niriLayoutGapsOverride: Spec.SPEC.niriLayoutGapsOverride.def
     property int niriLayoutRadiusOverride: Spec.SPEC.niriLayoutRadiusOverride.def
     property int niriLayoutBorderSize: Spec.SPEC.niriLayoutBorderSize.def
+    property bool niriOverviewBackgroundEnabled: Spec.SPEC.niriOverviewBackgroundEnabled.def
+    property bool niriActiveWindowColorEnabled: Spec.SPEC.niriActiveWindowColorEnabled.def
     property int hyprlandLayoutGapsOverride: Spec.SPEC.hyprlandLayoutGapsOverride.def
     property int hyprlandLayoutGapsOutOverride: Spec.SPEC.hyprlandLayoutGapsOutOverride.def
     property int hyprlandLayoutRadiusOverride: Spec.SPEC.hyprlandLayoutRadiusOverride.def

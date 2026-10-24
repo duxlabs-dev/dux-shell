@@ -32,6 +32,14 @@ Column {
         }
     }
 
+    ConfigInclude {
+        id: niriLayoutInclude
+        includeKind: "layout"
+        procTag: "niri-layout-include-theme"
+        autoCheck: CompositorService.isNiri
+        onFixed: SettingsData.updateCompositorLayout()
+    }
+
     readonly property var opacityTargets: {
         SettingsData.barConfigs;
         SettingsData.dockConfigs;
@@ -246,6 +254,40 @@ Column {
             checked: SettingsData.m3ElevationEnabled ?? true
             onNavigated: keyboard => root.parentModal?.navigateTo("surface_shadows", keyboard)
             onToggled: checked => SettingsData.set("m3ElevationEnabled", checked)
+        }
+    }
+
+    SettingsCard {
+        tab: "theme"
+        tags: ["niri", "integration", "palette", "overview", "window", "focus"]
+        title: I18n.tr("niri integration", "interface style settings section title")
+        settingKey: "niriThemeIntegration"
+        visible: CompositorService.isNiri
+
+        IncludeSetupBanner {
+            include: niriLayoutInclude
+        }
+
+        SettingsToggleRow {
+            tab: "theme"
+            tags: ["niri", "overview", "background", "backdrop", "palette"]
+            settingKey: "niriOverviewBackgroundEnabled"
+            text: I18n.tr("Overview background", "niri palette integration toggle")
+            description: I18n.tr("Use Surface Container Highest from the DMS palette", "niri overview background integration description")
+            enabled: niriLayoutInclude.included
+            checked: SettingsData.niriOverviewBackgroundEnabled
+            onToggled: checked => SettingsData.set("niriOverviewBackgroundEnabled", checked)
+        }
+
+        SettingsToggleRow {
+            tab: "theme"
+            tags: ["niri", "window", "focus", "border", "accent", "palette"]
+            settingKey: "niriActiveWindowColorEnabled"
+            text: I18n.tr("Active window outline", "niri palette integration toggle")
+            description: I18n.tr("Use Primary from the DMS palette", "niri active window color integration description")
+            enabled: niriLayoutInclude.included
+            checked: SettingsData.niriActiveWindowColorEnabled
+            onToggled: checked => SettingsData.set("niriActiveWindowColorEnabled", checked)
         }
     }
 

@@ -57,6 +57,10 @@ Singleton {
     property int _awaitingLayoutReloadRevision: 0
     property string _lastGeneratedAlttabContent: ""
     readonly property bool frameLayoutReady: _layoutAppliedRevision >= _frameTransitionRevision
+    readonly property string overviewBackdropConfig: niriOverviewBlock()
+    onOverviewBackdropConfigChanged: generateNiriLayoutConfig()
+    readonly property string activeWindowColor: SettingsData.niriActiveWindowColorEnabled ? niriColor(Theme.primary) : ""
+    onActiveWindowColorChanged: generateNiriLayoutConfig()
 
     // dms/layout.kdl is the source of truth for xray; parsed once before the first regeneration
     property bool layoutXrayEnabled: true
@@ -1254,6 +1258,21 @@ blur {
 }`;
     }
 
+    function niriColor(color) {
+        return Qt.rgba(color.r, color.g, color.b, 1).toString();
+    }
+
+    function niriOverviewBlock() {
+        if (!SettingsData.niriOverviewBackgroundEnabled)
+            return "";
+        const color = niriColor(Theme.surfaceContainerHighest);
+        return `
+
+overview {
+    backdrop-color "${color}"
+}`;
+    }
+
     function doGenerateNiriLayoutConfig() {
         if (writeConfigProcess.running || _awaitingLayoutReloadRevision > _layoutAppliedRevision)
             return;
@@ -1314,7 +1333,8 @@ window-rule {
         const layoutLines = [];
         if (manageGaps)
             layoutLines.push(`    gaps ${gaps}`, "");
-        layoutLines.push("    border {", `        width ${borderSize}`, "    }", "", "    focus-ring {", `        width ${borderSize}`, "    }");
+        const activeColorLines = root.activeWindowColor ? [`        active-color "${root.activeWindowColor}"`] : [];
+        layoutLines.push("    border {", `        width ${borderSize}`, ...activeColorLines, "    }", "", "    focus-ring {", `        width ${borderSize}`, ...activeColorLines, "    }");
 
         const configContent = dmsWarning + `layout {
 ${layoutLines.join("\n")}
@@ -1325,7 +1345,7 @@ window-rule {
     clip-to-geometry true
     tiled-state true
     draw-border-with-background false
-}` + niriBlurBlock(typeof SettingsData !== "undefined" ? SettingsData.blurStrength : 0) + xrayRules;
+}` + niriBlurBlock(typeof SettingsData !== "undefined" ? SettingsData.blurStrength : 0) + xrayRules + root.overviewBackdropConfig;
 
         const alttabContent = dmsWarning + `recent-windows {
     highlight {
