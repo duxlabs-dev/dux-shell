@@ -5803,6 +5803,37 @@
     "icon": "format_color_fill"
   },
   {
+    "section": "barWidgetInset",
+    "label": "Widget inset",
+    "tabIndex": 6,
+    "category": "Appearance",
+    "keywords": [
+      "across",
+      "appearance",
+      "bar",
+      "between",
+      "components",
+      "edge",
+      "edges",
+      "gap",
+      "height",
+      "inset",
+      "margin",
+      "modules",
+      "padding",
+      "panel",
+      "statusbar",
+      "taskbar",
+      "thickness",
+      "topbar",
+      "widget",
+      "widgets",
+      "width"
+    ],
+    "parentLabel": "Bar",
+    "description": "Gap between widgets and the bar edges across its thickness"
+  },
+  {
     "section": "barWidgetOutline",
     "label": "Widget outline",
     "tabIndex": 6,

@@ -24,6 +24,12 @@ Item {
     readonly property int frameInsetPaddingDisplay: Math.round(SettingsData.frameBarContentGap)
     readonly property var frameBar: SettingsData.frameBarConfig
     readonly property bool frameBarOverridden: frameBar?.followInterfaceStyle === false
+    readonly property real selectedBarThickness: bar.selectedBarFrameStyled ? SettingsData.frameBarSize : Theme.barThickness(bar.selectedBarConfig?.innerPadding ?? 2, 1)
+    readonly property int widgetInsetDisplay: {
+        const inset = bar.selectedBarConfig?.widgetInset ?? -1;
+        const widgetThickness = Theme.barWidgetThickness(bar.selectedBarConfig?.innerPadding ?? 2, 1, inset, selectedBarThickness);
+        return Math.max(0, Math.round((selectedBarThickness - widgetThickness) / 2));
+    }
 
     function updateFrameBar(updates) {
         if (!frameBar)
@@ -376,6 +382,24 @@ Item {
                 unit: "px"
                 onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
                         innerPadding: finalValue
+                    })
+            }
+
+            SettingsSliderRow {
+                settingKey: "barWidgetInset"
+                tags: ["widget", "inset", "padding", "margin", "gap", "height", "width", "edge"]
+                visible: !bar.selectedBarIsIsland
+                text: I18n.tr("Widget inset")
+                description: I18n.tr("Gap between widgets and the bar edges across its thickness")
+                minimumLabel: I18n.tr("Edge to edge", "slider minimum label, bar touches the screen edges")
+                resetStore: bar
+                resetKeys: ["widgetInset"]
+                value: root.widgetInsetDisplay
+                minimum: 0
+                maximum: Math.max(0, Math.round((root.selectedBarThickness - Theme.barWidgetThickness(bar.selectedBarConfig?.innerPadding ?? 2, 1)) / 2))
+                unit: "px"
+                onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
+                        widgetInset: finalValue
                     })
             }
 

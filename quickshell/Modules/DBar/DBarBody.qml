@@ -731,7 +731,7 @@ Item {
         onTriggered: barWindow._fitSettled = true
     }
     readonly property bool effectiveOpenOnOverview: (FrameTransitionState.effectiveFrameEnabled && usesFrameBarChrome) ? SettingsData.frameShowOnOverview : (barConfig?.openOnOverview ?? false)
-    readonly property real widgetThickness: Theme.barWidgetThickness(barConfig?.innerPadding ?? 2, _dpr)
+    readonly property real widgetThickness: Theme.barWidgetThickness(barConfig?.innerPadding ?? 2, _dpr, isIsland ? -1 : (barConfig?.widgetInset ?? -1), effectiveBarThickness)
 
     readonly property bool hasAdjacentTopBar: isVertical && ShellLayout.adjacentBar(screen, "top", barConfig) !== null
     readonly property bool hasAdjacentBottomBar: isVertical && ShellLayout.adjacentBar(screen, "bottom", barConfig) !== null

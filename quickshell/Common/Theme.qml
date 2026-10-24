@@ -2286,8 +2286,15 @@ Singleton {
         return Math.ceil(value * s - 0.001) / s;
     }
 
-    function barWidgetThickness(innerPadding, dpr) {
-        return snapEven(Math.max(20, 26 + innerPadding * 0.6), dpr);
+    function barWidgetThickness(innerPadding, dpr, widgetInset, thickness) {
+        // Content still scales with the bar, so insets must preserve the legacy pill size.
+        const minimum = snapEven(Math.max(20, 26 + innerPadding * 0.6), dpr);
+        if (widgetInset >= 0 && thickness !== undefined) {
+            if (widgetInset === 0)
+                return thickness;
+            return Math.min(thickness, snapEven(Math.max(minimum, thickness - widgetInset * 2), dpr));
+        }
+        return minimum;
     }
 
     function barThickness(innerPadding, dpr) {
