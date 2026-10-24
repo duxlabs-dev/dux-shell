@@ -13,7 +13,8 @@ BasePill {
     id: root
 
     property var widgetData: null
-    property bool compactMode: SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowCompactMode")
+    property bool showAppName: SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowShowAppName")
+    property bool showWindowTitle: SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowShowWindowTitle")
     property bool showIcon: SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowShowIcon")
     readonly property int maxWidth: {
         const size = SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowSize");
@@ -118,7 +119,7 @@ BasePill {
     content: Component {
         Item {
             readonly property bool iconShown: horizontalAppIcon.visible || horizontalSteamIcon.visible
-            readonly property real appTextNatural: appText.visible ? Math.min(appText.implicitWidth, root.compactMode ? 80 : 180) : 0
+            readonly property real appTextNatural: appText.visible ? Math.min(appText.implicitWidth, 180) : 0
             readonly property real naturalWidth: {
                 const parts = [];
                 if (iconShown)
@@ -240,7 +241,7 @@ BasePill {
                     StyledText {
                         id: appText
                         text: {
-                            if (compactMode || !activeWindow || !activeWindow.appId)
+                            if (!root.showAppName || !activeWindow || !activeWindow.appId)
                                 return "";
                             return Paths.getAppName(activeWindow.appId, activeDesktopEntry);
                         }
@@ -258,33 +259,29 @@ BasePill {
                             else if (horizontalSteamIcon.visible)
                                 used += horizontalSteamIcon.width + sp;
                             const budget = Math.max(0, root.effectiveHorizontalInnerWidth - used);
-                            return Math.min(implicitWidth, compactMode ? 80 : 180, budget);
+                            return Math.min(implicitWidth, 180, budget);
                         }
                         visible: text.length > 0
                     }
 
                     StyledText {
                         id: appSeparator
-                        text: compactMode ? "" : "•"
+                        text: "•"
                         font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: Theme.outlineButton
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: !compactMode && appText.text && titleText.text
+                        visible: root.showAppName && root.showWindowTitle && appText.text && titleText.text
                     }
 
                     StyledText {
                         id: titleText
                         text: {
+                            if (!root.showWindowTitle) {
+                                return "";
+                            }
+
                             const title = activeWindow && activeWindow.title ? activeWindow.title : "";
                             const appName = appText.text;
-
-                            if (compactMode) {
-                                if (!title || title === appName)
-                                    return title || appName;
-                                if (title.endsWith(appName))
-                                    return title.substring(0, title.length - appName.length).replace(/ (-|—) $/, "") || appName;
-                                return title;
-                            }
 
                             if (!title || !appName)
                                 return title;

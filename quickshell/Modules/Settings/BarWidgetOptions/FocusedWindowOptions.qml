@@ -14,9 +14,15 @@ Column {
         settingKey: "barWidgetFocusedWindow"
 
         SettingsToggleRow {
-            text: I18n.tr("Compact mode")
-            checked: root.page.value("focusedWindowCompactMode")
-            onToggled: checked => root.page.set("focusedWindowCompactMode", checked)
+            text: I18n.tr("Show app name", "focused window bar widget option")
+            checked: root.page.value("focusedWindowShowAppName")
+            onToggled: checked => root.page.set("focusedWindowShowAppName", checked)
+        }
+
+        SettingsToggleRow {
+            text: I18n.tr("Show window title", "focused window bar widget option")
+            checked: root.page.value("focusedWindowShowWindowTitle")
+            onToggled: checked => root.page.set("focusedWindowShowWindowTitle", checked)
         }
 
         SettingsToggleRow {
