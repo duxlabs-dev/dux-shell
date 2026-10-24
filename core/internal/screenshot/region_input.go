@@ -733,6 +733,11 @@ func (r *RegionSelector) handleKey(sym string, state uint32) {
 				r.copyOnly = true
 				r.finishScroll()
 			}
+		case "o", "O":
+			if HasOCR() {
+				r.ocrOnly = true
+				r.finishScroll()
+			}
 		}
 		return
 	}
@@ -754,6 +759,37 @@ func (r *RegionSelector) handleKey(sym string, state uint32) {
 			r.finishSelection()
 		} else if r.selection.hasSelection {
 			r.finishSelection()
+		}
+	case "o", "O":
+		if HasOCR() {
+			if r.clickedTarget != nil {
+				t := r.clickedTarget
+				r.clickedTarget = nil
+				r.hoveredTarget = nil
+				r.snapToTarget(t)
+				r.selection.dragging = false
+				r.ocrOnly = true
+				r.finishSelection()
+				return
+			}
+			if r.hoveredTarget != nil && r.activeSurface != nil && (!r.selection.hasSelection || r.selection.fromPreSelect) {
+				t := r.hoveredTarget
+				r.hoveredTarget = nil
+				r.snapToTarget(t)
+				r.ocrOnly = true
+				r.finishSelection()
+				return
+			}
+			if r.selection.hasSelection {
+				if _, _, _, w, h := r.selectionDeviceRect(); w > 1 || h > 1 {
+					r.selection.dragging = false
+					r.movingSelection = false
+					r.resizingHandle = handleNone
+					r.ocrOnly = true
+					r.finishSelection()
+					return
+				}
+			}
 		}
 	case "c", "C":
 		if r.ctrlHeld {
@@ -811,7 +847,7 @@ func (r *RegionSelector) finishSelection() {
 		return
 	}
 
-	scrollMode := r.screenshoter != nil && r.screenshoter.config.Mode == ModeScroll && !r.copyOnly
+	scrollMode := r.screenshoter != nil && r.screenshoter.config.Mode == ModeScroll && !r.copyOnly && !r.ocrOnly
 	switch {
 	case scrollMode:
 		r.clampSelectionToSurface()
