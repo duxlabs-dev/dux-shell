@@ -133,6 +133,39 @@ DPopout {
             Qt.callLater(openModal);
     }
 
+    component ActionItem: DListItem {
+        id: actionItem
+
+        property string iconName: ""
+        property color tint: contentColor
+        readonly property color itemColor: enabled ? tint : contentColor
+
+        Accessible.name: text
+
+        Row {
+            anchors.fill: parent
+            anchors.leftMargin: Theme.spacingL
+            anchors.rightMargin: Theme.spacingL
+            spacing: Theme.spacingS
+
+            DIcon {
+                name: actionItem.iconName
+                size: Theme.iconSizeSmall
+                color: actionItem.itemColor
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            StyledText {
+                width: parent.width - Theme.iconSizeSmall - Theme.spacingS
+                text: actionItem.text
+                color: actionItem.itemColor
+                font.pixelSize: Theme.fontSizeSmall
+                elide: Text.ElideRight
+                anchors.verticalCenter: parent.verticalCenter
+            }
+        }
+    }
+
     onBackgroundClicked: close()
 
     content: Component {
@@ -154,12 +187,12 @@ DPopout {
                 id: contentColumn
                 anchors.fill: parent
                 anchors.margins: PopoutMetrics.contentPadding
-                spacing: Theme.spacingXXS
+                spacing: Theme.spacingS
 
                 Row {
                     width: parent.width
-                    height: BarMetrics.menuRowHeight
                     spacing: Theme.spacingS
+                    height: implicitHeight + Theme.spacingS
 
                     IconImage {
                         width: Theme.iconSizeMedium
@@ -168,7 +201,6 @@ DPopout {
                         asynchronous: true
                         mipmap: true
                         smooth: true
-                        anchors.verticalCenter: parent.verticalCenter
                     }
 
                     StyledText {
@@ -181,221 +213,150 @@ DPopout {
                         maximumLineCount: 2
                         wrapMode: Text.Wrap
                         clip: true
-                        anchors.verticalCenter: parent.verticalCenter
                     }
                 }
 
-                Repeater {
-                    model: [
-                        {
-                            label: I18n.tr("App ID"),
-                            value: root.appId,
-                            copyable: !!root.appId
-                        },
-                        {
-                            label: I18n.tr("Title"),
-                            value: root.windowTitle || I18n.tr("Untitled"),
-                            copyable: !!root.windowTitle
-                        },
-                        {
-                            label: I18n.tr("PID", "Label for the process ID row in the focused window popout"),
-                            value: root.pid > 0 ? root.pid.toString() : I18n.tr("Unavailable"),
-                            copyable: root.pid > 0
-                        }
-                    ]
-
-                    delegate: DListRow {
-                        id: copyRow
-                        required property var modelData
-                        required property int index
-                        readonly property real labelWidth: Theme.iconButtonSize + Theme.iconSizeLarge
-
-                        width: contentColumn.width
-                        implicitHeight: BarMetrics.popoutRowHeight
-                        firstInGroup: index === 0
-                        lastInGroup: index === 2
-
-                        Row {
-                            anchors.fill: parent
-                            anchors.leftMargin: Theme.spacingL
-                            anchors.rightMargin: Theme.spacingL
-                            spacing: Theme.spacingS
-
-                            StyledText {
-                                width: copyRow.labelWidth
-                                text: copyRow.modelData.label
-                                color: copyRow.supportingContentColor
-                                font.pixelSize: Theme.fontSizeSmall
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            StyledText {
-                                width: parent.width - copyRow.labelWidth - Theme.spacingS
-                                text: copyRow.modelData.value
-                                color: copyRow.contentColor
-                                font.pixelSize: Theme.fontSizeSmall
-                                font.family: SettingsData.monoFontFamily
-                                wrapMode: Text.Wrap
-                                maximumLineCount: 2
-                                elide: Text.ElideMiddle
-                                clip: true
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-                        }
-
-                        StateLayer {
-                            topLeftRadius: copyRow.firstInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-                            topRightRadius: topLeftRadius
-                            bottomLeftRadius: copyRow.lastInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-                            bottomRightRadius: bottomLeftRadius
-                            enabled: copyRow.modelData.copyable
-                            disabled: !copyRow.modelData.copyable
-                            onClicked: root.copyValue(copyRow.modelData.value)
-                        }
-                    }
-                }
-
-                Rectangle {
+                Column {
                     width: parent.width
-                    height: Theme.dividerWidth
-                    color: Theme.outlineVariant
-                }
+                    spacing: Theme.spacingXXS
 
-                Item {
-                    visible: root.scratchpadName !== ""
-                    width: parent.width
-                    height: BarMetrics.menuRowHeight
+                    Repeater {
+                        model: [
+                            {
+                                label: I18n.tr("App ID"),
+                                value: root.appId,
+                                copyable: !!root.appId,
+                                copyTooltip: I18n.tr("Copy App ID")
+                            },
+                            {
+                                label: I18n.tr("Title"),
+                                value: root.windowTitle || I18n.tr("Untitled"),
+                                copyable: !!root.windowTitle,
+                                copyTooltip: I18n.tr("Copy Title")
+                            },
+                            {
+                                label: I18n.tr("PID", "Label for the process ID row in the focused window popout"),
+                                value: root.pid > 0 ? root.pid.toString() : I18n.tr("Unavailable"),
+                                copyable: root.pid > 0,
+                                copyTooltip: I18n.tr("Copy PID")
+                            }
+                        ]
 
-                    Row {
-                        anchors.fill: parent
-                        anchors.leftMargin: Theme.spacingS
-                        spacing: Theme.spacingS
+                        delegate: DListRow {
+                            id: copyRow
+                            required property var modelData
+                            required property int index
+                            readonly property real labelWidth: Theme.iconButtonSize + Theme.iconSizeLarge
 
-                        DIcon {
-                            name: "outbox"
-                            size: Theme.iconSizeSmall
-                            color: Theme.surfaceText
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
+                            width: contentColumn.width
+                            implicitHeight: BarMetrics.popoutRowHeight
+                            firstInGroup: index === 0
+                            lastInGroup: index === 2
 
-                        StyledText {
-                            text: I18n.tr("Move out of scratchpad", "window context menu action, brings the window back from the special workspace")
-                            color: Theme.surfaceText
-                            font.pixelSize: Theme.fontSizeSmall
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
+                            Row {
+                                anchors.fill: parent
+                                anchors.leftMargin: Theme.spacingL
+                                anchors.rightMargin: Theme.spacingL
+                                spacing: Theme.spacingS
 
-                    StateLayer {
-                        cornerRadius: BarMetrics.menuItemRadius
-                        onClicked: {
-                            CompositorService.moveWindowOutOfSpecial(root.currentWindow);
-                            root.close();
-                        }
-                    }
-                }
+                                StyledText {
+                                    width: copyRow.labelWidth
+                                    text: copyRow.modelData.label
+                                    color: copyRow.supportingContentColor
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
 
-                Repeater {
-                    model: root.scratchpadName !== "" ? [] : CompositorService.specialWorkspaceNames
-
-                    Item {
-                        required property string modelData
-
-                        width: parent.width
-                        height: BarMetrics.menuRowHeight
-
-                        Row {
-                            anchors.fill: parent
-                            anchors.leftMargin: Theme.spacingS
-                            spacing: Theme.spacingS
-
-                            DIcon {
-                                name: "inbox"
-                                size: Theme.iconSizeSmall
-                                color: Theme.surfaceText
-                                anchors.verticalCenter: parent.verticalCenter
+                                StyledText {
+                                    width: parent.width - copyRow.labelWidth - Theme.spacingS
+                                    text: copyRow.modelData.value
+                                    color: copyRow.contentColor
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    font.family: SettingsData.monoFontFamily
+                                    wrapMode: Text.Wrap
+                                    maximumLineCount: 2
+                                    elide: Text.ElideMiddle
+                                    clip: true
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
                             }
 
-                            StyledText {
-                                text: modelData === "special" ? I18n.tr("Move to scratchpad", "window context menu action, sends the window to the unnamed special workspace") : I18n.tr("Move to scratchpad: %1", "%1 is the named special workspace").arg(modelData)
-                                color: Theme.surfaceText
-                                font.pixelSize: Theme.fontSizeSmall
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-                        }
-
-                        StateLayer {
-                            cornerRadius: BarMetrics.menuItemRadius
-                            onClicked: {
-                                CompositorService.moveWindowToSpecial(root.currentWindow, modelData);
-                                root.close();
+                            StateLayer {
+                                topLeftRadius: copyRow.firstInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
+                                topRightRadius: topLeftRadius
+                                bottomLeftRadius: copyRow.lastInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
+                                bottomRightRadius: bottomLeftRadius
+                                enabled: copyRow.modelData.copyable
+                                disabled: !copyRow.modelData.copyable
+                                tooltipText: copyRow.modelData.copyable ? copyRow.modelData.copyTooltip : null
+                                onClicked: root.copyValue(copyRow.modelData.value)
                             }
                         }
                     }
                 }
 
-                Item {
-                    visible: CompositorService.supportsWindowRules
+                Column {
+                    visible: actionRepeater.count > 0
                     width: parent.width
-                    height: BarMetrics.menuRowHeight
+                    spacing: Theme.spacingXXS
 
-                    Row {
-                        anchors.fill: parent
-                        anchors.leftMargin: Theme.spacingS
-                        spacing: Theme.spacingS
+                    Repeater {
+                        id: actionRepeater
 
-                        DIcon {
-                            name: root.hasMatchingRule ? "edit" : "rule"
-                            size: Theme.iconSizeSmall
-                            color: Theme.surfaceText
-                            anchors.verticalCenter: parent.verticalCenter
+                        model: {
+                            const items = [];
+                            if (root.scratchpadName !== "") {
+                                items.push({
+                                    icon: "outbox",
+                                    text: I18n.tr("Move out of scratchpad", "window context menu action, brings the window back from the special workspace"),
+                                    run: () => {
+                                        CompositorService.moveWindowOutOfSpecial(root.currentWindow);
+                                        root.close();
+                                    }
+                                });
+                            } else {
+                                for (const name of CompositorService.specialWorkspaceNames) {
+                                    items.push({
+                                        icon: "inbox",
+                                        text: name === "special" ? I18n.tr("Move to scratchpad", "window context menu action, sends the window to the unnamed special workspace") : I18n.tr("Move to scratchpad: %1", "%1 is the named special workspace").arg(name),
+                                        run: () => {
+                                            CompositorService.moveWindowToSpecial(root.currentWindow, name);
+                                            root.close();
+                                        }
+                                    });
+                                }
+                            }
+                            if (CompositorService.supportsWindowRules) {
+                                items.push({
+                                    icon: root.hasMatchingRule ? "edit" : "rule",
+                                    text: root.hasMatchingRule ? I18n.tr("Edit Window Rule") : I18n.tr("Add window rule"),
+                                    run: () => root.openWindowRule()
+                                });
+                            }
+                            return items;
                         }
 
-                        StyledText {
-                            text: root.hasMatchingRule ? I18n.tr("Edit Window Rule") : I18n.tr("Add window rule")
-                            color: Theme.surfaceText
-                            font.pixelSize: Theme.fontSizeSmall
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
+                        delegate: ActionItem {
+                            required property var modelData
+                            required property int index
 
-                    StateLayer {
-                        cornerRadius: BarMetrics.menuItemRadius
-                        onClicked: root.openWindowRule()
+                            width: contentColumn.width
+                            firstInGroup: index === 0
+                            lastInGroup: index === actionRepeater.count - 1
+                            iconName: modelData.icon
+                            text: modelData.text
+                            onClicked: modelData.run()
+                        }
                     }
                 }
 
-                Item {
+                ActionItem {
                     width: parent.width
-                    height: BarMetrics.menuRowHeight
-
-                    Row {
-                        anchors.fill: parent
-                        anchors.leftMargin: Theme.spacingS
-                        spacing: Theme.spacingS
-
-                        DIcon {
-                            name: "close"
-                            size: Theme.iconSizeSmall
-                            color: Theme.error
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        StyledText {
-                            text: I18n.tr("Kill Process")
-                            color: Theme.error
-                            font.pixelSize: Theme.fontSizeSmall
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-
-                    StateLayer {
-                        cornerRadius: BarMetrics.menuItemRadius
-                        stateColor: Theme.error
-                        enabled: root.pid > 0
-                        disabled: root.pid <= 0
-                        onClicked: root.killWindow()
-                    }
+                    enabled: root.pid > 0
+                    tint: Theme.error
+                    iconName: "close"
+                    text: I18n.tr("Kill Process")
+                    onClicked: root.killWindow()
                 }
             }
         }
