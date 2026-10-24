@@ -90,6 +90,7 @@ in
       Unit = {
         Description = "Dux Shell";
         PartOf = [ cfg.systemd.target ];
+        Wants = [ cfg.systemd.target ];
         After = [ cfg.systemd.target ];
       };
 
