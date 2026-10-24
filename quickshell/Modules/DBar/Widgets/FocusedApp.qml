@@ -16,18 +16,9 @@ BasePill {
     property bool showAppName: SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowShowAppName")
     property bool showWindowTitle: SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowShowWindowTitle")
     property bool showIcon: SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowShowIcon")
-    readonly property int maxWidth: {
+    readonly property real maxWidth: {
         const size = SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowSize");
-        switch (size) {
-        case 0:
-            return 288;
-        case 2:
-            return 656;
-        case 3:
-            return 856;
-        default:
-            return 456;
-        }
+        return Theme.barTextSize(barThickness, barConfig?.fontScale, barConfig?.maximizeWidgetText) * ([18, 36, 54, 72][size] ?? 36);
     }
     property real allottedPrimarySize: 0
     property real availableWidth: allottedPrimarySize > 0 ? allottedPrimarySize : maxWidth
