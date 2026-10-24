@@ -748,6 +748,7 @@ Singleton {
     property bool terminalsAlwaysDark: Spec.SPEC.terminalsAlwaysDark.def
     property int terminalOpacity: Spec.SPEC.terminalOpacity.def
     property string terminalPalette: Spec.SPEC.terminalPalette.def
+    property var contrastOverrides: Spec.SPEC.contrastOverrides.def
 
     property string muxType: Spec.SPEC.muxType.def
     property bool muxUseCustomCommand: Spec.SPEC.muxUseCustomCommand.def

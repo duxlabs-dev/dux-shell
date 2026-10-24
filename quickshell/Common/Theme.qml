@@ -8,6 +8,7 @@ import "../DCommon/Common/Surface.js" as Surface
 import "../DCommon/Common/Contrast.js" as Contrast
 import "../DCommon/Common/Accents.js" as Accents
 import "../DCommon/Common/Tonal.js" as Tonal
+import "ContrastFloors.js" as ContrastFloors
 import Quickshell
 import Quickshell.Io
 import qs.Common
@@ -1786,6 +1787,9 @@ Singleton {
         }
         if (typeof SettingsData !== "undefined" && SettingsData.matugenContrast !== 0) {
             args.push("--contrast", SettingsData.matugenContrast.toString());
+        }
+        if (typeof SettingsData !== "undefined") {
+            args.push(...ContrastFloors.args(SettingsData.contrastOverrides));
         }
         // Only sent when it would change something. A shell newer than the dms
         // binary is a supported setup (DMS_SHELL_DIR / -c), and an older binary

@@ -2,6 +2,7 @@ package matugen
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -136,8 +137,12 @@ type Options struct {
 	TerminalsAlwaysDark bool
 	TerminalOpacity     int
 	TerminalPalette     string
+	ContrastOverrides   ContrastOverrides
 	SkipTemplates       string
 	AppChecker          utils.AppChecker
+
+	// Set by buildOnce for the terminal config header.
+	terminalContrast []Adjustment
 }
 
 type ColorsOutput struct {
@@ -400,6 +405,7 @@ func buildOnce(opts *Options) (bool, error) {
 	var primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight string
 	var dank16JSON string
 	var importArgs, args []string
+	var built *builtPalettes
 
 	if opts.StockColors == "" && opts.SeedColor != "" {
 		seed, err := NormalizeHexColor(opts.SeedColor)
@@ -441,10 +447,10 @@ func buildOnce(opts *Options) (bool, error) {
 			primaryLight = primaryDark
 		}
 
-		dank16JSON = generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode, "")
-		dank16TermJSON := generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode, opts.TerminalPalette)
-		importData := fmt.Sprintf(`{"colors": %s, "dank16": %s, "dank16term": %s}`, opts.StockColors, dank16JSON, dank16TermJSON)
-		importArgs = []string{"--import-json-string", importData}
+		built = buildPalettes(opts, dank16Seeds{primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight}, opts.StockColors, false)
+		dank16JSON = built.Dank16JSON
+		colors := cmp.Or(built.AdjustedRoles, opts.StockColors)
+		importArgs = []string{"--import-json-string", buildImportData(dank16JSON, "", colors, []paletteInjection{built.termInjection()})}
 
 		log.Info("Running matugen color hex with stock color overrides")
 		args = []string{"color", "hex", primaryDark, "-m", string(opts.Mode), "-t", opts.MatugenType}
@@ -511,11 +517,15 @@ func buildOnce(opts *Options) (bool, error) {
 			primaryLight = primaryDark
 		}
 
-		dank16JSON = generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode, "")
-		// The terminal palette only reaches the terminal templates; editor themes and user templates keep dank16.
-		dank16Term := paletteInjection{Namespace: "dank16term", JSON: generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode, opts.TerminalPalette)}
-		injections := append([]paletteInjection{dank16Term}, InjectedPalettes(opts.ConfigDir, sourceImage, opts.Mode)...)
-		importArgs = []string{"--import-json-string", buildImportData(dank16JSON, sourceImage, specColors, injections)}
+		rolesSrc, wrapped := specColors, false
+		if rolesSrc == "" {
+			rolesSrc, wrapped = matJSON, true
+		}
+		built = buildPalettes(opts, dank16Seeds{primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight}, rolesSrc, wrapped)
+		dank16JSON = built.Dank16JSON
+		colors := cmp.Or(built.AdjustedRoles, specColors)
+		injections := append([]paletteInjection{built.termInjection()}, InjectedPalettes(opts.ConfigDir, sourceImage, opts.Mode)...)
+		importArgs = []string{"--import-json-string", buildImportData(dank16JSON, sourceImage, colors, injections)}
 
 		log.Infof("Running matugen %s with dank16 injection", opts.Kind)
 		switch opts.Kind {
@@ -529,7 +539,11 @@ func buildOnce(opts *Options) (bool, error) {
 	args = appendContrastArg(args, opts.Contrast)
 	args = append(args, importArgs...)
 
-	changed, err := renderColors(opts, args, tmpDir, oldColors)
+	opts.terminalContrast = built.Contrast.terminalAdjustments(opts.TerminalsAlwaysDark)
+	primaryDark = built.Contrast.adjusted("colors.primary", "dark", primaryDark)
+	primaryLight = built.Contrast.adjusted("colors.primary", "light", primaryLight)
+
+	changed, err := renderColors(opts, args, tmpDir, oldColors, built)
 	if err != nil {
 		return false, err
 	}
@@ -580,7 +594,7 @@ func buildOnce(opts *Options) (bool, error) {
 }
 
 // The shell only needs dms-colors.json, so it is rendered and committed on its own before the template pass.
-func renderColors(opts *Options, args []string, tmpDir string, oldColors []byte) (bool, error) {
+func renderColors(opts *Options, args []string, tmpDir string, oldColors []byte, built *builtPalettes) (bool, error) {
 	colorsOpts := *opts
 	colorsOpts.ColorsOnly = true
 	cfgPath, err := writeMergedConfig(&colorsOpts, tmpDir, "colors.toml")
@@ -593,6 +607,12 @@ func renderColors(opts *Options, args []string, tmpDir string, oldColors []byte)
 	newColors, err := os.ReadFile(opts.colorsStaging())
 	if err != nil {
 		return false, fmt.Errorf("matugen did not produce colors output: %w", err)
+	}
+	if newColors, err = withPaletteRecord(newColors, &built.Term, built.Contrast); err != nil {
+		return false, fmt.Errorf("failed to add terminal palette to colors output: %w", err)
+	}
+	if err := os.WriteFile(opts.colorsStaging(), newColors, 0o644); err != nil {
+		return false, fmt.Errorf("failed to write colors output: %w", err)
 	}
 	if bytes.Equal(oldColors, newColors) && len(oldColors) > 0 {
 		return false, nil
@@ -832,7 +852,7 @@ func appendTerminalConfig(opts *Options, cfgFile *os.File, tmpDir string, checkC
 
 	content := string(data)
 
-	if !opts.TerminalsAlwaysDark && !terminalOpacityManaged(opts) {
+	if !opts.TerminalsAlwaysDark && !terminalOpacityManaged(opts) && len(opts.terminalContrast) == 0 {
 		cfgFile.WriteString(substituteVars(content, opts.ShellDir))
 		cfgFile.WriteString("\n")
 		return
@@ -875,6 +895,13 @@ func appendTerminalConfig(opts *Options, cfgFile *os.File, tmpDir string, checkC
 	cfgFile.WriteString("\n")
 }
 
+func commentMarker(templateName string) string {
+	if strings.HasSuffix(templateName, ".lua") {
+		return "--"
+	}
+	return "#"
+}
+
 func terminalOpacityManaged(opts *Options) bool {
 	return opts.TerminalOpacity >= 1 && opts.TerminalOpacity <= 99
 }
@@ -883,6 +910,7 @@ func applyTerminalTemplate(name, content string, opts *Options) string {
 	if opts.TerminalsAlwaysDark {
 		content = strings.ReplaceAll(content, ".default.", ".dark.")
 	}
+	content = contrastHeader(opts.terminalContrast, commentMarker(name)) + content
 	if !terminalOpacityManaged(opts) {
 		return content
 	}
@@ -1359,20 +1387,62 @@ func extractNestedColor(jsonStr, colorName, variant string) string {
 	return color
 }
 
-func generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight string, mode ColorMode, profile string) string {
-	variantOpts := dank16.VariantOptions{
-		PrimaryDark:     primaryDark,
-		PrimaryLight:    primaryLight,
-		BackgroundDark:  surfaceDark,
-		BackgroundLight: surfaceLight,
-		ContainerDark:   containerDark,
-		ContainerLight:  containerLight,
+type dank16Seeds struct {
+	PrimaryDark, PrimaryLight, SurfaceDark, SurfaceLight, ContainerDark, ContainerLight string
+}
+
+func generateDank16Variants(s dank16Seeds, mode ColorMode, profile string) dank16.VariantPalette {
+	return dank16.GenerateVariantPalette(dank16.VariantOptions{
+		PrimaryDark:     s.PrimaryDark,
+		PrimaryLight:    s.PrimaryLight,
+		BackgroundDark:  s.SurfaceDark,
+		BackgroundLight: s.SurfaceLight,
+		ContainerDark:   s.ContainerDark,
+		ContainerLight:  s.ContainerLight,
 		UseDPS:          true,
 		IsLightMode:     mode == ColorModeLight,
 		Profile:         profile,
+	})
+}
+
+type builtPalettes struct {
+	Dank16JSON    string
+	Term          dank16.VariantPalette
+	AdjustedRoles string
+	Contrast      contrastResult
+}
+
+// The terminal palette only reaches the terminal templates; editor themes and user templates keep dank16.
+func (b *builtPalettes) termInjection() paletteInjection {
+	return paletteInjection{Namespace: "dank16term", JSON: dank16.GenerateVariantJSON(b.Term)}
+}
+
+// rolesSrc is matugen output when wrapped, else a bare role map. AdjustedRoles stays "" when no
+// role moved, so the theme's own roles are imported unchanged.
+func buildPalettes(opts *Options, seeds dank16Seeds, rolesSrc string, wrapped bool) *builtPalettes {
+	d16 := generateDank16Variants(seeds, opts.Mode, "")
+	b := &builtPalettes{Term: generateDank16Variants(seeds, opts.Mode, opts.TerminalPalette)}
+
+	// Roles are read even with nothing to change: the audit measures them, and terminal colors against colors.background.
+	roles := rolesFromJSON(rolesSrc, wrapped)
+	b.Contrast = applyContrast(opts.ContrastOverrides, roles, map[string]*dank16.VariantPalette{"dank16": &d16, "dank16term": &b.Term}, opts.Mode)
+	if b.Contrast.rolesChanged() {
+		b.AdjustedRoles = roles.importJSON()
 	}
-	variantColors := dank16.GenerateVariantPalette(variantOpts)
-	return dank16.GenerateVariantJSON(variantColors)
+	b.Dank16JSON = dank16.GenerateVariantJSON(d16)
+	return b
+}
+
+func rolesFromJSON(src string, wrapped bool) roleMap {
+	var data map[string]any
+	if err := json.Unmarshal([]byte(src), &data); err != nil {
+		log.Warnf("contrast: cannot read theme roles: %v", err)
+		return roleMap{}
+	}
+	if wrapped {
+		data, _ = data["colors"].(map[string]any)
+	}
+	return parseRoleMap(data)
 }
 
 func isDMSGTKActive(configDir string) bool {
