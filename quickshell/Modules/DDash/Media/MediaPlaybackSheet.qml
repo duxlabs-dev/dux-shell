@@ -46,6 +46,10 @@ FocusScope {
 
     visible: shown
     enabled: opened
+    opacity: pageOpacity
+    transform: Translate {
+        x: root.pageShift
+    }
 
     onRequestedPanelChanged: {
         if (requestedPanel !== "players" && requestedPanel !== "devices")
@@ -110,12 +114,10 @@ FocusScope {
         positionEpsilon: DashMetrics.mediaSheetSettleProgress
     }
 
-    // The card stays put and only fades, since with the controls container it is the same surface.
     Rectangle {
         anchors.fill: parent
         radius: Theme.cornerRadiusXL
         color: root.surfaceColor
-        opacity: Math.min(1, root.progress)
     }
 
     Item {
@@ -125,10 +127,6 @@ FocusScope {
         y: Theme.spacingL
         width: parent.width - Theme.spacingL * 2
         height: backButton.height
-        opacity: root.pageOpacity
-        transform: Translate {
-            x: root.pageShift
-        }
 
         DIconButton {
             id: backButton
@@ -163,10 +161,6 @@ FocusScope {
         anchors.fill: parent
         anchors.margins: Theme.spacingL
         anchors.topMargin: header.y + header.height + Theme.spacingM
-        opacity: root.pageOpacity
-        transform: Translate {
-            x: root.pageShift
-        }
         contentHeight: content.implicitHeight
         clip: true
 

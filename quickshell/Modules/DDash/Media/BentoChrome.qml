@@ -20,9 +20,8 @@ MediaChromeBase {
     readonly property real deckWidth: compact ? contentWidth : contentWidth - artColumnWidth - Theme.spacingXL
     readonly property real artworkSize: Math.round(Math.min(artColumnWidth, artSize))
     readonly property bool lyricsShown: root.player.lyricsOpen && root.player.live
-    readonly property real deckInset: Theme.spacingXL
     // The transport takes what the artwork leaves over, so both columns end up about as tall.
-    readonly property real deckFixedHeight: sourceRow.height + titleBlock.height + seekBlock.height + optionRow.height + deckInset * 2 + Theme.spacingXL * 2 + Theme.spacingL * 2
+    readonly property real deckFixedHeight: sourceRow.height + titleBlock.height + seekBlock.height + optionRow.height + Theme.spacingXL * 2 + Theme.spacingL * 2
     readonly property real transportSize: Math.round(Math.max(Theme.buttonHeightM, Math.min(DashMetrics.mediaTransportMaxHeight, artworkSize - deckFixedHeight)))
     readonly property real stageWidth: lyricsShown && !compact ? artColumnWidth : artworkSize
     readonly property real stageHeight: lyricsShown && !compact ? Math.max(artworkSize, deck.height) : artworkSize
@@ -49,259 +48,250 @@ MediaChromeBase {
         holdArt: TrackArtService.loading && TrackArtService.resolvedArtUrl === ""
     }
 
-    Column {
+    Item {
         id: deck
 
         x: root.compact || I18n.isRtl ? 0 : parent.width - width
         y: root.compact ? stage.height + Theme.spacingXL : Math.round((parent.height - height) / 2)
         width: root.deckWidth
-        spacing: Theme.spacingXL
+        height: controls.height
 
-        Item {
-            id: sourceRow
+        Column {
+            id: controls
 
             width: parent.width
-            height: Theme.buttonHeightXS
+            spacing: Theme.spacingXL
+            opacity: playbackSheet.controlsOpacity
+            visible: opacity > 0 || !playbackSheet.opened
+            enabled: !playbackSheet.opened
+            transform: Translate {
+                x: playbackSheet.controlsShift
+            }
 
-            Row {
-                anchors.centerIn: parent
-                spacing: Theme.spacingM
-                visible: !!root.presentation
+            Item {
+                id: sourceRow
 
-                StyledText {
-                    id: sourceLabel
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: Math.min(implicitWidth, sourceRow.width / 2)
-                    text: I18n.tr("Listening from", "Label before the active media player")
-                    color: Theme.onSurfaceVariant
-                    font.pixelSize: Theme.fontSizeMedium
-                    wrapMode: Text.NoWrap
-                    elide: Text.ElideRight
+                width: parent.width
+                height: Theme.buttonHeightXS
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: Theme.spacingM
+                    visible: !!root.presentation
+
+                    StyledText {
+                        id: sourceLabel
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.min(implicitWidth, sourceRow.width / 2)
+                        text: I18n.tr("Listening from", "Label before the active media player")
+                        color: Theme.onSurfaceVariant
+                        font.pixelSize: Theme.fontSizeMedium
+                        wrapMode: Text.NoWrap
+                        elide: Text.ElideRight
+                    }
+
+                    DButton {
+                        id: playerButton
+
+                        readonly property string panelId: "players"
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        maximumWidth: Math.max(0, sourceRow.width - sourceLabel.width - parent.spacing)
+                        buttonHeight: Theme.buttonHeightXS
+                        horizontalPadding: Theme.spacingL
+                        text: root.presentation?.identity ?? ""
+                        backgroundColor: MediaAccentService.accentSecondaryContainer
+                        textColor: MediaAccentService.onAccentSecondaryContainer
+                        tooltipText: I18n.tr("Players", "Media player selection")
+                        Accessible.name: tooltipText + ": " + text
+                        onClicked: root.player.togglePanel(panelId, playerButton)
+                    }
+                }
+            }
+
+            Column {
+                id: titleBlock
+
+                width: parent.width
+                spacing: Theme.spacingXS
+
+                TextMetrics {
+                    id: fullSizeTitle
+                    text: root.title
+                    font: Qt.font({
+                        family: titleText.font.family,
+                        weight: titleText.font.weight,
+                        variableAxes: titleText.font.variableAxes,
+                        pixelSize: Theme.fontSizeDisplay
+                    })
                 }
 
-                DButton {
-                    id: playerButton
+                FontMetrics {
+                    id: fullSizeTitleFont
+                    font: fullSizeTitle.font
+                }
 
-                    readonly property string panelId: "players"
+                ScrollingText {
+                    id: titleText
 
-                    anchors.verticalCenter: parent.verticalCenter
-                    maximumWidth: Math.max(0, sourceRow.width - sourceLabel.width - parent.spacing)
-                    buttonHeight: Theme.buttonHeightXS
-                    horizontalPadding: Theme.spacingL
-                    text: root.presentation?.identity ?? ""
-                    backgroundColor: MediaAccentService.accentSecondaryContainer
-                    textColor: MediaAccentService.onAccentSecondaryContainer
-                    tooltipText: I18n.tr("Players", "Media player selection")
-                    Accessible.name: tooltipText + ": " + text
-                    onClicked: root.player.togglePanel(panelId, playerButton)
+                    readonly property bool expressiveFont: root.titleFontToken === "ui"
+                    readonly property real fittedPixelSize: {
+                        if (fullSizeTitle.advanceWidth <= width)
+                            return Theme.fontSizeDisplay;
+                        return Math.max(Theme.fontSizeXXLarge, Math.floor(Theme.fontSizeDisplay * width / fullSizeTitle.advanceWidth));
+                    }
+
+                    width: parent.width
+                    height: Math.ceil(fullSizeTitleFont.height)
+                    text: root.title
+                    fontToken: root.titleFontToken
+                    color: MediaAccentService.highlight
+                    font.pixelSize: fittedPixelSize
+                    // The bundled static weights share the family name and carry no axes, so
+                    // the regular weight selects the variable font and wght sets the weight.
+                    font.weight: Font.Normal
+                    font.variableAxes: expressiveFont ? DashMetrics.mediaTitleFontAxes : ({})
+                    horizontalAlignment: Text.AlignHCenter
+                    active: root.scrolling
+                    loop: true
+                    fadeEdges: true
+                    pxPerMs: DashMetrics.mediaTextScrollSpeed / 1000
+                    stepInterval: DashMetrics.mediaTextScrollStep
+                }
+
+                ScrollingText {
+                    width: parent.width
+                    text: [root.artist, root.album].filter(Boolean).join(" · ") || " "
+                    color: Theme.onSurfaceVariant
+                    font.pixelSize: Theme.fontSizeMedium
+                    horizontalAlignment: Text.AlignHCenter
+                    active: root.scrolling
+                    loop: true
+                    fadeEdges: true
+                    pxPerMs: DashMetrics.mediaTextScrollSpeed / 1000
+                    stepInterval: DashMetrics.mediaTextScrollStep
+                }
+            }
+
+            Column {
+                width: parent.width
+                spacing: Theme.spacingL
+
+                // Kept for a length-less stream, so the deck does not resize when one comes up.
+                Column {
+                    id: seekBlock
+
+                    width: parent.width
+                    spacing: Theme.spacingXS
+                    visible: root.seekbarEnabled && !!root.presentation
+                    LayoutMirroring.enabled: false
+                    LayoutMirroring.childrenInherit: true
+
+                    MediaSeekbar {
+                        id: seekbar
+                        width: parent.width
+                        opacity: root.hasSeekbar ? 1 : 0
+                        height: DashMetrics.mediaSeekbarExpressiveHeight
+                        player: root.player
+                        accentTrackColor: MediaAccentService.accentRail
+                        waveLineWidth: DashMetrics.mediaSeekbarExpressiveLineWidth
+                        waveAmplitude: DashMetrics.mediaSeekbarExpressiveAmplitude
+                        wavelength: DashMetrics.mediaSeekbarExpressiveWavelength
+                        showHandle: true
+                        handleSize: DashMetrics.mediaSeekbarHandleSize
+                        handleDragWidth: DashMetrics.mediaSeekbarHandleDragWidth
+                        handleDragHeight: DashMetrics.mediaSeekbarHandleDragHeight
+                        handleGap: DashMetrics.mediaSeekbarHandleGap
+                    }
+
+                    Item {
+                        width: parent.width
+                        height: elapsed.implicitHeight
+                        opacity: root.hasSeekbar ? 1 : 0
+
+                        MediaTimeLabel {
+                            id: elapsed
+                            anchors.left: parent.left
+                            text: Format.formatDuration(seekbar.value * (root.presentation?.length ?? 0))
+                            reserveText: duration.text.replace(/\d/g, "8")
+                        }
+
+                        MediaTimeLabel {
+                            id: duration
+                            anchors.right: parent.right
+                            horizontalAlignment: Text.AlignRight
+                            text: Format.formatDuration(root.presentation?.length ?? 0)
+                            reserveText: text.replace(/\d/g, "8")
+                        }
+                    }
+                }
+
+                MediaTransport {
+                    id: transport
+                    width: parent.width
+                    player: root.player
+                    presentation: root.presentation
+                    buttonSize: root.transportSize
+                    visible: hasControls
+                }
+
+                Row {
+                    id: optionRow
+
+                    readonly property var focusTargets: [lyricsButton, shuffleButton.button, repeatButton.button, outputButton]
+
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: Theme.groupedListGap
+                    LayoutMirroring.enabled: false
+                    LayoutMirroring.childrenInherit: true
+
+                    Keys.onPressed: event => event.accepted = FocusNavigation.handleHorizontalKey(event, focusTargets, false)
+
+                    GroupButton {
+                        id: lyricsButton
+
+                        groupStart: true
+                        visible: root.player.lyricsEnabled
+                        enabled: !!root.presentation
+                        iconName: "lyrics"
+                        checkable: true
+                        checked: root.player.lyricsOpen
+                        tooltipText: I18n.tr("Lyrics", "Media player lyrics button")
+                        onClicked: root.player.toggleLyrics(lyricsButton)
+                    }
+
+                    ModeButton {
+                        id: shuffleButton
+                        mediaAction: "shuffle"
+                        groupStart: !lyricsButton.visible
+                    }
+
+                    ModeButton {
+                        id: repeatButton
+                        mediaAction: "repeat"
+                    }
+
+                    GroupButton {
+                        id: outputButton
+
+                        readonly property string panelId: "devices"
+
+                        groupStart: !lyricsButton.visible && !root.presentation
+                        groupEnd: true
+                        iconName: AudioService.sinkIcon(AudioService.sink)
+                        tooltipText: I18n.tr("Devices", "Media player output device picker") + ": " + AudioService.displayName(AudioService.sink)
+                        onClicked: root.player.togglePanel(panelId, outputButton)
+                    }
                 }
             }
         }
 
-        Rectangle {
-            width: parent.width
-            height: controls.height + root.deckInset * 2
-            radius: Theme.cornerRadiusXL
-            color: Theme.surfaceContainer
-
-            Column {
-                id: controls
-
-                x: root.deckInset
-                y: root.deckInset
-                width: parent.width - root.deckInset * 2
-                spacing: Theme.spacingXL
-                opacity: playbackSheet.controlsOpacity
-                visible: opacity > 0 || !playbackSheet.opened
-                enabled: !playbackSheet.opened
-                transform: Translate {
-                    x: playbackSheet.controlsShift
-                }
-
-                Column {
-                    id: titleBlock
-
-                    width: parent.width
-                    spacing: Theme.spacingXS
-
-                    TextMetrics {
-                        id: fullSizeTitle
-                        text: root.title
-                        font: Qt.font({
-                            family: titleText.font.family,
-                            weight: titleText.font.weight,
-                            variableAxes: titleText.font.variableAxes,
-                            pixelSize: Theme.fontSizeDisplay
-                        })
-                    }
-
-                    FontMetrics {
-                        id: fullSizeTitleFont
-                        font: fullSizeTitle.font
-                    }
-
-                    ScrollingText {
-                        id: titleText
-
-                        readonly property bool expressiveFont: root.titleFontToken === "ui"
-                        readonly property real fittedPixelSize: {
-                            if (fullSizeTitle.advanceWidth <= width)
-                                return Theme.fontSizeDisplay;
-                            return Math.max(Theme.fontSizeXXLarge, Math.floor(Theme.fontSizeDisplay * width / fullSizeTitle.advanceWidth));
-                        }
-
-                        width: parent.width
-                        height: Math.ceil(fullSizeTitleFont.height)
-                        text: root.title
-                        fontToken: root.titleFontToken
-                        color: MediaAccentService.highlight
-                        font.pixelSize: fittedPixelSize
-                        // The bundled static weights share the family name and carry no axes, so
-                        // the regular weight selects the variable font and wght sets the weight.
-                        font.weight: Font.Normal
-                        font.variableAxes: expressiveFont ? DashMetrics.mediaTitleFontAxes : ({})
-                        horizontalAlignment: Text.AlignHCenter
-                        active: root.scrolling
-                        loop: true
-                        fadeEdges: true
-                        pxPerMs: DashMetrics.mediaTextScrollSpeed / 1000
-                        stepInterval: DashMetrics.mediaTextScrollStep
-                    }
-
-                    ScrollingText {
-                        width: parent.width
-                        text: [root.artist, root.album].filter(Boolean).join(" · ") || " "
-                        color: Theme.onSurfaceVariant
-                        font.pixelSize: Theme.fontSizeMedium
-                        horizontalAlignment: Text.AlignHCenter
-                        active: root.scrolling
-                        loop: true
-                        fadeEdges: true
-                        pxPerMs: DashMetrics.mediaTextScrollSpeed / 1000
-                        stepInterval: DashMetrics.mediaTextScrollStep
-                    }
-                }
-
-                Column {
-                    width: parent.width
-                    spacing: Theme.spacingL
-
-                    // Kept for a length-less stream, so the deck does not resize when one comes up.
-                    Column {
-                        id: seekBlock
-
-                        width: parent.width
-                        spacing: Theme.spacingXS
-                        visible: root.seekbarEnabled && !!root.presentation
-                        LayoutMirroring.enabled: false
-                        LayoutMirroring.childrenInherit: true
-
-                        MediaSeekbar {
-                            id: seekbar
-                            width: parent.width
-                            opacity: root.hasSeekbar ? 1 : 0
-                            height: DashMetrics.mediaSeekbarExpressiveHeight
-                            player: root.player
-                            accentTrackColor: MediaAccentService.accentRail
-                            waveLineWidth: DashMetrics.mediaSeekbarExpressiveLineWidth
-                            waveAmplitude: DashMetrics.mediaSeekbarExpressiveAmplitude
-                            wavelength: DashMetrics.mediaSeekbarExpressiveWavelength
-                            showHandle: true
-                            handleSize: DashMetrics.mediaSeekbarHandleSize
-                            handleDragWidth: DashMetrics.mediaSeekbarHandleDragWidth
-                            handleDragHeight: DashMetrics.mediaSeekbarHandleDragHeight
-                            handleGap: DashMetrics.mediaSeekbarHandleGap
-                        }
-
-                        Item {
-                            width: parent.width
-                            height: elapsed.implicitHeight
-                            opacity: root.hasSeekbar ? 1 : 0
-
-                            MediaTimeLabel {
-                                id: elapsed
-                                anchors.left: parent.left
-                                text: Format.formatDuration(seekbar.value * (root.presentation?.length ?? 0))
-                                reserveText: duration.text.replace(/\d/g, "8")
-                            }
-
-                            MediaTimeLabel {
-                                id: duration
-                                anchors.right: parent.right
-                                horizontalAlignment: Text.AlignRight
-                                text: Format.formatDuration(root.presentation?.length ?? 0)
-                                reserveText: text.replace(/\d/g, "8")
-                            }
-                        }
-                    }
-
-                    MediaTransport {
-                        id: transport
-                        width: parent.width
-                        player: root.player
-                        presentation: root.presentation
-                        buttonSize: root.transportSize
-                        visible: hasControls
-                    }
-
-                    Row {
-                        id: optionRow
-
-                        readonly property var focusTargets: [lyricsButton, shuffleButton.button, repeatButton.button, outputButton]
-
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: Theme.groupedListGap
-                        LayoutMirroring.enabled: false
-                        LayoutMirroring.childrenInherit: true
-
-                        Keys.onPressed: event => event.accepted = FocusNavigation.handleHorizontalKey(event, focusTargets, false)
-
-                        GroupButton {
-                            id: lyricsButton
-
-                            groupStart: true
-                            visible: root.player.lyricsEnabled
-                            enabled: !!root.presentation
-                            iconName: "lyrics"
-                            checkable: true
-                            checked: root.player.lyricsOpen
-                            tooltipText: I18n.tr("Lyrics", "Media player lyrics button")
-                            onClicked: root.player.toggleLyrics(lyricsButton)
-                        }
-
-                        ModeButton {
-                            id: shuffleButton
-                            mediaAction: "shuffle"
-                            groupStart: !lyricsButton.visible
-                        }
-
-                        ModeButton {
-                            id: repeatButton
-                            mediaAction: "repeat"
-                        }
-
-                        GroupButton {
-                            id: outputButton
-
-                            readonly property string panelId: "devices"
-
-                            groupStart: !lyricsButton.visible && !root.presentation
-                            groupEnd: true
-                            iconName: AudioService.sinkIcon(AudioService.sink)
-                            tooltipText: I18n.tr("Devices", "Media player output device picker") + ": " + AudioService.displayName(AudioService.sink)
-                            onClicked: root.player.togglePanel(panelId, outputButton)
-                        }
-                    }
-                }
-            }
-
-            // Takes the controls' place, so opening it never moves the deck or the artwork.
-            MediaPlaybackSheet {
-                id: playbackSheet
-                anchors.fill: parent
-                player: root.player
-                returnFocusItem: root.buttonForPanel(shownPanel)
-            }
+        // Takes the controls' place, so opening it never moves the deck or the artwork.
+        MediaPlaybackSheet {
+            id: playbackSheet
+            anchors.fill: parent
+            player: root.player
+            returnFocusItem: root.buttonForPanel(shownPanel)
         }
     }
 

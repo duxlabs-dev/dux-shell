@@ -212,7 +212,7 @@ Singleton {
     readonly property real mediaInnerRadius: Math.max(Theme.cornerRadiusXS, surfaceRadius - mediaCardMargin - Theme.layerOutlineWidth)
     readonly property real mediaArtSoftRadiusRatio: 0.3
     readonly property real mediaArtPlaceholderIcon: Theme.buttonHeightM
-    readonly property real mediaArtColumnRatio: 5 / 11
+    readonly property real mediaArtColumnRatio: 0.5
     readonly property real mediaArtLyricsScale: 0.88
     readonly property int mediaArtRotationDuration: 30000
     readonly property real mediaSeekbarHeight: 22
