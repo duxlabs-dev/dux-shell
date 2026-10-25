@@ -14,7 +14,9 @@ MediaChromeBase {
 
     readonly property real contentWidth: Math.max(0, width - padding * 2)
     readonly property bool compact: width < Theme.smallBreakpoint
-    readonly property real artColumnWidth: compact ? contentWidth : (contentWidth - Theme.spacingXL) * DashMetrics.mediaArtColumnRatio
+    // Whole pixels throughout: the lyrics draw through a layer, and a layer placed between pixels
+    // resamples every glyph.
+    readonly property real artColumnWidth: compact ? contentWidth : Math.round((contentWidth - Theme.spacingXL) * DashMetrics.mediaArtColumnRatio)
     readonly property real deckWidth: compact ? contentWidth : contentWidth - artColumnWidth - Theme.spacingXL
     readonly property real artworkSize: Math.round(Math.min(artColumnWidth, artSize))
     readonly property bool lyricsShown: root.player.lyricsOpen && root.player.live
@@ -39,9 +41,9 @@ MediaChromeBase {
 
         x: {
             const start = root.compact || !I18n.isRtl ? 0 : parent.width - root.artColumnWidth;
-            return start + (root.artColumnWidth - width) / 2;
+            return Math.round(start + (root.artColumnWidth - width) / 2);
         }
-        y: root.compact ? 0 : (parent.height - height) / 2
+        y: root.compact ? 0 : Math.round((parent.height - height) / 2)
         width: root.stageWidth
         height: root.stageHeight
         player: root.player
@@ -52,7 +54,7 @@ MediaChromeBase {
         id: deck
 
         x: root.compact || I18n.isRtl ? 0 : parent.width - width
-        y: root.compact ? stage.height + Theme.spacingXL : (parent.height - height) / 2
+        y: root.compact ? stage.height + Theme.spacingXL : Math.round((parent.height - height) / 2)
         width: root.deckWidth
         spacing: Theme.spacingXL
 
