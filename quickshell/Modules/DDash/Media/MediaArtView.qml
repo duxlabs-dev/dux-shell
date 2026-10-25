@@ -26,7 +26,6 @@ Item {
         artStyle: root.player.options?.artStyle ?? MediaOptions.defaultArtStyle
         playing: !!root.player.presentation?.playing
         live: root.player.live
-        rotate: root.player.options?.rotateArt ?? MediaOptions.defaults.rotateArt
         suspended: root.lyricsShown
         visible: opacity > 0
         opacity: root.lyricsShown ? 0 : 1

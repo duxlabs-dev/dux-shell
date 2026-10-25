@@ -104,7 +104,6 @@ Card {
             artStyle: root.options.artStyle
             playing: root.playing
             live: root.live
-            rotate: root.options.rotateArt
             visible: root.showArtwork
 
             MediaArtwork {

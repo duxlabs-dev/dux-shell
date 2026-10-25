@@ -20,8 +20,7 @@ MediaChromeBase {
     readonly property real deckWidth: compact ? contentWidth : contentWidth - artColumnWidth - Theme.spacingXL
     readonly property real artworkSize: Math.round(Math.min(artColumnWidth, artSize))
     readonly property bool lyricsShown: root.player.lyricsOpen && root.player.live
-    readonly property bool boxed: root.player.controlsContainer
-    readonly property real deckInset: boxed ? Theme.spacingXL : 0
+    readonly property real deckInset: Theme.spacingXL
     // The transport takes what the artwork leaves over, so both columns end up about as tall.
     readonly property real deckFixedHeight: sourceRow.height + titleBlock.height + seekBlock.height + optionRow.height + deckInset * 2 + Theme.spacingXL * 2 + Theme.spacingL * 2
     readonly property real transportSize: Math.round(Math.max(Theme.buttonHeightM, Math.min(DashMetrics.mediaTransportMaxHeight, artworkSize - deckFixedHeight)))
@@ -103,7 +102,7 @@ MediaChromeBase {
             width: parent.width
             height: controls.height + root.deckInset * 2
             radius: Theme.cornerRadiusXL
-            color: root.boxed ? Theme.surfaceContainer : "transparent"
+            color: Theme.surfaceContainer
 
             Column {
                 id: controls

@@ -14,13 +14,12 @@ ClippingRectangle {
     property string artStyle: MediaOptions.defaultArtStyle
     property bool playing: false
     property bool live: true
-    property bool rotate: false
     property bool suspended: false
     property real spin: 0
 
     readonly property bool expressive: artStyle === "expressive"
     readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
-    readonly property bool spinning: expressive && rotate && playing && visible && !suspended && animationsEnabled && live
+    readonly property bool spinning: expressive && playing && visible && !suspended && animationsEnabled && live
     readonly property var morphSpring: Theme.springPreset("fast", Theme.expressiveDurations.expressiveFastSpatial)
     // The 12-fold cosine terms of the cookie's polar radius. The off-centre terms of the Material
     // path are left out, so the shape spins about the artwork's centre without wobbling.
@@ -68,7 +67,7 @@ ClippingRectangle {
         to: 2 * Math.PI
         duration: DashMetrics.mediaArtRotationDuration
         loops: Animation.Infinite
-        running: root.expressive && root.rotate
+        running: root.expressive
         paused: !root.spinning
     }
 

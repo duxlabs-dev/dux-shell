@@ -20,7 +20,6 @@ Item {
     readonly property string playerStyle: options?.playerStyle ?? MediaOptions.defaultPlayerStyle
     readonly property bool lyricsEnabled: (options?.lyrics ?? MediaOptions.defaults.lyrics) && DMSService.capabilities.includes("lyrics")
     readonly property bool smoothLyrics: options?.smoothLyrics ?? MediaOptions.defaults.smoothLyrics
-    readonly property bool controlsContainer: options?.controlsContainer ?? MediaOptions.defaults.controlsContainer
     property bool lyricsOpen: false
     property Item lyricsFocusTarget: null
     property Item lyricsOpener: null

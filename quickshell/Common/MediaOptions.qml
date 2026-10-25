@@ -14,9 +14,7 @@ Singleton {
             albumArtAccent: true,
             animatedArt: false,
             lyrics: true,
-            smoothLyrics: true,
-            controlsContainer: false,
-            rotateArt: false
+            smoothLyrics: true
         })
 
     readonly property string defaultPlayerStyle: "bento"
