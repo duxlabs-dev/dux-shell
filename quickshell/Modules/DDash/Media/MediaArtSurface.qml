@@ -17,9 +17,9 @@ ClippingRectangle {
     property bool suspended: false
     property real spin: 0
 
-    readonly property bool expressive: artStyle === "expressive"
+    readonly property bool cookie: artStyle === "cookie"
     readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
-    readonly property bool spinning: expressive && playing && visible && !suspended && animationsEnabled && live
+    readonly property bool spinning: cookie && playing && visible && !suspended && animationsEnabled && live
     readonly property var morphSpring: Theme.springPreset("fast", Theme.expressiveDurations.expressiveFastSpatial)
     // The 12-fold cosine terms of the cookie's polar radius. The off-centre terms of the Material
     // path are left out, so the shape spins about the artwork's centre without wobbling.
@@ -42,15 +42,15 @@ ClippingRectangle {
         case "square":
             return width * DashMetrics.mediaArtSoftRadiusRatio * Theme.shapeScale;
         case "slanted":
-        case "expressive":
+        case "cookie":
             return 0;
         }
         return DashMetrics.mediaInnerRadius;
     }
     color: "transparent"
     antialiasing: true
-    layer.enabled: expressive || artStyle === "slanted"
-    layer.effect: expressive ? shapeEffect : slantedEffect
+    layer.enabled: cookie || artStyle === "slanted"
+    layer.effect: cookie ? shapeEffect : slantedEffect
 
     onPlayingChanged: morphMotion.retarget(playing ? 1 : 0)
 
@@ -67,7 +67,7 @@ ClippingRectangle {
         to: 2 * Math.PI
         duration: DashMetrics.mediaArtRotationDuration
         loops: Animation.Infinite
-        running: root.expressive
+        running: root.cookie
         paused: !root.spinning
     }
 

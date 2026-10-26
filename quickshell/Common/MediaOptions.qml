@@ -18,7 +18,7 @@ Singleton {
         })
 
     readonly property string defaultPlayerStyle: "bento"
-    readonly property string defaultArtStyle: "expressive"
+    readonly property string defaultArtStyle: "cookie"
     readonly property var playerStyles: [
         {
             "value": "bento",

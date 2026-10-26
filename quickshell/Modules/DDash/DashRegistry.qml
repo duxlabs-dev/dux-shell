@@ -121,8 +121,8 @@ Singleton {
             },
             "options": [choice("playerStyle", I18n.tr("Player style"), MediaOptions.defaultPlayerStyle, MediaOptions.playerStyles), choice("artStyle", I18n.tr("Artwork"), MediaOptions.defaultArtStyle, [
                     {
-                        "value": "expressive",
-                        "text": I18n.tr("Expressive")
+                        "value": "cookie",
+                        "text": I18n.tr("Rotating Cookie", "Album artwork shape")
                     },
                     {
                         "value": "rounded",
