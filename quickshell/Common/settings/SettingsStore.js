@@ -752,7 +752,27 @@ function migrateToVersion(obj, targetVersion) {
         settings.configVersion = 42;
     }
 
+    if (currentVersion < 43 && targetVersion >= 43) {
+        migrateFocusedWindowCompactMode(settings);
+        settings.configVersion = 43;
+    }
+
     return settings;
+}
+
+// v43: focused window compact mode split into separate app name and title toggles
+function migrateFocusedWindowCompactMode(settings) {
+    const bars = Array.isArray(settings.barConfigs) ? settings.barConfigs : [];
+    for (const bar of bars) {
+        for (const listKey of BAR_WIDGET_LIST_KEYS) {
+            for (const widget of Array.isArray(bar?.[listKey]) ? bar[listKey] : []) {
+                if (!widget || typeof widget !== "object" || widget.focusedWindowCompactMode === undefined)
+                    continue;
+                widget.focusedWindowShowAppName = widget.focusedWindowCompactMode !== true;
+                delete widget.focusedWindowCompactMode;
+            }
+        }
+    }
 }
 
 // v42: dock apps follow the dock's icon size and magnification instead of their own copies
