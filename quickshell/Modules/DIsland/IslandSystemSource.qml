@@ -141,7 +141,7 @@ QtObject {
             AudioService.setMicVolume(Math.round(clampedRatio * maximum));
             return;
         case "brightness":
-            BrightnessService.setBrightness(Math.round(clampedRatio * maximum), BrightnessService.lastIpcDevice, true);
+            BrightnessService.setGroupBrightness(Math.round(clampedRatio * maximum), BrightnessService.lastIpcTargets(), true);
             return;
         }
     }

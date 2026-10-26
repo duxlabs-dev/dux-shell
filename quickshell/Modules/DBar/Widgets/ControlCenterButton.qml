@@ -188,16 +188,13 @@ BasePill {
         return root.screenName;
     }
 
-    function getPinnedBrightnessDevice() {
-        const pinKey = getScreenPinKey();
-        if (!pinKey)
-            return "";
-        const pins = CacheData.brightnessDevicePins || {};
-        return pins[pinKey] || "";
+    function getBrightnessTargets() {
+        const pinned = BrightnessService.pinnedDevices(getScreenPinKey());
+        return pinned.length > 0 ? pinned : [BrightnessService.getDefaultDevice()];
     }
 
     function getEffectiveBrightnessDevice() {
-        return getPinnedBrightnessDevice() || BrightnessService.getDefaultDevice();
+        return getBrightnessTargets()[0];
     }
 
     function handleVolumeWheel(delta) {
@@ -267,7 +264,7 @@ BasePill {
 
         const currentBrightness = BrightnessService.getDeviceBrightness(deviceName);
         const newBrightness = delta > 0 ? Math.min(100, currentBrightness + step) : Math.max(1, currentBrightness - step);
-        BrightnessService.setBrightness(newBrightness, deviceName);
+        BrightnessService.setGroupBrightness(newBrightness, getBrightnessTargets());
     }
 
     function getBrightness() {
