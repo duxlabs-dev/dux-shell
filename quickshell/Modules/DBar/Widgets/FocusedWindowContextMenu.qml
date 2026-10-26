@@ -133,49 +133,6 @@ DPopout {
             Qt.callLater(openModal);
     }
 
-    component ActionLabel: Row {
-        id: actionLabel
-
-        property string iconName: ""
-        property string text: ""
-        property color color
-
-        anchors.fill: parent
-        anchors.leftMargin: Theme.spacingL
-        anchors.rightMargin: Theme.spacingL
-        spacing: Theme.spacingS
-
-        DIcon {
-            name: actionLabel.iconName
-            size: Theme.iconSizeSmall
-            color: actionLabel.color
-            anchors.verticalCenter: parent.verticalCenter
-        }
-
-        StyledText {
-            width: parent.width - Theme.iconSizeSmall - Theme.spacingS
-            text: actionLabel.text
-            color: actionLabel.color
-            font.pixelSize: Theme.fontSizeSmall
-            elide: Text.ElideRight
-            anchors.verticalCenter: parent.verticalCenter
-        }
-    }
-
-    component ActionItem: DListItem {
-        id: actionItem
-
-        property string iconName: ""
-
-        Accessible.name: text
-
-        ActionLabel {
-            iconName: actionItem.iconName
-            text: actionItem.text
-            color: actionItem.contentColor
-        }
-    }
-
     onBackgroundClicked: close()
 
     content: Component {
@@ -252,7 +209,7 @@ DPopout {
                             }
                         ]
 
-                        delegate: DListRow {
+                        delegate: DListItem {
                             id: copyRow
                             required property var modelData
                             required property int index
@@ -262,6 +219,10 @@ DPopout {
                             implicitHeight: BarMetrics.popoutRowHeight
                             firstInGroup: index === 0
                             lastInGroup: index === 2
+                            enabled: modelData.copyable
+                            tooltipText: modelData.copyTooltip
+                            Accessible.name: modelData.copyTooltip
+                            onClicked: root.copyValue(modelData.value)
 
                             Row {
                                 anchors.fill: parent
@@ -289,17 +250,6 @@ DPopout {
                                     clip: true
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
-                            }
-
-                            StateLayer {
-                                topLeftRadius: copyRow.firstInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-                                topRightRadius: topLeftRadius
-                                bottomLeftRadius: copyRow.lastInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-                                bottomRightRadius: bottomLeftRadius
-                                enabled: copyRow.modelData.copyable
-                                disabled: !copyRow.modelData.copyable
-                                tooltipText: copyRow.modelData.copyable ? copyRow.modelData.copyTooltip : null
-                                onClicked: root.copyValue(copyRow.modelData.value)
                             }
                         }
                     }
@@ -360,34 +310,45 @@ DPopout {
                     }
                 }
 
-                StyledButton {
-                    id: killItem
-
-                    readonly property color itemColor: enabled ? Theme.error : Theme.onSurface_38
-
+                ActionItem {
                     width: parent.width
-                    implicitHeight: Theme.listItemHeight
                     enabled: root.pid > 0
+                    idleContentColor: Theme.error
+                    iconName: "close"
                     text: I18n.tr("Kill Process")
-                    Accessible.name: text
-                    color: Theme.foregroundColor(Theme.cardSurface, Theme.isFloatingWindow(killItem))
-                    border.width: Theme.layerOutlineWidth
-                    border.color: Theme.outlineMedium
-                    radius: Theme.groupedListOuterRadius
                     onClicked: root.killWindow()
-
-                    StateLayer {
-                        control: killItem
-                        disabled: !killItem.enabled
-                        stateColor: Theme.error
-                    }
-
-                    ActionLabel {
-                        iconName: "close"
-                        text: killItem.text
-                        color: killItem.itemColor
-                    }
                 }
+            }
+        }
+    }
+
+    component ActionItem: DListItem {
+        id: actionItem
+
+        property string iconName: ""
+
+        Accessible.name: text
+
+        Row {
+            anchors.fill: parent
+            anchors.leftMargin: Theme.spacingL
+            anchors.rightMargin: Theme.spacingL
+            spacing: Theme.spacingS
+
+            DIcon {
+                name: actionItem.iconName
+                size: Theme.iconSizeSmall
+                color: actionItem.contentColor
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            StyledText {
+                width: parent.width - Theme.iconSizeSmall - Theme.spacingS
+                text: actionItem.text
+                color: actionItem.contentColor
+                font.pixelSize: Theme.fontSizeSmall
+                elide: Text.ElideRight
+                anchors.verticalCenter: parent.verticalCenter
             }
         }
     }
