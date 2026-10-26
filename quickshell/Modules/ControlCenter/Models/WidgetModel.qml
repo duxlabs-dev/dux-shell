@@ -295,7 +295,7 @@ QtObject {
             "id": "idleInhibitor",
             "text": I18n.tr("Keep Awake"),
             "description": I18n.tr("Prevent screen timeout"),
-            "icon": "motion_sensor_active",
+            "icon": "local_cafe",
             "type": "toggle",
             "category": "system",
             "enabled": true

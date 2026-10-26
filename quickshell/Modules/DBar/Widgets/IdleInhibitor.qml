@@ -18,7 +18,7 @@ BasePill {
             DIcon {
                 id: icon
                 anchors.centerIn: parent
-                name: SessionService.idleInhibited ? "motion_sensor_active" : "motion_sensor_idle"
+                name: "local_cafe"
                 size: Theme.barIconSize(root.barThickness, -4, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
                 color: SessionService.idleInhibited ? inhibitColor : idleColor
             }

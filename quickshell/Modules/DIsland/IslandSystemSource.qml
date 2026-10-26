@@ -91,7 +91,7 @@ QtObject {
         case "powerprofile":
             return Theme.getPowerProfileIcon(PowerProfileWatcher.currentProfile);
         case "idleinhibitor":
-            return SessionService.idleInhibited ? "motion_sensor_active" : "motion_sensor_idle";
+            return "local_cafe";
         case "charging":
             return BatteryService.getBatteryIcon();
         }

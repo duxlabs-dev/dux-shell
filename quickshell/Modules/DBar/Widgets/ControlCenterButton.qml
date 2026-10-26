@@ -509,7 +509,7 @@ BasePill {
                                 case "printer":
                                     return "print";
                                 case "idleInhibitor":
-                                    return "motion_sensor_active";
+                                    return "local_cafe";
                                 case "doNotDisturb":
                                     return "do_not_disturb_on";
                                 default:
@@ -694,7 +694,7 @@ BasePill {
                                 case "printer":
                                     return "print";
                                 case "idleInhibitor":
-                                    return "motion_sensor_active";
+                                    return "local_cafe";
                                 case "doNotDisturb":
                                     return "do_not_disturb_on";
                                 default:
