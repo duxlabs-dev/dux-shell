@@ -421,3 +421,82 @@ func TestManager_HandlePropertiesChanged(t *testing.T) {
 		})
 	})
 }
+
+func TestManager_LidClosedWhileKeepingAwake(t *testing.T) {
+	lidClosed := &dbus.Signal{
+		Name: "org.freedesktop.DBus.Properties.PropertiesChanged",
+		Body: []any{
+			"org.freedesktop.login1.Manager",
+			map[string]dbus.Variant{"LidClosed": dbus.MakeVariant(true)},
+			[]string{},
+		},
+	}
+
+	newManager := func(t *testing.T, keepAwake, lockBeforeSuspend bool) *Manager {
+		m := &Manager{
+			state:      &SessionState{},
+			stateMutex: sync.RWMutex{},
+			dirty:      make(chan struct{}, 1),
+		}
+		if keepAwake {
+			f, err := os.CreateTemp(t.TempDir(), "inhibit")
+			require.NoError(t, err)
+			m.keepAwakeFile = f
+		}
+		m.lockBeforeSuspend.Store(lockBeforeSuspend)
+		return m
+	}
+
+	expectDocked := func(managerObj *mockdbus.MockBusObject, docked bool) {
+		managerObj.EXPECT().
+			Call("org.freedesktop.DBus.Properties.Get", dbus.Flags(0), "org.freedesktop.login1.Manager", "Docked").
+			Return(&dbus.Call{Body: []any{dbus.MakeVariant(docked)}})
+	}
+
+	t.Run("locks when undocked", func(t *testing.T) {
+		managerObj := mockdbus.NewMockBusObject(t)
+		sessionObj := mockdbus.NewMockBusObject(t)
+		expectDocked(managerObj, false)
+		sessionObj.EXPECT().Call("org.freedesktop.login1.Session.Lock", dbus.Flags(0)).Return(&dbus.Call{})
+
+		m := newManager(t, true, true)
+		m.managerObj = managerObj
+		m.sessionObj = sessionObj
+		m.handleDBusSignal(lidClosed)
+	})
+
+	t.Run("does not lock when docked", func(t *testing.T) {
+		managerObj := mockdbus.NewMockBusObject(t)
+		expectDocked(managerObj, true)
+
+		m := newManager(t, true, true)
+		m.managerObj = managerObj
+		m.sessionObj = mockdbus.NewMockBusObject(t)
+		m.handleDBusSignal(lidClosed)
+	})
+
+	t.Run("does not lock without keep awake", func(t *testing.T) {
+		m := newManager(t, false, true)
+		m.managerObj = mockdbus.NewMockBusObject(t)
+		m.sessionObj = mockdbus.NewMockBusObject(t)
+		m.handleDBusSignal(lidClosed)
+	})
+
+	t.Run("does not lock with lock before suspend off", func(t *testing.T) {
+		m := newManager(t, true, false)
+		m.managerObj = mockdbus.NewMockBusObject(t)
+		m.sessionObj = mockdbus.NewMockBusObject(t)
+		m.handleDBusSignal(lidClosed)
+	})
+}
+
+func TestManager_SetKeepAwakeFalseReleasesInhibitor(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "inhibit")
+	require.NoError(t, err)
+	m := &Manager{keepAwakeFile: f}
+
+	require.NoError(t, m.SetKeepAwake(false))
+
+	assert.Nil(t, m.keepAwakeFile)
+	assert.Error(t, f.Close())
+}

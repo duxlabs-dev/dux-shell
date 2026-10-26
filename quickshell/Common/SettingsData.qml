@@ -737,6 +737,7 @@ Singleton {
     property bool batteryAutoPowerSaver: Spec.SPEC.batteryAutoPowerSaver.def
     property bool lowerDisplayRefreshRateOnBattery: Spec.SPEC.lowerDisplayRefreshRateOnBattery.def
     property bool lockBeforeSuspend: Spec.SPEC.lockBeforeSuspend.def
+    property bool keepAwakeBlocksSleep: Spec.SPEC.keepAwakeBlocksSleep.def
     property bool loginctlLockIntegration: Spec.SPEC.loginctlLockIntegration.def
     property bool fadeToLockEnabled: Spec.SPEC.fadeToLockEnabled.def
     property int fadeToLockGracePeriod: Spec.SPEC.fadeToLockGracePeriod.def

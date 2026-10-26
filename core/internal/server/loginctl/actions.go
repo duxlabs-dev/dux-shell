@@ -107,6 +107,46 @@ func (m *Manager) markLockerReady() {
 	m.prelockedReady.Store(true)
 }
 
+func (m *Manager) SetKeepAwake(enabled bool) error {
+	if !enabled {
+		m.releaseKeepAwake()
+		return nil
+	}
+
+	m.keepAwakeMu.Lock()
+	defer m.keepAwakeMu.Unlock()
+
+	if m.keepAwakeFile != nil {
+		return nil
+	}
+	if m.managerObj == nil {
+		return fmt.Errorf("manager object not available")
+	}
+
+	file, err := m.inhibit("sleep:handle-lid-switch", "Dux Shell", "Keep Awake", "block")
+	if err != nil {
+		return fmt.Errorf("failed to inhibit sleep: %w", err)
+	}
+	m.keepAwakeFile = file
+	return nil
+}
+
+func (m *Manager) releaseKeepAwake() {
+	m.keepAwakeMu.Lock()
+	f := m.keepAwakeFile
+	m.keepAwakeFile = nil
+	m.keepAwakeMu.Unlock()
+	if f != nil {
+		f.Close()
+	}
+}
+
+func (m *Manager) keepingAwake() bool {
+	m.keepAwakeMu.Lock()
+	defer m.keepAwakeMu.Unlock()
+	return m.keepAwakeFile != nil
+}
+
 func (m *Manager) SetSleepInhibitorEnabled(enabled bool) {
 	m.sleepInhibitorEnabled.Store(enabled)
 	if enabled {

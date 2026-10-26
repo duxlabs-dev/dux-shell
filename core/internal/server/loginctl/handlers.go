@@ -26,6 +26,8 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 		handleSetLockBeforeSuspend(conn, req, manager)
 	case "loginctl.setSleepInhibitorEnabled":
 		handleSetSleepInhibitorEnabled(conn, req, manager)
+	case "loginctl.setKeepAwake":
+		handleSetKeepAwake(conn, req, manager)
 	case "loginctl.lockerReady":
 		handleLockerReady(conn, req, manager)
 	case "loginctl.terminate":
@@ -113,6 +115,20 @@ func handleSetSleepInhibitorEnabled(conn *ipc.ConnWriter, req ipc.Request, manag
 
 	manager.SetSleepInhibitorEnabled(enabled)
 	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "sleep inhibitor setting updated"})
+}
+
+func handleSetKeepAwake(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	enabled, err := params.Bool(req.Params, "enabled")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	if err := manager.SetKeepAwake(enabled); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "keep awake set"})
 }
 
 func handleLockerReady(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {

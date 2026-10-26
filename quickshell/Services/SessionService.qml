@@ -810,6 +810,7 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
             return;
         idleInhibited = enabled;
         inhibitorChanged();
+        syncKeepAwake();
     }
 
     // Both entry points are deliberate: the singletons are created lazily in no fixed order, so
@@ -868,6 +869,7 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
 
         function onCapabilitiesReceived() {
             syncSleepInhibitor();
+            syncKeepAwake();
         }
     }
 
@@ -911,6 +913,10 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
                 syncLockBeforeSuspend();
             }
             syncSleepInhibitor();
+        }
+
+        function onKeepAwakeBlocksSleepChanged() {
+            syncKeepAwake();
         }
     }
 
@@ -1064,6 +1070,17 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
             } else {
                 log.debug("Synced sleep inhibitor:", SettingsData.loginctlLockIntegration);
             }
+        });
+    }
+
+    function syncKeepAwake() {
+        if (!loginctlAvailable)
+            return;
+        DMSService.sendRequest("loginctl.setKeepAwake", {
+            enabled: idleInhibited && SettingsData.keepAwakeBlocksSleep
+        }, response => {
+            if (response.error)
+                log.warn("Failed to sync keep awake:", response.error);
         });
     }
 
