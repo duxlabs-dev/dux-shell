@@ -697,7 +697,7 @@ Item {
                 SettingsToggleRow {
                     settingKey: "systemUpdaterHomebrew"
                     tags: ["homebrew", "brew", "include"]
-                    text: I18n.tr("Include Homebrew updates")
+                    text: I18n.tr("Include Homebrew updates", "software updates setting, toggle to include homebrew packages in updates")
                     visible: (SystemUpdateService.backends || []).some(b => b.repo === "homebrew")
                     checked: SettingsData.updaterIncludeHomebrew
                     onToggled: checked => SettingsData.set("updaterIncludeHomebrew", checked)
