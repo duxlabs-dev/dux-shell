@@ -119,7 +119,7 @@ Item {
 
                 CcToggleRow {
                     iconName: "laptop"
-                    text: I18n.tr("Stay awake with the lid closed")
+                    text: I18n.tr("Stay awake with the lid closed", "keep awake option that also blocks suspend on lid close")
                     checked: SettingsData.keepAwakeBlocksSleep
                     onToggled: checked => SettingsData.set("keepAwakeBlocksSleep", checked)
                 }
