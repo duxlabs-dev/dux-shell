@@ -236,13 +236,13 @@ DPopout {
                                 label: I18n.tr("App ID"),
                                 value: root.appId,
                                 copyable: !!root.appId,
-                                copyTooltip: I18n.tr("Copy App ID")
+                                copyTooltip: I18n.tr("Copy App ID", "tooltip in the focused window popout, copies the window's app ID")
                             },
                             {
                                 label: I18n.tr("Title"),
                                 value: root.windowTitle || I18n.tr("Untitled"),
                                 copyable: !!root.windowTitle,
-                                copyTooltip: I18n.tr("Copy Title")
+                                copyTooltip: I18n.tr("Copy Title", "tooltip in the focused window popout, copies the window title")
                             },
                             {
                                 label: I18n.tr("PID", "Label for the process ID row in the focused window popout"),
