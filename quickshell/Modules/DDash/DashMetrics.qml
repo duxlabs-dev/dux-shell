@@ -258,21 +258,22 @@ Singleton {
     readonly property real lyricsLineInactiveScale: 0.8
     readonly property real lyricsLineInactiveAlpha: 0.4
     readonly property real lyricsRestAlpha: 0.35
-    readonly property int lyricsLineFadeDuration: 600
-    readonly property int lyricsLineScaleDuration: 700
+    readonly property int lyricsLineFadeDuration: lyricsTrackMoveDuration
+    readonly property int lyricsLineScaleDuration: lyricsTrackMoveDuration
     readonly property int lyricsLineLinger: 500
     // Seconds before a line starts that the track moves it into the centre.
     readonly property real lyricsLineLeadIn: 0.25
-    readonly property int lyricsTrackMoveDuration: 850
-    // Critically damped and tuned to arrive with lyricsTrackMoveDuration on a long scroll.
-    readonly property real lyricsScrollStiffness: 139
-    readonly property real lyricsScrollDamping: 23.6
+    readonly property int lyricsTrackMoveDuration: 500
+    // A critically damped spring settles in about ten time constants, so a long scroll lands with the line move.
+    readonly property real lyricsScrollRate: 10000 / lyricsTrackMoveDuration
+    readonly property real lyricsScrollStiffness: lyricsScrollRate * lyricsScrollRate
+    readonly property real lyricsScrollDamping: 2 * lyricsScrollRate
     // Below half a pixel the rounded position no longer moves, so the spring stops there.
     readonly property real lyricsScrollSettleDistance: 0.5
     readonly property real lyricsScrollSettleSpeed: 10
     readonly property int lyricsTrackPushStep: 20
     readonly property int lyricsTrackMaxPush: 5
-    readonly property var lyricsTrackCurve: [0.22, 0.9, 0.2, 1, 1, 1]
+    readonly property var lyricsTrackCurve: [0.25, 0.7, 0.2, 1, 1, 1]
     readonly property real lyricsBreakGap: 5
     readonly property real lyricsBreakIndicatorScale: 1.2
     readonly property real lyricsEdgeFadeRatio: 0.2

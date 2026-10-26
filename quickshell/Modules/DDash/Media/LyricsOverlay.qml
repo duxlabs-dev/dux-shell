@@ -128,7 +128,7 @@ FocusScope {
     }
 
     // The view snaps to the new centre and every row is pushed back by the same distance, so the
-    // rows can catch up one after another: the new line leads, the lines above it follow.
+    // rows can catch up one after another: the new line leads and the others follow outwards.
     function followCurrent() {
         const animate = animateFollow && animationsEnabled && pushedItem >= 0;
         animateFollow = false;
@@ -169,8 +169,8 @@ FocusScope {
         for (const row of transcript.contentItem.children) {
             if (!row.push || row.index < 0)
                 continue;
-            const lag = centre - row.index;
-            row.push(delta, jump || lag <= 0 ? 0 : Math.min(lag, DashMetrics.lyricsTrackMaxPush) * DashMetrics.lyricsTrackPushStep);
+            const lag = Math.abs(centre - row.index);
+            row.push(delta, jump ? 0 : Math.min(lag, DashMetrics.lyricsTrackMaxPush) * DashMetrics.lyricsTrackPushStep);
         }
     }
 
