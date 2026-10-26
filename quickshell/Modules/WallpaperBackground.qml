@@ -764,7 +764,6 @@ Variants {
 
                 sourceComponent: DBackdrop {
                     screenName: modelData.name
-                    blur: root.overviewBlurActive ? Theme.wallpaperBlur : 0
                     onInvalidated: root.invalidate()
                 }
             }
@@ -1212,11 +1211,11 @@ Variants {
             Loader {
                 id: overviewBlurLoader
                 anchors.fill: parent
-                active: root.overviewBlurActive && !root.showsBackdrop
+                active: root.overviewBlurActive
 
                 sourceComponent: MultiEffect {
                     anchors.fill: parent
-                    source: effectLoader.active ? effectLoader.item : (parallaxLoader.active ? parallaxLoader.item : srcCurrent)
+                    source: root.showsBackdrop ? backdropLoader.item : (effectLoader.active ? effectLoader.item : (parallaxLoader.active ? parallaxLoader.item : srcCurrent))
                     blurEnabled: true
                     blur: 0.8
                     blurMax: 75
