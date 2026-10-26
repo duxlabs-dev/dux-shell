@@ -310,8 +310,8 @@ MediaChromeBase {
         bottomLeftRadius: groupStart ? outerRadius : radius
         topRightRadius: groupEnd ? outerRadius : radius
         bottomRightRadius: groupEnd ? outerRadius : radius
-        containerColor: checked ? MediaAccentService.accent : Theme.surfaceContainerHighest
-        contentColor: checked ? MediaAccentService.onAccent : Theme.onSurfaceVariant
+        containerColor: checked ? MediaAccentService.accent : MediaAccentService.accentContainer
+        contentColor: checked ? MediaAccentService.onAccent : MediaAccentService.onAccentContainer
     }
 
     // Shown even when unsupported. A disabled button takes no hover, so a sibling area drives the tooltip.
@@ -340,14 +340,16 @@ MediaChromeBase {
             radius: pressed ? Theme.cornerRadiusXS : (checked ? outerRadius : Theme.cornerRadiusS)
             topLeftRadius: mode.groupStart ? outerRadius : radius
             bottomLeftRadius: mode.groupStart ? outerRadius : radius
-            containerColor: checked ? MediaAccentService.accent : Theme.surfaceContainerHighest
-            contentColor: checked ? MediaAccentService.onAccent : Theme.onSurfaceVariant
+            containerColor: checked ? MediaAccentService.accent : MediaAccentService.accentContainer
+            contentColor: checked ? MediaAccentService.onAccent : MediaAccentService.onAccentContainer
         }
 
         MouseArea {
             id: unsupportedHover
             anchors.fill: parent
-            enabled: !modeButton.enabled
+            // MouseArea.enabled: false is different from Item.enabled: false and still takes mouseevents although not handling them
+            // That causes the cursor to not change to pointer over the button when it is enabled.
+            visible: !modeButton.enabled
             hoverEnabled: true
             acceptedButtons: Qt.NoButton
         }
