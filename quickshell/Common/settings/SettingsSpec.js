@@ -97,6 +97,12 @@ var LOCAL_SPEC = {
     cardSurfaceCustomColor: {
         def: "#6750A4"
     },
+    tooltipSurfaceColor: {
+        def: "default"
+    },
+    tooltipSurfaceCustomColor: {
+        def: "#6750A4"
+    },
     chipSurfaceColor: {
         def: "default"
     },

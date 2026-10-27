@@ -71,7 +71,7 @@ PanelWindow {
     Rectangle {
         anchors.fill: parent
         visible: root.shown
-        color: Theme.inverseSurface
+        color: Theme.tooltipSurface
         radius: Theme.cornerRadiusXS
 
         StyledText {
@@ -80,7 +80,7 @@ PanelWindow {
             anchors.centerIn: parent
             text: root.text
             font.pixelSize: Theme.fontSizeSmall
-            color: Theme.inverseOnSurface
+            color: Theme.tooltipText
             wrapMode: Text.NoWrap
             maximumLineCount: 1
             elide: Text.ElideRight

@@ -846,6 +846,13 @@ Column {
                     "fallback": "schh",
                     "text": I18n.tr("Nested chip", "surface role"),
                     "tags": ["nested", "chip", "control"]
+                },
+                {
+                    "key": "tooltipSurfaceColor",
+                    "customKey": "tooltipSurfaceCustomColor",
+                    "fallback": "schh",
+                    "text": I18n.tr("Tooltip", "surface role"),
+                    "tags": ["tooltip", "hint", "hover", "toast"]
                 }
             ]
 

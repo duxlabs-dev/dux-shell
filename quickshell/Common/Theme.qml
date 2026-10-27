@@ -222,6 +222,8 @@ Singleton {
             "surfaceContainer": getMatugenColorForMode(colorMode, "surface_container", "#1e2023"),
             "surfaceContainerHigh": getMatugenColorForMode(colorMode, "surface_container_high", "#292b2f"),
             "surfaceContainerHighest": getMatugenColorForMode(colorMode, "surface_container_highest", "#343740"),
+            "inverseSurface": getMatugenColorForMode(colorMode, "inverse_surface", getMatugenColorForMode(colorMode === "light" ? "dark" : "light", "surface", "#fdf7fe")),
+            "inverseOnSurface": getMatugenColorForMode(colorMode, "inverse_on_surface", getMatugenColorForMode(colorMode === "light" ? "dark" : "light", "on_surface", "#302e33")),
             "error": getMatugenColorForMode(colorMode, "error", "#F2B8B5"),
             "errorText": getMatugenColorForMode(colorMode, "on_error"),
             "errorContainer": getMatugenColorForMode(colorMode, "error_container"),
@@ -368,6 +370,8 @@ Singleton {
     readonly property color cardSurface: typeof SettingsData === "undefined" ? surfaceContainer : surfaceRoleColor(SettingsData.cardSurfaceColor, SettingsData.cardSurfaceCustomColor, surfaceContainer)
     readonly property color chipSurface: typeof SettingsData === "undefined" ? surfaceContainerHigh : surfaceRoleColor(SettingsData.chipSurfaceColor, SettingsData.chipSurfaceCustomColor, surfaceContainerHigh)
     readonly property color chipSurfaceNested: typeof SettingsData === "undefined" ? surfaceContainerHighest : surfaceRoleColor(SettingsData.chipSurfaceNestedColor, SettingsData.chipSurfaceNestedCustomColor, surfaceContainerHighest)
+    readonly property color tooltipSurface: typeof SettingsData === "undefined" ? (isLightMode ? inverseSurface : surfaceContainerHighest) : surfaceRoleColor(SettingsData.tooltipSurfaceColor, SettingsData.tooltipSurfaceCustomColor, (isLightMode ? inverseSurface : surfaceContainerHighest))
+    readonly property color tooltipText: Contrast.ratio(surfaceText, tooltipSurface) >= 4.5 ? surfaceText : (Contrast.ratio(inverseOnSurface, tooltipSurface) >= 4.5 ? inverseOnSurface : (Contrast.ratio("#ffffff", tooltipSurface) >= Contrast.ratio("#000000", tooltipSurface) ? "#ffffff" : "#000000"))
     readonly property real containerSaturation: typeof SettingsData === "undefined" ? 1 : SettingsData.containerSaturation / 100
     readonly property real containerTint: (currentThemeData.containerTint ?? Tonal.defaultTint(surfaceContainer)) * containerSaturation
     property color primaryContainer: currentThemeData.softPrimaryContainer || Tonal.softContainer(primary, surfaceContainer, containerTint)
@@ -380,8 +384,8 @@ Singleton {
     readonly property color accentOnPrimaryContainer: currentThemeData.accentOnPrimaryContainer || (Contrast.ratio(primary, primaryContainer) >= 3 ? primary : onPrimaryContainer)
     readonly property var accents: Accents.derive(primary, isLightMode, currentThemeData.accents ?? null)
     property color inversePrimary: currentThemeData.inversePrimary || wallpaperThemeData(!isLightMode).primary
-    property color inverseSurface: currentThemeData.inverseSurface || surfaceText
-    property color inverseOnSurface: currentThemeData.inverseOnSurface || surface
+    property color inverseSurface: currentThemeData.inverseSurface || (isLightMode ? surfaceText : surfaceContainerHighest)
+    property color inverseOnSurface: currentThemeData.inverseOnSurface || (isLightMode ? surface : surfaceText)
 
     // on<Role> next to a <role> property parses as a signal handler; only Binding elements assign them.
     property color onSurface
