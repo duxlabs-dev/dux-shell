@@ -384,8 +384,8 @@ Singleton {
     readonly property color accentOnPrimaryContainer: currentThemeData.accentOnPrimaryContainer || (Contrast.ratio(primary, primaryContainer) >= 3 ? primary : onPrimaryContainer)
     readonly property var accents: Accents.derive(primary, isLightMode, currentThemeData.accents ?? null)
     property color inversePrimary: currentThemeData.inversePrimary || wallpaperThemeData(!isLightMode).primary
-    property color inverseSurface: currentThemeData.inverseSurface || (isLightMode ? surfaceText : surfaceContainerHighest)
-    property color inverseOnSurface: currentThemeData.inverseOnSurface || Contrast.readableOn(inverseSurface, [surface, contrastLight, contrastDark])
+    property color inverseSurface: currentThemeData.inverseSurface || surfaceText
+    property color inverseOnSurface: currentThemeData.inverseOnSurface || surface
 
     // on<Role> next to a <role> property parses as a signal handler; only Binding elements assign them.
     property color onSurface
