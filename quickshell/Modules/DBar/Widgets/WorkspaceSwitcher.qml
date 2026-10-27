@@ -549,7 +549,7 @@ BasePill {
                     return Theme.isLightColor(bgColor, 0.4) ? Qt.rgba(0.15, 0.15, 0.15, 1) : Qt.rgba(0.8, 0.8, 0.8, 1);
                 }
 
-                readonly property color quickshellIconActiveColor: getContrastingIconColor(activeColor)
+                readonly property color quickshellIconActiveColor: root.linesStyle ? activeColor : getContrastingIconColor(activeColor)
                 readonly property color quickshellIconInactiveColor: getContrastingIconColor(unfocusedColor)
 
                 function inkFromMode(mode, fill, fallbackInk) {
@@ -585,6 +585,7 @@ BasePill {
                 }
 
                 readonly property color filledInk: isActive ? inkFromMode(activeColorMode, activeColor, Theme.onPrimary) : inkFromMode(urgentColorMode, urgentColor, Theme.onError)
+                readonly property color contentInk: root.linesStyle ? (isActive ? activeColor : isUrgent ? urgentColor : isPlaceholder ? Theme.surfaceTextAlpha : Theme.surfaceTextMedium) : ((isActive || isUrgent) ? filledInk : isPlaceholder ? Theme.surfaceTextAlpha : Theme.surfaceTextMedium)
 
                 readonly property color requestedColor: isActive ? activeColor : isUrgent ? urgentColor : isPlaceholder ? Theme.surfaceTextLight : isHovered ? Theme.withAlpha(unfocusedColor, root.hoverFadeAlpha) : isOccupied ? occupiedColor : unfocusedColor
 
@@ -944,7 +945,7 @@ BasePill {
                                         anchors.verticalCenter: parent.verticalCenter
                                         name: loadedIconData?.value ?? ""
                                         size: labelSize
-                                        color: (isActive || isUrgent) ? filledInk : isPlaceholder ? Theme.surfaceTextAlpha : Theme.surfaceTextMedium
+                                        color: contentInk
                                         weight: (isActive && !isPlaceholder) ? 500 : 400
                                     }
                                 }
@@ -958,7 +959,7 @@ BasePill {
                                         id: wsText
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: loadedIconData?.value ?? ""
-                                        color: (isActive || isUrgent) ? filledInk : isPlaceholder ? Theme.surfaceTextAlpha : Theme.surfaceTextMedium
+                                        color: contentInk
                                         font.pixelSize: labelSize
                                         font.weight: (isActive && !isPlaceholder) ? Theme.fontWeightMedium : Theme.fontWeight
                                     }
@@ -973,7 +974,7 @@ BasePill {
                                         id: wsIndexText
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: loadedHasIcon ? (record?.name ?? "") : root.getWorkspaceIndex(record, index)
-                                        color: (isActive || isUrgent) ? filledInk : isPlaceholder ? Theme.surfaceTextAlpha : Theme.surfaceTextMedium
+                                        color: contentInk
                                         font.pixelSize: labelSize
                                         font.weight: (isActive && !isPlaceholder) ? Theme.fontWeightMedium : Theme.fontWeight
                                     }
@@ -1115,7 +1116,7 @@ BasePill {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     name: loadedIconData?.value ?? ""
                                     size: labelSize
-                                    color: (isActive || isUrgent) ? filledInk : isPlaceholder ? Theme.surfaceTextAlpha : Theme.surfaceTextMedium
+                                    color: contentInk
                                     weight: (isActive && !isPlaceholder) ? 500 : 400
                                 }
 
@@ -1123,7 +1124,7 @@ BasePill {
                                     visible: loadedHasIcon && loadedIconData?.type === "text"
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: loadedIconData?.value ?? ""
-                                    color: (isActive || isUrgent) ? filledInk : isPlaceholder ? Theme.surfaceTextAlpha : Theme.surfaceTextMedium
+                                    color: contentInk
                                     font.pixelSize: labelSize
                                     font.weight: (isActive && !isPlaceholder) ? Theme.fontWeightMedium : Theme.fontWeight
                                 }
@@ -1132,7 +1133,7 @@ BasePill {
                                     visible: (root.opt("showWorkspaceIndex") || root.opt("showWorkspaceName")) && !loadedHasIcon
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: root.getWorkspaceIndex(record, index)
-                                    color: (isActive || isUrgent) ? filledInk : isPlaceholder ? Theme.surfaceTextAlpha : Theme.surfaceTextMedium
+                                    color: contentInk
                                     font.pixelSize: labelSize
                                     font.weight: (isActive && !isPlaceholder) ? Theme.fontWeightMedium : Theme.fontWeight
                                 }
