@@ -370,8 +370,8 @@ Singleton {
     readonly property color cardSurface: typeof SettingsData === "undefined" ? surfaceContainer : surfaceRoleColor(SettingsData.cardSurfaceColor, SettingsData.cardSurfaceCustomColor, surfaceContainer)
     readonly property color chipSurface: typeof SettingsData === "undefined" ? surfaceContainerHigh : surfaceRoleColor(SettingsData.chipSurfaceColor, SettingsData.chipSurfaceCustomColor, surfaceContainerHigh)
     readonly property color chipSurfaceNested: typeof SettingsData === "undefined" ? surfaceContainerHighest : surfaceRoleColor(SettingsData.chipSurfaceNestedColor, SettingsData.chipSurfaceNestedCustomColor, surfaceContainerHighest)
-    readonly property color tooltipSurface: typeof SettingsData === "undefined" ? (isLightMode ? inverseSurface : surfaceContainerHighest) : surfaceRoleColor(SettingsData.tooltipSurfaceColor, SettingsData.tooltipSurfaceCustomColor, (isLightMode ? inverseSurface : surfaceContainerHighest))
-    readonly property color tooltipText: Contrast.ratio(surfaceText, tooltipSurface) >= 4.5 ? surfaceText : (Contrast.ratio(inverseOnSurface, tooltipSurface) >= 4.5 ? inverseOnSurface : (Contrast.ratio("#ffffff", tooltipSurface) >= Contrast.ratio("#000000", tooltipSurface) ? "#ffffff" : "#000000"))
+    readonly property color tooltipSurface: typeof SettingsData === "undefined" ? surfaceContainerHighest : surfaceRoleColor(SettingsData.tooltipSurfaceColor, SettingsData.tooltipSurfaceCustomColor, surfaceContainerHighest)
+    readonly property color tooltipText: Contrast.readableOn(tooltipSurface, [surfaceText, (isLightColor(tooltipSurface) ? contrastDark : contrastLight)])
     readonly property real containerSaturation: typeof SettingsData === "undefined" ? 1 : SettingsData.containerSaturation / 100
     readonly property real containerTint: (currentThemeData.containerTint ?? Tonal.defaultTint(surfaceContainer)) * containerSaturation
     property color primaryContainer: currentThemeData.softPrimaryContainer || Tonal.softContainer(primary, surfaceContainer, containerTint)
@@ -385,7 +385,7 @@ Singleton {
     readonly property var accents: Accents.derive(primary, isLightMode, currentThemeData.accents ?? null)
     property color inversePrimary: currentThemeData.inversePrimary || wallpaperThemeData(!isLightMode).primary
     property color inverseSurface: currentThemeData.inverseSurface || (isLightMode ? surfaceText : surfaceContainerHighest)
-    property color inverseOnSurface: currentThemeData.inverseOnSurface || (isLightMode ? surface : surfaceText)
+    property color inverseOnSurface: currentThemeData.inverseOnSurface || Contrast.readableOn(inverseSurface, [surface, contrastLight, contrastDark])
 
     // on<Role> next to a <role> property parses as a signal handler; only Binding elements assign them.
     property color onSurface
