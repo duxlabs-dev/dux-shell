@@ -1,7 +1,9 @@
 .pragma library
 
-// Reads efibootmgr output into the current boot id and the active entries as [{id, label}],
+// Reads efibootmgr output into the current boot id and the entries as [{id, label}],
 // where id is the upper-case hex Boot#### number.
+// Inactive entries stay: dual-booters often deactivate Windows so it stops rewriting
+// BootOrder, and BootNext still boots them.
 function parseEntries(text) {
     const result = {
         currentId: "",
@@ -14,12 +16,12 @@ function parseEntries(text) {
             continue;
         }
         // efibootmgr 18+ appends a tab and the device path after the label
-        const entry = line.match(/^Boot([0-9A-Fa-f]{4})(\*?)\s+([^\t]+)/);
-        if (!entry || entry[2] !== "*")
+        const entry = line.match(/^Boot([0-9A-Fa-f]{4})\*?\s+([^\t]+)/);
+        if (!entry)
             continue;
         result.entries.push({
             id: entry[1].toUpperCase(),
-            label: entry[3].trim()
+            label: entry[2].trim()
         });
     }
     return result;
