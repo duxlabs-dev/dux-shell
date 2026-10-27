@@ -21,6 +21,9 @@ ColorDropdownRow {
                 "value": "schh",
                 "label": I18n.tr("Surface Highest", "surface color option")
             }), ({
+                "value": "inverseSurface",
+                "label": I18n.tr("Inverse Surface", "surface color option")
+            }), ({
                 "value": "primaryContainer",
                 "label": I18n.tr("Primary Container", "surface color option")
             }), ({

@@ -635,6 +635,8 @@ Singleton {
             return surfaceContainerHigh;
         case "schh":
             return surfaceContainerHighest;
+        case "inverseSurface":
+            return inverseSurface;
         case "sth":
             return surfaceTextHover;
         case "error":
