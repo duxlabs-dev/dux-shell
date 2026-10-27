@@ -79,16 +79,9 @@ Item {
     function selectDevice(deviceName) {
         if (!deviceName || deviceName === currentDeviceName)
             return;
-        const pinKey = getScreenPinKey();
-        if (pinKey) {
-            const pins = CacheData.brightnessDevicePins || {};
-            const pinned = QmlUtils.normalizePinList(pins[pinKey]);
-            if (pinned.length === 1 && pinned[0] !== deviceName) {
-                const next = JSON.parse(JSON.stringify(pins));
-                delete next[pinKey];
-                CacheData.set("brightnessDevicePins", next);
-            }
-        }
+        const pinned = QmlUtils.normalizePinList((CacheData.brightnessDevicePins || {})[getScreenPinKey()]);
+        if (pinned.length > 0 && !pinned.includes(deviceName))
+            clearScreenPins();
         currentDeviceName = deviceName;
         BrightnessService.setCurrentDevice(deviceName, true);
         deviceNameChanged(deviceName);
