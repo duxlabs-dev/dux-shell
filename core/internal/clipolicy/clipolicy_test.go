@@ -1,6 +1,7 @@
 package clipolicy
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -124,6 +125,7 @@ func TestShellEnv(t *testing.T) {
 						want = append(want, other+"=0")
 					}
 				}
+				want = append(want, "DMS_POLICY_LOCK_SETTINGS={}")
 
 				env, err := ShellEnv(fs)
 				require.NoError(t, err)
@@ -133,11 +135,12 @@ func TestShellEnv(t *testing.T) {
 	}
 }
 
-func TestShellEnvMalformedPolicyTurnsEverySwitchOn(t *testing.T) {
+func TestShellEnvMalformedPolicyTurnsEverySwitchOnAndIgnoresLockSettings(t *testing.T) {
 	fs := afero.NewMemMapFs()
+	require.NoError(t, afero.WriteFile(fs, PackagedPath, []byte(`{"lock_settings": {"lockBeforeSuspend": true}}`), 0o644))
 	require.NoError(t, afero.WriteFile(fs, AdminPath, []byte("{not json"), 0o644))
 
-	var want []string
+	want := []string{"DMS_POLICY_LOCK_SETTINGS={}"}
 	for _, name := range shellSwitchEnv {
 		want = append(want, name+"=1")
 	}
@@ -145,4 +148,84 @@ func TestShellEnvMalformedPolicyTurnsEverySwitchOn(t *testing.T) {
 	env, err := ShellEnv(fs)
 	require.ErrorContains(t, err, "failed to parse "+AdminPath)
 	assert.ElementsMatch(t, want, env)
+}
+
+func TestLockSettings(t *testing.T) {
+	tests := []struct {
+		name     string
+		packaged string
+		admin    string
+		want     string
+		wantErr  string
+	}{
+		{name: "no policy files", want: `{}`},
+		{name: "no lock settings", admin: `{"disable_registries": true}`, want: `{}`},
+		{name: "packaged policy", packaged: `{"lock_settings": {"lockBeforeSuspend": true, "customPowerActionLock": ""}}`, want: `{"lockBeforeSuspend": true, "customPowerActionLock": ""}`},
+		{name: "admin policy overrides packaged per key", packaged: `{"lock_settings": {"lockBeforeSuspend": true, "acLockTimeout": 300}}`, admin: `{"lock_settings": {"lockBeforeSuspend": false}}`, want: `{"lockBeforeSuspend": false, "acLockTimeout": 300}`},
+		{name: "admin policy without lock settings keeps packaged", packaged: `{"lock_settings": {"enableFprint": false}}`, admin: `{"disable_registries": true}`, want: `{"enableFprint": false}`},
+		{name: "null leaves a key unset", packaged: `{"lock_settings": {"u2fMode": "and"}}`, admin: `{"lock_settings": {"u2fMode": null, "lockAtStartup": null}}`, want: `{"u2fMode": "and"}`},
+		{
+			name:  "only lock settings are managed",
+			admin: `{"lock_settings": {"customPowerActionLock": "", "lockBeforeSuspend": true, "loginctlLockIntegration": true, "lockAtStartup": true, "acLockTimeout": 300, "batteryLockTimeout": 120, "fadeToLockEnabled": true, "fadeToLockGracePeriod": 5, "enableFprint": true, "maxFprintTries": 3, "enableU2f": true, "u2fMode": "and", "lockScreenShowPowerActions": false, "lockPamPath": "/tmp/pam", "unknownSetting": 1}}`,
+			want:  `{"customPowerActionLock": "", "lockBeforeSuspend": true, "loginctlLockIntegration": true, "lockAtStartup": true, "acLockTimeout": 300, "batteryLockTimeout": 120, "fadeToLockEnabled": true, "fadeToLockGracePeriod": 5, "enableFprint": true, "maxFprintTries": 3, "enableU2f": true, "u2fMode": "and"}`,
+		},
+		{name: "values are passed as written", admin: `{"lock_settings": {"lockBeforeSuspend": "yes", "acLockTimeout": [1]}}`, want: `{"lockBeforeSuspend": "yes", "acLockTimeout": [1]}`},
+		{name: "malformed admin policy manages nothing", packaged: `{"lock_settings": {"lockBeforeSuspend": true}}`, admin: "{not json", want: `{}`, wantErr: "failed to parse " + AdminPath},
+		{name: "lock settings not an object", packaged: `{"lock_settings": {"lockBeforeSuspend": true}}`, admin: `{"lock_settings": ["lockBeforeSuspend"]}`, want: `{}`, wantErr: "failed to parse " + AdminPath},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+			if tt.packaged != "" {
+				require.NoError(t, afero.WriteFile(fs, PackagedPath, []byte(tt.packaged), 0o644))
+			}
+			if tt.admin != "" {
+				require.NoError(t, afero.WriteFile(fs, AdminPath, []byte(tt.admin), 0o644))
+			}
+
+			settings, err := LockSettings(fs)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+			got, err := json.Marshal(settings)
+			require.NoError(t, err)
+			assert.JSONEq(t, tt.want, string(got))
+		})
+	}
+}
+
+func TestShellEnvLockSettings(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	require.NoError(t, afero.WriteFile(fs, PackagedPath, []byte(`{"lock_settings": {"lockBeforeSuspend": false, "acLockTimeout": 300}}`), 0o644))
+	require.NoError(t, afero.WriteFile(fs, AdminPath, []byte(`{"lock_settings": {"lockBeforeSuspend": true, "customPowerActionLock": "", "lockScreenShowWeather": false}}`), 0o644))
+
+	env, err := ShellEnv(fs)
+	require.NoError(t, err)
+	assert.Contains(t, env, `DMS_POLICY_LOCK_SETTINGS={"acLockTimeout":300,"customPowerActionLock":"","lockBeforeSuspend":true}`)
+}
+
+func TestLockSettingBool(t *testing.T) {
+	on, off := true, false
+	tests := []struct {
+		name     string
+		settings string
+		want     *bool
+	}{
+		{name: "not managed", settings: `{"lockAtStartup": true}`},
+		{name: "managed on", settings: `{"lockBeforeSuspend": true}`, want: &on},
+		{name: "managed off", settings: `{"lockBeforeSuspend": false}`, want: &off},
+		{name: "null", settings: `{"lockBeforeSuspend": null}`},
+		{name: "not a boolean", settings: `{"lockBeforeSuspend": "true"}`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var settings map[string]json.RawMessage
+			require.NoError(t, json.Unmarshal([]byte(tt.settings), &settings))
+			assert.Equal(t, tt.want, LockSettingBool(settings, "lockBeforeSuspend"))
+		})
+	}
 }

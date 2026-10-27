@@ -203,13 +203,13 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 		evdev.HandleRequest(conn, req, evdevManager)
 	}))
 
-	mux.HandlePrefix("dbus.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
+	mux.HandlePrefix("dbus.", func(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, _ *ipc.Subscriber) {
 		if dbusManager == nil {
 			conn.RespondError(req.ID, "dbus manager not initialized")
 			return
 		}
-		serverDbus.HandleRequest(conn, req, dbusManager, dbusClientID)
-	}))
+		serverDbus.HandleRequest(ctx, conn, req, dbusManager, dbusClientID)
+	})
 
 	mux.HandlePrefix("clipboard.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
 		if clipboardManager == nil {

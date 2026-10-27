@@ -183,13 +183,17 @@ func (m *Manager) Close() {
 	})
 }
 
+// Zero turns scheduled checks off; manual and startup checks still run.
 func (m *Manager) SetInterval(seconds int) {
-	if seconds < minIntervalSeconds {
+	if seconds > 0 && seconds < minIntervalSeconds {
 		seconds = minIntervalSeconds
 	}
 	m.mu.Lock()
-	m.state.IntervalSeconds = seconds
-	m.state.NextCheckUnix = m.nextCheckLocked()
+	m.state.IntervalSeconds = max(seconds, 0)
+	m.state.NextCheckUnix = 0
+	if seconds > 0 {
+		m.state.NextCheckUnix = m.nextCheckLocked()
+	}
 	m.mu.Unlock()
 	m.wake()
 	m.markDirty()
@@ -284,7 +288,11 @@ func (m *Manager) wake() {
 func (m *Manager) scheduler() {
 	defer m.schedulerWG.Done()
 	for {
-		if !m.held() {
+		m.mu.RLock()
+		interval := m.state.IntervalSeconds
+		next := m.state.NextCheckUnix
+		m.mu.RUnlock()
+		if !m.held() || interval == 0 {
 			select {
 			case <-m.stopChan:
 				return
@@ -293,10 +301,6 @@ func (m *Manager) scheduler() {
 			continue
 		}
 
-		m.mu.RLock()
-		interval := m.state.IntervalSeconds
-		next := m.state.NextCheckUnix
-		m.mu.RUnlock()
 		if interval < minIntervalSeconds {
 			interval = minIntervalSeconds
 		}

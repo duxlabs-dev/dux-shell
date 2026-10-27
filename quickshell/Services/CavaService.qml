@@ -41,6 +41,11 @@ Singleton {
         id: cavaProcess
 
         running: root.cavaAvailable && root.refCount > 0
+        // cava asks for 512 frames, which drags the graph quantum down on spawn and back up on exit, audible on some hardware (#810)
+        environment: ({
+                "PIPEWIRE_LATENCY": "2400/48000",
+                "PULSE_LATENCY_MSEC": "50"
+            })
         command: ["sh", "-c", `cat <<'CAVACONF' > ${root._confPath}
 [general]
 framerate=25

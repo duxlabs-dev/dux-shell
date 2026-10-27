@@ -1,6 +1,6 @@
 module github.com/duxlabs-dev/dux-shell/core
 
-go 1.27.1
+go 1.27.3
 
 require (
 	github.com/Wifx/gonetworkmanager/v2 v2.2.0

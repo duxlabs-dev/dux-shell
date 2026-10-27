@@ -122,6 +122,7 @@ Card {
                 id: titleLabel
                 width: parent.width
                 text: root.inlineMetadata ? root.titleText + " · " + root.artistText : root.titleText
+                fontToken: root.options.titleFont ?? MediaOptions.defaultTitleFont
                 font.pixelSize: root.compact ? Theme.fontSizeMedium : Theme.fontSizeLarge
                 font.weight: Theme.fontWeightMedium
                 color: root.contentColor

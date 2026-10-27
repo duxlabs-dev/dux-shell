@@ -1739,6 +1739,10 @@ Singleton {
         })
 
     function set(key, value) {
+        if (isManaged(key)) {
+            log.warn("Refusing to change a setting managed by administrator policy:", key);
+            return;
+        }
         if (key === "cornerRadius") {
             setCornerRadius(value);
             return;
@@ -1754,6 +1758,10 @@ Singleton {
         return key in Spec.SPEC;
     }
 
+    function isManaged(key) {
+        return key in AdminPolicy.lockSettings;
+    }
+
     function specDefault(key) {
         return SpecUtil.cloneDef(Spec.SPEC[key]?.def);
     }
@@ -1764,7 +1772,7 @@ Singleton {
 
     function resetToDefault(keys) {
         for (const key of keys) {
-            if (key in Spec.SPEC)
+            if (key in Spec.SPEC && !isManaged(key))
                 Spec.set(root, key, null, saveSettings, _hooks);
         }
     }
@@ -1876,7 +1884,7 @@ Singleton {
         const prevFrameEnabled = frameEnabled;
         const prevFrameMode = frameMode;
         unsavedChanges = loadedSettings !== JSON.stringify(obj);
-        Store.parse(root, obj);
+        Store.parse(root, Object.assign(obj, AdminPolicy.lockSettings));
 
         // set() enforces this pair, but a hand-edited settings bypass set() entirely.
         if (frameEnabled)
@@ -2031,6 +2039,8 @@ Singleton {
             const file = _settingsFiles.get(path);
             const fileSettings = file.getSettings();
             for (const setting in fileSettings) {
+                if (isManaged(setting))
+                    continue;
                 if (!(setting in settings)) {
                     delete fileSettings[setting];
                     continue;
@@ -2045,7 +2055,7 @@ Singleton {
         }
 
         for (const setting in settings) {
-            if (!savedSettings.has(setting)) {
+            if (!savedSettings.has(setting) && !isManaged(setting)) {
                 splitSettings[defaultSettingsFile.filePath][setting] = settings[setting];
             }
         }
@@ -3695,14 +3705,14 @@ Singleton {
                 return;
             }
 
-            settings = newSettings;
+            settings = JSON.parse(newSettingsJson);
             fileUnsavedUserChanges = fileUnsavedUserChanges || userChanges;
 
             selfWrite = true;
             settingsFileView.setText(newSettingsJson);
         }
         function getSettings() {
-            return Object.assign({}, settings);
+            return JSON.parse(JSON.stringify(settings));
         }
 
         property Timer timer: Timer {

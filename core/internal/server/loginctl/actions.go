@@ -1,7 +1,13 @@
 package loginctl
 
 import (
+	"errors"
 	"fmt"
+)
+
+var (
+	errLockBeforeSuspendManaged = errors.New("lock before suspend is managed by administrator policy")
+	errSleepInhibitorManaged    = errors.New("the sleep inhibitor is managed by administrator policy")
 )
 
 func (m *Manager) Lock() error {
@@ -85,8 +91,21 @@ func (m *Manager) Terminate() error {
 	return nil
 }
 
-func (m *Manager) SetLockBeforeSuspend(enabled bool) {
+// applyLockPolicy starts from the managed settings, before the shell connects.
+func (m *Manager) applyLockPolicy() {
+	if managed := m.lockPolicy.LockBeforeSuspend; managed != nil {
+		m.lockBeforeSuspend.Store(*managed)
+	}
+	enabled, managed := m.lockPolicy.sleepInhibitor()
+	m.sleepInhibitorEnabled.Store(enabled || !managed)
+}
+
+func (m *Manager) SetLockBeforeSuspend(enabled bool) error {
+	if managed := m.lockPolicy.LockBeforeSuspend; managed != nil && *managed != enabled {
+		return errLockBeforeSuspendManaged
+	}
 	m.lockBeforeSuspend.Store(enabled)
+	return nil
 }
 
 func (m *Manager) markLockerReady() {
@@ -107,7 +126,10 @@ func (m *Manager) markLockerReady() {
 	m.prelockedReady.Store(true)
 }
 
-func (m *Manager) SetSleepInhibitorEnabled(enabled bool) {
+func (m *Manager) SetSleepInhibitorEnabled(enabled bool) error {
+	if managedValue, managed := m.lockPolicy.sleepInhibitor(); managed && managedValue != enabled {
+		return errSleepInhibitorManaged
+	}
 	m.sleepInhibitorEnabled.Store(enabled)
 	if enabled {
 		// Re-acquire inhibitor if enabled
@@ -116,4 +138,5 @@ func (m *Manager) SetSleepInhibitorEnabled(enabled bool) {
 		// Release inhibitor if disabled
 		m.releaseSleepInhibitor()
 	}
+	return nil
 }

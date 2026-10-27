@@ -15,7 +15,7 @@ printf '0.0.git.%s.%s\n' \
     "$(git rev-parse --short=8 HEAD)"
 }}}
 %global pkg_summary Dux Shell - Material 3 inspired shell for Wayland compositors
-%global go_toolchain_version 1.27.1
+%global go_toolchain_version 1.27.3
 
 Name:           dms
 Epoch:          2

@@ -135,7 +135,6 @@ DPopout {
                         id: searchField
                         Layout.fillWidth: true
                         Layout.minimumWidth: Theme.fontSizeMedium * 8
-                        Layout.preferredHeight: Theme.buttonHeightS
                         placeholderText: I18n.tr("Search", "search field placeholder") + "…"
                         text: processListPopout.searchText
                         onTextChanged: processListPopout.searchText = text

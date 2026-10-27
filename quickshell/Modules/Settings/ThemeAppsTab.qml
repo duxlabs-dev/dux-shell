@@ -12,6 +12,12 @@ Item {
     readonly property var neovimDarkBaseThemes: ["aquarium", "ashes", "aylin", "ayu_dark", "bearded-arc", "carbonfox", "catppuccin", "chadracula", "chadracula-evondev", "chadtain", "chocolate", "darcula-dark", "dark_horizon", "decay", "default-dark", "doomchad", "eldritch", "embark", "everblush", "everforest", "falcon", "flexoki", "flouromachine", "gatekeeper", "github_dark", "gruvbox", "gruvchad", "hiberbee", "horizon", "jabuti", "jellybeans", "kanagawa", "kanagawa-dragon", "material-darker", "material-deep-ocean", "melange", "midnight_breeze", "mito-laser", "monekai", "monochrome", "mountain", "neofusion", "nightfox", "nightlamp", "nightowl", "nord", "obsidian-ember", "oceanic-next", "onedark", "onenord", "oxocarbon", "palenight", "pastelDark", "pastelbeans", "penumbra_dark", "poimandres", "radium", "rosepine", "rxyhn", "scaryforest", "seoul256_dark", "solarized_dark", "solarized_osaka", "starlight", "sweetpastel", "tokyodark", "tokyonight", "tomorrow_night", "tundra", "vesper", "vscode_dark", "wombat", "yoru", "zenburn"]
     readonly property var neovimLightBaseThemes: ["ayu_light", "blossom_light", "catppuccin-latte", "default-light", "everforest_light", "flex-light", "flexoki-light", "github_light", "gruvbox_light", "material-lighter", "nano-light", "oceanic-light", "one_light", "onenord_light", "penumbra_light", "rosepine-dawn", "seoul256_light", "solarized_light", "sunrise_breeze", "vscode_light"]
 
+    function setNeovimSetting(mode, key, value) {
+        const settings = JSON.parse(JSON.stringify(SettingsData.matugenTemplateNeovimSettings));
+        settings[mode][key] = value;
+        SettingsData.set("matugenTemplateNeovimSettings", settings);
+    }
+
     function isTemplateDetected(templateId) {
         if (!templateDetection || templateDetection.length === 0)
             return true;
@@ -429,11 +435,7 @@ Item {
                 currentValue: SettingsData.matugenTemplateNeovimSettings?.dark?.baseTheme ?? "github_dark"
                 options: root.neovimDarkBaseThemes.concat(root.neovimLightBaseThemes)
                 enableFuzzySearch: true
-                onValueChanged: value => {
-                    const settings = SettingsData.matugenTemplateNeovimSettings;
-                    settings.dark.baseTheme = value;
-                    SettingsData.set("matugenTemplateNeovimSettings", settings);
-                }
+                onValueChanged: value => root.setNeovimSetting("dark", "baseTheme", value)
             }
 
             SettingsDropdownRow {
@@ -446,11 +448,7 @@ Item {
                 currentValue: SettingsData.matugenTemplateNeovimSettings?.light?.baseTheme ?? "github_light"
                 options: root.neovimLightBaseThemes.concat(root.neovimDarkBaseThemes)
                 enableFuzzySearch: true
-                onValueChanged: value => {
-                    const settings = SettingsData.matugenTemplateNeovimSettings;
-                    settings.light.baseTheme = value;
-                    SettingsData.set("matugenTemplateNeovimSettings", settings);
-                }
+                onValueChanged: value => root.setNeovimSetting("light", "baseTheme", value)
             }
 
             SettingsSliderRow {
@@ -462,11 +460,7 @@ Item {
                 minimum: 0
                 maximum: 100
                 value: (SettingsData.matugenTemplateNeovimSettings?.dark?.harmony ?? 0.5) * 100
-                onSliderValueChanged: value => {
-                    const settings = SettingsData.matugenTemplateNeovimSettings;
-                    settings.dark.harmony = value / 100;
-                    SettingsData.set("matugenTemplateNeovimSettings", settings);
-                }
+                onSliderValueChanged: value => root.setNeovimSetting("dark", "harmony", value / 100)
             }
 
             SettingsSliderRow {
@@ -478,11 +472,7 @@ Item {
                 minimum: 0
                 maximum: 100
                 value: (SettingsData.matugenTemplateNeovimSettings?.light?.harmony ?? 0.5) * 100
-                onSliderValueChanged: value => {
-                    const settings = SettingsData.matugenTemplateNeovimSettings;
-                    settings.light.harmony = value / 100;
-                    SettingsData.set("matugenTemplateNeovimSettings", settings);
-                }
+                onSliderValueChanged: value => root.setNeovimSetting("light", "harmony", value / 100)
             }
 
             SettingsToggleRow {

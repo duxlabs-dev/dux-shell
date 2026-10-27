@@ -18,6 +18,14 @@ FocusScope {
     property var parentModal: null
     property string viewModeContext: "spotlight"
     property alias searchField: searchField
+    property real baseHeight: height
+    readonly property real baseChromeHeight: Theme.spacingM + searchRow.height + mesgRow.height + contentStack.anchors.topMargin + contentStack.anchors.bottomMargin + (categoryRow.visible ? categoryRow.height + contentStack.gap : 0) + (fileFilterRow.visible ? fileFilterRow.height + contentStack.gap : 0) + footerBar.height + (footerBar.showFooter || contentHolder.inverted ? 0 : Theme.spacingM) + (contentHolder.inverted || footerBar._connectedBottomEmerge ? 0 : (root.parentModal?.borderWidth ?? 1))
+    readonly property real surplusHeight: {
+        const pitch = LauncherMetrics.rowHeight + LauncherMetrics.rowGap;
+        const available = baseHeight - baseChromeHeight - LauncherMetrics.sectionBand;
+        const rows = Math.max(0, Math.floor((available + 1) / pitch));
+        return Math.max(0, Math.round(available - rows * pitch));
+    }
     property alias controller: controller
     property alias resultsList: resultsList
     property alias actionPanel: actionPanel
@@ -674,7 +682,12 @@ FocusScope {
                     id: resultsList
                     focusReturnTarget: searchField
                     keyForwardTargets: [root]
-                    anchors.fill: parent
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: contentHolder.inverted ? undefined : parent.top
+                    anchors.bottom: contentHolder.inverted ? parent.bottom : undefined
+                    availableHeight: parent.height + (actionPanel.height > 0 ? actionPanel.height + contentStack.gap : 0)
+                    height: Math.min(fittedHeight, parent.height)
                     controller: root.controller
                     leadingSectionHeaderAtBottom: contentHolder.inverted
                     transientSurfaceTracker: root.transientSurfaceTracker

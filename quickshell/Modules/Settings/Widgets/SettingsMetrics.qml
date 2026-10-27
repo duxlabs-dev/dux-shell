@@ -33,7 +33,6 @@ Singleton {
     readonly property real navIconSize: Theme.avatarSize
     readonly property real navItemMinHeight: Theme.listItemHeight
     readonly property real sidebarGroupGap: Theme.spacingS
-    readonly property real searchBarHeight: 56
     readonly property real searchBarGap: Theme.spacingM
     readonly property real avatarSize: 64
     readonly property real splitDividerHeight: Theme.iconSize

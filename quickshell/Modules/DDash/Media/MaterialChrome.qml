@@ -122,7 +122,7 @@ MediaChromeBase {
                 reserveText: (durationText + " / " + durationText).replace(/\d/g, "8")
                 isMonospace: false
                 color: Theme.surfaceText
-                font.pixelSize: Theme.fontSizeLarge
+                font.pixelSize: Theme.fontSizeSmall
                 font.weight: Theme.fontWeightMedium
             }
         }

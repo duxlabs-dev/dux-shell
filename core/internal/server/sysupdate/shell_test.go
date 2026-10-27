@@ -222,6 +222,11 @@ func TestSetIntervalSchedulesFromLastCheck(t *testing.T) {
 	if next := m.GetState().NextCheckUnix; next < now+startupGraceSeconds-5 || next > now+startupGraceSeconds+5 {
 		t.Errorf("overdue next = now+%d, want now+%d", next-now, startupGraceSeconds)
 	}
+
+	m.SetInterval(0)
+	if state := m.GetState(); state.IntervalSeconds != 0 || state.NextCheckUnix != 0 {
+		t.Errorf("never: interval = %d, next = %d, want both 0", state.IntervalSeconds, state.NextCheckUnix)
+	}
 }
 
 func TestRefreshWithoutBackendsAdvancesDeadline(t *testing.T) {

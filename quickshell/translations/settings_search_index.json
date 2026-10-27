@@ -3500,26 +3500,25 @@
     "category": "General",
     "keywords": [
       "anchor",
-      "anchored",
       "bar",
+      "center",
       "click",
+      "control",
       "cursor",
       "follow",
       "general",
       "mouse",
-      "open",
+      "opens",
       "panel",
       "popout",
-      "popouts",
       "position",
       "statusbar",
       "taskbar",
-      "their",
       "topbar",
       "widget"
     ],
     "parentLabel": "Bar",
-    "description": "Anchored popouts open at the cursor instead of their widget"
+    "description": "The Control Center opens at the cursor instead of its widget"
   },
   {
     "section": "frameEnabled",
@@ -4123,11 +4122,13 @@
     "category": "General",
     "keywords": [
       "alert",
+      "always",
       "app drawer",
       "app menu",
       "applications",
       "bar",
       "center",
+      "clicks",
       "control",
       "control center",
       "dash",
@@ -4138,7 +4139,9 @@
       "launcher",
       "notif",
       "notification",
+      "open",
       "panel",
+      "popout",
       "routes",
       "routing",
       "shared",
@@ -4146,10 +4149,12 @@
       "start menu",
       "statusbar",
       "taskbar",
-      "topbar"
+      "their",
+      "topbar",
+      "widget"
     ],
     "parentLabel": "Bar",
-    "description": "Routes launcher, dash, control center and notification shortcuts",
+    "description": "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout",
     "conditionKey": "islandEnabled"
   },
   {
@@ -18023,11 +18028,13 @@
     "category": "Dot",
     "keywords": [
       "alert",
+      "always",
       "app drawer",
       "app menu",
       "applications",
       "bar",
       "center",
+      "clicks",
       "control",
       "control center",
       "dash",
@@ -18038,7 +18045,9 @@
       "launcher",
       "notif",
       "notification",
+      "open",
       "panel",
+      "popout",
       "routes",
       "routing",
       "shared",
@@ -18046,10 +18055,12 @@
       "start menu",
       "statusbar",
       "taskbar",
-      "topbar"
+      "their",
+      "topbar",
+      "widget"
     ],
     "parentLabel": "Bar",
-    "description": "Routes launcher, dash, control center and notification shortcuts",
+    "description": "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout",
     "conditionKey": "dotEnabled"
   },
   {

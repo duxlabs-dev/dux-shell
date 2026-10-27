@@ -15,6 +15,7 @@ Item {
     readonly property var timeoutOptions: timeoutValues.map(seconds => seconds === 0 ? I18n.tr("Never", "timeout option meaning the action never happens") : I18n.duration(seconds))
     readonly property var gracePeriodValues: [1, 2, 3, 4, 5, 10, 15, 20, 30]
     readonly property var gracePeriodOptions: gracePeriodValues.map(seconds => I18n.duration(seconds))
+    readonly property string managedNote: I18n.tr("Managed by administrator policy", "settings note: the administrator lock policy sets this value")
 
     function sourceKey(suffix) {
         return (onAc ? "ac" : "battery") + suffix;
@@ -70,6 +71,8 @@ Item {
                 settingKey: "lockTimeout"
                 tags: ["lock", "timeout", "idle", "automatic", "security"]
                 text: I18n.tr("Automatically lock after")
+                description: SettingsData.isManaged(root.sourceKey("LockTimeout")) ? root.managedNote : ""
+                enabled: !SettingsData.isManaged(root.sourceKey("LockTimeout"))
                 resetKeys: [root.sourceKey("LockTimeout")]
                 options: root.timeoutOptions
                 currentValue: root.timeoutText(root.sourceKey("LockTimeout"))
@@ -126,6 +129,8 @@ Item {
                 settingKey: "lockBeforeSuspend"
                 tags: ["lock", "suspend", "hibernate", "sleep", "security"]
                 text: I18n.tr("Lock before suspend")
+                description: SettingsData.isManaged("lockBeforeSuspend") ? root.managedNote : ""
+                enabled: !SettingsData.isManaged("lockBeforeSuspend")
                 checked: SettingsData.lockBeforeSuspend
                 visible: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
                 onToggled: checked => SettingsData.set("lockBeforeSuspend", checked)
@@ -143,7 +148,8 @@ Item {
                 settingKey: "fadeToLockEnabled"
                 tags: ["fade", "lock", "screen", "idle", "grace period"]
                 text: I18n.tr("Fade to lock screen")
-                description: I18n.tr("Fades the screen out first. Input during the fade cancels it", "idle fade toggle description")
+                description: SettingsData.isManaged("fadeToLockEnabled") ? root.managedNote : I18n.tr("Fades the screen out first. Input during the fade cancels it", "idle fade toggle description")
+                enabled: !SettingsData.isManaged("fadeToLockEnabled")
                 checked: SettingsData.fadeToLockEnabled
                 onToggled: checked => SettingsData.set("fadeToLockEnabled", checked)
             }
@@ -152,6 +158,8 @@ Item {
                 settingKey: "fadeToLockGracePeriod"
                 tags: ["fade", "grace", "period", "timeout", "lock"]
                 text: I18n.tr("Lock fade grace period")
+                description: SettingsData.isManaged("fadeToLockGracePeriod") ? root.managedNote : ""
+                enabled: !SettingsData.isManaged("fadeToLockGracePeriod")
                 visible: SettingsData.fadeToLockEnabled
                 options: root.gracePeriodOptions
                 currentValue: root.gracePeriodText("fadeToLockGracePeriod")
@@ -453,6 +461,8 @@ Item {
                     tags: ["power", "command", "override", modelData.label]
                     text: modelData.label
                     leftIconName: modelData.icon
+                    description: SettingsData.isManaged(modelData.key) ? root.managedNote : ""
+                    enabled: !SettingsData.isManaged(modelData.key)
                     value: SettingsData[modelData.key] || ""
                     placeholderText: modelData.placeholder
                     onValueEdited: value => SettingsData.set(modelData.key, value.trim())

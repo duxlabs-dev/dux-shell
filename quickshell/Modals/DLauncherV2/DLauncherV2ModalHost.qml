@@ -103,7 +103,8 @@ Item {
     readonly property int baseHeight: LauncherMetrics.sizeHeight(_dmenuSizeOverride || SettingsData.dankLauncherV2Size)
     readonly property real _contentImplicitH: launcherContentLoader.item?.implicitHeight ?? LauncherMetrics.pillHeight
     readonly property int modalWidth: Math.min(spotlight ? (_dmenuSizeOverride ? LauncherMetrics.sizeWidth(_dmenuSizeOverride) : LauncherMetrics.spotlightWidth) : baseWidth, screenWidth - LauncherMetrics.screenMargin)
-    readonly property int modalHeight: spotlight ? _contentImplicitH : Math.min(baseHeight, screenHeight - LauncherMetrics.screenMargin)
+    readonly property int clampedBaseHeight: Math.min(baseHeight, screenHeight - LauncherMetrics.screenMargin)
+    readonly property int modalHeight: spotlight ? _contentImplicitH : clampedBaseHeight - (launcherContentLoader.item?.surplusHeight ?? 0)
 
     readonly property string preferredConnectedBarSide: SettingsData.frameLauncherEmergeSide
 
@@ -896,6 +897,7 @@ Item {
             focus: true
             parentModal: root
             transientSurfaceTracker: transientSurfaces
+            baseHeight: root.clampedBaseHeight
         }
     }
 

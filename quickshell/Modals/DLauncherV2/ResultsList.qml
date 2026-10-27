@@ -32,6 +32,23 @@ Item {
 
     readonly property real contentHeight: _visualModel.height
     readonly property int pageRows: Math.max(1, Math.floor(height / (LauncherMetrics.rowHeight + LauncherMetrics.rowGap)))
+    property real availableHeight: 0
+    readonly property real fittedHeight: {
+        const rows = _visualModel.rows;
+        const starts = _visualModel.heights;
+        const inset = bottomSectionHeader.visible ? bottomSectionHeader.height + LauncherMetrics.resultsGap : 0;
+        const viewport = availableHeight - inset;
+        if (rows.length === 0 || _visualModel.height <= viewport + 1)
+            return availableHeight;
+        let fitted = 0;
+        for (let i = 0; i < rows.length; i++) {
+            const bottom = starts[i] + rows[i].height;
+            if (bottom > viewport + 1)
+                break;
+            fitted = bottom;
+        }
+        return fitted > 0 ? fitted + inset : availableHeight;
+    }
 
     signal itemRightClicked(int index, var item, real mouseX, real mouseY)
 

@@ -232,7 +232,6 @@ Item {
         anchors.top: parent.top
         anchors.leftMargin: sideInset
         anchors.rightMargin: sideInset
-        height: SettingsMetrics.searchBarHeight
         placeholderText: I18n.tr("Search settings", "settings search field placeholder")
         rightAccessoryWidth: avatarButton.visible ? avatarButton.width + Theme.spacingXS : 0
         onFocusStateChanged: hasFocus => {
@@ -317,7 +316,7 @@ Item {
             id: avatarButton
 
             anchors.right: parent.right
-            anchors.rightMargin: (SettingsMetrics.searchBarHeight - buttonSize) / 2
+            anchors.rightMargin: (searchField.height - buttonSize) / 2
             anchors.verticalCenter: parent.verticalCenter
             visible: !root.searchActive
             buttonSize: Theme.avatarSize

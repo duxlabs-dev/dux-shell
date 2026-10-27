@@ -1366,6 +1366,14 @@ Item {
             // An idle layer surface won't commit the cleared blur region on auto-close; pulse updatesEnabled to force it.
             property bool blurCommitSuppress: false
 
+            readonly property bool popoutShown: root.shouldBeVisible
+            // The idle surface never commits the emptied input region on close without a frame.
+            onPopoutShownChanged: {
+                if (popoutShown || !backgroundWindow.visible)
+                    return;
+                holdCommits();
+            }
+
             function show() {
                 if (required)
                     backgroundWindow.visible = true;

@@ -1,12 +1,14 @@
 package dbus
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"strings"
 
 	"github.com/duxlabs-dev/dux-go/dbusutil"
+	"github.com/duxlabs-dev/dux-go/ipc"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/godbus/dbus/v5"
 )
@@ -188,7 +190,7 @@ func (m *Manager) ListNames(bus string) (*ListNamesResult, error) {
 	return &ListNamesResult{Names: names}, nil
 }
 
-func (m *Manager) Subscribe(clientID, bus, sender, path, iface, member string) (*SubscribeResult, error) {
+func (m *Manager) Subscribe(owner *ipc.ConnWriter, clientID, bus, sender, path, iface, member string) (*SubscribeResult, error) {
 	conn, err := m.getConn(bus)
 	if err != nil {
 		return nil, err
@@ -223,6 +225,7 @@ func (m *Manager) Subscribe(clientID, bus, sender, path, iface, member string) (
 		Interface: iface,
 		Member:    member,
 		ClientID:  clientID,
+		Owner:     owner,
 	}
 	m.subscriptions.Store(subID, sub)
 
@@ -267,10 +270,23 @@ func (m *Manager) Unsubscribe(subID string) error {
 	return nil
 }
 
-func (m *Manager) UnsubscribeClient(clientID string) {
+// Match rules live as long as the request connection that added them, not the
+// subscribe socket, which the shell re-dials whenever its service list changes.
+func (m *Manager) ReleaseOnClose(ctx context.Context, owner *ipc.ConnWriter) {
+	if _, loaded := m.owners.LoadOrStore(owner, struct{}{}); loaded {
+		return
+	}
+	go func() {
+		<-ctx.Done()
+		m.owners.Delete(owner)
+		m.unsubscribeOwner(owner)
+	}()
+}
+
+func (m *Manager) unsubscribeOwner(owner *ipc.ConnWriter) {
 	var toDelete []string
 	m.subscriptions.Range(func(subID string, sub *signalSubscription) bool {
-		if sub.ClientID == clientID {
+		if sub.Owner == owner {
 			toDelete = append(toDelete, subID)
 		}
 		return true
@@ -281,20 +297,23 @@ func (m *Manager) UnsubscribeClient(clientID string) {
 	}
 }
 
+// A re-dialed subscribe socket can register before the old one tears down, so
+// the old release must only drop the channel it created. Channels are never
+// closed here because dispatchSignal may be mid-send on another goroutine.
 func (m *Manager) SubscribeSignals(clientID string) chan SignalEvent {
 	ch := make(chan SignalEvent, 64)
-	existing, loaded := m.signalSubscribers.LoadOrStore(clientID, ch)
-	if loaded {
-		return existing
-	}
+	m.subscribersMu.Lock()
+	m.signalSubscribers.Store(clientID, ch)
+	m.subscribersMu.Unlock()
 	return ch
 }
 
-func (m *Manager) UnsubscribeSignals(clientID string) {
-	if ch, ok := m.signalSubscribers.LoadAndDelete(clientID); ok {
-		close(ch)
+func (m *Manager) UnsubscribeSignals(clientID string, ch chan SignalEvent) {
+	m.subscribersMu.Lock()
+	defer m.subscribersMu.Unlock()
+	if current, ok := m.signalSubscribers.Load(clientID); ok && current == ch {
+		m.signalSubscribers.Delete(clientID)
 	}
-	m.UnsubscribeClient(clientID)
 }
 
 func (m *Manager) processSystemSignals() {

@@ -180,6 +180,46 @@ function blurRegions(descriptor, rect, radii, dpr) {
     return regions;
 }
 
+function _touchesEdge(rect, edges, edge) {
+    switch (edge) {
+    case "left":
+        return rect.x <= edges.left;
+    case "top":
+        return rect.y <= edges.top;
+    case "right":
+        return rect.x + rect.width >= edges.right;
+    default:
+        return rect.y + rect.height >= edges.bottom;
+    }
+}
+
+function bandPaddedRect(rect, pad, edges, side) {
+    var out = {
+        "x": Math.round(_number(rect.x, 0)),
+        "y": Math.round(_number(rect.y, 0)),
+        "width": Math.round(_number(rect.width, 0)),
+        "height": Math.round(_number(rect.height, 0))
+    };
+    if (!(pad > 0) || out.width <= 0 || out.height <= 0)
+        return out;
+    var touches = function (edge) {
+        return side ? side === edge : _touchesEdge(out, edges, edge);
+    };
+    if (touches("left")) {
+        out.x -= pad;
+        out.width += pad;
+    }
+    if (touches("top")) {
+        out.y -= pad;
+        out.height += pad;
+    }
+    if (touches("right"))
+        out.width += pad;
+    if (touches("bottom"))
+        out.height += pad;
+    return out;
+}
+
 function unionBounds(rects, padding, dpr) {
     var minX = Infinity;
     var minY = Infinity;
@@ -195,7 +235,12 @@ function unionBounds(rects, padding, dpr) {
         maxY = Math.max(maxY, rect.y + rect.height);
     }
     if (minX === Infinity)
-        return {"x": 0, "y": 0, "width": 0, "height": 0};
+        return {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+        };
     var pad = Math.max(0, _number(padding, 0));
     return {
         "x": snap(minX - pad, dpr),

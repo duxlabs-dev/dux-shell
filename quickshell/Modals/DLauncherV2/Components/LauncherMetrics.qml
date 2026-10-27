@@ -23,6 +23,7 @@ Singleton {
     readonly property real previewWidth: Theme.listItemHeight
     readonly property real previewHeight: Theme.avatarSize
     readonly property real footerHeight: Theme.buttonHeightXS
+    readonly property real chromeHeight: Theme.spacingM + pillHeight + resultsGap + footerHeight
     readonly property real modeChipHeight: Theme.buttonHeightXS - Theme.spacingXS * 2
     readonly property int maxVisibleRows: Theme.launcherMaxVisibleRows
     readonly property real maxResultsHeight: maxVisibleRows * (rowHeight + rowGap) + sectionBand
@@ -53,17 +54,21 @@ Singleton {
         }
     }
 
-    function sizeHeight(size) {
+    function sizeRows(size) {
         switch (size) {
         case "micro":
-            return Theme.smallBreakpoint;
+            return 6;
         case "medium":
-            return Theme.launcherWidthWide;
+            return 10;
         case "large":
-            return Theme.launcherWidthLarge;
+            return 13;
         default:
-            return Theme.launcherHeightDefault;
+            return 8;
         }
+    }
+
+    function sizeHeight(size) {
+        return chromeHeight + sectionBand + sizeRows(size) * (rowHeight + rowGap);
     }
 
     function spotlightRadius(width) {
