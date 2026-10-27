@@ -20,6 +20,7 @@ BasePill {
                 anchors.centerIn: parent
                 name: "local_cafe"
                 size: Theme.barIconSize(root.barThickness, -4, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
+                filled: SessionService.idleInhibited
                 color: SessionService.idleInhibited ? inhibitColor : idleColor
             }
         }
