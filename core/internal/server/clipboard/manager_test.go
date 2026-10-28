@@ -3,6 +3,7 @@ package clipboard
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"image"
 	"image/png"
 	"net"
@@ -1089,4 +1090,60 @@ func TestApplyConfigChange_DisableReleasesDataDevice(t *testing.T) {
 	assert.Nil(t, m.dataDevice)
 	require.ErrorIs(t, m.CopyText("secret"), errSelectionUnavailable)
 	assert.Empty(t, m.GetHistory())
+}
+
+func TestTouchEntry_SurvivesTrimWhenHistoryFull(t *testing.T) {
+	m := newTestManagerWithDB(t)
+	m.config.MaxHistory = 3
+
+	for i := range 3 {
+		require.NoError(t, m.storeEntry(Entry{
+			Data:      []byte(fmt.Sprintf("entry-%d", i)),
+			MimeType:  "text/plain",
+			Timestamp: time.Now(),
+		}))
+	}
+
+	oldest := m.GetHistory()[2]
+	require.NoError(t, m.TouchEntry(oldest.ID))
+
+	// A new copy trims the bucket back to MaxHistory.
+	require.NoError(t, m.storeEntry(Entry{
+		Data:      []byte("newcomer"),
+		MimeType:  "text/plain",
+		Timestamp: time.Now(),
+	}))
+
+	history := m.GetHistory()
+	require.Len(t, history, 3)
+	ids := make([]uint64, len(history))
+	for i, e := range history {
+		ids[i] = e.ID
+	}
+	assert.Contains(t, ids, oldest.ID, "the touched row must survive trimming")
+	assert.Equal(t, oldest.ID, history[1].ID, "the touched row ranks second, behind the newer copy")
+}
+
+func TestGetHistory_SameSecondOrdersByID(t *testing.T) {
+	m := newTestManagerWithDB(t)
+	m.config.MaxHistory = 10
+
+	stamp := time.Now()
+	for i := range 3 {
+		require.NoError(t, m.storeEntry(Entry{
+			Data:      []byte(fmt.Sprintf("same-second-%d", i)),
+			MimeType:  "text/plain",
+			Timestamp: stamp,
+		}))
+	}
+
+	// Touching the oldest row rewrites it in place, so the bucket now yields
+	// it first even though every row shares a timestamp.
+	oldest := m.GetHistory()[2]
+	require.NoError(t, m.TouchEntry(oldest.ID))
+
+	history := m.GetHistory()
+	require.Len(t, history, 3)
+	assert.Equal(t, oldest.ID, history[0].ID, "the touched row must lead: its timestamp is newer")
+	assert.Greater(t, history[1].ID, history[2].ID, "rows still tied on timestamp break on newest id")
 }

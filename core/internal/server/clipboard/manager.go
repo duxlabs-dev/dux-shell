@@ -2,6 +2,7 @@ package clipboard
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -637,18 +638,27 @@ func (m *Manager) trimLengthInTx(b *bolt.Bucket) error {
 	if maxHistory < 0 {
 		return nil
 	}
+
+	type row struct {
+		key   []byte
+		entry Entry
+	}
+	var rows []row
 	c := b.Cursor()
-	var count int
-	for k, v := c.Last(); k != nil; k, v = c.Prev() {
+	for k, v := c.First(); k != nil; k, v = c.Next() {
 		entry, err := decodeEntryMeta(v)
-		if err == nil && entry.Pinned {
+		if err != nil || entry.Pinned {
 			continue
 		}
-		if count < maxHistory {
-			count++
-			continue
-		}
-		if err := b.Delete(k); err != nil {
+		rows = append(rows, row{slices.Clone(k), entry})
+	}
+
+	slices.SortFunc(rows, func(a, b row) int {
+		return compareEntriesNewestFirst(a.entry, b.entry)
+	})
+
+	for _, r := range rows[min(maxHistory, len(rows)):] {
+		if err := b.Delete(r.key); err != nil {
 			return err
 		}
 	}
@@ -666,7 +676,7 @@ func encodeEntry(e Entry) ([]byte, error) {
 	binary.Write(buf, binary.BigEndian, uint32(len(e.Preview)))
 	buf.WriteString(e.Preview)
 	binary.Write(buf, binary.BigEndian, int32(e.Size))
-	binary.Write(buf, binary.BigEndian, e.Timestamp.Unix())
+	binary.Write(buf, binary.BigEndian, e.Timestamp.UnixNano())
 	if e.IsImage {
 		buf.WriteByte(1)
 	} else {
@@ -732,7 +742,13 @@ func decodeEntryFields(data []byte, withData bool) (Entry, error) {
 
 	var timestamp int64
 	binary.Read(buf, binary.BigEndian, &timestamp)
-	e.Timestamp = time.Unix(timestamp, 0)
+	// Rows written before the switch to nanosecond precision hold seconds;
+	// no second-resolution stamp reaches 1e12 until the year 33658.
+	if timestamp < 1e12 {
+		e.Timestamp = time.Unix(timestamp, 0)
+	} else {
+		e.Timestamp = time.Unix(0, timestamp)
+	}
 
 	var isImage byte
 	binary.Read(buf, binary.BigEndian, &isImage)
@@ -1108,13 +1124,23 @@ func (m *Manager) GetHistory() []Entry {
 		go m.deleteStaleEntries(stale)
 	}
 
-	// Key order no longer tracks recency once TouchEntry rewrites a row in
-	// place to keep its id stable for the UI.
-	slices.SortFunc(history, func(a, b Entry) int {
-		return b.Timestamp.Compare(a.Timestamp)
-	})
+	sortEntriesNewestFirst(history)
 
 	return history
+}
+
+// sortEntriesNewestFirst orders by timestamp, falling back to id: TouchEntry
+// rewrites a row in place to keep its id stable, so bucket key order stops
+// tracking recency.
+func sortEntriesNewestFirst(entries []Entry) {
+	slices.SortFunc(entries, compareEntriesNewestFirst)
+}
+
+func compareEntriesNewestFirst(a, b Entry) int {
+	if c := b.Timestamp.Compare(a.Timestamp); c != 0 {
+		return c
+	}
+	return cmp.Compare(b.ID, a.ID)
 }
 
 func (m *Manager) deleteStaleEntries(ids []uint64) {
@@ -1252,7 +1278,9 @@ func (m *Manager) TouchEntry(id uint64) error {
 		return err
 	}
 
-	entry.Timestamp = time.Now()
+	// Round(0) drops the monotonic reading so the in-memory stamp compares the
+	// same way as the one decoded back from the bucket.
+	entry.Timestamp = time.Now().Round(0)
 
 	// storeEntry would dedupe the row against itself and hand out a fresh
 	// sequence number, invalidating the id the UI is still holding.
@@ -2221,6 +2249,8 @@ func (m *Manager) GetPinnedEntries() []Entry {
 	}); err != nil {
 		log.Errorf("Failed to get pinned entries: %v", err)
 	}
+
+	sortEntriesNewestFirst(pinned)
 
 	return pinned
 }
