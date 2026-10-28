@@ -119,9 +119,9 @@ Singleton {
             (entry.pinned ? pinned : unpinned).push(entry);
         }
 
-        const byIdDesc = (a, b) => b.id - a.id;
-        pinned.sort(byIdDesc);
-        unpinned.sort(byIdDesc);
+        const byTimestampDesc = (a, b) => new Date(b.timestamp) - new Date(a.timestamp);
+        pinned.sort(byTimestampDesc);
+        unpinned.sort(byTimestampDesc);
 
         pinnedEntries = pinned;
         unpinnedEntries = unpinned;

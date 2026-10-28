@@ -1108,6 +1108,12 @@ func (m *Manager) GetHistory() []Entry {
 		go m.deleteStaleEntries(stale)
 	}
 
+	// Key order no longer tracks recency once TouchEntry rewrites a row in
+	// place to keep its id stable for the UI.
+	slices.SortFunc(history, func(a, b Entry) int {
+		return b.Timestamp.Compare(a.Timestamp)
+	})
+
 	return history
 }
 
@@ -1248,7 +1254,20 @@ func (m *Manager) TouchEntry(id uint64) error {
 
 	entry.Timestamp = time.Now()
 
-	if err := m.storeEntry(*entry); err != nil {
+	// storeEntry would dedupe the row against itself and hand out a fresh
+	// sequence number, invalidating the id the UI is still holding.
+	err = m.dbUpdate(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("clipboard"))
+		if b == nil {
+			return fmt.Errorf("clipboard bucket missing")
+		}
+		encoded, err := encodeEntry(*entry)
+		if err != nil {
+			return err
+		}
+		return b.Put(itob(id), encoded)
+	})
+	if err != nil {
 		return err
 	}
 

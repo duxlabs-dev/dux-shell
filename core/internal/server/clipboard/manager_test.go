@@ -446,7 +446,9 @@ func TestUnpinEntry_KeepsTopUnpinnedDuplicate(t *testing.T) {
 
 	history = m.GetHistory()
 	require.Len(t, history, 3)
-	require.Equal(t, topHistoryDuplicate.ID, history[0].ID)
+	// GetHistory sorts by timestamp, so the newer row leads even though its
+	// id is lower.
+	require.Equal(t, olderHistoryDuplicate.ID, history[0].ID)
 	require.NoError(t, m.UnpinEntry(pinnedID))
 
 	history = m.GetHistory()
