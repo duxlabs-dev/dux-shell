@@ -186,7 +186,7 @@ Singleton {
         distributionPretty = data.distroPretty || "";
         distributionSupported = (backends.length > 0);
         recentLog = data.recentLog || [];
-        intervalSeconds = data.intervalSeconds || 86400;
+        intervalSeconds = data.intervalSeconds ?? 86400;
         const checked = data.lastCheckUnix || 0;
         const freshCheck = _stateSeeded && checked > lastCheckUnix;
         _stateSeeded = true;

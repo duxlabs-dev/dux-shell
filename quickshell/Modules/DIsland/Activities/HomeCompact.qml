@@ -284,7 +284,7 @@ Item {
             return;
         SessionData.suppressOSDTemporarily();
         const next = Math.max(BrightnessService.brightnessMinimum(root.brightnessDevice), Math.min(root.brightnessMaximum, BrightnessService.brightnessLevel + direction * 5));
-        BrightnessService.setBrightness(next, root.brightnessDevice.id, true);
+        BrightnessService.setGroupBrightness(next, BrightnessService.lastIpcTargets(), true);
     }
 
     function connectivityIconName(type) {

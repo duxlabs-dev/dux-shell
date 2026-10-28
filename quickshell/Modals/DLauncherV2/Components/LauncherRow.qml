@@ -19,7 +19,8 @@ DListItem {
     property real iconMaterialSizeAdjustment: Theme.spacingM
     property real iconUnicodeScale: Theme.fontSizeXLarge / Theme.iconSizeLarge
     property real iconSize: LauncherMetrics.iconSize
-    property bool showDescription: true
+    // Dense keeps file paths and setting categories: those names repeat across folders and pages
+    property bool showDescription: Theme.densityLevel > -2 || item?.type === "file" || item?.type === "setting"
     property var item: null
     property var controller: null
     property int flatIndex: -1

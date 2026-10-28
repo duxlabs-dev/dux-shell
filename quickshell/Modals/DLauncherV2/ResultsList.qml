@@ -31,7 +31,29 @@ Item {
     readonly property bool _bottomSectionHeaderActive: leadingSectionHeaderAtBottom && (controller?.sections?.length ?? 0) > 0
 
     readonly property real contentHeight: _visualModel.height
-    readonly property int pageRows: Math.max(1, Math.floor(height / (LauncherMetrics.rowHeight + LauncherMetrics.rowGap)))
+    readonly property int _densityLevel: Theme.densityLevel
+    readonly property int pageRows: Math.max(1, Math.floor((height - LauncherMetrics.fadeLength) / (LauncherMetrics.rowHeight + LauncherMetrics.rowGap)))
+    property real availableHeight: 0
+    property bool fitGridRows: false
+    // Set while the host animates height, so fitted cells settle once instead of every frame
+    property bool resizing: false
+    readonly property real fittedHeight: {
+        const rows = _visualModel.rows;
+        const starts = _visualModel.heights;
+        const inset = bottomSectionHeader.visible ? bottomSectionHeader.height + LauncherMetrics.resultsGap : 0;
+        const viewport = availableHeight - inset;
+        if (rows.length === 0 || _visualModel.height <= viewport + 1)
+            return availableHeight;
+        const limit = viewport - LauncherMetrics.fadeLength;
+        let fitted = 0;
+        for (let i = 0; i < rows.length; i++) {
+            const bottom = starts[i] + rows[i].height;
+            if (bottom > limit + 1)
+                break;
+            fitted = bottom;
+        }
+        return fitted > 0 ? Math.min(viewport, fitted + LauncherMetrics.fadeLength) + inset : availableHeight;
+    }
 
     signal itemRightClicked(int index, var item, real mouseX, real mouseY)
 
@@ -42,6 +64,7 @@ Item {
         var indexMap = {};
         var cumHeights = [];
         var cumY = 0;
+        var hasGrid = false;
         const rowHeight = LauncherMetrics.rowHeight + LauncherMetrics.rowGap;
         const sectionBand = LauncherMetrics.sectionBand;
         const sectionGap = LauncherMetrics.resultsGap;
@@ -105,9 +128,16 @@ Item {
                     cumY += rowHeight;
                 }
             } else {
+                hasGrid = hasGrid || mode === "grid";
                 var cols = root.controller?.getGridColumns(sectionId) ?? root.gridColumns;
                 var cellWidth = Math.floor(root.width / cols);
                 var cellHeight = mode === "tile" ? cellWidth * LauncherMetrics.tileImageRatio : cellWidth + LauncherMetrics.tileLabelHeight;
+                var gridSpace = root.height - sectionBand - LauncherMetrics.fadeLength;
+                if (root.fitGridRows && mode === "grid" && gridSpace > 0) {
+                    // Never aim below what the icon and label need
+                    var target = Math.max(cellHeight * LauncherMetrics.gridDensityScale, Math.min(cellHeight, LauncherMetrics.tileMinHeight));
+                    cellHeight = gridSpace / Math.max(1, Math.round(gridSpace / target));
+                }
                 var numRows = Math.ceil(items.length / cols);
 
                 for (var r = 0; r < numRows; r++) {
@@ -142,7 +172,8 @@ Item {
             rows: rows,
             indexMap: indexMap,
             heights: cumHeights,
-            height: cumY
+            height: cumY,
+            hasGrid: hasGrid
         };
     }
 
@@ -173,7 +204,29 @@ Item {
 
     onGridColumnsChanged: rebuildTimer.restart()
     onWidthChanged: rebuildTimer.restart()
+    onHeightChanged: _settleHeight()
+    onResizingChanged: _settleHeight()
+
+    // Only fitted grid cells depend on height
+    function _settleHeight() {
+        if (!fitGridRows || resizing)
+            return;
+        if (_visualModel.hasGrid)
+            rebuildTimer.restart();
+        else
+            selectionTimer.restart();
+    }
     onLeadingSectionHeaderAtBottomChanged: rebuildTimer.restart()
+    // ScriptModel keeps rows whose _rowId matches, so their stale heights must be dropped first
+    on_DensityLevelChanged: {
+        root._visualModel = {
+            rows: [],
+            indexMap: {},
+            heights: [],
+            height: 0
+        };
+        rebuildTimer.restart();
+    }
 
     Connections {
         target: root.controller
@@ -288,6 +341,7 @@ Item {
             width: parent.width
             height: parent.height + listClip.anchors.topMargin
             fadeTopInset: listClip.anchors.topMargin
+            fadeLength: LauncherMetrics.fadeLength
             clip: true
             scrollBarTopMargin: (root.controller?.sections?.length > 0) ? LauncherMetrics.sectionBand : 0
 

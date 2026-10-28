@@ -21,8 +21,7 @@ DContextMenu {
     readonly property real iconSpacing: Theme.spacingXXS
     readonly property int cols: Math.min(5, Math.max(1, hiddenItems.length))
 
-    // DContextMenu has flickable margins Theme.spacingS on both sides
-    customContentWidth: cols * itemSize + (cols - 1) * iconSpacing + Theme.spacingS * 2
+    customContentWidth: cols * itemSize + (cols - 1) * iconSpacing + menuPadding * 2
 
     function openAt(targetX, targetY, screen, edge) {
         root.menuEdge = edge || "top";

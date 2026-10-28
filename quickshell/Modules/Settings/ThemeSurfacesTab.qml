@@ -78,6 +78,50 @@ Column {
 
     SettingsCard {
         tab: "theme"
+        title: I18n.tr("Appearance")
+        settingKey: "surfaceAppearance"
+
+        SettingsButtonGroupRow {
+            tab: "theme"
+            tags: ["style", "classic", "expressive", "pill", "round", "shape", "morph", "corners", "buttons"]
+            settingKey: "interfaceStyle"
+            text: I18n.tr("Style")
+            model: [I18n.tr("Expressive"), I18n.tr("Classic", "interface style option with one corner radius on controls and no shape change on press")]
+            values: ["expressive", "classic"]
+            value: SettingsData.interfaceStyle
+            fallbackValue: "expressive"
+            onValueSelected: value => SettingsData.set("interfaceStyle", value)
+        }
+
+        SettingsButtonGroupRow {
+            tab: "theme"
+            tags: ["density", "compact", "dense", "spacious", "comfortable", "spacing", "padding", "rows", "menus", "control center", "bar", "dock", "island", "frame", "size"]
+            settingKey: "density"
+            text: I18n.tr("Interface density", "interface density setting label")
+            model: [I18n.tr("Spacious", "interface density option with the most room between items"), I18n.tr("Comfortable", "interface density option with the default spacing"), I18n.tr("Compact", "interface density option fitting the most items on screen"), I18n.tr("Dense", "interface density option denser than compact for small text and tight rows")]
+            values: ["spacious", "comfortable", "compact", "dense"]
+            value: SettingsData.density
+            fallbackValue: "comfortable"
+            onValueSelected: value => SettingsData.set("density", value)
+        }
+
+        SettingsSliderRow {
+            tab: "theme"
+            tags: ["classic", "divider", "dividers", "lines", "rows", "sections", "sidebar", "outline"]
+            settingKey: "sectionDividerOpacity"
+            visible: SettingsData.interfaceStyle === "classic"
+            text: I18n.tr("Section dividers", "classic interface style: strength of the lines between rows of a settings section")
+            minimumLabel: I18n.tr("Off")
+            minimum: 0
+            maximum: 40
+            step: 1
+            value: Math.round((SettingsData.sectionDividerOpacity ?? 0) * 100)
+            onSliderValueChanged: newValue => SettingsData.set("sectionDividerOpacity", newValue / 100)
+        }
+    }
+
+    SettingsCard {
+        tab: "theme"
         tags: ["surface", "popup", "transparency", "opacity", "modal", "corner", "radius", "blur", "background", "glass", "frosted", "shadow", "elevation", "foreground", "layers"]
         title: I18n.tr("Surfaces", "plural noun, settings title, shell surfaces like popouts and modals")
         settingKey: "surfaceStyling"
@@ -260,7 +304,7 @@ Column {
             tags: ["corner", "radius", "rounded", "square", "fixed", "material", "shape"]
             settingKey: "radiusMode"
             text: I18n.tr("Corner style")
-            model: [I18n.tr("Material scale", "corner style: Material shape scale with a strength slider"), I18n.tr("Fixed", "corner style: one radius for every corner")]
+            model: [I18n.tr("Material", "corner style: Material shape scale with a strength slider"), I18n.tr("Fixed", "corner style: one radius for every corner")]
             currentIndex: SettingsData.radiusMode === "fixed" ? 1 : 0
             onSelectionChanged: (index, selected) => {
                 if (selected)

@@ -13,11 +13,11 @@ Rectangle {
     signal toggled
 
     readonly property color contentColor: enabled ? (pinned ? Theme.onSecondaryContainer : Theme.onSurfaceVariant) : Theme.onSurface_38
-    readonly property real restRadius: Math.min(pinned ? Theme.cornerRadiusXL : Theme.cornerRadiusM, height / 2)
+    readonly property real restRadius: Math.min(pinned && Theme.shapeMorph ? Theme.cornerRadiusXL : Theme.cornerRadiusM, height / 2)
 
     height: Theme.buttonHeightXS
     width: iconOnly ? height : content.implicitWidth + Theme.spacingM * 2
-    radius: layer.pressed ? Math.min(Theme.cornerRadiusS, height / 2) : restRadius
+    radius: layer.pressed && Theme.shapeMorph ? Math.min(Theme.cornerRadiusS, height / 2) : restRadius
     color: pinned ? Theme.secondaryContainer : "transparent"
     border.width: pinned ? 0 : Theme.outlineWidth
     border.color: Theme.outlineVariant

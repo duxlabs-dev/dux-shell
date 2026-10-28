@@ -419,7 +419,7 @@ Item {
         }
 
         function close(): string {
-            const islandClosed = SettingsData.islandDashActivities.filter(activity => PopoutService.closeIslandActivity(activity)).length > 0;
+            const islandClosed = [...SettingsData.islandDashActivities, "wellbeing"].filter(activity => PopoutService.closeIslandActivity(activity)).length > 0;
             if (root.dankDashPopoutLoaderRef.item)
                 root.dankDashPopoutLoaderRef.item.dashVisible = false;
             return islandClosed || root.dankDashPopoutLoaderRef.item ? "DASH_CLOSE_SUCCESS" : "DASH_CLOSE_FAILED";
@@ -1104,7 +1104,9 @@ Item {
         function set(key: string, value: string): string {
             if (AdminPolicy.disableSettingsIpcSet)
                 return "SETTINGS_SET_DISABLED";
-            if (!(key in SettingsData)) {
+            if (SettingsData.isManaged(key))
+                return "SETTINGS_SET_MANAGED";
+            if (!SettingsData.hasSetting(key)) {
                 log.warn("Cannot set property, not found:", key);
                 return "SETTINGS_INVALID_KEY";
             }
@@ -1139,8 +1141,8 @@ Item {
                 }
 
                 log.warn("Setting:", key, value);
-                SettingsData[key] = value;
-                SettingsData.saveSettings();
+                if (!SettingsData.set(key, value))
+                    throw `${value} is not a valid ${key}`;
                 return "SETTINGS_SET_SUCCESS";
             } catch (e) {
                 log.warn("Failed to set property:", key, "error:", e);

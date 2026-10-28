@@ -73,7 +73,6 @@ FocusScope {
 
     Component.onCompleted: {
         WeatherService.addRef();
-        UserInfoService.getUserInfo();
 
         lockerReadyArmed = true;
     }

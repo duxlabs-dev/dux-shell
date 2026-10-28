@@ -6,10 +6,10 @@
     "%1 (+%2 more)": "%1（另有 %2 项）"
   },
   "%1 DMS bind may be overridden by config binds that come after the include.": {
-    "%1 DMS bind may be overridden by config binds that come after the include.": "%1 个 DMS 绑定可能被 include 之后的配置绑定覆盖。"
+    "%1 DMS bind may be overridden by config binds that come after the include.": "%1 个 Dux 绑定可能被 include 之后的配置绑定覆盖。"
   },
   "%1 DMS binds may be overridden by config binds that come after the include.": {
-    "%1 DMS binds may be overridden by config binds that come after the include.": "%1 个 DMS 绑定可能被 include 之后的配置绑定覆盖。"
+    "%1 DMS binds may be overridden by config binds that come after the include.": "%1 个 Dux 绑定可能被 include 之后的配置绑定覆盖。"
   },
   "%1 Flatpak": {
     "%1 Flatpak": "%1 个 Flatpak 更新"
@@ -114,13 +114,13 @@
     "%1 is %2 and may use a lot of memory.": "%1 大小为 %2，打开后可能占用大量内存。"
   },
   "%1 is not installed. Install the package to manage the greeter.": {
-    "%1 is not installed. Install the package to manage the greeter.": ""
+    "%1 is not installed. Install the package to manage the greeter.": "%1 尚未安装。请安装该软件包以管理登录界面。"
   },
   "%1 is now included in config": {
     "%1 is now included in config": "%1 现在已被你的合成器配置引用"
   },
   "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": {
-    "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": ""
+    "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": "%1 正在运行，会创建重复的蓝牙播放器。请通过以下方式停用它：%2"
   },
   "%1 issue found": {
     "%1 issue found": "发现 %1 个问题"
@@ -153,16 +153,16 @@
     "%1 ms": "%1 毫秒"
   },
   "%1 not available": {
-    "%1 not available": ""
+    "%1 not available": "%1 不可用"
   },
   "%1 not available - lock integration requires the DMS socket connection": {
-    "%1 not available - lock integration requires the DMS socket connection": ""
+    "%1 not available - lock integration requires the DMS socket connection": "%1 不可用 - 锁屏集成需要 Dux socket 连接"
   },
   "%1 not available or disabled - cannot apply %2 colors": {
-    "%1 not available or disabled - cannot apply %2 colors": ""
+    "%1 not available or disabled - cannot apply %2 colors": "%1 不可用或已停用 - 无法应用 %2 颜色"
   },
   "%1 not found": {
-    "%1 not found": ""
+    "%1 not found": "未找到 %1"
   },
   "%1 notifications": {
     "%1 notifications": "%1 条通知"
@@ -171,7 +171,7 @@
     "%1 online": "%1 在线"
   },
   "%1 only": {
-    "%1 only": ""
+    "%1 only": "仅支持 %1"
   },
   "%1 other": {
     "%1 other": "另有 %1 项"
@@ -192,7 +192,7 @@
     "%1 printers": "%1 台打印机"
   },
   "%1 procs": {
-    "%1 procs": ""
+    "%1 procs": "%1 进程"
   },
   "%1 second": {
     "%1 second": "%1 秒"
@@ -204,7 +204,7 @@
     "%1 tasks": "%1 项任务"
   },
   "%1 uninstalled": {
-    "%1 uninstalled": ""
+    "%1 uninstalled": "%1 未安装"
   },
   "%1 update": {
     "%1 update": "%1 个更新"
@@ -236,11 +236,17 @@
   "%1: %2": {
     "%1: %2": "%1: %2"
   },
+  "%1d ago": {
+    "%1d ago": ""
+  },
   "%1h": {
     "%1h": "%1 小时"
   },
   "%1h %2m": {
     "%1h %2m": "%1 小时 %2 分"
+  },
+  "%1h ago": {
+    "%1h ago": ""
   },
   "%1m": {
     "%1m": "%1 分"
@@ -255,13 +261,16 @@
     "(Unnamed)": "（未命名）"
   },
   "(exit %1)": {
-    "(exit %1)": ""
+    "(exit %1)": "（%1 已退出）"
   },
   "+ %1 more": {
     "+ %1 more": "+ %1 个更多"
   },
   "+%1 conditions": {
-    "+%1 conditions": ""
+    "+%1 conditions": "+%1 个条件"
+  },
+  "1 hour before": {
+    "1 hour before": ""
   },
   "1 notification": {
     "1 notification": "1 条通知"
@@ -291,10 +300,10 @@
     "A floating companion that works alongside any bar layout": "可搭配任意状态栏布局使用的悬浮球"
   },
   "A modern desktop shell for Wayland": {
-    "A modern desktop shell for Wayland": ""
+    "A modern desktop shell for Wayland": "一款面向 Wayland 的现代桌面外壳"
   },
   "A newer dms binary is installed.": {
-    "A newer dms binary is installed.": "已安装更新版本的 dms 程序。"
+    "A newer dms binary is installed.": "已安装更新版本的 Dux 程序。"
   },
   "A notification must match every condition": {
     "A notification must match every condition": "通知必须匹配所有条件"
@@ -363,7 +372,7 @@
     "Activate Greeter": "激活登录界面"
   },
   "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.": {
-    "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.": "要激活 DMS 登录界面吗？将打开终端进行 sudo 认证。激活后运行“同步”以应用你的设置。"
+    "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.": "要激活 Dux 登录界面吗？将打开终端进行 sudo 认证。激活后运行“同步”以应用你的设置。"
   },
   "Activates immediately": {
     "Activates immediately": "立即生效"
@@ -408,7 +417,7 @@
     "Add \"%1\" to the %2 group?": "将“%1”添加到 %2 组吗？"
   },
   "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": {
-    "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": ""
+    "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": "要将“%1”添加到 %2 组吗？该用户需注销并重新登录，然后运行 %3 才能发布其登录界面主题。"
   },
   "Add Desktop Widget": {
     "Add Desktop Widget": "添加桌面部件"
@@ -477,13 +486,13 @@
     "Added in front of every app launch command": "添加到每个应用启动命令的开头"
   },
   "Adds a compositor window rule so DMS windows such as Settings open floating": {
-    "Adds a compositor window rule so DMS windows such as Settings open floating": "添加合成器窗口规则，让设置等 DMS 窗口以浮动方式打开"
+    "Adds a compositor window rule so DMS windows such as Settings open floating": "添加合成器窗口规则，让设置等 Dux 窗口以浮动方式打开"
   },
   "Adds concave curves where the bar meets the screen edge": {
     "Adds concave curves where the bar meets the screen edge": "在状态栏与屏幕边缘的连接处添加内凹曲线"
   },
   "Adds them to the %1 group so they can run %2": {
-    "Adds them to the %1 group so they can run %2": ""
+    "Adds them to the %1 group so they can run %2": "将该用户加入 %1 组，以便其运行 %2。"
   },
   "Adds them to the %1 group so they can use sudo": {
     "Adds them to the %1 group so they can use sudo": "将其添加到 %1 组，以便使用 sudo"
@@ -531,7 +540,7 @@
     "All displays": "所有显示器"
   },
   "All plugins": {
-    "All plugins": ""
+    "All plugins": "所有插件"
   },
   "All settings": {
     "All settings": "全部设置"
@@ -564,10 +573,10 @@
     "Already on that session": "已在该会话中"
   },
   "Already upvoted, click again to remove": {
-    "Already upvoted, click again to remove": ""
+    "Already upvoted, click again to remove": "已点赞，再次点击取消点赞"
   },
   "Also runs the templates in your %1": {
-    "Also runs the templates in your %1": ""
+    "Also runs the templates in your %1": "还会运行你 %1 中的模板"
   },
   "Also saves the screenshot to disk": {
     "Also saves the screenshot to disk": "同时将截图保存到磁盘"
@@ -625,9 +634,6 @@
   },
   "Anchor": {
     "Anchor": "锚点"
-  },
-  "Anchored popouts open at the cursor instead of their widget": {
-    "Anchored popouts open at the cursor instead of their widget": "锚定弹出面板在光标处打开，而非在其部件处"
   },
   "Animation duration": {
     "Animation duration": "动画时长"
@@ -867,10 +873,10 @@
     "Authorize": "授权"
   },
   "Authorize pairing with %1": {
-    "Authorize pairing with %1": ""
+    "Authorize pairing with %1": "验证以与 %1 配对"
   },
   "Authorize service for %1": {
-    "Authorize service for %1": ""
+    "Authorize service for %1": "验证服务 %1"
   },
   "Auto": {
     "Auto": "自动"
@@ -1398,7 +1404,7 @@
     "Changes save to %1": "更改将保存到 %1"
   },
   "Changes volume and audio devices": {
-    "Changes volume and audio devices": ""
+    "Changes volume and audio devices": "调节音量与切换音频设备"
   },
   "Channel": {
     "Channel": "频道"
@@ -1508,6 +1514,9 @@
   "Classes": {
     "Classes": "类别"
   },
+  "Classic": {
+    "Classic": ""
+  },
   "Clear All": {
     "Clear All": "清空"
   },
@@ -1536,7 +1545,7 @@
     "Click 'Setup' to create %1 and add include to your compositor config.": "点击“设置”以创建 %1 配置，并添加引用至合成器配置文件。"
   },
   "Click Import to add a %1 or %2 file": {
-    "Click Import to add a %1 or %2 file": ""
+    "Click Import to add a %1 or %2 file": "点击“导入”以添加 %1 或 %2 文件"
   },
   "Click actions": {
     "Click actions": "点击操作"
@@ -1662,7 +1671,7 @@
     "Color space": "色彩空间"
   },
   "Color theme from DMS registry": {
-    "Color theme from DMS registry": "DMS 主题仓库的颜色主题"
+    "Color theme from DMS registry": "Dux 主题仓库的颜色主题"
   },
   "Colorful": {
     "Colorful": "彩色"
@@ -1687,6 +1696,9 @@
   },
   "Columns": {
     "Columns": "列数"
+  },
+  "Comfortable": {
+    "Comfortable": ""
   },
   "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": {
     "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": "逗号分隔的布局名称列表。留空以使用系统键盘设置。"
@@ -1770,7 +1782,7 @@
     "Confirm Display Changes": "确认显示器更改"
   },
   "Confirm passkey for %1": {
-    "Confirm passkey for %1": ""
+    "Confirm passkey for %1": "确认通行密钥 %1"
   },
   "Confirm password": {
     "Confirm password": "确认密码"
@@ -1818,7 +1830,7 @@
     "Connections and autoconnect": "连接和自动连接"
   },
   "Connects to the internet": {
-    "Connects to the internet": ""
+    "Connects to the internet": "连接网络"
   },
   "Consumes the key only when a dispatcher runs": {
     "Consumes the key only when a dispatcher runs": "仅在派发器运行时吞噬按键"
@@ -1845,10 +1857,10 @@
     "Controls": "播放控制"
   },
   "Controls media players": {
-    "Controls media players": ""
+    "Controls media players": "控制媒体播放器"
   },
   "Convert to DMS": {
-    "Convert to DMS": "导入到 DMS"
+    "Convert to DMS": "导入到 Dux"
   },
   "Cooldown": {
     "Cooldown": "冷却"
@@ -1866,7 +1878,7 @@
     "Copy": "复制"
   },
   "Copy %1": {
-    "Copy %1": ""
+    "Copy %1": "复制 %1"
   },
   "Copy Full Command": {
     "Copy Full Command": "复制完整命令"
@@ -2067,46 +2079,46 @@
     "DDC/CI monitor": "DDC/CI 监视器"
   },
   "DMS %1 available": {
-    "DMS %1 available": "DMS %1 已可用"
+    "DMS %1 available": "Dux %1 已可用"
   },
   "DMS Settings": {
-    "DMS Settings": "DMS 设置"
+    "DMS Settings": "Dux 设置"
   },
   "DMS Settings writes Lua keybinds. Add the DMS include so edits apply.": {
-    "DMS Settings writes Lua keybinds. Add the DMS include so edits apply.": "DMS 设置会写入 Lua 快捷键配置。请添加 DMS 的 include，修改才能生效。"
+    "DMS Settings writes Lua keybinds. Add the DMS include so edits apply.": "Dux 设置会写入 Lua 快捷键配置。请添加 Dux 的 include，修改才能生效。"
   },
   "DMS Shortcuts": {
-    "DMS Shortcuts": "DMS 快捷键"
+    "DMS Shortcuts": "Dux 快捷键"
   },
   "DMS and system updates": {
-    "DMS and system updates": "DMS 与系统更新"
+    "DMS and system updates": "Dux 与系统更新"
   },
   "DMS chooser": {
-    "DMS chooser": "DMS 选择器"
+    "DMS chooser": "Dux 选择器"
   },
   "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.": {
-    "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.": ""
+    "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.": "Dux 是一款现代、高度可定制的桌面外壳。它不仅开箱即用、视觉优雅，同时兼具极高的自由度，让您能够全方位打造专属于自己的桌面。<br/><br/>它基于 %1 与 %2 构建，完美融合了面板、小部件、系统控制等组件，为您带来和谐统一的桌面交互体验。"
   },
   "DMS out of date": {
-    "DMS out of date": "DMS 版本过旧"
+    "DMS out of date": "Dux 版本过旧"
   },
   "DMS removes its managed block from %1 and stops write services": {
-    "DMS removes its managed block from %1 and stops write services": ""
+    "DMS removes its managed block from %1 and stops write services": "Dux 从 %1 移除托管块并停止写入服务"
   },
   "DMS server is outdated (API v%1, expected v%2)": {
-    "DMS server is outdated (API v%1, expected v%2)": "DMS 服务器版本过旧（API v%1，应为 v%2）"
+    "DMS server is outdated (API v%1, expected v%2)": "Dux 服务器版本过旧（API v%1，应为 v%2）"
   },
   "DMS service is not connected. Clipboard settings are unavailable.": {
-    "DMS service is not connected. Clipboard settings are unavailable.": "DMS 服务未连接。剪贴板设置不可用。"
+    "DMS service is not connected. Clipboard settings are unavailable.": "Dux 服务未连接。剪贴板设置不可用。"
   },
   "DMS shell actions (launcher, clipboard, etc.)": {
-    "DMS shell actions (launcher, clipboard, etc.)": "DMS Shell 操作（启动器、剪贴板等）"
+    "DMS shell actions (launcher, clipboard, etc.)": "Dux Shell 操作（启动器、剪贴板等）"
   },
   "DMS stops drawing wallpapers on every display": {
-    "DMS stops drawing wallpapers on every display": "DMS 停止在所有显示器上绘制壁纸"
+    "DMS stops drawing wallpapers on every display": "Dux 停止在所有显示器上绘制壁纸"
   },
   "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": {
-    "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": "DMS 使用字体系列、字重和缩放比例。具体字形、倾斜、宽度以及单独缩放的状态栏可能有所不同。"
+    "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": "Dux 使用字体系列、字重和缩放比例。具体字形、倾斜、宽度以及单独缩放的状态栏可能有所不同。"
   },
   "Daily": {
     "Daily": "每日"
@@ -2190,7 +2202,7 @@
     "Deck": "Deck"
   },
   "Declared by the author, not enforced": {
-    "Declared by the author, not enforced": ""
+    "Declared by the author, not enforced": "由作者声明，不强制执行"
   },
   "Default": {
     "Default": "默认"
@@ -2270,6 +2282,9 @@
   "Deletes all stored screen time": {
     "Deletes all stored screen time": "删除所有已保存的屏幕使用时间记录"
   },
+  "Dense": {
+    "Dense": ""
+  },
   "Dependencies & documentation": {
     "Dependencies & documentation": "依赖与文档"
   },
@@ -2322,7 +2337,7 @@
     "Dew point %1": "露点 %1"
   },
   "Did you mean": {
-    "Did you mean": ""
+    "Did you mean": "您是不是要找"
   },
   "Digital": {
     "Digital": "数字式"
@@ -2365,6 +2380,9 @@
   },
   "Disabled": {
     "Disabled": "已禁用"
+  },
+  "Disabled by Auto": {
+    "Disabled by Auto": ""
   },
   "Disabled by Click through": {
     "Disabled by Click through": "因开启“点击穿透”而禁用"
@@ -2505,7 +2523,7 @@
     "Dock": "Dock"
   },
   "Dock %1": {
-    "Dock %1": ""
+    "Dock %1": "Dock %1"
   },
   "Dock margin, opacity, and border": {
     "Dock margin, opacity, and border": "停靠栏边距、不透明度和边框"
@@ -2539,6 +2557,9 @@
   },
   "Don't change": {
     "Don't change": "不更改"
+  },
+  "Don't dim unfocused apps": {
+    "Don't dim unfocused apps": ""
   },
   "Door Open": {
     "Door Open": "打印机维护口已打开"
@@ -2586,7 +2607,7 @@
     "Drop here": "放置于此"
   },
   "Drop your override for %1 so the DMS default action re-applies?": {
-    "Drop your override for %1 so the DMS default action re-applies?": "删除 %1 的覆盖设置并重新应用 DMS 默认动作吗？"
+    "Drop your override for %1 so the DMS default action re-applies?": "删除 %1 的覆盖设置并重新应用 Dux 默认动作吗？"
   },
   "Drops": {
     "Drops": "水滴"
@@ -2616,16 +2637,16 @@
     "Dusk (Nautical Twilight)": "黄昏（航海暮光）"
   },
   "Dux Calendar": {
-    "Dux Calendar": ""
+    "Dux Calendar": "Dux Calendar"
   },
   "Dux Calendar isn't installed": {
-    "Dux Calendar isn't installed": ""
+    "Dux Calendar isn't installed": "Dux Calendar 尚未安装"
   },
   "Dux Calendar isn't running": {
-    "Dux Calendar isn't running": ""
+    "Dux Calendar isn't running": "Dux Calendar 未运行"
   },
   "Dux Greeter docs": {
-    "Dux Greeter docs": ""
+    "Dux Greeter docs": "Dux Greeter 文档"
   },
   "Dwindle": {
     "Dwindle": "Dwindle"
@@ -2766,7 +2787,7 @@
     "Enter PIN": "输入 PIN"
   },
   "Enter PIN for %1": {
-    "Enter PIN for %1": ""
+    "Enter PIN for %1": "输入 %1 的 PIN"
   },
   "Enter a new name for session \"%1": {
     "Enter a new name for session \"%1\"": "为会话“%1”设置新名称"
@@ -2775,7 +2796,7 @@
     "Enter a new name for this workspace": "为此工作区键入新名称"
   },
   "Enter credentials for %1": {
-    "Enter credentials for %1": ""
+    "Enter credentials for %1": "输入 %1 的凭据"
   },
   "Enter custom lock screen format (e.g., dddd, MMMM d)": {
     "Enter custom lock screen format (e.g., dddd, MMMM d)": "输入自定义锁屏格式（例如：dddd, MMMM d）"
@@ -2790,16 +2811,16 @@
     "Enter network name and password": "输入网络名称与密码"
   },
   "Enter passkey for %1": {
-    "Enter passkey for %1": ""
+    "Enter passkey for %1": "验证用于 %1 的通行密钥"
   },
   "Enter password for %1": {
-    "Enter password for %1": ""
+    "Enter password for %1": "输入 %1 的密码"
   },
   "Enter text to encode": {
     "Enter text to encode": "输入要编码的文本"
   },
   "Enter this passkey on %1": {
-    "Enter this passkey on %1": ""
+    "Enter this passkey on %1": "在 %1 上验证通行密钥"
   },
   "Enter to paste": {
     "Enter to paste": "按 Enter 粘贴"
@@ -2892,7 +2913,7 @@
     "Expressive": "生动"
   },
   "Extend %1 with powerful plugins for widgets, launchers, and more": {
-    "Extend %1 with powerful plugins for widgets, launchers, and more": ""
+    "Extend %1 with powerful plugins for widgets, launchers, and more": "利用功能强大的部件、启动器等插件，全方位扩展 %1"
   },
   "Extend battery life": {
     "Extend battery life": "延长电池寿命"
@@ -3059,6 +3080,9 @@
   "Failed to read theme file: %1": {
     "Failed to read theme file: %1": "读取主题文件失败：%1"
   },
+  "Failed to reboot to firmware setup": {
+    "Failed to reboot to firmware setup": ""
+  },
   "Failed to reload plugin: %1": {
     "Failed to reload plugin: %1": "重载插件失败：%1"
   },
@@ -3081,7 +3105,7 @@
     "Failed to resume printer": "恢复打印机失败"
   },
   "Failed to run '%1'. Ensure the %2 package is installed.": {
-    "Failed to run '%1'. Ensure the %2 package is installed.": ""
+    "Failed to run '%1'. Ensure the %2 package is installed.": "无法运行“%1”。请确保已安装 %2 软件包。"
   },
   "Failed to save VPN credentials": {
     "Failed to save VPN credentials": "保存 VPN 凭据失败"
@@ -3183,7 +3207,7 @@
     "Family": "字体系列"
   },
   "Featured plugin": {
-    "Featured plugin": ""
+    "Featured plugin": "官方精选插件"
   },
   "Feels Like %1°": {
     "Feels Like %1°": "体感 %1°"
@@ -3204,7 +3228,7 @@
     "File manager": "文件管理器"
   },
   "File search requires %1\nInstall from %2": {
-    "File search requires %1\nInstall from %2": ""
+    "File search requires %1\nInstall from %2": "文件搜索需要 %1\n从 %2 安装"
   },
   "File the command writes; leave empty to read stdout": {
     "File the command writes; leave empty to read stdout": "命令写入的文件；留空则读取标准输出"
@@ -3269,6 +3293,9 @@
   "Fires with any modifiers held": {
     "Fires with any modifiers held": "按住任意修饰键时也会触发"
   },
+  "Firmware setup": {
+    "Firmware setup": ""
+  },
   "First Time Setup": {
     "First Time Setup": "首次设置"
   },
@@ -3282,7 +3309,7 @@
     "Fits the song title instead of keeping a fixed width": "宽度随歌曲标题变化，不使用固定宽度"
   },
   "Fits your setup": {
-    "Fits your setup": ""
+    "Fits your setup": "与你的配置兼容"
   },
   "Fixed": {
     "Fixed": "固定"
@@ -3390,7 +3417,7 @@
     "Folders": "文件夹"
   },
   "Follow DMS background color": {
-    "Follow DMS background color": "遵循 DMS 背景颜色"
+    "Follow DMS background color": "遵循 Dux 背景颜色"
   },
   "Follow display focus": {
     "Follow display focus": "跟随显示器焦点"
@@ -3428,8 +3455,11 @@
   "For %1": {
     "For %1": "持续 %1"
   },
+  "For 1 hour": {
+    "For 1 hour": ""
+  },
   "For you": {
-    "For you": ""
+    "For you": "为你推荐"
   },
   "Force HDR": {
     "Force HDR": "强制 HDR"
@@ -3546,7 +3576,7 @@
     "GPU": "GPU"
   },
   "GPU %1": {
-    "GPU %1": ""
+    "GPU %1": "GPU %1"
   },
   "GPU Monitoring": {
     "GPU Monitoring": "GPU 监视"
@@ -3564,7 +3594,7 @@
     "GTK colors applied successfully": "GTK 配色已成功应用"
   },
   "GTK, Qt, portal, matugen templates": {
-    "GTK, Qt, portal, matugen templates": "GTK、Qt、门户和 Matugen 模板"
+    "GTK, Qt, portal, matugen templates": "GTK、Qt、桌面门户和 Matugen 模板"
   },
   "Games": {
     "Games": "游戏"
@@ -3573,13 +3603,13 @@
     "Gamma": "伽马"
   },
   "Gamma %1": {
-    "Gamma %1": ""
+    "Gamma %1": "伽马/亮度 %1"
   },
   "Gamma control": {
     "Gamma control": "伽马控制"
   },
   "Gamma control not available. Requires DMS API v6+.": {
-    "Gamma control not available. Requires DMS API v6+.": "伽马控制不可用，需要 DMS API v6+。"
+    "Gamma control not available. Requires DMS API v6+.": "伽马控制不可用，需要 Dux API v6+。"
   },
   "Gap": {
     "Gap": "间隙"
@@ -3612,7 +3642,7 @@
     "Generate Theme at Startup": "启动时生成主题"
   },
   "Generate baseline GTK3/4, QT5/QT6, or qtengine configurations to follow DMS colors (only qt6ct requires qt6ct-kde). Only needed once.<br /><br />It is recommended to configure %1 prior to applying GTK themes.": {
-    "Generate baseline GTK3/4, QT5/QT6, or qtengine configurations to follow DMS colors (only qt6ct requires qt6ct-kde). Only needed once.<br /><br />It is recommended to configure %1 prior to applying GTK themes.": "生成遵循 DMS 颜色的 GTK3/4、Qt 5/Qt 6 或 qtengine 基础配置（仅 qt6ct 需要 qt6ct-kde）。只需配置一次。<br /><br />建议在应用 GTK 主题前先配置 %1。"
+    "Generate baseline GTK3/4, QT5/QT6, or qtengine configurations to follow DMS colors (only qt6ct requires qt6ct-kde). Only needed once.<br /><br />It is recommended to configure %1 prior to applying GTK themes.": "生成遵循 Dux 颜色的 GTK3/4、Qt 5/Qt 6 或 qtengine 基础配置（仅 qt6ct 需要 qt6ct-kde）。只需配置一次。<br /><br />建议在应用 GTK 主题前先配置 %1。"
   },
   "Generate override": {
     "Generate override": "生成覆盖配置"
@@ -3735,7 +3765,7 @@
     "Health": "电池健康"
   },
   "Health %1": {
-    "Health %1": ""
+    "Health %1": "电池健康 %1"
   },
   "Heat shimmer": {
     "Heat shimmer": "热浪"
@@ -3804,7 +3834,7 @@
     "Hide installed": "隐藏已安装"
   },
   "Hide on last display": {
-    "Hide on last display": ""
+    "Hide on last display": "在上一个显示器上隐藏"
   },
   "Hide until typing": {
     "Hide until typing": "输入时显示"
@@ -3861,7 +3891,7 @@
     "History size, retention, paste behavior": "历史记录大小、保留时间和粘贴行为"
   },
   "Hold Ctrl, Alt or Super and press a key. Esc cancels.": {
-    "Hold Ctrl, Alt or Super and press a key. Esc cancels.": ""
+    "Hold Ctrl, Alt or Super and press a key. Esc cancels.": "按住 Ctrl、Alt 或 Super 键并按下任意键。按 Esc 取消。"
   },
   "Hold duration": {
     "Hold duration": "按住时长"
@@ -3915,7 +3945,7 @@
     "Hover popouts": "悬停弹出面板"
   },
   "How far terminal colors shift toward the wallpaper color": {
-    "How far terminal colors shift toward the wallpaper color": ""
+    "How far terminal colors shift toward the wallpaper color": "终端色彩随壁纸颜色的晕染程度"
   },
   "Hue": {
     "Hue": "色相"
@@ -3966,7 +3996,7 @@
     "IP address or hostname": "IP 地址或主机名"
   },
   "IP sharing setup failed. Check that %1 is installed.": {
-    "IP sharing setup failed. Check that %1 is installed.": ""
+    "IP sharing setup failed. Check that %1 is installed.": "IP 共享设置失败。请检查 %1 是否已安装。"
   },
   "ISO date": {
     "ISO date": "ISO 日期"
@@ -3984,7 +4014,7 @@
     "Icon spacing": "图标间距"
   },
   "Icon theme changed outside DMS; switched to System Default": {
-    "Icon theme changed outside DMS; switched to System Default": "图标主题在 DMS 之外变更，切换至系统默认"
+    "Icon theme changed outside DMS; switched to System Default": "图标主题在 Dux 之外变更，切换至系统默认"
   },
   "Icons": {
     "Icons": "图标"
@@ -4014,7 +4044,7 @@
     "Idle timeouts, power menu, custom actions": "空闲超时、电源菜单和自定义操作"
   },
   "If autostart app icons don't appear in the system tray, generate a systemd override to ensure DMS starts before autostart apps": {
-    "If autostart app icons don't appear in the system tray, generate a systemd override to ensure DMS starts before autostart apps": "如果自启动应用图标没有出现在系统托盘中，可生成一个 systemd override，确保 DMS 在这些自启动应用之前启动"
+    "If autostart app icons don't appear in the system tray, generate a systemd override to ensure DMS starts before autostart apps": "如果自启动应用图标没有出现在系统托盘中，可生成一个 systemd override，确保 Dux 在这些自启动应用之前启动"
   },
   "Ignore Completely": {
     "Ignore Completely": "完全忽略"
@@ -4179,22 +4209,22 @@
     "Install Theme": "安装主题"
   },
   "Install color themes from the DMS theme registry": {
-    "Install color themes from the DMS theme registry": "从 DMS 主题仓库安装颜色主题"
+    "Install color themes from the DMS theme registry": "从 Dux 主题仓库安装颜色主题"
   },
   "Install failed: %1": {
     "Install failed: %1": "安装失败：%1"
   },
   "Install plugin '%1' from the DMS registry?": {
-    "Install plugin '%1' from the DMS registry?": "要从 DMS 插件仓库安装插件 %1 吗？"
+    "Install plugin '%1' from the DMS registry?": "要从 Dux 插件仓库安装插件 %1 吗？"
   },
   "Install system updates?": {
     "Install system updates?": "安装系统更新吗？"
   },
   "Install the %1 package for dynamic theming": {
-    "Install the %1 package for dynamic theming": ""
+    "Install the %1 package for dynamic theming": "安装 %1 软件包用于动态主题"
   },
   "Install theme '%1' from the DMS registry?": {
-    "Install theme '%1' from the DMS registry?": "要从 DMS 主题仓库安装主题 %1 吗？"
+    "Install theme '%1' from the DMS registry?": "要从 Dux 主题仓库安装主题 %1 吗？"
   },
   "Install wallpaper": {
     "Install wallpaper": "安装壁纸"
@@ -4203,7 +4233,7 @@
     "Install wallpaper '%1'?": "要安装壁纸“%1”吗？"
   },
   "Installation and PAM setup are documented in the %1.": {
-    "Installation and PAM setup are documented in the %1.": ""
+    "Installation and PAM setup are documented in the %1.": "安装过程和 PAM 设置的文档参见 %1。"
   },
   "Installed": {
     "Installed": "已安装"
@@ -4235,6 +4265,9 @@
   "Interface": {
     "Interface": "网络接口"
   },
+  "Interface density": {
+    "Interface density": ""
+  },
   "Interface style": {
     "Interface style": "界面样式"
   },
@@ -4261,6 +4294,9 @@
   },
   "Invalid wallpaper layout": {
     "Invalid wallpaper layout": "壁纸布局无效"
+  },
+  "Inverse Surface": {
+    "Inverse Surface": ""
   },
   "Iridescence": {
     "Iridescence": "虹彩"
@@ -4446,7 +4482,7 @@
     "Launching": "启动方式"
   },
   "Layer namespace %1, needs a niri blur rule": {
-    "Layer namespace %1, needs a niri blur rule": ""
+    "Layer namespace %1, needs a niri blur rule": "层命名空间 %1，需要一个 Niri 模糊规则"
   },
   "Layer outline": {
     "Layer outline": "层轮廓"
@@ -4485,7 +4521,7 @@
     "Least Saturated": "最低饱和度"
   },
   "Leaves the overview when DMS launches an app or focuses a window": {
-    "Leaves the overview when DMS launches an app or focuses a window": "DMS 启动应用或聚焦窗口时退出概览"
+    "Leaves the overview when DMS launches an app or focuses a window": "Dux 启动应用或聚焦窗口时退出概览"
   },
   "Left": {
     "Left": "左侧"
@@ -4539,7 +4575,7 @@
     "Lightest": "最亮"
   },
   "Like your plugins": {
-    "Like your plugins": ""
+    "Like your plugins": "相似插件推荐"
   },
   "Limit": {
     "Limit": "时限"
@@ -4560,13 +4596,13 @@
     "Lines: %1": "行数：%1"
   },
   "Link copied": {
-    "Link copied": ""
+    "Link copied": "链接已复制"
   },
   "Link your DMS settings so the login screen follows them.": {
-    "Link your DMS settings so the login screen follows them.": "关联你的 DMS 设置，让登录界面跟随这些设置。"
+    "Link your DMS settings so the login screen follows them.": "关联你的 Dux 设置，让登录界面跟随这些设置。"
   },
   "Link your DMS settings so the login screen follows them. Administrator access is required.": {
-    "Link your DMS settings so the login screen follows them. Administrator access is required.": "关联你的 DMS 设置，让登录界面跟随这些设置。需要管理员权限。"
+    "Link your DMS settings so the login screen follows them. Administrator access is required.": "关联你的 Dux 设置，让登录界面跟随这些设置。需要管理员权限。"
   },
   "Linked": {
     "Linked": "已关联"
@@ -4712,6 +4748,9 @@
   "Managed by Nix": {
     "Managed by Nix": "由 Nix 管理"
   },
+  "Managed by administrator policy": {
+    "Managed by administrator policy": ""
+  },
   "Managed by the primary PAM source": {
     "Managed by the primary PAM source": "由主要 PAM 来源管理"
   },
@@ -4801,9 +4840,6 @@
   },
   "Material palette": {
     "Material palette": "Material 调色板"
-  },
-  "Material scale": {
-    "Material scale": "Material 缩放"
   },
   "Matugen Missing": {
     "Matugen Missing": "未找到 Matugen"
@@ -5025,7 +5061,7 @@
     "More": "更多"
   },
   "More in %1": {
-    "More in %1": ""
+    "More in %1": "%1 中的更多内容"
   },
   "More samples look smoother and cost more GPU": {
     "More samples look smoother and cost more GPU": "采样数越高越平滑，GPU 开销也越大"
@@ -5157,7 +5193,7 @@
     "Near island": "靠近灵动岛"
   },
   "Needs": {
-    "Needs": ""
+    "Needs": "依赖项"
   },
   "Nested chip": {
     "Nested chip": "嵌套标签块"
@@ -5202,7 +5238,7 @@
     "New": "新建"
   },
   "New & updated": {
-    "New & updated": ""
+    "New & updated": "新品与更新"
   },
   "New Session": {
     "New Session": "新建会话"
@@ -5244,7 +5280,7 @@
     "Next Transition": "下一次切换"
   },
   "Next category": {
-    "Next category": ""
+    "Next category": "下一个分类"
   },
   "Next page": {
     "Next page": "下一页"
@@ -5262,7 +5298,7 @@
     "Night mode exceptions": "夜间模式例外"
   },
   "Night mode failed: DMS gamma control not available": {
-    "Night mode failed: DMS gamma control not available": "夜间模式失败：DMS 伽马控制不可用"
+    "Night mode failed: DMS gamma control not available": "夜间模式失败：Dux 伽马控制不可用"
   },
   "Night mode, gamma, contrast": {
     "Night mode, gamma, contrast": "夜间模式、伽马和对比度"
@@ -5280,7 +5316,7 @@
     "No Bluetooth adapter found": "未找到蓝牙适配器"
   },
   "No DMS shortcuts configured": {
-    "No DMS shortcuts configured": "未配置 DMS 快捷键"
+    "No DMS shortcuts configured": "未配置 Dux 快捷键"
   },
   "No GPU detected": {
     "No GPU detected": "未检测到 GPU"
@@ -5637,16 +5673,16 @@
     "Not available": "不可用"
   },
   "Not available - install %1 and %2": {
-    "Not available - install %1 and %2": ""
+    "Not available - install %1 and %2": "不可用 - 请安装 %1 和 %2"
   },
   "Not available - install %1 and %2, or configure %3 PAM": {
-    "Not available - install %1 and %2, or configure %3 PAM": ""
+    "Not available - install %1 and %2, or configure %3 PAM": "不可用 - 请安装 %1 和 %2 或配置 %3 PAM"
   },
   "Not available - install or configure %1": {
-    "Not available - install or configure %1": ""
+    "Not available - install or configure %1": "不可用 - 请安装或配置 %1"
   },
   "Not available - install or configure %1, or configure %2 PAM": {
-    "Not available - install or configure %1, or configure %2 PAM": ""
+    "Not available - install or configure %1, or configure %2 PAM": "不可用 - 请安装或配置 %1，或配置 %2 PAM"
   },
   "Not bound": {
     "Not bound": "未绑定"
@@ -5670,7 +5706,7 @@
     "Not set": "未设置"
   },
   "Not shown on this bar, so its section widgets stay hidden": {
-    "Not shown on this bar, so its section widgets stay hidden": ""
+    "Not shown on this bar, so its section widgets stay hidden": "未在当前状态栏显示，故其分区部件保持隐藏"
   },
   "Not synchronized": {
     "Not synchronized": "未同步"
@@ -5757,13 +5793,13 @@
     "Off keeps the bar hidden until turned back on or shown over IPC": "关闭后状态栏将保持隐藏，直到重新开启或通过 IPC 显示"
   },
   "Off lets the compositor decorate DMS windows. Open windows update when reopened.": {
-    "Off lets the compositor decorate DMS windows. Open windows update when reopened.": "关闭时由合成器装饰 DMS 窗口。已打开的窗口重新打开后更新。"
+    "Off lets the compositor decorate DMS windows. Open windows update when reopened.": "关闭时由合成器装饰 Dux 窗口。已打开的窗口重新打开后更新。"
   },
   "Office": {
     "Office": "办公"
   },
   "Official only": {
-    "Official only": ""
+    "Official only": "官方出品"
   },
   "Offline Report": {
     "Offline Report": "离线报告"
@@ -5859,13 +5895,13 @@
     "Open with": "打开方式"
   },
   "Opening GitHub to remove the upvote": {
-    "Opening GitHub to remove the upvote": ""
+    "Opening GitHub to remove the upvote": "打开 Github 以取消点赞"
   },
   "Opening GitHub to upvote": {
-    "Opening GitHub to upvote": ""
+    "Opening GitHub to upvote": "打开 Github 以点赞"
   },
   "Opening terminal: %1": {
-    "Opening terminal: %1": ""
+    "Opening terminal: %1": "开启终端：%1"
   },
   "Opens": {
     "Opens": "打开"
@@ -6012,7 +6048,7 @@
     "PID": "PID"
   },
   "PID %1": {
-    "PID %1": ""
+    "PID %1": "PID %1"
   },
   "PIN": {
     "PIN": "PIN 码"
@@ -6174,10 +6210,10 @@
     "Pick how long to stay awake": "选择保持唤醒的时长"
   },
   "Pick of the day": {
-    "Pick of the day": ""
+    "Pick of the day": "每日精选"
   },
   "Pick of the week": {
-    "Pick of the week": ""
+    "Pick of the week": "每周精选"
   },
   "Pill": {
     "Pill": "胶囊"
@@ -6204,7 +6240,7 @@
     "Pixelate": "像素化"
   },
   "Place plugin directories here. Each plugin should have a %1 manifest file.": {
-    "Place plugin directories here. Each plugin should have a %1 manifest file.": ""
+    "Place plugin directories here. Each plugin should have a %1 manifest file.": "在这里放置插件目录。每个插件需要包含一个 %1 清单文件。"
   },
   "Placement": {
     "Placement": "放置方式"
@@ -6222,7 +6258,7 @@
     "Playback": "播放"
   },
   "Playback error: %1": {
-    "Playback error: %1": ""
+    "Playback error: %1": "播放错误：%1"
   },
   "Playback position": {
     "Playback position": "播放位置"
@@ -6255,7 +6291,7 @@
     "Plugin Source Code": "插件源码"
   },
   "Plugin authors": {
-    "Plugin authors": ""
+    "Plugin authors": "插件作者"
   },
   "Plugin dependency missing": {
     "Plugin dependency missing": "缺少插件依赖"
@@ -6288,7 +6324,7 @@
     "Plugins": "插件"
   },
   "Plugins by %1": {
-    "Plugins by %1": ""
+    "Plugins by %1": "%1 开发的插件"
   },
   "Plugins shown in All mode without a trigger. Drag to reorder": {
     "Plugins shown in All mode without a trigger. Drag to reorder": "在“全部”模式中显示的无触发器插件。拖动以重新排序"
@@ -6315,7 +6351,7 @@
     "Popouts and modals use the main animation duration": "弹出面板和对话框使用主动画时长"
   },
   "Popular": {
-    "Popular": ""
+    "Popular": "人气推荐"
   },
   "Popular Plugins": {
     "Popular Plugins": "热门插件"
@@ -6348,10 +6384,10 @@
     "Port switching is not available with the FreeBSD native audio backend": "FreeBSD 原生音频后端不支持切换端口"
   },
   "Portal": {
-    "Portal": "门户"
+    "Portal": "桌面门户"
   },
   "Portal & terminals": {
-    "Portal & terminals": "门户和终端"
+    "Portal & terminals": "桌面门户和终端"
   },
   "Position": {
     "Position": "位置"
@@ -6459,7 +6495,7 @@
     "Previous": "上一个"
   },
   "Previous category": {
-    "Previous category": ""
+    "Previous category": "上一个分类"
   },
   "Previous page": {
     "Previous page": "上一页"
@@ -6558,7 +6594,7 @@
     "Profile not found": "未找到配置"
   },
   "Profile not found in %1": {
-    "Profile not found in %1": ""
+    "Profile not found in %1": "在 %1 中没有找到配置文件"
   },
   "Profile on AC": {
     "Profile on AC": "交流电源配置"
@@ -6656,23 +6692,26 @@
   "Read:": {
     "Read:": "读取："
   },
+  "Readings": {
+    "Readings": ""
+  },
   "Reads audio devices and volume": {
-    "Reads audio devices and volume": ""
+    "Reads audio devices and volume": "获取音频设备与音量信息"
   },
   "Reads its own settings": {
-    "Reads its own settings": ""
+    "Reads its own settings": "读取自身设置"
   },
   "Reads its saved state": {
-    "Reads its saved state": ""
+    "Reads its saved state": "读取自身保存的状态"
   },
   "Reads the clipboard": {
-    "Reads the clipboard": ""
+    "Reads the clipboard": "读取剪贴板内容"
   },
   "Reads the list of running programs": {
-    "Reads the list of running programs": ""
+    "Reads the list of running programs": "读取正在运行的程序列表"
   },
   "Reads your files": {
-    "Reads your files": ""
+    "Reads your files": "读取您的文件"
   },
   "Ready": {
     "Ready": "就绪"
@@ -6681,16 +6720,19 @@
     "Reason": "原因"
   },
   "Reboot now?": {
-    "Reboot now?": ""
+    "Reboot now?": "立即重启？"
   },
   "Reboot recommended": {
     "Reboot recommended": "建议重启"
   },
+  "Reboot targets": {
+    "Reboot targets": ""
+  },
   "Reboot to %1": {
     "Reboot to %1": "重启进入 %1"
   },
-  "Reboot to another OS": {
-    "Reboot to another OS": "重启进入其他操作系统"
+  "Reboot to firmware setup": {
+    "Reboot to firmware setup": ""
   },
   "Recent": {
     "Recent": "最近"
@@ -6726,7 +6768,7 @@
     "Refreshing...": "正在刷新…"
   },
   "Regenerate matugen colors when DMS starts, even if nothing changed.": {
-    "Regenerate matugen colors when DMS starts, even if nothing changed.": "DMS 启动时重新生成 Matugen 颜色，即使未发生更改。"
+    "Regenerate matugen colors when DMS starts, even if nothing changed.": "Dux 启动时重新生成 Matugen 颜色，即使未发生更改。"
   },
   "Regex": {
     "Regex": "正则"
@@ -6801,7 +6843,7 @@
     "Remove condition": "移除条件"
   },
   "Remove from recent colors": {
-    "Remove from recent colors": ""
+    "Remove from recent colors": "从“最近拾取的颜色”中移除"
   },
   "Remove greeter access?": {
     "Remove greeter access?": "移除登录界面访问权限吗？"
@@ -6819,10 +6861,10 @@
     "Remove the shortcut %1?": "移除快捷键 %1？"
   },
   "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": {
-    "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": ""
+    "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": "移除快捷键 %1？这将会保存一个解绑条目到 %2，以便其在 DMS 更新后依然保持移除状态。"
   },
   "Remove upvote": {
-    "Remove upvote": ""
+    "Remove upvote": "取消点赞"
   },
   "Removed administrator privileges": {
     "Removed administrator privileges": "已移除管理员权限"
@@ -6870,19 +6912,19 @@
     "Report": "报告"
   },
   "Required plugin: %1": {
-    "Required plugin: %1": ""
+    "Required plugin: %1": "需要插件：%1"
   },
   "Requires %1": {
     "Requires %1": "需要 %1"
   },
   "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": {
-    "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": ""
+    "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": "需要 %1、%2，且您的用户需属于 %3 组（另外，使用指纹需要 %4，使用安全密钥需要 %5）。"
   },
   "Requires DMS %1": {
-    "Requires DMS %1": "需要 DMS %1"
+    "Requires DMS %1": "需要 Dux %1"
   },
   "Requires DMS server with sysupdate capability": {
-    "Requires DMS server with sysupdate capability": "需要具备 sysupdate 功能的 DMS 服务器"
+    "Requires DMS server with sysupdate capability": "需要具备 sysupdate 功能的 Dux 服务器"
   },
   "Requires MangoWC compositor": {
     "Requires MangoWC compositor": "需要 MangoWC 合成器"
@@ -6897,7 +6939,7 @@
     "Requires restart": "需要重启"
   },
   "Requires the DMS Theme extension from the editor marketplace": {
-    "Requires the DMS Theme extension from the editor marketplace": "需要从编辑器市场安装 DMS Theme 扩展"
+    "Requires the DMS Theme extension from the editor marketplace": "需要从编辑器市场安装 Dux Theme 扩展"
   },
   "Reserved height": {
     "Reserved height": "预留高度"
@@ -6927,7 +6969,7 @@
     "Resolution, position, scale": "分辨率、位置与缩放"
   },
   "Restart DMS": {
-    "Restart DMS": "重启 DMS"
+    "Restart DMS": "重启 Dux"
   },
   "Restarting audio system...": {
     "Restarting audio system...": "正在重启音频系统…"
@@ -6999,16 +7041,16 @@
     "Root Filesystem": "根文件系统"
   },
   "Rotating Cookie": {
-    "Rotating Cookie": ""
+    "Rotating Cookie": "旋转曲奇"
   },
   "Rounded": {
     "Rounded": "圆角"
   },
   "Route Bluetooth headset controls to the active DMS media player": {
-    "Route Bluetooth headset controls to the active DMS media player": "将蓝牙耳机控制转发到当前 DMS 媒体播放器"
+    "Route Bluetooth headset controls to the active DMS media player": "将蓝牙耳机控制转发到当前 Dux 媒体播放器"
   },
-  "Routes launcher, dash, control center and notification shortcuts": {
-    "Routes launcher, dash, control center and notification shortcuts": "设置启动器、仪表盘、控制中心和通知快捷键的打开位置"
+  "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": {
+    "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": ""
   },
   "Rows": {
     "Rows": "行数"
@@ -7029,13 +7071,13 @@
     "Rules (%1)": "规则（%1）"
   },
   "Rules found in your compositor config. These are read-only here, use Convert to DMS to make an editable copy.": {
-    "Rules found in your compositor config. These are read-only here, use Convert to DMS to make an editable copy.": "在你的合成器配置中发现了这些规则。它们在这里是只读的，请使用“导入到 DMS”创建一个可编辑副本。"
+    "Rules found in your compositor config. These are read-only here, use Convert to DMS to make an editable copy.": "在你的合成器配置中发现了这些规则。它们在这里是只读的，请使用“导入到 Dux”创建一个可编辑副本。"
   },
   "Run Again": {
     "Run Again": "再次运行"
   },
   "Run DMS templates": {
-    "Run DMS templates": "运行 DMS 模板"
+    "Run DMS templates": "运行 Dux 模板"
   },
   "Run a program (e.g., firefox, kitty)": {
     "Run a program (e.g., firefox, kitty)": "运行程序（例如：firefox, kitty）"
@@ -7044,7 +7086,7 @@
     "Run a shell command (e.g., notify-send)": "运行 shell 命令（例如：notify-send）"
   },
   "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": {
-    "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": ""
+    "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": "在每次壁纸更改时运行外部命令，并在某个命名空间下将其 JSON 调色板合并到 %1 中，以便模板可以使用例如 %2。该命令会将壁纸作为 %3 接收，并将模式作为 %4 接收。"
   },
   "Run full sync": {
     "Run full sync": "运行完整同步"
@@ -7068,10 +7110,10 @@
     "Runs in a terminal.": "在终端中运行。"
   },
   "Runs programs on your computer": {
-    "Runs programs on your computer": ""
+    "Runs programs on your computer": "在您的电脑上运行程序"
   },
   "Runs shell commands": {
-    "Runs shell commands": ""
+    "Runs shell commands": "运行终端（Shell）命令"
   },
   "S": {
     "S": "S"
@@ -7128,7 +7170,7 @@
     "Save password": "保存密码"
   },
   "Save your work first. Open apps will close.": {
-    "Save your work first. Open apps will close.": ""
+    "Save your work first. Open apps will close.": "请先保存您的工作。所有打开的应用都将被关闭。"
   },
   "Saved": {
     "Saved": "已保存"
@@ -7146,10 +7188,10 @@
     "Saved networks": "已保存的网络"
   },
   "Saves its own settings": {
-    "Saves its own settings": ""
+    "Saves its own settings": "保存自身设置"
   },
   "Saves its state": {
-    "Saves its state": ""
+    "Saves its state": "保存自身状态"
   },
   "Saving...": {
     "Saving...": "正在保存…"
@@ -7262,6 +7304,9 @@
   "Secondary Container": {
     "Secondary Container": "辅色容器"
   },
+  "Section dividers": {
+    "Section dividers": ""
+  },
   "Sections": {
     "Sections": "区域"
   },
@@ -7312,6 +7357,9 @@
   },
   "Select Dock Launcher Logo": {
     "Select Dock Launcher Logo": "选择停靠栏启动器 Logo"
+  },
+  "Select Dot Icon": {
+    "Select Dot Icon": ""
   },
   "Select ICC Profile": {
     "Select ICC Profile": "选择 ICC 配置文件"
@@ -7419,7 +7467,7 @@
     "Set notification rules": "设置通知规则"
   },
   "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": {
-    "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": ""
+    "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": "设置这些环境变量的其中之一，然后重启 Shell：\n%1\n\n只有 %2 需要安装 %3。"
   },
   "Set under Theme & colors, Derived color": {
     "Set under Theme & colors, Derived color": "在「主题与颜色 → 派生颜色」中设置"
@@ -7542,7 +7590,7 @@
     "Show discharge rate": "显示放电速率"
   },
   "Show every author": {
-    "Show every author": ""
+    "Show every author": "显示所有作者"
   },
   "Show filename": {
     "Show filename": "显示文件名"
@@ -7632,7 +7680,7 @@
     "Show remaining time": "显示剩余时间"
   },
   "Show restart DMS": {
-    "Show restart DMS": "显示重启 DMS"
+    "Show restart DMS": "显示重启 Dux"
   },
   "Show scratchpads": {
     "Show scratchpads": "显示暂存区"
@@ -7785,7 +7833,7 @@
     "Soft square": "圆角方形"
   },
   "Software dimming": {
-    "Software dimming": ""
+    "Software dimming": "软件调光"
   },
   "Software updates": {
     "Software updates": "软件更新"
@@ -7797,7 +7845,7 @@
     "Solid": "纯色"
   },
   "Some plugins require a newer version of DMS:": {
-    "Some plugins require a newer version of DMS:": "有些插件需要更新版的 DMS："
+    "Some plugins require a newer version of DMS:": "有些插件需要更新版的 Dux："
   },
   "Sort alphabetically": {
     "Sort alphabetically": "按字母排序"
@@ -7834,6 +7882,9 @@
   },
   "Spacing": {
     "Spacing": "间距"
+  },
+  "Spacious": {
+    "Spacious": ""
   },
   "Speaker settings": {
     "Speaker settings": "扬声器设置"
@@ -7941,7 +7992,7 @@
     "Stopping": "正在停止"
   },
   "Stops syncing your DMS settings to the greeter. Set up links them again.": {
-    "Stops syncing your DMS settings to the greeter. Set up links them again.": "停止将 DMS 设置同步到登录界面。重新设置可恢复关联。"
+    "Stops syncing your DMS settings to the greeter. Set up links them again.": "停止将 Dux 设置同步到登录界面。重新设置可恢复关联。"
   },
   "Stretch": {
     "Stretch": "拉伸"
@@ -7986,7 +8037,7 @@
     "Super + Space": "Super + Space"
   },
   "Support DMS": {
-    "Support DMS": "支持 DMS"
+    "Support DMS": "支持 Dux"
   },
   "Suppress duplicates": {
     "Suppress duplicates": "抑制重复通知"
@@ -8046,10 +8097,13 @@
     "Switch layout shortcut": "切换布局快捷键"
   },
   "Switch to media when playback starts": {
-    "Switch to media when playback starts": ""
+    "Switch to media when playback starts": "播放开始时切换至媒体界面"
   },
   "Switches to power saver at the low battery threshold": {
     "Switches to power saver at the low battery threshold": "电池电量低于阈值时切换到省电模式"
+  },
+  "Symbol": {
+    "Symbol": ""
   },
   "Sync": {
     "Sync": "同步"
@@ -8076,7 +8130,7 @@
     "Sync position across displays": "在各显示器间同步位置"
   },
   "Sync with portal": {
-    "Sync with portal": "与门户同步"
+    "Sync with portal": "与桌面门户同步"
   },
   "Synchronized": {
     "Synchronized": "已同步"
@@ -8187,7 +8241,7 @@
     "Terminal additional parameters": "终端附加参数"
   },
   "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": {
-    "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": ""
+    "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": "终端回退失败。请安装一个受支持的终端模拟器，或者手动运行 %1。"
   },
   "Terminal fallback opened. Complete authentication there; it will close automatically when done.": {
     "Terminal fallback opened. Complete authentication there; it will close automatically when done.": "已打开终端备用方式。请在那里完成认证，完成后终端会自动关闭。"
@@ -8229,10 +8283,13 @@
     "Text style": "文本样式"
   },
   "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": {
-    "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": ""
+    "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": "%1 环境变量没有设置，或者 Socket 不可用。自动插件管理需要它。"
   },
   "The Aqueous operation failed.": {
     "The Aqueous operation failed.": "Aqueous 操作失败。"
+  },
+  "The Control Center opens at the cursor instead of its widget": {
+    "The Control Center opens at the cursor instead of its widget": ""
   },
   "The Default action only overrides priority": {
     "The Default action only overrides priority": "默认操作只会覆盖优先级"
@@ -8241,7 +8298,7 @@
     "The Island holds this edge on a display this bar covers, so the bar stays hidden there": "灵动岛占用状态栏覆盖的显示器边缘，因此状态栏会在该处隐藏"
   },
   "The Island takes its place on this bar": {
-    "The Island takes its place on this bar": ""
+    "The Island takes its place on this bar": "灵动岛将固定在此状态栏上"
   },
   "The WiFi adapter could not start access point mode.": {
     "The WiFi adapter could not start access point mode.": "WiFi 适配器无法启动接入点模式。"
@@ -8250,7 +8307,7 @@
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "箭头指向风吹去的方向。标签显示风的来源方向。"
   },
   "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": {
-    "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": ""
+    "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": "以下设置将会修改你的 GTK 和 Qt 设置。如果你想要保留当前的配置，请备份位于 %1 和 %2 的文件。"
   },
   "The compositor session changed. Discard this edit before starting a new one.": {
     "The compositor session changed. Discard this edit before starting a new one.": "合成器会话已更改。请放弃此编辑，然后开始新的编辑。"
@@ -8283,7 +8340,7 @@
     "The login screen shows the lock screen widgets it supports and its own session picker. Turn off to arrange it separately.": "登录界面显示其支持的锁屏部件和独立的会话选择器。关闭后可单独布局。"
   },
   "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": {
-    "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": "登录界面停止跟随你的 DMS 主题、壁纸、部件和设置。greetd、身份验证和其他用户不受影响。"
+    "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": "登录界面停止跟随你的 Dux 主题、壁纸、部件和设置。greetd、身份验证和其他用户不受影响。"
   },
   "The new shortcut is already in use. Choose another shortcut.": {
     "The new shortcut is already in use. Choose another shortcut.": "新快捷键已在使用中。请选择其他快捷键。"
@@ -8355,7 +8412,7 @@
     "Themes": "主题"
   },
   "These add entries to the XDG autostart directory (%1)": {
-    "These add entries to the XDG autostart directory (%1)": ""
+    "These add entries to the XDG autostart directory (%1)": "这将会向 XDG autostart 目录（%1）添加条目"
   },
   "They load with the next update check. Release notes are also published on GitHub.": {
     "They load with the next update check. Release notes are also published on GitHub.": "下次检查更新时加载，发行说明也会发布在 GitHub 上。"
@@ -8370,13 +8427,13 @@
     "Third-party plugins": "第三方插件"
   },
   "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.": {
-    "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.": ""
+    "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.": "第三方插件由社区创建，未获得 %1 的官方支持。\n\n此类插件可能存在安全与隐私风险，安装后果由用户自行承担。"
   },
   "This bar is the Island": {
     "This bar is the Island": "此状态栏为灵动岛"
   },
   "This bind is overridden by %1": {
-    "This bind is overridden by %1": ""
+    "This bind is overridden by %1": "此键位已被 %1 覆盖"
   },
   "This device": {
     "This device": "此设备"
@@ -8388,7 +8445,7 @@
     "This display does not report VRR support": "此显示器未报告 VRR 支持"
   },
   "This install is still using %1. Run %2 to migrate before changing these settings.": {
-    "This install is still using %1. Run %2 to migrate before changing these settings.": ""
+    "This install is still using %1. Run %2 to migrate before changing these settings.": "此安装仍在使用 %1。在更改这些设置之前，请运行 %2 来迁移。"
   },
   "This may take a few seconds": {
     "This may take a few seconds": "此操作可能会花费一些时间"
@@ -8400,7 +8457,7 @@
     "This output is disabled in the current profile": "当前配置中此输出已被禁用"
   },
   "This plugin does not have '%1' permission.\n\nAdd %2 to %3": {
-    "This plugin does not have '%1' permission.\n\nAdd %2 to %3": ""
+    "This plugin does not have '%1' permission.\n\nAdd %2 to %3": "插件没有 “%1” 权限。\n\n向 %3 添加 %2"
   },
   "This system cannot link settings live. Sync again after changing them.": {
     "This system cannot link settings live. Sync again after changing them.": "此系统无法实时关联设置。修改后请再次同步。"
@@ -8508,10 +8565,10 @@
     "To Full": "充至满电"
   },
   "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": {
-    "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": ""
+    "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": "如需登录到其他用户，请注销然后在 greeter 选择其他账户。并行地开启一个新会话需要一个多会话 greeter （%1）。"
   },
   "To use this DMS bind, remove or change the keybind in your %1": {
-    "To use this DMS bind, remove or change the keybind in your %1": ""
+    "To use this DMS bind, remove or change the keybind in your %1": "如需使用这个 DMS 键位，请在你的 %1 中删除或更改按键绑定"
   },
   "Toast": {
     "Toast": "浮动通知"
@@ -8566,6 +8623,9 @@
   },
   "Tools": {
     "Tools": "工具"
+  },
+  "Tooltip": {
+    "Tooltip": ""
   },
   "Top": {
     "Top": "顶部"
@@ -8628,7 +8688,7 @@
     "Tray icon tint": "托盘图标色调"
   },
   "Trending": {
-    "Trending": ""
+    "Trending": "人气飙升"
   },
   "Trigger": {
     "Trigger": "触发"
@@ -8838,7 +8898,7 @@
     "Update plugin": "更新插件"
   },
   "Update the dms package with your package manager, then restart the shell.": {
-    "Update the dms package with your package manager, then restart the shell.": "通过软件包管理器更新 dms 软件包，然后重启桌面环境。"
+    "Update the dms package with your package manager, then restart the shell.": "通过软件包管理器更新 Dux 软件包，然后重启桌面环境。"
   },
   "Updates, clipboard, %1": {
     "Updates, clipboard, %1": "更新、剪贴板与 %1"
@@ -8859,13 +8919,13 @@
     "Uptime": "运行时间"
   },
   "Upvote on GitHub": {
-    "Upvote on GitHub": ""
+    "Upvote on GitHub": "在 Github 上点赞"
   },
   "Upvote removed": {
-    "Upvote removed": ""
+    "Upvote removed": "已取消点赞"
   },
   "Upvoted on GitHub": {
-    "Upvoted on GitHub": ""
+    "Upvoted on GitHub": "已在 Github 上点赞"
   },
   "Urgent": {
     "Urgent": "紧急"
@@ -9153,13 +9213,13 @@
     "Welcome": "欢迎"
   },
   "Welcome to %1": {
-    "Welcome to %1": ""
+    "Welcome to %1": "欢迎使用 %1"
   },
   "What changed": {
     "What changed": "更新内容"
   },
   "What's New": {
-    "What's New": ""
+    "What's New": "新功能"
   },
   "When locked": {
     "When locked": "何时锁定"
@@ -9207,7 +9267,7 @@
     "Wi-Fi, Ethernet, VPN": "Wi-Fi、以太网与 VPN"
   },
   "WiFi QR code for %1": {
-    "WiFi QR code for %1": ""
+    "WiFi QR code for %1": "用于连接 %1 的 WiFi 二维码"
   },
   "WiFi disabled": {
     "WiFi disabled": "Wi-Fi 已停用"
@@ -9312,7 +9372,7 @@
     "Working...": "正在处理…"
   },
   "Works here": {
-    "Works here": ""
+    "Works here": "支持此设备"
   },
   "Works in every submap": {
     "Works in every submap": "在所有子映射中均生效"
@@ -9342,7 +9402,7 @@
     "Write:": "写入："
   },
   "Writes to your files": {
-    "Writes to your files": ""
+    "Writes to your files": "修改或写入您的文件"
   },
   "X axis": {
     "X axis": "X 轴"
@@ -9450,7 +9510,7 @@
     "checked just now": "刚刚检查"
   },
   "copy link": {
-    "copy link": ""
+    "copy link": "复制链接"
   },
   "deprecated": {
     "deprecated": "废弃"
@@ -9466,6 +9526,12 @@
   },
   "display rotation option": {
     "Normal": "正常"
+  },
+  "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural": {
+    "%1 days": "",
+    "%1 hours": "",
+    "%1 minutes": "",
+    "%1 seconds": ""
   },
   "e.g. /usr/bin/my-script --flag": {
     "e.g. /usr/bin/my-script --flag": "例如：/usr/bin/my-script --flag"
@@ -9504,7 +9570,7 @@
     "featured": "精选"
   },
   "greetd is not using the DMS greeter yet.": {
-    "greetd is not using the DMS greeter yet.": "greetd 尚未使用 DMS 登录界面。"
+    "greetd is not using the DMS greeter yet.": "greetd 尚未使用 Dux 登录界面。"
   },
   "keyboard tab key name": {
     "Tab": "Tab"
@@ -9603,7 +9669,7 @@
     "remote": "远程"
   },
   "report a problem": {
-    "report a problem": ""
+    "report a problem": "报告问题"
   },
   "reviewed": {
     "reviewed": "已审核"

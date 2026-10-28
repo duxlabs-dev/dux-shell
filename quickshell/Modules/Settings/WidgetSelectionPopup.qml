@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
+import qs.Modules.Settings.Widgets
 
 WidgetPickerWindow {
     id: root
@@ -51,7 +52,7 @@ WidgetPickerWindow {
 
         DListItem {
             width: ListView.view.width
-            implicitHeight: Math.max(Theme.listItemHeight, textColumn.implicitHeight + Theme.spacingM * 2)
+            implicitHeight: Math.max(SettingsMetrics.rowMinHeight, textColumn.implicitHeight + Theme.spacingM * 2)
             isSelected: root.keyboardNavigationActive && index === root.selectedIndex && !modelData.disabled
             enabled: !modelData.disabled
             Accessible.name: modelData.text

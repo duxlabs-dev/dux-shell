@@ -245,7 +245,7 @@ PanelWindow {
     PanelWindow {
         id: dismissWindow
         screen: root.screen
-        visible: root.expanded && !body.inputSuspended
+        visible: body.islandController.outsideClickCollapses && !body.inputSuspended
         color: "transparent"
         exclusiveZone: -1
         WlrLayershell.namespace: "dms:dankisland-dismiss"

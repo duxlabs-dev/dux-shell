@@ -18,8 +18,7 @@ FocusScope {
     property string screenName: ""
     property string screenModel: ""
     property var transientSurfaceTracker: null
-    property real topInset: 0
-    property vector4d cornerRadii: Qt.vector4d(Theme.windowRadius, Theme.windowRadius, Theme.windowRadius, Theme.windowRadius)
+    property real maximumHeight: 0
     property real coverage: 0
     property var runningToplevels: []
 
@@ -31,17 +30,25 @@ FocusScope {
     signal portSelectorRequested(var node)
 
     property string shownSection: ""
-    property bool enterPending: false
-    readonly property bool animationsEnabled: CcMetrics.animationsEnabled && !SettingsData.reduceMotion
-    readonly property bool transitioning: enterPending || enterAnimation.running
     readonly property var pageItem: pageLoader.item
-    readonly property real pageHeight: (pageItem?.implicitHeight ?? 0) > 0 ? pageItem.implicitHeight : CcMetrics.preferredDetailHeight(shownSection, pageItem?.preferredHeight ?? 0)
-    readonly property real contentHeight: pageHeight
-    readonly property real chromeHeight: header.height + CcMetrics.detailDialogPadding * 2
-    readonly property real maximumHeight: height - topInset - CcMetrics.detailDialogInset
-    // plugin detail content may not scroll itself, so the panel grows to fit it
-    readonly property bool pageScrollsItself: !shownSection.startsWith("plugin_")
-    readonly property real minimumHeight: chromeHeight + (pageScrollsItself ? Math.min(contentHeight, CcMetrics.detailMinContentHeight) : pageHeight)
+    readonly property bool pluginPage: shownSection.startsWith("plugin_") || shownSection.startsWith("builtin_")
+    // A page measures itself a tick after it loads; waiting for that keeps the first target the final one.
+    readonly property real pageHeight: {
+        const own = pageItem?.implicitHeight ?? 0;
+        if (own > 0)
+            return own;
+        if (!pluginPage)
+            return 0;
+        const preferred = pageItem?.preferredHeight ?? 0;
+        return preferred > 0 ? preferred : CcMetrics.detailHeightDefault;
+    }
+    // The band's extent includes the gap above and below its card, so they grow and shrink with it.
+    readonly property real chromeHeight: CcMetrics.gridGap * 2 + CcMetrics.detailHeaderHeight + CcMetrics.detailDialogPadding * 2
+    readonly property real contentCap: Math.max(CcMetrics.detailHeightFloor(shownSection, pageItem?.preferredHeight ?? 0), maximumHeight - chromeHeight)
+    readonly property real targetHeight: section === "" || pageHeight <= 0 ? 0 : chromeHeight + Math.min(pageHeight, contentCap)
+    readonly property bool transitioning: heightAnimation.running
+    // Only IPC can ask for a plugin section whose tile is not placed, so there is nothing to show.
+    readonly property bool pageEmpty: pageItem?.empty === true
     readonly property string title: {
         const own = pageItem?.title ?? "";
         if (own)
@@ -49,46 +56,35 @@ FocusScope {
         const parsed = Sections.parse(shownSection);
         return model?.getWidgetForId(parsed.base)?.text ?? "";
     }
+
+    height: targetHeight
     visible: shownSection !== ""
-    opacity: 0
-    layer.enabled: enterPending || enterAnimation.running || exitAnimation.running
-    layer.smooth: true
-    Accessible.role: Accessible.Dialog
+    clip: true
+    Accessible.role: Accessible.Grouping
     Accessible.name: title
 
+    // Same timing as the popout's own resize, so the surface and the content move as one.
+    Behavior on height {
+        enabled: CcMetrics.animationsEnabled
+        NumberAnimation {
+            id: heightAnimation
+            duration: CcMetrics.transitionDuration
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.standard
+        }
+    }
+
+    onPageEmptyChanged: {
+        if (pageEmpty && section !== "")
+            Qt.callLater(collapseRequested);
+    }
+
     function finishClose() {
-        if (section !== "")
+        if (section !== "" || shownSection === "")
             return;
         pageLoader.sourceComponent = null;
         shownSection = "";
         dismissed();
-    }
-
-    function containsItem(item) {
-        for (let ancestor = item; ancestor; ancestor = ancestor.parent) {
-            if (ancestor === root)
-                return true;
-        }
-        return false;
-    }
-
-    function moveFocus(backwards) {
-        const current = root.Window.window?.activeFocusItem ?? root;
-        const next = current.nextItemInFocusChain(!backwards);
-        const target = root.containsItem(next) ? next : backwards ? closeButton : root.nextItemInFocusChain(true);
-        (root.containsItem(target) ? target : closeButton).forceActiveFocus(backwards ? Qt.BacktabFocusReason : Qt.TabFocusReason);
-    }
-
-    Shortcut {
-        sequence: "Tab"
-        enabled: root.section !== "" && root.activeFocus
-        onActivated: root.moveFocus(false)
-    }
-
-    Shortcut {
-        sequences: ["Backtab", "Shift+Tab"]
-        enabled: root.section !== "" && root.activeFocus
-        onActivated: root.moveFocus(true)
     }
 
     function dismissTransient() {
@@ -129,132 +125,52 @@ FocusScope {
     }
 
     onSectionChanged: {
-        enterPending = false;
-        enterAnimation.stop();
-        exitAnimation.stop();
         if (section === "") {
-            if (!animationsEnabled) {
-                root.opacity = 0;
+            if (!CcMetrics.animationsEnabled)
                 finishClose();
-                return;
-            }
-            exitBlocker.forceActiveFocus();
-            exitAnimation.start();
             return;
         }
-        const opening = shownSection === "";
-        enterPending = opening && animationsEnabled;
-        root.opacity = enterPending ? 0 : 1;
-        dialogSurface.entryScale = enterPending ? CcMetrics.popupEnterScale : 1;
         shownSection = section;
         pageLoader.sourceComponent = _componentFor(section);
         (pageItem ?? root).forceActiveFocus();
     }
 
-    Connections {
-        target: root.Window.window
-        enabled: root.enterPending
-
-        function onFrameSwapped() {
-            root.enterPending = false;
-            enterAnimation.start();
-        }
-    }
-
-    ParallelAnimation {
-        id: enterAnimation
-
-        NumberAnimation {
-            target: root
-            property: "opacity"
-            to: 1
-            duration: CcMetrics.fadeDuration
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
-        }
-        NumberAnimation {
-            target: dialogSurface
-            property: "entryScale"
-            to: 1
-            duration: Theme.expressiveDurations.expressiveDefaultSpatial
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
-        }
-    }
-
-    NumberAnimation {
-        id: exitAnimation
-        target: root
-        property: "opacity"
-        to: 0
-        duration: CcMetrics.fadeDuration
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
-        onFinished: root.finishClose()
+    onHeightChanged: {
+        if (section === "" && height <= 0.5)
+            finishClose();
     }
 
     Rectangle {
-        anchors.fill: parent
-        topLeftRadius: root.cornerRadii.x
-        topRightRadius: root.cornerRadii.y
-        bottomRightRadius: root.cornerRadii.z
-        bottomLeftRadius: root.cornerRadii.w
-        color: Theme.scrimColor
-        opacity: Theme.scrimAlpha
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.AllButtons
-        onClicked: {
-            if (root.section !== "")
-                root.backRequested();
-        }
-        onWheel: wheel => wheel.accepted = true
-    }
-
-    Rectangle {
-        id: dialogSurface
-
-        x: CcMetrics.detailDialogInset
-        y: root.topInset + Math.max(0, (root.maximumHeight - height) / 2)
-        width: Math.max(0, root.width - CcMetrics.detailDialogInset * 2)
-        height: Math.max(0, Math.min(root.chromeHeight + root.contentHeight, root.maximumHeight))
-        radius: Theme.cornerRadiusXL
-
-        Behavior on height {
-            enabled: root.animationsEnabled && !root.transitioning && root.section !== ""
-            NumberAnimation {
-                duration: Theme.expressiveDurations.expressiveFastSpatial
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.expressiveCurves.standard
-            }
-        }
+        y: CcMetrics.gridGap
+        width: parent.width
+        height: Math.max(0, parent.height - CcMetrics.gridGap * 2)
+        radius: CcMetrics.tallTileRadius
         color: CcMetrics.dialogColor
         border.width: Theme.layerOutlineWidth
         border.color: Theme.outlineMedium
-        property real entryScale: 1
-        scale: Math.min(1, entryScale)
-
-        MouseArea {
-            anchors.fill: parent
-            acceptedButtons: Qt.AllButtons
-        }
 
         Item {
             id: panel
 
             anchors.fill: parent
             anchors.margins: CcMetrics.detailDialogPadding
-            opacity: CcMetrics.hideCoveredContent ? 1 - root.coverage : 1
+            opacity: root.section !== "" ? (CcMetrics.hideCoveredContent ? 1 - root.coverage : 1) : 0
+
+            Behavior on opacity {
+                enabled: CcMetrics.animationsEnabled
+                NumberAnimation {
+                    duration: CcMetrics.fadeDuration
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+                }
+            }
 
             Item {
                 id: header
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                height: CcMetrics.pageHeaderHeight
+                height: CcMetrics.detailHeaderHeight
 
                 StyledText {
                     anchors.left: parent.left
@@ -263,7 +179,8 @@ FocusScope {
                     anchors.rightMargin: Theme.spacingM
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.title
-                    font.pixelSize: CcMetrics.pageTitleSize
+                    font.pixelSize: CcMetrics.detailTitleSize
+                    font.weight: Theme.fontWeightMedium
                     color: Theme.surfaceText
                     elide: Text.ElideRight
                     horizontalAlignment: Text.AlignLeft
@@ -306,18 +223,6 @@ FocusScope {
                 }
             }
         }
-    }
-
-    MouseArea {
-        id: exitBlocker
-
-        anchors.fill: parent
-        visible: root.section === ""
-        hoverEnabled: true
-        acceptedButtons: Qt.AllButtons
-        onWheel: wheel => wheel.accepted = true
-        Keys.onPressed: event => event.accepted = true
-        Keys.onReleased: event => event.accepted = true
     }
 
     Connections {

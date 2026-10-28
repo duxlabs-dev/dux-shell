@@ -31,6 +31,12 @@ CcTile {
             return I18n.tr("No disk data available");
         return `${selectedMount.used} / ${selectedMount.size} (${usagePercent.toFixed(0)}%)`;
     }
+    denseTitle: {
+        if (!selectedMount)
+            return "";
+        const name = showMountPath && selectedMount.mount !== "/" ? selectedMount.mount : I18n.tr("Disk usage");
+        return `${name} • ${usagePercent.toFixed(0)}%`;
+    }
     active: false
     opensPage: true
     available: DgopService.dgopAvailable

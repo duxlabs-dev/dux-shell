@@ -36,7 +36,6 @@ SettingsRow {
 
     title: text
     subtitle: description
-    spacing: Theme.groupedListGap
 
     Item {
         id: trailingHost
@@ -60,7 +59,6 @@ SettingsRow {
         x: root.compact ? (parent.width - width) / 2 : 0
         selectionMode: "single"
         currentIndex: root.values.length > 0 ? root.indexOfValue(root.value) : 0
-        spacing: root.spacing
         enabled: root.enabled
         maximumWidth: root.compact ? root.width - SettingsMetrics.rowPaddingH * 2 : -1
         onSelectionChanged: (index, selected) => {

@@ -15,6 +15,9 @@ Item {
     property string statusText: ""
     property bool statusIsError: false
     property bool operationPending: false
+
+    Component.onCompleted: UsersService.refresh()
+
     Connections {
         target: UsersService
         function onOperationCompleted(op, username, success, message) {

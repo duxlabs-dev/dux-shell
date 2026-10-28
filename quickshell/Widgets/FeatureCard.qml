@@ -21,7 +21,7 @@ DCard {
     clickable: true
     pad: Theme.spacingL
     restRadius: Theme.groupedListOuterRadius
-    bodyRadius: focusTarget.pressed ? Theme.cornerRadiusM : restRadius
+    bodyRadius: focusTarget.pressed && Theme.shapeMorph ? Theme.cornerRadiusM : restRadius
     implicitHeight: body.implicitHeight + pad * 2
     Accessible.name: heading
     Accessible.description: description

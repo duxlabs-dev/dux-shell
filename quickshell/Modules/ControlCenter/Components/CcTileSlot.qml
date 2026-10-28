@@ -131,7 +131,7 @@ DEditableGridSlot {
         passthrough: root.passthrough
         dragging: root.dragging
         resizing: root.resizing
-        cornerRadius: root.small ? Theme.fullRadius(root.width, root.height - root.bodyInset * 2) : (root.tileItem?.bodyRadius ?? Theme.fullRadius(root.width, root.height))
+        cornerRadius: root.small ? CcMetrics.pillRadius(root.width, root.height - root.bodyInset * 2) : (root.tileItem?.bodyRadius ?? CcMetrics.pillRadius(root.width, root.height))
         sizeText: root.cols + "×" + (root.small ? CcMetrics.smallRowFraction : root.rows)
         onResizeStarted: (px, py) => {
             root.biasH = root.small ? CcMetrics.smallRowFraction * root.grid.cellWidth - CcMetrics.gridGap - root.height : 0;

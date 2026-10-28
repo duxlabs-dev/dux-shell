@@ -102,6 +102,26 @@
     "icon": "palette"
   },
   {
+    "section": "surfaceAppearance",
+    "label": "Appearance",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "appearance",
+      "buttons",
+      "classic",
+      "corners",
+      "expressive",
+      "interface",
+      "morph",
+      "pill",
+      "round",
+      "shape",
+      "style"
+    ],
+    "page": "theme_surfaces"
+  },
+  {
     "section": "wallpaper",
     "label": "Appearance",
     "tabIndex": -1,
@@ -1403,6 +1423,32 @@
     "description": "Shortcuts, keyboard, mouse"
   },
   {
+    "section": "density",
+    "label": "Interface density",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "bar",
+      "comfortable",
+      "compact",
+      "control center",
+      "dense",
+      "density",
+      "dock",
+      "frame",
+      "interface",
+      "island",
+      "menus",
+      "padding",
+      "rows",
+      "size",
+      "spacing",
+      "spacious",
+      "style"
+    ],
+    "page": "theme_surfaces"
+  },
+  {
     "section": "blurLayerOutline",
     "label": "Layer outline",
     "tabIndex": -1,
@@ -2068,6 +2114,26 @@
     "icon": "unfold_more"
   },
   {
+    "section": "sectionDividerOpacity",
+    "label": "Section dividers",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "classic",
+      "divider",
+      "dividers",
+      "interface",
+      "lines",
+      "outline",
+      "rows",
+      "section",
+      "sections",
+      "sidebar",
+      "style"
+    ],
+    "page": "theme_surfaces"
+  },
+  {
     "section": "_hub_security_accounts",
     "label": "Security",
     "tabIndex": -1,
@@ -2264,6 +2330,25 @@
       "sounds"
     ],
     "icon": "volume_up"
+  },
+  {
+    "section": "interfaceStyle",
+    "label": "Style",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "buttons",
+      "classic",
+      "corners",
+      "expressive",
+      "interface",
+      "morph",
+      "pill",
+      "round",
+      "shape",
+      "style"
+    ],
+    "page": "theme_surfaces"
   },
   {
     "section": "notificationSummaryFontSize",
@@ -3500,26 +3585,25 @@
     "category": "General",
     "keywords": [
       "anchor",
-      "anchored",
       "bar",
+      "center",
       "click",
+      "control",
       "cursor",
       "follow",
       "general",
       "mouse",
-      "open",
+      "opens",
       "panel",
       "popout",
-      "popouts",
       "position",
       "statusbar",
       "taskbar",
-      "their",
       "topbar",
       "widget"
     ],
     "parentLabel": "Bar",
-    "description": "Anchored popouts open at the cursor instead of their widget"
+    "description": "The Control Center opens at the cursor instead of its widget"
   },
   {
     "section": "frameEnabled",
@@ -3691,6 +3775,36 @@
     ],
     "parentLabel": "Bar",
     "conditionKey": "frameEnabled"
+  },
+  {
+    "section": "islandMediaLyrics",
+    "label": "Lyrics",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "artist",
+      "available",
+      "bar",
+      "being",
+      "compact",
+      "general",
+      "island",
+      "line",
+      "lyrics",
+      "media",
+      "panel",
+      "shows",
+      "statusbar",
+      "sung",
+      "synced",
+      "taskbar",
+      "title",
+      "topbar",
+      "while"
+    ],
+    "parentLabel": "Bar",
+    "description": "Shows the line being sung instead of the title and artist while synced lyrics are available",
+    "conditionKey": "islandEnabled"
   },
   {
     "section": "barManualVisibility",
@@ -4123,11 +4237,13 @@
     "category": "General",
     "keywords": [
       "alert",
+      "always",
       "app drawer",
       "app menu",
       "applications",
       "bar",
       "center",
+      "clicks",
       "control",
       "control center",
       "dash",
@@ -4138,7 +4254,9 @@
       "launcher",
       "notif",
       "notification",
+      "open",
       "panel",
+      "popout",
       "routes",
       "routing",
       "shared",
@@ -4146,10 +4264,12 @@
       "start menu",
       "statusbar",
       "taskbar",
-      "topbar"
+      "their",
+      "topbar",
+      "widget"
     ],
     "parentLabel": "Bar",
-    "description": "Routes launcher, dash, control center and notification shortcuts",
+    "description": "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout",
     "conditionKey": "islandEnabled"
   },
   {
@@ -9789,7 +9909,7 @@
     "optionFile": "PrivacyOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:27",
+    "section": "barWidgetOption:IslandOptions.qml:28",
     "label": "Charging",
     "tabIndex": 22,
     "keywords": [],
@@ -9797,7 +9917,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:29",
+    "section": "barWidgetOption:IslandOptions.qml:30",
     "label": "Clear badge on open",
     "tabIndex": 22,
     "keywords": [],
@@ -9997,7 +10117,15 @@
     "optionFile": "SystemMonitorOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:19",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:17",
+    "label": "Don't dim unfocused apps",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "WorkspaceSwitcherOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:20",
     "label": "Drag to reorder",
     "tabIndex": 22,
     "keywords": [],
@@ -10005,7 +10133,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:28",
+    "section": "barWidgetOption:IslandOptions.qml:29",
     "label": "Expand by default",
     "tabIndex": 22,
     "keywords": [],
@@ -10021,7 +10149,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:17",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:18",
     "label": "Follow display focus",
     "tabIndex": 22,
     "keywords": [],
@@ -10229,6 +10357,14 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
+    "section": "barWidgetOption:IslandOptions.qml:23",
+    "label": "Lyrics",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "IslandOptions.qml"
+  },
+  {
     "section": "barWidgetOption:MusicOptions.qml:4",
     "label": "Lyrics",
     "tabIndex": 22,
@@ -10309,7 +10445,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:30",
+    "section": "barWidgetOption:IslandOptions.qml:31",
     "label": "Motion",
     "tabIndex": 22,
     "keywords": [],
@@ -10357,7 +10493,7 @@
     "optionFile": "ClockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:24",
+    "section": "barWidgetOption:IslandOptions.qml:25",
     "label": "Notifications",
     "tabIndex": 22,
     "keywords": [],
@@ -10421,7 +10557,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:18",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:19",
     "label": "Reverse scroll direction",
     "tabIndex": 22,
     "keywords": [],
@@ -10461,7 +10597,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:20",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:21",
     "label": "Show all tags",
     "tabIndex": 22,
     "keywords": [],
@@ -10637,7 +10773,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:32",
+    "section": "barWidgetOption:IslandOptions.qml:33",
     "label": "Spring damping",
     "tabIndex": 22,
     "keywords": [],
@@ -10645,7 +10781,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:33",
+    "section": "barWidgetOption:IslandOptions.qml:34",
     "label": "Spring mass",
     "tabIndex": 22,
     "keywords": [],
@@ -10653,7 +10789,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:31",
+    "section": "barWidgetOption:IslandOptions.qml:32",
     "label": "Spring stiffness",
     "tabIndex": 22,
     "keywords": [],
@@ -10685,7 +10821,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:23",
+    "section": "barWidgetOption:IslandOptions.qml:24",
     "label": "Switch to media when playback starts",
     "tabIndex": 22,
     "keywords": [],
@@ -10741,7 +10877,7 @@
     "optionFile": "SystemTrayOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:26",
+    "section": "barWidgetOption:IslandOptions.qml:27",
     "label": "Use standard OSDs",
     "tabIndex": 22,
     "keywords": [],
@@ -10749,7 +10885,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:25",
+    "section": "barWidgetOption:IslandOptions.qml:26",
     "label": "Use standard popups",
     "tabIndex": 22,
     "keywords": [],
@@ -17184,7 +17320,14 @@
       "users"
     ],
     "parentLabel": "Users & accounts",
-    "description": "Adds them to the %1 group so they can run %2"
+    "description": "Adds them to the %1 group so they can run %2",
+    "descriptionArgs": [
+      {
+        "service": "UsersService",
+        "property": "greeterGroup"
+      },
+      "dms-greeter sync --profile"
+    ]
   },
   {
     "section": "createUserAdmin",
@@ -17207,7 +17350,13 @@
       "wheel"
     ],
     "parentLabel": "Users & accounts",
-    "description": "Adds them to the %1 group so they can use sudo"
+    "description": "Adds them to the %1 group so they can use sudo",
+    "descriptionArgs": [
+      {
+        "service": "UsersService",
+        "property": "adminGroup"
+      }
+    ]
   },
   {
     "section": "greeterAuth",
@@ -18023,11 +18172,13 @@
     "category": "Dot",
     "keywords": [
       "alert",
+      "always",
       "app drawer",
       "app menu",
       "applications",
       "bar",
       "center",
+      "clicks",
       "control",
       "control center",
       "dash",
@@ -18038,7 +18189,9 @@
       "launcher",
       "notif",
       "notification",
+      "open",
       "panel",
+      "popout",
       "routes",
       "routing",
       "shared",
@@ -18046,10 +18199,12 @@
       "start menu",
       "statusbar",
       "taskbar",
-      "topbar"
+      "their",
+      "topbar",
+      "widget"
     ],
     "parentLabel": "Bar",
-    "description": "Routes launcher, dash, control center and notification shortcuts",
+    "description": "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout",
     "conditionKey": "dotEnabled"
   },
   {

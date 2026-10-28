@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import qs.Common
+import qs.Modules.DBar
 import qs.DCommon.Widgets
 import qs.Widgets
 
@@ -93,7 +94,7 @@ Item {
         Rectangle {
             visible: entryStack.count === 0
             width: parent.width
-            height: Theme.menuItemHeight
+            height: BarMetrics.menuRowHeight
             radius: Theme.cornerRadiusS
             color: Theme.withAlpha(Theme.onSurface, visibilityToggleArea.pressed ? Theme.stateLayerPressed : visibilityToggleArea.containsMouse ? Theme.stateLayerHover : 0)
 
@@ -163,7 +164,7 @@ Item {
         Rectangle {
             visible: entryStack.count > 0
             width: parent.width
-            height: Theme.menuItemHeight
+            height: BarMetrics.menuRowHeight
             radius: Theme.cornerRadiusS
             color: Theme.withAlpha(Theme.onSurface, backArea.pressed ? Theme.stateLayerPressed : backArea.containsMouse ? Theme.stateLayerHover : 0)
 
@@ -213,7 +214,7 @@ Item {
                 readonly property var menuEntry: modelData
 
                 width: menuColumn.width
-                height: menuEntry?.isSeparator ? Theme.dividerWidth : Theme.menuItemHeight
+                height: menuEntry?.isSeparator ? Theme.dividerWidth : BarMetrics.menuRowHeight
                 radius: menuEntry?.isSeparator ? 0 : Theme.cornerRadiusS
                 color: {
                     if (menuEntry?.isSeparator)

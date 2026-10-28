@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Modals.DLauncherV2
+import qs.Modals.DLauncherV2.Components
 
 FocusScope {
     id: root
@@ -15,7 +16,7 @@ FocusScope {
     property real screenHeight: effectiveScreen?.height ?? 1080
     property real alignedX: 0
     property real alignedY: 0
-    property real bottomInset: 18
+    property real bottomInset: LauncherMetrics.islandBottomInset
 
     clip: true
 

@@ -11,24 +11,40 @@ Rectangle {
     property bool joinedEnd: false
     property bool pressed: false
     property real pressProgress: pressed ? 1 : 0
+    property real joinedStartProgress: joinedStart ? 1 : 0
+    property real joinedEndProgress: joinedEnd ? 1 : 0
     property real radiusOverride: -1
     readonly property bool mirrored: !vertical && LayoutMirroring.enabled
-    readonly property real startRadius: cornerRadius(mirrored ? joinedEnd : joinedStart)
-    readonly property real endRadius: cornerRadius(mirrored ? joinedStart : joinedEnd)
+    readonly property real freeRadius: radiusOverride >= 0 ? radiusOverride : BarMetrics.cornerRadius(thickness, style, false, pressProgress)
+    readonly property real joinedRadius: BarMetrics.cornerRadius(thickness, style, true, pressProgress)
+    readonly property real startRadius: freeRadius + (joinedRadius - freeRadius) * (mirrored ? joinedEndProgress : joinedStartProgress)
+    readonly property real endRadius: freeRadius + (joinedRadius - freeRadius) * (mirrored ? joinedStartProgress : joinedEndProgress)
 
-    function cornerRadius(joined) {
-        if (radiusOverride >= 0 && !joined)
-            return radiusOverride;
-        return BarMetrics.cornerRadius(thickness, style, joined, pressProgress);
-    }
-
-    radius: radiusOverride >= 0 ? radiusOverride : BarMetrics.cornerRadius(thickness, style, false, pressProgress)
+    radius: freeRadius
     topLeftRadius: startRadius
     topRightRadius: vertical ? startRadius : endRadius
     bottomLeftRadius: vertical ? endRadius : startRadius
     bottomRightRadius: endRadius
 
     Behavior on pressProgress {
+        enabled: !Theme.reduceMotion && !Theme.springMotionDisabled
+        NumberAnimation {
+            duration: Theme.expressiveDurations.expressiveFastSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+        }
+    }
+
+    Behavior on joinedStartProgress {
+        enabled: !Theme.reduceMotion && !Theme.springMotionDisabled
+        NumberAnimation {
+            duration: Theme.expressiveDurations.expressiveFastSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+        }
+    }
+
+    Behavior on joinedEndProgress {
         enabled: !Theme.reduceMotion && !Theme.springMotionDisabled
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveFastSpatial

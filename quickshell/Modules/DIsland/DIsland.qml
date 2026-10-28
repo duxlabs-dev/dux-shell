@@ -119,6 +119,7 @@ Item {
         case "controlcenter":
         case "wallpaper":
         case "weather":
+        case "wellbeing":
         case "notificationcenter":
         case "clipboard":
         case "powermenu":

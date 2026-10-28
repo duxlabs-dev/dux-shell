@@ -209,7 +209,6 @@ DFloatingWindow {
                     anchors.right: parent.right
                     anchors.top: aboveSearchSlot.bottom
                     anchors.topMargin: aboveSearchSlot.height > 0 ? Theme.spacingM : 0
-                    height: Theme.fieldHeightLarge
                     textColor: Theme.surfaceText
                     font.pixelSize: Theme.fontSizeMedium
                     placeholderText: root.searchPlaceholder

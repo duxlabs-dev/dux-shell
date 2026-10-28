@@ -762,32 +762,9 @@ Singleton {
 
     function migrateFromUndefinedToV1(settings) {
         if (typeof SettingsData !== "undefined") {
-            if (settings.acMonitorTimeout !== undefined) {
-                SettingsData.set("acMonitorTimeout", settings.acMonitorTimeout);
-            }
-            if (settings.acLockTimeout !== undefined) {
-                SettingsData.set("acLockTimeout", settings.acLockTimeout);
-            }
-            if (settings.acSuspendTimeout !== undefined) {
-                SettingsData.set("acSuspendTimeout", settings.acSuspendTimeout);
-            }
-            if (settings.batteryMonitorTimeout !== undefined) {
-                SettingsData.set("batteryMonitorTimeout", settings.batteryMonitorTimeout);
-            }
-            if (settings.batteryLockTimeout !== undefined) {
-                SettingsData.set("batteryLockTimeout", settings.batteryLockTimeout);
-            }
-            if (settings.batterySuspendTimeout !== undefined) {
-                SettingsData.set("batterySuspendTimeout", settings.batterySuspendTimeout);
-            }
-            if (settings.lockBeforeSuspend !== undefined) {
-                SettingsData.set("lockBeforeSuspend", settings.lockBeforeSuspend);
-            }
-            if (settings.loginctlLockIntegration !== undefined) {
-                SettingsData.set("loginctlLockIntegration", settings.loginctlLockIntegration);
-            }
-            if (settings.launchPrefix !== undefined) {
-                SettingsData.set("launchPrefix", settings.launchPrefix);
+            for (const key of ["acMonitorTimeout", "acLockTimeout", "acSuspendTimeout", "batteryMonitorTimeout", "batteryLockTimeout", "batterySuspendTimeout", "lockBeforeSuspend", "loginctlLockIntegration", "launchPrefix"]) {
+                if (settings[key] !== undefined && !SettingsData.isManaged(key))
+                    SettingsData.set(key, settings[key]);
             }
         }
         if (typeof CacheData !== "undefined") {

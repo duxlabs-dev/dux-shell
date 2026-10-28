@@ -95,6 +95,7 @@ in
 
       Service = {
         Type = "notify";
+        BusName = "org.freedesktop.Notifications";
         NotifyAccess = "main";
         Environment = [ "QS_DISABLE_CRASH_HANDLER=1" ];
         ExecStart = lib.getExe cfg.package + " run --session";

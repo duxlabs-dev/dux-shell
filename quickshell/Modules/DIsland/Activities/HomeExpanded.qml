@@ -24,6 +24,9 @@ DashTabFace {
                     if (SettingsData.weatherEnabled)
                         root.controller.requestWeather(false);
                     break;
+                case "wellbeing":
+                    root.controller.requestActivity("wellbeing", true, true);
+                    break;
                 case "notifications":
                     root.controller.requestNotificationCenter(false);
                     break;

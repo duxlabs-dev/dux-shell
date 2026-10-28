@@ -91,7 +91,7 @@ QtObject {
         case "powerprofile":
             return Theme.getPowerProfileIcon(PowerProfileWatcher.currentProfile);
         case "idleinhibitor":
-            return SessionService.idleInhibited ? "motion_sensor_active" : "motion_sensor_idle";
+            return "local_cafe";
         case "charging":
             return BatteryService.getBatteryIcon();
         }
@@ -141,7 +141,7 @@ QtObject {
             AudioService.setMicVolume(Math.round(clampedRatio * maximum));
             return;
         case "brightness":
-            BrightnessService.setBrightness(Math.round(clampedRatio * maximum), BrightnessService.lastIpcDevice, true);
+            BrightnessService.setGroupBrightness(Math.round(clampedRatio * maximum), BrightnessService.lastIpcTargets(), true);
             return;
         }
     }

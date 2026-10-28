@@ -100,7 +100,7 @@ Item {
     readonly property real effectiveBarThickness: {
         if (root.usesConnectedSurfaceChrome)
             return Math.max(0, storedBarThickness);
-        return Theme.barThickness(storedBarConfig?.innerPadding ?? 2, dpr) + storedBarSpacing;
+        return Theme.barThickness(storedBarConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault, dpr) + storedBarSpacing;
     }
 
     readonly property var barBounds: {
@@ -1365,6 +1365,14 @@ Item {
             property bool commitWindow: false
             // An idle layer surface won't commit the cleared blur region on auto-close; pulse updatesEnabled to force it.
             property bool blurCommitSuppress: false
+
+            readonly property bool popoutShown: root.shouldBeVisible
+            // The idle surface never commits the emptied input region on close without a frame.
+            onPopoutShownChanged: {
+                if (popoutShown || !backgroundWindow.visible)
+                    return;
+                holdCommits();
+            }
 
             function show() {
                 if (required)

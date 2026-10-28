@@ -50,8 +50,8 @@ Item {
         SettingsToggleRow {
             id: header
             width: parent.width
-            topRadius: root.firstInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-            bottomRadius: root.lastInGroup && !root.expanded ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
+            topRadius: root.firstInGroup ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+            bottomRadius: root.lastInGroup && !root.expanded ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
             tab: root.tab
             tags: root.tags
             settingKey: root.settingKey

@@ -26,6 +26,6 @@ DFlickable {
         width: Math.min(root.contentMaxWidth, parent.width - SettingsMetrics.focusGutter * 2)
         bottomPadding: SettingsMetrics.pagePaddingV + (root.fabBar?.reservedHeight ?? 0)
         anchors.horizontalCenter: parent.horizontalCenter
-        spacing: Theme.spacingL
+        spacing: SettingsMetrics.cardGap
     }
 }

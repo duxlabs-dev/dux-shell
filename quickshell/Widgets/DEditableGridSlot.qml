@@ -112,7 +112,7 @@ Item {
     }
 
     Behavior on width {
-        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout
+        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout && !root.grid.holdLayout
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline
@@ -121,7 +121,7 @@ Item {
     }
 
     Behavior on height {
-        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout
+        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout && !root.grid.holdLayout
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline
@@ -130,7 +130,7 @@ Item {
     }
 
     Behavior on x {
-        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout
+        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout && !root.grid.holdLayout
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveDefaultSpatial
             easing.type: Easing.BezierSpline
@@ -139,7 +139,7 @@ Item {
     }
 
     Behavior on y {
-        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout
+        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout && !root.grid.holdLayout
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveDefaultSpatial
             easing.type: Easing.BezierSpline

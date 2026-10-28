@@ -236,11 +236,17 @@
   "%1: %2": {
     "%1: %2": "%1: %2"
   },
+  "%1d ago": {
+    "%1d ago": ""
+  },
   "%1h": {
     "%1h": "%1 ساعة"
   },
   "%1h %2m": {
     "%1h %2m": "%1 ساعة %2 دقيقة"
+  },
+  "%1h ago": {
+    "%1h ago": ""
   },
   "%1m": {
     "%1m": "%1 دقيقة"
@@ -262,6 +268,9 @@
   },
   "+%1 conditions": {
     "+%1 conditions": "+%1 شرط"
+  },
+  "1 hour before": {
+    "1 hour before": ""
   },
   "1 notification": {
     "1 notification": "إشعار واحد"
@@ -625,9 +634,6 @@
   },
   "Anchor": {
     "Anchor": "المرساة (Anchor)"
-  },
-  "Anchored popouts open at the cursor instead of their widget": {
-    "Anchored popouts open at the cursor instead of their widget": "تفتح النوافذ المنبثقة المرساة عند المؤشر بدلاً من الأداة الخاصة بها"
   },
   "Animation duration": {
     "Animation duration": "مدة الحركة"
@@ -1508,6 +1514,9 @@
   "Classes": {
     "Classes": "فئات"
   },
+  "Classic": {
+    "Classic": ""
+  },
   "Clear All": {
     "Clear All": "مسح الكل"
   },
@@ -1687,6 +1696,9 @@
   },
   "Columns": {
     "Columns": "أعمدة"
+  },
+  "Comfortable": {
+    "Comfortable": ""
   },
   "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": {
     "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": "قائمة بأسماء التخطيطات مفصولة بفواصل. اتركها فارغة لاستخدام إعدادات لوحة مفاتيح النظام."
@@ -2270,6 +2282,9 @@
   "Deletes all stored screen time": {
     "Deletes all stored screen time": "يحذف كل وقت الشاشة المخزن"
   },
+  "Dense": {
+    "Dense": ""
+  },
   "Dependencies & documentation": {
     "Dependencies & documentation": "التبعيات والتوثيق"
   },
@@ -2365,6 +2380,9 @@
   },
   "Disabled": {
     "Disabled": "غير نشط"
+  },
+  "Disabled by Auto": {
+    "Disabled by Auto": ""
   },
   "Disabled by Click through": {
     "Disabled by Click through": "معطل بواسطة النقر عبر"
@@ -2539,6 +2557,9 @@
   },
   "Don't change": {
     "Don't change": "لا تغير"
+  },
+  "Don't dim unfocused apps": {
+    "Don't dim unfocused apps": ""
   },
   "Door Open": {
     "Door Open": "الباب مفتوح"
@@ -3059,6 +3080,9 @@
   "Failed to read theme file: %1": {
     "Failed to read theme file: %1": "فشل قراءة ملف السمة: %1"
   },
+  "Failed to reboot to firmware setup": {
+    "Failed to reboot to firmware setup": ""
+  },
   "Failed to reload plugin: %1": {
     "Failed to reload plugin: %1": "فشل إعادة تحميل الملحق: %1"
   },
@@ -3269,6 +3293,9 @@
   "Fires with any modifiers held": {
     "Fires with any modifiers held": "يعمل مع الضغط على أي مفاتيح تعديل"
   },
+  "Firmware setup": {
+    "Firmware setup": ""
+  },
   "First Time Setup": {
     "First Time Setup": "الإعداد لأول مرة"
   },
@@ -3427,6 +3454,9 @@
   },
   "For %1": {
     "For %1": "لـ %1"
+  },
+  "For 1 hour": {
+    "For 1 hour": ""
   },
   "For you": {
     "For you": "لك"
@@ -4235,6 +4265,9 @@
   "Interface": {
     "Interface": "الواجهة"
   },
+  "Interface density": {
+    "Interface density": ""
+  },
   "Interface style": {
     "Interface style": "نمط الواجهة"
   },
@@ -4261,6 +4294,9 @@
   },
   "Invalid wallpaper layout": {
     "Invalid wallpaper layout": "تخطيط خلفية غير صالح"
+  },
+  "Inverse Surface": {
+    "Inverse Surface": ""
   },
   "Iridescence": {
     "Iridescence": "قزحية"
@@ -4712,6 +4748,9 @@
   "Managed by Nix": {
     "Managed by Nix": "مدار بواسطة Nix"
   },
+  "Managed by administrator policy": {
+    "Managed by administrator policy": ""
+  },
   "Managed by the primary PAM source": {
     "Managed by the primary PAM source": "تتم إدارتها بواسطة مصدر PAM الأساسي"
   },
@@ -4801,9 +4840,6 @@
   },
   "Material palette": {
     "Material palette": "لوحة الألوان المادية"
-  },
-  "Material scale": {
-    "Material scale": "مقياس مادي"
   },
   "Matugen Missing": {
     "Matugen Missing": "Matugen مفقود"
@@ -6656,6 +6692,9 @@
   "Read:": {
     "Read:": "قراءة:"
   },
+  "Readings": {
+    "Readings": ""
+  },
   "Reads audio devices and volume": {
     "Reads audio devices and volume": "يقرأ أجهزة الصوت ومستوى الصوت"
   },
@@ -6686,11 +6725,14 @@
   "Reboot recommended": {
     "Reboot recommended": "يوصى بإعادة التشغيل"
   },
+  "Reboot targets": {
+    "Reboot targets": ""
+  },
   "Reboot to %1": {
     "Reboot to %1": "إعادة التشغيل إلى %1"
   },
-  "Reboot to another OS": {
-    "Reboot to another OS": "إعادة التشغيل إلى نظام تشغيل آخر"
+  "Reboot to firmware setup": {
+    "Reboot to firmware setup": ""
   },
   "Recent": {
     "Recent": "الأخيرة"
@@ -7007,8 +7049,8 @@
   "Route Bluetooth headset controls to the active DMS media player": {
     "Route Bluetooth headset controls to the active DMS media player": "توجيه عناصر تحكم سماعة البلوتوث إلى مشغل وسائط DMS النشط"
   },
-  "Routes launcher, dash, control center and notification shortcuts": {
-    "Routes launcher, dash, control center and notification shortcuts": "يوجه المشغل، ولوحة المعلومات، ومركز التحكم، واختصارات التنبيهات"
+  "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": {
+    "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": ""
   },
   "Rows": {
     "Rows": "الصفوف"
@@ -7262,6 +7304,9 @@
   "Secondary Container": {
     "Secondary Container": "حاوية ثانوية"
   },
+  "Section dividers": {
+    "Section dividers": ""
+  },
   "Sections": {
     "Sections": "الأقسام"
   },
@@ -7312,6 +7357,9 @@
   },
   "Select Dock Launcher Logo": {
     "Select Dock Launcher Logo": "اختيار شعار مشغل التطبيقات في شريط التطبيقات"
+  },
+  "Select Dot Icon": {
+    "Select Dot Icon": ""
   },
   "Select ICC Profile": {
     "Select ICC Profile": "اختر ملف تعريف ICC"
@@ -7835,6 +7883,9 @@
   "Spacing": {
     "Spacing": "التباعد"
   },
+  "Spacious": {
+    "Spacious": ""
+  },
   "Speaker settings": {
     "Speaker settings": "إعدادات السماعات"
   },
@@ -8051,6 +8102,9 @@
   "Switches to power saver at the low battery threshold": {
     "Switches to power saver at the low battery threshold": "يتحول إلى وضع توفير الطاقة عند وصول البطارية إلى حد منخفض"
   },
+  "Symbol": {
+    "Symbol": ""
+  },
   "Sync": {
     "Sync": "مزامنة"
   },
@@ -8233,6 +8287,9 @@
   },
   "The Aqueous operation failed.": {
     "The Aqueous operation failed.": "فشلت عملية Aqueous."
+  },
+  "The Control Center opens at the cursor instead of its widget": {
+    "The Control Center opens at the cursor instead of its widget": ""
   },
   "The Default action only overrides priority": {
     "The Default action only overrides priority": "الإجراء الافتراضي يتجاوز الأولوية فقط"
@@ -8566,6 +8623,9 @@
   },
   "Tools": {
     "Tools": "الأدوات"
+  },
+  "Tooltip": {
+    "Tooltip": ""
   },
   "Top": {
     "Top": "أعلى"
@@ -9466,6 +9526,12 @@
   },
   "display rotation option": {
     "Normal": "عادي"
+  },
+  "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural": {
+    "%1 days": "",
+    "%1 hours": "",
+    "%1 minutes": "",
+    "%1 seconds": ""
   },
   "e.g. /usr/bin/my-script --flag": {
     "e.g. /usr/bin/my-script --flag": "مثال: /usr/bin/my-script --flag"

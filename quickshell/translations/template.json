@@ -161,6 +161,13 @@
     "comment": "duration, plural, %1 is a number"
   },
   {
+    "term": "%1 days",
+    "translation": "",
+    "context": "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "%1 disconnected",
     "translation": "",
     "context": "%1 disconnected",
@@ -259,6 +266,13 @@
     "comment": "duration, plural, %1 is a number"
   },
   {
+    "term": "%1 hours",
+    "translation": "",
+    "context": "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "%1 is %2 and may use a lot of memory.",
     "translation": "",
     "context": "%1 is %2 and may use a lot of memory.",
@@ -348,6 +362,13 @@
     "context": "%1 minutes",
     "reference": "",
     "comment": "duration, plural, %1 is a number"
+  },
+  {
+    "term": "%1 minutes",
+    "translation": "",
+    "context": "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "%1 ms",
@@ -469,6 +490,13 @@
     "comment": "duration, plural, %1 is a number"
   },
   {
+    "term": "%1 seconds",
+    "translation": "",
+    "context": "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "%1 tasks",
     "translation": "",
     "context": "%1 tasks",
@@ -553,6 +581,13 @@
     "comment": "vpn error toast, %1 is the vpn name, %2 is the error"
   },
   {
+    "term": "%1d ago",
+    "translation": "",
+    "context": "%1d ago",
+    "reference": "",
+    "comment": "Tailscale peer last seen time, %1 is a number of days"
+  },
+  {
     "term": "%1h",
     "translation": "",
     "context": "%1h",
@@ -567,6 +602,13 @@
     "comment": "battery time remaining"
   },
   {
+    "term": "%1h ago",
+    "translation": "",
+    "context": "%1h ago",
+    "reference": "",
+    "comment": "Tailscale peer last seen time, %1 is a number of hours"
+  },
+  {
     "term": "%1m",
     "translation": "",
     "context": "%1m",
@@ -578,7 +620,7 @@
     "translation": "",
     "context": "%1m ago",
     "reference": "",
-    "comment": "notification relative time, %1 is a number of minutes"
+    "comment": "Tailscale peer last seen time, %1 is a number of minutes | notification relative time, %1 is a number of minutes"
   },
   {
     "term": "'Alternative' lets the key unlock on its own. 'Second factor' requires password or fingerprint first, then the key.",
@@ -614,6 +656,13 @@
     "context": "+%1 conditions",
     "reference": "",
     "comment": "notification rule summary, %1 is the number of extra conditions"
+  },
+  {
+    "term": "1 hour before",
+    "translation": "",
+    "context": "1 hour before",
+    "reference": "",
+    "comment": "calendar reminder option"
   },
   {
     "term": "1 notification",
@@ -1475,13 +1524,6 @@
     "context": "Anchor",
     "reference": "",
     "comment": "noun, screen corner or edge a floating window position is relative to"
-  },
-  {
-    "term": "Anchored popouts open at the cursor instead of their widget",
-    "translation": "",
-    "context": "Anchored popouts open at the cursor instead of their widget",
-    "reference": "",
-    "comment": ""
   },
   {
     "term": "Animation duration",
@@ -3570,6 +3612,13 @@
     "comment": "printer settings card title, cups printer classes"
   },
   {
+    "term": "Classic",
+    "translation": "",
+    "context": "Classic",
+    "reference": "",
+    "comment": "interface style option with one corner radius on controls and no shape change on press"
+  },
+  {
     "term": "Clear",
     "translation": "",
     "context": "Clear",
@@ -4011,6 +4060,13 @@
     "comment": "number of columns in the wallpaper grid option"
   },
   {
+    "term": "Comfortable",
+    "translation": "",
+    "context": "Comfortable",
+    "reference": "",
+    "comment": "interface density option with the default spacing"
+  },
+  {
     "term": "Comma-separated list of layout names. Leave empty to use the system keyboard settings.",
     "translation": "",
     "context": "Comma-separated list of layout names. Leave empty to use the system keyboard settings.",
@@ -4064,7 +4120,7 @@
     "translation": "",
     "context": "Compact",
     "reference": "",
-    "comment": "adjective, dock style option, also notification compact mode toggle"
+    "comment": "adjective, dock style option, also notification compact mode toggle | interface density option fitting the most items on screen"
   },
   {
     "term": "Compact mode",
@@ -5404,6 +5460,13 @@
     "comment": "confirmation message before clearing screen time history"
   },
   {
+    "term": "Dense",
+    "translation": "",
+    "context": "Dense",
+    "reference": "",
+    "comment": "interface density option denser than compact for small text and tight rows"
+  },
+  {
     "term": "Dependencies & documentation",
     "translation": "",
     "context": "Dependencies & documentation",
@@ -5640,6 +5703,13 @@
     "context": "Disabled",
     "reference": "",
     "comment": "bluetooth status | lock screen notification mode option"
+  },
+  {
+    "term": "Disabled by Auto",
+    "translation": "",
+    "context": "Disabled by Auto",
+    "reference": "",
+    "comment": "display profiles row, Auto is the profile auto select toggle above it"
   },
   {
     "term": "Disabled by Click through",
@@ -6046,6 +6116,13 @@
     "context": "Don't change",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Don't dim unfocused apps",
+    "translation": "",
+    "context": "Don't dim unfocused apps",
+    "reference": "",
+    "comment": "workspace switcher toggle: show icons of unfocused apps at full opacity"
   },
   {
     "term": "Door Open",
@@ -7273,6 +7350,13 @@
     "comment": "error toast, %1 is the error message"
   },
   {
+    "term": "Failed to reboot to firmware setup",
+    "translation": "",
+    "context": "Failed to reboot to firmware setup",
+    "reference": "",
+    "comment": "error toast, firmware setup is the UEFI/BIOS settings screen"
+  },
+  {
     "term": "Failed to reload plugin: %1",
     "translation": "",
     "context": "Failed to reload plugin: %1",
@@ -7770,6 +7854,13 @@
     "comment": "keybind option tooltip, hyprland ignore mods flag"
   },
   {
+    "term": "Firmware setup",
+    "translation": "",
+    "context": "Firmware setup",
+    "reference": "",
+    "comment": "settings toggle, adds a power menu action that reboots into the UEFI/BIOS settings screen"
+  },
+  {
     "term": "First Time Setup",
     "translation": "",
     "context": "First Time Setup",
@@ -8146,6 +8237,13 @@
     "context": "For %1",
     "reference": "",
     "comment": "timed preset menu option, %1 is a duration such as 15 minutes"
+  },
+  {
+    "term": "For 1 hour",
+    "translation": "",
+    "context": "For 1 hour",
+    "reference": "",
+    "comment": "timed preset menu option"
   },
   {
     "term": "For you",
@@ -10080,6 +10178,13 @@
     "comment": "noun, wifi network interface name label"
   },
   {
+    "term": "Interface density",
+    "translation": "",
+    "context": "Interface density",
+    "reference": "",
+    "comment": "interface density setting label"
+  },
+  {
     "term": "Interface style",
     "translation": "",
     "context": "Interface style",
@@ -10141,6 +10246,13 @@
     "context": "Invalid wallpaper layout",
     "reference": "",
     "comment": "material wallpaper import error"
+  },
+  {
+    "term": "Inverse Surface",
+    "translation": "",
+    "context": "Inverse Surface",
+    "reference": "",
+    "comment": "surface color option"
   },
   {
     "term": "Iridescence",
@@ -11207,6 +11319,13 @@
     "comment": "badge on the DMS update row when the shell is installed through Nix"
   },
   {
+    "term": "Managed by administrator policy",
+    "translation": "",
+    "context": "Managed by administrator policy",
+    "reference": "",
+    "comment": "settings note: the administrator lock policy sets this value"
+  },
+  {
     "term": "Managed by the primary PAM source",
     "translation": "",
     "context": "Managed by the primary PAM source",
@@ -11393,7 +11512,7 @@
     "translation": "",
     "context": "Material",
     "reference": "",
-    "comment": "wallpaper type"
+    "comment": "corner style: Material shape scale with a strength slider | wallpaper type"
   },
   {
     "term": "Material Design inspired color themes",
@@ -11415,13 +11534,6 @@
     "context": "Material palette",
     "reference": "",
     "comment": "theme settings card title, matugen palette options"
-  },
-  {
-    "term": "Material scale",
-    "translation": "",
-    "context": "Material scale",
-    "reference": "",
-    "comment": "corner style: Material shape scale with a strength slider"
   },
   {
     "term": "Matugen Missing",
@@ -15848,6 +15960,13 @@
     "comment": "disk read label"
   },
   {
+    "term": "Readings",
+    "translation": "",
+    "context": "Readings",
+    "reference": "",
+    "comment": "weather widget title, grid of current measurements"
+  },
+  {
     "term": "Reads audio devices and volume",
     "translation": "",
     "context": "Reads audio devices and volume",
@@ -15925,6 +16044,13 @@
     "comment": "chip shown after a kernel or systemd upgrade"
   },
   {
+    "term": "Reboot targets",
+    "translation": "",
+    "context": "Reboot targets",
+    "reference": "",
+    "comment": "settings card title, firmware setup and EFI boot entries the power menu can reboot into once"
+  },
+  {
     "term": "Reboot to %1",
     "translation": "",
     "context": "Reboot to %1",
@@ -15932,11 +16058,11 @@
     "comment": "power menu action, %1 is a boot entry such as Windows Boot Manager"
   },
   {
-    "term": "Reboot to another OS",
+    "term": "Reboot to firmware setup",
     "translation": "",
-    "context": "Reboot to another OS",
+    "context": "Reboot to firmware setup",
     "reference": "",
-    "comment": "settings card title, lists EFI boot entries the power menu can reboot into"
+    "comment": "power menu action, firmware setup is the UEFI/BIOS settings screen"
   },
   {
     "term": "Recent",
@@ -16709,9 +16835,9 @@
     "comment": "Description of how Bluetooth headset media buttons select a player"
   },
   {
-    "term": "Routes launcher, dash, control center and notification shortcuts",
+    "term": "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout",
     "translation": "",
-    "context": "Routes launcher, dash, control center and notification shortcuts",
+    "context": "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout",
     "reference": "",
     "comment": "shared shortcuts dropdown description"
   },
@@ -17325,6 +17451,13 @@
     "comment": "surface color option | widget background color option | workspace color option"
   },
   {
+    "term": "Section dividers",
+    "translation": "",
+    "context": "Section dividers",
+    "reference": "",
+    "comment": "classic interface style: strength of the lines between rows of a settings section"
+  },
+  {
     "term": "Sections",
     "translation": "",
     "context": "Sections",
@@ -17440,6 +17573,13 @@
     "term": "Select Dock Launcher Logo",
     "translation": "",
     "context": "Select Dock Launcher Logo",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Select Dot Icon",
+    "translation": "",
+    "context": "Select Dot Icon",
     "reference": "",
     "comment": ""
   },
@@ -18683,6 +18823,13 @@
     "comment": "slider label, gap between dock items"
   },
   {
+    "term": "Spacious",
+    "translation": "",
+    "context": "Spacious",
+    "reference": "",
+    "comment": "interface density option with the most room between items"
+  },
+  {
     "term": "Speaker settings",
     "translation": "",
     "context": "Speaker settings",
@@ -19215,6 +19362,13 @@
     "comment": "battery auto power saver toggle description"
   },
   {
+    "term": "Symbol",
+    "translation": "",
+    "context": "Symbol",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Sync",
     "translation": "",
     "context": "Sync",
@@ -19654,6 +19808,13 @@
     "context": "The Aqueous operation failed.",
     "reference": "",
     "comment": "Fallback error for an Aqueous compositor or configuration request"
+  },
+  {
+    "term": "The Control Center opens at the cursor instead of its widget",
+    "translation": "",
+    "context": "The Control Center opens at the cursor instead of its widget",
+    "reference": "",
+    "comment": "bar click action follow mouse description"
   },
   {
     "term": "The Default action only overrides priority",
@@ -20431,6 +20592,13 @@
     "context": "Tools",
     "reference": "",
     "comment": "about page card title for welcome and system check"
+  },
+  {
+    "term": "Tooltip",
+    "translation": "",
+    "context": "Tooltip",
+    "reference": "",
+    "comment": "surface role"
   },
   {
     "term": "Top",

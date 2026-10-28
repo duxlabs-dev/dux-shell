@@ -6,6 +6,7 @@ import Quickshell.Wayland
 import qs.Common
 import qs.Widgets
 import qs.Services
+import qs.Modules.Lock
 import "../Common/WorkspaceModel.js" as WorkspaceModel
 
 Variants {
@@ -102,8 +103,7 @@ Variants {
             property bool contentReady: false
             property bool surfaceBounce: false
 
-            property string scrollMode: SettingsData.wallpaperFillMode
-            property bool scrollingEnabled: scrollMode === "Scrolling"
+            readonly property bool scrollingEnabled: SessionData.getMonitorWallpaperFillMode(modelData.name) === "Scrolling"
             property int currentWorkspaceIndex: 0
             property int totalWorkspaces: 1
             // Also requires the image to overflow on the compositor's scroll
@@ -178,7 +178,7 @@ Variants {
             readonly property var backingWindow: Window.window
             readonly property bool showsBackdrop: !source || isColorSource || currentWallpaper.status === Image.Error
             readonly property bool backdropBusy: showsBackdrop && !(backdropLoader.item?.ready ?? false)
-            readonly property bool renderActive: backdropBusy || effectActive || overviewBlurActive || pendingWallpaper !== "" || _deferredSource !== "" || changePending || _freezeWaitFrames > 0 || frameAnim.running || currentWallpaper.status === Image.Loading || nextWallpaper.status === Image.Loading || parallaxImage.status === Image.Loading
+            readonly property bool renderActive: backdropBusy || effectActive || overviewBlurActive || pendingWallpaper !== "" || _deferredSource !== "" || changePending || _freezeWaitFrames > 0 || frameAnim.running || currentWallpaper.status === Image.Loading || nextWallpaper.status === Image.Loading || parallaxImage.status === Image.Loading || lockScrollSampler.busy
             property int _settleFrames: 3
 
             function invalidate() {
@@ -764,7 +764,6 @@ Variants {
 
                 sourceComponent: DBackdrop {
                     screenName: modelData.name
-                    blur: root.overviewBlurActive ? Theme.wallpaperBlur : 0
                     onInvalidated: root.invalidate()
                 }
             }
@@ -773,6 +772,11 @@ Variants {
             property real screenScale: 1
             property int textureWidth: Math.min(Math.round(modelData.width * screenScale), maxTextureSize)
             property int textureHeight: Math.min(Math.round(modelData.height * screenScale), maxTextureSize)
+
+            LockScrollSampler {
+                id: lockScrollSampler
+                screen: modelData
+            }
 
             QtObject {
                 id: imageMetrics
@@ -1212,11 +1216,11 @@ Variants {
             Loader {
                 id: overviewBlurLoader
                 anchors.fill: parent
-                active: root.overviewBlurActive && !root.showsBackdrop
+                active: root.overviewBlurActive
 
                 sourceComponent: MultiEffect {
                     anchors.fill: parent
-                    source: effectLoader.active ? effectLoader.item : (parallaxLoader.active ? parallaxLoader.item : srcCurrent)
+                    source: root.showsBackdrop ? backdropLoader.item : (effectLoader.active ? effectLoader.item : (parallaxLoader.active ? parallaxLoader.item : srcCurrent))
                     blurEnabled: true
                     blur: 0.8
                     blurMax: 75

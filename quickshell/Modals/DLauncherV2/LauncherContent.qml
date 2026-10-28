@@ -285,7 +285,7 @@ FocusScope {
             id: footerBar
             readonly property bool _connectedBottomEmerge: (root.parentModal?.frameOwnsConnectedChrome ?? false) && (root.parentModal?.resolvedConnectedBarSide === "bottom")
             readonly property bool _connectedArcAtFooter: _connectedBottomEmerge && !(root.parentModal?.launcherArcExtenderActive ?? false)
-            readonly property bool showFooter: SettingsData.dankLauncherV2Size !== "micro" && SettingsData.dankLauncherV2ShowFooter && controller.searchMode !== "dmenu"
+            readonly property bool showFooter: LauncherMetrics.footerShown(SettingsData.dankLauncherV2Size) && controller.searchMode !== "dmenu"
             readonly property int edgeInset: root.parentModal?.paintedBorderWidth ?? Theme.outlineWidth
             readonly property var modes: [
                 {
@@ -675,6 +675,8 @@ FocusScope {
                     focusReturnTarget: searchField
                     keyForwardTargets: [root]
                     anchors.fill: parent
+                    fitGridRows: true
+                    resizing: actionPanel.animating
                     controller: root.controller
                     leadingSectionHeaderAtBottom: contentHolder.inverted
                     transientSurfaceTracker: root.transientSurfaceTracker

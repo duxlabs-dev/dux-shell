@@ -168,7 +168,7 @@ Singleton {
             "id": "idleInhibitor",
             "text": I18n.tr("Idle inhibitor", "feature that keeps the session from going idle"),
             "description": I18n.tr("Prevent screen timeout"),
-            "icon": "motion_sensor_active",
+            "icon": "local_cafe",
             "section": "right"
         },
         {

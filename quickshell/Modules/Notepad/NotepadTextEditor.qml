@@ -394,7 +394,6 @@ Column {
                 id: searchField
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
-                Layout.preferredHeight: Theme.buttonHeightXS
                 leftIconSize: Theme.iconSizeSmall
                 font.pixelSize: Theme.fontSizeMedium
                 placeholderText: I18n.tr("Find in note...")

@@ -1,7 +1,6 @@
 package distros
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"os"
@@ -165,31 +164,8 @@ func (a *ArchDistribution) detectDMSGreeter() deps.Dependency {
 	return dep
 }
 
-// AUR packages renamed for Dux; installs from before the rename keep the old name.
-var legacyAURNames = map[string]string{
-	"dux-shell-git":    "dms-shell-git",
-	"dux-greeter-bin":  "greetd-dms-greeter-bin",
-	"dux-greeter-git":  "greetd-dms-greeter-git",
-	"dux-search-bin":   "dsearch-bin",
-	"dux-search-git":   "dsearch-git",
-	"dux-calendar-bin": "dankcalendar-bin",
-	"dux-calendar-git": "dankcalendar-git",
-}
-
 func (a *ArchDistribution) packageInstalled(pkg string) bool {
-	return a.installedName(pkg) != ""
-}
-
-// installedName returns the name pkg is installed under, which may be its pre-rename name.
-func (a *ArchDistribution) installedName(pkg string) string {
-	if exec.Command("pacman", "-Q", pkg).Run() == nil {
-		return pkg
-	}
-	legacy, ok := legacyAURNames[pkg]
-	if ok && exec.Command("pacman", "-Q", legacy).Run() == nil {
-		return legacy
-	}
-	return ""
+	return exec.Command("pacman", "-Q", pkg).Run() == nil
 }
 
 // parseSRCINFODeps reads a .SRCINFO file and returns runtime dep and makedep package
@@ -292,7 +268,7 @@ func (a *ArchDistribution) getMangoMapping(variant deps.PackageVariant) PackageM
 	if variant == deps.VariantGit {
 		return PackageMapping{Name: "mangowm-git", Repository: RepoTypeAUR}
 	}
-	return PackageMapping{Name: "mangowm", Repository: RepoTypeAUR}
+	return PackageMapping{Name: "mangowm", Repository: RepoTypeSystem}
 }
 
 func (a *ArchDistribution) getMatugenMapping(variant deps.PackageVariant) PackageMapping {
@@ -331,7 +307,7 @@ func (a *ArchDistribution) getDMSMapping(variant deps.PackageVariant) PackageMap
 	if forceDMSGit || variant == deps.VariantGit {
 		return PackageMapping{Name: "dux-shell-git", Repository: RepoTypeAUR}
 	}
-	return PackageMapping{Name: "dms-shell", Repository: RepoTypeSystem}
+	return PackageMapping{Name: "dux-shell", Repository: RepoTypeSystem}
 }
 
 func (a *ArchDistribution) detectXwaylandSatellite() deps.Dependency {
@@ -418,7 +394,7 @@ func (a *ArchDistribution) InstallPackages(ctx context.Context, dependencies []d
 
 	systemPkgs, aurPkgs, manualPkgs, variantMap := a.categorizePackages(dependencies, wm, reinstallFlags, skipFlags)
 
-	if slices.Contains(aurPkgs, "quickshell-git") && slices.Contains(systemPkgs, "dms-shell") {
+	if slices.Contains(aurPkgs, "quickshell-git") && slices.Contains(systemPkgs, "dux-shell") {
 		if err := a.preinstallQuickshellGit(ctx, sudoPassword, progressChan); err != nil {
 			return fmt.Errorf("failed to preinstall quickshell-git: %w", err)
 		}
@@ -588,7 +564,7 @@ func (a *ArchDistribution) preinstallQuickshellGit(ctx context.Context, sudoPass
 		Progress:    0.18,
 		Step:        "Building quickshell-git before system packages...",
 		IsComplete:  false,
-		CommandInfo: "Installing quickshell-git ahead of dms-shell to avoid conflict",
+		CommandInfo: "Installing quickshell-git ahead of dux-shell to avoid conflict",
 	}
 	return a.installSingleAURPackage(ctx, "quickshell-git", sudoPassword, progressChan, 0.18, 0.32)
 }
@@ -609,7 +585,7 @@ func (a *ArchDistribution) SwapVariants(ctx context.Context, swaps []VariantSwap
 		}
 
 		if swap.To.Repository == RepoTypeAUR {
-			from := cmp.Or(a.installedName(swap.From.Name), swap.From.Name)
+			from := swap.From.Name
 			if err := a.installSingleAURPackageInternal(ctx, swap.To.Name, from, sudoPassword, progressChan, 0.40, 0.85, make(map[string]bool)); err != nil {
 				return err
 			}
@@ -631,11 +607,7 @@ func (a *ArchDistribution) installSystemPackages(ctx context.Context, packages [
 
 	a.log(fmt.Sprintf("Installing system packages: %s", strings.Join(packages, ", ")))
 
-	args := []string{"pacman", "-S", "--needed", "--noconfirm"}
-	if slices.Contains(packages, "dms-shell") {
-		args = append(args, "--assume-installed", "dms-shell-compositor=1")
-	}
-	args = append(args, packages...)
+	args := append([]string{"pacman", "-S", "--needed", "--noconfirm"}, packages...)
 
 	progressChan <- InstallProgressMsg{
 		Phase:       PhaseSystemPackages,
@@ -806,15 +778,16 @@ func (a *ArchDistribution) installSingleAURPackageInternal(ctx context.Context, 
 
 	if pkg == "dux-shell-git" {
 		srcinfoPath := filepath.Join(packageDir, ".SRCINFO")
-		depsToRemove := []string{
-			"depends = quickshell",
-			"depends = dgop",
+		// extra ships dgop only as dux-gop (provides dgop), which makepkg resolves but pacman -Si does not
+		srcinfoEdits := []string{
+			"/depends = quickshell/d",
+			`s/^\(\s*depends = \)dgop$/\1dux-gop/`,
 		}
 
-		for _, dep := range depsToRemove {
-			sedCmd := exec.CommandContext(ctx, "sed", "-i", fmt.Sprintf("/%s/d", dep), srcinfoPath)
+		for _, edit := range srcinfoEdits {
+			sedCmd := exec.CommandContext(ctx, "sed", "-i", edit, srcinfoPath)
 			if err := sedCmd.Run(); err != nil {
-				return fmt.Errorf("failed to remove dependency %s from .SRCINFO for %s: %w", dep, pkg, err)
+				return fmt.Errorf("failed to patch .SRCINFO for %s: %w", pkg, err)
 			}
 		}
 	}

@@ -28,7 +28,7 @@ Item {
     }
 
     readonly property real targetImplicitHeight: {
-        let baseHeight = Theme.spacingL * 2;
+        let baseHeight = PopoutMetrics.contentPadding * 2;
         baseHeight += cachedHeaderHeight;
         baseHeight += Theme.spacingM * 2;
 

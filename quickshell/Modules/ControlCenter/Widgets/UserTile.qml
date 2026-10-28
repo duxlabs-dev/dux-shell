@@ -25,7 +25,7 @@ Item {
     readonly property bool wide: width >= height * 2
     readonly property bool background: widgetData?.background === true
     readonly property bool tall: height >= CcMetrics.gridRowUnit * 2
-    readonly property real inset: background ? (tall ? Theme.spacingM : Theme.spacingS) : 0
+    readonly property real inset: background ? (tall ? CcMetrics.tallTilePadding : CcMetrics.tilePadding) : 0
     readonly property real avatarSide: Math.min(width, height) - inset * 2
     readonly property string shape: widgetData?.shape ?? WidgetUtils.USER_SHAPES[0]
     readonly property bool editMode: host?.editMode ?? false
@@ -34,7 +34,7 @@ Item {
     readonly property real bodyRadius: {
         if (!background)
             return Theme.fullRadius(avatarSide, avatarSide);
-        return tall ? Math.min(CcMetrics.tallTileRadius, width / 2, height / 2) : Theme.fullRadius(width, height);
+        return tall ? Math.min(CcMetrics.tallTileRadius, width / 2, height / 2) : CcMetrics.pillRadius(width, height);
     }
     readonly property real fallbackGlyphRatio: 0.5
     readonly property string avatarSource: PortalService.profileImageUrl

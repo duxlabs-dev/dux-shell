@@ -18,6 +18,7 @@ import "settings/SettingsStore.js" as Store
 import "../DCommon/Common/settings/SpecUtil.js" as SpecUtil
 import "settings/BarWidgetDefaults.js" as WidgetDefaults
 import "settings/DockConfig.js" as DockConfig
+import "settings/DensityPresets.js" as DensityPresets
 
 Singleton {
     id: root
@@ -183,6 +184,8 @@ Singleton {
     property string hostSurfaceCustomColor: Spec.SPEC.hostSurfaceCustomColor.def
     property string cardSurfaceColor: Spec.SPEC.cardSurfaceColor.def
     property string cardSurfaceCustomColor: Spec.SPEC.cardSurfaceCustomColor.def
+    property string tooltipSurfaceColor: Spec.SPEC.tooltipSurfaceColor.def
+    property string tooltipSurfaceCustomColor: Spec.SPEC.tooltipSurfaceCustomColor.def
     property string chipSurfaceColor: Spec.SPEC.chipSurfaceColor.def
     property string chipSurfaceCustomColor: Spec.SPEC.chipSurfaceCustomColor.def
     property string chipSurfaceNestedColor: Spec.SPEC.chipSurfaceNestedColor.def
@@ -306,6 +309,8 @@ Singleton {
     onScrollbarsEnabledChanged: saveSettings()
     property int motionEffect: SettingsData.AnimationEffect.Standard
     onMotionEffectChanged: saveSettings()
+    property string density: Spec.SPEC.density.def
+    property string interfaceStyle: Spec.SPEC.interfaceStyle.def
     property bool m3ElevationEnabled: Spec.SPEC.m3ElevationEnabled.def
     onM3ElevationEnabledChanged: saveSettings()
     property int m3ElevationIntensity: Spec.SPEC.m3ElevationIntensity.def
@@ -335,6 +340,8 @@ Singleton {
     property real foregroundLayerTransparency: Spec.SPEC.foregroundLayerTransparency.def
     property real blurLayerOutlineOpacity: Spec.SPEC.blurLayerOutlineOpacity.def
     onBlurLayerOutlineOpacityChanged: saveSettings()
+    property real sectionDividerOpacity: Spec.SPEC.sectionDividerOpacity.def
+    onSectionDividerOpacityChanged: saveSettings()
     property bool blurBorderEnabled: Spec.SPEC.blurBorderEnabled.def
     onBlurBorderEnabledChanged: saveSettings()
     property string blurBorderColor: Spec.SPEC.blurBorderColor.def
@@ -876,8 +883,10 @@ Singleton {
     // One slot per edge; a dot floats, so it never takes one.
     readonly property int edgeBarConfigCount: (barConfigs || []).filter(cfg => cfg && !isDotBarConfig(cfg)).length
     readonly property var dotBarConfig: (barConfigs || []).find(cfg => isDotBarConfig(cfg)) ?? null
-    readonly property var islandDefaults: WidgetDefaults.ISLAND_DEFAULTS
+    readonly property var islandDefaults: Object.assign({}, WidgetDefaults.ISLAND_DEFAULTS, DensityPresets.values("island", density))
     readonly property var islandWidgetDefaults: WidgetDefaults.DEFAULTS.island
+    readonly property real barInnerPaddingDefault: barConfigDefault("innerPadding")
+    readonly property real barWidgetPaddingDefault: barConfigDefault("widgetPadding")
 
     function islandSettings(bc) {
         if (!bc)
@@ -1724,7 +1733,33 @@ Singleton {
         saveSettings();
     }
 
+    function applyDensityPresets(who, key, previous) {
+        // Theme renders an unknown level as comfortable.
+        const from = DensityPresets.LEVELS.includes(previous) ? previous : "comfortable";
+        const writes = Object.assign({
+            "barConfigs": DensityPresets.transitionAll(barConfigs, "bar", from, density),
+            "dockConfigs": DensityPresets.transitionAll(dockConfigs, "dock", from, density)
+        }, DensityPresets.transition({
+            "frameThickness": frameThickness,
+            "frameBarSize": frameBarSize
+        }, "frame", from, density));
+        for (const name in writes) {
+            if (writes[name] !== null && !isManaged(name))
+                root[name] = writes[name];
+        }
+    }
+
+    function applyInterfaceStyle(who, key, previous) {
+        const from = Store.styleDefault("radiusMode", previous) ?? Spec.SPEC.radiusMode.def;
+        if (radiusMode !== from || isManaged("radiusMode"))
+            return;
+        radiusMode = presetDefault("radiusMode") ?? Spec.SPEC.radiusMode.def;
+        updateCompositorLayout();
+    }
+
     readonly property var _hooks: ({
+            "applyDensityPresets": applyDensityPresets,
+            "applyInterfaceStyle": applyInterfaceStyle,
             "applyStoredTheme": applyStoredTheme,
             "regenSystemThemes": regenSystemThemes,
             "updateCompositorLayout": updateCompositorLayout,
@@ -1740,33 +1775,52 @@ Singleton {
         })
 
     function set(key, value) {
-        if (key === "cornerRadius") {
-            setCornerRadius(value);
-            return;
+        if (isManaged(key)) {
+            log.warn("Refusing to change a setting managed by administrator policy:", key);
+            return false;
         }
+        if (key === "density" && !DensityPresets.LEVELS.includes(value)) {
+            log.warn("Refusing an unknown density:", value);
+            return false;
+        }
+        if (key === "interfaceStyle" && !["expressive", "classic"].includes(value)) {
+            log.warn("Refusing an unknown interface style:", value);
+            return false;
+        }
+        if (key === "cornerRadius")
+            return setCornerRadius(value);
         if (key === "radiusStrength")
             value = Shape.normalizeStrength(value);
         Spec.set(root, key, value, saveSettings, _hooks);
         if (key === "frameEnabled" && value)
             clearIslandBars();
+        return true;
     }
 
     function hasSetting(key) {
         return key in Spec.SPEC;
     }
 
+    function isManaged(key) {
+        return key in AdminPolicy.lockSettings;
+    }
+
+    function presetDefault(key) {
+        return DensityPresets.value("frame", key, density) ?? Store.styleDefault(key, interfaceStyle);
+    }
+
     function specDefault(key) {
-        return SpecUtil.cloneDef(Spec.SPEC[key]?.def);
+        return presetDefault(key) ?? SpecUtil.cloneDef(Spec.SPEC[key]?.def);
     }
 
     function isDefault(keys) {
-        return keys.every(key => !(key in Spec.SPEC) || SpecUtil.isDefault(root[key], Spec.SPEC[key].def));
+        return keys.every(key => !(key in Spec.SPEC) || SpecUtil.isDefault(root[key], presetDefault(key) ?? Spec.SPEC[key].def));
     }
 
     function resetToDefault(keys) {
         for (const key of keys) {
-            if (key in Spec.SPEC)
-                Spec.set(root, key, null, saveSettings, _hooks);
+            if (key in Spec.SPEC && !isManaged(key))
+                Spec.set(root, key, presetDefault(key) ?? null, saveSettings, _hooks);
         }
     }
 
@@ -1806,11 +1860,11 @@ Singleton {
     }
 
     function barConfigDefault(field) {
-        return Spec.SPEC.barConfigs.def[0][field];
+        return DensityPresets.value("bar", field, density) ?? Spec.SPEC.barConfigs.def[0][field];
     }
 
     function dockConfigDefaults() {
-        return DockConfig.create("", "");
+        return Object.assign(DockConfig.create("", ""), DensityPresets.values("dock", density));
     }
 
     // Frame mode hosts bars inside the frame surface, which has nowhere to put an edge island; a dot floats over it.
@@ -1829,7 +1883,7 @@ Singleton {
         let obj = _getSettingsObjectFromFiles();
         let loadedSettings = JSON.stringify(obj);
 
-        const oldVersion = obj?.configVersion ?? 0;
+        const oldVersion = obj?.configVersion ?? settingsConfigVersion;
         if (oldVersion > settingsConfigVersion) {
             newerSettingsBackup.path = `${_configDir}/dms/settings.v${oldVersion}.json`;
             newerSettingsBackup.setText(JSON.stringify(obj, null, 2));
@@ -1877,7 +1931,7 @@ Singleton {
         const prevFrameEnabled = frameEnabled;
         const prevFrameMode = frameMode;
         unsavedChanges = loadedSettings !== JSON.stringify(obj);
-        Store.parse(root, obj);
+        Store.parse(root, Object.assign(obj, AdminPolicy.lockSettings));
 
         // set() enforces this pair, but a hand-edited settings bypass set() entirely.
         if (frameEnabled)
@@ -2032,6 +2086,8 @@ Singleton {
             const file = _settingsFiles.get(path);
             const fileSettings = file.getSettings();
             for (const setting in fileSettings) {
+                if (isManaged(setting))
+                    continue;
                 if (!(setting in settings)) {
                     delete fileSettings[setting];
                     continue;
@@ -2046,7 +2102,7 @@ Singleton {
         }
 
         for (const setting in settings) {
-            if (!savedSettings.has(setting)) {
+            if (!savedSettings.has(setting) && !isManaged(setting)) {
                 splitSettings[defaultSettingsFile.filePath][setting] = settings[setting];
             }
         }
@@ -2391,7 +2447,7 @@ Singleton {
         let number = 2;
         while (dockConfigs.some(config => config.name === name))
             name = I18n.tr("Dock %1", "generated dock name, %1 is a number").arg(number++);
-        const config = DockConfig.create(id, name);
+        const config = Object.assign(DockConfig.create(id, name), DensityPresets.values("dock", density));
         const edge = firstFreeDockEdge(id, config.screenPreferences);
         config.enabled = edge >= 0;
         config.position = Math.max(SettingsData.Position.Top, edge);
@@ -3085,7 +3141,7 @@ Singleton {
     }
 
     function setCornerRadius(radius) {
-        set("radiusStrength", Shape.strengthFromRadius(radius));
+        return set("radiusStrength", Shape.strengthFromRadius(radius));
     }
 
     function setWeatherLocation(displayName, coordinates) {
@@ -3696,14 +3752,14 @@ Singleton {
                 return;
             }
 
-            settings = newSettings;
+            settings = JSON.parse(newSettingsJson);
             fileUnsavedUserChanges = fileUnsavedUserChanges || userChanges;
 
             selfWrite = true;
             settingsFileView.setText(newSettingsJson);
         }
         function getSettings() {
-            return Object.assign({}, settings);
+            return JSON.parse(JSON.stringify(settings));
         }
 
         property Timer timer: Timer {

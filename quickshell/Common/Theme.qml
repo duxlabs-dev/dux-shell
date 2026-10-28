@@ -222,6 +222,8 @@ Singleton {
             "surfaceContainer": getMatugenColorForMode(colorMode, "surface_container", "#1e2023"),
             "surfaceContainerHigh": getMatugenColorForMode(colorMode, "surface_container_high", "#292b2f"),
             "surfaceContainerHighest": getMatugenColorForMode(colorMode, "surface_container_highest", "#343740"),
+            "inverseSurface": getMatugenColorForMode(colorMode, "inverse_surface", getMatugenColorForMode(colorMode === "light" ? "dark" : "light", "surface", "#fdf7fe")),
+            "inverseOnSurface": getMatugenColorForMode(colorMode, "inverse_on_surface", getMatugenColorForMode(colorMode === "light" ? "dark" : "light", "on_surface", "#302e33")),
             "error": getMatugenColorForMode(colorMode, "error", "#F2B8B5"),
             "errorText": getMatugenColorForMode(colorMode, "on_error"),
             "errorContainer": getMatugenColorForMode(colorMode, "error_container"),
@@ -368,6 +370,8 @@ Singleton {
     readonly property color cardSurface: typeof SettingsData === "undefined" ? surfaceContainer : surfaceRoleColor(SettingsData.cardSurfaceColor, SettingsData.cardSurfaceCustomColor, surfaceContainer)
     readonly property color chipSurface: typeof SettingsData === "undefined" ? surfaceContainerHigh : surfaceRoleColor(SettingsData.chipSurfaceColor, SettingsData.chipSurfaceCustomColor, surfaceContainerHigh)
     readonly property color chipSurfaceNested: typeof SettingsData === "undefined" ? surfaceContainerHighest : surfaceRoleColor(SettingsData.chipSurfaceNestedColor, SettingsData.chipSurfaceNestedCustomColor, surfaceContainerHighest)
+    readonly property color tooltipSurface: typeof SettingsData === "undefined" ? surfaceContainerHighest : surfaceRoleColor(SettingsData.tooltipSurfaceColor, SettingsData.tooltipSurfaceCustomColor, surfaceContainerHighest)
+    readonly property color tooltipText: Contrast.readableOn(tooltipSurface, [surfaceText, (isLightColor(tooltipSurface) ? contrastDark : contrastLight)])
     readonly property real containerSaturation: typeof SettingsData === "undefined" ? 1 : SettingsData.containerSaturation / 100
     readonly property real containerTint: (currentThemeData.containerTint ?? Tonal.defaultTint(surfaceContainer)) * containerSaturation
     property color primaryContainer: currentThemeData.softPrimaryContainer || Tonal.softContainer(primary, surfaceContainer, containerTint)
@@ -631,6 +635,8 @@ Singleton {
             return surfaceContainerHigh;
         case "schh":
             return surfaceContainerHighest;
+        case "inverseSurface":
+            return inverseSurface;
         case "sth":
             return surfaceTextHover;
         case "error":
@@ -1068,7 +1074,13 @@ Singleton {
     readonly property var springSpecs: {
         "expressive": [560, 37],
         "fast": [220, 23],
-        "default": [300, 24]
+        "default": [300, 24],
+        "fastSpatial": [800, 33.9],
+        "defaultSpatial": [380, 31.2],
+        "slowSpatial": [200, 22.6],
+        "fastEffects": [3800, 123.3],
+        "defaultEffects": [1600, 80],
+        "slowEffects": [800, 56.6]
     }
 
     // Damping multipliers for the user-facing spring bounce setting:
@@ -1121,15 +1133,15 @@ Singleton {
 
     readonly property real notificationExpandedIconSizeNormal: avatarSize
     readonly property real notificationExpandedIconSizeCompact: avatarSize
-    readonly property real notificationButtonCornerRadius: cornerRadiusFull
+    readonly property real notificationButtonCornerRadius: pillControls ? cornerRadiusFull : cornerRadiusL
     readonly property real notificationHoverRevealMargin: spacingXL
     readonly property real notificationContentSpacing: spacingXS
     readonly property real notificationCardPadding: spacingM
     readonly property real notificationCardPaddingCompact: spacingS
 
     readonly property real stateLayerHover: 0.08
-    readonly property real stateLayerFocus: 0.12
-    readonly property real stateLayerPressed: 0.12
+    readonly property real stateLayerFocus: 0.1
+    readonly property real stateLayerPressed: 0.1
     readonly property real stateLayerDrag: 0.16
 
     readonly property int popoutAnimationDuration: {
@@ -1178,16 +1190,40 @@ Singleton {
         return Shape.scaledRadius(radius, limit, shapeScale, fixedRadius);
     }
 
+    function innerRadius(token) {
+        return Shape.innerRadius(token, shapeScale, fixedRadius);
+    }
+
     function fullRadius(width, height) {
         return Shape.fullRadius(width, height, shapeScale, fixedRadius);
     }
 
+    readonly property bool classicStyle: typeof SettingsData !== "undefined" && SettingsData.interfaceStyle === "classic"
+    readonly property bool shapeMorph: !classicStyle
+    readonly property bool pillControls: !classicStyle
+
     function buttonRadius(width, height, sizeHeight, pressed, round) {
-        return Shape.buttonRadius(width, height, sizeHeight, pressed, round, shapeScale, fixedRadius);
+        return Shape.buttonRadius(width, height, sizeHeight, pressed, round, shapeScale, fixedRadius, shapeMorph, pillControls);
     }
 
+    readonly property int densityLevel: {
+        switch (typeof SettingsData !== "undefined" ? SettingsData.density : "") {
+        case "spacious":
+            return 1;
+        case "compact":
+            return -1;
+        case "dense":
+            return -2;
+        default:
+            return 0;
+        }
+    }
+    // Added by surface metrics and text fields; other shared tokens stay fixed so bar, dock and lock never move.
+    readonly property real densityStepS: densityLevel * spacingXS
+    readonly property real densityStepM: densityLevel * spacingS
+    readonly property real densityStepXS: densityLevel * spacingXXS
     readonly property real groupedListGap: spacingXXS
-    readonly property real groupedListInnerRadius: cornerRadiusXS
+    readonly property real groupedListInnerRadius: innerRadius("xs")
     readonly property real groupedListOuterRadius: cornerRadiusL
 
     property string fontFamily: typeof SettingsData !== "undefined" ? resolvedFontFamily(SettingsData.fontFamily) : DCommon.Fonts.sans
@@ -1265,11 +1301,11 @@ Singleton {
     readonly property real avatarSize: 36
     readonly property real sliderTrackHeight: 16
     readonly property real sliderHandleWidth: 4
-    readonly property real sliderHandleWidthPressed: 2
+    readonly property real sliderHandleWidthPressed: shapeMorph ? 2 : sliderHandleWidth
     readonly property real sliderHandleHeight: 28
     readonly property real sliderHandleGap: 6
-    readonly property real sliderTrackHeightS: 24
-    readonly property real sliderHandleHeightS: 36
+    readonly property real sliderTrackHeightS: classicStyle ? sliderTrackHeight : 24
+    readonly property real sliderHandleHeightS: classicStyle ? sliderHandleHeight : 36
     readonly property real sliderTrackHeightM: 40
     readonly property real sliderHandleHeightM: 52
     readonly property real sliderTrackHeightL: 56
@@ -1348,8 +1384,8 @@ Singleton {
     readonly property real launcherScreenMargin: 100
 
     readonly property real fieldDefaultWidth: 200
-    readonly property real fieldHeight: Math.round(fontSizeMedium * 3)
-    readonly property real fieldHeightLarge: 48
+    readonly property real fieldHeight: Math.round(fontSizeMedium * 3) + densityStepS
+    readonly property real fieldHeightLarge: 48 + densityStepS
     readonly property real outlinedFieldLabelLineHeight: 16
     readonly property real textFieldSpatialStiffness: 800
     readonly property real textFieldSpatialDampingRatio: 1

@@ -35,9 +35,17 @@ SettingsRow {
                 return choiceControl;
             case "number":
                 return numberControl;
+            case "slider":
+                return sliderLabel;
             }
             return null;
         }
+    }
+
+    body: Loader {
+        width: parent?.width ?? 0
+        active: root.spec.type === "slider"
+        sourceComponent: sliderControl
     }
 
     Component {
@@ -77,6 +85,31 @@ SettingsRow {
             decrementEnabled: root.spec.min === undefined || current - step >= root.spec.min
             onIncrement: () => root.commit(current + step)
             onDecrement: () => root.commit(current - step)
+        }
+    }
+
+    Component {
+        id: sliderLabel
+
+        StyledText {
+            visible: root.value === root.spec.min
+            text: root.spec.minimumLabel ?? ""
+            font.pixelSize: Theme.fontSizeSmall
+            color: Theme.surfaceVariantText
+        }
+    }
+
+    Component {
+        id: sliderControl
+
+        SettingsSliderControl {
+            value: Number(root.value) || 0
+            minimum: root.spec.min
+            maximum: root.spec.max
+            step: root.spec.step
+            showValue: root.value !== root.spec.min
+            accessibleName: root.title
+            onSliderValueChanged: newValue => root.commit(newValue)
         }
     }
 }

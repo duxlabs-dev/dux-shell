@@ -74,7 +74,7 @@ Column {
         {
             "id": "idleInhibitor",
             "label": I18n.tr("Idle inhibitor", "feature that keeps the session from going idle"),
-            "icon": "motion_sensor_active",
+            "icon": "local_cafe",
             "setting": "showIdleInhibitorIcon"
         },
         {

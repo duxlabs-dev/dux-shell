@@ -470,6 +470,14 @@ var LOCAL_SPEC = {
     motionEffect: {
         def: 0
     },
+    density: {
+        def: "comfortable",
+        onChange: "applyDensityPresets"
+    },
+    interfaceStyle: {
+        def: "expressive",
+        onChange: "applyInterfaceStyle"
+    },
     m3ElevationEnabled: {
         def: true
     },
@@ -513,6 +521,10 @@ var LOCAL_SPEC = {
     },
     blurLayerOutlineOpacity: {
         def: 0,
+        coerce: Util.percentToUnit
+    },
+    sectionDividerOpacity: {
+        def: 0.1,
         coerce: Util.percentToUnit
     },
     focusRingEnabled: {
@@ -578,13 +590,15 @@ var LOCAL_SPEC = {
                 id: "brightnessSlider",
                 enabled: true,
                 w: 4,
-                h: 1
+                h: 1,
+                small: true
             },
             {
                 id: "volumeSlider",
                 enabled: true,
                 w: 4,
-                h: 1
+                h: 1,
+                small: true
             },
             {
                 id: "wifi",

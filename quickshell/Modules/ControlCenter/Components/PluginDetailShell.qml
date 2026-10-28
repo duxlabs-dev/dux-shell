@@ -10,6 +10,7 @@ Item {
 
     readonly property var instance: builtinInstance ?? pluginHost.instance
     readonly property real preferredHeight: instance?.ccDetailHeight ?? 0
+    readonly property bool empty: (instance?.ccDetailContent ?? null) === null
     readonly property string title: instance?.ccWidgetPrimaryText || PluginService.loadedPlugins[pluginId]?.name || PluginService.availablePluginsList.find(p => p.id === pluginId)?.name || ""
 
     PluginInstanceHost {

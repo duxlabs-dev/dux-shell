@@ -43,6 +43,10 @@ Item {
         {
             label: I18n.tr("Once a day"),
             seconds: 86400
+        },
+        {
+            label: I18n.tr("Never"),
+            seconds: 0
         }
     ]
 
@@ -79,7 +83,7 @@ Item {
             seconds: 0
         },
         {
-            label: I18n.tr("Every %1", "update check interval option, %1 is a duration such as 30 minutes").arg(I18n.duration(3600)),
+            label: I18n.tr("Every hour"),
             seconds: 3600
         },
         {
@@ -230,6 +234,7 @@ Item {
                 title: I18n.tr("Install system updates?", "confirmation dialog title before running the system upgrade"),
                 message: root.installSummary(),
                 confirmText: I18n.tr("Install", "install action button"),
+                confirmByDefault: true,
                 onConfirm: () => root.runUpdateAll()
             });
             return;
@@ -273,12 +278,30 @@ Item {
             interactive: interactive === true
         });
         packagesExpanded = false;
+        followUpgradeLog = true;
         if (upgradeInWindow && interactive !== true)
             PopoutService.showSystemUpdateModal();
     }
 
+    property bool followUpgradeLog: false
+    readonly property bool upgrading: SystemUpdateService.isUpgrading
+
+    onUpgradingChanged: {
+        if (!upgrading)
+            followUpgradeLog = false;
+    }
+
+    function revealUpgradeLog() {
+        if (!followUpgradeLog || !upgradeLogRow.visible)
+            return;
+        const top = upgradeLogRow.mapToItem(mainColumn.contentItem, 0, 0).y;
+        mainColumn.revealRange(top, top + upgradeLogRow.height);
+    }
+
     SettingsPage {
         id: mainColumn
+
+        onContentHeightChanged: root.revealUpgradeLog()
 
         ReleaseHero {
             M3WaveProgress {
@@ -449,7 +472,7 @@ Item {
 
             Column {
                 width: parent?.width ?? 0
-                spacing: Theme.groupedListGap
+                spacing: SettingsMetrics.groupGap
 
                 Repeater {
                     model: root.packagesExpanded && !SystemUpdateService.isUpgrading ? SystemUpdateService.systemUpdates.slice(0, root.packageListCap) : []
@@ -501,6 +524,7 @@ Item {
             }
 
             SettingsRow {
+                id: upgradeLogRow
                 visible: (SystemUpdateService.isUpgrading && !root.upgradeInWindow) || (root.upgradeFailed && !root.upgradeRunsInTerminal)
                 body: Item {
                     readonly property real lineHeight: logText.implicitHeight / Math.max(1, logText.lineCount)

@@ -8,7 +8,7 @@ Item {
 
     readonly property bool isSettingsGroup: true
     default property alias content: host.data
-    property real spacing: Theme.groupedListGap
+    property real spacing: SettingsMetrics.groupGap
     property real customPaddingH: SettingsMetrics.rowPaddingH
     property real customPaddingV: SettingsMetrics.rowPaddingV
     property bool highlighted: false
@@ -120,13 +120,21 @@ Item {
             width: root.width
             height: slot.height
             visible: !slot.transparent
-            topLeftRadius: first ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-            topRightRadius: first ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-            bottomLeftRadius: last ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-            bottomRightRadius: last ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
+            topLeftRadius: first ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+            topRightRadius: first ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+            bottomLeftRadius: last ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+            bottomRightRadius: last ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
             color: root.highlighted ? Theme.blend(root.slotColor, Theme.primary, SettingsMetrics.highlightBlend) : root.slotColor
-            border.width: Theme.layerOutlineWidth
+            border.width: SettingsMetrics.groupEdgeWidth
             border.color: Theme.outlineMedium
+
+            Rectangle {
+                x: SettingsMetrics.rowPaddingH
+                width: parent.width - SettingsMetrics.rowPaddingH * 2
+                height: Theme.dividerWidth
+                visible: SettingsMetrics.continuousGroups && !parent.first
+                color: SettingsMetrics.groupDividerColor
+            }
 
             Behavior on color {
                 enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
@@ -137,6 +145,16 @@ Item {
                 }
             }
         }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        z: 1
+        radius: Theme.groupedListOuterRadius
+        color: "transparent"
+        border.width: SettingsMetrics.groupFrameWidth
+        border.color: Theme.outlineMedium
+        visible: border.width > 0
     }
 
     Item {

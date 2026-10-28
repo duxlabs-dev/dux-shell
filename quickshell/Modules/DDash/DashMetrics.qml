@@ -16,8 +16,8 @@ Singleton {
     readonly property real popoutWidth: widthFor(false)
     readonly property real weekColumnWidth: 28
     readonly property real popoutWidthWide: popoutWidth + weekColumnWidth + Theme.spacingS
-    readonly property real contentPadding: Theme.spacingM
-    readonly property real contentGap: Theme.spacingM
+    readonly property real contentPadding: Theme.spacingM + Theme.densityStepXS
+    readonly property real contentGap: Theme.spacingM + Theme.densityStepXS
     readonly property real editHeaderHeight: Theme.minimumTouchTargetSize
     readonly property real islandHandleHeight: Theme.spacingXL
     readonly property real islandHandleChromeHeight: islandHandleHeight + contentPadding
@@ -37,7 +37,9 @@ Singleton {
     readonly property bool animationsEnabled: CcMetrics.animationsEnabled
 
     function widthFor(weekNumbers, screenWidth, columns = gridColumns) {
-        const panelWidth = Math.max(minimumPopoutWidth, preferredColumnWidth * columns + gridGap * (columns - 1) + contentPadding * 2);
+        // The floor is sized at comfortable spacing, so it carries the density offsets.
+        const floorWidth = minimumPopoutWidth + (gridGap - Theme.spacingS) * (columns - 1) + (contentPadding - Theme.spacingM) * 2;
+        const panelWidth = Math.max(floorWidth, preferredColumnWidth * columns + gridGap * (columns - 1) + contentPadding * 2);
         const extra = weekNumbers ? weekColumnWidth + Theme.spacingS : 0;
         if (!Number.isFinite(screenWidth) || screenWidth <= 0)
             return panelWidth + extra;
@@ -133,8 +135,9 @@ Singleton {
     }
 
     readonly property int gridColumns: panelColumnsFor(overviewId)
+    // Cells ignore density so saved layouts and art sizes hold; only the gaps step.
     readonly property real gridRowUnit: 96
-    readonly property real gridGap: Theme.spacingS
+    readonly property real gridGap: CcMetrics.gridGap
     readonly property real tabMinHeight: heightForRows(minimumTabRows)
     readonly property real tabDefaultHeight: heightForRows(defaultTabRows)
     readonly property real cardRadius: Theme.cornerRadius
@@ -151,7 +154,7 @@ Singleton {
     readonly property real tileTrendFillAlpha: 0.1
     readonly property real tileValueSizeCompact: Math.round((Theme.fontSizeXXLarge + Theme.fontSizeXLarge) / 2)
     readonly property real gaugeSize: Theme.buttonHeightXS
-    readonly property real gaugeSizeHero: CcMetrics.iconBoxSize
+    readonly property real gaugeSizeHero: CcMetrics.baseIconBoxSize
     readonly property real gaugeStroke: 3
     readonly property real gaugeGap: Theme.spacingXXS
     readonly property real batteryMeterThickness: 28
@@ -160,7 +163,7 @@ Singleton {
 
     readonly property real weatherCompactIconRatio: 0.4
     readonly property real weatherTempSize: Theme.fontSizeXXLarge
-    readonly property real weatherChipSize: CcMetrics.iconBoxSize
+    readonly property real weatherChipSize: CcMetrics.baseIconBoxSize
 
     readonly property real meterBarThickness: Theme.spacingM
     readonly property real overviewPlayWidth: 64

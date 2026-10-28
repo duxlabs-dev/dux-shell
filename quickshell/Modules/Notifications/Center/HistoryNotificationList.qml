@@ -246,6 +246,7 @@ Item {
             rightMargin: root.swipeBleed
             spacing: Theme.groupedListGap
             rowFadeEnabled: NotificationMetrics.animationsEnabled
+            fadeInitialRows: false
 
             model: ScriptModel {
                 id: historyModel

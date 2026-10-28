@@ -80,7 +80,6 @@ DFloatingWindow {
                     DSearchField {
                         id: searchField
                         width: parent.width
-                        height: Theme.fieldHeightLarge
                         textColor: Theme.surfaceText
                         font.pixelSize: Theme.fontSizeMedium
                         placeholderText: I18n.tr("Search applications...")
@@ -107,7 +106,7 @@ DFloatingWindow {
 
                         delegate: Rectangle {
                             width: appList.width
-                            height: Theme.listItemHeight + Theme.spacingXS
+                            height: SettingsMetrics.rowMinHeight + Theme.spacingXS
                             radius: Theme.cornerRadius
                             required property int index
                             required property var modelData

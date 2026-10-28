@@ -305,6 +305,9 @@ func (b *NetworkManagerBackend) handleDBusSignal(sig *dbus.Signal) {
 		}
 		b.updateHotspotState()
 		b.listCellularConnections()
+		// Device state does not change when an inactive wired profile is
+		// added or deleted, so the profile list must be refreshed here too.
+		b.listEthernetConnections()
 		if b.onStateChange != nil {
 			b.onStateChange()
 		}

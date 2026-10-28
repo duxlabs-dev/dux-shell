@@ -236,11 +236,17 @@
   "%1: %2": {
     "%1: %2": "%1: %2"
   },
+  "%1d ago": {
+    "%1d ago": ""
+  },
   "%1h": {
     "%1h": "%1u"
   },
   "%1h %2m": {
     "%1h %2m": "%1u %2m"
+  },
+  "%1h ago": {
+    "%1h ago": ""
   },
   "%1m": {
     "%1m": "%1m"
@@ -262,6 +268,9 @@
   },
   "+%1 conditions": {
     "+%1 conditions": "+%1 voorwaarden"
+  },
+  "1 hour before": {
+    "1 hour before": ""
   },
   "1 notification": {
     "1 notification": "1 melding"
@@ -625,9 +634,6 @@
   },
   "Anchor": {
     "Anchor": "Anker"
-  },
-  "Anchored popouts open at the cursor instead of their widget": {
-    "Anchored popouts open at the cursor instead of their widget": "Verankerde uitklappanelen openen bij de cursor in plaats van bij hun widget"
   },
   "Animation duration": {
     "Animation duration": "Animatieduur"
@@ -1508,6 +1514,9 @@
   "Classes": {
     "Classes": "Klassen"
   },
+  "Classic": {
+    "Classic": ""
+  },
   "Clear All": {
     "Clear All": "Alles wissen"
   },
@@ -1687,6 +1696,9 @@
   },
   "Columns": {
     "Columns": "Kolommen"
+  },
+  "Comfortable": {
+    "Comfortable": ""
   },
   "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": {
     "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": "Door komma's gescheiden lijst van indelingsnamen. Laat leeg om de systeeminstellingen voor het toetsenbord te gebruiken."
@@ -2270,6 +2282,9 @@
   "Deletes all stored screen time": {
     "Deletes all stored screen time": "Verwijdert alle opgeslagen schermtijd"
   },
+  "Dense": {
+    "Dense": ""
+  },
   "Dependencies & documentation": {
     "Dependencies & documentation": "Afhankelijkheden & documentatie"
   },
@@ -2365,6 +2380,9 @@
   },
   "Disabled": {
     "Disabled": "Uitgeschakeld"
+  },
+  "Disabled by Auto": {
+    "Disabled by Auto": ""
   },
   "Disabled by Click through": {
     "Disabled by Click through": "Uitgeschakeld door Doorklikken"
@@ -2539,6 +2557,9 @@
   },
   "Don't change": {
     "Don't change": "Niet wijzigen"
+  },
+  "Don't dim unfocused apps": {
+    "Don't dim unfocused apps": ""
   },
   "Door Open": {
     "Door Open": "Deur open"
@@ -3059,6 +3080,9 @@
   "Failed to read theme file: %1": {
     "Failed to read theme file: %1": "Lezen van themabestand mislukt: %1"
   },
+  "Failed to reboot to firmware setup": {
+    "Failed to reboot to firmware setup": ""
+  },
   "Failed to reload plugin: %1": {
     "Failed to reload plugin: %1": "Herladen van plugin mislukt: %1"
   },
@@ -3269,6 +3293,9 @@
   "Fires with any modifiers held": {
     "Fires with any modifiers held": "Wordt geactiveerd met willekeurige ingedrukte modificatietoetsen"
   },
+  "Firmware setup": {
+    "Firmware setup": ""
+  },
   "First Time Setup": {
     "First Time Setup": "Eerste installatie"
   },
@@ -3427,6 +3454,9 @@
   },
   "For %1": {
     "For %1": "Gedurende %1"
+  },
+  "For 1 hour": {
+    "For 1 hour": ""
   },
   "For you": {
     "For you": ""
@@ -4235,6 +4265,9 @@
   "Interface": {
     "Interface": "Interface"
   },
+  "Interface density": {
+    "Interface density": ""
+  },
   "Interface style": {
     "Interface style": "Interfacestijl"
   },
@@ -4261,6 +4294,9 @@
   },
   "Invalid wallpaper layout": {
     "Invalid wallpaper layout": "Ongeldige achtergrondindeling"
+  },
+  "Inverse Surface": {
+    "Inverse Surface": ""
   },
   "Iridescence": {
     "Iridescence": "Iriserend effect"
@@ -4712,6 +4748,9 @@
   "Managed by Nix": {
     "Managed by Nix": "Beheerd door Nix"
   },
+  "Managed by administrator policy": {
+    "Managed by administrator policy": ""
+  },
   "Managed by the primary PAM source": {
     "Managed by the primary PAM source": "Beheerd door de primaire PAM-bron"
   },
@@ -4801,9 +4840,6 @@
   },
   "Material palette": {
     "Material palette": "Material-palet"
-  },
-  "Material scale": {
-    "Material scale": "Material-schaal"
   },
   "Matugen Missing": {
     "Matugen Missing": "Matugen ontbreekt"
@@ -6656,6 +6692,9 @@
   "Read:": {
     "Read:": "Lezen:"
   },
+  "Readings": {
+    "Readings": ""
+  },
   "Reads audio devices and volume": {
     "Reads audio devices and volume": ""
   },
@@ -6686,11 +6725,14 @@
   "Reboot recommended": {
     "Reboot recommended": "Herstart aanbevolen"
   },
+  "Reboot targets": {
+    "Reboot targets": ""
+  },
   "Reboot to %1": {
     "Reboot to %1": "Herstarten naar %1"
   },
-  "Reboot to another OS": {
-    "Reboot to another OS": "Herstarten naar ander besturingssysteem"
+  "Reboot to firmware setup": {
+    "Reboot to firmware setup": ""
   },
   "Recent": {
     "Recent": "Recent"
@@ -7007,8 +7049,8 @@
   "Route Bluetooth headset controls to the active DMS media player": {
     "Route Bluetooth headset controls to the active DMS media player": "Bluetooth-headsetbediening doorsturen naar de actieve DMS-mediaspeler"
   },
-  "Routes launcher, dash, control center and notification shortcuts": {
-    "Routes launcher, dash, control center and notification shortcuts": "Routeert sneltoetsen voor starter, dashboard, bedieningscentrum en meldingen"
+  "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": {
+    "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": ""
   },
   "Rows": {
     "Rows": "Rijen"
@@ -7262,6 +7304,9 @@
   "Secondary Container": {
     "Secondary Container": "Secundaire container"
   },
+  "Section dividers": {
+    "Section dividers": ""
+  },
   "Sections": {
     "Sections": "Secties"
   },
@@ -7312,6 +7357,9 @@
   },
   "Select Dock Launcher Logo": {
     "Select Dock Launcher Logo": "Kies Dock launcher Logo"
+  },
+  "Select Dot Icon": {
+    "Select Dot Icon": ""
   },
   "Select ICC Profile": {
     "Select ICC Profile": "ICC-profiel selecteren"
@@ -7835,6 +7883,9 @@
   "Spacing": {
     "Spacing": "Tussenruimte"
   },
+  "Spacious": {
+    "Spacious": ""
+  },
   "Speaker settings": {
     "Speaker settings": "Luidsprekerinstellingen"
   },
@@ -8051,6 +8102,9 @@
   "Switches to power saver at the low battery threshold": {
     "Switches to power saver at the low battery threshold": "Schakelt over naar energiebesparing bij de drempel voor lage accu"
   },
+  "Symbol": {
+    "Symbol": ""
+  },
   "Sync": {
     "Sync": "Sync"
   },
@@ -8233,6 +8287,9 @@
   },
   "The Aqueous operation failed.": {
     "The Aqueous operation failed.": "De Aqueous-bewerking is mislukt."
+  },
+  "The Control Center opens at the cursor instead of its widget": {
+    "The Control Center opens at the cursor instead of its widget": ""
   },
   "The Default action only overrides priority": {
     "The Default action only overrides priority": "De actie Standaard overschrijft alleen de prioriteit"
@@ -8566,6 +8623,9 @@
   },
   "Tools": {
     "Tools": "Hulpmiddelen"
+  },
+  "Tooltip": {
+    "Tooltip": ""
   },
   "Top": {
     "Top": "Boven"
@@ -9466,6 +9526,12 @@
   },
   "display rotation option": {
     "Normal": "Normaal"
+  },
+  "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural": {
+    "%1 days": "",
+    "%1 hours": "",
+    "%1 minutes": "",
+    "%1 seconds": ""
   },
   "e.g. /usr/bin/my-script --flag": {
     "e.g. /usr/bin/my-script --flag": "bijv. /usr/bin/my-script --vlag"

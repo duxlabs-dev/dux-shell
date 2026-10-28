@@ -29,7 +29,7 @@ Item {
     }
 
     Loader {
-        active: root.live
+        active: root.live && root.available
         sourceComponent: Component {
             Ref {
                 service: CavaService
@@ -39,7 +39,7 @@ Item {
 
     Connections {
         target: CavaService
-        enabled: root.live
+        enabled: root.live && root.available
         function onValuesChanged() {
             const v = CavaService.values;
             if (v.length < 6)

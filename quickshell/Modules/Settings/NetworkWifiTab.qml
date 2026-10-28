@@ -346,7 +346,7 @@ Item {
                     readonly property bool isExpanded: root.expandedWifiSsid === modelData.ssid
 
                     width: parent?.width ?? 0
-                    spacing: Theme.groupedListGap
+                    spacing: SettingsMetrics.groupGap
                     SettingsRow {
                         id: wifiNetworkRow
                         title: wifiNetworkDelegate.modelData.ssid || I18n.tr("Unknown")
@@ -525,7 +525,7 @@ Item {
                     readonly property var detailFields: networkWifiTab.wifiDetailFields(modelData)
 
                     width: parent?.width ?? 0
-                    spacing: Theme.groupedListGap
+                    spacing: SettingsMetrics.groupGap
 
                     SettingsRow {
                         id: savedWifiRow

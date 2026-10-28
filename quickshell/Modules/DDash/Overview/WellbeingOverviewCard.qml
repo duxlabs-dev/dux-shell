@@ -24,6 +24,7 @@ Card {
     readonly property bool overLimit: limitSeconds > 0 && today.active >= limitSeconds
 
     entryId: "wellbeing"
+    clickable: true
     clipContent: true
     pad: Theme.spacingM
     Accessible.name: I18n.tr("Screen time", "dashboard card and settings card title, time spent in apps")

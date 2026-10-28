@@ -137,7 +137,7 @@ function clampSize(widget, columns, rows = Infinity) {
 function addWidget(widgetId, columns) {
     const widgets = Common.SettingsData.controlCenterWidgets.slice();
     const widget = defaultWidget(widgetId, columns);
-    if (BUTTON_IDS.includes(widgetId))
+    if (BUTTON_IDS.includes(widgetId) || isSliderWidget(widgetId))
         widget.small = true;
 
     if (widgetId === "diskUsage") {

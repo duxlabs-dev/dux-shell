@@ -40,7 +40,7 @@ Item {
         iconName: "power_settings_new"
         iconColor: Theme.onSecondaryContainer
         backgroundColor: root.round ? Theme.secondaryContainer : "transparent"
-        radius: pressed ? Theme.cornerRadiusS : Theme.fullRadius(width, height)
+        radius: pressed && Theme.shapeMorph ? Theme.cornerRadiusS : (Theme.pillControls ? Theme.fullRadius(width, height) : Math.min(Theme.cornerRadiusL, width / 2, height / 2))
         buttonSize: Theme.buttonHeightM
         onClicked: root.lockHost?.showPowerMenu()
     }

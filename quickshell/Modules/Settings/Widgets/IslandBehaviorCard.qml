@@ -30,7 +30,7 @@ SettingsCard {
         resetStore: root.store
         resetKeys: ["islandSharedRouting"]
         text: I18n.tr("Shared shortcuts", "island settings dropdown label, which island handles global shortcuts")
-        description: I18n.tr("Routes launcher, dash, control center and notification shortcuts", "shared shortcuts dropdown description")
+        description: I18n.tr("Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout", "shared shortcuts dropdown description")
         options: [I18n.tr("Normal routing", "shared shortcuts option, shortcuts open where they normally would"), I18n.tr("Always here", "shared shortcuts option, shortcuts always open on this island"), I18n.tr("Last used on this screen", "shared shortcuts option, shortcuts open on the island last used on this display")]
         dropdownWidth: Theme.smallBreakpoint / 2
         currentValue: options[Math.max(0, root.routingValues.indexOf(root.sharedRouting))]
@@ -181,6 +181,16 @@ SettingsCard {
         text: I18n.tr("Keep clock with media", "island settings: clock in media face toggle")
         checked: root.store.setting("islandMediaClockVisible")
         onToggled: checked => root.store.apply("islandMediaClockVisible", checked)
+    }
+
+    SettingsToggleRow {
+        settingKey: root.keyPrefix + "MediaLyrics"
+        tags: ["island", "media", "lyrics", "compact"]
+        visible: !root.isDot
+        text: I18n.tr("Lyrics", "Media player lyrics button")
+        description: I18n.tr("Shows the line being sung instead of the title and artist while synced lyrics are available", "media widget lyrics toggle description")
+        checked: root.store.setting("islandMediaLyrics")
+        onToggled: checked => root.store.apply("islandMediaLyrics", checked)
     }
 
     SettingsToggleRow {

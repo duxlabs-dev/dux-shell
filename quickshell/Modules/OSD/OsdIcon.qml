@@ -9,6 +9,7 @@ Loader {
     property string label: ""
     property color iconColor: Theme.onSecondaryContainer
     property color backgroundColor: Theme.secondaryContainer
+    property bool filled: false
     property bool tonal: true
     property bool interactive: false
     property bool available: true
@@ -48,6 +49,7 @@ Loader {
                 name: root.iconName
                 size: root.glyphSize
                 color: root.available ? root.iconColor : Theme.onSurface_38
+                filled: root.filled
             }
         }
     }

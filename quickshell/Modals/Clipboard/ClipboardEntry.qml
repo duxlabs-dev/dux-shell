@@ -202,7 +202,7 @@ DListItem {
                 color: root.contentColor
                 width: parent.width
                 wrapMode: Text.WordWrap
-                maximumLineCount: entryType === "long_text" ? 3 : 1
+                maximumLineCount: entryType === "long_text" ? 3 + Math.min(0, Theme.densityLevel) : 1
                 elide: Text.ElideRight
                 textFormat: Text.PlainText
             }

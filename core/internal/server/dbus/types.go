@@ -1,6 +1,9 @@
 package dbus
 
 import (
+	"sync"
+
+	"github.com/duxlabs-dev/dux-go/ipc"
 	"github.com/duxlabs-dev/dux-go/syncmap"
 	"github.com/godbus/dbus/v5"
 )
@@ -12,7 +15,9 @@ type Manager struct {
 	sessionSignals chan *dbus.Signal
 
 	subscriptions     syncmap.Map[string, *signalSubscription]
+	subscribersMu     sync.Mutex
 	signalSubscribers syncmap.Map[string, chan SignalEvent]
+	owners            syncmap.Map[*ipc.ConnWriter, struct{}]
 }
 
 type signalSubscription struct {
@@ -22,6 +27,7 @@ type signalSubscription struct {
 	Interface string
 	Member    string
 	ClientID  string
+	Owner     *ipc.ConnWriter
 }
 
 type SignalEvent struct {

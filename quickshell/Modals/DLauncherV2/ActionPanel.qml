@@ -4,6 +4,7 @@ import QtQuick
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
+import qs.Modals.DLauncherV2.Components
 
 Rectangle {
     id: root
@@ -15,6 +16,7 @@ Rectangle {
     property var controller: null
     property bool expanded: false
     property int selectedActionIndex: 0
+    readonly property bool animating: heightAnimation.running
 
     onSelectedActionIndexChanged: revealTimer.restart()
     onActionsChanged: revealTimer.restart()
@@ -119,7 +121,7 @@ Rectangle {
     }
 
     width: parent?.width ?? Theme.fieldDefaultWidth
-    height: expanded && hasActions ? Theme.listItemHeight : 0
+    height: expanded && hasActions ? LauncherMetrics.rowHeight : 0
     color: Theme.foregroundColor(Theme.cardSurface, Theme.isFloatingWindow(root))
     border.width: Theme.layerOutlineWidth
     border.color: Theme.outlineMedium
@@ -129,6 +131,7 @@ Rectangle {
 
     Behavior on height {
         NumberAnimation {
+            id: heightAnimation
             duration: Theme.shortDuration
             easing.type: Theme.standardEasing
         }

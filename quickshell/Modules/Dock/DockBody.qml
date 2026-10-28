@@ -581,6 +581,7 @@ FocusScope {
     DTooltip {
         id: dockTooltip
         targetScreen: dock.screen
+        persistent: dock.config.enabled && (dock.hostWindow?.visible ?? false) && !dock.fullscreenOnScreen
     }
 
     Timer {

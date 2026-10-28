@@ -34,7 +34,7 @@ DesktopWidgetInstanceSettings {
         visible: !root.analog
         text: I18n.tr("Weight")
         minimum: 0
-        maximum: 900
+        maximum: Font.Black
         step: 100
         minimumLabel: I18n.tr("Default")
         value: root.cfg.weight ?? 0

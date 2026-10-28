@@ -289,7 +289,7 @@ MediaChromeBase {
                         width: parent.width
                         text: [root.artist, root.album].filter(Boolean).join(" \u00b7 ") || "\u00a0"
                         color: Theme.onSurfaceVariant
-                        font.pixelSize: Theme.fontSizeSmall
+                        font.pixelSize: Theme.fontSizeMedium
                         horizontalAlignment: Text.AlignHCenter
                         active: root.scrolling
                         loop: true

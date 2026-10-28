@@ -346,7 +346,6 @@ DModal {
 
                     width: parent.width - Theme.spacingS * 2
                     anchors.horizontalCenter: parent.horizontalCenter
-                    height: 52
                     font.pixelSize: Theme.fontSizeLarge
                     enabled: root.shouldBeVisible
                     ignoreLeftRightKeys: root.viewMode !== "list"

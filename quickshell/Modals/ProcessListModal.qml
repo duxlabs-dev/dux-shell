@@ -257,7 +257,6 @@ DFloatingWindow {
                 DSearchField {
                     id: searchField
                     Layout.fillWidth: true
-                    Layout.preferredHeight: Theme.buttonHeightS
                     placeholderText: I18n.tr("Search processes...", "process search placeholder")
                     text: processListModal.searchText
                     onTextChanged: processListModal.searchText = text

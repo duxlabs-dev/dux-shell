@@ -14,6 +14,8 @@ CcTile {
     iconName: instance?.ccWidgetIcon || widgetDef?.icon || "extension"
     title: instance?.ccWidgetPrimaryText || widgetDef?.text || I18n.tr("Plugin")
     subtitle: instance?.ccWidgetSecondaryText || ""
+    // Primary text can be generic ("Display"); the registered name always identifies the plugin.
+    denseTitle: widgetDef?.text ?? ""
     active: instance?.ccWidgetIsActive ?? false
     toggle: instance?.ccWidgetIsToggle ?? true
     showExpand: hasDetail

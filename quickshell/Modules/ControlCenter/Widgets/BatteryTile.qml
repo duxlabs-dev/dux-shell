@@ -33,6 +33,7 @@ CcTile {
             return `${BatteryService.batteryLevel}% • ` + I18n.tr("Plugged in");
         return `${BatteryService.batteryLevel}%`;
     }
+    denseTitle: available && !showsMeter ? I18n.tr("Battery") + ` • ${BatteryService.batteryLevel}%` : ""
 
     function syncBatteryRef(wanted) {
         if (wanted === batteryRefHeld)

@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/spf13/afero"
 )
 
@@ -25,6 +27,8 @@ type File struct {
 	DisableCustomLockPAM  *bool     `json:"disable_custom_lock_pam"`
 	DisableUserPlugins    *bool     `json:"disable_user_plugins"`
 	DisableSettingsIPCSet *bool     `json:"disable_settings_ipc_set"`
+
+	LockSettings map[string]json.RawMessage `json:"lock_settings"`
 }
 
 // shellSwitches reach the shell as DMS_POLICY_<KEY> in its launch environment.
@@ -37,6 +41,22 @@ var shellSwitches = []struct {
 	{"disable_custom_lock_pam", func(p *File) *bool { return p.DisableCustomLockPAM }},
 	{"disable_user_plugins", func(p *File) *bool { return p.DisableUserPlugins }},
 	{"disable_settings_ipc_set", func(p *File) *bool { return p.DisableSettingsIPCSet }},
+}
+
+// lockSettingKeys are the shell settings lock_settings may manage.
+var lockSettingKeys = []string{
+	"customPowerActionLock",
+	"lockBeforeSuspend",
+	"loginctlLockIntegration",
+	"lockAtStartup",
+	"acLockTimeout",
+	"batteryLockTimeout",
+	"fadeToLockEnabled",
+	"fadeToLockGracePeriod",
+	"enableFprint",
+	"maxFprintTries",
+	"enableU2f",
+	"u2fMode",
 }
 
 // LoadFile returns nil without an error when the file does not exist.
@@ -104,12 +124,50 @@ func LogindUnlockDisabled(fs afero.Fs) (bool, error) {
 	return flag(policies, func(p *File) *bool { return p.DisableLogindUnlock }), nil
 }
 
-// ShellEnv returns every shell switch as DMS_POLICY_<KEY>=1 or 0, so a value
+// lockSettings merges lock_settings per key, AdminPath over PackagedPath,
+// without null values and keys outside lockSettingKeys.
+func lockSettings(policies []*File) map[string]json.RawMessage {
+	settings := make(map[string]json.RawMessage)
+	for _, policy := range policies {
+		for key, value := range policy.LockSettings {
+			if !slices.Contains(lockSettingKeys, key) {
+				log.Warnf("CLI policy: ignoring lock_settings key %q, which is not a managed lock setting", key)
+				continue
+			}
+			if string(value) == "null" {
+				continue
+			}
+			settings[key] = value
+		}
+	}
+	return settings
+}
+
+// LockSettings returns the managed lock settings as raw JSON by key. A policy
+// file that fails to load manages none, and its error is returned.
+func LockSettings(fs afero.Fs) (map[string]json.RawMessage, error) {
+	policies, err := load(fs)
+	return lockSettings(policies), err
+}
+
+// LockSettingBool returns a managed boolean lock setting, or nil when it is
+// not managed or not a boolean, which the shell ignores too.
+func LockSettingBool(settings map[string]json.RawMessage, key string) *bool {
+	var value *bool
+	if err := json.Unmarshal(settings[key], &value); err != nil {
+		return nil
+	}
+	return value
+}
+
+// ShellEnv returns every shell switch as DMS_POLICY_<KEY>=1 or 0 and the
+// managed lock settings as DMS_POLICY_LOCK_SETTINGS=<JSON object>, so a value
 // inherited by the shell never counts. A policy file that fails to load turns
-// every switch on, and its error is returned with them.
+// every switch on and manages no lock setting, and its error is returned with
+// them.
 func ShellEnv(fs afero.Fs) ([]string, error) {
 	policies, err := load(fs)
-	env := make([]string, 0, len(shellSwitches))
+	env := make([]string, 0, len(shellSwitches)+1)
 	for _, s := range shellSwitches {
 		value := "0"
 		if err != nil || flag(policies, s.value) {
@@ -117,5 +175,8 @@ func ShellEnv(fs afero.Fs) ([]string, error) {
 		}
 		env = append(env, "DMS_POLICY_"+strings.ToUpper(s.key)+"="+value)
 	}
+	// The values come from json.Unmarshal, so they marshal.
+	settings, _ := json.Marshal(lockSettings(policies))
+	env = append(env, "DMS_POLICY_LOCK_SETTINGS="+string(settings))
 	return env, err
 }

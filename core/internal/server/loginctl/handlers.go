@@ -102,7 +102,10 @@ func handleSetLockBeforeSuspend(conn *ipc.ConnWriter, req ipc.Request, manager *
 		return
 	}
 
-	manager.SetLockBeforeSuspend(enabled)
+	if err := manager.SetLockBeforeSuspend(enabled); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
 	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "lock before suspend set"})
 }
 
@@ -113,7 +116,10 @@ func handleSetSleepInhibitorEnabled(conn *ipc.ConnWriter, req ipc.Request, manag
 		return
 	}
 
-	manager.SetSleepInhibitorEnabled(enabled)
+	if err := manager.SetSleepInhibitorEnabled(enabled); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
 	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "sleep inhibitor setting updated"})
 }
 

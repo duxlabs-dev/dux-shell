@@ -435,6 +435,7 @@ Item {
         homeBrightnessDisplay: SettingsData.islandLevelDisplay(root.barConfig, "islandHomeBrightnessDisplay")
         batteryStyle: root.setting("islandBatteryStyle")
         mediaClockVisible: root.setting("islandMediaClockVisible")
+        mediaLyrics: root.setting("islandMediaLyrics")
         // Home and media share the dot face; see mediaFaceToggleAvailable.
         mediaAutoSwitch: !root.dotMode && root.setting("islandMediaAutoSwitch")
         launcherCycleEnabled: SettingsData.launcherStyle === "island"

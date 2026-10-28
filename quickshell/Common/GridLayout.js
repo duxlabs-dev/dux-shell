@@ -171,6 +171,37 @@ function shrinkRows(layout, shrinkable, unit) {
     });
 }
 
+// Opens a full-width band of `extent` at the cut under the slot at `index`, or under the last row when there is
+// none, pushing every slot below the cut down by exactly that much. The extent carries the band's own gaps, so an
+// animated extent moves the rows without a step at either end. The cut sits below any taller neighbour straddling
+// the slot's bottom edge.
+function insertBand(layout, index, extent) {
+    if (extent <= 0)
+        return layout;
+    const slots = layout.slots;
+    const anchor = slots[index] ?? null;
+    let cut = anchor ? anchor.y + anchor.h : layout.totalHeight;
+    for (let moved = true; moved && anchor; ) {
+        moved = false;
+        for (const slot of slots) {
+            if (!slot || slot.y >= cut || slot.y + slot.h <= cut)
+                continue;
+            cut = slot.y + slot.h;
+            moved = true;
+        }
+    }
+    const shifted = slots.map(slot => slot && slot.y >= cut ? Object.assign({}, slot, {
+            "y": slot.y + extent
+        }) : slot);
+    const below = slots.some(slot => slot && slot.y >= cut);
+    return Object.assign({}, layout, {
+        "slots": shifted,
+        "bandY": cut,
+        "bandExtent": extent,
+        "totalHeight": (below ? layout.totalHeight : cut) + extent
+    });
+}
+
 function rowAt(layout, y) {
     const pitch = (layout.rowUnit + layout.gap) * layout.step;
     const tops = layout.bandTops;

@@ -16,6 +16,8 @@ Item {
     property real placeholderRadius: Theme.cornerRadiusXL
     property bool animationsEnabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
     property bool animateLayout: false
+    // Slots take layout changes as they come, for a layout that an animation elsewhere already drives frame by frame.
+    property bool holdLayout: false
     property int draggingSourceIndex: -1
     property var dragCell: null
     property var sizePreview: null

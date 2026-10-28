@@ -258,7 +258,6 @@ DBottomSheet {
     DSearchField {
         id: searchField
         width: parent.width
-        height: Theme.fieldHeightLarge
         placeholderText: I18n.tr("Search widgets...")
         onAccepted: {
             if (root.matches.length > 0)

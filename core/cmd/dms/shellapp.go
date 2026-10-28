@@ -125,7 +125,7 @@ func dmsExtraEnv(string) []string {
 	env = append(env, gpu.EGLVendorEnv()...)
 	policyEnv, err := clipolicy.ShellEnv(afero.NewOsFs())
 	if err != nil {
-		log.Errorf("CLI policy unreadable, enforcing every shell switch: %v", err)
+		log.Errorf("CLI policy unreadable, enforcing every shell switch and ignoring its lock settings: %v", err)
 	}
 	env = append(env, policyEnv...)
 	// systemd user services miss the login shell PATH, so tools in ~/.local/bin

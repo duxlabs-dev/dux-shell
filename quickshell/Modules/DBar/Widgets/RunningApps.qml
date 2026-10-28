@@ -49,7 +49,7 @@ BasePill {
         if (barThickness > 0 && barSpacing > 0) {
             return barThickness + barSpacing;
         }
-        return Theme.barThickness(barConfig?.innerPadding ?? 2, CompositorService.getScreenScale(parentScreen)) + (barConfig?.spacing ?? 4);
+        return Theme.barThickness(barConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault, CompositorService.getScreenScale(parentScreen)) + (barConfig?.spacing ?? 4);
     }
 
     readonly property var barBounds: {

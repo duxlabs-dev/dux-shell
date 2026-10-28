@@ -2,6 +2,7 @@ package sysupdate
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -96,6 +97,50 @@ func TestParseFlatpakUpdateOutput(t *testing.T) {
 			got := parseFlatpakUpdateOutput(tt.input, tt.installed)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("parseFlatpakUpdateOutput() = %#v\nwant %#v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFlatpakCheckUpdates(t *testing.T) {
+	const runtimePrompt = `[ "$1" = list ] && exit 0
+for a in "$@"; do
+	if [ "$a" = --no-deps ]; then
+		printf ' 1.\tVesktop\tdev.vencord.Vesktop\tstable\tu\tflathub\t< 130 MB\n\nProceed with these changes? [Y/n]: '
+		exit 1
+	fi
+done
+printf 'Required runtime for dev.vencord.Vesktop/x86_64/stable found in remote flathub\nDo you want to install it? [Y/n]: '
+echo 'error: The application dev.vencord.Vesktop/x86_64/stable requires the runtime org.freedesktop.Platform/x86_64/26.08 which is not installed' >&2
+exit 1`
+
+	for _, tt := range []struct {
+		name    string
+		script  string
+		wantRef string
+		wantErr string
+	}{
+		{name: "update needing a new runtime", script: runtimePrompt, wantRef: "dev.vencord.Vesktop//stable"},
+		{
+			name:    "failure without a table",
+			script:  "[ \"$1\" = list ] && exit 0\necho 'Looking for updates…'\necho 'error: Unable to load summary from remote flathub' >&2\nexit 1",
+			wantErr: "Unable to load summary",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Setenv("PATH", dir)
+			writeUpdateExecutable(t, dir, "flatpak", tt.script)
+
+			pkgs, err := flatpakBackend{}.CheckUpdates(t.Context())
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Errorf("err = %v, want %q (a failed check must not read as up to date)", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil || len(pkgs) != 1 || pkgs[0].Ref != tt.wantRef {
+				t.Errorf("pkgs = %#v, err = %v, want %s", pkgs, err, tt.wantRef)
 			}
 		})
 	}

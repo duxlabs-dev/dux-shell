@@ -30,7 +30,7 @@ DContextMenu {
 
     layerNamespace: "dms:desktop-context-menu"
     keyboardNavigable: true
-    itemHeight: Theme.listItemHeight
+    itemHeight: Theme.listItemHeight + Theme.densityStepM
     itemFontSize: Theme.fontSizeMedium
     minMenuWidth: stripUnit * (stripCount + 1) + Theme.spacingS * (stripCount + 1)
 

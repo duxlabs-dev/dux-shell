@@ -10,6 +10,8 @@ Item {
 
     readonly property bool isSettingsRow: true
     readonly property bool transparentSlot: true
+    readonly property bool inGroup: parent?.isSettingsGroupHost ?? false
+    readonly property bool isFirstInGroup: inGroup ? parent.isEdge(root, true) : true
 
     property string startTitle: ""
     property int startHour: 7
@@ -48,6 +50,15 @@ Item {
     width: parent?.width ?? 0
     height: halves.implicitHeight
 
+    Rectangle {
+        x: SettingsMetrics.rowPaddingH
+        z: 1
+        width: parent.width - SettingsMetrics.rowPaddingH * 2
+        height: Theme.dividerWidth
+        visible: SettingsMetrics.continuousGroups && root.inGroup && !root.isFirstInGroup
+        color: SettingsMetrics.groupDividerColor
+    }
+
     Row {
         id: halves
         width: parent.width
@@ -62,6 +73,8 @@ Item {
 
                 width: root.showEnd ? (root.width - Theme.groupedListGap) / 2 : root.width
                 paintBackground: true
+                inGroup: root.inGroup
+                dividerBefore: false
                 topRadius: Theme.groupedListOuterRadius
                 bottomRadius: Theme.groupedListOuterRadius
                 title: isStart ? root.startTitle : root.endTitle

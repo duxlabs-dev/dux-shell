@@ -114,13 +114,13 @@
     "%1 is %2 and may use a lot of memory.": "%1 — це %2, і він може використовувати багато пам'яті"
   },
   "%1 is not installed. Install the package to manage the greeter.": {
-    "%1 is not installed. Install the package to manage the greeter.": ""
+    "%1 is not installed. Install the package to manage the greeter.": "%1 не встановлено. Встановіть пакунок, щоб управляти екраном входу."
   },
   "%1 is now included in config": {
     "%1 is now included in config": "%1 тепер включено в конфігурацію"
   },
   "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": {
-    "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": ""
+    "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": "%1 запущено, що призведе до створення дублікатів Bluetooth-програвачів. Вимкніть це за допомогою: %2"
   },
   "%1 issue found": {
     "%1 issue found": "%1 проблему знайдено"
@@ -153,13 +153,13 @@
     "%1 ms": "%1 мс"
   },
   "%1 not available": {
-    "%1 not available": ""
+    "%1 not available": "%1 недоступно"
   },
   "%1 not available - lock integration requires the DMS socket connection": {
-    "%1 not available - lock integration requires the DMS socket connection": ""
+    "%1 not available - lock integration requires the DMS socket connection": "%1 недоступно — інтеграція блокування потребує підключення до сокета DMS"
   },
   "%1 not available or disabled - cannot apply %2 colors": {
-    "%1 not available or disabled - cannot apply %2 colors": ""
+    "%1 not available or disabled - cannot apply %2 colors": "%1 недоступно або вимкнено — неможливо застосувати кольори %2"
   },
   "%1 not found": {
     "%1 not found": "%1 не знайдено"
@@ -192,7 +192,7 @@
     "%1 printers": "%1 принтерів"
   },
   "%1 procs": {
-    "%1 procs": ""
+    "%1 procs": "%1 проц."
   },
   "%1 second": {
     "%1 second": "%1 секунда"
@@ -236,11 +236,17 @@
   "%1: %2": {
     "%1: %2": "%1: %2"
   },
+  "%1d ago": {
+    "%1d ago": ""
+  },
   "%1h": {
     "%1h": "%1 год"
   },
   "%1h %2m": {
     "%1h %2m": "%1г %2 хв"
+  },
+  "%1h ago": {
+    "%1h ago": ""
   },
   "%1m": {
     "%1m": "%1 хв"
@@ -255,13 +261,16 @@
     "(Unnamed)": "(Безіменний)"
   },
   "(exit %1)": {
-    "(exit %1)": ""
+    "(exit %1)": "(код %1)"
   },
   "+ %1 more": {
     "+ %1 more": "+ ще %1"
   },
   "+%1 conditions": {
     "+%1 conditions": "+%1 умови"
+  },
+  "1 hour before": {
+    "1 hour before": ""
   },
   "1 notification": {
     "1 notification": "1 сповіщення"
@@ -408,7 +417,7 @@
     "Add \"%1\" to the %2 group?": "Додати «%1» до групи %2?"
   },
   "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": {
-    "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": ""
+    "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": "Додати «%1» до групи %2? Користувачі мають вийти з системи та увійти знову, а потім запустити %3, щоб опублікувати тему екрана входу"
   },
   "Add Desktop Widget": {
     "Add Desktop Widget": "Додати пристосунок робочого столу"
@@ -483,7 +492,7 @@
     "Adds concave curves where the bar meets the screen edge": "Додає вогнуті криві в місцях стикування панелі з краєм екрана"
   },
   "Adds them to the %1 group so they can run %2": {
-    "Adds them to the %1 group so they can run %2": ""
+    "Adds them to the %1 group so they can run %2": "Додає їх до групи %1, щоб вони могли запускати %2"
   },
   "Adds them to the %1 group so they can use sudo": {
     "Adds them to the %1 group so they can use sudo": "Додає їх до групи %1, щоб вони могли використовувати sudo"
@@ -564,10 +573,10 @@
     "Already on that session": "Вже в цій сесії"
   },
   "Already upvoted, click again to remove": {
-    "Already upvoted, click again to remove": ""
+    "Already upvoted, click again to remove": "Вже проголосовано, натисніть ще раз, щоб скасувати"
   },
   "Also runs the templates in your %1": {
-    "Also runs the templates in your %1": ""
+    "Also runs the templates in your %1": "Також запускає шаблони у вашій %1"
   },
   "Also saves the screenshot to disk": {
     "Also saves the screenshot to disk": "Також зберігає знімок екрану на диск"
@@ -625,9 +634,6 @@
   },
   "Anchor": {
     "Anchor": "Якір"
-  },
-  "Anchored popouts open at the cursor instead of their widget": {
-    "Anchored popouts open at the cursor instead of their widget": "Закріплені спливаючі вікна відкриваються біля курсора замість свого пристосунку"
   },
   "Animation duration": {
     "Animation duration": "Тривалість анімації"
@@ -729,7 +735,7 @@
     "Applying authentication changes...": "Застосування змін автентифікації..."
   },
   "Applying auto-login on startup...": {
-    "Applying auto-login on startup...": "Застосування автологіну при запуску..."
+    "Applying auto-login on startup...": "Застосування автоматичного входу при запуску..."
   },
   "Apps": {
     "Apps": "Програми"
@@ -867,10 +873,10 @@
     "Authorize": "Авторизувати"
   },
   "Authorize pairing with %1": {
-    "Authorize pairing with %1": ""
+    "Authorize pairing with %1": "Авторизувати сполучення з %1"
   },
   "Authorize service for %1": {
-    "Authorize service for %1": ""
+    "Authorize service for %1": "Авторизувати службу для %1"
   },
   "Auto": {
     "Auto": "Авто"
@@ -930,16 +936,16 @@
     "Auto-hide": "Автоприховування"
   },
   "Auto-login change needs a sync": {
-    "Auto-login change needs a sync": "Зміна автологіну потребує синхронізації"
+    "Auto-login change needs a sync": "Зміна автоматичного входу потребує синхронізації"
   },
   "Auto-login disabled": {
-    "Auto-login disabled": "Автологін вимкнено"
+    "Auto-login disabled": "Автоматичний вхід вимкнено"
   },
   "Auto-login enabled": {
-    "Auto-login enabled": "Автологін увімкнено"
+    "Auto-login enabled": "Автоматичний вхід увімкнено"
   },
   "Auto-login on startup": {
-    "Auto-login on startup": "Автологін при запуску"
+    "Auto-login on startup": "Автоматичний вхід при запуску"
   },
   "Auto-save to disk": {
     "Auto-save to disk": "Автозбереження на диск"
@@ -1398,7 +1404,7 @@
     "Changes save to %1": "Зміни зберігаються в %1"
   },
   "Changes volume and audio devices": {
-    "Changes volume and audio devices": ""
+    "Changes volume and audio devices": "Змінює гучність та аудіопристрої"
   },
   "Channel": {
     "Channel": "Канал"
@@ -1508,6 +1514,9 @@
   "Classes": {
     "Classes": "Класи"
   },
+  "Classic": {
+    "Classic": ""
+  },
   "Clear All": {
     "Clear All": "Очистити все"
   },
@@ -1536,7 +1545,7 @@
     "Click 'Setup' to create %1 and add include to your compositor config.": "Натисніть «Налаштувати», щоб створити %1 та додати include у конфігурацію вашого композитора"
   },
   "Click Import to add a %1 or %2 file": {
-    "Click Import to add a %1 or %2 file": ""
+    "Click Import to add a %1 or %2 file": "Натисніть «Імпортувати», щоб додати файл %1 або %2"
   },
   "Click actions": {
     "Click actions": "Дії при кліку"
@@ -1688,6 +1697,9 @@
   "Columns": {
     "Columns": "Стовпці"
   },
+  "Comfortable": {
+    "Comfortable": ""
+  },
   "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": {
     "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": "Список назв розкладок, розділених комами. Залиште порожнім, щоб використовувати системні налаштування"
   },
@@ -1770,7 +1782,7 @@
     "Confirm Display Changes": "Підтвердити зміни дисплея"
   },
   "Confirm passkey for %1": {
-    "Confirm passkey for %1": ""
+    "Confirm passkey for %1": "Підтвердьте пароль для %1"
   },
   "Confirm password": {
     "Confirm password": "Підтвердьте пароль"
@@ -1818,7 +1830,7 @@
     "Connections and autoconnect": "Підключення та автопідключення"
   },
   "Connects to the internet": {
-    "Connects to the internet": ""
+    "Connects to the internet": "З'єднується з інтернетом"
   },
   "Consumes the key only when a dispatcher runs": {
     "Consumes the key only when a dispatcher runs": "Використовує клавішу лише тоді, коли працює диспетчер"
@@ -1866,7 +1878,7 @@
     "Copy": "Копіювати"
   },
   "Copy %1": {
-    "Copy %1": ""
+    "Copy %1": "Скопіювати %1"
   },
   "Copy Full Command": {
     "Copy Full Command": "Копіювати повну команду"
@@ -2091,7 +2103,7 @@
     "DMS out of date": "Версія DMS застаріла"
   },
   "DMS removes its managed block from %1 and stops write services": {
-    "DMS removes its managed block from %1 and stops write services": ""
+    "DMS removes its managed block from %1 and stops write services": "DMS видаляє свій керований блок із %1 і зупиняє служби запису"
   },
   "DMS server is outdated (API v%1, expected v%2)": {
     "DMS server is outdated (API v%1, expected v%2)": "Сервер DMS застарів (API v%1, очікується v%2)"
@@ -2190,7 +2202,7 @@
     "Deck": "Колода"
   },
   "Declared by the author, not enforced": {
-    "Declared by the author, not enforced": ""
+    "Declared by the author, not enforced": "Декларується автором, але не є обов'язковим"
   },
   "Default": {
     "Default": "Типово"
@@ -2269,6 +2281,9 @@
   },
   "Deletes all stored screen time": {
     "Deletes all stored screen time": "Видаляє весь збережений екранний час"
+  },
+  "Dense": {
+    "Dense": ""
   },
   "Dependencies & documentation": {
     "Dependencies & documentation": "Залежності та документація"
@@ -2366,6 +2381,9 @@
   "Disabled": {
     "Disabled": "Вимкнено"
   },
+  "Disabled by Auto": {
+    "Disabled by Auto": ""
+  },
   "Disabled by Click through": {
     "Disabled by Click through": "Вимкнено через «Пропускати кліки»"
   },
@@ -2376,7 +2394,7 @@
     "Disabling WiFi...": "Вимкнення WiFi..."
   },
   "Disabling auto-login on startup...": {
-    "Disabling auto-login on startup...": "Вимкнення автологіну при запуску..."
+    "Disabling auto-login on startup...": "Вимкнення автоматичного входу при запуску..."
   },
   "Disabling cellular...": {
     "Disabling cellular...": "Вимкнення стільникового зв'язку..."
@@ -2505,7 +2523,7 @@
     "Dock": "Док"
   },
   "Dock %1": {
-    "Dock %1": ""
+    "Dock %1": "Закріпити %1"
   },
   "Dock margin, opacity, and border": {
     "Dock margin, opacity, and border": "Зовнішні відступи, прозорість та контур доку"
@@ -2539,6 +2557,9 @@
   },
   "Don't change": {
     "Don't change": "Не змінювати"
+  },
+  "Don't dim unfocused apps": {
+    "Don't dim unfocused apps": ""
   },
   "Door Open": {
     "Door Open": "Дверцята відкриті"
@@ -2616,16 +2637,16 @@
     "Dusk (Nautical Twilight)": "Сутінки (навігаційні сутінки)"
   },
   "Dux Calendar": {
-    "Dux Calendar": ""
+    "Dux Calendar": "Календар Dux"
   },
   "Dux Calendar isn't installed": {
-    "Dux Calendar isn't installed": ""
+    "Dux Calendar isn't installed": "Календар Dux не встановлено"
   },
   "Dux Calendar isn't running": {
-    "Dux Calendar isn't running": ""
+    "Dux Calendar isn't running": "Календар Dux не запущено"
   },
   "Dux Greeter docs": {
-    "Dux Greeter docs": ""
+    "Dux Greeter docs": "Документація Dux Greeter"
   },
   "Dwindle": {
     "Dwindle": "Dwindle"
@@ -2766,7 +2787,7 @@
     "Enter PIN": "Введіть PIN-код"
   },
   "Enter PIN for %1": {
-    "Enter PIN for %1": ""
+    "Enter PIN for %1": "Введіть PIN-код для %1"
   },
   "Enter a new name for session \"%1": {
     "Enter a new name for session \"%1\"": "Введіть нову назву для сесії «%1»"
@@ -2775,7 +2796,7 @@
     "Enter a new name for this workspace": "Введіть нову назву для цього робочого простору"
   },
   "Enter credentials for %1": {
-    "Enter credentials for %1": ""
+    "Enter credentials for %1": "Введіть облікові дані для %1"
   },
   "Enter custom lock screen format (e.g., dddd, MMMM d)": {
     "Enter custom lock screen format (e.g., dddd, MMMM d)": "Введіть власний формат екрана блокування (напр., dddd, MMMM d)"
@@ -2790,16 +2811,16 @@
     "Enter network name and password": "Введіть назву мережі та пароль"
   },
   "Enter passkey for %1": {
-    "Enter passkey for %1": ""
+    "Enter passkey for %1": "Введіть пароль для %1"
   },
   "Enter password for %1": {
-    "Enter password for %1": ""
+    "Enter password for %1": "Введіть пароль для %1"
   },
   "Enter text to encode": {
     "Enter text to encode": "Введіть текст для кодування"
   },
   "Enter this passkey on %1": {
-    "Enter this passkey on %1": ""
+    "Enter this passkey on %1": "Введіть цей пароль на %1"
   },
   "Enter to paste": {
     "Enter to paste": "Enter для вставки"
@@ -2892,7 +2913,7 @@
     "Expressive": "Експресивний"
   },
   "Extend %1 with powerful plugins for widgets, launchers, and more": {
-    "Extend %1 with powerful plugins for widgets, launchers, and more": ""
+    "Extend %1 with powerful plugins for widgets, launchers, and more": "Розширюйте %1 за допомогою потужних розширень для пристосунків, запускачів та іншого"
   },
   "Extend battery life": {
     "Extend battery life": "Подовжити термін роботи батареї"
@@ -3059,6 +3080,9 @@
   "Failed to read theme file: %1": {
     "Failed to read theme file: %1": "Не вдалося прочитати файл теми: %1"
   },
+  "Failed to reboot to firmware setup": {
+    "Failed to reboot to firmware setup": ""
+  },
   "Failed to reload plugin: %1": {
     "Failed to reload plugin: %1": "Не вдалося перезавантажити розширення: %1"
   },
@@ -3081,7 +3105,7 @@
     "Failed to resume printer": "Не вдалося відновити роботу принтера"
   },
   "Failed to run '%1'. Ensure the %2 package is installed.": {
-    "Failed to run '%1'. Ensure the %2 package is installed.": ""
+    "Failed to run '%1'. Ensure the %2 package is installed.": "Не вдалося запустити '%1'. Переконайтесь, що пакунок %2 встановлено."
   },
   "Failed to save VPN credentials": {
     "Failed to save VPN credentials": "Не вдалося зберегти облікові дані VPN"
@@ -3183,7 +3207,7 @@
     "Family": "Сімейство"
   },
   "Featured plugin": {
-    "Featured plugin": ""
+    "Featured plugin": "Вибране розширення"
   },
   "Feels Like %1°": {
     "Feels Like %1°": "Відчувається як %1°"
@@ -3204,7 +3228,7 @@
     "File manager": "Файловий менеджер"
   },
   "File search requires %1\nInstall from %2": {
-    "File search requires %1\nInstall from %2": ""
+    "File search requires %1\nInstall from %2": "Пошук файлів потребує %1\nВстановіть з %2"
   },
   "File the command writes; leave empty to read stdout": {
     "File the command writes; leave empty to read stdout": "Файл, у який записується команда; залиште порожнім, щоб прочитати stdout"
@@ -3269,6 +3293,9 @@
   "Fires with any modifiers held": {
     "Fires with any modifiers held": "Спрацьовує при затисканні будь-яких модифікаторів"
   },
+  "Firmware setup": {
+    "Firmware setup": ""
+  },
   "First Time Setup": {
     "First Time Setup": "Перше налаштування"
   },
@@ -3282,7 +3309,7 @@
     "Fits the song title instead of keeping a fixed width": "Підлаштовує назву пісні замість використання фіксованої ширини"
   },
   "Fits your setup": {
-    "Fits your setup": ""
+    "Fits your setup": "Пасує до вашого налаштування"
   },
   "Fixed": {
     "Fixed": "Фіксовано"
@@ -3426,7 +3453,10 @@
     "Fonts, scale, animations": "Шрифти, масштаб, анімації"
   },
   "For %1": {
-    "For %1": "Для %1"
+    "For %1": "На %1"
+  },
+  "For 1 hour": {
+    "For 1 hour": ""
   },
   "For you": {
     "For you": "Для вас"
@@ -3546,7 +3576,7 @@
     "GPU": "ГП"
   },
   "GPU %1": {
-    "GPU %1": ""
+    "GPU %1": "GPU %1"
   },
   "GPU Monitoring": {
     "GPU Monitoring": "Моніторинг ГП"
@@ -3573,7 +3603,7 @@
     "Gamma": "Гамма"
   },
   "Gamma %1": {
-    "Gamma %1": ""
+    "Gamma %1": "Гамма %1"
   },
   "Gamma control": {
     "Gamma control": "Керування гаммою"
@@ -3735,7 +3765,7 @@
     "Health": "Здоров'я"
   },
   "Health %1": {
-    "Health %1": ""
+    "Health %1": "Стан %1"
   },
   "Heat shimmer": {
     "Heat shimmer": "Мерехтіння від тепла"
@@ -3804,7 +3834,7 @@
     "Hide installed": "Приховати встановлені"
   },
   "Hide on last display": {
-    "Hide on last display": ""
+    "Hide on last display": "Приховати на останньому дисплеї"
   },
   "Hide until typing": {
     "Hide until typing": "Приховати під час введення"
@@ -3966,7 +3996,7 @@
     "IP address or hostname": "IP-адреса або назва хоста"
   },
   "IP sharing setup failed. Check that %1 is installed.": {
-    "IP sharing setup failed. Check that %1 is installed.": ""
+    "IP sharing setup failed. Check that %1 is installed.": "Налаштування спільного використання IP-адреси не вдалося. Перевірте, чи встановлено %1"
   },
   "ISO date": {
     "ISO date": "ISO дата"
@@ -4191,7 +4221,7 @@
     "Install system updates?": "Встановити системні оновлення?"
   },
   "Install the %1 package for dynamic theming": {
-    "Install the %1 package for dynamic theming": ""
+    "Install the %1 package for dynamic theming": "Встановіть пакет %1 для динамічного оформлення"
   },
   "Install theme '%1' from the DMS registry?": {
     "Install theme '%1' from the DMS registry?": "Встановити тему «%1» з реєстру DMS?"
@@ -4203,7 +4233,7 @@
     "Install wallpaper '%1'?": "Встановити шпалери «%1»?"
   },
   "Installation and PAM setup are documented in the %1.": {
-    "Installation and PAM setup are documented in the %1.": ""
+    "Installation and PAM setup are documented in the %1.": "Встановлення та налаштування PAM задокументоване у %1."
   },
   "Installed": {
     "Installed": "Встановлено"
@@ -4235,6 +4265,9 @@
   "Interface": {
     "Interface": "Інтерфейс"
   },
+  "Interface density": {
+    "Interface density": ""
+  },
   "Interface style": {
     "Interface style": "Стиль інтерфейсу"
   },
@@ -4261,6 +4294,9 @@
   },
   "Invalid wallpaper layout": {
     "Invalid wallpaper layout": "Неправильний макет шпалер"
+  },
+  "Inverse Surface": {
+    "Inverse Surface": ""
   },
   "Iridescence": {
     "Iridescence": "Переливчастість"
@@ -4446,7 +4482,7 @@
     "Launching": "Запуск"
   },
   "Layer namespace %1, needs a niri blur rule": {
-    "Layer namespace %1, needs a niri blur rule": ""
+    "Layer namespace %1, needs a niri blur rule": "Простір імен шару %1, потребує правила розмиття niri"
   },
   "Layer outline": {
     "Layer outline": "Контур шару"
@@ -4539,7 +4575,7 @@
     "Lightest": "Найсвітліший"
   },
   "Like your plugins": {
-    "Like your plugins": ""
+    "Like your plugins": "Подібне до ваших розширень"
   },
   "Limit": {
     "Limit": "Ліміт"
@@ -4712,6 +4748,9 @@
   "Managed by Nix": {
     "Managed by Nix": "Керується Nix"
   },
+  "Managed by administrator policy": {
+    "Managed by administrator policy": ""
+  },
   "Managed by the primary PAM source": {
     "Managed by the primary PAM source": "Керується основним джерелом PAM"
   },
@@ -4801,9 +4840,6 @@
   },
   "Material palette": {
     "Material palette": "Палітра Material"
-  },
-  "Material scale": {
-    "Material scale": "Масштаб Material"
   },
   "Matugen Missing": {
     "Matugen Missing": "Matugen відсутній"
@@ -5025,7 +5061,7 @@
     "More": "Більше"
   },
   "More in %1": {
-    "More in %1": ""
+    "More in %1": "Більше в %1"
   },
   "More samples look smoother and cost more GPU": {
     "More samples look smoother and cost more GPU": "Більше зразків виглядають плавніше і потребують більше ресурсів GPU"
@@ -5637,16 +5673,16 @@
     "Not available": "Недоступно"
   },
   "Not available - install %1 and %2": {
-    "Not available - install %1 and %2": ""
+    "Not available - install %1 and %2": "Недоступно — встановіть %1 та %2"
   },
   "Not available - install %1 and %2, or configure %3 PAM": {
-    "Not available - install %1 and %2, or configure %3 PAM": ""
+    "Not available - install %1 and %2, or configure %3 PAM": "Недоступно — встановіть %1 та %2 або налаштуйте %3 PAM"
   },
   "Not available - install or configure %1": {
-    "Not available - install or configure %1": ""
+    "Not available - install or configure %1": "Недоступно — встановіть або налаштуйте %1"
   },
   "Not available - install or configure %1, or configure %2 PAM": {
-    "Not available - install or configure %1, or configure %2 PAM": ""
+    "Not available - install or configure %1, or configure %2 PAM": "Недоступно — встановіть або налаштуйте %1 або налаштуйте %2 PAM"
   },
   "Not bound": {
     "Not bound": "Не прив'язано"
@@ -5859,13 +5895,13 @@
     "Open with": "Відкрити за допомогою"
   },
   "Opening GitHub to remove the upvote": {
-    "Opening GitHub to remove the upvote": ""
+    "Opening GitHub to remove the upvote": "Відкриття GitHub для скасування голосу"
   },
   "Opening GitHub to upvote": {
-    "Opening GitHub to upvote": ""
+    "Opening GitHub to upvote": "Відкриття GitHub для голосування"
   },
   "Opening terminal: %1": {
-    "Opening terminal: %1": ""
+    "Opening terminal: %1": "Відкриття термінала: %1"
   },
   "Opens": {
     "Opens": "Відкрити"
@@ -6012,7 +6048,7 @@
     "PID": "PID"
   },
   "PID %1": {
-    "PID %1": ""
+    "PID %1": "PID %1"
   },
   "PIN": {
     "PIN": "PIN-код"
@@ -6204,7 +6240,7 @@
     "Pixelate": "Пікселізація"
   },
   "Place plugin directories here. Each plugin should have a %1 manifest file.": {
-    "Place plugin directories here. Each plugin should have a %1 manifest file.": ""
+    "Place plugin directories here. Each plugin should have a %1 manifest file.": "Розмістіть тут папки розширень. Кожне розширення повинно мати файл маніфесту %1"
   },
   "Placement": {
     "Placement": "Розміщення"
@@ -6222,7 +6258,7 @@
     "Playback": "Відтворення"
   },
   "Playback error: %1": {
-    "Playback error: %1": ""
+    "Playback error: %1": "Помилка відтворення: %1"
   },
   "Playback position": {
     "Playback position": "Позиція відтворення"
@@ -6255,7 +6291,7 @@
     "Plugin Source Code": "Вихідний код розширення"
   },
   "Plugin authors": {
-    "Plugin authors": ""
+    "Plugin authors": "Автори розширення"
   },
   "Plugin dependency missing": {
     "Plugin dependency missing": "Відсутня залежність розширення"
@@ -6288,7 +6324,7 @@
     "Plugins": "Розширення"
   },
   "Plugins by %1": {
-    "Plugins by %1": ""
+    "Plugins by %1": "Розширення від %1"
   },
   "Plugins shown in All mode without a trigger. Drag to reorder": {
     "Plugins shown in All mode without a trigger. Drag to reorder": "Розширення, що відображаються в режимі «Усі» без тригера. Перетягніть для зміни порядку"
@@ -6558,7 +6594,7 @@
     "Profile not found": "Профіль не знайдено"
   },
   "Profile not found in %1": {
-    "Profile not found in %1": ""
+    "Profile not found in %1": "Профіль не знайдено у %1"
   },
   "Profile on AC": {
     "Profile on AC": "Профіль від мережі"
@@ -6656,6 +6692,9 @@
   "Read:": {
     "Read:": "Читати:"
   },
+  "Readings": {
+    "Readings": ""
+  },
   "Reads audio devices and volume": {
     "Reads audio devices and volume": "Читає пристрої аудіо та гучність"
   },
@@ -6686,11 +6725,14 @@
   "Reboot recommended": {
     "Reboot recommended": "Рекомендовано перезавантаження"
   },
+  "Reboot targets": {
+    "Reboot targets": ""
+  },
   "Reboot to %1": {
     "Reboot to %1": "Перезавантажити в %1"
   },
-  "Reboot to another OS": {
-    "Reboot to another OS": "Перезавантажити в іншу ОС"
+  "Reboot to firmware setup": {
+    "Reboot to firmware setup": ""
   },
   "Recent": {
     "Recent": "Нещодавні"
@@ -6819,10 +6861,10 @@
     "Remove the shortcut %1?": "Видалити ярлик %1?"
   },
   "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": {
-    "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": ""
+    "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": "Видалити скорочення %1? Запис відв'язки буде додано до %2, він зберігатиметься між оновленнями DMS."
   },
   "Remove upvote": {
-    "Remove upvote": ""
+    "Remove upvote": "Скасувати голос"
   },
   "Removed administrator privileges": {
     "Removed administrator privileges": "Права адміністратора видалено"
@@ -6870,13 +6912,13 @@
     "Report": "Звіт"
   },
   "Required plugin: %1": {
-    "Required plugin: %1": ""
+    "Required plugin: %1": "Необхідне розширення: %1"
   },
   "Requires %1": {
     "Requires %1": "Потребує %1"
   },
   "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": {
-    "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": ""
+    "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": "Потребує %1, %2 та перебування вашого користувача в групі %3 (а також %4 для відбитка пальця, %5 для ключів безпеки)"
   },
   "Requires DMS %1": {
     "Requires DMS %1": "Потребує DMS %1"
@@ -6999,7 +7041,7 @@
     "Root Filesystem": "Корнева файлова система"
   },
   "Rotating Cookie": {
-    "Rotating Cookie": ""
+    "Rotating Cookie": "Ротація кукі"
   },
   "Rounded": {
     "Rounded": "Закруглені"
@@ -7007,8 +7049,8 @@
   "Route Bluetooth headset controls to the active DMS media player": {
     "Route Bluetooth headset controls to the active DMS media player": "Направити керування Bluetooth-гарнітурою до активного медіа-програвача DMS"
   },
-  "Routes launcher, dash, control center and notification shortcuts": {
-    "Routes launcher, dash, control center and notification shortcuts": "Маршрутизація запускача, дашборду, центру керування та ярликів сповіщень"
+  "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": {
+    "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": ""
   },
   "Rows": {
     "Rows": "Рядки"
@@ -7044,7 +7086,7 @@
     "Run a shell command (e.g., notify-send)": "Запустити команду оболонки (наприклад, notify-send)"
   },
   "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": {
-    "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": ""
+    "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": "Запускає зовнішню команду при кожній зміні шпалер і об'єднує її JSON-палітру в %1 під простором імен, щоб шаблони могли використовувати, наприклад, %2. Команда отримує шпалери як %3 та режим як %4"
   },
   "Run full sync": {
     "Run full sync": "Запустити повну синхронізацію"
@@ -7262,6 +7304,9 @@
   "Secondary Container": {
     "Secondary Container": "Другорядний контейнер"
   },
+  "Section dividers": {
+    "Section dividers": ""
+  },
   "Sections": {
     "Sections": "Секції"
   },
@@ -7312,6 +7357,9 @@
   },
   "Select Dock Launcher Logo": {
     "Select Dock Launcher Logo": "Оберіть логотип запускача доку"
+  },
+  "Select Dot Icon": {
+    "Select Dot Icon": ""
   },
   "Select ICC Profile": {
     "Select ICC Profile": "Вибрати ICC-профіль"
@@ -7419,7 +7467,7 @@
     "Set notification rules": "Налаштувати правила сповіщень"
   },
   "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": {
-    "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": ""
+    "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": "Встановіть одну з цих змінних середовища, а потім перезапустіть оболонку:\n%1\n\nТільки %2 потребує встановлення %3"
   },
   "Set under Theme & colors, Derived color": {
     "Set under Theme & colors, Derived color": "Встановіть у «Тема та кольори» → «Похідний колір»"
@@ -7542,7 +7590,7 @@
     "Show discharge rate": "Показати швидкість розряду"
   },
   "Show every author": {
-    "Show every author": ""
+    "Show every author": "Показати всіх авторів"
   },
   "Show filename": {
     "Show filename": "Показати ім'я файлу"
@@ -7835,6 +7883,9 @@
   "Spacing": {
     "Spacing": "Відступи"
   },
+  "Spacious": {
+    "Spacious": ""
+  },
   "Speaker settings": {
     "Speaker settings": "Налаштування динаміків"
   },
@@ -8051,6 +8102,9 @@
   "Switches to power saver at the low battery threshold": {
     "Switches to power saver at the low battery threshold": "Перемикається в режим енергозбереження при досягненні порогу низького заряду батареї"
   },
+  "Symbol": {
+    "Symbol": ""
+  },
   "Sync": {
     "Sync": "Синхронізація"
   },
@@ -8187,7 +8241,7 @@
     "Terminal additional parameters": "Додаткові параметри терміналу"
   },
   "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": {
-    "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": ""
+    "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": "Резервний варіант термінала не спрацював. Встановіть один із підтримуваних емуляторів термінала або запустіть «%1» вручну"
   },
   "Terminal fallback opened. Complete authentication there; it will close automatically when done.": {
     "Terminal fallback opened. Complete authentication there; it will close automatically when done.": "Відкрито резервний термінал. Завершіть автентифікацію там; він закриється автоматично після завершення"
@@ -8229,10 +8283,13 @@
     "Text style": "Стиль тексту"
   },
   "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": {
-    "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": ""
+    "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": "Змінна середовища %1 не задана або сокет не доступний. Це потрібно для автоматизованого керування плагінами."
   },
   "The Aqueous operation failed.": {
     "The Aqueous operation failed.": "Операція Aqueous не вдалася"
+  },
+  "The Control Center opens at the cursor instead of its widget": {
+    "The Control Center opens at the cursor instead of its widget": ""
   },
   "The Default action only overrides priority": {
     "The Default action only overrides priority": "Типова дія лише замінює пріоритет"
@@ -8250,7 +8307,7 @@
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "Стрілка вказує напрямок вітру. Мітка показує, звідки він дме"
   },
   "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": {
-    "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": ""
+    "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": "Наведені нижче налаштування змінять ваші параметри GTK та Qt. Якщо ви бажаєте зберегти поточну конфігурацію, будь ласка, зробіть резервну копію (%1 та %2)"
   },
   "The compositor session changed. Discard this edit before starting a new one.": {
     "The compositor session changed. Discard this edit before starting a new one.": "Сесія композитора змінилася. Відмініть цю правку перед початком нової"
@@ -8355,7 +8412,7 @@
     "Themes": "Теми"
   },
   "These add entries to the XDG autostart directory (%1)": {
-    "These add entries to the XDG autostart directory (%1)": ""
+    "These add entries to the XDG autostart directory (%1)": "Це додає записи до каталогу автозапуску XDG (%1)"
   },
   "They load with the next update check. Release notes are also published on GitHub.": {
     "They load with the next update check. Release notes are also published on GitHub.": "Вони завантажуються під час наступної перевірки оновлень. Нотатки до релізу також публікуються на GitHub"
@@ -8376,7 +8433,7 @@
     "This bar is the Island": "Ця панель є Острівцем"
   },
   "This bind is overridden by %1": {
-    "This bind is overridden by %1": ""
+    "This bind is overridden by %1": "Це скорочення перезаписане у %1"
   },
   "This device": {
     "This device": "Цей пристрій"
@@ -8388,7 +8445,7 @@
     "This display does not report VRR support": "Цей дисплей не повідомляє про підтримку VRR"
   },
   "This install is still using %1. Run %2 to migrate before changing these settings.": {
-    "This install is still using %1. Run %2 to migrate before changing these settings.": ""
+    "This install is still using %1. Run %2 to migrate before changing these settings.": "Ця інсталяція все ще використовує %1. Запустіть %2 для міграції перед зміною цих налаштувань"
   },
   "This may take a few seconds": {
     "This may take a few seconds": "Це може зайняти кілька секунд"
@@ -8400,7 +8457,7 @@
     "This output is disabled in the current profile": "Цей вивід вимкнено в поточному профілі"
   },
   "This plugin does not have '%1' permission.\n\nAdd %2 to %3": {
-    "This plugin does not have '%1' permission.\n\nAdd %2 to %3": ""
+    "This plugin does not have '%1' permission.\n\nAdd %2 to %3": "Це розширення не має дозволу %1.\n\nДодайте %2 до %3"
   },
   "This system cannot link settings live. Sync again after changing them.": {
     "This system cannot link settings live. Sync again after changing them.": "Ця система не може прив'язувати налаштування в реальному часі. Синхронізуйте знову після їх зміни"
@@ -8508,10 +8565,10 @@
     "To Full": "До повного заряду"
   },
   "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": {
-    "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": ""
+    "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": "Щоб увійти як інший користувач, вийдіть із системи та виберіть обліковий запис у вікні входу. Створення нової паралельної сесії потребує вікна входу з підтримкою багатосесійності (%1)"
   },
   "To use this DMS bind, remove or change the keybind in your %1": {
-    "To use this DMS bind, remove or change the keybind in your %1": ""
+    "To use this DMS bind, remove or change the keybind in your %1": "Щоб використовувати це прив'язування DMS, видаліть або змініть комбінацію клавіш у вашій %1"
   },
   "Toast": {
     "Toast": "Спливаюче повідомлення"
@@ -8566,6 +8623,9 @@
   },
   "Tools": {
     "Tools": "Інструменти"
+  },
+  "Tooltip": {
+    "Tooltip": ""
   },
   "Top": {
     "Top": "Вгорі"
@@ -8859,13 +8919,13 @@
     "Uptime": "Час роботи"
   },
   "Upvote on GitHub": {
-    "Upvote on GitHub": ""
+    "Upvote on GitHub": "Проголосувати на GitHub"
   },
   "Upvote removed": {
-    "Upvote removed": ""
+    "Upvote removed": "Голос скасовано"
   },
   "Upvoted on GitHub": {
-    "Upvoted on GitHub": ""
+    "Upvoted on GitHub": "Проголосовано на GitHub"
   },
   "Urgent": {
     "Urgent": "Терміново"
@@ -9207,7 +9267,7 @@
     "Wi-Fi, Ethernet, VPN": "Wi-Fi, Ethernet, VPN"
   },
   "WiFi QR code for %1": {
-    "WiFi QR code for %1": ""
+    "WiFi QR code for %1": "Wi-Fi QR-код для %1"
   },
   "WiFi disabled": {
     "WiFi disabled": "Wi-Fi вимкнено"
@@ -9312,7 +9372,7 @@
     "Working...": "Працюю..."
   },
   "Works here": {
-    "Works here": ""
+    "Works here": "Працює тут"
   },
   "Works in every submap": {
     "Works in every submap": "Працює в кожній підкарті"
@@ -9342,7 +9402,7 @@
     "Write:": "Записати:"
   },
   "Writes to your files": {
-    "Writes to your files": ""
+    "Writes to your files": "Записує у ваші файли"
   },
   "X axis": {
     "X axis": "Вісь X"
@@ -9466,6 +9526,12 @@
   },
   "display rotation option": {
     "Normal": "Нормальний"
+  },
+  "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural": {
+    "%1 days": "",
+    "%1 hours": "",
+    "%1 minutes": "",
+    "%1 seconds": ""
   },
   "e.g. /usr/bin/my-script --flag": {
     "e.g. /usr/bin/my-script --flag": "напр. /usr/bin/my-script --flag"
@@ -9603,7 +9669,7 @@
     "remote": "дистанційний"
   },
   "report a problem": {
-    "report a problem": ""
+    "report a problem": "повідомити про проблему"
   },
   "reviewed": {
     "reviewed": "перевірено"

@@ -370,7 +370,7 @@ Item {
                 text: I18n.tr("Size")
                 resetStore: bar
                 resetKeys: ["innerPadding"]
-                value: bar.selectedBarConfig?.innerPadding ?? 2
+                value: bar.selectedBarConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault
                 minimum: -8
                 maximum: 24
                 unit: "px"
@@ -699,7 +699,7 @@ Item {
                 tags: ["widget", "padding", "spacing", "compact", "remove"]
                 resetStore: bar
                 resetKeys: ["widgetPadding"]
-                value: bar.selectedBarConfig?.widgetPadding ?? 8
+                value: bar.selectedBarConfig?.widgetPadding ?? SettingsData.barWidgetPaddingDefault
                 minimum: 0
                 maximum: 32
                 unit: "px"

@@ -17,6 +17,8 @@ Item {
     property string iconName: ""
     property string title: ""
     property string subtitle: ""
+    // Dense pills drop the subtitle, so tiles whose title is a bare state name themselves here.
+    property string denseTitle: ""
     property bool active: false
     property real columns: 4
     property real rows: 1
@@ -33,19 +35,32 @@ Item {
     // Replaces the icon and labels inside the body; the chrome, focus and activation stay.
     property Component bodyContent: null
     property Component iconContent: null
-    property real expandedMinimumHeight: Theme.listItemHeight
+    property real expandedMinimumHeight: CcMetrics.rowHeight
     readonly property Item expandedItem: expandedLoader.item
     readonly property bool expanded: expandedContent !== null && width >= CcMetrics.expandedTileMinWidth && height >= headerHeight + expandedMinimumHeight + tilePadding * 2 + Theme.spacingM
-    readonly property real tilePadding: tall && !narrow ? Theme.spacingM : Theme.spacingS
-    readonly property real baseIconExtent: Math.min(Math.max(Theme.minimumTouchTargetSize, CcMetrics.iconBoxSize), bodyHeight - tilePadding * 2, width - tilePadding * 2)
+    readonly property real tilePadding: tall && !narrow ? CcMetrics.tallTilePadding : small ? CcMetrics.smallTilePadding : CcMetrics.tilePadding
+    readonly property real baseIconExtent: Math.min(Math.max(CcMetrics.touchTarget, CcMetrics.iconBoxSize), bodyHeight - tilePadding * 2, width - tilePadding * 2)
     readonly property real iconExtent: stacked ? Math.max(0, Math.min(baseIconExtent, height - tilePadding * 2 - Theme.spacingS - titleLabel.implicitHeight)) : baseIconExtent
-    readonly property real headerHeight: Math.max(baseIconExtent, Theme.fontSizeLarge + Theme.fontSizeMedium + Theme.spacingS)
+    readonly property real headerHeight: Math.max(baseIconExtent, (denseText ? Theme.fontSizeMedium + Theme.fontSizeSmall : Theme.fontSizeLarge + Theme.fontSizeMedium) + Theme.spacingS)
     readonly property bool stacked: tall && !expanded && width <= height
     readonly property bool narrow: width < CcMetrics.expandedTileMinWidth
-    readonly property bool denseText: narrow || small
+    readonly property bool denseText: narrow || small || CcMetrics.denseTileText
     readonly property real labelHeight: titleLabel.implicitHeight + (showSubtitle ? Theme.spacingXXS + subtitleLabel.implicitHeight : 0)
     readonly property real textGap: CcMetrics.tileTextGap
-    readonly property bool showSubtitle: subtitle !== "" && (!stacked || height - tilePadding * 2 >= iconExtent + Theme.spacingS + titleLabel.implicitHeight + Theme.spacingXXS + subtitleLabel.implicitHeight)
+    readonly property bool densePill: CcMetrics.dense && !tall && !expanded
+    readonly property bool showSubtitle: {
+        if (subtitle === "")
+            return false;
+        if (stacked)
+            return height - tilePadding * 2 >= iconExtent + Theme.spacingS + titleLabel.implicitHeight + Theme.spacingXXS + subtitleLabel.implicitHeight;
+        // Accessible.description still carries the hidden subtitle.
+        if (densePill)
+            return false;
+        // Shrunk rows can overflow at larger font scales; small tiles keep their box.
+        if (!CcMetrics.denseTileText || small)
+            return true;
+        return (expanded ? headerHeight : bodyHeight - tilePadding * 2) >= titleLabel.implicitHeight + Theme.spacingXXS + subtitleLabel.implicitHeight;
+    }
     property bool showExpand: false
     property bool opensPage: false
     property color restIconColor: CcMetrics.tileInactiveIcon
@@ -65,9 +80,9 @@ Item {
     readonly property bool hasIconBox: (showExpand || opensPage || expanded) && !compact
     readonly property bool showsActive: active && interactive
     readonly property real restRadius: {
-        if (showsActive)
+        if (showsActive && Theme.shapeMorph)
             return Math.min(CcMetrics.tileActiveRadius, width / 2, bodyHeight / 2);
-        return tall ? Math.min(CcMetrics.tallTileRadius, width / 2, height / 2) : Theme.fullRadius(width, bodyHeight);
+        return tall ? Math.min(CcMetrics.tallTileRadius, width / 2, height / 2) : CcMetrics.pillRadius(width, bodyHeight);
     }
     property bool acceptsInput: interactive && enabled
     readonly property bool bodyActive: showsActive && !hasIconBox && !bare
@@ -106,13 +121,13 @@ Item {
         return showsActive ? CcMetrics.tileActiveColor : CcMetrics.iconBoxInactiveColor;
     }
 
-    property real bodyRadius: bodyLayer.pressed ? Math.min(Theme.cornerRadiusM, width / 2, bodyHeight / 2) : restRadius
+    property real bodyRadius: bodyLayer.pressed && Theme.shapeMorph ? Math.min(Theme.cornerRadiusM, width / 2, bodyHeight / 2) : restRadius
     property real iconBoxRadius: {
-        if (boxLayer.pressed)
+        if (boxLayer.pressed && Theme.shapeMorph)
             return Math.min(Theme.cornerRadiusS, CcMetrics.iconBoxSize / 2);
-        if (showsActive)
+        if (showsActive && Theme.shapeMorph)
             return Math.min(CcMetrics.iconBoxActiveRadius, CcMetrics.iconBoxSize / 2);
-        return Theme.fullRadius(CcMetrics.iconBoxSize, CcMetrics.iconBoxSize);
+        return CcMetrics.pillRadius(CcMetrics.iconBoxSize, CcMetrics.iconBoxSize);
     }
 
     width: parent?.width ?? 0
@@ -364,7 +379,7 @@ Item {
                     id: titleLabel
                     objectName: "tileTitle"
                     width: parent.width
-                    text: root.title
+                    text: root.densePill && root.denseTitle !== "" ? root.denseTitle : root.title
                     color: root.contentColor
                     font.pixelSize: root.denseText ? Theme.fontSizeMedium : Theme.fontSizeLarge
                     font.weight: Theme.fontWeightMedium

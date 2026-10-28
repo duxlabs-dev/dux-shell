@@ -27,9 +27,9 @@ Singleton {
             return {
                 config,
                 flattened,
-                barThickness: Theme.barThickness(config.innerPadding ?? 2, screen.scale),
+                barThickness: Theme.barThickness(config.innerPadding ?? SettingsData.barInnerPaddingDefault, screen.scale),
                 wingSize: config.gothCornersEnabled && !flattened && root.barSpansEdge(config) ? Math.max(0, config.gothCornerRadiusOverride ? config.gothCornerRadiusValue ?? 12 : Theme.windowRadius) : 0,
-                popupThickness: Theme.barThickness(Resolver.option(config, "innerPadding", root.primaryBar, 2), screen.scale),
+                popupThickness: Theme.barThickness(Resolver.option(config, "innerPadding", root.primaryBar, SettingsData.barInnerPaddingDefault), screen.scale),
                 islandThickness: Resolver.islandThickness(SettingsData.islandSettings(config), SettingsData.islandDefaultsFor(config)),
                 islandReserve: Resolver.islandReserve(SettingsData.islandSettings(config), SettingsData.islandDefaultsFor(config)),
                 islandFloating: SettingsData.islandSetting(config, "islandFloating"),

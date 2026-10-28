@@ -4,6 +4,7 @@
 .import "../../DCommon/Common/Shape.js" as Shape
 .import "./BarWidgetDefaults.js" as WidgetDefaults
 .import "./DockConfig.js" as DockConfig
+.import "./DensityPresets.js" as DensityPresets
 .import "../GridLayout.js" as GridLayout
 
 var PIN_KEYS = ["brightnessDevicePins", "wifiNetworkPins", "bluetoothDevicePins", "audioInputDevicePins", "audioOutputDevicePins"];
@@ -172,9 +173,28 @@ function extractPins(obj) {
     return pins;
 }
 
+function styleDefault(key, style) {
+    if (key === "radiusMode" && style === "classic")
+        return "fixed";
+    return undefined;
+}
+
+// Sizes absent from the file load at the saved density's preset, as a reset would; a save omits only that preset.
+function densityDefault(key, density, style) {
+    var def = styleDefault(key, style) ?? SpecModule.SPEC[key].def;
+    if (key === "barConfigs" || key === "dockConfigs") {
+        var presets = DensityPresets.values(key === "barConfigs" ? "bar" : "dock", density);
+        return def.map(function (config) {
+            return Object.assign({}, config, presets);
+        });
+    }
+    var frame = DensityPresets.value("frame", key, density);
+    return frame === undefined ? def : frame;
+}
+
 function parse(root, jsonObj) {
     jsonObj = migrateToVersion(jsonObj || {}, root.settingsConfigVersion) || jsonObj || {};
-    jsonObj.dockConfigs = DockConfig.normalize(jsonObj.dockConfigs);
+    jsonObj.dockConfigs = DockConfig.normalize(jsonObj.dockConfigs, DensityPresets.values("dock", jsonObj.density));
     // the dock pages configure whichever dock is selected, so an empty list leaves them blank
     if (!jsonObj.dockConfigs.length)
         delete jsonObj.dockConfigs;
@@ -186,13 +206,11 @@ function parse(root, jsonObj) {
     for (var k in SPEC) {
         if (k === "pluginSettings")
             continue;
-        // Runtime-only keys are never in the JSON; resetting them here
-        // would wipe values set by detection processes on every reload.
+        // Runtime-only keys are never in the JSON; a reset here would wipe values set by processes on every reload.
         if (SPEC[k].persist === false)
             continue;
-        if (!(k in jsonObj)) {
-            root[k] = Util.cloneDef(SPEC[k].def);
-        }
+        if (!(k in jsonObj))
+            assign(root, k, Util.cloneDef(densityDefault(k, jsonObj.density, jsonObj.interfaceStyle)));
     }
 
     for (var k in jsonObj) {
@@ -203,7 +221,16 @@ function parse(root, jsonObj) {
         var raw = jsonObj[k];
         var spec = SPEC[k];
         var coerce = spec.coerce;
-        root[k] = coerce ? (coerce(raw) !== undefined ? coerce(raw) : root[k]) : raw;
+        assign(root, k, coerce ? (coerce(raw) !== undefined ? coerce(raw) : root[k]) : raw);
+    }
+}
+
+// A QML root throws on an undeclared property; a shared spec key the shell has not declared must not abort the load.
+function assign(root, key, value) {
+    try {
+        root[key] = value;
+    } catch (e) {
+        console.warn("settings: no SettingsData property for spec key, skipped:", key);
     }
 }
 
@@ -216,11 +243,13 @@ function toJson(root, setKeys) {
         if (k === "pluginSettings")
             continue;
         var value = root[k];
+        if (value === undefined)
+            continue;
         if (k === "desktopWidgetInstances")
             value = withoutInstancePositions(value);
         if (k === "builtInPluginSettings")
             value = withoutSessionBackedPluginState(value);
-        if (!setKeys.has(k) && Util.isDefault(value, SPEC[k].def))
+        if (!setKeys.has(k) && Util.isDefault(value, densityDefault(k, root.density, root.interfaceStyle)))
             continue;
         out[k] = value;
     }
@@ -232,8 +261,11 @@ function migrateToVersion(obj, targetVersion) {
     if (!obj)
         return null;
 
+    // hand-written and nix-generated files carry no version and are authored against the current format
+    if (obj.configVersion === undefined)
+        return null;
     var settings = JSON.parse(JSON.stringify(obj));
-    var currentVersion = settings.configVersion || 0;
+    var currentVersion = settings.configVersion;
 
     if (currentVersion >= targetVersion) {
         return null;

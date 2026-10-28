@@ -208,7 +208,7 @@ DPopout {
                         readonly property real labelWidth: Theme.iconButtonSize + Theme.iconSizeLarge
 
                         width: contentColumn.width
-                        implicitHeight: Theme.listItemHeight
+                        implicitHeight: BarMetrics.popoutRowHeight
                         firstInGroup: index === 0
                         lastInGroup: index === 2
 

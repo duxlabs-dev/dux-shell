@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
+import qs.DCommon.Common as DCommon
 import qs.DCommon.Widgets
 import qs.Widgets
 
@@ -21,7 +22,9 @@ Item {
     property string layerNamespace: "dms:context-menu"
     property real menuMargin: Theme.spacingS
     property real minMenuWidth: Theme.fieldDefaultWidth
-    property real itemHeight: Theme.menuItemHeight
+    property real itemHeight: DCommon.Style.menuRowHeight
+    property real menuPadding: DCommon.Style.menuPadding
+    property real itemIconSize: DCommon.Style.menuItemIconSize
     property real itemFontSize: Theme.fontSizeSmall
     property bool keyboardNavigable: false
     property var transientSurfaceTracker: null
@@ -51,9 +54,9 @@ Item {
         return longest;
     }
     readonly property bool hasTrailingIcons: menuItems.some(menuItem => !!menuItem.trailingIcon)
-    readonly property real naturalMenuWidth: customContent ? Math.max(minMenuWidth, customContentWidth) : Math.max(minMenuWidth, menuTextMetrics.width + Theme.iconSize + Theme.spacingS * 5 + (hasTrailingIcons ? Theme.iconSizeMedium + Theme.spacingS : 0))
+    readonly property real naturalMenuWidth: customContent ? Math.max(minMenuWidth, customContentWidth) : Math.max(minMenuWidth, menuTextMetrics.width + Theme.iconSize + Theme.spacingS * 5 + (hasTrailingIcons ? itemIconSize + Theme.spacingS : 0))
     readonly property real effectiveMenuWidth: Math.max(0, Math.min(maxMenuWidth, naturalMenuWidth))
-    readonly property real naturalMenuHeight: (customContent ? customContentLoader.implicitHeight : menuItemsHeight()) + Theme.spacingS * 2
+    readonly property real naturalMenuHeight: (customContent ? customContentLoader.implicitHeight : menuItemsHeight()) + menuPadding * 2
     readonly property real effectiveMenuHeight: Math.min(maxMenuHeight, naturalMenuHeight)
     readonly property bool menuScrolls: naturalMenuHeight > effectiveMenuHeight + 0.5
     readonly property int visibleItemCount: menuItems.filter(menuItem => isSelectable(menuItem)).length
@@ -368,7 +371,7 @@ Item {
                 DFlickable {
                     id: menuFlickable
                     anchors.fill: parent
-                    anchors.margins: Theme.spacingS
+                    anchors.margins: root.menuPadding
                     clip: true
                     contentWidth: width
                     contentHeight: menuColumn.implicitHeight
@@ -452,7 +455,7 @@ Item {
 
                                         DIcon {
                                             name: menuItemDelegate.modelData?.icon ?? ""
-                                            size: Theme.iconSizeMedium
+                                            size: root.itemIconSize
                                             color: menuRow.contentColor
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
@@ -464,7 +467,7 @@ Item {
                                             font.weight: Theme.fontWeight
                                             anchors.verticalCenter: parent.verticalCenter
                                             elide: Text.ElideRight
-                                            width: parent.width - (Theme.iconSizeMedium + Theme.spacingS) * (trailingIcon.visible ? 2 : 1)
+                                            width: parent.width - (root.itemIconSize + Theme.spacingS) * (trailingIcon.visible ? 2 : 1)
                                         }
                                     }
 
@@ -472,7 +475,7 @@ Item {
                                         id: trailingIcon
                                         visible: name !== ""
                                         name: menuItemDelegate.modelData?.trailingIcon ?? ""
-                                        size: Theme.iconSizeMedium
+                                        size: root.itemIconSize
                                         color: menuRow.contentColor
                                         anchors.right: parent.right
                                         anchors.rightMargin: Theme.spacingS

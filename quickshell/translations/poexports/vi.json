@@ -236,11 +236,17 @@
   "%1: %2": {
     "%1: %2": "%1: %2"
   },
+  "%1d ago": {
+    "%1d ago": ""
+  },
   "%1h": {
     "%1h": ""
   },
   "%1h %2m": {
     "%1h %2m": "%1 giờ %2 phút"
+  },
+  "%1h ago": {
+    "%1h ago": ""
   },
   "%1m": {
     "%1m": "%1 phút"
@@ -262,6 +268,9 @@
   },
   "+%1 conditions": {
     "+%1 conditions": ""
+  },
+  "1 hour before": {
+    "1 hour before": ""
   },
   "1 notification": {
     "1 notification": "1 thông báo"
@@ -625,9 +634,6 @@
   },
   "Anchor": {
     "Anchor": "Điểm neo"
-  },
-  "Anchored popouts open at the cursor instead of their widget": {
-    "Anchored popouts open at the cursor instead of their widget": ""
   },
   "Animation duration": {
     "Animation duration": "Thời lượng ảnh động"
@@ -1508,6 +1514,9 @@
   "Classes": {
     "Classes": "Lớp học"
   },
+  "Classic": {
+    "Classic": ""
+  },
   "Clear All": {
     "Clear All": "Xóa hết"
   },
@@ -1687,6 +1696,9 @@
   },
   "Columns": {
     "Columns": "Cột"
+  },
+  "Comfortable": {
+    "Comfortable": ""
   },
   "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": {
     "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": "Danh sách tên bố cục được phân tách bằng dấu phẩy. Để trống để sử dụng cài đặt bàn phím hệ thống."
@@ -2270,6 +2282,9 @@
   "Deletes all stored screen time": {
     "Deletes all stored screen time": ""
   },
+  "Dense": {
+    "Dense": ""
+  },
   "Dependencies & documentation": {
     "Dependencies & documentation": "Các phụ thuộc & tài liệu"
   },
@@ -2365,6 +2380,9 @@
   },
   "Disabled": {
     "Disabled": "Đã tắt"
+  },
+  "Disabled by Auto": {
+    "Disabled by Auto": ""
   },
   "Disabled by Click through": {
     "Disabled by Click through": ""
@@ -2539,6 +2557,9 @@
   },
   "Don't change": {
     "Don't change": "Không thay đổi"
+  },
+  "Don't dim unfocused apps": {
+    "Don't dim unfocused apps": ""
   },
   "Door Open": {
     "Door Open": "Cửa mở"
@@ -3059,6 +3080,9 @@
   "Failed to read theme file: %1": {
     "Failed to read theme file: %1": "Đọc tệp chủ đề thất bại: %1"
   },
+  "Failed to reboot to firmware setup": {
+    "Failed to reboot to firmware setup": ""
+  },
   "Failed to reload plugin: %1": {
     "Failed to reload plugin: %1": "Tải lại plugin thất bại: %1"
   },
@@ -3269,6 +3293,9 @@
   "Fires with any modifiers held": {
     "Fires with any modifiers held": ""
   },
+  "Firmware setup": {
+    "Firmware setup": ""
+  },
   "First Time Setup": {
     "First Time Setup": "Thiết lập lần đầu"
   },
@@ -3427,6 +3454,9 @@
   },
   "For %1": {
     "For %1": "Đối với %1"
+  },
+  "For 1 hour": {
+    "For 1 hour": ""
   },
   "For you": {
     "For you": ""
@@ -4235,6 +4265,9 @@
   "Interface": {
     "Interface": "Giao diện"
   },
+  "Interface density": {
+    "Interface density": ""
+  },
   "Interface style": {
     "Interface style": "Kiểu giao diện"
   },
@@ -4261,6 +4294,9 @@
   },
   "Invalid wallpaper layout": {
     "Invalid wallpaper layout": ""
+  },
+  "Inverse Surface": {
+    "Inverse Surface": ""
   },
   "Iridescence": {
     "Iridescence": ""
@@ -4712,6 +4748,9 @@
   "Managed by Nix": {
     "Managed by Nix": ""
   },
+  "Managed by administrator policy": {
+    "Managed by administrator policy": ""
+  },
   "Managed by the primary PAM source": {
     "Managed by the primary PAM source": "Được quản lý bởi nguồn PAM chính"
   },
@@ -4801,9 +4840,6 @@
   },
   "Material palette": {
     "Material palette": "Bảng màu vật liệu"
-  },
-  "Material scale": {
-    "Material scale": "quy mô vật liệu"
   },
   "Matugen Missing": {
     "Matugen Missing": "Thiếu Matugen"
@@ -6656,6 +6692,9 @@
   "Read:": {
     "Read:": "Đọc:"
   },
+  "Readings": {
+    "Readings": ""
+  },
   "Reads audio devices and volume": {
     "Reads audio devices and volume": ""
   },
@@ -6686,11 +6725,14 @@
   "Reboot recommended": {
     "Reboot recommended": ""
   },
+  "Reboot targets": {
+    "Reboot targets": ""
+  },
   "Reboot to %1": {
     "Reboot to %1": ""
   },
-  "Reboot to another OS": {
-    "Reboot to another OS": ""
+  "Reboot to firmware setup": {
+    "Reboot to firmware setup": ""
   },
   "Recent": {
     "Recent": "Gần đây"
@@ -7007,8 +7049,8 @@
   "Route Bluetooth headset controls to the active DMS media player": {
     "Route Bluetooth headset controls to the active DMS media player": "Định tuyến các điều khiển tai nghe Bluetooth tới trình phát đa phương tiện DMS đang hoạt động"
   },
-  "Routes launcher, dash, control center and notification shortcuts": {
-    "Routes launcher, dash, control center and notification shortcuts": "Các phím tắt trình khởi chạy tuyến đường, dấu gạch ngang, trung tâm điều khiển và thông báo"
+  "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": {
+    "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": ""
   },
   "Rows": {
     "Rows": "Hàng"
@@ -7262,6 +7304,9 @@
   "Secondary Container": {
     "Secondary Container": "Thùng chứa Thứ cấp"
   },
+  "Section dividers": {
+    "Section dividers": ""
+  },
   "Sections": {
     "Sections": "Phần"
   },
@@ -7312,6 +7357,9 @@
   },
   "Select Dock Launcher Logo": {
     "Select Dock Launcher Logo": "Chọn logo trình khởi chạy dock"
+  },
+  "Select Dot Icon": {
+    "Select Dot Icon": ""
   },
   "Select ICC Profile": {
     "Select ICC Profile": "Chọn hồ sơ ICC"
@@ -7835,6 +7883,9 @@
   "Spacing": {
     "Spacing": "Khoảng cách"
   },
+  "Spacious": {
+    "Spacious": ""
+  },
   "Speaker settings": {
     "Speaker settings": "Cài đặt loa"
   },
@@ -8051,6 +8102,9 @@
   "Switches to power saver at the low battery threshold": {
     "Switches to power saver at the low battery threshold": "Chuyển sang chế độ tiết kiệm năng lượng ở ngưỡng pin yếu"
   },
+  "Symbol": {
+    "Symbol": ""
+  },
   "Sync": {
     "Sync": "Đồng bộ"
   },
@@ -8233,6 +8287,9 @@
   },
   "The Aqueous operation failed.": {
     "The Aqueous operation failed.": "Hoạt động của nước không thành công."
+  },
+  "The Control Center opens at the cursor instead of its widget": {
+    "The Control Center opens at the cursor instead of its widget": ""
   },
   "The Default action only overrides priority": {
     "The Default action only overrides priority": "Hành động mặc định chỉ ghi đè mức độ ưu tiên"
@@ -8566,6 +8623,9 @@
   },
   "Tools": {
     "Tools": "Công cụ"
+  },
+  "Tooltip": {
+    "Tooltip": ""
   },
   "Top": {
     "Top": "Trên"
@@ -9466,6 +9526,12 @@
   },
   "display rotation option": {
     "Normal": "Bình thường"
+  },
+  "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural": {
+    "%1 days": "",
+    "%1 hours": "",
+    "%1 minutes": "",
+    "%1 seconds": ""
   },
   "e.g. /usr/bin/my-script --flag": {
     "e.g. /usr/bin/my-script --flag": "vd. /usr/bin/my-script --flag"

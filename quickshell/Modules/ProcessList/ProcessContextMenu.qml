@@ -244,7 +244,7 @@ Popup {
     }
 
     width: ProcessListMetrics.menuWidth
-    height: menuColumn.implicitHeight + Theme.spacingS * 2
+    height: menuColumn.implicitHeight + ProcessListMetrics.menuPadding * 2
     padding: 0
     modal: false
     closePolicy: Popup.CloseOnEscape
@@ -317,7 +317,7 @@ Popup {
         Column {
             id: menuColumn
             anchors.fill: parent
-            anchors.margins: Theme.spacingS
+            anchors.margins: ProcessListMetrics.menuPadding
             spacing: Theme.groupedListGap
 
             Repeater {
@@ -325,7 +325,7 @@ Popup {
 
                 Item {
                     width: parent.width
-                    height: modelData.type === "separator" ? Theme.spacingS : Theme.menuItemHeight
+                    height: modelData.type === "separator" ? Theme.spacingS : ProcessListMetrics.menuRowHeight
                     visible: modelData.type !== "separator" || index > 0
 
                     property int itemVisibleIndex: {
@@ -350,7 +350,7 @@ Popup {
                         id: menuItem
                         visible: modelData.type !== "separator"
                         width: parent.width
-                        height: Theme.menuItemHeight
+                        height: ProcessListMetrics.menuRowHeight
                         radius: Theme.cornerRadiusM
                         color: {
                             if (!modelData.enabled)

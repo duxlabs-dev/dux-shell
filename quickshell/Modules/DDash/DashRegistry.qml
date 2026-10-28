@@ -67,6 +67,13 @@ Singleton {
         };
     }
 
+    function slider(key, text, def, min, max, step, minimumLabel) {
+        return Object.assign(number(key, text, def, min, max, step), {
+            "type": "slider",
+            "minimumLabel": minimumLabel ?? ""
+        });
+    }
+
     function toneOption(def = "") {
         return choice("tone", I18n.tr("Tone", "noun, dashboard widget color tone option label"), def, toneChoices);
     }
@@ -231,7 +238,7 @@ Singleton {
                         "value": "analog",
                         "text": I18n.tr("Analog", "clock style option")
                     }
-                ]), toggle("seconds", I18n.tr("Show seconds"), false), toggle("date", I18n.tr("Show date"), false), toggle("numbers", I18n.tr("Show hour numbers"), false), choice("tone", I18n.tr("Tone"), "primary", toneChoices)]
+                ]), slider("weight", I18n.tr("Weight"), 0, 0, Font.Black, 100, I18n.tr("Default")), toggle("seconds", I18n.tr("Show seconds"), false), toggle("date", I18n.tr("Show date"), false), toggle("numbers", I18n.tr("Show hour numbers"), false), choice("tone", I18n.tr("Tone"), "primary", toneChoices)]
         },
         {
             "id": "calendar",

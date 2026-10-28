@@ -2,13 +2,19 @@ package distros
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/netfetch"
 	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
 )
+
+const hyprlandPPA = "ppa:cppiber/hyprland"
 
 func init() {
 	Register("ubuntu", "#E95420", FamilyUbuntu, func(config DistroConfig, logChan chan<- string) Distribution {
@@ -149,10 +155,10 @@ func (u *UbuntuDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 	switch wm {
 	case deps.WindowManagerHyprland:
 		// Use the cppiber PPA for Hyprland
-		packages["hyprland"] = PackageMapping{Name: "hyprland", Repository: RepoTypePPA, RepoURL: "ppa:cppiber/hyprland"}
-		packages["hyprctl"] = PackageMapping{Name: "hyprland", Repository: RepoTypePPA, RepoURL: "ppa:cppiber/hyprland"}
+		packages["hyprland"] = PackageMapping{Name: "hyprland", Repository: RepoTypePPA, RepoURL: hyprlandPPA}
+		packages["hyprctl"] = PackageMapping{Name: "hyprland", Repository: RepoTypePPA, RepoURL: hyprlandPPA}
 		packages["jq"] = PackageMapping{Name: "jq", Repository: RepoTypeSystem}
-		packages["hyprland-guiutils"] = PackageMapping{Name: "hyprland-guiutils", Repository: RepoTypePPA, RepoURL: "ppa:cppiber/hyprland"}
+		packages["hyprland-guiutils"] = PackageMapping{Name: "hyprland-guiutils", Repository: RepoTypePPA, RepoURL: hyprlandPPA}
 	case deps.WindowManagerNiri:
 		niriVariant := variants["niri"]
 		packages["niri"] = u.getNiriMapping(niriVariant)
@@ -265,6 +271,7 @@ func (u *UbuntuDistribution) InstallPackages(ctx context.Context, dependencies [
 	}
 
 	systemPkgs, ppaPkgs, manualPkgs, variantMap := u.categorizePackages(dependencies, wm, reinstallFlags, disabledFlags)
+	systemPkgs, ppaPkgs = u.fallbackUnpublishedPPAs(ctx, systemPkgs, ppaPkgs)
 
 	// Phase 2: Enable PPA repositories
 	if len(ppaPkgs) > 0 {
@@ -415,6 +422,45 @@ func (u *UbuntuDistribution) extractPackageNames(packages []PackageMapping) []st
 		names[i] = pkg.Name
 	}
 	return names
+}
+
+// Use the Ubuntu archive when the Hyprland PPA has no build for this series yet.
+func (u *UbuntuDistribution) fallbackUnpublishedPPAs(ctx context.Context, systemPkgs []string, ppaPkgs []PackageMapping) ([]string, []PackageMapping) {
+	usesHyprlandPPA := false
+	for _, pkg := range ppaPkgs {
+		usesHyprlandPPA = usesHyprlandPPA || pkg.RepoURL == hyprlandPPA
+	}
+	if !usesHyprlandPPA {
+		return systemPkgs, ppaPkgs
+	}
+
+	osInfo, err := GetOSInfo()
+	if err != nil || osInfo.VersionCodename == "" || ppaPublishesSeries(ctx, hyprlandPPA, osInfo.VersionCodename) {
+		return systemPkgs, ppaPkgs
+	}
+	u.log(fmt.Sprintf("%s has no %s build, installing its packages from the Ubuntu archive", hyprlandPPA, osInfo.VersionCodename))
+
+	kept := ppaPkgs[:0]
+	for _, pkg := range ppaPkgs {
+		if pkg.RepoURL == hyprlandPPA {
+			systemPkgs = append(systemPkgs, pkg.Name)
+			continue
+		}
+		kept = append(kept, pkg)
+	}
+	return systemPkgs, kept
+}
+
+// Only a 404 counts as unpublished; network errors keep the PPA.
+func ppaPublishesSeries(ctx context.Context, ppa, series string) bool {
+	owner, name, ok := strings.Cut(strings.TrimPrefix(ppa, "ppa:"), "/")
+	if !ok {
+		return true
+	}
+	url := fmt.Sprintf("https://ppa.launchpadcontent.net/%s/%s/ubuntu/dists/%s/Release", owner, name, series)
+	_, err := netfetch.Bytes(ctx, url, netfetch.Options{Timeout: 15 * time.Second})
+	var statusErr *netfetch.StatusError
+	return !errors.As(err, &statusErr) || statusErr.Code != http.StatusNotFound
 }
 
 func (u *UbuntuDistribution) enablePPARepos(ctx context.Context, ppaPkgs []PackageMapping, sudoPassword string, progressChan chan<- InstallProgressMsg) error {

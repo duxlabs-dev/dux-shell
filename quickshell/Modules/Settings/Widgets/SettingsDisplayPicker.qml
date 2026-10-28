@@ -22,7 +22,7 @@ Column {
     signal hideOnLastDisplayToggled(bool checked)
 
     width: parent?.width ?? 0
-    spacing: Theme.groupedListGap
+    spacing: SettingsMetrics.groupGap
 
     function screenPref(screen) {
         const pref = {

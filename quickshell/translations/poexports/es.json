@@ -236,11 +236,17 @@
   "%1: %2": {
     "%1: %2": "%1: %2"
   },
+  "%1d ago": {
+    "%1d ago": ""
+  },
   "%1h": {
-    "%1h": ""
+    "%1h": "%1h"
   },
   "%1h %2m": {
     "%1h %2m": ""
+  },
+  "%1h ago": {
+    "%1h ago": ""
   },
   "%1m": {
     "%1m": ""
@@ -262,6 +268,9 @@
   },
   "+%1 conditions": {
     "+%1 conditions": ""
+  },
+  "1 hour before": {
+    "1 hour before": ""
   },
   "1 notification": {
     "1 notification": "1 notificación"
@@ -423,7 +432,7 @@
     "Add by address": ""
   },
   "Add condition": {
-    "Add condition": ""
+    "Add condition": "Añadir condición"
   },
   "Add entry": {
     "Add entry": ""
@@ -438,16 +447,16 @@
     "Add notes": "Agregar notas"
   },
   "Add palette": {
-    "Add palette": ""
+    "Add palette": "Añadir paleta"
   },
   "Add printer": {
     "Add printer": ""
   },
   "Add rule": {
-    "Add rule": ""
+    "Add rule": "Añadir regla"
   },
   "Add shortcut": {
-    "Add shortcut": ""
+    "Add shortcut": "Añadir atajo"
   },
   "Add substitution": {
     "Add substitution": ""
@@ -456,7 +465,7 @@
     "Add to autostart": ""
   },
   "Add user": {
-    "Add user": ""
+    "Add user": "Añadir usuario"
   },
   "Add widget": {
     "Add widget": ""
@@ -576,7 +585,7 @@
     "Also works on the lock screen": ""
   },
   "Alt + Shift": {
-    "Alt + Shift": ""
+    "Alt + Shift": "Alt + Shift"
   },
   "Alternative (OR)": {
     "Alternative (OR)": "Alternativo (OR)"
@@ -594,7 +603,7 @@
     "Always open here": ""
   },
   "Always show": {
-    "Always show": ""
+    "Always show": "Mostrar siempre"
   },
   "Always show percentage": {
     "Always show percentage": ""
@@ -625,9 +634,6 @@
   },
   "Anchor": {
     "Anchor": "Ancla"
-  },
-  "Anchored popouts open at the cursor instead of their widget": {
-    "Anchored popouts open at the cursor instead of their widget": ""
   },
   "Animation duration": {
     "Animation duration": ""
@@ -1131,7 +1137,7 @@
     "Bloom": ""
   },
   "Blue": {
-    "Blue": ""
+    "Blue": "Azul"
   },
   "Blue light filter": {
     "Blue light filter": "Filtro de luz azul"
@@ -1508,6 +1514,9 @@
   "Classes": {
     "Classes": ""
   },
+  "Classic": {
+    "Classic": ""
+  },
   "Clear All": {
     "Clear All": "Limpiar Todo"
   },
@@ -1688,6 +1697,9 @@
   "Columns": {
     "Columns": ""
   },
+  "Comfortable": {
+    "Comfortable": ""
+  },
   "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": {
     "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": ""
   },
@@ -1842,7 +1854,7 @@
     "Control Center": "Centro de control"
   },
   "Controls": {
-    "Controls": ""
+    "Controls": "Controles"
   },
   "Controls media players": {
     "Controls media players": ""
@@ -1953,7 +1965,7 @@
     "Critical threshold": ""
   },
   "Ctrl + Shift": {
-    "Ctrl + Shift": ""
+    "Ctrl + Shift": "Ctrl + Shift"
   },
   "Ctrl+%1 is used for password editing": {
     "Ctrl+%1 is used for password editing": ""
@@ -2157,7 +2169,7 @@
     "Date first": ""
   },
   "Date format": {
-    "Date format": ""
+    "Date format": "Formato de fecha"
   },
   "Date, time & region": {
     "Date, time & region": ""
@@ -2172,7 +2184,7 @@
     "Dawn (Nautical Twilight)": "Amanecer (Crepúsculo náutico)"
   },
   "Day": {
-    "Day": ""
+    "Day": "Día"
   },
   "Day date": {
     "Day date": ""
@@ -2270,6 +2282,9 @@
   "Deletes all stored screen time": {
     "Deletes all stored screen time": ""
   },
+  "Dense": {
+    "Dense": ""
+  },
   "Dependencies & documentation": {
     "Dependencies & documentation": "Dependencias y documentación"
   },
@@ -2365,6 +2380,9 @@
   },
   "Disabled": {
     "Disabled": "Desactivado"
+  },
+  "Disabled by Auto": {
+    "Disabled by Auto": ""
   },
   "Disabled by Click through": {
     "Disabled by Click through": ""
@@ -2540,6 +2558,9 @@
   "Don't change": {
     "Don't change": ""
   },
+  "Don't dim unfocused apps": {
+    "Don't dim unfocused apps": ""
+  },
   "Door Open": {
     "Door Open": "Puera abierta"
   },
@@ -2547,7 +2568,7 @@
     "Dot": ""
   },
   "Dots": {
-    "Dots": ""
+    "Dots": "Puntos"
   },
   "Down": {
     "Down": ""
@@ -2700,7 +2721,7 @@
     "Edit rule": ""
   },
   "Edit shortcut": {
-    "Edit shortcut": ""
+    "Edit shortcut": "Editar atajo"
   },
   "Edit widgets": {
     "Edit widgets": ""
@@ -2865,7 +2886,7 @@
     "Exit node": "Nodo de salida"
   },
   "Expand": {
-    "Expand": ""
+    "Expand": "Expandir"
   },
   "Expand by default": {
     "Expand by default": ""
@@ -3058,6 +3079,9 @@
   },
   "Failed to read theme file: %1": {
     "Failed to read theme file: %1": "Error al leer archivo de tema: %1"
+  },
+  "Failed to reboot to firmware setup": {
+    "Failed to reboot to firmware setup": ""
   },
   "Failed to reload plugin: %1": {
     "Failed to reload plugin: %1": "Error al recargar complemento: %1"
@@ -3269,6 +3293,9 @@
   "Fires with any modifiers held": {
     "Fires with any modifiers held": ""
   },
+  "Firmware setup": {
+    "Firmware setup": ""
+  },
   "First Time Setup": {
     "First Time Setup": "Configuración inicial"
   },
@@ -3428,8 +3455,11 @@
   "For %1": {
     "For %1": ""
   },
+  "For 1 hour": {
+    "For 1 hour": ""
+  },
   "For you": {
-    "For you": ""
+    "For you": "Para ti"
   },
   "Force HDR": {
     "Force HDR": "Forzar HDR"
@@ -3666,7 +3696,7 @@
     "Graphics": "Gráficos"
   },
   "Green": {
-    "Green": ""
+    "Green": "Verde"
   },
   "Greeter": {
     "Greeter": "Greeter"
@@ -4235,6 +4265,9 @@
   "Interface": {
     "Interface": ""
   },
+  "Interface density": {
+    "Interface density": ""
+  },
   "Interface style": {
     "Interface style": ""
   },
@@ -4261,6 +4294,9 @@
   },
   "Invalid wallpaper layout": {
     "Invalid wallpaper layout": ""
+  },
+  "Inverse Surface": {
+    "Inverse Surface": ""
   },
   "Iridescence": {
     "Iridescence": ""
@@ -4338,10 +4374,10 @@
     "Keybinds": "Atajos de teclado"
   },
   "Keyboard": {
-    "Keyboard": ""
+    "Keyboard": "Teclado"
   },
   "Keyboard layout": {
-    "Keyboard layout": ""
+    "Keyboard layout": "Disposición del teclado"
   },
   "Keyboard shortcuts": {
     "Keyboard shortcuts": ""
@@ -4386,7 +4422,7 @@
     "Largest": "El más grande"
   },
   "Last commit %1": {
-    "Last commit %1": ""
+    "Last commit %1": "Último commit %1"
   },
   "Last hour": {
     "Last hour": "Última hora"
@@ -4542,7 +4578,7 @@
     "Like your plugins": ""
   },
   "Limit": {
-    "Limit": ""
+    "Limit": "Límite"
   },
   "Limit set to %1%": {
     "Limit set to %1%": "Límite establecido en %1%"
@@ -4560,7 +4596,7 @@
     "Lines: %1": "Líneas: %1"
   },
   "Link copied": {
-    "Link copied": ""
+    "Link copied": "Link copiado"
   },
   "Link your DMS settings so the login screen follows them.": {
     "Link your DMS settings so the login screen follows them.": ""
@@ -4692,7 +4728,7 @@
     "Lyrics providers": ""
   },
   "MIT License": {
-    "MIT License": ""
+    "MIT License": "Licencia MIT"
   },
   "Magnification": {
     "Magnification": ""
@@ -4711,6 +4747,9 @@
   },
   "Managed by Nix": {
     "Managed by Nix": ""
+  },
+  "Managed by administrator policy": {
+    "Managed by administrator policy": ""
   },
   "Managed by the primary PAM source": {
     "Managed by the primary PAM source": "Gestionado por la fuente PAM principal"
@@ -4801,9 +4840,6 @@
   },
   "Material palette": {
     "Material palette": ""
-  },
-  "Material scale": {
-    "Material scale": ""
   },
   "Matugen Missing": {
     "Matugen Missing": "Matugen perdido"
@@ -5007,7 +5043,7 @@
     "Monospace family": ""
   },
   "Month": {
-    "Month": ""
+    "Month": "Mes"
   },
   "Month date": {
     "Month date": ""
@@ -5043,7 +5079,7 @@
     "Most Vivid": ""
   },
   "Most used apps": {
-    "Most used apps": ""
+    "Most used apps": "Apps más usadas"
   },
   "Motion": {
     "Motion": ""
@@ -5631,7 +5667,7 @@
     "Normal routing": ""
   },
   "Not active": {
-    "Not active": ""
+    "Not active": "No activo"
   },
   "Not available": {
     "Not available": "No disponible"
@@ -5661,7 +5697,7 @@
     "Not inhibitable": ""
   },
   "Not installed": {
-    "Not installed": ""
+    "Not installed": "No instalado"
   },
   "Not linked": {
     "Not linked": ""
@@ -5763,7 +5799,7 @@
     "Office": "Oficina"
   },
   "Official only": {
-    "Official only": ""
+    "Official only": "Solo oficiales"
   },
   "Offline Report": {
     "Offline Report": "Reporte sin conexión"
@@ -5898,7 +5934,7 @@
     "Options of one widget instance": ""
   },
   "Orange": {
-    "Orange": ""
+    "Orange": "Naranjo"
   },
   "Orbit": {
     "Orbit": ""
@@ -6174,10 +6210,10 @@
     "Pick how long to stay awake": ""
   },
   "Pick of the day": {
-    "Pick of the day": ""
+    "Pick of the day": "Selección del día"
   },
   "Pick of the week": {
-    "Pick of the week": ""
+    "Pick of the week": "Selección de la semana"
   },
   "Pill": {
     "Pill": ""
@@ -6192,7 +6228,7 @@
     "Pin to Dock": "Fijar al dock"
   },
   "Pink": {
-    "Pink": ""
+    "Pink": "Rosado"
   },
   "Pinned": {
     "Pinned": "Fijado"
@@ -6656,6 +6692,9 @@
   "Read:": {
     "Read:": "Lectura:"
   },
+  "Readings": {
+    "Readings": ""
+  },
   "Reads audio devices and volume": {
     "Reads audio devices and volume": ""
   },
@@ -6686,11 +6725,14 @@
   "Reboot recommended": {
     "Reboot recommended": ""
   },
+  "Reboot targets": {
+    "Reboot targets": ""
+  },
   "Reboot to %1": {
     "Reboot to %1": ""
   },
-  "Reboot to another OS": {
-    "Reboot to another OS": ""
+  "Reboot to firmware setup": {
+    "Reboot to firmware setup": ""
   },
   "Recent": {
     "Recent": "Reciente"
@@ -6711,7 +6753,7 @@
     "Record app usage and past queries. Turning this off clears what is stored.": ""
   },
   "Red": {
-    "Red": ""
+    "Red": "Rojo"
   },
   "Reduce motion": {
     "Reduce motion": ""
@@ -7007,8 +7049,8 @@
   "Route Bluetooth headset controls to the active DMS media player": {
     "Route Bluetooth headset controls to the active DMS media player": ""
   },
-  "Routes launcher, dash, control center and notification shortcuts": {
-    "Routes launcher, dash, control center and notification shortcuts": ""
+  "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": {
+    "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": ""
   },
   "Rows": {
     "Rows": ""
@@ -7262,6 +7304,9 @@
   "Secondary Container": {
     "Secondary Container": "Contenedor secundario"
   },
+  "Section dividers": {
+    "Section dividers": ""
+  },
   "Sections": {
     "Sections": ""
   },
@@ -7312,6 +7357,9 @@
   },
   "Select Dock Launcher Logo": {
     "Select Dock Launcher Logo": "Seleccionar logo del lanzador del dock"
+  },
+  "Select Dot Icon": {
+    "Select Dot Icon": ""
   },
   "Select ICC Profile": {
     "Select ICC Profile": ""
@@ -7392,7 +7440,7 @@
     "Server": "Servidor"
   },
   "Session": {
-    "Session": ""
+    "Session": "Sesión"
   },
   "Session filter": {
     "Session filter": ""
@@ -7835,6 +7883,9 @@
   "Spacing": {
     "Spacing": "Espacio"
   },
+  "Spacious": {
+    "Spacious": ""
+  },
   "Speaker settings": {
     "Speaker settings": "Ajustes del altavoz"
   },
@@ -7983,7 +8034,7 @@
     "Sunset": "Atardecer"
   },
   "Super + Space": {
-    "Super + Space": ""
+    "Super + Space": "Super + Espacio"
   },
   "Support DMS": {
     "Support DMS": ""
@@ -8050,6 +8101,9 @@
   },
   "Switches to power saver at the low battery threshold": {
     "Switches to power saver at the low battery threshold": ""
+  },
+  "Symbol": {
+    "Symbol": ""
   },
   "Sync": {
     "Sync": "Sincronizar"
@@ -8233,6 +8287,9 @@
   },
   "The Aqueous operation failed.": {
     "The Aqueous operation failed.": ""
+  },
+  "The Control Center opens at the cursor instead of its widget": {
+    "The Control Center opens at the cursor instead of its widget": ""
   },
   "The Default action only overrides priority": {
     "The Default action only overrides priority": ""
@@ -8567,6 +8624,9 @@
   "Tools": {
     "Tools": "Herrramientas"
   },
+  "Tooltip": {
+    "Tooltip": ""
+  },
   "Top": {
     "Top": "Arriba"
   },
@@ -8691,7 +8751,7 @@
     "Uncategorized": "Sin categoría"
   },
   "Undo": {
-    "Undo": ""
+    "Undo": "Deshacer"
   },
   "Unfocused color": {
     "Unfocused color": ""
@@ -9141,7 +9201,7 @@
     "Web browser": ""
   },
   "Week": {
-    "Week": ""
+    "Week": "Semana"
   },
   "Weekly screen time": {
     "Weekly screen time": ""
@@ -9369,7 +9429,7 @@
     "Y axis": ""
   },
   "Yellow": {
-    "Yellow": ""
+    "Yellow": "Amarillo"
   },
   "Yes": {
     "Yes": "Si"
@@ -9467,6 +9527,12 @@
   "display rotation option": {
     "Normal": "Normal"
   },
+  "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural": {
+    "%1 days": "",
+    "%1 hours": "",
+    "%1 minutes": "",
+    "%1 seconds": ""
+  },
   "e.g. /usr/bin/my-script --flag": {
     "e.g. /usr/bin/my-script --flag": "ej. /usr/bin/mi-script --flag"
   },
@@ -9549,7 +9615,7 @@
     "Open": "Abrir"
   },
   "new": {
-    "new": ""
+    "new": "nuevo"
   },
   "niri GitHub": {
     "niri GitHub": "GitHub de niri"
@@ -9633,7 +9699,7 @@
     "up": "arriba"
   },
   "updated": {
-    "updated": ""
+    "updated": "actualizado"
   },
   "useradd failed (exit %1)": {
     "useradd failed (exit %1)": "useradd falló (salida %1)"

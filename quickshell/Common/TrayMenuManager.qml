@@ -3,6 +3,8 @@ pragma Singleton
 import Quickshell
 import Quickshell.Services.SystemTray
 import QtQuick
+import qs.Common
+import "../Services/IconThemeIndex.js" as IconIndex
 
 Singleton {
     id: root
@@ -10,6 +12,8 @@ Singleton {
     property var activeTrayMenus: ({})
     property var _pendingMenuRequest: null
     property var _trayKeyByItem: new Map()
+    property var _iconFallbacks: ({})
+    property var _iconFallbackWaiters: ({})
 
     readonly property var envHiddenTrayIds: {
         const envValue = Quickshell.env("DMS_HIDE_TRAYIDS") || "";
@@ -155,12 +159,13 @@ Singleton {
 
     function closeHoverMenus() {
         for (const screenName in activeTrayMenus) {
-            const menu = activeTrayMenus[screenName]
-            if (!menu || menu.openedByHover !== true) continue
+            const menu = activeTrayMenus[screenName];
+            if (!menu || menu.openedByHover !== true)
+                continue;
             if (typeof menu.close === "function") {
-                menu.close()
+                menu.close();
             } else if (menu.showMenu !== undefined) {
-                menu.showMenu = false
+                menu.showMenu = false;
             }
         }
     }
@@ -178,27 +183,63 @@ Singleton {
         }
     }
 
+    function iconRequest(icon) {
+        if (typeof icon !== "string" || !icon.includes("?path="))
+            return null;
+        const split = icon.split("?path=");
+        if (split.length !== 2)
+            return null;
+        const name = split[0].substring(split[0].lastIndexOf("/") + 1);
+        return {
+            name: name,
+            dir: split[1]
+        };
+    }
+
     function iconSourceFor(trayItem) {
-        let icon = trayItem && trayItem.icon;
-        if (typeof icon === "string" || icon instanceof String) {
-            if (icon === "")
-                return "";
-            if (icon.includes("?path=")) {
-                const split = icon.split("?path=");
-                if (split.length !== 2)
-                    return icon;
-                const name = split[0];
-                const path = split[1];
-                let fileName = name.substring(name.lastIndexOf("/") + 1);
-                if (fileName.startsWith("dropboxstatus"))
-                    fileName = `hicolor/16x16/status/${fileName}`;
-                return `file://${path}/${fileName}`;
-            }
-            if (icon.startsWith("/") && !icon.startsWith("file://"))
-                return `file://${icon}`;
-            return icon;
+        const icon = trayItem && trayItem.icon;
+        if (typeof icon !== "string" || icon === "")
+            return "";
+        const request = iconRequest(icon);
+        if (request)
+            return `file://${request.dir}/${request.name}`;
+        if (icon.startsWith("/"))
+            return `file://${icon}`;
+        return icon;
+    }
+
+    function resolveIconFallback(icon, callback) {
+        const request = iconRequest(icon);
+        if (!request || !/^[\w.+-]+$/.test(request.name)) {
+            callback("");
+            return;
         }
-        return "";
+        const cached = _iconFallbacks[icon];
+        if (cached) {
+            callback(cached);
+            return;
+        }
+        const waiters = _iconFallbackWaiters[icon];
+        if (waiters) {
+            waiters.push(callback);
+            return;
+        }
+        _iconFallbackWaiters[icon] = [callback];
+        Proc.runCommand(null, ["find", "-L", request.dir, "-maxdepth", "4", "-type", "f", "-name", `${request.name}.*`], out => {
+            const index = IconIndex.create();
+            for (const path of (out || "").split("\n")) {
+                if (path)
+                    IconIndex.add(index, path, [request.dir], [request.dir]);
+            }
+            const found = index.paths[request.name];
+            const url = found ? Paths.toFileUrl(found) : Paths.themedIconPath(request.name);
+            if (url)
+                _iconFallbacks[icon] = url;
+            const pending = _iconFallbackWaiters[icon] || [];
+            delete _iconFallbackWaiters[icon];
+            for (const waiter of pending)
+                waiter(url);
+        }, 0);
     }
 
     function callContextMenuFallback(trayItemId, globalX, globalY) {

@@ -7,8 +7,26 @@ import qs.Common
 Singleton {
     id: root
 
+    readonly property int sampleSize: 128
     property var decodedSamples: ({})
     property var layouts: ({})
+    property var scrollSamplers: ({})
+
+    function setScrollSampler(screenName, present) {
+        const next = Object.assign({}, scrollSamplers);
+        if (present)
+            next[screenName] = true;
+        else
+            delete next[screenName];
+        scrollSamplers = next;
+    }
+
+    function usesScrollAtlas(screenName) {
+        if (!scrollSamplers[screenName] || SettingsData.lockScreenWallpaperPath !== "")
+            return false;
+        const source = SessionData.getMonitorWallpaper(screenName);
+        return !!source && !source.startsWith("#") && (SettingsData.lockScreenWallpaperFillMode || SessionData.getMonitorWallpaperFillMode(screenName)) === "Scrolling";
+    }
 
     function neededFor(screen) {
         return SettingsData.lockScreenWidgetInstances.some(instance => {

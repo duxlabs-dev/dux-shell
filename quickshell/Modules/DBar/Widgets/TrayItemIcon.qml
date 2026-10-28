@@ -17,14 +17,27 @@ Item {
     property color iconTintColor: tray ? tray.trayIconTintColor : "transparent"
     property color fallbackTextColor: tray ? (tray.trayTextColor ?? Theme.widgetTextColor) : Theme.widgetTextColor
     property real fallbackTextSize: 10
+    property string fallbackSource: ""
+
+    onSourceChanged: fallbackSource = ""
 
     IconImage {
         id: iconImg
         anchors.centerIn: parent
         width: root.iconSize
         height: root.iconSize
-        source: root.source
+        source: root.fallbackSource || root.source
         asynchronous: true
+        onStatusChanged: {
+            if (status !== Image.Error || root.fallbackSource)
+                return;
+            const requested = root.source;
+            TrayMenuManager.resolveIconFallback(root.trayItem?.icon, url => {
+                if (root.source !== requested)
+                    return;
+                root.fallbackSource = url;
+            });
+        }
         smooth: true
         mipmap: true
         visible: status === Image.Ready

@@ -42,6 +42,8 @@ Item {
     required property Component wallpaperExpandedComponent
     required property Component weatherCompactComponent
     required property Component weatherExpandedComponent
+    required property Component wellbeingCompactComponent
+    required property Component wellbeingExpandedComponent
     required property Component systemCompactComponent
     required property Component systemExpandedComponent
     required property Component notificationCompactComponent
@@ -104,6 +106,7 @@ Item {
             "launcher": launcherExpandedLoader,
             "wallpaper": wallpaperExpandedLoader,
             "weather": weatherExpandedLoader,
+            "wellbeing": wellbeingExpandedLoader,
             "notificationcenter": notificationCenterExpandedLoader,
             "clipboard": clipboardExpandedLoader,
             "powermenu": powerMenuExpandedLoader,
@@ -322,6 +325,21 @@ Item {
         active: root.controller.visualsRequested("weather")
         asynchronous: true
         sourceComponent: root.weatherExpandedComponent
+    }
+
+    CompactFace {
+        active: root.surfaceActive("wellbeing")
+        activity: "wellbeing"
+        face: root.wellbeingCompactComponent
+    }
+
+    ExpandedFace {
+        id: wellbeingExpandedLoader
+
+        activity: "wellbeing"
+        active: root.controller.visualsRequested("wellbeing")
+        asynchronous: true
+        sourceComponent: root.wellbeingExpandedComponent
     }
 
     CompactFace {

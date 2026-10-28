@@ -460,6 +460,8 @@ Item {
             wallpaperExpandedComponent: expandedWallpaperComponent
             weatherCompactComponent: compactWeatherComponent
             weatherExpandedComponent: expandedWeatherComponent
+            wellbeingCompactComponent: compactWellbeingComponent
+            wellbeingExpandedComponent: expandedWellbeingComponent
             systemCompactComponent: compactSystemComponent
             systemExpandedComponent: expandedSystemComponent
             notificationCompactComponent: compactNotificationComponent
@@ -752,6 +754,26 @@ Item {
         id: expandedWeatherComponent
 
         WeatherExpanded {
+            controller: root.controller
+            resizeGeometry: root.resizeGeometry
+        }
+    }
+
+    Component {
+        id: compactWellbeingComponent
+
+        DestinationCompact {
+            controller: root.controller
+            activityId: "wellbeing"
+            iconName: "digital_wellbeing"
+            label: I18n.tr("Screen time", "dashboard card and settings card title, time spent in apps")
+        }
+    }
+
+    Component {
+        id: expandedWellbeingComponent
+
+        WellbeingExpanded {
             controller: root.controller
             resizeGeometry: root.resizeGeometry
         }

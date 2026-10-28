@@ -16,6 +16,7 @@ Built with [Quickshell](https://quickshell.org/) and [Go](https://go.dev/)
 [![Arch version](https://img.shields.io/archlinux/v/extra/x86_64/dux-shell?style=for-the-badge&labelColor=101418&color=9ccbfb)](https://archlinux.org/packages/extra/x86_64/dux-shell/)
 [![AUR version (git)](<https://img.shields.io/aur/version/dux-shell-git?style=for-the-badge&labelColor=101418&color=9ccbfb&label=AUR%20(git)>)](https://aur.archlinux.org/packages/dux-shell-git)
 [![Ko-Fi donate](https://img.shields.io/badge/donate-kofi?style=for-the-badge&logo=ko-fi&logoColor=ffffff&label=ko-fi&labelColor=101418&color=f16061&link=https%3A%2F%2Fko-fi.com%2Fduxlabs)](https://ko-fi.com/duxlabs)
+[![Discord](https://img.shields.io/discord/1387519366651842574?style=for-the-badge&labelColor=101418&color=9ccbfb&label=Discord)](https://discord.gg/ppWTpKmPgT)
 
 </div>
 
@@ -157,6 +158,8 @@ See component-specific documentation:
 - **[core/](core/)** - Go backend, CLI tools, and system integration
 - **[distro/](distro/)** - Distribution packaging (Fedora, Debian, NixOS)
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for editor setup, the i18n workflow, and Go style guidelines.
+
 ### Building from Source
 
 **Core + Duxinstall:**
@@ -186,14 +189,12 @@ quickshell -p quickshell/
 
 ## Contributing
 
-Contributions welcome. Bug fixes, widgets, features, documentation, and plugins all help.
+Contributions welcome. Bug fixes, widgets, features, translation, documentation and plugins all help.
 
-1. Fork the repository
-2. Make your changes
-3. Test thoroughly
-4. Open a pull request
-
-For documentation contributions, see [dux-docs](https://github.com/duxlabs-dev/dux-docs).
+- For code contributions, see [Development](#development) and [CONTRIBUTING.md](CONTRIBUTING.md)
+- Translations are managed through POEditor: [DMS on POEditor](https://poeditor.com/join/project/kyeCPTpmJM)
+- For documentation contributions, see [dux-docs](https://github.com/duxlabs-dev/dux-docs)
+- If you want to discuss designs or need help with contributing, join the [Discord](https://discord.gg/ppWTpKmPgT)
 
 ## Credits
 

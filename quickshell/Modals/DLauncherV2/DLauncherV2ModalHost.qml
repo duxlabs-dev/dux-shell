@@ -97,10 +97,11 @@ Item {
         "error": true
     })
 
-    readonly property string _dmenuSizeOverride: (spotlightContent?.controller?.searchMode === "dmenu") ? (spotlightContent.controller.dmenuSize || "") : ""
+    readonly property bool _dmenuActive: spotlightContent?.controller?.searchMode === "dmenu"
+    readonly property string _dmenuSizeOverride: _dmenuActive ? (spotlightContent.controller.dmenuSize || "") : ""
 
     readonly property int baseWidth: LauncherMetrics.sizeWidth(_dmenuSizeOverride || SettingsData.dankLauncherV2Size)
-    readonly property int baseHeight: LauncherMetrics.sizeHeight(_dmenuSizeOverride || SettingsData.dankLauncherV2Size)
+    readonly property int baseHeight: LauncherMetrics.sizeHeight(_dmenuSizeOverride || SettingsData.dankLauncherV2Size, paintedBorderWidth, !_dmenuActive && LauncherMetrics.footerShown(SettingsData.dankLauncherV2Size))
     readonly property real _contentImplicitH: launcherContentLoader.item?.implicitHeight ?? LauncherMetrics.pillHeight
     readonly property int modalWidth: Math.min(spotlight ? (_dmenuSizeOverride ? LauncherMetrics.sizeWidth(_dmenuSizeOverride) : LauncherMetrics.spotlightWidth) : baseWidth, screenWidth - LauncherMetrics.screenMargin)
     readonly property int modalHeight: spotlight ? _contentImplicitH : Math.min(baseHeight, screenHeight - LauncherMetrics.screenMargin)

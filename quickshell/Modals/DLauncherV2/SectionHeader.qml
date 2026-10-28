@@ -155,6 +155,7 @@ Item {
             visible: root.canChangeViewMode && !root.section?.collapsed
             iconName: current.icon
             tooltipText: current.label
+            buttonSize: LauncherMetrics.headerButtonSize
             iconSize: Theme.iconSizeSmall
             onClicked: {
                 if (!root.controller || !root.section)
@@ -169,6 +170,7 @@ Item {
             visible: root.canCollapse
             iconName: root.section?.collapsed ? "expand_more" : "expand_less"
             Accessible.name: root.section?.collapsed ? I18n.tr("Expand") : I18n.tr("Collapse")
+            buttonSize: LauncherMetrics.headerButtonSize
             iconSize: Theme.iconSizeSmall
             onClicked: {
                 if (!root.controller || !root.section)

@@ -526,8 +526,9 @@ Item {
 
             SettingsToggleRow {
                 text: I18n.tr("Follow mouse")
-                description: I18n.tr("Anchored popouts open at the cursor instead of their widget")
+                description: I18n.tr("The Control Center opens at the cursor instead of its widget", "bar click action follow mouse description")
                 settingKey: "barClickActionFollowMouse"
+                visible: bar.selectedBarConfig?.middleClickAction === "control-center" || bar.selectedBarConfig?.rightClickAction === "control-center"
                 tags: ["bar", "click", "mouse", "cursor", "position", "anchor", "popout"]
                 checked: bar.selectedBarConfig?.clickActionFollowMouse ?? false
                 onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {

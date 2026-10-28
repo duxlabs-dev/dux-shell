@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"math"
 	"os"
 	"os/exec"
@@ -1147,21 +1146,32 @@ func runMatugen(baseArgs []string, sourceMode string) error {
 
 // matugen's stderr is echoed as before and its tail travels in the error, so a failure
 // reaching the shell through the socket still names the broken template or option.
+// It goes through a file, not a pipe: with a pipe, Wait blocks until every hook
+// child that inherited stderr exits, and a backgrounded post_hook never does (#3901).
 func execMatugen(args []string) error {
+	stderrFile, err := os.CreateTemp("", "matugen-stderr-*")
+	if err != nil {
+		return fmt.Errorf("matugen: %w", err)
+	}
+	defer os.Remove(stderrFile.Name())
+	defer stderrFile.Close()
+
 	cmd := exec.Command("matugen", args...)
 	cmd.Env = utils.EnvWithUserBinPath(nil)
 	cmd.Stdout = os.Stdout
-	var stderr bytes.Buffer
-	cmd.Stderr = io.MultiWriter(os.Stderr, &stderr)
-	err := cmd.Run()
-	if err == nil {
+	cmd.Stderr = stderrFile
+	runErr := cmd.Run()
+
+	stderr, _ := os.ReadFile(stderrFile.Name())
+	os.Stderr.Write(stderr)
+	if runErr == nil {
 		return nil
 	}
-	tail := stderrTail(stderr.String(), 6)
+	tail := stderrTail(string(stderr), 6)
 	if tail == "" {
-		return fmt.Errorf("matugen: %w", err)
+		return fmt.Errorf("matugen: %w", runErr)
 	}
-	return fmt.Errorf("matugen: %w\n%s", err, tail)
+	return fmt.Errorf("matugen: %w\n%s", runErr, tail)
 }
 
 var ansiEscapeRe = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)

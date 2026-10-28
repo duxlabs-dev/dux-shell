@@ -40,7 +40,7 @@ Item {
         id: dismissWindow
 
         screen: root.screen
-        visible: !!root.body && root.body.expanded && !PopoutManager.screenshotActive
+        visible: !!root.islandController && root.islandController.outsideClickCollapses && !PopoutManager.screenshotActive
         color: "transparent"
         exclusiveZone: -1
 

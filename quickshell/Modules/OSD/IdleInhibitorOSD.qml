@@ -26,8 +26,9 @@ DOSD {
         OsdIcon {
             tonal: false
             anchors.centerIn: parent
-            iconName: SessionService.idleInhibited ? "motion_sensor_active" : "motion_sensor_idle"
+            iconName: "local_cafe"
             iconColor: SessionService.idleInhibited ? Theme.primary : Theme.outline
+            filled: SessionService.idleInhibited
         }
     }
 }

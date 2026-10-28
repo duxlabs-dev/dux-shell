@@ -114,13 +114,13 @@
     "%1 is %2 and may use a lot of memory.": "%1 הוא %2 ועלול להשתמש בכמות גדולה של זיכרון."
   },
   "%1 is not installed. Install the package to manage the greeter.": {
-    "%1 is not installed. Install the package to manage the greeter.": ""
+    "%1 is not installed. Install the package to manage the greeter.": "החבילה %1 אינה מותקנת. התקן/י את החבילה כדי לנהל את מסך ההתחברות."
   },
   "%1 is now included in config": {
     "%1 is now included in config": "%1 כעת כלול בconfig"
   },
   "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": {
-    "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": ""
+    "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": "השירות %1 פועל ויגרום להופעת נגני בלוטות׳ כפולים. השבת/י אותו באמצעות הפקודה: %2"
   },
   "%1 issue found": {
     "%1 issue found": "נמצאה בעיה %1"
@@ -153,13 +153,13 @@
     "%1 ms": "%1 ms"
   },
   "%1 not available": {
-    "%1 not available": ""
+    "%1 not available": "הכלי %1 אינו זמין"
   },
   "%1 not available - lock integration requires the DMS socket connection": {
-    "%1 not available - lock integration requires the DMS socket connection": ""
+    "%1 not available - lock integration requires the DMS socket connection": "השירות %1 אינו זמין. שילוב מסך הנעילה מחייב חיבור לשקע של DMS"
   },
   "%1 not available or disabled - cannot apply %2 colors": {
-    "%1 not available or disabled - cannot apply %2 colors": ""
+    "%1 not available or disabled - cannot apply %2 colors": "השירות של %1 אינו זמין או מושבת. לא ניתן להחיל את הצבעים על %2"
   },
   "%1 not found": {
     "%1 not found": "%1 לא נמצא"
@@ -192,7 +192,7 @@
     "%1 printers": "%1 מדפסות"
   },
   "%1 procs": {
-    "%1 procs": ""
+    "%1 procs": "%1 תהליכים"
   },
   "%1 second": {
     "%1 second": "שנייה אחת"
@@ -236,11 +236,17 @@
   "%1: %2": {
     "%1: %2": "%1: %2"
   },
+  "%1d ago": {
+    "%1d ago": ""
+  },
   "%1h": {
     "%1h": "%1 ש׳"
   },
   "%1h %2m": {
     "%1h %2m": "%1 שעות ו-%2 דקות"
+  },
+  "%1h ago": {
+    "%1h ago": ""
   },
   "%1m": {
     "%1m": "%1 דקות"
@@ -255,13 +261,16 @@
     "(Unnamed)": "(ללא שם)"
   },
   "(exit %1)": {
-    "(exit %1)": ""
+    "(exit %1)": "(יציאה %1)"
   },
   "+ %1 more": {
     "+ %1 more": "+ %1 נוספים"
   },
   "+%1 conditions": {
     "+%1 conditions": "+%1 תנאים"
+  },
+  "1 hour before": {
+    "1 hour before": ""
   },
   "1 notification": {
     "1 notification": "התראה אחת"
@@ -408,7 +417,7 @@
     "Add \"%1\" to the %2 group?": "להוסיף את \"%1\" לקבוצה %2?"
   },
   "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": {
-    "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": ""
+    "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": "להוסיף את \"%1\" לקבוצה %2? יש להתנתק, להתחבר מחדש ולאחר מכן להריץ %3 כדי לעדכן את ערכת הנושא במסך ההתחברות."
   },
   "Add Desktop Widget": {
     "Add Desktop Widget": "הוספת ווידג׳ט לשולחן העבודה"
@@ -483,7 +492,7 @@
     "Adds concave curves where the bar meets the screen edge": "מוסיף עיקולים קעורים במקום שבו הסרגל נפגש עם קצה המסך"
   },
   "Adds them to the %1 group so they can run %2": {
-    "Adds them to the %1 group so they can run %2": ""
+    "Adds them to the %1 group so they can run %2": "מוסיף את המשתמש/ת לקבוצה %1 כדי לאפשר הרצה של הפקודה %2"
   },
   "Adds them to the %1 group so they can use sudo": {
     "Adds them to the %1 group so they can use sudo": "מוסיף את המשתמש/ת לקבוצה %1 כדי לאפשר שימוש בsudo"
@@ -567,7 +576,7 @@
     "Already upvoted, click again to remove": "כבר הצבעת בעד התוסף. לחץ/י שוב כדי לבטל את ההצבעה"
   },
   "Also runs the templates in your %1": {
-    "Also runs the templates in your %1": ""
+    "Also runs the templates in your %1": "מריץ גם את התבניות שמוגדרות ב%1"
   },
   "Also saves the screenshot to disk": {
     "Also saves the screenshot to disk": "שומר גם את צילום המסך בדיסק"
@@ -625,9 +634,6 @@
   },
   "Anchor": {
     "Anchor": "עוגן"
-  },
-  "Anchored popouts open at the cursor instead of their widget": {
-    "Anchored popouts open at the cursor instead of their widget": "חלונות קופצים המעוגנים לווידג׳טים ייפתחו במיקום הסמן במקום ליד הווידג׳ט"
   },
   "Animation duration": {
     "Animation duration": "משך זמן לאנימציה"
@@ -867,10 +873,10 @@
     "Authorize": "אשר/י"
   },
   "Authorize pairing with %1": {
-    "Authorize pairing with %1": ""
+    "Authorize pairing with %1": "אשר/י צימוד עם %1"
   },
   "Authorize service for %1": {
-    "Authorize service for %1": ""
+    "Authorize service for %1": "אשר/י שירות עבור %1"
   },
   "Auto": {
     "Auto": "אוטומטי"
@@ -1508,6 +1514,9 @@
   "Classes": {
     "Classes": "מחלקות"
   },
+  "Classic": {
+    "Classic": ""
+  },
   "Clear All": {
     "Clear All": "ניקוי הכל"
   },
@@ -1536,7 +1545,7 @@
     "Click 'Setup' to create %1 and add include to your compositor config.": "לחץ/י על 'התקנה' כדי ליצור את %1 ולכלול אותו בהגדרות הקומפוזיטור שלך."
   },
   "Click Import to add a %1 or %2 file": {
-    "Click Import to add a %1 or %2 file": ""
+    "Click Import to add a %1 or %2 file": "לחץ/י על ״ייבוא״ כדי להוסיף קובץ %1 או %2"
   },
   "Click actions": {
     "Click actions": "פעולות לחיצה"
@@ -1688,6 +1697,9 @@
   "Columns": {
     "Columns": "עמודות"
   },
+  "Comfortable": {
+    "Comfortable": ""
+  },
   "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": {
     "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": "רשימה מופרדת בפסיקים של שמות פריסות. השאר/י ריק כדי להשתמש בהגדרות המקלדת של המערכת."
   },
@@ -1770,7 +1782,7 @@
     "Confirm Display Changes": "אשר/י שינויי תצוגה"
   },
   "Confirm passkey for %1": {
-    "Confirm passkey for %1": ""
+    "Confirm passkey for %1": "אשר/י את מפתח הגישה עבור %1"
   },
   "Confirm password": {
     "Confirm password": "אימות סיסמה"
@@ -1866,7 +1878,7 @@
     "Copy": "העתקה"
   },
   "Copy %1": {
-    "Copy %1": ""
+    "Copy %1": "העתק/י %1"
   },
   "Copy Full Command": {
     "Copy Full Command": "העתק/י פקודה מלאה"
@@ -2091,7 +2103,7 @@
     "DMS out of date": "הDMS לא מעודכן"
   },
   "DMS removes its managed block from %1 and stops write services": {
-    "DMS removes its managed block from %1 and stops write services": ""
+    "DMS removes its managed block from %1 and stops write services": "המערכת של DMS מסירה את המקטע שהיא מנהלת מ%1 ומפסיקה את שירותי הכתיבה"
   },
   "DMS server is outdated (API v%1, expected v%2)": {
     "DMS server is outdated (API v%1, expected v%2)": "השרת של DMS לא מעודכן (API v%1, צפוי v%2)"
@@ -2190,7 +2202,7 @@
     "Deck": "חפיסה"
   },
   "Declared by the author, not enforced": {
-    "Declared by the author, not enforced": ""
+    "Declared by the author, not enforced": "ההרשאות הוצהרו על ידי יוצר/ת התוסף, אך אינן נאכפות"
   },
   "Default": {
     "Default": "ברירת מחדל"
@@ -2269,6 +2281,9 @@
   },
   "Deletes all stored screen time": {
     "Deletes all stored screen time": "מוחק את כל נתוני זמן המסך שנשמרו"
+  },
+  "Dense": {
+    "Dense": ""
   },
   "Dependencies & documentation": {
     "Dependencies & documentation": "חבילות נדרשות ודוקיומנטציה"
@@ -2365,6 +2380,9 @@
   },
   "Disabled": {
     "Disabled": "מושבת"
+  },
+  "Disabled by Auto": {
+    "Disabled by Auto": ""
   },
   "Disabled by Click through": {
     "Disabled by Click through": "מושבת עקב לחיצה מבעד לווידג׳ט"
@@ -2505,7 +2523,7 @@
     "Dock": "Dock"
   },
   "Dock %1": {
-    "Dock %1": ""
+    "Dock %1": "Dock %1"
   },
   "Dock margin, opacity, and border": {
     "Dock margin, opacity, and border": "שוליים, שקיפות ומסגרת של הDock"
@@ -2539,6 +2557,9 @@
   },
   "Don't change": {
     "Don't change": "ללא שינוי"
+  },
+  "Don't dim unfocused apps": {
+    "Don't dim unfocused apps": ""
   },
   "Door Open": {
     "Door Open": "דלת פתוחה"
@@ -2616,16 +2637,16 @@
     "Dusk (Nautical Twilight)": "צאת הכוכבים (דמדומים ימיים)"
   },
   "Dux Calendar": {
-    "Dux Calendar": ""
+    "Dux Calendar": "Dux Calendar"
   },
   "Dux Calendar isn't installed": {
-    "Dux Calendar isn't installed": ""
+    "Dux Calendar isn't installed": "Dux Calendar אינו מותקן"
   },
   "Dux Calendar isn't running": {
-    "Dux Calendar isn't running": ""
+    "Dux Calendar isn't running": "Dux Calendar אינו פועל"
   },
   "Dux Greeter docs": {
-    "Dux Greeter docs": ""
+    "Dux Greeter docs": "הדוקיומנטציה של מסך ההתחברות של Dux"
   },
   "Dwindle": {
     "Dwindle": "Dwindle"
@@ -2766,7 +2787,7 @@
     "Enter PIN": "הזן/י קוד PIN"
   },
   "Enter PIN for %1": {
-    "Enter PIN for %1": ""
+    "Enter PIN for %1": "הזן/י קוד PIN עבור %1"
   },
   "Enter a new name for session \"%1": {
     "Enter a new name for session \"%1\"": "הזן/י שם חדש להפעלה \"%1\""
@@ -2775,7 +2796,7 @@
     "Enter a new name for this workspace": "הזן/י שם חדש לסביבת העבודה הזו"
   },
   "Enter credentials for %1": {
-    "Enter credentials for %1": ""
+    "Enter credentials for %1": "הזן/י אישורי גישה עבור %1"
   },
   "Enter custom lock screen format (e.g., dddd, MMMM d)": {
     "Enter custom lock screen format (e.g., dddd, MMMM d)": "הזן/י תבנית מותאמת אישית למסך הנעילה (לדוגמא: dddd, MMMM d)"
@@ -2790,16 +2811,16 @@
     "Enter network name and password": "הזן/י שם רשת וסיסמה"
   },
   "Enter passkey for %1": {
-    "Enter passkey for %1": ""
+    "Enter passkey for %1": "הזן/י מפתח גישה עבור %1"
   },
   "Enter password for %1": {
-    "Enter password for %1": ""
+    "Enter password for %1": "הזן/י סיסמה עבור %1"
   },
   "Enter text to encode": {
     "Enter text to encode": "הזן/י טקסט לקידוד"
   },
   "Enter this passkey on %1": {
-    "Enter this passkey on %1": ""
+    "Enter this passkey on %1": "הזן/י את מפתח הגישה הזה ב%1"
   },
   "Enter to paste": {
     "Enter to paste": "הדבקה עם Enter"
@@ -3059,6 +3080,9 @@
   "Failed to read theme file: %1": {
     "Failed to read theme file: %1": "קריאת קובץ ערכת הנושא נכשלה: %1"
   },
+  "Failed to reboot to firmware setup": {
+    "Failed to reboot to firmware setup": ""
+  },
   "Failed to reload plugin: %1": {
     "Failed to reload plugin: %1": "טעינת התוסף מחדש נכשלה: %1"
   },
@@ -3081,7 +3105,7 @@
     "Failed to resume printer": "המשך פעולת המדפסת נכשל"
   },
   "Failed to run '%1'. Ensure the %2 package is installed.": {
-    "Failed to run '%1'. Ensure the %2 package is installed.": ""
+    "Failed to run '%1'. Ensure the %2 package is installed.": "הפעלת הפקודה '%1' נכשלה. ודא/י שהחבילה %2 מותקנת."
   },
   "Failed to save VPN credentials": {
     "Failed to save VPN credentials": "שמירת אישורי הגישה לVPN נכשלה"
@@ -3204,7 +3228,7 @@
     "File manager": "מנהל קבצים"
   },
   "File search requires %1\nInstall from %2": {
-    "File search requires %1\nInstall from %2": ""
+    "File search requires %1\nInstall from %2": "חיפוש קבצים דורש את החבילה %1\nהתקן/י אותה דרך %2"
   },
   "File the command writes; leave empty to read stdout": {
     "File the command writes; leave empty to read stdout": "הקובץ שאליו הפקודה כותבת; השאר/י ריק כדי לקרוא מstdout"
@@ -3268,6 +3292,9 @@
   },
   "Fires with any modifiers held": {
     "Fires with any modifiers held": "מופעל עם כל צירוף של מקשי שינוי לחוצים"
+  },
+  "Firmware setup": {
+    "Firmware setup": ""
   },
   "First Time Setup": {
     "First Time Setup": "התקנה ראשונית"
@@ -3428,6 +3455,9 @@
   "For %1": {
     "For %1": "למשך %1"
   },
+  "For 1 hour": {
+    "For 1 hour": ""
+  },
   "For you": {
     "For you": "בשבילך"
   },
@@ -3546,7 +3576,7 @@
     "GPU": "GPU"
   },
   "GPU %1": {
-    "GPU %1": ""
+    "GPU %1": "GPU %1"
   },
   "GPU Monitoring": {
     "GPU Monitoring": "ניטור GPU"
@@ -3573,7 +3603,7 @@
     "Gamma": "גאמה"
   },
   "Gamma %1": {
-    "Gamma %1": ""
+    "Gamma %1": "גאמה %1"
   },
   "Gamma control": {
     "Gamma control": "בקרת גאמה"
@@ -3735,7 +3765,7 @@
     "Health": "בריאות"
   },
   "Health %1": {
-    "Health %1": ""
+    "Health %1": "בריאות הסוללה %1"
   },
   "Heat shimmer": {
     "Heat shimmer": "ריצוד חום"
@@ -3966,7 +3996,7 @@
     "IP address or hostname": "כתובת IP או שם מארח"
   },
   "IP sharing setup failed. Check that %1 is installed.": {
-    "IP sharing setup failed. Check that %1 is installed.": ""
+    "IP sharing setup failed. Check that %1 is installed.": "הגדרת שיתוף IP נכשלה. ודא/י שהחבילה %1 מותקנת."
   },
   "ISO date": {
     "ISO date": "תאריך ISO"
@@ -4191,7 +4221,7 @@
     "Install system updates?": "להתקין עדכוני מערכת?"
   },
   "Install the %1 package for dynamic theming": {
-    "Install the %1 package for dynamic theming": ""
+    "Install the %1 package for dynamic theming": "התקן/י את החבילה %1 כדי לאפשר עיצוב דינמי"
   },
   "Install theme '%1' from the DMS registry?": {
     "Install theme '%1' from the DMS registry?": "להתקין את ערכת הנושא '%1' מהמאגר של DMS?"
@@ -4203,7 +4233,7 @@
     "Install wallpaper '%1'?": "להתקין את תמונת הרקע \"%1\"?"
   },
   "Installation and PAM setup are documented in the %1.": {
-    "Installation and PAM setup are documented in the %1.": ""
+    "Installation and PAM setup are documented in the %1.": "הוראות ההתקנה והגדרה של PAM מתועדות ב%1."
   },
   "Installed": {
     "Installed": "מותקן"
@@ -4235,6 +4265,9 @@
   "Interface": {
     "Interface": "ממשק"
   },
+  "Interface density": {
+    "Interface density": ""
+  },
   "Interface style": {
     "Interface style": "סגנון ממשק"
   },
@@ -4261,6 +4294,9 @@
   },
   "Invalid wallpaper layout": {
     "Invalid wallpaper layout": "פריסת תמונת רקע לא תקינה"
+  },
+  "Inverse Surface": {
+    "Inverse Surface": ""
   },
   "Iridescence": {
     "Iridescence": "ססגוניות"
@@ -4446,7 +4482,7 @@
     "Launching": "הפעלה"
   },
   "Layer namespace %1, needs a niri blur rule": {
-    "Layer namespace %1, needs a niri blur rule": ""
+    "Layer namespace %1, needs a niri blur rule": "מרחב השמות של השכבה הוא %1. נדרש כלל טשטוש בniri"
   },
   "Layer outline": {
     "Layer outline": "קו מתאר לשכבה"
@@ -4712,6 +4748,9 @@
   "Managed by Nix": {
     "Managed by Nix": "מנוהל על ידי Nix"
   },
+  "Managed by administrator policy": {
+    "Managed by administrator policy": ""
+  },
   "Managed by the primary PAM source": {
     "Managed by the primary PAM source": "מנוהל על ידי מקור הPAM הראשי"
   },
@@ -4801,9 +4840,6 @@
   },
   "Material palette": {
     "Material palette": "פלטת Material"
-  },
-  "Material scale": {
-    "Material scale": "קנה מידה של Material"
   },
   "Matugen Missing": {
     "Matugen Missing": "Matugen חסר"
@@ -5025,7 +5061,7 @@
     "More": "עוד"
   },
   "More in %1": {
-    "More in %1": ""
+    "More in %1": "עוד בגרסה %1"
   },
   "More samples look smoother and cost more GPU": {
     "More samples look smoother and cost more GPU": "יותר דגימות יוצרות תנועה חלקה יותר אך צורכות יותר משאבי GPU"
@@ -5637,16 +5673,16 @@
     "Not available": "לא זמינה"
   },
   "Not available - install %1 and %2": {
-    "Not available - install %1 and %2": ""
+    "Not available - install %1 and %2": "לא זמין - יש להתקין את החבילות %1 ו %2"
   },
   "Not available - install %1 and %2, or configure %3 PAM": {
-    "Not available - install %1 and %2, or configure %3 PAM": ""
+    "Not available - install %1 and %2, or configure %3 PAM": "לא זמין - יש להתקין את החבילות %1 ו %2, או להגדיר את PAM עבור %3"
   },
   "Not available - install or configure %1": {
-    "Not available - install or configure %1": ""
+    "Not available - install or configure %1": "לא זמין - יש להתקין או להגדיר את המודול %1"
   },
   "Not available - install or configure %1, or configure %2 PAM": {
-    "Not available - install or configure %1, or configure %2 PAM": ""
+    "Not available - install or configure %1, or configure %2 PAM": "לא זמין - יש להתקין או להגדיר את המודול %1, או להגדיר את PAM עבור %2"
   },
   "Not bound": {
     "Not bound": "לא מקושר"
@@ -5865,7 +5901,7 @@
     "Opening GitHub to upvote": "פתיחת GitHub להצבעה בעד התוסף"
   },
   "Opening terminal: %1": {
-    "Opening terminal: %1": ""
+    "Opening terminal: %1": "פותח מסוף: %1"
   },
   "Opens": {
     "Opens": "פותח"
@@ -6012,7 +6048,7 @@
     "PID": "PID"
   },
   "PID %1": {
-    "PID %1": ""
+    "PID %1": "PID %1"
   },
   "PIN": {
     "PIN": "קוד PIN"
@@ -6204,7 +6240,7 @@
     "Pixelate": "פיקסול"
   },
   "Place plugin directories here. Each plugin should have a %1 manifest file.": {
-    "Place plugin directories here. Each plugin should have a %1 manifest file.": ""
+    "Place plugin directories here. Each plugin should have a %1 manifest file.": "מקם/י כאן תיקיות של תוספים. כל תוסף צריך להכיל קובץ מניפסט עם השם %1."
   },
   "Placement": {
     "Placement": "מיקום"
@@ -6222,7 +6258,7 @@
     "Playback": "השמעה"
   },
   "Playback error: %1": {
-    "Playback error: %1": ""
+    "Playback error: %1": "שגיאת השמעה: %1"
   },
   "Playback position": {
     "Playback position": "מיקום ההשמעה"
@@ -6255,7 +6291,7 @@
     "Plugin Source Code": "קוד המקור של התוסף"
   },
   "Plugin authors": {
-    "Plugin authors": ""
+    "Plugin authors": "יוצרי התוספים"
   },
   "Plugin dependency missing": {
     "Plugin dependency missing": "חסרה חבילה נדרשת לתוסף"
@@ -6558,7 +6594,7 @@
     "Profile not found": "הפרופיל לא נמצא"
   },
   "Profile not found in %1": {
-    "Profile not found in %1": ""
+    "Profile not found in %1": "הפרופיל לא נמצא ב%1"
   },
   "Profile on AC": {
     "Profile on AC": "פרופיל בחיבור לחשמל"
@@ -6656,6 +6692,9 @@
   "Read:": {
     "Read:": "קריאה:"
   },
+  "Readings": {
+    "Readings": ""
+  },
   "Reads audio devices and volume": {
     "Reads audio devices and volume": "קריאת התקני השמע ועוצמת השמע"
   },
@@ -6686,11 +6725,14 @@
   "Reboot recommended": {
     "Reboot recommended": "מומלץ להפעיל מחדש"
   },
+  "Reboot targets": {
+    "Reboot targets": ""
+  },
   "Reboot to %1": {
     "Reboot to %1": "הפעלה מחדש אל %1"
   },
-  "Reboot to another OS": {
-    "Reboot to another OS": "הפעלה מחדש למערכת הפעלה אחרת"
+  "Reboot to firmware setup": {
+    "Reboot to firmware setup": ""
   },
   "Recent": {
     "Recent": "אחרונים"
@@ -6819,7 +6861,7 @@
     "Remove the shortcut %1?": "להסיר את קיצור הדרך %1?"
   },
   "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": {
-    "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": ""
+    "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": "להסיר את קיצור המקלדת %1? רשומת להסרת הקיצור תישמר ב%2 כדי שההסרה תישמר גם לאחר התקדנת עדכונים לDMS."
   },
   "Remove upvote": {
     "Remove upvote": "ביטול הצבעה"
@@ -6870,13 +6912,13 @@
     "Report": "דיווח"
   },
   "Required plugin: %1": {
-    "Required plugin: %1": ""
+    "Required plugin: %1": "תוסף נדרש: %1"
   },
   "Requires %1": {
     "Requires %1": "גרסה %1 נדרשת"
   },
   "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": {
-    "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": ""
+    "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": "החבילות %1 ו%2 נדרשות בנוסף לשיוך של המשתמש/ת שלך לקבוצה %3 (נדרשים גם המודולים %4 עבור טביעת אצבע ו%5 עבור מפתחות אבטחה)."
   },
   "Requires DMS %1": {
     "Requires DMS %1": "DMS %1 נדרש"
@@ -7007,8 +7049,8 @@
   "Route Bluetooth headset controls to the active DMS media player": {
     "Route Bluetooth headset controls to the active DMS media player": "נתב/י את בקרי אוזניות הBluetooth לנגן המדיה הפעיל של DMS"
   },
-  "Routes launcher, dash, control center and notification shortcuts": {
-    "Routes launcher, dash, control center and notification shortcuts": "מנתב קיצורי דרך של המשגר, הDash, מרכז הבקרה וההתראות"
+  "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": {
+    "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": ""
   },
   "Rows": {
     "Rows": "שורות"
@@ -7044,7 +7086,7 @@
     "Run a shell command (e.g., notify-send)": "הרץ/י פקודת מעטפת (לדוגמא notify-send)"
   },
   "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": {
-    "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": ""
+    "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": "הרץ/י פקודה חיצונית בכל שינוי של תמונת הרקע ומזג/י את פלטת הצבעים בפורמט JSON שהפקודה מפיקה לתוך %1, תחת מרחב שמות, כך שתבניות יוכלו להשתמש, לדוגמא, ב%2. הפקודה מקבלת את תמונת הרקע כ%3 ואת המצב כ%4."
   },
   "Run full sync": {
     "Run full sync": "הרצת סנכרון מלא"
@@ -7262,6 +7304,9 @@
   "Secondary Container": {
     "Secondary Container": "מיכל משני"
   },
+  "Section dividers": {
+    "Section dividers": ""
+  },
   "Sections": {
     "Sections": "מקטעים"
   },
@@ -7312,6 +7357,9 @@
   },
   "Select Dock Launcher Logo": {
     "Select Dock Launcher Logo": "בחר/י לוגו למשגר בDock"
+  },
+  "Select Dot Icon": {
+    "Select Dot Icon": ""
   },
   "Select ICC Profile": {
     "Select ICC Profile": "בחר/י פרופיל ICC"
@@ -7419,7 +7467,7 @@
     "Set notification rules": "הגדר/י חוקים להתראות"
   },
   "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": {
-    "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": ""
+    "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": "הגדר/י את אחד ממשתני הסביבה הבאים ולאחר מכן הפעל/י מחדש את המעטפת:\n%1\n\nרק החבילה %2 מחייבת התקנה של %3."
   },
   "Set under Theme & colors, Derived color": {
     "Set under Theme & colors, Derived color": "הגדר/י תחת ערכת נושא וצבעים ← צבע נגזר"
@@ -7835,6 +7883,9 @@
   "Spacing": {
     "Spacing": "ריווח"
   },
+  "Spacious": {
+    "Spacious": ""
+  },
   "Speaker settings": {
     "Speaker settings": "הגדרות רמקול"
   },
@@ -8051,6 +8102,9 @@
   "Switches to power saver at the low battery threshold": {
     "Switches to power saver at the low battery threshold": "עובר למצב חיסכון בחשמל בסף הסוללה החלשה"
   },
+  "Symbol": {
+    "Symbol": ""
+  },
   "Sync": {
     "Sync": "סנכרון"
   },
@@ -8187,7 +8241,7 @@
     "Terminal additional parameters": "פרמטרים נוספים למסוף"
   },
   "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": {
-    "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": ""
+    "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": "ההפעלה באמצעות מסוף חלופי נכשלה. התקן/י אחד מהמסופים הנתמכים או הרץ/י את '%1' ידנית."
   },
   "Terminal fallback opened. Complete authentication there; it will close automatically when done.": {
     "Terminal fallback opened. Complete authentication there; it will close automatically when done.": "נפתח מסוף כגיבוי. השלם/י את האימות שם; הוא ייסגר אוטומטית בסיום."
@@ -8229,10 +8283,13 @@
     "Text style": "סגנון טקסט"
   },
   "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": {
-    "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": ""
+    "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": "משתנה הסביבה %1 אינו מוגדר או ששקע התקשורת אינו זמין. החיבור נדרש כדי לאפשר ניהול תוספים אוטומטי."
   },
   "The Aqueous operation failed.": {
     "The Aqueous operation failed.": "פעולת Aqueous נכשלה."
+  },
+  "The Control Center opens at the cursor instead of its widget": {
+    "The Control Center opens at the cursor instead of its widget": ""
   },
   "The Default action only overrides priority": {
     "The Default action only overrides priority": "פעולת ברירת המחדל דורסת רק את העדיפות"
@@ -8250,7 +8307,7 @@
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "החץ מצביע לכיוון שאליו הרוח נושבת. התווית מציגה מהיכן היא מגיעה."
   },
   "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": {
-    "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": ""
+    "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": "ההגדרות הבאות ישנו את הגדרות הGTK וQt שלך. אם ברצונך לשמור על התצורות הנוכחיות, יש לגבות אותן (מתוך %1 ו%2)."
   },
   "The compositor session changed. Discard this edit before starting a new one.": {
     "The compositor session changed. Discard this edit before starting a new one.": "הפעלת הקומפוזיטור השתנתה. בטל/י את העריכה הזו לפני התחלת עריכה חדשה."
@@ -8355,7 +8412,7 @@
     "Themes": "ערכות נושא"
   },
   "These add entries to the XDG autostart directory (%1)": {
-    "These add entries to the XDG autostart directory (%1)": ""
+    "These add entries to the XDG autostart directory (%1)": "אפשרויות אלו מוסיפות רשומות לתיקיית ההפעלה האוטומטית של XDG (%1)"
   },
   "They load with the next update check. Release notes are also published on GitHub.": {
     "They load with the next update check. Release notes are also published on GitHub.": "הם ייטענו בבדיקת העדכונים הבאה. הערות גרסה מתפרסמות גם בGitHub."
@@ -8376,7 +8433,7 @@
     "This bar is the Island": "סרגל זה הוא האי"
   },
   "This bind is overridden by %1": {
-    "This bind is overridden by %1": ""
+    "This bind is overridden by %1": "קיצור מקלדת זה נדרס על ידי %1"
   },
   "This device": {
     "This device": "התקן זה"
@@ -8388,7 +8445,7 @@
     "This display does not report VRR support": "המסך אינו מדווח על תמיכה בVRR"
   },
   "This install is still using %1. Run %2 to migrate before changing these settings.": {
-    "This install is still using %1. Run %2 to migrate before changing these settings.": ""
+    "This install is still using %1. Run %2 to migrate before changing these settings.": "ההתקנה הזו עדיין משתמשת ב%1. הרץ/י את הפקודה %2 כדי להעביר את התצורה לפני שינוי ההגדרות האלו."
   },
   "This may take a few seconds": {
     "This may take a few seconds": "זה עשוי לקחת מספר שניות"
@@ -8400,7 +8457,7 @@
     "This output is disabled in the current profile": "פלט זה מושבת בפרופיל הנוכחי"
   },
   "This plugin does not have '%1' permission.\n\nAdd %2 to %3": {
-    "This plugin does not have '%1' permission.\n\nAdd %2 to %3": ""
+    "This plugin does not have '%1' permission.\n\nAdd %2 to %3": "לתוסף הזה אין הרשאת '%1'.\n\nהוסף/י את %2 ל%3"
   },
   "This system cannot link settings live. Sync again after changing them.": {
     "This system cannot link settings live. Sync again after changing them.": "מערכת זו אינה יכולה לקשר הגדרות בזמן אמת. סנכרן/י שוב לאחר שינוי שלהן."
@@ -8508,10 +8565,10 @@
     "To Full": "לטעינה מלאה"
   },
   "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": {
-    "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": ""
+    "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": "כדי להתחבר כמשתמש/ת אחר/ת, יש להתנתק ולבחור את החשבון במסך ההתחברות. יצירת הפעלה חדשה במקביל מחייבת מסך התחברות שתומך בכמה הפעלות (%1)."
   },
   "To use this DMS bind, remove or change the keybind in your %1": {
-    "To use this DMS bind, remove or change the keybind in your %1": ""
+    "To use this DMS bind, remove or change the keybind in your %1": "כדי להשתמש בקיצור המקלדת הזה של DMS, יש להסיר או לשנות את קיצור המקלדת בקובץ %1 שלך"
   },
   "Toast": {
     "Toast": "התראה קופצת"
@@ -8566,6 +8623,9 @@
   },
   "Tools": {
     "Tools": "כלים"
+  },
+  "Tooltip": {
+    "Tooltip": ""
   },
   "Top": {
     "Top": "למעלה"
@@ -9207,7 +9267,7 @@
     "Wi-Fi, Ethernet, VPN": "Wi-Fi, Ethernet, VPN"
   },
   "WiFi QR code for %1": {
-    "WiFi QR code for %1": ""
+    "WiFi QR code for %1": "קוד QR לרשת הWiFi %1"
   },
   "WiFi disabled": {
     "WiFi disabled": "WiFi מושבת"
@@ -9466,6 +9526,12 @@
   },
   "display rotation option": {
     "Normal": "רגיל"
+  },
+  "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural": {
+    "%1 days": "",
+    "%1 hours": "",
+    "%1 minutes": "",
+    "%1 seconds": ""
   },
   "e.g. /usr/bin/my-script --flag": {
     "e.g. /usr/bin/my-script --flag": "לדוגמה /usr/bin/my-script --flag"

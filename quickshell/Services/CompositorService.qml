@@ -346,16 +346,17 @@ Singleton {
             return screen.devicePixelRatio || 1;
         }
 
-        const randrScale = randrScales[screen.name];
-        if (randrScale !== undefined && randrScale > 0)
-            return fractionalScale(randrScale);
-
-        if (WlrOutputService.wlrOutputAvailable && screen) {
+        // Live wlr-output state outranks the one-shot randr snapshot so scale changes propagate
+        if (WlrOutputService.wlrOutputAvailable) {
             const wlrOutput = WlrOutputService.getOutput(screen.name);
             if (wlrOutput?.enabled && wlrOutput.scale !== undefined && wlrOutput.scale > 0) {
                 return fractionalScale(wlrOutput.scale);
             }
         }
+
+        const randrScale = randrScales[screen.name];
+        if (randrScale !== undefined && randrScale > 0)
+            return fractionalScale(randrScale);
 
         if (isNiri && screen) {
             const niriScale = NiriService.displayScales[screen.name];
