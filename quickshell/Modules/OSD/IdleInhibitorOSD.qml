@@ -28,6 +28,7 @@ DOSD {
             anchors.centerIn: parent
             iconName: "local_cafe"
             iconColor: SessionService.idleInhibited ? Theme.primary : Theme.outline
+            filled: SessionService.idleInhibited
         }
     }
 }
