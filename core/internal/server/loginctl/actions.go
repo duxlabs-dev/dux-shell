@@ -141,12 +141,6 @@ func (m *Manager) releaseKeepAwake() {
 	}
 }
 
-func (m *Manager) keepingAwake() bool {
-	m.keepAwakeMu.Lock()
-	defer m.keepAwakeMu.Unlock()
-	return m.keepAwakeFile != nil
-}
-
 func (m *Manager) SetSleepInhibitorEnabled(enabled bool) {
 	m.sleepInhibitorEnabled.Store(enabled)
 	if enabled {

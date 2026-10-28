@@ -647,40 +647,6 @@ func (m *Manager) startSignalPump() error {
 		return err
 	}
 
-	if err := m.conn.AddMatchSignal(
-		dbus.WithMatchObjectPath(dbus.ObjectPath(dbusPath)),
-		dbus.WithMatchInterface(dbusPropsInterface),
-		dbus.WithMatchMember("PropertiesChanged"),
-	); err != nil {
-		m.conn.RemoveMatchSignal(
-			dbus.WithMatchObjectPath(m.sessionPath),
-			dbus.WithMatchInterface(dbusPropsInterface),
-			dbus.WithMatchMember("PropertiesChanged"),
-		)
-		m.conn.RemoveMatchSignal(
-			dbus.WithMatchObjectPath(m.sessionPath),
-			dbus.WithMatchInterface(dbusSessionInterface),
-			dbus.WithMatchMember("Lock"),
-		)
-		m.conn.RemoveMatchSignal(
-			dbus.WithMatchObjectPath(m.sessionPath),
-			dbus.WithMatchInterface(dbusSessionInterface),
-			dbus.WithMatchMember("Unlock"),
-		)
-		m.conn.RemoveMatchSignal(
-			dbus.WithMatchObjectPath(dbus.ObjectPath(dbusPath)),
-			dbus.WithMatchInterface(dbusManagerInterface),
-			dbus.WithMatchMember("PrepareForSleep"),
-		)
-		m.conn.RemoveMatchSignal(
-			dbus.WithMatchObjectPath("/org/freedesktop/DBus"),
-			dbus.WithMatchInterface("org.freedesktop.DBus"),
-			dbus.WithMatchMember("NameOwnerChanged"),
-		)
-		m.conn.RemoveSignal(m.signals)
-		return err
-	}
-
 	m.sigWG.Go(func() {
 		for {
 			select {
@@ -728,11 +694,6 @@ func (m *Manager) stopSignalPump() {
 		dbus.WithMatchObjectPath("/org/freedesktop/DBus"),
 		dbus.WithMatchInterface("org.freedesktop.DBus"),
 		dbus.WithMatchMember("NameOwnerChanged"),
-	)
-	m.conn.RemoveMatchSignal(
-		dbus.WithMatchObjectPath(dbus.ObjectPath(dbusPath)),
-		dbus.WithMatchInterface(dbusPropsInterface),
-		dbus.WithMatchMember("PropertiesChanged"),
 	)
 
 	m.conn.RemoveSignal(m.signals)

@@ -985,8 +985,20 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
     function handleLidPropertiesChanged(data) {
         if (data?.path !== "/org/freedesktop/UPower" || data.body?.[0] !== "org.freedesktop.UPower")
             return;
-        if (data.body?.[1]?.LidIsClosed === false)
+        const lidClosed = data.body?.[1]?.LidIsClosed;
+        if (lidClosed === false)
             lidOpened();
+        else if (lidClosed === true)
+            lockOnLidCloseWhileKeepingAwake();
+    }
+
+    // Keep Awake blocks the suspend that would have locked the session.
+    function lockOnLidCloseWhileKeepingAwake() {
+        if (!idleInhibited || !SettingsData.keepAwakeBlocksSleep || !SettingsData.lockBeforeSuspend || locked)
+            return;
+        if (Quickshell.screens.some(screen => !/^(eDP|LVDS|DSI)/.test(screen.name)))
+            return;
+        IdleService.lockRequested();
     }
 
     function ensurePrepareForSleepSubscription() {

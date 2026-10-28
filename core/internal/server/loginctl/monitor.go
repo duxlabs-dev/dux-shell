@@ -139,20 +139,12 @@ func (m *Manager) handlePropertiesChanged(sig *dbus.Signal) {
 	}
 
 	iface, ok := sig.Body[0].(string)
-	if !ok {
+	if !ok || iface != dbusSessionInterface {
 		return
 	}
 
 	changes, ok := sig.Body[1].(map[string]dbus.Variant)
 	if !ok {
-		return
-	}
-
-	if iface == dbusManagerInterface {
-		m.handleManagerPropertiesChanged(changes)
-		return
-	}
-	if iface != dbusSessionInterface {
 		return
 	}
 
@@ -198,32 +190,4 @@ func (m *Manager) handlePropertiesChanged(sig *dbus.Signal) {
 	if needsUpdate {
 		m.notifySubscribers()
 	}
-}
-
-// Keep Awake blocks the suspend that would have locked the session, so lock
-// on lid close instead, unless logind counts the machine as docked.
-func (m *Manager) handleManagerPropertiesChanged(changes map[string]dbus.Variant) {
-	variant, ok := changes["LidClosed"]
-	if !ok {
-		return
-	}
-	closed, ok := dbusutil.As[bool](variant)
-	if !ok || !closed || !m.lockBeforeSuspend.Load() || !m.keepingAwake() || m.docked() {
-		return
-	}
-
-	m.stateMutex.RLock()
-	locked := m.state.Locked
-	m.stateMutex.RUnlock()
-	if !locked {
-		m.Lock()
-	}
-}
-
-func (m *Manager) docked() bool {
-	var docked bool
-	if err := m.managerObj.Call(dbusPropsInterface+".Get", 0, dbusManagerInterface, "Docked").Store(&docked); err != nil {
-		return false
-	}
-	return docked
 }
