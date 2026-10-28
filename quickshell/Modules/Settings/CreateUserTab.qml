@@ -18,6 +18,8 @@ Item {
     property bool pendingAdmin: false
     property bool pendingGreeter: false
 
+    Component.onCompleted: UsersService.refresh()
+
     function _resetForm() {
         pendingUsername = "";
         pendingPassword = "";
