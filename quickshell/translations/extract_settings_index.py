@@ -279,14 +279,18 @@ def enrich_keywords(label, description, category, existing_tags, parent_label=No
 
 
 def literal_args(value):
-    """Positional .arg() values after the first I18n.tr call, None where the arg is not a string literal."""
+    """Extract literal and supported runtime .arg() values from a setting description."""
     call_tail = value.split("I18n.tr(", 1)[-1].split("I18n.tr(", 1)[0]
     args = []
-    for match in re.finditer(r"\.arg\(\s*(?:" + STR_DQ + "|" + STR_SQ + r")?", call_tail):
+    pattern = r"\.arg\(\s*(?:" + STR_DQ + "|" + STR_SQ + r"|(?P<dynamic>UsersService\.(?:adminGroup|greeterGroup)))?"
+    for match in re.finditer(pattern, call_tail):
         if match.group(1) is not None:
             args.append(decode_string_literal(match.group(1), '"'))
         elif match.group(2) is not None:
             args.append(decode_string_literal(match.group(2), "'"))
+        elif match.group("dynamic") is not None:
+            service, prop = match.group("dynamic").split(".", 1)
+            args.append({"service": service, "property": prop})
         else:
             args.append(None)
     return args
@@ -294,7 +298,7 @@ def literal_args(value):
 
 def apply_args(text, args):
     for index, arg in enumerate(args, start=1):
-        if arg is not None:
+        if isinstance(arg, str):
             text = text.replace(f"%{index}", arg)
     return text
 

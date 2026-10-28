@@ -17282,7 +17282,14 @@
       "users"
     ],
     "parentLabel": "Users & accounts",
-    "description": "Adds them to the %1 group so they can run %2"
+    "description": "Adds them to the %1 group so they can run %2",
+    "descriptionArgs": [
+      {
+        "service": "UsersService",
+        "property": "greeterGroup"
+      },
+      "dms-greeter sync --profile"
+    ]
   },
   {
     "section": "createUserAdmin",
@@ -17305,7 +17312,13 @@
       "wheel"
     ],
     "parentLabel": "Users & accounts",
-    "description": "Adds them to the %1 group so they can use sudo"
+    "description": "Adds them to the %1 group so they can use sudo",
+    "descriptionArgs": [
+      {
+        "service": "UsersService",
+        "property": "adminGroup"
+      }
+    ]
   },
   {
     "section": "greeterAuth",

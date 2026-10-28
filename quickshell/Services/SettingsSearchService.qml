@@ -50,6 +50,18 @@ Singleton {
     }
 
     Connections {
+        target: UsersService
+
+        function onAdminGroupChanged() {
+            root._refreshTranslatedCache();
+        }
+
+        function onGreeterGroupChanged() {
+            root._refreshTranslatedCache();
+        }
+    }
+
+    Connections {
         target: SettingsTabs
 
         function onPageMapChanged() {
@@ -362,7 +374,21 @@ Singleton {
     function _withArgs(text, args) {
         if (!args)
             return text;
-        return args.reduce((acc, arg) => acc.arg(arg), text);
+        return args.reduce((acc, arg) => acc.arg(_descriptionArgument(arg)), text);
+    }
+
+    function _descriptionArgument(arg) {
+        if (typeof arg === "string")
+            return arg;
+        if (arg?.service !== "UsersService")
+            return "";
+        switch (arg.property) {
+        case "adminGroup":
+        case "greeterGroup":
+            return UsersService[arg.property];
+        default:
+            return "";
+        }
     }
 
     function _rebuildTranslationCache() {
