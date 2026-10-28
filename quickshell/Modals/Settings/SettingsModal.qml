@@ -141,6 +141,11 @@ DFloatingWindow {
 
     function showKeybindsSearch(query: string) {
         keybindSearchQuery = query || "";
+        // From inside settings keep the history so back returns to the calling page
+        if (visible) {
+            navigateTo("keybinds");
+            return;
+        }
         showWithTabName("keybinds");
     }
 
