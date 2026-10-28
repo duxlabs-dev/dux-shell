@@ -249,6 +249,9 @@ func (m *Manager) setupRegistry() error {
 			m.dataControlMgr = dataControlMgr
 			log.Info("Bound ext_data_control_manager_v1")
 		case "wl_seat":
+			if m.seat != nil {
+				return
+			}
 			seat := wlclient.NewSeat(ctx)
 			if err := registry.Bind(e.Name, e.Interface, e.Version, seat); err != nil {
 				log.Errorf("Failed to bind wl_seat: %v", err)
