@@ -254,16 +254,16 @@ done
 
             SettingsToggleRow {
                 settingKey: "batteryScaleToChargeLimit"
-                text: I18n.tr("Scale battery level to charge limit")
-                description: I18n.tr("Scale the displayed battery level to the configured charge limit")
+                text: I18n.tr("Scale battery level to charge limit", "battery settings: toggle to scale the displayed percentage so the charge limit represents 100%")
+                description: I18n.tr("Scale the displayed battery level to the configured charge limit", "battery settings: explains that the displayed battery percentage is scaled relative to the charge limit")
                 checked: SettingsData.batteryScaleToChargeLimit
                 onToggled: checked => SettingsData.set("batteryScaleToChargeLimit", checked)
             }
 
             SettingsToggleRow {
                 settingKey: "batteryScaleAlertThresholds"
-                text: I18n.tr("Scale low and critical alert thresholds")
-                description: I18n.tr("Use the scaled battery level for alert thresholds and percentages")
+                text: I18n.tr("Scale low and critical alert thresholds", "battery settings: toggle to apply low and critical alert thresholds to the charge-limit-scaled battery percentage")
+                description: I18n.tr("Use the scaled battery level for alert thresholds and percentages", "battery settings: explains that low and critical alerts trigger and report percentages on the scaled battery level")
                 checked: SettingsData.batteryScaleAlertThresholds
                 visible: SettingsData.batteryScaleToChargeLimit
                 onToggled: checked => SettingsData.set("batteryScaleAlertThresholds", checked)
