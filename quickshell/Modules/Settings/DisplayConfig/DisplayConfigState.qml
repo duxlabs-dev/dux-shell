@@ -1281,7 +1281,7 @@ Singleton {
                     };
                     config.transform = OutputModel.niriTransform(output.logical.transform);
                 }
-                if (settings.vrrOnDemand !== undefined)
+                if (settings.vrrOnDemand)
                     config.vrrOnDemand = settings.vrrOnDemand;
                 else if (output.vrr_enabled !== undefined)
                     config.vrr = output.vrr_enabled;
