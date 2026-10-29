@@ -137,3 +137,25 @@ test('ending fullscreen auto-hide clears IPC reveal before the next fullscreen',
     vm.runInContext(handler, state);
     assert.deepEqual(calls, [['evaluate']]);
 });
+
+test('fullscreen-only hiding keeps the bar exclusive zone', () => {
+    const body = readFileSync(new URL('../Modules/DBar/DBarBody.qml', import.meta.url), 'utf8');
+    const expression = body.match(/readonly property real surfaceExclusiveZone: (.+)$/m)?.[1];
+    assert.ok(expression, 'DBar exclusive-zone binding exists');
+
+    const state = vm.createContext({
+        isIsland: false,
+        islandFree: false,
+        islandHost: null,
+        barConfig: { visible: true, autoHide: false, bottomGap: 0 },
+        barWindow: { effectiveBarThickness: 40, reserveExclusiveWhenAutoHidden: false },
+        effectiveSpacing: 4,
+        usesFrameBarChrome: false,
+        topBarCore: { autoHide: true },
+        SettingsData: { islandReserveThickness: () => 0 }
+    });
+    assert.equal(vm.runInContext(expression, state), 44);
+
+    state.barConfig.autoHide = true;
+    assert.equal(vm.runInContext(expression, state), -1);
+});
