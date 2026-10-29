@@ -477,7 +477,7 @@ Singleton {
         for (const ws of data.workspaces) {
             const oldWs = root.workspaces[ws.id];
             newWorkspaces[ws.id] = ws;
-            if (oldWs && oldWs.active_window_id !== undefined) {
+            if (ws.active_window_id === undefined && oldWs && oldWs.active_window_id !== undefined) {
                 newWorkspaces[ws.id].active_window_id = oldWs.active_window_id;
             }
         }
@@ -582,13 +582,17 @@ Singleton {
     }
 
     function handleWorkspaceActiveWindowChanged(data) {
-        if (root.workspaces[data.workspace_id]) {
-            if (data.active_window_id !== null && data.active_window_id !== undefined)
+        const ws = root.workspaces[data.workspace_id];
+        if (ws) {
+            if (ws.is_focused && data.active_window_id !== null && data.active_window_id !== undefined)
                 lastFocusedWindowId = data.active_window_id;
             updateWorkspace(data.workspace_id, {
                 "active_window_id": data.active_window_id
             });
         }
+
+        if (!ws?.is_focused)
+            return;
 
         let changed = false;
         const updatedWindows = new Array(windows.length);

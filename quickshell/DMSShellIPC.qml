@@ -914,7 +914,7 @@ Item {
 
         function toggleReveal(selector: string, value: string): string {
             return withBarConfig(selector, value, false, bar => {
-                if (!bar.autoHide)
+                if (!bar.autoHide && !BarWidgetService.dankBarItems[bar.id]?.fullscreenAutoHide)
                     return "BAR_AUTO_HIDE_DISABLED";
                 if (!(bar.visible ?? true)) {
                     SettingsData.updateBarConfig(bar.id, {

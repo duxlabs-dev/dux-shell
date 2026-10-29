@@ -21,6 +21,7 @@ PanelWindow {
     readonly property bool isVertical: body.isVertical
     readonly property int barPos: body.barPos
     readonly property bool barRevealed: body.barRevealed
+    readonly property bool fullscreenAutoHide: body.fullscreenAutoHide
     readonly property bool isIsland: body.isIsland
     readonly property var islandHost: body.islandHost
     readonly property var leadingSectionRect: body.leadingSectionRect

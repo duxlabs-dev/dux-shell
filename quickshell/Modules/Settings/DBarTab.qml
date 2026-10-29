@@ -635,6 +635,20 @@ Item {
             }
 
             SettingsToggleRow {
+                settingKey: "barHideOnFullscreen"
+                resetStore: bar
+                resetKeys: ["hideOnFullscreen"]
+                tags: ["bar", "fullscreen", "hide", "visibility"]
+                visible: CompositorService.isNiri && !bar.islandOwnsSelectedBarTop && (bar.selectedBarConfig?.useOverlayLayer ?? false)
+                text: I18n.tr("Hide bar on fullscreen", "bar visibility toggle")
+                description: I18n.tr("Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.", "bar fullscreen auto-hide description")
+                checked: bar.selectedBarConfig?.hideOnFullscreen ?? false
+                onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
+                        hideOnFullscreen: toggled
+                    })
+            }
+
+            SettingsToggleRow {
                 settingKey: "islandUseOverlayLayer"
                 tags: ["island", "fullscreen", "overlay", "layer"]
                 visible: bar.selectedBarIsIsland && !bar.selectedBarFrameStyled

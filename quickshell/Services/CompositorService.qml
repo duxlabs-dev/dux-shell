@@ -11,6 +11,7 @@ import qs.DCommon.Common as DCommon
 import qs.Services
 import "../Common/WorkspaceModel.js" as WorkspaceModel
 import "../Common/WindowModel.js" as WindowModel
+import "NiriFullscreen.js" as NiriFullscreen
 
 Singleton {
     id: root
@@ -871,6 +872,12 @@ Singleton {
                 return true;
         }
         return false;
+    }
+
+    function visibleNiriFullscreenToplevelOnScreen(screenOrName) {
+        if (!isNiri || !NiriService.hasInitialConnection)
+            return false;
+        return NiriFullscreen.isFullscreenOnScreen(_screenName(screenOrName), NiriService.allWorkspaces, NiriService.windows, ToplevelManager.toplevels?.values);
     }
 
     function filterCurrentDisplay(toplevels, screenName) {
