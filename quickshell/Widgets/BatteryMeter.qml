@@ -29,9 +29,9 @@ Item {
     readonly property bool circular: root.ring || root.duo
     readonly property real arcStart: root.duo ? 150 : -90
     readonly property real arcSpan: root.duo ? 240 : 360
-    readonly property real chargeTarget: Math.max(root.level, Math.min(100, SettingsData.batteryChargeLimit))
+    readonly property real chargeTarget: SettingsData.batteryScaleToChargeLimit ? 100 : Math.max(root.level, Math.min(100, SettingsData.batteryChargeLimit))
     readonly property real unit: root.thickness / 14
-    readonly property real level: Math.max(0, Math.min(100, BatteryService.batteryLevel))
+    readonly property real level: Math.max(0, Math.min(100, BatteryService.displayBatteryLevel))
     readonly property bool charging: BatteryService.batteryAvailable && BatteryService.isCharging
     readonly property bool lowState: BatteryService.batteryAvailable && BatteryService.isLowBattery && !BatteryService.isCharging
     readonly property color fillColor: {

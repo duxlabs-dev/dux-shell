@@ -736,6 +736,8 @@ Singleton {
     property string batteryProfileName: Spec.SPEC.batteryProfileName.def
     property int batteryPostLockMonitorTimeout: Spec.SPEC.batteryPostLockMonitorTimeout.def
     property int batteryChargeLimit: Spec.SPEC.batteryChargeLimit.def
+    property bool batteryScaleToChargeLimit: Spec.SPEC.batteryScaleToChargeLimit.def
+    property bool batteryScaleAlertThresholds: Spec.SPEC.batteryScaleAlertThresholds.def
     property bool batteryNotifyChargeLimit: Spec.SPEC.batteryNotifyChargeLimit.def
     property int batteryCriticalThreshold: Spec.SPEC.batteryCriticalThreshold.def
     property bool batteryCriticalAnimation: Spec.SPEC.batteryCriticalAnimation.def

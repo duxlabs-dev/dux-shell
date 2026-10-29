@@ -1081,6 +1081,12 @@ var LOCAL_SPEC = {
     batteryChargeLimit: {
         def: 100
     },
+    batteryScaleToChargeLimit: {
+        def: false
+    },
+    batteryScaleAlertThresholds: {
+        def: false
+    },
     batteryNotifyChargeLimit: {
         def: false
     },

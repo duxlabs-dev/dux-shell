@@ -502,7 +502,7 @@ BasePill {
                                 case "bluetooth":
                                     return BluetoothService.connected ? "bluetooth_connected" : "bluetooth";
                                 case "battery":
-                                    return Theme.getBatteryIcon(BatteryService.batteryLevel, BatteryService.isCharging, BatteryService.batteryAvailable);
+                                    return Theme.getBatteryIcon(BatteryService.displayBatteryLevel, BatteryService.isCharging, BatteryService.batteryAvailable);
                                 case "printer":
                                     return "print";
                                 case "idleInhibitor":
@@ -687,7 +687,7 @@ BasePill {
                                 case "bluetooth":
                                     return BluetoothService.connected ? "bluetooth_connected" : "bluetooth";
                                 case "battery":
-                                    return Theme.getBatteryIcon(BatteryService.batteryLevel, BatteryService.isCharging, BatteryService.batteryAvailable);
+                                    return Theme.getBatteryIcon(BatteryService.displayBatteryLevel, BatteryService.isCharging, BatteryService.batteryAvailable);
                                 case "printer":
                                     return "print";
                                 case "idleInhibitor":

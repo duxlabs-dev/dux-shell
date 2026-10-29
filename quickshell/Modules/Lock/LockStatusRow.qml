@@ -376,7 +376,7 @@ Row {
         }
 
         StyledText {
-            text: BatteryService.batteryLevel + "%"
+            text: BatteryService.displayBatteryLevel + "%"
             font.pixelSize: Theme.fontSizeLarge
             font.weight: Theme.fontWeight
             color: root.contentColor

@@ -112,7 +112,7 @@ QtObject {
     }
 
     function chargingValue() {
-        const level = Math.round(BatteryService.batteryLevel) + "%";
+        const level = Math.round(BatteryService.displayBatteryLevel) + "%";
         const seconds = BatteryService.estimatedSeconds();
         if (!seconds)
             return level;

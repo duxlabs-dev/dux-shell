@@ -106,7 +106,7 @@ done
                                 width: parent.width
 
                                 StyledText {
-                                    text: BatteryService.batteryAvailable ? `${BatteryService.batteryLevel}%` : ""
+                                    text: BatteryService.batteryAvailable ? `${BatteryService.displayBatteryLevel}%` : ""
                                     font.pixelSize: Theme.fontSizeXLarge
                                     font.weight: Theme.fontWeightMedium
                                     color: root.batteryStatusColor
@@ -145,7 +145,7 @@ done
 
                         Rectangle {
                             anchors.left: parent.left
-                            width: parent.width * Math.max(0, Math.min(1, BatteryService.batteryLevel / 100))
+                            width: parent.width * Math.max(0, Math.min(1, BatteryService.displayBatteryLevel / 100))
                             height: parent.height
                             radius: Theme.fullRadius(width, height)
                             color: root.batteryStatusColor
@@ -250,6 +250,23 @@ done
                 minimum: 50
                 maximum: 100
                 onSliderValueChanged: newValue => SettingsData.set("batteryChargeLimit", newValue)
+            }
+
+            SettingsToggleRow {
+                settingKey: "batteryScaleToChargeLimit"
+                text: I18n.tr("Scale battery level to charge limit")
+                description: I18n.tr("Scale the displayed battery level to the configured charge limit")
+                checked: SettingsData.batteryScaleToChargeLimit
+                onToggled: checked => SettingsData.set("batteryScaleToChargeLimit", checked)
+            }
+
+            SettingsToggleRow {
+                settingKey: "batteryScaleAlertThresholds"
+                text: I18n.tr("Scale low and critical alert thresholds")
+                description: I18n.tr("Use the scaled battery level for alert thresholds and percentages")
+                checked: SettingsData.batteryScaleAlertThresholds
+                visible: SettingsData.batteryScaleToChargeLimit
+                onToggled: checked => SettingsData.set("batteryScaleAlertThresholds", checked)
             }
 
             SettingsRow {
