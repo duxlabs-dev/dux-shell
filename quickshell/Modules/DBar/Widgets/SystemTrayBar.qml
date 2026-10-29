@@ -19,6 +19,8 @@ BasePill {
     property var parentWindow: null
     property var widgetData: null
     property string section: "right"
+    // A same-named binding inside the overflow grid would resolve to its own property.
+    readonly property DPopout overflowPopoutRef: overflowPopout
     property bool isAtBottom: false
     property bool useOverflowPopup: !widgetData?.trayUseInlineExpansion
     property bool useSingleLineOverflowPopup: SettingsData.widgetOption("systemTray", widgetData, "trayPopupSingleLine")
@@ -931,7 +933,7 @@ BasePill {
                 TrayOverflowGrid {
                     id: menuGrid
                     bar: root
-                    overflowPopout: overflowPopout
+                    overflowPopout: root.overflowPopoutRef
                     popupUsesVerticalLine: overflowContent.popupUsesVerticalLine
                     anchors.verticalCenter: overflowContent.popupUsesVerticalLine ? undefined : parent.verticalCenter
                     anchors.horizontalCenter: overflowContent.popupUsesVerticalLine ? parent.horizontalCenter : undefined
