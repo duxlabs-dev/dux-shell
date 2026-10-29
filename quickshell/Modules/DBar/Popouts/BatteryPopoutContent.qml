@@ -224,7 +224,7 @@ Item {
 
                         StyledText {
                             width: parent.width
-                            text: root.formatPercent(BatteryService.displayBatteryLevel)
+                            text: root.formatPercent(BatteryService.displayBatteryLevelText)
                             visible: BatteryService.hasBatteryReading
                             font.pixelSize: Theme.fontSizeXXLarge
                             color: root.levelColor

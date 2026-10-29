@@ -106,7 +106,7 @@ done
                                 width: parent.width
 
                                 StyledText {
-                                    text: BatteryService.batteryAvailable ? `${BatteryService.displayBatteryLevel}%` : ""
+                                    text: BatteryService.batteryAvailable ? `${BatteryService.displayBatteryLevelText}%` : ""
                                     font.pixelSize: Theme.fontSizeXLarge
                                     font.weight: Theme.fontWeightMedium
                                     color: root.batteryStatusColor

@@ -96,7 +96,7 @@ BasePill {
     readonly property string horizontalDisplayText: {
         const parts = [];
         if (showPercent) {
-            parts.push(`${BatteryService.displayBatteryLevel}%`);
+            parts.push(`${BatteryService.displayBatteryLevelText}%`);
         }
         if (showTime && batteryTimeText) {
             parts.push(showPercent ? `(${batteryTimeText})` : batteryTimeText);
@@ -114,7 +114,7 @@ BasePill {
         }
         const parts = [];
         if (showPercent && batteryStyle === "duo") {
-            parts.push(`${BatteryService.displayBatteryLevel}%`);
+            parts.push(`${BatteryService.displayBatteryLevelText}%`);
         }
         if (showTime && batteryTimeText) {
             parts.push(batteryTimeText);
@@ -128,7 +128,7 @@ BasePill {
     readonly property string verticalDisplayText: {
         const lines = [];
         if (showPercent) {
-            lines.push(BatteryService.displayBatteryLevel.toString());
+            lines.push(BatteryService.displayBatteryLevelText);
         }
         if (showTime && batteryTimeText) {
             lines.push(verticalBatteryTimeText);

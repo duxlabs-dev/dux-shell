@@ -354,6 +354,7 @@ Singleton {
         return live > 0 ? live : _lastBatteryLevel;
     }
     readonly property real displayBatteryLevel: displayLevelForChargeLimit(batteryLevel, SettingsData.batteryChargeLimit, SettingsData.batteryScaleToChargeLimit)
+    readonly property string displayBatteryLevelText: SettingsData.batteryScaleToChargeLimit ? Math.round(displayBatteryLevel).toString() : displayBatteryLevel.toString()
     readonly property real batteryAlertLevel: batteryAlertLevelForDisplay(batteryLevel, displayBatteryLevel, SettingsData.batteryScaleToChargeLimit, SettingsData.batteryScaleAlertThresholds)
 
     readonly property bool isCharging: (isBSD && freebsdBatteryAvailable) ? freebsdIsCharging : (_hasKnownChargingState ? _currentIsCharging : _lastIsCharging)
