@@ -29,7 +29,8 @@ Item {
     }
 
     function _dayNames() {
-        return Array(7).fill(0).map((_, i) => new Date(Date.UTC(2026, 2, 1 + i, 0, 0, 0)).toLocaleDateString(I18n.locale(), "dddd")).map(d => d[0].toUpperCase() + d.slice(1));
+        // Local noon on Sunday 1 March 2026 onwards; a UTC midnight is the day before west of UTC.
+        return Array(7).fill(0).map((_, i) => new Date(2026, 2, 1 + i, 12, 0, 0).toLocaleDateString(I18n.locale(), "dddd")).map(d => d[0].toUpperCase() + d.slice(1));
     }
 
     SettingsPage {
