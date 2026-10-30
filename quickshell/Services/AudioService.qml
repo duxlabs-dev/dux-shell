@@ -138,6 +138,8 @@ Singleton {
     property var cards: []
     property var pendingCardSwitch: null
     readonly property var switchableOutputPorts: root.collectSwitchableOutputPorts(root.cards, SessionData.hiddenOutputDeviceNames ?? [])
+    readonly property var disabledOutputCards: root.collectDisabledOutputCards(root.cards)
+    readonly property var outputChoices: root.collectOutputChoices(root.allNodes.filter(n => n.isSink && !n.isStream), root.sinkPorts, root.switchableOutputPorts)
 
     readonly property int sinkMaxVolume: {
         if (freebsdAudio)
@@ -298,14 +300,6 @@ Singleton {
         }, 0);
     }
 
-    function getSinkPorts(node) {
-        return sinkPorts[node?.name] ?? null;
-    }
-
-    function sinkHasMultiplePorts(node) {
-        return (sinkPorts[node?.name]?.ports?.length ?? 0) > 1;
-    }
-
     function setSinkPort(sinkName, portName, callback) {
         if (freebsdAudio) {
             if (callback)
@@ -435,6 +429,7 @@ Singleton {
             target.profiles[match[1]] = {
                 description: match[2],
                 priority: parseInt(meta.match(/priority:?\s*(\d+)/)?.[1] ?? "0", 10),
+                sinks: parseInt(meta.match(/sinks:\s*(\d+)/)?.[1] ?? "0", 10),
                 available: !/available:\s*no/.test(meta)
             };
         }
@@ -565,9 +560,11 @@ Singleton {
                 const product = port.props["device.product.name"] || "";
                 entries.push({
                     cardName: card.name,
+                    cardId: card.props["object.id"] ?? "",
                     cardDescription: card.description,
                     portName: port.name,
                     profile: profile,
+                    availability: port.availability,
                     icon: port.type === "hdmi" ? "tv" : "speaker",
                     title: product ? `${port.description} [${product}]` : port.description
                 });
@@ -576,14 +573,91 @@ Singleton {
         return entries;
     }
 
-    function sinkBelongsToCard(node, cardName) {
+    // Picks profiles by sink count, since UCM (HiFi) and Bluetooth (a2dp-sink) profiles have no output: prefix.
+    // pro-audio is excluded: it stays available on cards WirePlumber turned off for having nothing plugged in.
+    function collectDisabledOutputCards(cards) {
+        const entries = [];
+        for (const card of cards || []) {
+            if (card.activeProfile !== "off")
+                continue;
+            const candidates = Object.keys(card.profiles).filter(name => name !== "pro-audio" && card.profiles[name].sinks > 0 && card.profiles[name].available);
+            if (candidates.length === 0)
+                continue;
+            candidates.sort((a, b) => card.profiles[b].priority - card.profiles[a].priority);
+            entries.push({
+                cardName: card.name,
+                cardDescription: card.description,
+                profile: candidates[0]
+            });
+        }
+        return entries;
+    }
+
+    function collectOutputChoices(sinks, sinkPorts, switchable) {
+        const bySink = {};
+        for (const sink of sinks || []) {
+            const info = sinkPorts?.[sink.name];
+            const ports = (info?.ports || []).slice().sort((a, b) => b.priority - a.priority).map(port => ({
+                kind: "port",
+                sinkName: sink.name,
+                portName: port.name,
+                title: port.description,
+                availability: port.availability,
+                active: port.name === info.active
+            }));
+            const profiles = (switchable || []).filter(entry => sinkBelongsToCard(sink, entry.cardName, entry.cardId));
+            bySink[sink.name] = ports.concat(profiles.map(entry => Object.assign({
+                kind: "profile",
+                active: false
+            }, entry)));
+        }
+        return bySink;
+    }
+
+    function activateOutputChoice(choice, callback) {
+        if (choice?.kind !== "port") {
+            activateOutputPort(choice, callback);
+            return;
+        }
+        setDefaultSinkByName(choice.sinkName);
+        setSinkPort(choice.sinkName, choice.portName, callback);
+    }
+
+    // device.id is the card's object.id. PipeWire nodes carry no device.name (pactl adds it), so Bluetooth matches only by id
+    function sinkBelongsToCard(node, cardName, cardId) {
         if (!node || node.isStream || !cardName)
             return false;
+        const deviceId = node.properties?.["device.id"];
+        if (cardId && deviceId !== undefined)
+            return String(deviceId) === String(cardId);
         if (node.properties?.["device.name"] === cardName)
             return true;
         if (!cardName.startsWith("alsa_card."))
             return false;
         return (node.name || "").startsWith("alsa_output." + cardName.substring(10) + ".");
+    }
+
+    function cardForSink(node) {
+        return cards.find(card => sinkBelongsToCard(node, card.name, card.props["object.id"])) ?? null;
+    }
+
+    function setCardProfile(cardName, profile, callback) {
+        if (freebsdAudio) {
+            if (callback)
+                callback(false, I18n.tr("Output profile switching is not available with the FreeBSD native audio backend"));
+            return;
+        }
+        if (!cardName || !profile)
+            return;
+        Proc.runCommand("audio-set-card-profile", ["env", "LC_ALL=C", "pactl", "set-card-profile", cardName, profile], (output, exitCode) => {
+            const ok = exitCode === 0;
+            if (callback)
+                callback(ok, ok ? I18n.tr("Output switched", "audio card profile switched successful message") : (output || I18n.tr("Failed to switch output", "audio card profile switch failure message")));
+            Qt.callLater(() => {
+                root.refreshCards();
+                root.refreshSinkPorts();
+            });
+        }, 0);
     }
 
     function activateOutputPort(entry, callback) {
@@ -594,12 +668,13 @@ Singleton {
         }
         if (!entry?.cardName || !entry.profile)
             return;
-        const previousSinks = root.pipewireNodes.filter(n => n.isSink && sinkBelongsToCard(n, entry.cardName)).map(n => n.name);
+        const previousSinks = root.pipewireNodes.filter(n => n.isSink && sinkBelongsToCard(n, entry.cardName, entry.cardId)).map(n => n.name);
         Proc.runCommand("audio-set-card-profile", ["env", "LC_ALL=C", "pactl", "set-card-profile", entry.cardName, entry.profile], (output, exitCode) => {
             const ok = exitCode === 0;
             if (ok) {
                 root.pendingCardSwitch = {
                     cardName: entry.cardName,
+                    cardId: entry.cardId,
                     portName: entry.portName,
                     exclude: previousSinks
                 };
@@ -619,7 +694,7 @@ Singleton {
         const pending = pendingCardSwitch;
         if (!pending)
             return;
-        const node = root.pipewireNodes.find(n => n.isSink && sinkBelongsToCard(n, pending.cardName) && !pending.exclude.includes(n.name));
+        const node = root.pipewireNodes.find(n => n.isSink && sinkBelongsToCard(n, pending.cardName, pending.cardId) && !pending.exclude.includes(n.name));
         if (!node)
             return;
         pendingCardSwitch = null;
