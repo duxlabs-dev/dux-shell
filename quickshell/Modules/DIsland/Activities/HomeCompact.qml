@@ -631,7 +631,12 @@ Item {
                 spacing: Theme.spacingXXS
 
                 PrivacyIcon {
-                    name: "mic"
+                    // Same muted check as the bar's PrivacyIndicator
+                    name: {
+                        const sourceAudio = AudioService.source?.audio;
+                        const muted = !sourceAudio || sourceAudio.muted || sourceAudio.volume === 0.0;
+                        return muted ? "mic_off" : "mic";
+                    }
                     active: PrivacyService.microphoneActive
                 }
 
