@@ -1,4 +1,5 @@
 .pragma library
+.import "../DCommon/Common/Contrast.js" as Contrast
 
 // The island kit's shared rules, plain arithmetic: motion and layout (springs of interior.dev, MIT), frame cadence, alerts.
 
@@ -8,7 +9,6 @@ var springs = {
     "fill": [210, 34, 0.9]
 };
 
-
 // Content micro-motions, in multiples of DMS's animation speed.
 var beats = {
     // An important info rings like a phone: its second ring leaves this long after the first.
@@ -16,6 +16,10 @@ var beats = {
     // A ringing call rings again after this pause, like a phone.
     "ringPause": 4
 };
+// How far a ringing call's shape swings each ring, in degrees at the spring's peak.
+var ringTilt = 12;
+// A shape moving on to its next one beats out by this much (the app icon's poke, a replaced face on the wing).
+var morphPulse = 0.15;
 
 // DMS's default animation duration: the speed the tables above are tuned at.
 var baseMs = 250;
@@ -23,6 +27,30 @@ var baseMs = 250;
 // A beat at DMS's animation speed (250 ms by default); 0 at speed 0, where content shows its final state.
 function beat(name, baseDuration) {
     return baseDuration > 0 ? Math.round(baseDuration * (beats[name] ?? 1)) : 0;
+}
+
+// A share in 0..1 for a meter: a negative one or NaN reads as 0, one over 1 as 1.
+function unit(v) {
+    return v > 0 ? Math.min(1, v) : 0;
+}
+
+// The Theme roles a face on the island can sit on (DIslandSurface); a mark stands markContrast off each.
+var islandGrounds = ["surface", "surfaceContainer", "surfaceContainerHigh", "surfaceContainerHighest", "surfaceBright", "surfaceDim"];
+// WCAG's 3:1 for a shape or a glyph (a non-text mark).
+var markContrast = 3;
+// WCAG AA's 4.5:1 for text, as the sender's initial drawn in place of an icon.
+var textContrast = 4.5;
+
+// An alert's [shape, icon, text] colours (null without one): the first shape tone that stands markContrast off every
+// island ground, then the first icon tone that stands markContrast on that shape, and the first at textContrast.
+function alertTones(alert, theme) {
+    if (!alert)
+        return null;
+    const critical = alert === "critical";
+    const grounds = islandGrounds.map(role => theme[role]);
+    const shape = Contrast.readableOnAll(grounds, critical ? [theme.errorContainer, theme.error, theme.surfaceText] : [theme.warning, theme.surfaceText], markContrast);
+    const icons = critical ? [theme.onErrorContainer, theme.onError, theme.surface, theme.surfaceText] : [theme.surface, theme.surfaceText];
+    return [shape, Contrast.readableOn(shape, icons, markContrast), Contrast.readableOn(shape, icons, textContrast)];
 }
 
 // An alert's rings, ms into them: a cycle sends a ring every gap, each lasting span, then pauses; cycles 0 never ends.
@@ -143,6 +171,8 @@ function cadenceCarry(refreshes, every) {
     return Math.max(-0.5, Math.min(0.5, refreshes - every));
 }
 
+// The refresh the kit's clocks count in while the screen's own is unknown (screenRefresh gives 0).
+var fallbackHz = 60;
 // The refresh of the screen named `name`, from niri's outputs (its current mode, mHz), 0 when unknown.
 function screenRefresh(outputs, name) {
     const output = outputs?.[name];
