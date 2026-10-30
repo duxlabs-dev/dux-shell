@@ -56,6 +56,9 @@ Singleton {
     }
     readonly property string wallpaperPath: SessionData.getMonitorWallpaper(Quickshell.screens[0]?.name ?? "")
     readonly property string rawWallpaperPath: SessionData.getMonitorWallpaper(wallpaperSourceScreen)
+    // A video themes from its extracted frame, which can arrive after the wallpaper is set.
+    readonly property string wallpaperImagePath: VideoWallpaperService.imageFor(rawWallpaperPath)
+    property bool _themeAwaitsFrame: false
     readonly property string materialWallpaperSeed: SessionData.getMonitorMaterialWallpaper(wallpaperSourceScreen).seed
 
     property bool matugenAvailable: false
@@ -1959,6 +1962,11 @@ Singleton {
         root.matugenCompleted((typeof SessionData !== "undefined" && SessionData.isLightMode) ? "light" : "dark", "error");
     }
 
+    onWallpaperImagePathChanged: {
+        if (_themeAwaitsFrame && wallpaperImagePath)
+            generateSystemThemesFromCurrentTheme();
+    }
+
     function generateSystemThemesFromCurrentTheme() {
         if (!matugenAvailable)
             return;
@@ -1976,8 +1984,11 @@ Singleton {
         const iconTheme = (typeof SettingsData !== "undefined" && SettingsData.iconTheme) ? SettingsData.iconTheme : "System Default";
 
         if (currentTheme === dynamic) {
+            _themeAwaitsFrame = !wallpaperImagePath && VideoWallpaperService.framePending(rawWallpaperPath);
+            if (_themeAwaitsFrame)
+                return;
             const selectedMatugenType = SettingsData.matugenScheme || "scheme-tonal-spot";
-            const source = rawWallpaperPath || SettingsData.matugenSeedColor || materialWallpaperSeed;
+            const source = wallpaperImagePath || SettingsData.matugenSeedColor || materialWallpaperSeed;
             const kind = source.startsWith("#") ? "hex" : "image";
             setDesiredTheme(kind, source, isLight, iconTheme, selectedMatugenType, null);
             return;

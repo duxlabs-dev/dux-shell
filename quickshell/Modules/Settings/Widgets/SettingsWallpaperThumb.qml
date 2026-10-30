@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell.Widgets
 import qs.Common
+import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 
@@ -46,7 +47,7 @@ Rectangle {
             active: root.isImage
 
             sourceComponent: CachingImage {
-                imagePath: root.path
+                imagePath: VideoWallpaperService.imageFor(root.path)
                 maxCacheSize: SettingsMetrics.wallpaperThumbCache
                 asynchronous: false
                 animate: false

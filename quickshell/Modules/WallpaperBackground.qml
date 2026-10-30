@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Effects
+import QtMultimedia
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -8,6 +9,7 @@ import qs.Widgets
 import qs.Services
 import qs.Modules.Lock
 import "../Common/WorkspaceModel.js" as WorkspaceModel
+import "../Common/WallpaperFormats.js" as WallpaperFormats
 
 Variants {
     id: variants
@@ -94,7 +96,12 @@ Variants {
                 return "file://" + path.split('/').map(s => encodeURIComponent(s)).join('/');
             }
 
-            property string source: SessionData.getMonitorWallpaper(modelData.name) || ""
+            property string wallpaperSource: SessionData.getMonitorWallpaper(modelData.name) || ""
+            readonly property bool isVideoSource: WallpaperFormats.isVideo(wallpaperSource)
+            // A video drives the image pipeline below with its still frame.
+            readonly property string resolvedSource: VideoWallpaperService.imageFor(wallpaperSource)
+            // Holds the previous wallpaper while a new video's frame is still being extracted.
+            property string source: ""
             property bool isColorSource: source.startsWith("#")
             property string transitionType: SessionData.wallpaperTransition
             property string actualTransitionType: transitionType
@@ -117,8 +124,8 @@ Variants {
 
                 function onIsLightModeChanged() {
                     const newSource = SessionData.getMonitorWallpaper(modelData.name) || "";
-                    if (newSource !== root.source)
-                        root.source = newSource;
+                    if (newSource !== root.wallpaperSource)
+                        root.wallpaperSource = newSource;
                 }
             }
 
@@ -178,8 +185,13 @@ Variants {
             readonly property var backingWindow: Window.window
             readonly property bool showsBackdrop: !source || isColorSource || currentWallpaper.status === Image.Error
             readonly property bool backdropBusy: showsBackdrop && !(backdropLoader.item?.ready ?? false)
-            readonly property bool renderActive: backdropBusy || effectActive || overviewBlurActive || pendingWallpaper !== "" || _deferredSource !== "" || changePending || _freezeWaitFrames > 0 || frameAnim.running || currentWallpaper.status === Image.Loading || nextWallpaper.status === Image.Loading || parallaxImage.status === Image.Loading || lockScrollSampler.busy
+            readonly property bool renderActive: backdropBusy || effectActive || overviewBlurActive || pendingWallpaper !== "" || _deferredSource !== "" || changePending || _freezeWaitFrames > 0 || frameAnim.running || currentWallpaper.status === Image.Loading || nextWallpaper.status === Image.Loading || parallaxImage.status === Image.Loading || lockScrollSampler.busy || videoRendering
             property int _settleFrames: 3
+
+            readonly property bool fullscreenOnScreen: isVideoSource && CompositorService.fullscreenToplevelOnScreen(modelData)
+            // Nothing decodes while the video cannot be seen.
+            readonly property bool videoShouldPlay: isVideoSource && wallpaperWindow.visible && !IdleService.isShellLocked && !IdleService.monitorsOff && !overviewBlurActive && !fullscreenOnScreen
+            readonly property bool videoRendering: videoLoader.item?.rendering ?? false
 
             function invalidate() {
                 _settleFrames = 3;
@@ -575,7 +587,13 @@ Variants {
                 }
             }
 
+            onResolvedSourceChanged: {
+                if (resolvedSource || !VideoWallpaperService.framePending(wallpaperSource))
+                    source = resolvedSource;
+            }
+
             Component.onCompleted: {
+                source = resolvedSource;
                 isInitialized = true;
                 if (!source || isColorSource) {
                     contentReady = true;
@@ -1210,6 +1228,90 @@ Variants {
                     currentWallpaper.source = nextWallpaper.source;
                     if (root._freezeWaitFrames === 0 && currentWallpaper.status !== Image.Loading)
                         root.finishTransition();
+                }
+            }
+
+            Loader {
+                id: videoLoader
+                anchors.fill: parent
+                // Stays loaded until the outgoing video has faded off the still frame below.
+                active: root.isVideoSource || (item?.opacity ?? 0) > 0
+                sourceComponent: videoComponent
+            }
+
+            Component {
+                id: videoComponent
+
+                Item {
+                    id: videoLayer
+
+                    readonly property string wantedSource: root.wallpaperSource
+                    readonly property bool settled: !root.transitioning && !root.effectActive && !root.changePending
+                    // Switched only once the still frame transition is done, so it plays out uncovered.
+                    property string playingSource: ""
+                    readonly property bool current: playingSource !== "" && playingSource === wantedSource
+                    readonly property bool wantsPlay: root.videoShouldPlay && current
+                    readonly property bool shown: current && player.hasVideo && player.playbackState !== MediaPlayer.StoppedState
+                    readonly property bool rendering: player.playbackState === MediaPlayer.PlayingState || fadeAnimation.running
+
+                    function syncSource() {
+                        if (!settled || !root.isVideoSource || playingSource === wantedSource)
+                            return;
+                        playingSource = wantedSource;
+                    }
+
+                    function videoFillMode(mode) {
+                        switch (mode) {
+                        case "Stretch":
+                            return VideoOutput.Stretch;
+                        case "Fit":
+                        case "PreserveAspectFit":
+                            return VideoOutput.PreserveAspectFit;
+                        default:
+                            return VideoOutput.PreserveAspectCrop;
+                        }
+                    }
+
+                    opacity: shown ? 1 : 0
+                    onWantedSourceChanged: syncSource()
+                    onSettledChanged: syncSource()
+                    onWantsPlayChanged: wantsPlay ? player.play() : player.pause()
+                    Component.onCompleted: syncSource()
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            id: fadeAnimation
+                            duration: Theme.mediumDuration
+                            easing.type: Theme.standardEasing
+                        }
+                    }
+
+                    VideoOutput {
+                        id: videoOutput
+                        anchors.fill: parent
+                        fillMode: videoLayer.videoFillMode(SessionData.getMonitorWallpaperFillMode(modelData.name))
+                    }
+
+                    MediaPlayer {
+                        id: player
+                        source: videoLayer.playingSource ? root.encodeFileUrl(videoLayer.playingSource) : ""
+                        videoOutput: videoOutput
+                        loops: WallpaperCyclingService.advancesOnVideoEnd(modelData.name) ? 1 : MediaPlayer.Infinite
+
+                        onSourceChanged: {
+                            if (videoLayer.wantsPlay)
+                                play();
+                        }
+                        onMediaStatusChanged: {
+                            if (mediaStatus !== MediaPlayer.EndOfMedia || !videoLayer.current)
+                                return;
+                            WallpaperCyclingService.handleVideoEnded(modelData.name);
+                            // Replays when cycling is off or picked the same file; a new pick replaces it.
+                            if (videoLayer.wantsPlay)
+                                play();
+                        }
+                        onErrorOccurred: (error, errorString) => log.warn("video wallpaper failed on", modelData.name + ":", errorString)
+                    }
                 }
             }
 

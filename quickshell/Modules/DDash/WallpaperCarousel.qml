@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Widgets
 import qs.Common
+import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.DDash
 
@@ -44,7 +45,7 @@ Item {
 
             CachingImage {
                 anchors.fill: parent
-                imagePath: root.paths[root.currentIndex] ?? ""
+                imagePath: VideoWallpaperService.imageFor(root.paths[root.currentIndex] ?? "")
                 maxCacheSize: DashMetrics.wallpaperThumbCache * 2
                 animate: false
                 opacity: DashMetrics.carouselBackdropAlpha
@@ -133,7 +134,7 @@ Item {
 
                     CachingImage {
                         anchors.fill: parent
-                        imagePath: slide.modelData
+                        imagePath: VideoWallpaperService.imageFor(slide.modelData)
                         maxCacheSize: DashMetrics.wallpaperThumbCache * 2
                         animate: false
                         opacity: status === Image.Ready ? 1 : 0
