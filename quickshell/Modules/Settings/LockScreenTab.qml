@@ -297,7 +297,7 @@ Item {
 
         PluginBrowser {
             parentModal: root.parentModal
-            typeFilter: "desktop-widget"
+            typeFilters: ["desktop-widget"]
         }
     }
 

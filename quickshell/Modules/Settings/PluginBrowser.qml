@@ -16,7 +16,7 @@ RegistryBrowserWindow {
     readonly property var log: Log.scoped("PluginBrowser")
     property var allPlugins: []
     property var filteredPlugins: []
-    property string typeFilter: ""
+    property var typeFilters: []
     property string categoryFilter: "all"
     property var categoryFilterOptions: []
     property var availableLetters: []
@@ -38,7 +38,7 @@ RegistryBrowserWindow {
 
     readonly property var detailPlugin: resolveDetailPlugin(detailPluginId, allPlugins)
     readonly property bool discoverVisible: {
-        if (isLoading || loadError !== "" || searchQuery !== "" || typeFilter !== "" || authorFilter !== "")
+        if (isLoading || loadError !== "" || searchQuery !== "" || typeFilters.length > 0 || authorFilter !== "")
             return false;
         if (discoverPicks.length === 0 && discoverShelves.length === 0)
             return false;
@@ -70,6 +70,37 @@ RegistryBrowserWindow {
         }
     ]
     showLoadingSpinner: false
+
+    readonly property var typeFilterOptions: [
+        {
+            label: I18n.tr("Bar", "plugin browser type filter chip, bar widget plugins"),
+            value: "dankbar-widget"
+        },
+        {
+            label: I18n.tr("Control Center", "plugin browser type filter chip"),
+            value: "control-center"
+        },
+        {
+            label: I18n.tr("Launcher", "plugin browser type filter chip"),
+            value: "launcher"
+        },
+        {
+            label: I18n.tr("Daemon", "plugin browser type filter chip, background plugins"),
+            value: "daemon"
+        },
+        {
+            label: I18n.tr("Desktop", "plugin browser type filter chip, desktop widget plugins"),
+            value: "desktop-widget"
+        },
+        {
+            label: I18n.tr("Dash tab", "plugin browser type filter chip"),
+            value: "dash-tab"
+        },
+        {
+            label: I18n.tr("Dash card", "plugin browser type filter chip"),
+            value: "dash-card"
+        }
+    ]
 
     readonly property var sortChipOptions: [
         {
@@ -389,8 +420,8 @@ RegistryBrowserWindow {
 
             if (!SessionData.showThirdPartyPlugins && !isFirstParty)
                 continue;
-            if (typeFilter !== "") {
-                var hasCapability = plugin.capabilities && plugin.capabilities.includes(typeFilter);
+            if (typeFilters.length > 0) {
+                var hasCapability = typeFilters.some(type => (plugin.capabilities || []).includes(type));
                 if (!hasCapability)
                     continue;
             }
@@ -763,7 +794,7 @@ RegistryBrowserWindow {
                 return;
             pendingRevealPluginId = pluginId;
             searchQuery = "";
-            typeFilter = "";
+            typeFilters = [];
             categoryFilter = "all";
             detailPluginId = "";
             SessionData.setPluginBrowserHideInstalled(false);
@@ -958,6 +989,17 @@ RegistryBrowserWindow {
                         next[model[index].value] = selected;
                         root.quickFilters = next;
                     }
+                    root.updateFilteredPlugins();
+                }
+            }
+            DFilterChips {
+                width: parent.width
+                model: root.typeFilterOptions
+                multiSelect: true
+                selectedValues: root.typeFilters
+                onSelectionToggled: (index, selected) => {
+                    var value = model[index].value;
+                    root.typeFilters = selected ? root.typeFilters.concat([value]) : root.typeFilters.filter(type => type !== value);
                     root.updateFilteredPlugins();
                 }
             }
