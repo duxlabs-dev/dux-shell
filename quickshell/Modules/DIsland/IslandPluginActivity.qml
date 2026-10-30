@@ -56,7 +56,6 @@ QtObject {
         root.timeoutMs = timeoutMs;
         // The host loads the plugin's faces from the token, so expandability is known only after it is set.
         island.pluginToken = token;
-        const displaced = island.systemActivityActive ? island.activeActivity : "";
         const arriving = !island.pluginActive && kind !== "live";
         // A plugin taking over from a plugin keeps activeActivity, so its change handler would leave userHeld set.
         island.userHeld = false;
@@ -69,7 +68,6 @@ QtObject {
                 "urgent": kind === "alert"
             }));
         root.syncTimeout(true);
-        island.displaceSystem(displaced);
     }
 
     function end() {

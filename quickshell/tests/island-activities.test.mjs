@@ -201,20 +201,25 @@ test("machine changes wait on the machine side, the newest first", () => {
     assert.equal(activities.bubbleSide({ "id": "p", "source": "plugin", "side": "machine" }), "apps", "only the system source is the machine");
 });
 
-test("do not disturb keeps only critical popups, the call and what the user lets through on the apps side", () => {
+test("do not disturb keeps only critical popups and what the user lets through on the apps side", () => {
     const bubbles = [
         { "id": "v", "source": "system", "kind": "volume", "seq": 1 },
         { "id": "n", "source": "notification", "seq": 2 },
         { "id": "l", "source": "plugin", "kind": "live", "seq": 3 },
         { "id": "a", "source": "plugin", "kind": "alert", "seq": 4 },
-        { "id": "call", "source": "call", "kind": "call", "seq": 5 },
-        { "id": "code2fa", "source": "code2fa", "kind": "code2fa", "seq": 6 },
         { "id": "crit", "source": "notification", "critical": true, "seq": 7 }
     ];
     const sides = activities.bubbleSides(bubbles, true);
     assert.equal(sides.machine.id, "v");
-    assert.deepEqual(sides.apps.map(b => b.id).sort(), ["call", "crit"], "an alert and a one-time code wait");
-    assert.deepEqual(activities.bubbleSides(bubbles, true, b => b.kind === "alert").apps.map(b => b.id).sort(), ["a", "call", "crit"]);
+    assert.deepEqual(sides.apps.map(b => b.id), ["crit"], "an alert waits");
+    assert.deepEqual(activities.bubbleSides(bubbles, true, b => b.kind === "alert").apps.map(b => b.id).sort(), ["a", "crit"]);
+});
+
+test("the machine bubble shows the system source's values, a long value off the pill", () => {
+    const volume = { "kind": "volume", "icon": "volume_up", "title": "Volume", "value": "40%", "progress": 0.4 };
+    const entry = activities.machineEntry("volume", volume);
+    assert.deepEqual([entry.kind, entry.icon, entry.title, entry.detail, entry.text, entry.progress], ["volume", "volume_up", "Volume", "40%", "40%", 0.4]);
+    assert.equal(activities.machineEntry("powerprofile", { ...volume, "value": "Performance" }).text, "");
 });
 
 test("only levels go to a bubble when the user asks for it", () => {
@@ -223,25 +228,19 @@ test("only levels go to a bubble when the user asks for it", () => {
     assert.equal(activities.levelInBubble("capslock", true), false);
 });
 
-test("brief info goes to a bubble when the user asks for it, never a lasting state or an alert", () => {
-    // Battery: fully charged, unplugged and low are brief; plugging in is normal; critical is important.
-    for (const kind of ["capslock", "network", "dnd", "charged", "unplugged", "battery", "output", "powerprofile", "reopen", "copy", "trash", "display", "periph"]) {
+test("brief info goes to a bubble when the user asks for it, never plugging in or a level", () => {
+    for (const kind of ["capslock", "powerprofile", "idleinhibitor"]) {
         assert.equal(activities.briefInBubble(kind, true), true, kind);
         assert.equal(activities.briefInBubble(kind, false), false, kind);
     }
-    for (const kind of ["charging", "batterycritical", "call", "keepawake", "usb", "vpn", "password", "camera", "volume", "disk", "progress", "frozen"])
+    for (const kind of ["charging", "volume", "mic", "brightness", "plugin", ""])
         assert.equal(activities.briefInBubble(kind, true), false, kind);
 });
 
-test("battery: plugging in is a normal info (big, 5 s), critical an important one, the rest brief", () => {
+test("plugging in is a normal info (big, 5 s)", () => {
     assert.equal(activities.faceTier("charging"), 1);
     assert.equal(activities.faceTimeoutMs("charging"), activities.lifetimeMs(1));
-    assert.equal(activities.faceTier("batterycritical"), 2);
-    assert.equal(activities.faceTimeoutMs("batterycritical"), activities.lifetimeMs(2));
-    for (const kind of ["charged", "unplugged", "battery"]) {
-        assert.equal(activities.faceTier(kind), 0, kind);
-        assert.equal(activities.faceTimeoutMs(kind), activities.lifetimeMs(0), kind);
-    }
+    assert.equal(activities.faceTimeoutMs("charging", 2200), activities.lifetimeMs(1), "a glance keeps its lifetime");
 });
 
 test("the lasting charge bubble yields to a passing machine bubble, then comes back", () => {
@@ -252,16 +251,10 @@ test("the lasting charge bubble yields to a passing machine bubble, then comes b
     assert.equal(activities.bubbleSides([charge]).machine, charge);
 });
 
-test("an island face lasts an Undo's lifetime when it offers one, a brief info's otherwise", () => {
-    // A weather alert is a notification: big 1.4 s, then compact, 5 s in all.
-    assert.equal(activities.faceTimeoutMs("weatheralert"), 5000);
-    for (const kind of ["output", "trash", "display"])
-        assert.equal(activities.faceTimeoutMs(kind), 4000, kind);
-    for (const kind of ["copy", "periph", "disk", "progress", "frozen", "volume", "print", ""])
+test("an island face lasts a brief info's lifetime, or DMS's own OSD delay the island passes", () => {
+    for (const kind of ["volume", "capslock", "powerprofile", "idleinhibitor", ""])
         assert.equal(activities.faceTimeoutMs(kind), 2000, kind);
-    // The island keeps DMS's own OSD delay for a brief face; the others keep their lifetime.
     assert.equal(activities.faceTimeoutMs("volume", 2200), 2200);
-    assert.equal(activities.faceTimeoutMs("output", 2200), 4000);
     assert.equal(activities.faceTimeoutMs("powerprofile", 2200), 2200);
 });
 
@@ -270,8 +263,6 @@ test("lifetimes per tier: big then compact in the island, a bubble lives the tot
     assert.deepEqual([0, 1, 2].map(t => activities.compactMs(t)), [1600, 3600, 3600]);
     assert.deepEqual([0, 1, 2].map(t => activities.lifetimeMs(t)), [2000, 5000, 5600]);
     assert.equal(activities.lifetimeMs(1), activities.normalizeOptions({ "kind": "glance" }).timeoutMs);
-    // A lasting state is big as long as a notification, then stays as long as it lasts.
-    assert.equal(activities.bigMs(activities.faceTier("vpn")), 1400);
 });
 
 test("a tier out of range is held to the nearest one, a missing one reads as normal", () => {
@@ -279,23 +270,11 @@ test("a tier out of range is held to the nearest one, a missing one reads as nor
     assert.deepEqual([-1, t.brief, t.normal, t.important, 7, undefined, null].map(x => activities.tierIndex(x)), [t.brief, t.brief, t.normal, t.important, t.important, t.normal, t.normal]);
 });
 
-test("a face's arrival tier: brief for a brief info or a level, normal for an Undo or a lasting state", () => {
-    for (const kind of ["copy", "network", "capslock", "powerprofile", "volume", "brightness", "periph"])
+test("a face's arrival tier: brief for a brief info or a level, normal for the others", () => {
+    for (const kind of ["capslock", "powerprofile", "idleinhibitor", "volume", "mic", "brightness"])
         assert.equal(activities.faceTier(kind), activities.tiers.brief, kind);
-    for (const kind of ["output", "trash", "display", "vpn", "call", "keepawake", "disk", "frozen", "weatheralert"])
+    for (const kind of ["charging", "plugin", "notification", "media"])
         assert.equal(activities.faceTier(kind), activities.tiers.normal, kind);
-});
-
-test("a face pushed out by the launcher, an alert or another face comes back once the island is idle, if its info lives on", () => {
-    assert.equal(activities.faceToReturn("trash", "home", false, true), "trash");
-    assert.equal(activities.faceToReturn("display", "media", false, true), "display");
-    // Its info ended meanwhile, or the island is still busy: it stays out.
-    assert.equal(activities.faceToReturn("trash", "home", false, false), "");
-    assert.equal(activities.faceToReturn("copy", "launcher", true, true), "");
-    assert.equal(activities.faceToReturn("copy", "home", true, true), "");
-    assert.equal(activities.faceToReturn("copy", "plugin", false, true), "");
-    assert.equal(activities.faceToReturn("copy", "notification", false, true), "");
-    assert.equal(activities.faceToReturn("", "home", false, true), "");
 });
 
 test("each wing rests at its own width: a wide face on one side never stretches the other", () => {

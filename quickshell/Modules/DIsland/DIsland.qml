@@ -5,6 +5,8 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
+import "../../Common/IslandBubbleIpc.js" as BubbleIpc
+import "../../Common/IslandArrivalGestures.js" as Gestures
 import "../../Common/IslandActivityInput.js" as Input
 
 Item {
@@ -280,6 +282,8 @@ Item {
                 "enabled": true,
                 "launcherAvailable": false
             });
+        // Through the registry: a free island's window has its body only as an id, not as a property.
+        const body = IslandHostRegistry.hostFor(host.screen?.name, host.barId);
         return JSON.stringify({
             "available": true,
             "enabled": true,
@@ -301,8 +305,20 @@ Item {
             "idle": host.free ? host.idle : false,
             "x": host.free ? Math.round(host.anchorX) : null,
             "y": host.free ? Math.round(host.anchorY) : null,
-            "plugin": root.pluginStatus(host.islandController.pluginToken)
+            "plugin": root.pluginStatus(host.islandController.pluginToken),
+            "bubbles": {
+                "machine": body?.bubbleSides?.machine?.kind ?? "",
+                "apps": (body?.bubbleSides?.apps ?? []).map(BubbleIpc.bubbleName)
+            }
         });
+    }
+
+    // A bubble beside the island, for the keyboard (a bound key) and scripts: "open" brings it into the island, "dismiss"
+    // puts it away, as a click and a right click do. which: "machine", or an app bubble as status lists it.
+    function ipcBubble(action, which, screen) {
+        const host = root.hostForScreen(screen, "", "island");
+        const body = host ? IslandHostRegistry.hostFor(host.screen?.name, host.barId) : null;
+        return BubbleIpc.ipcBubble(body, action, which, host?.screen?.name ?? "");
     }
 
     function pluginStatus(token) {
@@ -454,6 +470,21 @@ Item {
         // The last action the user picked stays readable until the activity ends.
         function activityStatus(token: string): string {
             return Input.ipcActivityStatus(IslandActivityService, token);
+        }
+
+        // open | dismiss, of "machine" or an app bubble as status lists it ("notification:<id>", a script's token...).
+        function bubble(action: string, which: string): string {
+            return root.ipcBubble(action, which, "");
+        }
+
+        // open | next | prev | tidy, of the info arriving in the island (its card, its pages), as the gestures do.
+        function arrival(action: string): string {
+            const host = root.hostForScreen("", "", "island");
+            return host ? Gestures.ipcArrival(host.islandController.arrival, action, "DANK_ISLAND") : "DANK_ISLAND_UNAVAILABLE";
+        }
+
+        function bubbleOn(action: string, which: string, screen: string): string {
+            return root.ipcBubble(action, which, screen);
         }
     }
 

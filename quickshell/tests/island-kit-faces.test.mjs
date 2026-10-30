@@ -9,6 +9,91 @@ const C = loadScript(new URL("../DCommon/Common/Contrast.js", import.meta.url));
 for (const context of [C, K.Contrast])
     context.Qt = { rgba: (r, g, b, a) => ({ r, g, b, a }) };
 
+test("a closing bubble fuses only when it merges itself, never as the island's own face or activity closes", () => {
+    const own = { "inPlace": true, "reduced": false, "occupantBefore": "plugin|dms:eyes:1", "occupantNow": "plugin|dms:eyes:1" };
+    assert.equal(K.closeStyle(own), "fuse");
+    // The eye break leaves the island (a click): the media bubble beside it goes back, no fusion.
+    assert.equal(K.closeStyle(Object.assign({}, own, { "occupantNow": "home|" })), "shrink");
+    // Another bubble's face taking the island does not fuse either.
+    assert.equal(K.closeStyle(Object.assign({}, own, { "occupantBefore": "home|", "occupantNow": "media|", "source": "system" })), "shrink");
+    // The island taking the bubble's own info (the media bubble's face) is the bubble going in: it fuses.
+    assert.equal(K.closeStyle(Object.assign({}, own, { "occupantBefore": "home|", "occupantNow": "media|", "source": "media" })), "fuse");
+    assert.equal(K.closeStyle(Object.assign({}, own, { "reduced": true })), "fade");
+    assert.equal(K.closeStyle(Object.assign({}, own, { "inPlace": false })), "shrink");
+});
+
+test("tookIn: the island's occupant is the bubble's source, as its activity", () => {
+    assert.equal(K.tookIn("media|", "media"), true);
+    assert.equal(K.tookIn("plugin|dms:media:7", "media"), false, "a plugin's token is no source's");
+    assert.equal(K.tookIn("home|", "media"), false);
+    assert.equal(K.tookIn("media|", ""), false, "a bubble with no source");
+    assert.equal(K.tookIn("media", "media"), true, "an occupant without a token");
+});
+
+test("a card the bubble opened itself (2FA, Undo) still fuses when it leaves; one the pointer holds open withdraws", () => {
+    const own = { "ready": true, "hoverGrow": 1, "selfOpened": true, "hovered": false };
+    assert.equal(K.closesInPlace(own), true);
+    assert.equal(K.closesInPlace({ ...own, "hovered": true }), false);
+    assert.equal(K.closesInPlace({ ...own, "selfOpened": false }), false);
+    assert.equal(K.closesInPlace({ ...own, "hoverGrow": 0, "selfOpened": false, "hovered": true }), true, "a shut pill");
+    assert.equal(K.closesInPlace({ ...own, "ready": false }), false, "not seen");
+});
+
+test("a light theme's track is fainter, so the liquid keeps 3:1 against it", () => {
+    assert.equal(K.fillAlpha, 0.75);
+    assert.equal(K.waveTrackAlpha(false), 0.24);
+    assert.equal(K.waveTrackAlpha(true), 0.08);
+});
+
+// A wing given with carded as a plain value.
+const cardOpenOf = w => K.cardOpen({ ...w, "carded": () => w.carded });
+
+test("a hovered pill opens its card beside the launcher on either side, a folded side never", () => {
+    const pill = { "has": true, "hovered": true, "dwelt": true, "cardness": 1, "carded": true };
+    assert.equal(cardOpenOf(pill), true, "machine pill standing beside the launcher");
+    assert.equal(cardOpenOf({ ...pill, "carded": false }), false, "a side folded into the sheet");
+    assert.equal(cardOpenOf({ ...pill, "dwelt": false }), false, "a short pass only breathes");
+    assert.equal(cardOpenOf({ ...pill, "cardness": 0, "carded": false }), true, "flat pill");
+    assert.equal(cardOpenOf({ ...pill, "vertical": true }), false);
+    assert.equal(cardOpenOf({ ...pill, "has": false, "heldOpen": true }), false);
+    assert.equal(cardOpenOf({ "has": true, "tileOpen": true, "tileOpenable": true }), true);
+    assert.equal(cardOpenOf({ "has": true, "heldOpen": true, "cardness": 1, "carded": true }), true);
+});
+
+test("cardOpen reads carded only when it decides: the binding that opens the card never depends on the spring it moves", () => {
+    let reads = 0;
+    const open = (w, carded) => K.cardOpen({ ...w, "carded": () => (reads++, carded) });
+    const pill = { "has": true, "hovered": true, "dwelt": true, "cardness": 1 };
+    for (const w of [{ ...pill, "has": false }, { ...pill, "vertical": true }, { ...pill, "tileOpen": true, "tileOpenable": true }, { ...pill, "dwelt": false }, { ...pill, "cardness": 0.2 }])
+        open(w, false);
+    assert.equal(reads, 0, "no read when the answer does not hang on carded");
+    assert.equal(open(pill, true), true);
+    assert.equal(open(pill, false), false);
+    assert.equal(reads, 2, "read once per decision");
+});
+
+test("a card held open over IPC goes with its bubble, never stays for the one that takes the wing after it", () => {
+    const media = { "id": "media" }, note = { "id": "notification:4" };
+    const held = K.heldKey(media);
+    assert.equal(K.cardHeld(held, [note, media]), true, "its bubble is still on the wing, behind another");
+    assert.equal(K.cardHeld(held, [note]), false, "its bubble left, another holds the wing");
+    assert.equal(K.cardHeld("", [media]), false, "nothing held");
+    // The machine's bubbles share one id: their kind tells them apart.
+    const volume = { "id": "system", "kind": "volume" };
+    assert.equal(K.cardHeld(K.heldKey(volume), [{ ...volume, "detail": "40 %" }]), true, "the same info, a new value");
+    assert.equal(K.cardHeld(K.heldKey(volume), [{ "id": "system", "kind": "brightness" }]), false, "another machine info");
+});
+
+test("the alert liquid keeps 3:1 on its pill: a pale error falls back to the dark container tone", () => {
+    const white = { "r": 1, "g": 0.97, "b": 1 }, dark = { "r": 0.08, "g": 0.07, "b": 0.09 };
+    const pale = { "r": 0.95, "g": 0.72, "b": 0.71 }, deep = { "r": 0.25, "g": 0.05, "b": 0.04 }, red = { "r": 0.73, "g": 0.1, "b": 0.1 };
+    assert.equal(K.legible(pale, deep, white, 0.75, 3), deep, "stock error in light mode");
+    assert.equal(K.legible(pale, deep, dark, 0.75, 3), pale, "stock error in dark mode");
+    assert.equal(K.legible(red, deep, white, 0.75, 3), red, "a theme with a real light error keeps it");
+    assert.ok(Math.abs(K.contrast(white, { "r": 0, "g": 0, "b": 0 }) - 20.1) < 0.2);
+    assert.equal(K.contrast(red, red), 1);
+});
+
 test("an alert's rings, read off their clock: two leave a gap apart, each is gone after its span, then it is over", () => {
     const span = 1300, gap = K.beat("ringGap", 250), pause = K.beat("ringPause", 250);
     assert.ok(gap > 0 && gap < span && pause > gap);

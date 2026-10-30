@@ -83,3 +83,64 @@ test("a cubic bezier easing matches the CSS curve: ends pinned, monotone, known 
         last = y;
     }
 });
+
+test("the fusion runs on one spring: gathered, then one continuous flow that stretches, thins and lands softly", () => {
+    // wt = ω·t of the wing's exit spring (critically damped); the shape touches the island halfway along its way.
+    const at = wt => K.fusionPhases(wt, 0.5);
+    const p0 = at(0);
+    assert.deepEqual([p0.text, p0.gather, p0.along, p0.glow, p0.swell, p0.flowing, p0.done], [1, 0, 0, 0, 0, false, false]);
+    assert.ok(at(1.2).text === 0 && at(1.2).gather > 0.99);
+    // Its speed never jumps: no step between two frames is far from the one before (gather, flow, melt alike).
+    const dt = 0.05;
+    let prev = 0, last = at(0);
+    for (let wt = dt; wt < 12; wt += dt) {
+        const p = at(wt);
+        const step = p.along - last.along;
+        assert.ok(step >= 0 && Math.abs(step - prev) < 0.01, `speed jumps at ${wt.toFixed(2)}`);
+        assert.ok(p.gather >= last.gather && p.text <= last.text);
+        // Moving, it stretches along its way and thins across, more the faster it goes; at rest it is round.
+        assert.ok(p.scaleAlong >= p.scaleCross - 1e-9);
+        prev = step;
+        last = p;
+    }
+    // It lands with no jolt: barely moving at the end.
+    assert.ok(at(9).along - at(8.95).along < 1e-3);
+    assert.ok(at(12).done);
+});
+
+test("a critically damped step waits for its release, then rises to its target without overshoot", () => {
+    assert.equal(K.criticalStep(-1), 0);
+    assert.equal(K.criticalStep(0), 0);
+    assert.ok(Math.abs(K.criticalStep(1) - (1 - 2 / Math.E)) < 1e-12);
+    const xs = [0.25, 1, 2, 4, 8, 30];
+    xs.slice(1).forEach((x, i) => assert.ok(K.criticalStep(x) > K.criticalStep(xs[i]), `rises at ${x}`));
+    assert.ok(K.criticalStep(30) < 1 && K.criticalStep(30) > 1 - 1e-9);
+});
+
+test("a tone laid over a surface mixes them by its alpha, channel by channel", () => {
+    const tone = { "r": 1, "g": 0.5, "b": 0 }, surface = { "r": 0, "g": 0.5, "b": 1 };
+    assert.deepEqual({ ...K.laidOver(tone, surface, 0) }, surface);
+    assert.deepEqual({ ...K.laidOver(tone, surface, 1) }, tone);
+    assert.deepEqual({ ...K.laidOver(tone, surface, 0.25) }, { "r": 0.25, "g": 0.5, "b": 0.75 });
+});
+
+test("the fusion's glow: a halo born at the contact, spreading like a wave on the island's spring, fading out", () => {
+    const at = wt => K.fusionPhases(wt, 0.5);
+    let contact = -1;
+    for (let wt = 0; wt < 12 && contact < 0; wt += 0.01)
+        if (at(wt).along >= 0.5)
+            contact = wt;
+    assert.ok(contact > 0);
+    // Nothing lights before the shape touches the island.
+    assert.equal(at(contact - 0.05).glow, 0);
+    assert.equal(at(contact - 0.05).wave, 0);
+    // Then a halo from the contact point, its front moving out while it pales, and gone at the end.
+    let last = at(contact);
+    for (let t = 0.1; t < 8; t += 0.1) {
+        const p = at(contact + t);
+        assert.ok(p.wave >= last.wave && p.glow <= last.glow + 1e-9, `at ${t.toFixed(1)}`);
+        last = p;
+    }
+    assert.ok(at(contact + 1).wave > 0.2 && at(contact + 1).glow > 0.2);
+    assert.ok(at(contact + 8).glow < 0.01 && at(contact + 8).swell < 0.02);
+});

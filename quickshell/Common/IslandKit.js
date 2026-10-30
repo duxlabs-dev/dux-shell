@@ -53,8 +53,24 @@ function countdownTones(theme, light) {
     return best;
 }
 
+// A bubble's wing comes in on a spring this underdamped (a small overshoot); a ringing call's shape rocks back on it.
+var bubbleInDampingRatio = 0.6;
+// A card's content shows early in its growth (the kit's card opening, Interior's SURFACE: content early).
+var revealFrom = 0.35;
+// A presence, fade or spring (0..1) below this counts as none: nothing is drawn for it, nothing waits on it.
+var shownFrom = 0.01;
+
 // A shape moving on to its next one beats out by this much (the app icon's poke, a replaced face on the wing).
 var morphPulse = 0.15;
+
+// A gauge's liquid and its track, as alphas of one hue (trackAlpha alone: behind an opaque liquid). On a light theme a
+// 0.24 track leaves the liquid at 2.5:1; lightTrackAlpha keeps it at 3:1, and the dark value on it at 4.5:1.
+var fillAlpha = 0.75;
+var trackAlpha = 0.24;
+var lightTrackAlpha = 0.08;
+function waveTrackAlpha(light) {
+    return light ? lightTrackAlpha : trackAlpha;
+}
 
 // DMS's default animation duration: the speed the tables above are tuned at.
 var baseMs = 250;
@@ -67,6 +83,20 @@ function beat(name, baseDuration) {
 // A share in 0..1 for a meter: a negative one or NaN reads as 0, one over 1 as 1.
 function unit(v) {
     return v > 0 ? Math.min(1, v) : 0;
+}
+
+function mix(a, b, t) {
+    return a + (b - a) * t;
+}
+
+// A bubble born floating fades in faster than it grows (opaque at two thirds), from half its size at the island's edge.
+var appearGain = 1.5;
+var appearScaleFrom = 0.5;
+function appearOpacity(presence) {
+    return unit(presence * appearGain);
+}
+function appearScale(presence) {
+    return mix(appearScaleFrom, 1, unit(presence));
 }
 
 // The Theme roles a face on the island can sit on (DIslandSurface); a mark stands markContrast off each.
@@ -198,6 +228,11 @@ function waveSlope(d, amp, phase) {
     return amp * Math.PI * Math.cos(phase + Math.PI * d);
 }
 
+// A critically damped spring released at 0 toward 1, at x = ω·t (x <= 0: not yet released).
+function criticalStep(x) {
+    return x <= 0 ? 0 : 1 - (1 + x) * Math.exp(-x);
+}
+
 // Where in [0, hi] a rising f reaches y, by bisection: bisectSteps halvings land within a billionth of the range.
 var bisectSteps = 30;
 function solveRising(f, y, hi) {
@@ -220,6 +255,78 @@ function bezier(x1, y1, x2, y2, x) {
         return 1;
     const at = (a, b, t) => 3 * (1 - t) * (1 - t) * t * a + 3 * (1 - t) * t * t * b + t * t * t;
     return at(y1, y2, solveRising(t => at(x1, x2, t), x, 1));
+}
+
+// Whether a leaving bubble closes where it stands: its card shut, or a card it opened itself (a 2FA code, the trash's Undo)
+// that nobody is reading, which folds back onto its shape as it fuses. A card the pointer still holds open withdraws.
+function closesInPlace(w) {
+    return w.ready && (w.hoverGrow < 0.01 || w.selfOpened && !w.hovered);
+}
+
+// How a bubble closing where it stands leaves: "fuse" (into the island), "fade" (reduced motion) or "shrink" (back along
+// its spring). It fuses when it goes on its own, or when the island takes its own info in the same turn (its media
+// face): it goes in. Any other change of the island's occupant (a face or activity closing, another
+// one opening) makes it just withdraw.
+function closeStyle(s) {
+    if (!s.inPlace || s.occupantBefore !== s.occupantNow && !tookIn(s.occupantNow, s.source))
+        return "shrink";
+    return s.reduced ? "fade" : "fuse";
+}
+
+// Whether the island's occupant ("activity|plugin token") is the bubble's own source, as its activity.
+function tookIn(occupant, source) {
+    return !!source && String(occupant).split("|")[0] === source;
+}
+
+// A bubble merging into the island, read off one critically damped spring (the wing's exit spring: the island's
+// stiffness, damping ratio 1) at wt = ω·t. Its position P eases from 0 to 1 with no jump in speed: the text fades over
+// fuseTextShare of the hand-off and the wing gathers onto its shape until P reaches the hand-off, then the shape flows on
+// along its way (along, 0..1, still on P, so the speed carries over), stretched along and thinned across by its own
+// speed, losing fuseShrink of its size as it goes in, landing softly as the spring settles. contact: the share of its way
+// where it touches the island; from there a halo spreads from that point like a wave on the same spring (wave 0..1 of its
+// reach) while it pales (glow), and the island's edge swells there and back (swell, 1 at its height).
+var fuseHandoff = 0.2;
+// Flow speed (along per unit of wt) at which the shape is stretched the most, and that stretch.
+var fuseFastest = 0.33;
+var fuseStretch = 0.6;
+var fuseTextShare = 0.6;
+var fuseShrink = 0.8;
+// Inside the island the shader hides it; it fades from this share of its way so nothing is left to draw.
+var fuseBlobFade = 0.85;
+// The spring and the halo count as landed this close to rest.
+var fuseLanded = 0.995;
+function fusionPhases(wt, contact) {
+    const smooth = (a, b, x) => {
+        const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+        return t * t * (3 - 2 * t);
+    };
+    const h = fuseHandoff;
+    const flowAt = x => {
+        const q = Math.max(0, (criticalStep(x) - h) / (1 - h));
+        return q * q;
+    };
+    const P = criticalStep(wt);
+    const along = flowAt(wt);
+    const q = Math.max(0, (P - h) / (1 - h));
+    const speed = P > h ? 2 * q / (1 - h) * Math.max(0, wt) * Math.exp(-wt) : 0;
+    const stretch = fuseStretch * Math.min(1, speed / fuseFastest);
+    const size = 1 - fuseShrink * along;
+    // The moment of contact (the flow rises with wt).
+    const touch = contact >= 0 && along >= contact ? solveRising(flowAt, contact, Math.max(0, wt)) : -1;
+    const wave = touch < 0 ? 0 : criticalStep(wt - touch);
+    return {
+        "text": 1 - smooth(0, fuseTextShare * h, P),
+        "gather": smooth(0, h, P),
+        "flowing": P >= h,
+        "along": along,
+        "scaleAlong": size * (1 + stretch),
+        "scaleCross": size / (1 + stretch),
+        "blob": 1 - smooth(fuseBlobFade, 1, along),
+        "wave": wave,
+        "glow": touch < 0 ? 0 : 1 - wave,
+        "swell": 4 * wave * (1 - wave),
+        "done": P > fuseLanded && (touch < 0 || wave > fuseLanded)
+    };
 }
 
 // A costly frame is redrawn once `every` refreshes went by (within half of one, as DMS's timer ticks off vsync) and
@@ -281,3 +388,53 @@ function framesBetween(refresh, speed, prev) {
         return k;
     return Math.max(fewest, Math.min(most, stepsFit(slowStepPx, hz, speed, fewest, most) > prev ? prev + 1 : prev));
 }
+
+// Whether a wing's card is open: a click toggled its list, the pointer dwelt on it, or IPC holds it, on a bar that is not
+// vertical. w.carded, a function, is read only past half a sheet: opening moves the spring that sets it (else a loop).
+function cardOpen(w) {
+    if (!w.has || w.vertical)
+        return false;
+    if (w.tileOpen && w.tileOpenable)
+        return true;
+    const asked = w.hovered && w.dwelt || w.heldOpen;
+    return !!asked && (!(w.cardness >= 0.5) || !!w.carded());
+}
+
+// The bubble a card held open over IPC (island bubble card) belongs to: the machine's bubbles share one id, their kind
+// tells them apart.
+function heldKey(bubble) {
+    return bubble.id + "|" + (bubble.kind ?? "");
+}
+
+// Whether that card's bubble (held, its heldKey) is still on the wing: the card goes with it, never stays for the one
+// that takes the wing after it.
+function cardHeld(held, items) {
+    return held !== "" && items.some(bubble => heldKey(bubble) === held);
+}
+
+// WCAG contrast of two colours ({r, g, b} in 0..1, as a QML color).
+function contrast(a, b) {
+    const lum = c => [c.r, c.g, c.b].map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+    const la = lum(a), lb = lum(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+// A liquid tone that reads on its pill: `tone`, laid at `alpha` over `surface`, if it keeps `min` contrast with it, else
+// `fallback` (a stock theme's error is pale in light mode; its container's text tone is not).
+var legibleMin = 3;
+// Contrast.mix on plain {r, g, b}: Contrast.mix returns a Qt.rgba, which the node tests have no Qt for.
+function laidOver(tone, surface, alpha) {
+    return {
+        "r": surface.r + (tone.r - surface.r) * alpha,
+        "g": surface.g + (tone.g - surface.g) * alpha,
+        "b": surface.b + (tone.b - surface.b) * alpha
+    };
+}
+function legible(tone, fallback, surface, alpha, min) {
+    return contrast(laidOver(tone, surface, alpha), surface) >= min ? tone : fallback;
+}
+
+// The A1 battery glyph's geometry (BubbleChargeGlyph): its pile is 10 of the 19 units of its box, so the flat pill's
+// value sits closer to it than to a full-width icon.
+var batteryPileUnits = 10;
+var batteryBoxUnits = 19;

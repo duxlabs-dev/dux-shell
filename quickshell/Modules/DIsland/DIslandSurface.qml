@@ -84,8 +84,72 @@ Item {
     readonly property string autoBarShadowDirection: root.controller.edge
     readonly property string effectiveShadowDirection: Theme.elevationLightDirection === "autoBar" ? autoBarShadowDirection : Theme.elevationLightDirection
     readonly property real currentSurfaceRadius: Math.max(0, motion.currentTopLeftRadius, motion.currentBottomLeftRadius)
+    // A ringing call's shape rocks back on the island's spring at the wing's entry damping.
+    readonly property var ringSpring: [motion.stiffness, IslandKit.bubbleInDampingRatio, motion.mass]
+    // IslandBubbles is made with the first bubble (a wing, a plugin's permanent one) and let go bubblesHoldMs after the
+    // last one is gone: an island that shows none holds none of its objects, nor adds to the shell's start time.
+    readonly property bool bubblesWanted: !!root.bubbleSides?.machine || (root.bubbleSides?.machines?.length ?? 0) > 0 || (root.bubbleSides?.apps?.length ?? 0) > 0 || Object.keys(IslandActivityService.permanent).length > 0
+    readonly property bool bubblesShown: root.bubblesWanted || inputEnvelope.hasBubbles
+    property bool bubblesMade: false
+    // Long enough that bubbles coming and going keep it, short enough to give its memory back to an idle island.
+    readonly property int bubblesHoldMs: 30000
+    // Untyped: naming IslandBubbles or ArrivalCard here would compile them, and their parts, with the shell's startup.
+    readonly property var bubblesItem: bubbles.item
+    readonly property var arrivalCardItem: arrivalCard.item
+    // Two types compile off the main thread ahead of use, so their Loaders (by URL) find them compiled: IslandBubbles'
+    // here, held only for that, once warm or sooner (a transient face, a bubble); the arrival card's below, once warm.
+    property Component bubblesType: null
+    readonly property bool bubblesSoon: root.warm || root.controller.transientActive || root.bubblesShown
+    onBubblesSoonChanged: {
+        if (root.bubblesSoon && !root.bubblesType)
+            root.bubblesType = Qt.createComponent(Qt.resolvedUrl("IslandBubbles.qml"), Component.Asynchronous, root);
+    }
+    onBubblesShownChanged: {
+        if (root.bubblesShown)
+            root.bubblesMade = true;
+    }
+
+    // Set once the shell has started, so what the island makes ahead of its first use (IslandBubbles' type, the arrival
+    // card) stays off the startup; an arrival that comes first sets it at once. K1: its timer runs once, then never.
+    property bool warm: false
+    // Well past the shell's startup, long before a first bubble or arrival usually comes.
+    readonly property int warmUpMs: 2000
+    // Compiled before its Loader starts, so the Loader only ever incubates it: an arrival can always finish that at once,
+    // where forcing a Loader whose type still compiles drops its initial properties (the card would never be made).
+    property Component arrivalType: null
+    readonly property bool arrivalTypeReady: root.arrivalType?.status === Component.Ready
+    onWarmChanged: root.arrivalType = Qt.createComponent(Qt.resolvedUrl("Activities/ArrivalCard.qml"), Component.Asynchronous, root)
+    onArrivalTypeReadyChanged: {
+        if (root.arrivalTypeReady)
+            arrivalCard.active = true;
+    }
+    onArrivalGrowChanged: {
+        if (root.arrivalGrow <= 0 || !arrivalCard.asynchronous)
+            return;
+        // Made, or finished, at once: none leaves without its card.
+        arrivalCard.asynchronous = false;
+        arrivalCard.active = true;
+        root.warm = true;
+    }
+
+    Timer {
+        interval: root.warmUpMs
+        running: !root.warm
+        onTriggered: root.warm = true
+    }
+
+    Timer {
+        interval: root.bubblesHoldMs
+        running: root.bubblesMade && !root.bubblesShown
+        onTriggered: root.bubblesMade = false
+    }
 
     signal scrollWheel(var wheel)
+    signal bubbleActivated(var bubble)
+    signal bubbleDismissed(var bubble)
+    signal bubbleHovered(var bubble, bool inside)
+    signal bubbleWheeled(var bubble, var wheel)
+    property var bubbleSides: null
 
     readonly property alias inputMaskItem: inputEnvelope
     readonly property alias fittsStripItem: fittsStrip
@@ -387,11 +451,33 @@ Item {
         readonly property real islandTop: (motion.running ? Math.min(root.motionStartBounds.y, root.targetVisualY) : root.targetVisualY) - overshootBudget
         readonly property real islandRight: (motion.running ? Math.max(root.motionStartBounds.x + root.motionStartBounds.width, root.targetVisualX + motion.targetWidth) : root.targetVisualX + motion.targetWidth) + overshootBudget
         readonly property real islandBottom: (motion.running ? Math.max(root.motionStartBounds.y + root.motionStartBounds.height, root.targetVisualY + motion.targetHeight) : root.targetVisualY + motion.targetHeight) + overshootBudget
+        readonly property rect bubbleRect: root.bubblesItem?.envelope ?? Qt.rect(0, 0, 0, 0)
+        readonly property bool hasBubbles: bubbleRect.width > 0
 
-        x: islandLeft
-        y: islandTop
-        width: islandRight - x
-        height: islandBottom - y
+        x: hasBubbles ? Math.min(islandLeft, bubbleRect.x) : islandLeft
+        y: hasBubbles ? Math.min(islandTop, bubbleRect.y) : islandTop
+        width: (hasBubbles ? Math.max(islandRight, bubbleRect.x + bubbleRect.width) : islandRight) - x
+        height: (hasBubbles ? Math.max(islandBottom, bubbleRect.y + bubbleRect.height) : islandBottom) - y
+    }
+
+    Loader {
+        id: bubbles
+
+        anchors.fill: parent
+        active: root.bubblesMade
+        // Bound through its initial properties, which the Loader keeps for every reload.
+        Component.onCompleted: bubbles.setSource(Qt.resolvedUrl("IslandBubbles.qml"), {
+            "surface": root,
+            "sides": Qt.binding(() => root.bubbleSides),
+            "color": Qt.binding(() => root.embedded ? Theme.withAlpha(root.surfaceColor, root.islandOpacity) : root.effectiveSurfaceColor),
+            "reducedMotion": Qt.binding(() => root.reducedMotion)
+        })
+        onLoaded: {
+            root.bubblesItem.activated.connect(root.bubbleActivated);
+            root.bubblesItem.dismissed.connect(root.bubbleDismissed);
+            root.bubblesItem.hovered.connect(root.bubbleHovered);
+            root.bubblesItem.wheeled.connect(root.bubbleWheeled);
+        }
     }
 
     Loader {
@@ -580,18 +666,25 @@ Item {
             clip: true
             visible: root.arrivalBigness > 0
 
-            ArrivalCard {
+            // Made over the frames once the shell has started (arrivalTypeReady) and kept from then on; an arrival that
+            // comes first makes or finishes it at once (onArrivalGrowChanged).
+            Loader {
                 id: arrivalCard
 
                 x: Math.round((parent.width - width) / 2)
                 y: Arrival.centered(parent.height, height)
-                grow: root.arrivalGrow
-                from: root.notificationPlaces
-                enabled: hand.cardOwn >= 0.5
-                controller: root.controller
-                notificationModel: root.notificationModel
-                reducedMotion: root.reducedMotion
-                dragX: root.arrivalDragX
+                active: false
+                asynchronous: true
+                Component.onCompleted: arrivalCard.setSource(Qt.resolvedUrl("Activities/ArrivalCard.qml"), {
+                    "grow": Qt.binding(() => root.arrivalGrow),
+                    "reveal": IslandKit.revealFrom,
+                    "from": Qt.binding(() => root.notificationPlaces),
+                    "controller": root.controller,
+                    "notificationModel": Qt.binding(() => root.notificationModel),
+                    "reducedMotion": Qt.binding(() => root.reducedMotion),
+                    "dragX": Qt.binding(() => root.arrivalDragX),
+                    "ringSpring": Qt.binding(() => root.ringSpring)
+                })
             }
         }
 

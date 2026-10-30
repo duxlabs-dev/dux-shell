@@ -78,9 +78,6 @@ QtObject {
     property int transientTimeout: 2200
     property int notificationTimeout: 5000
     property string transientReturnActivity: ""
-    // The last system face a destination, an alert or another face pushed out: the host brings it back once idle.
-    // shortcut: only the latest one is kept, an older one pushed out meanwhile ends in its bubble; keep a list if it matters.
-    property string displacedSystemActivity: ""
     property string suspendedActivity: ""
     property bool suspendedExpanded: false
     property bool suspendedKeyboardDismissRequested: false
@@ -154,6 +151,41 @@ QtObject {
             return;
         userHeld = false;
         dashNavigationFocused = false;
+    }
+    // Off behind the lock screen and on islands away from the focused screen.
+    property bool bubblesEnabled: true
+    onBubblesEnabledChanged: {
+        if (!bubblesEnabled)
+            hideMachineBubble();
+    }
+    // The leading bubble: a machine change the island could not show.
+    property string machineBubbleKind: ""
+    // A bubble that leaves under the pointer gets no hover exit: without this reset the next one would never time out.
+    onMachineBubbleKindChanged: {
+        if (!machineBubbleKind)
+            machineBubbleHovered = false;
+    }
+    property bool machineBubbleHovered: false
+    // A held bubble stays while the pointer is on it, and gets its full time again once let go.
+    onMachineBubbleHoveredChanged: {
+        if (machineBubbleHovered)
+            machineBubbleTimer.stop();
+        else if (machineBubbleKind)
+            machineBubbleTimer.restart();
+    }
+
+    function showMachineBubble(activityId) {
+        if (!isSystemActivity(activityId))
+            return false;
+        machineBubbleKind = activityId;
+        if (!machineBubbleHovered)
+            machineBubbleTimer.restart();
+        return true;
+    }
+
+    function hideMachineBubble() {
+        machineBubbleTimer.stop();
+        machineBubbleKind = "";
     }
 
     readonly property IslandArrivalState arrival: IslandArrivalState {
@@ -570,7 +602,7 @@ QtObject {
             "bottomRightRadius": root.dotSize / 2
         })
     readonly property var systemLevelActivities: ["volume", "brightness", "mic"]
-    readonly property var systemStateActivities: ["capslock", "powerprofile", "idleinhibitor", "charging", "charged", "unplugged", "battery", "batterycritical", "network", "keepawake", "dnd", "output", "reopen", "call", "print", "usb", "password", "vpn", "openwifi", "ssh", "camera", "copy", "trash", "disk", "display", "periph", "progress", "frozen", "weatheralert"]
+    readonly property var systemStateActivities: ["capslock", "powerprofile", "idleinhibitor", "charging"]
     readonly property var systemActivities: systemLevelActivities.concat(systemStateActivities)
     readonly property var dotTransientActivities: ["notification", "plugin"].concat(systemActivities)
     function isSystemActivity(activityId) {
@@ -881,13 +913,6 @@ QtObject {
         return activityId !== "wellbeing" || SettingsData.wellbeingEnabled;
     }
 
-    // A system face pushed aside by a destination or a plugin: kept, to take the island back once it is idle.
-    function displaceSystem(displaced) {
-        if (!displaced)
-            return;
-        displacedSystemActivity = displaced;
-    }
-
     function requestActivity(activityId, shouldExpand, requestKeyboardFocus) {
         const destination = isDestination(activityId);
         if (!activityAllowed(activityId, shouldExpand))
@@ -922,10 +947,8 @@ QtObject {
         transientTimer.stop();
         consumeTransientNotification();
         keyboardDismissRequested = shouldExpand === true && requestKeyboardFocus === true;
-        const displaced = destination && shouldExpand === true && systemActivityActive ? activeActivity : "";
         expanded = shouldExpand === true;
         activeActivity = activityId;
-        displaceSystem(displaced);
         if ((activityId === "media" || activityId === "home") && shouldExpand !== true)
             mediaPreferred = activityId === "media";
         launcherSessionActive = activityId === "launcher" && expanded;
@@ -1069,7 +1092,6 @@ QtObject {
             expanded = false;
         }
 
-        const replaced = systemActivityActive && activeActivity !== activityId ? activeActivity : "";
         const arriving = activeActivity !== activityId;
         if (!systemActivityActive)
             transientReturnActivity = activeActivity;
@@ -1078,9 +1100,10 @@ QtObject {
         if (arriving && force !== true)
             arrival.face(Activities.faceTier(activityId));
         userHeld = force === true;
+        // The machine bubble reads the system source, which now follows this face: it never shows another kind's values.
+        if (machineBubbleKind)
+            hideMachineBubble();
         syncTransientTimeout(true);
-        if (replaced)
-            displacedSystemActivity = replaced;
         return true;
     }
 
@@ -1257,6 +1280,11 @@ QtObject {
         onTriggered: root.completeNotification()
     }
 
+    property Timer machineBubbleTimer: Timer {
+        // A bubble with an Undo keeps it for an Undo's lifetime.
+        interval: Activities.faceTimeoutMs(root.machineBubbleKind)
+        onTriggered: root.machineBubbleKind = ""
+    }
     property Timer visualsReleaseTimer: Timer {
         interval: 260
         onTriggered: root.dropIdleVisuals()

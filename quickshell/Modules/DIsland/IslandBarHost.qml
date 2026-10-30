@@ -70,7 +70,7 @@ Item {
     readonly property real surfaceOpacity: surface.surfaceOpacity
     readonly property bool inputSuspended: controller.inputSuspended
     readonly property bool expanded: controller.expanded
-    readonly property bool holdsHost: controller.plugin.holdsHost
+    readonly property bool holdsHost: controller.plugin.holdsHost || controller.machineBubbleKind !== ""
     // Held from expand until the collapse spring settles, so compact-to-compact morphs never resize the bar window.
     property bool sheetOut: false
     readonly property bool surfaceFits: (root.isVertical ? root.windowWidth : root.windowHeight) >= root.hostThickness - 1
@@ -347,19 +347,82 @@ Item {
         }
         IslandActivityService.markShown(next.token, controller);
     }
-    // Whether an owned face's info still lives (its clock, its question, its state), so it may take the island back.
-    function faceAlive(kind) {
-        switch (kind) {
-        case "disk":
-        case "periph":
-        }
-        return false;
+
+    // Bubbles show on the focused screen only, never behind the lock.
+    readonly property bool bubblesShown: !root.sessionLocked && CompositorService.getFocusedScreen()?.name === root.screenName
+    property bool mediaBubbleDismissed: false
+    readonly property string heldPluginToken: controller.pluginToken
+    onHeldPluginTokenChanged: root.mediaBubbleDismissed = false
+
+    // The system source's values, as the machine bubble reads them.
+    function machineValues() {
+        return {
+            "kind": systemSource.kind,
+            "icon": systemSource.iconName,
+            "title": systemSource.title,
+            "value": systemSource.displayValue,
+            "progress": systemSource.levelActivity ? systemSource.ratio : -1
+        };
     }
 
-    // A machine info with no bubble of its own: the island face first, else the machine bubble.
-    function playMachine(kind) {
-        if (systemSource.enabled && controller.requestSystemActivity(kind)) {
-            systemSource.kind = kind;
+    // The machine bubble of a kind: its pill, and its card (in the wing, or in the island over its face).
+    function machineEntry(kind) {
+        return Activities.machineEntry(kind, root.machineValues());
+    }
+
+    readonly property var bubbleList: {
+        if (!root.bubblesShown)
+            return [];
+        const list = [];
+        if (controller.machineBubbleKind)
+            list.push(root.machineEntry(controller.machineBubbleKind));
+        // One the island is about to take (it does a moment later) is never a bubble, not even for a frame.
+        const taker = root.islandTaker();
+        for (const entry of IslandActivityService.waitingFor(controller, controller.pluginActive ? controller.pluginToken : "")) {
+            if (entry.token === taker)
+                continue;
+            const face = Input.bubbleFace(entry.data);
+            list.push(Object.assign(face, {
+                "id": entry.token,
+                "source": "plugin",
+                "kind": entry.kind,
+                "token": entry.token,
+                "app": PluginService.availablePlugins[entry.pluginId]?.name ?? "",
+                "seq": entry.seq,
+                "icon": face.icon || "extension",
+            }));
+        }
+        if (mediaSource.playing && controller.pluginActive && !root.mediaBubbleDismissed)
+            list.push({
+                "id": "media",
+                "source": "media",
+                "seq": 0,
+                "title": mediaSource.title,
+                "detail": mediaSource.artist,
+                "image": mediaSource.artUrl || "",
+                "icon": "music_note",
+                "text": "",
+                "accent": "primary"
+            });
+        return list;
+    }
+    // Do not disturb lets a plugin's or script's bubble through as it lets its activity into the island.
+    readonly property var bubbleSides: Activities.bubbleSides(root.bubbleList, root.quiet, bubble => {
+        const entry = bubble.source === "plugin" ? IslandActivityService.entry(bubble.token) : null;
+        return !!entry && IslandActivityService.letThroughDnd(entry);
+    })
+
+    function bringBubble(bubble) {
+        switch (bubble?.source) {
+        case "system":
+            systemSource.open(bubble.kind, true);
+            return;
+        case "media":
+            controller.requestActivity("media", true, false);
+            return;
+        case "plugin":
+            root.bringPlugin(bubble.token);
+            return;
         }
     }
 
@@ -372,6 +435,37 @@ Item {
         controller.plugin.begin(token, entry.kind, true, entry.timeoutMs);
         controller.userHeld = true;
         IslandActivityService.markShown(token, controller);
+    }
+
+    function dismissBubble(bubble) {
+        switch (bubble?.source) {
+        case "system":
+            controller.hideMachineBubble();
+            return;
+        case "media":
+            root.mediaBubbleDismissed = true;
+            return;
+        case "plugin":
+            IslandActivityService.remove(bubble.token, "dismissed");
+            return;
+        }
+    }
+
+    function holdBubble(bubble, inside) {
+        if (bubble?.source === "system") {
+            controller.machineBubbleHovered = inside;
+        }
+    }
+
+    // The wheel on a level bubble sets it in place, like the wheel on the level face.
+    function wheelBubble(bubble, wheel) {
+        if (bubble?.source !== "system" || !systemSource.levelActivity)
+            return;
+        const step = wheel.angleDelta.y > 0 ? 0.05 : wheel.angleDelta.y < 0 ? -0.05 : 0;
+        if (!step)
+            return;
+        systemSource.setRatio(systemSource.ratio + step);
+        controller.showMachineBubble(bubble.kind);
     }
 
     Loader {
@@ -394,6 +488,10 @@ Item {
             give("interrupted", Qt.binding(() => !controller.pluginActive));
             give("screen", Qt.binding(() => root.screenName));
             give("edge", Qt.binding(() => root.edge));
+            // Only while the plugin draws overflow; through face: item is null once the loader unloads.
+            const face = item;
+            if ("islandRadius" in item)
+                item.islandRadius = Qt.binding(() => controller.expanded ? controller.cornerRadius : Math.min(controller.compactFaceThickness / 2, controller.pillRadius));
         }
     }
 
@@ -593,6 +691,7 @@ Item {
 
         barConfig: root.barConfig
         screen: root.screen
+        bubblesEnabled: root.bubblesShown
         edge: root.edge
         sectionOriginX: root.sectionOriginX
         sectionOriginY: root.sectionOriginY
@@ -625,6 +724,7 @@ Item {
         dashboardAvailableHeight: Math.max(0, (root.screen?.height ?? root.referenceScreenHeight) - (root.isVertical ? root.alongInset : root.crossInsetStart + root.crossInsetEnd + root.outerGap + root.nearInset) - Theme.spacingL * 2)
         notificationExpandAllowed: root.setting("islandNotificationExpand")
         unreadNotificationCount: root.setting("islandNotificationBadgeClearOnOpen") ? NotificationService.unreadCount : NotificationService.notifications.length
+        wingCountsNotifications: (root.bubbleSides?.apps ?? []).some(b => b.source === "notification")
         hoverOpenDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverOpenDelay")))
         hoverCloseDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverCloseDelay")))
         pluginExpandable: root.readyFace ? (root.readyFace.text !== "" || root.readyFace.actions.length > 0) : !!root.pluginActivity?.expandedContent
@@ -714,6 +814,11 @@ Item {
         transparency: SettingsData.barTransparency(root.barConfig)
         surfaceBase: SettingsData.barSurfaceColor(root.barConfig)
         onScrollWheel: wheel => root.scrollWheel(wheel)
+        bubbleSides: root.bubbleSides
+        onBubbleActivated: bubble => root.bringBubble(bubble)
+        onBubbleDismissed: bubble => root.dismissBubble(bubble)
+        onBubbleHovered: (bubble, inside) => root.holdBubble(bubble, inside)
+        onBubbleWheeled: (bubble, wheel) => root.wheelBubble(bubble, wheel)
 
         Behavior on opacity {
             NumberAnimation {

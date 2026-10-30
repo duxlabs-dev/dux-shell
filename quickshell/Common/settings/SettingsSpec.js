@@ -1781,6 +1781,36 @@ var LOCAL_SPEC = {
     islandArrivalWheelInverted: {
         def: false
     },
+    islandBubbleOutline: {
+        def: false
+    },
+    islandBubbleMotion: {
+        def: 80
+    },
+    islandBubbleDialStyle: {
+        def: "wave"
+    },
+    islandBubbleCorners: {
+        def: "island"
+    },
+    islandBubbleLauncherTransition: {
+        def: "liquid"
+    },
+    islandBubbleShapeStyle: {
+        def: "flat"
+    },
+    islandBubbleShapeTone: {
+        def: "theme"
+    },
+    islandBubbleOutlineWidth: {
+        def: 1
+    },
+    islandBubbleOutlineOpacity: {
+        def: 100
+    },
+    islandBubbleOutlineColor: {
+        def: "type"
+    },
     launcherKeybinds: {
         def: {}
     },

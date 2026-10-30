@@ -131,6 +131,16 @@ Singleton {
     property var islandArrivalTint: Spec.SPEC.islandArrivalTint.def
     property bool islandArrivalWheel: Spec.SPEC.islandArrivalWheel.def
     property bool islandArrivalWheelInverted: Spec.SPEC.islandArrivalWheelInverted.def
+    property bool islandBubbleOutline: Spec.SPEC.islandBubbleOutline.def
+    property real islandBubbleMotion: Spec.SPEC.islandBubbleMotion.def
+    property string islandBubbleCorners: Spec.SPEC.islandBubbleCorners.def
+    property string islandBubbleDialStyle: Spec.SPEC.islandBubbleDialStyle.def
+    property string islandBubbleLauncherTransition: Spec.SPEC.islandBubbleLauncherTransition.def
+    property string islandBubbleShapeStyle: Spec.SPEC.islandBubbleShapeStyle.def
+    property string islandBubbleShapeTone: Spec.SPEC.islandBubbleShapeTone.def
+    property real islandBubbleOutlineWidth: Spec.SPEC.islandBubbleOutlineWidth.def
+    property real islandBubbleOutlineOpacity: Spec.SPEC.islandBubbleOutlineOpacity.def
+    property string islandBubbleOutlineColor: Spec.SPEC.islandBubbleOutlineColor.def
 
     function getPluginAllowWithoutTrigger(pluginId) {
         if (!launcherPluginVisibility[pluginId])

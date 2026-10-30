@@ -127,8 +127,9 @@ QtObject {
         open(activityKind);
     }
 
-    function open(activityKind) {
-        if (controller.requestSystemActivity(activityKind))
+    // Refused by the island, the level goes to the machine bubble rather than being lost.
+    function open(activityKind, force) {
+        if (controller.requestSystemActivity(activityKind, force) || (controller.bubblesEnabled && !controller.systemActivityActive && controller.showMachineBubble(activityKind)))
             kind = activityKind;
     }
 

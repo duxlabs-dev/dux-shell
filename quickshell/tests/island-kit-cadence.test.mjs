@@ -95,6 +95,16 @@ const plain = {
         return Math.max(fewest, Math.min(most, fit(0.8) > prev ? prev + 1 : prev));
     }
 };
+
+// A wing's card written the plain way, carded as a plain value.
+function oldCardOpen(w) {
+    if (!w.has || w.vertical)
+        return false;
+    if (w.tileOpen && w.tileOpenable)
+        return true;
+    const asked = w.hovered && w.dwelt || w.heldOpen;
+    return !!asked && (!(w.cardness >= 0.5) || w.carded);
+}
 const near = (a, b, what) => assert.ok(a === b || Math.abs(a - b) <= 1e-12, `${what}: ${a} != ${b}`);
 
 test("the decors' cadence matches the plain rule on 60, 120, 144 and 240 Hz screens, 0 to 5000 px/s", () => {
@@ -105,6 +115,16 @@ test("the decors' cadence matches the plain rule on 60, 120, 144 and 240 Hz scre
                     near(K.framesBetween(hz, speed, prev), plain.framesBetween(hz, speed, prev), `${hz} Hz ${speed} px/s prev ${prev}`);
     for (const r of [NaN, 0, 23, 27, 59.95, 61, 122, 143.2, 239.6, 1000])
         near(K.panelRate(r), plain.panelRate(r), `rate ${r}`);
+});
+
+test("a wing's card opens exactly as before, from its plain values", () => {
+    const keys = ["has", "vertical", "tileOpen", "tileOpenable", "hovered", "dwelt", "heldOpen", "carded"];
+    for (let bits = 0; bits < 1 << keys.length; bits++)
+        for (const cardness of [0, 0.49, 0.5, 1, NaN]) {
+            const w = { cardness };
+            keys.forEach((k, i) => w[k] = (bits >> i & 1) === 1);
+            assert.equal(K.cardOpen({ ...w, "carded": () => w.carded }), oldCardOpen(w), JSON.stringify(w));
+        }
 });
 
 test("a window's clock steps one screen period, or the periods gone by when an image was skipped", () => {
