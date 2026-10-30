@@ -6,6 +6,7 @@ import qs.Modules.DDash
 Card {
     id: root
 
+    property bool live: Window.window?.visible ?? false
     readonly property bool narrow: width < DashMetrics.gridRowUnit * 2
     readonly property bool tall: height >= DashMetrics.gridRowUnit * 2
 
@@ -13,7 +14,7 @@ Card {
 
     UserIdentity {
         anchors.fill: parent
-        live: root.Window.window?.visible ?? false
+        live: root.live
         options: root.options
         narrow: root.narrow
         tall: root.tall
