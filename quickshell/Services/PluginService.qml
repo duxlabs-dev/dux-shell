@@ -47,7 +47,7 @@ Singleton {
     property var _stateDirtyPlugins: ({})
     property bool _stateDirCreated: false
 
-    signal pluginLoaded(string pluginId)
+    signal pluginLoaded(string pluginId, var components)
     signal pluginUnloaded(string pluginId)
     signal pluginLoadFailed(string pluginId, string error)
     signal pluginDataChanged(string pluginId)
@@ -94,6 +94,7 @@ Singleton {
     }
 
     Component.onCompleted: {
+        pluginLoaded.connect((pluginId, components) => IslandActivityService.setComponents(pluginId, components)); // not in the service: this starts it, so an island enabled later still gets the surfaces
         // A FolderListModel never given a folder lists the working directory.
         userWatcher.folder = AdminPolicy.disableUserPlugins ? "" : Paths.toFileUrl(root.pluginDirectory);
         systemWatcher.folder = Paths.toFileUrl(root.systemPluginDirectory);
@@ -233,7 +234,7 @@ Singleton {
         }
     }
 
-    readonly property var pluginSurfaceKeys: ["widget", "desktop", "daemon", "launcher", "dash", "dashCard"]
+    readonly property var pluginSurfaceKeys: ["widget", "desktop", "daemon", "launcher", "dash", "dashCard", "island", "islandSystem"]
 
     Connections {
         target: I18n
@@ -600,7 +601,7 @@ Singleton {
             loadedPlugins = newLoaded;
 
             _clearLoadError(pluginId);
-            pluginLoaded(pluginId);
+            pluginLoaded(pluginId, comps);
             return true;
         } catch (e) {
             log.error("Error loading plugin:", pluginId, e.message);

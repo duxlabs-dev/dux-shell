@@ -26,6 +26,15 @@ function followFocusMode(v) {
     return Number.isInteger(v) && v >= 0 && v <= 2 ? v : undefined;
 }
 
+// A hand-edited settings.json may hold any type; the island iterates these, so another type keeps the current value.
+function islandList(v) {
+    return Array.isArray(v) ? v : undefined;
+}
+
+function islandMap(v) {
+    return v && typeof v === "object" && !Array.isArray(v) ? v : undefined;
+}
+
 var LOCAL_SPEC = {
     dockConfigs: {
         def: [DockConfig.create("dock", "Dock")]
@@ -1741,6 +1750,14 @@ var LOCAL_SPEC = {
     },
     launcherPluginOrder: {
         def: []
+    },
+    islandPluginsBlocked: {
+        def: [],
+        coerce: islandList
+    },
+    islandSystemFaces: {
+        def: {},
+        coerce: islandMap
     },
     launcherKeybinds: {
         def: {}

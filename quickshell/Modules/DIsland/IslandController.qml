@@ -7,6 +7,7 @@ import qs.Modals.DLauncherV2.Components
 import qs.Modules.ControlCenter
 import qs.Modules.DBar
 import qs.Modules.DDash
+import "../../Common/IslandActivities.js" as Activities
 
 QtObject {
     id: root
@@ -126,7 +127,20 @@ QtObject {
     readonly property real notificationCompactMinLength: isVertical ? compactFaceThickness : (compactDense ? 200 : 240)
     readonly property real notificationCompactMaxLength: mediaCompactMaxLength
 
+    property string pluginToken: ""
+    property string pluginKind: "live"
+    property bool pluginExpandable: false
+    // Bound by the host to the plugin face's own sizes (IslandActivityInput.faceSize).
+    property real pluginCompactLength
+    property real pluginExpandedWidth
+    property real pluginExpandedHeight
+    readonly property bool pluginActive: activeActivity === "plugin"
+    readonly property IslandPluginActivity plugin: IslandPluginActivity {
+        controller: root
+    }
+
     signal sessionStarted(string activityId)
+    signal pluginDismissed(string token, string reason)
 
     function setHomeContentLength(length) {
         const next = Math.ceil(length);
@@ -526,7 +540,7 @@ QtObject {
     readonly property var systemLevelActivities: ["volume", "brightness", "mic"]
     readonly property var systemStateActivities: ["capslock", "powerprofile", "idleinhibitor", "charging"]
     readonly property var systemActivities: systemLevelActivities.concat(systemStateActivities)
-    readonly property var dotTransientActivities: ["notification"].concat(systemActivities)
+    readonly property var dotTransientActivities: ["notification", "plugin"].concat(systemActivities)
     function isSystemActivity(activityId) {
         return root.systemActivities.indexOf(activityId) !== -1;
     }
@@ -542,10 +556,14 @@ QtObject {
     readonly property real launcherContentHeight: destinationContentHeight("launcher")
     readonly property var launcherExpandedTarget: sheetTarget(Math.min(dashboardAvailableWidth, LauncherMetrics.sizeWidth(SettingsData.dankLauncherV2Size)), launcherContentHeight > 0 ? Math.min(launcherMaxHeight, launcherContentHeight) : launcherMaxHeight)
     readonly property var controlCenterExpandedTarget: sheetTarget(controlCenterSheetWidth + controlCenterSheetInset, controlCenterHeight)
-    readonly property var systemCompactTarget: pillTarget(root.isVertical ? 240 : (SettingsData.osdAlwaysShowValue ? 330 : 282), compactFaceThickness)
+    // A plugin drawing the system face may size it; zero keeps the shell's size.
+    property real systemFaceCompactLength: 0
+    property real systemFaceExpandedWidth: 0
+    property real systemFaceExpandedHeight: 0
+    readonly property var systemCompactTarget: pillTarget(systemFaceCompactLength > 0 ? systemFaceCompactLength : root.isVertical ? 240 : (SettingsData.osdAlwaysShowValue ? 330 : 282), compactFaceThickness)
     property real systemStateContentLength: 0
-    readonly property var systemStateCompactTarget: pillTarget(Math.ceil(Math.max(compactFaceThickness, systemStateContentLength + destinationCompactEndPad * 2)), compactFaceThickness)
-    readonly property var systemExpandedTarget: sheetTarget(460, 176)
+    readonly property var systemStateCompactTarget: systemFaceCompactLength > 0 ? systemCompactTarget : pillTarget(Math.ceil(Math.max(compactFaceThickness, systemStateContentLength + destinationCompactEndPad * 2)), compactFaceThickness)
+    readonly property var systemExpandedTarget: sheetTarget(systemFaceExpandedWidth > 0 ? systemFaceExpandedWidth : 460, systemFaceExpandedHeight > 0 ? systemFaceExpandedHeight : 176)
     readonly property var notificationCompactTarget: pillTarget(Math.ceil(Math.max(notificationCompactMinLength, Math.min(notificationCompactMaxLength, notificationContentLength))), compactFaceThickness)
     readonly property var notificationExpandedTarget: sheetTarget(520, 220)
     readonly property var notificationCenterExpandedTarget: dashboardTargetFor("notificationcenter")
@@ -554,9 +572,10 @@ QtObject {
 
     readonly property bool systemActivityActive: isSystemActivity(activeActivity)
     readonly property bool notificationActive: activeActivity === "notification"
-    readonly property bool outsideClickCollapses: expanded && !notificationActive
+    // A plugin sheet that opened by itself has no keyboard yet: the user's next click belongs to their window.
+    readonly property bool outsideClickCollapses: expanded && !notificationActive && !(pluginActive && !keyboardDismissRequested)
     readonly property bool notificationHeldForSystem: root.systemActivityActive && root.transientReturnActivity === "notification"
-    readonly property bool transientActive: systemActivityActive || notificationActive
+    readonly property bool transientActive: systemActivityActive || notificationActive || pluginActive
     readonly property bool timeoutSuspended: pointerInside || (expanded && !notificationActive)
     readonly property bool activityOwnsBlankClicks: blankClickOwners.indexOf(activeActivity) !== -1
     readonly property bool hoverExpandEnabled: root.interactionMode === "hybrid" && !root.systemActivityActive
@@ -566,6 +585,8 @@ QtObject {
         switch (activityId) {
         case "notification":
             return notificationCompactTarget;
+        case "plugin":
+            return pillTarget(pluginCompactLength, compactFaceThickness);
         case "media":
             return mediaCompactTarget;
         case "home":
@@ -585,6 +606,8 @@ QtObject {
             return homeExpandedTarget;
         case "notification":
             return notificationExpandedTarget;
+        case "plugin":
+            return sheetTarget(pluginExpandedWidth, pluginExpandedHeight);
         case "launcher":
             return launcherExpandedTarget;
         case "controlcenter":
@@ -737,6 +760,8 @@ QtObject {
         }
         if (isDestination(activeActivity))
             return requestActivity(activeActivity, true, requestKeyboardFocus);
+        if (pluginActive && !pluginExpandable)
+            return false;
         if (notificationActive && !notificationExpandAllowed)
             return requestNotificationCenter(false);
         hoverExpanded = false;
@@ -767,6 +792,15 @@ QtObject {
             finishTransient();
             return true;
         }
+        // Alerts and live activities fold back to their pill; only a glance goes away.
+        if (pluginActive) {
+            // The user folded the alert away: the sheet under it stays closed when it ends.
+            plugin.returnExpanded = false;
+            plugin.syncTimeout(true);
+            if (pluginKind === "glance")
+                pluginDismissed(pluginToken, "dismissed");
+            return true;
+        }
         activeActivity = idleActivity();
         return true;
     }
@@ -778,6 +812,8 @@ QtObject {
             return activityId;
         case "media":
             return mediaAvailable ? "media" : "home";
+        case "plugin":
+            return pluginToken ? "plugin" : idleActivity();
         }
         if (isDestination(activityId))
             return activityId;
@@ -942,6 +978,10 @@ QtObject {
     function requestSystemActivity(activityId) {
         if (!isSystemActivity(activityId))
             return false;
+        if (pluginActive && Activities.kindRank(pluginKind) >= Activities.occupantRank({
+            "system": true
+        }))
+            return false;
 
         launcherSessionActive = false;
         clearPendingRequests("");
@@ -970,6 +1010,11 @@ QtObject {
     }
 
     function canRequestNotification(critical) {
+        if (pluginActive)
+            return Activities.occupantRank({
+                "activity": "notification",
+                "critical": critical === true
+            }) > Activities.kindRank(pluginKind);
         return notificationActive || !expanded || critical === true;
     }
 
@@ -1045,6 +1090,11 @@ QtObject {
     function requestToggle(requestKeyboardFocus) {
         if (notificationActive && hoverExpanded && expanded)
             return requestNotificationCenter(false);
+        // An alert opens without taking the keyboard from what the user is typing in; a click hands it over.
+        if (pluginActive && expanded && !keyboardDismissRequested && requestKeyboardFocus === true) {
+            keyboardDismissRequested = true;
+            return true;
+        }
         if (expanded)
             return requestCollapse();
         return requestExpand(requestKeyboardFocus);
