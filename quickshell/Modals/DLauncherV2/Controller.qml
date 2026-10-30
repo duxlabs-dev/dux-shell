@@ -10,6 +10,7 @@ import "Scorer.js" as Scorer
 import "ControllerUtils.js" as Utils
 import "NavigationHelpers.js" as Nav
 import "ItemTransformers.js" as Transform
+import "../../Services/DSearchCollections.js" as Collections
 
 Item {
     id: root
@@ -159,6 +160,11 @@ Item {
         service: AppSearchService
     }
 
+    Ref {
+        service: DSearchService
+        active: root.active && root.searchMode !== "dmenu"
+    }
+
     Loader {
         id: dmenuSocketLoader
         active: false
@@ -186,6 +192,7 @@ Item {
             SessionData.addLauncherHistory(searchQuery, explicitQuerySession);
         }
         _cancelSearch();
+        _semantic = _emptySemantic("");
         selectedFlatIndex = -1;
         selectedItem = null;
         keyboardNavigationActive = false;
@@ -330,6 +337,13 @@ Item {
             title: I18n.tr("Applications", "launcher section title and settings page name"),
             icon: "apps",
             priority: 2,
+            defaultViewMode: "list"
+        },
+        {
+            id: "actions",
+            title: I18n.tr("Actions"),
+            icon: "bolt",
+            priority: 2.2,
             defaultViewMode: "list"
         },
         {
@@ -542,6 +556,17 @@ Item {
     property string _lastPhase1Query: ""
     property var _lastSettingsItems: []
     property var _lastClipboardItems: []
+    property var _semantic: _emptySemantic("")
+    property bool _actionsPromoted: false
+    property var _actionIndex: ({
+            "revision": -1,
+            "entries": [],
+            "byId": {}
+        })
+    property var _appIndex: ({
+            "version": -1,
+            "byId": {}
+        })
     property var _lastPluginItems: ({})
     property var _lastPluginOrder: []
     property string _lastPluginQuery: ""
@@ -599,9 +624,11 @@ Item {
         pluginPhaseTimer.restart();
     }
 
+    // 200 ms was sized for spawning a process per query. A query on the open socket
+    // costs one embedding (about 35 ms), so it only has to wait out a typing pause.
     Timer {
         id: fileSearchDebounce
-        interval: 200
+        interval: DSearchService.linked ? 120 : 200
         onTriggered: root.performFileSearch()
     }
 
@@ -636,8 +663,7 @@ Item {
             }
         }
 
-        var filesInAll = searchMode === "all" && (SettingsData.dankLauncherV2IncludeFilesInAll || SettingsData.dankLauncherV2IncludeFoldersInAll);
-        if (searchMode !== "plugins" && (searchMode === "files" || query.startsWith("/") || filesInAll) && query.length > 0) {
+        if (searchMode !== "plugins" && (searchMode === "files" || query.startsWith("/") || _dsearchWantedInAll(searchMode)) && query.length > 0) {
             fileSearchDebounce.restart();
         }
     }
@@ -665,8 +691,7 @@ Item {
         }
         modeChanged(mode, !isAutoSwitch && notPersist !== true);
         performSearch();
-        var filesInAll = mode === "all" && (SettingsData.dankLauncherV2IncludeFilesInAll || SettingsData.dankLauncherV2IncludeFoldersInAll) && searchQuery.length > 0;
-        if (mode === "files" || filesInAll) {
+        if (mode === "files" || (_dsearchWantedInAll(mode) && searchQuery.length > 0)) {
             fileSearchDebounce.restart();
         }
     }
@@ -725,6 +750,7 @@ Item {
             return;
         }
         DSearchService.ensureChecked();
+        DSearchService.warm();
         if (appCategory !== "" || Object.keys(collapsedSections).length > 0)
             _clearModeCache();
         appCategory = "";
@@ -1488,7 +1514,7 @@ Item {
         _lastPhase1Query = searchQuery;
 
         if (searchMode === "all") {
-            appendSharedAllResults(allItems, searchQuery);
+            allItems = appendSharedAllResults(allItems, searchQuery);
             if (searchQuery && searchQuery.length >= 2) {
                 _pluginPhasePending = true;
                 _phase1Items = allItems.slice();
@@ -1656,7 +1682,7 @@ Item {
         return true;
     }
 
-    function _publishPluginResults(allItems, restoreSelection) {
+    function _buildAllSections(allItems) {
         var dynamicDefs = buildDynamicSectionDefs(allItems);
         var scoredItems = Scorer.scoreItems(allItems, searchQuery, getFrecencyForItem);
         var sortAlpha = !searchQuery && SettingsData.sortAppsAlphabetically;
@@ -1669,6 +1695,11 @@ Item {
         }
 
         _applyHighlights(newSections, searchQuery);
+        return newSections;
+    }
+
+    function _publishPluginResults(allItems, restoreSelection) {
+        var newSections = _buildAllSections(allItems);
         flatModel = Scorer.flattenSections(newSections);
         sections = newSections;
 
@@ -1690,6 +1721,8 @@ Item {
         var effectiveType = fileSearchType || "all";
         var includeFiles = SettingsData.dankLauncherV2IncludeFilesInAll;
         var includeFolders = SettingsData.dankLauncherV2IncludeFoldersInAll;
+        var catalog = _semanticCatalogWanted();
+        var wantFiles = true;
 
         if (searchQuery.startsWith("/")) {
             var prefixInfo = Utils.parseFileSearchPrefix(searchQuery);
@@ -1704,6 +1737,11 @@ Item {
                 effectiveType = "dir";
             else
                 effectiveType = "all";
+        } else if (catalog) {
+            // No file rows are shown; the query is only for the semantic catalog.
+            fileQuery = searchQuery.trim();
+            effectiveType = "file";
+            wantFiles = false;
         } else {
             return;
         }
@@ -1713,61 +1751,79 @@ Item {
             return;
         }
 
-        isFileSearching = true;
+        isFileSearching = wantFiles;
 
-        var splitBothTypes = searchMode === "all" && includeFiles && includeFolders && DSearchService.supportsTypeFilter;
-        var queryTypes = splitBothTypes ? ["file", "dir"] : [effectiveType];
-        var pending = queryTypes.length;
-        var aggregatedItems = [];
+        // One request carries the files, the folders and the catalog collections.
+        var params = {
+            limit: wantFiles ? 20 : 1,
+            fuzzy: true,
+            sort: fileSearchSort || "score",
+            desc: true,
+            semantic: DSearchService.semanticReady
+        };
+        if (DSearchService.supportsTypeFilter) {
+            params.type = (effectiveType && effectiveType !== "all") ? effectiveType : "all";
+        }
+        if (fileSearchExt) {
+            params.ext = fileSearchExt;
+        }
+        if (fileSearchFolder) {
+            params.folder = fileSearchFolder;
+        }
+        if (catalog) {
+            params.collections = _semanticCollections();
+            params.collectionLimit = 8;
+        }
+
         const currentVersion = _searchVersion;
         const currentMode = searchMode;
+        const currentQuery = searchQuery;
 
-        for (var t = 0; t < queryTypes.length; t++) {
-            var queryType = queryTypes[t];
-            var params = {
-                limit: 20,
-                fuzzy: true,
-                sort: fileSearchSort || "score",
-                desc: true
-            };
-
-            if (DSearchService.supportsTypeFilter) {
-                params.type = (queryType && queryType !== "all") ? queryType : "all";
+        DSearchService.search(fileQuery, params, function (response) {
+            if (!root.active || currentVersion !== root._searchVersion || currentMode !== root.searchMode)
+                return;
+            isFileSearching = false;
+            var baseSections = null;
+            if (catalog && !response.error) {
+                _semantic = _resolveSemantic(currentQuery, response.result.collections);
+                baseSections = _recomposeCatalogSections();
             }
-            if (fileSearchExt) {
-                params.ext = fileSearchExt;
-            }
-            if (fileSearchFolder) {
-                params.folder = fileSearchFolder;
-            }
-
-            DSearchService.search(fileQuery, params, function (response) {
-                if (!root.active || currentVersion !== root._searchVersion || currentMode !== root.searchMode)
-                    return;
-                pending--;
-                if (!response.error) {
-                    var hits = response.result?.hits || [];
-                    for (var i = 0; i < hits.length; i++) {
-                        var hit = hits[i];
-                        var docTypes = hit.locations?.doc_type;
-                        var isDir = docTypes ? !!docTypes["dir"] : false;
-                        aggregatedItems.push(transformFileResult({
-                            path: hit.id || "",
-                            score: hit.score || 0,
-                            is_dir: isDir
-                        }));
-                    }
-                }
-                if (pending > 0)
-                    return;
-
-                isFileSearching = false;
-                _applyFileSearchResults(aggregatedItems, effectiveType);
-            });
-        }
+            _applyFileSearchResults(wantFiles && !response.error ? _fileItemsFromResult(response.result) : [], effectiveType, baseSections, catalog);
+        });
     }
 
-    function _applyFileSearchResults(fileItems, effectiveType) {
+    // A search of type "all" lists folders apart from files; either list may carry the
+    // doc_type location that marks a folder.
+    function _fileItemsFromResult(result) {
+        var items = [];
+        var lists = [
+            {
+                "hits": result.hits || [],
+                "dir": false
+            },
+            {
+                "hits": result.directory_hits || [],
+                "dir": true
+            }
+        ];
+        for (var l = 0; l < lists.length; l++) {
+            for (var i = 0; i < lists[l].hits.length; i++) {
+                var hit = lists[l].hits[i];
+                var docTypes = hit.locations?.doc_type;
+                items.push(transformFileResult({
+                    path: hit.id || "",
+                    score: hit.score || 0,
+                    is_dir: lists[l].dir || (docTypes ? !!docTypes["dir"] : false)
+                }));
+            }
+        }
+        return items;
+    }
+
+    // baseSections: the non-file sections to put the files next to, when the catalog was
+    // recomputed for this answer. keepNavigation: leave the selection where the user took it.
+    function _applyFileSearchResults(fileItems, effectiveType, baseSections, keepNavigation) {
+        var restoreSelection = preserveSelectionAfterUpdate(!(keepNavigation && keyboardNavigationActive));
         var fileSections = [];
         var showType = effectiveType;
         var order = SettingsData.launcherPluginOrder || [];
@@ -1828,7 +1884,7 @@ Item {
         if (searchMode === "files") {
             newSections = fileSections;
         } else {
-            var existingNonFile = sections.filter(function (s) {
+            var existingNonFile = (baseSections || sections).filter(function (s) {
                 return s.id !== "files" && s.id !== "folders";
             });
             newSections = existingNonFile.concat(fileSections);
@@ -1841,7 +1897,7 @@ Item {
         _applyHighlights(newSections, searchQuery);
         flatModel = Scorer.flattenSections(newSections);
         sections = newSections;
-        selectedFlatIndex = getFirstItemIndex();
+        selectedFlatIndex = restoreSelection(flatModel);
         updateSelectedItem();
     }
 
@@ -1905,17 +1961,16 @@ Item {
         return builtInLauncherVisibleInAll("dms_clipboard_search") && ClipboardService.clipboardAvailable;
     }
 
+    // Next to the applications in All mode: settings, actions and clipboard, with the
+    // semantic answer folded in once it has arrived for this query.
     function appendSharedAllResults(allItems, query) {
-        if (!query || query.length < 2)
-            return;
-        var settingsItems = _settingsSharedItems(query);
-        var clipboardItems = _clipboardSharedItems(query);
-        for (var i = 0; i < settingsItems.length; i++)
-            allItems.push(settingsItems[i]);
-        for (var j = 0; j < clipboardItems.length; j++)
-            allItems.push(clipboardItems[j]);
-        _lastSettingsItems = settingsItems;
-        _lastClipboardItems = clipboardItems;
+        if (!query || query.length < 2) {
+            _actionsPromoted = false;
+            return allItems;
+        }
+        _lastSettingsItems = _settingsSharedItems(query);
+        _lastClipboardItems = _clipboardSharedItems(query);
+        return _composePhase1(query, _lastAppItems, _lastSettingsItems, _lastClipboardItems);
     }
 
     function _settingsSharedItems(query) {
@@ -1926,7 +1981,10 @@ Item {
         var settingsLimit = Math.min(settingsItems.length, 8);
         for (var i = 0; i < settingsLimit; i++) {
             settingsItems[i]._preScored = 890 - i;
-            items.push(transformBuiltInSearchItem(settingsItems[i], "dms_settings_search"));
+            var settingRow = transformBuiltInSearchItem(settingsItems[i], "dms_settings_search");
+            // Several rows can open the same page; action and label tell them apart.
+            settingRow._key = settingRow.id + "\u0001" + settingRow.name;
+            items.push(settingRow);
         }
         return items;
     }
@@ -1951,11 +2009,8 @@ Item {
         if (_samePluginItems(_lastClipboardItems, fresh))
             return true;
         _lastClipboardItems = fresh;
-        var phase1 = _lastAppItems.slice();
-        for (var i = 0; i < _lastSettingsItems.length; i++)
-            phase1.push(_lastSettingsItems[i]);
-        for (var j = 0; j < fresh.length; j++)
-            phase1.push(fresh[j]);
+        var phase1 = _composePhase1(searchQuery, _lastAppItems, _lastSettingsItems, fresh);
+        _lastPhase1Items = phase1.slice();
         if (_pluginPhasePending) {
             _phase1Items = phase1;
             return true;
@@ -1970,6 +2025,234 @@ Item {
         }
         _publishPluginResults(allItems, preserveSelectionAfterUpdate(false));
         return true;
+    }
+
+    function _emptySemantic(query) {
+        return {
+            "query": query,
+            "actions": {
+                "items": [],
+                "hits": []
+            },
+            "settings": {
+                "items": [],
+                "hits": []
+            },
+            "apps": {
+                "items": [],
+                "hits": []
+            }
+        };
+    }
+
+    function _actionEntries() {
+        if (_actionIndex.revision === ActionCatalogService.revision)
+            return _actionIndex;
+        var entries = ActionCatalogService.items || [];
+        var byId = {};
+        for (var i = 0; i < entries.length; i++)
+            byId[entries[i].id] = entries[i];
+        _actionIndex = {
+            "revision": ActionCatalogService.revision,
+            "entries": entries,
+            "byId": byId
+        };
+        return _actionIndex;
+    }
+
+    function _actionItem(entry) {
+        var state = ActionCatalogService.stateText(entry.id);
+        return Transform.transformActionItem(entry, state ? I18n.tr("Current: %1").arg(state) : "", I18n.tr("Apply"), I18n.tr("Action"));
+    }
+
+    function _lexicalActionItems(query) {
+        var entries = _actionEntries().entries;
+        var matched = [];
+        for (var i = 0; i < entries.length; i++) {
+            var textScore = Scorer.textScore({
+                "name": entries[i].title || "",
+                "keywords": entries[i].keywords || [],
+                "type": "action"
+            }, query);
+            if (textScore >= Scorer.Fusion.minLexical && ActionCatalogService.available(entries[i].id))
+                matched.push({
+                    "entry": entries[i],
+                    "score": textScore,
+                    "order": i
+                });
+        }
+        matched.sort(function (a, b) {
+            return b.score - a.score || a.order - b.order;
+        });
+        return matched.slice(0, 8).map(function (match) {
+            return _actionItem(match.entry);
+        });
+    }
+
+    function _appById() {
+        if (_appIndex.version === AppSearchService.cacheVersion)
+            return _appIndex.byId;
+        var apps = AppSearchService.getVisibleApplications();
+        var byId = {};
+        for (var i = 0; i < apps.length; i++) {
+            if (apps[i].id)
+                byId[apps[i].id] = apps[i];
+        }
+        _appIndex = {
+            "version": AppSearchService.cacheVersion,
+            "byId": byId
+        };
+        return byId;
+    }
+
+    // Hits become rows once per answer. An action that is not available now, an app that
+    // is hidden and a setting that does not apply to this compositor drop out here.
+    function _resolveSemantic(query, collections) {
+        var resolved = _emptySemantic(query);
+        var hits = collections[DSearchService.collectionActions] || [];
+        var actions = _actionEntries().byId;
+        for (var i = 0; i < hits.length; i++) {
+            var entry = actions[hits[i].id];
+            if (!entry || !ActionCatalogService.available(entry.id))
+                continue;
+            var actionRow = _actionItem(entry);
+            resolved.actions.items.push(actionRow);
+            resolved.actions.hits.push({
+                "id": actionRow.id,
+                "score": hits[i].score
+            });
+        }
+
+        hits = collections[DSearchService.collectionApps] || [];
+        var apps = _appById();
+        for (var j = 0; j < hits.length; j++) {
+            if (!apps[hits[j].id])
+                continue;
+            var appRow = getOrTransformApp(apps[hits[j].id]);
+            resolved.apps.items.push(appRow);
+            resolved.apps.hits.push({
+                "id": appRow.id,
+                "score": hits[j].score
+            });
+        }
+
+        if (!builtInLauncherVisibleInAll("dms_settings_search"))
+            return resolved;
+        hits = collections[DSearchService.collectionSettings] || [];
+        for (var k = 0; k < hits.length; k++) {
+            var setting = DSearchService.settingEntry(hits[k].id);
+            if (!setting || !SettingsSearchService.checkCondition(setting))
+                continue;
+            var t = SettingsSearchService.translateItem(setting);
+            // Same row AppSearchService builds for a lexical settings match.
+            var settingRow = transformBuiltInSearchItem({
+                "name": t.label,
+                "type": "setting",
+                "section": "settings",
+                "icon": "material:" + t.icon,
+                "comment": t.description || t.category,
+                "action": Collections.settingAction(hits[k].id),
+                "categories": ["Settings"],
+                "keywords": t.keywords || [],
+                "source": I18n.tr("Settings", "settings window title"),
+                "badgeLabel": I18n.tr("Setting"),
+                "isCore": true,
+                "isBuiltInLauncher": true,
+                "builtInPluginId": "dms_settings_search"
+            }, "dms_settings_search");
+            settingRow._key = settingRow.id + "\u0001" + settingRow.name;
+            resolved.settings.items.push(settingRow);
+            resolved.settings.hits.push({
+                "id": settingRow._key,
+                "score": hits[k].score
+            });
+        }
+        return resolved;
+    }
+
+    function _usageOf(item) {
+        var frecency = getFrecencyForItem(item);
+        return frecency ? frecency.usageCount : 0;
+    }
+
+    function _fusedItems(fused, limit) {
+        return fused.entries.slice(0, limit).map(function (entry) {
+            return entry.item;
+        });
+    }
+
+    // The lexical rows of one query, merged with the semantic answer if it is for this query.
+    // Without semantic hits for a kind its rows keep their classic scores and order.
+    function _composePhase1(query, appItems, settingsItems, clipboardItems) {
+        var semantic = _semantic.query === query ? _semantic : _emptySemantic(query);
+        var apps = appItems;
+        var settings = settingsItems;
+
+        if (semantic.apps.hits.length > 0) {
+            var rankedApps = Scorer.scoreItems(appItems, query, getFrecencyForItem).map(function (entry) {
+                return entry.item;
+            });
+            apps = _fusedItems(Scorer.fuseCatalog(rankedApps, semantic.apps.items, query, semantic.apps.hits, _usageOf), 50);
+        }
+        if (semantic.settings.hits.length > 0)
+            settings = _fusedItems(Scorer.fuseCatalog(settingsItems, semantic.settings.items, query, semantic.settings.hits, null), 8);
+
+        var fusedActions = Scorer.fuseCatalog(_lexicalActionItems(query), semantic.actions.items, query, semantic.actions.hits, _usageOf);
+        _actionsPromoted = Scorer.actionsConfident(fusedActions, Scorer.bestTextScore(appItems, query));
+
+        return apps.concat(settings, _fusedItems(fusedActions, 8), clipboardItems);
+    }
+
+    // The sections of the current All-mode query with the semantic answer folded in, or null
+    // when this list is not the one the answer belongs to.
+    function _recomposeCatalogSections() {
+        if (searchMode !== "all" || _lastPhase1Query !== searchQuery)
+            return null;
+        var phase1 = _composePhase1(searchQuery, _lastAppItems, _lastSettingsItems, _lastClipboardItems);
+        _lastPhase1Items = phase1.slice();
+        if (_pluginPhasePending) {
+            _phase1Items = phase1.slice();
+            return null;
+        }
+        if (_lastPluginQuery !== searchQuery || _lastPluginMode !== searchMode)
+            return null;
+        var allItems = phase1;
+        for (var k = 0; k < _lastPluginOrder.length; k++) {
+            var items = _lastPluginItems[_lastPluginOrder[k]] || [];
+            for (var m = 0; m < items.length; m++)
+                allItems.push(items[m]);
+        }
+        return _buildAllSections(allItems);
+    }
+
+    function _semanticCatalogWanted() {
+        if (searchMode !== "all" || !DSearchService.semanticReady || !DSearchService.collectionsSupported)
+            return false;
+        return searchQuery.trim().length >= 2 && !detectTrigger(searchQuery).pluginId;
+    }
+
+    // Is a dsearch query due in this mode: files, folders, or the semantic catalog.
+    function _dsearchWantedInAll(mode) {
+        if (mode !== "all")
+            return false;
+        if (SettingsData.dankLauncherV2IncludeFilesInAll || SettingsData.dankLauncherV2IncludeFoldersInAll)
+            return true;
+        return DSearchService.semanticReady && DSearchService.collectionsSupported;
+    }
+
+    function _semanticCollections() {
+        var names = [DSearchService.collectionActions, DSearchService.collectionApps];
+        if (builtInLauncherVisibleInAll("dms_settings_search"))
+            names.push(DSearchService.collectionSettings);
+        return names;
+    }
+
+    function _recordActionUsage(item) {
+        AppUsageHistoryData.addAppUsage({
+            "id": "action:" + item.data.actionId,
+            "name": item.name,
+            "icon": item.icon
+        });
     }
 
     function detectTrigger(query) {
@@ -2180,6 +2463,9 @@ Item {
             var virtualId = baseDefs[d].id === "settings" ? "dms_settings_search" : baseDefs[d].id === "clipboard" ? "dms_clipboard_search" : "";
             if (virtualId && orderMap[virtualId] !== undefined)
                 baseDefs[d].priority = 2.6 + orderMap[virtualId] * 0.01;
+            // Above the applications only while the best action is a sure match.
+            if (baseDefs[d].id === "actions" && _actionsPromoted)
+                baseDefs[d].priority = 1.5;
         }
 
         for (var i = 0; i < items.length; i++) {
@@ -2252,6 +2538,12 @@ Item {
     }
 
     function getFrecencyForItem(item) {
+        if (item.type === "action") {
+            var action = (AppUsageHistoryData.appUsageRanking || {})["action:" + item.data?.actionId];
+            return {
+                usageCount: action?.usageCount || 0
+            };
+        }
         if (item.type !== "app")
             return null;
 
@@ -2709,6 +3001,12 @@ Item {
             break;
         case "setting":
             AppSearchService.executeBuiltInLauncherItem(item.data);
+            break;
+        case "action":
+            // The catalog reports the outcome itself; a refused action keeps the launcher open.
+            if (!ActionCatalogService.execute(item.data.actionId, searchQuery))
+                return;
+            _recordActionUsage(item);
             break;
         case "clipboard":
             var shouldPaste = isKeyboard ? SettingsData.clipboardEnterToPaste : SettingsData.clipboardClickToPaste;
