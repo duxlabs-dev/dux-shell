@@ -2,10 +2,13 @@ package distros
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"os/exec"
+	"slices"
 	"strings"
+	"sync"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
 	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
@@ -53,7 +56,8 @@ type FedoraDistribution struct {
 	*ManualPackageInstaller
 	config DistroConfig
 
-	rpmInstalled func(pkg string) bool
+	rpmInstalled    func(pkg string) bool
+	ostreeRequested func() []string
 }
 
 func NewFedoraDistribution(config DistroConfig, logChan chan<- string) *FedoraDistribution {
@@ -106,7 +110,7 @@ func (f *FedoraDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 	}
 	dependencies = append(dependencies, wmDep)
 	dependencies = append(dependencies, f.detectQuickshell())
-	dependencies = append(dependencies, f.detectDMSGreeter())
+	dependencies = append(dependencies, f.detectGreeterPackage(f.packageInstalled))
 	dependencies = append(dependencies, f.detectXDGPortal())
 	dependencies = append(dependencies, f.detectAccountsService())
 
@@ -128,7 +132,7 @@ func (f *FedoraDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 
 	dependencies = append(dependencies, f.detectMatugen())
 	dependencies = append(dependencies, f.detectDanksearch())
-	dependencies = append(dependencies, withGitVariant(f.detectDankCalendar(), f.packageInstalled("dankcalendar-git")))
+	dependencies = append(dependencies, f.detectCalendarPackage(f.packageInstalled))
 
 	return dependencies, nil
 }
@@ -294,11 +298,11 @@ func (f *FedoraDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 
 		// COPR packages
 		"quickshell":      f.getQuickshellMapping(variants["quickshell"]),
-		"dms-greeter":     variantMapping("dms-greeter", variants["dms-greeter"], RepoTypeCOPR, coprDeps),
+		"dms-greeter":     variantMapping("dux-greeter", variants["dms-greeter"], RepoTypeCOPR, coprDeps),
 		"matugen":         {Name: "matugen", Repository: RepoTypeCOPR, RepoURL: coprDeps},
 		"dms (Dux Shell)": f.getDmsMapping(variants["dms (Dux Shell)"]),
-		"danksearch":      {Name: "danksearch", Repository: RepoTypeCOPR, RepoURL: coprDeps},
-		"dankcalendar":    variantMapping("dankcalendar", variants["dankcalendar"], RepoTypeCOPR, coprDeps),
+		"danksearch":      {Name: "dux-search", Repository: RepoTypeCOPR, RepoURL: coprDeps},
+		"dankcalendar":    variantMapping("dux-calendar", variants["dankcalendar"], RepoTypeCOPR, coprDeps),
 	}
 
 	switch wm {
@@ -379,12 +383,6 @@ func (f *FedoraDistribution) detectAccountsService() deps.Dependency {
 		Description: "D-Bus interface for user account query and manipulation",
 		Required:    true,
 	}
-}
-
-func (f *FedoraDistribution) detectDMSGreeter() deps.Dependency {
-	gitInstalled := f.packageInstalled("dms-greeter-git")
-	dep := f.detectOptionalPackage("dms-greeter", "Dux Shell greetd greeter", gitInstalled || f.packageInstalled("dms-greeter"))
-	return withGitVariant(dep, gitInstalled)
 }
 
 func (f *FedoraDistribution) getPrerequisites() []string {
@@ -829,6 +827,44 @@ func (f *FedoraDistribution) coprRepoFileCommand(repo string) string {
 		coprRepoFile(repo), owner, project, chroot, owner, project, chroot)
 }
 
+// rpm-ostree status runs over D-Bus and the layer view rebuilds its commands on every render.
+var rpmOstreeRequested = sync.OnceValue(func() []string {
+	out, err := exec.Command("rpm-ostree", "status", "--json").Output()
+	if err != nil {
+		return nil
+	}
+	var status struct {
+		Deployments []struct {
+			Requested []string `json:"requested-packages"`
+		} `json:"deployments"`
+	}
+	if json.Unmarshal(out, &status) != nil || len(status.Deployments) == 0 {
+		return nil
+	}
+	return status.Deployments[0].Requested
+})
+
+func (f *FedoraDistribution) layeredRequests() map[string]bool {
+	list := f.ostreeRequested
+	if list == nil {
+		list = rpmOstreeRequested
+	}
+	requested := map[string]bool{}
+	for _, name := range list() {
+		requested[name] = true
+	}
+	return requested
+}
+
+// layeredName is what --uninstall must name: the request, which may still be the pre-rename name
+// even when its Provides already resolved to the renamed package.
+func layeredName(requested map[string]bool, pkg string) string {
+	if old, ok := renamedPackages[pkg]; ok && !requested[pkg] && requested[old] {
+		return old
+	}
+	return pkg
+}
+
 // Shown to the user, never run. Terra-only packages have no rpm-ostree path.
 func (f *FedoraDistribution) LayerCommands(dependencies []deps.Dependency, wm deps.WindowManager, reinstallFlags, disabledFlags map[string]bool) []string {
 	var commands []string
@@ -837,6 +873,7 @@ func (f *FedoraDistribution) LayerCommands(dependencies []deps.Dependency, wm de
 	if skip == nil {
 		skip = map[string]bool{}
 	}
+	requested := f.layeredRequests()
 	// rpm-ostree refuses to install what is already layered, so a reinstall mark only means a variant switch.
 	for _, dep := range dependencies {
 		if !reinstallFlags[dep.Name] || skip[dep.Name] || dep.Status != deps.StatusInstalled {
@@ -847,7 +884,7 @@ func (f *FedoraDistribution) LayerCommands(dependencies []deps.Dependency, wm de
 			skip[dep.Name] = true
 			continue
 		}
-		uninstall = append(uninstall, swap.From.Name)
+		uninstall = append(uninstall, layeredName(requested, swap.From.Name))
 		if swap.From.Name == swap.To.Name && swap.From.Repository == RepoTypeCOPR {
 			var files []string
 			for _, repo := range coprAliases(swap.From.RepoURL) {
@@ -869,6 +906,17 @@ func (f *FedoraDistribution) LayerCommands(dependencies []deps.Dependency, wm de
 		commands = append(commands, f.coprRepoFileCommand(pkg.RepoURL))
 		if pkg.RepoURL == "yalter/niri-git" {
 			commands = append(commands, "echo priority=1 | sudo tee -a "+coprRepoFile("yalter/niri-git"))
+		}
+	}
+	// A request keeps its old name forever and resolves by name before Provides, ignoring Obsoletes.
+	for _, name := range slices.Sorted(maps.Keys(renamedPackages)) {
+		old := renamedPackages[name]
+		if !requested[old] || slices.Contains(uninstall, old) {
+			continue
+		}
+		uninstall = append(uninstall, old)
+		if !requested[name] && !slices.Contains(pkgs, name) {
+			pkgs = append(pkgs, name)
 		}
 	}
 	for _, dep := range dependencies {

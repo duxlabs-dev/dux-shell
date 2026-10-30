@@ -5,8 +5,8 @@ XBPS templates for Dux Shell on [Void Linux](https://voidlinux.org).
 | Package | Source repo | Template |
 | --- | --- | --- |
 | `dms` | Dux Shell | [`srcpkgs/dms/template`](srcpkgs/dms/template) |
-| `dgop` | duxlabs-dev/dux-gop | maintained in the **dux-repo** repo (`distro/void/srcpkgs/dgop`) |
-| `danksearch` | duxlabs-dev/dux-search | maintained in the **dux-repo** repo (`distro/void/srcpkgs/danksearch`) |
+| `dux-gop` | duxlabs-dev/dux-gop | maintained in the **dux-repo** repo (`distro/void/srcpkgs/dux-gop`) |
+| `dux-search` | duxlabs-dev/dux-search | maintained in the **dux-repo** repo (`distro/void/srcpkgs/dux-search`) |
 
 All build from source.
 
@@ -18,7 +18,7 @@ This is a DMS maintained repo for VoidLinux until these packages are officially 
 
 We serve both stable release and development packages from Cloudflare R2 at
 `void.duxlabs.dev`: `dms` and `dms-git` from `dms/current`, their dependencies
-and `dms-greeter` from `dux-repo/current`.
+and `dux-greeter` from `dux-repo/current`.
 
 > **Repository migration:** the former GitHub Pages repositories will be
 > frozen for 14 days at cutover. Their retirement date will be announced when
@@ -59,14 +59,14 @@ checkout at `srcpkgs/<pkg>/template` to build or submit it.
 
 ## Dependencies
 
-Installing `dms` automatically pulls in `quickshell`, `accountsservice`, `dgop`,
+Installing `dms` automatically pulls in `quickshell`, `accountsservice`, `dux-gop`,
 `matugen` (which drives the Material You theming), `dbus`, `elogind`, and
 `mesa-dri` (GL drivers, required for compositors to render).
 The rest are optional, install whichever features you want:
 
 | Package | Enables |
 | --- | --- |
-| `danksearch` | launcher / filesystem search |
+| `dux-search` | launcher / filesystem search |
 | `cava` | audio visualiser widget |
 | `qt6-multimedia` | system sound feedback |
 | `qt6ct` | Qt app theming |
@@ -81,16 +81,16 @@ The rest are optional, install whichever features you want:
 Inside a `void-packages` checkout (symlink or copy these `srcpkgs/<pkg>` dirs in):
 
 ```sh
-# build the dependency packages first (dms requires dgop)
-./xbps-src pkg dgop
-./xbps-src pkg danksearch
+# build the dependency packages first (dms requires dux-gop)
+./xbps-src pkg dux-gop
+./xbps-src pkg dux-search
 ./xbps-src pkg dms
 
 # lint (xlint ships in the xtools package)
 xlint srcpkgs/dms/template
 
 # install the built packages
-sudo xbps-install --repository=hostdir/binpkgs dms dgop
+sudo xbps-install --repository=hostdir/binpkgs dms dux-gop
 ```
 
 ## Running the shell

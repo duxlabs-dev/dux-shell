@@ -70,7 +70,7 @@ func (u *UbuntuDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 	dependencies = append(dependencies, u.detectGit())
 	dependencies = append(dependencies, u.detectWindowManager(wm))
 	dependencies = append(dependencies, u.detectQuickshell())
-	dependencies = append(dependencies, u.detectDMSGreeter())
+	dependencies = append(dependencies, u.detectGreeterPackage(u.packageInstalled))
 	dependencies = append(dependencies, u.detectXDGPortal())
 	dependencies = append(dependencies, u.detectAccountsService())
 
@@ -87,7 +87,7 @@ func (u *UbuntuDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 
 	dependencies = append(dependencies, u.detectMatugen())
 	dependencies = append(dependencies, u.detectDanksearch())
-	dependencies = append(dependencies, withGitVariant(u.detectDankCalendar(), u.packageInstalled("dankcalendar-git")))
+	dependencies = append(dependencies, u.detectCalendarPackage(u.packageInstalled))
 
 	return dependencies, nil
 }
@@ -102,12 +102,6 @@ func (u *UbuntuDistribution) detectXwaylandSatellite() deps.Dependency {
 
 func (u *UbuntuDistribution) detectAccountsService() deps.Dependency {
 	return u.detectPackage("accountsservice", "D-Bus interface for user account query and manipulation", u.packageInstalled("accountsservice"))
-}
-
-func (u *UbuntuDistribution) detectDMSGreeter() deps.Dependency {
-	gitInstalled := u.packageInstalled("dms-greeter-git")
-	dep := u.detectOptionalPackage("dms-greeter", "Dux Shell greetd greeter", gitInstalled || u.packageInstalled("dms-greeter"))
-	return withGitVariant(dep, gitInstalled)
 }
 
 func (u *UbuntuDistribution) packageInstalled(pkg string) bool {
@@ -190,11 +184,11 @@ func (u *UbuntuDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 		// DMS packages from PPAs
 		"dms (Dux Shell)": u.getDmsMapping(variants["dms (Dux Shell)"]),
 		"quickshell":      u.getQuickshellMapping(variants["quickshell"]),
-		"dms-greeter":     variantMapping("dms-greeter", variants["dms-greeter"], RepoTypePPA, ppaDeps),
+		"dms-greeter":     variantMapping("dux-greeter", variants["dms-greeter"], RepoTypePPA, ppaDeps),
 		"matugen":         {Name: "matugen", Repository: RepoTypePPA, RepoURL: ppaDeps},
 		"ghostty":         {Name: "ghostty", Repository: RepoTypePPA, RepoURL: ppaDeps},
-		"danksearch":      {Name: "danksearch", Repository: RepoTypePPA, RepoURL: ppaDeps},
-		"dankcalendar":    variantMapping("dankcalendar", variants["dankcalendar"], RepoTypePPA, ppaDeps),
+		"danksearch":      {Name: "dux-search", Repository: RepoTypePPA, RepoURL: ppaDeps},
+		"dankcalendar":    variantMapping("dux-calendar", variants["dankcalendar"], RepoTypePPA, ppaDeps),
 	}
 
 	switch wm {

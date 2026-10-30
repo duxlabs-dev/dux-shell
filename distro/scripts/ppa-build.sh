@@ -245,10 +245,10 @@ dms-git)
 dms)
     GIT_REPO="duxlabs-dev/dux-shell"
     ;;
-danksearch)
+dux-search)
     GIT_REPO="duxlabs-dev/dux-search"
     ;;
-dgop)
+dux-gop)
     GIT_REPO="duxlabs-dev/dux-gop"
     ;;
 esac
@@ -540,8 +540,8 @@ fi
 # Handle packages that need pre-built binaries downloaded
 cd "$WORK_PACKAGE_DIR"
 case "$PACKAGE_NAME" in
-danksearch)
-    info "Downloading pre-built binaries for danksearch..."
+dux-search)
+    info "Downloading pre-built binaries for dux-search..."
     VERSION=$(dpkg-parsechangelog -S Version | sed 's/-[^-]*$//' | sed 's/ppa[0-9]*$//')
 
     if [ ! -f "dsearch-amd64" ]; then
@@ -568,7 +568,7 @@ danksearch)
         fi
     fi
     ;;
-dgop)
+dux-gop)
     if [ ! -f "dgop" ]; then
         warn "dgop binary not found - should be committed to repo"
     fi

@@ -137,6 +137,7 @@ func TestApplyImmutableDetection(t *testing.T) {
 
 func TestFedoraLayerCommands(t *testing.T) {
 	f := NewFedoraDistribution(Registry["fedora"], nil)
+	f.ostreeRequested = func() []string { return nil }
 	dependencies := []deps.Dependency{
 		{Name: "dms (Dux Shell)", Status: deps.StatusMissing},
 		{Name: "niri", Status: deps.StatusMissing, Variant: deps.VariantGit},
@@ -180,6 +181,7 @@ func TestFedoraLayerCommandsSwapVariants(t *testing.T) {
 	f := NewFedoraDistribution(Registry["fedora"], nil)
 	installed := map[string]bool{"dms-greeter": true, "dms": true}
 	f.rpmInstalled = func(pkg string) bool { return installed[pkg] }
+	f.ostreeRequested = func() []string { return []string{"dms", "dms-greeter"} }
 	orig := installedFromCOPR
 	installedFromCOPR = func(pkg, repo string) bool { return pkg == "dms" && repo == "duxlabs/dms-git" }
 	t.Cleanup(func() { installedFromCOPR = orig })
@@ -194,7 +196,7 @@ func TestFedoraLayerCommandsSwapVariants(t *testing.T) {
 
 	for _, want := range []string{
 		"sudo rm -f /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:duxlabs:dms-git.repo /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:avengemedia:dms-git.repo",
-		"sudo rpm-ostree install dms dms-greeter-git --uninstall dms dms-greeter",
+		"sudo rpm-ostree install dms dux-greeter-git --uninstall dms dms-greeter",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("missing %q in:\n%s", want, got)
@@ -202,6 +204,31 @@ func TestFedoraLayerCommandsSwapVariants(t *testing.T) {
 	}
 	if strings.Contains(got, "danksearch") {
 		t.Fatalf("reinstall mark without a variant change must not be layered:\n%s", got)
+	}
+}
+
+func TestFedoraLayerCommandsRenamedRequests(t *testing.T) {
+	cases := []struct {
+		name      string
+		rpm       string
+		requested []string
+		want      string
+	}{
+		{"old package and request", "dms-greeter", []string{"dms-greeter", "danksearch"}, "sudo rpm-ostree install dux-greeter-git dux-search --uninstall dms-greeter danksearch"},
+		{"old request resolved through Provides", "dux-greeter", []string{"dms-greeter"}, "sudo rpm-ostree install dux-greeter-git --uninstall dms-greeter"},
+		{"new request", "dux-greeter", []string{"dux-greeter"}, "sudo rpm-ostree install dux-greeter-git --uninstall dux-greeter"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := NewFedoraDistribution(Registry["fedora"], nil)
+			f.rpmInstalled = func(pkg string) bool { return pkg == tc.rpm }
+			f.ostreeRequested = func() []string { return tc.requested }
+			dependencies := []deps.Dependency{{Name: "dms-greeter", Status: deps.StatusInstalled, Variant: deps.VariantGit, CanToggle: true}}
+			got := strings.Join(f.LayerCommands(dependencies, deps.WindowManagerNiri, map[string]bool{"dms-greeter": true}, nil), "\n")
+			if !strings.Contains(got, tc.want) {
+				t.Fatalf("missing %q in:\n%s", tc.want, got)
+			}
+		})
 	}
 }
 

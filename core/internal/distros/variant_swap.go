@@ -20,6 +20,7 @@ type VariantSwap struct {
 type VariantSwapper interface {
 	InstalledVariant(stable, git PackageMapping) (deps.PackageVariant, bool)
 	SwapVariants(ctx context.Context, swaps []VariantSwap, sudoPassword string, progressChan chan<- InstallProgressMsg) error
+	packageInstalled(pkg string) bool
 }
 
 type SwapStatus int
@@ -53,18 +54,26 @@ func PlanVariantSwap(d Distribution, wm deps.WindowManager, dep string, target d
 	case current == target:
 		return VariantSwap{}, SwapAlreadyOnTarget
 	case target == deps.VariantGit:
-		return VariantSwap{Dep: dep, From: stable, To: git}, SwapNeeded
+		return VariantSwap{Dep: dep, From: installedAs(swapper, stable), To: git}, SwapNeeded
 	default:
-		return VariantSwap{Dep: dep, From: git, To: stable}, SwapNeeded
+		return VariantSwap{Dep: dep, From: installedAs(swapper, git), To: stable}, SwapNeeded
 	}
+}
+
+// installedAs names the package the remove step must target, which is the old name on hosts not yet upgraded past a rename.
+func installedAs(swapper VariantSwapper, m PackageMapping) PackageMapping {
+	if name, ok := installedName(swapper.packageInstalled, m.Name); ok {
+		m.Name = name
+	}
+	return m
 }
 
 // installedVariantByName works when the two variants ship under different package names.
 func installedVariantByName(installed func(string) bool, stable, git PackageMapping) (deps.PackageVariant, bool) {
-	switch {
-	case installed(packageBaseName(git.Name)):
+	if _, ok := installedName(installed, packageBaseName(git.Name)); ok {
 		return deps.VariantGit, true
-	case installed(packageBaseName(stable.Name)):
+	}
+	if _, ok := installedName(installed, packageBaseName(stable.Name)); ok {
 		return deps.VariantStable, true
 	}
 	return deps.VariantStable, false

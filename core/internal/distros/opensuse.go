@@ -75,7 +75,7 @@ func (o *OpenSUSEDistribution) DetectDependenciesWithTerminal(ctx context.Contex
 	dependencies = append(dependencies, o.detectGit())
 	dependencies = append(dependencies, o.detectWindowManager(wm))
 	dependencies = append(dependencies, o.detectQuickshell())
-	dependencies = append(dependencies, o.detectDMSGreeter())
+	dependencies = append(dependencies, o.detectGreeterPackage(o.packageInstalled))
 	dependencies = append(dependencies, o.detectXDGPortal())
 	dependencies = append(dependencies, o.detectAccountsService())
 
@@ -92,7 +92,7 @@ func (o *OpenSUSEDistribution) DetectDependenciesWithTerminal(ctx context.Contex
 
 	dependencies = append(dependencies, o.detectMatugen())
 	dependencies = append(dependencies, o.detectDanksearch())
-	dependencies = append(dependencies, withGitVariant(o.detectDankCalendar(), o.packageInstalled("dankcalendar-git")))
+	dependencies = append(dependencies, o.detectCalendarPackage(o.packageInstalled))
 
 	return dependencies, nil
 }
@@ -196,12 +196,6 @@ func obsZypperRepoURL(repo, dist string) string {
 	return obsBaseURL(repo, dist) + "/" + repo + ".repo"
 }
 
-func (o *OpenSUSEDistribution) detectDMSGreeter() deps.Dependency {
-	gitInstalled := o.packageInstalled("dms-greeter-git")
-	dep := o.detectOptionalPackage("dms-greeter", "Dux Shell greetd greeter", gitInstalled || o.packageInstalled("dms-greeter"))
-	return withGitVariant(dep, gitInstalled)
-}
-
 func (o *OpenSUSEDistribution) GetPackageMapping(wm deps.WindowManager) map[string]PackageMapping {
 	return o.GetPackageMappingWithVariants(wm, make(map[string]deps.PackageVariant))
 }
@@ -218,11 +212,11 @@ func (o *OpenSUSEDistribution) GetPackageMappingWithVariants(wm deps.WindowManag
 		// DMS packages from OBS
 		"dms (Dux Shell)": o.getDmsMapping(variants["dms (Dux Shell)"]),
 		"quickshell":      o.getQuickshellMapping(variants["quickshell"]),
-		"dms-greeter":     variantMapping("dms-greeter", variants["dms-greeter"], RepoTypeOBS, obsDeps),
+		"dms-greeter":     variantMapping("dux-greeter", variants["dms-greeter"], RepoTypeOBS, obsDeps),
 		"ghostty":         {Name: "ghostty", Repository: RepoTypeOBS, RepoURL: obsDeps},
 		"matugen":         {Name: "matugen", Repository: RepoTypeOBS, RepoURL: obsDeps},
-		"danksearch":      {Name: "danksearch", Repository: RepoTypeOBS, RepoURL: obsDeps},
-		"dankcalendar":    variantMapping("dankcalendar", variants["dankcalendar"], RepoTypeOBS, obsDeps),
+		"danksearch":      {Name: "dux-search", Repository: RepoTypeOBS, RepoURL: obsDeps},
+		"dankcalendar":    variantMapping("dux-calendar", variants["dankcalendar"], RepoTypeOBS, obsDeps),
 	}
 
 	switch wm {

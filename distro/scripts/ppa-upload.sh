@@ -452,7 +452,7 @@ if [ "$KEEP_BUILDS" = "false" ]; then
     done
 
     case "$PACKAGE_NAME" in
-    danksearch)
+    dux-search)
         if [ -f "$PACKAGE_DIR/dsearch-amd64" ]; then
             rm -f "$PACKAGE_DIR/dsearch-amd64"
             REMOVED=$((REMOVED + 1))

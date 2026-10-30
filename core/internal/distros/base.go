@@ -113,6 +113,39 @@ func (b *BaseDistribution) detectDankCalendar() deps.Dependency {
 	return b.detectOptionalPackage("dankcalendar", "Calendar application", b.commandExists("dcal") || b.commandExists("dankcalendar"))
 }
 
+// renamedPackages maps distro packages to their pre-rename names. rpm -q, dpkg-query and xbps-query
+// ignore Provides, so hosts that have not upgraded since the rename only match the old name.
+var renamedPackages = map[string]string{
+	"dux-greeter":      "dms-greeter",
+	"dux-greeter-git":  "dms-greeter-git",
+	"dux-search":       "danksearch",
+	"dux-calendar":     "dankcalendar",
+	"dux-calendar-git": "dankcalendar-git",
+	"dux-gop":          "dgop",
+}
+
+func installedName(installed func(string) bool, pkg string) (string, bool) {
+	if installed(pkg) {
+		return pkg, true
+	}
+	if old, ok := renamedPackages[pkg]; ok && installed(old) {
+		return old, true
+	}
+	return "", false
+}
+
+func (b *BaseDistribution) detectGreeterPackage(installed func(string) bool) deps.Dependency {
+	_, gitInstalled := installedName(installed, "dux-greeter-git")
+	_, stableInstalled := installedName(installed, "dux-greeter")
+	dep := b.detectOptionalPackage("dms-greeter", "Dux Shell greetd greeter", gitInstalled || stableInstalled)
+	return withGitVariant(dep, gitInstalled)
+}
+
+func (b *BaseDistribution) detectCalendarPackage(installed func(string) bool) deps.Dependency {
+	_, gitInstalled := installedName(installed, "dux-calendar-git")
+	return withGitVariant(b.detectDankCalendar(), gitInstalled)
+}
+
 func withGitVariant(dep deps.Dependency, gitInstalled bool) deps.Dependency {
 	dep.CanToggle = true
 	if gitInstalled {

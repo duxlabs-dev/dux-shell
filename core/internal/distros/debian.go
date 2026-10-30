@@ -62,7 +62,7 @@ func (d *DebianDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 	dependencies = append(dependencies, d.detectGit())
 	dependencies = append(dependencies, d.detectWindowManager(wm))
 	dependencies = append(dependencies, d.detectQuickshell())
-	dependencies = append(dependencies, d.detectDMSGreeter())
+	dependencies = append(dependencies, d.detectGreeterPackage(d.packageInstalled))
 	dependencies = append(dependencies, d.detectXDGPortal())
 	dependencies = append(dependencies, d.detectAccountsService())
 
@@ -77,7 +77,7 @@ func (d *DebianDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 
 	dependencies = append(dependencies, d.detectMatugen())
 	dependencies = append(dependencies, d.detectDanksearch())
-	dependencies = append(dependencies, withGitVariant(d.detectDankCalendar(), d.packageInstalled("dankcalendar-git")))
+	dependencies = append(dependencies, d.detectCalendarPackage(d.packageInstalled))
 
 	return dependencies, nil
 }
@@ -92,12 +92,6 @@ func (d *DebianDistribution) detectXwaylandSatellite() deps.Dependency {
 
 func (d *DebianDistribution) detectAccountsService() deps.Dependency {
 	return d.detectPackage("accountsservice", "D-Bus interface for user account query and manipulation", d.packageInstalled("accountsservice"))
-}
-
-func (d *DebianDistribution) detectDMSGreeter() deps.Dependency {
-	gitInstalled := d.packageInstalled("dms-greeter-git")
-	dep := d.detectOptionalPackage("dms-greeter", "Dux Shell greetd greeter", gitInstalled || d.packageInstalled("dms-greeter"))
-	return withGitVariant(dep, gitInstalled)
 }
 
 func (d *DebianDistribution) packageInstalled(pkg string) bool {
@@ -159,11 +153,11 @@ func (d *DebianDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 		// DMS packages from OBS with variant support
 		"dms (Dux Shell)": d.getDmsMapping(variants["dms (Dux Shell)"]),
 		"quickshell":      d.getQuickshellMapping(variants["quickshell"]),
-		"dms-greeter":     variantMapping("dms-greeter", variants["dms-greeter"], RepoTypeOBS, obsDeps),
+		"dms-greeter":     variantMapping("dux-greeter", variants["dms-greeter"], RepoTypeOBS, obsDeps),
 		"matugen":         {Name: "matugen", Repository: RepoTypeOBS, RepoURL: obsDeps},
 		"ghostty":         {Name: "ghostty", Repository: RepoTypeOBS, RepoURL: obsDeps},
-		"danksearch":      {Name: "danksearch", Repository: RepoTypeOBS, RepoURL: obsDeps},
-		"dankcalendar":    variantMapping("dankcalendar", variants["dankcalendar"], RepoTypeOBS, obsDeps),
+		"danksearch":      {Name: "dux-search", Repository: RepoTypeOBS, RepoURL: obsDeps},
+		"dankcalendar":    variantMapping("dux-calendar", variants["dankcalendar"], RepoTypeOBS, obsDeps),
 	}
 
 	if wm == deps.WindowManagerNiri {

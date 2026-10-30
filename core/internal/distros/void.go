@@ -69,7 +69,7 @@ func (v *VoidDistribution) DetectDependenciesWithTerminal(ctx context.Context, w
 	dependencies = append(dependencies, v.detectGit())
 	dependencies = append(dependencies, v.detectWindowManager(wm))
 	dependencies = append(dependencies, v.detectQuickshell())
-	dependencies = append(dependencies, v.detectDMSGreeter())
+	dependencies = append(dependencies, v.detectGreeterPackage(v.packageInstalled))
 	dependencies = append(dependencies, v.detectXDGPortal())
 	dependencies = append(dependencies, v.detectAccountsService())
 	dependencies = append(dependencies, v.detectDBus())
@@ -127,12 +127,6 @@ func (v *VoidDistribution) detectQuickshell() deps.Dependency {
 
 func (v *VoidDistribution) detectXDGPortal() deps.Dependency {
 	return v.detectPackage("xdg-desktop-portal-gtk", "Desktop integration portal for GTK", v.packageInstalled("xdg-desktop-portal-gtk"))
-}
-
-func (v *VoidDistribution) detectDMSGreeter() deps.Dependency {
-	gitInstalled := v.packageInstalled("dms-greeter-git")
-	dep := v.detectOptionalPackage("dms-greeter", "Dux Shell greetd greeter", gitInstalled || v.packageInstalled("dms-greeter"))
-	return withGitVariant(dep, gitInstalled)
 }
 
 func (v *VoidDistribution) detectAccountsService() deps.Dependency {
@@ -318,9 +312,9 @@ func (v *VoidDistribution) GetPackageMappingWithVariants(wm deps.WindowManager, 
 		"quickshell":      {Name: "quickshell", Repository: RepoTypeSystem},
 		"matugen":         {Name: "matugen", Repository: RepoTypeSystem},
 		"dms (Dux Shell)": v.getDmsMapping(variants["dms (Dux Shell)"]),
-		"dms-greeter":     variantMapping("dms-greeter", variants["dms-greeter"], RepoTypeXBPS, VoidDepsRepo),
-		"danksearch":      {Name: "danksearch", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
-		"dankcalendar":    {Name: "dankcalendar", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
+		"dms-greeter":     variantMapping("dux-greeter", variants["dms-greeter"], RepoTypeXBPS, VoidDepsRepo),
+		"danksearch":      {Name: "dux-search", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
+		"dankcalendar":    {Name: "dux-calendar", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
 	}
 
 	switch wm {

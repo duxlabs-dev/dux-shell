@@ -3,6 +3,7 @@ package distros
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
@@ -70,6 +71,59 @@ func TestParseHyprlandVersion(t *testing.T) {
 	for _, tt := range tests {
 		if got := ParseHyprlandVersion(tt.out); got != tt.want {
 			t.Errorf("%s: got %q, want %q", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestDetectGreeterPackageAcceptsOldNames(t *testing.T) {
+	cases := []struct {
+		installed     string
+		wantInstalled bool
+		wantVariant   deps.PackageVariant
+	}{
+		{"", false, deps.VariantStable},
+		{"dms-greeter", true, deps.VariantStable},
+		{"dux-greeter", true, deps.VariantStable},
+		{"dms-greeter-git", true, deps.VariantGit},
+		{"dux-greeter-git", true, deps.VariantGit},
+	}
+	for _, tc := range cases {
+		dep := NewBaseDistribution(nil).detectGreeterPackage(func(p string) bool { return p == tc.installed })
+		if (dep.Status == deps.StatusInstalled) != tc.wantInstalled || dep.Variant != tc.wantVariant {
+			t.Errorf("%q installed: status %v variant %v, want installed=%v variant %v", tc.installed, dep.Status, dep.Variant, tc.wantInstalled, tc.wantVariant)
+		}
+	}
+}
+
+func TestDetectCalendarPackageAcceptsOldNames(t *testing.T) {
+	for installed, want := range map[string]deps.PackageVariant{
+		"":                 deps.VariantStable,
+		"dankcalendar-git": deps.VariantGit,
+		"dux-calendar-git": deps.VariantGit,
+	} {
+		dep := NewBaseDistribution(nil).detectCalendarPackage(func(p string) bool { return p == installed })
+		if dep.Variant != want {
+			t.Errorf("%q installed: variant %v, want %v", installed, dep.Variant, want)
+		}
+	}
+}
+
+func TestRenamedPackagesInstallNewNames(t *testing.T) {
+	cases := map[string]Distribution{
+		"fedora":   NewFedoraDistribution(Registry["fedora"], nil),
+		"opensuse": NewOpenSUSEDistribution(Registry["opensuse-tumbleweed"], nil),
+		"debian":   NewDebianDistribution(Registry["debian"], nil),
+		"ubuntu":   NewUbuntuDistribution(Registry["ubuntu"], nil),
+		"void":     NewVoidDistribution(Registry["void"], nil),
+	}
+	for id, d := range cases {
+		for _, variant := range []deps.PackageVariant{deps.VariantStable, deps.VariantGit} {
+			packages := d.GetPackageMappingWithVariants(deps.WindowManagerNiri, map[string]deps.PackageVariant{"dms-greeter": variant, "dankcalendar": variant})
+			for dep, want := range map[string]string{"dms-greeter": "dux-greeter", "danksearch": "dux-search", "dankcalendar": "dux-calendar"} {
+				if got := strings.TrimSuffix(packages[dep].Name, "-git"); got != want {
+					t.Errorf("%s %s (%v) installs %q, want %q", id, dep, variant, packages[dep].Name, want)
+				}
+			}
 		}
 	}
 }

@@ -14,16 +14,16 @@ import (
 var greeterCmd = &cobra.Command{
 	Use:                "greeter",
 	Short:              "Deprecated: moved to the standalone dms-greeter binary",
-	Long:               "The greeter has moved to the standalone dms-greeter package.\nThis command forwards to 'dms-greeter' when it is installed.",
+	Long:               "The greeter has moved to the standalone dux-greeter package.\nThis command forwards to 'dms-greeter' when it is installed.",
 	DisableFlagParsing: true,
 	SilenceUsage:       true,
 	RunE: func(_ *cobra.Command, args []string) error {
 		binary, err := exec.LookPath("dms-greeter")
 		if err != nil {
-			return fmt.Errorf("'dms greeter' has moved to the standalone dms-greeter package.\n  %s", greeterPackageInstallHint())
+			return fmt.Errorf("'dms greeter' has moved to the standalone dux-greeter package.\n  %s", greeterPackageInstallHint())
 		}
 		if isLegacyWrapperScript(binary) {
-			return fmt.Errorf("'dms greeter' has moved to the standalone dms-greeter package; %s is the old wrapper script.\n  %s", binary, greeterPackageInstallHint())
+			return fmt.Errorf("'dms greeter' has moved to the standalone dux-greeter package; %s is the old wrapper script.\n  %s", binary, greeterPackageInstallHint())
 		}
 		fmt.Fprintln(os.Stderr, "warning: 'dms greeter' is deprecated; use 'dms-greeter' directly")
 		return syscall.Exec(binary, append([]string{"dms-greeter"}, args...), os.Environ())
@@ -50,11 +50,11 @@ func isLegacyWrapperScript(path string) bool {
 func greeterPackageInstallHint() string {
 	osInfo, err := distros.GetOSInfo()
 	if err != nil {
-		return "Install package: dms-greeter"
+		return "Install package: dux-greeter"
 	}
 	config, exists := distros.Registry[osInfo.Distribution.ID]
 	if !exists {
-		return "Install package: dms-greeter"
+		return "Install package: dux-greeter"
 	}
 
 	if config.ID == "pika" {
@@ -63,19 +63,19 @@ func greeterPackageInstallHint() string {
 
 	switch config.Family {
 	case distros.FamilyDebian:
-		return "Install with 'sudo apt install dms-greeter' (requires Dux Labs OBS repo — see " + site.Docs + "/dms-greeter/installation#debian)"
+		return "Install with 'sudo apt install dux-greeter' (requires Dux Labs OBS repo — see " + site.Docs + "/dms-greeter/installation#debian)"
 	case distros.FamilySUSE:
-		return "Install with 'sudo zypper install dms-greeter' (requires Dux Labs OBS repo — see " + site.Docs + "/dms-greeter/installation#opensuse--derivatives)"
+		return "Install with 'sudo zypper install dux-greeter' (requires Dux Labs OBS repo — see " + site.Docs + "/dms-greeter/installation#opensuse--derivatives)"
 	case distros.FamilyUbuntu:
 		repo := greeterRepoURL(config)
-		return fmt.Sprintf("Install with 'sudo apt install dms-greeter' (requires %s: sudo add-apt-repository %s)", repo, repo)
+		return fmt.Sprintf("Install with 'sudo apt install dux-greeter' (requires %s: sudo add-apt-repository %s)", repo, repo)
 	case distros.FamilyFedora:
-		return fmt.Sprintf("Install with 'sudo dnf install dms-greeter' (requires COPR: sudo dnf copr enable %s)", greeterRepoURL(config))
+		return fmt.Sprintf("Install with 'sudo dnf install dux-greeter' (requires COPR: sudo dnf copr enable %s)", greeterRepoURL(config))
 	case distros.FamilyArch:
 		return "Install from AUR with 'paru -S dux-greeter-bin' or 'yay -S dux-greeter-bin'"
 	case distros.FamilyVoid:
-		return "Install with 'sudo xbps-install -S dms-greeter' (requires DMS XBPS repo: echo 'repository=" + distros.VoidDepsRepo + "' | sudo tee /etc/xbps.d/dux.conf)"
+		return "Install with 'sudo xbps-install -S dux-greeter' (requires DMS XBPS repo: echo 'repository=" + distros.VoidDepsRepo + "' | sudo tee /etc/xbps.d/dux.conf)"
 	default:
-		return "Install the dms-greeter package for your distribution"
+		return "Install the dux-greeter package for your distribution"
 	}
 }

@@ -223,7 +223,7 @@ Item {
                     root.greeterStatusText = root.greeterStatusText + "\n\nstderr:\n" + err;
                 return;
             }
-            var failure = I18n.tr("Failed to run '%1'. Ensure the %2 package is installed.", "greeter status error, %1 is a command, %2 a package name").arg("dms-greeter status").arg("dms-greeter") + " " + I18n.tr("(exit %1)", "process exit code").arg(exitCode);
+            var failure = I18n.tr("Failed to run '%1'. Ensure the %2 package is installed.", "greeter status error, %1 is a command, %2 a package name").arg("dms-greeter status").arg("dux-greeter") + " " + I18n.tr("(exit %1)", "process exit code").arg(exitCode);
             if (out !== "")
                 failure = failure + "\n\n" + out;
             if (err !== "")
