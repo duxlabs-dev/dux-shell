@@ -11,9 +11,18 @@ Item {
     property string appId: ""
     property real iconSize: Theme.iconSize
     readonly property int iconRequestSize: DCommon.Style.iconRasterSize(iconSize)
+    property int _desktopEntriesRevision: 0
 
     implicitWidth: iconSize
     implicitHeight: iconSize
+
+    Connections {
+        target: DesktopEntries
+
+        function onApplicationsChanged() {
+            root._desktopEntriesRevision++;
+        }
+    }
 
     IconImage {
         id: image
@@ -23,7 +32,10 @@ Item {
         readonly property bool showsFrame: status === Image.Ready || (holdsCurrentIcon && status === Image.Loading)
 
         anchors.fill: parent
-        source: root.appId ? Paths.getAppIcon(root.appId, DesktopEntries.heuristicLookup(root.appId)) : ""
+        source: {
+            root._desktopEntriesRevision;
+            return root.appId ? Paths.getAppIcon(root.appId, DesktopEntries.heuristicLookup(root.appId)) : "";
+        }
         backer.sourceSize: Qt.size(root.iconRequestSize, root.iconRequestSize)
         backer.retainWhileLoading: true
         smooth: true
