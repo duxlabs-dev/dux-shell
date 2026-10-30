@@ -1316,6 +1316,12 @@ Item {
                 }
 
                 Variants {
+                    model: (SettingsData.osdKeyboardLayoutEnabled && KeyboardLayoutService.available) ? SettingsData.getFilteredScreens("osd") : []
+
+                    delegate: KeyboardLayoutOSD {}
+                }
+
+                Variants {
                     model: (SettingsData.osdTouchpadEnabled && CompositorService.isNiri) ? root.legacySystemLevelOsdScreens : []
 
                     delegate: TouchpadOSD {}
