@@ -13876,6 +13876,72 @@
     "conditionKey": "layoutCapable"
   },
   {
+    "section": "hyprlandWobbleDamping",
+    "label": "Wobble damping",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "before",
+      "damping",
+      "hyprland",
+      "integrations",
+      "longer",
+      "lower",
+      "settling",
+      "spring",
+      "system",
+      "values",
+      "wobble"
+    ],
+    "description": "Lower values wobble longer before settling",
+    "conditionKey": "layoutCapable"
+  },
+  {
+    "section": "hyprlandWobbleMass",
+    "label": "Wobble mass",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "heavier",
+      "hyprland",
+      "inertia",
+      "integrations",
+      "mass",
+      "more",
+      "settle",
+      "slower",
+      "system",
+      "weight",
+      "windows",
+      "wobble"
+    ],
+    "description": "Heavier windows wobble more and settle slower",
+    "conditionKey": "layoutCapable"
+  },
+  {
+    "section": "hyprlandWobbleMesh",
+    "label": "Wobble mesh",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "cost",
+      "detail",
+      "flex",
+      "higher",
+      "hyprland",
+      "integrations",
+      "mesh",
+      "more",
+      "smoothly",
+      "system",
+      "values",
+      "vertices",
+      "wobble"
+    ],
+    "description": "Higher values flex more smoothly and cost more GPU",
+    "conditionKey": "layoutCapable"
+  },
+  {
     "section": "hyprlandWobbleStiffness",
     "label": "Wobble stiffness",
     "tabIndex": 37,

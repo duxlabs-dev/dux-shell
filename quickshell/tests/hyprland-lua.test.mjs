@@ -140,6 +140,16 @@ test("layout: effects the running Hyprland does not know are not written even wh
     });
 });
 
+test("layout: wobble writes spring tuning only off Hyprland's defaults", () => {
+    const def = table(decorationLines(layout({ hyprlandWobbleEnabled: true }), 0), "wobble");
+    assert.deepEqual(def, ["enabled = true,", "intensity = 0.2,", "stiffness = 200,"]);
+    const tuned = layout({ hyprlandWobbleEnabled: true, hyprlandWobbleDamping: 8, hyprlandWobbleMass: 150, hyprlandWobbleMesh: 24 });
+    assert.deepEqual(table(decorationLines(tuned, 0), "wobble"), ["enabled = true,", "intensity = 0.2,", "stiffness = 200,", "damping = 8,", "mass = 1.5,", "mesh = 24,"]);
+    withOptions({ "decoration:wobble:enabled": true, "decoration:wobble:mass": true }, () => {
+        assert.deepEqual(table(decorationLines(tuned, 0), "wobble").filter(line => /damping|mesh/.test(line)), []);
+    });
+});
+
 const hypr056 = { "scrolling:follow_focus": true, "binds:workspace_back_and_forth": true, "misc:exit_window_retains_fullscreen": true };
 const lines057 = s => [...scope.bindsLines(s), ...scope.miscLines(s), ...scope.blurLines(s), ...inputLines(s)].map(line => line.trim());
 
