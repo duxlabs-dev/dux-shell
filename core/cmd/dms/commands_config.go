@@ -60,10 +60,8 @@ func init() {
 }
 
 type IncludeResult struct {
-	Exists       bool   `json:"exists"`
-	Included     bool   `json:"included"`
-	ConfigFormat string `json:"configFormat,omitempty"`
-	ReadOnly     bool   `json:"readOnly,omitempty"`
+	Exists   bool `json:"exists"`
+	Included bool `json:"included"`
 }
 
 func runResolveInclude(cmd *cobra.Command, args []string) {
@@ -108,62 +106,11 @@ func checkHyprlandInclude(filename string) (IncludeResult, error) {
 	}
 
 	mainLua := filepath.Join(configDir, "hyprland.lua")
-	if _, err := os.Stat(mainLua); err == nil {
-		result.ConfigFormat = "lua"
-		result.Included = luaconfig.RequiresTarget(mainLua, targetAbs, make(map[string]bool))
+	if _, err := os.Stat(mainLua); err != nil {
 		return result, nil
 	}
-
-	// 0.55/0.56 installs still on hyprland.conf: read-only until migrated.
-	mainConf := filepath.Join(configDir, "hyprland.conf")
-	if _, err := os.Stat(mainConf); err != nil {
-		return result, nil
-	}
-	result.ConfigFormat = "hyprlang"
-	result.ReadOnly = true
-	result.Included = hyprlandFindIncludeHyprlang(mainConf, targetAbs, make(map[string]bool))
+	result.Included = luaconfig.RequiresTarget(mainLua, targetAbs, make(map[string]bool))
 	return result, nil
-}
-
-func hyprlandFindIncludeHyprlang(filePath, target string, processed map[string]bool) bool {
-	absPath, err := filepath.Abs(filePath)
-	if err != nil {
-		return false
-	}
-
-	if processed[absPath] {
-		return false
-	}
-	processed[absPath] = true
-
-	data, err := os.ReadFile(absPath)
-	if err != nil {
-		return false
-	}
-
-	baseDir := filepath.Dir(absPath)
-	for line := range strings.SplitSeq(string(data), "\n") {
-		trimmed := strings.TrimSpace(line)
-		if !strings.HasPrefix(trimmed, "source") {
-			continue
-		}
-
-		parts := strings.SplitN(trimmed, "=", 2)
-		if len(parts) < 2 {
-			continue
-		}
-
-		fullPath, err := resolveSourcePath(baseDir, strings.TrimSpace(parts[1]))
-		if err != nil {
-			continue
-		}
-
-		if fullPath == target || hyprlandFindIncludeHyprlang(fullPath, target, processed) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func checkNiriInclude(filename string) (IncludeResult, error) {

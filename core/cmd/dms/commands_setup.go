@@ -563,10 +563,7 @@ func compositorPrimaryPaths(wm deps.WindowManager) []string {
 	case deps.WindowManagerNiri:
 		return []string{filepath.Join(homeDir, ".config", "niri", "config.kdl")}
 	case deps.WindowManagerHyprland:
-		return []string{
-			filepath.Join(homeDir, ".config", "hypr", "hyprland.lua"),
-			filepath.Join(homeDir, ".config", "hypr", "hyprland.conf"),
-		}
+		return []string{filepath.Join(config.HyprlandConfigDir(), "hyprland.lua")}
 	case deps.WindowManagerMango:
 		return []string{
 			filepath.Join(homeDir, ".config", "mango", "config.conf"),

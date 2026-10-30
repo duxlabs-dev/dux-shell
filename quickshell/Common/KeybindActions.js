@@ -1834,6 +1834,10 @@ const HYPRLAND_ACTIONS = {
             label: "Force Renderer Reload"
         },
         {
+            id: "reloadconfig",
+            label: "Reload Config"
+        },
+        {
             id: "dpms on",
             label: "DPMS On"
         },

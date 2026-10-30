@@ -2881,6 +2881,37 @@
     "icon": "restore"
   },
   {
+    "section": "cursorWarpOnMonitorChange",
+    "label": "Warp on display change",
+    "tabIndex": -1,
+    "category": "Wallpaper & colors",
+    "keywords": [
+      "background",
+      "bg",
+      "change",
+      "colors",
+      "colour",
+      "colours",
+      "cursor",
+      "desktop",
+      "display",
+      "focus",
+      "hue",
+      "image",
+      "monitor",
+      "output",
+      "palette",
+      "picture",
+      "screen",
+      "tint",
+      "wallpaper",
+      "warp",
+      "warp_on_monitor_change"
+    ],
+    "page": "personalization",
+    "conditionKey": "isHyprland"
+  },
+  {
     "section": "blurXrayLink",
     "label": "Xray options are in Compositor → Layout",
     "tabIndex": -1,
@@ -12764,6 +12795,25 @@
     "conditionKey": "layoutCapable"
   },
   {
+    "section": "hyprlandBehavior",
+    "label": "Behavior",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "behavior",
+      "bell",
+      "binds",
+      "fullscreen",
+      "hyprland",
+      "integrations",
+      "misc",
+      "system",
+      "workspace"
+    ],
+    "icon": "tune",
+    "conditionKey": "isHyprland"
+  },
+  {
     "section": "hyprlandBlurVariant",
     "label": "Blur",
     "tabIndex": 37,
@@ -12785,6 +12835,54 @@
       "variant"
     ],
     "description": "Styles outside of Default use more GPU",
+    "conditionKey": "layoutCapable"
+  },
+  {
+    "section": "hyprlandBlurProportional",
+    "label": "Blur follows opacity",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "areas",
+      "blur",
+      "follows",
+      "hyprland",
+      "integrations",
+      "less",
+      "more",
+      "opacity",
+      "proportional",
+      "system",
+      "transparency",
+      "transparent"
+    ],
+    "description": "More transparent areas get less blur",
+    "conditionKey": "layoutCapable"
+  },
+  {
+    "section": "hyprlandDragCenterWindow",
+    "label": "Center dragged windows",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "center",
+      "centers",
+      "cursor",
+      "drag",
+      "drag_center_window",
+      "dragged",
+      "float",
+      "floating",
+      "fullscreen",
+      "hyprland",
+      "integrations",
+      "mouse",
+      "system",
+      "tiled",
+      "window",
+      "windows"
+    ],
+    "description": "A tiled or fullscreen window dragged into floating centers on the cursor",
     "conditionKey": "layoutCapable"
   },
   {
@@ -12861,8 +12959,10 @@
     "tabIndex": 37,
     "category": "System & integrations",
     "keywords": [
+      "click",
       "focus",
       "follow",
+      "follow_focus",
       "hyprland",
       "integrations",
       "scroll",
@@ -13166,6 +13266,25 @@
       "hyprland",
       "integrations",
       "iridescence",
+      "system"
+    ],
+    "conditionKey": "layoutCapable"
+  },
+  {
+    "section": "hyprlandExitWindowRetainsFullscreen",
+    "label": "Keep fullscreen on close",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "close",
+      "exit",
+      "exit_window_retains_fullscreen",
+      "fullscreen",
+      "group",
+      "hyprland",
+      "integrations",
+      "keep",
+      "retain",
       "system"
     ],
     "conditionKey": "layoutCapable"
@@ -13589,6 +13708,70 @@
     "conditionKey": "layoutCapable"
   },
   {
+    "section": "hyprlandBlurDropsSpeed",
+    "label": "Speed",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "animate",
+      "animation",
+      "animations",
+      "blur",
+      "drops",
+      "hyprland",
+      "integrations",
+      "motion",
+      "saves",
+      "speed",
+      "stops",
+      "system",
+      "transition"
+    ],
+    "description": "0 stops the animation and saves GPU",
+    "conditionKey": "layoutCapable"
+  },
+  {
+    "section": "hyprlandBlurHeatShimmerSpeed",
+    "label": "Speed",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "animate",
+      "animation",
+      "animations",
+      "blur",
+      "heat",
+      "hyprland",
+      "integrations",
+      "motion",
+      "saves",
+      "shimmer",
+      "speed",
+      "stops",
+      "system",
+      "transition"
+    ],
+    "description": "0 stops the animation and saves GPU",
+    "conditionKey": "layoutCapable"
+  },
+  {
+    "section": "hyprlandBellSound",
+    "label": "System bell",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "beep",
+      "bell",
+      "bell_sound",
+      "hyprland",
+      "integrations",
+      "mute",
+      "sound",
+      "system"
+    ],
+    "conditionKey": "layoutCapable"
+  },
+  {
     "section": "hyprlandTilingLayout",
     "label": "Tiling layout",
     "tabIndex": 37,
@@ -13721,6 +13904,30 @@
       "wobble",
       "wobbly"
     ],
+    "conditionKey": "layoutCapable"
+  },
+  {
+    "section": "hyprlandWorkspaceBackAndForth",
+    "label": "Workspace back and forth",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "back",
+      "current",
+      "desktop",
+      "forth",
+      "hyprland",
+      "integrations",
+      "previous",
+      "returns",
+      "switching",
+      "system",
+      "toggle",
+      "virtual",
+      "workspace",
+      "workspace_back_and_forth"
+    ],
+    "description": "Switching to the current workspace returns to the previous one",
     "conditionKey": "layoutCapable"
   },
   {
@@ -14915,6 +15122,65 @@
       "mouse",
       "scroll",
       "speed",
+      "touchpad"
+    ],
+    "parentLabel": "Input",
+    "conditionKey": "pointerCapable"
+  },
+  {
+    "section": "hyprlandSwallowFocusClick",
+    "label": "Swallow focus click",
+    "tabIndex": 44,
+    "category": "Mouse & touchpad",
+    "keywords": [
+      "click",
+      "does",
+      "focus",
+      "focuses",
+      "input",
+      "mouse",
+      "reach",
+      "swallow",
+      "swallow_focus_click",
+      "touchpad",
+      "window"
+    ],
+    "parentLabel": "Input",
+    "description": "The click that focuses a window does not reach the app",
+    "conditionKey": "isHyprland"
+  },
+  {
+    "section": "tabletSettings",
+    "label": "Tablet",
+    "tabIndex": 44,
+    "category": "Mouse & touchpad",
+    "keywords": [
+      "drawing",
+      "input",
+      "mouse",
+      "pen",
+      "stylus",
+      "tablet",
+      "touchpad"
+    ],
+    "parentLabel": "Input",
+    "icon": "stylus",
+    "conditionKey": "isHyprland"
+  },
+  {
+    "section": "hyprlandTabletEnabled",
+    "label": "Tablet input",
+    "tabIndex": 44,
+    "category": "Mouse & touchpad",
+    "keywords": [
+      "disable",
+      "drawing",
+      "enable",
+      "input",
+      "mouse",
+      "pen",
+      "stylus",
+      "tablet",
       "touchpad"
     ],
     "parentLabel": "Input",

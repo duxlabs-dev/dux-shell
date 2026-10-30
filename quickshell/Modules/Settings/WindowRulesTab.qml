@@ -232,7 +232,7 @@ Item {
 
     function removeRule(ruleId) {
         if (readOnly) {
-            showHyprlandReadOnlyWarning();
+            windowRulesInclude.showReadOnlyWarning();
             return;
         }
         const compositor = CompositorService.compositor;
@@ -252,7 +252,7 @@ Item {
         if (savingRuleOrder)
             return;
         if (readOnly) {
-            showHyprlandReadOnlyWarning();
+            windowRulesInclude.showReadOnlyWarning();
             return;
         }
         const compositor = CompositorService.compositor;
@@ -294,7 +294,7 @@ Item {
 
     function openEditor(mode, payload) {
         if (readOnly) {
-            showHyprlandReadOnlyWarning();
+            windowRulesInclude.showReadOnlyWarning();
             return;
         }
         if (editorOpen)
@@ -332,10 +332,6 @@ Item {
         editorRequest = null;
         if (editorLoader.item)
             editorLoader.item.opened = false;
-    }
-
-    function showHyprlandReadOnlyWarning() {
-        ToastService.showWarning(I18n.tr("Hyprland conf mode"), I18n.tr("This install is still using %1. Run %2 to migrate before changing these settings.", "hyprland legacy config warning, %1 is the config file, %2 a command").arg("hyprland.conf").arg("dms setup"), "dms setup", "hyprland-migration");
     }
 
     Component.onCompleted: {

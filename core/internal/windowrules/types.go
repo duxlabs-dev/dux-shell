@@ -116,8 +116,6 @@ type DMSRulesStatus struct {
 	Effective       bool   `json:"effective"`
 	OverriddenBy    int    `json:"overriddenBy"`
 	StatusMessage   string `json:"statusMessage"`
-	ConfigFormat    string `json:"configFormat,omitempty"`
-	ReadOnly        bool   `json:"readOnly,omitempty"`
 }
 
 type RuleSet struct {
@@ -151,7 +149,5 @@ func DMSRulesStatusFrom(s configfrag.Status) *DMSRulesStatus {
 		Effective:       s.Effective,
 		OverriddenBy:    s.OverriddenBy,
 		StatusMessage:   s.StatusMessage,
-		ConfigFormat:    s.ConfigFormat,
-		ReadOnly:        s.ReadOnly,
 	}
 }

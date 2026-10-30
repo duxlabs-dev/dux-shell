@@ -226,6 +226,13 @@ Column {
         SettingsData.set("cursorSettings", updated);
     }
 
+    function setHyprlandCursorWarp(mode) {
+        const updated = JSON.parse(JSON.stringify(SettingsData.cursorSettings));
+        updated.hyprland = updated.hyprland || {};
+        updated.hyprland.warpOnMonitorChange = mode;
+        SettingsData.set("cursorSettings", updated);
+    }
+
     function warnIfMissingQtTheme() {
         if (Quickshell.env("QT_QPA_PLATFORMTHEME") === "gtk3" || Quickshell.env("QT_QPA_PLATFORMTHEME") === "qt6ct" || Quickshell.env("QT_QPA_PLATFORMTHEME_QT6") === "qt6ct" || SettingsData.qtengineActive || Quickshell.env("QT_QPA_PLATFORMTHEME") === "kde")
             return;
@@ -1045,6 +1052,25 @@ Column {
                 updated.hyprland = updated.hyprland || {};
                 updated.hyprland.hideOnTouch = checked;
                 SettingsData.set("cursorSettings", updated);
+            }
+        }
+
+        SettingsDropdownRow {
+            readonly property var modes: [-1, 0, 1, 2]
+            tab: "theme"
+            tags: ["cursor", "warp", "monitor", "display", "focus", "warp_on_monitor_change"]
+            settingKey: "cursorWarpOnMonitorChange"
+            text: I18n.tr("Warp on display change", "Hyprland cursor option, move the pointer to the last focused window when focus moves to another display")
+            visible: CompositorService.isHyprland && HyprlandService.hyprSupports("cursor:warp_on_monitor_change")
+            options: [I18n.tr("Same as workspace change", "Hyprland cursor warp option, follow the workspace change warp setting"), I18n.tr("Off"), I18n.tr("On"), I18n.tr("Force", "Hyprland cursor warp option, warp even when cursor warps are disabled")]
+            currentValue: options[Math.max(0, modes.indexOf(SettingsData.cursorSettings.hyprland?.warpOnMonitorChange ?? -1))]
+            modified: (SettingsData.cursorSettings.hyprland?.warpOnMonitorChange ?? -1) !== -1
+            onResetRequested: root.setHyprlandCursorWarp(-1)
+            onValueChanged: value => {
+                const index = options.indexOf(value);
+                if (index < 0)
+                    return;
+                root.setHyprlandCursorWarp(modes[index]);
             }
         }
 

@@ -500,6 +500,11 @@ Singleton {
                 root.refreshHyprlandMonitorLayout();
                 return;
             }
+            // Hyprland 0.57 emits this when a workspace id changes (e.g. after a rename); Quickshell 0.3.2 ignores it
+            if (event.name === "changeworkspaceid") {
+                Hyprland.refreshWorkspaces();
+                return;
+            }
             if (event.name === "openwindow" || event.name === "closewindow" || event.name === "movewindow" || event.name === "movewindowv2" || event.name === "workspace" || event.name === "workspacev2" || event.name === "focusedmon" || event.name === "focusedmonv2" || event.name === "activewindow" || event.name === "activewindowv2" || event.name === "changefloatingmode" || event.name === "fullscreen" || event.name === "moveintogroup" || event.name === "moveoutofgroup" || event.name === "activespecial") {
                 try {
                     Hyprland.refreshToplevels();

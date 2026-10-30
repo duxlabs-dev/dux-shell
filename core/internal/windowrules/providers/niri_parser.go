@@ -523,7 +523,7 @@ var niriRulesMessages = configfrag.Messages{
 
 func (p *NiriRulesParser) buildDMSStatus() *windowrules.DMSRulesStatus {
 	scan := configfrag.IncludeScan{Count: p.includeCount, DMSPosition: p.dmsIncludePos, DMSSeen: p.dmsRulesIncluded}
-	return windowrules.DMSRulesStatusFrom(configfrag.BuildStatus(scan, p.dmsRulesExists, p.rulesAfterDMS, "", false, niriRulesMessages))
+	return windowrules.DMSRulesStatusFrom(configfrag.BuildStatus(scan, p.dmsRulesExists, p.rulesAfterDMS, niriRulesMessages))
 }
 
 type NiriRulesParseResult struct {

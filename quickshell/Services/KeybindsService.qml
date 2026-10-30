@@ -58,9 +58,7 @@ Singleton {
             "bindsAfterDms": 0,
             "effective": true,
             "overriddenBy": 0,
-            "statusMessage": "",
-            "configFormat": "",
-            "readOnly": false
+            "statusMessage": ""
         })
 
     // What the active layout puts on the first level of every physical key,
@@ -112,7 +110,7 @@ Singleton {
     readonly property var includePaths: ConfigIncludeResolve.includePaths("binds", includeCompositor, includeCompositor === "mango" ? MangoService.configDir : configDir)
     readonly property string dmsBindsPath: includePaths?.fragmentFiles[0] ?? ""
     readonly property string mainConfigPath: includePaths?.configFile ?? ""
-    readonly property bool readOnly: currentProvider === "hyprland" && dmsStatus.readOnly === true
+    readonly property bool readOnly: currentProvider === "hyprland" && CompositorService.isHyprland && !HyprlandService.luaConfigActive
     readonly property var actionTypes: Actions.getActionTypes()
     readonly property var dmsActions: getDmsActions()
 
@@ -380,7 +378,7 @@ Singleton {
         // Mouse-drag dispatchers do nothing without a pointer, and exit would end the session.
         if (provider === "hyprland" && (action.trim() === "movewindow" || action.trim() === "resizewindow" || base === "exit"))
             return false;
-        if (provider === "hyprland" && !luaAction && HyprlandService.luaConfigActive)
+        if (provider === "hyprland" && (!luaAction || !HyprlandService.luaConfigActive))
             return false;
         return provider === "niri" || provider === "hyprland" || provider === "mangowc";
     }
@@ -434,12 +432,7 @@ Singleton {
             return true;
         }
         if (provider === "hyprland") {
-            if (!HyprlandService.luaConfigActive) {
-                Quickshell.execDetached(["sh", "-c", "hyprctl dispatch " + action]);
-                return true;
-            }
-            // Lua-config Hyprland rejects legacy dispatcher text as a syntax error.
-            if (!luaAction)
+            if (!luaAction || !HyprlandService.luaConfigActive)
                 return false;
             Quickshell.execDetached(["hyprctl", "dispatch", luaAction]);
             return true;
@@ -785,9 +778,7 @@ Singleton {
                 "bindsAfterDms": status.bindsAfterDms ?? 0,
                 "effective": status.effective ?? true,
                 "overriddenBy": status.overriddenBy ?? 0,
-                "statusMessage": status.statusMessage ?? "",
-                "configFormat": status.configFormat ?? "",
-                "readOnly": status.readOnly === true
+                "statusMessage": status.statusMessage ?? ""
             };
         }
         _maybeWarnHyprlandLegacyConf();
@@ -965,7 +956,7 @@ Singleton {
     function _maybeWarnHyprlandLegacyConf() {
         if (_hyprlandLegacyWarnShown)
             return;
-        if (currentProvider !== "hyprland")
+        if (currentProvider !== "hyprland" || !HyprlandService.luaConfigStatusReady)
             return;
         if (readOnly) {
             _hyprlandLegacyWarnShown = true;
@@ -979,7 +970,7 @@ Singleton {
     }
 
     function showHyprlandReadOnlyWarning() {
-        ToastService.showWarning(I18n.tr("Hyprland conf mode"), I18n.tr("This install is still using %1. Run %2 to migrate before changing these settings.", "hyprland legacy config warning, %1 is the config file, %2 a command").arg("hyprland.conf").arg("dms setup"), "dms setup", "hyprland-migration");
+        ToastService.showWarning(I18n.tr("%1 not found").arg("hyprland.lua"), I18n.tr("Run %1 to create it before changing these settings.", "hyprland.lua missing warning, %1 is a command").arg("dms setup"), "dms setup", "hyprland-migration");
     }
 
     function removeBind(key, draft, callback) {

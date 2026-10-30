@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -215,12 +216,13 @@ func runDoctor(cmd *cobra.Command, args []string) {
 
 	qsFeatures, qsMissingFeatures := checkQuickshellFeatures()
 
+	versions, qsVersion := checkVersions(qsMissingFeatures)
 	results := slices.Concat(
 		checkSystemInfo(),
-		checkVersions(qsMissingFeatures),
+		versions,
 		checkDMSInstallation(),
 		checkPackageRepos(),
-		checkWindowManagers(),
+		checkWindowManagers(qsVersion),
 		qsFeatures,
 		checkOptionalDependencies(),
 		checkConfigurationFiles(),
@@ -685,18 +687,18 @@ func readOSRelease() map[string]string {
 	return result
 }
 
-func checkVersions(qsMissingFeatures bool) []checkResult {
+func checkVersions(qsMissingFeatures bool) (results []checkResult, qsSemver string) {
 	dmsCliPath, _ := os.Executable()
 	dmsCliDetails := ""
 	if doctorVerbose {
 		dmsCliDetails = dmsCliPath
 	}
 
-	results := []checkResult{
+	results = []checkResult{
 		{catVersions, "DMS CLI", statusOK, formatVersion(Version), dmsCliDetails, doctorDocsURL + "#dms-cli"},
 	}
 
-	qsVersion, qsStatus, qsPath, qsDetails := getQuickshellVersionInfo(qsMissingFeatures)
+	qsVersion, qsStatus, qsPath, qsDetails, qsSemver := getQuickshellVersionInfo(qsMissingFeatures)
 	if doctorVerbose && qsPath != "" && qsDetails == "" {
 		qsDetails = qsPath
 	}
@@ -709,7 +711,7 @@ func checkVersions(qsMissingFeatures bool) []checkResult {
 		results = append(results, checkResult{catVersions, "DMS Shell", statusError, "Not installed or not detected", "Run 'dms setup' to install", doctorDocsURL + "#dms-shell"})
 	}
 
-	return results
+	return results, qsSemver
 }
 
 func getDMSShellVersion() (version, path string) {
@@ -732,9 +734,9 @@ func getDMSShellVersion() (version, path string) {
 	return "", ""
 }
 
-func getQuickshellVersionInfo(missingFeatures bool) (string, status, string, string) {
+func getQuickshellVersionInfo(missingFeatures bool) (display string, st status, path, details, semver string) {
 	if !utils.CommandExists("qs") {
-		return "Not installed", statusError, "", ""
+		return "Not installed", statusError, "", "", ""
 	}
 
 	qsPath, _ := exec.LookPath("qs")
@@ -746,21 +748,21 @@ func getQuickshellVersionInfo(missingFeatures bool) (string, status, string, str
 		if errors.As(err, &exitErr) {
 			details = quickshellVersionFailureDetails(string(exitErr.Stderr))
 		}
-		return "Installed (version check failed)", statusWarn, qsPath, details
+		return "Installed (version check failed)", statusWarn, qsPath, details, ""
 	}
 
 	fullVersion := strings.TrimSpace(string(output))
 	if matches := quickshellVersionRegex.FindStringSubmatch(fullVersion); len(matches) >= 2 {
 		if version.CompareVersions(matches[1], "0.2.0") < 0 {
-			return fmt.Sprintf("%s (needs >= 0.2.0)", fullVersion), statusError, qsPath, ""
+			return fmt.Sprintf("%s (needs >= 0.2.0)", fullVersion), statusError, qsPath, "", matches[1]
 		}
 		if missingFeatures {
-			return fullVersion, statusWarn, qsPath, ""
+			return fullVersion, statusWarn, qsPath, "", matches[1]
 		}
-		return fullVersion, statusOK, qsPath, ""
+		return fullVersion, statusOK, qsPath, "", matches[1]
 	}
 
-	return fullVersion, statusWarn, qsPath, ""
+	return fullVersion, statusWarn, qsPath, "", ""
 }
 
 func quickshellVersionFailureDetails(stderr string) string {
@@ -835,7 +837,7 @@ func packageReposResult(distro distros.Distribution) []checkResult {
 	return []checkResult{{catInstallation, "Package Repos", statusInfo, "No DMS package repositories", "", url}}
 }
 
-func checkWindowManagers() []checkResult {
+func checkWindowManagers(qsVersion string) []checkResult {
 	compositors := []struct {
 		name, versionCmd, versionArg string
 		parseVersion                 func(string) string
@@ -887,7 +889,8 @@ func checkWindowManagers() []checkResult {
 			})
 		}
 		if c.name == "Hyprland" {
-			results = append(results, checkHyprlandConfigFormat(filepath.Join(utils.XDGConfigHome(), "hypr"))...)
+			results = append(results, checkHyprlandQuickshellFloor(ver, qsVersion)...)
+			results = append(results, checkHyprlandDeprecatedConfig()...)
 		}
 		if c.name == "mangowc" && mangoLacksSnakeCase(ver) {
 			results = append(results, checkResult{
@@ -1023,24 +1026,49 @@ func checkCompositorBlurSupport() checkResult {
 	return checkResult{catCompositor, "Background Blur", statusWarn, "Unsupported", "Compositor does not support ext-background-effect-v1", doctorDocsURL + "#compositor-checks"}
 }
 
-// Same detection as the keybinds parser: a regular hyprland.lua wins, else hyprland.conf is read-only.
-func checkHyprlandConfigFormat(hyprDir string) []checkResult {
-	if st, err := os.Stat(filepath.Join(hyprDir, "hyprland.lua")); err == nil && st.Mode().IsRegular() {
-		return nil
-	}
-	if st, err := os.Stat(filepath.Join(hyprDir, "hyprland.conf")); err != nil || !st.Mode().IsRegular() {
+func checkHyprlandQuickshellFloor(hyprVer, qsVer string) []checkResult {
+	if !hyprlandReadsOnlyLua(hyprVer) || qsVer == "" || version.CompareVersions(qsVer, "0.3.2") >= 0 {
 		return nil
 	}
 	return []checkResult{{
-		catCompositor, "Hyprland Lua config", statusWarn,
-		"Hyprland config is hyprland.conf",
-		"DMS keybinds, window rules and displays are read-only until you run `dms setup` to migrate to Lua. Hyprland 0.57 drops .conf support.",
+		catCompositor, "Quickshell for Hyprland 0.57", statusWarn,
+		fmt.Sprintf("Quickshell %s is older than 0.3.2", qsVer),
+		"Hyprland 0.57 sends workspace addresses that older Quickshell collapses to workspace 0, breaking named and special workspaces. Upgrade Quickshell.",
+		doctorDocsURL + "#compositor-checks",
+	}}
+}
+
+// Hyprland before 0.57 answers `unknown request`, which fails to parse and is skipped.
+func checkHyprlandDeprecatedConfig() []checkResult {
+	if os.Getenv("HYPRLAND_INSTANCE_SIGNATURE") == "" {
+		return nil
+	}
+	out, err := exec.Command("hyprctl", "-j", "deprecated-config").Output()
+	if err != nil {
+		return nil
+	}
+	return hyprlandDeprecatedConfigResults(out)
+}
+
+func hyprlandDeprecatedConfigResults(out []byte) []checkResult {
+	var notices []string
+	if err := json.Unmarshal(out, &notices); err != nil || len(notices) == 0 {
+		return nil
+	}
+	return []checkResult{{
+		catCompositor, "Hyprland deprecated config", statusWarn,
+		fmt.Sprintf("%d deprecated option(s)", len(notices)),
+		strings.Join(notices, "; "),
 		doctorDocsURL + "#compositor-checks",
 	}}
 }
 
 func hyprlandLacksLua(ver string) bool {
 	return ver != "" && version.CompareVersions(ver, "0.55.0") < 0
+}
+
+func hyprlandReadsOnlyLua(ver string) bool {
+	return ver != "" && version.CompareVersions(ver, "0.57.0") >= 0
 }
 
 func mangoLacksSnakeCase(ver string) bool {
@@ -1580,11 +1608,119 @@ func checkSystemdServices() []checkResult {
 			status = statusInfo
 		}
 		results = append(results, checkResult{catServices, "greetd", status, greetdState.enabled, "", doctorDocsURL + "#services"})
+		results = append(results, checkGreetdSession("/etc/greetd/config.toml")...)
+		results = append(results, checkRetiredGreeterPackages()...)
 	case doctorVerbose:
 		results = append(results, checkResult{catServices, "greetd", statusInfo, "Not installed", "Optional greeter service", doctorDocsURL + "#services"})
 	}
 
 	return results
+}
+
+func greeterLuaHint() string {
+	return "Hyprland 0.57 only reads Lua; switch to the dux-greeter package and rerun `dms-greeter install`. " + greeterPackageInstallHint()
+}
+
+func checkGreetdSession(configPath string) []checkResult {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil
+	}
+	fields := strings.Fields(greetdDefaultSessionCommand(string(data)))
+	if len(fields) == 0 {
+		return nil
+	}
+	warn := func(message string) []checkResult {
+		return []checkResult{{catServices, "Greeter session", statusWarn, message, greeterLuaHint(), doctorDocsURL + "#services"}}
+	}
+	if bin, err := exec.LookPath(fields[0]); err == nil && isLegacyWrapperScript(bin) {
+		return warn("greetd runs a pre-1.6 greeter wrapper script")
+	}
+	if !strings.EqualFold(greeterFlagValue(fields, "--command"), "hyprland") {
+		return nil
+	}
+	cfg := strings.Trim(greeterFlagValue(fields, "-C", "--config"), `"'`)
+	if cfg == "" || strings.HasSuffix(cfg, ".lua") {
+		return nil
+	}
+	content, err := os.ReadFile(cfg)
+	if err != nil || greeterHyprlandLuaContent(content) {
+		return nil
+	}
+	return warn("Greeter Hyprland config is not Lua: " + cfg)
+}
+
+var greeterHyprlandLuaPattern = regexp.MustCompile(`(^|[^[:alnum:]_])hl\.`)
+
+// Mirrors dux-greeter's launcher.IsHyprlandLuaConfig content check.
+func greeterHyprlandLuaContent(content []byte) bool {
+	for line := range strings.Lines(string(content)) {
+		if strings.HasPrefix(strings.TrimSpace(line), "#") {
+			continue
+		}
+		if greeterHyprlandLuaPattern.MatchString(line) {
+			return true
+		}
+	}
+	return false
+}
+
+func greetdDefaultSessionCommand(configTOML string) string {
+	inDefault := false
+	for line := range strings.SplitSeq(configTOML, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "[") {
+			inDefault = line == "[default_session]"
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !inDefault || !ok || strings.TrimSpace(key) != "command" {
+			continue
+		}
+		value = strings.TrimSpace(value)
+		if unquoted, err := strconv.Unquote(value); err == nil {
+			return unquoted
+		}
+		return strings.Trim(value, `'`)
+	}
+	return ""
+}
+
+func greeterFlagValue(fields []string, flags ...string) string {
+	for i, f := range fields {
+		for _, flag := range flags {
+			if f == flag && i+1 < len(fields) {
+				return fields[i+1]
+			}
+			if value, ok := strings.CutPrefix(f, flag+"="); ok {
+				return value
+			}
+		}
+	}
+	return ""
+}
+
+func checkRetiredGreeterPackages() []checkResult {
+	if !utils.CommandExists("pacman") {
+		return nil
+	}
+	// pacman -Q exits non-zero when any name is missing but still lists the installed ones
+	out, _ := exec.Command("pacman", "-Q", "greetd-dms-greeter", "greetd-dms-greeter-bin", "greetd-dms-greeter-git").Output()
+	var installed []string
+	for line := range strings.SplitSeq(strings.TrimSpace(string(out)), "\n") {
+		if name, _, _ := strings.Cut(line, " "); name != "" {
+			installed = append(installed, name)
+		}
+	}
+	if len(installed) == 0 {
+		return nil
+	}
+	return []checkResult{{
+		catServices, "Greeter package", statusWarn,
+		"Retired package installed: " + strings.Join(installed, ", "),
+		greeterLuaHint(),
+		doctorDocsURL + "#services",
+	}}
 }
 
 // Chromium, Electron and libadwaita follow light/dark through the settings

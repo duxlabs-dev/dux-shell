@@ -150,3 +150,19 @@ func (cd *ConfigDeployer) systemdAutostart(wm deps.WindowManager, useSystemd boo
 	cd.log("DMS starts as dms.service with " + unit)
 	return true
 }
+
+// An already active session unit ignores a new wants link until next login, so a deploy
+// from inside that session starts dms.service itself.
+func (cd *ConfigDeployer) startInLiveSession(wm deps.WindowManager) {
+	if running, ok := RunningCompositor(); !ok || running != wm {
+		return
+	}
+	if systemctlUser("is-active", "--quiet", SessionUnitName(wm)) != nil {
+		return
+	}
+	if err := systemctlUser("start", "--no-block", "dms.service"); err != nil {
+		cd.log(fmt.Sprintf("Warning: failed to start dms.service: %v", err))
+		return
+	}
+	cd.log("Started dms.service in the running session")
+}

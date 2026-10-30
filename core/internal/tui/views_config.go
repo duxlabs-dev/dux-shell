@@ -270,9 +270,7 @@ func (m Model) wmConfigInfo() ExistingConfigInfo {
 			filepath.Join(configDir, "mango", "config.conf"),
 			filepath.Join(configDir, "mango", "mango.conf"))
 	default:
-		return statConfig("Hyprland",
-			filepath.Join(configDir, "hypr", "hyprland.lua"),
-			filepath.Join(configDir, "hypr", "hyprland.conf"))
+		return statConfig("Hyprland", filepath.Join(config.HyprlandConfigDir(), "hyprland.lua"))
 	}
 }
 

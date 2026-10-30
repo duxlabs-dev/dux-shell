@@ -5,21 +5,12 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/luaconfig"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
-
-const (
-	TitleRegex         = "#+!"
-	HideComment        = "[hidden]"
-	CommentBindPattern = "#/#"
-)
-
-var ModSeparators = []rune{'+', ' '}
 
 type HyprlandKeyBinding struct {
 	Mods       []string `json:"mods"`
@@ -39,8 +30,6 @@ type HyprlandSection struct {
 }
 
 type HyprlandParser struct {
-	contentLines       []string
-	readingLine        int
 	configDir          string
 	currentSource      string
 	dmsBindsExists     bool
@@ -54,20 +43,15 @@ type HyprlandParser struct {
 	processedFiles     map[string]bool
 	dmsProcessed       bool
 	removedKeys        map[string]bool // hl.unbind targets
-	// rebindSources maps a removed key to the files that unbind and then rebind
-	// it. Their own bind survives the removal; binds from anywhere else do not.
+	// Files that unbind then rebind a removed key; only their own bind survives the removal.
 	rebindSources  map[string]map[string]bool
 	fileUnbinds    map[string]bool // hl.unbind targets seen so far in the file being parsed
-	defaultDMSKeys map[string]bool // keys present in dms/binds.{lua,conf}
-	configFormat   string
-	readOnly       bool
+	defaultDMSKeys map[string]bool // keys present in dms/binds.lua
 	mainMod        string
 }
 
 func NewHyprlandParser(configDir string) *HyprlandParser {
 	return &HyprlandParser{
-		contentLines:       []string{},
-		readingLine:        0,
 		configDir:          configDir,
 		walker:             configfrag.NewWalker(isDMSBindsPrimarySourcePath),
 		dmsBindKeys:        make(map[string]bool),
@@ -80,47 +64,6 @@ func NewHyprlandParser(configDir string) *HyprlandParser {
 		rebindSources:      make(map[string]map[string]bool),
 		defaultDMSKeys:     make(map[string]bool),
 	}
-}
-
-func (p *HyprlandParser) ReadContent(directory string) error {
-	expandedDir, err := utils.ExpandPath(directory)
-	if err != nil {
-		return err
-	}
-
-	info, err := os.Stat(expandedDir)
-	if err != nil {
-		return err
-	}
-	if !info.IsDir() {
-		return os.ErrNotExist
-	}
-
-	confFiles, err := filepath.Glob(filepath.Join(expandedDir, "*.conf"))
-	if err != nil {
-		return err
-	}
-	if len(confFiles) == 0 {
-		return os.ErrNotExist
-	}
-
-	var combinedContent []string
-	for _, confFile := range confFiles {
-		if fileInfo, err := os.Stat(confFile); err == nil && fileInfo.Mode().IsRegular() {
-			data, err := os.ReadFile(confFile)
-			if err == nil {
-				combinedContent = append(combinedContent, string(data))
-			}
-		}
-	}
-
-	if len(combinedContent) == 0 {
-		return os.ErrNotExist
-	}
-
-	fullContent := strings.Join(combinedContent, "\n")
-	p.contentLines = strings.Split(fullContent, "\n")
-	return nil
 }
 
 var hyprlandDirectionWords = map[string]string{
@@ -401,95 +344,24 @@ func describeHyprlandMove(params string) string {
 	return "Move window " + strings.Join(parts, ", ")
 }
 
-func (p *HyprlandParser) getKeybindAtLine(lineNumber int) *HyprlandKeyBinding {
-	line := p.contentLines[lineNumber]
-	return p.parseBindLine(line)
-}
-
-func (p *HyprlandParser) getBindsRecursive(currentContent *HyprlandSection, scope int) *HyprlandSection {
-	titleRegex := regexp.MustCompile(TitleRegex)
-
-	for p.readingLine < len(p.contentLines) {
-		line := p.contentLines[p.readingLine]
-
-		loc := titleRegex.FindStringIndex(line)
-		if loc != nil && loc[0] == 0 {
-			headingScope := strings.Index(line, "!")
-
-			if headingScope <= scope {
-				p.readingLine--
-				return currentContent
-			}
-
-			sectionName := strings.TrimSpace(line[headingScope+1:])
-			p.readingLine++
-
-			childSection := &HyprlandSection{
-				Children: []HyprlandSection{},
-				Keybinds: []HyprlandKeyBinding{},
-				Name:     sectionName,
-			}
-			result := p.getBindsRecursive(childSection, headingScope)
-			currentContent.Children = append(currentContent.Children, *result)
-
-		} else if strings.HasPrefix(line, CommentBindPattern) {
-			keybind := p.getKeybindAtLine(p.readingLine)
-			if keybind != nil {
-				currentContent.Keybinds = append(currentContent.Keybinds, *keybind)
-			}
-
-		} else if line == "" || !strings.HasPrefix(strings.TrimSpace(line), "bind") {
-
-		} else {
-			keybind := p.getKeybindAtLine(p.readingLine)
-			if keybind != nil {
-				currentContent.Keybinds = append(currentContent.Keybinds, *keybind)
-			}
-		}
-
-		p.readingLine++
-	}
-
-	return currentContent
-}
-
-func (p *HyprlandParser) ParseKeys() *HyprlandSection {
-	p.readingLine = 0
-	rootSection := &HyprlandSection{
-		Children: []HyprlandSection{},
-		Keybinds: []HyprlandKeyBinding{},
-		Name:     "",
-	}
-	return p.getBindsRecursive(rootSection, 0)
-}
-
-func ParseHyprlandKeys(path string) (*HyprlandSection, error) {
-	parser := NewHyprlandParser(path)
-	if err := parser.ReadContent(path); err != nil {
-		return nil, err
-	}
-	return parser.ParseKeys(), nil
-}
-
 type HyprlandParseResult struct {
 	Section            *HyprlandSection
 	DMSBindsIncluded   bool
 	DMSStatus          *configfrag.Status
 	ConflictingConfigs map[string]*HyprlandKeyBinding
-	DefaultDMSKeys     map[string]bool // keys with a DMS default in binds.{lua,conf}
-	ConfigFormat       string          // "lua" or "hyprlang"
+	DefaultDMSKeys     map[string]bool // keys with a DMS default in binds.lua
 	MainMod            string          // value of the mainMod Lua variable when the config defines one
 }
 
 var hyprlandBindsMessages = configfrag.Messages{
-	Missing:     "dms/binds.lua (or legacy binds.conf) does not exist",
-	NotIncluded: "dms binds are not loaded from Hyprland config (require / source)",
+	Missing:     "dms/binds.lua does not exist",
+	NotIncluded: "dms binds are not loaded from Hyprland config (require)",
 	Overridden:  "Some DMS binds may be overridden by config binds",
 	Active:      "DMS binds are active",
 }
 
 func (p *HyprlandParser) buildDMSStatus() *configfrag.Status {
-	status := configfrag.BuildStatus(p.walker.Scan(), p.dmsBindsExists, p.bindsAfterDMS, p.configFormat, p.readOnly, hyprlandBindsMessages)
+	status := configfrag.BuildStatus(p.walker.Scan(), p.dmsBindsExists, p.bindsAfterDMS, hyprlandBindsMessages)
 	return &status
 }
 
@@ -543,27 +415,14 @@ func (p *HyprlandParser) ParseWithDMS() (*HyprlandSection, error) {
 		return nil, err
 	}
 
-	dmsBindsLua := filepath.Join(expandedDir, "dms", "binds.lua")
-	dmsBindsConf := filepath.Join(expandedDir, "dms", "binds.conf")
-	dmsBindsPath := ""
-	if _, err := os.Stat(dmsBindsLua); err == nil {
+	dmsBindsPath := filepath.Join(expandedDir, "dms", "binds.lua")
+	if _, err := os.Stat(dmsBindsPath); err == nil {
 		p.dmsBindsExists = true
-		dmsBindsPath = dmsBindsLua
-	} else if _, err := os.Stat(dmsBindsConf); err == nil {
-		p.dmsBindsExists = true
-		dmsBindsPath = dmsBindsConf
 	}
 
 	mainConfig, err := hyprlandMainConfigPath(p.configDir)
 	if err != nil {
 		return nil, err
-	}
-	if strings.EqualFold(filepath.Ext(mainConfig), ".lua") {
-		p.configFormat = "lua"
-		p.readOnly = false
-	} else {
-		p.configFormat = "hyprlang"
-		p.readOnly = true
 	}
 	section, err := p.parseFileWithSource(mainConfig, "")
 	if err != nil {
@@ -649,94 +508,16 @@ func (p *HyprlandParser) parseFileWithSource(filePath, sectionName string) (*Hyp
 		return nil, err
 	}
 
-	if strings.EqualFold(filepath.Ext(absPath), ".lua") {
-		return p.parseLuaLines(string(data), filepath.Dir(absPath), absPath, sectionName)
-	}
-
-	prevSource := p.currentSource
-	p.currentSource = absPath
-
-	section := &HyprlandSection{Name: sectionName}
-	lines := strings.SplitSeq(string(data), "\n")
-
-	for line := range lines {
-		trimmed := strings.TrimSpace(line)
-
-		if strings.HasPrefix(trimmed, "source") {
-			p.handleSource(trimmed, section, filepath.Dir(absPath))
-			continue
-		}
-
-		if !strings.HasPrefix(trimmed, "bind") {
-			continue
-		}
-
-		kb := p.parseBindLine(line)
-		if kb == nil {
-			continue
-		}
-		kb.Source = p.currentSource
-		if p.addBind(kb) {
-			section.Keybinds = append(section.Keybinds, *kb)
-		}
-	}
-
-	p.currentSource = prevSource
-	return section, nil
-}
-
-func (p *HyprlandParser) handleSource(line string, section *HyprlandSection, baseDir string) {
-	matched := p.walker.IncludeAssignment(baseDir, line, func(absPath string) error {
-		includedSection, err := p.parseFileWithSource(absPath, "")
-		if err != nil {
-			return err
-		}
-		section.Children = append(section.Children, *includedSection)
-		return nil
-	})
-	if matched {
-		p.dmsProcessed = true
-	}
+	return p.parseLuaLines(string(data), filepath.Dir(absPath), absPath, sectionName)
 }
 
 func (p *HyprlandParser) parseDMSBindsDirectly(dmsBindsPath string, section *HyprlandSection) {
-	if strings.EqualFold(filepath.Ext(dmsBindsPath), ".lua") {
-		sub, err := p.parseLuaLinesFromPath(dmsBindsPath)
-		if err != nil {
-			return
-		}
-		section.Keybinds = append(section.Keybinds, sub.Keybinds...)
-		section.Children = append(section.Children, sub.Children...)
-		p.dmsProcessed = true
-		return
-	}
-
-	data, err := os.ReadFile(dmsBindsPath)
+	sub, err := p.parseLuaLinesFromPath(dmsBindsPath)
 	if err != nil {
 		return
 	}
-
-	prevSource := p.currentSource
-	p.currentSource = dmsBindsPath
-
-	lines := strings.SplitSeq(string(data), "\n")
-	for line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if !strings.HasPrefix(trimmed, "bind") {
-			continue
-		}
-
-		kb := p.parseBindLine(line)
-		if kb == nil {
-			continue
-		}
-		kb.Source = dmsBindsPath
-		if p.addBind(kb) {
-			section.Keybinds = append(section.Keybinds, *kb)
-		}
-	}
-
-	p.currentSource = prevSource
+	section.Keybinds = append(section.Keybinds, sub.Keybinds...)
+	section.Children = append(section.Children, sub.Children...)
 	p.dmsProcessed = true
 }
 
@@ -930,110 +711,6 @@ func luaBindOptDescription(optSuffix string) string {
 	return luaTableStringField(optSuffix, "description")
 }
 
-// Hyprland 0.56 field order: `bind[flags] = MODS, key, [device,] [description,] dispatcher, params`.
-func (p *HyprlandParser) parseBindLine(line string) *HyprlandKeyBinding {
-	parts := strings.SplitN(line, "=", 2)
-	if len(parts) < 2 {
-		return nil
-	}
-
-	var flags string
-	if bindType := strings.TrimSpace(parts[0]); bindType != CommentBindPattern {
-		var ok bool
-		if flags, ok = extractBindFlags(bindType); !ok {
-			return nil
-		}
-	}
-
-	keys, comment, _ := strings.Cut(parts[1], "#")
-	comment = strings.TrimSpace(comment)
-
-	dispatcherIndex := 2
-	descIndex := -1
-	if strings.Contains(flags, "k") {
-		dispatcherIndex++
-	}
-	if strings.Contains(flags, "d") {
-		descIndex = dispatcherIndex
-		dispatcherIndex++
-	}
-
-	keyFields := strings.SplitN(keys, ",", dispatcherIndex+2)
-	if len(keyFields) <= dispatcherIndex {
-		return nil
-	}
-
-	mods := strings.TrimSpace(keyFields[0])
-	key := strings.TrimSpace(keyFields[1])
-	dispatcher := strings.TrimSpace(keyFields[dispatcherIndex])
-	var params string
-	if len(keyFields) > dispatcherIndex+1 {
-		params = strings.TrimSpace(keyFields[dispatcherIndex+1])
-	}
-	if descIndex >= 0 && comment == "" {
-		comment = strings.TrimSpace(keyFields[descIndex])
-	}
-
-	if strings.HasPrefix(comment, HideComment) {
-		return nil
-	}
-
-	if comment == "" {
-		comment = hyprlandAutogenerateComment(dispatcher, params)
-	}
-
-	var modList []string
-	if mods != "" {
-		modstring := mods + string(ModSeparators[0])
-		idx := 0
-		for index, char := range modstring {
-			if slices.Contains(ModSeparators, char) {
-				if index-idx > 1 {
-					modList = append(modList, modstring[idx:index])
-				}
-				idx = index + 1
-			}
-		}
-	}
-
-	return &HyprlandKeyBinding{
-		Mods:       modList,
-		Key:        key,
-		Dispatcher: dispatcher,
-		Params:     params,
-		Comment:    comment,
-		Flags:      flags,
-	}
-}
-
-// ok is false for `binds:...` and for any letter Hyprland rejects, since that drops the whole bind.
-func extractBindFlags(bindType string) (string, bool) {
-	flags, ok := strings.CutPrefix(strings.TrimSpace(bindType), "bind")
-	if !ok {
-		return "", false
-	}
-	for i := 0; i < len(flags); i++ {
-		if !isHyprlangBindFlag(flags[i]) {
-			return "", false
-		}
-	}
-	return flags, true
-}
-
-// s (multi-key), k (device field) and d (description field) exist only in hyprlang.
-func isHyprlangBindFlag(c byte) bool {
-	switch c {
-	case 's', 'k', 'd':
-		return true
-	}
-	for _, fo := range hyprlandBindFlagOptions {
-		if fo.flag == c {
-			return true
-		}
-	}
-	return false
-}
-
 func ParseHyprlandKeysWithDMS(path string) (*HyprlandParseResult, error) {
 	parser := NewHyprlandParser(path)
 	section, err := parser.ParseWithDMS()
@@ -1047,7 +724,6 @@ func ParseHyprlandKeysWithDMS(path string) (*HyprlandParseResult, error) {
 		DMSStatus:          parser.buildDMSStatus(),
 		ConflictingConfigs: parser.conflictingConfigs,
 		DefaultDMSKeys:     parser.defaultDMSKeys,
-		ConfigFormat:       parser.configFormat,
 		MainMod:            parser.mainMod,
 	}, nil
 }
@@ -1261,6 +937,9 @@ func luaExprToDispatcherParams(expr string) (dispatcher, params string) {
 				if after, ok := strings.CutPrefix(u, "hyprctl dispatch "); ok {
 					return splitDispatchCommand(strings.TrimSpace(after))
 				}
+				if strings.TrimSpace(u) == "hyprctl reload" {
+					return "reloadconfig", ""
+				}
 				return "exec", u
 			}
 		}
@@ -1355,7 +1034,13 @@ func luaExprToDispatcherParams(expr string) (dispatcher, params string) {
 	case strings.HasPrefix(expr, "hl.dsp.group.lock_active("):
 		return "lockactivegroup", luaToggleActionToLockArg(luaTableStringField(expr, "action"))
 	case strings.HasPrefix(expr, "hl.dsp.group.lock("):
-		return "lockgroups", luaToggleActionToLockArg(luaTableStringField(expr, "action"))
+		lockArg := luaToggleActionToLockArg(luaTableStringField(expr, "action"))
+		window := luaTableStringField(expr, "window")
+		// Before 0.57 group.lock locked every group and ignored all; 0.57 locks only the active one without it
+		if all, _ := luaTableBoolField(expr, "all"); window == "" && (all || !luaconfig.HyprlandAtLeast(0, 57)) {
+			return "lockgroups", lockArg
+		}
+		return joinDispatcherParams("lockactivegroup", lockArg, window)
 	case strings.HasPrefix(expr, "hl.dsp.window.deny_from_group("):
 		return "denywindowfromgroup", luaToggleActionToLegacy(luaTableStringField(expr, "action"))
 	case strings.HasPrefix(expr, "hl.dsp.focus("):
@@ -1536,6 +1221,8 @@ func luaExprToDispatcherParams(expr string) (dispatcher, params string) {
 		return "releaseinputcapture", ""
 	case strings.Contains(expr, "hl.dsp.force_renderer_reload()"):
 		return "forcerendererreload", ""
+	case strings.Contains(expr, "hl.dsp.reload_config()"):
+		return "reloadconfig", ""
 	case strings.HasPrefix(expr, "hl.dsp.force_idle("):
 		return "forceidle", luaCallScalarArgValue(expr, "hl.dsp.force_idle")
 	case strings.Contains(expr, "hl.dsp.exit()"):
@@ -1767,13 +1454,7 @@ func isDMSBindsUserOverridePath(p string) bool {
 
 func isDMSBindsPrimarySourcePath(p string) bool {
 	p = filepath.ToSlash(strings.TrimSpace(p))
-	if strings.Contains(p, "/dms/binds.lua") || strings.HasSuffix(p, "dms/binds.lua") || p == "dms/binds.lua" || p == "./dms/binds.lua" {
-		return true
-	}
-	if strings.Contains(p, "/dms/binds.conf") || strings.HasSuffix(p, "dms/binds.conf") {
-		return true
-	}
-	return p == "dms/binds.conf" || p == "./dms/binds.conf"
+	return strings.Contains(p, "/dms/binds.lua") || strings.HasSuffix(p, "dms/binds.lua")
 }
 
 func hyprlandMainConfigPath(dir string) (string, error) {
@@ -1782,12 +1463,12 @@ func hyprlandMainConfigPath(dir string) (string, error) {
 		return "", err
 	}
 	luaPath := filepath.Join(expandedDir, "hyprland.lua")
-	if st, err := os.Stat(luaPath); err == nil && st.Mode().IsRegular() {
-		return luaPath, nil
+	st, err := os.Stat(luaPath)
+	if err != nil {
+		return "", err
 	}
-	confPath := filepath.Join(expandedDir, "hyprland.conf")
-	if st, err := os.Stat(confPath); err == nil && st.Mode().IsRegular() {
-		return confPath, nil
+	if !st.Mode().IsRegular() {
+		return "", os.ErrNotExist
 	}
-	return "", os.ErrNotExist
+	return luaPath, nil
 }

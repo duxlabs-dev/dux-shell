@@ -108,7 +108,7 @@ function hyprlandSpecial(ws) {
     return !(ws.id > 0) && hyprlandSpecialName(ws.name ?? "");
 }
 
-// Hyprland main gives named workspaces no id (Quickshell reports -1 for all of them), so the address is their identity
+// Hyprland 0.57 gives named workspaces no id (Quickshell reports -1 for all of them), so the address is their identity
 function hyprlandKey(ws) {
     if (ws?.id > 0)
         return ws.id;

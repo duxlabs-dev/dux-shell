@@ -219,6 +219,9 @@ Singleton {
     property int hyprlandBlurHazeIridescence: Spec.SPEC.hyprlandBlurHazeIridescence.def
     property int hyprlandBlurRippleStrength: Spec.SPEC.hyprlandBlurRippleStrength.def
     property int hyprlandBlurWaterStrength: Spec.SPEC.hyprlandBlurWaterStrength.def
+    property int hyprlandBlurDropsSpeed: Spec.SPEC.hyprlandBlurDropsSpeed.def
+    property int hyprlandBlurHeatShimmerSpeed: Spec.SPEC.hyprlandBlurHeatShimmerSpeed.def
+    property bool hyprlandBlurProportional: Spec.SPEC.hyprlandBlurProportional.def
     property bool hyprlandGlowEnabled: Spec.SPEC.hyprlandGlowEnabled.def
     property int hyprlandGlowRange: Spec.SPEC.hyprlandGlowRange.def
     property int hyprlandGlowRenderPower: Spec.SPEC.hyprlandGlowRenderPower.def
@@ -242,12 +245,18 @@ Singleton {
     property string hyprlandScrollingDirection: Spec.SPEC.hyprlandScrollingDirection.def
     property int hyprlandScrollingColumnWidth: Spec.SPEC.hyprlandScrollingColumnWidth.def
     property bool hyprlandScrollingFullscreenOneColumn: Spec.SPEC.hyprlandScrollingFullscreenOneColumn.def
-    property bool hyprlandScrollingFollowFocus: Spec.SPEC.hyprlandScrollingFollowFocus.def
+    property int hyprlandScrollingFollowFocus: Spec.SPEC.hyprlandScrollingFollowFocus.def
+    property bool hyprlandDragCenterWindow: Spec.SPEC.hyprlandDragCenterWindow.def
+    property int hyprlandWorkspaceBackAndForth: Spec.SPEC.hyprlandWorkspaceBackAndForth.def
+    property int hyprlandExitWindowRetainsFullscreen: Spec.SPEC.hyprlandExitWindowRetainsFullscreen.def
+    property string hyprlandBellSound: Spec.SPEC.hyprlandBellSound.def
     property int mangoLayoutGapsOverride: Spec.SPEC.mangoLayoutGapsOverride.def
     property int mangoLayoutGapsOutOverride: Spec.SPEC.mangoLayoutGapsOutOverride.def
     property int mangoLayoutRadiusOverride: Spec.SPEC.mangoLayoutRadiusOverride.def
     property int mangoLayoutBorderSize: Spec.SPEC.mangoLayoutBorderSize.def
     property int focusFollowsMouse: Spec.SPEC.focusFollowsMouse.def
+    property bool hyprlandSwallowFocusClick: Spec.SPEC.hyprlandSwallowFocusClick.def
+    property bool hyprlandTabletEnabled: Spec.SPEC.hyprlandTabletEnabled.def
     property string mouseAccelProfile: Spec.SPEC.mouseAccelProfile.def
     property real mouseAccelSpeed: Spec.SPEC.mouseAccelSpeed.def
     property bool mouseLeftHanded: Spec.SPEC.mouseLeftHanded.def

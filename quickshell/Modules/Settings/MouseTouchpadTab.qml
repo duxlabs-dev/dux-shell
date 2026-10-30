@@ -36,13 +36,23 @@ Item {
                 // Only Hyprland can report the live mode; untouched niri and Mango show their defaults
                 readonly property int inheritedMode: CompositorService.isHyprland ? HyprlandService.followMouseMode : CompositorService.isMango ? 1 : 0
                 visible: CompositorService.supportsInputConfig && (!CompositorService.isHyprland || HyprlandService.hyprSupports("input:follow_mouse"))
-                enabled: inputInclude.included && !inputInclude.readOnly && (!CompositorService.isHyprland || (HyprlandService.luaConfigActive && HyprlandService.followMouseMode >= 0))
+                enabled: inputInclude.included && (!CompositorService.isHyprland || (HyprlandService.luaConfigActive && HyprlandService.followMouseMode >= 0))
                 tags: ["mouse", "focus", "follow", "pointer", "window", "sloppy"]
                 settingKey: "focusFollowsMouse"
                 resetKeys: ["focusFollowsMouse"]
                 text: I18n.tr("Focus follows mouse", "Toggle that focuses a window when the pointer moves over it")
                 checked: (SettingsData.focusFollowsMouse < 0 ? inheritedMode : SettingsData.focusFollowsMouse) === 1
                 onToggled: checked => SettingsData.set("focusFollowsMouse", checked ? 1 : 0)
+            }
+
+            SettingsToggleRow {
+                visible: CompositorService.isHyprland && HyprlandService.hyprSupports("input:swallow_focus_click")
+                tags: ["mouse", "focus", "click", "swallow", "window", "swallow_focus_click"]
+                settingKey: "hyprlandSwallowFocusClick"
+                text: I18n.tr("Swallow focus click", "Hyprland toggle, the click that focuses a window is not passed to the app")
+                description: I18n.tr("The click that focuses a window does not reach the app")
+                checked: SettingsData.hyprlandSwallowFocusClick
+                onToggled: checked => SettingsData.set("hyprlandSwallowFocusClick", checked)
             }
 
             SettingsSliderRow {
@@ -280,6 +290,23 @@ Item {
                 text: I18n.tr("Middle click emulation")
                 checked: SettingsData.touchpadMiddleEmulation
                 onToggled: checked => SettingsData.set("touchpadMiddleEmulation", checked)
+            }
+        }
+
+        SettingsCard {
+            width: parent.width
+            visible: CompositorService.isHyprland && HyprlandService.hyprSupports("input:tablet:enabled")
+            tags: ["tablet", "pen", "stylus", "drawing", "input"]
+            title: I18n.tr("Tablet", "drawing tablet input settings card title")
+            settingKey: "tabletSettings"
+            iconName: "stylus"
+
+            SettingsToggleRow {
+                tags: ["tablet", "pen", "stylus", "drawing", "enable", "disable"]
+                settingKey: "hyprlandTabletEnabled"
+                text: I18n.tr("Tablet input", "Hyprland toggle, accept input from drawing tablets")
+                checked: SettingsData.hyprlandTabletEnabled
+                onToggled: checked => SettingsData.set("hyprlandTabletEnabled", checked)
             }
         }
     }

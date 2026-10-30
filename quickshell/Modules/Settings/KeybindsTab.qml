@@ -724,7 +724,7 @@ Item {
                             StyledText {
                                 text: {
                                     if (warningBox.showLegacy)
-                                        return I18n.tr("Hyprland conf mode");
+                                        return I18n.tr("%1 not found").arg("hyprland.lua");
                                     if (warningBox.showSetup)
                                         return I18n.tr("First Time Setup");
                                     if (warningBox.showWarning)
@@ -741,7 +741,7 @@ Item {
                             StyledText {
                                 text: {
                                     if (warningBox.showLegacy)
-                                        return I18n.tr("This install is still using %1. Run %2 to migrate before changing these settings.", "hyprland legacy config warning, %1 is the config file, %2 a command").arg("hyprland.conf").arg("dms setup");
+                                        return I18n.tr("Run %1 to create it before changing these settings.", "hyprland.lua missing warning, %1 is a command").arg("dms setup");
                                     if (warningBox.showSetup)
                                         return I18n.tr("Click 'Setup' to create %1 and add include to your compositor config.", "include setup banner, %1 is the dms config file name").arg("dms/binds");
                                     if (warningBox.showWarning) {

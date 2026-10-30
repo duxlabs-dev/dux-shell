@@ -24,7 +24,7 @@ const scope = vm.createContext({
     liveMonitor: name => live[name] ?? null,
     hyprOptionNames: new Proxy({}, { get: (names, key) => key in names ? names[key] : true })
 });
-for (const fn of ["getOutputIdentifier", "luaQuoted", "forceFlagValue", "buildOutputsLua", "luaString", "luaTable", "hyprSupports", "blurLines", "decorationLines", "groupbarLines", "hyprScrollMethod", "touchpadNames", "inputLines", "touchpadDeviceLines", "refreshFollowMouse"])
+for (const fn of ["getOutputIdentifier", "luaQuoted", "forceFlagValue", "buildOutputsLua", "luaString", "luaTable", "hyprSupports", "hyprIntModes", "hyprMode", "blurLines", "decorationLines", "groupbarLines", "bindsLines", "miscLines", "tilingLayoutLines", "hyprScrollMethod", "touchpadNames", "inputLines", "touchpadDeviceLines", "refreshFollowMouse"])
     vm.runInContext(extract(fn), scope);
 const withOptions = (names, run) => {
     const previous = scope.hyprOptionNames;
@@ -46,7 +46,7 @@ const settingsFor = prefix => {
     return overrides => Object.assign({}, defaults, overrides);
 };
 const layout = settingsFor(/^(hyprland|blurStrength)/);
-const input = settingsFor(/^(mouse|touchpad|keyboard)[A-Z]/);
+const input = settingsFor(/^(mouse|touchpad|keyboard|hyprlandSwallowFocusClick|hyprlandTabletEnabled)/);
 const table = (lines, name) => {
     const start = lines.indexOf(`${name} = {`);
     return start < 0 ? null : lines.slice(start + 1, lines.indexOf("},", start)).map(line => line.trim());
@@ -138,6 +138,52 @@ test("layout: effects the running Hyprland does not know are not written even wh
         assert.deepEqual(decorationLines(enabled, 12).filter(line => line.endsWith("= {")), ["glow = {"]);
         assert.deepEqual(groupbarLines(enabled), []);
     });
+});
+
+const hypr056 = { "scrolling:follow_focus": true, "binds:workspace_back_and_forth": true, "misc:exit_window_retains_fullscreen": true };
+const lines057 = s => [...scope.bindsLines(s), ...scope.miscLines(s), ...scope.blurLines(s), ...inputLines(s)].map(line => line.trim());
+
+test("layout: 0.57 options write nothing at Hyprland's defaults and only their own line once changed", () => {
+    const defaults = layout(input());
+    assert.deepEqual([...scope.bindsLines(defaults), ...scope.miscLines(defaults)], []);
+    const cases = [
+        [{ hyprlandDragCenterWindow: false }, "drag_center_window = false,"],
+        [{ hyprlandWorkspaceBackAndForth: 2 }, "workspace_back_and_forth = 2,"],
+        [{ hyprlandExitWindowRetainsFullscreen: 3 }, "exit_window_retains_fullscreen = 3,"],
+        [{ hyprlandBellSound: "" }, 'bell_sound = "",'],
+        [{ hyprlandBlurProportional: true }, "proportional = true,"],
+        [{ hyprlandSwallowFocusClick: true }, "swallow_focus_click = true,"],
+        [{ hyprlandTabletEnabled: false }, "enabled = false,"],
+        [{ hyprlandBlurVariant: "drops", hyprlandBlurDropsSpeed: 0 }, "speed = 0,"],
+        [{ hyprlandBlurVariant: "heat_shimmer", hyprlandBlurHeatShimmerSpeed: 0 }, "speed = 0,"]
+    ];
+    const base = lines057(defaults);
+    for (const [overrides, want] of cases) {
+        const s = layout(input(overrides));
+        const added = lines057(s).filter(line => !base.includes(line));
+        assert.deepEqual(added.filter(line => !/^(variant = |enabled = true,|\w+ = \{$)/.test(line)), [want], want);
+        assert.equal(withOptions({}, () => lines057(s)).includes(want), false, want);
+    }
+    assert.equal(lines057(layout(input({ hyprlandBlurVariant: "drops" }))).some(line => line.startsWith("speed")), false);
+});
+
+test("layout: follow focus and the other bools that became modes stay bools before 0.57", () => {
+    const previous = scope.SettingsData;
+    const s = scope.SettingsData = layout({ hyprlandScrollingFollowFocus: 2, hyprlandWorkspaceBackAndForth: 2, hyprlandExitWindowRetainsFullscreen: 2 });
+    const written = () => [scope.tilingLayoutLines("scrolling").at(-1), ...scope.bindsLines(s), ...scope.miscLines(s)];
+    try {
+        assert.deepEqual(written(), ["follow_focus = 2,", "workspace_back_and_forth = 2,", "exit_window_retains_fullscreen = 2,"]);
+        assert.deepEqual(withOptions(hypr056, written), ["follow_focus = true,", "workspace_back_and_forth = true,", "exit_window_retains_fullscreen = true,"]);
+        s.hyprlandScrollingFollowFocus = 0;
+        assert.equal(withOptions(hypr056, () => scope.tilingLayoutLines("scrolling").at(-1)), "follow_focus = false,");
+    } finally {
+        scope.SettingsData = previous;
+    }
+});
+
+test("settings: a stored follow focus bool loads as the matching mode", () => {
+    const coerce = SPEC.hyprlandScrollingFollowFocus.coerce;
+    assert.deepEqual([true, false, 0, 1, 2, 3, "1"].map(coerce), [1, 0, 0, 1, 2, undefined, undefined]);
 });
 
 test("input: turning natural scroll off is written so the template's true cannot shadow it", () => {

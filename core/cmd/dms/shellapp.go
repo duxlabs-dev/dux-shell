@@ -10,7 +10,6 @@ import (
 
 	"github.com/duxlabs-dev/dux-go/shellapp"
 	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
-	"github.com/duxlabs-dev/dux-shell/core/internal/config"
 	"github.com/duxlabs-dev/dux-shell/core/internal/gpu"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server"
@@ -58,7 +57,6 @@ func (b *dmsBackend) Close() {
 func (b *dmsBackend) Done() <-chan error { return b.done }
 
 func bootBackend(ctx context.Context) (shellapp.Backend, error) {
-	config.CleanupStrayHyprlandConfFile(log.Infof)
 	server.CLIVersion = Version
 
 	srv := server.New()

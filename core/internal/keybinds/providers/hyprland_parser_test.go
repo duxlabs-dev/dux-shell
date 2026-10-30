@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"github.com/duxlabs-dev/dux-shell/core/internal/luaconfig"
 	"os"
 	"path/filepath"
 	"strings"
@@ -96,8 +97,11 @@ func TestHyprlandLuaBindRoundTripHelpers(t *testing.T) {
 		{`hl.dsp.group.prev()`, "changegroupactive", "b"},
 		{`hl.dsp.group.active({ index = 2 })`, "changegroupactive", "2"},
 		{`hl.dsp.group.move_window({ forward = false })`, "movegroupwindow", "b"},
-		{`hl.dsp.group.lock({ action = "on" })`, "lockgroups", "lock"},
+		{`hl.dsp.group.lock({ all = true, action = "on" })`, "lockgroups", "lock"},
+		{`hl.dsp.group.lock({ action = "off", window = "class:^(kitty)$" })`, "lockactivegroup", "unlock class:^(kitty)$"},
 		{`hl.dsp.group.lock_active({ action = "off" })`, "lockactivegroup", "unlock"},
+		{`hl.dsp.reload_config()`, "reloadconfig", ""},
+		{`hl.dsp.exec_cmd("hyprctl reload")`, "reloadconfig", ""},
 		{`hl.dsp.window.deny_from_group({ action = "toggle" })`, "denywindowfromgroup", "toggle"},
 		{`function() hl.exec_cmd("hyprctl dispatch splitratio +0.1") end`, "splitratio", "+0.1"},
 		{`hl.dsp.layout("togglesplit")`, "layoutmsg", "togglesplit"},
@@ -202,8 +206,10 @@ func TestLuaActionStringFromHyprlangActionUsesNativeDispatchers(t *testing.T) {
 		{"moveoutofgroup", `hl.dsp.window.move({ out_of_group = true })`},
 		{"movewindoworgroup r", `hl.dsp.window.move({ direction = "r", group_aware = true })`},
 		{"movegroupwindow b", `hl.dsp.group.move_window({ forward = false })`},
-		{"lockgroups lock", `hl.dsp.group.lock({ action = "on" })`},
+		{"lockgroups lock", `hl.dsp.group.lock({ all = true, action = "on" })`},
 		{"lockactivegroup unlock", `hl.dsp.group.lock_active({ action = "off" })`},
+		{"lockactivegroup lock class:^(kitty)$", `hl.dsp.group.lock({ action = "on", window = "class:^(kitty)$" })`},
+		{"reloadconfig", `hl.dsp.exec_cmd("hyprctl reload")`},
 		{"denywindowfromgroup toggle", `hl.dsp.window.deny_from_group({ action = "toggle" })`},
 		{"cyclenext prev", `hl.dsp.window.cycle_next({ next = false })`},
 		{"setfloating", `hl.dsp.window.float({ action = "on" })`},
@@ -306,6 +312,34 @@ func TestParseLuaBindLineUpgradesMappableDispatchWrapper(t *testing.T) {
 	}
 }
 
+func TestParseLuaBindLineBareGroupLockFollowsHyprlandVersion(t *testing.T) {
+	prev := luaconfig.HyprlandVersion
+	t.Cleanup(func() { luaconfig.HyprlandVersion = prev })
+	for _, tc := range []struct {
+		minor  int
+		action string
+		want   string
+	}{
+		{56, "lockgroups toggle", `hl.dsp.group.lock({ all = true, action = "toggle" })`},
+		{57, "lockactivegroup toggle", `hl.dsp.group.lock_active({ action = "toggle" })`},
+	} {
+		minor := tc.minor
+		luaconfig.HyprlandVersion = func() (int, int) { return 0, minor }
+		got, ok := parseLuaBindOverrideLine(`hl.bind("SUPER + G", hl.dsp.group.lock({ action = "toggle" }))`)
+		if !ok {
+			t.Fatalf("0.%d: expected line to parse", minor)
+		}
+		if got.Action != tc.action {
+			t.Fatalf("0.%d: action = %q, want %q", minor, got.Action, tc.action)
+		}
+		var sb strings.Builder
+		writeLuaBindLine(&sb, got)
+		if !strings.Contains(sb.String(), tc.want) {
+			t.Fatalf("0.%d: expected %q, got %q", minor, tc.want, sb.String())
+		}
+	}
+}
+
 func TestReadLuaOverrideMigratesTrailingCommentToDescription(t *testing.T) {
 	tmpDir := t.TempDir()
 	overridePath := filepath.Join(tmpDir, "binds-user.lua")
@@ -317,7 +351,7 @@ hl.bind("SUPER + H", hl.dsp.exec_cmd("app --help"))
 		t.Fatal(err)
 	}
 
-	binds, err := readLuaOrHyprlangOverride(overridePath)
+	binds, err := readLuaOverride(overridePath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -401,7 +435,7 @@ hl.bind("SUPER + N", hl.dsp.exec_cmd("dms ipc call notepad toggle"))
 		t.Fatal(err)
 	}
 
-	binds, err := readLuaOrHyprlangOverride(overridePath)
+	binds, err := readLuaOverride(overridePath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -474,7 +508,7 @@ hl.bind("SUPER + T", hl.dsp.exec_cmd("kitty"))`,
 }
 
 func TestHyprlandRemoveBindWritesNegativeOverrideForDefault(t *testing.T) {
-	tmpDir := t.TempDir()
+	tmpDir := hyprLuaTestDir(t)
 	dmsDir := filepath.Join(tmpDir, "dms")
 	if err := os.MkdirAll(dmsDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -519,7 +553,7 @@ func TestIsRawLuaActionText(t *testing.T) {
 }
 
 func TestHyprlandSetBindPreservesRawLuaAction(t *testing.T) {
-	tmpDir := t.TempDir()
+	tmpDir := hyprLuaTestDir(t)
 	dmsDir := filepath.Join(tmpDir, "dms")
 	if err := os.MkdirAll(dmsDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -548,7 +582,7 @@ func TestHyprlandSetBindPreservesRawLuaAction(t *testing.T) {
 }
 
 func TestHyprlandSetBindUpdatesSpacedLuaOverrideWithoutDuplicates(t *testing.T) {
-	tmpDir := t.TempDir()
+	tmpDir := hyprLuaTestDir(t)
 	dmsDir := filepath.Join(tmpDir, "dms")
 	if err := os.MkdirAll(dmsDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -587,7 +621,7 @@ hl.bind("SUPER + 1", hl.dsp.exec_cmd("hyprctl dispatch workspace 1"))
 }
 
 func TestHyprlandSetBindTranslatesScrollWheelToMouse(t *testing.T) {
-	tmpDir := t.TempDir()
+	tmpDir := hyprLuaTestDir(t)
 	dmsDir := filepath.Join(tmpDir, "dms")
 	if err := os.MkdirAll(dmsDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -642,7 +676,7 @@ func readFile(t *testing.T, path string) string {
 }
 
 func TestHyprlandRemoveBindReplacesExistingOverrideWithNegativeOverride(t *testing.T) {
-	tmpDir := t.TempDir()
+	tmpDir := hyprLuaTestDir(t)
 	dmsDir := filepath.Join(tmpDir, "dms")
 	if err := os.MkdirAll(dmsDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -672,7 +706,7 @@ hl.bind("SUPER + N", hl.dsp.exec_cmd("dms ipc call notepad toggle"))
 }
 
 func TestHyprlandResetBindRevertsExistingOverrideToDefault(t *testing.T) {
-	tmpDir := t.TempDir()
+	tmpDir := hyprLuaTestDir(t)
 	dmsDir := filepath.Join(tmpDir, "dms")
 	if err := os.MkdirAll(dmsDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -797,7 +831,7 @@ func TestHyprlandBindFlagsRoundTrip(t *testing.T) {
 }
 
 func TestHyprlandSetBindKeepsDeviceTable(t *testing.T) {
-	tmpDir := t.TempDir()
+	tmpDir := hyprLuaTestDir(t)
 	dmsDir := filepath.Join(tmpDir, "dms")
 	if err := os.MkdirAll(dmsDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -840,420 +874,19 @@ func TestHyprlandSetBindLeavesConfOnlyInstallReadOnly(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected SetBind to reject conf-only Hyprland config")
 	}
-	if !strings.Contains(err.Error(), "read-only") {
-		t.Fatalf("expected read-only error, got %v", err)
+	if !strings.Contains(err.Error(), "dms setup") {
+		t.Fatalf("expected a run-dms-setup error, got %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(tmpDir, "dms", "binds-user.lua")); !os.IsNotExist(err) {
 		t.Fatalf("expected no Lua override to be created for conf-only config, stat err=%v", err)
 	}
 }
 
-func TestHyprlandGetKeybindAtLine(t *testing.T) {
-	tests := []struct {
-		name     string
-		line     string
-		expected *HyprlandKeyBinding
-	}{
-		{
-			name: "basic_keybind",
-			line: "bind = SUPER, Q, killactive",
-			expected: &HyprlandKeyBinding{
-				Mods:       []string{"SUPER"},
-				Key:        "Q",
-				Dispatcher: "killactive",
-				Params:     "",
-				Comment:    "Close window",
-			},
-		},
-		{
-			name: "keybind_with_params",
-			line: "bind = SUPER, left, movefocus, l",
-			expected: &HyprlandKeyBinding{
-				Mods:       []string{"SUPER"},
-				Key:        "left",
-				Dispatcher: "movefocus",
-				Params:     "l",
-				Comment:    "move focus left",
-			},
-		},
-		{
-			name: "keybind_with_comment",
-			line: "bind = SUPER, T, exec, kitty # Open terminal",
-			expected: &HyprlandKeyBinding{
-				Mods:       []string{"SUPER"},
-				Key:        "T",
-				Dispatcher: "exec",
-				Params:     "kitty",
-				Comment:    "Open terminal",
-			},
-		},
-		{
-			name:     "keybind_hidden",
-			line:     "bind = SUPER, H, exec, secret # [hidden]",
-			expected: nil,
-		},
-		{
-			name: "keybind_multiple_mods",
-			line: "bind = SUPER+SHIFT, F, fullscreen, 0",
-			expected: &HyprlandKeyBinding{
-				Mods:       []string{"SUPER", "SHIFT"},
-				Key:        "F",
-				Dispatcher: "fullscreen",
-				Params:     "0",
-				Comment:    "Toggle fullscreen",
-			},
-		},
-		{
-			name: "keybind_no_mods",
-			line: "bind = , Print, exec, screenshot",
-			expected: &HyprlandKeyBinding{
-				Mods:       []string{},
-				Key:        "Print",
-				Dispatcher: "exec",
-				Params:     "screenshot",
-				Comment:    "screenshot",
-			},
-		},
+func hyprLuaTestDir(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "hyprland.lua"), nil, 0o644); err != nil {
+		t.Fatal(err)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			parser := NewHyprlandParser("")
-			parser.contentLines = []string{tt.line}
-			result := parser.getKeybindAtLine(0)
-
-			if tt.expected == nil {
-				if result != nil {
-					t.Errorf("expected nil, got %+v", result)
-				}
-				return
-			}
-
-			if result == nil {
-				t.Errorf("expected %+v, got nil", tt.expected)
-				return
-			}
-
-			if result.Key != tt.expected.Key {
-				t.Errorf("Key = %q, want %q", result.Key, tt.expected.Key)
-			}
-			if result.Dispatcher != tt.expected.Dispatcher {
-				t.Errorf("Dispatcher = %q, want %q", result.Dispatcher, tt.expected.Dispatcher)
-			}
-			if result.Params != tt.expected.Params {
-				t.Errorf("Params = %q, want %q", result.Params, tt.expected.Params)
-			}
-			if result.Comment != tt.expected.Comment {
-				t.Errorf("Comment = %q, want %q", result.Comment, tt.expected.Comment)
-			}
-			if len(result.Mods) != len(tt.expected.Mods) {
-				t.Errorf("Mods length = %d, want %d", len(result.Mods), len(tt.expected.Mods))
-			} else {
-				for i := range result.Mods {
-					if result.Mods[i] != tt.expected.Mods[i] {
-						t.Errorf("Mods[%d] = %q, want %q", i, result.Mods[i], tt.expected.Mods[i])
-					}
-				}
-			}
-		})
-	}
-}
-
-func TestHyprlandParseKeysWithSections(t *testing.T) {
-	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "hyprland.conf")
-
-	content := `##! Window Management
-bind = SUPER, Q, killactive
-bind = SUPER, F, fullscreen, 0
-
-###! Movement
-bind = SUPER, left, movefocus, l
-bind = SUPER, right, movefocus, r
-
-##! Applications
-bind = SUPER, T, exec, kitty # Terminal
-`
-
-	if err := os.WriteFile(configFile, []byte(content), 0o644); err != nil {
-		t.Fatalf("Failed to write test config: %v", err)
-	}
-
-	section, err := ParseHyprlandKeys(tmpDir)
-	if err != nil {
-		t.Fatalf("ParseHyprlandKeys failed: %v", err)
-	}
-
-	if len(section.Children) != 2 {
-		t.Errorf("Expected 2 top-level sections, got %d", len(section.Children))
-	}
-
-	if len(section.Children) >= 1 {
-		windowMgmt := section.Children[0]
-		if windowMgmt.Name != "Window Management" {
-			t.Errorf("First section name = %q, want %q", windowMgmt.Name, "Window Management")
-		}
-		if len(windowMgmt.Keybinds) != 2 {
-			t.Errorf("Window Management keybinds = %d, want 2", len(windowMgmt.Keybinds))
-		}
-
-		if len(windowMgmt.Children) != 1 {
-			t.Errorf("Window Management children = %d, want 1", len(windowMgmt.Children))
-		} else {
-			movement := windowMgmt.Children[0]
-			if movement.Name != "Movement" {
-				t.Errorf("Movement section name = %q, want %q", movement.Name, "Movement")
-			}
-			if len(movement.Keybinds) != 2 {
-				t.Errorf("Movement keybinds = %d, want 2", len(movement.Keybinds))
-			}
-		}
-	}
-
-	if len(section.Children) >= 2 {
-		apps := section.Children[1]
-		if apps.Name != "Applications" {
-			t.Errorf("Second section name = %q, want %q", apps.Name, "Applications")
-		}
-		if len(apps.Keybinds) != 1 {
-			t.Errorf("Applications keybinds = %d, want 1", len(apps.Keybinds))
-		}
-		if len(apps.Keybinds) > 0 && apps.Keybinds[0].Comment != "Terminal" {
-			t.Errorf("Applications keybind comment = %q, want %q", apps.Keybinds[0].Comment, "Terminal")
-		}
-	}
-}
-
-func TestHyprlandParseKeysWithCommentBinds(t *testing.T) {
-	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "test.conf")
-
-	content := `#/# = SUPER, A, exec, app1
-bind = SUPER, B, exec, app2
-#/# = SUPER, C, exec, app3 # Custom comment
-`
-
-	if err := os.WriteFile(configFile, []byte(content), 0o644); err != nil {
-		t.Fatalf("Failed to write test config: %v", err)
-	}
-
-	section, err := ParseHyprlandKeys(tmpDir)
-	if err != nil {
-		t.Fatalf("ParseHyprlandKeys failed: %v", err)
-	}
-
-	if len(section.Keybinds) != 3 {
-		t.Errorf("Expected 3 keybinds, got %d", len(section.Keybinds))
-	}
-
-	if len(section.Keybinds) > 0 && section.Keybinds[0].Key != "A" {
-		t.Errorf("First keybind key = %q, want %q", section.Keybinds[0].Key, "A")
-	}
-	if len(section.Keybinds) > 1 && section.Keybinds[1].Key != "B" {
-		t.Errorf("Second keybind key = %q, want %q", section.Keybinds[1].Key, "B")
-	}
-	if len(section.Keybinds) > 2 && section.Keybinds[2].Comment != "Custom comment" {
-		t.Errorf("Third keybind comment = %q, want %q", section.Keybinds[2].Comment, "Custom comment")
-	}
-}
-
-func TestHyprlandReadContentMultipleFiles(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	file1 := filepath.Join(tmpDir, "a.conf")
-	file2 := filepath.Join(tmpDir, "b.conf")
-
-	content1 := "bind = SUPER, Q, killactive\n"
-	content2 := "bind = SUPER, T, exec, kitty\n"
-
-	if err := os.WriteFile(file1, []byte(content1), 0o644); err != nil {
-		t.Fatalf("Failed to write file1: %v", err)
-	}
-	if err := os.WriteFile(file2, []byte(content2), 0o644); err != nil {
-		t.Fatalf("Failed to write file2: %v", err)
-	}
-
-	parser := NewHyprlandParser("")
-	if err := parser.ReadContent(tmpDir); err != nil {
-		t.Fatalf("ReadContent failed: %v", err)
-	}
-
-	section := parser.ParseKeys()
-	if len(section.Keybinds) != 2 {
-		t.Errorf("Expected 2 keybinds from multiple files, got %d", len(section.Keybinds))
-	}
-}
-
-func TestHyprlandReadContentErrors(t *testing.T) {
-	tests := []struct {
-		name string
-		path string
-	}{
-		{
-			name: "nonexistent_directory",
-			path: "/nonexistent/path/that/does/not/exist",
-		},
-		{
-			name: "empty_directory",
-			path: t.TempDir(),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := ParseHyprlandKeys(tt.path)
-			if err == nil {
-				t.Error("Expected error, got nil")
-			}
-		})
-	}
-}
-
-func TestHyprlandKeybindWithParamsContainingCommas(t *testing.T) {
-	parser := NewHyprlandParser("")
-	parser.contentLines = []string{"bind = SUPER, R, exec, notify-send 'Title' 'Message, with comma'"}
-
-	result := parser.getKeybindAtLine(0)
-
-	if result == nil {
-		t.Fatal("Expected keybind, got nil")
-	}
-
-	expected := "notify-send 'Title' 'Message, with comma'"
-	if result.Params != expected {
-		t.Errorf("Params = %q, want %q", result.Params, expected)
-	}
-}
-
-func TestHyprlandEmptyAndCommentLines(t *testing.T) {
-	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "test.conf")
-
-	content := `
-# This is a comment
-bind = SUPER, Q, killactive
-
-# Another comment
-
-bind = SUPER, T, exec, kitty
-`
-
-	if err := os.WriteFile(configFile, []byte(content), 0o644); err != nil {
-		t.Fatalf("Failed to write test config: %v", err)
-	}
-
-	section, err := ParseHyprlandKeys(tmpDir)
-	if err != nil {
-		t.Fatalf("ParseHyprlandKeys failed: %v", err)
-	}
-
-	if len(section.Keybinds) != 2 {
-		t.Errorf("Expected 2 keybinds (comments ignored), got %d", len(section.Keybinds))
-	}
-}
-
-func TestExtractBindFlags(t *testing.T) {
-	tests := []struct {
-		bindType string
-		expected string
-	}{
-		{"bind", ""},
-		{"binde", "e"},
-		{"bindel", "el"},
-		{"  binde  ", "e"},
-		{"bindkd", "kd"},
-		{"bindpcg", "pcg"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.bindType, func(t *testing.T) {
-			result, ok := extractBindFlags(tt.bindType)
-			if !ok || result != tt.expected {
-				t.Errorf("extractBindFlags(%q) = %q, %v, want %q", tt.bindType, result, ok, tt.expected)
-			}
-		})
-	}
-
-	for _, bindType := range []string{"notbind", "", "bindq", "binds:allow_workspace_cycles"} {
-		if flags, ok := extractBindFlags(bindType); ok {
-			t.Errorf("extractBindFlags(%q) = %q, want rejected", bindType, flags)
-		}
-	}
-}
-
-func TestHyprlandBindFlags(t *testing.T) {
-	tests := []struct {
-		name          string
-		line          string
-		expectedFlags string
-		expectedKey   string
-		expectedDisp  string
-		expectedDesc  string
-	}{
-		{
-			name:          "binde (repeat on hold)",
-			line:          "binde = , XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",
-			expectedFlags: "e",
-			expectedKey:   "XF86AudioRaiseVolume",
-			expectedDisp:  "exec",
-			expectedDesc:  "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",
-		},
-		{
-			name:          "bindd (description)",
-			line:          "bindd = SUPER, Q, Open my favourite terminal, exec, kitty",
-			expectedFlags: "d",
-			expectedKey:   "Q",
-			expectedDisp:  "exec",
-			expectedDesc:  "Open my favourite terminal",
-		},
-		{
-			name:          "bindk (per-device)",
-			line:          "bindk = SUPER, Q, at-translated-set-2-keyboard, killactive",
-			expectedFlags: "k",
-			expectedKey:   "Q",
-			expectedDisp:  "killactive",
-			expectedDesc:  "Close window",
-		},
-		{
-			name:          "binddk (device before description)",
-			line:          "binddk = SUPER, T, !my-macropad, Terminal, exec, kitty",
-			expectedFlags: "dk",
-			expectedKey:   "T",
-			expectedDisp:  "exec",
-			expectedDesc:  "Terminal",
-		},
-		{
-			name:          "bindux (submap-universal, input capture)",
-			line:          "bindux = SUPER, Escape, submap, reset",
-			expectedFlags: "ux",
-			expectedKey:   "Escape",
-			expectedDisp:  "submap",
-			expectedDesc:  "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			parser := NewHyprlandParser("")
-			parser.contentLines = []string{tt.line}
-			result := parser.getKeybindAtLine(0)
-
-			if result == nil {
-				t.Fatal("Expected keybind, got nil")
-			}
-
-			if result.Flags != tt.expectedFlags {
-				t.Errorf("Flags = %q, want %q", result.Flags, tt.expectedFlags)
-			}
-			if result.Key != tt.expectedKey {
-				t.Errorf("Key = %q, want %q", result.Key, tt.expectedKey)
-			}
-			if result.Dispatcher != tt.expectedDisp {
-				t.Errorf("Dispatcher = %q, want %q", result.Dispatcher, tt.expectedDisp)
-			}
-			if result.Comment != tt.expectedDesc {
-				t.Errorf("Comment = %q, want %q", result.Comment, tt.expectedDesc)
-			}
-		})
-	}
+	return dir
 }

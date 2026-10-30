@@ -30,11 +30,9 @@ func TestDMSRulesStatusKeySpellings(t *testing.T) {
 		Effective:       true,
 		OverriddenBy:    4,
 		StatusMessage:   "DMS window rules are active",
-		ConfigFormat:    "lua",
-		ReadOnly:        true,
 	})
 
-	want := []string{"exists", "included", "includePosition", "totalIncludes", "rulesAfterDms", "effective", "overriddenBy", "statusMessage", "configFormat", "readOnly"}
+	want := []string{"exists", "included", "includePosition", "totalIncludes", "rulesAfterDms", "effective", "overriddenBy", "statusMessage"}
 	if len(keys) != len(want) {
 		t.Fatalf("key count = %d, want %d: %v", len(keys), len(want), keys)
 	}
@@ -55,8 +53,6 @@ func TestDMSRulesStatusFromCarriesEveryField(t *testing.T) {
 		Effective:       true,
 		OverriddenBy:    7,
 		StatusMessage:   "DMS window rules are active",
-		ConfigFormat:    "lua",
-		ReadOnly:        true,
 	})
 
 	want := DMSRulesStatus{
@@ -68,8 +64,6 @@ func TestDMSRulesStatusFromCarriesEveryField(t *testing.T) {
 		Effective:       true,
 		OverriddenBy:    7,
 		StatusMessage:   "DMS window rules are active",
-		ConfigFormat:    "lua",
-		ReadOnly:        true,
 	}
 	if *got != want {
 		t.Errorf("DMSRulesStatusFrom = %+v, want %+v", *got, want)

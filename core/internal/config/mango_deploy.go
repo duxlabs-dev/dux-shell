@@ -110,17 +110,23 @@ func (cd *ConfigDeployer) deployMangoConfig(terminalCommand string, useSystemd b
 	}
 
 	newConfig := strings.ReplaceAll(MangoConfig, "{{TERMINAL_COMMAND}}", terminalCommand)
-	if cd.systemdAutostart(deps.WindowManagerMango, useSystemd) {
+	autostart := cd.systemdAutostart(deps.WindowManagerMango, useSystemd)
+	if autostart {
 		newConfig = mangoExecOnceDMS.ReplaceAllString(newConfig, "")
-	}
-	if err := os.WriteFile(result.Path, []byte(newConfig), 0o644); err != nil {
-		result.Error = fmt.Errorf("failed to write config: %w", err)
-		return result, result.Error
 	}
 
 	if err := cd.deployMangoDmsConfigs(dmsDir, terminalCommand, existing, timestamp); err != nil {
 		result.Error = fmt.Errorf("failed to deploy dms configs: %w", err)
 		return result, result.Error
+	}
+
+	if err := os.WriteFile(result.Path, []byte(newConfig), 0o644); err != nil {
+		result.Error = fmt.Errorf("failed to write config: %w", err)
+		return result, result.Error
+	}
+
+	if autostart {
+		cd.startInLiveSession(deps.WindowManagerMango)
 	}
 
 	result.Deployed = true

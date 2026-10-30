@@ -47,6 +47,10 @@ func migrateLegacyDir(oldDir, newDir string) error {
 		if newExists {
 			return nil
 		}
+		// A dangling legacy link is usually our own link to a since-deleted dms dir; linking back would loop.
+		if _, err := os.Stat(oldDir); err != nil {
+			return nil
+		}
 		return os.Symlink(legacyDirName, newDir)
 	case !oldInfo.IsDir():
 		return nil

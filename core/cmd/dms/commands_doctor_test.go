@@ -433,24 +433,66 @@ func TestHyprlandLacksLua(t *testing.T) {
 	}
 }
 
-func TestCheckHyprlandConfigFormat(t *testing.T) {
-	for name, tc := range map[string]struct {
-		files []string
-		warn  bool
+func TestCheckHyprlandQuickshellFloor(t *testing.T) {
+	for _, tc := range []struct {
+		hypr, qs string
+		warn     bool
 	}{
-		"lua only":  {[]string{"hyprland.lua"}, false},
-		"lua wins":  {[]string{"hyprland.lua", "hyprland.conf"}, false},
-		"conf only": {[]string{"hyprland.conf"}, true},
-		"neither":   {nil, false},
+		{"0.57.0", "0.3.1", true},
+		{"0.57.0", "0.3.2", false},
+		{"0.56.1", "0.2.1", false},
+		{"0.57.0", "", false},
 	} {
-		dir := t.TempDir()
-		for _, f := range tc.files {
-			if err := os.WriteFile(filepath.Join(dir, f), nil, 0o644); err != nil {
-				t.Fatal(err)
-			}
+		if got := checkHyprlandQuickshellFloor(tc.hypr, tc.qs); (len(got) == 1 && got[0].status == statusWarn) != tc.warn || (!tc.warn && len(got) != 0) {
+			t.Errorf("hyprland %q quickshell %q: got %+v, want warn=%v", tc.hypr, tc.qs, got, tc.warn)
 		}
-		got := checkHyprlandConfigFormat(dir)
-		if warned := len(got) == 1 && got[0].status == statusWarn; warned != tc.warn || (!tc.warn && len(got) != 0) {
+	}
+}
+
+func TestHyprlandDeprecatedConfigResults(t *testing.T) {
+	got := hyprlandDeprecatedConfigResults([]byte(`["general:no_border_on_floating", "decoration:shadow:range"]`))
+	if len(got) != 1 || got[0].status != statusWarn || !strings.Contains(got[0].details, "decoration:shadow:range") {
+		t.Fatalf("got %+v, want one warning listing both keys", got)
+	}
+	for _, out := range []string{"[]", "unknown request"} {
+		if got := hyprlandDeprecatedConfigResults([]byte(out)); len(got) != 0 {
+			t.Errorf("%q: got %+v, want nothing", out, got)
+		}
+	}
+}
+
+func TestCheckGreetdSession(t *testing.T) {
+	dir := t.TempDir()
+	wrapper := filepath.Join(dir, "dms-greeter")
+	if err := os.WriteFile(wrapper, []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	hyprlang := filepath.Join(dir, "dms-hypr.conf")
+	if err := os.WriteFile(hyprlang, []byte("# see hl.dsp docs\nexec-once = waybar\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	luaConf := filepath.Join(dir, "lua-hypr.conf")
+	if err := os.WriteFile(luaConf, []byte("hl.config({ misc = { disable_hyprland_logo = true } })\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for name, tc := range map[string]struct {
+		command string
+		warn    bool
+	}{
+		"pre-1.6 wrapper":           {wrapper + " --command niri", true},
+		"hyprlang greeter config":   {"dux-greeter --command hyprland -C " + hyprlang, true},
+		"hyprlang via --config=":    {"dux-greeter --command hyprland --config='" + hyprlang + "'", true},
+		"lua content in a .conf":    {"dux-greeter --command hyprland -C " + luaConf, false},
+		"lua greeter config":        {"dux-greeter --command hyprland -C /etc/greetd/dms-hypr.lua", false},
+		"unreadable greeter config": {"dux-greeter --command hyprland -C " + filepath.Join(dir, "missing.conf"), false},
+		"niri greeter":              {"dux-greeter --command niri -C /etc/greetd/niri.kdl", false},
+	} {
+		config := filepath.Join(t.TempDir(), "config.toml")
+		toml := "[terminal]\nvt = 1\n\n[default_session]\ncommand = \"" + tc.command + "\"\nuser = \"greeter\"\n"
+		if err := os.WriteFile(config, []byte(toml), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if got := checkGreetdSession(config); (len(got) == 1 && got[0].status == statusWarn) != tc.warn || (!tc.warn && len(got) != 0) {
 			t.Errorf("%s: got %+v, want warn=%v", name, got, tc.warn)
 		}
 	}

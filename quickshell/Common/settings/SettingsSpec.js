@@ -19,6 +19,13 @@ function greeterWidgetDefaults() {
     return Shared.greeterWidgetDefaults();
 }
 
+// Hyprland 0.57 turned scrolling:follow_focus from a bool into modes 0-2; stored bools stay readable
+function followFocusMode(v) {
+    if (typeof v === "boolean")
+        return v ? 1 : 0;
+    return Number.isInteger(v) && v >= 0 && v <= 2 ? v : undefined;
+}
+
 var LOCAL_SPEC = {
     dockConfigs: {
         def: [DockConfig.create("dock", "Dock")]
@@ -203,6 +210,18 @@ var LOCAL_SPEC = {
         def: 32,
         onChange: "updateCompositorLayout"
     },
+    hyprlandBlurDropsSpeed: {
+        def: 3,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurHeatShimmerSpeed: {
+        def: 1,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurProportional: {
+        def: false,
+        onChange: "updateCompositorLayout"
+    },
     hyprlandGlowEnabled: {
         def: false,
         onChange: "updateCompositorLayout"
@@ -296,7 +315,24 @@ var LOCAL_SPEC = {
         onChange: "updateCompositorLayout"
     },
     hyprlandScrollingFollowFocus: {
+        def: 1,
+        coerce: followFocusMode,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandDragCenterWindow: {
         def: true,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWorkspaceBackAndForth: {
+        def: 0,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandExitWindowRetainsFullscreen: {
+        def: 0,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBellSound: {
+        def: "default",
         onChange: "updateCompositorLayout"
     },
     mangoLayoutGapsOverride: {
@@ -317,6 +353,14 @@ var LOCAL_SPEC = {
     },
     focusFollowsMouse: {
         def: -1,
+        onChange: "updateCompositorInput"
+    },
+    hyprlandSwallowFocusClick: {
+        def: false,
+        onChange: "updateCompositorInput"
+    },
+    hyprlandTabletEnabled: {
+        def: true,
         onChange: "updateCompositorInput"
     },
     mouseAccelProfile: {
@@ -963,7 +1007,8 @@ var LOCAL_SPEC = {
             hyprland: {
                 hideOnKeyPress: false,
                 hideOnTouch: false,
-                inactiveTimeout: 0
+                inactiveTimeout: 0,
+                warpOnMonitorChange: -1
             },
             dwl: {
                 cursorHideTimeout: 0

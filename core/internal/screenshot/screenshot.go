@@ -49,19 +49,22 @@ func (o *WaylandOutput) effectiveScale() float64 {
 	return scale
 }
 
-// Hyprland renders screencopy frames in the output's logical orientation since
-// 901881c9f (v0.57.0); wlroots and niri still hand back the native framebuffer.
+// Hyprland >= 0.57 (901881c9f) sends screencopy frames in logical orientation; wlroots and niri send the native framebuffer.
 // !TODO: drop the version fallback once every distro ships hyprland >= 0.57
-func (o *WaylandOutput) frameInLogicalOrientation(frameW, frameH int) bool {
-	switch o.transform {
+func FrameInLogicalOrientation(transform, outW, outH int32, frameW, frameH int) bool {
+	switch transform {
 	case TransformNormal:
 		return true
 	case Transform90, Transform270, TransformFlipped90, TransformFlipped270:
-		if o.width != o.height {
-			return frameW == int(o.height) && frameH == int(o.width)
+		if outW != outH {
+			return frameW == int(outH) && frameH == int(outW)
 		}
 	}
 	return DetectCompositor() == CompositorHyprland && hyprlandVersionAtLeast(0, 57)
+}
+
+func (o *WaylandOutput) frameInLogicalOrientation(frameW, frameH int) bool {
+	return FrameInLogicalOrientation(o.transform, o.width, o.height, frameW, frameH)
 }
 
 func (o *WaylandOutput) untransformFrame(buf *ShmBuffer) (*ShmBuffer, error) {

@@ -125,7 +125,6 @@ func ParseMangoWindowRules(configDir string) (*MangoRulesParseResult, error) {
 			Exists:        fileExists(overridePath),
 			Included:      included,
 			Effective:     included,
-			ConfigFormat:  "conf",
 			StatusMessage: mangoIncludeMessage(included),
 		},
 	}, nil

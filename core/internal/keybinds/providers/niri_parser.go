@@ -569,7 +569,7 @@ var niriBindsMessages = configfrag.Messages{
 
 func (p *NiriParser) buildDMSStatus() *configfrag.Status {
 	scan := configfrag.IncludeScan{Count: p.includeCount, DMSPosition: p.dmsIncludePos, DMSSeen: p.dmsBindsIncluded}
-	status := configfrag.BuildStatus(scan, p.dmsBindsExists, p.bindsAfterDMS, "", false, niriBindsMessages)
+	status := configfrag.BuildStatus(scan, p.dmsBindsExists, p.bindsAfterDMS, niriBindsMessages)
 	return &status
 }
 

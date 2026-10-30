@@ -32,8 +32,6 @@ type DMSBindsStatus struct {
 	Effective       bool   `json:"effective"`
 	OverriddenBy    int    `json:"overriddenBy"`
 	StatusMessage   string `json:"statusMessage"`
-	ConfigFormat    string `json:"configFormat,omitempty"`
-	ReadOnly        bool   `json:"readOnly,omitempty"`
 }
 
 const (
@@ -127,7 +125,5 @@ func DMSBindsStatusFrom(s configfrag.Status) *DMSBindsStatus {
 		Effective:       s.Effective,
 		OverriddenBy:    s.OverriddenBy,
 		StatusMessage:   s.StatusMessage,
-		ConfigFormat:    s.ConfigFormat,
-		ReadOnly:        s.ReadOnly,
 	}
 }

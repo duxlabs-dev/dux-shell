@@ -290,7 +290,7 @@ var mangowcBindsMessages = configfrag.Messages{
 }
 
 func (p *MangoWCParser) buildDMSStatus() *configfrag.Status {
-	status := configfrag.BuildStatus(p.walker.Scan(), p.dmsBindsExists, p.bindsAfterDMS, "", false, mangowcBindsMessages)
+	status := configfrag.BuildStatus(p.walker.Scan(), p.dmsBindsExists, p.bindsAfterDMS, mangowcBindsMessages)
 	return &status
 }
 

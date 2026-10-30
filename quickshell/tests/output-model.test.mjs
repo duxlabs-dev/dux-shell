@@ -55,13 +55,13 @@ test("niri kdl parser: top-level off disables, nested off does not, on-demand vr
     assert.deepEqual(parsed["Dell Inc. DELL U2720Q ABC123"].logical, { x: -2560, y: 0, scale: 1.5, transform: "flipped-90" });
 });
 
-test("hyprland conf parser: extras, disable line, desc name, trailing space, mirror, bare line skipped", () => {
-    const parsed = plain(model.parseHyprlandOutputs(text("hyprland-monitors.conf")));
+test("hyprland conf lines only parse for 1.x profile migration: extras, disable line, desc name, trailing space, mirror, bare line skipped", () => {
+    assert.deepEqual(Object.keys(plain(model.parseHyprlandOutputs(text("hyprland-monitors.conf")))), []);
+    const parsed = plain(model.parseHyprlandConfProfile(text("hyprland-monitors.conf")));
     assert.deepEqual(Object.keys(parsed), ["DP-1", "HDMI-A-1", "desc:Dell Inc. DELL U2720Q ABC123", "eDP-1", "DP-2"]);
     assert.deepEqual(parsed["DP-1"].logical, { x: 0, y: 0, scale: 1.25, transform: "90" });
-    assert.deepEqual(parsed["DP-1"].hyprlandSettings, { vrr: 2, bitdepth: 10, colorManagement: "hdr", sdrBrightness: 1.2, sdrSaturation: 0.9 });
     assert.equal(parsed["DP-1"].vrr_enabled, true);
-    assert.deepEqual(parsed["HDMI-A-1"], { name: "HDMI-A-1", logical: { x: 0, y: 0, scale: 1, transform: "Normal" }, modes: [], current_mode: -1, vrr_enabled: false, vrr_supported: false, hyprlandSettings: { disabled: true } });
+    assert.deepEqual(parsed["HDMI-A-1"], { name: "HDMI-A-1", logical: { x: 0, y: 0, scale: 1, transform: "Normal" }, modes: [], current_mode: -1, vrr_enabled: false, vrr_supported: false });
     assert.equal(parsed["desc:Dell Inc. DELL U2720Q ABC123"].logical.transform, "Flipped90");
     assert.equal(parsed["eDP-1"].mirror, "DP-1");
     assert.deepEqual(parsed["DP-2"].modes, [{ width: 1920, height: 1080, refresh_rate: 60000 }]);

@@ -376,7 +376,7 @@ Singleton {
                             parsed = OutputModel.parseNiriOutputs(content);
                             break;
                         case "hyprland":
-                            parsed = OutputModel.parseHyprlandOutputs(content);
+                            parsed = OutputModel.parseHyprlandConfProfile(content);
                             break;
                         case "dwl":
                         case "mango":
@@ -587,13 +587,13 @@ Singleton {
     }
 
     function applyConfigEntry(configEntry, configId, profileName, isManual) {
-        if (CompositorService.isHyprland && readOnly) {
+        if (readOnly) {
             if (isManual) {
                 profilesLoading = false;
                 manualActivation = false;
                 profileError(I18n.tr("Hyprland conf mode is read-only in Settings"));
             }
-            showHyprlandReadOnlyWarning();
+            include.showReadOnlyWarning();
             return;
         }
         const onWriteFailed = () => {
@@ -1149,10 +1149,6 @@ Singleton {
         WlrOutputService.requestState();
     }
 
-    function showHyprlandReadOnlyWarning() {
-        ToastService.showWarning(I18n.tr("Hyprland conf mode"), I18n.tr("This install is still using %1. Run %2 to migrate before changing these settings.", "hyprland legacy config warning, %1 is the config file, %2 a command").arg("hyprland.conf").arg("dms setup"), "dms setup", "display-config");
-    }
-
     function buildOutputsMap() {
         const liveMonitors = {};
         for (const output of wlrOutputs) {
@@ -1200,7 +1196,7 @@ Singleton {
         case "hyprland":
             {
                 if (readOnly) {
-                    showHyprlandReadOnlyWarning();
+                    include.showReadOnlyWarning();
                     finish(false);
                     return;
                 }
@@ -1611,8 +1607,8 @@ Singleton {
     function applyChanges() {
         if (!hasPendingChanges)
             return;
-        if (CompositorService.isHyprland && readOnly) {
-            showHyprlandReadOnlyWarning();
+        if (readOnly) {
+            include.showReadOnlyWarning();
             return;
         }
         const changeDescriptions = [];
