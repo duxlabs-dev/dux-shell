@@ -50,6 +50,11 @@ Item {
             "shown": SettingsData.osdCapsLockEnabled
         },
         {
+            "value": "keyboardLayout",
+            "label": I18n.tr("Keyboard layout"),
+            "shown": SettingsData.osdKeyboardLayoutEnabled && KeyboardLayoutService.available
+        },
+        {
             "value": "touchpad",
             "label": I18n.tr("Touchpad"),
             "shown": SettingsData.osdTouchpadEnabled && CompositorService.isNiri
@@ -188,6 +193,14 @@ Item {
                 text: I18n.tr("Caps lock")
                 checked: SettingsData.osdCapsLockEnabled
                 onToggled: checked => SettingsData.set("osdCapsLockEnabled", checked)
+            }
+
+            SettingsToggleRow {
+                settingKey: "osdKeyboardLayoutEnabled"
+                visible: KeyboardLayoutService.available
+                text: I18n.tr("Keyboard layout")
+                checked: SettingsData.osdKeyboardLayoutEnabled
+                onToggled: checked => SettingsData.set("osdKeyboardLayoutEnabled", checked)
             }
 
             SettingsToggleRow {

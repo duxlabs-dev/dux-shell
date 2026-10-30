@@ -5,7 +5,7 @@ import "../../Modules/DBar/Widgets/KeyboardLayoutLabels.js" as KeyboardLayoutLab
 TestCase {
     name: "KeyboardLayoutLabels"
 
-    readonly property var validVariants: ["US", "UK", "GB", "AZERTY", "QWERTY", "Dvorak", "Colemak", "Mac", "Intl", "International"]
+    readonly property var validVariants: KeyboardLayoutLabels.VALID_VARIANTS
 
     function test_overrideReplacesRawHyprlandCompactLabel() {
         compare(KeyboardLayoutLabels.displayLabel("am-phonetic-alt", true, true, validVariants, {

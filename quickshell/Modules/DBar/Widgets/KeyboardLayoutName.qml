@@ -12,7 +12,7 @@ BasePill {
     property bool compactMode: SettingsData.widgetOption("keyboard_layout_name", widgetData, "keyboardLayoutNameCompactMode")
     property bool showIcon: SettingsData.widgetOption("keyboard_layout_name", widgetData, "keyboardLayoutNameShowIcon")
     readonly property var labelOverrides: SettingsData.widgetOption("keyboard_layout_name", widgetData, "keyboardLayoutNameLabelOverrides") ?? ({})
-    readonly property var validVariants: ["US", "UK", "GB", "AZERTY", "QWERTY", "Dvorak", "Colemak", "Mac", "Intl", "International"]
+    readonly property var validVariants: KeyboardLayoutLabels.VALID_VARIANTS
     readonly property bool codesOnly: KeyboardLayoutService.namesAreXkbCodes
     readonly property string currentLayout: compactMode ? KeyboardLayoutService.compactLayout : KeyboardLayoutService.currentLayout
     readonly property var _allLayoutLabels: (compactMode || !codesOnly ? KeyboardLayoutService.layoutNames : []).map(n => displayLabel(n))

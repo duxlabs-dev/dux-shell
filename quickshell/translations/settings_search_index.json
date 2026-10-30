@@ -8908,6 +8908,21 @@
     ]
   },
   {
+    "section": "osdKeyboardLayoutEnabled",
+    "label": "Keyboard layout",
+    "tabIndex": 18,
+    "category": "On-screen displays",
+    "keywords": [
+      "displays",
+      "indicator",
+      "keyboard",
+      "layout",
+      "osd",
+      "popup",
+      "screen"
+    ]
+  },
+  {
     "section": "osdMediaPlaybackEnabled",
     "label": "Media playback",
     "tabIndex": 18,
