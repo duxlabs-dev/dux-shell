@@ -874,6 +874,7 @@ Singleton {
     property bool notificationCompactMode: Spec.SPEC.notificationCompactMode.def
     property bool notificationShowTimeoutBar: Spec.SPEC.notificationShowTimeoutBar.def
     property bool notificationDedupeEnabled: Spec.SPEC.notificationDedupeEnabled.def
+    property bool notificationServerEnabled: Spec.SPEC.notificationServerEnabled.def
     property int notificationPopupPosition: SettingsData.Position.Top
     property int notificationAnimationDuration: Spec.SPEC.notificationAnimationDuration.def
     property bool notificationHistoryEnabled: Spec.SPEC.notificationHistoryEnabled.def
