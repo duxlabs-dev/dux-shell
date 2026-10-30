@@ -224,6 +224,8 @@ Singleton {
     readonly property int mediaLyricsPositionProbeInterval: 5000
     readonly property real mediaLyricsPositionProbeDrift: 1.5
     readonly property real mediaLyricsPositionProbeThreshold: 1
+    readonly property int mediaLyricsPositionSettleInterval: 1000
+    readonly property real mediaLyricsTrackStartSlack: 5
     readonly property real lyricsNearOpacity: 0.55
     readonly property real lyricsFarOpacity: 0.3
     readonly property real lyricsLineHeight: 1.25
