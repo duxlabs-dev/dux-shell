@@ -1,5 +1,6 @@
 import QtQuick
 import "../../Common/IslandActivities.js" as Activities
+import "../../Common/IslandArrival.js" as Arrival
 
 // A plugin activity's turn in the island: begin and end write the controller's state as requestSystemActivity does;
 // requestCollapse only resets returnExpanded and calls syncTimeout() here.
@@ -55,11 +56,20 @@ QtObject {
         root.timeoutMs = timeoutMs;
         // The host loads the plugin's faces from the token, so expandability is known only after it is set.
         island.pluginToken = token;
+        const displaced = island.systemActivityActive ? island.activeActivity : "";
+        const arriving = !island.pluginActive && kind !== "live";
+        // A plugin taking over from a plugin keeps activeActivity, so its change handler would leave userHeld set.
+        island.userHeld = false;
         // Switch before expanding: the expanded handlers read transientActive.
         island.activeActivity = "plugin";
         island.expanded = expand === true && island.pluginExpandable;
         root.arrivalHold.restart();
+        if (arriving && !island.expanded)
+            island.arrival.face(Arrival.tierOf({
+                "urgent": kind === "alert"
+            }));
         root.syncTimeout(true);
+        island.displaceSystem(displaced);
     }
 
     function end() {

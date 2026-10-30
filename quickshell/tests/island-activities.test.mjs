@@ -132,3 +132,187 @@ test("a request says shown once, resumed after each interruption, nothing while 
     assert.equal(activities.showSignal("shown"), "");
     assert.equal(activities.showSignal(undefined), "");
 });
+
+test("a notification belongs to the activity whose plugin declared its app, else to the plugin's name or id", () => {
+    assert.equal(activities.normalizeOptions({ "notifyApp": "  Sands " }).notifyApp, "Sands");
+    assert.equal(activities.normalizeOptions({ "notifyApp": 3 }).notifyApp, "");
+    const names = { "sandsTimer": "Sands Timer", "noisy": "Noisy" };
+    const nameOf = id => names[id];
+    const declared = [{ "pluginId": "sandsTimer", "notifyApp": "sands" }];
+    assert.equal(activities.holdsApp(declared, "Sands", nameOf), true);
+    assert.equal(activities.holdsApp(declared, " sands ", nameOf), true);
+    // Declared means explicit: the plugin's own name no longer guesses.
+    assert.equal(activities.holdsApp(declared, "Sands Timer", nameOf), false);
+    assert.equal(activities.holdsApp(declared, "sandsTimer", nameOf), false);
+    const guessed = [{ "pluginId": "noisy", "notifyApp": "" }, { "pluginId": "script:backup" }];
+    assert.equal(activities.holdsApp(guessed, "noisy", nameOf), true);
+    assert.equal(activities.holdsApp(guessed, "NOISY", nameOf), true);
+    assert.equal(activities.holdsApp(guessed, "Backup", nameOf), true);
+    assert.equal(activities.holdsApp(guessed, "firefox", nameOf), false);
+    assert.equal(activities.holdsApp(guessed, "", nameOf), false);
+    assert.equal(activities.holdsApp(guessed, "noisy"), true);
+    assert.equal(activities.holdsApp(null, "noisy", nameOf), false);
+});
+
+test("what the user brought in from a bubble holds the island until it closes", () => {
+    const held = { "activity": "volume", "system": true, "held": true };
+    assert.equal(activities.takesIsland({ "token": "a", "kind": "alert", "state": "interrupted" }, held, "", false), false);
+    assert.equal(activities.takesIsland({ "token": "a", "kind": "alert", "state": "waiting" }, held, "", false), true);
+    const live = { "activity": "plugin", "kind": "live", "expanded": true, "held": true };
+    assert.equal(activities.takesIsland({ "token": "a", "kind": "alert", "state": "interrupted" }, live, "b", true), false);
+    assert.equal(activities.takesIsland({ "token": "a", "kind": "alert", "state": "interrupted" }, { "activity": "plugin", "kind": "live" }, "b", true), true);
+});
+
+test("bubbles split the machine from the apps and rank the apps", () => {
+    const sides = activities.bubbleSides([
+        { "id": "v", "source": "system", "kind": "volume", "seq": 1 },
+        { "id": "b", "source": "system", "kind": "brightness", "seq": 4 },
+        { "id": "w", "source": "system", "kind": "network", "seq": 6 },
+        { "id": "m", "source": "media", "seq": 9 },
+        { "id": "n1", "source": "notification", "seq": 2 },
+        { "id": "n2", "source": "notification", "seq": 5 },
+        { "id": "l", "source": "plugin", "kind": "live", "seq": 7 },
+        { "id": "a", "source": "plugin", "kind": "alert", "seq": 3 },
+        { "id": "c", "source": "notification", "critical": true, "seq": 1 }
+    ], false);
+    assert.equal(sides.machine.id, "w");
+    assert.deepEqual(sides.apps.map(b => b.id), ["c", "a", "n2", "n1", "l", "m"]);
+    assert.deepEqual(plain(activities.bubbleSides([], false)), { "machine": null, "machines": [], "apps": [] });
+    assert.deepEqual(plain(activities.bubbleSides(null, false).apps), []);
+});
+
+test("a bubble ranks as its plugin's kind or as a notification, a critical one above all, the rest last", () => {
+    const rank = bubble => activities.bubbleRank(bubble);
+    assert.equal(rank({ "source": "plugin", "kind": "alert" }), activities.kindRank("alert"));
+    assert.equal(rank({ "source": "plugin", "kind": "unknown" }), activities.kindRank("live"));
+    assert.ok(rank({ "source": "notification", "critical": true }) > rank({ "source": "plugin", "kind": "alert" }));
+    assert.ok(rank({ "source": "plugin", "kind": "alert" }) > rank({ "source": "notification" }));
+    assert.ok(rank({ "source": "notification" }) > rank({ "source": "plugin", "kind": "live" }));
+    assert.ok(rank({ "source": "plugin", "kind": "glance" }) > rank({ "source": "media" }));
+    assert.equal(rank({ "source": "media" }), 0);
+});
+
+test("machine changes wait on the machine side, the newest first", () => {
+    const older = { "id": "older", "source": "system", "kind": "brightness", "seq": -1 };
+    const sides = activities.bubbleSides([older, { "id": "system", "source": "system", "kind": "volume", "seq": 0 }, { "id": "n", "source": "notification", "seq": 2 }], true);
+    assert.equal(sides.machine.id, "system");
+    assert.deepEqual(sides.machines.map(b => b.id), ["system", "older"]);
+    assert.deepEqual(sides.apps.map(b => b.id), []);
+    assert.equal(activities.bubbleSide({ "id": "p", "source": "plugin", "side": "machine" }), "apps", "only the system source is the machine");
+});
+
+test("do not disturb keeps only critical popups, the call and what the user lets through on the apps side", () => {
+    const bubbles = [
+        { "id": "v", "source": "system", "kind": "volume", "seq": 1 },
+        { "id": "n", "source": "notification", "seq": 2 },
+        { "id": "l", "source": "plugin", "kind": "live", "seq": 3 },
+        { "id": "a", "source": "plugin", "kind": "alert", "seq": 4 },
+        { "id": "call", "source": "call", "kind": "call", "seq": 5 },
+        { "id": "code2fa", "source": "code2fa", "kind": "code2fa", "seq": 6 },
+        { "id": "crit", "source": "notification", "critical": true, "seq": 7 }
+    ];
+    const sides = activities.bubbleSides(bubbles, true);
+    assert.equal(sides.machine.id, "v");
+    assert.deepEqual(sides.apps.map(b => b.id).sort(), ["call", "crit"], "an alert and a one-time code wait");
+    assert.deepEqual(activities.bubbleSides(bubbles, true, b => b.kind === "alert").apps.map(b => b.id).sort(), ["a", "call", "crit"]);
+});
+
+test("only levels go to a bubble when the user asks for it", () => {
+    assert.equal(activities.levelInBubble("volume", true), true);
+    assert.equal(activities.levelInBubble("volume", false), false);
+    assert.equal(activities.levelInBubble("capslock", true), false);
+});
+
+test("brief info goes to a bubble when the user asks for it, never a lasting state or an alert", () => {
+    // Battery: fully charged, unplugged and low are brief; plugging in is normal; critical is important.
+    for (const kind of ["capslock", "network", "dnd", "charged", "unplugged", "battery", "output", "powerprofile", "reopen", "copy", "trash", "display", "periph"]) {
+        assert.equal(activities.briefInBubble(kind, true), true, kind);
+        assert.equal(activities.briefInBubble(kind, false), false, kind);
+    }
+    for (const kind of ["charging", "batterycritical", "call", "keepawake", "usb", "vpn", "password", "camera", "volume", "disk", "progress", "frozen"])
+        assert.equal(activities.briefInBubble(kind, true), false, kind);
+});
+
+test("battery: plugging in is a normal info (big, 5 s), critical an important one, the rest brief", () => {
+    assert.equal(activities.faceTier("charging"), 1);
+    assert.equal(activities.faceTimeoutMs("charging"), activities.lifetimeMs(1));
+    assert.equal(activities.faceTier("batterycritical"), 2);
+    assert.equal(activities.faceTimeoutMs("batterycritical"), activities.lifetimeMs(2));
+    for (const kind of ["charged", "unplugged", "battery"]) {
+        assert.equal(activities.faceTier(kind), 0, kind);
+        assert.equal(activities.faceTimeoutMs(kind), activities.lifetimeMs(0), kind);
+    }
+});
+
+test("the lasting charge bubble yields to a passing machine bubble, then comes back", () => {
+    const charge = { "id": "charge", "source": "system", "kind": "charging", "seq": -1 };
+    const volume = { "id": "system", "source": "system", "kind": "volume", "seq": 0 };
+    assert.equal(activities.bubbleSides([charge, volume]).machine, volume);
+    assert.equal(activities.bubbleSides([charge, volume]).machines[1], charge);
+    assert.equal(activities.bubbleSides([charge]).machine, charge);
+});
+
+test("an island face lasts an Undo's lifetime when it offers one, a brief info's otherwise", () => {
+    // A weather alert is a notification: big 1.4 s, then compact, 5 s in all.
+    assert.equal(activities.faceTimeoutMs("weatheralert"), 5000);
+    for (const kind of ["output", "trash", "display"])
+        assert.equal(activities.faceTimeoutMs(kind), 4000, kind);
+    for (const kind of ["copy", "periph", "disk", "progress", "frozen", "volume", "print", ""])
+        assert.equal(activities.faceTimeoutMs(kind), 2000, kind);
+    // The island keeps DMS's own OSD delay for a brief face; the others keep their lifetime.
+    assert.equal(activities.faceTimeoutMs("volume", 2200), 2200);
+    assert.equal(activities.faceTimeoutMs("output", 2200), 4000);
+    assert.equal(activities.faceTimeoutMs("powerprofile", 2200), 2200);
+});
+
+test("lifetimes per tier: big then compact in the island, a bubble lives the total", () => {
+    assert.deepEqual([0, 1, 2].map(t => activities.bigMs(t)), [400, 1400, 2000]);
+    assert.deepEqual([0, 1, 2].map(t => activities.compactMs(t)), [1600, 3600, 3600]);
+    assert.deepEqual([0, 1, 2].map(t => activities.lifetimeMs(t)), [2000, 5000, 5600]);
+    assert.equal(activities.lifetimeMs(1), activities.normalizeOptions({ "kind": "glance" }).timeoutMs);
+    // A lasting state is big as long as a notification, then stays as long as it lasts.
+    assert.equal(activities.bigMs(activities.faceTier("vpn")), 1400);
+});
+
+test("a tier out of range is held to the nearest one, a missing one reads as normal", () => {
+    const t = activities.tiers;
+    assert.deepEqual([-1, t.brief, t.normal, t.important, 7, undefined, null].map(x => activities.tierIndex(x)), [t.brief, t.brief, t.normal, t.important, t.important, t.normal, t.normal]);
+});
+
+test("a face's arrival tier: brief for a brief info or a level, normal for an Undo or a lasting state", () => {
+    for (const kind of ["copy", "network", "capslock", "powerprofile", "volume", "brightness", "periph"])
+        assert.equal(activities.faceTier(kind), activities.tiers.brief, kind);
+    for (const kind of ["output", "trash", "display", "vpn", "call", "keepawake", "disk", "frozen", "weatheralert"])
+        assert.equal(activities.faceTier(kind), activities.tiers.normal, kind);
+});
+
+test("a face pushed out by the launcher, an alert or another face comes back once the island is idle, if its info lives on", () => {
+    assert.equal(activities.faceToReturn("trash", "home", false, true), "trash");
+    assert.equal(activities.faceToReturn("display", "media", false, true), "display");
+    // Its info ended meanwhile, or the island is still busy: it stays out.
+    assert.equal(activities.faceToReturn("trash", "home", false, false), "");
+    assert.equal(activities.faceToReturn("copy", "launcher", true, true), "");
+    assert.equal(activities.faceToReturn("copy", "home", true, true), "");
+    assert.equal(activities.faceToReturn("copy", "plugin", false, true), "");
+    assert.equal(activities.faceToReturn("copy", "notification", false, true), "");
+    assert.equal(activities.faceToReturn("", "home", false, true), "");
+});
+
+test("each wing rests at its own width: a wide face on one side never stretches the other", () => {
+    assert.equal(activities.wingRest(120, 300), 300);
+    assert.equal(activities.wingRest(300, 0), 300, "the last item leaving keeps the wing's own width");
+    // One side open on a wide card, the other at rest: each reaches only as far as its own content.
+    assert.equal(activities.wingReach(true, true, 400, 120, 8), 408);
+    assert.equal(activities.wingReach(true, false, 400, 120, 8), 128);
+    assert.equal(activities.wingReach(true, true, 100, 300, 8), 308);
+    assert.equal(activities.wingReach(false, true, 400, 120, 8), 0);
+});
+
+test("a call or a critical notification shows even from an app the island holds; the rest stays in the list", () => {
+    const requests = [{ "pluginId": "discord-rpc", "notifyApp": "Discord" }];
+    const held = activities.holdsApp(requests, "Discord", () => "");
+    assert.equal(held, true);
+    assert.equal(activities.notificationShows(held, true), true);
+    assert.equal(activities.notificationShows(held, false), false);
+    assert.equal(activities.notificationShows(false, false), true);
+});

@@ -349,6 +349,10 @@ Item {
             visible: dankBarTab.selectedIslandEnabled
         }
 
+        IslandArrivalCard {
+            shown: dankBarTab.selectedIslandEnabled
+        }
+
         SettingsCard {
             iconName: "border_outer"
             title: I18n.tr("Frame")

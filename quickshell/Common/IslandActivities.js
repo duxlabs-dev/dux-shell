@@ -1,9 +1,38 @@
 .pragma library
 
 const kinds = ["alert", "live", "glance"];
-// A glance without a timeout of its own lives a notification's lifetime on the island, held here alone: the
-// controller's notificationTimeout is no constant but each notification's own DMS timeout (IslandNotificationSource).
-const glanceTimeoutMs = 5000;
+// Arrival tiers and their lifetimes, the one place for them (B4; var: IslandArrival.js and the island read them): in the
+// island the info is big (its swell, its card), then compact; a bubble lives the total. A lasting state is big as long as
+// a notification, then stays as long as it lasts.
+var tiers = {
+    "brief": 0,
+    "normal": 1,
+    "important": 2
+};
+const bigMsByTier = [400, 1400, 2000];
+const compactMsByTier = [1600, 3600, 3600];
+
+function tierIndex(tier) {
+    return Math.max(tiers.brief, Math.min(tiers.important, tier ?? tiers.normal));
+}
+function bigMs(tier) {
+    return bigMsByTier[tierIndex(tier)];
+}
+function compactMs(tier) {
+    return compactMsByTier[tierIndex(tier)];
+}
+function lifetimeMs(tier) {
+    return bigMs(tier) + compactMs(tier);
+}
+
+// Shared by every bubble and island face: a brief info, one with an Undo (its countdown too), a notification or glance,
+// an important one (a call, a code).
+const briefTimeoutMs = lifetimeMs(tiers.brief);
+// An Undo is big as long as a notification but shorter compact (4 s in all), so it gets its own compact time.
+const undoCompactMs = 2600;
+const undoTimeoutMs = bigMs(tiers.normal) + undoCompactMs;
+const glanceTimeoutMs = lifetimeMs(tiers.normal);
+const importantTimeoutMs = lifetimeMs(tiers.important);
 
 // One occupant per island; a newcomer needs a strictly higher rank, so equal ranks keep the oldest.
 // A notification steps in front of a live activity, which comes back once it is gone.
@@ -61,6 +90,9 @@ function takesIsland(next, occupant, held, active) {
         return false;
     if (!preempts(next.kind, occupant))
         return false;
+    // An activity pushed aside by the user's own sheet, or by what they brought in from a bubble, waits for it to close.
+    if (occupant.held)
+        return next.state === "waiting";
     return next.state === "waiting" || !occupant.expanded || active;
 }
 
@@ -73,6 +105,81 @@ function holdsHost(transient, pluginActive, timeoutMs, arriving) {
 // A plugin activity counts down only while it holds the island, unhovered and with its sheet shut.
 function countdownRuns(active, suspended, timeoutMs) {
     return active && !suspended && timeoutMs > 0;
+}
+
+// Bubbles: what loses the island waits beside it, the machine on the leading side, apps on the trailing one.
+const levelKinds = ["volume", "brightness", "mic"];
+
+function bubbleSide(bubble) {
+    return bubble?.source === "system" ? "machine" : "apps";
+}
+
+function bubbleRank(bubble) {
+    switch (bubble.source) {
+    case "plugin":
+        return kindRank(bubble.kind);
+    case "notification":
+        return bubble.critical ? ranks.critical : ranks.notification;
+    }
+    return ranks.home;
+}
+
+// The leading side keeps the newest machine change, the rest waiting behind it; the trailing side shows the most important app, then the newest.
+function bubbleSides(bubbles, quiet, letThrough) {
+    const machine = (bubbles || []).filter(b => bubbleSide(b) === "machine").sort((a, b) => b.seq - a.seq);
+    // Do not disturb keeps app bubbles to a critical popup the service lets through, the call the user is in, and what the
+    // user lets through as for the island (letThrough: a plugin's alert, a one-time code), never shown on a shared screen
+    // otherwise.
+    const quietShows = b => (b.source === "notification" && b.critical === true) || b.source === "call" || (!!letThrough && letThrough(b));
+    const apps = (bubbles || []).filter(b => bubbleSide(b) === "apps" && (!quiet || quietShows(b))).sort((a, b) => bubbleRank(b) - bubbleRank(a) || b.seq - a.seq);
+    return {
+        "machine": machine.length > 0 ? machine[0] : null,
+        "machines": machine,
+        "apps": apps
+    };
+}
+
+// "Always in a bubble" sends level changes beside an idle island instead of into it.
+function levelInBubble(kind, always) {
+    return always === true && levelKinds.indexOf(kind) !== -1;
+}
+
+// Brief info (and an Undo) lives in the island unless the user wants it in a bubble; lasting states and alerts stay.
+// Battery: fully charged, unplugged and low are brief; plugging in is normal, critical important.
+const briefKinds = ["capslock", "powerprofile", "idleinhibitor", "charged", "unplugged", "battery", "network", "dnd", "output", "reopen", "copy", "trash", "display", "periph"];
+function briefInBubble(kind, always) {
+    return always === true && briefKinds.indexOf(kind) !== -1;
+}
+
+// How long an island face stays: an Undo's lifetime when it offers one, briefMs (a brief info's by default) for a
+// brief one; the island passes DMS's own OSD delay there.
+// The power profile offers no Undo: it keeps DMS's OSD delay, as upstream.
+const undoKinds = ["output", "trash", "display"];
+// Machine faces that are notifications (5 s, frozen on hover); plugging in opens the charge face as long (M19).
+const glanceKinds = ["weatheralert", "charging"];
+// Machine faces that are important (a critical battery).
+const importantKinds = ["batterycritical"];
+
+function faceTimeoutMs(kind, briefMs = briefTimeoutMs) {
+    if (importantKinds.indexOf(kind) !== -1)
+        return importantTimeoutMs;
+    if (glanceKinds.indexOf(kind) !== -1)
+        return glanceTimeoutMs;
+    return undoKinds.indexOf(kind) !== -1 ? undoTimeoutMs : briefMs;
+}
+
+// How a face arrives in the island: brief (a brief info, a level), normal (an Undo, a lasting state) or important.
+function faceTier(kind) {
+    if (importantKinds.indexOf(kind) !== -1)
+        return tiers.important;
+    if (undoKinds.indexOf(kind) !== -1)
+        return tiers.normal;
+    return briefKinds.indexOf(kind) !== -1 || levelKinds.indexOf(kind) !== -1 ? tiers.brief : tiers.normal;
+}
+
+// The face a launcher, an alert or another face pushed out takes the island back once it is idle, if its info lives on.
+function faceToReturn(displaced, activity, expanded, alive) {
+    return displaced && alive && !expanded && (activity === "home" || activity === "media") ? displaced : "";
 }
 
 function showSignal(state) {
@@ -123,4 +230,37 @@ function normalizeOptions(options) {
         "notifyApp": typeof o.notifyApp === "string" ? o.notifyApp.trim() : "",
         "data": o.data && typeof o.data === "object" ? o.data : {}
     };
+}
+
+// Whether a notification from appName belongs to one of these activities, which the island already shows. A request
+// matches the app its plugin declared (notifyApp) and only that; without one, its id or its name (nameOf(pluginId)).
+function holdsApp(requests, appName, nameOf) {
+    const app = String(appName ?? "").trim().toLowerCase();
+    if (!app)
+        return false;
+    return (requests || []).some(r => {
+        const declared = String(r.notifyApp ?? "").trim().toLowerCase();
+        if (declared)
+            return declared === app;
+        const id = String(r.pluginId ?? "");
+        return id.replace(/^script:/, "").toLowerCase() === app || String((nameOf && nameOf(id)) ?? "").toLowerCase() === app;
+    });
+}
+
+// held: holdsApp for the notification's app. A call or a critical one still shows, the app's activity waiting in its
+// bubble meanwhile; the rest stays in the list only.
+function notificationShows(held, critical) {
+    return critical === true || !held;
+}
+
+// Each bubble wing rests at its own widest face, kept when the last item leaves so it melts back from its own width.
+function wingRest(rest, need) {
+    return need > 0 ? need : rest;
+}
+
+// How far a wing reaches out of the island for input: its gap, then its card while hovered open, else its rest.
+function wingReach(has, hoverOpen, cardWant, rest, gap) {
+    if (!has)
+        return 0;
+    return gap + (hoverOpen ? Math.max(cardWant, rest) : rest);
 }

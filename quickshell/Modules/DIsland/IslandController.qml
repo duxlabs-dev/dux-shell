@@ -8,6 +8,9 @@ import qs.Modules.ControlCenter
 import qs.Modules.DBar
 import qs.Modules.DDash
 import "../../Common/IslandActivities.js" as Activities
+import "../../Common/IslandArrival.js" as Arrival
+import "../../Common/IslandArrivalGestures.js" as Gestures
+import "../../Common/IslandKit.js" as IslandKit
 
 QtObject {
     id: root
@@ -72,14 +75,12 @@ QtObject {
     property bool dashTabs: false
     // Carries tab-bar focus across a face switch.
     property bool dashNavigationFocused: false
-
-    onExpandedChanged: {
-        if (!expanded)
-            dashNavigationFocused = false;
-    }
     property int transientTimeout: 2200
     property int notificationTimeout: 5000
     property string transientReturnActivity: ""
+    // The last system face a destination, an alert or another face pushed out: the host brings it back once idle.
+    // shortcut: only the latest one is kept, an older one pushed out meanwhile ends in its bubble; keep a list if it matters.
+    property string displacedSystemActivity: ""
     property string suspendedActivity: ""
     property bool suspendedExpanded: false
     property bool suspendedKeyboardDismissRequested: false
@@ -105,7 +106,9 @@ QtObject {
     readonly property real compactIconSize: Math.max(14, Math.min(32, (compactTight ? compactFaceThickness : compactThickness) - 8))
 
     property int unreadNotificationCount: 0
-    readonly property bool homeNotificationBadge: (root.dotMode || SettingsData.islandHomeGroupEnabled(root.barConfig, "notifications")) && unreadNotificationCount > 0
+    // The apps wing already shows how many wait: one figure on screen, not two that disagree.
+    property bool wingCountsNotifications: false
+    readonly property bool homeNotificationBadge: (root.dotMode || SettingsData.islandHomeGroupEnabled(root.barConfig, "notifications")) && unreadNotificationCount > 0 && !wingCountsNotifications
     readonly property bool homeWeatherEnabled: SettingsData.weatherEnabled && SettingsData.islandHomeGroupEnabled(root.barConfig, "weather")
     readonly property real homeSlotMargin: homeCompactTight ? Theme.spacingS : Theme.spacingM
     property real homeContentLength: 200
@@ -136,6 +139,24 @@ QtObject {
     property real pluginExpandedHeight
     readonly property bool pluginActive: activeActivity === "plugin"
     readonly property IslandPluginActivity plugin: IslandPluginActivity {
+        controller: root
+    }
+
+    // Set while the island shows what the user brought in from a bubble; an activity it pushed aside waits for it.
+    property bool userHeld: false
+    onActiveActivityChanged: {
+        userHeld = false;
+        // A swell belongs to the face that arrived.
+        arrival.swelling = false;
+    }
+    onExpandedChanged: {
+        if (expanded)
+            return;
+        userHeld = false;
+        dashNavigationFocused = false;
+    }
+
+    readonly property IslandArrivalState arrival: IslandArrivalState {
         controller: root
     }
 
@@ -497,6 +518,17 @@ QtObject {
         return [near, near, far, far];
     }
 
+    // A card's corners: `radius` all round, but square on the edge a notch hangs from.
+    function cardRadii(radius) {
+        const radii = root.edgeRadii(root.notch ? 0 : radius, radius);
+        return {
+            "topLeftRadius": radii[0],
+            "topRightRadius": radii[1],
+            "bottomLeftRadius": radii[2],
+            "bottomRightRadius": radii[3]
+        };
+    }
+
     function pillTarget(alongSize, crossSize) {
         const radius = Math.min(crossSize / 2, root.pillRadius);
         const radii = root.edgeRadii(root.notch ? 0 : radius, radius);
@@ -538,7 +570,7 @@ QtObject {
             "bottomRightRadius": root.dotSize / 2
         })
     readonly property var systemLevelActivities: ["volume", "brightness", "mic"]
-    readonly property var systemStateActivities: ["capslock", "powerprofile", "idleinhibitor", "charging"]
+    readonly property var systemStateActivities: ["capslock", "powerprofile", "idleinhibitor", "charging", "charged", "unplugged", "battery", "batterycritical", "network", "keepawake", "dnd", "output", "reopen", "call", "print", "usb", "password", "vpn", "openwifi", "ssh", "camera", "copy", "trash", "disk", "display", "periph", "progress", "frozen", "weatheralert"]
     readonly property var systemActivities: systemLevelActivities.concat(systemStateActivities)
     readonly property var dotTransientActivities: ["notification", "plugin"].concat(systemActivities)
     function isSystemActivity(activityId) {
@@ -565,15 +597,17 @@ QtObject {
     readonly property var systemStateCompactTarget: systemFaceCompactLength > 0 ? systemCompactTarget : pillTarget(Math.ceil(Math.max(compactFaceThickness, systemStateContentLength + destinationCompactEndPad * 2)), compactFaceThickness)
     readonly property var systemExpandedTarget: sheetTarget(systemFaceExpandedWidth > 0 ? systemFaceExpandedWidth : 460, systemFaceExpandedHeight > 0 ? systemFaceExpandedHeight : 176)
     readonly property var notificationCompactTarget: pillTarget(Math.ceil(Math.max(notificationCompactMinLength, Math.min(notificationCompactMaxLength, notificationContentLength))), compactFaceThickness)
-    readonly property var notificationExpandedTarget: sheetTarget(520, 220)
+    // Opened from a burst it keeps the arrival card's width, as every card does.
+    readonly property var notificationExpandedTarget: sheetTarget(arrival.count > 0 ? arrival.cardWidth : 520, 220)
     readonly property var notificationCenterExpandedTarget: dashboardTargetFor("notificationcenter")
     readonly property var clipboardExpandedTarget: sheetTarget(Math.min(dashboardAvailableWidth, ClipboardConstants.sizeWidth(SettingsData.clipboardSize)), Math.min(dashboardAvailableHeight, ClipboardConstants.sizeHeight(SettingsData.clipboardSize)))
     readonly property var powerMenuExpandedTarget: sheetTarget(Math.max(1, Math.min(dashboardAvailableWidth, powerMenuContentWidth)), Math.max(1, Math.min(dashboardAvailableHeight, destinationContentHeight("powermenu"))))
 
     readonly property bool systemActivityActive: isSystemActivity(activeActivity)
     readonly property bool notificationActive: activeActivity === "notification"
-    // A plugin sheet that opened by itself has no keyboard yet: the user's next click belongs to their window.
-    readonly property bool outsideClickCollapses: expanded && !notificationActive && !(pluginActive && !keyboardDismissRequested)
+    // A plugin sheet that opened by itself has no keyboard yet: the user's next click belongs to their window. One they
+    // brought in from its bubble (userHeld) is theirs, and folds as any sheet does.
+    readonly property bool outsideClickCollapses: expanded && !notificationActive && !(pluginActive && !keyboardDismissRequested && !userHeld)
     readonly property bool notificationHeldForSystem: root.systemActivityActive && root.transientReturnActivity === "notification"
     readonly property bool transientActive: systemActivityActive || notificationActive || pluginActive
     readonly property bool timeoutSuspended: pointerInside || (expanded && !notificationActive)
@@ -599,7 +633,7 @@ QtObject {
         return isDestination(activityId) ? pillTarget(destinationCompactLength(activityId), compactFaceThickness) : homeCompactTarget;
     }
 
-    readonly property var compactTarget: compactTargetFor(activeActivity)
+    readonly property var compactTarget: arrival.shape(compactTargetFor(activeActivity))
     function expandedTargetFor(activityId) {
         switch (activityId) {
         case "home":
@@ -625,10 +659,11 @@ QtObject {
     }
 
     readonly property var expandedTarget: expandedTargetFor(activeActivity)
-    readonly property var targetDescriptor: expanded ? expandedTarget : compactTarget
+    readonly property var targetDescriptor: expanded ? arrival.pulled(expandedTarget) : compactTarget
 
     function syncNotificationTimeout(restart) {
-        if (!notificationActive || timeoutSuspended || notificationTimeout <= 0) {
+        // The time in compact starts once the card has folded.
+        if (!notificationActive || timeoutSuspended || notificationTimeout <= 0 || arrival.phase === "big" || arrival.swelling || !Arrival.expires(arrival.current)) {
             notificationTimer.stop();
             return;
         }
@@ -638,6 +673,11 @@ QtObject {
 
     onNotificationTimeoutChanged: syncNotificationTimeout(true)
 
+    onPointerInsideChanged: {
+        // Fires inside updatePointerInside's assignment, before its timers, as an inline call would.
+        if (pointerInside)
+            arrival.reopen();
+    }
     function syncTransientTimeout(restart) {
         if (!systemActivityActive || timeoutSuspended) {
             transientTimer.stop();
@@ -712,7 +752,8 @@ QtObject {
     }
 
     function requestHoverExpand() {
-        if (inputSuspended || hoverHeld || !hoverExpandEnabled || activeActivity === "powermenu")
+        // A burst opens its own card on hover (arrival.reopen), never the sheet.
+        if (inputSuspended || hoverHeld || !hoverExpandEnabled || activeActivity === "powermenu" || (notificationActive && arrival.count > 0))
             return false;
         if (notificationActive) {
             hoverExpanded = true;
@@ -762,6 +803,12 @@ QtObject {
             return requestActivity(activeActivity, true, requestKeyboardFocus);
         if (pluginActive && !pluginExpandable)
             return false;
+        // An info in the island grows where it is: its card again, or whole.
+        const click = notificationActive ? Gestures.click(arrival.phase, arrival.count) : "";
+        if (click === "reopen" && arrival.reopen())
+            return true;
+        if (click === "open")
+            return arrival.open();
         if (notificationActive && !notificationExpandAllowed)
             return requestNotificationCenter(false);
         hoverExpanded = false;
@@ -820,9 +867,10 @@ QtObject {
         return idleActivity();
     }
 
-    function requestActivity(activityId, shouldExpand, requestKeyboardFocus) {
-        const destination = isDestination(activityId);
-        if (activityId !== "home" && activityId !== "media" && !destination)
+    // Whether activityId may open: home, media while it plays, or a destination that is turned on; none while input is
+    // suspended, if it would expand.
+    function activityAllowed(activityId, shouldExpand) {
+        if (activityId !== "home" && activityId !== "media" && !isDestination(activityId))
             return false;
         if (inputSuspended && shouldExpand === true)
             return false;
@@ -830,7 +878,19 @@ QtObject {
             return false;
         if (activityId === "weather" && !SettingsData.weatherEnabled)
             return false;
-        if (activityId === "wellbeing" && !SettingsData.wellbeingEnabled)
+        return activityId !== "wellbeing" || SettingsData.wellbeingEnabled;
+    }
+
+    // A system face pushed aside by a destination or a plugin: kept, to take the island back once it is idle.
+    function displaceSystem(displaced) {
+        if (!displaced)
+            return;
+        displacedSystemActivity = displaced;
+    }
+
+    function requestActivity(activityId, shouldExpand, requestKeyboardFocus) {
+        const destination = isDestination(activityId);
+        if (!activityAllowed(activityId, shouldExpand))
             return false;
 
         if (activityId !== "launcher")
@@ -862,8 +922,10 @@ QtObject {
         transientTimer.stop();
         consumeTransientNotification();
         keyboardDismissRequested = shouldExpand === true && requestKeyboardFocus === true;
+        const displaced = destination && shouldExpand === true && systemActivityActive ? activeActivity : "";
         expanded = shouldExpand === true;
         activeActivity = activityId;
+        displaceSystem(displaced);
         if ((activityId === "media" || activityId === "home") && shouldExpand !== true)
             mediaPreferred = activityId === "media";
         launcherSessionActive = activityId === "launcher" && expanded;
@@ -975,10 +1037,13 @@ QtObject {
         systemStateContentLength = next;
     }
 
-    function requestSystemActivity(activityId) {
+    // force: the user brought it in, so it holds the island (userHeld) while they adjust.
+    function requestSystemActivity(activityId, force) {
         if (!isSystemActivity(activityId))
             return false;
-        if (pluginActive && Activities.kindRank(pluginKind) >= Activities.occupantRank({
+        if (force !== true && (Activities.levelInBubble(activityId, SettingsData.islandLevelBubbles) || Activities.briefInBubble(activityId, SettingsData.islandBriefBubbles)))
+            return false;
+        if (force !== true && pluginActive && Activities.kindRank(pluginKind) >= Activities.occupantRank({
             "system": true
         }))
             return false;
@@ -986,14 +1051,16 @@ QtObject {
         launcherSessionActive = false;
         clearPendingRequests("");
 
-        if (expanded && !notificationActive) {
+        // An open alert folds to its pill while the user adjusts; any other open sheet keeps the island.
+        const foldsPlugin = force === true && pluginActive && expanded;
+        if (expanded && !notificationActive && !foldsPlugin) {
             if (activeActivity !== activityId)
                 return false;
             transientTimer.stop();
             return true;
         }
 
-        if (notificationActive) {
+        if (notificationActive || foldsPlugin) {
             notificationTimer.stop();
             hoverExpanded = false;
             hoverOpenTimer.stop();
@@ -1002,10 +1069,18 @@ QtObject {
             expanded = false;
         }
 
+        const replaced = systemActivityActive && activeActivity !== activityId ? activeActivity : "";
+        const arriving = activeActivity !== activityId;
         if (!systemActivityActive)
             transientReturnActivity = activeActivity;
         activeActivity = activityId;
+        // A repeat (another volume step) never swells again.
+        if (arriving && force !== true)
+            arrival.face(Activities.faceTier(activityId));
+        userHeld = force === true;
         syncTransientTimeout(true);
+        if (replaced)
+            displacedSystemActivity = replaced;
         return true;
     }
 
@@ -1015,7 +1090,7 @@ QtObject {
                 "activity": "notification",
                 "critical": critical === true
             }) > Activities.kindRank(pluginKind);
-        return notificationActive || !expanded || critical === true;
+        return Arrival.takesIsland(notificationActive, expanded, critical, activeActivity);
     }
 
     function consumeTransientNotification() {
@@ -1029,8 +1104,9 @@ QtObject {
         suspendedKeyboardDismissRequested = false;
     }
 
-    function requestNotification(critical) {
-        if (!canRequestNotification(critical))
+    // force: brought in from its bubble, so it opens with the keyboard for a reply.
+    function requestNotification(critical, force) {
+        if (force !== true && !canRequestNotification(critical))
             return false;
 
         if (notificationActive)
@@ -1042,9 +1118,10 @@ QtObject {
         suspendedExpanded = expanded;
         suspendedKeyboardDismissRequested = keyboardDismissRequested;
         launcherSessionActive = false;
-        keyboardDismissRequested = false;
-        expanded = notificationExpandAllowed;
+        keyboardDismissRequested = force === true;
+        expanded = force === true || notificationExpandAllowed;
         activeActivity = "notification";
+        userHeld = force === true;
         syncNotificationTimeout(true);
         return true;
     }
@@ -1061,6 +1138,7 @@ QtObject {
             return;
 
         notificationTimer.stop();
+        arrival.end();
         const nextExpanded = restoreExpanded === true && suspendedExpanded;
         const suspendedFace = suspendedActivity === "home" || suspendedActivity === "media";
         const nextActivity = !suspendedActivity || (suspendedFace && !nextExpanded) ? idleActivity() : suspendedActivity === "media" && !mediaAvailable ? "home" : suspendedActivity;
@@ -1166,7 +1244,7 @@ QtObject {
     }
 
     property Timer transientTimer: Timer {
-        interval: root.transientTimeout
+        interval: Activities.faceTimeoutMs(root.activeActivity, root.transientTimeout)
         onTriggered: {
             if (!root.transientActive || root.expanded)
                 return;

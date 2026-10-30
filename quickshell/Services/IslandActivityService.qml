@@ -25,6 +25,25 @@ Singleton {
     signal dropped(string token, string reason)
     signal action(string token, string actionId)
 
+    // Permanent bubbles, one per owner: { pluginId: { pluginId, side: "left" | "right", label, image (the app's one-colour
+    // icon), dropText, receiving, seq } }. Each side shows its newest plugin entry (Input.permanentOn).
+    property var permanent: ({})
+    // options: { side, image, label, dropText, receiving }, or null to clear it. Gone when the plugin unloads or is blocked.
+    function setPermanent(pluginId, options): bool {
+        if (!Input.permanentAllowed(pluginId, PluginService.isPluginLoaded(pluginId), root.pluginAllowed(pluginId)))
+            return false;
+        root.permanent = Input.withPermanent(root.permanent, pluginId, options, root.nextSeq++);
+        return true;
+    }
+
+    function clearPermanent(pluginId) {
+        root.permanent = Input.withPermanent(root.permanent, pluginId, null, 0);
+    }
+
+    function permanentOn(side) {
+        return Input.permanentOn(root.permanent, side);
+    }
+
     function pluginRefusal(pluginId): string {
         if (!Input.pluginIdAllowed(pluginId))
             return "an id with a colon";
@@ -155,6 +174,16 @@ Singleton {
         return Activities.nextRequest(Object.values(root.requests), island, SessionData.doNotDisturb, root.letThroughDnd);
     }
 
+    function waitingFor(island, shownToken) {
+        root.revision;
+        return Object.values(root.requests).filter(r => r.token !== shownToken && r.hosts.indexOf(island) !== -1);
+    }
+
+    // A plugin with an activity in the island is not shown again by its notifications (app: notifyApp, else name or id).
+    function holdsApp(appName): bool {
+        return Activities.holdsApp(Object.values(root.requests), appName, id => PluginService.availablePlugins[id]?.name);
+    }
+
     function pluginAllowed(pluginId): bool {
         return SettingsData.islandPluginsBlocked.indexOf(pluginId) === -1;
     }
@@ -174,6 +203,10 @@ Singleton {
     function systemFacesOf(pluginId) {
         const faces = PluginService.availablePlugins[pluginId]?.island?.systemFaces;
         return Array.isArray(faces) ? faces : [];
+    }
+
+    function systemFaceProviders(kind) {
+        return Object.keys(PluginService.availablePlugins).filter(id => root.systemFacesOf(id).indexOf(kind) !== -1);
     }
 
     // The user's pick stays saved while its plugin is away; the shell's face stands in.
@@ -245,6 +278,7 @@ Singleton {
 
         function onPluginUnloaded(pluginId) {
             root.removePlugin(pluginId, "unloaded");
+            root.clearPermanent(pluginId);
             const gone = [root.islandComponents[pluginId], root.islandSystemComponents[pluginId]].filter(comp => !!comp);
             root.setComponents(pluginId, {});
             for (const comp of gone)
@@ -258,6 +292,7 @@ Singleton {
         function onIslandPluginsBlockedChanged() {
             for (const pluginId of SettingsData.islandPluginsBlocked) {
                 root.removePlugin(pluginId, "disabled");
+                root.clearPermanent(pluginId);
             }
         }
     }

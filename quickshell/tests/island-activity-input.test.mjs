@@ -83,6 +83,13 @@ test("face sizes stay inside the island bounds", () => {
     assert.equal(activities.systemFaceSize({ "expandedWidth": 2000 }, "expandedWidth"), 736);
 });
 
+test("a bubble face keeps the ready face fields and a very short text", () => {
+    assert.deepEqual(plain(activities.bubbleFace({ "icon": "timer", "progress": 0.5, "shortText": "4:59", "accent": "error" })), { "icon": "timer", "progress": 0.5, "text": "4:59", "accent": "error" });
+    assert.equal(activities.bubbleFace({ "shortText": "far too long" }).text, "far to");
+    assert.equal(activities.bubbleFace(null).text, "");
+    assert.equal(activities.bubbleFace({ "shortText": 62 }).text, "62");
+});
+
 test("IPC reaches only the activities scripts started", () => {
     for (const token of ["script:x:1", "script:sands-timer:42"])
         assert.equal(activities.ipcOwns(token), true, token);

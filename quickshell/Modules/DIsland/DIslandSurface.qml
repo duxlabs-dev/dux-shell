@@ -5,8 +5,12 @@ import QtQuick
 import qs.Common
 import qs.Modules.DDash
 import qs.Modules.DIsland.Activities
+import qs.Modules.DIsland.Kit
 import qs.Services
 import qs.Widgets
+import "../../Common/IslandArrival.js" as Arrival
+import "../../Common/IslandArrivalGestures.js" as Gestures
+import "../../Common/IslandKit.js" as IslandKit
 
 Item {
     id: root
@@ -80,15 +84,6 @@ Item {
     readonly property string autoBarShadowDirection: root.controller.edge
     readonly property string effectiveShadowDirection: Theme.elevationLightDirection === "autoBar" ? autoBarShadowDirection : Theme.elevationLightDirection
     readonly property real currentSurfaceRadius: Math.max(0, motion.currentTopLeftRadius, motion.currentBottomLeftRadius)
-    readonly property color notificationAccentColor: {
-        if (!root.controller.notificationActive)
-            return "transparent";
-        if (root.notificationModel.critical)
-            return Theme.error;
-        if (root.notificationModel.important)
-            return Theme.warning;
-        return "transparent";
-    }
 
     signal scrollWheel(var wheel)
 
@@ -143,6 +138,31 @@ Item {
             return controller.expanded ? 1 : 0;
         return Math.max(0, Math.min(1, (currentVisualCross - fadeCompactCross) / span));
     }
+
+    // How far the island has grown from the notification's compact face to its arrival card, read from the spring:
+    // unclamped (the shared icon and title fly on it, bounce included), and clamped for the fades.
+    readonly property real arrivalGrow: {
+        // A swell without the card (a brief info, style C or A) keeps the compact face.
+        if (!root.controller.notificationActive || root.controller.expanded || root.isVertical || !(root.controller.arrival.pulse?.big || root.controller.arrival.pull > 0))
+            return 0;
+        return Arrival.grow(root.currentVisualCross, root.controller.compactTargetFor("notification").height, root.controller.arrival.bigTarget.height, root.reducedMotion);
+    }
+    readonly property real arrivalBigness: IslandKit.unit(arrivalGrow)
+    readonly property int arrivalNudges: root.controller.arrival.nudges
+    readonly property int arrivalFlashes: root.controller.arrival.flashes
+    // A newcomer rolling over the card: a small bounce of the island's height.
+    onArrivalNudgesChanged: {
+        if (root.reducedMotion)
+            return;
+        motion.velocityHeight += Gestures.nudge * root.controller.compactFaceThickness;
+        motion.running = true;
+    }
+    onArrivalFlashesChanged: tintFade.restart()
+    // Where the compact notification face shows its icon and title (NotificationCompact.places), for the card's flight.
+    property var notificationPlaces: null
+    // The finger's way sideways over the card.
+    property real arrivalDragX: 0
+    property real arrivalDragY: 0
 
     readonly property QtObject resizeGeometry: QtObject {
         readonly property real renderedX: root.currentScreenX
@@ -363,10 +383,15 @@ Item {
             return Math.ceil(span * Math.exp(-Math.PI * zeta / Math.sqrt(1 - zeta * zeta)));
         }
 
-        x: (motion.running ? Math.min(root.motionStartBounds.x, root.targetVisualX) : root.targetVisualX) - overshootBudget
-        y: (motion.running ? Math.min(root.motionStartBounds.y, root.targetVisualY) : root.targetVisualY) - overshootBudget
-        width: (motion.running ? Math.max(root.motionStartBounds.x + root.motionStartBounds.width, root.targetVisualX + motion.targetWidth) : root.targetVisualX + motion.targetWidth) + overshootBudget - x
-        height: (motion.running ? Math.max(root.motionStartBounds.y + root.motionStartBounds.height, root.targetVisualY + motion.targetHeight) : root.targetVisualY + motion.targetHeight) + overshootBudget - y
+        readonly property real islandLeft: (motion.running ? Math.min(root.motionStartBounds.x, root.targetVisualX) : root.targetVisualX) - overshootBudget
+        readonly property real islandTop: (motion.running ? Math.min(root.motionStartBounds.y, root.targetVisualY) : root.targetVisualY) - overshootBudget
+        readonly property real islandRight: (motion.running ? Math.max(root.motionStartBounds.x + root.motionStartBounds.width, root.targetVisualX + motion.targetWidth) : root.targetVisualX + motion.targetWidth) + overshootBudget
+        readonly property real islandBottom: (motion.running ? Math.max(root.motionStartBounds.y + root.motionStartBounds.height, root.targetVisualY + motion.targetHeight) : root.targetVisualY + motion.targetHeight) + overshootBudget
+
+        x: islandLeft
+        y: islandTop
+        width: islandRight - x
+        height: islandBottom - y
     }
 
     Loader {
@@ -386,8 +411,8 @@ Item {
         height: root.currentVisualHeight
         // Embedded, the band already paints the in-band strip; overhangFill draws the rest, so a translucent band never double-alphas.
         color: root.embedded ? "transparent" : root.effectiveSurfaceColor
-        border.width: root.notificationAccentColor !== "transparent" ? 1.5 : root.embedded ? 0 : (root.highContrast ? 2 : (root.popupStyled && !root.notch ? BlurService.borderWidth : 0))
-        border.color: root.notificationAccentColor !== "transparent" ? root.notificationAccentColor : (root.highContrast ? Theme.outlineStrong : (root.popupStyled && !root.notch ? BlurService.borderColor : "transparent"))
+        border.width: root.embedded ? 0 : (root.highContrast ? 2 : (root.popupStyled && !root.notch ? BlurService.borderWidth : 0))
+        border.color: root.highContrast ? Theme.outlineStrong : (root.popupStyled && !root.notch ? BlurService.borderColor : "transparent")
 
         Behavior on color {
             ColorAnimation {
@@ -414,6 +439,43 @@ Item {
             bottomRightRadius: parent.bottomRightRadius
         }
 
+        // An arriving info tints the island with its colour, fading out.
+        Rectangle {
+            id: tint
+
+            anchors.fill: parent
+            visible: opacity > 0
+            opacity: 0
+            color: root.controller.notificationActive && root.notificationModel.critical ? Theme.errorContainer : Theme.primaryContainer
+            topLeftRadius: parent.topLeftRadius
+            topRightRadius: parent.topRightRadius
+            bottomLeftRadius: parent.bottomLeftRadius
+            bottomRightRadius: parent.bottomRightRadius
+
+            // A1: faded out on the kit's Timer clock (out-quad), not a NumberAnimation: past the island's own spring, a
+            // burst of arrivals then redraws this window alone.
+            IslandDecorClock {
+                id: tintFade
+
+                property real from: 0
+                property real span: 0
+                property real left: 0
+
+                function restart() {
+                    tintFade.from = root.controller.arrival.tint;
+                    tintFade.span = IslandKit.beat("tint", root.reducedMotion ? 0 : Theme.currentAnimationBaseDuration);
+                    tintFade.left = tintFade.span;
+                    tint.opacity = tintFade.span > 0 ? tintFade.from : 0;
+                }
+
+                running: tintFade.left > 0
+                onTick: dt => {
+                    tintFade.left = Math.max(0, tintFade.left - 1000 * dt);
+                    tint.opacity = tintFade.from * Math.pow(tintFade.left / tintFade.span, 2);
+                }
+            }
+        }
+
         MouseArea {
             anchors.fill: parent
             acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -425,7 +487,10 @@ Item {
                     wheel.accepted = false;
                     return;
                 }
-                root.scrollWheel(wheel);
+                // Over an open burst the wheel turns its pages; else it keeps its role.
+                // A touchpad gives pixels, a wheel notch 120 eighths of a degree: a third of it is about a page.
+                if (!root.controller.arrival.wheel(Gestures.wheelDelta(wheel.pixelDelta, wheel.angleDelta)))
+                    root.scrollWheel(wheel);
                 wheel.accepted = true;
             }
         }
@@ -472,6 +537,62 @@ Item {
             clipboardExpandedComponent: expandedClipboardComponent
             powerMenuCompactComponent: compactPowerMenuComponent
             powerMenuExpandedComponent: expandedPowerMenuComponent
+        }
+
+        // Fingers and drags over a notification: sideways turns the burst's pages (the card follows), toward the screen
+        // edge tidies everything away, away from it opens the full card (the island follows). Above the faces, it only
+        // steals a press once it is a drag, so clicks still reach them; under the cards, whose buttons it blocked from above.
+        Item {
+            anchors.fill: parent
+            enabled: root.controller.notificationActive && !root.isVertical
+
+            DragHandler {
+                id: arrivalDrag
+
+                target: null
+                onActiveChanged: {
+                    root.controller.arrival.dragging = active;
+                    if (active)
+                        return;
+                    root.controller.arrival.swipe(root.arrivalDragX, root.arrivalDragY);
+                    root.arrivalDragX = 0;
+                    root.arrivalDragY = 0;
+                }
+                onActiveTranslationChanged: {
+                    const t = activeTranslation;
+                    if (Math.abs(t.x) > Math.abs(t.y)) {
+                        root.arrivalDragX = root.controller.arrival.browsable ? t.x : 0;
+                        root.arrivalDragY = 0;
+                        root.controller.arrival.pull = 0;
+                        return;
+                    }
+                    root.arrivalDragX = 0;
+                    root.arrivalDragY = t.y;
+                    root.controller.arrival.pull = root.farEdge ? -t.y : t.y;
+                }
+            }
+        }
+
+        // The arrival card, centred in the island as it grows into it: the icon and title fly from the compact face's
+        // places, the card's own lines come in late (and leave first on the way back).
+        Item {
+            anchors.fill: parent
+            clip: true
+            visible: root.arrivalBigness > 0
+
+            ArrivalCard {
+                id: arrivalCard
+
+                x: Math.round((parent.width - width) / 2)
+                y: Arrival.centered(parent.height, height)
+                grow: root.arrivalGrow
+                from: root.notificationPlaces
+                enabled: hand.cardOwn >= 0.5
+                controller: root.controller
+                notificationModel: root.notificationModel
+                reducedMotion: root.reducedMotion
+                dragX: root.arrivalDragX
+            }
         }
 
         HoverHandler {
@@ -836,6 +957,8 @@ Item {
         id: compactNotificationComponent
 
         NotificationCompact {
+            id: notificationFace
+
             notificationModel: root.notificationModel
             controller: root.controller
             dense: root.controller.compactDense

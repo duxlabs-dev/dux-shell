@@ -3371,6 +3371,63 @@
     "conditionKey": "frameEnabled"
   },
   {
+    "section": "islandArrival",
+    "label": "Arrival of info",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "animation",
+      "arrival",
+      "bar",
+      "bounce",
+      "burst",
+      "countdown",
+      "general",
+      "info",
+      "island",
+      "notification",
+      "panel",
+      "statusbar",
+      "taskbar",
+      "tint",
+      "topbar"
+    ],
+    "parentLabel": "Bar",
+    "icon": "animation",
+    "conditionKey": "islandEnabled"
+  },
+  {
+    "section": "islandArrivalStyle",
+    "label": "Arrival of info",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "animation",
+      "arrival",
+      "bar",
+      "bounce",
+      "card",
+      "compact",
+      "detail",
+      "folds",
+      "general",
+      "info",
+      "island",
+      "more",
+      "notification",
+      "opens",
+      "panel",
+      "statusbar",
+      "step",
+      "style",
+      "taskbar",
+      "topbar"
+    ],
+    "parentLabel": "Bar",
+    "description": "Step and bounce opens a card with more detail, then folds to compact",
+    "conditionKey": "islandEnabled"
+  },
+  {
     "section": "barAutoHide",
     "label": "Auto-hide",
     "tabIndex": 3,
@@ -4458,6 +4515,30 @@
     "conditionKey": "islandDocked"
   },
   {
+    "section": "islandArrivalWheelDirection",
+    "label": "Reverse scroll direction",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "arrival",
+      "bar",
+      "direction",
+      "general",
+      "inverted",
+      "island",
+      "natural",
+      "panel",
+      "reverse",
+      "scroll",
+      "statusbar",
+      "taskbar",
+      "topbar",
+      "wheel"
+    ],
+    "parentLabel": "Bar",
+    "conditionKey": "islandEnabled"
+  },
+  {
     "section": "barRightClickAction",
     "label": "Right click",
     "tabIndex": 3,
@@ -4485,6 +4566,36 @@
     ],
     "parentLabel": "Bar",
     "description": "Choose what right-clicking empty bar space does"
+  },
+  {
+    "section": "islandArrivalWheel",
+    "label": "Scroll through infos",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "arrival",
+      "bar",
+      "burst",
+      "general",
+      "goes",
+      "info",
+      "infos",
+      "island",
+      "next",
+      "open",
+      "over",
+      "panel",
+      "scroll",
+      "statusbar",
+      "taskbar",
+      "through",
+      "topbar",
+      "touchpad",
+      "wheel"
+    ],
+    "parentLabel": "Bar",
+    "description": "The wheel or touchpad over the open island goes from one info to the next",
+    "conditionKey": "islandEnabled"
   },
   {
     "section": "barScrollWheel",
@@ -10162,6 +10273,14 @@
     "optionFile": "PrivacyOptions.qml"
   },
   {
+    "section": "barWidgetOption:IslandOptions.qml:32",
+    "label": "Arrival of info",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "IslandOptions.qml"
+  },
+  {
     "section": "barWidgetOption:SystemTrayOptions.qml:3",
     "label": "Auto overflow",
     "tabIndex": 22,
@@ -10817,7 +10936,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:32",
+    "section": "barWidgetOption:IslandOptions.qml:35",
     "label": "Motion",
     "tabIndex": 22,
     "keywords": [],
@@ -10937,6 +11056,14 @@
     "optionFile": "IslandOptions.qml"
   },
   {
+    "section": "barWidgetOption:IslandOptions.qml:34",
+    "label": "Reverse scroll direction",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "IslandOptions.qml"
+  },
+  {
     "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:20",
     "label": "Reverse scroll direction",
     "tabIndex": 22,
@@ -10951,6 +11078,14 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "PrivacyOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:IslandOptions.qml:33",
+    "label": "Scroll through infos",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "IslandOptions.qml"
   },
   {
     "section": "barWidgetOption:MusicOptions.qml:7",
@@ -11161,7 +11296,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:34",
+    "section": "barWidgetOption:IslandOptions.qml:37",
     "label": "Spring damping",
     "tabIndex": 22,
     "keywords": [],
@@ -11169,7 +11304,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:35",
+    "section": "barWidgetOption:IslandOptions.qml:38",
     "label": "Spring mass",
     "tabIndex": 22,
     "keywords": [],
@@ -11177,7 +11312,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:33",
+    "section": "barWidgetOption:IslandOptions.qml:36",
     "label": "Spring stiffness",
     "tabIndex": 22,
     "keywords": [],
@@ -18270,6 +18405,63 @@
     "conditionKey": "matugenAvailable"
   },
   {
+    "section": "dotArrival",
+    "label": "Arrival of info",
+    "tabIndex": 65,
+    "category": "Dot",
+    "keywords": [
+      "animation",
+      "arrival",
+      "bar",
+      "bounce",
+      "burst",
+      "countdown",
+      "dot",
+      "info",
+      "island",
+      "notification",
+      "panel",
+      "statusbar",
+      "taskbar",
+      "tint",
+      "topbar"
+    ],
+    "parentLabel": "Bar",
+    "icon": "animation",
+    "conditionKey": "dotEnabled"
+  },
+  {
+    "section": "dotArrivalStyle",
+    "label": "Arrival of info",
+    "tabIndex": 65,
+    "category": "Dot",
+    "keywords": [
+      "animation",
+      "arrival",
+      "bar",
+      "bounce",
+      "card",
+      "compact",
+      "detail",
+      "dot",
+      "folds",
+      "info",
+      "island",
+      "more",
+      "notification",
+      "opens",
+      "panel",
+      "statusbar",
+      "step",
+      "style",
+      "taskbar",
+      "topbar"
+    ],
+    "parentLabel": "Bar",
+    "description": "Step and bounce opens a card with more detail, then folds to compact",
+    "conditionKey": "dotEnabled"
+  },
+  {
     "section": "dotSurfaceColor",
     "label": "Background",
     "tabIndex": 65,
@@ -18966,6 +19158,60 @@
     ],
     "parentLabel": "Bar",
     "icon": "drag_pan",
+    "conditionKey": "dotEnabled"
+  },
+  {
+    "section": "dotArrivalWheelDirection",
+    "label": "Reverse scroll direction",
+    "tabIndex": 65,
+    "category": "Dot",
+    "keywords": [
+      "arrival",
+      "bar",
+      "direction",
+      "dot",
+      "inverted",
+      "island",
+      "natural",
+      "panel",
+      "reverse",
+      "scroll",
+      "statusbar",
+      "taskbar",
+      "topbar",
+      "wheel"
+    ],
+    "parentLabel": "Bar",
+    "conditionKey": "dotEnabled"
+  },
+  {
+    "section": "dotArrivalWheel",
+    "label": "Scroll through infos",
+    "tabIndex": 65,
+    "category": "Dot",
+    "keywords": [
+      "arrival",
+      "bar",
+      "burst",
+      "dot",
+      "goes",
+      "info",
+      "infos",
+      "island",
+      "next",
+      "open",
+      "over",
+      "panel",
+      "scroll",
+      "statusbar",
+      "taskbar",
+      "through",
+      "topbar",
+      "touchpad",
+      "wheel"
+    ],
+    "parentLabel": "Bar",
+    "description": "The wheel or touchpad over the open island goes from one info to the next",
     "conditionKey": "dotEnabled"
   },
   {

@@ -310,6 +310,10 @@ Item {
             badgeGated: false
         }
 
+        IslandArrivalCard {
+            keyPrefix: "dot"
+        }
+
         IslandMotionCard {
             store: dot
             keyPrefix: "dot"

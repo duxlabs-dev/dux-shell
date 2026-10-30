@@ -2,6 +2,19 @@
 
 // What a script (over IPC) or a plugin hands the island, checked and shaped; its own rules are in IslandActivities.js.
 
+// A bubble reads the same fields as the ready face, plus a very short text ("62 %", "4:59"), cut at maxShortText.
+const maxShortText = 6;
+function bubbleFace(data) {
+    const face = readyFace(data);
+    const short = faceText(data && typeof data === "object" ? data.shortText : "");
+    return {
+        "icon": face.icon,
+        "progress": face.progress,
+        "text": short.slice(0, maxShortText),
+        "accent": face.accent
+    };
+}
+
 const accents = ["primary", "secondary", "tertiary", "error", "warning", "info", "success"];
 const maxActions = 3;
 
@@ -128,6 +141,49 @@ function ipcOwns(token) {
 // A token is "<source>:<n>": a plugin id with a colon could pass for a script's or the shell's.
 function pluginIdAllowed(id) {
     return typeof id === "string" && id !== "" && id.indexOf(":") === -1;
+}
+
+// Permanent bubbles (IslandActivityService.permanent): one entry per owner, { pluginId: { side, image, label, dropText,
+// receiving, seq } }. Keep awake ("dms:keepawake") is the shell's own and draws its own bubble.
+function permanentAllowed(id, loaded, allowed) {
+    return id === "dms:keepawake" || (pluginIdAllowed(id) && loaded === true && allowed === true);
+}
+
+// A permanent bubble's own fields come from a plugin: typed and bounded as a face's are (B10). The bubble's width follows
+// its label; an image URL too long to be one is dropped, never cut.
+const maxPermanentLabel = 24;
+const maxPermanentDropText = 64;
+const maxPermanentImage = 2048;
+
+// A new table with id's entry set (options) or gone (null); an owner setting its entry again keeps its place in line.
+function withPermanent(table, id, options, seq) {
+    const previous = (table || {})[id];
+    if (!options && !previous)
+        return table;
+    const next = Object.assign({}, table);
+    if (options)
+        next[id] = Object.assign({}, options, {
+            "pluginId": id,
+            "side": options.side === "left" ? "left" : "right",
+            "receiving": options.receiving === true,
+            "label": faceText(options.label).slice(0, maxPermanentLabel),
+            "dropText": faceText(options.dropText).slice(0, maxPermanentDropText),
+            "image": typeof options.image === "string" && options.image.length <= maxPermanentImage ? options.image : "",
+            "seq": previous ? previous.seq : seq
+        });
+    else
+        delete next[id];
+    return next;
+}
+
+// The plugin bubble a side shows: the newest owner there.
+function permanentOn(table, side) {
+    let shown = null;
+    for (const entry of Object.values(table || {})) {
+        if (entry.side === side && pluginIdAllowed(entry.pluginId) && (!shown || entry.seq > shown.seq))
+            shown = entry;
+    }
+    return shown;
 }
 
 // The IPC answer refusing a script's activity, or "". liveNames: scripts showing one now; asking again replaces it.

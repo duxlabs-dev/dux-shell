@@ -124,6 +124,13 @@ Singleton {
     property var launcherPluginVisibility: Spec.SPEC.launcherPluginVisibility.def
     property var islandPluginsBlocked: Spec.SPEC.islandPluginsBlocked.def
     property var islandSystemFaces: Spec.SPEC.islandSystemFaces.def
+    property bool islandLevelBubbles: Spec.SPEC.islandLevelBubbles.def
+    property bool islandBriefBubbles: Spec.SPEC.islandBriefBubbles.def
+    property string islandArrivalStyle: Spec.SPEC.islandArrivalStyle.def
+    property var islandArrivalBounce: Spec.SPEC.islandArrivalBounce.def
+    property var islandArrivalTint: Spec.SPEC.islandArrivalTint.def
+    property bool islandArrivalWheel: Spec.SPEC.islandArrivalWheel.def
+    property bool islandArrivalWheelInverted: Spec.SPEC.islandArrivalWheelInverted.def
 
     function getPluginAllowWithoutTrigger(pluginId) {
         if (!launcherPluginVisibility[pluginId])
@@ -131,6 +138,21 @@ Singleton {
         return launcherPluginVisibility[pluginId].allowWithoutTrigger !== false;
     }
 
+    function setIslandPluginAllowed(pluginId, allowed) {
+        const others = islandPluginsBlocked.filter(id => id !== pluginId);
+        islandPluginsBlocked = allowed ? others : others.concat([pluginId]);
+        saveSettings();
+    }
+
+    function setIslandSystemFace(kind, pluginId) {
+        const next = Object.assign({}, islandSystemFaces);
+        if (pluginId)
+            next[kind] = pluginId;
+        else
+            delete next[kind];
+        islandSystemFaces = next;
+        saveSettings();
+    }
     function setPluginAllowWithoutTrigger(pluginId, allow) {
         const updated = JSON.parse(JSON.stringify(launcherPluginVisibility));
         if (!updated[pluginId])

@@ -12,6 +12,8 @@ import qs.Widgets
 import "../../Common/LayoutResolver.js" as Resolver
 import "../../Common/IslandActivities.js" as Activities
 import "../../Common/IslandActivityInput.js" as Input
+import "../../Common/IslandArrival.js" as Arrival
+import "../../Common/IslandKit.js" as Kit
 
 Item {
     id: root
@@ -174,6 +176,8 @@ Item {
     readonly property var springStiffnessRange: [100, 1200]
     readonly property var springDampingRange: [10, 100]
     readonly property var springMassRange: [0.25, 3]
+    // The island's spring follows DMS's animation speed as the kit's springs do (Kit.stretch, M6).
+    readonly property var islandSpring: Kit.stretch([Math.max(root.springStiffnessRange[0], Math.min(root.springStiffnessRange[1], root.setting("islandSpringStiffness"))), Math.max(root.springDampingRange[0], Math.min(root.springDampingRange[1], root.setting("islandSpringDamping"))), Math.max(root.springMassRange[0], Math.min(root.springMassRange[1], root.setting("islandSpringMass")))], Theme.currentAnimationBaseDuration)
     readonly property int destinationMaxHeight: Math.max(destinationMinHeight, Math.min(destinationMaxHeightLimit, (root.screen?.height ?? referenceScreenHeight) - screenMargin))
     readonly property int maxActivityHeight: Math.max(root.heldEditSurfaceHeight, controller.dashboardHeight, controller.controlCenterHeight, controller.launcherMaxHeight, controller.clipboardExpandedTarget.height, controller.powerMenuExpandedTarget.height, destinationMaxHeight)
     readonly property int maxActivityWidth: Math.max(controller.dashboardMaxWidth, controller.controlCenterMaxWidth, controller.launcherExpandedTarget.width, controller.clipboardExpandedTarget.width, controller.powerMenuExpandedTarget.width, Math.min(activityMaxWidth, Math.max(activityMinWidth, (root.screen?.width ?? referenceScreenWidth) - screenMargin)))
@@ -311,6 +315,7 @@ Item {
         const occupant = {
             "activity": controller.activeActivity,
             "expanded": controller.expanded,
+            "held": controller.userHeld,
             "critical": notificationSource.critical,
             "system": controller.systemActivityActive,
             "kind": controller.pluginKind
@@ -341,6 +346,32 @@ Item {
             return;
         }
         IslandActivityService.markShown(next.token, controller);
+    }
+    // Whether an owned face's info still lives (its clock, its question, its state), so it may take the island back.
+    function faceAlive(kind) {
+        switch (kind) {
+        case "disk":
+        case "periph":
+        }
+        return false;
+    }
+
+    // A machine info with no bubble of its own: the island face first, else the machine bubble.
+    function playMachine(kind) {
+        if (systemSource.enabled && controller.requestSystemActivity(kind)) {
+            systemSource.kind = kind;
+        }
+    }
+
+    function bringPlugin(token) {
+        const entry = IslandActivityService.entry(token);
+        if (!entry)
+            return;
+        if (controller.pluginToken && controller.pluginToken !== token)
+            IslandActivityService.markInterrupted(controller.pluginToken, controller);
+        controller.plugin.begin(token, entry.kind, true, entry.timeoutMs);
+        controller.userHeld = true;
+        IslandActivityService.markShown(token, controller);
     }
 
     Loader {
@@ -500,6 +531,23 @@ Item {
         onTriggered: root.keyboardReclaiming = false
     }
 
+    // A sheet waiting for the bar window (a frame at the grown size, or the band size) that never comes holds the island.
+    Timer {
+        // How long a sheet waits for the bar window before it goes on without it.
+        readonly property int waitMs: 3000
+
+        interval: waitMs
+        running: root.editRoomWaiting || surface.targetPending
+        onTriggered: {
+            if (root.editRoomWaiting)
+                controller.editRoomGranted = true;
+            if (!surface.targetPending)
+                return;
+            surface.targetPending = false;
+            surface.surfaceMotion.setTarget(surface.resolveTarget(controller.targetDescriptor));
+        }
+    }
+
     Timer {
         id: keyboardRearmTimer
 
@@ -527,6 +575,9 @@ Item {
     IslandController {
         id: controller
 
+        arrival.reducedMotion: SettingsData.reduceMotion || SettingsData.animationDuration <= 0
+        // The island holds the keyboard only when given it (keyboard or a deliberate open), never on a hover.
+        arrival.focused: islandFocus.activeFocus
         onKeyboardDismissRequestedChanged: root.requestKeyboardFocus()
         onKeyboardYieldedChanged: {
             if (keyboardYielded || !keyboardDismissRequested)
@@ -654,9 +705,10 @@ Item {
         compactBackgroundColor: BarMetrics.widgetFill(root.barConfig)
         opacity: root.freeOpacity
         reducedMotion: SettingsData.reduceMotion || SettingsData.animationDuration <= 0
-        springStiffness: Math.max(root.springStiffnessRange[0], Math.min(root.springStiffnessRange[1], root.setting("islandSpringStiffness")))
-        springDamping: Math.max(root.springDampingRange[0], Math.min(root.springDampingRange[1], root.setting("islandSpringDamping")))
-        springMass: Math.max(root.springMassRange[0], Math.min(root.springMassRange[1], root.setting("islandSpringMass")))
+        springStiffness: root.islandSpring.stiffness
+        // An arrival sets its own bounce (damping ratio) on the island's stiffness and mass while it plays.
+        springDamping: controller.arrival.dampingRatio > 0 ? 2 * controller.arrival.dampingRatio * Math.sqrt(springStiffness * springMass) : root.islandSpring.damping
+        springMass: root.islandSpring.mass
         palette: root.setting("islandPalette")
         highContrast: !root.embedded && root.setting("islandHighContrast")
         transparency: SettingsData.barTransparency(root.barConfig)
@@ -691,5 +743,7 @@ Item {
             controller.requestCollapse();
             event.accepted = true;
         }
+        Keys.onLeftPressed: event => event.accepted = controller.arrival.step(I18n.isRtl ? 1 : -1)
+        Keys.onRightPressed: event => event.accepted = controller.arrival.step(I18n.isRtl ? -1 : 1)
     }
 }

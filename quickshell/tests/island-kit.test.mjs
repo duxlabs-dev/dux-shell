@@ -39,6 +39,9 @@ test("springs slow down with DMS's animation speed and keep their damping ratio"
     assert.ok(Math.abs(ratio(normal) - ratio(slow)) < 1e-9);
     assert.ok(Math.abs(Math.sqrt(normal.stiffness / slow.stiffness) - 4) < 1e-9);
     assert.deepEqual(K.spring("nope", 250), K.spring("cell", 250));
+    // The island's own spring, from its settings, stretches the same way.
+    const own = K.stretch([400, 20, 1], 500);
+    assert.deepEqual([own.stiffness, own.damping, own.mass], [100, 10, 1]);
 });
 
 test("content beats follow DMS's animation speed and stop at speed 0", () => {
@@ -46,6 +49,22 @@ test("content beats follow DMS's animation speed and stop at speed 0", () => {
     assert.equal(K.beat("ringPause", 500), 2000);
     assert.equal(K.beat("ringPause", 0), 0);
     assert.equal(K.beat("nope", 250), 250);
+});
+
+test("a face row is centred on its ink, not on its glyph boxes, to the whole pixel", () => {
+    // A 16 px icon box holding a 12 px-advance glyph whose ink starts 1 px in: 3 px of air before the ink.
+    assert.equal(K.boxBearing(16, 12, 1), 3);
+    assert.equal(K.boxBearing(16, 16, 0), 0);
+    // 3 px of air before, 1 px after in a 100 px row of a 120 px face: x 9 so both sides show 12 px of air.
+    assert.equal(K.inkCentredX(120, 100, 3, 1), 9);
+    assert.equal(K.inkCentredX(120, 100, 1, 5), 12);
+    assert.equal(K.inkCentredX(120, 100, 2, 2), 10);
+    // The row's own fractional width counts too: one rounding, on the final x.
+    assert.equal(K.inkCentredX(282, 199.53, 1.5, 0.37), 41);
+    for (const [w, row, lead, trail] of [[120, 100, 3, 0], [120, 100, 0, 3], [282, 199.53, 4.6, 1.2], [281, 124.58, 3.37, 0.37]]) {
+        const x = K.inkCentredX(w, row, lead, trail);
+        assert.ok(Number.isInteger(x) && Math.abs((x + lead) - (w - x - row + trail)) <= 1, `${w}/${row}/${lead}/${trail}`);
+    }
 });
 
 test("a cubic bezier easing matches the CSS curve: ends pinned, monotone, known midpoints", () => {

@@ -1759,6 +1759,28 @@ var LOCAL_SPEC = {
         def: {},
         coerce: islandMap
     },
+    islandLevelBubbles: {
+        def: false
+    },
+    islandBriefBubbles: {
+        def: false
+    },
+    islandArrivalStyle: {
+        def: "bc"
+    },
+    // Per tier: brief, normal, important (IslandArrival.js).
+    islandArrivalBounce: {
+        def: ["light", "light", "medium"]
+    },
+    islandArrivalTint: {
+        def: ["light", "normal", "strong"]
+    },
+    islandArrivalWheel: {
+        def: true
+    },
+    islandArrivalWheelInverted: {
+        def: false
+    },
     launcherKeybinds: {
         def: {}
     },

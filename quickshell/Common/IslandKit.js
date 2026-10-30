@@ -11,6 +11,13 @@ var springs = {
 
 // Content micro-motions, in multiples of DMS's animation speed.
 var beats = {
+    // An arriving info's tint fading.
+    "tint": 2.08,
+    // An arriving info: the page rolling in and out, a new page dot popping, a frozen dot emptying.
+    "roll": 1.36,
+    "rollOut": 0.88,
+    "pop": 1.28,
+    "drain": 1.8,
     // An important info rings like a phone: its second ring leaves this long after the first.
     "ringGap": 1.6,
     // A ringing call rings again after this pause, like a phone.
@@ -18,6 +25,34 @@ var beats = {
 };
 // How far a ringing call's shape swings each ring, in degrees at the spring's peak.
 var ringTilt = 12;
+// The shown page's countdown, [fill, track alpha] in theme (Theme): the text tone, else the far end (white on a dark
+// theme, black on a light one), with the opacity of it laid as a track that stands markContrast off every island ground
+// while the fill stands markContrast off the track on each (the middle of the opacities that do). Where none does (a
+// ground under 9:1 from the far end, as Monochrome dark's brightest), the opacity that comes closest.
+function countdownTones(theme, light) {
+    const grounds = islandGrounds.map(role => theme[role]);
+    const far = light ? Qt.rgba(0, 0, 0, 1) : Qt.rgba(1, 1, 1, 1);
+    let best = [far, 0.5], bestWorst = 0;
+    for (const fill of [theme.surfaceText, far]) {
+        const fits = [];
+        for (let i = 20; i <= 80; i++) {
+            const worst = Math.min(...grounds.map(ground => {
+                const track = Contrast.mix(ground, fill, i / 100);
+                return Math.min(Contrast.ratio(track, ground), Contrast.ratio(fill, track));
+            }));
+            if (worst >= markContrast)
+                fits.push(i / 100);
+            if (worst > bestWorst) {
+                best = [fill, i / 100];
+                bestWorst = worst;
+            }
+        }
+        if (fits.length > 0)
+            return [fill, fits[fits.length >> 1]];
+    }
+    return best;
+}
+
 // A shape moving on to its next one beats out by this much (the app icon's poke, a replaced face on the wing).
 var morphPulse = 0.15;
 
@@ -102,10 +137,24 @@ function ringSwing(ms, span, gap, rings, pause, cycles, stiffness, ratio, mass) 
     return x / peak;
 }
 
+// Air between a glyph's box edge and its ink, for a glyph centred in its box (icons).
+function boxBearing(box, advance, inkX) {
+    return (box - advance) / 2 + inkX;
+}
+
+// Whole-pixel x that centres a row on its ink in a face, given the air before its first ink and after its last.
+function inkCentredX(width, rowWidth, lead, trail) {
+    return Math.round((width - rowWidth + trail - lead) / 2);
+}
+
 // DMS's animation speed stretches time: k / f² and c / f keep the spring's shape, at most 1 / minStretch times faster.
 var minStretch = 0.05;
 function spring(name, baseDuration) {
-    const s = springs[name] ?? springs.cell;
+    return stretch(springs[name] ?? springs.cell, baseDuration);
+}
+
+// The same stretch for any [stiffness, damping, mass] (the island's own spring, read from its settings).
+function stretch(s, baseDuration) {
     const f = Math.max(minStretch, (baseDuration > 0 ? baseDuration : baseMs) / baseMs);
     return {
         "stiffness": s[0] / (f * f),
