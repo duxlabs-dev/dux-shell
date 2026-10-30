@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
+import "../../Common/IslandActivityInput.js" as Input
 
 Item {
     id: root
@@ -224,6 +225,10 @@ Item {
         const host = root.hostForScreen(screen, barId, kind);
         if (!host)
             return `${root.ipcTag(kind)}_UNAVAILABLE`;
+        // "activity": the plugin's or script's activity on the island opens to its sheet with the keyboard in it, where Tab,
+        // Enter and Space reach its actions (a key bound to this is the keyboard's way in).
+        if ((activity || "").trim().toLowerCase() === "activity")
+            return Input.ipcOpenActivity(host, root.ipcTag(kind));
         const requested = root.activityName(activity);
         if (!root.openActivityOn(host, requested, ""))
             return `${root.ipcTag(kind)}_ACTIVITY_UNAVAILABLE: ${requested}`;
@@ -295,8 +300,19 @@ Item {
             "free": !!host.free,
             "idle": host.free ? host.idle : false,
             "x": host.free ? Math.round(host.anchorX) : null,
-            "y": host.free ? Math.round(host.anchorY) : null
+            "y": host.free ? Math.round(host.anchorY) : null,
+            "plugin": root.pluginStatus(host.islandController.pluginToken)
         });
+    }
+
+    function pluginStatus(token) {
+        const entry = IslandActivityService.entry(token);
+        return entry ? {
+            "token": Input.ipcOwns(token) ? token : "",
+            "pluginId": entry.pluginId,
+            "kind": entry.kind,
+            "state": entry.state
+        } : null;
     }
 
     Component.onCompleted: PopoutService.dankIslandRouter = root
@@ -415,6 +431,29 @@ Item {
 
         function centerOn(screen: string): string {
             return root.ipcCenter(screen, "island");
+        }
+
+        // The answers are listed at IslandActivityInput.ipcRefusal.
+        function activity(id: string, kind: string, data: string): string {
+            return Input.ipcActivity(IslandActivityService, id, kind, "", data);
+        }
+
+        // screen "*" shows it on every island there is now, not on a screen plugged in later.
+        function activityOn(id: string, kind: string, screen: string, data: string): string {
+            return Input.ipcActivity(IslandActivityService, id, kind, screen, data);
+        }
+
+        function activityUpdate(token: string, data: string): string {
+            return Input.ipcActivityUpdate(IslandActivityService, token, data);
+        }
+
+        function activityEnd(token: string): string {
+            return Input.ipcActivityEnd(IslandActivityService, token);
+        }
+
+        // The last action the user picked stays readable until the activity ends.
+        function activityStatus(token: string): string {
+            return Input.ipcActivityStatus(IslandActivityService, token);
         }
     }
 

@@ -5,6 +5,9 @@ import { readFileSync } from "node:fs";
 import { loadScript } from "./qml-script.mjs";
 
 const C = loadScript(new URL("../DCommon/Common/Contrast.js", import.meta.url));
+// Contrast.mix builds its colour with Qt.rgba, as QML gives it.
+for (const context of [C, K.Contrast])
+    context.Qt = { rgba: (r, g, b, a) => ({ r, g, b, a }) };
 
 test("an alert's rings, read off their clock: two leave a gap apart, each is gone after its span, then it is over", () => {
     const span = 1300, gap = K.beat("ringGap", 250), pause = K.beat("ringPause", 250);
@@ -79,6 +82,29 @@ test("a warning ground keeps the light-mode text its readers lay on it (the toas
         assert.ok(C.ratio(rgb(ground), rgb(text)) >= 4.5, `${text} on ${ground}: ${C.ratio(rgb(ground), rgb(text)).toFixed(2)}`);
         assert.ok(C.ratio(rgb(light), rgb(text)) < 4.5, `${light} is a text tone, not a ground`);
     }
+});
+
+test("a ready face's tone stands 3:1 off every island ground and off its ring's track there, else the surface's text", () => {
+    for (const [name, colours] of Object.entries(themes)) {
+        const theme = themeOf({ ...colours, primary: "#9ecaff", success: "#4CAF50" });
+        for (const accent of ["error", "warning", "primary", "success", "unknown"]) {
+            const tone = K.readyTone(accent, theme);
+            for (const role of K.islandGrounds) {
+                const track = C.mix(theme[role], tone, K.readyTrackAlpha);
+                assert.ok(C.ratio(tone, theme[role]) >= K.markContrast && C.ratio(tone, track) >= K.markContrast, `${name} ${accent} on ${role}`);
+            }
+        }
+    }
+    // A pale accent on a light theme gives way; one that stands keeps its colour; an unknown one is the primary.
+    const light = themeOf({ ...themes["wallpaper light"], primary: "#6750a4", success: "#4CAF50" });
+    assert.equal(K.readyTone("success", light), light.surfaceText);
+    assert.equal(K.readyTone("primary", light), light.primary);
+    assert.equal(K.readyTone("unknown", light), light.primary);
+    // The host surface the island paints counts: a primary container it does not stand on makes it give way.
+    const hosted = themeOf({ ...themes["wallpaper light"], primary: "#6750a4", success: "#4CAF50", hostSurface: "#7d5260" });
+    assert.ok(C.ratio(hosted.primary, hosted.hostSurface) < K.markContrast);
+    assert.equal(K.readyTone("primary", hosted), hosted.surfaceText);
+    assert.equal(K.readyTone("primary", themeOf({ ...themes["wallpaper light"], primary: "#6750a4", hostSurface: "#eaddff" })).r, light.primary.r);
 });
 
 test("a meter's share: NaN and below 0 read as 0, over 1 as 1", () => {

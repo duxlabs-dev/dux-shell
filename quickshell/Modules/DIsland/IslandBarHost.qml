@@ -286,6 +286,14 @@ Item {
     }
     readonly property var pluginEntry: Activities.shownEntry(root.livePluginEntry, root.lastPluginEntry, controller.plugin.shown)
     readonly property var pluginActivity: pluginLoader.item
+    // A plugin that draws its own pill owns both faces; otherwise the shell draws them from its data.
+    // update() swaps data inside the same entry object, so the face follows the revision rather than the entry.
+    readonly property var readyFace: root.pluginRevision >= 0 && root.pluginEntry && !root.pluginActivity?.compactContent ? Input.readyFace(root.pluginEntry.data, root.stateWords) : null
+    readonly property var stateWords: ({
+            "error": I18n.tr("Error", "island activity state, said beside its detail"),
+            "warning": I18n.tr("Warning", "island activity state, said beside its detail"),
+            "success": I18n.tr("Success", "island activity state, said beside its detail")
+        })
     readonly property int pluginRevision: IslandActivityService.revision
     readonly property bool quiet: SessionData.doNotDisturb
     readonly property bool sessionLocked: SessionService.locked
@@ -327,6 +335,11 @@ Item {
         if (controller.pluginToken && controller.pluginToken !== next.token)
             IslandActivityService.markInterrupted(controller.pluginToken, controller);
         controller.plugin.begin(next.token, next.kind, next.state === "waiting" && next.expanded, next.timeoutMs);
+        // begin loads its faces: readyFace is set only when the plugin leaves compactContent to the shell.
+        if (root.readyFace && IslandActivityService.dropIfEmpty(next.token)) {
+            controller.plugin.end();
+            return;
+        }
         IslandActivityService.markShown(next.token, controller);
     }
 
@@ -350,11 +363,6 @@ Item {
             give("interrupted", Qt.binding(() => !controller.pluginActive));
             give("screen", Qt.binding(() => root.screenName));
             give("edge", Qt.binding(() => root.edge));
-            // Without compactContent nothing would draw the pill: give the island back rather than show an empty one.
-            if (!item.compactContent) {
-                const token = controller.pluginToken;
-                Qt.callLater(() => IslandActivityService.release(token));
-            }
         }
     }
 
@@ -568,14 +576,15 @@ Item {
         unreadNotificationCount: root.setting("islandNotificationBadgeClearOnOpen") ? NotificationService.unreadCount : NotificationService.notifications.length
         hoverOpenDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverOpenDelay")))
         hoverCloseDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverCloseDelay")))
-        pluginExpandable: !!root.pluginActivity?.expandedContent
+        pluginExpandable: root.readyFace ? (root.readyFace.text !== "" || root.readyFace.actions.length > 0) : !!root.pluginActivity?.expandedContent
         systemFaceCompactLength: Input.systemFaceSize(systemFaceLoader.item, "compactLength")
         systemFaceExpandedWidth: Math.min(dashboardAvailableWidth, Input.systemFaceSize(systemFaceLoader.item, "expandedWidth"))
         systemFaceExpandedHeight: Math.min(dashboardAvailableHeight, Input.systemFaceSize(systemFaceLoader.item, "expandedHeight"))
-        pluginCompactLength: Input.faceSize(root.pluginActivity, "compactLength")
-        pluginExpandedWidth: Math.min(dashboardAvailableWidth, Input.faceSize(root.pluginActivity, "expandedWidth"))
-        pluginExpandedHeight: Math.min(dashboardAvailableHeight, Input.faceSize(root.pluginActivity, "expandedHeight"))
+        pluginCompactLength: Input.faceSize(root.pluginActivity, "compactLength", !!root.readyFace)
+        pluginExpandedWidth: Math.min(dashboardAvailableWidth, Input.faceSize(root.pluginActivity, "expandedWidth", !!root.readyFace))
+        pluginExpandedHeight: Math.min(dashboardAvailableHeight, Input.faceSize(root.pluginActivity, "expandedHeight", !!root.readyFace))
         plugin.activity: root.pluginActivity
+        plugin.face: root.readyFace
         plugin.systemFace: systemFaceLoader.item
     }
 

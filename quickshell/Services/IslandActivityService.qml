@@ -121,6 +121,15 @@ Singleton {
         return true;
     }
 
+    // compactContent is known only once the island loads it: without it, no title nor icon is an empty pill.
+    function dropIfEmpty(token): bool {
+        const entry = root.requests[token];
+        if (!entry || !Input.ipcRefusal(entry.data))
+            return false;
+        root.log.warn("island activity dropped: no title, icon nor compactContent", entry.pluginId);
+        return root.remove(token, "empty");
+    }
+
     function release(token): bool {
         return root.remove(token, "released");
     }

@@ -53,6 +53,20 @@ function alertTones(alert, theme) {
     return [shape, Contrast.readableOn(shape, icons, markContrast), Contrast.readableOn(shape, icons, textContrast)];
 }
 
+// A ready face's ring (a script's or plugin's shell-drawn face): its track is the face's tone at this alpha.
+var readyTrackAlpha = 0.25;
+
+// The source's accent if it stands markContrast off every island ground and off its track, else the surface's text.
+function readyTone(accent, theme) {
+    const grounds = islandGrounds.map(role => theme[role]);
+    // The ground the island paints by default counts too: the host surface pick (a container, the inverse surface).
+    if (theme.hostSurface)
+        grounds.push(theme.hostSurface);
+    const stands = tone => grounds.every(ground => Contrast.ratio(tone, ground) >= markContrast && Contrast.ratio(tone, Contrast.mix(ground, tone, readyTrackAlpha)) >= markContrast);
+    const picked = theme[accent] ?? theme.primary;
+    return stands(picked) ? picked : theme.surfaceText;
+}
+
 // An alert's rings, ms into them: a cycle sends a ring every gap, each lasting span, then pauses; cycles 0 never ends.
 function ringCycle(span, gap, rings, pause) {
     return (rings - 1) * gap + span + pause;

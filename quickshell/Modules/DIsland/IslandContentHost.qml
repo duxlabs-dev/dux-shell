@@ -397,8 +397,26 @@ Item {
         sourceComponent: root.controller.plugin.systemFace?.expandedContent ?? root.systemExpandedComponent
     }
 
-    readonly property Component pluginCompactComponent: root.pluginActivity?.compactContent ?? null
-    readonly property Component pluginExpandedComponent: root.pluginActivity?.expandedContent ?? null
+    readonly property Component pluginCompactComponent: root.pluginFace ? readyCompactComponent : root.pluginActivity?.compactContent ?? null
+    readonly property Component pluginExpandedComponent: root.pluginFace ? readyExpandedComponent : root.pluginActivity?.expandedContent ?? null
+
+    Component {
+        id: readyCompactComponent
+
+        ReadyActivityCompact {
+            face: root.pluginFace
+            isVertical: root.controller.isVertical
+        }
+    }
+
+    Component {
+        id: readyExpandedComponent
+
+        ReadyActivityExpanded {
+            face: root.pluginFace
+            onTriggered: actionId => IslandActivityService.trigger(root.controller.pluginToken, actionId)
+        }
+    }
 
     CompactFace {
         active: root.pluginSurfaceActive && !!root.pluginCompactComponent

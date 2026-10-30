@@ -140,6 +140,21 @@ test("a chosen action is kept for the status a script reads, and an unknown toke
     assert.equal(context.entry(token).lastAction, "stop");
 });
 
+test("an update that would empty a ready face is refused, a valid one shows, an unknown token changes nothing", () => {
+    const { context } = service();
+    const token = context.requestScript("backup", { "data": { "title": "Backup" } });
+    const data = context.entry(token).data;
+    const revision = context.revision;
+    assert.equal(context.update(token, { "text": "50%" }), false, "no title nor icon");
+    assert.equal(context.entry(token).data, data, "the face keeps its last content");
+    assert.equal(context.revision, revision);
+    assert.equal(context.update(token, { "title": "Backup", "text": "50%" }), true);
+    assert.equal(context.entry(token).data.text, "50%");
+    assert.equal(context.revision, revision + 1);
+    assert.equal(context.update("script:other:9", { "title": "Other" }), false);
+    assert.equal(context.revision, revision + 1);
+});
+
 test("on two islands, one going away leaves the activity on the other; the last one going drops it", () => {
     const { context, signals } = service({ islands: ["DP-1", "HDMI-A-1"] });
     const token = context.requestScript("backup", { "screen": "*", "data": { "title": "Backup" } });
@@ -169,4 +184,19 @@ test("do not disturb turned on while an activity waits holds it, and turned off 
     assert.equal(context.nextFor("DP-1"), null);
     context.SessionData.doNotDisturb = false;
     assert.equal(context.nextFor("DP-1").token, token);
+});
+
+test("a shell-drawn face with neither title nor icon is dropped with a log line; one with either stays", () => {
+    const { context, signals } = service();
+    const warned = [];
+    context.log = { warn: (...args) => warned.push(args) };
+    const empty = context.request("weather", { "data": { "text": "Rain later" } });
+    assert.equal(context.dropIfEmpty(empty), true);
+    assert.equal(context.entry(empty), null);
+    assert.deepEqual(signals.at(-1), ["dropped", empty, "empty"]);
+    assert.equal(warned.length, 1);
+    const titled = context.request("weather", { "data": { "title": "Rain" } });
+    assert.equal(context.dropIfEmpty(titled), false);
+    assert.equal(context.entry(titled).pluginId, "weather");
+    assert.equal(context.dropIfEmpty("weather:99"), false, "an unknown token changes nothing");
 });
