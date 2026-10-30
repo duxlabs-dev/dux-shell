@@ -101,7 +101,7 @@ SettingsRow {
                             root.customColorSelected(selectedColor);
                             root.colorModeSelected("custom");
                         };
-                        PopoutService.colorPickerModal.show();
+                        PopoutService.colorPickerModal.show(true);
                     }
                 }
             }
