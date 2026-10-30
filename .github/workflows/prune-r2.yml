@@ -3,6 +3,7 @@ name: Prune Void R2 archive
 # Keeps the danklinux-void bucket inside the Cloudflare R2 free tier by
 # deleting the oldest archive/<repo>/<timestamp>/ snapshots written by
 # publish-void-r2.sh. Live repositories (<repo>/current/) are never touched.
+# <repo> comes from the listing, so new and legacy prefixes need no list.
 
 on:
   schedule:

@@ -148,7 +148,7 @@ func TestFedoraLayerCommands(t *testing.T) {
 	got := strings.Join(f.LayerCommands(dependencies, deps.WindowManagerNiri, nil, map[string]bool{"danksearch": true}), "\n")
 
 	for _, want := range []string{
-		"_copr:copr.fedorainfracloud.org:avengemedia:dms.repo https://copr.fedorainfracloud.org/coprs/avengemedia/dms/repo/fedora-$(rpm -E %fedora)/avengemedia-dms-fedora-$(rpm -E %fedora).repo",
+		"_copr:copr.fedorainfracloud.org:duxlabs:dms.repo https://copr.fedorainfracloud.org/coprs/duxlabs/dms/repo/fedora-$(rpm -E %fedora)/duxlabs-dms-fedora-$(rpm -E %fedora).repo",
 		"_copr:copr.fedorainfracloud.org:yalter:niri-git.repo",
 		"echo priority=1 | sudo tee -a",
 		"sudo rpm-ostree install xwayland-satellite dms niri matugen",
@@ -163,8 +163,8 @@ func TestFedoraLayerCommands(t *testing.T) {
 			t.Fatalf("unexpected %q in:\n%s", unwanted, got)
 		}
 	}
-	if strings.Count(got, "avengemedia:danklinux.repo https") != 1 {
-		t.Fatalf("danklinux repo must be fetched exactly once:\n%s", got)
+	if strings.Count(got, "duxlabs:dux-repo.repo https") != 1 {
+		t.Fatalf("deps repo must be fetched exactly once:\n%s", got)
 	}
 }
 
@@ -181,7 +181,7 @@ func TestFedoraLayerCommandsSwapVariants(t *testing.T) {
 	installed := map[string]bool{"dms-greeter": true, "dms": true}
 	f.rpmInstalled = func(pkg string) bool { return installed[pkg] }
 	orig := installedFromCOPR
-	installedFromCOPR = func(pkg, repo string) bool { return pkg == "dms" && repo == "avengemedia/dms-git" }
+	installedFromCOPR = func(pkg, repo string) bool { return pkg == "dms" && repo == "duxlabs/dms-git" }
 	t.Cleanup(func() { installedFromCOPR = orig })
 
 	dependencies := []deps.Dependency{
@@ -193,7 +193,7 @@ func TestFedoraLayerCommandsSwapVariants(t *testing.T) {
 	got := strings.Join(f.LayerCommands(dependencies, deps.WindowManagerNiri, reinstall, nil), "\n")
 
 	for _, want := range []string{
-		"sudo rm -f /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:avengemedia:dms-git.repo",
+		"sudo rm -f /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:duxlabs:dms-git.repo /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:avengemedia:dms-git.repo",
 		"sudo rpm-ostree install dms dms-greeter-git --uninstall dms dms-greeter",
 	} {
 		if !strings.Contains(got, want) {

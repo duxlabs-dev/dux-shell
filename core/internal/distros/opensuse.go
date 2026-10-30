@@ -132,6 +132,70 @@ func (o *OpenSUSEDistribution) SwapVariants(ctx context.Context, swaps []Variant
 	return o.runWithProgress(privesc.ExecCommand(ctx, sudoPassword, command), progressChan, PhaseSystemPackages, 0.40, 0.85)
 }
 
+func (o *OpenSUSEDistribution) RepoMoves() []RepoMove {
+	if !obsMigrationReady {
+		return nil
+	}
+	return obsZypperChannel.moves(repoPathExists)
+}
+
+func (o *OpenSUSEDistribution) ApplyRepoMoves(ctx context.Context, moves []RepoMove, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
+	if err := o.enableOBSRepos(ctx, repoMoveAdds(moves), sudoPassword, progressChan); err != nil {
+		return err
+	}
+	for _, move := range repoMoveRemoves(moves) {
+		command := "zypper removerepo " + obsZypperAlias(move.Old)
+		progressChan <- InstallProgressMsg{
+			Phase:       PhaseSystemPackages,
+			Progress:    0.30,
+			Step:        fmt.Sprintf("Removing OBS repo %s...", move.Old),
+			NeedsSudo:   true,
+			CommandInfo: "sudo " + command,
+		}
+		if err := o.runWithProgress(privescExec(ctx, sudoPassword, command), progressChan, PhaseSystemPackages, 0.30, 0.35); err != nil {
+			return fmt.Errorf("failed to remove OBS repo %s: %w", move.Old, err)
+		}
+	}
+	return nil
+}
+
+func (o *OpenSUSEDistribution) RepoMoveCommands(moves []RepoMove) []string {
+	osInfo, err := GetOSInfo()
+	if err != nil {
+		osInfo = &OSInfo{}
+	}
+	return opensuseRepoMoveCommands(moves, opensuseOBSDist(osInfo))
+}
+
+func opensuseRepoMoveCommands(moves []RepoMove, dist string) []string {
+	var commands []string
+	adds := repoMoveAdds(moves)
+	for _, add := range adds {
+		commands = append(commands, "sudo zypper addrepo -f "+obsZypperRepoURL(add.RepoURL, dist))
+	}
+	if len(adds) > 0 {
+		commands = append(commands, "sudo zypper --gpg-auto-import-keys refresh")
+	}
+	for _, move := range repoMoveRemoves(moves) {
+		commands = append(commands, "sudo zypper removerepo "+obsZypperAlias(move.Old))
+	}
+	return commands
+}
+
+func opensuseOBSDist(osInfo *OSInfo) string {
+	switch osInfo.Distribution.ID {
+	case "opensuse-leap":
+		return "openSUSE_Leap_" + osInfo.VersionID
+	case "opensuse-slowroll":
+		return "openSUSE_Slowroll"
+	}
+	return "openSUSE_Tumbleweed"
+}
+
+func obsZypperRepoURL(repo, dist string) string {
+	return obsBaseURL(repo, dist) + "/" + repo + ".repo"
+}
+
 func (o *OpenSUSEDistribution) detectDMSGreeter() deps.Dependency {
 	gitInstalled := o.packageInstalled("dms-greeter-git")
 	dep := o.detectOptionalPackage("dms-greeter", "Dux Shell greetd greeter", gitInstalled || o.packageInstalled("dms-greeter"))
@@ -154,11 +218,11 @@ func (o *OpenSUSEDistribution) GetPackageMappingWithVariants(wm deps.WindowManag
 		// DMS packages from OBS
 		"dms (Dux Shell)": o.getDmsMapping(variants["dms (Dux Shell)"]),
 		"quickshell":      o.getQuickshellMapping(variants["quickshell"]),
-		"dms-greeter":     variantMapping("dms-greeter", variants["dms-greeter"], RepoTypeOBS, "home:AvengeMedia:danklinux"),
-		"ghostty":         {Name: "ghostty", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
-		"matugen":         {Name: "matugen", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
-		"danksearch":      {Name: "danksearch", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
-		"dankcalendar":    variantMapping("dankcalendar", variants["dankcalendar"], RepoTypeOBS, "home:AvengeMedia:danklinux"),
+		"dms-greeter":     variantMapping("dms-greeter", variants["dms-greeter"], RepoTypeOBS, obsDeps),
+		"ghostty":         {Name: "ghostty", Repository: RepoTypeOBS, RepoURL: obsDeps},
+		"matugen":         {Name: "matugen", Repository: RepoTypeOBS, RepoURL: obsDeps},
+		"danksearch":      {Name: "danksearch", Repository: RepoTypeOBS, RepoURL: obsDeps},
+		"dankcalendar":    variantMapping("dankcalendar", variants["dankcalendar"], RepoTypeOBS, obsDeps),
 	}
 
 	switch wm {
@@ -179,28 +243,28 @@ func (o *OpenSUSEDistribution) GetPackageMappingWithVariants(wm deps.WindowManag
 
 func (o *OpenSUSEDistribution) getDmsMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "dms-git", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:dms-git"}
+		return PackageMapping{Name: "dms-git", Repository: RepoTypeOBS, RepoURL: obsDMSGit}
 	}
-	return PackageMapping{Name: "dms", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:dms"}
+	return PackageMapping{Name: "dms", Repository: RepoTypeOBS, RepoURL: obsDMS}
 }
 
 func (o *OpenSUSEDistribution) getQuickshellMapping(variant deps.PackageVariant) PackageMapping {
 	if forceQuickshellGit || variant == deps.VariantGit {
-		return PackageMapping{Name: "quickshell-git", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"}
+		return PackageMapping{Name: "quickshell-git", Repository: RepoTypeOBS, RepoURL: obsDeps}
 	}
-	return PackageMapping{Name: "quickshell", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"}
+	return PackageMapping{Name: "quickshell", Repository: RepoTypeOBS, RepoURL: obsDeps}
 }
 
 func (o *OpenSUSEDistribution) getNiriMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "niri-git", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"}
+		return PackageMapping{Name: "niri-git", Repository: RepoTypeOBS, RepoURL: obsDeps}
 	}
 	return PackageMapping{Name: "niri", Repository: RepoTypeSystem}
 }
 
 func (o *OpenSUSEDistribution) getXwaylandSatelliteMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "xwayland-satellite-git", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"}
+		return PackageMapping{Name: "xwayland-satellite-git", Repository: RepoTypeOBS, RepoURL: obsDeps}
 	}
 	return PackageMapping{Name: "xwayland-satellite", Repository: RepoTypeSystem}
 }
@@ -490,26 +554,16 @@ func (o *OpenSUSEDistribution) enableOBSRepos(ctx context.Context, obsPkgs []Pac
 		return fmt.Errorf("failed to get OS info: %w", err)
 	}
 
-	obsDistroVersion := "openSUSE_Tumbleweed"
-	switch osInfo.Distribution.ID {
-	case "opensuse-leap":
-		obsDistroVersion = fmt.Sprintf("openSUSE_Leap_%s", osInfo.VersionID)
-	case "opensuse-slowroll":
-		obsDistroVersion = "openSUSE_Slowroll"
-	}
+	obsDistroVersion := opensuseOBSDist(osInfo)
 
 	for _, pkg := range obsPkgs {
 		if pkg.RepoURL != "" && !enabledRepos[pkg.RepoURL] {
 			o.log(fmt.Sprintf("Enabling OBS repository: %s", pkg.RepoURL))
 
-			// RepoURL format: "home:AvengeMedia:danklinux"
-			repoPath := strings.ReplaceAll(pkg.RepoURL, ":", ":/")
-			repoName := strings.ReplaceAll(pkg.RepoURL, ":", "-")
-			repoURL := fmt.Sprintf("https://download.opensuse.org/repositories/%s/%s/%s.repo",
-				repoPath, obsDistroVersion, pkg.RepoURL)
+			repoURL := obsZypperRepoURL(pkg.RepoURL, obsDistroVersion)
 
-			checkCmd := exec.CommandContext(ctx, "zypper", "repos", repoName)
-			if checkCmd.Run() == nil {
+			// zypper stores the repo under the alias from the .repo section header, home_<owner>_<project>.
+			if repoPathExists(obsZypperRepoFile(pkg.RepoURL)) {
 				o.log(fmt.Sprintf("OBS repo %s already exists, skipping", pkg.RepoURL))
 				enabledRepos[pkg.RepoURL] = true
 				continue

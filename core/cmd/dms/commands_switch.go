@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -142,7 +143,7 @@ func runSwitch(channel string, packages []string) error {
 	if shellChanges {
 		fmt.Println("The shell restarts when the switch is done.")
 	}
-	if !switchAssumeYes && !askSwitch("\nContinue? [y/N] ") {
+	if !switchAssumeYes && !askYes("\nContinue? [y/N] ") {
 		return errors.New("cancelled")
 	}
 
@@ -171,7 +172,7 @@ func runSwitch(channel string, packages []string) error {
 	if snapshotLabel == "beta" && !switchAssumeYes {
 		if path, ok := backup.LatestSnapshot("stable"); ok {
 			fmt.Printf("\nSettings saved by beta may lose options on stable. Restore the backup from your last\nstable run (%s)? Your beta settings stay in the beta backup. [y/N] ", path)
-			if askSwitch("") {
+			if askYes("") {
 				restore = path
 			}
 		}
@@ -185,28 +186,39 @@ func runSwitch(channel string, packages []string) error {
 }
 
 func runSwaps(ctx context.Context, swapper distros.VariantSwapper, swaps []distros.VariantSwap) error {
+	return runWithProgressOutput(func(progressChan chan<- distros.InstallProgressMsg) error {
+		return swapper.SwapVariants(ctx, swaps, "", progressChan)
+	})
+}
+
+func runWithProgressOutput(run func(chan<- distros.InstallProgressMsg) error) error {
+	return runWithProgressOutputTo(os.Stdout, run)
+}
+
+func runWithProgressOutputTo(out io.Writer, run func(chan<- distros.InstallProgressMsg) error) error {
 	progressChan := make(chan distros.InstallProgressMsg, 100)
-	swapErr := make(chan error, 1)
+	runErr := make(chan error, 1)
 	go func() {
 		defer close(progressChan)
-		swapErr <- swapper.SwapVariants(ctx, swaps, "", progressChan)
+		runErr <- run(progressChan)
 	}()
 
-	// runWithProgress repeats the step on every output line, so only print it when it changes.
-	lastStep := ""
+	// runWithProgress repeats the step and the last output line on every tick, so only print changes.
+	lastStep, lastLog := "", ""
 	for msg := range progressChan {
 		switch {
 		case msg.Error != nil:
 			fmt.Fprintf(os.Stderr, "Error: %v\n", msg.Error)
 		case msg.Step != "" && msg.Step != lastStep:
-			fmt.Println(msg.Step)
+			fmt.Fprintln(out, msg.Step)
 			lastStep = msg.Step
 		}
-		if msg.LogOutput != "" {
-			fmt.Printf("    %s\n", msg.LogOutput)
+		if msg.LogOutput != "" && msg.LogOutput != lastLog {
+			fmt.Fprintf(out, "    %s\n", msg.LogOutput)
+			lastLog = msg.LogOutput
 		}
 	}
-	return <-swapErr
+	return <-runErr
 }
 
 // restartShellAfterSwitch stops the shell before restoring, or the running one would migrate the
@@ -268,7 +280,7 @@ func switchLabel(m distros.PackageMapping) string {
 	return m.RepoURL + "/" + m.Name
 }
 
-func askSwitch(prompt string) bool {
+func askYes(prompt string) bool {
 	if !stdinIsTTY() {
 		return false
 	}

@@ -16,6 +16,15 @@ on:
         description: "Release number for rebuilds (e.g., 2, 3, 4 to increment spec Release)"
         required: false
         default: ""
+      owners:
+        description: "OBS owners to publish to"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - duxlabs
+          - avengemedia
   schedule:
     - cron: "0 2,5,14,17,20,23 * * *" # 9am, 12pm, 3pm, 6pm, 9pm, 12am EST (UTC times shown)
 
@@ -27,7 +36,7 @@ jobs:
 
     outputs:
       has_updates: ${{ steps.check.outputs.has_updates }}
-      packages: ${{ steps.check.outputs.packages }}
+      matrix: ${{ steps.check.outputs.matrix }}
       version: ${{ steps.check.outputs.version }}
 
     steps:
@@ -40,13 +49,13 @@ jobs:
       - name: Check for updates
         id: check
         env:
-          OBS_USERNAME: ${{ secrets.OBS_USERNAME }}
-          OBS_PASSWORD: ${{ secrets.OBS_PASSWORD }}
+          # duxlabs is dispatch-only until its OBS account exists; drop this gate then
+          OWNERS: ${{ github.event_name == 'workflow_dispatch' && inputs.owners || 'avengemedia' }}
         run: |
-          # Helper function to check dms-git commit
+          # The public source API needs no credentials, so one job checks every owner
           check_dms_git() {
             local CURRENT_COMMIT=$(git rev-parse --short=8 HEAD)
-            local OBS_SPEC=$(curl -s -u "$OBS_USERNAME:$OBS_PASSWORD" "https://api.opensuse.org/source/home:AvengeMedia:dms-git/dms-git/dms-git.spec" 2>/dev/null || echo "")
+            local OBS_SPEC=$(curl -s "https://api.opensuse.org/public/source/$1:dms-git/dms-git/dms-git.spec" 2>/dev/null || echo "")
             local OBS_COMMIT=$(echo "$OBS_SPEC" | grep "^Version:" | grep -oP '\.[a-f0-9]{8}' | tr -d '.' || echo "")
 
             if [[ -n "$OBS_COMMIT" && "$CURRENT_COMMIT" == "$OBS_COMMIT" ]]; then
@@ -58,14 +67,13 @@ jobs:
             fi
           }
 
-          # Helper function to check dms stable tag
           # Sets LATEST_TAG variable in parent scope if update needed
           check_dms_stable() {
-            LATEST_TAG=$(curl -s https://api.github.com/repos/duxlabs-dev/dux-shell/releases/latest | grep '"tag_name"' | sed 's/.*"tag_name": "\([^"]*\)".*/\1/' || echo "")
-            local OBS_SPEC=$(curl -s -u "$OBS_USERNAME:$OBS_PASSWORD" "https://api.opensuse.org/source/home:AvengeMedia:dms/dms/dms.spec" 2>/dev/null || echo "")
+            LATEST_TAG=$(curl -sL https://api.github.com/repos/duxlabs-dev/dux-shell/releases/latest | grep '"tag_name"' | sed 's/.*"tag_name": "\([^"]*\)".*/\1/' || echo "")
+            local OBS_SPEC=$(curl -s "https://api.opensuse.org/public/source/$1:dms/dms/dms.spec" 2>/dev/null || echo "")
             local OBS_VERSION=$(echo "$OBS_SPEC" | grep "^Version:" | awk '{print $2}' | xargs || echo "")
 
-            if [[ -n "$LATEST_TAG" && "$LATEST_TAG" == "$OBS_VERSION" ]]; then
+            if [[ -n "$LATEST_TAG" && "${LATEST_TAG#v}" == "$OBS_VERSION" ]]; then
               echo "📋 dms: Tag $LATEST_TAG already exists, skipping"
               return 1  # No update needed
             else
@@ -74,94 +82,85 @@ jobs:
             fi
           }
 
-          # Main logic
           REBUILD="${{ github.event.inputs.rebuild_release }}"
+          PKG="${{ github.event.inputs.package }}"
+          VERSION=""
 
-          if [[ "${{ github.ref }}" =~ ^refs/tags/ ]] && [[ -z "${{ github.event.inputs.package }}" ]]; then
-            # Run from tag with no package specified - update stable package
-            echo "packages=dms" >> $GITHUB_OUTPUT
-            VERSION="${GITHUB_REF#refs/tags/}"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "has_updates=true" >> $GITHUB_OUTPUT
-            echo "Triggered by tag: $VERSION (always update)"
+          # Returns via OWNER_PACKAGES, and VERSION when a stable tag is due
+          plan_owner() {
+            OWNER_PACKAGES=""
+            if [[ "${{ github.ref }}" =~ ^refs/tags/ ]] && [[ -z "$PKG" ]]; then
+              OWNER_PACKAGES="dms"
+              VERSION="${GITHUB_REF#refs/tags/}"
+              echo "Triggered by tag: $VERSION (always update)"
 
-          elif [[ "${{ github.event_name }}" == "schedule" ]]; then
-            # Scheduled run - check dms-git only
-            echo "packages=dms-git" >> $GITHUB_OUTPUT
-            if check_dms_git; then
-              echo "has_updates=true" >> $GITHUB_OUTPUT
-            else
-              echo "has_updates=false" >> $GITHUB_OUTPUT
-            fi
+            elif [[ "${{ github.event_name }}" == "schedule" ]]; then
+              if check_dms_git "$1"; then
+                OWNER_PACKAGES="dms-git"
+              fi
 
-          elif [[ -n "${{ github.event.inputs.package }}" ]]; then
-            # Manual workflow trigger
-            PKG="${{ github.event.inputs.package }}"
+            elif [[ -n "$PKG" ]]; then
+              if [[ -n "$REBUILD" ]]; then
+                OWNER_PACKAGES="$PKG"
+                echo "🔄 Manual rebuild requested: $PKG (db$REBUILD)"
 
-            if [[ -n "$REBUILD" ]]; then
-              # Rebuild requested - always proceed
-              echo "packages=$PKG" >> $GITHUB_OUTPUT
-              echo "has_updates=true" >> $GITHUB_OUTPUT
-              echo "🔄 Manual rebuild requested: $PKG (db$REBUILD)"
-
-            elif [[ "$PKG" == "all" ]]; then
-              # Check the stable package and build list of those needing updates
-              PACKAGES_TO_UPDATE=()
-              if check_dms_stable; then
-                PACKAGES_TO_UPDATE+=("dms")
-                if [[ -n "$LATEST_TAG" ]]; then
-                  echo "version=$LATEST_TAG" >> $GITHUB_OUTPUT
+              elif [[ "$PKG" == "all" || "$PKG" == "dms" ]]; then
+                # "all" only checks the stable package
+                if check_dms_stable "$1"; then
+                  OWNER_PACKAGES="dms"
+                  if [[ -n "$LATEST_TAG" ]]; then
+                    VERSION="$LATEST_TAG"
+                  fi
                 fi
-              fi
 
-              if [[ ${#PACKAGES_TO_UPDATE[@]} -gt 0 ]]; then
-                echo "packages=${PACKAGES_TO_UPDATE[*]}" >> $GITHUB_OUTPUT
-                echo "has_updates=true" >> $GITHUB_OUTPUT
-                echo "✓ Packages to update: ${PACKAGES_TO_UPDATE[*]}"
-              else
-                echo "packages=" >> $GITHUB_OUTPUT
-                echo "has_updates=false" >> $GITHUB_OUTPUT
-                echo "✓ All packages up to date"
-              fi
-
-            elif [[ "$PKG" == "dms-git" ]]; then
-              if check_dms_git; then
-                echo "packages=$PKG" >> $GITHUB_OUTPUT
-                echo "has_updates=true" >> $GITHUB_OUTPUT
-              else
-                echo "packages=" >> $GITHUB_OUTPUT
-                echo "has_updates=false" >> $GITHUB_OUTPUT
-              fi
-
-            elif [[ "$PKG" == "dms" ]]; then
-              if check_dms_stable; then
-                echo "packages=$PKG" >> $GITHUB_OUTPUT
-                echo "has_updates=true" >> $GITHUB_OUTPUT
-                if [[ -n "$LATEST_TAG" ]]; then
-                  echo "version=$LATEST_TAG" >> $GITHUB_OUTPUT
+              elif [[ "$PKG" == "dms-git" ]]; then
+                if check_dms_git "$1"; then
+                  OWNER_PACKAGES="$PKG"
                 fi
-              else
-                echo "packages=" >> $GITHUB_OUTPUT
-                echo "has_updates=false" >> $GITHUB_OUTPUT
-              fi
 
+              else
+                OWNER_PACKAGES="$PKG"
+                echo "Manual trigger: $PKG"
+              fi
             else
-              # Unknown package - proceed anyway
-              echo "packages=$PKG" >> $GITHUB_OUTPUT
-              echo "has_updates=true" >> $GITHUB_OUTPUT
-              echo "Manual trigger: $PKG"
+              OWNER_PACKAGES="all"
             fi
+          }
+
+          # Planned per owner: the new projects may lag the legacy ones
+          INCLUDE='[]'
+          for T in duxlabs,,home:duxlabs avengemedia,_LEGACY,home:AvengeMedia; do
+            IFS=, read -r OWNER SUFFIX PROJECT <<< "$T"
+            [[ "$OWNERS" == all || "$OWNERS" == "$OWNER" ]] || continue
+            echo "==> $OWNER ($PROJECT)"
+            plan_owner "$PROJECT"
+            if [[ -z "$OWNER_PACKAGES" ]]; then
+              echo "✓ $OWNER: all packages up to date"
+              continue
+            fi
+            echo "✓ $OWNER: packages to update: $OWNER_PACKAGES"
+            INCLUDE=$(jq -c --arg o "$OWNER" --arg s "$SUFFIX" --arg p "$PROJECT" --arg k "$OWNER_PACKAGES" \
+              '. + [{owner: $o, suffix: $s, project: $p, packages: $k}]' <<< "$INCLUDE")
+          done
+
+          echo "matrix=$(jq -c '{include: .}' <<< "$INCLUDE")" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$INCLUDE" != "[]" ]]; then
+            echo "has_updates=true" >> "$GITHUB_OUTPUT"
           else
-            # Fallback - proceed
-            echo "packages=all" >> $GITHUB_OUTPUT
-            echo "has_updates=true" >> $GITHUB_OUTPUT
+            echo "has_updates=false" >> "$GITHUB_OUTPUT"
           fi
 
   update-obs:
-    name: Upload to OBS
+    name: Upload to OBS (${{ matrix.owner }})
     needs: check-updates
     runs-on: ubuntu-latest
     if: needs.check-updates.outputs.has_updates == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.check-updates.outputs.matrix) }}
+    env:
+      OBS_BASE_PROJECT: ${{ matrix.project }}
 
     steps:
       - name: Checkout
@@ -179,12 +178,12 @@ jobs:
           # Use check-updates outputs when available
           if [[ -n "${{ needs.check-updates.outputs.version }}" ]]; then
             # Use version from check-updates job
-            echo "packages=${{ needs.check-updates.outputs.packages }}" >> $GITHUB_OUTPUT
+            echo "packages=${{ matrix.packages }}" >> $GITHUB_OUTPUT
             echo "version=${{ needs.check-updates.outputs.version }}" >> $GITHUB_OUTPUT
             echo "Using version from check-updates: ${{ needs.check-updates.outputs.version }}"
           elif [[ "${{ github.event_name }}" == "schedule" ]]; then
             # Scheduled run - dms-git only
-            echo "packages=${{ needs.check-updates.outputs.packages }}" >> $GITHUB_OUTPUT
+            echo "packages=${{ matrix.packages }}" >> $GITHUB_OUTPUT
             echo "Triggered by schedule: updating git package"
           elif [[ -n "${{ github.event.inputs.package }}" ]]; then
             # Manual workflow dispatch
@@ -192,7 +191,7 @@ jobs:
             # Determine version for dms stable using the API
             # GITHUB_REF is unreliable when "Use workflow from" a tag; API works from any ref
             if [[ "${{ github.event.inputs.package }}" == "dms" ]] || [[ "${{ github.event.inputs.package }}" == "all" ]]; then
-              LATEST_TAG=$(curl -s https://api.github.com/repos/duxlabs-dev/dux-shell/releases/latest | grep '"tag_name"' | sed 's/.*"tag_name": "\([^"]*\)".*/\1/' || echo "")
+              LATEST_TAG=$(curl -sL https://api.github.com/repos/duxlabs-dev/dux-shell/releases/latest | grep '"tag_name"' | sed 's/.*"tag_name": "\([^"]*\)".*/\1/' || echo "")
               if [[ -n "$LATEST_TAG" ]]; then
                 echo "version=$LATEST_TAG" >> $GITHUB_OUTPUT
                 echo "Using latest release from API: $LATEST_TAG"
@@ -204,14 +203,14 @@ jobs:
 
             # Use filtered packages from check-updates when package="all" and no rebuild/tag specified
             if [[ "${{ github.event.inputs.package }}" == "all" ]] && [[ -z "${{ github.event.inputs.rebuild_release }}" ]] && [[ ! "${{ github.ref }}" =~ ^refs/tags/ ]]; then
-              echo "packages=${{ needs.check-updates.outputs.packages }}" >> $GITHUB_OUTPUT
-              echo "Manual trigger: all (filtered to: ${{ needs.check-updates.outputs.packages }})"
+              echo "packages=${{ matrix.packages }}" >> $GITHUB_OUTPUT
+              echo "Manual trigger: all (filtered to: ${{ matrix.packages }})"
             else
               echo "packages=${{ github.event.inputs.package }}" >> $GITHUB_OUTPUT
               echo "Manual trigger: ${{ github.event.inputs.package }}"
             fi
           else
-            echo "packages=${{ needs.check-updates.outputs.packages }}" >> $GITHUB_OUTPUT
+            echo "packages=${{ matrix.packages }}" >> $GITHUB_OUTPUT
             if [[ -n "${{ needs.check-updates.outputs.version }}" ]]; then
               echo "version=${{ needs.check-updates.outputs.version }}" >> $GITHUB_OUTPUT
             fi
@@ -311,20 +310,18 @@ jobs:
           cache-dependency-path: core/go.sum
 
       - name: Install OSC
+        env:
+          OBS_USERNAME: ${{ secrets[format('OBS_USERNAME{0}', matrix.suffix)] }}
+          OBS_PASSWORD: ${{ secrets[format('OBS_PASSWORD{0}', matrix.suffix)] }}
         run: |
+          : "${OBS_USERNAME:?OBS_USERNAME${{ matrix.suffix }} is not set}" "${OBS_PASSWORD:?OBS_PASSWORD${{ matrix.suffix }} is not set}"
           sudo apt-get update
           sudo apt-get install -y osc
 
           mkdir -p ~/.config/osc
-          cat > ~/.config/osc/oscrc << EOF
-          [general]
-          apiurl = https://api.opensuse.org
-
-          [https://api.opensuse.org]
-          user = ${{ secrets.OBS_USERNAME }}
-          pass = ${{ secrets.OBS_PASSWORD }}
-          EOF
-          chmod 600 ~/.config/osc/oscrc
+          umask 077
+          printf '[general]\napiurl = https://api.opensuse.org\n\n[https://api.opensuse.org]\nuser = %s\npass = %s\n' \
+            "$OBS_USERNAME" "$OBS_PASSWORD" > ~/.config/osc/oscrc
 
       # Cache OBS bundled Go toolchains
       - name: Cache OBS bundled Go toolchains (dms-git)
@@ -405,7 +402,7 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          echo "### OBS Package Upload Summary" >> $GITHUB_STEP_SUMMARY
+          echo "### OBS Package Upload Summary (${{ matrix.owner }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           PACKAGES="${{ steps.packages.outputs.packages }}"
@@ -458,10 +455,10 @@ jobs:
 
               case "$PKG" in
                 dms)
-                  echo "- $STATUS_ICON **dms** ($STATUS_TEXT) → [View builds](https://build.opensuse.org/package/show/home:AvengeMedia:dms/dms)" >> $GITHUB_STEP_SUMMARY
+                  echo "- $STATUS_ICON **dms** ($STATUS_TEXT) → [View builds](https://build.opensuse.org/package/show/${OBS_BASE_PROJECT}:dms/dms)" >> $GITHUB_STEP_SUMMARY
                   ;;
                 dms-git)
-                  echo "- $STATUS_ICON **dms-git** ($STATUS_TEXT) → [View builds](https://build.opensuse.org/package/show/home:AvengeMedia:dms-git/dms-git)" >> $GITHUB_STEP_SUMMARY
+                  echo "- $STATUS_ICON **dms-git** ($STATUS_TEXT) → [View builds](https://build.opensuse.org/package/show/${OBS_BASE_PROJECT}:dms-git/dms-git)" >> $GITHUB_STEP_SUMMARY
                   ;;
               esac
             done
@@ -477,5 +474,5 @@ jobs:
               echo "" >> $GITHUB_STEP_SUMMARY
             fi
 
-            echo "Monitor build progress on [OBS project page](https://build.opensuse.org/project/show/home:AvengeMedia)." >> $GITHUB_STEP_SUMMARY
+            echo "Monitor build progress on [OBS project page](https://build.opensuse.org/project/show/${OBS_BASE_PROJECT})." >> $GITHUB_STEP_SUMMARY
           fi

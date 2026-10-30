@@ -15,7 +15,7 @@ type swapFake struct {
 
 func (f *swapFake) GetPackageMappingWithVariants(_ deps.WindowManager, variants map[string]deps.PackageVariant) map[string]PackageMapping {
 	return map[string]PackageMapping{
-		"dms-greeter": variantMapping("dms-greeter", variants["dms-greeter"], RepoTypeCOPR, "avengemedia/danklinux"),
+		"dms-greeter": variantMapping("dms-greeter", variants["dms-greeter"], RepoTypeCOPR, "duxlabs/dux-repo"),
 		"matugen":     {Name: "matugen", Repository: RepoTypeSystem},
 	}
 }

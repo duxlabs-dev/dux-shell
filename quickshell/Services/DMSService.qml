@@ -823,4 +823,8 @@ Singleton {
             "force": force === true
         }, callback);
     }
+
+    function sysupdateRepoStatus(callback) {
+        sendRequest("sysupdate.repoStatus", null, callback);
+    }
 }

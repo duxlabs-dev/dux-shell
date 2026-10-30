@@ -10,13 +10,14 @@ import (
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
 	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
-	"github.com/duxlabs-dev/dux-shell/core/internal/site"
 )
 
 const (
-	VoidDMSRepo       = site.VoidRepo + "/dms/current"
-	VoidDankLinuxRepo = site.VoidRepo + "/danklinux/current"
-	VoidHyprlandRepo  = "https://mirror.black-hole.dev/x86_64"
+	VoidDMSRepo      = voidHost + "/" + projectDMS + "/current"
+	VoidDepsRepo     = voidHost + "/" + projectDeps + "/current"
+	VoidHyprlandRepo = "https://mirror.black-hole.dev/x86_64"
+
+	voidDepsConf = "/etc/xbps.d/dux.conf"
 
 	voidRunitSvDir      = "/etc/sv"
 	voidRunitServiceDir = "/var/service"
@@ -193,6 +194,103 @@ func (v *VoidDistribution) SwapVariants(ctx context.Context, swaps []VariantSwap
 	return fmt.Errorf("failed to install %s, restored %s: %w", strings.Join(to, ", "), strings.Join(from, ", "), installErr)
 }
 
+func (v *VoidDistribution) RepoMoves() []RepoMove {
+	var moves []RepoMove
+	legacy, hasDeps := false, false
+	for _, path := range repoGlob(voidConfGlob) {
+		for _, url := range xbpsRepositoryLines(path) {
+			move, ok := voidRepoMove(path, url)
+			if !ok {
+				continue
+			}
+			legacy = legacy || move.OldPresent
+			hasDeps = hasDeps || strings.HasPrefix(move.New, voidHost+"/"+projectDeps+"/")
+			moves = append(moves, move)
+		}
+	}
+	// Greeter-only hosts got dms-greeter from dms/current, which no longer carries it.
+	if legacy && !hasDeps {
+		moves = append(moves, RepoMove{Kind: RepoTypeXBPS, New: VoidDepsRepo, NewPath: voidDepsConf})
+	}
+	return moves
+}
+
+// Matches on the repository line because older installs named the conf files differently.
+func xbpsRepositoryLines(path string) []string {
+	content, err := repoReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var urls []string
+	for line := range strings.Lines(string(content)) {
+		key, value, ok := strings.Cut(strings.TrimSpace(line), "=")
+		if !ok || strings.TrimSpace(key) != "repository" {
+			continue
+		}
+		urls = append(urls, strings.TrimSpace(value))
+	}
+	return urls
+}
+
+func voidRepoMove(path, url string) (RepoMove, bool) {
+	if strings.HasPrefix(url, voidHost+"/") {
+		return RepoMove{Kind: RepoTypeXBPS, New: url, NewPath: path, NewPresent: true}, true
+	}
+	rest, ok := strings.CutPrefix(url, legacyVoidHost+"/")
+	if !ok {
+		return RepoMove{}, false
+	}
+	if deps, ok := strings.CutPrefix(rest, legacyProjectDeps+"/"); ok {
+		rest = projectDeps + "/" + deps
+	}
+	return RepoMove{Kind: RepoTypeXBPS, Old: url, New: voidHost + "/" + rest, OldPath: path, NewPath: path, OldPresent: true}, true
+}
+
+func voidAddsRepo(move RepoMove) bool {
+	return !move.OldPresent && !move.NewPresent && move.NewPath != ""
+}
+
+func voidMoveCommands(moves []RepoMove) []string {
+	var commands []string
+	for _, move := range moves {
+		switch {
+		case move.OldPresent:
+			commands = append(commands, fmt.Sprintf("sed -i 's|repository=%s|repository=%s|' %s", move.Old, move.New, move.OldPath))
+		case voidAddsRepo(move):
+			// Appends so an unrelated file that happens to share the name is not clobbered.
+			commands = append(commands, fmt.Sprintf("sh -c 'echo repository=%s >> %s'", move.New, move.NewPath))
+		}
+	}
+	if len(commands) > 0 {
+		commands = append(commands, "xbps-install -S")
+	}
+	return commands
+}
+
+func (v *VoidDistribution) ApplyRepoMoves(ctx context.Context, moves []RepoMove, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
+	for _, command := range voidMoveCommands(moves) {
+		progressChan <- InstallProgressMsg{
+			Phase:       PhaseSystemPackages,
+			Progress:    0.30,
+			Step:        "Moving XBPS repositories...",
+			NeedsSudo:   true,
+			CommandInfo: "sudo " + command,
+		}
+		if err := v.runWithProgress(privescExec(ctx, sudoPassword, command), progressChan, PhaseSystemPackages, 0.30, 0.40); err != nil {
+			return fmt.Errorf("failed to run %s: %w", command, err)
+		}
+	}
+	return nil
+}
+
+func (v *VoidDistribution) RepoMoveCommands(moves []RepoMove) []string {
+	var commands []string
+	for _, command := range voidMoveCommands(moves) {
+		commands = append(commands, "sudo "+command)
+	}
+	return commands
+}
+
 func (v *VoidDistribution) packageVersion(pkg string) string {
 	output, err := exec.Command("xbps-query", "-p", "pkgver", pkg).Output()
 	if err != nil {
@@ -220,9 +318,9 @@ func (v *VoidDistribution) GetPackageMappingWithVariants(wm deps.WindowManager, 
 		"quickshell":      {Name: "quickshell", Repository: RepoTypeSystem},
 		"matugen":         {Name: "matugen", Repository: RepoTypeSystem},
 		"dms (Dux Shell)": v.getDmsMapping(variants["dms (Dux Shell)"]),
-		"dms-greeter":     variantMapping("dms-greeter", variants["dms-greeter"], RepoTypeXBPS, VoidDMSRepo),
-		"danksearch":      {Name: "danksearch", Repository: RepoTypeXBPS, RepoURL: VoidDankLinuxRepo},
-		"dankcalendar":    {Name: "dankcalendar", Repository: RepoTypeXBPS, RepoURL: VoidDankLinuxRepo},
+		"dms-greeter":     variantMapping("dms-greeter", variants["dms-greeter"], RepoTypeXBPS, VoidDepsRepo),
+		"danksearch":      {Name: "danksearch", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
+		"dankcalendar":    {Name: "dankcalendar", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
 	}
 
 	switch wm {
@@ -521,8 +619,8 @@ func (v *VoidDistribution) xbpsRepoName(repoURL string) string {
 	switch repoURL {
 	case VoidDMSRepo:
 		return "dms"
-	case VoidDankLinuxRepo:
-		return "danklinux"
+	case VoidDepsRepo:
+		return "dux"
 	case VoidHyprlandRepo:
 		return "hyprland"
 	default:

@@ -219,6 +219,7 @@ func runDoctor(cmd *cobra.Command, args []string) {
 		checkSystemInfo(),
 		checkVersions(qsMissingFeatures),
 		checkDMSInstallation(),
+		checkPackageRepos(),
 		checkWindowManagers(),
 		qsFeatures,
 		checkOptionalDependencies(),
@@ -802,6 +803,36 @@ func checkDMSInstallation() []checkResult {
 	}
 
 	return results
+}
+
+func checkPackageRepos() []checkResult {
+	osInfo, err := distros.GetOSInfo()
+	if err != nil {
+		return nil
+	}
+	distro, err := distros.NewDistribution(osInfo.Distribution.ID, nil)
+	if err != nil {
+		return nil
+	}
+	return packageReposResult(distro)
+}
+
+func packageReposResult(distro distros.Distribution) []checkResult {
+	moves, ok := distros.PlanRepoMoves(distro)
+	if !ok {
+		return nil
+	}
+	url := doctorDocsURL + "#package-repos"
+	legacy := distros.LegacyRepoPaths(moves)
+	if len(legacy) > 0 {
+		return []checkResult{{catInstallation, "Package Repos", statusWarn, "Legacy repositories, run: " + migrateDuxCommand, strings.Join(legacy, ", "), url}}
+	}
+	for _, move := range moves {
+		if move.NewPresent {
+			return []checkResult{{catInstallation, "Package Repos", statusOK, "Current", "", url}}
+		}
+	}
+	return []checkResult{{catInstallation, "Package Repos", statusInfo, "No DMS package repositories", "", url}}
 }
 
 func checkWindowManagers() []checkResult {

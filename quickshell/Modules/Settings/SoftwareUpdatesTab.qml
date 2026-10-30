@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
@@ -421,6 +422,27 @@ Item {
                 iconName: "restart_alt"
                 iconColor: Theme.warning
                 subtitle: SystemUpdateService.shellInstalled ? I18n.tr("Installed %1, still running %2", "%1 is the installed version, %2 the running one").arg(SystemUpdateService.shellInstalled).arg(SystemUpdateService.shellRunning) : I18n.tr("A newer dms binary is installed.", "software updates row subtitle, the running shell is older than the installed binary")
+            }
+
+            SettingsRow {
+                visible: SystemUpdateService.legacyRepos.length > 0
+                title: I18n.tr("Package repositories moved", "notification title, the DMS package repositories moved to a new owner")
+                subtitle: I18n.tr("Run %1 in a terminal.", "%1 is a shell command").arg(SystemUpdateService.migrateCommand)
+                iconName: "swap_horiz"
+                iconColor: Theme.warning
+
+                DActionButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    buttonSize: Theme.buttonHeightS
+                    iconName: "content_copy"
+                    iconColor: Theme.surfaceText
+                    backgroundColor: SettingsMetrics.controlSurface
+                    tooltipText: I18n.tr("Copy")
+                    onClicked: {
+                        Quickshell.execDetached(["dms", "cl", "copy", SystemUpdateService.migrateCommand]);
+                        ToastService.showInfo(I18n.tr("Copied to clipboard"));
+                    }
+                }
             }
         }
 

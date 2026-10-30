@@ -9,8 +9,8 @@ import (
 func TestFedoraPackageMapping_EnterpriseLinuxUsesCOPRForMissingEPELPackages(t *testing.T) {
 	el := NewFedoraDistribution(Registry["rhel"], nil).GetPackageMapping(deps.WindowManagerNiri)
 	for _, name := range []string{"alacritty", "xwayland-satellite"} {
-		if el[name].Repository != RepoTypeCOPR || el[name].RepoURL != "avengemedia/danklinux" {
-			t.Errorf("rhel %s = %+v, want avengemedia/danklinux COPR", name, el[name])
+		if el[name].Repository != RepoTypeCOPR || el[name].RepoURL != "duxlabs/dux-repo" {
+			t.Errorf("rhel %s = %+v, want duxlabs/dux-repo COPR", name, el[name])
 		}
 	}
 

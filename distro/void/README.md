@@ -5,32 +5,35 @@ XBPS templates for Dux Shell on [Void Linux](https://voidlinux.org).
 | Package | Source repo | Template |
 | --- | --- | --- |
 | `dms` | Dux Shell | [`srcpkgs/dms/template`](srcpkgs/dms/template) |
-| `dgop` | duxlabs-dev/dux-gop | maintained in the **danklinux** repo (`distro/void/srcpkgs/dgop`) |
-| `danksearch` | duxlabs-dev/dux-search | maintained in the **danklinux** repo (`distro/void/srcpkgs/danksearch`) |
+| `dgop` | duxlabs-dev/dux-gop | maintained in the **dux-repo** repo (`distro/void/srcpkgs/dgop`) |
+| `danksearch` | duxlabs-dev/dux-search | maintained in the **dux-repo** repo (`distro/void/srcpkgs/danksearch`) |
 
 All build from source.
 
 ## Distribution
 
-This is a DMS maintained repo for VoidLinux until these packages are officially merged upstream in the Void Linux repositories, you can install them from our self-hosted custom XBPS repositories served via GitHub Pages.
+This is a DMS maintained repo for VoidLinux until these packages are officially merged upstream in the Void Linux repositories, you can install them from our self-hosted custom XBPS repositories.
 
 ### Using the Self-Hosted Repositories
 
 We serve both stable release and development packages from Cloudflare R2 at
-`void.danklinux.com`.
+`void.duxlabs.dev`: `dms` and `dms-git` from `dms/current`, their dependencies
+and `dms-greeter` from `dux-repo/current`.
 
 > **Repository migration:** the former GitHub Pages repositories will be
 > frozen for 14 days at cutover. Their retirement date will be announced when
 > the snapshots are frozen. Replace any existing `avengemedia.github.io`
 > entries with the URLs below.
+>
+> Existing installs: run `dms migrate dux`.
 
 #### 1. Add Repository Configurations
 
 Create configuration files in `/etc/xbps.d/` pointing to our repositories (needed for both stable and git/nightly variants):
 
 ```sh
-echo "repository=https://void.danklinux.com/dms/current" | sudo tee /etc/xbps.d/dms.conf
-echo "repository=https://void.danklinux.com/danklinux/current" | sudo tee /etc/xbps.d/danklinux.conf
+echo "repository=https://void.duxlabs.dev/dms/current" | sudo tee /etc/xbps.d/dms.conf
+echo "repository=https://void.duxlabs.dev/dux-repo/current" | sudo tee /etc/xbps.d/dux.conf
 ```
 
 #### 2. Install DMS

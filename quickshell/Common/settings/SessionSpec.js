@@ -30,6 +30,9 @@ var LOCAL_SPEC = {
     updaterNotifiedCount: {
         def: 0
     },
+    repoMoveNoticeVersion: {
+        def: ""
+    },
     terminalOverride: {
         def: ""
     },

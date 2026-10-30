@@ -66,7 +66,7 @@ case "%{_arch}" in
 esac
 
 # Download dms-cli for target architecture
-wget -O %{_builddir}/dms-cli.gz "https://github.com/duxlabs-dev/dux-shell/releases/latest/download/dms-distropkg-${ARCH_SUFFIX}.gz" || {
+wget -O %{_builddir}/dms-cli.gz "https://github.com/duxlabs-dev/dux-shell/releases/download/v%{version}/dms-distropkg-${ARCH_SUFFIX}.gz" || {
   echo "Failed to download dms-cli for architecture %{_arch}"
   exit 1
 }

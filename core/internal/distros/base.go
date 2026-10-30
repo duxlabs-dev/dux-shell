@@ -502,7 +502,7 @@ func (b *BaseDistribution) runWithProgressStepTimeout(cmd *exec.Cmd, progressCha
 			progressChan <- InstallProgressMsg{
 				Phase:      phase,
 				Progress:   endProgress,
-				Step:       "Installation step complete",
+				Step:       stepMessage,
 				IsComplete: false,
 				LogOutput:  lastOutput,
 			}
@@ -541,7 +541,7 @@ func (b *BaseDistribution) runWithProgressStepTimeout(cmd *exec.Cmd, progressCha
 				progressChan <- InstallProgressMsg{
 					Phase:      phase,
 					Progress:   progress,
-					Step:       "Installing...",
+					Step:       stepMessage,
 					IsComplete: false,
 					LogOutput:  lastOutput,
 				}

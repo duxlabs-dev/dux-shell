@@ -5,6 +5,7 @@ import (
 
 	"github.com/duxlabs-dev/dux-go/ipc"
 	"github.com/duxlabs-dev/dux-go/ipc/params"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 )
 
@@ -31,6 +32,8 @@ func HandleRequest(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, m
 	case "sysupdate.releases":
 		force := params.BoolOpt(req.Params, "force", false)
 		conn.Respond(req.ID, m.Releases(force))
+	case "sysupdate.repoStatus":
+		conn.Respond(req.ID, hostRepoStatus())
 	case "sysupdate.setInterval":
 		seconds, err := params.Int(req.Params, "seconds")
 		if err != nil {
@@ -60,6 +63,39 @@ func handleUpgrade(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		return
 	}
 	conn.Respond(req.ID, m.GetState())
+}
+
+type RepoStatus struct {
+	Legacy  []string `json:"legacy"`
+	Command string   `json:"command"`
+}
+
+const repoMigrateCommand = "dms migrate dux"
+
+// Per call and file stats only: the shell asks once per connect.
+func hostRepoStatus() RepoStatus {
+	osInfo, err := distros.GetOSInfo()
+	if err != nil {
+		return repoStatus(nil)
+	}
+	distro, err := distros.NewDistribution(osInfo.Distribution.ID, nil)
+	if err != nil {
+		return repoStatus(nil)
+	}
+	return repoStatus(distro)
+}
+
+func repoStatus(distro distros.Distribution) RepoStatus {
+	status := RepoStatus{Legacy: []string{}, Command: repoMigrateCommand}
+	if distro == nil {
+		return status
+	}
+	moves, ok := distros.PlanRepoMoves(distro)
+	if !ok {
+		return status
+	}
+	status.Legacy = distros.LegacyRepoPaths(moves)
+	return status
 }
 
 func stringSliceOpt(p map[string]any, key string) []string {

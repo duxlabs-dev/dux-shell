@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-PPA_OWNER="avengemedia"
+PPA_OWNER="${PPA_OWNER:-duxlabs}"
 LAUNCHPAD_API="https://api.launchpad.net/1.0"
 SERIES_LIST=(resolute stonking)
 PACKAGE_FILTER="dms-git"

@@ -18,185 +18,141 @@ on:
         description: 'Release number (e.g., 1, 2, 3 for hotfixes)'
         required: false
         default: '1'
+      owners:
+        description: 'Copr owners to publish to'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - duxlabs
+          - avengemedia
 
 jobs:
-  determine-packages:
+  plan:
     runs-on: ubuntu-latest
     outputs:
-      packages: ${{ steps.set-packages.outputs.packages }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      version: ${{ steps.plan.outputs.version }}
+      release: ${{ steps.plan.outputs.release }}
     steps:
-      - name: Set package list
-        id: set-packages
+      - name: Plan owners and version
+        id: plan
+        env:
+          OWNERS: ${{ inputs.owners || 'all' }}
+          PACKAGE: ${{ inputs.package || 'dms' }}
+          VERSION: ${{ inputs.version }}
+          RELEASE: ${{ inputs.release || '1' }}
         run: |
-          PACKAGE_INPUT="${{ github.event.inputs.package || 'dms' }}"
-          echo "packages=[\"$PACKAGE_INPUT\"]" >> $GITHUB_OUTPUT
+          MATRIX=$(jq -cn --arg owners "$OWNERS" --arg pkg "$PACKAGE" '
+            [{owner: "duxlabs", suffix: ""}, {owner: "avengemedia", suffix: "_LEGACY"}]
+            | map(select($owners == "all" or .owner == $owners) | .package = $pkg)
+            | {include: .}')
+
+          if [ -z "$VERSION" ]; then
+            VERSION=$(curl -sL "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name' | sed 's/^v//')
+          fi
+          if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
+            echo "::error::Could not determine the latest release of ${{ github.repository }}"
+            exit 1
+          fi
+
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "release=$RELEASE" >> "$GITHUB_OUTPUT"
+          echo "Building $PACKAGE $VERSION-$RELEASE for: $(jq -r '[.include[].owner] | join(", ")' <<< "$MATRIX")"
 
   build-and-upload:
-    needs: determine-packages
+    name: ${{ matrix.package }} to ${{ matrix.owner }}
+    needs: plan
     runs-on: ubuntu-latest
     strategy:
-      matrix:
-        package: ${{ fromJSON(needs.determine-packages.outputs.packages) }}
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      VERSION: ${{ needs.plan.outputs.version }}
+      RELEASE: ${{ needs.plan.outputs.release }}
+      PACKAGE: ${{ matrix.package }}
+      COPR_PROJECT: ${{ matrix.owner }}/dms
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Determine version
-        id: version
-        run: |
-          # Get version from manual input or latest release
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-            echo "Using manual version: $VERSION"
-          else
-            VERSION=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r '.tag_name' | sed 's/^v//')
-            echo "Using latest release version: $VERSION"
-          fi
-
-          RELEASE="${{ github.event.inputs.release }}"
-          if [ -z "$RELEASE" ]; then
-            RELEASE="1"
-          fi
-
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "release=$RELEASE" >> $GITHUB_OUTPUT
-          echo "✅ Building ${{ matrix.package }} version: $VERSION-$RELEASE"
-
       - name: Setup build environment
         run: |
           sudo apt-get update
-          sudo apt-get install -y rpm wget curl jq gzip
+          sudo apt-get install -y rpm wget curl jq gzip python3-pip
           mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
-          echo "✅ RPM build environment ready"
 
       - name: Download release assets
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
           cd ~/rpmbuild/SOURCES
-
-          echo "📦 Downloading DMS QML source for v${VERSION}..."
-
-          # Download DMS QML source
-          wget "https://github.com/duxlabs-dev/dux-shell/releases/download/v${VERSION}/dms-qml.tar.gz" || {
-            echo "❌ Failed to download dms-qml.tar.gz for v${VERSION}"
+          wget "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/dms-qml.tar.gz" || {
+            echo "::error::Failed to download dms-qml.tar.gz for v${VERSION}"
             exit 1
           }
-
-          echo "✅ Source downloaded"
-          echo "Note: dms-cli binary will be downloaded during build based on target architecture"
           ls -lh
 
       - name: Generate stable spec file
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          RELEASE="${{ steps.version.outputs.release }}"
-          CHANGELOG_DATE="$(date '+%a %b %d %Y')"
-          PACKAGE="${{ matrix.package }}"
-
-          # Copy spec file from repository
-          cp distro/fedora/${PACKAGE}.spec ~/rpmbuild/SPECS/${PACKAGE}.spec
-
-          # Replace placeholders with actual values
-          sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" ~/rpmbuild/SPECS/${PACKAGE}.spec
-          sed -i "s/RELEASE_PLACEHOLDER/${RELEASE}/g" ~/rpmbuild/SPECS/${PACKAGE}.spec
-          sed -i "s/CHANGELOG_DATE_PLACEHOLDER/${CHANGELOG_DATE}/g" ~/rpmbuild/SPECS/${PACKAGE}.spec
-
-          echo "✅ Spec file generated for ${PACKAGE} v${VERSION}-${RELEASE}"
-          echo ""
-          echo "=== Spec file preview ==="
-          head -40 ~/rpmbuild/SPECS/${PACKAGE}.spec
+          SPEC=~/rpmbuild/SPECS/${PACKAGE}.spec
+          cp "distro/fedora/${PACKAGE}.spec" "$SPEC"
+          sed -i -e "s/VERSION_PLACEHOLDER/${VERSION}/g" \
+            -e "s/RELEASE_PLACEHOLDER/${RELEASE}/g" \
+            -e "s/CHANGELOG_DATE_PLACEHOLDER/$(date '+%a %b %d %Y')/g" "$SPEC"
+          head -40 "$SPEC"
 
       - name: Build SRPM
         id: build
         run: |
-          cd ~/rpmbuild/SPECS
-          PACKAGE="${{ matrix.package }}"
-
-          echo "🔨 Building SRPM for ${PACKAGE}..."
-          rpmbuild -bs ${PACKAGE}.spec
-
+          rpmbuild -bs ~/rpmbuild/SPECS/${PACKAGE}.spec
           SRPM=$(ls ~/rpmbuild/SRPMS/${PACKAGE}-*.src.rpm | tail -n 1)
-          SRPM_NAME=$(basename "$SRPM")
-
-          echo "srpm_path=$SRPM" >> $GITHUB_OUTPUT
-          echo "srpm_name=$SRPM_NAME" >> $GITHUB_OUTPUT
-
-          echo "✅ SRPM built: $SRPM_NAME"
-          echo ""
-          echo "=== SRPM Info ==="
+          echo "srpm_path=$SRPM" >> "$GITHUB_OUTPUT"
+          echo "srpm_name=$(basename "$SRPM")" >> "$GITHUB_OUTPUT"
           rpm -qpi "$SRPM"
 
+      # Per-owner name: two legs uploading the same artifact name get a 409.
       - name: Upload SRPM artifact
         uses: actions/upload-artifact@v5
         with:
-          name: ${{ matrix.package }}-stable-srpm-${{ steps.version.outputs.version }}
+          name: ${{ matrix.package }}-stable-srpm-${{ needs.plan.outputs.version }}-${{ matrix.owner }}
           path: ${{ steps.build.outputs.srpm_path }}
           retention-days: 90
 
       - name: Install Copr CLI
+        env:
+          COPR_LOGIN: ${{ secrets[format('COPR_LOGIN{0}', matrix.suffix)] }}
+          COPR_TOKEN: ${{ secrets[format('COPR_TOKEN{0}', matrix.suffix)] }}
         run: |
-          sudo apt-get install -y python3-pip
+          : "${COPR_LOGIN:?COPR_LOGIN${{ matrix.suffix }} is not set}" "${COPR_TOKEN:?COPR_TOKEN${{ matrix.suffix }} is not set}"
           pip3 install copr-cli
-
           mkdir -p ~/.config
-          cat > ~/.config/copr << EOF
-          [copr-cli]
-          login = ${{ secrets.COPR_LOGIN }}
-          username = avengemedia
-          token = ${{ secrets.COPR_TOKEN }}
-          copr_url = https://copr.fedorainfracloud.org
-          EOF
-          chmod 600 ~/.config/copr
-
-          echo "✅ Copr CLI configured"
-
-      - name: Determine Copr project
-        id: copr_project
-        run: |
-          PACKAGE="${{ matrix.package }}"
-          if [ "$PACKAGE" = "dms" ]; then
-            COPR_PROJECT="avengemedia/dms"
-          else
-            echo "❌ Unknown package: $PACKAGE"
-            exit 1
-          fi
-          echo "copr_project=$COPR_PROJECT" >> $GITHUB_OUTPUT
-          echo "✅ Copr project: $COPR_PROJECT"
+          umask 077
+          printf '[copr-cli]\nlogin = %s\nusername = %s\ntoken = %s\ncopr_url = https://copr.fedorainfracloud.org\n' \
+            "$COPR_LOGIN" "${{ matrix.owner }}" "$COPR_TOKEN" > ~/.config/copr
 
       - name: Upload to Copr
         run: |
           SRPM="${{ steps.build.outputs.srpm_path }}"
-          VERSION="${{ steps.version.outputs.version }}"
-          COPR_PROJECT="${{ steps.copr_project.outputs.copr_project }}"
-          PACKAGE="${{ matrix.package }}"
-
-          echo "🚀 Uploading ${PACKAGE} SRPM to ${COPR_PROJECT}..."
-          echo "   SRPM: $(basename $SRPM)"
-          echo "   Version: $VERSION"
-
+          echo "Uploading $(basename "$SRPM") to ${COPR_PROJECT}"
           BUILD_OUTPUT=$(copr-cli build "$COPR_PROJECT" "$SRPM" --nowait 2>&1)
           echo "$BUILD_OUTPUT"
 
           BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -oP 'Build was added to.*\K[0-9]+' || echo "unknown")
-
           if [ "$BUILD_ID" != "unknown" ]; then
-            echo "✅ Build submitted successfully!"
-            echo "🔗 https://copr.fedorainfracloud.org/coprs/${COPR_PROJECT}/build/$BUILD_ID/"
+            echo "https://copr.fedorainfracloud.org/coprs/${COPR_PROJECT}/build/$BUILD_ID/"
           else
-            echo "⚠️  Could not extract build ID, but upload may have succeeded"
+            echo "::warning::Could not extract build ID, but upload may have succeeded"
           fi
 
       - name: Build summary
         if: always()
         run: |
-          PACKAGE="${{ matrix.package }}"
-          COPR_PROJECT="${{ steps.copr_project.outputs.copr_project }}"
-          echo "### 🎉 ${PACKAGE} Stable Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Package:** ${PACKAGE}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version:** ${{ steps.version.outputs.version }}-${{ steps.version.outputs.release }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **SRPM:** ${{ steps.build.outputs.srpm_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Project:** https://copr.fedorainfracloud.org/coprs/${COPR_PROJECT}/" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Stable release has been built and uploaded to Copr!" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### ${PACKAGE} stable to ${{ matrix.owner }}"
+            echo ""
+            echo "- **Version:** ${VERSION}-${RELEASE}"
+            echo "- **SRPM:** ${{ steps.build.outputs.srpm_name }}"
+            echo "- **Project:** https://copr.fedorainfracloud.org/coprs/${COPR_PROJECT}/"
+          } >> "$GITHUB_STEP_SUMMARY"

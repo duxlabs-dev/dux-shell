@@ -30,6 +30,10 @@ var greeterCmd = &cobra.Command{
 	},
 }
 
+func greeterRepoURL(config distros.DistroConfig) string {
+	return config.Constructor(config, nil).GetPackageMapping(0)["dms-greeter"].RepoURL
+}
+
 func isLegacyWrapperScript(path string) bool {
 	file, err := os.Open(path)
 	if err != nil {
@@ -63,13 +67,14 @@ func greeterPackageInstallHint() string {
 	case distros.FamilySUSE:
 		return "Install with 'sudo zypper install dms-greeter' (requires Dux Labs OBS repo — see " + site.Docs + "/dms-greeter/installation#opensuse--derivatives)"
 	case distros.FamilyUbuntu:
-		return "Install with 'sudo apt install dms-greeter' (requires ppa:avengemedia/danklinux: sudo add-apt-repository ppa:avengemedia/danklinux)"
+		repo := greeterRepoURL(config)
+		return fmt.Sprintf("Install with 'sudo apt install dms-greeter' (requires %s: sudo add-apt-repository %s)", repo, repo)
 	case distros.FamilyFedora:
-		return "Install with 'sudo dnf install dms-greeter' (requires COPR: sudo dnf copr enable avengemedia/danklinux)"
+		return fmt.Sprintf("Install with 'sudo dnf install dms-greeter' (requires COPR: sudo dnf copr enable %s)", greeterRepoURL(config))
 	case distros.FamilyArch:
 		return "Install from AUR with 'paru -S dux-greeter-bin' or 'yay -S dux-greeter-bin'"
 	case distros.FamilyVoid:
-		return "Install with 'sudo xbps-install -S dms-greeter' (requires DMS XBPS repo: echo 'repository=" + distros.VoidDMSRepo + "' | sudo tee /etc/xbps.d/dms.conf)"
+		return "Install with 'sudo xbps-install -S dms-greeter' (requires DMS XBPS repo: echo 'repository=" + distros.VoidDepsRepo + "' | sudo tee /etc/xbps.d/dux.conf)"
 	default:
 		return "Install the dms-greeter package for your distribution"
 	}

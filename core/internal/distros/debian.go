@@ -159,11 +159,11 @@ func (d *DebianDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 		// DMS packages from OBS with variant support
 		"dms (Dux Shell)": d.getDmsMapping(variants["dms (Dux Shell)"]),
 		"quickshell":      d.getQuickshellMapping(variants["quickshell"]),
-		"dms-greeter":     variantMapping("dms-greeter", variants["dms-greeter"], RepoTypeOBS, "home:AvengeMedia:danklinux"),
-		"matugen":         {Name: "matugen", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
-		"ghostty":         {Name: "ghostty", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
-		"danksearch":      {Name: "danksearch", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
-		"dankcalendar":    variantMapping("dankcalendar", variants["dankcalendar"], RepoTypeOBS, "home:AvengeMedia:danklinux"),
+		"dms-greeter":     variantMapping("dms-greeter", variants["dms-greeter"], RepoTypeOBS, obsDeps),
+		"matugen":         {Name: "matugen", Repository: RepoTypeOBS, RepoURL: obsDeps},
+		"ghostty":         {Name: "ghostty", Repository: RepoTypeOBS, RepoURL: obsDeps},
+		"danksearch":      {Name: "danksearch", Repository: RepoTypeOBS, RepoURL: obsDeps},
+		"dankcalendar":    variantMapping("dankcalendar", variants["dankcalendar"], RepoTypeOBS, obsDeps),
 	}
 
 	if wm == deps.WindowManagerNiri {
@@ -177,14 +177,14 @@ func (d *DebianDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 
 func (d *DebianDistribution) getDmsMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "dms-git", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:dms-git"}
+		return PackageMapping{Name: "dms-git", Repository: RepoTypeOBS, RepoURL: obsDMSGit}
 	}
-	return PackageMapping{Name: "dms", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:dms"}
+	return PackageMapping{Name: "dms", Repository: RepoTypeOBS, RepoURL: obsDMS}
 }
 
 func (d *DebianDistribution) getQuickshellMapping(variant deps.PackageVariant) PackageMapping {
 	if forceQuickshellGit || variant == deps.VariantGit {
-		return PackageMapping{Name: "quickshell-git", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"}
+		return PackageMapping{Name: "quickshell-git", Repository: RepoTypeOBS, RepoURL: obsDeps}
 	}
 	// Debian 13 ships stable quickshell in trixie-backports only.
 	if d.debianNeedsQuickshellBackports() {
@@ -244,16 +244,16 @@ func (d *DebianDistribution) ensureQuickshellBackports(ctx context.Context, syst
 
 func (d *DebianDistribution) getNiriMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "niri-git", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"}
+		return PackageMapping{Name: "niri-git", Repository: RepoTypeOBS, RepoURL: obsDeps}
 	}
-	return PackageMapping{Name: "niri", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"}
+	return PackageMapping{Name: "niri", Repository: RepoTypeOBS, RepoURL: obsDeps}
 }
 
 func (d *DebianDistribution) getXwaylandSatelliteMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "xwayland-satellite-git", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"}
+		return PackageMapping{Name: "xwayland-satellite-git", Repository: RepoTypeOBS, RepoURL: obsDeps}
 	}
-	return PackageMapping{Name: "xwayland-satellite", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"}
+	return PackageMapping{Name: "xwayland-satellite", Repository: RepoTypeOBS, RepoURL: obsDeps}
 }
 
 func (d *DebianDistribution) InstallPrerequisites(ctx context.Context, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
@@ -491,6 +491,62 @@ func (d *DebianDistribution) aptInstallArgs(packages []string, minimal bool) []s
 	return append(args, packages...)
 }
 
+func (d *DebianDistribution) RepoMoves() []RepoMove {
+	if !obsMigrationReady || d.isPika() {
+		return nil
+	}
+	return obsAptChannel.moves(repoPathExists)
+}
+
+func (d *DebianDistribution) ApplyRepoMoves(ctx context.Context, moves []RepoMove, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
+	if err := d.enableOBSRepos(ctx, repoMoveAdds(moves), sudoPassword, progressChan); err != nil {
+		return err
+	}
+	removes := repoMoveRemoves(moves)
+	for _, move := range removes {
+		command := fmt.Sprintf("rm -f %s %s", obsAptListFile(move.Old), obsAptKeyring(move.Old))
+		progressChan <- InstallProgressMsg{
+			Phase:       PhaseSystemPackages,
+			Progress:    0.30,
+			Step:        fmt.Sprintf("Removing OBS repo %s...", move.Old),
+			NeedsSudo:   true,
+			CommandInfo: "sudo " + command,
+		}
+		if err := d.runWithProgress(privescExec(ctx, sudoPassword, command), progressChan, PhaseSystemPackages, 0.30, 0.35); err != nil {
+			return fmt.Errorf("failed to remove OBS repo %s: %w", move.Old, err)
+		}
+	}
+	if len(removes) == 0 {
+		return nil
+	}
+	return d.aptUpdate(ctx, sudoPassword, progressChan)
+}
+
+func (d *DebianDistribution) RepoMoveCommands(moves []RepoMove) []string {
+	osInfo, err := GetOSInfo()
+	if err != nil {
+		osInfo = &OSInfo{}
+	}
+	return debianRepoMoveCommands(moves, debianOBSRepoVersion(osInfo, readDebianAPTSuites()), debianRepoArchitecture(osInfo.Architecture))
+}
+
+func debianRepoMoveCommands(moves []RepoMove, dist, arch string) []string {
+	var commands []string
+	for _, add := range repoMoveAdds(moves) {
+		baseURL := obsBaseURL(add.RepoURL, dist)
+		commands = append(commands,
+			fmt.Sprintf("curl -fsSL %s/Release.key | gpg --dearmor | sudo tee %s", baseURL, obsAptKeyring(add.RepoURL)),
+			fmt.Sprintf("echo 'deb [signed-by=%s arch=%s] %s/ /' | sudo tee %s", obsAptKeyring(add.RepoURL), arch, baseURL, obsAptListFile(add.RepoURL)))
+	}
+	for _, move := range repoMoveRemoves(moves) {
+		commands = append(commands, fmt.Sprintf("sudo rm -f %s %s", obsAptListFile(move.Old), obsAptKeyring(move.Old)))
+	}
+	if len(commands) > 0 {
+		commands = append(commands, "sudo apt-get update")
+	}
+	return commands
+}
+
 func (d *DebianDistribution) enableOBSRepos(ctx context.Context, obsPkgs []PackageMapping, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
 	enabledRepos := make(map[string]bool)
 
@@ -506,20 +562,17 @@ func (d *DebianDistribution) enableOBSRepos(ctx context.Context, obsPkgs []Packa
 		if pkg.RepoURL != "" && !enabledRepos[pkg.RepoURL] {
 			d.log(fmt.Sprintf("Enabling OBS repository: %s", pkg.RepoURL))
 
-			// RepoURL format: "home:AvengeMedia:danklinux"
-			repoPath := strings.ReplaceAll(pkg.RepoURL, ":", ":/")
-			repoName := strings.ReplaceAll(pkg.RepoURL, ":", "-")
-			baseURL := fmt.Sprintf("https://download.opensuse.org/repositories/%s/%s", repoPath, obsRepo)
+			baseURL := obsBaseURL(pkg.RepoURL, obsRepo)
 
 			// Check if repository already exists
-			listFile := fmt.Sprintf("/etc/apt/sources.list.d/%s.list", repoName)
+			listFile := obsAptListFile(pkg.RepoURL)
 			if debianOBSListFileMatches(listFile, obsRepo) {
 				d.log(fmt.Sprintf("OBS repo %s already exists, skipping", pkg.RepoURL))
 				enabledRepos[pkg.RepoURL] = true
 				continue
 			}
 
-			keyringPath := fmt.Sprintf("/etc/apt/keyrings/%s.gpg", repoName)
+			keyringPath := obsAptKeyring(pkg.RepoURL)
 
 			// Create keyrings directory if it doesn't exist
 			mkdirCmd := privesc.ExecCommand(ctx, sudoPassword, "mkdir -p /etc/apt/keyrings")

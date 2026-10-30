@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# Download / publish an XBPS repository prefix on Cloudflare R2.
-# Shared by dux-shell and dux-repo (same prefix); keep both copies identical.
+# Shared by dux-shell and dux-repo, which both write dms/current; keep both copies identical.
 # ETag guard: publish aborts if another writer replaced x86_64-repodata mid-run.
 
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 download|publish" >&2
+    echo "usage: $0 download|is-indexed|index|publish" >&2
     exit 2
 }
 
@@ -76,6 +75,60 @@ download() {
         --only-show-errors
 
     cp -a "$REPOSITORY_DIR/current/." "$REPOSITORY_DIR/previous-current/"
+}
+
+# Staged pkgvers count as indexed too.
+indexed_pkgvers() {
+    local repodata="$REPOSITORY_DIR/current/x86_64-repodata" member
+    [[ -s "$repodata" ]] || return 0
+    for member in index.plist stage.plist; do
+        tar -xOf "$repodata" "$member" 2>/dev/null | python3 -c '
+import plistlib, sys
+data = sys.stdin.buffer.read()
+for pkg in (plistlib.loads(data).values() if data.strip() else ()):
+    print(pkg["pkgver"])
+' || true
+    done
+}
+
+# Also catches packages uploaded by a run that died before its repodata PUT.
+is_indexed() {
+    local known file
+    shopt -s nullglob
+    known="$(indexed_pkgvers)"
+    for file in "$REPOSITORY_DIR"/current/*.xbps; do
+        if ! grep -qxF "$(xbps-uhelper binpkgver "$(basename "$file")")" <<<"$known"; then
+            echo "$(basename "$file") is not in ${R2_PREFIX}/current/x86_64-repodata"
+            return 1
+        fi
+    done
+}
+
+index() {
+    require_env XBPS_PRIVATE_KEY
+    local dir="$REPOSITORY_DIR/current" sig
+
+    shopt -s nullglob
+    local pkgs=("$dir"/*.xbps)
+    if (( ${#pkgs[@]} == 0 )); then
+        echo "error: no .xbps files to index in $dir" >&2
+        exit 1
+    fi
+
+    rm -f "$dir"/*.sig
+    xbps-rindex -a "${pkgs[@]}"
+    xbps-rindex --remove-obsoletes "$dir"
+
+    # Unchanged packages keep their .sig2 byte-for-byte; drop those of removed packages.
+    for sig in "$dir"/*.sig2; do
+        [[ -f "${sig%.sig2}" ]] || rm -f "$sig"
+    done
+
+    XBPS_KEY_FILE="$(mktemp)"
+    trap 'rm -f "$XBPS_KEY_FILE"' EXIT
+    printf '%s\n' "$XBPS_PRIVATE_KEY" > "$XBPS_KEY_FILE"
+    xbps-rindex --sign --signedby "AvengeMedia <AvengeMedia.US@gmail.com>" --privkey "$XBPS_KEY_FILE" "$dir"
+    xbps-rindex --sign-pkg --privkey "$XBPS_KEY_FILE" "$dir"/*.xbps
 }
 
 build_manifest() {
@@ -226,6 +279,8 @@ publish() {
 
 case "${1:-}" in
     download) download ;;
+    is-indexed) is_indexed ;;
+    index) index ;;
     publish) publish ;;
     *) usage ;;
 esac
