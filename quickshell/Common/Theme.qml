@@ -1273,6 +1273,7 @@ Singleton {
     }
 
     property real fontScale: typeof SettingsData !== "undefined" ? SettingsData.fontScale : 1.0
+    property real iconScale: typeof SettingsData !== "undefined" ? SettingsData.iconScale : 1.0
 
     property real spacingXXS: 2
     property real spacingXS: 4
@@ -1289,10 +1290,10 @@ Singleton {
     property real fontSizeDisplay: Math.round(fontScale * 36)
     property real fontSizeDisplayLarge: Math.round(fontScale * 57)
     property real barHeight: 48
-    property real iconSize: 24
-    property real iconSizeSmall: 16
-    property real iconSizeLarge: 32
-    readonly property real iconSizeMedium: 20
+    property real iconSize: Math.round(iconScale * 24)
+    property real iconSizeSmall: Math.round(iconScale * 16)
+    property real iconSizeLarge: Math.round(iconScale * 32)
+    readonly property real iconSizeMedium: Math.round(iconScale * 20)
     readonly property int smallBreakpoint: 480
     readonly property int mediumBreakpoint: 768
     readonly property real iconButtonSize: 40

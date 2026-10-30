@@ -27,6 +27,9 @@ function followFocusMode(v) {
 }
 
 var LOCAL_SPEC = {
+    iconScale: {
+        def: 1.0
+    },
     dockConfigs: {
         def: [DockConfig.create("dock", "Dock")]
     },

@@ -8198,6 +8198,22 @@
     "description": "Fonts, scale, animations"
   },
   {
+    "section": "iconScale",
+    "label": "Icon scale",
+    "tabIndex": 14,
+    "category": "Fonts & motion",
+    "keywords": [
+      "animation",
+      "fonts",
+      "icon",
+      "motion",
+      "scale",
+      "size",
+      "text",
+      "zoom"
+    ]
+  },
+  {
     "section": "modalAnimationDuration",
     "label": "Modals",
     "tabIndex": 14,
