@@ -109,7 +109,7 @@ Rectangle {
                 width: parent.width - Theme.spacingL * 2
 
                 AppIconRenderer {
-                    visible: !(root.item?.type === "dmenu" && root.item?.data?.nonSelectable && !root.item?.icon)
+                    visible: (SettingsData.dankLauncherV2ShowAppIcons || root.item?.type !== "app") && !(root.item?.type === "dmenu" && root.item?.data?.nonSelectable && !root.item?.icon)
                     fallbackRadius: Theme.fullRadius(width, height)
                     fallbackBackgroundColor: Theme.primaryContainer
                     fallbackTextColor: Theme.onPrimaryContainer

@@ -208,6 +208,14 @@ Item {
                 onToggled: checked => SettingsData.set("dankLauncherV2ShowSourceBadges", checked)
             }
 
+            SettingsToggleRow {
+                settingKey: "dankLauncherV2ShowAppIcons"
+                tags: ["launcher", "appearance", "icon", "app", "hide"]
+                text: I18n.tr("Show app icons", "Toggle icons in launcher list and grid results")
+                checked: SettingsData.dankLauncherV2ShowAppIcons
+                onToggled: checked => SettingsData.set("dankLauncherV2ShowAppIcons", checked)
+            }
+
             SettingsControlledBy {
                 visible: SettingsData.frameEnabled
                 parentModal: root.parentModal
