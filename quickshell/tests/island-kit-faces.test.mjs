@@ -5,8 +5,8 @@ import { readFileSync } from "node:fs";
 import { loadScript } from "./qml-script.mjs";
 
 const C = loadScript(new URL("../DCommon/Common/Contrast.js", import.meta.url));
-// Contrast.mix builds its colour with Qt.rgba, as QML gives it.
-for (const context of [C, K.Contrast])
+// Contrast.mix and the kit build their colours with Qt.rgba, as QML gives it.
+for (const context of [C, K.Contrast, K])
     context.Qt = { rgba: (r, g, b, a) => ({ r, g, b, a }) };
 
 test("a closing bubble fuses only when it merges itself, never as the island's own face or activity closes", () => {
@@ -75,14 +75,27 @@ test("a card held open over IPC goes with its bubble, never stays for the one th
     assert.equal(K.cardHeld(K.heldKey(volume), [{ "id": "system", "kind": "brightness" }]), false, "another machine info");
 });
 
-test("the alert liquid keeps 3:1 on its pill: a pale error falls back to the dark container tone", () => {
-    const white = { "r": 1, "g": 0.97, "b": 1 }, dark = { "r": 0.08, "g": 0.07, "b": 0.09 };
-    const pale = { "r": 0.95, "g": 0.72, "b": 0.71 }, deep = { "r": 0.25, "g": 0.05, "b": 0.04 }, red = { "r": 0.73, "g": 0.1, "b": 0.1 };
-    assert.equal(K.legible(pale, deep, white, 0.75, 3), deep, "stock error in light mode");
-    assert.equal(K.legible(pale, deep, dark, 0.75, 3), pale, "stock error in dark mode");
-    assert.equal(K.legible(red, deep, white, 0.75, 3), red, "a theme with a real light error keeps it");
-    assert.ok(Math.abs(K.contrast(white, { "r": 0, "g": 0, "b": 0 }) - 20.1) < 0.2);
-    assert.equal(K.contrast(red, red), 1);
+test("a card held open over IPC opens on its bubble's page, not on the wing's face", () => {
+    const shot = { "id": "notification:13" }, chat = { "id": "notification:12" }, media = { "id": "media" };
+    assert.equal(K.heldPage(K.heldKey(chat), [shot, chat, media]), 1, "the named bubble, behind the face");
+    assert.equal(K.heldPage(K.heldKey(shot), [shot, chat, media]), 0, "the face itself");
+    assert.equal(K.heldPage("", [shot, chat]), 0, "let go: back to the face");
+    assert.equal(K.heldPage(K.heldKey(chat), [shot]), 0, "its bubble left: the face");
+});
+
+test("the liquid keeps 3:1 on its pill and on its track: a pale tone falls down the list, each one checked", () => {
+    const hex = h => ({ "r": parseInt(h.slice(1, 3), 16) / 255, "g": parseInt(h.slice(3, 5), 16) / 255, "b": parseInt(h.slice(5, 7), 16) / 255 });
+    // Stock Blue (StockThemes.js): its tertiary is its secondary, its error Theme.qml's fallback, the error container's text
+    // half way between that and the text.
+    const light = hex("#f7f9ff"), dark = hex("#101418"), sky = hex("#42a5f5"), pale = hex("#8ab4f8"), ink = hex("#181c20");
+    const error = hex("#f2b8b5"), errorText = hex("#856a6a"), red = hex("#b91a1a");
+    assert.equal(K.legible([sky, ink], light, 0.75, 0.08, 3), ink, "light tertiary, 1.98:1");
+    assert.equal(K.legible([error, errorText, ink], light, 0.75, 0.08, 3), ink, "light error and its container's text, 2.93:1");
+    assert.equal(K.legible([red, errorText, ink], light, 0.75, 0.08, 3), red, "a theme with a real light error keeps it");
+    assert.equal(K.legible([pale, ink], dark, 0.75, 0.24, 3), pale, "dark tertiary");
+    assert.equal(K.legible([hex("#808fa5"), pale], dark, 0.75, 0.24, 3), pale, "3.69:1 on the pill, 2.60:1 on its track");
+    assert.equal(K.legible([error, errorText, ink], dark, 0.75, 0.24, 3), error, "dark error");
+    assert.equal(K.legible([error, sky], light, 0.75, 0.08, 3), sky, "none reaches it: the one that reads best");
 });
 
 test("an alert's rings, read off their clock: two leave a gap apart, each is gone after its span, then it is over", () => {
@@ -212,4 +225,38 @@ test("a ringing call rings again after a pause, forever, and its shape swings on
     assert.equal(K.ringSwing(50, 0, 0, 2, 0, 0, 220, 0.6, 1), 0);
     // A negative damping ratio would grow: still, as without stiffness.
     assert.equal(K.ringSwing(50, span, gap, 2, pause, 0, 220, -0.5, 1), 0);
+});
+
+test("the upright pill's gauge starts under the icon's shape, by the flat track's gap, and leaves the icon alone on top", () => {
+    const size = 32, gap = 3, inset = 4;
+    // Upright, three pills tall: the icon's shape fills the top pill, the gauge the rest less the gap and the bottom inset.
+    assert.equal(K.uprightGaugeTop(size, gap, inset, 1), 35);
+    assert.equal(K.uprightGaugeHeight(96, size, gap, inset, 1), 57);
+    // The standing value (centred between the gap and the inset) sits in the gauge's middle.
+    assert.equal(K.uprightGaugeTop(size, gap, inset, 1) + K.uprightGaugeHeight(96, size, gap, inset, 1) / 2, (size + gap + 96 - inset) / 2);
+    // Flat, it is the whole pill inside its inset, never empty (its liquid's spring settles by the pixel).
+    assert.equal(K.uprightGaugeTop(size, gap, inset, 0), 4);
+    assert.equal(K.uprightGaugeHeight(32, size, gap, inset, 0), 24);
+    // Halfway up, halfway under; never negative.
+    assert.equal(K.uprightGaugeTop(size, gap, inset, 0.5), 19.5);
+    assert.equal(K.uprightGaugeHeight(30, size, gap, inset, 1), 0);
+});
+
+test("a countdown's track stands 3:1 off every island ground and its fill 3:1 off the track, where a theme allows it", () => {
+    const white = { r: 1, g: 1, b: 1, a: 1 };
+    for (const [name, colours] of Object.entries(themes)) {
+        const theme = themeOf(colours);
+        const [fill, alpha] = K.countdownTones(theme, name.endsWith("light"));
+        const worst = Math.min(...K.islandGrounds.map(role => {
+            const track = C.mix(theme[role], fill, alpha);
+            return Math.min(C.ratio(track, theme[role]), C.ratio(fill, track));
+        }));
+        // Monochrome dark's brightest ground is under 9:1 from white: no track splits it in two 3:1 steps.
+        if (name === "Monochrome dark") {
+            assert.ok(C.ratio(white, theme.surfaceBright) < 9);
+            assert.ok(worst > 2.7, `${name}: the closest it comes, ${worst.toFixed(2)}`);
+            continue;
+        }
+        assert.ok(worst >= K.markContrast, `${name}: ${worst.toFixed(2)}`);
+    }
 });

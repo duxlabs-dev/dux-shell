@@ -144,3 +144,24 @@ test("the fusion's glow: a halo born at the contact, spreading like a wave on th
     assert.ok(at(contact + 1).wave > 0.2 && at(contact + 1).glow > 0.2);
     assert.ok(at(contact + 8).glow < 0.01 && at(contact + 8).swell < 0.02);
 });
+
+test("a bubble is opaque two thirds into its birth and grows from half its size, overshoot held", () => {
+    assert.deepEqual([0, 1 / 3, 2 / 3, 1, 1.2].map(p => K.appearOpacity(p)), [0, 0.5, 1, 1, 1]);
+    assert.deepEqual([0, 0.5, 1, 1.2, NaN].map(p => K.appearScale(p)), [0.5, 0.75, 1, 1, 0.5]);
+});
+
+test("the fusion lights the island's edge with the launcher closed too: flat pill or tile, both sides", () => {
+    // The shape flows from where the wing gathered (beside the island, one gap away), never from where its icon sat on the
+    // long open pill: measured from there, a flat pill's shape never reached the island and its edge never lit.
+    const size = 32, reach = 1.5;
+    for (const gap of [4, 12]) {
+        const contact = K.fuseContact(gap, size, reach);
+        assert.ok(contact > 0 && contact < 1, `gap ${gap}: contact ${contact}`);
+        let lit = 0;
+        for (let wt = 0; wt < 12; wt += 0.05)
+            lit = Math.max(lit, K.fusionPhases(wt, contact).glow);
+        assert.ok(lit > 0.5, `gap ${gap}: glow ${lit}`);
+    }
+    // A flat pill on a quiet island (the clock) fuses.
+    assert.equal(K.closeStyle({ "inPlace": true, "reduced": false, "occupantBefore": "home|", "occupantNow": "home|" }), "fuse");
+});

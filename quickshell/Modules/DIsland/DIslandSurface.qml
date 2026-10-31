@@ -144,6 +144,11 @@ Item {
         onTriggered: root.bubblesMade = false
     }
 
+    // IslandBubbles.pressBubble, for the bubble IPC; false while the bubbles are not made.
+    function pressBubble(bubble, action) {
+        return root.bubblesItem?.pressBubble(bubble, action) ?? false;
+    }
+
     signal scrollWheel(var wheel)
     signal bubbleActivated(var bubble)
     signal bubbleDismissed(var bubble)

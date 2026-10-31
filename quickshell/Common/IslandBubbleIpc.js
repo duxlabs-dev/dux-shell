@@ -7,7 +7,9 @@ function bubbleName(bubble) {
 }
 
 // The bubble IPC on a host's body (IslandBarHost): "open" brings the bubble named which into the island, "dismiss" puts
-// it away, as a click and a right click do.
+// it away, as a click and a right click do; "tile" is a left click on its wing (with the launcher open, `island open
+// launcher`, the right wing's tile list opens or closes; otherwise the bubble comes in), "card" holds its card open or
+// lets it go, as a hover does.
 function ipcBubble(body, action, which, screenName) {
     if (!body?.bringBubble)
         return "DANK_ISLAND_UNAVAILABLE";
@@ -18,8 +20,10 @@ function ipcBubble(body, action, which, screenName) {
         body.bringBubble(bubble);
     else if (action === "dismiss")
         body.dismissBubble(bubble);
-    else
+    else if (action !== "tile" && action !== "card")
         return `DANK_ISLAND_BUBBLE_ACTION_UNKNOWN: ${action}`;
+    else if (!body.pressBubble(bubble, action))
+        return `DANK_ISLAND_BUBBLE_UNAVAILABLE: ${which}`;
     return `DANK_ISLAND_BUBBLE_${action.toUpperCase()}: ${which}\t${screenName}`;
 }
 

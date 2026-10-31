@@ -154,7 +154,7 @@ Item {
         }
     }
 
-    // As on every open card (BubbleCardBase): closes it and the info goes.
+    // Closes the card, and the info goes with it.
     IslandButton {
         id: closeButton
 

@@ -177,6 +177,16 @@ function inkCentredX(width, rowWidth, lead, trail) {
     return Math.round((width - rowWidth + trail - lead) / 2);
 }
 
+// The upright pill's gauge (track and liquid), t = 0 flat to 1 upright: the whole pill inside its inset while flat (never
+// empty: its liquid's spring settles by the pixel), under the icon's shape by the flat track's gap once upright.
+function uprightGaugeTop(iconSide, gap, inset, t) {
+    return inset + (iconSide + gap - inset) * t;
+}
+
+function uprightGaugeHeight(height, iconSide, gap, inset, t) {
+    return Math.max(0, height - uprightGaugeTop(iconSide, gap, inset, t) - inset);
+}
+
 // DMS's animation speed stretches time: k / f² and c / f keep the spring's shape, at most 1 / minStretch times faster.
 var minStretch = 0.05;
 function spring(name, baseDuration) {
@@ -323,6 +333,12 @@ function fusionPhases(wt, contact) {
     };
 }
 
+// Where along its way the fusing shape touches the island: it flows from where the wing gathered (one pill of size, gap
+// away from the island's edge), the same flat or upright, whatever the open pill's length was.
+function fuseContact(gap, size, reach) {
+    return Math.max(0, Math.min(1, (gap + size / 2) / (size * reach)));
+}
+
 // A costly frame is redrawn once `every` refreshes went by (within half of one, as DMS's timer ticks off vsync) and
 // something moved minStepPx.
 var minStepPx = 0.5;
@@ -406,6 +422,11 @@ function cardHeld(held, items) {
     return held !== "" && items.some(bubble => heldKey(bubble) === held);
 }
 
+// The page of the wing's card that shows the held bubble: the face's (0) once it is let go or has left.
+function heldPage(held, items) {
+    return Math.max(0, items.findIndex(bubble => heldKey(bubble) === held));
+}
+
 // WCAG contrast of two colours ({r, g, b} in 0..1, as a QML color).
 function contrast(a, b) {
     const lum = c => [c.r, c.g, c.b].map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
@@ -413,8 +434,9 @@ function contrast(a, b) {
     return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
 
-// A liquid tone that reads on its pill: `tone`, laid at `alpha` over `surface`, if it keeps `min` contrast with it, else
-// `fallback` (a stock theme's error is pale in light mode; its container's text tone is not).
+// A liquid tone that reads on its pill: the first of `tones` that, laid at `alpha` over `surface`, keeps `min` contrast
+// with the surface and with its own track (the tone at `trackAlpha` over it), else the one that reads best (a stock
+// light theme's tertiary and error are pale; its text tone, last, is not).
 var legibleMin = 3;
 // Contrast.mix on plain {r, g, b}: Contrast.mix returns a Qt.rgba, which the node tests have no Qt for.
 function laidOver(tone, surface, alpha) {
@@ -424,11 +446,17 @@ function laidOver(tone, surface, alpha) {
         "b": surface.b + (tone.b - surface.b) * alpha
     };
 }
-function legible(tone, fallback, surface, alpha, min) {
-    return contrast(laidOver(tone, surface, alpha), surface) >= min ? tone : fallback;
+function legible(tones, surface, alpha, trackAlpha, min) {
+    let best = tones[0], bestRatio = -1;
+    for (const tone of tones) {
+        const liquid = laidOver(tone, surface, alpha);
+        const worst = Math.min(Contrast.ratio(liquid, surface), Contrast.ratio(liquid, laidOver(tone, surface, trackAlpha)));
+        if (worst >= min)
+            return tone;
+        if (worst > bestRatio) {
+            best = tone;
+            bestRatio = worst;
+        }
+    }
+    return best;
 }
-
-// The A1 battery glyph's geometry (BubbleChargeGlyph): its pile is 10 of the 19 units of its box, so the flat pill's
-// value sits closer to it than to a full-width icon.
-var batteryPileUnits = 10;
-var batteryBoxUnits = 19;

@@ -34,3 +34,14 @@ test("the bubble IPC opens or puts away the bubble it names, the second of a kin
     assert.equal(ipc.ipcBubble(null, "open", "machine", ""), "DANK_ISLAND_UNAVAILABLE");
     assert.equal(done.length, 3, "nothing runs on a refusal");
 });
+
+test("the keyboard turns a bubble's tile and holds its card open as the pointer does, and says when the bubble cannot", () => {
+    const done = [];
+    const sides = { "machine": { "id": "system", "source": "system", "kind": "volume" }, "apps": [{ "id": "notification:7", "source": "notification" }] };
+    const body = { "bubbleSides": sides, "bringBubble": () => done.push("open"), "dismissBubble": () => done.push("dismiss"),
+        "pressBubble": (b, action) => done.push(`${action} ${b.id}`) && b.source !== "system" };
+    assert.equal(ipc.ipcBubble(body, "tile", "notification:7", "DP-1"), "DANK_ISLAND_BUBBLE_TILE: notification:7\tDP-1");
+    assert.equal(ipc.ipcBubble(body, "card", "notification:7", "DP-1"), "DANK_ISLAND_BUBBLE_CARD: notification:7\tDP-1");
+    assert.equal(ipc.ipcBubble(body, "card", "machine", "DP-1"), "DANK_ISLAND_BUBBLE_UNAVAILABLE: machine");
+    assert.deepEqual(done, ["tile notification:7", "card notification:7", "card system"]);
+});

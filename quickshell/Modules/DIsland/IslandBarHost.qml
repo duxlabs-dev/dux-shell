@@ -437,6 +437,10 @@ Item {
         IslandActivityService.markShown(token, controller);
     }
 
+    function pressBubble(bubble, action) {
+        return surface.pressBubble(bubble, action);
+    }
+
     function dismissBubble(bubble) {
         switch (bubble?.source) {
         case "system":

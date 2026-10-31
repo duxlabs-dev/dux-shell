@@ -6,7 +6,6 @@ import QtQuick.Shapes
 import qs.Common
 import qs.DCommon.Widgets
 import qs.Modules.DIsland.Activities
-import qs.Modules.DIsland.Cards
 import qs.Modules.DIsland.Kit
 import qs.Modules.Notifications
 import qs.Modules.SurfaceWidgets
@@ -18,6 +17,11 @@ import "../../Common/IslandArrival.js" as Arrival
 import "../../Common/IslandArrivalGestures.js" as Gestures
 import "../../Common/IslandActivities.js" as Activities
 import "../../Common/IslandClock.js" as Clock
+
+// Wings of the island: the machine grows out of its leading side, apps out of its trailing one (above and below on a vertical bar).
+// At rest the capsule is three segments of one height and radius; a side with nothing to show has no wing.
+// The launcher's tall sheet lets the wings go: each stays a pill and buds off beside the sheet's top, under the bar, the way the
+// "Launcher transition" setting says (TileJelly, TileLiquid, TilePivot), and buds back on closing. Hover opens a wing into a card listing what waits.
 // Nothing runs at rest: every animation is a spring or a curve started by an event, and reduced motion settles them at once.
 Item {
     id: root
@@ -159,16 +163,16 @@ Item {
     // surface's height per unit of dial pull (a fraction of a pill).
     readonly property real waveFillAlpha: IslandKit.fillAlpha
     readonly property real waveTrackAlpha: IslandKit.waveTrackAlpha(SessionData.isLightMode)
-    // An alert's liquid: the theme's error, or its container's text tone where the error is too pale for the pill.
-    readonly property color alertHue: IslandKit.legible(Theme.error, Theme.onErrorContainer, root.color, root.waveFillAlpha, IslandKit.legibleMin)
+    // The liquid's tone (an alert's: the theme's error, or its container's text tone), else the text tone where it is too
+    // pale for the pill and its track, else a far end (a bright ground that leaves the text tone under 3:1).
+    readonly property color waveHue: IslandKit.legible([Theme.tertiary, Theme.surfaceText].concat(root.farInks), root.color, root.waveFillAlpha, root.waveTrackAlpha, IslandKit.legibleMin)
+    readonly property color alertHue: IslandKit.legible([Theme.error, Theme.onErrorContainer, Theme.surfaceText].concat(root.farInks), root.color, root.waveFillAlpha, root.waveTrackAlpha, IslandKit.legibleMin)
+    // Black and white: one of them reads at 4.5:1 on any opaque ground, the last resort of a pick by contrast.
+    readonly property var farInks: [Qt.rgba(0, 0, 0, 1), Qt.rgba(1, 1, 1, 1)]
     // The track's gap (after the icon and between liquid and empty part), the value's padding inside it.
     readonly property real trackGap: 3
     readonly property real trackPad: Theme.spacingS
     readonly property real waveHeight: 0.9
-    // A value kept beside its track (a transfer's time left): the track is this long.
-    readonly property real asideTrack: root.size * 2
-    // That value ends as far from the pill's end as the icon's ink from the other end (symmetric).
-    readonly property real asideEnd: (root.size - root.iconFit) / 2
     // The breath clock follows DMS's animation speed like the springs do.
     readonly property real breathPace: SettingsData.specDefault("animationDuration") / Math.max(1, SettingsData.animationDuration)
     // Polar radii in the indicator's unit box (0.5 = the event reach): [round backdrop, the event shapes].
@@ -236,12 +240,14 @@ Item {
     readonly property var schemeAccents: root.shapeTone === "theme" ? null : (MatugenPreviewService.previews[root.shapeTone]?.[SessionData.isLightMode ? "light" : "dark"] ?? null)
     // shortcut: the previews only carry each scheme's primary, secondary and tertiary, so the container and its "on" color
     // keep the accent's hue at the theme's container lightness (HSL, not HCT); upgrade by having `dms matugen preview` also
-    // print the container roles.
+    // print the container roles. The approximated "on" color can fall under 3:1 on it: the icon then takes a tone that reads.
     function schemeToneOf(family) {
         const role = family === "machine" ? "secondary" : family === "media" ? "primary" : "tertiary";
         const accent = Qt.color(root.schemeAccents[role] ?? Theme[role]);
         const satOf = c => Math.min(1, accent.hslSaturation * c.hslSaturation / Math.max(0.01, Theme.primary.hslSaturation));
-        return [Qt.hsla(accent.hslHue, satOf(Theme.primaryContainer), Theme.primaryContainer.hslLightness, 1), Qt.hsla(accent.hslHue, satOf(Theme.onPrimaryContainer), Theme.onPrimaryContainer.hslLightness, 1), accent];
+        const shape = Qt.hsla(accent.hslHue, satOf(Theme.primaryContainer), Theme.primaryContainer.hslLightness, 1);
+        const on = Qt.hsla(accent.hslHue, satOf(Theme.onPrimaryContainer), Theme.onPrimaryContainer.hslLightness, 1);
+        return [shape, Contrast.readableOn(shape, [on, Theme.surfaceText].concat(root.farInks), IslandKit.markContrast), accent];
     }
     // Shape style: "flat" fills the shape with the container tone; "tonal" keeps it a shade off the wing and colors only the icon.
     readonly property bool tonalShapes: SettingsData.islandBubbleShapeStyle === "tonal"
@@ -286,9 +292,14 @@ Item {
     // Px: the edges stop following closer than this.
     readonly property real followEpsilon: 1
     readonly property real followDamping: Math.max(0.2, Math.min(1, 0.68 / Math.max(0.1, root.motionGain))) * root.breathPace
+    // While the island is or turns into a sheet the edges are its own: the tiles ride its spring out and back along one
+    // path and land with it (a lagging edge kept every window redrawing past it); their own spring gives their bounce.
+    readonly property bool sheeted: root.cardness > 0 || root.targetCardness > 0
+    readonly property bool edgesFollow: !root.reducedMotion && root.anyWing && !root.sheeted
     property real leadEdge: root.surface.currentAlongPos
     property real trailEdge: root.surface.currentAlongPos + root.surface.currentVisualAlong
     Behavior on leadEdge {
+        enabled: root.edgesFollow
         SpringAnimation {
             spring: root.followSpring
             damping: root.followDamping
@@ -296,6 +307,7 @@ Item {
         }
     }
     Behavior on trailEdge {
+        enabled: root.edgesFollow
         SpringAnimation {
             spring: root.followSpring
             damping: root.followDamping
@@ -308,6 +320,24 @@ Item {
     readonly property real targetRowOffset: (Math.min(root.motion.targetHeight, root.controller.compactFaceThickness) - root.size) / 2
     function crossOf(near, extent) {
         return root.surface.farEdge ? root.surface.crossExtent - near - extent : near;
+    }
+
+    // The keyboard's way to a bubble (island bubble tile|card): "tile" is a left click on its wing for that bubble (the
+    // wing's tile, or that bubble into the island), "card" holds its card open, on that bubble's page, or lets it go.
+    // False when no wing shows it, or for a card on a vertical bar, which opens none.
+    function pressBubble(bubble, action) {
+        // Found by its key, not as the same object: the IPC takes it from the host's sides, not from the wing's items.
+        const key = IslandKit.heldKey(bubble);
+        const wing = [leading, trailing].find(w => IslandKit.cardHeld(key, w.items));
+        if (!wing || action === "card" && root.isVertical)
+            return false;
+        if (action === "tile") {
+            wing.press(Qt.LeftButton, wing.items.find(i => IslandKit.heldKey(i) === key));
+        } else {
+            wing.held = wing.held === key ? "" : key;
+            wing.page = IslandKit.heldPage(wing.held, wing.shownItems);
+        }
+        return true;
     }
 
     // Built from the spring target so the input mask is not rewritten every frame.
@@ -343,86 +373,6 @@ Item {
         border.color: Theme.withAlpha(root.outlineByType ? Theme.outlineVariant : Theme.primary, root.outlineAlpha)
         opacity: IslandKit.unit(Math.max(leading.presence, trailing.presence))
         visible: root.outlined && opacity > IslandKit.shownFrom
-    }
-
-    // One open card per system kind, each in its own file under Cards/.
-
-
-    // USB stick (source "usb"): Open / Eject under its name and free space.
-    // VPN dropped (source "vpn"): Reconnect / Cut network when it went down on its own.
-
-    // Open Wi-Fi (kind "openwifi"): Turn on VPN / Always for this network.
-
-    // Incoming SSH (source "ssh"): who and since when, Disconnect.
-
-    // Camera (source "camera"): the filming apps, go to the first one.
-    // Low peripheral: the header alone (device, level or time to full).
-    Component {
-        id: cardPeriph
-        BubbleCardBase {}
-    }
-    // The open island's charge face (the island grows into it on plugging in, or hovered while it charges).
-
-
-    // A bubble's own card, the same in its wing and in the island when its face there is hovered or clicked.
-    function cardFor(face) {
-        switch (face?.source) {
-        case "transfer":
-            return null;
-        case "shelf":
-            return null;
-        case "camera":
-            return null;
-        case "ssh":
-            return null;
-        case "vpn":
-            return null;
-        case "code2fa":
-            return null;
-        case "usb":
-            return null;
-        case "print":
-            return null;
-        case "copy":
-            return null;
-        }
-        if (face?.received)
-            return null;
-        switch (face?.source) {
-        case "trash":
-            return null;
-        case "download":
-            return null;
-        case "progress":
-            return null;
-        case "frozen":
-            return null;
-        case "call":
-            return null;
-        case "system":
-            return ({
-                    "volume": null,
-                    "mic": null,
-                    "brightness": null,
-                    "battery": null,
-                    "charging": null,
-                    "charged": null,
-                    "unplugged": null,
-                    "batterycritical": null,
-                    "network": null,
-                    "disk": null,
-                    "eyes": null,
-                    "display": null,
-                    "periph": cardPeriph,
-                    "weatheralert": null,
-                    "powerprofile": null,
-                    "keepawake": null,
-                    "dnd": null,
-                    "output": null,
-                    "openwifi": null
-                })[face.kind] ?? null;
-        }
-        return null;
     }
 
     Wing {
@@ -485,6 +435,20 @@ Item {
         // Kept while the face fades, so the last face does not blank mid-motion.
         property var shownItems: []
         readonly property bool has: wing.items.length > 0
+
+        // A click on the bubble (the pointer's, or a screen reader's press as a left one): a right one puts it away, a
+        // left one opens its tile or brings it into the island; the IPC names the bubble, the pointer takes the one shown.
+        function press(button, bubble) {
+            wing.breathe(false);
+            if (button === Qt.LeftButton)
+                currentGlyph.poke();
+            if (button === Qt.RightButton)
+                root.dismissed(bubble ?? wing.items[0]);
+            else if (wing.tileOpenable)
+                wing.tileOpen = !wing.tileOpen;
+            else
+                root.activated(bubble ?? wing.items[0]);
+        }
         readonly property var face: wing.shownItems.length > 0 ? wing.shownItems[0] : null
         // The pointer holds the face it rests on: the one it leaves, or that another face replaces under it, gets the exit.
         readonly property var hoverFace: hover.hovered && wing.has ? wing.face : null
@@ -523,6 +487,9 @@ Item {
             // A held notification's wrapper ticks while it waits: keep the shown list (and its rows) unless what they show changed.
             if (n > 0 && wing.showKey(wing.items) !== wing.showKey(wing.shownItems))
                 wing.shownItems = wing.items;
+            // Here, not on heldOpen: writing held from heldOpen's own change is a binding loop.
+            if (!IslandKit.cardHeld(wing.held, wing.items))
+                wing.held = "";
         }
         function showKey(list) {
             return list.map(b => [b.id, b.title, b.detail, b.text, b.icon, b.image, b.progress, b.critical].join("\u001f")).join("\u001e");
@@ -533,7 +500,7 @@ Item {
         readonly property var tone: root.toneOf(wing.family)
         // An app's own icon (no symbol over it): the kit's flower outline, never a filled backdrop.
         readonly property bool appFace: wing.symbol === "" && (wing.face?.image ?? "") !== ""
-        readonly property string symbol: wing.face?.call === true ? "call" : wing.face?.received ? "download" : wing.face?.source === "notification" ? (wing.family === "mail" ? "mail" : wing.family === "alert" ? "priority_high" : "chat") : (wing.face?.icon ?? "")
+        readonly property string symbol: wing.face?.call === true ? "call" : wing.face?.source === "notification" ? (wing.family === "mail" ? "mail" : wing.family === "alert" ? "priority_high" : "chat") : (wing.face?.icon ?? "")
         readonly property string count: wing.items.length > 1 ? "+" + (wing.items.length - 1) : ""
         // A change of what the wing says (birth, occupant, count, alert) moves it to its grammar shape.
         // The machine's bubbles share one id: their kind tells them apart.
@@ -564,11 +531,6 @@ Item {
             }
             const to = wing.level * 360;
             const owner = wing.face?.id ?? "";
-            if (wing.face?.stream === true && owner === wing.dialOwner) {
-                wing.dialAngle += to - wing.dialTo;
-                wing.dialTo = to;
-                return;
-            }
             // Each step of the same level moves the shape on, turning left as it goes down and right as it goes up.
             if (owner === wing.dialOwner && to !== wing.dialTo && wing.presence > root.presentFrom)
                 wing.breathe(true, to > wing.dialTo ? 1 : -1);
@@ -597,18 +559,33 @@ Item {
                 let vel = wing.dialVel, angle = wing.dialAngle;
                 vel += (k * (to - angle) - 2 * root.dialDampingRatio * Math.sqrt(k) * vel) * dt;
                 angle += vel * dt;
+                // Lands once what is left can no longer be seen: under half a degree, and a pull under a quarter pixel.
+                if (Math.abs(to - angle) < 0.5 && Math.abs(vel * root.dialStretchPerDeg) * Math.max(root.size, wing.length) < 0.25) {
+                    angle = to;
+                    vel = 0;
+                }
                 wing.dialVel = vel;
                 wing.dialAngle = angle;
             }
         }
         // How fast the dial turns, signed, as a stretch: 0 at rest.
         readonly property real dialPull: wing.dialing ? Math.max(-root.dialStretchMax, Math.min(root.dialStretchMax, wing.dialVel * root.dialStretchPerDeg)) : 0
-        // The liquid's tone: the face's own (face.hue, a transfer's state), else tertiary; error on an alert (its container
-        // is too close to the wing's surface to read as a level).
-        // A face may turn it to the alert by a share (face.alertShare, the disk as it fills).
-        readonly property color liquidHue: wing.face?.hue ?? (wing.face?.alertShare !== undefined ? Theme.blend(Theme.tertiary, root.alertHue, wing.face.alertShare) : wing.alarming ? root.alertHue : Theme.tertiary)
+        // The liquid's tone (waveHue), the alert's on an alert (an error container is too close to the wing's surface to
+        // read as a level).
+        readonly property color liquidHue: wing.alarming ? root.alertHue : root.waveHue
         readonly property color trackColor: Theme.withAlpha(wing.liquidHue, root.waveTrackAlpha)
         readonly property color liquidColor: Theme.withAlpha(wing.liquidHue, root.waveFillAlpha)
+        // The value's inks, 4.5:1 on all that lies under each: dry beside the liquid (the wing, the empty track), wet over it
+        // (the liquid on the wing, laid on the track once upright). Each copy of the value is clipped to its part.
+        readonly property color trackGround: Contrast.mix(root.color, wing.liquidHue, root.waveTrackAlpha)
+        readonly property color dryInk: Contrast.readableOnAll([root.color, wing.trackGround], [Theme.surfaceText].concat(root.farInks), IslandKit.textContrast)
+        readonly property color wetInk: Contrast.readableOn(Contrast.mix(wing.upright ? wing.trackGround : root.color, wing.liquidHue, root.waveFillAlpha), [root.color, Theme.surfaceText].concat(root.farInks), IslandKit.textContrast)
+        readonly property bool wetShown: liquid.visible || wing.upright && wing.tracked && (wing.tx?.gaugeShown ?? true)
+        // The upright liquid's top, at its level (the gauge's own fill spring lags it a moment).
+        readonly property real wetTop: {
+            const top = IslandKit.uprightGaugeTop(root.size, root.trackGap, Theme.spacingXS, wing.tileOf);
+            return top + IslandKit.uprightGaugeHeight(wing.height, root.size, root.trackGap, Theme.spacingXS, wing.tileOf) * (1 - IslandKit.unit(wing.level));
+        }
         // An alert sends one wave out of the shape.
         onAlarmingChanged: {
             if (wing.alarming && wing.has && !root.reducedMotion)
@@ -622,6 +599,12 @@ Item {
                 wave.play();
             else if (!wing.ringing)
                 wave.stop();
+        }
+        // Leaving for the launcher's side, or coming back, is one more breath of the shape.
+        readonly property bool sheeted: wing.cardTarget > 0
+        onSheetedChanged: {
+            if (wing.has)
+                wing.breathe(false);
         }
         // Spikes escalate with each event while an alert waits, lobes follow the count, else the family walks its own shapes.
         // Only what the wing says moves it on (advance); a hover, a click or the launcher keep the shape and just turn it.
@@ -656,6 +639,7 @@ Item {
         readonly property real morph: backdrop.springAt(wing.clock / 1000)
         // Only the two shapes of the morph: each new list costs an indicator its bounds and texture, row by row.
         readonly property var shapes: [wing.breathProfiles[wing.fromAt], wing.breathProfiles[wing.peakAt]]
+        // Half a turn per morph lands two-fold shapes upright; a hover leans it toward the pointer; the dial turns it with the level.
         // The dial turns it with the level (lean) or lets it float (wave).
         readonly property bool leans: root.dialLeans
         readonly property real dialTurn: wing.leans ? wing.dialAngle : 0
@@ -706,20 +690,14 @@ Item {
         readonly property real counterNeed: 0
         readonly property bool levelled: wing.level >= 0 && wing.face !== null && !root.isVertical
         readonly property bool tracked: root.dialStyle === "wave" && wing.levelled
-        // A value that is not the level itself (a transfer's time left; face.aside) sits past the end of a fixed track, so
-        // the front never runs under it; standing, the pill keeps its icon alone.
-        readonly property bool aside: wing.levelled && wing.face?.aside === true
-        // A transfer's track (face.waveBar) is DMS's wave progress (Kit/IslandWaveProgress), not the liquid.
-        readonly property bool waveBar: wing.aside && wing.face?.waveBar === true
-        // A face's action mark (face.mark, reopen's "replay"): a second icon slot, one pill wide, beside the app icon.
-        readonly property string mark: root.isVertical ? "" : wing.face?.mark ?? ""
         // Past the value: the track's round end, clear of the last glyph.
         readonly property real stopRoom: root.size / 2 + root.trackGap
-        readonly property real glyphSlack: wing.face?.battery && wing.levelled ? Math.max(0, (root.size - root.iconFit * IslandKit.batteryPileUnits / IslandKit.batteryBoxUnits) / 2 - Theme.spacingS) : 0
         readonly property string caption: wing.levelled ? wing.face?.text ?? "" : ""
         readonly property real labelWidth: compactLabel.implicitWidth
-        readonly property real need: !wing.has ? 0 : root.size + (wing.aside ? root.trackGap + root.asideTrack + root.trackPad + root.asideEnd + wing.labelWidth : wing.levelled ? root.trackGap + root.trackPad + wing.stopRoom + wing.labelWidth : wing.mark !== "" ? root.size : 0)
-        property real listHeight: root.pad * 2 + (kindCard.item ? kindCard.implicitHeight : root.rowHeight)
+        readonly property real need: !wing.has ? 0 : root.size + (wing.levelled ? root.trackGap + root.trackPad + wing.stopRoom + wing.labelWidth : 0)
+        // Text shows only in the last few pixels of the wing's growth, at its final width, never cut on the way.
+        readonly property real labelRoom: IslandKit.unit(((wing.upright ? wing.thick - wing.standLength : Math.max(wing.length, wing.thick) - wing.need)) / Theme.spacingS + 1)
+        property real listHeight: root.pad * 2 + root.rowHeight
         // An open card whose list changes resizes instead of jumping.
         Behavior on listHeight {
             enabled: !root.reducedMotion && wing.hoverGrow > IslandKit.shownFrom
@@ -736,6 +714,10 @@ Item {
 
             reducedMotion: root.reducedMotion
             mass: root.motion.mass
+            // In springUnit, not pixels: the stock 0.035 would run the soft tile spring ~0.6 s past the last fifth of a
+            // pixel, and while it runs every window of the shell redraws.
+            positionEpsilon: 0.2
+            velocityEpsilon: 2
             // Made with its first bubble (the Loader waits for one): born from nothing on its spring, as later ones are.
             Component.onCompleted: {
                 const empty = wing.lifeTarget();
@@ -745,12 +727,16 @@ Item {
                     wing.enter();
             }
         }
+        // Any sheet tall enough makes whole tiles on both sides, never a half-way shape.
+        // Only a side that holds something is a tile: one arriving flies down from the sheet's corner, one leaving flies back.
+        // A side about to close in place (fusion or fade) keeps its tile until it is gone, whichever of has and this updates first.
+        readonly property real cardTarget: (wing.has || wing.closesInPlace) && wing.carded && root.targetCardness > 0 ? 1 : 0
         function lifeTarget() {
             return {
                 "width": wing.has && !wing.bornAfterFold ? root.springUnit : 0,
                 "height": wing.hoverOpen ? root.springUnit : 0,
                 "offsetAlong": 0,
-                "offsetCross": 0,
+                "offsetCross": wing.cardTarget * root.springUnit,
                 "topLeftRadius": 0,
                 "topRightRadius": 0,
                 "bottomLeftRadius": 0,
@@ -784,6 +770,7 @@ Item {
         function followSheet() {
             if (!wing.has && wing.leaving)
                 return;
+            life.stiffness = root.motion.stiffness * root.tileStiffness * (wing.side > 0 && !root.reducedMotion ? root.tileSoftening : 1) * (wing.has ? 1 : root.tileLeaveSpeed * root.tileLeaveSpeed) * ((wing.tx as TileLiquid) ? root.liquidSpeed * root.liquidSpeed : 1);
             // Leaving, the same spring fully damped, so the tile never bounces back into sight once it is gone.
             life.damping = 2 * (!wing.has ? 1 : !root.reducedMotion ? root.tileDampingRatio : root.tilePlainDampingRatio) * Math.sqrt(life.stiffness * life.mass);
             life.setTarget(wing.lifeTarget());
@@ -794,6 +781,12 @@ Item {
 
             interval: Theme.shorterDuration
             onTriggered: wing.followSheet()
+        }
+        onCardTargetChanged: {
+            if (wing.side > 0 && !root.reducedMotion)
+                cascade.restart();
+            else
+                wing.followSheet();
         }
         readonly property bool alive: wing.has
         // Closing where it stands (a pill, or a tile beside the launcher, seen and not opened as a card): the fusion, or with
@@ -852,6 +845,7 @@ Item {
                 // Exit spring (the island's stiffness, critical damping); the shape meets the island this far along.
                 const spring = wing.springFor(false);
                 wing.fuseOmega = Math.sqrt(spring.k / life.mass);
+                wing.fuseContact = IslandKit.fuseContact(wing.gap, root.size, root.fuseReach);
                 wing.fuse = 0;
                 wing.fuseEdge = wing.edgeNow;
                 wing.fusing = true;
@@ -892,8 +886,6 @@ Item {
         property real fuseOmega: 0
         property real fuseContact: 1
         readonly property var phase: IslandKit.fusionPhases(wing.fuse, wing.fuseContact)
-        // The pill's face goes as its card comes (mirror of cardFace), and the text first while it fuses.
-        readonly property real iconOpacity: IslandKit.unit(1 - 2 * wing.hoverGrow) * wing.phase.text
         // Along the bar: where the wing's shape sits, and the island's edge on its side.
         function iconAlong() {
             return root.isVertical ? wing.y + wing.iconY : wing.x + wing.iconX;
@@ -949,7 +941,18 @@ Item {
             duration: Theme.variantDuration(Theme.expressiveDurations.expressiveFastEffects, false)
             onFinished: wing.endClose()
         }
+
+        // A tile breathes as it lands, and again as it lands back beside the island: one jelly beat each way.
+        readonly property bool landed: wing.carded && wing.tile > root.tileLanded
+        onLandedChanged: {
+            if (wing.landed && !root.reducedMotion)
+                jelly.restart();
+        }
         readonly property bool home: wing.tile < 1 - root.tileLanded
+        onHomeChanged: {
+            if (wing.home && wing.cardTarget === 0 && wing.presence > root.presentFrom && !root.reducedMotion)
+                jelly.restart();
+        }
 
         // Jelly: out fast past the stretch, back past rest, then settled (both curves overshoot).
         property real stretch: 0
@@ -987,6 +990,20 @@ Item {
         readonly property real pointerLean: hover.hovered && wing.width > 0 ? Math.max(-1, Math.min(1, (hover.point.position.x - wing.width / 2) / (wing.width / 2))) : 0
         readonly property real lean: wing.magnet * wing.pointerLean
 
+        // Face content fades in on arrival and out faster when the side empties.
+        // A tile leaving beside the open launcher fades as it came in, not on the quick exit.
+        // A fading side keeps it whole: the bubble fades as one; a fusing one fades it on the fusion's own run.
+        readonly property bool leavingTile: !wing.has && wing.carded && wing.tile > 0.5 && !wing.fusing
+        property real content: wing.has || wing.leavingTile || wing.leaving ? 1 : 0
+        Behavior on content {
+            enabled: !root.reducedMotion
+            NumberAnimation {
+                duration: wing.has || wing.leavingTile ? Theme.expressiveDurations.expressiveEffects : Theme.variantDuration(Theme.expressiveDurations.expressiveFastEffects, false)
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: wing.has || wing.leavingTile ? Theme.expressiveCurves.expressiveEffects : Theme.variantExitCurve
+            }
+        }
+
         // The outer of the sheet's target and current edges: still the open sheet's edge in the frame its close begins, whichever
         // of the island's targets updates first, so a tile on its way back never loses its room mid-flight.
         readonly property real sheetEdge: wing.side < 0 ? Math.min(root.surface.targetAlongPos, root.surface.currentAlongPos) : Math.max(root.surface.targetAlongPos + root.surface.targetVisualAlong, root.surface.currentAlongPos + root.surface.currentVisualAlong)
@@ -998,21 +1015,35 @@ Item {
         readonly property real cardLength: Math.min(wing.cardWant, wing.screenRoom)
         // Follows the sheet on its spring: the wing leaves the pill's side, buds off, and settles as a tile.
         readonly property real tile: Math.max(0, life.currentOffsetCross / root.springUnit)
+        // How far this side is into the sheet: its tile, or the island's own for a side that folds in.
+        readonly property real sheetness: wing.carded ? Math.min(1, wing.tile) : root.cardness
 
         // Hover opens the wing into its card while the island is a pill, on the same spring: in soft with its overshoot, out stiff.
-        // Beside the launcher the apps pill opens on hover too (what was copied), and a click toggles its list.
+        // Beside the launcher the apps pill opens on hover too, and a click toggles its list.
         property bool tileOpen: false
-        // A bubble that grows the island (weather) opens no card beside it: the dwell of a hover brings it into the island,
-        // which grows into its card there, the bubble leaving the normal way.
-        readonly property bool growsIsland: wing.face?.island === true && root.cardness < 0.5
-        onDweltChanged: {
-            if (wing.dwelt && hover.hovered && wing.growsIsland)
-                root.activated(wing.face);
+        readonly property bool tileOpenable: wing.has && wing.carded && wing.side > 0 && wing.shownItems.length > 1 && root.targetCardness > 0
+        onTileOpenableChanged: {
+            if (!wing.tileOpenable)
+                wing.tileOpen = false;
         }
-        // The shelf never opens beside the island on a hover: a click grows it in the island.
-        readonly property bool hoverOpen: IslandKit.cardOpen({ "has": wing.has, "vertical": root.isVertical, "faceOpen": wing.face?.open === true, "tileOpen": wing.tileOpen, "tileOpenable": false, "hovered": hover.hovered && !wing.growsIsland, "dwelt": wing.dwelt, "source": wing.face?.source ?? "", "cardness": root.cardness, "carded": () => wing.carded })
+        // The bubble (its heldKey) whose card is held open over IPC (island bubble card), as a hover holds it; let go with it.
+        property string held: ""
+        readonly property bool heldOpen: IslandKit.cardHeld(wing.held, wing.items)
+        readonly property bool hoverOpen: IslandKit.cardOpen({ "has": wing.has, "vertical": root.isVertical, "tileOpen": wing.tileOpen, "tileOpenable": wing.tileOpenable, "hovered": hover.hovered, "dwelt": wing.dwelt, "heldOpen": wing.heldOpen, "cardness": root.cardness, "carded": () => wing.carded })
         onHoverOpenChanged: wing.retargetCard()
         readonly property real hoverGrow: Math.max(0, life.currentHeight / root.springUnit)
+        // The card's rows show once the card has (nearly) its size, and leave at once when it starts closing.
+        property real reveal: wing.hoverOpen && wing.hoverGrow >= root.revealFrom ? 1 : 0
+        // Reduced motion: the card's rows only fade in, in place, on the wing's crossfade; they leave with the snapped card.
+        Behavior on reveal {
+            id: revealFade
+
+            NumberAnimation {
+                duration: root.reducedMotion ? (revealFade.targetValue > 0 ? Theme.variantDuration(Theme.expressiveDurations.expressiveFastEffects, true) : 0) : wing.hoverOpen ? Theme.expressiveDurations.expressiveEffects : Theme.shorterDuration
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: root.reducedMotion || wing.hoverOpen ? Theme.expressiveCurves.expressiveEffects : Theme.variantExitCurve
+            }
+        }
 
         // Each side rests at its own widest face (a wide face never stretches the other side).
         // Kept when the last item leaves, so the wing melts back from its own width instead of vanishing; a new value
@@ -1035,18 +1066,25 @@ Item {
         readonly property real tileT: Math.min(1, wing.tile)
         // The pill's shape forms a little ahead of its flight beside the launcher.
         readonly property real tileShape: Math.min(1, wing.tile * root.tileShapeLead)
+        // Beside the launcher the pill stands up (the transition, tx, drives it), as tall as its own content.
+        readonly property real openLength: root.isVertical ? root.size * wing.presence : wing.carded ? IslandKit.mix(wing.tx?.length ?? wing.restLength, wing.cardLength, wing.hoverGrow) : IslandKit.mix(wing.restLength * (1 - root.cardness), wing.cardLength, wing.hoverGrow)
+        readonly property real openThick: root.isVertical ? root.size : IslandKit.mix(wing.carded ? (wing.tx?.thick ?? root.size) : root.size, wing.carded ? Math.max(wing.standLength * wing.presence, wing.listHeight) : wing.listHeight, wing.hoverGrow)
+        // Every upright pill stands three pills tall, a level's liquid or not, so they all read alike.
         readonly property real standLength: root.size * 3
-        readonly property real openLength: root.isVertical ? root.size * wing.presence : IslandKit.mix(wing.restLength, wing.cardLength, wing.hoverGrow)
-        readonly property real openThick: root.isVertical ? root.size : IslandKit.mix(root.size, wing.listHeight, wing.hoverGrow)
+        readonly property bool upright: wing.tileOf > 0.5 && wing.hoverGrow < IslandKit.shownFrom
+        // The value's center: in the track (or beside the icon) on the flat pill; in the gauge under the icon once upright.
+        readonly property real trackValueX: liquid.start + root.trackPad + wing.labelWidth / 2
+        readonly property real valueX: IslandKit.mix(wing.levelled ? (wing.side < 0 ? wing.trackValueX : wing.width - wing.trackValueX) : wing.side < 0 ? (root.size + wing.width) / 2 : (wing.width - wing.iconShift - root.size) / 2, wing.width / 2, wing.tileOf)
+        readonly property real valueY: IslandKit.mix(root.size / 2, (root.size + root.trackGap + wing.height - Theme.spacingXS) / 2, wing.tileOf)
         // Jelly and the dial's pull stretch the size itself, never a scale, so the corners stay the island's.
         // Fusing, it gathers onto its shape: down to one pill, its island side held, so it closes toward the island.
         readonly property real baseThick: IslandKit.mix(wing.openThick, root.size, wing.phase.gather)
         readonly property real gathered: IslandKit.mix(wing.openLength, root.size, wing.phase.gather)
         readonly property real length: wing.gathered * (1 + wing.stretch * root.jellyStretch + Math.abs(wing.wingPull) * root.dialWingShare)
         readonly property real thick: wing.baseThick * (1 - wing.stretch * root.jellySquash - Math.abs(wing.wingPull) * root.dialWingShare / 2)
-        readonly property real gap: root.slit
-        readonly property real drop: (wing.baseThick - wing.thick) / 2
-        // Its corners: the island's as a pill, the popups' as a card; only the icon's shape morphs.
+        readonly property real gap: IslandKit.mix(root.slit, root.sheetGap, wing.sheetness)
+        readonly property real drop: (wing.carded ? root.tileDrop * wing.tile : 0) + (wing.baseThick - wing.thick) / 2
+        // Its corners: the island's as a pill or tile, the popups' as a card; only the icon's shape morphs.
         readonly property real radius: Math.min(wing.thick / 2, wing.length / 2, IslandKit.mix(root.pillRadius, NotificationMetrics.popupRadius, IslandKit.unit(wing.hoverGrow)))
 
         readonly property real edgeNow: wing.side < 0 ? Math.min(root.leadEdge, root.surface.currentAlongPos) : Math.max(root.trailEdge, root.surface.currentAlongPos + root.surface.currentVisualAlong)
@@ -1059,14 +1097,20 @@ Item {
         width: root.isVertical ? root.size : Math.max(0, wing.length)
         height: root.isVertical ? Math.max(0, wing.length) : wing.thick
         visible: wing.length > 0.5
-        // Born floating, it fades in growing from the island's edge; fusing, the wing is gone once the shape flows (the goo
-        // layer carries it on); fading, it all fades.
-        opacity: IslandKit.appearOpacity(wing.presence) * wing.fade * (wing.fusing && wing.phase.flowing ? 0 : 1)
+        // Born floating, it fades in growing from the island's edge.
+        // Fusing, the wing is gone once the shape flows (the goo layer carries it on); fading, it all fades.
+        opacity: IslandKit.appearOpacity(wing.presence) * wing.fade * (wing.tx?.fade ?? 1) * (wing.fusing && wing.phase.flowing ? 0 : 1)
+        // Card content has its final width from the start: the wing reveals it, never re-wraps it.
         clip: wing.hoverGrow > 0
         // Jelly stretches it outward from the island side (and the dial's pull leans and stretches it);
         // the magnet swells it a little and leans it toward the pointer. The transforms compose, so they can all play at once.
         readonly property real wingPull: wing.leans ? wing.dialPull : 0
         transform: [
+            Rotation {
+                origin.x: wing.iconX
+                origin.y: wing.iconY
+                angle: wing.tx?.turn ?? 0
+            },
             // Born floating: it grows from half its size at the island's edge, on its own spring (presence overshoots).
             Scale {
                 origin.x: wing.side < 0 ? wing.width : 0
@@ -1090,11 +1134,17 @@ Item {
             Translate {
                 x: wing.lean * root.magnetLean
             },
+            // Pivot: the upright frame is turned flat at the pill's place, so it is shifted there while it flies.
+            Translate {
+                x: (wing.tx as TilePivot)?.shiftX ?? 0
+                y: (wing.tx as TilePivot)?.shiftY ?? 0
+            }
         ]
 
         Rectangle {
             id: body
             anchors.fill: parent
+            visible: wing.tx?.bodyShown ?? true
             radius: wing.radius
             color: root.color
             // Fusing, the body melts away over the gather's second half: only the shape is left to flow, never a rim.
@@ -1102,27 +1152,152 @@ Item {
             border.width: root.outlineWidth
             border.color: Theme.withAlpha(root.outlineByType ? wing.tone[2] : Theme.primary, root.outlineAlpha * IslandKit.unit(wing.presence))
         }
-        // liquid rising flat from the bottom; the icon stands alone on top.
-        Item {
-            id: gauge
 
-            readonly property real inset: Theme.spacingXS
+        // The launcher transitions, one file each; the chosen one drives the wing from its
+        // pill to the upright pill beside the launcher (icon on top, a level's liquid falling to the bottom). Only the
+        // chosen one is made; a wing's first bindings run before it, on its resting values.
+        readonly property TileTransition tx: chosenTile.item as TileTransition
+        Loader {
+            id: chosenTile
 
-            z: 0.5
-            x: gauge.inset
-            width: Math.max(0, wing.width - 2 * gauge.inset)
+            anchors.fill: parent
+            z: wing.tx?.z ?? 0
+            sourceComponent: root.launcherTransition === "jelly" ? jellyTile : root.launcherTransition === "pivot" ? pivotTile : liquidTile
+        }
+        Component {
+            id: liquidTile
 
-            Rectangle {
-                anchors.fill: parent
-                color: wing.trackColor
-            }
-
-            IslandLiquid {
-                id: gaugeLiquid
-
-                anchors.fill: parent
+            TileLiquid {
+                active: true
+                wing: wing
+                pace: root.breathPace
+                cardTarget: wing.cardTarget
+                reducedMotion: root.reducedMotion
+                blocked: wing.hoverGrow > IslandKit.shownFrom
+                side: wing.side
+                iconShift: wing.iconShift
+                cornerRadius: root.pillRadius
+                dropBy: root.tileDrop
+                farEdge: root.surface.farEdge
+                shapeLead: root.tileShapeLead
+                stiffness: life.stiffness
+                mass: life.mass
+                presence: wing.presence
                 level: wing.level
-                color: wing.liquidColor
+                trackColor: wing.trackColor
+                liquidColor: wing.liquidColor
+                inset: Theme.spacingXS
+                trackGap: root.trackGap
+                fillColor: body.color
+                edgeColor: body.border.color
+                edgeWidth: body.border.width
+                carded: wing.carded
+                tile: wing.tile
+                tileShape: wing.tileShape
+                tileOf: wing.tileOf
+                restLength: wing.restLength
+                pillThick: root.size
+                tileSide: root.size
+                tileThick: wing.standLength * wing.presence
+                pillIconY: root.size / 2
+                tileIconY: root.size / 2
+                gauged: wing.tracked
+            }
+        }
+        Component {
+            id: jellyTile
+
+            TileJelly {
+                active: true
+                wing: wing
+                pace: root.breathPace
+                goal: life.targetOffsetCross / root.springUnit
+                reducedMotion: root.reducedMotion
+                level: wing.level
+                side: wing.side
+                radius: wing.radius
+                iconShift: wing.iconShift
+                trackGap: root.trackGap
+                content: wing.content
+                pillLiquid: true
+                trackColor: wing.trackColor
+                liquidColor: wing.liquidColor
+                carded: wing.carded
+                tile: wing.tile
+                tileShape: wing.tileShape
+                tileOf: wing.tileOf
+                restLength: wing.restLength
+                pillThick: root.size
+                tileSide: root.size
+                tileThick: wing.standLength * wing.presence
+                pillIconY: root.size / 2
+                tileIconY: root.size / 2
+                gauged: wing.tracked
+            }
+        }
+        Component {
+            id: pivotTile
+
+            TilePivot {
+                active: true
+                open: wing.cardTarget > 0
+                side: wing.side
+                level: wing.level
+                trackColor: wing.trackColor
+                liquidColor: wing.liquidColor
+                trackGap: root.trackGap
+                radius: wing.radius
+                content: wing.content
+                reduced: root.reducedMotion
+                farEdge: root.surface.farEdge
+                wing: wing
+                pace: root.breathPace
+                carded: wing.carded
+                tile: wing.tile
+                tileShape: wing.tileShape
+                tileOf: wing.tileOf
+                restLength: wing.restLength
+                pillThick: root.size
+                tileSide: root.size
+                tileThick: wing.standLength * wing.presence
+                pillIconY: root.size / 2
+                tileIconY: root.size / 2
+                gauged: wing.tracked
+            }
+        }
+
+        // The upright pill's gauge at rest: under the icon's shape by the flat track's gap (the transitions' own end), its
+        // liquid rising flat from the bottom; the icon stands alone on top.
+        Loader {
+            z: 0.5
+            active: wing.tileOf > 0
+            sourceComponent: Item {
+                id: gauge
+
+                readonly property real inset: Theme.spacingXS
+                readonly property real radius: Math.max(0, wing.radius - gauge.inset)
+
+                x: gauge.inset
+                y: IslandKit.uprightGaugeTop(root.size, root.trackGap, gauge.inset, wing.tileOf)
+                width: Math.max(0, wing.width - 2 * gauge.inset)
+                height: IslandKit.uprightGaugeHeight(wing.height, root.size, root.trackGap, gauge.inset, wing.tileOf)
+                visible: opacity > IslandKit.shownFrom && wing.tracked && (wing.tx?.gaugeShown ?? true) && wing.hoverGrow < IslandKit.shownFrom
+                opacity: wing.tileOf * wing.content
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: gauge.radius
+                    color: wing.trackColor
+                }
+
+                IslandLiquid {
+                    id: gaugeLiquid
+
+                    anchors.fill: parent
+                    radius: gauge.radius
+                    level: wing.level
+                    color: wing.liquidColor
+                }
             }
         }
 
@@ -1136,61 +1311,126 @@ Item {
             readonly property real across: wing.height
             readonly property bool flip: wing.side >= 0
             readonly property real inset: Theme.spacingXS
+            readonly property real start: root.size + wing.iconShift + root.trackGap
+            readonly property real end: Math.max(liquid.start, liquid.along - liquid.inset)
+            readonly property real fillTo: liquid.start + Math.max(0, wing.level) * (liquid.end - liquid.start)
             readonly property real lipTop: liquid.inset
             readonly property real lipBottom: liquid.across - liquid.inset
             readonly property real amp: Math.min(root.size * 0.3, Math.abs(wing.dialPull) * root.waveHeight * root.size)
             readonly property real phase: wing.dialAngle * Math.PI / 90
+            // The track's corners are the bubble's own, inset (concentric): round on a pill, tighter on a Notch bubble.
             readonly property real mid: (liquid.lipTop + liquid.lipBottom) / 2
             readonly property real half: (liquid.lipBottom - liquid.lipTop) / 2
+            readonly property real corner: Math.min(liquid.half, Math.max(0, wing.radius - liquid.inset))
+            // The rows of both paths (outer end at x = 0 on the leading side, mirrored on the trailing one): each row's y,
+            // how far the round end bulges in there, and its distance from the middle. Properties are read once per
+            // evaluation, as both paths re-run several times a frame while the wing moves. Kept until the track's shape
             // changes: the wave's frames reuse it (a plain holder, so writing it notifies nothing).
             readonly property var rowsKept: ({})
+            function rows(n) {
+                const top = liquid.lipTop, bottom = liquid.lipBottom, mid = liquid.mid, half = liquid.half, corner = liquid.corner;
+                const kept = liquid.rowsKept;
+                if (kept.n === n && kept.top === top && kept.bottom === bottom && kept.mid === mid && kept.half === half && kept.corner === corner)
+                    return kept.rows;
+                const out = [];
+                for (let i = 0; i <= n; i++) {
+                    const y = top + (bottom - top) * i / n;
+                    const dy = Math.max(0, Math.abs(y - mid) - (half - corner));
+                    out.push({
+                        "y": y,
+                        "b": corner - Math.sqrt(Math.max(0, corner * corner - dy * dy)),
+                        "d": Math.abs(y - mid) / Math.max(1, half)
+                    });
+                }
+                Object.assign(kept, { "n": n, "top": top, "bottom": bottom, "mid": mid, "half": half, "corner": corner, "rows": out });
+                return out;
+            }
+            // The empty part of the track, split from the liquid by a gap that follows its front.
+            readonly property var track: {
+                // Hidden (no gauge, a tile, another dial style): skip the points, they would follow every frame for nothing.
+                if (!liquid.visible)
+                    return [];
+                const pts = [];
+                const n = 24, r = liquid.rows(n);
+                const flip = liquid.flip, w = liquid.along, start = liquid.start, end = liquid.end;
+                const at = v => (flip ? w - v : v);
+                const fillTo = liquid.fillTo, amp = liquid.amp, phase = liquid.phase, gap = root.trackGap;
+                for (let i = 0; i <= n; i++)
+                    pts.push(Qt.point(at(end - r[i].b), r[i].y));
+                for (let i = n; i >= 0; i--) {
+                    const front = fillTo + IslandKit.wave(r[i].d, amp, phase) + gap;
+                    const x = Math.max(start + r[i].b, Math.min(end - r[i].b, front));
+                    pts.push(Qt.point(at(x), r[i].y));
+                }
+                return pts;
+            }
+            readonly property var outline: {
+                if (!liquid.visible)
+                    return [];
+                const pts = [];
+                const n = 24, r = liquid.rows(n);
+                const flip = liquid.flip, w = liquid.along, start = liquid.start, end = liquid.end;
+                const at = v => (flip ? w - v : v);
+                const fillTo = liquid.fillTo, amp = liquid.amp, phase = liquid.phase;
+                // The front: one wave per half, mirrored so both move alike, held inside the track's round ends.
+                for (let i = 0; i <= n; i++) {
+                    const x = Math.max(start + r[i].b, Math.min(end - r[i].b, fillTo + IslandKit.wave(r[i].d, amp, phase)));
+                    pts.push(Qt.point(at(x), r[i].y));
+                }
+                for (let i = n; i >= 0; i--)
+                    pts.push(Qt.point(at(start + r[i].b), r[i].y));
+                return pts;
+            }
 
             z: 0.5
             anchors.fill: parent
+            // Beside the launcher the transition and the upright gauge take over.
+            visible: wing.tracked && wing.iconOpacity > IslandKit.shownFrom && wing.tileOf < IslandKit.shownFrom && (wing.tx?.bodyShown ?? true)
             preferredRendererType: Shape.CurveRenderer
 
             ShapePath {
                 fillColor: wing.trackColor
                 strokeColor: "transparent"
                 strokeWidth: 0
+
+                PathPolyline {
+                    path: liquid.track
+                }
             }
 
             ShapePath {
                 fillColor: wing.liquidColor
                 strokeColor: "transparent"
                 strokeWidth: 0
+
+                PathPolyline {
+                    path: liquid.outline
+                }
             }
         }
-        // DMS's wave progress on a transfer's track, filling from the icon like the liquid would.
-        IslandWaveProgress {
-            z: 0.5
-            y: Math.round((liquid.across - height) / 2)
-            height: Theme.spacingL
-            value: Math.max(0, wing.level)
-            moving: wing.face?.flowing === true
-            mirrored: liquid.flip
-            fillColor: wing.liquidHue
-            playheadColor: wing.liquidHue
-        }
+
+        // The icon on its backdrop: at the pill's outer end (inside the counter on the apps side), in the middle beside the
+        // launcher, at the top of a hover card.
+        readonly property real tileOf: wing.carded ? wing.tileT : 0
         property real iconShift: wing.side > 0 ? wing.counterNeed : 0
         Behavior on iconShift {
-            enabled: !root.reducedMotion && wing.presence > 0.5
+            enabled: !root.reducedMotion && wing.presence > root.presentFrom
             NumberAnimation {
                 duration: Theme.expressiveDurations.expressiveFastSpatial
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
             }
         }
-        // The icon on its backdrop, at the pill's outer end (inside the counter on the apps side); the value beside it.
-        readonly property real iconX: wing.side < 0 ? root.size / 2 : wing.width - wing.iconShift - root.size / 2
-        readonly property real iconY: root.size / 2
-        readonly property real valueX: wing.side < 0 ? (root.size - wing.glyphSlack + wing.width) / 2 : (wing.width - wing.iconShift - root.size + wing.glyphSlack) / 2
-        readonly property real valueY: root.size / 2
+        readonly property real iconX: IslandKit.mix(wing.side < 0 ? root.size / 2 : wing.width - wing.iconShift - root.size / 2, wing.width / 2, wing.tileOf) + (wing.tx?.iconDx ?? 0)
+        readonly property real iconY: wing.tx?.iconY ?? root.size / 2
+        readonly property real iconOpacity: IslandKit.unit(1 - 2 * wing.reveal) * wing.content * (wing.carded ? 1 : 1 - root.cardness) * wing.phase.text
+        // The value and the "more" dot fade with the face; they stay on a pill beside the launcher.
+        // Fusing, the text fades out before the wing has closed over it.
+        readonly property real faceOpacity: IslandKit.unit(1 - 2 * wing.reveal) * wing.content * (wing.carded ? 1 : 1 - root.cardness) * wing.phase.text
 
         DLoadingIndicator {
             id: backdrop
             z: 1
-            opacity: wing.fusing ? 1 : wing.iconOpacity
 
             running: false
             shapes: wing.shapes
@@ -1203,6 +1443,7 @@ Item {
             height: width
             x: wing.iconX - width / 2
             y: wing.iconY - height / 2
+            rotation: -(wing.tx?.turn ?? 0) + wing.rock
             // The dial's speed swells the shape out past its ring and smears it along the wing, so the turn reads.
             // In the wave style it bobs on the liquid instead.
             transform: [
@@ -1216,6 +1457,8 @@ Item {
                     y: liquid.visible ? IslandKit.wave(0, liquid.amp / 2, liquid.phase) : 0 // A1
                 }
             ]
+            // Fusing, the shape stays whole while the rest fades (an app's own icon gets its shape too), until the goo takes it.
+            opacity: wing.fusing ? 1 : wing.iconOpacity
             visible: opacity > 0.01 && wing.face !== null && (!wing.appFace || wing.fusing)
 
             Behavior on color {
@@ -1241,6 +1484,8 @@ Item {
             color: wing.ringing ? Theme.primary : Contrast.readableOnAll(IslandKit.islandGrounds.map(role => Theme[role]), [Theme.error, Theme.surfaceText], IslandKit.markContrast)
             cycles: wing.ringing ? 0 : 1
             spring: wing.ringing ? [root.motion.stiffness, root.inDampingRatio, root.motion.mass] : null
+            // Its card open, the rings go with the shape, never over the card.
+            opacity: wing.iconOpacity
             x: wing.iconX - width / 2
             y: wing.iconY - height / 2
         }
@@ -1284,7 +1529,6 @@ Item {
         Item {
             id: iconSwap
             z: 3
-            opacity: wing.iconOpacity
 
             property real swap: 1
             property var outFace: null
@@ -1310,10 +1554,12 @@ Item {
             height: width
             x: wing.iconX - width / 2
             y: wing.iconY - height / 2
+            rotation: -(wing.tx?.turn ?? 0) + wing.rock
             // It rides the shape it sits on.
             transform: Translate {
                 y: liquid.visible ? IslandKit.wave(0, liquid.amp / 2, liquid.phase) : 0 // A1
             }
+            opacity: wing.iconOpacity
             visible: opacity > IslandKit.shownFrom
 
             NumberAnimation {
@@ -1371,31 +1617,51 @@ Item {
             }
         }
 
-        RollText {
-            id: compactLabel
-            // A replacement rolls toward the island: the right wing leftward, the left one rightward.
-            across: -wing.side
+        // The value's dry part: all of the wing but the liquid's (all of it while no liquid is drawn).
+        Item {
+            id: dryValue
             z: 4
-            opacity: wing.iconOpacity
+            clip: wing.wetShown
+            x: wing.wetShown && !wing.upright && wing.side < 0 ? liquid.fillTo : 0
+            width: wing.wetShown && !wing.upright ? wing.width - liquid.fillTo : wing.width
+            height: wing.wetShown && wing.upright ? wing.wetTop : wing.height
 
-            // Whole pixels, so the digits stay sharp.
-            x: Math.round(wing.valueX - width / 2)
-            y: Math.round(wing.valueY - height / 2)
-            text: wing.labelText
-            pixelSize: Theme.fontSizeSmall
-            color: Theme.surfaceText
+            RollText {
+                id: compactLabel
+                // A replacement rolls toward the island: the right wing leftward, the left one rightward; standing, up.
+                across: wing.upright ? 0 : -wing.side
+
+                // Whole pixels in the wing, so the digits stay sharp.
+                x: Math.round(wing.valueX - width / 2) - dryValue.x
+                y: Math.round(wing.valueY - height / 2)
+                // Standing, the pill is narrow: the unit sits tight against the number ("52%").
+                text: wing.upright ? wing.labelText.replace(/\s+%$/, "%") : wing.labelText
+                pixelSize: Theme.fontSizeSmall
+                color: wing.tracked ? wing.dryInk : Theme.surfaceText
+                opacity: wing.labelRoom * wing.faceOpacity * (wing.tx?.valueOpacity ?? 1)
+            }
         }
-
-        // The action mark, centred in its own slot on the flat pill.
-        DIcon {
+        // The value's wet part, over the liquid: from its start to its level on the flat pill, from its top down upright.
+        Item {
+            id: wetValue
             z: 4
-            x: Math.round(wing.valueX - width / 2)
-            y: Math.round(wing.valueY - height / 2)
-            visible: wing.mark !== ""
-            opacity: wing.iconOpacity
-            name: wing.mark
-            size: root.iconFit
-            color: Theme.surfaceText
+            visible: wing.wetShown
+            clip: true
+            x: wing.upright || wing.side < 0 ? 0 : wing.width - liquid.fillTo
+            y: wing.upright ? wing.wetTop : 0
+            width: wing.upright ? wing.width : liquid.fillTo
+            height: wing.upright ? wing.height - wing.wetTop : wing.height
+
+            RollText {
+                x: compactLabel.x + dryValue.x - wetValue.x
+                y: compactLabel.y - wetValue.y
+                across: compactLabel.across
+                up: compactLabel.up
+                text: compactLabel.text
+                pixelSize: compactLabel.pixelSize
+                color: wing.wetInk
+                opacity: compactLabel.opacity
+            }
         }
 
         // More waits behind the face: a dot on the pill's outer bottom corner (bottom right on the right, bottom left on the
@@ -1403,7 +1669,7 @@ Item {
         Rectangle {
             id: counter
             z: 4
-            opacity: wing.iconOpacity
+
             readonly property real inset: wing.radius * (1 - Math.SQRT1_2)
             width: Theme.spacingS
             height: width
@@ -1412,6 +1678,7 @@ Item {
             y: wing.height - counter.inset - height / 2
             color: Theme.primary
             visible: wing.count !== "" && !root.isVertical
+            opacity: wing.faceOpacity
         }
 
         // Card face: one row per waiting item; it rises into place as it fades in.
@@ -1423,13 +1690,13 @@ Item {
             x: wing.side < 0 ? wing.width - width - root.pad : root.pad
             y: root.pad + (root.reducedMotion ? 0 : Theme.spacingS * (1 - IslandKit.unit(wing.hoverGrow)))
             width: Math.max(0, wing.cardLength - root.pad * 2)
-            visible: opacity > 0.01 && wing.has && !kindCard.item
+            visible: opacity > IslandKit.shownFrom && wing.has
             opacity: IslandKit.unit(2 * wing.hoverGrow - 1)
 
             Repeater {
                 // One row, the shown page; the others wait behind the page dots. Made as the card starts to open (it
                 // shows from half way), gone once it has closed.
-                model: wing.has && wing.hoverGrow > 0.01 ? 1 : 0
+                model: wing.has && wing.hoverGrow > IslandKit.shownFrom ? 1 : 0
 
                 Item {
                     id: row
@@ -1441,6 +1708,7 @@ Item {
 
                     Rectangle {
                         anchors.fill: parent
+                        radius: Theme.cornerRadius
                         color: rowMouse.containsMouse ? Theme.surfaceTextHover : "transparent"
                     }
 
@@ -1496,40 +1764,6 @@ Item {
                         Accessible.onPressAction: root.activated(row.modelData)
                         onClicked: mouse => mouse.button === Qt.RightButton ? root.dismissed(row.modelData) : root.activated(row.modelData)
                     }
-                }
-            }
-        }
-
-        // A system bubble's card is its kind's own file (Cards/BubbleCard<Kind>.qml), loaded only while the card is open;
-        // the wing grows to its implicitHeight. Other bubbles keep the row list above.
-        readonly property Component cardComponent: root.cardFor(wing.paged)
-        Loader {
-            id: kindCard
-
-            z: 4
-            x: cardFace.x
-            y: cardFace.y
-            width: cardFace.width
-            active: wing.cardComponent !== null && !root.isVertical && (wing.hoverOpen || wing.hoverGrow > 0.01)
-            sourceComponent: wing.cardComponent
-            opacity: cardFace.opacity
-            visible: opacity > 0.01
-
-            Binding {
-                target: kindCard.item
-                property: "bubble"
-                value: wing.paged
-                when: kindCard.status === Loader.Ready
-            }
-            Connections {
-                target: kindCard.item
-                ignoreUnknownSignals: true
-
-                function onActivated(bubble) {
-                    root.activated(bubble);
-                }
-                function onDismissed(bubble) {
-                    root.dismissed(bubble);
                 }
             }
         }
@@ -1599,17 +1833,11 @@ Item {
             // The pill says what it shows: its face's title (the device and its state), the detail as description.
             Accessible.role: Accessible.Button
             Accessible.name: wing.face?.title || wing.face?.text || wing.face?.app || I18n.tr("Island bubble", "island bubble: its accessible name when its face has no title")
-            // A notification's body stays unsaid in DMS's privacy mode, as on its popup, until the user opens its card.
-            Accessible.description: wing.face?.source === "notification" && SettingsData.notificationPopupPrivacyMode ? I18n.tr("Message Content", "notification privacy mode placeholder") : (wing.face?.detail ?? "")
-            onClicked: mouse => {
-                wing.breathe(false);
-                if (mouse.button === Qt.LeftButton)
-                    currentGlyph.poke();
-                if (mouse.button === Qt.RightButton)
-                    root.dismissed(wing.items[0]);
-                else
-                    root.activated(wing.items[0]);
-            }
+            // A notification's body stays unsaid in DMS's privacy mode, as on its popup, until the user opens its card. Then
+            // what a right click does, and a tile's state.
+            Accessible.description: [wing.face?.source === "notification" && SettingsData.notificationPopupPrivacyMode ? I18n.tr("Message Content", "notification privacy mode placeholder") : (wing.face?.detail ?? ""), !wing.tileOpenable ? "" : wing.tileOpen ? I18n.tr("Tile open", "island bubble: its tile beside the launcher is open") : I18n.tr("Tile closed", "island bubble: its tile beside the launcher is closed"), I18n.tr("Right click to dismiss", "island bubble: what a right click on a bubble or its card does")].filter(part => part !== "").join(". ")
+            Accessible.onPressAction: wing.press(Qt.LeftButton)
+            onClicked: mouse => wing.press(mouse.button)
             onWheel: wheel => {
                 if (!wing.wheelPage(wheel))
                     root.wheeled(wing.items[0], wheel);
@@ -1771,17 +1999,9 @@ Item {
             iconName: "notifications"
         }
 
-        // Charging: the battery filling up in a wave, under its bolt.
-        // A battery (the laptop's, a device's): the A1 battery at the one icon size, the device's badge on the corner.
-        readonly property bool charge: !!glyph.bubble?.battery
-        Loader {
-            anchors.fill: parent
-            active: glyph.charge && !picture.visible
-        }
-
         ReadyActivityRing {
             anchors.fill: parent
-            visible: !picture.visible && !glyph.charge && glyph.bubble?.source !== "reopen"
+            visible: !picture.visible && glyph.bubble?.source !== "reopen"
             iconName: glyph.symbol || (glyph.notification ? (glyph.bubble?.call === true ? "call" : "notifications") : glyph.bubble?.icon ?? "")
             progress: glyph.onBackdrop ? -1 : glyph.shownProgress
             iconSize: glyph.onBackdrop ? root.iconFit : progress >= 0 ? Theme.iconSizeSmall : Theme.iconSize
@@ -1851,6 +2071,7 @@ Item {
             readonly property real islandRadius: root.surface.currentSurfaceRadius
             readonly property real glow: goo.phase.glow
             readonly property real glowPx: root.glowReach
+            // The halo's front, from the glow's size at the contact out to its reach, and how fast it pales with distance.
             readonly property real wavePx: root.glowReach + root.haloReach * goo.phase.wave
             readonly property real fallPx: root.haloReach / 2
             readonly property real swell: root.swellReach * goo.phase.swell

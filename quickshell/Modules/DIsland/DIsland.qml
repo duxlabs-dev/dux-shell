@@ -313,8 +313,8 @@ Item {
         });
     }
 
-    // A bubble beside the island, for the keyboard (a bound key) and scripts: "open" brings it into the island, "dismiss"
-    // puts it away, as a click and a right click do. which: "machine", or an app bubble as status lists it.
+    // A bubble beside the island, for the keyboard (a bound key) and scripts (IslandBubbleIpc.ipcBubble: open, dismiss,
+    // tile, card). which: "machine", or an app bubble as status lists it.
     function ipcBubble(action, which, screen) {
         const host = root.hostForScreen(screen, "", "island");
         const body = host ? IslandHostRegistry.hostFor(host.screen?.name, host.barId) : null;
@@ -472,7 +472,7 @@ Item {
             return Input.ipcActivityStatus(IslandActivityService, token);
         }
 
-        // open | dismiss, of "machine" or an app bubble as status lists it ("notification:<id>", a script's token...).
+        // open | dismiss | tile | card, of "machine" or an app bubble as status lists it ("notification:<id>", a script's token...).
         function bubble(action: string, which: string): string {
             return root.ipcBubble(action, which, "");
         }
