@@ -1640,9 +1640,7 @@ Singleton {
         fi
         done
 
-        ${GSettings.setCmd("org.gnome.desktop.interface", "icon-theme", gtkThemeName)} || true
-
-        pkill -HUP -f 'gtk' 2>/dev/null || true`;
+        ${GSettings.setCmd("org.gnome.desktop.interface", "icon-theme", gtkThemeName)} || true`;
 
         Quickshell.execDetached(["sh", "-lc", configScript]);
     }
