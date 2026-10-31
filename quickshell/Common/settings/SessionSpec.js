@@ -63,6 +63,9 @@ var LOCAL_SPEC = {
     wallpaperCyclingRecursive: {
         def: false
     },
+    wallpaperCyclingOnLogin: {
+        def: false
+    },
     wallpaperCyclingMode: {
         def: "interval"
     },

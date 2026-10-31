@@ -7,6 +7,7 @@ type ScheduleConfig struct {
 	Mode        string `json:"mode"`
 	IntervalSec int    `json:"intervalSec"`
 	Time        string `json:"time"`
+	OnLogin     bool   `json:"onLogin"`
 }
 
 type Config struct {

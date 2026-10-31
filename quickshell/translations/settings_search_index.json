@@ -16704,6 +16704,33 @@
     "icon": "skip_previous"
   },
   {
+    "section": "wallpaperCyclingOnLogin",
+    "label": "Change on login",
+    "tabIndex": 52,
+    "category": "Automatic cycling",
+    "keywords": [
+      "automatic",
+      "background",
+      "bg",
+      "boot",
+      "change",
+      "colors",
+      "colour",
+      "colours",
+      "cycling",
+      "desktop",
+      "hue",
+      "image",
+      "login",
+      "palette",
+      "picture",
+      "startup",
+      "tint",
+      "wallpaper"
+    ],
+    "parentLabel": "Wallpaper & colors"
+  },
+  {
     "section": "wallpaperCyclingFolder",
     "label": "Folder",
     "tabIndex": 52,

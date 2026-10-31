@@ -33,6 +33,7 @@ Item {
     readonly property var _nightModeServiceRef: NightModeService
     readonly property var _brightnessServiceRef: BrightnessService
     readonly property var _refreshRateServiceRef: RefreshRateService
+    readonly property var _wallpaperCyclingServiceRef: WallpaperCyclingService
 
     property var core: null
 
