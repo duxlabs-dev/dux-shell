@@ -462,13 +462,17 @@ Singleton {
         }
     }
 
-    function handleTouchpadToggled(data) {
-        // Each subscription starts with a snapshot; only later changes show the OSD.
-        const showOsd = _touchpadStateInitialized && touchpadEnabled !== data.on;
-        touchpadEnabled = data.on;
+    function updateTouchpadState(enabled, forceOsd) {
+        const showOsd = forceOsd || (_touchpadStateInitialized && touchpadEnabled !== enabled);
+        touchpadEnabled = enabled;
         _touchpadStateInitialized = true;
         if (showOsd)
             touchpadToggled();
+    }
+
+    function handleTouchpadToggled(data) {
+        // Each subscription starts with a snapshot; only later changes show the OSD.
+        updateTouchpadState(data.on, false);
     }
 
     function handleWorkspacesChanged(data) {
@@ -1923,6 +1927,14 @@ window-rule {
     }
 
     IpcHandler {
+        function showTouchpadOsd(enabled: bool): string {
+            if (!CompositorService.isNiri)
+                return "NIRI_NOT_AVAILABLE";
+
+            root.updateTouchpadState(enabled, true);
+            return "TOUCHPAD_OSD_SHOWN";
+        }
+
         function screenshot(): string {
             if (!CompositorService.isNiri) {
                 return "NIRI_NOT_AVAILABLE";
