@@ -1300,7 +1300,7 @@ layer-rule {${excludeLines}
 }
 
 window-rule {
-    match app-id="^(dev.duxlabs.shell|com.danklinux.dms)$"
+    match app-id="^(dev.duxlabs.shell|com.danklinux.dms|dev.duxlabs.files|dev.duxlabs.calendar)$"
     background-effect {
         xray false
     }
