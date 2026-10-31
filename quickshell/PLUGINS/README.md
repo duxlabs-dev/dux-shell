@@ -96,6 +96,8 @@ The manifest file defines plugin metadata and configuration.
 - `requires_dms`: Minimum DMS version requirement (e.g., ">=0.1.18", ">0.1.0")
 - `requires`: Array of required system tools/dependencies (e.g., ["curl", "jq"])
 - `permissions`: Required DMS permissions (e.g., ["settings_read", "settings_write"])
+- `island.systemFaces`: System kinds (`volume`, `idleinhibitor`, ...) the plugin's `islandSystem` component can draw instead of the shell's own face. The user picks the face per kind in the island's Plugins settings (in the Bar or Dot settings, or the island widget's options); while the plugin is not loaded, or does not list the kind, the shell's face is shown.
+- `island.notifyApp`: App name of the notifications this plugin sends (the `app_name` of `notify-send -a`). While the plugin has an activity in the island, its notifications stay in the list instead of showing in the island a second time. A single request can set it too: `IslandActivityService.request(pluginId, { "kind": "alert", "notifyApp": "Sands" })`, which wins over the manifest; a script does the same with `"notifyApp"` in the data of `dms ipc call island activity <id> <kind> <data>`. Without it, the island matches the plugin's `name` or `id`, case-insensitively.
 
 **Permissions:**
 
@@ -104,6 +106,38 @@ The plugin system enforces permissions when settings are accessed:
 - `settings_write`: **Required** to use PluginSettings component and save settings
 
 If your plugin includes a settings component but doesn't declare `settings_write` permission, users will see an error message instead of the settings UI.
+
+### Island Activities
+
+A plugin with an `island` surface (`components.island`) shows activities in the island: `IslandActivityService.request(pluginId, { "kind": "alert" | "live" | "glance", "expanded", "timeoutMs", "screen", "notifyApp", "data" })` returns a token (empty when refused: plugin not loaded, blocked in the island's Plugins settings, or no island on that screen); an unknown `kind` shows as `live` and is logged. The surface is an `IslandActivityComponent`; the island sets its properties and loads its contents:
+
+| Property | Set by | Meaning |
+|----------|--------|---------|
+| `pluginId`, `pluginService` | island | the plugin, as for other surfaces |
+| `token`, `kind`, `activityData` | island | the request's token, kind and `data` (updated by `IslandActivityService.update`) |
+| `expanded`, `interrupted` | island | the activity is open; another one stepped in front of it for now |
+| `screen`, `edge` | island | where its island is, and the bar edge it hangs from |
+| `islandRect`, `islandRadius` | island | the island's shape in the overflow layer, while `overflowContent` is set |
+| `compactContent`, `expandedContent`, `overflowContent` | plugin | the closed face, the open face, and a layer around the island that never takes clicks |
+| `compactLength`, `expandedWidth`, `expandedHeight` | plugin | the faces' sizes, clamped by the island |
+
+`dismiss()` ends the activity. An `islandSystem` surface (`components.islandSystem`) is an `IslandSystemFaceComponent`: the same `compactContent`, `expandedContent` and sizes (zero keeps the shell's size), and a `model` with the system source (`kind`, `value`, `ratio`, `muted`, `displayValue`, `iconName`, `setRatio()`, `toggleMute()`), for the kinds in `island.systemFaces`. See `IslandActivityExample`.
+
+### Island Permanent Bubble
+
+A loaded plugin can keep one small bubble beside the island on a horizontal bar, for as long as it likes (a drop target, for example). A file dragged over it swells it and shows `label`; an event bubble on the same side shrinks it into a dot.
+
+```qml
+IslandActivityService.setPermanent(pluginId, {
+    "side": "left",                         // or "right" (default)
+    "image": Qt.resolvedUrl("icon.svg"),    // one-colour icon, tinted by the island
+    "label": "Send to Example",
+    "receiving": false                      // true while something is dragged over it
+});
+IslandActivityService.clearPermanent(pluginId); // or setPermanent(pluginId, null)
+```
+
+`setPermanent` returns `false` when the plugin is not loaded, is blocked in the island's Plugins settings, or its id contains `:`. Calling it again updates the entry in place. Each side shows its newest entry; the entry goes when the plugin unloads or is blocked. See `IslandActivityExample` (`dms ipc call islandActivityExample permanent left`).
 
 ### Widget Component
 
@@ -2083,6 +2117,8 @@ Provide any subset of these keys in `components`:
 | `launcher` | launcher contract (`getItems` / `executeItem`) | requires `trigger` (or empty-trigger mode); see [Launcher Plugins](#launcher-plugins) |
 | `dash` | `DashTabComponent` | a tab in the dashboard popout; see [Dash Plugins](#dash-plugins) |
 | `dashCard` | `DashCardComponent` | a card in the dashboard overview grid; see [Dash Plugins](#dash-plugins) |
+| `island` | `IslandActivityComponent` | the plugin's activities in the island; see [Island Activities](#island-activities) |
+| `islandSystem` | `IslandSystemFaceComponent` | a system face (volume...) drawn by the plugin, for the kinds in `island.systemFaces` |
 
 Each surface is loaded independently into its own registry, so the same plugin can show
 up in the bar **and** on the desktop **and** run a daemon simultaneously.

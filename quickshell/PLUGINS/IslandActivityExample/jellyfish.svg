@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Abyss's bar jellyfish (JellyGlyph): a bell with a wavy hem and three tentacles, one colour. -->
+  <path fill="#fff" d="M12 50C12 8 88 8 88 50Q75 42 62 50Q50 42 38 50Q25 42 12 50Z"/>
+  <g fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round">
+    <path d="M30 54Q22 74 30 94"/>
+    <path d="M50 54Q50 74 50 94"/>
+    <path d="M70 54Q78 74 70 94"/>
+  </g>
+</svg>

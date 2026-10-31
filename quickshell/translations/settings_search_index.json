@@ -4757,6 +4757,35 @@
     "conditionKey": "islandEnabled"
   },
   {
+    "section": "islandPlugins",
+    "label": "Plugins",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "activity",
+      "addons",
+      "alert",
+      "bar",
+      "extensions",
+      "face",
+      "general",
+      "glance",
+      "island",
+      "live",
+      "osd",
+      "panel",
+      "plugins",
+      "statusbar",
+      "taskbar",
+      "topbar",
+      "volume",
+      "widgets"
+    ],
+    "parentLabel": "Bar",
+    "icon": "extension",
+    "conditionKey": "islandEnabled"
+  },
+  {
     "section": "barPosition",
     "label": "Position",
     "tabIndex": 3,
@@ -10648,7 +10677,7 @@
     "optionFile": "PrivacyOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:34",
+    "section": "barWidgetOption:IslandOptions.qml:35",
     "label": "Always show brief info in a bubble",
     "tabIndex": 22,
     "keywords": [],
@@ -10656,7 +10685,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:33",
+    "section": "barWidgetOption:IslandOptions.qml:34",
     "label": "Always show levels in a bubble",
     "tabIndex": 22,
     "keywords": [],
@@ -10664,7 +10693,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:45",
+    "section": "barWidgetOption:IslandOptions.qml:46",
     "label": "Arrival of info",
     "tabIndex": 22,
     "keywords": [],
@@ -10759,7 +10788,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:38",
+    "section": "barWidgetOption:IslandOptions.qml:39",
     "label": "Bubble corners",
     "tabIndex": 22,
     "keywords": [],
@@ -10767,7 +10796,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:32",
+    "section": "barWidgetOption:IslandOptions.qml:33",
     "label": "Bubbles",
     "tabIndex": 22,
     "keywords": [],
@@ -11255,7 +11284,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:37",
+    "section": "barWidgetOption:IslandOptions.qml:38",
     "label": "Launcher transition",
     "tabIndex": 22,
     "keywords": [],
@@ -11263,7 +11292,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:36",
+    "section": "barWidgetOption:IslandOptions.qml:37",
     "label": "Level animation",
     "tabIndex": 22,
     "keywords": [],
@@ -11359,7 +11388,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:48",
+    "section": "barWidgetOption:IslandOptions.qml:49",
     "label": "Motion",
     "tabIndex": 22,
     "keywords": [],
@@ -11367,7 +11396,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:35",
+    "section": "barWidgetOption:IslandOptions.qml:36",
     "label": "Motion intensity",
     "tabIndex": 22,
     "keywords": [],
@@ -11463,7 +11492,7 @@
     "optionFile": "ClockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:44",
+    "section": "barWidgetOption:IslandOptions.qml:45",
     "label": "Outline color",
     "tabIndex": 22,
     "keywords": [],
@@ -11471,7 +11500,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:43",
+    "section": "barWidgetOption:IslandOptions.qml:44",
     "label": "Outline opacity",
     "tabIndex": 22,
     "keywords": [],
@@ -11479,7 +11508,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:41",
+    "section": "barWidgetOption:IslandOptions.qml:42",
     "label": "Outline the bubbles",
     "tabIndex": 22,
     "keywords": [],
@@ -11487,7 +11516,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:42",
+    "section": "barWidgetOption:IslandOptions.qml:43",
     "label": "Outline width",
     "tabIndex": 22,
     "keywords": [],
@@ -11511,6 +11540,14 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
+    "section": "barWidgetOption:IslandOptions.qml:32",
+    "label": "Plugins",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "IslandOptions.qml"
+  },
+  {
     "section": "barWidgetOption:IslandOptions.qml:13",
     "label": "Power menu",
     "tabIndex": 22,
@@ -11519,7 +11556,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:47",
+    "section": "barWidgetOption:IslandOptions.qml:48",
     "label": "Reverse scroll direction",
     "tabIndex": 22,
     "keywords": [],
@@ -11543,7 +11580,7 @@
     "optionFile": "PrivacyOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:46",
+    "section": "barWidgetOption:IslandOptions.qml:47",
     "label": "Scroll through infos",
     "tabIndex": 22,
     "keywords": [],
@@ -11567,7 +11604,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:39",
+    "section": "barWidgetOption:IslandOptions.qml:40",
     "label": "Shape style",
     "tabIndex": 22,
     "keywords": [],
@@ -11575,7 +11612,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:40",
+    "section": "barWidgetOption:IslandOptions.qml:41",
     "label": "Shape tone",
     "tabIndex": 22,
     "keywords": [],
@@ -11775,7 +11812,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:50",
+    "section": "barWidgetOption:IslandOptions.qml:51",
     "label": "Spring damping",
     "tabIndex": 22,
     "keywords": [],
@@ -11783,7 +11820,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:51",
+    "section": "barWidgetOption:IslandOptions.qml:52",
     "label": "Spring mass",
     "tabIndex": 22,
     "keywords": [],
@@ -11791,7 +11828,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:49",
+    "section": "barWidgetOption:IslandOptions.qml:50",
     "label": "Spring stiffness",
     "tabIndex": 22,
     "keywords": [],
@@ -19904,6 +19941,35 @@
       "topbar"
     ],
     "parentLabel": "Bar",
+    "conditionKey": "dotEnabled"
+  },
+  {
+    "section": "dotPlugins",
+    "label": "Plugins",
+    "tabIndex": 65,
+    "category": "Dot",
+    "keywords": [
+      "activity",
+      "addons",
+      "alert",
+      "bar",
+      "dot",
+      "extensions",
+      "face",
+      "glance",
+      "island",
+      "live",
+      "osd",
+      "panel",
+      "plugins",
+      "statusbar",
+      "taskbar",
+      "topbar",
+      "volume",
+      "widgets"
+    ],
+    "parentLabel": "Bar",
+    "icon": "extension",
     "conditionKey": "dotEnabled"
   },
   {

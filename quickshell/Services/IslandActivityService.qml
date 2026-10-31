@@ -25,10 +25,9 @@ Singleton {
     signal dropped(string token, string reason)
     signal action(string token, string actionId)
 
-    // Permanent bubbles, one per owner: { pluginId: { pluginId, side: "left" | "right", label, image (the app's one-colour
-    // icon), dropText, receiving, seq } }. Each side shows its newest plugin entry (Input.permanentOn).
+    // One per plugin: { pluginId: { pluginId, side: "left" | "right", label, image (one-colour icon), receiving, seq } }.
     property var permanent: ({})
-    // options: { side, image, label, dropText, receiving }, or null to clear it. Gone when the plugin unloads or is blocked.
+    // options: { side, image, label, receiving }, or null to clear it. Gone when the plugin unloads or is blocked.
     function setPermanent(pluginId, options): bool {
         if (!Input.permanentAllowed(pluginId, PluginService.isPluginLoaded(pluginId), root.pluginAllowed(pluginId)))
             return false;

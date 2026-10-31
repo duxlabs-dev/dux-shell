@@ -143,7 +143,7 @@ function pluginIdAllowed(id) {
     return typeof id === "string" && id !== "" && id.indexOf(":") === -1;
 }
 
-// Permanent bubbles (IslandActivityService.permanent): one entry per owner, { pluginId: { side, image, label, dropText,
+// Permanent bubbles (IslandActivityService.permanent): one entry per owner, { pluginId: { side, image, label,
 // receiving, seq } }. Keep awake ("dms:keepawake") is the shell's own and draws its own bubble.
 function permanentAllowed(id, loaded, allowed) {
     return id === "dms:keepawake" || (pluginIdAllowed(id) && loaded === true && allowed === true);
@@ -152,8 +152,13 @@ function permanentAllowed(id, loaded, allowed) {
 // A permanent bubble's own fields come from a plugin: typed and bounded as a face's are (B10). The bubble's width follows
 // its label; an image URL too long to be one is dropped, never cut.
 const maxPermanentLabel = 24;
-const maxPermanentDropText = 64;
 const maxPermanentImage = 2048;
+
+// Qt 6 gives a url value (Qt.resolvedUrl) as an object: its text is the URL.
+function permanentImage(value) {
+    const text = value && typeof value === "object" ? String(value) : value;
+    return typeof text === "string" && text.length <= maxPermanentImage ? text : "";
+}
 
 // A new table with id's entry set (options) or gone (null); an owner setting its entry again keeps its place in line.
 function withPermanent(table, id, options, seq) {
@@ -167,8 +172,7 @@ function withPermanent(table, id, options, seq) {
             "side": options.side === "left" ? "left" : "right",
             "receiving": options.receiving === true,
             "label": faceText(options.label).slice(0, maxPermanentLabel),
-            "dropText": faceText(options.dropText).slice(0, maxPermanentDropText),
-            "image": typeof options.image === "string" && options.image.length <= maxPermanentImage ? options.image : "",
+            "image": permanentImage(options.image),
             "seq": previous ? previous.seq : seq
         });
     else

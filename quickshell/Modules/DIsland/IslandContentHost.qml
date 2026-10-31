@@ -29,6 +29,7 @@ Item {
     required property color surfaceColor
     property bool freeMode: false
     property Component compactFaceOverride: null
+    // The plugin's IslandActivityComponent while an activity owns this island.
     readonly property var pluginActivity: root.controller.plugin.activity
     // The shell-drawn face (IslandActivityInput.readyFace) when the activity has no pill of its own.
     readonly property var pluginFace: root.controller.plugin.face

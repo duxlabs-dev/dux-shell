@@ -1,0 +1,20 @@
+{
+    "id": "islandActivityExample",
+    "name": "Island Activity Example",
+    "description": "Shows an alert, a live activity or a glance in the island, with sand spilling past it, and draws the volume face",
+    "version": "1.0.0",
+    "author": "Dux Shell",
+    "type": "composite",
+    "capabilities": ["daemon", "island"],
+    "icon": "timer",
+    "components": {
+        "daemon": "./ExampleDaemon.qml",
+        "island": "./ExampleIsland.qml",
+        "islandSystem": "./ExampleSystemFace.qml"
+    },
+    "island": {
+        "systemFaces": ["volume", "idleinhibitor"],
+        "notifyApp": "Example Timer"
+    },
+    "permissions": []
+}

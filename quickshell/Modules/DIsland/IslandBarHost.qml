@@ -8,6 +8,7 @@ import Quickshell.Services.Notifications
 import qs.Modals.DLauncherV2 as DLauncher
 import qs.Modules.DBar
 import qs.Modules.DIsland.Activities
+import qs.Modules.Notifications
 import qs.Services
 import qs.Widgets
 import "../../Common/LayoutResolver.js" as Resolver
@@ -295,6 +296,8 @@ Item {
     readonly property var pluginActivity: pluginLoader.item
     // A plugin that draws its own pill owns both faces; otherwise the shell draws them from its data.
     // update() swaps data inside the same entry object, so the face follows the revision rather than the entry.
+    // ReadyActivityRing's stroke (its ringWidth): the ready sheet's ring is the icon and four of them.
+    readonly property real readyRingWidth: 3
     readonly property var readyFace: root.pluginRevision >= 0 && root.pluginEntry && !root.pluginActivity?.compactContent ? Input.readyFace(root.pluginEntry.data, root.stateWords) : null
     readonly property var stateWords: ({
             "error": I18n.tr("Error", "island activity state, said beside its detail"),
@@ -388,6 +391,7 @@ Item {
             if (entry.token === taker)
                 continue;
             const face = Input.bubbleFace(entry.data);
+            const ready = Input.readyFace(entry.data);
             list.push(Object.assign(face, {
                 "id": entry.token,
                 "source": "plugin",
@@ -396,6 +400,8 @@ Item {
                 "app": PluginService.availablePlugins[entry.pluginId]?.name ?? "",
                 "seq": entry.seq,
                 "icon": face.icon || "extension",
+                "title": ready.title,
+                "detail": ready.text
             }));
         }
         // A popup the island could not take (an open launcher or sheet) waits beside it, for as long as the popup lives.
@@ -531,14 +537,16 @@ Item {
             give("pluginService", PluginService);
             give("token", Qt.binding(() => controller.pluginToken));
             give("kind", Qt.binding(() => root.pluginEntry?.kind ?? "live"));
+            // update() swaps data inside the same entry object: follow the revision, not the entry.
+            give("activityData", Qt.binding(() => root.pluginRevision >= 0 ? root.pluginEntry?.data ?? {} : {}));
             give("expanded", Qt.binding(() => controller.pluginActive && controller.expanded));
             give("interrupted", Qt.binding(() => !controller.pluginActive));
             give("screen", Qt.binding(() => root.screenName));
             give("edge", Qt.binding(() => root.edge));
             // Only while the plugin draws overflow; through face: item is null once the loader unloads.
             const face = item;
-            if ("islandRadius" in item)
-                item.islandRadius = Qt.binding(() => controller.expanded ? controller.cornerRadius : Math.min(controller.compactFaceThickness / 2, controller.pillRadius));
+            give("islandRect", Qt.binding(() => !face.overflowContent ? Qt.rect(0, 0, 0, 0) : Qt.rect(root.hostOriginX + surface.currentVisualX, root.hostOriginY + surface.currentVisualY, surface.currentVisualWidth, surface.currentVisualHeight)));
+            give("islandRadius", Qt.binding(() => controller.expanded ? controller.cornerRadius : Math.min(controller.compactFaceThickness / 2, controller.pillRadius)));
         }
     }
 
@@ -780,7 +788,9 @@ Item {
         systemFaceExpandedHeight: Math.min(dashboardAvailableHeight, Input.systemFaceSize(systemFaceLoader.item, "expandedHeight"))
         pluginCompactLength: Input.faceSize(root.pluginActivity, "compactLength", !!root.readyFace)
         pluginExpandedWidth: Math.min(dashboardAvailableWidth, Input.faceSize(root.pluginActivity, "expandedWidth", !!root.readyFace))
-        pluginExpandedHeight: Math.min(dashboardAvailableHeight, Input.faceSize(root.pluginActivity, "expandedHeight", !!root.readyFace))
+        // The ready sheet on the card grid: margins, the header (one line each beside the ring, which is the icon and four
+        // of its strokes: ReadyActivityRing.ringWidth, 3 px), then the button row.
+        pluginExpandedHeight: Math.min(dashboardAvailableHeight, root.readyFace ? NotificationMetrics.cardPadding * 2 + Theme.iconSize + 4 * root.readyRingWidth + (root.readyFace.actions.length > 0 ? Theme.spacingS + Theme.buttonHeightS : 0) : Input.faceSize(root.pluginActivity, "expandedHeight"))
         plugin.activity: root.pluginActivity
         plugin.face: root.readyFace
         plugin.systemFace: systemFaceLoader.item
