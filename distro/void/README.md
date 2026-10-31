@@ -59,7 +59,7 @@ checkout at `srcpkgs/<pkg>/template` to build or submit it.
 
 ## Dependencies
 
-Installing `dms` automatically pulls in `quickshell`, `accountsservice`, `dux-gop`,
+Installing `dms` automatically pulls in `quickshell`, `accountsservice`,
 `matugen` (which drives the Material You theming), `dbus`, `elogind`, and
 `mesa-dri` (GL drivers, required for compositors to render).
 The rest are optional, install whichever features you want:
@@ -81,8 +81,6 @@ The rest are optional, install whichever features you want:
 Inside a `void-packages` checkout (symlink or copy these `srcpkgs/<pkg>` dirs in):
 
 ```sh
-# build the dependency packages first (dms requires dux-gop)
-./xbps-src pkg dux-gop
 ./xbps-src pkg dux-search
 ./xbps-src pkg dms
 
@@ -90,7 +88,7 @@ Inside a `void-packages` checkout (symlink or copy these `srcpkgs/<pkg>` dirs in
 xlint srcpkgs/dms/template
 
 # install the built packages
-sudo xbps-install --repository=hostdir/binpkgs dms dux-gop
+sudo xbps-install --repository=hostdir/binpkgs dms dux-search
 ```
 
 ## Running the shell

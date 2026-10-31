@@ -111,10 +111,10 @@ func TestDetectCalendarPackageAcceptsOldNames(t *testing.T) {
 func TestRenamedPackagesInstallNewNames(t *testing.T) {
 	cases := map[string]Distribution{
 		"fedora":   NewFedoraDistribution(Registry["fedora"], nil),
-		"opensuse": NewOpenSUSEDistribution(Registry["opensuse-tumbleweed"], nil),
-		"debian":   NewDebianDistribution(Registry["debian"], nil),
 		"ubuntu":   NewUbuntuDistribution(Registry["ubuntu"], nil),
 		"void":     NewVoidDistribution(Registry["void"], nil),
+		"opensuse": NewOpenSUSEDistribution(Registry["opensuse-tumbleweed"], nil),
+		"debian":   NewDebianDistribution(Registry["debian"], nil),
 	}
 	for id, d := range cases {
 		for _, variant := range []deps.PackageVariant{deps.VariantStable, deps.VariantGit} {

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"slices"
 	"testing"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
@@ -77,5 +78,17 @@ func TestCheckPackageRepos(t *testing.T) {
 
 	if results := packageReposResult(&plainDistroFake{}); results != nil {
 		t.Fatalf("printed %+v on a family without repo moves", results)
+	}
+}
+
+func TestRepoMoveRows(t *testing.T) {
+	moves := []distros.RepoMove{
+		{Kind: distros.RepoTypeCOPR, Old: "avengemedia/dms", New: "duxlabs/dms", OldPath: "/etc/yum.repos.d/a.repo", NewPath: "/etc/yum.repos.d/b.repo", OldPresent: true},
+		{Kind: distros.RepoTypeCOPR, Old: "avengemedia/dms-git", New: "duxlabs/dms-git", OldPath: "/etc/yum.repos.d/c.repo", NewPath: "/etc/yum.repos.d/d.repo"},
+		{Kind: distros.RepoTypeXBPS, New: "https://void.duxlabs.dev/dux-repo/current", NewPath: "/etc/xbps.d/dux.conf"},
+	}
+	want := []string{"  avengemedia/dms → duxlabs/dms", "  add https://void.duxlabs.dev/dux-repo/current"}
+	if got := repoMoveRows(moves); !slices.Equal(got, want) {
+		t.Fatalf("got %q, want %q", got, want)
 	}
 }

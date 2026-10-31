@@ -127,7 +127,7 @@ func TestUbuntuRepoMovesIgnoreRetiredSiblingGlob(t *testing.T) {
 	}
 }
 
-func fakeXBPSConfs(t *testing.T, files map[string]string) {
+func fakeRepoFiles(t *testing.T, files map[string]string) {
 	t.Helper()
 	origGlob, origRead := repoGlob, repoReadFile
 	var paths []string
@@ -193,7 +193,7 @@ func TestVoidRepoMoves(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			fakeXBPSConfs(t, tc.files)
+			fakeRepoFiles(t, tc.files)
 			v := NewVoidDistribution(Registry["void"], nil)
 			moves, _ := PlanRepoMoves(v)
 			var got []string
@@ -287,7 +287,6 @@ func TestRepoMoveCommands(t *testing.T) {
 	})
 
 	t.Run("ubuntu", func(t *testing.T) {
-		u := NewUbuntuDistribution(Registry["ubuntu"], nil)
 		moves := withOrig(ppaChannel, "/etc/apt/sources.list.d/avengemedia-ubuntu-danklinux-*.sources", "/etc/apt/sources.list.d/duxlabs-ubuntu-dux-*.sources")
 		want := []string{
 			"sudo add-apt-repository -y ppa:duxlabs/dux-repo",
@@ -295,26 +294,17 @@ func TestRepoMoveCommands(t *testing.T) {
 			"sudo add-apt-repository -r -y ppa:duxlabs/dux",
 			"sudo apt-get update",
 		}
-		if got := u.RepoMoveCommands(moves); !slices.Equal(got, want) {
+		if got := ubuntuRepoMoveCommands(moves, nil); !slices.Equal(got, want) {
 			t.Fatalf("got %q, want %q", got, want)
 		}
-	})
-
-	t.Run("debian", func(t *testing.T) {
-		moves := withOrig(obsAptChannel, obsAptListFile("home:AvengeMedia:dms-git"))
-		want := []string{
-			"curl -fsSL https://download.opensuse.org/repositories/home:/duxlabs:/dms-git/Debian_13/Release.key | gpg --dearmor | sudo tee /etc/apt/keyrings/home-duxlabs-dms-git.gpg",
-			"echo 'deb [signed-by=/etc/apt/keyrings/home-duxlabs-dms-git.gpg arch=amd64] https://download.opensuse.org/repositories/home:/duxlabs:/dms-git/Debian_13/ /' | sudo tee /etc/apt/sources.list.d/home-duxlabs-dms-git.list",
-			"sudo rm -f /etc/apt/sources.list.d/home-AvengeMedia-dms-git.list /etc/apt/keyrings/home-AvengeMedia-dms-git.gpg",
-			"sudo apt-get update",
-		}
-		if got := debianRepoMoveCommands(moves, "Debian_13", "amd64"); !slices.Equal(got, want) {
-			t.Fatalf("got %q, want %q", got, want)
+		renames := aptRenames(moves, ppaDeps, existsIn("dms-greeter-git", "dankcalendar", "dux-search"))
+		if got := ubuntuRepoMoveCommands(moves, renames); !slices.Contains(got, "sudo apt-get install -y dux-calendar dux-greeter-git") {
+			t.Fatalf("renamed packages not installed before the legacy PPA goes: %q", got)
 		}
 	})
 
 	t.Run("void", func(t *testing.T) {
-		fakeXBPSConfs(t, map[string]string{
+		fakeRepoFiles(t, map[string]string{
 			"/etc/xbps.d/dms.conf": "repository=https://void.danklinux.com/dms/current\n",
 			"/etc/xbps.d/dux.conf": "repository=https://void.danklinux.com/danklinux/current\n",
 		})
@@ -330,7 +320,7 @@ func TestRepoMoveCommands(t *testing.T) {
 	})
 
 	t.Run("void greeter only", func(t *testing.T) {
-		fakeXBPSConfs(t, map[string]string{"/etc/xbps.d/dms.conf": "repository=https://void.danklinux.com/dms/current\n"})
+		fakeRepoFiles(t, map[string]string{"/etc/xbps.d/dms.conf": "repository=https://void.danklinux.com/dms/current\n"})
 		v := NewVoidDistribution(Registry["void"], nil)
 		want := []string{
 			"sudo sed -i 's|repository=https://void.danklinux.com/dms/current|repository=https://void.duxlabs.dev/dms/current|' /etc/xbps.d/dms.conf",
@@ -348,7 +338,7 @@ func TestRepoMoveCommands(t *testing.T) {
 		"new":    "repository=https://void.duxlabs.dev/dux-repo/current\n",
 	} {
 		t.Run("void deps already "+name, func(t *testing.T) {
-			fakeXBPSConfs(t, map[string]string{
+			fakeRepoFiles(t, map[string]string{
 				"/etc/xbps.d/dms.conf":       "repository=https://void.danklinux.com/dms/current\n",
 				"/etc/xbps.d/danklinux.conf": deps,
 			})
@@ -362,35 +352,140 @@ func TestRepoMoveCommands(t *testing.T) {
 	}
 
 	t.Run("opensuse", func(t *testing.T) {
-		moves := withOrig(obsZypperChannel, obsZypperRepoFile("home:AvengeMedia:danklinux"))
+		moves := withOrig(obsZypperChannel, obsZypperRepoFile("home:AvengeMedia:danklinux"), obsZypperRepoFile("home:AvengeMedia:dms"), obsZypperRepoFile("home:duxlabs-dev:dms"))
 		want := []string{
-			"sudo zypper addrepo -f https://download.opensuse.org/repositories/home:/duxlabs:/dux-repo/openSUSE_Tumbleweed/home:duxlabs:dux-repo.repo",
+			"sudo zypper addrepo -f https://download.opensuse.org/repositories/home:/duxlabs-dev:/dux-repo/openSUSE_Tumbleweed/home:duxlabs-dev:dux-repo.repo",
 			"sudo zypper --gpg-auto-import-keys refresh",
+			"sudo zypper --non-interactive install --oldpackage --allow-vendor-change --from home_duxlabs-dev_dms --from home_duxlabs-dev_dux-repo 'dms>=2.0.0' 'dux-greeter>=2.0.0' 'dux-gop>=0.1.12' 'quickshell>=0.3.2'",
+			"sudo zypper removerepo home_AvengeMedia_dms",
 			"sudo zypper removerepo home_AvengeMedia_danklinux",
 		}
-		if got := opensuseRepoMoveCommands(moves, "openSUSE_Tumbleweed"); !slices.Equal(got, want) {
+		if got := opensuseRepoMoveCommands(moves, "openSUSE_Tumbleweed", parseRPMDistributions(legacyRPMs)); !slices.Equal(got, want) {
 			t.Fatalf("got %q, want %q", got, want)
+		}
+	})
+
+	// Repos moved by hand leave every package on the legacy vendor, where zypper update never looks.
+	t.Run("opensuse repos already moved", func(t *testing.T) {
+		moves := withOrig(obsZypperChannel, obsZypperRepoFile("home:duxlabs-dev:dux-repo"))
+		want := []string{
+			// Their signing key may never have been accepted, and the install below is non-interactive.
+			"sudo zypper --gpg-auto-import-keys refresh",
+			"sudo zypper --non-interactive install --oldpackage --allow-vendor-change --from home_duxlabs-dev_dux-repo 'dux-greeter>=2.0.0' 'dux-gop>=0.1.12' 'quickshell>=0.3.2'",
+		}
+		if got := opensuseRepoMoveCommands(moves, "openSUSE_Tumbleweed", parseRPMDistributions(legacyRPMs)); !slices.Equal(got, want) {
+			t.Fatalf("got %q, want %q", got, want)
+		}
+	})
+
+	t.Run("opensuse migrated", func(t *testing.T) {
+		moves := withOrig(obsZypperChannel, obsZypperRepoFile("home:duxlabs-dev:dux-repo"))
+		migrated := "dux-greeter\t2.0.0\thome:duxlabs-dev:dux-repo / openSUSE_Tumbleweed\nniri\t25.08\topenSUSE:Factory / standard\n"
+		if got := opensuseRepoMoveCommands(moves, "openSUSE_Tumbleweed", parseRPMDistributions(migrated)); len(got) != 0 {
+			t.Fatalf("got %q on a migrated host", got)
 		}
 	})
 }
 
-// Until OBS publishes, movers must plan nothing even with legacy files present, or doctor and migrate nag.
-func TestOBSMigrationGate(t *testing.T) {
-	if obsMigrationReady {
-		t.Skip("gate open")
-	}
-	orig := repoPathExists
-	repoPathExists = func(string) bool { return true }
-	t.Cleanup(func() { repoPathExists = orig })
+// niri and the base system come from the distro and must never be switched to an OBS build.
+const legacyRPMs = "dms\t2.0.0\thome:AvengeMedia:dms / openSUSE_Tumbleweed\n" +
+	"dms-greeter\t2.0.0\thome:AvengeMedia:danklinux / openSUSE_Tumbleweed\n" +
+	"dgop\t0.1.12\thome:AvengeMedia:danklinux / openSUSE_Tumbleweed\n" +
+	"quickshell\t0.3.2\thome:AvengeMedia:danklinux / openSUSE_Tumbleweed\n" +
+	"niri\t25.08\topenSUSE:Factory / standard\n" +
+	"zypper\t1.14.94\t(none)\n"
 
-	if moves := NewDebianDistribution(Registry["debian"], nil).RepoMoves(); moves != nil {
-		t.Fatalf("debian planned %v while the gate is closed", moves)
+func TestDebianOBSMoves(t *testing.T) {
+	const (
+		legacyDeps   = "https://download.opensuse.org/repositories/home:/AvengeMedia:/danklinux/Debian_13/"
+		legacyDMS    = "https://download.opensuse.org/repositories/home:AvengeMedia:dms/Debian_13/"
+		legacyDMSGit = "https://download.opensuse.org/repositories/home:/AvengeMedia:/dms-git/Debian_13/"
+	)
+	fakeRepoFiles(t, map[string]string{
+		// 2.0 docs: named for the new owner, still pointing at the legacy project.
+		"/etc/apt/sources.list.d/duxlabs.list": "deb [signed-by=/etc/apt/keyrings/duxlabs.gpg] " + legacyDeps + " /\n",
+		// apt modernize-sources output.
+		"/etc/apt/sources.list.d/avengemedia-dms.sources":   "Types: deb\nURIs: " + legacyDMS + "\nSuites: /\nSigned-By: /etc/apt/keyrings/avengemedia-dms.gpg\n",
+		"/etc/apt/sources.list.d/home-duxlabs-dev-dms.list": "deb [signed-by=/etc/apt/keyrings/home-duxlabs-dev-dms.gpg arch=amd64] https://download.opensuse.org/repositories/home:/duxlabs-dev:/dms/Debian_13/ /\n",
+		"/etc/apt/sources.list.d/mixed.list":                "deb [signed-by=/etc/apt/keyrings/avengemedia-dms.gpg] " + legacyDMSGit + " /\ndeb https://example.org/debian trixie main\n",
+		"/etc/apt/sources.list.d/off.sources":               "Types: deb\nURIs: " + legacyDMSGit + "\nSuites: /\nEnabled: no\n",
+		"/etc/apt/sources.list.d/old.list":                  "# deb " + legacyDMSGit + " /\n",
+	})
+	if !aptSourcesPointAt(readAPTSources(), "home:AvengeMedia:dms", "Debian_13") || aptSourcesPointAt(readAPTSources(), "home:AvengeMedia:dms", "Debian_12") {
+		t.Fatal("installer skip must match the 1.6 home:X:p spelling on the same dist only")
 	}
-	if moves := NewOpenSUSEDistribution(Registry["opensuse-tumbleweed"], nil).RepoMoves(); moves != nil {
-		t.Fatalf("opensuse planned %v while the gate is closed", moves)
+	moves := debianOBSMoves(readAPTSources())
+	if got := LegacyRepoPaths(moves); !slices.Equal(got, []string{"/etc/apt/sources.list.d/avengemedia-dms.sources", "/etc/apt/sources.list.d/duxlabs.list"}) {
+		t.Fatalf("legacy = %v", got)
 	}
-	if got := NewDebianDistribution(Registry["debian"], nil).GetPackageMapping(0)["dms-greeter"].RepoURL; got != "home:AvengeMedia:danklinux" {
-		t.Fatalf("debian mapping = %q, must stay on the legacy OBS project while the gate is closed", got)
+	installed := existsIn("dms-greeter", "dgop", "dux-search")
+	want := []string{
+		"curl -fsSL https://download.opensuse.org/repositories/home:/duxlabs-dev:/dux-repo/Debian_13/Release.key | gpg --dearmor | sudo tee /etc/apt/keyrings/home-duxlabs-dev-dux-repo.gpg",
+		"echo 'deb [signed-by=/etc/apt/keyrings/home-duxlabs-dev-dux-repo.gpg arch=amd64] https://download.opensuse.org/repositories/home:/duxlabs-dev:/dux-repo/Debian_13/ /' | sudo tee /etc/apt/sources.list.d/home-duxlabs-dev-dux-repo.list",
+		"sudo apt-get update",
+		"sudo apt-get install -y dux-gop dux-greeter",
+		// mixed.list still names avengemedia-dms.gpg, so the keyring stays.
+		"sudo rm -f /etc/apt/sources.list.d/avengemedia-dms.sources",
+		"sudo rm -f /etc/apt/sources.list.d/duxlabs.list /etc/apt/keyrings/duxlabs.gpg",
+		"sudo apt-get update",
+	}
+	if got := debianRepoMoveCommands(moves, readAPTSources(), aptRenames(moves, newObsRepo(projectDeps), installed), "Debian_13", "amd64"); !slices.Equal(got, want) {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+	if renames := aptRenames(debianOBSMoves(nil), newObsRepo(projectDeps), installed); renames != nil {
+		t.Fatalf("renamed %v with no deps repo to install them from", renames)
+	}
+}
+
+func TestDebianOBSRemovalsKeepUnrelatedSources(t *testing.T) {
+	const (
+		legacyDeps = "https://download.opensuse.org/repositories/home:/AvengeMedia:/danklinux/Debian_13/"
+		other      = "https://example.org/debian"
+	)
+	cases := map[string]struct {
+		files map[string]string
+		want  [][]string
+	}{
+		"deb-src beside a legacy entry keeps the file": {
+			files: map[string]string{"/etc/apt/sources.list.d/a.list": "deb " + legacyDeps + " /\ndeb-src " + other + " trixie main\n"},
+		},
+		"deb822 continuation URI keeps the file": {
+			files: map[string]string{"/etc/apt/sources.list.d/a.sources": "Types: deb\nURIs: " + legacyDeps + "\n " + other + "\nSuites: /\n"},
+		},
+		"keyring still named in sources.list stays": {
+			files: map[string]string{
+				"/etc/apt/sources.list":          "deb [signed-by=/etc/apt/keyrings/k.gpg] " + other + " trixie main\n",
+				"/etc/apt/sources.list.d/a.list": "deb [signed-by=/etc/apt/keyrings/k.gpg] " + legacyDeps + " /\n",
+			},
+			want: [][]string{{"/etc/apt/sources.list.d/a.list"}},
+		},
+		"every legacy file for one project goes": {
+			files: map[string]string{
+				"/etc/apt/sources.list.d/duxlabs.list":                    "deb " + legacyDeps + " /\n",
+				"/etc/apt/sources.list.d/home-AvengeMedia-danklinux.list": "deb " + legacyDeps + " /\n",
+			},
+			want: [][]string{{"/etc/apt/sources.list.d/duxlabs.list"}, {"/etc/apt/sources.list.d/home-AvengeMedia-danklinux.list"}},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			fakeRepoFiles(t, tc.files)
+			sources := readAPTSources()
+			if got := debianRemovals(debianOBSMoves(sources), sources); !slices.EqualFunc(got, tc.want, slices.Equal) {
+				t.Fatalf("removals = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestOpenSUSEOBSDist(t *testing.T) {
+	cases := map[string]string{"opensuse-leap": "16.0", "opensuse-slowroll": "openSUSE_Slowroll", "opensuse-tumbleweed": "openSUSE_Tumbleweed"}
+	for id, want := range cases {
+		info := &OSInfo{VersionID: "16.0"}
+		info.Distribution.ID = id
+		if got := opensuseOBSDist(info); got != want {
+			t.Errorf("%s: %q, want the OBS repository name %q", id, got, want)
+		}
 	}
 }
 

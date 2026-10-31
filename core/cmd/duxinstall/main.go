@@ -59,9 +59,9 @@ func init() {
 	rootCmd.Flags().StringSliceVar(&replaceConfigs, "replace-configs", []string{}, "Deploy only named configs (e.g. niri,ghostty)")
 	rootCmd.Flags().BoolVar(&replaceConfigsAll, "replace-configs-all", false, "Deploy and replace all configurations")
 	rootCmd.Flags().BoolVarP(&yes, "yes", "y", false, "Auto-confirm all prompts")
-	rootCmd.Flags().BoolVar(&danksearch, "danksearch", false, "Install danksearch and enable its user indexing service")
-	rootCmd.Flags().BoolVar(&dankcalendar, "dankcalendar", false, "Install dankcalendar")
-	rootCmd.Flags().BoolVar(&dmsGreeter, "dms-greeter", false, "Install dms-greeter")
+	rootCmd.Flags().BoolVar(&danksearch, "danksearch", false, "Install dsearch (dux-search) and enable its user indexing service")
+	rootCmd.Flags().BoolVar(&dankcalendar, "dankcalendar", false, "Install dcal (dux-calendar)")
+	rootCmd.Flags().BoolVar(&dmsGreeter, "dms-greeter", false, "Install the dms-greeter greetd greeter (dux-greeter)")
 }
 
 func main() {

@@ -20,13 +20,14 @@ Requires:       (quickshell-git or quickshell)
 Requires:       accountsservice
 
 Recommends:     cava
-Recommends:     danksearch
+Recommends:     (dux-search or danksearch)
 Recommends:     matugen
 Recommends:     quickshell-git
 Recommends:     NetworkManager
 Recommends:     qt6-multimedia-imports
 Suggests:       cups-pk-helper
 Suggests:       qt6ct
+Suggests:       (dux-gop or dgop)
 
 Provides:       dms
 Conflicts:      dms

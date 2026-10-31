@@ -14,7 +14,7 @@ Depends: ${misc:Depends},
          quickshell-git | quickshell,
          accountsservice,
          cava,
-         danksearch,
+         dux-search | danksearch,
          matugen,
          qml6-module-qtcore,
          qml6-module-qtmultimedia,
@@ -27,6 +27,7 @@ Depends: ${misc:Depends},
          qml6-module-qtquick-templates,
          qml6-module-qtquick-window,
          qt6ct
+Suggests: dux-gop | dgop
 Provides: dms
 Conflicts: dms
 Replaces: dms

@@ -44,7 +44,7 @@ Requires:       dms-cli = %{epoch}:%{version}-%{release}
 
 # Core utilities (Recommended for DMS functionality)
 Recommends:     cava
-Recommends:     danksearch
+Recommends:     (dux-search or danksearch)
 Recommends:     matugen
 Recommends:     quickshell-git
 
@@ -53,6 +53,7 @@ Recommends:     NetworkManager
 Recommends:     qt6-qtmultimedia
 Suggests:       cups-pk-helper
 Suggests:       qt6ct
+Suggests:       (dux-gop or dgop)
 
 %description
 Dux Shell (DMS) is a modern Wayland desktop shell built with Quickshell

@@ -30,8 +30,12 @@ var greeterCmd = &cobra.Command{
 	},
 }
 
+func greeterMapping(config distros.DistroConfig) distros.PackageMapping {
+	return config.Constructor(config, nil).GetPackageMapping(0)["dms-greeter"]
+}
+
 func greeterRepoURL(config distros.DistroConfig) string {
-	return config.Constructor(config, nil).GetPackageMapping(0)["dms-greeter"].RepoURL
+	return greeterMapping(config).RepoURL
 }
 
 func isLegacyWrapperScript(path string) bool {
@@ -63,9 +67,9 @@ func greeterPackageInstallHint() string {
 
 	switch config.Family {
 	case distros.FamilyDebian:
-		return "Install with 'sudo apt install dux-greeter' (requires Dux Labs OBS repo — see " + site.Docs + "/dms-greeter/installation#debian)"
+		return "Install with 'sudo apt install " + greeterMapping(config).Name + "' (requires Dux Labs OBS repo — see " + site.Docs + "/dms-greeter/installation#debian)"
 	case distros.FamilySUSE:
-		return "Install with 'sudo zypper install dux-greeter' (requires Dux Labs OBS repo — see " + site.Docs + "/dms-greeter/installation#opensuse--derivatives)"
+		return "Install with 'sudo zypper install " + greeterMapping(config).Name + "' (requires Dux Labs OBS repo — see " + site.Docs + "/dms-greeter/installation#opensuse--derivatives)"
 	case distros.FamilyUbuntu:
 		repo := greeterRepoURL(config)
 		return fmt.Sprintf("Install with 'sudo apt install dux-greeter' (requires %s: sudo add-apt-repository %s)", repo, repo)

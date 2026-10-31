@@ -49,8 +49,7 @@ jobs:
       - name: Check for updates
         id: check
         env:
-          # duxlabs is dispatch-only until its OBS account exists; drop this gate then
-          OWNERS: ${{ github.event_name == 'workflow_dispatch' && inputs.owners || 'avengemedia' }}
+          OWNERS: ${{ inputs.owners || 'all' }}
         run: |
           # The public source API needs no credentials, so one job checks every owner
           check_dms_git() {
@@ -129,7 +128,7 @@ jobs:
 
           # Planned per owner: the new projects may lag the legacy ones
           INCLUDE='[]'
-          for T in duxlabs,,home:duxlabs avengemedia,_LEGACY,home:AvengeMedia; do
+          for T in duxlabs,,home:duxlabs-dev avengemedia,_LEGACY,home:AvengeMedia; do
             IFS=, read -r OWNER SUFFIX PROJECT <<< "$T"
             [[ "$OWNERS" == all || "$OWNERS" == "$OWNER" ]] || continue
             echo "==> $OWNER ($PROJECT)"

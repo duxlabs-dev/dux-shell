@@ -486,31 +486,36 @@ func (d *DebianDistribution) aptInstallArgs(packages []string, minimal bool) []s
 }
 
 func (d *DebianDistribution) RepoMoves() []RepoMove {
-	if !obsMigrationReady || d.isPika() {
+	if d.isPika() {
 		return nil
 	}
-	return obsAptChannel.moves(repoPathExists)
+	return debianOBSMoves(readAPTSources())
 }
 
 func (d *DebianDistribution) ApplyRepoMoves(ctx context.Context, moves []RepoMove, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
 	if err := d.enableOBSRepos(ctx, repoMoveAdds(moves), sudoPassword, progressChan); err != nil {
 		return err
 	}
-	removes := repoMoveRemoves(moves)
-	for _, move := range removes {
-		command := fmt.Sprintf("rm -f %s %s", obsAptListFile(move.Old), obsAptKeyring(move.Old))
+	if renames := aptRenames(moves, newObsRepo(projectDeps), d.packageInstalled); len(renames) > 0 {
+		if err := d.installAPTPackages(ctx, renames, sudoPassword, progressChan); err != nil {
+			return fmt.Errorf("failed to install the renamed packages %s: %w", strings.Join(renames, ", "), err)
+		}
+	}
+	removals := debianRemovals(moves, readAPTSources())
+	for _, paths := range removals {
+		command := "rm -f " + strings.Join(paths, " ")
 		progressChan <- InstallProgressMsg{
 			Phase:       PhaseSystemPackages,
 			Progress:    0.30,
-			Step:        fmt.Sprintf("Removing OBS repo %s...", move.Old),
+			Step:        fmt.Sprintf("Removing OBS repo %s...", paths[0]),
 			NeedsSudo:   true,
 			CommandInfo: "sudo " + command,
 		}
 		if err := d.runWithProgress(privescExec(ctx, sudoPassword, command), progressChan, PhaseSystemPackages, 0.30, 0.35); err != nil {
-			return fmt.Errorf("failed to remove OBS repo %s: %w", move.Old, err)
+			return fmt.Errorf("failed to remove OBS repo %s: %w", paths[0], err)
 		}
 	}
-	if len(removes) == 0 {
+	if len(removals) == 0 {
 		return nil
 	}
 	return d.aptUpdate(ctx, sudoPassword, progressChan)
@@ -521,21 +526,30 @@ func (d *DebianDistribution) RepoMoveCommands(moves []RepoMove) []string {
 	if err != nil {
 		osInfo = &OSInfo{}
 	}
-	return debianRepoMoveCommands(moves, debianOBSRepoVersion(osInfo, readDebianAPTSuites()), debianRepoArchitecture(osInfo.Architecture))
+	dist := debianOBSRepoVersion(osInfo, readDebianAPTSuites())
+	return debianRepoMoveCommands(moves, readAPTSources(), aptRenames(moves, newObsRepo(projectDeps), d.packageInstalled), dist, debianRepoArchitecture(osInfo.Architecture))
 }
 
-func debianRepoMoveCommands(moves []RepoMove, dist, arch string) []string {
+func debianRepoMoveCommands(moves []RepoMove, sources []aptSource, renames []string, dist, arch string) []string {
 	var commands []string
-	for _, add := range repoMoveAdds(moves) {
+	adds := repoMoveAdds(moves)
+	for _, add := range adds {
 		baseURL := obsBaseURL(add.RepoURL, dist)
 		commands = append(commands,
 			fmt.Sprintf("curl -fsSL %s/Release.key | gpg --dearmor | sudo tee %s", baseURL, obsAptKeyring(add.RepoURL)),
 			fmt.Sprintf("echo 'deb [signed-by=%s arch=%s] %s/ /' | sudo tee %s", obsAptKeyring(add.RepoURL), arch, baseURL, obsAptListFile(add.RepoURL)))
 	}
-	for _, move := range repoMoveRemoves(moves) {
-		commands = append(commands, fmt.Sprintf("sudo rm -f %s %s", obsAptListFile(move.Old), obsAptKeyring(move.Old)))
+	if len(adds) > 0 {
+		commands = append(commands, "sudo apt-get update")
 	}
-	if len(commands) > 0 {
+	if len(renames) > 0 {
+		commands = append(commands, "sudo apt-get install -y "+strings.Join(renames, " "))
+	}
+	removals := debianRemovals(moves, sources)
+	for _, paths := range removals {
+		commands = append(commands, "sudo rm -f "+strings.Join(paths, " "))
+	}
+	if len(removals) > 0 {
 		commands = append(commands, "sudo apt-get update")
 	}
 	return commands
@@ -551,6 +565,7 @@ func (d *DebianDistribution) enableOBSRepos(ctx context.Context, obsPkgs []Packa
 
 	obsRepo := debianOBSRepoVersion(osInfo, readDebianAPTSuites())
 	d.log(fmt.Sprintf("Using OBS Debian repository: %s", obsRepo))
+	sources := readAPTSources()
 
 	for _, pkg := range obsPkgs {
 		if pkg.RepoURL != "" && !enabledRepos[pkg.RepoURL] {
@@ -558,9 +573,9 @@ func (d *DebianDistribution) enableOBSRepos(ctx context.Context, obsPkgs []Packa
 
 			baseURL := obsBaseURL(pkg.RepoURL, obsRepo)
 
-			// Check if repository already exists
+			// A second file for the same URI with another keyring makes apt refuse the Signed-By conflict.
 			listFile := obsAptListFile(pkg.RepoURL)
-			if debianOBSListFileMatches(listFile, obsRepo) {
+			if aptSourcesPointAt(sources, pkg.RepoURL, obsRepo) {
 				d.log(fmt.Sprintf("OBS repo %s already exists, skipping", pkg.RepoURL))
 				enabledRepos[pkg.RepoURL] = true
 				continue

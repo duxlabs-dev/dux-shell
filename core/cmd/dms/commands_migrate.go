@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
 	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
@@ -29,7 +30,9 @@ var migrateDuxCmd = &cobra.Command{
 	Long: `Move the DMS package repositories from the legacy AvengeMedia owner to Dux Labs.
 
 Adds the Dux Labs repository for every legacy one found, then removes the legacy
-one. Installed packages are not changed; the next update comes from the new repo.`,
+one. On openSUSE the installed packages are switched to the new repositories,
+which zypper does not do on its own; on Debian the renamed packages are installed
+under their new names. Elsewhere the next update comes from the new repo.`,
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := runMigrateDux(); err != nil {
@@ -100,17 +103,28 @@ func runMigrateDux() error {
 	return nil
 }
 
-func printRepoMoves(moves []distros.RepoMove, commands []string) {
-	fmt.Println("Repositories to move:")
+// Rows with neither repo present still carry a default NewPath, so only a row without a legacy side is an add.
+func repoMoveRows(moves []distros.RepoMove) []string {
+	var rows []string
 	for _, move := range moves {
 		switch {
 		case move.OldPresent:
-			fmt.Printf("  %s → %s\n", move.Old, move.New)
-		case !move.NewPresent && move.NewPath != "":
-			fmt.Printf("  add %s\n", move.New)
+			rows = append(rows, fmt.Sprintf("  %s → %s", move.Old, move.New))
+		case move.Old == "" && !move.NewPresent && move.NewPath != "":
+			rows = append(rows, "  add "+move.New)
 		}
 	}
-	fmt.Println("\nCommands:")
+	return rows
+}
+
+func printRepoMoves(moves []distros.RepoMove, commands []string) {
+	// Repos moved by hand can still leave packages to switch.
+	if rows := repoMoveRows(moves); len(rows) > 0 {
+		fmt.Println("Repositories to move:")
+		fmt.Println(strings.Join(rows, "\n"))
+		fmt.Println()
+	}
+	fmt.Println("Commands:")
 	for _, command := range commands {
 		fmt.Printf("  %s\n", command)
 	}

@@ -19,16 +19,16 @@ BuildRequires:  systemd-rpm-macros
 # Core requirements
 Requires:       (quickshell or quickshell-git)
 Requires:       accountsservice
-Requires:       dgop
 
 # Core utilities (Highly recommended for DMS functionality)
 Recommends:     cava
-Recommends:     danksearch
+Recommends:     (dux-search or danksearch)
 Recommends:     matugen
 Recommends:     NetworkManager
 Recommends:     qt6-multimedia-imports
 Suggests:       cups-pk-helper
 Suggests:       qt6ct
+Suggests:       (dux-gop or dgop)
 
 %description
 Dux Shell (DMS) is a modern Wayland desktop shell built with Quickshell

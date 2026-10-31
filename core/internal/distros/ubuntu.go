@@ -133,6 +133,11 @@ func (u *UbuntuDistribution) ApplyRepoMoves(ctx context.Context, moves []RepoMov
 			return err
 		}
 	}
+	if renames := aptRenames(moves, ppaDeps, u.packageInstalled); len(renames) > 0 {
+		if err := u.installAPTPackages(ctx, renames, sudoPassword, progressChan); err != nil {
+			return fmt.Errorf("failed to install the renamed packages %s: %w", strings.Join(renames, ", "), err)
+		}
+	}
 	removes := repoMoveRemoves(moves)
 	for _, move := range removes {
 		command := "add-apt-repository -r -y " + move.Old
@@ -154,9 +159,16 @@ func (u *UbuntuDistribution) ApplyRepoMoves(ctx context.Context, moves []RepoMov
 }
 
 func (u *UbuntuDistribution) RepoMoveCommands(moves []RepoMove) []string {
+	return ubuntuRepoMoveCommands(moves, aptRenames(moves, ppaDeps, u.packageInstalled))
+}
+
+func ubuntuRepoMoveCommands(moves []RepoMove, renames []string) []string {
 	var commands []string
 	for _, add := range repoMoveAdds(moves) {
 		commands = append(commands, "sudo add-apt-repository -y "+add.RepoURL)
+	}
+	if len(renames) > 0 {
+		commands = append(commands, "sudo apt-get install -y "+strings.Join(renames, " "))
 	}
 	removes := repoMoveRemoves(moves)
 	for _, move := range removes {

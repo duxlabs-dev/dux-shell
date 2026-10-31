@@ -3,6 +3,7 @@ package distros
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -10,6 +11,9 @@ const (
 	obsRepoDebian13       = "Debian_13"
 	obsRepoDebianTesting  = "Debian_Testing"
 	obsRepoDebianUnstable = "Debian_Unstable"
+
+	aptSourcesGlob = "/etc/apt/sources.list.d/*"
+	aptSourcesList = "/etc/apt/sources.list"
 )
 
 func debianOBSRepoVersion(info *OSInfo, aptSuites []string) string {
@@ -51,16 +55,174 @@ func debianOBSRepoVersion(info *OSInfo, aptSuites []string) string {
 	return obsRepoDebianTesting
 }
 
-func debianOBSListFileMatches(path, debianVersion string) bool {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return false
-	}
-	return debianOBSListPointsAt(string(data), debianVersion)
+type aptSource struct {
+	path, uri, signedBy string
+	// Enabled binary entry; deb-src and disabled entries still own their file and keyring.
+	active bool
 }
 
-func debianOBSListPointsAt(contents, debianVersion string) bool {
-	return strings.Contains(contents, "/"+debianVersion+"/")
+// Docs and older installers named the files differently, so sources match on the URI.
+func readAPTSources() []aptSource {
+	var sources []aptSource
+	if content, err := repoReadFile(aptSourcesList); err == nil {
+		sources = parseAPTSources(aptSourcesList, string(content))
+	}
+	for _, path := range repoGlob(aptSourcesGlob) {
+		if !strings.HasSuffix(path, ".list") && !strings.HasSuffix(path, ".sources") {
+			continue
+		}
+		content, err := repoReadFile(path)
+		if err != nil {
+			continue
+		}
+		sources = append(sources, parseAPTSources(path, string(content))...)
+	}
+	return sources
+}
+
+func parseAPTSources(path, content string) []aptSource {
+	if strings.HasSuffix(path, ".sources") {
+		return parseDeb822Sources(path, content)
+	}
+	var sources []aptSource
+	for line := range strings.Lines(content) {
+		kind, rest, _ := strings.Cut(strings.TrimSpace(line), " ")
+		if kind != "deb" && kind != "deb-src" {
+			continue
+		}
+		source := aptSource{path: path, active: kind == "deb"}
+		if options, ok := strings.CutPrefix(strings.TrimSpace(rest), "["); ok {
+			options, rest, ok = strings.Cut(options, "]")
+			if !ok {
+				continue
+			}
+			for _, option := range strings.Fields(options) {
+				if value, ok := strings.CutPrefix(option, "signed-by="); ok {
+					source.signedBy = value
+				}
+			}
+		}
+		if fields := strings.Fields(rest); len(fields) > 0 {
+			source.uri = fields[0]
+			sources = append(sources, source)
+		}
+	}
+	return sources
+}
+
+func parseDeb822Sources(path, content string) []aptSource {
+	var sources []aptSource
+	fields := map[string]string{}
+	var last string
+	flush := func() {
+		types := strings.Fields(fields["types"])
+		if slices.Contains(types, "deb") || slices.Contains(types, "deb-src") {
+			// Signed-By may also hold an inline key block, which no file removal can follow.
+			signedBy, _, _ := strings.Cut(fields["signed-by"], " ")
+			if !strings.HasPrefix(signedBy, "/") {
+				signedBy = ""
+			}
+			active := slices.Contains(types, "deb") && !strings.EqualFold(fields["enabled"], "no")
+			for _, uri := range strings.Fields(fields["uris"]) {
+				sources = append(sources, aptSource{path, uri, signedBy, active})
+			}
+		}
+		clear(fields)
+		last = ""
+	}
+	for line := range strings.Lines(content) {
+		trimmed := strings.TrimSpace(line)
+		switch {
+		case trimmed == "":
+			flush()
+		case strings.HasPrefix(trimmed, "#"):
+		case line[0] == ' ' || line[0] == '\t':
+			if last != "" {
+				fields[last] += " " + trimmed
+			}
+		default:
+			if key, value, ok := strings.Cut(trimmed, ":"); ok {
+				last = strings.ToLower(strings.TrimSpace(key))
+				fields[last] = strings.TrimSpace(value)
+			}
+		}
+	}
+	flush()
+	return sources
+}
+
+func isLegacyOBSURI(uri string) bool {
+	return slices.ContainsFunc(dmsProjects, func(project string) bool {
+		return obsURLMatches(uri, legacyObsRepo(legacyProject(project)))
+	})
+}
+
+// Removal deletes whole files, so a file that also carries other sources never counts as legacy.
+func legacyAPTFiles(sources []aptSource) map[string]bool {
+	files := map[string]bool{}
+	for _, source := range sources {
+		legacy, seen := files[source.path]
+		files[source.path] = (legacy || !seen) && isLegacyOBSURI(source.uri) && source.path != aptSourcesList
+	}
+	return files
+}
+
+func debianOBSMoves(sources []aptSource) []RepoMove {
+	legacyFiles := legacyAPTFiles(sources)
+	var moves []RepoMove
+	for _, project := range dmsProjects {
+		move := RepoMove{Kind: RepoTypeOBS, Old: legacyObsRepo(legacyProject(project)), New: newObsRepo(project)}
+		move.OldPath, move.NewPath = obsAptListFile(move.Old), obsAptListFile(move.New)
+		for _, source := range sources {
+			switch {
+			case !source.active:
+			case !move.OldPresent && legacyFiles[source.path] && obsURLMatches(source.uri, move.Old):
+				move.OldPath, move.OldPresent = source.path, true
+			case !move.NewPresent && obsURLMatches(source.uri, move.New):
+				move.NewPath, move.NewPresent = source.path, true
+			}
+		}
+		moves = append(moves, move)
+	}
+	return moves
+}
+
+func debianRemovals(moves []RepoMove, sources []aptSource) [][]string {
+	legacyFiles := legacyAPTFiles(sources)
+	removes := repoMoveRemoves(moves)
+	// Every legacy file goes, not just the one a move reports: docs and installers each wrote their own.
+	var files []string
+	for _, source := range sources {
+		if !source.active || !legacyFiles[source.path] || slices.Contains(files, source.path) {
+			continue
+		}
+		if slices.ContainsFunc(removes, func(move RepoMove) bool { return obsURLMatches(source.uri, move.Old) }) {
+			files = append(files, source.path)
+		}
+	}
+	var removals [][]string
+	for _, file := range files {
+		paths := []string{file}
+		for _, source := range sources {
+			if source.path != file || source.signedBy == "" || slices.Contains(paths, source.signedBy) {
+				continue
+			}
+			kept := slices.ContainsFunc(sources, func(other aptSource) bool {
+				return other.signedBy == source.signedBy && !slices.Contains(files, other.path)
+			})
+			if !kept {
+				paths = append(paths, source.signedBy)
+			}
+		}
+		removals = append(removals, paths)
+	}
+	return removals
+}
+
+func aptSourcesPointAt(sources []aptSource, repo, dist string) bool {
+	return slices.ContainsFunc(sources, func(source aptSource) bool {
+		return source.active && obsURLMatches(source.uri, repo) && strings.HasSuffix(strings.TrimSuffix(source.uri, "/"), "/"+dist)
+	})
 }
 
 func readDebianAPTSuites() []string {

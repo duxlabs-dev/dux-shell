@@ -14,8 +14,7 @@ Depends: ${misc:Depends},
          quickshell | quickshell-git,
          accountsservice,
          cava,
-         danksearch,
-         dgop,
+         dux-search | danksearch,
          matugen,
          qml6-module-qtcore,
          qml6-module-qtmultimedia,
@@ -28,6 +27,7 @@ Depends: ${misc:Depends},
          qml6-module-qtquick-templates,
          qml6-module-qtquick-window,
          qt6ct
+Suggests: dux-gop | dgop
 Conflicts: dms-git
 Replaces: dms-git
 Description: Dux Shell - Modern Wayland Desktop Shell

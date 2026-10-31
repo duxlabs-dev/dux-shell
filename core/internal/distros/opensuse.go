@@ -133,15 +133,31 @@ func (o *OpenSUSEDistribution) SwapVariants(ctx context.Context, swaps []Variant
 }
 
 func (o *OpenSUSEDistribution) RepoMoves() []RepoMove {
-	if !obsMigrationReady {
-		return nil
-	}
 	return obsZypperChannel.moves(repoPathExists)
 }
 
 func (o *OpenSUSEDistribution) ApplyRepoMoves(ctx context.Context, moves []RepoMove, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
-	if err := o.enableOBSRepos(ctx, repoMoveAdds(moves), sudoPassword, progressChan); err != nil {
+	adds := repoMoveAdds(moves)
+	if err := o.enableOBSRepos(ctx, adds, sudoPassword, progressChan); err != nil {
 		return err
+	}
+	if command := zypperVendorSwitch(moves, parseRPMDistributions(rpmQueryDistributions())); command != "" {
+		if len(adds) == 0 {
+			if err := o.runWithProgress(privescExec(ctx, sudoPassword, zypperKeyRefresh), progressChan, PhaseSystemPackages, 0.26, 0.28); err != nil {
+				return fmt.Errorf("failed to refresh the new repositories: %w", err)
+			}
+		}
+		progressChan <- InstallProgressMsg{
+			Phase:       PhaseSystemPackages,
+			Progress:    0.28,
+			Step:        "Switching installed packages to the new repositories...",
+			NeedsSudo:   true,
+			CommandInfo: "sudo " + command,
+		}
+		// Runs before the legacy repos go, so a failed switch is retried on the next run.
+		if err := o.runWithProgress(privescExec(ctx, sudoPassword, command), progressChan, PhaseSystemPackages, 0.28, 0.30); err != nil {
+			return fmt.Errorf("failed to switch packages to the new repositories: %w", err)
+		}
 	}
 	for _, move := range repoMoveRemoves(moves) {
 		command := "zypper removerepo " + obsZypperAlias(move.Old)
@@ -164,17 +180,22 @@ func (o *OpenSUSEDistribution) RepoMoveCommands(moves []RepoMove) []string {
 	if err != nil {
 		osInfo = &OSInfo{}
 	}
-	return opensuseRepoMoveCommands(moves, opensuseOBSDist(osInfo))
+	return opensuseRepoMoveCommands(moves, opensuseOBSDist(osInfo), parseRPMDistributions(rpmQueryDistributions()))
 }
 
-func opensuseRepoMoveCommands(moves []RepoMove, dist string) []string {
+func opensuseRepoMoveCommands(moves []RepoMove, dist string, installed []rpmPackage) []string {
 	var commands []string
 	adds := repoMoveAdds(moves)
 	for _, add := range adds {
 		commands = append(commands, "sudo zypper addrepo -f "+obsZypperRepoURL(add.RepoURL, dist))
 	}
-	if len(adds) > 0 {
-		commands = append(commands, "sudo zypper --gpg-auto-import-keys refresh")
+	switchCommand := zypperVendorSwitch(moves, installed)
+	// Repos added by hand may never have had their signing key accepted.
+	if len(adds) > 0 || switchCommand != "" {
+		commands = append(commands, "sudo "+zypperKeyRefresh)
+	}
+	if switchCommand != "" {
+		commands = append(commands, "sudo "+switchCommand)
 	}
 	for _, move := range repoMoveRemoves(moves) {
 		commands = append(commands, "sudo zypper removerepo "+obsZypperAlias(move.Old))
@@ -182,10 +203,65 @@ func opensuseRepoMoveCommands(moves []RepoMove, dist string) []string {
 	return commands
 }
 
+const zypperKeyRefresh = "zypper --gpg-auto-import-keys refresh"
+
+type rpmPackage struct {
+	name, version, project string
+}
+
+// OBS stamps Distribution "<project> / <repository>", which outlives the repo being removed.
+func rpmQueryDistributions() string {
+	out, _ := exec.Command("rpm", "-qa", "--qf", `%{NAME}\t%{VERSION}\t%{DISTRIBUTION}\n`).Output()
+	return string(out)
+}
+
+func parseRPMDistributions(out string) []rpmPackage {
+	var packages []rpmPackage
+	for line := range strings.Lines(out) {
+		fields := strings.Split(strings.TrimRight(line, "\n"), "\t")
+		if len(fields) != 3 {
+			continue
+		}
+		project, _, _ := strings.Cut(fields[2], " / ")
+		packages = append(packages, rpmPackage{fields[0], fields[1], strings.TrimSpace(project)})
+	}
+	return packages
+}
+
+// zypper keeps packages on their vendor, so whatever a legacy project built is reinstalled from the new one.
+// OBS restarts the release counter in a new project, so compare Version only.
+func zypperVendorSwitch(moves []RepoMove, installed []rpmPackage) string {
+	var froms, capabilities []string
+	for _, move := range moves {
+		if !move.newEnabled() {
+			continue
+		}
+		from := "--from " + obsZypperAlias(move.New)
+		for _, pkg := range installed {
+			if pkg.project != move.Old {
+				continue
+			}
+			name := pkg.name
+			if renamed, ok := renamedTo(name); ok {
+				name = renamed
+			}
+			capabilities = append(capabilities, fmt.Sprintf("'%s>=%s'", name, pkg.version))
+			if !slices.Contains(froms, from) {
+				froms = append(froms, from)
+			}
+		}
+	}
+	if len(capabilities) == 0 {
+		return ""
+	}
+	return "zypper --non-interactive install --oldpackage --allow-vendor-change " + strings.Join(froms, " ") + " " + strings.Join(capabilities, " ")
+}
+
 func opensuseOBSDist(osInfo *OSInfo) string {
 	switch osInfo.Distribution.ID {
 	case "opensuse-leap":
-		return "openSUSE_Leap_" + osInfo.VersionID
+		// The projects name their Leap repositories by bare version, e.g. 16.0.
+		return osInfo.VersionID
 	case "opensuse-slowroll":
 		return "openSUSE_Slowroll"
 	}

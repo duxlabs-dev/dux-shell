@@ -3,6 +3,7 @@ package distros
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -14,7 +15,7 @@ import (
 
 const (
 	coprOwner = "duxlabs"
-	obsHome   = "home:duxlabs"
+	obsHome   = "home:duxlabs-dev"
 	ppaOwner  = "duxlabs"
 
 	legacyCoprOwner = "avengemedia"
@@ -33,9 +34,6 @@ const (
 	voidConfGlob   = "/etc/xbps.d/*.conf"
 )
 
-// The duxlabs OBS projects are not published yet, so Debian and openSUSE stay on the legacy ones.
-const obsMigrationReady = false
-
 var dmsProjects = []string{projectDMS, projectDMSGit, projectDeps}
 
 func legacyProject(project string) string {
@@ -52,17 +50,24 @@ func legacyPpaRepo(project string) string  { return "ppa:" + legacyPpaOwner + "/
 func legacyObsRepo(project string) string  { return legacyObsHome + ":" + project }
 func newObsRepo(project string) string     { return obsHome + ":" + project }
 
-// obsRepo is what the mappings install from; the move tables use newObsRepo regardless of the gate.
-func obsRepo(project string) string {
-	if !obsMigrationReady {
-		return legacyObsRepo(legacyProject(project))
+func renamedTo(old string) (string, bool) {
+	for name, was := range renamedPackages {
+		if was == old {
+			return name, true
+		}
 	}
-	return newObsRepo(project)
+	return "", false
+}
+
+// A deb line may spell the project either way; download.opensuse.org serves both.
+func obsURLMatches(uri, repo string) bool {
+	return strings.Contains(uri, "/repositories/"+strings.ReplaceAll(repo, ":", ":/")+"/") ||
+		strings.Contains(uri, "/repositories/"+repo+"/")
 }
 
 var (
 	coprDMS, coprDMSGit, coprDeps = coprRepo(projectDMS), coprRepo(projectDMSGit), coprRepo(projectDeps)
-	obsDMS, obsDMSGit, obsDeps    = obsRepo(projectDMS), obsRepo(projectDMSGit), obsRepo(projectDeps)
+	obsDMS, obsDMSGit, obsDeps    = newObsRepo(projectDMS), newObsRepo(projectDMSGit), newObsRepo(projectDeps)
 	ppaDMS, ppaDMSGit, ppaDeps    = ppaRepo(projectDMS), ppaRepo(projectDMSGit), ppaRepo(projectDeps)
 )
 
@@ -200,13 +205,13 @@ func firstExisting(exists func(string) bool, paths []string) (string, bool) {
 
 var (
 	coprChannel      = repoChannel{RepoTypeCOPR, coprRepo, legacyCoprRepo, func(r string) []string { return []string{coprRepoFile(r)} }, true}
-	obsAptChannel    = repoChannel{RepoTypeOBS, newObsRepo, legacyObsRepo, func(r string) []string { return []string{obsAptListFile(r)} }, false}
 	obsZypperChannel = repoChannel{RepoTypeOBS, newObsRepo, legacyObsRepo, func(r string) []string { return []string{obsZypperRepoFile(r)} }, false}
 	ppaChannel       = repoChannel{RepoTypePPA, ppaRepo, legacyPpaRepo, ppaSourcesGlobs, true}
 )
 
 func (m RepoMove) needsAdd() bool    { return m.OldPresent && !m.NewPresent }
 func (m RepoMove) needsRemove() bool { return m.OldPresent }
+func (m RepoMove) newEnabled() bool  { return m.NewPresent || m.needsAdd() }
 
 // The enable*Repos helpers only read RepoURL; two legacy rows can share a target.
 func repoMoveAdds(moves []RepoMove) []PackageMapping {
@@ -244,6 +249,20 @@ func (b *BaseDistribution) aptUpdate(ctx context.Context, sudoPassword string, p
 		return fmt.Errorf("failed to update package lists: %w", err)
 	}
 	return nil
+}
+
+// Installs the new names now: the transitional old-name packages can share the legacy version and never upgrade.
+func aptRenames(moves []RepoMove, deps string, installed func(string) bool) []string {
+	if !slices.ContainsFunc(moves, func(move RepoMove) bool { return move.New == deps && move.newEnabled() }) {
+		return nil
+	}
+	var renames []string
+	for _, name := range slices.Sorted(maps.Keys(renamedPackages)) {
+		if installed(renamedPackages[name]) && !installed(name) {
+			renames = append(renames, name)
+		}
+	}
+	return renames
 }
 
 func LegacyRepoPaths(moves []RepoMove) []string {
