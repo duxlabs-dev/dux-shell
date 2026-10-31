@@ -36,6 +36,7 @@ done < <(git log --format=%B "${BASE}..origin/${TARGET}" 2>/dev/null |
   grep -oE 'cherry picked from commit [0-9a-f]{40}' | awk '{print $5}')
 
 # git cherry: "+ sha" = not on target (by patch-id), "- sha" = equivalent exists
+port_shas=()
 fixes=""
 others=""
 flagged=""
@@ -52,6 +53,7 @@ while read -r mark sha; do
   author=$(git log -1 --format=%an "$sha")
   case "$author" in *"[bot]"*) continue ;; esac
   short=$(git rev-parse --short "$sha")
+  port_shas+=("$short")
   pr=$(grep -oE '#[0-9]+' <<<"$subject" | head -1 || true)
   line="- [ ] \`${short}\` ${subject} (${author}${pr:+, ${pr}})"
   # explicit "port X.Y" mention anywhere in the message = strongest signal
@@ -72,6 +74,11 @@ if [ "$flagged_count" -gt 0 ]; then
   FLAGGED_SECTION="### :warning: Flagged \"port ${VER}\" but not applied (${flagged_count})"$'\n\n'"${flagged}"
 fi
 
+PORT_COMMAND=""
+if [ "${#port_shas[@]}" -gt 0 ]; then
+  PORT_COMMAND=$'\n\n'"scripts/port.sh ${TARGET} ${port_shas[*]}"
+fi
+
 REPORT=$(cat <<EOF
 ## Port audit: \`${TARGET}\` vs \`master\`
 
@@ -86,7 +93,7 @@ ${fixes:-_none — all caught up_ }
 
 ${others:-none}
 
-</details>
+</details>${PORT_COMMAND}
 EOF
 )
 

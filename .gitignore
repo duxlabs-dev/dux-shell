@@ -58,6 +58,7 @@ CLAUDE-activeContext.md
 CLAUDE-temp.md
 AGENTS-activeContext.md
 AGENTS-temp.md
+.agents/settings.local.json
 
 # Auto-generated theme files
 *.generated.*
