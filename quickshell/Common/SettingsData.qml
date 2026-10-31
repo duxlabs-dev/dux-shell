@@ -1163,6 +1163,7 @@ Singleton {
     property bool updaterPauseOnBattery: Spec.SPEC.updaterPauseOnBattery.def
     property int updaterNotifyMinSeconds: Spec.SPEC.updaterNotifyMinSeconds.def
     property bool updaterIncludeFlatpak: Spec.SPEC.updaterIncludeFlatpak.def
+    property bool updaterIncludeHomebrew: Spec.SPEC.updaterIncludeHomebrew.def
     property bool updaterAllowAUR: Spec.SPEC.updaterAllowAUR.def
     property bool updaterReopenAfterUpgrade: Spec.SPEC.updaterReopenAfterUpgrade.def
     property bool updaterUpgradeInWindow: Spec.SPEC.updaterUpgradeInWindow.def

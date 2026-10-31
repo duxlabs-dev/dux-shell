@@ -38,7 +38,8 @@ Examples:
   dms system update --noconfirm              # apply updates without prompting
   dms system update --interactive            # let the package manager ask its own questions
   dms system update --dry                    # simulate without changing anything
-  dms system update --no-flatpak --noconfirm # apply system updates only
+  dms system update --no-flatpak --noconfirm # skip Flatpak updates
+  dms system update --no-homebrew            # skip Homebrew updates
   dms system update --interval 3600          # set the server poll interval to 1h`,
 	Run: runSystemUpdate,
 }
@@ -50,6 +51,7 @@ var (
 	sysUpdateDry         bool
 	sysUpdateJSON        bool
 	sysUpdateNoFlatpak   bool
+	sysUpdateNoHomebrew  bool
 	sysUpdateNoAUR       bool
 	sysUpdateIgnore      []string
 	sysUpdateIntervalS   int
@@ -63,6 +65,7 @@ func init() {
 	systemUpdateCmd.Flags().BoolVar(&sysUpdateDry, "dry", false, "Simulate the upgrade without applying changes")
 	systemUpdateCmd.Flags().BoolVar(&sysUpdateJSON, "json", false, "Output as JSON (with --check)")
 	systemUpdateCmd.Flags().BoolVar(&sysUpdateNoFlatpak, "no-flatpak", false, "Skip the Flatpak overlay")
+	systemUpdateCmd.Flags().BoolVar(&sysUpdateNoHomebrew, "no-homebrew", false, "Skip the Homebrew overlay")
 	systemUpdateCmd.Flags().BoolVar(&sysUpdateNoAUR, "no-aur", false, "Skip AUR updates")
 	systemUpdateCmd.Flags().StringSliceVar(&sysUpdateIgnore, "ignore", nil, "Skip specific packages (repeatable or comma-separated)")
 	systemUpdateCmd.Flags().IntVar(&sysUpdateIntervalS, "interval", -1, "Set the DMS server poll interval in seconds and exit (requires running server)")
@@ -89,12 +92,15 @@ func runSystemUpdate(cmd *cobra.Command, args []string) {
 func selectBackends(ctx context.Context) []sysupdate.Backend {
 	sel := sysupdate.Select(ctx)
 	backends := sel.All()
-	if !sysUpdateNoFlatpak {
+	if !sysUpdateNoFlatpak && !sysUpdateNoHomebrew {
 		return backends
 	}
 	out := backends[:0]
 	for _, b := range backends {
-		if b.Repo() == sysupdate.RepoFlatpak {
+		if sysUpdateNoFlatpak && b.Repo() == sysupdate.RepoFlatpak {
+			continue
+		}
+		if sysUpdateNoHomebrew && b.Repo() == sysupdate.RepoHomebrew {
 			continue
 		}
 		out = append(out, b)
@@ -201,12 +207,13 @@ func runSystemUpdateApply() {
 	defer cancel()
 
 	opts := sysupdate.UpgradeOptions{
-		Targets:        pkgs,
-		IncludeFlatpak: !sysUpdateNoFlatpak,
-		IncludeAUR:     !sysUpdateNoAUR,
-		Ignored:        sysUpdateIgnore,
-		DryRun:         sysUpdateDry,
-		UseSudo:        true,
+		Targets:         pkgs,
+		IncludeFlatpak:  !sysUpdateNoFlatpak,
+		IncludeHomebrew: !sysUpdateNoHomebrew,
+		IncludeAUR:      !sysUpdateNoAUR,
+		Ignored:         sysUpdateIgnore,
+		DryRun:          sysUpdateDry,
+		UseSudo:         true,
 	}
 	opts.AttachStdio = sysupdate.UpgradeNeedsPrivilege(backends, pkgs, opts)
 	opts.Interactive = sysUpdateInteractive && opts.AttachStdio

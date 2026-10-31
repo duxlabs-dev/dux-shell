@@ -12,7 +12,7 @@ const extract = (name) => {
 };
 
 const scope = vm.createContext({
-    SettingsData: { updaterIgnoredPackages: [], updaterAllowAUR: true, updaterIncludeFlatpak: true },
+    SettingsData: { updaterIgnoredPackages: [], updaterAllowAUR: true, updaterIncludeFlatpak: true, updaterIncludeHomebrew: true },
     pkgManager: "portage",
     systemHoldsAllowed: true,
 });
@@ -71,4 +71,27 @@ test("excluded flatpak updates are dropped from the list", () => {
         assert.deepEqual(scope._filterUpdates(pkgs).map(p => p.name), want, `includeFlatpak=${include}`);
     }
     scope.SettingsData.updaterIncludeFlatpak = true;
+});
+
+test("excluded homebrew updates are dropped from the list", () => {
+    scope.SettingsData.updaterIgnoredPackages = [];
+    const pkgs = [
+        { name: "git", repo: "homebrew", backend: "homebrew" },
+        { name: "mail-client/thunderbird", repo: "gentoo (ebuild)", backend: "portage" },
+    ];
+    for (const [include, want] of [[true, ["git", "mail-client/thunderbird"]], [false, ["mail-client/thunderbird"]]]) {
+        scope.SettingsData.updaterIncludeHomebrew = include;
+        assert.deepEqual(scope._filterUpdates(pkgs).map(p => p.name), want, `includeHomebrew=${include}`);
+    }
+    scope.SettingsData.updaterIncludeHomebrew = true;
+});
+
+test("shelly holds only overlay packages", () => {
+    scope.pkgManager = "shelly";
+    try {
+        for (const [repo, want] of [["flatpak", true], ["homebrew", true], ["system", false], ["aur", false]])
+            assert.equal(scope.canIgnorePackage({ name: "pkg", repo }), want, repo);
+    } finally {
+        scope.pkgManager = "portage";
+    }
 });

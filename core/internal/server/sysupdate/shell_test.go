@@ -287,6 +287,7 @@ func TestRebootPackages(t *testing.T) {
 		{Name: "linux-zen", Repo: RepoSystem}, {Name: "kernel-core", Repo: RepoSystem}, {Name: "linux-image-6.12.0-amd64", Repo: RepoSystem},
 		{Name: "systemd", Repo: RepoSystem}, {Name: "glibc", Repo: RepoSystem}, {Name: "firefox", Repo: RepoSystem},
 		{Name: "linux-headers", Repo: RepoAUR}, {Name: "kernel-tools", Repo: RepoSystem},
+		{Name: "glibc", Repo: RepoHomebrew}, {Name: "mesa", Repo: RepoHomebrew},
 	}
 	got := rebootPackages(pkgs)
 	want := []string{"linux-zen", "kernel-core", "linux-image-6.12.0-amd64", "systemd", "glibc", "kernel-tools"}

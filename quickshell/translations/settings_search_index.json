@@ -9304,6 +9304,22 @@
     "parentLabel": "System & integrations"
   },
   {
+    "section": "systemUpdaterHomebrew",
+    "label": "Include Homebrew updates",
+    "tabIndex": 20,
+    "category": "Software updates",
+    "keywords": [
+      "brew",
+      "homebrew",
+      "include",
+      "integrations",
+      "software",
+      "system",
+      "updates"
+    ],
+    "parentLabel": "System & integrations"
+  },
+  {
     "section": "systemUpdaterNotifyMin",
     "label": "Notify at most",
     "tabIndex": 20,
@@ -9449,6 +9465,7 @@
     "keywords": [
       "aur",
       "flatpak",
+      "homebrew",
       "integrations",
       "packages",
       "software",

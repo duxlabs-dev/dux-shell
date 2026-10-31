@@ -63,6 +63,7 @@ Item {
     readonly property bool upgradeInWindow: SettingsData.updaterUpgradeInWindow && !upgradeRunsInTerminal
     readonly property int systemCount: SystemUpdateService.systemUpdates.length
     readonly property int flatpakCount: SystemUpdateService.systemUpdates.filter(p => p.repo === "flatpak").length
+    readonly property int homebrewCount: SystemUpdateService.systemUpdates.filter(p => p.repo === "homebrew").length
     readonly property bool busy: SystemUpdateService.isChecking || SystemUpdateService.isUpgrading
     // A refresh clears the log, so a log next to an error means the upgrade itself failed.
     readonly property bool upgradeFailed: SystemUpdateService.hasError && !busy && (SystemUpdateService.recentLog || []).length > 0
@@ -274,6 +275,7 @@ Item {
     function runUpdateAll(interactive) {
         SystemUpdateService.runUpdates({
             includeFlatpak: SettingsData.updaterIncludeFlatpak,
+            includeHomebrew: SettingsData.updaterIncludeHomebrew,
             includeAUR: SettingsData.updaterAllowAUR,
             terminal: SessionData.terminalOverride,
             interactive: interactive === true
@@ -452,7 +454,7 @@ Item {
             title: I18n.tr("System packages", "software updates card title, package manager updates")
             iconName: "inventory_2"
             settingKey: "softwareUpdatesSystem"
-            tags: ["system", "packages", "flatpak", "aur"]
+            tags: ["system", "packages", "flatpak", "homebrew", "aur"]
 
             SettingsRow {
                 title: {
@@ -460,8 +462,12 @@ Item {
                         return I18n.tr("No supported package manager found.");
                     if (root.systemCount === 0)
                         return I18n.tr("Up to date");
-                    const base = root.countText(root.systemCount);
-                    return root.flatpakCount > 0 ? base + " · " + I18n.tr("%1 Flatpak", "count of flatpak updates, %1 is a number").arg(root.flatpakCount) : base;
+                    const parts = [root.countText(root.systemCount)];
+                    if (root.flatpakCount > 0)
+                        parts.push(I18n.tr("%1 Flatpak", "count of flatpak updates, %1 is a number").arg(root.flatpakCount));
+                    if (root.homebrewCount > 0)
+                        parts.push(I18n.tr("%1 Homebrew", "count of homebrew updates, %1 is a number").arg(root.homebrewCount));
+                    return parts.join(" · ");
                 }
                 subtitle: {
                     const distro = SystemUpdateService.distributionPretty || SystemUpdateService.distribution;
@@ -686,6 +692,15 @@ Item {
                 visible: (SystemUpdateService.backends || []).some(b => b.repo === "flatpak")
                 checked: SettingsData.updaterIncludeFlatpak
                 onToggled: checked => SettingsData.set("updaterIncludeFlatpak", checked)
+            }
+
+            SettingsToggleRow {
+                settingKey: "systemUpdaterHomebrew"
+                tags: ["homebrew", "brew", "include"]
+                text: I18n.tr("Include Homebrew updates", "software updates setting, toggle to include homebrew packages in updates")
+                visible: (SystemUpdateService.backends || []).some(b => b.repo === "homebrew")
+                checked: SettingsData.updaterIncludeHomebrew
+                onToggled: checked => SettingsData.set("updaterIncludeHomebrew", checked)
             }
 
             SettingsToggleRow {

@@ -17,7 +17,7 @@ type RebootInfo struct {
 func rebootPackages(pkgs []Package) []string {
 	var out []string
 	for _, p := range pkgs {
-		if p.Repo == RepoFlatpak || p.Repo == RepoAUR {
+		if p.Repo == RepoFlatpak || p.Repo == RepoAUR || p.Repo == RepoHomebrew {
 			continue
 		}
 		if rebootPackageRe.MatchString(strings.ToLower(p.Name)) {

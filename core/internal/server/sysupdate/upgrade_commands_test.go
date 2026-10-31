@@ -116,6 +116,37 @@ func TestUpgradeCommandBuilders(t *testing.T) {
 			want: []string{"flatpak", "update", "-y", "--noninteractive", "com.discordapp.Discord//stable"},
 		},
 		{
+			name: "homebrew full upgrade",
+			got:  brewUpgradeArgv("brew", UpgradeOptions{}),
+			want: []string{"brew", "upgrade"},
+		},
+		{
+			name: "homebrew dry run",
+			got:  brewUpgradeArgv("brew", UpgradeOptions{DryRun: true}),
+			want: []string{"brew", "upgrade", "--dry-run"},
+		},
+		{
+			name: "homebrew with ignored packages names the remaining targets",
+			got: brewUpgradeArgv("brew", UpgradeOptions{
+				Ignored: []string{"node"},
+				Targets: []Package{
+					{Name: "git", Repo: RepoHomebrew, Backend: "homebrew"},
+					{Name: "bad;name", Repo: RepoHomebrew, Backend: "homebrew"},
+					{Name: "python@3.13", Repo: RepoHomebrew, Backend: "homebrew"},
+					{Name: "bash", Repo: RepoSystem, Backend: "apt"},
+				},
+			}),
+			want: []string{"brew", "upgrade", "git", "python@3.13"},
+		},
+		{
+			name: "homebrew with every target ignored runs nothing",
+			got: brewUpgradeArgv("brew", UpgradeOptions{
+				Ignored: []string{"git"},
+				Targets: []Package{{Name: "bash", Repo: RepoSystem, Backend: "apt"}},
+			}),
+			want: nil,
+		},
+		{
 			name: "rpm-ostree upgrade",
 			got:  rpmOstreeUpgradeArgv(UpgradeOptions{}),
 			want: []string{"rpm-ostree", "upgrade"},
@@ -267,6 +298,31 @@ func TestUpgradeBackendsFiltersFlatpakOnly(t *testing.T) {
 	}
 }
 
+func TestUpgradeBackendsFiltersHomebrew(t *testing.T) {
+	sel := Selection{
+		System:  dnfBackend{bin: "dnf5"},
+		Overlay: []Backend{homebrewBackend{bin: "brew"}},
+	}
+	opts := UpgradeOptions{
+		IncludeHomebrew: true,
+		Targets: []Package{
+			{Name: "bash.x86_64", Repo: RepoSystem, Backend: "dnf5"},
+			{Name: "git", Repo: RepoHomebrew, Backend: "homebrew"},
+		},
+	}
+
+	got := upgradeBackends(sel, opts)
+	if len(got) != 2 || got[1].ID() != "homebrew" {
+		t.Fatalf("upgradeBackends(included) = %#v, want dnf5 then homebrew", got)
+	}
+
+	opts.IncludeHomebrew = false
+	got = upgradeBackends(sel, opts)
+	if len(got) != 1 || got[0].ID() != "dnf5" {
+		t.Fatalf("upgradeBackends(excluded) = %#v, want only dnf5", got)
+	}
+}
+
 func TestWrapInTerminal(t *testing.T) {
 	tests := []struct {
 		term       string
@@ -296,7 +352,7 @@ func TestInteractiveUpgradeCommand(t *testing.T) {
 		IncludeFlatpak: true,
 		Ignored:        []string{"linux", "bad;name", "discord"},
 	})
-	want := `'/opt/it'\''s/dms' system update --interactive --no-aur --ignore linux,discord`
+	want := `'/opt/it'\''s/dms' system update --interactive --no-homebrew --no-aur --ignore linux,discord`
 	if got != want {
 		t.Fatalf("command = %q, want %q", got, want)
 	}

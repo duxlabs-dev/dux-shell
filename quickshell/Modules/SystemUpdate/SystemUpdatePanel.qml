@@ -67,6 +67,7 @@ FocusScope {
         }
         const opts = {
             includeFlatpak: SettingsData.updaterIncludeFlatpak,
+            includeHomebrew: SettingsData.updaterIncludeHomebrew,
             includeAUR: SettingsData.updaterAllowAUR,
             terminal: SessionData.terminalOverride
         };
@@ -132,7 +133,7 @@ FocusScope {
                     text: {
                         const kinds = [];
                         for (const backend of SystemUpdateService.backends || []) {
-                            const label = backend.repo === "flatpak" ? "Flatpak" : I18n.tr("System");
+                            const label = backend.repo === "flatpak" ? "Flatpak" : backend.repo === "homebrew" ? "Homebrew" : I18n.tr("System");
                             if (!kinds.includes(label))
                                 kinds.push(label);
                         }
