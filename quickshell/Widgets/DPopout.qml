@@ -88,7 +88,7 @@ Item {
                 return list.concat(transientWindows);
             if (root.backgroundWindow && root.backgroundWindow !== root.contentWindow)
                 list.push(root.backgroundWindow);
-            return list.concat(transientWindows).concat(KeyboardFocus.barWindows);
+            return list.concat(transientWindows).concat(KeyboardFocus.barWindows, KeyboardFocus.grabPeerWindows);
         }
         wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible, root.customKeyboardFocus)
     }

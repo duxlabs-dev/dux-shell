@@ -33,6 +33,10 @@ QtObject {
         {
             "id": "builtin_display_profiles",
             "component": displayProfilesComponent
+        },
+        {
+            "id": "builtin_config_profiles",
+            "component": configProfilesComponent
         }
     ]
 
@@ -47,6 +51,9 @@ QtObject {
     }
     readonly property Component displayProfilesComponent: Component {
         DisplayProfilesWidget {}
+    }
+    readonly property Component configProfilesComponent: Component {
+        ConfigProfilesWidget {}
     }
 
     readonly property Instantiator builtinLoaders: Instantiator {
@@ -437,6 +444,16 @@ QtObject {
             "icon": "monitor",
             "type": "builtin_plugin",
             "category": "display",
+            "enabled": true,
+            "isBuiltinPlugin": true
+        },
+        {
+            "id": "builtin_config_profiles",
+            "text": I18n.tr("Profiles"),
+            "description": I18n.tr("Switch between saved setups", "control center widget description for config profiles"),
+            "icon": "style",
+            "type": "builtin_plugin",
+            "category": "system",
             "enabled": true,
             "isBuiltinPlugin": true
         }

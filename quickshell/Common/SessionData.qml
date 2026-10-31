@@ -19,6 +19,7 @@ Singleton {
     readonly property int sessionConfigVersion: 7
 
     signal loaded
+    signal saved
     signal brightnessDisplayHintChanged(string deviceName)
     signal loadErrorOccurred(string file, string message)
 
@@ -294,6 +295,7 @@ Singleton {
 
     property var niriOutputSettings: ({})
     property var hyprlandOutputSettings: ({})
+    property string activeConfigProfile: ""
     property var activeDisplayProfile: ({})
     property var activeDisplayProfileModes: ({})
     property var desktopWidgetGridSettings: ({})
@@ -484,6 +486,69 @@ Singleton {
         settingsFile.setText(getCurrentSessionJson());
         if (_isReadOnly)
             _checkSessionWritable();
+        saved();
+    }
+
+    function profileValues(keys) {
+        const out = {};
+        for (const key of keys) {
+            if (key in Spec.SPEC)
+                out[key] = JSON.parse(JSON.stringify(root[key]));
+        }
+        return out;
+    }
+
+    function applyProfileValues(values) {
+        const themeKeys = ["perModeWallpaper", "perMonitorWallpaper", "monitorWallpapers", "materialWallpapers", "materialWallpaperProfiles"];
+        const modeSlotKeys = ["wallpaperPathLight", "wallpaperPathDark", "monitorWallpapersLight", "monitorWallpapersDark"];
+        let changed = false;
+        let themeChanged = false;
+        let slotChanged = false;
+        for (const key of Object.keys(values)) {
+            if (key === "isLightMode" || key === "wallpaperPath" || !(key in Spec.SPEC))
+                continue;
+            const coerce = Spec.SPEC[key].coerce;
+            const value = JSON.parse(JSON.stringify(values[key]));
+            const coerced = coerce ? coerce(value) : value;
+            // An equal object still fires change handlers, which would drop a loading wallpaper transition.
+            if (coerced === undefined || SpecUtil.stableStringify(coerced) === SpecUtil.stableStringify(root[key]))
+                continue;
+            root[key] = coerced;
+            changed = true;
+            if (themeKeys.includes(key))
+                themeChanged = true;
+            else if (modeSlotKeys.includes(key))
+                slotChanged = true;
+        }
+        if (slotChanged && perModeWallpaper)
+            themeChanged = true;
+
+        if ("isLightMode" in values && values.isLightMode !== isLightMode) {
+            themeChanged = true;
+            // Theme.setLightMode also turns off matugenSmartMode, which the profile sets itself.
+            setLightMode(values.isLightMode, true);
+            SettingsData.updateCosmicThemeMode(values.isLightMode);
+        }
+
+        // With per-mode wallpapers the stored single path may belong to the other mode; the slots decide.
+        const path = !perModeWallpaper || perMonitorWallpaper ? values.wallpaperPath : undefined;
+        if (path !== undefined && path !== wallpaperPath)
+            themeChanged = true;
+        if (!themeChanged) {
+            if (changed)
+                saveSettings();
+            return;
+        }
+        if (!perModeWallpaper && path !== undefined) {
+            setWallpaper(path);
+            return;
+        }
+        if (path !== undefined)
+            wallpaperPath = path;
+        syncWallpaperForCurrentMode();
+        saveSettings();
+        if (typeof Theme !== "undefined")
+            Theme.generateSystemThemesFromCurrentTheme();
     }
 
     function set(key, value) {
