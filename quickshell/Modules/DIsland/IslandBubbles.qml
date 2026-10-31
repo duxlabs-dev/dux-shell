@@ -270,12 +270,11 @@ Item {
     // A tile sits one bar row down, so the bar's own widgets keep their row.
     readonly property real tileDrop: root.size + Theme.spacingS
 
-    function clamp01(v) {
-        return Math.max(0, Math.min(1, v));
-    }
-    function mix(a, b, t) {
-        return a + (b - a) * t;
-    }
+    // 0 up to a short sheet, 1 once the sheet is a card span taller; read from the island's spring, so it never runs on its own.
+    // An arrival card is the island growing, not a sheet: the wings stay pills and are pushed aside.
+    readonly property bool arrivalGrowth: !root.controller.expanded && root.controller.notificationActive && root.controller.arrival.phase !== "rest"
+    readonly property real cardness: root.isVertical || root.arrivalGrowth ? 0 : IslandKit.unit((root.surface.currentVisualCross - root.cardStart) / root.cardSpan)
+    readonly property real targetCardness: root.isVertical || root.arrivalGrowth ? 0 : IslandKit.unit((root.motion.targetHeight - root.cardStart) / root.cardSpan)
     // The pill's near edge (the screen edge side), in near-cross coordinates.
     readonly property real nearCross: root.motion.currentOffsetCross
 
@@ -319,7 +318,7 @@ Item {
             const start = root.surface.targetAlongPos - root.slit - root.size;
             return Qt.rect(root.surface.targetCrossPos, start, root.size, root.surface.targetVisualAlong + 2 * (root.slit + root.size));
         }
-        const sheet = false;
+        const sheet = root.targetCardness > 0;
         const hoverOpen = leading.hoverOpen || trailing.hoverOpen;
         const gap = sheet ? root.sheetGap : root.slit;
         // Beside the launcher the pills stand up, each as tall as its own content.
@@ -358,6 +357,10 @@ Item {
 
     // Camera (source "camera"): the filming apps, go to the first one.
     // Low peripheral: the header alone (device, level or time to full).
+    Component {
+        id: cardPeriph
+        BubbleCardBase {}
+    }
     // The open island's charge face (the island grows into it on plugging in, or hovered while it charges).
 
 
@@ -404,14 +407,13 @@ Item {
                     "battery": null,
                     "charging": null,
                     "charged": null,
-                    "chargeface": null,
                     "unplugged": null,
                     "batterycritical": null,
                     "network": null,
                     "disk": null,
                     "eyes": null,
                     "display": null,
-                    "periph": null,
+                    "periph": cardPeriph,
                     "weatheralert": null,
                     "powerprofile": null,
                     "keepawake": null,
@@ -796,22 +798,9 @@ Item {
         readonly property bool alive: wing.has
         // Closing where it stands (a pill, or a tile beside the launcher, seen and not opened as a card): the fusion, or with
         // reduced motion a plain fade.
-        readonly property bool closesInPlace: IslandKit.closesInPlace({
-            "ready": wing.visible && wing.presence > 0.5,
-            "hoverGrow": wing.hoverGrow,
-            "selfOpened": wing.selfOpened,
-            "hovered": hover.hovered
-        })
-        // Kept past the face's end: by the time the wing closes, its face may already be gone.
-        property bool selfOpened: false
-        Binding {
-            target: wing
-            property: "selfOpened"
-            value: wing.face?.open === true
-            when: wing.face !== null
-            restoreMode: Binding.RestoreNone
-        }
-        // Kept the same way: the island taking this source's own info as the face leaves is the bubble going in.
+        readonly property bool closesInPlace: wing.visible && wing.presence > root.presentFrom && (wing.tile > 0.5 || root.cardness < IslandKit.shownFrom) && wing.hoverGrow < IslandKit.shownFrom
+        // Kept past the face's end (the face may be gone by the time the wing closes): the island taking this source's own
+        // info as the face leaves is the bubble going in.
         property string lastSource: ""
         Binding {
             target: wing
@@ -904,7 +893,7 @@ Item {
         property real fuseContact: 1
         readonly property var phase: IslandKit.fusionPhases(wing.fuse, wing.fuseContact)
         // The pill's face goes as its card comes (mirror of cardFace), and the text first while it fuses.
-        readonly property real iconOpacity: root.clamp01(1 - 2 * wing.hoverGrow) * wing.phase.text
+        readonly property real iconOpacity: IslandKit.unit(1 - 2 * wing.hoverGrow) * wing.phase.text
         // Along the bar: where the wing's shape sits, and the island's edge on its side.
         function iconAlong() {
             return root.isVertical ? wing.y + wing.iconY : wing.x + wing.iconX;
@@ -1013,7 +1002,15 @@ Item {
         // Hover opens the wing into its card while the island is a pill, on the same spring: in soft with its overshoot, out stiff.
         // Beside the launcher the apps pill opens on hover too (what was copied), and a click toggles its list.
         property bool tileOpen: false
-        readonly property bool hoverOpen: IslandKit.cardOpen({ "has": wing.has, "vertical": root.isVertical, "faceOpen": wing.face?.open === true, "tileOpen": wing.tileOpen, "tileOpenable": false, "hovered": hover.hovered, "dwelt": wing.dwelt, "source": wing.face?.source ?? "", "heldOpen": false, "cardness": 0, "carded": () => wing.carded })
+        // A bubble that grows the island (weather) opens no card beside it: the dwell of a hover brings it into the island,
+        // which grows into its card there, the bubble leaving the normal way.
+        readonly property bool growsIsland: wing.face?.island === true && root.cardness < 0.5
+        onDweltChanged: {
+            if (wing.dwelt && hover.hovered && wing.growsIsland)
+                root.activated(wing.face);
+        }
+        // The shelf never opens beside the island on a hover: a click grows it in the island.
+        readonly property bool hoverOpen: IslandKit.cardOpen({ "has": wing.has, "vertical": root.isVertical, "faceOpen": wing.face?.open === true, "tileOpen": wing.tileOpen, "tileOpenable": false, "hovered": hover.hovered && !wing.growsIsland, "dwelt": wing.dwelt, "source": wing.face?.source ?? "", "cardness": root.cardness, "carded": () => wing.carded })
         onHoverOpenChanged: wing.retargetCard()
         readonly property real hoverGrow: Math.max(0, life.currentHeight / root.springUnit)
 
@@ -1039,18 +1036,18 @@ Item {
         // The pill's shape forms a little ahead of its flight beside the launcher.
         readonly property real tileShape: Math.min(1, wing.tile * root.tileShapeLead)
         readonly property real standLength: root.size * 3
-        readonly property real openLength: root.isVertical ? root.size * wing.presence : root.mix(wing.restLength, wing.cardLength, wing.hoverGrow)
-        readonly property real openThick: root.isVertical ? root.size : root.mix(root.size, wing.listHeight, wing.hoverGrow)
+        readonly property real openLength: root.isVertical ? root.size * wing.presence : IslandKit.mix(wing.restLength, wing.cardLength, wing.hoverGrow)
+        readonly property real openThick: root.isVertical ? root.size : IslandKit.mix(root.size, wing.listHeight, wing.hoverGrow)
         // Jelly and the dial's pull stretch the size itself, never a scale, so the corners stay the island's.
         // Fusing, it gathers onto its shape: down to one pill, its island side held, so it closes toward the island.
-        readonly property real baseThick: root.mix(wing.openThick, root.size, wing.phase.gather)
-        readonly property real gathered: root.mix(wing.openLength, root.size, wing.phase.gather)
+        readonly property real baseThick: IslandKit.mix(wing.openThick, root.size, wing.phase.gather)
+        readonly property real gathered: IslandKit.mix(wing.openLength, root.size, wing.phase.gather)
         readonly property real length: wing.gathered * (1 + wing.stretch * root.jellyStretch + Math.abs(wing.wingPull) * root.dialWingShare)
         readonly property real thick: wing.baseThick * (1 - wing.stretch * root.jellySquash - Math.abs(wing.wingPull) * root.dialWingShare / 2)
         readonly property real gap: root.slit
         readonly property real drop: (wing.baseThick - wing.thick) / 2
         // Its corners: the island's as a pill, the popups' as a card; only the icon's shape morphs.
-        readonly property real radius: Math.min(wing.thick / 2, wing.length / 2, root.mix(root.pillRadius, NotificationMetrics.popupRadius, root.clamp01(wing.hoverGrow)))
+        readonly property real radius: Math.min(wing.thick / 2, wing.length / 2, IslandKit.mix(root.pillRadius, NotificationMetrics.popupRadius, IslandKit.unit(wing.hoverGrow)))
 
         readonly property real edgeNow: wing.side < 0 ? Math.min(root.leadEdge, root.surface.currentAlongPos) : Math.max(root.trailEdge, root.surface.currentAlongPos + root.surface.currentVisualAlong)
         // Fusing, it stays where it melts: an island growing at that moment (a card opening) spreads over it, never pushes it.
@@ -1064,7 +1061,7 @@ Item {
         visible: wing.length > 0.5
         // Born floating, it fades in growing from the island's edge; fusing, the wing is gone once the shape flows (the goo
         // layer carries it on); fading, it all fades.
-        opacity: root.clamp01(wing.presence * 1.5) * wing.fade * (wing.fusing && wing.phase.flowing ? 0 : 1)
+        opacity: IslandKit.appearOpacity(wing.presence) * wing.fade * (wing.fusing && wing.phase.flowing ? 0 : 1)
         clip: wing.hoverGrow > 0
         // Jelly stretches it outward from the island side (and the dial's pull leans and stretches it);
         // the magnet swells it a little and leans it toward the pointer. The transforms compose, so they can all play at once.
@@ -1588,6 +1585,8 @@ Item {
                 }
                 wing.dwellFrom = hover.point.position;
                 dwell.restart();
+                if (wing.has && root.cardness < 0.5)
+                    wing.breathe(false);
             }
         }
 

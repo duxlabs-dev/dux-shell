@@ -349,6 +349,10 @@ Item {
             visible: dankBarTab.selectedIslandEnabled
         }
 
+        IslandBubblesCard {
+            visible: dankBarTab.selectedIslandEnabled
+        }
+
         IslandArrivalCard {
             shown: dankBarTab.selectedIslandEnabled
         }

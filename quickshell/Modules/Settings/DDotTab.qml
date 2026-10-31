@@ -310,6 +310,10 @@ Item {
             badgeGated: false
         }
 
+        IslandBubblesCard {
+            keyPrefix: "dot"
+        }
+
         IslandArrivalCard {
             keyPrefix: "dot"
         }

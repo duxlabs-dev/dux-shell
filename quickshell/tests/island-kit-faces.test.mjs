@@ -30,15 +30,6 @@ test("tookIn: the island's occupant is the bubble's source, as its activity", ()
     assert.equal(K.tookIn("media", "media"), true, "an occupant without a token");
 });
 
-test("a card the bubble opened itself (2FA, Undo) still fuses when it leaves; one the pointer holds open withdraws", () => {
-    const own = { "ready": true, "hoverGrow": 1, "selfOpened": true, "hovered": false };
-    assert.equal(K.closesInPlace(own), true);
-    assert.equal(K.closesInPlace({ ...own, "hovered": true }), false);
-    assert.equal(K.closesInPlace({ ...own, "selfOpened": false }), false);
-    assert.equal(K.closesInPlace({ ...own, "hoverGrow": 0, "selfOpened": false, "hovered": true }), true, "a shut pill");
-    assert.equal(K.closesInPlace({ ...own, "ready": false }), false, "not seen");
-});
-
 test("a light theme's track is fainter, so the liquid keeps 3:1 against it", () => {
     assert.equal(K.fillAlpha, 0.75);
     assert.equal(K.waveTrackAlpha(false), 0.24);

@@ -257,12 +257,6 @@ function bezier(x1, y1, x2, y2, x) {
     return at(y1, y2, solveRising(t => at(x1, x2, t), x, 1));
 }
 
-// Whether a leaving bubble closes where it stands: its card shut, or a card it opened itself (a 2FA code, the trash's Undo)
-// that nobody is reading, which folds back onto its shape as it fuses. A card the pointer still holds open withdraws.
-function closesInPlace(w) {
-    return w.ready && (w.hoverGrow < 0.01 || w.selfOpened && !w.hovered);
-}
-
 // How a bubble closing where it stands leaves: "fuse" (into the island), "fade" (reduced motion) or "shrink" (back along
 // its spring). It fuses when it goes on its own, or when the island takes its own info in the same turn (its media
 // face): it goes in. Any other change of the island's occupant (a face or activity closing, another

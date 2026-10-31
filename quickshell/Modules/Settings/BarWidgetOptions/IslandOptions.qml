@@ -32,6 +32,10 @@ Column {
         keyPrefix: "islandWidget"
     }
 
+    IslandBubblesCard {
+        keyPrefix: "islandWidget"
+    }
+
     IslandArrivalCard {
         keyPrefix: "islandWidget"
     }
