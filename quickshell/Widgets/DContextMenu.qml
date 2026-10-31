@@ -23,9 +23,12 @@ Item {
     property real menuMargin: Theme.spacingS
     property real minMenuWidth: Theme.fieldDefaultWidth
     property real itemHeight: DCommon.Style.menuRowHeight
-    property real menuPadding: DCommon.Style.menuPadding
+    property real menuPadding: Theme.spacingXS
     property real itemIconSize: DCommon.Style.menuItemIconSize
     property real itemFontSize: Theme.fontSizeSmall
+    property real itemPadding: Theme.spacingM
+    property real itemSpacing: Theme.spacingM
+    property real itemRadius: Theme.cornerRadiusM
     property bool keyboardNavigable: false
     property var transientSurfaceTracker: null
     property var targetScreen: null
@@ -54,7 +57,7 @@ Item {
         return longest;
     }
     readonly property bool hasTrailingIcons: menuItems.some(menuItem => !!menuItem.trailingIcon)
-    readonly property real naturalMenuWidth: customContent ? Math.max(minMenuWidth, customContentWidth) : Math.max(minMenuWidth, menuTextMetrics.width + Theme.iconSize + Theme.spacingS * 5 + (hasTrailingIcons ? itemIconSize + Theme.spacingS : 0))
+    readonly property real naturalMenuWidth: customContent ? Math.max(minMenuWidth, customContentWidth) : Math.max(minMenuWidth, menuTextMetrics.width + Theme.iconSize + menuPadding * 2 + itemPadding * 2 + itemSpacing + (hasTrailingIcons ? itemIconSize + itemSpacing : 0))
     readonly property real effectiveMenuWidth: Math.max(0, Math.min(maxMenuWidth, naturalMenuWidth))
     readonly property real naturalMenuHeight: (customContent ? customContentLoader.implicitHeight : menuItemsHeight()) + menuPadding * 2
     readonly property real effectiveMenuHeight: Math.min(maxMenuHeight, naturalMenuHeight)
@@ -432,31 +435,33 @@ Item {
                                             return Theme.onSurface_38;
                                         if (destructive)
                                             return Theme.error;
-                                        return selected ? Theme.onSelectedContainer : Theme.onSurface;
+                                        return selected ? Theme.onTertiaryContainer : Theme.onSurface;
                                     }
+                                    readonly property color iconColor: itemEnabled && !destructive && !selected ? Theme.onSurfaceVariant : contentColor
                                     visible: !menuItemDelegate.isSeparator && !menuItemDelegate.isComponent
                                     anchors.fill: parent
-                                    radius: Theme.cornerRadiusS
+                                    anchors.leftMargin: menuItemDelegate.modelData?.indent ?? 0
+                                    radius: root.itemRadius
                                     color: {
                                         if (!itemEnabled)
                                             return "transparent";
                                         if (destructive)
                                             return selected ? Theme.errorSelected : itemMouseArea.containsMouse ? Theme.errorHover : "transparent";
-                                        return selected ? Theme.selectedContainer : itemMouseArea.pressed ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerPressed) : itemMouseArea.containsMouse ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerHover) : "transparent";
+                                        return selected ? Theme.tertiaryContainer : itemMouseArea.pressed ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerPressed) : itemMouseArea.containsMouse ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerHover) : "transparent";
                                     }
 
                                     Row {
                                         anchors.left: parent.left
-                                        anchors.leftMargin: Theme.spacingS
+                                        anchors.leftMargin: root.itemPadding
                                         anchors.right: parent.right
-                                        anchors.rightMargin: Theme.spacingS
+                                        anchors.rightMargin: root.itemPadding
                                         anchors.verticalCenter: parent.verticalCenter
-                                        spacing: Theme.spacingS
+                                        spacing: root.itemSpacing
 
                                         DIcon {
                                             name: menuItemDelegate.modelData?.icon ?? ""
                                             size: root.itemIconSize
-                                            color: menuRow.contentColor
+                                            color: menuRow.iconColor
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
 
@@ -467,7 +472,7 @@ Item {
                                             font.weight: Theme.fontWeight
                                             anchors.verticalCenter: parent.verticalCenter
                                             elide: Text.ElideRight
-                                            width: parent.width - (root.itemIconSize + Theme.spacingS) * (trailingIcon.visible ? 2 : 1)
+                                            width: parent.width - (root.itemIconSize + root.itemSpacing) * (trailingIcon.visible ? 2 : 1)
                                         }
                                     }
 
@@ -476,16 +481,16 @@ Item {
                                         visible: name !== ""
                                         name: menuItemDelegate.modelData?.trailingIcon ?? ""
                                         size: root.itemIconSize
-                                        color: menuRow.contentColor
+                                        color: menuRow.iconColor
                                         anchors.right: parent.right
-                                        anchors.rightMargin: Theme.spacingS
+                                        anchors.rightMargin: root.itemPadding
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
 
                                     DRipple {
                                         id: menuItemRipple
                                         rippleColor: menuRow.contentColor
-                                        cornerRadius: Theme.cornerRadiusS
+                                        cornerRadius: root.itemRadius
                                     }
 
                                     MouseArea {

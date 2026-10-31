@@ -30,7 +30,6 @@ DContextMenu {
 
     layerNamespace: "dms:desktop-context-menu"
     keyboardNavigable: true
-    itemHeight: Theme.listItemHeight + Theme.densityStepM
     itemFontSize: Theme.fontSizeMedium
     minMenuWidth: stripUnit * (stripCount + 1) + Theme.spacingS * (stripCount + 1)
 
@@ -77,6 +76,7 @@ DContextMenu {
         property string icon
         property string text
         property string trailingIcon
+        property real indent
         property bool keepOpen
         property bool hidden
         property var action
@@ -95,6 +95,7 @@ DContextMenu {
         id: allSettingsEntry
         icon: "tune"
         text: I18n.tr("All settings")
+        indent: Theme.spacingS
         hidden: !root.settingsExpanded
         action: () => PopoutService.openSettings()
     }
@@ -103,6 +104,7 @@ DContextMenu {
         id: desktopWidgetsEntry
         icon: "widgets"
         text: I18n.tr("Desktop widgets")
+        indent: Theme.spacingS
         hidden: !root.settingsExpanded
         action: () => PopoutService.openSettingsWithTab("desktop_widgets")
     }
@@ -111,6 +113,7 @@ DContextMenu {
         id: displaysEntry
         icon: "monitor"
         text: I18n.tr("Displays")
+        indent: Theme.spacingS
         hidden: !root.settingsExpanded
         action: () => PopoutService.openSettingsWithTab("displays")
     }
@@ -202,8 +205,9 @@ DContextMenu {
 
         Item {
             DCarousel {
+                x: root.menuPadding
                 y: Theme.spacingXS
-                width: parent.width
+                width: parent.width - root.menuPadding * 2
                 height: root.stripUnit * 2
                 preferredItemWidth: width / 2
                 itemRadius: Theme.cornerRadiusM
