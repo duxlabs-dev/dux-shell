@@ -37,6 +37,7 @@ done < <(git log --format=%B "${BASE}..origin/${TARGET}" 2>/dev/null |
 
 # git cherry: "+ sha" = not on target (by patch-id), "- sha" = equivalent exists
 port_shas=()
+other_shas=()
 fixes=""
 others=""
 flagged=""
@@ -66,6 +67,7 @@ while read -r mark sha; do
     port_shas+=("$short")
   else
     others+="${line}"$'\n'
+    other_shas+=("$short")
     other_count=$((other_count + 1))
   fi
 done < <(git cherry "origin/${TARGET}" origin/master "$BASE")
@@ -75,9 +77,18 @@ if [ "$flagged_count" -gt 0 ]; then
   FLAGGED_SECTION="### :warning: Flagged \"port ${VER}\" but not applied (${flagged_count})"$'\n\n'"${flagged}"
 fi
 
+PORT_FIXES=""
+PORT_ALL=""
+[ "${#port_shas[@]}" -gt 0 ] && PORT_FIXES="scripts/port.sh ${TARGET} ${port_shas[*]}"
+all_shas=("${port_shas[@]}" "${other_shas[@]}")
+[ "${#other_shas[@]}" -gt 0 ] && PORT_ALL="scripts/port.sh ${TARGET} ${all_shas[*]}"
+
 PORT_COMMAND=""
-if [ "${#port_shas[@]}" -gt 0 ]; then
-  PORT_COMMAND=$'\n### Port command\n\n```sh\n'"scripts/port.sh ${TARGET} ${port_shas[*]}"$'\n```\n'
+if [ -n "$PORT_FIXES" ]; then
+  PORT_COMMAND+=$'\n### Port fixes\n\n```sh\n'"${PORT_FIXES}"$'\n```\n'
+fi
+if [ -n "$PORT_ALL" ]; then
+  PORT_COMMAND+=$'\n### Port fixes and other candidates\n\n```sh\n'"${PORT_ALL}"$'\n```\n'
 fi
 
 REPORT=$(cat <<EOF
@@ -110,9 +121,8 @@ if [ -t 1 ]; then
   fi
   printf '\nCandidate fixes not ported (%s):\n%s\n' "$fix_count" "$(plain "${fixes:-  none - all caught up}")"
   printf '\nOther possible candidates (%s):\n%s\n' "$other_count" "$(plain "${others:-  none}")"
-  if [ "${#port_shas[@]}" -gt 0 ]; then
-    printf '\nPort command:\n  scripts/port.sh %s %s\n' "$TARGET" "${port_shas[*]}"
-  fi
+  [ -n "$PORT_FIXES" ] && printf '\nPort fixes:\n  %s\n' "$PORT_FIXES"
+  [ -n "$PORT_ALL" ] && printf '\nPort fixes and other candidates:\n  %s\n' "$PORT_ALL"
 else
   echo "$REPORT"
 fi
@@ -124,7 +134,7 @@ fi
 if [ "$UPDATE_ISSUE" = 1 ]; then
   REPO="${GITHUB_REPOSITORY:-$(gh repo view --json nameWithOwner --jq .nameWithOwner)}"
   TITLE="Port status: ${TARGET}"
-  num=$(gh issue list --repo "$REPO" --state open --search "in:title \"${TITLE}\"" \
+  num=$(gh issue list --repo "$REPO" --state open --limit 1000 \
     --json number,title --jq "map(select(.title == \"${TITLE}\")) | .[0].number // empty")
   if [ -z "$num" ]; then
     num=$(gh issue create --repo "$REPO" --title "$TITLE" --body "$REPORT" | grep -oE '[0-9]+$')
