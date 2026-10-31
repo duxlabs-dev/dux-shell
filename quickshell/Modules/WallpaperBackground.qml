@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Effects
-import QtMultimedia
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -1241,82 +1240,46 @@ Variants {
                 anchors.fill: parent
                 // Stays loaded until the outgoing video has faded off the still frame below.
                 active: root.isVideoSource || (item?.opacity ?? 0) > 0
-                sourceComponent: videoComponent
-            }
+                // By url, so without QtMultimedia only this layer fails and the still frame stays.
+                source: "VideoWallpaperLayer.qml"
+                onStatusChanged: {
+                    if (status === Loader.Error)
+                        log.warn("QtMultimedia not available, video wallpapers show their still frame");
+                }
 
-            Component {
-                id: videoComponent
+                Binding {
+                    target: videoLoader.item
+                    property: "screenName"
+                    value: modelData.name
+                    when: videoLoader.item !== null
+                }
 
-                Item {
-                    id: videoLayer
+                Binding {
+                    target: videoLoader.item
+                    property: "wantedSource"
+                    value: root.wallpaperSource
+                    when: videoLoader.item !== null
+                }
 
-                    readonly property string wantedSource: root.wallpaperSource
-                    readonly property bool settled: !root.transitioning && !root.effectActive && !root.changePending
-                    // Switched only once the still frame transition is done, so it plays out uncovered.
-                    property string playingSource: ""
-                    readonly property bool current: playingSource !== "" && playingSource === wantedSource
-                    readonly property bool wantsPlay: root.videoShouldPlay && current
-                    readonly property bool shown: current && player.hasVideo && player.playbackState !== MediaPlayer.StoppedState
-                    readonly property bool rendering: player.playbackState === MediaPlayer.PlayingState || fadeAnimation.running
+                Binding {
+                    target: videoLoader.item
+                    property: "fillMode"
+                    value: SessionData.getMonitorWallpaperFillMode(modelData.name)
+                    when: videoLoader.item !== null
+                }
 
-                    function syncSource() {
-                        if (!settled || !root.isVideoSource || playingSource === wantedSource)
-                            return;
-                        playingSource = wantedSource;
-                    }
+                Binding {
+                    target: videoLoader.item
+                    property: "settled"
+                    value: !root.transitioning && !root.effectActive && !root.changePending
+                    when: videoLoader.item !== null
+                }
 
-                    function videoFillMode(mode) {
-                        switch (mode) {
-                        case "Stretch":
-                            return VideoOutput.Stretch;
-                        case "Fit":
-                        case "PreserveAspectFit":
-                            return VideoOutput.PreserveAspectFit;
-                        default:
-                            return VideoOutput.PreserveAspectCrop;
-                        }
-                    }
-
-                    opacity: shown ? 1 : 0
-                    onWantedSourceChanged: syncSource()
-                    onSettledChanged: syncSource()
-                    onWantsPlayChanged: wantsPlay ? player.play() : player.pause()
-                    Component.onCompleted: syncSource()
-
-                    Behavior on opacity {
-                        NumberAnimation {
-                            id: fadeAnimation
-                            duration: Theme.mediumDuration
-                            easing.type: Theme.standardEasing
-                        }
-                    }
-
-                    VideoOutput {
-                        id: videoOutput
-                        anchors.fill: parent
-                        fillMode: videoLayer.videoFillMode(SessionData.getMonitorWallpaperFillMode(modelData.name))
-                    }
-
-                    MediaPlayer {
-                        id: player
-                        source: videoLayer.playingSource ? root.encodeFileUrl(videoLayer.playingSource) : ""
-                        videoOutput: videoOutput
-                        loops: WallpaperCyclingService.advancesOnVideoEnd(modelData.name) ? 1 : MediaPlayer.Infinite
-
-                        onSourceChanged: {
-                            if (videoLayer.wantsPlay)
-                                play();
-                        }
-                        onMediaStatusChanged: {
-                            if (mediaStatus !== MediaPlayer.EndOfMedia || !videoLayer.current)
-                                return;
-                            WallpaperCyclingService.handleVideoEnded(modelData.name);
-                            // Replays when cycling is off or picked the same file; a new pick replaces it.
-                            if (videoLayer.wantsPlay)
-                                play();
-                        }
-                        onErrorOccurred: (error, errorString) => log.warn("video wallpaper failed on", modelData.name + ":", errorString)
-                    }
+                Binding {
+                    target: videoLoader.item
+                    property: "shouldPlay"
+                    value: root.videoShouldPlay
+                    when: videoLoader.item !== null
                 }
             }
 
