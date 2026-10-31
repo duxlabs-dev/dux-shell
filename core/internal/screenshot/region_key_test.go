@@ -46,3 +46,19 @@ func TestHandleKeyTracksModifiers(t *testing.T) {
 		t.Errorf("ctrl=%v alt=%v after release, want both released", r.ctrlHeld, r.altHeld)
 	}
 }
+
+func TestHandleKeyOCRHoveredTarget(t *testing.T) {
+	if !HasOCR() {
+		t.Skip("tesseract not installed")
+	}
+	r, os := newOverlayFixture(t, 100, 100)
+	r.running = true
+	r.activeSurface = os
+	target := SnapTarget{Name: "test", X: 10, Y: 10, Width: 40, Height: 40}
+	r.hoveredTarget = &target
+
+	r.handleKey("o", 1)
+	if !r.ocrOnly || r.running {
+		t.Fatalf("ocrOnly=%v running=%v after pressing o on hovered target", r.ocrOnly, r.running)
+	}
+}

@@ -34,6 +34,8 @@ var (
 	ssStdout      bool
 	ssJSON        bool
 	ssGeometry    bool
+	ssOCR         bool
+	ssOCRLang     string
 	ssAllowMulti  bool
 	ssHUD         string
 )
@@ -41,6 +43,7 @@ var (
 type screenshotMetadata struct {
 	Status string  `json:"status"`
 	Path   string  `json:"path,omitempty"`
+	Text   string  `json:"text,omitempty"`
 	X      *int    `json:"x,omitempty"`
 	Y      *int    `json:"y,omitempty"`
 	Width  int     `json:"width,omitempty"`
@@ -157,6 +160,27 @@ var ssListCmd = &cobra.Command{
 	Run:   runScreenshotList,
 }
 
+var ssOCRFileCmd = &cobra.Command{
+	Use:    "ocr-file <path>",
+	Hidden: true,
+	Args:   cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		text, err := screenshot.ExtractTextFromFile(args[0], ssOCRLang)
+		if err != nil {
+			exitScreenshotError(" running ocr", err)
+		}
+		copied := false
+		if text != "" && !ssNoClipboard {
+			if err := clipboard.Copy([]byte(text), "text/plain;charset=utf-8"); err == nil {
+				copied = true
+			}
+		}
+		if !ssNoNotify {
+			screenshot.SendOCRNotification(text, copied)
+		}
+	},
+}
+
 var notifyActionCmd = &cobra.Command{
 	Use:    "notify-action",
 	Hidden: true,
@@ -181,6 +205,8 @@ func init() {
 	screenshotCmd.PersistentFlags().BoolVar(&ssStdout, "stdout", false, "Output image to stdout (for piping to swappy, etc.)")
 	screenshotCmd.PersistentFlags().BoolVar(&ssJSON, "json", false, "Print capture metadata as JSON")
 	screenshotCmd.PersistentFlags().BoolVarP(&ssGeometry, "geometry", "g", false, "Print selected region geometry (X,Y WxH) to stdout without capturing an image")
+	screenshotCmd.PersistentFlags().BoolVar(&ssOCR, "ocr", false, "Extract text from screenshot using Tesseract OCR")
+	screenshotCmd.PersistentFlags().StringVar(&ssOCRLang, "ocr-lang", "", "Tesseract OCR language(s) (e.g. eng, eng+vie; default: all installed)")
 	screenshotCmd.PersistentFlags().BoolVar(&ssAllowMulti, "allow-multiple", false, "Open a selector even when another one is already open")
 	screenshotCmd.PersistentFlags().StringVar(&ssHUD, "hud", "auto", "HUD overlay scale in region selector (auto, off/0, or integer scale 1-4)")
 
@@ -194,6 +220,7 @@ func init() {
 	screenshotCmd.AddCommand(ssLastCmd)
 	screenshotCmd.AddCommand(ssWindowCmd)
 	screenshotCmd.AddCommand(ssListCmd)
+	screenshotCmd.AddCommand(ssOCRFileCmd)
 
 	screenshotCmd.Run = runScreenshotRegion
 }
@@ -213,6 +240,8 @@ func getScreenshotConfig(mode screenshot.Mode) screenshot.Config {
 	config.Reset = ssReset
 	config.Stdout = ssStdout
 	config.Geometry = ssGeometry
+	config.OCR = ssOCR
+	config.OCRLang = ssOCRLang
 	config.AllowMultiple = ssAllowMulti
 	config.HUD = ssHUD
 
@@ -376,6 +405,40 @@ func runScreenshot(config screenshot.Config) {
 		if result.YInverted {
 			result.Buffer.FlipVertical()
 		}
+	}
+
+	if config.OCR || result.OCROnly {
+		text, err := screenshot.ExtractTextFromBuffer(result.Buffer, result.Format, result.CICP, config.OCRLang)
+		if err != nil {
+			exitScreenshotError(" running ocr", err)
+		}
+		copied := false
+		if text != "" && config.Clipboard {
+			if err := clipboard.Copy([]byte(text), "text/plain;charset=utf-8"); err != nil {
+				exitScreenshotError(" copying ocr text to clipboard", err)
+			}
+			copied = true
+		}
+		if ssJSON {
+			scale := result.Scale
+			if scale <= 0 {
+				scale = 1.0
+			}
+			writeScreenshotJSON(screenshotMetadata{
+				Status: "success",
+				Text:   text,
+				Width:  result.Buffer.Width,
+				Height: result.Buffer.Height,
+				Scale:  scale,
+				Mime:   "text/plain",
+			})
+		} else if text != "" {
+			fmt.Println(text)
+		}
+		if config.Notify {
+			screenshot.SendOCRNotification(text, copied)
+		}
+		return
 	}
 
 	if result.CopyOnly {

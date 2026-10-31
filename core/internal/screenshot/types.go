@@ -98,6 +98,8 @@ type Config struct {
 	Notify        bool
 	Stdout        bool
 	Geometry      bool
+	OCR           bool
+	OCRLang       string
 	AllowMultiple bool
 	IntervalMs    int
 	HUD           string
