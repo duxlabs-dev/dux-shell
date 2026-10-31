@@ -228,6 +228,9 @@ Singleton {
     property bool hyprlandWobbleEnabled: Spec.SPEC.hyprlandWobbleEnabled.def
     property int hyprlandWobbleIntensity: Spec.SPEC.hyprlandWobbleIntensity.def
     property int hyprlandWobbleStiffness: Spec.SPEC.hyprlandWobbleStiffness.def
+    property int hyprlandWobbleDamping: Spec.SPEC.hyprlandWobbleDamping.def
+    property int hyprlandWobbleMass: Spec.SPEC.hyprlandWobbleMass.def
+    property int hyprlandWobbleMesh: Spec.SPEC.hyprlandWobbleMesh.def
     property bool hyprlandMotionBlurEnabled: Spec.SPEC.hyprlandMotionBlurEnabled.def
     property int hyprlandMotionBlurSamples: Spec.SPEC.hyprlandMotionBlurSamples.def
     property bool hyprlandGroupbarBlur: Spec.SPEC.hyprlandGroupbarBlur.def

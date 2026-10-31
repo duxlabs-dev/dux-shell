@@ -688,8 +688,16 @@ hl.layer_rule({
         lines.push(...luaTable("blur", blurLines(s)));
         if (s.hyprlandGlowEnabled && hyprSupports("decoration:glow:enabled"))
             lines.push(...luaTable("glow", ["enabled = true,", `range = ${s.hyprlandGlowRange},`, `render_power = ${s.hyprlandGlowRenderPower},`]));
-        if (s.hyprlandWobbleEnabled && hyprSupports("decoration:wobble:enabled"))
-            lines.push(...luaTable("wobble", ["enabled = true,", `intensity = ${s.hyprlandWobbleIntensity / 100},`, `stiffness = ${s.hyprlandWobbleStiffness},`]));
+        if (s.hyprlandWobbleEnabled && hyprSupports("decoration:wobble:enabled")) {
+            const wobble = ["enabled = true,", `intensity = ${s.hyprlandWobbleIntensity / 100},`, `stiffness = ${s.hyprlandWobbleStiffness},`];
+            if (s.hyprlandWobbleDamping !== 12 && hyprSupports("decoration:wobble:damping"))
+                wobble.push(`damping = ${s.hyprlandWobbleDamping},`);
+            if (s.hyprlandWobbleMass !== 100 && hyprSupports("decoration:wobble:mass"))
+                wobble.push(`mass = ${s.hyprlandWobbleMass / 100},`);
+            if (s.hyprlandWobbleMesh !== 12 && hyprSupports("decoration:wobble:mesh"))
+                wobble.push(`mesh = ${s.hyprlandWobbleMesh},`);
+            lines.push(...luaTable("wobble", wobble));
+        }
         if (s.hyprlandMotionBlurEnabled && hyprSupports("decoration:motion_blur:enabled"))
             lines.push(...luaTable("motion_blur", ["enabled = true,", `samples = ${s.hyprlandMotionBlurSamples},`]));
         return lines;

@@ -658,6 +658,13 @@
     "comment": "notification rule summary, %1 is the number of extra conditions"
   },
   {
+    "term": "0 stops the animation and saves GPU",
+    "translation": "",
+    "context": "0 stops the animation and saves GPU",
+    "reference": "",
+    "comment": "Hyprland animated blur speed slider description"
+  },
+  {
     "term": "1 hour before",
     "translation": "",
     "context": "1 hour before",
@@ -747,6 +754,13 @@
     "context": "A notification must match every condition",
     "reference": "",
     "comment": "hint in the notification rule editor, all match conditions must apply"
+  },
+  {
+    "term": "A tiled or fullscreen window dragged into floating centers on the cursor",
+    "translation": "",
+    "context": "A tiled or fullscreen window dragged into floating centers on the cursor",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "A user with that name already exists.",
@@ -2772,6 +2786,13 @@
     "comment": ""
   },
   {
+    "term": "Blur follows opacity",
+    "translation": "",
+    "context": "Blur follows opacity",
+    "reference": "",
+    "comment": "Hyprland toggle, blur strength scales with how opaque each pixel is"
+  },
+  {
     "term": "Blur layer",
     "translation": "",
     "context": "Blur layer",
@@ -3311,6 +3332,13 @@
     "comment": ""
   },
   {
+    "term": "Center dragged windows",
+    "translation": "",
+    "context": "Center dragged windows",
+    "reference": "",
+    "comment": "Hyprland toggle, a tiled or fullscreen window dragged loose centers on the cursor"
+  },
+  {
     "term": "Center section",
     "translation": "",
     "context": "Center section",
@@ -3694,6 +3722,13 @@
     "context": "Click Import to add a %1 or %2 file",
     "reference": "",
     "comment": "VPN import hint, %1 and %2 are file extensions"
+  },
+  {
+    "term": "Click action",
+    "translation": "",
+    "context": "Click action",
+    "reference": "",
+    "comment": "clock widget option: what clicking the clock opens"
   },
   {
     "term": "Click actions",
@@ -5173,6 +5208,13 @@
     "comment": "settings page name for the dank dash popout"
   },
   {
+    "term": "Dashboard tabs",
+    "translation": "",
+    "context": "Dashboard tabs",
+    "reference": "",
+    "comment": "island settings: dashboard tab bar toggle"
+  },
+  {
     "term": "Date",
     "translation": "",
     "context": "Date",
@@ -5663,11 +5705,32 @@
     "comment": "plugin settings card title, folder where plugins are placed"
   },
   {
+    "term": "Disable",
+    "translation": "",
+    "context": "Disable",
+    "reference": "",
+    "comment": "audio settings button that turns a sound card off"
+  },
+  {
+    "term": "Disable %1?",
+    "translation": "",
+    "context": "Disable %1?",
+    "reference": "",
+    "comment": "audio settings confirmation title, %1 is the sound card name"
+  },
+  {
     "term": "Disable autoconnect",
     "translation": "",
     "context": "Disable autoconnect",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Disable card",
+    "translation": "",
+    "context": "Disable card",
+    "reference": "",
+    "comment": "audio settings button that turns a sound card off"
   },
   {
     "term": "Disable output",
@@ -5703,6 +5766,13 @@
     "context": "Disabled",
     "reference": "",
     "comment": "bluetooth status | lock screen notification mode option"
+  },
+  {
+    "term": "Disabled (%1)",
+    "translation": "",
+    "context": "Disabled (%1)",
+    "reference": "",
+    "comment": "count of disabled audio output cards"
   },
   {
     "term": "Disabled by Auto",
@@ -6601,6 +6671,13 @@
     "comment": ""
   },
   {
+    "term": "Enable card",
+    "translation": "",
+    "context": "Enable card",
+    "reference": "",
+    "comment": "audio settings button that turns a disabled sound card back on"
+  },
+  {
     "term": "Enable plugin to access settings",
     "translation": "",
     "context": "Enable plugin to access settings",
@@ -6858,6 +6935,13 @@
     "context": "Every hour",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Every output and input of this sound card turns off until you enable it again",
+    "translation": "",
+    "context": "Every output and input of this sound card turns off until you enable it again",
+    "reference": "",
+    "comment": "audio settings confirmation message before disabling a sound card"
   },
   {
     "term": "Exact",
@@ -8253,6 +8337,13 @@
     "comment": "plugin browser shelf, plugins ranked for this user | plugin browser sort option, plugins ranked for this user"
   },
   {
+    "term": "Force",
+    "translation": "",
+    "context": "Force",
+    "reference": "",
+    "comment": "Hyprland cursor warp option, warp even when cursor warps are disabled"
+  },
+  {
     "term": "Force HDR",
     "translation": "",
     "context": "Force HDR",
@@ -8974,6 +9065,13 @@
     "comment": "Hyprland blur variant"
   },
   {
+    "term": "Heavier windows wobble more and settle slower",
+    "translation": "",
+    "context": "Heavier windows wobble more and settle slower",
+    "reference": "",
+    "comment": "Hyprland wobble mass description"
+  },
+  {
     "term": "Heavy Rain",
     "translation": "",
     "context": "Heavy Rain",
@@ -9233,6 +9331,13 @@
     "comment": ""
   },
   {
+    "term": "Higher values flex more smoothly and cost more GPU",
+    "translation": "",
+    "context": "Higher values flex more smoothly and cost more GPU",
+    "reference": "",
+    "comment": "Hyprland wobble mesh description"
+  },
+  {
     "term": "Highlight focused app",
     "translation": "",
     "context": "Highlight focused app",
@@ -9467,13 +9572,6 @@
     "term": "Hyprland Options",
     "translation": "",
     "context": "Hyprland Options",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Hyprland conf mode",
-    "translation": "",
-    "context": "Hyprland conf mode",
     "reference": "",
     "comment": ""
   },
@@ -10351,6 +10449,13 @@
     "context": "Keep clock with media",
     "reference": "",
     "comment": "island settings: clock in media face toggle"
+  },
+  {
+    "term": "Keep fullscreen on close",
+    "translation": "",
+    "context": "Keep fullscreen on close",
+    "reference": "",
+    "comment": "Hyprland option, closing a fullscreen window makes the next focused window fullscreen"
   },
   {
     "term": "Keep in Bar",
@@ -11263,6 +11368,13 @@
     "comment": ""
   },
   {
+    "term": "Lower values wobble longer before settling",
+    "translation": "",
+    "context": "Lower values wobble longer before settling",
+    "reference": "",
+    "comment": "Hyprland wobble damping description"
+  },
+  {
     "term": "Lyrics",
     "translation": "",
     "context": "Lyrics",
@@ -12094,6 +12206,13 @@
     "context": "More samples look smoother and cost more GPU",
     "reference": "",
     "comment": "Hyprland motion blur sample count description"
+  },
+  {
+    "term": "More transparent areas get less blur",
+    "translation": "",
+    "context": "More transparent areas get less blur",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "More widgets",
@@ -13594,6 +13713,13 @@
     "comment": "greeter status, no greeter slot for this user"
   },
   {
+    "term": "Not on click",
+    "translation": "",
+    "context": "Not on click",
+    "reference": "",
+    "comment": "Hyprland scrolling follow focus option, focus scrolls the view but clicking a window does not"
+  },
+  {
     "term": "Not set",
     "translation": "",
     "context": "Not set",
@@ -13916,11 +14042,25 @@
     "comment": "Warning shown before trusting an unverified VPN server certificate"
   },
   {
+    "term": "Only in groups",
+    "translation": "",
+    "context": "Only in groups",
+    "reference": "",
+    "comment": "Hyprland keep fullscreen on close option, only inside tabbed window groups"
+  },
+  {
     "term": "Only on battery",
     "translation": "",
     "context": "Only on battery",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Only outside groups",
+    "translation": "",
+    "context": "Only outside groups",
+    "reference": "",
+    "comment": "Hyprland keep fullscreen on close option, only for windows not in a tabbed group"
   },
   {
     "term": "Opacity",
@@ -14455,6 +14595,13 @@
     "comment": ""
   },
   {
+    "term": "Package repositories moved",
+    "translation": "",
+    "context": "Package repositories moved",
+    "reference": "",
+    "comment": "notification title, the DMS package repositories moved to a new owner"
+  },
+  {
     "term": "Pad",
     "translation": "",
     "context": "Pad",
@@ -14726,6 +14873,13 @@
     "context": "Pending Discharge",
     "reference": "",
     "comment": "battery status"
+  },
+  {
+    "term": "Per display",
+    "translation": "",
+    "context": "Per display",
+    "reference": "",
+    "comment": "Hyprland workspace back and forth option, each display remembers its own previous workspace"
   },
   {
     "term": "Per window",
@@ -16898,6 +17052,20 @@
     "comment": ""
   },
   {
+    "term": "Run %1 in a terminal.",
+    "translation": "",
+    "context": "Run %1 in a terminal.",
+    "reference": "",
+    "comment": "%1 is a shell command"
+  },
+  {
+    "term": "Run %1 to create it before changing these settings.",
+    "translation": "",
+    "context": "Run %1 to create it before changing these settings.",
+    "reference": "",
+    "comment": "hyprland.lua missing warning, %1 is a command"
+  },
+  {
     "term": "Run Again",
     "translation": "",
     "context": "Run Again",
@@ -17043,6 +17211,13 @@
     "context": "SW",
     "reference": "",
     "comment": "Southwest compass direction"
+  },
+  {
+    "term": "Same as workspace change",
+    "translation": "",
+    "context": "Same as workspace change",
+    "reference": "",
+    "comment": "Hyprland cursor warp option, follow the workspace change warp setting"
   },
   {
     "term": "Satellites",
@@ -18522,6 +18697,13 @@
     "comment": "dock isolate displays toggle description"
   },
   {
+    "term": "Shows the dashboard tab bar instead of the sheet handle",
+    "translation": "",
+    "context": "Shows the dashboard tab bar instead of the sheet handle",
+    "reference": "",
+    "comment": "island settings: dashboard tab bar toggle description"
+  },
+  {
     "term": "Shows the line being sung instead of the title and artist while synced lyrics are available",
     "translation": "",
     "context": "Shows the line being sung instead of the title and artist while synced lyrics are available",
@@ -19341,6 +19523,13 @@
     "comment": ""
   },
   {
+    "term": "Swallow focus click",
+    "translation": "",
+    "context": "Swallow focus click",
+    "reference": "",
+    "comment": "Hyprland toggle, the click that focuses a window is not passed to the app"
+  },
+  {
     "term": "Swap",
     "translation": "",
     "context": "Swap",
@@ -19395,6 +19584,13 @@
     "context": "Switches to power saver at the low battery threshold",
     "reference": "",
     "comment": "battery auto power saver toggle description"
+  },
+  {
+    "term": "Switching to the current workspace returns to the previous one",
+    "translation": "",
+    "context": "Switching to the current workspace returns to the previous one",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Symbol",
@@ -19516,6 +19712,13 @@
     "comment": ""
   },
   {
+    "term": "System bell",
+    "translation": "",
+    "context": "System bell",
+    "reference": "",
+    "comment": "Hyprland toggle, play a sound when an app rings the terminal bell"
+  },
+  {
     "term": "System check",
     "translation": "",
     "context": "System check",
@@ -19612,6 +19815,20 @@
     "context": "Table",
     "reference": "",
     "comment": "Tone curve stored as a lookup table"
+  },
+  {
+    "term": "Tablet",
+    "translation": "",
+    "context": "Tablet",
+    "reference": "",
+    "comment": "drawing tablet input settings card title"
+  },
+  {
+    "term": "Tablet input",
+    "translation": "",
+    "context": "Tablet input",
+    "reference": "",
+    "comment": "Hyprland toggle, accept input from drawing tablets"
   },
   {
     "term": "Tabs",
@@ -19892,6 +20109,13 @@
     "context": "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).",
     "reference": "",
     "comment": "theme apps backup note, %1 and %2 are config paths"
+  },
+  {
+    "term": "The click that focuses a window does not reach the app",
+    "translation": "",
+    "context": "The click that focuses a window does not reach the app",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "The compositor session changed. Discard this edit before starting a new one.",
@@ -20207,13 +20431,6 @@
     "context": "This display does not report VRR support",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "This install is still using %1. Run %2 to migrate before changing these settings.",
-    "translation": "",
-    "context": "This install is still using %1. Run %2 to migrate before changing these settings.",
-    "reference": "",
-    "comment": "hyprland legacy config warning, %1 is the config file, %2 a command"
   },
   {
     "term": "This may take a few seconds",
@@ -21973,6 +22190,13 @@
     "comment": "greeter doctor page status card"
   },
   {
+    "term": "Warp on display change",
+    "translation": "",
+    "context": "Warp on display change",
+    "reference": "",
+    "comment": "Hyprland cursor option, move the pointer to the last focused window when focus moves to another display"
+  },
+  {
     "term": "Water",
     "translation": "",
     "context": "Water",
@@ -22372,6 +22596,27 @@
     "comment": "bars card hint shown when every bar, the Dot and every dock launcher button are off"
   },
   {
+    "term": "Wobble damping",
+    "translation": "",
+    "context": "Wobble damping",
+    "reference": "",
+    "comment": "Hyprland slider, how quickly wobbly windows stop swinging"
+  },
+  {
+    "term": "Wobble mass",
+    "translation": "",
+    "context": "Wobble mass",
+    "reference": "",
+    "comment": "Hyprland slider, inertia of the wobble spring"
+  },
+  {
+    "term": "Wobble mesh",
+    "translation": "",
+    "context": "Wobble mesh",
+    "reference": "",
+    "comment": "Hyprland slider, mesh vertices per window edge"
+  },
+  {
     "term": "Wobble stiffness",
     "translation": "",
     "context": "Wobble stiffness",
@@ -22440,6 +22685,13 @@
     "context": "Workspace Switch",
     "reference": "",
     "comment": "toggle label for workspace change OSD"
+  },
+  {
+    "term": "Workspace back and forth",
+    "translation": "",
+    "context": "Workspace back and forth",
+    "reference": "",
+    "comment": "Hyprland option, switching to the current workspace goes to the previous one"
   },
   {
     "term": "Workspace name",
