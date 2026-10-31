@@ -22,6 +22,7 @@ Item {
     readonly property bool enabled: perMonitor ? monitorSettings.enabled : SessionData.wallpaperCyclingEnabled
     readonly property bool random: perMonitor ? monitorSettings.random : SessionData.wallpaperCyclingRandom
     readonly property bool recursive: perMonitor ? monitorSettings.recursive : SessionData.wallpaperCyclingRecursive
+    readonly property bool videoEnd: perMonitor ? !!monitorSettings.videoEnd : SessionData.wallpaperCyclingVideoEnd
     readonly property string mode: perMonitor ? monitorSettings.mode : SessionData.wallpaperCyclingMode
     readonly property int interval: perMonitor ? monitorSettings.interval : SessionData.wallpaperCyclingInterval
     readonly property string time: perMonitor ? monitorSettings.time : SessionData.wallpaperCyclingTime
@@ -91,6 +92,14 @@ Item {
             return;
         }
         SessionData.setWallpaperCyclingRecursive(value);
+    }
+
+    function setVideoEnd(value) {
+        if (perMonitor) {
+            SessionData.setMonitorCyclingVideoEnd(selectedScreen, value);
+            return;
+        }
+        SessionData.setWallpaperCyclingVideoEnd(value);
     }
 
     function setMode(value) {
@@ -222,6 +231,16 @@ Item {
                 text: I18n.tr("Random order")
                 checked: root.random
                 onToggled: toggled => root.setRandom(toggled)
+            }
+
+            SettingsToggleRow {
+                tab: "wallpaper"
+                tags: ["cycling", "video", "live", "end"]
+                settingKey: "wallpaperCyclingVideoEnd"
+                text: I18n.tr("Advance when a video ends", "wallpaper cycling toggle")
+                description: I18n.tr("Video wallpapers play once, then the next wallpaper is shown", "wallpaper cycling toggle description")
+                checked: root.videoEnd
+                onToggled: toggled => root.setVideoEnd(toggled)
             }
 
             SettingsButtonGroupRow {

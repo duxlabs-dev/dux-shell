@@ -39,7 +39,7 @@ Singleton {
 
     function backgroundKey(screenName, width, height) {
         const custom = SettingsData.lockScreenWallpaperPath !== "";
-        const source = custom ? SettingsData.lockScreenWallpaperPath : SessionData.getMonitorWallpaper(screenName);
+        const source = custom ? SettingsData.lockScreenWallpaperPath : SessionData.getMonitorWallpaperImage(screenName);
         const backdrop = !source || source.startsWith("#");
         const fill = SettingsData.lockScreenWallpaperFillMode || (custom ? "Fill" : SessionData.getMonitorWallpaperFillMode(screenName));
         return JSON.stringify([1, source, width, height, fill, fill === "Scrolling" ? SessionData.getMonitorScrollPosition(screenName) : null, backdrop ? SessionData.getMonitorMaterialWallpaper(screenName) : null, backdrop ? Theme.wallpaperPalette() : null, Theme.lockScreenBlur, Theme.lockScreenBlurMax, Theme.lockScreenScrimAlpha, Theme.screenOffColor.toString(), SettingsData.effectiveWallpaperBackgroundColor.toString()]);

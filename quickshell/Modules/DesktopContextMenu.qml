@@ -7,6 +7,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 import "../DCommon/Common/MaterialWallpaper.js" as Art
+import "../Common/WallpaperFormats.js" as WallpaperFormats
 
 DContextMenu {
     id: root
@@ -187,7 +188,7 @@ DContextMenu {
                 showDirs: false
                 showDotAndDotDot: false
                 caseSensitive: false
-                nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp", "*.jxl", "*.avif", "*.heif", "*.exr", "*.svg"]
+                nameFilters: WallpaperFormats.nameFilters(true)
                 folder: "file://" + root.wallpaperDir.split("/").map(s => encodeURIComponent(s)).join("/")
                 onStatusChanged: {
                     if (folderModel.status === FolderListModel.Ready)
@@ -228,7 +229,7 @@ DContextMenu {
                             id: imageThumb
 
                             CachingImage {
-                                imagePath: thumb.modelData.path
+                                imagePath: VideoWallpaperService.imageFor(thumb.modelData.path)
                                 maxCacheSize: 256
                                 animate: false
                             }

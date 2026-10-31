@@ -227,7 +227,7 @@ Item {
                             Image {
                                 anchors.fill: parent
                                 source: {
-                                    var wp = Theme.wallpaperPath;
+                                    var wp = VideoWallpaperService.imageFor(Theme.wallpaperPath);
                                     if (!wp || wp === "" || wp.startsWith("#"))
                                         return "";
                                     if (wp.startsWith("file://"))
