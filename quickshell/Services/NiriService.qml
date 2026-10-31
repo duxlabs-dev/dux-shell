@@ -43,6 +43,7 @@ Singleton {
 
     property bool touchpadEnabled: true
     property bool _touchpadStateInitialized: false
+    property int _touchpadEventRevision: 0
     signal touchpadToggled
 
     property string configValidationOutput: ""
@@ -462,13 +463,40 @@ Singleton {
         }
     }
 
-    function handleTouchpadToggled(data) {
-        // Each subscription starts with a snapshot; only later changes show the OSD.
-        const showOsd = _touchpadStateInitialized && touchpadEnabled !== data.on;
-        touchpadEnabled = data.on;
+    function updateTouchpadState(enabled, forceOsd) {
+        const showOsd = forceOsd || (_touchpadStateInitialized && touchpadEnabled !== enabled);
+        touchpadEnabled = enabled;
         _touchpadStateInitialized = true;
         if (showOsd)
             touchpadToggled();
+    }
+
+    function handleTouchpadToggled(data) {
+        // Each subscription starts with a snapshot; only later changes show the OSD.
+        _touchpadEventRevision++;
+        updateTouchpadState(data.on, false);
+    }
+
+    function requestTouchpadToggle() {
+        if (!CompositorService.isNiri)
+            return "NIRI_NOT_AVAILABLE";
+
+        const nextState = !root.touchpadEnabled;
+        const eventRevision = root._touchpadEventRevision;
+        Proc.runCommand(null, ["niri", "msg", "action", "toggle-touchpad"], (output, exitCode) => {
+            if (exitCode !== 0) {
+                root.log.warn("Failed to toggle touchpad:", output);
+                return;
+            }
+
+            // Newer Niri versions report the change through TouchpadToggled.
+            if (root._touchpadEventRevision !== eventRevision)
+                return;
+
+            // Older versions lack that event, so update the state and OSD here.
+            root.updateTouchpadState(nextState, true);
+        });
+        return "TOUCHPAD_TOGGLE_REQUESTED";
     }
 
     function handleWorkspacesChanged(data) {
@@ -1923,6 +1951,18 @@ window-rule {
     }
 
     IpcHandler {
+        function toggleTouchpad(): string {
+            return root.requestTouchpadToggle();
+        }
+
+        function showTouchpadOsd(enabled: bool): string {
+            if (!CompositorService.isNiri)
+                return "NIRI_NOT_AVAILABLE";
+
+            root.updateTouchpadState(enabled, true);
+            return "TOUCHPAD_OSD_SHOWN";
+        }
+
         function screenshot(): string {
             if (!CompositorService.isNiri) {
                 return "NIRI_NOT_AVAILABLE";
