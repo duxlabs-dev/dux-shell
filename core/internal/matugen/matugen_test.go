@@ -1188,6 +1188,13 @@ func TestWriteDryRunConfigAlwaysDeclaresConfigAndTemplates(t *testing.T) {
 
 func TestApplyTerminalTemplate(t *testing.T) {
 	opts := func(v int, dark bool) *Options { return &Options{TerminalOpacity: v, TerminalsAlwaysDark: dark} }
+	adjusted := []Adjustment{{Key: "dank16term.color5", From: "#55461b", To: "#9a8758", FromRatio: 1.73, ToRatio: 4.54}}
+	hdr := contrastHeader(adjusted, "#")
+	raised := func(v int, dark bool) *Options {
+		o := opts(v, dark)
+		o.terminalContrast = adjusted
+		return o
+	}
 	tests := []struct {
 		name, tmpl, in, want string
 		opts                 *Options
@@ -1204,6 +1211,10 @@ func TestApplyTerminalTemplate(t *testing.T) {
 		{"wezterm", "wezterm.toml", "a\n", "a\n", opts(85, false)},
 		{"dark and opacity", "kitty.conf", "x.default.y\n", "x.dark.y\nbackground_opacity 0.85\ndynamic_background_opacity yes\n", opts(85, true)},
 		{"opacity only keeps default", "kitty.conf", "x.default.y\n", "x.default.y\nbackground_opacity 0.85\ndynamic_background_opacity yes\n", opts(85, false)},
+		{"contrast header", "wezterm.toml", "a\n", hdr + "a\n", raised(0, false)},
+		{"contrast header with forced dark", "ghostty.conf", "x.default.y\n", hdr + "x.dark.y\n", raised(0, true)},
+		{"contrast header and opacity", "foot.ini", "a\n", hdr + "a\nalpha=0.5\n", raised(50, false)},
+		{"contrast header in lua", "neovim-colors.lua", "a\n", contrastHeader(adjusted, "--") + "a\n", raised(0, false)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1269,17 +1280,10 @@ func TestAppendTerminalConfigOpacity(t *testing.T) {
 }
 
 func TestGenerateDank16VariantsProfile(t *testing.T) {
-	gen := func(profile string) map[string]any {
-		out := generateDank16Variants("#8ad0ee", "#1c5070", "#0f1417", "#f5fafd", "#1b2023", "#e9eef2", ColorModeDark, profile)
-		var m map[string]any
-		if err := json.Unmarshal([]byte(out), &m); err != nil {
-			t.Fatal(err)
-		}
-		return m
-	}
-	def, high := gen(""), gen("high")
-	assert.NotEqual(t, def["color1"], high["color1"])
-	assert.Equal(t, def["color0"], high["color0"])
+	seeds := dank16Seeds{"#8ad0ee", "#1c5070", "#0f1417", "#f5fafd", "#1b2023", "#e9eef2"}
+	def, high := generateDank16Variants(seeds, ColorModeDark, ""), generateDank16Variants(seeds, ColorModeDark, "high")
+	assert.NotEqual(t, def.Color1, high.Color1)
+	assert.Equal(t, def.Color0, high.Color0)
 }
 
 func TestTerminalPaletteOnlyReachesTerminalTemplates(t *testing.T) {
