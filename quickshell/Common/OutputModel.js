@@ -46,6 +46,13 @@ function hyprlandIdentifier(output, name, displayNameMode) {
     return ("desc:" + [output.make, output.model, output.serial].filter(p => p).join(" ")).replace(/,/g, "");
 }
 
+// monitors.json keys Hyprland profiles by bare "Make Model", which hl.monitor ignores; only a connector or desc: matches
+function hyprlandProfileOutputIdentifier(output, key, isConnector) {
+    if (isConnector || key.startsWith("desc:") || !output?.make || !output?.model)
+        return key;
+    return hyprlandIdentifier(output, key, "model");
+}
+
 function modelIdentifier(output) {
     return output.make + " " + output.model;
 }

@@ -165,7 +165,7 @@ Singleton {
 
     function getOutputIdentifier(output, outputName) {
         if (output.explicitIdentifier)
-            return outputName;
+            return OutputModel.hyprlandProfileOutputIdentifier(output, outputName, !!liveMonitor(outputName));
         return OutputModel.hyprlandIdentifier(output, outputName, SettingsData.displayNameMode);
     }
 
@@ -332,7 +332,7 @@ Singleton {
             if (!(output.make && output.model) && liveIdentifiers[identifier.trim()])
                 continue;
 
-            const outputSettings = settings[identifier] || {};
+            const outputSettings = settings[identifier] || settings[outputName] || {};
 
             if (outputSettings.disabled) {
                 lines.push(`hl.monitor({ output = ${luaQuoted(identifier)}, disabled = true })`);
@@ -346,7 +346,7 @@ Singleton {
                     resolution = mode.width + "x" + mode.height + "@" + (mode.refresh_rate / 1000).toFixed(3);
             }
 
-            const geometry = OutputModel.hyprlandLuaGeometry(output, saved[identifier], liveMonitor(outputName));
+            const geometry = OutputModel.hyprlandLuaGeometry(output, saved[identifier] ?? saved[outputName], liveMonitor(outputName));
             const scale = geometry.scale === "auto" ? luaQuoted("auto") : geometry.scale;
             const parts = [`output = ${luaQuoted(identifier)}`, `mode = ${luaQuoted(resolution)}`, `position = ${luaQuoted(geometry.position)}`, `scale = ${scale}`];
 
@@ -354,7 +354,7 @@ Singleton {
             if (transform !== 0)
                 parts.push(`transform = ${transform}`);
 
-            const vrrMode = OutputModel.hyprlandVrrMode(outputSettings, saved[identifier]);
+            const vrrMode = OutputModel.hyprlandVrrMode(outputSettings, saved[identifier] ?? saved[outputName]);
             if (vrrMode !== undefined)
                 parts.push(`vrr = ${vrrMode}`);
 

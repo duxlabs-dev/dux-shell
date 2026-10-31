@@ -85,6 +85,20 @@ test("outputs: auto position and scale survive a rewrite until the written value
     assert.ok(disconnected.includes('position = "auto-right", scale = "auto"'), disconnected);
 });
 
+test("outputs: a monitors.json profile key is written as desc: so Hyprland matches it, settings still resolve by the key, connector and desc: keys pass through", () => {
+    live["eDP-1"] = { x: 0, y: 0, scale: 1.25 };
+    const profile = (key, make, model, serial) => ({ ...connected(key, 1920, 0, 1.5), make, model, serial, explicitIdentifier: true, configured_mode: "3840x2160@60.000" });
+    const outputsData = {
+        "Dell Inc. DELL U2720Q": profile("Dell Inc. DELL U2720Q", "Dell Inc.", "DELL U2720Q", "ABC123"),
+        "desc:LG Electronics LG ULTRAGEAR": profile("desc:LG Electronics LG ULTRAGEAR", "LG Electronics", "LG ULTRAGEAR", "0x0001"),
+        "eDP-1": { ...connected("eDP-1", 0, 0, 1.25), make: "BOE", model: "0x0A1B", explicitIdentifier: true }
+    };
+    const content = scope.buildOutputsLua(outputsData, { "Dell Inc. DELL U2720Q": { bitdepth: 10 } }, saved);
+    const names = content.split("\n").map(line => line.match(/output = "([^"]*)"/)?.[1]).filter(name => name);
+    assert.deepEqual(names, ["desc:Dell Inc. DELL U2720Q ABC123", "desc:LG Electronics LG ULTRAGEAR", "eDP-1"]);
+    assert.ok(monitorLine(content, "desc:Dell Inc. DELL U2720Q ABC123").includes("bitdepth = 10"), content);
+});
+
 test("outputs: vrr is written only for a chosen mode, so untouched monitors inherit misc:vrr", () => {
     const vrrFile = OutputModel.parseHyprlandOutputs([
         'hl.monitor({ output = "eDP-1", mode = "2400x1600@120.000", position = "0x0", scale = 1.25, vrr = 0 })',
