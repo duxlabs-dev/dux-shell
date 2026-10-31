@@ -675,7 +675,7 @@ Item {
                             property real _maxPerItem: _count > 1 ? (parent.width - (_count - 1) * spacing) / _count : parent.width
                             buttonPadding: _maxPerItem < 55 ? Theme.spacingXS : (_maxPerItem < 75 ? Theme.spacingS : Theme.spacingL)
                             minButtonWidth: Math.min(_maxPerItem < 55 ? 28 : (_maxPerItem < 75 ? 44 : 64), Math.max(28, Math.floor(_maxPerItem)))
-                            textSize: _maxPerItem < 55 ? Theme.fontSizeSmall - 2 : (_maxPerItem < 75 ? Theme.fontSizeSmall : Theme.fontSizeMedium)
+                            textSize: _maxPerItem < 55 ? Theme.fontSizeXSmall : (_maxPerItem < 75 ? Theme.fontSizeSmall : Theme.fontSizeMedium)
                             checkEnabled: _maxPerItem >= 55
                             property int pendingIndex: -1
                             model: variantSelector.flavorNames
@@ -752,7 +752,7 @@ Item {
                             property real _maxPerItem: _count > 1 ? (parent.width - (_count - 1) * spacing) / _count : parent.width
                             buttonPadding: _maxPerItem < 55 ? Theme.spacingXS : (_maxPerItem < 75 ? Theme.spacingS : Theme.spacingL)
                             minButtonWidth: Math.min(_maxPerItem < 55 ? 28 : (_maxPerItem < 75 ? 44 : 64), Math.max(28, Math.floor(_maxPerItem)))
-                            textSize: _maxPerItem < 55 ? Theme.fontSizeSmall - 2 : (_maxPerItem < 75 ? Theme.fontSizeSmall : Theme.fontSizeMedium)
+                            textSize: _maxPerItem < 55 ? Theme.fontSizeXSmall : (_maxPerItem < 75 ? Theme.fontSizeSmall : Theme.fontSizeMedium)
                             checkEnabled: _maxPerItem >= 55
                             property int pendingIndex: -1
                             model: variantSelector.variantNames

@@ -767,6 +767,7 @@ func getCommonCommands() []*cobra.Command {
 		versionCmd,
 		ipcCmd,
 		debugSrvCmd,
+		sysmonHelperCmd,
 		pluginsCmd,
 		registryCmd,
 		dank16Cmd,

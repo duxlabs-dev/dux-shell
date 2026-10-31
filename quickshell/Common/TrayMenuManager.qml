@@ -35,9 +35,9 @@ Singleton {
     }
 
     Connections {
-        target: SystemTray
-        function onItemUnregistered(item) {
-            root._trayKeyByItem.delete(item);
+        target: SystemTray.items
+        function onObjectRemovedPost(object) {
+            root._trayKeyByItem.delete(object);
         }
     }
 

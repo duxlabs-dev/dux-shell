@@ -5,6 +5,7 @@ import qs.Modules.ProcessList
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
+import "ProcessColumns.js" as ProcessColumns
 
 DPopout {
     id: processListPopout
@@ -156,6 +157,7 @@ DPopout {
                     searchText: processListPopout.searchText
                     expandedPid: processListPopout.expandedPid
                     contextMenu: processContextMenu
+                    columns: ProcessColumns.POPOUT_COLUMNS
                     onExpandedPidChanged: processListPopout.expandedPid = expandedPid
                 }
             }

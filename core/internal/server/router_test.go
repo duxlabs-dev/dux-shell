@@ -52,7 +52,7 @@ func TestRouteRequestUnavailableManagers(t *testing.T) {
 }
 
 func TestRouteRequestUnknownMethods(t *testing.T) {
-	for _, method := range []string{"", "missing", "network", "networking.getState", "theme.auto", "matugen.missing", "plugins.missing", "themes.missing", "registries.missing", "mime.missing", "dgop.missing", "lyrics.missing"} {
+	for _, method := range []string{"", "missing", "network", "networking.getState", "theme.auto", "matugen.missing", "plugins.missing", "themes.missing", "registries.missing", "mime.missing", "dgop.missing", "drives.missing", "lyrics.missing"} {
 		t.Run(method, func(t *testing.T) {
 			conn := &mockConn{}
 			RouteRequest(context.Background(), ipc.NewConnWriter(conn), ipc.Request{ID: 18, Method: method})

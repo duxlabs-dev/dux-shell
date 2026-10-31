@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/dlclark/regexp2/v2 v2.9.1
 	github.com/duxlabs-dev/dux-go v1.6.3-0.20261024072205-827c879f557a
-	github.com/duxlabs-dev/dux-gop v1.6.3-0.20261020163819-0e4888f1fcea
+	github.com/duxlabs-dev/dux-gop v1.6.3-0.20261031021448-854e306ff3e4
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-git/go-git/v6 v6.0.0-beta.1
 	github.com/godbus/dbus/v5 v5.2.4

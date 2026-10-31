@@ -1281,6 +1281,7 @@ Singleton {
     property real spacingL: 16
     property real spacingXL: 24
     readonly property real windowInset: spacingM
+    property real fontSizeXSmall: Math.round(fontScale * 10)
     property real fontSizeSmall: Math.round(fontScale * 12)
     property real fontSizeMedium: Math.round(fontScale * 14)
     property real fontSizeLarge: Math.round(fontScale * 16)
