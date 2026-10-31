@@ -100,6 +100,7 @@ Variants {
             readonly property bool isVideoSource: WallpaperFormats.isVideo(wallpaperSource)
             // A video drives the image pipeline below with its still frame.
             readonly property string resolvedSource: VideoWallpaperService.imageFor(wallpaperSource)
+            readonly property bool framePending: VideoWallpaperService.framePending(wallpaperSource)
             // Holds the previous wallpaper while a new video's frame is still being extracted.
             property string source: ""
             property bool isColorSource: source.startsWith("#")
@@ -587,10 +588,14 @@ Variants {
                 }
             }
 
-            onResolvedSourceChanged: {
-                if (resolvedSource || !VideoWallpaperService.framePending(wallpaperSource))
+            // Switches once the frame exists, or once it never will (extraction failed, no ffmpeg).
+            function syncSource() {
+                if (resolvedSource || !framePending)
                     source = resolvedSource;
             }
+
+            onResolvedSourceChanged: syncSource()
+            onFramePendingChanged: syncSource()
 
             Component.onCompleted: {
                 source = resolvedSource;

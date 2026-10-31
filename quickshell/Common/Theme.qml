@@ -58,6 +58,7 @@ Singleton {
     readonly property string rawWallpaperPath: SessionData.getMonitorWallpaper(wallpaperSourceScreen)
     // A video themes from its extracted frame, which can arrive after the wallpaper is set.
     readonly property string wallpaperImagePath: VideoWallpaperService.imageFor(rawWallpaperPath)
+    readonly property bool wallpaperFramePending: VideoWallpaperService.framePending(rawWallpaperPath)
     property bool _themeAwaitsFrame: false
     readonly property string materialWallpaperSeed: SessionData.getMonitorMaterialWallpaper(wallpaperSourceScreen).seed
 
@@ -1962,10 +1963,14 @@ Singleton {
         root.matugenCompleted((typeof SessionData !== "undefined" && SessionData.isLightMode) ? "light" : "dark", "error");
     }
 
-    onWallpaperImagePathChanged: {
-        if (_themeAwaitsFrame && wallpaperImagePath)
+    // The frame arrived, or it never will (extraction failed, no ffmpeg) and the seed color takes over.
+    function _resumeThemeAfterFrame() {
+        if (_themeAwaitsFrame && (wallpaperImagePath || !wallpaperFramePending))
             generateSystemThemesFromCurrentTheme();
     }
+
+    onWallpaperImagePathChanged: _resumeThemeAfterFrame()
+    onWallpaperFramePendingChanged: _resumeThemeAfterFrame()
 
     function generateSystemThemesFromCurrentTheme() {
         if (!matugenAvailable)
@@ -1984,7 +1989,7 @@ Singleton {
         const iconTheme = (typeof SettingsData !== "undefined" && SettingsData.iconTheme) ? SettingsData.iconTheme : "System Default";
 
         if (currentTheme === dynamic) {
-            _themeAwaitsFrame = !wallpaperImagePath && VideoWallpaperService.framePending(rawWallpaperPath);
+            _themeAwaitsFrame = !wallpaperImagePath && wallpaperFramePending;
             if (_themeAwaitsFrame)
                 return;
             const selectedMatugenType = SettingsData.matugenScheme || "scheme-tonal-spot";

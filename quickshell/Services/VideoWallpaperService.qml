@@ -73,7 +73,10 @@ Singleton {
                 return;
             }
             if (exitCode !== 0) {
-                _failed[video] = true;
+                // reassigned, not mutated, so framePending() bindings see the failure
+                _failed = Object.assign({}, _failed, {
+                    [video]: true
+                });
                 log.warn("could not extract a frame from", video + ":", output.trim());
             } else {
                 posters = Object.assign({}, posters, {
