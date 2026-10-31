@@ -20,10 +20,7 @@ Item {
     property bool lyricsHeld: false
     readonly property bool lyricsShown: root.lyricsOpen && (lyricsReady || lyricsHeld)
 
-    onLyricsOpenChanged: {
-        if (!lyricsOpen)
-            lyricsHeld = false;
-    }
+    onLyricsOpenChanged: lyricsHeld = lyricsOpen && lyricsReady
     onLyricsReadyChanged: {
         if (lyricsReady && lyricsOpen)
             lyricsHeld = true;
