@@ -337,6 +337,10 @@ func (b *NetworkManagerBackend) ConnectVPN(uuidOrName string, singleActive bool)
 		if err := b.handleOpenVPNUsernameAuth(targetConn, connName, targetUUID, vpnServiceType); err != nil {
 			return err
 		}
+	case "openconnect_helper":
+		if err := b.ensureOpenConnectAgentFlags(targetConn, vpnData); err != nil {
+			return fmt.Errorf("failed to prepare OpenConnect connection: %w", err)
+		}
 	case "openconnect_password":
 		if err := b.ensureOpenConnectAgentFlags(targetConn, vpnData); err != nil {
 			return fmt.Errorf("failed to prepare OpenConnect connection: %w", err)
@@ -407,15 +411,7 @@ func (b *NetworkManagerBackend) ConnectVPN(uuidOrName string, singleActive bool)
 	}
 
 	if openConnectAuth != nil {
-		b.cachedOpenConnectMu.Lock()
-		b.cachedOpenConnectAuth = &cachedOpenConnectAuth{
-			ConnectionUUID: targetUUID,
-			Cookie:         openConnectAuth.Cookie,
-			Host:           openConnectAuth.Host,
-			User:           openConnectAuth.User,
-			Fingerprint:    openConnectAuth.Fingerprint,
-		}
-		b.cachedOpenConnectMu.Unlock()
+		b.cacheOpenConnectAuthentication(targetConn.GetPath(), targetUUID, openConnectAuth)
 		log.Infof("[ConnectVPN] OpenConnect authentication cached for %s, proceeding with activation", connName)
 	}
 
@@ -453,6 +449,20 @@ func (b *NetworkManagerBackend) ConnectVPN(uuidOrName string, singleActive bool)
 	return nil
 }
 
+func (b *NetworkManagerBackend) cacheOpenConnectAuthentication(path dbus.ObjectPath, uuid string, auth *openConnectAuthResult) {
+	b.cachedOpenConnectMu.Lock()
+	defer b.cachedOpenConnectMu.Unlock()
+	b.cachedOpenConnectAuth = &cachedOpenConnectAuth{
+		ConnectionPath: path,
+		ConnectionUUID: uuid,
+		Cookie:         auth.Cookie,
+		Host:           auth.Host,
+		Resolve:        auth.Resolve,
+		User:           auth.User,
+		Fingerprint:    auth.Fingerprint,
+	}
+}
+
 func detectVPNAuthAction(serviceType string, data map[string]string) string {
 	if data == nil {
 		return ""
@@ -470,8 +480,12 @@ func detectVPNAuthAction(serviceType string, data map[string]string) string {
 			default:
 				log.Infof("[VPN] External browser auth detected for protocol '%s' but only GlobalProtect (gp) and Fortinet are currently supported", protocol)
 			}
+			return ""
 		}
-		if protocol == "fortinet" && data["authtype"] == "password" {
+		if isOpenConnectHelperEligible(serviceType, data) {
+			return "openconnect_helper"
+		}
+		if openConnectPasswordProtocol(data["protocol"]) == "fortinet" && supportsOpenConnectPasswordAuth(data) {
 			return "openconnect_password"
 		}
 	case strings.Contains(serviceType, "openvpn"):
@@ -484,9 +498,55 @@ func detectVPNAuthAction(serviceType string, data map[string]string) string {
 	return ""
 }
 
+func supportsOpenConnectPasswordAuth(data map[string]string) bool {
+	protocol := openConnectPasswordProtocol(data["protocol"])
+	if protocol == "fortinet" {
+		return data["authtype"] == "password"
+	}
+	if protocol != "anyconnect" {
+		return false
+	}
+
+	authType := data["authtype"]
+	if authType != "" && authType != "password" {
+		return false
+	}
+
+	for _, key := range []string{
+		"usercert", "userkey", "privkey", "key_pass",
+		"mcacert", "mcakey", "mca_key_pass", "multi-cert", "multicert",
+		"browser", "external-browser", "sso-browser", "saml-auth-method",
+	} {
+		if strings.TrimSpace(data[key]) != "" {
+			return false
+		}
+	}
+
+	for _, key := range []string{"stoken_source", "stoken_string", "token-mode", "token-secret"} {
+		value := strings.TrimSpace(data[key])
+		if value != "" && value != "disabled" {
+			return false
+		}
+	}
+
+	for key, value := range data {
+		if strings.Contains(strings.ToLower(key), "pkcs11") || strings.Contains(strings.ToLower(value), "pkcs11:") {
+			return false
+		}
+	}
+	return true
+}
+
+func openConnectPasswordProtocol(protocol string) string {
+	if protocol == "" {
+		return "anyconnect"
+	}
+	return protocol
+}
+
 func setOpenConnectAgentFlags(data map[string]string) bool {
 	changed := false
-	for _, field := range []string{"cookie", "gateway", "gwcert"} {
+	for _, field := range []string{"cookie", "gateway", "gwcert", "resolve"} {
 		key := field + "-flags"
 		if data[key] != "2" {
 			data[key] = "2"
@@ -496,47 +556,122 @@ func setOpenConnectAgentFlags(data map[string]string) bool {
 	return changed
 }
 
-func (b *NetworkManagerBackend) ensureOpenConnectAgentFlags(conn gonetworkmanager.Connection, data map[string]string) error {
-	if !setOpenConnectAgentFlags(data) {
-		return nil
+type networkManagerSettingsCall func(method string, result any, args ...any) error
+
+type nmLegacyIPv6Address struct {
+	Address []byte
+	Prefix  uint32
+	Gateway []byte
+}
+
+type nmLegacyIPv6Route struct {
+	Destination []byte
+	Prefix      uint32
+	NextHop     []byte
+	Metric      uint32
+}
+
+func normalizeLegacyIPv6Settings(ipv6 map[string]dbus.Variant) error {
+	// godbus decodes D-Bus structs as []any; restore their wire types before Update2.
+	if value, ok := ipv6["addresses"]; ok {
+		var addresses []nmLegacyIPv6Address
+		if err := dbus.Store([]any{value.Value()}, &addresses); err != nil {
+			return fmt.Errorf("failed to convert ipv6.addresses: %w", err)
+		}
+		ipv6["addresses"] = dbus.MakeVariant(addresses)
 	}
+	if value, ok := ipv6["routes"]; ok {
+		var routes []nmLegacyIPv6Route
+		if err := dbus.Store([]any{value.Value()}, &routes); err != nil {
+			return fmt.Errorf("failed to convert ipv6.routes: %w", err)
+		}
+		ipv6["routes"] = dbus.MakeVariant(routes)
+	}
+	return nil
+}
+
+func (b *NetworkManagerBackend) ensureOpenConnectAgentFlags(conn gonetworkmanager.Connection, data map[string]string) error {
 	if b.dbusConn == nil {
 		return fmt.Errorf("NetworkManager D-Bus connection is unavailable")
 	}
 
 	connObj := b.dbusConn.Object("org.freedesktop.NetworkManager", conn.GetPath())
-	var existingSettings map[string]map[string]dbus.Variant
-	if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSettings", 0).Store(&existingSettings); err != nil {
+	return updateOpenConnectAgentFlags(data, func(method string, result any, args ...any) error {
+		return connObj.Call(method, 0, args...).Store(result)
+	})
+}
+
+func updateOpenConnectAgentFlags(data map[string]string, call networkManagerSettingsCall) error {
+	var settings map[string]map[string]dbus.Variant
+	if err := call("org.freedesktop.NetworkManager.Settings.Connection.GetSettings", &settings); err != nil {
 		return fmt.Errorf("failed to get connection settings: %w", err)
 	}
 
-	vpn, ok := existingSettings["vpn"]
+	vpn, ok := settings["vpn"]
 	if !ok {
 		return fmt.Errorf("VPN settings are missing")
 	}
-	vpn["data"] = dbus.MakeVariant(data)
-
-	var stored map[string]map[string]dbus.Variant
-	if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSecrets", 0, "vpn").Store(&stored); err != nil {
-		return fmt.Errorf("failed to preserve VPN secrets: %w", err)
+	vpnDataVariant, ok := vpn["data"]
+	if !ok {
+		return fmt.Errorf("VPN data is missing")
 	}
-	if storedVPN, ok := stored["vpn"]; ok {
-		if secrets, ok := storedVPN["secrets"]; ok {
-			vpn["secrets"] = secrets
-		}
+	freshData, ok := vpnDataVariant.Value().(map[string]string)
+	if !ok {
+		return fmt.Errorf("VPN data has unexpected type %T", vpnDataVariant.Value())
 	}
 
-	settings := map[string]map[string]dbus.Variant{"vpn": vpn}
-	if connection, ok := existingSettings["connection"]; ok {
-		settings["connection"] = connection
+	updatedData := make(map[string]string, len(freshData)+4)
+	maps.Copy(updatedData, freshData)
+	if !setOpenConnectAgentFlags(updatedData) {
+		clear(data)
+		maps.Copy(data, freshData)
+		return nil
+	}
+	vpn["data"] = dbus.MakeVariant(updatedData)
+	if err := normalizeLegacyIPv6Settings(settings["ipv6"]); err != nil {
+		return err
 	}
 
 	var result map[string]dbus.Variant
-	if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.Update2", 0,
-		settings, uint32(0x1), map[string]dbus.Variant{}).Store(&result); err != nil {
+	if err := call("org.freedesktop.NetworkManager.Settings.Connection.Update2", &result,
+		settings, uint32(0x1), map[string]dbus.Variant{}); err != nil {
 		return fmt.Errorf("failed to set NetworkManager secret-agent flags: %w", err)
 	}
+	clear(data)
+	maps.Copy(data, updatedData)
 	return nil
+}
+
+type openConnectSecretRead struct {
+	uuid string
+	path dbus.ObjectPath
+}
+
+func (b *NetworkManagerBackend) readStoredOpenConnectSecrets(
+	conn gonetworkmanager.Connection, uuid, service string, data map[string]string,
+) (gonetworkmanager.ConnectionSettings, error) {
+	if uuid == "" || service != "org.freedesktop.NetworkManager.openconnect" ||
+		data["password-flags"] != "0" || !supportsOpenConnectPasswordAuth(data) {
+		return conn.GetSecrets("vpn")
+	}
+
+	key := openConnectSecretRead{uuid: uuid, path: conn.GetPath()}
+	if !key.path.IsValid() || key.path == "/" {
+		return conn.GetSecrets("vpn")
+	}
+
+	endRead := b.beginOpenConnectSecretRead(uuid, key.path)
+	defer endRead()
+
+	// D-Bus cannot distinguish concurrent external reads of this same profile.
+	// Keep the marker limited to the synchronous lookup, with no lock held.
+	return conn.GetSecrets("vpn")
+}
+
+func (b *NetworkManagerBackend) isReadingOpenConnectSecrets(uuid string, path dbus.ObjectPath) bool {
+	b.openConnectSecretReadMu.Lock()
+	defer b.openConnectSecretReadMu.Unlock()
+	return b.openConnectSecretReads[openConnectSecretRead{uuid: uuid, path: path}] > 0
 }
 
 func (b *NetworkManagerBackend) handleOpenConnectPasswordAuth(
@@ -545,9 +680,12 @@ func (b *NetworkManagerBackend) handleOpenConnectPasswordAuth(
 	connName, targetUUID, vpnServiceType string,
 	data map[string]string,
 ) (*openConnectAuthResult, error) {
+	if protocol := openConnectPasswordProtocol(data["protocol"]); protocol != "fortinet" {
+		return nil, fmt.Errorf("OpenConnect password authentication is not supported for protocol %q", protocol)
+	}
 	username := data["username"]
 	secrets := map[string]string{}
-	if stored, err := targetConn.GetSecrets("vpn"); err == nil {
+	if stored, err := b.readStoredOpenConnectSecrets(targetConn, targetUUID, vpnServiceType, data); err == nil {
 		if vpn, ok := stored["vpn"]; ok {
 			if saved, ok := vpn["secrets"].(map[string]string); ok {
 				secrets = saved
@@ -559,6 +697,10 @@ func (b *NetworkManagerBackend) handleOpenConnectPasswordAuth(
 	serverCert := secrets["certificate:"+data["gateway"]]
 	if serverCert == "" {
 		serverCert = secrets["gwcert"]
+	}
+	strictPKI := data["prevent_invalid_cert"] == "yes"
+	if strictPKI {
+		serverCert = ""
 	}
 
 	var reply PromptReply
@@ -598,6 +740,9 @@ func (b *NetworkManagerBackend) handleOpenConnectPasswordAuth(
 		if err != nil {
 			return nil, fmt.Errorf("credentials prompt failed: %w", err)
 		}
+		if reply.Cancel {
+			return nil, fmt.Errorf("credentials prompt was cancelled")
+		}
 		if username == "" {
 			username = reply.Secrets["username"]
 		}
@@ -609,7 +754,7 @@ func (b *NetworkManagerBackend) handleOpenConnectPasswordAuth(
 	auth, err := runOpenConnectPasswordAuth(ctx, data, username, password, serverCert)
 	persistentSecrets := map[string]string{}
 	var authErr *openConnectAuthError
-	if err != nil && errors.As(err, &authErr) && authErr.serverCert != "" && authErr.serverCert != serverCert {
+	if err != nil && !strictPKI && errors.As(err, &authErr) && authErr.serverCert != "" && authErr.serverCert != serverCert {
 		if b.promptBroker == nil {
 			return nil, fmt.Errorf("VPN server certificate is untrusted: %s", authErr.serverCert)
 		}
@@ -633,8 +778,12 @@ func (b *NetworkManagerBackend) handleOpenConnectPasswordAuth(
 		if promptErr != nil {
 			return nil, fmt.Errorf("failed to request certificate confirmation: %w", promptErr)
 		}
-		if _, promptErr = b.promptBroker.Wait(ctx, token); promptErr != nil {
+		confirmation, promptErr := b.promptBroker.Wait(ctx, token)
+		if promptErr != nil {
 			return nil, fmt.Errorf("certificate confirmation failed: %w", promptErr)
+		}
+		if confirmation.Cancel {
+			return nil, fmt.Errorf("certificate confirmation was cancelled")
 		}
 
 		auth, err = runOpenConnectPasswordAuth(ctx, data, username, password, authErr.serverCert)

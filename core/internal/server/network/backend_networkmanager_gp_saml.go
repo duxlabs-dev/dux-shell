@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os/exec"
 	"strings"
 
@@ -14,6 +15,8 @@ import (
 type openConnectAuthResult struct {
 	Cookie      string
 	Host        string
+	ConnectURL  string
+	Resolve     string
 	User        string
 	Fingerprint string
 }
@@ -61,30 +64,18 @@ func (b *NetworkManagerBackend) runGlobalProtectSAMLAuth(ctx context.Context, ga
 		return nil, fmt.Errorf("GP SAML auth: failed to create stdout pipe: %w", err)
 	}
 
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, fmt.Errorf("GP SAML auth: failed to create stderr pipe: %w", err)
-	}
+	// Diagnostics can contain authentication cookies as well as stdout.
+	cmd.Stderr = io.Discard
 
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("GP SAML auth: failed to start gp-saml-gui: %w", err)
 	}
 
-	go func() {
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			log.Debugf("[GP-SAML] gp-saml-gui: %s", scanner.Text())
-		}
-	}()
-
 	result := &openConnectAuthResult{Host: gateway}
-	var allOutput []string
 
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		line := scanner.Text()
-		allOutput = append(allOutput, line)
-		log.Infof("[GP-SAML] stdout: %s", line)
 
 		switch {
 		case strings.HasPrefix(line, "COOKIE="):
@@ -95,6 +86,8 @@ func (b *NetworkManagerBackend) runGlobalProtectSAMLAuth(ctx context.Context, ga
 			result.User = unshellQuote(strings.TrimPrefix(line, "USER="))
 		case strings.HasPrefix(line, "FINGERPRINT="):
 			result.Fingerprint = unshellQuote(strings.TrimPrefix(line, "FINGERPRINT="))
+		case strings.HasPrefix(line, "RESOLVE="):
+			result.Resolve = unshellQuote(strings.TrimPrefix(line, "RESOLVE="))
 		default:
 			parseGPSamlFromCommandLine(line, result)
 		}
@@ -105,7 +98,7 @@ func (b *NetworkManagerBackend) runGlobalProtectSAMLAuth(ctx context.Context, ga
 			return nil, fmt.Errorf("GP SAML auth timed out or was cancelled: %w", ctx.Err())
 		}
 		if result.Cookie == "" {
-			return nil, fmt.Errorf("GP SAML auth failed: %w (output: %s)", err, strings.Join(allOutput, "\n"))
+			return nil, fmt.Errorf("GP SAML auth failed: %w", err)
 		}
 		log.Warnf("[GP-SAML] gp-saml-gui exited with error but cookie was captured: %v", err)
 	}
@@ -124,6 +117,9 @@ func (b *NetworkManagerBackend) runGlobalProtectSAMLAuth(ctx context.Context, ga
 
 	result.Cookie = ocResult.Cookie
 	result.Host = ocResult.Host
+	if ocResult.Resolve != "" {
+		result.Resolve = ocResult.Resolve
+	}
 	result.Fingerprint = ocResult.Fingerprint
 
 	log.Infof("[GP-SAML] Authentication successful: user=%s, host=%s, cookie_len=%d, has_fingerprint=%v",
@@ -148,8 +144,9 @@ func runOpenConnectPasswordAuth(
 	data map[string]string,
 	username, password, serverCert string,
 ) (*openConnectAuthResult, error) {
-	if data["protocol"] != "fortinet" {
-		return nil, fmt.Errorf("only Fortinet password authentication is supported")
+	protocol := openConnectPasswordProtocol(data["protocol"])
+	if protocol != "fortinet" {
+		return nil, fmt.Errorf("OpenConnect password authentication is not supported for protocol %q", protocol)
 	}
 	gateway := data["gateway"]
 	if gateway == "" {
@@ -160,7 +157,7 @@ func runOpenConnectPasswordAuth(
 	}
 
 	args := []string{
-		"--protocol=fortinet",
+		"--protocol=" + protocol,
 		"--user=" + username,
 		"--passwd-on-stdin",
 		"--non-inter",
@@ -168,7 +165,10 @@ func runOpenConnectPasswordAuth(
 	if usergroup := data["usergroup"]; usergroup != "" {
 		args = append(args, "--usergroup="+usergroup)
 	}
-	if serverCert != "" {
+	if caCert := data["cacert"]; caCert != "" {
+		args = append(args, "--cafile="+caCert)
+	}
+	if serverCert != "" && data["prevent_invalid_cert"] != "yes" {
 		args = append(args, "--servercert="+serverCert)
 	}
 	args = append(args, "--authenticate", gateway)
@@ -176,7 +176,7 @@ func runOpenConnectPasswordAuth(
 	result, err := runOpenConnectAuthenticate(ctx, args, password)
 	if err == nil {
 		result.Host = gateway
-		if result.Fingerprint == "" {
+		if result.Fingerprint == "" && data["prevent_invalid_cert"] != "yes" {
 			result.Fingerprint = serverCert
 		}
 	}
@@ -226,10 +226,12 @@ func parseOpenConnectAuthenticateOutput(output string) *openConnectAuthResult {
 		case strings.HasPrefix(line, "FINGERPRINT="):
 			result.Fingerprint = unshellQuote(strings.TrimPrefix(line, "FINGERPRINT="))
 		case strings.HasPrefix(line, "CONNECT_URL="):
-			connectURL := unshellQuote(strings.TrimPrefix(line, "CONNECT_URL="))
-			if connectURL != "" && result.Host == "" {
-				result.Host = connectURL
+			result.ConnectURL = unshellQuote(strings.TrimPrefix(line, "CONNECT_URL="))
+			if result.Host == "" {
+				result.Host = result.ConnectURL
 			}
+		case strings.HasPrefix(line, "RESOLVE="):
+			result.Resolve = unshellQuote(strings.TrimPrefix(line, "RESOLVE="))
 		}
 	}
 	return result
