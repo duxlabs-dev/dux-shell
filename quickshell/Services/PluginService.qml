@@ -1190,6 +1190,16 @@ Singleton {
         return true;
     }
 
+    // Actions a plugin offers to the launcher and semantic search; they drop
+    // out with the plugin on unload (ActionCatalogService listens for it).
+    function registerActions(pluginId, actions) {
+        return ActionCatalogService.registerPluginActions(pluginId, actions);
+    }
+
+    function unregisterActions(pluginId) {
+        ActionCatalogService.unregisterPluginActions(pluginId);
+    }
+
     // Launcher plugin helper functions
     function getLauncherPlugins() {
         const launchers = {};

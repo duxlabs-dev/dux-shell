@@ -3,6 +3,7 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
+import "../../Common/Format.js" as Format
 import "../../Common/KeyUtils.js" as KeyUtils
 import "../../Common/LauncherKeybinds.js" as LauncherKeybinds
 
@@ -69,6 +70,40 @@ Item {
             modePlugins: I18n.tr("Plugins")
         })
 
+    readonly property var semanticTowers: ["text", "image", "audio"]
+
+    function towerLabel(tower) {
+        switch (tower) {
+        case "image":
+            return I18n.tr("Image");
+        case "audio":
+            return I18n.tr("Audio");
+        default:
+            return I18n.tr("Text");
+        }
+    }
+
+    function towerSubtitle(tower, info, progress) {
+        if (progress && progress.phase === "active")
+            return Math.round(progress.fraction * 100) + "%" + (progress.total > 0 ? " - " + Format.formatBytes(progress.bytes) + " / " + Format.formatBytes(progress.total) : "");
+        if (progress && progress.phase === "error")
+            return progress.error || I18n.tr("Error");
+        const state = info.installed ? I18n.tr("Installed") + (info.bytes > 0 ? " - " + Format.formatBytes(info.bytes) : "") : I18n.tr("Not installed");
+        return tower === "text" ? state + " - " + I18n.tr("Required", "launcher settings, semantic search model part that cannot be removed") : state;
+    }
+
+    function semanticStatusText() {
+        if (DSearchService.unreachable)
+            return I18n.tr("dsearch is not running", "launcher settings, semantic search status; dsearch is the file search service");
+        if (!DSearchService.statusKnown)
+            return "";
+        if (!DSearchService.semanticEnabled)
+            return "";
+        return DSearchService.semanticReady ? I18n.tr("Ready") : (DSearchService.semanticState.embedderReason || I18n.tr("Unavailable"));
+    }
+
+    readonly property real semanticDiskBytes: semanticTowers.reduce((sum, tower) => sum + DSearchService.semanticState.model.towers[tower].bytes, 0)
+
     function setLauncherKeybind(actionId, combos) {
         const updated = Object.assign({}, SettingsData.launcherKeybinds);
         if (combos)
@@ -78,10 +113,16 @@ Item {
         SettingsData.set("launcherKeybinds", updated);
     }
 
+    Ref {
+        service: DSearchService
+    }
+
     Component.onCompleted: {
         KeybindsService.addRef();
         if (KeybindsService.available)
             KeybindsService.loadBinds(false);
+        DSearchService.refreshSemanticStatus();
+        DSearchService.refreshConfig();
     }
 
     Component.onDestruction: KeybindsService.removeRef()
@@ -347,6 +388,87 @@ Item {
                 text: I18n.tr("Include folders in All tab")
                 checked: SettingsData.dankLauncherV2IncludeFoldersInAll
                 onToggled: checked => SettingsData.set("dankLauncherV2IncludeFoldersInAll", checked)
+            }
+        }
+
+        SettingsCard {
+            width: parent.width
+            iconName: "psychology"
+            title: I18n.tr("Semantic search", "launcher settings section: search by meaning with a local model")
+            settingKey: "launcherSemanticSearch"
+            tags: ["launcher", "semantic", "meaning", "model", "download", "embedding", "dsearch", "actions", "language"]
+            visible: DSearchService.semanticSupported
+
+            SettingsToggleRow {
+                text: I18n.tr("Enabled")
+                description: I18n.tr("Restarts the dsearch service to apply the change.", "launcher settings, semantic search toggle description")
+                checked: DSearchService.configEnabled
+                toggling: DSearchService.restarting
+                onToggled: checked => DSearchService.setSemanticEnabled(checked)
+            }
+
+            SettingsNoteRow {
+                visible: DSearchService.configError !== ""
+                text: DSearchService.configError === "restart" ? I18n.tr("dsearch could not be restarted. Restart the dsearch service yourself to apply this.", "launcher settings, semantic search error; dsearch is the file search service") : DSearchService.configError === "inline" ? I18n.tr("The dsearch config defines [semantic] in a way that cannot be edited here.", "launcher settings, semantic search error; [semantic] is a section name in a config file") : I18n.tr("The dsearch config could not be written.", "launcher settings, semantic search error")
+                noteIconName: "error"
+                tint: Theme.error
+                tintBackground: Theme.errorHover
+            }
+
+            SettingsRow {
+                title: I18n.tr("Status")
+                subtitle: root.semanticStatusText()
+                trailingBadge: DSearchService.semanticEnabled ? I18n.tr("Enabled") : I18n.tr("Disabled")
+                trailingBadgeColor: DSearchService.semanticReady ? Theme.primary : Theme.surfaceVariantText
+            }
+
+            SettingsNoteRow {
+                readonly property string failure: {
+                    return DSearchService.downloadError || DSearchService.semanticState.model.error;
+                }
+
+                visible: failure !== ""
+                text: failure
+                noteIconName: "error"
+                tint: Theme.error
+                tintBackground: Theme.errorHover
+            }
+
+            Repeater {
+                model: root.semanticTowers
+
+                SettingsRow {
+                    id: towerRow
+
+                    required property string modelData
+                    readonly property var info: DSearchService.semanticState.model.towers[modelData]
+                    readonly property var progress: DSearchService.modelProgress[modelData]
+                    readonly property bool busy: progress !== undefined && progress.phase === "active"
+
+                    title: root.towerLabel(modelData)
+                    subtitle: root.towerSubtitle(modelData, info, progress)
+                    body: M3WaveProgress {
+                        width: parent.width
+                        height: towerRow.busy ? Theme.spacingM : 0
+                        visible: towerRow.busy
+                        isPlaying: visible
+                        value: towerRow.progress ? towerRow.progress.fraction : 0
+                    }
+
+                    DButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: towerRow.info.installed ? I18n.tr("Remove") : (DSearchService.downloadError !== "" ? I18n.tr("Retry") : I18n.tr("Install"))
+                        enabled: DSearchService.linked && !towerRow.busy
+                        backgroundColor: SettingsMetrics.controlSurface
+                        textColor: Theme.surfaceText
+                        onClicked: towerRow.info.installed ? DSearchService.removeModel([towerRow.modelData]) : DSearchService.downloadModel([towerRow.modelData])
+                    }
+                }
+            }
+
+            SettingsRow {
+                title: I18n.tr("Disk usage")
+                trailingBadge: Format.formatBytes(root.semanticDiskBytes)
             }
         }
 
@@ -838,6 +960,9 @@ Item {
                     return [];
                 var apps = [];
                 for (var appId in ranking) {
+                    // Launcher actions share the usage store under an action: key.
+                    if (appId.startsWith("action:"))
+                        continue;
                     var appData = ranking[appId];
                     apps.push({
                         "id": appId,
