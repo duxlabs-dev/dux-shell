@@ -662,7 +662,7 @@ Item {
             settingKey: "lockDisplay"
             SettingsRow {
                 body: StyledText {
-                    text: I18n.tr("Other displays show a solid color for OLED burn-in protection")
+                    text: SettingsData.lockScreenBlurInactiveBackground ? I18n.tr("Other displays show blurred wallpaper with a solid color fallback", "lock screen inactive display background description") : I18n.tr("Other displays show a solid color for OLED burn-in protection")
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
                     width: parent.width
@@ -679,6 +679,19 @@ Item {
                     updated["lockScreen"] = prefs;
                     SettingsData.set("screenPreferences", updated);
                 }
+            }
+
+            SettingsToggleRow {
+                settingKey: "lockScreenBlurInactiveBackground"
+                tags: ["lock", "screen", "inactive", "display", "wallpaper", "blur"]
+                text: I18n.tr("Blur wallpaper on inactive monitors", "lock screen inactive display wallpaper toggle")
+                description: I18n.tr("Show blurred wallpaper instead of a solid background. Disable for OLED burn-in protection.", "lock screen inactive display wallpaper toggle description")
+                checked: SettingsData.lockScreenBlurInactiveBackground
+                visible: {
+                    const prefs = SettingsData.screenPreferences?.lockScreen;
+                    return Array.isArray(prefs) && !prefs.includes("all") && prefs.length > 0;
+                }
+                onToggled: checked => SettingsData.set("lockScreenBlurInactiveBackground", checked)
             }
 
             SettingsRow {

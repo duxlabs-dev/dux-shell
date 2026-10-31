@@ -7632,12 +7632,45 @@
     "icon": "lock"
   },
   {
+    "section": "lockScreenBlurInactiveBackground",
+    "label": "Blur wallpaper on inactive monitors",
+    "tabIndex": 11,
+    "category": "Lock screen",
+    "keywords": [
+      "background",
+      "bg",
+      "blur",
+      "blurred",
+      "burn",
+      "desktop",
+      "disable",
+      "display",
+      "image",
+      "inactive",
+      "lock",
+      "lockscreen",
+      "login",
+      "monitors",
+      "oled",
+      "password",
+      "picture",
+      "protection",
+      "screen",
+      "security",
+      "show",
+      "solid",
+      "wallpaper"
+    ],
+    "parentLabel": "Security",
+    "description": "Show blurred wallpaper instead of a solid background. Disable for OLED burn-in protection."
+  },
+  {
     "section": "lockDisplay",
     "label": "Displays",
     "tabIndex": 11,
     "category": "Lock screen",
     "keywords": [
-      "color",
+      "blur",
       "display",
       "displays",
       "inactive",
@@ -7646,13 +7679,13 @@
       "login",
       "monitor",
       "monitors",
-      "oled",
       "output",
       "outputs",
       "password",
       "screen",
       "screens",
-      "security"
+      "security",
+      "wallpaper"
     ],
     "parentLabel": "Security",
     "icon": "monitor"

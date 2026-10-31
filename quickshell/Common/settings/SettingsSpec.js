@@ -1379,6 +1379,9 @@ var LOCAL_SPEC = {
     lockScreenInactiveColor: {
         def: "#000000"
     },
+    lockScreenBlurInactiveBackground: {
+        def: false
+    },
     lockScreenVideoEnabled: {
         def: false
     },
