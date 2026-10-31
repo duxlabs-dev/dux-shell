@@ -31,10 +31,6 @@ DContextMenu {
     layerNamespace: "dms:desktop-context-menu"
     keyboardNavigable: true
     itemFontSize: Theme.fontSizeMedium
-    menuPadding: Theme.spacingXS
-    itemPadding: Theme.spacingM
-    itemSpacing: Theme.spacingM
-    itemRadius: Theme.cornerRadiusM
     minMenuWidth: stripUnit * (stripCount + 1) + Theme.spacingS * (stripCount + 1)
 
     menuItems: {

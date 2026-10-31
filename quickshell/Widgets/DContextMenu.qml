@@ -23,12 +23,12 @@ Item {
     property real menuMargin: Theme.spacingS
     property real minMenuWidth: Theme.fieldDefaultWidth
     property real itemHeight: DCommon.Style.menuRowHeight
-    property real menuPadding: DCommon.Style.menuPadding
+    property real menuPadding: Theme.spacingXS
     property real itemIconSize: DCommon.Style.menuItemIconSize
     property real itemFontSize: Theme.fontSizeSmall
-    property real itemPadding: Theme.spacingS
-    property real itemSpacing: Theme.spacingS
-    property real itemRadius: Theme.cornerRadiusS
+    property real itemPadding: Theme.spacingM
+    property real itemSpacing: Theme.spacingM
+    property real itemRadius: Theme.cornerRadiusM
     property bool keyboardNavigable: false
     property var transientSurfaceTracker: null
     property var targetScreen: null
