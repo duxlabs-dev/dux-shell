@@ -1168,6 +1168,9 @@ var LOCAL_SPEC = {
     lockBeforeSuspend: {
         def: false
     },
+    keepAwakeBlocksSleep: {
+        def: false
+    },
     loginctlLockIntegration: {
         def: true
     },
