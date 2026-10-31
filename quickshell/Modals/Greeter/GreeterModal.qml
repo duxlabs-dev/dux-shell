@@ -87,6 +87,8 @@ DFloatingWindow {
 
     objectName: "greeterModal"
     title: I18n.tr("Welcome", "greeter modal window title")
+    implicitWidth: modalWidth
+    implicitHeight: modalHeight
     minimumSize: Qt.size(modalWidth, modalHeight)
     maximumSize: Qt.size(modalWidth, modalHeight)
     visible: false

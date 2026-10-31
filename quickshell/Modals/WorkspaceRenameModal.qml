@@ -15,6 +15,8 @@ DFloatingWindow {
     title: I18n.tr("Rename Workspace")
     minimumSize: Qt.size(400, renameDialog.implicitHeight)
     maximumSize: Qt.size(400, renameDialog.implicitHeight)
+    implicitWidth: minimumSize.width
+    implicitHeight: minimumSize.height
     visible: false
 
     onClosed: hide()

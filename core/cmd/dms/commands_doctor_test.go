@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -495,5 +496,23 @@ func TestCheckGreetdSession(t *testing.T) {
 		if got := checkGreetdSession(config); (len(got) == 1 && got[0].status == statusWarn) != tc.warn || (!tc.warn && len(got) != 0) {
 			t.Errorf("%s: got %+v, want warn=%v", name, got, tc.warn)
 		}
+	}
+}
+
+func TestRetiredGreeterPackagesInstalled(t *testing.T) {
+	tests := map[string]struct {
+		query string
+		want  []string
+	}{
+		"dux successor satisfying the retired names": {"dux-greeter-git 2.0.0.r165.g7cf13f1-1\ndux-greeter-git 2.0.0.r165.g7cf13f1-1\ndux-greeter-git 2.0.0.r165.g7cf13f1-1\n", nil},
+		"retired package still installed":            {"greetd-dms-greeter-git 1:1.6.2.r0.g0175be5-1\ngreetd-dms-greeter-git 1:1.6.2.r0.g0175be5-1\n", []string{"greetd-dms-greeter-git", "greetd-dms-greeter-git"}},
+		"nothing installed":                          {"", nil},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := retiredGreeterPackagesInstalled(tc.query); !slices.Equal(got, tc.want) {
+				t.Fatalf("got %v, want %v", got, tc.want)
+			}
+		})
 	}
 }

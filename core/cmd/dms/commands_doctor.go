@@ -1700,18 +1700,15 @@ func greeterFlagValue(fields []string, flags ...string) string {
 	return ""
 }
 
+var retiredGreeterPackages = []string{"greetd-dms-greeter", "greetd-dms-greeter-bin", "greetd-dms-greeter-git"}
+
 func checkRetiredGreeterPackages() []checkResult {
 	if !utils.CommandExists("pacman") {
 		return nil
 	}
 	// pacman -Q exits non-zero when any name is missing but still lists the installed ones
-	out, _ := exec.Command("pacman", "-Q", "greetd-dms-greeter", "greetd-dms-greeter-bin", "greetd-dms-greeter-git").Output()
-	var installed []string
-	for line := range strings.SplitSeq(strings.TrimSpace(string(out)), "\n") {
-		if name, _, _ := strings.Cut(line, " "); name != "" {
-			installed = append(installed, name)
-		}
-	}
+	out, _ := exec.Command("pacman", append([]string{"-Q"}, retiredGreeterPackages...)...).Output()
+	installed := retiredGreeterPackagesInstalled(string(out))
 	if len(installed) == 0 {
 		return nil
 	}
@@ -1721,6 +1718,19 @@ func checkRetiredGreeterPackages() []checkResult {
 		greeterLuaHint(),
 		doctorDocsURL + "#services",
 	}}
+}
+
+// pacman -Q answers a missing name with any installed package that provides it,
+// so the dux-greeter successors come back under the retired names they provide.
+func retiredGreeterPackagesInstalled(pacmanQuery string) []string {
+	var installed []string
+	for line := range strings.SplitSeq(strings.TrimSpace(pacmanQuery), "\n") {
+		name, _, _ := strings.Cut(line, " ")
+		if slices.Contains(retiredGreeterPackages, name) {
+			installed = append(installed, name)
+		}
+	}
+	return installed
 }
 
 // Chromium, Electron and libadwaita follow light/dark through the settings

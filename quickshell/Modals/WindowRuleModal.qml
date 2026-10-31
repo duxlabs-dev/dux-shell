@@ -15,6 +15,8 @@ DFloatingWindow {
     title: editor.title
     minimumSize: Qt.size(Math.min(SettingsMetrics.formDialogWidth + Theme.spacingL * 2, Screen.width), Math.min(Math.round(Theme.fontSizeMedium * 52), Screen.height))
     maximumSize: minimumSize
+    implicitWidth: minimumSize.width
+    implicitHeight: minimumSize.height
     visible: false
 
     onClosed: hide()

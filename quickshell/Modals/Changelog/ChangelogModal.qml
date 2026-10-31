@@ -24,6 +24,8 @@ DFloatingWindow {
 
     objectName: "changelogModal"
     title: I18n.tr("What's New", "changelog window title")
+    implicitWidth: modalWidth
+    implicitHeight: modalHeight
     minimumSize: Qt.size(modalWidth, modalHeight)
     maximumSize: Qt.size(modalWidth, modalHeight)
     visible: false
