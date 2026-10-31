@@ -51,7 +51,7 @@ Item {
         },
         {
             "value": "numLock",
-            "label": I18n.tr("Num Lock"),
+            "label": I18n.tr("Num lock", "OSD toggle for the Num Lock indicator"),
             "shown": SettingsData.osdNumLockEnabled
         },
         {
@@ -202,7 +202,7 @@ Item {
 
             SettingsToggleRow {
                 settingKey: "osdNumLockEnabled"
-                text: I18n.tr("Num Lock")
+                text: I18n.tr("Num lock", "OSD toggle for the Num Lock indicator")
                 checked: SettingsData.osdNumLockEnabled
                 onToggled: checked => SettingsData.set("osdNumLockEnabled", checked)
             }

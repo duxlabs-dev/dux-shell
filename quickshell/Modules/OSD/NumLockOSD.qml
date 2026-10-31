@@ -18,7 +18,7 @@ DOSD {
     property bool stateInitialized: false
 
     onCurrentNumLockStateChanged: {
-        if (stateInitialized && lastNumLockState !== currentNumLockState && SettingsData.osdNumLockEnabled)
+        if (stateInitialized && DMSService.evdevStateInitialized && lastNumLockState !== currentNumLockState && SettingsData.osdNumLockEnabled)
             root.show();
         lastNumLockState = currentNumLockState;
     }
@@ -33,7 +33,7 @@ DOSD {
             tonal: false
             anchors.centerIn: parent
             iconName: "dialpad"
-            iconColor: Theme.primary
+            iconColor: root.currentNumLockState ? Theme.primary : Theme.outline
         }
     }
 }

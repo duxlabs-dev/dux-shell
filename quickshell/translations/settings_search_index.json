@@ -8992,7 +8992,7 @@
   },
   {
     "section": "osdNumLockEnabled",
-    "label": "Num Lock",
+    "label": "Num lock",
     "tabIndex": 18,
     "category": "On-screen displays",
     "keywords": [
