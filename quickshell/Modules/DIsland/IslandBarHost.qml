@@ -4,6 +4,7 @@ import QtQuick
 import qs.Common
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Services.Notifications
 import qs.Modals.DLauncherV2 as DLauncher
 import qs.Modules.DBar
 import qs.Modules.DIsland.Activities
@@ -12,6 +13,8 @@ import qs.Widgets
 import "../../Common/LayoutResolver.js" as Resolver
 import "../../Common/IslandActivities.js" as Activities
 import "../../Common/IslandActivityInput.js" as Input
+import "../../Common/IslandEcho.js" as Echo
+import "../../Common/htmlElide.js" as HtmlElide
 import "../../Common/IslandArrival.js" as Arrival
 import "../../Common/IslandKit.js" as Kit
 
@@ -333,7 +336,10 @@ Item {
         else if (outcome === "interrupted")
             IslandActivityService.markInterrupted(held, controller);
 
-        // Nothing starts behind the lock screen (islandTaker); it shows once the session is back.
+        // Nothing starts behind the lock screen; it shows once the session is back.
+        if (root.sessionLocked)
+            return;
+        notificationSource.retryHeld();
         const next = IslandActivityService.entry(root.islandTaker());
         if (!next)
             return;
@@ -392,6 +398,23 @@ Item {
                 "icon": face.icon || "extension",
             }));
         }
+        // A popup the island could not take (an open launcher or sheet) waits beside it, for as long as the popup lives.
+        notificationSource.heldWrappers.forEach((wrapper, index) => list.push({
+                "id": "notification:" + (wrapper.notification?.id ?? index),
+                "source": "notification",
+                "critical": wrapper.urgency === NotificationUrgency.Critical || Arrival.ringing(wrapper.notification?.hints?.category),
+                "call": Arrival.ringing(wrapper.notification?.hints?.category),
+                "wrapper": wrapper,
+                "seq": index,
+                "app": wrapper.appName,
+                "appIcon": wrapper.displayImage || "",
+                "title": HtmlElide.plainText(wrapper.summary) || wrapper.appName,
+                "detail": HtmlElide.plainText(wrapper.body),
+                "image": wrapper.displayImage || "",
+                "icon": wrapper.fallbackIconName || "material:notifications",
+                "text": "",
+                "accent": "primary"
+            }));
         if (mediaSource.playing && controller.pluginActive && !root.mediaBubbleDismissed)
             list.push({
                 "id": "media",
@@ -404,7 +427,19 @@ Item {
                 "text": "",
                 "accent": "primary"
             });
-        return list;
+        return root.withoutEchoes(list);
+    }
+    // Never the same info twice: a bubble yields to the island's notification that says it, and a waiting notification
+    // that only repeats a bubble, or what the island shows, is left out.
+    function withoutEchoes(list) {
+        const echo = !SettingsData.islandBriefBubbles && notificationSource.currentWrapper ? Echo.kind(notificationSource.appName, notificationSource.summary, notificationSource.body) : "";
+        const told = new Set([echo, Echo.bubbleKind({
+                "source": "system",
+                "kind": controller.activeActivity
+            })]);
+        list.forEach(face => told.add(face.source === "notification" ? "" : Echo.bubbleKind(face)));
+        told.delete("");
+        return list.filter(face => face.source === "notification" ? face.critical || !told.has(Echo.kind(face.app, face.title, face.detail)) : !echo || Echo.bubbleKind(face) !== echo);
     }
     // Do not disturb lets a plugin's or script's bubble through as it lets its activity into the island.
     readonly property var bubbleSides: Activities.bubbleSides(root.bubbleList, root.quiet, bubble => {
@@ -416,6 +451,9 @@ Item {
         switch (bubble?.source) {
         case "system":
             systemSource.open(bubble.kind, true);
+            return;
+        case "notification":
+            notificationSource.bringIn(bubble.wrapper);
             return;
         case "media":
             controller.requestActivity("media", true, false);
@@ -446,6 +484,9 @@ Item {
         case "system":
             controller.hideMachineBubble();
             return;
+        case "notification":
+            notificationSource.dismissHeld(bubble.wrapper);
+            return;
         case "media":
             root.mediaBubbleDismissed = true;
             return;
@@ -459,6 +500,8 @@ Item {
         if (bubble?.source === "system") {
             controller.machineBubbleHovered = inside;
         }
+        else if (bubble?.source === "notification")
+            notificationSource.holdTimeout(bubble.wrapper, inside);
     }
 
     // The wheel on a level bubble sets it in place, like the wheel on the level face.
@@ -775,6 +818,10 @@ Item {
 
         controller: controller
         targetScreen: root.screen
+        shownKinds: [Echo.bubbleKind({
+                "source": "system",
+                "kind": controller.activeActivity
+            })]
         enabled: SettingsData.islandNotificationHost(root.screen)?.id === root.barId
     }
 

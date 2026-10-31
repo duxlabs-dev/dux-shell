@@ -1061,6 +1061,17 @@ Item {
             controller: root.controller
             dense: root.controller.compactDense
             iconSize: root.controller.compactIconSize
+            ringSpring: root.ringSpring
+            // Its icon and title fly to the arrival card's on the island's spring; the rest is gone before the card shows.
+            grow: root.arrivalGrow
+            reveal: IslandKit.revealFrom
+            to: root.arrivalCardItem?.places ?? null
+
+            Binding {
+                target: root
+                property: "notificationPlaces"
+                value: notificationFace.places
+            }
         }
     }
 

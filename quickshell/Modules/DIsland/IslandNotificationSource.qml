@@ -5,7 +5,9 @@ import Quickshell.Services.Notifications
 import qs.Common
 import qs.Services
 import "../../Common/htmlElide.js" as HtmlElide
+import "../../Common/IslandEcho.js" as Echo
 import "../../Common/IslandArrival.js" as Arrival
+import "../../Common/IslandActivities.js" as Activities
 
 QtObject {
     id: root
@@ -13,6 +15,8 @@ QtObject {
     required property IslandController controller
     required property var targetScreen
     property bool enabled: true
+    // The echo kinds (IslandEcho) the island or a bubble shows now: an app's notification repeating one stays out.
+    property var shownKinds: []
 
     property var currentWrapper: null
     property string appName: ""
@@ -25,6 +29,8 @@ QtObject {
     property string actionLabel: ""
     property bool critical: false
     property bool important: false
+    // An incoming call: it rings until it goes.
+    property bool call: false
 
     readonly property bool hasAction: actionLabel.length > 0
 
@@ -45,11 +51,12 @@ QtObject {
         actionLabel = "";
         critical = false;
         important = false;
+        call = false;
     }
 
-    function wrapperTimeout(wrapper) {
-        const interval = wrapper?.timer?.interval ?? -1;
-        return interval >= 0 ? interval : 5000;
+    function wrapperTimeout(wrapper, tier) {
+        // Its time in compact once the card has folded; one that never expires (0) stays.
+        return wrapper?.timer?.interval === 0 ? 0 : Activities.compactMs(tier);
     }
 
     // Every info of a burst keeps its popup until the burst is over (arrival.released): its own popup time is held while it
@@ -76,6 +83,7 @@ QtObject {
         }
         timerHooks = [];
         heldInBurst = [];
+        ringWatched = [];
     }
 
     Component.onDestruction: unhookTimers()
@@ -125,23 +133,121 @@ QtObject {
         scheduleDisplayFieldClear();
     }
 
-    function adopt(wrapper) {
+    // Popups the island could not take; they wait in the trailing bubble for as long as the popup lives.
+    property var heldWrappers: []
+
+    function setHeld(wrapper, held) {
+        const others = heldWrappers.filter(w => w !== wrapper);
+        heldWrappers = held && controller.bubblesEnabled ? others.concat([wrapper]) : others;
+        if (held && launcherOpen)
+            seenWrappers = seenWrappers.concat([wrapper]);
+    }
+
+    // Popups already listed in the card beside the open launcher stay in their bubble when it closes, rather than
+    // cutting the card's way back with a popup the user has seen.
+    property var seenWrappers: []
+    readonly property bool launcherOpen: controller.activeActivity === "launcher" && controller.expanded
+    onLauncherOpenChanged: {
+        if (launcherOpen)
+            seenWrappers = heldWrappers.slice();
+    }
+
+    // Hovering the bubble pauses the popup's own timeout, like hovering the island does.
+    function holdTimeout(wrapper, hold) {
+        const timer = wrapper?.timer;
+        if (!timer || !wrapper.popup || timer.interval <= 0)
+            return;
+        if (hold)
+            timer.stop();
+        else
+            timer.restart();
+    }
+
+    // Once the island can take it, the newest waiting popup leaves its bubble for the island.
+    function retryHeld() {
+        const unseen = heldWrappers.filter(w => seenWrappers.indexOf(w) === -1);
+        if (unseen.length === 0 || currentWrapper)
+            return;
+        adopt(unseen[unseen.length - 1]);
+    }
+
+    function bringIn(wrapper) {
+        return adopt(wrapper, true);
+    }
+
+    function dismissHeld(wrapper) {
+        setHeld(wrapper, false);
+        if (wrapper)
+            NotificationService.dismissNotification(wrapper);
+    }
+
+    // A ringing call's popup never times out by itself, which would take it out of the island or its bubble: its own timer
+    // is stopped whenever it starts (the service starts it after the popup shows), so it goes only when it is closed.
+    property var ringWatched: []
+
+    function keepRinging(wrapper) {
+        const timer = wrapper?.timer;
+        if (!timer || ringWatched.indexOf(wrapper) !== -1)
+            return;
+        ringWatched = ringWatched.concat([wrapper]);
+        hookTimer(wrapper, () => {
+            if (timer.running)
+                timer.stop();
+        });
+        timer.stop();
+    }
+
+    function adopt(wrapper, force) {
         // The released burst is emptied right after: what joined it then would show nowhere (taken in once it is empty).
         if (releasing || !enabled || !wrapper || !NotificationService.isFocusedScreen(root.targetScreen))
             return false;
 
-        const isCritical = wrapper.urgency === NotificationUrgency.Critical;
-        if (!controller.canRequestNotification(isCritical))
+        const isCall = Arrival.ringing(wrapper.notification?.hints?.category);
+        const isCritical = isCall || wrapper.urgency === NotificationUrgency.Critical;
+        if (!root.admits(wrapper, force, isCall, isCritical))
             return false;
+        const item = root.infoOf(wrapper, isCall, isCritical);
+        if (!controller.requestNotification(isCritical, force))
+            return false;
+        controller.arrival.arrive(item);
+        holdInBurst(wrapper);
+        return true;
+    }
 
+    // Whether the island takes this notification now (forced: always); one it leaves is held for later or not.
+    function admits(wrapper, force, isCall, isCritical) {
+        // A plugin with an activity in the island is shown there already: its own notification stays in the list only.
+        if (force !== true && !Activities.notificationShows(IslandActivityService.holdsApp(wrapper.appName), isCritical)) {
+            setHeld(wrapper, false);
+            return false;
+        }
+        if (isCall)
+            keepRinging(wrapper);
+        // An app's notification that only repeats what a bubble or the island says (the battery) stays in the list while
+        // that info shows.
+        if (force !== true && !Echo.adoptable(Echo.kind(wrapper.appName, HtmlElide.plainText(wrapper.summary), HtmlElide.plainText(wrapper.body)), isCritical, root.shownKinds)) {
+            setHeld(wrapper, false);
+            return false;
+        }
+        if (force !== true && !controller.canRequestNotification(isCritical)) {
+            setHeld(wrapper, true);
+            return false;
+        }
+        setHeld(wrapper, false);
+        return true;
+    }
+
+    // The info the island shows for a notification it takes.
+    function infoOf(wrapper, isCall, isCritical) {
         const app = wrapper.appName || I18n.tr("Notification", "island notification face: fallback app name");
         const icon = wrapper.fallbackIconName || "material:notifications";
         const actions = wrapper.actions || [];
-        const item = {
+        const tier = Arrival.tierOf({
+            "critical": isCritical
+        });
+        return {
             "wrapper": wrapper,
-            "tier": Arrival.tierOf({
-                "critical": isCritical
-            }),
+            "tier": tier,
             "app": app,
             "title": HtmlElide.plainText(wrapper.summary) || app,
             "detail": HtmlElide.plainText(wrapper.body),
@@ -150,15 +256,11 @@ QtObject {
             "icon": icon,
             "fallbackText": app.charAt(0).toUpperCase(),
             "critical": isCritical,
+            "call": isCall,
             "important": !isCritical && wrapper.urgency === NotificationUrgency.Normal && icon.startsWith("material:battery"),
             "action": actions.length > 0 ? (actions[0].text || I18n.tr("Open", "island notification face: default action button")) : "",
-            "timeout": wrapperTimeout(wrapper)
+            "timeout": wrapperTimeout(wrapper, tier)
         };
-        if (!controller.requestNotification(isCritical))
-            return false;
-        controller.arrival.arrive(item);
-        holdInBurst(wrapper);
-        return true;
     }
 
     // An info of the burst becomes the face's fields.
@@ -176,6 +278,7 @@ QtObject {
         fallbackText = item.fallbackText ?? item.app.charAt(0).toUpperCase();
         critical = item.critical === true;
         important = item.important === true;
+        call = item.call === true;
         actionLabel = item.action ?? "";
         if (item.timeout !== undefined)
             controller.notificationTimeout = item.timeout;
@@ -207,6 +310,25 @@ QtObject {
             timerHooks = timerHooks.filter(h => NotificationService.allWrappers.indexOf(h[0]) !== -1);
         dropWithdrawn();
         const visible = NotificationService.visibleNotifications || [];
+        if (heldWrappers.some(w => visible.indexOf(w) === -1))
+            heldWrappers = heldWrappers.filter(w => visible.indexOf(w) !== -1);
+        if (ringWatched.some(w => visible.indexOf(w) === -1))
+            ringWatched = ringWatched.filter(w => visible.indexOf(w) !== -1);
+        if (seenWrappers.some(w => visible.indexOf(w) === -1))
+            seenWrappers = seenWrappers.filter(w => visible.indexOf(w) !== -1);
+        // A ringing call that is gone (answered elsewhere, closed) leaves its place to the next info; the others of the burst
+        // stay. Its popup never times out (keepRinging), so leaving the visible list means it was closed. Checked first: another
+        // info of its burst still showing must never hold a dead call in the island.
+        if (call && currentWrapper && visible.indexOf(currentWrapper) === -1) {
+            if (controller.arrival.count > 1) {
+                controller.arrival.drop();
+                return;
+            }
+            currentWrapper = null;
+            controller.completeNotification();
+            scheduleDisplayFieldClear();
+            return;
+        }
         const latest = visible.length > 0 ? visible[visible.length - 1] : null;
         if (latest && (latest === currentWrapper || inBurst(latest) || adopt(latest)))
             return;
@@ -239,6 +361,17 @@ QtObject {
         // Invoking a non resident one closes it, and the next info of the burst may already show.
         if (currentWrapper === wrapper)
             dismiss();
+    }
+
+    readonly property bool canReply: currentWrapper?.notification?.hasInlineReply ?? false
+    readonly property string replyPlaceholder: currentWrapper?.notification?.inlineReplyPlaceholder || I18n.tr("Reply", "island notification face: inline reply placeholder")
+
+    function reply(text) {
+        const message = String(text ?? "").trim();
+        if (!message || !canReply)
+            return;
+        currentWrapper.notification.sendInlineReply(message);
+        dismiss();
     }
 
     function dismiss() {
