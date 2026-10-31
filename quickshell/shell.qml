@@ -6,7 +6,6 @@
 //@ pragma Env QT_QUICK_CONTROLS_STYLE=Material
 //@ pragma UseQApplication
 //@ pragma AppId dev.duxlabs.shell
-//@ pragma RenderControl
 
 import QtQuick
 import Quickshell
