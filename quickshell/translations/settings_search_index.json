@@ -4540,6 +4540,7 @@
     "tabIndex": 5,
     "category": "General",
     "keywords": [
+      "arrange",
       "dock",
       "edit",
       "general",
@@ -4591,6 +4592,29 @@
       "taskbar"
     ],
     "parentLabel": "Dock"
+  },
+  {
+    "section": "dockShowEditWidgetsInContextMenu",
+    "label": "Show Edit widgets in app context menu",
+    "tabIndex": 5,
+    "category": "General",
+    "keywords": [
+      "app",
+      "components",
+      "context",
+      "dock",
+      "edit",
+      "general",
+      "launcher bar",
+      "menu",
+      "modules",
+      "panel",
+      "show",
+      "taskbar",
+      "widgets"
+    ],
+    "parentLabel": "Dock",
+    "conditionKey": "dockEnabled"
   },
   {
     "section": "dockSmartAutoHide",

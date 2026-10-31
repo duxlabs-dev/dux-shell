@@ -417,8 +417,9 @@ DockContextMenuBase {
             }
         }
     }
+
     DockTrashMenuItem {
-        visible: root.dockApps?.surfaceContext?.kind === "dock"
+        visible: root.dockApps?.surfaceContext?.kind === "dock" && root.options.showEditWidgetsInContextMenu !== false
         width: parent.width
         text: I18n.tr("Edit widgets")
         iconName: "edit"
