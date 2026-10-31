@@ -61,6 +61,8 @@ Item {
 
     // The backdrop clips itself to the corners, so the card needs no clip of its own.
     Rectangle {
+        id: card
+
         anchors.fill: parent
         radius: root.backdropRadius
         color: root.surfaceColor
@@ -77,6 +79,15 @@ Item {
                 stableHeight: root.baseHeight
                 activePlayer: root.activePlayer
                 artUrl: root.artUrl
+            }
+        }
+
+        TapHandler {
+            enabled: root.panelOpen
+            onTapped: eventPoint => {
+                if (root.inlinePanel.contains(root.inlinePanel.mapFromItem(card, eventPoint.position)))
+                    return;
+                root.player.panel = "";
             }
         }
 
