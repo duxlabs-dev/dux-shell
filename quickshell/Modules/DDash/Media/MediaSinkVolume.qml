@@ -12,6 +12,8 @@ RowLayout {
     required property var node
     property string label: AudioService.displayName(node)
     property color contentColor: Theme.onSelectedContainer
+    property color rowColor: Theme.selectedContainer
+    property color insetColor: Theme.onPrimary
     readonly property var focusTargets: [muteButton, volumeSlider]
     // A host that cycles its own focus takes Tab from the slider before Qt's window wide tab chain does.
     property bool hostCyclesFocus: false
@@ -28,6 +30,7 @@ RowLayout {
 
     DActionButton {
         id: muteButton
+        focusRingColor: MediaAccentService.focusRing
         buttonSize: Theme.iconButtonSize
         iconName: volumeSlider.volumeIcon
         iconColor: root.contentColor
@@ -45,10 +48,10 @@ RowLayout {
         volume: root.node?.audio?.volume ?? 0
         muted: root.node?.audio?.muted ?? false
         maximumVolume: AudioService.getMaxVolumePercent(root.node)
-        fillColor: Theme.onSelectedContainer
-        fillTextColor: Theme.selectedContainer
-        trackColor: Theme.onPrimary
-        trackTextColor: Theme.onSelectedContainer
+        fillColor: root.contentColor
+        fillTextColor: root.rowColor
+        trackColor: root.insetColor
+        trackTextColor: root.contentColor
         Accessible.name: I18n.tr("Volume") + ": " + root.label
         Keys.onTabPressed: event => root.handleTab(event, false)
         Keys.onBacktabPressed: event => root.handleTab(event, true)

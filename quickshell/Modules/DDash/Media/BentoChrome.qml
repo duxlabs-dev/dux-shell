@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Layouts
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
@@ -12,7 +13,7 @@ import "../../../DCommon/Common/FocusNavigation.js" as FocusNavigation
 MediaChromeBase {
     id: root
 
-    readonly property real contentWidth: Math.max(0, width - padding * 2)
+    readonly property real contentWidth: Math.max(0, width - (padding + Theme.layerOutlineWidth) * 2)
     readonly property bool compact: width < Theme.smallBreakpoint
     // Whole pixels throughout: the lyrics draw through a layer, and a layer placed between pixels
     // resamples every glyph.
@@ -31,6 +32,7 @@ MediaChromeBase {
     baseHeight: Math.max(DashMetrics.tabMinHeight, padding * 2 + columnHeight)
     focusTargets: [playerButton].concat(seekbar.canSeek && root.hasSeekbar ? [seekbar] : [], transport.focusTargets, optionRow.focusTargets)
     panelButtons: [playerButton, outputButton]
+    inlineVolume: true
     inlinePanels: ["players", "devices"]
     inlinePanel: playbackSheet
 
@@ -95,6 +97,7 @@ MediaChromeBase {
 
                         readonly property string panelId: "players"
 
+                        focusRingColor: MediaAccentService.focusRing
                         anchors.verticalCenter: parent.verticalCenter
                         maximumWidth: Math.max(0, sourceRow.width - sourceLabel.width - parent.spacing)
                         buttonHeight: Theme.buttonHeightXS
@@ -115,15 +118,14 @@ MediaChromeBase {
                 width: parent.width
                 spacing: Theme.spacingXS
 
-                TextMetrics {
+                // Measured from the token, not from titleText's font, which takes its size from here.
+                StyledTextMetrics {
                     id: fullSizeTitle
                     text: root.title
-                    font: Qt.font({
-                        family: titleText.font.family,
-                        weight: titleText.font.weight,
-                        variableAxes: titleText.font.variableAxes,
-                        pixelSize: Theme.fontSizeDisplay
-                    })
+                    fontToken: root.titleFontToken
+                    font.weight: Font.Normal
+                    font.variableAxes: titleText.expressiveFont ? DashMetrics.mediaTitleFontAxes : ({})
+                    font.pixelSize: Theme.fontSizeDisplay
                 }
 
                 FontMetrics {
@@ -145,7 +147,7 @@ MediaChromeBase {
                     height: Math.ceil(fullSizeTitleFont.height)
                     text: root.title
                     fontToken: root.titleFontToken
-                    color: MediaAccentService.highlight
+                    color: MediaAccentService.readableHighlight
                     font.pixelSize: fittedPixelSize
                     // The bundled static weights share the family name and carry no axes, so
                     // the regular weight selects the variable font and wght sets the weight.
@@ -213,7 +215,7 @@ MediaChromeBase {
                             id: elapsed
                             anchors.left: parent.left
                             text: Format.formatDuration(seekbar.value * (root.presentation?.length ?? 0))
-                            reserveText: duration.text.replace(/\d/g, "8")
+                            reserveText: duration.text
                         }
 
                         MediaTimeLabel {
@@ -221,7 +223,6 @@ MediaChromeBase {
                             anchors.right: parent.right
                             horizontalAlignment: Text.AlignRight
                             text: Format.formatDuration(root.presentation?.length ?? 0)
-                            reserveText: text.replace(/\d/g, "8")
                         }
                     }
                 }
@@ -235,49 +236,50 @@ MediaChromeBase {
                     visible: hasControls
                 }
 
-                Row {
+                RowLayout {
                     id: optionRow
 
-                    readonly property var focusTargets: [lyricsButton, shuffleButton.button, repeatButton.button, outputButton]
+                    readonly property var focusTargets: [lyricsButton, volumeSlider, outputButton]
 
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: Theme.groupedListGap
+                    width: parent.width
+                    spacing: Theme.spacingM
                     LayoutMirroring.enabled: false
                     LayoutMirroring.childrenInherit: true
 
                     Keys.onPressed: event => event.accepted = FocusNavigation.handleHorizontalKey(event, focusTargets, false)
 
-                    GroupButton {
+                    OptionButton {
                         id: lyricsButton
 
-                        groupStart: true
                         visible: root.player.lyricsEnabled
                         enabled: !!root.presentation
                         iconName: "lyrics"
                         checkable: true
                         checked: root.player.lyricsOpen
+                        radius: pressed && Theme.shapeMorph ? Theme.cornerRadiusXS : Theme.cornerRadiusM
                         tooltipText: I18n.tr("Lyrics", "Media player lyrics button")
                         onClicked: root.player.toggleLyrics(lyricsButton)
                     }
 
-                    ModeButton {
-                        id: shuffleButton
-                        mediaAction: "shuffle"
-                        groupStart: !lyricsButton.visible
+                    MediaVolumeSlider {
+                        id: volumeSlider
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        size: "s"
+                        volume: root.player.currentVolume
+                        muted: root.player.usePlayerVolume ? volume === 0 : AudioService.sinkSilent
+                        maximumVolume: root.player.maxVolumePercent
+                        enabled: root.player.volumeAvailable
+                        onVolumeChangedByUser: volume => root.player.setVolume(volume)
+                        onMuteRequested: root.player.toggleMute()
                     }
 
-                    ModeButton {
-                        id: repeatButton
-                        mediaAction: "repeat"
-                    }
-
-                    GroupButton {
+                    OptionButton {
                         id: outputButton
 
                         readonly property string panelId: "devices"
 
-                        groupStart: !lyricsButton.visible && !root.presentation
-                        groupEnd: true
+                        radius: Theme.fullRadius(width, height)
                         iconName: AudioService.sinkIcon(AudioService.sink)
                         tooltipText: I18n.tr("Devices", "Media player output device picker") + ": " + AudioService.displayName(AudioService.sink)
                         onClicked: root.player.togglePanel(panelId, outputButton)
@@ -295,69 +297,11 @@ MediaChromeBase {
         }
     }
 
-    // A connected group: the outer ends stay round, the inner corners follow radius so its Behavior
-    // animates press and toggle. ModeButton repeats this because it needs MediaTransportButton's logic.
-    component GroupButton: DIconButton {
-        property bool groupStart: false
-        property bool groupEnd: false
-        readonly property real outerRadius: Theme.fullRadius(width, height)
-
-        widthMode: "wide"
+    component OptionButton: DIconButton {
+        focusRingColor: MediaAccentService.focusRing
         variant: "tonal"
         iconFilled: checked
-        radius: pressed ? Theme.cornerRadiusXS : (checked ? outerRadius : Theme.cornerRadiusS)
-        topLeftRadius: groupStart ? outerRadius : radius
-        bottomLeftRadius: groupStart ? outerRadius : radius
-        topRightRadius: groupEnd ? outerRadius : radius
-        bottomRightRadius: groupEnd ? outerRadius : radius
         containerColor: checked ? MediaAccentService.accent : MediaAccentService.accentContainer
         contentColor: checked ? MediaAccentService.onAccent : MediaAccentService.onAccentContainer
-    }
-
-    // Shown even when unsupported. A disabled button takes no hover, so a sibling area drives the tooltip.
-    component ModeButton: Item {
-        id: mode
-
-        property string mediaAction: ""
-        property bool groupStart: false
-        readonly property alias button: modeButton
-
-        implicitWidth: modeButton.width
-        implicitHeight: modeButton.height
-        visible: !!root.presentation
-
-        MediaTransportButton {
-            id: modeButton
-
-            readonly property real outerRadius: Theme.fullRadius(width, height)
-
-            player: root.player
-            mediaAction: mode.mediaAction
-            visible: true
-            widthMode: "wide"
-            variant: "tonal"
-            iconFilled: checked
-            radius: pressed ? Theme.cornerRadiusXS : (checked ? outerRadius : Theme.cornerRadiusS)
-            topLeftRadius: mode.groupStart ? outerRadius : radius
-            bottomLeftRadius: mode.groupStart ? outerRadius : radius
-            containerColor: checked ? MediaAccentService.accent : MediaAccentService.accentContainer
-            contentColor: checked ? MediaAccentService.onAccent : MediaAccentService.onAccentContainer
-        }
-
-        MouseArea {
-            id: unsupportedHover
-            anchors.fill: parent
-            // MouseArea.enabled: false is different from Item.enabled: false and still takes mouseevents although not handling them
-            // That causes the cursor to not change to pointer over the button when it is enabled.
-            visible: !modeButton.enabled
-            hoverEnabled: true
-            acceptedButtons: Qt.NoButton
-        }
-
-        DTooltipHost {
-            target: modeButton
-            hoverArea: unsupportedHover
-            text: modeButton.enabled ? "" : I18n.tr("Not supported by this player", "Tooltip on a disabled media shuffle or repeat button")
-        }
     }
 }

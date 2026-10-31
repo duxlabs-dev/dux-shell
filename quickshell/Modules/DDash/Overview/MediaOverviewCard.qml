@@ -131,7 +131,7 @@ Card {
                 // The regular weight selects the variable font, so the title axes apply, see BentoChrome.
                 font.weight: root.bento ? Font.Normal : Theme.fontWeightMedium
                 font.variableAxes: root.bento ? DashMetrics.mediaTitleFontAxes : ({})
-                color: root.bento ? MediaAccentService.highlight : root.contentColor
+                color: root.bento ? MediaAccentService.readableHighlight : root.contentColor
                 elide: Text.ElideRight
                 maximumLineCount: root.showArtwork ? 2 : 1
                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
@@ -207,7 +207,7 @@ Card {
                 anchors.bottom: parent.bottom
                 visible: root.showTimes
                 text: Format.formatDuration(seekbar.value * MprisController.activePlayerStableLength)
-                reserveText: duration.text.replace(/\d/g, "8")
+                reserveText: duration.text
             }
 
             MediaTimeLabel {
@@ -217,7 +217,6 @@ Card {
                 horizontalAlignment: Text.AlignRight
                 visible: root.showTimes
                 text: Format.formatDuration(MprisController.activePlayerStableLength)
-                reserveText: text.replace(/\d/g, "8")
             }
         }
 

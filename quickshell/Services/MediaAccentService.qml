@@ -16,7 +16,7 @@ Singleton {
     readonly property color highlight: MediaOptions.albumArtAccent && _accent !== null ? _accent : Theme.tertiary
     property int lyricsConsumers: 0
     readonly property bool lyricsLive: lyricsConsumers > 0
-    readonly property var lyricsHues: lyricsLive ? _lyricsHues() : [Theme.primary, Theme.tertiary, Theme.secondary]
+    readonly property var lyricsHues: lyricsLive ? _lyricsHues() : [Theme.tertiary, Theme.primary, Theme.secondary]
     readonly property var lyricsAccents: lyricsLive ? lyricsHues.map(color => _readableLyricColor(color)) : lyricsHues
     // The first voice is the highlight made readable, so solo lines and a duet's first singer match.
     readonly property color lyricsLead: lyricsAccents[0]
@@ -25,12 +25,13 @@ Singleton {
     readonly property real lyricsContrast: 4.5
     readonly property real lyricsTintMax: 0.8
     readonly property color lyricsTint: Theme.withAlpha(Theme.cardSurface, Math.min(Theme.cardSurface.a * Theme.foregroundAlpha, lyricsTintMax))
-    readonly property var lyricsBackgrounds: {
-        if (!lyricsLive)
-            return [];
+    // The card surface and the art colours as the tinted backdrop shows them.
+    readonly property var backdropColors: {
         const surface = Theme.withAlpha(Theme.cardSurface, 1);
         return [surface].concat(TrackArtService.artwork.colors.map(art => Theme.blend(Theme.withAlpha(art, 1), surface, lyricsTint.a)));
     }
+    readonly property var lyricsBackgrounds: lyricsLive ? backdropColors : []
+    readonly property color readableHighlight: _readableColor(highlight, backdropColors)
 
     readonly property color accentContainer: _container(Theme.primaryContainer, Theme.isLightMode ? 0.3 : 0.55, Theme.isLightMode ? 0.9 : 0.42, 1.25)
     readonly property color accentSecondaryContainer: _container(Theme.secondaryContainer, Theme.isLightMode ? 0.12 : 0.22, Theme.isLightMode ? 0.94 : 0.3, 1.08)
@@ -148,7 +149,10 @@ Singleton {
 
     // Blending toward onSurface desaturates into the onSurfaceVariant lyric text, so shift tone in HCT instead.
     function _readableLyricColor(color) {
-        const backgrounds = lyricsBackgrounds;
+        return _readableColor(color, lyricsBackgrounds);
+    }
+
+    function _readableColor(color, backgrounds) {
         const hct = Hct.toHct(color);
         const chroma = Math.max(hct.chroma, lyricsChromaMin);
         const backgroundTone = Hct.toHct(backgrounds[0]).tone;

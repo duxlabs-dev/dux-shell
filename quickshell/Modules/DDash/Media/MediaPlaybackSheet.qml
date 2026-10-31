@@ -130,6 +130,7 @@ FocusScope {
 
         DIconButton {
             id: backButton
+            focusRingColor: MediaAccentService.focusRing
             width: buttonSize
             variant: "tonal"
             round: false
@@ -234,6 +235,8 @@ FocusScope {
                                 onCycleFocusRequested: backwards => root.cycleFocus(backwards)
                                 label: deviceRow.title
                                 contentColor: deviceRow.titleColor
+                                rowColor: deviceRow.rowColor
+                                insetColor: Theme.surfaceContainerHighest
                             }
                         }
                     }

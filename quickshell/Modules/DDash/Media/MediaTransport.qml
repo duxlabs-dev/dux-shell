@@ -14,7 +14,7 @@ RowLayout {
     required property var presentation
     property real buttonSize: Theme.buttonHeightM
 
-    readonly property var focusTargets: [previousButton, playButton, nextButton]
+    readonly property var focusTargets: [shuffleButton, previousButton, playButton, nextButton, repeatButton]
     readonly property bool hasControls: !!presentation
     readonly property var pressSpring: Theme.springPreset("fast", Theme.expressiveDurations.expressiveFastSpatial)
 
@@ -26,10 +26,14 @@ RowLayout {
 
     Keys.onPressed: event => event.accepted = FocusNavigation.handleHorizontalKey(event, focusTargets, false)
 
+    ModeButton {
+        id: shuffleButton
+        mediaAction: "shuffle"
+    }
+
     TransportButton {
         id: previousButton
         mediaAction: "previous"
-        groupStart: true
         containerColor: MediaAccentService.accentContainer
         contentColor: MediaAccentService.onAccentContainer
     }
@@ -47,18 +51,20 @@ RowLayout {
     TransportButton {
         id: nextButton
         mediaAction: "next"
-        groupEnd: true
         containerColor: MediaAccentService.accentContainer
         contentColor: MediaAccentService.onAccentContainer
+    }
+
+    ModeButton {
+        id: repeatButton
+        mediaAction: "repeat"
     }
 
     component TransportButton: MediaTransportButton {
         id: button
 
         property real weight: 1
-        property bool groupStart: false
-        property bool groupEnd: false
-        readonly property real outerRadius: Theme.fullRadius(width, height)
+        property bool pill: false
         readonly property real targetWeight: weight * (pressed ? DashMetrics.mediaTransportPressScale : 1)
 
         player: root.player
@@ -71,7 +77,7 @@ RowLayout {
         buttonSize: root.buttonSize
         iconSize: Math.round(root.buttonSize * Theme.iconSize / Theme.buttonHeightM)
         iconFilled: true
-        radius: Theme.buttonRadius(width, height, buttonSize, pressed, true)
+        radius: pill ? Theme.fullRadius(width, height) : Theme.buttonRadius(width, height, buttonSize, pressed, true)
         variant: "tonal"
         containerColor: MediaAccentService.accentSecondaryContainer
         contentColor: MediaAccentService.onAccentSecondaryContainer
@@ -85,5 +91,12 @@ RowLayout {
             damping: root.pressSpring.damping
             Component.onCompleted: snapTo(button.targetWeight)
         }
+    }
+
+    component ModeButton: TransportButton {
+        pill: true
+        iconFilled: checked
+        containerColor: checked ? MediaAccentService.accent : MediaAccentService.accentContainer
+        contentColor: checked ? MediaAccentService.onAccent : MediaAccentService.onAccentContainer
     }
 }

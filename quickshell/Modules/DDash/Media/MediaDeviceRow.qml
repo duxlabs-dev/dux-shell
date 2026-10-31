@@ -11,6 +11,7 @@ SettingsRow {
 
     required property var node
     property bool selected: false
+    readonly property color insetColor: Theme.blend(MediaAccentService.accentContainer, Theme.surface, 0.7)
 
     signal activated
 
@@ -19,8 +20,8 @@ SettingsRow {
     clickable: !selected
     paddingH: Theme.spacingL
     paddingV: Theme.spacingL
-    rowColor: selected ? Theme.selectedContainer : Theme.chipSurface
-    titleColor: selected ? Theme.onSelectedContainer : Theme.surfaceText
+    rowColor: selected ? MediaAccentService.accentContainer : Theme.chipSurface
+    titleColor: selected ? MediaAccentService.onAccentContainer : Theme.surfaceText
     subtitleColor: titleColor
     topRadius: Theme.cornerRadiusLIncreased
     bottomRadius: Theme.cornerRadiusLIncreased
@@ -31,13 +32,13 @@ SettingsRow {
         width: Theme.iconButtonSize
         height: width
         radius: Theme.fullRadius(width, height)
-        color: root.selected ? Theme.onPrimary : Theme.chipSurfaceNested
+        color: root.selected ? root.insetColor : Theme.chipSurfaceNested
 
         DIcon {
             anchors.centerIn: parent
             name: AudioService.sinkIcon(root.node)
             size: Theme.iconSizeMedium
-            color: root.selected ? Theme.onSelectedContainer : Theme.onSurfaceVariant
+            color: root.selected ? root.titleColor : Theme.onSurfaceVariant
         }
     }
 
@@ -50,6 +51,8 @@ SettingsRow {
             node: root.node
             label: root.title
             contentColor: root.titleColor
+            rowColor: root.rowColor
+            insetColor: root.insetColor
         }
     }
 }

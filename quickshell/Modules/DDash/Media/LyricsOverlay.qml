@@ -32,7 +32,9 @@ FocusScope {
     readonly property real sampleTime: controller.sampleTime
     readonly property string trackKey: controller.trackKey
     readonly property var items: synced ? LyricsModel.buildItems(controller.lines, DashMetrics.lyricsBreakGap) : LyricsModel.plainItems(controller.plainLines)
-    readonly property int centreItem: synced ? LyricsModel.centreItem(items, sampleTime, controller.followIndex) : -1
+    readonly property int trackedCentre: synced ? LyricsModel.centreItem(items, sampleTime, controller.followIndex) : -1
+    property int centreItem: -1
+    property real centreTime: -Infinity
     // Only a word sweep or a break moves between the controller's cue ticks.
     readonly property bool needsClock: {
         const item = items[centreItem];
@@ -48,7 +50,7 @@ FocusScope {
     readonly property real breakSize: Math.round(leadFontSize * DashMetrics.lyricsBreakIndicatorScale)
     readonly property real leadFontSize: Math.round(Math.max(Theme.fontSizeXLarge, Math.min(Theme.fontSizeDisplay, transcript.height / DashMetrics.lyricsLeadHeightDivisor, transcript.width / DashMetrics.lyricsLeadWidthDivisor)))
     // The ends leave room for half a single row line, so scrolling stops with the first or last line centred.
-    readonly property real endPadding: synced ? Math.max(0, transcript.height / 2 - (leadFontMetrics.height + Theme.spacingS * 2) / 2) : Theme.spacingS
+    readonly property real endPadding: synced ? Math.max(0, transcript.height / 2 - (leadFontMetrics.lineHeight + Theme.spacingS * 2) / 2) : Theme.spacingS
     readonly property real edgeFade: Math.min(transcript.height * DashMetrics.lyricsEdgeFadeRatio, DashMetrics.lyricsEdgeFadeMax)
     readonly property string message: {
         switch (controller.state) {
@@ -65,9 +67,21 @@ FocusScope {
     activeFocusOnTab: true
     Accessible.role: Accessible.Pane
     Accessible.name: I18n.tr("Lyrics", "Media player lyrics button")
+    // A position correction or a floored resume can set the clock back a second just after the view
+    // moved on, which would scroll back to the previous row and forward again a moment later.
+    onTrackedCentreChanged: {
+        const backstep = synced && trackedCentre >= 0 && trackedCentre === centreItem - 1;
+        if (backstep && sampleTime < centreTime && centreTime - sampleTime < DashMetrics.lyricsFollowBackstepSlack)
+            return;
+        centreTime = sampleTime;
+        centreItem = trackedCentre;
+    }
     onCentreItemChanged: requestFollow(true)
+    Component.onCompleted: centreItem = trackedCentre
     onItemsChanged: {
         pushedItem = -1;
+        centreTime = -Infinity;
+        centreItem = trackedCentre;
         requestFollow(false);
     }
     onReadyChanged: requestFollow(false)
@@ -290,26 +304,43 @@ FocusScope {
         antialiasing: true
     }
 
-    StyledTextMetrics {
-        id: leadFont
+    LineMeasure {
+        id: leadFontMetrics
         font.pixelSize: root.leadFontSize
         font.weight: Theme.fontWeightBold
     }
 
-    StyledTextMetrics {
-        id: backgroundFont
+    LineMeasure {
+        id: backgroundFontMetrics
         font.pixelSize: Math.round(root.leadFontSize * Theme.fontSizeLarge / Theme.fontSizeXLarge)
         font.weight: Theme.fontWeightMedium
     }
 
-    FontMetrics {
-        id: leadFontMetrics
-        font: leadFont.font
-    }
+    // Rows are measured by the same text type that draws them, so a row never comes out wider than it was laid out.
+    component LineMeasure: Item {
+        id: measure
 
-    FontMetrics {
-        id: backgroundFontMetrics
-        font: backgroundFont.font
+        property alias font: probe.font
+        readonly property real lineHeight: metrics.height
+
+        visible: false
+
+        function advanceWidth(text) {
+            probe.text = text;
+            return probe.implicitWidth;
+        }
+
+        StyledText {
+            id: probe
+            visible: false
+            wrapMode: Text.NoWrap
+            elide: Text.ElideNone
+        }
+
+        FontMetrics {
+            id: metrics
+            font: probe.font
+        }
     }
 
     Item {
@@ -340,12 +371,6 @@ FocusScope {
             anchors.margins: Theme.spacingM
             visible: root.ready
             opacity: root.ready ? 1 : 0
-            // MultiEffect thresholds a gradient mask into a hard edge, so the ramp is a shader.
-            layer.enabled: root.ready && root.synced && root.edgeFade > 0
-            layer.effect: ShaderEffect {
-                property real edgeFade: viewport.height > 0 ? root.edgeFade / viewport.height : 0
-                fragmentShader: Qt.resolvedUrl("../../../Shaders/qsb/lyrics_edge.frag.qsb")
-            }
 
             Behavior on opacity {
                 enabled: root.animationsEnabled
@@ -364,7 +389,7 @@ FocusScope {
                 showScrollBar: false
                 clip: true
                 reuseItems: true
-                cacheBuffer: Math.round(height / 2)
+                cacheBuffer: Math.max(0, Math.round(height / 2))
                 model: root.items
                 add: null
                 remove: null
@@ -407,8 +432,11 @@ FocusScope {
 
                     required property var modelData
                     readonly property bool live: Math.abs(index - root.centreItem) <= 1
+                    // Faded per row rather than through a layer over the view, so a sung word only repaints its own row.
+                    readonly property real edgeDistance: Math.min(y + height / 2 - transcript.contentY, transcript.contentY + transcript.height - y - height / 2)
 
                     width: transcript.width
+                    opacity: root.synced && root.edgeFade > 0 ? Math.max(0, Math.min(1, edgeDistance / root.edgeFade)) : 1
                     item: modelData
                     controller: root.controller
                     clock: {

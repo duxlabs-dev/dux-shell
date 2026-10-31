@@ -53,6 +53,17 @@ ClippingRectangle {
     layer.effect: cookie ? shapeEffect : slantedEffect
 
     onPlayingChanged: morphMotion.retarget(playing ? 1 : 0)
+    onSpinningChanged: {
+        if (!spinning) {
+            if (spinMotion.running)
+                spinMotion.pause();
+            return;
+        }
+        if (spinMotion.paused)
+            spinMotion.resume();
+        else
+            spinMotion.start();
+    }
 
     SpringMotion {
         id: morphMotion
@@ -62,13 +73,14 @@ ClippingRectangle {
         Component.onCompleted: snapTo(root.playing ? 1 : 0)
     }
 
-    NumberAnimation on spin {
+    NumberAnimation {
+        id: spinMotion
+        target: root
+        property: "spin"
         from: 0
         to: 2 * Math.PI
         duration: DashMetrics.mediaArtRotationDuration
         loops: Animation.Infinite
-        running: root.cookie
-        paused: !root.spinning
     }
 
     Component {

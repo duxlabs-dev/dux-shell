@@ -33,7 +33,8 @@ Item {
         }
         MprisController.removePositionRef();
     }
-    activeFocusOnTab: canSeek
+    // Qt refuses to clear this on the focused item, so it only drops once focus has moved on.
+    activeFocusOnTab: canSeek || activeFocus
     Accessible.role: Accessible.Slider
     Accessible.name: I18n.tr("Playback position", "media seekbar accessible name")
     Accessible.focusable: canSeek

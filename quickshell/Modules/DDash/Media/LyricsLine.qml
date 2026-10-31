@@ -22,8 +22,8 @@ Item {
     property bool sweep: true
     property bool animationsEnabled: true
     property real leadFontSize: Theme.fontSizeXLarge
-    property FontMetrics leadMetrics: null
-    property FontMetrics backgroundMetrics: null
+    property Item leadMetrics: null
+    property Item backgroundMetrics: null
     property real breakSize: Theme.iconSizeLarge
     property real shift: 0
     // A line that playback moves on from keeps its highlight a moment before it dims.
@@ -42,16 +42,27 @@ Item {
     readonly property color restingColor: Theme.withAlpha(Theme.onSurfaceVariant, synced && following ? DashMetrics.lyricsLineInactiveAlpha : 1)
     readonly property bool shrunk: synced && following && !isPlain && !promoted
     // Every part is wrapped here, so the height is known when the row is created. A height that
-    // settles a frame later moves the rows around it while the view scrolls past.
-    readonly property var layouts: {
-        if (isBreak || isPlain || width <= 0 || !leadMetrics || !backgroundMetrics)
-            return [];
-        leadMetrics.font;
-        backgroundMetrics.font;
-        return LyricsModel.partLayouts(item.group.parts, width, leadMetrics, backgroundMetrics, Theme.spacingXS);
-    }
+    // settles a frame later moves the rows around it while the view scrolls past. Measuring writes
+    // the probe's text, so this is rebuilt from handlers rather than bound.
+    property var layouts: []
+    readonly property font leadFont: leadMetrics?.font ?? Qt.font({})
+    readonly property font backgroundFont: backgroundMetrics?.font ?? Qt.font({})
 
     signal activated
+
+    function relayout() {
+        if (isBreak || isPlain || width <= 0 || !leadMetrics || !backgroundMetrics) {
+            layouts = [];
+            return;
+        }
+        layouts = LyricsModel.partLayouts(item.group.parts, width, leadMetrics, backgroundMetrics, Theme.spacingXS);
+    }
+
+    onWidthChanged: relayout()
+    onItemChanged: relayout()
+    onLeadFontChanged: relayout()
+    onBackgroundFontChanged: relayout()
+    Component.onCompleted: relayout()
 
     // The push starts from where the line was, so the view can snap and the lines catch up.
     function push(delta, delay) {
@@ -274,59 +285,58 @@ Item {
 
                 required property var modelData
                 required property int index
-                // Line timed parts have no cues, so the whole line changes colour when it starts.
-                readonly property real fill: lyricsPart.timed ? Math.round(Math.min(width, LyricsModel.rowFill(modelData.segments, root.shownClock, root.sweep))) : 0
+                readonly property var latest: lyricsPart.timed ? LyricsModel.latestSegment(modelData.segments, root.shownClock) : null
+                // The edge sweeps each cue over its own time behind a soft feather. Line timed parts
+                // have no cues, so the whole line changes colour when it starts.
+                readonly property real edge: lyricsPart.timed && width > 0 ? Math.min(1, LyricsModel.fillEdge(modelData.segments, root.shownClock, root.sweep) / width) : 0
+                readonly property real feather: latest && root.sweep && width > 0 ? Math.max(DashMetrics.lyricsSweepFeatherMin, (latest.x1 - latest.x0) * DashMetrics.lyricsSweepFeather) / width : 0
+                readonly property color restColor: !lyricsPart.timed && lyricsPart.sung ? lyricsPart.fillColor : lyricsPart.restColor
 
-                x: lyricsPart.alignment === Text.AlignLeft ? 0 : lyricsPart.alignment === Text.AlignRight ? lyricsPart.width - width : (lyricsPart.width - width) / 2
+                x: Math.round(lyricsPart.alignment === Text.AlignLeft ? 0 : lyricsPart.alignment === Text.AlignRight ? lyricsPart.width - width : (lyricsPart.width - width) / 2)
                 y: index * lyricsPart.layout.rowHeight
                 width: modelData.width
                 height: lyricsPart.layout.rowHeight
 
-                // The two copies meet at the fill edge rather than overlap, so translucent colours do not add up.
-                Item {
-                    x: lyricsPart.rtl ? 0 : row.fill
-                    width: parent.width - row.fill
-                    height: parent.height
-                    clip: true
-                    visible: width > 0
-
-                    StyledText {
-                        x: -parent.x
-                        text: row.modelData.text
-                        color: !lyricsPart.timed && lyricsPart.sung ? lyricsPart.fillColor : lyricsPart.restColor
-                        font: lyricsPart.layout.font
-                        wrapMode: Text.NoWrap
-                        Accessible.ignored: true
-
-                        Behavior on color {
-                            enabled: root.animationsEnabled
-                            ColorAnimation {
-                                duration: DashMetrics.lyricsLineFadeDuration
-                            }
-                        }
-                    }
+                StyledText {
+                    id: glyphs
+                    width: row.width
+                    height: row.height
+                    text: row.modelData.text
+                    font: lyricsPart.layout.font
+                    // Only the coverage reaches the shader, the colour is applied there.
+                    color: Theme.surfaceText
+                    wrapMode: Text.NoWrap
+                    Accessible.ignored: true
                 }
 
-                Item {
-                    x: lyricsPart.rtl ? parent.width - width : 0
-                    width: row.fill
-                    height: parent.height
-                    clip: true
-                    visible: width > 0
+                ShaderEffectSource {
+                    id: glyphSource
+                    sourceItem: glyphs
+                    hideSource: true
+                    smooth: true
+                }
 
-                    StyledText {
-                        x: -parent.x
-                        text: row.modelData.text
-                        color: lyricsPart.fillColor
-                        font: lyricsPart.layout.font
-                        wrapMode: Text.NoWrap
-                        Accessible.ignored: true
+                ShaderEffect {
+                    anchors.fill: parent
+                    property var source: glyphSource
+                    property color restColor: row.restColor
+                    property color fillColor: lyricsPart.fillColor
+                    property real edge: row.edge
+                    property real feather: row.feather
+                    property real rtl: lyricsPart.rtl ? 1 : 0
+                    fragmentShader: Qt.resolvedUrl("../../../Shaders/qsb/lyrics_fill.frag.qsb")
 
-                        Behavior on color {
-                            enabled: root.animationsEnabled
-                            ColorAnimation {
-                                duration: DashMetrics.lyricsLineFadeDuration
-                            }
+                    Behavior on restColor {
+                        enabled: root.animationsEnabled
+                        ColorAnimation {
+                            duration: DashMetrics.lyricsLineFadeDuration
+                        }
+                    }
+
+                    Behavior on fillColor {
+                        enabled: root.animationsEnabled
+                        ColorAnimation {
+                            duration: DashMetrics.lyricsLineFadeDuration
                         }
                     }
                 }

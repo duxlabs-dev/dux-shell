@@ -258,11 +258,16 @@ Singleton {
     readonly property real lyricsLineInactiveScale: 0.8
     readonly property real lyricsLineInactiveAlpha: 0.4
     readonly property real lyricsRestAlpha: 0.35
+    // The sweep's soft edge as a share of the cue it crosses, and its floor in pixels.
+    readonly property real lyricsSweepFeather: 0.1
+    readonly property real lyricsSweepFeatherMin: 6
     readonly property int lyricsLineFadeDuration: lyricsTrackMoveDuration
     readonly property int lyricsLineScaleDuration: lyricsTrackMoveDuration
     readonly property int lyricsLineLinger: 500
     // Seconds before a line starts that the track moves it into the centre.
     readonly property real lyricsLineLeadIn: 0.25
+    // A clock that steps back less than this right after the centre advanced keeps the new row.
+    readonly property real lyricsFollowBackstepSlack: 1.5
     readonly property int lyricsTrackMoveDuration: 500
     // A critically damped spring settles in about ten time constants, so a long scroll lands with the line move.
     readonly property real lyricsScrollRate: 10000 / lyricsTrackMoveDuration

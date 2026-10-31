@@ -145,7 +145,7 @@ function partLayouts(parts, width, lead, background, gap) {
     return parts.map(part => {
         const metrics = part.background ? background : lead;
         const rows = layoutRows(part.x || "\u00a0", cueSpans(part), width, text => metrics.advanceWidth(text));
-        const rowHeight = Math.ceil(metrics.height);
+        const rowHeight = Math.ceil(metrics.lineHeight);
         const layout = {
             part,
             rows,
@@ -166,16 +166,27 @@ function rowHeight(item, layouts, breakSize, padding, gap) {
     return (item.kind === "break" ? breakSize : layoutsHeight(layouts, gap)) + padding * 2;
 }
 
-// How far into the row the sung part reaches at a time. Without the sweep a cue fills at once.
-function rowFill(segments, at, sweep) {
-    let fill = 0;
+// Where the fill's edge sits: each started cue sweeps across its own span over its own time, and
+// without the sweep it fills at once.
+function fillEdge(segments, at, sweep) {
+    let edge = 0;
     for (const segment of segments) {
         if (segment.t > at)
             continue;
         const progress = sweep && segment.e > segment.t ? Math.min(1, (at - segment.t) / (segment.e - segment.t)) : 1;
-        fill = Math.max(fill, segment.x0 + (segment.x1 - segment.x0) * progress);
+        edge = Math.max(edge, segment.x0 + (segment.x1 - segment.x0) * progress);
     }
-    return fill;
+    return edge;
+}
+
+// The cue started most recently.
+function latestSegment(segments, at) {
+    let latest = null;
+    for (const segment of segments) {
+        if (segment.t <= at && (!latest || segment.t >= latest.t))
+            latest = segment;
+    }
+    return latest;
 }
 
 // The first strong character decides, so digits and punctuation do not count.
