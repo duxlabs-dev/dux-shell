@@ -26,7 +26,8 @@ hl.bind("SUPER + SHIFT + Slash", hl.dsp.exec_cmd("dms ipc call keybinds toggle h
 
 -- === Security ===
 hl.bind("SUPER + ALT + L", hl.dsp.exec_cmd("dms ipc call lock lock"))
-hl.bind("SUPER + SHIFT + E", hl.dsp.exit())
+-- Routed through the power menu so a stray press can't end the session
+hl.bind("SUPER + SHIFT + E", hl.dsp.exec_cmd("dms ipc call powermenu toggle"))
 hl.bind("CTRL + ALT + Delete", hl.dsp.exec_cmd("dms ipc call processlist focusOrToggle"))
 hl.bind("CTRL + ALT + M", hl.dsp.exec_cmd("dms ipc call processlist focusOrToggle"))
 

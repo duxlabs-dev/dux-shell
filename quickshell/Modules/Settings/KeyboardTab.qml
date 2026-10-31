@@ -46,18 +46,17 @@ Item {
                 settingKey: "keyboardOptions"
                 resetKeys: []
                 text: I18n.tr("Switch layout shortcut")
-                options: [I18n.tr("Alt + Shift"), I18n.tr("Ctrl + Shift"), I18n.tr("Caps lock"), I18n.tr("Super + Space"), I18n.tr("Custom / None")]
+                options: [I18n.tr("Alt + Shift"), I18n.tr("Both Shift keys"), I18n.tr("Caps lock"), I18n.tr("Custom / None")]
+                description: currentValue === options[0] ? I18n.tr("Alt + Shift shortcuts in apps and keybinds stop working.") : ""
                 currentValue: {
                     const opt = SettingsData.keyboardOptions;
                     if (opt.includes("grp:alt_shift_toggle"))
                         return options[0];
-                    if (opt.includes("grp:ctrl_shift_toggle"))
+                    if (opt.includes("grp:shifts_toggle"))
                         return options[1];
                     if (opt.includes("grp:caps_toggle"))
                         return options[2];
-                    if (opt.includes("grp:win_space_toggle"))
-                        return options[3];
-                    return options[4];
+                    return options[3];
                 }
                 onValueChanged: value => {
                     const idx = options.indexOf(value);
@@ -69,13 +68,10 @@ Item {
                         newGrp = "grp:alt_shift_toggle";
                         break;
                     case 1:
-                        newGrp = "grp:ctrl_shift_toggle";
+                        newGrp = "grp:shifts_toggle";
                         break;
                     case 2:
                         newGrp = "grp:caps_toggle";
-                        break;
-                    case 3:
-                        newGrp = "grp:win_space_toggle";
                         break;
                     }
 
