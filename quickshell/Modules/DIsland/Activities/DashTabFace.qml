@@ -131,8 +131,10 @@ FocusScope {
         contentScope: tabLoader
         contentTarget: root.tab?.focusTarget ?? null
         headerTargets: root.editMode ? pageActions.focusTargets : [tabBarLoader.item, sheetHandle.focusTarget]
+        tabsShown: root.tabsShown
         onTabCycleRequested: direction => root.controller.cycleDashTab(direction, tabBarLoader.item?.activeFocus ?? false)
         onEditModeRequested: on => root.editMode = on
+        onLeaveRequested: root.focusFace()
         onOptionsDismissRequested: tabOptions.dismiss()
         onCloseRequested: root.controller.requestCollapse()
     }
@@ -160,7 +162,6 @@ FocusScope {
                 id: tabBar
 
                 editable: true
-                tabHighlights: true
                 evenlySpaced: SettingsData.dashTabsEvenlySpaced
                 currentIndex: root.controller.dashTabIds.indexOf(root.entryId)
                 nextFocusTarget: root.tab?.focusTarget ?? null

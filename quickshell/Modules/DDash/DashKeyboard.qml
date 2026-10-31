@@ -16,6 +16,13 @@ Item {
     property Item contentTarget: null
     property var headerTargets: []
     property string headerEdge: "up"
+    property bool tabsShown: true
+    // Outside the content, Tab switches tabs and the tab keeps Space and the arrows.
+    property bool steppedIn: false
+
+    onActiveChanged: steppedIn = false
+    onTabItemChanged: steppedIn = false
+    onEditModeChanged: steppedIn = false
 
     readonly property bool idle: active && !optionsShown && !menuOpen
     readonly property bool contentFocused: contentScope?.activeFocus ?? false
@@ -26,31 +33,39 @@ Item {
     signal editModeRequested(bool on)
     signal optionsDismissRequested
     signal closeRequested
+    signal leaveRequested
 
     function visibleHeaderTargets() {
         return headerTargets.filter(item => item && item.visible && item.enabled);
     }
 
+    // Outside edit mode the header is not a keyboard stop; leaving the content goes back to the tabs.
     function focusHeader(backwards) {
+        if (!editMode) {
+            leaveContent();
+            return;
+        }
         const targets = visibleHeaderTargets();
         const target = backwards ? targets[targets.length - 1] : targets[0];
         target?.forceActiveFocus(backwards ? Qt.BacktabFocusReason : Qt.TabFocusReason);
     }
 
     function enterContent(backwards) {
+        steppedIn = true;
         const target = backwards ? (tabItem?.previousFocusTarget ?? contentTarget) : contentTarget;
         FocusNavigation.focusItem(target, backwards);
     }
 
-    function cycleRegion(backwards) {
-        const targets = visibleHeaderTargets();
-        if (!targets.some(FocusNavigation.containsFocus) && targets.length > 0) {
-            focusHeader(backwards);
-            return;
-        }
-        if (FocusNavigation.moveFocus(targets, backwards))
-            return;
-        enterContent(backwards);
+    function leaveContent() {
+        steppedIn = false;
+        leaveRequested();
+    }
+
+    function toggleContent(backwards) {
+        if (steppedIn)
+            leaveContent();
+        else
+            enterContent(backwards);
     }
 
     function inContent(item) {
@@ -59,6 +74,13 @@ Item {
                 return true;
         }
         return false;
+    }
+
+    function tabKey(backwards) {
+        if (tabsShown && !steppedIn)
+            tabCycleRequested(backwards ? -1 : 1);
+        else
+            walkContent(backwards);
     }
 
     // Tab wraps inside the content, as in Settings.
@@ -77,24 +99,14 @@ Item {
         }
     }
 
-    // A tab without restoreFocus parks focus on the host, which counts as content.
-    function toggleRegion() {
-        if (headerFocused || visibleHeaderTargets().length === 0)
-            enterContent(false);
-        else
-            focusHeader(false);
-    }
-
     function moveCard(direction) {
         if (!contentFocused) {
-            if (direction === headerEdge)
-                focusHeader(false);
-            else
+            if (direction !== headerEdge)
                 enterContent(false);
             return;
         }
         if (tabItem?.moveCardFocus?.(direction) !== true && direction === headerEdge)
-            focusHeader(false);
+            leaveContent();
     }
 
     function arrowDirection(event) {
@@ -155,31 +167,32 @@ Item {
             return false;
         if (editMode)
             editModeRequested(false);
+        else if (steppedIn && tabsShown)
+            leaveContent();
         else
             closeRequested();
         return true;
     }
 
-    // The tab row takes Tab itself to move its highlight.
     Shortcut {
         sequence: "Tab"
-        enabled: root.browsing && !root.headerFocused
+        enabled: root.browsing
         context: Qt.WindowShortcut
-        onActivated: root.walkContent(false)
+        onActivated: root.tabKey(false)
     }
 
     Shortcut {
         sequence: "Shift+Tab"
-        enabled: root.browsing && !root.headerFocused
+        enabled: root.browsing
         context: Qt.WindowShortcut
-        onActivated: root.walkContent(true)
+        onActivated: root.tabKey(true)
     }
 
     Shortcut {
         sequences: ["Ctrl+Tab", "Ctrl+Shift+Tab"]
         enabled: root.browsing
         context: Qt.WindowShortcut
-        onActivated: root.toggleRegion()
+        onActivated: root.toggleContent(false)
     }
 
     Shortcut {
@@ -207,14 +220,14 @@ Item {
         sequence: "F6"
         enabled: root.browsing
         context: Qt.WindowShortcut
-        onActivated: root.cycleRegion(false)
+        onActivated: root.toggleContent(false)
     }
 
     Shortcut {
         sequence: "Shift+F6"
         enabled: root.browsing
         context: Qt.WindowShortcut
-        onActivated: root.cycleRegion(true)
+        onActivated: root.toggleContent(true)
     }
 
     Shortcut {

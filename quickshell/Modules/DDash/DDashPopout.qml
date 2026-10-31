@@ -383,6 +383,7 @@ DPopout {
                 contentScope: pages.currentHost
                 contentTarget: pages.focusTarget
                 headerTargets: root.editMode ? pageActions.focusTargets : [tabBar, pageTitle.focusTarget]
+                tabsShown: root.showTabs
                 headerEdge: root.verticalNavigation ? (root.navigationEdge === SettingsData.Right ? "right" : "left") : (root.navigationEdge === SettingsData.Bottom ? "down" : "up")
                 onTabCycleRequested: direction => {
                     root.cycleTab(direction);
@@ -390,6 +391,7 @@ DPopout {
                         mainContainer.focusInitial();
                 }
                 onEditModeRequested: on => root.editMode = on
+                onLeaveRequested: mainContainer.focusInitial()
                 onOptionsDismissRequested: tabOptions.dismiss()
                 onCloseRequested: {
                     if (root.detailTabId !== "")
@@ -468,7 +470,6 @@ DPopout {
                             onEditRequested: root.editMode = true
                             visible: root.showTabs && !root.editMode
                             orientation: root.verticalNavigation ? Qt.Vertical : Qt.Horizontal
-                            tabHighlights: true
                             currentIndex: root.currentTabIndex
                             nextFocusTarget: pageActions.focusTargets[0] ?? pages.focusTarget
                             previousFocusTarget: pages.currentItem?.previousFocusTarget ?? pages.focusTarget
