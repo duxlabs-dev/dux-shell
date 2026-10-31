@@ -134,7 +134,7 @@ func (g *GentooDistribution) detectDMS() deps.Dependency {
 		Required:    true,
 		CanToggle:   false,
 	}
-	if g.packageInstalled("gui-apps/dankmaterialshell") {
+	if g.packageInstalled("dux-desktop/dux-shell") {
 		dep.Status = deps.StatusInstalled
 	}
 	return dep
@@ -175,7 +175,7 @@ func (g *GentooDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 		"quickshell":      g.getQuickshellMapping(variants["quickshell"]),
 		"matugen":         {Name: "x11-misc/matugen", Repository: RepoTypeGURU, AcceptKeywords: archKeyword},
 		"dms (Dux Shell)": g.getDmsMapping(),
-		"danksearch":      {Name: "gui-apps/danksearch", Repository: RepoTypeGURU, AcceptKeywords: archKeyword},
+		"danksearch":      {Name: "dux-desktop/dux-search", Repository: RepoTypeGURU, AcceptKeywords: archKeyword},
 	}
 
 	switch wm {
@@ -200,7 +200,7 @@ func (g *GentooDistribution) getQuickshellMapping(_ deps.PackageVariant) Package
 }
 
 func (g *GentooDistribution) getDmsMapping() PackageMapping {
-	return PackageMapping{Name: "gui-apps/dankmaterialshell", Repository: RepoTypeGURU, AcceptKeywords: g.getArchKeyword()}
+	return PackageMapping{Name: "dux-desktop/dux-shell", Repository: RepoTypeGURU, AcceptKeywords: g.getArchKeyword()}
 }
 
 func (g *GentooDistribution) getHyprlandMapping(_ deps.PackageVariant) PackageMapping {

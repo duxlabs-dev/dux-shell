@@ -152,7 +152,7 @@ func uninstallCommand(distroID string, dependencies []deps.Dependency) string {
 		return ""
 	}
 	if config.Family == distros.FamilyGentoo {
-		return "sudo emerge --deselect gui-apps/dankmaterialshell && sudo emerge --depclean gui-apps/dankmaterialshell"
+		return "sudo emerge --deselect dux-desktop/dux-shell && sudo emerge --depclean dux-desktop/dux-shell"
 	}
 
 	pkg := dmsPackageName(distroID, dependencies)
