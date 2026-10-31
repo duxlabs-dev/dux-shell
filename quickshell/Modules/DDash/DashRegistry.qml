@@ -119,7 +119,11 @@ Singleton {
                 "minW": 1,
                 "minH": 1
             },
-            "options": [choice("playerStyle", I18n.tr("Player style"), MediaOptions.defaultPlayerStyle, MediaOptions.playerStyles), choice("artStyle", I18n.tr("Artwork"), "rounded", [
+            "options": [choice("playerStyle", I18n.tr("Player style"), MediaOptions.defaultPlayerStyle, MediaOptions.playerStyles), choice("artStyle", I18n.tr("Artwork"), MediaOptions.defaultArtStyle, [
+                    {
+                        "value": "cookie",
+                        "text": I18n.tr("Rotating Cookie", "Album artwork shape")
+                    },
                     {
                         "value": "rounded",
                         "text": I18n.tr("Rounded")
@@ -135,12 +139,8 @@ Singleton {
                     {
                         "value": "slanted",
                         "text": I18n.tr("Slanted", "Album artwork shape")
-                    },
-                    {
-                        "value": "cookie",
-                        "text": I18n.tr("Rotating Cookie", "Album artwork shape")
                     }
-                ]), choice("titleFont", I18n.tr("Title font"), MediaOptions.defaultTitleFont, Theme.fontChoices), toggle("deviceName", I18n.tr("Show device name", "Media player option that puts the audio output device name on its button"), MediaOptions.defaults.deviceName), toggle("seekbar", I18n.tr("Show seekbar"), MediaOptions.defaults.seekbar), toggle("waveProgress", I18n.tr("Wave progress bars"), MediaOptions.defaults.waveProgress), toggle("albumArtBackdrop", I18n.tr("Album art backdrop"), MediaOptions.defaults.albumArtBackdrop), toggle("albumArtAccent", I18n.tr("Use album art accent"), MediaOptions.defaults.albumArtAccent), toggle("animatedArt", I18n.tr("Apple Music animated covers"), MediaOptions.defaults.animatedArt, I18n.tr("Sends the playing artist and album name to Apple")), toggle("lyrics", I18n.tr("Lyrics", "Media player lyrics button"), MediaOptions.defaults.lyrics, I18n.tr("Sends the playing track, artist and album name to enabled lyrics providers")), toggle("smoothLyrics", I18n.tr("Smooth lyrics highlight", "Media player option that fills each sung word gradually instead of highlighting it at once"), MediaOptions.defaults.smoothLyrics)]
+                ]), choice("titleFont", I18n.tr("Title font"), MediaOptions.defaultTitleFont, Theme.fontChoices), toggle("seekbar", I18n.tr("Show seekbar"), MediaOptions.defaults.seekbar), toggle("waveProgress", I18n.tr("Wave progress bars"), MediaOptions.defaults.waveProgress), toggle("albumArtBackdrop", I18n.tr("Album art backdrop"), MediaOptions.defaults.albumArtBackdrop), toggle("albumArtAccent", I18n.tr("Use album art accent"), MediaOptions.defaults.albumArtAccent), toggle("animatedArt", I18n.tr("Apple Music animated covers"), MediaOptions.defaults.animatedArt, I18n.tr("Sends the playing artist and album name to Apple")), toggle("lyrics", I18n.tr("Lyrics", "Media player lyrics button"), MediaOptions.defaults.lyrics, I18n.tr("Sends the playing track, artist and album name to enabled lyrics providers")), toggle("smoothLyrics", I18n.tr("Smooth lyrics highlight", "Media player option that fills each sung word gradually instead of highlighting it at once"), MediaOptions.defaults.smoothLyrics)]
         },
         {
             "id": "wallpaper",

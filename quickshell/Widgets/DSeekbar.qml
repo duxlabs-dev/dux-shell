@@ -33,7 +33,8 @@ Item {
         }
         MprisController.removePositionRef();
     }
-    activeFocusOnTab: canSeek
+    // Qt refuses to clear this on the focused item, so it only drops once focus has moved on.
+    activeFocusOnTab: canSeek || activeFocus
     Accessible.role: Accessible.Slider
     Accessible.name: I18n.tr("Playback position", "media seekbar accessible name")
     Accessible.focusable: canSeek
@@ -89,6 +90,41 @@ Item {
     property color focusRingColor: Theme.focusRingColor
     property color accentTrackColor: Theme.withAlpha(accentColor, 0.28)
     property color accentSubtleColor: Theme.withAlpha(accentColor, 0.55)
+    // Disabled, the bar takes Material's disabled colours like the controls around it.
+    readonly property color shownAccent: enabled ? accentColor : Theme.onSurface_38
+    readonly property color shownTrack: enabled ? accentTrackColor : Theme.onSurface_12
+
+    property real waveLineWidth: 2
+    property real waveAmplitude: 1.6
+    property real wavelength: 20
+    // The handle keeps half its current width from the ends, so the track maps onto the span between them.
+    property bool showHandle: false
+    property real handleSize: 0
+    property real handleDragWidth: 0
+    property real handleDragHeight: 0
+    property real handleGap: 0
+    readonly property real handleInset: showHandle ? handleWidth / 2 : 0
+    readonly property real handleTravel: Math.max(1, width - handleInset * 2)
+    property real handleWidth: isSeeking ? handleDragWidth : handleSize
+    property real handleHeight: isSeeking ? handleDragHeight : handleSize
+
+    Behavior on handleWidth {
+        enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        NumberAnimation {
+            duration: Theme.expressiveDurations.expressiveEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+        }
+    }
+
+    Behavior on handleHeight {
+        enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        NumberAnimation {
+            duration: Theme.expressiveDurations.expressiveEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+        }
+    }
 
     property real seekPreviewRatio: -1
     readonly property real playerValue: {
@@ -110,6 +146,10 @@ Item {
         return Math.max(0, Math.min(1, ratio));
     }
 
+    function trackValue(ratio) {
+        return width > 0 ? (handleInset + ratio * handleTravel) / width : ratio;
+    }
+
     function ratioForPosition(position) {
         if (!activePlayer || stableLength <= 0)
             return 0;
@@ -126,7 +166,7 @@ Item {
     function updatePreviewFromMouse(mouseX, width) {
         if (!activePlayer || stableLength <= 0 || width <= 0)
             return;
-        seekPreviewRatio = clampRatio(mouseX / width);
+        seekPreviewRatio = clampRatio((mouseX - handleInset) / handleTravel);
     }
 
     function clearCommittedSeekPreview() {
@@ -219,12 +259,21 @@ Item {
             id: waveProgressComponent
 
             M3WaveProgress {
-                value: root.value
-                actualValue: root.playerValue
-                showActualPlaybackState: root.isSeeking
-                fillColor: root.accentColor
-                playheadColor: root.accentColor
-                trackColor: root.accentTrackColor
+                value: root.trackValue(root.value)
+                actualValue: root.trackValue(root.playerValue)
+                // The handle carries the played wave with it, so there is no separate preview of the drag.
+                showActualPlaybackState: root.isSeeking && !root.showHandle
+                lineWidth: root.waveLineWidth
+                amp: root.waveAmplitude
+                wavelength: root.wavelength
+                showHandle: root.showHandle
+                handleWidth: root.handleWidth
+                handleHeight: root.handleHeight
+                handleGap: root.handleGap
+                handleColor: root.shownAccent
+                fillColor: root.shownAccent
+                playheadColor: root.shownAccent
+                trackColor: root.shownTrack
                 actualProgressColor: root.accentSubtleColor
                 isPlaying: activePlayer && activePlayer.playbackState === MprisPlaybackState.Playing
                 onFrameTicked: {
@@ -264,15 +313,19 @@ Item {
             id: flatProgressComponent
 
             Item {
-                property real lineWidth: 3
-                property color trackColor: Theme.withAlpha(Theme.surfaceVariant, 0.40)
-                property color fillColor: root.accentColor
-                property color playheadColor: root.accentColor
+                id: flatBar
+
+                property real lineWidth: root.showHandle ? root.waveLineWidth : 3
+                property color trackColor: root.showHandle ? root.shownTrack : Theme.withAlpha(Theme.surfaceVariant, 0.40)
+                property color fillColor: root.shownAccent
+                property color playheadColor: root.shownAccent
                 property color actualProgressColor: Theme.onSurface_38
                 readonly property real midY: height / 2
+                readonly property real handleX: root.trackValue(root.value) * width
 
                 Rectangle {
-                    width: parent.width
+                    x: root.showHandle ? flatBar.handleX + root.handleWidth / 2 + root.handleGap : 0
+                    width: Math.max(0, parent.width - x)
                     height: parent.lineWidth
                     anchors.verticalCenter: parent.verticalCenter
                     color: parent.trackColor
@@ -280,7 +333,7 @@ Item {
                 }
 
                 Rectangle {
-                    width: Math.max(0, Math.min(parent.width, parent.width * root.value))
+                    width: Math.max(0, Math.min(parent.width, root.showHandle ? flatBar.handleX : parent.width * root.value))
                     height: parent.lineWidth
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
@@ -289,7 +342,18 @@ Item {
                 }
 
                 Rectangle {
-                    visible: root.isDraggingSeek
+                    visible: root.showHandle
+                    x: flatBar.handleX - width / 2
+                    y: parent.midY - height / 2
+                    width: root.handleWidth
+                    height: root.handleHeight
+                    radius: Theme.fullRadius(width, height)
+                    color: parent.fillColor
+                    z: 3
+                }
+
+                Rectangle {
+                    visible: root.isDraggingSeek && !root.showHandle
                     width: 2
                     height: Math.max(parent.lineWidth + 4, 10)
                     radius: Theme.fullRadius(width, height)
@@ -301,6 +365,7 @@ Item {
 
                 Rectangle {
                     id: playhead
+                    visible: !root.showHandle
                     width: 3
                     height: Math.max(parent.lineWidth + 8, 14)
                     radius: Theme.fullRadius(width, height)
