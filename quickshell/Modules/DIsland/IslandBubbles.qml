@@ -1438,7 +1438,8 @@ Item {
             toShape: 1
             morph: wing.morph
             angle: wing.shapeAngle
-            color: wing.tone[0]
+            // Under an app's logo, the tone that contrasts with the logo (dark under a white Android silhouette).
+            color: wing.appFace ? currentGlyph.logoShapeColor : wing.tone[0]
             width: root.unitPx / backdrop.activeRatio
             height: width
             x: wing.iconX - width / 2
@@ -1457,9 +1458,9 @@ Item {
                     y: liquid.visible ? IslandKit.wave(0, liquid.amp / 2, liquid.phase) : 0 // A1
                 }
             ]
-            // Fusing, the shape stays whole while the rest fades (an app's own icon gets its shape too), until the goo takes it.
+            // Fusing, the shape stays whole while the rest fades, until the goo takes it.
             opacity: wing.fusing ? 1 : wing.iconOpacity
-            visible: opacity > 0.01 && wing.face !== null && (!wing.appFace || wing.fusing)
+            visible: opacity > IslandKit.shownFrom && wing.face !== null
 
             Behavior on color {
                 enabled: !root.reducedMotion
@@ -1983,6 +1984,8 @@ Item {
         // On the shape the bare icon sits flat, like the shape's own print: a level ring there covered the shape and read as
         // a sticker; the wing's value and its wave show the level instead.
         property bool onBackdrop: false
+        // The backdrop tone that reads under this glyph's logo (IslandAppIcon samples it).
+        readonly property color logoShapeColor: picture.logoShapeColor
 
         function poke() {
             picture.poke();

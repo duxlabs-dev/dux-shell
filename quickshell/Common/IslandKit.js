@@ -427,11 +427,33 @@ function heldPage(held, items) {
     return Math.max(0, items.findIndex(bubble => heldKey(bubble) === held));
 }
 
-// WCAG contrast of two colours ({r, g, b} in 0..1, as a QML color).
-function contrast(a, b) {
-    const lum = c => [c.r, c.g, c.b].map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
-    const la = lum(a), lb = lum(b);
+// The WCAG ratio of Contrast.ratio, on two luminances: Contrast.ratio takes colours, and a logo's luminance is a mean over
+// its pixels that no colour has.
+function contrastOfLuminances(la, lb) {
     return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+// The mean luminance of a logo, from its RGBA pixels (a canvas's getImageData, 0..255), each weighted by its alpha so a
+// silhouette on a clear ground counts only where it is drawn; -1 when nothing is drawn.
+function logoLuminance(pixels) {
+    let sum = 0, weight = 0;
+    for (let i = 0; i + 3 < pixels.length; i += 4) {
+        const a = pixels[i + 3] / 255;
+        if (a === 0)
+            continue;
+        sum += Contrast.relativeLuminance({ "r": pixels[i] / 255, "g": pixels[i + 1] / 255, "b": pixels[i + 2] / 255 }) * a;
+        weight += a;
+    }
+    return weight > 0 ? sum / weight : -1;
+}
+
+// The shape under an app's logo (IslandAppIcon): of two tones, the one that contrasts most with the logo's mean luminance
+// (logoLuminance): a white Android silhouette sits on the dark one, a black glyph on the light one, a photo on whichever
+// reads. Unknown (-1) keeps the first.
+function logoShapeTone(logoLum, first, second) {
+    if (logoLum < 0)
+        return first;
+    return contrastOfLuminances(logoLum, Contrast.relativeLuminance(second)) > contrastOfLuminances(logoLum, Contrast.relativeLuminance(first)) ? second : first;
 }
 
 // A liquid tone that reads on its pill: the first of `tones` that, laid at `alpha` over `surface`, keeps `min` contrast

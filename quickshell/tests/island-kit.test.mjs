@@ -165,3 +165,27 @@ test("the fusion lights the island's edge with the launcher closed too: flat pil
     // A flat pill on a quiet island (the clock) fuses.
     assert.equal(K.closeStyle({ "inPlace": true, "reduced": false, "occupantBefore": "home|", "occupantNow": "home|" }), "fuse");
 });
+
+test("the shape under a logo is the tone that contrasts with it; unknown keeps the dark one", () => {
+    const dark = { "r": 0.05, "g": 0.06, "b": 0.07 }, light = { "r": 0.93, "g": 0.92, "b": 0.92 };
+    assert.equal(K.logoShapeTone(1, dark, light), dark, "white silhouette");
+    assert.equal(K.logoShapeTone(0, dark, light), light, "black glyph");
+    assert.equal(K.logoShapeTone(-1, dark, light), dark, "unknown");
+    // A mid photo (luminance 0.35) reads better on the dark tone than on the light one.
+    assert.equal(K.logoShapeTone(0.35, dark, light), dark, "photo");
+});
+
+test("a logo's luminance counts only where it is drawn, weighted by alpha", () => {
+    assert.equal(K.logoLuminance([255, 255, 255, 255, 0, 0, 0, 0]), 1, "white over a clear pixel");
+    assert.equal(K.logoLuminance([0, 0, 0, 255, 255, 255, 255, 0]), 0, "black over a clear pixel");
+    assert.equal(K.logoLuminance([0, 0, 0, 0]), -1, "nothing drawn");
+    assert.ok(Math.abs(K.logoLuminance([255, 255, 255, 255, 0, 0, 0, 255]) - 0.5) < 1e-9, "half white, half black");
+    assert.ok(Math.abs(K.logoLuminance([255, 255, 255, 255, 0, 0, 0, 85]) - 0.75) < 1e-9, "a third of a black pixel");
+});
+
+test("the contrast of two luminances is WCAG's ratio, either way round", () => {
+    assert.ok(Math.abs(K.contrastOfLuminances(1, 0) - 21) < 1e-9);
+    assert.equal(K.contrastOfLuminances(0.2, 0.5), K.contrastOfLuminances(0.5, 0.2));
+    assert.ok(Math.abs(K.contrastOfLuminances(0.5, 0.2) - 0.55 / 0.25) < 1e-12);
+    assert.equal(K.contrastOfLuminances(0.3, 0.3), 1);
+});

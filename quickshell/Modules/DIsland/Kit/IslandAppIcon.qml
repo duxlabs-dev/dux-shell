@@ -28,10 +28,19 @@ Item {
     readonly property real pulseOutShare: 0.5
     // Drawn smooth, so the symbol stays clean while its shape rocks (a ringing call).
     property bool smoothGlyph: false
-    property color shapeColor: Theme.primaryContainer
+    // Under a logo, the tone that contrasts with it (logoShapeColor); under a symbol, the primary container.
+    property color shapeColor: root.hasImage ? root.logoShapeColor : Theme.primaryContainer
     property color iconColor: Theme.onPrimaryContainer
     readonly property bool still: Theme.currentAnimationBaseDuration <= 0 || SettingsData.reduceMotion
-    readonly property bool hasImage: image.visible
+    // From the load, not from image.visible: hidden by a parent, visible reads false, and a parent waiting on hasImage
+    // to show would never show.
+    readonly property bool hasImage: image.status === Image.Ready
+    // The logo's mean luminance (0..1, where it is drawn), sampled once per image; -1 until known or without a logo.
+    readonly property real logoLuminance: sampler.luminance
+    // The shape that reads under this logo: dark under a light one (an Android notification's white silhouette), light
+    // under a dark one. The raised surface and the inverse surface: one is dark and one light in every theme, and each
+    // stands off the island's own surface.
+    readonly property color logoShapeColor: Kit.logoShapeTone(root.logoLuminance, Theme.surfaceContainerHighest, Theme.inverseSurface)
 
     // At rest the first one (an alert's own, IslandNoticeIcon), then the icon's own cycle (shorter than DTextField's,
     // without the oval).
@@ -47,6 +56,49 @@ Item {
 
     implicitWidth: root.size
     implicitHeight: root.size
+
+    onSourceChanged: sampler.sample()
+
+    // Reads the logo once, at 16 px, for its mean luminance; never shown.
+    Canvas {
+        id: sampler
+
+        readonly property int side: 16
+        property real luminance: -1
+        property string loaded: ""
+
+        width: side
+        height: side
+        opacity: 0
+        Component.onCompleted: sample()
+        onAvailableChanged: sample()
+        onImageLoaded: sample()
+        function sample() {
+            const url = root.source;
+            if (!available || loaded === url)
+                return;
+            if (loaded !== "")
+                unloadImage(loaded);
+            loaded = "";
+            luminance = -1;
+            if (url === "")
+                return;
+            if (isImageLoaded(url))
+                requestPaint();
+            else if (!isImageError(url))
+                loadImage(url);
+        }
+        onPaint: {
+            const url = root.source;
+            if (url === "" || !isImageLoaded(url))
+                return;
+            const context = getContext("2d");
+            context.clearRect(0, 0, width, height);
+            context.drawImage(url, 0, 0, width, height);
+            luminance = Kit.logoLuminance(context.getImageData(0, 0, width, height).data);
+            loaded = url;
+        }
+    }
 
     DMaterialShape {
         id: shape

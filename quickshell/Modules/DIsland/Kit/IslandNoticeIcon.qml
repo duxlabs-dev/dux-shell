@@ -23,9 +23,10 @@ Item {
     Accessible.role: Accessible.Graphic
     Accessible.name: root.critical ? I18n.tr("Critical", "island notification: alert level") : root.alarmed ? I18n.tr("Important", "island notification: alert level") : ""
 
+    // Without a logo: the sender's initial or symbol in the round fallback.
     Loader {
         anchors.fill: parent
-        active: !root.alarmed
+        active: !shape.visible
         sourceComponent: DCircularImage {
             imageSource: root.imageSource
             fallbackIcon: root.fallbackIcon
@@ -34,18 +35,21 @@ Item {
         }
     }
 
+    // A logo sits on the filled shape; plain, the shape takes the tone that contrasts with the logo (31/10: a white
+    // Android silhouette from the phone was lost on the light theme's round picture).
     IslandAppIcon {
         id: shape
 
         anchors.fill: parent
-        visible: root.alarmed
+        visible: root.alarmed || shape.hasImage
         size: root.width
         restShape: root.critical ? "burst" : "cookie9"
-        source: root.alarmed ? root.imageSource : ""
+        source: root.imageSource
         iconName: root.alarmed && root.material ? root.fallbackIcon.substring(root.materialPrefix.length) : ""
         smoothGlyph: true
-        shapeColor: root.tones ? root.tones[0] : Theme.primaryContainer
-        iconColor: root.tones ? root.tones[1] : Theme.onPrimaryContainer
+        // An alert on its tones (IslandKit.alertTones); a plain logo on the tone that contrasts with it.
+        shapeColor: root.tones ? root.tones[0] : shape.logoShapeColor
+        iconColor: root.tones ? root.tones[1] : Theme.surfaceText
     }
 
     Loader {
