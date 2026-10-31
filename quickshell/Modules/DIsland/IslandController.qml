@@ -716,6 +716,16 @@ QtObject {
         return requestCollapse();
     }
 
+    // A press inside a hover-opened sheet takes the keyboard; a notification keeps its click-to-center path.
+    function promoteHoverToActive() {
+        if (!hoverExpanded || !expanded || notificationActive)
+            return false;
+        hoverExpanded = false;
+        hoverCloseTimer.stop();
+        keyboardDismissRequested = true;
+        return true;
+    }
+
     function requestExpand(requestKeyboardFocus) {
         if (inputSuspended)
             return false;

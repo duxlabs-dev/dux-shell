@@ -113,25 +113,14 @@ Item {
             "controlcenter": controlCenterExpandedLoader
         })
 
+    // Faces load async and stay disabled until half faded in, so ExpandedFace calls this again on each ready edge.
     function requestActivityFocus() {
-        if (root.activityId === "launcher" && launcherExpandedLoader.active) {
-            // Reserve focus until the launcher is ready.
-            root.refocusLauncher();
-            return true;
-        }
-        const face = root.focusableFaces[root.activityId]?.item;
-        if (!face || typeof face.focusFace !== "function")
-            return false;
-        return face.focusFace() === true;
-    }
-
-    function refocusLauncher() {
-        if (root.activityId !== "launcher" || !root.controller.keyboardDismissRequested || !launcherExpandedLoader.enabled)
+        if (!root.controller.keyboardDismissRequested)
             return;
-        const face = launcherExpandedLoader.item;
-        if (!face || face.activeFocus)
+        const face = root.focusableFaces[root.activityId];
+        if (!face?.enabled || !face.item || face.item.activeFocus)
             return;
-        face.focusFace();
+        face.item.focusFace?.();
     }
 
     function latchHomeExpanded() {
@@ -228,6 +217,14 @@ Item {
         opacity: !active ? 0 : root.controller.isSystemActivity(activity) ? root.systemOpacity(root.expandedOpacity) : root.expandedOpacity(activity)
         visible: opacity > 0.001
         enabled: opacity >= 0.5
+        onEnabledChanged: {
+            if (enabled && activity === root.activityId)
+                root.requestActivityFocus();
+        }
+        onItemChanged: {
+            if (item && activity === root.activityId)
+                root.requestActivityFocus();
+        }
     }
 
     CompactFace {
@@ -273,14 +270,6 @@ Item {
         active: root.controller.visualsRequested("launcher")
         asynchronous: true
         sourceComponent: root.launcherExpandedComponent
-        onEnabledChanged: {
-            if (enabled)
-                root.refocusLauncher();
-        }
-        onItemChanged: {
-            if (item)
-                root.refocusLauncher();
-        }
     }
 
     CompactFace {

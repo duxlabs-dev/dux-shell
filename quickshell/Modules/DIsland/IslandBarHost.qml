@@ -228,14 +228,14 @@ Item {
 
     function requestKeyboardFocus() {
         if (!controller.keyboardDismissRequested) {
-            keyboardActivationTimer.stop();
             keyboardFocusArmed = false;
             keyboardRearmTimer.restart();
             return;
         }
         keyboardRearmTimer.stop();
         keyboardFocusArmed = true;
-        keyboardActivationTimer.restart();
+        islandFocus.forceActiveFocus(Qt.PopupFocusReason);
+        surface.requestActivityFocus();
     }
 
     function containsGlobalPoint(gx, gy, padding) {
@@ -364,16 +364,6 @@ Item {
                 return;
             const body = root.surfaceBodyRect();
             lease.updateBody(body.x, body.y, body.width, body.height);
-        }
-    }
-
-    Timer {
-        id: keyboardActivationTimer
-
-        interval: 60
-        onTriggered: {
-            if (controller.keyboardDismissRequested && !surface.requestActivityFocus())
-                islandFocus.forceActiveFocus(Qt.PopupFocusReason);
         }
     }
 

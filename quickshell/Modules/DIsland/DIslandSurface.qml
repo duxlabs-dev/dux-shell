@@ -293,7 +293,7 @@ Item {
     }
 
     function requestActivityFocus() {
-        return contentHost.requestActivityFocus();
+        contentHost.requestActivityFocus();
     }
 
     Component.onCompleted: {
@@ -478,6 +478,19 @@ Item {
             id: islandHover
 
             onHoveredChanged: root.updateFittsPointerInside()
+        }
+
+        // Above the content so the face takes focus before the pressed control; a handler on the parent runs after it.
+        Item {
+            anchors.fill: parent
+
+            PointHandler {
+                target: null
+                onActiveChanged: {
+                    if (active)
+                        root.controller.promoteHoverToActive();
+                }
+            }
         }
     }
 
