@@ -948,15 +948,7 @@ Singleton {
                 return formatTime(time);
             }
 
-            try {
-                const localeName = (typeof I18n !== "undefined" && I18n.locale) ? I18n.locale().name : "en-US";
-                const weekday = time.toLocaleDateString(localeName, {
-                    weekday: "long"
-                });
-                return `${weekday}, ${formatTime(time)}`;
-            } catch (e) {
-                return formatTime(time);
-            }
+            return `${time.toLocaleDateString(I18n.locale(), "dddd")}, ${formatTime(time)}`;
         }
 
         function formatTime(date) {
