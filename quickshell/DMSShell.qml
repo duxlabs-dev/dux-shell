@@ -1316,6 +1316,12 @@ Item {
                 }
 
                 Variants {
+                    model: SettingsData.osdNumLockEnabled ? root.legacySystemLevelOsdScreens : []
+
+                    delegate: NumLockOSD {}
+                }
+
+                Variants {
                     model: (SettingsData.osdKeyboardLayoutEnabled && KeyboardLayoutService.available) ? SettingsData.getFilteredScreens("osd") : []
 
                     delegate: KeyboardLayoutOSD {}

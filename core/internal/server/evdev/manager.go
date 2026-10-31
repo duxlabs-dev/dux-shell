@@ -18,7 +18,9 @@ const (
 	evKeyType      = 0x01
 	evLedType      = 0x11
 	keyCapslockKey = 58
+	keyNumlockKey  = 69
 	ledCapslockKey = 1
+	ledNumlockKey  = 0
 	keyStateOn     = 1
 )
 
@@ -49,6 +51,7 @@ func NewManager() (*Manager, error) {
 	}
 
 	initialCapsLock, _ := capsLockFromDevices(devices)
+	initialNumLock, _ := numLockFromDevices(devices)
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -68,7 +71,7 @@ func NewManager() (*Manager, error) {
 	m := &Manager{
 		devices:        devices,
 		monitoredPaths: monitoredPaths,
-		state:          State{Available: true, CapsLock: initialCapsLock},
+		state:          State{Available: true, CapsLock: initialCapsLock, NumLock: initialNumLock},
 
 		closeChan: make(chan struct{}),
 		watcher:   watcher,
@@ -96,6 +99,14 @@ func armNonBlocking(device EvdevDevice) {
 }
 
 func capsLockFromDevices(devices []EvdevDevice) (bool, bool) {
+	return lockStateFromDevices(devices, ledCapslockKey)
+}
+
+func numLockFromDevices(devices []EvdevDevice) (bool, bool) {
+	return lockStateFromDevices(devices, ledNumlockKey)
+}
+
+func lockStateFromDevices(devices []EvdevDevice, ledCode int) (bool, bool) {
 	for _, device := range devices {
 		if device == nil {
 			continue
@@ -103,11 +114,14 @@ func capsLockFromDevices(devices []EvdevDevice) (bool, bool) {
 
 		ledStates, err := device.State(evLedType)
 		armNonBlocking(device)
-		if err != nil || len(ledStates) == 0 {
+		if err != nil {
 			continue
 		}
-
-		return ledStates[ledCapslockKey], true
+		state, ok := ledStates[evdev.EvCode(ledCode)]
+		if !ok {
+			continue
+		}
+		return state, true
 	}
 
 	return false, false
@@ -285,12 +299,15 @@ func (m *Manager) monitorDevice(device EvdevDevice, deviceIndex int) {
 			continue
 		}
 
-		if event.Type == evKeyType && event.Code == keyCapslockKey && event.Value == keyStateOn {
+		if event.Type == evKeyType && (event.Code == keyCapslockKey || event.Code == keyNumlockKey) && event.Value == keyStateOn {
 			time.Sleep(50 * time.Millisecond)
-			m.readAndUpdateCapsLockState(deviceIndex)
-		} else if event.Type == evLedType && event.Code == ledCapslockKey {
-			capsLockState := event.Value == keyStateOn
-			m.updateCapsLockStateDirect(capsLockState)
+			ledCode := ledCapslockKey
+			if event.Code == keyNumlockKey {
+				ledCode = ledNumlockKey
+			}
+			m.readAndUpdateLockState(deviceIndex, ledCode)
+		} else if event.Type == evLedType && (event.Code == ledCapslockKey || event.Code == ledNumlockKey) {
+			m.updateLockStateDirect(int(event.Code), event.Value == keyStateOn)
 		}
 	}
 }
@@ -311,7 +328,7 @@ func isClosedError(err error) bool {
 	}
 }
 
-func (m *Manager) readAndUpdateCapsLockState(deviceIndex int) {
+func (m *Manager) readAndUpdateLockState(deviceIndex int, ledCode int) {
 	m.devicesMutex.RLock()
 	if deviceIndex >= len(m.devices) {
 		m.devicesMutex.RUnlock()
@@ -327,27 +344,41 @@ func (m *Manager) readAndUpdateCapsLockState(deviceIndex int) {
 	}
 	m.devicesMutex.RUnlock()
 
-	capsLockState, ok := capsLockFromDevices(ordered)
+	lockState, ok := lockStateFromDevices(ordered, ledCode)
 	if !ok {
-		log.Debug("No LED-capable device available for caps lock state")
+		log.Debugf("No keyboard LED state available for LED code %d", ledCode)
 		return
 	}
 
-	m.updateCapsLockStateDirect(capsLockState)
+	m.updateLockStateDirect(ledCode, lockState)
 }
 
-func (m *Manager) updateCapsLockStateDirect(capsLockState bool) {
+func (m *Manager) readAndUpdateCapsLockState(deviceIndex int) {
+	m.readAndUpdateLockState(deviceIndex, ledCapslockKey)
+}
+
+func (m *Manager) updateLockStateDirect(ledCode int, enabled bool) {
 	m.stateMutex.Lock()
-	if m.state.CapsLock == capsLockState {
+	var current *bool
+	switch ledCode {
+	case ledCapslockKey:
+		current = &m.state.CapsLock
+	case ledNumlockKey:
+		current = &m.state.NumLock
+	default:
+		m.stateMutex.Unlock()
+		return
+	}
+	if *current == enabled {
 		m.stateMutex.Unlock()
 		return
 	}
 
-	m.state.CapsLock = capsLockState
+	*current = enabled
 	newState := m.state
 	m.stateMutex.Unlock()
 
-	log.Debugf("Caps lock state: %v", newState.CapsLock)
+	log.Debugf("Keyboard lock LED %d state: %v", ledCode, enabled)
 	m.notifySubscribers(newState)
 }
 

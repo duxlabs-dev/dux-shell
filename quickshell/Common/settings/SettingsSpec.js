@@ -1478,6 +1478,9 @@ var LOCAL_SPEC = {
     osdCapsLockEnabled: {
         def: true
     },
+    osdNumLockEnabled: {
+        def: true
+    },
     osdKeyboardLayoutEnabled: {
         def: false
     },

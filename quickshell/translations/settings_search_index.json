@@ -8991,6 +8991,21 @@
     ]
   },
   {
+    "section": "osdNumLockEnabled",
+    "label": "Num lock",
+    "tabIndex": 18,
+    "category": "On-screen displays",
+    "keywords": [
+      "displays",
+      "indicator",
+      "lock",
+      "num",
+      "osd",
+      "popup",
+      "screen"
+    ]
+  },
+  {
     "section": "osd",
     "label": "On-screen displays",
     "tabIndex": 18,
