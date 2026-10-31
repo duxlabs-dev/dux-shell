@@ -79,6 +79,7 @@ Singleton {
     signal filesEvent(var data)
 
     property bool capsLockState: false
+    property bool numLockState: false
     property bool screensaverInhibited: false
     property var screensaverInhibitors: []
 
@@ -319,6 +320,9 @@ Singleton {
         } else if (service === "evdev") {
             if (data.capsLock !== undefined) {
                 capsLockState = data.capsLock;
+            }
+            if (data.numLock !== undefined) {
+                numLockState = data.numLock;
             }
             evdevStateUpdate(data);
         } else if (service === "gamma") {
