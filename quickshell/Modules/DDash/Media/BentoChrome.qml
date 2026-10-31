@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Layouts
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
@@ -22,7 +21,7 @@ MediaChromeBase {
     readonly property real artworkSize: Math.round(Math.min(artColumnWidth, artSize))
     readonly property bool lyricsShown: root.player.lyricsOpen && root.player.live
     // The transport takes what the artwork leaves over, so both columns end up about as tall.
-    readonly property real deckFixedHeight: sourceRow.height + titleBlock.height + seekBlock.height + optionRow.height + Theme.spacingXL * 2 + Theme.spacingL * 2
+    readonly property real deckFixedHeight: sourceRow.height + titleBlock.height + seekBlock.height + optionGroup.height + Theme.spacingXL * 2 + Theme.spacingL * 2
     readonly property real transportSize: Math.round(Math.max(Theme.buttonHeightM, Math.min(DashMetrics.mediaTransportMaxHeight, artworkSize - deckFixedHeight)))
     readonly property real stageWidth: lyricsShown && !compact ? artColumnWidth : artworkSize
     readonly property real stageHeight: lyricsShown && !compact ? Math.max(artworkSize, deck.height) : artworkSize
@@ -30,9 +29,8 @@ MediaChromeBase {
 
     surfaceColor: Theme.foregroundColor(Theme.hostSurface)
     baseHeight: Math.max(DashMetrics.tabMinHeight, padding * 2 + columnHeight)
-    focusTargets: [playerButton].concat(seekbar.canSeek && root.hasSeekbar ? [seekbar] : [], transport.focusTargets, optionRow.focusTargets)
-    panelButtons: [playerButton, outputButton]
-    inlineVolume: true
+    focusTargets: [playerButton].concat(seekbar.canSeek && root.hasSeekbar ? [seekbar] : [], transport.focusTargets, optionGroup.segments)
+    panelButtons: [playerButton, volumeButton, outputButton]
     inlinePanel: playbackSheet
 
     MediaArtView {
@@ -157,7 +155,7 @@ MediaChromeBase {
                     loop: true
                     fadeEdges: true
                     pxPerMs: DashMetrics.mediaTextScrollSpeed / 1000
-                    stepInterval: DashMetrics.mediaTextScrollStep
+                    frameDriven: true
                 }
 
                 ScrollingText {
@@ -170,7 +168,7 @@ MediaChromeBase {
                     loop: true
                     fadeEdges: true
                     pxPerMs: DashMetrics.mediaTextScrollSpeed / 1000
-                    stepInterval: DashMetrics.mediaTextScrollStep
+                    frameDriven: true
                 }
             }
 
@@ -235,17 +233,39 @@ MediaChromeBase {
                     visible: hasControls
                 }
 
-                RowLayout {
-                    id: optionRow
+                Row {
+                    id: optionGroup
 
-                    readonly property var focusTargets: [lyricsButton, volumeSlider, outputButton]
+                    readonly property var segments: [lyricsButton, shuffleButton, repeatButton, volumeButton, outputButton]
+                    readonly property var shownSegments: segments.filter(segment => segment.visible)
+                    readonly property real segmentWidth: Theme.buttonHeightM
+                    readonly property real outerRadius: Theme.fullRadius(Theme.buttonHeightS, Theme.buttonHeightS)
+                    readonly property real innerRadius: Math.min(Theme.innerRadius("s"), outerRadius)
+                    readonly property real pressedInnerRadius: Math.min(Theme.innerRadius("xs"), outerRadius)
 
-                    width: parent.width
-                    spacing: Theme.spacingM
+                    function joinRadius(segment) {
+                        if (!Theme.shapeMorph)
+                            return innerRadius;
+                        if (segment.pressed)
+                            return pressedInnerRadius;
+                        return segment.checked ? outerRadius : innerRadius;
+                    }
+
+                    function leadingRadius(segment) {
+                        return segment === shownSegments[0] ? outerRadius : joinRadius(segment);
+                    }
+
+                    function trailingRadius(segment) {
+                        return segment === shownSegments[shownSegments.length - 1] ? outerRadius : joinRadius(segment);
+                    }
+
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    height: Theme.buttonHeightS
+                    spacing: Theme.groupedListGap
                     LayoutMirroring.enabled: false
                     LayoutMirroring.childrenInherit: true
 
-                    Keys.onPressed: event => event.accepted = FocusNavigation.handleHorizontalKey(event, focusTargets, false)
+                    Keys.onPressed: event => event.accepted = FocusNavigation.handleHorizontalKey(event, segments, false)
 
                     OptionButton {
                         id: lyricsButton
@@ -255,21 +275,71 @@ MediaChromeBase {
                         iconName: "lyrics"
                         checkable: true
                         checked: root.player.lyricsOpen
-                        radius: pressed && Theme.shapeMorph ? Theme.cornerRadiusXS : Theme.cornerRadiusM
                         tooltipText: I18n.tr("Lyrics", "Media player lyrics button")
                         onClicked: root.player.toggleLyrics(lyricsButton)
                     }
 
-                    MediaVolumeSlider {
-                        id: volumeSlider
-                        Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignVCenter
-                        volume: root.player.currentVolume
-                        muted: root.player.usePlayerVolume ? volume === 0 : AudioService.sinkSilent
-                        maximumVolume: root.player.maxVolumePercent
+                    MediaTransportButton {
+                        id: shuffleButton
+                        player: root.player
+                        mediaAction: "shuffle"
+                        width: optionGroup.segmentWidth
+                        variant: "tonal"
+                        iconFilled: checked
+                        containerColor: checked ? MediaAccentService.accent : MediaAccentService.accentContainer
+                        contentColor: checked ? MediaAccentService.onAccent : MediaAccentService.onAccentContainer
+
+                        MediaSegmentShape {
+                            group: optionGroup
+                        }
+                    }
+
+                    MediaTransportButton {
+                        id: repeatButton
+                        player: root.player
+                        mediaAction: "repeat"
+                        width: optionGroup.segmentWidth
+                        variant: "tonal"
+                        iconFilled: checked
+                        containerColor: checked ? MediaAccentService.accent : MediaAccentService.accentContainer
+                        contentColor: checked ? MediaAccentService.onAccent : MediaAccentService.onAccentContainer
+
+                        MediaSegmentShape {
+                            group: optionGroup
+                        }
+                    }
+
+                    OptionButton {
+                        id: volumeButton
+
+                        readonly property string panelId: "volume"
+                        readonly property bool muted: root.player.usePlayerVolume ? root.player.currentVolume === 0 : AudioService.sinkSilent
+                        readonly property real volumeRatio: root.player.maxVolumePercent > 0 ? root.player.currentVolume * 100 / root.player.maxVolumePercent : 0
+
                         enabled: root.player.volumeAvailable
-                        onVolumeChangedByUser: volume => root.player.setVolume(volume)
-                        onMuteRequested: root.player.toggleMute()
+                        iconName: root.player.getVolumeIcon()
+                        iconSize: Theme.iconSizeSmall
+                        tooltipText: (root.player.usePlayerVolume ? I18n.tr("Media volume") : I18n.tr("Volume")) + ": " + Math.round(root.player.currentVolume * 100) + "%"
+                        onClicked: root.player.togglePanel(panelId, volumeButton)
+
+                        DRingGauge {
+                            anchors.centerIn: parent
+                            width: parent.height - Theme.spacingXS * 2
+                            height: width
+                            value: !root.player.volumeAvailable || volumeButton.muted ? 0 : volumeButton.volumeRatio
+                            startAngle: 135
+                            spanAngle: 270
+                            strokeWidth: Theme.outlineWidthFocused + Theme.dividerWidth
+                            trackGap: Theme.spacingXXS
+                            ringColor: MediaAccentService.accent
+                            trackColor: MediaAccentService.accentTrack
+                            animated: root.player.live
+                        }
+
+                        MediaVolumeWheel {
+                            player: root.player
+                            button: volumeButton
+                        }
                     }
 
                     OptionButton {
@@ -277,7 +347,6 @@ MediaChromeBase {
 
                         readonly property string panelId: "devices"
 
-                        radius: Theme.fullRadius(width, height)
                         iconName: AudioService.sinkIcon(AudioService.sink)
                         tooltipText: I18n.tr("Devices", "Media player output device picker") + ": " + AudioService.displayName(AudioService.sink)
                         onClicked: root.player.togglePanel(panelId, outputButton)
@@ -296,10 +365,16 @@ MediaChromeBase {
     }
 
     component OptionButton: DIconButton {
+        width: optionGroup.segmentWidth
+        height: optionGroup.height
         focusRingColor: MediaAccentService.focusRing
         variant: "tonal"
         iconFilled: checked
         containerColor: checked ? MediaAccentService.accent : MediaAccentService.accentContainer
         contentColor: checked ? MediaAccentService.onAccent : MediaAccentService.onAccentContainer
+
+        MediaSegmentShape {
+            group: optionGroup
+        }
     }
 }

@@ -245,7 +245,6 @@ Singleton {
     readonly property int mediaTransitionGraceInterval: 3000
     readonly property int mediaPlayerLossGraceInterval: 1500
     readonly property real mediaTextScrollSpeed: 40
-    readonly property int mediaTextScrollStep: 30
     readonly property int mediaLyricsRequestTimeout: 16000
     readonly property int mediaLyricsLoadingDelay: 300
     readonly property real mediaLyricsPositionTolerance: 0.05

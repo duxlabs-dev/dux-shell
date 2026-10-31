@@ -18,6 +18,7 @@ Item {
     property real holdEndMs: 2000
     property real pxPerMs: 1 / 60
     property int stepInterval: 60
+    property bool frameDriven: false
     property real overscroll: 5
     property bool animateTextChange: false
     property bool loop: false
@@ -37,6 +38,7 @@ Item {
     property real scrollHoldMs: holdStartMs
     property real textShift: 0
     property real lastStepMs: 0
+    readonly property bool holding: scrollHoldMs > 0
 
     function resetScroll() {
         scrollOffset = 0;
@@ -69,20 +71,60 @@ Item {
         scrollOffset = next;
     }
 
+    function syncHold() {
+        if (!frameDriven || !scrollActive || !holding) {
+            holdTimer.stop();
+            return;
+        }
+        holdTimer.interval = scrollHoldMs;
+        holdTimer.restart();
+    }
+
+    onHoldingChanged: syncHold()
+
     onScrollActiveChanged: {
         if (!scrollActive) {
             resetScroll();
+            syncHold();
             return;
         }
         lastStepMs = Date.now();
+        syncHold();
     }
 
     clip: true
     implicitHeight: label.implicitHeight
     layer.enabled: fadeEdges && needsScrolling
+    // Mask kept out of the source: a layer nested in it re-dirties the source layer when it grabs.
     layer.effect: MultiEffect {
         maskEnabled: true
-        maskSource: edgeMask.item
+        maskSource: edgeMask
+
+        Rectangle {
+            id: edgeMask
+            anchors.fill: parent
+            visible: false
+            layer.enabled: true
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop {
+                    position: 0
+                    color: "transparent"
+                }
+                GradientStop {
+                    position: Math.min(0.5, Theme.spacingL / Math.max(1, root.width))
+                    color: "white"
+                }
+                GradientStop {
+                    position: 1 - Math.min(0.5, Theme.spacingL / Math.max(1, root.width))
+                    color: "white"
+                }
+                GradientStop {
+                    position: 1
+                    color: "transparent"
+                }
+            }
+        }
     }
 
     StyledText {
@@ -134,42 +176,12 @@ Item {
         }
     }
 
-    Loader {
-        id: edgeMask
-        anchors.fill: parent
-        active: root.fadeEdges && root.needsScrolling
-
-        sourceComponent: Rectangle {
-            visible: false
-            layer.enabled: true
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop {
-                    position: 0
-                    color: "transparent"
-                }
-                GradientStop {
-                    position: Math.min(0.5, Theme.spacingL / Math.max(1, root.width))
-                    color: "white"
-                }
-                GradientStop {
-                    position: 1 - Math.min(0.5, Theme.spacingL / Math.max(1, root.width))
-                    color: "white"
-                }
-                GradientStop {
-                    position: 1
-                    color: "transparent"
-                }
-            }
-        }
-    }
-
-    // Timer stepping, not NumberAnimation: a running animation commits frames every vsync (#2863).
+    // Timer stepping unless frameDriven: a running animation commits frames every vsync (#2863).
     // When cava frames are already driving renders, scroll steps ride those ticks instead (#2863).
     Timer {
         interval: root.stepInterval
         repeat: true
-        running: root.scrollActive
+        running: root.scrollActive && !root.frameDriven
         onTriggered: {
             const now = Date.now();
             const elapsed = Math.min(now - root.lastStepMs, root.stepInterval * 4);
@@ -187,11 +199,21 @@ Item {
 
     Connections {
         target: CavaService
-        enabled: root.scrollActive && SettingsData.audioVisualizerEnabled && CavaService.cavaAvailable
+        enabled: root.scrollActive && !root.frameDriven && SettingsData.audioVisualizerEnabled && CavaService.cavaAvailable
         function onValuesChanged() {
             cavaTickWatch.restart();
             root.stepScroll(40);
         }
+    }
+
+    Timer {
+        id: holdTimer
+        onTriggered: root.scrollHoldMs = 0
+    }
+
+    FrameAnimation {
+        running: root.frameDriven && root.scrollActive && !root.holding
+        onTriggered: root.stepScroll(Math.min(frameTime * 1000, root.stepInterval * 4))
     }
 
     SequentialAnimation {

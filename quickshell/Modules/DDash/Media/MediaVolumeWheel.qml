@@ -8,8 +8,9 @@ MouseArea {
     required property Item button
 
     anchors.fill: parent
-    acceptedButtons: Qt.NoButton
+    acceptedButtons: Qt.RightButton
     cursorShape: Qt.PointingHandCursor
+    onClicked: root.player.toggleMute()
     onWheel: wheel => {
         if (wheel.angleDelta.y === 0)
             return;
