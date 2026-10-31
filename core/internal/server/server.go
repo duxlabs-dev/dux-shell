@@ -21,6 +21,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/clipboard"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/cups"
 	serverDbus "github.com/duxlabs-dev/dux-shell/core/internal/server/dbus"
+	serverDgop "github.com/duxlabs-dev/dux-shell/core/internal/server/dgop"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/evdev"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/freedesktop"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/location"
@@ -441,7 +442,7 @@ func routeRequestRecovered(ctx context.Context, conn *ipc.ConnWriter, req ipc.Re
 }
 
 func getCapabilities() Capabilities {
-	caps := []string{"plugins", "dgop", "lyrics", "lyrics.plugins"}
+	caps := []string{"plugins", "dgop", "drives", "lyrics", "lyrics.plugins"}
 
 	if networkManager != nil {
 		caps = append(caps, "network")
@@ -929,6 +930,7 @@ func cleanupManagers() {
 	if filesService != nil {
 		filesService.Close()
 	}
+	serverDgop.Close()
 }
 
 type Server struct {

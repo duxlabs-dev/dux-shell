@@ -15,7 +15,7 @@ Popup {
     property var parentFocusItem: null
     property var transientSurfaceTracker: null
 
-    readonly property alias confirmationOpen: confirmation.visible
+    readonly property bool confirmationOpen: confirmation.opened
 
     signal menuClosed
     signal processKilled
@@ -33,7 +33,10 @@ Popup {
         }
     }
 
-    readonly property var menuItems: [
+    property bool inSubmenu: false
+    readonly property string endTitle: ProcessActions.restartKind(processData) === "reload" ? I18n.tr("Quit or reload", "process menu: opens the quit, force quit, end tree and reload actions") : I18n.tr("Quit or restart", "process menu: opens the quit, force quit, end tree and restart actions")
+
+    readonly property var mainItems: [
         {
             text: I18n.tr("Copy PID"),
             icon: "tag",
@@ -56,20 +59,65 @@ Popup {
             type: "separator"
         },
         {
-            text: I18n.tr("Kill Process"),
+            text: endTitle,
+            icon: "power_settings_new",
+            action: () => Qt.callLater(setSubmenu, true),
+            enabled: ProcessActions.canEnd(processData) || ProcessActions.canRestart(processData),
+            submenu: true
+        }
+    ]
+
+    readonly property var endItems: [
+        {
+            text: I18n.tr("Back"),
+            icon: "arrow_back",
+            action: () => Qt.callLater(setSubmenu, false),
+            enabled: true
+        },
+        {
+            type: "separator"
+        },
+        {
+            text: I18n.tr("Quit", "process action: ask the process to exit (SIGTERM)"),
             icon: "close",
-            action: killProcess,
-            enabled: true,
+            action: () => requestAction("quit"),
+            enabled: ProcessActions.canEnd(processData),
             dangerous: true
         },
         {
-            text: I18n.tr("Force Kill (SIGKILL)"),
+            text: I18n.tr("Force quit", "process action: kill the process immediately (SIGKILL)"),
             icon: "dangerous",
-            action: forceKillProcess,
-            enabled: processData && processData.pid > 1000,
+            action: () => requestAction("force"),
+            enabled: ProcessActions.canEnd(processData),
             dangerous: true
+        },
+        {
+            text: I18n.tr("End process tree", "process action: quit the process and every process it started"),
+            icon: "account_tree",
+            action: () => requestAction("tree"),
+            enabled: ProcessActions.canEnd(processData),
+            dangerous: true
+        },
+        {
+            text: ProcessActions.title("restart", processData),
+            icon: "restart_alt",
+            action: () => requestAction("restart"),
+            enabled: ProcessActions.canRestart(processData)
         }
     ]
+
+    readonly property var menuItems: inSubmenu ? endItems : mainItems
+
+    function setSubmenu(on) {
+        inSubmenu = on;
+        selectedIndex = keyboardNavigation ? (on ? 2 : menuItems.length - 1) : -1;
+    }
+
+    // The end actions list is taller than the main one; keep it inside the parent.
+    onHeightChanged: {
+        if (visible && parent)
+            y = Math.max(0, Math.min(y, parent.height - height));
+    }
 
     readonly property int visibleItemCount: {
         let count = 0;
@@ -98,6 +146,7 @@ Popup {
 
         processContextMenu.x = finalX;
         processContextMenu.y = finalY;
+        inSubmenu = false;
         keyboardNavigation = fromKeyboard || false;
         selectedIndex = fromKeyboard ? 0 : -1;
         open();
@@ -136,14 +185,14 @@ Popup {
 
     function copyPid() {
         if (processData)
-            Quickshell.execDetached(["dms", "cl", "copy", processData.pid.toString()]);
+            Quickshell.execDetached(["dms", "cl", "copy", "--", processData.pid.toString()]);
         close();
     }
 
     function copyName() {
         if (processData) {
             const name = processData.command || "";
-            Quickshell.execDetached(["dms", "cl", "copy", name]);
+            Quickshell.execDetached(["dms", "cl", "copy", "--", name]);
         }
         close();
     }
@@ -151,26 +200,17 @@ Popup {
     function copyFullCommand() {
         if (processData) {
             const fullCmd = processData.fullCommand || processData.command || "";
-            Quickshell.execDetached(["dms", "cl", "copy", fullCmd]);
+            Quickshell.execDetached(["dms", "cl", "copy", "--", fullCmd]);
         }
         close();
     }
 
-    function killProcess() {
-        requestKill(false);
-    }
-
-    function forceKillProcess() {
-        requestKill(true);
-    }
-
-    function requestKill(force) {
-        if (!processData || processData.pid <= 0 || (force && processData.pid <= 1000))
+    function requestAction(action) {
+        if (!processData || !(action === "restart" ? ProcessActions.canRestart(processData) : ProcessActions.canEnd(processData)))
             return;
-        confirmation.process = Object.assign({}, processData);
-        confirmation.forceKill = force;
+        const process = Object.assign({}, processData);
         close();
-        confirmation.open();
+        confirmation.open(process, action, action !== "restart" && ProcessActions.isCritical(process));
     }
 
     function dismiss() {
@@ -178,60 +218,18 @@ Popup {
         confirmation.close();
     }
 
-    Popup {
+    ProcessActionDialog {
         id: confirmation
-        property var process: null
-        property bool forceKill: false
         parent: processContextMenu.parent
-        width: Math.min(ProcessListMetrics.dialogWidth, parent.width - Theme.spacingL * 2)
-        height: confirmationContent.implicitHeight + Theme.spacingL * 2
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
-        padding: Theme.spacingL
-        modal: true
-        focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        onOpened: {
-            confirmationContent.reset();
-            confirmationContent.selectedButton = 0;
-            confirmationContent.keyboardNavigation = true;
-            confirmationContent.forceActiveFocus();
+        onChosen: (action, process) => {
+            if ((process?.pid ?? 0) <= 0)
+                return;
+            ProcessActions.run(action, process);
+            processContextMenu.processKilled();
         }
-        onClosed: focusRestore.restart()
-
-        background: Rectangle {
-            color: Theme.isFloatingWindow(processContextMenu) ? Theme.floatingWindowSurface : Theme.readableSurface
-            border.width: Theme.layerOutlineWidth
-            border.color: Theme.outlineMedium
-            radius: Theme.windowRadius
-        }
-
-        contentItem: ConfirmDialogContent {
-            id: confirmationContent
-            confirmTitle: confirmation.forceKill ? I18n.tr("Force Kill (SIGKILL)") : I18n.tr("Kill Process")
-            confirmMessage: (confirmation.process?.command ?? "") + " (" + I18n.tr("PID %1", "%1 is a process id").arg(confirmation.process?.pid ?? 0) + ")"
-            confirmButtonText: I18n.tr("Kill Process")
-            confirmButtonColor: Theme.error
-            Keys.onPressed: event => {
-                if (event.key === Qt.Key_Backtab) {
-                    keyboardNavigation = true;
-                    selectedButton = selectedButton === 0 ? 1 : 0;
-                    event.accepted = true;
-                    return;
-                }
-                handleKey(event);
-            }
-            onCancelled: confirmation.close()
-            onButtonActivated: button => {
-                const pid = confirmation.process?.pid ?? 0;
-                const force = confirmation.forceKill;
-                confirmation.close();
-                if (button !== 1 || pid <= 0)
-                    return;
-                const args = force ? ["kill", "-9", pid.toString()] : ["kill", pid.toString()];
-                Quickshell.execDetached(args);
-                processContextMenu.processKilled();
-            }
+        onOpenedChanged: {
+            if (!opened)
+                focusRestore.restart();
         }
     }
 
@@ -244,13 +242,16 @@ Popup {
     }
 
     width: ProcessListMetrics.menuWidth
-    height: menuColumn.implicitHeight + ProcessListMetrics.menuPadding * 2
+    height: menuColumn.implicitHeight
     padding: 0
-    modal: false
+    // Modal so the click that closes the menu doesn't also act on the row under it.
+    modal: true
+    dim: false
     closePolicy: Popup.CloseOnEscape
 
     onClosed: {
         closePolicy = Popup.CloseOnEscape;
+        inSubmenu = false;
         keyboardNavigation = false;
         selectedIndex = -1;
         menuClosed();
@@ -273,12 +274,22 @@ Popup {
         color: "transparent"
     }
 
-    contentItem: Rectangle {
-        color: Theme.foregroundColor(Theme.chipSurfaceNested, Theme.isFloatingWindow(processContextMenu))
-        radius: Theme.windowRadius
-        border.color: Theme.outlineMedium
-        border.width: Theme.layerOutlineWidth
+    // Groups split at separators; each is its own card, so the end actions stand apart from the copy actions.
+    readonly property var groups: {
+        const out = [[]];
+        menuItems.forEach((entry, index) => {
+            if (entry.type === "separator")
+                out.push([]);
+            else
+                out[out.length - 1].push({
+                    "entry": entry,
+                    "index": index
+                });
+        });
+        return out.filter(g => g.length > 0);
+    }
 
+    contentItem: Item {
         Item {
             id: keyboardHandler
             anchors.fill: parent
@@ -304,10 +315,19 @@ Popup {
                     activateSelected();
                     event.accepted = true;
                     return;
+                case Qt.Key_Right:
+                case Qt.Key_L:
+                    if (menuItems[selectedIndex]?.submenu && menuItems[selectedIndex].enabled)
+                        setSubmenu(true);
+                    event.accepted = true;
+                    return;
                 case Qt.Key_Escape:
                 case Qt.Key_Left:
                 case Qt.Key_H:
-                    close();
+                    if (inSubmenu)
+                        setSubmenu(false);
+                    else
+                        close();
                     event.accepted = true;
                     return;
                 }
@@ -316,114 +336,128 @@ Popup {
 
         Column {
             id: menuColumn
-            anchors.fill: parent
-            anchors.margins: ProcessListMetrics.menuPadding
-            spacing: Theme.groupedListGap
+            anchors.left: parent.left
+            anchors.right: parent.right
+            spacing: Theme.spacingXS
 
             Repeater {
-                model: menuItems
+                model: processContextMenu.groups
 
-                Item {
-                    width: parent.width
-                    height: modelData.type === "separator" ? Theme.spacingS : ProcessListMetrics.menuRowHeight
-                    visible: modelData.type !== "separator" || index > 0
+                Rectangle {
+                    id: groupCard
+                    required property var modelData
+                    width: menuColumn.width
+                    height: groupColumn.implicitHeight + ProcessListMetrics.menuPadding * 2
+                    color: Theme.foregroundColor(Theme.chipSurfaceNested, Theme.isFloatingWindow(processContextMenu))
+                    radius: Theme.windowRadius
+                    border.color: Theme.outlineMedium
+                    border.width: Theme.layerOutlineWidth
 
-                    property int itemVisibleIndex: {
-                        let count = 0;
-                        for (let i = 0; i < index; i++) {
-                            if (menuItems[i].type !== "separator")
-                                count++;
-                        }
-                        return count;
-                    }
+                    Column {
+                        id: groupColumn
+                        anchors.fill: parent
+                        anchors.margins: ProcessListMetrics.menuPadding
+                        spacing: Theme.groupedListGap
 
-                    Rectangle {
-                        visible: modelData.type === "separator"
-                        width: parent.width - Theme.spacingS * 2
-                        height: Theme.dividerWidth
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: Theme.outlineStrong
-                    }
+                        Repeater {
+                            model: groupCard.modelData
 
-                    Rectangle {
-                        id: menuItem
-                        visible: modelData.type !== "separator"
-                        width: parent.width
-                        height: ProcessListMetrics.menuRowHeight
-                        radius: Theme.cornerRadiusM
-                        color: {
-                            if (!modelData.enabled)
-                                return "transparent";
-                            const isSelected = keyboardNavigation && selectedIndex === index;
-                            if (modelData.dangerous) {
-                                if (isSelected)
-                                    return Theme.errorPressed;
-                                return menuItemArea.containsMouse ? Theme.errorHover : Theme.withAlpha(Theme.errorHover, 0);
-                            }
-                            if (isSelected)
-                                return Theme.primaryPressed;
-                            return menuItemArea.containsMouse ? BlurService.hoverColor(Theme.widgetBaseHoverColor) : Theme.withAlpha(BlurService.hoverColor(Theme.widgetBaseHoverColor), 0);
-                        }
+                            Item {
+                                id: row
+                                required property var modelData
+                                readonly property var entry: modelData.entry
+                                readonly property int itemIndex: modelData.index
+                                width: groupColumn.width
+                                height: ProcessListMetrics.menuRowHeight
 
-                        Row {
-                            anchors.left: parent.left
-                            anchors.leftMargin: Theme.spacingS
-                            anchors.right: parent.right
-                            anchors.rightMargin: Theme.spacingS
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: Theme.spacingS
+                                Rectangle {
+                                    id: menuItem
+                                    width: parent.width
+                                    height: ProcessListMetrics.menuRowHeight
+                                    radius: Theme.cornerRadiusM
+                                    color: {
+                                        if (!row.entry.enabled)
+                                            return "transparent";
+                                        const isSelected = keyboardNavigation && selectedIndex === row.itemIndex;
+                                        if (row.entry.dangerous) {
+                                            if (isSelected)
+                                                return Theme.errorPressed;
+                                            return menuItemArea.containsMouse ? Theme.errorHover : Theme.withAlpha(Theme.errorHover, 0);
+                                        }
+                                        if (isSelected)
+                                            return Theme.selectedContainer;
+                                        return menuItemArea.pressed ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerPressed) : menuItemArea.containsMouse ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerHover) : "transparent";
+                                    }
 
-                            DIcon {
-                                name: modelData.icon || ""
-                                size: Theme.iconSizeSmall
-                                color: {
-                                    if (!modelData.enabled)
-                                        return Theme.onSurface_38;
-                                    const isSelected = keyboardNavigation && selectedIndex === index;
-                                    if (modelData.dangerous && (menuItemArea.containsMouse || isSelected))
-                                        return Theme.error;
-                                    return Theme.surfaceText;
+                                    Row {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: Theme.spacingS
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: Theme.spacingS
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: Theme.spacingS
+
+                                        DIcon {
+                                            name: row.entry.icon || ""
+                                            size: Theme.iconSizeSmall
+                                            color: {
+                                                if (!row.entry.enabled)
+                                                    return Theme.onSurface_38;
+                                                const isSelected = keyboardNavigation && selectedIndex === row.itemIndex;
+                                                if (row.entry.dangerous && (menuItemArea.containsMouse || isSelected))
+                                                    return Theme.error;
+                                                return Theme.surfaceText;
+                                            }
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+
+                                        StyledText {
+                                            text: row.entry.text || ""
+                                            font.pixelSize: Theme.fontSizeSmall
+                                            font.weight: Theme.fontWeight
+                                            color: {
+                                                if (!row.entry.enabled)
+                                                    return Theme.onSurface_38;
+                                                const isSelected = keyboardNavigation && selectedIndex === row.itemIndex;
+                                                if (row.entry.dangerous && (menuItemArea.containsMouse || isSelected))
+                                                    return Theme.error;
+                                                return Theme.surfaceText;
+                                            }
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            elide: Text.ElideRight
+                                            width: parent.width - Theme.iconSizeSmall * (row.entry.submenu ? 2 : 1) - Theme.spacingS * (row.entry.submenu ? 2 : 1)
+                                        }
+
+                                        DIcon {
+                                            visible: row.entry.submenu ?? false
+                                            name: "chevron_right"
+                                            size: Theme.iconSizeSmall - 2
+                                            color: row.entry.enabled ? Theme.surfaceText : Theme.onSurface_38
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+                                    }
+
+                                    DRipple {
+                                        id: menuItemRipple
+                                        rippleColor: row.entry.dangerous ? Theme.error : Theme.surfaceText
+                                        cornerRadius: menuItem.radius
+                                    }
+
+                                    MouseArea {
+                                        id: menuItemArea
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: row.entry.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                        enabled: row.entry.enabled ?? false
+                                        onEntered: {
+                                            keyboardNavigation = false;
+                                            selectedIndex = row.itemIndex;
+                                        }
+                                        onPressed: mouse => menuItemRipple.trigger(mouse.x, mouse.y)
+                                        onClicked: row.entry.action()
+                                    }
                                 }
-                                anchors.verticalCenter: parent.verticalCenter
                             }
-
-                            StyledText {
-                                text: modelData.text || ""
-                                font.pixelSize: Theme.fontSizeSmall
-                                font.weight: Theme.fontWeight
-                                color: {
-                                    if (!modelData.enabled)
-                                        return Theme.onSurface_38;
-                                    const isSelected = keyboardNavigation && selectedIndex === index;
-                                    if (modelData.dangerous && (menuItemArea.containsMouse || isSelected))
-                                        return Theme.error;
-                                    return Theme.surfaceText;
-                                }
-                                anchors.verticalCenter: parent.verticalCenter
-                                elide: Text.ElideRight
-                                width: parent.width - Theme.iconSizeSmall - Theme.spacingS
-                            }
-                        }
-
-                        DRipple {
-                            id: menuItemRipple
-                            rippleColor: modelData.dangerous ? Theme.error : Theme.surfaceText
-                            cornerRadius: menuItem.radius
-                        }
-
-                        MouseArea {
-                            id: menuItemArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: modelData.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            enabled: modelData.enabled ?? false
-                            onEntered: {
-                                keyboardNavigation = false;
-                                selectedIndex = index;
-                            }
-                            onPressed: mouse => menuItemRipple.trigger(mouse.x, mouse.y)
-                            onClicked: modelData.action()
                         }
                     }
                 }

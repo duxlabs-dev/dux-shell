@@ -30,7 +30,7 @@ func main() {
 	disableMemProfilingUnlessRequested()
 	clipboard.MaybeServeAndExit()
 
-	if os.Geteuid() == 0 && !isReadOnlyCommand(os.Args) {
+	if os.Geteuid() == 0 && !isReadOnlyCommand(os.Args) && !isRootHelper(os.Args) {
 		log.Fatal("This program should not be run as root. Exiting.")
 	}
 

@@ -16,9 +16,10 @@ function service() {
         SettingsData: { controlCenterWidgets: [{ id: "diskUsage", enabled: true }] },
         DMSService: { sendRequest: (method, params, callback) => requests.push({ method, params, callback }) },
         log: { warn() {} },
-        statsUpdated() {}
+        statsUpdated() {},
+        deviceHistory: {}
     });
-    const methods = ["initializeDiskMounts", "hasModule", "parseData", "releaseUnusedData"];
+    const methods = ["initializeDiskMounts", "hasModule", "parseData", "releaseUnusedData", "removeDeviceHistory"];
     const found = [];
     for (const match of source.matchAll(/^    function (\w+)\([^\n]*\)(?:: \w+)? \{\n[\s\S]*?^    \}/gm)) {
         if (!methods.includes(match[1]))

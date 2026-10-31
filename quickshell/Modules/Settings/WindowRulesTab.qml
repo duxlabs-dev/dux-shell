@@ -642,7 +642,7 @@ Item {
                             StyledText {
                                 width: parent.width
                                 text: I18n.tr("Source: %1", "window rule detail, %1 is the config file path").arg(externalCard.modelData.source || "")
-                                font.pixelSize: Theme.fontSizeSmall - 1
+                                font.pixelSize: Theme.fontSizeXSmall
                                 color: Theme.surfaceVariantText
                                 elide: Text.ElideMiddle
                                 topPadding: Theme.spacingXS

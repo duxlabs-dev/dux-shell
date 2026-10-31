@@ -6,7 +6,7 @@ import qs.Modules.ProcessList
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
-import "../Common/Format.js" as Format
+import "../Modules/ProcessList/ProcessColumns.js" as ProcessColumns
 
 DFloatingWindow {
     id: processListModal
@@ -15,6 +15,7 @@ DFloatingWindow {
     property int currentTab: 0
     property string searchText: ""
     property string expandedPid: ""
+    property var processColumns: ProcessColumns.DEFAULT_COLUMNS
     property bool shouldHaveFocus: visible
     readonly property alias modalFocusScope: contentFocusScope
     property alias shouldBeVisible: processListModal.visible
@@ -77,13 +78,20 @@ DFloatingWindow {
     objectName: "processListModal"
     title: I18n.tr("System Monitor", "sysmon window title")
     minimumSize: Qt.size(Math.min(Math.round(Theme.fontSizeMedium * 48), Screen.width), Math.min(Math.round(Theme.fontSizeMedium * 34), Screen.height))
-    implicitWidth: Math.round(Theme.fontSizeMedium * 71)
+    implicitWidth: Math.round(Theme.fontSizeMedium * 91)
     implicitHeight: ProcessListMetrics.windowHeight
     visible: false
 
     Ref {
         service: DgopService
-        modules: ["cpu", "memory", "network", "disk", "system", "gpu"]
+        // Device histories keep filling while the window is open, whichever page is shown.
+        modules: ["cpu", "memory", "network", "disk", "system", "gpu", "disk-rate", "net-rate"]
+        active: processListModal.visible
+    }
+
+    // Held for the whole window, so drive cards survive tab switches and the SMART report is not read again.
+    Ref {
+        service: DriveService
         active: processListModal.visible
     }
 
@@ -96,6 +104,7 @@ DFloatingWindow {
 
     onVisibleChanged: {
         if (!visible) {
+            DgopService.lock();
             processContextMenu.dismiss();
             closingModal();
             searchText = "";
@@ -127,7 +136,7 @@ DFloatingWindow {
         focus: true
 
         Keys.onPressed: event => {
-            if (processContextMenu.visible || processContextMenu.confirmationOpen)
+            if (processContextMenu.visible || processContextMenu.confirmationOpen || columnPicker.shown)
                 return;
 
             switch (event.key) {
@@ -198,6 +207,7 @@ DFloatingWindow {
         }
 
         ColumnLayout {
+            id: mainColumn
             anchors.fill: parent
             spacing: 0
             visible: DgopService.dgopAvailable
@@ -209,208 +219,158 @@ DFloatingWindow {
                 onCloseRequested: processListModal.hide()
             }
 
-            DNavigationBar {
-                id: viewNavigation
-                Layout.fillWidth: true
-                Layout.leftMargin: Theme.windowInset
-                Layout.rightMargin: Theme.windowInset
-                nextFocusTarget: currentTab === 0 ? searchField : null
-                model: [
-                    {
-                        text: I18n.tr("Processes"),
-                        icon: "list_alt"
-                    },
-                    {
-                        text: I18n.tr("Performance"),
-                        icon: "monitoring"
-                    },
-                    {
-                        text: I18n.tr("Disks", "process list window tab name"),
-                        icon: "storage"
-                    },
-                    {
-                        text: I18n.tr("System", "noun, tab name, process filter and app category"),
-                        icon: "computer"
-                    }
-                ]
-                currentIndex: processListModal.currentTab
-                onActivated: index => processListModal.currentTab = index
-            }
-
-            ProcessSummary {
-                Layout.fillWidth: true
-                Layout.fillHeight: false
-                Layout.leftMargin: Theme.windowInset
-                Layout.rightMargin: Theme.windowInset
-                Layout.topMargin: Theme.spacingS
-                visible: currentTab === 0
-            }
-
             RowLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: Theme.windowInset
-                Layout.rightMargin: Theme.windowInset
-                Layout.topMargin: Theme.spacingS
-                spacing: Theme.spacingM
-                visible: currentTab === 0
-
-                DSearchField {
-                    id: searchField
-                    Layout.fillWidth: true
-                    placeholderText: I18n.tr("Search processes...", "process search placeholder")
-                    text: processListModal.searchText
-                    onTextChanged: processListModal.searchText = text
-                    ignoreUpDownKeys: true
-                    keyForwardTargets: [contentFocusScope]
-                    KeyNavigation.backtab: viewNavigation
-                }
-
-                ProcessFilterChips {
-                    id: processFilterGroup
-                    Layout.preferredWidth: singleRowWidth
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.margins: Theme.spacingL
-                Layout.topMargin: Theme.spacingS
-                Layout.bottomMargin: Theme.spacingS
-                radius: Theme.cornerRadius
-                color: "transparent"
-                clip: true
-                readonly property bool isFloatingWindowSurface: true
+                spacing: 0
 
-                Loader {
-                    id: processesTabLoader
-                    anchors.fill: parent
-                    active: processListModal.visible
-                    visible: currentTab === 0
-                    sourceComponent: ProcessesView {
-                        searchText: processListModal.searchText
-                        expandedPid: processListModal.expandedPid
-                        contextMenu: processContextMenu
-                        onExpandedPidChanged: processListModal.expandedPid = expandedPid
+                DNavigationBar {
+                    id: viewNavigation
+                    Layout.preferredWidth: Theme.navigationRailWidth
+                    Layout.preferredHeight: implicitHeight
+                    Layout.alignment: Qt.AlignTop
+                    orientation: Qt.Vertical
+                    evenlySpaced: false
+                    spacing: Theme.spacingM
+                    nextFocusTarget: currentTab === 0 ? searchField : null
+                    model: [
+                        {
+                            text: I18n.tr("Processes"),
+                            icon: "list_alt"
+                        },
+                        {
+                            text: I18n.tr("Performance"),
+                            icon: "monitoring"
+                        },
+                        {
+                            text: I18n.tr("Disks", "process list window tab name"),
+                            icon: "storage"
+                        },
+                        {
+                            text: I18n.tr("System", "noun, tab name, process filter and app category"),
+                            icon: "computer"
+                        }
+                    ]
+                    currentIndex: processListModal.currentTab
+                    onActivated: index => processListModal.currentTab = index
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.leftMargin: Theme.spacingS
+                    Layout.rightMargin: Theme.windowInset
+                    Layout.bottomMargin: Theme.windowInset
+                    spacing: Theme.spacingM
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Theme.spacingM
+                        visible: currentTab === 0
+
+                        DSearchField {
+                            id: searchField
+                            Layout.fillWidth: true
+                            Layout.maximumWidth: Theme.fontSizeMedium * 30
+                            placeholderText: I18n.tr("Search processes...", "process search placeholder")
+                            text: processListModal.searchText
+                            onTextChanged: processListModal.searchText = text
+                            ignoreUpDownKeys: true
+                            keyForwardTargets: [contentFocusScope]
+                            KeyNavigation.backtab: viewNavigation
+                        }
+
+                        ProcessFilterChips {
+                            id: processFilterGroup
+                            Layout.preferredWidth: singleRowWidth
+                        }
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            horizontalAlignment: Text.AlignRight
+                            text: processesTabLoader.item?.processCountText ?? ""
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                        }
+
+                        DIconButton {
+                            id: lockButton
+                            readonly property bool busy: DgopService.unlocking || DgopService.unlockLoading
+                            iconName: busy ? "" : DgopService.unlocked ? "lock_open" : "lock"
+                            variant: DgopService.unlocked ? "tonal" : "standard"
+                            enabled: !DgopService.unlocking
+                            tooltipText: DgopService.unlocked ? I18n.tr("Lock") : I18n.tr("Unlock")
+                            onClicked: DgopService.unlocked ? DgopService.lock() : DgopService.unlock()
+
+                            DSpinner {
+                                anchors.centerIn: parent
+                                size: Theme.iconSizeSmall
+                                visible: lockButton.busy
+                            }
+                        }
+
+                        DIconButton {
+                            iconName: "view_column"
+                            tooltipText: I18n.tr("Columns")
+                            onClicked: columnPicker.present()
+                        }
                     }
-                }
 
-                Loader {
-                    id: performanceTabLoader
-                    anchors.fill: parent
-                    anchors.margins: Theme.spacingS
-                    active: processListModal.visible
-                    visible: currentTab === 1
-                    sourceComponent: PerformanceView {}
-                }
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
+                        readonly property bool isFloatingWindowSurface: true
 
-                Loader {
-                    id: disksTabLoader
-                    anchors.fill: parent
-                    anchors.margins: Theme.spacingS
-                    active: processListModal.visible
-                    visible: currentTab === 2
-                    sourceComponent: DisksView {}
-                }
+                        Loader {
+                            id: processesTabLoader
+                            anchors.fill: parent
+                            active: processListModal.visible
+                            visible: currentTab === 0
+                            sourceComponent: ProcessesView {
+                                fullList: true
+                                searchText: processListModal.searchText
+                                expandedPid: processListModal.expandedPid
+                                contextMenu: processContextMenu
+                                columns: processListModal.processColumns
+                                onExpandedPidChanged: processListModal.expandedPid = expandedPid
+                            }
+                        }
 
-                Loader {
-                    id: systemTabLoader
-                    anchors.fill: parent
-                    anchors.margins: Theme.spacingS
-                    active: processListModal.visible
-                    visible: currentTab === 3
-                    sourceComponent: SystemView {}
+                        Loader {
+                            id: performanceTabLoader
+                            anchors.fill: parent
+                            active: processListModal.visible
+                            visible: currentTab === 1
+                            sourceComponent: PerformanceView {}
+                        }
+
+                        Loader {
+                            id: disksTabLoader
+                            anchors.fill: parent
+                            active: processListModal.visible
+                            visible: currentTab === 2
+                            sourceComponent: DisksView {}
+                        }
+
+                        Loader {
+                            id: systemTabLoader
+                            anchors.fill: parent
+                            active: processListModal.visible
+                            visible: currentTab === 3
+                            sourceComponent: SystemView {}
+                        }
+                    }
                 }
             }
+        }
 
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: Theme.buttonHeightXS
-                Layout.leftMargin: Theme.windowInset
-                Layout.rightMargin: Theme.windowInset
-                Layout.bottomMargin: Theme.spacingM
-                color: "transparent"
-
-                Row {
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: Theme.spacingL
-
-                    Row {
-                        spacing: Theme.spacingXS
-
-                        DIcon {
-                            name: "swap_horiz"
-                            size: Theme.iconSizeSmall
-                            color: Theme.info
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        StyledText {
-                            text: "↓" + Format.formatRate(DgopService.networkRxRate) + " ↑" + Format.formatRate(DgopService.networkTxRate)
-                            font.pixelSize: Theme.fontSizeSmall
-                            font.family: SettingsData.monoFontFamily
-                            color: Theme.surfaceText
-                        }
-                    }
-
-                    Row {
-                        spacing: Theme.spacingXS
-
-                        DIcon {
-                            name: "storage"
-                            size: Theme.iconSizeSmall
-                            color: Theme.warning
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        StyledText {
-                            text: "↓" + Format.formatRate(DgopService.diskReadRate) + " ↑" + Format.formatRate(DgopService.diskWriteRate)
-                            font.pixelSize: Theme.fontSizeSmall
-                            font.family: SettingsData.monoFontFamily
-                            color: Theme.surfaceText
-                        }
-                    }
-
-                    Row {
-                        spacing: Theme.spacingXS
-
-                        DIcon {
-                            name: "memory"
-                            size: Theme.iconSizeSmall
-                            color: Theme.primary
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        StyledText {
-                            text: DgopService.cpuUsage.toFixed(1) + "%"
-                            font.pixelSize: Theme.fontSizeSmall
-                            font.family: SettingsData.monoFontFamily
-                            font.weight: Theme.fontWeightMedium
-                            color: DgopService.cpuUsage > 80 ? Theme.error : Theme.surfaceText
-                        }
-                    }
-
-                    Row {
-                        spacing: Theme.spacingXS
-
-                        DIcon {
-                            name: "sd_card"
-                            size: Theme.iconSizeSmall
-                            color: Theme.secondary
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        StyledText {
-                            text: DgopService.formatSystemMemory(DgopService.usedMemoryKB) + " / " + DgopService.formatSystemMemory(DgopService.totalMemoryKB)
-                            font.pixelSize: Theme.fontSizeSmall
-                            font.family: SettingsData.monoFontFamily
-                            font.weight: Theme.fontWeightMedium
-                            color: DgopService.memoryUsage > 90 ? Theme.error : Theme.surfaceText
-                        }
-                    }
-                }
-            }
+        ColumnPickerSheet {
+            id: columnPicker
+            backdrop: mainColumn
+            columns: processListModal.processColumns
+            onColumnsEdited: cols => processListModal.processColumns = cols
+            onDismissed: searchField.forceActiveFocus()
         }
     }
 

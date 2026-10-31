@@ -280,7 +280,7 @@ DModal {
 
                     StyledText {
                         text: I18n.tr("Use keys 1-3 or arrows, Enter/Space to select")
-                        font.pixelSize: Theme.fontSizeSmall - 1
+                        font.pixelSize: Theme.fontSizeXSmall
                         color: Theme.surfaceText
                     }
                 }

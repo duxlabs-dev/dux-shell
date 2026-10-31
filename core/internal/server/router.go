@@ -13,6 +13,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/cups"
 	serverDbus "github.com/duxlabs-dev/dux-shell/core/internal/server/dbus"
 	serverDgop "github.com/duxlabs-dev/dux-shell/core/internal/server/dgop"
+	serverDrives "github.com/duxlabs-dev/dux-shell/core/internal/server/drives"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/evdev"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/freedesktop"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/location"
@@ -149,6 +150,8 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 	})
 
 	mux.HandlePrefix("dgop.", requestHandler(serverDgop.HandleRequest))
+
+	mux.HandlePrefix("drives.", requestHandler(serverDrives.HandleRequest))
 
 	mux.HandlePrefix("lyrics.", requestHandler(serverLyrics.HandleRequest))
 

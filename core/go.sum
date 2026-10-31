@@ -99,8 +99,8 @@ github.com/dlclark/regexp2/v2 v2.9.1 h1:q6bZW/NN9VodqMjYXpuic2lZxdHPfFTzGS+MJxIJ
 github.com/dlclark/regexp2/v2 v2.9.1/go.mod h1:avUrQvPaLz2DrFNHJF0taWAFFX2C1GMSSoeiqFjcBmU=
 github.com/duxlabs-dev/dux-go v1.6.3-0.20261024072205-827c879f557a h1:AgR1FUYWhq5JgptZy0dwk1vsuHCXmOjxLFkB6iS/uTc=
 github.com/duxlabs-dev/dux-go v1.6.3-0.20261024072205-827c879f557a/go.mod h1:b+hBqIgOVAmlFKJ+33SY2pH4kJjXpifNeioPMxwC4Nk=
-github.com/duxlabs-dev/dux-gop v1.6.3-0.20261020163819-0e4888f1fcea h1:+z9uPtBmpXXBPupB6++/8avPA0weOkzAz7jBoE+yIok=
-github.com/duxlabs-dev/dux-gop v1.6.3-0.20261020163819-0e4888f1fcea/go.mod h1:IYu4GO7zR61w3+tDmjg71dQDInXe5TcP3lHQqJpZYR0=
+github.com/duxlabs-dev/dux-gop v1.6.3-0.20261031021448-854e306ff3e4 h1:5hWVhzBENYxtGLLkalKHrozWBBOp6x1C8kqHXPE77V0=
+github.com/duxlabs-dev/dux-gop v1.6.3-0.20261031021448-854e306ff3e4/go.mod h1:IYu4GO7zR61w3+tDmjg71dQDInXe5TcP3lHQqJpZYR0=
 github.com/ebitengine/purego v0.11.2 h1:WWiTx8rD8zYdOwSj8O/NiNbsOvSAgJMTlyV1XlbUSeU=
 github.com/ebitengine/purego v0.11.2/go.mod h1:DCHPP08djqhNSoTfImcnHYQRZmd0qhakvrozqaEYhGQ=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=

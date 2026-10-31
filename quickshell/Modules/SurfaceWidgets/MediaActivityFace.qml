@@ -115,7 +115,7 @@ Item {
     StyledTextMetrics {
         id: artistMetrics
 
-        font.pixelSize: Math.max(9, Theme.fontSizeSmall - 2) * root.contentScale
+        font.pixelSize: Theme.fontSizeXSmall * root.contentScale
         text: root.dense ? "" : root.mediaModel.artist
     }
 
@@ -204,7 +204,7 @@ Item {
                 visible: !root.dense
                 text: root.mediaModel.artist
                 color: Theme.surfaceTextSecondary
-                font.pixelSize: Math.max(9, Theme.fontSizeSmall - 2) * root.contentScale
+                font.pixelSize: Theme.fontSizeXSmall * root.contentScale
                 wrapMode: Text.NoWrap
                 elide: Text.ElideRight
             }

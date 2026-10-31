@@ -1,338 +1,159 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
-import "../../Common/Format.js" as Format
+import qs.Modules.Settings.Widgets
+import "Drives.js" as Drives
 
 Item {
     id: root
 
+    readonly property var drives: DriveService.drives ?? []
+    readonly property bool hasDrives: drives.length > 0
+    readonly property var mounts: DgopService.diskMounts ?? []
+    // With drive data, only mounts outside every drive; without it (old core, no UDisks), all of them
+    readonly property var looseMounts: hasDrives ? mounts.filter(m => !Drives.driveByMount(m.mount, drives)) : mounts
+
     Ref {
         service: DgopService
-        modules: ["disk", "diskmounts"]
+        modules: ["diskmounts"]
         active: root.visible
     }
 
-    ColumnLayout {
+    // Held until the first drive reply, so the cards do not shuffle in one by one on the first visit.
+    readonly property bool ready: DriveService.loaded || !DriveService.polling
+
+    DSpinner {
+        anchors.centerIn: parent
+        size: Theme.iconSize * 2
+        visible: !root.ready
+    }
+
+    DFlickable {
+        id: scroll
         anchors.fill: parent
-        spacing: Theme.spacingM
+        visible: root.ready
+        contentWidth: width
+        contentHeight: column.implicitHeight
 
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 80
-            radius: Theme.cornerRadius
-            color: Theme.nestedSurface
-            border.width: Theme.layerOutlineWidth
-            border.color: Theme.outlineMedium
+        ColumnLayout {
+            id: column
+            width: scroll.width
+            spacing: Theme.spacingL
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.margins: Theme.spacingM
-                spacing: Theme.spacingXL
+            Repeater {
+                model: root.drives.length
 
-                Column {
+                DriveCard {
+                    required property int index
                     Layout.fillWidth: true
-                    spacing: Theme.spacingXS
+                    expanded: index === 0
+                    drive: root.drives[index]
+                    mounts: root.mounts
+                    onInstallRequested: DriveService.install()
+                }
+            }
 
-                    Row {
-                        spacing: Theme.spacingS
+            // Spacing 0 like SettingsCard: the label's own bottom gap sets the distance to the list.
+            ColumnLayout {
+                Layout.fillWidth: true
+                visible: root.looseMounts.length > 0
+                spacing: 0
 
-                        DIcon {
-                            name: "storage"
-                            size: Theme.iconSize
-                            color: Theme.primary
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
+                SettingsSectionLabel {
+                    Layout.fillWidth: true
+                    topGap: 0
+                    text: I18n.tr("Mount Points", "mount points header in system monitor")
+                }
 
-                        StyledText {
-                            text: I18n.tr("Disk I/O", "disk io header in system monitor")
-                            font.pixelSize: Theme.fontSizeLarge
-                            font.weight: Theme.fontWeightMedium
-                            color: Theme.surfaceText
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
+                SettingsGroup {
+                    Layout.fillWidth: true
+                    customPaddingV: 0
+                    customPaddingH: Theme.spacingL
 
-                    Row {
-                        spacing: Theme.spacingL
+                    Repeater {
+                        model: root.looseMounts.length
 
-                        Row {
-                            spacing: Theme.spacingXS
+                        RowLayout {
+                            id: mountRow
 
-                            StyledText {
-                                text: I18n.tr("Read:", "disk read label")
-                                font.pixelSize: Theme.fontSizeSmall
+                            required property int index
+                            readonly property var mount: root.looseMounts[index] ?? ({})
+                            readonly property real usedRatio: (parseFloat(mount.percent) || 0) / 100
+
+                            width: parent?.width ?? 0
+                            height: Theme.buttonHeightS
+                            spacing: Theme.spacingL
+
+                            DIcon {
+                                name: "folder"
+                                size: Theme.iconSizeSmall
                                 color: Theme.surfaceVariantText
                             }
 
                             StyledText {
-                                text: Format.formatRate(DgopService.diskReadRate)
-                                font.pixelSize: Theme.fontSizeSmall
-                                font.family: SettingsData.monoFontFamily
-                                font.weight: Theme.fontWeightMedium
-                                color: Theme.primary
+                                Layout.fillWidth: true
+                                text: mountRow.mount.mount ?? ""
+                                font.pixelSize: Theme.fontSizeMedium
+                                color: Theme.surfaceText
+                                wrapMode: Text.NoWrap
+                                elide: Text.ElideMiddle
                             }
-                        }
-
-                        Row {
-                            spacing: Theme.spacingXS
 
                             StyledText {
-                                text: I18n.tr("Write:", "disk write label")
+                                Layout.preferredWidth: Theme.fontSizeMedium * 10
+                                text: mountRow.mount.device ?? ""
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceVariantText
+                                wrapMode: Text.NoWrap
+                                elide: Text.ElideMiddle
                             }
 
                             StyledText {
-                                text: Format.formatRate(DgopService.diskWriteRate)
+                                Layout.preferredWidth: Theme.fontSizeMedium * 7
+                                text: mountRow.mount.fstype ?? ""
                                 font.pixelSize: Theme.fontSizeSmall
-                                font.family: SettingsData.monoFontFamily
-                                font.weight: Theme.fontWeightMedium
-                                color: Theme.warning
+                                color: Theme.surfaceVariantText
+                                wrapMode: Text.NoWrap
+                                elide: Text.ElideRight
+                            }
+
+                            Rectangle {
+                                Layout.preferredWidth: Theme.fontSizeMedium * 10
+                                Layout.preferredHeight: Theme.spacingS
+                                radius: height / 2
+                                color: Theme.surfaceContainerHighest
+
+                                Rectangle {
+                                    width: parent.width * Math.min(1, mountRow.usedRatio)
+                                    height: parent.height
+                                    radius: height / 2
+                                    color: mountRow.usedRatio > 0.95 ? Theme.error : mountRow.usedRatio > 0.85 ? Theme.warning : Theme.primary
+                                }
+                            }
+
+                            NumericText {
+                                Layout.preferredWidth: Theme.fontSizeMedium * 12
+                                horizontalAlignment: Text.AlignRight
+                                text: (mountRow.mount.used ?? "") + " / " + (mountRow.mount.size ?? "")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceText
                             }
                         }
                     }
                 }
             }
-        }
 
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            radius: Theme.cornerRadius
-            color: Theme.nestedSurface
-            border.width: Theme.layerOutlineWidth
-            border.color: Theme.outlineMedium
-
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: Theme.spacingM
-                spacing: Theme.spacingS
-
-                Row {
-                    spacing: Theme.spacingS
-
-                    DIcon {
-                        name: "folder"
-                        size: Theme.iconSize - 2
-                        color: Theme.secondary
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    StyledText {
-                        text: I18n.tr("Mount Points", "mount points header in system monitor")
-                        font.pixelSize: Theme.fontSizeMedium
-                        font.weight: Theme.fontWeightMedium
-                        color: Theme.surfaceText
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                }
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 1
-                    color: Theme.outlineLight
-                }
-
-                DListView {
-                    id: mountListView
-
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-                    spacing: Theme.spacingXS
-
-                    model: DgopService.diskMounts
-
-                    delegate: Rectangle {
-                        required property var modelData
-                        required property int index
-
-                        width: mountListView.width
-                        height: 60
-                        radius: Theme.cornerRadius
-                        color: mountMouseArea.containsMouse ? Theme.primaryBackground : Theme.withAlpha(Theme.primaryBackground, 0)
-
-                        readonly property real usedPct: {
-                            const pctStr = modelData?.percent ?? "0%";
-                            return parseFloat(pctStr.replace("%", "")) / 100;
-                        }
-
-                        MouseArea {
-                            id: mountMouseArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                        }
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: Theme.spacingS
-                            spacing: Theme.spacingM
-
-                            Column {
-                                Layout.fillWidth: true
-                                spacing: Theme.spacingXS
-
-                                Row {
-                                    spacing: Theme.spacingS
-
-                                    DIcon {
-                                        name: {
-                                            const mp = modelData?.mount ?? "";
-                                            if (mp === "/")
-                                                return "home";
-                                            if (mp === "/home")
-                                                return "person";
-                                            if (mp.includes("boot"))
-                                                return "memory";
-                                            if (mp.includes("media") || mp.includes("mnt"))
-                                                return "usb";
-                                            return "folder";
-                                        }
-                                        size: Theme.iconSize - 4
-                                        color: Theme.surfaceText
-                                        opacity: 0.8
-                                    }
-
-                                    StyledText {
-                                        text: modelData?.mount ?? ""
-                                        font.pixelSize: Theme.fontSizeSmall
-                                        font.family: SettingsData.monoFontFamily
-                                        font.weight: Theme.fontWeightMedium
-                                        color: Theme.surfaceText
-                                    }
-                                }
-
-                                Row {
-                                    spacing: Theme.spacingS
-
-                                    StyledText {
-                                        text: modelData?.device ?? ""
-                                        font.pixelSize: Theme.fontSizeSmall - 2
-                                        font.family: SettingsData.monoFontFamily
-                                        color: Theme.surfaceVariantText
-                                    }
-
-                                    StyledText {
-                                        text: "•"
-                                        font.pixelSize: Theme.fontSizeSmall - 2
-                                        color: Theme.surfaceVariantText
-                                    }
-
-                                    StyledText {
-                                        text: modelData?.fstype ?? ""
-                                        font.pixelSize: Theme.fontSizeSmall - 2
-                                        font.family: SettingsData.monoFontFamily
-                                        color: Theme.surfaceVariantText
-                                    }
-                                }
-                            }
-
-                            Column {
-                                Layout.preferredWidth: 200
-                                spacing: Theme.spacingXS
-
-                                Rectangle {
-                                    width: parent.width
-                                    height: 8
-                                    radius: Theme.fullRadius(width, height)
-                                    color: Theme.outlineHeavy
-
-                                    Rectangle {
-                                        width: parent.width * Math.min(1, parent.parent.parent.parent.usedPct)
-                                        height: parent.height
-                                        radius: Theme.fullRadius(width, height)
-                                        color: {
-                                            const pct = parent.parent.parent.parent.usedPct;
-                                            if (pct > 0.95)
-                                                return Theme.error;
-                                            if (pct > 0.85)
-                                                return Theme.warning;
-                                            return Theme.primary;
-                                        }
-
-                                        Behavior on width {
-                                            NumberAnimation {
-                                                duration: Theme.shortDuration
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Row {
-                                    anchors.right: parent.right
-                                    spacing: Theme.spacingS
-
-                                    StyledText {
-                                        text: modelData?.used ?? ""
-                                        font.pixelSize: Theme.fontSizeSmall - 2
-                                        font.family: SettingsData.monoFontFamily
-                                        color: Theme.surfaceText
-                                    }
-
-                                    StyledText {
-                                        text: "/"
-                                        font.pixelSize: Theme.fontSizeSmall - 2
-                                        color: Theme.surfaceVariantText
-                                    }
-
-                                    StyledText {
-                                        text: modelData?.size ?? ""
-                                        font.pixelSize: Theme.fontSizeSmall - 2
-                                        font.family: SettingsData.monoFontFamily
-                                        color: Theme.surfaceVariantText
-                                    }
-                                }
-                            }
-
-                            StyledText {
-                                Layout.preferredWidth: 50
-                                text: modelData?.percent ?? ""
-                                font.pixelSize: Theme.fontSizeSmall
-                                font.family: SettingsData.monoFontFamily
-                                font.weight: Theme.fontWeightMedium
-                                color: {
-                                    const pct = parent.parent.usedPct;
-                                    if (pct > 0.95)
-                                        return Theme.error;
-                                    if (pct > 0.85)
-                                        return Theme.warning;
-                                    return Theme.surfaceText;
-                                }
-                                horizontalAlignment: Text.AlignRight
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: 300
-                        height: 80
-                        radius: Theme.cornerRadius
-                        color: "transparent"
-                        visible: DgopService.diskMounts.length === 0
-
-                        Column {
-                            anchors.centerIn: parent
-                            spacing: Theme.spacingM
-
-                            DIcon {
-                                name: "storage"
-                                size: 32
-                                color: Theme.surfaceVariantText
-                                anchors.horizontalCenter: parent.horizontalCenter
-                            }
-
-                            StyledText {
-                                text: I18n.tr("No mount points found", "empty state in disk mounts list")
-                                font.pixelSize: Theme.fontSizeMedium
-                                color: Theme.surfaceVariantText
-                                anchors.horizontalCenter: parent.horizontalCenter
-                            }
-                        }
-                    }
-                }
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: Theme.spacingXL
+                visible: !root.hasDrives && root.mounts.length === 0
+                text: I18n.tr("No mount points found", "empty state in disk mounts list")
+                font.pixelSize: Theme.fontSizeMedium
+                color: Theme.surfaceVariantText
             }
         }
     }
