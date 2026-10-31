@@ -14,8 +14,20 @@ Item {
     property bool holdArt: false
 
     readonly property bool lyricsOpen: root.showLyrics && root.player.lyricsOpen && root.player.live
-    // The art stays up while the lyrics load, the overlay's loading indicator sits on top of it.
-    readonly property bool lyricsShown: root.lyricsOpen && !LyricsService.controller.pending
+    readonly property bool lyricsReady: !LyricsService.controller.pending
+    // The art stays up while lyrics first load, with the overlay's indicator on top. Once they have
+    // shown, a reload on a track change keeps their place rather than flashing the art back in.
+    property bool lyricsHeld: false
+    readonly property bool lyricsShown: root.lyricsOpen && (lyricsReady || lyricsHeld)
+
+    onLyricsOpenChanged: {
+        if (!lyricsOpen)
+            lyricsHeld = false;
+    }
+    onLyricsReadyChanged: {
+        if (lyricsReady && lyricsOpen)
+            lyricsHeld = true;
+    }
     readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
 
     MediaArtSurface {

@@ -33,7 +33,6 @@ MediaChromeBase {
     focusTargets: [playerButton].concat(seekbar.canSeek && root.hasSeekbar ? [seekbar] : [], transport.focusTargets, optionRow.focusTargets)
     panelButtons: [playerButton, outputButton]
     inlineVolume: true
-    inlinePanels: ["players", "devices"]
     inlinePanel: playbackSheet
 
     MediaArtView {
@@ -265,7 +264,6 @@ MediaChromeBase {
                         id: volumeSlider
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
-                        size: "s"
                         volume: root.player.currentVolume
                         muted: root.player.usePlayerVolume ? volume === 0 : AudioService.sinkSilent
                         maximumVolume: root.player.maxVolumePercent

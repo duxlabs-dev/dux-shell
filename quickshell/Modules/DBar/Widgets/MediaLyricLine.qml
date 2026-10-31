@@ -46,7 +46,7 @@ Item {
     function place() {
         sweepMotion.stop();
         const parts = visible ? (controller.lines[controller.activeIndex]?.parts ?? []) : [];
-        const at = controller.currentTime();
+        const at = controller.shownTime();
         const next = parts.find(candidate => !candidate.background && at >= candidate.t && at < candidate.e) ?? parts.find(candidate => !candidate.background) ?? parts[0] ?? null;
         if (!next) {
             clearLine();

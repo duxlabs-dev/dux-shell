@@ -59,11 +59,18 @@ QtObject {
     property real positionWall: 0
     property var probe: null
     property bool positionTrusted: true
+    // A jump back to the start can be a track change whose metadata has not arrived, so the old
+    // lines stay unlit until it does or the grace runs out. A jump right after the metadata is the
+    // same change seen the other way round.
+    property real restartHoldUntil: 0
+    property real trackChangedWall: 0
     property string clockBus: ""
     property var memo: null
 
     onTrackKeyChanged: {
         cancel();
+        restartHoldUntil = 0;
+        trackChangedWall = Date.now();
         refreshPending = holdsSong();
         if (!refreshPending)
             restart();
@@ -408,7 +415,21 @@ QtObject {
         return anchorPosition + (Date.now() - anchorWall) * anchorRate / 1000;
     }
 
+    // The time the views show: nothing while a restart may still turn out to be a track change.
+    function shownTime() {
+        return Date.now() < restartHoldUntil ? -1 : currentTime();
+    }
+
+    function noteRestart(observed) {
+        if (observed >= DashMetrics.mediaLyricsTrackStartSlack || observed >= currentTime() - DashMetrics.mediaLyricsPositionTolerance)
+            return;
+        if (Date.now() - trackChangedWall < DashMetrics.mediaLyricsRestartHold)
+            return;
+        restartHoldUntil = Date.now() + DashMetrics.mediaLyricsRestartHold;
+    }
+
     function updatePlaybackClock() {
+        noteRestart(position);
         const predicted = currentTime();
         const sampled = position + (anchorPlaying ? (Date.now() - positionWall) * anchorRate / 1000 : 0);
         const pendingSeek = !stopped && anchorUpdate.running && Math.abs(sampled - predicted) >= DashMetrics.mediaLyricsPositionTolerance && reachable(sampled);
@@ -451,6 +472,7 @@ QtObject {
         positionTrusted = true;
         if (Math.abs(observed - currentTime()) < DashMetrics.mediaLyricsPositionProbeThreshold)
             return;
+        noteRestart(observed);
         anchorPosition = observed;
         anchorWall = wall;
         anchorPlaying = playing;
@@ -482,6 +504,8 @@ QtObject {
         const observed = reachable(sampled) ? sampled : currentTime();
         if (!force && anchorPlaying && Math.abs(observed - currentTime()) < DashMetrics.mediaLyricsPositionTolerance)
             return false;
+        if (!force)
+            noteRestart(observed);
         anchorPosition = observed;
         anchorWall = Date.now();
         anchorPlaying = playing;
@@ -500,6 +524,16 @@ QtObject {
         tick.stop();
         if (!enabled || !synced)
             return;
+        const holdLeft = restartHoldUntil - Date.now();
+        if (holdLeft > 0) {
+            sampleTime = -1;
+            activeIndex = -1;
+            followIndex = -1;
+            wordRevision++;
+            tick.interval = holdLeft;
+            tick.start();
+            return;
+        }
         const at = currentTime();
         sampleTime = at;
         const nextIndex = indexFor(at, lines);

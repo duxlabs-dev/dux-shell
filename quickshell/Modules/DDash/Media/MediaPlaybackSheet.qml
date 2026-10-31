@@ -18,8 +18,9 @@ FocusScope {
     property string shownPanel: ""
     property bool closedByKey: false
 
+    readonly property var panels: ["players", "devices", "volume"]
     readonly property string requestedPanel: root.player.panel
-    readonly property bool opened: root.player.live && (requestedPanel === "players" || requestedPanel === "devices")
+    readonly property bool opened: root.player.live && panels.includes(requestedPanel)
     readonly property bool shown: opened || progress > 0
     readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
     // Material's shared axis: the controls slide out and fade first, then the sheet slides in from the
@@ -35,12 +36,14 @@ FocusScope {
     readonly property var players: shown && shownPanel === "players" ? root.player.selectablePlayers() : []
     readonly property var focusTargets: {
         const targets = [backButton];
+        if (shownPanel === "volume")
+            return targets.concat(volumeSlider);
         const repeater = shownPanel === "devices" ? deviceRows : playerRows;
         for (let i = 0; i < repeater.count; i++)
             targets.push(...(repeater.itemAt(i)?.focusTargets ?? []));
         return targets;
     }
-    readonly property Item focusTarget: focusTargets[0]
+    readonly property Item focusTarget: focusTargets[0] ?? null
     // The list's edge fade reads this to blend into the sheet instead of a darker ancestor.
     readonly property color surfaceColor: Theme.surfaceContainer
 
@@ -52,7 +55,7 @@ FocusScope {
     }
 
     onRequestedPanelChanged: {
-        if (requestedPanel !== "players" && requestedPanel !== "devices")
+        if (!panels.includes(requestedPanel))
             return;
         shownPanel = requestedPanel;
         flickable.contentY = 0;
@@ -90,7 +93,23 @@ FocusScope {
     }
 
     Keys.onPressed: event => {
+        const volume = shownPanel === "volume" && root.player.volumeAvailable;
         switch (event.key) {
+        case Qt.Key_K:
+            if (!volume)
+                return;
+            root.player.adjustVolume(AudioService.wheelVolumeStep);
+            break;
+        case Qt.Key_J:
+            if (!volume)
+                return;
+            root.player.adjustVolume(-AudioService.wheelVolumeStep);
+            break;
+        case Qt.Key_M:
+            if (!volume)
+                return;
+            root.player.toggleMute();
+            break;
         case Qt.Key_Escape:
             closedByKey = true;
             close();
@@ -148,7 +167,15 @@ FocusScope {
             anchors.leftMargin: Theme.spacingM
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            text: root.shownPanel === "devices" ? I18n.tr("Play on", "Audio output selection sheet title") : I18n.tr("Players", "Media player selection")
+            text: {
+                switch (root.shownPanel) {
+                case "devices":
+                    return I18n.tr("Play on", "Audio output selection sheet title");
+                case "volume":
+                    return root.player.usePlayerVolume ? I18n.tr("Media volume") : I18n.tr("Volume");
+                }
+                return I18n.tr("Players", "Media player selection");
+            }
             color: Theme.onSurface
             font.pixelSize: Theme.fontSizeXLarge
             font.weight: Theme.fontWeightMedium
@@ -243,9 +270,36 @@ FocusScope {
                 }
             }
 
+            Column {
+                width: parent.width
+                visible: root.shownPanel === "volume"
+                spacing: Theme.spacingM
+
+                StyledText {
+                    width: parent.width
+                    text: root.player.usePlayerVolume ? root.player.activePlayer?.identity ?? "" : AudioService.displayName(AudioService.sink)
+                    color: Theme.onSurfaceVariant
+                    font.pixelSize: Theme.fontSizeMedium
+                    elide: Text.ElideRight
+                }
+
+                MediaVolumeSlider {
+                    id: volumeSlider
+                    width: parent.width
+                    volume: root.player.currentVolume
+                    muted: root.player.usePlayerVolume ? volume === 0 : AudioService.sinkSilent
+                    maximumVolume: root.player.maxVolumePercent
+                    enabled: root.player.volumeAvailable
+                    Keys.onTabPressed: root.cycleFocus(false)
+                    Keys.onBacktabPressed: root.cycleFocus(true)
+                    onVolumeChangedByUser: volume => root.player.setVolume(volume)
+                    onMuteRequested: root.player.toggleMute()
+                }
+            }
+
             StyledText {
                 width: parent.width
-                visible: root.shownPanel === "devices" ? root.sinks.length === 0 : root.players.length === 0
+                visible: root.shownPanel === "devices" ? root.sinks.length === 0 : root.shownPanel === "players" && root.players.length === 0
                 text: root.shownPanel === "devices" ? I18n.tr("No output devices found") : I18n.tr("No Active Players")
                 color: Theme.onSurfaceVariant
                 wrapMode: Text.Wrap

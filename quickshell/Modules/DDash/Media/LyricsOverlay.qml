@@ -284,8 +284,8 @@ FocusScope {
     FrameAnimation {
         id: clock
         running: root.visible && root.ready && root.synced && root.playing && root.needsClock
-        onTriggered: root.now = root.controller.currentTime()
-        onRunningChanged: root.now = root.controller.currentTime()
+        onTriggered: root.now = root.controller.shownTime()
+        onRunningChanged: root.now = root.controller.shownTime()
     }
 
     NumberAnimation on opacity {

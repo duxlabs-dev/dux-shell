@@ -19,8 +19,7 @@ Item {
     property var focusTargets: []
     property var panelButtons: []
     property bool inlineVolume: false
-    // A chrome that shows some panels in its own layout lists them here and hands over the shown one.
-    property var inlinePanels: []
+    // The sheet a chrome shows its panels in, laid out by the chrome itself.
     property Item inlinePanel: null
 
     readonly property var activePlayer: root.player.activePlayer
@@ -33,20 +32,17 @@ Item {
     readonly property string titleFontToken: root.player.options?.titleFont ?? MediaOptions.defaultTitleFont
     readonly property bool seekbarEnabled: root.player.options?.seekbar ?? MediaOptions.defaults.seekbar
     readonly property bool hasSeekbar: seekbarEnabled && !!presentation && presentation.length > 0
-    readonly property bool panelOpen: panel.opened || !!inlinePanel?.opened
+    readonly property bool panelOpen: !!inlinePanel?.opened
     readonly property bool scrolling: root.player.live && !!presentation?.playing && !panelOpen
     readonly property var availableFocusTargets: root.player.lyricsFocusTarget ? [root.player.lyricsFocusTarget].concat(focusTargets) : focusTargets
 
-    readonly property Item openPanel: panel.opened ? panel : inlinePanel?.opened ? inlinePanel : null
-    readonly property Item focusTarget: openPanel ? openPanel.focusTarget : availableFocusTargets.find(item => item?.visible && item.enabled) ?? null
-    readonly property Item previousFocusTarget: openPanel ? openPanel.focusTarget : availableFocusTargets.filter(item => item?.visible && item.enabled).slice(-1)[0] ?? null
+    readonly property Item focusTarget: panelOpen ? inlinePanel.focusTarget : availableFocusTargets.find(item => item?.visible && item.enabled) ?? null
+    readonly property Item previousFocusTarget: panelOpen ? inlinePanel.focusTarget : availableFocusTargets.filter(item => item?.visible && item.enabled).slice(-1)[0] ?? null
 
     implicitHeight: root.baseHeight
 
     function cycleFocus(backwards) {
-        if (panel.opened)
-            return panel.cycleFocus(backwards);
-        if (inlinePanel?.opened)
+        if (panelOpen)
             return FocusNavigation.moveFocus(inlinePanel.focusTargets, backwards);
         return FocusNavigation.moveFocus(availableFocusTargets, backwards);
     }
@@ -89,16 +85,5 @@ Item {
             anchors.fill: parent
             anchors.margins: root.padding + Theme.layerOutlineWidth
         }
-    }
-
-    MediaPanel {
-        id: panel
-        parent: root.player.contentViewport || root
-        z: DashMetrics.overlayZ
-        player: root.player
-        inlinePanels: root.inlinePanels
-        visible: root.visible && active
-        scrimRadius: root.backdropRadius
-        returnFocusItem: root.buttonForPanel(displayedPanel)
     }
 }

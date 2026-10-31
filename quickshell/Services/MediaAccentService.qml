@@ -12,8 +12,24 @@ Singleton {
     id: root
 
     readonly property bool hasAccent: MediaOptions.albumArtAccent ? _accent !== null : true
-    readonly property color accent: MediaOptions.albumArtAccent && _accent !== null ? _accent : Theme.primary
-    readonly property color highlight: MediaOptions.albumArtAccent && _accent !== null ? _accent : Theme.tertiary
+    readonly property bool artAccent: MediaOptions.albumArtAccent && _accent !== null
+    // A new track's colours arrive after its art decodes, so the accent crossfades rather than snaps.
+    property color accent: artAccent ? _accent : Theme.primary
+    property color highlight: artAccent ? _accent : Theme.tertiary
+
+    Behavior on accent {
+        enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        ColorAnimation {
+            duration: Theme.expressiveDurations.expressiveEffects
+        }
+    }
+
+    Behavior on highlight {
+        enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        ColorAnimation {
+            duration: Theme.expressiveDurations.expressiveEffects
+        }
+    }
     property int lyricsConsumers: 0
     readonly property bool lyricsLive: lyricsConsumers > 0
     readonly property var lyricsHues: lyricsLive ? _lyricsHues() : [Theme.tertiary, Theme.primary, Theme.secondary]
@@ -45,9 +61,9 @@ Singleton {
         target: root
         property: "onAccent"
         value: {
-            if (!MediaOptions.albumArtAccent || root._accent === null)
+            if (!root.artAccent)
                 return Theme.onPrimary;
-            const color = root._accent;
+            const color = root.accent;
             return Contrast.ratio(color, Theme.contrastDark) >= Contrast.ratio(color, Theme.contrastLight) ? Theme.contrastDark : Theme.contrastLight;
         }
     }
@@ -133,17 +149,17 @@ Singleton {
     }
 
     function _container(fallback, saturationCap, value, cardContrast) {
-        if (!MediaOptions.albumArtAccent || _accent === null)
+        if (!artAccent)
             return fallback;
-        const seed = Qt.hsva(Math.max(0, _accent.hsvHue), Math.min(_accent.hsvSaturation, saturationCap), value, 1);
+        const seed = Qt.hsva(Math.max(0, accent.hsvHue), Math.min(accent.hsvSaturation, saturationCap), value, 1);
         return contrastTo(seed, Theme.onSurface, Theme.chipSurface, cardContrast);
     }
 
     function _onContainer(fallback, saturationCap, container) {
-        if (!MediaOptions.albumArtAccent || _accent === null)
+        if (!artAccent)
             return fallback;
         const light = Theme.isLightMode;
-        const seed = Qt.hsva(Math.max(0, _accent.hsvHue), Math.min(_accent.hsvSaturation, saturationCap), light ? 0.25 : 0.95, 1);
+        const seed = Qt.hsva(Math.max(0, accent.hsvHue), Math.min(accent.hsvSaturation, saturationCap), light ? 0.25 : 0.95, 1);
         return contrastTo(seed, light ? Theme.contrastDark : Theme.contrastLight, container, 4.5);
     }
 
