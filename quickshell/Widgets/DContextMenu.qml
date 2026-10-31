@@ -432,8 +432,9 @@ Item {
                                             return Theme.onSurface_38;
                                         if (destructive)
                                             return Theme.error;
-                                        return selected ? Theme.onSelectedContainer : Theme.onSurface;
+                                        return selected ? Theme.onTertiaryContainer : Theme.onSurface;
                                     }
+                                    readonly property color iconColor: itemEnabled && !destructive && !selected ? Theme.onSurfaceVariant : contentColor
                                     visible: !menuItemDelegate.isSeparator && !menuItemDelegate.isComponent
                                     anchors.fill: parent
                                     radius: Theme.cornerRadiusS
@@ -442,7 +443,7 @@ Item {
                                             return "transparent";
                                         if (destructive)
                                             return selected ? Theme.errorSelected : itemMouseArea.containsMouse ? Theme.errorHover : "transparent";
-                                        return selected ? Theme.selectedContainer : itemMouseArea.pressed ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerPressed) : itemMouseArea.containsMouse ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerHover) : "transparent";
+                                        return selected ? Theme.tertiaryContainer : itemMouseArea.pressed ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerPressed) : itemMouseArea.containsMouse ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerHover) : "transparent";
                                     }
 
                                     Row {
@@ -456,7 +457,7 @@ Item {
                                         DIcon {
                                             name: menuItemDelegate.modelData?.icon ?? ""
                                             size: root.itemIconSize
-                                            color: menuRow.contentColor
+                                            color: menuRow.iconColor
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
 
@@ -476,7 +477,7 @@ Item {
                                         visible: name !== ""
                                         name: menuItemDelegate.modelData?.trailingIcon ?? ""
                                         size: root.itemIconSize
-                                        color: menuRow.contentColor
+                                        color: menuRow.iconColor
                                         anchors.right: parent.right
                                         anchors.rightMargin: Theme.spacingS
                                         anchors.verticalCenter: parent.verticalCenter
