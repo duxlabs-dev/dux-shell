@@ -240,7 +240,7 @@ func (h *HyprlandProvider) validateAction(action string) error {
 		return nil
 	}
 	if _, ok := luaActionStringFromHyprlangAction(action); !ok {
-		return fmt.Errorf("hyprland has no Lua dispatcher for %q", action)
+		return fmt.Errorf("hyprland %q is not a Lua dispatcher or is missing its arguments", action)
 	}
 	return nil
 }
