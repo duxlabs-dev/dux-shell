@@ -242,6 +242,12 @@ func (p *Picker) handleGlobal(e client.RegistryGlobalEvent) {
 		}
 
 	case client.SeatInterfaceName:
+		// Keep the first seat: compositors may advertise additional seats
+		// (automation, second keyboard), and the last one used to win, which
+		// left the picker listening to a seat the user never types on.
+		if p.seat != nil {
+			return
+		}
 		seat := client.NewSeat(p.ctx)
 		if err := p.registry.Bind(e.Name, e.Interface, e.Version, seat); err == nil {
 			p.seat = seat
