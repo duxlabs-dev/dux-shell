@@ -92,7 +92,7 @@ binds {
 
     // === Input ===
     XF86TouchpadToggle allow-when-locked=true repeat=false {
-        spawn "dms" "ipc" "call" "niri" "toggleTouchpad";
+        spawn "niri" "msg" "action" "toggle-touchpad";
     }
     XF86TouchpadOn allow-when-locked=true repeat=false {
         spawn "dms" "ipc" "call" "niri" "showTouchpadOsd" "true";
