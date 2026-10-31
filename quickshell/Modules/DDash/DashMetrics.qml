@@ -183,6 +183,14 @@ Singleton {
     readonly property real overviewArtFrame: gridRowUnit
     readonly property real overviewArtHero: gridRowUnit * 1.5 + Theme.spacingL
     readonly property real overviewSeekHeight: Theme.sliderTrackHeightS
+    readonly property real overviewSeekExpressiveHeight: 20
+    readonly property real overviewSeekLineWidth: 3
+    readonly property real overviewSeekAmplitude: 1.4
+    readonly property real overviewSeekWavelength: 18
+    readonly property real overviewSeekHandleSize: 12
+    readonly property real overviewSeekHandleDragWidth: 4
+    readonly property real overviewSeekHandleDragHeight: 20
+    readonly property real overviewSeekHandleGap: 5
     readonly property real overviewSideButtonSize: Theme.iconButtonSize
     readonly property real overviewPlaySize: Theme.iconButtonSize
     readonly property real overviewTransportWidth: overviewPlayWidth + (overviewSideButtonSize + Theme.spacingXS) * 2
@@ -204,9 +212,30 @@ Singleton {
     readonly property real mediaInnerRadius: Math.max(Theme.cornerRadiusXS, surfaceRadius - mediaCardMargin - Theme.layerOutlineWidth)
     readonly property real mediaArtSoftRadiusRatio: 0.3
     readonly property real mediaArtPlaceholderIcon: Theme.buttonHeightM
+    readonly property real mediaArtColumnRatio: 0.5
+    readonly property real mediaArtLyricsScale: 0.88
+    readonly property int mediaArtRotationDuration: 30000
     readonly property real mediaSeekbarHeight: 22
-    readonly property real mediaPlayWidthRatio: 1.5
-    readonly property real mediaPlayWidthStep: 0.75
+    readonly property real mediaSeekbarHandleSize: 16
+    readonly property real mediaSeekbarHandleDragWidth: 5
+    readonly property real mediaSeekbarHandleDragHeight: 28
+    readonly property real mediaSeekbarHandleGap: 7
+    readonly property real mediaSeekbarExpressiveHeight: 30
+    readonly property real mediaSeekbarExpressiveLineWidth: 4
+    readonly property real mediaSeekbarExpressiveAmplitude: 1.8
+    readonly property real mediaSeekbarExpressiveWavelength: 22
+    readonly property real mediaTransportMaxHeight: 70
+    // Material's shared axis transition: 30dp of travel, with the outgoing side gone by 35% of it.
+    readonly property real mediaSheetSlideDistance: 30
+    readonly property real mediaSheetFadeThreshold: 0.35
+    readonly property real mediaSheetSettleProgress: 0.002
+    readonly property var mediaTitleFontAxes: ({
+            "wght": 700,
+            "wdth": 25,
+            "ROND": 100,
+            "GRAD": 100
+        })
+    readonly property real mediaPlayWidthRatio: 2
     readonly property real mediaTransportPressScale: 1.2
     readonly property real mediaDeviceNameWidthRatio: 0.42
     readonly property real accentSelectedAlpha: 0.2
@@ -226,9 +255,35 @@ Singleton {
     readonly property real mediaLyricsPositionProbeThreshold: 1
     readonly property int mediaLyricsPositionSettleInterval: 1000
     readonly property real mediaLyricsTrackStartSlack: 5
-    readonly property real lyricsNearOpacity: 0.55
-    readonly property real lyricsFarOpacity: 0.3
-    readonly property real lyricsLineHeight: 1.25
+    readonly property int mediaLyricsRestartHold: 1500
+    readonly property real lyricsLineInactiveScale: 0.8
+    readonly property real lyricsLineInactiveAlpha: 0.4
+    readonly property real lyricsRestAlpha: 0.35
+    // The sweep's soft edge as a share of the cue it crosses, and its floor in pixels.
+    readonly property real lyricsSweepFeather: 0.1
+    readonly property real lyricsSweepFeatherMin: 6
+    readonly property int lyricsLineFadeDuration: lyricsTrackMoveDuration
+    readonly property int lyricsLineScaleDuration: lyricsTrackMoveDuration
+    readonly property int lyricsLineLinger: 500
+    // Seconds before a line starts that the track moves it into the centre.
+    readonly property real lyricsLineLeadIn: 0.25
+    // A clock that steps back less than this right after the centre advanced keeps the new row.
+    readonly property real lyricsFollowBackstepSlack: 1.5
+    readonly property int lyricsTrackMoveDuration: 500
+    // A critically damped spring settles in about ten time constants, so a long scroll lands with the line move.
+    readonly property real lyricsScrollRate: 10000 / lyricsTrackMoveDuration
+    readonly property real lyricsScrollStiffness: lyricsScrollRate * lyricsScrollRate
+    readonly property real lyricsScrollDamping: 2 * lyricsScrollRate
+    // Below half a pixel the rounded position no longer moves, so the spring stops there.
+    readonly property real lyricsScrollSettleDistance: 0.5
+    readonly property real lyricsScrollSettleSpeed: 10
+    readonly property int lyricsTrackPushStep: 20
+    readonly property int lyricsTrackMaxPush: 5
+    readonly property var lyricsTrackCurve: [0.25, 0.7, 0.2, 1, 1, 1]
+    readonly property real lyricsBreakGap: 5
+    readonly property real lyricsBreakIndicatorScale: 1.2
+    readonly property real lyricsEdgeFadeRatio: 0.2
+    readonly property real lyricsEdgeFadeMax: Theme.spacingXL * 2
     readonly property real lyricsLeadHeightDivisor: 12
     readonly property real lyricsLeadWidthDivisor: 11
     readonly property int wheelNotch: 120

@@ -1,437 +1,305 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Layouts
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.DDash
 import "../../../Common/Format.js" as Format
+import "../../../DCommon/Common/FocusNavigation.js" as FocusNavigation
 
 MediaChromeBase {
     id: root
 
-    readonly property bool compact: width < Theme.smallBreakpoint || halfWidth < headerHeight + controls.implicitHeight
-    readonly property real halfWidth: Math.max(0, (width - padding * 2 - Theme.spacingXL) / 2)
-    // Panes size from this, not the card body, which can lag at zero width and loop compact forever
-    readonly property real bodyWidth: Math.max(0, width - (padding + Theme.layerOutlineWidth) * 2)
-    // !TODO: expose this variant? playerPaneOpen false gives art beside lyrics, or art alone with hover transport
-    readonly property bool playerPane: root.player.playerPaneOpen
-    readonly property bool controlsColumn: playerPane
-    readonly property bool lyricsColumn: root.player.lyricsOpen && !playerPane
-    readonly property bool splitPanes: controlsColumn || lyricsColumn
-    readonly property bool artTransport: !playerPane && !!root.presentation
-    readonly property real naturalArtSize: Math.round(Math.max(0, Math.min(artSize, compact ? width / 2 : halfWidth)))
-    // Sized from the controls column, never from this item's own height: reading back the height
-    // the artwork itself sets makes the split settle wherever the current track happened to put it.
-    readonly property real artworkSize: Math.round(compact ? naturalArtSize : Math.min(halfWidth, Math.max(naturalArtSize, headerHeight + controls.implicitHeight)))
-    readonly property real columnHeight: compact ? artworkSize : Math.max(artworkSize, paneHeight)
-    readonly property real paneHeight: Math.max(artworkSize, headerHeight + controls.implicitHeight)
-    readonly property real paneMinHeight: Math.max(naturalArtSize, headerHeight + controls.implicitHeight)
-    readonly property real headerHeight: sourceRow.height + Theme.spacingS
+    readonly property real contentWidth: Math.max(0, width - (padding + Theme.layerOutlineWidth) * 2)
+    readonly property bool compact: width < Theme.smallBreakpoint
+    // Whole pixels throughout: the lyrics draw through a layer, and a layer placed between pixels
+    // resamples every glyph.
+    readonly property real artColumnWidth: compact ? contentWidth : Math.round((contentWidth - Theme.spacingXL) * DashMetrics.mediaArtColumnRatio)
+    readonly property real deckWidth: compact ? contentWidth : contentWidth - artColumnWidth - Theme.spacingXL
+    readonly property real artworkSize: Math.round(Math.min(artColumnWidth, artSize))
+    readonly property bool lyricsShown: root.player.lyricsOpen && root.player.live
+    // The transport takes what the artwork leaves over, so both columns end up about as tall.
+    readonly property real deckFixedHeight: sourceRow.height + titleBlock.height + seekBlock.height + optionRow.height + Theme.spacingXL * 2 + Theme.spacingL * 2
+    readonly property real transportSize: Math.round(Math.max(Theme.buttonHeightM, Math.min(DashMetrics.mediaTransportMaxHeight, artworkSize - deckFixedHeight)))
+    readonly property real stageWidth: lyricsShown && !compact ? artColumnWidth : artworkSize
+    readonly property real stageHeight: lyricsShown && !compact ? Math.max(artworkSize, deck.height) : artworkSize
+    readonly property real columnHeight: compact ? stageHeight + Theme.spacingXL + deck.height : Math.max(stageHeight, deck.height)
 
-    artSize: DashMetrics.mediaArtSizeDash
     surfaceColor: Theme.foregroundColor(Theme.hostSurface)
-    baseHeight: Math.max(DashMetrics.tabMinHeight, padding * 2 + (compact ? naturalArtSize + Theme.spacingXL + paneMinHeight : Math.max(naturalArtSize, paneMinHeight)))
-    focusTargets: (viewToggle.visible ? [viewToggle] : []).concat(artTransportLoader.item?.focusTargets ?? [], [playerButton], sourceGroup.focusTargets, transport.focusTargets, seekbar.canSeek && root.hasSeekbar ? [seekbar] : [])
-    panelButtons: [playerButton].concat(sourceGroup.panelButtons)
+    baseHeight: Math.max(DashMetrics.tabMinHeight, padding * 2 + columnHeight)
+    focusTargets: [playerButton].concat(seekbar.canSeek && root.hasSeekbar ? [seekbar] : [], transport.focusTargets, optionRow.focusTargets)
+    panelButtons: [playerButton, outputButton]
     inlineVolume: true
+    inlinePanel: playbackSheet
 
-    Item {
-        id: artPane
+    MediaArtView {
+        id: stage
 
-        x: root.compact || !root.splitPanes ? (parent.width - width) / 2 : I18n.isRtl ? parent.width - width : 0
-        y: root.compact && root.splitPanes ? 0 : (parent.height - height) / 2
-        width: root.compact ? root.bodyWidth : art.width
-        height: root.columnHeight
-
-        Behavior on x {
-            enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
-            NumberAnimation {
-                duration: Theme.expressiveDurations.expressiveDefaultSpatial
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
-            }
+        x: {
+            const start = root.compact || !I18n.isRtl ? 0 : parent.width - root.artColumnWidth;
+            return Math.round(start + (root.artColumnWidth - width) / 2);
         }
-
-        Item {
-            id: art
-
-            anchors.centerIn: parent
-            width: root.artworkSize
-            height: width
-
-            HoverHandler {
-                id: artHover
-            }
-
-            MediaArtView {
-                anchors.fill: parent
-                player: root.player
-                showLyrics: root.playerPane
-                holdArt: TrackArtService.loading && TrackArtService.resolvedArtUrl === ""
-            }
-
-            Rectangle {
-                id: viewTogglePill
-
-                // Tab can focus a segment while the group itself has none.
-                readonly property bool keyboardFocused: {
-                    const item = root.Window.activeFocusItem;
-                    if (!(item?.visualFocus ?? false))
-                        return false;
-                    for (let p = item; p; p = p.parent) {
-                        if (p === viewToggle)
-                            return true;
-                    }
-                    return false;
-                }
-                readonly property bool revealed: artHover.hovered || keyboardFocused
-
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                anchors.topMargin: Theme.spacingM
-                width: viewToggle.width + Theme.spacingXS * 2
-                height: viewToggle.height + Theme.spacingXS * 2
-                radius: Theme.fullRadius(width, height)
-                color: DashMetrics.chipColor
-                border.width: Theme.layerOutlineWidth
-                border.color: Theme.outlineMedium
-                visible: root.player.lyricsEnabled
-                opacity: revealed ? 1 : 0
-
-                Behavior on opacity {
-                    enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
-                    NumberAnimation {
-                        duration: Theme.expressiveDurations.expressiveEffects
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
-                    }
-                }
-
-                DButtonGroup {
-                    id: viewToggle
-
-                    focusRingColor: MediaAccentService.focusRing
-                    anchors.centerIn: parent
-                    size: "small"
-                    checkEnabled: false
-                    enabled: !!root.presentation
-                    labelOnlySelected: true
-                    maximumWidth: art.width - (Theme.spacingM + Theme.spacingXS) * 2
-                    model: [
-                        {
-                            "text": I18n.tr("Artwork", "noun, media player album art view toggle and art style option"),
-                            "icon": "image"
-                        },
-                        {
-                            "text": I18n.tr("Lyrics", "Media player lyrics button"),
-                            "icon": "lyrics"
-                        }
-                    ]
-                    currentIndex: root.player.lyricsOpen ? 1 : 0
-                    selectedColor: MediaAccentService.accentContainer
-                    selectedContentColor: MediaAccentService.onAccentContainer
-                    unselectedColor: Theme.withAlpha(MediaAccentService.accentContainer, 0)
-                    unselectedContentColor: Theme.onSurfaceVariant
-                    onActiveFocusChanged: {
-                        if (activeFocus)
-                            requestFocus(false);
-                    }
-                    onSelectionChanged: (index, selected) => {
-                        if (!selected || (index === 1) === root.player.lyricsOpen)
-                            return;
-                        root.player.toggleLyrics(viewToggle);
-                    }
-                }
-            }
-
-            Loader {
-                id: artTransportLoader
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: Theme.spacingM
-                active: root.artTransport
-
-                sourceComponent: Rectangle {
-                    readonly property var focusTargets: [previousButton, playButton, nextButton]
-                    readonly property bool focusWithin: previousButton.activeFocus || playButton.activeFocus || nextButton.activeFocus
-
-                    width: artTransportRow.width + Theme.spacingM * 2
-                    height: Theme.buttonHeightM + Theme.spacingXS * 2
-                    radius: Theme.fullRadius(width, height)
-                    color: DashMetrics.chipColor
-                    border.width: Theme.layerOutlineWidth
-                    border.color: Theme.outlineMedium
-                    opacity: artHover.hovered || focusWithin ? 1 : 0
-
-                    Behavior on opacity {
-                        enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
-                        NumberAnimation {
-                            duration: Theme.expressiveDurations.expressiveEffects
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
-                        }
-                    }
-
-                    Row {
-                        id: artTransportRow
-                        anchors.centerIn: parent
-                        spacing: Theme.spacingXS
-                        LayoutMirroring.enabled: false
-
-                        ArtTransportButton {
-                            id: previousButton
-                            mediaAction: "previous"
-                        }
-
-                        ArtTransportButton {
-                            id: playButton
-                            mediaAction: "play"
-                            buttonSize: Theme.buttonHeightM
-                            width: buttonSize
-                            containerColor: MediaAccentService.accentContainer
-                            contentColor: MediaAccentService.onAccentContainer
-                        }
-
-                        ArtTransportButton {
-                            id: nextButton
-                            mediaAction: "next"
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    component ArtTransportButton: MediaTransportButton {
+        y: root.compact ? 0 : Math.round((parent.height - height) / 2)
+        width: root.stageWidth
+        height: root.stageHeight
         player: root.player
-        keepNavigation: true
-        round: true
-        checkable: false
-        buttonSize: Theme.minimumTouchTargetSize
-        variant: "tonal"
-        containerColor: "transparent"
-        contentColor: Theme.onSurface
+        holdArt: TrackArtService.loading && TrackArtService.resolvedArtUrl === ""
     }
 
     Item {
-        id: contentPane
+        id: deck
 
-        x: root.compact || I18n.isRtl ? 0 : artPane.width + Theme.spacingXL
-        y: root.compact ? root.artworkSize + Theme.spacingXL : (parent.height - height) / 2
-        width: root.compact ? root.bodyWidth : root.bodyWidth - artPane.width - Theme.spacingXL
-        height: root.compact ? root.paneHeight : root.columnHeight
-        visible: root.splitPanes
-
-        Loader {
-            id: lyricsView
-            y: controls.y
-            width: parent.width
-            height: parent.height - controls.y
-            active: root.lyricsColumn && root.player.live
-            onLoaded: {
-                if (root.player.ownsFocus())
-                    item.forceActiveFocus(Qt.PopupFocusReason);
-            }
-
-            sourceComponent: LyricsOverlay {
-                player: root.player
-            }
-        }
+        x: root.compact || I18n.isRtl ? 0 : parent.width - width
+        y: root.compact ? stage.height + Theme.spacingXL : Math.round((parent.height - height) / 2)
+        width: root.deckWidth
+        height: controls.height
 
         Column {
             id: controls
-            visible: root.controlsColumn
-            y: root.compact ? parent.height - height : art.y + art.height - height
+
             width: parent.width
-            spacing: Theme.spacingS
+            spacing: Theme.spacingXL
+            opacity: playbackSheet.controlsOpacity
+            visible: opacity > 0 || !playbackSheet.opened
+            enabled: !playbackSheet.opened
+            transform: Translate {
+                x: playbackSheet.controlsShift
+            }
 
-            Rectangle {
+            Item {
+                id: sourceRow
+
                 width: parent.width
-                height: metadata.implicitHeight + Theme.spacingS * 2
-                radius: DashMetrics.mediaInnerRadius
-                color: DashMetrics.cardColor
-                border.width: Theme.layerOutlineWidth
-                border.color: Theme.outlineMedium
+                height: Theme.buttonHeightXS
 
-                Column {
-                    id: metadata
-                    x: Theme.spacingL
-                    y: Theme.spacingS
-                    width: parent.width - Theme.spacingL * 2
-                    spacing: Theme.spacingXS
+                Row {
+                    anchors.centerIn: parent
+                    spacing: Theme.spacingM
+                    visible: !!root.presentation
 
-                    TextMetrics {
-                        id: fullSizeTitle
-                        text: root.title
-                        font: Qt.font({
-                            family: titleText.font.family,
-                            weight: titleText.font.weight,
-                            pixelSize: Theme.fontSizeDisplay
-                        })
-                    }
-
-                    FontMetrics {
-                        id: fullSizeTitleFont
-                        font: fullSizeTitle.font
-                    }
-
-                    ScrollingText {
-                        id: titleText
-
-                        readonly property real fittedPixelSize: {
-                            if (fullSizeTitle.advanceWidth <= width)
-                                return Theme.fontSizeDisplay;
-                            const fitted = Math.floor(Theme.fontSizeDisplay * width / fullSizeTitle.advanceWidth);
-                            return Math.max(Theme.fontSizeXXLarge, fitted);
-                        }
-
-                        width: parent.width
-                        height: Math.ceil(fullSizeTitleFont.height)
-                        text: root.title
-                        fontToken: root.titleFontToken
-                        color: Theme.onSurface
-                        font.pixelSize: fittedPixelSize
-                        horizontalAlignment: Text.AlignHCenter
-                        active: root.scrolling
-                        loop: true
-                        fadeEdges: true
-                        pxPerMs: DashMetrics.mediaTextScrollSpeed / 1000
-                        stepInterval: DashMetrics.mediaTextScrollStep
-                    }
-
-                    ScrollingText {
-                        width: parent.width
-                        text: [root.artist, root.album].filter(Boolean).join(" \u00b7 ") || "\u00a0"
+                    StyledText {
+                        id: sourceLabel
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.min(implicitWidth, sourceRow.width / 2)
+                        text: I18n.tr("Listening from", "Label before the active media player")
                         color: Theme.onSurfaceVariant
                         font.pixelSize: Theme.fontSizeMedium
-                        horizontalAlignment: Text.AlignHCenter
-                        active: root.scrolling
-                        loop: true
-                        fadeEdges: true
-                        pxPerMs: DashMetrics.mediaTextScrollSpeed / 1000
-                        stepInterval: DashMetrics.mediaTextScrollStep
+                        wrapMode: Text.NoWrap
+                        elide: Text.ElideRight
+                    }
+
+                    DButton {
+                        id: playerButton
+
+                        readonly property string panelId: "players"
+
+                        focusRingColor: MediaAccentService.focusRing
+                        anchors.verticalCenter: parent.verticalCenter
+                        maximumWidth: Math.max(0, sourceRow.width - sourceLabel.width - parent.spacing)
+                        buttonHeight: Theme.buttonHeightXS
+                        horizontalPadding: Theme.spacingL
+                        text: root.presentation?.identity ?? ""
+                        backgroundColor: MediaAccentService.accentSecondaryContainer
+                        textColor: MediaAccentService.onAccentSecondaryContainer
+                        tooltipText: I18n.tr("Players", "Media player selection")
+                        Accessible.name: tooltipText + ": " + text
+                        onClicked: root.player.togglePanel(panelId, playerButton)
                     }
                 }
             }
 
-            Rectangle {
+            Column {
+                id: titleBlock
+
                 width: parent.width
-                height: playback.implicitHeight + Theme.spacingL * 2
-                radius: DashMetrics.mediaInnerRadius
-                color: DashMetrics.cardColor
-                border.width: Theme.layerOutlineWidth
-                border.color: Theme.outlineMedium
+                spacing: Theme.spacingXS
 
+                // Measured from the token, not from titleText's font, which takes its size from here.
+                StyledTextMetrics {
+                    id: fullSizeTitle
+                    text: root.title
+                    fontToken: root.titleFontToken
+                    font.weight: Font.Normal
+                    font.variableAxes: titleText.expressiveFont ? DashMetrics.mediaTitleFontAxes : ({})
+                    font.pixelSize: Theme.fontSizeDisplay
+                }
+
+                FontMetrics {
+                    id: fullSizeTitleFont
+                    font: fullSizeTitle.font
+                }
+
+                ScrollingText {
+                    id: titleText
+
+                    readonly property bool expressiveFont: root.titleFontToken === "ui"
+                    readonly property real fittedPixelSize: {
+                        if (fullSizeTitle.advanceWidth <= width)
+                            return Theme.fontSizeDisplay;
+                        return Math.max(Theme.fontSizeXXLarge, Math.floor(Theme.fontSizeDisplay * width / fullSizeTitle.advanceWidth));
+                    }
+
+                    width: parent.width
+                    height: Math.ceil(fullSizeTitleFont.height)
+                    text: root.title
+                    fontToken: root.titleFontToken
+                    color: MediaAccentService.readableHighlight
+                    font.pixelSize: fittedPixelSize
+                    // The bundled static weights share the family name and carry no axes, so
+                    // the regular weight selects the variable font and wght sets the weight.
+                    font.weight: Font.Normal
+                    font.variableAxes: expressiveFont ? DashMetrics.mediaTitleFontAxes : ({})
+                    horizontalAlignment: Text.AlignHCenter
+                    active: root.scrolling
+                    loop: true
+                    fadeEdges: true
+                    pxPerMs: DashMetrics.mediaTextScrollSpeed / 1000
+                    stepInterval: DashMetrics.mediaTextScrollStep
+                }
+
+                ScrollingText {
+                    width: parent.width
+                    text: [root.artist, root.album].filter(Boolean).join(" · ") || " "
+                    color: Theme.onSurfaceVariant
+                    font.pixelSize: Theme.fontSizeMedium
+                    horizontalAlignment: Text.AlignHCenter
+                    active: root.scrolling
+                    loop: true
+                    fadeEdges: true
+                    pxPerMs: DashMetrics.mediaTextScrollSpeed / 1000
+                    stepInterval: DashMetrics.mediaTextScrollStep
+                }
+            }
+
+            Column {
+                width: parent.width
+                spacing: Theme.spacingL
+
+                // Kept for a length-less stream, so the deck does not resize when one comes up.
                 Column {
-                    id: playback
-                    x: Theme.spacingL
-                    y: Theme.spacingL
-                    width: parent.width - Theme.spacingL * 2
-                    spacing: Theme.spacingS
+                    id: seekBlock
 
-                    MediaSourceGroup {
-                        id: sourceGroup
+                    width: parent.width
+                    spacing: Theme.spacingXS
+                    visible: root.seekbarEnabled && !!root.presentation
+                    LayoutMirroring.enabled: false
+                    LayoutMirroring.childrenInherit: true
+
+                    MediaSeekbar {
+                        id: seekbar
                         width: parent.width
+                        opacity: root.hasSeekbar ? 1 : 0
+                        height: DashMetrics.mediaSeekbarExpressiveHeight
                         player: root.player
+                        accentTrackColor: MediaAccentService.accentRail
+                        waveLineWidth: DashMetrics.mediaSeekbarExpressiveLineWidth
+                        waveAmplitude: DashMetrics.mediaSeekbarExpressiveAmplitude
+                        wavelength: DashMetrics.mediaSeekbarExpressiveWavelength
+                        showHandle: true
+                        handleSize: DashMetrics.mediaSeekbarHandleSize
+                        handleDragWidth: DashMetrics.mediaSeekbarHandleDragWidth
+                        handleDragHeight: DashMetrics.mediaSeekbarHandleDragHeight
+                        handleGap: DashMetrics.mediaSeekbarHandleGap
                     }
 
-                    MediaTransport {
-                        id: transport
-                        width: parent.width
-                        player: root.player
-                        presentation: root.presentation
-                        visible: hasControls
-                    }
-
-                    // Kept in the column for a length-less stream so the pane, and with it the
-                    // artwork it sizes, does not resize when one comes up in the queue.
                     Item {
-                        id: seekBlock
                         width: parent.width
-                        height: Theme.buttonHeightXS
-                        visible: root.seekbarEnabled && !!root.presentation
-                        LayoutMirroring.enabled: false
-                        LayoutMirroring.childrenInherit: true
+                        height: elapsed.implicitHeight
+                        opacity: root.hasSeekbar ? 1 : 0
 
-                        TimeLabel {
+                        MediaTimeLabel {
                             id: elapsed
                             anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: root.hasSeekbar
                             text: Format.formatDuration(seekbar.value * (root.presentation?.length ?? 0))
                             reserveText: duration.text
                         }
 
-                        MediaSeekbar {
-                            id: seekbar
-                            anchors.left: elapsed.right
-                            anchors.right: duration.left
-                            anchors.margins: Theme.spacingS
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: root.hasSeekbar
-                            player: root.player
-                        }
-
-                        TimeLabel {
+                        MediaTimeLabel {
                             id: duration
                             anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: root.hasSeekbar
+                            horizontalAlignment: Text.AlignRight
                             text: Format.formatDuration(root.presentation?.length ?? 0)
                         }
+                    }
+                }
+
+                MediaTransport {
+                    id: transport
+                    width: parent.width
+                    player: root.player
+                    presentation: root.presentation
+                    buttonSize: root.transportSize
+                    visible: hasControls
+                }
+
+                RowLayout {
+                    id: optionRow
+
+                    readonly property var focusTargets: [lyricsButton, volumeSlider, outputButton]
+
+                    width: parent.width
+                    spacing: Theme.spacingM
+                    LayoutMirroring.enabled: false
+                    LayoutMirroring.childrenInherit: true
+
+                    Keys.onPressed: event => event.accepted = FocusNavigation.handleHorizontalKey(event, focusTargets, false)
+
+                    OptionButton {
+                        id: lyricsButton
+
+                        visible: root.player.lyricsEnabled
+                        enabled: !!root.presentation
+                        iconName: "lyrics"
+                        checkable: true
+                        checked: root.player.lyricsOpen
+                        radius: pressed && Theme.shapeMorph ? Theme.cornerRadiusXS : Theme.cornerRadiusM
+                        tooltipText: I18n.tr("Lyrics", "Media player lyrics button")
+                        onClicked: root.player.toggleLyrics(lyricsButton)
+                    }
+
+                    MediaVolumeSlider {
+                        id: volumeSlider
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        volume: root.player.currentVolume
+                        muted: root.player.usePlayerVolume ? volume === 0 : AudioService.sinkSilent
+                        maximumVolume: root.player.maxVolumePercent
+                        enabled: root.player.volumeAvailable
+                        onVolumeChangedByUser: volume => root.player.setVolume(volume)
+                        onMuteRequested: root.player.toggleMute()
+                    }
+
+                    OptionButton {
+                        id: outputButton
+
+                        readonly property string panelId: "devices"
+
+                        radius: Theme.fullRadius(width, height)
+                        iconName: AudioService.sinkIcon(AudioService.sink)
+                        tooltipText: I18n.tr("Devices", "Media player output device picker") + ": " + AudioService.displayName(AudioService.sink)
+                        onClicked: root.player.togglePanel(panelId, outputButton)
                     }
                 }
             }
         }
 
-        Item {
-            id: sourceRow
-
-            y: root.compact ? Math.round((controls.y - height) / 2) : art.y
-            width: parent.width
-            height: Theme.buttonHeightXS
-
-            Row {
-                anchors.centerIn: parent
-                spacing: Theme.spacingS
-                visible: !!root.presentation
-
-                StyledText {
-                    id: sourceLabel
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: Math.min(implicitWidth, sourceRow.width / 2)
-                    text: I18n.tr("Listening from", "Label before the active media player")
-                    color: Theme.onSurfaceVariant
-                    font.pixelSize: Theme.fontSizeSmall
-                    wrapMode: Text.NoWrap
-                    elide: Text.ElideRight
-                }
-
-                DButton {
-                    id: playerButton
-                    focusRingColor: MediaAccentService.focusRing
-
-                    readonly property string panelId: "players"
-
-                    maximumWidth: Math.max(0, sourceRow.width - sourceLabel.width - parent.spacing)
-                    buttonHeight: Theme.buttonHeightXS
-                    horizontalPadding: Theme.spacingM
-                    text: root.presentation?.identity ?? ""
-                    backgroundColor: MediaAccentService.accentContainer
-                    textColor: MediaAccentService.onAccentContainer
-                    tooltipText: I18n.tr("Players", "Media player selection")
-                    Accessible.name: I18n.tr("Players", "Media player selection") + ": " + text
-                    onClicked: root.player.togglePanel("players")
-                }
-            }
+        // Takes the controls' place, so opening it never moves the deck or the artwork.
+        MediaPlaybackSheet {
+            id: playbackSheet
+            anchors.fill: parent
+            player: root.player
+            returnFocusItem: root.buttonForPanel(shownPanel)
         }
     }
 
-    component TimeLabel: NumericText {
-        color: Theme.onSurfaceVariant
-        font.pixelSize: Theme.fontSizeSmall
-        font.weight: Theme.fontWeightMedium
+    component OptionButton: DIconButton {
+        focusRingColor: MediaAccentService.focusRing
+        variant: "tonal"
+        iconFilled: checked
+        containerColor: checked ? MediaAccentService.accent : MediaAccentService.accentContainer
+        contentColor: checked ? MediaAccentService.onAccent : MediaAccentService.onAccentContainer
     }
 }

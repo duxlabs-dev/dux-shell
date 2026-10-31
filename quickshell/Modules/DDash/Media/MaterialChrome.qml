@@ -13,6 +13,7 @@ MediaChromeBase {
     baseHeight: Math.max(DashMetrics.tabMinHeight, padding * 2 + sourceGroup.height + Theme.spacingL * 2 + artSize + transport.height)
     focusTargets: transport.focusTargets.concat(seekbar.canSeek ? [seekbar] : [], sourceGroup.focusTargets)
     panelButtons: sourceGroup.panelButtons
+    inlinePanel: playbackSheet
 
     StyledText {
         anchors.left: parent.left
@@ -42,25 +43,33 @@ MediaChromeBase {
         anchors.topMargin: Theme.spacingL
         anchors.bottom: transport.top
         anchors.bottomMargin: Theme.spacingL
-
-        MediaArtView {
-            id: art
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            width: Math.max(0, Math.min(parent.height, parent.width / 2 - Theme.spacingL))
-            height: width
-            player: root.player
-            showLyrics: false
-            visible: !root.player.lyricsOpen
+        opacity: playbackSheet.controlsOpacity
+        visible: opacity > 0 || !playbackSheet.opened
+        enabled: !playbackSheet.opened
+        transform: Translate {
+            x: playbackSheet.controlsShift
         }
 
+        // Lyrics take the art's column rather than the card, so the title and seekbar stay put.
+        MediaArtView {
+            id: art
+
+            readonly property real columnWidth: Math.max(0, parent.width / 2 - Theme.spacingL)
+
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            width: root.player.lyricsOpen ? columnWidth : Math.max(0, Math.min(parent.height, columnWidth))
+            height: root.player.lyricsOpen ? parent.height : width
+            player: root.player
+        }
+
+        // Beside the lyrics the title block holds the column's middle rather than the gap above the
+        // seekbar. Positioned by one binding either way: an anchor would write y and leave it stale.
         Column {
-            visible: !root.player.lyricsOpen
             anchors.left: parent.left
             anchors.right: art.left
             anchors.rightMargin: Theme.spacingL
-            anchors.bottom: seekBlock.top
-            anchors.bottomMargin: Theme.spacingM
+            y: Math.round(root.player.lyricsOpen ? (seekBlock.y - height) / 2 : seekBlock.y - Theme.spacingM - height)
             spacing: Theme.spacingXS
 
             StyledText {
@@ -95,8 +104,8 @@ MediaChromeBase {
         Item {
             id: seekBlock
             anchors.left: parent.left
-            anchors.right: root.player.lyricsOpen ? parent.right : art.left
-            anchors.rightMargin: root.player.lyricsOpen ? 0 : Theme.spacingL
+            anchors.right: art.left
+            anchors.rightMargin: Theme.spacingL
             anchors.bottom: parent.bottom
             height: Math.max(DashMetrics.mediaSeekbarHeight, timeReadout.implicitHeight)
             visible: root.hasSeekbar
@@ -124,22 +133,6 @@ MediaChromeBase {
                 font.weight: Theme.fontWeightMedium
             }
         }
-
-        Loader {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.bottom: seekBlock.visible ? seekBlock.top : parent.bottom
-            anchors.bottomMargin: seekBlock.visible ? Theme.spacingM : 0
-            active: root.player.lyricsOpen && root.player.live
-            onLoaded: {
-                if (root.player.ownsFocus())
-                    item.forceActiveFocus(Qt.PopupFocusReason);
-            }
-            sourceComponent: LyricsOverlay {
-                player: root.player
-            }
-        }
     }
 
     MaterialTransport {
@@ -148,5 +141,13 @@ MediaChromeBase {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         player: root.player
+    }
+
+    // Takes the hero's place, so opening it never moves the source row or the transport.
+    MediaPlaybackSheet {
+        id: playbackSheet
+        anchors.fill: hero
+        player: root.player
+        returnFocusItem: root.buttonForPanel(shownPanel)
     }
 }

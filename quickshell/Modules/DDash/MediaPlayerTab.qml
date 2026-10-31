@@ -21,13 +21,13 @@ Item {
     readonly property bool lyricsEnabled: (options?.lyrics ?? MediaOptions.defaults.lyrics) && DMSService.capabilities.includes("lyrics")
     readonly property bool smoothLyrics: options?.smoothLyrics ?? MediaOptions.defaults.smoothLyrics
     property bool lyricsOpen: false
-    property bool playerPaneOpen: true
     property Item lyricsFocusTarget: null
     property Item lyricsOpener: null
     readonly property var presentation: mediaPresentation.current
     readonly property bool idle: !presentation
     property bool wallpaperEnabled: MediaOptions.albumArtBackdrop
     property string panel: ""
+    property Item panelOpener: null
     property Item contentViewport: null
     readonly property bool blocksTabNavigation: panel !== ""
     property bool isSeeking: false
@@ -68,7 +68,6 @@ Item {
     onPlayerStyleChanged: {
         panel = "";
         lyricsOpen = false;
-        playerPaneOpen = true;
         isSeeking = false;
         restoreLyrics();
     }
@@ -79,7 +78,6 @@ Item {
             return;
         }
         lyricsOpen = false;
-        playerPaneOpen = true;
     }
 
     onIdleChanged: {
@@ -148,14 +146,26 @@ Item {
         }
         panel = "";
         lyricsOpen = false;
-        playerPaneOpen = true;
     }
 
     function cycleFocus(backwards) {
         return mediaChrome.item?.cycleFocus(backwards) ?? false;
     }
 
-    function togglePanel(panelId) {
+    function selectablePlayers() {
+        return (allPlayers || []).filter(p => p && (p === activePlayer || !MprisController.isIdle(p)));
+    }
+
+    function outputStatus(node) {
+        if (node !== AudioService.sink)
+            return I18n.tr("Available");
+        if (node?.audio?.muted)
+            return I18n.tr("Muted");
+        return presentation?.playing ? I18n.tr("Playing", "Audio output currently playing media") : I18n.tr("Active");
+    }
+
+    function togglePanel(panelId, opener) {
+        panelOpener = opener ?? null;
         panel = panel === panelId ? "" : panelId;
     }
 

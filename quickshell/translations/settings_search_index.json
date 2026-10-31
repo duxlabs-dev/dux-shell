@@ -10338,7 +10338,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:MusicOptions.qml:5",
+    "section": "barWidgetOption:MusicOptions.qml:6",
     "label": "Cover art",
     "tabIndex": 22,
     "keywords": [],
@@ -10730,7 +10730,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:MusicOptions.qml:7",
+    "section": "barWidgetOption:MusicOptions.qml:8",
     "label": "Media player",
     "tabIndex": 22,
     "keywords": [],
@@ -10882,7 +10882,7 @@
     "optionFile": "PrivacyOptions.qml"
   },
   {
-    "section": "barWidgetOption:MusicOptions.qml:6",
+    "section": "barWidgetOption:MusicOptions.qml:7",
     "label": "Scroll wheel",
     "tabIndex": 22,
     "keywords": [],
@@ -11064,6 +11064,14 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "LauncherButtonOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:MusicOptions.qml:5",
+    "label": "Smooth lyrics highlight",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "MusicOptions.qml"
   },
   {
     "section": "barWidgetOption:SystemUpdateOptions.qml:2",

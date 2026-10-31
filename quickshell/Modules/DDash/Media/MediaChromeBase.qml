@@ -19,6 +19,8 @@ Item {
     property var focusTargets: []
     property var panelButtons: []
     property bool inlineVolume: false
+    // The sheet a chrome shows its panels in, laid out by the chrome itself.
+    property Item inlinePanel: null
 
     readonly property var activePlayer: root.player.activePlayer
     readonly property var presentation: root.player.presentation
@@ -30,23 +32,26 @@ Item {
     readonly property string titleFontToken: root.player.options?.titleFont ?? MediaOptions.defaultTitleFont
     readonly property bool seekbarEnabled: root.player.options?.seekbar ?? MediaOptions.defaults.seekbar
     readonly property bool hasSeekbar: seekbarEnabled && !!presentation && presentation.length > 0
-    readonly property bool panelOpen: panel.opened
-    readonly property bool scrolling: root.player.live && !!presentation?.playing && !panel.opened
+    readonly property bool panelOpen: !!inlinePanel?.opened
+    readonly property bool scrolling: root.player.live && !!presentation?.playing && !panelOpen
     readonly property var availableFocusTargets: root.player.lyricsFocusTarget ? [root.player.lyricsFocusTarget].concat(focusTargets) : focusTargets
 
-    readonly property Item focusTarget: panel.opened ? panel.focusTarget : availableFocusTargets.find(item => item?.visible && item.enabled) ?? null
-    readonly property Item previousFocusTarget: panel.opened ? panel.focusTarget : availableFocusTargets.filter(item => item?.visible && item.enabled).slice(-1)[0] ?? null
+    readonly property Item focusTarget: panelOpen ? inlinePanel.focusTarget : availableFocusTargets.find(item => item?.visible && item.enabled) ?? null
+    readonly property Item previousFocusTarget: panelOpen ? inlinePanel.focusTarget : availableFocusTargets.filter(item => item?.visible && item.enabled).slice(-1)[0] ?? null
 
     implicitHeight: root.baseHeight
 
     function cycleFocus(backwards) {
-        if (panel.opened)
-            return panel.cycleFocus(backwards);
+        if (panelOpen)
+            return FocusNavigation.moveFocus(inlinePanel.focusTargets, backwards);
         return FocusNavigation.moveFocus(availableFocusTargets, backwards);
     }
 
     function buttonForPanel(panelId) {
         const usable = panelButtons.filter(button => button?.visible && button.enabled);
+        const opener = root.player.panelOpener;
+        if (opener?.panelId === panelId && usable.includes(opener))
+            return opener;
         return usable.find(button => button.panelId === panelId) ?? usable[0] ?? null;
     }
 
@@ -80,15 +85,5 @@ Item {
             anchors.fill: parent
             anchors.margins: root.padding + Theme.layerOutlineWidth
         }
-    }
-
-    MediaPanel {
-        id: panel
-        parent: root.player.contentViewport || root
-        z: DashMetrics.overlayZ
-        player: root.player
-        visible: root.visible && active
-        scrimRadius: root.backdropRadius
-        returnFocusItem: root.buttonForPanel(displayedPanel)
     }
 }

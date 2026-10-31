@@ -6,37 +6,52 @@ import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Services
 import qs.Modules.DDash
+import "LyricsModel.js" as LyricsModel
 
 FocusScope {
     id: root
 
     property var player: null
     property var lyrics: null
-    property bool smoothHighlight: root.player?.smoothLyrics ?? MediaOptions.defaults.smoothLyrics
     property real radius: DashMetrics.mediaInnerRadius
-    property real contentInset: 0
-    property Item blurSource: null
-    property Item backgroundParent: null
-    property real backgroundRadius: radius
+    property color backgroundColor: DashMetrics.cardColor
     property bool following: true
-    property bool followSnap: false
-    property Item followedItem: null
-    property real followedY: 0
+    property real now: 0
+    property int pushedItem: -1
+    property bool animateFollow: false
+    property var heightCache: ({})
 
     readonly property var controller: root.lyrics ?? LyricsService.controller
     readonly property bool ready: controller.state === "ready"
-    readonly property bool unsynced: ready && !controller.synced
-    readonly property bool showFollow: ready && controller.synced && !following
+    readonly property bool synced: controller.synced
+    readonly property bool unsynced: ready && !synced
+    readonly property bool showFollow: ready && synced && !following
     readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
-    readonly property int activeIndex: controller.activeIndex
-    readonly property int firstFocusedIndex: controller.focusedGroups[0] ?? -1
+    readonly property bool sweep: (root.player?.smoothLyrics ?? MediaOptions.defaults.smoothLyrics) && animationsEnabled
+    readonly property bool playing: controller.playing
+    readonly property real sampleTime: controller.sampleTime
     readonly property string trackKey: controller.trackKey
-    readonly property string shownResult: controller.shownResult
+    readonly property var items: synced ? LyricsModel.buildItems(controller.lines, DashMetrics.lyricsBreakGap) : LyricsModel.plainItems(controller.plainLines)
+    readonly property int trackedCentre: synced ? LyricsModel.centreItem(items, sampleTime, controller.followIndex) : -1
+    property int centreItem: -1
+    property real centreTime: -Infinity
+    // Only a word sweep or a break moves between the controller's cue ticks.
+    readonly property bool needsClock: {
+        const item = items[centreItem];
+        if (!item)
+            return false;
+        if (item.kind === "break")
+            return true;
+        return sweep && item.group.parts.some(part => part.w.length > 0);
+    }
     readonly property bool userScrolling: transcript.isUserScrolling || transcript.dragging
-    readonly property real currentLineY: transcript.currentItem?.y ?? 0
     readonly property real shapeInset: Math.ceil(Math.min(radius, width / 2, height / 2) * (1 - Math.SQRT1_2))
     readonly property bool compact: content.height < Theme.listItemTwoLineHeight * 2
+    readonly property real breakSize: Math.round(leadFontSize * DashMetrics.lyricsBreakIndicatorScale)
     readonly property real leadFontSize: Math.round(Math.max(Theme.fontSizeXLarge, Math.min(Theme.fontSizeDisplay, transcript.height / DashMetrics.lyricsLeadHeightDivisor, transcript.width / DashMetrics.lyricsLeadWidthDivisor)))
+    // The ends leave room for half a single row line, so scrolling stops with the first or last line centred.
+    readonly property real endPadding: synced ? Math.max(0, transcript.height / 2 - (leadFontMetrics.lineHeight + Theme.spacingS * 2) / 2) : Theme.spacingS
+    readonly property real edgeFade: Math.min(transcript.height * DashMetrics.lyricsEdgeFadeRatio, DashMetrics.lyricsEdgeFadeMax)
     readonly property string message: {
         switch (controller.state) {
         case "instrumental":
@@ -52,37 +67,42 @@ FocusScope {
     activeFocusOnTab: true
     Accessible.role: Accessible.Pane
     Accessible.name: I18n.tr("Lyrics", "Media player lyrics button")
-    onActiveIndexChanged: followTimer.restart()
-    onFirstFocusedIndexChanged: followTimer.restart()
-    onReadyChanged: snapToCurrent()
-    onShownResultChanged: snapToCurrent()
-    onWidthChanged: snapToCurrent()
-    onHeightChanged: snapToCurrent()
+    // A position correction or a floored resume can set the clock back a second just after the view
+    // moved on, which would scroll back to the previous row and forward again a moment later.
+    onTrackedCentreChanged: {
+        const backstep = synced && trackedCentre >= 0 && trackedCentre === centreItem - 1;
+        if (backstep && sampleTime < centreTime && centreTime - sampleTime < DashMetrics.lyricsFollowBackstepSlack)
+            return;
+        centreTime = sampleTime;
+        centreItem = trackedCentre;
+    }
+    onCentreItemChanged: requestFollow(true)
+    Component.onCompleted: centreItem = trackedCentre
+    onItemsChanged: {
+        pushedItem = -1;
+        centreTime = -Infinity;
+        centreItem = trackedCentre;
+        requestFollow(false);
+    }
+    onReadyChanged: requestFollow(false)
+    onWidthChanged: requestFollow(false)
+    onHeightChanged: requestFollow(false)
+    onLeadFontSizeChanged: requestFollow(false)
+    onSampleTimeChanged: {
+        if (!clock.running)
+            now = sampleTime;
+    }
     onTrackKeyChanged: {
         if (controller.holdsSong())
             return;
         following = true;
-        followMotion.stop();
         transcript.stopMomentum();
-        transcript.savedY = 0;
         transcript.positionViewAtBeginning();
+        requestFollow(false);
     }
     onUserScrollingChanged: {
         if (userScrolling)
             browse();
-    }
-    onCurrentLineYChanged: {
-        if (!followedItem || transcript.currentItem !== followedItem || transcript.currentIndex !== Math.max(0, activeIndex))
-            return;
-        const shift = currentLineY - followedY;
-        followedY = currentLineY;
-        if (shift === 0 || !following)
-            return;
-        if (followMotion.running) {
-            followTimer.restart();
-            return;
-        }
-        transcript.contentY = Math.max(transcript.originY, Math.min(transcript.maximumContentY, transcript.contentY + shift));
     }
 
     LyricsSubscription {
@@ -99,42 +119,107 @@ FocusScope {
 
     function browse() {
         following = false;
-        followMotion.stop();
+        scrollSpring.snapTo(transcript.contentY);
+        settleRows();
     }
 
-    function snapToCurrent() {
-        followSnap = true;
+    function resume() {
+        following = true;
+        forceActiveFocus(Qt.OtherFocusReason);
+        requestFollow(true);
+    }
+
+    function requestFollow(animate) {
+        animateFollow = animate && (followTimer.running ? animateFollow : true);
         followTimer.restart();
     }
 
+    function settleRows() {
+        for (const row of transcript.contentItem.children) {
+            if (row.settle)
+                row.settle();
+        }
+    }
+
+    // The view snaps to the new centre and every row is pushed back by the same distance, so the
+    // rows can catch up one after another: the new line leads and the others follow outwards.
     function followCurrent() {
-        const snap = followSnap;
-        followSnap = false;
-        if (!ready || !controller.synced || !following || transcript.count === 0)
+        const animate = animateFollow && animationsEnabled && pushedItem >= 0;
+        animateFollow = false;
+        if (!ready || !synced || !following || transcript.count === 0)
             return;
-        followMotion.stop();
+        const centre = Math.max(0, centreItem);
+        const jump = Math.abs(centre - pushedItem) > 1;
+        pushedItem = centre;
+        // A scroll on its way retargets to the active line on every step.
+        if (scrollSpring.running)
+            return;
         transcript.stopMomentum();
-        const previous = transcript.contentY;
-        transcript.currentIndex = Math.max(0, activeIndex);
         transcript.forceLayout();
-        transcript.positionViewAtIndex(transcript.currentIndex, ListView.Center);
-        if (transcript.currentItem && transcript.currentItem.height > transcript.height)
-            transcript.positionViewAtIndex(transcript.currentIndex, ListView.Beginning);
-        let target = transcript.contentY;
-        const first = transcript.itemAtIndex(controller.focusedGroups[0] ?? transcript.currentIndex);
-        const last = transcript.currentItem;
-        if (first && last && first !== last && first.y < target && last.y + last.height - first.y <= transcript.height)
-            target = Math.max(transcript.originY, Math.min(transcript.maximumContentY, first.y));
-        target = Math.round(target);
-        transcript.contentY = target;
-        followedItem = last;
-        followedY = last?.y ?? 0;
-        if (snap || !animationsEnabled || Math.abs(target - previous) > transcript.height)
+        heightCache = {};
+        const target = Math.round(centreOffset(centre));
+        const delta = target - transcript.contentY;
+        if (delta === 0)
             return;
-        transcript.contentY = previous;
-        followMotion.from = previous;
-        followMotion.to = target;
-        followMotion.restart();
+        // Rows far off are only laid out by moving there, so a jump lets the view place them.
+        if (!animate && Math.abs(delta) > transcript.height) {
+            settleRows();
+            transcript.positionViewAtIndex(centre, ListView.Center);
+            return;
+        }
+        // Further than a view away the rows cannot catch up one by one, so the view scrolls there.
+        if (animate && Math.abs(delta) > transcript.height) {
+            settleRows();
+            scrollSpring.snapTo(transcript.contentY);
+            scrollSpring.retarget(target);
+            return;
+        }
+        transcript.contentY = target;
+        if (!animate) {
+            settleRows();
+            return;
+        }
+        transcript.forceLayout();
+        for (const row of transcript.contentItem.children) {
+            if (!row.push || row.index < 0)
+                continue;
+            const lag = Math.abs(centre - row.index);
+            row.push(delta, jump ? 0 : Math.min(lag, DashMetrics.lyricsTrackMaxPush) * DashMetrics.lyricsTrackPushStep);
+        }
+    }
+
+    // The same sum a row makes of its height, so a line without a row is placed exactly.
+    function itemHeight(index) {
+        const item = items[index];
+        if (!item)
+            return 0;
+        const layouts = item.kind === "line" ? LyricsModel.partLayouts(item.group.parts, transcript.width, leadFontMetrics, backgroundFontMetrics, Theme.spacingXS) : [];
+        return LyricsModel.rowHeight(item, layouts, breakSize, Theme.spacingS, Theme.spacingXS);
+    }
+
+    // Counted from the row in the middle of the view, which is always laid out for real. The view
+    // keeps far off rows such as the first one at a guessed y, and lines without a row have none.
+    function centreOffset(centre) {
+        let anchor = transcript.itemAtIndex(transcript.indexAt(transcript.width / 2, transcript.contentY + transcript.height / 2));
+        if (!anchor)
+            anchor = transcript.itemAtIndex(Math.max(0, centreItem));
+        if (!anchor)
+            return transcript.contentY;
+        let y = anchor.y;
+        if (centre > anchor.index) {
+            for (let i = anchor.index; i < centre; i++)
+                y += cachedHeight(i) + transcript.spacing;
+        } else {
+            for (let i = centre; i < anchor.index; i++)
+                y -= cachedHeight(i) + transcript.spacing;
+        }
+        return y + cachedHeight(centre) / 2 - transcript.height / 2;
+    }
+
+    function cachedHeight(index) {
+        if (!(index in heightCache))
+            heightCache[index] = itemHeight(index);
+        return heightCache[index];
     }
 
     function scrollBy(amount) {
@@ -173,19 +258,34 @@ FocusScope {
         event.accepted = true;
     }
 
+    // A spring keeps its speed when the active line changes on the way, so the scroll bends towards
+    // the new line instead of starting over.
+    SpringMotion {
+        id: scrollSpring
+        enabled: !Theme.springMotionDisabled
+        stiffness: DashMetrics.lyricsScrollStiffness
+        damping: DashMetrics.lyricsScrollDamping
+        positionEpsilon: DashMetrics.lyricsScrollSettleDistance
+        velocityEpsilon: DashMetrics.lyricsScrollSettleSpeed
+        onValueChanged: {
+            if (!running)
+                return;
+            transcript.contentY = Math.round(value);
+            retarget(root.centreOffset(Math.max(0, root.centreItem)));
+        }
+    }
+
     Timer {
         id: followTimer
         interval: 0
         onTriggered: root.followCurrent()
     }
 
-    NumberAnimation {
-        id: followMotion
-        target: transcript
-        property: "contentY"
-        duration: Theme.expressiveDurations.expressiveDefaultSpatial
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+    FrameAnimation {
+        id: clock
+        running: root.visible && root.ready && root.synced && root.playing && root.needsClock
+        onTriggered: root.now = root.controller.shownTime()
+        onRunningChanged: root.now = root.controller.shownTime()
     }
 
     NumberAnimation on opacity {
@@ -197,30 +297,56 @@ FocusScope {
         easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
     }
 
-    Item {
-        parent: root.backgroundParent ?? root
+    Rectangle {
         anchors.fill: parent
-        opacity: root.backgroundParent ? root.opacity : 1
+        radius: root.radius
+        color: root.backgroundColor
+        antialiasing: true
+    }
 
-        BackdropBlur {
-            anchors.fill: parent
-            radius: root.backgroundRadius
-            sourceItem: root.blurSource
-            active: root.blurSource !== null && MediaAccentService.lyricsTint.a < 1
+    LineMeasure {
+        id: leadFontMetrics
+        font.pixelSize: root.leadFontSize
+        font.weight: Theme.fontWeightBold
+    }
+
+    LineMeasure {
+        id: backgroundFontMetrics
+        font.pixelSize: Math.round(root.leadFontSize * Theme.fontSizeLarge / Theme.fontSizeXLarge)
+        font.weight: Theme.fontWeightMedium
+    }
+
+    // Rows are measured by the same text type that draws them, so a row never comes out wider than it was laid out.
+    component LineMeasure: Item {
+        id: measure
+
+        property alias font: probe.font
+        readonly property real lineHeight: metrics.height
+
+        visible: false
+
+        function advanceWidth(text) {
+            probe.text = text;
+            return probe.implicitWidth;
         }
 
-        Rectangle {
-            anchors.fill: parent
-            radius: root.backgroundRadius
-            color: root.blurSource ? MediaAccentService.lyricsTint : DashMetrics.cardColor
-            antialiasing: true
+        StyledText {
+            id: probe
+            visible: false
+            wrapMode: Text.NoWrap
+            elide: Text.ElideNone
+        }
+
+        FontMetrics {
+            id: metrics
+            font: probe.font
         }
     }
 
     Item {
         id: content
         anchors.fill: parent
-        anchors.margins: Math.max(0, Math.max(root.shapeInset, root.contentInset) - Theme.spacingM)
+        anchors.margins: Math.max(0, root.shapeInset - Theme.spacingM)
 
         StyledText {
             id: heading
@@ -235,55 +361,16 @@ FocusScope {
             visible: root.unsynced && !root.compact
         }
 
-        DListView {
-            id: transcript
-            fadeEdges: false
-            showScrollBar: false
+        Item {
+            id: viewport
+
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: heading.visible ? heading.bottom : parent.top
-            anchors.bottom: followButton.top
+            anchors.bottom: parent.bottom
             anchors.margins: Theme.spacingM
-            clip: true
             visible: root.ready
             opacity: root.ready ? 1 : 0
-            reuseItems: true
-            spacing: Theme.spacingXXS
-            model: root.controller.synced ? root.controller.lines : root.controller.plainLines
-            add: null
-            remove: null
-            displaced: null
-            move: null
-            header: Item {
-                height: root.controller.synced ? transcript.height / 3 : Theme.spacingS
-            }
-            footer: Item {
-                width: transcript.width
-                height: Math.max(root.controller.synced ? transcript.height / 3 : Theme.spacingS, credit.implicitHeight + Theme.spacingM * 2)
-
-                StyledText {
-                    id: credit
-                    anchors.top: parent.top
-                    anchors.topMargin: Theme.spacingM
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: Math.min(implicitWidth, parent.width)
-                    text: root.controller.attributionName
-                    color: Theme.outline
-                    font.pixelSize: Theme.fontSizeSmall
-                    elide: Text.ElideRight
-                }
-
-                StateLayer {
-                    anchors.fill: credit
-                    anchors.margins: -Theme.spacingXS
-                    cornerRadius: Theme.cornerRadius
-                    stateColor: Theme.outline
-                    visible: root.controller.attributionUrl !== ""
-                    tooltipText: root.controller.attributionText || root.controller.attributionUrl
-                    onClicked: Qt.openUrlExternally(root.controller.attributionUrl)
-                }
-            }
-            onCountChanged: followTimer.restart()
 
             Behavior on opacity {
                 enabled: root.animationsEnabled
@@ -294,63 +381,87 @@ FocusScope {
                 }
             }
 
-            delegate: Item {
-                id: lyric
-                required property int index
-                required property var modelData
-                width: transcript.width
-                height: vocals.implicitHeight
+            DListView {
+                id: transcript
 
-                // Positioners relayout on polish, so the list would measure reused and rescaled rows at their old height.
-                Column {
-                    id: vocals
-                    width: parent.width
+                anchors.fill: parent
+                fadeEdges: false
+                showScrollBar: false
+                clip: true
+                reuseItems: true
+                cacheBuffer: Math.max(0, Math.round(height / 2))
+                model: root.items
+                add: null
+                remove: null
+                displaced: null
+                move: null
+                onCountChanged: root.requestFollow(false)
+                header: Item {
+                    width: transcript.width
+                    height: root.endPadding
+                }
+                footer: Item {
+                    width: transcript.width
+                    height: Math.max(root.endPadding, credit.implicitHeight + Theme.spacingM * 2)
 
-                    Repeater {
-                        onItemAdded: vocals.forceLayout()
-                        model: root.controller.synced ? lyric.modelData.parts : [
-                            {
-                                x: lyric.modelData,
-                                w: [],
-                                cues: [],
-                                side: 0,
-                                voiceName: "",
-                                background: false
-                            }
-                        ]
+                    StyledText {
+                        id: credit
+                        anchors.top: parent.top
+                        anchors.topMargin: Theme.spacingM
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: Math.min(implicitWidth, parent.width)
+                        text: root.controller.attributionName
+                        color: Theme.outline
+                        font.pixelSize: Theme.fontSizeSmall
+                        elide: Text.ElideRight
+                    }
 
-                        delegate: LyricsVocal {
-                            required property var modelData
-                            width: vocals.width
-                            controller: root.controller
-                            part: modelData
-                            accent: modelData.chorus ? MediaAccentService.lyricsGroupAccent : MediaAccentService.lyricsAccents[(modelData.voiceIndex ?? 0) % MediaAccentService.lyricsAccents.length]
-                            synced: root.controller.synced
-                            following: root.following
-                            leadFontSize: root.leadFontSize
-                            distance: lyric ? Math.abs(lyric.index - root.activeIndex) : 0
-                            animationsEnabled: root.animationsEnabled
-                            smoothHighlight: root.smoothHighlight
-                            onImplicitHeightChanged: vocals.forceLayout()
-                            inViewport: {
-                                if (!lyric)
-                                    return false;
-                                const top = lyric.y + y;
-                                return top + height > transcript.contentY && top < transcript.contentY + transcript.height;
-                            }
-                        }
+                    StateLayer {
+                        anchors.fill: credit
+                        anchors.margins: -Theme.spacingXS
+                        cornerRadius: Theme.cornerRadius
+                        stateColor: Theme.outline
+                        visible: root.controller.attributionUrl !== ""
+                        tooltipText: root.controller.attributionText || root.controller.attributionUrl
+                        onClicked: Qt.openUrlExternally(root.controller.attributionUrl)
                     }
                 }
 
-                StateLayer {
-                    anchors.fill: parent
-                    enabled: root.controller.canSeekLines
-                    stateColor: Theme.onSurfaceVariant
-                    cornerRadius: Theme.cornerRadius
-                    onClicked: {
-                        root.following = true;
-                        root.forceActiveFocus(Qt.MouseFocusReason);
-                        root.controller.seekToLine(lyric.index);
+                delegate: LyricsLine {
+                    id: line
+
+                    required property var modelData
+                    readonly property bool live: Math.abs(index - root.centreItem) <= 1
+                    // Faded per row rather than through a layer over the view, so a sung word only repaints its own row.
+                    readonly property real edgeDistance: Math.min(y + height / 2 - transcript.contentY, transcript.contentY + transcript.height - y - height / 2)
+
+                    width: transcript.width
+                    opacity: root.synced && root.edgeFade > 0 ? Math.max(0, Math.min(1, edgeDistance / root.edgeFade)) : 1
+                    item: modelData
+                    controller: root.controller
+                    clock: {
+                        if (!root.synced)
+                            return -1;
+                        if (line.live)
+                            return root.now;
+                        return line.index < root.centreItem ? Infinity : -1;
+                    }
+                    promoted: root.synced && index === root.centreItem
+                    synced: root.synced
+                    following: root.following
+                    playing: root.playing
+                    sweep: root.sweep
+                    animationsEnabled: root.animationsEnabled
+                    leadFontSize: root.leadFontSize
+                    leadMetrics: leadFontMetrics
+                    breakSize: root.breakSize
+                    backgroundMetrics: backgroundFontMetrics
+                    onActivated: {
+                        root.resume();
+                        if (line.item.kind === "break")
+                            root.controller.seekToTime(line.item.t);
+                        else
+                            root.controller.seekToLine(line.item.line);
                     }
                 }
             }
@@ -362,27 +473,22 @@ FocusScope {
             objectName: "followPlayback"
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: Theme.spacingM
+            anchors.bottomMargin: Theme.spacingL
             buttonHeight: Theme.buttonHeightXS
             maximumWidth: Math.max(0, parent.width - Theme.spacingM * 2)
             wrapText: true
-            height: root.showFollow ? implicitHeight : 0
             visible: root.showFollow
             text: root.compact ? "" : I18n.tr("Follow playback", "Resume automatic scrolling of lyrics")
             Accessible.name: I18n.tr("Follow playback", "Resume automatic scrolling of lyrics")
             tooltipText: root.compact ? Accessible.name : ""
             iconName: "my_location"
-            backgroundColor: Theme.chipSurface
-            textColor: MediaAccentService.readableAccent
-            onClicked: {
-                root.following = true;
-                root.forceActiveFocus(Qt.OtherFocusReason);
-                root.followCurrent();
-            }
+            backgroundColor: MediaAccentService.accentContainer
+            textColor: MediaAccentService.onAccentContainer
+            onClicked: root.resume()
         }
 
         Loader {
-            anchors.centerIn: transcript
+            anchors.centerIn: viewport
             active: opacity > 0
             opacity: root.controller.pending ? 1 : 0
 
