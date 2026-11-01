@@ -192,6 +192,17 @@ Item {
         return closed;
     }
 
+    function closeDash(): bool {
+        let closed = false;
+        for (const host of hosts()) {
+            if (!host?.islandController?.dashFaceExpanded)
+                continue;
+            host.islandController.requestCollapse();
+            closed = true;
+        }
+        return closed;
+    }
+
     function openLauncher(query, mode, screen, barId): bool {
         const target = screen ?? CompositorService.getFocusedScreen();
         const config = barId ? null : SettingsData.islandLauncherHostConfig(target);

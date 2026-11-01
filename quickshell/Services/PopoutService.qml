@@ -370,6 +370,7 @@ Singleton {
         _dankDashWantsEdit = false;
         if (dankDashPopout)
             dankDashPopout.dashVisible = false;
+        dankIslandRouter?.closeDash?.();
     }
 
     function toggleDankDash(tab, x, y, width, section, screen) {
