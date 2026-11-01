@@ -596,8 +596,9 @@ const DMS_ACTIONS = [
     },
     {
         id: "spawn dms ipc call niri cycleColumnWidth",
-        label: "Column width",
-        tip: "Fill remaining space, press again to restore, then the next preset width"
+        label: "Column: Cycle Width",
+        tip: "Fill remaining space, press again to restore, then the next preset width",
+        compositor: "niri"
     }
 ];
 

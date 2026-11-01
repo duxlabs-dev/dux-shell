@@ -196,3 +196,11 @@ test("niri argument fields keep quoted workspace names and land edits in the fie
     assert.equal(edit("set-column-width -10%", {}), "set-column-width -10%");
     assert.deepEqual(Object.assign({}, Actions.parseCompositorActionArgs("niri", 'move-column-to-workspace "focus=false"').args), { index: "focus=false" });
 });
+
+test("the niri column width cycle is offered on niri only", () => {
+    const Actions = loadScript(new URL("../Common/KeybindActions.js", import.meta.url));
+    const id = "spawn dms ipc call niri cycleColumnWidth";
+    assert.ok(Actions.getDmsActions(true, false).some(a => a.id === id));
+    assert.ok(!Actions.getDmsActions(false, true).some(a => a.id === id));
+    assert.ok(!Actions.getDmsActions(false, false).some(a => a.id === id));
+});
