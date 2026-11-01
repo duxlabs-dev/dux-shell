@@ -177,6 +177,8 @@ QtObject {
         return "";
     }
 
+    readonly property bool dashFaceExpanded: expanded && activeActivity !== "" && dashActivityFor(dashEntryIdFor(activeActivity)) === activeActivity
+
     function dashTabsShownFor(activityId) {
         return dashTabIds.length > 1 && dashTabIds.indexOf(dashEntryIdFor(activityId)) >= 0;
     }
