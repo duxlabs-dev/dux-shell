@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/duxlabs-dev/dux-shell/core/internal/niriconf"
 	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/niriconf"
 	"github.com/stretchr/testify/require"
 )
 

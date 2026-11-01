@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duxlabs-dev/dux-shell/core/internal/niriconf"
 	"github.com/duxlabs-dev/dux-go/ipc"
 	"github.com/duxlabs-dev/dux-go/ipc/params"
+	"github.com/duxlabs-dev/dux-shell/core/internal/niriconf"
 )
 
 // The socket only touches the page's fragments: DMS writes the other dms/*.kdl elsewhere.
