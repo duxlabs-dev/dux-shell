@@ -8,8 +8,8 @@ import qs.Modules.Settings.Widgets
 import "../../../../Common/niri/keep.js" as Keep
 import "../../../../Common/niri/registry.js" as Registry
 
-// « Keep this change? »: risky edits of the section go through edit() and come back after 15 s unless kept.
-// The mockup floats ONE banner at the top of the page: NiriShell owns it and it mirrors the active
+// "Keep this change?": risky edits of the section go through edit() and come back after 15 s unless kept.
+// One banner floats at the top of the page: NiriShell owns it and it mirrors the active
 // section's keeper, which keeps its state (and the revert on leave) and drops its own rendering.
 Rectangle {
     id: root
@@ -25,9 +25,8 @@ Rectangle {
     readonly property bool asking: secondsLeft > 0
     // A real-time 1 s tick, not an animation: Theme durations are fractions of the animation base.
     readonly property int oneSecondMs: 1000
-    // Banner width of the validated mockup; clamped to the parent in the banner itself.
     readonly property real bannerWidth: 520
-    // The mockup names the changed setting before the warning; titles come from the page's search index.
+    // Titles come from the page's search index.
     readonly property string what: Object.keys(shown.keepState.pending).map(key => titleOf(key)).filter(title => title !== "").join(", ")
 
     function edit(key, value) {
@@ -192,7 +191,7 @@ Rectangle {
                 font.features: ({
                         "tnum": 1
                     })
-                color: Theme.warning
+                color: Theme.surfaceText
             }
 
             StyledText {
