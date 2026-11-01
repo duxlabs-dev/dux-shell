@@ -158,7 +158,7 @@ Rectangle {
                 placeholderText: root.lane?.output ?? ""
                 maximumLength: 64
                 backgroundColor: "transparent"
-                // The mockup draws the lane name strong, including the output hint of an unnamed workspace.
+                // Strong text for the lane name, including the output hint of an unnamed workspace.
                 textColor: Theme.surfaceText
                 placeholderColor: Theme.surfaceText
                 font.weight: Theme.fontWeightBold

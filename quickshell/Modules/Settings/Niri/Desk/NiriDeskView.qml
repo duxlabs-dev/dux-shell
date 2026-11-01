@@ -22,7 +22,7 @@ ClippingRectangle {
     // Only false today (the gesture scene): a true value would need edit affordances back
     property bool editable: false
     property bool barAtBottom: false
-    // Mockup's "Loading config": windows hide under a scrim while niri loads the written config
+    // Windows hide under a scrim while niri loads the written config
     property bool loading: false
 
     // niri keeps the view where it was until focus leaves it, so the offset carries over between layouts

@@ -33,7 +33,7 @@ Item {
     readonly property var modifiedCounts: Shell.modifiedCounts(Object.keys(SettingsData.niriPage), key => NiriPageService.isModified(key))
     readonly property int modifiedTotal: Object.values(modifiedCounts).reduce((sum, n) => sum + n, 0)
 
-    // Breakpoints of the validated mockup (a-final.html), kept in shell.js; NiriTab reads maxWidth
+    // Breakpoints are kept in shell.js; NiriTab reads maxWidth
     readonly property real maxWidth: Shell.maxWidth
     readonly property bool wide: width >= Shell.wideMinWidth
     readonly property bool narrow: width <= Shell.narrowMaxWidth
@@ -61,7 +61,6 @@ Item {
     function readyOr(component, fallback) {
         if (component?.status === Component.Ready)
             return component;
-        // An absent file is a part not built yet; any other error is a broken file worth a log line
         if (component?.status === Component.Error && !component.errorString().includes("File not found"))
             root.log.warn("section", currentSection + ":", component.errorString().replace(/file:\/\/\S*\//g, ""));
         return fallback;
@@ -270,7 +269,7 @@ Item {
         id: sectionCatalog
     }
 
-    // The mockup floats one « Keep this change? » banner at the top of the page, over every section
+    // One "Keep this change?" banner floats at the top of the page, over every section
     NiriKeep {
         id: keepBanner
 

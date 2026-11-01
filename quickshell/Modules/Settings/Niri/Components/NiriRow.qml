@@ -51,8 +51,8 @@ Item {
         NiriPageService.reset(settingKey);
     }
 
-    // The fixed battery cost list, keyed by settingKey (the mockup poses pills on blur, shadows,
-    // animations and Alt-Tab previews only). A section never poses one itself.
+    // The fixed battery cost list, keyed by settingKey (blur, shadows, animations and Alt-Tab
+    // previews only). A section never poses one itself.
     readonly property var costList: ({
             "look.blurOn": ["high", I18n.tr("Redraws what is behind each window, every frame.", "niri page battery cost, blur")],
             "look.shadowOn": ["low", I18n.tr("Soft shadows cost little to draw.", "niri page battery cost, shadows")],
@@ -68,7 +68,7 @@ Item {
         return costList[key]?.[1] ?? "";
     }
 
-    // Bleeds into the card padding like the mockup, so the hover plate reaches past the text.
+    // Bleeds into the card padding so the hover plate reaches past the text.
     x: -Theme.spacingS
     width: (parent?.width ?? 0) + Theme.spacingS * 2
     visible: !folded

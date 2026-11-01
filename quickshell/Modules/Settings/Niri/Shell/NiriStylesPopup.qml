@@ -66,7 +66,7 @@ Popup {
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
     // The popup is created during the click that opens it, so focus: true alone lands before it can
     // hold focus and the first Escape would fall through to the page: close it from a window shortcut
-    // instead of taking focus on open (the forceActiveFocus attempt was reverted)
+    // instead of taking focus on open
     Shortcut {
         sequence: "Escape"
         enabled: root.visible

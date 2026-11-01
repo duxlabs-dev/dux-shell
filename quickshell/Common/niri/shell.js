@@ -1,9 +1,8 @@
 .pragma library
 
-// Pure rules of the niri shell (NiriShell.qml): the mockup's breakpoints and column sizes,
+// Pure rules of the niri shell (NiriShell.qml): breakpoints and column sizes,
 // where a section's side pane goes, and the nav list's modified counts.
 
-// Breakpoints and column sizes of the validated mockup (a-final.html)
 var maxWidth = 1440;
 var wideMinWidth = 1181;
 var narrowMaxWidth = 860;

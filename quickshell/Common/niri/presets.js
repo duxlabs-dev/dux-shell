@@ -13,7 +13,6 @@ var NAME_MAX = 40;
 // Import reads a file only up to this size.
 var TEXT_MAX = 65536;
 
-// The four presets of the validated mockup (a-final.html PRESETS).
 var presets = [
     {
         id: "compact",

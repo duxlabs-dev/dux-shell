@@ -7,7 +7,7 @@ import qs.DCommon.Widgets
 import qs.Modules.Settings.Niri.Components
 import qs.Modules.Settings.Widgets
 
-// One card for the pointer devices, as the mockup: its rows (tap, natural scrolling,
+// One card for the pointer devices: its rows (tap, natural scrolling,
 // focus follows mouse, pointer jumps to focus, speed) in Simple, the rest of what a
 // touchpad or a mouse has in Expert.
 NiriCard {

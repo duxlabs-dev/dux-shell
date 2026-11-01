@@ -9,7 +9,7 @@ NiriRow {
     id: root
 
     readonly property int mode: value === -2 ? 2 : value >= 0 ? 1 : 0
-    // Custom starts from niri's own default, as the mockup's gaps slider does
+    // Custom starts from niri's own default
     readonly property int niriGaps: 16
 
     settingKey: "look.gaps"

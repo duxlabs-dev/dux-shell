@@ -20,7 +20,7 @@ Item {
     signal kdlToggled
     signal changedOnlyToggled
 
-    // Compact follows the mockup at 400 px: status row first, tools across the full width last
+    // Compact: status row first, tools across the full width last
     readonly property real gap: Theme.spacingM
     readonly property real rowHeight: Math.max(searchBar.height, tools.implicitHeight, status.height)
     readonly property bool oneLine: !compact && width - tools.implicitWidth - status.width - gap * 2 >= searchMinWidth
@@ -99,8 +99,8 @@ Item {
     Row {
         id: status
 
-        // Two-line narrow: pack right after the tools like the mockup's wrapped action row,
-        // instead of floating alone at the far right of a half-empty line
+        // Two-line narrow: pack right after the tools instead of floating alone at the far right
+        // of a half-empty line
         x: header.oneLine || header.compact ? header.width - width : tools.x + tools.width + header.gap
         y: (header.oneLine || header.compact ? header.gap : header.lowerY) + (header.rowHeight - height) / 2
         spacing: Theme.spacingS

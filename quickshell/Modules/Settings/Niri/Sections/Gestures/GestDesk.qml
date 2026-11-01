@@ -25,7 +25,7 @@ Rectangle {
         const g = (view.shown.gaps ?? 0) * view.ky;
         return Qt.rect((c.x - view.viewOffset) * view.kx, (view.barAtBottom ? 0 : view.barHeight) + g, c.width * view.kx, height - view.barHeight - g * 2);
     }
-    // Move, resize and float carry the focused column alone (mockup `.col.f`), scene and bar still
+    // Move, resize and float carry the focused column alone, scene and bar still
     readonly property bool carryColumn: (fx === "move" || fx === "resize" || fx === "float") && view.focusedColumn !== null
     // One gap around the column: its shadow leaves with it and no neighbouring window is caught
     readonly property real padX: (view.shown.gaps ?? 0) * view.kx
@@ -59,7 +59,7 @@ Rectangle {
 
         width: root.width
         height: root.height
-        // The mockup slides the scene (ws, cols) or shrinks it (ov); move, resize and float act on the column below
+        // Slides the scene (ws, cols) or shrinks it (ov); move, resize and float act on the column below
         x: root.fx === "cols" ? -0.22 * width * root.t : 0
         y: root.fx === "ws" ? -height * root.t : 0
         scale: root.fx === "ov" ? 1 - 0.45 * root.t : 1
@@ -86,7 +86,7 @@ Rectangle {
             }
         }
 
-        // The carried column: the mockup's `.col.f`, transform-origin left middle
+        // The carried column, scaled from its left middle
         Item {
             id: carried
 
@@ -118,7 +118,7 @@ Rectangle {
             }
         }
 
-        // The next workspace under this one (mockup ws2): flat grey window blocks slide in on a workspace swipe
+        // The next workspace under this one: flat grey window blocks slide in on a workspace swipe
         Item {
             id: nextWs
 

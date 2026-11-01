@@ -29,7 +29,7 @@ NiriCard {
     }
     Component.onDestruction: KeybindsService.removeRef()
 
-    // The bind store spells the modifier "Mod"; the card shows the key it stands for, as in the mockup.
+    // The bind store spells the modifier "Mod"; the card shows the key it stands for.
     function printKey(key) {
         return String(key).split("+").map(part => part.toLowerCase() === "mod" ? root.modKey : part).join("+");
     }

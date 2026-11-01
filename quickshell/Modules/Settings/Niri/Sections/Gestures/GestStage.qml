@@ -133,9 +133,8 @@ Column {
         }
     }
 
-    // The hint line sits under the column the gesture acts on (mockup ghint, left-aligned). Its height is
-    // kept while empty (the mockup reserves min-height 24): if the cards below shifted on hover, the
-    // pointer would cross the tile edge and restart the animation forever.
+    // The hint line sits under the column the gesture acts on. Its height is kept while empty: if the
+    // cards below shifted on hover, the pointer would cross the tile edge and restart the animation forever.
     Item {
         width: root.width
         height: Theme.buttonHeightM
