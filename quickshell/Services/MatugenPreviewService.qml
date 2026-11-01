@@ -20,7 +20,7 @@ Singleton {
     readonly property int seedCacheLimit: 32
 
     readonly property string source: SettingsData.matugenSeedColor || (!Theme.rawWallpaperPath ? Theme.materialWallpaperSeed : Theme.getMatugenColor("source_color", Theme.primary).toString())
-    readonly property string image: (!SettingsData.matugenSeedColor && Theme.rawWallpaperPath && !Theme.rawWallpaperPath.startsWith("#")) ? Theme.rawWallpaperPath : ""
+    readonly property string image: (!SettingsData.matugenSeedColor && Theme.wallpaperImagePath && !Theme.wallpaperImagePath.startsWith("#")) ? Theme.wallpaperImagePath : ""
     readonly property string keySuffix: "|" + (SettingsData.matugenContrast ?? 0) + "|" + SettingsData.matugenSpec
     readonly property string key: source + "|" + (SettingsData.matugenContrast ?? 0) + "|" + image + "|" + SettingsData.matugenSpec
     readonly property bool ready: loadedKey === key || failed || !Theme.matugenAvailable

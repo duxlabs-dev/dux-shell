@@ -8,6 +8,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
+import "../Common/WallpaperFormats.js" as WallpaperFormats
 
 Singleton {
     id: root
@@ -27,6 +28,7 @@ Singleton {
     readonly property bool serverSchedulingAvailable: DMSService.capabilities.includes("wallpaper")
     property real lastCycleSeq: -1
     property var monitorProcesses: ({})
+    property real _lastVideoAdvance: 0
 
     Connections {
         target: DMSService
@@ -147,7 +149,7 @@ Singleton {
 
     function findCommand(wallpaperDir, recursive) {
         const depthArg = recursive ? "" : "-maxdepth 1 ";
-        return ["sh", "-c", `find -L "${wallpaperDir}" ${depthArg}-type f \\( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.bmp" -o -iname "*.gif" -o -iname "*.webp" -o -iname "*.jxl" -o -iname "*.avif" -o -iname "*.heif" -o -iname "*.exr" -o -iname "*.svg" \\) 2>/dev/null | sort`];
+        return ["sh", "-c", `find -L "${wallpaperDir}" ${depthArg}-type f ${WallpaperFormats.findPredicate(true)} 2>/dev/null | sort`];
     }
 
     function monitorProcessFor(screenName) {
@@ -257,6 +259,34 @@ Singleton {
         DMSService.sendRequest("wallpaper.trigger", {
             "target": ""
         }, null);
+    }
+
+    // A video set to advance plays once and hands over to the next wallpaper when it ends.
+    function advancesOnVideoEnd(screenName) {
+        if (!serverSchedulingAvailable)
+            return false;
+        if (SessionData.perMonitorWallpaper) {
+            const settings = SessionData.getMonitorCyclingSettings(screenName);
+            return !!(settings.enabled && settings.videoEnd);
+        }
+        return SessionData.wallpaperCyclingEnabled && SessionData.wallpaperCyclingVideoEnd;
+    }
+
+    function handleVideoEnded(screenName) {
+        if (!advancesOnVideoEnd(screenName) || shouldPauseCycling)
+            return;
+        if (SessionData.perMonitorWallpaper) {
+            cycleNextForMonitor(screenName);
+            DMSService.sendRequest("wallpaper.trigger", {
+                "target": screenName
+            }, null);
+            return;
+        }
+        // Every output plays the shared video and reports its end; the first one advances.
+        if (Date.now() - _lastVideoAdvance < 2000)
+            return;
+        _lastVideoAdvance = Date.now();
+        cycleNextManually();
     }
 
     function cycleNextManually() {

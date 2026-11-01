@@ -75,6 +75,9 @@ var LOCAL_SPEC = {
     wallpaperCyclingFolderPath: {
         def: ""
     },
+    wallpaperCyclingVideoEnd: {
+        def: false
+    },
     monitorCyclingSettings: {
         def: {}
     },

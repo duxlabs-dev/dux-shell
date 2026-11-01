@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Widgets
 import qs.Common
+import qs.Services
 import qs.Modals.FileBrowser
 import qs.DCommon.FileBrowser as FB
 import qs.DCommon.Widgets
@@ -10,6 +11,7 @@ import qs.Widgets
 import qs.Modules.ControlCenter.Widgets
 import qs.Modules.DDash
 import "../../DCommon/Common/FocusNavigation.js" as FocusNavigation
+import "../../Common/WallpaperFormats.js" as WallpaperFormats
 
 Item {
     id: root
@@ -476,7 +478,7 @@ Item {
         showDotAndDotDot: false
         showHidden: false
         caseSensitive: false
-        nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp", "*.jxl", "*.avif", "*.heif", "*.exr", "*.svg"]
+        nameFilters: WallpaperFormats.nameFilters(true)
         showFiles: true
         showDirs: false
         sortField: {
@@ -526,7 +528,7 @@ Item {
             browserTitle: I18n.tr("Select Wallpaper Directory", "wallpaper directory file browser title")
             bucket: "wallpaper"
             startPath: root.getCurrentWallpaper()
-            filters: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp", "*.jxl", "*.avif", "*.heif", "*.exr", "*.svg"]
+            filters: WallpaperFormats.nameFilters(true)
             parentPopout: root.parentPopout
             onAccepted: paths => {
                 root.setCurrentWallpaper(paths[0]);
@@ -674,7 +676,7 @@ Item {
 
                                 CachingImage {
                                     anchors.fill: parent
-                                    imagePath: modelData || ""
+                                    imagePath: VideoWallpaperService.imageFor(modelData || "")
                                     maxCacheSize: DashMetrics.wallpaperThumbCache
                                     animate: false
                                     opacity: status === Image.Ready ? 1 : 0

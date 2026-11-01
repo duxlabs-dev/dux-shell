@@ -6,6 +6,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Settings.Widgets
+import "../../Common/WallpaperFormats.js" as WallpaperFormats
 
 DFloatingWindow {
     id: settingsModal
@@ -264,7 +265,7 @@ DFloatingWindow {
             browserTitle: I18n.tr("Select Wallpaper", "wallpaper file browser title")
             bucket: "wallpaper"
             showHiddenFiles: true
-            filters: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp", "*.jxl", "*.avif", "*.heif", "*.exr", "*.svg"]
+            filters: WallpaperFormats.nameFilters(true)
             onAccepted: paths => {
                 SessionData.setWallpaper(paths[0]);
                 SessionData.wallpaperCyclingFolderPath = "";
