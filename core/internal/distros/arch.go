@@ -121,6 +121,7 @@ func (a *ArchDistribution) DetectDependenciesWithTerminal(ctx context.Context, w
 	dependencies = append(dependencies, a.detectMatugen())
 	dependencies = append(dependencies, a.detectDanksearch())
 	dependencies = append(dependencies, a.detectDankCalendar())
+	dependencies = append(dependencies, a.detectFilesPackage(a.packageInstalled))
 
 	return dependencies, nil
 }
@@ -156,7 +157,7 @@ func (a *ArchDistribution) detectAccountsService() deps.Dependency {
 
 func (a *ArchDistribution) detectDMSGreeter() deps.Dependency {
 	installed := a.packageInstalled("dux-greeter-git") || a.packageInstalled("dux-greeter-bin")
-	dep := a.detectOptionalPackage("dms-greeter", "Dux Shell greetd greeter", installed)
+	dep := a.detectOptionalPackage("dux-greeter", "Dux Shell greetd greeter", installed)
 	dep.CanToggle = true
 	if a.packageInstalled("dux-greeter-git") {
 		dep.Variant = deps.VariantGit
@@ -218,15 +219,16 @@ func (a *ArchDistribution) GetPackageMappingWithVariants(wm deps.WindowManager, 
 		"dms (Dux Shell)":        a.getDMSMapping(variants["dms (Dux Shell)"]),
 		"git":                    {Name: "git", Repository: RepoTypeSystem},
 		"quickshell":             a.getQuickshellMapping(variants["quickshell"]),
-		"dms-greeter":            a.getDMSGreeterMapping(variants["dms-greeter"]),
+		"dux-greeter":            a.getDMSGreeterMapping(variants["dux-greeter"]),
 		"matugen":                a.getMatugenMapping(variants["matugen"]),
 		"ghostty":                {Name: "ghostty", Repository: RepoTypeSystem},
 		"kitty":                  {Name: "kitty", Repository: RepoTypeSystem},
 		"alacritty":              {Name: "alacritty", Repository: RepoTypeSystem},
 		"xdg-desktop-portal-gtk": {Name: "xdg-desktop-portal-gtk", Repository: RepoTypeSystem},
 		"accountsservice":        {Name: "accountsservice", Repository: RepoTypeSystem},
-		"danksearch":             a.getDanksearchMapping(variants["danksearch"]),
-		"dankcalendar":           a.getDankCalendarMapping(variants["dankcalendar"]),
+		"dux-search":             a.getDanksearchMapping(variants["dux-search"]),
+		"dux-calendar":           a.getDankCalendarMapping(variants["dux-calendar"]),
+		"dux-files":              a.getDuxFilesMapping(variants["dux-files"]),
 	}
 
 	switch wm {
@@ -294,6 +296,13 @@ func (a *ArchDistribution) getDankCalendarMapping(variant deps.PackageVariant) P
 		return PackageMapping{Name: "dux-calendar-git", Repository: RepoTypeAUR}
 	}
 	return PackageMapping{Name: "dux-calendar-bin", Repository: RepoTypeAUR}
+}
+
+func (a *ArchDistribution) getDuxFilesMapping(variant deps.PackageVariant) PackageMapping {
+	if variant == deps.VariantGit {
+		return PackageMapping{Name: "dux-files-git", Repository: RepoTypeAUR}
+	}
+	return PackageMapping{Name: "dux-files-bin", Repository: RepoTypeAUR}
 }
 
 func (a *ArchDistribution) getDMSGreeterMapping(variant deps.PackageVariant) PackageMapping {

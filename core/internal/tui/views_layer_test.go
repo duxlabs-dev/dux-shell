@@ -50,12 +50,12 @@ func TestImmutableSecondRunResumesPastReview(t *testing.T) {
 
 	first := immutableFedoraModel([]deps.Dependency{
 		{Name: dmsDepName, Status: deps.StatusMissing, Required: true},
-		{Name: "danksearch", Status: deps.StatusMissing},
-		{Name: "dankcalendar", Status: deps.StatusMissing},
+		{Name: "dux-search", Status: deps.StatusMissing},
+		{Name: "dux-calendar", Status: deps.StatusMissing},
 	})
 	first.selectedWM, first.selectedTerminal = 0, 1 // niri, kitty
-	first.disabledItems["danksearch"] = false
-	first.disabledItems["dankcalendar"] = true
+	first.disabledItems["dux-search"] = false
+	first.disabledItems["dux-calendar"] = true
 	if next, _ := first.continueOnImmutable(); next.(Model).state != StateLayerPackages {
 		t.Fatal("first run should stop at the layer screen")
 	}
@@ -73,15 +73,25 @@ func TestImmutableSecondRunResumesPastReview(t *testing.T) {
 
 	updated, _ := second.Update(depsDetectedMsg{deps: []deps.Dependency{
 		{Name: dmsDepName, Status: deps.StatusInstalled, Required: true},
-		{Name: "danksearch", Status: deps.StatusInstalled},
-		{Name: "dankcalendar", Status: deps.StatusInstalled},
+		{Name: "dux-search", Status: deps.StatusInstalled},
+		{Name: "dux-calendar", Status: deps.StatusInstalled},
 	}})
 	second = updated.(Model)
 	if second.state != StateConfigConfirmation {
 		t.Fatalf("state = %v, want StateConfigConfirmation without a review stop", second.state)
 	}
-	if second.disabledItems["danksearch"] || !second.disabledItems["dankcalendar"] {
+	if second.disabledItems["dux-search"] || !second.disabledItems["dux-calendar"] {
 		t.Fatalf("resume must restore the optional selection: %v", second.disabledItems)
+	}
+}
+
+func TestResumeFromOlderInstallerUsesCurrentNames(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
+	if err := saveLayerResume(layerResume{WindowManager: "niri", Terminal: "kitty", Selected: []string{"danksearch", "dms-greeter"}}); err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(loadLayerResume().Selected, ","); got != "dux-search,dux-greeter" {
+		t.Fatalf("Selected = %q, want dux-search,dux-greeter", got)
 	}
 }
 
@@ -106,12 +116,12 @@ func TestImmutableStartOverClearsResume(t *testing.T) {
 func TestImmutableEnableInstalledOptionalIsNotPending(t *testing.T) {
 	m := immutableFedoraModel([]deps.Dependency{
 		{Name: dmsDepName, Status: deps.StatusInstalled, Required: true},
-		{Name: "dms-greeter", Status: deps.StatusInstalled},
+		{Name: "dux-greeter", Status: deps.StatusInstalled},
 	})
 	m.selectedDep = 1
-	m.disabledItems["dms-greeter"] = true
+	m.disabledItems["dux-greeter"] = true
 	m.toggleSelectedDependency()
-	if m.disabledItems["dms-greeter"] || m.reinstallItems["dms-greeter"] {
+	if m.disabledItems["dux-greeter"] || m.reinstallItems["dux-greeter"] {
 		t.Fatalf("enable on an image must not mark a reinstall: disabled=%v reinstall=%v", m.disabledItems, m.reinstallItems)
 	}
 	if pending := distros.PendingDependencies(m.dependencies, m.reinstallItems, m.disabledItems); len(pending) != 0 {

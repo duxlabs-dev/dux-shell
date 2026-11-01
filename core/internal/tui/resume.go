@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
 )
 
 // Carries the first run's choices across the reboot that layering needs.
@@ -42,6 +44,9 @@ func loadLayerResume() *layerResume {
 	var r layerResume
 	if json.Unmarshal(data, &r) != nil || r.WindowManager == "" || r.Terminal == "" {
 		return nil
+	}
+	for i, name := range r.Selected {
+		r.Selected[i] = deps.CanonicalName(name)
 	}
 	return &r
 }

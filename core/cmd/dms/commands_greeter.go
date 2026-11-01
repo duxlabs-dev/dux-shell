@@ -31,7 +31,7 @@ var greeterCmd = &cobra.Command{
 }
 
 func greeterMapping(config distros.DistroConfig) distros.PackageMapping {
-	return config.Constructor(config, nil).GetPackageMapping(0)["dms-greeter"]
+	return config.Constructor(config, nil).GetPackageMapping(0)["dux-greeter"]
 }
 
 func greeterRepoURL(config distros.DistroConfig) string {

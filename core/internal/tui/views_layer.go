@@ -34,11 +34,11 @@ func (m Model) resumeAfterLayering() (tea.Model, tea.Cmd) {
 
 func (m Model) setupUserServices() tea.Cmd {
 	return func() tea.Msg {
-		if !m.useSystemdConfig() || !m.optionalDepSelected("danksearch") {
+		if !m.useSystemdConfig() || !m.optionalDepSelected("dux-search") {
 			return nil
 		}
 		if err := distros.SetupDsearchService(context.Background(), func(line string) { m.logChan <- line }); err != nil {
-			m.logChan <- "danksearch service setup warning (non-fatal): " + err.Error()
+			m.logChan <- "dux-search service setup warning (non-fatal): " + err.Error()
 		}
 		return nil
 	}

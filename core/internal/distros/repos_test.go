@@ -226,15 +226,15 @@ func TestVoidRepoMoves(t *testing.T) {
 func TestVoidMappingsUseNewHost(t *testing.T) {
 	v := NewVoidDistribution(Registry["void"], nil)
 	for _, variants := range []map[string]deps.PackageVariant{
-		{"dms (Dux Shell)": deps.VariantStable, "dms-greeter": deps.VariantStable},
-		{"dms (Dux Shell)": deps.VariantGit, "dms-greeter": deps.VariantGit},
+		{"dms (Dux Shell)": deps.VariantStable, "dux-greeter": deps.VariantStable},
+		{"dms (Dux Shell)": deps.VariantGit, "dux-greeter": deps.VariantGit},
 	} {
 		packages := v.GetPackageMappingWithVariants(deps.WindowManagerNiri, variants)
 		want := map[string]string{
 			"dms (Dux Shell)": "https://void.duxlabs.dev/dms/current",
-			"dms-greeter":     "https://void.duxlabs.dev/dux-repo/current",
-			"danksearch":      "https://void.duxlabs.dev/dux-repo/current",
-			"dankcalendar":    "https://void.duxlabs.dev/dux-repo/current",
+			"dux-greeter":     "https://void.duxlabs.dev/dux-repo/current",
+			"dux-search":      "https://void.duxlabs.dev/dux-repo/current",
+			"dux-calendar":    "https://void.duxlabs.dev/dux-repo/current",
 		}
 		for dep, url := range want {
 			if got := packages[dep].RepoURL; got != url {

@@ -26,6 +26,7 @@ var ErrPackagesNotLayered = fmt.Errorf("packages must be layered into the image 
 var validConfigNames = map[string]string{
 	"niri":      "Niri",
 	"hyprland":  "Hyprland",
+	"mango":     "Mango",
 	"ghostty":   "Ghostty",
 	"kitty":     "Kitty",
 	"alacritty": "Alacritty",
@@ -33,7 +34,7 @@ var validConfigNames = map[string]string{
 
 // orderedConfigNames defines the canonical order for config names in output.
 // Must be kept in sync with validConfigNames.
-var orderedConfigNames = []string{"niri", "hyprland", "ghostty", "kitty", "alacritty"}
+var orderedConfigNames = []string{"niri", "hyprland", "mango", "ghostty", "kitty", "alacritty"}
 
 // Config holds all CLI parameters for unattended installation.
 type Config struct {
@@ -48,9 +49,10 @@ type Config struct {
 	ReplaceConfigs    []string // specific configs to deploy (e.g. "niri", "ghostty")
 	ReplaceConfigsAll bool     // deploy/replace all configurations
 	Yes               bool
-	DankSearch        bool // install danksearch and enable its user service
-	DankCalendar      bool // install dankcalendar
-	DmsGreeter        bool // install dms-greeter
+	DuxSearch         bool // install dux-search and enable its user service
+	DuxCalendar       bool // install dux-calendar
+	DuxFiles          bool // install dux-files
+	DuxGreeter        bool // install dux-greeter
 }
 
 // Runner orchestrates unattended (headless) installation.
@@ -220,10 +222,10 @@ func (r *Runner) Run() error {
 	useSystemd := distros.HasSystemd()
 
 	// 9. Greeter setup. On images dms-greeter escalates itself, so it is left to the user.
-	if osInfo.Immutable && !disabledItems["dms-greeter"] && r.depExists(dependencies, "dms-greeter") {
+	if osInfo.Immutable && !disabledItems["dux-greeter"] && r.depExists(dependencies, "dux-greeter") {
 		fmt.Fprintln(os.Stdout, "Greeter: run 'dms-greeter install --yes' to configure greetd.")
 	}
-	if !osInfo.Immutable && !disabledItems["dms-greeter"] && r.depExists(dependencies, "dms-greeter") {
+	if !osInfo.Immutable && !disabledItems["dux-greeter"] && r.depExists(dependencies, "dux-greeter") {
 		fmt.Fprintln(os.Stdout, "Configuring DMS greeter...")
 		logFunc := func(line string) {
 			r.log(line)
@@ -235,16 +237,16 @@ func (r *Runner) Run() error {
 		}
 	}
 
-	// 9b. danksearch service setup (if danksearch was included)
-	if useSystemd && !disabledItems["danksearch"] && r.depExists(dependencies, "danksearch") {
-		fmt.Fprintln(os.Stdout, "Enabling danksearch service...")
+	// 9b. dux-search service setup (if dux-search was included)
+	if useSystemd && !disabledItems["dux-search"] && r.depExists(dependencies, "dux-search") {
+		fmt.Fprintln(os.Stdout, "Enabling dux-search service...")
 		logFunc := func(line string) {
 			r.log(line)
-			fmt.Fprintf(os.Stdout, "  danksearch: %s\n", line)
+			fmt.Fprintf(os.Stdout, "  dux-search: %s\n", line)
 		}
 		if err := distros.SetupDsearchService(context.Background(), logFunc); err != nil {
 			// Non-fatal, matching greeter behavior
-			fmt.Fprintf(os.Stderr, "Warning: danksearch service setup issue (non-fatal): %v\n", err)
+			fmt.Fprintf(os.Stderr, "Warning: dux-search service setup issue (non-fatal): %v\n", err)
 		}
 	}
 
@@ -325,7 +327,7 @@ func (r *Runner) applyGitVariants(dependencies []deps.Dependency, hasGitVariant 
 	}
 
 	for _, name := range r.cfg.GitDeps {
-		name = strings.ToLower(strings.TrimSpace(name))
+		name = deps.CanonicalName(strings.ToLower(strings.TrimSpace(name)))
 		if name == "" {
 			continue
 		}
@@ -378,28 +380,34 @@ func (r *Runner) buildDisabledItems(dependencies []deps.Dependency) (map[string]
 	}
 
 	// Dedicated flags resolve before include/exclude
-	if r.cfg.DankSearch {
-		if !r.depExists(dependencies, "danksearch") {
-			return nil, fmt.Errorf("--danksearch: not available on this distribution")
+	if r.cfg.DuxSearch {
+		if !r.depExists(dependencies, "dux-search") {
+			return nil, fmt.Errorf("--dux-search: not available on this distribution")
 		}
-		delete(disabledItems, "danksearch")
+		delete(disabledItems, "dux-search")
 	}
-	if r.cfg.DankCalendar {
-		if !r.depExists(dependencies, "dankcalendar") {
-			return nil, fmt.Errorf("--dankcalendar: not available on this distribution")
+	if r.cfg.DuxCalendar {
+		if !r.depExists(dependencies, "dux-calendar") {
+			return nil, fmt.Errorf("--dux-calendar: not available on this distribution")
 		}
-		delete(disabledItems, "dankcalendar")
+		delete(disabledItems, "dux-calendar")
 	}
-	if r.cfg.DmsGreeter {
-		if !r.depExists(dependencies, "dms-greeter") {
-			return nil, fmt.Errorf("--dms-greeter: not available on this distribution")
+	if r.cfg.DuxFiles {
+		if !r.depExists(dependencies, "dux-files") {
+			return nil, fmt.Errorf("--dux-files: not available on this distribution")
 		}
-		delete(disabledItems, "dms-greeter")
+		delete(disabledItems, "dux-files")
+	}
+	if r.cfg.DuxGreeter {
+		if !r.depExists(dependencies, "dux-greeter") {
+			return nil, fmt.Errorf("--dux-greeter: not available on this distribution")
+		}
+		delete(disabledItems, "dux-greeter")
 	}
 
 	// Process --include-deps (enable items that are disabled by default)
 	for _, name := range r.cfg.IncludeDeps {
-		name = strings.TrimSpace(name)
+		name = deps.CanonicalName(strings.TrimSpace(name))
 		if name == "" {
 			continue
 		}
@@ -411,7 +419,7 @@ func (r *Runner) buildDisabledItems(dependencies []deps.Dependency) (map[string]
 
 	// Process --exclude-deps (disable items)
 	for _, name := range r.cfg.ExcludeDeps {
-		name = strings.TrimSpace(name)
+		name = deps.CanonicalName(strings.TrimSpace(name))
 		if name == "" {
 			continue
 		}
@@ -460,7 +468,7 @@ func (r *Runner) buildReplaceConfigs() (map[string]bool, error) {
 		}
 		deployerKey, ok := validConfigNames[strings.ToLower(name)]
 		if !ok {
-			return nil, fmt.Errorf("--replace-configs: unknown config %q; valid values: niri, hyprland, ghostty, kitty, alacritty", name)
+			return nil, fmt.Errorf("--replace-configs: unknown config %q; valid values: niri, hyprland, mango, ghostty, kitty, alacritty", name)
 		}
 		result[deployerKey] = true
 	}

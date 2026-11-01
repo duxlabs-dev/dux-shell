@@ -28,10 +28,11 @@ func (d *DebianDistribution) pikaPackageMapping(wm deps.WindowManager, variants 
 		"accountsservice":        system("accountsservice"),
 		"dms (Dux Shell)":        variantMapping("dms", variants["dms (Dux Shell)"], RepoTypeSystem, ""),
 		"quickshell":             variantMapping("quickshell", variants["quickshell"], RepoTypeSystem, ""),
-		"dms-greeter":            variantMapping("dms-greeter", variants["dms-greeter"], RepoTypeSystem, ""),
+		"dux-greeter":            variantMapping("dms-greeter", variants["dux-greeter"], RepoTypeSystem, ""),
 		"matugen":                system("matugen"),
-		"danksearch":             system("danksearch"),
-		"dankcalendar":           variantMapping("dankcalendar", variants["dankcalendar"], RepoTypeSystem, ""),
+		"dux-search":             system("danksearch"),
+		"dux-calendar":           variantMapping("dankcalendar", variants["dux-calendar"], RepoTypeSystem, ""),
+		"dux-files":              variantMapping("dux-files", variants["dux-files"], RepoTypeSystem, ""),
 	}
 
 	switch wm {

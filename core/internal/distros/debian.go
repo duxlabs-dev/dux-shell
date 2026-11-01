@@ -78,6 +78,7 @@ func (d *DebianDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 	dependencies = append(dependencies, d.detectMatugen())
 	dependencies = append(dependencies, d.detectDanksearch())
 	dependencies = append(dependencies, d.detectCalendarPackage(d.packageInstalled))
+	dependencies = append(dependencies, d.detectFilesPackage(d.packageInstalled))
 
 	return dependencies, nil
 }
@@ -153,11 +154,12 @@ func (d *DebianDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 		// DMS packages from OBS with variant support
 		"dms (Dux Shell)": d.getDmsMapping(variants["dms (Dux Shell)"]),
 		"quickshell":      d.getQuickshellMapping(variants["quickshell"]),
-		"dms-greeter":     variantMapping("dux-greeter", variants["dms-greeter"], RepoTypeOBS, obsDeps),
+		"dux-greeter":     variantMapping("dux-greeter", variants["dux-greeter"], RepoTypeOBS, obsDeps),
 		"matugen":         {Name: "matugen", Repository: RepoTypeOBS, RepoURL: obsDeps},
 		"ghostty":         {Name: "ghostty", Repository: RepoTypeOBS, RepoURL: obsDeps},
-		"danksearch":      {Name: "dux-search", Repository: RepoTypeOBS, RepoURL: obsDeps},
-		"dankcalendar":    variantMapping("dux-calendar", variants["dankcalendar"], RepoTypeOBS, obsDeps),
+		"dux-search":      {Name: "dux-search", Repository: RepoTypeOBS, RepoURL: obsDeps},
+		"dux-calendar":    variantMapping("dux-calendar", variants["dux-calendar"], RepoTypeOBS, obsDeps),
+		"dux-files":       variantMapping("dux-files", variants["dux-files"], RepoTypeOBS, obsDeps),
 	}
 
 	if wm == deps.WindowManagerNiri {
