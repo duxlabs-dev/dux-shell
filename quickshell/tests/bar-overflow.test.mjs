@@ -3,7 +3,7 @@ import test from "node:test";
 import { loadScript } from "./qml-script.mjs";
 
 const layout = loadScript(new URL("../Modules/DBar/OverflowLayout.js", import.meta.url));
-const entry = (size, mode = "bar") => ({ size, mode });
+const entry = (size, mode = "bar", priority = 0) => ({ size, mode, priority });
 const options = { length: 400, spacing: 4, triggerSize: 30, restoreMargin: 8 };
 const plain = value => JSON.parse(JSON.stringify(value));
 const solve = (left, center, right, extra = {}, previous = {}) => layout.resolve({ left, center, right }, { ...options, ...extra }, previous);
@@ -32,6 +32,18 @@ test("center eligibility resolves a collision with pinned side widgets", () => {
     const result = solve([entry(130)], [entry(80, "auto"), entry(80)], [entry(80)]);
     assert.deepEqual(plain(result.hidden.center), [0]);
     assert.equal(result.fits, true);
+});
+
+test("the lowest overflow priority yields first, ahead of nearer widgets and across sections", () => {
+    const left = solve([entry(100), entry(90, "auto", -1), entry(20, "auto")], [entry(80)], [], { length: 420 });
+    assert.deepEqual(plain(left.hidden.left), [1]);
+    const across = solve([entry(100), entry(50, "auto", -1)], [], [entry(100), entry(100, "auto")], { length: 360 });
+    assert.deepEqual(plain(across.hidden), { left: [1], center: [], right: [] });
+});
+
+test("the highest priority returns from overflow first", () => {
+    const result = solve([entry(100), entry(60, "auto"), entry(60, "auto", 5)], [entry(80)], [], { length: 500 }, { left: [1, 2] });
+    assert.deepEqual(plain(result.hidden.left), [1]);
 });
 
 test("pinned-only impossible layouts stop without hiding widgets", () => {

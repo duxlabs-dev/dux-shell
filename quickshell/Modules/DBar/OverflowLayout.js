@@ -12,6 +12,11 @@ function placement(entry, fallback = "bar") {
     return mode === "auto" || mode === "always" ? mode : "bar";
 }
 
+function priority(entry) {
+    const value = Number(entry?.overflowPriority);
+    return Number.isFinite(value) ? value : 0;
+}
+
 function defaultPosition(name, count) {
     return name === "right" ? 0 : count;
 }
@@ -239,6 +244,7 @@ function resolve(sections, options, previous = {}) {
         const measured = fit.measured;
         // The center anchors the bar, so the sides yield first; between them the longer one gives up a widget.
         const colliding = measured.collisions.slice().sort((a, b) => (a === "center") - (b === "center") || measured.intervals[b].size - measured.intervals[a].size);
+        // The lowest priority yields first; ties keep the section and proximity order.
         let candidate = null;
         for (const name of colliding) {
             const position = options.positions?.[name] ?? defaultPosition(name, sections[name].length);
@@ -249,12 +255,14 @@ function resolve(sections, options, previous = {}) {
                     eligible.push(index);
             }
             eligible.sort((a, b) => Math.abs(a + 0.5 - position) - Math.abs(b + 0.5 - position));
-            if (eligible.length) {
-                candidate = {
-                    name,
-                    index: eligible[0]
-                };
-                break;
+            for (const index of eligible) {
+                const rank = sections[name][index].priority ?? 0;
+                if (!candidate || rank < candidate.rank)
+                    candidate = {
+                        name,
+                        index,
+                        rank
+                    };
             }
         }
         if (!candidate)
@@ -281,6 +289,7 @@ function resolve(sections, options, previous = {}) {
             }
         }
     }
+    restoring.sort((a, b) => (sections[b.name][b.index].priority ?? 0) - (sections[a.name][a.index].priority ?? 0));
     for (const {
         name,
         index
