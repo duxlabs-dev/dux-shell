@@ -791,15 +791,15 @@ func (s *Screenshoter) captureRegionOnOutput(output *WaylandOutput, region Regio
 		return s.captureRegionOnTransformedOutput(output, region)
 	}
 
-	scale := regionCaptureScale(DetectCompositor(), output.effectiveScale())
-	localX := int32(float64(region.X-output.x) * scale)
-	localY := int32(float64(region.Y-output.y) * scale)
-	w := int32(float64(region.Width) * scale)
-	h := int32(float64(region.Height) * scale)
+	captureScale, resultScale := regionCaptureScales(DetectCompositor(), output.effectiveScale())
+	localX := int32(float64(region.X-output.x) * captureScale)
+	localY := int32(float64(region.Y-output.y) * captureScale)
+	w := int32(float64(region.Width) * captureScale)
+	h := int32(float64(region.Height) * captureScale)
 
 	if DetectCompositor() == CompositorMango {
-		scaledOutW := int32(float64(output.width) * scale)
-		scaledOutH := int32(float64(output.height) * scale)
+		scaledOutW := int32(float64(output.width) * resultScale)
+		scaledOutH := int32(float64(output.height) * resultScale)
 		if localX >= scaledOutW {
 			localX = localX % scaledOutW
 		}
@@ -833,16 +833,17 @@ func (s *Screenshoter) captureRegionOnOutput(output *WaylandOutput, region Regio
 	if err != nil {
 		return nil, err
 	}
-	result.Scale = scale
+	result.Scale = resultScale
 	result.CICP = s.outputCICP(output)
 	return result, nil
 }
 
-func regionCaptureScale(compositor Compositor, scale float64) float64 {
+func regionCaptureScales(compositor Compositor, outputScale float64) (captureScale, resultScale float64) {
+	resultScale = outputScale
 	if compositor != CompositorMango {
-		return 1
+		return 1, resultScale
 	}
-	return scale
+	return outputScale, resultScale
 }
 
 func (s *Screenshoter) captureRegionOnTransformedOutput(output *WaylandOutput, region Region) (*CaptureResult, error) {

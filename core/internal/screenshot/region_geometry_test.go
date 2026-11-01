@@ -163,6 +163,41 @@ func TestSelectedLogicalGeometryPreSelection(t *testing.T) {
 	}
 }
 
+func TestSelectedLogicalGeometryPreSelectionScaled(t *testing.T) {
+	surface := &OutputSurface{
+		logicalW: 1920,
+		logicalH: 1080,
+		output: &WaylandOutput{
+			name:            "eDP-1",
+			fractionalScale: 2,
+		},
+		screenBuf: &ShmBuffer{
+			Width:  3840,
+			Height: 2160,
+			Stride: 3840 * 4,
+		},
+	}
+	r := &RegionSelector{
+		preSelect: Region{
+			X:      200,
+			Y:      100,
+			Width:  400,
+			Height: 300,
+			Output: "eDP-1",
+		},
+	}
+
+	r.applyPreSelection(surface)
+	got, ok := r.selectedLogicalGeometry()
+	if !ok {
+		t.Fatal("expected scaled preselection to produce valid geometry")
+	}
+	if got.X != 200 || got.Y != 100 || got.Width != 400 || got.Height != 300 {
+		t.Fatalf("got (%d, %d, %d, %d), want (200, 100, 400, 300)",
+			got.X, got.Y, got.Width, got.Height)
+	}
+}
+
 func TestLogicalRegionFromDevicePixels(t *testing.T) {
 	out := &WaylandOutput{
 		name:            "eDP-1",
@@ -181,12 +216,23 @@ func TestLogicalRegionFromDevicePixels(t *testing.T) {
 	}
 }
 
-func TestRegionCaptureScale(t *testing.T) {
-	if got := regionCaptureScale(CompositorNiri, 2); got != 1 {
-		t.Errorf("protocol scale = %v, want 1", got)
+func TestRegionCaptureScales(t *testing.T) {
+	tests := []struct {
+		name                    string
+		compositor              Compositor
+		wantCapture, wantResult float64
+	}{
+		{"protocol compositor", CompositorNiri, 1, 2},
+		{"Mango", CompositorMango, 2, 2},
 	}
-	if got := regionCaptureScale(CompositorMango, 2); got != 2 {
-		t.Errorf("Mango scale = %v, want 2", got)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			captureScale, resultScale := regionCaptureScales(tc.compositor, 2)
+			if captureScale != tc.wantCapture || resultScale != tc.wantResult {
+				t.Fatalf("regionCaptureScales() = (%v, %v), want (%v, %v)",
+					captureScale, resultScale, tc.wantCapture, tc.wantResult)
+			}
+		})
 	}
 }
 

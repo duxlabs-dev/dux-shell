@@ -989,11 +989,11 @@ func (r *RegionSelector) applyPreSelection(os *OutputSurface) {
 	scaleX := float64(os.logicalW) / float64(os.screenBuf.Width)
 	scaleY := float64(os.logicalH) / float64(os.screenBuf.Height)
 
-	x1 := float64(r.preSelect.X-os.output.x) * scaleX
-	y1 := float64(r.preSelect.Y-os.output.y) * scaleY
+	x1 := float64(r.preSelect.X - os.output.x)
+	y1 := float64(r.preSelect.Y - os.output.y)
 	// selection edges are inclusive; the exclusive width edge is one device px past it
-	x2 := float64(r.preSelect.X-os.output.x+r.preSelect.Width)*scaleX - scaleX
-	y2 := float64(r.preSelect.Y-os.output.y+r.preSelect.Height)*scaleY - scaleY
+	x2 := x1 + float64(r.preSelect.Width) - scaleX
+	y2 := y1 + float64(r.preSelect.Height) - scaleY
 
 	r.selection.hasSelection = true
 	r.selection.fromPreSelect = true
