@@ -996,7 +996,7 @@ Or edit `$CONFIGPATH/quickshell/dms/config.json`:
 5. **Performance**: Keep widgets lightweight, avoid long operations that block the UI loop
 6. **Responsive Design**: Adapt to `compactMode` and different screen sizes
 7. **Documentation**: Include README.md explaining plugin usage
-8. **Versioning**: Use semantic versioning for updates
+8. **Versioning**: Use semantic versioning for updates. Users update while the shell is running, and Qt keeps each plugin directory's file list from the first load until the shell restarts. A QML or JS file that an update adds next to the existing ones fails with `File name case mismatch` until `dms restart`. Put new files in a new subdirectory, or tell users the update needs a restart.
 9. **Dependencies**: Document external library requirements
 
 ## Clipboard Access
