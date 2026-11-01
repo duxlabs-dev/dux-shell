@@ -82,95 +82,9 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            tags: ["niri", "layout", "gaps", "radius", "window", "border"]
-            title: I18n.tr("Layout overrides")
-            settingKey: "niriLayout"
-            iconName: "layers"
-            visible: CompositorService.isNiri
-
-            SettingsButtonGroupRow {
-                tags: ["niri", "gaps", "override", "unmanaged"]
-                settingKey: "niriLayoutGapsMode"
-                resetKeys: ["niriLayoutGapsOverride"]
-                text: I18n.tr("Gaps", "noun, window gaps mode in compositor layout settings")
-                description: I18n.tr("Auto follows bar spacing, Off keeps your %1 config", "gaps mode description, %1 is the compositor name").arg("niri")
-                model: [I18n.tr("Auto"), I18n.tr("Custom"), I18n.tr("Off")]
-                currentIndex: {
-                    if (SettingsData.niriLayoutGapsOverride === -2)
-                        return 2;
-                    return SettingsData.niriLayoutGapsOverride >= 0 ? 1 : 0;
-                }
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    switch (index) {
-                    case 1:
-                        SettingsData.set("niriLayoutGapsOverride", Math.max(4, (SettingsData.getPrimaryBarConfig()?.spacing ?? 4)));
-                        return;
-                    case 2:
-                        SettingsData.set("niriLayoutGapsOverride", -2);
-                        return;
-                    default:
-                        SettingsData.set("niriLayoutGapsOverride", -1);
-                    }
-                }
-            }
-
-            SettingsSliderRow {
-                tags: ["niri", "gaps", "override"]
-                settingKey: "niriLayoutGapsOverride"
-                resetKeys: []
-                text: I18n.tr("Window gaps")
-                visible: SettingsData.niriLayoutGapsOverride >= 0
-                value: Math.max(0, SettingsData.niriLayoutGapsOverride)
-                minimum: 0
-                maximum: 50
-                unit: "px"
-                onSliderValueChanged: newValue => SettingsData.set("niriLayoutGapsOverride", newValue)
-            }
-
-            SettingsControlledBy {
-                target: "surfaces"
-                parentModal: root.parentModal
-                section: "windowRadius"
-                settingLabel: I18n.tr("Window radius")
-                reason: Math.round(Theme.windowRadius) + "px"
-            }
-
-            SettingsToggleSliderRow {
-                tags: ["niri", "border", "override", "focus-ring"]
-                settingKey: "niriLayoutBorderSizeEnabled"
-                text: I18n.tr("Override border size")
-                checked: SettingsData.niriLayoutBorderSize >= 0
-                value: Math.max(0, SettingsData.niriLayoutBorderSize)
-                minimum: 0
-                maximum: 10
-                unit: "px"
-                onToggled: checked => SettingsData.set("niriLayoutBorderSize", checked ? 2 : -1)
-                onSliderValueChanged: newValue => SettingsData.set("niriLayoutBorderSize", newValue)
-            }
-
-            SettingsToggleRow {
-                visible: CompositorService.isNiri
-                tags: ["niri", "xray", "blur", "background-effect", "performance"]
-                settingKey: "niriLayoutXrayEnabled"
-                text: I18n.tr("Xray blur")
-                description: I18n.tr("Blurred surfaces show the wallpaper, not the windows beneath")
-                checked: NiriService.layoutXrayEnabled
-                onToggled: checked => NiriService.setLayoutXray(checked)
-            }
-
-            SettingsToggleRow {
-                visible: CompositorService.isNiri && !SettingsData.connectedFrameModeActive
-                tags: ["niri", "xray", "bar", "frame", "performance"]
-                settingKey: "niriLayoutBarXrayEnabled"
-                text: SettingsData.frameEnabled ? I18n.tr("Frame xray") : I18n.tr("Bar xray")
-                description: I18n.tr("Blur against the wallpaper even with xray off")
-                checked: NiriService.layoutBarXrayEnabled
-                onToggled: checked => NiriService.setLayoutBarXray(checked)
-            }
+        SettingsNiriLink {
+            section: "windows"
+            hint: I18n.tr("Windows", "niri page section")
         }
 
         SettingsCard {

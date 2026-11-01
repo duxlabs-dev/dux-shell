@@ -9,6 +9,7 @@ import qs.Common
 import qs.Services
 import "../Common/ConfigIncludeResolve.js" as ConfigIncludeResolve
 import "../Common/KeybindActions.js" as Actions
+import "../Common/niri/binds.js" as Binds
 
 Singleton {
     id: root
@@ -388,49 +389,22 @@ Singleton {
     function executeAction(action, luaAction) {
         if (!action)
             return false;
-        log.info("Executing keybind action:", action);
-
-        if (action.startsWith("spawn ") || action.startsWith("spawn_shell ") || action.startsWith("spawn-sh ") || action.startsWith("exec ")) {
-            let cmd = action;
-            if (cmd.startsWith("spawn "))
-                cmd = cmd.slice(6).trim();
-            else if (cmd.startsWith("spawn_shell "))
-                cmd = cmd.slice(12).trim();
-            else if (cmd.startsWith("spawn-sh ")) {
-                cmd = cmd.slice(9).trim();
-                if ((cmd.startsWith('"') && cmd.endsWith('"')) || (cmd.startsWith("'") && cmd.endsWith("'")))
-                    cmd = cmd.slice(1, -1);
-            } else if (cmd.startsWith("exec "))
-                cmd = cmd.slice(5).trim();
-
-            Quickshell.execDetached(["sh", "-c", cmd]);
-            return true;
-        }
+        // The action name only: arguments can hold paths or secrets
+        log.info("Executing keybind action:", action.trim().split(/\s+/)[0]);
 
         const provider = currentProvider || cheatsheetProvider;
-        if (provider === "niri") {
-            const parts = action.trim().split(/\s+/);
-            if (parts.length === 0 || parts[0] === "next-window" || parts[0] === "previous-window")
-                return false;
+        const spawn = Binds.spawnArgv(action, provider);
+        if (spawn) {
+            if (spawn.length > 0)
+                Quickshell.execDetached(spawn);
+            return spawn.length > 0;
+        }
 
-            const cmdParts = [];
-            for (let i = 0; i < parts.length; i++) {
-                const part = parts[i];
-                const eqIdx = part.indexOf("=");
-                if (eqIdx !== -1) {
-                    const key = part.slice(0, eqIdx);
-                    const val = part.slice(eqIdx + 1).replace(/^["']|["']$/g, "");
-                    if (key === "skip-confirmation") {
-                        if (val === "true")
-                            cmdParts.push("--skip-confirmation");
-                    } else {
-                        cmdParts.push("--" + key + "=" + val);
-                    }
-                } else {
-                    cmdParts.push(part);
-                }
-            }
-            Quickshell.execDetached(["sh", "-c", "niri msg action " + cmdParts.join(" ")]);
+        if (provider === "niri") {
+            const base = action.trim().split(/\s+/)[0];
+            if (!base || base === "next-window" || base === "previous-window")
+                return false;
+            Quickshell.execDetached(Binds.niriActionArgv(action));
             return true;
         }
         if (provider === "hyprland") {
@@ -765,6 +739,74 @@ Singleton {
         });
     }
 
+    function bindKeyData(bind) {
+        const sourceStr = bind.source || "config";
+        return {
+            "key": bind.key || "",
+            "desc": bind.desc || "",
+            "source": sourceStr,
+            "isOverride": sourceStr === "dms",
+            "isDMSManaged": sourceStr === "dms" || sourceStr === "dms-default",
+            "hasDefault": bind.hasDefault === true,
+            "cooldownMs": bind.cooldownMs || 0,
+            "flags": bind.flags || "",
+            "allowWhenLocked": bind.allowWhenLocked || false,
+            "allowInhibiting": bind.allowInhibiting,
+            "repeat": bind.repeat,
+            "trigger": bind.trigger === "press" ? "" : (bind.trigger || ""),
+            "releaseAction": bind.releaseAction || "",
+            "passThrough": bind.passThrough
+        };
+    }
+
+    // Each `conflict` hides a config.kdl bind behind one key: a conflicted bind keeps its own entry, or
+    // merging it into the action entry would drop later conflicts and under-plan the clean-up doubles.
+    function bindGroups(processed, sortedCats) {
+        const grouped = [];
+        const actionMap = {};
+        for (var ci = 0; ci < sortedCats.length; ci++) {
+            const category = sortedCats[ci];
+            const binds = processed[category];
+            if (!binds)
+                continue;
+            for (var i = 0; i < binds.length; i++) {
+                const bind = binds[i];
+                const action = bind.action || "";
+                const keyData = bindKeyData(bind);
+                const releaseAction = keyData.trigger === "both" ? keyData.releaseAction : "";
+                const groupKey = releaseAction ? action + "\n" + releaseAction : action;
+                if (bind.conflict) {
+                    grouped.push({
+                        "category": category,
+                        "action": action,
+                        "releaseAction": releaseAction,
+                        "desc": bind.desc || actionMap[groupKey]?.desc || "",
+                        "keys": [keyData],
+                        "conflict": bind.conflict
+                    });
+                    continue;
+                }
+                if (actionMap[groupKey]) {
+                    actionMap[groupKey].keys.push(keyData);
+                    if (!actionMap[groupKey].desc && bind.desc)
+                        actionMap[groupKey].desc = bind.desc;
+                } else {
+                    const entry = {
+                        "category": category,
+                        "action": action,
+                        "releaseAction": releaseAction,
+                        "desc": bind.desc || "",
+                        "keys": [keyData],
+                        "conflict": null
+                    };
+                    actionMap[groupKey] = entry;
+                    grouped.push(entry);
+                }
+            }
+        }
+        return grouped;
+    }
+
     function _processData() {
         keybinds = _rawData || {};
         modKey = _rawData?.mod?.resolved || _rawData?.modKey || "Super";
@@ -820,56 +862,7 @@ Singleton {
             return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
         });
 
-        const grouped = [];
-        const actionMap = {};
-        for (var ci = 0; ci < sortedCats.length; ci++) {
-            const category = sortedCats[ci];
-            const binds = processed[category];
-            if (!binds)
-                continue;
-            for (var i = 0; i < binds.length; i++) {
-                const bind = binds[i];
-                const action = bind.action || "";
-                const sourceStr = bind.source || "config";
-                const keyData = {
-                    "key": bind.key || "",
-                    "desc": bind.desc || "",
-                    "source": sourceStr,
-                    "isOverride": sourceStr === "dms",
-                    "isDMSManaged": sourceStr === "dms" || sourceStr === "dms-default",
-                    "hasDefault": bind.hasDefault === true,
-                    "cooldownMs": bind.cooldownMs || 0,
-                    "flags": bind.flags || "",
-                    "allowWhenLocked": bind.allowWhenLocked || false,
-                    "allowInhibiting": bind.allowInhibiting,
-                    "repeat": bind.repeat,
-                    "trigger": bind.trigger === "press" ? "" : (bind.trigger || ""),
-                    "releaseAction": bind.releaseAction || "",
-                    "passThrough": bind.passThrough
-                };
-                const releaseAction = keyData.trigger === "both" ? keyData.releaseAction : "";
-                const groupKey = releaseAction ? action + "\n" + releaseAction : action;
-                const existing = actionMap[groupKey];
-                if (existing) {
-                    existing.keys.push(keyData);
-                    if (!existing.desc && bind.desc)
-                        existing.desc = bind.desc;
-                    if (!existing.conflict && bind.conflict)
-                        existing.conflict = bind.conflict;
-                } else {
-                    const entry = {
-                        "category": category,
-                        "action": action,
-                        "releaseAction": releaseAction,
-                        "desc": bind.desc || "",
-                        "keys": [keyData],
-                        "conflict": bind.conflict || null
-                    };
-                    actionMap[groupKey] = entry;
-                    grouped.push(entry);
-                }
-            }
-        }
+        const grouped = bindGroups(processed, sortedCats);
 
         const list = [];
         for (const cat of sortedCats) {
@@ -913,19 +906,18 @@ Singleton {
     function keysForAction(actionId) {
         if (!actionId)
             return [];
+        const keys = [];
         for (let i = 0; i < _flatCache.length; i++) {
             const group = _flatCache[i];
             if (!group || group.action !== actionId || !Array.isArray(group.keys))
                 continue;
-            const keys = [];
             for (let k = 0; k < group.keys.length; k++) {
                 const key = group.keys[k]?.key || "";
                 if (key)
                     keys.push(key);
             }
-            return keys;
         }
-        return [];
+        return keys;
     }
 
     function saveBind(originalKey, bindData, draft, callback) {
@@ -1028,6 +1020,10 @@ Singleton {
         if (currentProvider === "aqueous")
             return (_rawData?.binds?.Compositor || []).find(b => b.action === action)?.desc || Actions.getActionLabel(action, currentProvider);
         return Actions.getActionLabel(action, currentProvider);
+    }
+
+    function getActionTip(action) {
+        return Actions.getActionTip(action);
     }
 
     function isKnownCompositorAction(action) {

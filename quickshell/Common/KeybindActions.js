@@ -322,6 +322,11 @@ const DMS_ACTIONS = [
         compositor: "niri"
     },
     {
+        id: "spawn dms ipc call workspace closeAll",
+        label: "Workspace: Close All Windows",
+        compositor: "niri"
+    },
+    {
         id: "spawn dms ipc call keybinds open niri",
         label: "Keybinds Cheatsheet: Open",
         compositor: "niri"
@@ -588,6 +593,11 @@ const DMS_ACTIONS = [
     {
         id: "spawn dms ipc call workspace-rename open",
         label: "Workspace: Rename"
+    },
+    {
+        id: "spawn dms ipc call niri cycleColumnWidth",
+        label: "Column width",
+        tip: "Fill remaining space, press again to restore, then the next preset width"
     }
 ];
 
@@ -624,6 +634,10 @@ const NIRI_ACTIONS = {
         {
             id: "switch-preset-column-width",
             label: "Cycle Column Width"
+        },
+        {
+            id: "switch-preset-column-width-back",
+            label: "Previous preset width"
         },
         {
             id: "switch-preset-window-height",
@@ -3029,6 +3043,11 @@ function findCompositorAction(compositor, actionId) {
         }
     }
     return null;
+}
+
+// One line under the label of a DMS action, empty for the others.
+function getActionTip(action) {
+    return findDmsAction(action)?.tip || "";
 }
 
 function getActionLabel(action, compositor) {

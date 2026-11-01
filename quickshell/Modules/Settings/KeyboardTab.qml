@@ -24,8 +24,14 @@ Item {
             visibleCondition: CompositorService.supportsInputConfig
         }
 
+        SettingsNiriLink {
+            section: "input"
+            hint: I18n.tr("Input", "niri page section")
+        }
+
         SettingsCard {
             width: parent.width
+            visible: !CompositorService.isNiri
             tags: ["keyboard", "layout", "language", "input", "xkb"]
             title: I18n.tr("Layouts")
             settingKey: "keyboardLayoutsSettings"
@@ -123,6 +129,7 @@ Item {
 
         SettingsCard {
             width: parent.width
+            visible: !CompositorService.isNiri
             tags: ["keyboard", "repeat", "delay", "rate", "numlock", "behavior"]
             title: I18n.tr("Behavior")
             settingKey: "keyboardBehaviorSettings"

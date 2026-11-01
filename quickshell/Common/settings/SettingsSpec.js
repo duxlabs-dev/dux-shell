@@ -150,6 +150,12 @@ var LOCAL_SPEC = {
         def: -1,
         onChange: "updateCompositorLayout"
     },
+    niriPage: {
+        def: {}
+    },
+    niriPageExpert: {
+        def: false
+    },
     hyprlandLayoutGapsOverride: {
         def: -1,
         onChange: "updateCompositorLayout"

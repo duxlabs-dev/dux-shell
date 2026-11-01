@@ -176,6 +176,30 @@ BasePill {
         overview.overviewOpen = !overview.overviewOpen;
     }
 
+    property var contextMenuRecord: null
+
+    function runSecondaryAction(record) {
+        CompositorService.workspaceSecondaryAction(record, root.effectiveScreenName);
+        root.toggleHyprlandOverview();
+    }
+
+    function openNiriWorkspaces() {
+        if (!CompositorService.isNiri)
+            return;
+        SettingsUiState.niriSection = "workspaces";
+        PopoutService.openSettingsWithTab("niri");
+    }
+
+    // under niri the right click must also reach the niri page, so it opens a menu keeping the old action; other compositors keep the direct action
+    function openContextMenu(record) {
+        if (!CompositorService.isNiri) {
+            root.runSecondaryAction(record);
+            return;
+        }
+        root.contextMenuRecord = record;
+        contextMenu.openFromBar(root.contextMenuAnchor());
+    }
+
     function findClosestWorkspaceIndex(localX, localY) {
         if (workspaceRepeater.count === 0)
             return -1;
@@ -250,10 +274,7 @@ BasePill {
         }
     }
 
-    onRightClicked: {
-        CompositorService.workspaceSecondaryAction(null, root.effectiveScreenName);
-        root.toggleHyprlandOverview();
-    }
+    onRightClicked: root.openContextMenu(null)
 
     onPressedAt: (rootX, rootY) => {
         const idx = root.findClosestWorkspaceIndex(rootX, rootY);
@@ -745,8 +766,7 @@ BasePill {
                                 return;
                             root.switchToWorkspaceByModelData(modelData);
                         } else if (mouse.button === Qt.RightButton) {
-                            CompositorService.workspaceSecondaryAction(record, root.effectiveScreenName);
-                            root.toggleHyprlandOverview();
+                            root.openContextMenu(record);
                         }
                     }
                 }
@@ -1355,5 +1375,24 @@ BasePill {
                 }
             }
         }
+    }
+
+    DContextMenu {
+        id: contextMenu
+        layerNamespace: "dms:workspace-switcher-context-menu"
+        menuItems: [
+            {
+                type: "item",
+                icon: "grid_view",
+                text: I18n.tr("Overview", "noun, niri compositor overview mode label"),
+                action: () => root.runSecondaryAction(root.contextMenuRecord)
+            },
+            {
+                type: "item",
+                icon: "settings",
+                text: I18n.tr("Niri settings", "workspace switcher context menu entry: opens the niri settings page"),
+                action: () => root.openNiriWorkspaces()
+            }
+        ]
     }
 }

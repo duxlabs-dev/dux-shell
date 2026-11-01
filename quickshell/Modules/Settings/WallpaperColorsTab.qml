@@ -990,10 +990,16 @@ Column {
             include: cursorInclude
         }
 
+        SettingsNiriLink {
+            section: "input"
+            hint: I18n.tr("Input", "niri page section")
+        }
+
         SettingsDropdownRow {
             tab: "theme"
             tags: ["cursor", "mouse", "pointer", "theme"]
             settingKey: "cursorTheme"
+            visible: !CompositorService.isNiri
             text: I18n.tr("Theme")
             currentValue: SettingsData.cursorSettings.theme
             enableFuzzySearch: true
@@ -1009,6 +1015,7 @@ Column {
             tab: "theme"
             tags: ["cursor", "mouse", "pointer", "size"]
             settingKey: "cursorSize"
+            visible: !CompositorService.isNiri
             text: I18n.tr("Size")
             value: SettingsData.cursorSettings.size
             minimum: 12
@@ -1024,7 +1031,7 @@ Column {
             tags: ["cursor", "hide", "typing", "keyboard"]
             settingKey: "cursorHideWhenTyping"
             text: I18n.tr("Hide cursor when typing")
-            visible: CompositorService.isNiri || CompositorService.isHyprland
+            visible: CompositorService.isHyprland
             modified: checked
             checked: CompositorService.isNiri ? (SettingsData.cursorSettings.niri?.hideWhenTyping || false) : (SettingsData.cursorSettings.hyprland?.hideOnKeyPress || false)
             onToggled: checked => {
@@ -1081,7 +1088,7 @@ Column {
             settingKey: "cursorHideAfterInactive"
             text: I18n.tr("Cursor auto-hide timeout")
             minimumLabel: I18n.tr("Off")
-            visible: CompositorService.supportsCursorConfig
+            visible: CompositorService.supportsCursorConfig && !CompositorService.isNiri
             value: {
                 if (CompositorService.isNiri)
                     return SettingsData.cursorSettings.niri?.hideAfterInactiveMs || 0;

@@ -15,6 +15,7 @@ import qs.Modules.AppDrawer
 import qs.Modules.DDash
 import qs.Modules.ControlCenter
 import qs.Modules.Dock
+import qs.Modules.HotCorners
 import qs.Modules.Lock
 import qs.Modules.Notepad
 import qs.Modules.Notifications.Center
@@ -63,6 +64,12 @@ Item {
 
     DesktopContextMenu {
         Component.onCompleted: PopoutService.desktopContextMenu = this
+    }
+
+    LazyLoader {
+        active: CompositorService.isNiri
+
+        HotCorners {}
     }
 
     Lock {

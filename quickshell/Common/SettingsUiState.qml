@@ -20,6 +20,11 @@ Singleton {
     property string selectedWidgetTitle: ""
     property string selectedWidgetDescription: ""
     property string selectedWidgetIcon: ""
+    property string niriSection: "windows"
+    // {key, category} picked on the niri keybinds keyboard; the side pane lists its shortcuts.
+    property var niriKeyPick: null
+    // {key: value} drawn on the niri mini desktop while a row or a style is hovered; null shows the real state.
+    property var niriPreviewState: null
 
     // The dot has its own page, so bar selection never lands on it.
     function normalizeSelectedBar() {

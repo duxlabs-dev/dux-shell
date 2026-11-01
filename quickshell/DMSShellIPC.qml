@@ -8,6 +8,7 @@ import qs.Common
 import qs.Modules.DDash
 import qs.Services
 import qs.Modules.Settings.DisplayConfig
+import qs.Modules.Settings.Niri.Shell
 
 Item {
     id: root
@@ -22,6 +23,10 @@ Item {
     required property var hyprlandOverviewLoader
     required property var workspaceRenameModalLoaderRef
     required property var windowRuleModalLoaderRef
+
+    NiriSections {
+        id: niriSections
+    }
 
     function getPreferredBar(refPropertyName) {
         const focusedScreenName = BarWidgetService.getFocusedScreenName();
@@ -1029,6 +1034,21 @@ Item {
             return `SETTINGS_OPEN_SUCCESS: ${tab}`;
         }
 
+        function openNiri(section: string): string {
+            if (!CompositorService.isNiri)
+                return "SETTINGS_OPEN_FAILED: The niri page needs niri";
+            const entry = niriSections.all.find(item => item.id === section);
+            if (section && !entry)
+                return `SETTINGS_OPEN_FAILED: Unknown niri section ${section}`;
+            // The menu lists an Expert section only in Expert mode; the mode stays the user's choice
+            if (entry?.expertOnly && !SettingsData.niriPageExpert)
+                return `SETTINGS_OPEN_FAILED: ${section} is an Expert section, switch the niri page to Expert first`;
+            if (section)
+                SettingsUiState.niriSection = section;
+            PopoutService.openSettingsWithTab("niri");
+            return `SETTINGS_OPEN_SUCCESS: niri ${SettingsUiState.niriSection}`;
+        }
+
         function close(): string {
             PopoutService.closeSettings();
             return "SETTINGS_CLOSE_SUCCESS";
@@ -1895,6 +1915,14 @@ Item {
         }
 
         target: "workspace-rename"
+    }
+
+    IpcHandler {
+        function closeAll(): string {
+            return NiriWorkspaceActions.closeFocusedWorkspace();
+        }
+
+        target: "workspace"
     }
 
     IpcHandler {

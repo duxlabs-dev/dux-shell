@@ -13,10 +13,6 @@ SettingsCard {
         void (DisplayConfigState.pendingNiriChanges);
         return DisplayConfigState.getNiriSetting(root.outputData, root.outputName, "disabled", false);
     }
-    readonly property var hotCornersData: {
-        void (DisplayConfigState.pendingNiriChanges);
-        return DisplayConfigState.getNiriSetting(root.outputData, root.outputName, "hotCorners", null);
-    }
 
     title: I18n.tr("Compositor", "noun, wayland compositor, section title and launcher logo option fallback")
     collapsible: true
@@ -55,65 +51,9 @@ SettingsCard {
         }
     }
 
-    SettingsDropdownRow {
-        text: I18n.tr("Hot corners")
-        enabled: !root.isDisabled
-        currentValue: {
-            const data = root.hotCornersData;
-            if (!data)
-                return I18n.tr("Inherit", "inherit from global setting");
-            if (data.off)
-                return I18n.tr("Off");
-            const corners = data.corners || [];
-            if (corners.length === 0)
-                return I18n.tr("Inherit", "inherit from global setting");
-            if (corners.length === 4)
-                return I18n.tr("All");
-            return I18n.tr("Select", "verb, dropdown placeholder or option that opens a picker") + "…";
-        }
-        options: [I18n.tr("Inherit", "inherit from global setting"), I18n.tr("Off"), I18n.tr("All"), I18n.tr("Select", "verb, dropdown placeholder or option that opens a picker") + "…"]
-
-        onValueChanged: value => {
-            switch (value) {
-            case I18n.tr("Inherit", "inherit from global setting"):
-                DisplayConfigState.setNiriSetting(root.outputData, root.outputName, "hotCorners", null);
-                break;
-            case I18n.tr("Off"):
-                DisplayConfigState.setNiriSetting(root.outputData, root.outputName, "hotCorners", {
-                    "off": true
-                });
-                break;
-            case I18n.tr("All"):
-                DisplayConfigState.setNiriSetting(root.outputData, root.outputName, "hotCorners", {
-                    "corners": ["top-left", "top-right", "bottom-left", "bottom-right"]
-                });
-                break;
-            case I18n.tr("Select", "verb, dropdown placeholder or option that opens a picker") + "…":
-                DisplayConfigState.setNiriSetting(root.outputData, root.outputName, "hotCorners", {
-                    "corners": []
-                });
-                break;
-            }
-        }
-    }
-
-    SettingsButtonGroupRow {
-        id: hotCornersGroup
-
-        readonly property var cornerKeys: ["top-left", "top-right", "bottom-left", "bottom-right"]
-
-        visible: !!root.hotCornersData && !root.hotCornersData.off && root.hotCornersData.corners !== undefined
-        enabled: !root.isDisabled
-        selectionMode: "multi"
-        checkEnabled: false
-        model: [I18n.tr("Top Left"), I18n.tr("Top Right"), I18n.tr("Bottom Left"), I18n.tr("Bottom Right")]
-        currentSelection: (root.hotCornersData?.corners ?? []).map(key => model[cornerKeys.indexOf(key)]).filter(label => label !== undefined)
-        onSelectionChanged: (index, selected) => {
-            const corners = currentSelection.map(label => cornerKeys[model.indexOf(label)]).filter(key => key !== undefined);
-            DisplayConfigState.setNiriSetting(root.outputData, root.outputName, "hotCorners", {
-                "corners": corners
-            });
-        }
+    SettingsNiriLink {
+        section: "gestures"
+        hint: I18n.tr("Gestures", "niri page section")
     }
 
     SettingsRow {
