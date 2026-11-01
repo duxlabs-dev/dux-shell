@@ -47,7 +47,7 @@ Popup {
     // A bind row titles with the real bind key, not the typed spelling; a free combination keeps it
     function titleOf(result) {
         if (result.kind !== "bind")
-            return result.title;
+            return I18n.tr(result.title, "niri page search entry");
         const group = result.binds[0];
         if (!group)
             return result.combo;
