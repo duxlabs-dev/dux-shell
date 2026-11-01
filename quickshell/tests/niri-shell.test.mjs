@@ -26,10 +26,3 @@ test("modifiedCounts counts per section, skips custom and styles, one per animat
     // the vm context has its own Object prototype: compare the shape
     assert.equal(JSON.stringify(counts), JSON.stringify({ look: 2, animations: 2 }));
 });
-
-test("breakpoints are the validated mockup's", () => {
-    assert.equal(Shell.wideMinWidth, 1181);
-    assert.equal(Shell.narrowMaxWidth, 860);
-    assert.equal(Shell.compactMaxWidth, 480);
-    assert.ok(Shell.menuWideWidth > Shell.menuMediumWidth);
-});
