@@ -17,6 +17,7 @@ import (
 func setupNiriConfig(t *testing.T) {
 	t.Helper()
 	home := t.TempDir()
+	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", home)
 	t.Setenv("NIRI_SOCKET", "")
 	require.NoError(t, os.MkdirAll(filepath.Join(home, "niri"), 0o755))
