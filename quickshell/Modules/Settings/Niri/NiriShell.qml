@@ -288,4 +288,3 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
     }
 }
-
