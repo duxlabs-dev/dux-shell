@@ -178,7 +178,7 @@ Item {
                 visible: !root.dockHosted && !OverflowLayout.pinned(root.widgetType) && OverflowLayout.placement(root.entry, root.sectionAutoOverflow ? "auto" : "bar") === "auto"
                 resetStore: root.store
                 resetKeys: ["overflowPriority"]
-                text: I18n.tr("Overflow priority")
+                text: I18n.tr("Overflow priority", "bar widget setting, how early an auto widget moves into overflow")
                 description: I18n.tr("Lower priorities move into overflow first", "bar widget overflow priority slider description")
                 value: root.value("overflowPriority")
                 minimum: -10
