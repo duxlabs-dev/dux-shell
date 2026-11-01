@@ -822,7 +822,8 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization"
+    "page": "personalization",
+    "conditionKey": "isNiri"
   },
   {
     "section": "themeScheduleNav",
@@ -1286,7 +1287,7 @@
       "wallpaper"
     ],
     "page": "personalization",
-    "conditionKey": "isHyprlandOrNiri"
+    "conditionKey": "isHyprland"
   },
   {
     "section": "notificationHistory",
@@ -2417,7 +2418,8 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization"
+    "page": "personalization",
+    "conditionKey": "isNiri"
   },
   {
     "section": "_hub_sound_media",
@@ -13052,32 +13054,6 @@
     "conditionKey": "isHyprland"
   },
   {
-    "section": "niriLayoutBarXrayEnabled",
-    "label": "Frame xray",
-    "tabIndex": 37,
-    "category": "System & integrations",
-    "keywords": [
-      "against",
-      "background",
-      "bar",
-      "bg",
-      "blur",
-      "desktop",
-      "even",
-      "frame",
-      "image",
-      "integrations",
-      "niri",
-      "performance",
-      "picture",
-      "system",
-      "wallpaper",
-      "xray"
-    ],
-    "description": "Blur against the wallpaper even with xray off",
-    "conditionKey": "isNiri"
-  },
-  {
     "section": "hyprlandScrollingFullscreenOneColumn",
     "label": "Fullscreen single column",
     "tabIndex": 37,
@@ -13142,38 +13118,6 @@
     "description": "Auto follows bar spacing, Off keeps your %1 config",
     "descriptionArgs": [
       "MangoWC"
-    ],
-    "conditionKey": "layoutCapable"
-  },
-  {
-    "section": "niriLayoutGapsMode",
-    "label": "Gaps",
-    "tabIndex": 37,
-    "category": "System & integrations",
-    "keywords": [
-      "auto",
-      "config",
-      "follows",
-      "gap",
-      "gaps",
-      "integrations",
-      "keeps",
-      "margin",
-      "margins",
-      "niri",
-      "override",
-      "padding",
-      "panel",
-      "spacing",
-      "statusbar",
-      "system",
-      "taskbar",
-      "topbar",
-      "unmanaged"
-    ],
-    "description": "Auto follows bar spacing, Off keeps your %1 config",
-    "descriptionArgs": [
-      "niri"
     ],
     "conditionKey": "layoutCapable"
   },
@@ -13369,25 +13313,6 @@
     "conditionKey": "isMango"
   },
   {
-    "section": "niriLayout",
-    "label": "Layout overrides",
-    "tabIndex": 37,
-    "category": "System & integrations",
-    "keywords": [
-      "border",
-      "gaps",
-      "integrations",
-      "layout",
-      "niri",
-      "overrides",
-      "radius",
-      "system",
-      "window"
-    ],
-    "icon": "layers",
-    "conditionKey": "isNiri"
-  },
-  {
     "section": "hyprlandMasterOrientation",
     "label": "Master position",
     "tabIndex": 37,
@@ -13577,22 +13502,6 @@
       "integrations",
       "mango",
       "mangowc",
-      "override",
-      "size",
-      "system"
-    ],
-    "conditionKey": "layoutCapable"
-  },
-  {
-    "section": "niriLayoutBorderSizeEnabled",
-    "label": "Override border size",
-    "tabIndex": 37,
-    "category": "System & integrations",
-    "keywords": [
-      "border",
-      "focus-ring",
-      "integrations",
-      "niri",
       "override",
       "size",
       "system"
@@ -13866,21 +13775,6 @@
     "conditionKey": "isHyprland"
   },
   {
-    "section": "niriLayoutGapsOverride",
-    "label": "Window gaps",
-    "tabIndex": 37,
-    "category": "System & integrations",
-    "keywords": [
-      "gaps",
-      "integrations",
-      "niri",
-      "override",
-      "system",
-      "window"
-    ],
-    "conditionKey": "layoutCapable"
-  },
-  {
     "section": "hyprlandGroupbar",
     "label": "Window groups",
     "tabIndex": 37,
@@ -13995,34 +13889,6 @@
     ],
     "description": "Blurred surfaces show the wallpaper, not the windows beneath",
     "conditionKey": "isHyprland"
-  },
-  {
-    "section": "niriLayoutXrayEnabled",
-    "label": "Xray blur",
-    "tabIndex": 37,
-    "category": "System & integrations",
-    "keywords": [
-      "background",
-      "background-effect",
-      "beneath",
-      "bg",
-      "blur",
-      "blurred",
-      "desktop",
-      "image",
-      "integrations",
-      "niri",
-      "performance",
-      "picture",
-      "show",
-      "surfaces",
-      "system",
-      "wallpaper",
-      "windows",
-      "xray"
-    ],
-    "description": "Blurred surfaces show the wallpaper, not the windows beneath",
-    "conditionKey": "isNiri"
   },
   {
     "section": "windowRules",
@@ -15305,7 +15171,7 @@
     ],
     "parentLabel": "Input",
     "icon": "settings",
-    "conditionKey": "inputCapable"
+    "conditionKey": "isNiri"
   },
   {
     "section": "_tab_45",
@@ -15349,7 +15215,7 @@
     "parentLabel": "Input",
     "icon": "keyboard",
     "description": "Comma-separated list of layout names. Leave empty to use the system keyboard settings.",
-    "conditionKey": "inputCapable"
+    "conditionKey": "isNiri"
   },
   {
     "section": "keyboardNumlock",
@@ -19263,5 +19129,28 @@
       "wellbeing"
     ],
     "icon": "show_chart"
+  },
+  {
+    "section": "_tab_68",
+    "label": "",
+    "tabIndex": 68,
+    "category": "Settings",
+    "keywords": [
+      "animate",
+      "animations",
+      "desktop",
+      "desktops",
+      "motion",
+      "settings",
+      "shortcuts",
+      "transition",
+      "virtual",
+      "windows",
+      "workspace",
+      "workspaces"
+    ],
+    "icon": "view_column",
+    "description": "Windows, animations, workspaces, shortcuts",
+    "runtimeType": "pageLabel"
   }
 ]
