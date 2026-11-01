@@ -88,6 +88,7 @@ func (u *UbuntuDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 	dependencies = append(dependencies, u.detectMatugen())
 	dependencies = append(dependencies, u.detectDanksearch())
 	dependencies = append(dependencies, u.detectCalendarPackage(u.packageInstalled))
+	dependencies = append(dependencies, u.detectFilesPackage(u.packageInstalled))
 
 	return dependencies, nil
 }
@@ -196,11 +197,12 @@ func (u *UbuntuDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 		// DMS packages from PPAs
 		"dms (Dux Shell)": u.getDmsMapping(variants["dms (Dux Shell)"]),
 		"quickshell":      u.getQuickshellMapping(variants["quickshell"]),
-		"dms-greeter":     variantMapping("dux-greeter", variants["dms-greeter"], RepoTypePPA, ppaDeps),
+		"dux-greeter":     variantMapping("dux-greeter", variants["dux-greeter"], RepoTypePPA, ppaDeps),
 		"matugen":         {Name: "matugen", Repository: RepoTypePPA, RepoURL: ppaDeps},
 		"ghostty":         {Name: "ghostty", Repository: RepoTypePPA, RepoURL: ppaDeps},
-		"danksearch":      {Name: "dux-search", Repository: RepoTypePPA, RepoURL: ppaDeps},
-		"dankcalendar":    variantMapping("dux-calendar", variants["dankcalendar"], RepoTypePPA, ppaDeps),
+		"dux-search":      {Name: "dux-search", Repository: RepoTypePPA, RepoURL: ppaDeps},
+		"dux-calendar":    variantMapping("dux-calendar", variants["dux-calendar"], RepoTypePPA, ppaDeps),
+		"dux-files":       variantMapping("dux-files", variants["dux-files"], RepoTypePPA, ppaDeps),
 	}
 
 	switch wm {

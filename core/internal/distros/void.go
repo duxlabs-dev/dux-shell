@@ -88,6 +88,7 @@ func (v *VoidDistribution) DetectDependenciesWithTerminal(ctx context.Context, w
 	dependencies = append(dependencies, v.detectMatugen())
 	dependencies = append(dependencies, v.detectDanksearch())
 	dependencies = append(dependencies, v.detectDankCalendar())
+	dependencies = append(dependencies, v.detectDuxFiles())
 
 	return dependencies, nil
 }
@@ -312,9 +313,10 @@ func (v *VoidDistribution) GetPackageMappingWithVariants(wm deps.WindowManager, 
 		"quickshell":      {Name: "quickshell", Repository: RepoTypeSystem},
 		"matugen":         {Name: "matugen", Repository: RepoTypeSystem},
 		"dms (Dux Shell)": v.getDmsMapping(variants["dms (Dux Shell)"]),
-		"dms-greeter":     variantMapping("dux-greeter", variants["dms-greeter"], RepoTypeXBPS, VoidDepsRepo),
-		"danksearch":      {Name: "dux-search", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
-		"dankcalendar":    {Name: "dux-calendar", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
+		"dux-greeter":     variantMapping("dux-greeter", variants["dux-greeter"], RepoTypeXBPS, VoidDepsRepo),
+		"dux-search":      {Name: "dux-search", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
+		"dux-calendar":    {Name: "dux-calendar", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
+		"dux-files":       {Name: "dux-files", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
 	}
 
 	switch wm {

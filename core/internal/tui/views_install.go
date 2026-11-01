@@ -255,7 +255,7 @@ func (m Model) viewInstallComplete() string {
 	cmd := m.styles.Accent
 	autostart, logs := m.troubleshootingHints()
 
-	if m.isImmutable() && m.optionalDepSelected("dms-greeter") {
+	if m.isImmutable() && m.optionalDepSelected("dux-greeter") {
 		b.WriteString(label.Render("Greeter:") + "\n")
 		b.WriteString(label.Render("  Configure greetd:  ") + cmd.Render("dms-greeter install --yes") + "\n\n")
 	}

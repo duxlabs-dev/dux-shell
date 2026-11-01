@@ -38,6 +38,7 @@ func PlanVariantSwap(d Distribution, wm deps.WindowManager, dep string, target d
 	if !ok {
 		return VariantSwap{}, SwapUnsupported
 	}
+	dep = deps.CanonicalName(dep)
 	stable, ok := d.GetPackageMappingWithVariants(wm, map[string]deps.PackageVariant{dep: deps.VariantStable})[dep]
 	if !ok {
 		return VariantSwap{}, SwapNoVariant

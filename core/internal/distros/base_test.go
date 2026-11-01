@@ -1,6 +1,7 @@
 package distros
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -118,11 +119,49 @@ func TestRenamedPackagesInstallNewNames(t *testing.T) {
 	}
 	for id, d := range cases {
 		for _, variant := range []deps.PackageVariant{deps.VariantStable, deps.VariantGit} {
-			packages := d.GetPackageMappingWithVariants(deps.WindowManagerNiri, map[string]deps.PackageVariant{"dms-greeter": variant, "dankcalendar": variant})
-			for dep, want := range map[string]string{"dms-greeter": "dux-greeter", "danksearch": "dux-search", "dankcalendar": "dux-calendar"} {
-				if got := strings.TrimSuffix(packages[dep].Name, "-git"); got != want {
-					t.Errorf("%s %s (%v) installs %q, want %q", id, dep, variant, packages[dep].Name, want)
+			packages := d.GetPackageMappingWithVariants(deps.WindowManagerNiri, map[string]deps.PackageVariant{"dux-greeter": variant, "dux-calendar": variant, "dux-files": variant})
+			for _, dep := range []string{"dux-greeter", "dux-search", "dux-calendar", "dux-files"} {
+				if got := strings.TrimSuffix(packages[dep].Name, "-git"); got != dep {
+					t.Errorf("%s %s (%v) installs %q, want %q", id, dep, variant, packages[dep].Name, dep)
 				}
+			}
+		}
+	}
+}
+
+func TestDuxFilesIsOfferedAndMapped(t *testing.T) {
+	cases := map[string]struct {
+		d           Distribution
+		stable, git string
+	}{
+		"arch":     {NewArchDistribution(Registry["arch"], nil), "dux-files-bin", "dux-files-git"},
+		"fedora":   {NewFedoraDistribution(Registry["fedora"], nil), "dux-files", "dux-files-git"},
+		"ubuntu":   {NewUbuntuDistribution(Registry["ubuntu"], nil), "dux-files", "dux-files-git"},
+		"debian":   {NewDebianDistribution(Registry["debian"], nil), "dux-files", "dux-files-git"},
+		"pika":     {NewDebianDistribution(Registry["pika"], nil), "dux-files", "dux-files-git"},
+		"opensuse": {NewOpenSUSEDistribution(Registry["opensuse-tumbleweed"], nil), "dux-files", "dux-files-git"},
+		"void":     {NewVoidDistribution(Registry["void"], nil), "dux-files", "dux-files"},
+		"gentoo":   {NewGentooDistribution(Registry["gentoo"], nil), "dux-desktop/dux-files", "dux-desktop/dux-files"},
+	}
+	for id, tc := range cases {
+		dependencies, err := tc.d.DetectDependenciesWithTerminal(context.Background(), deps.WindowManagerNiri, deps.TerminalKitty)
+		if err != nil {
+			t.Fatal(err)
+		}
+		packages := tc.d.GetPackageMapping(deps.WindowManagerNiri)
+		offered := false
+		for _, dep := range dependencies {
+			offered = offered || dep.Name == "dux-files"
+			if _, ok := packages[dep.Name]; !ok {
+				t.Errorf("%s offers %s but maps no package for it", id, dep.Name)
+			}
+		}
+		if !offered {
+			t.Errorf("%s does not offer dux-files", id)
+		}
+		for variant, want := range map[deps.PackageVariant]string{deps.VariantStable: tc.stable, deps.VariantGit: tc.git} {
+			if got := tc.d.GetPackageMappingWithVariants(deps.WindowManagerNiri, map[string]deps.PackageVariant{"dux-files": variant})["dux-files"].Name; got != want {
+				t.Errorf("%s dux-files (%v) installs %q, want %q", id, variant, got, want)
 			}
 		}
 	}

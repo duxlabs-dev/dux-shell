@@ -1515,8 +1515,9 @@ func checkOptionalDependencies() []checkResult {
 		{"matugen", "matugen", "Dynamic theming", true},
 		{"cava", "cava", "Audio visualizer", true},
 		{"khal", "khal", "Calendar events", false},
-		{"danksearch", "dsearch", "File search", false},
-		{"dankcalendar", "dcal", "Calendar app", false},
+		{"dux-search", "dsearch", "File search", false},
+		{"dux-calendar", "dcal", "Calendar app", false},
+		{"dux-files", "dfiles", "File manager", false},
 		{"fprintd", "fprintd-list", "Fingerprint auth", false},
 	}
 

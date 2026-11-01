@@ -106,11 +106,15 @@ func (b *BaseDistribution) detectMatugen() deps.Dependency {
 }
 
 func (b *BaseDistribution) detectDanksearch() deps.Dependency {
-	return b.detectOptionalPackage("danksearch", "File indexing and search service", b.commandExists("dsearch") || b.commandExists("danksearch"))
+	return b.detectOptionalPackage("dux-search", "File indexing and search service", b.commandExists("dsearch") || b.commandExists("danksearch"))
 }
 
 func (b *BaseDistribution) detectDankCalendar() deps.Dependency {
-	return b.detectOptionalPackage("dankcalendar", "Calendar application", b.commandExists("dcal") || b.commandExists("dankcalendar"))
+	return b.detectOptionalPackage("dux-calendar", "Calendar application", b.commandExists("dcal") || b.commandExists("dankcalendar"))
+}
+
+func (b *BaseDistribution) detectDuxFiles() deps.Dependency {
+	return b.detectOptionalPackage("dux-files", "File manager", b.commandExists("dfiles"))
 }
 
 // renamedPackages maps distro packages to their pre-rename names. rpm -q, dpkg-query and xbps-query
@@ -137,13 +141,17 @@ func installedName(installed func(string) bool, pkg string) (string, bool) {
 func (b *BaseDistribution) detectGreeterPackage(installed func(string) bool) deps.Dependency {
 	_, gitInstalled := installedName(installed, "dux-greeter-git")
 	_, stableInstalled := installedName(installed, "dux-greeter")
-	dep := b.detectOptionalPackage("dms-greeter", "Dux Shell greetd greeter", gitInstalled || stableInstalled)
+	dep := b.detectOptionalPackage("dux-greeter", "Dux Shell greetd greeter", gitInstalled || stableInstalled)
 	return withGitVariant(dep, gitInstalled)
 }
 
 func (b *BaseDistribution) detectCalendarPackage(installed func(string) bool) deps.Dependency {
 	_, gitInstalled := installedName(installed, "dux-calendar-git")
 	return withGitVariant(b.detectDankCalendar(), gitInstalled)
+}
+
+func (b *BaseDistribution) detectFilesPackage(installed func(string) bool) deps.Dependency {
+	return withGitVariant(b.detectDuxFiles(), installed("dux-files-git"))
 }
 
 func withGitVariant(dep deps.Dependency, gitInstalled bool) deps.Dependency {

@@ -115,9 +115,9 @@ func TestPendingDependencies(t *testing.T) {
 		{Name: "dms (Dux Shell)", Status: deps.StatusMissing},
 		{Name: "niri", Status: deps.StatusInstalled},
 		{Name: "quickshell", Status: deps.StatusInstalled},
-		{Name: "danksearch", Status: deps.StatusMissing},
+		{Name: "dux-search", Status: deps.StatusMissing},
 	}
-	got := PendingDependencies(all, map[string]bool{"quickshell": true}, map[string]bool{"danksearch": true})
+	got := PendingDependencies(all, map[string]bool{"quickshell": true}, map[string]bool{"dux-search": true})
 	if len(got) != 2 || got[0].Name != "dms (Dux Shell)" || got[1].Name != "quickshell" {
 		t.Fatalf("got %+v", got)
 	}
@@ -143,10 +143,10 @@ func TestFedoraLayerCommands(t *testing.T) {
 		{Name: "niri", Status: deps.StatusMissing, Variant: deps.VariantGit},
 		{Name: "ghostty", Status: deps.StatusInstalled},
 		{Name: "matugen", Status: deps.StatusMissing},
-		{Name: "danksearch", Status: deps.StatusMissing},
+		{Name: "dux-search", Status: deps.StatusMissing},
 		{Name: "xwayland-satellite", Status: deps.StatusMissing},
 	}
-	got := strings.Join(f.LayerCommands(dependencies, deps.WindowManagerNiri, nil, map[string]bool{"danksearch": true}), "\n")
+	got := strings.Join(f.LayerCommands(dependencies, deps.WindowManagerNiri, nil, map[string]bool{"dux-search": true}), "\n")
 
 	for _, want := range []string{
 		"_copr:copr.fedorainfracloud.org:duxlabs:dms.repo https://copr.fedorainfracloud.org/coprs/duxlabs/dms/repo/fedora-$(rpm -E %fedora)/duxlabs-dms-fedora-$(rpm -E %fedora).repo",
@@ -159,7 +159,7 @@ func TestFedoraLayerCommands(t *testing.T) {
 			t.Fatalf("missing %q in:\n%s", want, got)
 		}
 	}
-	for _, unwanted := range []string{"ghostty", "danksearch", "rpm-ostree upgrade", "dnf "} {
+	for _, unwanted := range []string{"ghostty", "dux-search", "rpm-ostree upgrade", "dnf "} {
 		if strings.Contains(got, unwanted) {
 			t.Fatalf("unexpected %q in:\n%s", unwanted, got)
 		}
@@ -188,10 +188,10 @@ func TestFedoraLayerCommandsSwapVariants(t *testing.T) {
 
 	dependencies := []deps.Dependency{
 		{Name: "dms (Dux Shell)", Status: deps.StatusInstalled, Variant: deps.VariantStable, CanToggle: true},
-		{Name: "dms-greeter", Status: deps.StatusInstalled, Variant: deps.VariantGit, CanToggle: true},
-		{Name: "danksearch", Status: deps.StatusInstalled},
+		{Name: "dux-greeter", Status: deps.StatusInstalled, Variant: deps.VariantGit, CanToggle: true},
+		{Name: "dux-search", Status: deps.StatusInstalled},
 	}
-	reinstall := map[string]bool{"dms (Dux Shell)": true, "dms-greeter": true, "danksearch": true}
+	reinstall := map[string]bool{"dms (Dux Shell)": true, "dux-greeter": true, "dux-search": true}
 	got := strings.Join(f.LayerCommands(dependencies, deps.WindowManagerNiri, reinstall, nil), "\n")
 
 	for _, want := range []string{
@@ -202,7 +202,7 @@ func TestFedoraLayerCommandsSwapVariants(t *testing.T) {
 			t.Fatalf("missing %q in:\n%s", want, got)
 		}
 	}
-	if strings.Contains(got, "danksearch") {
+	if strings.Contains(got, "dux-search") {
 		t.Fatalf("reinstall mark without a variant change must not be layered:\n%s", got)
 	}
 }
@@ -223,8 +223,8 @@ func TestFedoraLayerCommandsRenamedRequests(t *testing.T) {
 			f := NewFedoraDistribution(Registry["fedora"], nil)
 			f.rpmInstalled = func(pkg string) bool { return pkg == tc.rpm }
 			f.ostreeRequested = func() []string { return tc.requested }
-			dependencies := []deps.Dependency{{Name: "dms-greeter", Status: deps.StatusInstalled, Variant: deps.VariantGit, CanToggle: true}}
-			got := strings.Join(f.LayerCommands(dependencies, deps.WindowManagerNiri, map[string]bool{"dms-greeter": true}, nil), "\n")
+			dependencies := []deps.Dependency{{Name: "dux-greeter", Status: deps.StatusInstalled, Variant: deps.VariantGit, CanToggle: true}}
+			got := strings.Join(f.LayerCommands(dependencies, deps.WindowManagerNiri, map[string]bool{"dux-greeter": true}, nil), "\n")
 			if !strings.Contains(got, tc.want) {
 				t.Fatalf("missing %q in:\n%s", tc.want, got)
 			}

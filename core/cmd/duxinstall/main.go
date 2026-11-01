@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
 	"github.com/duxlabs-dev/dux-shell/core/internal/headless"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/duxlabs-dev/dux-shell/core/internal/tui"
@@ -26,9 +27,10 @@ var (
 	replaceConfigs    []string
 	replaceConfigsAll bool
 	yes               bool
-	danksearch        bool
-	dankcalendar      bool
-	dmsGreeter        bool
+	duxSearch         bool
+	duxCalendar       bool
+	duxFiles          bool
+	duxGreeter        bool
 )
 
 var rootCmd = &cobra.Command{
@@ -53,15 +55,22 @@ func init() {
 	rootCmd.Flags().StringVar(&privescTool, "privesc", "", "Privilege escalation tool: sudo, doas, or run0 (default: autodetect)")
 	rootCmd.Flags().BoolVar(&gitAll, "git", false, "Install the git version of every dep that has one")
 	rootCmd.Flags().StringSliceVar(&gitDeps, "git-deps", []string{}, "Deps to install the git version of (e.g. niri,quickshell)")
-	rootCmd.Flags().BoolVar(&allFeatures, "all-features", false, "Enable all optional deps (dms-greeter, danksearch, dankcalendar)")
-	rootCmd.Flags().StringSliceVar(&includeDeps, "include-deps", []string{}, "Optional deps to enable (e.g. dms-greeter)")
+	rootCmd.Flags().BoolVar(&allFeatures, "all-features", false, "Enable all optional deps (dux-greeter, dux-search, dux-calendar, dux-files)")
+	rootCmd.Flags().StringSliceVar(&includeDeps, "include-deps", []string{}, "Optional deps to enable (e.g. dux-greeter)")
 	rootCmd.Flags().StringSliceVar(&excludeDeps, "exclude-deps", []string{}, "Deps to skip during installation")
 	rootCmd.Flags().StringSliceVar(&replaceConfigs, "replace-configs", []string{}, "Deploy only named configs (e.g. niri,ghostty)")
 	rootCmd.Flags().BoolVar(&replaceConfigsAll, "replace-configs-all", false, "Deploy and replace all configurations")
 	rootCmd.Flags().BoolVarP(&yes, "yes", "y", false, "Auto-confirm all prompts")
-	rootCmd.Flags().BoolVar(&danksearch, "danksearch", false, "Install dsearch (dux-search) and enable its user indexing service")
-	rootCmd.Flags().BoolVar(&dankcalendar, "dankcalendar", false, "Install dcal (dux-calendar)")
-	rootCmd.Flags().BoolVar(&dmsGreeter, "dms-greeter", false, "Install the dms-greeter greetd greeter (dux-greeter)")
+	rootCmd.Flags().BoolVar(&duxSearch, "dux-search", false, "Install dsearch (dux-search) and enable its user indexing service")
+	rootCmd.Flags().BoolVar(&duxCalendar, "dux-calendar", false, "Install dcal (dux-calendar)")
+	rootCmd.Flags().BoolVar(&duxFiles, "dux-files", false, "Install dfiles (dux-files) file manager")
+	rootCmd.Flags().BoolVar(&duxGreeter, "dux-greeter", false, "Install the dux-greeter greetd greeter")
+
+	// Dank-era names, kept so existing install one-liners keep working.
+	for old, target := range map[string]*bool{"danksearch": &duxSearch, "dankcalendar": &duxCalendar, "dms-greeter": &duxGreeter} {
+		rootCmd.Flags().BoolVar(target, old, false, "")
+		_ = rootCmd.Flags().MarkDeprecated(old, "use --"+deps.CanonicalName(old)+" instead")
+	}
 }
 
 func main() {
@@ -90,6 +99,10 @@ func runDuxinstall(cmd *cobra.Command, args []string) error {
 			"replace-configs",
 			"replace-configs-all",
 			"yes",
+			"dux-search",
+			"dux-calendar",
+			"dux-files",
+			"dux-greeter",
 			"danksearch",
 			"dankcalendar",
 			"dms-greeter",
@@ -131,9 +144,10 @@ func runHeadless() error {
 		ReplaceConfigs:    replaceConfigs,
 		ReplaceConfigsAll: replaceConfigsAll,
 		Yes:               yes,
-		DankSearch:        danksearch,
-		DankCalendar:      dankcalendar,
-		DmsGreeter:        dmsGreeter,
+		DuxSearch:         duxSearch,
+		DuxCalendar:       duxCalendar,
+		DuxFiles:          duxFiles,
+		DuxGreeter:        duxGreeter,
 	}
 
 	runner := headless.NewRunner(cfg)

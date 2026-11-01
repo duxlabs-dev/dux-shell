@@ -118,6 +118,7 @@ func (g *GentooDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 
 	dependencies = append(dependencies, g.detectMatugen())
 	dependencies = append(dependencies, g.detectDanksearch())
+	dependencies = append(dependencies, g.detectDuxFiles())
 
 	return dependencies, nil
 }
@@ -175,7 +176,8 @@ func (g *GentooDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 		"quickshell":      g.getQuickshellMapping(variants["quickshell"]),
 		"matugen":         {Name: "x11-misc/matugen", Repository: RepoTypeGURU, AcceptKeywords: archKeyword},
 		"dms (Dux Shell)": g.getDmsMapping(),
-		"danksearch":      {Name: "dux-desktop/dux-search", Repository: RepoTypeGURU, AcceptKeywords: archKeyword},
+		"dux-search":      {Name: "dux-desktop/dux-search", Repository: RepoTypeGURU, AcceptKeywords: archKeyword},
+		"dux-files":       {Name: "dux-desktop/dux-files", Repository: RepoTypeGURU, AcceptKeywords: archKeyword},
 	}
 
 	switch wm {

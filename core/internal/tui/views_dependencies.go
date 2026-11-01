@@ -138,12 +138,12 @@ func variantLabel(variant deps.PackageVariant) string {
 
 func (m Model) dependencyNote(name string) string {
 	switch name {
-	case "dms-greeter":
+	case "dux-greeter":
 		return m.styles.Subtle.Render(" (selection replaces your current display manager)")
-	case "danksearch":
+	case "dux-search":
 		return m.styles.Subtle.Render(" (file search; enables dsearch.service)")
-	case "dankcalendar":
-		return m.styles.Subtle.Render(" (autostart managed in dankcalendar settings)")
+	case "dux-calendar":
+		return m.styles.Subtle.Render(" (autostart managed in dux-calendar settings)")
 	default:
 		return ""
 	}
@@ -315,7 +315,7 @@ func (m Model) forwardInstallProgress(progressChan <-chan distros.InstallProgres
 }
 
 func (m Model) runPostInstallTasks() {
-	if m.optionalDepSelected("dms-greeter") {
+	if m.optionalDepSelected("dux-greeter") {
 		m.reportProgress(0.92, "Configuring DMS greeter...", "Starting automated greeter setup...")
 		logLine := func(line string) {
 			m.reportProgress(0.94, "Configuring DMS greeter...", line)
@@ -325,15 +325,15 @@ func (m Model) runPostInstallTasks() {
 		}
 	}
 
-	if !m.useSystemdConfig() || !m.optionalDepSelected("danksearch") {
+	if !m.useSystemdConfig() || !m.optionalDepSelected("dux-search") {
 		return
 	}
-	m.reportProgress(0.97, "Enabling danksearch service...", "Setting up dsearch.service...")
+	m.reportProgress(0.97, "Enabling dux-search service...", "Setting up dsearch.service...")
 	logLine := func(line string) {
-		m.reportProgress(0.97, "Enabling danksearch service...", line)
+		m.reportProgress(0.97, "Enabling dux-search service...", line)
 	}
 	if err := distros.SetupDsearchService(context.Background(), logLine); err != nil {
-		m.reportProgress(0.98, "danksearch service warning", fmt.Sprintf("danksearch service setup warning (non-fatal): %v", err))
+		m.reportProgress(0.98, "dux-search service warning", fmt.Sprintf("dux-search service setup warning (non-fatal): %v", err))
 	}
 }
 

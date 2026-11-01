@@ -145,9 +145,10 @@ DMS is one piece of the suite. The rest lives in its own repos:
 
 - [dux-greeter](https://github.com/duxlabs-dev/dux-greeter) - greetd login screen with the Dux Shell aesthetic. The Greeter tab in DMS settings is the front-end for it.
 - [dux-calendar](https://github.com/duxlabs-dev/dux-calendar) - Local, Google, Microsoft, and CalDAV calendars for the Dux desktop.
+- [dux-files](https://github.com/duxlabs-dev/dux-files) - File manager for the Dux desktop; also serves the FileManager1 and portal file chooser D-Bus services.
 - [dgop](https://github.com/duxlabs-dev/dux-gop) - System monitoring TUI and Go library; its library powers the process list and dashboard widgets inside the dms daemon.
 - [dsearch](https://github.com/duxlabs-dev/dux-search) - Fast file search that powers file results in the launcher.
-- [dux-qml-common](https://github.com/duxlabs-dev/dux-qml-common) - Shared QML widgets and components used by DMS, dux-greeter, and dux-calendar.
+- [dux-qml-common](https://github.com/duxlabs-dev/dux-qml-common) - Shared QML widgets and components used by DMS, dux-greeter, dux-calendar, and dux-files.
 - [dux-go](https://github.com/duxlabs-dev/dux-go) - Common Go modules behind the single binary apps.
 
 ## Development

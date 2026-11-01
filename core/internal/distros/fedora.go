@@ -133,6 +133,7 @@ func (f *FedoraDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 	dependencies = append(dependencies, f.detectMatugen())
 	dependencies = append(dependencies, f.detectDanksearch())
 	dependencies = append(dependencies, f.detectCalendarPackage(f.packageInstalled))
+	dependencies = append(dependencies, f.detectFilesPackage(f.packageInstalled))
 
 	return dependencies, nil
 }
@@ -298,11 +299,12 @@ func (f *FedoraDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 
 		// COPR packages
 		"quickshell":      f.getQuickshellMapping(variants["quickshell"]),
-		"dms-greeter":     variantMapping("dux-greeter", variants["dms-greeter"], RepoTypeCOPR, coprDeps),
+		"dux-greeter":     variantMapping("dux-greeter", variants["dux-greeter"], RepoTypeCOPR, coprDeps),
 		"matugen":         {Name: "matugen", Repository: RepoTypeCOPR, RepoURL: coprDeps},
 		"dms (Dux Shell)": f.getDmsMapping(variants["dms (Dux Shell)"]),
-		"danksearch":      {Name: "dux-search", Repository: RepoTypeCOPR, RepoURL: coprDeps},
-		"dankcalendar":    variantMapping("dux-calendar", variants["dankcalendar"], RepoTypeCOPR, coprDeps),
+		"dux-search":      {Name: "dux-search", Repository: RepoTypeCOPR, RepoURL: coprDeps},
+		"dux-calendar":    variantMapping("dux-calendar", variants["dux-calendar"], RepoTypeCOPR, coprDeps),
+		"dux-files":       variantMapping("dux-files", variants["dux-files"], RepoTypeCOPR, coprDeps),
 	}
 
 	switch wm {

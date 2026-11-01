@@ -15,7 +15,7 @@ type swapFake struct {
 
 func (f *swapFake) GetPackageMappingWithVariants(_ deps.WindowManager, variants map[string]deps.PackageVariant) map[string]PackageMapping {
 	return map[string]PackageMapping{
-		"dms-greeter": variantMapping("dux-greeter", variants["dms-greeter"], RepoTypeCOPR, "duxlabs/dux-repo"),
+		"dux-greeter": variantMapping("dux-greeter", variants["dux-greeter"], RepoTypeCOPR, "duxlabs/dux-repo"),
 		"matugen":     {Name: "matugen", Repository: RepoTypeSystem},
 	}
 }
@@ -40,13 +40,14 @@ func TestPlanVariantSwap(t *testing.T) {
 		want      SwapStatus
 		from, to  string
 	}{
-		{"stable to git", "dms-greeter", "dux-greeter", deps.VariantGit, SwapNeeded, "dux-greeter", "dux-greeter-git"},
-		{"git to stable", "dms-greeter", "dux-greeter-git", deps.VariantStable, SwapNeeded, "dux-greeter-git", "dux-greeter"},
-		{"stable to git from the pre-rename package", "dms-greeter", "dms-greeter", deps.VariantGit, SwapNeeded, "dms-greeter", "dux-greeter-git"},
-		{"git to stable from the pre-rename package", "dms-greeter", "dms-greeter-git", deps.VariantStable, SwapNeeded, "dms-greeter-git", "dux-greeter"},
-		{"already on target", "dms-greeter", "dux-greeter-git", deps.VariantGit, SwapAlreadyOnTarget, "", ""},
-		{"already on target under the pre-rename name", "dms-greeter", "dms-greeter-git", deps.VariantGit, SwapAlreadyOnTarget, "", ""},
-		{"not installed", "dms-greeter", "", deps.VariantGit, SwapNotInstalled, "", ""},
+		{"stable to git", "dux-greeter", "dux-greeter", deps.VariantGit, SwapNeeded, "dux-greeter", "dux-greeter-git"},
+		{"git to stable", "dux-greeter", "dux-greeter-git", deps.VariantStable, SwapNeeded, "dux-greeter-git", "dux-greeter"},
+		{"stable to git from the pre-rename package", "dux-greeter", "dms-greeter", deps.VariantGit, SwapNeeded, "dms-greeter", "dux-greeter-git"},
+		{"git to stable from the pre-rename package", "dux-greeter", "dms-greeter-git", deps.VariantStable, SwapNeeded, "dms-greeter-git", "dux-greeter"},
+		{"already on target", "dux-greeter", "dux-greeter-git", deps.VariantGit, SwapAlreadyOnTarget, "", ""},
+		{"already on target under the pre-rename name", "dux-greeter", "dms-greeter-git", deps.VariantGit, SwapAlreadyOnTarget, "", ""},
+		{"not installed", "dux-greeter", "", deps.VariantGit, SwapNotInstalled, "", ""},
+		{"dank-era dep key still plans the swap", "dms-greeter", "dux-greeter", deps.VariantGit, SwapNeeded, "dux-greeter", "dux-greeter-git"},
 		{"same mapping both ways", "matugen", "matugen", deps.VariantGit, SwapNoVariant, "", ""},
 	}
 	for _, tc := range cases {
@@ -63,10 +64,10 @@ func TestPlanVariantSwap(t *testing.T) {
 func TestSwapReinstalledVariantsSkipsSwappedDeps(t *testing.T) {
 	d := &swapFake{installed: map[string]bool{"dux-greeter": true}}
 	dependencies := []deps.Dependency{
-		{Name: "dms-greeter", Status: deps.StatusInstalled, Variant: deps.VariantGit},
+		{Name: "dux-greeter", Status: deps.StatusInstalled, Variant: deps.VariantGit},
 		{Name: "matugen", Status: deps.StatusInstalled},
 	}
-	reinstall := map[string]bool{"dms-greeter": true, "matugen": true}
+	reinstall := map[string]bool{"dux-greeter": true, "matugen": true}
 	disabled := map[string]bool{}
 
 	skip, err := swapReinstalledVariants(context.Background(), d, dependencies, deps.WindowManagerNiri, reinstall, disabled, "", nil)
@@ -76,7 +77,7 @@ func TestSwapReinstalledVariantsSkipsSwappedDeps(t *testing.T) {
 	if len(d.swapped) != 1 || d.swapped[0].To.Name != "dux-greeter-git" {
 		t.Fatalf("swapped = %+v, want only dux-greeter → dux-greeter-git", d.swapped)
 	}
-	if !skip["dms-greeter"] || skip["matugen"] {
+	if !skip["dux-greeter"] || skip["matugen"] {
 		t.Fatalf("skip = %v, want the swapped greeter skipped and matugen reinstalled", skip)
 	}
 	if len(disabled) != 0 {

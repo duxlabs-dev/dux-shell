@@ -22,15 +22,19 @@ import (
 const switchDMSDep = "dms (Dux Shell)"
 
 // The greeter runs the shell's QML, so it moves with dms or the login screen can break.
-var switchFamily = []string{switchDMSDep, "quickshell", "dms-greeter"}
+var switchFamily = []string{switchDMSDep, "quickshell", "dux-greeter"}
 
 var switchAliases = map[string]string{
 	"dms":          switchDMSDep,
 	"quickshell":   "quickshell",
-	"dms-greeter":  "dms-greeter",
-	"greeter":      "dms-greeter",
-	"dankcalendar": "dankcalendar",
-	"danksearch":   "danksearch",
+	"dux-greeter":  "dux-greeter",
+	"dms-greeter":  "dux-greeter",
+	"greeter":      "dux-greeter",
+	"dux-calendar": "dux-calendar",
+	"dankcalendar": "dux-calendar",
+	"dux-files":    "dux-files",
+	"dux-search":   "dux-search",
+	"danksearch":   "dux-search",
 }
 
 var switchAssumeYes bool
@@ -40,8 +44,8 @@ var switchCmd = &cobra.Command{
 	Short: "Switch DMS packages between stable and beta builds",
 	Long: `Switch installed DMS packages between stable releases and beta builds.
 
-With no packages, dms, quickshell and dms-greeter switch together. Name packages
-(dms, quickshell, greeter, dankcalendar, danksearch) to switch only those.
+With no packages, dms, quickshell and dux-greeter switch together. Name packages
+(dms, quickshell, dux-greeter, dux-calendar, dux-search, dux-files) to switch only those.
 
 Settings, plugins, themes and session state are backed up before anything changes.
 Settings written by beta can lose options on stable, so switching back to stable
