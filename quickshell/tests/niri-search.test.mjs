@@ -9,16 +9,16 @@ const modules = [
     {
         id: "windows",
         search: [
-            { key: "look.gaps", title: "Gaps", words: ["gaps", "space", "spacing", "espace", "écart", "marge"] },
-            { key: "look.ringWidth", title: "Ring width", words: ["focus", "ring", "width", "anneau"] },
-            { key: "look.radius", title: "Rounded corners", words: ["corner", "radius", "coins", "arrondis"] }
+            { key: "look.gaps", title: "Gaps", words: ["gaps", "space", "spacing"] },
+            { key: "look.ringWidth", title: "Ring width", words: ["focus", "ring", "width"] },
+            { key: "look.radius", title: "Rounded corners", words: ["corner", "radius"] }
         ]
     },
     {
         id: "animations",
-        search: [{ key: "anim.slowdown", title: "Slowdown", words: ["speed", "vitesse", "faster", "slower"] }]
+        search: [{ key: "anim.slowdown", title: "Slowdown", words: ["speed", "faster", "slower"] }]
     },
-    { id: "advanced", search: [{ key: "adv.debug", title: "Debug flags", words: ["debug", "débogage"] }] },
+    { id: "advanced", search: [{ key: "adv.debug", title: "Debug flags", words: ["debug"] }] },
     { id: "input" }
 ];
 
@@ -33,15 +33,34 @@ const options = { binds, modKey: "Super", modSymbol: "Mod" };
 // The script runs in its own realm: copy its arrays before a strict deep compare.
 const keys = results => Array.from(results, r => r.kind === "setting" ? r.key : "bind:" + r.combo);
 
-test("a plain French phrase finds the setting through its words", () => {
-    const results = find("plus d'espace", modules, options);
+test("a plain phrase finds the setting through its words", () => {
+    const results = find("more space", modules, options);
     assert.equal(results[0].key, "look.gaps");
     assert.equal(results[0].section, "windows");
     assert.equal(results[0].title, "Gaps");
 });
 
+const translations = { "Gaps": "Espacements", "Rounded corners": "Coins arrondis", "Slowdown": "Ralentissement" };
+const I18n = { tr: term => translations[term] ?? term };
+const translated = { ...options, translate: term => I18n.tr(term) };
+
+test("the translated title finds the setting and keeps its source title", () => {
+    const results = find("espacements", modules, translated);
+    assert.deepEqual(keys(results), ["look.gaps"]);
+    assert.equal(results[0].title, "Gaps");
+    assert.deepEqual(keys(find("coins", modules, translated)), ["look.radius"]);
+    assert.deepEqual(keys(find("ralenti", modules, translated)), ["anim.slowdown"]);
+    assert.deepEqual(keys(find("espacements", modules, options)), []);
+});
+
+test("keyword lists hold no French filler or alias words", () => {
+    for (const word of ["plus", "moins", "de", "la", "le", "mon", "je", "veux", "comment"])
+        assert.equal(search.stopWords.has(word), false, word);
+    for (const word of ["supprimer", "effacer", "fermer", "espace", "fenetre", "ouvrir", "quitter"])
+        assert.equal(word in search.ALIASES, false, word);
+});
+
 test("accents are ignored on both sides", () => {
-    assert.equal(find("ecart", modules, options)[0].key, "look.gaps");
     assert.equal(find("débug", modules, options)[0].key, "adv.debug");
     assert.equal(fold("Écart d’Été"), "ecart d ete");
 });
@@ -70,7 +89,7 @@ test("sections outside the allowed list are skipped", () => {
 
 test("an empty or stop-word-only query still behaves", () => {
     assert.equal(find("  ", modules, options).length, 0);
-    assert.deepEqual(keys(find("plus", modules, options)), []);
+    assert.deepEqual(keys(find("my", modules, options)), []);
 });
 
 test("a key combination finds its bind, whatever the modifier spelling", () => {
@@ -123,7 +142,7 @@ test("a combo on one entry of a split action merges that action's entries", () =
 test("combo detection", () => {
     assert.equal(isCombo("Super+B"), true);
     assert.equal(isCombo("ctrl +k"), true);
-    assert.equal(isCombo("plus d'espace"), false);
+    assert.equal(isCombo("more space"), false);
     assert.equal(isCombo("c++"), false);
 });
 
@@ -132,8 +151,8 @@ test("results are capped", () => {
     assert.equal(find("gap", many, options).length, 8);
 });
 
-// The owner types shortcuts the way he says them: « super + space », « spce »,
-// French words, typos. The exact paths stay first; fuzzy only adds results.
+// Shortcuts typed the way they are said ("super + space", "spce", typos):
+// the exact paths stay first, fuzzy only adds results.
 const fuzzyBinds = binds.concat([
     { category: "Launcher", action: "spawn \"launcher\"", desc: "Toggle launcher", keys: [{ key: "Mod+Space" }] },
     { category: "System", action: "spawn \"volume\"", desc: "Volume control", keys: [{ key: "Mod+P" }] }
@@ -142,7 +161,7 @@ const fuzzyOptions = { binds: fuzzyBinds, modKey: "Super", modSymbol: "Mod" };
 const bindActions = results => Array.from(results).filter(r => r.kind === "bind").flatMap(r => Array.from(r.binds, b => b.action));
 
 test("a shortcut search tolerates case, accents, spaces and a missing plus", () => {
-    for (const query of ["super space", "Super + SPACE", "Super+Space", "supér espace"])
+    for (const query of ["super space", "Super + SPACE", "Super+Space", "supér space"])
         assert.ok(bindActions(find(query, [], fuzzyOptions)).includes("spawn \"launcher\""), query);
 });
 
@@ -151,9 +170,8 @@ test("a typo of one or two characters per word still finds the bind", () => {
         assert.ok(bindActions(find(query, [], fuzzyOptions)).includes(query === "controle" ? "spawn \"volume\"" : "spawn \"launcher\""), query);
 });
 
-test("short en/fr aliases match bind words", () => {
-    assert.ok(bindActions(find("ferme la fenetre", [], options)).includes("close-window"));
-    assert.ok(bindActions(find("quiter terminal", [], options)).length >= 0);
+test("aliases match bind words", () => {
+    assert.ok(bindActions(find("win q", [], options)).includes("close-window"));
 });
 
 test("an unrelated word matches no bind", () => {
@@ -163,9 +181,8 @@ test("an unrelated word matches no bind", () => {
 test("levenshtein and alias helpers", () => {
     assert.equal(search.distance("kitten", "sitting"), 3);
     assert.equal(search.distance("spce", "space"), 1);
-    assert.equal(search.wordsMatch("fermer", "close"), true);
-    assert.equal(search.wordsMatch("supprimer", "delete"), true);
-    assert.equal(search.wordsMatch("espace", "space"), true);
-    assert.equal(search.wordsMatch("quitter", "quit"), true);
+    assert.equal(search.wordsMatch("del", "delete"), true);
+    assert.equal(search.wordsMatch("remove", "delete"), true);
+    assert.equal(search.wordsMatch("win", "mod"), true);
     assert.equal(search.wordsMatch("zebra", "close"), false);
 });

@@ -4,22 +4,16 @@
 var maxSettings = 8;
 var maxBinds = 3;
 
-// Filler words of a plain phrase: « plus d'espace » ranks on « espace » alone.
-var stopWords = new Set(["more", "less", "plus", "moins", "de", "d", "du", "des", "la", "le", "les", "l", "the", "a", "an", "of", "to", "my", "mon", "ma", "mes", "un", "une", "en", "some", "bigger", "smaller", "big", "small", "grand", "petit", "change", "set", "how", "comment", "i", "want", "je", "veux"]);
+// Filler words of a plain phrase: "more space" ranks on "space" alone.
+var stopWords = new Set(["more", "less", "the", "a", "an", "of", "to", "my", "some", "bigger", "smaller", "big", "small", "change", "set", "how", "i", "want"]);
 
 function fold(text) {
     return String(text || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[’']/g, " ");
 }
 
-// Short en/fr synonyms the owner says interchangeably: « delete », « fermer », « espace ».
 // First word of each group is its canonical form.
 var ALIAS_GROUPS = [
-    ["delete", "del", "suppr", "supprimer", "effacer"],
-    ["close", "fermer", "ferme", "fermeture"],
-    ["quit", "quitter"],
-    ["space", "espace", "espaces"],
-    ["window", "fenetre", "fenetres"],
-    ["open", "ouvrir"],
+    ["delete", "del", "remove"],
     ["super", "mod", "win", "meta", "logo", "mod4"]
 ];
 var ALIASES = {};
@@ -47,8 +41,8 @@ function distance(a, b) {
 }
 
 // One or two typos per word, no library: short words only afford one edit.
-// Typos are measured on each word's canonical alias form, so « supr » still
-// hangs on « Mod » (canonical « super »).
+// Typos are measured on each word's canonical alias form, so "supr" still
+// hangs on "Mod" (canonical "super").
 function wordsMatch(a, b) {
     if (a === b)
         return true;
@@ -111,17 +105,18 @@ function perAction(groups) {
     return merged;
 }
 
-function score(entry, query, tokens) {
-    const title = fold(entry.title);
-    if (title.startsWith(query))
+// Matches the English title and its translation, so every language finds its own words.
+function score(entry, query, tokens, translate) {
+    const titles = [fold(entry.title), fold(translate(entry.title))];
+    if (titles.some(title => title.startsWith(query)))
         return 4;
-    if (title.includes(query))
+    if (titles.some(title => title.includes(query)))
         return 3;
-    const hay = title + " " + fold((entry.words || []).join(" ")) + " " + fold(entry.key);
+    const hay = titles.join(" ") + " " + fold((entry.words || []).join(" ")) + " " + fold(entry.key);
     return tokens.every(word => hay.includes(word)) ? 2 : 0;
 }
 
-// modules: the registry entries ({id, search}); options: {sections: allowed menu ids or null, binds: KeybindsService flat binds, modKey, modSymbol}.
+// modules: the registry entries ({id, search}); options: {sections: allowed menu ids or null, binds: KeybindsService flat binds, modKey, modSymbol, translate: title translator}.
 // Returns {kind: "setting", section, key, title} and {kind: "bind", combo, binds} results, best first.
 function find(text, modules, options) {
     const raw = String(text || "").trim();
@@ -130,13 +125,14 @@ function find(text, modules, options) {
         return [];
     const opts = options || {};
     const binds = opts.binds || [];
+    const translate = opts.translate || (title => title);
     const results = [];
     const fuzzyTokens = tokensOf(raw);
     const combo = isCombo(raw);
     if (combo) {
         let hits = bindsFor(raw, binds, opts.modKey, opts.modSymbol);
-        // The owner types his combos loose (« supr + space »): fall back on the
-        // fuzzy tokens only when the exact normalized combo found nothing.
+        // Combos typed loose ("supr + space") fall back on the fuzzy tokens
+        // only when the exact normalized combo found nothing.
         if (!hits.length && fuzzyTokens.length)
             hits = binds.filter(group => (group.keys || []).length && matchTokens(fuzzyTokens, bindTokens(group)));
         // A split action hides its other keys behind other entries: pull every entry of each hit action
@@ -152,7 +148,7 @@ function find(text, modules, options) {
         if (opts.sections && !opts.sections.includes(module.id))
             continue;
         for (const entry of module.search || []) {
-            const value = score(entry, query, tokens);
+            const value = score(entry, query, tokens, translate);
             if (value)
                 scored.push({ value: value, order: scored.length, result: { kind: "setting", section: module.id, key: entry.key, title: entry.title } });
         }
