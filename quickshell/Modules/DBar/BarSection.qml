@@ -45,7 +45,8 @@ Item {
             entries.push({
                 size: wrapper?.preferredSize ?? 0,
                 min: wrapper?.minimumSize ?? 0,
-                mode: wrapper?.overflowMode ?? "bar"
+                mode: wrapper?.overflowMode ?? "bar",
+                priority: wrapper?.overflowPriority ?? 0
             });
         }
         return entries;
