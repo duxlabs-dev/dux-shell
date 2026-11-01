@@ -11,6 +11,7 @@ output "DP-1" {
 
 output "HDMI-A-1" {
     off
+    max-bpc 8;
     mode "1920x1080@60.000"
     position x=2048 y=0
 }
@@ -20,6 +21,7 @@ output "eDP-1" {
     scale 1
     position x=0 y=1152
     variable-refresh-rate
+    max-bpc 10
     hot-corners {
         off
     }
@@ -37,4 +39,5 @@ output "Dell Inc. DELL U2720Q ABC123" {
     transform "flipped-90"
     position x=-2560 y=0
     backdrop-color "#000000"
+    max-bpc 12 // cap bandwidth
 }

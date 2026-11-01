@@ -114,7 +114,7 @@ Item {
                 resetKeys: ["keyboardKeymapFile"]
                 leftIconName: "description"
                 text: I18n.tr("Keymap file")
-                description: I18n.tr("Direct path to a .xkb keymap file. Overrides layouts/variants above.")
+                description: I18n.tr("Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.")
                 value: SettingsData.keyboardKeymapFile
                 placeholderText: "~/.config/keymap.xkb"
                 onValueEdited: value => SettingsData.set("keyboardKeymapFile", value)

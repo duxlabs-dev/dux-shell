@@ -12,6 +12,7 @@ import (
 	"github.com/duxlabs-dev/dux-go/ipc"
 	"github.com/duxlabs-dev/dux-go/syncmap"
 	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
 	"github.com/duxlabs-dev/dux-shell/core/internal/geolocation"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/duxlabs-dev/dux-shell/core/internal/matugen"
@@ -520,8 +521,13 @@ func getCapabilities() Capabilities {
 		caps = append(caps, "files")
 	}
 
+	caps = append(caps, niriCapabilities()...)
+
 	return Capabilities{Capabilities: caps}
 }
+
+// Probed once per process, so these never change after the first getServerInfo.
+var niriCapabilities = config.NiriCapabilities
 
 func getServerInfo() ServerInfo {
 	return ServerInfo{
@@ -1152,6 +1158,16 @@ func (s *Server) Serve(printDocs bool) error {
 	}
 	log.Info("Initializing managers...")
 	log.Info("")
+
+	go func() {
+		written, err := config.SyncNiriBindsNext()
+		switch {
+		case err != nil:
+			log.Warnf("Failed to write niri %s: %v", config.NiriBindsNextFile, err)
+		case written:
+			log.Infof("Updated niri %s", config.NiriBindsNextFile)
+		}
+	}()
 
 	go func() {
 		switch err := InitializeNetworkManager(); {

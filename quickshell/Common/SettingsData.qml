@@ -273,6 +273,7 @@ Singleton {
     property bool touchpadMiddleEmulation: Spec.SPEC.touchpadMiddleEmulation.def
     property bool touchpadNaturalScroll: Spec.SPEC.touchpadNaturalScroll.def
     property real touchpadScrollFactor: Spec.SPEC.touchpadScrollFactor.def
+    property real touchpadPinchSensitivity: Spec.SPEC.touchpadPinchSensitivity.def
     property string touchpadScrollMethod: Spec.SPEC.touchpadScrollMethod.def
     property bool touchpadTapAndDrag: Spec.SPEC.touchpadTapAndDrag.def
     property bool touchpadTapToClick: Spec.SPEC.touchpadTapToClick.def

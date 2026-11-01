@@ -19,6 +19,9 @@ type Keybind struct {
 	AllowWhenLocked bool     `json:"allowWhenLocked,omitempty"`
 	AllowInhibiting *bool    `json:"allowInhibiting,omitempty"` // nil=default(true), false=explicitly disabled
 	Repeat          *bool    `json:"repeat,omitempty"`          // nil=default(true), false=explicitly disabled
+	Trigger         string   `json:"trigger,omitempty"`         // niri: ""=press, "release", "both"; Action is the release action when "release"
+	ReleaseAction   string   `json:"releaseAction,omitempty"`   // niri: release action when Trigger is "both"
+	PassThrough     *bool    `json:"passThrough,omitempty"`     // niri: nil=default (forward for release-only keyboard binds)
 	Conflict        *Keybind `json:"conflict,omitempty"`
 	HasDefault      bool     `json:"hasDefault,omitempty"` // override has a DMS default to revert to
 }

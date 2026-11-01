@@ -16,6 +16,7 @@ import (
 // Tests never reach the user's systemd; stubAddWants counts the add-wants calls a deploy makes.
 func TestMain(m *testing.M) {
 	systemctlUser = func(...string) error { return nil }
+	niriCapabilityProbe = func() []string { return nil }
 	// Hyprland paths follow XDG_CONFIG_HOME; tests pin HOME and must not write a real config.
 	os.Unsetenv("XDG_CONFIG_HOME")
 	os.Exit(m.Run())

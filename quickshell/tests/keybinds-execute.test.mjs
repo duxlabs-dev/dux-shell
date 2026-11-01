@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
+import { loadScript } from "./qml-script.mjs";
 
 const source = readFileSync(new URL("../Services/KeybindsService.qml", import.meta.url), "utf8");
 
@@ -49,4 +50,45 @@ test("hyprland runs nothing without an active Lua config", () => {
         assert.equal(scope.executeAction("movefocus l", luaAction), expected, `run ${active} ${luaAction}`);
         assert.equal(calls.length, expected ? 1 : 0);
     }
+});
+
+test("the shell field reads and writes the backslash escaping core uses", () => {
+    const Actions = loadScript(new URL("../Common/KeybindActions.js", import.meta.url));
+    const cases = [
+        ["kitty --title foo", 'spawn sh -c "kitty --title foo"'],
+        ["printf 'a\\n'", 'spawn sh -c "printf \'a\\\\n\'"'],
+        ['grep "a b" C:\\tmp\\', 'spawn sh -c "grep \\"a b\\" C:\\\\tmp\\\\"'],
+        ['echo \\"', 'spawn sh -c "echo \\\\\\""']
+    ];
+    for (const [command, action] of cases) {
+        assert.equal(Actions.parseShellCommand(action), command, action);
+        assert.equal(Actions.buildShellAction("niri", command, "sh"), action, command);
+        assert.equal(Actions.getActionLabel(action, "niri"), command, action);
+    }
+});
+
+test("the cheatsheet loads a custom config path when one is given", () => {
+    const ctx = vm.createContext({ cheatsheetProvider: "niri", cheatsheetLoading: false, cheatsheetProcess: { running: false, command: [] } });
+    vm.runInContext(extract("loadCheatsheet"), ctx);
+    for (const [provider, path, expected] of [
+        ["sway", "/etc/sway/config", ["dms", "keybinds", "show", "sway", "--path", "/etc/sway/config"]],
+        ["", "", ["dms", "keybinds", "show", "niri"]]
+    ]) {
+        ctx.cheatsheetProcess.running = false;
+        ctx.loadCheatsheet(provider, path);
+        assert.deepEqual(Array.from(ctx.cheatsheetProcess.command), expected);
+    }
+});
+
+test("niri argument fields keep quoted workspace names and land edits in the field they came from", () => {
+    const Actions = loadScript(new URL("../Common/KeybindActions.js", import.meta.url));
+    const edit = (action, changes) => {
+        const parsed = Actions.parseCompositorActionArgs("niri", action);
+        return Actions.buildCompositorAction("niri", parsed.base, Object.assign({}, parsed.args, changes));
+    };
+    assert.equal(edit('move-column-to-workspace "my work"', { focus: false }), 'move-column-to-workspace "my work" focus=false');
+    assert.equal(edit("focus-workspace 3", { index: "my work" }), 'focus-workspace "my work"');
+    assert.equal(edit('focus-workspace "a\\"b"', {}), 'focus-workspace "a\\"b"');
+    assert.equal(edit("set-column-width -10%", {}), "set-column-width -10%");
+    assert.deepEqual(Object.assign({}, Actions.parseCompositorActionArgs("niri", 'move-column-to-workspace "focus=false"').args), { index: "focus=false" });
 });

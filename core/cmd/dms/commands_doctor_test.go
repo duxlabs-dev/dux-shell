@@ -409,6 +409,45 @@ func TestCheckMangoConfigReportsUnknownKeysAndOverviewBinds(t *testing.T) {
 	}
 }
 
+func TestCheckNiriConfig(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "dms"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	write := func(name, content string) {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("config.kdl", "debug {\n    keep-max-bpc-unchanged\n}\ninclude optional=true \"dms/binds.kdl\"\n")
+	write("dms/binds.kdl", "binds {\n    Mod+O { toggle-overview; }\n    Mod+Shift+Slash { spawn \"dms\"; }\n}\n")
+	write("dms/binds-next.kdl", "binds { Mod { release { toggle-overview; } } }\n")
+	rejectAll := func(string) bool { return false }
+
+	messages := func(results []checkResult) []string {
+		var out []string
+		for _, r := range results {
+			out = append(out, r.message)
+		}
+		return out
+	}
+	want := []string{
+		"config.kdl does not include dms/binds-next.kdl",
+		"config.kdl:2 sets keep-max-bpc-unchanged",
+		"dms/binds-next.kdl is rejected by the installed niri",
+		"dms/binds.kdl:3 binds Mod+Shift+Slash",
+	}
+	if got := messages(checkNiriConfig(dir, []string{"niri.binds-next"}, rejectAll)); !slices.Equal(got, want) {
+		t.Fatalf("got %q", got)
+	}
+
+	write("config.kdl", "include optional=true \"dms/binds.kdl\"\ninclude optional=true \"dms/binds-next.kdl\"\n")
+	got := messages(checkNiriConfig(dir, nil, func(string) bool { return true }))
+	if !slices.Equal(got, []string{"config.kdl:2 includes dms/binds-next.kdl after dms/binds.kdl"}) {
+		t.Fatalf("on niri 26.04 only the include order should warn, got %q", got)
+	}
+}
+
 func TestMangoLacksSnakeCase(t *testing.T) {
 	for ver, want := range map[string]bool{
 		"0.17.5": true,
