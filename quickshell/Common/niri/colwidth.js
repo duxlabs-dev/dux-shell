@@ -1,6 +1,6 @@
 .pragma library
 
-// Mod+R emulated by DMS (brief 31/10 point 13): fill the remaining space, press again to go
+// Mod+R emulated by DMS: fill the remaining space, press again to go
 // back to the width before, then the presets upward; past the largest preset, fill again.
 // state: null (next press fills) or {id, width, count, phase, before, pending}
 //   phase "filled": before = width to go back to; "restored": niri picks the preset above
@@ -37,11 +37,37 @@ function focused(windows) {
     };
 }
 
-// page: SettingsData.niriPage. Option off (only a strict false): null, so press() sends niri's
-// stock switch and forgets any cycle; absent from the page and the defaults means on.
+// page: SettingsData.niriPage. Option off or absent: null, so press() sends niri's stock switch
+// and forgets any cycle.
 function target(page, defaults, windows) {
-    const on = (page?.["columns.cycleWidth"] ?? defaults?.["columns.cycleWidth"]) !== false;
+    const on = (page?.["columns.cycleWidth"] ?? defaults?.["columns.cycleWidth"]) === true;
     return on ? focused(windows) : null;
+}
+
+// The bind of each key with the option on and off.
+const BINDS = {
+    "Mod+R": { on: "spawn dms ipc call niri cycleColumnWidth", off: "switch-preset-column-width", desc: "Column width" },
+    "Mod+Shift+R": { on: "switch-preset-column-width-back", off: "switch-preset-window-height", desc: "" }
+};
+
+// current: {key: {action, dms}} of each key, absent when unbound. A key on another action,
+// or from config.kdl, is the user's own and lands in kept instead of writes.
+function rebinds(on, current) {
+    const writes = [];
+    const kept = [];
+    for (const key in BINDS) {
+        const bind = BINDS[key];
+        const cur = current?.[key];
+        const want = on ? bind.on : bind.off;
+        if (cur && cur.action === want)
+            continue;
+        if (cur && (!cur.dms || (cur.action !== bind.on && cur.action !== bind.off))) {
+            kept.push(key);
+            continue;
+        }
+        writes.push({ key: key, action: want, desc: on ? bind.desc : "" });
+    }
+    return { writes: writes, kept: kept };
 }
 
 function fill(win) {

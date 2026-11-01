@@ -3,6 +3,8 @@ import qs.Common
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Niri.Components
 import qs.Services
+import "../../../../../Common/niri/colwidth.js" as ColWidth
+import "../../../../../Common/niri/keymaps.js" as Keymaps
 import "../../../../../Common/niri/sections/columns.js" as Columns
 
 // The Columns card and the Alt-Tab card of the windows section.
@@ -49,9 +51,57 @@ Column {
     ]
 
     // The Alt-Tab card arrived whole with niri 25.11, so its New pill sits on the card title
-    // (mockup) and shows while any key of the card is new.
+    // and shows while any key of the card is new.
     readonly property var altTabKeys: ["columns.altTab", "columns.altTabDelay", "columns.altTabPreviewScale"]
     readonly property bool altTabNew: altTabKeys.some(key => NiriPageService.isNew(key))
+
+    // Super+R and Super+Shift+R follow the cycle option, unless the user bound them elsewhere
+    readonly property var cycleBinds: {
+        const map = Keymaps.bindMap(KeybindsService._dataVersion >= 0 ? KeybindsService.getFlatBinds() : [], KeybindsService.modKey);
+        const current = {};
+        for (const key of ["Mod+R", "Mod+Shift+R"]) {
+            const bind = map[Keymaps.chordId(key, KeybindsService.modKey)]?.[0];
+            if (bind)
+                current[key] = bind;
+        }
+        return ColWidth.rebinds(NiriPageService.get("columns.cycleWidth") === true, current);
+    }
+    property var bindQueue: []
+
+    function syncCycleBinds() {
+        // Before the first load every key reads as unbound
+        if (KeybindsService._dataVersion === 0 || KeybindsService.readOnly)
+            return;
+        bindQueue = cycleBinds.writes;
+        writeNextBind();
+    }
+
+    function writeNextBind() {
+        if (bindQueue.length === 0)
+            return;
+        const bind = bindQueue[0];
+        bindQueue = bindQueue.slice(1);
+        KeybindsService.saveBind("", bind);
+    }
+
+    // saveBind runs one process at a time, so the two keys go one after the other
+    Connections {
+        target: KeybindsService
+        enabled: root.bindQueue.length > 0
+        function onBindSaveCompleted(success) {
+            if (success)
+                root.writeNextBind();
+            else
+                root.bindQueue = [];
+        }
+    }
+
+    Component.onCompleted: {
+        KeybindsService.addRef();
+        if (KeybindsService.available && (KeybindsService._dataVersion === 0 || KeybindsService.keybinds?.provider !== KeybindsService.currentProvider))
+            KeybindsService.loadBinds();
+    }
+    Component.onDestruction: KeybindsService.removeRef()
 
     width: parent?.width ?? 0
     spacing: Theme.spacingM
@@ -104,7 +154,8 @@ Column {
             settingKey: "columns.cycleWidth"
             icon: "keyboard"
             title: I18n.tr("Super+R fills the remaining space")
-            tip: I18n.tr("Press again to get the width back, then the next preset. Off: Super+R only steps through the presets, as niri does")
+            tip: root.cycleBinds.kept.length > 0 ? I18n.tr("%1 keeps your own shortcut", "niri columns Super+R option, %1 lists key combinations").arg(root.cycleBinds.kept.map(key => key.replace("Mod", KeybindsService.modKey)).join(", ")) : I18n.tr("Press again to get the width back, then the next preset. Off: Super+R only steps through the presets, as niri does")
+            onValueChanged: root.syncCycleBinds()
         }
 
         ColumnsPresets {

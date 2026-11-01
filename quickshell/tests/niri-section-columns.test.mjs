@@ -86,10 +86,10 @@ test("overview close on focus binds to the SettingsData property and writes no K
     assert.equal(kdl({ "columns.overviewCloseFocus": true }), "");
 });
 
-test("the Super+R option lives on the page only, on by default, never written to niri.kdl", () => {
-    assert.equal(columns.defaults["columns.cycleWidth"], true);
-    assert.equal(kdl({ "columns.cycleWidth": false }), "");
+test("the Super+R option lives on the page only, off by default, never written to niri.kdl", () => {
+    assert.equal(columns.defaults["columns.cycleWidth"], false);
+    assert.equal(kdl({ "columns.cycleWidth": true }), "");
     const windows = [{ id: 1, workspace_id: 1, is_focused: true, layout: { pos_in_scrolling_layout: [1, 0], window_size: [400, 600] } }];
-    assert.equal(target({}, columns.defaults, windows)?.id, 1, "an empty page cycles");
-    assert.equal(target({ "columns.cycleWidth": false }, columns.defaults, windows), null, "off: niri's own switch");
+    assert.equal(target({}, columns.defaults, windows), null, "an empty page keeps niri's own switch");
+    assert.equal(target({ "columns.cycleWidth": true }, columns.defaults, windows)?.id, 1, "on: the page cycles");
 });

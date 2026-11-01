@@ -7,7 +7,7 @@ var defaults = {
     "columns.centerSingle": false,
     "columns.defaultWidth": 0.33333,
     "columns.presetWidths": [0.33333, 0.5, 0.66667],
-    "columns.cycleWidth": true,
+    "columns.cycleWidth": false,
     "columns.display": "normal",
     "columns.overviewZoom": 0.5,
     "columns.noCsd": true,

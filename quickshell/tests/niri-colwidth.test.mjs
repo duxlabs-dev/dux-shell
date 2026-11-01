@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { loadScript } from "./qml-script.mjs";
 
-const { press, observe, atTop, focused, target } = loadScript(new URL("../Common/niri/colwidth.js", import.meta.url));
+const { press, observe, atTop, focused, target, rebinds } = loadScript(new URL("../Common/niri/colwidth.js", import.meta.url));
 
 const same = (a, b, msg) => assert.equal(JSON.stringify(a), JSON.stringify(b), msg);
 const presets = [0.33333, 0.5, 0.66667];
@@ -125,14 +125,49 @@ test("option off: every press is niri's native switch and nothing is remembered"
     }
 });
 
-test("option absent or on: the focused tiled window is the target", () => {
+test("option on: the focused tiled window is the target; absent means off", () => {
     const windows = [tiled(2, 500, { is_focused: true })];
     const want = { id: 2, width: 500, workspace_id: 3, count: 1 };
     same(target({}, { "columns.cycleWidth": true }, windows), want, "absent, default on");
-    same(target({}, {}, windows), want, "absent everywhere");
-    same(target(undefined, undefined, windows), want, "no page");
+    assert.equal(target({}, {}, windows), null, "absent everywhere");
+    assert.equal(target(undefined, undefined, windows), null, "no page");
     same(target({ "columns.cycleWidth": true }, { "columns.cycleWidth": false }, windows), want, "page wins");
     assert.equal(target({}, { "columns.cycleWidth": false }, windows), null, "default off");
+});
+
+const CYCLE = "spawn dms ipc call niri cycleColumnWidth";
+const dms = action => ({ action, dms: true });
+
+test("turning the option on binds the cycle and moves the preset switch to Shift", () => {
+    same(rebinds(true, { "Mod+R": dms("switch-preset-column-width"), "Mod+Shift+R": dms("switch-preset-window-height") }), {
+        writes: [
+            { key: "Mod+R", action: CYCLE, desc: "Column width" },
+            { key: "Mod+Shift+R", action: "switch-preset-column-width-back", desc: "" }
+        ],
+        kept: []
+    });
+    same(rebinds(true, {}).writes.map(w => w.key), ["Mod+R", "Mod+Shift+R"], "unbound keys are written");
+});
+
+test("turning the option off puts niri's stock binds back", () => {
+    same(rebinds(false, { "Mod+R": dms(CYCLE), "Mod+Shift+R": dms("switch-preset-column-width-back") }), {
+        writes: [
+            { key: "Mod+R", action: "switch-preset-column-width", desc: "" },
+            { key: "Mod+Shift+R", action: "switch-preset-window-height", desc: "" }
+        ],
+        kept: []
+    });
+});
+
+test("binds already in place are not rewritten", () => {
+    same(rebinds(false, { "Mod+R": dms("switch-preset-column-width"), "Mod+Shift+R": dms("switch-preset-window-height") }), { writes: [], kept: [] });
+    same(rebinds(true, { "Mod+R": dms(CYCLE), "Mod+Shift+R": dms("switch-preset-column-width-back") }), { writes: [], kept: [] });
+});
+
+test("a key the user bound to something else, or from config.kdl, stays as it is", () => {
+    const r = rebinds(true, { "Mod+R": dms("spawn fuzzel"), "Mod+Shift+R": { action: "switch-preset-window-height", dms: false } });
+    same(r, { writes: [], kept: ["Mod+R", "Mod+Shift+R"] });
+    same(rebinds(false, { "Mod+R": { action: "switch-preset-column-width", dms: false } }).kept, [], "a stock bind in config.kdl is already in place");
 });
 
 test("atTop compares the width with the midpoint of the two largest presets", () => {
