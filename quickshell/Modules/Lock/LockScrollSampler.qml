@@ -13,7 +13,7 @@ Item {
 
     readonly property string screenName: screen.name
     readonly property string source: {
-        const path = SessionData.getMonitorWallpaper(screenName);
+        const path = SessionData.getMonitorWallpaperImage(screenName);
         return path && !path.startsWith("#") ? "file://" + path.split('/').map(s => encodeURIComponent(s)).join('/') : "";
     }
     readonly property string backgroundKey: LockPlacementService.backgroundKey(screenName, screen.width, screen.height)

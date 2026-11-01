@@ -56,6 +56,10 @@ Singleton {
     }
     readonly property string wallpaperPath: SessionData.getMonitorWallpaper(Quickshell.screens[0]?.name ?? "")
     readonly property string rawWallpaperPath: SessionData.getMonitorWallpaper(wallpaperSourceScreen)
+    // A video themes from its extracted frame, which can arrive after the wallpaper is set.
+    readonly property string wallpaperImagePath: VideoWallpaperService.imageFor(rawWallpaperPath)
+    readonly property bool wallpaperFramePending: VideoWallpaperService.framePending(rawWallpaperPath)
+    property bool _themeAwaitsFrame: false
     readonly property string materialWallpaperSeed: SessionData.getMonitorMaterialWallpaper(wallpaperSourceScreen).seed
 
     property bool matugenAvailable: false
@@ -1960,6 +1964,15 @@ Singleton {
         root.matugenCompleted((typeof SessionData !== "undefined" && SessionData.isLightMode) ? "light" : "dark", "error");
     }
 
+    // The frame arrived, or it never will (extraction failed, no ffmpeg) and the seed color takes over.
+    function _resumeThemeAfterFrame() {
+        if (_themeAwaitsFrame && (wallpaperImagePath || !wallpaperFramePending))
+            generateSystemThemesFromCurrentTheme();
+    }
+
+    onWallpaperImagePathChanged: _resumeThemeAfterFrame()
+    onWallpaperFramePendingChanged: _resumeThemeAfterFrame()
+
     function generateSystemThemesFromCurrentTheme() {
         if (!matugenAvailable)
             return;
@@ -1977,8 +1990,11 @@ Singleton {
         const iconTheme = (typeof SettingsData !== "undefined" && SettingsData.iconTheme) ? SettingsData.iconTheme : "System Default";
 
         if (currentTheme === dynamic) {
+            _themeAwaitsFrame = !wallpaperImagePath && wallpaperFramePending;
+            if (_themeAwaitsFrame)
+                return;
             const selectedMatugenType = SettingsData.matugenScheme || "scheme-tonal-spot";
-            const source = rawWallpaperPath || SettingsData.matugenSeedColor || materialWallpaperSeed;
+            const source = wallpaperImagePath || SettingsData.matugenSeedColor || materialWallpaperSeed;
             const kind = source.startsWith("#") ? "hex" : "image";
             setDesiredTheme(kind, source, isLight, iconTheme, selectedMatugenType, null);
             return;

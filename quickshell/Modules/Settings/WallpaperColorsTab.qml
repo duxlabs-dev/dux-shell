@@ -12,6 +12,7 @@ import qs.Modules.Settings.Widgets
 import "../../Common/Format.js" as Format
 import "../../Common/ThemePalette.js" as ThemePalette
 import "../../DCommon/Common/MaterialWallpaper.js" as Art
+import "../../Common/WallpaperFormats.js" as WallpaperFormats
 
 Column {
     id: root
@@ -1175,7 +1176,7 @@ Column {
             bucket: "wallpaper"
             showHiddenFiles: true
             startPath: root.currentWallpaper
-            filters: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp", "*.jxl", "*.avif", "*.heif", "*.exr", "*.svg"]
+            filters: WallpaperFormats.nameFilters(true)
             onAccepted: paths => root.applyWallpaper(paths[0])
         }
     }

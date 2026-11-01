@@ -33,7 +33,7 @@ Item {
         active: {
             if (root.hasCustomWallpaper)
                 return false;
-            var currentWallpaper = SessionData.getMonitorWallpaper(screenName);
+            var currentWallpaper = SessionData.getMonitorWallpaperImage(screenName);
             return !currentWallpaper || (currentWallpaper && currentWallpaper.startsWith("#"));
         }
         asynchronous: root.asynchronous
@@ -52,7 +52,7 @@ Item {
         readonly property string wallpaperSource: {
             if (root.hasCustomWallpaper)
                 return root.encodeFileUrl(SettingsData.lockScreenWallpaperPath);
-            var w = SessionData.getMonitorWallpaper(screenName);
+            var w = SessionData.getMonitorWallpaperImage(screenName);
             return (w && !w.startsWith("#")) ? encodeFileUrl(w) : "";
         }
         readonly property string fillModeName: {
