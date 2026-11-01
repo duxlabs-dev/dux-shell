@@ -41,6 +41,9 @@ type Actions struct {
 	DefaultColumnWidth   string   `json:"defaultColumnWidth,omitempty"`
 	DefaultWindowHeight  string   `json:"defaultWindowHeight,omitempty"`
 	VariableRefreshRate  *bool    `json:"variableRefreshRate,omitempty"`
+	VrrFullscreenOnly    *bool    `json:"vrrFullscreenOnly,omitempty"`
+	OnXdgActivate        string   `json:"onXdgActivate,omitempty"`
+	PinchSensitivity     *float64 `json:"pinchSensitivity,omitempty"`
 	BlockOutFrom         string   `json:"blockOutFrom,omitempty"`
 	DefaultColumnDisplay string   `json:"defaultColumnDisplay,omitempty"`
 	ScrollFactor         *float64 `json:"scrollFactor,omitempty"`

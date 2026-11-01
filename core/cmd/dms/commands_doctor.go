@@ -892,6 +892,9 @@ func checkWindowManagers(qsVersion string) []checkResult {
 			results = append(results, checkHyprlandQuickshellFloor(ver, qsVersion)...)
 			results = append(results, checkHyprlandDeprecatedConfig()...)
 		}
+		if c.name == "niri" {
+			results = append(results, checkNiriConfig(filepath.Join(utils.XDGConfigHome(), "niri"), config.ProbeNiriCapabilities(), config.NiriValidates)...)
+		}
 		if c.name == "mangowc" && mangoLacksSnakeCase(ver) {
 			results = append(results, checkResult{
 				catCompositor, "Mango config format", statusError,
@@ -998,6 +1001,80 @@ func checkMangoConfig(mangoDir string) []checkResult {
 			"mousebind=NONE,btn_left,toggleoverview,1 and mousebind=NONE,btn_right,killclient,0 swallow normal clicks; remove them.", url})
 	}
 	return results
+}
+
+var (
+	niriIncludeBinds     = regexp.MustCompile(`^\s*include\b.*"dms/binds\.kdl"`)
+	niriIncludeBindsNext = regexp.MustCompile(`^\s*include\b.*"dms/binds-next\.kdl"`)
+	niriSlashBind        = regexp.MustCompile(`(?i)^\s*Mod\+Shift\+Slash\b`)
+	niriKeepMaxBpc       = regexp.MustCompile(`^\s*keep-max-bpc-unchanged\b`)
+)
+
+// DMS never rewrites the user's config.kdl or binds.kdl, so name the line to fix by hand.
+func checkNiriConfig(niriDir string, caps []string, validates func(string) bool) []checkResult {
+	url := doctorDocsURL + "#compositor-checks"
+	mainPath := filepath.Join(niriDir, "config.kdl")
+	paths, _ := filepath.Glob(filepath.Join(niriDir, "dms", "*.kdl"))
+	paths = append([]string{mainPath}, paths...)
+	bindsNext := slices.Contains(caps, config.NiriCapBindsNext)
+
+	var results []checkResult
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		rel, _ := filepath.Rel(niriDir, path)
+		isFragment := filepath.Base(path) == config.NiriBindsNextFile
+		lines := strings.Split(string(data), "\n")
+		if path == mainPath {
+			results = append(results, niriBindsNextIncludeResults(rel, lines, url)...)
+		}
+		for i, line := range lines {
+			where := fmt.Sprintf("%s:%d", rel, i+1)
+			switch {
+			case bindsNext && !isFragment && niriSlashBind.MatchString(line):
+				results = append(results, checkResult{catCompositor, "Mod+Shift+Slash", statusWarn,
+					where + " binds Mod+Shift+Slash",
+					"This niri also fires it for Mod+Shift+7 on de, es and se layouts. Rename it to Mod+Shift+question, which dms/binds-next.kdl already binds to Keyboard Shortcuts.", url})
+			case niriKeepMaxBpc.MatchString(line):
+				results = append(results, checkResult{catCompositor, "keep-max-bpc", statusWarn,
+					where + " sets keep-max-bpc-unchanged",
+					"niri after 26.04 removed this debug flag and rejects the whole config. Delete the line; set max-bpc in the output section instead.", url})
+			}
+		}
+		if isFragment && strings.TrimSpace(string(data)) != "" && !validates(string(data)) {
+			results = append(results, checkResult{catCompositor, "binds-next.kdl", statusWarn,
+				rel + " is rejected by the installed niri",
+				"niri then rejects the whole config. Delete the file; DMS rewrites it for this niri on its next start.", url})
+		}
+	}
+	return results
+}
+
+func niriBindsNextIncludeResults(rel string, lines []string, url string) []checkResult {
+	bindsLine, nextLine := 0, 0
+	for i, line := range lines {
+		if bindsLine == 0 && niriIncludeBinds.MatchString(line) {
+			bindsLine = i + 1
+		}
+		if nextLine == 0 && niriIncludeBindsNext.MatchString(line) {
+			nextLine = i + 1
+		}
+	}
+	switch {
+	case bindsLine == 0:
+		return nil
+	case nextLine == 0:
+		return []checkResult{{catCompositor, "binds-next include", statusWarn,
+			fmt.Sprintf("%s does not include dms/binds-next.kdl", rel),
+			fmt.Sprintf(`Add include optional=true "dms/binds-next.kdl" above line %d, or run 'dms setup', to get the DMS binds that depend on the niri version.`, bindsLine), url}}
+	case nextLine > bindsLine:
+		return []checkResult{{catCompositor, "binds-next include", statusWarn,
+			fmt.Sprintf("%s:%d includes dms/binds-next.kdl after dms/binds.kdl", rel, nextLine),
+			fmt.Sprintf("Move it above line %d so your binds in dms/binds.kdl override the DMS defaults.", bindsLine), url}}
+	}
+	return nil
 }
 
 func checkAqueousConfigHelper() checkResult {

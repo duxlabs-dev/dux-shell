@@ -1024,6 +1024,7 @@ Singleton {
             if (CompositorService.isNiri) {
                 syncNiriVrrFromConfig(parsed);
                 syncNiriDisabledFromConfig(parsed);
+                syncNiriMaxBpcFromConfig(parsed);
             }
         });
     }
@@ -1067,6 +1068,16 @@ Singleton {
             if (current === fromConfig)
                 continue;
             SessionData.setNiriOutputSetting(outputName, "vrrOnDemand", fromConfig || undefined);
+        }
+    }
+
+    function syncNiriMaxBpcFromConfig(parsedOutputs) {
+        for (const outputName in parsedOutputs) {
+            const fromConfig = parsedOutputs[outputName].max_bpc;
+            // the dropdown stores null for Default
+            if ((SessionData.getNiriOutputSetting(outputName, "maxBpc", undefined) ?? undefined) === fromConfig)
+                continue;
+            SessionData.setNiriOutputSetting(outputName, "maxBpc", fromConfig);
         }
     }
 

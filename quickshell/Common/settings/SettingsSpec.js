@@ -427,6 +427,10 @@ var LOCAL_SPEC = {
         def: 1.0,
         onChange: "updateCompositorInput"
     },
+    touchpadPinchSensitivity: {
+        def: 1.0,
+        onChange: "updateCompositorInput"
+    },
     touchpadScrollMethod: {
         def: "default",
         onChange: "updateCompositorInput"

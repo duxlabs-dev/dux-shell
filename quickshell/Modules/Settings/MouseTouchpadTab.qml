@@ -195,6 +195,20 @@ Item {
                 onSliderValueChanged: newValue => SettingsData.set("touchpadScrollFactor", newValue / 10.0)
             }
 
+            SettingsSliderRow {
+                visible: CompositorService.isNiri && NiriService.configNextSupported
+                tags: ["touchpad", "pinch", "zoom", "gesture", "sensitivity"]
+                settingKey: "touchpadPinchSensitivity"
+                text: I18n.tr("Pinch sensitivity", "touchpad slider, how strongly pinch gestures zoom in apps")
+                value: Math.round(SettingsData.touchpadPinchSensitivity * 10)
+                unit: "×"
+                decimals: 1
+                minimum: 1
+                maximum: 30
+                step: 1
+                onSliderValueChanged: newValue => SettingsData.set("touchpadPinchSensitivity", newValue / 10.0)
+            }
+
             SettingsToggleRow {
                 tags: ["touchpad", "tap", "drag"]
                 settingKey: "touchpadTapAndDrag"

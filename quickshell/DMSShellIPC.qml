@@ -663,27 +663,14 @@ Item {
 
     IpcHandler {
         function toggle(provider: string): string {
-            if (!provider)
-                return "ERROR: No provider specified";
-
-            KeybindsService.loadCheatsheet(provider);
-            root.hyprKeybindsModalLoaderRef.active = true;
-
-            if (!root.hyprKeybindsModalLoaderRef.item)
-                return `KEYBINDS_TOGGLE_FAILED: ${provider}`;
-
-            if (root.hyprKeybindsModalLoaderRef.item.shouldBeVisible)
-                root.hyprKeybindsModalLoaderRef.item.close();
-            else
-                root.hyprKeybindsModalLoaderRef.item.open();
-            return `KEYBINDS_TOGGLE_SUCCESS: ${provider}`;
+            return toggleWithPath(provider, "");
         }
 
         function toggleWithPath(provider: string, path: string): string {
             if (!provider)
                 return "ERROR: No provider specified";
 
-            KeybindsService.loadCheatsheet(provider);
+            KeybindsService.loadCheatsheet(provider, path);
             root.hyprKeybindsModalLoaderRef.active = true;
 
             if (!root.hyprKeybindsModalLoaderRef.item)
@@ -693,35 +680,25 @@ Item {
                 root.hyprKeybindsModalLoaderRef.item.close();
             else
                 root.hyprKeybindsModalLoaderRef.item.open();
-            return `KEYBINDS_TOGGLE_SUCCESS: ${provider} (${path})`;
+            return path ? `KEYBINDS_TOGGLE_SUCCESS: ${provider} (${path})` : `KEYBINDS_TOGGLE_SUCCESS: ${provider}`;
         }
 
         function open(provider: string): string {
-            if (!provider)
-                return "ERROR: No provider specified";
-
-            KeybindsService.loadCheatsheet(provider);
-            root.hyprKeybindsModalLoaderRef.active = true;
-
-            if (!root.hyprKeybindsModalLoaderRef.item)
-                return `KEYBINDS_OPEN_FAILED: ${provider}`;
-
-            root.hyprKeybindsModalLoaderRef.item.open();
-            return `KEYBINDS_OPEN_SUCCESS: ${provider}`;
+            return openWithPath(provider, "");
         }
 
         function openWithPath(provider: string, path: string): string {
             if (!provider)
                 return "ERROR: No provider specified";
 
-            KeybindsService.loadCheatsheet(provider);
+            KeybindsService.loadCheatsheet(provider, path);
             root.hyprKeybindsModalLoaderRef.active = true;
 
             if (!root.hyprKeybindsModalLoaderRef.item)
                 return `KEYBINDS_OPEN_FAILED: ${provider}`;
 
             root.hyprKeybindsModalLoaderRef.item.open();
-            return `KEYBINDS_OPEN_SUCCESS: ${provider} (${path})`;
+            return path ? `KEYBINDS_OPEN_SUCCESS: ${provider} (${path})` : `KEYBINDS_OPEN_SUCCESS: ${provider}`;
         }
 
         function close(): string {

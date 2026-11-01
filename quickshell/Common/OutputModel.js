@@ -13,6 +13,7 @@ const GAP_FILL_CLEARANCE = 4;
 const LOGICAL_PIXEL_TOLERANCE = 0.01;
 const FALLBACK_SCALE_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
 const NIRI_TRANSFORMS = ["normal", "90", "180", "270", "flipped", "flipped-90", "flipped-180", "flipped-270"];
+const NIRI_MAX_BPC = [6, 8, 10, 12, 14, 16];
 
 function transformName(index) {
     if (!Number.isInteger(index))
@@ -68,9 +69,33 @@ function profileIdentifier(output, name, displayNameMode, compositor) {
     }
 }
 
+// index just past the string starting at i, or -1; raw strings (r#"…"#, #"…"#) have no escapes
+function kdlStringEnd(text, i) {
+    const ch = text[i];
+    if (ch !== '"' && ch !== "r" && ch !== "#")
+        return -1;
+    // a raw string only starts a value, never mid-identifier
+    if (ch !== '"' && i > 0 && !/[\s=(){};]/.test(text[i - 1]))
+        return -1;
+    const opener = /(r?)(#*)"/y;
+    opener.lastIndex = i;
+    const raw = opener.exec(text);
+    if (!raw)
+        return -1;
+    if (raw[1] || raw[2]) {
+        const close = text.indexOf('"' + raw[2], i + raw[0].length);
+        return close < 0 ? text.length : close + 1 + raw[2].length;
+    }
+    let j = i + 1;
+    while (j < text.length && text[j] !== '"')
+        j += text[j] === "\\" ? 2 : 1;
+    return j + 1;
+}
+
+// a /- slashdash comments out the whole output node, so its body is skipped but not kept
 function extractNiriOutputBlocks(content) {
     const blocks = [];
-    const headerRegex = /output\s+"([^"]+)"\s*\{/g;
+    const headerRegex = /(\/-\s*)?\boutput\s+"([^"]+)"\s*\{/g;
     let match;
     while ((match = headerRegex.exec(content)) !== null) {
         const start = headerRegex.lastIndex;
@@ -78,19 +103,70 @@ function extractNiriOutputBlocks(content) {
         let i = start;
         while (i < content.length && depth > 0) {
             const ch = content[i];
+            const stringEnd = kdlStringEnd(content, i);
+            if (stringEnd > 0) {
+                i = stringEnd;
+                continue;
+            }
             if (ch === '{')
                 depth++;
             else if (ch === '}')
                 depth--;
             i++;
         }
-        blocks.push({
-            "name": match[1],
-            "body": content.slice(start, i - 1)
-        });
+        if (!match[1])
+            blocks.push({
+                "name": match[2],
+                "body": content.slice(start, i - 1)
+            });
         headerRegex.lastIndex = i;
     }
     return blocks;
+}
+
+// blanks comments in place, keeping strings and line breaks; KDL block comments nest
+function stripKdlComments(text) {
+    let out = "";
+    let i = 0;
+    while (i < text.length) {
+        let end = kdlStringEnd(text, i);
+        if (end > 0) {
+            out += text.slice(i, end);
+            i = end;
+            continue;
+        }
+        if (text.startsWith("//", i)) {
+            end = text.indexOf("\n", i);
+            if (end < 0)
+                end = text.length;
+        } else if (text.startsWith("/*", i)) {
+            let depth = 0;
+            end = i;
+            do {
+                if (text.startsWith("/*", end)) {
+                    depth++;
+                    end += 2;
+                } else if (text.startsWith("*/", end)) {
+                    depth--;
+                    end += 2;
+                } else {
+                    end++;
+                }
+            } while (depth > 0 && end < text.length)
+        } else {
+            out += text[i];
+            i++;
+            continue;
+        }
+        out += text.slice(i, end).replace(/[^\n]/g, " ");
+        i = end;
+    }
+    return out;
+}
+
+// KDL also ends a node at ';', which the anchored matches need on its own line
+function niriTopLevelNodes(body) {
+    return stripNestedBlocks(body).replace(/;/g, "\n");
 }
 
 function stripNestedBlocks(body) {
@@ -138,18 +214,20 @@ function parsedMode(width, height, refresh) {
 
 function parseNiriOutputs(content) {
     const result = {};
-    for (const block of extractNiriOutputBlocks(content)) {
+    for (const block of extractNiriOutputBlocks(stripKdlComments(content))) {
         const name = block.name;
         const body = block.body;
+        const topLevel = niriTopLevelNodes(body);
 
         // top-level off only, nested hot-corners { off } must not count (#2966)
-        const disabled = /^\s*off\s*$/m.test(stripNestedBlocks(body));
+        const disabled = /^\s*off\s*$/m.test(topLevel);
         const modeMatch = body.match(/mode\s+"(\d+)x(\d+)@([\d.]+)"/);
         const posMatch = body.match(/position\s+x=(-?\d+)\s+y=(-?\d+)/);
         const scaleMatch = body.match(/scale\s+([\d.]+)/);
         const transformMatch = body.match(/transform\s+"([^"]+)"/);
         const vrrMatch = body.match(/variable-refresh-rate/);
         const vrrOnDemandMatch = body.match(/variable-refresh-rate\s+on-demand=true/);
+        const maxBpcMatch = topLevel.match(/^\s*max-bpc\s+(\d+)\s*$/m);
 
         result[name] = {
             "name": name,
@@ -164,10 +242,15 @@ function parseNiriOutputs(content) {
             "current_mode": 0,
             "vrr_enabled": !!vrrMatch,
             "vrr_on_demand": !!vrrOnDemandMatch,
-            "vrr_supported": true
+            "vrr_supported": true,
+            "max_bpc": maxBpcMatch ? niriMaxBpc(parseInt(maxBpcMatch[1])) : undefined
         };
     }
     return result;
+}
+
+function niriMaxBpc(value) {
+    return NIRI_MAX_BPC.includes(value) ? value : undefined;
 }
 
 function hyprLuaSettings(line, disabled, vrrMode) {

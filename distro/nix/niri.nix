@@ -42,6 +42,7 @@ in {
           '';
           default = [
             "alttab"
+            "binds-next"
             "binds"
             "colors"
             "cursor"
@@ -86,13 +87,17 @@ in {
             layout { border { on; }; }
           ''
         );
+
+        # binds-next holds DMS defaults, so it goes first and never overrides the user's binds.
+        bindsNext = lib.optional (lib.elem "binds-next" cfg'.filesToInclude) "dms/binds-next";
       in {
         niri-config.target = lib.mkForce "niri/${cfg'.originalFileName}.kdl";
         niri-config-dms = {
           target = "niri/config.kdl";
-          text = lib.pipe cfg'.filesToInclude [
+          text = lib.pipe (lib.remove "binds-next" cfg'.filesToInclude) [
             (map (filename: "dms/${filename}"))
             withOriginalConfig
+            (files: bindsNext ++ files)
             (map (filename: "include optional=true \"${filename}.kdl\""))
             (files: files ++ fixes)
             (builtins.concatStringsSep "\n")

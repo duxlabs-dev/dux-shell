@@ -91,6 +91,9 @@ func init() {
 	keybindsSetCmd.Flags().Int("cooldown-ms", 0, "Cooldown in milliseconds")
 	keybindsSetCmd.Flags().Bool("no-repeat", false, "Disable key repeat")
 	keybindsSetCmd.Flags().Bool("no-inhibiting", false, "Keep bind active when shortcuts are inhibited (allow-inhibiting=false)")
+	keybindsSetCmd.Flags().String("trigger", "", "Niri: fire on press, release, or both (both needs --release-action). Omitted keeps the existing bind's trigger")
+	keybindsSetCmd.Flags().String("release-action", "", "Niri: action run on release when --trigger both")
+	keybindsSetCmd.Flags().Bool("pass-through", false, "Niri: also forward the key to the focused window (keyboard binds only)")
 	keybindsSetCmd.Flags().String("replace-key", "", "Original key to replace (removes old key)")
 	keybindsSetCmd.Flags().String("flags", "", "Hyprland bind flags as letters: e repeat, l locked, r release, o long-press, n non-consuming, m mouse, t transparent, i ignore-mods, u submap-universal, a auto-consuming, x allow-input-capture")
 
@@ -289,7 +292,7 @@ func editKeybind(cmd *cobra.Command, args []string) (map[string]any, error) {
 		generation, _ := cmd.Flags().GetString("expected-generation")
 		edit := providers.AqueousBindEdit{Generation: generation, Key: key, Remove: cmd.Name() != "set"}
 		if !edit.Remove {
-			for _, flag := range []string{"desc", "allow-when-locked", "cooldown-ms", "no-repeat", "no-inhibiting", "flags"} {
+			for _, flag := range []string{"desc", "allow-when-locked", "cooldown-ms", "no-repeat", "no-inhibiting", "flags", "trigger", "release-action", "pass-through"} {
 				if cmd.Flags().Changed(flag) {
 					return nil, fmt.Errorf("aqueous does not support --%s in this provider", flag)
 				}
@@ -325,6 +328,23 @@ func editKeybind(cmd *cobra.Command, args []string) (map[string]any, error) {
 		}
 		if v, _ := cmd.Flags().GetString("flags"); v != "" {
 			options["flags"] = v
+		}
+		for _, flag := range []string{"trigger", "release-action", "pass-through"} {
+			if !cmd.Flags().Changed(flag) {
+				continue
+			}
+			if _, isNiri := provider.(*providers.NiriProvider); !isNiri {
+				return nil, fmt.Errorf("--%s is only supported by the niri provider", flag)
+			}
+		}
+		if cmd.Flags().Changed("trigger") {
+			options["trigger"], _ = cmd.Flags().GetString("trigger")
+		}
+		if cmd.Flags().Changed("release-action") {
+			options["release-action"], _ = cmd.Flags().GetString("release-action")
+		}
+		if cmd.Flags().Changed("pass-through") {
+			options["pass-through"], _ = cmd.Flags().GetBool("pass-through")
 		}
 		if replaceKey, _ := cmd.Flags().GetString("replace-key"); replaceKey != "" && replaceKey != key {
 			_ = writable.RemoveBind(replaceKey)

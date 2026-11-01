@@ -45,6 +45,9 @@ Singleton {
     property bool _touchpadStateInitialized: false
     signal touchpadToggled
 
+    // Not bound to capabilities: they empty on every socket drop and would rewrite input.kdl twice.
+    property bool configNextSupported: false
+
     property string configValidationOutput: ""
     property bool hasInitialConnection: false
     property bool suppressConfigToast: true
@@ -91,6 +94,7 @@ Singleton {
     }
 
     Component.onCompleted: {
+        configNextSupported = DMSService.capabilities.includes("niri.config-next");
         fetchOutputs();
         generateNiriInputConfig();
     }
@@ -142,6 +146,19 @@ Singleton {
                 return;
             root._lastGapValue = newGaps;
             generateNiriLayoutConfig();
+        }
+    }
+
+    Connections {
+        target: DMSService
+        function onCapabilitiesReceived() {
+            const supported = DMSService.capabilities.includes("niri.config-next");
+            if (supported === root.configNextSupported)
+                return;
+            root.configNextSupported = supported;
+            // input.kdl is first written before the DMS socket reports capabilities
+            if (SettingsData.touchpadPinchSensitivity !== 1.0)
+                root.generateNiriInputConfig();
         }
     }
 
@@ -1545,6 +1562,11 @@ window-rule {
         return SessionData.getNiriOutputSettings(identifier);
     }
 
+    // niri 26.04 rejects max-bpc in config; newer builds report the max_bpc key in IPC outputs
+    function maxBpcSupported() {
+        return Object.values(outputs).some(o => o && "max_bpc" in o);
+    }
+
     function buildOutputsConfig(outputsData, niriSettings) {
         const data = outputsData || outputs;
         if (!data || Object.keys(data).length === 0)
@@ -1590,6 +1612,11 @@ window-rule {
             if (output.vrr_enabled || outputSettings.vrrOnDemand) {
                 const vrrOnDemand = outputSettings.vrrOnDemand ?? false;
                 kdlContent += vrrOnDemand ? `    variable-refresh-rate on-demand=true\n` : `    variable-refresh-rate\n`;
+            }
+
+            const maxBpc = OutputModel.niriMaxBpc(outputSettings.maxBpc);
+            if (maxBpc && maxBpcSupported()) {
+                kdlContent += `    max-bpc ${maxBpc}\n`;
             }
 
             if (outputSettings.focusAtStartup) {
@@ -1759,6 +1786,7 @@ window-rule {
         const touchpadNaturalScroll = typeof SettingsData !== "undefined" ? SettingsData.touchpadNaturalScroll : defaultTouchpadNaturalScroll;
         const touchpadProfile = typeof SettingsData !== "undefined" ? SettingsData.touchpadAccelProfile : defaultTouchpadProfile;
         const touchpadScrollFactor = typeof SettingsData !== "undefined" ? SettingsData.touchpadScrollFactor : defaultTouchpadScrollFactor;
+        const touchpadPinchSensitivity = typeof SettingsData !== "undefined" ? SettingsData.touchpadPinchSensitivity : 1.0;
         const touchpadScrollMethod = typeof SettingsData !== "undefined" ? SettingsData.touchpadScrollMethod : defaultTouchpadScrollMethod;
         const touchpadSpeed = typeof SettingsData !== "undefined" ? SettingsData.touchpadAccelSpeed : defaultTouchpadSpeed;
         const touchpadTap = typeof SettingsData !== "undefined" ? SettingsData.touchpadTapToClick : defaultTouchpadTap;
@@ -1836,6 +1864,9 @@ window-rule {
         }
         if (touchpadScrollFactor !== 1.0) {
             inputContent += `        scroll-factor ${touchpadScrollFactor.toFixed(1)}\n`;
+        }
+        if (touchpadPinchSensitivity !== 1.0 && configNextSupported) {
+            inputContent += `        pinch-sensitivity ${touchpadPinchSensitivity.toFixed(1)}\n`;
         }
         if (touchpadScrollMethod !== "default") {
             inputContent += `        scroll-method "${touchpadScrollMethod}"\n`;

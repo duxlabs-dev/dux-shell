@@ -15070,6 +15070,23 @@
     "conditionKey": "pointerCapable"
   },
   {
+    "section": "touchpadPinchSensitivity",
+    "label": "Pinch sensitivity",
+    "tabIndex": 44,
+    "category": "Mouse & touchpad",
+    "keywords": [
+      "gesture",
+      "input",
+      "mouse",
+      "pinch",
+      "sensitivity",
+      "touchpad",
+      "zoom"
+    ],
+    "parentLabel": "Input",
+    "conditionKey": "isNiri"
+  },
+  {
     "section": "mouseAccelSpeed",
     "label": "Pointer speed",
     "tabIndex": 44,
