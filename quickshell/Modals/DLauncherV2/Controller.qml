@@ -63,6 +63,7 @@ Item {
     property string dmenuSize: ""
     property string dmenuIcon: ""
     property bool dmenuDisableHistory: false
+    property string dmenuFreqKey: ""
     property bool _dmenuSelectApplied: false
 
     readonly property var _dmenuKeyNameMap: (function () {
@@ -786,6 +787,7 @@ Item {
         dmenuSize = "";
         dmenuIcon = "";
         dmenuDisableHistory = false;
+        dmenuFreqKey = "";
         _dmenuSelectApplied = false;
         sections = [];
         flatModel = [];
@@ -835,6 +837,7 @@ Item {
             dmenuSize = msg.size || "";
             dmenuIcon = msg.icon || "";
             dmenuDisableHistory = !!msg.disableHistory;
+            dmenuFreqKey = msg.freqKey || "";
             dmenuView = msg.view || "";
             if (dmenuView)
                 viewModeVersion++;
@@ -899,6 +902,15 @@ Item {
     }
 
     function _writeDmenuSelection(payload) {
+        if (dmenuFreqKey) {
+            if (payload.kind === "row") {
+                DmenuFrequencyData.recordUsage(dmenuFreqKey, payload.text);
+            } else if (payload.kind === "multi") {
+                for (var mi = 0; mi < payload.items.length; mi++)
+                    DmenuFrequencyData.recordUsage(dmenuFreqKey, payload.items[mi].text);
+            }
+        }
+
         var socket = dmenuSocketLoader.item;
         if (socket && socket.connected) {
             socket.write(JSON.stringify(Object.assign({
@@ -1267,7 +1279,7 @@ Item {
                 if (grp.items.length === 0)
                     continue;
 
-                var scoredItems = Scorer.scoreItems(grp.items, searchQuery, null);
+                var scoredItems = Scorer.scoreItems(grp.items, searchQuery, dmenuFreqKey ? getDmenuFrecencyForItem : null);
                 if (searchQuery) {
                     var scoredIdx = ({});
                     for (var si = 0; si < scoredItems.length; si++)
@@ -2271,6 +2283,12 @@ Item {
         return {
             usageCount: usageData?.usageCount || 0
         };
+    }
+
+    function getDmenuFrecencyForItem(item) {
+        if (!dmenuFreqKey || !item || item.type !== "dmenu")
+            return null;
+        return DmenuFrequencyData.getUsage(dmenuFreqKey, item.data.text);
     }
 
     function getFirstItemIndex() {
