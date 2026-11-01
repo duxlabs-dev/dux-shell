@@ -130,6 +130,7 @@ Item {
     }
 
     readonly property var focusableFaces: ({
+            "live": liveExpandedLoader,
             "home": homeExpandedLoader,
             "media": mediaExpandedLoader,
             "launcher": launcherExpandedLoader,
@@ -264,6 +265,7 @@ Item {
     }
 
     ExpandedFace {
+        id: liveExpandedLoader
         activity: "live"
         active: root.surfaceActive("live") && (root.expanded || root.expandedFade > 0)
         sourceComponent: root.liveExpandedComponent

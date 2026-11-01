@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Window
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
@@ -56,10 +57,27 @@ Item {
         text: root.activity?.subtitle ?? ""
     }
     readonly property var renderer: IslandActivityService.renderers[activity?.source]
-    readonly property Component customFace: (expanded ? renderer?.expanded : renderer?.compact) ?? null
+    readonly property Component customFace: (expanded ? renderer?.expanded : iconOnly ? null : renderer?.compact) ?? null
     readonly property Component customIcon: renderer?.icon ?? null
-    readonly property bool rendererMotionEnabled: visible && !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None && controller.liveIconAnimationMode !== "none"
+    readonly property bool live: visible && opacity > 0 && !!Window.window && Window.window.visible
+    readonly property bool rendererMotionEnabled: live && !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None && controller.liveIconAnimationMode !== "none"
     readonly property bool motionEnabled: rendererMotionEnabled && !customFace && !customIcon
+
+    function focusFace() {
+        if (!expanded || !visible)
+            return false;
+        let target = customLoader.item;
+        for (let i = 0; !target && i < actionRepeater.count; i++) {
+            const button = actionRepeater.itemAt(i);
+            if (button?.enabled)
+                target = button;
+        }
+        target = target ?? dismissButton;
+        if (typeof target.focusFace === "function")
+            return target.focusFace() === true;
+        target.forceActiveFocus(Qt.TabFocusReason);
+        return true;
+    }
 
     function syncActivityAnimation() {
         const key = `${root.activity?.source ?? ""}:${root.activity?.id ?? ""}:${root.iconAnimation}`;
@@ -70,6 +88,13 @@ Item {
             wiggleAnimation.restart();
     }
 
+    onMotionEnabledChanged: {
+        if (motionEnabled)
+            return;
+        wiggleAnimation.stop();
+        iconGlyph.rotation = 0;
+        iconGlyph.scale = 1;
+    }
     onActivityChanged: syncActivityAnimation()
     onIconAnimationChanged: syncActivityAnimation()
     Loader {
@@ -83,18 +108,22 @@ Item {
         readonly property bool expanded: root.expanded
         readonly property bool stable: root.stable
         readonly property color foreground: root.foreground
-        readonly property bool live: root.visible
+        readonly property bool live: root.live
         readonly property bool motionEnabled: root.rendererMotionEnabled
         readonly property int motionDuration: root.controller.liveIconAnimationDuration
         readonly property real motionIntensity: root.animationIntensity
+        readonly property real contentInset: root.expanded ? Theme.spacingL : Theme.spacingM
+        readonly property real contentSpacing: Theme.spacingM
+        readonly property real actionHeight: Theme.buttonHeightS
+        function close() { root.controller.requestCollapse(); }
     }
 
-    Column {
+    IslandActivityLayout {
         id: content
         visible: !root.customFace
         anchors.centerIn: parent
-        width: root.iconOnly ? root.controller.compactIconSize : Math.max(0, parent.width - (root.expanded ? Theme.spacingL : Theme.spacingM) * 2)
-        spacing: Theme.spacingM
+        contentInset: root.expanded ? Theme.spacingL : Theme.spacingM
+        width: root.iconOnly ? root.controller.compactIconSize : availableWidth
 
         Row {
             width: parent.width
@@ -118,7 +147,7 @@ Item {
                     anchors.centerIn: parent
                     visible: !root.activity?.image && !root.customIcon
                     name: root.activity?.icon ?? "notifications"
-                    size: root.expanded ? Theme.iconSize : parent.width
+                    size: root.expanded ? Theme.iconSizeMedium : parent.width
                     color: root.foreground
                     filled: true
                 }
@@ -133,7 +162,7 @@ Item {
                     readonly property bool stable: root.stable
                     readonly property color foreground: root.foreground
                     readonly property real iconSize: root.expanded ? Theme.iconSize : root.controller.compactIconSize
-                    readonly property bool live: root.visible && !root.customFace && !root.activity?.image
+                    readonly property bool live: root.live && !root.customFace && !root.activity?.image
                     readonly property bool motionEnabled: live && root.rendererMotionEnabled
                     readonly property int motionDuration: root.controller.liveIconAnimationDuration
                     readonly property real motionIntensity: root.animationIntensity
@@ -176,11 +205,19 @@ Item {
                     easing.type: Easing.Linear
                     loops: Animation.Infinite
                     running: root.motionEnabled && iconGlyph.visible && root.iconAnimation === "spin"
+                    onRunningChanged: {
+                        if (!running)
+                            iconGlyph.rotation = 0;
+                    }
                 }
 
                 SequentialAnimation {
                     loops: Animation.Infinite
                     running: root.motionEnabled && iconGlyph.visible && root.iconAnimation === "pulse"
+                    onRunningChanged: {
+                        if (!running)
+                            iconGlyph.scale = 1;
+                    }
                     NumberAnimation {
                         target: iconGlyph
                         property: "scale"
@@ -237,11 +274,38 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 iconName: "close"
                 iconColor: root.foreground
-                Accessible.name: I18n.tr("Dismiss")
-                onClicked: {
-                    IslandActivityService.remove(root.activity.source, root.activity.id);
-                    root.controller.requestCollapse();
-                }
+                Accessible.name: I18n.tr("Close")
+                onClicked: root.controller.requestCollapse()
+            }
+        }
+
+        Column {
+            width: parent.width
+            visible: root.expanded && (!!root.activity?.value || !!root.activity?.status)
+            spacing: Theme.spacingXS
+
+            StyledText {
+                width: parent.width
+                visible: !!text
+                text: root.activity?.value ?? ""
+                textFormat: Text.PlainText
+                color: root.foreground
+                font.pixelSize: Theme.fontSizeXLarge
+                font.weight: Theme.fontWeightMedium
+                elide: Text.ElideRight
+            }
+
+            StyledText {
+                width: parent.width
+                visible: !!text
+                text: root.activity?.status ?? ""
+                textFormat: Text.PlainText
+                color: root.foreground
+                opacity: 0.75
+                font.pixelSize: Theme.fontSizeSmall
+                wrapMode: Text.Wrap
+                maximumLineCount: 2
+                elide: Text.ElideRight
             }
         }
 
@@ -284,7 +348,7 @@ Item {
         Flow {
             id: actionRow
             width: parent.width
-            visible: root.expanded && actionRepeater.count > 0
+            visible: root.expanded && (actionRepeater.count > 0 || !!root.activity?.dismissible)
             spacing: Theme.spacingS
 
             Repeater {
@@ -294,11 +358,29 @@ Item {
                 DButton {
                     required property var modelData
                     maximumWidth: actionRow.width
-                    buttonHeight: Theme.buttonHeightXS
-                    backgroundColor: Theme.withAlpha(root.foreground, 0.12)
-                    textColor: root.foreground
+                    buttonHeight: Theme.buttonHeightS
+                    wrapText: true
+                    enabled: modelData.enabled !== false && !modelData.pending
+                    busy: root.live && !!modelData.pending && root.rendererMotionEnabled
+                    backgroundColor: modelData.role === "primary" ? Theme.primary : modelData.role === "destructive" ? Theme.errorContainer : Theme.withAlpha(root.foreground, 0.12)
+                    textColor: modelData.role === "primary" ? Theme.onPrimary : modelData.role === "destructive" ? Theme.onErrorContainer : root.foreground
+                    Accessible.description: modelData.pending ? I18n.tr("Loading") : ""
                     text: modelData.label
                     onClicked: IslandActivityService.invoke(root.activity.source, root.activity.id, modelData.id)
+                }
+            }
+
+            DButton {
+                visible: !!root.activity?.dismissible
+                maximumWidth: actionRow.width
+                buttonHeight: Theme.buttonHeightS
+                wrapText: true
+                backgroundColor: Theme.withAlpha(root.foreground, 0.12)
+                textColor: root.foreground
+                text: I18n.tr("Dismiss")
+                onClicked: {
+                    IslandActivityService.remove(root.activity.source, root.activity.id);
+                    root.controller.requestCollapse();
                 }
             }
         }

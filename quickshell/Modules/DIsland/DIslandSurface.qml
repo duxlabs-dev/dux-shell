@@ -527,7 +527,7 @@ Item {
     }
 
     function updateFittsPointerInside() {
-        root.controller.updatePointerInside(islandHover.hovered || transitionHover.hovered);
+        root.controller.updatePointerInside(islandHover.hovered || stripHover.hovered || transitionHover.hovered);
     }
 
     // Fitts zone from the island edge to the screen edge — hover/click count as island.

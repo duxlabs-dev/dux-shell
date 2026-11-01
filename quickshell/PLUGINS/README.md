@@ -2192,10 +2192,13 @@ Payload fields:
 | Field | Behavior |
 | --- | --- |
 | `title`, `subtitle`, `body` | Plain text; title is required. |
+| `value`, `status` | Optional prominent expanded value (128 characters) and supporting status (256 characters). Use these for remaining time, transfer size, or current phase rather than embedding everything in the title. |
+| `dismissible` | Show a separate Dismiss button that removes this activity. Defaults to false. The header close button always collapses without removing the activity. |
 | `icon`, `image` | Material icon name and optional artwork URL. |
 | `compact` | `label` (default) or `icon`; expanded content still has the title. |
 | `persistent` | Keep a compact slot after the timed preview until explicitly removed. |
 | `duration` | Preview time in milliseconds while displayed, maximum 3600000. Omitted duration follows each island's Preview duration setting. 0 creates a persistent slot without a preview. |
+| `ttl` | Wall-clock lifetime in milliseconds for a persistent activity, up to 86400000 (24 hours). Republishing renews it. IPC publishers default to eight hours when omitted or zero; in-process plugins default to their existing explicit removal/unload lifetime. Use a shorter lifetime for external jobs that publish progress regularly. |
 | `announce` | `false` suppresses a preview. Updating an existing persistent activity is silent unless `true` explicitly requests another preview. |
 | `position` | Stable slot position: `left`, `center`, or `right`. Users can override placement per source. |
 | `category` | `status` defaults to the right; other activities default to the left. Explicit `position` takes precedence. |
@@ -2207,7 +2210,7 @@ Payload fields:
 | `severity` | `error` or `warning`, for themed temporary background colors. |
 | `background`, `expandedBackground`, `foreground` | Optional `#RRGGBB` or Qt `#AARRGGBB` colors, subject to the island's Activity colors setting. |
 | `progress` | Optional fraction from 0 to 1, shown when expanded. |
-| `actions` | Up to three `{id, label}` buttons, dispatched through `actionInvoked`. |
+| `actions` | Up to three `{id, label, role?, enabled?, pending?}` buttons, dispatched through `actionInvoked`. Roles are `primary`, `secondary` (default), and `destructive`. Disabled or pending actions cannot be invoked through buttons, click actions, or IPC. Pending is publisher-controlled: republish to clear it. |
 | `clickActivity` | Click destination: `live` (default, this activity's expanded renderer), `home`, `media`, `clipboard`, `controlcenter`, `notificationcenter`, `weather`, `launcher`, or `wallpaper`. |
 | `clickAction` | Instead of opening a panel, dispatch this action ID through `actionInvoked`. |
 | `clickTarget`, `clickMethod` | Instead of opening a panel, invoke `dms ipc call TARGET METHOD`; both accept validated identifiers only, without arguments or shell evaluation. |
@@ -2222,7 +2225,7 @@ time after the preceding event ends; notification popup timers are held while qu
 and popup completion preserves notification-center history. Initial plugin previews
 settle automatically, including while hovered, and do not trigger dashboard hover
 expansion. Notifications pause while being read under the pointer. System OSDs and
-explicitly opened ongoing panels hold the preview timer; unrelated built-in sheets
+expanded activity panels hold the preview timer; unrelated built-in sheets
 delay the next queued event without extending an already-running plugin preview.
 Each screen/bar tracks completion independently. Events use one priority queue for plugin
 previews, Island notifications, and built-in system status previews. Normal notifications
@@ -2250,6 +2253,17 @@ IslandActivityService.publish(pluginId, "recording", {
     duration: 3000
 });
 ```
+
+Persistent slots use the minimal icon renderer (or the built-in icon/image fallback)
+unless `stableCompact: "label"` requests the compact renderer. Clicking follows the
+configured action; pressing and holding opens the activity's details. Slots use the
+shared keyboard-accessible button control. Expanded renderers can implement
+`focusFace()` to choose their initial keyboard focus.
+
+IPC persistent activities have a renewable wall-clock lifetime even while queued or
+held. Renew by republishing before `ttl` elapses; removal cancels both the slot and any
+preview on every host. This bounds stale entries after a producer exits without cleanup,
+without a heartbeat process or polling timer in the shell.
 
 Orphaned transient activities with no
 eligible host expire from publication. Closing a preview advances the queue; closing an
@@ -2424,3 +2438,39 @@ NotificationInterceptorService.register(
 Use the activity action signal to route event actions back to the calendar plugin. Keep
 the activity ID for each event so updates replace it, and remove the ID when the event
 ends. User-configured notification ignore rules take precedence over interceptors.
+
+
+### Activity presentation contract
+
+Existing payloads and `registerRenderer` / `registerIconRenderer` signatures remain supported.
+Equal-priority persistent slots retain their original publication order across updates,
+including updates in the same millisecond. Priority changes can deliberately change
+which slots are visible. Removing and republishing creates a new placement lifetime.
+
+The standard face presents identity, optional `value` and `status`, body, progress,
+and actions. Use one primary action where possible, secondary actions for alternatives,
+and a destructive role for cancellation or deletion. The framework preserves action
+order; roles do not reorder developer content. Labels wrap and controls use the shared
+small button height rather than the extra-small variant. Localize publisher-provided
+text in the plugin; IPC text is displayed as supplied.
+
+Custom faces retain complete control of composition and styling. The hosting Loader
+additionally exposes `contentInset`, `contentSpacing`, `actionHeight`, and `close()`.
+These are recommendations, not enforced constraints. `close()` collapses without
+ending an activity; use `IslandActivityService.remove(source, id)` to end it explicitly.
+
+For a standard content column, import `qs.Widgets` and use `IslandActivityLayout`.
+It provides themed spacing and horizontal insets, an `availableWidth`, and derives
+its implicit height from its children. Override `contentInset`, `spacing`, or `width`
+when the activity needs a different composition. Use the shared D* buttons and text
+widgets for typography, focus rings, wrapping, and accessible names.
+
+Size custom faces with finite `implicitWidth` and `implicitHeight` within the host's
+available space. Implement `focusFace()` to focus the first enabled control and return
+true; support keyboard activation and a touch/click path to every action. Give controls
+accessible names. Keep close and destructive actions distinct.
+
+Gate custom timers and work on the Loader's `live`, and animations on `motionEnabled`.
+The host includes face visibility and window visibility in these signals, and motion
+also respects reduced motion and the user's animation setting. Retained hidden faces
+must stop animation and polling. The standard renderer adds no polling timers.

@@ -3,6 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Widgets
+import qs.DCommon.Widgets
+import "../../../Common/IslandActivities.js" as Activities
 
 Item {
     id: root
@@ -102,22 +104,30 @@ Item {
                     }
                 }
 
-                LiveActivityFace {
-                    id: face
+                StyledButton {
+                    id: slotButton
                     anchors.fill: parent
-                    controller: root.controller
-                    activity: root.entries.find(entry => JSON.stringify([entry.source, entry.id]) === slot.entryKey) ?? JSON.parse(slot.payload)
-                    foreground: root.activityColors && activity?.foreground ? activity.foreground : root.foreground
-                    stable: true
-                    trackSize: false
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    acceptedButtons: Qt.LeftButton
-                    cursorShape: Qt.PointingHandCursor
+                    padding: 0
+                    radius: Theme.cornerRadius
+                    color: hovered || pressed ? Theme.surfaceTextHover : "transparent"
+                    Accessible.name: face.activity?.title ?? ""
+                    Accessible.description: face.activity?.subtitle ?? ""
                     onPressed: root.controller.hoverOpenTimer.stop()
-                    onClicked: root.controller.openStableEntry(face.activity)
+                    onClicked: root.controller.openStableEntry(face.activity, visualFocus)
+                    onPressAndHold: root.controller.expandLiveEntry(face.activity, visualFocus)
+
+                    FocusRing {
+                        visible: slotButton.visualFocus
+                    }
+
+                    contentItem: LiveActivityFace {
+                        id: face
+                        controller: root.controller
+                        activity: root.entries.find(entry => Activities.identity(entry) === slot.entryKey) ?? JSON.parse(slot.payload)
+                        foreground: root.activityColors && activity?.foreground ? activity.foreground : root.foreground
+                        stable: true
+                        trackSize: false
+                    }
                 }
             }
         }
