@@ -5,7 +5,7 @@
 var defaults = {
     "columns.centerFocused": "never",
     "columns.centerSingle": false,
-    "columns.defaultWidth": 0.33333,
+    "columns.defaultWidth": 0.5,
     "columns.presetWidths": [0.33333, 0.5, 0.66667],
     "columns.cycleWidth": false,
     "columns.display": "normal",

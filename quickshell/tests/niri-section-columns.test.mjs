@@ -7,12 +7,12 @@ const { assemble } = loadScript(new URL("../Common/niri/assemble.js", import.met
 const { target } = loadScript(new URL("../Common/niri/colwidth.js", import.meta.url));
 
 const raw = changes => assemble([{ id: "windows", toKdl: columns.toKdl }], Object.assign({}, columns.defaults, changes));
-const defaultLayout = "layout {\n    default-column-width { proportion 0.33333; }\n}\n";
+const defaultLayout = "layout {\n    default-column-width { proportion 0.5; }\n}\n";
 // Every other test looks past the always-written default width.
 const kdl = changes => raw(changes).replace(defaultLayout, "");
 
 test("the 1/3 default is written even unchanged so it wins over config.kdl at boot", () => {
-    assert.equal(columns.defaults["columns.defaultWidth"], 0.33333);
+    assert.equal(columns.defaults["columns.defaultWidth"], 0.5);
     assert.equal(raw({}), defaultLayout);
 });
 
