@@ -100,6 +100,7 @@ binds {
 
     // === Window Management ===
     Mod+Q repeat=false { close-window; }
+    Mod+Delete repeat=false hotkey-overlay-title="Close Workspace Windows" { spawn "dms" "ipc" "call" "workspace" "closeAll"; }
     Alt+F4 repeat=false { close-window; }
     Mod+F { maximize-column; }
     Mod+Shift+F { fullscreen-window; }
@@ -219,8 +220,8 @@ binds {
     Mod+Period { expel-window-from-column; }
 
     // === Sizing & Layout ===
-    Mod+R { switch-preset-column-width; }
-    Mod+Shift+R { switch-preset-window-height; }
+    Mod+R hotkey-overlay-title="Column width" { spawn "dms" "ipc" "call" "niri" "cycleColumnWidth"; }
+    Mod+Shift+R { switch-preset-column-width-back; }
     Mod+Ctrl+R { reset-window-height; }
     Mod+Ctrl+F { expand-column-to-available-width; }
     Mod+C { center-column; }

@@ -77,7 +77,8 @@ layout {
     // - "on-overflow", focusing a column will center it if it doesn't fit
     //   together with the previously focused column.
     center-focused-column "never"
-    // You can customize the widths that "switch-preset-column-width" (Mod+R) toggles between.
+    // You can customize the widths that the DMS column width cycle (Mod+R) climbs through
+    // and that "switch-preset-column-width-back" (Mod+Shift+R) steps back through.
     preset-column-widths {
         // Proportion sets the width as a fraction of the output width, taking gaps into account.
         // For example, you can perfectly fit four windows sized "proportion 0.25" on an output.
@@ -88,10 +89,10 @@ layout {
         // Fixed sets the width in logical pixels exactly.
         // fixed 1920
     }
-    // You can also customize the heights that "switch-preset-window-height" (Mod+Shift+R) toggles between.
+    // You can also customize the heights that "switch-preset-window-height" (no default key) toggles between.
     // preset-window-heights { }
     // You can change the default width of the new windows.
-    default-column-width { proportion 0.5; }
+    default-column-width { proportion 0.33333; }
     // If you leave the brackets empty, the windows themselves will decide their initial width.
     // default-column-width {}
     // By default focus ring and border are rendered as a solid background rectangle

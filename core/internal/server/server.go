@@ -43,7 +43,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-const APIVersion = 38
+const APIVersion = 39
 
 var CLIVersion = "dev"
 
@@ -1143,6 +1143,12 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info(" clipboard.getConfig                   - Get clipboard configuration")
 		log.Info(" clipboard.setConfig                   - Set configuration (params: maxHistory?, maxEntrySize?, autoClearDays?, clearAtStartup?, disabled?, maxPinned?)")
 		log.Info(" clipboard.subscribe                   - Subscribe to clipboard state changes (streaming)")
+		log.Info("Niri config:")
+		log.Info(" niri.config.read                      - Read a dms/ fragment of the niri config (params: fragment)")
+		log.Info(" niri.config.apply                     - Validate, write and reload the page fragments (params: fragment, content, baseHash, extra)")
+		log.Info(" niri.config.history                   - List saved versions of a fragment (params: fragment)")
+		log.Info(" niri.config.restore                   - Apply a saved version again (params: fragment, version)")
+		log.Info(" niri.config.doctor                    - Check the niri config, optionally fix first: fix=add-include (backup of config.kdl kept in config.kdl.dms-bak next to it) or fix=undo-include, which restores that backup (params: appIds?, fix?, fragment?)")
 		log.Info("Notify:")
 		log.Info(" notify.watchAction                    - Open a file when a notification action fires (params: id, path)")
 		log.Info("Location:")

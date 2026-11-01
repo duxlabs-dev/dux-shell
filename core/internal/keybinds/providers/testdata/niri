@@ -1,0 +1,22 @@
+#!/bin/sh
+# Like niri 26.04: a key bound twice in one file is an error, a key bound again
+# in an included file overrides the earlier one.
+[ "$1" = validate ] && [ "$2" = -c ] && [ -n "$3" ] || exit 2
+
+files=$3
+for inc in $(sed -n 's/^[[:space:]]*include[^"]*"\([^"]*\)".*/\1/p' "$3"); do
+	case $inc in
+	/*) ;;
+	*) inc="$(dirname "$3")/$inc" ;;
+	esac
+	files="$files $inc"
+done
+
+for f in $files; do
+	dup=$(sed -n 's/^[[:space:]]*\([A-Za-z0-9+_]*\) .*{.*}.*/\1/p' "$f" | sort | uniq -d)
+	if [ -n "$dup" ]; then
+		echo "error: duplicate keybind $dup in $f"
+		exit 1
+	fi
+done
+echo ok

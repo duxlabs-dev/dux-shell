@@ -79,6 +79,14 @@ var keybindsKeymapCmd = &cobra.Command{
 	Run: runKeybindsKeymap,
 }
 
+var keybindsUndoDefaultsCmd = &cobra.Command{
+	Use:   "undo-defaults <provider>",
+	Short: "Restore the binds file as it was before the boot merge of DMS defaults",
+	Long:  "Put dms/binds.kdl back as it was before the last boot added missing DMS default binds, from the backup kept beside it. Refuses once the file changed since.",
+	Args:  cobra.ExactArgs(1),
+	Run:   runKeybindsUndoDefaults,
+}
+
 func init() {
 	keybindsCmd.PersistentFlags().String("expected-generation", "", "Configuration generation observed when editing Aqueous bindings")
 	for _, command := range []*cobra.Command{keybindsSetCmd, keybindsRemoveCmd, keybindsResetCmd} {
@@ -103,6 +111,7 @@ func init() {
 	keybindsCmd.AddCommand(keybindsRemoveCmd)
 	keybindsCmd.AddCommand(keybindsResetCmd)
 	keybindsCmd.AddCommand(keybindsKeymapCmd)
+	keybindsCmd.AddCommand(keybindsUndoDefaultsCmd)
 
 	keybinds.SetJSONProviderFactory(func(filePath string) (keybinds.Provider, error) {
 		return providers.NewJSONFileProvider(filePath)
@@ -256,6 +265,20 @@ func runKeybindsShow(cmd *cobra.Command, args []string) {
 		log.Fatalf("Error: %v", err)
 	}
 	printCheatSheet(provider)
+}
+
+func runKeybindsUndoDefaults(_ *cobra.Command, args []string) {
+	provider, err := keybinds.GetDefaultRegistry().Get(args[0])
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+	niri, ok := provider.(*providers.NiriProvider)
+	if !ok {
+		log.Fatalf("Provider %s does not keep a defaults backup", args[0])
+	}
+	if err := niri.UndoMergeDefaults(defaultTerminalCommand()); err != nil {
+		log.Fatalf("Failed to undo the default binds merge: %v", err)
+	}
 }
 
 func keybindEditFailure(err error) map[string]any {

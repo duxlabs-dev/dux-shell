@@ -6,11 +6,71 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/config"
 	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds"
+	"github.com/duxlabs-dev/dux-shell/core/internal/niriconf"
 )
+
+func TestWriteOverrideBindsValidatesMergedConfig(t *testing.T) {
+	fake, err := filepath.Abs("testdata/niri")
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := niriconf.NiriBin
+	niriconf.NiriBin = fake
+	t.Cleanup(func() { niriconf.NiriBin = old })
+	t.Setenv("PATH", filepath.Dir(fake)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+
+	tests := map[string]struct {
+		config  string
+		wantErr bool
+	}{
+		"rest of the config broken": {
+			config:  "include \"dms/binds.kdl\"\nbinds {\n    Mod+Q { close-window; }\n    Mod+Q { quit; }\n}\n",
+			wantErr: true,
+		},
+		"key overridden by the include": {
+			config: "binds {\n    Mod+T { spawn \"alacritty\"; }\n}\ninclude \"dms/binds.kdl\"\n",
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			dir := filepath.Join(t.TempDir(), "niri")
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(dir, "config.kdl"), []byte(tc.config), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			provider := NewNiriProvider(dir)
+
+			err := provider.SetBind("Mod+T", "spawn foot", "", nil)
+			written, readErr := os.ReadFile(provider.GetOverridePath())
+
+			if tc.wantErr {
+				if err == nil || !strings.HasPrefix(err.Error(), "invalid config: ") {
+					t.Fatalf("SetBind error = %v, want invalid config", err)
+				}
+				if !os.IsNotExist(readErr) {
+					t.Fatalf("binds.kdl written despite the invalid config: %q", written)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("SetBind: %v", err)
+			}
+			if !strings.Contains(string(written), `Mod+T { spawn "foot"; }`) {
+				t.Fatalf("binds.kdl = %q", written)
+			}
+		})
+	}
+}
 
 func TestNiriProviderGetCheatSheet(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -122,6 +182,38 @@ func TestNiriFormatRawAction(t *testing.T) {
 			result := provider.formatRawAction(tt.action, tt.args)
 			if result != tt.expected {
 				t.Errorf("formatRawAction(%q, %v) = %q, want %q", tt.action, tt.args, result, tt.expected)
+			}
+		})
+	}
+}
+
+// A spawn argument is one argv entry: it must survive the action string round trip whole.
+func TestNiriSpawnArgsKeepTheirSpaces(t *testing.T) {
+	provider := NewNiriProvider("")
+
+	for _, action := range []string{
+		`spawn-at-startup "app with spaces" --flag "a b"`,
+		`spawn "app with spaces" --flag "a b"`,
+		`spawn sh -c "echo hi" "extra arg"`,
+	} {
+		t.Run(action, func(t *testing.T) {
+			node := provider.buildActionNode(action)
+			args := make([]string, 0, len(node.Arguments))
+			for _, arg := range node.Arguments {
+				args = append(args, arg.ValueString())
+			}
+			got := provider.formatRawAction(node.Name.String(), args)
+			if got != action {
+				t.Fatalf("formatRawAction = %q, want %q", got, action)
+			}
+			parts := provider.parseActionParts(got)[1:]
+			if len(parts) != len(args) {
+				t.Fatalf("parsed back %d arguments, want %d: %v", len(parts), len(args), parts)
+			}
+			for i, arg := range args {
+				if parts[i].value != arg {
+					t.Errorf("argument %d = %q, want %q", i, parts[i].value, arg)
+				}
 			}
 		})
 	}
@@ -608,9 +700,9 @@ func writeNiriDMSBinds(t *testing.T, content string) string {
 // Parser and writer tests must not depend on which niri is installed.
 func stubNiriValidate(t *testing.T) {
 	t.Helper()
-	orig := niriValidate
-	niriValidate = func(string) ([]byte, error) { return nil, nil }
-	t.Cleanup(func() { niriValidate = orig })
+	orig := niriconf.NiriBin
+	niriconf.NiriBin = "/bin/true"
+	t.Cleanup(func() { niriconf.NiriBin = orig })
 }
 
 func TestNiriBoundActionsRoundTrip(t *testing.T) {

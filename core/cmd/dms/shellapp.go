@@ -10,7 +10,10 @@ import (
 
 	"github.com/duxlabs-dev/dux-go/shellapp"
 	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
 	"github.com/duxlabs-dev/dux-shell/core/internal/gpu"
+	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds/providers"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server"
 	"github.com/duxlabs-dev/dux-shell/core/internal/shellembed"
@@ -58,6 +61,7 @@ func (b *dmsBackend) Done() <-chan error { return b.done }
 
 func bootBackend(ctx context.Context) (shellapp.Backend, error) {
 	server.CLIVersion = Version
+	go mergeNiriDefaultBinds()
 
 	srv := server.New()
 	if err := srv.Listen(); err != nil {
@@ -78,6 +82,22 @@ func bootBackend(ctx context.Context) (shellapp.Backend, error) {
 	}()
 
 	return backend, nil
+}
+
+// The embedded defaults reach an installed dms/binds.kdl only through dms setup;
+// each boot adds the ones still bound nowhere and upgrades untouched superseded stock lines.
+func mergeNiriDefaultBinds() {
+	if wm, ok := config.RunningCompositor(); !ok || wm != deps.WindowManagerNiri {
+		return
+	}
+	changed, err := providers.NewNiriProvider("").MergeMissingDefaults(defaultTerminalCommand())
+	if err != nil {
+		log.Warnf("niri: merging default binds failed: %v", err)
+		return
+	}
+	if len(changed) > 0 {
+		log.Infof("niri: changed default binds: %s", strings.Join(changed, ", "))
+	}
 }
 
 func preLaunch() {
