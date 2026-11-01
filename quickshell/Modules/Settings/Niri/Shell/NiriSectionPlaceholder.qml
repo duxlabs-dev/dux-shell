@@ -33,16 +33,16 @@ Column {
 
     Rectangle {
         width: parent.width
-        height: comingText.implicitHeight + Theme.spacingL * 2
+        height: messageText.implicitHeight + Theme.spacingL * 2
         radius: Theme.cornerRadiusL
         color: SettingsMetrics.rowColor
 
         StyledText {
-            id: comingText
+            id: messageText
             x: Theme.spacingL
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width - x * 2
-            text: I18n.tr("Coming soon", "niri page placeholder for a section not built yet")
+            text: I18n.tr("Could not load this section", "niri page fallback when a settings section fails to load")
             wrapMode: Text.WordWrap
             color: Theme.surfaceVariantText
         }
