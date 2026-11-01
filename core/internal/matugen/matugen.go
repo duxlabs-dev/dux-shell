@@ -92,14 +92,14 @@ func (c *ColorMode) GTKTheme() string {
 	}
 }
 
-// GTKRefreshTheme is the built-in theme the gtk-theme round trip passes through
-// to make GTK3 reload gtk.css. It must match the mode's polarity: an empty or
-// light name resolves to Adwaita, and toolkit-following apps (Chromium/Electron
-// without a settings portal) latch light when the restore lands mid-repaint.
+// GTKRefreshTheme is the theme the gtk-theme round trip passes through to make
+// GTK3 reload gtk.css. A light name makes portal-less Chromium/Electron latch
+// light; a HighContrast name makes GTK4 latch prefers-contrast on its theme
+// provider and stay high contrast until restart. adw-gtk3 stays dark under prefer-dark.
 func (c *ColorMode) GTKRefreshTheme() string {
 	switch *c {
 	case ColorModeDark:
-		return "HighContrastInverse"
+		return "adw-gtk3"
 	default:
 		return "Adwaita"
 	}

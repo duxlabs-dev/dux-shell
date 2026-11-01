@@ -12,6 +12,7 @@ import (
 
 // The gtk-theme round trip must never pass through a light theme in dark mode:
 // Chromium/Electron without a settings portal follow the toolkit and latch light.
+// Nor through HighContrast*, which latches GTK4 apps in high contrast.
 func TestRefreshGTKThemeKeepsDarkPolarity(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -30,6 +31,6 @@ func TestRefreshGTKThemeKeepsDarkPolarity(t *testing.T) {
 	require.NoError(t, err)
 	calls := strings.Split(strings.TrimSpace(string(data)), "\n")
 	require.Len(t, calls, 2)
-	assert.Equal(t, "write /org/gnome/desktop/interface/gtk-theme 'HighContrastInverse'", calls[0])
+	assert.Equal(t, "write /org/gnome/desktop/interface/gtk-theme 'adw-gtk3'", calls[0])
 	assert.Equal(t, "write /org/gnome/desktop/interface/gtk-theme 'adw-gtk3-dark'", calls[1])
 }
