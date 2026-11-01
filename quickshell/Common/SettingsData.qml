@@ -1135,6 +1135,7 @@ Singleton {
     property bool osdCapsLockEnabled: Spec.SPEC.osdCapsLockEnabled.def
     property bool osdNumLockEnabled: Spec.SPEC.osdNumLockEnabled.def
     property bool osdKeyboardLayoutEnabled: Spec.SPEC.osdKeyboardLayoutEnabled.def
+    property bool osdInputMethodEnabled: Spec.SPEC.osdInputMethodEnabled.def
     property bool osdTouchpadEnabled: Spec.SPEC.osdTouchpadEnabled.def
     property bool osdPowerProfileEnabled: Spec.SPEC.osdPowerProfileEnabled.def
     property bool osdAudioOutputEnabled: Spec.SPEC.osdAudioOutputEnabled.def
