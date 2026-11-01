@@ -189,6 +189,13 @@ Column {
         }
 
         SettingsToggleRow {
+            enabled: root.showApps
+            text: I18n.tr("Don't dim unfocused apps", "workspace switcher toggle: show icons of unfocused apps at full opacity")
+            checked: root.page.value("workspaceUnfocusedAppsFullOpacity")
+            onToggled: checked => root.page.set("workspaceUnfocusedAppsFullOpacity", checked)
+        }
+
+        SettingsToggleRow {
             text: I18n.tr("Follow display focus")
             description: I18n.tr("Lists workspaces from whichever display has focus", "workspace switcher follow display focus toggle description")
             visible: CompositorService.supportsWorkspaceFollowFocus

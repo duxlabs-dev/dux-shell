@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const dirName = "DankMaterialShell"
+const dirName = "dms"
 
 func ConfigDir() (string, error) {
 	configDir, err := os.UserConfigDir()
@@ -34,6 +34,12 @@ func Create(outputPath string) error {
 		return fmt.Errorf("no DMS configuration found at %s: %w", srcDir, err)
 	}
 
+	return writeArchive(outputPath, func(tw *tar.Writer) error {
+		return addPath(tw, srcDir, dirName)
+	})
+}
+
+func writeArchive(outputPath string, fill func(*tar.Writer) error) error {
 	out, err := os.Create(outputPath)
 	if err != nil {
 		return err
@@ -45,17 +51,24 @@ func Create(outputPath string) error {
 	tw := tar.NewWriter(gz)
 	defer tw.Close()
 
-	return filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
+	return fill(tw)
+}
+
+// addPath archives the file or tree at src as name. A symlinked src is followed so dotfile-managed
+// configs are captured, not just the link.
+func addPath(tw *tar.Writer, src, name string) error {
+	root, err := filepath.EvalSymlinks(src)
+	if err != nil {
+		return err
+	}
+	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		rel, err := filepath.Rel(srcDir, path)
+		rel, err := filepath.Rel(root, path)
 		if err != nil {
 			return err
-		}
-		if rel == "." {
-			return nil
 		}
 
 		var link string
@@ -69,7 +82,7 @@ func Create(outputPath string) error {
 		if err != nil {
 			return err
 		}
-		header.Name = filepath.ToSlash(filepath.Join(dirName, rel))
+		header.Name = filepath.ToSlash(filepath.Join(name, rel))
 
 		if err := tw.WriteHeader(header); err != nil {
 			return err

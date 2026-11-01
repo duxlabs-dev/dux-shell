@@ -111,7 +111,7 @@ RegistryBrowserWindow {
     }
 
     function themePreviewUrl(theme) {
-        const base = "https://raw.githubusercontent.com/AvengeMedia/dms-plugin-registry/main/themes/" + (theme.sourceDir || theme.id) + "/";
+        const base = "https://raw.githubusercontent.com/duxlabs-dev/dux-plugin-registry/master/themes/" + (theme.sourceDir || theme.id) + "/";
         const variants = theme.variants || null;
         if (!variants)
             return base + "preview.svg";
@@ -171,7 +171,7 @@ RegistryBrowserWindow {
             var theme = installedThemes[i];
             if (theme.id === themeId) {
                 var sourceDir = theme.sourceDir || theme.id;
-                var themePath = Quickshell.env("HOME") + "/.config/DankMaterialShell/themes/" + sourceDir + "/theme.json";
+                var themePath = Quickshell.env("HOME") + "/.config/dms/themes/" + sourceDir + "/theme.json";
                 SettingsData.set("customThemeFile", themePath);
                 Theme.switchThemeCategory("registry", "custom");
                 Theme.switchTheme("custom", true, true);

@@ -10,18 +10,19 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/screenshot"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/screenshot"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 type iccConfig struct {
-	ICCProfiles map[string]string `json:"iccProfiles,omitempty"`
-	OutputTemps map[string]int    `json:"outputTemps,omitempty"`
+	ICCProfiles      map[string]string `json:"iccProfiles,omitempty"`
+	OutputTemps      map[string]int    `json:"outputTemps,omitempty"`
+	OutputBrightness map[string]int    `json:"outputBrightness,omitempty"`
 }
 
 func dmsConfigDir() string {
-	return filepath.Join(utils.XDGConfigHome(), "DankMaterialShell")
+	return filepath.Join(utils.XDGConfigHome(), "dms")
 }
 
 func iccConfigPath() string {
@@ -55,15 +56,16 @@ func LoadConfig() Config {
 	}
 	cfg.ICCProfiles = stored.ICCProfiles
 	cfg.OutputTemps = stored.OutputTemps
+	cfg.OutputBrightness = stored.OutputBrightness
 	return cfg
 }
 
-func SaveICCConfig(iccProfiles map[string]string, outputTemps map[string]int) error {
+func SaveICCConfig(cfg Config) error {
 	path := iccConfigPath()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	data, err := json.MarshalIndent(iccConfig{ICCProfiles: iccProfiles, OutputTemps: outputTemps}, "", "  ")
+	data, err := json.MarshalIndent(iccConfig{ICCProfiles: cfg.ICCProfiles, OutputTemps: cfg.OutputTemps, OutputBrightness: cfg.OutputBrightness}, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -153,7 +155,7 @@ func migrateLegacyICCConfig() {
 		cfg.ICCProfiles[output] = name
 	}
 
-	if err := SaveICCConfig(cfg.ICCProfiles, cfg.OutputTemps); err != nil {
+	if err := SaveICCConfig(Config{ICCProfiles: cfg.ICCProfiles, OutputTemps: cfg.OutputTemps}); err != nil {
 		log.Warnf("icc: cannot migrate %s: %v", legacyPath, err)
 		return
 	}

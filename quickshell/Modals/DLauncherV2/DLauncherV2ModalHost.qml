@@ -59,6 +59,8 @@ Item {
     visible: false
 
     property bool spotlightOpen: false
+    readonly property bool shouldBeVisible: spotlightOpen
+    readonly property string layerNamespace: spotlight ? "dms:spotlight" : "dms:launcher"
     property bool keyboardActive: false
     property bool contentVisible: false
     property bool _surfaceFrameReady: false
@@ -97,10 +99,11 @@ Item {
         "error": true
     })
 
-    readonly property string _dmenuSizeOverride: (spotlightContent?.controller?.searchMode === "dmenu") ? (spotlightContent.controller.dmenuSize || "") : ""
+    readonly property bool _dmenuActive: spotlightContent?.controller?.searchMode === "dmenu"
+    readonly property string _dmenuSizeOverride: _dmenuActive ? (spotlightContent.controller.dmenuSize || "") : ""
 
     readonly property int baseWidth: LauncherMetrics.sizeWidth(_dmenuSizeOverride || SettingsData.dankLauncherV2Size)
-    readonly property int baseHeight: LauncherMetrics.sizeHeight(_dmenuSizeOverride || SettingsData.dankLauncherV2Size)
+    readonly property int baseHeight: LauncherMetrics.sizeHeight(_dmenuSizeOverride || SettingsData.dankLauncherV2Size, paintedBorderWidth, !_dmenuActive && LauncherMetrics.footerShown(SettingsData.dankLauncherV2Size))
     readonly property real _contentImplicitH: launcherContentLoader.item?.implicitHeight ?? LauncherMetrics.pillHeight
     readonly property int modalWidth: Math.min(spotlight ? (_dmenuSizeOverride ? LauncherMetrics.sizeWidth(_dmenuSizeOverride) : LauncherMetrics.spotlightWidth) : baseWidth, screenWidth - LauncherMetrics.screenMargin)
     readonly property int modalHeight: spotlight ? _contentImplicitH : Math.min(baseHeight, screenHeight - LauncherMetrics.screenMargin)
@@ -527,9 +530,9 @@ Item {
         if (connectedFluidMotion && !preserveFluid)
             fluidMotion.snapTo(fluidTravelCollapsedRect);
 
-        ModalManager.openModal(modalHandle);
         spotlightOpen = true;
         contentWindow.visible = true;
+        ModalManager.openModal(modalHandle);
 
         _ensureContentLoadedAndInitialize(query || "", mode || "");
 
@@ -706,10 +709,10 @@ Item {
     HyprlandFocusGrab {
         id: focusGrab
         windows: [contentWindow].concat(transientSurfaces.focusWindows)
-        active: root.useHyprlandFocusGrab && (root.connected ? root.spotlightOpen : root.keyboardActive)
+        active: root.useHyprlandFocusGrab && !PopoutManager.screenshotActive && (root.connected ? root.spotlightOpen : root.keyboardActive)
 
         onCleared: {
-            if (root.spotlightOpen) {
+            if (root.spotlightOpen && !PopoutManager.screenshotActive) {
                 root.hide();
             }
         }
@@ -1235,7 +1238,7 @@ Item {
             Rectangle {
                 id: backgroundDarken
                 anchors.fill: parent
-                color: Theme.scrimColor
+                color: Theme.backdropColor
                 opacity: root.floatingMotionVisible && root.useBackgroundDarken ? Theme.scrimAlpha : 0
                 visible: (root.spotlightOpen || root.isClosing) && (root.useBackgroundDarken || opacity > 0)
                 z: -3

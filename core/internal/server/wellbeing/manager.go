@@ -5,7 +5,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	bolt "go.etcd.io/bbolt"
 )
 

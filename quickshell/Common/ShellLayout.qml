@@ -19,17 +19,24 @@ Singleton {
                 scale: CompositorService.getScreenScale(screen)
             }))
     readonly property var primaryBar: SettingsData.getPrimaryBarConfig()
-    readonly property var layouts: screens.map(screen => Resolver.resolveScreen(SettingsData.barConfigs.map(config => ({
-                    config,
-                    barThickness: Theme.barThickness(config.innerPadding ?? 2, screen.scale),
-                    wingSize: config.gothCornersEnabled && root.barSpansEdge(config) ? Math.max(0, config.gothCornerRadiusOverride ? config.gothCornerRadiusValue ?? 12 : Theme.windowRadius) : 0,
-                    popupThickness: Theme.barThickness(Resolver.option(config, "innerPadding", root.primaryBar, 2), screen.scale),
-                    islandThickness: Resolver.islandThickness(SettingsData.islandSettings(config), SettingsData.islandDefaultsFor(config)),
-                    islandReserve: Resolver.islandReserve(SettingsData.islandSettings(config), SettingsData.islandDefaultsFor(config)),
-                    islandFloating: SettingsData.islandSetting(config, "islandFloating"),
-                    islandPlacement: SettingsData.islandFreePlacement(config) ? "free" : "edge",
-                    islandSatellites: SettingsData.islandSetting(config, "islandSatellitesEnabled")
-                })), screen, {
+    property string maximizedScreens: ""
+    readonly property var layouts: screens.map(screen => {
+        const maximized = !!screen.name && root.maximizedScreens.split("\n").includes(screen.name);
+        return Resolver.resolveScreen(SettingsData.barConfigs.map(config => {
+            const flattened = maximized && (config.maximizeDetection ?? true);
+            return {
+                config,
+                flattened,
+                barThickness: Theme.barThickness(config.innerPadding ?? SettingsData.barInnerPaddingDefault, screen.scale),
+                wingSize: config.gothCornersEnabled && !flattened && root.barSpansEdge(config) ? Math.max(0, config.gothCornerRadiusOverride ? config.gothCornerRadiusValue ?? 12 : Theme.windowRadius) : 0,
+                popupThickness: Theme.barThickness(Resolver.option(config, "innerPadding", root.primaryBar, SettingsData.barInnerPaddingDefault), screen.scale),
+                islandThickness: Resolver.islandThickness(SettingsData.islandSettings(config), SettingsData.islandDefaultsFor(config)),
+                islandReserve: Resolver.islandReserve(SettingsData.islandSettings(config), SettingsData.islandDefaultsFor(config)),
+                islandFloating: SettingsData.islandSetting(config, "islandFloating"),
+                islandPlacement: SettingsData.islandFreePlacement(config) ? "free" : "edge",
+                islandSatellites: SettingsData.islandSetting(config, "islandSatellitesEnabled")
+            };
+        }), screen, {
             screens: root.screens,
             displayNameMode: SettingsData.displayNameMode,
             framePreferences: SettingsData.frameScreenPreferences,
@@ -37,9 +44,27 @@ Singleton {
             effectiveConnected: FrameTransitionState.effectiveConnectedFrameModeActive,
             frameThickness: SettingsData.frameThickness,
             frameBarSize: SettingsData.frameBarSize
-        }))
+        });
+    })
     readonly property var islandKeys: layouts.reduce((keys, layout) => keys.concat(layout.instances.filter(instance => instance.hostsIsland && !instance.free).map(instance => instance.key)), [])
     readonly property var freeIslandKeys: layouts.reduce((keys, layout) => keys.concat(layout.instances.filter(instance => instance.free).map(instance => instance.key)), [])
+
+    onScreensChanged: updateMaximizedScreens()
+    Component.onCompleted: updateMaximizedScreens()
+
+    Connections {
+        target: CompositorService
+        function onToplevelsChanged() {
+            root.updateMaximizedScreens();
+        }
+        function onWorkspaceStateChanged() {
+            root.updateMaximizedScreens();
+        }
+    }
+
+    function updateMaximizedScreens() {
+        maximizedScreens = Quickshell.screens.filter(screen => CompositorService.maximizedWindowOnScreen(screen.name)).map(screen => screen.name).join("\n");
+    }
 
     function barSpansEdge(config) {
         return (config?.barLengthMode ?? "full") === "full" && (config?.barLengthPadding ?? 0) <= 0;
@@ -154,8 +179,8 @@ Singleton {
         };
     }
 
-    function adjacentInfo(screen, config) {
-        return Resolver.adjacentInfo(forScreen(screen), config, primaryBar);
+    function adjacentInfo(screen, config, includeAutoHide) {
+        return Resolver.adjacentInfo(forScreen(screen), config, primaryBar, includeAutoHide);
     }
 
     function barBounds(screen, thickness, position, config) {

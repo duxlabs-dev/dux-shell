@@ -47,7 +47,8 @@ Column {
             enabled: true,
             position: freeEdge >= 0 ? freeEdge : (defaultBar.position ?? 0),
             screenPreferences: ["all"],
-            showOnLastDisplay: true
+            showOnLastDisplay: true,
+            hideOnLastDisplay: false
         });
         delete newBar.island;
         delete newBar.dot;
@@ -57,7 +58,7 @@ Column {
     }
 
     function canDeleteBar(config) {
-        return config.id !== "default" && (SettingsData.getBarKindConfigs().length > 1 || SettingsData.isIslandBarConfig(config));
+        return config.id !== "default" && SettingsData.edgeBarConfigCount > 1;
     }
 
     function deleteBar(barId) {

@@ -71,6 +71,9 @@ jobs:
         run: echo "base=$(gh pr view ${{ github.event.issue.number }} --json baseRefName --jq .baseRefName)" >> "$GITHUB_OUTPUT"
 
       - uses: anthropics/claude-code-action@9ca9355b36297178e28d37c799d1c9c8a28e6507
+        env:
+          CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
+          CLAUDE_CODE_EFFORT_LEVEL: high
         id: claude
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -105,7 +108,7 @@ jobs:
             - QML: undefined refs, missing imports, binding loops, bindings that never update, handlers on the wrong object, raw Flickable/ListView/ScrollView instead of the D* wrappers (DFlickable, DListView, DGridView).
             - Deprecated shims: added code that uses a deprecated type or imports a deprecated module. Every shim calls `Deprecation.type(` or `Deprecation.module(`; list them with `git grep -h -e "Deprecation.type(" -e "Deprecation.module(" origin/${{ steps.pr.outputs.base }} -- quickshell`, which gives the old and new name. Grep the base, not HEAD, since a PR branched before the rename has no shims. Flag it even when the rest of the file still uses old names on the PR's base; suggest the new name and a rebase if the base predates it.
             - Security: command injection, path traversal, unsafe file permissions, secrets in code.
-            - CONTRIBUTING.md rules: user-facing strings in `I18n.tr()` with translator context, reuse existing terms from quickshell/translations/en.json; en.json and template.json must not be touched in a PR; mocks under core/internal/mocks/ are regenerated not hand-edited; new dank-qml-common contract properties need the matching library change.
+            - CONTRIBUTING.md rules: user-facing strings in `I18n.tr()` with translator context, reuse existing terms from quickshell/translations/en.json; en.json and template.json must not be touched in a PR; mocks under core/internal/mocks/ are regenerated not hand-edited; new dux-qml-common contract properties need the matching library change.
 
             Don't flag style or naming (deprecated shims are not naming), pre-existing issues, anything a linter or compiler catches, speculative input-dependent problems, missing tests or docs, or refactor ideas. Not sure it's real: don't post it.
 

@@ -5,10 +5,10 @@
 Name:           dms
 Version:        1.2.3
 Release:        1%{?dist}
-Summary:        DankMaterialShell - Material 3 inspired shell for Wayland compositors
+Summary:        Dux Shell - Material 3 inspired shell for Wayland compositors
 
 License:        MIT
-URL:            https://github.com/AvengeMedia/DankMaterialShell
+URL:            https://github.com/duxlabs-dev/dux-shell
 Source0:        dms-source.tar.gz
 Source1:        dms-distropkg-amd64.gz
 Source2:        dms-distropkg-arm64.gz
@@ -19,19 +19,19 @@ BuildRequires:  systemd-rpm-macros
 # Core requirements
 Requires:       (quickshell or quickshell-git)
 Requires:       accountsservice
-Requires:       dgop
 
 # Core utilities (Highly recommended for DMS functionality)
 Recommends:     cava
-Recommends:     danksearch
+Recommends:     (dux-search or danksearch)
 Recommends:     matugen
 Recommends:     NetworkManager
 Recommends:     qt6-multimedia-imports
 Suggests:       cups-pk-helper
 Suggests:       qt6ct
+Suggests:       (dux-gop or dgop)
 
 %description
-DankMaterialShell (DMS) is a modern Wayland desktop shell built with Quickshell
+Dux Shell (DMS) is a modern Wayland desktop shell built with Quickshell
 and optimized for niri, Hyprland, Sway, and other wlroots compositors. Features
 notifications, app launcher, wallpaper customization, and plugin system.
 
@@ -65,9 +65,9 @@ install -d %{buildroot}%{_datadir}/fish/vendor_completions.d
 install -Dm644 assets/systemd/dms.service %{buildroot}%{_userunitdir}/dms.service
 
 install -Dm644 assets/dms-open.desktop %{buildroot}%{_datadir}/applications/dms-open.desktop
-install -Dm644 assets/com.danklinux.dms.desktop %{buildroot}%{_datadir}/applications/com.danklinux.dms.desktop
-install -Dm644 assets/com.danklinux.dms.notepad.desktop %{buildroot}%{_datadir}/applications/com.danklinux.dms.notepad.desktop
-install -Dm644 assets/com.danklinux.dms.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/com.danklinux.dms.svg
+install -Dm644 assets/dev.duxlabs.shell.desktop %{buildroot}%{_datadir}/applications/dev.duxlabs.shell.desktop
+install -Dm644 assets/dev.duxlabs.shell.notepad.desktop %{buildroot}%{_datadir}/applications/dev.duxlabs.shell.notepad.desktop
+install -Dm644 assets/dev.duxlabs.shell.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/dev.duxlabs.shell.svg
 
 install -dm755 %{buildroot}%{_datadir}/quickshell/dms
 cp -r quickshell/* %{buildroot}%{_datadir}/quickshell/dms/
@@ -101,12 +101,12 @@ pkill -USR1 -x dms >/dev/null 2>&1 || :
 %{_datadir}/quickshell/dms/
 %{_userunitdir}/dms.service
 %{_datadir}/applications/dms-open.desktop
-%{_datadir}/applications/com.danklinux.dms.desktop
-%{_datadir}/applications/com.danklinux.dms.notepad.desktop
+%{_datadir}/applications/dev.duxlabs.shell.desktop
+%{_datadir}/applications/dev.duxlabs.shell.notepad.desktop
 %dir %{_datadir}/icons/hicolor
 %dir %{_datadir}/icons/hicolor/scalable
 %dir %{_datadir}/icons/hicolor/scalable/apps
-%{_datadir}/icons/hicolor/scalable/apps/com.danklinux.dms.svg
+%{_datadir}/icons/hicolor/scalable/apps/dev.duxlabs.shell.svg
 
 %changelog
 * Mon Dec 16 2025 AvengeMedia <maintainer@avengemedia.com> - 1.0.3-1

@@ -61,6 +61,7 @@ PanelWindow {
     readonly property bool cardShown: presenting && (presentationProgress > 0 || !exiting)
     readonly property bool layoutPinned: !exiting && (hovered || contextMenuActive || swipeActive)
     property bool exiting: false
+    property var exitSnapshot: null
     property bool exitStarted: false
     property bool collapseChromeOnExit: false
     property bool _isDestroying: false
@@ -124,6 +125,7 @@ PanelWindow {
         }
         enterAnimation.stop();
         enterDelay.stop();
+        exitSnapshot = snapshotNotification(notificationData);
         exiting = true;
         if (NotificationService.removeFromVisibleNotifications)
             NotificationService.removeFromVisibleNotifications(win.notificationData);
@@ -170,6 +172,29 @@ PanelWindow {
         wrapperConn.enabled = false;
         wrapperConn.target = null;
         win.exitFinished();
+    }
+
+    // The wrapper is destroyed as soon as its notification closes, which would blank the card mid-exit.
+    function snapshotNotification(data) {
+        if (!data)
+            return null;
+        return {
+            "appName": data.appName,
+            "appIcon": data.appIcon,
+            "desktopEntry": data.desktopEntry,
+            "summary": data.summary,
+            "body": data.body,
+            "htmlBody": data.htmlBody,
+            "image": data.image,
+            "hasDisplayImage": data.hasDisplayImage,
+            "displayImage": data.displayImage,
+            "persistedImagePath": data.persistedImagePath,
+            "timeStr": data.timeStr,
+            "urgency": data.urgency,
+            "actions": Array.from(data.actions || [], action => ({
+                        "text": action.text
+                    }))
+        };
     }
 
     function closeTransientUi() {
@@ -382,7 +407,7 @@ PanelWindow {
             id: "notification-popup",
             screenPreferences: [screen.name],
             autoHide: false
-        });
+        }, true);
     }
 
     function _frameEdgeInset(side) {
@@ -719,7 +744,7 @@ PanelWindow {
                         chipColor: Theme.notificationChipSurface
                         width: parent.width
                         height: win.inlineHeightAnimating ? Math.min(targetHeight, cardSurface.height - win.timeoutRailClearance) : targetHeight
-                        notificationData: win.notificationData
+                        notificationData: win.exitSnapshot ?? win.notificationData
                         descriptionExpanded: win.descriptionExpanded
                         privacyMode: SettingsData.notificationPopupPrivacyMode
                         bodyInvokesAction: win.bodyClickInvokesAction
@@ -992,7 +1017,7 @@ PanelWindow {
         repeat: false
         onTriggered: {
             if (notificationData && notificationData.timer && !contextMenuActive && !hovered && !exiting && !_isDestroying)
-                notificationData.timer.restart();
+                notificationData.timer.start();
         }
     }
 

@@ -30,7 +30,7 @@ var LOCAL_SPEC = {
     updaterNotifiedCount: {
         def: 0
     },
-    changelogSeenVersion: {
+    repoMoveNoticeVersion: {
         def: ""
     },
     terminalOverride: {
@@ -74,6 +74,9 @@ var LOCAL_SPEC = {
     },
     wallpaperCyclingFolderPath: {
         def: ""
+    },
+    wallpaperCyclingVideoEnd: {
+        def: false
     },
     monitorCyclingSettings: {
         def: {}

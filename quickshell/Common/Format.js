@@ -22,7 +22,17 @@ function formatRateCompact(bytesPerSec, abbreviated) {
     return abbreviated ? shown + units[unit] : shown + " " + units[unit] + "B/s";
 }
 
-function formatBytes(bytes) {
+function formatBytes(bytes, iec) {
+    if (iec) {
+        const units = ["B", "KiB", "MiB", "GiB", "TiB"];
+        let value = bytes;
+        let i = 0;
+        while (value >= 1024 && i < units.length - 1) {
+            value /= 1024;
+            i++;
+        }
+        return value.toFixed(i < 2 ? 0 : 1) + " " + units[i];
+    }
     if (bytes < 1024)
         return bytes.toFixed(0) + "B";
     if (bytes < 1024 * 1024)
@@ -62,11 +72,13 @@ function pad2(n) {
     return n < 10 ? "0" + n : "" + n;
 }
 
-function formatDuration(seconds) {
+function formatDuration(seconds, withHours) {
     if (!isFinite(seconds) || seconds < 0)
         return "0:00";
-    const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
+    if (withHours && seconds >= 3600)
+        return Math.floor(seconds / 3600) + ":" + pad2(Math.floor(seconds / 60) % 60) + ":" + pad2(s);
+    const m = Math.floor(seconds / 60);
     return m + ":" + pad2(s);
 }
 

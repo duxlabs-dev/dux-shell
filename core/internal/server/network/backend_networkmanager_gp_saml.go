@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 )
 
 type openConnectAuthResult struct {

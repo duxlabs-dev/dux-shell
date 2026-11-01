@@ -11,7 +11,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
 )
 
 type RunOptions struct {
@@ -138,7 +138,7 @@ func findTerminal(override string) string {
 }
 
 func wrapInTerminal(term, title, shellCmd string, extraArgs []string) []string {
-	const appID = "com.danklinux.dms"
+	const appID = "dev.duxlabs.shell"
 	banner := fmt.Sprintf(
 		`printf '\033[1;36m=== %s ===\033[0m\n'; printf '\033[2m$ %s\033[0m\n'; printf '\033[33mYou may be prompted for your sudo password to apply system updates.\033[0m\n\n'`,
 		title, shellCmd,

@@ -14,8 +14,8 @@ printf '0.0.git.%s.%s\n' \
     "$(git rev-list --count HEAD)" \
     "$(git rev-parse --short=8 HEAD)"
 }}}
-%global pkg_summary DankMaterialShell - Material 3 inspired shell for Wayland compositors
-%global go_toolchain_version 1.27.1
+%global pkg_summary Dux Shell - Material 3 inspired shell for Wayland compositors
+%global go_toolchain_version 1.27.3
 
 Name:           dms
 Epoch:          2
@@ -24,13 +24,13 @@ Release:        1%{?dist}
 Summary:        %{pkg_summary}
 
 License:        MIT
-URL:            https://github.com/AvengeMedia/DankMaterialShell
+URL:            https://github.com/duxlabs-dev/dux-shell
 VCS:            {{{ git_repo_vcs }}}
 Source0:        {{{ git_repo_pack }}}
 Source1:        https://go.dev/dl/go%{go_toolchain_version}.linux-amd64.tar.gz
 Source2:        https://go.dev/dl/go%{go_toolchain_version}.linux-arm64.tar.gz
-# git_repo_pack archives skip submodule content, so pack dank-qml-common separately
-Source3:        {{{ git_pack path=$GIT_ROOT/dank-qml-common dir_name=dank-qml-common source_name=dank-qml-common.tar.gz }}}
+# git_repo_pack archives skip submodule content, so pack dux-qml-common separately
+Source3:        {{{ git_pack path=$GIT_ROOT/dux-qml-common dir_name=dux-qml-common source_name=dux-qml-common.tar.gz }}}
 
 BuildRequires:  git-core
 BuildRequires:  gzip
@@ -44,7 +44,7 @@ Requires:       dms-cli = %{epoch}:%{version}-%{release}
 
 # Core utilities (Recommended for DMS functionality)
 Recommends:     cava
-Recommends:     danksearch
+Recommends:     (dux-search or danksearch)
 Recommends:     matugen
 Recommends:     quickshell-git
 
@@ -53,9 +53,10 @@ Recommends:     NetworkManager
 Recommends:     qt6-qtmultimedia
 Suggests:       cups-pk-helper
 Suggests:       qt6ct
+Suggests:       (dux-gop or dgop)
 
 %description
-DankMaterialShell (DMS) is a modern Wayland desktop shell built with Quickshell
+Dux Shell (DMS) is a modern Wayland desktop shell built with Quickshell
 and optimized for the niri, hyprland, sway, and dwl (MangoWC) compositors. Features notifications,
 app launcher, wallpaper customization, and fully customizable with plugins.
 
@@ -64,17 +65,17 @@ process monitoring, notification center, clipboard history, dock, control center
 lock screen, and comprehensive plugin system.
 
 %package -n dms-cli
-Summary:        DankMaterialShell CLI tool
+Summary:        Dux Shell CLI tool
 License:        MIT
-URL:            https://github.com/AvengeMedia/DankMaterialShell
+URL:            https://github.com/duxlabs-dev/dux-shell
 
 %description -n dms-cli
-Command-line interface for DankMaterialShell configuration and management.
+Command-line interface for Dux Shell configuration and management.
 Provides native DBus bindings, NetworkManager integration, and system utilities.
 
 %prep
 {{{ git_repo_setup_macro }}}
-rm -rf dank-qml-common
+rm -rf dux-qml-common
 tar -xzf %{SOURCE3}
 test -e quickshell/DCommon/Widgets/DIcon.qml || { echo "DCommon missing after submodule unpack"; exit 1; }
 
@@ -137,9 +138,9 @@ core/bin/${DMS_BINARY} completion fish > %{buildroot}%{_datadir}/fish/vendor_com
 install -Dm644 assets/systemd/dms.service %{buildroot}%{_userunitdir}/dms.service
 
 install -Dm644 assets/dms-open.desktop %{buildroot}%{_datadir}/applications/dms-open.desktop
-install -Dm644 assets/com.danklinux.dms.desktop %{buildroot}%{_datadir}/applications/com.danklinux.dms.desktop
-install -Dm644 assets/com.danklinux.dms.notepad.desktop %{buildroot}%{_datadir}/applications/com.danklinux.dms.notepad.desktop
-install -Dm644 assets/com.danklinux.dms.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/com.danklinux.dms.svg
+install -Dm644 assets/dev.duxlabs.shell.desktop %{buildroot}%{_datadir}/applications/dev.duxlabs.shell.desktop
+install -Dm644 assets/dev.duxlabs.shell.notepad.desktop %{buildroot}%{_datadir}/applications/dev.duxlabs.shell.notepad.desktop
+install -Dm644 assets/dev.duxlabs.shell.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/dev.duxlabs.shell.svg
 
 %posttrans
 # Signal running DMS instances to reload
@@ -151,9 +152,9 @@ pkill -USR1 -x dms >/dev/null 2>&1 || :
 %doc quickshell/README.md
 %{_userunitdir}/dms.service
 %{_datadir}/applications/dms-open.desktop
-%{_datadir}/applications/com.danklinux.dms.desktop
-%{_datadir}/applications/com.danklinux.dms.notepad.desktop
-%{_datadir}/icons/hicolor/scalable/apps/com.danklinux.dms.svg
+%{_datadir}/applications/dev.duxlabs.shell.desktop
+%{_datadir}/applications/dev.duxlabs.shell.notepad.desktop
+%{_datadir}/icons/hicolor/scalable/apps/dev.duxlabs.shell.svg
 
 %files -n dms-cli
 %{_bindir}/dms

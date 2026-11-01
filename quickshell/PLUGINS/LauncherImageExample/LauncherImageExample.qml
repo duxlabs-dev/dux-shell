@@ -15,7 +15,7 @@ QtObject {
         {
             name: "DankDash",
             imageUrl: Site.web + "/img/dankdash.png",
-            comment: "DankMaterialShell Dashboard"
+            comment: "Dux Shell Dashboard"
         },
         {
             name: "Control Center",

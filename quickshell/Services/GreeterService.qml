@@ -97,7 +97,7 @@ Singleton {
 grep -qs dms-greeter /etc/greetd/config.toml && echo config
 [ "$(systemctl is-enabled greetd 2>/dev/null)" = enabled ] && echo enabled
 id -nG | tr ' ' '\n' | grep -qxE 'greeter|greetd|_greeter' && echo group
-own=$(readlink -f "$HOME/.config/DankMaterialShell/settings.json")
+own=$(readlink -f "$HOME/.config/dms/settings.json")
 for f in "/var/cache/dms-greeter/users/$USER/settings.json" /var/cache/dms-greeter/settings.json; do
     [ -L "$f" ] && [ "$(readlink -f "$f")" = "$own" ] && echo live && break
 done
@@ -135,7 +135,7 @@ exit 0`]
             const out = profileOut.text.trim();
             const err = profileErr.text.trim();
             if (exitCode !== 0) {
-                root.syncStatus = root.withOutput(I18n.tr("Profile sync failed.") + " (exit " + exitCode + ")", out, err);
+                root.syncStatus = root.withOutput(I18n.tr("Profile sync failed.") + " " + I18n.tr("(exit %1)", "process exit code").arg(exitCode), out, err);
                 root.finishSync();
                 return;
             }
@@ -185,7 +185,7 @@ exit 0`]
             const out = syncOut.text.trim();
             const err = syncErr.text.trim();
             if (exitCode !== 0) {
-                root.syncStatus = root.withOutput(I18n.tr("Sync failed in background mode. Trying terminal mode so you can authenticate interactively.") + " (exit " + exitCode + ")", out, err);
+                root.syncStatus = root.withOutput(I18n.tr("Sync failed in background mode. Trying terminal mode so you can authenticate interactively.") + " " + I18n.tr("(exit %1)", "process exit code").arg(exitCode), out, err);
                 root.launchTerminalFallback(false, "");
                 return;
             }
@@ -229,7 +229,7 @@ exit 0`]
 
         onExited: exitCode => {
             if (exitCode !== 0)
-                root.syncStatus += "\n\n" + I18n.tr("Terminal fallback failed. Install one of the supported terminal emulators or run 'dms-greeter unlink' manually.", "greeter unlink status") + " (exit " + exitCode + ")";
+                root.syncStatus += "\n\n" + I18n.tr("Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.", "terminal fallback status, %1 is a command").arg("dms-greeter unlink") + " " + I18n.tr("(exit %1)", "process exit code").arg(exitCode);
             root.finishSync();
         }
     }
@@ -251,7 +251,7 @@ exit 0`]
                 root.finishSync();
                 return;
             }
-            let fallback = I18n.tr("Terminal fallback failed. Install one of the supported terminal emulators or run 'dms-greeter sync' manually.") + " (exit " + exitCode + ")";
+            let fallback = I18n.tr("Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.", "terminal fallback status, %1 is a command").arg("dms-greeter sync") + " " + I18n.tr("(exit %1)", "process exit code").arg(exitCode);
             const err = terminalFallbackErr.text.trim();
             if (err !== "")
                 fallback += "\n\nstderr:\n" + err;

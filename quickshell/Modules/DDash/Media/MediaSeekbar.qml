@@ -15,6 +15,7 @@ DSeekbar {
     accentColor: root.player.accent
     accentTrackColor: MediaAccentService.accentTrack
     accentSubtleColor: MediaAccentService.accentSubtle
+    focusRingColor: MediaAccentService.focusRing
     isSeeking: root.player.isSeeking
     onIsSeekingChanged: root.player.isSeeking = isSeeking
 }

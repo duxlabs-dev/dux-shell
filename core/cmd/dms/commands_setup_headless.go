@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/config"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
 	"github.com/spf13/cobra"
 )
 

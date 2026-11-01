@@ -8,13 +8,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/config"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/distros"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/mangoconf"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -130,7 +130,7 @@ var dmsConfigSpecs = map[string]dmsConfigSpec{
 		mangoFile:    "layout.conf",
 		niriContent:  func(_ string) string { return config.NiriLayoutConfig },
 		hyprContent:  func(_ string) string { return config.DMSLayoutLuaConfig },
-		mangoContent: func(_ string) string { return mangoconf.Detect().Translate(config.MangoLayoutConfig) },
+		mangoContent: func(_ string) string { return config.MangoLayoutConfig },
 	},
 	"colors": {
 		niriFile:     "colors.kdl",
@@ -138,7 +138,7 @@ var dmsConfigSpecs = map[string]dmsConfigSpec{
 		mangoFile:    "colors.conf",
 		niriContent:  func(_ string) string { return config.NiriColorsConfig },
 		hyprContent:  func(_ string) string { return config.DMSColorsLuaConfig },
-		mangoContent: func(_ string) string { return mangoconf.Detect().Translate(config.MangoColorsConfig) },
+		mangoContent: func(_ string) string { return config.MangoColorsConfig },
 	},
 	"alttab": {
 		niriFile:    "alttab.kdl",
@@ -335,6 +335,16 @@ func runSetupDmsConfig(name string) error {
 	}
 
 	fmt.Printf("Deployed %s to %s\n", name, path)
+
+	// Stock binds leave the version-dependent ones to binds-next.kdl.
+	if compositor == "niri" && name == "binds" {
+		if _, err := config.WriteNiriBindsNext(dmsDir, config.ProbeNiriCapabilities()); err != nil {
+			return fmt.Errorf("failed to write %s: %w", config.NiriBindsNextFile, err)
+		}
+		if config.NiriConfigMissingBindsNext(dmsDir) {
+			fmt.Println(config.NiriBindsNextIncludeHint)
+		}
+	}
 	return nil
 }
 
@@ -563,10 +573,7 @@ func compositorPrimaryPaths(wm deps.WindowManager) []string {
 	case deps.WindowManagerNiri:
 		return []string{filepath.Join(homeDir, ".config", "niri", "config.kdl")}
 	case deps.WindowManagerHyprland:
-		return []string{
-			filepath.Join(homeDir, ".config", "hypr", "hyprland.lua"),
-			filepath.Join(homeDir, ".config", "hypr", "hyprland.conf"),
-		}
+		return []string{filepath.Join(config.HyprlandConfigDir(), "hyprland.lua")}
 	case deps.WindowManagerMango:
 		return []string{
 			filepath.Join(homeDir, ".config", "mango", "config.conf"),

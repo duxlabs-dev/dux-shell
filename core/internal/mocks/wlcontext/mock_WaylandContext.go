@@ -5,7 +5,7 @@
 package mocks_wlcontext
 
 import (
-	"github.com/AvengeMedia/dankgo/wayland/client"
+	"github.com/duxlabs-dev/dux-go/wayland/client"
 	mock "github.com/stretchr/testify/mock"
 )
 

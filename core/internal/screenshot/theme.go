@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 type ThemeColors struct {
@@ -87,7 +87,7 @@ func getColorsFilePath() string {
 		log.Error("Failed to get user cache dir", "err", err)
 		return ""
 	}
-	return filepath.Join(cacheDir, "DankMaterialShell", "dms-colors.json")
+	return filepath.Join(cacheDir, "dms", "dms-colors.json")
 }
 
 func isLightMode() bool {

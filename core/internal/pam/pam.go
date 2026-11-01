@@ -9,8 +9,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 const (
@@ -157,7 +157,7 @@ func IsNixOS() bool {
 }
 
 func ReadAuthSettings(homeDir string) (AuthSettings, error) {
-	settingsPath := filepath.Join(homeDir, ".config", "DankMaterialShell", "settings.json")
+	settingsPath := filepath.Join(homeDir, ".config", "dms", "settings.json")
 	data, err := os.ReadFile(settingsPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -807,7 +807,7 @@ session  required    pam_deny.so
 `
 
 func UserLockscreenPamDir() string {
-	return filepath.Join(utils.XDGStateHome(), "DankMaterialShell", "pam")
+	return filepath.Join(utils.XDGStateHome(), "dms", "pam")
 }
 
 // WriteUserLockscreenPamConfig resolves the distro's real auth stack into a

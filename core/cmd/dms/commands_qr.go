@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/clipboard"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/qrcode"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/qrcode"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 )

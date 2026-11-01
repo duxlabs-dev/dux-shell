@@ -39,7 +39,7 @@ Item {
         onCancel = options.onCancel || (() => {});
         visible = true;
         dialogContent.keyboardNavigation = false;
-        dialogContent.selectedButton = 0;
+        dialogContent.selectedButton = options.confirmByDefault === true ? 1 : 0;
         focusDialog();
     }
 
@@ -93,7 +93,7 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            color: Theme.scrimColor
+            color: Theme.backdropColor
             opacity: root.backgroundOpacity
         }
 

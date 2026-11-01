@@ -4,6 +4,7 @@ import qs.Common
 import qs.Modules.Settings.Widgets
 import qs.Services
 import qs.DCommon.Widgets
+import "../../Common/PluginRanking.js" as PluginRanking
 
 DCard {
     id: root
@@ -13,14 +14,17 @@ DCard {
     property bool installed: false
     property bool selected: false
     property string fallbackIcon: "extension"
+    property string highlight: ""
     property string previewSource: PluginService.thumbUrl(plugin)
     property string previewFallback: PluginService.previewUrl(plugin)
     property var badges: PluginService.badgeModel(plugin)
     property bool allowUninstall: false
     property var palette: null
+    property string compositor: ""
     property real previewHeight: Math.round((width - Theme.spacingS * 2) * SettingsMetrics.choiceCardPreviewRatio)
     readonly property int infoHeight: Theme.iconButtonSize + Theme.fontSizeSmall * 4 + Theme.spacingS
     readonly property bool compatible: PluginService.checkPluginCompatibility(plugin.requires_dms)
+    readonly property var otherCompositors: PluginRanking.unsupportedOn(plugin, compositor)
     readonly property bool focusRingShown: selected && Theme.focusRingWidth > 0
 
     signal installRequested
@@ -60,6 +64,7 @@ DCard {
                 fillMode: Image.PreserveAspectCrop
                 animate: false
                 visible: status === Image.Ready
+                opacity: root.otherCompositors.length > 0 ? 0.5 : 1
                 onStatusChanged: {
                     if (status !== Image.Error || useFallback || !root.previewFallback || root.previewFallback === root.previewSource)
                         return;
@@ -120,9 +125,36 @@ DCard {
             anchors.right: parent.right
             anchors.margins: Theme.spacingXS
             iconName: "thumb_up"
-            label: root.plugin.upvotes || 0
+            label: PluginService.upvoteCount(root.plugin)
             tone: Theme.primary
             visible: !!root.plugin.issueUrl
+            // Stays clickable while a vote is sent, so the click never falls through to the card; upvotePlugin ignores it.
+            interactive: true
+            active: !!PluginService.upvotedPlugins[root.plugin.id]
+            tooltipText: active ? I18n.tr("Remove upvote", "plugin upvote button tooltip") : I18n.tr("Upvote on GitHub", "plugin upvote button tooltip")
+            Accessible.role: Accessible.Button
+            Accessible.name: tooltipText
+            onClicked: PluginService.upvotePlugin(root.plugin)
+        }
+
+        PluginBadge {
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.margins: Theme.spacingXS
+            iconName: "auto_awesome"
+            label: root.highlight
+            tone: Theme.primary
+            visible: root.highlight.length > 0
+        }
+
+        PluginBadge {
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            anchors.margins: Theme.spacingXS
+            iconName: root.installed ? "check_circle" : "desktop_windows"
+            label: root.installed ? I18n.tr("Installed", "adjective, plugin or theme is already installed, button state and filter chip") : I18n.tr("%1 only", "lowercase plugin badge, compositors the plugin is limited to").arg(root.otherCompositors.join(", "))
+            tone: root.installed ? Theme.primary : Theme.warning
+            visible: root.installed || root.otherCompositors.length > 0
         }
     }
 

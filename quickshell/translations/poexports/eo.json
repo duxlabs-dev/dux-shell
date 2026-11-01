@@ -113,8 +113,14 @@
   "%1 is %2 and may use a lot of memory.": {
     "%1 is %2 and may use a lot of memory.": "%1 estas %2 kaj eble uzos multe da memoro."
   },
+  "%1 is not installed. Install the package to manage the greeter.": {
+    "%1 is not installed. Install the package to manage the greeter.": ""
+  },
   "%1 is now included in config": {
     "%1 is now included in config": "%1 nun inkluziviĝas en la agordo"
+  },
+  "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": {
+    "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": ""
   },
   "%1 issue found": {
     "%1 issue found": "%1 problemo trovita"
@@ -146,11 +152,26 @@
   "%1 ms": {
     "%1 ms": "%1 ms"
   },
+  "%1 not available": {
+    "%1 not available": ""
+  },
+  "%1 not available - lock integration requires the DMS socket connection": {
+    "%1 not available - lock integration requires the DMS socket connection": ""
+  },
+  "%1 not available or disabled - cannot apply %2 colors": {
+    "%1 not available or disabled - cannot apply %2 colors": ""
+  },
+  "%1 not found": {
+    "%1 not found": ""
+  },
   "%1 notifications": {
     "%1 notifications": "%1 sciigoj"
   },
   "%1 online": {
     "%1 online": "%1 interrete"
+  },
+  "%1 only": {
+    "%1 only": ""
   },
   "%1 other": {
     "%1 other": "%1 aliaj"
@@ -170,6 +191,9 @@
   "%1 printers": {
     "%1 printers": "%1 presiloj"
   },
+  "%1 procs": {
+    "%1 procs": ""
+  },
   "%1 second": {
     "%1 second": "%1 sekundo"
   },
@@ -178,6 +202,9 @@
   },
   "%1 tasks": {
     "%1 tasks": "%1 taskoj"
+  },
+  "%1 uninstalled": {
+    "%1 uninstalled": ""
   },
   "%1 update": {
     "%1 update": "%1 ĝisdatigo"
@@ -209,11 +236,17 @@
   "%1: %2": {
     "%1: %2": "%1: %2"
   },
+  "%1d ago": {
+    "%1d ago": ""
+  },
   "%1h": {
     "%1h": "%1h"
   },
   "%1h %2m": {
     "%1h %2m": "%1h %2m"
+  },
+  "%1h ago": {
+    "%1h ago": ""
   },
   "%1m": {
     "%1m": "%1m"
@@ -227,11 +260,17 @@
   "(Unnamed)": {
     "(Unnamed)": "(Sentitola)"
   },
+  "(exit %1)": {
+    "(exit %1)": ""
+  },
   "+ %1 more": {
     "+ %1 more": "+ ankoraŭ %1"
   },
   "+%1 conditions": {
     "+%1 conditions": ""
+  },
+  "1 hour before": {
+    "1 hour before": ""
   },
   "1 notification": {
     "1 notification": "1 sciigo"
@@ -260,8 +299,8 @@
   "A floating companion that works alongside any bar layout": {
     "A floating companion that works alongside any bar layout": "Flosanta kunulo kiu funkcias kune kun iu ajn breta aranĝo"
   },
-  "A modern desktop shell for Wayland compositors": {
-    "A modern desktop shell for Wayland compositors": "Moderna labortabla ŝelo por Wayland-komponiloj"
+  "A modern desktop shell for Wayland": {
+    "A modern desktop shell for Wayland": ""
   },
   "A newer dms binary is installed.": {
     "A newer dms binary is installed.": "Pli nova duuma dosiero de dms estas instalita."
@@ -377,8 +416,8 @@
   "Add \"%1\" to the %2 group?": {
     "Add \"%1\" to the %2 group?": "Ĉu aldoni \"%1\" al la grupo %2?"
   },
-  "Add \"%1\" to the %2 group? They must log out and back in, then run dms-greeter sync --profile to publish their login-screen theme.": {
-    "Add \"%1\" to the %2 group? They must log out and back in, then run dms-greeter sync --profile to publish their login-screen theme.": "Ĉu aldoni \"%1\" al la grupo %2? Ili devas elsaluti kaj reensaluti, poste ruli dms-greeter sync --profile por publikigi sian salutekranan etoson."
+  "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": {
+    "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": ""
   },
   "Add Desktop Widget": {
     "Add Desktop Widget": "Aldoni labortablan fenestraĵon"
@@ -452,8 +491,8 @@
   "Adds concave curves where the bar meets the screen edge": {
     "Adds concave curves where the bar meets the screen edge": "Aldonas konkavajn kurbojn kie la breto renkontas la ekranrandon"
   },
-  "Adds them to the %1 group so they can run dms-greeter sync --profile": {
-    "Adds them to the %1 group so they can run dms-greeter sync --profile": "Aldonas ilin al la grupo %1 por ke ili povu ruli dms-greeter sync --profile"
+  "Adds them to the %1 group so they can run %2": {
+    "Adds them to the %1 group so they can run %2": ""
   },
   "Adds them to the %1 group so they can use sudo": {
     "Adds them to the %1 group so they can use sudo": "Aldonas ilin al la grupo %1 por ke ili povu uzi sudo"
@@ -500,6 +539,9 @@
   "All displays": {
     "All displays": "Ĉiuj ekranoj"
   },
+  "All plugins": {
+    "All plugins": ""
+  },
   "All settings": {
     "All settings": ""
   },
@@ -530,8 +572,11 @@
   "Already on that session": {
     "Already on that session": "Jam en tiu sesio"
   },
-  "Also runs the templates in your matugen config.toml": {
-    "Also runs the templates in your matugen config.toml": "Ankaŭ rulas la ŝablonojn en via matugen config.toml"
+  "Already upvoted, click again to remove": {
+    "Already upvoted, click again to remove": ""
+  },
+  "Also runs the templates in your %1": {
+    "Also runs the templates in your %1": ""
   },
   "Also saves the screenshot to disk": {
     "Also saves the screenshot to disk": "Ankaŭ konservas la ekrankopion al disko"
@@ -589,9 +634,6 @@
   },
   "Anchor": {
     "Anchor": "ankro"
-  },
-  "Anchored popouts open at the cursor instead of their widget": {
-    "Anchored popouts open at the cursor instead of their widget": ""
   },
   "Animation duration": {
     "Animation duration": "Animacidaŭro"
@@ -803,9 +845,6 @@
   "Authenticate": {
     "Authenticate": "Aŭtentigi"
   },
-  "Authenticating...": {
-    "Authenticating...": "Aŭtentigante..."
-  },
   "Authentication": {
     "Authentication": "Aŭtentigo"
   },
@@ -830,11 +869,11 @@
   "Authorize": {
     "Authorize": "Rajtigi"
   },
-  "Authorize pairing with ": {
-    "Authorize pairing with ": "Rajtigi pariĝon kun "
+  "Authorize pairing with %1": {
+    "Authorize pairing with %1": ""
   },
-  "Authorize service for ": {
-    "Authorize service for ": "Rajtigi servon por "
+  "Authorize service for %1": {
+    "Authorize service for %1": ""
   },
   "Auto": {
     "Auto": "Aŭtomata"
@@ -1223,9 +1262,6 @@
   "Built-in plugins": {
     "Built-in plugins": "Enkonstruitaj kromprogramoj"
   },
-  "Bundled greeter active": {
-    "Bundled greeter active": "Kunpakita salutekrano aktiva"
-  },
   "Button areas": {
     "Button areas": "Butonaj areoj"
   },
@@ -1364,6 +1400,9 @@
   "Changes save to %1": {
     "Changes save to %1": "Ŝanĝoj konserviĝas al %1"
   },
+  "Changes volume and audio devices": {
+    "Changes volume and audio devices": ""
+  },
   "Channel": {
     "Channel": "Kanalo"
   },
@@ -1472,6 +1511,9 @@
   "Classes": {
     "Classes": "Klasoj"
   },
+  "Classic": {
+    "Classic": ""
+  },
   "Clear All": {
     "Clear All": "Viŝi ĉion"
   },
@@ -1499,8 +1541,8 @@
   "Click 'Setup' to create %1 and add include to your compositor config.": {
     "Click 'Setup' to create %1 and add include to your compositor config.": "Klaku «Agordi» por krei %1 kaj aldoni inkluzivon al via komponila agordo."
   },
-  "Click Import to add a .ovpn or .conf": {
-    "Click Import to add a .ovpn or .conf": "Klaku «Importi» por aldoni .ovpn- aŭ .conf-dosieron"
+  "Click Import to add a %1 or %2 file": {
+    "Click Import to add a %1 or %2 file": ""
   },
   "Click actions": {
     "Click actions": ""
@@ -1652,6 +1694,9 @@
   "Columns": {
     "Columns": "Kolumnoj"
   },
+  "Comfortable": {
+    "Comfortable": ""
+  },
   "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": {
     "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": "Komo-apartigita listo de aranĝonomoj. Lasu malplena por uzi la sistemajn klavarajn agordojn."
   },
@@ -1676,14 +1721,8 @@
   "Compact": {
     "Compact": "Kompakta"
   },
-  "Compact height": {
-    "Compact height": "Kompakta alto"
-  },
   "Compact mode": {
     "Compact mode": "Kompakta reĝimo"
-  },
-  "Compact width": {
-    "Compact width": "Kompakta larĝo"
   },
   "Completed": {
     "Completed": "Plenumita"
@@ -1739,8 +1778,8 @@
   "Confirm Display Changes": {
     "Confirm Display Changes": "Konfirmi ekran-ŝanĝojn"
   },
-  "Confirm passkey for ": {
-    "Confirm passkey for ": "Konfirmi pasŝlosilon por "
+  "Confirm passkey for %1": {
+    "Confirm passkey for %1": ""
   },
   "Confirm password": {
     "Confirm password": "Konfirmi pasvorton"
@@ -1787,6 +1826,9 @@
   "Connections and autoconnect": {
     "Connections and autoconnect": "Konektoj kaj aŭtomata konektado"
   },
+  "Connects to the internet": {
+    "Connects to the internet": ""
+  },
   "Consumes the key only when a dispatcher runs": {
     "Consumes the key only when a dispatcher runs": ""
   },
@@ -1811,6 +1853,9 @@
   "Controls": {
     "Controls": ""
   },
+  "Controls media players": {
+    "Controls media players": ""
+  },
   "Convert to DMS": {
     "Convert to DMS": "Konverti al DMS"
   },
@@ -1828,6 +1873,9 @@
   },
   "Copy": {
     "Copy": "Kopii"
+  },
+  "Copy %1": {
+    "Copy %1": ""
   },
   "Copy Full Command": {
     "Copy Full Command": "Kopii tutan komandon"
@@ -2045,14 +2093,14 @@
   "DMS chooser": {
     "DMS chooser": "DMS Elektilo"
   },
-  "DMS is a highly customizable modern desktop shell with a %1 inspired design.<br/><br/>It is built with %2, a QT6 framework for building desktop shells, and %3, a statically typed, compiled programming language.": {
-    "DMS is a highly customizable modern desktop shell with a %1 inspired design.<br/><br/>It is built with %2, a QT6 framework for building desktop shells, and %3, a statically typed, compiled programming language.": "DMS estas tre agordebla moderna labortabla ŝelo kun fasono inspirita de %1.<br/><br/>Ĝi estas konstruita per %2, kadro de QT6 por konstrui labortablajn ŝelojn, kaj %3, statike tipita, kompilita programlingvo."
+  "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.": {
+    "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.": ""
   },
   "DMS out of date": {
     "DMS out of date": "DMS malaktualas"
   },
-  "DMS removes its managed block from /etc/pam.d/greetd and stops write services": {
-    "DMS removes its managed block from /etc/pam.d/greetd and stops write services": "DMS forigas sian mastrumatan blokon de /etc/pam.d/greetd kaj haltigas skribservojn"
+  "DMS removes its managed block from %1 and stops write services": {
+    "DMS removes its managed block from %1 and stops write services": ""
   },
   "DMS server is outdated (API v%1, expected v%2)": {
     "DMS server is outdated (API v%1, expected v%2)": "DMS-servilo estas malaktuala (API v%1, atendata v%2)"
@@ -2069,9 +2117,6 @@
   "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": {
     "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": "DMS uzas la tiparan familion, pezon kaj skalon. Ekzaktaj tiparo, deklivo, larĝo kaj aparte skalitaj bretoj povas diferenci."
   },
-  "DMS_SOCKET not available": {
-    "DMS_SOCKET not available": "DMS_SOCKET ne disponeblas"
-  },
   "Daily": {
     "Daily": "Ĉiutage"
   },
@@ -2086,15 +2131,6 @@
   },
   "DankBar": {
     "DankBar": "DankBar"
-  },
-  "DankCalendar": {
-    "DankCalendar": "DankCalendar"
-  },
-  "DankCalendar isn't installed": {
-    "DankCalendar isn't installed": "DankCalendar ne estas instalita"
-  },
-  "DankCalendar isn't running": {
-    "DankCalendar isn't running": "DankCalendar ne funkcias"
   },
   "Dark": {
     "Dark": "Malhela"
@@ -2161,6 +2197,9 @@
   },
   "Deck": {
     "Deck": "Ludkartaro (deck)"
+  },
+  "Declared by the author, not enforced": {
+    "Declared by the author, not enforced": ""
   },
   "Default": {
     "Default": "Defaŭlta"
@@ -2240,6 +2279,9 @@
   "Deletes all stored screen time": {
     "Deletes all stored screen time": "Forigas ĉiujn konservitajn ekrantempajn datumojn"
   },
+  "Dense": {
+    "Dense": ""
+  },
   "Dependencies & documentation": {
     "Dependencies & documentation": "Dependaĵoj kaj dokumentaro"
   },
@@ -2291,6 +2333,9 @@
   "Dew point %1": {
     "Dew point %1": "Rosopunkto %1"
   },
+  "Did you mean": {
+    "Did you mean": ""
+  },
   "Digital": {
     "Digital": "Cifereca"
   },
@@ -2332,6 +2377,9 @@
   },
   "Disabled": {
     "Disabled": "Malŝaltita"
+  },
+  "Disabled by Auto": {
+    "Disabled by Auto": ""
   },
   "Disabled by Click through": {
     "Disabled by Click through": ""
@@ -2471,6 +2519,9 @@
   "Dock": {
     "Dock": "Doko"
   },
+  "Dock %1": {
+    "Dock %1": ""
+  },
   "Dock margin, opacity, and border": {
     "Dock margin, opacity, and border": "Doka marĝeno, opakeco kaj limo"
   },
@@ -2503,6 +2554,9 @@
   },
   "Don't change": {
     "Don't change": "Ne ŝanĝi"
+  },
+  "Don't dim unfocused apps": {
+    "Don't dim unfocused apps": ""
   },
   "Door Open": {
     "Door Open": "Pordo malfermita"
@@ -2578,6 +2632,18 @@
   },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "Krepasko (naŭtika krepasko)"
+  },
+  "Dux Calendar": {
+    "Dux Calendar": ""
+  },
+  "Dux Calendar isn't installed": {
+    "Dux Calendar isn't installed": ""
+  },
+  "Dux Calendar isn't running": {
+    "Dux Calendar isn't running": ""
+  },
+  "Dux Greeter docs": {
+    "Dux Greeter docs": ""
   },
   "Dwindle": {
     "Dwindle": "Dwindle"
@@ -2711,17 +2777,14 @@
   "End must be after start": {
     "End must be after start": "Fino devas esti post komenco"
   },
-  "Enlarge on hover": {
-    "Enlarge on hover": "Pligrandigi dum paŭzo"
-  },
   "Enter 6-digit passkey": {
     "Enter 6-digit passkey": "Enigu 6-ciferan pasŝlosilon"
   },
   "Enter PIN": {
     "Enter PIN": "Enigu PIN-kodo"
   },
-  "Enter PIN for ": {
-    "Enter PIN for ": "Enigu PIN-kodo por "
+  "Enter PIN for %1": {
+    "Enter PIN for %1": ""
   },
   "Enter a new name for session \"%1": {
     "Enter a new name for session \"%1\"": "Enigu novan nomon por seanco \"%1\""
@@ -2729,8 +2792,8 @@
   "Enter a new name for this workspace": {
     "Enter a new name for this workspace": "Enigu novan nomon por ĉi tiu laborspaco"
   },
-  "Enter credentials for ": {
-    "Enter credentials for ": "Enigu akreditaĵojn por "
+  "Enter credentials for %1": {
+    "Enter credentials for %1": ""
   },
   "Enter custom lock screen format (e.g., dddd, MMMM d)": {
     "Enter custom lock screen format (e.g., dddd, MMMM d)": "Enigu propran ŝlosekranan formaton (ekz., dddd, MMMM d)"
@@ -2744,17 +2807,17 @@
   "Enter network name and password": {
     "Enter network name and password": "Enigu retnomon kaj pasvorton"
   },
-  "Enter passkey for ": {
-    "Enter passkey for ": "Enigu pasŝlosilon por "
+  "Enter passkey for %1": {
+    "Enter passkey for %1": ""
   },
-  "Enter password for ": {
-    "Enter password for ": "Enigu pasvorton por "
+  "Enter password for %1": {
+    "Enter password for %1": ""
   },
   "Enter text to encode": {
     "Enter text to encode": "Enigu tekston por kodi"
   },
-  "Enter this passkey on ": {
-    "Enter this passkey on ": "Enigu ĉi tiun pasŝlosilon sur "
+  "Enter this passkey on %1": {
+    "Enter this passkey on %1": ""
   },
   "Enter to paste": {
     "Enter to paste": "Enigu por alglui"
@@ -2846,8 +2909,8 @@
   "Expressive": {
     "Expressive": "Esprimplena"
   },
-  "Extend DankMaterialShell with powerful plugins for widgets, launchers, and more": {
-    "Extend DankMaterialShell with powerful plugins for widgets, launchers, and more": "Etendi DankMaterialShell per potencaj kromprogramoj por fenestraĵoj, lanĉiloj kaj pli"
+  "Extend %1 with powerful plugins for widgets, launchers, and more": {
+    "Extend %1 with powerful plugins for widgets, launchers, and more": ""
   },
   "Extend battery life": {
     "Extend battery life": "Plilongigi baterio-daŭron"
@@ -3014,6 +3077,9 @@
   "Failed to read theme file: %1": {
     "Failed to read theme file: %1": "Malsukcesis legi etosieron: %1"
   },
+  "Failed to reboot to firmware setup": {
+    "Failed to reboot to firmware setup": ""
+  },
   "Failed to reload plugin: %1": {
     "Failed to reload plugin: %1": "Malsukcesis reŝargi kromprogramon: %1"
   },
@@ -3035,8 +3101,8 @@
   "Failed to resume printer": {
     "Failed to resume printer": "Malsukcesis daŭrigi presilon"
   },
-  "Failed to run 'dms-greeter status'. Ensure the dms-greeter package is installed.": {
-    "Failed to run 'dms-greeter status'. Ensure the dms-greeter package is installed.": "Malsukcesis ruli 'dms-greeter status'. Certigu, ke la pakaĵo dms-greeter estas instalita."
+  "Failed to run '%1'. Ensure the %2 package is installed.": {
+    "Failed to run '%1'. Ensure the %2 package is installed.": ""
   },
   "Failed to save VPN credentials": {
     "Failed to save VPN credentials": "Malsukcesis konservi VPN-salutilojn"
@@ -3137,8 +3203,8 @@
   "Family": {
     "Family": "Familio"
   },
-  "Features": {
-    "Features": "Trajtoj"
+  "Featured plugin": {
+    "Featured plugin": ""
   },
   "Feels Like %1°": {
     "Feels Like %1°": "Ŝajnas kiel %1°"
@@ -3158,8 +3224,8 @@
   "File manager": {
     "File manager": "Dosiermastrumilo"
   },
-  "File search requires dsearch\nInstall from github.com/AvengeMedia/danksearch": {
-    "File search requires dsearch\nInstall from github.com/AvengeMedia/danksearch": "Dosier-serĉado postulas dsearch\nInstalu el github.com/AvengeMedia/danksearch"
+  "File search requires %1\nInstall from %2": {
+    "File search requires %1\nInstall from %2": ""
   },
   "File the command writes; leave empty to read stdout": {
     "File the command writes; leave empty to read stdout": "Dosiero kiun la komando skribas; lasu malplena por legi el ĉefeligujo"
@@ -3191,9 +3257,6 @@
   "Fine-tune the seed around the color wheel": {
     "Fine-tune the seed around the color wheel": "Fajnagordi la semon ĉirkaŭ la kolorrado"
   },
-  "Fingerprint": {
-    "Fingerprint": "Fingrospuro"
-  },
   "Fingerprint at login": {
     "Fingerprint at login": "Fingrospuro ĉe ensaluto"
   },
@@ -3224,6 +3287,9 @@
   "Fires with any modifiers held": {
     "Fires with any modifiers held": ""
   },
+  "Firmware setup": {
+    "Firmware setup": ""
+  },
   "First Time Setup": {
     "First Time Setup": "Unuafoja agordado"
   },
@@ -3235,6 +3301,9 @@
   },
   "Fits the song title instead of keeping a fixed width": {
     "Fits the song title instead of keeping a fixed width": "Adaptiĝas al la kantotitolo anstataŭ teni fiksan larĝon"
+  },
+  "Fits your setup": {
+    "Fits your setup": ""
   },
   "Fixed": {
     "Fixed": "Fiksita"
@@ -3380,6 +3449,12 @@
   "For %1": {
     "For %1": "Dum %1"
   },
+  "For 1 hour": {
+    "For 1 hour": ""
+  },
+  "For you": {
+    "For you": ""
+  },
   "Force HDR": {
     "Force HDR": "Devigi HDR-on"
   },
@@ -3494,6 +3569,9 @@
   "GPU": {
     "GPU": "Grafikprocesoro (GPU)"
   },
+  "GPU %1": {
+    "GPU %1": ""
+  },
   "GPU Monitoring": {
     "GPU Monitoring": "Monitorado de GPU"
   },
@@ -3517,6 +3595,9 @@
   },
   "Gamma": {
     "Gamma": "Gamo"
+  },
+  "Gamma %1": {
+    "Gamma %1": ""
   },
   "Gamma control": {
     "Gamma control": "Gama-regado"
@@ -3677,6 +3758,9 @@
   "Health": {
     "Health": "Sano"
   },
+  "Health %1": {
+    "Health %1": ""
+  },
   "Heat shimmer": {
     "Heat shimmer": ""
   },
@@ -3728,6 +3812,9 @@
   "Hide App": {
     "Hide App": "Kaŝi aplikaĵon"
   },
+  "Hide bar on fullscreen": {
+    "Hide bar on fullscreen": ""
+  },
   "Hide cursor on touch": {
     "Hide cursor on touch": "Kaŝi kursoron ĉe tuŝo"
   },
@@ -3742,6 +3829,9 @@
   },
   "Hide installed": {
     "Hide installed": "Kaŝi instalitajn"
+  },
+  "Hide on last display": {
+    "Hide on last display": ""
   },
   "Hide until typing": {
     "Hide until typing": "Kaŝi ĝis tajpado"
@@ -3797,6 +3887,9 @@
   "History size, retention, paste behavior": {
     "History size, retention, paste behavior": "Grandeco de historio, konservado, alglua konduto"
   },
+  "Hold Ctrl, Alt or Super and press a key. Esc cancels.": {
+    "Hold Ctrl, Alt or Super and press a key. Esc cancels.": ""
+  },
   "Hold duration": {
     "Hold duration": "Daŭro de tenado"
   },
@@ -3848,6 +3941,9 @@
   "Hover popouts": {
     "Hover popouts": "Ŝvebaj ŝprucaĵoj"
   },
+  "How far terminal colors shift toward the wallpaper color": {
+    "How far terminal colors shift toward the wallpaper color": ""
+  },
   "Hue": {
     "Hue": "Nuanco"
   },
@@ -3896,8 +3992,8 @@
   "IP address or hostname": {
     "IP address or hostname": "IP-adreso aŭ gastigantnomo"
   },
-  "IP sharing setup failed. Check that dnsmasq is installed.": {
-    "IP sharing setup failed. Check that dnsmasq is installed.": "Agordo de IP-kunhavigo malsukcesis. Kontrolu, ke dnsmasq estas instalita."
+  "IP sharing setup failed. Check that %1 is installed.": {
+    "IP sharing setup failed. Check that %1 is installed.": ""
   },
   "ISO date": {
     "ISO date": "ISO-dato"
@@ -4115,14 +4211,14 @@
   "Install failed: %1": {
     "Install failed: %1": "Instalado malsukcesis: %1"
   },
-  "Install matugen package for dynamic theming": {
-    "Install matugen package for dynamic theming": "Instali pakaĵon matugen por dinamika etosigo"
-  },
   "Install plugin '%1' from the DMS registry?": {
     "Install plugin '%1' from the DMS registry?": "Ĉu instali kromprogramon '%1' el la DMS-registro?"
   },
   "Install system updates?": {
     "Install system updates?": "Ĉu instali sistemajn ĝisdatigojn?"
+  },
+  "Install the %1 package for dynamic theming": {
+    "Install the %1 package for dynamic theming": ""
   },
   "Install theme '%1' from the DMS registry?": {
     "Install theme '%1' from the DMS registry?": "Ĉu instali etoson '%1' el la DMS-registro?"
@@ -4133,8 +4229,8 @@
   "Install wallpaper '%1'?": {
     "Install wallpaper '%1'?": ""
   },
-  "Installation and PAM setup are documented in the ": {
-    "Installation and PAM setup are documented in the ": "Instalado kaj PAM-agordo estas dokumentitaj en la "
+  "Installation and PAM setup are documented in the %1.": {
+    "Installation and PAM setup are documented in the %1.": ""
   },
   "Installed": {
     "Installed": "Instalita"
@@ -4166,6 +4262,9 @@
   "Interface": {
     "Interface": "Interfaco"
   },
+  "Interface density": {
+    "Interface density": ""
+  },
   "Interface style": {
     "Interface style": "Interfaca stilo"
   },
@@ -4192,6 +4291,9 @@
   },
   "Invalid wallpaper layout": {
     "Invalid wallpaper layout": ""
+  },
+  "Inverse Surface": {
+    "Inverse Surface": ""
   },
   "Iridescence": {
     "Iridescence": ""
@@ -4267,9 +4369,6 @@
   },
   "Keybinds": {
     "Keybinds": "Klavkombinoj"
-  },
-  "Keyboard": {
-    "Keyboard": "Klavaro"
   },
   "Keyboard layout": {
     "Keyboard layout": "Klavara aranĝo"
@@ -4376,8 +4475,8 @@
   "Launching": {
     "Launching": "Lanĉado"
   },
-  "Layer namespace dms:blurwallpaper, needs a niri blur rule": {
-    "Layer namespace dms:blurwallpaper, needs a niri blur rule": "Tavola nomspaco dms:blurwallpaper, bezonas niri-malklarigan regulon"
+  "Layer namespace %1, needs a niri blur rule": {
+    "Layer namespace %1, needs a niri blur rule": ""
   },
   "Layer outline": {
     "Layer outline": ""
@@ -4469,6 +4568,9 @@
   "Lightest": {
     "Lightest": "Plej hela"
   },
+  "Like your plugins": {
+    "Like your plugins": ""
+  },
   "Limit": {
     "Limit": "Limo"
   },
@@ -4486,6 +4588,9 @@
   },
   "Lines: %1": {
     "Lines: %1": "Linioj: %1"
+  },
+  "Link copied": {
+    "Link copied": ""
   },
   "Link your DMS settings so the login screen follows them.": {
     "Link your DMS settings so the login screen follows them.": "Ligu viajn DMS-agordojn por ke la salutekrano sekvu ilin."
@@ -4571,9 +4676,6 @@
   "Log out": {
     "Log out": "Elsaluti"
   },
-  "Login": {
-    "Login": "Saluti"
-  },
   "Login screen appearance and authentication": {
     "Login screen appearance and authentication": "Aspekto kaj aŭtentigo de salutekrano"
   },
@@ -4636,6 +4738,9 @@
   },
   "Managed by Nix": {
     "Managed by Nix": "Mastrumata de Nix"
+  },
+  "Managed by administrator policy": {
+    "Managed by administrator policy": ""
   },
   "Managed by the primary PAM source": {
     "Managed by the primary PAM source": "Mastrumata de la ĉefa PAM-fonto"
@@ -4726,9 +4831,6 @@
   },
   "Material palette": {
     "Material palette": "Material-paletro"
-  },
-  "Material scale": {
-    "Material scale": "Material-skalo"
   },
   "Matugen Missing": {
     "Matugen Missing": "Matugen mankas"
@@ -4949,6 +5051,9 @@
   "More": {
     "More": "Pli"
   },
+  "More in %1": {
+    "More in %1": ""
+  },
   "More samples look smoother and cost more GPU": {
     "More samples look smoother and cost more GPU": ""
   },
@@ -5078,6 +5183,9 @@
   "Near island": {
     "Near island": "Proksime de insulo"
   },
+  "Needs": {
+    "Needs": ""
+  },
   "Nested chip": {
     "Nested chip": "Enmetita peco"
   },
@@ -5120,6 +5228,9 @@
   "New": {
     "New": "Nova"
   },
+  "New & updated": {
+    "New & updated": ""
+  },
   "New Session": {
     "New Session": "Nova seanco"
   },
@@ -5158,6 +5269,9 @@
   },
   "Next Transition": {
     "Next Transition": "Sekva transiro"
+  },
+  "Next category": {
+    "Next category": ""
   },
   "Next page": {
     "Next page": "Sekva paĝo"
@@ -5549,17 +5663,17 @@
   "Not available": {
     "Not available": "Ne disponebla"
   },
-  "Not available - install fprintd and pam_fprintd": {
-    "Not available - install fprintd and pam_fprintd": "Nedisponebla - instalu fprintd kaj pam_fprintd"
+  "Not available - install %1 and %2": {
+    "Not available - install %1 and %2": ""
   },
-  "Not available - install or configure pam_u2f": {
-    "Not available - install or configure pam_u2f": "Nedisponebla - instalu aŭ agordu pam_u2f"
+  "Not available - install %1 and %2, or configure %3 PAM": {
+    "Not available - install %1 and %2, or configure %3 PAM": ""
   },
-  "Not available — install fprintd and pam_fprintd, or configure greetd PAM.": {
-    "Not available — install fprintd and pam_fprintd, or configure greetd PAM.": "Ne disponebla — instalu fprintd kaj pam_fprintd, aŭ agordu PAM de greetd."
+  "Not available - install or configure %1": {
+    "Not available - install or configure %1": ""
   },
-  "Not available — install or configure pam_u2f, or configure greetd PAM.": {
-    "Not available — install or configure pam_u2f, or configure greetd PAM.": "Ne disponebla — instalu aŭ agordu pam_u2f, aŭ agordu PAM de greetd."
+  "Not available - install or configure %1, or configure %2 PAM": {
+    "Not available - install or configure %1, or configure %2 PAM": ""
   },
   "Not bound": {
     "Not bound": "Ne ligita"
@@ -5581,6 +5695,9 @@
   },
   "Not set": {
     "Not set": "Ne agordita"
+  },
+  "Not shown on this bar, so its section widgets stay hidden": {
+    "Not shown on this bar, so its section widgets stay hidden": ""
   },
   "Not synchronized": {
     "Not synchronized": "Ne sinkronigita"
@@ -5671,6 +5788,9 @@
   },
   "Office": {
     "Office": "Oficejo"
+  },
+  "Official only": {
+    "Official only": ""
   },
   "Offline Report": {
     "Offline Report": "Senreta raporto"
@@ -5765,8 +5885,14 @@
   "Open with": {
     "Open with": "Malfermi per"
   },
-  "Opening terminal: ": {
-    "Opening terminal: ": "Malfermante terminalon: "
+  "Opening GitHub to remove the upvote": {
+    "Opening GitHub to remove the upvote": ""
+  },
+  "Opening GitHub to upvote": {
+    "Opening GitHub to upvote": ""
+  },
+  "Opening terminal: %1": {
+    "Opening terminal: %1": ""
   },
   "Opens": {
     "Opens": "Malfermas"
@@ -5911,6 +6037,9 @@
   },
   "PID": {
     "PID": "PID"
+  },
+  "PID %1": {
+    "PID %1": ""
   },
   "PIN": {
     "PIN": "PIN"
@@ -6071,6 +6200,12 @@
   "Pick how long to stay awake": {
     "Pick how long to stay awake": "Elektu kiom longe resti veka"
   },
+  "Pick of the day": {
+    "Pick of the day": ""
+  },
+  "Pick of the week": {
+    "Pick of the week": ""
+  },
   "Pill": {
     "Pill": "Pilolo"
   },
@@ -6095,8 +6230,8 @@
   "Pixelate": {
     "Pixelate": "Rastrumigi"
   },
-  "Place plugin directories here. Each plugin should have a plugin.json manifest file.": {
-    "Place plugin directories here. Each plugin should have a plugin.json manifest file.": "Metu kromprogramajn dosierujojn ĉi tien. Ĉiu kromprogramo devus havi dosieron plugin.json."
+  "Place plugin directories here. Each plugin should have a %1 manifest file.": {
+    "Place plugin directories here. Each plugin should have a %1 manifest file.": ""
   },
   "Placement": {
     "Placement": "Lokigo"
@@ -6113,8 +6248,8 @@
   "Playback": {
     "Playback": "Ludado"
   },
-  "Playback error: ": {
-    "Playback error: ": "Eraro dum ludado: "
+  "Playback error: %1": {
+    "Playback error: %1": ""
   },
   "Playback position": {
     "Playback position": "Luda pozicio"
@@ -6146,6 +6281,9 @@
   "Plugin Source Code": {
     "Plugin Source Code": "Fontkodo de kromprogramo"
   },
+  "Plugin authors": {
+    "Plugin authors": ""
+  },
   "Plugin dependency missing": {
     "Plugin dependency missing": "Mankas dependeco de kromprogramo"
   },
@@ -6176,6 +6314,9 @@
   "Plugins": {
     "Plugins": "Kromprogramoj"
   },
+  "Plugins by %1": {
+    "Plugins by %1": ""
+  },
   "Plugins shown in All mode without a trigger. Drag to reorder": {
     "Plugins shown in All mode without a trigger. Drag to reorder": "Kromprogramoj montrataj en reĝimo Ĉio sen aktivigilo. Trenu por reordigi"
   },
@@ -6199,6 +6340,9 @@
   },
   "Popouts and modals use the main animation duration": {
     "Popouts and modals use the main animation duration": "Ŝprucaĵoj kaj modaloj uzas la ĉefan animacian daŭron"
+  },
+  "Popular": {
+    "Popular": ""
   },
   "Popular Plugins": {
     "Popular Plugins": "Popularaj kromprogramoj"
@@ -6341,6 +6485,9 @@
   "Previous": {
     "Previous": "Antaŭa"
   },
+  "Previous category": {
+    "Previous category": ""
+  },
   "Previous page": {
     "Previous page": "Antaŭa paĝo"
   },
@@ -6437,8 +6584,8 @@
   "Profile not found": {
     "Profile not found": "Profilo ne estis trovita"
   },
-  "Profile not found in monitors.json": {
-    "Profile not found in monitors.json": "Profilo ne trovita en monitors.json"
+  "Profile not found in %1": {
+    "Profile not found in %1": ""
   },
   "Profile on AC": {
     "Profile on AC": "Profilo ĉe kurentreto"
@@ -6536,20 +6683,47 @@
   "Read:": {
     "Read:": "Legado:"
   },
+  "Readings": {
+    "Readings": ""
+  },
+  "Reads audio devices and volume": {
+    "Reads audio devices and volume": ""
+  },
+  "Reads its own settings": {
+    "Reads its own settings": ""
+  },
+  "Reads its saved state": {
+    "Reads its saved state": ""
+  },
+  "Reads the clipboard": {
+    "Reads the clipboard": ""
+  },
+  "Reads the list of running programs": {
+    "Reads the list of running programs": ""
+  },
+  "Reads your files": {
+    "Reads your files": ""
+  },
   "Ready": {
     "Ready": "Preta"
   },
   "Reason": {
     "Reason": "Kialo"
   },
+  "Reboot now?": {
+    "Reboot now?": ""
+  },
   "Reboot recommended": {
     "Reboot recommended": "Restartigo rekomendita"
+  },
+  "Reboot targets": {
+    "Reboot targets": ""
   },
   "Reboot to %1": {
     "Reboot to %1": "Restartigi al %1"
   },
-  "Reboot to another OS": {
-    "Reboot to another OS": "Restartigi al alia operaciumo"
+  "Reboot to firmware setup": {
+    "Reboot to firmware setup": ""
   },
   "Recent": {
     "Recent": "lastaj"
@@ -6659,6 +6833,9 @@
   "Remove condition": {
     "Remove condition": ""
   },
+  "Remove from recent colors": {
+    "Remove from recent colors": ""
+  },
   "Remove greeter access?": {
     "Remove greeter access?": "Ĉu forigi salutan aliron?"
   },
@@ -6674,8 +6851,11 @@
   "Remove the shortcut %1?": {
     "Remove the shortcut %1?": "Ĉu forigi la ŝparvojon %1?"
   },
-  "Remove the shortcut %1? An unbind entry will be saved to dms/binds-user.lua so it stays removed across DMS updates.": {
-    "Remove the shortcut %1? An unbind entry will be saved to dms/binds-user.lua so it stays removed across DMS updates.": "Ĉu forigi la ŝparvojon %1? "
+  "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": {
+    "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": ""
+  },
+  "Remove upvote": {
+    "Remove upvote": ""
   },
   "Removed administrator privileges": {
     "Removed administrator privileges": "Forigis administrantajn privilegiojn"
@@ -6722,14 +6902,14 @@
   "Report": {
     "Report": "Raporti"
   },
-  "Required plugin: ": {
-    "Required plugin: ": "Postulata kromprogramo: "
+  "Required plugin: %1": {
+    "Required plugin: %1": ""
   },
   "Requires %1": {
     "Requires %1": "Postulas %1"
   },
-  "Requires 'dgop' tool": {
-    "Requires 'dgop' tool": "Postulas ilon 'dgop'"
+  "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": {
+    "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": ""
   },
   "Requires DMS %1": {
     "Requires DMS %1": "Postulas DMS %1"
@@ -6739,9 +6919,6 @@
   },
   "Requires MangoWC compositor": {
     "Requires MangoWC compositor": "Postulas MangoWC-komponiston"
-  },
-  "Requires greetd, dms-greeter, and your user in the greeter group (plus fprintd/pam_fprintd for fingerprint, pam_u2f for security keys).": {
-    "Requires greetd, dms-greeter, and your user in the greeter group (plus fprintd/pam_fprintd for fingerprint, pam_u2f for security keys).": "Postulas greetd, dms-greeter, kaj vian uzanton en la grupo greeter (plus fprintd/pam_fprintd por fingrospuro, pam_u2f por sekurecŝlosiloj)."
   },
   "Requires night mode support": {
     "Requires night mode support": "Postulas subtenon de nokta reĝimo"
@@ -6854,14 +7031,17 @@
   "Root Filesystem": {
     "Root Filesystem": "Radika dosiersistemo"
   },
+  "Rotating Cookie": {
+    "Rotating Cookie": ""
+  },
   "Rounded": {
     "Rounded": "Rondigita"
   },
   "Route Bluetooth headset controls to the active DMS media player": {
     "Route Bluetooth headset controls to the active DMS media player": "Direkti regilojn de Bluetooth-aŭdilo al la aktiva aŭdvidaĵa ludilo de DMS"
   },
-  "Routes launcher, dash, control center and notification shortcuts": {
-    "Routes launcher, dash, control center and notification shortcuts": "Vojigas fulmklavojn de lanĉilo, instrumentpanelo, stircentro kaj sciigoj"
+  "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": {
+    "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": ""
   },
   "Rows": {
     "Rows": "Vicoj"
@@ -6896,8 +7076,8 @@
   "Run a shell command (e.g., notify-send)": {
     "Run a shell command (e.g., notify-send)": "Lanĉi ŝelan komandon (ekz., notify-send)"
   },
-  "Run an external command on each wallpaper change and merge its JSON palette into matugen under a namespace, so templates can use e.g. {{name.color0}}. The command receives the wallpaper as {image} / $DMS_WALLPAPER and the mode as {mode} / $DMS_MODE.": {
-    "Run an external command on each wallpaper change and merge its JSON palette into matugen under a namespace, so templates can use e.g. {{name.color0}}. The command receives the wallpaper as {image} / $DMS_WALLPAPER and the mode as {mode} / $DMS_MODE.": "Ruli eksteran komandon ĉe ĉiu ŝanĝo de fonbildo kaj kunfandi ĝian JSON-paletron en matugen sub nomspaco, tiel ke ŝablonoj povas uzi ekz. {{name.color0}}. La komando ricevas la fonbildon kiel {image} / $DMS_WALLPAPER kaj la reĝimon kiel {mode} / $DMS_MODE."
+  "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": {
+    "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": ""
   },
   "Run full sync": {
     "Run full sync": "Ruli plenan sinkronigon"
@@ -6919,6 +7099,12 @@
   },
   "Runs in a terminal.": {
     "Runs in a terminal.": "Ruliĝas en terminalo."
+  },
+  "Runs programs on your computer": {
+    "Runs programs on your computer": ""
+  },
+  "Runs shell commands": {
+    "Runs shell commands": ""
   },
   "S": {
     "S": "S"
@@ -6974,6 +7160,9 @@
   "Save password": {
     "Save password": "Konservi pasvorton"
   },
+  "Save your work first. Open apps will close.": {
+    "Save your work first. Open apps will close.": ""
+  },
   "Saved": {
     "Saved": "Konservita"
   },
@@ -6989,11 +7178,26 @@
   "Saved networks": {
     "Saved networks": "Konservitaj retoj"
   },
+  "Saves its own settings": {
+    "Saves its own settings": ""
+  },
+  "Saves its state": {
+    "Saves its state": ""
+  },
   "Saving...": {
     "Saving...": "Konservante..."
   },
   "Scale": {
     "Scale": "Skalo"
+  },
+  "Scale battery level to charge limit": {
+    "Scale battery level to charge limit": ""
+  },
+  "Scale low and critical alert thresholds": {
+    "Scale low and critical alert thresholds": ""
+  },
+  "Scale the displayed battery level to the configured charge limit": {
+    "Scale the displayed battery level to the configured charge limit": ""
   },
   "Scan": {
     "Scan": "Skani"
@@ -7100,6 +7304,9 @@
   "Secondary Container": {
     "Secondary Container": "Malĉefa Ujo"
   },
+  "Section dividers": {
+    "Section dividers": ""
+  },
   "Sections": {
     "Sections": "Sekcioj"
   },
@@ -7108,9 +7315,6 @@
   },
   "Security": {
     "Security": "Sekureco"
-  },
-  "Security key": {
-    "Security key": "Sekurecŝlosilo"
   },
   "Security key (%1)": {
     "Security key (%1)": "Sekurecŝlosilo (%1)"
@@ -7150,6 +7354,9 @@
   },
   "Select Dock Launcher Logo": {
     "Select Dock Launcher Logo": "Elekti emblemon de dok-lanĉilo"
+  },
+  "Select Dot Icon": {
+    "Select Dot Icon": ""
   },
   "Select ICC Profile": {
     "Select ICC Profile": "Elekti ICC-profilon"
@@ -7255,6 +7462,9 @@
   },
   "Set notification rules": {
     "Set notification rules": "Agordi sciigajn regulojn"
+  },
+  "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": {
+    "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": ""
   },
   "Set under Theme & colors, Derived color": {
     "Set under Theme & colors, Derived color": "Agordita sub Etoso kaj koloroj, Derivita koloro"
@@ -7375,6 +7585,9 @@
   },
   "Show discharge rate": {
     "Show discharge rate": "Montri malŝargrapidon"
+  },
+  "Show every author": {
+    "Show every author": ""
   },
   "Show filename": {
     "Show filename": "Montri dosiernomon"
@@ -7580,6 +7793,9 @@
   "Slanted": {
     "Slanted": "Oblikva"
   },
+  "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": {
+    "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": ""
+  },
   "Slideout": {
     "Slideout": "Glitilo"
   },
@@ -7615,6 +7831,9 @@
   },
   "Soft square": {
     "Soft square": "Milda kvadrato"
+  },
+  "Software dimming": {
+    "Software dimming": ""
   },
   "Software updates": {
     "Software updates": "Programaraj ĝisdatigoj"
@@ -7663,6 +7882,9 @@
   },
   "Spacing": {
     "Spacing": "Interspaco"
+  },
+  "Spacious": {
+    "Spacious": ""
   },
   "Speaker settings": {
     "Speaker settings": "Laŭtparolilaj agordoj"
@@ -7874,8 +8096,14 @@
   "Switch layout shortcut": {
     "Switch layout shortcut": "Fulmklavo por ŝanĝi aranĝon"
   },
+  "Switch to media when playback starts": {
+    "Switch to media when playback starts": ""
+  },
   "Switches to power saver at the low battery threshold": {
     "Switches to power saver at the low battery threshold": "Ŝanĝas al energiŝparilo ĉe la sojlo de malalta baterio"
+  },
+  "Symbol": {
+    "Symbol": ""
   },
   "Sync": {
     "Sync": "Sinkronigi"
@@ -8012,14 +8240,8 @@
   "Terminal additional parameters": {
     "Terminal additional parameters": "Finaj kromaj parametroj"
   },
-  "Terminal fallback failed. Install a supported terminal emulator or run 'dms auth sync' manually.": {
-    "Terminal fallback failed. Install a supported terminal emulator or run 'dms auth sync' manually.": "Terminala retropaŝo malsukcesis. Instalu subtenatan terminal-imitilon aŭ lanĉu 'dms auth sync' mane."
-  },
-  "Terminal fallback failed. Install one of the supported terminal emulators or run 'dms-greeter sync' manually.": {
-    "Terminal fallback failed. Install one of the supported terminal emulators or run 'dms-greeter sync' manually.": "Terminala retropaŝo malsukcesis. Instalu unu el la subtenataj terminalaj imutiloj aŭ rulu 'dms-greeter sync' permane."
-  },
-  "Terminal fallback failed. Install one of the supported terminal emulators or run 'dms-greeter unlink' manually.": {
-    "Terminal fallback failed. Install one of the supported terminal emulators or run 'dms-greeter unlink' manually.": "Terminala retropaŝo malsukcesis. Instalu unu el la subtenataj terminalaj imutiloj aŭ rulu 'dms-greeter unlink' permane."
+  "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": {
+    "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": ""
   },
   "Terminal fallback opened. Complete authentication there; it will close automatically when done.": {
     "Terminal fallback opened. Complete authentication there; it will close automatically when done.": "Terminala retropaŝo malfermiĝis. Plenumu aŭtentigon tie; ĝi fermiĝos aŭtomate kiam finite."
@@ -8060,11 +8282,14 @@
   "Text style": {
     "Text style": "Teksta stilo"
   },
+  "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": {
+    "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": ""
+  },
   "The Aqueous operation failed.": {
     "The Aqueous operation failed.": "La operacio de Aqueous malsukcesis."
   },
-  "The DMS_SOCKET environment variable is not set or the socket is unavailable. Automated plugin management requires the DMS_SOCKET.": {
-    "The DMS_SOCKET environment variable is not set or the socket is unavailable. Automated plugin management requires the DMS_SOCKET.": "La media variablo DMS_SOCKET ne estas agordita aŭ la kontaktskatolo ne estas disponebla. Aŭtomata mastrumado de kromprogramoj postulas la DMS_SOCKET."
+  "The Control Center opens at the cursor instead of its widget": {
+    "The Control Center opens at the cursor instead of its widget": ""
   },
   "The Default action only overrides priority": {
     "The Default action only overrides priority": "La defaŭlta ago nur superregas prioritaton"
@@ -8072,14 +8297,17 @@
   "The Island holds this edge on a display this bar covers, so the bar stays hidden there": {
     "The Island holds this edge on a display this bar covers, so the bar stays hidden there": "La Insulo okupas ĉi tiun randon sur ekrano kiun ĉi tiu breto kovras, tial la breto restas kaŝita tie"
   },
+  "The Island takes its place on this bar": {
+    "The Island takes its place on this bar": ""
+  },
   "The WiFi adapter could not start access point mode.": {
     "The WiFi adapter could not start access point mode.": "La vifia adaptilo ne povis startigi alirpunktan reĝimon."
   },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "La sago indikas la direkton en kiu la vento blovas. La etikedo montras de kie ĝi venas."
   },
-  "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (qt5ct.conf|qt6ct.conf|qtengine/config.json and ~/.config/gtk-3.0|gtk-4.0).": {
-    "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (qt5ct.conf|qt6ct.conf|qtengine/config.json and ~/.config/gtk-3.0|gtk-4.0).": "La subaj agordoj modifos viajn agordojn de GTK kaj Qt. Se vi volas konservi viajn nunajn agordojn, bonvolu sekurkopii ilin (qt5ct.conf|qt6ct.conf|qtengine/config.json kaj ~/.config/gtk-3.0|gtk-4.0)."
+  "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": {
+    "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": ""
   },
   "The compositor session changed. Discard this edit before starting a new one.": {
     "The compositor session changed. Discard this edit before starting a new one.": "La kunmetila seanco ŝanĝiĝis. Forĵetu ĉi tiun redakton antaŭ ol komenci novan."
@@ -8095,9 +8323,6 @@
   },
   "The fill shows today's precipitation probability.": {
     "The fill shows today's precipitation probability.": "La plenigo montras la hodiaŭan precipitaĵan probablon."
-  },
-  "The greeter bundled with DMS is active (archinstall setup). It keeps working as is, but syncing theme and settings needs the standalone greeter. Install greetd-dms-greeter-bin from the AUR, then run Sync to migrate the login screen.": {
-    "The greeter bundled with DMS is active (archinstall setup). It keeps working as is, but syncing theme and settings needs the standalone greeter. Install greetd-dms-greeter-bin from the AUR, then run Sync to migrate the login screen.": "La salutekrano kunpakita kun DMS estas aktiva (agordo de archinstall). Ĝi plu funkcias tiel, sed sinkronigo de etoso kaj agordoj bezonas la memstaran salutekranon. Instalu greetd-dms-greeter-bin el AUR, poste rulu Sync por migri la salutekranon."
   },
   "The highlighted marker shows the UV category: low, moderate, high, very high, or extreme.": {
     "The highlighted marker shows the UV category: low, moderate, high, very high, or extreme.": "La emfazita markilo montras la UV-kategorion: malalta, modera, alta, tre alta, aŭ ekstrema."
@@ -8186,8 +8411,8 @@
   "Themes": {
     "Themes": "Etosoj"
   },
-  "These add entries to the XDG autostart directory (~/.config/autostart/*.desktop)": {
-    "These add entries to the XDG autostart directory (~/.config/autostart/*.desktop)": "Ĉi tiuj aldonas enskribojn al la XDG-aŭtomata dosierujo (~/.config/autostart/*.desktop)"
+  "These add entries to the XDG autostart directory (%1)": {
+    "These add entries to the XDG autostart directory (%1)": ""
   },
   "They load with the next update check. Release notes are also published on GitHub.": {
     "They load with the next update check. Release notes are also published on GitHub.": "Ili ŝarĝiĝos ĉe la sekva ĝisdatigkontrolo. Eldonnotoj estas ankaŭ publikigitaj ĉe GitHub."
@@ -8201,14 +8426,14 @@
   "Third-party plugins": {
     "Third-party plugins": "Triapartaj kromprogramoj"
   },
-  "Third-party plugins are created by the community and are not officially supported by DankMaterialShell.\n\nThese plugins may pose security and privacy risks - install at your own risk.": {
-    "Third-party plugins are created by the community and are not officially supported by DankMaterialShell.\n\nThese plugins may pose security and privacy risks - install at your own risk.": "Triaj kromprogramoj estas kreitaj de la komunumo kaj ne estas oficiale subtenataj de DankMaterialShell.\n\nĈi tiuj kromprogramoj eble riskas sekurecon kaj privatecon - instalu je via propra risko."
+  "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.": {
+    "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.": ""
   },
   "This bar is the Island": {
     "This bar is the Island": "Ĉi tiu breto estas la Insulo"
   },
-  "This bind is overridden by config.kdl": {
-    "This bind is overridden by config.kdl": "Ĉi tiu klavkombino estas preterpasita de config.kdl"
+  "This bind is overridden by %1": {
+    "This bind is overridden by %1": ""
   },
   "This device": {
     "This device": "Ĉi tiu aparato"
@@ -8219,8 +8444,8 @@
   "This display does not report VRR support": {
     "This display does not report VRR support": ""
   },
-  "This install is still using hyprland.conf. Run dms setup to migrate before changing these settings.": {
-    "This install is still using hyprland.conf. Run dms setup to migrate before changing these settings.": "Ĉi tiu instalado ankoraŭ uzas hyprland.conf. Plenumu dms setup por migri antaŭ ol ŝanĝi ĉi tiujn agordojn."
+  "This install is still using %1. Run %2 to migrate before changing these settings.": {
+    "This install is still using %1. Run %2 to migrate before changing these settings.": ""
   },
   "This may take a few seconds": {
     "This may take a few seconds": "Ĉi tio eble prenos kelkajn sekundojn"
@@ -8231,8 +8456,8 @@
   "This output is disabled in the current profile": {
     "This output is disabled in the current profile": "Ĉi tiu eligo estas malŝaltita en la nuna profilo"
   },
-  "This plugin does not have 'settings_write' permission.\n\nAdd \"permissions\": [\"settings_read\", \"settings_write\"] to plugin.json": {
-    "This plugin does not have 'settings_write' permission.\n\nAdd \"permissions\": [\"settings_read\", \"settings_write\"] to plugin.json": "Ĉi tiu kromprogramo ne havas permeson 'settings_write'.\n\nAldonu \"permissions\": [\"settings_read\", \"settings_write\"] al plugin.json"
+  "This plugin does not have '%1' permission.\n\nAdd %2 to %3": {
+    "This plugin does not have '%1' permission.\n\nAdd %2 to %3": ""
   },
   "This system cannot link settings live. Sync again after changing them.": {
     "This system cannot link settings live. Sync again after changing them.": "Ĉi tiu sistemo ne povas ligi agordojn vive. Sinkronigu denove post ŝanĝo de ili."
@@ -8339,11 +8564,11 @@
   "To Full": {
     "To Full": "Ĝis plena"
   },
-  "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (greetd-flexiserver / GDM / LightDM).": {
-    "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (greetd-flexiserver / GDM / LightDM).": "Por ensaluti kiel malsama uzanto, elsalutu kaj elektu la konton el la salutilo. "
+  "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": {
+    "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": ""
   },
-  "To use this DMS bind, remove or change the keybind in your config.kdl": {
-    "To use this DMS bind, remove or change the keybind in your config.kdl": "Por uzi ĉi tiun DMS-klavkombinon, forigu aŭ ŝanĝu la klavkombinon en via config.kdl"
+  "To use this DMS bind, remove or change the keybind in your %1": {
+    "To use this DMS bind, remove or change the keybind in your %1": ""
   },
   "Toast": {
     "Toast": "Sciigeto"
@@ -8398,6 +8623,9 @@
   },
   "Tools": {
     "Tools": "Iloj"
+  },
+  "Tooltip": {
+    "Tooltip": ""
   },
   "Top": {
     "Top": "Supre"
@@ -8458,6 +8686,9 @@
   },
   "Tray icon tint": {
     "Tray icon tint": "Nuanco de pleto-piktogramoj"
+  },
+  "Trending": {
+    "Trending": ""
   },
   "Trigger": {
     "Trigger": "Aktivigilo"
@@ -8687,6 +8918,15 @@
   "Uptime": {
     "Uptime": "Lanĉtempo"
   },
+  "Upvote on GitHub": {
+    "Upvote on GitHub": ""
+  },
+  "Upvote removed": {
+    "Upvote removed": ""
+  },
+  "Upvoted on GitHub": {
+    "Upvoted on GitHub": ""
+  },
   "Urgent": {
     "Urgent": "urĝa"
   },
@@ -8740,6 +8980,9 @@
   },
   "Use system PAM authentication": {
     "Use system PAM authentication": "Uzi sisteman PAM-aŭtentigon"
+  },
+  "Use the scaled battery level for alert thresholds and percentages": {
+    "Use the scaled battery level for alert thresholds and percentages": ""
   },
   "User": {
     "User": "Uzanto"
@@ -8972,11 +9215,14 @@
   "Welcome": {
     "Welcome": "Bonvenon"
   },
-  "Welcome to DankMaterialShell": {
-    "Welcome to DankMaterialShell": "Bonvenon al DankMaterialShell"
+  "Welcome to %1": {
+    "Welcome to %1": ""
   },
   "What changed": {
     "What changed": "Kio ŝanĝiĝis"
+  },
+  "What's New": {
+    "What's New": ""
   },
   "When locked": {
     "When locked": "Kiam ŝlosita"
@@ -9023,8 +9269,8 @@
   "Wi-Fi, Ethernet, VPN": {
     "Wi-Fi, Ethernet, VPN": "Wi-Fi, Eterreto, VPN"
   },
-  "WiFi QR code for ": {
-    "WiFi QR code for ": "WiFi QR-kodo por "
+  "WiFi QR code for %1": {
+    "WiFi QR code for %1": ""
   },
   "WiFi disabled": {
     "WiFi disabled": "WiFi estas malŝaltita"
@@ -9128,6 +9374,9 @@
   "Working...": {
     "Working...": "Laborante..."
   },
+  "Works here": {
+    "Works here": ""
+  },
   "Works in every submap": {
     "Works in every submap": ""
   },
@@ -9154,6 +9403,9 @@
   },
   "Write:": {
     "Write:": "Skribado:"
+  },
+  "Writes to your files": {
+    "Writes to your files": ""
   },
   "X axis": {
     "X axis": "Akso X"
@@ -9190,9 +9442,6 @@
   },
   "You have unsaved changes. Save before continuing?": {
     "You have unsaved changes. Save before continuing?": "Vi havas nekonservitajn ŝanĝojn. Ĉu konservi antaŭ ol daŭrigi?"
-  },
-  "You need to set one of:\nQT_QPA_PLATFORMTHEME=gtk3 OR\nQT_QPA_PLATFORMTHEME=qt6ct OR\nQT_QPA_PLATFORMTHEME=qtengine\nas environment variables, and then restart the shell.\n\nOnly qt6ct requires qt6ct-kde to be installed.": {
-    "You need to set one of:\nQT_QPA_PLATFORMTHEME=gtk3 OR\nQT_QPA_PLATFORMTHEME=qt6ct OR\nQT_QPA_PLATFORMTHEME=qtengine\nas environment variables, and then restart the shell.\n\nOnly qt6ct requires qt6ct-kde to be installed.": "Vi devas agordi unu el:\nQT_QPA_PLATFORMTHEME=gtk3 AŬ\nQT_QPA_PLATFORMTHEME=qt6ct AŬ\nQT_QPA_PLATFORMTHEME=qtengine\nkiel mediajn variablojn, kaj poste restartigi la ŝelon.\n\nNur qt6ct postulas ke qt6ct-kde estu instalita."
   },
   "You'll enter your password at the greeter after the next reboot.": {
     "You'll enter your password at the greeter after the next reboot.": "Vi enigos vian pasvorton ĉe la salutilo post la sekva rekomenco."
@@ -9263,14 +9512,14 @@
   "checked just now": {
     "checked just now": "kontrolita ĵus"
   },
+  "copy link": {
+    "copy link": ""
+  },
   "deprecated": {
     "deprecated": "malrekomendita"
   },
   "detached": {
     "detached": "deigita"
-  },
-  "dgop not available": {
-    "dgop not available": "dgop ne disponeblas"
   },
   "direct": {
     "direct": "senpera"
@@ -9281,8 +9530,11 @@
   "display rotation option": {
     "Normal": "Normala"
   },
-  "dms-greeter is not installed. Install the dms-greeter package to manage the greeter.": {
-    "dms-greeter is not installed. Install the dms-greeter package to manage the greeter.": "dms-greeter ne estas instalita. Instalu la pakaĵon dms-greeter por mastrumi la salutekranon."
+  "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural": {
+    "%1 days": "",
+    "%1 hours": "",
+    "%1 minutes": "",
+    "%1 seconds": ""
   },
   "e.g. /usr/bin/my-script --flag": {
     "e.g. /usr/bin/my-script --flag": "ekz. "
@@ -9341,9 +9593,6 @@
   "loginctl integration": {
     "loginctl integration": "Integriĝo kun loginctl"
   },
-  "loginctl not available - lock integration requires DMS socket connection": {
-    "loginctl not available - lock integration requires DMS socket connection": "loginctl ne disponeblas - ŝlos-integriĝo postulas DMS-kontaktskatolan konekton"
-  },
   "mango: config reloaded": {
     "mango: config reloaded": "mango: agordo reŝargita"
   },
@@ -9356,17 +9605,8 @@
   "mangowc GitHub": {
     "mangowc GitHub": "GitHub de mangowc"
   },
-  "matugen not available or disabled - cannot apply %1 colors": {
-    "matugen not available or disabled - cannot apply %1 colors": "matugen ne estas disponebla aŭ estas malebligita - ne eblas apliki kolorojn de %1"
-  },
-  "matugen not found - install matugen package for dynamic theming": {
-    "matugen not found - install matugen package for dynamic theming": "matugen ne trovita - instalu pakaĵon matugen por dinamika etosigo"
-  },
   "missing program": {
     "Requires %1": "Postulas %1"
-  },
-  "mpris-proxy is running and will create duplicate Bluetooth players. Disable it with: systemctl --user disable --now mpris-proxy.service": {
-    "mpris-proxy is running and will create duplicate Bluetooth players. Disable it with: systemctl --user disable --now mpris-proxy.service": "mpris-proxy funkcias kaj kreos duoblajn Bluetooth-ludilojn. Malebligu ĝin per: systemctl --user disable --now mpris-proxy.service"
   },
   "ms": {
     "ms": "ms"
@@ -9388,9 +9628,6 @@
   },
   "niri shortcuts config": {
     "niri shortcuts config": "agordo de niri-mallongigoj"
-  },
-  "niri/dms Discord": {
-    "niri/dms Discord": "Discord de niri/dms"
   },
   "niri: config reloaded": {
     "niri: config reloaded": "niri: agordo reŝargita"
@@ -9419,9 +9656,6 @@
   "primary network connection label": {
     "Primary": "Ĉefa"
   },
-  "procs": {
-    "procs": "proc."
-  },
   "pt": {
     "pt": "pt"
   },
@@ -9436,6 +9670,9 @@
   },
   "remote": {
     "remote": "fora"
+  },
+  "report a problem": {
+    "report a problem": ""
   },
   "reviewed": {
     "reviewed": "reviziita"

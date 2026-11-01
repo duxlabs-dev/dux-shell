@@ -45,6 +45,8 @@ Item {
     required property Component wallpaperExpandedComponent
     required property Component weatherCompactComponent
     required property Component weatherExpandedComponent
+    required property Component wellbeingCompactComponent
+    required property Component wellbeingExpandedComponent
     required property Component systemCompactComponent
     required property Component systemExpandedComponent
     required property Component notificationCompactComponent
@@ -136,31 +138,21 @@ Item {
             "launcher": launcherExpandedLoader,
             "wallpaper": wallpaperExpandedLoader,
             "weather": weatherExpandedLoader,
+            "wellbeing": wellbeingExpandedLoader,
             "notificationcenter": notificationCenterExpandedLoader,
             "clipboard": clipboardExpandedLoader,
             "powermenu": powerMenuExpandedLoader,
             "controlcenter": controlCenterExpandedLoader
         })
 
+    // Faces load async and stay disabled until half faded in, so ExpandedFace calls this again on each ready edge.
     function requestActivityFocus() {
-        if (root.activityId === "launcher" && launcherExpandedLoader.active) {
-            // Reserve focus until the launcher is ready.
-            root.refocusLauncher();
-            return true;
-        }
-        const face = root.focusableFaces[root.activityId]?.item;
-        if (!face || typeof face.focusFace !== "function")
-            return false;
-        return face.focusFace() === true;
-    }
-
-    function refocusLauncher() {
-        if (root.activityId !== "launcher" || !root.controller.keyboardDismissRequested || !launcherExpandedLoader.enabled)
+        if (!root.controller.keyboardDismissRequested)
             return;
-        const face = launcherExpandedLoader.item;
-        if (!face || face.activeFocus)
+        const face = root.focusableFaces[root.activityId];
+        if (!face?.enabled || !face.item || face.item.activeFocus)
             return;
-        face.focusFace();
+        face.item.focusFace?.();
     }
 
     function latchHomeExpanded() {
@@ -217,10 +209,11 @@ Item {
     component CompactFace: Loader {
         required property string activity
         required property Component face
-        readonly property var target: root.resolveTarget(root.controller.compactTargetFor(activity))
+        // A free face only centres in the island, so it skips the anchor-resolved slot every drag event would rebuild.
+        readonly property var target: root.freeMode ? root.controller.compactTargetFor(activity) : root.resolveTarget(root.controller.compactTargetFor(activity))
         readonly property bool isVertical: root.controller.isVertical
-        readonly property real alongPos: !active ? 0 : Math.round(root.slotAlong(target) + root.controller.stableLeadingLength) - Math.round(isVertical ? root.islandY : root.islandX)
-        readonly property real crossPos: !active ? 0 : Math.round(root.slotCross(target)) - Math.round(isVertical ? root.islandX : root.islandY)
+        readonly property real alongPos: !active || root.freeMode ? 0 : Math.round(root.slotAlong(target) + root.controller.stableLeadingLength) - Math.round(isVertical ? root.islandY : root.islandX)
+        readonly property real crossPos: !active || root.freeMode ? 0 : Math.round(root.slotCross(target)) - Math.round(isVertical ? root.islandX : root.islandY)
         readonly property bool followsBody: root.followsCompactBody && activity === root.activityId
         readonly property real bodySpan: Math.max(root.controller.compactFaceThickness, Math.min(Math.max(root.controller.mediaCompactMaxLength, (isVertical ? target.height : target.width) - root.controller.stableSlotsLength), (isVertical ? parent.height : parent.width) - root.controller.stableSlotsLength))
         readonly property real bodyStart: root.controller.stableLeadingLength + Math.max(0, ((isVertical ? parent.height : parent.width) - root.controller.stableSlotsLength - bodySpan) / 2)
@@ -229,6 +222,7 @@ Item {
         y: followsBody ? (isVertical ? bodyStart : crossPos) : root.freeMode ? (isVertical ? Math.round((parent.height - target.height) / 2 + root.controller.stableLeadingLength) : crossPos) : (isVertical ? alongPos : crossPos)
         width: isVertical ? target.width : followsBody ? bodySpan : Math.max(root.controller.compactFaceThickness, target.width - root.controller.stableSlotsLength)
         height: isVertical ? followsBody ? bodySpan : Math.max(root.controller.compactFaceThickness, target.height - root.controller.stableSlotsLength) : target.height
+
         asynchronous: false
         sourceComponent: root.compactFaceOverride && root.controller.usesDotFace(activity) ? root.compactFaceOverride : face
         opacity: !active ? 0 : root.controller.isSystemActivity(activity) ? root.systemOpacity(root.compactOpacity) : root.compactOpacity(activity)
@@ -240,11 +234,13 @@ Item {
     component ExpandedFace: Loader {
         required property string activity
         readonly property var target: root.controller.expandedTargetFor(activity)
-        readonly property var slot: root.resolveTarget(target)
+        // A hidden face stays put, so a kept-alive sheet is not re-laid out on every move of the pill.
+        readonly property bool placed: active && visible
+        readonly property var slot: placed ? root.resolveTarget(target) : target
         readonly property bool isVertical: root.controller.isVertical
         readonly property real inset: root.controller.farEdge ? 0 : root.expandedInset
-        readonly property real alongPos: !active ? 0 : Math.round(root.slotAlong(slot)) - Math.round(isVertical ? root.islandY : root.islandX)
-        readonly property real crossPos: !active ? 0 : Math.round(root.slotCross(slot)) - Math.round(isVertical ? root.islandX : root.islandY) + inset
+        readonly property real alongPos: !placed ? 0 : Math.round(root.slotAlong(slot)) - Math.round(isVertical ? root.islandY : root.islandX)
+        readonly property real crossPos: !placed ? 0 : Math.round(root.slotCross(slot)) - Math.round(isVertical ? root.islandX : root.islandY) + inset
 
         x: isVertical ? crossPos : alongPos
         y: isVertical ? alongPos : crossPos
@@ -255,6 +251,14 @@ Item {
         opacity: !active ? 0 : root.controller.isSystemActivity(activity) ? root.systemOpacity(root.expandedOpacity) : root.expandedOpacity(activity)
         visible: opacity > 0.001
         enabled: opacity >= 0.5
+        onEnabledChanged: {
+            if (enabled && activity === root.activityId)
+                root.requestActivityFocus();
+        }
+        onItemChanged: {
+            if (item && activity === root.activityId)
+                root.requestActivityFocus();
+        }
     }
 
     CompactFace {
@@ -315,14 +319,6 @@ Item {
         active: root.controller.visualsRequested("launcher")
         asynchronous: true
         sourceComponent: root.launcherExpandedComponent
-        onEnabledChanged: {
-            if (enabled)
-                root.refocusLauncher();
-        }
-        onItemChanged: {
-            if (item)
-                root.refocusLauncher();
-        }
     }
 
     CompactFace {
@@ -367,6 +363,21 @@ Item {
         active: root.controller.visualsRequested("weather")
         asynchronous: true
         sourceComponent: root.weatherExpandedComponent
+    }
+
+    CompactFace {
+        active: root.surfaceActive("wellbeing")
+        activity: "wellbeing"
+        face: root.wellbeingCompactComponent
+    }
+
+    ExpandedFace {
+        id: wellbeingExpandedLoader
+
+        activity: "wellbeing"
+        active: root.controller.visualsRequested("wellbeing")
+        asynchronous: true
+        sourceComponent: root.wellbeingExpandedComponent
     }
 
     CompactFace {

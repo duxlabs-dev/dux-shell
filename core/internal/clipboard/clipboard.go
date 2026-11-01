@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/AvengeMedia/dankgo/wayland/ext_data_control"
-	"github.com/AvengeMedia/dankgo/wlclipboard"
+	"github.com/duxlabs-dev/dux-go/wayland/ext_data_control"
+	"github.com/duxlabs-dev/dux-go/wlclipboard"
 )
 
 const envServe = "_DMS_CLIPBOARD_SERVE"

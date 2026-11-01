@@ -7,12 +7,14 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 import "../DCommon/Common/MaterialWallpaper.js" as Art
+import "../Common/WallpaperFormats.js" as WallpaperFormats
 
 DContextMenu {
     id: root
 
     property bool settingsExpanded: false
     property var stripItems: []
+    property string widgetInstanceId: ""
 
     readonly property int stripCount: 4
     readonly property real stripUnit: Theme.listItemHeight
@@ -29,31 +31,38 @@ DContextMenu {
 
     layerNamespace: "dms:desktop-context-menu"
     keyboardNavigable: true
-    itemHeight: Theme.listItemHeight
     itemFontSize: Theme.fontSizeMedium
     minMenuWidth: stripUnit * (stripCount + 1) + Theme.spacingS * (stripCount + 1)
 
     menuItems: {
-        const items = [
+        const instanceId = widgetInstanceId;
+        const items = instanceId === "" ? [] : [
             {
                 type: "item",
-                icon: "edit",
-                text: I18n.tr("Edit widgets"),
-                action: () => DesktopWidgetRegistry.startEditing(root.targetScreen, false)
+                icon: "tune",
+                text: I18n.tr("Widget settings"),
+                action: () => DesktopWidgetRegistry.editOptions(root.targetScreen, instanceId)
             },
             {
-                type: "item",
-                icon: "extension",
-                text: I18n.tr("Plugins"),
-                action: () => PopoutService.openSettingsWithTab("plugins")
-            },
-            {
-                type: "item",
-                icon: "palette",
-                text: I18n.tr("Wallpaper & colors"),
-                action: () => PopoutService.openSettingsWithTab("personalization")
+                type: "separator"
             }
         ];
+        items.push({
+            type: "item",
+            icon: "edit",
+            text: I18n.tr("Edit widgets"),
+            action: () => DesktopWidgetRegistry.startEditing(root.targetScreen, false)
+        }, {
+            type: "item",
+            icon: "extension",
+            text: I18n.tr("Plugins"),
+            action: () => PopoutService.openSettingsWithTab("plugins")
+        }, {
+            type: "item",
+            icon: "palette",
+            text: I18n.tr("Wallpaper & colors"),
+            action: () => PopoutService.openSettingsWithTab("personalization")
+        });
         if (wallpaperDir || materialWallpaper)
             items.push({
                 type: "component",
@@ -68,6 +77,7 @@ DContextMenu {
         property string icon
         property string text
         property string trailingIcon
+        property real indent
         property bool keepOpen
         property bool hidden
         property var action
@@ -86,6 +96,7 @@ DContextMenu {
         id: allSettingsEntry
         icon: "tune"
         text: I18n.tr("All settings")
+        indent: Theme.spacingS
         hidden: !root.settingsExpanded
         action: () => PopoutService.openSettings()
     }
@@ -94,6 +105,7 @@ DContextMenu {
         id: desktopWidgetsEntry
         icon: "widgets"
         text: I18n.tr("Desktop widgets")
+        indent: Theme.spacingS
         hidden: !root.settingsExpanded
         action: () => PopoutService.openSettingsWithTab("desktop_widgets")
     }
@@ -102,16 +114,24 @@ DContextMenu {
         id: displaysEntry
         icon: "monitor"
         text: I18n.tr("Displays")
+        indent: Theme.spacingS
         hidden: !root.settingsExpanded
         action: () => PopoutService.openSettingsWithTab("displays")
     }
 
-    onBackdropRightClicked: (x, y) => open(targetScreen, x, y, false)
+    onBackdropRightClicked: (x, y) => openForWidget(targetScreen, x, y, "")
     onRenderActiveChanged: {
         settingsExpanded = false;
         stripItems = renderActive && materialWallpaper ? leadWithCurrent(presetItems()) : [];
+        if (!renderActive)
+            widgetInstanceId = "";
     }
     onWallpaperDirChanged: stripItems = []
+
+    function openForWidget(screen, x, y, instanceId) {
+        widgetInstanceId = instanceId;
+        open(screen, x, y, false);
+    }
 
     function pick(item) {
         if (item.path) {
@@ -171,7 +191,7 @@ DContextMenu {
                 showDirs: false
                 showDotAndDotDot: false
                 caseSensitive: false
-                nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp", "*.jxl", "*.avif", "*.heif", "*.exr", "*.svg"]
+                nameFilters: WallpaperFormats.nameFilters(true)
                 folder: "file://" + root.wallpaperDir.split("/").map(s => encodeURIComponent(s)).join("/")
                 onStatusChanged: {
                     if (folderModel.status === FolderListModel.Ready)
@@ -186,8 +206,9 @@ DContextMenu {
 
         Item {
             DCarousel {
+                x: root.menuPadding
                 y: Theme.spacingXS
-                width: parent.width
+                width: parent.width - root.menuPadding * 2
                 height: root.stripUnit * 2
                 preferredItemWidth: width / 2
                 itemRadius: Theme.cornerRadiusM
@@ -212,7 +233,7 @@ DContextMenu {
                             id: imageThumb
 
                             CachingImage {
-                                imagePath: thumb.modelData.path
+                                imagePath: VideoWallpaperService.imageFor(thumb.modelData.path)
                                 maxCacheSize: 256
                                 animate: false
                             }

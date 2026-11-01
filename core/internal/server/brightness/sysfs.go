@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 )
 
 func NewSysfsBackend() (*SysfsBackend, error) {

@@ -40,7 +40,7 @@ Item {
     }
 
     function registryThemeDir(theme) {
-        return Quickshell.env("HOME") + "/.config/DankMaterialShell/themes/" + (theme.sourceDir || theme.id);
+        return Quickshell.env("HOME") + "/.config/dms/themes/" + (theme.sourceDir || theme.id);
     }
     Component.onCompleted: {
         if (DMSService.dmsAvailable)
@@ -163,7 +163,10 @@ Item {
                                     break;
                                 case 1:
                                     if (ToastService.wallpaperErrorStatus === "matugen_missing" || ToastService.wallpaperErrorStatus === "error") {
-                                        ToastService.showError(ToastService.wallpaperErrorStatus === "matugen_missing" ? I18n.tr("matugen not found - install matugen package for dynamic theming", "matugen error") : I18n.tr("Wallpaper processing failed - check wallpaper path", "wallpaper error"));
+                                        if (ToastService.wallpaperErrorStatus === "matugen_missing")
+                                            ToastService.showError(I18n.tr("%1 not found", "missing program, %1 is a program name").arg("matugen"), I18n.tr("Install the %1 package for dynamic theming", "matugen installation hint, %1 is the package name").arg("matugen"));
+                                        else
+                                            ToastService.showError(I18n.tr("Wallpaper processing failed - check wallpaper path", "wallpaper error"));
                                         break;
                                     }
                                     Theme.switchThemeCategory("dynamic", Theme.dynamic);
@@ -224,7 +227,7 @@ Item {
                             Image {
                                 anchors.fill: parent
                                 source: {
-                                    var wp = Theme.wallpaperPath;
+                                    var wp = VideoWallpaperService.imageFor(Theme.wallpaperPath);
                                     if (!wp || wp === "" || wp.startsWith("#"))
                                         return "";
                                     if (wp.startsWith("file://"))
@@ -284,7 +287,7 @@ Item {
                                 if (ToastService.wallpaperErrorStatus === "error")
                                     return I18n.tr("Wallpaper processing failed", "wallpaper processing error");
                                 if (ToastService.wallpaperErrorStatus === "matugen_missing")
-                                    return I18n.tr("Install matugen package for dynamic theming", "matugen installation hint");
+                                    return I18n.tr("Install the %1 package for dynamic theming", "matugen installation hint, %1 is the package name").arg("matugen");
                                 if (Theme.wallpaperPath)
                                     return Theme.wallpaperPath;
                                 return I18n.tr("Dynamic colors from wallpaper", "dynamic colors description");
@@ -323,7 +326,7 @@ Item {
                 settingKey: "matugenSpec"
                 text: I18n.tr("Material palette", "theme settings card title, matugen palette options")
                 enabled: Theme.matugenAvailable
-                model: ["2021", "2025", "DMS"]
+                model: ["2021", "2025", "dms"]
                 currentIndex: SettingsData.matugenSpec === "dms" ? 2 : SettingsData.matugenSpec === "2025" ? 1 : 0
                 onSelectionChanged: (index, selected) => {
                     if (!selected)
@@ -672,7 +675,7 @@ Item {
                             property real _maxPerItem: _count > 1 ? (parent.width - (_count - 1) * spacing) / _count : parent.width
                             buttonPadding: _maxPerItem < 55 ? Theme.spacingXS : (_maxPerItem < 75 ? Theme.spacingS : Theme.spacingL)
                             minButtonWidth: Math.min(_maxPerItem < 55 ? 28 : (_maxPerItem < 75 ? 44 : 64), Math.max(28, Math.floor(_maxPerItem)))
-                            textSize: _maxPerItem < 55 ? Theme.fontSizeSmall - 2 : (_maxPerItem < 75 ? Theme.fontSizeSmall : Theme.fontSizeMedium)
+                            textSize: _maxPerItem < 55 ? Theme.fontSizeXSmall : (_maxPerItem < 75 ? Theme.fontSizeSmall : Theme.fontSizeMedium)
                             checkEnabled: _maxPerItem >= 55
                             property int pendingIndex: -1
                             model: variantSelector.flavorNames
@@ -749,7 +752,7 @@ Item {
                             property real _maxPerItem: _count > 1 ? (parent.width - (_count - 1) * spacing) / _count : parent.width
                             buttonPadding: _maxPerItem < 55 ? Theme.spacingXS : (_maxPerItem < 75 ? Theme.spacingS : Theme.spacingL)
                             minButtonWidth: Math.min(_maxPerItem < 55 ? 28 : (_maxPerItem < 75 ? 44 : 64), Math.max(28, Math.floor(_maxPerItem)))
-                            textSize: _maxPerItem < 55 ? Theme.fontSizeSmall - 2 : (_maxPerItem < 75 ? Theme.fontSizeSmall : Theme.fontSizeMedium)
+                            textSize: _maxPerItem < 55 ? Theme.fontSizeXSmall : (_maxPerItem < 75 ? Theme.fontSizeSmall : Theme.fontSizeMedium)
                             checkEnabled: _maxPerItem >= 55
                             property int pendingIndex: -1
                             model: variantSelector.variantNames

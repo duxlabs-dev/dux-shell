@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/config"
-	"github.com/AvengeMedia/DankMaterialShell/core/pkg/ipp"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/pkg/ipp"
 )
 
 func isAuthError(err error) bool {

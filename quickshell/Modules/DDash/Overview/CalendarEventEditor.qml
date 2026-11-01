@@ -32,7 +32,7 @@ Column {
     property bool saving: false
 
     readonly property var _cals: CalendarService.writableCalendars()
-    readonly property var _remLabels: [I18n.tr("No reminder"), I18n.tr("At start"), I18n.tr("%1 before", "calendar reminder option, %1 is a duration such as 15 minutes").arg(I18n.duration(300)), I18n.tr("%1 before", "calendar reminder option, %1 is a duration such as 15 minutes").arg(I18n.duration(600)), I18n.tr("%1 before", "calendar reminder option, %1 is a duration such as 15 minutes").arg(I18n.duration(900)), I18n.tr("%1 before", "calendar reminder option, %1 is a duration such as 15 minutes").arg(I18n.duration(1800)), I18n.tr("%1 before", "calendar reminder option, %1 is a duration such as 15 minutes").arg(I18n.duration(3600)), I18n.tr("%1 before", "calendar reminder option, %1 is a duration such as 15 minutes").arg(I18n.duration(86400))]
+    readonly property var _remLabels: [I18n.tr("No reminder"), I18n.tr("At start"), I18n.tr("%1 before", "calendar reminder option, %1 is a duration such as 15 minutes").arg(I18n.duration(300)), I18n.tr("%1 before", "calendar reminder option, %1 is a duration such as 15 minutes").arg(I18n.duration(600)), I18n.tr("%1 before", "calendar reminder option, %1 is a duration such as 15 minutes").arg(I18n.duration(900)), I18n.tr("%1 before", "calendar reminder option, %1 is a duration such as 15 minutes").arg(I18n.duration(1800)), I18n.tr("1 hour before", "calendar reminder option"), I18n.tr("%1 before", "calendar reminder option, %1 is a duration such as 15 minutes").arg(I18n.duration(86400))]
     readonly property var _remMins: [-1, 0, 5, 10, 15, 30, 60, 1440]
 
     spacing: Theme.spacingM

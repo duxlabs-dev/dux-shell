@@ -195,7 +195,6 @@ DFloatingWindow {
                     DSearchField {
                         id: searchField
                         width: parent.width
-                        height: Theme.fieldHeightLarge
                         textColor: Theme.surfaceText
                         font.pixelSize: Theme.fontSizeMedium
                         placeholderText: I18n.tr("Search widgets...")

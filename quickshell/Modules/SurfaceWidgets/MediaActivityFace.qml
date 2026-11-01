@@ -7,6 +7,7 @@ import qs.Modules.DBar.Widgets
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
+import "../../Common/LyricLayout.js" as LyricLayout
 
 Item {
     id: root
@@ -43,12 +44,52 @@ Item {
     }
     readonly property string minuteText: String(systemClock.date.getMinutes()).padStart(2, "0")
     property bool clockVisible: false
-    readonly property real naturalTextWidth: Math.min(Math.max(root.minTextWidth, root.titleMaxWidth), Math.max(root.minTextWidth, titleMetrics.width, root.dense ? 0 : artistMetrics.width)) + root.textGutter * 2
-    readonly property real measuredWidth: {
-        let width = Theme.spacingS + (root.artworkVisible ? root.artworkSize : 0) + (horizontalWave.retained ? (root.artworkVisible ? root.artworkWaveGap : 0) + root.cavaWidth : 0) + Theme.spacingXS + (titleSlot.retained ? root.naturalTextWidth + Theme.spacingXS : 0);
+    property bool lyricsEnabled: false
+    readonly property bool lyricsWanted: lyricsEnabled && LyricsService.allowed && !isVertical
+    readonly property bool lyricsLive: lyricsWanted && enabled && titleVisible
+    readonly property bool lyricActive: {
+        if (!lyricsLive)
+            return false;
+        const controller = LyricsService.controller;
+        if (!controller.enabled || !controller.synced)
+            return false;
+        const parts = controller.lines[controller.activeIndex]?.parts ?? [];
+        return parts.some(part => LyricLayout.hasWords(part.x));
+    }
+    property real maxLength: Infinity
+    property var lyricWidths: []
+    property real lyricWordWidth: 0
+    readonly property real titleFontSize: Theme.fontSizeSmall * root.contentScale
+    readonly property real chromeWidth: {
+        let width = Theme.spacingS + (root.artworkVisible ? root.artworkSize + root.artworkWaveGap : 0) + (horizontalWave.retained ? root.cavaWidth + Theme.spacingXS : 0) + (titleSlot.retained ? root.textGutter * 2 + Theme.spacingXS : 0);
+
         if (root.clockVisible)
             width += clockText.width + Theme.spacingXS * 2 + Theme.spacingS;
         return width;
+    }
+    readonly property real lyricWidth: LyricsService.controller.synced ? LyricLayout.pageWidth(root.lyricWidths, root.maxLength - root.chromeWidth, root.minTextWidth, root.lyricWordWidth / 2) : 0
+    readonly property real naturalTextWidth: root.lyricWidth > 0 ? root.lyricWidth : Math.min(Math.max(root.minTextWidth, root.titleMaxWidth), Math.max(root.minTextWidth, titleMetrics.width, root.dense ? 0 : artistMetrics.width))
+    readonly property real measuredWidth: root.chromeWidth + (titleSlot.retained ? root.naturalTextWidth : 0)
+
+    onLyricsWantedChanged: measureLyrics()
+
+    function measureLyrics() {
+        if (!root.lyricsWanted && root.lyricWidths.length === 0)
+            return;
+        const widths = [];
+        let words = 0;
+        for (const line of root.lyricsWanted ? LyricsService.controller.lines : []) {
+            for (const part of line.parts) {
+                if (part.background || !LyricLayout.hasWords(part.x))
+                    continue;
+                lyricMetrics.text = part.x.replace(/\s+/g, " ").trim();
+                widths.push(lyricMetrics.width);
+                words += lyricMetrics.text.split(" ").length;
+            }
+        }
+        lyricMetrics.text = "";
+        root.lyricWordWidth = words > 0 ? widths.reduce((sum, width) => sum + width, 0) / words : 0;
+        root.lyricWidths = widths;
     }
 
     implicitWidth: isVertical ? artworkSize + verticalPad * 2 : measuredWidth
@@ -67,16 +108,36 @@ Item {
     StyledTextMetrics {
         id: titleMetrics
 
-        font.pixelSize: Theme.fontSizeSmall * root.contentScale
+        font.pixelSize: root.titleFontSize
         font.weight: Theme.fontWeightMedium
         text: root.mediaModel.title
     }
 
     StyledTextMetrics {
+        id: lyricMetrics
+
+        font.pixelSize: root.titleFontSize
+        font.weight: Theme.fontWeightMedium
+        onFontChanged: root.measureLyrics()
+    }
+
+    Connections {
+        target: LyricsService.controller
+
+        function onLinesChanged() {
+            root.measureLyrics();
+        }
+    }
+
+    StyledTextMetrics {
         id: artistMetrics
 
-        font.pixelSize: Math.max(9, Theme.fontSizeSmall - 2) * root.contentScale
+        font.pixelSize: Theme.fontSizeXSmall * root.contentScale
         text: root.dense ? "" : root.mediaModel.artist
+    }
+
+    LyricsSubscription {
+        active: root.lyricsLive && root.mediaModel.available
     }
 
     SystemClock {
@@ -140,31 +201,50 @@ Item {
                 id: trackText
                 width: parent.width
                 spacing: 0
+                Item {
+                    width: parent.width
+                    height: titleText.implicitHeight
+            ScrollingText {
+                id: titleText
 
-                ScrollingText {
-                    x: root.textGutter
-                    width: parent.width - root.textGutter * 2
-                    text: root.mediaModel.title
-                    color: Theme.surfaceText
-                    font.pixelSize: Theme.fontSizeSmall * root.contentScale
-                    font.weight: Theme.fontWeightMedium
-                    active: root.enabled && root.mediaModel.playing && titleSlot.shown
-                    holdStartMs: 1600
-                    holdEndMs: 1200
-                    pxPerMs: 1 / 62.5
-                    overscroll: root.textGutter
-                }
+                x: root.textGutter
+                width: parent.width - root.textGutter * 2
+                visible: !root.lyricActive
+                text: root.mediaModel.title
+                color: Theme.surfaceText
+                font.pixelSize: Theme.fontSizeSmall * root.contentScale
+                font.weight: Theme.fontWeightMedium
+                active: root.enabled && root.mediaModel.playing && titleSlot.shown
+                holdStartMs: 1600
+                holdEndMs: 1200
+                pxPerMs: 1 / 62.5
+                overscroll: root.textGutter
+            }
 
-                StyledText {
-                    x: root.textGutter
-                    width: parent.width - root.textGutter * 2
-                    visible: !root.dense
-                    text: root.mediaModel.artist
-                    color: Theme.surfaceTextSecondary
-                    font.pixelSize: Math.max(9, Theme.fontSizeSmall - 2) * root.contentScale
-                    wrapMode: Text.NoWrap
-                    elide: Text.ElideRight
+            MediaLyricLine {
+                x: root.textGutter
+                width: parent.width - root.textGutter * 2
+                height: titleText.height
+                visible: root.lyricActive
+                controller: LyricsService.controller
+                color: Theme.surfaceText
+                font.pixelSize: titleText.font.pixelSize
+                font.weight: titleText.font.weight
+                live: root.enabled
+            }
+
                 }
+            StyledText {
+                x: root.textGutter
+                width: parent.width - root.textGutter * 2
+                visible: !root.dense
+                text: root.mediaModel.artist
+                color: Theme.surfaceTextSecondary
+                font.pixelSize: Theme.fontSizeXSmall * root.contentScale
+                wrapMode: Text.NoWrap
+                elide: Text.ElideRight
+            }
+
             }
         }
     }
@@ -190,11 +270,7 @@ Item {
                 id: clockText
 
                 anchors.centerIn: parent
-                isMonospace: false
                 text: root.timeText
-                reserveText: root.timeText.replace(/\d/g, "0")
-                width: Math.ceil(Math.max(implicitWidth, reservedWidth))
-                horizontalAlignment: Text.AlignHCenter
                 color: Theme.surfaceText
                 font.pixelSize: Theme.fontSizeSmall * root.contentScale
                 font.weight: Theme.fontWeightMedium
@@ -258,10 +334,8 @@ Item {
 
                 NumericText {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    isMonospace: false
                     text: root.hourText
                     reserveText: "00"
-                    horizontalAlignment: Text.AlignHCenter
                     color: Theme.surfaceText
                     font.pixelSize: Theme.fontSizeSmall * root.contentScale
                     font.weight: Theme.fontWeightMedium
@@ -269,10 +343,8 @@ Item {
 
                 NumericText {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    isMonospace: false
                     text: root.minuteText
                     reserveText: "00"
-                    horizontalAlignment: Text.AlignHCenter
                     color: Theme.surfaceTextMedium
                     font.pixelSize: Theme.fontSizeSmall * root.contentScale
                     font.weight: Theme.fontWeightMedium

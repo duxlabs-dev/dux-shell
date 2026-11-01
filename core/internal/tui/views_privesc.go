@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
 )
 
 func (m Model) viewSelectPrivesc() string {

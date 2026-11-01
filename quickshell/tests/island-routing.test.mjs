@@ -518,7 +518,8 @@ test("the privacy slot is a known home layout entry appended after stored ones",
     const legacy = { islandHomeLayout: [{ id: "clock" }, { id: "media", enabled: false }] };
     const ids = settings.getIslandHomeLayout(legacy).map(entry => entry.id);
     assert.ok(ids.includes("privacy"), "a stored layout gains the privacy slot");
-    assert.equal(ids.indexOf("privacy"), ids.length - 1, "new slots append after the stored order");
+    assert.ok(ids.includes("tray"), "a stored layout gains the tray slot");
+    assert.equal(ids.indexOf("tray"), ids.length - 1, "new slots append after the stored order");
 });
 
 test("power menu shortcuts open in the island before the modal", () => {

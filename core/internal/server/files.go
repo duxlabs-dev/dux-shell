@@ -3,9 +3,9 @@ package server
 import (
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
-	"github.com/AvengeMedia/dankgo/files"
-	"github.com/AvengeMedia/dankgo/syncmap"
+	"github.com/duxlabs-dev/dux-go/files"
+	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 const filesEventBuffer = 256

@@ -344,7 +344,7 @@ Item {
         const baselineDraft = editDraft;
         removeBindConfirm.showWithOptions({
             "title": I18n.tr("Remove Shortcut?"),
-            "message": KeybindsService.currentProvider === "hyprland" ? I18n.tr("Remove the shortcut %1? An unbind entry will be saved to dms/binds-user.lua so it stays removed across DMS updates.", "hyprland remove shortcut confirmation, %1 is the key combination").arg(key) : I18n.tr("Remove the shortcut %1?", "remove shortcut confirmation, %1 is the key combination").arg(key),
+            "message": KeybindsService.currentProvider === "hyprland" ? I18n.tr("Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.", "hyprland remove shortcut confirmation, %1 is the key combination, %2 the override file").arg(key).arg("dms/binds-user.lua") : I18n.tr("Remove the shortcut %1?", "remove shortcut confirmation, %1 is the key combination").arg(key),
             "confirmText": I18n.tr("Remove"),
             "confirmColor": Theme.primary,
             "onConfirm": () => {
@@ -724,7 +724,7 @@ Item {
                             StyledText {
                                 text: {
                                     if (warningBox.showLegacy)
-                                        return I18n.tr("Hyprland conf mode");
+                                        return I18n.tr("%1 not found").arg("hyprland.lua");
                                     if (warningBox.showSetup)
                                         return I18n.tr("First Time Setup");
                                     if (warningBox.showWarning)
@@ -741,7 +741,7 @@ Item {
                             StyledText {
                                 text: {
                                     if (warningBox.showLegacy)
-                                        return I18n.tr("This install is still using hyprland.conf. Run dms setup to migrate before changing these settings.");
+                                        return I18n.tr("Run %1 to create it before changing these settings.", "hyprland.lua missing warning, %1 is a command").arg("dms setup");
                                     if (warningBox.showSetup)
                                         return I18n.tr("Click 'Setup' to create %1 and add include to your compositor config.", "include setup banner, %1 is the dms config file name").arg("dms/binds");
                                     if (warningBox.showWarning) {

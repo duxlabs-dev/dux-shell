@@ -301,3 +301,291 @@ function pickOfTheDay(plugins, now) {
     const week = pickOfTheWeek(plugins, t);
     return _pick(plugins, t, "day:" + _dayNumber(t), 30, week ? week.id : "");
 }
+
+// Id of the reaction in a `gh api --include` reply (headers, blank line, JSON), 0 when there is none.
+function reactionId(output) {
+    const text = String(output || "");
+    const blank = text.search(/\r?\n\r?\n/);
+    const start = text.indexOf("{", blank < 0 ? 0 : blank);
+    if (start < 0)
+        return 0;
+    try {
+        const reply = JSON.parse(text.slice(start));
+        return reply && reply.content === "+1" && reply.id > 0 ? reply.id : 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+// "https://github.com/owner/repo/issues/12" -> "repos/owner/repo/issues/12/reactions",
+// the GitHub API path an upvote is posted to. Empty for anything else.
+function issueReactionsPath(url) {
+    const m = /^https:\/\/github\.com\/((?!\.\.?\/)[\w.-]+)\/((?!\.\.?\/)[\w.-]+)\/issues\/(\d+)\/?(?:[?#].*)?$/.exec(url || "");
+    return m ? "repos/" + m[1] + "/" + m[2] + "/issues/" + m[3] + "/reactions" : "";
+}
+
+// Votes shown for a plugin: the registry count plus what this session changed, never below zero.
+function upvoteCount(upvotes, delta) {
+    return Math.max(0, (upvotes || 0) + (delta || 0));
+}
+
+// This session's change after a vote request. A new +1 adds one; a +1 the account
+// already had is in the registry count, so it adds nothing; taking a vote back removes one.
+function nextUpvoteDelta(delta, removed, created) {
+    return (delta || 0) + (removed ? -1 : created ? 1 : 0);
+}
+
+// --- Search -----------------------------------------------------------------
+
+function _fold(text) {
+    return String(text || "").replace(/([a-z0-9])([A-Z])/g, "$1 $2").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
+// Lowercased first, so camelCase is not split: "AvengeMedia" stays "avengemedia".
+function _unsplit(text) {
+    return _fold(String(text || "").toLowerCase());
+}
+
+function _words(text) {
+    return _fold(text).split(/[^a-z0-9]+/).filter(w => w.length > 0);
+}
+
+// Matching costs grow with every word of the query, so a pasted wall of text must not freeze the shell.
+const MAX_QUERY_LENGTH = 100;
+const MAX_QUERY_WORDS = 8;
+
+function _queryWords(query) {
+    const text = String(query || "");
+    const words = _words(text.slice(0, MAX_QUERY_LENGTH));
+    // A word cut in half would match names it is not ("weather" cut to "w"); a lone word stays so it still finds nothing.
+    if (words.length > 1 && _words(text.charAt(MAX_QUERY_LENGTH)).length > 0)
+        words.pop();
+    return words.slice(0, MAX_QUERY_WORDS);
+}
+
+// The one-word form of a camelCase text, empty when it has no camelCase to undo.
+function _joined(text) {
+    const unsplit = _unsplit(text);
+    return unsplit === _fold(text) ? "" : unsplit;
+}
+
+// Edit distance, given up as soon as it is known to exceed max.
+function _distance(a, b, max) {
+    if (Math.abs(a.length - b.length) > max)
+        return max + 1;
+    let prev = [];
+    let prev2 = [];
+    for (let j = 0; j <= b.length; j++)
+        prev.push(j);
+    for (let i = 1; i <= a.length; i++) {
+        const row = [i];
+        let best = i;
+        for (let j = 1; j <= b.length; j++) {
+            let cost = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+            if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1])
+                cost = Math.min(cost, prev2[j - 2] + 1);
+            row.push(cost);
+            if (cost < best)
+                best = cost;
+        }
+        if (best > max)
+            return max + 1;
+        prev2 = prev;
+        prev = row;
+    }
+    return prev[b.length];
+}
+
+function _typos(word) {
+    return word.length < 4 ? 0 : word.length < 8 ? 1 : 2;
+}
+
+// What a query is matched against: the name first, then everything a user
+// may type to find a plugin (author, category, capabilities, dependencies).
+function _searchText(plugin) {
+    const p = plugin || {};
+    const name = [_fold(p.name), _fold(p.id), _joined(p.name), _joined(p.id)].join(" ");
+    const extra = [p.description, p.author, p.category].concat(_list(p.capabilities), _list(p.dependencies)).map(_fold).join(" ") + " " + _joined(p.author);
+    return {
+        name: name,
+        all: name + " " + extra,
+        words: (name + " " + _fold(p.category) + " " + _list(p.capabilities).map(_fold).join(" ")).split(/[^a-z0-9]+/).filter(w => w.length > 0)
+    };
+}
+
+function _nearWord(token, words, max) {
+    for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        if (_distance(token, word, max) <= max)
+            return true;
+        if (word.length > token.length && _distance(token, word.slice(0, token.length), max) <= max)
+            return true;
+    }
+    return false;
+}
+
+// A typo is forgiven only for a word no plugin contains as typed, so a correct
+// query never picks up look-alikes ("dark" does not match every "dank").
+function searchPlan(plugins, query) {
+    const tokens = _queryWords(query);
+    const texts = _list(plugins).map(_searchText);
+    return tokens.map(token => ({
+        token: token,
+        typos: texts.some(t => t.all.indexOf(token) >= 0) ? 0 : _typos(token)
+    }));
+}
+
+// 0 when the plugin does not match, higher for a better match.
+function searchRank(plugin, plan) {
+    const terms = _list(plan);
+    if (terms.length === 0)
+        return 1;
+    const text = _searchText(plugin);
+    let total = 0;
+    for (let i = 0; i < terms.length; i++) {
+        const term = terms[i];
+        if (text.name.indexOf(term.token) >= 0)
+            total += 3;
+        else if (text.all.indexOf(term.token) >= 0)
+            total += 2;
+        else if (term.typos > 0 && _nearWord(term.token, text.words, term.typos))
+            total += 1;
+        else
+            return 0;
+    }
+    return total;
+}
+
+// The plugins whose name is nearest to a query that found nothing.
+function closest(plugins, query, limit) {
+    const tokens = _queryWords(query);
+    if (tokens.length === 0)
+        return [];
+    const rows = [];
+    _list(plugins).forEach(p => {
+        const words = _words((p.name || "") + " " + (p.id || ""));
+        let total = 0;
+        for (let i = 0; i < tokens.length; i++) {
+            const max = Math.max(1, Math.floor(tokens[i].length / 2));
+            let best = max + 1;
+            for (let j = 0; j < words.length; j++) {
+                best = Math.min(best, _distance(tokens[i], words[j], max));
+                if (words[j].length > tokens[i].length)
+                    best = Math.min(best, _distance(tokens[i], words[j].slice(0, tokens[i].length), max));
+            }
+            if (best > max)
+                return;
+            total += best;
+        }
+        rows.push({
+            plugin: p,
+            distance: total
+        });
+    });
+    rows.sort((a, b) => a.distance - b.distance || (b.plugin.upvotes || 0) - (a.plugin.upvotes || 0) || String(a.plugin.id).localeCompare(String(b.plugin.id)));
+    return rows.slice(0, limit || 4).map(r => r.plugin);
+}
+
+// "Avenge Media", "AvengeMedia" and "avengemedia" are one author. Only spaces and
+// ASCII punctuation are dropped, so a name in another script keeps its letters.
+function _authorKey(author) {
+    return _unsplit(author).replace(/[\s!-/:-@[-`{-~]/g, "");
+}
+
+function byAuthor(plugins, author) {
+    const wanted = _authorKey(author);
+    if (!wanted)
+        return [];
+    return _list(plugins).filter(p => _authorKey(p.author) === wanted);
+}
+
+// --- Detail pane ------------------------------------------------------------
+
+// Permissions that reach outside the plugin's own settings, most far-reaching first.
+const _SENSITIVE_PERMISSIONS = ["shell_execute", "process", "network", "filesystem_write", "filesystem_read", "clipboard_read"];
+
+// Sensitive permissions come first.
+function sortPermissions(permissions) {
+    const rank = id => {
+        const i = _SENSITIVE_PERMISSIONS.indexOf(id);
+        return i < 0 ? _SENSITIVE_PERMISSIONS.length : i;
+    };
+    return _list(permissions).map((id, i) => ({
+            id: id,
+            i: i
+        })).sort((a, b) => rank(a.id) - rank(b.id) || a.i - b.i).map(r => r.id);
+}
+
+function permissionIsSensitive(id) {
+    return _SENSITIVE_PERMISSIONS.indexOf(id) >= 0;
+}
+
+const _DEPENDENCY_COMMANDS = {
+    "wl-clipboard": ["wl-copy"],
+    "imagemagick": ["magick", "convert"],
+    "libnotify": ["notify-send"],
+    "iproute2": ["ip"],
+    "python": ["python3", "python"],
+    "systemd": ["systemctl"],
+    "pipewire": ["pw-cli"],
+    "pulseaudio": ["pactl"],
+    "networkmanager": ["nmcli"],
+    "bluez": ["bluetoothctl"],
+    "playerctl": ["playerctl"],
+    "secret-tool": ["secret-tool"],
+    "libsecret": ["secret-tool"],
+    "tesseract": ["tesseract"],
+    "zbar": ["zbarimg", "zbarcam"],
+    "docker": ["docker", "podman"]
+};
+
+// The commands whose presence proves a dependency is installed. Empty when
+// the name is a library or a package that ships no command to look for.
+function dependencyCommands(name) {
+    const dep = String(name || "").trim().toLowerCase();
+    if (!dep)
+        return [];
+    if (_DEPENDENCY_COMMANDS[dep])
+        return _DEPENDENCY_COMMANDS[dep];
+    if (!/^[a-z0-9][a-z0-9._+-]*$/.test(dep) || /^(lib|qt[56]-|qml-|python3?-|kf[56]-|gst-|ttf-|font)/.test(dep))
+        return [];
+    return [dep];
+}
+
+// "ok", "missing" or "unknown" for each dependency, from the commands found.
+// A dependency is only "missing" once every command for it was looked up: until then it stays "unknown".
+function dependencyStates(dependencies, found, checked) {
+    const have = _list(found);
+    const done = _list(checked);
+    return _list(dependencies).map(name => {
+        const commands = dependencyCommands(name);
+        const ok = commands.some(c => have.indexOf(c) >= 0);
+        return {
+            name: name,
+            state: ok ? "ok" : commands.length > 0 && commands.every(c => done.indexOf(c) >= 0) ? "missing" : "unknown"
+        };
+    });
+}
+
+// A new-issue link on the plugin's own repository, with what a maintainer
+// asks first already filled in. Nothing is posted: the user reviews and sends.
+function issueReportUrl(plugin, info) {
+    const p = plugin || {};
+    const m = /^https:\/\/github\.com\/([\w.-]+)\/([\w.-]+?)(?:\.git)?\/?$/.exec(p.repo || "");
+    if (!m)
+        return "";
+    const env = info || {};
+    const lines = ["**Plugin:** " + (p.name || p.id || "") + (p.id ? " (`" + p.id + "`)" : "") + (p.version ? " v" + p.version : "")];
+    if (env.dms)
+        lines.push("**DMS:** " + env.dms);
+    if (env.compositor)
+        lines.push("**Compositor:** " + env.compositor);
+    lines.push("", "**What happened:**", "", "", "**What I expected:**", "");
+    return "https://github.com/" + m[1] + "/" + m[2] + "/issues/new?title=" + encodeURIComponent("[" + (p.name || p.id || "plugin") + "] ") + "&body=" + encodeURIComponent(lines.join("\n"));
+}
+
+// The page to share for a plugin: its registry thread when it has one, else its repository.
+function shareUrl(plugin) {
+    const p = plugin || {};
+    return /^https:\/\//.test(p.issueUrl || "") ? p.issueUrl : /^https:\/\//.test(p.repo || "") ? p.repo : "";
+}

@@ -202,7 +202,6 @@ DCard {
             anchors.right: limitButton.left
             anchors.rightMargin: Theme.spacingS
             anchors.verticalCenter: parent.verticalCenter
-            width: reservedWidth
             horizontalAlignment: Text.AlignRight
             reserveText: WellbeingService.formatDuration(10 * Wellbeing.secondsPerHour)
             text: WellbeingService.formatDuration(row.modelData.seconds)

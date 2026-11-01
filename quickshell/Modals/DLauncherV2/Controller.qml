@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 import qs.Common
 import qs.Services
 import "Scorer.js" as Scorer
@@ -1885,7 +1886,7 @@ Item {
     }
 
     function transformFileResult(file) {
-        return Transform.transformFileResult(file, I18n.tr("Open"), I18n.tr("Open folder"), I18n.tr("Copy path"), I18n.tr("Open in terminal"));
+        return Transform.transformFileResult(file, I18n.tr("Open"), I18n.tr("Open folder"), I18n.tr("Copy path"), I18n.tr("Open in terminal"), I18n.tr("Open with") + "…");
     }
 
     function transformClipboardEntry(entry) {
@@ -2644,7 +2645,7 @@ Item {
             sectionExpanded(sectionId);
     }
 
-    function executeSelected() {
+    function executeSelected(newInstance = false) {
         if (_searchPending) {
             _searchPending = false;
             searchDebounce.stop();
@@ -2663,10 +2664,10 @@ Item {
             }
             return;
         }
-        executeItem(selectedItem, true);
+        executeItem(selectedItem, true, newInstance);
     }
 
-    function executeItem(item, isKeyboard = false) {
+    function executeItem(item, isKeyboard = false, newInstance = false) {
         if (!item)
             return;
 
@@ -2696,7 +2697,7 @@ Item {
             } else if (item.data?.isAction) {
                 launchAppAction(item.data);
             } else {
-                launchApp(item.data);
+                launchApp(item.data, newInstance);
             }
             break;
         case "plugin":
@@ -2752,6 +2753,9 @@ Item {
             break;
         case "open_folder":
             openFolder(item.data.path);
+            break;
+        case "open_with":
+            openWith(item.data.path);
             break;
         case "copy_path":
             copyToClipboard(item.data.path);
@@ -2811,10 +2815,30 @@ Item {
         return DesktopEntries.heuristicLookup(id);
     }
 
-    function launchApp(app) {
+    function _runningToplevelFor(entry) {
+        if (!entry.id)
+            return null;
+        const toplevels = ToplevelManager.toplevels.values;
+        for (let i = 0; i < toplevels.length; i++) {
+            const appId = toplevels[i].appId;
+            if (!appId)
+                continue;
+            if (DesktopEntries.heuristicLookup(Paths.moddedAppId(appId))?.id === entry.id)
+                return toplevels[i];
+        }
+        return null;
+    }
+
+    function launchApp(app, newInstance = false) {
         var entry = _resolveDesktopEntry(app);
         if (!entry)
             return;
+        const running = SettingsData.launcherEnterAction === "focus" && !newInstance ? _runningToplevelFor(entry) : null;
+        if (running) {
+            CompositorService.activateToplevel(running);
+            AppUsageHistoryData.addAppUsage(entry);
+            return;
+        }
         SessionService.launchDesktopEntry(entry);
         AppUsageHistoryData.addAppUsage(entry);
     }
@@ -2845,6 +2869,15 @@ Item {
         if (!path)
             return;
         SessionService.openPath(path.substring(0, path.lastIndexOf("/")));
+    }
+
+    function openWith(path) {
+        if (!path)
+            return;
+        // No mimeType: it would limit the picker to declared handlers, and any app must stay pickable.
+        DMSService.appPickerRequested({
+            target: path
+        });
     }
 
     function openTerminal(path) {

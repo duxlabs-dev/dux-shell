@@ -482,7 +482,7 @@ Item {
                     readonly property bool isStopped: printerData?.state === "stopped"
 
                     width: parent?.width ?? 0
-                    spacing: Theme.groupedListGap
+                    spacing: SettingsMetrics.groupGap
 
                     SettingsRow {
                         iconName: printerDelegate.isStopped ? "print_disabled" : "print"

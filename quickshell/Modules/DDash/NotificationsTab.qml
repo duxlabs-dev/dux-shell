@@ -94,6 +94,11 @@ FocusScope {
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
+    Ref {
+        service: NotificationService
+        active: root.live
+    }
+
     onLiveChanged: {
         if (!live) {
             keyboard.reset();

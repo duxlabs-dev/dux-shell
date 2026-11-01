@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/blur"
+	"github.com/duxlabs-dev/dux-shell/core/internal/blur"
 	"github.com/spf13/cobra"
 )
 

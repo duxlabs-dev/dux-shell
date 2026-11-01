@@ -1,6 +1,8 @@
 .pragma library
 .import "../../../DCommon/Common/LayoutCodes.js" as LayoutCodes
 
+var VALID_VARIANTS = ["US", "UK", "GB", "AZERTY", "QWERTY", "Dvorak", "Colemak", "Mac", "Intl", "International"];
+
 // Overrides are keyed by whatever string would otherwise be displayed, so the same
 // map applies after any compositor-specific shortening (compact vs. vertical mode).
 function applyOverride(label, overrides) {

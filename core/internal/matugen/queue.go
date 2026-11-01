@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/lowprio"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/lowprio"
 )
 
 type Result struct {

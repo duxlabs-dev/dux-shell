@@ -194,7 +194,7 @@ Error: Cannot assign to non-existent property "popoutService"
 
 ## Installation
 
-1. Copy the plugin directory to `~/.config/DankMaterialShell/plugins/`
+1. Copy the plugin directory to `~/.config/dms/plugins/`
 2. Open Settings → Plugins
 3. Click "Scan for Plugins"
 4. Enable "Popout Control Example"

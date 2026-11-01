@@ -106,7 +106,7 @@ done
                                 width: parent.width
 
                                 StyledText {
-                                    text: BatteryService.batteryAvailable ? `${BatteryService.batteryLevel}%` : ""
+                                    text: BatteryService.batteryAvailable ? `${BatteryService.displayBatteryLevelText}%` : ""
                                     font.pixelSize: Theme.fontSizeXLarge
                                     font.weight: Theme.fontWeightMedium
                                     color: root.batteryStatusColor
@@ -145,7 +145,7 @@ done
 
                         Rectangle {
                             anchors.left: parent.left
-                            width: parent.width * Math.max(0, Math.min(1, BatteryService.batteryLevel / 100))
+                            width: parent.width * Math.max(0, Math.min(1, BatteryService.displayBatteryLevel / 100))
                             height: parent.height
                             radius: Theme.fullRadius(width, height)
                             color: root.batteryStatusColor
@@ -250,6 +250,23 @@ done
                 minimum: 50
                 maximum: 100
                 onSliderValueChanged: newValue => SettingsData.set("batteryChargeLimit", newValue)
+            }
+
+            SettingsToggleRow {
+                settingKey: "batteryScaleToChargeLimit"
+                text: I18n.tr("Scale battery level to charge limit", "battery settings: toggle to scale the displayed percentage so the charge limit represents 100%")
+                description: I18n.tr("Scale the displayed battery level to the configured charge limit", "battery settings: explains that the displayed battery percentage is scaled relative to the charge limit")
+                checked: SettingsData.batteryScaleToChargeLimit
+                onToggled: checked => SettingsData.set("batteryScaleToChargeLimit", checked)
+            }
+
+            SettingsToggleRow {
+                settingKey: "batteryScaleAlertThresholds"
+                text: I18n.tr("Scale low and critical alert thresholds", "battery settings: toggle to apply low and critical alert thresholds to the charge-limit-scaled battery percentage")
+                description: I18n.tr("Use the scaled battery level for alert thresholds and percentages", "battery settings: explains that low and critical alerts trigger and report percentages on the scaled battery level")
+                checked: SettingsData.batteryScaleAlertThresholds
+                visible: SettingsData.batteryScaleToChargeLimit
+                onToggled: checked => SettingsData.set("batteryScaleAlertThresholds", checked)
             }
 
             SettingsRow {

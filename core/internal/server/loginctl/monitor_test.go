@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	mockdbus "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/github.com/godbus/dbus/v5"
+	mockdbus "github.com/duxlabs-dev/dux-shell/core/internal/mocks/github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -37,40 +37,56 @@ func TestManager_HandleDBusSignal_Lock(t *testing.T) {
 
 func TestManager_HandleDBusSignal_Unlock(t *testing.T) {
 	tests := []struct {
-		name       string
-		lockedHint bool
+		name           string
+		keepLock       bool
+		call           *dbus.Call // logind's GetAll answer; nil means no session object
+		wantLocked     bool
+		wantLockedHint bool
 	}{
-		{name: "logind cleared LockedHint", lockedHint: false},
-		{name: "logind still reports LockedHint", lockedHint: true},
+		{name: "logind cleared LockedHint", call: lockedHintCall(false)},
+		{name: "logind still reports LockedHint", call: lockedHintCall(true), wantLockedHint: true},
+		{name: "logind unreachable", call: &dbus.Call{Err: assert.AnError}},
+		{name: "policy, LockedHint still set", keepLock: true, call: lockedHintCall(true), wantLocked: true, wantLockedHint: true},
+		{name: "policy, LockedHint cleared", keepLock: true, call: lockedHintCall(false)},
+		{name: "policy, logind unreachable", keepLock: true, call: &dbus.Call{Err: assert.AnError}, wantLocked: true, wantLockedHint: true},
+		{name: "policy, no session object", keepLock: true, wantLocked: true, wantLockedHint: true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sessionObj := mockdbus.NewMockBusObject(t)
-			sessionObj.EXPECT().CallWithContext(mock.Anything, "org.freedesktop.DBus.Properties.GetAll", dbus.Flags(0), "org.freedesktop.login1.Session").Return(&dbus.Call{
-				Body: []any{map[string]dbus.Variant{"LockedHint": dbus.MakeVariant(tt.lockedHint)}},
-			})
-
 			manager := &Manager{
 				state: &SessionState{
 					Locked:     true,
 					LockedHint: true,
 				},
-				stateMutex: sync.RWMutex{},
-				dirty:      make(chan struct{}, 1),
-				sessionObj: sessionObj,
+				stateMutex:       sync.RWMutex{},
+				dirty:            make(chan struct{}, 1),
+				keepLockOnUnlock: tt.keepLock,
 			}
+			if tt.call != nil {
+				sessionObj := mockdbus.NewMockBusObject(t)
+				sessionObj.EXPECT().CallWithContext(mock.Anything, "org.freedesktop.DBus.Properties.GetAll", dbus.Flags(0), "org.freedesktop.login1.Session").Return(tt.call)
+				manager.sessionObj = sessionObj
+			}
+			manager.markLockerReady()
 
 			manager.handleDBusSignal(&dbus.Signal{
 				Name: "org.freedesktop.login1.Session.Unlock",
 			})
 
+			assert.Equal(t, tt.wantLocked, manager.prelockedReady.Load())
 			manager.stateMutex.RLock()
 			defer manager.stateMutex.RUnlock()
-			assert.False(t, manager.state.Locked)
-			assert.Equal(t, tt.lockedHint, manager.state.LockedHint)
+			assert.Equal(t, tt.wantLocked, manager.state.Locked)
+			assert.Equal(t, tt.wantLockedHint, manager.state.LockedHint)
 		})
 	}
+}
+
+func lockedHintCall(lockedHint bool) *dbus.Call {
+	return &dbus.Call{Body: []any{map[string]dbus.Variant{
+		"LockedHint": dbus.MakeVariant(lockedHint),
+	}}}
 }
 
 func TestManager_HandleDBusSignal_PrepareForSleep(t *testing.T) {

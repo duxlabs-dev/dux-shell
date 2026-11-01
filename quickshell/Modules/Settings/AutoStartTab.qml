@@ -388,7 +388,7 @@ Item {
                 iconName: "menu_book"
                 title: I18n.tr("Docs")
                 subtitle: Site.domain
-                url: Site.docs + "/dankmaterialshell/autostart#target-not-active"
+                url: Site.docs + "/dms/autostart#target-not-active"
             }
 
             SettingsCard {
@@ -474,7 +474,7 @@ Item {
                 SettingsRow {
                     body: StyledText {
                         width: parent.width
-                        text: I18n.tr("These add entries to the XDG autostart directory (~/.config/autostart/*.desktop)")
+                        text: I18n.tr("These add entries to the XDG autostart directory (%1)", "autostart note, %1 is a path").arg("~/.config/autostart/*.desktop")
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceVariantText
                         wrapMode: Text.WordWrap

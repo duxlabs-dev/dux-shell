@@ -36,8 +36,8 @@
             }
         },
         "windows": [
-            { "appId": "alacritty", "mangoTags": [3] },
-            { "appId": "firefox", "mangoTags": [2, 3] },
+            { "appId": "alacritty", "mangoMonitor": "DP-1", "mangoTags": [3] },
+            { "appId": "firefox", "mangoMonitor": "DP-1", "mangoTags": [2, 3] },
             { "appId": "untagged" }
         ]
     },

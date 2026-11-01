@@ -36,6 +36,8 @@ done < <(git log --format=%B "${BASE}..origin/${TARGET}" 2>/dev/null |
   grep -oE 'cherry picked from commit [0-9a-f]{40}' | awk '{print $5}')
 
 # git cherry: "+ sha" = not on target (by patch-id), "- sha" = equivalent exists
+port_shas=()
+other_shas=()
 fixes=""
 others=""
 flagged=""
@@ -58,11 +60,14 @@ while read -r mark sha; do
   if git log -1 --format=%B "$sha" | grep -qiE "$FLAG_RE"; then
     flagged+="${line}"$'\n'
     flagged_count=$((flagged_count + 1))
+    port_shas+=("$short")
   elif grep -qiE '^(fix|hotfix|bugfix)([(:! ]|$)|^[a-z0-9_./-]+: *fix' <<<"$subject"; then
     fixes+="${line}"$'\n'
     fix_count=$((fix_count + 1))
+    port_shas+=("$short")
   else
-    others+="${line#- [ ] }"$'\n'
+    others+="${line}"$'\n'
+    other_shas+=("$short")
     other_count=$((other_count + 1))
   fi
 done < <(git cherry "origin/${TARGET}" origin/master "$BASE")
@@ -70,6 +75,20 @@ done < <(git cherry "origin/${TARGET}" origin/master "$BASE")
 FLAGGED_SECTION=""
 if [ "$flagged_count" -gt 0 ]; then
   FLAGGED_SECTION="### :warning: Flagged \"port ${VER}\" but not applied (${flagged_count})"$'\n\n'"${flagged}"
+fi
+
+PORT_FIXES=""
+PORT_ALL=""
+[ "${#port_shas[@]}" -gt 0 ] && PORT_FIXES="scripts/port.sh ${TARGET} ${port_shas[*]}"
+all_shas=("${port_shas[@]}" "${other_shas[@]}")
+[ "${#other_shas[@]}" -gt 0 ] && PORT_ALL="scripts/port.sh ${TARGET} ${all_shas[*]}"
+
+PORT_COMMAND=""
+if [ -n "$PORT_FIXES" ]; then
+  PORT_COMMAND+=$'\n### Port fixes\n\n```sh\n'"${PORT_FIXES}"$'\n```\n'
+fi
+if [ -n "$PORT_ALL" ]; then
+  PORT_COMMAND+=$'\n### Port fixes and other candidates\n\n```sh\n'"${PORT_ALL}"$'\n```\n'
 fi
 
 REPORT=$(cat <<EOF
@@ -82,15 +101,32 @@ ${FLAGGED_SECTION}
 
 ${fixes:-_none — all caught up_ }
 
-<details><summary>Other unported commits (${other_count}) — held for next major</summary>
+<details><summary>Other possible candidates (${other_count})</summary>
 
 ${others:-none}
 
 </details>
+${PORT_COMMAND}
 EOF
 )
 
-echo "$REPORT"
+# shellcheck disable=SC2016 # backticks are literal markdown
+plain() { sed 's/^- \[ \] `\([0-9a-f]*\)`/  \1 /' <<<"$1"; }
+
+# markdown is for the step summary, the tracking issue, and pipes; terminals get plain text
+if [ -t 1 ]; then
+  echo "Port audit: ${TARGET} vs master (base $(git rev-parse --short "$BASE"))"
+  if [ "$flagged_count" -gt 0 ]; then
+    printf '\nFlagged "port %s" but not applied (%s):\n%s\n' "$VER" "$flagged_count" "$(plain "$flagged")"
+  fi
+  printf '\nCandidate fixes not ported (%s):\n%s\n' "$fix_count" "$(plain "${fixes:-  none - all caught up}")"
+  printf '\nOther possible candidates (%s):\n%s\n' "$other_count" "$(plain "${others:-  none}")"
+  [ -n "$PORT_FIXES" ] && printf '\nPort fixes:\n  %s\n' "$PORT_FIXES"
+  [ -n "$PORT_ALL" ] && printf '\nPort fixes and other candidates:\n  %s\n' "$PORT_ALL"
+else
+  echo "$REPORT"
+fi
+
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
   echo "$REPORT" >> "$GITHUB_STEP_SUMMARY"
 fi
@@ -98,7 +134,7 @@ fi
 if [ "$UPDATE_ISSUE" = 1 ]; then
   REPO="${GITHUB_REPOSITORY:-$(gh repo view --json nameWithOwner --jq .nameWithOwner)}"
   TITLE="Port status: ${TARGET}"
-  num=$(gh issue list --repo "$REPO" --state open --search "in:title \"${TITLE}\"" \
+  num=$(gh issue list --repo "$REPO" --state open --limit 1000 \
     --json number,title --jq "map(select(.title == \"${TITLE}\")) | .[0].number // empty")
   if [ -z "$num" ]; then
     num=$(gh issue create --repo "$REPO" --title "$TITLE" --body "$REPORT" | grep -oE '[0-9]+$')

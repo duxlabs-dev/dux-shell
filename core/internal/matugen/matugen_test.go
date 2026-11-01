@@ -9,13 +9,14 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
-	mocks_utils "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/utils"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
-	matcolor "github.com/AvengeMedia/dankgo/material/color"
+	matcolor "github.com/duxlabs-dev/dux-go/material/color"
+	mocks_utils "github.com/duxlabs-dev/dux-shell/core/internal/mocks/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -510,7 +511,7 @@ func TestBuildMergedConfigColorsOnly(t *testing.T) {
 	assert.False(t, strings.Contains(content, "output_path = 'CONFIG_DIR/"), "colors-only config should not emit app template outputs")
 }
 
-func TestBuildMergedConfigSkipsMangowcWithoutActiveSession(t *testing.T) {
+func TestBuildMergedConfigMangoSession(t *testing.T) {
 	t.Setenv("MANGO_INSTANCE_SIGNATURE", "")
 
 	tempDir := t.TempDir()
@@ -554,6 +555,31 @@ func TestBuildMergedConfigSkipsMangowcWithoutActiveSession(t *testing.T) {
 		t.Fatalf("failed to read merged config: %v", err)
 	}
 	assert.NotContains(t, string(output), "[templates.dmsmango]")
+
+	socket := filepath.Join(tempDir, "mango.sock")
+	if err := os.WriteFile(socket, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("MANGO_INSTANCE_SIGNATURE", socket)
+	checker := mocks_utils.NewMockAppChecker(t)
+	checker.EXPECT().AnyCommandExists("mango").Return(true)
+	opts.AppChecker = checker
+	cfgFile, err = os.CreateTemp(tempDir, "merged-active-*.toml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cfgFile.Close()
+	if err := buildMergedConfig(opts, cfgFile, filepath.Join(tempDir, "templates")); err != nil {
+		t.Fatal(err)
+	}
+	if err := cfgFile.Close(); err != nil {
+		t.Fatal(err)
+	}
+	output, err = os.ReadFile(cfgFile.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Contains(t, string(output), mangowcConfig)
 }
 
 func TestAppendConfigConfigDirExists(t *testing.T) {
@@ -1158,4 +1184,129 @@ func TestWriteDryRunConfigAlwaysDeclaresConfigAndTemplates(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestApplyTerminalTemplate(t *testing.T) {
+	opts := func(v int, dark bool) *Options { return &Options{TerminalOpacity: v, TerminalsAlwaysDark: dark} }
+	tests := []struct {
+		name, tmpl, in, want string
+		opts                 *Options
+	}{
+		{"kitty", "kitty.conf", "a\n", "a\nbackground_opacity 0.85\ndynamic_background_opacity yes\n", opts(85, false)},
+		{"foot", "foot.ini", "a\n", "a\nalpha=0.85\n", opts(85, false)},
+		{"ghostty", "ghostty.conf", "a\n", "a\nbackground-opacity = 0.85\n", opts(85, false)},
+		{"alacritty", "alacritty.toml", "a\n", "a\n[window]\nopacity = 0.85\n", opts(85, false)},
+		{"no trailing newline", "foot.ini", "a", "a\nalpha=0.5\n", opts(50, false)},
+		{"100", "kitty.conf", "a\n", "a\n", opts(100, false)},
+		{"0", "kitty.conf", "a\n", "a\n", opts(0, false)},
+		{"negative", "kitty.conf", "a\n", "a\n", opts(-5, false)},
+		{"tabs", "kitty-tabs.conf", "a\n", "a\n", opts(85, false)},
+		{"wezterm", "wezterm.toml", "a\n", "a\n", opts(85, false)},
+		{"dark and opacity", "kitty.conf", "x.default.y\n", "x.dark.y\nbackground_opacity 0.85\ndynamic_background_opacity yes\n", opts(85, true)},
+		{"opacity only keeps default", "kitty.conf", "x.default.y\n", "x.default.y\nbackground_opacity 0.85\ndynamic_background_opacity yes\n", opts(85, false)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, applyTerminalTemplate(tt.tmpl, tt.in, tt.opts))
+		})
+	}
+}
+
+func TestAppendTerminalConfigOpacity(t *testing.T) {
+	tempDir := t.TempDir()
+	shellDir := filepath.Join(tempDir, "shell")
+	cfgDir := filepath.Join(shellDir, "matugen", "configs")
+	tmplDir := filepath.Join(shellDir, "matugen", "templates")
+	for _, d := range []string{cfgDir, tmplDir} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	toml := "[templates.dmskitty]\ninput_path = 'SHELL_DIR/matugen/templates/kitty.conf'\noutput_path = 'out/kitty'\n\n" +
+		"[templates.dmskittytabs]\ninput_path = 'SHELL_DIR/matugen/templates/kitty-tabs.conf'\noutput_path = 'out/tabs'\n"
+	for name, c := range map[string]string{
+		filepath.Join(cfgDir, "kitty.toml"):       toml,
+		filepath.Join(tmplDir, "kitty.conf"):      "color0 {{x}}\n",
+		filepath.Join(tmplDir, "kitty-tabs.conf"): "tab {{x}}\n",
+	} {
+		if err := os.WriteFile(name, []byte(c), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	run := func(opacity int) (string, string) {
+		runTmp := t.TempDir()
+		checker := mocks_utils.NewMockAppChecker(t)
+		checker.EXPECT().AnyCommandExists("kitty").Return(true)
+		out := filepath.Join(runTmp, "out.toml")
+		f, err := os.Create(out)
+		if err != nil {
+			t.Fatal(err)
+		}
+		opts := &Options{ShellDir: shellDir, AppChecker: checker, TerminalOpacity: opacity}
+		appendTerminalConfig(opts, f, runTmp, []string{"kitty"}, nil, "kitty.toml")
+		f.Close()
+		b, _ := os.ReadFile(out)
+		return string(b), runTmp
+	}
+
+	got, runTmp := run(85)
+	kittyCopy := filepath.Join(runTmp, "kitty.conf")
+	tabsCopy := filepath.Join(runTmp, "kitty-tabs.conf")
+	assert.Contains(t, got, "input_path = '"+kittyCopy+"'")
+	assert.Contains(t, got, "input_path = '"+tabsCopy+"'")
+	b, err := os.ReadFile(kittyCopy)
+	assert.NoError(t, err)
+	assert.True(t, strings.HasSuffix(string(b), "background_opacity 0.85\ndynamic_background_opacity yes\n"))
+	b, err = os.ReadFile(tabsCopy)
+	assert.NoError(t, err)
+	assert.Equal(t, "tab {{x}}\n", string(b))
+
+	got, runTmp = run(0)
+	assert.Equal(t, substituteVars(toml, shellDir)+"\n", got)
+	_, err = os.Stat(filepath.Join(runTmp, "kitty.conf"))
+	assert.True(t, os.IsNotExist(err))
+}
+
+func TestGenerateDank16VariantsProfile(t *testing.T) {
+	gen := func(profile string) map[string]any {
+		out := generateDank16Variants("#8ad0ee", "#1c5070", "#0f1417", "#f5fafd", "#1b2023", "#e9eef2", ColorModeDark, profile)
+		var m map[string]any
+		if err := json.Unmarshal([]byte(out), &m); err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+	def, high := gen(""), gen("high")
+	assert.NotEqual(t, def["color1"], high["color1"])
+	assert.Equal(t, def["color0"], high["color0"])
+}
+
+func TestTerminalPaletteOnlyReachesTerminalTemplates(t *testing.T) {
+	shellDir := filepath.Join("..", "..", "..", "quickshell")
+	inputPath := regexp.MustCompile(`input_path = 'SHELL_DIR/([^']+)'`)
+	checked := 0
+	for _, def := range templateRegistry {
+		if def.ConfigFile == "" {
+			continue
+		}
+		config, err := os.ReadFile(filepath.Join(shellDir, "matugen", "configs", def.ConfigFile))
+		if !assert.NoError(t, err) {
+			continue
+		}
+		for _, m := range inputPath.FindAllStringSubmatch(string(config), -1) {
+			data, err := os.ReadFile(filepath.Join(shellDir, m[1]))
+			if !assert.NoError(t, err) {
+				continue
+			}
+			content := string(data)
+			if def.Kind == TemplateKindTerminal {
+				assert.NotContains(t, content, "{{dank16.", "%s: terminal templates read dank16term", m[1])
+			} else {
+				assert.NotContains(t, content, "dank16term", "%s: only terminal templates follow the terminal palette", m[1])
+			}
+			checked++
+		}
+	}
+	assert.Greater(t, checked, 10)
 }

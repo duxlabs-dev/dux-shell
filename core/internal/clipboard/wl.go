@@ -3,9 +3,9 @@ package clipboard
 import (
 	"fmt"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/virtual_keyboard"
-	wlclient "github.com/AvengeMedia/dankgo/wayland/client"
-	"github.com/AvengeMedia/dankgo/wayland/ext_data_control"
+	wlclient "github.com/duxlabs-dev/dux-go/wayland/client"
+	"github.com/duxlabs-dev/dux-go/wayland/ext_data_control"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/virtual_keyboard"
 )
 
 type session struct {

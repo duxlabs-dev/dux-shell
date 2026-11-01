@@ -75,9 +75,6 @@ Card {
             text: root.badgeText
             font.pixelSize: Theme.fontSizeMedium
             font.weight: Theme.fontWeightMedium
-            font.features: ({
-                    "tnum": 1
-                })
             color: root.contentColor
         }
     }
@@ -186,9 +183,6 @@ Card {
         text: root.valueText
         font.pixelSize: root.hero ? Theme.fontSizeDisplay : (root.compact ? DashMetrics.tileValueSizeCompact : Theme.fontSizeXXLarge)
         font.weight: Theme.fontWeightMedium
-        font.features: ({
-                "tnum": 1
-            })
         color: root.contentColor
         elide: Text.ElideRight
     }

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/site"
+	"github.com/duxlabs-dev/dux-shell/core/internal/site"
 )
 
 const feedbackURL = site.API + "/plugins"

@@ -1,8 +1,10 @@
 pragma Singleton
 pragma ComponentBehavior: Bound
 
+import QtCore
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import qs.Common
 import qs.Services
 
@@ -17,21 +19,25 @@ Singleton {
         const m = v.match(/^\d+\.\d+/);
         return m ? m[0] : "";
     }
-    readonly property bool changelogEnabled: false
-    readonly property bool ready: SessionData._hasLoaded && !SessionData.isGreeterMode && FirstLaunchService.checkComplete && currentVersion !== ""
+    readonly property bool changelogEnabled: true
+    // A dotfile in the config dir, not session.json: the Nix home module can make session.json read-only
+    readonly property string markerPath: currentVersion !== "" ? Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation)) + "/dms/.changelog-" + currentVersion : ""
+    property bool markerChecked: false
+    property bool markerSeen: false
+    readonly property bool ready: FirstLaunchService.checkComplete && markerChecked
 
     property bool changelogDismissed: false
     property var release: null
     property bool releasePending: false
 
-    readonly property bool shouldShowChangelog: ready && changelogEnabled && !changelogDismissed && !FirstLaunchService.isFirstLaunch && SessionData.changelogSeenVersion !== currentVersion
+    readonly property bool shouldShowChangelog: ready && changelogEnabled && !changelogDismissed && !FirstLaunchService.isFirstLaunch && !markerSeen
 
     signal changelogRequested
     signal changelogCompleted
 
     onReadyChanged: {
         if (ready && FirstLaunchService.isFirstLaunch)
-            SessionData.set("changelogSeenVersion", currentVersion);
+            markSeen();
     }
 
     onShouldShowChangelogChanged: {
@@ -66,7 +72,28 @@ Singleton {
         changelogDismissed = true;
         release = null;
         releasePending = false;
-        SessionData.set("changelogSeenVersion", currentVersion);
+        markSeen();
         changelogCompleted();
+    }
+
+    function markSeen() {
+        if (markerSeen)
+            return;
+        markerSeen = true;
+        marker.setText(currentVersion + "\n");
+    }
+
+    FileView {
+        id: marker
+        path: root.markerPath
+        printErrors: false
+        onLoaded: {
+            root.markerSeen = true;
+            root.markerChecked = true;
+        }
+        onLoadFailed: error => {
+            root.markerSeen = error !== FileViewError.FileNotFound;
+            root.markerChecked = true;
+        }
     }
 }

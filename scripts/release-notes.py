@@ -360,7 +360,7 @@ def main():
     if not repo:
         url = run(["git", "remote", "get-url", "origin"]).strip()
         m = re.search(r"github\.com[:/]([^/]+/[^/.]+)", url)
-        repo = m.group(1) if m else "AvengeMedia/DankMaterialShell"
+        repo = m.group(1) if m else "duxlabs-dev/dux-shell"
 
     entries = build_entries(repo, args.range, use_api=not args.no_api)
     if not entries:

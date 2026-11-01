@@ -3,9 +3,9 @@ package network
 import (
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/errdefs"
-	mock_gonetworkmanager "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/github.com/Wifx/gonetworkmanager/v2"
 	"github.com/Wifx/gonetworkmanager/v2"
+	"github.com/duxlabs-dev/dux-shell/core/internal/errdefs"
+	mock_gonetworkmanager "github.com/duxlabs-dev/dux-shell/core/internal/mocks/github.com/Wifx/gonetworkmanager/v2"
 	"github.com/stretchr/testify/assert"
 )
 

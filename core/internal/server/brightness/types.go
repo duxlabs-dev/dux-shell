@@ -2,9 +2,11 @@ package brightness
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/AvengeMedia/dankgo/syncmap"
+	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wayland"
 )
 
 type DeviceClass string
@@ -13,6 +15,7 @@ const (
 	ClassBacklight DeviceClass = "backlight"
 	ClassLED       DeviceClass = "leds"
 	ClassDDC       DeviceClass = "ddc"
+	ClassSoftware  DeviceClass = "software"
 )
 
 type Device struct {
@@ -49,10 +52,13 @@ type Manager struct {
 	nativeBackend Backend
 	ddcBackend    *DDCBackend
 	monitor       deviceMonitor
+	gamma         atomic.Pointer[wayland.Manager]
 
 	logindReady bool
 	nativeReady bool
 	ddcReady    bool
+	// Until DDC has probed, every external monitor looks uncovered.
+	ddcSettled atomic.Bool
 
 	exponential bool
 
@@ -114,6 +120,7 @@ type ddcDevice struct {
 	id             string
 	name           string
 	adapter        string
+	connector      string
 	max            int
 	lastBrightness int
 }

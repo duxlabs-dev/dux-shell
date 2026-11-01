@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/errdefs"
-	"github.com/AvengeMedia/dankgo/syncmap"
+	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/errdefs"
 )
 
 type SubscriptionBroker struct {

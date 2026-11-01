@@ -9,7 +9,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/AvengeMedia/dankgo/shellapp/shellfs"
+	"github.com/duxlabs-dev/dux-go/shellapp/shellfs"
 )
 
 const (

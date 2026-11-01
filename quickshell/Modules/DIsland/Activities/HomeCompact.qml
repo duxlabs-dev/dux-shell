@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell.Services.SystemTray
 import qs.Common
 import qs.Modules.DBar.Widgets
 import qs.Services
@@ -63,6 +64,143 @@ Item {
         reverseScrolling: root.workspaceOption("reverseScrolling")
     }
 
+    readonly property bool traySlotEnabled: (root.controller.homeLeftGroups.indexOf("tray") !== -1 || root.controller.homeRightGroups.indexOf("tray") !== -1)
+    readonly property var allTrayItems: traySlotEnabled ? TrayMenuManager.filterEnvHidden(SystemTray.items.values) : []
+    readonly property var allSortedTrayItems: TrayMenuManager.sortByPreferredOrder(allTrayItems, SessionData.trayItemOrder)
+    // Same options as the bar's tray widget (a satellite entry on island bars)
+    readonly property var trayWidgetData: SettingsData.barWidgetEntry(root.controller.barConfig, "systemTray")
+    readonly property var visibleSortedTrayItems: allSortedTrayItems.filter(item => !SessionData.isHiddenTrayId(TrayMenuManager.getTrayItemKey(item)))
+    readonly property int trayVisibleLimit: {
+        const shown = root.visibleSortedTrayItems.length;
+        if (!SettingsData.widgetOption("systemTray", root.trayWidgetData, "trayAutoOverflow"))
+            return shown;
+        const limit = Number(SettingsData.widgetOption("systemTray", root.trayWidgetData, "trayMaxVisibleItems") || 0);
+        return limit > 0 ? Math.max(1, Math.min(shown, limit)) : shown;
+    }
+    readonly property var visibleTrayItems: visibleSortedTrayItems.slice(0, trayVisibleLimit)
+    readonly property var autoOverflowTrayItems: visibleSortedTrayItems.slice(trayVisibleLimit)
+    readonly property var hiddenTrayItems: allSortedTrayItems.filter(item => !root.visibleTrayItems.includes(item))
+
+    function isManualHiddenTrayItem(item) {
+        return SessionData.isHiddenTrayId(TrayMenuManager.getTrayItemKey(item));
+    }
+
+    function isAutoOverflowTrayItem(item) {
+        return root.autoOverflowTrayItems.includes(item);
+    }
+
+    function promoteTrayItemToBar(item) {
+        const key = TrayMenuManager.getTrayItemKey(item);
+        if (!key)
+            return;
+        if (SessionData.isHiddenTrayId(key)) {
+            SessionData.showTrayId(key);
+            return;
+        }
+        const order = root.allSortedTrayItems.map(entry => TrayMenuManager.getTrayItemKey(entry));
+        const from = order.indexOf(key);
+        if (from < 0)
+            return;
+        order.splice(from, 1);
+        order.splice(Math.max(0, Math.min(root.trayVisibleLimit - 1, order.length)), 0, key);
+        SessionData.setTrayItemOrder(order);
+    }
+
+    property int trayDraggedIndex: -1
+    property int trayDropTargetIndex: -1
+    property bool suppressTrayShiftAnimation: false
+
+    function beginTrayDrag(visualIndex) {
+        root.trayDraggedIndex = visualIndex;
+        root.trayDropTargetIndex = visualIndex;
+    }
+
+    function updateTrayDrag(axisOffset, visualIndex, itemSize) {
+        const slotOffset = Math.round(axisOffset / itemSize);
+        const visualTargetIndex = Math.max(0, Math.min(root.visibleTrayItems.length - 1, visualIndex + slotOffset));
+        if (visualTargetIndex !== root.trayDropTargetIndex)
+            root.trayDropTargetIndex = visualTargetIndex;
+    }
+
+    function finishTrayDrag() {
+        const fromIdx = root.trayDraggedIndex;
+        const toIdx = root.trayDropTargetIndex;
+        root.trayDraggedIndex = -1;
+        root.trayDropTargetIndex = -1;
+
+        const didReorder = toIdx >= 0 && fromIdx >= 0 && toIdx !== fromIdx;
+        if (didReorder) {
+            const fromItem = root.visibleTrayItems[fromIdx];
+            const toItem = root.visibleTrayItems[toIdx];
+            const fromKey = TrayMenuManager.getTrayItemKey(fromItem);
+            const toKey = TrayMenuManager.getTrayItemKey(toItem);
+            const allKeys = root.allSortedTrayItems.map(item => TrayMenuManager.getTrayItemKey(item));
+            const nextOrder = TrayMenuManager.reorderItemKeys(allKeys, fromKey, toKey);
+            if (nextOrder) {
+                root.suppressTrayShiftAnimation = true;
+                SessionData.setTrayItemOrder(nextOrder);
+                Qt.callLater(() => root.suppressTrayShiftAnimation = false);
+            }
+        }
+        return didReorder;
+    }
+
+    Connections {
+        target: TrayMenuManager
+        enabled: root.traySlotEnabled
+
+        function onOpenTrayMenuRequested() {
+            Qt.callLater(() => {
+                const screen = root.controller.screen;
+                const request = TrayMenuManager.claimMenuRequest(screen?.name);
+                if (!request)
+                    return;
+
+                const item = TrayMenuManager.findTrayItem(request.itemId);
+                if (!item || !item.hasMenu || !root.trayContextMenu)
+                    return;
+
+                const edge = root.controller.edge;
+                let targetX = 0;
+                let targetY = 0;
+                if (edge === "bottom" || edge === "top") {
+                    targetX = root.screenPosAt(root, root.width / 2, 0).x;
+                    targetY = root.islandEdgeCoord();
+                } else {
+                    targetX = root.islandEdgeCoord();
+                    targetY = root.screenPosAt(root, 0, root.height / 2).y;
+                }
+
+                root.trayContextMenu.openFor(item, targetX, targetY, screen, edge);
+            });
+        }
+    }
+
+    // The island sits inside a host window, so mapToGlobal is window-relative, not screen space.
+    function screenPosAt(item, x, y) {
+        const p = item.mapToItem(null, x, y);
+        return Qt.point(p.x + root.controller.sectionOriginX, p.y + root.controller.sectionOriginY);
+    }
+
+    function islandEdgeCoord() {
+        const edge = root.controller.edge;
+        switch (edge) {
+        case "bottom":
+            return root.screenPosAt(root, 0, 0).y;
+        case "top":
+            return root.screenPosAt(root, 0, root.height).y;
+        case "left":
+            return root.screenPosAt(root, root.width, 0).x;
+        case "right":
+            return root.screenPosAt(root, 0, 0).x;
+        }
+        return 0;
+    }
+
+    function trayIconSourceFor(trayItem) {
+        return TrayMenuManager.iconSourceFor(trayItem);
+    }
+
     function groupsForSide(side) {
         const groups = side === "left" ? root.controller.homeLeftGroups : root.controller.homeRightGroups;
         return groups.filter(id => root.groupShown(id));
@@ -82,6 +220,8 @@ Item {
             return PrivacyService.anyPrivacyActive;
         case "workspaces":
             return workspaces.available;
+        case "tray":
+            return root.visibleTrayItems.length > 0 || root.hiddenTrayItems.length > 0;
         }
         return true;
     }
@@ -151,7 +291,7 @@ Item {
             return;
         SessionData.suppressOSDTemporarily();
         const next = Math.max(BrightnessService.brightnessMinimum(root.brightnessDevice), Math.min(root.brightnessMaximum, BrightnessService.brightnessLevel + direction * 5));
-        BrightnessService.setBrightness(next, root.brightnessDevice.id, true);
+        BrightnessService.setGroupBrightness(next, BrightnessService.lastIpcTargets(), true);
     }
 
     function connectivityIconName(type) {
@@ -226,6 +366,7 @@ Item {
 
     onWeatherSlotEnabledChanged: root.syncWeatherRef(root.weatherSlotEnabled)
     onIsVerticalChanged: root.pushMeasuredLength()
+    onVisibleTrayItemsChanged: root.pushMeasuredLength()
     Component.onCompleted: {
         root.syncWeatherRef(root.weatherSlotEnabled);
         root.pushMeasuredLength();
@@ -280,7 +421,8 @@ Item {
         required property var group
 
         enabled: !group.isClock && !group.isCustom
-        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+        acceptedButtons: group.isTray ? Qt.NoButton : (Qt.LeftButton | Qt.MiddleButton)
+
 
         function connectivityTypeAt(event) {
             const clickPos = group.vertical ? event.y : event.x;
@@ -349,6 +491,7 @@ Item {
         readonly property bool isBrightness: group.groupId === "brightness"
         readonly property bool isPrivacy: group.groupId === "privacy"
         readonly property bool isWorkspaces: group.groupId === "workspaces"
+        readonly property bool isTray: group.groupId === "tray"
         readonly property bool isSystemLevel: group.isVolume || group.isBrightness
         readonly property var pager: pagerLoader.item
         readonly property bool usesConnectivity: group.isStatus && root.controller.homeStatusContent === "connectivity"
@@ -362,6 +505,18 @@ Item {
         width: group.vertical ? root.width : (group.isMedia ? content.implicitWidth : group.iconOnly ? root.iconSize : content.implicitWidth)
         height: group.vertical ? content.implicitHeight : root.slotSize
 
+        GroupHoverArea {
+            id: groupArea
+
+            group: group
+            anchors.verticalCenter: group.vertical ? undefined : parent.verticalCenter
+            anchors.horizontalCenter: group.vertical ? parent.horizontalCenter : undefined
+            x: group.vertical ? 0 : -group.leadPad
+            y: group.vertical ? -group.leadPad : 0
+            width: group.vertical ? root.width : parent.width + group.leadPad + group.trailPad
+            height: group.vertical ? parent.height + group.leadPad + group.trailPad : root.height
+        }
+
         Rectangle {
             anchors.centerIn: parent
             width: group.vertical ? root.slotSize : parent.width + Theme.spacingS
@@ -370,7 +525,8 @@ Item {
             border.width: group.outlineEnabled ? Theme.outlineWidth : 0
             border.color: Theme.withAlpha(Theme.primary, root.controller.barConfig?.widgetOutlineOpacity ?? 1)
             color: groupArea.containsMouse ? Theme.surfaceTextHover : "transparent"
-            visible: group.outlineEnabled || !group.isClock && (group.vertical || !group.usesBattery)
+            visible: group.outlineEnabled || !group.isClock && !group.isTray && (group.vertical || !group.usesBattery)
+
         }
 
         Grid {
@@ -510,7 +666,12 @@ Item {
                 spacing: Theme.spacingXXS
 
                 PrivacyIcon {
-                    name: "mic"
+                    // Same muted check as the bar's PrivacyIndicator
+                    name: {
+                        const sourceAudio = AudioService.source?.audio;
+                        const muted = !sourceAudio || sourceAudio.muted || sourceAudio.volume === 0.0;
+                        return muted ? "mic_off" : "mic";
+                    }
                     active: PrivacyService.microphoneActive
                 }
 
@@ -531,18 +692,306 @@ Item {
                 size: root.iconSize
                 color: Theme.surfaceText
             }
+
+            Repeater {
+                model: group.isTray ? root.visibleTrayItems : []
+
+                Item {
+                    id: trayItemRoot
+
+                    required property var modelData
+                    required property int index
+                    readonly property var trayItem: modelData
+                    property bool hovered: false
+
+                    readonly property real itemStep: (group.vertical ? height : width) + content.spacing
+                    property real shiftOffset: TrayMenuManager.dragShiftOffset(index, root.trayDraggedIndex, root.trayDropTargetIndex, itemStep)
+
+                    width: group.vertical ? root.slotSize : (root.iconSize + Theme.spacingXS)
+                    height: group.vertical ? (root.iconSize + Theme.spacingXS) : root.slotSize
+                    z: dragHandler.dragging ? 100 : 0
+
+                    transform: Translate {
+                        x: !group.vertical ? trayItemRoot.shiftOffset : 0
+                        y: group.vertical ? trayItemRoot.shiftOffset : 0
+                        Behavior on x {
+                            enabled: !root.suppressTrayShiftAnimation && !group.vertical
+                            NumberAnimation {
+                                duration: Theme.shortDuration
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+                        Behavior on y {
+                            enabled: !root.suppressTrayShiftAnimation && group.vertical
+                            NumberAnimation {
+                                duration: Theme.shortDuration
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+                    }
+
+                    Item {
+                        id: visualContent
+                        anchors.fill: parent
+
+                        transform: Translate {
+                            x: dragHandler.dragging && !group.vertical ? dragHandler.dragAxisOffset : 0
+                            y: dragHandler.dragging && group.vertical ? dragHandler.dragAxisOffset : 0
+                        }
+
+                        Rectangle {
+                            id: trayHighlightBg
+                            anchors.fill: parent
+                            radius: Theme.fullRadius(width, height)
+                            color: trayMouseArea.pressed
+                                ? Theme.withAlpha(Theme.surfaceText, Theme.stateLayerPressed)
+                                : (trayItemRoot.hovered ? Theme.surfaceTextHover : "transparent")
+                            border.width: dragHandler.dragging ? Theme.outlineWidthFocused : 0
+                            border.color: Theme.primary
+                            opacity: dragHandler.dragging ? 0.8 : 1.0
+                        }
+
+                        TrayItemIcon {
+                            anchors.centerIn: parent
+                            trayItem: trayItemRoot.trayItem
+                            source: root.trayIconSourceFor(trayItemRoot.trayItem)
+                            iconSize: root.statusIconSize
+                            fallbackTextColor: Theme.surfaceTextSecondary
+                        }
+                    }
+
+                    Item {
+                        id: dragHandler
+                        anchors.fill: parent
+                        property bool dragInitiated: false
+                        property bool dragging: false
+                        property bool wasDragging: false
+                        property point dragStartPos: Qt.point(0, 0)
+                        property real dragAxisOffset: 0
+                    }
+
+                    MouseArea {
+                        id: trayMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        cursorShape: dragHandler.dragging ? Qt.DragMoveCursor : Qt.PointingHandCursor
+
+                        onContainsMouseChanged: {
+                            trayItemRoot.hovered = containsMouse;
+                            if (containsMouse) {
+                                root.controller.slotHoverEntered();
+                            } else {
+                                if (!dragHandler.dragging)
+                                    root.controller.slotHoverExited();
+                            }
+                        }
+
+                        Component.onDestruction: {
+                            dragHandler.dragging = false;
+                            dragHandler.dragInitiated = false;
+                            if (trayItemRoot.hovered) {
+                                trayItemRoot.hovered = false;
+                                root.controller.slotHoverExited();
+                            }
+                        }
+
+                        onPressed: mouse => {
+                            dragHandler.wasDragging = false;
+                            if (mouse.button === Qt.LeftButton) {
+                                dragHandler.dragInitiated = true;
+                                dragHandler.dragStartPos = Qt.point(mouse.x, mouse.y);
+                                root.controller.hoverOpenTimer.stop();
+                                root.controller.hoverHeld = true;
+                            }
+                        }
+
+                        onReleased: mouse => {
+                            dragHandler.dragInitiated = false;
+                            const wasDragging = dragHandler.dragging;
+                            dragHandler.dragging = false;
+                            dragHandler.dragAxisOffset = 0;
+                            if (wasDragging) {
+                                dragHandler.wasDragging = true;
+                                root.finishTrayDrag();
+                                if (!trayMouseArea.containsMouse)
+                                    root.controller.slotHoverExited();
+                            }
+                            root.controller.hoverOpenTimer.stop();
+                            Qt.callLater(() => {
+                                root.controller.hoverOpenTimer.stop();
+                                if (!trayMouseArea.containsMouse)
+                                    root.controller.hoverHeld = false;
+                            });
+                        }
+
+                        onPositionChanged: mouse => {
+                            if (!dragHandler.dragInitiated || (mouse.buttons & Qt.LeftButton) === 0)
+                                return;
+
+                            root.controller.hoverOpenTimer.stop();
+                            root.controller.hoverHeld = true;
+
+                            const dist = Math.hypot(mouse.x - dragHandler.dragStartPos.x, mouse.y - dragHandler.dragStartPos.y);
+                            if (!dragHandler.dragging && dist > 5) {
+                                dragHandler.dragging = true;
+                                root.beginTrayDrag(trayItemRoot.index);
+                            }
+                            if (!dragHandler.dragging)
+                                return;
+
+                            const axisDelta = group.vertical ? (mouse.y - dragHandler.dragStartPos.y) : (mouse.x - dragHandler.dragStartPos.x);
+                            dragHandler.dragAxisOffset = axisDelta;
+                            root.updateTrayDrag(axisDelta, trayItemRoot.index, trayItemRoot.itemStep);
+                        }
+
+                        onClicked: mouse => {
+                            if (dragHandler.wasDragging) {
+                                dragHandler.wasDragging = false;
+                                return;
+                            }
+                            if (!trayItemRoot.trayItem)
+                                return;
+                            const screen = root.controller.screen;
+                            const screenX = screen?.x || 0;
+                            const screenY = screen?.y || 0;
+                            const edge = root.controller.edge;
+                            let targetX = 0;
+                            let targetY = 0;
+                            if (edge === "bottom" || edge === "top") {
+                                targetX = root.screenPosAt(trayMouseArea, trayItemRoot.width / 2, 0).x;
+                                targetY = root.islandEdgeCoord();
+                            } else {
+                                targetX = root.islandEdgeCoord();
+                                targetY = root.screenPosAt(trayMouseArea, 0, trayItemRoot.height / 2).y;
+                            }
+                            if (mouse.button === Qt.RightButton) {
+                                if (trayItemRoot.trayItem.hasMenu && root.trayContextMenu) {
+                                    root.trayContextMenu.openFor(trayItemRoot.trayItem, targetX, targetY, screen, edge);
+                                    return;
+                                }
+                                const mousePt = root.screenPosAt(trayMouseArea, mouse.x, mouse.y);
+                                TrayMenuManager.callContextMenuFallback(trayItemRoot.trayItem.id, screenX + mousePt.x, screenY + mousePt.y);
+                                return;
+                            }
+                            if (!trayItemRoot.trayItem.onlyMenu) {
+                                trayItemRoot.trayItem.activate();
+                                return;
+                            }
+                            if (trayItemRoot.trayItem.hasMenu && root.trayContextMenu) {
+                                root.trayContextMenu.openFor(trayItemRoot.trayItem, targetX, targetY, screen, edge);
+                            }
+                        }
+                    }
+                }
+            }
+
+            Item {
+                id: caretRoot
+                visible: group.isTray && root.hiddenTrayItems.length > 0
+                width: group.vertical ? root.slotSize : (root.iconSize + Theme.spacingXS)
+                height: group.vertical ? (root.iconSize + Theme.spacingXS) : root.slotSize
+                property bool hovered: false
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Theme.fullRadius(width, height)
+                    color: caretArea.pressed
+                        ? Theme.withAlpha(Theme.surfaceText, Theme.stateLayerPressed)
+                        : (caretRoot.hovered ? Theme.surfaceTextHover : "transparent")
+                }
+
+                DIcon {
+                    anchors.centerIn: parent
+                    name: {
+                        const edge = root.controller.edge;
+                        const open = root.trayOverflowMenu ? root.trayOverflowMenu.openState : false;
+                        switch (edge) {
+                        case "left":
+                            return open ? "keyboard_arrow_left" : "keyboard_arrow_right";
+                        case "right":
+                            return open ? "keyboard_arrow_right" : "keyboard_arrow_left";
+                        case "bottom":
+                            return open ? "keyboard_arrow_down" : "keyboard_arrow_up";
+                        case "top":
+                        default:
+                            return open ? "keyboard_arrow_up" : "keyboard_arrow_down";
+                        }
+                    }
+                    size: root.statusIconSize
+                    color: Theme.surfaceText
+                }
+
+                MouseArea {
+                    id: caretArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+
+                    onContainsMouseChanged: {
+                        caretRoot.hovered = containsMouse;
+                        if (containsMouse) {
+                            root.controller.slotHoverEntered();
+                        } else {
+                            root.controller.slotHoverExited();
+                        }
+                    }
+
+                    Component.onDestruction: {
+                        if (caretRoot.hovered) {
+                            caretRoot.hovered = false;
+                            root.controller.slotHoverExited();
+                        }
+                    }
+
+                    onClicked: {
+                        if (!root.trayOverflowMenu)
+                            return;
+                        if (root.trayOverflowMenu.openState) {
+                            root.trayOverflowMenu.hide();
+                            return;
+                        }
+                        const screen = root.controller.screen;
+                        const edge = root.controller.edge;
+                        let triggerX = 0;
+                        let triggerY = 0;
+                        if (edge === "bottom" || edge === "top") {
+                            triggerX = root.screenPosAt(caretArea, caretRoot.width / 2, 0).x;
+                            triggerY = root.islandEdgeCoord();
+                        } else {
+                            triggerX = root.islandEdgeCoord();
+                            triggerY = root.screenPosAt(caretArea, 0, caretRoot.height / 2).y;
+                        }
+                        root.trayOverflowMenu.openAt(triggerX, triggerY, screen, edge);
+                    }
+                }
+            }
         }
+    }
 
-        GroupHoverArea {
-            id: groupArea
+    readonly property var trayContextMenu: trayMenusLoader.item?.contextMenu ?? null
+    readonly property var trayOverflowMenu: trayMenusLoader.item?.overflowMenu ?? null
 
-            group: group
-            anchors.verticalCenter: group.vertical ? undefined : parent.verticalCenter
-            anchors.horizontalCenter: group.vertical ? parent.horizontalCenter : undefined
-            x: group.vertical ? 0 : -group.leadPad
-            y: group.vertical ? -group.leadPad : 0
-            width: group.vertical ? root.width : parent.width + group.leadPad + group.trailPad
-            height: group.vertical ? parent.height + group.leadPad + group.trailPad : root.height
+    Loader {
+        id: trayMenusLoader
+        active: root.traySlotEnabled
+        sourceComponent: Component {
+            Item {
+                id: trayMenusHost
+                readonly property alias contextMenu: ctxMenu
+                readonly property alias overflowMenu: ovMenu
+
+                TrayContextMenu {
+                    id: ctxMenu
+                    bar: root
+                }
+
+                TrayOverflowMenu {
+                    id: ovMenu
+                    hiddenItems: root.hiddenTrayItems
+                    contextMenu: ctxMenu
+                }
+            }
         }
     }
 

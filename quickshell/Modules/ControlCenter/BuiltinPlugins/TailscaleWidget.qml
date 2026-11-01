@@ -48,6 +48,17 @@ PluginComponent {
             property int filterIndex: 0
             property string expandedHostname: ""
 
+            function formatLastSeen(iso) {
+                const date = new Date(iso);
+                const minutes = Math.floor((Date.now() - date.getTime()) / 60000);
+                if (minutes < 60)
+                    return I18n.tr("%1m ago", "Tailscale peer last seen time, %1 is a number of minutes").arg(Math.max(1, minutes));
+                const hours = Math.floor(minutes / 60);
+                if (hours < 24)
+                    return I18n.tr("%1h ago", "Tailscale peer last seen time, %1 is a number of hours").arg(hours);
+                return I18n.tr("%1d ago", "Tailscale peer last seen time, %1 is a number of days").arg(Math.floor(hours / 24));
+            }
+
             readonly property string title: I18n.tr("Tailscale", "Tailscale mesh VPN widget title")
             readonly property string noneLabel: I18n.tr("None", "Tailscale exit node: none selected")
             readonly property var filteredPeers: {
@@ -207,7 +218,7 @@ PluginComponent {
                                     if (modelData.online)
                                         parts.push(modelData.relay ? I18n.tr("relay: %1", "Tailscale relay server name").arg(modelData.relay) : I18n.tr("direct", "Tailscale direct connection"));
                                     else if (modelData.lastSeen)
-                                        parts.push(I18n.tr("last seen %1", "Tailscale peer last seen time").arg(modelData.lastSeen));
+                                        parts.push(I18n.tr("last seen %1", "Tailscale peer last seen time").arg(detailRoot.formatLastSeen(modelData.lastSeen)));
                                     return parts.join(" • ");
                                 }
                                 trailingBadge: isSelf ? I18n.tr("This device", "Label for the user's own device in Tailscale") : ""

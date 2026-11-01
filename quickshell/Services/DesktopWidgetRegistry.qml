@@ -13,17 +13,28 @@ Singleton {
     property var registeredWidgetsList: []
     property bool editing: false
     property string libraryScreen: ""
+    property string optionsScreen: ""
+    property string optionsInstanceId: ""
 
     signal registryChanged
 
     onEditingChanged: {
-        if (!editing)
-            libraryScreen = "";
+        if (editing)
+            return;
+        libraryScreen = "";
+        optionsScreen = "";
+        optionsInstanceId = "";
     }
 
     function startEditing(screen, openLibrary) {
         libraryScreen = openLibrary ? (screen?.name ?? "") : "";
         editing = true;
+    }
+
+    function editOptions(screen, instanceId) {
+        optionsScreen = screen?.name ?? "";
+        optionsInstanceId = instanceId;
+        startEditing(screen, false);
     }
 
     Component.onCompleted: {

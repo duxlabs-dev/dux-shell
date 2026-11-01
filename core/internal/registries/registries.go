@@ -8,13 +8,13 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/clipolicy"
+	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
 	"github.com/spf13/afero"
 )
 
 const (
 	OfficialName = "official"
-	officialURL  = "https://github.com/AvengeMedia/dms-plugin-registry.git"
+	officialURL  = "https://github.com/duxlabs-dev/dux-plugin-registry.git"
 )
 
 // Source identifies a registry repository. Name doubles as the per-registry
@@ -35,7 +35,7 @@ func configPath() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get user config dir: %w", err)
 	}
-	return filepath.Join(configDir, "DankMaterialShell", "registries.json"), nil
+	return filepath.Join(configDir, "dms", "registries.json"), nil
 }
 
 // Load returns the official registry followed by any user-configured extras.

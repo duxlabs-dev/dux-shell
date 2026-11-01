@@ -21,7 +21,8 @@ DModal {
     keepContentLoaded: true
     allowStacking: true
 
-    function show() {
+    function show(overlayLayer = false) {
+        useOverlayLayer = overlayLayer;
         open();
         contentLoader?.item?.setColor(selectedColor);
     }
@@ -42,13 +43,19 @@ DModal {
         shouldBeVisible ? hideInstant() : show();
     }
 
-    onSelectedColorChanged: contentLoader?.item?.setColor(selectedColor)
+    // show() applies selectedColor on open. While the picker is open, a change to the
+    // recent colors (which selectedColor follows) must not reset the color being edited.
+    onSelectedColorChanged: {
+        if (!shouldBeVisible)
+            contentLoader?.item?.setColor(selectedColor);
+    }
     onBackgroundClicked: hide()
     onOpened: Qt.callLater(() => contentLoader?.item?.focusInitial())
     onDialogClosed: {
         if (contentLoader?.item?.pickingFromScreen)
             return;
         onColorSelectedCallback = null;
+        useOverlayLayer = false;
     }
     onColorSelected: color => {
         if (typeof onColorSelectedCallback === "function")
@@ -106,7 +113,7 @@ DModal {
                 root.hideInstant();
                 startScreenPick();
             }
-            onShowRequested: root.show()
+            onShowRequested: root.show(root.useOverlayLayer)
         }
     }
 }

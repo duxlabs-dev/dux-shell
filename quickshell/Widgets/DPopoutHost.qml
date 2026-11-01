@@ -100,7 +100,7 @@ Item {
     readonly property real effectiveBarThickness: {
         if (root.usesConnectedSurfaceChrome)
             return Math.max(0, storedBarThickness);
-        return Theme.barThickness(storedBarConfig?.innerPadding ?? 2, dpr) + storedBarSpacing;
+        return Theme.barThickness(storedBarConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault, dpr) + storedBarSpacing;
     }
 
     readonly property var barBounds: {
@@ -233,7 +233,7 @@ Item {
         if (barSide !== "top" && barSide !== "bottom")
             return contentContainer.animY;
 
-        const extent = Math.max(0, root.pubBodyH);
+        const extent = Math.max(0, root.pubBodyH + root.topOverflow + root.bottomOverflow);
         const progress = Math.min(1, Math.abs(contentContainer.animY) / Math.max(1, _chromeAnimTravelY));
         const offset = Theme.snap(extent * progress, root.dpr);
         return contentContainer.animY < 0 ? -offset : offset;
@@ -995,7 +995,11 @@ Item {
             return;
         if ((!hoverDismissEnabled && !isClosing) || !ConnectedModeState.hasSurfaceOwner(root.screen.name, "popout", chromeLease.claimId))
             return;
-        const body = SurfaceGeometry.animatedBodyRect(_connectedChromeState(), root.dpr);
+        // Hand off the bare body; the overflow stays on this descriptor.
+        const state = _connectedChromeState();
+        state.overflowTop = 0;
+        state.overflowBottom = 0;
+        const body = SurfaceGeometry.animatedBodyRect(state, root.dpr);
         const traveling = morphTravelEnabled && !morph.running;
         const rect = traveling ? root._boundTravel(travelSpring.value) : Qt.rect(body.x, body.y, Math.max(1, body.width), Math.max(1, body.height));
         const velocity = traveling ? travelSpring.velocity : Qt.vector4d(0, 0, 0, 0);
@@ -1366,6 +1370,14 @@ Item {
             // An idle layer surface won't commit the cleared blur region on auto-close; pulse updatesEnabled to force it.
             property bool blurCommitSuppress: false
 
+            readonly property bool popoutShown: root.shouldBeVisible
+            // The idle surface never commits the emptied input region on close without a frame.
+            onPopoutShownChanged: {
+                if (popoutShown || !backgroundWindow.visible)
+                    return;
+                holdCommits();
+            }
+
             function show() {
                 if (required)
                     backgroundWindow.visible = true;
@@ -1673,7 +1685,7 @@ Item {
             readonly property bool directionalEffect: Theme.isDirectionalEffect
             readonly property bool depthEffect: Theme.isDepthEffect
             readonly property real directionalTravelX: Math.max(root.animationOffset, root.renderedAlignedWidth + Theme.spacingL)
-            readonly property real directionalTravelY: Math.max(root.animationOffset, root.renderedAlignedHeight + Theme.spacingL)
+            readonly property real directionalTravelY: Math.max(root.animationOffset, root.renderedAlignedHeight + root.topOverflow + root.bottomOverflow + Theme.spacingL)
             readonly property real depthTravel: Math.max(root.animationOffset * 0.7, 28)
             readonly property real sectionTilt: (triggerSection === "left" ? -1 : (triggerSection === "right" ? 1 : 0))
             readonly property real horizontalConnectorExtent: root.usesConnectedSurfaceChrome && (barTop || barBottom) ? Theme.connectedCornerRadius : 0
@@ -1842,13 +1854,14 @@ Item {
                 readonly property real s: Math.min(1, contentContainer.scaleValue)
                 readonly property bool trackBlurFromBarEdge: root.usesConnectedSurfaceChrome
 
-                readonly property real _dyClamp: (contentContainer.barTop || contentContainer.barBottom) ? Math.max(-contentContainer.height, Math.min(contentContainer.animY, contentContainer.height)) : 0
+                readonly property real _overflowExtent: root.topOverflow + root.bottomOverflow
+                readonly property real _dyClamp: (contentContainer.barTop || contentContainer.barBottom) ? Math.max(-contentContainer.height - _overflowExtent, Math.min(contentContainer.animY, contentContainer.height + _overflowExtent)) : 0
                 readonly property real _dxClamp: (contentContainer.barLeft || contentContainer.barRight) ? Math.max(-contentContainer.width, Math.min(contentContainer.animX, contentContainer.width)) : 0
 
                 blurX: trackBlurFromBarEdge ? contentContainer.x + (contentContainer.barRight ? _dxClamp : 0) : contentContainer.x + contentContainer.width * (1 - s) * 0.5 + Theme.snap(contentContainer.animX, root.dpr) - contentContainer.horizontalConnectorExtent * s
                 blurY: (trackBlurFromBarEdge ? contentContainer.y + (contentContainer.barBottom ? _dyClamp : 0) : contentContainer.y + contentContainer.height * (1 - s) * 0.5 + Theme.snap(contentContainer.animY, root.dpr) - contentContainer.verticalConnectorExtent * s) - root.topOverflow
                 blurWidth: root.shouldBeVisible ? (trackBlurFromBarEdge ? Math.max(0, contentContainer.width - Math.abs(_dxClamp)) : (contentContainer.width + contentContainer.horizontalConnectorExtent * 2) * s) : 0
-                blurHeight: root.shouldBeVisible ? (trackBlurFromBarEdge ? Math.max(0, contentContainer.height - Math.abs(_dyClamp)) : (contentContainer.height + contentContainer.verticalConnectorExtent * 2) * s) + root.topOverflow + root.bottomOverflow : 0
+                blurHeight: root.shouldBeVisible ? (trackBlurFromBarEdge ? Math.max(0, contentContainer.height + _overflowExtent - Math.abs(_dyClamp)) : (contentContainer.height + contentContainer.verticalConnectorExtent * 2) * s + _overflowExtent) : 0
                 blurRadius: root.usesConnectedSurfaceChrome ? Theme.connectedCornerRadius : Theme.windowRadius
             }
 
@@ -1906,11 +1919,11 @@ Item {
                     ElevationShadow {
                         visible: !root.usesConnectedSurfaceChrome
                         width: rollOutAdjuster.baseWidth
-                        height: rollOutAdjuster.baseHeight
+                        height: rollOutAdjuster.baseHeight + root.topOverflow + root.bottomOverflow
                         opacity: contentWrapper.publishedOpacity
                         scale: contentWrapper.scale
                         x: contentWrapper.x
-                        y: contentWrapper.y
+                        y: contentWrapper.y - root.topOverflow
                         level: root.shadowLevel
                         direction: root.effectiveShadowDirection
                         fallbackOffset: root.shadowFallbackOffset
@@ -1919,9 +1932,8 @@ Item {
                         topRightRadius: chrome.surfaceTopRightRadius
                         bottomLeftRadius: chrome.surfaceBottomLeftRadius
                         bottomRightRadius: chrome.surfaceBottomRightRadius
-                        targetColor: chrome.surfaceColor
-                        borderColor: chrome.surfaceBorderColor
-                        borderWidth: chrome.surfaceBorderWidth
+                        // Shadow only; contentWrapper paints the fill.
+                        targetColor: "transparent"
                         shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1" && !(root.suspendShadowWhileResizing && root._resizeActive) && !root.frameOwnsConnectedChrome
                     }
 
@@ -1942,11 +1954,11 @@ Item {
                         readonly property real pad: shadowsOn ? Math.ceil(Math.max(shadowBlurPx + shadowSpreadPx + Math.max(Math.abs(shadowOffsetX), Math.abs(shadowOffsetY)), ambient.blurPx + ambient.spreadPx) + 2) : 0
 
                         width: rollOutAdjuster.baseWidth + extraLeft * 2
-                        height: rollOutAdjuster.baseHeight + extraTop * 2
+                        height: rollOutAdjuster.baseHeight + extraTop * 2 + root.topOverflow + root.bottomOverflow
                         opacity: contentWrapper.publishedOpacity
                         scale: contentWrapper.scale
                         x: contentWrapper.x - extraLeft
-                        y: contentWrapper.y - extraTop
+                        y: contentWrapper.y - extraTop - root.topOverflow
 
                         ShaderEffect {
                             anchors.fill: parent
@@ -1962,7 +1974,7 @@ Item {
                             property vector4d shadowColor: Qt.vector4d(localChrome.shadowTint.r, localChrome.shadowTint.g, localChrome.shadowTint.b, localChrome.shadowsOn ? localChrome.shadowTint.a : 0)
                             property vector4d shadowParam: Qt.vector4d(Math.max(0, localChrome.shadowBlurPx), localChrome.shadowSpreadPx, localChrome.shadowOffsetX, localChrome.shadowOffsetY)
                             property vector4d ambientParam: Qt.vector4d(localChrome.ambient.blurPx, localChrome.ambient.spreadPx, localChrome.shadowsOn ? localChrome.ambient.alpha : 0, 0)
-                            property vector4d bodyRect: Qt.vector4d((contentContainer.barLeft ? 0 : localChrome.pad) + localChrome.extraLeft, (contentContainer.barTop ? 0 : localChrome.pad) + localChrome.extraTop, rollOutAdjuster.baseWidth, rollOutAdjuster.baseHeight)
+                            property vector4d bodyRect: Qt.vector4d((contentContainer.barLeft ? 0 : localChrome.pad) + localChrome.extraLeft, (contentContainer.barTop ? 0 : localChrome.pad) + localChrome.extraTop, rollOutAdjuster.baseWidth, rollOutAdjuster.baseHeight + root.topOverflow + root.bottomOverflow)
                             property vector4d cornerRadius: Qt.vector4d(chrome.surfaceTopLeftRadius, chrome.surfaceTopRightRadius, chrome.surfaceBottomRightRadius, chrome.surfaceBottomLeftRadius)
                             property vector4d edgeParam: Qt.vector4d(contentContainer.barTop ? 0 : (contentContainer.barBottom ? 1 : (contentContainer.barLeft ? 2 : 3)), Theme.connectedCornerRadius, 0, 0)
                         }
@@ -2009,7 +2021,9 @@ Item {
                             visible: !root.usesConnectedSurfaceChrome
 
                             Rectangle {
-                                anchors.fill: parent
+                                y: -root.topOverflow
+                                width: parent.width
+                                height: parent.height + root.topOverflow + root.bottomOverflow
                                 antialiasing: true
                                 topLeftRadius: chrome.surfaceTopLeftRadius
                                 topRightRadius: chrome.surfaceTopRightRadius
@@ -2118,11 +2132,11 @@ Item {
                     parent: root._fluidMotionActive ? chrome : contentClip.contentItem
                     z: root._fluidMotionActive ? -1 : 0
                     width: root._fluidMotionActive ? chrome.fluidBody.width : chrome.width
-                    height: root._fluidMotionActive ? chrome.fluidBody.height : chrome.height + root.topOverflow + root.bottomOverflow
+                    height: (root._fluidMotionActive ? chrome.fluidBody.height : chrome.height) + root.topOverflow + root.bottomOverflow
                     opacity: root._fluidMotionActive ? FluidGeometry.chromeOpacity(morph.value) : contentWrapper.publishedOpacity
                     scale: root.directionalRevealActive ? 1 : contentWrapper.scale
                     x: root._fluidMotionActive ? chrome.fluidBody.x : (root.directionalRevealActive ? 0 : contentWrapper.x)
-                    y: root._fluidMotionActive ? chrome.fluidBody.y : (root.directionalRevealActive ? 0 : contentWrapper.y) - root.topOverflow
+                    y: (root._fluidMotionActive ? chrome.fluidBody.y : (root.directionalRevealActive ? 0 : contentWrapper.y)) - root.topOverflow
                     level: root.shadowLevel
                     direction: root.effectiveShadowDirection
                     fallbackOffset: root.shadowFallbackOffset
@@ -2164,7 +2178,9 @@ Item {
                     }
 
                     Rectangle {
-                        anchors.fill: parent
+                        y: -root.topOverflow
+                        width: parent.width
+                        height: parent.height + root.topOverflow + root.bottomOverflow
                         visible: !root._fluidMotionActive
                         radius: Theme.windowRadius
                         color: Theme.readableSurface
@@ -2174,9 +2190,9 @@ Item {
                 Rectangle {
                     parent: root._fluidMotionActive ? chrome : contentClip.contentItem
                     width: root._fluidMotionActive ? chrome.fluidBody.width : chrome.width
-                    height: root._fluidMotionActive ? chrome.fluidBody.height : chrome.height + root.topOverflow + root.bottomOverflow
+                    height: (root._fluidMotionActive ? chrome.fluidBody.height : chrome.height) + root.topOverflow + root.bottomOverflow
                     x: root._fluidMotionActive ? chrome.fluidBody.x : (root.directionalRevealActive ? 0 : contentWrapper.x)
-                    y: root._fluidMotionActive ? chrome.fluidBody.y : (root.directionalRevealActive ? 0 : contentWrapper.y) - root.topOverflow
+                    y: (root._fluidMotionActive ? chrome.fluidBody.y : (root.directionalRevealActive ? 0 : contentWrapper.y)) - root.topOverflow
                     opacity: root._fluidMotionActive ? FluidGeometry.chromeOpacity(morph.value) : contentWrapper.publishedOpacity
                     scale: root.directionalRevealActive ? 1 : contentWrapper.scale
                     visible: contentWrapper.visible

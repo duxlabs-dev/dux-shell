@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/AvengeMedia/dankgo/paths"
+	"github.com/duxlabs-dev/dux-go/paths"
 )
 
 const noGlobs = "__NOGLOBS__"

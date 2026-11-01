@@ -190,7 +190,7 @@ DModal {
 
                         StyledText {
                             width: parent.width
-                            text: I18n.tr("To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (greetd-flexiserver / GDM / LightDM).")
+                            text: I18n.tr("To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).", "switch user note, %1 lists multi-session greeters").arg("greetd-flexiserver / GDM / LightDM")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
                             wrapMode: Text.WordWrap

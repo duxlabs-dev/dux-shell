@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
 	"github.com/Wifx/gonetworkmanager/v2"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 )
 
 func (b *NetworkManagerBackend) GetWiredConnections() ([]WiredConnection, error) {
@@ -258,16 +258,11 @@ func (b *NetworkManagerBackend) listEthernetConnections() ([]WiredConnection, er
 		return nil, fmt.Errorf("no ethernet device available")
 	}
 
-	s := b.settings
-	if s == nil {
-		s, err := gonetworkmanager.NewSettings()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get settings: %w", err)
-		}
-		b.settings = s
+	settingsMgr, err := b.networkManagerSettings()
+	if err != nil {
+		return nil, err
 	}
 
-	settingsMgr := s.(gonetworkmanager.Settings)
 	connections, err := settingsMgr.ListConnections()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get connections: %w", err)

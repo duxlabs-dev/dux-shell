@@ -6,10 +6,10 @@ To contribute fork this repository, make your changes, and open a pull request.
 
 ## Setup
 
-Clone with submodules — the shared widget library ([dank-qml-common](https://github.com/AvengeMedia/dank-qml-common)) is vendored at `dank-qml-common/` and symlinked into `quickshell/DCommon`:
+Clone with submodules — the shared widget library ([dux-qml-common](https://github.com/duxlabs-dev/dux-qml-common)) is vendored at `dux-qml-common/` and symlinked into `quickshell/DCommon`:
 
 ```bash
-git clone --recurse-submodules https://github.com/AvengeMedia/DankMaterialShell.git
+git clone --recurse-submodules https://github.com/duxlabs-dev/dux-shell.git
 # or, in an existing clone:
 git submodule update --init
 ```
@@ -54,29 +54,29 @@ make run     # dev build, then launch against the live quickshell/ tree
 
 The UI config dir resolves in order: `-c <dir>`, `DMS_SHELL_DIR`, the dir a running instance is using, then the embedded UI. Each candidate must contain `shell.qml`. `make run` uses `-c $(pwd)/quickshell`, so QML edits hot-reload from the working tree.
 
-The Go core depends on [dankgo](https://github.com/AvengeMedia/dankgo) for logging, XDG paths, the IPC transport, and the quickshell process lifecycle. To develop against a local dankgo checkout, create a gitignored `go.work` at the repo root:
+The Go core depends on [dankgo](https://github.com/duxlabs-dev/dux-go) for logging, XDG paths, the IPC transport, and the quickshell process lifecycle. To develop against a local dankgo checkout, create a gitignored `go.work` at the repo root:
 
 ```
 go work init ./core ../dankgo
 ```
 
-## Shared widgets (dank-qml-common)
+## Shared widgets (dux-qml-common)
 
-Everything under `quickshell/DCommon/` (core widgets, the file browser, scroll physics, bundled fonts) is shared across the DMS suite and lives in the `dank-qml-common` submodule. It is a normal git worktree:
+Everything under `quickshell/DCommon/` (core widgets, the file browser, scroll physics, bundled fonts) is shared across the DMS suite and lives in the `dux-qml-common` submodule. It is a normal git worktree:
 
-1. Edit files under `dank-qml-common/` (or through the `quickshell/DCommon` symlink — same files) and test in the running shell; hot reload works as usual. For isolated widget work, the library is its own runnable config with a gallery: `qs -c dank-qml-common`.
-2. Commit and PR those changes in the `dank-qml-common` repo: `cd dank-qml-common && git switch -c my-change`, push, open the PR there.
+1. Edit files under `dux-qml-common/` (or through the `quickshell/DCommon` symlink — same files) and test in the running shell; hot reload works as usual. For isolated widget work, the library is its own runnable config with a gallery: `qs -c dux-qml-common`.
+2. Commit and PR those changes in the `dux-qml-common` repo: `cd dux-qml-common && git switch -c my-change`, push, open the PR there.
 3. Once merged, bump the pointer here: `make update-common` (updates the submodule and the nix flake input together), then commit alongside any DMS-side changes. If you only bump the submodule, CI syncs `flake.lock` to it automatically on master.
 
 The submodule URL in `.gitmodules` is HTTPS so CI and anonymous clones keep working. To push over SSH instead of being prompted for credentials, add a push rewrite to your git config — fetches stay HTTPS, pushes use SSH:
 
 ```bash
-git config --global url."git@github.com:AvengeMedia/".pushInsteadOf "https://github.com/AvengeMedia/"
+git config --global url."git@github.com:duxlabs-dev/".pushInsteadOf "https://github.com/duxlabs-dev/"
 ```
 
-Shared widgets read app-provided singletons (`Theme`, `SettingsData`, ...) through a documented contract — see the dank-qml-common README. If your change needs a new contract property, add it to the library's stub singletons in the same PR, then to `quickshell/Common/` here when you bump.
+Shared widgets read app-provided singletons (`Theme`, `SettingsData`, ...) through a documented contract — see the dux-qml-common README. If your change needs a new contract property, add it to the library's stub singletons in the same PR, then to `quickshell/Common/` here when you bump.
 
-Files in `quickshell/Widgets/`, `quickshell/Common/`, and `quickshell/Modals/FileBrowser/` that moved to the library remain in place as thin wrappers, so `import qs.Widgets`, `qs.Common`, and `qs.Modals.FileBrowser` keep working for the shell and for plugins.
+Files in `quickshell/Widgets/`, `quickshell/Common/`, and `quickshell/Modals/FileBrowser/` that moved to the library remain in place as thin wrappers, so existing `qs.Widgets`, `qs.Common`, and `qs.Modals.FileBrowser` imports keep working for the shell and for plugins. The `Dank*` widget names are deprecated: each one logs a warning naming its replacement. New code imports `qs.DCommon.Widgets` and uses the `D*` names (`DButton`, `DIcon`, `DListView`, and so on).
 
 ## VSCode Setup
 
@@ -158,7 +158,7 @@ Preferably, try to keep new terms to a minimum and re-use existing terms where p
 
 Don't re-extract the translations. `en.json` and `template.json` are synced with POEditor by a maintainer script, so running `extract_translations.py` in your PR just makes a diff that fights the next sync. Add your `I18n.tr()` calls and leave the catalogs alone. (`settings_search_index.json` is the exception, the pre-commit hook regenerates that one when you touch settings QML.)
 
-Strings inside `quickshell/DCommon/` are owned by the dank-qml-common repo but stay in the DMS POEditor project — extraction here deliberately skips them, and `scripts/i18nsync.py sync` uploads the union of app terms and the submodule's terms instead (common terms carry the `dank-qml-common` tag). On download the sync splits the exports: app translations go to `quickshell/translations/poexports/`, common translations go to `dank-qml-common/DCommon/translations/poexports/` for you to commit in that repo and bump. At runtime `I18n` merges both catalogs (app terms win). Other apps (dankcalendar) keep their own POEditor projects and merge the `dank-qml-common`-tagged terms from the DMS project.
+Strings inside `quickshell/DCommon/` are owned by the dux-qml-common repo but stay in the DMS POEditor project — extraction here deliberately skips them, and `scripts/i18nsync.py sync` uploads the union of app terms and the submodule's terms instead (common terms carry the `dux-qml-common` tag). On download the sync splits the exports: app translations go to `quickshell/translations/poexports/`, common translations go to `dux-qml-common/DCommon/translations/poexports/` for you to commit in that repo and bump. At runtime `I18n` merges both catalogs (app terms win). Other apps (dankcalendar) keep their own POEditor projects and merge the `dux-qml-common`-tagged terms from the DMS project.
 
 ### GO (`core` directory)
 
@@ -185,10 +185,13 @@ mockery
 
 ## Generative AI
 
-Using an LLM to help write code, issues, or comments is fine. Submitting its output unread is not.
+Using an LLM to help write code is fine. Submitting its output unread is not.
 
 - You are responsible for every line you submit. You have read it, tested it, and can explain it in review.
-- Say in the PR when a meaningful part of it was AI generated.
+- Say in the PR when a meaningful part of the code was AI generated.
+- Write PR descriptions, issues, and comments yourself. No AI-written or AI-rewritten text. A few plain sentences in your own words beat a page of generated summary. PRs and issues with AI-written text get closed without review.
+  - You can use AI to troubleshoot, gather data, and information for new issues. The description should be written by a human.
+  - If you are not an english-native speaker you can use AI to translate your request or PR description
 - Do not file issues or leave comments you have not verified yourself. Reports that do not reproduce get closed.
 - PRs that read like unreviewed output, with narrating comments, invented APIs, or style that ignores the file they are in, get closed without review.
 

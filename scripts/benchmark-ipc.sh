@@ -19,7 +19,7 @@ if [[ -n "${QS_ARGS:-}" ]]; then
     # shellcheck disable=SC2206
     qs_args=($QS_ARGS)
 else
-    state_file="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/danklinux.path"
+    state_file="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/dms.path"
     config_path="$(cat "$state_file" 2>/dev/null || true)"
     [[ -n "$config_path" ]] || { echo "no running dms shell ($state_file missing)" >&2; exit 1; }
     qs_args=(-p "$config_path")

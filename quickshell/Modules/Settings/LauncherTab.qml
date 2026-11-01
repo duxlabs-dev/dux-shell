@@ -3,6 +3,8 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
+import "../../Common/KeyUtils.js" as KeyUtils
+import "../../Common/LauncherKeybinds.js" as LauncherKeybinds
 
 Item {
     id: root
@@ -56,6 +58,24 @@ Item {
         if (diffDays < 7)
             return diffDays === 1 ? I18n.tr("Last launched %1 day ago", "singular, app usage list in launcher settings, %1 is 1").arg(diffDays) : I18n.tr("Last launched %1 days ago", "plural, app usage list in launcher settings, %1 is a count").arg(diffDays);
         return I18n.tr("Last launched %1", "app usage list in launcher settings, %1 is a localized date").arg(date.toLocaleDateString());
+    }
+
+    readonly property var launcherActionLabels: ({
+            nextMode: I18n.tr("Next category", "launcher shortcut that switches to the next mode tab"),
+            previousMode: I18n.tr("Previous category", "launcher shortcut that switches to the previous mode tab"),
+            modeAll: I18n.tr("All"),
+            modeApps: I18n.tr("Apps", "launcher mode tab, short for applications"),
+            modeFiles: I18n.tr("Files"),
+            modePlugins: I18n.tr("Plugins")
+        })
+
+    function setLauncherKeybind(actionId, combos) {
+        const updated = Object.assign({}, SettingsData.launcherKeybinds);
+        if (combos)
+            updated[actionId] = combos;
+        else
+            delete updated[actionId];
+        SettingsData.set("launcherKeybinds", updated);
     }
 
     Component.onCompleted: {
@@ -284,6 +304,19 @@ Item {
                 onToggled: checked => SettingsData.set("launcherHistoryEnabled", checked)
             }
 
+            SettingsButtonGroupRow {
+                settingKey: "launcherEnterAction"
+                tags: ["launcher", "default", "action", "focus", "running", "window", "instance", "launch"]
+                text: I18n.tr("Default action")
+                model: [I18n.tr("Launch"), I18n.tr("Focus")]
+                currentIndex: SettingsData.launcherEnterAction === "focus" ? 1 : 0
+                onSelectionChanged: (index, selected) => {
+                    if (!selected)
+                        return;
+                    SettingsData.set("launcherEnterAction", index === 1 ? "focus" : "launch");
+                }
+            }
+
             SettingsToggleRow {
                 settingKey: "rememberLastQuery"
                 tags: ["launcher", "remember", "last", "search", "query"]
@@ -314,6 +347,74 @@ Item {
                 text: I18n.tr("Include folders in All tab")
                 checked: SettingsData.dankLauncherV2IncludeFoldersInAll
                 onToggled: checked => SettingsData.set("dankLauncherV2IncludeFoldersInAll", checked)
+            }
+        }
+
+        SettingsCard {
+            width: parent.width
+            iconName: "keyboard"
+            title: I18n.tr("Keyboard shortcuts")
+            settingKey: "launcherKeybinds"
+            tags: ["launcher", "keybind", "shortcut", "keyboard", "mode", "category", "tab"]
+
+            Repeater {
+                model: LauncherKeybinds.ACTIONS
+
+                SettingsRow {
+                    id: keybindRow
+
+                    required property var modelData
+                    readonly property var combos: LauncherKeybinds.combosFor(modelData, SettingsData.launcherKeybinds)
+
+                    title: root.launcherActionLabels[modelData.id]
+                    subtitle: keyCapture.capturing ? I18n.tr("Hold Ctrl, Alt or Super and press a key. Esc cancels.", "launcher shortcut key combination capture hint") : ""
+                    modified: SettingsData.launcherKeybinds[modelData.id] !== undefined
+                    resetByKeys: false
+                    onResetRequested: root.setLauncherKeybind(modelData.id, null)
+
+                    DButton {
+                        id: keyCapture
+
+                        property bool capturing: false
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: capturing ? I18n.tr("Press key...") : (keybindRow.combos.join(", ") || I18n.tr("Not bound"))
+                        backgroundColor: capturing ? Theme.selectedContainer : SettingsMetrics.controlColor
+                        textColor: Theme.surfaceText
+                        onClicked: {
+                            capturing = !capturing;
+                            if (capturing)
+                                forceActiveFocus();
+                        }
+                        onActiveFocusChanged: {
+                            if (!activeFocus)
+                                capturing = false;
+                        }
+
+                        Keys.onPressed: event => captureKey(event)
+                        // Specific Tab handlers stop Qt focus traversal while capturing.
+                        Keys.onTabPressed: event => captureKey(event)
+                        Keys.onBacktabPressed: event => captureKey(event)
+
+                        function captureKey(event) {
+                            event.accepted = capturing;
+                            if (!capturing || KeyUtils.isModifierKey(event.key))
+                                return;
+                            if (event.key === Qt.Key_Escape) {
+                                capturing = false;
+                                return;
+                            }
+                            // Unmodified keys belong to the search field.
+                            if (!(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)))
+                                return;
+                            const chord = LauncherKeybinds.chordFromEvent(event);
+                            if (!chord)
+                                return;
+                            root.setLauncherKeybind(keybindRow.modelData.id, [chord]);
+                            capturing = false;
+                        }
+                    }
+                }
             }
         }
 

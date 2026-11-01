@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Common
+import qs.Modals.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
@@ -20,13 +21,33 @@ Item {
     property bool isReloadingAudio: false
     property var hiddenOutputDeviceNames: SessionData.hiddenOutputDeviceNames ?? []
     property var hiddenInputDeviceNames: SessionData.hiddenInputDeviceNames ?? []
+    // Hidden names persist for absent devices (unplugged, card disabled), so count only the present ones
+    readonly property var shownOutputDevices: outputDevices.filter(d => !hiddenOutputDeviceNames.includes(d.name))
+    readonly property var hiddenOutputDevices: outputDevices.filter(d => hiddenOutputDeviceNames.includes(d.name))
+    readonly property var shownInputDevices: inputDevices.filter(d => !hiddenInputDeviceNames.includes(d.name))
+    readonly property var hiddenInputDevices: inputDevices.filter(d => hiddenInputDeviceNames.includes(d.name))
     property bool showHiddenOutputDevices: false
+    property bool showDisabledOutputCards: false
+    property var deviceSetKey: null
     property bool showHiddenInputDevices: false
 
     function openRenameDialog(device, type) {
         editingDevice = device;
         editingDeviceType = type;
         renameDialog.show(AudioService.displayName(device));
+    }
+
+    function confirmDisableCard(card) {
+        disableCardConfirm.showWithOptions({
+            "title": I18n.tr("Disable %1?", "audio settings confirmation title, %1 is the sound card name").arg(card.description),
+            "message": I18n.tr("Every output and input of this sound card turns off until you enable it again", "audio settings confirmation message before disabling a sound card"),
+            "confirmText": I18n.tr("Disable", "audio settings button that turns a sound card off"),
+            "confirmColor": Theme.error,
+            "onConfirm": () => AudioService.setCardProfile(card.name, "off", (ok, message) => {
+                if (!ok)
+                    ToastService.showToast(message, ToastService.levelError);
+            })
+        });
     }
 
     function saveDeviceName(name) {
@@ -82,6 +103,13 @@ Item {
         };
 
         inputDevices = inputs.sort(sortInputs);
+
+        // deviceRevision also bumps on app streams, so re-read cards only when the device set changes
+        const key = outputs.concat(inputs).filter(node => !node.isStream).map(node => node.name).sort().join("\n");
+        if (key === deviceSetKey)
+            return;
+        deviceSetKey = key;
+        AudioService.refreshCards();
     }
 
     Component.onCompleted: {
@@ -130,6 +158,11 @@ Item {
             root.isReloadingAudio = false;
             root.updateDeviceList();
         }
+    }
+
+    ConfirmDialogOverlay {
+        id: disableCardConfirm
+        parent: root.parentModal?.modalFocusScope ?? root
     }
 
     SettingsPage {
@@ -189,7 +222,7 @@ Item {
             }
 
             Repeater {
-                model: root.outputDevices.filter(d => !root.hiddenOutputDeviceNames.includes(d.name))
+                model: root.shownOutputDevices
 
                 delegate: Column {
                     required property var modelData
@@ -197,6 +230,10 @@ Item {
                     spacing: 0
 
                     DeviceAliasRow {
+                        id: outputRow
+
+                        readonly property var card: AudioService.cardForSink(modelData)
+
                         deviceNode: modelData
                         deviceType: "output"
                         showHideButton: true
@@ -205,6 +242,15 @@ Item {
 
                         onHideRequested: device => {
                             root.persistHiddenOutputDeviceNames([...root.hiddenOutputDeviceNames, device.name]);
+                        }
+
+                        DActionButton {
+                            visible: outputRow.card !== null
+                            iconName: "power_settings_new"
+                            iconSize: Theme.iconSizeMedium
+                            iconColor: Theme.error
+                            tooltipText: I18n.tr("Disable card", "audio settings button that turns a sound card off")
+                            onClicked: root.confirmDisableCard(outputRow.card)
                         }
                     }
 
@@ -253,7 +299,7 @@ Item {
             }
 
             SettingsRow {
-                visible: root.outputDevices.filter(d => !root.hiddenOutputDeviceNames.includes(d.name)).length === 0 && root.hiddenOutputDeviceNames.length === 0
+                visible: root.shownOutputDevices.length === 0 && root.hiddenOutputDevices.length === 0 && AudioService.disabledOutputCards.length === 0
                 body: StyledText {
                     width: parent.width
                     text: I18n.tr("No output devices found", "Audio settings empty state")
@@ -265,7 +311,7 @@ Item {
             }
 
             SettingsRow {
-                visible: root.hiddenOutputDeviceNames.length > 0
+                visible: root.hiddenOutputDevices.length > 0
                 body: Column {
                     width: parent.width
                     spacing: 0
@@ -287,7 +333,7 @@ Item {
                             }
 
                             StyledText {
-                                text: I18n.tr("Hidden (%1)", "count of hidden audio devices").arg(root.hiddenOutputDeviceNames.length)
+                                text: I18n.tr("Hidden (%1)", "count of hidden audio devices").arg(root.hiddenOutputDevices.length)
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceVariantText
                                 anchors.verticalCenter: parent.verticalCenter
@@ -315,7 +361,7 @@ Item {
                         visible: root.showHiddenOutputDevices
 
                         Repeater {
-                            model: root.outputDevices.filter(d => root.hiddenOutputDeviceNames.includes(d.name))
+                            model: root.hiddenOutputDevices
 
                             delegate: DeviceAliasRow {
                                 required property var modelData
@@ -326,6 +372,81 @@ Item {
 
                                 onHideRequested: device => {
                                     root.persistHiddenOutputDeviceNames(root.hiddenOutputDeviceNames.filter(n => n !== device.name));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            SettingsRow {
+                visible: AudioService.disabledOutputCards.length > 0
+                body: Column {
+                    width: parent.width
+                    spacing: 0
+
+                    Item {
+                        width: parent.width
+                        height: 36
+
+                        Row {
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: Theme.spacingS
+
+                            DIcon {
+                                name: "power_off"
+                                size: Theme.iconSizeMedium
+                                color: Theme.surfaceVariantText
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            StyledText {
+                                text: I18n.tr("Disabled (%1)", "count of disabled audio output cards").arg(AudioService.disabledOutputCards.length)
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        DIcon {
+                            name: root.showDisabledOutputCards ? "expand_less" : "expand_more"
+                            size: Theme.iconSizeMedium
+                            color: Theme.surfaceVariantText
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.showDisabledOutputCards = !root.showDisabledOutputCards
+                        }
+                    }
+
+                    Column {
+                        width: parent.width
+                        spacing: 0
+                        visible: root.showDisabledOutputCards
+
+                        Repeater {
+                            model: AudioService.disabledOutputCards
+
+                            delegate: SettingsRow {
+                                required property var modelData
+
+                                iconName: "speaker"
+                                title: modelData.cardDescription
+                                subtitle: modelData.cardName
+
+                                DActionButton {
+                                    iconName: "power_settings_new"
+                                    iconSize: Theme.iconSizeMedium
+                                    tooltipText: I18n.tr("Enable card", "audio settings button that turns a disabled sound card back on")
+                                    onClicked: AudioService.setCardProfile(modelData.cardName, modelData.profile, (ok, message) => {
+                                        if (!ok)
+                                            ToastService.showToast(message, ToastService.levelError);
+                                    })
                                 }
                             }
                         }
@@ -356,7 +477,7 @@ Item {
                     }
 
                     Repeater {
-                        model: root.inputDevices.filter(d => !root.hiddenInputDeviceNames.includes(d.name))
+                        model: root.shownInputDevices
 
                         delegate: DeviceAliasRow {
                             required property var modelData
@@ -379,14 +500,14 @@ Item {
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceVariantText
                         horizontalAlignment: Text.AlignHCenter
-                        visible: root.inputDevices.filter(d => !root.hiddenInputDeviceNames.includes(d.name)).length === 0 && root.hiddenInputDeviceNames.length === 0
+                        visible: root.shownInputDevices.length === 0 && root.hiddenInputDevices.length === 0
                         topPadding: Theme.spacingM
                     }
 
                     Column {
                         width: parent.width
                         spacing: 0
-                        visible: root.hiddenInputDeviceNames.length > 0
+                        visible: root.hiddenInputDevices.length > 0
 
                         Item {
                             width: parent.width
@@ -405,7 +526,7 @@ Item {
                                 }
 
                                 StyledText {
-                                    text: I18n.tr("Hidden (%1)", "count of hidden audio devices").arg(root.hiddenInputDeviceNames.length)
+                                    text: I18n.tr("Hidden (%1)", "count of hidden audio devices").arg(root.hiddenInputDevices.length)
                                     font.pixelSize: Theme.fontSizeSmall
                                     color: Theme.surfaceVariantText
                                     anchors.verticalCenter: parent.verticalCenter
@@ -433,7 +554,7 @@ Item {
                             visible: root.showHiddenInputDevices
 
                             Repeater {
-                                model: root.inputDevices.filter(d => root.hiddenInputDeviceNames.includes(d.name))
+                                model: root.hiddenInputDevices
 
                                 delegate: DeviceAliasRow {
                                     required property var modelData

@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 func aqueousFixture(t *testing.T) aqueousConfig {

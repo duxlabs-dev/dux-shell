@@ -1,14 +1,14 @@
 package providers
 
 import (
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/configfrag"
+	"github.com/duxlabs-dev/dux-shell/core/internal/configfrag"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 const (
@@ -290,7 +290,7 @@ var mangowcBindsMessages = configfrag.Messages{
 }
 
 func (p *MangoWCParser) buildDMSStatus() *configfrag.Status {
-	status := configfrag.BuildStatus(p.walker.Scan(), p.dmsBindsExists, p.bindsAfterDMS, "", false, mangowcBindsMessages)
+	status := configfrag.BuildStatus(p.walker.Scan(), p.dmsBindsExists, p.bindsAfterDMS, mangowcBindsMessages)
 	return &status
 }
 

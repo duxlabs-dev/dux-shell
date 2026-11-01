@@ -69,7 +69,7 @@ Item {
     }
 
     // inset padding stores < 0 as "auto", resolved here to the mode's natural inset
-    readonly property real insetPadAutoUI: (SettingsData.connectedFrameModeActive && root.selectedBarFrameStyled) ? SettingsData.frameThickness : (selectedBarIsVertical ? Theme.spacingXS : Math.max(Theme.spacingXS, (selectedBarConfig?.innerPadding ?? 2) * 0.8))
+    readonly property real insetPadAutoUI: (SettingsData.connectedFrameModeActive && root.selectedBarFrameStyled) ? SettingsData.frameThickness : (selectedBarIsVertical ? Theme.spacingXS : Math.max(Theme.spacingXS, (selectedBarConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault) * 0.8))
     readonly property int insetPadDisplayValue: {
         const raw = SettingsData.barInsetPaddingSyncAll ? SettingsData.barInsetPaddingShared : (selectedBarConfig?.barInsetPadding ?? -1);
         return raw < 0 ? Math.round(insetPadAutoUI) : raw;
@@ -137,7 +137,7 @@ Item {
             return false;
         const prefs = c.screenPreferences || ["all"];
         if (prefs.length > 0)
-            return true;
+            return !(c.hideOnLastDisplay ?? false) || Quickshell.screens.length !== 1;
         return (c.showOnLastDisplay ?? true) && Quickshell.screens.length === 1;
     }
 

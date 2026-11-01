@@ -10,8 +10,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
 )
 
 func init() {
@@ -121,6 +121,7 @@ func (a *ArchDistribution) DetectDependenciesWithTerminal(ctx context.Context, w
 	dependencies = append(dependencies, a.detectMatugen())
 	dependencies = append(dependencies, a.detectDanksearch())
 	dependencies = append(dependencies, a.detectDankCalendar())
+	dependencies = append(dependencies, a.detectFilesPackage(a.packageInstalled))
 
 	return dependencies, nil
 }
@@ -128,19 +129,22 @@ func (a *ArchDistribution) DetectDependenciesWithTerminal(ctx context.Context, w
 func (a *ArchDistribution) detectDanksearch() deps.Dependency {
 	dep := a.BaseDistribution.detectDanksearch()
 	dep.CanToggle = true
-	if a.packageInstalled("dsearch-git") {
+	if a.packageInstalled("dux-search-git") {
+		dep.Variant = deps.VariantGit
+	}
+	return dep
+}
+
+func (a *ArchDistribution) detectDMS() deps.Dependency {
+	dep := a.BaseDistribution.detectDMS()
+	if a.packageInstalled("dux-shell-git") {
 		dep.Variant = deps.VariantGit
 	}
 	return dep
 }
 
 func (a *ArchDistribution) detectDankCalendar() deps.Dependency {
-	dep := a.BaseDistribution.detectDankCalendar()
-	dep.CanToggle = true
-	if a.packageInstalled("dankcalendar-git") {
-		dep.Variant = deps.VariantGit
-	}
-	return dep
+	return withGitVariant(a.BaseDistribution.detectDankCalendar(), a.packageInstalled("dux-calendar-git"))
 }
 
 func (a *ArchDistribution) detectXDGPortal() deps.Dependency {
@@ -152,19 +156,17 @@ func (a *ArchDistribution) detectAccountsService() deps.Dependency {
 }
 
 func (a *ArchDistribution) detectDMSGreeter() deps.Dependency {
-	installed := a.packageInstalled("greetd-dms-greeter-git") || a.packageInstalled("greetd-dms-greeter-bin")
-	dep := a.detectOptionalPackage("dms-greeter", "DankMaterialShell greetd greeter", installed)
+	installed := a.packageInstalled("dux-greeter-git") || a.packageInstalled("dux-greeter-bin")
+	dep := a.detectOptionalPackage("dux-greeter", "Dux Shell greetd greeter", installed)
 	dep.CanToggle = true
-	if a.packageInstalled("greetd-dms-greeter-git") {
+	if a.packageInstalled("dux-greeter-git") {
 		dep.Variant = deps.VariantGit
 	}
 	return dep
 }
 
 func (a *ArchDistribution) packageInstalled(pkg string) bool {
-	cmd := exec.Command("pacman", "-Q", pkg)
-	err := cmd.Run()
-	return err == nil
+	return exec.Command("pacman", "-Q", pkg).Run() == nil
 }
 
 // parseSRCINFODeps reads a .SRCINFO file and returns runtime dep and makedep package
@@ -214,18 +216,19 @@ func (a *ArchDistribution) GetPackageMapping(wm deps.WindowManager) map[string]P
 
 func (a *ArchDistribution) GetPackageMappingWithVariants(wm deps.WindowManager, variants map[string]deps.PackageVariant) map[string]PackageMapping {
 	packages := map[string]PackageMapping{
-		"dms (DankMaterialShell)": a.getDMSMapping(variants["dms (DankMaterialShell)"]),
-		"git":                     {Name: "git", Repository: RepoTypeSystem},
-		"quickshell":              a.getQuickshellMapping(variants["quickshell"]),
-		"dms-greeter":             a.getDMSGreeterMapping(variants["dms-greeter"]),
-		"matugen":                 a.getMatugenMapping(variants["matugen"]),
-		"ghostty":                 {Name: "ghostty", Repository: RepoTypeSystem},
-		"kitty":                   {Name: "kitty", Repository: RepoTypeSystem},
-		"alacritty":               {Name: "alacritty", Repository: RepoTypeSystem},
-		"xdg-desktop-portal-gtk":  {Name: "xdg-desktop-portal-gtk", Repository: RepoTypeSystem},
-		"accountsservice":         {Name: "accountsservice", Repository: RepoTypeSystem},
-		"danksearch":              a.getDanksearchMapping(variants["danksearch"]),
-		"dankcalendar":            a.getDankCalendarMapping(variants["dankcalendar"]),
+		"dms (Dux Shell)":        a.getDMSMapping(variants["dms (Dux Shell)"]),
+		"git":                    {Name: "git", Repository: RepoTypeSystem},
+		"quickshell":             a.getQuickshellMapping(variants["quickshell"]),
+		"dux-greeter":            a.getDMSGreeterMapping(variants["dux-greeter"]),
+		"matugen":                a.getMatugenMapping(variants["matugen"]),
+		"ghostty":                {Name: "ghostty", Repository: RepoTypeSystem},
+		"kitty":                  {Name: "kitty", Repository: RepoTypeSystem},
+		"alacritty":              {Name: "alacritty", Repository: RepoTypeSystem},
+		"xdg-desktop-portal-gtk": {Name: "xdg-desktop-portal-gtk", Repository: RepoTypeSystem},
+		"accountsservice":        {Name: "accountsservice", Repository: RepoTypeSystem},
+		"dux-search":             a.getDanksearchMapping(variants["dux-search"]),
+		"dux-calendar":           a.getDankCalendarMapping(variants["dux-calendar"]),
+		"dux-files":              a.getDuxFilesMapping(variants["dux-files"]),
 	}
 
 	switch wm {
@@ -267,7 +270,7 @@ func (a *ArchDistribution) getMangoMapping(variant deps.PackageVariant) PackageM
 	if variant == deps.VariantGit {
 		return PackageMapping{Name: "mangowm-git", Repository: RepoTypeAUR}
 	}
-	return PackageMapping{Name: "mangowm", Repository: RepoTypeAUR}
+	return PackageMapping{Name: "mangowm", Repository: RepoTypeSystem}
 }
 
 func (a *ArchDistribution) getMatugenMapping(variant deps.PackageVariant) PackageMapping {
@@ -283,35 +286,37 @@ func (a *ArchDistribution) getMatugenMapping(variant deps.PackageVariant) Packag
 
 func (a *ArchDistribution) getDanksearchMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "dsearch-git", Repository: RepoTypeAUR}
+		return PackageMapping{Name: "dux-search-git", Repository: RepoTypeAUR}
 	}
-	return PackageMapping{Name: "dsearch-bin", Repository: RepoTypeAUR}
+	return PackageMapping{Name: "dux-search-bin", Repository: RepoTypeAUR}
 }
 
 func (a *ArchDistribution) getDankCalendarMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "dankcalendar-git", Repository: RepoTypeAUR}
+		return PackageMapping{Name: "dux-calendar-git", Repository: RepoTypeAUR}
 	}
-	return PackageMapping{Name: "dankcalendar-bin", Repository: RepoTypeAUR}
+	return PackageMapping{Name: "dux-calendar-bin", Repository: RepoTypeAUR}
+}
+
+func (a *ArchDistribution) getDuxFilesMapping(variant deps.PackageVariant) PackageMapping {
+	if variant == deps.VariantGit {
+		return PackageMapping{Name: "dux-files-git", Repository: RepoTypeAUR}
+	}
+	return PackageMapping{Name: "dux-files-bin", Repository: RepoTypeAUR}
 }
 
 func (a *ArchDistribution) getDMSGreeterMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "greetd-dms-greeter-git", Repository: RepoTypeAUR}
+		return PackageMapping{Name: "dux-greeter-git", Repository: RepoTypeAUR}
 	}
-	return PackageMapping{Name: "greetd-dms-greeter-bin", Repository: RepoTypeAUR}
+	return PackageMapping{Name: "dux-greeter-bin", Repository: RepoTypeAUR}
 }
 
 func (a *ArchDistribution) getDMSMapping(variant deps.PackageVariant) PackageMapping {
 	if forceDMSGit || variant == deps.VariantGit {
-		return PackageMapping{Name: "dms-shell-git", Repository: RepoTypeAUR}
+		return PackageMapping{Name: "dux-shell-git", Repository: RepoTypeAUR}
 	}
-
-	if a.packageInstalled("dms-shell-git") {
-		return PackageMapping{Name: "dms-shell-git", Repository: RepoTypeAUR}
-	}
-
-	return PackageMapping{Name: "dms-shell", Repository: RepoTypeSystem}
+	return PackageMapping{Name: "dux-shell", Repository: RepoTypeSystem}
 }
 
 func (a *ArchDistribution) detectXwaylandSatellite() deps.Dependency {
@@ -391,9 +396,14 @@ func (a *ArchDistribution) InstallPackages(ctx context.Context, dependencies []d
 		return fmt.Errorf("failed to install prerequisites: %w", err)
 	}
 
-	systemPkgs, aurPkgs, manualPkgs, variantMap := a.categorizePackages(dependencies, wm, reinstallFlags, disabledFlags)
+	skipFlags, err := swapReinstalledVariants(ctx, a, dependencies, wm, reinstallFlags, disabledFlags, sudoPassword, progressChan)
+	if err != nil {
+		return err
+	}
 
-	if slices.Contains(aurPkgs, "quickshell-git") && slices.Contains(systemPkgs, "dms-shell") {
+	systemPkgs, aurPkgs, manualPkgs, variantMap := a.categorizePackages(dependencies, wm, reinstallFlags, skipFlags)
+
+	if slices.Contains(aurPkgs, "quickshell-git") && slices.Contains(systemPkgs, "dux-shell") {
 		if err := a.preinstallQuickshellGit(ctx, sudoPassword, progressChan); err != nil {
 			return fmt.Errorf("failed to preinstall quickshell-git: %w", err)
 		}
@@ -563,9 +573,40 @@ func (a *ArchDistribution) preinstallQuickshellGit(ctx context.Context, sudoPass
 		Progress:    0.18,
 		Step:        "Building quickshell-git before system packages...",
 		IsComplete:  false,
-		CommandInfo: "Installing quickshell-git ahead of dms-shell to avoid conflict",
+		CommandInfo: "Installing quickshell-git ahead of dux-shell to avoid conflict",
 	}
 	return a.installSingleAURPackage(ctx, "quickshell-git", sudoPassword, progressChan, 0.18, 0.32)
+}
+
+func (a *ArchDistribution) InstalledVariant(stable, git PackageMapping) (deps.PackageVariant, bool) {
+	return installedVariantByName(a.packageInstalled, stable, git)
+}
+
+// SwapVariants builds AUR targets before removing the old variant. Repo targets go through one
+// pacman transaction: --noconfirm answers the conflict prompt "no" and -Sw still runs the conflict
+// check, so --ask=4 pre-answers ALPM_QUESTION_CONFLICT_PKG instead.
+func (a *ArchDistribution) SwapVariants(ctx context.Context, swaps []VariantSwap, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
+	for _, swap := range swaps {
+		progressChan <- InstallProgressMsg{
+			Phase:    PhaseAURPackages,
+			Progress: 0.40,
+			Step:     fmt.Sprintf("Switching %s to %s...", swap.From.Name, swap.To.Name),
+		}
+
+		if swap.To.Repository == RepoTypeAUR {
+			from := swap.From.Name
+			if err := a.installSingleAURPackageInternal(ctx, swap.To.Name, from, sudoPassword, progressChan, 0.40, 0.85, make(map[string]bool)); err != nil {
+				return err
+			}
+			continue
+		}
+
+		command := "pacman -S --noconfirm --ask=4 " + swap.To.Name
+		if err := a.runWithProgress(privesc.ExecCommand(ctx, sudoPassword, command), progressChan, PhaseSystemPackages, 0.40, 0.85); err != nil {
+			return fmt.Errorf("failed to switch %s to %s: %w", swap.From.Name, swap.To.Name, err)
+		}
+	}
+	return nil
 }
 
 func (a *ArchDistribution) installSystemPackages(ctx context.Context, packages []string, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
@@ -575,11 +616,7 @@ func (a *ArchDistribution) installSystemPackages(ctx context.Context, packages [
 
 	a.log(fmt.Sprintf("Installing system packages: %s", strings.Join(packages, ", ")))
 
-	args := []string{"pacman", "-S", "--needed", "--noconfirm"}
-	if slices.Contains(packages, "dms-shell") {
-		args = append(args, "--assume-installed", "dms-shell-compositor=1")
-	}
-	args = append(args, packages...)
+	args := append([]string{"pacman", "-S", "--needed", "--noconfirm"}, packages...)
 
 	progressChan <- InstallProgressMsg{
 		Phase:       PhaseSystemPackages,
@@ -625,7 +662,7 @@ func (a *ArchDistribution) installAURPackages(ctx context.Context, packages []st
 		}
 	}
 
-	// Reorder packages to ensure dms-shell-git dependencies are installed first
+	// Reorder packages to ensure dux-shell-git dependencies are installed first
 	orderedPackages := a.reorderAURPackages(packages)
 
 	baseProgress := 0.67
@@ -666,7 +703,7 @@ func (a *ArchDistribution) reorderAURPackages(packages []string) []string {
 	var dmsShell []string
 
 	for _, pkg := range packages {
-		if pkg == "dms-shell-git" {
+		if pkg == "dux-shell-git" {
 			dmsShell = append(dmsShell, pkg)
 		} else {
 			isDep := false
@@ -686,10 +723,11 @@ func (a *ArchDistribution) reorderAURPackages(packages []string) []string {
 }
 
 func (a *ArchDistribution) installSingleAURPackage(ctx context.Context, pkg, sudoPassword string, progressChan chan<- InstallProgressMsg, startProgress, endProgress float64) error {
-	return a.installSingleAURPackageInternal(ctx, pkg, sudoPassword, progressChan, startProgress, endProgress, make(map[string]bool))
+	return a.installSingleAURPackageInternal(ctx, pkg, "", sudoPassword, progressChan, startProgress, endProgress, make(map[string]bool))
 }
 
-func (a *ArchDistribution) installSingleAURPackageInternal(ctx context.Context, pkg, sudoPassword string, progressChan chan<- InstallProgressMsg, startProgress, endProgress float64, visited map[string]bool) error {
+// installSingleAURPackageInternal removes replaces only after pkg built, so a failed build keeps the old variant.
+func (a *ArchDistribution) installSingleAURPackageInternal(ctx context.Context, pkg, replaces, sudoPassword string, progressChan chan<- InstallProgressMsg, startProgress, endProgress float64, visited map[string]bool) error {
 	if visited[pkg] {
 		a.log(fmt.Sprintf("Skipping %s (already being installed, cycle detected)", pkg))
 		return nil
@@ -701,7 +739,7 @@ func (a *ArchDistribution) installSingleAURPackageInternal(ctx context.Context, 
 		return fmt.Errorf("failed to get user home directory: %w", err)
 	}
 
-	buildDir := filepath.Join(homeDir, ".cache", "dankinstall", "aur-builds", pkg)
+	buildDir := filepath.Join(homeDir, ".cache", "duxinstall", "aur-builds", pkg)
 
 	// Clean up any existing cache first
 	if err := os.RemoveAll(buildDir); err != nil {
@@ -747,17 +785,18 @@ func (a *ArchDistribution) installSingleAURPackageInternal(ctx context.Context, 
 		}
 	}
 
-	if pkg == "dms-shell-git" {
+	if pkg == "dux-shell-git" {
 		srcinfoPath := filepath.Join(packageDir, ".SRCINFO")
-		depsToRemove := []string{
-			"depends = quickshell",
-			"depends = dgop",
+		// extra ships dgop only as dux-gop (provides dgop), which makepkg resolves but pacman -Si does not
+		srcinfoEdits := []string{
+			"/depends = quickshell/d",
+			`s/^\(\s*depends = \)dgop$/\1dux-gop/`,
 		}
 
-		for _, dep := range depsToRemove {
-			sedCmd := exec.CommandContext(ctx, "sed", "-i", fmt.Sprintf("/%s/d", dep), srcinfoPath)
+		for _, edit := range srcinfoEdits {
+			sedCmd := exec.CommandContext(ctx, "sed", "-i", edit, srcinfoPath)
 			if err := sedCmd.Run(); err != nil {
-				return fmt.Errorf("failed to remove dependency %s from .SRCINFO for %s: %w", dep, pkg, err)
+				return fmt.Errorf("failed to patch .SRCINFO for %s: %w", pkg, err)
 			}
 		}
 	}
@@ -822,7 +861,7 @@ func (a *ArchDistribution) installSingleAURPackageInternal(ctx context.Context, 
 				IsComplete:  false,
 				CommandInfo: fmt.Sprintf("Building AUR dependency: %s", aurDep),
 			}
-			if err := a.installSingleAURPackageInternal(ctx, aurDep, sudoPassword, progressChan,
+			if err := a.installSingleAURPackageInternal(ctx, aurDep, "", sudoPassword, progressChan,
 				startProgress+0.35*(endProgress-startProgress),
 				startProgress+0.39*(endProgress-startProgress),
 				visited,
@@ -868,7 +907,11 @@ func (a *ArchDistribution) installSingleAURPackageInternal(ctx context.Context, 
 	installArgs := []string{"pacman", "-U", "--noconfirm"}
 	installArgs = append(installArgs, files...)
 
-	installCmd := privesc.ExecCommand(ctx, sudoPassword, strings.Join(installArgs, " "))
+	command := strings.Join(installArgs, " ")
+	if replaces != "" {
+		command = fmt.Sprintf("sh -c '%s'", privesc.EscapeSingleQuotes("pacman -Rdd --noconfirm "+replaces+" && "+command))
+	}
+	installCmd := privesc.ExecCommand(ctx, sudoPassword, command)
 
 	fileNames := make([]string, len(files))
 	for i, f := range files {

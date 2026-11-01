@@ -48,7 +48,7 @@ Item {
                     iconName: "open_in_new"
                     backgroundColor: SettingsMetrics.controlSurface
                     textColor: Theme.surfaceText
-                    onClicked: Qt.openUrlExternally("https://github.com/AvengeMedia/DankMaterialShell/releases")
+                    onClicked: Qt.openUrlExternally("https://github.com/duxlabs-dev/dux-shell/releases")
                 }
             }
 

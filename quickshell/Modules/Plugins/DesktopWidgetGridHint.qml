@@ -63,8 +63,6 @@ Rectangle {
             NumericText {
                 text: root.gridSize + "px"
                 reserveText: "200px"
-                width: Math.ceil(reservedWidth)
-                horizontalAlignment: Text.AlignHCenter
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.surfaceText
                 anchors.verticalCenter: parent.verticalCenter

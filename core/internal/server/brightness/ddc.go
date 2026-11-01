@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"golang.org/x/sys/unix"
 )
 
@@ -122,6 +122,7 @@ func (b *DDCBackend) scanI2CDevicesInternal(force bool) error {
 		}
 
 		dev.id = id
+		dev.connector = drmConnectorPattern.ReplaceAllString(connectors[i], "")
 		unread := dev.max == 0
 		b.devices.Store(id, dev)
 		log.Debugf("found DDC device on i2c-%d", i)
@@ -365,6 +366,18 @@ func (b *DDCBackend) GetDevices() ([]Device, error) {
 	})
 
 	return devices, nil
+}
+
+// ControlledOutputs returns the output names (DP-2, ...) of monitors whose brightness is driven over DDC/CI.
+func (b *DDCBackend) ControlledOutputs() []string {
+	connectors := []string{}
+	b.devices.Range(func(_ string, dev *ddcDevice) bool {
+		if dev.connector != "" {
+			connectors = append(connectors, dev.connector)
+		}
+		return true
+	})
+	return connectors
 }
 
 func (b *DDCBackend) SetBrightness(id string, value int, exponential bool, callback func()) error {

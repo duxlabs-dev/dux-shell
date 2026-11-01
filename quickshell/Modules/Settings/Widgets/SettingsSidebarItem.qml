@@ -33,12 +33,16 @@ Rectangle {
     }
 
     readonly property var accentPair: Theme.accent(accent)
-    readonly property color badgeColor: accentPair?.container ?? Theme.withAlpha(Theme.primary, Theme.tonalTintAlpha)
-    readonly property color glyphColor: accentPair?.onContainer ?? Theme.primary
+    readonly property color badgeColor: SettingsMetrics.navIconBadges ? accentPair?.container ?? Theme.withAlpha(Theme.primary, Theme.tonalTintAlpha) : "transparent"
+    readonly property color glyphColor: {
+        if (SettingsMetrics.navIconBadges)
+            return accentPair?.onContainer ?? Theme.primary;
+        return active ? Theme.onSelectedContainer : Theme.primary;
+    }
     property bool isFirstInGroup: true
     property bool isLastInGroup: true
-    property real topRadius: active || isFirstInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-    property real bottomRadius: active || isLastInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
+    property real topRadius: (active && Theme.shapeMorph) || isFirstInGroup ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+    property real bottomRadius: (active && Theme.shapeMorph) || isLastInGroup ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
 
     Behavior on topRadius {
         enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
@@ -65,8 +69,16 @@ Rectangle {
     bottomLeftRadius: bottomRadius
     bottomRightRadius: bottomRadius
     color: active ? SettingsMetrics.selectedRowColor : SettingsMetrics.sidebarRowColor
-    border.width: Theme.layerOutlineWidth
+    border.width: SettingsMetrics.groupEdgeWidth
     border.color: Theme.outlineMedium
+
+    Rectangle {
+        x: Theme.spacingL
+        width: parent.width - Theme.spacingL * 2
+        height: Theme.dividerWidth
+        visible: SettingsMetrics.continuousGroups && !root.isFirstInGroup && !root.active
+        color: SettingsMetrics.groupDividerColor
+    }
 
     Behavior on color {
         enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None

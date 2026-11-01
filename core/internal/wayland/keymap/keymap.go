@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/AvengeMedia/dankgo/wayland/client"
+	"github.com/duxlabs-dev/dux-go/wayland/client"
 	"golang.org/x/sys/unix"
 )
 

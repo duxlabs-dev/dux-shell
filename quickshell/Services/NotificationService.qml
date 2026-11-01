@@ -632,31 +632,26 @@ Singleton {
         }
     }
 
-    Timer {
-        id: timeUpdateTimer
-        interval: 30000
-        repeat: true
-        running: root.overlayOpen && (root.allWrappers.length > 0 || visibleNotifications.length > 0)
-        triggeredOnStart: false
-        onTriggered: {
-            root.timeUpdateTick = !root.timeUpdateTick;
-        }
-    }
-
-    // Date.now() inside a QML binding is not reactive, so anything counting
-    // down to a rule's expiresAt needs a ticking time source. Minute
-    // precision matches the countdown granularity, and the clock only runs
-    // while timed rules exist, so shells without them pay nothing.
     SystemClock {
-        id: ruleExpiryClock
+        id: minuteClock
         precision: SystemClock.Minutes
-        enabled: SettingsData.hasTimedNotificationRules
+        enabled: root.relativeTimesShown || SettingsData.hasTimedNotificationRules
     }
 
-    // Current time in ms for rule-expiry bindings. Reads 0 while the clock is
-    // off, which is safe: the clock is off exactly when no rule carries an
-    // expiry, so no binding can depend on the value moving.
-    readonly property double notificationRuleNowMs: ruleExpiryClock.enabled ? ruleExpiryClock.date.getTime() : 0
+    // Views that show relative times without calling onOverlayOpen(), such
+    // as NotificationsTab, hold a Ref while visible.
+    property int refCount: 0
+
+    readonly property bool relativeTimesShown: overlayOpen || IdleService.isShellLocked || refCount > 0
+
+    // Relative-time bindings read this to refresh every minute while
+    // relativeTimesShown. It stays null otherwise, so clock ticks for timed
+    // rules do not re-evaluate them.
+    readonly property var relativeTimeNow: relativeTimesShown ? minuteClock.date : null
+
+    // Current time in ms for rule-expiry bindings. Reads 0 while no rule
+    // carries an expiry, so no binding can depend on the value moving.
+    readonly property double notificationRuleNowMs: SettingsData.hasTimedNotificationRules ? minuteClock.date.getTime() : 0
 
     // Formatted remaining time for a rule's expiresAt, driven by the ticking
     // clock above so bindings calling this refresh every minute. Single home
@@ -711,7 +706,6 @@ Singleton {
         onTriggered: _recomputeGroups()
     }
 
-    property bool timeUpdateTick: false
     property bool clockFormatChanged: false
 
     readonly property var groupedNotifications: _groupCache.notifications
@@ -958,7 +952,7 @@ Singleton {
 
         readonly property date time: new Date()
         readonly property string timeStr: {
-            root.timeUpdateTick;
+            root.relativeTimeNow;
             root.clockFormatChanged;
 
             const now = new Date();
@@ -1115,7 +1109,7 @@ Singleton {
     }
 
     function sendTestNotification(index) {
-        const notifications = [["Notification Position Test", "DMS test notification 1 of 3 ~ Hi there!", "preferences-system"], ["Second Test", "DMS Notification 2 of 3 ~ Check it out!", "applications-graphics"], ["Third Test", "DMS notification 3 of 3 ~ Enjoy!", "face-smile"]];
+        const notifications = [["Notification Position Test", "dms test notification 1 of 3 ~ Hi there!", "preferences-system"], ["Second Test", "dms notification 2 of 3 ~ Check it out!", "applications-graphics"], ["Third Test", "DMS notification 3 of 3 ~ Enjoy!", "face-smile"]];
 
         if (index < 0 || index >= notifications.length) {
             return;

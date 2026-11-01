@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/themes"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/themes"
 )
 
 func HandleList(conn *ipc.ConnWriter, req ipc.Request) {
@@ -50,5 +50,5 @@ func HandleList(conn *ipc.ConnWriter, req ipc.Request) {
 }
 
 func isFirstParty(author string) bool {
-	return strings.EqualFold(author, "Avenge Media") || strings.EqualFold(author, "AvengeMedia")
+	return strings.EqualFold(author, "Dux Labs") || strings.EqualFold(author, "Avenge Media") || strings.EqualFold(author, "AvengeMedia")
 }

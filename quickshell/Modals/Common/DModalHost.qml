@@ -614,7 +614,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             z: -1
-            color: "black"
+            color: Theme.backdropColor
             opacity: root.useBackground ? (root.shouldBeVisible ? root.backgroundOpacity : 0) : 0
             visible: root.useBackground
 

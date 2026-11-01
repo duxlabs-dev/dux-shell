@@ -61,7 +61,7 @@ FocusScope {
 
             SettingsRow {
                 body: StyledText {
-                    text: I18n.tr("Place plugin directories here. Each plugin should have a plugin.json manifest file.")
+                    text: I18n.tr("Place plugin directories here. Each plugin should have a %1 manifest file.", "plugin directory note, %1 is the manifest file name").arg("plugin.json")
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
                     wrapMode: Text.WordWrap

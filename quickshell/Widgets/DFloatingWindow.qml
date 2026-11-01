@@ -14,6 +14,12 @@ FloatingWindow {
     property color surfaceColor: Theme.floatingWindowSurface
     property bool contentVisible: true
 
+    // A placeholder screen (no outputs left) is 0x0; a size derived from it is a zero geometry and the compositor drops the connection.
+    function heightWithin(preferred, inset) {
+        const available = (root.screen?.height ?? 0) - inset;
+        return available > 0 ? Math.min(preferred, available) : preferred;
+    }
+
     color: "transparent"
 
     Rectangle {

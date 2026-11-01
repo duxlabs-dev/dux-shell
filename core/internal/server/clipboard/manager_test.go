@@ -3,6 +3,7 @@ package clipboard
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"image"
 	"image/png"
 	"net"
@@ -17,10 +18,11 @@ import (
 	"github.com/stretchr/testify/require"
 	bolt "go.etcd.io/bbolt"
 
-	mocks_wlcontext "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/wlcontext"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/ipc"
-	"github.com/AvengeMedia/dankgo/wayland/ext_data_control"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	wlclient "github.com/duxlabs-dev/dux-go/wayland/client"
+	"github.com/duxlabs-dev/dux-go/wayland/ext_data_control"
+	mocks_wlcontext "github.com/duxlabs-dev/dux-shell/core/internal/mocks/wlcontext"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 )
 
 type clipboardTestConn struct {
@@ -51,13 +53,15 @@ func newTestManagerWithDB(t *testing.T) *Manager {
 	mockCtx := mocks_wlcontext.NewMockWaylandContext(t)
 	mockCtx.EXPECT().Post(mock.AnythingOfType("func()")).Return().Maybe()
 
-	return &Manager{
+	m := &Manager{
 		config:         DefaultConfig(),
 		db:             db,
 		wlCtx:          mockCtx,
 		dataControlMgr: &ext_data_control.ExtDataControlManagerV1{},
 		dataDevice:     &ext_data_control.ExtDataControlDeviceV1{},
 	}
+	m.deviceBound.Store(true)
+	return m
 }
 
 func TestEncodeDecodeEntry_Roundtrip(t *testing.T) {
@@ -443,7 +447,9 @@ func TestUnpinEntry_KeepsTopUnpinnedDuplicate(t *testing.T) {
 
 	history = m.GetHistory()
 	require.Len(t, history, 3)
-	require.Equal(t, topHistoryDuplicate.ID, history[0].ID)
+	// GetHistory sorts by timestamp, so the newer row leads even though its
+	// id is lower.
+	require.Equal(t, olderHistoryDuplicate.ID, history[0].ID)
 	require.NoError(t, m.UnpinEntry(pinnedID))
 
 	history = m.GetHistory()
@@ -887,6 +893,24 @@ func TestOpenDB_HealsGarbageFile(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestOpenDB_LockedByAnotherProcessKeepsHistory(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "db")
+	holder, err := openDB(path)
+	require.NoError(t, err)
+	m := &Manager{config: DefaultConfig(), db: holder, dbPath: path}
+	require.NoError(t, m.storeEntry(Entry{Data: []byte("x"), MimeType: "text/plain"}))
+
+	_, err = openDB(path)
+	require.Error(t, err)
+	require.NoError(t, holder.Close())
+
+	reopened, err := openDB(path)
+	require.NoError(t, err)
+	defer reopened.Close()
+	m = &Manager{config: DefaultConfig(), db: reopened, dbPath: path}
+	assert.Len(t, m.GetHistory(), 1)
+}
+
 func TestStoreEntry_CorruptDBReturnsErrorNotPanic(t *testing.T) {
 	for _, tt := range corruptDBCases {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1039,4 +1063,87 @@ func TestCopyFile_DisabledTrackingRefusesCopy(t *testing.T) {
 
 	require.ErrorIs(t, m.CopyFile(path), errSelectionUnavailable)
 	assert.Empty(t, m.GetHistory())
+}
+
+func TestApplyConfigChange_DisableReleasesDataDevice(t *testing.T) {
+	sock := filepath.Join(t.TempDir(), "wayland-test")
+	ln, err := net.Listen("unix", sock)
+	require.NoError(t, err)
+	t.Cleanup(func() { ln.Close() })
+
+	display, err := wlclient.Connect(sock)
+	require.NoError(t, err)
+	t.Cleanup(func() { display.Context().Close() })
+
+	m := newTestManagerWithDB(t)
+	mockCtx := mocks_wlcontext.NewMockWaylandContext(t)
+	mockCtx.EXPECT().Post(mock.AnythingOfType("func()")).Run(func(fn func()) { fn() })
+	m.wlCtx = mockCtx
+	device := ext_data_control.NewExtDataControlDeviceV1(display.Context())
+	m.dataDevice = device
+
+	cfg := DefaultConfig()
+	cfg.Disabled = true
+	m.applyConfigChange(cfg)
+
+	assert.True(t, device.IsZombie())
+	assert.Nil(t, m.dataDevice)
+	require.ErrorIs(t, m.CopyText("secret"), errSelectionUnavailable)
+	assert.Empty(t, m.GetHistory())
+}
+
+func TestTouchEntry_SurvivesTrimWhenHistoryFull(t *testing.T) {
+	m := newTestManagerWithDB(t)
+	m.config.MaxHistory = 3
+
+	for i := range 3 {
+		require.NoError(t, m.storeEntry(Entry{
+			Data:      []byte(fmt.Sprintf("entry-%d", i)),
+			MimeType:  "text/plain",
+			Timestamp: time.Now(),
+		}))
+	}
+
+	oldest := m.GetHistory()[2]
+	require.NoError(t, m.TouchEntry(oldest.ID))
+
+	// A new copy trims the bucket back to MaxHistory.
+	require.NoError(t, m.storeEntry(Entry{
+		Data:      []byte("newcomer"),
+		MimeType:  "text/plain",
+		Timestamp: time.Now(),
+	}))
+
+	history := m.GetHistory()
+	require.Len(t, history, 3)
+	ids := make([]uint64, len(history))
+	for i, e := range history {
+		ids[i] = e.ID
+	}
+	assert.Contains(t, ids, oldest.ID, "the touched row must survive trimming")
+	assert.Equal(t, oldest.ID, history[1].ID, "the touched row ranks second, behind the newer copy")
+}
+
+func TestGetHistory_SameSecondOrdersByID(t *testing.T) {
+	m := newTestManagerWithDB(t)
+	m.config.MaxHistory = 10
+
+	stamp := time.Now()
+	for i := range 3 {
+		require.NoError(t, m.storeEntry(Entry{
+			Data:      []byte(fmt.Sprintf("same-second-%d", i)),
+			MimeType:  "text/plain",
+			Timestamp: stamp,
+		}))
+	}
+
+	// Touching the oldest row rewrites it in place, so the bucket now yields
+	// it first even though every row shares a timestamp.
+	oldest := m.GetHistory()[2]
+	require.NoError(t, m.TouchEntry(oldest.ID))
+
+	history := m.GetHistory()
+	require.Len(t, history, 3)
+	assert.Equal(t, oldest.ID, history[0].ID, "the touched row must lead: its timestamp is newer")
+	assert.Greater(t, history[1].ID, history[2].ID, "rows still tied on timestamp break on newest id")
 }

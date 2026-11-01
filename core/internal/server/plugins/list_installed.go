@@ -3,8 +3,8 @@ package plugins
 import (
 	"fmt"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/plugins"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/plugins"
 )
 
 func HandleListInstalled(conn *ipc.ConnWriter, req ipc.Request) {

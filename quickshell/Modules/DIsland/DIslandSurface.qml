@@ -31,8 +31,9 @@ Item {
     property string requestedWindow: ""
     property bool freeMode: false
     property bool anchorSnaps: false
-    property real anchorX: 0
-    property real anchorY: 0
+    property point anchor
+    // Velocity the next applyTarget seeds the spring with; a released drag flings from it.
+    property var flingSeed: null
     property real freeMargin: 8
     // Measured from the band centre, not the band start.
     property real anchorAlong: 0
@@ -133,6 +134,9 @@ Item {
         return Qt.rgba(from.r + (to.r - from.r) * t, from.g + (to.g - from.g) * t, from.b + (to.b - from.b) * t, from.a + (to.a - from.a) * t);
     }
     readonly property real surfaceOpacity: root.effectiveSurfaceColor.a
+    readonly property bool shadowEnabled: !root.chromeless && root.surfaceOpacity > 0 && Theme.elevationEnabled && SettingsData.barElevationEnabled
+    readonly property string autoBarShadowDirection: root.controller.edge
+    readonly property string effectiveShadowDirection: Theme.elevationLightDirection === "autoBar" ? autoBarShadowDirection : Theme.elevationLightDirection
     readonly property real currentSurfaceRadius: Math.max(0, motion.currentTopLeftRadius, motion.currentBottomLeftRadius)
     readonly property color notificationAccentColor: {
         if (!root.controller.notificationActive)
@@ -275,8 +279,8 @@ Item {
         }
         if (!root.freeMode)
             return target;
-        const x = root.clampFree(root.anchorX - target.width / 2, target.width, root.width);
-        const y = root.clampFree(root.anchorY - target.height / 2, target.height, root.height);
+        const x = root.clampFree(root.anchor.x - target.width / 2, target.width, root.width);
+        const y = root.clampFree(root.anchor.y - target.height / 2, target.height, root.height);
         return Object.assign({}, target, {
             "offsetAlong": root.isVertical ? y + target.height / 2 - root.height / 2 : x + target.width / 2 - root.width / 2,
             "offsetCross": root.isVertical ? x : y
@@ -293,7 +297,9 @@ Item {
             fadeCompactCross = root.descriptorCross(controller.compactTarget);
         if (motion.running)
             root.unionMotionStartBounds();
-        motion.setTarget(root.resolveTarget(controller.targetDescriptor), seedVelocity);
+        const seed = seedVelocity ?? root.flingSeed;
+        root.flingSeed = null;
+        motion.setTarget(root.resolveTarget(controller.targetDescriptor), seed);
         if (!motion.running)
             root.controller.releaseIdleVisuals();
     }
@@ -316,8 +322,7 @@ Item {
         root.applyTarget();
     }
 
-    onAnchorXChanged: root.syncAnchor()
-    onAnchorYChanged: root.syncAnchor()
+    onAnchorChanged: root.syncAnchor()
     onAnchorAlongChanged: root.syncAnchor()
     onAlongExtentChanged: root.syncAnchor()
     onBandAlongStartChanged: root.syncAnchor()
@@ -346,7 +351,7 @@ Item {
     }
 
     function requestActivityFocus() {
-        return contentHost.requestActivityFocus();
+        contentHost.requestActivityFocus();
     }
 
     Component.onCompleted: {
@@ -428,6 +433,13 @@ Item {
         }
     }
 
+    Loader {
+        anchors.fill: island
+        z: island.z - 1
+        active: root.shadowEnabled && !root.embedded
+        sourceComponent: shadowComponent
+    }
+
     MorphSurface {
         id: island
         motion: root.surfaceMotion
@@ -507,6 +519,8 @@ Item {
             wallpaperExpandedComponent: expandedWallpaperComponent
             weatherCompactComponent: compactWeatherComponent
             weatherExpandedComponent: expandedWeatherComponent
+            wellbeingCompactComponent: compactWellbeingComponent
+            wellbeingExpandedComponent: expandedWellbeingComponent
             systemCompactComponent: compactSystemComponent
             systemExpandedComponent: expandedSystemComponent
             notificationCompactComponent: compactNotificationComponent
@@ -523,6 +537,19 @@ Item {
             id: islandHover
 
             onHoveredChanged: root.updateFittsPointerInside()
+        }
+
+        // Above the content so the face takes focus before the pressed control; a handler on the parent runs after it.
+        Item {
+            anchors.fill: parent
+
+            PointHandler {
+                target: null
+                onActiveChanged: {
+                    if (active)
+                        root.controller.promoteHoverToActive();
+                }
+            }
         }
     }
 
@@ -570,8 +597,7 @@ Item {
     readonly property real embeddedOverhang: !root.embedded || root.chromeless ? 0 : Math.max(0, root.farEdge ? -(root.isVertical ? root.currentVisualX : root.currentVisualY) : (root.isVertical ? root.currentVisualX + root.currentVisualWidth : root.currentVisualY + root.currentVisualHeight) - root.crossExtent)
     readonly property real joinRadius: root.notch ? root.notchRadius : Math.min(Theme.connectedCornerRadius, root.embeddedOverhang)
     // Depth is capped so the flare never passes the pill's far corner; the slider still drives the along radius.
-    readonly property real notchCross: Math.min(root.controller.homeCompactFaceThickness, root.controller.compactFaceThickness)
-    readonly property real joinCrossRadius: root.notch ? Math.max(0, Math.min(root.joinRadius, root.notchCross - Math.min(root.notchCross / 2, root.controller.pillRadius))) : root.joinRadius
+    readonly property real joinCrossRadius: root.notch ? Math.max(0, Math.min(root.joinRadius, root.controller.compactFaceThickness - Math.min(root.controller.compactFaceThickness / 2, root.controller.pillRadius))) : root.joinRadius
     // Where the join corners sit: the band's inner edge when embedded, the screen edge for a notch.
     readonly property real joinCross: root.notch === root.farEdge ? root.crossExtent : 0
     readonly property var joinCorners: joinChrome.item ? [joinChrome.item.leadingCorner, joinChrome.item.trailingCorner] : []
@@ -590,15 +616,24 @@ Item {
                 active: root.embedded
                 sourceComponent: Item {
                     id: overhangClip
+                    readonly property real shadowPad: root.shadowEnabled ? Theme.elevationRenderPadding(Theme.elevationLevel2, root.effectiveShadowDirection, Theme.spacingXS, Theme.spacingS, Theme.spacingL) : 0
 
                     visible: root.embeddedOverhang > 0
                     clip: true
-                    x: root.isVertical ? (root.farEdge ? -root.embeddedOverhang : root.crossExtent) : 0
-                    y: root.isVertical ? 0 : (root.farEdge ? -root.embeddedOverhang : root.crossExtent)
-                    width: root.isVertical ? root.embeddedOverhang : root.width
-                    height: root.isVertical ? root.height : root.embeddedOverhang
+                    x: root.isVertical ? (root.farEdge ? -root.embeddedOverhang - shadowPad : root.crossExtent) : -shadowPad
+                    y: root.isVertical ? -shadowPad : (root.farEdge ? -root.embeddedOverhang - shadowPad : root.crossExtent)
+                    width: root.isVertical ? root.embeddedOverhang + shadowPad : root.width + 2 * shadowPad
+                    height: root.isVertical ? root.height + 2 * shadowPad : root.embeddedOverhang + shadowPad
+
+                    Loader {
+                        anchors.fill: overhang
+                        active: root.shadowEnabled
+                        sourceComponent: shadowComponent
+                    }
 
                     MorphSurface {
+                        id: overhang
+
                         motion: root.surfaceMotion
                         x: root.currentVisualX - overhangClip.x
                         y: root.currentVisualY - overhangClip.y
@@ -636,6 +671,21 @@ Item {
     }
 
     Component {
+        id: shadowComponent
+
+        ElevationShadow {
+            level: Theme.elevationLevel2
+            direction: root.effectiveShadowDirection
+            fallbackOffset: Theme.spacingXS
+            targetColor: "transparent"
+            topLeftRadius: island.topLeftRadius
+            topRightRadius: island.topRightRadius
+            bottomLeftRadius: island.bottomLeftRadius
+            bottomRightRadius: island.bottomRightRadius
+        }
+    }
+
+    Component {
         id: compactHomeComponent
 
         Loader {
@@ -666,6 +716,7 @@ Item {
 
         HomeExpanded {
             controller: root.controller
+            onWindowRequested: windowName => root.openAfterCollapse(windowName)
             resizeGeometry: root.resizeGeometry
         }
     }
@@ -703,6 +754,7 @@ Item {
 
         MediaExpanded {
             controller: root.controller
+            onWindowRequested: windowName => root.openAfterCollapse(windowName)
             resizeGeometry: root.resizeGeometry
         }
     }
@@ -792,6 +844,7 @@ Item {
 
         WallpaperExpanded {
             controller: root.controller
+            onWindowRequested: windowName => root.openAfterCollapse(windowName)
             resizeGeometry: root.resizeGeometry
             effectiveScreen: root.effectiveScreen
         }
@@ -813,6 +866,28 @@ Item {
 
         WeatherExpanded {
             controller: root.controller
+            onWindowRequested: windowName => root.openAfterCollapse(windowName)
+            resizeGeometry: root.resizeGeometry
+        }
+    }
+
+    Component {
+        id: compactWellbeingComponent
+
+        DestinationCompact {
+            controller: root.controller
+            activityId: "wellbeing"
+            iconName: "digital_wellbeing"
+            label: I18n.tr("Screen time", "dashboard card and settings card title, time spent in apps")
+        }
+    }
+
+    Component {
+        id: expandedWellbeingComponent
+
+        WellbeingExpanded {
+            controller: root.controller
+            onWindowRequested: windowName => root.openAfterCollapse(windowName)
             resizeGeometry: root.resizeGeometry
         }
     }
@@ -885,6 +960,7 @@ Item {
 
         NotificationCenterExpanded {
             controller: root.controller
+            onWindowRequested: windowName => root.openAfterCollapse(windowName)
             resizeGeometry: root.resizeGeometry
         }
     }

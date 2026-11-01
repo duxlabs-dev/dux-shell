@@ -3,7 +3,7 @@ package keymap
 import (
 	"fmt"
 
-	wlclient "github.com/AvengeMedia/dankgo/wayland/client"
+	wlclient "github.com/duxlabs-dev/dux-go/wayland/client"
 )
 
 // FromSeat opens a short-lived Wayland connection just to receive the xkb

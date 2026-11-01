@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.SystemTray
@@ -33,29 +34,38 @@ Item {
         for (const screenName in BarWidgetService.frameHostedBars)
             bars.push(...BarWidgetService.frameBarsForScreen(screenName));
 
-        let currentBar = null;
-        let islandBar = null;
-        for (const bar of bars) {
-            if (!bar)
-                continue;
-
-            const onFocusedScreen = focusedScreenName && bar.modelData?.name === focusedScreenName;
-            const hasRef = !refPropertyName || !!bar[refPropertyName];
-            if (!hasRef)
-                continue;
-
-            if (bar.isIsland) {
-                if (!islandBar || onFocusedScreen)
-                    islandBar = bar;
-                continue;
+        const configOrder = SettingsData.barConfigs.map(config => config.id);
+        const screenOrder = Quickshell.screens.map(screen => screen.name);
+        const lastBarId = focusedScreenName ? SettingsData.lastUsedBarByScreen[focusedScreenName] : "";
+        // Same order as BarWidgetService.resolveIpcWidget, so every IPC path picks the same bar.
+        const rank = bar => {
+            const screenName = bar.modelData?.name;
+            const onFocused = !!focusedScreenName && screenName === focusedScreenName;
+            const registration = refPropertyName ? BarWidgetService.registrationForItem(bar[refPropertyName]) : null;
+            const tier = !refPropertyName || BarWidgetService.registrationShown(registration) ? 0 : BarWidgetService.registrationLive(registration) ? 1 : 2;
+            const position = bar.barConfig?.position;
+            return [bar.isIsland ? 1 : 0, onFocused ? 0 : 1, tier, onFocused && bar.barConfig?.id === lastBarId ? 0 : 1, screenOrder.indexOf(screenName), position === SettingsData.Position.Left || position === SettingsData.Position.Right ? 1 : 0, configOrder.indexOf(bar.barConfig?.id)];
+        };
+        const compare = (a, b) => {
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i])
+                    return a[i] - b[i];
             }
+            return 0;
+        };
 
-            currentBar = bar;
-            if (onFocusedScreen)
-                break;
+        let best = null;
+        let bestRank = null;
+        for (const bar of bars) {
+            if (!bar || (refPropertyName && !bar[refPropertyName]))
+                continue;
+            const barRank = rank(bar);
+            if (!best || compare(barRank, bestRank) < 0) {
+                best = bar;
+                bestRank = barRank;
+            }
         }
-
-        return currentBar ?? islandBar;
+        return best;
     }
 
     readonly property var defaultAppMimeTypes: ({
@@ -409,7 +419,7 @@ Item {
         }
 
         function close(): string {
-            const islandClosed = SettingsData.islandDashActivities.filter(activity => PopoutService.closeIslandActivity(activity)).length > 0;
+            const islandClosed = [...SettingsData.islandDashActivities, "wellbeing"].filter(activity => PopoutService.closeIslandActivity(activity)).length > 0;
             if (root.dankDashPopoutLoaderRef.item)
                 root.dankDashPopoutLoaderRef.item.dashVisible = false;
             return islandClosed || root.dankDashPopoutLoaderRef.item ? "DASH_CLOSE_SUCCESS" : "DASH_CLOSE_FAILED";
@@ -653,27 +663,14 @@ Item {
 
     IpcHandler {
         function toggle(provider: string): string {
-            if (!provider)
-                return "ERROR: No provider specified";
-
-            KeybindsService.loadCheatsheet(provider);
-            root.hyprKeybindsModalLoaderRef.active = true;
-
-            if (!root.hyprKeybindsModalLoaderRef.item)
-                return `KEYBINDS_TOGGLE_FAILED: ${provider}`;
-
-            if (root.hyprKeybindsModalLoaderRef.item.shouldBeVisible)
-                root.hyprKeybindsModalLoaderRef.item.close();
-            else
-                root.hyprKeybindsModalLoaderRef.item.open();
-            return `KEYBINDS_TOGGLE_SUCCESS: ${provider}`;
+            return toggleWithPath(provider, "");
         }
 
         function toggleWithPath(provider: string, path: string): string {
             if (!provider)
                 return "ERROR: No provider specified";
 
-            KeybindsService.loadCheatsheet(provider);
+            KeybindsService.loadCheatsheet(provider, path);
             root.hyprKeybindsModalLoaderRef.active = true;
 
             if (!root.hyprKeybindsModalLoaderRef.item)
@@ -683,35 +680,25 @@ Item {
                 root.hyprKeybindsModalLoaderRef.item.close();
             else
                 root.hyprKeybindsModalLoaderRef.item.open();
-            return `KEYBINDS_TOGGLE_SUCCESS: ${provider} (${path})`;
+            return path ? `KEYBINDS_TOGGLE_SUCCESS: ${provider} (${path})` : `KEYBINDS_TOGGLE_SUCCESS: ${provider}`;
         }
 
         function open(provider: string): string {
-            if (!provider)
-                return "ERROR: No provider specified";
-
-            KeybindsService.loadCheatsheet(provider);
-            root.hyprKeybindsModalLoaderRef.active = true;
-
-            if (!root.hyprKeybindsModalLoaderRef.item)
-                return `KEYBINDS_OPEN_FAILED: ${provider}`;
-
-            root.hyprKeybindsModalLoaderRef.item.open();
-            return `KEYBINDS_OPEN_SUCCESS: ${provider}`;
+            return openWithPath(provider, "");
         }
 
         function openWithPath(provider: string, path: string): string {
             if (!provider)
                 return "ERROR: No provider specified";
 
-            KeybindsService.loadCheatsheet(provider);
+            KeybindsService.loadCheatsheet(provider, path);
             root.hyprKeybindsModalLoaderRef.active = true;
 
             if (!root.hyprKeybindsModalLoaderRef.item)
                 return `KEYBINDS_OPEN_FAILED: ${provider}`;
 
             root.hyprKeybindsModalLoaderRef.item.open();
-            return `KEYBINDS_OPEN_SUCCESS: ${provider} (${path})`;
+            return path ? `KEYBINDS_OPEN_SUCCESS: ${provider} (${path})` : `KEYBINDS_OPEN_SUCCESS: ${provider}`;
         }
 
         function close(): string {
@@ -904,7 +891,7 @@ Item {
 
         function toggleReveal(selector: string, value: string): string {
             return withBarConfig(selector, value, false, bar => {
-                if (!bar.autoHide)
+                if (!bar.autoHide && !BarWidgetService.dankBarItems[bar.id]?.fullscreenAutoHide)
                     return "BAR_AUTO_HIDE_DISABLED";
                 if (!(bar.visible ?? true)) {
                     SettingsData.updateBarConfig(bar.id, {
@@ -1092,7 +1079,11 @@ Item {
         }
 
         function set(key: string, value: string): string {
-            if (!(key in SettingsData)) {
+            if (AdminPolicy.disableSettingsIpcSet)
+                return "SETTINGS_SET_DISABLED";
+            if (SettingsData.isManaged(key))
+                return "SETTINGS_SET_MANAGED";
+            if (!SettingsData.hasSetting(key)) {
                 log.warn("Cannot set property, not found:", key);
                 return "SETTINGS_INVALID_KEY";
             }
@@ -1127,8 +1118,8 @@ Item {
                 }
 
                 log.warn("Setting:", key, value);
-                SettingsData[key] = value;
-                SettingsData.saveSettings();
+                if (!SettingsData.set(key, value))
+                    throw `${value} is not a valid ${key}`;
                 return "SETTINGS_SET_SUCCESS";
             } catch (e) {
                 log.warn("Failed to set property:", key, "error:", e);

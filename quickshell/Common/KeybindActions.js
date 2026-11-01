@@ -850,6 +850,10 @@ const NIRI_ACTIONS = {
             label: "Toggle Shortcuts Inhibit"
         },
         {
+            id: "toggle-touchpad",
+            label: "Toggle Touchpad"
+        },
+        {
             id: "quit",
             label: "Quit niri"
         },
@@ -1828,6 +1832,10 @@ const HYPRLAND_ACTIONS = {
         {
             id: "forcerendererreload",
             label: "Force Renderer Reload"
+        },
+        {
+            id: "reloadconfig",
+            label: "Reload Config"
         },
         {
             id: "dpms on",
@@ -3059,7 +3067,7 @@ function getActionLabel(action, compositor) {
     }
 
     if (action.startsWith("spawn sh -c "))
-        return action.slice(12).replace(/^["']|["']$/g, "");
+        return parseShellCommand(action);
     if (action.startsWith("spawn "))
         return action.slice(6);
     return action;
@@ -3127,7 +3135,7 @@ function buildShellAction(compositor, shellCmd, shell) {
     if (compositor === "mangowc")
         return "spawn_shell " + shellCmd;
     var shellBin = shell || "sh";
-    return "spawn " + shellBin + " -c \"" + shellCmd.replace(/"/g, "\\\"") + "\"";
+    return "spawn " + shellBin + " -c \"" + shellCmd.replace(/["\\]/g, "\\$&") + "\"";
 }
 
 function parseSpawnCommand(action) {
@@ -3154,7 +3162,7 @@ function parseShellCommand(action) {
         var content = match[2];
         if ((content.startsWith('"') && content.endsWith('"')) || (content.startsWith("'") && content.endsWith("'")))
             content = content.slice(1, -1);
-        return content.replace(/\\"/g, "\"");
+        return content.replace(/\\(["\\])/g, "$1");
     }
     if (action.startsWith("spawn_shell "))
         return action.slice(12);
@@ -3210,6 +3218,50 @@ function findDmsArgKey(action) {
     return best;
 }
 
+// same splitting as core's niri action parser: double quotes group, backslash escapes
+function splitNiriActionArgs(text) {
+    var parts = [];
+    var current = "";
+    var quoted = false;
+    var inQuote = false;
+    var escaped = false;
+    for (var i = 0; i < text.length; i++) {
+        var ch = text[i];
+        if (escaped) {
+            current += ch;
+            escaped = false;
+        } else if (ch === "\\") {
+            escaped = true;
+        } else if (ch === '"') {
+            quoted = true;
+            inQuote = !inQuote;
+        } else if (ch === " " && !inQuote) {
+            if (current || quoted)
+                parts.push({
+                    value: current,
+                    quoted: quoted
+                });
+            current = "";
+            quoted = false;
+        } else {
+            current += ch;
+        }
+    }
+    if (current || quoted)
+        parts.push({
+            value: current,
+            quoted: quoted
+        });
+    return parts;
+}
+
+function quoteNiriActionArg(value) {
+    var text = String(value);
+    if (text !== "" && !/[\s"\\]/.test(text))
+        return text;
+    return '"' + text.replace(/[\\"]/g, "\\$&") + '"';
+}
+
 function parseCompositorActionArgs(compositor, action) {
     if (!action)
         return {
@@ -3233,26 +3285,29 @@ function parseCompositorActionArgs(compositor, action) {
 
     switch (compositor) {
     case "niri":
+        var tokens = splitNiriActionArgs(action.slice(base.length));
         switch (base) {
         case "move-column-to-workspace":
-            for (var i = 0; i < argParts.length; i++) {
-                if (argParts[i] === "focus=true" || argParts[i] === "focus=false") {
-                    args.focus = argParts[i] === "focus=true";
+            for (var i = 0; i < tokens.length; i++) {
+                if (!tokens[i].quoted && (tokens[i].value === "focus=true" || tokens[i].value === "focus=false")) {
+                    args.focus = tokens[i].value === "focus=true";
                 } else if (!args.index) {
-                    args.index = argParts[i];
+                    args.index = tokens[i].value;
                 }
             }
             break;
         case "move-column-to-workspace-down":
         case "move-column-to-workspace-up":
-            for (var k = 0; k < argParts.length; k++) {
-                if (argParts[k] === "focus=true" || argParts[k] === "focus=false")
-                    args.focus = argParts[k] === "focus=true";
+            for (var k = 0; k < tokens.length; k++) {
+                if (!tokens[k].quoted && (tokens[k].value === "focus=true" || tokens[k].value === "focus=false"))
+                    args.focus = tokens[k].value === "focus=true";
             }
             break;
         default:
-            for (var j = 0; j < argParts.length; j++) {
-                var kv = argParts[j].split("=");
+            var firstArg = argConfig.args && argConfig.args[0];
+            var positional = firstArg && (firstArg.type === "text" || firstArg.type === "number") ? firstArg.name : "value";
+            for (var j = 0; j < tokens.length; j++) {
+                var kv = tokens[j].quoted ? [] : tokens[j].value.split("=");
                 if (kv.length === 2) {
                     switch (kv[1]) {
                     case "true":
@@ -3265,7 +3320,7 @@ function parseCompositorActionArgs(compositor, action) {
                         args[kv[0]] = kv[1];
                     }
                 } else {
-                    args.value = args.value ? (args.value + " " + argParts[j]) : argParts[j];
+                    args[positional] = args[positional] ? (args[positional] + " " + tokens[j].value) : tokens[j].value;
                 }
             }
         }
@@ -3402,7 +3457,7 @@ function buildCompositorAction(compositor, base, args) {
         switch (base) {
         case "move-column-to-workspace":
             if (args.index)
-                parts.push(args.index);
+                parts.push(quoteNiriActionArg(args.index));
             if (args.focus === false)
                 parts.push("focus=false");
             break;
@@ -3413,9 +3468,9 @@ function buildCompositorAction(compositor, base, args) {
             break;
         default:
             if (args.value)
-                parts.push(args.value);
+                parts.push(quoteNiriActionArg(args.value));
             else if (args.index)
-                parts.push(args.index);
+                parts.push(quoteNiriActionArg(args.index));
             for (var prop in args) {
                 switch (prop) {
                 case "value":

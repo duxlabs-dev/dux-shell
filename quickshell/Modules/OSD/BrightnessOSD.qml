@@ -17,6 +17,7 @@ LevelOSD {
         switch (device?.class) {
         case "backlight":
         case "ddc":
+        case "software":
             return "monitor";
         default:
             return BrightnessService.brightnessIconName(device);
@@ -41,7 +42,7 @@ LevelOSD {
 
     onLevelRequested: level => {
         displayLevel = level;
-        BrightnessService.setBrightness(level, BrightnessService.lastIpcDevice, true);
+        BrightnessService.setGroupBrightness(level, BrightnessService.lastIpcTargets(), true);
     }
 
     Connections {

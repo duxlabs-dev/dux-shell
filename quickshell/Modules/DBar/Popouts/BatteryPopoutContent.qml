@@ -204,7 +204,7 @@ Item {
                         width: Theme.iconButtonSize + Theme.spacingM
                         height: width
                         anchors.verticalCenter: parent.verticalCenter
-                        value: BatteryService.hasBatteryReading ? BatteryService.batteryLevel / 100 : -1
+                        value: BatteryService.hasBatteryReading ? BatteryService.displayBatteryLevel / 100 : -1
                         trackGap: Theme.spacingXXS
                         ringColor: root.levelLow ? Theme.error : Theme.primary
                         animated: root.active
@@ -224,7 +224,7 @@ Item {
 
                         StyledText {
                             width: parent.width
-                            text: root.formatPercent(BatteryService.batteryLevel)
+                            text: root.formatPercent(BatteryService.displayBatteryLevelText)
                             visible: BatteryService.hasBatteryReading
                             font.pixelSize: Theme.fontSizeXXLarge
                             color: root.levelColor
@@ -307,7 +307,7 @@ Item {
                         enabled: PowerProfileWatcher.available
                         model: profiles.map(profile => ({
                                     text: Theme.getPowerProfileLabel(profile),
-                                    icon: ["eco", "bolt", "speed"][profile]
+                                    icon: ["eco", "speed", "bolt"][profile]
                                 }))
                         currentIndex: profiles.indexOf(PowerProfileWatcher.currentProfile)
                         onSelectionChanged: (index, selected) => {

@@ -329,17 +329,15 @@ Singleton {
     }
 
     function evaluateNightMode() {
-        if (!nightModeEnabled) {
-            return;
-        }
-
         if (SessionData.nightModeAutoEnabled) {
             restartTimer.nextAction = "automation";
             restartTimer.start();
-        } else {
-            restartTimer.nextAction = "direct";
-            restartTimer.start();
+            return;
         }
+        if (!nightModeEnabled)
+            return;
+        restartTimer.nextAction = "direct";
+        restartTimer.start();
     }
 
     function runResumeRecoveryPass() {
@@ -378,14 +376,16 @@ Singleton {
                 if (_gammaNeeded)
                     applyGammaAdjustments();
 
-                if (nightModeEnabled) {
-                    _setNightModeEnabled(!nightModePaused, true, success => {
-                        if (!success)
-                            return;
-                        evaluateNightMode();
-                        handleNightModeExceptions();
-                    });
+                if (!nightModeEnabled) {
+                    evaluateNightMode();
+                    return;
                 }
+                _setNightModeEnabled(!nightModePaused, true, success => {
+                    if (!success)
+                        return;
+                    evaluateNightMode();
+                    handleNightModeExceptions();
+                });
             }
         });
     }
@@ -615,7 +615,7 @@ Singleton {
 
         function gamma(value: string): string {
             if (!root.gammaAdjustAvailable)
-                return "Gamma adjustment not available (requires DMS API v34+)";
+                return "Gamma adjustment not available (requires dms API v34+)";
             if (!value)
                 return SessionData.displayGamma.toString();
 
@@ -629,7 +629,7 @@ Singleton {
 
         function contrast(value: string): string {
             if (!root.gammaAdjustAvailable)
-                return "Contrast adjustment not available (requires DMS API v34+)";
+                return "Contrast adjustment not available (requires dms API v34+)";
             if (!value)
                 return SessionData.displayContrast.toString();
 

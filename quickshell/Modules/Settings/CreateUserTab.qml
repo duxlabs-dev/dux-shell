@@ -18,6 +18,8 @@ Item {
     property bool pendingAdmin: false
     property bool pendingGreeter: false
 
+    Component.onCompleted: UsersService.refresh()
+
     function _resetForm() {
         pendingUsername = "";
         pendingPassword = "";
@@ -72,7 +74,7 @@ Item {
 
                     DTextField {
                         id: usernameField
-                        expressive: true
+                        outlined: true
                         leftIconName: "person"
                         labelText: I18n.tr("Username")
                         width: parent.width
@@ -113,7 +115,7 @@ Item {
 
                     DTextField {
                         id: passwordField
-                        expressive: true
+                        outlined: true
                         leftIconName: "lock"
                         labelText: I18n.tr("Password")
                         width: parent.width
@@ -131,7 +133,7 @@ Item {
 
                     DTextField {
                         id: confirmField
-                        expressive: true
+                        outlined: true
                         leftIconName: "lock"
                         labelText: I18n.tr("Confirm password")
                         width: parent.width
@@ -167,7 +169,7 @@ Item {
                 settingKey: "createUserGreeter"
                 tags: ["user", "greeter", "login", "sync"]
                 text: I18n.tr("Allow greeter login access")
-                description: I18n.tr("Adds them to the %1 group so they can run dms-greeter sync --profile", "create user greeter toggle description, %1 is a group name").arg(UsersService.greeterGroup)
+                description: I18n.tr("Adds them to the %1 group so they can run %2", "create user greeter toggle description, %1 is a group name, %2 a command").arg(UsersService.greeterGroup).arg("dms-greeter sync --profile")
                 checked: root.pendingGreeter
                 onToggled: checked => root.pendingGreeter = checked
             }

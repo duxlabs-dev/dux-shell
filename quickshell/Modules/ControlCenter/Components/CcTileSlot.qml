@@ -73,9 +73,9 @@ DEditableGridSlot {
     }
 
     onPressAndHold: {
-        if (!editChrome.hasOptions)
+        if (!WidgetUtils.hasOptions(widgetData.id))
             return;
-        root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, editChrome);
+        root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, chromeBounds);
     }
 
     onResizeRequested: (requestedWidth, requestedHeight) => {
@@ -117,30 +117,40 @@ DEditableGridSlot {
         small: root.small
     }
 
-    CcEditChrome {
-        id: editChrome
+    Item {
+        id: chromeBounds
 
         anchors.fill: parent
-        anchors.margins: -contentInset
-        anchors.topMargin: -contentInset + root.bodyInset
-        anchors.bottomMargin: -contentInset + root.bodyInset
+        anchors.margins: -CcMetrics.editChromeInset
+        anchors.topMargin: -CcMetrics.editChromeInset + root.bodyInset
+        anchors.bottomMargin: -CcMetrics.editChromeInset + root.bodyInset
+    }
+
+    Loader {
+        id: editChromeLoader
+
+        anchors.fill: chromeBounds
         z: 2
-        visible: root.grid.editMode
-        enabled: root.interactionEnabled
-        widgetData: root.widgetData
-        passthrough: root.passthrough
-        dragging: root.dragging
-        resizing: root.resizing
-        cornerRadius: root.small ? Theme.fullRadius(root.width, root.height - root.bodyInset * 2) : (root.tileItem?.bodyRadius ?? Theme.fullRadius(root.width, root.height))
-        sizeText: root.cols + "×" + (root.small ? CcMetrics.smallRowFraction : root.rows)
-        onResizeStarted: (px, py) => {
-            root.biasH = root.small ? CcMetrics.smallRowFraction * root.grid.cellWidth - CcMetrics.gridGap - root.height : 0;
-            root.beginResize(px, py);
+        active: root.grid.editMode || root.resizing
+
+        sourceComponent: CcEditChrome {
+            visible: root.grid.editMode
+            enabled: root.interactionEnabled
+            widgetData: root.widgetData
+            passthrough: root.passthrough
+            dragging: root.dragging
+            resizing: root.resizing
+            cornerRadius: root.small ? CcMetrics.pillRadius(root.width, root.height - root.bodyInset * 2) : (root.tileItem?.bodyRadius ?? CcMetrics.pillRadius(root.width, root.height))
+            sizeText: root.cols + "×" + (root.small ? CcMetrics.smallRowFraction : root.rows)
+            onResizeStarted: (px, py) => {
+                root.biasH = root.small ? CcMetrics.smallRowFraction * root.grid.cellWidth - CcMetrics.gridGap - root.height : 0;
+                root.beginResize(px, py);
+            }
+            onResizeMoved: (px, py) => root.resizeTo(px, py)
+            onResizeEnded: root.finishResize()
+            onResizeCanceled: root.cancelResize()
+            onRemoveRequested: root.grid.removeWidget(root.grid.savedIndex(root.index))
+            onConfigRequested: anchor => root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, anchor)
         }
-        onResizeMoved: (px, py) => root.resizeTo(px, py)
-        onResizeEnded: root.finishResize()
-        onResizeCanceled: root.cancelResize()
-        onRemoveRequested: root.grid.removeWidget(root.grid.savedIndex(root.index))
-        onConfigRequested: anchor => root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, anchor)
     }
 }

@@ -119,9 +119,10 @@ Singleton {
             (entry.pinned ? pinned : unpinned).push(entry);
         }
 
-        const byIdDesc = (a, b) => b.id - a.id;
-        pinned.sort(byIdDesc);
-        unpinned.sort(byIdDesc);
+        // JS Date keeps milliseconds only, so rows sharing one get id as the tie-break.
+        const byTimestampDesc = (a, b) => (new Date(b.timestamp) - new Date(a.timestamp)) || (b.id - a.id);
+        pinned.sort(byTimestampDesc);
+        unpinned.sort(byTimestampDesc);
 
         pinnedEntries = pinned;
         unpinnedEntries = unpinned;

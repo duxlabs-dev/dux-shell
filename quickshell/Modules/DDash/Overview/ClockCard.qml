@@ -42,6 +42,7 @@ Card {
             minutes: root.minuteText
             seconds: root.showSeconds ? root.secondText : ""
             dateText: root.dateText
+            weight: root.options.weight
             color: root.accentColor
             supportingColor: root.supportingColor
         }

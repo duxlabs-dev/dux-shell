@@ -120,7 +120,7 @@ FocusScope {
             cancelDrag();
     }
     readonly property bool vertical: surfaceContext.isVertical
-    readonly property bool magnificationEnabled: (root.surfaceContext.config?.magnification ?? false) && !root.surfaceContext.editMode
+    readonly property bool magnificationEnabled: (root.surfaceContext.config?.magnification ?? false) && !root.surfaceContext.editMode && root.surfaceContext.live
     readonly property bool magnificationExpand: (root.surfaceContext.config?.magnificationExpand ?? false) && root.magnificationEnabled && !root.fillAvailable
     readonly property string magnificationProfile: root.surfaceContext.config?.magnificationProfile ?? "parabolic"
     readonly property real maxMagnification: Math.max(1.05, Math.min(2.0, (root.surfaceContext.config?.magnificationScale ?? 130) / 100))

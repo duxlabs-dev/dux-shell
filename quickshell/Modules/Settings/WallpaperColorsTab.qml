@@ -12,6 +12,7 @@ import qs.Modules.Settings.Widgets
 import "../../Common/Format.js" as Format
 import "../../Common/ThemePalette.js" as ThemePalette
 import "../../DCommon/Common/MaterialWallpaper.js" as Art
+import "../../Common/WallpaperFormats.js" as WallpaperFormats
 
 Column {
     id: root
@@ -226,10 +227,17 @@ Column {
         SettingsData.set("cursorSettings", updated);
     }
 
+    function setHyprlandCursorWarp(mode) {
+        const updated = JSON.parse(JSON.stringify(SettingsData.cursorSettings));
+        updated.hyprland = updated.hyprland || {};
+        updated.hyprland.warpOnMonitorChange = mode;
+        SettingsData.set("cursorSettings", updated);
+    }
+
     function warnIfMissingQtTheme() {
         if (Quickshell.env("QT_QPA_PLATFORMTHEME") === "gtk3" || Quickshell.env("QT_QPA_PLATFORMTHEME") === "qt6ct" || Quickshell.env("QT_QPA_PLATFORMTHEME_QT6") === "qt6ct" || SettingsData.qtengineActive || Quickshell.env("QT_QPA_PLATFORMTHEME") === "kde")
             return;
-        ToastService.showError(I18n.tr("Missing Environment Variables", "qt theme env error title"), I18n.tr("You need to set one of:\nQT_QPA_PLATFORMTHEME=gtk3 OR\nQT_QPA_PLATFORMTHEME=qt6ct OR\nQT_QPA_PLATFORMTHEME=qtengine\nas environment variables, and then restart the shell.\n\nOnly qt6ct requires qt6ct-kde to be installed.", "qt theme env error body"));
+        ToastService.showError(I18n.tr("Missing Environment Variables", "qt theme env error title"), I18n.tr("Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.", "qt theme env error body, %1 is a list of variable assignments, %2 and %3 are package names").arg(["QT_QPA_PLATFORMTHEME=gtk3", "QT_QPA_PLATFORMTHEME=qt6ct", "QT_QPA_PLATFORMTHEME=qtengine"].join("\n")).arg("qt6ct").arg("qt6ct-kde"));
     }
 
     SettingsCard {
@@ -385,6 +393,13 @@ Column {
                 iconName: "restore"
                 onClicked: SessionData.restoreMaterialWallpaperProfiles()
             }
+
+            DButton {
+                text: I18n.tr("Create")
+                iconName: "open_in_new"
+                tooltipText: Site.wallpaperCreator
+                onClicked: Qt.openUrlExternally(Site.wallpaperCreator)
+            }
         }
 
         SettingsDropdownRow {
@@ -392,12 +407,16 @@ Column {
 
             readonly property var fillModes: ["Stretch", "Fit", "Fill", "Scrolling", "Tile", "TileVertically", "TileHorizontally", "Pad"]
             readonly property var fillModeLabels: [I18n.tr("Stretch", "wallpaper fill mode"), I18n.tr("Fit", "wallpaper fill mode"), I18n.tr("Fill", "wallpaper fill mode"), I18n.tr("Scroll", "wallpaper fill mode"), I18n.tr("Tile", "wallpaper fill mode"), I18n.tr("Tile Vertically", "wallpaper fill mode"), I18n.tr("Tile Horizontally", "wallpaper fill mode"), I18n.tr("Pad", "wallpaper fill mode")]
+            // dms picks the animation driver at launch from this setting
+            readonly property bool simpleAnimationDriver: Quickshell.env("QSG_USE_SIMPLE_ANIMATION_DRIVER") === "1"
+            readonly property bool driverMismatch: (SettingsData.wallpaperFillMode === "Scrolling") !== simpleAnimationDriver
 
             tab: "wallpaper"
             tags: ["background", "fill", "fit", "stretch", "tile", "scale"]
             settingKey: "wallpaperFillMode"
             resetKeys: root.perMonitor ? [] : ["wallpaperFillMode"]
             text: I18n.tr("Fill mode")
+            description: driverMismatch ? I18n.tr("Requires restart") : ""
             visible: root.wallpaperIsImage
             dropdownWidth: 190
             options: fillModeLabels
@@ -637,7 +656,7 @@ Column {
 
         SettingsNoteRow {
             visible: !Theme.matugenAvailable
-            text: I18n.tr("Install matugen package for dynamic theming", "matugen installation hint")
+            text: I18n.tr("Install the %1 package for dynamic theming", "matugen installation hint, %1 is the package name").arg("matugen")
         }
 
         SettingsRow {
@@ -795,64 +814,80 @@ Column {
 
     SettingsCard {
         tab: "wallpaper"
-        tags: ["surface", "color", "bar", "popout", "modal", "card", "chip", "background", "elevation"]
+        tags: ["surface", "color", "bar", "popout", "modal", "card", "chip", "tooltip", "background", "elevation"]
         title: I18n.tr("Surfaces")
-        settingKey: "surfaceColors"
+        settingKey: "surfaceRoles"
 
         SettingsRow {
-            settingKey: "surfaceColorsPreview"
+            settingKey: "surfaceRolesPreview"
             body: SettingsSurfacePreview {
                 width: parent.width
             }
         }
 
-        Repeater {
-            model: [
-                {
-                    "key": "hostSurfaceColor",
-                    "customKey": "hostSurfaceCustomColor",
-                    "fallback": "s",
-                    "text": I18n.tr("Host"),
-                    "tags": ["host", "bar", "popout", "modal", "window"]
-                },
-                {
-                    "key": "cardSurfaceColor",
-                    "customKey": "cardSurfaceCustomColor",
-                    "fallback": "sc",
-                    "text": I18n.tr("Cards"),
-                    "tags": ["card", "row", "section"]
-                },
-                {
-                    "key": "chipSurfaceColor",
-                    "customKey": "chipSurfaceCustomColor",
-                    "fallback": "sch",
-                    "text": I18n.tr("Chip", "surface role"),
-                    "tags": ["chip", "field", "dropdown", "input"]
-                },
-                {
-                    "key": "chipSurfaceNestedColor",
-                    "customKey": "chipSurfaceNestedCustomColor",
-                    "fallback": "schh",
-                    "text": I18n.tr("Nested chip", "surface role"),
-                    "tags": ["nested", "chip", "control"]
-                }
-            ]
+        SurfaceColorRow {
+            tab: "wallpaper"
+            tags: ["surface", "color", "host", "bar", "popout", "modal", "window"]
+            settingKey: "hostSurfaceColor"
+            resetKeys: ["hostSurfaceColor", "hostSurfaceCustomColor"]
+            text: I18n.tr("Host")
+            defaultColor: Theme.roleColor("s")
+            currentMode: SettingsData.hostSurfaceColor
+            customColor: SettingsData.hostSurfaceCustomColor
+            onModeSelected: mode => SettingsData.set("hostSurfaceColor", mode)
+            onCustomColorSelected: selectedColor => SettingsData.set("hostSurfaceCustomColor", selectedColor.toString())
+        }
 
-            SurfaceColorRow {
-                required property var modelData
+        SurfaceColorRow {
+            tab: "wallpaper"
+            tags: ["surface", "color", "card", "row", "section"]
+            settingKey: "cardSurfaceColor"
+            resetKeys: ["cardSurfaceColor", "cardSurfaceCustomColor"]
+            text: I18n.tr("Cards")
+            defaultColor: Theme.roleColor("sc")
+            currentMode: SettingsData.cardSurfaceColor
+            customColor: SettingsData.cardSurfaceCustomColor
+            onModeSelected: mode => SettingsData.set("cardSurfaceColor", mode)
+            onCustomColorSelected: selectedColor => SettingsData.set("cardSurfaceCustomColor", selectedColor.toString())
+        }
 
-                tab: "wallpaper"
-                tags: ["surface", "color"].concat(modelData.tags)
-                settingKey: modelData.key
-                resetKeys: [modelData.key, modelData.customKey]
-                text: modelData.text
-                defaultColor: Theme.roleColor(modelData.fallback)
-                currentMode: SettingsData[modelData.key]
-                customColor: SettingsData[modelData.customKey]
-                pickerTitle: modelData.text
-                onModeSelected: mode => SettingsData.set(modelData.key, mode)
-                onCustomColorSelected: selectedColor => SettingsData.set(modelData.customKey, selectedColor.toString())
-            }
+        SurfaceColorRow {
+            tab: "wallpaper"
+            tags: ["surface", "color", "chip", "field", "dropdown", "input"]
+            settingKey: "chipSurfaceColor"
+            resetKeys: ["chipSurfaceColor", "chipSurfaceCustomColor"]
+            text: I18n.tr("Chip", "surface role")
+            defaultColor: Theme.roleColor("sch")
+            currentMode: SettingsData.chipSurfaceColor
+            customColor: SettingsData.chipSurfaceCustomColor
+            onModeSelected: mode => SettingsData.set("chipSurfaceColor", mode)
+            onCustomColorSelected: selectedColor => SettingsData.set("chipSurfaceCustomColor", selectedColor.toString())
+        }
+
+        SurfaceColorRow {
+            tab: "wallpaper"
+            tags: ["surface", "color", "nested", "chip", "control"]
+            settingKey: "chipSurfaceNestedColor"
+            resetKeys: ["chipSurfaceNestedColor", "chipSurfaceNestedCustomColor"]
+            text: I18n.tr("Nested chip", "surface role")
+            defaultColor: Theme.roleColor("schh")
+            currentMode: SettingsData.chipSurfaceNestedColor
+            customColor: SettingsData.chipSurfaceNestedCustomColor
+            onModeSelected: mode => SettingsData.set("chipSurfaceNestedColor", mode)
+            onCustomColorSelected: selectedColor => SettingsData.set("chipSurfaceNestedCustomColor", selectedColor.toString())
+        }
+
+        SurfaceColorRow {
+            tab: "wallpaper"
+            tags: ["surface", "color", "tooltip", "hint", "hover", "toast"]
+            settingKey: "tooltipSurfaceColor"
+            resetKeys: ["tooltipSurfaceColor", "tooltipSurfaceCustomColor"]
+            text: I18n.tr("Tooltip", "surface role")
+            defaultColor: Theme.roleColor("inverseSurface")
+            currentMode: SettingsData.tooltipSurfaceColor
+            customColor: SettingsData.tooltipSurfaceCustomColor
+            onModeSelected: mode => SettingsData.set("tooltipSurfaceColor", mode)
+            onCustomColorSelected: selectedColor => SettingsData.set("tooltipSurfaceCustomColor", selectedColor.toString())
         }
     }
 
@@ -1021,6 +1056,25 @@ Column {
             }
         }
 
+        SettingsDropdownRow {
+            readonly property var modes: [-1, 0, 1, 2]
+            tab: "theme"
+            tags: ["cursor", "warp", "monitor", "display", "focus", "warp_on_monitor_change"]
+            settingKey: "cursorWarpOnMonitorChange"
+            text: I18n.tr("Warp on display change", "Hyprland cursor option, move the pointer to the last focused window when focus moves to another display")
+            visible: CompositorService.isHyprland && HyprlandService.hyprSupports("cursor:warp_on_monitor_change")
+            options: [I18n.tr("Same as workspace change", "Hyprland cursor warp option, follow the workspace change warp setting"), I18n.tr("Off"), I18n.tr("On"), I18n.tr("Force", "Hyprland cursor warp option, warp even when cursor warps are disabled")]
+            currentValue: options[Math.max(0, modes.indexOf(SettingsData.cursorSettings.hyprland?.warpOnMonitorChange ?? -1))]
+            modified: (SettingsData.cursorSettings.hyprland?.warpOnMonitorChange ?? -1) !== -1
+            onResetRequested: root.setHyprlandCursorWarp(-1)
+            onValueChanged: value => {
+                const index = options.indexOf(value);
+                if (index < 0)
+                    return;
+                root.setHyprlandCursorWarp(modes[index]);
+            }
+        }
+
         SettingsSliderRow {
             tab: "theme"
             tags: ["cursor", "hide", "timeout", "inactive"]
@@ -1075,7 +1129,7 @@ Column {
             settingKey: "blurredWallpaperLayer"
             visible: CompositorService.isNiri
             text: I18n.tr("Blur layer")
-            description: I18n.tr("Layer namespace dms:blurwallpaper, needs a niri blur rule")
+            description: I18n.tr("Layer namespace %1, needs a niri blur rule", "blur layer toggle description, %1 is the layer namespace").arg("dms:blurwallpaper")
             checked: SettingsData.blurredWallpaperLayer
             onToggled: checked => SettingsData.set("blurredWallpaperLayer", checked)
         }
@@ -1122,7 +1176,7 @@ Column {
             bucket: "wallpaper"
             showHiddenFiles: true
             startPath: root.currentWallpaper
-            filters: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp", "*.jxl", "*.avif", "*.heif", "*.exr", "*.svg"]
+            filters: WallpaperFormats.nameFilters(true)
             onAccepted: paths => root.applyWallpaper(paths[0])
         }
     }

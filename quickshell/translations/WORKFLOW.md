@@ -1,4 +1,4 @@
-# Translation Workflow for DankMaterialShell
+# Translation Workflow for Dux Shell
 
 ## POEditor Integration Guide
 
@@ -6,7 +6,7 @@
 
 1. **Create POEditor Project**
    - Go to https://poeditor.com
-   - Create new project "DankMaterialShell"
+   - Create new project "Dux Shell"
    - Add languages you want to support (es, fr, de, etc.)
 
 2. **Import Source Strings**
@@ -172,7 +172,7 @@ curl -X POST https://api.poeditor.com/v2/projects/upload \
 ### Troubleshooting
 
 **Translations not loading?**
-- Check file exists: `~/.config/DankMaterialShell/translations/{language_code}.json`
+- Check file exists: `~/.config/dms/translations/{language_code}.json`
 - Verify JSON syntax: `python3 -m json.tool translations/es.json`
 - Check console for errors: `qs -v -p .`
 

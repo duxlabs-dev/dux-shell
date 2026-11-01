@@ -66,9 +66,9 @@ override_dh_auto_install:
 		cp -rL DankMaterialShell-$(UPSTREAM_VERSION)/quickshell/* debian/dms/usr/share/quickshell/dms/; \
 		install -Dm644 DankMaterialShell-$(UPSTREAM_VERSION)/assets/systemd/dms.service debian/dms/usr/lib/systemd/user/dms.service; \
 		install -Dm644 DankMaterialShell-$(UPSTREAM_VERSION)/assets/dms-open.desktop debian/dms/usr/share/applications/dms-open.desktop; \
-		install -Dm644 DankMaterialShell-$(UPSTREAM_VERSION)/assets/com.danklinux.dms.desktop debian/dms/usr/share/applications/com.danklinux.dms.desktop; \
-		install -Dm644 DankMaterialShell-$(UPSTREAM_VERSION)/assets/com.danklinux.dms.notepad.desktop debian/dms/usr/share/applications/com.danklinux.dms.notepad.desktop; \
-		install -Dm644 DankMaterialShell-$(UPSTREAM_VERSION)/assets/com.danklinux.dms.svg debian/dms/usr/share/icons/hicolor/scalable/apps/com.danklinux.dms.svg; \
+		install -Dm644 DankMaterialShell-$(UPSTREAM_VERSION)/assets/dev.duxlabs.shell.desktop debian/dms/usr/share/applications/dev.duxlabs.shell.desktop; \
+		install -Dm644 DankMaterialShell-$(UPSTREAM_VERSION)/assets/dev.duxlabs.shell.notepad.desktop debian/dms/usr/share/applications/dev.duxlabs.shell.notepad.desktop; \
+		install -Dm644 DankMaterialShell-$(UPSTREAM_VERSION)/assets/dev.duxlabs.shell.svg debian/dms/usr/share/icons/hicolor/scalable/apps/dev.duxlabs.shell.svg; \
 	else \
 		echo "ERROR: DankMaterialShell-$(UPSTREAM_VERSION) directory not found!" && \
 		echo "Contents of current directory:" && ls -la && \

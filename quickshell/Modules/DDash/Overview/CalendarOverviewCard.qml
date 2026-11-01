@@ -223,7 +223,7 @@ Card {
             StyledText {
                 width: parent.width - Theme.iconSizeSmall - Theme.spacingS - (launchButton.visible ? launchButton.width + Theme.spacingS : 0)
                 anchors.verticalCenter: parent.verticalCenter
-                text: CalendarService.dankBinaryExists ? I18n.tr("DankCalendar isn't running") : I18n.tr("DankCalendar isn't installed")
+                text: CalendarService.dankBinaryExists ? I18n.tr("Dux Calendar isn't running") : I18n.tr("Dux Calendar isn't installed")
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.surfaceText
                 wrapMode: Text.Wrap

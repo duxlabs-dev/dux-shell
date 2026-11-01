@@ -3,7 +3,7 @@
     "name": "CC Detail Example",
     "description": "Example plugin with Control Center detail dropdown",
     "version": "1.0.0",
-    "author": "DankMaterialShell",
+    "author": "Dux Shell",
     "type": "widget",
     "capabilities": ["control-center"],
     "component": "./DetailExampleWidget.qml",

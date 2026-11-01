@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/AvengeMedia/dankgo/material/color"
-	"github.com/AvengeMedia/dankgo/material/dynamic"
-	"github.com/AvengeMedia/dankgo/material/palettes"
+	"github.com/duxlabs-dev/dux-go/material/color"
+	"github.com/duxlabs-dev/dux-go/material/dynamic"
+	"github.com/duxlabs-dev/dux-go/material/palettes"
 )
 
 // Palette spec versions. Spec2021 is matugen's own output and the historical

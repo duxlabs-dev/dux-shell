@@ -130,9 +130,6 @@ Item {
                     text: WeatherService.formatTemp(root.daily ? column.modelData.tempMax : column.modelData.temp) ?? "--"
                     font.pixelSize: Theme.fontSizeSmall
                     font.weight: Theme.fontWeightMedium
-                    font.features: ({
-                            "tnum": 1
-                        })
                     color: column.current ? Theme.primary : Theme.surfaceText
                     horizontalAlignment: Text.AlignHCenter
                     elide: Text.ElideRight

@@ -1,7 +1,7 @@
 package errdefs
 
 import (
-	dankerrdefs "github.com/AvengeMedia/dankgo/errdefs"
+	dankerrdefs "github.com/duxlabs-dev/dux-go/errdefs"
 )
 
 type ErrorType = dankerrdefs.ErrorType

@@ -23,15 +23,18 @@ type FileLogger struct {
 func NewFileLogger() (*FileLogger, error) {
 	timestamp := time.Now().Unix()
 
-	// Use DANKINSTALL_LOG_DIR if set, otherwise fall back to /tmp.
-	logDir := os.Getenv("DANKINSTALL_LOG_DIR")
+	logDir := os.Getenv("DUXINSTALL_LOG_DIR")
+	if logDir == "" {
+		// Pre-rename name, still set in existing scripts.
+		logDir = os.Getenv("DANKINSTALL_LOG_DIR")
+	}
 	if logDir == "" {
 		logDir = "/tmp"
 	}
 	if err := os.MkdirAll(logDir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create log directory: %w", err)
 	}
-	logPath := filepath.Join(logDir, fmt.Sprintf("dankinstall-%d.log", timestamp))
+	logPath := filepath.Join(logDir, fmt.Sprintf("duxinstall-%d.log", timestamp))
 
 	file, err := os.Create(logPath)
 	if err != nil {
@@ -49,7 +52,7 @@ func NewFileLogger() (*FileLogger, error) {
 		passwordRe: passwordRe,
 	}
 
-	header := fmt.Sprintf("=== DankInstall Log ===\nStarted: %s\n\n", time.Now().Format(time.RFC3339))
+	header := fmt.Sprintf("=== DuxInstall Log ===\nStarted: %s\n\n", time.Now().Format(time.RFC3339))
 	logger.writeToFile(header)
 
 	return logger, nil
@@ -102,7 +105,7 @@ func (l *FileLogger) Close() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	footer := fmt.Sprintf("\n=== DankInstall Log End ===\nCompleted: %s\n", time.Now().Format(time.RFC3339))
+	footer := fmt.Sprintf("\n=== DuxInstall Log End ===\nCompleted: %s\n", time.Now().Format(time.RFC3339))
 	l.writer.WriteString(footer) //nolint:errcheck
 	l.writer.Flush()
 

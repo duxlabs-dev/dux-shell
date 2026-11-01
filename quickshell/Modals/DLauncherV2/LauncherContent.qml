@@ -7,6 +7,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modals.DLauncherV2.Components
+import "../../Common/LauncherKeybinds.js" as LauncherKeybinds
 
 FocusScope {
     id: root
@@ -126,8 +127,17 @@ FocusScope {
         }
 
         var hasCtrl = event.modifiers & Qt.ControlModifier;
-        var hasAlt = event.modifiers & Qt.AltModifier;
         event.accepted = true;
+
+        const launcherAction = LauncherKeybinds.actionForEvent(event, SettingsData.launcherKeybinds);
+        if (launcherAction) {
+            actionPanel.hide();
+            if (launcherAction.mode)
+                controller.setMode(launcherAction.mode);
+            else
+                controller.cycleMode(launcherAction.id === "previousMode");
+            return;
+        }
 
         switch (event.key) {
         case Qt.Key_Escape:
@@ -226,18 +236,12 @@ FocusScope {
             event.accepted = false;
             return;
         case Qt.Key_Tab:
-            if (hasCtrl) {
-                actionPanel.hide();
-                controller.cycleMode();
-            } else if (actionPanel.hasActions) {
+            if (!hasCtrl && actionPanel.hasActions) {
                 actionPanel.expanded ? actionPanel.cycleAction() : actionPanel.show();
             }
             return;
         case Qt.Key_Backtab:
-            if (hasCtrl) {
-                actionPanel.hide();
-                controller.cycleMode(true);
-            } else if (actionPanel.hasActions) {
+            if (!hasCtrl && actionPanel.hasActions) {
                 actionPanel.expanded ? actionPanel.cycleAction(true) : actionPanel.show();
             }
             return;
@@ -253,7 +257,7 @@ FocusScope {
             if (actionPanel.expanded && actionPanel.selectedActionIndex > 0) {
                 actionPanel.executeSelectedAction();
             } else {
-                controller.executeSelected();
+                controller.executeSelected(!!(event.modifiers & Qt.ControlModifier));
             }
             return;
         case Qt.Key_Menu:
@@ -263,34 +267,6 @@ FocusScope {
                 var localPos = root.mapFromItem(null, scenePos.x, scenePos.y);
                 showContextMenu(controller.selectedItem, localPos.x, localPos.y, true);
             }
-            return;
-        case Qt.Key_1:
-            if (hasCtrl || hasAlt) {
-                controller.setMode("all");
-                return;
-            }
-            event.accepted = false;
-            return;
-        case Qt.Key_2:
-            if (hasCtrl || hasAlt) {
-                controller.setMode("apps");
-                return;
-            }
-            event.accepted = false;
-            return;
-        case Qt.Key_3:
-            if (hasCtrl || hasAlt) {
-                controller.setMode("files");
-                return;
-            }
-            event.accepted = false;
-            return;
-        case Qt.Key_4:
-            if (hasCtrl || hasAlt) {
-                controller.setMode("plugins");
-                return;
-            }
-            event.accepted = false;
             return;
         default:
             event.accepted = false;
@@ -309,7 +285,7 @@ FocusScope {
             id: footerBar
             readonly property bool _connectedBottomEmerge: (root.parentModal?.frameOwnsConnectedChrome ?? false) && (root.parentModal?.resolvedConnectedBarSide === "bottom")
             readonly property bool _connectedArcAtFooter: _connectedBottomEmerge && !(root.parentModal?.launcherArcExtenderActive ?? false)
-            readonly property bool showFooter: SettingsData.dankLauncherV2Size !== "micro" && SettingsData.dankLauncherV2ShowFooter && controller.searchMode !== "dmenu"
+            readonly property bool showFooter: LauncherMetrics.footerShown(SettingsData.dankLauncherV2Size) && controller.searchMode !== "dmenu"
             readonly property int edgeInset: root.parentModal?.paintedBorderWidth ?? Theme.outlineWidth
             readonly property var modes: [
                 {
@@ -699,6 +675,7 @@ FocusScope {
                     focusReturnTarget: searchField
                     keyForwardTargets: [root]
                     anchors.fill: parent
+                    resizing: actionPanel.animating
                     controller: root.controller
                     leadingSectionHeaderAtBottom: contentHolder.inverted
                     transientSurfaceTracker: root.transientSurfaceTracker

@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/spf13/afero"
 )
 
@@ -40,7 +40,7 @@ func getPluginsDir() string {
 		log.Error("failed to get user config dir", "err", err)
 		return ""
 	}
-	path := filepath.Join(configDir, "DankMaterialShell", "plugins")
+	path := filepath.Join(configDir, "dms", "plugins")
 	if resolved, err := filepath.EvalSymlinks(path); err == nil {
 		return resolved
 	}
@@ -56,7 +56,7 @@ func getPluginLockPath() string {
 		log.Error("failed to get user config dir", "err", err)
 		return ""
 	}
-	return filepath.Join(configDir, "DankMaterialShell", "plugins.lock.json")
+	return filepath.Join(configDir, "dms", "plugins.lock.json")
 }
 
 func (m *Manager) IsInstalled(plugin Plugin) (bool, error) {

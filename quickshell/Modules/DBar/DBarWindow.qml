@@ -21,6 +21,7 @@ PanelWindow {
     readonly property bool isVertical: body.isVertical
     readonly property int barPos: body.barPos
     readonly property bool barRevealed: body.barRevealed
+    readonly property bool fullscreenAutoHide: body.fullscreenAutoHide
     readonly property bool isIsland: body.isIsland
     readonly property var islandHost: body.islandHost
     readonly property var leadingSectionRect: body.leadingSectionRect
@@ -61,7 +62,7 @@ PanelWindow {
 
     screen: modelData
     readonly property var layoutInstance: body.layoutInstance
-    readonly property bool manualPlacement: ShellLayout.forScreen(screen)?.manualPlacement ?? false
+    readonly property bool manualPlacement: layoutInstance?.manualPlacement ?? false
     margins.top: manualPlacement ? layoutInstance?.margins.top ?? 0 : 0
     margins.bottom: manualPlacement ? layoutInstance?.margins.bottom ?? 0 : 0
     margins.left: manualPlacement ? layoutInstance?.margins.left ?? 0 : 0

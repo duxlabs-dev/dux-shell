@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	AppID = "com.danklinux.dms"
+	AppID = "dev.duxlabs.shell"
 
 	appName = "DMS"
 

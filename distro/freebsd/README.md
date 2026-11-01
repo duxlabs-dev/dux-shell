@@ -1,6 +1,6 @@
 # FreeBSD support
 
-DankMaterialShell contains native FreeBSD code paths and does not require
+Dux Shell contains native FreeBSD code paths and does not require
 PulseAudio, PipeWire, systemd, NetworkManager, or Linux sysfs to provide its
 core shell features.
 
@@ -19,9 +19,7 @@ core shell features.
 - **Users:** `pw(8)`.
 - **Package updates:** `pkg(8)`.
 - **Compositor/socket discovery:** `sockstat(1)` where Linux would use `/proc`.
-- **Greeter state:** FreeBSD rc service detection for greetd.
-- **Sessions:** elogind/loginctl is used when installed; otherwise DMS exposes
-  the current session without repeatedly executing a missing Linux command.
+- **Sessions:** FreeBSD has no logind. DMS lists the current session only.
 
 ## Recommended runtime tools
 
@@ -30,13 +28,12 @@ Quickshell, grim/slurp, wl-clipboard, and a notification/audio stack as desired)
 from FreeBSD packages/ports. DMS's native audio path itself only needs the base
 system `mixer` utility.
 
-For session switching and login-manager integration, install/use elogind so
-`loginctl` is available. Without elogind, locking and the current-session shell
-remain usable, but switching between already-running graphical sessions is not
-provided by the base system.
-
 ## FreeBSD limitations that DMS should not fake
 
+- No logind, so the daemon's `org.freedesktop.login1` integration is off: no
+  lock or unlock requests from the session manager, no sleep inhibitor, and no
+  switching between running sessions (`dms switch-user`).
+- Greeter status detection uses `systemctl` and reports greetd as not enabled.
 - FreeBSD ACPI S4 hibernation is hardware/kernel dependent and is not presented
   as generally available by DMS.
 - Charge thresholds are vendor-specific; the Linux `/sys/class/power_supply`

@@ -174,8 +174,6 @@ CcListRow {
             DTextField {
                 id: usernameField
                 width: parent.width
-                expressive: true
-                leftIconName: "person"
                 placeholderText: I18n.tr("Username")
                 text: (root.configData && (root.configData.username || (root.configData.data && root.configData.data.username))) || ""
             }
@@ -183,12 +181,10 @@ CcListRow {
             DTextField {
                 id: passwordField
                 width: parent.width
-                expressive: true
-                leftIconName: "lock"
                 placeholderText: I18n.tr("Password")
                 echoMode: TextInput.Password
                 showPasswordToggle: true
-                isError: root.hasError
+                normalBorderColor: root.hasError ? Theme.error : Theme.outlineMedium
             }
 
             DButton {

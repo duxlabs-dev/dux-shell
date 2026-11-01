@@ -63,8 +63,8 @@ jobs:
       - name: Build dms (distropkg)
         run: go build -v -tags 'distro_binary withshell' ./cmd/dms
 
-      - name: Build dankinstall
-        run: go build -v ./cmd/dankinstall
+      - name: Build duxinstall
+        run: go build -v ./cmd/duxinstall
 
   build-freebsd:
     runs-on: ubuntu-latest

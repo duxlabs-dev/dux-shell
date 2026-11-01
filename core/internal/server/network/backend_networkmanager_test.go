@@ -3,7 +3,7 @@ package network
 import (
 	"testing"
 
-	mock_gonetworkmanager "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/github.com/Wifx/gonetworkmanager/v2"
+	mock_gonetworkmanager "github.com/duxlabs-dev/dux-shell/core/internal/mocks/github.com/Wifx/gonetworkmanager/v2"
 	"github.com/stretchr/testify/assert"
 )
 

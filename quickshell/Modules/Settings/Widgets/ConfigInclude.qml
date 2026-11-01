@@ -17,7 +17,7 @@ QtObject {
 
     readonly property bool compositorSupported: ConfigIncludeResolve.includeSpec(includeKind, CompositorService.compositor) !== null
     readonly property bool included: status.included === true
-    readonly property bool readOnly: CompositorService.isHyprland && status.readOnly === true
+    readonly property bool readOnly: CompositorService.isHyprland && !HyprlandService.luaConfigActive
     readonly property string fragmentLabel: "dms/" + includeKind
 
     signal fixed
@@ -25,9 +25,7 @@ QtObject {
     function defaultStatus() {
         return {
             "exists": false,
-            "included": false,
-            "configFormat": "",
-            "readOnly": false
+            "included": false
         };
     }
 
@@ -36,9 +34,7 @@ QtObject {
             return;
         status = {
             "exists": dmsStatus.exists,
-            "included": dmsStatus.included,
-            "configFormat": dmsStatus.configFormat ?? "",
-            "readOnly": dmsStatus.readOnly === true
+            "included": dmsStatus.included
         };
     }
 
@@ -68,17 +64,12 @@ QtObject {
     }
 
     function showReadOnlyWarning() {
-        ToastService.showWarning(I18n.tr("Hyprland conf mode"), I18n.tr("This install is still using hyprland.conf. Run dms setup to migrate before changing these settings."), "dms setup", warningCategory);
+        ToastService.showWarning(I18n.tr("%1 not found").arg("hyprland.lua"), I18n.tr("Run %1 to create it before changing these settings.", "hyprland.lua missing warning, %1 is a command").arg("dms setup"), "dms setup", warningCategory);
     }
 
     function fix() {
         if (readOnly) {
             showReadOnlyWarning();
-            return;
-        }
-        if (CompositorService.isHyprland && !HyprlandService.luaConfigActive) {
-            showReadOnlyWarning();
-            check();
             return;
         }
         const compositor = CompositorService.compositor;

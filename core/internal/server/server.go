@@ -9,34 +9,38 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/geolocation"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/matugen"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/apppicker"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/bluez"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/brightness"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/clipboard"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/cups"
-	serverDbus "github.com/AvengeMedia/DankMaterialShell/core/internal/server/dbus"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/evdev"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/freedesktop"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/location"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/loginctl"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/network"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/notifyactions"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/sysupdate"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/tailscale"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/thememode"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/trayrecovery"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wallpaper"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wayland"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wellbeing"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wlcontext"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wlroutput"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/systemd"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
-	"github.com/AvengeMedia/dankgo/ipc"
-	"github.com/AvengeMedia/dankgo/syncmap"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/geolocation"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/matugen"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/apppicker"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/bluez"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/brightness"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/clipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/cups"
+	serverDbus "github.com/duxlabs-dev/dux-shell/core/internal/server/dbus"
+	serverDgop "github.com/duxlabs-dev/dux-shell/core/internal/server/dgop"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/evdev"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/freedesktop"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/location"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/network"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/notifyactions"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/sysupdate"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/tailscale"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/thememode"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/trayrecovery"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wallpaper"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wayland"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wellbeing"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wlcontext"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wlroutput"
+	"github.com/duxlabs-dev/dux-shell/core/internal/systemd"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
+	"github.com/spf13/afero"
 )
 
 const APIVersion = 38
@@ -108,7 +112,19 @@ func InitializeNetworkManager() error {
 }
 
 func InitializeLoginctlManager() error {
-	manager, err := loginctl.NewManager()
+	keepLockOnUnlock, err := clipolicy.LogindUnlockDisabled(afero.NewOsFs())
+	if err != nil {
+		log.Errorf("CLI policy unreadable, keeping locks through logind Unlock: %v", err)
+		keepLockOnUnlock = true
+	}
+	lockSettings, err := clipolicy.LockSettings(afero.NewOsFs())
+	if err != nil {
+		log.Errorf("CLI policy unreadable, ignoring its lock settings: %v", err)
+	}
+	manager, err := loginctl.NewManager(keepLockOnUnlock, loginctl.LockPolicy{
+		LockBeforeSuspend:       clipolicy.LockSettingBool(lockSettings, "lockBeforeSuspend"),
+		LoginctlLockIntegration: clipolicy.LockSettingBool(lockSettings, "loginctlLockIntegration"),
+	})
 	if err != nil {
 		log.Warnf("Failed to initialize loginctl manager: %v", err)
 		return err
@@ -243,6 +259,9 @@ func InitializeBrightnessManager() error {
 	}
 
 	brightnessManager = manager
+	if waylandManager != nil {
+		manager.AttachGamma(waylandManager)
+	}
 
 	log.Info("Brightness manager initialized")
 	return nil
@@ -424,7 +443,7 @@ func routeRequestRecovered(ctx context.Context, conn *ipc.ConnWriter, req ipc.Re
 }
 
 func getCapabilities() Capabilities {
-	caps := []string{"plugins", "dgop", "lyrics", "lyrics.plugins"}
+	caps := []string{"plugins", "dgop", "drives", "lyrics", "lyrics.plugins"}
 
 	if networkManager != nil {
 		caps = append(caps, "network")
@@ -502,8 +521,13 @@ func getCapabilities() Capabilities {
 		caps = append(caps, "files")
 	}
 
+	caps = append(caps, niriCapabilities()...)
+
 	return Capabilities{Capabilities: caps}
 }
+
+// Probed once per process, so these never change after the first getServerInfo.
+var niriCapabilities = config.NiriCapabilities
 
 func getServerInfo() ServerInfo {
 	return ServerInfo{
@@ -778,7 +802,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		mgr := dbusManager
 		events := mgr.SubscribeSignals(dbusClient)
 		forwardSubscription(&wg, eventChan, stopChan, "dbus", events, func() {
-			mgr.UnsubscribeSignals(dbusClient)
+			mgr.UnsubscribeSignals(dbusClient, events)
 		}, nil)
 	}
 
@@ -912,6 +936,7 @@ func cleanupManagers() {
 	if filesService != nil {
 		filesService.Close()
 	}
+	serverDgop.Close()
 }
 
 type Server struct {
@@ -1116,7 +1141,7 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info(" clipboard.paste                       - Get current clipboard text")
 		log.Info(" clipboard.search                      - Search history (params: query?, mimeType?, isImage?, limit?, offset?, before?, after?)")
 		log.Info(" clipboard.getConfig                   - Get clipboard configuration")
-		log.Info(" clipboard.setConfig                   - Set configuration (params: maxHistory?, maxEntrySize?, autoClearDays?, clearAtStartup?)")
+		log.Info(" clipboard.setConfig                   - Set configuration (params: maxHistory?, maxEntrySize?, autoClearDays?, clearAtStartup?, disabled?, maxPinned?)")
 		log.Info(" clipboard.subscribe                   - Subscribe to clipboard state changes (streaming)")
 		log.Info("Notify:")
 		log.Info(" notify.watchAction                    - Open a file when a notification action fires (params: id, path)")
@@ -1133,6 +1158,16 @@ func (s *Server) Serve(printDocs bool) error {
 	}
 	log.Info("Initializing managers...")
 	log.Info("")
+
+	go func() {
+		written, err := config.SyncNiriBindsNext()
+		switch {
+		case err != nil:
+			log.Warnf("Failed to write niri %s: %v", config.NiriBindsNextFile, err)
+		case written:
+			log.Infof("Updated niri %s", config.NiriBindsNextFile)
+		}
+	}()
 
 	go func() {
 		switch err := InitializeNetworkManager(); {

@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/clipolicy"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/registries"
+	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
+	"github.com/duxlabs-dev/dux-shell/core/internal/registries"
 	"github.com/spf13/afero"
 )
 

@@ -347,13 +347,24 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                 onToggled: checked => SettingsData.set("hyprlandScrollingFullscreenOneColumn", checked)
             }
 
-            SettingsToggleRow {
-                tags: ["hyprland", "scrolling", "follow", "focus", "scroll"]
+            SettingsDropdownRow {
+                tags: ["hyprland", "scrolling", "follow", "focus", "scroll", "click", "follow_focus"]
                 settingKey: "hyprlandScrollingFollowFocus"
                 visible: SettingsData.hyprlandTilingLayout === "scrolling"
                 text: I18n.tr("Follow focus")
-                checked: SettingsData.hyprlandScrollingFollowFocus
-                onToggled: checked => SettingsData.set("hyprlandScrollingFollowFocus", checked)
+                options: {
+                    const modes = [I18n.tr("Off"), I18n.tr("On")];
+                    if (HyprlandService.hyprIntModes())
+                        modes.push(I18n.tr("Not on click", "Hyprland scrolling follow focus option, focus scrolls the view but clicking a window does not"));
+                    return modes;
+                }
+                currentValue: options[Math.min(SettingsData.hyprlandScrollingFollowFocus, options.length - 1)] ?? ""
+                onValueChanged: value => {
+                    const index = options.indexOf(value);
+                    if (index < 0)
+                        return;
+                    SettingsData.set("hyprlandScrollingFollowFocus", index);
+                }
             }
         }
 
@@ -452,6 +463,16 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                 onSliderValueChanged: newValue => SettingsData.set("hyprlandBorderGrabArea", newValue)
             }
 
+            SettingsToggleRow {
+                tags: ["hyprland", "drag", "float", "center", "cursor", "mouse", "drag_center_window"]
+                settingKey: "hyprlandDragCenterWindow"
+                visible: HyprlandService.hyprSupports("binds:drag_center_window")
+                text: I18n.tr("Center dragged windows", "Hyprland toggle, a tiled or fullscreen window dragged loose centers on the cursor")
+                description: I18n.tr("A tiled or fullscreen window dragged into floating centers on the cursor")
+                checked: SettingsData.hyprlandDragCenterWindow
+                onToggled: checked => SettingsData.set("hyprlandDragCenterWindow", checked)
+            }
+
             SettingsSliderRow {
                 tags: ["hyprland", "opacity", "transparency", "window"]
                 settingKey: "hyprlandWindowOpacity"
@@ -491,7 +512,7 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
             title: I18n.tr("Visual effects")
             settingKey: "hyprlandEffects"
             iconName: "auto_awesome"
-            visible: CompositorService.isHyprland && (HyprlandService.hyprSupports("decoration:blur:variant") || HyprlandService.hyprSupports("decoration:glow:enabled") || HyprlandService.hyprSupports("decoration:wobble:enabled") || HyprlandService.hyprSupports("decoration:motion_blur:enabled"))
+            visible: CompositorService.isHyprland && (HyprlandService.hyprSupports("decoration:blur:variant") || HyprlandService.hyprSupports("decoration:blur:proportional") || HyprlandService.hyprSupports("decoration:glow:enabled") || HyprlandService.hyprSupports("decoration:wobble:enabled") || HyprlandService.hyprSupports("decoration:motion_blur:enabled"))
 
             readonly property var blurVariantIds: ["kawase", "frost", "ripple", "drops", "water", "fluid_jar", "prism", "heat_shimmer", "acrylic", "aurora", "haze"]
 
@@ -504,6 +525,40 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                 options: [I18n.tr("Default"), I18n.tr("Frost", "Hyprland blur variant"), I18n.tr("Ripple", "Hyprland blur variant"), I18n.tr("Drops", "Hyprland blur variant"), I18n.tr("Water", "Hyprland blur variant"), I18n.tr("Fluid jar", "Hyprland blur variant"), I18n.tr("Prism", "Hyprland blur variant"), I18n.tr("Heat shimmer", "Hyprland blur variant"), I18n.tr("Acrylic", "Hyprland blur variant"), I18n.tr("Aurora", "Hyprland blur variant"), I18n.tr("Haze", "Hyprland blur variant")]
                 currentValue: options[Math.max(0, hyprEffectsCard.blurVariantIds.indexOf(SettingsData.hyprlandBlurVariant))]
                 onValueChanged: value => SettingsData.set("hyprlandBlurVariant", hyprEffectsCard.blurVariantIds[Math.max(0, options.indexOf(value))])
+            }
+
+            SettingsToggleRow {
+                tags: ["hyprland", "blur", "proportional", "opacity", "transparency"]
+                settingKey: "hyprlandBlurProportional"
+                visible: HyprlandService.hyprSupports("decoration:blur:proportional")
+                text: I18n.tr("Blur follows opacity", "Hyprland toggle, blur strength scales with how opaque each pixel is")
+                description: I18n.tr("More transparent areas get less blur")
+                checked: SettingsData.hyprlandBlurProportional
+                onToggled: checked => SettingsData.set("hyprlandBlurProportional", checked)
+            }
+
+            SettingsSliderRow {
+                tags: ["hyprland", "blur", "drops", "speed", "animation"]
+                settingKey: "hyprlandBlurDropsSpeed"
+                visible: SettingsData.hyprlandBlurVariant === "drops" && HyprlandService.hyprSupports("decoration:blur:drops:speed")
+                text: I18n.tr("Speed")
+                description: I18n.tr("0 stops the animation and saves GPU", "Hyprland animated blur speed slider description")
+                value: SettingsData.hyprlandBlurDropsSpeed
+                minimum: 0
+                maximum: 10
+                onSliderValueChanged: newValue => SettingsData.set("hyprlandBlurDropsSpeed", newValue)
+            }
+
+            SettingsSliderRow {
+                tags: ["hyprland", "blur", "heat", "shimmer", "speed", "animation"]
+                settingKey: "hyprlandBlurHeatShimmerSpeed"
+                visible: SettingsData.hyprlandBlurVariant === "heat_shimmer" && HyprlandService.hyprSupports("decoration:blur:heat_shimmer:speed")
+                text: I18n.tr("Speed")
+                description: I18n.tr("0 stops the animation and saves GPU", "Hyprland animated blur speed slider description")
+                value: SettingsData.hyprlandBlurHeatShimmerSpeed
+                minimum: 0
+                maximum: 10
+                onSliderValueChanged: newValue => SettingsData.set("hyprlandBlurHeatShimmerSpeed", newValue)
             }
 
             SettingsSliderRow {
@@ -704,6 +759,55 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
 
         SettingsCard {
             width: parent.width
+            tags: ["hyprland", "behavior", "workspace", "fullscreen", "bell", "binds", "misc"]
+            title: I18n.tr("Behavior")
+            settingKey: "hyprlandBehavior"
+            iconName: "tune"
+            visible: CompositorService.isHyprland && (HyprlandService.hyprSupports("binds:workspace_back_and_forth") || HyprlandService.hyprSupports("misc:exit_window_retains_fullscreen") || HyprlandService.hyprSupports("misc:bell_sound"))
+
+            SettingsDropdownRow {
+                tags: ["hyprland", "workspace", "back", "forth", "previous", "toggle", "workspace_back_and_forth"]
+                settingKey: "hyprlandWorkspaceBackAndForth"
+                visible: HyprlandService.hyprSupports("binds:workspace_back_and_forth")
+                text: I18n.tr("Workspace back and forth", "Hyprland option, switching to the current workspace goes to the previous one")
+                description: I18n.tr("Switching to the current workspace returns to the previous one")
+                options: HyprlandService.hyprIntModes() ? [I18n.tr("Off"), I18n.tr("All displays"), I18n.tr("Per display", "Hyprland workspace back and forth option, each display remembers its own previous workspace")] : [I18n.tr("Off"), I18n.tr("On")]
+                currentValue: options[Math.min(SettingsData.hyprlandWorkspaceBackAndForth, options.length - 1)] ?? ""
+                onValueChanged: value => {
+                    const index = options.indexOf(value);
+                    if (index < 0)
+                        return;
+                    SettingsData.set("hyprlandWorkspaceBackAndForth", index);
+                }
+            }
+
+            SettingsDropdownRow {
+                tags: ["hyprland", "fullscreen", "close", "exit", "retain", "group", "exit_window_retains_fullscreen"]
+                settingKey: "hyprlandExitWindowRetainsFullscreen"
+                visible: HyprlandService.hyprSupports("misc:exit_window_retains_fullscreen")
+                text: I18n.tr("Keep fullscreen on close", "Hyprland option, closing a fullscreen window makes the next focused window fullscreen")
+                options: HyprlandService.hyprIntModes() ? [I18n.tr("Off"), I18n.tr("On"), I18n.tr("Only in groups", "Hyprland keep fullscreen on close option, only inside tabbed window groups"), I18n.tr("Only outside groups", "Hyprland keep fullscreen on close option, only for windows not in a tabbed group")] : [I18n.tr("Off"), I18n.tr("On")]
+                currentValue: options[Math.min(SettingsData.hyprlandExitWindowRetainsFullscreen, options.length - 1)] ?? ""
+                onValueChanged: value => {
+                    const index = options.indexOf(value);
+                    if (index < 0)
+                        return;
+                    SettingsData.set("hyprlandExitWindowRetainsFullscreen", index);
+                }
+            }
+
+            SettingsToggleRow {
+                tags: ["hyprland", "bell", "sound", "beep", "mute", "bell_sound"]
+                settingKey: "hyprlandBellSound"
+                visible: HyprlandService.hyprSupports("misc:bell_sound")
+                text: I18n.tr("System bell", "Hyprland toggle, play a sound when an app rings the terminal bell")
+                checked: SettingsData.hyprlandBellSound !== "" && SettingsData.hyprlandBellSound !== "none"
+                onToggled: checked => SettingsData.set("hyprlandBellSound", checked ? "default" : "")
+            }
+        }
+
+        SettingsCard {
+            width: parent.width
             tags: ["mangowc", "mango", "dwl", "layout", "gaps", "radius", "window", "border"]
             title: I18n.tr("Layout overrides")
             settingKey: "mangoLayout"
@@ -739,7 +843,7 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
             }
 
             SettingsSliderRow {
-                tags: ["mangowc", "mango", "gaps", "override", "inner", "gappih", "gappiv"]
+                tags: ["mangowc", "mango", "gaps", "override", "inner", "gap_inner_horizontal", "gap_inner_vertical", "gappih", "gappiv"]
                 settingKey: "mangoLayoutGapsOverride"
                 resetKeys: []
                 text: I18n.tr("Inner gaps")
@@ -752,7 +856,7 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
             }
 
             SettingsSliderRow {
-                tags: ["mangowc", "mango", "gaps", "override", "outer", "edge", "gappoh", "gappov"]
+                tags: ["mangowc", "mango", "gaps", "override", "outer", "edge", "gap_outer_horizontal", "gap_outer_vertical", "gappoh", "gappov"]
                 settingKey: "mangoLayoutGapsOutOverride"
                 text: I18n.tr("Outer gaps")
                 visible: SettingsData.mangoLayoutGapsOverride >= 0
@@ -772,7 +876,7 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
             }
 
             SettingsToggleSliderRow {
-                tags: ["mangowc", "mango", "border", "override", "borderpx"]
+                tags: ["mangowc", "mango", "border", "override", "border_px", "borderpx"]
                 settingKey: "mangoLayoutBorderSizeEnabled"
                 text: I18n.tr("Override border size")
                 checked: SettingsData.mangoLayoutBorderSize >= 0

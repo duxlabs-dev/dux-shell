@@ -62,13 +62,11 @@ Item {
     property string greeterStatusStderr: ""
     readonly property bool greeterBinaryExists: GreeterService.binaryExists
     readonly property bool greeterEnabled: GreeterService.enabled
-    property bool embeddedGreeterConfigured: false
-    readonly property bool embeddedGreeterOnly: embeddedGreeterConfigured && !greeterBinaryExists
     readonly property bool busy: greeterSyncRunning || greeterInstallActionRunning
 
     readonly property string greeterState: {
         if (!greeterBinaryExists)
-            return embeddedGreeterOnly ? "embedded" : "missing";
+            return "missing";
         if (!greeterEnabled)
             return "inactive";
         switch (GreeterService.slotState) {
@@ -103,8 +101,6 @@ Item {
             return I18n.tr("Not active", "greeter status, greetd does not run the DMS greeter");
         case "unlinked":
             return I18n.tr("Not linked", "greeter status, no greeter slot for this user");
-        case "embedded":
-            return I18n.tr("Bundled greeter active", "greeter status");
         }
         return I18n.tr("Not installed", "greeter status");
     }
@@ -118,10 +114,8 @@ Item {
             return I18n.tr("greetd is not using the DMS greeter yet.", "greeter status");
         case "unlinked":
             return GreeterService.profileSyncSufficient ? I18n.tr("Link your DMS settings so the login screen follows them.", "greeter status") : I18n.tr("Link your DMS settings so the login screen follows them. Administrator access is required.", "greeter status");
-        case "embedded":
-            return I18n.tr("The greeter bundled with DMS is active (archinstall setup). It keeps working as is, but syncing theme and settings needs the standalone greeter. Install greetd-dms-greeter-bin from the AUR, then run Sync to migrate the login screen.", "embedded greeter status");
         }
-        return I18n.tr("dms-greeter is not installed. Install the dms-greeter package to manage the greeter.", "greeter status placeholder");
+        return I18n.tr("%1 is not installed. Install the package to manage the greeter.", "greeter status placeholder, %1 is the dms-greeter binary").arg("dms-greeter");
     }
     readonly property string greeterStateAction: {
         switch (greeterState) {
@@ -149,7 +143,6 @@ Item {
 
     function checkGreeterInstallState() {
         GreeterService.refresh();
-        embeddedGreeterCheckProcess.running = true;
     }
 
     function runGreeterStatus() {
@@ -161,7 +154,7 @@ Item {
     }
 
     function runGreeterInstallAction() {
-        greeterStatusText = I18n.tr("Opening terminal: ") + I18n.tr("Activate") + "...";
+        greeterStatusText = I18n.tr("Opening terminal: %1", "%1 is the action name").arg(I18n.tr("Activate")) + "...";
         greeterInstallActionRunning = true;
         greeterInstallActionProcess.running = true;
     }
@@ -206,17 +199,6 @@ Item {
     }
 
     Process {
-        id: embeddedGreeterCheckProcess
-        // archinstall's DMS profile points greetd at this launcher inside the packaged DMS tree
-        command: ["sh", "-c", "grep -q 'Modules/Greetd/assets/dms-greeter' /etc/greetd/config.toml 2>/dev/null"]
-        running: false
-
-        onExited: exitCode => {
-            root.embeddedGreeterConfigured = (exitCode === 0);
-        }
-    }
-
-    Process {
         id: greeterStatusProcess
         command: ["dms-greeter", "status"]
         running: false
@@ -241,7 +223,7 @@ Item {
                     root.greeterStatusText = root.greeterStatusText + "\n\nstderr:\n" + err;
                 return;
             }
-            var failure = I18n.tr("Failed to run 'dms-greeter status'. Ensure the dms-greeter package is installed.", "greeter status error") + " (exit " + exitCode + ")";
+            var failure = I18n.tr("Failed to run '%1'. Ensure the %2 package is installed.", "greeter status error, %1 is a command, %2 a package name").arg("dms-greeter status").arg("dux-greeter") + " " + I18n.tr("(exit %1)", "process exit code").arg(exitCode);
             if (out !== "")
                 failure = failure + "\n\n" + out;
             if (err !== "")
@@ -267,7 +249,7 @@ Item {
             root.greeterInstallActionRunning = false;
             root.checkGreeterInstallState();
             if (exitCode !== 0) {
-                root.greeterStatusText = I18n.tr("Action failed or terminal was closed.") + " (exit " + exitCode + ")";
+                root.greeterStatusText = I18n.tr("Action failed or terminal was closed.") + " " + I18n.tr("(exit %1)", "process exit code").arg(exitCode);
                 return;
             }
             root.greeterStatusText = I18n.tr("Greeter activated. greetd is now enabled.");
@@ -479,7 +461,7 @@ Item {
 
             SettingsRow {
                 body: StyledText {
-                    text: I18n.tr("Requires greetd, dms-greeter, and your user in the greeter group (plus fprintd/pam_fprintd for fingerprint, pam_u2f for security keys).")
+                    text: I18n.tr("Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).", "greeter requirements note, %1 and %2 are package names, %3 a group name, %4 and %5 PAM modules").arg("greetd").arg("dms-greeter").arg("greeter").arg("fprintd/pam_fprintd").arg("pam_u2f")
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
                     width: parent.width
@@ -490,7 +472,7 @@ Item {
 
             SettingsRow {
                 body: StyledText {
-                    text: I18n.tr("Installation and PAM setup are documented in the ") + "<a href=\"" + Site.docs + "/dankgreeter/installation\" style=\"text-decoration:none; color:" + Theme.primary + ";\">DankGreeter docs.</a> "
+                    text: I18n.tr("Installation and PAM setup are documented in the %1.", "%1 is a link to the greeter docs").arg("<a href=\"" + Site.docs + "/dms-greeter/installation\" style=\"text-decoration:none; color:" + Theme.primary + ";\">" + I18n.tr("Dux Greeter docs", "link text") + "</a>")
                     textFormat: Text.RichText
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText

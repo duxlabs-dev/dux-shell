@@ -11,10 +11,10 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/clipboard"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/notify"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/qsipc"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/screenshot"
+	"github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/notify"
+	"github.com/duxlabs-dev/dux-shell/core/internal/qsipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/screenshot"
 	"github.com/spf13/cobra"
 )
 

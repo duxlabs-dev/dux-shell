@@ -12,21 +12,22 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/blur"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/clipboard"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/config"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/distros"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/mangoconf"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/matugen"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/brightness"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/network"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/site"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/tui"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/version"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/duxlabs-dev/dux-shell/core/internal/blur"
+	"github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
+	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
+	"github.com/duxlabs-dev/dux-shell/core/internal/matugen"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/brightness"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/network"
+	"github.com/duxlabs-dev/dux-shell/core/internal/site"
+	"github.com/duxlabs-dev/dux-shell/core/internal/tui"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/version"
 	"github.com/godbus/dbus/v5"
 	"github.com/spf13/cobra"
 )
@@ -166,7 +167,7 @@ func (c category) String() string {
 
 const (
 	checkNameMaxLength = 21
-	doctorDocsURL      = site.Docs + "/dankmaterialshell/cli-doctor"
+	doctorDocsURL      = site.Docs + "/dms/cli-doctor"
 )
 
 type checkResult struct {
@@ -215,11 +216,13 @@ func runDoctor(cmd *cobra.Command, args []string) {
 
 	qsFeatures, qsMissingFeatures := checkQuickshellFeatures()
 
+	versions, qsVersion := checkVersions(qsMissingFeatures)
 	results := slices.Concat(
 		checkSystemInfo(),
-		checkVersions(qsMissingFeatures),
+		versions,
 		checkDMSInstallation(),
-		checkWindowManagers(),
+		checkPackageRepos(),
+		checkWindowManagers(qsVersion),
 		qsFeatures,
 		checkOptionalDependencies(),
 		checkConfigurationFiles(),
@@ -285,15 +288,15 @@ func checkSystemInfo() []checkResult {
 		if message == "" {
 			message = fmt.Sprintf("%s %s", osInfo.Distribution.ID, osInfo.VersionID)
 		}
-		if distros.IsUnsupportedDistro(osInfo.Distribution.ID, osInfo.VersionID) {
+		details := fmt.Sprintf("ID: %s, Version: %s, Arch: %s", osInfo.ID, osInfo.VersionID, osInfo.Architecture)
+		switch {
+		case osInfo.Immutable:
+			details += "; image-based (" + osInfo.ImmutableReason + "), duxinstall deploys configuration only"
+		case distros.IsUnsupportedDistro(osInfo.Distribution.ID, osInfo.VersionID):
 			status = statusWarn
 			message += " (version may not be fully supported)"
 		}
-		results = append(results, checkResult{
-			catSystem, "Operating System", status, message,
-			fmt.Sprintf("ID: %s, Version: %s, Arch: %s", osInfo.Distribution.ID, osInfo.VersionID, osInfo.Architecture),
-			doctorDocsURL + "#operating-system",
-		})
+		results = append(results, checkResult{catSystem, "Operating System", status, message, details, doctorDocsURL + "#operating-system"})
 	}
 
 	arch := runtime.GOARCH
@@ -684,18 +687,18 @@ func readOSRelease() map[string]string {
 	return result
 }
 
-func checkVersions(qsMissingFeatures bool) []checkResult {
+func checkVersions(qsMissingFeatures bool) (results []checkResult, qsSemver string) {
 	dmsCliPath, _ := os.Executable()
 	dmsCliDetails := ""
 	if doctorVerbose {
 		dmsCliDetails = dmsCliPath
 	}
 
-	results := []checkResult{
+	results = []checkResult{
 		{catVersions, "DMS CLI", statusOK, formatVersion(Version), dmsCliDetails, doctorDocsURL + "#dms-cli"},
 	}
 
-	qsVersion, qsStatus, qsPath, qsDetails := getQuickshellVersionInfo(qsMissingFeatures)
+	qsVersion, qsStatus, qsPath, qsDetails, qsSemver := getQuickshellVersionInfo(qsMissingFeatures)
 	if doctorVerbose && qsPath != "" && qsDetails == "" {
 		qsDetails = qsPath
 	}
@@ -708,7 +711,7 @@ func checkVersions(qsMissingFeatures bool) []checkResult {
 		results = append(results, checkResult{catVersions, "DMS Shell", statusError, "Not installed or not detected", "Run 'dms setup' to install", doctorDocsURL + "#dms-shell"})
 	}
 
-	return results
+	return results, qsSemver
 }
 
 func getDMSShellVersion() (version, path string) {
@@ -731,9 +734,9 @@ func getDMSShellVersion() (version, path string) {
 	return "", ""
 }
 
-func getQuickshellVersionInfo(missingFeatures bool) (string, status, string, string) {
+func getQuickshellVersionInfo(missingFeatures bool) (display string, st status, path, details, semver string) {
 	if !utils.CommandExists("qs") {
-		return "Not installed", statusError, "", ""
+		return "Not installed", statusError, "", "", ""
 	}
 
 	qsPath, _ := exec.LookPath("qs")
@@ -745,21 +748,21 @@ func getQuickshellVersionInfo(missingFeatures bool) (string, status, string, str
 		if errors.As(err, &exitErr) {
 			details = quickshellVersionFailureDetails(string(exitErr.Stderr))
 		}
-		return "Installed (version check failed)", statusWarn, qsPath, details
+		return "Installed (version check failed)", statusWarn, qsPath, details, ""
 	}
 
 	fullVersion := strings.TrimSpace(string(output))
 	if matches := quickshellVersionRegex.FindStringSubmatch(fullVersion); len(matches) >= 2 {
 		if version.CompareVersions(matches[1], "0.2.0") < 0 {
-			return fmt.Sprintf("%s (needs >= 0.2.0)", fullVersion), statusError, qsPath, ""
+			return fmt.Sprintf("%s (needs >= 0.2.0)", fullVersion), statusError, qsPath, "", matches[1]
 		}
 		if missingFeatures {
-			return fullVersion, statusWarn, qsPath, ""
+			return fullVersion, statusWarn, qsPath, "", matches[1]
 		}
-		return fullVersion, statusOK, qsPath, ""
+		return fullVersion, statusOK, qsPath, "", matches[1]
 	}
 
-	return fullVersion, statusWarn, qsPath, ""
+	return fullVersion, statusWarn, qsPath, "", ""
 }
 
 func quickshellVersionFailureDetails(stderr string) string {
@@ -804,7 +807,37 @@ func checkDMSInstallation() []checkResult {
 	return results
 }
 
-func checkWindowManagers() []checkResult {
+func checkPackageRepos() []checkResult {
+	osInfo, err := distros.GetOSInfo()
+	if err != nil {
+		return nil
+	}
+	distro, err := distros.NewDistribution(osInfo.Distribution.ID, nil)
+	if err != nil {
+		return nil
+	}
+	return packageReposResult(distro)
+}
+
+func packageReposResult(distro distros.Distribution) []checkResult {
+	moves, ok := distros.PlanRepoMoves(distro)
+	if !ok {
+		return nil
+	}
+	url := doctorDocsURL + "#package-repos"
+	legacy := distros.LegacyRepoPaths(moves)
+	if len(legacy) > 0 {
+		return []checkResult{{catInstallation, "Package Repos", statusWarn, "Legacy repositories, run: " + migrateDuxCommand, strings.Join(legacy, ", "), url}}
+	}
+	for _, move := range moves {
+		if move.NewPresent {
+			return []checkResult{{catInstallation, "Package Repos", statusOK, "Current", "", url}}
+		}
+	}
+	return []checkResult{{catInstallation, "Package Repos", statusInfo, "No DMS package repositories", "", url}}
+}
+
+func checkWindowManagers(qsVersion string) []checkResult {
 	compositors := []struct {
 		name, versionCmd, versionArg string
 		parseVersion                 func(string) string
@@ -856,7 +889,19 @@ func checkWindowManagers() []checkResult {
 			})
 		}
 		if c.name == "Hyprland" {
-			results = append(results, checkHyprlandConfigFormat(filepath.Join(utils.XDGConfigHome(), "hypr"))...)
+			results = append(results, checkHyprlandQuickshellFloor(ver, qsVersion)...)
+			results = append(results, checkHyprlandDeprecatedConfig()...)
+		}
+		if c.name == "niri" {
+			results = append(results, checkNiriConfig(filepath.Join(utils.XDGConfigHome(), "niri"), config.ProbeNiriCapabilities(), config.NiriValidates)...)
+		}
+		if c.name == "mangowc" && mangoLacksSnakeCase(ver) {
+			results = append(results, checkResult{
+				catCompositor, "Mango config format", statusError,
+				fmt.Sprintf("Mango %s is older than 0.18", ver),
+				"DMS writes Mango config with the snake_case keys of Mango 0.18 and later, which this release rejects; upgrade Mango",
+				doctorDocsURL + "#compositor-checks",
+			})
 		}
 	}
 
@@ -877,8 +922,8 @@ func checkWindowManagers() []checkResult {
 		results = append(results, checkAqueousConfigHelper())
 	}
 
-	if utils.CommandExists("mango") {
-		results = append(results, checkMangoConfig(mangoconf.Dir(), mangoconf.Detect())...)
+	if os.Getenv("MANGO_INSTANCE_SIGNATURE") != "" {
+		results = append(results, checkMangoConfig(mangoconf.Dir())...)
 	}
 
 	results = append(results, checkCompositorBlurSupport())
@@ -886,37 +931,69 @@ func checkWindowManagers() []checkResult {
 	return results
 }
 
-func mangoWantsDMS() bool {
-	_, err := os.Stat(mangoconf.WantsLink())
-	return err == nil
+var (
+	mangoLegacyOverviewBinds = regexp.MustCompile(`(?im)^\s*mousebind\s*=\s*none\s*,\s*(btn_left\s*,\s*toggleoverview\s*,\s*1|btn_right\s*,\s*killclient\s*,\s*0)\s*$`)
+	mangoUnknownKeyword      = regexp.MustCompile(`Unknown keyword:\s*(\S+)`)
+	ansiEscape               = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+)
+
+// Mango's parser follows source= and always exits 0; only its output tells.
+var mangoParseConfig = func(path string) (string, error) {
+	if _, err := exec.LookPath("mango"); err != nil {
+		return "", err
+	}
+	out, _ := exec.Command("mango", "-p", "-c", path).CombinedOutput()
+	return string(out), nil
 }
 
-var mangoLegacyOverviewBinds = regexp.MustCompile(`(?im)^\s*mousebind\s*=\s*none\s*,\s*(btn_left\s*,\s*toggleoverview\s*,\s*1|btn_right\s*,\s*killclient\s*,\s*0)\s*$`)
+// Each "Unknown keyword" line is followed by a location line naming the file.
+func mangoUnknownKeywords(output string) []string {
+	var found []string
+	seen := map[string]bool{}
+	key := ""
+	for line := range strings.SplitSeq(ansiEscape.ReplaceAllString(output, ""), "\n") {
+		if m := mangoUnknownKeyword.FindStringSubmatch(line); m != nil {
+			key = m[1]
+			continue
+		}
+		slash := strings.LastIndex(line, "/")
+		if key == "" || slash < 0 {
+			continue
+		}
+		file, _, _ := strings.Cut(line[slash+1:], ":")
+		entry := key + " (" + file + ")"
+		if !seen[entry] {
+			seen[entry] = true
+			found = append(found, entry)
+		}
+		key = ""
+	}
+	return found
+}
 
-func checkMangoConfig(mangoDir string, dialect mangoconf.Dialect) []checkResult {
+func checkMangoConfig(mangoDir string) []checkResult {
 	url := doctorDocsURL + "#compositor-checks"
-	paths, _ := filepath.Glob(filepath.Join(mangoDir, "dms", "*.conf"))
-	paths = append([]string{filepath.Join(mangoDir, "config.conf")}, paths...)
+	mainPath := filepath.Join(mangoDir, "config.conf")
+	var results []checkResult
+	if output, err := mangoParseConfig(mainPath); err == nil {
+		if unknown := mangoUnknownKeywords(output); len(unknown) > 0 {
+			results = append(results, checkResult{catCompositor, "Mango config keys", statusError,
+				"Unknown keys: " + strings.Join(unknown, ", "),
+				"Mango 0.18 renamed its config keys to snake_case. Run migrate-config-keys.sh from Mango's 0.18.0 release over ~/.config/mango, or rename the keys by hand.", url})
+		}
+	}
 
-	var stale, overviewBinds []string
+	paths, _ := filepath.Glob(filepath.Join(mangoDir, "dms", "*.conf"))
+	paths = append([]string{mainPath}, paths...)
+	var overviewBinds []string
 	for _, path := range paths {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			continue
 		}
-		if dialect.Translate(string(data)) != string(data) {
-			stale = append(stale, filepath.Base(path))
-		}
 		if mangoLegacyOverviewBinds.Match(data) {
 			overviewBinds = append(overviewBinds, filepath.Base(path))
 		}
-	}
-
-	var results []checkResult
-	if len(stale) > 0 {
-		results = append(results, checkResult{catCompositor, "Mango config keys", statusError,
-			fmt.Sprintf("Not %s keys: %s", dialect, strings.Join(stale, ", ")),
-			"This Mango rejects those lines as unknown keywords. Run `dms config mango-migrate --main` (config.conf is backed up).", url})
 	}
 	if len(overviewBinds) > 0 {
 		results = append(results, checkResult{catCompositor, "Mango mouse binds", statusWarn,
@@ -924,6 +1001,80 @@ func checkMangoConfig(mangoDir string, dialect mangoconf.Dialect) []checkResult 
 			"mousebind=NONE,btn_left,toggleoverview,1 and mousebind=NONE,btn_right,killclient,0 swallow normal clicks; remove them.", url})
 	}
 	return results
+}
+
+var (
+	niriIncludeBinds     = regexp.MustCompile(`^\s*include\b.*"dms/binds\.kdl"`)
+	niriIncludeBindsNext = regexp.MustCompile(`^\s*include\b.*"dms/binds-next\.kdl"`)
+	niriSlashBind        = regexp.MustCompile(`(?i)^\s*Mod\+Shift\+Slash\b`)
+	niriKeepMaxBpc       = regexp.MustCompile(`^\s*keep-max-bpc-unchanged\b`)
+)
+
+// DMS never rewrites the user's config.kdl or binds.kdl, so name the line to fix by hand.
+func checkNiriConfig(niriDir string, caps []string, validates func(string) bool) []checkResult {
+	url := doctorDocsURL + "#compositor-checks"
+	mainPath := filepath.Join(niriDir, "config.kdl")
+	paths, _ := filepath.Glob(filepath.Join(niriDir, "dms", "*.kdl"))
+	paths = append([]string{mainPath}, paths...)
+	bindsNext := slices.Contains(caps, config.NiriCapBindsNext)
+
+	var results []checkResult
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		rel, _ := filepath.Rel(niriDir, path)
+		isFragment := filepath.Base(path) == config.NiriBindsNextFile
+		lines := strings.Split(string(data), "\n")
+		if path == mainPath {
+			results = append(results, niriBindsNextIncludeResults(rel, lines, url)...)
+		}
+		for i, line := range lines {
+			where := fmt.Sprintf("%s:%d", rel, i+1)
+			switch {
+			case bindsNext && !isFragment && niriSlashBind.MatchString(line):
+				results = append(results, checkResult{catCompositor, "Mod+Shift+Slash", statusWarn,
+					where + " binds Mod+Shift+Slash",
+					"This niri also fires it for Mod+Shift+7 on de, es and se layouts. Rename it to Mod+Shift+question, which dms/binds-next.kdl already binds to Keyboard Shortcuts.", url})
+			case niriKeepMaxBpc.MatchString(line):
+				results = append(results, checkResult{catCompositor, "keep-max-bpc", statusWarn,
+					where + " sets keep-max-bpc-unchanged",
+					"niri after 26.04 removed this debug flag and rejects the whole config. Delete the line; set max-bpc in the output section instead.", url})
+			}
+		}
+		if isFragment && strings.TrimSpace(string(data)) != "" && !validates(string(data)) {
+			results = append(results, checkResult{catCompositor, "binds-next.kdl", statusWarn,
+				rel + " is rejected by the installed niri",
+				"niri then rejects the whole config. Delete the file; DMS rewrites it for this niri on its next start.", url})
+		}
+	}
+	return results
+}
+
+func niriBindsNextIncludeResults(rel string, lines []string, url string) []checkResult {
+	bindsLine, nextLine := 0, 0
+	for i, line := range lines {
+		if bindsLine == 0 && niriIncludeBinds.MatchString(line) {
+			bindsLine = i + 1
+		}
+		if nextLine == 0 && niriIncludeBindsNext.MatchString(line) {
+			nextLine = i + 1
+		}
+	}
+	switch {
+	case bindsLine == 0:
+		return nil
+	case nextLine == 0:
+		return []checkResult{{catCompositor, "binds-next include", statusWarn,
+			fmt.Sprintf("%s does not include dms/binds-next.kdl", rel),
+			fmt.Sprintf(`Add include optional=true "dms/binds-next.kdl" above line %d, or run 'dms setup', to get the DMS binds that depend on the niri version.`, bindsLine), url}}
+	case nextLine > bindsLine:
+		return []checkResult{{catCompositor, "binds-next include", statusWarn,
+			fmt.Sprintf("%s:%d includes dms/binds-next.kdl after dms/binds.kdl", rel, nextLine),
+			fmt.Sprintf("Move it above line %d so your binds in dms/binds.kdl override the DMS defaults.", bindsLine), url}}
+	}
+	return nil
 }
 
 func checkAqueousConfigHelper() checkResult {
@@ -952,24 +1103,53 @@ func checkCompositorBlurSupport() checkResult {
 	return checkResult{catCompositor, "Background Blur", statusWarn, "Unsupported", "Compositor does not support ext-background-effect-v1", doctorDocsURL + "#compositor-checks"}
 }
 
-// Same detection as the keybinds parser: a regular hyprland.lua wins, else hyprland.conf is read-only.
-func checkHyprlandConfigFormat(hyprDir string) []checkResult {
-	if st, err := os.Stat(filepath.Join(hyprDir, "hyprland.lua")); err == nil && st.Mode().IsRegular() {
-		return nil
-	}
-	if st, err := os.Stat(filepath.Join(hyprDir, "hyprland.conf")); err != nil || !st.Mode().IsRegular() {
+func checkHyprlandQuickshellFloor(hyprVer, qsVer string) []checkResult {
+	if !hyprlandReadsOnlyLua(hyprVer) || qsVer == "" || version.CompareVersions(qsVer, "0.3.2") >= 0 {
 		return nil
 	}
 	return []checkResult{{
-		catCompositor, "Hyprland Lua config", statusWarn,
-		"Hyprland config is hyprland.conf",
-		"DMS keybinds, window rules and displays are read-only until you run `dms setup` to migrate to Lua. Hyprland 0.57 drops .conf support.",
+		catCompositor, "Quickshell for Hyprland 0.57", statusWarn,
+		fmt.Sprintf("Quickshell %s is older than 0.3.2", qsVer),
+		"Hyprland 0.57 sends workspace addresses that older Quickshell collapses to workspace 0, breaking named and special workspaces. Upgrade Quickshell.",
+		doctorDocsURL + "#compositor-checks",
+	}}
+}
+
+// Hyprland before 0.57 answers `unknown request`, which fails to parse and is skipped.
+func checkHyprlandDeprecatedConfig() []checkResult {
+	if os.Getenv("HYPRLAND_INSTANCE_SIGNATURE") == "" {
+		return nil
+	}
+	out, err := exec.Command("hyprctl", "-j", "deprecated-config").Output()
+	if err != nil {
+		return nil
+	}
+	return hyprlandDeprecatedConfigResults(out)
+}
+
+func hyprlandDeprecatedConfigResults(out []byte) []checkResult {
+	var notices []string
+	if err := json.Unmarshal(out, &notices); err != nil || len(notices) == 0 {
+		return nil
+	}
+	return []checkResult{{
+		catCompositor, "Hyprland deprecated config", statusWarn,
+		fmt.Sprintf("%d deprecated option(s)", len(notices)),
+		strings.Join(notices, "; "),
 		doctorDocsURL + "#compositor-checks",
 	}}
 }
 
 func hyprlandLacksLua(ver string) bool {
 	return ver != "" && version.CompareVersions(ver, "0.55.0") < 0
+}
+
+func hyprlandReadsOnlyLua(ver string) bool {
+	return ver != "" && version.CompareVersions(ver, "0.57.0") >= 0
+}
+
+func mangoLacksSnakeCase(ver string) bool {
+	return ver != "" && version.CompareVersions(ver, "0.18.0") < 0
 }
 
 func firstSubmatch(re *regexp.Regexp) func(string) string {
@@ -1335,8 +1515,9 @@ func checkOptionalDependencies() []checkResult {
 		{"matugen", "matugen", "Dynamic theming", true},
 		{"cava", "cava", "Audio visualizer", true},
 		{"khal", "khal", "Calendar events", false},
-		{"danksearch", "dsearch", "File search", false},
-		{"dankcalendar", "dcal", "Calendar app", false},
+		{"dux-search", "dsearch", "File search", false},
+		{"dux-calendar", "dcal", "Calendar app", false},
+		{"dux-files", "dfiles", "File manager", false},
 		{"fprintd", "fprintd-list", "Fingerprint auth", false},
 	}
 
@@ -1412,7 +1593,7 @@ func checkAdwGtk3() checkResult {
 func checkConfigurationFiles() []checkResult {
 	configDir, _ := os.UserConfigDir()
 	cacheDir, _ := os.UserCacheDir()
-	dmsDir := "DankMaterialShell"
+	dmsDir := "dms"
 
 	configFiles := []struct{ name, path string }{
 		{"settings.json", filepath.Join(configDir, dmsDir, "settings.json")},
@@ -1454,6 +1635,7 @@ func checkSystemdServices() []checkResult {
 	var results []checkResult
 
 	dmsState := getServiceState("dms", true)
+	wanted := config.SessionWanted()
 	if !dmsState.exists {
 		results = append(results, checkResult{catServices, "dms.service", statusInfo, "Not installed", "Optional user service", doctorDocsURL + "#services"})
 	} else {
@@ -1465,8 +1647,8 @@ func checkSystemdServices() []checkResult {
 		case dmsState.active == "failed":
 			status = statusError
 		case dmsState.active == "active":
-		case dmsState.enabled == "disabled" && os.Getenv("MANGO_INSTANCE_SIGNATURE") != "" && mangoWantsDMS():
-			message = "Started with " + mangoconf.SessionTarget
+		case dmsState.enabled == "disabled" && len(wanted) > 0:
+			message = "Started with " + strings.Join(wanted, ", ")
 			if dmsState.active != "" {
 				message += ", " + dmsState.active
 			}
@@ -1477,7 +1659,16 @@ func checkSystemdServices() []checkResult {
 		case dmsState.active == "inactive":
 			status = statusError
 		}
-		results = append(results, checkResult{catServices, "dms.service", status, message, "", doctorDocsURL + "#services"})
+		details := ""
+		if len(wanted) > 0 {
+			details = "Wanted by " + strings.Join(wanted, ", ")
+		}
+		if wm, ok := config.RunningCompositor(); ok && status != statusOK {
+			if unit := config.SessionUnitName(wm); !slices.Contains(wanted, unit) {
+				details = fmt.Sprintf("Nothing starts dms.service with %s. Run 'dms systemd enable'.", unit)
+			}
+		}
+		results = append(results, checkResult{catServices, "dms.service", status, message, details, doctorDocsURL + "#services"})
 	}
 
 	if dmsState.exists && dmsState.enabled == "enabled" {
@@ -1495,11 +1686,129 @@ func checkSystemdServices() []checkResult {
 			status = statusInfo
 		}
 		results = append(results, checkResult{catServices, "greetd", status, greetdState.enabled, "", doctorDocsURL + "#services"})
+		results = append(results, checkGreetdSession("/etc/greetd/config.toml")...)
+		results = append(results, checkRetiredGreeterPackages()...)
 	case doctorVerbose:
 		results = append(results, checkResult{catServices, "greetd", statusInfo, "Not installed", "Optional greeter service", doctorDocsURL + "#services"})
 	}
 
 	return results
+}
+
+func greeterLuaHint() string {
+	return "Hyprland 0.57 only reads Lua; switch to the dux-greeter package and rerun `dms-greeter install`. " + greeterPackageInstallHint()
+}
+
+func checkGreetdSession(configPath string) []checkResult {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil
+	}
+	fields := strings.Fields(greetdDefaultSessionCommand(string(data)))
+	if len(fields) == 0 {
+		return nil
+	}
+	warn := func(message string) []checkResult {
+		return []checkResult{{catServices, "Greeter session", statusWarn, message, greeterLuaHint(), doctorDocsURL + "#services"}}
+	}
+	if bin, err := exec.LookPath(fields[0]); err == nil && isLegacyWrapperScript(bin) {
+		return warn("greetd runs a pre-1.6 greeter wrapper script")
+	}
+	if !strings.EqualFold(greeterFlagValue(fields, "--command"), "hyprland") {
+		return nil
+	}
+	cfg := strings.Trim(greeterFlagValue(fields, "-C", "--config"), `"'`)
+	if cfg == "" || strings.HasSuffix(cfg, ".lua") {
+		return nil
+	}
+	content, err := os.ReadFile(cfg)
+	if err != nil || greeterHyprlandLuaContent(content) {
+		return nil
+	}
+	return warn("Greeter Hyprland config is not Lua: " + cfg)
+}
+
+var greeterHyprlandLuaPattern = regexp.MustCompile(`(^|[^[:alnum:]_])hl\.`)
+
+// Mirrors dux-greeter's launcher.IsHyprlandLuaConfig content check.
+func greeterHyprlandLuaContent(content []byte) bool {
+	for line := range strings.Lines(string(content)) {
+		if strings.HasPrefix(strings.TrimSpace(line), "#") {
+			continue
+		}
+		if greeterHyprlandLuaPattern.MatchString(line) {
+			return true
+		}
+	}
+	return false
+}
+
+func greetdDefaultSessionCommand(configTOML string) string {
+	inDefault := false
+	for line := range strings.SplitSeq(configTOML, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "[") {
+			inDefault = line == "[default_session]"
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !inDefault || !ok || strings.TrimSpace(key) != "command" {
+			continue
+		}
+		value = strings.TrimSpace(value)
+		if unquoted, err := strconv.Unquote(value); err == nil {
+			return unquoted
+		}
+		return strings.Trim(value, `'`)
+	}
+	return ""
+}
+
+func greeterFlagValue(fields []string, flags ...string) string {
+	for i, f := range fields {
+		for _, flag := range flags {
+			if f == flag && i+1 < len(fields) {
+				return fields[i+1]
+			}
+			if value, ok := strings.CutPrefix(f, flag+"="); ok {
+				return value
+			}
+		}
+	}
+	return ""
+}
+
+var retiredGreeterPackages = []string{"greetd-dms-greeter", "greetd-dms-greeter-bin", "greetd-dms-greeter-git"}
+
+func checkRetiredGreeterPackages() []checkResult {
+	if !utils.CommandExists("pacman") {
+		return nil
+	}
+	// pacman -Q exits non-zero when any name is missing but still lists the installed ones
+	out, _ := exec.Command("pacman", append([]string{"-Q"}, retiredGreeterPackages...)...).Output()
+	installed := retiredGreeterPackagesInstalled(string(out))
+	if len(installed) == 0 {
+		return nil
+	}
+	return []checkResult{{
+		catServices, "Greeter package", statusWarn,
+		"Retired package installed: " + strings.Join(installed, ", "),
+		greeterLuaHint(),
+		doctorDocsURL + "#services",
+	}}
+}
+
+// pacman -Q answers a missing name with any installed package that provides it,
+// so the dux-greeter successors come back under the retired names they provide.
+func retiredGreeterPackagesInstalled(pacmanQuery string) []string {
+	var installed []string
+	for line := range strings.SplitSeq(strings.TrimSpace(pacmanQuery), "\n") {
+		name, _, _ := strings.Cut(line, " ")
+		if slices.Contains(retiredGreeterPackages, name) {
+			installed = append(installed, name)
+		}
+	}
+	return installed
 }
 
 // Chromium, Electron and libadwaita follow light/dark through the settings
@@ -1607,7 +1916,7 @@ func printResultLine(r checkResult, styles tui.Styles) {
 
 	fmt.Printf("    %s %s %s %s\n", style.Render(icon), name, styles.Subtle.Render(dots), r.message)
 
-	if doctorVerbose && r.details != "" {
+	if r.details != "" && (doctorVerbose || r.status != statusOK) {
 		fmt.Printf("      %s\n", styles.Subtle.Render("└─ "+r.details))
 	}
 
@@ -1666,7 +1975,7 @@ func formatResultsPlain(results []checkResult) string {
 
 		fmt.Fprintf(&sb, "- [%s] %s: %s\n", r.status, r.name, r.message)
 
-		if doctorVerbose && r.details != "" {
+		if r.details != "" && (doctorVerbose || r.status != statusOK) {
 			fmt.Fprintf(&sb, "  - %s\n", r.details)
 		}
 	}
@@ -1707,6 +2016,9 @@ var bundledFontRelPaths = map[string][]string{
 	"notable": {
 		"DCommon/assets/fonts/notable/Notable-Regular.ttf",
 	},
+	"gochi hand": {
+		"DCommon/assets/fonts/gochi-hand/GochiHand-Regular.ttf",
+	},
 }
 
 func resolveDoctorShellPath() string {
@@ -1741,22 +2053,47 @@ func isBundledDefaultFont(family string) bool {
 	return ok
 }
 
-func fontInFcList(name, cacheLower string) bool {
-	target := strings.ToLower(strings.TrimSpace(name))
-	if target == "" {
-		return false
+const fcListQtFormat = "%{family}\t%{style}\t%{foundry}\n"
+
+var qtGenericFamilies = map[string]bool{"sans serif": true, "serif": true, "monospace": true}
+
+func qtFontFamilies() (map[string]bool, error) {
+	output, err := exec.Command("fc-list", "--format", fcListQtFormat).Output()
+	if err != nil {
+		return nil, err
 	}
-	for line := range strings.SplitSeq(cacheLower, "\n") {
-		for fam := range strings.SplitSeq(strings.TrimSpace(line), ",") {
-			if strings.TrimSpace(fam) == target {
-				return true
+	return parseQtFontFamilies(string(output)), nil
+}
+
+// parseQtFontFamilies retrieves, from the provided fcOutput list, a new map in the style of Qt.fontFamilies()
+func parseQtFontFamilies(fcOutput string) map[string]bool {
+	families := map[string]bool{}
+	for line := range strings.SplitSeq(fcOutput, "\n") {
+		fields := strings.Split(line, "\t")
+		if len(fields) != 3 || fields[0] == "" {
+			continue
+		}
+		styleCount := len(strings.Split(fields[1], ","))
+		for i, fam := range strings.Split(fields[0], ",") {
+			if i > 0 && i >= styleCount {
+				break
+			}
+			families[strings.ToLower(fam)] = true
+			// Qt only lists "Family [Foundry]" for multi-foundry families but resolves it either way
+			if fields[2] != "" {
+				families[strings.ToLower(fam+" ["+fields[2]+"]")] = true
 			}
 		}
 	}
-	return false
+	return families
 }
 
-func checkConfiguredFont(label, family, shellPath, fcCache string, fcListAvailable bool, url string) checkResult {
+func fontInFcList(name string, families map[string]bool) bool {
+	target := strings.ToLower(strings.TrimSpace(name))
+	return qtGenericFamilies[target] || families[target]
+}
+
+func checkConfiguredFont(label, family, shellPath string, fcFamilies map[string]bool, fcListAvailable bool, url string) checkResult {
 	if bundled := findBundledFontFile(shellPath, family); bundled != "" {
 		details := "Bundled (Qt FontLoader)"
 		if doctorVerbose {
@@ -1791,7 +2128,7 @@ func checkConfiguredFont(label, family, shellPath, fcCache string, fcListAvailab
 		}
 	}
 
-	if fcCache == "" {
+	if len(fcFamilies) == 0 {
 		return checkResult{
 			catFonts, label, statusWarn,
 			fmt.Sprintf("'%s' not found", family),
@@ -1800,7 +2137,7 @@ func checkConfiguredFont(label, family, shellPath, fcCache string, fcListAvailab
 		}
 	}
 
-	if fontInFcList(family, fcCache) {
+	if fontInFcList(family, fcFamilies) {
 		return checkResult{catFonts, label, statusOK, family, "Available via fontconfig", url}
 	}
 
@@ -1821,7 +2158,7 @@ func checkFonts() []checkResult {
 	displayFontFamily := defaultDoctorDisplayFamily
 
 	if configDir, err := os.UserConfigDir(); err == nil {
-		settingsPath := filepath.Join(configDir, "DankMaterialShell", "settings.json")
+		settingsPath := filepath.Join(configDir, "dms", "settings.json")
 		if data, err := os.ReadFile(settingsPath); err == nil {
 			var settings struct {
 				FontFamily        string `json:"fontFamily"`
@@ -1846,18 +2183,18 @@ func checkFonts() []checkResult {
 	needFontconfig := !isBundledDefaultFont(fontFamily) || !isBundledDefaultFont(monoFontFamily) || !isBundledDefaultFont(displayFontFamily)
 
 	fcListAvailable := utils.CommandExists("fc-list")
-	fcCache := ""
+	var fcFamilies map[string]bool
 
 	if needFontconfig {
 		if !fcListAvailable {
 			results = append(results, checkResult{catFonts, "Fontconfig Tools", statusWarn, "fc-list not installed", "Cannot verify custom fonts in fontconfig cache.", url})
 		} else {
-			output, err := exec.Command("fc-list", ":", "family").Output()
+			families, err := qtFontFamilies()
 			if err != nil {
 				results = append(results, checkResult{catFonts, "Fontconfig Cache", statusError, "Failed to query font list", "Fontconfig cache query failed. Try running 'fc-cache -fv'.", url})
 			} else {
-				fcCache = strings.ToLower(string(output))
-				if len(strings.TrimSpace(fcCache)) == 0 {
+				fcFamilies = families
+				if len(fcFamilies) == 0 {
 					results = append(results, checkResult{catFonts, "Fontconfig Cache", statusError, "Cache is empty", "No fonts found in fontconfig cache. Try running 'fc-cache -fv'.", url})
 				}
 			}
@@ -1865,9 +2202,9 @@ func checkFonts() []checkResult {
 	}
 
 	results = append(results,
-		checkConfiguredFont("Normal Font", fontFamily, shellPath, fcCache, fcListAvailable, url),
-		checkConfiguredFont("Monospace Font", monoFontFamily, shellPath, fcCache, fcListAvailable, url),
-		checkConfiguredFont("Display Font", displayFontFamily, shellPath, fcCache, fcListAvailable, url),
+		checkConfiguredFont("Normal Font", fontFamily, shellPath, fcFamilies, fcListAvailable, url),
+		checkConfiguredFont("Monospace Font", monoFontFamily, shellPath, fcFamilies, fcListAvailable, url),
+		checkConfiguredFont("Display Font", displayFontFamily, shellPath, fcFamilies, fcListAvailable, url),
 	)
 
 	return results

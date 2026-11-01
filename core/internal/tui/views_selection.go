@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/distros"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
 )
 
 type listOption struct {
@@ -25,12 +25,22 @@ type wmChoice struct {
 	desc  string
 }
 
+func (m Model) isEL() bool {
+	return m.osInfo != nil && distros.IsEnterpriseLinux(m.osInfo.Distribution.ID)
+}
+
 func (m Model) windowManagerChoices() []wmChoice {
 	choices := []wmChoice{
 		{deps.WindowManagerNiri, "niri", "Scrollable-tiling Wayland compositor."},
 	}
+	if m.isEL() {
+		return choices
+	}
 	if m.osInfo == nil || m.osInfo.Distribution.ID != "debian" {
 		choices = append(choices, wmChoice{deps.WindowManagerHyprland, "Hyprland", "Dynamic tiling Wayland compositor."})
+	}
+	if m.isImmutable() {
+		return choices
 	}
 	if m.osInfo != nil {
 		// No mango package mapping exists for these families; offering it would deploy a config with no compositor.
@@ -58,7 +68,9 @@ type terminalChoice struct {
 
 func (m Model) terminalChoices() []terminalChoice {
 	var choices []terminalChoice
-	if !m.isGentoo() {
+	// EPEL 10 ships zig for x86_64 only, so the COPR has no EL aarch64 ghostty.
+	elNoGhostty := m.isEL() && m.osInfo.Architecture != "amd64"
+	if !m.isGentoo() && !elNoGhostty {
 		choices = append(choices, terminalChoice{deps.TerminalGhostty, "ghostty", "A fast, native terminal emulator built in Zig."})
 	}
 	return append(choices,

@@ -133,7 +133,7 @@ Item {
                 visible: !root.hasProfiles
                 iconName: "vpn_key_off"
                 title: I18n.tr("No VPN profiles")
-                subtitle: I18n.tr("Click Import to add a .ovpn or .conf")
+                subtitle: I18n.tr("Click Import to add a %1 or %2 file", "VPN import hint, %1 and %2 are file extensions").arg(".ovpn").arg(".conf")
             }
 
             DListView {

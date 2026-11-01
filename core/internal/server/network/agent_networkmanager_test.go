@@ -308,6 +308,47 @@ func TestSecretAgent_GetSecrets_NoInteractionFlag(t *testing.T) {
 	assert.Contains(t, err.Error(), "NoSecrets")
 }
 
+func TestSecretAgent_GetSecrets_OpenVPNDynamicChallenge(t *testing.T) {
+	conn := map[string]nmVariantMap{
+		"connection": {
+			"id":   dbus.MakeVariant("Work VPN"),
+			"type": dbus.MakeVariant("vpn"),
+		},
+		"vpn": {
+			"service-type": dbus.MakeVariant("org.freedesktop.NetworkManager.openvpn"),
+		},
+	}
+
+	tests := []struct {
+		name     string
+		hint     string
+		isSecret bool
+	}{
+		{"noecho", "x-dynamic-challenge:challenge-response", true},
+		{"echo", "x-dynamic-challenge-echo:challenge-response", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			broker := &fakePromptBroker{
+				asked: make(chan PromptRequest, 1),
+				reply: PromptReply{Secrets: map[string]string{"challenge-response": "123456"}},
+			}
+			agent := &SecretAgent{prompts: broker}
+			hints := []string{tt.hint, "x-vpn-message:Enter your OTP"}
+
+			out, err := agent.GetSecrets(conn, "/test/path", "vpn", hints, nmSecretAgentFlagAllowInteraction)
+			assert.Nil(t, err)
+
+			req := <-broker.asked
+			assert.Equal(t, []string{"challenge-response"}, req.Fields)
+			assert.Equal(t, []FieldInfo{{Name: "challenge-response", Label: "Challenge Response", IsSecret: tt.isSecret}}, req.FieldsInfo)
+
+			secrets, _ := out["vpn"]["secrets"].Value().(map[string]string)
+			assert.Equal(t, map[string]string{"challenge-response": "123456"}, secrets)
+		})
+	}
+}
+
 func TestBuildWiFiSecretsResponse(t *testing.T) {
 	t.Run("wpa-psk returns psk", func(t *testing.T) {
 		out := buildWiFiSecretsResponse("802-11-wireless-security", map[string]string{"psk": "hunter2"})

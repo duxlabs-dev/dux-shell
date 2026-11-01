@@ -139,11 +139,12 @@ PanelWindow {
         readonly property bool _active: bodyActive && connectorRadius > 0
         readonly property var _rect: far ? SurfaceGeometry.farConnectorRect(barSide, body, placement, connectorRadius, win._dpr) : SurfaceGeometry.connectorRect(barSide, body, placement, 0, connectorRadius, win._dpr)
         readonly property string _arcCorner: far ? ConnectorGeometry.arcCorner(win._farConnectorBarSide(barSide, placement), win._farConnectorPlacement(barSide, placement)) : ConnectorGeometry.arcCorner(barSide, placement)
+        readonly property var _blur: win._seamPaddedBlurRect(_rect, far ? win._farConnectorBarSide(barSide, placement) : barSide)
 
-        x: _active ? Math.round(_rect.x) : 0
-        y: _active ? Math.round(_rect.y) : 0
-        width: _active ? Math.round(_rect.width) : 0
-        height: _active ? Math.round(_rect.height) : 0
+        x: _active ? _blur.x : 0
+        y: _active ? _blur.y : 0
+        width: _active ? _blur.width : 0
+        height: _active ? _blur.height : 0
 
         Region {
             readonly property bool _active: connectorBlur.width > 0 && connectorBlur.height > 0
@@ -172,11 +173,13 @@ PanelWindow {
 
             readonly property bool _active: win._blurSurfacesActive && win._connectedActive && dockBlur.descriptor.visible && dockBlur.geometry.width > 0 && dockBlur.geometry.height > 0
 
+            readonly property var _blur: win._seamPaddedBlurRect(dockBlur.geometry)
+
             radius: dockBlur.bodyRadius
-            x: _active ? Math.round(dockBlur.geometry.x) : 0
-            y: _active ? Math.round(dockBlur.geometry.y) : 0
-            width: _active ? Math.round(dockBlur.geometry.width) : 0
-            height: _active ? Math.round(dockBlur.geometry.height) : 0
+            x: _active ? _blur.x : 0
+            y: _active ? _blur.y : 0
+            width: _active ? _blur.width : 0
+            height: _active ? _blur.height : 0
         }
         Region {
             id: _dockBodyBlurCap
@@ -509,6 +512,24 @@ PanelWindow {
         const maxRadius = Math.floor(Math.min(_blurCutout.width, _blurCutout.height) / 2);
         return Math.max(0, Math.min(requested, maxRadius));
     }
+    readonly property var _emptyRect: ({
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+        })
+
+    readonly property var _cutoutEdges: ({
+            "left": win.cutoutLeftInset,
+            "top": win.cutoutTopInset,
+            "right": win._windowRegionWidth - win.cutoutRightInset,
+            "bottom": win._windowRegionHeight - win.cutoutBottomInset
+        })
+
+    // Chrome fused to a band shares its paint, so the band's blur inset must not leave an unblurred line along the seam.
+    function _seamPaddedBlurRect(rect, side) {
+        return SurfaceGeometry.bandPaddedRect(rect, win._blurCutoutCompensation, win._cutoutEdges, side);
+    }
 
     QtObject {
         id: _notifBodyBlurAnchor
@@ -542,12 +563,13 @@ PanelWindow {
 
             readonly property bool _active: win._blurSurfacesActive && win._popoutDescriptor.visible
 
+            readonly property var _blur: win._seamPaddedBlurRect(win._popoutBodyGeometry)
+
             radius: win._surfaceRadius
-            x: _active ? Math.round(win._popoutBodyGeometry.x) : 0
-            // Covers chrome hung off the body; the cap and connectors stay on the body.
-            y: _active ? Math.round(win._popoutBodyGeometry.y - win._popoutDescriptor.overflowTop) : 0
-            width: _active ? Math.round(win._popoutBodyGeometry.width) : 0
-            height: _active ? Math.round(win._popoutBodyGeometry.height + win._popoutDescriptor.overflowTop + win._popoutDescriptor.overflowBottom) : 0
+            x: _active ? _blur.x : 0
+            y: _active ? _blur.y : 0
+            width: _active ? _blur.width : 0
+            height: _active ? _blur.height : 0
         }
         Region {
             id: _popoutBodyBlurCap
@@ -583,11 +605,12 @@ PanelWindow {
             readonly property real _radius: win._effectivePopoutFarStartCcr
             readonly property bool _active: _popoutBodyBlurAnchor._active && _radius > 0
             readonly property var _rect: SurfaceGeometry.farBodyCapRect(win._popoutDescriptor.barSide, win._popoutBodyGeometry, "left", _radius, win._dpr)
+            readonly property var _blur: win._seamPaddedBlurRect(_rect)
 
-            x: _active ? Math.round(_rect.x) : 0
-            y: _active ? Math.round(_rect.y) : 0
-            width: _active ? Math.round(_rect.width) : 0
-            height: _active ? Math.round(_rect.height) : 0
+            x: _active ? _blur.x : 0
+            y: _active ? _blur.y : 0
+            width: _active ? _blur.width : 0
+            height: _active ? _blur.height : 0
         }
         Region {
             id: _popoutFarEndBodyBlurCap
@@ -595,11 +618,12 @@ PanelWindow {
             readonly property real _radius: win._effectivePopoutFarEndCcr
             readonly property bool _active: _popoutBodyBlurAnchor._active && _radius > 0
             readonly property var _rect: SurfaceGeometry.farBodyCapRect(win._popoutDescriptor.barSide, win._popoutBodyGeometry, "right", _radius, win._dpr)
+            readonly property var _blur: win._seamPaddedBlurRect(_rect)
 
-            x: _active ? Math.round(_rect.x) : 0
-            y: _active ? Math.round(_rect.y) : 0
-            width: _active ? Math.round(_rect.width) : 0
-            height: _active ? Math.round(_rect.height) : 0
+            x: _active ? _blur.x : 0
+            y: _active ? _blur.y : 0
+            width: _active ? _blur.width : 0
+            height: _active ? _blur.height : 0
         }
         ConnectorBlurRegion {
             barSide: win._popoutDescriptor.barSide
@@ -638,13 +662,14 @@ PanelWindow {
             id: _notifBodySceneBlurAnchor
 
             readonly property bool _active: _notifBodyBlurAnchor._active
-            readonly property var _scene: _active ? win._notifBodyScene() : null
+            readonly property var sceneRect: _active ? win._notifBodyScene() : win._emptyRect
+            readonly property var _blur: win._seamPaddedBlurRect(sceneRect)
 
             radius: win._surfaceRadius
-            x: _scene ? Math.round(_scene.x) : 0
-            y: _scene ? Math.round(_scene.y) : 0
-            width: _scene ? Math.round(_scene.width) : 0
-            height: _scene ? Math.round(_scene.height) : 0
+            x: _blur.x
+            y: _blur.y
+            width: _blur.width
+            height: _blur.height
         }
         Region {
             id: _notifBodyBlurCap
@@ -662,14 +687,14 @@ PanelWindow {
         }
         ConnectorBlurRegion {
             barSide: win._notifDescriptor.barSide
-            body: _notifBodySceneBlurAnchor
+            body: _notifBodySceneBlurAnchor.sceneRect
             placement: "left"
             bodyActive: _notifBodySceneBlurAnchor._active
             connectorRadius: win._notifConnectorRadiusLeft
         }
         ConnectorBlurRegion {
             barSide: win._notifDescriptor.barSide
-            body: _notifBodySceneBlurAnchor
+            body: _notifBodySceneBlurAnchor.sceneRect
             placement: "right"
             bodyActive: _notifBodySceneBlurAnchor._active
             connectorRadius: win._notifConnectorRadiusRight
@@ -679,28 +704,30 @@ PanelWindow {
 
             readonly property real _radius: win._effectiveNotifFarStartCcr
             readonly property bool _active: _notifBodySceneBlurAnchor._active && _radius > 0
-            readonly property var _rect: SurfaceGeometry.farBodyCapRect(win._notifDescriptor.barSide, _notifBodySceneBlurAnchor, "left", _radius, win._dpr)
+            readonly property var _rect: SurfaceGeometry.farBodyCapRect(win._notifDescriptor.barSide, _notifBodySceneBlurAnchor.sceneRect, "left", _radius, win._dpr)
+            readonly property var _blur: win._seamPaddedBlurRect(_rect)
 
-            x: _active ? Math.round(_rect.x) : 0
-            y: _active ? Math.round(_rect.y) : 0
-            width: _active ? Math.round(_rect.width) : 0
-            height: _active ? Math.round(_rect.height) : 0
+            x: _active ? _blur.x : 0
+            y: _active ? _blur.y : 0
+            width: _active ? _blur.width : 0
+            height: _active ? _blur.height : 0
         }
         Region {
             id: _notifFarEndBodyBlurCap
 
             readonly property real _radius: win._effectiveNotifFarEndCcr
             readonly property bool _active: _notifBodySceneBlurAnchor._active && _radius > 0
-            readonly property var _rect: SurfaceGeometry.farBodyCapRect(win._notifDescriptor.barSide, _notifBodySceneBlurAnchor, "right", _radius, win._dpr)
+            readonly property var _rect: SurfaceGeometry.farBodyCapRect(win._notifDescriptor.barSide, _notifBodySceneBlurAnchor.sceneRect, "right", _radius, win._dpr)
+            readonly property var _blur: win._seamPaddedBlurRect(_rect)
 
-            x: _active ? Math.round(_rect.x) : 0
-            y: _active ? Math.round(_rect.y) : 0
-            width: _active ? Math.round(_rect.width) : 0
-            height: _active ? Math.round(_rect.height) : 0
+            x: _active ? _blur.x : 0
+            y: _active ? _blur.y : 0
+            width: _active ? _blur.width : 0
+            height: _active ? _blur.height : 0
         }
         ConnectorBlurRegion {
             barSide: win._notifDescriptor.barSide
-            body: _notifBodySceneBlurAnchor
+            body: _notifBodySceneBlurAnchor.sceneRect
             placement: "left"
             far: true
             bodyActive: _notifBodySceneBlurAnchor._active
@@ -708,7 +735,7 @@ PanelWindow {
         }
         ConnectorBlurRegion {
             barSide: win._notifDescriptor.barSide
-            body: _notifBodySceneBlurAnchor
+            body: _notifBodySceneBlurAnchor.sceneRect
             placement: "right"
             far: true
             bodyActive: _notifBodySceneBlurAnchor._active
@@ -720,21 +747,23 @@ PanelWindow {
 
             readonly property bool _active: win._blurSurfacesActive && win._slideoutSurface !== null
 
-            x: _active ? Math.round(win._slideoutSurface.body.x) : 0
-            y: _active ? Math.round(win._slideoutSurface.body.y) : 0
-            width: _active ? Math.round(win._slideoutSurface.body.width) : 0
-            height: _active ? Math.round(win._slideoutSurface.body.height) : 0
+            readonly property var _blur: win._seamPaddedBlurRect(win._slideoutSurface?.body ?? win._emptyRect)
+
+            x: _active ? _blur.x : 0
+            y: _active ? _blur.y : 0
+            width: _active ? _blur.width : 0
+            height: _active ? _blur.height : 0
         }
         ConnectorBlurRegion {
             barSide: win._slideoutDescriptor.barSide
-            body: _slideoutBodyBlurAnchor
+            body: win._slideoutSurface?.body ?? win._emptyRect
             placement: "left"
             far: true
             connectorRadius: _slideoutBodyBlurAnchor._active ? Math.min(win._slideoutSurface.radii.farStart, win._slideoutSurface.body.width) : 0
         }
         ConnectorBlurRegion {
             barSide: win._slideoutDescriptor.barSide
-            body: _slideoutBodyBlurAnchor
+            body: win._slideoutSurface?.body ?? win._emptyRect
             placement: "right"
             far: true
             connectorRadius: _slideoutBodyBlurAnchor._active ? Math.min(win._slideoutSurface.radii.farEnd, win._slideoutSurface.body.width) : 0
@@ -745,11 +774,13 @@ PanelWindow {
 
             readonly property bool _active: win._blurSurfacesActive && win._modalDescriptor.visible && win._modalBodyGeometry.width > 0 && win._modalBodyGeometry.height > 0
 
+            readonly property var _blur: win._seamPaddedBlurRect(win._modalBodyGeometry)
+
             radius: win._surfaceRadius
-            x: _active ? Math.round(win._modalBodyGeometry.x) : 0
-            y: _active ? Math.round(win._modalBodyGeometry.y) : 0
-            width: _active ? Math.round(win._modalBodyGeometry.width) : 0
-            height: _active ? Math.round(win._modalBodyGeometry.height) : 0
+            x: _active ? _blur.x : 0
+            y: _active ? _blur.y : 0
+            width: _active ? _blur.width : 0
+            height: _active ? _blur.height : 0
         }
         Region {
             id: _modalBodyBlurCap
@@ -785,11 +816,12 @@ PanelWindow {
             readonly property real _radius: win._effectiveModalFarStartCcr
             readonly property bool _active: _modalBodyBlurAnchor._active && _radius > 0
             readonly property var _rect: SurfaceGeometry.farBodyCapRect(win._modalDescriptor.barSide, win._modalBodyGeometry, "left", _radius, win._dpr)
+            readonly property var _blur: win._seamPaddedBlurRect(_rect)
 
-            x: _active ? Math.round(_rect.x) : 0
-            y: _active ? Math.round(_rect.y) : 0
-            width: _active ? Math.round(_rect.width) : 0
-            height: _active ? Math.round(_rect.height) : 0
+            x: _active ? _blur.x : 0
+            y: _active ? _blur.y : 0
+            width: _active ? _blur.width : 0
+            height: _active ? _blur.height : 0
         }
         Region {
             id: _modalFarEndBodyBlurCap
@@ -797,11 +829,12 @@ PanelWindow {
             readonly property real _radius: win._effectiveModalFarEndCcr
             readonly property bool _active: _modalBodyBlurAnchor._active && _radius > 0
             readonly property var _rect: SurfaceGeometry.farBodyCapRect(win._modalDescriptor.barSide, win._modalBodyGeometry, "right", _radius, win._dpr)
+            readonly property var _blur: win._seamPaddedBlurRect(_rect)
 
-            x: _active ? Math.round(_rect.x) : 0
-            y: _active ? Math.round(_rect.y) : 0
-            width: _active ? Math.round(_rect.width) : 0
-            height: _active ? Math.round(_rect.height) : 0
+            x: _active ? _blur.x : 0
+            y: _active ? _blur.y : 0
+            width: _active ? _blur.width : 0
+            height: _active ? _blur.height : 0
         }
         ConnectorBlurRegion {
             barSide: win._modalDescriptor.barSide

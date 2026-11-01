@@ -22,7 +22,6 @@ Item {
     property bool overTrash: false
     property color backgroundColor: CcMetrics.dialogColor
     property vector4d cornerRadii: Qt.vector4d(Theme.windowRadius, Theme.windowRadius, Theme.windowRadius, Theme.windowRadius)
-    // Shoulders fill outside the panel's corner arcs so a translucent fill never doubles up.
     property bool joined: false
     property bool above: false
     readonly property real leftRadius: above ? cornerRadii.x : cornerRadii.w
@@ -32,13 +31,11 @@ Item {
     readonly property string outline: {
         const w = width;
         const h = height;
-        const lw = Math.min(leftRadius, w / 2);
-        const rw = Math.min(rightRadius, w / 2);
-        const lf = Math.min(lw, h / 2);
-        const rf = Math.min(rw, h / 2);
+        const lf = Math.min(leftRadius, w / 2, h / 2);
+        const rf = Math.min(rightRadius, w / 2, h / 2);
         const y = v => above ? h - v : v;
         const s = flag => above ? 1 - flag : flag;
-        const joinedEdge = joined ? `M 0 ${y(-lw)} A ${lw} ${lw} 0 0 ${s(0)} ${lw} ${y(0)} L ${w - rw} ${y(0)} A ${rw} ${rw} 0 0 ${s(0)} ${w} ${y(-rw)}` : `M 0 ${y(lf)} A ${lf} ${lf} 0 0 ${s(1)} ${lf} ${y(0)} L ${w - rf} ${y(0)} A ${rf} ${rf} 0 0 ${s(1)} ${w} ${y(rf)}`;
+        const joinedEdge = joined ? `M 0 ${y(0)} L ${w} ${y(0)}` : `M 0 ${y(lf)} A ${lf} ${lf} 0 0 ${s(1)} ${lf} ${y(0)} L ${w - rf} ${y(0)} A ${rf} ${rf} 0 0 ${s(1)} ${w} ${y(rf)}`;
         return `${joinedEdge} L ${w} ${y(h - rf)} A ${rf} ${rf} 0 0 ${s(1)} ${w - rf} ${y(h)} L ${lf} ${y(h)} A ${lf} ${lf} 0 0 ${s(1)} 0 ${y(h - lf)} Z`;
     }
 

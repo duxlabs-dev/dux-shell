@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/keybinds"
+	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds"
 )
 
 type AqueousProvider struct{}

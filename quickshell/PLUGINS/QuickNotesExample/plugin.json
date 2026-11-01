@@ -3,7 +3,7 @@
     "name": "Quick Notes",
     "description": "Example launcher plugin demonstrating the plugin state API for persistent data like history and notes",
     "version": "1.0.0",
-    "author": "DankMaterialShell",
+    "author": "Dux Shell",
     "icon": "sticky_note_2",
     "type": "launcher",
     "capabilities": ["clipboard"],

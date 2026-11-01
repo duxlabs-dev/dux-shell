@@ -1,9 +1,9 @@
 package site
 
 const (
-	Domain   = "danklinux.com"
+	Domain   = "duxlabs.dev"
 	Web      = "https://" + Domain
 	Docs     = Web + "/docs"
-	API      = "https://api." + Domain
-	VoidRepo = "https://void." + Domain
+	API      = "https://api.duxlabs.dev"
+	VoidRepo = "https://void.duxlabs.dev"
 )

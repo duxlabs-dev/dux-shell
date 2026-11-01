@@ -788,8 +788,8 @@ Item {
                         }
                     }
 
-                    // IME commits use a hidden password input: https://github.com/AvengeMedia/DankMaterialShell/issues/2950
-                    // An in-process module like fcitx5-qt draws its popup as an xdg_popup, which the lock surface cannot parent: https://github.com/AvengeMedia/DankMaterialShell/issues/3669
+                    // IME commits use a hidden password input: https://github.com/duxlabs-dev/dux-shell/issues/2950
+                    // An in-process module like fcitx5-qt draws its popup as an xdg_popup, which the lock surface cannot parent: https://github.com/duxlabs-dev/dux-shell/issues/3669
                     Loader {
                         focus: true
                         active: KeyUtils.compositorTextInputSelected(Quickshell.env("QT_IM_MODULES"), Quickshell.env("QT_IM_MODULE"))
@@ -801,7 +801,8 @@ Item {
                             height: 1
                             opacity: 0
                             cursorDelegate: Item {}
-                            echoMode: TextInput.Password
+                            // Password echo strips ImhHiddenText (QTBUG-88367); NoEcho keeps it so the input method sees a password field
+                            echoMode: TextInput.NoEcho
                             inputMethodHints: Qt.ImhHiddenText | Qt.ImhSensitiveData | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
                             KeyNavigation.tab: passwordField.KeyNavigation.tab
                             KeyNavigation.backtab: passwordField.KeyNavigation.backtab

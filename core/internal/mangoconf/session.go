@@ -46,8 +46,3 @@ func SessionTargetInstalled() bool {
 	}
 	return false
 }
-
-// WantsLink is the add-wants symlink that starts dms.service with the Mango session.
-func WantsLink() string {
-	return filepath.Join(os.Getenv("HOME"), ".config", "systemd", "user", SessionTarget+".wants", "dms.service")
-}

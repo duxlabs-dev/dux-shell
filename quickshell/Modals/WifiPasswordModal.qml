@@ -47,13 +47,18 @@ DModal {
     readonly property bool isCertificateChangedPrompt: promptReason === "server-certificate-changed"
     readonly property bool isCertificatePrompt: promptReason === "server-certificate" || isCertificateChangedPrompt
     readonly property string serverCertificateFingerprint: promptHints.length > 0 ? promptHints[0] : ""
+    readonly property string vpnPromptMessage: {
+        const hint = promptHints.find(h => typeof h === "string" && h.startsWith("x-vpn-message:"));
+        return hint ? hint.slice("x-vpn-message:".length) : "";
+    }
+    readonly property bool isChallengePrompt: promptHints.some(h => typeof h === "string" && h.startsWith("x-dynamic-challenge"))
     readonly property bool showUsernameField: requiresEnterprise && !isVpnPrompt && fieldsInfo.length === 0
     readonly property bool showPasswordField: fieldsInfo.length === 0 && !isCertificatePrompt
     readonly property bool showEapFields: requiresEnterprise && !isVpnPrompt && !isPromptMode
     readonly property bool showPhase2Dropdown: eapMethodValue === "peap" || eapMethodValue === "ttls"
     readonly property bool showAnonField: requiresEnterprise && !isVpnPrompt && !isPromptMode && eapMethodValue !== "pwd"
     readonly property bool showDomainField: showAnonField
-    readonly property bool showSavePasswordCheckbox: (isVpnPrompt || fieldsInfo.length > 0) && promptReason !== "pkcs11" && !isCertificatePrompt
+    readonly property bool showSavePasswordCheckbox: (isVpnPrompt || fieldsInfo.length > 0) && promptReason !== "pkcs11" && !isCertificatePrompt && !isChallengePrompt
 
     readonly property int certificateWarningHeight: certificateWarningColumn.implicitHeight + Theme.spacingM * 2
 
@@ -165,27 +170,15 @@ DModal {
 
         open();
         Qt.callLater(() => {
-            if (reason === "wrong-password")
-                shakeSecretFields();
+            if (reason === "wrong-password" && fieldsInfo.length === 0) {
+                passwordInput.text = "";
+            }
             focusFirstField();
         });
     }
 
     function hide() {
         close();
-    }
-
-    function shakeSecretFields() {
-        if (fieldsInfo.length === 0) {
-            passwordInput.text = "";
-            passwordInput.shake();
-            return;
-        }
-        for (var i = 0; i < dynamicFieldsRepeater.count; i++) {
-            const item = dynamicFieldsRepeater.itemAt(i);
-            if (item?.morph)
-                item.shake();
-        }
     }
 
     function getFieldLabel(fieldName) {
@@ -327,16 +320,18 @@ DModal {
         }
         supportingText: {
             if (promptReason === "pkcs11")
-                return I18n.tr("Enter PIN for ") + wifiPasswordSSID;
+                return I18n.tr("Enter PIN for %1", "%1 is the device or network name").arg(wifiPasswordSSID);
             if (isCertificatePrompt)
                 return wifiPasswordSSID;
+            if (vpnPromptMessage)
+                return vpnPromptMessage;
             if (fieldsInfo.length > 0)
-                return I18n.tr("Enter credentials for ") + wifiPasswordSSID;
+                return I18n.tr("Enter credentials for %1", "%1 is the network name").arg(wifiPasswordSSID);
             if (isVpnPrompt)
-                return I18n.tr("Enter password for ") + wifiPasswordSSID;
+                return I18n.tr("Enter password for %1", "%1 is the network name").arg(wifiPasswordSSID);
             if (isHiddenNetwork)
                 return I18n.tr("Enter network name and password");
-            return (requiresEnterprise ? I18n.tr("Enter credentials for ") : I18n.tr("Enter password for ")) + wifiPasswordSSID;
+            return (requiresEnterprise ? I18n.tr("Enter credentials for %1", "%1 is the network name") : I18n.tr("Enter password for %1", "%1 is the network name")).arg(wifiPasswordSSID);
         }
 
         Rectangle {
@@ -381,10 +376,13 @@ DModal {
         DTextField {
             id: ssidInput
             visible: isHiddenNetwork
-            expressive: true
+            outlined: true
+            controlHeight: Theme.fieldHeightLarge
             leftIconName: "wifi"
 
             width: parent.width
+            font.pixelSize: Theme.fontSizeMedium
+            textColor: Theme.surfaceText
             labelText: I18n.tr("Network Name (SSID)")
             enabled: root.shouldBeVisible
 
@@ -399,10 +397,12 @@ DModal {
                 id: fieldInput
                 required property var modelData
                 required property int index
-                expressive: true
-                morph: modelData.isSecret
+                outlined: true
+                controlHeight: Theme.fieldHeightLarge
                 leftIconName: modelData.isSecret ? "lock" : "person"
                 width: contentFocusScope.contentItem.width
+                font.pixelSize: Theme.fontSizeMedium
+                textColor: Theme.surfaceText
                 showPasswordToggle: modelData.isSecret
                 isError: modelData.isSecret && isPromptMode && promptReason === "wrong-password" && text.length === 0
                 supportingText: isError ? I18n.tr("Incorrect password") : ""
@@ -483,10 +483,13 @@ DModal {
         DTextField {
             id: usernameInput
             visible: showUsernameField
-            expressive: true
+            outlined: true
+            controlHeight: Theme.fieldHeightLarge
             leftIconName: "person"
 
             width: parent.width
+            font.pixelSize: Theme.fontSizeMedium
+            textColor: Theme.surfaceText
             text: wifiUsernameInput
             labelText: I18n.tr("Username", "text field label for network, vpn and account forms")
             enabled: root.shouldBeVisible
@@ -498,11 +501,13 @@ DModal {
         DTextField {
             id: passwordInput
             visible: showPasswordField
-            expressive: true
-            morph: true
+            outlined: true
+            controlHeight: Theme.fieldHeightLarge
             leftIconName: "lock"
 
             width: parent.width
+            font.pixelSize: Theme.fontSizeMedium
+            textColor: Theme.surfaceText
             text: wifiPasswordInput
             showPasswordToggle: true
             isError: isPromptMode && promptReason === "wrong-password" && text.length === 0
@@ -524,10 +529,13 @@ DModal {
         DTextField {
             id: anonInput
             visible: showAnonField
-            expressive: true
+            outlined: true
+            controlHeight: Theme.fieldHeightLarge
             leftIconName: "person_off"
 
             width: parent.width
+            font.pixelSize: Theme.fontSizeMedium
+            textColor: Theme.surfaceText
             text: wifiAnonymousIdentityInput
             labelText: I18n.tr("Anonymous Identity (optional)")
             enabled: root.shouldBeVisible
@@ -539,10 +547,13 @@ DModal {
         DTextField {
             id: domainMatchInput
             visible: showDomainField
-            expressive: true
+            outlined: true
+            controlHeight: Theme.fieldHeightLarge
             leftIconName: "domain"
 
             width: parent.width
+            font.pixelSize: Theme.fontSizeMedium
+            textColor: Theme.surfaceText
             text: wifiDomainInput
             labelText: I18n.tr("Domain (optional)")
             enabled: root.shouldBeVisible

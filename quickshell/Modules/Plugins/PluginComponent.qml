@@ -11,6 +11,7 @@ Item {
     property var surfaceContext: null
     property var hostContext: null
     property string widgetInstanceId: ""
+    readonly property string popoutTriggerId: widgetInstanceId || pluginId
     property Component attachedContent: null
     readonly property bool usesAttachedExpansion: !!attachedContent && ((surfaceContext?.inlineExpansion ?? false) || !hasPopout)
     readonly property bool surfaceLive: (surfaceContext?.live ?? true) && effectiveVisible
@@ -352,17 +353,17 @@ Item {
         if (usesAttachedExpansion && surfaceContext?.requestExpansion(root))
             return;
         if (hasPopout && positionPopout())
-            pluginPopout.toggle();
+            PopoutManager.requestPopout(pluginPopout, undefined, popoutTriggerId);
     }
 
-    function triggerHoverPopout(widgetHostId) {
+    function triggerHoverPopout() {
         if (pillClickAction) {
             triggerPopout();
             return;
         }
         if (!hasPopout || !positionPopout())
             return;
-        PopoutManager.requestHoverPopout(pluginPopout, undefined, widgetHostId || pluginId);
+        PopoutManager.requestHoverPopout(pluginPopout, undefined, popoutTriggerId);
     }
 
     PluginPopout {

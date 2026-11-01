@@ -15,10 +15,10 @@ POEXPORTS_DIR = REPO_ROOT / "translations" / "poexports"
 SYNC_STATE = REPO_ROOT / ".git" / "i18n_sync_state.json"
 TERM_RENAMES_JSON = REPO_ROOT / "translations" / "term_renames.json"
 
-# dank-qml-common terms live in the same DMS POEditor project (tagged
+# dux-qml-common terms live in the same DMS POEditor project (tagged
 # dank-qml-common); their translations ship inside the submodule so every
 # consumer gets them with the pointer. dankcalendar merges from this project.
-COMMON_ROOT = REPO_ROOT.parent / "dank-qml-common"
+COMMON_ROOT = REPO_ROOT.parent / "dux-qml-common"
 COMMON_EN_JSON = COMMON_ROOT / "translations" / "en.json"
 COMMON_POEXPORTS_DIR = COMMON_ROOT / "DCommon" / "translations" / "poexports"
 
@@ -26,7 +26,7 @@ COMMON_POEXPORTS_DIR = COMMON_ROOT / "DCommon" / "translations" / "poexports"
 # I18n.tr, so their terms belong to the shell catalog. I18n.trFor terms
 # (external registry plugins) are owned by the DankPlugins project, see
 # i18nsync_plugins.py.
-OFFICIAL_PLUGINS_REPO = "https://github.com/AvengeMedia/dms-plugins.git"
+OFFICIAL_PLUGINS_REPO = "https://github.com/duxlabs-dev/dux-plugins.git"
 OFFICIAL_PLUGINS_DIR = REPO_ROOT / "dms-plugins"
 
 RATE_LIMIT_CODE = '4048'
@@ -149,7 +149,7 @@ def json_changed(file_path, new_data):
 
 def load_common_entries():
     if not COMMON_EN_JSON.exists():
-        error("dank-qml-common submodule not initialized (git submodule update --init)")
+        error("dux-qml-common submodule not initialized (git submodule update --init)")
     with open(COMMON_EN_JSON) as f:
         entries = json.load(f)
     return [{**e, "tags": sorted(set(e.get("tags", [])) | {"dank-qml-common"})} for e in entries]
@@ -398,7 +398,7 @@ def download_translations(api_token, project_id, common_keys, greeter_keys):
             info(f"No changes for {filename}")
 
         if write_if_changed(common_file, common_part):
-            success(f"Updated dank-qml-common {filename}")
+            success(f"Updated dux-qml-common {filename}")
             common_changed.append(filename)
 
     return any_changed, common_changed
@@ -521,7 +521,7 @@ def main():
         if prune:
             warn("--prune deletes every POEditor term missing from the local en.json, including its translations.")
             warn("The official plugin checkout is refreshed first, so pruning keeps official plugin terms.")
-            warn("dank-qml-common terms are included from the submodule, so pruning keeps them as long as the submodule is current.")
+            warn("dux-qml-common terms are included from the submodule, so pruning keeps them as long as the submodule is current.")
             warn("dms-greeter terms are fetched from POEditor and re-included, so pruning keeps them.")
 
         common_entries = load_common_entries()
@@ -565,8 +565,8 @@ def main():
             info("Already in sync")
 
         if common_files_changed:
-            info(f"dank-qml-common poexports updated: {', '.join(common_files_changed)}")
-            info("Commit those in dank-qml-common and bump the pointer here (make update-common).")
+            info(f"dux-qml-common poexports updated: {', '.join(common_files_changed)}")
+            info("Commit those in dux-qml-common and bump the pointer here (make update-common).")
 
     elif command == "local":
         info("Updating en.json locally (no POEditor sync)")

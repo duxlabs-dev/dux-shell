@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        ## DankMaterialShell Bug Report
+        ## Dux Shell Bug Report
         Limit your report to one issue per submission unless similarly related
   - type: dropdown
     id: compositor
@@ -47,7 +47,7 @@ body:
     attributes:
       label: Select your Installation Method
       options:
-        - DankInstaller
+        - Dux Installer
         - Distro Packaging
         - Source
     validations:

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/netfetch"
+	"github.com/duxlabs-dev/dux-shell/core/internal/netfetch"
 )
 
 const (

@@ -3,7 +3,7 @@ package location
 import (
 	"fmt"
 
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
 )
 
 type LocationEvent struct {

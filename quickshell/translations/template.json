@@ -161,6 +161,13 @@
     "comment": "duration, plural, %1 is a number"
   },
   {
+    "term": "%1 days",
+    "translation": "",
+    "context": "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "%1 disconnected",
     "translation": "",
     "context": "%1 disconnected",
@@ -259,6 +266,13 @@
     "comment": "duration, plural, %1 is a number"
   },
   {
+    "term": "%1 hours",
+    "translation": "",
+    "context": "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "%1 is %2 and may use a lot of memory.",
     "translation": "",
     "context": "%1 is %2 and may use a lot of memory.",
@@ -266,11 +280,25 @@
     "comment": "notepad large file prompt, file name then size"
   },
   {
+    "term": "%1 is not installed. Install the package to manage the greeter.",
+    "translation": "",
+    "context": "%1 is not installed. Install the package to manage the greeter.",
+    "reference": "",
+    "comment": "greeter status placeholder, %1 is the dms-greeter binary"
+  },
+  {
     "term": "%1 is now included in config",
     "translation": "",
     "context": "%1 is now included in config",
     "reference": "",
     "comment": "keybinds toast, %1 is the binds file path"
+  },
+  {
+    "term": "%1 is running and will create duplicate Bluetooth players. Disable it with: %2",
+    "translation": "",
+    "context": "%1 is running and will create duplicate Bluetooth players. Disable it with: %2",
+    "reference": "",
+    "comment": "Warning shown when the legacy BlueZ MPRIS proxy conflicts with DMS Bluetooth media controls, %1 is the service name, %2 a shell command"
   },
   {
     "term": "%1 issue found",
@@ -336,11 +364,46 @@
     "comment": "duration, plural, %1 is a number"
   },
   {
+    "term": "%1 minutes",
+    "translation": "",
+    "context": "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "%1 ms",
     "translation": "",
     "context": "%1 ms",
     "reference": "",
     "comment": "duration in milliseconds, %1 is a number"
+  },
+  {
+    "term": "%1 not available",
+    "translation": "",
+    "context": "%1 not available",
+    "reference": "",
+    "comment": "%1 is a tool or environment variable name"
+  },
+  {
+    "term": "%1 not available - lock integration requires the DMS socket connection",
+    "translation": "",
+    "context": "%1 not available - lock integration requires the DMS socket connection",
+    "reference": "",
+    "comment": "lock screen warning, %1 is the loginctl binary"
+  },
+  {
+    "term": "%1 not available or disabled - cannot apply %2 colors",
+    "translation": "",
+    "context": "%1 not available or disabled - cannot apply %2 colors",
+    "reference": "",
+    "comment": "error toast, %1 is matugen, %2 is GTK or Qt"
+  },
+  {
+    "term": "%1 not found",
+    "translation": "",
+    "context": "%1 not found",
+    "reference": "",
+    "comment": "missing program, %1 is a program name | plugin dependency missing, %1 is a program name"
   },
   {
     "term": "%1 notifications",
@@ -355,6 +418,13 @@
     "context": "%1 online",
     "reference": "",
     "comment": "Number of online Tailscale peers"
+  },
+  {
+    "term": "%1 only",
+    "translation": "",
+    "context": "%1 only",
+    "reference": "",
+    "comment": "lowercase plugin badge, compositors the plugin is limited to"
   },
   {
     "term": "%1 other",
@@ -399,6 +469,13 @@
     "comment": "plural, %1 is a count of printers"
   },
   {
+    "term": "%1 procs",
+    "translation": "",
+    "context": "%1 procs",
+    "reference": "",
+    "comment": "short for processes, %1 is a count"
+  },
+  {
     "term": "%1 second",
     "translation": "",
     "context": "%1 second",
@@ -413,11 +490,25 @@
     "comment": "duration, plural, %1 is a number"
   },
   {
+    "term": "%1 seconds",
+    "translation": "",
+    "context": "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "%1 tasks",
     "translation": "",
     "context": "%1 tasks",
     "reference": "",
     "comment": "task count next to a date, %1 is the number of tasks"
+  },
+  {
+    "term": "%1 uninstalled",
+    "translation": "",
+    "context": "%1 uninstalled",
+    "reference": "",
+    "comment": "plugin removed notice, %1 is the plugin name"
   },
   {
     "term": "%1 update",
@@ -490,6 +581,13 @@
     "comment": "vpn error toast, %1 is the vpn name, %2 is the error"
   },
   {
+    "term": "%1d ago",
+    "translation": "",
+    "context": "%1d ago",
+    "reference": "",
+    "comment": "Tailscale peer last seen time, %1 is a number of days"
+  },
+  {
     "term": "%1h",
     "translation": "",
     "context": "%1h",
@@ -504,6 +602,13 @@
     "comment": "battery time remaining"
   },
   {
+    "term": "%1h ago",
+    "translation": "",
+    "context": "%1h ago",
+    "reference": "",
+    "comment": "Tailscale peer last seen time, %1 is a number of hours"
+  },
+  {
     "term": "%1m",
     "translation": "",
     "context": "%1m",
@@ -515,7 +620,7 @@
     "translation": "",
     "context": "%1m ago",
     "reference": "",
-    "comment": "notification relative time, %1 is a number of minutes"
+    "comment": "Tailscale peer last seen time, %1 is a number of minutes | notification relative time, %1 is a number of minutes"
   },
   {
     "term": "'Alternative' lets the key unlock on its own. 'Second factor' requires password or fingerprint first, then the key.",
@@ -532,6 +637,13 @@
     "comment": "dock menu fallback for a window without a title"
   },
   {
+    "term": "(exit %1)",
+    "translation": "",
+    "context": "(exit %1)",
+    "reference": "",
+    "comment": "process exit code"
+  },
+  {
     "term": "+ %1 more",
     "translation": "",
     "context": "+ %1 more",
@@ -544,6 +656,13 @@
     "context": "+%1 conditions",
     "reference": "",
     "comment": "notification rule summary, %1 is the number of extra conditions"
+  },
+  {
+    "term": "1 hour before",
+    "translation": "",
+    "context": "1 hour before",
+    "reference": "",
+    "comment": "calendar reminder option"
   },
   {
     "term": "1 notification",
@@ -609,9 +728,9 @@
     "comment": "bar settings: what the dot is"
   },
   {
-    "term": "A modern desktop shell for Wayland compositors",
+    "term": "A modern desktop shell for Wayland",
     "translation": "",
-    "context": "A modern desktop shell for Wayland compositors",
+    "context": "A modern desktop shell for Wayland",
     "reference": "",
     "comment": "greeter welcome page tagline"
   },
@@ -896,11 +1015,11 @@
     "comment": "confirm dialog message, %1 is the username, %2 is the group name"
   },
   {
-    "term": "Add \"%1\" to the %2 group? They must log out and back in, then run dms-greeter sync --profile to publish their login-screen theme.",
+    "term": "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.",
     "translation": "",
-    "context": "Add \"%1\" to the %2 group? They must log out and back in, then run dms-greeter sync --profile to publish their login-screen theme.",
+    "context": "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.",
     "reference": "",
-    "comment": "confirm dialog message, %1 is the username, %2 is the group name, keep the command verbatim"
+    "comment": "confirm dialog message, %1 is the username, %2 is the group name, %3 a command"
   },
   {
     "term": "Add Desktop Widget",
@@ -1071,11 +1190,11 @@
     "comment": "bar goth corners toggle description"
   },
   {
-    "term": "Adds them to the %1 group so they can run dms-greeter sync --profile",
+    "term": "Adds them to the %1 group so they can run %2",
     "translation": "",
-    "context": "Adds them to the %1 group so they can run dms-greeter sync --profile",
+    "context": "Adds them to the %1 group so they can run %2",
     "reference": "",
-    "comment": "create user greeter toggle description, %1 is a group name"
+    "comment": "create user greeter toggle description, %1 is a group name, %2 a command"
   },
   {
     "term": "Adds them to the %1 group so they can use sudo",
@@ -1183,6 +1302,13 @@
     "comment": ""
   },
   {
+    "term": "All plugins",
+    "translation": "",
+    "context": "All plugins",
+    "reference": "",
+    "comment": "plugin browser section title above the full list"
+  },
+  {
     "term": "All settings",
     "translation": "",
     "context": "All settings",
@@ -1253,11 +1379,18 @@
     "comment": ""
   },
   {
-    "term": "Also runs the templates in your matugen config.toml",
+    "term": "Already upvoted, click again to remove",
     "translation": "",
-    "context": "Also runs the templates in your matugen config.toml",
+    "context": "Already upvoted, click again to remove",
     "reference": "",
-    "comment": "run user matugen templates toggle description"
+    "comment": "plugin upvote toast"
+  },
+  {
+    "term": "Also runs the templates in your %1",
+    "translation": "",
+    "context": "Also runs the templates in your %1",
+    "reference": "",
+    "comment": "run user matugen templates toggle description, %1 is the matugen config file"
   },
   {
     "term": "Also saves the screenshot to disk",
@@ -1391,13 +1524,6 @@
     "context": "Anchor",
     "reference": "",
     "comment": "noun, screen corner or edge a floating window position is relative to"
-  },
-  {
-    "term": "Anchored popouts open at the cursor instead of their widget",
-    "translation": "",
-    "context": "Anchored popouts open at the cursor instead of their widget",
-    "reference": "",
-    "comment": ""
   },
   {
     "term": "Animation duration",
@@ -1974,18 +2100,18 @@
     "comment": "verb, bluetooth pairing dialog confirm button"
   },
   {
-    "term": "Authorize pairing with ",
+    "term": "Authorize pairing with %1",
     "translation": "",
-    "context": "Authorize pairing with ",
+    "context": "Authorize pairing with %1",
     "reference": "",
-    "comment": ""
+    "comment": "%1 is the device name"
   },
   {
-    "term": "Authorize service for ",
+    "term": "Authorize service for %1",
     "translation": "",
-    "context": "Authorize service for ",
+    "context": "Authorize service for %1",
     "reference": "",
-    "comment": ""
+    "comment": "%1 is the device name"
   },
   {
     "term": "Auto",
@@ -2898,13 +3024,6 @@
     "comment": ""
   },
   {
-    "term": "Bundled greeter active",
-    "translation": "",
-    "context": "Bundled greeter active",
-    "reference": "",
-    "comment": "greeter status"
-  },
-  {
     "term": "Button areas",
     "translation": "",
     "context": "Button areas",
@@ -3196,7 +3315,7 @@
     "translation": "",
     "context": "Center section",
     "reference": "",
-    "comment": ""
+    "comment": "widgets settings: bar section replaced by the island"
   },
   {
     "term": "Center single column",
@@ -3232,6 +3351,13 @@
     "context": "Changes save to %1",
     "reference": "",
     "comment": "hint under the keybind and window rule editors, %1 is the config file the changes are written to"
+  },
+  {
+    "term": "Changes volume and audio devices",
+    "translation": "",
+    "context": "Changes volume and audio devices",
+    "reference": "",
+    "comment": "plugin permission"
   },
   {
     "term": "Channel",
@@ -3486,6 +3612,13 @@
     "comment": "printer settings card title, cups printer classes"
   },
   {
+    "term": "Classic",
+    "translation": "",
+    "context": "Classic",
+    "reference": "",
+    "comment": "interface style option with one corner radius on controls and no shape change on press"
+  },
+  {
     "term": "Clear",
     "translation": "",
     "context": "Clear",
@@ -3556,11 +3689,11 @@
     "comment": "include setup banner, %1 is the dms config file name"
   },
   {
-    "term": "Click Import to add a .ovpn or .conf",
+    "term": "Click Import to add a %1 or %2 file",
     "translation": "",
-    "context": "Click Import to add a .ovpn or .conf",
+    "context": "Click Import to add a %1 or %2 file",
     "reference": "",
-    "comment": ""
+    "comment": "VPN import hint, %1 and %2 are file extensions"
   },
   {
     "term": "Click actions",
@@ -3927,6 +4060,13 @@
     "comment": "number of columns in the wallpaper grid option"
   },
   {
+    "term": "Comfortable",
+    "translation": "",
+    "context": "Comfortable",
+    "reference": "",
+    "comment": "interface density option with the default spacing"
+  },
+  {
     "term": "Comma-separated list of layout names. Leave empty to use the system keyboard settings.",
     "translation": "",
     "context": "Comma-separated list of layout names. Leave empty to use the system keyboard settings.",
@@ -3980,14 +4120,7 @@
     "translation": "",
     "context": "Compact",
     "reference": "",
-    "comment": "adjective, dock style option, also notification compact mode toggle"
-  },
-  {
-    "term": "Compact height",
-    "translation": "",
-    "context": "Compact height",
-    "reference": "",
-    "comment": "island settings: compact pill height slider"
+    "comment": "adjective, dock style option, also notification compact mode toggle | interface density option fitting the most items on screen"
   },
   {
     "term": "Compact mode",
@@ -3995,13 +4128,6 @@
     "context": "Compact mode",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "Compact width",
-    "translation": "",
-    "context": "Compact width",
-    "reference": "",
-    "comment": "island settings: compact pill width slider"
   },
   {
     "term": "Completed",
@@ -4137,11 +4263,11 @@
     "comment": ""
   },
   {
-    "term": "Confirm passkey for ",
+    "term": "Confirm passkey for %1",
     "translation": "",
-    "context": "Confirm passkey for ",
+    "context": "Confirm passkey for %1",
     "reference": "",
-    "comment": ""
+    "comment": "%1 is the device name"
   },
   {
     "term": "Confirm password",
@@ -4249,6 +4375,13 @@
     "comment": ""
   },
   {
+    "term": "Connects to the internet",
+    "translation": "",
+    "context": "Connects to the internet",
+    "reference": "",
+    "comment": "plugin permission"
+  },
+  {
     "term": "Consumes the key only when a dispatcher runs",
     "translation": "",
     "context": "Consumes the key only when a dispatcher runs",
@@ -4305,6 +4438,13 @@
     "comment": "media widget style with play, previous and next buttons"
   },
   {
+    "term": "Controls media players",
+    "translation": "",
+    "context": "Controls media players",
+    "reference": "",
+    "comment": "plugin permission"
+  },
+  {
     "term": "Convert to DMS",
     "translation": "",
     "context": "Convert to DMS",
@@ -4345,6 +4485,13 @@
     "context": "Copy",
     "reference": "",
     "comment": "Copy to clipboard"
+  },
+  {
+    "term": "Copy %1",
+    "translation": "",
+    "context": "Copy %1",
+    "reference": "",
+    "comment": "%1 is a color value"
   },
   {
     "term": "Copy Full Command",
@@ -4865,11 +5012,11 @@
     "comment": ""
   },
   {
-    "term": "DMS is a highly customizable modern desktop shell with a %1 inspired design.<br/><br/>It is built with %2, a QT6 framework for building desktop shells, and %3, a statically typed, compiled programming language.",
+    "term": "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.",
     "translation": "",
-    "context": "DMS is a highly customizable modern desktop shell with a %1 inspired design.<br/><br/>It is built with %2, a QT6 framework for building desktop shells, and %3, a statically typed, compiled programming language.",
+    "context": "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.",
     "reference": "",
-    "comment": "about page blurb, %1 is a Material 3 link, %2 is a Quickshell link, %3 is a Go link"
+    "comment": "about page blurb, %1 is a Quickshell link, %2 is a Go link"
   },
   {
     "term": "DMS out of date",
@@ -4879,11 +5026,11 @@
     "comment": ""
   },
   {
-    "term": "DMS removes its managed block from /etc/pam.d/greetd and stops write services",
+    "term": "DMS removes its managed block from %1 and stops write services",
     "translation": "",
-    "context": "DMS removes its managed block from /etc/pam.d/greetd and stops write services",
+    "context": "DMS removes its managed block from %1 and stops write services",
     "reference": "",
-    "comment": "greeter system PAM toggle description"
+    "comment": "greeter system PAM toggle description, %1 is a PAM config path"
   },
   {
     "term": "DMS server is outdated (API v%1, expected v%2)",
@@ -4919,13 +5066,6 @@
     "context": "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.",
     "reference": "",
     "comment": "Aqueous font synchronization, describing which font settings DMS can represent"
-  },
-  {
-    "term": "DMS_SOCKET not available",
-    "translation": "",
-    "context": "DMS_SOCKET not available",
-    "reference": "",
-    "comment": ""
   },
   {
     "term": "Daily",
@@ -4967,28 +5107,7 @@
     "translation": "",
     "context": "DankBar",
     "reference": "",
-    "comment": "greeter feature card title | greeter settings link"
-  },
-  {
-    "term": "DankCalendar",
-    "translation": "",
-    "context": "DankCalendar",
-    "reference": "",
-    "comment": "calendar backend option"
-  },
-  {
-    "term": "DankCalendar isn't installed",
-    "translation": "",
-    "context": "DankCalendar isn't installed",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "DankCalendar isn't running",
-    "translation": "",
-    "context": "DankCalendar isn't running",
-    "reference": "",
-    "comment": ""
+    "comment": "greeter settings link"
   },
   {
     "term": "Dark",
@@ -5143,6 +5262,13 @@
     "context": "Deck",
     "reference": "",
     "comment": "window tiling layout name in layout picker"
+  },
+  {
+    "term": "Declared by the author, not enforced",
+    "translation": "",
+    "context": "Declared by the author, not enforced",
+    "reference": "",
+    "comment": "plugin detail section, introduces the permission list the plugin declares about itself"
   },
   {
     "term": "Decrease",
@@ -5334,6 +5460,13 @@
     "comment": "confirmation message before clearing screen time history"
   },
   {
+    "term": "Dense",
+    "translation": "",
+    "context": "Dense",
+    "reference": "",
+    "comment": "interface density option denser than compact for small text and tight rows"
+  },
+  {
     "term": "Dependencies & documentation",
     "translation": "",
     "context": "Dependencies & documentation",
@@ -5467,6 +5600,13 @@
     "comment": "Weather dew point temperature"
   },
   {
+    "term": "Did you mean",
+    "translation": "",
+    "context": "Did you mean",
+    "reference": "",
+    "comment": "plugin search, introduces plugins with a close name"
+  },
+  {
     "term": "Digital",
     "translation": "",
     "context": "Digital",
@@ -5563,6 +5703,13 @@
     "context": "Disabled",
     "reference": "",
     "comment": "bluetooth status | lock screen notification mode option"
+  },
+  {
+    "term": "Disabled by Auto",
+    "translation": "",
+    "context": "Disabled by Auto",
+    "reference": "",
+    "comment": "display profiles row, Auto is the profile auto select toggle above it"
   },
   {
     "term": "Disabled by Click through",
@@ -5887,6 +6034,13 @@
     "comment": "greeter settings link"
   },
   {
+    "term": "Dock %1",
+    "translation": "",
+    "context": "Dock %1",
+    "reference": "",
+    "comment": "generated dock name, %1 is a number"
+  },
+  {
     "term": "Dock margin, opacity, and border",
     "translation": "",
     "context": "Dock margin, opacity, and border",
@@ -5962,6 +6116,13 @@
     "context": "Don't change",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Don't dim unfocused apps",
+    "translation": "",
+    "context": "Don't dim unfocused apps",
+    "reference": "",
+    "comment": "workspace switcher toggle: show icons of unfocused apps at full opacity"
   },
   {
     "term": "Door Open",
@@ -6144,6 +6305,34 @@
     "context": "Dusk (Nautical Twilight)",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Dux Calendar",
+    "translation": "",
+    "context": "Dux Calendar",
+    "reference": "",
+    "comment": "calendar backend option"
+  },
+  {
+    "term": "Dux Calendar isn't installed",
+    "translation": "",
+    "context": "Dux Calendar isn't installed",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Dux Calendar isn't running",
+    "translation": "",
+    "context": "Dux Calendar isn't running",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Dux Greeter docs",
+    "translation": "",
+    "context": "Dux Greeter docs",
+    "reference": "",
+    "comment": "link text"
   },
   {
     "term": "Dwindle",
@@ -6461,13 +6650,6 @@
     "comment": ""
   },
   {
-    "term": "Enlarge on hover",
-    "translation": "",
-    "context": "Enlarge on hover",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Enter 6-digit passkey",
     "translation": "",
     "context": "Enter 6-digit passkey",
@@ -6482,11 +6664,11 @@
     "comment": ""
   },
   {
-    "term": "Enter PIN for ",
+    "term": "Enter PIN for %1",
     "translation": "",
-    "context": "Enter PIN for ",
+    "context": "Enter PIN for %1",
     "reference": "",
-    "comment": ""
+    "comment": "%1 is the device or network name"
   },
   {
     "term": "Enter a new name for session \"%1\"",
@@ -6503,11 +6685,11 @@
     "comment": ""
   },
   {
-    "term": "Enter credentials for ",
+    "term": "Enter credentials for %1",
     "translation": "",
-    "context": "Enter credentials for ",
+    "context": "Enter credentials for %1",
     "reference": "",
-    "comment": ""
+    "comment": "%1 is the network name"
   },
   {
     "term": "Enter custom lock screen format (e.g., dddd, MMMM d)",
@@ -6538,18 +6720,18 @@
     "comment": ""
   },
   {
-    "term": "Enter passkey for ",
+    "term": "Enter passkey for %1",
     "translation": "",
-    "context": "Enter passkey for ",
+    "context": "Enter passkey for %1",
     "reference": "",
-    "comment": ""
+    "comment": "%1 is the device name"
   },
   {
-    "term": "Enter password for ",
+    "term": "Enter password for %1",
     "translation": "",
-    "context": "Enter password for ",
+    "context": "Enter password for %1",
     "reference": "",
-    "comment": ""
+    "comment": "%1 is the network name"
   },
   {
     "term": "Enter text to encode",
@@ -6559,11 +6741,11 @@
     "comment": ""
   },
   {
-    "term": "Enter this passkey on ",
+    "term": "Enter this passkey on %1",
     "translation": "",
-    "context": "Enter this passkey on ",
+    "context": "Enter this passkey on %1",
     "reference": "",
-    "comment": ""
+    "comment": "%1 is the device name"
   },
   {
     "term": "Enter to paste",
@@ -6776,11 +6958,11 @@
     "comment": "matugen color scheme option"
   },
   {
-    "term": "Extend DankMaterialShell with powerful plugins for widgets, launchers, and more",
+    "term": "Extend %1 with powerful plugins for widgets, launchers, and more",
     "translation": "",
-    "context": "Extend DankMaterialShell with powerful plugins for widgets, launchers, and more",
+    "context": "Extend %1 with powerful plugins for widgets, launchers, and more",
     "reference": "",
-    "comment": ""
+    "comment": "plugins hub description, %1 is the product name"
   },
   {
     "term": "Extend battery life",
@@ -7168,6 +7350,13 @@
     "comment": "error toast, %1 is the error message"
   },
   {
+    "term": "Failed to reboot to firmware setup",
+    "translation": "",
+    "context": "Failed to reboot to firmware setup",
+    "reference": "",
+    "comment": "error toast, firmware setup is the UEFI/BIOS settings screen"
+  },
+  {
     "term": "Failed to reload plugin: %1",
     "translation": "",
     "context": "Failed to reload plugin: %1",
@@ -7217,11 +7406,11 @@
     "comment": ""
   },
   {
-    "term": "Failed to run 'dms-greeter status'. Ensure the dms-greeter package is installed.",
+    "term": "Failed to run '%1'. Ensure the %2 package is installed.",
     "translation": "",
-    "context": "Failed to run 'dms-greeter status'. Ensure the dms-greeter package is installed.",
+    "context": "Failed to run '%1'. Ensure the %2 package is installed.",
     "reference": "",
-    "comment": "greeter status error"
+    "comment": "greeter status error, %1 is a command, %2 a package name"
   },
   {
     "term": "Failed to save VPN credentials",
@@ -7455,11 +7644,11 @@
     "comment": "font family dropdown label"
   },
   {
-    "term": "Features",
+    "term": "Featured plugin",
     "translation": "",
-    "context": "Features",
+    "context": "Featured plugin",
     "reference": "",
-    "comment": "greeter welcome page section header"
+    "comment": "plugin recommendation reason"
   },
   {
     "term": "Feels Like %1°",
@@ -7511,11 +7700,11 @@
     "comment": ""
   },
   {
-    "term": "File search requires dsearch\nInstall from github.com/AvengeMedia/danksearch",
+    "term": "File search requires %1\nInstall from %2",
     "translation": "",
-    "context": "File search requires dsearch\nInstall from github.com/AvengeMedia/danksearch",
+    "context": "File search requires %1\nInstall from %2",
     "reference": "",
-    "comment": ""
+    "comment": "launcher file search empty state, %1 is the dsearch binary, %2 is its repository"
   },
   {
     "term": "File the command writes; leave empty to read stdout",
@@ -7665,6 +7854,13 @@
     "comment": "keybind option tooltip, hyprland ignore mods flag"
   },
   {
+    "term": "Firmware setup",
+    "translation": "",
+    "context": "Firmware setup",
+    "reference": "",
+    "comment": "settings toggle, adds a power menu action that reboots into the UEFI/BIOS settings screen"
+  },
+  {
     "term": "First Time Setup",
     "translation": "",
     "context": "First Time Setup",
@@ -7691,6 +7887,13 @@
     "context": "Fits the song title instead of keeping a fixed width",
     "reference": "",
     "comment": "media widget adaptive width toggle description"
+  },
+  {
+    "term": "Fits your setup",
+    "translation": "",
+    "context": "Fits your setup",
+    "reference": "",
+    "comment": "plugin recommendation reason, same category as installed plugins"
   },
   {
     "term": "Fixed",
@@ -8036,6 +8239,20 @@
     "comment": "timed preset menu option, %1 is a duration such as 15 minutes"
   },
   {
+    "term": "For 1 hour",
+    "translation": "",
+    "context": "For 1 hour",
+    "reference": "",
+    "comment": "timed preset menu option"
+  },
+  {
+    "term": "For you",
+    "translation": "",
+    "context": "For you",
+    "reference": "",
+    "comment": "plugin browser shelf, plugins ranked for this user | plugin browser sort option, plugins ranked for this user"
+  },
+  {
     "term": "Force HDR",
     "translation": "",
     "context": "Force HDR",
@@ -8302,6 +8519,13 @@
     "comment": ""
   },
   {
+    "term": "GPU %1",
+    "translation": "",
+    "context": "GPU %1",
+    "reference": "",
+    "comment": "%1 is a temperature"
+  },
+  {
     "term": "GPU Monitoring",
     "translation": "",
     "context": "GPU Monitoring",
@@ -8355,7 +8579,14 @@
     "translation": "",
     "context": "Gamma",
     "reference": "",
-    "comment": "Gamma"
+    "comment": ""
+  },
+  {
+    "term": "Gamma %1",
+    "translation": "",
+    "context": "Gamma %1",
+    "reference": "",
+    "comment": "%1 is a gamma value"
   },
   {
     "term": "Gamma control",
@@ -8729,6 +8960,13 @@
     "comment": "noun, battery health percentage label"
   },
   {
+    "term": "Health %1",
+    "translation": "",
+    "context": "Health %1",
+    "reference": "",
+    "comment": "battery health, %1 is a percentage"
+  },
+  {
     "term": "Heat shimmer",
     "translation": "",
     "context": "Heat shimmer",
@@ -8855,6 +9093,13 @@
     "comment": ""
   },
   {
+    "term": "Hide bar on fullscreen",
+    "translation": "",
+    "context": "Hide bar on fullscreen",
+    "reference": "",
+    "comment": "bar visibility toggle"
+  },
+  {
     "term": "Hide cursor on touch",
     "translation": "",
     "context": "Hide cursor on touch",
@@ -8888,6 +9133,13 @@
     "context": "Hide installed",
     "reference": "",
     "comment": "plugin browser filter chip"
+  },
+  {
+    "term": "Hide on last display",
+    "translation": "",
+    "context": "Hide on last display",
+    "reference": "",
+    "comment": "bar display assignment option"
   },
   {
     "term": "Hide password",
@@ -9021,6 +9273,13 @@
     "context": "History size, retention, paste behavior",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Hold Ctrl, Alt or Super and press a key. Esc cancels.",
+    "translation": "",
+    "context": "Hold Ctrl, Alt or Super and press a key. Esc cancels.",
+    "reference": "",
+    "comment": "launcher shortcut key combination capture hint"
   },
   {
     "term": "Hold duration",
@@ -9163,6 +9422,13 @@
     "comment": ""
   },
   {
+    "term": "How far terminal colors shift toward the wallpaper color",
+    "translation": "",
+    "context": "How far terminal colors shift toward the wallpaper color",
+    "reference": "",
+    "comment": "terminal wallpaper colors intensity description"
+  },
+  {
     "term": "Hue",
     "translation": "",
     "context": "Hue",
@@ -9275,11 +9541,11 @@
     "comment": "Placeholder text for manual printer address input"
   },
   {
-    "term": "IP sharing setup failed. Check that dnsmasq is installed.",
+    "term": "IP sharing setup failed. Check that %1 is installed.",
     "translation": "",
-    "context": "IP sharing setup failed. Check that dnsmasq is installed.",
+    "context": "IP sharing setup failed. Check that %1 is installed.",
     "reference": "",
-    "comment": "hotspot IP configuration failure message"
+    "comment": "hotspot IP configuration failure message, %1 is a package name"
   },
   {
     "term": "ISO date",
@@ -9800,13 +10066,6 @@
     "comment": "installation error"
   },
   {
-    "term": "Install matugen package for dynamic theming",
-    "translation": "",
-    "context": "Install matugen package for dynamic theming",
-    "reference": "",
-    "comment": "matugen installation hint"
-  },
-  {
     "term": "Install plugin '%1' from the DMS registry?",
     "translation": "",
     "context": "Install plugin '%1' from the DMS registry?",
@@ -9819,6 +10078,13 @@
     "context": "Install system updates?",
     "reference": "",
     "comment": "confirmation dialog title before running the system upgrade"
+  },
+  {
+    "term": "Install the %1 package for dynamic theming",
+    "translation": "",
+    "context": "Install the %1 package for dynamic theming",
+    "reference": "",
+    "comment": "matugen installation hint, %1 is the package name"
   },
   {
     "term": "Install theme '%1' from the DMS registry?",
@@ -9842,11 +10108,11 @@
     "comment": "material wallpaper install confirmation"
   },
   {
-    "term": "Installation and PAM setup are documented in the ",
+    "term": "Installation and PAM setup are documented in the %1.",
     "translation": "",
-    "context": "Installation and PAM setup are documented in the ",
+    "context": "Installation and PAM setup are documented in the %1.",
     "reference": "",
-    "comment": ""
+    "comment": "%1 is a link to the greeter docs"
   },
   {
     "term": "Installed",
@@ -9919,6 +10185,13 @@
     "comment": "noun, wifi network interface name label"
   },
   {
+    "term": "Interface density",
+    "translation": "",
+    "context": "Interface density",
+    "reference": "",
+    "comment": "interface density setting label"
+  },
+  {
     "term": "Interface style",
     "translation": "",
     "context": "Interface style",
@@ -9980,6 +10253,13 @@
     "context": "Invalid wallpaper layout",
     "reference": "",
     "comment": "material wallpaper import error"
+  },
+  {
+    "term": "Inverse Surface",
+    "translation": "",
+    "context": "Inverse Surface",
+    "reference": "",
+    "comment": "surface color option"
   },
   {
     "term": "Iridescence",
@@ -10409,11 +10689,11 @@
     "comment": "launcher settings card about how apps are launched"
   },
   {
-    "term": "Layer namespace dms:blurwallpaper, needs a niri blur rule",
+    "term": "Layer namespace %1, needs a niri blur rule",
     "translation": "",
-    "context": "Layer namespace dms:blurwallpaper, needs a niri blur rule",
+    "context": "Layer namespace %1, needs a niri blur rule",
     "reference": "",
-    "comment": ""
+    "comment": "blur layer toggle description, %1 is the layer namespace"
   },
   {
     "term": "Layer outline",
@@ -10626,6 +10906,13 @@
     "comment": "matugen source color option"
   },
   {
+    "term": "Like your plugins",
+    "translation": "",
+    "context": "Like your plugins",
+    "reference": "",
+    "comment": "plugin recommendation reason, similar to installed plugins"
+  },
+  {
     "term": "Limit",
     "translation": "",
     "context": "Limit",
@@ -10666,6 +10953,13 @@
     "context": "Lines: %1",
     "reference": "",
     "comment": "plural, notepad status bar line count, %1 is a count"
+  },
+  {
+    "term": "Link copied",
+    "translation": "",
+    "context": "Link copied",
+    "reference": "",
+    "comment": "plugin browser, link copied to clipboard"
   },
   {
     "term": "Link your DMS settings so the login screen follows them.",
@@ -11032,6 +11326,13 @@
     "comment": "badge on the DMS update row when the shell is installed through Nix"
   },
   {
+    "term": "Managed by administrator policy",
+    "translation": "",
+    "context": "Managed by administrator policy",
+    "reference": "",
+    "comment": "settings note: the administrator lock policy sets this value"
+  },
+  {
     "term": "Managed by the primary PAM source",
     "translation": "",
     "context": "Managed by the primary PAM source",
@@ -11218,7 +11519,7 @@
     "translation": "",
     "context": "Material",
     "reference": "",
-    "comment": "wallpaper type"
+    "comment": "corner style: Material shape scale with a strength slider | wallpaper type"
   },
   {
     "term": "Material Design inspired color themes",
@@ -11240,13 +11541,6 @@
     "context": "Material palette",
     "reference": "",
     "comment": "theme settings card title, matugen palette options"
-  },
-  {
-    "term": "Material scale",
-    "translation": "",
-    "context": "Material scale",
-    "reference": "",
-    "comment": "corner style: Material shape scale with a strength slider"
   },
   {
     "term": "Matugen Missing",
@@ -11575,7 +11869,7 @@
     "translation": "",
     "context": "Middle section",
     "reference": "",
-    "comment": ""
+    "comment": "widgets settings: bar section replaced by the island"
   },
   {
     "term": "Min H",
@@ -11786,6 +12080,13 @@
     "context": "More",
     "reference": "",
     "comment": "hub group of rarely used pages"
+  },
+  {
+    "term": "More in %1",
+    "translation": "",
+    "context": "More in %1",
+    "reference": "",
+    "comment": "changelog card title, %1 is a version"
   },
   {
     "term": "More samples look smoother and cost more GPU",
@@ -12096,6 +12397,13 @@
     "comment": "island settings: satellites hug the island"
   },
   {
+    "term": "Needs",
+    "translation": "",
+    "context": "Needs",
+    "reference": "",
+    "comment": "plugin detail section, introduces the programs a plugin depends on"
+  },
+  {
     "term": "Nested chip",
     "translation": "",
     "context": "Nested chip",
@@ -12191,7 +12499,14 @@
     "translation": "",
     "context": "New",
     "reference": "",
-    "comment": "adjective, shortcut or button that creates a new session or note"
+    "comment": "adjective, shortcut or button that creates a new session or note | plugin browser shelf, recently published | plugin recommendation reason, recently published"
+  },
+  {
+    "term": "New & updated",
+    "translation": "",
+    "context": "New & updated",
+    "reference": "",
+    "comment": "plugin browser filter chip"
   },
   {
     "term": "New Session",
@@ -12283,6 +12598,13 @@
     "context": "Next Transition",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Next category",
+    "translation": "",
+    "context": "Next category",
+    "reference": "",
+    "comment": "launcher shortcut that switches to the next mode tab"
   },
   {
     "term": "Next page",
@@ -13202,32 +13524,32 @@
     "comment": "Tailscale service not available"
   },
   {
-    "term": "Not available - install fprintd and pam_fprintd",
+    "term": "Not available - install %1 and %2",
     "translation": "",
-    "context": "Not available - install fprintd and pam_fprintd",
+    "context": "Not available - install %1 and %2",
     "reference": "",
-    "comment": "lock screen fingerprint setting"
+    "comment": "lock screen fingerprint setting, %1 and %2 are package names"
   },
   {
-    "term": "Not available - install or configure pam_u2f",
+    "term": "Not available - install %1 and %2, or configure %3 PAM",
     "translation": "",
-    "context": "Not available - install or configure pam_u2f",
+    "context": "Not available - install %1 and %2, or configure %3 PAM",
     "reference": "",
-    "comment": "lock screen security key setting"
+    "comment": "greeter fingerprint login setting, %1 and %2 are package names, %3 is greetd"
   },
   {
-    "term": "Not available — install fprintd and pam_fprintd, or configure greetd PAM.",
+    "term": "Not available - install or configure %1",
     "translation": "",
-    "context": "Not available — install fprintd and pam_fprintd, or configure greetd PAM.",
+    "context": "Not available - install or configure %1",
     "reference": "",
-    "comment": "greeter fingerprint login setting"
+    "comment": "lock screen security key setting, %1 is a PAM module"
   },
   {
-    "term": "Not available — install or configure pam_u2f, or configure greetd PAM.",
+    "term": "Not available - install or configure %1, or configure %2 PAM",
     "translation": "",
-    "context": "Not available — install or configure pam_u2f, or configure greetd PAM.",
+    "context": "Not available - install or configure %1, or configure %2 PAM",
     "reference": "",
-    "comment": "greeter security key login setting"
+    "comment": "greeter security key login setting, %1 is a PAM module, %2 is greetd"
   },
   {
     "term": "Not bound",
@@ -13277,6 +13599,13 @@
     "context": "Not set",
     "reference": "",
     "comment": "wallpaper not set label"
+  },
+  {
+    "term": "Not shown on this bar, so its section widgets stay hidden",
+    "translation": "",
+    "context": "Not shown on this bar, so its section widgets stay hidden",
+    "reference": "",
+    "comment": "widgets settings: island satellites are not rendered on this bar"
   },
   {
     "term": "Not synchronized",
@@ -13494,6 +13823,13 @@
     "context": "Office",
     "reference": "",
     "comment": "launcher app category"
+  },
+  {
+    "term": "Official only",
+    "translation": "",
+    "context": "Official only",
+    "reference": "",
+    "comment": "plugin browser filter chip, first party plugins"
   },
   {
     "term": "Offline Report",
@@ -13727,11 +14063,25 @@
     "comment": "app picker title, followed by a list of apps | trash setting label, which file manager opens the trash"
   },
   {
-    "term": "Opening terminal: ",
+    "term": "Opening GitHub to remove the upvote",
     "translation": "",
-    "context": "Opening terminal: ",
+    "context": "Opening GitHub to remove the upvote",
     "reference": "",
-    "comment": ""
+    "comment": "plugin upvote toast, shown when the GitHub CLI is missing or signed out"
+  },
+  {
+    "term": "Opening GitHub to upvote",
+    "translation": "",
+    "context": "Opening GitHub to upvote",
+    "reference": "",
+    "comment": "plugin upvote toast, shown when the GitHub CLI is missing or signed out"
+  },
+  {
+    "term": "Opening terminal: %1",
+    "translation": "",
+    "context": "Opening terminal: %1",
+    "reference": "",
+    "comment": "%1 is the action name"
   },
   {
     "term": "Opens",
@@ -13745,7 +14095,7 @@
     "translation": "",
     "context": "Opens %1",
     "reference": "",
-    "comment": "plugin settings page, plugin details, %1 is the link to the plugin source code"
+    "comment": "dashboard tab description, %1 is the settings window name | plugin settings page, plugin details, %1 is the link to the plugin source code"
   },
   {
     "term": "Opens a floating window with the live output",
@@ -14075,6 +14425,13 @@
     "context": "PID",
     "reference": "",
     "comment": "Label for the process ID row in the focused window popout"
+  },
+  {
+    "term": "PID %1",
+    "translation": "",
+    "context": "PID %1",
+    "reference": "",
+    "comment": "%1 is a process id"
   },
   {
     "term": "PIN",
@@ -14455,6 +14812,20 @@
     "comment": "idle inhibitor detail subtitle shown while keep awake is off"
   },
   {
+    "term": "Pick of the day",
+    "translation": "",
+    "context": "Pick of the day",
+    "reference": "",
+    "comment": "plugin browser highlighted plugin"
+  },
+  {
+    "term": "Pick of the week",
+    "translation": "",
+    "context": "Pick of the week",
+    "reference": "",
+    "comment": "plugin browser highlighted plugin"
+  },
+  {
     "term": "Pill",
     "translation": "",
     "context": "Pill",
@@ -14511,11 +14882,11 @@
     "comment": "wallpaper transition option"
   },
   {
-    "term": "Place plugin directories here. Each plugin should have a plugin.json manifest file.",
+    "term": "Place plugin directories here. Each plugin should have a %1 manifest file.",
     "translation": "",
-    "context": "Place plugin directories here. Each plugin should have a plugin.json manifest file.",
+    "context": "Place plugin directories here. Each plugin should have a %1 manifest file.",
     "reference": "",
-    "comment": ""
+    "comment": "plugin directory note, %1 is the manifest file name"
   },
   {
     "term": "Placement",
@@ -14553,11 +14924,11 @@
     "comment": "section label above per-app audio playback streams"
   },
   {
-    "term": "Playback error: ",
+    "term": "Playback error: %1",
     "translation": "",
-    "context": "Playback error: ",
+    "context": "Playback error: %1",
     "reference": "",
-    "comment": ""
+    "comment": "%1 is the player error text"
   },
   {
     "term": "Playback position",
@@ -14630,6 +15001,13 @@
     "comment": "plugin settings page, plugin details"
   },
   {
+    "term": "Plugin authors",
+    "translation": "",
+    "context": "Plugin authors",
+    "reference": "",
+    "comment": "changelog section heading"
+  },
+  {
     "term": "Plugin dependency missing",
     "translation": "",
     "context": "Plugin dependency missing",
@@ -14700,6 +15078,13 @@
     "comment": "greeter feature card title"
   },
   {
+    "term": "Plugins by %1",
+    "translation": "",
+    "context": "Plugins by %1",
+    "reference": "",
+    "comment": "plugin browser author filter, %1 is the author"
+  },
+  {
     "term": "Plugins shown in All mode without a trigger. Drag to reorder",
     "translation": "",
     "context": "Plugins shown in All mode without a trigger. Drag to reorder",
@@ -14754,6 +15139,13 @@
     "context": "Popouts and modals use the main animation duration",
     "reference": "",
     "comment": "sync popout and modal animation toggle description"
+  },
+  {
+    "term": "Popular",
+    "translation": "",
+    "context": "Popular",
+    "reference": "",
+    "comment": "plugin browser shelf | plugin recommendation reason, many votes"
   },
   {
     "term": "Popular Plugins",
@@ -14935,7 +15327,7 @@
     "translation": "",
     "context": "Power menu",
     "reference": "",
-    "comment": ""
+    "comment": "island compact face: power menu label | island settings: route the power menu to the island"
   },
   {
     "term": "Power off",
@@ -15104,6 +15496,13 @@
     "context": "Previous",
     "reference": "",
     "comment": "button going to the previous track, page, day, month or match"
+  },
+  {
+    "term": "Previous category",
+    "translation": "",
+    "context": "Previous category",
+    "reference": "",
+    "comment": "launcher shortcut that switches to the previous mode tab"
   },
   {
     "term": "Previous page",
@@ -15337,11 +15736,11 @@
     "comment": ""
   },
   {
-    "term": "Profile not found in monitors.json",
+    "term": "Profile not found in %1",
     "translation": "",
-    "context": "Profile not found in monitors.json",
+    "context": "Profile not found in %1",
     "reference": "",
-    "comment": ""
+    "comment": "display profile error, %1 is the profiles file"
   },
   {
     "term": "Profile on AC",
@@ -15568,6 +15967,55 @@
     "comment": "disk read label"
   },
   {
+    "term": "Readings",
+    "translation": "",
+    "context": "Readings",
+    "reference": "",
+    "comment": "weather widget title, grid of current measurements"
+  },
+  {
+    "term": "Reads audio devices and volume",
+    "translation": "",
+    "context": "Reads audio devices and volume",
+    "reference": "",
+    "comment": "plugin permission"
+  },
+  {
+    "term": "Reads its own settings",
+    "translation": "",
+    "context": "Reads its own settings",
+    "reference": "",
+    "comment": "plugin permission"
+  },
+  {
+    "term": "Reads its saved state",
+    "translation": "",
+    "context": "Reads its saved state",
+    "reference": "",
+    "comment": "plugin permission"
+  },
+  {
+    "term": "Reads the clipboard",
+    "translation": "",
+    "context": "Reads the clipboard",
+    "reference": "",
+    "comment": "plugin permission"
+  },
+  {
+    "term": "Reads the list of running programs",
+    "translation": "",
+    "context": "Reads the list of running programs",
+    "reference": "",
+    "comment": "plugin permission"
+  },
+  {
+    "term": "Reads your files",
+    "translation": "",
+    "context": "Reads your files",
+    "reference": "",
+    "comment": "plugin permission"
+  },
+  {
     "term": "Ready",
     "translation": "",
     "context": "Ready",
@@ -15589,11 +16037,25 @@
     "comment": "verb, power menu action"
   },
   {
+    "term": "Reboot now?",
+    "translation": "",
+    "context": "Reboot now?",
+    "reference": "",
+    "comment": "confirmation dialog title, reboot to finish a system update"
+  },
+  {
     "term": "Reboot recommended",
     "translation": "",
     "context": "Reboot recommended",
     "reference": "",
     "comment": "chip shown after a kernel or systemd upgrade"
+  },
+  {
+    "term": "Reboot targets",
+    "translation": "",
+    "context": "Reboot targets",
+    "reference": "",
+    "comment": "settings card title, firmware setup and EFI boot entries the power menu can reboot into once"
   },
   {
     "term": "Reboot to %1",
@@ -15603,11 +16065,11 @@
     "comment": "power menu action, %1 is a boot entry such as Windows Boot Manager"
   },
   {
-    "term": "Reboot to another OS",
+    "term": "Reboot to firmware setup",
     "translation": "",
-    "context": "Reboot to another OS",
+    "context": "Reboot to firmware setup",
     "reference": "",
-    "comment": "settings card title, lists EFI boot entries the power menu can reboot into"
+    "comment": "power menu action, firmware setup is the UEFI/BIOS settings screen"
   },
   {
     "term": "Recent",
@@ -15869,6 +16331,13 @@
     "comment": "button in the notification rule editor, removes this match condition"
   },
   {
+    "term": "Remove from recent colors",
+    "translation": "",
+    "context": "Remove from recent colors",
+    "reference": "",
+    "comment": "button on a recently picked color swatch"
+  },
+  {
     "term": "Remove greeter access?",
     "translation": "",
     "context": "Remove greeter access?",
@@ -15904,11 +16373,18 @@
     "comment": "remove shortcut confirmation, %1 is the key combination"
   },
   {
-    "term": "Remove the shortcut %1? An unbind entry will be saved to dms/binds-user.lua so it stays removed across DMS updates.",
+    "term": "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.",
     "translation": "",
-    "context": "Remove the shortcut %1? An unbind entry will be saved to dms/binds-user.lua so it stays removed across DMS updates.",
+    "context": "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.",
     "reference": "",
-    "comment": "hyprland remove shortcut confirmation, %1 is the key combination"
+    "comment": "hyprland remove shortcut confirmation, %1 is the key combination, %2 the override file"
+  },
+  {
+    "term": "Remove upvote",
+    "translation": "",
+    "context": "Remove upvote",
+    "reference": "",
+    "comment": "plugin upvote button tooltip"
   },
   {
     "term": "Removed administrator privileges",
@@ -16030,18 +16506,18 @@
     "comment": "noun, printer state reason severity"
   },
   {
-    "term": "Required plugin: ",
+    "term": "Required plugin: %1",
     "translation": "",
-    "context": "Required plugin: ",
+    "context": "Required plugin: %1",
     "reference": "",
-    "comment": ""
+    "comment": "%1 is a repository URL"
   },
   {
     "term": "Requires %1",
     "translation": "",
     "context": "Requires %1",
     "reference": "",
-    "comment": "version requirement"
+    "comment": "missing program | version requirement"
   },
   {
     "term": "Requires %1",
@@ -16051,11 +16527,11 @@
     "comment": ""
   },
   {
-    "term": "Requires 'dgop' tool",
+    "term": "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).",
     "translation": "",
-    "context": "Requires 'dgop' tool",
+    "context": "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).",
     "reference": "",
-    "comment": ""
+    "comment": "greeter requirements note, %1 and %2 are package names, %3 a group name, %4 and %5 PAM modules"
   },
   {
     "term": "Requires DMS %1",
@@ -16075,13 +16551,6 @@
     "term": "Requires MangoWC compositor",
     "translation": "",
     "context": "Requires MangoWC compositor",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Requires greetd, dms-greeter, and your user in the greeter group (plus fprintd/pam_fprintd for fingerprint, pam_u2f for security keys).",
-    "translation": "",
-    "context": "Requires greetd, dms-greeter, and your user in the greeter group (plus fprintd/pam_fprintd for fingerprint, pam_u2f for security keys).",
     "reference": "",
     "comment": ""
   },
@@ -16352,6 +16821,13 @@
     "comment": ""
   },
   {
+    "term": "Rotating Cookie",
+    "translation": "",
+    "context": "Rotating Cookie",
+    "reference": "",
+    "comment": "Album artwork shape"
+  },
+  {
     "term": "Rounded",
     "translation": "",
     "context": "Rounded",
@@ -16366,9 +16842,9 @@
     "comment": "Description of how Bluetooth headset media buttons select a player"
   },
   {
-    "term": "Routes launcher, dash, control center and notification shortcuts",
+    "term": "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout",
     "translation": "",
-    "context": "Routes launcher, dash, control center and notification shortcuts",
+    "context": "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout",
     "reference": "",
     "comment": "shared shortcuts dropdown description"
   },
@@ -16450,11 +16926,11 @@
     "comment": ""
   },
   {
-    "term": "Run an external command on each wallpaper change and merge its JSON palette into matugen under a namespace, so templates can use e.g. {{name.color0}}. The command receives the wallpaper as {image} / $DMS_WALLPAPER and the mode as {mode} / $DMS_MODE.",
+    "term": "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.",
     "translation": "",
-    "context": "Run an external command on each wallpaper change and merge its JSON palette into matugen under a namespace, so templates can use e.g. {{name.color0}}. The command receives the wallpaper as {image} / $DMS_WALLPAPER and the mode as {mode} / $DMS_MODE.",
+    "context": "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.",
     "reference": "",
-    "comment": "injected palettes settings description, the placeholders in braces and the $DMS_ variables stay as is"
+    "comment": "injected palettes settings description, %1 is matugen, %2 a template placeholder, %3 and %4 placeholder and variable pairs"
   },
   {
     "term": "Run full sync",
@@ -16504,6 +16980,20 @@
     "context": "Runs in a terminal.",
     "reference": "",
     "comment": "system update confirmation, the upgrade opens a terminal window"
+  },
+  {
+    "term": "Runs programs on your computer",
+    "translation": "",
+    "context": "Runs programs on your computer",
+    "reference": "",
+    "comment": "plugin permission"
+  },
+  {
+    "term": "Runs shell commands",
+    "translation": "",
+    "context": "Runs shell commands",
+    "reference": "",
+    "comment": "plugin permission"
   },
   {
     "term": "S",
@@ -16639,6 +17129,13 @@
     "comment": ""
   },
   {
+    "term": "Save your work first. Open apps will close.",
+    "translation": "",
+    "context": "Save your work first. Open apps will close.",
+    "reference": "",
+    "comment": "reboot confirmation after a system update"
+  },
+  {
     "term": "Saved",
     "translation": "",
     "context": "Saved",
@@ -16688,6 +17185,20 @@
     "comment": ""
   },
   {
+    "term": "Saves its own settings",
+    "translation": "",
+    "context": "Saves its own settings",
+    "reference": "",
+    "comment": "plugin permission"
+  },
+  {
+    "term": "Saves its state",
+    "translation": "",
+    "context": "Saves its state",
+    "reference": "",
+    "comment": "plugin permission"
+  },
+  {
     "term": "Saving...",
     "translation": "",
     "context": "Saving...",
@@ -16700,6 +17211,27 @@
     "context": "Scale",
     "reference": "",
     "comment": "noun, font scale slider and display scale setting label"
+  },
+  {
+    "term": "Scale battery level to charge limit",
+    "translation": "",
+    "context": "Scale battery level to charge limit",
+    "reference": "",
+    "comment": "battery settings: toggle to scale the displayed percentage so the charge limit represents 100%"
+  },
+  {
+    "term": "Scale low and critical alert thresholds",
+    "translation": "",
+    "context": "Scale low and critical alert thresholds",
+    "reference": "",
+    "comment": "battery settings: toggle to apply low and critical alert thresholds to the charge-limit-scaled battery percentage"
+  },
+  {
+    "term": "Scale the displayed battery level to the configured charge limit",
+    "translation": "",
+    "context": "Scale the displayed battery level to the configured charge limit",
+    "reference": "",
+    "comment": "battery settings: explains that the displayed battery percentage is scaled relative to the charge limit"
   },
   {
     "term": "Scan",
@@ -16947,6 +17479,13 @@
     "comment": "surface color option | widget background color option | workspace color option"
   },
   {
+    "term": "Section dividers",
+    "translation": "",
+    "context": "Section dividers",
+    "reference": "",
+    "comment": "classic interface style: strength of the lines between rows of a settings section"
+  },
+  {
     "term": "Sections",
     "translation": "",
     "context": "Sections",
@@ -17062,6 +17601,13 @@
     "term": "Select Dock Launcher Logo",
     "translation": "",
     "context": "Select Dock Launcher Logo",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Select Dot Icon",
+    "translation": "",
+    "context": "Select Dot Icon",
     "reference": "",
     "comment": ""
   },
@@ -17316,6 +17862,13 @@
     "context": "Set notification rules",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.",
+    "translation": "",
+    "context": "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.",
+    "reference": "",
+    "comment": "qt theme env error body, %1 is a list of variable assignments, %2 and %3 are package names"
   },
   {
     "term": "Set under Theme & colors, Derived color",
@@ -17596,6 +18149,13 @@
     "context": "Show discharge rate",
     "reference": "",
     "comment": "Battery bar widget setting: show how many watts the system is drawing from the battery"
+  },
+  {
+    "term": "Show every author",
+    "translation": "",
+    "context": "Show every author",
+    "reference": "",
+    "comment": "plugin browser, clears the author filter"
   },
   {
     "term": "Show filename",
@@ -18088,6 +18648,13 @@
     "comment": "Album artwork shape"
   },
   {
+    "term": "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.",
+    "translation": "",
+    "context": "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.",
+    "reference": "",
+    "comment": "bar fullscreen auto-hide description"
+  },
+  {
     "term": "Slideout",
     "translation": "",
     "context": "Slideout",
@@ -18170,6 +18737,13 @@
     "context": "Soft square",
     "reference": "",
     "comment": "Album artwork shape"
+  },
+  {
+    "term": "Software dimming",
+    "translation": "",
+    "context": "Software dimming",
+    "reference": "",
+    "comment": "brightness device class label, dimmed through the gamma ramp"
   },
   {
     "term": "Software updates",
@@ -18282,6 +18856,13 @@
     "context": "Spacing",
     "reference": "",
     "comment": "slider label, gap between dock items"
+  },
+  {
+    "term": "Spacious",
+    "translation": "",
+    "context": "Spacious",
+    "reference": "",
+    "comment": "interface density option with the most room between items"
   },
   {
     "term": "Speaker settings",
@@ -18802,11 +19383,25 @@
     "comment": ""
   },
   {
+    "term": "Switch to media when playback starts",
+    "translation": "",
+    "context": "Switch to media when playback starts",
+    "reference": "",
+    "comment": "island settings: auto-switch the compact face to media toggle"
+  },
+  {
     "term": "Switches to power saver at the low battery threshold",
     "translation": "",
     "context": "Switches to power saver at the low battery threshold",
     "reference": "",
     "comment": "battery auto power saver toggle description"
+  },
+  {
+    "term": "Symbol",
+    "translation": "",
+    "context": "Symbol",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Sync",
@@ -19138,25 +19733,11 @@
     "comment": ""
   },
   {
-    "term": "Terminal fallback failed. Install a supported terminal emulator or run 'dms auth sync' manually.",
+    "term": "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.",
     "translation": "",
-    "context": "Terminal fallback failed. Install a supported terminal emulator or run 'dms auth sync' manually.",
+    "context": "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.",
     "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Terminal fallback failed. Install one of the supported terminal emulators or run 'dms-greeter sync' manually.",
-    "translation": "",
-    "context": "Terminal fallback failed. Install one of the supported terminal emulators or run 'dms-greeter sync' manually.",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Terminal fallback failed. Install one of the supported terminal emulators or run 'dms-greeter unlink' manually.",
-    "translation": "",
-    "context": "Terminal fallback failed. Install one of the supported terminal emulators or run 'dms-greeter unlink' manually.",
-    "reference": "",
-    "comment": "greeter unlink status"
+    "comment": "terminal fallback status, %1 is a command"
   },
   {
     "term": "Terminal fallback opened. Complete authentication there; it will close automatically when done.",
@@ -19250,6 +19831,13 @@
     "comment": ""
   },
   {
+    "term": "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.",
+    "translation": "",
+    "context": "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.",
+    "reference": "",
+    "comment": "plugin manager unavailable notice, %1 is an environment variable"
+  },
+  {
     "term": "The Aqueous operation failed.",
     "translation": "",
     "context": "The Aqueous operation failed.",
@@ -19257,11 +19845,11 @@
     "comment": "Fallback error for an Aqueous compositor or configuration request"
   },
   {
-    "term": "The DMS_SOCKET environment variable is not set or the socket is unavailable. Automated plugin management requires the DMS_SOCKET.",
+    "term": "The Control Center opens at the cursor instead of its widget",
     "translation": "",
-    "context": "The DMS_SOCKET environment variable is not set or the socket is unavailable. Automated plugin management requires the DMS_SOCKET.",
+    "context": "The Control Center opens at the cursor instead of its widget",
     "reference": "",
-    "comment": ""
+    "comment": "bar click action follow mouse description"
   },
   {
     "term": "The Default action only overrides priority",
@@ -19278,6 +19866,13 @@
     "comment": ""
   },
   {
+    "term": "The Island takes its place on this bar",
+    "translation": "",
+    "context": "The Island takes its place on this bar",
+    "reference": "",
+    "comment": "widgets settings: the island replaces the bar's center section"
+  },
+  {
     "term": "The WiFi adapter could not start access point mode.",
     "translation": "",
     "context": "The WiFi adapter could not start access point mode.",
@@ -19292,11 +19887,11 @@
     "comment": ""
   },
   {
-    "term": "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (qt5ct.conf|qt6ct.conf|qtengine/config.json and ~/.config/gtk-3.0|gtk-4.0).",
+    "term": "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).",
     "translation": "",
-    "context": "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (qt5ct.conf|qt6ct.conf|qtengine/config.json and ~/.config/gtk-3.0|gtk-4.0).",
+    "context": "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).",
     "reference": "",
-    "comment": ""
+    "comment": "theme apps backup note, %1 and %2 are config paths"
   },
   {
     "term": "The compositor session changed. Discard this edit before starting a new one.",
@@ -19332,13 +19927,6 @@
     "context": "The fill shows today's precipitation probability.",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "The greeter bundled with DMS is active (archinstall setup). It keeps working as is, but syncing theme and settings needs the standalone greeter. Install greetd-dms-greeter-bin from the AUR, then run Sync to migrate the login screen.",
-    "translation": "",
-    "context": "The greeter bundled with DMS is active (archinstall setup). It keeps working as is, but syncing theme and settings needs the standalone greeter. Install greetd-dms-greeter-bin from the AUR, then run Sync to migrate the login screen.",
-    "reference": "",
-    "comment": "embedded greeter status"
   },
   {
     "term": "The highlighted marker shows the UV category: low, moderate, high, very high, or extreme.",
@@ -19544,11 +20132,11 @@
     "comment": "greeter themes link"
   },
   {
-    "term": "These add entries to the XDG autostart directory (~/.config/autostart/*.desktop)",
+    "term": "These add entries to the XDG autostart directory (%1)",
     "translation": "",
-    "context": "These add entries to the XDG autostart directory (~/.config/autostart/*.desktop)",
+    "context": "These add entries to the XDG autostart directory (%1)",
     "reference": "",
-    "comment": ""
+    "comment": "autostart note, %1 is a path"
   },
   {
     "term": "They load with the next update check. Release notes are also published on GitHub.",
@@ -19579,11 +20167,11 @@
     "comment": "community plugin discovery control"
   },
   {
-    "term": "Third-party plugins are created by the community and are not officially supported by DankMaterialShell.\n\nThese plugins may pose security and privacy risks - install at your own risk.",
+    "term": "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.",
     "translation": "",
-    "context": "Third-party plugins are created by the community and are not officially supported by DankMaterialShell.\n\nThese plugins may pose security and privacy risks - install at your own risk.",
+    "context": "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.",
     "reference": "",
-    "comment": ""
+    "comment": "third-party plugin warning, %1 is the product name"
   },
   {
     "term": "This bar is the Island",
@@ -19593,11 +20181,11 @@
     "comment": "bar widget picker: island widget unavailable on an island-layout bar"
   },
   {
-    "term": "This bind is overridden by config.kdl",
+    "term": "This bind is overridden by %1",
     "translation": "",
-    "context": "This bind is overridden by config.kdl",
+    "context": "This bind is overridden by %1",
     "reference": "",
-    "comment": ""
+    "comment": "keybind conflict notice, %1 is the compositor config file"
   },
   {
     "term": "This device",
@@ -19621,11 +20209,11 @@
     "comment": ""
   },
   {
-    "term": "This install is still using hyprland.conf. Run dms setup to migrate before changing these settings.",
+    "term": "This install is still using %1. Run %2 to migrate before changing these settings.",
     "translation": "",
-    "context": "This install is still using hyprland.conf. Run dms setup to migrate before changing these settings.",
+    "context": "This install is still using %1. Run %2 to migrate before changing these settings.",
     "reference": "",
-    "comment": ""
+    "comment": "hyprland legacy config warning, %1 is the config file, %2 a command"
   },
   {
     "term": "This may take a few seconds",
@@ -19649,11 +20237,11 @@
     "comment": ""
   },
   {
-    "term": "This plugin does not have 'settings_write' permission.\n\nAdd \"permissions\": [\"settings_read\", \"settings_write\"] to plugin.json",
+    "term": "This plugin does not have '%1' permission.\n\nAdd %2 to %3",
     "translation": "",
-    "context": "This plugin does not have 'settings_write' permission.\n\nAdd \"permissions\": [\"settings_read\", \"settings_write\"] to plugin.json",
+    "context": "This plugin does not have '%1' permission.\n\nAdd %2 to %3",
     "reference": "",
-    "comment": ""
+    "comment": "plugin settings write warning, %1 is a permission name, %2 a manifest snippet, %3 the manifest file"
   },
   {
     "term": "This system cannot link settings live. Sync again after changing them.",
@@ -19901,18 +20489,18 @@
     "comment": ""
   },
   {
-    "term": "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (greetd-flexiserver / GDM / LightDM).",
+    "term": "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).",
     "translation": "",
-    "context": "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (greetd-flexiserver / GDM / LightDM).",
+    "context": "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).",
     "reference": "",
-    "comment": ""
+    "comment": "switch user note, %1 lists multi-session greeters"
   },
   {
-    "term": "To use this DMS bind, remove or change the keybind in your config.kdl",
+    "term": "To use this DMS bind, remove or change the keybind in your %1",
     "translation": "",
-    "context": "To use this DMS bind, remove or change the keybind in your config.kdl",
+    "context": "To use this DMS bind, remove or change the keybind in your %1",
     "reference": "",
-    "comment": ""
+    "comment": "keybind conflict hint, %1 is the compositor config file"
   },
   {
     "term": "Toast",
@@ -20039,6 +20627,13 @@
     "context": "Tools",
     "reference": "",
     "comment": "about page card title for welcome and system check"
+  },
+  {
+    "term": "Tooltip",
+    "translation": "",
+    "context": "Tooltip",
+    "reference": "",
+    "comment": "surface role"
   },
   {
     "term": "Top",
@@ -20179,6 +20774,13 @@
     "context": "Tray icon tint",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Trending",
+    "translation": "",
+    "context": "Trending",
+    "reference": "",
+    "comment": "plugin browser shelf, gaining votes quickly | plugin recommendation reason, gaining votes quickly"
   },
   {
     "term": "Trigger",
@@ -20332,7 +20934,7 @@
     "translation": "",
     "context": "Undo",
     "reference": "",
-    "comment": ""
+    "comment": "reinstall the plugin that was just uninstalled"
   },
   {
     "term": "Unfocused color",
@@ -20727,6 +21329,27 @@
     "comment": ""
   },
   {
+    "term": "Upvote on GitHub",
+    "translation": "",
+    "context": "Upvote on GitHub",
+    "reference": "",
+    "comment": "plugin upvote button tooltip"
+  },
+  {
+    "term": "Upvote removed",
+    "translation": "",
+    "context": "Upvote removed",
+    "reference": "",
+    "comment": "plugin upvote toast"
+  },
+  {
+    "term": "Upvoted on GitHub",
+    "translation": "",
+    "context": "Upvoted on GitHub",
+    "reference": "",
+    "comment": "plugin upvote toast"
+  },
+  {
     "term": "Urgent",
     "translation": "",
     "context": "Urgent",
@@ -20851,6 +21474,13 @@
     "context": "Use system PAM authentication",
     "reference": "",
     "comment": "system PAM policy toggle"
+  },
+  {
+    "term": "Use the scaled battery level for alert thresholds and percentages",
+    "translation": "",
+    "context": "Use the scaled battery level for alert thresholds and percentages",
+    "reference": "",
+    "comment": "battery settings: explains that low and critical alerts trigger and report percentages on the scaled battery level"
   },
   {
     "term": "User",
@@ -21399,11 +22029,11 @@
     "comment": "greeter modal window title"
   },
   {
-    "term": "Welcome to DankMaterialShell",
+    "term": "Welcome to %1",
     "translation": "",
-    "context": "Welcome to DankMaterialShell",
+    "context": "Welcome to %1",
     "reference": "",
-    "comment": "greeter welcome page title"
+    "comment": "greeter welcome page title, %1 is the product name"
   },
   {
     "term": "What changed",
@@ -21411,6 +22041,13 @@
     "context": "What changed",
     "reference": "",
     "comment": "changelog section heading listing the changes in a release"
+  },
+  {
+    "term": "What's New",
+    "translation": "",
+    "context": "What's New",
+    "reference": "",
+    "comment": "changelog window title"
   },
   {
     "term": "When locked",
@@ -21518,11 +22155,11 @@
     "comment": "settings sidebar hint for the network page"
   },
   {
-    "term": "WiFi QR code for ",
+    "term": "WiFi QR code for %1",
     "translation": "",
-    "context": "WiFi QR code for ",
+    "context": "WiFi QR code for %1",
     "reference": "",
-    "comment": ""
+    "comment": "%1 is the network name"
   },
   {
     "term": "WiFi disabled",
@@ -21763,6 +22400,13 @@
     "comment": "create user button text while the operation runs"
   },
   {
+    "term": "Works here",
+    "translation": "",
+    "context": "Works here",
+    "reference": "",
+    "comment": "plugin browser filter chip, plugins that run on the current compositor"
+  },
+  {
     "term": "Works in every submap",
     "translation": "",
     "context": "Works in every submap",
@@ -21831,6 +22475,13 @@
     "context": "Write:",
     "reference": "",
     "comment": "disk write label"
+  },
+  {
+    "term": "Writes to your files",
+    "translation": "",
+    "context": "Writes to your files",
+    "reference": "",
+    "comment": "plugin permission"
   },
   {
     "term": "X axis",
@@ -21915,13 +22566,6 @@
     "context": "You have unsaved changes. Save before continuing?",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "You need to set one of:\nQT_QPA_PLATFORMTHEME=gtk3 OR\nQT_QPA_PLATFORMTHEME=qt6ct OR\nQT_QPA_PLATFORMTHEME=qtengine\nas environment variables, and then restart the shell.\n\nOnly qt6ct requires qt6ct-kde to be installed.",
-    "translation": "",
-    "context": "You need to set one of:\nQT_QPA_PLATFORMTHEME=gtk3 OR\nQT_QPA_PLATFORMTHEME=qt6ct OR\nQT_QPA_PLATFORMTHEME=qtengine\nas environment variables, and then restart the shell.\n\nOnly qt6ct requires qt6ct-kde to be installed.",
-    "reference": "",
-    "comment": "qt theme env error body"
   },
   {
     "term": "You'll enter your password at the greeter after the next reboot.",
@@ -22057,6 +22701,13 @@
     "comment": ""
   },
   {
+    "term": "copy link",
+    "translation": "",
+    "context": "copy link",
+    "reference": "",
+    "comment": "plugin detail link, copies the plugin page address"
+  },
+  {
     "term": "deprecated",
     "translation": "",
     "context": "deprecated",
@@ -22071,13 +22722,6 @@
     "comment": "multiplexer session state, no client attached"
   },
   {
-    "term": "dgop not available",
-    "translation": "",
-    "context": "dgop not available",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "direct",
     "translation": "",
     "context": "direct",
@@ -22090,13 +22734,6 @@
     "context": "discuss",
     "reference": "",
     "comment": "plugin discussion link"
-  },
-  {
-    "term": "dms-greeter is not installed. Install the dms-greeter package to manage the greeter.",
-    "translation": "",
-    "context": "dms-greeter is not installed. Install the dms-greeter package to manage the greeter.",
-    "reference": "",
-    "comment": "greeter status placeholder"
   },
   {
     "term": "e.g. /usr/bin/my-script --flag",
@@ -22225,13 +22862,6 @@
     "comment": ""
   },
   {
-    "term": "loginctl not available - lock integration requires DMS socket connection",
-    "translation": "",
-    "context": "loginctl not available - lock integration requires DMS socket connection",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "mango: config reloaded",
     "translation": "",
     "context": "mango: config reloaded",
@@ -22258,27 +22888,6 @@
     "context": "mangowc GitHub",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "matugen not available or disabled - cannot apply %1 colors",
-    "translation": "",
-    "context": "matugen not available or disabled - cannot apply %1 colors",
-    "reference": "",
-    "comment": "error toast, %1 is GTK or Qt"
-  },
-  {
-    "term": "matugen not found - install matugen package for dynamic theming",
-    "translation": "",
-    "context": "matugen not found - install matugen package for dynamic theming",
-    "reference": "",
-    "comment": "matugen error"
-  },
-  {
-    "term": "mpris-proxy is running and will create duplicate Bluetooth players. Disable it with: systemctl --user disable --now mpris-proxy.service",
-    "translation": "",
-    "context": "mpris-proxy is running and will create duplicate Bluetooth players. Disable it with: systemctl --user disable --now mpris-proxy.service",
-    "reference": "",
-    "comment": "Warning shown when the legacy BlueZ MPRIS proxy conflicts with DMS Bluetooth media controls"
   },
   {
     "term": "ms",
@@ -22323,13 +22932,6 @@
     "comment": "greeter keybinds niri description"
   },
   {
-    "term": "niri/dms Discord",
-    "translation": "",
-    "context": "niri/dms Discord",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "niri: config reloaded",
     "translation": "",
     "context": "niri: config reloaded",
@@ -22365,13 +22967,6 @@
     "comment": ""
   },
   {
-    "term": "procs",
-    "translation": "",
-    "context": "procs",
-    "reference": "",
-    "comment": "short for processes"
-  },
-  {
     "term": "pt",
     "translation": "",
     "context": "pt",
@@ -22405,6 +23000,13 @@
     "context": "remote",
     "reference": "",
     "comment": "adjective, shown when a login session has no tty or seat"
+  },
+  {
+    "term": "report a problem",
+    "translation": "",
+    "context": "report a problem",
+    "reference": "",
+    "comment": "plugin detail link, opens a prefilled issue"
   },
   {
     "term": "reviewed",

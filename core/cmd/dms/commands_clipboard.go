@@ -28,10 +28,10 @@ import (
 	_ "golang.org/x/image/tiff"
 	_ "golang.org/x/image/webp"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/clipboard"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/dankgo/ipc"
-	"github.com/AvengeMedia/dankgo/wlclipboard"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-go/wlclipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/spf13/cobra"
 )
 

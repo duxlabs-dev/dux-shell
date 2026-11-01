@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/dmenuipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/dmenuipc"
 )
 
 func TestParseIndexSpec(t *testing.T) {

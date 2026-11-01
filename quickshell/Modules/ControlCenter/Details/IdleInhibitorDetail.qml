@@ -75,7 +75,7 @@ Item {
 
             CcGroup {
                 CcToggleRow {
-                    iconName: SessionService.idleInhibited ? "motion_sensor_active" : "motion_sensor_idle"
+                    iconName: "local_cafe"
                     iconColor: SessionService.idleInhibited ? Theme.primary : Theme.surfaceText
                     text: I18n.tr("Prevent screen timeout")
                     description: {

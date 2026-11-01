@@ -1,9 +1,9 @@
 package apppicker
 
 import (
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/dankgo/desktop"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/desktop"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 )
 
 func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {

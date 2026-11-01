@@ -1,5 +1,6 @@
 import QtQuick
 import QtTest
+import Quickshell.Io
 import Quickshell.Services.Pam
 import qs.Common
 import qs.Services
@@ -21,8 +22,13 @@ TestCase {
         SettingsData.lockFingerprintReady = true;
         SettingsData.lockPamExternallyManaged = false;
         SettingsData.lockPamPath = "";
+        SettingsData.lockU2fPamPath = "";
         SettingsData.lockPamInlineFprint = false;
+        SettingsData.lockPamInlineU2f = false;
         SettingsData.maxFprintTries = 2;
+        AdminPolicy.disableCustomLockPam = false;
+        MockFiles.missing = [];
+        Log.warnings = [];
         SessionService.preparingForSleep = false;
         IdleService.monitorsOff = false;
     }
@@ -71,6 +77,73 @@ TestCase {
         verify(!pam.fprint.active);
         compare(pam.fprint.starts, 1);
         compare(pam.fprint.status, "disabled");
+    }
+
+    function test_pamStacks_data() {
+        const policy = {
+            policy: true,
+            missing: [],
+            passwd: "/etc/pam.d/dankshell",
+            fprint: "/etc/pam.d/dankshell-fprint",
+            u2f: "/etc/pam.d/dankshell-u2f",
+            fprintStatus: "active",
+            secondFactor: true,
+            warnings: 0
+        };
+        return [
+            {
+                tag: "settings",
+                policy: false,
+                missing: [],
+                passwd: "/test/custom",
+                fprint: "/test/assets/pam/fprint",
+                u2f: "/test/custom-u2f",
+                fprintStatus: "disabled",
+                secondFactor: false,
+                warnings: 0
+            },
+            Object.assign({}, policy, {
+                tag: "policy"
+            }),
+            Object.assign({}, policy, {
+                tag: "policyWithoutDankshell",
+                missing: ["/etc/pam.d/dankshell"],
+                passwd: "/etc/pam.d/login"
+            }),
+            Object.assign({}, policy, {
+                tag: "policyWithoutU2fStack",
+                missing: ["/etc/pam.d/dankshell-u2f"],
+                secondFactor: false,
+                warnings: 1
+            }),
+            Object.assign({}, policy, {
+                tag: "policyWithoutFprintStack",
+                missing: ["/etc/pam.d/dankshell-fprint"],
+                fprintStatus: "disabled"
+            })
+        ];
+    }
+
+    function test_pamStacks(data) {
+        AdminPolicy.disableCustomLockPam = data.policy;
+        MockFiles.missing = data.missing;
+        SettingsData.enableU2f = true;
+        SettingsData.lockPamPath = "/test/custom";
+        SettingsData.lockU2fPamPath = "/test/custom-u2f";
+        SettingsData.lockPamInlineFprint = true;
+        SettingsData.lockPamInlineU2f = true;
+        SettingsData.lockPamExternallyManaged = true;
+        const pam = createTemporaryObject(factory, tests);
+        pam.lockSecured = true;
+        compare(pam.passwd.configDirectory + "/" + pam.passwd.config, data.passwd);
+        compare(pam.fprint.configDirectory + "/" + pam.fprint.config, data.fprint);
+        compare(pam.u2f.configDirectory + "/" + pam.u2f.config, data.u2f);
+        tryCompare(pam.fprint, "status", data.fprintStatus);
+        pam.passwd.start();
+        pam.passwd.finish(PamResult.Success);
+        compare(pam.u2fPending, data.secondFactor);
+        compare(pam.unlockInProgress, !data.secondFactor);
+        compare(Log.warnings.length, data.warnings);
     }
 
     function test_disabledContextIgnoresLateSuccess() {

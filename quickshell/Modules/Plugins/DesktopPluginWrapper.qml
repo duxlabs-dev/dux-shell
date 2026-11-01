@@ -94,6 +94,13 @@ Item {
         implicitWidth: geometry.widgetWidth
         implicitHeight: geometry.widgetHeight
 
+        MouseArea {
+            anchors.fill: parent
+            enabled: CompositorService.desktopContextMenuEnabled
+            acceptedButtons: Qt.RightButton
+            onClicked: mouse => PopoutService.desktopContextMenu?.openForWidget(root.screen, geometry.widgetX + mouse.x, geometry.widgetY + mouse.y, root.instanceId)
+        }
+
         DesktopWidgetContent {
             id: content
             anchors.fill: parent

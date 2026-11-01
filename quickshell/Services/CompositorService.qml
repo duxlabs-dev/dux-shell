@@ -11,6 +11,7 @@ import qs.DCommon.Common as DCommon
 import qs.Services
 import "../Common/WorkspaceModel.js" as WorkspaceModel
 import "../Common/WindowModel.js" as WindowModel
+import "NiriFullscreen.js" as NiriFullscreen
 
 Singleton {
     id: root
@@ -148,6 +149,16 @@ Singleton {
     readonly property bool supportsWorkspaceFollowFocus: isKnownCompositor && !isLabwc
     // labwc root menu and desktop scroll, sway/scroll --whole-window binds, plasmashell desktop menu
     readonly property bool reservesDesktopInput: isLabwc || isSway || isScroll || isKwin
+    readonly property bool desktopContextMenuEnabled: {
+        switch (SettingsData.desktopContextMenu) {
+        case "on":
+            return true;
+        case "off":
+            return false;
+        default:
+            return !reservesDesktopInput;
+        }
+    }
     readonly property bool supportsSmartDock: isNiri || isHyprland || isMango || isAqueous
     readonly property bool supportsNativeOverview: isNiri || isAqueous
     readonly property bool supportsPointerConfig: isNiri || isHyprland || isMango
@@ -336,16 +347,17 @@ Singleton {
             return screen.devicePixelRatio || 1;
         }
 
-        const randrScale = randrScales[screen.name];
-        if (randrScale !== undefined && randrScale > 0)
-            return fractionalScale(randrScale);
-
-        if (WlrOutputService.wlrOutputAvailable && screen) {
+        // Live wlr-output state outranks the one-shot randr snapshot so scale changes propagate
+        if (WlrOutputService.wlrOutputAvailable) {
             const wlrOutput = WlrOutputService.getOutput(screen.name);
             if (wlrOutput?.enabled && wlrOutput.scale !== undefined && wlrOutput.scale > 0) {
                 return fractionalScale(wlrOutput.scale);
             }
         }
+
+        const randrScale = randrScales[screen.name];
+        if (randrScale !== undefined && randrScale > 0)
+            return fractionalScale(randrScale);
 
         if (isNiri && screen) {
             const niriScale = NiriService.displayScales[screen.name];
@@ -458,7 +470,7 @@ Singleton {
             const yKey = y.niriWindowId !== undefined ? y.niriWindowId : y.mangoWindowId;
             if (xKey === undefined || yKey === undefined)
                 return false;
-            if (xKey !== yKey || x.niriWorkspaceId !== y.niriWorkspaceId || x.appId !== y.appId || x.title !== y.title || !!x.activated !== !!y.activated || !!x.fullscreen !== !!y.fullscreen || !!x.maximized !== !!y.maximized || !!x.minimized !== !!y.minimized)
+            if (xKey !== yKey || x.niriWorkspaceId !== y.niriWorkspaceId || x.mangoMonitor !== y.mangoMonitor || x.appId !== y.appId || x.title !== y.title || !!x.activated !== !!y.activated || !!x.fullscreen !== !!y.fullscreen || !!x.maximized !== !!y.maximized || !!x.minimized !== !!y.minimized)
                 return false;
         }
         return true;
@@ -486,6 +498,11 @@ Singleton {
                 if (event.name === "configreloaded")
                     HyprlandService.refreshFollowMouse();
                 root.refreshHyprlandMonitorLayout();
+                return;
+            }
+            // Hyprland 0.57 emits this when a workspace id changes (e.g. after a rename); Quickshell 0.3.2 ignores it
+            if (event.name === "changeworkspaceid") {
+                Hyprland.refreshWorkspaces();
                 return;
             }
             if (event.name === "openwindow" || event.name === "closewindow" || event.name === "movewindow" || event.name === "movewindowv2" || event.name === "workspace" || event.name === "workspacev2" || event.name === "focusedmon" || event.name === "focusedmonv2" || event.name === "activewindow" || event.name === "activewindowv2" || event.name === "changefloatingmode" || event.name === "fullscreen" || event.name === "moveintogroup" || event.name === "moveoutofgroup" || event.name === "activespecial") {
@@ -860,6 +877,12 @@ Singleton {
                 return true;
         }
         return false;
+    }
+
+    function visibleNiriFullscreenToplevelOnScreen(screenOrName) {
+        if (!isNiri || !NiriService.hasInitialConnection)
+            return false;
+        return NiriFullscreen.isFullscreenOnScreen(_screenName(screenOrName), NiriService.allWorkspaces, NiriService.windows, ToplevelManager.toplevels?.values);
     }
 
     function filterCurrentDisplay(toplevels, screenName) {
@@ -1480,14 +1503,26 @@ Singleton {
                 log.warn("failed to parse window rules", e);
                 return;
             }
-            syncDmsWindowFloatingRule(rules);
-            if (ensureOpaque)
-                ensureDmsOpaqueRule(rules);
+            // Each rule write rewrites the whole rules file, so writes must not overlap.
+            syncDmsWindowFloatingRule(rules, () => {
+                if (ensureOpaque)
+                    ensureDmsOpaqueRule(rules);
+            });
         });
     }
 
-    function syncDmsWindowFloatingRule(rules) {
-        dmsWindowFloatingActive = rules.some(rule => rule.id === dmsFloatingRuleId && rule.enabled !== false && rule.actions?.openFloating === true);
+    function dmsRuleMatchesCurrentAppId(rule) {
+        return (rule.matchCriteria?.appId || "").includes("duxlabs");
+    }
+
+    function syncDmsWindowFloatingRule(rules, onDone) {
+        const rule = rules.find(rule => rule.id === dmsFloatingRuleId && rule.enabled !== false && rule.actions?.openFloating === true);
+        dmsWindowFloatingActive = rule !== undefined;
+        if (!rule || dmsRuleMatchesCurrentAppId(rule)) {
+            onDone?.();
+            return;
+        }
+        setDmsWindowFloatingRule(true, onDone);
     }
 
     function reloadAfterWindowRuleWrite() {
@@ -1520,7 +1555,7 @@ Singleton {
         setDmsRule(dmsFloatingRuleId, enabled ? {
             "name": "DMS Floating Windows",
             "matchCriteria": {
-                "appId": "^com.danklinux.dms$"
+                "appId": "^(dev\\.duxlabs\\.shell|com\\.danklinux\\.dms)$"
             },
             "actions": {
                 "openFloating": true
@@ -1532,7 +1567,7 @@ Singleton {
     }
 
     function ensureDmsOpaqueRule(rules) {
-        if (rules.some(rule => rule.id === dmsOpaqueRuleId))
+        if (rules.some(rule => rule.id === dmsOpaqueRuleId && dmsRuleMatchesCurrentAppId(rule)))
             return;
         // DMS windows are translucent via client alpha; Hyprland's opaque keeps that alpha, force_rgbx would drop it.
         let actions;
@@ -1549,7 +1584,7 @@ Singleton {
         setDmsRule(dmsOpaqueRuleId, {
             "name": "DMS Window Opaque",
             "matchCriteria": {
-                "appId": "^com\\.danklinux\\.dms$"
+                "appId": "^(dev\\.duxlabs\\.shell|com\\.danklinux\\.dms)$"
             },
             "actions": actions
         });

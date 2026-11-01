@@ -8,15 +8,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/site"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
 )
 
 const (
-	VoidDMSRepo       = site.VoidRepo + "/dms/current"
-	VoidDankLinuxRepo = site.VoidRepo + "/danklinux/current"
-	VoidHyprlandRepo  = "https://mirror.black-hole.dev/x86_64"
+	VoidDMSRepo      = voidHost + "/" + projectDMS + "/current"
+	VoidDepsRepo     = voidHost + "/" + projectDeps + "/current"
+	VoidHyprlandRepo = "https://mirror.black-hole.dev/x86_64"
+
+	voidDepsConf = "/etc/xbps.d/dux.conf"
 
 	voidRunitSvDir      = "/etc/sv"
 	voidRunitServiceDir = "/var/service"
@@ -68,7 +69,7 @@ func (v *VoidDistribution) DetectDependenciesWithTerminal(ctx context.Context, w
 	dependencies = append(dependencies, v.detectGit())
 	dependencies = append(dependencies, v.detectWindowManager(wm))
 	dependencies = append(dependencies, v.detectQuickshell())
-	dependencies = append(dependencies, v.detectDMSGreeter())
+	dependencies = append(dependencies, v.detectGreeterPackage(v.packageInstalled))
 	dependencies = append(dependencies, v.detectXDGPortal())
 	dependencies = append(dependencies, v.detectAccountsService())
 	dependencies = append(dependencies, v.detectDBus())
@@ -87,6 +88,7 @@ func (v *VoidDistribution) DetectDependenciesWithTerminal(ctx context.Context, w
 	dependencies = append(dependencies, v.detectMatugen())
 	dependencies = append(dependencies, v.detectDanksearch())
 	dependencies = append(dependencies, v.detectDankCalendar())
+	dependencies = append(dependencies, v.detectDuxFiles())
 
 	return dependencies, nil
 }
@@ -108,7 +110,7 @@ func (v *VoidDistribution) detectDMS() deps.Dependency {
 	}
 
 	return deps.Dependency{
-		Name:        "dms (DankMaterialShell)",
+		Name:        "dms (Dux Shell)",
 		Status:      status,
 		Version:     version,
 		Description: "Desktop Management System package",
@@ -126,10 +128,6 @@ func (v *VoidDistribution) detectQuickshell() deps.Dependency {
 
 func (v *VoidDistribution) detectXDGPortal() deps.Dependency {
 	return v.detectPackage("xdg-desktop-portal-gtk", "Desktop integration portal for GTK", v.packageInstalled("xdg-desktop-portal-gtk"))
-}
-
-func (v *VoidDistribution) detectDMSGreeter() deps.Dependency {
-	return v.detectOptionalPackage("dms-greeter", "DankMaterialShell greetd greeter", v.packageInstalled("dms-greeter"))
 }
 
 func (v *VoidDistribution) detectAccountsService() deps.Dependency {
@@ -156,6 +154,138 @@ func (v *VoidDistribution) packageInstalled(pkg string) bool {
 	return exec.Command("xbps-query", pkg).Run() == nil
 }
 
+func (v *VoidDistribution) InstalledVariant(stable, git PackageMapping) (deps.PackageVariant, bool) {
+	return installedVariantByName(v.packageInstalled, stable, git)
+}
+
+// SwapVariants removes before installing because xbps has no replace-in-place; a failed install
+// puts the old packages back from the local cache so the greeter is never left missing.
+func (v *VoidDistribution) SwapVariants(ctx context.Context, swaps []VariantSwap, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
+	if err := v.enableXBPSRepos(ctx, swapTargets(swaps, RepoTypeXBPS), sudoPassword, progressChan); err != nil {
+		return err
+	}
+
+	from, to := swapNames(swaps)
+	remove := "xbps-remove -Fy " + strings.Join(from, " ")
+	progressChan <- InstallProgressMsg{
+		Phase:       PhaseSystemPackages,
+		Progress:    0.40,
+		Step:        "Removing current package variants...",
+		NeedsSudo:   true,
+		CommandInfo: "sudo " + remove,
+	}
+	if err := v.runWithProgress(privesc.ExecCommand(ctx, sudoPassword, remove), progressChan, PhaseSystemPackages, 0.40, 0.50); err != nil {
+		return fmt.Errorf("failed to remove %s: %w", strings.Join(from, ", "), err)
+	}
+
+	installErr := v.installXBPSPackages(ctx, to, sudoPassword, progressChan)
+	if installErr == nil {
+		return nil
+	}
+	restore := privesc.ExecCommand(ctx, sudoPassword, "xbps-install -y "+strings.Join(from, " "))
+	if err := v.runWithProgress(restore, progressChan, PhaseSystemPackages, 0.85, 0.90); err != nil {
+		return fmt.Errorf("failed to install %s (%w) and to restore %s: %v", strings.Join(to, ", "), installErr, strings.Join(from, ", "), err)
+	}
+	return fmt.Errorf("failed to install %s, restored %s: %w", strings.Join(to, ", "), strings.Join(from, ", "), installErr)
+}
+
+func (v *VoidDistribution) RepoMoves() []RepoMove {
+	var moves []RepoMove
+	legacy, hasDeps := false, false
+	for _, path := range repoGlob(voidConfGlob) {
+		for _, url := range xbpsRepositoryLines(path) {
+			move, ok := voidRepoMove(path, url)
+			if !ok {
+				continue
+			}
+			legacy = legacy || move.OldPresent
+			hasDeps = hasDeps || strings.HasPrefix(move.New, voidHost+"/"+projectDeps+"/")
+			moves = append(moves, move)
+		}
+	}
+	// Greeter-only hosts got dms-greeter from dms/current, which no longer carries it.
+	if legacy && !hasDeps {
+		moves = append(moves, RepoMove{Kind: RepoTypeXBPS, New: VoidDepsRepo, NewPath: voidDepsConf})
+	}
+	return moves
+}
+
+// Matches on the repository line because older installs named the conf files differently.
+func xbpsRepositoryLines(path string) []string {
+	content, err := repoReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var urls []string
+	for line := range strings.Lines(string(content)) {
+		key, value, ok := strings.Cut(strings.TrimSpace(line), "=")
+		if !ok || strings.TrimSpace(key) != "repository" {
+			continue
+		}
+		urls = append(urls, strings.TrimSpace(value))
+	}
+	return urls
+}
+
+func voidRepoMove(path, url string) (RepoMove, bool) {
+	if strings.HasPrefix(url, voidHost+"/") {
+		return RepoMove{Kind: RepoTypeXBPS, New: url, NewPath: path, NewPresent: true}, true
+	}
+	rest, ok := strings.CutPrefix(url, legacyVoidHost+"/")
+	if !ok {
+		return RepoMove{}, false
+	}
+	if deps, ok := strings.CutPrefix(rest, legacyProjectDeps+"/"); ok {
+		rest = projectDeps + "/" + deps
+	}
+	return RepoMove{Kind: RepoTypeXBPS, Old: url, New: voidHost + "/" + rest, OldPath: path, NewPath: path, OldPresent: true}, true
+}
+
+func voidAddsRepo(move RepoMove) bool {
+	return !move.OldPresent && !move.NewPresent && move.NewPath != ""
+}
+
+func voidMoveCommands(moves []RepoMove) []string {
+	var commands []string
+	for _, move := range moves {
+		switch {
+		case move.OldPresent:
+			commands = append(commands, fmt.Sprintf("sed -i 's|repository=%s|repository=%s|' %s", move.Old, move.New, move.OldPath))
+		case voidAddsRepo(move):
+			// Appends so an unrelated file that happens to share the name is not clobbered.
+			commands = append(commands, fmt.Sprintf("sh -c 'echo repository=%s >> %s'", move.New, move.NewPath))
+		}
+	}
+	if len(commands) > 0 {
+		commands = append(commands, "xbps-install -S")
+	}
+	return commands
+}
+
+func (v *VoidDistribution) ApplyRepoMoves(ctx context.Context, moves []RepoMove, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
+	for _, command := range voidMoveCommands(moves) {
+		progressChan <- InstallProgressMsg{
+			Phase:       PhaseSystemPackages,
+			Progress:    0.30,
+			Step:        "Moving XBPS repositories...",
+			NeedsSudo:   true,
+			CommandInfo: "sudo " + command,
+		}
+		if err := v.runWithProgress(privescExec(ctx, sudoPassword, command), progressChan, PhaseSystemPackages, 0.30, 0.40); err != nil {
+			return fmt.Errorf("failed to run %s: %w", command, err)
+		}
+	}
+	return nil
+}
+
+func (v *VoidDistribution) RepoMoveCommands(moves []RepoMove) []string {
+	var commands []string
+	for _, command := range voidMoveCommands(moves) {
+		commands = append(commands, "sudo "+command)
+	}
+	return commands
+}
+
 func (v *VoidDistribution) packageVersion(pkg string) string {
 	output, err := exec.Command("xbps-query", "-p", "pkgver", pkg).Output()
 	if err != nil {
@@ -180,12 +310,13 @@ func (v *VoidDistribution) GetPackageMappingWithVariants(wm deps.WindowManager, 
 		"elogind":                {Name: "elogind", Repository: RepoTypeSystem},
 		"mesa-dri":               {Name: "mesa-dri", Repository: RepoTypeSystem},
 
-		"quickshell":              {Name: "quickshell", Repository: RepoTypeSystem},
-		"matugen":                 {Name: "matugen", Repository: RepoTypeSystem},
-		"dms (DankMaterialShell)": v.getDmsMapping(variants["dms (DankMaterialShell)"]),
-		"dms-greeter":             {Name: "dms-greeter", Repository: RepoTypeXBPS, RepoURL: VoidDMSRepo},
-		"danksearch":              {Name: "danksearch", Repository: RepoTypeXBPS, RepoURL: VoidDankLinuxRepo},
-		"dankcalendar":            {Name: "dankcalendar", Repository: RepoTypeXBPS, RepoURL: VoidDankLinuxRepo},
+		"quickshell":      {Name: "quickshell", Repository: RepoTypeSystem},
+		"matugen":         {Name: "matugen", Repository: RepoTypeSystem},
+		"dms (Dux Shell)": v.getDmsMapping(variants["dms (Dux Shell)"]),
+		"dux-greeter":     variantMapping("dux-greeter", variants["dux-greeter"], RepoTypeXBPS, VoidDepsRepo),
+		"dux-search":      {Name: "dux-search", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
+		"dux-calendar":    {Name: "dux-calendar", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
+		"dux-files":       {Name: "dux-files", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
 	}
 
 	switch wm {
@@ -251,7 +382,12 @@ func (v *VoidDistribution) InstallPackages(ctx context.Context, dependencies []d
 		return fmt.Errorf("failed to install prerequisites: %w", err)
 	}
 
-	systemPkgs, xbpsPkgs := v.categorizePackages(dependencies, wm, reinstallFlags, disabledFlags)
+	skipFlags, err := swapReinstalledVariants(ctx, v, dependencies, wm, reinstallFlags, disabledFlags, sudoPassword, progressChan)
+	if err != nil {
+		return err
+	}
+
+	systemPkgs, xbpsPkgs := v.categorizePackages(dependencies, wm, reinstallFlags, skipFlags)
 
 	if len(xbpsPkgs) > 0 {
 		progressChan <- InstallProgressMsg{
@@ -479,8 +615,8 @@ func (v *VoidDistribution) xbpsRepoName(repoURL string) string {
 	switch repoURL {
 	case VoidDMSRepo:
 		return "dms"
-	case VoidDankLinuxRepo:
-		return "danklinux"
+	case VoidDepsRepo:
+		return "dux"
 	case VoidHyprlandRepo:
 		return "hyprland"
 	default:

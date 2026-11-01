@@ -22,7 +22,7 @@ DPopout {
         triggerScreen = screen;
         root.screen = screen;
 
-        storedBarThickness = barThickness !== undefined ? barThickness : Theme.barThickness(SettingsData.getPrimaryBarConfig()?.innerPadding ?? 2, 1);
+        storedBarThickness = barThickness !== undefined ? barThickness : Theme.barThickness(SettingsData.getPrimaryBarConfig()?.innerPadding ?? SettingsData.barInnerPaddingDefault, 1);
         storedBarSpacing = barSpacing !== undefined ? barSpacing : 4;
         storedBarConfig = barConfig;
 

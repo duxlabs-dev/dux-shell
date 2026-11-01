@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"maps"
 	"sync"
+	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
 	"github.com/Wifx/gonetworkmanager/v2"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -67,9 +68,8 @@ type NetworkManagerBackend struct {
 	wifiDev         any
 	wifiDevices     map[string]*wifiDeviceInfo
 
-	// devMutex guards ethernetDevices/wifiDevices/cellularDevices (written by the signal pump,
-	// read by request handlers). Not reentrant — never hold it across calls
-	// into other backend methods.
+	// devMutex guards the device maps and selected Wi-Fi device pointers.
+	// Not reentrant: never hold it across calls into other backend methods.
 	devMutex sync.RWMutex
 
 	// modems holds ModemManager radio metrics keyed by modem object path.
@@ -80,6 +80,10 @@ type NetworkManagerBackend struct {
 	signals  chan *dbus.Signal
 	sigWG    sync.WaitGroup
 	stopChan chan struct{}
+
+	wifiRefreshTimer *time.Timer
+	wifiRefreshMu    sync.Mutex
+	wifiRefreshWG    sync.WaitGroup
 
 	secretAgent  *SecretAgent
 	promptBroker PromptBroker
@@ -274,11 +278,6 @@ func (b *NetworkManagerBackend) Initialize() error {
 				name:      iface,
 				hwAddress: hwAddr,
 			})
-
-			if b.wifiDevice == nil {
-				b.wifiDevice = dev
-				b.wifiDev = w
-			}
 		}
 	}
 
@@ -388,8 +387,29 @@ func (b *NetworkManagerBackend) setEthernetDeviceInfo(iface string, info *ethern
 
 func (b *NetworkManagerBackend) setWifiDeviceInfo(iface string, info *wifiDeviceInfo) {
 	b.devMutex.Lock()
+	defer b.devMutex.Unlock()
+	previous := b.wifiDevices[iface]
+	if b.dbusConn != nil && (previous == nil || previous.device.GetPath() != info.device.GetPath()) {
+		if err := b.dbusConn.AddMatchSignal(
+			dbus.WithMatchObjectPath(info.device.GetPath()),
+			dbus.WithMatchInterface(dbusPropsInterface),
+			dbus.WithMatchMember("PropertiesChanged"),
+		); err != nil {
+			log.Warnf("Failed to watch WiFi device: %v", err)
+			return
+		}
+		if previous != nil {
+			b.dbusConn.RemoveMatchSignal(
+				dbus.WithMatchObjectPath(previous.device.GetPath()),
+				dbus.WithMatchInterface(dbusPropsInterface),
+				dbus.WithMatchMember("PropertiesChanged"),
+			)
+		}
+	}
 	b.wifiDevices[iface] = info
-	b.devMutex.Unlock()
+	if b.wifiDevice == nil || (previous != nil && b.wifiDevice.(gonetworkmanager.Device).GetPath() == previous.device.GetPath()) {
+		b.wifiDevice, b.wifiDev = info.device, info.wireless
+	}
 }
 
 func (b *NetworkManagerBackend) setCellularDeviceInfo(iface string, info *cellularDeviceInfo) {
@@ -422,7 +442,21 @@ func (b *NetworkManagerBackend) removeWifiDeviceByPath(path dbus.ObjectPath) (re
 		if info.device.GetPath() != path {
 			continue
 		}
+		if b.dbusConn != nil {
+			b.dbusConn.RemoveMatchSignal(
+				dbus.WithMatchObjectPath(path),
+				dbus.WithMatchInterface(dbusPropsInterface),
+				dbus.WithMatchMember("PropertiesChanged"),
+			)
+		}
 		delete(b.wifiDevices, iface)
+		if b.wifiDevice != nil && b.wifiDevice.(gonetworkmanager.Device).GetPath() == path {
+			b.wifiDevice, b.wifiDev = nil, nil
+			for _, replacement := range b.wifiDevices {
+				b.wifiDevice, b.wifiDev = replacement.device, replacement.wireless
+				break
+			}
+		}
 		remaining = make(map[string]*wifiDeviceInfo, len(b.wifiDevices))
 		maps.Copy(remaining, b.wifiDevices)
 		return info, remaining, true
@@ -631,22 +665,122 @@ func (b *NetworkManagerBackend) clearCachedWiFiSecretBySSID(ssid string) {
 	}
 }
 
-func (b *NetworkManagerBackend) ensureWiFiDevice() error {
+func (b *NetworkManagerBackend) selectedWiFiDevice() (gonetworkmanager.Device, gonetworkmanager.DeviceWireless) {
+	b.devMutex.RLock()
+	defer b.devMutex.RUnlock()
+	dev, _ := b.wifiDevice.(gonetworkmanager.Device)
+	wireless, _ := b.wifiDev.(gonetworkmanager.DeviceWireless)
+	return dev, wireless
+}
+
+func (b *NetworkManagerBackend) ensureWiFiDevice() (gonetworkmanager.DeviceWireless, error) {
+	b.devMutex.Lock()
+	defer b.devMutex.Unlock()
 	if b.wifiDev != nil {
-		return nil
+		return b.wifiDev.(gonetworkmanager.DeviceWireless), nil
 	}
 
 	if b.wifiDevice == nil {
-		return fmt.Errorf("no WiFi device available")
+		return nil, fmt.Errorf("no WiFi device available")
 	}
 
 	dev := b.wifiDevice.(gonetworkmanager.Device)
 	wifiDev, err := gonetworkmanager.NewDeviceWireless(dev.GetPath())
 	if err != nil {
-		return fmt.Errorf("failed to get wireless device: %w", err)
+		return nil, fmt.Errorf("failed to get wireless device: %w", err)
 	}
 	b.wifiDev = wifiDev
-	return nil
+	return wifiDev, nil
+}
+
+func (b *NetworkManagerBackend) refreshWiFiDevices() (bool, error) {
+	// Serialize discovery with hotplug handlers so an older snapshot cannot
+	// overwrite an addition or removal that has already been handled.
+	b.devMutex.Lock()
+	defer b.devMutex.Unlock()
+
+	devices, err := b.nmConn.(gonetworkmanager.NetworkManager).GetDevices()
+	if err != nil {
+		return false, fmt.Errorf("failed to get devices: %w", err)
+	}
+
+	previousPaths := make(map[dbus.ObjectPath]bool, len(b.wifiDevices))
+	for _, info := range b.wifiDevices {
+		previousPaths[info.device.GetPath()] = true
+	}
+	var selectedPath dbus.ObjectPath
+	if b.wifiDevice != nil {
+		selectedPath = b.wifiDevice.(gonetworkmanager.Device).GetPath()
+	}
+
+	wifiDevices := make(map[string]*wifiDeviceInfo)
+	var selected *wifiDeviceInfo
+	for _, dev := range devices {
+		// GetDevices uses DeviceFactory, which returns DeviceWireless for Wi-Fi.
+		wireless, ok := dev.(gonetworkmanager.DeviceWireless)
+		if !ok {
+			continue
+		}
+		iface, err := dev.GetPropertyInterface()
+		if err != nil {
+			return false, fmt.Errorf("failed to get WiFi interface: %w", err)
+		}
+		hwAddress, _ := wireless.GetPropertyHwAddress()
+		info := &wifiDeviceInfo{device: dev, wireless: wireless, name: iface, hwAddress: hwAddress}
+		wifiDevices[iface] = info
+		path := dev.GetPath()
+		if selected == nil || path == selectedPath {
+			selected = info
+		}
+	}
+
+	changed := len(wifiDevices) != len(b.wifiDevices)
+	for name, info := range wifiDevices {
+		previous := b.wifiDevices[name]
+		if previous == nil || previous.device.GetPath() != info.device.GetPath() {
+			changed = true
+		}
+	}
+
+	if b.dbusConn != nil {
+		var addedPaths []dbus.ObjectPath
+		for _, info := range wifiDevices {
+			path := info.device.GetPath()
+			if previousPaths[path] {
+				delete(previousPaths, path)
+				continue
+			}
+			if err := b.dbusConn.AddMatchSignal(
+				dbus.WithMatchObjectPath(path),
+				dbus.WithMatchInterface(dbusPropsInterface),
+				dbus.WithMatchMember("PropertiesChanged"),
+			); err != nil {
+				for _, added := range addedPaths {
+					b.dbusConn.RemoveMatchSignal(
+						dbus.WithMatchObjectPath(added),
+						dbus.WithMatchInterface(dbusPropsInterface),
+						dbus.WithMatchMember("PropertiesChanged"),
+					)
+				}
+				return false, fmt.Errorf("failed to watch WiFi device: %w", err)
+			}
+			addedPaths = append(addedPaths, path)
+		}
+		for path := range previousPaths {
+			b.dbusConn.RemoveMatchSignal(
+				dbus.WithMatchObjectPath(path),
+				dbus.WithMatchInterface(dbusPropsInterface),
+				dbus.WithMatchMember("PropertiesChanged"),
+			)
+		}
+	}
+
+	b.wifiDevices = wifiDevices
+	b.wifiDevice, b.wifiDev = nil, nil
+	if selected != nil {
+		b.wifiDevice, b.wifiDev = selected.device, selected.wireless
+	}
+	return changed, nil
 }
 
 func (b *NetworkManagerBackend) startSecretAgent() error {

@@ -1,3 +1,4 @@
 module qs.Common
 singleton SettingsData 1.0 SettingsData.qml
+singleton AdminPolicy 1.0 AdminPolicy.qml
 singleton Paths 1.0 Paths.qml

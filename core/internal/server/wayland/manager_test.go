@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"sync"
@@ -12,11 +13,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	wlclient "github.com/AvengeMedia/dankgo/wayland/client"
+	wlclient "github.com/duxlabs-dev/dux-go/wayland/client"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/icc"
-	mocks_wlclient "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/wlclient"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_gamma_control"
+	"github.com/duxlabs-dev/dux-shell/core/internal/icc"
+	mocks_wlclient "github.com/duxlabs-dev/dux-shell/core/internal/mocks/wlclient"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_gamma_control"
 )
 
 func TestManager_ActorSerializesOutputStateAccess(t *testing.T) {
@@ -909,4 +910,59 @@ func TestManager_RemovingAbsentProfileDoesNotForceResend(t *testing.T) {
 	drain()
 
 	assert.Equal(t, 4000, out.lastTemp, "removing a profile that was never attached must not clear the dedupe state")
+}
+
+func TestManager_SetOutputBrightnessClampsAndPersists(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+
+	m := &Manager{
+		config:   DefaultConfig(),
+		cmdq:     make(chan cmd, 8),
+		stopChan: make(chan struct{}),
+	}
+	m.wg.Add(1)
+	go m.waylandActor()
+	defer func() {
+		close(m.stopChan)
+		m.wg.Wait()
+	}()
+
+	tests := []struct {
+		percent int
+		want    map[string]int
+	}{
+		{0, map[string]int{"eDP-1": 0}},
+		{40, map[string]int{"eDP-1": 40}},
+		{150, nil},
+	}
+	for _, tt := range tests {
+		assert.NoError(t, m.SetOutputBrightness("eDP-1", tt.percent))
+		assert.True(t, maps.Equal(tt.want, m.GetOutputBrightness()), "percent %d", tt.percent)
+		assert.True(t, maps.Equal(tt.want, LoadConfig().OutputBrightness), "percent %d persisted", tt.percent)
+	}
+	assert.False(t, m.needsControls(), "full brightness must release the gamma controls")
+}
+
+// A control that fails before gamma_size was refused by the compositor, so
+// software brightness cannot use the output; a failure after it worked is a
+// lost control that the retry path recovers.
+func TestOutputState_MarkFailedDetectsRefusal(t *testing.T) {
+	tests := []struct {
+		name     string
+		rampSize uint32
+		refused  bool
+	}{
+		{"failed before gamma_size", 0, true},
+		{"failed after gamma_size", 256, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := &outputState{rampSize: tt.rampSize, retryCount: 1}
+			out.markFailed(time.Now())
+			assert.Equal(t, tt.refused, out.gammaRefused)
+			assert.True(t, out.failed)
+			assert.Zero(t, out.rampSize)
+			assert.Equal(t, 2, out.retryCount)
+		})
+	}
 }

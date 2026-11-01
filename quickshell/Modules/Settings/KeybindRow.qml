@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
+import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
@@ -23,13 +24,14 @@ SettingsRow {
             return I18n.tr("Override", "noun, badge on a keybind that overrides the default", true);
         return "";
     }
+    readonly property string releaseText: bindData.releaseAction ? I18n.tr("Release", "noun, hyprland bind flag toggle, trigger on key release") + ": " + (KeybindsService.getActionLabel(bindData.releaseAction) || bindData.releaseAction) : ""
 
     signal editRequested(int keyIndex)
     signal removeRequested(string key)
 
     title: bindData.desc || bindData.action || I18n.tr("No action")
     singleLineTitle: true
-    subtitle: [bindData.category || "", statusText].filter(part => part !== "").join(" · ")
+    subtitle: [bindData.category || "", releaseText, statusText].filter(part => part !== "").join(" · ")
     subtitleColor: hasConfigConflict ? Theme.primary : Theme.surfaceVariantText
     topRadius: firstInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
     bottomRadius: lastInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
@@ -50,6 +52,17 @@ SettingsRow {
 
                 anchors.right: parent?.right
                 spacing: Theme.spacingS
+
+                Loader {
+                    active: keyLine.modelData.trigger === "release"
+                    visible: active
+                    anchors.verticalCenter: parent.verticalCenter
+                    sourceComponent: DBadge {
+                        text: I18n.tr("Release", "noun, hyprland bind flag toggle, trigger on key release")
+                        color: Theme.primaryHover
+                        textColor: Theme.primary
+                    }
+                }
 
                 DKeycap {
                     text: keyLine.modelData.key

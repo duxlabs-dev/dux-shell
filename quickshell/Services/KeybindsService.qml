@@ -58,9 +58,7 @@ Singleton {
             "bindsAfterDms": 0,
             "effective": true,
             "overriddenBy": 0,
-            "statusMessage": "",
-            "configFormat": "",
-            "readOnly": false
+            "statusMessage": ""
         })
 
     // What the active layout puts on the first level of every physical key,
@@ -112,7 +110,8 @@ Singleton {
     readonly property var includePaths: ConfigIncludeResolve.includePaths("binds", includeCompositor, includeCompositor === "mango" ? MangoService.configDir : configDir)
     readonly property string dmsBindsPath: includePaths?.fragmentFiles[0] ?? ""
     readonly property string mainConfigPath: includePaths?.configFile ?? ""
-    readonly property bool readOnly: currentProvider === "hyprland" && dmsStatus.readOnly === true
+    readonly property bool readOnly: currentProvider === "hyprland" && CompositorService.isHyprland && !HyprlandService.luaConfigActive
+    readonly property bool niriBindsNext: currentProvider === "niri" && DMSService.capabilities.includes("niri.binds-next")
     readonly property var actionTypes: Actions.getActionTypes()
     readonly property var dmsActions: getDmsActions()
 
@@ -357,14 +356,14 @@ Singleton {
         loadBinds(true);
     }
 
-    function loadCheatsheet(provider) {
+    function loadCheatsheet(provider, path) {
         if (cheatsheetProcess.running)
             return;
         const target = provider || cheatsheetProvider;
         if (!target)
             return;
         cheatsheetLoading = true;
-        cheatsheetProcess.command = ["dms", "keybinds", "show", target];
+        cheatsheetProcess.command = path ? ["dms", "keybinds", "show", target, "--path", path] : ["dms", "keybinds", "show", target];
         cheatsheetProcess.running = true;
     }
 
@@ -380,7 +379,7 @@ Singleton {
         // Mouse-drag dispatchers do nothing without a pointer, and exit would end the session.
         if (provider === "hyprland" && (action.trim() === "movewindow" || action.trim() === "resizewindow" || base === "exit"))
             return false;
-        if (provider === "hyprland" && !luaAction && HyprlandService.luaConfigActive)
+        if (provider === "hyprland" && (!luaAction || !HyprlandService.luaConfigActive))
             return false;
         return provider === "niri" || provider === "hyprland" || provider === "mangowc";
     }
@@ -434,12 +433,7 @@ Singleton {
             return true;
         }
         if (provider === "hyprland") {
-            if (!HyprlandService.luaConfigActive) {
-                Quickshell.execDetached(["sh", "-c", "hyprctl dispatch " + action]);
-                return true;
-            }
-            // Lua-config Hyprland rejects legacy dispatcher text as a syntax error.
-            if (!luaAction)
+            if (!luaAction || !HyprlandService.luaConfigActive)
                 return false;
             Quickshell.execDetached(["hyprctl", "dispatch", luaAction]);
             return true;
@@ -785,9 +779,7 @@ Singleton {
                 "bindsAfterDms": status.bindsAfterDms ?? 0,
                 "effective": status.effective ?? true,
                 "overriddenBy": status.overriddenBy ?? 0,
-                "statusMessage": status.statusMessage ?? "",
-                "configFormat": status.configFormat ?? "",
-                "readOnly": status.readOnly === true
+                "statusMessage": status.statusMessage ?? ""
             };
         }
         _maybeWarnHyprlandLegacyConf();
@@ -849,23 +841,30 @@ Singleton {
                     "flags": bind.flags || "",
                     "allowWhenLocked": bind.allowWhenLocked || false,
                     "allowInhibiting": bind.allowInhibiting,
-                    "repeat": bind.repeat
+                    "repeat": bind.repeat,
+                    "trigger": bind.trigger === "press" ? "" : (bind.trigger || ""),
+                    "releaseAction": bind.releaseAction || "",
+                    "passThrough": bind.passThrough
                 };
-                if (actionMap[action]) {
-                    actionMap[action].keys.push(keyData);
-                    if (!actionMap[action].desc && bind.desc)
-                        actionMap[action].desc = bind.desc;
-                    if (!actionMap[action].conflict && bind.conflict)
-                        actionMap[action].conflict = bind.conflict;
+                const releaseAction = keyData.trigger === "both" ? keyData.releaseAction : "";
+                const groupKey = releaseAction ? action + "\n" + releaseAction : action;
+                const existing = actionMap[groupKey];
+                if (existing) {
+                    existing.keys.push(keyData);
+                    if (!existing.desc && bind.desc)
+                        existing.desc = bind.desc;
+                    if (!existing.conflict && bind.conflict)
+                        existing.conflict = bind.conflict;
                 } else {
                     const entry = {
                         "category": category,
                         "action": action,
+                        "releaseAction": releaseAction,
                         "desc": bind.desc || "",
                         "keys": [keyData],
                         "conflict": bind.conflict || null
                     };
-                    actionMap[action] = entry;
+                    actionMap[groupKey] = entry;
                     grouped.push(entry);
                 }
             }
@@ -954,6 +953,14 @@ Singleton {
             cmd.push("--no-inhibiting");
         if (bindData.flags)
             cmd.push("--flags", bindData.flags);
+        // --replace-key drops the old bind before core can keep its trigger, so the editor always sends it
+        if (currentProvider === "niri" && typeof bindData.trigger === "string") {
+            cmd.push("--trigger", bindData.trigger || "press");
+            if (bindData.trigger === "both")
+                cmd.push("--release-action", bindData.releaseAction || "");
+            if (typeof bindData.passThrough === "boolean")
+                cmd.push("--pass-through=" + bindData.passThrough);
+        }
         saveProcess.command = cmd;
         saveProcess.provider = currentProvider;
         saveProcess.savedKey = bindData.key;
@@ -965,7 +972,7 @@ Singleton {
     function _maybeWarnHyprlandLegacyConf() {
         if (_hyprlandLegacyWarnShown)
             return;
-        if (currentProvider !== "hyprland")
+        if (currentProvider !== "hyprland" || !HyprlandService.luaConfigStatusReady)
             return;
         if (readOnly) {
             _hyprlandLegacyWarnShown = true;
@@ -979,7 +986,7 @@ Singleton {
     }
 
     function showHyprlandReadOnlyWarning() {
-        ToastService.showWarning(I18n.tr("Hyprland conf mode"), I18n.tr("This install is still using hyprland.conf. Run dms setup to migrate before changing these settings."), "dms setup", "hyprland-migration");
+        ToastService.showWarning(I18n.tr("%1 not found").arg("hyprland.lua"), I18n.tr("Run %1 to create it before changing these settings.", "hyprland.lua missing warning, %1 is a command").arg("dms setup"), "dms setup", "hyprland-migration");
     }
 
     function removeBind(key, draft, callback) {
@@ -1051,6 +1058,9 @@ Singleton {
     }
 
     function getDmsActions() {
-        return Actions.getDmsActions(CompositorService.isNiri, CompositorService.isHyprland);
+        const actions = Actions.getDmsActions(CompositorService.isNiri, CompositorService.isHyprland);
+        if (!AdminPolicy.disableLockIpcUnlock)
+            return actions;
+        return actions.filter(action => action.id !== "spawn dms ipc call lock demo");
     }
 }

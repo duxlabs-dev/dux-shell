@@ -22,11 +22,15 @@ FocusScope {
     readonly property var tab: tabLoader.item
     readonly property real tabHeight: tab?.implicitHeight ?? 0
     readonly property real contentHeight: DashMetrics.panelHeightFor(entryId, tabHeight)
-    readonly property bool handleHeader: !root.editMode
+    readonly property bool tabsShown: root.controller.dashTabsShownFor(root.activityId)
+    readonly property real chromeHeight: DashMetrics.islandChromeHeight(tabsShown ? (tabBarLoader.item?.implicitHeight ?? Theme.navigationHeight) : 0)
+    readonly property bool handleHeader: !root.editMode && !root.tabsShown
     readonly property real pillOverhang: editMode ? DashMetrics.islandPillOverhang : 0
     readonly property int panelColumns: DashMetrics.panelColumnsFor(entryId)
     readonly property int contentRows: DashMetrics.rowsForHeight(tabHeight)
     readonly property int panelRows: Math.max(DashMetrics.panelFloorRowsFor(entryId), contentRows)
+
+    signal windowRequested(string windowName)
 
     readonly property QtObject resizeHost: QtObject {
         readonly property real renderedAlignedX: root.resizeGeometry?.renderedX ?? 0
@@ -68,29 +72,29 @@ FocusScope {
     clip: true
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
-    KeyNavigation.tab: !root.editMode && !tabOptions.shown && !pageActions.menuOpen ? root.tab?.focusTarget ?? null : null
 
     function focusFace() {
         pageActions.clearFocus();
-        const target = root.tab?.focusTarget ?? root;
-        if (typeof target.requestFocus === "function") {
-            target.requestFocus(false, Qt.OtherFocusReason);
+        sheetHandle.focusTarget.focus = false;
+        if (tabBarLoader.item)
+            tabBarLoader.item.focus = false;
+        tabLoader.focus = false;
+        if (root.controller.dashNavigationFocused && tabBarLoader.item && !root.editMode) {
+            tabBarLoader.item.forceActiveFocus(Qt.OtherFocusReason);
             return true;
         }
-        target.forceActiveFocus(Qt.OtherFocusReason);
+        root.forceActiveFocus(Qt.OtherFocusReason);
+        if (!root.editMode)
+            root.tab?.restoreFocus?.();
         return true;
     }
 
-    function focusHeader(backwards) {
-        const targets = root.editMode ? pageActions.focusTargets : [sheetHandle.focusTarget];
-        targets[backwards ? targets.length - 1 : 0]?.forceActiveFocus(backwards ? Qt.BacktabFocusReason : Qt.TabFocusReason);
-    }
-
     function reportHeight() {
-        root.controller.setDashboardContentHeight(root.activityId, root.contentHeight + DashMetrics.islandHandleChromeHeight);
+        root.controller.setDashboardContentHeight(root.activityId, root.contentHeight + root.chromeHeight);
     }
 
     onContentHeightChanged: reportHeight()
+    onChromeHeightChanged: reportHeight()
     onLiveChanged: {
         if (live)
             return;
@@ -98,44 +102,41 @@ FocusScope {
         pageActions.closeMenu();
         tabOptions.dismiss();
     }
+    // A switched-to face stays disabled until its fade is halfway, so take focus then.
+    onEnabledChanged: {
+        if (enabled && live && root.controller.keyboardDismissRequested && !activeFocus)
+            focusFace();
+    }
     onEditModeChanged: {
-        root.controller.setEditing(root.activityId, editMode, DashMetrics.islandEditRoom);
-        if (!editMode) {
+        root.controller.setEditing(root.activityId, editMode, Math.max(0, DashMetrics.islandEditChromeHeight - root.chromeHeight));
+        if (!editMode)
             panelResizer.cancel();
-            return;
-        }
         Qt.callLater(() => {
-            if (!root.live || !root.editMode)
-                return;
-            pageActions.clearFocus();
-            sheetHandle.focusTarget.focus = false;
-            tabLoader.focus = false;
-            root.forceActiveFocus(Qt.OtherFocusReason);
+            if (root.live)
+                root.focusFace();
         });
     }
 
-    Keys.onPressed: event => {
-        if (tabOptions.shown || pageActions.menuOpen)
-            return;
-        if (root.editMode && (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab)) {
-            root.focusHeader(event.key === Qt.Key_Backtab || !!(event.modifiers & Qt.ShiftModifier));
-            event.accepted = true;
-            return;
-        }
-        if (root.tab?.handleKeyEvent?.(event) === true) {
-            event.accepted = true;
-            return;
-        }
-        if (!root.editMode && (event.key === Qt.Key_F2 || (event.key === Qt.Key_E && (event.modifiers & Qt.ControlModifier)))) {
-            root.editMode = true;
-            event.accepted = true;
-            return;
-        }
-        if (event.key !== Qt.Key_Escape || !root.editMode)
-            return;
-        root.editMode = false;
-        root.focusFace();
-        event.accepted = true;
+    Keys.onPressed: event => event.accepted = keyboard.handleKeyEvent(event)
+
+    DashKeyboard {
+        id: keyboard
+
+        active: root.live
+        editable: root.entryId !== ""
+        editMode: root.editMode
+        optionsShown: tabOptions.shown
+        menuOpen: pageActions.menuOpen
+        tabItem: root.tab
+        contentScope: tabLoader
+        contentTarget: root.tab?.focusTarget ?? null
+        headerTargets: root.editMode ? pageActions.focusTargets : [tabBarLoader.item, sheetHandle.focusTarget]
+        tabsShown: root.tabsShown
+        onTabCycleRequested: direction => root.controller.cycleDashTab(direction, tabBarLoader.item?.activeFocus ?? false)
+        onEditModeRequested: on => root.editMode = on
+        onLeaveRequested: root.focusFace()
+        onOptionsDismissRequested: tabOptions.dismiss()
+        onCloseRequested: root.controller.requestCollapse()
     }
 
     Item {
@@ -145,11 +146,40 @@ FocusScope {
             top: parent.top
             left: parent.left
             right: parent.right
-            topMargin: root.editMode ? DashMetrics.islandEditHeaderInset : 0
+            topMargin: root.editMode ? DashMetrics.islandEditHeaderInset : root.tabsShown ? DashMetrics.contentPadding : 0
             leftMargin: DashMetrics.contentPadding
             rightMargin: DashMetrics.contentPadding
         }
-        height: root.handleHeader ? DashMetrics.islandHandleHeight : DashMetrics.editHeaderHeight
+        height: root.editMode ? DashMetrics.editHeaderHeight : root.tabsShown ? (tabBarLoader.item?.implicitHeight ?? Theme.navigationHeight) : DashMetrics.islandHandleHeight
+
+        Loader {
+            id: tabBarLoader
+            anchors.fill: parent
+            active: root.tabsShown
+            visible: !root.editMode
+
+            sourceComponent: DNavigationBar {
+                id: tabBar
+
+                editable: true
+                evenlySpaced: SettingsData.dashTabsEvenlySpaced
+                currentIndex: root.controller.dashTabIds.indexOf(root.entryId)
+                nextFocusTarget: root.tab?.focusTarget ?? null
+                previousFocusTarget: root.tab?.focusTarget ?? null
+                model: root.controller.dashTabBarModel
+                onEditRequested: root.editMode = true
+                onActivated: index => {
+                    const id = root.controller.dashTabIds[index];
+                    if (id === undefined || id === root.entryId)
+                        return;
+                    if (DashRegistry.isAction(id)) {
+                        root.windowRequested(id);
+                        return;
+                    }
+                    root.controller.requestDashTab(id, tabBar.activeFocus);
+                }
+            }
+        }
 
         DashSheetHandle {
             id: sheetHandle
@@ -172,10 +202,7 @@ FocusScope {
             editMode: root.editMode
             panelResizable: true
             onOptionsRequested: tabOptions.presentFor(root.entryId)
-            onFinished: {
-                root.editMode = false;
-                root.focusFace();
-            }
+            onFinished: root.editMode = false
         }
     }
 
@@ -185,7 +212,7 @@ FocusScope {
         showScrollBar: false
         anchors {
             top: header.bottom
-            topMargin: root.editMode ? DashMetrics.contentPadding : 0
+            topMargin: root.editMode ? DashMetrics.contentPadding : root.tabsShown ? DashMetrics.contentGap : 0
             left: parent.left
             right: parent.right
             bottom: parent.bottom
@@ -205,6 +232,10 @@ FocusScope {
             asynchronous: true
             visible: status === Loader.Ready
             sourceComponent: root.tabComponent
+            onActiveFocusChanged: {
+                if (activeFocus)
+                    root.controller.dashNavigationFocused = false;
+            }
             onLoaded: {
                 root.reportHeight();
                 if (root.live)
@@ -217,7 +248,7 @@ FocusScope {
         target: root.tab
         ignoreUnknownSignals: true
         function onNavFocusRequested(backwards) {
-            root.focusHeader(backwards);
+            keyboard.focusHeader(backwards);
         }
     }
 

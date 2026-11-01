@@ -1357,7 +1357,7 @@ Singleton {
     function hotspotErrorMessage(code) {
         switch (code) {
         case "hotspot-ip-config-failed":
-            return I18n.tr("IP sharing setup failed. Check that dnsmasq is installed.", "hotspot IP configuration failure message");
+            return I18n.tr("IP sharing setup failed. Check that %1 is installed.", "hotspot IP configuration failure message, %1 is a package name").arg("dnsmasq");
         case "hotspot-supplicant-failed":
             return I18n.tr("The WiFi adapter could not start access point mode.", "hotspot adapter failure message");
         default:

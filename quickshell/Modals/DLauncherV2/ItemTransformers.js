@@ -215,7 +215,7 @@ function transformClipboardItem(entry, copyLabel, pasteLabel, primaryLabel, imag
     };
 }
 
-function transformFileResult(file, openLabel, openFolderLabel, copyPathLabel, openTerminalLabel) {
+function transformFileResult(file, openLabel, openFolderLabel, copyPathLabel, openTerminalLabel, openWithLabel) {
     var filename = file.path ? file.path.split("/").pop() : "";
     var dirname = file.path ? file.path.substring(0, file.path.lastIndexOf("/")) : "";
     var isDir = file.is_dir || false;
@@ -240,6 +240,10 @@ function transformFileResult(file, openLabel, openFolderLabel, copyPathLabel, op
         name: copyPathLabel,
         icon: "content_copy",
         action: "copy_path"
+    }, {
+        name: openWithLabel,
+        icon: "apps",
+        action: "open_with"
     });
 
     return {

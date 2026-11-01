@@ -49,7 +49,7 @@ BasePill {
         if (barThickness > 0 && barSpacing > 0) {
             return barThickness + barSpacing;
         }
-        return Theme.barThickness(barConfig?.innerPadding ?? 2, CompositorService.getScreenScale(parentScreen)) + (barConfig?.spacing ?? 4);
+        return Theme.barThickness(barConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault, CompositorService.getScreenScale(parentScreen)) + (barConfig?.spacing ?? 4);
     }
 
     readonly property var barBounds: {
@@ -312,7 +312,7 @@ BasePill {
                     asynchronous: true
                     visible: status === Image.Ready
                     opacity: delegateItem.isMinimized ? 0.4 : 1
-                    layer.enabled: appId === "org.quickshell" || appId === "com.danklinux.dms"
+                    layer.enabled: Paths.isDmsAppId(appId)
                     layer.smooth: true
                     layer.mipmap: true
                     layer.effect: MultiEffect {

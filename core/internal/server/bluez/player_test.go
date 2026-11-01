@@ -124,7 +124,7 @@ func TestPlayerTrackIDIsStableAndMetadataDependent(t *testing.T) {
 func TestStalePlayerPropertiesClearMetadataAndCapabilities(t *testing.T) {
 	old := PlayerSnapshot{
 		Enabled:        true,
-		Identity:       "DankMaterialShell",
+		Identity:       "Dux Shell",
 		PlaybackStatus: "Playing",
 		Title:          "Title",
 		Artist:         "Artist",
@@ -366,7 +366,7 @@ func TestPlayerCommandOwnerLossWithoutWaiterDisablesPlayer(t *testing.T) {
 	player := newMPRISPlayer(nil, nil)
 	player.snapshot = PlayerSnapshot{
 		Enabled:        true,
-		Identity:       "DankMaterialShell",
+		Identity:       "Dux Shell",
 		PlaybackStatus: "Playing",
 		Title:          "Title",
 		CanControl:     true,
@@ -388,7 +388,7 @@ func TestPlayerCommandOwnerLossClearsStaleStateAndPromotesWaiter(t *testing.T) {
 	player := newMPRISPlayer(nil, nil)
 	player.snapshot = PlayerSnapshot{
 		Enabled:        true,
-		Identity:       "DankMaterialShell",
+		Identity:       "Dux Shell",
 		PlaybackStatus: "Playing",
 		Title:          "Title",
 		Artist:         "Artist",
@@ -412,7 +412,7 @@ func TestPlayerCommandOwnerLossClearsStaleStateAndPromotesWaiter(t *testing.T) {
 	manager.UnsubscribePlayerCommands("owner")
 	assert.Equal(t, PlayerSnapshot{
 		Enabled:        true,
-		Identity:       "DankMaterialShell",
+		Identity:       "Dux Shell",
 		PlaybackStatus: "Stopped",
 	}, player.currentSnapshot())
 	waiterLease := (<-waiter).Lease

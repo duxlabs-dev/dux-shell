@@ -1,6 +1,6 @@
-# DankMaterialShell Translations
+# Dux Shell Translations
 
-This directory contains translation files for DankMaterialShell extracted from all qsTr() calls in the QML codebase.
+This directory contains translation files for Dux Shell extracted from all qsTr() calls in the QML codebase.
 
 ## Files
 

@@ -16,7 +16,7 @@ Singleton {
     readonly property int largeFileBytes: 5 * 1024 * 1024
     property var approvedLargeFiles: ({})
 
-    readonly property string baseDir: Paths.strip(StandardPaths.writableLocation(StandardPaths.GenericStateLocation) + "/DankMaterialShell")
+    readonly property string baseDir: Paths.strip(StandardPaths.writableLocation(StandardPaths.GenericStateLocation) + "/dms")
     readonly property string filesDir: baseDir + "/notepad-files"
     readonly property string metadataPath: baseDir + "/notepad-session.json"
 

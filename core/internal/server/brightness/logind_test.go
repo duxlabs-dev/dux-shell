@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	mocks_brightness "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/brightness"
-	mock_dbus "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/github.com/godbus/dbus/v5"
+	mocks_brightness "github.com/duxlabs-dev/dux-shell/core/internal/mocks/brightness"
+	mock_dbus "github.com/duxlabs-dev/dux-shell/core/internal/mocks/github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5"
 	"github.com/stretchr/testify/mock"
 )

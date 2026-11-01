@@ -2,15 +2,17 @@ package wellbeing
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime/debug"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	bolt "go.etcd.io/bbolt"
+	berrors "go.etcd.io/bbolt/errors"
 )
 
 var (
@@ -20,7 +22,7 @@ var (
 )
 
 func DBPath() string {
-	return filepath.Join(utils.XDGStateHome(), "DankMaterialShell", "wellbeing", "db")
+	return filepath.Join(utils.XDGStateHome(), "dms", "wellbeing", "db")
 }
 
 func openDB(path string) (*bolt.DB, error) {
@@ -30,6 +32,9 @@ func openDB(path string) (*bolt.DB, error) {
 	db, err := tryOpenDB(path)
 	if err == nil {
 		return db, nil
+	}
+	if errors.Is(err, berrors.ErrTimeout) {
+		return nil, err
 	}
 	log.Errorf("Wellbeing db unreadable, starting over: %v", err)
 	corruptPath := path + ".corrupt"

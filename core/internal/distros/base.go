@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/config"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/netfetch"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/version"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/netfetch"
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/version"
 )
 
 const (
@@ -106,11 +106,68 @@ func (b *BaseDistribution) detectMatugen() deps.Dependency {
 }
 
 func (b *BaseDistribution) detectDanksearch() deps.Dependency {
-	return b.detectOptionalPackage("danksearch", "File indexing and search service", b.commandExists("dsearch") || b.commandExists("danksearch"))
+	return b.detectOptionalPackage("dux-search", "File indexing and search service", b.commandExists("dsearch") || b.commandExists("danksearch"))
 }
 
 func (b *BaseDistribution) detectDankCalendar() deps.Dependency {
-	return b.detectOptionalPackage("dankcalendar", "Calendar application", b.commandExists("dcal") || b.commandExists("dankcalendar"))
+	return b.detectOptionalPackage("dux-calendar", "Calendar application", b.commandExists("dcal") || b.commandExists("dankcalendar"))
+}
+
+func (b *BaseDistribution) detectDuxFiles() deps.Dependency {
+	return b.detectOptionalPackage("dux-files", "File manager", b.commandExists("dfiles"))
+}
+
+// renamedPackages maps distro packages to their pre-rename names. rpm -q, dpkg-query and xbps-query
+// ignore Provides, so hosts that have not upgraded since the rename only match the old name.
+var renamedPackages = map[string]string{
+	"dux-greeter":      "dms-greeter",
+	"dux-greeter-git":  "dms-greeter-git",
+	"dux-search":       "danksearch",
+	"dux-calendar":     "dankcalendar",
+	"dux-calendar-git": "dankcalendar-git",
+	"dux-gop":          "dgop",
+}
+
+func installedName(installed func(string) bool, pkg string) (string, bool) {
+	if installed(pkg) {
+		return pkg, true
+	}
+	if old, ok := renamedPackages[pkg]; ok && installed(old) {
+		return old, true
+	}
+	return "", false
+}
+
+func (b *BaseDistribution) detectGreeterPackage(installed func(string) bool) deps.Dependency {
+	_, gitInstalled := installedName(installed, "dux-greeter-git")
+	_, stableInstalled := installedName(installed, "dux-greeter")
+	dep := b.detectOptionalPackage("dux-greeter", "Dux Shell greetd greeter", gitInstalled || stableInstalled)
+	return withGitVariant(dep, gitInstalled)
+}
+
+func (b *BaseDistribution) detectCalendarPackage(installed func(string) bool) deps.Dependency {
+	_, gitInstalled := installedName(installed, "dux-calendar-git")
+	return withGitVariant(b.detectDankCalendar(), gitInstalled)
+}
+
+func (b *BaseDistribution) detectFilesPackage(installed func(string) bool) deps.Dependency {
+	return withGitVariant(b.detectDuxFiles(), installed("dux-files-git"))
+}
+
+func withGitVariant(dep deps.Dependency, gitInstalled bool) deps.Dependency {
+	dep.CanToggle = true
+	if gitInstalled {
+		dep.Variant = deps.VariantGit
+	}
+	return dep
+}
+
+// variantMapping is for packages whose git build is published as "<name>-git" in the same repo.
+func variantMapping(name string, variant deps.PackageVariant, repo RepositoryType, repoURL string) PackageMapping {
+	if variant == deps.VariantGit {
+		name += "-git"
+	}
+	return PackageMapping{Name: name, Repository: repo, RepoURL: repoURL}
 }
 
 func (b *BaseDistribution) detectDMS() deps.Dependency {
@@ -130,7 +187,7 @@ func (b *BaseDistribution) detectDMS() deps.Dependency {
 	}
 
 	dep := deps.Dependency{
-		Name:        "dms (DankMaterialShell)",
+		Name:        "dms (Dux Shell)",
 		Status:      status,
 		Description: "Desktop Management System configuration",
 		Required:    true,
@@ -486,7 +543,7 @@ func (b *BaseDistribution) runWithProgressStepTimeout(cmd *exec.Cmd, progressCha
 			progressChan <- InstallProgressMsg{
 				Phase:      phase,
 				Progress:   endProgress,
-				Step:       "Installation step complete",
+				Step:       stepMessage,
 				IsComplete: false,
 				LogOutput:  lastOutput,
 			}
@@ -525,7 +582,7 @@ func (b *BaseDistribution) runWithProgressStepTimeout(cmd *exec.Cmd, progressCha
 				progressChan <- InstallProgressMsg{
 					Phase:      phase,
 					Progress:   progress,
-					Step:       "Installing...",
+					Step:       stepMessage,
 					IsComplete: false,
 					LogOutput:  lastOutput,
 				}
@@ -584,18 +641,13 @@ TERMINAL=%s
 	return nil
 }
 
-func (b *BaseDistribution) EnableDMSService(ctx context.Context, wm deps.WindowManager) error {
-	switch wm {
-	case deps.WindowManagerNiri:
-		if err := exec.CommandContext(ctx, "systemctl", "--user", "add-wants", "niri.service", "dms").Run(); err != nil {
-			b.log("Warning: failed to add dms as a want for niri.service")
-		}
-	case deps.WindowManagerHyprland:
-		if err := exec.CommandContext(ctx, "systemctl", "--user", "add-wants", "hyprland-session.target", "dms").Run(); err != nil {
-			b.log("Warning: failed to add dms as a want for hyprland-session.target")
-		}
+func (b *BaseDistribution) EnableDMSService(_ context.Context, wm deps.WindowManager) error {
+	unit, err := config.EnableSession(wm)
+	if err != nil {
+		b.log(fmt.Sprintf("Warning: %v", err))
+		return nil
 	}
-
+	b.log("dms.service starts with " + unit)
 	return nil
 }
 
@@ -648,14 +700,14 @@ func (b *BaseDistribution) installDMSBinary(ctx context.Context, sudoPassword st
 	if err != nil {
 		return fmt.Errorf("failed to get user home directory: %w", err)
 	}
-	tmpDir := filepath.Join(homeDir, ".cache", "dankinstall", "manual-builds")
+	tmpDir := filepath.Join(homeDir, ".cache", "duxinstall", "manual-builds")
 	if err := os.MkdirAll(tmpDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
 	defer os.RemoveAll(tmpDir)
 
 	// Download the gzipped binary
-	downloadURL := fmt.Sprintf("https://github.com/AvengeMedia/DankMaterialShell/releases/download/%s/dms-cli-%s.gz", version, arch)
+	downloadURL := fmt.Sprintf("https://github.com/duxlabs-dev/dux-shell/releases/download/%s/dms-cli-%s.gz", version, arch)
 	gzPath := filepath.Join(tmpDir, "dms.gz")
 
 	if err := netfetch.ToFile(ctx, downloadURL, netfetch.Options{Timeout: 5 * time.Minute}, gzPath); err != nil {

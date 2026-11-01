@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/wayland/shm"
+	"github.com/duxlabs-dev/dux-shell/core/internal/wayland/shm"
 )
 
 type PixelFormat = shm.PixelFormat

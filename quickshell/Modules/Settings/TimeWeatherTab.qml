@@ -29,7 +29,8 @@ Item {
     }
 
     function _dayNames() {
-        return Array(7).fill(0).map((_, i) => new Date(Date.UTC(2026, 2, 1 + i, 0, 0, 0)).toLocaleDateString(I18n.locale(), "dddd")).map(d => d[0].toUpperCase() + d.slice(1));
+        // Local noon on Sunday 1 March 2026 onwards; a UTC midnight is the day before west of UTC.
+        return Array(7).fill(0).map((_, i) => new Date(2026, 2, 1 + i, 12, 0, 0).toLocaleDateString(I18n.locale(), "dddd")).map(d => d[0].toUpperCase() + d.slice(1));
     }
 
     SettingsPage {
@@ -384,7 +385,7 @@ Item {
                 settingKey: "calendarBackend"
                 text: I18n.tr("Calendar backend")
                 readonly property var _backendValues: ["auto", "khal", "dankcal"]
-                readonly property var _backendLabels: [I18n.tr("Auto", "calendar backend option"), I18n.tr("khal", "calendar backend option"), I18n.tr("DankCalendar", "calendar backend option")]
+                readonly property var _backendLabels: [I18n.tr("Auto", "calendar backend option"), I18n.tr("khal", "calendar backend option"), I18n.tr("Dux Calendar", "calendar backend option")]
                 options: _backendLabels
                 currentValue: _backendLabels[Math.max(0, _backendValues.indexOf(SettingsData.calendarBackend))]
                 onValueChanged: value => {

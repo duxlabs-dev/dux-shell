@@ -22,6 +22,7 @@ Item {
     readonly property bool hasSavedPosition: geometry.hasSavedPosition
     readonly property bool automaticPlacement: lockScreen && widgetType === "desktopClock" && (instanceData?.config?.autoPosition ?? true) && !hasSavedPosition
     readonly property bool dragging: editChrome.item?.dragging ?? false
+    readonly property real chromeOutset: editChrome.item?.chromeOutset ?? 0
     readonly property var stock: hostLayer.stockRect(widgetType, root)
     // Stock-placed lock widgets grow around their stock anchor; everything else keeps its top-left corner.
     readonly property bool keepsCornerOnResize: !lockScreen || hasSavedPosition
@@ -147,6 +148,16 @@ Item {
         sourceComponent: Item {
             readonly property bool interacting: dragArea.pressed || chrome.resizing
             readonly property bool dragging: dragArea.pressed
+            readonly property real chromeOutset: chrome.contentInset + Theme.spacingL
+
+            TapHandler {
+                acceptedButtons: Qt.RightButton
+                gesturePolicy: TapHandler.WithinBounds
+                onTapped: {
+                    root.forceActiveFocus();
+                    root.optionsRequested();
+                }
+            }
 
             MouseArea {
                 id: dragArea
@@ -188,11 +199,8 @@ Item {
                     geometry.clearDragOverrides();
                     root.snappedCenterX = false;
                     root.snappedCenterY = false;
-                    if (moved) {
+                    if (moved)
                         root.commitPosition(finalX, finalY);
-                        return;
-                    }
-                    root.optionsRequested();
                 }
 
                 onCanceled: {
@@ -210,7 +218,7 @@ Item {
                 property point startPos
 
                 anchors.fill: parent
-                anchors.margins: -contentInset - Theme.spacingL
+                anchors.margins: -parent.chromeOutset
                 visible: root.selected
                 cornerRadius: Theme.cornerRadius
                 dragging: dragArea.pressed
@@ -234,9 +242,9 @@ Item {
                     }
                     resizing = true;
                 }
-                onResizeMoved: (px, py) => {
+                onResizeMoved: (px, py, modifiers) => {
                     const current = chrome.mapToItem(root.hostLayer, px, py);
-                    const next = geometry.dragResizeTo(startWidth, startHeight, current.x - startPos.x, current.y - startPos.y);
+                    const next = geometry.dragResizeTo(startWidth, startHeight, current.x - startPos.x, current.y - startPos.y, !!(modifiers & Qt.ShiftModifier));
                     geometry.dragOverrideW = next.width;
                     geometry.dragOverrideH = next.height;
                 }

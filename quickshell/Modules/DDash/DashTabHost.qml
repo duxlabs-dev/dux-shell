@@ -66,9 +66,9 @@ FocusScope {
         if ("entryId" in target)
             target.entryId = root.entry?.id ?? "";
         if ("live" in target)
-            target.live = Qt.binding(() => root.isCurrent && root.presented);
+            target.live = Qt.binding(() => (root.isCurrent || root.animatingOut) && root.presented);
         if ("active" in target)
-            target.active = Qt.binding(() => root.isCurrent && root.presented);
+            target.active = Qt.binding(() => (root.isCurrent || root.animatingOut) && root.presented);
         if ("keyForwardTarget" in target)
             target.keyForwardTarget = root.keyForwardTarget;
         if ("contentViewport" in target)

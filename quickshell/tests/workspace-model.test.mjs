@@ -291,8 +291,23 @@ test("mango scroll targets, active tag and windows", () => {
     assert.deepEqual(plain(model.mangoActiveWorkspace(dp1, "DP-1")), { id: 2, idx: 3, name: "", output: "DP-1", active: true, placeholder: false });
     assert.equal(model.mangoActiveWorkspace(mango("available", "HDMI-A-1"), "HDMI-A-1").id, 0);
     assert.equal(model.mangoActiveWorkspace(mango("available", "DP-2"), "DP-2"), null);
-    assert.deepEqual(pick(model.mangoWindowsOnWorkspace(dp1.windows, { id: 2 }), "appId"), ["alacritty", "firefox"]);
-    assert.deepEqual(pick(model.mangoWindowsOnWorkspace(dp1.windows, { id: 1 }), "appId"), ["firefox"]);
+    assert.deepEqual(pick(model.mangoWindowsOnWorkspace(dp1.windows, { id: 2, output: "DP-1" }), "appId"), ["alacritty", "firefox"]);
+    assert.deepEqual(pick(model.mangoWindowsOnWorkspace(dp1.windows, { id: 1, output: "DP-1" }), "appId"), ["firefox"]);
+});
+
+test("mango workspace apps follow their output when windows share a tag", () => {
+    const windows = [
+        { appId: "app1", mangoMonitor: "DP-1", mangoTags: [1] },
+        { appId: "app2", mangoMonitor: "HDMI-A-1", mangoTags: [1] }
+    ];
+    const dp1 = model.mangoRecord(0, {}, "DP-1");
+    const hdmi = model.mangoRecord(0, {}, "HDMI-A-1");
+    assert.deepEqual(pick(model.mangoWindowsOnWorkspace(windows, dp1), "appId"), ["app1"]);
+    assert.deepEqual(pick(model.mangoWindowsOnWorkspace(windows, hdmi), "appId"), ["app2"]);
+
+    windows[0].mangoMonitor = "HDMI-A-1";
+    assert.deepEqual(pick(model.mangoWindowsOnWorkspace(windows, dp1), "appId"), []);
+    assert.deepEqual(pick(model.mangoWindowsOnWorkspace(windows, hdmi), "appId"), ["app1", "app2"]);
 });
 
 test("i3 lists order numbered before named and strip the number prefix", () => {

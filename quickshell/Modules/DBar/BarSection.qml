@@ -45,7 +45,8 @@ Item {
             entries.push({
                 size: wrapper?.preferredSize ?? 0,
                 min: wrapper?.minimumSize ?? 0,
-                mode: wrapper?.overflowMode ?? "bar"
+                mode: wrapper?.overflowMode ?? "bar",
+                priority: wrapper?.overflowPriority ?? 0
             });
         }
         return entries;
@@ -79,10 +80,26 @@ Item {
     property real overflowButtonPosition: 0
     property bool overflowWanted: false
     readonly property real overflowTriggerSize: widgetThickness
+    readonly property bool overflowBackground: {
+        root.entryRevision;
+        let barePills = 0;
+        for (let index = 0; index < (entryRepeater?.count ?? 0); index++) {
+            const wrapper = entryRepeater.itemAt(index);
+            const item = wrapper?.available ? wrapper.widgetItem : null;
+            if (!item || !("widgetBackground" in item))
+                continue;
+            if (item.widgetBackground)
+                return true;
+            barePills++;
+        }
+        return barePills === 0 && !noBackground;
+    }
     readonly property var inlineOrder: {
         const layout = inlineLayout();
         return layout.indices.filter((index, position) => layout.sizes[position] !== null);
     }
+    readonly property var leadingInlineItem: inlineItemAt(0)
+    readonly property var trailingInlineItem: inlineItemAt(inlineOrder.length - 1)
 
     signal layoutRequested
 
@@ -110,6 +127,16 @@ Item {
 
     function inlineLayout() {
         return OverflowLayout.section(inlineEntries, hiddenEntries.map(entry => entry.occurrenceOrder), widgetSpacing, overflowTriggerSize, overflowPosition);
+    }
+
+    function inlineItemAt(position) {
+        root.entryRevision;
+        const index = inlineOrder[position];
+        if (index === undefined)
+            return null;
+        if (index === -1)
+            return overflowButton;
+        return entryRepeater?.itemAt(index)?.widgetItem ?? null;
     }
 
     Item {

@@ -8,7 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/registries"
+	"github.com/duxlabs-dev/dux-shell/core/internal/gitssh"
+	"github.com/duxlabs-dev/dux-shell/core/internal/registries"
 	"github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/spf13/afero"
@@ -44,8 +45,9 @@ type realGitClient struct{}
 
 func (g *realGitClient) PlainClone(path string, url string) error {
 	_, err := git.PlainClone(path, &git.CloneOptions{
-		URL:      url,
-		Progress: os.Stdout,
+		URL:           url,
+		Progress:      os.Stdout,
+		ClientOptions: gitssh.ClientOptions(),
 	})
 	return err
 }
@@ -61,8 +63,8 @@ func (g *realGitClient) Pull(path string) error {
 		return err
 	}
 
-	err = worktree.Pull(&git.PullOptions{})
-	if err != nil && err.Error() != "already up-to-date" {
+	err = worktree.Pull(&git.PullOptions{ClientOptions: gitssh.ClientOptions()})
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return err
 	}
 
@@ -101,7 +103,7 @@ func (g *realGitClient) HasUpdates(path string) (bool, string, string, error) {
 		return false, "", "", err
 	}
 
-	refs, err := remote.List(&git.ListOptions{})
+	refs, err := remote.List(&git.ListOptions{ClientOptions: gitssh.ClientOptions()})
 	if err != nil {
 		return false, "", "", err
 	}
@@ -116,12 +118,30 @@ func (g *realGitClient) HasUpdates(path string) (bool, string, string, error) {
 		}
 	}
 
-	localHash := head.Hash().String()
+	localHash := head.Hash()
 	if remoteHead == "" {
-		return false, localHash, "", nil
+		return false, localHash.String(), "", nil
+	}
+	if localHash.String() == remoteHead {
+		return false, localHash.String(), remoteHead, nil
 	}
 
-	return localHash != remoteHead, localHash, remoteHead, nil
+	remoteCommit, err := repo.CommitObject(plumbing.NewHash(remoteHead))
+	if errors.Is(err, plumbing.ErrObjectNotFound) {
+		return true, localHash.String(), remoteHead, nil
+	}
+	if err != nil {
+		return false, "", "", err
+	}
+	headCommit, err := repo.CommitObject(localHash)
+	if err != nil {
+		return false, "", "", err
+	}
+	contained, err := remoteCommit.IsAncestor(headCommit)
+	if err != nil {
+		return false, "", "", err
+	}
+	return !contained, localHash.String(), remoteHead, nil
 }
 
 func (g *realGitClient) CurrentRevision(path string) (string, error) {
@@ -150,7 +170,7 @@ func (g *realGitClient) CheckoutRevision(path string, revision string) error {
 		if _, remoteErr := repo.Remote("origin"); remoteErr != nil {
 			return fmt.Errorf("revision %s is not available in repository: %w", revision, objectErr)
 		}
-		fetchErr := repo.Fetch(&git.FetchOptions{})
+		fetchErr := repo.Fetch(&git.FetchOptions{ClientOptions: gitssh.ClientOptions()})
 		if fetchErr != nil && fetchErr != git.NoErrAlreadyUpToDate {
 			return fmt.Errorf("failed to fetch locked revision: %w", fetchErr)
 		}
@@ -275,6 +295,12 @@ func (r *Registry) resetLegacyCache() {
 // declaration order (first occurrence of an ID wins). A failing registry is
 // reported in the joined error but does not block the others.
 func (r *Registry) Update() error {
+	unlock, err := registries.LockCache()
+	if err != nil {
+		return err
+	}
+	defer unlock()
+
 	r.resetLegacyCache()
 	r.plugins = []Plugin{}
 	seen := make(map[string]struct{})

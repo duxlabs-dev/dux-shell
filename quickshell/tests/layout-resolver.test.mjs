@@ -28,7 +28,8 @@ test("island metrics clamp each setting and a default reservation follows the pi
     assert.deepEqual(plain(resolver.islandMetrics({ islandCompactThickness: 60 }, islandDefaults)), { reserve: 64, compact: 60, gap: 4, thickness: 64 });
     assert.deepEqual(plain(resolver.islandMetrics({ islandReserveThickness: 500, islandCompactThickness: 1, islandOuterGap: -3 }, islandDefaults)), { reserve: 128, compact: 24, gap: 0, thickness: 128 });
     assert.equal(resolver.islandThickness({ islandReserveThickness: 30, islandCompactThickness: 60, islandOuterGap: 10 }, islandDefaults), 70);
-    assert.deepEqual(plain(resolver.islandMetrics({ islandOuterGap: 10, islandNotch: true }, islandDefaults)), { reserve: 40, compact: 38, gap: 0, thickness: 40 });
+    assert.deepEqual(plain(resolver.islandMetrics({ islandOuterGap: 10, islandNotch: true }, islandDefaults)), { reserve: 38, compact: 38, gap: 0, thickness: 40 });
+    assert.deepEqual(plain(resolver.islandMetrics({ islandCompactThickness: 32, islandNotch: true }, islandDefaults)), { reserve: 32, compact: 32, gap: 0, thickness: 40 });
 });
 
 test("an island set to reserve less than its pill paints the full pill but reserves only what was set", () => {
@@ -49,6 +50,9 @@ test("absent, empty, explicit and fallback assignments remain distinct", () => {
         assert.equal(covers({ screenPreferences: ["DP-2"] }), false);
         assert.equal(covers({ screenPreferences: [], showOnLastDisplay: true }), count === 1);
         assert.equal(covers({ screenPreferences: ["missing"], showOnLastDisplay: true }), count === 1);
+        assert.equal(covers({ hideOnLastDisplay: true }), count !== 1);
+        assert.equal(covers({ screenPreferences: ["DP-1"], hideOnLastDisplay: true }), count !== 1);
+        assert.equal(covers({ screenPreferences: [], showOnLastDisplay: true, hideOnLastDisplay: true }), false);
     }
 });
 
@@ -185,7 +189,7 @@ test("free islands and dots keep their key but leave every band, reservation and
     for (const options of [{}, { effectiveFrameEnabled: true }, { effectiveFrameEnabled: true, effectiveConnected: true }]) {
         const layout = resolve(configs, options);
         const dot = layout.instances.find(instance => instance.barId === "dot");
-        assert.deepEqual(plain({ ...dot, paintedBounds: undefined, margins: undefined }), { key: JSON.stringify(["DP-1", "dot"]), screenName: "DP-1", barId: "dot", configOrder: 1, edge: "", kind: "island", free: true, dot: true, hostsIsland: true, satelliteEdge: "", row: 0, rowThickness: 0, rowOffset: 0, reservation: 0, exclusiveZone: -1, exclusionSize: 0 });
+        assert.deepEqual(plain({ ...dot, paintedBounds: undefined, margins: undefined }), { key: JSON.stringify(["DP-1", "dot"]), screenName: "DP-1", barId: "dot", configOrder: 1, edge: "", kind: "island", free: true, dot: true, hostsIsland: true, satelliteEdge: "", row: 0, rowThickness: 0, rowOffset: 0, reservation: 0, manualPlacement: false, exclusiveZone: -1, exclusionSize: 0 });
         assert.equal(layout.instances.find(instance => instance.barId === "free").dot, false);
         assert.equal(layout.edges.top.island, null);
         assert.equal(layout.edges.top.islandThickness, 0);

@@ -346,7 +346,7 @@ Item {
                     readonly property bool isExpanded: root.expandedWifiSsid === modelData.ssid
 
                     width: parent?.width ?? 0
-                    spacing: Theme.groupedListGap
+                    spacing: SettingsMetrics.groupGap
                     SettingsRow {
                         id: wifiNetworkRow
                         title: wifiNetworkDelegate.modelData.ssid || I18n.tr("Unknown")
@@ -525,7 +525,7 @@ Item {
                     readonly property var detailFields: networkWifiTab.wifiDetailFields(modelData)
 
                     width: parent?.width ?? 0
-                    spacing: Theme.groupedListGap
+                    spacing: SettingsMetrics.groupGap
 
                     SettingsRow {
                         id: savedWifiRow
@@ -852,7 +852,7 @@ Item {
             SettingsRow {
                 visible: hotspotCard.showForm
                 body: DTextField {
-                    expressive: true
+                    outlined: true
                     width: parent.width
                     labelText: I18n.tr("Hotspot name", "hotspot SSID field label")
                     placeholderText: I18n.tr("SSID", "hotspot network name placeholder")
@@ -867,7 +867,7 @@ Item {
             SettingsRow {
                 visible: hotspotCard.showForm
                 body: DTextField {
-                    expressive: true
+                    outlined: true
                     width: parent.width
                     labelText: I18n.tr("Password", "hotspot password field label")
                     placeholderText: I18n.tr("Optional; leave blank for open hotspot", "hotspot password field placeholder")

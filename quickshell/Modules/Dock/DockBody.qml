@@ -581,6 +581,7 @@ FocusScope {
     DTooltip {
         id: dockTooltip
         targetScreen: dock.screen
+        persistent: dock.config.enabled && (dock.hostWindow?.visible ?? false) && !dock.fullscreenOnScreen
     }
 
     Timer {
@@ -627,7 +628,7 @@ FocusScope {
 
     Rectangle {
         anchors.fill: parent
-        color: Theme.withAlpha(Theme.scrimColor, Theme.scrimAlpha)
+        color: Theme.withAlpha(Theme.backdropColor, Theme.scrimAlpha)
         opacity: dock.editMode ? 1 : 0
         visible: opacity > 0
 

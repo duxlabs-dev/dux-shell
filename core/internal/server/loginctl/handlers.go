@@ -3,9 +3,9 @@ package loginctl
 import (
 	"fmt"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/ipc"
-	"github.com/AvengeMedia/dankgo/ipc/params"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc/params"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 )
 
 func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
@@ -100,7 +100,10 @@ func handleSetLockBeforeSuspend(conn *ipc.ConnWriter, req ipc.Request, manager *
 		return
 	}
 
-	manager.SetLockBeforeSuspend(enabled)
+	if err := manager.SetLockBeforeSuspend(enabled); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
 	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "lock before suspend set"})
 }
 
@@ -111,7 +114,10 @@ func handleSetSleepInhibitorEnabled(conn *ipc.ConnWriter, req ipc.Request, manag
 		return
 	}
 
-	manager.SetSleepInhibitorEnabled(enabled)
+	if err := manager.SetSleepInhibitorEnabled(enabled); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
 	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "sleep inhibitor setting updated"})
 }
 

@@ -36,6 +36,7 @@ Item {
         }
     ]
     readonly property bool blocksTabNavigation: widgets.blocksTabNavigation
+    readonly property bool cardInteracting: widgets.cardInteracting
     readonly property var forecastOptions: [DashRegistry.choice("forecast", I18n.tr("Forecast", "weather widget option label for forecast display type"), "chart", [
             {
                 "value": "chart",
@@ -107,11 +108,24 @@ Item {
                 options: [DashRegistry.toneOption("primary"), DashRegistry.toggle("city", I18n.tr("Show city"), false)]
             },
             {
+                id: "readings",
+                text: I18n.tr("Readings", "weather widget title, grid of current measurements"),
+                icon: "grid_view",
+                component: readings,
+                w: 2,
+                h: 2,
+                minW: 2,
+                minH: 1,
+                maxW: 4,
+                maxH: 2,
+                options: [DashRegistry.toneOption()]
+            },
+            {
                 id: "hourly",
                 text: I18n.tr("Hourly", "adjective, hourly weather forecast widget title"),
                 icon: "schedule",
                 component: hourly,
-                w: 2,
+                w: 4,
                 h: 2,
                 minW: 2,
                 minH: 2,
@@ -129,7 +143,8 @@ Item {
                 minH: 2,
                 maxW: 4,
                 maxH: 3,
-                options: [DashRegistry.toneOption()]
+                options: [DashRegistry.toneOption()],
+                enabled: false
             },
             {
                 id: "moon",
@@ -141,7 +156,8 @@ Item {
                 minH: 2,
                 maxW: 4,
                 maxH: 3,
-                options: [DashRegistry.toneOption()]
+                options: [DashRegistry.toneOption()],
+                enabled: false
             },
             {
                 id: "humidity",
@@ -153,7 +169,8 @@ Item {
                 minH: 2,
                 maxW: 2,
                 maxH: 3,
-                options: root.metricOptions
+                options: root.metricOptions,
+                enabled: false
             },
             {
                 id: "wind",
@@ -165,7 +182,8 @@ Item {
                 minH: 2,
                 maxW: 2,
                 maxH: 3,
-                options: root.metricOptions
+                options: root.metricOptions,
+                enabled: false
             },
             {
                 id: "daily",
@@ -178,8 +196,7 @@ Item {
                 minH: 2,
                 maxW: 4,
                 maxH: 4,
-                options: root.forecastOptions,
-                enabled: false
+                options: root.forecastOptions
             },
             {
                 id: "pressure",
@@ -247,6 +264,11 @@ Item {
     Component {
         id: metric
         WeatherMetricCard {}
+    }
+
+    Component {
+        id: readings
+        WeatherReadingsCard {}
     }
 
     Component {

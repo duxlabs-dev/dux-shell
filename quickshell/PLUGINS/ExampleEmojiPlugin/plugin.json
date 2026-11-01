@@ -3,7 +3,7 @@
     "name": "Emoji Cycler",
     "description": "Display cycling emojis in your bar with a handy emoji picker popout",
     "version": "1.0.0",
-    "author": "AvengeMedia",
+    "author": "Dux Labs",
     "type": "widget",
     "capabilities": ["emoji-search", "clipboard", "dankbar-widget"],
     "component": "./EmojiWidget.qml",

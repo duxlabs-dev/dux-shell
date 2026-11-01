@@ -134,6 +134,7 @@ Item {
 
             SettingsRow {
                 visible: !root.showNewProfileDialog && !root.showDeleteConfirmDialog && !root.showRenameDialog && !root.showEditMonitorsDialog
+                subtitle: SettingsData.displayProfileAutoSelect ? I18n.tr("Disabled by Auto", "display profiles row, Auto is the profile auto select toggle above it") : ""
                 body: Row {
                     width: parent.width
                     spacing: Theme.spacingS

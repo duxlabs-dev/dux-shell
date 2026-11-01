@@ -39,6 +39,9 @@ const KEY_MAP = {
     16777328: "XF86AudioLowerVolume",
     16777329: "XF86AudioMute",
     16842808: "XF86AudioMicMute",
+    16777488: "XF86TouchpadToggle",
+    16777489: "XF86TouchpadOn",
+    16777490: "XF86TouchpadOff",
     16777344: "XF86AudioPlay",
     16777345: "XF86AudioStop",
     16777346: "XF86AudioPrev",
@@ -276,13 +279,55 @@ function formatToken(mods, key) {
     return (mods.length ? mods.join("+") + "+" : "") + key;
 }
 
+const QT_MODIFIER_NAMES = {
+    16777248: "Shift",
+    16777249: "Ctrl",
+    16777250: "Super",
+    16777251: "Alt",
+    16777299: "Super",
+    16777300: "Super"
+};
+const CAPTURE_MODIFIER_ORDER = ["Super", "Alt", "Ctrl", "Shift"];
+
+function modifierFromQtKey(qtKey) {
+    return QT_MODIFIER_NAMES[qtKey] || "";
+}
+
+// The pressed modifier key may be missing from the event's modifier mask.
+function heldModifiers(qtKey, modifiers, previous) {
+    const held = (previous || []).concat(modsFromEvent(modifiers), modifierFromQtKey(qtKey));
+    return CAPTURE_MODIFIER_ORDER.filter(mod => held.includes(mod));
+}
+
+function bareModifierToken(mods, modKey, modSymbol) {
+    return withSymbolicMod(mods, modKey, modSymbol).join("+");
+}
+
+function triggerName(key) {
+    const parts = String(key || "").toLowerCase().split("+");
+    return parts[parts.length - 1].trim();
+}
+
+function isScrollTrigger(key) {
+    const trigger = triggerName(key);
+    return trigger.startsWith("wheelscroll") || trigger.startsWith("touchpadscroll");
+}
+
+// niri only passes keyboard binds through to the focused window.
+function isKeyboardTrigger(key) {
+    const trigger = triggerName(key);
+    return !["mouse", "wheelscroll", "touchpadscroll", "tabletstylusbutton"].some(prefix => trigger.startsWith(prefix));
+}
+
 const MODIFIER_ALIASES = {
     "control": "ctrl",
     "win": "super",
     "meta": "super",
     "logo": "super",
     "mod4": "super",
-    "mod1": "alt"
+    "mod1": "alt",
+    "iso_level3_shift": "mod5",
+    "iso_level5_shift": "mod3"
 };
 
 function canonicalModifier(modifier) {
@@ -306,7 +351,7 @@ const QT_SHORTCUT_MODIFIERS = 0x10000000 | 0x08000000;
 const QT_CONTROL_MODIFIER = 0x04000000;
 // keys a text field owns: escape, tab, backtab, backspace, return, enter, insert, delete, home, end, arrows, page up/down
 const TEXT_EDIT_KEYS = [16777216, 16777217, 16777218, 16777219, 16777220, 16777221, 16777222, 16777223, 16777232, 16777233, 16777234, 16777235, 16777236, 16777237, 16777238, 16777239];
-const QT_MODIFIER_KEYS = [16777248, 16777249, 16777250, 16777251, 16777252, 16777253, 16777254];
+const QT_MODIFIER_KEYS = [16777248, 16777249, 16777250, 16777251, 16777252, 16777253, 16777254, 16777299, 16777300];
 
 function chordToken(qtKey, modifiers, mods, scanCode, modKey, modSymbol) {
     if (qtKey === QT_KEY_BACKTAB) {
@@ -331,28 +376,91 @@ function shortcutFromSearchKey(event, modKey, modSymbol) {
     return chordToken(event.key, event.modifiers, modsFromEvent(event.modifiers), event.nativeScanCode, modKey, modSymbol);
 }
 
+const NORMALIZED_MODIFIER_ORDER = ["super", "ctrl", "alt", "shift", "mod5", "mod3"];
+// Imply their modifier but stay distinct triggers.
+const MODIFIER_KEYSYMS = {
+    "control_l": "ctrl",
+    "control_r": "ctrl",
+    "shift_l": "shift",
+    "shift_r": "shift",
+    "alt_l": "alt",
+    "alt_r": "alt",
+    "super_l": "super",
+    "super_r": "super"
+};
+
+// Mirrors core normalizeNiriBindKey, so Shift+Alt equals Alt+Shift.
 function normalizeKeyCombo(keyCombo, modKey, modSymbol) {
     if (!keyCombo)
         return "";
-    var configuredMod = canonicalModifier(modKey) || "super";
-    var symbol = (modSymbol || "mod").toLowerCase();
-    return keyCombo.toLowerCase().split("+").map(function (part) {
-        var token = part.trim();
-        return token === symbol ? configuredMod : canonicalModifier(token);
-    }).join("+");
+    const configuredMod = canonicalModifier(modKey) || "super";
+    const symbol = (modSymbol || "mod").toLowerCase();
+    const canonical = token => token === symbol ? configuredMod : canonicalModifier(token);
+    let combo = String(keyCombo).toLowerCase();
+    let trigger = "";
+    if (combo.length > 1 && combo.endsWith("++")) {
+        trigger = "+";
+        combo = combo.slice(0, -2);
+    }
+    const parts = combo.split("+").map(part => part.trim());
+    if (!trigger)
+        trigger = parts.pop();
+
+    const mods = new Set();
+    const unknown = [];
+    for (const part of parts) {
+        const mod = canonical(part);
+        if (NORMALIZED_MODIFIER_ORDER.includes(mod))
+            mods.add(mod);
+        else if (!unknown.includes(mod))
+            unknown.push(mod);
+    }
+
+    const triggerMod = canonical(trigger);
+    const bareModifier = NORMALIZED_MODIFIER_ORDER.includes(triggerMod);
+    if (bareModifier)
+        mods.add(triggerMod);
+    else if (MODIFIER_KEYSYMS[trigger])
+        mods.add(MODIFIER_KEYSYMS[trigger]);
+
+    const out = NORMALIZED_MODIFIER_ORDER.filter(mod => mods.has(mod)).concat(unknown.sort());
+    if (!bareModifier)
+        out.push(trigger);
+    return out.join("+");
+}
+
+function comboTrigger(keyCombo) {
+    const combo = String(keyCombo).toLowerCase();
+    if (combo.length > 1 && combo.endsWith("++"))
+        return "+";
+    return combo.slice(combo.lastIndexOf("+") + 1).trim();
+}
+
+// Mirrors core niriBindsConflict: Alt also takes Alt_L and Alt_R, which stay distinct.
+function keyCombosConflict(a, b, modKey, modSymbol) {
+    const na = normalizeKeyCombo(a, modKey, modSymbol);
+    const nb = normalizeKeyCombo(b, modKey, modSymbol);
+    if (na === nb)
+        return true;
+    const ta = comboTrigger(a);
+    const tb = comboTrigger(b);
+    if (MODIFIER_KEYSYMS[ta])
+        return nb + "+" + ta === na;
+    if (MODIFIER_KEYSYMS[tb])
+        return na + "+" + tb === nb;
+    return false;
 }
 
 function getConflictingBinds(keyCombo, currentAction, allBinds, modKey, modSymbol) {
     if (!keyCombo)
         return [];
     var conflicts = [];
-    var normalizedKey = normalizeKeyCombo(keyCombo, modKey, modSymbol);
     for (var i = 0; i < allBinds.length; i++) {
         var bind = allBinds[i];
         if (bind.action === currentAction)
             continue;
         for (var k = 0; k < bind.keys.length; k++) {
-            if (normalizeKeyCombo(bind.keys[k].key, modKey, modSymbol) === normalizedKey) {
+            if (keyCombosConflict(keyCombo, bind.keys[k].key, modKey, modSymbol)) {
                 conflicts.push({
                     action: bind.action,
                     desc: bind.desc || bind.action
@@ -436,6 +544,14 @@ const KEY_GLYPH_MAP = {
     "super": "⌘",
     "meta": "⌘",
     "win": "⌘",
+    "shift_l": "⇧ L",
+    "shift_r": "⇧ R",
+    "control_l": "⌃ L",
+    "control_r": "⌃ R",
+    "alt_l": "⌥ L",
+    "alt_r": "⌥ R",
+    "super_l": "⌘ L",
+    "super_r": "⌘ R",
     "return": "⏎",
     "enter": "⏎",
     "tab": "⇥",

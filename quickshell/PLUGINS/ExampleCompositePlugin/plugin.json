@@ -3,7 +3,7 @@
     "name": "Composite Example",
     "description": "One plugin providing all three surfaces at once: a wallpaper-watcher daemon, an emoji bar widget with popout, and a desktop clock",
     "version": "1.0.0",
-    "author": "DankMaterialShell",
+    "author": "Dux Shell",
     "type": "composite",
     "capabilities": ["daemon", "dankbar-widget", "desktop-widget", "clipboard"],
     "icon": "extension",

@@ -48,7 +48,9 @@ Theme.fullRadius(width, height)
 Theme.buttonRadius(width, height, buttonHeight, pressed, true)
 ```
 
-Use `fullRadius()` for pills and round controls so lower strength values reduce their rounding. `cornerRadiusFull` remains available for compatibility. See the shared [shape reference](../../dank-qml-common/SHAPES.md) for component baselines.
+Use `fullRadius()` for pills and round controls so lower strength values reduce their rounding. `cornerRadiusFull` remains available for compatibility. See the shared [shape reference](../../dux-qml-common/SHAPES.md) for component baselines.
+
+`Theme.buttonRadius(...)` follows the Interface style setting: Classic turns off pills and the press morph. Plugins that hand-roll control shapes can read `Theme.pillControls` and `Theme.shapeMorph` (both false in Classic).
 
 ## Colors
 
@@ -92,7 +94,7 @@ Theme.foregroundColor(Theme.cardSurface, Theme.isFloatingWindow(root))
 
 ### Icon with Text
 ```qml
-DankIcon {
+DIcon {
     name: "icon_name"
     color: Theme.onSurface
     font.pixelSize: Theme.iconSize

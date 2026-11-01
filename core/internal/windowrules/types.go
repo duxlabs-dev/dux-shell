@@ -1,6 +1,6 @@
 package windowrules
 
-import "github.com/AvengeMedia/DankMaterialShell/core/internal/configfrag"
+import "github.com/duxlabs-dev/dux-shell/core/internal/configfrag"
 
 type MatchCriteria struct {
 	AppID              string `json:"appId,omitempty"`
@@ -41,6 +41,9 @@ type Actions struct {
 	DefaultColumnWidth   string   `json:"defaultColumnWidth,omitempty"`
 	DefaultWindowHeight  string   `json:"defaultWindowHeight,omitempty"`
 	VariableRefreshRate  *bool    `json:"variableRefreshRate,omitempty"`
+	VrrFullscreenOnly    *bool    `json:"vrrFullscreenOnly,omitempty"`
+	OnXdgActivate        string   `json:"onXdgActivate,omitempty"`
+	PinchSensitivity     *float64 `json:"pinchSensitivity,omitempty"`
 	BlockOutFrom         string   `json:"blockOutFrom,omitempty"`
 	DefaultColumnDisplay string   `json:"defaultColumnDisplay,omitempty"`
 	ScrollFactor         *float64 `json:"scrollFactor,omitempty"`
@@ -116,8 +119,6 @@ type DMSRulesStatus struct {
 	Effective       bool   `json:"effective"`
 	OverriddenBy    int    `json:"overriddenBy"`
 	StatusMessage   string `json:"statusMessage"`
-	ConfigFormat    string `json:"configFormat,omitempty"`
-	ReadOnly        bool   `json:"readOnly,omitempty"`
 }
 
 type RuleSet struct {
@@ -151,7 +152,5 @@ func DMSRulesStatusFrom(s configfrag.Status) *DMSRulesStatus {
 		Effective:       s.Effective,
 		OverriddenBy:    s.OverriddenBy,
 		StatusMessage:   s.StatusMessage,
-		ConfigFormat:    s.ConfigFormat,
-		ReadOnly:        s.ReadOnly,
 	}
 }

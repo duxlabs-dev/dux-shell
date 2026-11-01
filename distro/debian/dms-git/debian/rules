@@ -70,9 +70,9 @@ override_dh_auto_install:
 
 	install -Dm644 assets/systemd/dms.service debian/dms-git/usr/lib/systemd/user/dms.service
 	install -Dm644 assets/dms-open.desktop debian/dms-git/usr/share/applications/dms-open.desktop
-	install -Dm644 assets/com.danklinux.dms.desktop debian/dms-git/usr/share/applications/com.danklinux.dms.desktop
-	install -Dm644 assets/com.danklinux.dms.notepad.desktop debian/dms-git/usr/share/applications/com.danklinux.dms.notepad.desktop
-	install -Dm644 assets/com.danklinux.dms.svg debian/dms-git/usr/share/icons/hicolor/scalable/apps/com.danklinux.dms.svg
+	install -Dm644 assets/dev.duxlabs.shell.desktop debian/dms-git/usr/share/applications/dev.duxlabs.shell.desktop
+	install -Dm644 assets/dev.duxlabs.shell.notepad.desktop debian/dms-git/usr/share/applications/dev.duxlabs.shell.notepad.desktop
+	install -Dm644 assets/dev.duxlabs.shell.svg debian/dms-git/usr/share/icons/hicolor/scalable/apps/dev.duxlabs.shell.svg
 
 override_dh_auto_clean:
 	# Clean up build artifacts

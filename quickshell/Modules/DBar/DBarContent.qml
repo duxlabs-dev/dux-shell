@@ -125,7 +125,7 @@ Item {
     }
     property bool _animateFrameInsets: false
 
-    readonly property real innerPadding: barConfig?.innerPadding ?? 2
+    readonly property real innerPadding: barConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault
     readonly property real outlineThickness: (barConfig?.widgetOutlineEnabled ?? false) ? (barConfig?.widgetOutlineThickness ?? 1) : 0
     readonly property real _edgeBaseMargin: Math.max(Theme.spacingXS, innerPadding * 0.8)
     readonly property bool _hasBarWindow: barWindow !== undefined && barWindow !== null

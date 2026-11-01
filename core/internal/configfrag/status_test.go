@@ -47,7 +47,7 @@ var allDomains = map[string]Messages{
 
 func TestMissingFragmentIsNotEffective(t *testing.T) {
 	for domain, msgs := range allDomains {
-		status := BuildStatus(NewScan(), false, 0, "", false, msgs)
+		status := BuildStatus(NewScan(), false, 0, msgs)
 		if status.Effective {
 			t.Errorf("%s: a missing fragment must not be effective", domain)
 		}
@@ -64,7 +64,7 @@ func TestExistingButNotIncludedIsNotEffective(t *testing.T) {
 	for domain, msgs := range allDomains {
 		scan := NewScan()
 		scan.Count = 2
-		status := BuildStatus(scan, true, 0, "", false, msgs)
+		status := BuildStatus(scan, true, 0, msgs)
 		if status.Effective {
 			t.Errorf("%s: an unincluded fragment must not be effective", domain)
 		}
@@ -77,7 +77,7 @@ func TestExistingButNotIncludedIsNotEffective(t *testing.T) {
 func TestIncludedWithEntriesAfterReportsOverride(t *testing.T) {
 	for domain, msgs := range allDomains {
 		scan := IncludeScan{Count: 3, DMSPosition: 2, DMSSeen: true}
-		status := BuildStatus(scan, true, 5, "", false, msgs)
+		status := BuildStatus(scan, true, 5, msgs)
 		if !status.Effective {
 			t.Errorf("%s: an overridden fragment is still effective", domain)
 		}
@@ -93,7 +93,7 @@ func TestIncludedWithEntriesAfterReportsOverride(t *testing.T) {
 func TestIncludedWithNothingAfterIsActive(t *testing.T) {
 	for domain, msgs := range allDomains {
 		scan := IncludeScan{Count: 1, DMSPosition: 1, DMSSeen: true}
-		status := BuildStatus(scan, true, 0, "", false, msgs)
+		status := BuildStatus(scan, true, 0, msgs)
 		if !status.Effective {
 			t.Errorf("%s: an included fragment with nothing after it is effective", domain)
 		}
@@ -106,17 +106,14 @@ func TestIncludedWithNothingAfterIsActive(t *testing.T) {
 	}
 }
 
-func TestScanAndFormatCarryThrough(t *testing.T) {
+func TestScanCarriesThrough(t *testing.T) {
 	scan := IncludeScan{Count: 4, DMSPosition: 3, DMSSeen: true}
-	status := BuildStatus(scan, true, 0, "lua", true, hyprlandRules)
+	status := BuildStatus(scan, true, 0, hyprlandRules)
 
 	if status.TotalIncludes != 4 || status.IncludePosition != 3 {
 		t.Errorf("includes = %d/%d, want 3/4", status.IncludePosition, status.TotalIncludes)
 	}
 	if !status.Included {
 		t.Error("DMSSeen must land on Included")
-	}
-	if status.ConfigFormat != "lua" || !status.ReadOnly {
-		t.Errorf("format/readOnly = %q/%v, want lua/true", status.ConfigFormat, status.ReadOnly)
 	}
 }

@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
+import qs.DCommon.Common as DCommon
 import qs.DCommon.Widgets
 import qs.Widgets
 
@@ -21,8 +22,13 @@ Item {
     property string layerNamespace: "dms:context-menu"
     property real menuMargin: Theme.spacingS
     property real minMenuWidth: Theme.fieldDefaultWidth
-    property real itemHeight: Theme.menuItemHeight
+    property real itemHeight: DCommon.Style.menuRowHeight
+    property real menuPadding: Theme.spacingXS
+    property real itemIconSize: DCommon.Style.menuItemIconSize
     property real itemFontSize: Theme.fontSizeSmall
+    property real itemPadding: Theme.spacingM
+    property real itemSpacing: Theme.spacingM
+    property real itemRadius: Theme.cornerRadiusM
     property bool keyboardNavigable: false
     property var transientSurfaceTracker: null
     property var targetScreen: null
@@ -30,11 +36,13 @@ Item {
     property real anchorY: 0
     property real originX: 0
     property real originY: 0
+    property string menuEdge: "top"
     property bool openState: false
     property bool renderActive: false
     property int selectedMenuIndex: -1
     property bool keyboardNavigation: false
     readonly property alias contextWindow: menuWindow
+    readonly property alias customContentItem: customContentLoader.item
     readonly property bool blurActive: renderActive && openState && BlurService.enabled
 
     readonly property real maxMenuWidth: Math.max(0, (targetScreen?.width ?? Theme.launcherWidthMicro) - menuMargin * 2)
@@ -49,9 +57,9 @@ Item {
         return longest;
     }
     readonly property bool hasTrailingIcons: menuItems.some(menuItem => !!menuItem.trailingIcon)
-    readonly property real naturalMenuWidth: customContent ? Math.max(minMenuWidth, customContentWidth) : Math.max(minMenuWidth, menuTextMetrics.width + Theme.iconSize + Theme.spacingS * 5 + (hasTrailingIcons ? Theme.iconSizeMedium + Theme.spacingS : 0))
+    readonly property real naturalMenuWidth: customContent ? Math.max(minMenuWidth, customContentWidth) : Math.max(minMenuWidth, menuTextMetrics.width + Theme.iconSize + menuPadding * 2 + itemPadding * 2 + itemSpacing + (hasTrailingIcons ? itemIconSize + itemSpacing : 0))
     readonly property real effectiveMenuWidth: Math.max(0, Math.min(maxMenuWidth, naturalMenuWidth))
-    readonly property real naturalMenuHeight: (customContent ? customContentLoader.implicitHeight : menuItemsHeight()) + Theme.spacingS * 2
+    readonly property real naturalMenuHeight: (customContent ? customContentLoader.implicitHeight : menuItemsHeight()) + menuPadding * 2
     readonly property real effectiveMenuHeight: Math.min(maxMenuHeight, naturalMenuHeight)
     readonly property bool menuScrolls: naturalMenuHeight > effectiveMenuHeight + 0.5
     readonly property int visibleItemCount: menuItems.filter(menuItem => isSelectable(menuItem)).length
@@ -294,8 +302,18 @@ Item {
 
             Rectangle {
                 id: menuContainer
-                x: Math.max(root.menuMargin, Math.min(menuWindow.width - width - root.menuMargin, root.anchorX))
-                y: Math.max(root.menuMargin, Math.min(menuWindow.height - height - root.menuMargin, root.anchorY))
+                x: {
+                    if (root.menuEdge === "right")
+                        return Math.max(root.menuMargin, Math.min(menuWindow.width - width - root.menuMargin, root.anchorX - width));
+                    return Math.max(root.menuMargin, Math.min(menuWindow.width - width - root.menuMargin, root.anchorX));
+                }
+                y: {
+                    if (root.menuEdge === "bottom")
+                        return Math.max(root.menuMargin, Math.min(menuWindow.height - height - root.menuMargin, root.anchorY - height));
+                    if (root.menuEdge === "left" || root.menuEdge === "right")
+                        return Math.max(root.menuMargin, Math.min(menuWindow.height - height - root.menuMargin, root.anchorY - height / 2));
+                    return Math.max(root.menuMargin, Math.min(menuWindow.height - height - root.menuMargin, root.anchorY));
+                }
                 width: root.effectiveMenuWidth
                 height: root.effectiveMenuHeight
                 color: Theme.readableSurface
@@ -356,7 +374,7 @@ Item {
                 DFlickable {
                     id: menuFlickable
                     anchors.fill: parent
-                    anchors.margins: Theme.spacingS
+                    anchors.margins: root.menuPadding
                     clip: true
                     contentWidth: width
                     contentHeight: menuColumn.implicitHeight
@@ -417,31 +435,33 @@ Item {
                                             return Theme.onSurface_38;
                                         if (destructive)
                                             return Theme.error;
-                                        return selected ? Theme.onSelectedContainer : Theme.onSurface;
+                                        return selected ? Theme.onTertiaryContainer : Theme.onSurface;
                                     }
+                                    readonly property color iconColor: itemEnabled && !destructive && !selected ? Theme.onSurfaceVariant : contentColor
                                     visible: !menuItemDelegate.isSeparator && !menuItemDelegate.isComponent
                                     anchors.fill: parent
-                                    radius: Theme.cornerRadiusS
+                                    anchors.leftMargin: menuItemDelegate.modelData?.indent ?? 0
+                                    radius: root.itemRadius
                                     color: {
                                         if (!itemEnabled)
                                             return "transparent";
                                         if (destructive)
                                             return selected ? Theme.errorSelected : itemMouseArea.containsMouse ? Theme.errorHover : "transparent";
-                                        return selected ? Theme.selectedContainer : itemMouseArea.pressed ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerPressed) : itemMouseArea.containsMouse ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerHover) : "transparent";
+                                        return selected ? Theme.tertiaryContainer : itemMouseArea.pressed ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerPressed) : itemMouseArea.containsMouse ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerHover) : "transparent";
                                     }
 
                                     Row {
                                         anchors.left: parent.left
-                                        anchors.leftMargin: Theme.spacingS
+                                        anchors.leftMargin: root.itemPadding
                                         anchors.right: parent.right
-                                        anchors.rightMargin: Theme.spacingS
+                                        anchors.rightMargin: root.itemPadding
                                         anchors.verticalCenter: parent.verticalCenter
-                                        spacing: Theme.spacingS
+                                        spacing: root.itemSpacing
 
                                         DIcon {
                                             name: menuItemDelegate.modelData?.icon ?? ""
-                                            size: Theme.iconSizeMedium
-                                            color: menuRow.contentColor
+                                            size: root.itemIconSize
+                                            color: menuRow.iconColor
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
 
@@ -452,7 +472,7 @@ Item {
                                             font.weight: Theme.fontWeight
                                             anchors.verticalCenter: parent.verticalCenter
                                             elide: Text.ElideRight
-                                            width: parent.width - (Theme.iconSizeMedium + Theme.spacingS) * (trailingIcon.visible ? 2 : 1)
+                                            width: parent.width - (root.itemIconSize + root.itemSpacing) * (trailingIcon.visible ? 2 : 1)
                                         }
                                     }
 
@@ -460,17 +480,17 @@ Item {
                                         id: trailingIcon
                                         visible: name !== ""
                                         name: menuItemDelegate.modelData?.trailingIcon ?? ""
-                                        size: Theme.iconSizeMedium
-                                        color: menuRow.contentColor
+                                        size: root.itemIconSize
+                                        color: menuRow.iconColor
                                         anchors.right: parent.right
-                                        anchors.rightMargin: Theme.spacingS
+                                        anchors.rightMargin: root.itemPadding
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
 
                                     DRipple {
                                         id: menuItemRipple
                                         rippleColor: menuRow.contentColor
-                                        cornerRadius: Theme.cornerRadiusS
+                                        cornerRadius: root.itemRadius
                                     }
 
                                     MouseArea {

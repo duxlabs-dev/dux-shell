@@ -43,7 +43,7 @@ PluginSettings {
     pluginId: "exampleVariants"
 
     // Variant creation UI
-    DankButton {
+    DButton {
         text: "Add New Instance"
         onClicked: {
             var id = "variant_" + Date.now()

@@ -37,7 +37,13 @@ FocusScope {
         }
         if (label.startsWith("Media: "))
             label = label.slice(7).trim();
+        if (bind.trigger === "both" && bind.releaseAction && !bind.desc)
+            label += " • " + releaseLabel(Actions.getActionLabel(bind.releaseAction, KeybindsService.currentProvider) || bind.releaseAction);
         return label;
+    }
+
+    function releaseLabel(text) {
+        return I18n.tr("Release", "noun, hyprland bind flag toggle, trigger on key release") + ": " + text;
     }
 
     Component {
@@ -46,7 +52,7 @@ FocusScope {
         DListItem {
             id: keybindRow
             required property var modelData
-            readonly property bool canExecute: !keybindRow.modelData.isRange && KeybindsService.canExecuteAction(keybindRow.modelData.action, keybindRow.modelData.luaAction)
+            readonly property bool canExecute: !keybindRow.modelData.isRange && keybindRow.modelData.trigger !== "both" && KeybindsService.canExecuteAction(keybindRow.modelData.action, keybindRow.modelData.luaAction)
 
             Layout.fillWidth: true
             Layout.preferredHeight: implicitHeight
@@ -79,6 +85,17 @@ FocusScope {
                     color: keybindRow.contentColor
                     elide: Text.ElideRight
                     wrapMode: Text.NoWrap
+                }
+
+                Loader {
+                    Layout.alignment: Qt.AlignVCenter
+                    active: keybindRow.modelData.trigger === "release"
+                    visible: active
+                    sourceComponent: DBadge {
+                        text: I18n.tr("Release", "noun, hyprland bind flag toggle, trigger on key release")
+                        color: Theme.primaryHover
+                        textColor: Theme.primary
+                    }
                 }
 
                 // DKeycap items (Trailing - stacked vertically if multiple combos)
@@ -116,7 +133,7 @@ FocusScope {
             }
 
             DTooltipHost {
-                text: keybindRow.canExecute ? ((keybindRow.modelData.action || keybindRow.modelData.desc || "") + " • " + I18n.tr("Click to run", "cheatsheet action tooltip suffix")) : (keybindRow.modelData.label || keybindRow.modelData.action || keybindRow.modelData.desc || "")
+                text: keybindRow.canExecute ? ((keybindRow.modelData.action || keybindRow.modelData.desc || "") + " • " + I18n.tr("Click to run", "cheatsheet action tooltip suffix")) : keybindRow.modelData.releaseAction ? (keybindRow.modelData.action + " • " + content.releaseLabel(keybindRow.modelData.releaseAction)) : (keybindRow.modelData.label || keybindRow.modelData.action || keybindRow.modelData.desc || "")
                 target: keybindRow
                 hoverArea: rowHoverArea
             }
@@ -412,7 +429,7 @@ FocusScope {
                 const keyLower = (bind.key || "").toLowerCase();
                 const keyCombo = KeyUtils.normalizeKeyCombo(bind.key, KeybindsService.modKey, KeybindsService.modSymbol);
                 const descLower = (bind.desc || "").toLowerCase();
-                const actionLower = (bind.action || "").toLowerCase();
+                const actionLower = ((bind.action || "") + " " + (bind.releaseAction || "")).toLowerCase();
 
                 let matched = true;
                 for (let j = 0; j < lowerQueryWords.length; j++) {
@@ -433,7 +450,9 @@ FocusScope {
 
                 const isGraveAltTab = (bind.action === "next-window" || bind.action === "previous-window") && (bind.key || "").toLowerCase().includes("grave") && !bind.action.includes("filter=");
                 const bindAction = isGraveAltTab ? (bind.action + ' filter="app-id"') : (bind.action || "");
-                const groupKey = (label + "||" + bindAction).toLowerCase();
+                const trigger = bind.trigger === "press" ? "" : (bind.trigger || "");
+                const releaseAction = trigger === "both" ? (bind.releaseAction || "") : "";
+                const groupKey = (label + "||" + bindAction + "||" + trigger + "||" + releaseAction).toLowerCase();
                 if (subcatMap[subcatName][groupKey]) {
                     const existing = subcatMap[subcatName][groupKey];
                     if (tokenSig && !existing.tokenSigs[tokenSig] && keyTokens.length > 0) {
@@ -448,6 +467,8 @@ FocusScope {
                     subcatMap[subcatName][groupKey] = {
                         action: bindAction,
                         luaAction: bind.luaAction || "",
+                        trigger: trigger,
+                        releaseAction: releaseAction,
                         desc: bind.desc,
                         label: label,
                         key: bind.key,
@@ -622,7 +643,7 @@ FocusScope {
                             StyledText {
                                 text: I18n.tr("All")
                                 color: allTab.contentColor
-                                font.weight: allTab.isSelected ? Theme.fontWeightMedium : Theme.fontWeightNormal
+                                font.weight: allTab.isSelected ? Theme.fontWeightMedium : Theme.fontWeight
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
@@ -675,7 +696,7 @@ FocusScope {
                                 StyledText {
                                     text: I18n.tr(catTab.catName)
                                     color: catTab.contentColor
-                                    font.weight: catTab.isSelected ? Theme.fontWeightMedium : Theme.fontWeightNormal
+                                    font.weight: catTab.isSelected ? Theme.fontWeightMedium : Theme.fontWeight
                                     Layout.fillWidth: true
                                     elide: Text.ElideRight
                                 }

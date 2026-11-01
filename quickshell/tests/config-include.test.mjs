@@ -54,7 +54,7 @@ test("repair preserves config and fragments, backs up, and adds live includes on
     }
 });
 
-test("mango input fragment maps choices onto libinput numbers and spells numlock per dialect", () => {
+test("mango input fragment maps choices onto libinput numbers and spells numlock in snake_case", () => {
     const SPEC = loadScript(new URL("../Common/settings/SettingsSpec.js", import.meta.url)).SPEC;
     const source = readFileSync(new URL("../Services/MangoService.qml", import.meta.url), "utf8");
     const found = source.match(/^    function mangoInputLines\([^)]*\) \{\n[\s\S]*?^    \}/m);
@@ -62,7 +62,7 @@ test("mango input fragment maps choices onto libinput numbers and spells numlock
     const scope = vm.createContext({});
     vm.runInContext(found[0], scope);
     const defaults = Object.fromEntries(Object.keys(SPEC).filter(key => /^(mouse|touchpad|keyboard)[A-Z]|^focusFollowsMouse$/.test(key)).map(key => [key, SPEC[key].def]));
-    const lines = (overrides, snake = false) => [...scope.mangoInputLines(Object.assign({}, defaults, overrides), snake)];
+    const lines = overrides => [...scope.mangoInputLines(Object.assign({}, defaults, overrides))];
     const value = (list, key) => list.find(line => line.startsWith(key + "="))?.slice(key.length + 1);
 
     const stock = lines({});
@@ -79,8 +79,8 @@ test("mango input fragment maps choices onto libinput numbers and spells numlock
     assert.equal(value(chosen, "xkb_rules_layout"), "us,de");
     assert.equal(value(chosen, "xkb_rules_variant"), undefined, "empty fields stay out");
     assert.equal(value(chosen, "repeat_delay"), "300");
-    assert.equal(value(chosen, "numlockon"), "0");
-    assert.equal(value(lines({ keyboardNumlock: true }, true), "numlock_on"), "1");
+    assert.equal(value(chosen, "numlock_on"), "0");
+    assert.equal(value(lines({ keyboardNumlock: true }), "numlock_on"), "1");
 
     assert.equal(value(stock, "sloppy_focus"), undefined, "untouched focus mode stays Mango's");
     for (const mode of [0, 1])

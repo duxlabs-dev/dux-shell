@@ -120,6 +120,7 @@ Item {
         case "controlcenter":
         case "wallpaper":
         case "weather":
+        case "wellbeing":
         case "notificationcenter":
         case "clipboard":
         case "powermenu":
@@ -187,6 +188,17 @@ Item {
         let closed = false;
         for (const host of hosts()) {
             if (host?.islandController?.activeActivity !== activityId || !host.islandController.expanded)
+                continue;
+            host.islandController.requestCollapse();
+            closed = true;
+        }
+        return closed;
+    }
+
+    function closeDash(): bool {
+        let closed = false;
+        for (const host of hosts()) {
+            if (!host?.islandController?.dashFaceExpanded)
                 continue;
             host.islandController.requestCollapse();
             closed = true;

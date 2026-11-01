@@ -280,7 +280,7 @@ Scope {
                     }
 
                     readonly property int baseWidth: overlayWindow.useSpotlightStyle ? LauncherMetrics.spotlightWidth : LauncherMetrics.sizeWidth(SettingsData.dankLauncherV2Size)
-                    readonly property int baseHeight: LauncherMetrics.sizeHeight(SettingsData.dankLauncherV2Size)
+                    readonly property int baseHeight: LauncherMetrics.sizeHeight(SettingsData.dankLauncherV2Size, Theme.outlineWidth, LauncherMetrics.footerShown(SettingsData.dankLauncherV2Size))
                     readonly property real cornerRadius: overlayWindow.useSpotlightStyle ? LauncherMetrics.spotlightRadius(width) : Theme.windowRadius
                     readonly property real bottomRadius: overlayWindow.useSpotlightStyle ? LauncherMetrics.spotlightBottomRadius(width, height) : cornerRadius
                     width: Math.min(baseWidth, overlayWindow.screen.width - LauncherMetrics.screenMargin)

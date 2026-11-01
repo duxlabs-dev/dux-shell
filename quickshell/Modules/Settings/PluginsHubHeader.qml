@@ -231,6 +231,8 @@ Column {
 
     function uninstall(row) {
         const id = row.pluginId;
+        const wasEnabled = PluginService.isPluginLoaded(id);
+        const repo = DMSService.installedPlugins.find(entry => entry.id === id)?.repo ?? "";
         uninstalling = Object.assign({}, uninstalling, {
             [id]: true
         });
@@ -248,6 +250,7 @@ Column {
                 return;
             }
             PluginService.scanPlugins();
+            PluginService.noteUninstalled(id, row.text, wasEnabled, repo);
         });
     }
 
@@ -353,7 +356,7 @@ Column {
         SettingsRow {
             iconName: "warning"
             title: I18n.tr("Plugin manager unavailable")
-            subtitle: I18n.tr("The DMS_SOCKET environment variable is not set or the socket is unavailable. Automated plugin management requires the DMS_SOCKET.")
+            subtitle: I18n.tr("The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.", "plugin manager unavailable notice, %1 is an environment variable").arg("DMS_SOCKET")
         }
     }
 
@@ -432,6 +435,37 @@ Column {
     }
 
     DCard {
+        color: SettingsMetrics.rowColor
+        width: parent.width
+        implicitHeight: undoRow.implicitHeight + pad * 2
+        visible: PluginService.lastUninstalledPlugin !== null && DMSService.dmsAvailable
+        pad: Theme.spacingS
+
+        RowLayout {
+            id: undoRow
+            width: parent.width
+            spacing: Theme.spacingM
+
+            StyledText {
+                Layout.fillWidth: true
+                Layout.leftMargin: Theme.spacingS
+                text: I18n.tr("%1 uninstalled", "plugin removed notice, %1 is the plugin name").arg(PluginService.lastUninstalledPlugin?.name ?? "")
+                color: Theme.surfaceText
+                elide: Text.ElideRight
+            }
+
+            DButton {
+                text: I18n.tr("Undo", "reinstall the plugin that was just uninstalled")
+                buttonHeight: Theme.buttonHeightXS
+                horizontalPadding: Theme.spacingS
+                backgroundColor: "transparent"
+                textColor: Theme.primary
+                onClicked: PluginService.undoUninstall()
+            }
+        }
+    }
+
+    DCard {
         id: storeCard
         color: SettingsMetrics.rowColor
         width: parent.width
@@ -459,7 +493,7 @@ Column {
             }
             StyledText {
                 Layout.fillWidth: true
-                text: I18n.tr("Extend DankMaterialShell with powerful plugins for widgets, launchers, and more")
+                text: I18n.tr("Extend %1 with powerful plugins for widgets, launchers, and more", "plugins hub description, %1 is the product name").arg("Dux Shell")
                 color: storeCard.mutedColor
                 wrapMode: Text.Wrap
             }
@@ -499,6 +533,8 @@ Column {
             width: parent.width
             text: root.searchQuery
             placeholderText: I18n.tr("Search plugins...", "plugin search placeholder")
+            // matches MAX_QUERY_LENGTH in PluginRanking.js
+            maximumLength: 100
             onTextEdited: root.searchQuery = text
         }
         Flow {

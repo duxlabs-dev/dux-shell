@@ -5,9 +5,9 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/clipboard"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/colorpicker"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/site"
+	"github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/colorpicker"
+	"github.com/duxlabs-dev/dux-shell/core/internal/site"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +27,7 @@ var colorCmd = &cobra.Command{
 This is the screen eyedropper CLI. To open the in-shell color modal, use:
   dms ipc call color-picker toggle
 
-See: ` + site.Docs + "/dankmaterialshell/keybinds-ipc",
+See: ` + site.Docs + "/dms/keybinds-ipc",
 }
 
 var colorPickCmd = &cobra.Command{

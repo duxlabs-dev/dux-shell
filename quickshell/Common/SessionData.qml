@@ -18,8 +18,6 @@ Singleton {
 
     readonly property int sessionConfigVersion: 7
 
-    readonly property bool isGreeterMode: Quickshell.env("DMS_RUN_GREETER") === "1" || Quickshell.env("DMS_RUN_GREETER") === "true"
-
     signal loaded
     signal brightnessDisplayHintChanged(string deviceName)
     signal loadErrorOccurred(string file, string message)
@@ -46,7 +44,7 @@ Singleton {
     property string terminalOverride: ""
     property int updaterNotifiedUnix: 0
     property int updaterNotifiedCount: 0
-    property string changelogSeenVersion: ""
+    property string repoMoveNoticeVersion: ""
     property bool isSwitchingMode: false
     property bool suppressOSD: true
 
@@ -223,6 +221,7 @@ Singleton {
     property int wallpaperCyclingInterval: 300
     property string wallpaperCyclingTime: "06:00"
     property string wallpaperCyclingFolderPath: ""
+    property bool wallpaperCyclingVideoEnd: false
     property var monitorCyclingSettings: ({})
 
     property bool nightModeEnabled: false
@@ -327,11 +326,6 @@ Singleton {
         _hasUnsavedChanges = false;
         _pendingMigration = null;
 
-        if (isGreeterMode) {
-            parseSettings(greeterSessionFile.text());
-            return;
-        }
-
         try {
             const txt = settingsFile.text();
             let obj = (txt && txt.trim()) ? JSON.parse(txt) : null;
@@ -370,7 +364,7 @@ Singleton {
             _loadedSessionSnapshot = getCurrentSessionJson();
             _hasLoaded = true;
 
-            if (!isGreeterMode && typeof Theme !== "undefined")
+            if (typeof Theme !== "undefined")
                 Theme.generateSystemThemesFromCurrentTheme();
 
             loaded();
@@ -453,7 +447,7 @@ Singleton {
             _loadedSessionSnapshot = getCurrentSessionJson();
             _hasLoaded = true;
 
-            if (!isGreeterMode && typeof Theme !== "undefined")
+            if (typeof Theme !== "undefined")
                 Theme.generateSystemThemesFromCurrentTheme();
 
             loaded();
@@ -486,7 +480,7 @@ Singleton {
     }
 
     function saveSettings() {
-        if (isGreeterMode || _parseError || !_hasLoaded)
+        if (_parseError || !_hasLoaded)
             return;
         settingsFile.setText(getCurrentSessionJson());
         if (_isReadOnly)
@@ -770,32 +764,9 @@ Singleton {
 
     function migrateFromUndefinedToV1(settings) {
         if (typeof SettingsData !== "undefined") {
-            if (settings.acMonitorTimeout !== undefined) {
-                SettingsData.set("acMonitorTimeout", settings.acMonitorTimeout);
-            }
-            if (settings.acLockTimeout !== undefined) {
-                SettingsData.set("acLockTimeout", settings.acLockTimeout);
-            }
-            if (settings.acSuspendTimeout !== undefined) {
-                SettingsData.set("acSuspendTimeout", settings.acSuspendTimeout);
-            }
-            if (settings.batteryMonitorTimeout !== undefined) {
-                SettingsData.set("batteryMonitorTimeout", settings.batteryMonitorTimeout);
-            }
-            if (settings.batteryLockTimeout !== undefined) {
-                SettingsData.set("batteryLockTimeout", settings.batteryLockTimeout);
-            }
-            if (settings.batterySuspendTimeout !== undefined) {
-                SettingsData.set("batterySuspendTimeout", settings.batterySuspendTimeout);
-            }
-            if (settings.lockBeforeSuspend !== undefined) {
-                SettingsData.set("lockBeforeSuspend", settings.lockBeforeSuspend);
-            }
-            if (settings.loginctlLockIntegration !== undefined) {
-                SettingsData.set("loginctlLockIntegration", settings.loginctlLockIntegration);
-            }
-            if (settings.launchPrefix !== undefined) {
-                SettingsData.set("launchPrefix", settings.launchPrefix);
+            for (const key of ["acMonitorTimeout", "acLockTimeout", "acSuspendTimeout", "batteryMonitorTimeout", "batteryLockTimeout", "batterySuspendTimeout", "lockBeforeSuspend", "loginctlLockIntegration", "launchPrefix"]) {
+                if (settings[key] !== undefined && !SettingsData.isManaged(key))
+                    SettingsData.set(key, settings[key]);
             }
         }
         if (typeof CacheData !== "undefined") {
@@ -860,8 +831,6 @@ Singleton {
     }
 
     function _screenShareShouldHold() {
-        if (isGreeterMode)
-            return false;
         if (typeof SettingsData === "undefined" || !SettingsData.notificationDndWhileScreenSharing)
             return false;
         if (typeof PrivacyService === "undefined" || !PrivacyService.screensharingActive)
@@ -910,9 +879,6 @@ Singleton {
     }
 
     function syncScreenShareDnd() {
-        if (isGreeterMode)
-            return;
-
         if (!_screenShareShouldHold()) {
             if (!doNotDisturbHeldByScreenShare && !screenShareDndDismissed)
                 return;
@@ -1264,6 +1230,11 @@ Singleton {
         saveSettings();
     }
 
+    function setWallpaperCyclingVideoEnd(enabled) {
+        wallpaperCyclingVideoEnd = enabled;
+        saveSettings();
+    }
+
     function updateMonitorCyclingSetting(screenName, key, value) {
         const screen = _screenByName(screenName);
         if (!screen) {
@@ -1311,6 +1282,10 @@ Singleton {
 
     function setMonitorCyclingFolderPath(screenName, folderPath) {
         updateMonitorCyclingSetting(screenName, "folderPath", folderPath);
+    }
+
+    function setMonitorCyclingVideoEnd(screenName, enabled) {
+        updateMonitorCyclingSetting(screenName, "videoEnd", enabled);
     }
 
     function setNightModeEnabled(enabled) {
@@ -1512,6 +1487,15 @@ Singleton {
         saveSettings();
     }
 
+    function removeRecentColor(color) {
+        const colorStr = color.toString();
+        const recent = recentColors.filter(c => c !== colorStr);
+        if (recent.length === recentColors.length)
+            return;
+        recentColors = recent;
+        saveSettings();
+    }
+
     function setShowThirdPartyPlugins(enabled) {
         showThirdPartyPlugins = enabled;
         saveSettings();
@@ -1530,7 +1514,7 @@ Singleton {
     function setPluginBrowserSortMode(mode) {
         if (mode === "type" || mode === "contributor")
             mode = "author";
-        if (mode !== "default" && mode !== "name" && mode !== "author" && mode !== "category")
+        if (mode !== "default" && mode !== "recommended" && mode !== "name" && mode !== "author" && mode !== "category")
             mode = "default";
         pluginBrowserSortMode = mode;
         saveSettings();
@@ -1823,6 +1807,11 @@ Singleton {
         return value !== undefined ? value : wallpaperPath;
     }
 
+    // Still-image surfaces (lock screen, blur) show a video wallpaper through its extracted frame.
+    function getMonitorWallpaperImage(screenName) {
+        return VideoWallpaperService.imageFor(getMonitorWallpaper(screenName));
+    }
+
     function getMonitorWallpaperFillMode(screenName) {
         var globalFillMode = (typeof SettingsData !== "undefined") ? SettingsData.wallpaperFillMode : "Fill";
         if (!perMonitorWallpaper)
@@ -1875,53 +1864,18 @@ Singleton {
     FileView {
         id: settingsFile
 
-        path: isGreeterMode ? "" : StandardPaths.writableLocation(StandardPaths.GenericStateLocation) + "/DankMaterialShell/session.json"
+        path: StandardPaths.writableLocation(StandardPaths.GenericStateLocation) + "/dms/session.json"
         blockLoading: true
         blockWrites: true
         atomicWrites: true
-        watchChanges: !isGreeterMode
+        watchChanges: true
         onLoaded: {
-            if (isGreeterMode)
-                return;
             _hasUnsavedChanges = false;
             parseSettings(settingsFile.text());
         }
         onSaveFailed: error => {
             root._isReadOnly = true;
             root._hasUnsavedChanges = root._checkForUnsavedChanges();
-        }
-    }
-
-    readonly property string _greeterCacheDir: Quickshell.env("DMS_GREET_CFG_DIR") || "/var/cache/dms-greeter"
-
-    property string greeterSessionBaseDir: root._greeterCacheDir
-
-    function setGreeterSessionBaseDir(dir) {
-        const next = dir || root._greeterCacheDir;
-        if (greeterSessionBaseDir === next)
-            return;
-        greeterSessionBaseDir = next;
-        if (isGreeterMode)
-            greeterSessionFile.reload();
-    }
-
-    function resetGreeterSessionBaseDir() {
-        setGreeterSessionBaseDir(root._greeterCacheDir);
-    }
-
-    FileView {
-        id: greeterSessionFile
-
-        path: isGreeterMode && root.greeterSessionBaseDir ? (root.greeterSessionBaseDir + "/session.json") : ""
-        preload: isGreeterMode
-        blockLoading: false
-        blockWrites: true
-        watchChanges: false
-        printErrors: true
-        onLoaded: {
-            if (isGreeterMode) {
-                parseSettings(greeterSessionFile.text());
-            }
         }
     }
 

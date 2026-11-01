@@ -14,8 +14,8 @@ SettingsRow {
 
     paintBackground: true
     rowColor: dragging ? Theme.blend(SettingsMetrics.rowColor, Theme.onSurface, Theme.stateLayerDrag) : SettingsMetrics.rowColor
-    topRadius: dragging || (position === 0 && reorderList.firstInGroup) ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-    bottomRadius: dragging || (position === reorderList.count - 1 && reorderList.lastInGroup) ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
+    topRadius: dragging || (position === 0 && reorderList.firstInGroup) ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+    bottomRadius: dragging || (position === reorderList.count - 1 && reorderList.lastInGroup) ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
     z: dragging ? 100 : 0
 
     function focusHandle(reason) {

@@ -92,7 +92,7 @@ Scope {
                 Rectangle {
                     id: background
                     anchors.fill: parent
-                    color: "black"
+                    color: Theme.backdropColor
                     opacity: overviewScope.overviewOpen ? 0.5 : 0
 
                     Behavior on opacity {

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/notify"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/notify"
 	"github.com/godbus/dbus/v5"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"

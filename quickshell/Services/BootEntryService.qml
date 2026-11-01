@@ -20,7 +20,7 @@ Singleton {
     property string status: "unknown"
     // efibootmgr's stderr when status is "error"
     property string errorText: ""
-    // Active entries as [{id, label}], where id is the hex Boot#### number
+    // Entries as [{id, label}], where id is the hex Boot#### number
     property var entries: []
     property string currentId: ""
 

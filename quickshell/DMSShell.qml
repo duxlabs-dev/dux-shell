@@ -1316,6 +1316,24 @@ Item {
                 }
 
                 Variants {
+                    model: SettingsData.osdNumLockEnabled ? root.legacySystemLevelOsdScreens : []
+
+                    delegate: NumLockOSD {}
+                }
+
+                Variants {
+                    model: (SettingsData.osdKeyboardLayoutEnabled && KeyboardLayoutService.available) ? SettingsData.getFilteredScreens("osd") : []
+
+                    delegate: KeyboardLayoutOSD {}
+                }
+
+                Variants {
+                    model: (SettingsData.osdTouchpadEnabled && CompositorService.isNiri) ? root.legacySystemLevelOsdScreens : []
+
+                    delegate: TouchpadOSD {}
+                }
+
+                Variants {
                     model: SettingsData.osdAudioOutputEnabled ? SettingsData.getFilteredScreens("osd") : []
 
                     delegate: AudioOutputOSD {}
@@ -1371,6 +1389,11 @@ Item {
         sourceComponent: ChangelogModal {
             onChangelogDismissed: changelogLoader.active = false
             Component.onCompleted: show()
+        }
+
+        Component.onCompleted: {
+            if (ChangelogService.shouldShowChangelog)
+                active = true;
         }
 
         Connections {

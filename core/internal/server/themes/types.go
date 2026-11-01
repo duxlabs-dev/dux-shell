@@ -1,7 +1,7 @@
 package themes
 
 import (
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/themes"
+	"github.com/duxlabs-dev/dux-shell/core/internal/themes"
 )
 
 type VariantInfo struct {

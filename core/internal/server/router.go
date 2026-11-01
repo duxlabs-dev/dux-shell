@@ -4,35 +4,36 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/apppicker"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/bluez"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/brightness"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/clipboard"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/cups"
-	serverDbus "github.com/AvengeMedia/DankMaterialShell/core/internal/server/dbus"
-	serverDgop "github.com/AvengeMedia/DankMaterialShell/core/internal/server/dgop"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/evdev"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/freedesktop"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/location"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/loginctl"
-	serverLyrics "github.com/AvengeMedia/DankMaterialShell/core/internal/server/lyrics"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/mime"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/network"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/notifyactions"
-	serverPlugins "github.com/AvengeMedia/DankMaterialShell/core/internal/server/plugins"
-	serverRegistries "github.com/AvengeMedia/DankMaterialShell/core/internal/server/registries"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/sysupdate"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/tailscale"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/thememode"
-	serverThemes "github.com/AvengeMedia/DankMaterialShell/core/internal/server/themes"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wallpaper"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wayland"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wellbeing"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wlroutput"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/systemd"
-	"github.com/AvengeMedia/dankgo/ipc"
-	"github.com/AvengeMedia/dankgo/ipc/params"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc/params"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/apppicker"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/bluez"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/brightness"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/clipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/cups"
+	serverDbus "github.com/duxlabs-dev/dux-shell/core/internal/server/dbus"
+	serverDgop "github.com/duxlabs-dev/dux-shell/core/internal/server/dgop"
+	serverDrives "github.com/duxlabs-dev/dux-shell/core/internal/server/drives"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/evdev"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/freedesktop"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/location"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
+	serverLyrics "github.com/duxlabs-dev/dux-shell/core/internal/server/lyrics"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/mime"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/network"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/notifyactions"
+	serverPlugins "github.com/duxlabs-dev/dux-shell/core/internal/server/plugins"
+	serverRegistries "github.com/duxlabs-dev/dux-shell/core/internal/server/registries"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/sysupdate"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/tailscale"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/thememode"
+	serverThemes "github.com/duxlabs-dev/dux-shell/core/internal/server/themes"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wallpaper"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wayland"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wellbeing"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wlroutput"
+	"github.com/duxlabs-dev/dux-shell/core/internal/systemd"
 )
 
 var requestMux = newRequestMux(nil)
@@ -150,6 +151,8 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 
 	mux.HandlePrefix("dgop.", requestHandler(serverDgop.HandleRequest))
 
+	mux.HandlePrefix("drives.", requestHandler(serverDrives.HandleRequest))
+
 	mux.HandlePrefix("lyrics.", requestHandler(serverLyrics.HandleRequest))
 
 	appPickerHandler := requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
@@ -203,13 +206,13 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 		evdev.HandleRequest(conn, req, evdevManager)
 	}))
 
-	mux.HandlePrefix("dbus.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
+	mux.HandlePrefix("dbus.", func(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, _ *ipc.Subscriber) {
 		if dbusManager == nil {
 			conn.RespondError(req.ID, "dbus manager not initialized")
 			return
 		}
-		serverDbus.HandleRequest(conn, req, dbusManager, dbusClientID)
-	}))
+		serverDbus.HandleRequest(ctx, conn, req, dbusManager, dbusClientID)
+	})
 
 	mux.HandlePrefix("clipboard.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
 		if clipboardManager == nil {
@@ -279,7 +282,11 @@ func handleClipboardSetConfig(conn *ipc.ConnWriter, req ipc.Request) {
 		cfg.MaxPinned = int(v)
 	}
 
-	if err := clipboard.SaveConfig(cfg); err != nil {
+	save := clipboard.SaveConfig
+	if clipboardManager != nil {
+		save = clipboardManager.SetConfig
+	}
+	if err := save(cfg); err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return
 	}

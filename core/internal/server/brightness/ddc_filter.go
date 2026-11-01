@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 )
 
 func isIgnorableI2CBus(busno int) bool {

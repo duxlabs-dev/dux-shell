@@ -13,12 +13,12 @@ func TestTerminalWrapperWezterm(t *testing.T) {
 	}{
 		{
 			name: "update",
-			want: []string{"wezterm", "start", "--always-new-process", "--class", "com.danklinux.dms", "--", "sh", "-c"},
+			want: []string{"wezterm", "start", "--always-new-process", "--class", "dev.duxlabs.shell", "--", "sh", "-c"},
 		},
 		{
 			name:      "extra arguments",
 			extraArgs: []string{"--cwd", "/tmp/system update"},
-			want:      []string{"wezterm", "start", "--always-new-process", "--class", "com.danklinux.dms", "--cwd", "/tmp/system update", "--", "sh", "-c"},
+			want:      []string{"wezterm", "start", "--always-new-process", "--class", "dev.duxlabs.shell", "--cwd", "/tmp/system update", "--", "sh", "-c"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

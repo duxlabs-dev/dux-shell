@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/matugen"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/matugen"
 )
 
 type MatugenQueueResult struct {
@@ -27,6 +27,8 @@ func handleMatugenQueue(conn *ipc.ConnWriter, req ipc.Request) {
 		StockColors:         req.GetOr("stockColors", ""),
 		SyncModeWithPortal:  req.GetOr("syncModeWithPortal", false),
 		TerminalsAlwaysDark: req.GetOr("terminalsAlwaysDark", false),
+		TerminalOpacity:     int(req.GetOr("terminalOpacity", 0.0)),
+		TerminalPalette:     req.GetOr("terminalPalette", ""),
 		SkipTemplates:       req.GetOr("skipTemplates", ""),
 		Contrast:            req.GetOr("contrast", 0.0),
 		SourceMode:          req.GetOr("sourceMode", ""),

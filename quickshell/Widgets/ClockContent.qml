@@ -68,10 +68,6 @@ Item {
                 required property int index
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: stack.lines[index]
-                reserveText: text.replace(/\d/g, "0")
-                width: Math.ceil(reservedWidth)
-                horizontalAlignment: Text.AlignHCenter
-                isMonospace: false
                 color: stack.color
                 font.pixelSize: root.fontSize
             }
@@ -84,6 +80,7 @@ Item {
         anchors.centerIn: parent
         columns: root.vertical ? 1 : Math.max(1, layout.visibleChildren.length)
         spacing: root.vertical ? 0 : Theme.spacingS
+        verticalItemAlignment: Grid.AlignVCenter
 
         Loader {
             sourceComponent: root.dateFirst && root.showDate || !root.showTime ? dateComponent : timeComponent

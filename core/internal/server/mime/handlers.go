@@ -3,10 +3,10 @@ package mime
 import (
 	"fmt"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/desktop"
-	"github.com/AvengeMedia/dankgo/ipc"
-	"github.com/AvengeMedia/dankgo/ipc/params"
+	"github.com/duxlabs-dev/dux-go/desktop"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc/params"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 )
 
 type defaultResult struct {

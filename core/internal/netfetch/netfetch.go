@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const DefaultUserAgent = "DankMaterialShell/1.0 (Linux)"
+const DefaultUserAgent = "DuxShell/1.0 (Linux)"
 
 type Options struct {
 	Headers        map[string]string

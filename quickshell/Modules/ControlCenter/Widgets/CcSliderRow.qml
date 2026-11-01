@@ -17,6 +17,8 @@ Item {
     property real columns: 4
     property real rows: 1
     property bool compact: columns <= 2 && rows === 1
+    property bool small: false
+    readonly property real bodyInset: small ? Math.max(0, (height - CcMetrics.smallRowHeight) / 2) : 0
     property string iconName: ""
     property string iconLabel: ""
     property string iconTooltip: ""
@@ -33,8 +35,8 @@ Item {
     readonly property bool showLabel: tall && !vertical && width >= CcMetrics.expandedTileMinWidth
     readonly property bool showNumber: tall && (!vertical || height >= CcMetrics.gridRowUnit * 3)
     readonly property real bodyRadius: tall ? CcMetrics.tallTileRadius : Theme.cornerRadiusM
-    readonly property real contentPadding: tall ? (vertical ? Theme.spacingS : Theme.spacingM) : 0
-    readonly property real actionSize: Math.min(compact ? Theme.minimumTouchTargetSize : Math.max(Theme.minimumTouchTargetSize, CcMetrics.iconBoxSize), width - contentPadding * 2, tall ? Math.min(CcMetrics.tileHeight, height - contentPadding * 2 - Theme.minimumTouchTargetSize - (vertical ? Theme.spacingS : Theme.spacingM)) : height)
+    readonly property real contentPadding: tall ? (vertical ? Theme.spacingS : CcMetrics.tallTilePadding) : 0
+    readonly property real actionSize: Math.min(compact ? CcMetrics.touchTarget : Math.max(CcMetrics.touchTarget, CcMetrics.iconBoxSize), width - contentPadding * 2, tall ? Math.min(CcMetrics.tileHeight, height - contentPadding * 2 - CcMetrics.touchTarget - (vertical ? Theme.spacingS : Theme.spacingM)) : height)
 
     signal iconClicked
     signal expandClicked
@@ -87,7 +89,7 @@ Item {
             StyledText {
                 width: parent.width
                 text: root.sliderLabel
-                font.pixelSize: Theme.fontSizeLarge
+                font.pixelSize: CcMetrics.denseTileText ? Theme.fontSizeMedium : Theme.fontSizeLarge
                 font.weight: Theme.fontWeightMedium
                 color: root.sliderEnabled ? Theme.surfaceText : Theme.onSurface_38
                 elide: Text.ElideRight
@@ -97,7 +99,7 @@ Item {
             StyledText {
                 width: parent.width
                 text: slider.formatValue(slider.valueOverride >= 0 ? slider.valueOverride : slider.value)
-                font.pixelSize: root.vertical ? Theme.fontSizeLarge : Theme.fontSizeMedium
+                font.pixelSize: root.vertical ? Theme.fontSizeLarge : CcMetrics.denseTileText ? Theme.fontSizeSmall : Theme.fontSizeMedium
                 color: root.sliderEnabled ? Theme.surfaceVariantText : Theme.onSurface_38
                 horizontalAlignment: root.vertical ? Text.AlignHCenter : Text.AlignLeft
                 visible: root.showNumber
@@ -128,20 +130,23 @@ Item {
                         return "xl";
                     if (extent >= Theme.sliderHandleHeightL + Theme.spacingXS)
                         return "l";
-                    return "m";
+                    // Comfortable keeps its old "m" even when icon scale squeezes the track.
+                    if (extent >= Theme.sliderHandleHeightM || Theme.densityLevel >= 0)
+                        return "m";
+                    return "s";
                 }
                 Accessible.name: root.sliderLabel
                 showValue: !root.vertical
                 onSliderValueChanged: newValue => root.sliderValueChanged(newValue)
 
                 Binding on trackHeight {
-                    when: !root.tall
+                    when: !root.tall && !root.small
                     value: CcMetrics.stripTrackHeight
                     restoreMode: Binding.RestoreBinding
                 }
 
                 Binding on handleHeight {
-                    when: !root.tall
+                    when: !root.tall && !root.small
                     value: CcMetrics.stripHandleHeight
                     restoreMode: Binding.RestoreBinding
                 }

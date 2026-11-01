@@ -94,7 +94,8 @@ Singleton {
     }
 
     Component.onCompleted: {
-        userWatcher.folder = Paths.toFileUrl(root.pluginDirectory);
+        // A FolderListModel never given a folder lists the working directory.
+        userWatcher.folder = AdminPolicy.disableUserPlugins ? "" : Paths.toFileUrl(root.pluginDirectory);
         systemWatcher.folder = Paths.toFileUrl(root.systemPluginDirectory);
         Qt.callLater(resyncAll);
         Qt.callLater(checkPluginDirectoryExists);
@@ -150,7 +151,7 @@ Singleton {
     }
 
     function resyncAll() {
-        const userList = snapshotModel(userWatcher, "user");
+        const userList = AdminPolicy.disableUserPlugins ? [] : snapshotModel(userWatcher, "user");
         const sysList = snapshotModel(systemWatcher, "system");
         const seenPaths = {};
         const modifiedTimes = {};
@@ -308,8 +309,21 @@ Singleton {
         }
     }
 
-    function _stripDotSlash(p) {
-        return p.startsWith("./") ? p.slice(2) : p;
+    function _pluginFilePath(dir, rel) {
+        if (!rel)
+            return "";
+        const path = String(rel);
+        let decoded;
+        try {
+            decoded = decodeURIComponent(path);
+        } catch (e) {
+            decoded = "..";
+        }
+        if (decoded.split("/").includes("..")) {
+            log.warn("plugin path outside its directory, refusing:", path, "in", dir);
+            return "";
+        }
+        return dir + "/" + (path.startsWith("./") ? path.slice(2) : path);
     }
 
     function _deriveLegacySurface(type, capabilities) {
@@ -334,17 +348,16 @@ Singleton {
                     log.warn("unknown plugin surface", surface, "in", dir);
                     continue;
                 }
-                const rel = manifest.components[surface];
-                if (!rel)
+                const path = _pluginFilePath(dir, manifest.components[surface]);
+                if (!path)
                     continue;
-                paths[surface] = dir + "/" + _stripDotSlash(rel);
+                paths[surface] = path;
             }
             return paths;
         }
-        if (manifest.component) {
-            const surface = _deriveLegacySurface(manifest.type, manifest.capabilities);
-            paths[surface] = dir + "/" + _stripDotSlash(manifest.component);
-        }
+        const legacyPath = _pluginFilePath(dir, manifest.component);
+        if (legacyPath)
+            paths[_deriveLegacySurface(manifest.type, manifest.capabilities)] = legacyPath;
         return paths;
     }
 
@@ -360,12 +373,8 @@ Singleton {
         }
 
         const dir = absPath.substring(0, absPath.lastIndexOf('/'));
-        let settings = manifest.settings;
-        if (settings && settings.startsWith("./"))
-            settings = settings.slice(2);
-        let startupCheck = manifest.startupCheck;
-        if (startupCheck && startupCheck.startsWith("./"))
-            startupCheck = startupCheck.slice(2);
+        const settingsPath = _pluginFilePath(dir, manifest.settings);
+        const startupCheckPath = _pluginFilePath(dir, manifest.startupCheck);
 
         const componentPaths = _resolveComponentPaths(manifest, dir);
         const surfaces = Object.keys(componentPaths);
@@ -397,8 +406,8 @@ Singleton {
         info.componentPaths = componentPaths;
         info.surfaces = surfaces;
         info.componentPath = componentPaths.widget || componentPaths[surfaces[0]];
-        info.settingsPath = settings ? (dir + "/" + settings) : null;
-        info.startupCheckPath = startupCheck ? (dir + "/" + startupCheck) : null;
+        info.settingsPath = settingsPath || null;
+        info.startupCheckPath = startupCheckPath || null;
         info.loaded = isPluginLoaded(manifest.id);
         info.type = manifest.type || (manifest.components ? "composite" : "widget");
         info.source = sourceTag;
@@ -1148,7 +1157,8 @@ Singleton {
         const userUrl = Paths.toFileUrl(root.pluginDirectory);
         const systemUrl = Paths.toFileUrl(root.systemPluginDirectory);
         userWatcher.folder = "";
-        userWatcher.folder = userUrl;
+        if (!AdminPolicy.disableUserPlugins)
+            userWatcher.folder = userUrl;
         systemWatcher.folder = "";
         systemWatcher.folder = systemUrl;
         resyncDebounce.restart();
@@ -1386,6 +1396,117 @@ Singleton {
     }
 
     property var installingPlugins: ({})
+
+    // The plugin removed last ({id, name, wasEnabled}), kept a few seconds so the plugins page can offer to put it back.
+    property var lastUninstalledPlugin: null
+
+    Timer {
+        id: undoUninstallTimer
+        interval: 8000
+        onTriggered: root.lastUninstalledPlugin = null
+    }
+
+    // Only a registry plugin (one with a repo in the installed list) can be put back:
+    // a plugin the registry does not know would otherwise be swapped for another one.
+    function noteUninstalled(pluginId, pluginName, wasEnabled, repo) {
+        if (!repo) {
+            undoUninstallTimer.stop();
+            lastUninstalledPlugin = null;
+            return;
+        }
+        lastUninstalledPlugin = {
+            id: pluginId,
+            name: pluginName || pluginId,
+            wasEnabled: wasEnabled === true
+        };
+        undoUninstallTimer.restart();
+    }
+
+    function undoUninstall() {
+        const plugin = lastUninstalledPlugin;
+        if (!plugin)
+            return;
+        undoUninstallTimer.stop();
+        lastUninstalledPlugin = null;
+        installFromRegistry(plugin.id, plugin.name, plugin.wasEnabled);
+    }
+
+    // Plugin id -> id of the user's own +1 reaction on the registry issue, once a click has found or created it.
+    property var upvotedPlugins: ({})
+    // Plugin id -> what this session changed on top of the registry count (+1, 0 or -1).
+    property var upvoteDeltas: ({})
+    property var upvotingPlugins: ({})
+
+    function upvoteCount(plugin) {
+        return PluginRanking.upvoteCount(plugin.upvotes, upvoteDeltas[plugin.id]);
+    }
+
+    function _setUpvote(pluginId, reactionId, delta) {
+        const voted = Object.assign({}, upvotedPlugins);
+        if (reactionId)
+            voted[pluginId] = reactionId;
+        else
+            delete voted[pluginId];
+        upvotedPlugins = voted;
+        upvoteDeltas = Object.assign({}, upvoteDeltas, {
+            [pluginId]: delta
+        });
+    }
+
+    function _setUpvoting(pluginId, active) {
+        const pending = Object.assign({}, upvotingPlugins);
+        if (active)
+            pending[pluginId] = true;
+        else
+            delete pending[pluginId];
+        upvotingPlugins = pending;
+    }
+
+    // One click: a thumbs-up on the plugin's GitHub issue through the gh CLI when
+    // it is installed and signed in, otherwise the issue opens in the browser.
+    // One click votes, a second click on a vote takes it back. GitHub keeps one +1 per account.
+    function upvotePlugin(plugin) {
+        if (!plugin || !plugin.issueUrl || upvotingPlugins[plugin.id])
+            return;
+        const path = PluginRanking.issueReactionsPath(plugin.issueUrl);
+        if (!path) {
+            if (/^https:\/\//.test(plugin.issueUrl))
+                Qt.openUrlExternally(plugin.issueUrl);
+            return;
+        }
+        const pluginId = plugin.id;
+        const issueUrl = plugin.issueUrl;
+        const delta = upvoteDeltas[pluginId] || 0;
+        const ownReaction = upvotedPlugins[pluginId];
+        _setUpvoting(pluginId, true);
+        if (ownReaction) {
+            Proc.runCommand("plugin-upvote-" + pluginId, ["gh", "api", "--method", "DELETE", path + "/" + ownReaction], (output, exitCode) => {
+                _setUpvoting(pluginId, false);
+                if (exitCode !== 0) {
+                    root.log.warn("gh upvote removal failed", pluginId, exitCode);
+                    ToastService.showInfo(I18n.tr("Opening GitHub to remove the upvote", "plugin upvote toast, shown when the GitHub CLI is missing or signed out"));
+                    Qt.openUrlExternally(issueUrl);
+                    return;
+                }
+                _setUpvote(pluginId, 0, PluginRanking.nextUpvoteDelta(delta, true, false));
+                ToastService.showInfo(I18n.tr("Upvote removed", "plugin upvote toast"));
+            }, 0, 15000);
+            return;
+        }
+        Proc.runCommand("plugin-upvote-" + pluginId, ["gh", "api", "--include", "--method", "POST", path, "-f", "content=+1"], (output, exitCode) => {
+            _setUpvoting(pluginId, false);
+            const reactionId = exitCode === 0 ? PluginRanking.reactionId(output) : 0;
+            if (!reactionId) {
+                root.log.warn("gh upvote failed", pluginId, exitCode);
+                ToastService.showInfo(I18n.tr("Opening GitHub to upvote", "plugin upvote toast, shown when the GitHub CLI is missing or signed out"));
+                Qt.openUrlExternally(issueUrl);
+                return;
+            }
+            const added = /^HTTP\/\S+ 201/.test(output || "");
+            _setUpvote(pluginId, reactionId, PluginRanking.nextUpvoteDelta(delta, false, added));
+            ToastService.showInfo(added ? I18n.tr("Upvoted on GitHub", "plugin upvote toast") : I18n.tr("Already upvoted, click again to remove", "plugin upvote toast"));
+        }, 0, 15000);
+    }
 
     Component {
         id: installedPluginWaiter

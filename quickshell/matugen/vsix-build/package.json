@@ -1,7 +1,7 @@
 {
   "name": "dms-theme",
-  "displayName": "DMS - Dank Material Shell Theme",
-  "description": "Dynamic theme using matugen & dank16 terminal colors - auto-updated by DankMaterialShell",
+  "displayName": "DMS - Dux Shell Theme",
+  "description": "Dynamic theme using matugen & dank16 terminal colors - auto-updated by Dux Shell",
   "publisher": "DankLinux",
   "version": "0.0.3",
   "icon": "danklogo.png",
@@ -20,7 +20,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/AvengeMedia/DankMaterialShell"
+    "url": "https://github.com/duxlabs-dev/dux-shell"
   },
   "contributes": {
     "themes": [

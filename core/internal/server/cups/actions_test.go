@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	mocks_cups "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/cups"
-	"github.com/AvengeMedia/DankMaterialShell/core/pkg/ipp"
+	mocks_cups "github.com/duxlabs-dev/dux-shell/core/internal/mocks/cups"
+	"github.com/duxlabs-dev/dux-shell/core/pkg/ipp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

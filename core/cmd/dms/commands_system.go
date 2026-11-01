@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/lowprio"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/sysupdate"
-	"github.com/AvengeMedia/dankgo/ipc"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/lowprio"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/sysupdate"
 	"github.com/spf13/cobra"
 )
 

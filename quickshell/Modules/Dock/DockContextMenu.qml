@@ -11,7 +11,7 @@ DockContextMenuBase {
     property bool hidePin: false
     property var desktopEntry: null
     property var dockApps: null
-    readonly property bool isDmsWindow: appData?.appId === "org.quickshell" || appData?.appId === "com.danklinux.dms"
+    readonly property bool isDmsWindow: Paths.isDmsAppId(appData?.appId)
     readonly property var settingsJumpGroups: visible && appData?.appId === "dms_settings" ? buildSettingsJumpGroups() : []
 
     layerNamespace: "dms:dock-context-menu"

@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/dmenuipc"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/qsipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/dmenuipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/qsipc"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

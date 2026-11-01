@@ -15,6 +15,9 @@ Item {
     property string statusText: ""
     property bool statusIsError: false
     property bool operationPending: false
+
+    Component.onCompleted: UsersService.refresh()
+
     Connections {
         target: UsersService
         function onOperationCompleted(op, username, success, message) {
@@ -105,7 +108,7 @@ Item {
                                 const enableGreeter = !userRow.modelData.isGreeter;
                                 greeterToggleConfirm.showWithOptions({
                                     title: enableGreeter ? I18n.tr("Allow greeter access?") : I18n.tr("Remove greeter access?"),
-                                    message: enableGreeter ? I18n.tr("Add \"%1\" to the %2 group? They must log out and back in, then run dms-greeter sync --profile to publish their login-screen theme.", "confirm dialog message, %1 is the username, %2 is the group name, keep the command verbatim").arg(userRow.modelData.username).arg(UsersService.greeterGroup) : I18n.tr("Remove \"%1\" from the %2 group?").arg(userRow.modelData.username).arg(UsersService.greeterGroup),
+                                    message: enableGreeter ? I18n.tr("Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.", "confirm dialog message, %1 is the username, %2 is the group name, %3 a command").arg(userRow.modelData.username).arg(UsersService.greeterGroup).arg("dms-greeter sync --profile") : I18n.tr("Remove \"%1\" from the %2 group?").arg(userRow.modelData.username).arg(UsersService.greeterGroup),
                                     confirmText: enableGreeter ? I18n.tr("Allow", "verb, confirm button granting a user greeter access") : I18n.tr("Remove"),
                                     confirmColor: Theme.primary,
                                     onConfirm: () => {

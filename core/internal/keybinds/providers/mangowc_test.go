@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/config"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/mangoconf"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
 )
 
 func TestMangoWCCategorizeByCommand(t *testing.T) {

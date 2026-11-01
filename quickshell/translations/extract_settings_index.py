@@ -278,12 +278,42 @@ def enrich_keywords(label, description, category, existing_tags, parent_label=No
     return sorted(keywords)
 
 
+def literal_args(value):
+    """Extract literal and supported runtime .arg() values from a setting description."""
+    call_tail = value.split("I18n.tr(", 1)[-1].split("I18n.tr(", 1)[0]
+    args = []
+    pattern = r"\.arg\(\s*(?:" + STR_DQ + "|" + STR_SQ + r"|(?P<dynamic>UsersService\.(?:adminGroup|greeterGroup)))?"
+    for match in re.finditer(pattern, call_tail):
+        if match.group(1) is not None:
+            args.append(decode_string_literal(match.group(1), '"'))
+        elif match.group(2) is not None:
+            args.append(decode_string_literal(match.group(2), "'"))
+        elif match.group("dynamic") is not None:
+            service, prop = match.group("dynamic").split(".", 1)
+            args.append({"service": service, "property": prop})
+        else:
+            args.append(None)
+    return args
+
+
+def apply_args(text, args):
+    for index, arg in enumerate(args, start=1):
+        if isinstance(arg, str):
+            text = text.replace(f"%{index}", arg)
+    return text
+
+
 def extract_i18n_string(value):
     for literal, quote in ((STR_DQ, '"'), (STR_SQ, "'")):
         match = re.search(rf"I18n\.tr\(\s*{literal}", value) or re.fullmatch(literal, value.strip())
         if match and match.group(1):
             return decode_string_literal(match.group(1), quote)
     return None
+
+
+def is_status_notice(value):
+    """A description with an empty branch only shows while some state holds; it is not searchable text."""
+    return re.search(r"""\?\s*(""|'')\s*:|:\s*(""|'')\s*$""", value.strip()) is not None
 
 
 def extract_tags(value):
@@ -339,6 +369,40 @@ def own_scope(block):
         if depth <= 1:
             kept.append(char)
     return "".join(kept)
+
+
+def child_blocks(block):
+    children = []
+    depth = 0
+    i = 0
+    while i < len(block):
+        char = block[i]
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+        elif depth == 1:
+            match = re.match(r"[A-Z]\w*\s*\{", block[i:])
+            if match and (i == 0 or not (block[i - 1].isalnum() or block[i - 1] in "_.")):
+                child = parse_component_block(block, i, None)
+                children.append(child)
+                i = block.index(child, i) + len(child)
+                continue
+        i += 1
+    return children
+
+
+def borrowed_description(block, setting_key):
+    """First description among the nested rows that have no index entry of their own."""
+    for child in child_blocks(block):
+        own = own_scope(child)
+        key = extract_property(own, "settingKey")
+        if key and key.strip("\"'") != setting_key:
+            continue
+        found = extract_property(own, "description") or extract_property(own, "summary") or borrowed_description(child, setting_key)
+        if found:
+            return found
+    return None
 
 
 def load_wrapper_components(root_dir):
@@ -453,10 +517,12 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
             if tags_raw:
                 tags = extract_tags(tags_raw)
 
-            desc_raw = extract_property(block, "description") or extract_property(block, "summary") or defaults.get("description")
+            desc_raw = extract_property(own, "description") or extract_property(own, "summary") or defaults.get("description") or borrowed_description(block, setting_key)
             description = None
-            if desc_raw:
+            description_args = []
+            if desc_raw and not is_status_notice(desc_raw):
                 description = extract_i18n_string(desc_raw)
+                description_args = literal_args(desc_raw)
 
             visible_raw = extract_property(own_scope(block), "visible")
             page_meta = hub_meta.get(file_page) if file_page else None
@@ -528,7 +594,7 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                 condition_key = next((cond for start, end, cond in card_conditions if start < match.start() < end), None)
 
             category, parent_label, _ = page_meta if page_meta else tab_meta.get(tab_index, TAB_META_DEFAULT)
-            enriched_keywords = enrich_keywords(label, description, category, tags, parent_label)
+            enriched_keywords = enrich_keywords(label, apply_args(description, description_args) if description else description, category, tags, parent_label)
 
             entry = {
                 "section": setting_key,
@@ -546,6 +612,8 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                 entry["icon"] = icon
             if description:
                 entry["description"] = description
+            if description_args and None not in description_args:
+                entry["descriptionArgs"] = description_args
             if condition_key:
                 entry["conditionKey"] = condition_key
 

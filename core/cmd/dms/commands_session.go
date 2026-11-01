@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/spf13/cobra"
 )
 

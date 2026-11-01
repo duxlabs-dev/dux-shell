@@ -11,6 +11,7 @@ import qs.DCommon.Session
 Item {
     id: root
     property string screenName: ""
+    property bool asynchronous: false
     readonly property bool hasCustomWallpaper: SettingsData.lockScreenWallpaperPath !== ""
 
     function encodeFileUrl(path) {
@@ -32,10 +33,10 @@ Item {
         active: {
             if (root.hasCustomWallpaper)
                 return false;
-            var currentWallpaper = SessionData.getMonitorWallpaper(screenName);
+            var currentWallpaper = SessionData.getMonitorWallpaperImage(screenName);
             return !currentWallpaper || (currentWallpaper && currentWallpaper.startsWith("#"));
         }
-        asynchronous: false
+        asynchronous: root.asynchronous
 
         sourceComponent: DBackdrop {
             screenName: root.screenName
@@ -51,7 +52,7 @@ Item {
         readonly property string wallpaperSource: {
             if (root.hasCustomWallpaper)
                 return root.encodeFileUrl(SettingsData.lockScreenWallpaperPath);
-            var w = SessionData.getMonitorWallpaper(screenName);
+            var w = SessionData.getMonitorWallpaperImage(screenName);
             return (w && !w.startsWith("#")) ? encodeFileUrl(w) : "";
         }
         readonly property string fillModeName: {
@@ -64,7 +65,7 @@ Item {
         readonly property size decodeSize: Qt.size(Math.round(width * screenScale), Math.round(height * screenScale))
 
         active: wallpaperSource !== "" && width > 0 && height > 0
-        asynchronous: false
+        asynchronous: root.asynchronous
 
         sourceComponent: fillModeName === "Scrolling" ? scrollWallpaperComp : plainWallpaperComp
 
@@ -95,7 +96,7 @@ Item {
             fillMode: Theme.getFillMode(wallpaperBackground.fillModeName)
             smooth: true
             cache: true
-            asynchronous: false
+            asynchronous: root.asynchronous
         }
     }
 
@@ -109,7 +110,7 @@ Item {
                 visible: false
                 source: wallpaperBackground.wallpaperSource
                 sourceSize: wallpaperBackground.decodeSize
-                asynchronous: false
+                asynchronous: root.asynchronous
                 cache: true
             }
 

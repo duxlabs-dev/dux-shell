@@ -135,9 +135,6 @@ Rectangle {
         font.weight: Theme.fontWeightMedium
         minimumPixelSize: Theme.fontSizeXXLarge
         fontSizeMode: Text.HorizontalFit
-        font.features: ({
-                "tnum": 1
-            })
     }
 
     DMaterialShape {

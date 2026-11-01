@@ -1,6 +1,6 @@
 # DMS Quickshell Interface
 
-QML-based desktop shell interface for DankMaterialShell providing panels, widgets, and overlays.
+QML-based desktop shell interface for Dux Shell providing panels, widgets, and overlays.
 
 **See [root README](../README.md) for project overview and installation.**
 
@@ -82,15 +82,15 @@ Singletons providing system integration:
 
 ## Widgets
 
-Reusable Material Design 3 components in `Widgets/`:
+Reusable Material Design 3 components from the shared library (`qs.DCommon.Widgets`):
 
-- `DankIcon` - Icon component with Material font
-- `DankSlider` - Enhanced slider with animations
-- `DankToggle` - Toggle switch component
-- `DankTabBar` - Tab bar implementation
-- `DankGridView` - Grid layout with adaptive columns
-- `DankListView` - Scrollable list view
-- `DankTextField` - Text input with validation
+- `DIcon` - Icon component with Material font
+- `DSlider` - Enhanced slider with animations
+- `DToggle` - Toggle switch component
+- `DTabBar` - Tab bar implementation
+- `DGridView` - Grid layout with adaptive columns
+- `DListView` - Scrollable list view
+- `DTextField` - Text input with validation
 - `DDropdown` - Dropdown selection
 - `DPopout` - Base for overlay components
 - `StateLayer` - Material interaction states
@@ -140,7 +140,7 @@ Workspace switchers adapt to compositor (Niri/Hyprland).
 
 ## Plugin System
 
-External plugins in `~/.config/DankMaterialShell/plugins/`:
+External plugins in `~/.config/dms/plugins/`:
 
 **Widget plugins** - UI components in DankBar
 **Daemon plugins** - Background processes without UI
@@ -219,7 +219,7 @@ Singleton {
 **Guidelines:**
 - Use `Theme.propertyName` for consistent styling
 - Bind directly to service properties for reactivity
-- Use `DankIcon` for all icons
+- Use `DIcon` for all icons
 - Implement feature detection and graceful degradation
 - 4-space indentation, no unnecessary comments
 

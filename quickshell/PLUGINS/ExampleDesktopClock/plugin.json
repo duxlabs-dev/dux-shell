@@ -3,7 +3,7 @@
     "name": "Desktop Clock",
     "description": "An example desktop widget displaying an analog clock",
     "version": "1.0.0",
-    "author": "DankMaterialShell",
+    "author": "Dux Shell",
     "type": "desktop",
     "capabilities": ["desktop-widget", "clock"],
     "component": "./DesktopClock.qml",

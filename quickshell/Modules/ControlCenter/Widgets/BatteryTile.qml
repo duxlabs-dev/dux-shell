@@ -28,11 +28,12 @@ CcTile {
         if (!available)
             return I18n.tr("Not available");
         if (BatteryService.isCharging)
-            return `${BatteryService.batteryLevel}% • ` + I18n.tr("Charging");
+            return `${BatteryService.displayBatteryLevelText}% • ` + I18n.tr("Charging");
         if (BatteryService.isPluggedIn)
-            return `${BatteryService.batteryLevel}% • ` + I18n.tr("Plugged in");
-        return `${BatteryService.batteryLevel}%`;
+            return `${BatteryService.displayBatteryLevelText}% • ` + I18n.tr("Plugged in");
+        return `${BatteryService.displayBatteryLevelText}%`;
     }
+    denseTitle: available && !showsMeter ? I18n.tr("Battery") + ` • ${BatteryService.displayBatteryLevelText}%` : ""
 
     function syncBatteryRef(wanted) {
         if (wanted === batteryRefHeld)

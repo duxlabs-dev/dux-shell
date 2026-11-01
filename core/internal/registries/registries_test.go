@@ -3,7 +3,7 @@ package registries
 import (
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/clipolicy"
+	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -57,12 +57,12 @@ func TestRemove(t *testing.T) {
 func TestLoadIgnoresInvalidConfig(t *testing.T) {
 	fs := setupFs(t)
 
-	require.NoError(t, fs.MkdirAll("/xdg/DankMaterialShell", 0o755))
-	require.NoError(t, afero.WriteFile(fs, "/xdg/DankMaterialShell/registries.json", []byte("{not json"), 0o644))
+	require.NoError(t, fs.MkdirAll("/xdg/dms", 0o755))
+	require.NoError(t, afero.WriteFile(fs, "/xdg/dms/registries.json", []byte("{not json"), 0o644))
 	assert.Len(t, Load(fs), 1)
 
 	entries := `[{"name":"ok","url":"https://example.com/ok.git"},{"name":"Bad Name","url":"https://example.com/bad.git"},{"name":"official","url":"https://example.com/spoof.git"},{"name":"nourl","url":""}]`
-	require.NoError(t, afero.WriteFile(fs, "/xdg/DankMaterialShell/registries.json", []byte(entries), 0o644))
+	require.NoError(t, afero.WriteFile(fs, "/xdg/dms/registries.json", []byte(entries), 0o644))
 	sources := Load(fs)
 	require.Len(t, sources, 2, "invalid entries dropped")
 	assert.Equal(t, "ok", sources[1].Name)

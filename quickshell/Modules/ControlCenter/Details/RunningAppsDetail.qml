@@ -19,6 +19,7 @@ Item {
     readonly property string title: I18n.tr("Running apps")
     property var toplevels: []
     readonly property int count: toplevels.length
+    property int _desktopEntriesRevision: 0
 
     signal closeRequested
     signal dismissRequested
@@ -26,6 +27,14 @@ Item {
     onCountChanged: {
         if (count === 0)
             dismissRequested();
+    }
+
+    Connections {
+        target: DesktopEntries
+
+        function onApplicationsChanged() {
+            root._desktopEntriesRevision++;
+        }
     }
 
     DFlickable {
@@ -50,7 +59,10 @@ Item {
 
                         required property var modelData
                         readonly property string appId: modelData?.appId ?? ""
-                        readonly property string appName: Paths.getAppName(appId, DesktopEntries.heuristicLookup(appId))
+                        readonly property string appName: {
+                            root._desktopEntriesRevision;
+                            return Paths.getAppName(appId, DesktopEntries.heuristicLookup(appId));
+                        }
                         readonly property var placement: CompositorService.toplevelPlacement(modelData)
                         readonly property string workspaceLabel: placement.workspace ? I18n.tr("Workspace %1", "control center running app row, %1 is a workspace number or name").arg(placement.workspace) : ""
                         readonly property string outputLabel: Quickshell.screens.length > 1 ? (SettingsData.getScreenDisplayName(Quickshell.screens.find(screen => screen.name === placement.output)) || placement.output) : ""

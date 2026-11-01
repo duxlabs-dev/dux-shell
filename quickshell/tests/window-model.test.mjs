@@ -20,6 +20,14 @@ const aqueousService = source("../Services/AqueousService.qml");
 const model = vm.createContext({});
 vm.runInContext(source("../Common/WindowModel.js").replace(/^\.pragma.*$/m, ""), model);
 
+test("mango monitor changes invalidate cached toplevels", () => {
+    const context = vm.createContext({});
+    lift(compositorService, "_toplevelListEquivalent", context);
+    const window = { mangoWindowId: 1, appId: "app1", mangoMonitor: "DP-1", mangoTags: [1] };
+    assert.equal(context._toplevelListEquivalent([window], [{ ...window }]), true);
+    assert.equal(context._toplevelListEquivalent([window], [{ ...window, mangoMonitor: "HDMI-A-1" }]), false);
+});
+
 function niriState(scenario) {
     const s = fixture("niri")[scenario];
     const toplevels = s.toplevels.map(t => ({ ...t }));

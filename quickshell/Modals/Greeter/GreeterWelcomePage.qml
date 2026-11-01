@@ -1,135 +1,189 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Effects
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
+import qs.Widgets
 
 Item {
     id: root
 
-    readonly property real logoSize: Math.round(Theme.iconSize * 5.3)
+    readonly property int columns: 3
+    readonly property real cardWidth: (content.width - Theme.spacingS * (columns - 1)) / columns
+    readonly property var features: [
+        {
+            "icon": "palette",
+            "shape": "softBurst",
+            "hoverShape": "flower",
+            "accent": "purple",
+            "heading": I18n.tr("Dynamic Theming", "greeter feature card title"),
+            "description": I18n.tr("Colors from wallpaper", "greeter feature card description"),
+            "target": "theme"
+        },
+        {
+            "icon": "toolbar",
+            "shape": "pill",
+            "hoverShape": "cookie4",
+            "accent": "blue",
+            "heading": I18n.tr("Bar"),
+            "description": I18n.tr("Modular widget bar", "greeter feature card description"),
+            "target": "dankbar_settings"
+        },
+        {
+            "icon": "extension",
+            "shape": "puffy",
+            "hoverShape": "clover8",
+            "accent": "green",
+            "heading": I18n.tr("Plugins", "greeter feature card title"),
+            "description": I18n.tr("Extensible architecture", "greeter feature card description"),
+            "target": "plugins"
+        },
+        {
+            "icon": "monitor",
+            "shape": "gem",
+            "hoverShape": "cookie6",
+            "accent": "orange",
+            "heading": I18n.tr("Multi-Monitor", "greeter feature card title"),
+            "description": I18n.tr("Per-screen config", "greeter feature card description"),
+            "target": CompositorService.supportsDisplayConfig ? "display_config" : "display_widgets"
+        },
+        {
+            "icon": "nightlight",
+            "shape": "sunny",
+            "hoverShape": "softBurst",
+            "accent": "pink",
+            "heading": I18n.tr("Display Control", "greeter feature card title"),
+            "description": I18n.tr("Night mode & gamma", "greeter feature card description"),
+            "target": "display_gamma"
+        },
+        {
+            "icon": "tune",
+            "shape": "cookie9",
+            "hoverShape": "sunny",
+            "accent": "teal",
+            "heading": I18n.tr("Control Center", "greeter feature card title"),
+            "description": I18n.tr("Quick system toggles", "greeter feature card description"),
+            "target": "control_center"
+        }
+    ]
 
-    Column {
-        id: mainColumn
-        anchors.centerIn: parent
-        width: Math.min(Math.round(Theme.fontSizeMedium * 43), parent.width - Theme.spacingXL * 2)
-        spacing: Theme.spacingXL
+    function open(target) {
+        switch (target) {
+        case "control_center":
+            BarWidgetService.getBarWindowOnFocusedScreen()?.triggerControlCenter();
+            return;
+        }
+        PopoutService.openSettingsWithTab(target);
+    }
+
+    DFlickable {
+        id: flick
+        anchors.fill: parent
+        clip: true
+        contentWidth: width
+        contentHeight: Math.max(height, content.height)
 
         Column {
-            width: parent.width
-            spacing: Theme.spacingM
+            id: content
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 0
+            width: Math.min(640, parent.width - Theme.spacingXL * 2)
+            spacing: Theme.spacingL
 
-            Image {
-                width: root.logoSize
-                height: width * (569.94629 / 506.50931)
-                anchors.horizontalCenter: parent.horizontalCenter
-                fillMode: Image.PreserveAspectFit
-                smooth: true
-                mipmap: true
-                asynchronous: true
-                source: "file://" + Theme.shellDir + "/assets/danklogonormal.svg"
-                layer.enabled: true
-                layer.smooth: true
-                layer.mipmap: true
-                layer.effect: MultiEffect {
-                    saturation: 0
-                    colorization: 1
-                    colorizationColor: Theme.primary
-                }
-            }
-
-            Column {
+            DShapeHero {
+                id: hero
                 width: parent.width
-                spacing: Theme.spacingXS
+                height: Math.max(implicitHeight, flick.height - grid.height - content.spacing)
+                paddingV: Theme.spacingXL
 
-                StyledText {
-                    text: I18n.tr("Welcome to DankMaterialShell", "greeter welcome page title")
-                    font.pixelSize: Theme.fontSizeXLarge + 4
-                    color: Theme.surfaceText
-                    anchors.horizontalCenter: parent.horizontalCenter
+                Column {
+                    width: parent.width
+                    spacing: Theme.spacingM
+
+                    Item {
+                        width: Theme.buttonHeightM * 2
+                        height: width
+                        anchors.horizontalCenter: parent.horizontalCenter
+
+                        Image {
+                            readonly property real dpr: Screen.devicePixelRatio
+
+                            anchors.centerIn: parent
+                            height: parent.height
+                            width: height * (506.50931 / 569.94629)
+                            // 2x raster plus mipmap keeps the thin rings smooth at fractional scales
+                            sourceSize.height: Math.ceil(height * dpr * 2)
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            mipmap: true
+                            asynchronous: true
+                            source: "file://" + Theme.shellDir + "/assets/danklogonormal.svg"
+                            layer.enabled: true
+                            layer.smooth: true
+                            layer.textureSize: Qt.size(Math.ceil(width * dpr), Math.ceil(height * dpr))
+                            layer.effect: MultiEffect {
+                                saturation: 0
+                                colorization: 1
+                                colorizationColor: hero.accentColor
+                            }
+                        }
+                    }
+
+                    StyledText {
+                        width: parent.width
+                        text: I18n.tr("Welcome to %1", "greeter welcome page title, %1 is the product name").arg("Dux Shell")
+                        font.pixelSize: Theme.fontSizeXXLarge
+                        font.weight: Theme.fontWeightBold
+                        color: hero.contentColor
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                    }
+
+                    StyledText {
+                        width: parent.width
+                        text: I18n.tr("A modern desktop shell for Wayland", "greeter welcome page tagline")
+                        font.pixelSize: Theme.fontSizeLarge
+                        color: hero.contentColor
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                    }
                 }
-
-                StyledText {
-                    text: I18n.tr("A modern desktop shell for Wayland compositors", "greeter welcome page tagline")
-                    font.pixelSize: Theme.fontSizeMedium
-                    color: Theme.surfaceVariantText
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
-            }
-        }
-
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Theme.outlineMedium
-            opacity: 0.3
-        }
-
-        Column {
-            width: parent.width
-            spacing: Theme.spacingM
-
-            StyledText {
-                text: I18n.tr("Features", "greeter welcome page section header")
-                font.pixelSize: Theme.fontSizeMedium
-                font.weight: Theme.fontWeightMedium
-                color: Theme.surfaceText
             }
 
             Grid {
+                id: grid
+
+                readonly property real cellHeight: {
+                    let tallest = 0;
+                    for (const card of children)
+                        tallest = Math.max(tallest, card.implicitHeight ?? 0);
+                    return tallest;
+                }
+
                 width: parent.width
-                columns: 3
+                columns: root.columns
                 rowSpacing: Theme.spacingS
                 columnSpacing: Theme.spacingS
+                layoutDirection: I18n.isRtl ? Qt.RightToLeft : Qt.LeftToRight
 
-                GreeterFeatureCard {
-                    width: (parent.width - Theme.spacingS * 2) / 3
-                    iconName: "auto_awesome"
-                    title: I18n.tr("Dynamic Theming", "greeter feature card title")
-                    description: I18n.tr("Colors from wallpaper", "greeter feature card description")
-                    onClicked: PopoutService.openSettingsWithTab("theme")
-                }
+                Repeater {
+                    model: root.features
 
-                GreeterFeatureCard {
-                    width: (parent.width - Theme.spacingS * 2) / 3
-                    iconName: "view_carousel"
-                    title: I18n.tr("DankBar", "greeter feature card title")
-                    description: I18n.tr("Modular widget bar", "greeter feature card description")
-                    onClicked: PopoutService.openSettingsWithTab("dankbar_settings")
-                }
+                    delegate: FeatureCard {
+                        required property var modelData
 
-                GreeterFeatureCard {
-                    width: (parent.width - Theme.spacingS * 2) / 3
-                    iconName: "extension"
-                    title: I18n.tr("Plugins", "greeter feature card title")
-                    description: I18n.tr("Extensible architecture", "greeter feature card description")
-                    onClicked: PopoutService.openSettingsWithTab("plugins")
-                }
-
-                GreeterFeatureCard {
-                    width: (parent.width - Theme.spacingS * 2) / 3
-                    iconName: "layers"
-                    title: I18n.tr("Multi-Monitor", "greeter feature card title")
-                    description: I18n.tr("Per-screen config", "greeter feature card description")
-                    onClicked: {
-                        PopoutService.openSettingsWithTab(CompositorService.supportsDisplayConfig ? "display_config" : "display_widgets");
+                        width: root.cardWidth
+                        height: grid.cellHeight
+                        iconName: modelData.icon
+                        shape: modelData.shape
+                        hoverShape: modelData.hoverShape
+                        accent: modelData.accent
+                        heading: modelData.heading
+                        description: modelData.description
+                        onClicked: root.open(modelData.target)
                     }
-                }
-
-                GreeterFeatureCard {
-                    width: (parent.width - Theme.spacingS * 2) / 3
-                    iconName: "nightlight"
-                    title: I18n.tr("Display Control", "greeter feature card title")
-                    description: I18n.tr("Night mode & gamma", "greeter feature card description")
-                    onClicked: PopoutService.openSettingsWithTab("display_gamma")
-                }
-
-                GreeterFeatureCard {
-                    width: (parent.width - Theme.spacingS * 2) / 3
-                    iconName: "tune"
-                    title: I18n.tr("Control Center", "greeter feature card title")
-                    description: I18n.tr("Quick system toggles", "greeter feature card description")
-                    onClicked: BarWidgetService.getBarWindowOnFocusedScreen()?.triggerControlCenter()
                 }
             }
         }

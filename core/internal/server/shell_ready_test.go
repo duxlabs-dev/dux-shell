@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/systemd"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
+	"github.com/duxlabs-dev/dux-shell/core/internal/systemd"
 	"github.com/stretchr/testify/require"
 )
 

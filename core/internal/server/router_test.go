@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/apppicker"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/clipboard"
-	"github.com/AvengeMedia/dankgo/files"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/files"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/apppicker"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/clipboard"
 	"github.com/stretchr/testify/require"
 )
 
@@ -52,7 +52,7 @@ func TestRouteRequestUnavailableManagers(t *testing.T) {
 }
 
 func TestRouteRequestUnknownMethods(t *testing.T) {
-	for _, method := range []string{"", "missing", "network", "networking.getState", "theme.auto", "matugen.missing", "plugins.missing", "themes.missing", "registries.missing", "mime.missing", "dgop.missing", "lyrics.missing"} {
+	for _, method := range []string{"", "missing", "network", "networking.getState", "theme.auto", "matugen.missing", "plugins.missing", "themes.missing", "registries.missing", "mime.missing", "dgop.missing", "drives.missing", "lyrics.missing"} {
 		t.Run(method, func(t *testing.T) {
 			conn := &mockConn{}
 			RouteRequest(context.Background(), ipc.NewConnWriter(conn), ipc.Request{ID: 18, Method: method})

@@ -5,7 +5,7 @@
 package mocks_network
 
 import (
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/network"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/network"
 	mock "github.com/stretchr/testify/mock"
 )
 

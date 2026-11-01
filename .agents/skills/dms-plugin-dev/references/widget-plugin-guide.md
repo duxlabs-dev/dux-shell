@@ -59,7 +59,7 @@ horizontalBarPill: Component {
             anchors.centerIn: parent
             spacing: Theme.spacingS
 
-            DankIcon {
+            DIcon {
                 name: "star"
                 color: Theme.surfaceText
                 font.pixelSize: Theme.iconSize
@@ -92,7 +92,7 @@ verticalBarPill: Component {
             anchors.centerIn: parent
             spacing: Theme.spacingS
 
-            DankIcon {
+            DIcon {
                 name: "star"
                 color: Theme.surfaceText
                 font.pixelSize: Theme.iconSizeSmall
@@ -261,7 +261,7 @@ PluginComponent {
             padding: Theme.spacingM
             spacing: Theme.spacingM
 
-            DankButton {
+            DButton {
                 text: I18n.trFor("myPlugin", "Close")
                 onClicked: root.surfaceContext.dismissExpansion()
             }
@@ -311,6 +311,7 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Services
 import qs.Modules.Plugins
 
@@ -367,7 +368,7 @@ PluginComponent {
         PopoutComponent {
             headerText: "Emoji Picker"
 
-            DankGridView {
+            DGridView {
                 width: parent.width
                 height: 300
                 cellWidth: 50

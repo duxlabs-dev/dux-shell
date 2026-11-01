@@ -19,6 +19,7 @@ DSlider {
     signal muteRequested
 
     size: "m"
+    focusRingColor: MediaAccentService.focusRing
     insetIcon: volumeIcon
     insetIconClickable: true
     insetIconLabel: muteLabel

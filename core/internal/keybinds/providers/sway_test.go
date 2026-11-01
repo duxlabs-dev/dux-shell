@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/keybinds"
+	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds"
 )
 
 func TestSwayCategorizeByCommand(t *testing.T) {

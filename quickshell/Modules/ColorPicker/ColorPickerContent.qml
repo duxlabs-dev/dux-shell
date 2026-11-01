@@ -388,11 +388,46 @@ DDialog {
             Repeater {
                 model: SessionData.recentColors.slice(0, 5)
 
-                CommonWidgets.DColorButton {
+                Item {
+                    id: recentSwatch
+
                     required property var modelData
-                    swatchColor: modelData
-                    selected: Qt.colorEqual(root.currentColor, swatchColor)
-                    onClicked: root.setColor(swatchColor)
+
+                    implicitWidth: recentButton.implicitWidth
+                    implicitHeight: recentButton.implicitHeight
+
+                    HoverHandler {
+                        id: recentHover
+                    }
+
+                    CommonWidgets.DColorButton {
+                        id: recentButton
+                        anchors.fill: parent
+                        swatchColor: recentSwatch.modelData
+                        selected: Qt.colorEqual(root.currentColor, swatchColor)
+                        onClicked: root.setColor(swatchColor)
+                        Keys.onDeletePressed: SessionData.removeRecentColor(recentSwatch.modelData)
+                        Keys.onPressed: event => {
+                            if (event.key !== Qt.Key_Backspace)
+                                return;
+                            SessionData.removeRecentColor(recentSwatch.modelData);
+                            event.accepted = true;
+                        }
+                    }
+
+                    CommonWidgets.DActionButton {
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        anchors.margins: -Theme.spacingXS
+                        buttonSize: Theme.iconSizeSmall + Theme.spacingXS
+                        iconSize: Theme.iconSizeSmall - Theme.spacingXS
+                        iconName: "close"
+                        backgroundColor: Theme.surfaceContainerHighest
+                        focusPolicy: Qt.NoFocus
+                        visible: recentHover.hovered
+                        tooltipText: I18n.tr("Remove from recent colors", "button on a recently picked color swatch")
+                        onClicked: SessionData.removeRecentColor(recentSwatch.modelData)
+                    }
                 }
             }
         }

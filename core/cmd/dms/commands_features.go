@@ -13,21 +13,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/distros"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/errdefs"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/netfetch"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/sysupdate"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/version"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
+	"github.com/duxlabs-dev/dux-shell/core/internal/errdefs"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/netfetch"
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/sysupdate"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/version"
 	"github.com/spf13/cobra"
 )
 
 var updateCmd = &cobra.Command{
 	Use:     "update",
-	Short:   "Update DankMaterialShell to the latest version",
-	Long:    "Update DankMaterialShell to the latest version using the appropriate package manager for your distribution",
+	Short:   "Update Dux Shell to the latest version",
+	Long:    "Update Dux Shell to the latest version using the appropriate package manager for your distribution",
 	PreRunE: shellApp.ResolveConfig,
 	Run: func(cmd *cobra.Command, args []string) {
 		runUpdate()
@@ -36,7 +36,7 @@ var updateCmd = &cobra.Command{
 
 var updateCheckCmd = &cobra.Command{
 	Use:   "check",
-	Short: "Check if updates are available for DankMaterialShell",
+	Short: "Check if updates are available for Dux Shell",
 	Long:  "Check for available updates without performing the actual update",
 	Run: func(cmd *cobra.Command, args []string) {
 		runUpdateCheck()
@@ -44,7 +44,7 @@ var updateCheckCmd = &cobra.Command{
 }
 
 func runUpdateCheck() {
-	fmt.Println("Checking for DankMaterialShell updates...")
+	fmt.Println("Checking for Dux Shell updates...")
 	fmt.Println()
 
 	shell := sysupdate.ProbeShell(context.Background(), Version)
@@ -81,6 +81,10 @@ func runUpdate() {
 	osInfo, err := distros.GetOSInfo()
 	if err != nil {
 		log.Fatalf("Error detecting OS: %v", err)
+	}
+
+	if osInfo.Immutable {
+		log.Fatalf("%s is an image-based system (%s). dms lives in the read-only image; update it with 'dms system update' or your image tooling (rpm-ostree, bootc, transactional-update).", osInfo.PrettyName, osInfo.ImmutableReason)
 	}
 
 	config, exists := distros.Registry[osInfo.Distribution.ID]
@@ -124,16 +128,14 @@ func updateArchLinux() error {
 
 	var packageName string
 	var isAUR bool
-	if isArchPackageInstalled("dms-shell") {
-		packageName = "dms-shell"
-	} else if isArchPackageInstalled("dms-shell-git") {
-		packageName = "dms-shell-git"
+	// AUR name first: pacman -Q matches provides, and dux-shell-git provides dux-shell.
+	if isArchPackageInstalled("dux-shell-git") {
+		packageName = "dux-shell-git"
 		isAUR = true
-	} else if isArchPackageInstalled("dms-shell-bin") {
-		packageName = "dms-shell-bin"
-		isAUR = true
+	} else if isArchPackageInstalled("dux-shell") {
+		packageName = "dux-shell"
 	} else {
-		fmt.Println("Info: No dms-shell package found.")
+		fmt.Println("Info: No dux-shell package found.")
 		fmt.Println("Info: Falling back to git-based update method...")
 		return updateOtherDistros()
 	}
@@ -169,7 +171,7 @@ func updateArchLinux() error {
 		return updateOtherDistros()
 	}
 
-	fmt.Printf("This will update DankMaterialShell using %s.\n", helper)
+	fmt.Printf("This will update Dux Shell using %s.\n", helper)
 	if !confirmUpdate() {
 		return errdefs.ErrUpdateCancelled
 	}
@@ -224,7 +226,7 @@ func updateOtherDistros() error {
 
 	fmt.Println("\nThis will update:")
 	fmt.Println("  1. The dms binary from GitHub releases")
-	fmt.Println("  2. DankMaterialShell configuration using git")
+	fmt.Println("  2. Dux Shell configuration using git")
 	if !confirmUpdate() {
 		return errdefs.ErrUpdateCancelled
 	}
@@ -385,7 +387,7 @@ func offerReclone(dmsPath string) bool {
 	}
 
 	fmt.Println("Cloning fresh copy...")
-	cloneCmd := exec.Command("git", "clone", "--recurse-submodules", "https://github.com/AvengeMedia/DankMaterialShell.git", dmsPath)
+	cloneCmd := exec.Command("git", "clone", "--recurse-submodules", "https://github.com/duxlabs-dev/dux-shell.git", dmsPath)
 	cloneCmd.Stdout = os.Stdout
 	cloneCmd.Stderr = os.Stderr
 	if err := cloneCmd.Run(); err != nil {
@@ -449,8 +451,8 @@ func updateDMSBinary() error {
 	}
 	defer os.RemoveAll(tempDir)
 
-	binaryURL := fmt.Sprintf("https://github.com/AvengeMedia/DankMaterialShell/releases/download/%s/dms-cli-%s.gz", version, arch)
-	checksumURL := fmt.Sprintf("https://github.com/AvengeMedia/DankMaterialShell/releases/download/%s/dms-cli-%s.gz.sha256", version, arch)
+	binaryURL := fmt.Sprintf("https://github.com/duxlabs-dev/dux-shell/releases/download/%s/dms-cli-%s.gz", version, arch)
+	checksumURL := fmt.Sprintf("https://github.com/duxlabs-dev/dux-shell/releases/download/%s/dms-cli-%s.gz.sha256", version, arch)
 
 	binaryPath := filepath.Join(tempDir, "dms.gz")
 	checksumPath := filepath.Join(tempDir, "dms.gz.sha256")

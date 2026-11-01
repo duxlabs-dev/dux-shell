@@ -40,6 +40,14 @@ function chainIndex(path, searchDirs, looseDirs) {
     return searchDirs.length + looseDirs.length;
 }
 
+const LARGEST_PREFERRED_RASTER = 256;
+
+function rasterScore(size) {
+    if (size <= LARGEST_PREFERRED_RASTER)
+        return LARGEST_PREFERRED_RASTER + size;
+    return Math.max(0, LARGEST_PREFERRED_RASTER - size / 8);
+}
+
 function score(path, searchDirs, looseDirs) {
     let s = 0;
     if (path.includes("/apps/"))
@@ -59,7 +67,7 @@ function score(path, searchDirs, looseDirs) {
     } else {
         const m = path.match(/\/(\d+)(?:x\d+)?(?:@\d+x)?\//);
         if (m)
-            s += Math.min(parseInt(m[1]), 999);
+            s += rasterScore(parseInt(m[1]));
     }
     return s;
 }

@@ -3,9 +3,9 @@ package wlroutput
 import (
 	"sync"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_output_management"
-	"github.com/AvengeMedia/dankgo/syncmap"
-	wlclient "github.com/AvengeMedia/dankgo/wayland/client"
+	"github.com/duxlabs-dev/dux-go/syncmap"
+	wlclient "github.com/duxlabs-dev/dux-go/wayland/client"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_output_management"
 )
 
 type OutputMode struct {

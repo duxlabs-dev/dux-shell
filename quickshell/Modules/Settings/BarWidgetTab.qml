@@ -85,6 +85,8 @@ Item {
     function defaultOption(key) {
         if (!dockHosted && key === "overflowMode")
             return "section";
+        if (!dockHosted && key === "overflowPriority")
+            return 0;
         if (dockHosted && widgetType === "appsDock" && key in _dockAppsDefaults)
             return _dockAppsDefaults[key];
         return SettingsData.widgetDefaults(widgetType)[key];
@@ -93,6 +95,8 @@ Item {
     function value(key) {
         if (!dockHosted && key === "overflowMode")
             return entry?.overflowMode ?? "section";
+        if (!dockHosted && key === "overflowPriority")
+            return OverflowLayout.priority(entry);
         if (dockHosted && widgetType === "appsDock" && key in _dockAppsDefaults)
             return entry?.[key] ?? _dockAppsDefaults[key];
         return SettingsData.widgetOption(widgetType, entry, key);
@@ -170,6 +174,18 @@ Item {
                 options: placementLabels
                 currentValue: placementLabels[Math.max(0, placementValues.indexOf(placementValue))]
                 onValueChanged: value => root.set("overflowMode", placementValues[placementLabels.indexOf(value)])
+            }
+
+            SettingsSliderRow {
+                visible: !root.dockHosted && !OverflowLayout.pinned(root.widgetType) && OverflowLayout.placement(root.entry, root.sectionAutoOverflow ? "auto" : "bar") === "auto"
+                resetStore: root.store
+                resetKeys: ["overflowPriority"]
+                text: I18n.tr("Overflow priority", "bar widget setting, how early an auto widget moves into overflow")
+                description: I18n.tr("Lower priorities move into overflow first", "bar widget overflow priority slider description")
+                value: root.value("overflowPriority")
+                minimum: -10
+                maximum: 10
+                onSliderValueChanged: value => root.set("overflowPriority", value === 0 ? undefined : value)
             }
 
             SettingsToggleRow {

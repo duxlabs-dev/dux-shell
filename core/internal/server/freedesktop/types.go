@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AvengeMedia/dankgo/syncmap"
+	"github.com/duxlabs-dev/dux-go/syncmap"
 	"github.com/godbus/dbus/v5"
 )
 

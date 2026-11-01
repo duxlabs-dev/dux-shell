@@ -38,7 +38,7 @@ override_dh_auto_build:
 		echo "Renaming $$SOURCE_DIR to DankMaterialShell-$(BASE_VERSION)"; \
 		mv "$$SOURCE_DIR" DankMaterialShell-$(BASE_VERSION); \
 	elif [ ! -d "DankMaterialShell-$(BASE_VERSION)" ]; then \
-		echo "ERROR: No DankMaterialShell directory found after extraction!"; \
+		echo "ERROR: No Dux Shell directory found after extraction!"; \
 		ls -la; \
 		exit 1; \
 	fi
@@ -54,12 +54,12 @@ override_dh_auto_install:
 	# Install desktop file and icon
 	install -Dm644 DankMaterialShell-$(BASE_VERSION)/assets/dms-open.desktop \
 		debian/dms/usr/share/applications/dms-open.desktop
-	install -Dm644 DankMaterialShell-$(BASE_VERSION)/assets/com.danklinux.dms.desktop \
-		debian/dms/usr/share/applications/com.danklinux.dms.desktop
-	install -Dm644 DankMaterialShell-$(BASE_VERSION)/assets/com.danklinux.dms.notepad.desktop \
-		debian/dms/usr/share/applications/com.danklinux.dms.notepad.desktop
-	install -Dm644 DankMaterialShell-$(BASE_VERSION)/assets/com.danklinux.dms.svg \
-		debian/dms/usr/share/icons/hicolor/scalable/apps/com.danklinux.dms.svg
+	install -Dm644 DankMaterialShell-$(BASE_VERSION)/assets/dev.duxlabs.shell.desktop \
+		debian/dms/usr/share/applications/dev.duxlabs.shell.desktop
+	install -Dm644 DankMaterialShell-$(BASE_VERSION)/assets/dev.duxlabs.shell.notepad.desktop \
+		debian/dms/usr/share/applications/dev.duxlabs.shell.notepad.desktop
+	install -Dm644 DankMaterialShell-$(BASE_VERSION)/assets/dev.duxlabs.shell.svg \
+		debian/dms/usr/share/icons/hicolor/scalable/apps/dev.duxlabs.shell.svg
 
 	# Install QML files from source tarball
 	mkdir -p debian/dms/usr/share/quickshell/dms

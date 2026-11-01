@@ -6,6 +6,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Settings.Widgets
+import "../../Common/WallpaperFormats.js" as WallpaperFormats
 
 DFloatingWindow {
     id: settingsModal
@@ -141,6 +142,11 @@ DFloatingWindow {
 
     function showKeybindsSearch(query: string) {
         keybindSearchQuery = query || "";
+        // From inside settings keep the history so back returns to the calling page
+        if (visible) {
+            navigateTo("keybinds");
+            return;
+        }
         showWithTabName("keybinds");
     }
 
@@ -173,7 +179,7 @@ DFloatingWindow {
     title: I18n.tr("Settings", "settings window title")
     minimumSize: Qt.size(SettingsMetrics.windowMinWidth, SettingsMetrics.windowMinHeight)
     implicitWidth: SettingsMetrics.windowWidth
-    implicitHeight: screen ? Math.min(SettingsMetrics.windowHeight, screen.height - SettingsMetrics.pagePaddingH * 2 - Theme.spacingL) : SettingsMetrics.windowHeight
+    implicitHeight: heightWithin(SettingsMetrics.windowHeight, SettingsMetrics.pagePaddingH * 2 + Theme.spacingL)
     visible: false
 
     onClosed: hide()
@@ -259,7 +265,7 @@ DFloatingWindow {
             browserTitle: I18n.tr("Select Wallpaper", "wallpaper file browser title")
             bucket: "wallpaper"
             showHiddenFiles: true
-            filters: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp", "*.jxl", "*.avif", "*.heif", "*.exr", "*.svg"]
+            filters: WallpaperFormats.nameFilters(true)
             onAccepted: paths => {
                 SessionData.setWallpaper(paths[0]);
                 SessionData.wallpaperCyclingFolderPath = "";

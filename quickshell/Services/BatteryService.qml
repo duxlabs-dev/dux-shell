@@ -353,6 +353,9 @@ Singleton {
         const live = _liveChargePercent();
         return live > 0 ? live : _lastBatteryLevel;
     }
+    readonly property real displayBatteryLevel: displayLevelForChargeLimit(batteryLevel, SettingsData.batteryChargeLimit, SettingsData.batteryScaleToChargeLimit)
+    readonly property string displayBatteryLevelText: SettingsData.batteryScaleToChargeLimit ? Math.round(displayBatteryLevel).toString() : displayBatteryLevel.toString()
+    readonly property real batteryAlertLevel: batteryAlertLevelForDisplay(batteryLevel, displayBatteryLevel, SettingsData.batteryScaleToChargeLimit, SettingsData.batteryScaleAlertThresholds)
 
     readonly property bool isCharging: (isBSD && freebsdBatteryAvailable) ? freebsdIsCharging : (_hasKnownChargingState ? _currentIsCharging : _lastIsCharging)
 
@@ -360,11 +363,27 @@ Singleton {
     readonly property bool isPluggedIn: (isBSD && freebsdBatteryAvailable) ? freebsdPluggedIn : !UPower.onBattery
 
     readonly property bool hasBatteryReading: batteryAvailable && batteryLevel > 0
-    readonly property bool isLowBattery: hasBatteryReading && batteryLevel <= SettingsData.batteryLowThreshold
-    readonly property bool isCriticalBattery: hasBatteryReading && batteryLevel <= SettingsData.batteryCriticalThreshold
+    readonly property bool isLowBattery: hasBatteryReading && isBatteryLevelAtOrBelow(batteryLevel, SettingsData.batteryLowThreshold)
+    readonly property bool isCriticalBattery: hasBatteryReading && isBatteryLevelAtOrBelow(batteryLevel, SettingsData.batteryCriticalThreshold)
+    readonly property bool isLowBatteryAlert: hasBatteryReading && isBatteryLevelAtOrBelow(batteryAlertLevel, SettingsData.batteryLowThreshold)
+    readonly property bool isCriticalBatteryAlert: hasBatteryReading && isBatteryLevelAtOrBelow(batteryAlertLevel, SettingsData.batteryCriticalThreshold)
 
     readonly property color levelCautionColor: "#FFC107"
     readonly property color levelCriticalColor: "#F44336"
+
+    function displayLevelForChargeLimit(level, chargeLimit, enabled) {
+        if (!enabled || chargeLimit <= 0 || chargeLimit >= 100)
+            return level;
+        return Math.max(0, Math.min(100, level / chargeLimit * 100));
+    }
+
+    function isBatteryLevelAtOrBelow(level, threshold) {
+        return level > 0 && level <= threshold;
+    }
+
+    function batteryAlertLevelForDisplay(actualLevel, scaledLevel, scaleDisplayEnabled, scaleAlertsEnabled) {
+        return scaleDisplayEnabled && scaleAlertsEnabled ? scaledLevel : actualLevel;
+    }
 
     readonly property color levelColor: {
         if (isCharging)
@@ -393,6 +412,23 @@ Singleton {
 
     on_HasKnownChargingStateChanged: _syncLastIsCharging()
     on_CurrentIsChargingChanged: _syncLastIsCharging()
+    onBatteryAlertLevelChanged: updateBatteryWarnings()
+
+    Connections {
+        target: SettingsData
+        function onBatteryLowThresholdChanged() {
+            root.updateBatteryWarnings();
+        }
+        function onBatteryCriticalThresholdChanged() {
+            root.updateBatteryWarnings();
+        }
+        function onBatteryScaleToChargeLimitChanged() {
+            root.updateBatteryWarnings();
+        }
+        function onBatteryScaleAlertThresholdsChanged() {
+            root.updateBatteryWarnings();
+        }
+    }
 
     Component.onCompleted: {
         Qt.callLater(root.updateFreeBsdBatteryFallback);
@@ -436,7 +472,10 @@ Singleton {
         } else if (!isCharging || batteryLevel < SettingsData.batteryChargeLimit - 2) {
             _hasNotifiedChargeLimit = false;
         }
+        updateBatteryWarnings();
+    }
 
+    function updateBatteryWarnings() {
         if (isCharging) {
             _hasNotifiedLowBattery = false;
             _hasNotifiedCriticalBattery = false;
@@ -444,34 +483,35 @@ Singleton {
         }
 
         // Critical battery check (higher priority)
-        if (isCriticalBattery) {
+        if (isCriticalBatteryAlert) {
             if (!_hasNotifiedCriticalBattery && SettingsData.batteryNotifyCritical) {
                 _hasNotifiedCriticalBattery = true;
 
-                sendAlert(I18n.tr("Critical Battery"), I18n.tr("Battery is at %1% - Connect charger immediately!", "critical battery notification body, %1 is the battery percentage").arg(batteryLevel), "critical", "material:battery_alert", SettingsData.batteryCriticalNotificationType);
+                sendAlert(I18n.tr("Critical Battery"), I18n.tr("Battery is at %1% - Connect charger immediately!", "critical battery notification body, %1 is the battery percentage").arg(Math.round(batteryAlertLevel)), "critical", "material:battery_alert", SettingsData.batteryCriticalNotificationType);
             }
 
             return;
         }
 
-        if (batteryLevel > SettingsData.batteryCriticalThreshold)
+        if (batteryAlertLevel > SettingsData.batteryCriticalThreshold)
             _hasNotifiedCriticalBattery = false;
 
         // Low battery check
-        if (isLowBattery) {
+        if (isLowBatteryAlert) {
             if (!_hasNotifiedLowBattery && SettingsData.batteryNotifyLow) {
                 _hasNotifiedLowBattery = true;
 
-                sendAlert(I18n.tr("Low Battery"), I18n.tr("Battery is at %1% - Consider charging soon", "low battery notification body, %1 is the battery percentage").arg(batteryLevel), "warning", "material:battery_0_bar", SettingsData.batteryLowNotificationType);
+                sendAlert(I18n.tr("Low Battery"), I18n.tr("Battery is at %1% - Consider charging soon", "low battery notification body, %1 is the battery percentage").arg(Math.round(batteryAlertLevel)), "warning", "material:battery_0_bar", SettingsData.batteryLowNotificationType);
             }
 
-            if (SettingsData.batteryAutoPowerSaver && PowerProfileWatcher.available) {
-                if (PowerProfileWatcher.currentProfile !== PowerProfile.PowerSaver)
-                    PowerProfileWatcher.applyProfile(PowerProfile.PowerSaver);
-            }
         }
 
-        if (batteryLevel > SettingsData.batteryLowThreshold)
+        if (isLowBattery && SettingsData.batteryAutoPowerSaver && PowerProfileWatcher.available) {
+            if (PowerProfileWatcher.currentProfile !== PowerProfile.PowerSaver)
+                PowerProfileWatcher.applyProfile(PowerProfile.PowerSaver);
+        }
+
+        if (batteryAlertLevel > SettingsData.batteryLowThreshold)
             _hasNotifiedLowBattery = false;
     }
 
@@ -486,6 +526,7 @@ Singleton {
             _hasNotifiedCriticalBattery = false;
         } else {
             _hasNotifiedChargeLimit = false;
+            updateBatteryWarnings();
         }
     }
 
@@ -827,50 +868,50 @@ Singleton {
             return "power";
 
         if (isCharging) {
-            if (batteryLevel >= 90)
+            if (displayBatteryLevel >= 90)
                 return "battery_charging_full";
-            if (batteryLevel >= 80)
+            if (displayBatteryLevel >= 80)
                 return "battery_charging_90";
-            if (batteryLevel >= 60)
+            if (displayBatteryLevel >= 60)
                 return "battery_charging_80";
-            if (batteryLevel >= 50)
+            if (displayBatteryLevel >= 50)
                 return "battery_charging_60";
-            if (batteryLevel >= 30)
+            if (displayBatteryLevel >= 30)
                 return "battery_charging_50";
-            if (batteryLevel >= 20)
+            if (displayBatteryLevel >= 20)
                 return "battery_charging_30";
 
             return "battery_charging_20";
         }
 
         if (isPluggedIn) {
-            if (batteryLevel >= 90)
+            if (displayBatteryLevel >= 90)
                 return "battery_charging_full";
-            if (batteryLevel >= 80)
+            if (displayBatteryLevel >= 80)
                 return "battery_charging_90";
-            if (batteryLevel >= 60)
+            if (displayBatteryLevel >= 60)
                 return "battery_charging_80";
-            if (batteryLevel >= 50)
+            if (displayBatteryLevel >= 50)
                 return "battery_charging_60";
-            if (batteryLevel >= 30)
+            if (displayBatteryLevel >= 30)
                 return "battery_charging_50";
-            if (batteryLevel >= 20)
+            if (displayBatteryLevel >= 20)
                 return "battery_charging_30";
 
             return "battery_charging_20";
         }
 
-        if (batteryLevel >= 95)
+        if (displayBatteryLevel >= 95)
             return "battery_full";
-        if (batteryLevel >= 85)
+        if (displayBatteryLevel >= 85)
             return "battery_6_bar";
-        if (batteryLevel >= 70)
+        if (displayBatteryLevel >= 70)
             return "battery_5_bar";
-        if (batteryLevel >= 55)
+        if (displayBatteryLevel >= 55)
             return "battery_4_bar";
-        if (batteryLevel >= 40)
+        if (displayBatteryLevel >= 40)
             return "battery_3_bar";
-        if (batteryLevel >= 25)
+        if (displayBatteryLevel >= 25)
             return "battery_2_bar";
 
         return "battery_1_bar";

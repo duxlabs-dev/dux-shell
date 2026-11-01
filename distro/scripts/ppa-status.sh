@@ -8,7 +8,7 @@
 #   ./distro/scripts/ppa-status.sh dms          # Check dms package
 #   ./distro/scripts/ppa-status.sh all dms-git  # Check all packages in dms-git PPA
 
-PPA_OWNER="avengemedia"
+PPA_OWNER="${PPA_OWNER:-duxlabs}"
 LAUNCHPAD_API="https://api.launchpad.net/1.0"
 # Supported Ubuntu series for PPA builds (26.04 LTS resolute + 26.10 stonking)
 DISTRO_SERIES_LIST=(resolute stonking)

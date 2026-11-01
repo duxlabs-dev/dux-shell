@@ -3,6 +3,7 @@ name: Prune Void R2 archive
 # Keeps the danklinux-void bucket inside the Cloudflare R2 free tier by
 # deleting the oldest archive/<repo>/<timestamp>/ snapshots written by
 # publish-void-r2.sh. Live repositories (<repo>/current/) are never touched.
+# <repo> comes from the listing, so new and legacy prefixes need no list.
 
 on:
   schedule:
@@ -42,7 +43,7 @@ jobs:
   prune:
     name: Prune archive snapshots
     runs-on: ubuntu-latest
-    if: github.repository == 'AvengeMedia/DankMaterialShell'
+    if: github.repository == 'duxlabs-dev/dux-shell'
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}

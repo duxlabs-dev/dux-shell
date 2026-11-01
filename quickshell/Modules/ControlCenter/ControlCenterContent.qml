@@ -24,12 +24,13 @@ FocusScope {
 
     readonly property bool pageOpen: (host.expandedSection ?? "") !== ""
     readonly property real gridHeight: widgetGrid.gridHeight
+    readonly property real gridTargetHeight: widgetGrid.targetHeight
     // Reserved from the grid in both modes so the island growing into edit mode never reflows tiles.
     readonly property real editRoom: host.editRoom ?? 0
     readonly property real chromeHeight: (host.editRoomShown ?? false) ? editRoom : 0
     readonly property bool stripAbove: host.stripAbove ?? false
     readonly property bool widgetSheetOpen: widgetSheetLoader.item?.active ?? false
-    readonly property real coveredAmount: Math.max(detailPage.opacity, widgetSheetLoader.item?.progress ?? 0)
+    readonly property real coveredAmount: Math.max(widgetSheetLoader.item?.progress ?? 0, codecSelectorLoader.item?.presence ?? 0, portSelectorLoader.item?.presence ?? 0)
     property bool widgetSheetRequested: false
     property int toplevelRevision: 0
     readonly property var runningToplevels: {
@@ -47,14 +48,10 @@ FocusScope {
     readonly property real newRowUnit: CcMetrics.gridGap + widgetGrid.slotLayout.rowUnit
     // Held during a drag so the trash never moves under the pointer.
     readonly property real heldGridHeight: widgetGrid.dragging ? widgetGrid.pinnedHeight + dragRoom : gridHeight
-    readonly property real targetImplicitHeight: {
-        const total = CcMetrics.sheetPadding * 2 + heldGridHeight;
-        if (detailPage.shownSection === "")
-            return total;
-        return Math.max(total, detailPage.topInset + detailPage.minimumHeight + CcMetrics.detailDialogInset);
-    }
+    // The popout sizes to where the band is going; the content inside follows the band frame by frame.
+    readonly property real targetImplicitHeight: CcMetrics.sheetPadding * 2 + (widgetGrid.dragging ? heldGridHeight : gridTargetHeight)
+    readonly property bool contentOverflows: targetImplicitHeight > (host.availableHeight ?? Infinity)
     property Item detailReturnFocus: null
-    property var pageHistory: []
     // One string so Discard and undo can compare and restore the whole session state at once.
     readonly property string editState: JSON.stringify({
         "widgets": SettingsData.controlCenterWidgets || [],
@@ -70,6 +67,8 @@ FocusScope {
     readonly property bool panelResizing: panelResizer.resizing
     readonly property real sheetContentWidth: host.sheetContentWidth ?? CcMetrics.sheetWidthFor(gridColumns)
     readonly property vector4d surfaceCornerRadii: host.surfaceCornerRadii ?? Qt.vector4d(Theme.windowRadius, Theme.windowRadius, Theme.windowRadius, Theme.windowRadius)
+    // A dim can't follow a frame-attached body past its square corners; the covered content is faded out anyway.
+    readonly property bool sheetsDim: !CcMetrics.hideCoveredContent || Math.min(surfaceCornerRadii.x, surfaceCornerRadii.y, surfaceCornerRadii.z, surfaceCornerRadii.w) > 0
     readonly property int gridColumnCap: host.gridColumnCap ?? CcMetrics.columnCapFor((host.triggerScreen?.width ?? CcMetrics.sheetWidthDefault + Theme.spacingL * 2) - Theme.spacingL * 2)
     readonly property int gridColumns: host.gridColumns ?? Math.min(CcMetrics.gridColumns, gridColumnCap)
     readonly property real availableGridHeight: (host.availableHeight ?? (host.triggerScreen?.height ?? CcMetrics.fallbackScreenHeight) - CcMetrics.maxHeightInset) - CcMetrics.sheetPadding * 2 - editRoom
@@ -113,23 +112,23 @@ FocusScope {
     function navigateTo(section) {
         if (section === host.expandedSection)
             return;
-        if (host.expandedSection)
-            pageHistory = pageHistory.concat([host.expandedSection]);
-        else if (detailPage.shownSection === "")
+        if (!host.expandedSection && detailBand.shownSection === "")
             detailReturnFocus = root.Window.window?.activeFocusItem ?? null;
         host.expandedSection = section;
     }
 
     function goBack() {
-        if (detailPage.dismissTransient())
+        if (detailBand.dismissTransient())
             return;
-        if (pageHistory.length > 0) {
-            const previous = pageHistory[pageHistory.length - 1];
-            pageHistory = pageHistory.slice(0, -1);
-            host.expandedSection = previous;
-            return;
-        }
         host.collapseAll();
+    }
+
+    // Only a popout the screen has capped scrolls; otherwise it grows around the band and any scroll would bounce.
+    function revealDetail() {
+        if (detailBand.section === "" || !contentOverflows)
+            return;
+        const top = mainColumn.y + body.y + detailBand.y;
+        contentFlickable.revealRange(top, top + detailBand.height);
     }
 
     function openWidgetPage(widgetData) {
@@ -330,14 +329,7 @@ FocusScope {
         onActivated: root.undoEdit()
     }
 
-    readonly property string expandedSection: host.expandedSection ?? ""
     readonly property bool editMode: host.editMode
-
-    onExpandedSectionChanged: {
-        if (expandedSection !== "")
-            return;
-        pageHistory = [];
-    }
 
     onEditModeChanged: {
         if (editMode) {
@@ -366,13 +358,13 @@ FocusScope {
         anchors.bottomMargin: -contentInset - (editActions.joined && !root.stripAbove ? editActions.height : 0)
         z: 1
         visible: root.host.editMode
-        enabled: detailPage.shownSection === "" && !root.widgetSheetOpen
+        enabled: detailBand.shownSection === "" && !root.widgetSheetOpen
         edgeResize: root.panelResizing ? resizeSide < 0 : root.panelResizer.sideMovable(-1, root.gridColumns)
         cornerResize: root.panelResizing ? resizeSide > 0 : root.panelResizer.sideMovable(1, root.gridColumns)
         horizontalResize: true
         removable: false
-        cornerRadius: Theme.windowRadius
-        cornerRadii: root.surfaceCornerRadii
+        // Frame-attached corners are square, but the ring keeps the surface radius.
+        cornerRadius: Math.max(root.surfaceCornerRadii.x, root.surfaceCornerRadii.y, root.surfaceCornerRadii.z, root.surfaceCornerRadii.w)
         buttonSize: Theme.iconSize
         iconSize: PopoutMetrics.chromeIconSize
         resizing: root.panelResizing
@@ -399,7 +391,7 @@ FocusScope {
         topRightRadius: root.surfaceCornerRadii.y
         bottomRightRadius: root.surfaceCornerRadii.z
         bottomLeftRadius: root.surfaceCornerRadii.w
-        color: Qt.rgba(0, 0, 0, Theme.scrimAlpha)
+        color: Theme.withAlpha(Theme.backdropColor, Theme.scrimAlpha)
         opacity: root.host.powerMenuOpen ? 1 : 0
         visible: opacity > 0
         z: CcMetrics.overlayZ
@@ -451,7 +443,11 @@ FocusScope {
                     anchors.top: parent.top
                     editMode: root.host.editMode
                     model: widgetModel
-                    live: root.host.shouldBeVisible && detailPage.shownSection === ""
+                    live: root.host.shouldBeVisible
+                    expandedSection: detailBand.shownSection
+                    bandHeight: detailBand.height
+                    bandTargetHeight: detailBand.targetHeight
+                    bandMoving: detailBand.shownSection !== ""
                     screenName: root.host.triggerScreen?.name || ""
                     tapToClose: root.host.headerTogglesClose ?? false
                     runningToplevels: root.runningToplevels
@@ -481,6 +477,37 @@ FocusScope {
                         loader.item.openFromControlCenter(bounds, root.host.screen);
                     }
                 }
+
+                CcDetailBand {
+                    id: detailBand
+
+                    x: 0
+                    y: widgetGrid.bandY
+                    width: parent.width
+                    section: root.host.expandedSection ?? ""
+                    maximumHeight: root.availableGridHeight - widgetGrid.baseHeight
+                    coverage: Math.max(codecSelectorLoader.item?.presence ?? 0, portSelectorLoader.item?.presence ?? 0)
+                    model: widgetModel
+                    screenName: root.host.triggerScreen?.name || ""
+                    screenModel: root.host.triggerScreen?.model || ""
+                    transientSurfaceTracker: root.host.transientSurfaceTracker
+                    runningToplevels: root.runningToplevels
+                    onCodecSelectorRequested: device => root.showCodecSelector(device)
+                    onPortSelectorRequested: node => root.showPortSelector(node)
+                    onBackRequested: root.goBack()
+                    onCollapseRequested: root.host.collapseAll()
+                    onCloseRequested: root.host.close()
+                    onHeightChanged: root.revealDetail()
+                    onDismissed: {
+                        const target = root.detailReturnFocus;
+                        root.detailReturnFocus = null;
+                        if (target?.visible && target.enabled) {
+                            target.forceActiveFocus();
+                            return;
+                        }
+                        root.forceActiveFocus();
+                    }
+                }
             }
         }
     }
@@ -492,17 +519,18 @@ FocusScope {
         y: root.editRoom > 0 ? Math.max(root.height - root.editRoom, CcMetrics.sheetPadding * 2 + root.heldGridHeight) + (root.editRoom - height) / 2 : (root.stripAbove ? -height : root.height)
         width: root.sheetContentWidth
         height: implicitHeight
-        // Below the edit rings so the shoulder fill never covers them.
+        // Below the edit rings so the trash fill never covers them.
         z: -1
         editMode: root.host.editMode
-        enabled: detailPage.shownSection === "" && !root.widgetSheetOpen
+        enabled: detailBand.shownSection === "" && !root.widgetSheetOpen
         dragging: root.gridDragWidget !== null
         dragRemovable: WidgetUtils.isRemovable(root.gridDragWidget)
         overTrash: root.overTrash
         transientSurfaceTracker: root.host.transientSurfaceTracker
         joined: root.editRoom === 0
         above: root.stripAbove
-        backgroundColor: joined ? (root.host.surfaceColor ?? CcMetrics.dialogColor) : Theme.foregroundColor(Theme.cardSurface)
+        // Joined, the popout host paints the surface under the strip.
+        backgroundColor: joined ? "transparent" : Theme.foregroundColor(Theme.cardSurface)
         cornerRadii: root.surfaceCornerRadii
         opacity: body.opacity
         canUndo: root.canUndo
@@ -514,36 +542,6 @@ FocusScope {
         onCancelRequested: root.cancelEdit()
     }
 
-    CcDetailPage {
-        id: detailPage
-
-        z: 1
-        anchors.fill: parent
-        section: root.host.expandedSection ?? ""
-        topInset: CcMetrics.sheetPadding
-        cornerRadii: root.surfaceCornerRadii
-        coverage: Math.max(codecSelectorLoader.item?.presence ?? 0, portSelectorLoader.item?.presence ?? 0)
-        model: widgetModel
-        screenName: root.host.triggerScreen?.name || ""
-        screenModel: root.host.triggerScreen?.model || ""
-        transientSurfaceTracker: root.host.transientSurfaceTracker
-        onCodecSelectorRequested: device => root.showCodecSelector(device)
-        onPortSelectorRequested: node => root.showPortSelector(node)
-        runningToplevels: root.runningToplevels
-        onBackRequested: root.goBack()
-        onCollapseRequested: root.host.collapseAll()
-        onCloseRequested: root.host.close()
-        onDismissed: {
-            const target = root.detailReturnFocus;
-            root.detailReturnFocus = null;
-            if (target?.visible && target.enabled) {
-                target.forceActiveFocus();
-                return;
-            }
-            root.forceActiveFocus();
-        }
-    }
-
     Loader {
         id: codecSelectorLoader
 
@@ -552,6 +550,7 @@ FocusScope {
         active: false
         sourceComponent: BluetoothCodecSelector {
             cornerRadii: root.surfaceCornerRadii
+            dimsBackdrop: root.sheetsDim
             onDismissed: Qt.callLater(root.releaseSheet, codecSelectorLoader)
         }
     }
@@ -564,6 +563,7 @@ FocusScope {
         active: false
         sourceComponent: AudioPortSelector {
             cornerRadii: root.surfaceCornerRadii
+            dimsBackdrop: root.sheetsDim
             onDismissed: Qt.callLater(root.releaseSheet, portSelectorLoader)
         }
     }
@@ -580,6 +580,8 @@ FocusScope {
         id: widgetSheetLoader
 
         anchors.fill: parent
+        anchors.topMargin: editActions.joined && root.stripAbove ? -editActions.height : 0
+        anchors.bottomMargin: editActions.joined && !root.stripAbove ? -editActions.height : 0
         z: CcMetrics.overlayZ
         active: root.host.editMode
         asynchronous: true
@@ -591,6 +593,7 @@ FocusScope {
         }
         sourceComponent: CcWidgetSheet {
             scrimRadii: root.surfaceCornerRadii
+            scrimVisible: root.sheetsDim
             surfaceColor: CcMetrics.dialogColor
             widgets: {
                 const existingIds = root.placedWidgetIds.split(",");

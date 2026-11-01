@@ -37,7 +37,7 @@ Rectangle {
     readonly property bool hasMoreText: bodyText.truncated || summaryText.truncated
     readonly property bool hasBody: (notificationData?.htmlBody || "").replace(/<[^>]*>/g, "").trim().length > 0
     readonly property string appIcon: NotificationService.notificationAppIcon(notificationData?.appIcon || "", notificationData?.desktopEntry || "")
-    readonly property bool dmsIcon: appIcon === "com.danklinux.dms"
+    readonly property bool dmsIcon: appIcon === "dev.duxlabs.shell" || appIcon === "com.danklinux.dms"
     readonly property string contentImageSource: notificationData?.hasDisplayImage ? notificationData?.displayImage || "" : ""
     readonly property bool hasContentImage: contentImageSource.length > 0 && contentImage.status !== Image.Error
     readonly property bool contentVisible: !headerOnly && (!privacyMode || descriptionExpanded)
@@ -55,7 +55,7 @@ Rectangle {
 
     function saveDisplayImage() {
         const data = root.notificationData;
-        if (!root.persistImage || !data?.hasDisplayImage || data.persistedImagePath)
+        if (!root.persistImage || !data?.notification || !data.hasDisplayImage || data.persistedImagePath)
             return;
         const image = data.image || "";
         if (!image.startsWith("image://qsimage/") && !NotificationService.notificationIconFromImage(image).startsWith("/"))

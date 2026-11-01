@@ -12,6 +12,12 @@ Item {
     readonly property var neovimDarkBaseThemes: ["aquarium", "ashes", "aylin", "ayu_dark", "bearded-arc", "carbonfox", "catppuccin", "chadracula", "chadracula-evondev", "chadtain", "chocolate", "darcula-dark", "dark_horizon", "decay", "default-dark", "doomchad", "eldritch", "embark", "everblush", "everforest", "falcon", "flexoki", "flouromachine", "gatekeeper", "github_dark", "gruvbox", "gruvchad", "hiberbee", "horizon", "jabuti", "jellybeans", "kanagawa", "kanagawa-dragon", "material-darker", "material-deep-ocean", "melange", "midnight_breeze", "mito-laser", "monekai", "monochrome", "mountain", "neofusion", "nightfox", "nightlamp", "nightowl", "nord", "obsidian-ember", "oceanic-next", "onedark", "onenord", "oxocarbon", "palenight", "pastelDark", "pastelbeans", "penumbra_dark", "poimandres", "radium", "rosepine", "rxyhn", "scaryforest", "seoul256_dark", "solarized_dark", "solarized_osaka", "starlight", "sweetpastel", "tokyodark", "tokyonight", "tomorrow_night", "tundra", "vesper", "vscode_dark", "wombat", "yoru", "zenburn"]
     readonly property var neovimLightBaseThemes: ["ayu_light", "blossom_light", "catppuccin-latte", "default-light", "everforest_light", "flex-light", "flexoki-light", "github_light", "gruvbox_light", "material-lighter", "nano-light", "oceanic-light", "one_light", "onenord_light", "penumbra_light", "rosepine-dawn", "seoul256_light", "solarized_light", "sunrise_breeze", "vscode_light"]
 
+    function setNeovimSetting(mode, key, value) {
+        const settings = JSON.parse(JSON.stringify(SettingsData.matugenTemplateNeovimSettings));
+        settings[mode][key] = value;
+        SettingsData.set("matugenTemplateNeovimSettings", settings);
+    }
+
     function isTemplateDetected(templateId) {
         if (!templateDetection || templateDetection.length === 0)
             return true;
@@ -49,7 +55,7 @@ Item {
         SettingsNoteRow {
             paintBackground: false
             noteIconName: "info"
-            text: I18n.tr("The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (qt5ct.conf|qt6ct.conf|qtengine/config.json and ~/.config/gtk-3.0|gtk-4.0).")
+            text: I18n.tr("The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).", "theme apps backup note, %1 and %2 are config paths").arg("qt5ct.conf|qt6ct.conf|qtengine/config.json").arg("~/.config/gtk-3.0|gtk-4.0")
         }
 
         SettingsCard {
@@ -87,7 +93,7 @@ Item {
 
             SettingsRow {
                 body: StyledText {
-                    text: I18n.tr('Generate baseline GTK3/4, QT5/QT6, or qtengine configurations to follow DMS colors (only qt6ct requires qt6ct-kde). Only needed once.<br /><br />It is recommended to configure %1 prior to applying GTK themes.', 'app theming help text, %1 is a link to adw-gtk3').arg(`<a href="https://github.com/AvengeMedia/DankMaterialShell/blob/master/README.md#Theming" style="text-decoration:none; color:${Theme.primary};">adw-gtk3</a>`)
+                    text: I18n.tr('Generate baseline GTK3/4, QT5/QT6, or qtengine configurations to follow DMS colors (only qt6ct requires qt6ct-kde). Only needed once.<br /><br />It is recommended to configure %1 prior to applying GTK themes.', 'app theming help text, %1 is a link to adw-gtk3').arg(`<a href="https://duxlabs.dev/docs/dms/application-themes#gtk-applications" style="text-decoration:none; color:${Theme.primary};">adw-gtk3</a>`)
                     textFormat: Text.RichText
                     linkColor: Theme.primary
                     onLinkActivated: url => Qt.openUrlExternally(url)
@@ -132,6 +138,41 @@ Item {
                 checked: SettingsData.terminalsAlwaysDark
                 onToggled: checked => SettingsData.set("terminalsAlwaysDark", checked)
             }
+
+            SettingsSliderRow {
+                tab: "theme"
+                tags: ["terminal", "opacity", "transparency", "background", "kitty", "foot", "ghostty", "alacritty"]
+                settingKey: "terminalOpacity"
+                text: I18n.tr("Opacity")
+                value: SettingsData.terminalOpacity
+                minimum: 10
+                maximum: 100
+                unit: "%"
+                enabled: Theme.matugenAvailable
+                onSliderDragFinished: finalValue => SettingsData.set("terminalOpacity", finalValue)
+            }
+
+            SettingsToggleRow {
+                tab: "theme"
+                tags: ["terminal", "palette", "ansi", "colors", "wallpaper", "intensity"]
+                settingKey: "terminalPalette"
+                text: I18n.tr("Colors from wallpaper")
+                enabled: Theme.matugenAvailable
+                checked: SettingsData.terminalPalette !== "default"
+                onToggled: checked => SettingsData.set("terminalPalette", checked ? "medium" : "default")
+            }
+
+            SettingsButtonGroupRow {
+                text: I18n.tr("Intensity")
+                description: I18n.tr("How far terminal colors shift toward the wallpaper color", "terminal wallpaper colors intensity description")
+                visible: SettingsData.terminalPalette !== "default"
+                enabled: Theme.matugenAvailable
+                model: [I18n.tr("Low"), I18n.tr("Medium"), I18n.tr("High")]
+                values: ["low", "medium", "high"]
+                value: SettingsData.terminalPalette
+                fallbackValue: "medium"
+                onValueSelected: value => SettingsData.set("terminalPalette", value)
+            }
         }
 
         SettingsCard {
@@ -149,7 +190,7 @@ Item {
                 tags: ["matugen", "user", "templates"]
                 settingKey: "runUserMatugenTemplates"
                 text: I18n.tr("Run user templates")
-                description: I18n.tr("Also runs the templates in your matugen config.toml", "run user matugen templates toggle description")
+                description: I18n.tr("Also runs the templates in your %1", "run user matugen templates toggle description, %1 is the matugen config file").arg("matugen config.toml")
                 checked: SettingsData.runUserMatugenTemplates
                 onToggled: checked => SettingsData.set("runUserMatugenTemplates", checked)
             }
@@ -378,7 +419,7 @@ Item {
                 tags: ["matugen", "neovim", "terminal", "template"]
                 settingKey: "matugenTemplateNeovim"
                 text: "neovim"
-                description: root.getTemplateDescription("nvim", I18n.tr("Required plugin: ") + "https://github.com/AvengeMedia/base46")
+                description: root.getTemplateDescription("nvim", I18n.tr("Required plugin: %1", "%1 is a repository URL").arg("https://github.com/duxlabs-dev/base46"))
                 descriptionColor: root.getTemplateDescriptionColor("nvim")
                 checked: SettingsData.matugenTemplateNeovim
                 onToggled: checked => SettingsData.set("matugenTemplateNeovim", checked)
@@ -394,11 +435,7 @@ Item {
                 currentValue: SettingsData.matugenTemplateNeovimSettings?.dark?.baseTheme ?? "github_dark"
                 options: root.neovimDarkBaseThemes.concat(root.neovimLightBaseThemes)
                 enableFuzzySearch: true
-                onValueChanged: value => {
-                    const settings = SettingsData.matugenTemplateNeovimSettings;
-                    settings.dark.baseTheme = value;
-                    SettingsData.set("matugenTemplateNeovimSettings", settings);
-                }
+                onValueChanged: value => root.setNeovimSetting("dark", "baseTheme", value)
             }
 
             SettingsDropdownRow {
@@ -411,11 +448,7 @@ Item {
                 currentValue: SettingsData.matugenTemplateNeovimSettings?.light?.baseTheme ?? "github_light"
                 options: root.neovimLightBaseThemes.concat(root.neovimDarkBaseThemes)
                 enableFuzzySearch: true
-                onValueChanged: value => {
-                    const settings = SettingsData.matugenTemplateNeovimSettings;
-                    settings.light.baseTheme = value;
-                    SettingsData.set("matugenTemplateNeovimSettings", settings);
-                }
+                onValueChanged: value => root.setNeovimSetting("light", "baseTheme", value)
             }
 
             SettingsSliderRow {
@@ -427,11 +460,7 @@ Item {
                 minimum: 0
                 maximum: 100
                 value: (SettingsData.matugenTemplateNeovimSettings?.dark?.harmony ?? 0.5) * 100
-                onSliderValueChanged: value => {
-                    const settings = SettingsData.matugenTemplateNeovimSettings;
-                    settings.dark.harmony = value / 100;
-                    SettingsData.set("matugenTemplateNeovimSettings", settings);
-                }
+                onSliderValueChanged: value => root.setNeovimSetting("dark", "harmony", value / 100)
             }
 
             SettingsSliderRow {
@@ -443,11 +472,7 @@ Item {
                 minimum: 0
                 maximum: 100
                 value: (SettingsData.matugenTemplateNeovimSettings?.light?.harmony ?? 0.5) * 100
-                onSliderValueChanged: value => {
-                    const settings = SettingsData.matugenTemplateNeovimSettings;
-                    settings.light.harmony = value / 100;
-                    SettingsData.set("matugenTemplateNeovimSettings", settings);
-                }
+                onSliderValueChanged: value => root.setNeovimSetting("light", "harmony", value / 100)
             }
 
             SettingsToggleRow {

@@ -43,32 +43,17 @@ func TestMangowcFindIncludeNestedRelativeToIncludingFile(t *testing.T) {
 	}
 }
 
-func TestCheckHyprlandIncludeFormat(t *testing.T) {
-	tests := []struct {
-		name         string
-		files        map[string]string
-		wantFormat   string
-		wantReadOnly bool
-		wantIncluded bool
-	}{
-		{"hyprlang sourced", map[string]string{"hyprland.conf": "source = ./dms/colors.conf\n"}, "hyprlang", true, true},
-		{"hyprlang not sourced", map[string]string{"hyprland.conf": "bind = SUPER, Q, killactive\n"}, "hyprlang", true, false},
-		{"lua wins over leftover conf", map[string]string{"hyprland.conf": "source = ./dms/colors.conf\n", "hyprland.lua": "\n"}, "lua", false, false},
+func TestCheckHyprlandIncludeIgnoresLegacyConf(t *testing.T) {
+	xdg := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", xdg)
+	writeConfigFile(t, filepath.Join(xdg, "hypr", "hyprland.conf"), "source = ./dms/colors.conf\n")
+	writeConfigFile(t, filepath.Join(xdg, "hypr", "dms", "colors.conf"), "")
+
+	got, err := checkHyprlandInclude("colors.conf")
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			xdg := t.TempDir()
-			t.Setenv("XDG_CONFIG_HOME", xdg)
-			for name, content := range tt.files {
-				writeConfigFile(t, filepath.Join(xdg, "hypr", name), content)
-			}
-			got, err := checkHyprlandInclude("colors.conf")
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got.ConfigFormat != tt.wantFormat || got.ReadOnly != tt.wantReadOnly || got.Included != tt.wantIncluded {
-				t.Fatalf("got %+v, want format %q readOnly %v included %v", got, tt.wantFormat, tt.wantReadOnly, tt.wantIncluded)
-			}
-		})
+	if got.Included {
+		t.Fatalf("got %+v; a hyprland.conf source must not count once Hyprland reads only Lua", got)
 	}
 }

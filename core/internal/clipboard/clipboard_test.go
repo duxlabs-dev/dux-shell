@@ -6,7 +6,7 @@ import (
 	"image/png"
 	"testing"
 
-	"github.com/AvengeMedia/dankgo/wlclipboard"
+	"github.com/duxlabs-dev/dux-go/wlclipboard"
 	"github.com/stretchr/testify/assert"
 )
 

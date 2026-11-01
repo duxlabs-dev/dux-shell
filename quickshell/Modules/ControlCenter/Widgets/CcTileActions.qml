@@ -2,12 +2,13 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
+import qs.Modules.ControlCenter
 
 CcTileContent {
     id: root
 
     property var actions: []
-    readonly property int capacity: Math.max(0, Math.floor((height + Theme.groupedListGap) / (Theme.listItemHeight + Theme.groupedListGap)))
+    readonly property int capacity: Math.max(0, Math.floor((height + Theme.groupedListGap) / (CcMetrics.rowHeight + Theme.groupedListGap)))
 
     CcGroup {
         width: parent.width

@@ -68,6 +68,7 @@ Item {
         barThickness: root.sectionContext.barThickness
         barSpacing: root.sectionContext.barSpacing
         barConfig: root.sectionContext.barConfig
+        widgetBackground: root.sectionContext.overflowBackground
         sectionSpacing: root.sectionContext.widgetSpacing
         segmentRole: root.sectionContext.overflowSegmentRole
         isFirst: root.sectionContext.inlineOrder[0] === -1

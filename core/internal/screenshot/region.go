@@ -5,15 +5,15 @@ import (
 	"math"
 	"sync"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/keyboard_shortcuts_inhibit"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_layer_shell"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_screencopy"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wp_cursor_shape"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wp_viewporter"
-	wlhelpers "github.com/AvengeMedia/DankMaterialShell/core/internal/wayland/client"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/wayland/keymap"
-	"github.com/AvengeMedia/dankgo/wayland/client"
+	"github.com/duxlabs-dev/dux-go/wayland/client"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/keyboard_shortcuts_inhibit"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_layer_shell"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_screencopy"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wp_cursor_shape"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wp_viewporter"
+	wlhelpers "github.com/duxlabs-dev/dux-shell/core/internal/wayland/client"
+	"github.com/duxlabs-dev/dux-shell/core/internal/wayland/keymap"
 )
 
 type resizeHandle int
@@ -385,6 +385,12 @@ func (r *RegionSelector) handleGlobal(e client.RegistryGlobalEvent) {
 		}
 
 	case client.SeatInterfaceName:
+		// Keep the first seat: compositors may advertise additional seats
+		// (automation, second keyboard), and the last one used to win, which
+		// left the selector listening to a seat the user never types on.
+		if r.seat != nil {
+			return
+		}
 		seat := client.NewSeat(r.ctx)
 		if err := r.registry.Bind(e.Name, e.Interface, e.Version, seat); err == nil {
 			r.seat = seat
@@ -609,15 +615,12 @@ func (r *RegionSelector) preCaptureOutput(output *WaylandOutput, pc *PreCapture,
 			pc.yInverted = false
 		}
 
-		if output.transform != TransformNormal {
-			invTransform := InverseTransform(output.transform)
-			transformed, err := capturedBuf.ApplyTransform(invTransform)
-			if err != nil {
-				log.Error("apply transform failed", "err", err)
-			} else if transformed != capturedBuf {
-				capturedBuf.Close()
-				capturedBuf = transformed
-			}
+		transformed, err := output.untransformFrame(capturedBuf)
+		if err != nil {
+			log.Error("apply transform failed", "err", err)
+		} else if transformed != capturedBuf {
+			capturedBuf.Close()
+			capturedBuf = transformed
 		}
 
 		if withCursor {

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"math"
 	"os"
 	"os/exec"
@@ -18,10 +17,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/dank16"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/mangoconf"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/dank16"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/godbus/dbus/v5"
 	"github.com/lucasb-eyer/go-colorful"
 )
@@ -44,7 +42,6 @@ const (
 	TemplateKindGTK
 	TemplateKindVSCode
 	TemplateKindEmacs
-	TemplateKindMango
 )
 
 type TemplateDef struct {
@@ -63,7 +60,7 @@ var templateRegistry = []TemplateDef{
 	{ID: "gtk", Kind: TemplateKindGTK, RunUnconditionally: true},
 	{ID: "niri", Commands: []string{"niri"}, ConfigFile: "niri.toml"},
 	{ID: "hyprland", Commands: []string{"Hyprland"}, ConfigFile: "hyprland.toml"},
-	{ID: "mangowc", Commands: []string{"mango"}, ConfigFile: "mangowc.toml", RequiredEnv: "MANGO_INSTANCE_SIGNATURE", Kind: TemplateKindMango},
+	{ID: "mangowc", Commands: []string{"mango"}, ConfigFile: "mangowc.toml", RequiredEnv: "MANGO_INSTANCE_SIGNATURE"},
 	{ID: "qt5ct", Commands: []string{"qt5ct"}, ConfigFile: "qt5ct.toml"},
 	{ID: "qt6ct", Commands: []string{"qt6ct"}, ConfigFile: "qt6ct.toml"},
 	{ID: "fcitx5", Commands: []string{"fcitx5"}, ConfigDirs: []string{"fcitx5"}, ConfigFile: "fcitx5.toml"},
@@ -136,6 +133,8 @@ type Options struct {
 	StockColors         string
 	SyncModeWithPortal  bool
 	TerminalsAlwaysDark bool
+	TerminalOpacity     int
+	TerminalPalette     string
 	SkipTemplates       string
 	AppChecker          utils.AppChecker
 }
@@ -441,8 +440,9 @@ func buildOnce(opts *Options) (bool, error) {
 			primaryLight = primaryDark
 		}
 
-		dank16JSON = generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode)
-		importData := fmt.Sprintf(`{"colors": %s, "dank16": %s}`, opts.StockColors, dank16JSON)
+		dank16JSON = generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode, "")
+		dank16TermJSON := generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode, opts.TerminalPalette)
+		importData := fmt.Sprintf(`{"colors": %s, "dank16": %s, "dank16term": %s}`, opts.StockColors, dank16JSON, dank16TermJSON)
 		importArgs = []string{"--import-json-string", importData}
 
 		log.Info("Running matugen color hex with stock color overrides")
@@ -510,9 +510,10 @@ func buildOnce(opts *Options) (bool, error) {
 			primaryLight = primaryDark
 		}
 
-		injections := InjectedPalettes(opts.ConfigDir, sourceImage, opts.Mode)
-
-		dank16JSON = generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode)
+		dank16JSON = generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode, "")
+		// The terminal palette only reaches the terminal templates; editor themes and user templates keep dank16.
+		dank16Term := paletteInjection{Namespace: "dank16term", JSON: generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode, opts.TerminalPalette)}
+		injections := append([]paletteInjection{dank16Term}, InjectedPalettes(opts.ConfigDir, sourceImage, opts.Mode)...)
 		importArgs = []string{"--import-json-string", buildImportData(dank16JSON, sourceImage, specColors, injections)}
 
 		log.Infof("Running matugen %s with dank16 injection", opts.Kind)
@@ -537,6 +538,7 @@ func buildOnce(opts *Options) (bool, error) {
 	if err := renderTemplates(opts, args, tmpDir); err != nil {
 		return false, err
 	}
+	signalTerminals(opts)
 	if !changed {
 		return false, nil
 	}
@@ -569,7 +571,6 @@ func buildOnce(opts *Options) (bool, error) {
 		}
 	}
 
-	signalTerminals(opts)
 	if !opts.ShouldSkipTemplate("fcitx5") && appExists(opts.AppChecker, []string{"fcitx5"}, nil) {
 		refreshFcitx5()
 	}
@@ -663,7 +664,7 @@ func userConfigSection(opts *Options) string {
 	if err != nil {
 		return "[config]\n\n"
 	}
-	section := extractTOMLSection(string(data), "[config]", "[templates]")
+	section := extractTOMLSection(string(data), "[config]", "\n[templates")
 	if section == "" {
 		return "[config]\n\n"
 	}
@@ -721,12 +722,6 @@ output_path = '%s'
 			for _, editor := range vscodeEditors {
 				appendVSCodeConfig(cfgFile, editor.name, editor.extensionsDir(homeDir), opts.ShellDir)
 			}
-		case TemplateKindMango:
-			configFile := tmpl.ConfigFile
-			if mangoconf.Detect() == mangoconf.Snake {
-				configFile = "mangowc-snake.toml"
-			}
-			appendConfig(opts, cfgFile, tmpl.Commands, tmpl.Flatpaks, tmpl.ConfigDirs, configFile)
 		case TemplateKindEmacs:
 			if utils.EmacsConfigDir() != "" {
 				appendConfig(opts, cfgFile, tmpl.Commands, tmpl.Flatpaks, tmpl.ConfigDirs, tmpl.ConfigFile)
@@ -745,7 +740,7 @@ output_path = '%s'
 
 	if opts.RunUserTemplates {
 		if data, err := os.ReadFile(userConfigPath); err == nil {
-			templatesSection := extractTOMLSection(string(data), "[templates]", "")
+			templatesSection := extractTOMLSection("\n"+string(data), "\n[templates", "\n[config]")
 			if templatesSection != "" {
 				cfgFile.WriteString(templatesSection)
 				cfgFile.WriteString("\n")
@@ -836,7 +831,7 @@ func appendTerminalConfig(opts *Options, cfgFile *os.File, tmpDir string, checkC
 
 	content := string(data)
 
-	if !opts.TerminalsAlwaysDark {
+	if !opts.TerminalsAlwaysDark && !terminalOpacityManaged(opts) {
 		cfgFile.WriteString(substituteVars(content, opts.ShellDir))
 		cfgFile.WriteString("\n")
 		return
@@ -864,7 +859,7 @@ func appendTerminalConfig(opts *Options, cfgFile *os.File, tmpDir string, checkC
 			continue
 		}
 
-		modified := strings.ReplaceAll(string(origData), ".default.", ".dark.")
+		modified := applyTerminalTemplate(templateName, string(origData), opts)
 		tmpPath := filepath.Join(tmpDir, templateName)
 		if err := os.WriteFile(tmpPath, []byte(modified), 0o644); err != nil {
 			continue
@@ -877,6 +872,37 @@ func appendTerminalConfig(opts *Options, cfgFile *os.File, tmpDir string, checkC
 
 	cfgFile.WriteString(substituteVars(content, opts.ShellDir))
 	cfgFile.WriteString("\n")
+}
+
+func terminalOpacityManaged(opts *Options) bool {
+	return opts.TerminalOpacity >= 1 && opts.TerminalOpacity <= 99
+}
+
+func applyTerminalTemplate(name, content string, opts *Options) string {
+	if opts.TerminalsAlwaysDark {
+		content = strings.ReplaceAll(content, ".default.", ".dark.")
+	}
+	if !terminalOpacityManaged(opts) {
+		return content
+	}
+	v := strconv.FormatFloat(float64(opts.TerminalOpacity)/100, 'f', -1, 64)
+	var snippet string
+	switch name {
+	case "kitty.conf":
+		snippet = "background_opacity " + v + "\ndynamic_background_opacity yes\n"
+	case "foot.ini":
+		snippet = "alpha=" + v + "\n"
+	case "ghostty.conf":
+		snippet = "background-opacity = " + v + "\n"
+	case "alacritty.toml":
+		snippet = "[window]\nopacity = " + v + "\n"
+	default:
+		return content
+	}
+	if content != "" && !strings.HasSuffix(content, "\n") {
+		content += "\n"
+	}
+	return content + snippet
 }
 
 func templateSessionActive(tmpl TemplateDef) bool {
@@ -930,6 +956,7 @@ var vscodeEditors = []vscodeEditor{
 	{"cursor", ".cursor"},
 	{"windsurf", ".windsurf"},
 	{"positron", ".positron"},
+	{"antigravity", ".antigravity-ide"},
 	{"vscode-insiders", ".vscode-insiders"},
 }
 
@@ -1119,21 +1146,32 @@ func runMatugen(baseArgs []string, sourceMode string) error {
 
 // matugen's stderr is echoed as before and its tail travels in the error, so a failure
 // reaching the shell through the socket still names the broken template or option.
+// It goes through a file, not a pipe: with a pipe, Wait blocks until every hook
+// child that inherited stderr exits, and a backgrounded post_hook never does (#3901).
 func execMatugen(args []string) error {
+	stderrFile, err := os.CreateTemp("", "matugen-stderr-*")
+	if err != nil {
+		return fmt.Errorf("matugen: %w", err)
+	}
+	defer os.Remove(stderrFile.Name())
+	defer stderrFile.Close()
+
 	cmd := exec.Command("matugen", args...)
 	cmd.Env = utils.EnvWithUserBinPath(nil)
 	cmd.Stdout = os.Stdout
-	var stderr bytes.Buffer
-	cmd.Stderr = io.MultiWriter(os.Stderr, &stderr)
-	err := cmd.Run()
-	if err == nil {
+	cmd.Stderr = stderrFile
+	runErr := cmd.Run()
+
+	stderr, _ := os.ReadFile(stderrFile.Name())
+	os.Stderr.Write(stderr)
+	if runErr == nil {
 		return nil
 	}
-	tail := stderrTail(stderr.String(), 6)
+	tail := stderrTail(string(stderr), 6)
 	if tail == "" {
-		return fmt.Errorf("matugen: %w", err)
+		return fmt.Errorf("matugen: %w", runErr)
 	}
-	return fmt.Errorf("matugen: %w\n%s", err, tail)
+	return fmt.Errorf("matugen: %w\n%s", runErr, tail)
 }
 
 var ansiEscapeRe = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
@@ -1183,11 +1221,7 @@ func writeDryRunConfig(opts *Options) (string, error) {
 	}
 	defer cfgFile.Close()
 
-	section := userConfigSection(opts)
-	if idx := strings.Index(section, "\n[templates"); idx != -1 {
-		section = section[:idx+1]
-	}
-	cfgFile.WriteString(section)
+	cfgFile.WriteString(userConfigSection(opts))
 	cfgFile.WriteString("[templates]\n")
 	return cfgFile.Name(), nil
 }
@@ -1331,7 +1365,7 @@ func extractNestedColor(jsonStr, colorName, variant string) string {
 	return color
 }
 
-func generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight string, mode ColorMode) string {
+func generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight string, mode ColorMode, profile string) string {
 	variantOpts := dank16.VariantOptions{
 		PrimaryDark:     primaryDark,
 		PrimaryLight:    primaryLight,
@@ -1341,6 +1375,7 @@ func generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight
 		ContainerLight:  containerLight,
 		UseDPS:          true,
 		IsLightMode:     mode == ColorModeLight,
+		Profile:         profile,
 	}
 	variantColors := dank16.GenerateVariantPalette(variantOpts)
 	return dank16.GenerateVariantJSON(variantColors)

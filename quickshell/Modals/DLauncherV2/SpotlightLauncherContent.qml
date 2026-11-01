@@ -6,6 +6,7 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2.Components
+import "../../Common/LauncherKeybinds.js" as LauncherKeybinds
 
 FocusScope {
     id: root
@@ -22,7 +23,7 @@ FocusScope {
     property bool showResultsWithoutQuery: false
     property bool suspendSearchUpdates: false
     property real maxResultsHeight: 0
-    // Off for fixed-height hosts, where the resize would only slide the bottom fade.
+    // Off for hosts that animate their own size, where this would only slide the bottom fade.
     property bool resizeAnimated: true
     property real resultsInset: LauncherMetrics.spotlightInset
 
@@ -38,10 +39,10 @@ FocusScope {
     readonly property real _statusH: Theme.listItemTwoLineHeight + Theme.spacingXL
     readonly property bool _firstSectionShowsHeader: !!(root.controller.sections?.[0]?.title?.length > 0)
     readonly property real _resultsTopGap: _firstSectionShowsHeader ? LauncherMetrics.resultsGap : root.resultsInset
-    readonly property real _rowsHeightBudget: (root.controller.searchMode === "dmenu" && root.controller.dmenuLines > 0) ? (root.controller.dmenuLines * (LauncherMetrics.rowHeight + LauncherMetrics.rowGap) + (_firstSectionShowsHeader ? LauncherMetrics.sectionBand : _resultsTopGap)) : LauncherMetrics.maxResultsHeight
+    readonly property real _rowsHeightBudget: _resultsTopGap + ((root.controller.searchMode === "dmenu" && root.controller.dmenuLines > 0) ? (root.controller.dmenuLines * (LauncherMetrics.rowHeight + LauncherMetrics.rowGap) + (_firstSectionShowsHeader ? LauncherMetrics.sectionBand : 0) + LauncherMetrics.fadeLength) : LauncherMetrics.maxResultsHeight)
     readonly property real _maxResultsH: root.maxResultsHeight > 0 ? root.maxResultsHeight : Math.max(0, Math.min(_rowsHeightBudget + resultsList.bottomInset, (parentModal?.screenHeight ?? Theme.mediumBreakpoint) - (parentModal?.modalY ?? 0) - LauncherMetrics.pillHeight - actionPanel.height - Theme.spacingL))
     readonly property real _resultsContentH: resultsList.contentHeight > 0 ? _resultsTopGap + resultsList.contentHeight + resultsList.bottomInset : _statusH
-    readonly property real _resultsH: _hasQuery ? Math.min(_resultsContentH, _maxResultsH) : 0
+    readonly property real _resultsH: _hasQuery ? Math.min(_resultsContentH, _resultsTopGap + resultsList.fittedHeight + resultsList.bottomInset) : 0
     readonly property int _resizeDuration: Theme.expressiveDurations.expressiveFastSpatial
     readonly property real _frameClipRadius: Math.max(0, (parentModal?.frameBottomRadius ?? 0) - resultsInset)
     readonly property real _editAvailableH: maxResultsHeight > 0 ? maxResultsHeight + _searchAreaH : Math.max(LauncherMetrics.maxResultsHeight, (parentModal?.screenHeight ?? Theme.mediumBreakpoint) - (parentModal?.modalY ?? 0) - Theme.spacingL)
@@ -121,7 +122,6 @@ FocusScope {
         }
 
         const hasCtrl = event.modifiers & Qt.ControlModifier;
-        const hasAlt = event.modifiers & Qt.AltModifier;
 
         if (root.controller.searchMode === "dmenu") {
             const kbN = root.controller.matchDmenuKeybind(event);
@@ -130,6 +130,17 @@ FocusScope {
                 event.accepted = true;
                 return;
             }
+        }
+
+        const launcherAction = LauncherKeybinds.actionForEvent(event, SettingsData.launcherKeybinds);
+        if (launcherAction) {
+            actionPanel.hide();
+            if (launcherAction.mode)
+                root.controller.setMode(launcherAction.mode);
+            else
+                _cycleCategory(launcherAction.id === "previousMode");
+            event.accepted = true;
+            return;
         }
 
         switch (event.key) {
@@ -224,19 +235,13 @@ FocusScope {
             event.accepted = true;
             return;
         case Qt.Key_Tab:
-            if (hasCtrl) {
-                actionPanel.hide();
-                _cycleCategory(false);
-            } else if (actionPanel.hasActions) {
+            if (!hasCtrl && actionPanel.hasActions) {
                 actionPanel.expanded ? actionPanel.cycleAction() : actionPanel.show();
             }
             event.accepted = true;
             return;
         case Qt.Key_Backtab:
-            if (hasCtrl) {
-                actionPanel.hide();
-                _cycleCategory(true);
-            } else if (actionPanel.hasActions) {
+            if (!hasCtrl && actionPanel.hasActions) {
                 actionPanel.expanded ? actionPanel.cycleAction(true) : actionPanel.show();
             }
             event.accepted = true;
@@ -251,7 +256,7 @@ FocusScope {
             } else if (actionPanel.expanded && actionPanel.selectedActionIndex > 0) {
                 actionPanel.executeSelectedAction();
             } else {
-                root.controller.executeSelected();
+                root.controller.executeSelected(!!(event.modifiers & Qt.ControlModifier));
             }
             event.accepted = true;
             return;
@@ -260,34 +265,6 @@ FocusScope {
             if (contextMenu.hasContextMenuActions(root.controller.selectedItem)) {
                 const scenePos = resultsList.getSelectedItemPosition();
                 _showContextMenu(root.controller.selectedItem, scenePos.x, scenePos.y, true);
-                event.accepted = true;
-                return;
-            }
-            break;
-        case Qt.Key_1:
-            if (hasCtrl || hasAlt) {
-                root.controller.setMode("all");
-                event.accepted = true;
-                return;
-            }
-            break;
-        case Qt.Key_2:
-            if (hasCtrl || hasAlt) {
-                root.controller.setMode("apps");
-                event.accepted = true;
-                return;
-            }
-            break;
-        case Qt.Key_3:
-            if (hasCtrl || hasAlt) {
-                root.controller.setMode("files");
-                event.accepted = true;
-                return;
-            }
-            break;
-        case Qt.Key_4:
-            if (hasCtrl || hasAlt) {
-                root.controller.setMode("plugins");
                 event.accepted = true;
                 return;
             }
@@ -462,6 +439,8 @@ FocusScope {
             focusReturnTarget: searchInput
             keyForwardTargets: [searchKeyHandler]
             readonly property real bottomInset: Theme.spacingS
+            availableHeight: Math.max(0, root._maxResultsH - root._resultsTopGap - bottomInset)
+            resizing: actionPanel.animating
             anchors.fill: parent
             anchors.topMargin: root._resultsTopGap
             controller: root.controller

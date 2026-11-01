@@ -1,4 +1,4 @@
-# Root Makefile for DankMaterialShell (DMS)
+# Root Makefile for Dux Shell (DMS)
 # Orchestrates building, installation, and systemd management
 
 # Build configuration
@@ -46,10 +46,10 @@ lint-qml:
 test-qml:
 	QMLTESTRUNNER="$(QMLTESTRUNNER)" python3 quickshell/tests/run-qml.py
 
-# Pull the latest dank-qml-common and pin it everywhere it is consumed
+# Pull the latest dux-qml-common and pin it everywhere it is consumed
 # (submodule pointer + nix flake input). Commit both in one change.
 update-common:
-	git submodule update --remote --merge dank-qml-common
+	git submodule update --remote --merge dux-qml-common
 	nix --extra-experimental-features 'nix-command flakes' flake update dank-qml-common
 
 # Installation targets
@@ -83,15 +83,17 @@ endif
 
 install-icon:
 	@echo "Installing icon..."
-	@install -D -m 644 $(ASSETS_DIR)/com.danklinux.dms.svg $(ICON_DIR)/com.danklinux.dms.svg
+	@install -D -m 644 $(ASSETS_DIR)/dev.duxlabs.shell.svg $(ICON_DIR)/dev.duxlabs.shell.svg
+	@rm -f $(ICON_DIR)/com.danklinux.dms.svg
 	@gtk-update-icon-cache -q $(DATA_DIR)/icons/hicolor 2>/dev/null || true
 	@echo "Icon installed"
 
 install-desktop:
 	@echo "Installing desktop entries..."
 	@install -D -m 644 $(ASSETS_DIR)/dms-open.desktop $(APPLICATIONS_DIR)/dms-open.desktop
-	@install -D -m 644 $(ASSETS_DIR)/com.danklinux.dms.desktop $(APPLICATIONS_DIR)/com.danklinux.dms.desktop
-	@install -D -m 644 $(ASSETS_DIR)/com.danklinux.dms.notepad.desktop $(APPLICATIONS_DIR)/com.danklinux.dms.notepad.desktop
+	@install -D -m 644 $(ASSETS_DIR)/dev.duxlabs.shell.desktop $(APPLICATIONS_DIR)/dev.duxlabs.shell.desktop
+	@install -D -m 644 $(ASSETS_DIR)/dev.duxlabs.shell.notepad.desktop $(APPLICATIONS_DIR)/dev.duxlabs.shell.notepad.desktop
+	@rm -f $(APPLICATIONS_DIR)/com.danklinux.dms.desktop $(APPLICATIONS_DIR)/com.danklinux.dms.notepad.desktop
 	@update-desktop-database -q $(APPLICATIONS_DIR) 2>/dev/null || true
 	@echo "Desktop entries installed"
 
@@ -127,6 +129,7 @@ uninstall-systemd:
 
 uninstall-icon:
 	@echo "Removing icon..."
+	@rm -f $(ICON_DIR)/dev.duxlabs.shell.svg
 	@rm -f $(ICON_DIR)/com.danklinux.dms.svg
 	@rm -f $(ICON_DIR)/danklogo.svg
 	@gtk-update-icon-cache -q $(DATA_DIR)/icons/hicolor 2>/dev/null || true
@@ -135,8 +138,9 @@ uninstall-icon:
 uninstall-desktop:
 	@echo "Removing desktop entries..."
 	@rm -f $(APPLICATIONS_DIR)/dms-open.desktop
-	@rm -f $(APPLICATIONS_DIR)/com.danklinux.dms.desktop
-	@rm -f $(APPLICATIONS_DIR)/com.danklinux.dms.notepad.desktop
+	@rm -f $(APPLICATIONS_DIR)/dev.duxlabs.shell.desktop
+	@rm -f $(APPLICATIONS_DIR)/dev.duxlabs.shell.notepad.desktop
+	@rm -f $(APPLICATIONS_DIR)/com.danklinux.dms.desktop $(APPLICATIONS_DIR)/com.danklinux.dms.notepad.desktop
 	@update-desktop-database -q $(APPLICATIONS_DIR) 2>/dev/null || true
 	@echo "Desktop entries removed"
 

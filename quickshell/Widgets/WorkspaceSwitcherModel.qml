@@ -61,25 +61,24 @@ QtObject {
             "minCount": showPadding ? paddingCount : 0,
             "showSpecial": showSpecial
         });
-        if (CompositorService.ephemeralWorkspaces)
-            return hyprlandSlotList(baseList);
-        if (!showPadding || CompositorService.supportsPersistentWorkspaces || (useAqueous && baseList.length === 0))
-            return baseList;
-        return padWorkspaces(baseList);
+        const slots = slotList(baseList);
+        if (CompositorService.ephemeralWorkspaces || !showPadding || CompositorService.supportsPersistentWorkspaces || (useAqueous && baseList.length === 0))
+            return slots;
+        return padWorkspaces(slots);
     }
 
-    readonly property var realWorkspaces: workspaceList.filter(ws => ws && !recordOf(ws).placeholder)
+    readonly property var realWorkspaces: workspaceList.map(ws => recordOf(ws)).filter(ws => ws && !ws.placeholder)
     readonly property bool hasWorkspaces: realWorkspaces.length > 0
     readonly property bool available: useNativeWorkspaces || (useExtWorkspace && hasWorkspaces)
 
     onCompositorNameChanged: {
         _placeholderPool = [];
-        _hyprSlotPool = {};
+        _slotPool = {};
     }
 
     // Hyprland creates/destroys workspaces on empty enter/leave; slots keyed by id keep delegate identity so pills animate instead of popping
-    property var _hyprSlotPool: ({})
-    readonly property Component _hyprSlotComponent: Component {
+    property var _slotPool: ({})
+    readonly property Component _slotComponent: Component {
         QtObject {
             property var ws: null
         }
@@ -91,19 +90,33 @@ QtObject {
         return entry.ws;
     }
 
-    function _hyprSlot(key, ws) {
-        let slot = _hyprSlotPool[key];
-        if (!slot) {
-            slot = _hyprSlotComponent.createObject(root);
-            _hyprSlotPool[key] = slot;
+    function slotList(raw) {
+        const live = {};
+        const slots = raw.map(ws => {
+            const key = ws.id !== null && ws.id !== undefined && !ws.special ? ws.id : (ws.special ? "special:" : "name:") + (ws.name ?? "");
+            let entry = _slotPool[key];
+            if (!entry) {
+                entry = {
+                    "slot": _slotComponent.createObject(root),
+                    "ws": null
+                };
+                _slotPool[key] = entry;
+            }
+            // Compare against the cached record: reading slot.ws here would make workspaceList depend on the write below (binding loop)
+            if (entry.ws !== ws) {
+                entry.ws = ws;
+                entry.slot.ws = ws;
+            }
+            live[key] = true;
+            return entry.slot;
+        });
+        for (const key in _slotPool) {
+            if (live[key])
+                continue;
+            _slotPool[key].slot.destroy();
+            delete _slotPool[key];
         }
-        if (slot.ws !== ws)
-            slot.ws = ws;
-        return slot;
-    }
-
-    function hyprlandSlotList(raw) {
-        return raw.map(ws => _hyprSlot(ws.id > 0 ? ws.id : (ws.special ? "special:" : "name:") + (ws.name ?? ""), ws));
+        return slots;
     }
 
     // Stable placeholder instances so ScriptModel reuses padding delegates instead of recreating them on workspace churn

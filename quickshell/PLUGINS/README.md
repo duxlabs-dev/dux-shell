@@ -4,11 +4,11 @@ Extend DMS with dynamically loaded QML components: bar and dock widgets, Control
 
 ## Plugin Registry
 
-Browse and discover community plugins at **https://plugins.danklinux.com/**
+Browse and discover community plugins at **https://plugins.duxlabs.dev/**
 
 ## Overview
 
-Plugins are discovered from `~/.config/DankMaterialShell/plugins/` and managed by PluginService. One plugin can provide a single surface or several (see [Composite Plugins](#composite-plugins)).
+Plugins are discovered from `~/.config/dms/plugins/` and managed by PluginService. One plugin can provide a single surface or several (see [Composite Plugins](#composite-plugins)).
 
 ## Architecture
 
@@ -16,7 +16,7 @@ Plugins are discovered from `~/.config/DankMaterialShell/plugins/` and managed b
 
 1. **PluginService** (`Services/PluginService.qml`)
    - Singleton service managing plugin lifecycle
-   - Discovers plugins from `$CONFIGPATH/DankMaterialShell/plugins/`
+   - Discovers plugins from `$CONFIGPATH/dms/plugins/`
    - Handles loading, unloading, and state management
    - Provides data persistence for plugin settings
 
@@ -35,14 +35,14 @@ Plugins are discovered from `~/.config/DankMaterialShell/plugins/` and managed b
    - Lists built-in and plugin tabs and overview cards
    - Hosts plugin tabs in `DashTabHost.qml` and cards in `Overview/DashCardSlot.qml`
 
-Many widgets are implemented in the shared [dank-qml-common](https://github.com/AvengeMedia/dank-qml-common) library and re-exported by DMS. Plugins should keep importing `qs.Common`, `qs.Services`, `qs.Widgets`, and `qs.Modules.Plugins` — these remain the supported plugin API and are unaffected by where a widget is implemented.
+Many widgets are implemented in the shared [dux-qml-common](https://github.com/duxlabs-dev/dux-qml-common) library and re-exported by DMS. Plugins should keep importing `qs.Common`, `qs.Services`, `qs.Widgets`, and `qs.Modules.Plugins` — these remain the supported plugin API and are unaffected by where a widget is implemented.
 
 ## Plugin Structure
 
-Each plugin must be a directory in `$CONFIGPATH/DankMaterialShell/plugins/` containing:
+Each plugin must be a directory in `$CONFIGPATH/dms/plugins/` containing:
 
 ```
-$CONFIGPATH/DankMaterialShell/plugins/YourPlugin/
+$CONFIGPATH/dms/plugins/YourPlugin/
 ├── plugin.json          # Required: Plugin manifest
 ├── YourWidget.qml       # Required: Widget component
 ├── YourSettings.qml     # Optional: Settings UI
@@ -245,7 +245,7 @@ shrinks below the minimum size. Keep persistent state in the plugin instance.
 ```qml
 ccExpandedContent: Component {
     CcTileContent {
-        DankButton {
+        DButton {
             maximumWidth: parent.width
             text: I18n.trFor("myPlugin", "Run")
             onClicked: root.runAction()
@@ -292,6 +292,7 @@ PopoutComponent provides a consistent header/content layout for plugin popouts:
 
 ```qml
 import qs.Modules.Plugins
+import qs.DCommon.Widgets
 
 PopoutComponent {
     headerText: "Header Title"        // Main header text (bold, large)
@@ -303,7 +304,7 @@ PopoutComponent {
 
     // Your content here - use parent.width for full width
     // Calculate available height: root.popoutHeight - headerHeight - detailsHeight - spacing
-    DankGridView {
+    DGridView {
         width: parent.width
         height: parent.height
         // ...
@@ -633,7 +634,7 @@ File names match what DMS ships in its own catalog (`es.json`, `pt.json`, `zh_CN
 
 ### Central Translation via POEditor
 
-Plugins in the [plugin registry](https://github.com/AvengeMedia/dms-plugin-registry) can apply to join the DankPlugins POEditor project, translated by the same community that translates DMS itself. Approved plugins get every `I18n.trFor()` string uploaded under a `<pluginId>:` context, so your "Auto" and another plugin's "Auto" are separate terms with separate translations. Finished translations come back to the plugin repo as PRs to `translations/`, in the file format above. See the registry's CONTRIBUTING guide for the application process.
+Plugins in the [plugin registry](https://github.com/duxlabs-dev/dux-plugin-registry) can apply to join the DankPlugins POEditor project, translated by the same community that translates DMS itself. Approved plugins get every `I18n.trFor()` string uploaded under a `<pluginId>:` context, so your "Auto" and another plugin's "Auto" are separate terms with separate translations. Finished translations come back to the plugin repo as PRs to `translations/`, in the file format above. See the registry's CONTRIBUTING guide for the application process.
 
 Strings you wrap in plain `I18n.tr()` are not uploaded. They resolve from the shell catalog only, which is the right choice for terms DMS already has ("Cancel", "Settings"). A term DMS does not have stays English, and the sync warns about it.
 
@@ -643,7 +644,7 @@ Strings you wrap in plain `I18n.tr()` are not uploaded. They resolve from the sh
 
 ```qml
 PluginService.pluginDirectory: string
-// Path to plugins directory ($CONFIGPATH/DankMaterialShell/plugins)
+// Path to plugins directory ($CONFIGPATH/dms/plugins)
 
 PluginService.availablePlugins: object
 // Map of all discovered plugins {pluginId: pluginInfo}
@@ -716,7 +717,7 @@ QtObject {
             }
             done({
                 title: I18n.tr("boregard is required"),
-                details: I18n.tr("Install it from https://danklinux.com, then re-enable this plugin.")
+                details: I18n.tr("Install it from https://duxlabs.dev, then re-enable this plugin.")
             })
         })
     }
@@ -845,8 +846,8 @@ PluginComponent {
 ### Step 1: Create Plugin Directory
 
 ```bash
-mkdir -p $CONFIGPATH/DankMaterialShell/plugins/MyPlugin
-cd $CONFIGPATH/DankMaterialShell/plugins/MyPlugin
+mkdir -p $CONFIGPATH/dms/plugins/MyPlugin
+cd $CONFIGPATH/dms/plugins/MyPlugin
 ```
 
 ### Step 2: Create Manifest
@@ -988,7 +989,7 @@ Or edit `$CONFIGPATH/quickshell/dms/config.json`:
 
 ## Best Practices
 
-1. **Use Existing Widgets**: Leverage `qs.Widgets` components (DankIcon, DankToggle, etc.) for consistency
+1. **Use Existing Widgets**: Leverage `qs.DCommon.Widgets` components (DIcon, DToggle, etc.) for consistency
 2. **Follow Theme**: Use `Theme` singleton for colors, spacing, and fonts
 3. **Data Persistence**: Use PluginService data APIs instead of manual file operations
 4. **Error Handling**: Gracefully handle missing dependencies and invalid data
@@ -1177,9 +1178,10 @@ Item {
 import QtQuick
 import qs.Common
 import qs.Widgets
+import qs.DCommon.Widgets
 
 Item {
-    DankTextField {
+    DTextField {
         id: searchField
         placeholderText: "Search files..."
 
@@ -1240,7 +1242,7 @@ Look for lines prefixed with:
 
 1. **Plugin Not Detected**
    - Check plugin.json syntax (use `jq` or JSON validator)
-   - Verify directory is in `$CONFIGPATH/DankMaterialShell/plugins/`
+   - Verify directory is in `$CONFIGPATH/dms/plugins/`
    - Click "Scan for Plugins" in Settings
 
 2. **Widget Not Displaying**
@@ -1256,7 +1258,7 @@ Look for lines prefixed with:
 
 4. **Data Not Persisting**
    - Confirm pluginService.savePluginData() calls (with injection)
-   - Check `$CONFIGPATH/DankMaterialShell/settings.json` for pluginSettings data
+   - Check `$CONFIGPATH/dms/settings.json` for pluginSettings data
    - Verify plugin has settings permissions
    - Ensure PluginService was properly injected into settings component
 
@@ -1452,6 +1454,7 @@ Provide a settings component with trigger configuration:
 import QtQuick
 import QtQuick.Controls
 import qs.Widgets
+import qs.DCommon.Widgets
 
 FocusScope {
     id: root
@@ -1476,7 +1479,7 @@ FocusScope {
             }
         }
 
-        DankTextField {
+        DTextField {
             id: triggerField
             visible: !noTriggerToggle.checked
             text: loadSettings("trigger", "#")

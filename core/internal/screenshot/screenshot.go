@@ -5,12 +5,12 @@ import (
 	"math"
 	"sync"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_screencopy"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wp_color_management"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
-	wlhelpers "github.com/AvengeMedia/DankMaterialShell/core/internal/wayland/client"
-	"github.com/AvengeMedia/dankgo/wayland/client"
+	"github.com/duxlabs-dev/dux-go/wayland/client"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_screencopy"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wp_color_management"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
+	wlhelpers "github.com/duxlabs-dev/dux-shell/core/internal/wayland/client"
 )
 
 type WaylandOutput struct {
@@ -47,6 +47,31 @@ func (o *WaylandOutput) effectiveScale() float64 {
 		return 1.0
 	}
 	return scale
+}
+
+// Hyprland >= 0.57 (901881c9f) sends screencopy frames in logical orientation; wlroots and niri send the native framebuffer.
+// !TODO: drop the version fallback once every distro ships hyprland >= 0.57
+func FrameInLogicalOrientation(transform, outW, outH int32, frameW, frameH int) bool {
+	switch transform {
+	case TransformNormal:
+		return true
+	case Transform90, Transform270, TransformFlipped90, TransformFlipped270:
+		if outW != outH {
+			return frameW == int(outH) && frameH == int(outW)
+		}
+	}
+	return DetectCompositor() == CompositorHyprland && hyprlandVersionAtLeast(0, 57)
+}
+
+func (o *WaylandOutput) frameInLogicalOrientation(frameW, frameH int) bool {
+	return FrameInLogicalOrientation(o.transform, o.width, o.height, frameW, frameH)
+}
+
+func (o *WaylandOutput) untransformFrame(buf *ShmBuffer) (*ShmBuffer, error) {
+	if o.frameInLogicalOrientation(buf.Width, buf.Height) {
+		return buf, nil
+	}
+	return buf.ApplyTransform(InverseTransform(o.transform))
 }
 
 func (o *WaylandOutput) bounds() Region {
@@ -677,12 +702,7 @@ func (s *Screenshoter) captureWholeOutput(output *WaylandOutput) (*CaptureResult
 		result.YInverted = false
 	}
 
-	if output.transform == TransformNormal {
-		return result, nil
-	}
-
-	invTransform := InverseTransform(output.transform)
-	transformed, err := result.Buffer.ApplyTransform(invTransform)
+	transformed, err := output.untransformFrame(result.Buffer)
 	if err != nil {
 		result.Buffer.Close()
 		return nil, fmt.Errorf("apply transform: %w", err)

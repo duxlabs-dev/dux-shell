@@ -83,11 +83,12 @@ Theme.popupBackground()  // Popup background with proper opacity
 
 ```qml
 import qs.Widgets
+import qs.DCommon.Widgets
 
 Row {
     spacing: Theme.spacingS
 
-    DankIcon {
+    DIcon {
         name: "icon_name"
         color: Theme.onSurface
         font.pixelSize: Theme.iconSize
@@ -151,7 +152,7 @@ StyledRect {
         anchors.centerIn: parent
         spacing: Theme.spacingS
 
-        DankIcon {
+        DIcon {
             name: "star"
             color: Theme.surfaceText
             font.pixelSize: Theme.iconSize
@@ -191,17 +192,17 @@ font.pixelSize: 14     // Use Theme.fontSizeMedium
 |--------|-------------|
 | `StyledText` | Themed text with proper color defaults |
 | `StyledRect` | Themed rectangle |
-| `DankIcon` | Material Symbols icon renderer |
+| `DIcon` | Material Symbols icon renderer |
 | `DankNFIcon` | Nerd Font icon renderer |
-| `DankButton` | Themed button |
-| `DankToggle` | Toggle switch |
-| `DankTextField` | Text input field |
-| `DankSlider` | Slider control |
-| `DankDropdown` | Dropdown menu |
-| `DankGridView` | Grid layout view |
-| `DankListView` | List layout view |
-| `DankFlickable` | Scrollable container |
-| `DankTabBar` | Tab bar navigation |
+| `DButton` | Themed button |
+| `DToggle` | Toggle switch |
+| `DTextField` | Text input field |
+| `DSlider` | Slider control |
+| `DDropdown` | Dropdown menu |
+| `DGridView` | Grid layout view |
+| `DListView` | List layout view |
+| `DFlickable` | Scrollable container |
+| `DTabBar` | Tab bar navigation |
 | `DankCollapsibleSection` | Collapsible content section |
 | `DankTooltip` | Hover tooltip |
 | `DankNumberStepper` | Number +/- control |

@@ -121,15 +121,15 @@ Singleton {
         return null;
     }
 
-    function registrationActive(entry) {
-        return registrationLive(entry) && entry.item.effectiveVisible !== false;
+    function registrationActive(entry, includeHidden = false) {
+        return registrationLive(entry, includeHidden) && entry.item.effectiveVisible !== false;
     }
 
     function registrationShown(entry) {
         return registrationActive(entry) && entry.context?.owner?.widgetEnabled !== false;
     }
 
-    function registrationLive(entry) {
+    function registrationLive(entry, includeHidden = false) {
         if (!entry?.item || widgetRegistry[entry.key] !== entry)
             return false;
         const context = entry.context;
@@ -137,18 +137,47 @@ Singleton {
             return true;
         if (!context.owner?.active || context.surface.config.enabled === false)
             return false;
-        if (context.surface.config.visible === false && !(context.surface.host?.barRevealed ?? context.surface.revealed))
+        if (!includeHidden && context.surface.config.visible === false && !(context.surface.host?.barRevealed ?? context.surface.revealed))
             return false;
         if (context.kind === "dock")
             return SettingsData.dockConfigsForScreen(context.surface.screen).some(config => config.id === context.barId);
         return ShellLayout.forScreen(entry.screenName)?.instances.some(instance => instance.barId === context.barId) === true;
     }
 
-    function resolveWidget(widgetId, target) {
+    // IPC passes includeHidden: a hidden bar's widget still opens, anchored where the bar sits.
+    function resolveWidget(widgetId, target, includeHidden = false) {
         const configs = SettingsData.barConfigs.concat(SettingsData.dockConfigs ?? []).map(config => config.id);
         const screens = Quickshell.screens.map(screen => screen.name);
         const select = eligible => Registry.select(widgetRegistry, widgetId, target, configs, screens, eligible);
-        return select(registrationShown) ?? select(registrationLive);
+        return select(registrationShown) ?? select(registrationLive) ?? (includeHidden ? select(entry => registrationLive(entry, true)) : null);
+    }
+
+    // Matches getPreferredBar in DMSShellIPC: focused screen, then visible before hidden, then the last used bar.
+    function resolveIpcWidget(widgetId) {
+        const configs = SettingsData.barConfigs.concat(SettingsData.dockConfigs ?? []).map(config => config.id);
+        const screens = Quickshell.screens.map(screen => screen.name);
+        const screenName = getFocusedScreenName();
+        const lastBarId = screenName ? SettingsData.lastUsedBarByScreen[screenName] : "";
+        const tiers = [registrationShown, registrationLive, entry => registrationLive(entry, true)];
+        const focusedTargets = screenName ? [
+            {
+                screenName,
+                barId: lastBarId
+            },
+            {
+                screenName
+            }
+        ] : [];
+        for (const targets of [focusedTargets, [{}]]) {
+            for (const eligible of tiers) {
+                for (const target of targets) {
+                    const hit = Registry.select(widgetRegistry, widgetId, target, configs, screens, eligible);
+                    if (hit)
+                        return hit;
+                }
+            }
+        }
+        return null;
     }
 
     function getWidget(widgetId, screenName, instanceId) {
@@ -198,7 +227,7 @@ Singleton {
     }
 
     function getWidgetOnFocusedScreen(widgetId) {
-        return getWidget(widgetId, getFocusedScreenName()) || getWidget(widgetId);
+        return resolveIpcWidget(widgetId)?.item ?? null;
     }
 
     readonly property bool focusedScreenDetectionSupported: (CompositorService.isAqueous && AqueousService.available) || CompositorService.isHyprland || CompositorService.isNiri || CompositorService.isMango || CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle || CompositorService.isUmbriel
@@ -214,7 +243,7 @@ Singleton {
     }
 
     function hasWidget(widgetId) {
-        return getWidget(widgetId) !== null;
+        return resolveIpcWidget(widgetId) !== null;
     }
 
     function ensureWidget(widgetId) {
@@ -224,7 +253,7 @@ Singleton {
     }
 
     function triggerWidgetPopout(widgetId, target) {
-        const widget = target ? resolveWidget(widgetId, target)?.item : getWidgetOnFocusedScreen(widgetId);
+        const widget = target ? resolveWidget(widgetId, target, true)?.item : getWidgetOnFocusedScreen(widgetId);
         if (!widget)
             return false;
 

@@ -204,7 +204,7 @@ Item {
         id: errorText
         visible: pluginService && !root.hasPermission
         anchors.fill: parent
-        text: I18n.tr("This plugin does not have 'settings_write' permission.\n\nAdd \"permissions\": [\"settings_read\", \"settings_write\"] to plugin.json")
+        text: I18n.tr("This plugin does not have '%1' permission.\n\nAdd %2 to %3", "plugin settings write warning, %1 is a permission name, %2 a manifest snippet, %3 the manifest file").arg("settings_write").arg('"permissions": ["settings_read", "settings_write"]').arg("plugin.json")
         color: Theme.error
         font.pixelSize: Theme.fontSizeMedium
         wrapMode: Text.WordWrap

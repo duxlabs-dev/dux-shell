@@ -28,11 +28,19 @@ Item {
         return root.body?.containsGlobalPoint(gx, gy, padding) ?? false;
     }
 
+    // The focus grab must include the dismiss layer, or Hyprland eats the first outside click to end the grab.
+    Binding {
+        target: root.body
+        property: "dismissWindow"
+        value: dismissWindow
+        when: !!root.body
+    }
+
     PanelWindow {
         id: dismissWindow
 
         screen: root.screen
-        visible: !!root.body && root.body.expanded && !PopoutManager.screenshotActive
+        visible: !!root.islandController && root.islandController.outsideClickCollapses && !PopoutManager.screenshotActive
         color: "transparent"
         exclusiveZone: -1
 
@@ -143,8 +151,6 @@ Item {
                 root.islandController?.requestCollapse();
                 mouse.accepted = true;
             }
-
-            onWheel: wheel => root.body?.scrollWheel(wheel)
         }
     }
 }

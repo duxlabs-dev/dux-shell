@@ -30,7 +30,7 @@ BasePill {
     }
     property real allottedPrimarySize: 0
     property int availableWidth: allottedPrimarySize > 0 ? allottedPrimarySize : maxWidth
-    readonly property real naturalPrimarySize: isVerticalOrientation ? height : !hasWindowsOnCurrentWorkspace ? 0 : Theme.snap(Math.min(contentItem?.naturalWidth ?? 0, maxWidth - horizontalPadding * 2) + horizontalPadding * 2, dpr)
+    readonly property real naturalPrimarySize: isVerticalOrientation ? height : !hasWindowsOnCurrentWorkspace ? 0 : Theme.pxCeil(Math.min(contentItem?.naturalWidth ?? 0, maxWidth - horizontalPadding * 2) + horizontalPadding * 2, dpr)
     readonly property real minimumPrimarySize: isVerticalOrientation ? height : Math.min(naturalPrimarySize, Theme.snap((contentItem?.minimumWidth ?? 0) + horizontalPadding * 2, dpr))
     readonly property real effectiveHorizontalWidth: Math.max(0, Math.min(maxWidth, availableWidth))
     readonly property real effectiveHorizontalInnerWidth: Math.max(0, effectiveHorizontalWidth - horizontalPadding * 2)
@@ -157,7 +157,7 @@ BasePill {
                 smooth: true
                 mipmap: true
                 asynchronous: true
-                layer.enabled: activeWindow && (activeWindow.appId === "org.quickshell" || activeWindow.appId === "com.danklinux.dms")
+                layer.enabled: activeWindow && Paths.isDmsAppId(activeWindow.appId)
                 layer.smooth: true
                 layer.mipmap: true
                 layer.effect: MultiEffect {
@@ -217,7 +217,7 @@ BasePill {
                         smooth: true
                         mipmap: true
                         asynchronous: true
-                        layer.enabled: activeWindow && (activeWindow.appId === "org.quickshell" || activeWindow.appId === "com.danklinux.dms")
+                        layer.enabled: activeWindow && Paths.isDmsAppId(activeWindow.appId)
                         layer.smooth: true
                         layer.mipmap: true
                         layer.effect: MultiEffect {

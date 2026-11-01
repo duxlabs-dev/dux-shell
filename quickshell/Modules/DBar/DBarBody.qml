@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Wayland
 import qs.Common
 import qs.Modules.DIsland
 import qs.Services
@@ -22,6 +23,13 @@ Item {
 
     readonly property bool barRevealed: inputMask.showing
     readonly property bool autoHideActive: topBarCore.autoHide
+    readonly property bool fullscreenAutoHide: !barWindow.isIsland
+        && !usesFrameBarChrome
+        && (barConfig?.hideOnFullscreen ?? false)
+        && hostWindow?.dBarLayer === WlrLayer.Overlay
+        && CompositorService.isNiri
+        && !CompositorService.overviewActiveOnScreen(screenName)
+        && CompositorService.visibleNiriFullscreenToplevelOnScreen(screen)
 
     readonly property bool isIsland: barConfig?.island === true
     // Resolver-owned so the body, the frame and the dismiss window agree during the frame latch.
@@ -53,13 +61,13 @@ Item {
         return palette === "bright" ? Theme.surfaceBright : palette === "dim" ? Theme.surfaceDim : _hostSurface;
     }
     readonly property real islandSatelliteOpacity: isIsland ? SettingsData.islandSatelliteTransparency(barConfig) : 1
-    readonly property real islandChromePad: isIsland ? Theme.snap((barConfig?.innerPadding ?? 2) + Theme.spacingXS, _dpr) : 0
+    readonly property real islandChromePad: isIsland ? Theme.snap((barConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault) + Theme.spacingXS, _dpr) : 0
     readonly property real islandChromeInset: islandSatelliteBackground ? islandChromePad : 0
     readonly property real islandSatelliteSweep: islandSatelliteBackground && SettingsData.islandSetting(barConfig, "islandSatelliteGothCorners") ? islandGothRadius : 0
     readonly property real islandFlareClearance: ((islandHost?.notch ?? false) ? islandHost.surface.joinRadius * 2.5 : 0) + islandSatelliteSweep
     // Satellites centre on the idle pill face, not the strip; backed ones reach its far edge instead.
     readonly property bool islandSatellitesTrackPill: isIsland && !!islandHost && !islandFree
-    readonly property real islandPillFace: islandSatellitesTrackPill ? islandHost.islandController.homeCompactFaceThickness : 0
+    readonly property real islandPillFace: islandSatellitesTrackPill ? islandHost.islandController.compactFaceThickness : 0
     readonly property real islandSatelliteDepth: islandSatellitesTrackPill ? Theme.px(Math.min(islandStripThickness, islandHost.outerGap + islandPillFace), _dpr) : islandStripThickness
     readonly property real islandSatelliteCrossCenter: !islandSatellitesTrackPill || islandSatelliteBackground ? islandSatelliteDepth / 2 : islandHost.outerGap + islandPillFace / 2
     readonly property real islandSatelliteCrossShift: Theme.px(islandSatelliteCrossCenter - islandStripThickness / 2, _dpr) * (axis.edge === "bottom" || axis.edge === "right" ? -1 : 1)
@@ -140,7 +148,15 @@ Item {
         if (!loader.item)
             return;
         loader.item.screen = screen;
+        positionUnresolvedPopout(loader.item, systemUpdateButtonRef);
         PopoutManager.requestPopout(loader.item, undefined, "systemUpdate");
+    }
+
+    function positionUnresolvedPopout(popout, item) {
+        const section = item?.section || "right";
+        const anchor = item ?? dashSectionItem(section);
+        if (anchor)
+            topBarContent.surfaceContext.positionPopout(popout, anchor, section);
     }
 
     function triggerControlCenter() {
@@ -157,6 +173,7 @@ Item {
         if (!loader.item)
             return;
         loader.item.triggerScreen = screen;
+        positionUnresolvedPopout(loader.item, controlCenterButtonRef);
         loader.item.toggle();
         if (loader.item.shouldBeVisible && NetworkService.wifiEnabled)
             NetworkService.scanWifi();
@@ -340,49 +357,56 @@ Item {
     Component {
         id: blurIslandRegionComp
 
-        // Region geometry is int; keep it a pixel inside the fill so its antialiased edge never shows raw blur.
+        // Region geometry is int; round inward so the region stays inside the antialiased fill.
         Region {
             readonly property real left: topBarMouseArea.x + islandLoader.x + topBarSlide.x + (barWindow.islandHost?.currentVisualX ?? 0)
             readonly property real top: topBarMouseArea.y + islandLoader.y + topBarSlide.y + (barWindow.islandHost?.currentVisualY ?? 0)
 
-            function inset(r) {
-                return r > 0 ? Math.ceil(r) + 1 : 0;
-            }
-
-            x: Math.ceil(left) + 1
-            y: Math.ceil(top) + 1
-            width: Math.max(0, Math.floor(left + (barWindow.islandHost?.currentVisualWidth ?? 0)) - 1 - x)
-            height: Math.max(0, Math.floor(top + (barWindow.islandHost?.currentVisualHeight ?? 0)) - 1 - y)
-            topLeftRadius: inset(barWindow.islandHost?.surface.surfaceMotion.currentTopLeftRadius ?? 0)
-            topRightRadius: inset(barWindow.islandHost?.surface.surfaceMotion.currentTopRightRadius ?? 0)
-            bottomLeftRadius: inset(barWindow.islandHost?.surface.surfaceMotion.currentBottomLeftRadius ?? 0)
-            bottomRightRadius: inset(barWindow.islandHost?.surface.surfaceMotion.currentBottomRightRadius ?? 0)
+            x: Math.ceil(left)
+            y: Math.ceil(top)
+            width: Math.max(0, Math.floor(left + (barWindow.islandHost?.currentVisualWidth ?? 0)) - x)
+            height: Math.max(0, Math.floor(top + (barWindow.islandHost?.currentVisualHeight ?? 0)) - y)
+            topLeftRadius: Math.ceil(barWindow.islandHost?.surface.surfaceMotion.currentTopLeftRadius ?? 0)
+            topRightRadius: Math.ceil(barWindow.islandHost?.surface.surfaceMotion.currentTopRightRadius ?? 0)
+            bottomLeftRadius: Math.ceil(barWindow.islandHost?.surface.surfaceMotion.currentBottomLeftRadius ?? 0)
+            bottomRightRadius: Math.ceil(barWindow.islandHost?.surface.surfaceMotion.currentBottomRightRadius ?? 0)
         }
     }
 
     Component {
         id: blurIslandJoinRegionComp
 
+        // Overlaps the island body by a pixel on the join side so the body's inward rounding leaves no unblurred seam.
         Region {
             id: joinRegion
 
             property Item corner
+            property bool trailing: false
 
-            readonly property real sx: topBarMouseArea.x + islandLoader.x + topBarSlide.x
-            readonly property real sy: topBarMouseArea.y + islandLoader.y + topBarSlide.y
+            readonly property real cx: topBarMouseArea.x + islandLoader.x + topBarSlide.x + corner.x
+            readonly property real cy: topBarMouseArea.y + islandLoader.y + topBarSlide.y + corner.y
+            readonly property bool vertical: barWindow.isVertical
+            readonly property real alongFrom: vertical ? cy : cx
+            readonly property real alongTo: vertical ? cy + corner.height : cx + corner.width
+            readonly property real crossFrom: vertical ? cx : cy
+            readonly property real crossTo: vertical ? cx + corner.width : cy + corner.height
+            readonly property int alongStart: trailing ? Math.floor(alongFrom) - 1 : Math.ceil(alongFrom)
+            readonly property int alongEnd: trailing ? Math.floor(alongTo) : Math.ceil(alongTo) + 1
+            readonly property int crossStart: Math.ceil(crossFrom)
+            readonly property int crossEnd: Math.floor(crossTo)
 
-            x: sx + corner.x
-            y: sy + corner.y
-            width: corner.width
-            height: corner.height
+            x: vertical ? crossStart : alongStart
+            y: vertical ? alongStart : crossStart
+            width: Math.max(0, vertical ? crossEnd - crossStart : alongEnd - alongStart)
+            height: Math.max(0, vertical ? alongEnd - alongStart : crossEnd - crossStart)
 
             Region {
                 intersection: Intersection.Subtract
                 shape: RegionShape.Ellipse
-                x: joinRegion.x + joinRegion.corner.discRect.x
-                y: joinRegion.y + joinRegion.corner.discRect.y
-                width: joinRegion.corner.discRect.width
-                height: joinRegion.corner.discRect.height
+                x: Math.round(joinRegion.cx + joinRegion.corner.discRect.x)
+                y: Math.round(joinRegion.cy + joinRegion.corner.discRect.y)
+                width: Math.round(joinRegion.corner.discRect.width)
+                height: Math.round(joinRegion.corner.discRect.height)
             }
         }
     }
@@ -390,6 +414,7 @@ Item {
     Component {
         id: blurSatelliteRegionComp
 
+        // Sweeps hang off the body's integer bounds; converting each rect on its own could open a seam between them.
         Region {
             id: satelliteRegion
 
@@ -401,45 +426,63 @@ Item {
             readonly property bool far: surface.crossFar
             readonly property int startR: Math.round(surface.alongStartRadius)
             readonly property int endR: Math.round(surface.alongEndRadius)
+            readonly property int alongStart: Math.ceil(horizontal ? sx : sy)
+            readonly property int along: Math.max(0, Math.floor(horizontal ? sx + surface.width : sy + surface.height) - alongStart)
+            readonly property int crossStart: Math.ceil(horizontal ? sy : sx)
+            readonly property int cross: Math.max(0, Math.floor(horizontal ? sy + surface.height : sx + surface.width) - crossStart)
+            readonly property int startAlongR: Math.round(surface.startAlongR)
+            readonly property int startCrossR: Math.round(surface.startCrossR)
+            readonly property int endAlongR: Math.round(surface.endAlongR)
+            readonly property int endCrossR: Math.round(surface.endCrossR)
+            readonly property rect startSweep: localRect(surface.startAttached ? 0 : -startAlongR, surface.startAttached ? cross : 0, startAlongR, startCrossR)
+            readonly property rect startDisc: localRect(surface.startAttached ? 0 : -startAlongR * 2, surface.startAttached ? cross : 0, startAlongR * 2, startCrossR * 2)
+            readonly property rect endSweep: localRect(surface.endAttached ? along - endAlongR : along, surface.endAttached ? cross : 0, endAlongR, endCrossR)
+            readonly property rect endDisc: localRect(surface.endAttached ? along - endAlongR * 2 : along, surface.endAttached ? cross : 0, endAlongR * 2, endCrossR * 2)
 
-            x: sx
-            y: sy
-            width: surface.width
-            height: surface.height
+            function localRect(cx, cy, cw, ch) {
+                if (horizontal)
+                    return far ? Qt.rect(alongStart + cx, crossStart + cross - cy - ch, cw, ch) : Qt.rect(alongStart + cx, crossStart + cy, cw, ch);
+                return far ? Qt.rect(crossStart + cross - cy - ch, alongStart + cx, ch, cw) : Qt.rect(crossStart + cy, alongStart + along - cx - cw, ch, cw);
+            }
+
+            x: horizontal ? alongStart : crossStart
+            y: horizontal ? crossStart : alongStart
+            width: horizontal ? along : cross
+            height: horizontal ? cross : along
             topLeftRadius: far ? startR : 0
             topRightRadius: horizontal ? (far ? endR : 0) : (far ? 0 : startR)
             bottomLeftRadius: horizontal ? (far ? 0 : startR) : (far ? endR : 0)
             bottomRightRadius: far ? 0 : endR
 
             Region {
-                x: satelliteRegion.sx + satelliteRegion.surface.startSweepRect.x
-                y: satelliteRegion.sy + satelliteRegion.surface.startSweepRect.y
-                width: satelliteRegion.surface.startSweepRect.width
-                height: satelliteRegion.surface.startSweepRect.height
+                x: satelliteRegion.startSweep.x
+                y: satelliteRegion.startSweep.y
+                width: satelliteRegion.startSweep.width
+                height: satelliteRegion.startSweep.height
 
                 Region {
                     intersection: Intersection.Subtract
                     shape: RegionShape.Ellipse
-                    x: satelliteRegion.sx + satelliteRegion.surface.startSweepDisc.x
-                    y: satelliteRegion.sy + satelliteRegion.surface.startSweepDisc.y
-                    width: satelliteRegion.surface.startSweepDisc.width
-                    height: satelliteRegion.surface.startSweepDisc.height
+                    x: satelliteRegion.startDisc.x
+                    y: satelliteRegion.startDisc.y
+                    width: satelliteRegion.startDisc.width
+                    height: satelliteRegion.startDisc.height
                 }
             }
 
             Region {
-                x: satelliteRegion.sx + satelliteRegion.surface.endSweepRect.x
-                y: satelliteRegion.sy + satelliteRegion.surface.endSweepRect.y
-                width: satelliteRegion.surface.endSweepRect.width
-                height: satelliteRegion.surface.endSweepRect.height
+                x: satelliteRegion.endSweep.x
+                y: satelliteRegion.endSweep.y
+                width: satelliteRegion.endSweep.width
+                height: satelliteRegion.endSweep.height
 
                 Region {
                     intersection: Intersection.Subtract
                     shape: RegionShape.Ellipse
-                    x: satelliteRegion.sx + satelliteRegion.surface.endSweepDisc.x
-                    y: satelliteRegion.sy + satelliteRegion.surface.endSweepDisc.y
-                    width: satelliteRegion.surface.endSweepDisc.width
-                    height: satelliteRegion.surface.endSweepDisc.height
+                    x: satelliteRegion.endDisc.x
+                    y: satelliteRegion.endDisc.y
+                    width: satelliteRegion.endDisc.width
+                    height: satelliteRegion.endDisc.height
                 }
             }
         }
@@ -511,9 +554,11 @@ Item {
                 const islandSub = blurIslandRegionComp.createObject(region);
                 if (islandSub)
                     subRegions.push(islandSub);
-                for (const corner of barWindow.islandHost.notch ? barWindow.islandHost.surface.joinCorners : []) {
+                const joinCorners = barWindow.islandHost.notch ? barWindow.islandHost.surface.joinCorners : [];
+                for (let i = 0; i < joinCorners.length; i++) {
                     const sub = blurIslandJoinRegionComp.createObject(region, {
-                        corner: corner
+                        corner: joinCorners[i],
+                        trailing: i === 1
                     });
                     if (sub)
                         subRegions.push(sub);
@@ -677,7 +722,7 @@ Item {
     }
 
     readonly property int notificationCount: NotificationService.notifications.length
-    readonly property real effectiveBarThickness: (FrameTransitionState.effectiveFrameEnabled && usesFrameBarChrome) ? SettingsData.frameBarSize : Theme.barThickness(barConfig?.innerPadding ?? 2, _dpr)
+    readonly property real effectiveBarThickness: (FrameTransitionState.effectiveFrameEnabled && usesFrameBarChrome) ? SettingsData.frameBarSize : Theme.barThickness(barConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault, _dpr)
     readonly property real effectiveBarLengthPadding: {
         if (barLengthMode === "percent") {
             const percent = Math.min(100, Math.max(10, barConfig?.barLengthPercent ?? 80));
@@ -722,7 +767,7 @@ Item {
         onTriggered: barWindow._fitSettled = true
     }
     readonly property bool effectiveOpenOnOverview: (FrameTransitionState.effectiveFrameEnabled && usesFrameBarChrome) ? SettingsData.frameShowOnOverview : (barConfig?.openOnOverview ?? false)
-    readonly property real widgetThickness: Theme.barWidgetThickness(barConfig?.innerPadding ?? 2, _dpr)
+    readonly property real widgetThickness: Theme.barWidgetThickness(barConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault, _dpr)
 
     readonly property bool hasAdjacentTopBar: isVertical && ShellLayout.adjacentBar(screen, "top", barConfig) !== null
     readonly property bool hasAdjacentBottomBar: isVertical && ShellLayout.adjacentBar(screen, "bottom", barConfig) !== null
@@ -734,8 +779,13 @@ Item {
 
     readonly property real barSurfaceThickness: Theme.px(effectiveBarThickness + surfaceSpacing + ((renderBarConfig?.gothCornersEnabled ?? false) && !hasMaximizedToplevel && spansEdge ? _wingR : 0), _dpr) + _shadowBuffer
     readonly property bool islandSheetOut: islandHost?.sheetOut ?? false
-    readonly property real hostThickness: isIsland ? (islandHost?.hostThickness ?? islandStripThickness) : Math.max(barSurfaceThickness, islandSheetOut ? islandHost.hostThickness : 0)
-    readonly property real hideSlideThickness: isIsland ? hostThickness : barSurfaceThickness
+    readonly property real islandSatelliteShadowBuffer: isIsland && islandSatellitesEnabled && !islandSatelliteBackground ? _shadowBuffer : 0
+    // A grown layer surface jumps to its new origin before the client draws at the new size, so a far-edge host never grows for the sheet.
+    readonly property bool islandReservesSheet: !!islandHost && (axis.edge === "bottom" || axis.edge === "right")
+    readonly property real hostThickness: isIsland ? Math.max(islandHost?.hostThickness ?? 0, islandStripThickness + islandSatelliteShadowBuffer) : Math.max(barSurfaceThickness, islandSheetOut || islandReservesSheet ? islandHost.hostThickness : 0)
+    // The host reserves the expanded island's height, so sliding by it would move a compact island off-screen within a frame.
+    readonly property real islandCompactThickness: Math.max(islandStripThickness + islandSatelliteShadowBuffer, (islandHost?.outerGap ?? 0) + (islandHost?.compactThickness ?? 0) + (islandHost?.shadowPadding ?? 0))
+    readonly property real hideSlideThickness: isIsland ? islandCompactThickness : barSurfaceThickness
     readonly property real surfaceImplicitHeight: !isVertical ? hostThickness : 0
     readonly property real surfaceImplicitWidth: isVertical ? hostThickness : 0
 
@@ -780,7 +830,7 @@ Item {
 
     readonly property bool reserveExclusiveWhenAutoHidden: FrameTransitionState.effectiveFrameEnabled && usesFrameBarChrome && !!barWindow.screen && SettingsData.isScreenInPreferences(barWindow.screen, SettingsData.frameScreenPreferences)
 
-    readonly property real surfaceExclusiveZone: isIsland ? ((islandFree || (islandHost?.floating ?? false)) ? 0 : SettingsData.islandReserveThickness(barConfig)) : (!(barConfig?.visible ?? true) || (topBarCore.autoHide && !barWindow.reserveExclusiveWhenAutoHidden)) ? -1 : (barWindow.effectiveBarThickness + effectiveSpacing + (usesFrameBarChrome ? 0 : (barConfig?.bottomGap ?? 0)))
+    readonly property real surfaceExclusiveZone: isIsland ? ((islandFree || (islandHost?.floating ?? false)) ? 0 : SettingsData.islandReserveThickness(barConfig)) : (!(barConfig?.visible ?? true) || ((barConfig?.autoHide ?? false) && !barWindow.reserveExclusiveWhenAutoHidden)) ? -1 : (barWindow.effectiveBarThickness + effectiveSpacing + (usesFrameBarChrome ? 0 : (barConfig?.bottomGap ?? 0)))
 
     readonly property alias inputMaskItem: inputMask
 
@@ -892,7 +942,12 @@ Item {
         anchors.fill: parent
         layer.enabled: false
 
-        property bool autoHide: (!barWindow.isIsland || barWindow.islandOverlay) && (barConfig?.autoHide ?? false)
+        readonly property bool autoHide: ((!barWindow.isIsland || barWindow.islandOverlay) && (barConfig?.autoHide ?? false)) || barWindow.fullscreenAutoHide
+        onAutoHideChanged: {
+            if (!autoHide)
+                SettingsData.setBarIpcReveal(barConfig?.id ?? "", false);
+            evaluateReveal();
+        }
         property bool revealSticky: false
         // In click-through mode the hidden bar's input mask covers the full
         // band while the revealed bar's mask covers only the widget sections,
@@ -990,6 +1045,9 @@ Item {
             if (inOverviewWithShow)
                 return true;
 
+            if (barWindow.fullscreenAutoHide)
+                return hoverReveal || popoutPinsReveal || revealSticky || ipcReveal;
+
             const showOnWindowsSetting = barConfig?.showOnWindowsOpen ?? false;
             if (showOnWindowsSetting && autoHide && CompositorService.windowOverlapSupported) {
                 if (barWindow.shouldHideForWindows)
@@ -1006,7 +1064,6 @@ Item {
         readonly property var rootWindowBarConfig: rootWindow.barConfig
 
         onRootWindowBarConfigChanged: {
-            autoHide = (!barWindow.isIsland || barWindow.islandOverlay) && (barConfig?.autoHide ?? false);
             evaluateReveal();
         }
 
@@ -1220,6 +1277,52 @@ Item {
 
                         onHoveredChanged: {
                             topBarContent.updateHoverBarHovered(hovered);
+                        }
+                    }
+                }
+
+                // Qt 6.11+ drops pointer delivery outside an ancestor's bounds once its clip cache is set
+                // (QQuickItemPrivate::effectivelyClipsEventHandlingChildren), so an edge pill cannot reach the screen edge on its own.
+                Repeater {
+                    model: 2
+
+                    MouseArea {
+                        id: edgeStrip
+
+                        required property int index
+                        readonly property bool leading: index === 0
+                        readonly property var section: leading ? barWindow._leftSection : barWindow._rightSection
+                        readonly property var edgeItem: {
+                            const item = leading ? section?.leadingInlineItem : section?.trailingInlineItem;
+                            if (!item || !("handlePress" in item) || !item.enabled || !item.visible)
+                                return null;
+                            if (leading)
+                                return item.isFirst && (barWindow.isVertical ? item.isTopBarEdge : item.isLeftBarEdge) ? item : null;
+                            return item.isLast && (barWindow.isVertical ? item.isBottomBarEdge : item.isRightBarEdge) ? item : null;
+                        }
+                        readonly property real sectionStart: !section ? 0 : barWindow.isVertical ? barUnitInset.y + topBarContent.y + section.y : barUnitInset.x + topBarContent.x + section.x
+                        readonly property real sectionEnd: !section ? 0 : sectionStart + (barWindow.isVertical ? section.height : section.width)
+
+                        x: barWindow.isVertical || leading ? 0 : sectionEnd
+                        y: barWindow.isVertical && !leading ? sectionEnd : 0
+                        width: barWindow.isVertical ? parent.width : Math.max(0, leading ? sectionStart : parent.width - sectionEnd)
+                        height: barWindow.isVertical ? Math.max(0, leading ? sectionStart : parent.height - sectionEnd) : parent.height
+                        visible: !!edgeItem && width > 0 && height > 0
+                        hoverEnabled: true
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        cursorShape: (edgeItem?.enableCursor ?? false) ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        onPressed: mouse => edgeItem.handlePress(mouse, edgeStrip)
+                        onWheel: wheelEvent => {
+                            wheelEvent.accepted = false;
+                            edgeItem.wheel(wheelEvent);
+                        }
+
+                        Binding {
+                            target: edgeStrip.edgeItem
+                            property: "edgeHovered"
+                            value: edgeStrip.containsMouse
+                            when: !!edgeStrip.edgeItem
+                            restoreMode: Binding.RestoreBindingOrValue
                         }
                     }
                 }

@@ -14,7 +14,7 @@ Singleton {
 
     readonly property int idleTimeoutSeconds: 300
     readonly property int summaryDays: Wellbeing.retentionDays
-    readonly property var ownAppIds: ["com.danklinux.dms", "org.quickshell", "quickshell"]
+    readonly property var ownAppIds: ["dev.duxlabs.shell", "com.danklinux.dms", "org.quickshell", "quickshell"]
     readonly property bool available: DMSService.isConnected && DMSService.capabilities.includes("wellbeing")
     readonly property bool enabled: SettingsData.wellbeingEnabled
     readonly property bool tracking: available && enabled
@@ -225,7 +225,7 @@ Singleton {
 
         function status(): string {
             if (!root.available)
-                return "Screen time tracking: unavailable (DMS server without wellbeing support)";
+                return "Screen time tracking: unavailable (dms server without wellbeing support)";
             const lines = ["Screen time tracking: " + (root.enabled ? "enabled" : "disabled")];
             if (root.tracking)
                 lines.push("Today: " + root.formatDuration(root.today.active ?? 0));

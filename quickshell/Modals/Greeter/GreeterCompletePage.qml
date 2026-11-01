@@ -329,13 +329,13 @@ Item {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                let url = Site.docs + "/dankmaterialshell/keybinds-ipc";
+                                let url = Site.docs + "/dms/keybinds-ipc";
                                 if (CompositorService.isNiri)
-                                    url = Site.docs + "/dankmaterialshell/compositors#dms-keybindings";
+                                    url = Site.docs + "/dms/compositors#dms-keybindings";
                                 else if (CompositorService.isHyprland)
-                                    url = Site.docs + "/dankmaterialshell/compositors#dms-keybindings-1";
+                                    url = Site.docs + "/dms/compositors#dms-keybindings-1";
                                 else if (CompositorService.isMango)
-                                    url = Site.docs + "/dankmaterialshell/compositors#dms-keybindings-2";
+                                    url = Site.docs + "/dms/compositors#dms-keybindings-2";
                                 Qt.openUrlExternally(url);
                             }
                         }

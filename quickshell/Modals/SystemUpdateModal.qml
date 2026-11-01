@@ -21,8 +21,8 @@ DFloatingWindow {
     title: I18n.tr("Software updates", "settings page, modal and bar widget title, DMS and system package updates")
     minimumSize: Qt.size(SettingsMetrics.windowMinWidth, SettingsMetrics.windowMinHeight)
     implicitWidth: SettingsMetrics.formDialogWidth + SettingsMetrics.pagePaddingH * 2
-    readonly property real defaultHeight: SettingsMetrics.windowHeight - SettingsMetrics.pagePaddingV * 4
-    implicitHeight: screen ? Math.min(defaultHeight, screen.height - SettingsMetrics.pagePaddingH * 2 - Theme.spacingL) : defaultHeight
+    readonly property real defaultHeight: SettingsMetrics.windowHeight - SettingsMetrics.basePagePaddingV * 4
+    implicitHeight: heightWithin(defaultHeight, SettingsMetrics.pagePaddingH * 2 + Theme.spacingL)
     visible: false
 
     Ref {

@@ -84,7 +84,7 @@ function bounded(value, fallback, minimum, maximum) {
     return Number.isFinite(number) ? Math.max(minimum, Math.min(maximum, number)) : fallback;
 }
 
-function normalize(configs) {
+function normalize(configs, presets) {
     if (!Array.isArray(configs))
         return [];
     const ids = new Set();
@@ -94,7 +94,7 @@ function normalize(configs) {
         ids.add(config.id);
         return true;
     }).map(config => {
-        const defaults = create(config.id, config.id);
+        const defaults = Object.assign(create(config.id, config.id), presets);
         const result = Object.assign({}, defaults, clone(config));
         result.name = typeof config.name === "string" && config.name.trim() ? config.name : config.id;
         result.position = Number.isInteger(config.position) && config.position >= 0 && config.position < 4 ? config.position : 1;

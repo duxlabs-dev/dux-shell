@@ -15,7 +15,7 @@ func TestParseXbpsInstalled(t *testing.T) {
 			name: "splits on the last dash so hyphenated names survive",
 			input: `ii bash-5.2.21_1                         GNU Bourne Again Shell
 ii xorg-server-xwayland-24.1.2_1         Nested X server that runs as a wayland client
-ii dms-shell-git-1.7.0+git4915_1         DankMaterialShell
+ii dms-shell-git-1.7.0+git4915_1         Dux Shell
 `,
 			want: map[string]string{
 				"bash":                 "5.2.21_1",

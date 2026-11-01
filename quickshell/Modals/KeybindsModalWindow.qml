@@ -28,7 +28,7 @@ DFloatingWindow {
     title: I18n.tr("Keybinds")
     minimumSize: Qt.size(Math.min(560, Screen.width), Math.min(400, Screen.height))
     implicitWidth: 1000
-    implicitHeight: screen ? Math.min(820, screen.height - 100) : 820
+    implicitHeight: heightWithin(820, 100)
     visible: false
 
     onVisibleChanged: {

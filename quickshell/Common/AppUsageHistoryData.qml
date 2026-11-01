@@ -122,7 +122,7 @@ Singleton {
     FileView {
         id: settingsFile
 
-        path: StandardPaths.writableLocation(StandardPaths.GenericStateLocation) + "/DankMaterialShell/appusage.json"
+        path: StandardPaths.writableLocation(StandardPaths.GenericStateLocation) + "/dms/appusage.json"
         blockLoading: true
         blockWrites: true
         watchChanges: SettingsData.launcherHistoryEnabled

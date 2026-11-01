@@ -14,16 +14,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/AvengeMedia/dankgo/boottimer"
-	wlclient "github.com/AvengeMedia/dankgo/wayland/client"
+	"github.com/duxlabs-dev/dux-go/boottimer"
+	wlclient "github.com/duxlabs-dev/dux-go/wayland/client"
 	"github.com/godbus/dbus/v5"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/errdefs"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/geolocation"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/icc"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_gamma_control"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/wayland/shm"
+	"github.com/duxlabs-dev/dux-shell/core/internal/errdefs"
+	"github.com/duxlabs-dev/dux-shell/core/internal/geolocation"
+	"github.com/duxlabs-dev/dux-shell/core/internal/icc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_gamma_control"
+	"github.com/duxlabs-dev/dux-shell/core/internal/wayland/shm"
 )
 
 const animKelvinStep = 25
@@ -133,6 +133,7 @@ func (m *Manager) post(fn func()) {
 func cloneConfig(cfg Config) Config {
 	cfg.ICCProfiles = maps.Clone(cfg.ICCProfiles)
 	cfg.OutputTemps = maps.Clone(cfg.OutputTemps)
+	cfg.OutputBrightness = maps.Clone(cfg.OutputBrightness)
 	return cfg
 }
 
@@ -338,6 +339,11 @@ func (m *Manager) setupControlHandlers(state *outputState, control *wlr_gamma_co
 				out.failed = false
 				out.retryCount = 0
 				out.lastTemp = 0
+				if out.gammaRefused {
+					out.gammaRefused = false
+					m.publishICCState()
+					m.updateStateFromSchedule()
+				}
 			}
 			m.applyCurrentTemp("gamma_size")
 		})
@@ -353,10 +359,11 @@ func (m *Manager) setupControlHandlers(state *outputState, control *wlr_gamma_co
 				ctrl.Destroy()
 			}
 			out.gammaControl = nil
-			out.failed = true
-			out.rampSize = 0
-			out.retryCount++
-			out.lastFailTime = time.Now()
+			out.markFailed(time.Now())
+			if out.gammaRefused {
+				m.publishICCState()
+				m.updateStateFromSchedule()
+			}
 
 			if !m.outputStillValid(out) {
 				return
@@ -1011,6 +1018,9 @@ func (m *Manager) applyGamma(temp int) {
 			}
 			ramp = GenerateGammaRamp(out.rampSize, outTemp, gamma, contrast)
 		}
+		if out.dimScale > 0 {
+			scaleRamp(ramp, out.dimScale)
+		}
 		buf := bytes.NewBuffer(make([]byte, 0, int(out.rampSize)*6))
 		for _, v := range ramp.Red {
 			binary.Write(buf, binary.LittleEndian, v)
@@ -1123,6 +1133,7 @@ func (m *Manager) updateStateFromSchedule() {
 		SunPosition:    pos,
 		ICCProfiles:    m.GetICCStatus(),
 		OutputTemps:    m.GetOutputTemps(),
+		GammaRefused:   m.GammaRefusedOutputs(),
 		Outputs:        m.ListOutputs(),
 	}
 
@@ -1392,7 +1403,8 @@ func (m *Manager) needsControls() bool {
 		m.config.Gamma != 1.0 ||
 		m.config.Contrast != 1.0 ||
 		len(m.config.ICCProfiles) > 0 ||
-		len(m.config.OutputTemps) > 0
+		len(m.config.OutputTemps) > 0 ||
+		len(m.config.OutputBrightness) > 0
 }
 
 func (m *Manager) syncControls() {
@@ -1472,7 +1484,7 @@ func (m *Manager) loadConfiguredICC() bool {
 	iccProfiles := config.ICCProfiles
 	outputTemps := config.OutputTemps
 
-	if len(iccProfiles) == 0 && len(outputTemps) == 0 {
+	if len(iccProfiles) == 0 && len(outputTemps) == 0 && len(config.OutputBrightness) == 0 {
 		return false
 	}
 
@@ -1482,7 +1494,7 @@ func (m *Manager) loadConfiguredICC() bool {
 		if !ok {
 			return true
 		}
-		if m.applyConfiguredICCForOutput(out, name, iccProfiles, outputTemps) {
+		if m.applyConfiguredICCForOutput(out, name, config) {
 			attached++
 		}
 		return true
@@ -1502,7 +1514,7 @@ func (m *Manager) attachConfiguredICC(outputID uint32, outputName string) {
 	iccProfiles := config.ICCProfiles
 	outputTemps := config.OutputTemps
 
-	if len(iccProfiles) == 0 && len(outputTemps) == 0 {
+	if len(iccProfiles) == 0 && len(outputTemps) == 0 && len(config.OutputBrightness) == 0 {
 		m.publishICCState()
 		return
 	}
@@ -1512,7 +1524,7 @@ func (m *Manager) attachConfiguredICC(outputID uint32, outputName string) {
 		if out.id != outputID {
 			return true
 		}
-		changed = m.applyConfiguredICCForOutput(out, outputName, iccProfiles, outputTemps)
+		changed = m.applyConfiguredICCForOutput(out, outputName, config)
 		if changed {
 			log.Infof("icc: attached configured profile/temperature to output %s", outputName)
 			out.lastTemp = 0
@@ -1531,15 +1543,20 @@ func (m *Manager) attachConfiguredICC(outputID uint32, outputName string) {
 
 // applyConfiguredICCForOutput applies the configured profile and temperature of
 // one output and reports whether anything changed.
-func (m *Manager) applyConfiguredICCForOutput(out *outputState, outputName string, iccProfiles map[string]string, outputTemps map[string]int) bool {
+func (m *Manager) applyConfiguredICCForOutput(out *outputState, outputName string, config Config) bool {
 	changed := false
 
-	if temp, ok := outputTemps[outputName]; ok {
+	if temp, ok := config.OutputTemps[outputName]; ok {
 		out.outputTemp = temp
 		changed = true
 	}
 
-	if profileName, ok := iccProfiles[outputName]; ok {
+	if percent, ok := config.OutputBrightness[outputName]; ok {
+		out.dimScale = brightnessScale(percent)
+		changed = true
+	}
+
+	if profileName, ok := config.ICCProfiles[outputName]; ok {
 		iccPath := resolveICCProfile(profileName)
 		profile, err := icc.ParseFile(iccPath)
 		switch {
@@ -1654,7 +1671,7 @@ func (m *Manager) ApplyICC(outputName, iccPath string) error {
 	savedConfig := cloneConfig(m.config)
 	m.configMutex.Unlock()
 
-	if err := SaveICCConfig(savedConfig.ICCProfiles, savedConfig.OutputTemps); err != nil {
+	if err := SaveICCConfig(savedConfig); err != nil {
 		log.Warnf("icc: failed to save config: %v", err)
 	}
 
@@ -1672,7 +1689,7 @@ func (m *Manager) RemoveICC(outputName string) error {
 	savedConfig := cloneConfig(m.config)
 	m.configMutex.Unlock()
 
-	if err := SaveICCConfig(savedConfig.ICCProfiles, savedConfig.OutputTemps); err != nil {
+	if err := SaveICCConfig(savedConfig); err != nil {
 		log.Warnf("icc: failed to save config: %v", err)
 	}
 
@@ -1723,6 +1740,7 @@ func (m *Manager) releaseIdleControls() bool {
 func (m *Manager) publishICCState() {
 	status := make(map[string]*ICCStatus)
 	temps := make(map[string]int)
+	refused := []string{}
 
 	m.configMutex.RLock()
 	for name, temp := range m.config.OutputTemps {
@@ -1743,12 +1761,17 @@ func (m *Manager) publishICCState() {
 		if out.iccPath != "" {
 			status[name] = describeICCProfile(out.iccPath, out.iccProfile)
 		}
+		if out.gammaRefused {
+			refused = append(refused, name)
+		}
 		return true
 	})
+	slices.Sort(refused)
 
 	m.iccStateMutex.Lock()
 	m.iccStatus = status
 	m.iccTemps = temps
+	m.iccRefused = refused
 	m.iccStateMutex.Unlock()
 }
 
@@ -1827,7 +1850,7 @@ func (m *Manager) SetOutputTemp(outputName string, temp int) error {
 	savedConfig := cloneConfig(m.config)
 	m.configMutex.Unlock()
 
-	if err := SaveICCConfig(savedConfig.ICCProfiles, savedConfig.OutputTemps); err != nil {
+	if err := SaveICCConfig(savedConfig); err != nil {
 		log.Warnf("icc: failed to save config: %v", err)
 	}
 
@@ -1868,6 +1891,80 @@ func (m *Manager) SetOutputTemp(outputName string, temp int) error {
 	})
 
 	return nil
+}
+
+// SetOutputBrightness dims an output through its gamma ramp, for outputs
+// without a backlight or DDC/CI. 100 removes the override.
+func (m *Manager) SetOutputBrightness(outputName string, percent int) error {
+	if err := validateOutputName(outputName); err != nil {
+		return err
+	}
+	percent = min(max(percent, 0), 100)
+
+	m.configMutex.Lock()
+	current, configured := m.config.OutputBrightness[outputName]
+	if (configured && current == percent) || (!configured && percent == 100) {
+		m.configMutex.Unlock()
+		return nil
+	}
+	if m.config.OutputBrightness == nil {
+		m.config.OutputBrightness = make(map[string]int)
+	}
+	if percent == 100 {
+		delete(m.config.OutputBrightness, outputName)
+	} else {
+		m.config.OutputBrightness[outputName] = percent
+	}
+	savedConfig := cloneConfig(m.config)
+	m.configMutex.Unlock()
+
+	if err := SaveICCConfig(savedConfig); err != nil {
+		log.Warnf("gamma: failed to save config: %v", err)
+	}
+
+	scale := brightnessScale(percent)
+	if percent == 100 {
+		scale = 0
+	}
+
+	m.post(func() {
+		defer m.updateStateFromSchedule()
+
+		if m.releaseIdleControls() {
+			return
+		}
+		if !m.ensureOutputControls() {
+			return
+		}
+
+		m.outputs.Range(func(_ uint32, out *outputState) bool {
+			if name, ok := m.outputNames.Load(out.id); !ok || name != outputName {
+				return true
+			}
+			out.dimScale = scale
+			out.lastTemp = 0
+			m.applyCurrentTemp("output-brightness-change")
+			return false
+		})
+	})
+
+	return nil
+}
+
+// GetOutputBrightness returns the configured software brightness per output;
+// outputs at full brightness are absent.
+func (m *Manager) GetOutputBrightness() map[string]int {
+	m.configMutex.RLock()
+	defer m.configMutex.RUnlock()
+	return maps.Clone(m.config.OutputBrightness)
+}
+
+// GammaRefusedOutputs returns the outputs whose gamma control the compositor
+// refused, so software brightness cannot dim them.
+func (m *Manager) GammaRefusedOutputs() []string {
+	m.iccStateMutex.RLock()
+	defer m.iccStateMutex.RUnlock()
+	return slices.Clone(m.iccRefused)
 }
 
 // GetOutputTemps returns the published per-output temperatures.

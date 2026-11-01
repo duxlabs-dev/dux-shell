@@ -9,7 +9,8 @@ var DEFAULT_HOME_LAYOUT = [
     {id: "volume", enabled: false},
     {id: "brightness", enabled: false},
     {id: "notifications", enabled: true},
-    {id: "privacy", enabled: true}
+    {id: "privacy", enabled: true},
+    {id: "tray", enabled: false}
 ];
 
 var GROUP_WIDGETS = {

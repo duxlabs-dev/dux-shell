@@ -9,16 +9,18 @@ CcSliderRow {
     property string deviceName: widgetData.deviceName || ""
     property string screenName: host?.screenName ?? ""
 
+    readonly property var pinnedDevices: {
+        if (!screenName)
+            return [];
+        const screen = Quickshell.screens.find(s => s.name === screenName);
+        return BrightnessService.pinnedDevices(screen ? SettingsData.getScreenDisplayName(screen) : screenName);
+    }
+
     property string targetDeviceName: {
         if (!BrightnessService.brightnessAvailable || !BrightnessService.devices || BrightnessService.devices.length === 0)
             return "";
-        if (screenName) {
-            const screen = Quickshell.screens.find(s => s.name === screenName);
-            const pinKey = screen ? SettingsData.getScreenDisplayName(screen) : screenName;
-            const pinnedDevice = (CacheData.brightnessDevicePins || {})[pinKey];
-            if (pinnedDevice && BrightnessService.devices.find(dev => dev.name === pinnedDevice))
-                return pinnedDevice;
-        }
+        if (pinnedDevices.length > 0)
+            return pinnedDevices[0];
         if (deviceName && BrightnessService.devices.find(dev => dev.name === deviceName))
             return deviceName;
         const currentDeviceName = BrightnessService.currentDevice;
@@ -55,7 +57,7 @@ CcSliderRow {
     onSliderValueChanged: newValue => {
         if (!BrightnessService.brightnessAvailable || !targetDeviceName)
             return;
-        BrightnessService.setBrightness(newValue, targetDeviceName, true);
+        BrightnessService.setGroupBrightness(newValue, pinnedDevices.length > 0 ? pinnedDevices : [targetDeviceName], true);
     }
 
     Binding {

@@ -7,7 +7,7 @@ package mocks_cups
 import (
 	"io"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/pkg/ipp"
+	"github.com/duxlabs-dev/dux-shell/core/pkg/ipp"
 	mock "github.com/stretchr/testify/mock"
 )
 

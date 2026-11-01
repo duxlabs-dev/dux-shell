@@ -1,10 +1,10 @@
-name: Sync flake.lock to dank-qml-common
+name: Sync flake.lock to dux-qml-common
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - "dank-qml-common"
+      - "dux-qml-common"
     branches:
       - master
       - "stable-*"
@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: Create GitHub App token
         id: app_token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -35,10 +35,10 @@ jobs:
       - name: Point flake input at the submodule commit
         run: |
           set -euo pipefail
-          submodule_rev=$(git ls-tree HEAD dank-qml-common --object-only)
+          submodule_rev=$(git ls-tree HEAD dux-qml-common --object-only)
           flake_rev=$(python3 -c "import json; print(json.load(open('flake.lock'))['nodes']['dank-qml-common']['locked']['rev'])")
           [ "$submodule_rev" = "$flake_rev" ] && { echo "flake.lock already matches $submodule_rev"; exit 0; }
-          nix flake lock --override-input dank-qml-common "github:AvengeMedia/dank-qml-common/$submodule_rev"
+          nix flake lock --override-input dank-qml-common "github:duxlabs-dev/dux-qml-common/$submodule_rev"
 
       - name: Commit and push flake.lock update
         env:
@@ -49,9 +49,9 @@ jobs:
             echo "No changes to flake.lock"
             exit 0
           fi
-          git config user.name "dms-ci[bot]"
-          git config user.email "dms-ci[bot]@users.noreply.github.com"
+          git config user.name "dux-ci[bot]"
+          git config user.email "344434142+dux-ci[bot]@users.noreply.github.com"
           git add flake.lock
-          git commit -m "nix: sync flake.lock to dank-qml-common submodule"
+          git commit -m "nix: sync flake.lock to dux-qml-common submodule"
           git pull --rebase origin ${{ github.ref_name }}
           git push https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git HEAD:${{ github.ref_name }}

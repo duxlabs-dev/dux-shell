@@ -3,7 +3,7 @@
     "name": "Counter Example",
     "description": "One counter shared by a dash tab, an overview card and a bar or dock widget",
     "version": "1.0.0",
-    "author": "DankMaterialShell",
+    "author": "Dux Shell",
     "type": "composite",
     "capabilities": ["dash-tab", "dash-card", "dankbar-widget"],
     "icon": "counter_1",

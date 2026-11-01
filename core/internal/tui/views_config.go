@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/config"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/distros"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/mangoconf"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
+	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
 )
 
 type configDeploymentResult struct {
@@ -73,6 +73,9 @@ func (m Model) updateDeployingConfigsState(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.installationLogs = append(m.installationLogs, logLine)
 	}
 
+	if m.isImmutable() {
+		clearLayerResume()
+	}
 	m.state = StateInstallComplete
 	m.isLoading = false
 	return m, nil
@@ -101,14 +104,7 @@ func (m Model) optionalDepSelected(name string) bool {
 }
 
 func (m Model) useSystemdConfig() bool {
-	if m.osInfo == nil {
-		return true
-	}
-	distroConfig, exists := distros.Registry[m.osInfo.Distribution.ID]
-	if !exists {
-		return true
-	}
-	return distroConfig.Family != distros.FamilyVoid
+	return distros.HasSystemd()
 }
 
 func (m Model) viewConfigConfirmation() string {
@@ -179,7 +175,7 @@ func (m Model) configReplacementNote() string {
 		if m.useSystemdConfig() && mangoconf.SessionTargetInstalled() {
 			return "Replacing Mango writes the DMS Mango template and starts the user systemd dms service with mango-session.target. Existing binds, monitor and window rules move into the dms/ files."
 		}
-		return "Replacing Mango writes the DMS Mango template and starts DMS from Mango with " + mangoconf.Detect().Key("exec_once") + "=dms run. Existing binds, monitor and window rules move into the dms/ files."
+		return "Replacing Mango writes the DMS Mango template and starts DMS from Mango with exec_once=dms run. Existing binds, monitor and window rules move into the dms/ files."
 	case config.BindsConfigType:
 		return "Keep uses your binds as they are; replace starts from the DMS stock binds. A timestamped backup is kept either way."
 	case "Ghostty":
@@ -274,9 +270,7 @@ func (m Model) wmConfigInfo() ExistingConfigInfo {
 			filepath.Join(configDir, "mango", "config.conf"),
 			filepath.Join(configDir, "mango", "mango.conf"))
 	default:
-		return statConfig("Hyprland",
-			filepath.Join(configDir, "hypr", "hyprland.lua"),
-			filepath.Join(configDir, "hypr", "hyprland.conf"))
+		return statConfig("Hyprland", filepath.Join(config.HyprlandConfigDir(), "hyprland.lua"))
 	}
 }
 

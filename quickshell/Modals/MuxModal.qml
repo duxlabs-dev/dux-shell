@@ -308,7 +308,6 @@ DModal {
                 id: searchField
 
                 width: parent.width
-                height: 48
                 font.pixelSize: Theme.fontSizeMedium
                 placeholderText: I18n.tr("Search sessions...")
                 keyForwardTargets: [muxPanel]

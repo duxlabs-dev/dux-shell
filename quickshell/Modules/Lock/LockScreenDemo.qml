@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.Common
 import qs.Services
 
 Scope {
@@ -44,7 +45,7 @@ Scope {
             WlrLayershell.namespace: "dms:lock-demo"
             WlrLayershell.layer: WlrLayershell.Overlay
             WlrLayershell.exclusiveZone: -1
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+            WlrLayershell.keyboardFocus: PopoutManager.screenshotActive ? WlrKeyboardFocus.None : WlrKeyboardFocus.Exclusive
 
             color: "transparent"
 

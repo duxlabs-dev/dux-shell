@@ -82,7 +82,6 @@ BasePill {
                 }
 
                 NumericText {
-                    isMonospace: false
                     text: root.verticalRate(DgopService.networkRxRate)
                     font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: Theme.info
@@ -90,7 +89,6 @@ BasePill {
                 }
 
                 NumericText {
-                    isMonospace: false
                     text: root.verticalRate(DgopService.networkTxRate)
                     font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: Theme.error
@@ -122,10 +120,8 @@ BasePill {
                     }
 
                     NumericText {
-                        isMonospace: false
                         text: root.horizontalRate(DgopService.networkRxRate)
                         reserveText: root.reserveRate
-                        width: Math.ceil(reservedWidth)
                         font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: root.contentColor
                         anchors.verticalCenter: parent.verticalCenter
@@ -145,10 +141,8 @@ BasePill {
                     }
 
                     NumericText {
-                        isMonospace: false
                         text: root.horizontalRate(DgopService.networkTxRate)
                         reserveText: root.reserveRate
-                        width: Math.ceil(reservedWidth)
                         font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                         color: root.contentColor
                         anchors.verticalCenter: parent.verticalCenter

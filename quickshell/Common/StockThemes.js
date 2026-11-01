@@ -1,4 +1,4 @@
-// Stock theme definitions for DankMaterialShell
+// Stock theme definitions for Dux Shell
 // Separated from Theme.qml to keep that file clean
 
 const StockThemes = {

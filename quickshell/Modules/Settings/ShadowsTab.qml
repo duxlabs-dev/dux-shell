@@ -23,26 +23,19 @@ Item {
     }
 
     SettingsPage {
-        SettingsCard {
+        SettingsToggleCard {
             tab: "theme"
             tags: ["elevation", "shadow", "lift", "m3", "material", "intensity", "blur", "opacity", "color", "direction", "light"]
             settingKey: "m3ElevationEnabled"
-
-            SettingsToggleRow {
-                tab: "theme"
-                tags: ["elevation", "shadow", "lift", "m3", "material"]
-                settingKey: "m3ElevationToggle"
-                text: I18n.tr("Shadows", "noun, settings page name and toggle for surface shadows")
-                checked: SettingsData.m3ElevationEnabled ?? true
-                onToggled: checked => SettingsData.set("m3ElevationEnabled", checked)
-            }
+            title: I18n.tr("Shadows", "noun, settings page name and toggle for surface shadows")
+            checked: SettingsData.m3ElevationEnabled ?? true
+            onToggled: checked => SettingsData.set("m3ElevationEnabled", checked)
 
             SettingsSliderRow {
                 tab: "theme"
                 tags: ["elevation", "shadow", "intensity", "blur", "m3"]
                 settingKey: "m3ElevationIntensity"
                 text: I18n.tr("Intensity")
-                enabled: SettingsData.m3ElevationEnabled ?? true
                 value: SettingsData.m3ElevationIntensity ?? 12
                 minimum: 0
                 maximum: 100
@@ -55,7 +48,6 @@ Item {
                 tags: ["elevation", "shadow", "opacity", "transparency", "m3"]
                 settingKey: "m3ElevationOpacity"
                 text: I18n.tr("Opacity")
-                enabled: SettingsData.m3ElevationEnabled ?? true
                 value: SettingsData.m3ElevationOpacity ?? 30
                 minimum: 0
                 maximum: 100
@@ -68,7 +60,6 @@ Item {
                 settingKey: "m3ElevationColorMode"
                 resetKeys: ["m3ElevationColorMode", "m3ElevationCustomColor"]
                 text: I18n.tr("Color")
-                enabled: SettingsData.m3ElevationEnabled ?? true
                 options: [I18n.tr("Default (Black)", "shadow color option"), I18n.tr("Text Color", "shadow color option"), I18n.tr("Primary", "shadow color option"), I18n.tr("Surface Variant", "shadow color option"), I18n.tr("Custom", "shadow color option")]
                 optionColorMap: ({
                         [I18n.tr("Default (Black)", "shadow color option")]: "#000000",
@@ -131,7 +122,6 @@ Item {
                 tags: ["elevation", "shadow", "direction", "light", "advanced", "m3"]
                 settingKey: "m3ElevationLightDirection"
                 text: I18n.tr("Light direction")
-                enabled: SettingsData.m3ElevationEnabled ?? true
                 options: [I18n.tr("Auto (Bar-aware)", "shadow direction option"), I18n.tr("Top (Default)", "shadow direction option"), I18n.tr("Top Left", "shadow direction option"), I18n.tr("Top Right", "shadow direction option"), I18n.tr("Bottom", "shadow direction option")]
                 currentValue: {
                     switch (SettingsData.m3ElevationLightDirection) {
@@ -225,8 +215,6 @@ Item {
 
             readonly property var bars: SettingsData.barConfigs.filter(config => !SettingsData.isIslandBarConfig(config))
             readonly property bool shadowActive: (bar.selectedBarConfig?.shadowIntensity ?? 0) > 0
-            readonly property bool editable: shadowActive && !bar.selectedBarFrameSanitized
-            readonly property bool isCustomColor: (bar.selectedBarConfig?.shadowColorMode ?? "default") === "custom"
             readonly property string directionSource: bar.selectedBarConfig?.shadowDirectionMode ?? "inherit"
 
             SettingsDropdownRow {
@@ -245,9 +233,9 @@ Item {
                 reason: I18n.tr("Disabled by Frame Mode")
             }
 
-            SettingsToggleRow {
+            SettingsToggleCard {
                 tags: ["shadow", "override", "custom"]
-                text: I18n.tr("Override")
+                title: I18n.tr("Override")
                 enabled: !bar.selectedBarFrameSanitized
                 checked: shadowCard.shadowActive
                 onToggled: checked => {
@@ -262,146 +250,141 @@ Item {
                         });
                     }
                 }
-            }
 
-            SettingsSliderRow {
-                enabled: shadowCard.editable
-                tags: ["shadow", "blur", "radius"]
-                text: I18n.tr("Intensity", "shadow intensity slider")
-                minimum: 0
-                maximum: 100
-                unit: ""
-                value: bar.selectedBarConfig?.shadowIntensity ?? 0
-                onSliderValueChanged: newValue => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        shadowIntensity: newValue
-                    })
-            }
+                SettingsSliderRow {
+                    tags: ["shadow", "blur", "radius"]
+                    text: I18n.tr("Intensity", "shadow intensity slider")
+                    minimum: 0
+                    maximum: 100
+                    unit: ""
+                    value: bar.selectedBarConfig?.shadowIntensity ?? 0
+                    onSliderValueChanged: newValue => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            shadowIntensity: newValue
+                        })
+                }
 
-            SettingsSliderRow {
-                enabled: shadowCard.editable
-                text: I18n.tr("Opacity")
-                resetStore: bar
-                resetKeys: ["shadowOpacity"]
-                minimum: 10
-                maximum: 100
-                value: bar.selectedBarConfig?.shadowOpacity ?? 60
-                onSliderValueChanged: newValue => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        shadowOpacity: newValue
-                    })
-            }
+                SettingsSliderRow {
+                    text: I18n.tr("Opacity")
+                    resetStore: bar
+                    resetKeys: ["shadowOpacity"]
+                    minimum: 10
+                    maximum: 100
+                    value: bar.selectedBarConfig?.shadowOpacity ?? 60
+                    onSliderValueChanged: newValue => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            shadowOpacity: newValue
+                        })
+                }
 
-            SettingsDropdownRow {
-                enabled: shadowCard.editable
-                text: I18n.tr("Direction source", "bar shadow direction source")
-                settingKey: "barShadowDirectionSource"
-                resetStore: bar
-                resetKeys: ["shadowDirectionMode"]
-                options: [I18n.tr("Inherit Global (Default)", "bar shadow direction source option"), I18n.tr("Auto (Bar-aware)", "bar shadow direction source option"), I18n.tr("Manual", "bar shadow direction source option")]
-                currentValue: {
-                    switch (shadowCard.directionSource) {
-                    case "autoBar":
-                        return I18n.tr("Auto (Bar-aware)", "bar shadow direction source option");
-                    case "manual":
-                        return I18n.tr("Manual", "bar shadow direction source option");
-                    default:
-                        return I18n.tr("Inherit Global (Default)", "bar shadow direction source option");
+                SettingsDropdownRow {
+                    text: I18n.tr("Direction source", "bar shadow direction source")
+                    settingKey: "barShadowDirectionSource"
+                    resetStore: bar
+                    resetKeys: ["shadowDirectionMode"]
+                    options: [I18n.tr("Inherit Global (Default)", "bar shadow direction source option"), I18n.tr("Auto (Bar-aware)", "bar shadow direction source option"), I18n.tr("Manual", "bar shadow direction source option")]
+                    currentValue: {
+                        switch (shadowCard.directionSource) {
+                        case "autoBar":
+                            return I18n.tr("Auto (Bar-aware)", "bar shadow direction source option");
+                        case "manual":
+                            return I18n.tr("Manual", "bar shadow direction source option");
+                        default:
+                            return I18n.tr("Inherit Global (Default)", "bar shadow direction source option");
+                        }
+                    }
+                    onValueChanged: value => {
+                        let mode = "inherit";
+                        switch (value) {
+                        case I18n.tr("Auto (Bar-aware)", "bar shadow direction source option"):
+                            mode = "autoBar";
+                            break;
+                        case I18n.tr("Manual", "bar shadow direction source option"):
+                            mode = "manual";
+                            break;
+                        }
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            shadowDirectionMode: mode
+                        });
                     }
                 }
-                onValueChanged: value => {
-                    let mode = "inherit";
-                    switch (value) {
-                    case I18n.tr("Auto (Bar-aware)", "bar shadow direction source option"):
-                        mode = "autoBar";
-                        break;
-                    case I18n.tr("Manual", "bar shadow direction source option"):
-                        mode = "manual";
-                        break;
-                    }
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        shadowDirectionMode: mode
-                    });
-                }
-            }
 
-            SettingsDropdownRow {
-                enabled: shadowCard.editable
-                visible: shadowCard.directionSource === "manual"
-                text: I18n.tr("Direction", "bar manual shadow direction")
-                settingKey: "barShadowDirectionManual"
-                resetStore: bar
-                resetKeys: ["shadowDirection"]
-                options: [I18n.tr("Top", "shadow direction option"), I18n.tr("Top Left", "shadow direction option"), I18n.tr("Top Right", "shadow direction option"), I18n.tr("Bottom", "shadow direction option")]
-                currentValue: {
-                    switch (bar.selectedBarConfig?.shadowDirection) {
-                    case "topLeft":
-                        return I18n.tr("Top Left", "shadow direction option");
-                    case "topRight":
-                        return I18n.tr("Top Right", "shadow direction option");
-                    case "bottom":
-                        return I18n.tr("Bottom", "shadow direction option");
-                    default:
-                        return I18n.tr("Top", "shadow direction option");
+                SettingsDropdownRow {
+                    visible: shadowCard.directionSource === "manual"
+                    text: I18n.tr("Direction", "bar manual shadow direction")
+                    settingKey: "barShadowDirectionManual"
+                    resetStore: bar
+                    resetKeys: ["shadowDirection"]
+                    options: [I18n.tr("Top", "shadow direction option"), I18n.tr("Top Left", "shadow direction option"), I18n.tr("Top Right", "shadow direction option"), I18n.tr("Bottom", "shadow direction option")]
+                    currentValue: {
+                        switch (bar.selectedBarConfig?.shadowDirection) {
+                        case "topLeft":
+                            return I18n.tr("Top Left", "shadow direction option");
+                        case "topRight":
+                            return I18n.tr("Top Right", "shadow direction option");
+                        case "bottom":
+                            return I18n.tr("Bottom", "shadow direction option");
+                        default:
+                            return I18n.tr("Top", "shadow direction option");
+                        }
+                    }
+                    onValueChanged: value => {
+                        let direction = "top";
+                        switch (value) {
+                        case I18n.tr("Top Left", "shadow direction option"):
+                            direction = "topLeft";
+                            break;
+                        case I18n.tr("Top Right", "shadow direction option"):
+                            direction = "topRight";
+                            break;
+                        case I18n.tr("Bottom", "shadow direction option"):
+                            direction = "bottom";
+                            break;
+                        }
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            shadowDirection: direction
+                        });
                     }
                 }
-                onValueChanged: value => {
-                    let direction = "top";
-                    switch (value) {
-                    case I18n.tr("Top Left", "shadow direction option"):
-                        direction = "topLeft";
-                        break;
-                    case I18n.tr("Top Right", "shadow direction option"):
-                        direction = "topRight";
-                        break;
-                    case I18n.tr("Bottom", "shadow direction option"):
-                        direction = "bottom";
-                        break;
-                    }
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        shadowDirection: direction
-                    });
-                }
-            }
 
-            ColorDropdownRow {
-                enabled: shadowCard.editable
-                tags: ["shadow", "color", "custom"]
-                settingKey: "barShadowColor"
-                resetStore: bar
-                resetKeys: ["shadowColorMode", "shadowCustomColor"]
-                text: I18n.tr("Color")
-                pickerTitle: I18n.tr("Color")
-                options: [
-                    {
-                        "value": "default",
-                        "label": I18n.tr("Default (Black)"),
-                        "previewColor": "#000000"
-                    },
-                    {
-                        "value": "surface",
-                        "label": I18n.tr("Surface", "shadow color option"),
-                        "previewColor": Theme.surface
-                    },
-                    {
-                        "value": "primary",
-                        "label": I18n.tr("Primary")
-                    },
-                    {
-                        "value": "secondary",
-                        "label": I18n.tr("Secondary")
-                    },
-                    {
-                        "value": "custom",
-                        "label": I18n.tr("Custom")
-                    }
-                ]
-                currentMode: bar.selectedBarConfig?.shadowColorMode || "default"
-                customColor: bar.selectedBarConfig?.shadowCustomColor ?? "#000000"
-                onModeSelected: mode => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        shadowColorMode: mode
-                    })
-                onCustomColorSelected: selectedColor => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        shadowCustomColor: selectedColor.toString()
-                    })
+                ColorDropdownRow {
+                    tags: ["shadow", "color", "custom"]
+                    settingKey: "barShadowColor"
+                    resetStore: bar
+                    resetKeys: ["shadowColorMode", "shadowCustomColor"]
+                    text: I18n.tr("Color")
+                    pickerTitle: I18n.tr("Color")
+                    options: [
+                        {
+                            "value": "default",
+                            "label": I18n.tr("Default (Black)"),
+                            "previewColor": "#000000"
+                        },
+                        {
+                            "value": "surface",
+                            "label": I18n.tr("Surface", "shadow color option"),
+                            "previewColor": Theme.surface
+                        },
+                        {
+                            "value": "primary",
+                            "label": I18n.tr("Primary")
+                        },
+                        {
+                            "value": "secondary",
+                            "label": I18n.tr("Secondary")
+                        },
+                        {
+                            "value": "custom",
+                            "label": I18n.tr("Custom")
+                        }
+                    ]
+                    currentMode: bar.selectedBarConfig?.shadowColorMode || "default"
+                    customColor: bar.selectedBarConfig?.shadowCustomColor ?? "#000000"
+                    onModeSelected: mode => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            shadowColorMode: mode
+                        })
+                    onCustomColorSelected: selectedColor => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            shadowCustomColor: selectedColor.toString()
+                        })
+                }
             }
         }
     }

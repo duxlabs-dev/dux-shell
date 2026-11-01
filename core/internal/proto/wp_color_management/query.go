@@ -1,7 +1,7 @@
 package wp_color_management
 
 import (
-	"github.com/AvengeMedia/dankgo/wayland/client"
+	"github.com/duxlabs-dev/dux-go/wayland/client"
 )
 
 // OutputDescription is the named color encoding of an output's current image

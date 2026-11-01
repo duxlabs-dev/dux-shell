@@ -15,10 +15,10 @@ Singleton {
     readonly property url pictures: StandardPaths.standardLocations(StandardPaths.PicturesLocation)[0]
     readonly property url xdgCache: StandardPaths.standardLocations(StandardPaths.GenericCacheLocation)[0]
 
-    readonly property url data: `${StandardPaths.standardLocations(StandardPaths.GenericDataLocation)[0]}/DankMaterialShell`
-    readonly property url state: `${StandardPaths.standardLocations(StandardPaths.GenericStateLocation)[0]}/DankMaterialShell`
-    readonly property url cache: `${StandardPaths.standardLocations(StandardPaths.GenericCacheLocation)[0]}/DankMaterialShell`
-    readonly property url config: `${StandardPaths.standardLocations(StandardPaths.GenericConfigLocation)[0]}/DankMaterialShell`
+    readonly property url data: `${StandardPaths.standardLocations(StandardPaths.GenericDataLocation)[0]}/dms`
+    readonly property url state: `${StandardPaths.standardLocations(StandardPaths.GenericStateLocation)[0]}/dms`
+    readonly property url cache: `${StandardPaths.standardLocations(StandardPaths.GenericCacheLocation)[0]}/dms`
+    readonly property url config: `${StandardPaths.standardLocations(StandardPaths.GenericConfigLocation)[0]}/dms`
 
     readonly property url imagecache: `${cache}/imagecache`
 
@@ -161,8 +161,14 @@ Singleton {
         return desktopIconResolver(appId);
     }
 
+    readonly property var dmsAppIds: ["org.quickshell", "dev.duxlabs.shell", "com.danklinux.dms"]
+
+    function isDmsAppId(appId: string): bool {
+        return dmsAppIds.includes(appId);
+    }
+
     function getAppName(appId: string, desktopEntry: var): string {
-        if (appId === "org.quickshell" || appId === "com.danklinux.dms") {
+        if (isDmsAppId(appId)) {
             return "dms";
         }
 

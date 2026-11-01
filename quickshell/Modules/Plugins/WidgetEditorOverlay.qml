@@ -8,6 +8,7 @@ import qs.Modules.ControlCenter.Widgets
 import qs.Modules.DDash.Overview
 import qs.Modules.Settings.DesktopWidgetSettings
 import qs.Modules.Settings.Widgets
+import "../../DCommon/Common/FocusNavigation.js" as FocusNavigation
 
 FocusScope {
     id: root
@@ -37,16 +38,35 @@ FocusScope {
         return SettingsData.greeterFollowLockScreen && GreeterService.slotState !== "" ? I18n.tr("Editing the lock screen, the login screen follows it", "widget editor banner") : I18n.tr("Editing the lock screen", "widget editor banner");
     }
 
+    property string optionsInstanceId: ""
+    readonly property string selectedInstanceId: editLayer.selectedInstanceId
+    readonly property Item optionsTarget: optionsInstanceId !== "" && optionsInstanceId === selectedInstanceId ? editLayer.itemById(optionsInstanceId) : null
+
     signal finished
+
+    onSelectedInstanceIdChanged: {
+        if (selectedInstanceId !== optionsInstanceId)
+            optionsInstanceId = "";
+    }
 
     function closeLibrary() {
         libraryOpen = false;
         forceActiveFocus();
     }
 
-    function showOptions(instanceData) {
-        optionsSheet.instanceId = instanceData?.id ?? "";
-        optionsSheet.opened = true;
+    function showOptions(instanceId) {
+        if (optionsInstanceId === instanceId) {
+            closeOptions();
+            return;
+        }
+        optionsInstanceId = instanceId;
+        editLayer.selectedInstanceId = instanceId;
+    }
+
+    function closeOptions() {
+        const target = optionsTarget;
+        optionsInstanceId = "";
+        target?.forceActiveFocus();
     }
 
     function addWidget(widgetType) {
@@ -69,6 +89,10 @@ FocusScope {
     }
 
     function dismiss() {
+        if (optionsTarget) {
+            closeOptions();
+            return;
+        }
         if (editControls.pendingAction !== "") {
             editControls.cancelConfirmation();
             return;
@@ -84,8 +108,16 @@ FocusScope {
     Component.onCompleted: {
         libraryOpen = DesktopWidgetRegistry.libraryScreen === editLayer.screenName;
         forceActiveFocus();
+        if (!lockScreen && DesktopWidgetRegistry.optionsScreen === editLayer.screenName)
+            showOptions(DesktopWidgetRegistry.optionsInstanceId);
     }
-    Keys.onEscapePressed: dismiss()
+    Keys.onEscapePressed: event => {
+        if (PopoutManager.screenshotActive) {
+            event.accepted = false;
+            return;
+        }
+        dismiss();
+    }
 
     MouseArea {
         anchors.fill: parent
@@ -108,31 +140,6 @@ FocusScope {
                 root.closeLibrary();
             }
             onDismissed: root.closeLibrary()
-        }
-    }
-
-    DBottomSheet {
-        id: optionsSheet
-
-        property string instanceId: ""
-        readonly property var instanceData: SettingsData.getDesktopWidgetInstance(instanceId)
-        readonly property var widgetDef: DesktopWidgetRegistry.getWidget(instanceData?.widgetType ?? "")
-
-        maximumWidth: Math.min(Theme.mediumBreakpoint, root.width - Theme.spacingXL * 2)
-        topMargin: root.height * 0.3
-        returnFocusItem: root
-        title: instanceData?.name || widgetDef?.name || ""
-        onDismissRequested: opened = false
-        onActiveChanged: {
-            if (!active)
-                instanceId = "";
-        }
-
-        DesktopWidgetTypeSettings {
-            width: parent.width
-            instanceId: optionsSheet.instanceId
-            instanceData: optionsSheet.instanceData
-            widgetDef: optionsSheet.widgetDef
         }
     }
 
@@ -182,14 +189,121 @@ FocusScope {
 
     SettingsFabBar {
         id: fabBar
-        shown: !root.libraryOpen && !optionsSheet.active
+        shown: !root.libraryOpen
 
         DashEditControls {
             id: editControls
             canClear: false
-            onAddRequested: root.libraryOpen = true
+            onAddRequested: {
+                root.optionsInstanceId = "";
+                root.libraryOpen = true;
+            }
             onResetRequested: root.resetLayout()
             onFinished: root.finished()
+        }
+    }
+
+    Loader {
+        active: root.optionsTarget !== null
+
+        sourceComponent: FocusScope {
+            id: panel
+
+            readonly property Item target: root.optionsTarget
+            readonly property var instanceData: SettingsData.getDesktopWidgetInstance(root.optionsInstanceId)
+            readonly property var widgetDef: DesktopWidgetRegistry.getWidget(instanceData?.widgetType ?? "")
+            readonly property real margin: Theme.spacingL
+            readonly property real padding: PopoutMetrics.contentPadding
+            readonly property real focusPadding: SettingsMetrics.focusGutter
+            readonly property real bottomLimit: root.height - root.fabReserved - margin
+            readonly property real gap: (target?.chromeOutset ?? 0) + Theme.spacingS
+            readonly property real afterEdge: (target?.x ?? 0) + (target?.width ?? 0) + gap
+            readonly property real beforeEdge: (target?.x ?? 0) - gap
+            readonly property real afterRoom: root.width - margin - afterEdge
+            readonly property real beforeRoom: beforeEdge - margin
+            readonly property real maxWidth: Math.min(Theme.dialogMaxWidth, root.width - margin * 2)
+            readonly property real minWidth: Math.min(SettingsMetrics.windowMinWidth, maxWidth)
+            readonly property real firstRoom: I18n.isRtl ? beforeRoom : afterRoom
+            readonly property real secondRoom: I18n.isRtl ? afterRoom : beforeRoom
+            readonly property bool onAfter: (firstRoom >= minWidth || firstRoom >= secondRoom) !== I18n.isRtl
+            readonly property Item windowFocusItem: Window.activeFocusItem
+
+            x: Math.max(margin, Math.min(root.width - margin - width, onAfter ? afterEdge : beforeEdge - width))
+            y: Math.max(margin, Math.min(bottomLimit - height, target?.y ?? 0))
+            width: Math.min(maxWidth, Math.max(minWidth, onAfter ? afterRoom : beforeRoom))
+            height: Math.min(bottomLimit - margin, header.height + PopoutMetrics.contentGap + settings.implicitHeight + padding * 2)
+            focus: true
+            LayoutMirroring.enabled: I18n.isRtl
+            LayoutMirroring.childrenInherit: true
+            Accessible.role: Accessible.Dialog
+            Accessible.name: header.title
+            Component.onCompleted: forceActiveFocus()
+
+            onWindowFocusItemChanged: {
+                const item = windowFocusItem;
+                if (!item || !FocusNavigation.containsFocus(settings))
+                    return;
+                const top = item.mapToItem(scroll.contentItem, 0, 0).y;
+                scroll.revealRange(top - focusPadding, top + item.height + focusPadding);
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: Theme.windowRadius
+                color: Theme.cardSurface
+                border.width: Theme.layerOutlineWidth
+                border.color: Theme.outlineMedium
+
+                ElevationShadow {
+                    anchors.fill: parent
+                    z: -1
+                    level: Theme.elevationLevel2
+                    targetRadius: parent.radius
+                    targetColor: "transparent"
+                    shadowEnabled: Theme.elevationEnabled
+                }
+
+                // Presses and hover that miss a control would reach the widgets and the deselect area below.
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.AllButtons
+                    hoverEnabled: true
+                    cursorShape: Qt.ArrowCursor
+                }
+            }
+
+            DWindowHeader {
+                id: header
+                x: panel.padding
+                y: panel.padding
+                width: parent.width - panel.padding * 2
+                controls: null
+                horizontalPadding: 0
+                verticalPadding: 0
+                title: panel.instanceData?.name || panel.widgetDef?.name || ""
+                onCloseRequested: root.closeOptions()
+            }
+
+            DFlickable {
+                id: scroll
+                x: panel.padding - panel.focusPadding
+                y: header.y + header.height + PopoutMetrics.contentGap - panel.focusPadding
+                width: parent.width - x * 2
+                height: Math.max(0, parent.height - y - panel.padding + panel.focusPadding)
+                contentWidth: width
+                contentHeight: settings.implicitHeight + panel.focusPadding * 2
+                clip: true
+
+                DesktopWidgetTypeSettings {
+                    id: settings
+                    x: panel.focusPadding
+                    y: panel.focusPadding
+                    width: scroll.width - panel.focusPadding * 2
+                    instanceId: root.optionsInstanceId
+                    instanceData: panel.instanceData
+                    widgetDef: panel.widgetDef
+                }
+            }
         }
     }
 }

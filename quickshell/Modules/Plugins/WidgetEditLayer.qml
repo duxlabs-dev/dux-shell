@@ -32,7 +32,7 @@ FocusScope {
     }
 
     signal focusStolen
-    signal optionsRequested(var instanceData)
+    signal optionsRequested(string instanceId)
 
     // Widgets added from the editor start in the nearest free area instead of on top of another widget.
     property var pendingIds: []
@@ -277,6 +277,13 @@ FocusScope {
         return null;
     }
 
+    MouseArea {
+        anchors.fill: parent
+        enabled: root.editMode
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onPressed: root.selectedInstanceId = ""
+    }
+
     Rectangle {
         x: (parent.width - width) / 2
         width: Theme.dividerWidth
@@ -325,7 +332,7 @@ FocusScope {
             visible: liveInstanceData.enabled !== false && DesktopWidgetRegistry.showsOnScreen(liveInstanceData.config?.displayPreferences, root.screen)
             z: interacting ? repeater.count + 1 : repeater.count - index
             onRemoveRequested: SettingsData.removeDesktopWidgetInstance(liveInstanceData.id)
-            onOptionsRequested: root.optionsRequested(liveInstanceData)
+            onOptionsRequested: root.optionsRequested(liveInstanceData.id)
         }
     }
 }

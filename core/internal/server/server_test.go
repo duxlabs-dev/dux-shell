@@ -7,9 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/bluez"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/network"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/bluez"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/network"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,6 +29,15 @@ func TestGetCapabilities(t *testing.T) {
 		networkManager = &network.Manager{}
 		caps := getCapabilities()
 		assert.Contains(t, caps.Capabilities, "network")
+	})
+
+	t.Run("niri capabilities from the probe", func(t *testing.T) {
+		original := niriCapabilities
+		defer func() { niriCapabilities = original }()
+		niriCapabilities = func() []string { return []string{config.NiriCapBindsNext, config.NiriCapConfigNext} }
+		caps := getCapabilities()
+		assert.Contains(t, caps.Capabilities, "niri.binds-next")
+		assert.Contains(t, caps.Capabilities, "niri.config-next")
 	})
 }
 

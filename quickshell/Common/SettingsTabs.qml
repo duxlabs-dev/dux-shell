@@ -160,6 +160,7 @@ Singleton {
             "children": [
                 {
                     "id": "dock_general",
+                    "hidden": true,
                     "text": I18n.tr("General"),
                     "icon": "tune",
                     "tabIndex": 5,
@@ -167,6 +168,7 @@ Singleton {
                 },
                 {
                     "id": "dock_widgets",
+                    "hidden": true,
                     "text": I18n.tr("Apps & widgets"),
                     "icon": "widgets",
                     "tabIndex": 57,
@@ -174,6 +176,7 @@ Singleton {
                 },
                 {
                     "id": "dock_appearance",
+                    "hidden": true,
                     "text": I18n.tr("Appearance"),
                     "icon": "palette",
                     "tabIndex": 58,
@@ -571,7 +574,7 @@ Singleton {
                     "id": "updater_changelog",
                     "hidden": true,
                     "text": I18n.tr("Release notes", "settings page and card title, notes for a DMS release"),
-                    "icon": "auto_awesome",
+                    "icon": "article",
                     "tabIndex": 66,
                     "hint": I18n.tr("Summary, highlights, links", "settings sidebar hint for the release notes page")
                 },

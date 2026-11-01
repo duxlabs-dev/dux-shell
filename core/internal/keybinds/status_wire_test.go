@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/configfrag"
+	"github.com/duxlabs-dev/dux-shell/core/internal/configfrag"
 )
 
 func marshalKeys(t *testing.T, v any) map[string]json.RawMessage {
@@ -30,11 +30,9 @@ func TestDMSBindsStatusKeySpellings(t *testing.T) {
 		Effective:       true,
 		OverriddenBy:    4,
 		StatusMessage:   "DMS binds are active",
-		ConfigFormat:    "lua",
-		ReadOnly:        true,
 	})
 
-	want := []string{"exists", "included", "includePosition", "totalIncludes", "bindsAfterDms", "effective", "overriddenBy", "statusMessage", "configFormat", "readOnly"}
+	want := []string{"exists", "included", "includePosition", "totalIncludes", "bindsAfterDms", "effective", "overriddenBy", "statusMessage"}
 	if len(keys) != len(want) {
 		t.Fatalf("key count = %d, want %d: %v", len(keys), len(want), keys)
 	}
@@ -55,8 +53,6 @@ func TestDMSBindsStatusFromCarriesEveryField(t *testing.T) {
 		Effective:       true,
 		OverriddenBy:    7,
 		StatusMessage:   "DMS binds are active",
-		ConfigFormat:    "lua",
-		ReadOnly:        true,
 	})
 
 	want := DMSBindsStatus{
@@ -68,8 +64,6 @@ func TestDMSBindsStatusFromCarriesEveryField(t *testing.T) {
 		Effective:       true,
 		OverriddenBy:    7,
 		StatusMessage:   "DMS binds are active",
-		ConfigFormat:    "lua",
-		ReadOnly:        true,
 	}
 	if *got != want {
 		t.Errorf("DMSBindsStatusFrom = %+v, want %+v", *got, want)

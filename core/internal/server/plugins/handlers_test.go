@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/net"
-	coreplugins "github.com/AvengeMedia/DankMaterialShell/core/internal/plugins"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/mocks/net"
+	coreplugins "github.com/duxlabs-dev/dux-shell/core/internal/plugins"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -164,11 +164,11 @@ func TestPluginInfoFromPluginIncludesScreenshot(t *testing.T) {
 	info := pluginInfoFromPlugin(coreplugins.Plugin{
 		ID:         "dankVault",
 		Name:       "Vault",
-		Repo:       "https://github.com/AvengeMedia/dms-plugins",
-		Screenshot: "https://github.com/AvengeMedia/dms-plugins/blob/master/DankNotepadModule/screenshot.png",
+		Repo:       "https://github.com/duxlabs-dev/dux-plugins",
+		Screenshot: "https://github.com/duxlabs-dev/dux-plugins/blob/master/DankNotepadModule/screenshot.png",
 	})
 
-	assert.Equal(t, "https://raw.githubusercontent.com/AvengeMedia/dms-plugins/master/DankNotepadModule/screenshot.png", info.Screenshot)
+	assert.Equal(t, "https://raw.githubusercontent.com/duxlabs-dev/dux-plugins/master/DankNotepadModule/screenshot.png", info.Screenshot)
 	assert.True(t, info.FirstParty)
 }
 

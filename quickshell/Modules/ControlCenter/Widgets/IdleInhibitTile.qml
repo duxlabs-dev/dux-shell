@@ -5,7 +5,7 @@ import "../../../Common/Format.js" as Format
 
 CcTile {
 
-    iconName: "motion_sensor_active"
+    iconName: "local_cafe"
     title: SessionService.idleInhibited ? I18n.tr("Keeping Awake") : I18n.tr("Keep Awake")
     subtitle: {
         if (!SessionService.idleInhibited)

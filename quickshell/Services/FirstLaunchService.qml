@@ -12,7 +12,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("FirstLaunchService")
 
-    readonly property string configDir: Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation)) + "/DankMaterialShell"
+    readonly property string configDir: Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation)) + "/dms"
     readonly property string settingsPath: configDir + "/settings.json"
     readonly property string firstLaunchMarkerPath: configDir + "/.firstlaunch"
 
