@@ -133,13 +133,14 @@ dms plugins restore ~/plugins.lock.json
 
 ### niri keybinds
 
-On niri, each `dms run` merges the embedded default binds into `~/.config/niri/dms/binds.kdl`: only keys bound nowhere (neither in that file nor in `config.kdl` and its includes) are added, existing lines are kept as they are. Before the merge the previous file is copied to `binds.kdl.dms-bak` next to it.
+`dms setup` writes the default binds to `~/.config/niri/dms/binds.kdl` once. To pick up defaults added in later releases:
 
 ```bash
+dms keybinds add-defaults niri    # add the defaults whose keys are still free, print each key added
 dms keybinds undo-defaults niri   # put binds.kdl back from binds.kdl.dms-bak, then drop the backup
 ```
 
-The undo refuses when there is no backup or when the file changed since the merge.
+`add-defaults` only adds keys bound nowhere (neither in `binds.kdl` nor in `config.kdl` and its includes) and keeps existing lines as they are. The previous file is copied to `binds.kdl.dms-bak` first. The undo refuses when there is no backup or when the file changed since.
 
 ## Documentation
 
