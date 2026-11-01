@@ -41,6 +41,21 @@ test("the first theme change of a session compares with niri.kdl as read, not wi
     }
 });
 
+test("a theme change writes nothing until the page holds a saved setting", () => {
+    for (const page of [{}, { "custom.news-seen": "25.08" }]) {
+        const { s, settings, requests } = service();
+        settings.niriPage = page;
+        s.followTheme();
+        assert.deepEqual(requests, []);
+        assert.equal(s.applyTimer.running, false);
+    }
+    const { s, settings, methods, fire } = service();
+    settings.niriPage = { "t.width": 6 };
+    s.followTheme();
+    fire();
+    assert.deepEqual(methods(), ["niri.config.read", "niri.config.apply"]);
+});
+
 test("a failed theme read leaves an apply in progress alone", () => {
     const { s, settings, events, warnings } = service({ "niri.config.read": [{ error: "socket closed" }] });
     const page = { "t.width": 6 };

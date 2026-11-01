@@ -92,9 +92,9 @@ Singleton {
         return Page.withColors(Page.pageState(Registry.sections, page), root.themeColors);
     }
 
-    // Nothing sent yet this session: compare with niri.kdl as it is on disk.
+    // Only a page the user saved is written. Nothing sent yet this session: compare with niri.kdl as it is on disk.
     function followTheme() {
-        if (!CompositorService.isNiri)
+        if (!CompositorService.isNiri || (root._confirmed === null && Object.keys(SettingsData.niriPage).every(key => key === "custom.news-seen")))
             return;
         if (root._sentMain === null) {
             // Only log: refuse() would reset an apply in flight.
