@@ -1002,44 +1002,7 @@ Singleton {
         return LayoutResolver.islandReserve(islandSettings(bc), islandDefaultsFor(bc));
     }
     readonly property var _islandHomeGroupIds: ["workspaces", "media", "clock", "weather", "status", "volume", "brightness", "notifications", "privacy"]
-    readonly property var _islandHomeLayoutDefault: [
-        {
-            "id": "workspaces",
-            "enabled": false
-        },
-        {
-            "id": "media",
-            "enabled": true
-        },
-        {
-            "id": "clock",
-            "enabled": true
-        },
-        {
-            "id": "weather",
-            "enabled": false
-        },
-        {
-            "id": "status",
-            "enabled": false
-        },
-        {
-            "id": "volume",
-            "enabled": false
-        },
-        {
-            "id": "brightness",
-            "enabled": false
-        },
-        {
-            "id": "notifications",
-            "enabled": true
-        },
-        {
-            "id": "privacy",
-            "enabled": true
-        }
-    ]
+    readonly property var _islandHomeLayoutDefault: IslandLayout.DEFAULT_HOME_LAYOUT
     function getIslandHomeLayout(bc) {
         const layout = islandSettings(bc).islandHomeLayout;
         const stored = Array.isArray(layout) ? layout : [];

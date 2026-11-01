@@ -262,7 +262,7 @@ Item {
         case "left":
             return selectedBarConfig?.leftWidgets || [];
         case "center":
-            return dankIslandOwnsSelectedBarCenter ? SettingsData.islandCollapsedWidgets(selectedBarConfig) : selectedBarConfig?.centerWidgets || [];
+            return selectedBarConfig?.centerWidgets || [];
         case "right":
             return selectedBarConfig?.rightWidgets || [];
         default:
@@ -683,7 +683,7 @@ Item {
             WidgetsTabSection {
                 id: centerSection
                 width: parent.width
-                title: widgetsTab.dankIslandOwnsSelectedBarCenter ? I18n.tr("Island widgets") : selectedBarIsVertical ? I18n.tr("Middle section") : I18n.tr("Center section")
+                title: widgetsTab.dankIslandOwnsSelectedBarCenter ? I18n.tr("Island widgets", "bar widget settings: widgets in the collapsed island") : selectedBarIsVertical ? I18n.tr("Middle section") : I18n.tr("Center section")
                 sectionId: "center"
                 barId: widgetsTab.selectedBarId
                 allWidgets: widgetsTab.baseWidgetDefinitions

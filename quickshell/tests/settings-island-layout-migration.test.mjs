@@ -24,3 +24,18 @@ test("version 42 island layouts migrate into the configured compact widgets", ()
     assert.equal(migrated.barConfigs[0].islandHomeLayout, undefined);
     assert.equal(store.migrateToVersion(migrated, 43), null);
 });
+
+
+test("version 42 islands without a stored layout migrate the default home face", () => {
+    for (const centerWidgets of [[], [{id: "weather"}, {id: "music", mediaArtworkCircular: false}]]) {
+        const migrated = store.migrateToVersion({configVersion: 42, barConfigs: [{island: true, centerWidgets}]}, 43);
+        const widgets = migrated.barConfigs[0].centerWidgets;
+        assert.deepEqual(Array.from(widgets, widget => widget.id), ["music", "clock", "notificationButton", "privacyIndicator"]);
+        assert.equal(widgets[0].mediaStyle, "activity");
+        assert.equal(store.migrateToVersion(migrated, 43), null);
+    }
+    for (const bar of [{centerWidgets: [{id: "weather"}]}, {island: true, dot: true, centerWidgets: [{id: "weather"}]}]) {
+        const migrated = store.migrateToVersion({configVersion: 42, barConfigs: [bar]}, 43);
+        assert.deepEqual(Array.from(migrated.barConfigs[0].centerWidgets, widget => widget.id), ["weather"]);
+    }
+});

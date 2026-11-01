@@ -755,7 +755,7 @@ function migrateToVersion(obj, targetVersion) {
 
     if (currentVersion < 43 && targetVersion >= 43) {
         for (const config of settings.barConfigs || [])
-            IslandLayout.migrate(config);
+            IslandLayout.migrate(config, true);
         settings.configVersion = 43;
     }
 

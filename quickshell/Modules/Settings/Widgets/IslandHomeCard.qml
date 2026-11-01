@@ -144,7 +144,7 @@ SettingsCard {
         resetStore: root.store
         resetKeys: ["batteryColorMode"]
         text: I18n.tr("Color")
-        visible: root.hosted && root.batteryShown
+        visible: !root.hosted && root.batteryShown
         model: [I18n.tr("Theme", "battery settings: theme accent indicator colors"), I18n.tr("Level", "battery settings: charge level indicator colors")]
         currentIndex: (root.store.config?.batteryColorMode ?? "theme") === "level" ? 1 : 0
         onSelectionChanged: (index, selected) => {
@@ -154,7 +154,6 @@ SettingsCard {
     }
 
     SettingsButtonGroupRow {
-        visible: root.hosted
         settingKey: root.keyPrefix + "HomeCompactTight"
         tags: ["island", "home", "compact", "pill", "narrow", "tight", "width", "height", "size", "clock"]
         resetStore: root.store

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
+import { loadScript } from "./qml-script.mjs";
 
 function functions(source, indent, context) {
     const pattern = new RegExp(`^${indent}function (\\w+)\\(([^)]*)\\)(?:: \\w+)? \\{([\\s\\S]*?)^${indent}\\}`, "gm");
@@ -510,7 +511,7 @@ test("control-center IPC hide and status agree on both surfaces", () => {
 
 test("the privacy slot is a known home layout entry appended after stored ones", () => {
     const groupIds = JSON.parse(settingsSource.match(/_islandHomeGroupIds: (\[.*\])/)[1]);
-    const layoutDefault = JSON.parse(settingsSource.match(/_islandHomeLayoutDefault: (\[[\s\S]*?\n    \])/)[1]);
+    const layoutDefault = loadScript(new URL("../Common/IslandLayout.js", import.meta.url)).DEFAULT_HOME_LAYOUT;
     const settings = functions(settingsSource, "    ", vm.createContext({ _islandHomeGroupIds: groupIds, _islandHomeLayoutDefault: layoutDefault }));
     settings.islandSetting = (config, key) => config[key];
     settings.islandSettings = config => config;

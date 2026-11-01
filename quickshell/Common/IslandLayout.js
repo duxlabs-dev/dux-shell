@@ -1,5 +1,17 @@
 .pragma library
 
+var DEFAULT_HOME_LAYOUT = [
+    {id: "workspaces", enabled: false},
+    {id: "media", enabled: true},
+    {id: "clock", enabled: true},
+    {id: "weather", enabled: false},
+    {id: "status", enabled: false},
+    {id: "volume", enabled: false},
+    {id: "brightness", enabled: false},
+    {id: "notifications", enabled: true},
+    {id: "privacy", enabled: true}
+];
+
 var GROUP_WIDGETS = {
     workspaces: "workspaceSwitcher", media: "music", clock: "clock", weather: "weather",
     status: "battery", volume: "controlCenterButton", brightness: "controlCenterButton",
@@ -13,12 +25,13 @@ function widgets(config) {
     });
 }
 
-function migrate(config) {
-    if (!config?.island || config.dot || !Array.isArray(config.islandHomeLayout))
+function migrate(config, includeDefault = false) {
+    if (!config?.island || config.dot || (!Array.isArray(config.islandHomeLayout) && !includeDefault))
         return;
     const original = (config.leftWidgets || []).concat(config.centerWidgets || [], config.rightWidgets || []);
     const result = [];
-    for (const group of config.islandHomeLayout) {
+    const layout = Array.isArray(config.islandHomeLayout) ? config.islandHomeLayout : DEFAULT_HOME_LAYOUT;
+    for (const group of layout) {
         const id = group.id === "status" && config.islandHomeStatusContent === "connectivity" ? "controlCenterButton" : GROUP_WIDGETS[group.id];
         if (!id || group.enabled === false || result.some(entry => entry.id === id))
             continue;

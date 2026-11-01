@@ -23,7 +23,7 @@ Item {
             return SettingsData.getDockConfig(dockId)?.widgets.find(item => item.id === SettingsUiState.selectedDockWidgetId) ?? null;
         SettingsData.barConfigs;
         const config = SettingsData.getBarConfig(barId);
-        const entries = section === "center" && SettingsData.isIslandBarConfig(config) ? SettingsData.islandCollapsedWidgets(config) : config?.[section + "Widgets"] ?? [];
+        const entries = config?.[section + "Widgets"] ?? [];
         const raw = entries[index];
         if (raw === undefined)
             return null;
@@ -181,7 +181,7 @@ Item {
             }
             SettingsToggleRow {
                 visible: root.hasPill
-                text: I18n.tr("Border")
+                text: I18n.tr("Border", "bar widget settings: widget border toggle")
                 checked: root.entry?.outline ?? root.barOutline
                 onToggled: checked => root.set("outline", checked === root.barOutline ? undefined : checked)
             }
