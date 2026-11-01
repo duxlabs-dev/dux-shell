@@ -23,7 +23,8 @@ Item {
         "sections": expert ? null : sectionCatalog.all.filter(section => !section.expertOnly).map(section => section.id),
         "binds": KeybindsService.getFlatBinds(),
         "modKey": KeybindsService.modKey,
-        "modSymbol": KeybindsService.modSymbol
+        "modSymbol": KeybindsService.modSymbol,
+        "translate": title => I18n.tr(title, "niri page search entry")
     })
     readonly property bool resultsShown: hasFocus && !capturing && !dismissed && field.text.trim() !== ""
     readonly property int flashHoldMs: Theme.scrollbarHideDelay
