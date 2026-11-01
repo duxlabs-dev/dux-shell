@@ -21,7 +21,7 @@ Column {
     readonly property real slowdown: Number(pageState["animations.slowdown"]) || 1
     readonly property bool expert: NiriPageService.expert
     readonly property var titles: ({
-            "workspace-switch": I18n.tr("Workspace switch", "niri animation"),
+            "workspace-switch": I18n.tr("Workspace Switch", "niri animation"),
             "window-open": I18n.tr("Window open", "niri animation"),
             "window-close": I18n.tr("Window close", "niri animation"),
             "horizontal-view-movement": I18n.tr("View scroll", "niri animation"),

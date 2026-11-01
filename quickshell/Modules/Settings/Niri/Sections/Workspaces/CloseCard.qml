@@ -102,7 +102,7 @@ NiriCard {
             id: unitLabel
 
             anchors.verticalCenter: parent.verticalCenter
-            text: I18n.tr("windows", "niri page: unit after the Ask from number")
+            text: I18n.tr("Windows", "niri page: unit after the Ask from number")
             font.pixelSize: Theme.fontSizeSmall
             color: Theme.surfaceVariantText
         }

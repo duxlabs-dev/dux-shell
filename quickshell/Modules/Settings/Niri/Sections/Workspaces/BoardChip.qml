@@ -124,7 +124,7 @@ Item {
                 DActionButton {
                     id: actClose
                     iconName: "close"
-                    tooltipText: I18n.tr("Close window", "niri page workspaces, window chip action")
+                    tooltipText: I18n.tr("Close Window", "niri page workspaces, window chip action")
                     onClicked: root.closeRequested()
                 }
             }

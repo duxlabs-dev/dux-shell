@@ -201,7 +201,7 @@ Rectangle {
 
                     StyledText {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: I18n.tr("focus", "niri page workspaces, badge on the active lane")
+                        text: I18n.tr("Focus", "niri page workspaces, badge on the active lane")
                         font.pixelSize: Theme.fontSizeSmall
                         font.weight: Theme.fontWeightMedium
                         color: Theme.onPrimaryContainer

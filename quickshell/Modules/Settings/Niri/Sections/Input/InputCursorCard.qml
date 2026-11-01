@@ -78,7 +78,7 @@ NiriCard {
                         StyledText {
                             width: parent.width
                             horizontalAlignment: Text.AlignHCenter
-                            text: themeButton.modelData === "System Default" ? I18n.tr("System Default") : themeButton.modelData
+                            text: themeButton.modelData === "System Default" ? I18n.tr("System default") : themeButton.modelData
                             elide: Text.ElideRight
                             wrapMode: Text.NoWrap
                             font.pixelSize: Theme.fontSizeSmall
