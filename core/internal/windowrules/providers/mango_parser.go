@@ -11,7 +11,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/windowrules"
 )
 
-// DMS-managed rules live in dms/windowrules.conf (sourced from config.conf),
+// DMS-managed rules live in dms/windowrules.conf (sourced from the main config),
 // each preceded by an `# @id=<id> @name=<name>` comment so they round-trip.
 
 type MangoWindowRule struct {
@@ -69,38 +69,8 @@ func parseMangoWindowRuleLine(value string) map[string]string {
 	return fields
 }
 
-// mangoConfigPath returns the main mango config (config.conf or mango.conf).
-func mangoConfigPath(configDir string) string {
-	candidates := []string{
-		filepath.Join(configDir, "config.conf"),
-		filepath.Join(configDir, "mango.conf"),
-	}
-	for _, c := range candidates {
-		if _, err := os.Stat(c); err == nil {
-			return c
-		}
-	}
-	return candidates[0]
-}
-
 func mangoOverridePath(configDir string) string {
 	return filepath.Join(configDir, "dms", "windowrules.conf")
-}
-
-// parseMangoRulesFile reads a config file and returns its window_rule= lines.
-func parseMangoRulesFile(path, source string) []MangoWindowRule {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil
-	}
-	var rules []MangoWindowRule
-	for line := range strings.SplitSeq(string(data), "\n") {
-		trimmed := strings.TrimSpace(line)
-		if m := mangoWindowRuleRegex.FindStringSubmatch(trimmed); m != nil {
-			rules = append(rules, MangoWindowRule{Source: source, Fields: parseMangoWindowRuleLine(m[1])})
-		}
-	}
-	return rules
 }
 
 type MangoRulesParseResult struct {
@@ -110,14 +80,30 @@ type MangoRulesParseResult struct {
 }
 
 func ParseMangoWindowRules(configDir string) (*MangoRulesParseResult, error) {
-	mainPath := mangoConfigPath(configDir)
+	mainPath := mangoconf.MainConfig(configDir)
+	mainName := filepath.Base(mainPath)
 	overridePath := mangoOverridePath(configDir)
 
+	// Rules expand where Mango reads them; the override is listed even when nothing sources it.
 	var rules []MangoWindowRule
-	rules = append(rules, parseMangoRulesFile(mainPath, "config.conf")...)
-	rules = append(rules, parseMangoRulesFile(overridePath, "dms/windowrules.conf")...)
+	included := false
+	vars := mangoconf.Vars{}
+	collect := func(file string, e mangoconf.Entry) {
+		switch {
+		case e.IsSource():
+			included = included || e.Value == overridePath
+		case e.Key != "window_rule":
+		case file == mainPath:
+			rules = append(rules, MangoWindowRule{Source: mainName, Fields: parseMangoWindowRuleLine(e.Value)})
+		case file == overridePath:
+			rules = append(rules, MangoWindowRule{Source: "dms/windowrules.conf", Fields: parseMangoWindowRuleLine(e.Value)})
+		}
+	}
+	_ = mangoconf.Walk(configDir, mainPath, vars, collect)
+	if !included {
+		_ = mangoconf.Walk(configDir, overridePath, vars, collect)
+	}
 
-	included := mangoDMSRulesIncluded(mainPath)
 	return &MangoRulesParseResult{
 		Rules:            rules,
 		DMSRulesIncluded: included,
@@ -125,7 +111,7 @@ func ParseMangoWindowRules(configDir string) (*MangoRulesParseResult, error) {
 			Exists:        fileExists(overridePath),
 			Included:      included,
 			Effective:     included,
-			StatusMessage: mangoIncludeMessage(included),
+			StatusMessage: mangoIncludeMessage(included, mainName),
 		},
 	}, nil
 }
@@ -135,25 +121,11 @@ func fileExists(path string) bool {
 	return err == nil
 }
 
-func mangoDMSRulesIncluded(mainPath string) bool {
-	data, err := os.ReadFile(mainPath)
-	if err != nil {
-		return false
-	}
-	for line := range strings.SplitSeq(string(data), "\n") {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "source") && strings.Contains(trimmed, "dms/windowrules.conf") {
-			return true
-		}
-	}
-	return false
-}
-
-func mangoIncludeMessage(included bool) string {
+func mangoIncludeMessage(included bool, mainName string) string {
 	if included {
-		return "DMS window rules are sourced from config.conf"
+		return "DMS window rules are sourced from " + mainName
 	}
-	return "Add `source=./dms/windowrules.conf` to config.conf to apply DMS window rules"
+	return "Source ./dms/windowrules.conf from " + mainName + " to apply DMS window rules"
 }
 
 func mangoBoolField(fields map[string]string, key string) *bool {

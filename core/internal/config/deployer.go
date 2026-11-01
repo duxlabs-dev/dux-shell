@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
 	"github.com/duxlabs-dev/dux-shell/core/internal/version"
 )
 
@@ -72,10 +73,7 @@ func (cd *ConfigDeployer) deployConfigurationsInternal(_ context.Context, wm dep
 		"Hyprland": {
 			filepath.Join(HyprlandConfigDir(), "hyprland.lua"),
 		},
-		"Mango": {
-			filepath.Join(os.Getenv("HOME"), ".config", "mango", "config.conf"),
-			filepath.Join(os.Getenv("HOME"), ".config", "mango", "mango.conf"),
-		},
+		"Mango": mangoconf.MainConfigs(mangoconf.Dir()),
 		"Ghostty": {
 			filepath.Join(os.Getenv("HOME"), ".config", "ghostty", "config"),
 		},

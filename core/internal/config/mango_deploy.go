@@ -41,30 +41,29 @@ func nonEmptyFile(path string) (string, bool) {
 }
 
 var (
-	mangoBindLine    = regexp.MustCompile(`^\s*(bind[a-z]*|mousebind|axisbind|gesturebind|switchbind|key_mode)\s*=`)
+	mangoBindLine    = regexp.MustCompile(`^\s*((bind|mousebind|axisbind|gesturebind|switchbind)[a-z]*|key_mode)\s*=`)
 	mangoMonitorLine = regexp.MustCompile(`^\s*monitor_rule\s*=`)
 	mangoWindowLine  = regexp.MustCompile(`^\s*window_rule(_once)?\s*=`)
-	mangoExecOnceDMS = regexp.MustCompile(`(?m)^# Starts the shell when DMS.*\n#.*\nexec_once=dms run\n`)
+	mangoExecOnceDMS = regexp.MustCompile(`(?m)^# Starts the shell when DMS.*\n#.*\nexec_once( = "dms run"|=dms run)\n`)
 )
 
 var (
 	mangoSessionTargetInstalled = mangoconf.SessionTargetInstalled
 )
 
-// MangoExistingBinds returns where the user's Mango binds live: a non-empty
-// dms/binds.conf, else a config.conf with bind lines.
+// config.toml binds are left out: replacing it never carries them.
 func MangoExistingBinds() (string, bool) {
 	dir := mangoconf.Dir()
 	bindsPath := filepath.Join(dir, "dms", "binds.conf")
 	if info, err := os.Stat(bindsPath); err == nil && info.Size() > 0 {
 		return bindsPath, true
 	}
-	mainPath := filepath.Join(dir, "config.conf")
-	data, err := os.ReadFile(mainPath)
-	if err != nil {
+	mainPath := mangoconf.MainConfig(dir)
+	if mangoconf.IsTOML(mainPath) {
 		return "", false
 	}
-	if extractMangoLines(string(data), mangoBindLine) == "" {
+	data, err := os.ReadFile(mainPath)
+	if err != nil || extractMangoLines(string(data), mangoBindLine) == "" {
 		return "", false
 	}
 	return mainPath, true
@@ -85,9 +84,16 @@ func extractMangoLines(text string, match *regexp.Regexp) string {
 
 func (cd *ConfigDeployer) deployMangoConfig(terminalCommand string, useSystemd bool) (DeploymentResult, error) {
 	configDir := mangoconf.Dir()
-	result := DeploymentResult{
-		ConfigType: "Mango",
-		Path:       filepath.Join(configDir, "config.conf"),
+	// A config.toml in use is replaced by the TOML template, so Mango keeps loading the same file.
+	mainPath := mangoconf.MainConfig(configDir)
+	toml := mangoconf.IsTOML(mainPath)
+	result := DeploymentResult{ConfigType: "Mango", Path: mainPath}
+
+	// A config that can't be read can't be backed up, so nothing may be written.
+	data, err := os.ReadFile(mainPath)
+	if err != nil && !os.IsNotExist(err) {
+		result.Error = fmt.Errorf("failed to read %s: %w", mainPath, err)
+		return result, result.Error
 	}
 
 	dmsDir := filepath.Join(configDir, "dms")
@@ -98,18 +104,26 @@ func (cd *ConfigDeployer) deployMangoConfig(terminalCommand string, useSystemd b
 
 	timestamp := time.Now().Format("2006-01-02_15-04-05")
 	var existing string
-	if data, err := os.ReadFile(result.Path); err == nil {
-		existing = string(data)
+	if err == nil {
 		cd.log("Found existing Mango configuration")
-		result.BackupPath = result.Path + ".backup." + timestamp
+		result.BackupPath = mainPath + ".backup." + timestamp
 		if err := os.WriteFile(result.BackupPath, data, 0o644); err != nil {
 			result.Error = fmt.Errorf("failed to create backup: %w", err)
 			return result, result.Error
 		}
 		cd.log(fmt.Sprintf("Backed up existing config to %s", result.BackupPath))
+		if toml {
+			cd.log(fmt.Sprintf("Binds and rules from config.toml are not carried over; copy what you need from %s", result.BackupPath))
+		} else {
+			existing = string(data)
+		}
 	}
 
-	newConfig := strings.ReplaceAll(MangoConfig, "{{TERMINAL_COMMAND}}", terminalCommand)
+	template := MangoConfig
+	if toml {
+		template = MangoTOMLConfig
+	}
+	newConfig := strings.ReplaceAll(template, "{{TERMINAL_COMMAND}}", terminalCommand)
 	autostart := cd.systemdAutostart(deps.WindowManagerMango, useSystemd)
 	if autostart {
 		newConfig = mangoExecOnceDMS.ReplaceAllString(newConfig, "")

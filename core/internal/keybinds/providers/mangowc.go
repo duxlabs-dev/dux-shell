@@ -150,8 +150,7 @@ func (m *MangoWCProvider) convertKeybind(kb *MangoWCKeyBinding, conflicts map[st
 	}
 
 	if source == "dms-default" && conflicts != nil {
-		normalizedKey := strings.ToLower(keyStr)
-		if conflictKb, ok := conflicts[normalizedKey]; ok {
+		if conflictKb, ok := conflicts[mangoConflictKey(kb.Mode, strings.ToLower(keyStr))]; ok {
 			bind.Conflict = &keybinds.Keybind{
 				Key:         keyStr,
 				Description: conflictKb.Comment,

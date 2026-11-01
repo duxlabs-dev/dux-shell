@@ -161,3 +161,119 @@ func TestMangoRuleSaveKeepsUnmodeledFieldsAndOnceRules(t *testing.T) {
 		t.Error("a rule Mango would truncate must be rejected")
 	}
 }
+
+func TestParseMangoWindowRulesReadsConfigToml(t *testing.T) {
+	dir := t.TempDir()
+	toml := `window_rule = "app_id:mpv,is_floating:1"
+[[rule.window_rule]]
+app_id = "pavucontrol"
+title = "Volume # Control"
+[[rule.window_rule_once]]
+app_id = "once"
+[global]
+source = "./dms/windowrules.conf"
+`
+	if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte(toml), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := ParseMangoWindowRules(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, r := range result.Rules {
+		got = append(got, r.Source+" "+r.Fields["app_id"]+" "+r.Fields["title"])
+	}
+	want := []string{"config.toml mpv ", "config.toml pavucontrol Volume # Control"}
+	if strings.Join(got, "|") != strings.Join(want, "|") || !result.DMSRulesIncluded {
+		t.Errorf("rules = %q included = %v, want %q and the dms source", got, result.DMSRulesIncluded, want)
+	}
+}
+
+func TestParseMangoWindowRulesExpandsMainConfigVars(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "dms"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		"config.toml":          "[var]\napp = \"mpv\"\n[global]\nsource = \"./dms/windowrules.conf\"\n",
+		"dms/windowrules.conf": "window_rule=app_id:$app,is_floating:1\n",
+	}
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	result, err := ParseMangoWindowRules(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Rules) != 1 || result.Rules[0].Fields["app_id"] != "mpv" {
+		t.Errorf("rules = %+v, want app_id mpv from the main config's var", result.Rules)
+	}
+}
+
+func TestMangoDMSRulesIncludedResolvesLikeMango(t *testing.T) {
+	dir := t.TempDir()
+	for source, want := range map[string]bool{"./dms/windowrules.conf": true, "dms/windowrules.conf": false, "./other/dms/windowrules.conf": false} {
+		if err := os.WriteFile(filepath.Join(dir, "config.conf"), []byte("source="+source+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if got, _ := ParseMangoWindowRules(dir); got.DMSRulesIncluded != want {
+			t.Errorf("source=%s included = %v, want %v", source, got.DMSRulesIncluded, want)
+		}
+	}
+}
+
+func TestParseMangoWindowRulesFollowsMangoOrder(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "dms"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		"config.conf":          "source=./vars.conf\nwindow_rule=app_id:$app,is_floating:1\nsource=$dir/windowrules.conf\nvar=app,firefox\n",
+		"vars.conf":            "var=app,mpv\nvar=dir,./dms\n",
+		"dms/windowrules.conf": "window_rule=app_id:$app,no_blur:1\n",
+	}
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	result, err := ParseMangoWindowRules(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, r := range result.Rules {
+		got = append(got, r.Source+" "+r.Fields["app_id"])
+	}
+	want := []string{"config.conf mpv", "dms/windowrules.conf mpv"}
+	if strings.Join(got, "|") != strings.Join(want, "|") || !result.DMSRulesIncluded {
+		t.Errorf("rules = %q included = %v, want %q, sourced through vars.conf's $dir", got, result.DMSRulesIncluded, want)
+	}
+}
+
+func TestParseMangoWindowRulesRereadsRepeatedSources(t *testing.T) {
+	dir := t.TempDir()
+	files := map[string]string{
+		"config.conf": "var=app,firefox\nvar=next,mpv\nsource=./vars.conf\nvar=next,firefox\nsource=./vars.conf\nwindow_rule=app_id:$app,is_floating:1\n",
+		"vars.conf":   "var=app,$next\n",
+	}
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	result, err := ParseMangoWindowRules(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Rules) != 1 || result.Rules[0].Fields["app_id"] != "firefox" {
+		t.Errorf("rules = %+v, want app_id firefox: Mango reads vars.conf again on its second source", result.Rules)
+	}
+}

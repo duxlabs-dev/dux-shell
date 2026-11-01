@@ -973,7 +973,7 @@ func mangoUnknownKeywords(output string) []string {
 
 func checkMangoConfig(mangoDir string) []checkResult {
 	url := doctorDocsURL + "#compositor-checks"
-	mainPath := filepath.Join(mangoDir, "config.conf")
+	mainPath := mangoconf.MainConfig(mangoDir)
 	var results []checkResult
 	if output, err := mangoParseConfig(mainPath); err == nil {
 		if unknown := mangoUnknownKeywords(output); len(unknown) > 0 {
@@ -990,6 +990,13 @@ func checkMangoConfig(mangoDir string) []checkResult {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			continue
+		}
+		if mangoconf.IsTOML(path) {
+			var b strings.Builder
+			for _, e := range mangoconf.TOMLEntries(string(data)) {
+				b.WriteString(e.Key + "=" + e.Value + "\n")
+			}
+			data = []byte(b.String())
 		}
 		if mangoLegacyOverviewBinds.Match(data) {
 			overviewBinds = append(overviewBinds, filepath.Base(path))
