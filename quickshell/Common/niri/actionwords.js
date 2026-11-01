@@ -4,7 +4,7 @@
 // close-workspace action: the DMS workspace closeAll IPC closes the active workspace
 // with its windows, so it carries the delete words.
 var ACTION_WORDS = {
-    "spawn dms ipc call workspace closeAll": ["delete", "del", "suppr", "supprimer", "effacer", "fermer", "fermeture", "espace", "espaces"]
+    "spawn dms ipc call workspace closeAll": ["delete", "remove", "close", "workspace"]
 };
 
 function actionSearchWords(actionId) {

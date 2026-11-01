@@ -6,8 +6,10 @@ const words = loadScript(new URL("../Common/niri/actionwords.js", import.meta.ur
 
 test("actionSearchWords gives the delete words for the workspace close action", () => {
     const found = words.actionSearchWords("spawn dms ipc call workspace closeAll");
-    for (const word of ["delete", "supprimer", "suppr", "fermer", "espace"])
+    for (const word of ["delete", "remove", "close", "workspace"])
         assert.ok(found.includes(word), word);
+    for (const word of ["supprimer", "suppr", "fermer", "espace"])
+        assert.ok(!found.includes(word), word);
 });
 
 test("actionSearchWords stays empty for unknown actions", () => {
