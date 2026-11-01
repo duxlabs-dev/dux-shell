@@ -73,12 +73,14 @@ QtObject {
             return;
         }
         const compositor = CompositorService.compositor;
-        const dir = configDir();
-        const paths = ConfigIncludeResolve.includePaths(includeKind, compositor, dir);
+        const mango = compositor === "mango";
+        const dir = mango ? MangoService.configDir : configDir();
+        const configName = mango ? MangoService.configName : "";
+        const paths = ConfigIncludeResolve.includePaths(includeKind, compositor, dir, configName);
         if (!paths)
             return;
         const unixTime = Math.floor(Date.now() / 1000);
-        const script = ConfigIncludeResolve.repairScriptFor(includeKind, compositor, dir, paths.configFile + ".backup" + unixTime);
+        const script = ConfigIncludeResolve.repairScriptFor(includeKind, compositor, dir, paths.configFile + ".backup" + unixTime, configName, Proc.dmsBin);
         fixing = true;
         Proc.runCommand("fix-" + procTag, ["sh", "-c", script], (output, exitCode) => {
             fixing = false;

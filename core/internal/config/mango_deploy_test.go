@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -34,6 +35,7 @@ key_mode=resize
 bind=NONE,h,resizewin,-10,0
 monitor_rule=name:^DP-1$,width:2560,height:1440,refresh:144,x:0,y:0,scale:1,rr:0,vrr:1,hdr:1
 window_rule=app_id:pavucontrol,is_floating:1
+mousebindl=SUPER,btn_left,moveresize,curmove
 `
 
 func TestMangoDeployMovesUserRulesAndKeepsBindsByDefault(t *testing.T) {
@@ -52,10 +54,66 @@ func TestMangoDeployMovesUserRulesAndKeepsBindsByDefault(t *testing.T) {
 	assert.Equal(t, "", readMango(t, home, "dms/input.conf"))
 	binds := readMango(t, home, "dms/binds.conf")
 	assert.Contains(t, binds, "bind=SUPER,Return,spawn,foot\nkey_mode=resize\nbind=NONE,h,resizewin,-10,0")
+	assert.Contains(t, binds, "mousebindl=SUPER,btn_left,moveresize,curmove")
 	assert.NotContains(t, binds, "{{TERMINAL_COMMAND}}")
 	assert.Contains(t, readMango(t, home, "dms/outputs.conf"), "monitor_rule=name:^DP-1$")
 	assert.Contains(t, readMango(t, home, "dms/outputs.conf"), "hdr:1")
 	assert.Contains(t, readMango(t, home, "dms/windowrules.conf"), "window_rule=app_id:pavucontrol,is_floating:1")
+}
+
+func TestMangoDeployReplacesConfigToml(t *testing.T) {
+	for _, target := range []bool{false, true} {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		stubMango(t, target, nil)
+		dir := filepath.Join(home, ".config", "mango")
+		require.NoError(t, os.MkdirAll(dir, 0o755))
+		old := "[bind.default]\n\"SUPER+Return\" = \"spawn,foot\"\n[[rule.window_rule]]\napp_id = \"pavucontrol\"\nis_floating = 1\n"
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "config.toml"), []byte(old), 0o644))
+
+		_, ok := MangoExistingBinds()
+		assert.False(t, ok, "replace never carries TOML binds, so there are none to keep")
+
+		result, err := NewConfigDeployer(nil).DeployCompositor(deps.WindowManagerMango, "kitty", true)
+		require.NoError(t, err)
+
+		assert.NoFileExists(t, filepath.Join(dir, "config.conf"), "a config.conf would shadow config.toml")
+		assert.Equal(t, filepath.Join(dir, "config.toml"), result.Path)
+		assert.Equal(t, old, readMango(t, home, filepath.Base(result.BackupPath)))
+		assert.Equal(t, strings.ReplaceAll(MangoBindsConfig, "{{TERMINAL_COMMAND}}", "kitty"), readMango(t, home, "dms/binds.conf"))
+		assert.Equal(t, "", readMango(t, home, "dms/windowrules.conf"))
+
+		// Mango must read the TOML template as it reads the conf one; only systemd starts DMS when there is a session target.
+		var want, got []string
+		for line := range strings.SplitSeq(MangoConfig, "\n") {
+			if line != "" && !strings.HasPrefix(line, "#") && (!target || line != "exec_once=dms run") {
+				want = append(want, line)
+			}
+		}
+		for _, e := range mangoconf.TOMLEntries(readMango(t, home, "config.toml")) {
+			got = append(got, e.Key+"="+e.Value)
+		}
+		assert.Equal(t, want, got, "session target=%v", target)
+		assert.Equal(t, !target, slices.Contains(got, "exec_once=dms run"), "session target=%v", target)
+	}
+}
+
+func TestMangoDeployLeavesUnreadableConfigAlone(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root reads any file")
+	}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	stubMango(t, false, nil)
+	dir := filepath.Join(home, ".config", "mango")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "config.conf"), []byte("bind=SUPER,q,killclient\n"), 0o000))
+
+	_, err := NewConfigDeployer(nil).DeployCompositor(deps.WindowManagerMango, "kitty", true)
+	require.Error(t, err)
+
+	entries, _ := os.ReadDir(dir)
+	assert.Len(t, entries, 1, "nothing may be written next to a config that cannot be backed up")
 }
 
 func TestMangoDeployBindsChoiceAlwaysBacksUp(t *testing.T) {

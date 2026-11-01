@@ -409,6 +409,18 @@ func TestCheckMangoConfigReportsUnknownKeysAndOverviewBinds(t *testing.T) {
 	}
 }
 
+func TestCheckMangoConfigReadsOverviewBindsFromToml(t *testing.T) {
+	dir := t.TempDir()
+	_ = os.WriteFile(filepath.Join(dir, "config.toml"), []byte("[mousebind.default]\n\"NONE+btn_left\" = \"toggleoverview,1\"\n"), 0o644)
+	prev := mangoParseConfig
+	mangoParseConfig = func(string) (string, error) { return "", os.ErrNotExist }
+	t.Cleanup(func() { mangoParseConfig = prev })
+
+	if got := checkMangoConfig(dir); len(got) != 1 || got[0].message != "Obsolete overview binds in config.toml" {
+		t.Fatalf("got %+v", got)
+	}
+}
+
 func TestCheckNiriConfig(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(dir, "dms"), 0o755); err != nil {

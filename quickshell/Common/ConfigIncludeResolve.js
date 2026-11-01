@@ -11,7 +11,7 @@ function sectionHeaderFor(includeLine) {
     const line = String(includeLine ?? "").trim();
     if (line.startsWith("require"))
         return "-- DMS Include Configs";
-    if (line.startsWith("source"))
+    if (line.startsWith("source") || line.startsWith("[global]"))
         return "# DMS Include Configs";
     return "// DMS Include Configs";
 }
@@ -23,6 +23,15 @@ function managedIncludePatternFor(includeLine) {
     if (line.startsWith("source"))
         return "source.*dms/";
     return "include.*dms/";
+}
+
+function activeLinesCommand(file) {
+    return `grep -v '^[[:space:]]*\\(//\\|#\\|--\\)' ${file} 2>/dev/null`;
+}
+
+// Only core reads TOML the way Mango does, vars and nested sources included.
+function tomlIncludedCommand(fragment, dmsBin) {
+    return `${shQuote(dmsBin || "dms")} config resolve-include mangowc ${shQuote(fragment)} 2>/dev/null | grep -Fq '"included":true'`;
 }
 
 function buildRepairScript(options) {
@@ -49,11 +58,15 @@ function buildRepairScript(options) {
         commands.push("touch " + fragments.map(shQuote).join(" "));
 
     for (const include of includes) {
-        if (!include.grepPattern || !include.includeLine)
+        if (!(include.grepPattern || include.tomlFragment) || !include.includeLine)
             continue;
         const sectionHeader = options.sectionHeader || sectionHeaderFor(include.includeLine);
-        const managedIncludePattern = managedIncludePatternFor(include.includeLine);
-        commands.push(`if ! grep -v '^[[:space:]]*\\(//\\|#\\|--\\)' ${shQuote(configFile)} 2>/dev/null | grep -q ${shQuote(include.grepPattern)}; then if grep -Fqx ${shQuote(sectionHeader)} ${shQuote(configFile)} 2>/dev/null || grep -v '^[[:space:]]*\\(//\\|#\\|--\\)' ${shQuote(configFile)} 2>/dev/null | grep -q ${shQuote(managedIncludePattern)}; then printf '%s\\n' ${shQuote(include.includeLine)} >> ${shQuote(configFile)}; elif [ -s ${shQuote(configFile)} ]; then printf '\\n%s\\n%s\\n' ${shQuote(sectionHeader)} ${shQuote(include.includeLine)} >> ${shQuote(configFile)}; else printf '%s\\n%s\\n' ${shQuote(sectionHeader)} ${shQuote(include.includeLine)} >> ${shQuote(configFile)}; fi; fi`);
+        const file = shQuote(configFile);
+        const active = activeLinesCommand(file);
+        const included = include.tomlFragment ? tomlIncludedCommand(include.tomlFragment, options.dmsBin) : `${active} | grep -q ${shQuote(include.grepPattern)}`;
+        const managed = include.tomlFragment ? `grep -Fq 'dms/' ${file} 2>/dev/null` : `${active} | grep -q ${shQuote(managedIncludePatternFor(include.includeLine))}`;
+        // The append must start on its own line, or a TOML [global] fuses with the last statement.
+        commands.push(`if ! { ${included}; }; then if grep -Fqx ${shQuote(sectionHeader)} ${file} 2>/dev/null || ${managed}; then { [ -z "$(tail -c 1 ${file})" ] || printf '\\n'; printf '%s\\n' ${shQuote(include.includeLine)}; } >> ${file}; elif [ -s ${file} ]; then printf '\\n%s\\n%s\\n' ${shQuote(sectionHeader)} ${shQuote(include.includeLine)} >> ${file}; else printf '%s\\n%s\\n' ${shQuote(sectionHeader)} ${shQuote(include.includeLine)} >> ${file}; fi; fi`);
     }
 
     return commands.join("; ");
@@ -90,6 +103,12 @@ const luaInclude = name => ({
 const confInclude = (name, grepPattern, includeLine) => ({
             grepPattern: grepPattern ?? `source.*dms/${name}.conf`,
             includeLine: includeLine ?? `source=./dms/${name}.conf`
+        });
+
+// Each include brings its own [global], so tables appended after it cannot capture it.
+const tomlInclude = fragment => ({
+            tomlFragment: fragment,
+            includeLine: `[global]\nsource = "./dms/${fragment}"`
         });
 
 const includeTable = {
@@ -131,21 +150,22 @@ const fragmentNameTable = {
     }
 };
 
-function includeSpec(kind, compositor) {
+function includeSpec(kind, compositor, configName) {
     const includes = includeTable[kind]?.[compositor];
     if (!includes)
         return null;
     const extension = fragmentExtensions[compositor];
-    const names = fragmentNameTable[kind]?.[compositor] ?? [kind];
+    const fragmentNames = (fragmentNameTable[kind]?.[compositor] ?? [kind]).map(name => `${name}.${extension}`);
+    const name = configName || configNames[compositor];
     return {
-        configName: configNames[compositor],
-        fragmentNames: names.map(name => `${name}.${extension}`),
-        includes: includes
+        configName: name,
+        fragmentNames: fragmentNames,
+        includes: name.endsWith(".toml") ? fragmentNames.map(tomlInclude) : includes
     };
 }
 
-function includePaths(kind, compositor, configDir) {
-    const spec = includeSpec(kind, compositor);
+function includePaths(kind, compositor, configDir, configName) {
+    const spec = includeSpec(kind, compositor, configName);
     if (!spec)
         return null;
     const dir = configDir + "/" + compositorDirs[compositor];
@@ -156,15 +176,16 @@ function includePaths(kind, compositor, configDir) {
     };
 }
 
-function repairScriptFor(kind, compositor, configDir, backupFile) {
-    const paths = includePaths(kind, compositor, configDir);
+function repairScriptFor(kind, compositor, configDir, backupFile, configName, dmsBin) {
+    const paths = includePaths(kind, compositor, configDir, configName);
     if (!paths)
         return "";
     return buildRepairScript({
         configFile: paths.configFile,
         backupFile: backupFile,
         fragmentFiles: paths.fragmentFiles,
-        includes: paths.includes
+        includes: paths.includes,
+        dmsBin: dmsBin
     });
 }
 
