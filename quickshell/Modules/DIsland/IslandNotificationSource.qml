@@ -13,7 +13,7 @@ QtObject {
     required property IslandController controller
     required property var targetScreen
     property bool enabled: true
-    property var activitySession: null
+    required property IslandActivitySession activitySession
     readonly property string visibleVersion: NotificationService.visibleNotifications.map(wrapper => wrapper.seq).join(",")
     readonly property string presentationVersion: activitySession?.current?.kind === "notification" ? activitySession.current.id : ""
     readonly property bool notificationPresented: controller.notificationActive
@@ -35,7 +35,6 @@ QtObject {
     property bool important: false
 
     readonly property bool hasAction: actionLabel.length > 0
-    readonly property bool wrapperTimeoutHeld: (controller.notificationActive && controller.timeoutSuspended) || controller.notificationHeldForSystem
 
     function scheduleDisplayFieldClear() {
         displayFieldClearTimer.restart();
@@ -57,32 +56,6 @@ QtObject {
         important = false;
     }
 
-    function wrapperTimeout(wrapper) {
-        const interval = wrapper?.timer?.interval ?? -1;
-        return interval >= 0 ? interval : 5000;
-    }
-
-    function applyWrapperTimeoutHold() {
-        const timer = currentWrapper?.timer;
-        if (!timer)
-            return;
-        if (activitySession || wrapperTimeoutHeld) {
-            timer.stop();
-            return;
-        }
-        if (currentWrapper.popup && timer.interval > 0)
-            timer.restart();
-    }
-
-    function releaseWrapperTimeoutHold() {
-        if (activitySession)
-            return;
-        const timer = currentWrapper?.timer;
-        if (!timer || !currentWrapper.popup || timer.interval <= 0)
-            return;
-        timer.restart();
-    }
-
     function adopt(wrapper) {
         if (!enabled || !wrapper || !NotificationService.isFocusedScreen(root.targetScreen))
             return false;
@@ -91,7 +64,6 @@ QtObject {
         if (!controller.canRequestNotification(isCritical))
             return false;
 
-        releaseWrapperTimeoutHold();
         displayFieldClearTimer.stop();
         currentWrapper = wrapper;
         appName = wrapper.appName || I18n.tr("Notification", "island notification face: fallback app name");
@@ -111,45 +83,22 @@ QtObject {
         important = !isCritical && wrapper.urgency === NotificationUrgency.Normal && fallbackIcon.startsWith("material:battery");
         const actions = wrapper.actions || [];
         actionLabel = actions.length > 0 ? (actions[0].text || I18n.tr("Open", "island notification face: default action button")) : "";
-        controller.notificationTimeout = wrapperTimeout(wrapper);
-        const accepted = controller.requestNotification(isCritical);
-        applyWrapperTimeoutHold();
-        return accepted;
+        return controller.requestNotification(isCritical);
     }
 
     function refreshDeduplicated(wrapper) {
-        if (activitySession) {
-            activitySession.refreshNotification(wrapper);
-            if (wrapper === currentWrapper)
-                adopt(wrapper);
-            return;
-        }
-        if (!wrapper || wrapper !== currentWrapper)
-            return;
-        controller.refreshNotification();
-        applyWrapperTimeoutHold();
+        activitySession.refreshNotification(wrapper);
+        if (wrapper === currentWrapper)
+            adopt(wrapper);
     }
-
-    onWrapperTimeoutHeldChanged: applyWrapperTimeoutHold()
 
     function syncVisibleNotifications() {
         const visible = NotificationService.visibleNotifications || [];
-        if (activitySession) {
-            activitySession.cancelMissingNotifications(visible);
-            if (enabled && NotificationService.isFocusedScreen(root.targetScreen)) {
-                for (const wrapper of visible)
-                    activitySession.enqueueNotification(wrapper);
-            }
+        activitySession.cancelMissingNotifications(visible);
+        if (!enabled || !NotificationService.isFocusedScreen(root.targetScreen))
             return;
-        }
-        const latest = visible.length > 0 ? visible[visible.length - 1] : null;
-        if (latest && (latest === currentWrapper || adopt(latest)))
-            return;
-        if (!currentWrapper || visible.indexOf(currentWrapper) !== -1)
-            return;
-        currentWrapper = null;
-        controller.completeNotification();
-        scheduleDisplayFieldClear();
+        for (const wrapper of visible)
+            activitySession.enqueueNotification(wrapper);
     }
 
     function syncPresentation() {

@@ -21,11 +21,16 @@ Singleton {
     readonly property bool notificationsAvailable: sessions.some(session => session.notificationsEnabled)
     signal actionInvoked(string source, string id, string action)
 
-    function publish(source, id, payload) {
+    function publish(source, id, payload, external = false) {
         const now = Date.now();
         const entry = Activities.normalize(source, id, payload, now);
         if (!entry)
             return false;
+        if (external && entry.persistent && !entry.ttl) {
+            entry.ttl = Activities.IPC_ACTIVITY_TTL;
+            entry.expiresAt = now + entry.ttl;
+        }
+        expireEntries();
         const previous = entries.find(item => item.source === source && item.id === id);
         if (previous?.persistent && payload.announce !== true)
             entry.announce = false;
@@ -35,7 +40,7 @@ Singleton {
         const hosts = receivers.filter(session => session.canEnqueue(entry) && (entry.announce || session.contains(entry)));
         if (entry.announce && !entry.persistent && receivers.length && !hosts.length)
             return false;
-        if (hosts.length)
+        if (hosts.length && !entry.persistent)
             entry.expiresAt = 0;
         const next = Activities.upsert(entries, entry, now);
         if (!next)
@@ -62,7 +67,8 @@ Singleton {
             const hosts = pendingHosts[key] || [];
             if (hosts.indexOf(session.hostKey) >= 0)
                 continue;
-            entry.expiresAt = 0;
+            if (!entry.persistent)
+                entry.expiresAt = 0;
             pendingHosts = Object.assign({}, pendingHosts, {[key]: hosts.concat([session.hostKey])});
             session.enqueue(entry);
         }
@@ -162,7 +168,7 @@ Singleton {
 
     function invoke(source, id, action) {
         const entry = entries.find(entry => entry.source === source && entry.id === id);
-        if (!entry || (!entry.actions.some(item => item.id === action) && entry.clickAction !== action))
+        if (!Activities.canInvoke(entry, action))
             return false;
         actionInvoked(source, id, action);
         actionQueue = actionQueue.concat([{source: source, id: id, action: action}]).slice(-64);
@@ -229,10 +235,10 @@ Singleton {
         target: "islandActivity"
 
         function publish(source: string, id: string, payload: string): string {
-            if (payload.length > 16384)
+            if (!Activities.validPayloadSize(payload))
                 return "ISLAND_ACTIVITY_INVALID";
             try {
-                return root.publish(source, id, JSON.parse(payload)) ? "ISLAND_ACTIVITY_PUBLISHED" : "ISLAND_ACTIVITY_INVALID";
+                return root.publish(source, id, JSON.parse(payload), true) ? "ISLAND_ACTIVITY_PUBLISHED" : "ISLAND_ACTIVITY_INVALID";
             } catch (error) {
                 return "ISLAND_ACTIVITY_INVALID";
             }

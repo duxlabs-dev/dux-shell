@@ -188,7 +188,7 @@ function session(service) {
     const timeout = { interval: 0, running: false, start() { this.running = true; }, stop() { this.running = false; } };
     const instance = serviceFunctions("../Services/IslandActivitySession.qml", {
         Activities: activities, IslandActivityService: service,
-        enabled: true, notificationsEnabled: true, blocked: false, held: false, registered: true,
+        enabled: true, notificationsEnabled: true, systemsEnabled: true, blocked: false, held: false, registered: true,
         screenName: "DP-1", barId: "bar", hostKey: "host", excludedSources: [], defaultDuration: 5000,
         queue: [], current: null, remaining: 0, deadline: 0, timeout,
         Date: { now: () => clock.now }, Qt: { callLater: fn => deferred.push(fn) }, NotificationUrgency: { Critical: 2 }
@@ -502,4 +502,152 @@ test("plugin notification interceptors can consume into a live activity", () => 
     assert.equal(policy.drop, true);
     assert.equal(published.source, "dankCalendar");
     assert.equal(published.activity.title, "Design review");
+});
+
+test("blocked sheets defer preemption without losing the running preview", () => {
+    const service = registry();
+    const host = session(service);
+    service.registerSession(host.instance);
+    service.publish("download", "one", { title: "Download", duration: 3000 });
+    host.instance.blocked = true;
+    host.instance.enqueueSystem("volume", 2200);
+    assert.equal(host.instance.current.source, "download");
+    assert.equal(host.instance.queue[0].kind, "system");
+});
+
+test("system feedback stays available when plugin activities are disabled", () => {
+    const host = session(registry());
+    host.instance.enabled = false;
+    assert.equal(host.instance.enqueueSystem("volume", 2200), true);
+    host.instance.reconfigure();
+    assert.equal(host.instance.current.kind, "system");
+});
+
+test("a full queue never drops the interrupted preview", () => {
+    const service = registry();
+    const host = session(service);
+    service.registerSession(host.instance);
+    service.publish("download", "one", { title: "Download", duration: 3000 });
+    host.instance.queue = Array.from({ length: 63 }, (_, i) => entry("queued", String(i), { title: "Queued" }));
+    host.instance.enqueueSystem("volume", 2200);
+    assert.equal(host.instance.current.source, "download");
+    assert.equal(host.instance.queue.length, 64);
+});
+
+test("preempted notifications without a timeout remain untimed on resumption", () => {
+    const host = session(registry());
+    host.instance.enqueueNotification({ seq: 1, summary: "Message", popup: true, urgency: 1, timer: { interval: 0, stop() {} } });
+    host.instance.enqueueSystem("volume", 2200);
+    host.instance.finishCurrent(host.instance.current);
+    host.flush();
+    assert.equal(host.instance.current.kind, "notification");
+    assert.equal(host.instance.current.duration, 0);
+    assert.equal(host.timeout.running, false);
+});
+
+test("external persistent activities expire and renew through the existing registry timer", () => {
+    const service = registry();
+    let now = 1000;
+    service.Date.now = () => now;
+    const host = session(service);
+    service.registerSession(host.instance);
+    service.publish("external", "job", { title: "Job", persistent: true, ttl: 2000 }, true);
+    service.scheduleExpiry();
+    assert.equal(service.expiry.interval, 2000);
+    now = 2000;
+    service.publish("external", "job", { title: "Updated", persistent: true, ttl: 2000 }, true);
+    assert.equal(service.entries[0].expiresAt, 4000);
+    now = 3100;
+    service.expireEntries();
+    assert.equal(service.entries.length, 1);
+    now = 4000;
+    service.expireEntries();
+    assert.equal(service.entries.length, 0);
+    assert.equal(host.instance.current, null);
+    assert.equal(Object.keys(service.pendingHosts).length, 0);
+    service.scheduleExpiry();
+    assert.equal(service.expiry.running, false);
+});
+
+test("external publishers get a bounded lifetime while plugin lifetime follows unload", () => {
+    const service = registry();
+    service.publish("external", "job", { title: "Job", duration: 0 }, true);
+    service.publish("plugin", "job", { title: "Job", duration: 0 });
+    assert.ok(service.entries[0].expiresAt > 1000);
+    assert.equal(service.entries[1].expiresAt, 0);
+    for (const ttl of [-1, Infinity, "2000", 86400001])
+        assert.equal(service.publish("external", "bad", { title: "Bad", persistent: true, ttl }, true), false);
+});
+
+test("disabling island notifications releases the current popup back to its existing timer", () => {
+    const host = session(registry());
+    let restarts = 0;
+    const wrapper = { seq: 1, summary: "Message", popup: true, urgency: 1, timer: { interval: 1000, stop() {}, restart() { restarts++; } } };
+    host.instance.enqueueNotification(wrapper);
+    host.instance.notificationsEnabled = false;
+    host.instance.reconfigure();
+    assert.equal(wrapper.popup, true);
+    assert.equal(restarts, 1);
+    assert.equal(host.instance.current, null);
+    assert.equal(host.timeout.running, false);
+});
+
+test("silent updates do not prevent an interrupted preview from resuming", () => {
+    const service = registry();
+    const host = session(service);
+    service.registerSession(host.instance);
+    service.publish("download", "job", { title: "Download", persistent: true });
+    service.publish("download", "job", { title: "Halfway", persistent: true });
+    host.instance.enqueueSystem("volume", 2200);
+    host.instance.finishCurrent(host.instance.current);
+    host.flush();
+    assert.equal(host.instance.current.source, "download");
+    assert.equal(host.instance.current.title, "Halfway");
+});
+
+test("replacement notifications keep their popup timers held by the session", () => {
+    const host = session(registry());
+    const timer = { interval: 1000, running: true, stop() { this.running = false; } };
+    const wrapper = { seq: 1, summary: "Message", popup: true, urgency: 1, timer };
+    host.instance.enqueueNotification(wrapper);
+    host.flush();
+    timer.running = true;
+    host.instance.refreshNotification(wrapper);
+    assert.equal(timer.running, false);
+    timer.running = true;
+    host.flush();
+    assert.equal(timer.running, false);
+});
+
+
+test("silent updates retain slot order and visibility even for simultaneous publications", () => {
+    for (const secondTime of [1000, 1100]) {
+        let entries = activities.upsert([], entry("timer", "one", {duration: 0}), 1000);
+        entries = activities.upsert(entries, entry("transfer", "two", {duration: 0}, secondTime), secondTime);
+        entries = activities.upsert(entries, entry("timer", "one", {duration: 0, value: "0:02"}, 2000), 2000);
+        assert.equal(activities.stableEntries(entries, "screen", "bar", [], {}, 1)[0].source, "timer");
+        assert.equal(entries.find(item => item.source === "timer").value, "0:02");
+        entries = activities.upsert(entries, entry("transfer", "two", {duration: 0, priority: 10}, 2100), 2100);
+        assert.equal(activities.stableEntries(entries, "screen", "bar", [], {}, 1)[0].source, "transfer");
+    }
+});
+
+test("action availability is enforced for both button and click dispatch", () => {
+    const service = registry();
+    for (const state of [{enabled: false}, {pending: true}, {enabled: true, pending: false}]) {
+        service.publish("timer", "one", {title: "Timer", duration: 0, clickAction: "pause", actions: [{id: "pause", label: "Pause", role: "primary", ...state}]});
+        assert.equal(service.invoke("timer", "one", "pause"), state.enabled !== false && !state.pending);
+    }
+    const payload = entry("timer", "one", {value: "x".repeat(200), status: "x".repeat(500), actions: [{id: "cancel", label: "Cancel", role: "destructive"}]});
+    assert.equal(payload.value.length, 128);
+    assert.equal(payload.status.length, 256);
+    assert.equal(payload.actions[0].role, "destructive");
+});
+
+
+test("IPC payloads share the CLI's 64 KiB UTF-8 boundary", () => {
+    for (const [text, count] of [["x", 65536], ["é", 32768], ["界", 21845], ["😀", 16384]]) {
+        assert.equal(activities.validPayloadSize(text.repeat(count)), true);
+        assert.equal(activities.validPayloadSize(text.repeat(count + 1)), false);
+    }
 });

@@ -12,6 +12,7 @@ QtObject {
     required property string barId
     property bool enabled: true
     property bool notificationsEnabled: true
+    property bool systemsEnabled: true
     property bool blocked: false
     property bool held: false
     property var excludedSources: []
@@ -28,6 +29,10 @@ QtObject {
     signal openRequested(var entry)
 
     function accepts(entry) {
+        if (entry.kind === "system")
+            return systemsEnabled;
+        if (entry.kind === "notification")
+            return notificationsEnabled;
         return enabled && Activities.matches(entry, screenName, barId, excludedSources);
     }
 
@@ -41,10 +46,12 @@ QtObject {
     }
 
     function enqueue(entry) {
-        if (!accepts(entry))
-            return;
+        if (!accepts(entry) || !canEnqueue(entry))
+            return false;
         if (!entry.durationSpecified)
             entry = Object.assign({}, entry, {duration: defaultDuration});
+        if (entry.kind === "notification")
+            holdNotification(entry);
         if (Activities.identity(current) === Activities.identity(entry)) {
             current = entry.restartPreview ? entry : Object.assign({}, entry, {duration: current.duration});
             if (entry.announce && entry.restartPreview) {
@@ -52,20 +59,20 @@ QtObject {
                 deadline = 0;
                 syncTimer();
             }
-            return;
+            return true;
         }
         queue = Activities.enqueue(queue, entry);
         if (shouldPreempt(entry))
             suspendCurrent();
         advance();
+        return true;
     }
 
     function enqueueSystem(activityId, duration) {
-        if (!enabled || !Activities.validId(activityId))
+        if (!Activities.validId(activityId))
             return false;
         const entry = Activities.normalize("system", activityId, {
             title: activityId,
-            category: "system",
             priorityClass: "high",
             preemption: "higher",
             duration: duration
@@ -74,59 +81,41 @@ QtObject {
             return false;
         entry.kind = "system";
         entry.systemActivity = activityId;
-        entry.durationSpecified = true;
-        if (Activities.identity(current) === Activities.identity(entry)) {
-            current = entry;
-            remaining = entry.duration;
-            deadline = 0;
-            syncTimer();
-            return true;
-        }
-        if (!contains(entry) && queue.length >= 64)
-            return false;
-        queue = Activities.enqueue(queue, entry);
-        if (shouldPreempt(entry))
-            suspendCurrent();
-        advance();
-        return true;
+        entry.restartPreview = true;
+        return enqueue(entry);
     }
 
     function shouldPreempt(entry) {
-        return !!current && entry.preemption === "higher" && entry.priority > current.priority;
+        return !!current && (!blocked || entry.priorityClass === "critical") && queue.length < 64 && entry.preemption === "higher" && entry.priority > current.priority;
     }
 
     function suspendCurrent() {
         if (!current)
             return;
         const suspended = Object.assign({}, current, {
-            duration: Math.max(1, deadline ? deadline - Date.now() : remaining),
+            duration: current.duration <= 0 ? 0 : Math.max(1, deadline ? deadline - Date.now() : remaining),
             durationSpecified: true,
-            resumed: true
+            resumed: true,
+            announce: true
         });
-        timeout.stop();
-        deadline = 0;
-        remaining = 0;
-        current = null;
         queue = Activities.enqueue(queue, suspended);
+        takeCurrent();
     }
 
     function enqueueNotification(wrapper) {
-        if (!notificationsEnabled || !wrapper || contains({source: "notifications", id: String(wrapper.seq)}))
+        if (!wrapper || contains({source: "notifications", id: String(wrapper.seq)}))
             return;
-        const duration = wrapper.timer?.interval ?? 5000;
         const critical = wrapper.urgency === NotificationUrgency.Critical;
-        const entry = {source: "notifications", id: String(wrapper.seq), kind: "notification", wrapper: wrapper, title: wrapper.summary, duration: duration, priorityClass: critical ? "critical" : "normal", priority: critical ? 100 : 0, preemption: critical ? "higher" : "never", announce: true};
-        if (queue.length >= 64)
-            return;
-        wrapper.timer?.stop();
-        queue = Activities.enqueue(queue, entry);
-        if (shouldPreempt(entry))
-            suspendCurrent();
-        advance();
+        const entry = {source: "notifications", id: String(wrapper.seq), kind: "notification", wrapper: wrapper, title: wrapper.summary, duration: wrapper.timer?.interval ?? 5000, durationSpecified: true, priorityClass: critical ? "critical" : "normal", priority: critical ? 100 : 0, preemption: critical ? "higher" : "never", announce: true};
+        enqueue(entry);
+    }
+
+    function holdNotification(entry) {
+        entry.wrapper?.timer?.stop();
         // NotificationService starts the wrapper timer after emitting its visible-list update.
         Qt.callLater(() => {
             if (root.contains(entry))
-                wrapper.timer?.stop();
+                entry.wrapper?.timer?.stop();
         });
     }
 
@@ -150,14 +139,9 @@ QtObject {
     }
 
     function refreshNotification(wrapper) {
-        const duration = wrapper?.timer?.interval ?? 5000;
-        queue = queue.map(entry => entry.kind === "notification" && entry.wrapper === wrapper ? Object.assign({}, entry, {duration: duration}) : entry);
-        if (current?.kind !== "notification" || current.wrapper !== wrapper)
-            return;
-        current = Object.assign({}, current, {duration: duration});
-        remaining = duration;
-        deadline = 0;
-        syncTimer();
+        const entry = [current].concat(queue).find(entry => entry?.kind === "notification" && entry.wrapper === wrapper);
+        if (entry)
+            enqueue(Object.assign({}, entry, {duration: wrapper.timer?.interval ?? 5000, restartPreview: true}));
     }
 
     function syncTimer() {
@@ -177,14 +161,19 @@ QtObject {
         timeout.start();
     }
 
+    function takeCurrent() {
+        const previous = current;
+        timeout.stop();
+        deadline = 0;
+        remaining = 0;
+        current = null;
+        return previous;
+    }
+
     function finishCurrent(expected) {
         if (!current || (expected && Activities.identity(expected) !== Activities.identity(current)))
             return false;
-        const finished = current;
-        timeout.stop();
-        deadline = 0;
-        current = null;
-        remaining = 0;
+        const finished = takeCurrent();
         if (finished.kind === "notification") {
             if (finished.wrapper)
                 finished.wrapper.popup = false;
@@ -205,21 +194,25 @@ QtObject {
         if (!registered)
             return;
         for (const entry of queue.slice()) {
-            if (entry.kind === "notification" && !notificationsEnabled) {
-                queue = queue.filter(item => item !== entry);
-                if (entry.wrapper?.popup && entry.wrapper.timer?.interval > 0)
-                    entry.wrapper.timer.restart();
+            if (accepts(entry))
                 continue;
-            }
-            if (entry.kind !== "notification" && !accepts(entry)) {
-                queue = queue.filter(item => item !== entry);
-                IslandActivityService.acknowledge(entry, hostKey);
-            }
+            queue = queue.filter(item => item !== entry);
+            release(entry);
         }
-        if (current && ((current.kind === "notification" && !notificationsEnabled) || (current.kind !== "notification" && !accepts(current))))
-            finishCurrent(current);
+        if (current && !accepts(current)) {
+            release(takeCurrent());
+        }
         IslandActivityService.seedSession(root);
         advance();
+    }
+
+    function release(entry) {
+        if (entry.kind === "notification") {
+            if (entry.wrapper?.popup && entry.wrapper.timer?.interval > 0)
+                entry.wrapper.timer.restart();
+        } else if (entry.kind === "activity") {
+            IslandActivityService.acknowledge(entry, hostKey);
+        }
     }
 
     onBlockedChanged: {
@@ -230,6 +223,7 @@ QtObject {
     onEnabledChanged: reconfigure()
     onExcludedSourcesChanged: reconfigure()
     onNotificationsEnabledChanged: reconfigure()
+    onSystemsEnabledChanged: reconfigure()
 
     property Timer timeout: Timer {
         onTriggered: root.finishCurrent(root.current)
@@ -241,10 +235,8 @@ QtObject {
     }
     Component.onDestruction: {
         registered = false;
-        for (const entry of queue.concat(current ? [current] : [])) {
-            if (entry.kind === "notification" && entry.wrapper?.popup && entry.wrapper.timer?.interval > 0)
-                entry.wrapper.timer.restart();
-        }
+        for (const entry of queue.concat(current ? [current] : []))
+            release(entry);
         IslandActivityService.unregisterSession(root);
     }
 }

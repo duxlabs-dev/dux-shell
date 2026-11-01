@@ -1,5 +1,8 @@
 .pragma library
 
+var IPC_ACTIVITY_TTL = 8 * 60 * 60 * 1000;
+var MAX_ACTIVITY_TTL = 24 * 60 * 60 * 1000;
+
 var CLICK_ACTIVITIES = ["live", "home", "media", "clipboard", "controlcenter", "notificationcenter", "weather", "launcher", "wallpaper"];
 var HOVER_ACTIVITIES = ["none", "live", "home", "media", "controlcenter", "notificationcenter", "weather"];
 
@@ -52,6 +55,9 @@ function normalize(source, id, payload, now) {
     if (typeof duration !== "number" || !isFinite(duration) || duration < 0 || duration > 3600000)
         return null;
     const persistent = payload.persistent === true || duration === 0;
+    const ttl = payload.ttl === undefined ? 0 : payload.ttl;
+    if (typeof ttl !== "number" || !isFinite(ttl) || ttl < 0 || ttl > MAX_ACTIVITY_TTL)
+        return null;
     const position = ["left", "center", "right"].indexOf(payload.position) >= 0 ? payload.position : payload.category === "status" ? "right" : "left";
     return {
         source: source,
@@ -59,6 +65,7 @@ function normalize(source, id, payload, now) {
         title: title,
         compact: payload.compact === "icon" ? "icon" : "label",
         persistent: persistent,
+        dismissible: payload.dismissible === true,
         position: position,
         stableCompact: payload.stableCompact === "label" ? "label" : "icon",
         duration: duration,
@@ -70,6 +77,8 @@ function normalize(source, id, payload, now) {
         clickMethod: validId(payload.clickMethod) ? payload.clickMethod : "",
         subtitle: text(payload.subtitle, 512),
         body: text(payload.body, 4096),
+        value: text(payload.value, 128),
+        status: text(payload.status, 256),
         icon: text(payload.icon, 128) || "notifications",
         iconAnimation: ["wiggle", "pulse", "spin"].indexOf(payload.iconAnimation) >= 0 ? payload.iconAnimation : "",
         image: text(payload.image, 2048),
@@ -84,8 +93,9 @@ function normalize(source, id, payload, now) {
         preemption: payload.preemption === "higher" ? "higher" : "never",
         screen: text(payload.screen, 128),
         barId: text(payload.barId, 128),
-        actions: Array.isArray(payload.actions) ? payload.actions.filter(action => action && validId(action.id) && typeof action.label === "string" && action.label.length > 0).slice(0, 3).map(action => ({id: action.id, label: text(action.label, 64)})) : [],
-        expiresAt: persistent ? 0 : now + duration,
+        actions: Array.isArray(payload.actions) ? payload.actions.filter(action => action && validId(action.id) && typeof action.label === "string" && action.label.length > 0).slice(0, 3).map(action => ({id: action.id, label: text(action.label, 64), role: ["primary", "destructive"].indexOf(action.role) >= 0 ? action.role : "secondary", enabled: action.enabled !== false, pending: action.pending === true})) : [],
+        ttl: ttl,
+        expiresAt: persistent ? (ttl > 0 ? now + ttl : 0) : now + duration,
         updatedAt: now
     };
 }
@@ -110,7 +120,7 @@ function stableEntries(entries, screen, barId, excludedSources, overrides, limit
             clickAction: clickOverride ? "" : entry.clickAction,
             clickTarget: clickOverride ? "" : entry.clickTarget
         });
-    }).sort((a, b) => b.priority - a.priority || a.updatedAt - b.updatedAt).slice(0, Math.max(0, Math.min(6, limit)));
+    }).sort((a, b) => b.priority - a.priority || (a.createdAt ?? a.updatedAt) - (b.createdAt ?? b.updatedAt) || (a.createdOrder ?? 0) - (b.createdOrder ?? 0)).slice(0, Math.max(0, Math.min(6, limit)));
 }
 
 function enqueue(queue, entry) {
@@ -130,7 +140,10 @@ function nextEvent(queue) {
 }
 
 function upsert(entries, entry, now) {
-    const retained = entries.filter(item => (!item.expiresAt || item.expiresAt > now) && !(item.source === entry.source && item.id === entry.id));
+    const previous = entries.find(item => item.source === entry.source && item.id === entry.id && (!item.expiresAt || item.expiresAt > now));
+    entry.createdAt = previous?.createdAt ?? previous?.updatedAt ?? now;
+    entry.createdOrder = previous?.createdOrder ?? entries.reduce((order, item) => Math.max(order, item.createdOrder ?? 0), 0) + 1;
+    const retained = entries.filter(item => (!item.expiresAt || item.expiresAt > now) && item !== previous);
     if (retained.length >= 64)
         return null;
     return retained.concat([entry]);
@@ -152,4 +165,31 @@ function notificationTitle(template, info) {
 
 function idleActivity(mediaAvailable, mediaAlwaysVisible) {
     return "home";
+}
+
+function canInvoke(entry, action) {
+    if (!entry)
+        return false;
+    const button = entry.actions.find(item => item.id === action);
+    if (button)
+        return button.enabled !== false && !button.pending;
+    return entry.clickAction === action;
+}
+
+
+function validPayloadSize(payload) {
+    const limit = 64 * 1024;
+    let bytes = 0;
+    for (let i = 0; i < payload.length; i++) {
+        const code = payload.charCodeAt(i);
+        if (code >= 0xd800 && code <= 0xdbff && i + 1 < payload.length && payload.charCodeAt(i + 1) >= 0xdc00 && payload.charCodeAt(i + 1) <= 0xdfff) {
+            bytes += 4;
+            i++;
+        } else {
+            bytes += code < 0x80 ? 1 : code < 0x800 ? 2 : 3;
+        }
+        if (bytes > limit)
+            return false;
+    }
+    return true;
 }

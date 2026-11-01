@@ -8,10 +8,10 @@ QtObject {
     id: root
 
     required property IslandController controller
-    property IslandActivitySession presentationSession: null
+    required property IslandActivitySession presentationSession
 
     readonly property string activeSystemEventKey: presentationSession?.current?.kind === "system" ? `${presentationSession.current.source}:${presentationSession.current.id}:${presentationSession.current.updatedAt}` : ""
-    onActiveSystemEventKeyChanged: syncQueuedSystemActivity()
+    onActiveSystemEventKeyChanged: syncPresentation()
 
     property string kind: "volume"
     // Off: system levels and state changes keep their OSDs and only the face's own controls open this activity.
@@ -129,25 +129,20 @@ QtObject {
         open(activityKind);
     }
 
-    function syncQueuedSystemActivity() {
+    function syncPresentation() {
         const entry = activeSystemEventKey ? presentationSession?.current : null;
         if (entry) {
             kind = entry.systemActivity;
-            if (!controller.presentQueuedSystemActivity(kind))
+            if (!controller.presentSystemActivity(kind))
                 presentationSession.finishCurrent(entry);
             return;
         }
-        if (controller.queuedSystemActivityActive)
-            controller.finishQueuedSystemActivity();
+        if (controller.systemActivityActive)
+            controller.completeSystemActivity();
     }
 
     function open(activityKind) {
-        if (presentationSession?.enabled) {
-            presentationSession.enqueueSystem(activityKind, controller.transientTimeout);
-            return;
-        }
-        if (controller.requestSystemActivity(activityKind))
-            kind = activityKind;
+        presentationSession.enqueueSystem(activityKind, controller.transientTimeout);
     }
 
     function setRatio(nextRatio) {

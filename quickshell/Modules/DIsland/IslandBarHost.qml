@@ -484,13 +484,14 @@ Item {
         screenName: root.screen?.name ?? ""
         barId: root.barId
         enabled: root.setting("islandActivitiesEnabled") && root.barConfig?.visible !== false
+        systemsEnabled: root.barConfig?.visible !== false
         notificationsEnabled: !root.setting("islandNotificationPopups") && root.barConfig?.visible !== false
         excludedSources: root.setting("islandExcludedSources")
         sourceOverrides: root.setting("islandActivitySourceOverrides")
         slotLimit: root.setting("islandActivitySlotLimit")
         defaultDuration: root.setting("islandActivityDuration")
-        blocked: controller.inputSuspended || (controller.systemActivityActive && !controller.queuedSystemActivityActive) || (controller.expanded && !controller.liveActive && !controller.notificationActive)
-        held: controller.inputSuspended || (controller.systemActivityActive && (!controller.queuedSystemActivityActive || controller.timeoutSuspended)) || (controller.notificationActive && controller.pointerInside) || (controller.expanded && !!controller.selectedLiveEntry)
+        blocked: controller.inputSuspended || (controller.expanded && !controller.notificationActive)
+        held: controller.inputSuspended || (controller.systemActivityActive && controller.timeoutSuspended) || (controller.notificationActive && controller.pointerInside) || (controller.expanded && controller.liveActive)
         onOpenRequested: entry => controller.openStableEntry(entry)
     }
 
