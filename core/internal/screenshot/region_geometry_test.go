@@ -163,6 +163,33 @@ func TestSelectedLogicalGeometryPreSelection(t *testing.T) {
 	}
 }
 
+func TestLogicalRegionFromDevicePixels(t *testing.T) {
+	out := &WaylandOutput{
+		name:            "eDP-1",
+		x:               0,
+		y:               0,
+		fractionalScale: 2.0,
+	}
+
+	reg := logicalRegionFromDevicePixels(out, 3155, 50, 640, 442)
+	if reg.X != 1578 || reg.Y != 25 || reg.Width != 320 || reg.Height != 221 {
+		t.Fatalf("logicalRegionFromDevicePixels() = (%d, %d, %d, %d), want (1578, 25, 320, 221)",
+			reg.X, reg.Y, reg.Width, reg.Height)
+	}
+	if reg.Output != "eDP-1" {
+		t.Fatalf("Output = %q, want %q", reg.Output, "eDP-1")
+	}
+}
+
+func TestRegionCaptureScale(t *testing.T) {
+	if got := regionCaptureScale(CompositorNiri, 2); got != 1 {
+		t.Errorf("protocol scale = %v, want 1", got)
+	}
+	if got := regionCaptureScale(CompositorMango, 2); got != 2 {
+		t.Errorf("Mango scale = %v, want 2", got)
+	}
+}
+
 func TestWaylandOutputBoundsScaled(t *testing.T) {
 	// DetectCompositor caches its result, so inside a live Hyprland session the test would exec hyprctl
 	prev := detectedCompositor
