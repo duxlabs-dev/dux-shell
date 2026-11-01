@@ -229,6 +229,32 @@ func TestMergeRefusesWhenConfigInvalid(t *testing.T) {
 	}
 }
 
+func TestMergeRefusesWhenConfigUnparsable(t *testing.T) {
+	fakeNiriValidate(t)
+	dir := seedMergeDir(t)
+	provider := NewNiriProvider(dir)
+	if err := os.WriteFile(filepath.Join(dir, "config.kdl"), []byte("binds {\n    Mod+Q { quit; }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(provider.GetOverridePath(), []byte(mergeTestBinds), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := provider.MergeMissingDefaults("foot"); err == nil {
+		t.Fatal("MergeMissingDefaults must fail when config.kdl cannot be parsed")
+	}
+	written, err := os.ReadFile(provider.GetOverridePath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(written) != mergeTestBinds {
+		t.Fatalf("binds.kdl must stay untouched, got:\n%s", written)
+	}
+	if _, err := os.Stat(provider.bindsBackup()); !os.IsNotExist(err) {
+		t.Fatalf("a refused merge must not leave a backup, %v", err)
+	}
+}
+
 func TestUndoRestoresPreMergeFile(t *testing.T) {
 	fakeNiriValidate(t)
 	dir := seedMergeDir(t)

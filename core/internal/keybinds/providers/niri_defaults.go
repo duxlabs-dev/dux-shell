@@ -28,7 +28,10 @@ func (n *NiriProvider) MergeMissingDefaults(terminalCommand string) ([]string, e
 		return nil, err
 	}
 
-	merged, changed := n.mergeBinds(data, stock)
+	merged, changed, err := n.mergeBinds(data, stock)
+	if err != nil {
+		return nil, err
+	}
 	if len(changed) == 0 {
 		return nil, nil
 	}
@@ -97,7 +100,10 @@ func (n *NiriProvider) undoSafe(old, current []byte, terminalCommand string) boo
 	oldSet := bindSet(oldBinds)
 	curSet := bindSet(curBinds)
 	stockSet := bindSet(stock)
-	want := n.missingDefaults(old, stock)
+	want, err := n.missingDefaults(old, stock)
+	if err != nil {
+		return false
+	}
 
 	for key, b := range oldSet {
 		c, ok := curSet[key]
@@ -124,8 +130,11 @@ func (n *NiriProvider) undoSafe(old, current []byte, terminalCommand string) boo
 }
 
 // missingDefaults: the defaults a merge would add to data, stock keys bound nowhere yet.
-func (n *NiriProvider) missingDefaults(data []byte, stock []*overrideBind) map[string]*overrideBind {
-	bound := n.boundKeys(data)
+func (n *NiriProvider) missingDefaults(data []byte, stock []*overrideBind) (map[string]*overrideBind, error) {
+	bound, err := n.boundKeys(data)
+	if err != nil {
+		return nil, err
+	}
 	want := map[string]*overrideBind{}
 	for _, b := range stock {
 		key := normalizeNiriBindKey(b.Key)
@@ -133,7 +142,7 @@ func (n *NiriProvider) missingDefaults(data []byte, stock []*overrideBind) map[s
 			want[key] = b
 		}
 	}
-	return want
+	return want, nil
 }
 
 func bindSet(binds []*overrideBind) map[string]*overrideBind {
@@ -177,8 +186,11 @@ func (n *NiriProvider) stockDefaults(terminalCommand string) ([]*overrideBind, e
 // binds node, after upgrading its superseded stock lines. Empty data yields the whole
 // stock file; every other existing line is kept. It returns the keys it changed:
 // the upgraded ones, then the added ones.
-func (n *NiriProvider) mergeBinds(data []byte, stock []*overrideBind) (string, []string) {
-	skip := n.boundKeys(data)
+func (n *NiriProvider) mergeBinds(data []byte, stock []*overrideBind) (string, []string, error) {
+	skip, err := n.boundKeys(data)
+	if err != nil {
+		return "", nil, err
+	}
 
 	content, upgraded := n.upgradeSuperseded(string(data), stock)
 	var lines, added []string
@@ -193,36 +205,39 @@ func (n *NiriProvider) mergeBinds(data []byte, stock []*overrideBind) (string, [
 	}
 	changed := append(upgraded, added...)
 	if len(added) == 0 {
-		return content, changed
+		return content, changed, nil
 	}
 	body := strings.Join(lines, "\n") + "\n"
 
 	if len(content) == 0 {
-		return "binds {\n" + body + "}\n", changed
+		return "binds {\n" + body + "}\n", changed, nil
 	}
 	if merged, ok := insertBindsLines(content, body); ok {
-		return merged, changed
+		return merged, changed, nil
 	}
 	// No binds node to extend: a fresh one carries the missing defaults.
-	return strings.TrimRight(content, "\n") + "\n\nbinds {\n" + body + "}\n", changed
+	return strings.TrimRight(content, "\n") + "\n\nbinds {\n" + body + "}\n", changed, nil
 }
 
 // boundKeys collects the keys already bound in data and in the config.kdl include
 // chain, so a default lands nowhere a bind of the user's already lives.
-func (n *NiriProvider) boundKeys(data []byte) map[string]bool {
+func (n *NiriProvider) boundKeys(data []byte) (map[string]bool, error) {
+	binds, err := n.bindsFromData(data)
+	if err != nil {
+		return nil, err
+	}
 	skip := map[string]bool{}
-	if binds, err := n.bindsFromData(data); err == nil {
-		for _, bind := range binds {
-			skip[normalizeNiriBindKey(bind.Key)] = true
-		}
+	for _, bind := range binds {
+		skip[normalizeNiriBindKey(bind.Key)] = true
 	}
 	parser := NewNiriParser(n.configDir)
-	if _, err := parser.Parse(); err == nil {
-		for key := range parser.configBindKeys {
-			skip[key] = true
-		}
+	if _, err := parser.Parse(); err != nil {
+		return nil, err
 	}
-	return skip
+	for key := range parser.configBindKeys {
+		skip[key] = true
+	}
+	return skip, nil
 }
 
 // insertBindsLines returns content with body added just before the brace that
