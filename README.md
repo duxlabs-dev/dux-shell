@@ -131,6 +131,16 @@ dms plugins restore ~/plugins.lock.json
 
 [Full CLI and IPC documentation](https://duxlabs.dev/docs/dms/keybinds-ipc)
 
+### niri keybinds
+
+On niri, each `dms run` merges the embedded default binds into `~/.config/niri/dms/binds.kdl`: only keys bound nowhere (neither in that file nor in `config.kdl` and its includes) are added, existing lines are kept as they are. Before the merge the previous file is copied to `binds.kdl.dms-bak` next to it.
+
+```bash
+dms keybinds undo-defaults niri   # put binds.kdl back from binds.kdl.dms-bak, then drop the backup
+```
+
+The undo refuses when there is no backup or when the file changed since the merge.
+
 ## Documentation
 
 - **Website:** [duxlabs.dev](https://duxlabs.dev)

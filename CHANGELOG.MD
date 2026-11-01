@@ -8,6 +8,7 @@ This file is more of a quick reference so I know what to account for before next
 - -git packages (AUR dms-shell-git, fedora, opensuse, void, debian, ubuntu) no longer install /usr/share/quickshell/dms; dms greeter install falls back to the embedded UI when the greeter package is present
 - ping over the socket returns {"pong":true} instead of "pong"
 - startup: embedded UI resolution is keyed by build-time .dankrev (no per-start content hashing)
+- niri keybinds: each boot merges the embedded default binds still bound nowhere into ~/.config/niri/dms/binds.kdl, previous file kept in binds.kdl.dms-bak; `dms keybinds undo-defaults niri` restores it unless the file changed since
 
 # 1.5.0
 - Overhauled shadows
