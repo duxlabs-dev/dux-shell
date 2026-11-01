@@ -79,7 +79,7 @@ var search = [
     { key: "input.hideIdle", title: "Hide cursor when idle", words: ["hide", "cursor", "idle", "inactive", "timeout"] }
 ];
 
-// A wrong value can leave the user unable to type: the section asks « keep? » and goes back after 15 s.
+// A wrong value can leave the user unable to type: the section asks "keep?" and goes back after 15 s.
 var risky = ["input.layouts", "input.xkbOptions", "input.variants", "input.model", "input.keymapFile"];
 
 // The first six letters of the first layout, as the Keybinds board draws them.

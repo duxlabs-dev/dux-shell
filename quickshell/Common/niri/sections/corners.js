@@ -51,7 +51,7 @@ function toKdl(state) {
         }];
 }
 
-// DMS writes `{corners: []}` for « inherit », niri reads it the same way.
+// DMS writes `{corners: []}` for "inherit", niri reads it the same way.
 function overrides(niriOverride) {
     return !!niriOverride && (niriOverride.off === true || (niriOverride.corners || []).length > 0);
 }

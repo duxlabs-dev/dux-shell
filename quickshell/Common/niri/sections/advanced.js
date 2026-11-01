@@ -18,7 +18,7 @@ Object.keys(defaults).forEach(key => stored[key] = "page");
 // DMS's own reload toast, not a niri key: it stays out of defaults and toKdl.
 stored["advanced.configToast"] = "SessionData:showConfigReloadToast";
 
-// Each can cut the keyboard or the screen: the section asks « keep? » and goes back after 15 s.
+// Each can cut the keyboard or the screen: the section asks "keep?" and goes back after 15 s.
 var risky = Object.keys(defaults);
 
 var search = [
