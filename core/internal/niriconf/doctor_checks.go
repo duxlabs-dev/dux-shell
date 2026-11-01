@@ -40,7 +40,7 @@ func normalizeKey(name string) string {
 	return strings.Join(append(mods, parts[len(parts)-1]), "+")
 }
 
-// overrides reports what the mockup shows: binds hidden by a later file, options set twice
+// overrides reports binds hidden by a later file, options set twice
 // in one file, and blocks replaced whole. A plain option overridden by a later file is how
 // DMS works, so it only counts in FileState.Overrides.
 func (d *doctor) overrides() {
