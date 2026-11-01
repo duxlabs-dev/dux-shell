@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Window
 import Quickshell
+import Quickshell.Io
 import qs.Common
 import qs.Modals.Common
 import qs.Modules.Settings
@@ -138,6 +139,38 @@ Item {
         function onBindSaveCompleted(success) {
             if (!success)
                 root.writeNext();
+        }
+    }
+
+    readonly property bool addingDefaults: addDefaultsProcess.running
+
+    function addDefaults() {
+        if (!addDefaultsProcess.running)
+            addDefaultsProcess.running = true;
+    }
+
+    Process {
+        id: addDefaultsProcess
+        running: false
+        command: ["dms", "keybinds", "add-defaults", "niri"]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const found = text.match(/\d+/);
+                if (!found)
+                    return;
+                const added = Number(found[0]);
+                if (added === 0)
+                    ToastService.showInfo(I18n.tr("Already in place", "niri keybinds pack, nothing to change"));
+                else
+                    ToastService.showInfo(added === 1 ? I18n.tr("Added %1 shortcut", "niri keybinds add default shortcuts; singular, %1 is 1").arg(1) : I18n.tr("Added %1 shortcuts", "niri keybinds add default shortcuts, %1 is a count").arg(added));
+                KeybindsService.loadBinds(false);
+            }
+        }
+
+        onExited: exitCode => {
+            if (exitCode !== 0)
+                ToastService.showError(I18n.tr("Could not add the default shortcuts", "niri keybinds add default shortcuts error"));
         }
     }
 

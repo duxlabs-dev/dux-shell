@@ -7,7 +7,7 @@ import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Settings.Widgets
 
-// The ⋯ tools: packs, export, duplicates, origin filter, cheatsheet, unused
+// The ⋯ tools: packs, export, duplicates, default shortcuts, origin filter, cheatsheet, unused
 Column {
     id: root
 
@@ -117,6 +117,14 @@ Column {
         count: root.doubleKeys.length > 0 ? String(root.doubleKeys.length) : ""
         active: root.doubleKeys.length > 0 && !KeybindsService.readOnly
         onClicked: root.pane?.cleanDoubles()
+    }
+
+    MenuEntry {
+        icon: "library_add"
+        text: I18n.tr("Add default shortcuts", "niri keybinds, bind the DMS default shortcuts missing from the config")
+        trailing: ""
+        active: !KeybindsService.readOnly && !(root.pane?.addingDefaults ?? false)
+        onClicked: root.pane?.addDefaults()
     }
 
     MenuEntry {
