@@ -27,7 +27,7 @@ Rectangle {
     // Drop and active share the primary border: one strong color per screen at most.
     border.color: drop.containsDrag || root.active ? Theme.primary : Theme.outlineVariant
     Accessible.role: Accessible.Grouping
-    Accessible.name: I18n.tr("Workspace %1, %2 windows").arg(lane?.name || lane?.idx || "").arg(windows.length)
+    Accessible.name: windows.length === 1 ? I18n.tr("Workspace %1, %2 window", "niri page workspaces lane; singular, %2 is 1").arg(lane?.name || lane?.idx || "").arg(1) : I18n.tr("Workspace %1, %2 windows").arg(lane?.name || lane?.idx || "").arg(windows.length)
 
     DropArea {
         id: drop

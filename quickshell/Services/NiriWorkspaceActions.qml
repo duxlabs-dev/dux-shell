@@ -70,7 +70,7 @@ Singleton {
         }
         // The ids asked about are the ones closed: a window opened while the dialog is up stays.
         _pending = {
-            "title": I18n.tr("Close %1 windows on \"%2\"?", "close whole workspace confirmation, %1 is a count, %2 a workspace name").arg(ids.length).arg(focusedWorkspaceName()),
+            "title": ids.length === 1 ? I18n.tr("Close %1 window on \"%2\"?", "close whole workspace confirmation; singular, %1 is 1, %2 a workspace name").arg(1).arg(focusedWorkspaceName()) : I18n.tr("Close %1 windows on \"%2\"?", "close whole workspace confirmation, %1 is a count, %2 a workspace name").arg(ids.length).arg(focusedWorkspaceName()),
             "message": I18n.tr("This cannot be undone."),
             "confirmText": I18n.tr("Close all"),
             "cancelText": I18n.tr("Cancel"),

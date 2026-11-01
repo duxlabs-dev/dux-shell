@@ -30,7 +30,7 @@ Rectangle {
         if (reloadFailed)
             return I18n.tr("Reload failed", "niri health pill, niri refused the last config");
         if (errors)
-            return I18n.tr("%1 errors", "niri health pill, count of config errors").arg(errors);
+            return errors === 1 ? I18n.tr("%1 error", "niri health pill, count of config errors; singular, %1 is 1").arg(1) : I18n.tr("%1 errors", "niri health pill, count of config errors").arg(errors);
         if (warnings)
             return I18n.tr("%1 to check", "niri health pill, count of config warnings").arg(warnings);
         return I18n.tr("Healthy", "niri health pill, no config problem");

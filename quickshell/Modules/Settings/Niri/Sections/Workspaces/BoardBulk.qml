@@ -82,7 +82,7 @@ NiriCard {
             return;
         }
         board.moveWindows(p.ids, p.to);
-        done = I18n.tr("%1 windows moved").arg(p.ids.length);
+        done = p.ids.length === 1 ? I18n.tr("%1 window moved", "niri page bulk actions; singular, %1 is 1").arg(1) : I18n.tr("%1 windows moved").arg(p.ids.length);
     }
 
     function cancel() {
@@ -94,7 +94,7 @@ NiriCard {
         confirming = false;
         const ids = Bulk.plan("close", NiriService.windows, leftValue, null, null).ids;
         board.closeWindows(ids);
-        done = I18n.tr("Closed %1 windows").arg(ids.length);
+        done = ids.length === 1 ? I18n.tr("Closed %1 window", "niri page bulk actions; singular, %1 is 1").arg(1) : I18n.tr("Closed %1 windows").arg(ids.length);
     }
 
     component Pick: Column {
@@ -236,7 +236,7 @@ NiriCard {
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - x - yes.width - no.width - Theme.spacingS * 2
                 wrapMode: Text.WordWrap
-                text: I18n.tr("Close %1 %2 windows? No undo.").arg(root.closeCount).arg(root.leftValue)
+                text: root.closeCount === 1 ? I18n.tr("Close %1 %2 window? No undo.", "niri page bulk actions; singular, %1 is 1, %2 an app name").arg(1).arg(root.leftValue) : I18n.tr("Close %1 %2 windows? No undo.").arg(root.closeCount).arg(root.leftValue)
                 color: Theme.surfaceText
             }
 
