@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Red tile: it blew up -->
+  <rect x="81" y="118" width="168" height="168" rx="10" fill="#E2553F"/>
+  <path d="M153 124 L157 66 H173 L177 124 Z" fill="#B5301F"/>
+  <ellipse cx="165" cy="121" rx="36" ry="8" fill="#B5301F"/>
+  <ellipse cx="165" cy="98" rx="22" ry="6" fill="#9E2A1B"/>
+  <g transform="translate(165 40) scale(.82) translate(-165 -60)">
+  <g fill="#9E2A1B">
+    <circle cx="126" cy="64" r="25"/>
+    <circle cx="165" cy="48" r="32"/>
+    <circle cx="204" cy="64" r="25"/>
+    <circle cx="145" cy="78" r="21"/>
+    <circle cx="185" cy="78" r="21"/>
+  </g>
+  <g fill="#C2412B">
+    <circle cx="150" cy="40" r="13"/>
+    <circle cx="178" cy="34" r="10"/>
+    <circle cx="118" cy="56" r="9"/>
+    <circle cx="208" cy="55" r="9"/>
+  </g>
+  </g>
+  <rect x="156" y="158" width="18" height="74" rx="9" fill="#FFFFFF"/>
+  <circle cx="165" cy="255" r="11" fill="#FFFFFF"/>
+
+  <!-- Green tile: it feels sick -->
+  <rect x="263" y="118" width="168" height="168" rx="10" fill="#6DB33F"/>
+  <circle cx="347" cy="72" r="54" fill="#F6C21C" stroke="#D99A00" stroke-width="3"/>
+  <path d="M318 58 L334 68 L318 78 M376 58 L360 68 L376 78" fill="none" stroke="#1B1D22" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <ellipse cx="311" cy="88" rx="8" ry="5" fill="#E8A31A"/>
+  <ellipse cx="383" cy="88" rx="8" ry="5" fill="#E8A31A"/>
+  <path d="M327 96 Q347 86 367 96 L380 124 H314 Z" fill="#6DB33F"/>
+  <ellipse cx="347" cy="96" rx="20" ry="8" fill="#3F7A22"/>
+  <circle cx="303" cy="104" r="6" fill="#6DB33F"/>
+  <circle cx="394" cy="110" r="5" fill="#6DB33F"/>
+
+  <!-- Blue tile: the blue screen -->
+  <rect x="81" y="300" width="168" height="168" rx="10" fill="#2F7FD8"/>
+  <circle cx="138" cy="366" r="10" fill="#FFFFFF"/>
+  <circle cx="138" cy="404" r="10" fill="#FFFFFF"/>
+  <path d="M196 350 Q164 385 196 420" fill="none" stroke="#FFFFFF" stroke-width="13" stroke-linecap="round"/>
+
+  <!-- Yellow tile: it melts, still smiling -->
+  <path d="M273 300 H421 Q431 300 431 310 V440 Q431 458 418 462 Q404 466 404 480 Q404 494 390 494 Q376 494 376 478 Q376 464 360 466 Q340 468 336 486 Q332 500 314 498 Q296 496 298 478 Q300 464 284 462 Q263 458 263 440 V310 Q263 300 273 300 Z" fill="#F6C21C" stroke="#D99A00" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="322" cy="370" r="17" fill="#FFFFFF" stroke="#1B1D22" stroke-width="3"/>
+  <circle cx="372" cy="366" r="17" fill="#FFFFFF" stroke="#1B1D22" stroke-width="3"/>
+  <circle cx="327" cy="373" r="8" fill="#1B1D22"/>
+  <circle cx="377" cy="369" r="8" fill="#1B1D22"/>
+  <path d="M316 408 Q347 436 380 404" fill="none" stroke="#1B1D22" stroke-width="7" stroke-linecap="round"/>
+</svg>
