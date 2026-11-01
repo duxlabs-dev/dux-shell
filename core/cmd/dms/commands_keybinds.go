@@ -79,10 +79,18 @@ var keybindsKeymapCmd = &cobra.Command{
 	Run: runKeybindsKeymap,
 }
 
+var keybindsAddDefaultsCmd = &cobra.Command{
+	Use:   "add-defaults <provider>",
+	Short: "Add the DMS default binds whose keys are still free",
+	Long:  "Add to dms/binds.kdl every DMS default bind whose key is bound nowhere in the config. The previous file is kept beside it for undo-defaults.",
+	Args:  cobra.ExactArgs(1),
+	Run:   runKeybindsAddDefaults,
+}
+
 var keybindsUndoDefaultsCmd = &cobra.Command{
 	Use:   "undo-defaults <provider>",
-	Short: "Restore the binds file as it was before the boot merge of DMS defaults",
-	Long:  "Put dms/binds.kdl back as it was before the last boot added missing DMS default binds, from the backup kept beside it. Refuses once the file changed since.",
+	Short: "Restore the binds file as it was before add-defaults",
+	Long:  "Put dms/binds.kdl back as it was before the last add-defaults, from the backup kept beside it. Refuses once the file changed since.",
 	Args:  cobra.ExactArgs(1),
 	Run:   runKeybindsUndoDefaults,
 }
@@ -111,6 +119,7 @@ func init() {
 	keybindsCmd.AddCommand(keybindsRemoveCmd)
 	keybindsCmd.AddCommand(keybindsResetCmd)
 	keybindsCmd.AddCommand(keybindsKeymapCmd)
+	keybindsCmd.AddCommand(keybindsAddDefaultsCmd)
 	keybindsCmd.AddCommand(keybindsUndoDefaultsCmd)
 
 	keybinds.SetJSONProviderFactory(func(filePath string) (keybinds.Provider, error) {
@@ -265,6 +274,28 @@ func runKeybindsShow(cmd *cobra.Command, args []string) {
 		log.Fatalf("Error: %v", err)
 	}
 	printCheatSheet(provider)
+}
+
+func runKeybindsAddDefaults(_ *cobra.Command, args []string) {
+	provider, err := keybinds.GetDefaultRegistry().Get(args[0])
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+	niri, ok := provider.(*providers.NiriProvider)
+	if !ok {
+		log.Fatalf("Provider %s has no default binds to add", args[0])
+	}
+	added, err := niri.MergeMissingDefaults(defaultTerminalCommand())
+	if err != nil {
+		log.Fatalf("Failed to add the default binds: %v", err)
+	}
+	if len(added) == 0 {
+		fmt.Println("nothing to add")
+		return
+	}
+	for _, key := range added {
+		fmt.Println(key)
+	}
 }
 
 func runKeybindsUndoDefaults(_ *cobra.Command, args []string) {
