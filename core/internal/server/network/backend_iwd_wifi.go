@@ -41,6 +41,8 @@ func (b *IWDBackend) updateState() error {
 				b.state.NetworkStatus = StatusWiFi
 			} else {
 				b.state.NetworkStatus = StatusDisconnected
+				b.state.WiFiSSID = ""
+				b.state.WiFiSignal = 0
 			}
 			b.stateMutex.Unlock()
 		}
