@@ -184,6 +184,7 @@ DPopout {
             return;
         }
         __focusArmed = false;
+        editMode = false;
         contentLoader.item?.dismissOptions();
         if (openDeadline.running) {
             openDeadline.stop();
