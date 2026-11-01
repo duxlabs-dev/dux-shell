@@ -5,9 +5,7 @@ import qs.Common
 import qs.DCommon.Widgets
 import qs.Widgets
 
-// « input.kdl added »: the doctor posed a missing include by itself, through its own
-// path (backup, niri validate, Undo). It floats at the top of the page like the Keep
-// banner and goes away on its own.
+// Announces an include the doctor added on its own (with a backup and Undo); it hides itself like the Keep banner.
 Rectangle {
     id: root
 
