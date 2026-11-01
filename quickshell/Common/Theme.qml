@@ -232,7 +232,7 @@ Singleton {
             "errorText": getMatugenColorForMode(colorMode, "on_error"),
             "errorContainer": getMatugenColorForMode(colorMode, "error_container"),
             "errorContainerText": getMatugenColorForMode(colorMode, "on_error_container"),
-            "warning": colorMode === "light" ? "#B25E00" : "#FF9800",
+            "warning": "#FF9800",
             "info": "#2196F3",
             "success": "#4CAF50"
         };
@@ -470,8 +470,7 @@ Singleton {
 
     property color error: currentThemeData.error || "#F2B8B5"
     property color errorContainer: currentThemeData.errorContainer || getMatugenColor("error_container", blend(surfaceContainerHigh, error, 0.35))
-    // No stock theme but Monochrome defines warning; keep the fallback AA-readable on light surfaces (keep banner countdown).
-    property color warning: currentThemeData.warning || (isLightMode ? "#B25E00" : "#FF9800")
+    property color warning: currentThemeData.warning || "#FF9800"
     property color info: currentThemeData.info || "#2196F3"
     property color tempWarning: "#ff9933"
     property color tempDanger: "#ff5555"
