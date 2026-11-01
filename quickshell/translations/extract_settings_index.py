@@ -155,6 +155,7 @@ TAB_INDEX_MAP = {
     "BatteryTab.qml": 42,
     "MouseTouchpadTab.qml": 44,
     "KeyboardTab.qml": 45,
+    "NiriTab.qml": 68,
 }
 
 SIDEBAR_GATE_CONDITIONS = [
