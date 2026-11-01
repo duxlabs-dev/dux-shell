@@ -550,6 +550,8 @@ Singleton {
                     const error = comp.errorString();
                     log.error("component error", pluginId, surface, error);
                     _destroyComponents(Object.values(comps));
+                    // Qt caches the failure per URL, so the next attempt needs a new revision.
+                    _invalidatePluginComponents(pluginId);
                     _setLoadError(pluginId, {
                         title: error,
                         details: ""
@@ -912,8 +914,10 @@ Singleton {
 
     function _makeStartupCheckObject(pluginId, plugin) {
         const comp = Qt.createComponent(pluginComponentUrl(pluginId, plugin.startupCheckPath), Component.PreferSynchronous);
-        if (comp.status === Component.Error)
+        if (comp.status === Component.Error) {
+            _invalidatePluginComponents(pluginId);
             throw new Error(comp.errorString());
+        }
         return comp.createObject(root);
     }
 

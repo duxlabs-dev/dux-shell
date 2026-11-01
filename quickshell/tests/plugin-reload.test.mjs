@@ -23,15 +23,20 @@ function service({ enabled = true, type = "widget" } = {}) {
         pluginSurfaceKeys: ["widget", "desktop", "daemon", "launcher", "dash", "dashCard"],
         log: { error() {}, warn() {} },
         Paths: { toFileUrl: path => path.startsWith("file://") ? path : "file://" + path },
-        SettingsData: { getPluginSetting: () => enabled },
+        SettingsData: { getPluginSetting: () => enabled, setPluginSetting() {} },
         DMSService: { update: (id, callback) => requests.push(callback), installedPlugins: [] },
         ShellVersionService: { checkVersionRequirement: requirement => !requirement.startsWith(">=99"), getParsedShellVersion: () => ({}) },
         Component: { Error: 3, PreferSynchronous: 0 },
         I18n: { tr: text => ({ arg: value => text.replace("%1", value) }) },
         ToastService: { showError() {} },
+        // Like Qt's type loader, a URL keeps whatever it first compiled to, errors included.
         Qt: { createComponent(url) {
-            if (!compiled.has(url))
-                compiled.set(url, { value: files.get(url.split("?")[0]), createObject() { return this.value; }, destroy() { destroyed.push(url); } });
+            if (!compiled.has(url)) {
+                const value = files.get(url.split("?")[0]);
+                compiled.set(url, value instanceof Error
+                    ? { status: 3, errorString: () => value.message, destroy() {} }
+                    : { value, createObject() { return this.value; }, destroy() { destroyed.push(url); } });
+            }
             return compiled.get(url);
         } },
         pluginLoaded() {}, pluginUnloaded() {}, pluginListUpdated() {},
@@ -231,5 +236,26 @@ test("composite updates refresh every surface without creating daemons synchrono
         for (const key of ["pluginWidgetComponents", "pluginDesktopComponents", "pluginDaemonComponents", "pluginLauncherComponents", "pluginDashComponents", "pluginDashCardComponents"])
             assert.equal(context[key].fixture.value, value);
         assert.equal(context.pluginDaemonInstances.fixture, undefined);
+    }
+});
+
+test("enabling again after a failed load compiles the fixed files", () => {
+    const cases = [
+        ["Widget.qml", {}, "pluginWidgetComponents"],
+        ["Check.qml", { startupCheck: "./Check.qml" }, "pluginWidgetComponents"]
+    ];
+    for (const [file, extra, key] of cases) {
+        const { context, files, pending, manifest, failures } = service({ enabled: false });
+        Object.assign(manifest, extra);
+        context.forceRescanPlugin("fixture");
+        pending.shift()();
+        files.set("file:///plugins/fixture/" + file, new Error("Script unavailable"));
+        assert.equal(context.enablePlugin("fixture") && context.isPluginLoaded("fixture"), false, file);
+        assert.match(failures.at(-1), /Script unavailable/, file);
+        files.set("file:///plugins/fixture/Widget.qml", 30);
+        files.set("file:///plugins/fixture/Check.qml", { check: () => null, destroy() {} });
+        context.enablePlugin("fixture");
+        assert.equal(context.isPluginLoaded("fixture"), true, file);
+        assert.equal(context[key].fixture.value, 30, file);
     }
 });
