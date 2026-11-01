@@ -196,7 +196,7 @@ Column {
 
             StyledText {
                 anchors.verticalCenter: parent.verticalCenter
-                text: change.modelData.before || I18n.tr("free", "niri keybinds pack, the key had no shortcut")
+                text: change.modelData.before || I18n.tr("Free", "niri keybinds, a key with no shortcut")
                 font.strikeout: change.modelData.before !== ""
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.surfaceVariantText

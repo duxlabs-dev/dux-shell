@@ -199,7 +199,7 @@ Column {
                 spacing: Theme.spacingXS
 
                 StyledText {
-                    text: I18n.tr("Free:", "niri keybinds guided add, label before free key suggestions")
+                    text: I18n.tr("Free", "niri keybinds, a key with no shortcut") + ":"
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
                 }

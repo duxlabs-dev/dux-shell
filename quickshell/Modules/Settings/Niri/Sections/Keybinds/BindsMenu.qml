@@ -7,7 +7,7 @@ import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Settings.Widgets
 
-// The ⋯ tools: packs, export, doubles, origin filter, cheatsheet, unused
+// The ⋯ tools: packs, export, duplicates, origin filter, cheatsheet, unused
 Column {
     id: root
 
@@ -112,7 +112,7 @@ Column {
 
     MenuEntry {
         icon: "cleaning_services"
-        text: root.doubleKeys.length > 0 ? I18n.tr("Clean up doubles", "niri keybinds, remove the extra binding of a key bound twice") : I18n.tr("No doubles", "niri keybinds, no key is bound twice")
+        text: root.doubleKeys.length > 0 ? I18n.tr("Remove duplicates", "niri keybinds, remove the extra binding of a key bound twice") : I18n.tr("No duplicates", "niri keybinds, no key is bound twice")
         trailing: ""
         count: root.doubleKeys.length > 0 ? String(root.doubleKeys.length) : ""
         active: root.doubleKeys.length > 0 && !KeybindsService.readOnly

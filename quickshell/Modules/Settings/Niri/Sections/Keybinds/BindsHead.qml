@@ -55,7 +55,7 @@ Item {
             return I18n.tr("Click a key or a category", "niri keybinds pane hint when nothing is picked");
         if (pick.key && count === 0)
             return I18n.tr("Free", "niri keybinds, a key with no shortcut") + originText;
-        return (count === 1 ? I18n.tr("1 shortcut", "niri keybinds count, singular") : I18n.tr("%1 shortcuts", "niri keybinds count, plural").arg(count)) + originText;
+        return (count === 1 ? I18n.tr("%1 shortcut", "niri keybinds count; singular, %1 is 1").arg(1) : I18n.tr("%1 shortcuts", "niri keybinds count, plural").arg(count)) + originText;
     }
 
     implicitHeight: Math.max(Theme.iconButtonSize, texts.implicitHeight)
@@ -127,7 +127,7 @@ Item {
             iconName: "more_horiz"
             iconColor: root.mode === "menu" ? Theme.onPrimaryContainer : Theme.surfaceText
             backgroundColor: root.mode === "menu" ? Theme.primaryContainer : "transparent"
-            tooltipText: I18n.tr("More: packs, export, doubles, filter", "niri keybinds more button")
+            tooltipText: I18n.tr("More: packs, export, duplicates, filter", "niri keybinds more button")
             Accessible.name: tooltipText
 
             // A dot says the origin filter hides some shortcuts

@@ -56,7 +56,7 @@ FocusScope {
     readonly property string pickedCategory: pick && !pick.key ? (pick.category ?? "") : ""
 
     // A search pick can name a chord from another layer: show that layer so the key lights up,
-    // like the mockup's setLayer(modOf(ch)). A bare key sits on every layer and changes nothing.
+    // A bare key sits on every layer and changes nothing.
     onPickedChordChanged: {
         if (!pickedChord || holding)
             return;

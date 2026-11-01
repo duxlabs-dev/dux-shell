@@ -4,7 +4,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 
-// One key of one action: the old tab's row, plus origin, doubles, Test
+// One key of one action: the old tab's row, plus origin, duplicates, Test
 Item {
     id: root
 

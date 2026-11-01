@@ -50,7 +50,7 @@ Rectangle {
     activeFocusOnTab: active
 
     Accessible.role: key.mod || bindable ? Accessible.Button : Accessible.StaticText
-    Accessible.name: key.super ? I18n.tr("Super. Press and hold to see every key") : key.mod ? I18n.tr("%1 layer").arg(key.mod) : bindable ? chord + ": " + (name || I18n.tr("free")) : key.label
+    Accessible.name: key.super ? I18n.tr("Super. Press and hold to see every key") : key.mod ? I18n.tr("%1 layer").arg(key.mod) : bindable ? chord + ": " + (name || I18n.tr("Free", "niri keybinds, a key with no shortcut")) : key.label
     Keys.onReturnPressed: activate()
     Keys.onEnterPressed: activate()
     Keys.onSpacePressed: activate()
@@ -144,7 +144,7 @@ Rectangle {
         sourceComponent: DTooltipHost {
             target: root
             side: "top"
-            text: (root.name || I18n.tr("Free")) + " · " + root.chord
+            text: (root.name || I18n.tr("Free", "niri keybinds, a key with no shortcut")) + " · " + root.chord
             Component.onCompleted: Qt.callLater(schedule)
         }
     }

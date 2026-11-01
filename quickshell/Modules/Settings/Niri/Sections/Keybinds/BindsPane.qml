@@ -81,7 +81,7 @@ Item {
 
     // Keys bound twice whose extra copy sits in dms/binds.kdl (rule and tests in keymaps.js)
     readonly property var doubleKeys: Keymaps.doubleKeys(groups, KeybindsService.modKey)
-    // The records the last clean-up removed, kept for one Undo (the mockup keeps "Annuler possible")
+    // The records the last clean-up removed, kept for one Undo
     property var cleaned: []
     property var writeQueue: []
 
@@ -90,7 +90,7 @@ Item {
         if (keys.length === 0)
             return;
         removeConfirm.showWithOptions({
-            "title": I18n.tr("Clean up doubles", "niri keybinds, remove the extra binding of a key bound twice"),
+            "title": I18n.tr("Remove duplicates", "niri keybinds, remove the extra binding of a key bound twice"),
             "message": I18n.tr("Remove the DMS copy of %1 keys bound twice? Their other binding stays: %2", "niri keybinds clean up confirmation, %1 is a count, %2 the keys").arg(keys.length).arg(keys.join(", ")),
             "confirmText": I18n.tr("Remove"),
             "confirmColor": Theme.error,
@@ -171,7 +171,7 @@ Item {
             width: flick.width
             spacing: Theme.spacingS
 
-            // One Undo for the last clean-up, standing in for the mockup snack bar's Undo
+            // One Undo for the last clean-up
             Rectangle {
                 id: undoPlate
 
@@ -196,7 +196,7 @@ Item {
 
                     StyledText {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: I18n.tr("Cleaned up %1 doubles", "niri keybinds, the clean-up just removed the extra copies; %1 is a count").arg(root.cleaned.length)
+                        text: I18n.tr("Removed %1 duplicates", "niri keybinds, the clean-up just removed the extra copies; %1 is a count").arg(root.cleaned.length)
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceText
                     }
