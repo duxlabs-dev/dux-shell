@@ -4,10 +4,10 @@
 var defaults = {};
 var stored = {};
 var search = [
-    { key: "rules.pick", title: "Rule from a window", words: ["window rule", "pick", "app-id", "title", "règle", "fenêtre", "choisir"] },
-    { key: "rules.list", title: "Window rules", words: ["rules", "list", "edit", "reorder", "règles", "liste", "modifier"] },
-    { key: "rules.blockOut", title: "Hide when sharing", words: ["screencast", "share", "block out", "partage", "masquer", "capture"] },
-    { key: "rules.dmsFloating", title: "Open DMS windows floating", words: ["floating", "settings window", "flottante", "fenêtres DMS"] }
+    { key: "rules.pick", title: "Rule from a window", words: ["window rule", "pick", "app-id", "title"] },
+    { key: "rules.list", title: "Window rules", words: ["rules", "list", "edit", "reorder"] },
+    { key: "rules.blockOut", title: "Hide when sharing", words: ["screencast", "share", "block out", "capture"] },
+    { key: "rules.dmsFloating", title: "Open DMS windows floating", words: ["floating", "settings window"] }
 ];
 
 function toKdl() {

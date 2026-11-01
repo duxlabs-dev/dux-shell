@@ -30,7 +30,7 @@ var stored = {
 var search = [{
         key: "corners.top-left",
         title: "Hot corners",
-        words: ["hot corners", "corner", "overview", "notifications", "launcher", "control center", "screenshot", "coins actifs", "coin", "vue d'ensemble", "lanceur", "capture"]
+        words: ["hot corners", "corner", "overview", "notifications", "launcher", "control center", "screenshot", "capture"]
     }];
 
 function globalCorners(state) {

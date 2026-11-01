@@ -22,11 +22,11 @@ stored["advanced.configToast"] = "SessionData:showConfigReloadToast";
 var risky = Object.keys(defaults);
 
 var search = [
-    { key: "advanced.modKey", title: "Mod key", words: ["mod", "super", "alt", "modifier", "touche", "modificateur", "logo"] },
-    { key: "advanced.powerKey", title: "DMS handles the power button", words: ["power", "button", "key", "alimentation", "bouton", "marche", "arrêt"] },
-    { key: "advanced.xwayland", title: "X11 apps", words: ["x11", "xwayland", "satellite", "xorg", "apps", "applications", "anciennes"] },
-    { key: "advanced.debug", title: "Debug options", words: ["debug", "débogage", "scanout", "overlay", "drm", "options"] },
-    { key: "advanced.configToast", title: "Show \"config reloaded\" toast", words: ["toast", "notification", "reload", "reloaded", "config", "notification", "rechargement", "configuration"] }
+    { key: "advanced.modKey", title: "Mod key", words: ["mod", "super", "alt", "modifier", "logo"] },
+    { key: "advanced.powerKey", title: "DMS handles the power button", words: ["power", "button", "key"] },
+    { key: "advanced.xwayland", title: "X11 apps", words: ["x11", "xwayland", "satellite", "xorg", "apps", "applications"] },
+    { key: "advanced.debug", title: "Debug options", words: ["debug", "scanout", "overlay", "drm", "options"] },
+    { key: "advanced.configToast", title: "Show \"config reloaded\" toast", words: ["toast", "notification", "reload", "reloaded", "config", "configuration"] }
 ];
 
 function toKdl(state) {

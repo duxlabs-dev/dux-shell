@@ -17,7 +17,7 @@ var search = [
     {
         key: "session.on",
         title: "Reopen programs at login",
-        words: ["session", "restore", "login", "startup", "programs", "workspace", "screen", "output", "restaurer", "démarrage", "connexion", "programmes", "espace", "écran"]
+        words: ["session", "restore", "login", "startup", "programs", "workspace", "screen", "output"]
     }
 ];
 

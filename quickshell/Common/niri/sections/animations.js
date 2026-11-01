@@ -31,22 +31,22 @@ var search = [
     {
         key: "animations.window-open.kind",
         title: "Animation style",
-        words: ["animation", "style", "preset", "snappy", "bouncy", "rapide", "rebond", "préréglage"]
+        words: ["animation", "style", "preset", "snappy", "bouncy"]
     },
     {
         key: "animations.on",
         title: "Window animations",
-        words: ["animations", "off", "disable", "on", "motion", "désactiver", "mouvement"]
+        words: ["animations", "off", "disable", "on", "motion"]
     },
     {
         key: "animations.slowdown",
         title: "Slowdown",
-        words: ["slowdown", "speed", "faster", "slower", "vitesse", "ralenti", "lent"]
+        words: ["slowdown", "speed", "faster", "slower"]
     },
     {
         key: "animations.window-open.ms",
         title: "Fine tune",
-        words: ["spring", "curve", "damping", "stiffness", "epsilon", "duration", "easing", "ressort", "courbe", "durée", "amorti"]
+        words: ["spring", "curve", "damping", "stiffness", "epsilon", "duration", "easing"]
     }
 ];
 

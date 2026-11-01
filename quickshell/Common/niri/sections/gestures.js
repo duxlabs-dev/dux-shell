@@ -12,8 +12,8 @@ var stored = {
 };
 
 var search = [
-    { key: "gestures.dndViewWidth", title: "Side edges scroll while dragging", words: ["drag", "edge", "scroll", "dnd", "glisser", "bord", "défiler"] },
-    { key: "gestures.dndWorkspaceHeight", title: "Top and bottom edges switch workspace while dragging", words: ["drag", "edge", "workspace", "dnd", "glisser", "bord", "espace de travail"] }
+    { key: "gestures.dndViewWidth", title: "Side edges scroll while dragging", words: ["drag", "edge", "scroll", "dnd"] },
+    { key: "gestures.dndWorkspaceHeight", title: "Top and bottom edges switch workspace while dragging", words: ["drag", "edge", "workspace", "dnd"] }
 ];
 
 function toKdl(state) {

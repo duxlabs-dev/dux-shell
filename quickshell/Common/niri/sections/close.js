@@ -4,8 +4,8 @@
 var defaults = { "close.askFrom": 3, "close.neverAsk": false };
 var stored = { "close.askFrom": "page", "close.neverAsk": "page" };
 var search = [
-    { key: "close.askFrom", title: "Close a whole workspace", words: ["close", "workspace", "windows", "all", "shortcut", "confirm", "fermer", "espace", "fenêtres", "tout", "raccourci", "confirmer"] },
-    { key: "close.neverAsk", title: "Never ask before closing", words: ["never", "ask", "confirm", "jamais", "demander", "confirmer"] }
+    { key: "close.askFrom", title: "Close a whole workspace", words: ["close", "workspace", "windows", "all", "shortcut", "confirm"] },
+    { key: "close.neverAsk", title: "Never ask before closing", words: ["never", "ask", "confirm"] }
 ];
 
 function toKdl(state) {

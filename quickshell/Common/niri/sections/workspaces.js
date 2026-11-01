@@ -14,12 +14,12 @@ var search = [
     {
         key: "workspaces.named",
         title: "Live workspaces",
-        words: ["workspace", "named", "rename", "drag", "windows", "move", "order", "screen", "espace", "espaces", "renommer", "glisser", "fenêtres", "déplacer", "ordre", "écran"]
+        words: ["workspace", "named", "rename", "drag", "windows", "move", "order", "screen"]
     },
     {
         key: "workspaces.named",
         title: "Bulk actions",
-        words: ["group", "app", "move all", "close app", "kill", "quit", "regrouper", "tout déplacer", "fermer", "appli"]
+        words: ["group", "app", "move all", "close app", "kill", "quit"]
     }
 ];
 

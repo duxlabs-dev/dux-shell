@@ -27,7 +27,7 @@ test("every key DMS already writes binds to a SettingsData property, never to th
     assert.equal(input.stored["input.layouts"], "SettingsData:keyboardLayouts");
 });
 
-test("every search entry names a known key and carries French words", () => {
+test("every search entry names a known key and carries search words", () => {
     for (const entry of input.search) {
         assert.ok(entry.key in input.stored, entry.key);
         assert.ok(entry.words.length > 1, entry.key);

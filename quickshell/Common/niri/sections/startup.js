@@ -14,7 +14,7 @@ var search = [
     {
         key: "startup.env",
         title: "Environment",
-        words: ["environment", "variables", "env", "startup", "login", "environnement", "démarrage", "autostart"]
+        words: ["environment", "variables", "env", "startup", "login", "autostart"]
     }
 ];
 

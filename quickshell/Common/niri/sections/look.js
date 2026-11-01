@@ -40,17 +40,17 @@ var stored = {
 };
 
 var search = [
-    { key: "look.gaps", title: "Gaps", words: ["gaps", "space", "spacing", "room", "espace", "écart", "marge", "plus d'espace"] },
-    { key: "look.ringOn", title: "Window focus ring", words: ["focus", "ring", "active", "outline", "anneau"] },
-    { key: "look.ringWidth", title: "Ring width", words: ["focus", "ring", "width", "thickness", "anneau", "épaisseur", "largeur"] },
-    { key: "look.ringColor", title: "Ring color", words: ["ring", "color", "colour", "accent", "theme", "anneau", "couleur"] },
-    { key: "look.borderOn", title: "Border", words: ["border", "bordure"] },
-    { key: "look.borderWidth", title: "Border width", words: ["border", "width", "bordure", "épaisseur", "largeur"] },
-    { key: "look.borderColor", title: "Border color", words: ["border", "color", "colour", "bordure", "couleur"] },
-    { key: "look.radius", title: "Override window radius", words: ["corner", "radius", "rounded", "round", "corners", "coins", "arrondis", "override", "window"] },
-    { key: "look.shadowOn", title: "Window shadows", words: ["shadow", "ombre", "ombres"] },
-    { key: "look.blurOn", title: "Blur", words: ["blur", "frosted", "transparent", "flou", "verre"] },
-    { key: "look.blurStrength", title: "Blur strength", words: ["blur", "strength", "amount", "flou", "force"] }
+    { key: "look.gaps", title: "Gaps", words: ["gaps", "space", "spacing", "room"] },
+    { key: "look.ringOn", title: "Window focus ring", words: ["focus", "ring", "active", "outline"] },
+    { key: "look.ringWidth", title: "Ring width", words: ["focus", "ring", "width", "thickness"] },
+    { key: "look.ringColor", title: "Ring color", words: ["ring", "color", "colour", "accent", "theme"] },
+    { key: "look.borderOn", title: "Border", words: ["border"] },
+    { key: "look.borderWidth", title: "Border width", words: ["border", "width"] },
+    { key: "look.borderColor", title: "Border color", words: ["border", "color", "colour"] },
+    { key: "look.radius", title: "Override window radius", words: ["corner", "radius", "rounded", "round", "corners", "override", "window"] },
+    { key: "look.shadowOn", title: "Window shadows", words: ["shadow"] },
+    { key: "look.blurOn", title: "Blur", words: ["blur", "frosted", "transparent"] },
+    { key: "look.blurStrength", title: "Blur strength", words: ["blur", "strength", "amount"] }
 ];
 
 // The radius sentinel -1 follows the DMS theme (Theme.qml windowRadius); 0 is a real size

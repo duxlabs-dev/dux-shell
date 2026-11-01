@@ -29,18 +29,18 @@ for (const key in defaults)
 stored["columns.overviewCloseFocus"] = "SettingsData:closeNiriOverviewOnWindowFocus";
 
 var search = [
-    { key: "columns.centerFocused", title: "Center the focused column", words: ["center", "focused", "column", "middle", "centrer", "colonne", "milieu"] },
-    { key: "columns.centerSingle", title: "Center a lone column", words: ["center", "single", "lone", "alone", "column", "centrer", "seule", "colonne"] },
-    { key: "columns.defaultWidth", title: "New column width", words: ["default", "column", "width", "new", "window", "size", "largeur", "colonne", "taille", "fenêtre"] },
-    { key: "columns.presetWidths", title: "Preset widths", words: ["preset", "column", "widths", "cycle", "largeurs", "préréglées"] },
-    { key: "columns.cycleWidth", title: "Super+R fills the remaining space", words: ["super", "mod", "r", "fill", "remaining", "space", "width", "restore", "cycle", "reste", "remplir", "largeur", "touche"] },
-    { key: "columns.display", title: "New columns", words: ["tabbed", "tabs", "column", "display", "onglets", "colonne"] },
-    { key: "columns.overviewZoom", title: "Overview zoom", words: ["overview", "zoom", "size", "vue", "ensemble", "taille"] },
-    { key: "columns.overviewCloseFocus", title: "Close on window focus", words: ["overview", "close", "leave", "focus", "window", "launch", "vue", "ensemble", "fermer", "quitter", "fenêtre"] },
-    { key: "columns.noCsd", title: "No app title bars", words: ["csd", "client", "decorations", "title", "bars", "barre", "titre", "décorations"] },
-    { key: "columns.altTab", title: "Alt-Tab switcher", words: ["alt", "tab", "switcher", "recent", "windows", "récentes", "fenêtres"] },
-    { key: "columns.altTabDelay", title: "Show Alt-Tab after", words: ["alt", "tab", "delay", "show", "délai", "afficher"] },
-    { key: "columns.altTabPreviewScale", title: "Alt-Tab preview size", words: ["alt", "tab", "previews", "thumbnails", "size", "aperçu", "vignettes", "taille"] }
+    { key: "columns.centerFocused", title: "Center the focused column", words: ["center", "focused", "column", "middle"] },
+    { key: "columns.centerSingle", title: "Center a lone column", words: ["center", "single", "lone", "alone", "column"] },
+    { key: "columns.defaultWidth", title: "New column width", words: ["default", "column", "width", "new", "window", "size"] },
+    { key: "columns.presetWidths", title: "Preset widths", words: ["preset", "column", "widths", "cycle"] },
+    { key: "columns.cycleWidth", title: "Super+R fills the remaining space", words: ["super", "mod", "r", "fill", "remaining", "space", "width", "restore", "cycle"] },
+    { key: "columns.display", title: "New columns", words: ["tabbed", "tabs", "column", "display"] },
+    { key: "columns.overviewZoom", title: "Overview zoom", words: ["overview", "zoom", "size"] },
+    { key: "columns.overviewCloseFocus", title: "Close on window focus", words: ["overview", "close", "leave", "focus", "window", "launch"] },
+    { key: "columns.noCsd", title: "No app title bars", words: ["csd", "client", "decorations", "title", "bars"] },
+    { key: "columns.altTab", title: "Alt-Tab switcher", words: ["alt", "tab", "switcher", "recent", "windows"] },
+    { key: "columns.altTabDelay", title: "Show Alt-Tab after", words: ["alt", "tab", "delay", "show"] },
+    { key: "columns.altTabPreviewScale", title: "Alt-Tab preview size", words: ["alt", "tab", "previews", "thumbnails", "size"] }
 ];
 
 function num(v) {
