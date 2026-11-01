@@ -14,9 +14,9 @@ func (n *NiriProvider) bindsBackup() string {
 }
 
 // MergeMissingDefaults adds every embedded default bind whose key is bound nowhere (not in
-// dms/binds.kdl, config.kdl or its includes) and upgrades the lines still equal to a superseded
-// stock line; every other line is kept. The merged file is validated first, the old one kept
-// beside it for UndoMergeDefaults. Returns the keys upgraded or added, nil when nothing changed.
+// dms/binds.kdl, config.kdl or its includes); every existing line is kept. The merged file is
+// validated first, the old one kept beside it for UndoMergeDefaults. Returns the keys added,
+// nil when nothing was missing.
 func (n *NiriProvider) MergeMissingDefaults(terminalCommand string) ([]string, error) {
 	stock, err := n.stockDefaults(terminalCommand)
 	if err != nil {
@@ -28,11 +28,11 @@ func (n *NiriProvider) MergeMissingDefaults(terminalCommand string) ([]string, e
 		return nil, err
 	}
 
-	merged, changed, err := n.mergeBinds(data, stock)
+	merged, added, err := n.mergeBinds(data, stock)
 	if err != nil {
 		return nil, err
 	}
-	if len(changed) == 0 {
+	if len(added) == 0 {
 		return nil, nil
 	}
 	if err := n.validateBindsContent(merged); err != nil {
@@ -49,7 +49,7 @@ func (n *NiriProvider) MergeMissingDefaults(terminalCommand string) ([]string, e
 	if err := niriconf.WriteAtomic(n.GetOverridePath(), []byte(merged)); err != nil {
 		return nil, err
 	}
-	return changed, nil
+	return added, nil
 }
 
 // UndoMergeDefaults puts dms/binds.kdl back as it was before the last
@@ -99,7 +99,6 @@ func (n *NiriProvider) undoSafe(old, current []byte, terminalCommand string) boo
 
 	oldSet := bindSet(oldBinds)
 	curSet := bindSet(curBinds)
-	stockSet := bindSet(stock)
 	want, err := n.missingDefaults(old, stock)
 	if err != nil {
 		return false
@@ -107,7 +106,7 @@ func (n *NiriProvider) undoSafe(old, current []byte, terminalCommand string) boo
 
 	for key, b := range oldSet {
 		c, ok := curSet[key]
-		if !ok || !(bindEqual(b, c) || upgradedBind(key, b, c, stockSet)) {
+		if !ok || !bindEqual(b, c) {
 			return false
 		}
 	}
@@ -183,16 +182,15 @@ func (n *NiriProvider) stockDefaults(terminalCommand string) ([]*overrideBind, e
 }
 
 // mergeBinds renders the stock binds missing from data into data's first top-level
-// binds node, after upgrading its superseded stock lines. Empty data yields the whole
-// stock file; every other existing line is kept. It returns the keys it changed:
-// the upgraded ones, then the added ones.
+// binds node. Empty data yields the whole stock file; every existing line is kept.
+// It returns the keys it added.
 func (n *NiriProvider) mergeBinds(data []byte, stock []*overrideBind) (string, []string, error) {
 	skip, err := n.boundKeys(data)
 	if err != nil {
 		return "", nil, err
 	}
 
-	content, upgraded := n.upgradeSuperseded(string(data), stock)
+	content := string(data)
 	var lines, added []string
 	for _, bind := range stock {
 		if skip[normalizeNiriBindKey(bind.Key)] {
@@ -203,20 +201,19 @@ func (n *NiriProvider) mergeBinds(data []byte, stock []*overrideBind) (string, [
 		n.writeBindNode(&sb, bind, "    ")
 		lines = append(lines, strings.TrimRight(sb.String(), "\n"))
 	}
-	changed := append(upgraded, added...)
 	if len(added) == 0 {
-		return content, changed, nil
+		return content, added, nil
 	}
 	body := strings.Join(lines, "\n") + "\n"
 
 	if len(content) == 0 {
-		return "binds {\n" + body + "}\n", changed, nil
+		return "binds {\n" + body + "}\n", added, nil
 	}
 	if merged, ok := insertBindsLines(content, body); ok {
-		return merged, changed, nil
+		return merged, added, nil
 	}
 	// No binds node to extend: a fresh one carries the missing defaults.
-	return strings.TrimRight(content, "\n") + "\n\nbinds {\n" + body + "}\n", changed, nil
+	return strings.TrimRight(content, "\n") + "\n\nbinds {\n" + body + "}\n", added, nil
 }
 
 // boundKeys collects the keys already bound in data and in the config.kdl include
