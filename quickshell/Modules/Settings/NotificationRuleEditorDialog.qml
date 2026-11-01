@@ -254,25 +254,25 @@ DDialog {
     }
 
     SettingsCard {
-        title: I18n.tr("Island summary")
+        title: I18n.tr("Island summary", "notification rule island summary settings")
 
         SettingsToggleRow {
-            text: I18n.tr("Summarize matching notifications")
-            description: I18n.tr("Show an icon and title in the island; keep the original notification in the notification center")
+            text: I18n.tr("Summarize matching notifications", "notification rule island summary settings")
+            description: I18n.tr("Show an icon and title in the island; keep the original notification in the notification center", "notification rule island summary settings")
             checked: root.ruleIslandSummary
             onToggled: checked => root.ruleIslandSummary = checked
         }
 
         SettingsTextFieldRow {
             id: islandIcon
-            text: I18n.tr("Icon")
+            text: I18n.tr("Icon", "notification rule island summary settings")
             enabled: root.ruleIslandSummary
         }
 
         SettingsTextFieldRow {
             id: islandTitle
-            text: I18n.tr("Title template")
-            description: I18n.tr("Use {summary}, {body}, or {appName} to insert notification text")
+            text: I18n.tr("Title template", "notification rule island summary settings")
+            description: I18n.tr("Use {summary}, {body}, or {appName} to insert notification text", "notification rule island summary settings")
             enabled: root.ruleIslandSummary
         }
     }

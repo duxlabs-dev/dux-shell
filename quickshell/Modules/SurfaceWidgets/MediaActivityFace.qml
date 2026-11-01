@@ -234,7 +234,6 @@ Item {
         FadePresence {
             anchors.horizontalCenter: parent.horizontalCenter
             shown: root.visualizerVisible
-            visible: root.artworkVisible
             width: root.verticalArtworkSize
             height: root.cavaWidth
 
