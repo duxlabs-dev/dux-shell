@@ -70,6 +70,10 @@ Singleton {
             updateCyclingState();
         }
 
+        function onWallpaperCyclingOnLoginChanged() {
+            updateCyclingState();
+        }
+
         function onWallpaperCyclingIntervalChanged() {
             updateCyclingState();
         }
@@ -102,7 +106,7 @@ Singleton {
     }
 
     function updateCyclingState() {
-        cyclingActive = serverSchedulingAvailable && (SessionData.wallpaperCyclingEnabled || SessionData.perMonitorWallpaper);
+        cyclingActive = serverSchedulingAvailable && (SessionData.wallpaperCyclingEnabled || SessionData.wallpaperCyclingOnLogin || SessionData.perMonitorWallpaper);
         if (!cyclingActive && !_lastPushedEnabled)
             return;
         _lastPushedEnabled = cyclingActive;
@@ -117,21 +121,27 @@ Singleton {
                 var name = screens[i].name;
                 var s = SessionData.getMonitorCyclingSettings(name);
                 var wp = SessionData.getMonitorWallpaper(name);
+                // A folder is enough to run the schedule, so on-login can pick from it
+                // without a wallpaper being pinned first.
+                var hasSource = (wp && !wp.startsWith("#")) || !!s.folderPath;
                 monitors[name] = {
-                    "enabled": !!(s.enabled && wp && !wp.startsWith("#")),
+                    "enabled": !!((s.enabled || s.onLogin) && hasSource),
                     "mode": s.mode || "interval",
                     "intervalSec": s.interval || 300,
-                    "time": s.time || "06:00"
+                    "time": s.time || "06:00",
+                    "onLogin": !!s.onLogin
                 };
             }
         }
+        const globalHasSource = (SessionData.wallpaperPath && !SessionData.wallpaperPath.startsWith("#")) || !!SessionData.wallpaperCyclingFolderPath;
         return {
             "perMonitor": SessionData.perMonitorWallpaper,
             "global": {
-                "enabled": !!(SessionData.wallpaperCyclingEnabled && SessionData.wallpaperPath),
+                "enabled": !!((SessionData.wallpaperCyclingEnabled || SessionData.wallpaperCyclingOnLogin) && globalHasSource),
                 "mode": SessionData.wallpaperCyclingMode,
                 "intervalSec": SessionData.wallpaperCyclingInterval,
-                "time": SessionData.wallpaperCyclingTime
+                "time": SessionData.wallpaperCyclingTime,
+                "onLogin": !!SessionData.wallpaperCyclingOnLogin
             },
             "monitors": monitors
         };
@@ -162,8 +172,13 @@ Singleton {
     }
     function cycle(screenName, wallpaperPath, goToPrevious) {
         const currentWallpaper = wallpaperPath || (screenName ? SessionData.getMonitorWallpaper(screenName) : SessionData.wallpaperPath);
-        if (!currentWallpaper || currentWallpaper.startsWith("#"))
+        if (!currentWallpaper || currentWallpaper.startsWith("#")) {
+            // No wallpaper pinned yet (e.g. first change-on-login): pick from the configured folder.
+            const folderPath = screenName ? SessionData.getMonitorCyclingSettings(screenName).folderPath : SessionData.wallpaperCyclingFolderPath;
+            if (folderPath)
+                cycleFromFolder(screenName, folderPath);
             return;
+        }
         let wallpaperDir;
         let recursive = false;
 
@@ -276,10 +291,8 @@ Singleton {
     function cycleNextForMonitor(screenName) {
         if (!screenName)
             return;
-        var currentWallpaper = SessionData.getMonitorWallpaper(screenName);
-        if (currentWallpaper) {
-            cycleToNextWallpaper(screenName, currentWallpaper);
-        }
+        // Pass the current wallpaper if set; cycle() falls back to the folder when it is not.
+        cycleToNextWallpaper(screenName, SessionData.getMonitorWallpaper(screenName));
     }
 
     function cyclePrevForMonitor(screenName) {
@@ -316,7 +329,9 @@ Singleton {
         }
 
         let targetIndex;
-        if (isInitialFolderSelect) {
+        if (isInitialFolderSelect && isRandom) {
+            targetIndex = Math.floor(Math.random() * wallpaperList.length);
+        } else if (isInitialFolderSelect) {
             targetIndex = 0;
         } else if (isRandom) {
             if (wallpaperList.length > 1) {

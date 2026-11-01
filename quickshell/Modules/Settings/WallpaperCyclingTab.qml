@@ -22,6 +22,7 @@ Item {
     readonly property bool enabled: perMonitor ? monitorSettings.enabled : SessionData.wallpaperCyclingEnabled
     readonly property bool random: perMonitor ? monitorSettings.random : SessionData.wallpaperCyclingRandom
     readonly property bool recursive: perMonitor ? monitorSettings.recursive : SessionData.wallpaperCyclingRecursive
+    readonly property bool onLogin: perMonitor ? monitorSettings.onLogin : SessionData.wallpaperCyclingOnLogin
     readonly property string mode: perMonitor ? monitorSettings.mode : SessionData.wallpaperCyclingMode
     readonly property int interval: perMonitor ? monitorSettings.interval : SessionData.wallpaperCyclingInterval
     readonly property string time: perMonitor ? monitorSettings.time : SessionData.wallpaperCyclingTime
@@ -91,6 +92,14 @@ Item {
             return;
         }
         SessionData.setWallpaperCyclingRecursive(value);
+    }
+
+    function setOnLogin(value) {
+        if (perMonitor) {
+            SessionData.setMonitorCyclingOnLogin(selectedScreen, value);
+            return;
+        }
+        SessionData.setWallpaperCyclingOnLogin(value);
     }
 
     function setMode(value) {
@@ -222,6 +231,15 @@ Item {
                 text: I18n.tr("Random order")
                 checked: root.random
                 onToggled: toggled => root.setRandom(toggled)
+            }
+
+            SettingsToggleRow {
+                tab: "wallpaper"
+                tags: ["cycling", "automatic", "login", "startup", "boot"]
+                settingKey: "wallpaperCyclingOnLogin"
+                text: I18n.tr("Change on login")
+                checked: root.onLogin
+                onToggled: toggled => root.setOnLogin(toggled)
             }
 
             SettingsButtonGroupRow {

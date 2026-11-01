@@ -156,6 +156,9 @@ func (m *Manager) schedulerLoop() {
 
 	schedules := map[string]*activeSchedule{}
 	resets := map[string]bool{}
+	// Keyed like schedules; marks a schedule whose on-login cycle already
+	// fired this process, so re-sent config does not re-trigger it.
+	loginFired := map[string]bool{}
 	var seq uint64
 	var timer *time.Timer
 
@@ -188,6 +191,12 @@ func (m *Manager) schedulerLoop() {
 						// Scheduled time passed while dms wasn't running.
 						s.nextFire = now.Add(catchUpDelay)
 					}
+				}
+				if cfg.OnLogin && !loginFired[key] {
+					// Fire once shortly after startup, after the frontend has
+					// established its cycle-seq baseline from the first state.
+					loginFired[key] = true
+					s.nextFire = now.Add(catchUpDelay)
 				}
 			case s.cfg != cfg || resets[key]:
 				s.cfg = cfg

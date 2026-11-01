@@ -4,7 +4,7 @@ import vm from "node:vm";
 import test from "node:test";
 
 const source = readFileSync(new URL("../Common/SessionData.qml", import.meta.url), "utf8");
-const setters = ["setMonitorCyclingEnabled", "setMonitorCyclingRandom", "setMonitorCyclingRecursive", "setMonitorCyclingMode", "setMonitorCyclingInterval", "setMonitorCyclingTime", "setMonitorCyclingFolderPath"];
+const setters = ["setMonitorCyclingEnabled", "setMonitorCyclingRandom", "setMonitorCyclingRecursive", "setMonitorCyclingOnLogin", "setMonitorCyclingMode", "setMonitorCyclingInterval", "setMonitorCyclingTime", "setMonitorCyclingFolderPath"];
 const helpers = ["getMonitorCyclingSettings", "_findMonitorValue", "_screenByName", "updateMonitorCyclingSetting"];
 
 function session(initial) {
@@ -38,7 +38,7 @@ test("a setter writes its field under the display identifier and keeps other scr
     const result = plain(context.monitorCyclingSettings);
     assert.deepEqual(Object.keys(result).sort(), ["HDMI-A-1", "LG 27"]);
     assert.deepEqual(result["HDMI-A-1"], { enabled: true, interval: 10 });
-    assert.deepEqual(result["LG 27"], { enabled: false, random: false, recursive: false, mode: "interval", interval: 60, time: "06:00", folderPath: "" });
+    assert.deepEqual(result["LG 27"], { enabled: false, random: false, recursive: false, onLogin: false, mode: "interval", interval: 60, time: "06:00", folderPath: "" });
     assert.equal(saved(), 1);
 });
 

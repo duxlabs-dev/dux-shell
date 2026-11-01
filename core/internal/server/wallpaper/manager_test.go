@@ -174,3 +174,78 @@ func TestSchedulerEmitsCycle(t *testing.T) {
 		}
 	}
 }
+
+func TestOnLoginFiresOnceAfterStartup(t *testing.T) {
+	origDelay := catchUpDelay
+	catchUpDelay = 100 * time.Millisecond
+	defer func() { catchUpDelay = origDelay }()
+
+	m := newManager(map[string]time.Time{}, func(map[string]time.Time) {})
+	defer m.Close()
+
+	sub := m.Subscribe("test")
+	defer m.Unsubscribe("test")
+
+	// Interval far in the future so only the on-login fire can bump the seq.
+	m.SetConfig(Config{Global: ScheduleConfig{Enabled: true, Mode: "interval", IntervalSec: 3600, OnLogin: true}})
+
+	deadline := time.After(3 * time.Second)
+	for {
+		select {
+		case state := <-sub:
+			if state.CycleSeq > 0 && state.Target == "" {
+				return
+			}
+		case <-deadline:
+			t.Fatal("on-login schedule did not fire within 3s")
+		}
+	}
+}
+
+func TestOnLoginDoesNotRefireOnConfigResend(t *testing.T) {
+	origDelay := catchUpDelay
+	catchUpDelay = 100 * time.Millisecond
+	defer func() { catchUpDelay = origDelay }()
+
+	m := newManager(map[string]time.Time{}, func(map[string]time.Time) {})
+	defer m.Close()
+
+	sub := m.Subscribe("test")
+	defer m.Unsubscribe("test")
+
+	cfg := Config{Global: ScheduleConfig{Enabled: true, Mode: "interval", IntervalSec: 3600, OnLogin: true}}
+	m.SetConfig(cfg)
+
+	// Wait for the single on-login fire.
+	var firstSeq uint64
+	fired := time.After(3 * time.Second)
+waitFirst:
+	for {
+		select {
+		case state := <-sub:
+			if state.CycleSeq > 0 {
+				firstSeq = state.CycleSeq
+				break waitFirst
+			}
+		case <-fired:
+			t.Fatal("on-login schedule did not fire")
+		}
+	}
+
+	// Re-send an equivalent-but-not-DeepEqual config (toggle an unrelated field) to
+	// force a schedule rebuild, and confirm the seq does not bump again.
+	cfg.Global.IntervalSec = 7200
+	m.SetConfig(cfg)
+
+	deadline := time.After(1 * time.Second)
+	for {
+		select {
+		case state := <-sub:
+			if state.CycleSeq > firstSeq {
+				t.Fatalf("on-login refired on config resend: seq %d > %d", state.CycleSeq, firstSeq)
+			}
+		case <-deadline:
+			return
+		}
+	}
+}
