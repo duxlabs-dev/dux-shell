@@ -1,9 +1,13 @@
 import QtQuick
+import qs.Common
 import qs.Modules.Settings.Niri
 import qs.Modules.Settings.Widgets
 
 Item {
     id: root
+
+    LayoutMirroring.enabled: I18n.isRtl
+    LayoutMirroring.childrenInherit: true
 
     property var parentModal: null
     property bool pageActive: false
