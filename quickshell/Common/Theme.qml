@@ -68,6 +68,7 @@ Singleton {
 
     signal matugenCompleted(string mode, string result)
     property var matugenColors: ({})
+    property string _appliedColorsText: ""
     property var _pendingGenerateParams: null
     property int _colorsRetryCount: 0
     property double _lastGenerateMs: 0
@@ -2452,18 +2453,22 @@ Singleton {
         function parseAndLoadColors() {
             try {
                 const colorsText = dynamicColorsFileView.text();
-                if (colorsText) {
+                if (!colorsText)
+                    return;
+                // the watch and the worker exit both reload the same write; don't parse and rebuild the palette twice
+                if (colorsText !== root._appliedColorsText) {
                     root.matugenColors = JSON.parse(colorsText);
-                    if (typeof SettingsData !== "undefined" && SettingsData.matugenSmartMode && currentTheme === dynamic && root.matugenColors && root.matugenColors.mode && typeof SessionData !== "undefined" && !SessionData.isSwitchingMode) {
-                        const resolvedLight = root.matugenColors.mode === "light";
-                        if (SessionData.isLightMode !== resolvedLight) {
-                            SessionData.setLightMode(resolvedLight, true);
-                            SettingsData.updateCosmicThemeMode(resolvedLight);
-                        }
+                    root._appliedColorsText = colorsText;
+                }
+                if (typeof SettingsData !== "undefined" && SettingsData.matugenSmartMode && currentTheme === dynamic && root.matugenColors && root.matugenColors.mode && typeof SessionData !== "undefined" && !SessionData.isSwitchingMode) {
+                    const resolvedLight = root.matugenColors.mode === "light";
+                    if (SessionData.isLightMode !== resolvedLight) {
+                        SessionData.setLightMode(resolvedLight, true);
+                        SettingsData.updateCosmicThemeMode(resolvedLight);
                     }
-                    if (typeof ToastService !== "undefined") {
-                        ToastService.clearWallpaperError();
-                    }
+                }
+                if (typeof ToastService !== "undefined") {
+                    ToastService.clearWallpaperError();
                 }
             } catch (e) {
                 log.error("Failed to parse dynamic colors:", e);
