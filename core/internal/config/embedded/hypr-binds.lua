@@ -1,5 +1,24 @@
 -- DMS default keybinds (Hyprland 0.55+ Lua)
 
+-- Hyprland emits no socket2 event when a window moves or resizes, so these
+-- dispatchers announce one for the shell (dock smart auto-hide, #3168)
+if hl.dsp.event then
+	for _, name in ipairs({ "move", "resize", "center" }) do
+		local raw = hl.dsp.window[name]
+		hl.dsp.window[name] = function(...)
+			-- argless resize is the mouse drag bind, which needs the native dispatcher
+			if name == "resize" and select("#", ...) == 0 then
+				return raw()
+			end
+			local dispatcher = raw(...)
+			return function()
+				hl.dispatch(dispatcher)
+				hl.dispatch(hl.dsp.event("dms:geometry"))
+			end
+		end
+	end
+end
+
 -- === Application Launchers ===
 hl.bind("SUPER + T", hl.dsp.exec_cmd("{{TERMINAL_COMMAND}}"))
 hl.bind("SUPER + Return", hl.dsp.exec_cmd("{{TERMINAL_COMMAND}}"))
