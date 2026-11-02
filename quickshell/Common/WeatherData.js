@@ -1,7 +1,7 @@
 .pragma library
 
 function toF(celsius) {
-    return celsius * 9 / 5 + 32;
+    return Number.isFinite(celsius) ? celsius * 9 / 5 + 32 : null;
 }
 
 // Readings beyond temperature are optional per provider; missing ones stay null so the UI shows a placeholder.
@@ -26,7 +26,7 @@ function fromOpenMeteo(data, labels) {
     const hourlyForecast = [];
     for (let i = 0; i < (hourly.time?.length ?? 0); i++) {
         const tempC = hourly.temperature_2m?.[i] || 0;
-        const feelsLikeC = hourly.apparent_temperature?.[i] || tempC;
+        const feelsLikeC = hourly.apparent_temperature?.[i];
         const day = dayIndex[hourly.time[i].slice(0, 10)];
         const sunrise = new Date(daily.sunrise?.[day]);
         const sunset = new Date(daily.sunset?.[day]);
@@ -37,8 +37,8 @@ function fromOpenMeteo(data, labels) {
             "rawTime": hourly.time[i],
             "temp": Math.round(tempC),
             "tempF": Math.round(toF(tempC)),
-            "feelsLike": Math.round(feelsLikeC),
-            "feelsLikeF": Math.round(toF(feelsLikeC)),
+            "feelsLike": roundOrNull(feelsLikeC),
+            "feelsLikeF": roundOrNull(toF(feelsLikeC)),
             "wCode": hourly.weather_code?.[i] || 0,
             "humidity": roundOrNull(hourly.relative_humidity_2m?.[i]),
             "wind": roundOrNull(hourly.wind_speed_10m?.[i]),
@@ -71,7 +71,7 @@ function fromOpenMeteo(data, labels) {
     }
 
     const tempC = current.temperature_2m || 0;
-    const feelsLikeC = current.apparent_temperature || tempC;
+    const feelsLikeC = current.apparent_temperature;
     const currentHour = hourly.time?.findIndex(time => time.slice(0, 13) === current.time?.slice(0, 13)) ?? -1;
     const hourlyValue = key => {
         const value = hourly[key]?.[currentHour];
@@ -83,8 +83,8 @@ function fromOpenMeteo(data, labels) {
         "loading": false,
         "temp": Math.round(tempC),
         "tempF": Math.round(toF(tempC)),
-        "feelsLike": Math.round(feelsLikeC),
-        "feelsLikeF": Math.round(toF(feelsLikeC)),
+        "feelsLike": roundOrNull(feelsLikeC),
+        "feelsLikeF": roundOrNull(toF(feelsLikeC)),
         "city": labels.city,
         "country": labels.country,
         "wCode": current.weather_code || 0,
@@ -108,4 +108,44 @@ function fromOpenMeteo(data, labels) {
         "forecast": forecast,
         "hourlyForecast": hourlyForecast
     };
+}
+
+const currentReadings = ["feelsLike", "feelsLikeF", "humidity", "wind", "windDirection", "pressure", "uv", "visibility", "dewPoint", "precipitationProbability"];
+const hourlyReadings = ["feelsLike", "feelsLikeF", "humidity", "wind", "pressure", "precipitationProbability", "visibility"];
+
+function fillNulls(target, source, keys) {
+    const filled = Object.assign({}, target);
+    for (const key of keys) {
+        if (filled[key] == null && source?.[key] != null)
+            filled[key] = source[key];
+    }
+    return filled;
+}
+
+function hasMissingReadings(weather) {
+    return currentReadings.some(key => weather[key] == null);
+}
+
+// Fills readings the primary provider lacks from another provider's forecast,
+// matched by hour and day. Values the primary provider has always win.
+function fillMissing(primary, extra) {
+    // Providers report local times in different zones (Open-Meteo the
+    // location's, MET Norway the machine's), so hours are matched by their UTC
+    // instant when both give their offset. The offset is the one at fetch time,
+    // so hours after a DST change can miss when the two zones change on
+    // different dates. Days stay matched by date, which overlaps enough for
+    // the daily precipitation maximum.
+    const byInstant = Number.isFinite(primary.utcOffsetSeconds) && Number.isFinite(extra.utcOffsetSeconds);
+    const hourKey = (weather, rawTime) => byInstant ? String(Date.parse(rawTime + "Z") - weather.utcOffsetSeconds * 1000) : rawTime;
+    const extraHours = {};
+    for (const hour of extra.hourlyForecast ?? [])
+        extraHours[hourKey(extra, hour.rawTime)] = hour;
+    const extraDays = {};
+    for (const day of extra.forecast ?? [])
+        extraDays[day.rawDate] = day;
+
+    const filled = fillNulls(primary, extra, currentReadings);
+    filled.hourlyForecast = (primary.hourlyForecast ?? []).map(hour => fillNulls(hour, extraHours[hourKey(primary, hour.rawTime)], hourlyReadings));
+    filled.forecast = (primary.forecast ?? []).map(day => fillNulls(day, extraDays[day.rawDate], ["precipitationProbability"]));
+    return filled;
 }

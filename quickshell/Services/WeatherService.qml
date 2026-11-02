@@ -53,6 +53,8 @@ Singleton {
     property var _pendingCoords: null
     property var _providerQueue: []
     property var _fetchCoords: null
+    // After a provider succeeds, the remaining ones only fill readings it lacks.
+    property bool _supplementing: false
 
     readonly property var providers: {
         const saved = Array.isArray(SettingsData.weatherProviders) ? SettingsData.weatherProviders : [];
@@ -692,6 +694,7 @@ Singleton {
         };
         // Turning every provider off still falls back to the default one.
         root._providerQueue = root.enabledProviders.length ? root.enabledProviders.slice() : ["openmeteo"];
+        root._supplementing = false;
         root.tryNextProvider();
     }
 
@@ -700,11 +703,12 @@ Singleton {
             root._providerQueue = [];
             return;
         }
-        if (reason)
+        if (reason && !root._supplementing)
             root.lastFetchError = reason;
         const id = root._providerQueue.shift();
         if (!id) {
-            root.handleWeatherFailure();
+            if (!root._supplementing)
+                root.handleWeatherFailure();
             return;
         }
         if (reason)
@@ -712,6 +716,7 @@ Singleton {
         const req = WeatherProviders.request(id, root._fetchCoords.latitude, root._fetchCoords.longitude);
         weatherFetcher.providerId = id;
         weatherFetcher.failure = "";
+        weatherFetcher.supplement = false;
         weatherFetcher.command = lowPriorityCmd.concat(root.fetchCmd, req.userAgent ? ["--user-agent", req.userAgent] : [], [req.url]);
         weatherFetcher.running = true;
     }
@@ -973,6 +978,7 @@ Singleton {
         property string providerId: ""
         property string failure: ""
         property bool cancelled: false
+        property bool supplement: false
         running: false
 
         stderr: StdioCollector {
@@ -992,15 +998,23 @@ Singleton {
                 try {
                     const coords = root._fetchCoords;
                     const data = WeatherProviders.parse(weatherFetcher.providerId, raw, coords.latitude, coords.longitude, Date.now());
-                    root.weather = WeatherData.fromOpenMeteo(data, {
+                    const parsed = WeatherData.fromOpenMeteo(data, {
                         formatTime: root.formatTime,
                         formatDay: root.formatForecastDay,
                         city: root.location?.city || I18n.tr("Unknown"),
                         country: root.location?.country || I18n.tr("Unknown")
                     });
-                    root.lastFetchError = "";
-                    root._providerQueue = [];
-                    root.handleWeatherSuccess();
+                    if (root._supplementing) {
+                        root.weather = WeatherData.fillMissing(root.weather, parsed);
+                    } else {
+                        root.weather = parsed;
+                        root.lastFetchError = "";
+                        root._supplementing = true;
+                        root.handleWeatherSuccess();
+                    }
+                    if (!WeatherData.hasMissingReadings(root.weather))
+                        root._providerQueue = [];
+                    weatherFetcher.supplement = root._providerQueue.length > 0;
                 } catch (e) {
                     weatherFetcher.failure = e.message;
                 }
@@ -1019,6 +1033,8 @@ Singleton {
             const failure = weatherFetcher.failure || (exitCode !== 0 ? weatherFetchErr.text.trim() || "exit code " + exitCode : "");
             if (failure)
                 root.tryNextProvider(weatherFetcher.providerId + ": " + failure);
+            else if (weatherFetcher.supplement)
+                root.tryNextProvider();
         }
     }
 

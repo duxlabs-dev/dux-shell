@@ -62,3 +62,60 @@ test("fromOpenMeteo converts the daily range to both units", () => {
     const day = weatherData.fromOpenMeteo(openMeteo(), labels).forecast[1];
     assert.deepEqual([day.tempMin, day.tempMax, day.tempMinF, day.tempMaxF, day.wCode], [2, 10, 36, 49, 61]);
 });
+
+test("fillMissing takes only readings the primary provider lacks, matched by hour and day", () => {
+    const primary = weatherData.fromOpenMeteo(openMeteo(), labels);
+    primary.humidity = null;
+    primary.uv = null;
+    primary.hourlyForecast[14].humidity = null;
+    primary.forecast[1].precipitationProbability = null;
+    const extraData = openMeteo();
+    extraData.current.relative_humidity_2m = 60;
+    extraData.current.temperature_2m = 1;
+    extraData.hourly.relative_humidity_2m = Array(48).fill(55);
+    extraData.daily.precipitation_probability_max = [10, 90];
+    const extra = weatherData.fromOpenMeteo(extraData, labels);
+    extra.uv = 3;
+
+    const filled = weatherData.fillMissing(primary, extra);
+    assert.deepEqual([filled.humidity, filled.uv, filled.temp, filled.pressure], [60, 3, 8, 961]);
+    assert.equal(filled.hourlyForecast[14].humidity, 55);
+    assert.deepEqual([filled.forecast[0].precipitationProbability, filled.forecast[1].precipitationProbability], [5, 90]);
+    assert.equal(weatherData.hasMissingReadings(primary), true);
+});
+
+test("fillMissing matches hours by instant when the providers report different time zones", () => {
+    // Primary in machine time 12 hours ahead (like MET Norway), extra in the location's time.
+    const primaryData = openMeteo();
+    primaryData.utc_offset_seconds = 13 * 3600;
+    primaryData.hourly.time = primaryData.hourly.time.map(time => {
+        const ms = Date.parse(time + "Z") + 12 * 3600000;
+        return new Date(ms).toISOString().slice(0, 16);
+    });
+    const primary = weatherData.fromOpenMeteo(primaryData, labels);
+    primary.hourlyForecast[10].humidity = null;
+    const extraData = openMeteo();
+    extraData.hourly.relative_humidity_2m = extraData.hourly.time.map((time, i) => i);
+    const extra = weatherData.fromOpenMeteo(extraData, labels);
+
+    const filled = weatherData.fillMissing(primary, extra);
+    assert.equal(filled.hourlyForecast[10].humidity, 10);
+});
+
+test("fillMissing falls back to matching local times when a provider gives no offset", () => {
+    const primary = weatherData.fromOpenMeteo(openMeteo(), labels);
+    primary.hourlyForecast[10].humidity = null;
+    const extraData = openMeteo();
+    delete extraData.utc_offset_seconds;
+    extraData.hourly.relative_humidity_2m = extraData.hourly.time.map((time, i) => i);
+    const filled = weatherData.fillMissing(primary, weatherData.fromOpenMeteo(extraData, labels));
+    assert.equal(filled.hourlyForecast[10].humidity, 10);
+});
+
+test("a missing apparent temperature stays null in both units instead of copying the air temperature", () => {
+    const data = openMeteo();
+    data.current.apparent_temperature = null;
+    data.hourly.apparent_temperature = Array(48).fill(null);
+    const weather = weatherData.fromOpenMeteo(data, labels);
+    assert.deepEqual([weather.feelsLike, weather.feelsLikeF, weather.hourlyForecast[3].feelsLikeF], [null, null, null]);
+});
