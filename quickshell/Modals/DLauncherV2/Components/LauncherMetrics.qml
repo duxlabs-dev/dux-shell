@@ -93,7 +93,7 @@ Singleton {
 
     function spotlightBottomRadius(width, contentHeight) {
         const pill = spotlightRadius(width);
-        const t = Math.max(0, Math.min(1, (contentHeight - pillHeight) / Theme.windowRadius));
+        const t = Math.max(0, Math.min(1, (contentHeight - pillHeight) / Math.max(1, Theme.windowRadius)));
         return pill + (Theme.windowRadius - pill) * t;
     }
 
