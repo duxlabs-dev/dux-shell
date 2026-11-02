@@ -101,6 +101,25 @@ func shouldSuppressDevice(name string) bool {
 	return false
 }
 
+// isIndicatorLED reports whether a kernel trigger drives the LED (phy0radio, mmc0,
+// disk-activity, ...) instead of the user. Such LEDs mirror hardware state and are
+// not brightness controls; listing one adds a 0% device that can be picked as the
+// default. User-controlled LEDs (keyboard backlight) sit at [none].
+func (b *SysfsBackend) isIndicatorLED(name string) bool {
+	data, err := os.ReadFile(filepath.Join(b.basePath, "leds", name, "trigger"))
+	if err != nil {
+		return false
+	}
+
+	for _, field := range strings.Fields(string(data)) {
+		if strings.HasPrefix(field, "[") && strings.HasSuffix(field, "]") {
+			return field != "[none]"
+		}
+	}
+
+	return false
+}
+
 func (b *SysfsBackend) Rescan() error {
 	return b.scanDevices()
 }
@@ -109,7 +128,7 @@ func (b *SysfsBackend) GetDevices() ([]Device, error) {
 	devices := make([]Device, 0)
 
 	b.deviceCache.Range(func(key string, dev *sysfsDevice) bool {
-		if shouldSuppressDevice(dev.name) {
+		if shouldSuppressDevice(dev.name) || (dev.class == ClassLED && b.isIndicatorLED(dev.name)) {
 			return true
 		}
 
