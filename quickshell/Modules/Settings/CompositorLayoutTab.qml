@@ -701,7 +701,6 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                 settingKey: "hyprlandWobbleDamping"
                 visible: SettingsData.hyprlandWobbleEnabled && HyprlandService.hyprSupports("decoration:wobble:damping")
                 text: I18n.tr("Wobble damping", "Hyprland slider, how quickly wobbly windows stop swinging")
-                description: I18n.tr("Lower values wobble longer before settling", "Hyprland wobble damping description")
                 value: SettingsData.hyprlandWobbleDamping
                 minimum: 0
                 maximum: 1000
@@ -713,7 +712,6 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                 settingKey: "hyprlandWobbleMass"
                 visible: SettingsData.hyprlandWobbleEnabled && HyprlandService.hyprSupports("decoration:wobble:mass")
                 text: I18n.tr("Wobble mass", "Hyprland slider, inertia of the wobble spring")
-                description: I18n.tr("Heavier windows wobble more and settle slower", "Hyprland wobble mass description")
                 value: SettingsData.hyprlandWobbleMass
                 minimum: 25
                 maximum: 300

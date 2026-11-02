@@ -13881,19 +13881,13 @@
     "tabIndex": 37,
     "category": "System & integrations",
     "keywords": [
-      "before",
       "damping",
       "hyprland",
       "integrations",
-      "longer",
-      "lower",
-      "settling",
       "spring",
       "system",
-      "values",
       "wobble"
     ],
-    "description": "Lower values wobble longer before settling",
     "conditionKey": "layoutCapable"
   },
   {
@@ -13902,20 +13896,14 @@
     "tabIndex": 37,
     "category": "System & integrations",
     "keywords": [
-      "heavier",
       "hyprland",
       "inertia",
       "integrations",
       "mass",
-      "more",
-      "settle",
-      "slower",
       "system",
       "weight",
-      "windows",
       "wobble"
     ],
-    "description": "Heavier windows wobble more and settle slower",
     "conditionKey": "layoutCapable"
   },
   {
