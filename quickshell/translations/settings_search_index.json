@@ -668,6 +668,24 @@
     "page": "theme_surfaces"
   },
   {
+    "section": "surfaceControls",
+    "label": "Controls",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "controls",
+      "focus",
+      "interface",
+      "keyboard",
+      "ring",
+      "scrollbar",
+      "scrollbars",
+      "style"
+    ],
+    "page": "theme_surfaces",
+    "icon": "center_focus_strong"
+  },
+  {
     "section": "fixedRadius",
     "label": "Corner radius",
     "tabIndex": -1,
@@ -3180,6 +3198,30 @@
     ],
     "parentLabel": "Date, time & region",
     "description": "Preview: %1"
+  },
+  {
+    "section": "showAmPm",
+    "label": "Show AM/PM",
+    "tabIndex": 1,
+    "category": "Time & weather",
+    "keywords": [
+      "12hour",
+      "am",
+      "climate",
+      "clock",
+      "date",
+      "date,",
+      "forecast",
+      "format",
+      "meridiem",
+      "pm",
+      "region",
+      "show",
+      "temperature",
+      "time",
+      "weather"
+    ],
+    "parentLabel": "Date, time & region"
   },
   {
     "section": "showSeconds",

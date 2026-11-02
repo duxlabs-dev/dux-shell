@@ -358,3 +358,34 @@ func TestNetworkManagerBackend_FindConnection_NoSettings(t *testing.T) {
 	_, err = backend.findConnection("NonExistentNetwork")
 	assert.Error(t, err)
 }
+
+func TestAPNeedsCredentials(t *testing.T) {
+	const (
+		privacy = uint32(gonetworkmanager.Nm80211APFlagsPrivacy)
+		ccmp    = uint32(gonetworkmanager.Nm80211APSecPairCCMP) | uint32(gonetworkmanager.Nm80211APSecGroupCCMP)
+		psk     = uint32(gonetworkmanager.Nm80211APSecKeyMgmtPSK)
+		sae     = uint32(gonetworkmanager.Nm80211APSecKeyMgmtSAE)
+		owe     = uint32(gonetworkmanager.Nm80211APSecKeyMgmtOWE)
+		oweTM   = uint32(gonetworkmanager.Nm80211APSecKeyMgmtOWETM)
+	)
+
+	tests := []struct {
+		name                      string
+		flags, wpaFlags, rsnFlags uint32
+		want                      bool
+	}{
+		{"open", 0, 0, 0, false},
+		{"owe", privacy, 0, owe | ccmp, false},
+		{"owe transition open bss", 0, 0, oweTM, false},
+		{"wep", privacy, 0, 0, true},
+		{"wpa2 psk", privacy, 0, psk | ccmp, true},
+		{"wpa3 transition", privacy, 0, psk | sae | ccmp, true},
+		{"sae with owe", privacy, 0, sae | owe | ccmp, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, apNeedsCredentials(tt.flags, tt.wpaFlags, tt.rsnFlags))
+		})
+	}
+}

@@ -53,6 +53,8 @@ while read -r mark sha; do
   # skip automated bumps/CI commits
   author=$(git log -1 --format=%an "$sha")
   case "$author" in *"[bot]"*) continue ;; esac
+  # version/codename bumps open a release line on master and must never port
+  git diff --name-only "${sha}^" "$sha" -- quickshell/VERSION quickshell/CODENAME | grep -q . && continue
   short=$(git rev-parse --short "$sha")
   pr=$(grep -oE '#[0-9]+' <<<"$subject" | head -1 || true)
   line="- [ ] \`${short}\` ${subject} (${author}${pr:+, ${pr}})"

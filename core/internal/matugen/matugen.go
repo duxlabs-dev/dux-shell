@@ -528,11 +528,12 @@ func buildOnce(opts *Options) (bool, error) {
 		default:
 			syncAccentColor(primaryDark)
 		}
-		// A pending color-scheme sync reloads GTK4 itself; pulsing first would show
-		// the new mode's colors in the old mode until it lands.
-		if !opts.SyncModeWithPortal || !colorSchemeChanging(opts.Mode) {
-			pulseReducedMotion()
+		// Switch the mode before pulsing so apps following it never show the new
+		// colors in the old mode; the pulse reaches apps that pin their own scheme
+		if opts.SyncModeWithPortal {
+			syncColorScheme(opts.Mode)
 		}
+		pulseReducedMotion()
 		refreshGTKColorScheme()
 	}
 
@@ -1537,11 +1538,6 @@ func currentColorScheme() string {
 		return ""
 	}
 	return strings.Trim(cur, "'")
-}
-
-func colorSchemeChanging(mode ColorMode) bool {
-	_, needed := colorSchemeTarget(mode, currentColorScheme())
-	return needed
 }
 
 func syncColorScheme(mode ColorMode) {

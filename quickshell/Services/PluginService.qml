@@ -353,6 +353,11 @@ Singleton {
                     continue;
                 paths[surface] = path;
             }
+            // A desktop card's root can't also be a bar pill; in a bar or dock it renders at card size and overflows.
+            if (paths.widget && paths.widget === paths.desktop) {
+                log.warn("widget surface reuses the desktop component, ignoring it in", dir);
+                delete paths.widget;
+            }
             return paths;
         }
         const legacyPath = _pluginFilePath(dir, manifest.component);
@@ -552,9 +557,10 @@ Singleton {
                     _destroyComponents(Object.values(comps));
                     // Qt caches the failure per URL, so the next attempt needs a new revision.
                     _invalidatePluginComponents(pluginId);
+                    // Qt also says this when a file was added after the running shell first listed the plugin directory.
                     _setLoadError(pluginId, {
                         title: error,
-                        details: ""
+                        details: error.includes("File name case mismatch") ? I18n.tr("A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.", "plugin load error hint shown under Qt's 'File name case mismatch' error") : ""
                     });
                     pluginLoadFailed(pluginId, error);
                     return false;

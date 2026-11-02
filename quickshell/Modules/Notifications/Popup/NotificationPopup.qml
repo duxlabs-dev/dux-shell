@@ -40,13 +40,13 @@ PanelWindow {
     required property string notificationId
     readonly property bool hasValidData: notificationData && notificationData.notification
     readonly property alias hovered: cardHoverHandler.hovered
-    readonly property alias swipeActive: content.swipeActive
-    readonly property alias swipeDismissing: content.swipeDismissing
+    readonly property bool swipeActive: swipe.magnetActive
+    readonly property bool swipeDismissing: swipe.dismissing
     readonly property bool swipeDismissTowardEdge: {
-        if (content.swipeDismissing)
-            return _swipeDismissesTowardFrameEdge();
-        if (content.swipeActive)
-            return content.swipeOffset * _frameEdgeSwipeDirection() > 0;
+        if (swipe.dismissing)
+            return swipe.dismissDirection === _frameEdgeSwipeDirection();
+        if (swipe.magnetActive)
+            return swipe.offset * _frameEdgeSwipeDirection() > 0;
         return false;
     }
     readonly property real screenY: stackMotion.value
@@ -166,7 +166,6 @@ PanelWindow {
         _isDestroying = true;
         enterAnimation.stop();
         exitAnim.stop();
-        swipeDismissAnim.stop();
         enterDelay.stop();
         exitWatchdog.stop();
         wrapperConn.enabled = false;
@@ -537,26 +536,18 @@ PanelWindow {
         return Theme.snap(getAllocatedContentY() - windowShadowPad, dpr);
     }
 
-    function _swipeDismissTarget() {
-        return (content.swipeDismissDirection < 0 ? -1 : 1) * content.width;
-    }
-
     function _frameEdgeSwipeDirection() {
         const popupPos = SettingsData.notificationPopupPosition;
         return (popupPos === SettingsData.Position.Left || popupPos === SettingsData.Position.Bottom) ? -1 : 1;
     }
 
-    function _swipeDismissesTowardFrameEdge() {
-        return content.swipeDismissDirection === _frameEdgeSwipeDirection();
-    }
-
     function popupChromeMotionActive() {
-        return presentationProgress < 1 || exiting || content.swipeActive || content.swipeDismissing || Math.abs(content.swipeOffset) > 0.5;
+        return presentationProgress < 1 || exiting || swipe.magnetActive || swipe.dismissing || Math.abs(swipe.offset) > 0.5;
     }
 
     function swipeReleaseProgress() {
-        if (content.swipeDismissing || (content.swipeActive && content.swipeOffset * _frameEdgeSwipeDirection() > 0))
-            return Math.max(0, Math.min(1, Math.abs(content.swipeOffset) / Math.max(1, content.swipeTravelDistance)));
+        if (swipe.dismissing || (swipe.magnetActive && swipe.offset * _frameEdgeSwipeDirection() > 0))
+            return Math.max(0, Math.min(1, Math.abs(swipe.offset) / Math.max(1, content.width)));
         return 0;
     }
 
@@ -607,40 +598,8 @@ PanelWindow {
         visible: win.cardShown && !chromeOnlyExit
         transformOrigin: Item.Center
 
-        property real swipeOffset: 0
-        property real swipeDismissDirection: 1
         property bool chromeOnlyExit: false
-        readonly property real dismissThreshold: width * NotificationMetrics.swipeThreshold
-        readonly property real swipeFadeStartRatio: NotificationMetrics.swipeFadeStart
-        readonly property real swipeTravelDistance: width
-        readonly property real swipeFadeStartOffset: swipeTravelDistance * swipeFadeStartRatio
-        readonly property real swipeFadeDistance: Math.max(1, swipeTravelDistance - swipeFadeStartOffset)
-        property bool swipeWheelActive: false
-        readonly property bool swipeActive: swipeDragHandler.active || swipeWheelActive
-        property bool swipeDismissing: false
-        onSwipeDismissingChanged: {
-            if (!win.connectedFrameMode)
-                return;
-            win.popupHeightChanged();
-            win.popupChromeGeometryChanged();
-        }
-        onSwipeOffsetChanged: {
-            if (win.connectedFrameMode)
-                win.popupChromeGeometryChanged();
-        }
-
-        function releaseSwipe(velocity = 0) {
-            if (win.exiting || swipeDismissing)
-                return;
-            const projected = swipeOffset + velocity * NotificationMetrics.swipeFlingProjectionMs / 1000;
-            if (Math.abs(projected) <= dismissThreshold) {
-                swipeOffset = 0;
-                return;
-            }
-            swipeDismissDirection = projected < 0 ? -1 : 1;
-            swipeDismissing = true;
-            swipeDismissAnim.start();
-        }
+        readonly property real swipeFadeStart: width * NotificationMetrics.swipeFadeStart
 
         readonly property bool shadowsAllowed: win.popupWindowShadowActive
         readonly property var elevLevel: Theme.elevationLevel2
@@ -751,6 +710,7 @@ PanelWindow {
                         persistImage: true
                         showClose: true
                         revealControls: win.hovered || win.contextMenuActive
+                        contentOpacity: swipe.contentOpacity
                         dismissText: I18n.tr("Clear")
                         animateHeight: false
                         outerRadius: win.connectedFrameMode ? Theme.connectedSurfaceRadius : NotificationMetrics.popupRadius
@@ -850,64 +810,22 @@ PanelWindow {
             }
         }
 
-        DragHandler {
-            id: swipeDragHandler
-            target: null
-            xAxis.enabled: true
-            yAxis.enabled: false
-
-            onActiveChanged: {
-                if (active)
-                    return;
-                content.releaseSwipe();
-            }
-
-            onTranslationChanged: {
-                if (win.exiting || content.swipeDismissing)
-                    return;
-
-                content.swipeOffset = translation.x;
-            }
-        }
-
+        // The window edge hard-clips the surface as it leaves, so fade the shell out over the last stretch
         opacity: {
-            const swipeAmount = Math.abs(content.swipeOffset);
+            const swipeAmount = Math.abs(swipe.offset);
             const revealOpacity = win.directionalEffect ? 1 : win.presentationProgress;
-            if (swipeAmount <= content.swipeFadeStartOffset)
+            if (swipeAmount <= content.swipeFadeStart)
                 return revealOpacity;
-            const fadeProgress = (swipeAmount - content.swipeFadeStartOffset) / content.swipeFadeDistance;
+            const fadeProgress = (swipeAmount - content.swipeFadeStart) / Math.max(1, content.width - content.swipeFadeStart);
             return Math.max(0, 1 - fadeProgress) * revealOpacity;
         }
 
         scale: win.directionalEffect ? 1 : Theme.effectScaleCollapsed + (1 - Theme.effectScaleCollapsed) * win.presentationProgress
 
-        Behavior on swipeOffset {
-            enabled: !content.swipeActive && !content.swipeDismissing
-            NumberAnimation {
-                duration: NotificationMetrics.animationsEnabled ? Theme.notificationExitDuration : 0
-                easing.type: Theme.standardEasing
-            }
-        }
-
-        NumberAnimation {
-            id: swipeDismissAnim
-            target: content
-            property: "swipeOffset"
-            to: win._swipeDismissTarget()
-            duration: NotificationMetrics.animationsEnabled ? Theme.notificationExitDuration : 0
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: NotificationMetrics.dismissCurve
-            onFinished: {
-                content.chromeOnlyExit = true;
-                win.startExit();
-                NotificationService.dismissNotification(notificationData);
-            }
-        }
-
         transform: [
             Translate {
                 id: swipeTx
-                x: content.swipeOffset
+                x: swipe.offset
                 y: 0
             },
             Translate {
@@ -926,24 +844,36 @@ PanelWindow {
         ]
     }
 
-    // Sits on the untranslated card footprint: inside content the handler would lose the pointer once the card slides past it,
-    // and above content so it sees the gesture before DFlickable's blocking vertical handler
-    Item {
+    NotificationSwipeGroup {
+        id: swipeGroup
+    }
+
+    // Sits on the untranslated card footprint: inside content the handlers would lose the pointer once the card slides past them,
+    // and above content so they see the gesture before DFlickable's blocking vertical handler
+    NotificationSwipeRow {
+        id: swipe
         parent: slideClip
+        index: 0
         x: content.x
         y: content.y
         width: content.width
         height: content.height
         visible: content.visible
-
-        NotificationSwipeWheel {
-            enabled: !win.exiting && !content.swipeDismissing
-            onBegan: content.swipeWheelActive = true
-            onMoved: travel => content.swipeOffset = travel
-            onEnded: velocity => {
-                content.swipeWheelActive = false;
-                content.releaseSwipe(velocity);
-            }
+        group: win.exiting ? null : swipeGroup
+        onOffsetChanged: {
+            if (win.connectedFrameMode)
+                win.popupChromeGeometryChanged();
+        }
+        onDismissingChanged: {
+            if (!win.connectedFrameMode)
+                return;
+            win.popupHeightChanged();
+            win.popupChromeGeometryChanged();
+        }
+        onDismissed: {
+            content.chromeOnlyExit = true;
+            win.startExit();
+            NotificationService.dismissNotification(win.notificationData);
         }
     }
 

@@ -306,6 +306,7 @@ Singleton {
     readonly property bool use24HourClock: clockFormat === "24h" ? true : (clockFormat === "12h" ? false : localeUses24Hour)
     property bool showSeconds: Spec.SPEC.showSeconds.def
     property bool padHours12Hour: Spec.SPEC.padHours12Hour.def
+    property bool showAmPm: Spec.SPEC.showAmPm.def
     property bool useFahrenheit: Spec.SPEC.useFahrenheit.def
     property string windSpeedUnit: Spec.SPEC.windSpeedUnit.def
     property int animationDuration: Spec.SPEC.animationDuration.def
@@ -2351,11 +2352,10 @@ Singleton {
     }
 
     function getEffectiveTimeFormat() {
+        const seconds = showSeconds ? ":ss" : "";
         if (use24HourClock)
-            return showSeconds ? "hh:mm:ss" : "hh:mm";
-        if (padHours12Hour)
-            return showSeconds ? "hh:mm:ss AP" : "hh:mm AP";
-        return showSeconds ? "h:mm:ss AP" : "h:mm AP";
+            return "hh:mm" + seconds;
+        return (padHours12Hour ? "hh" : "h") + ":mm" + seconds + (showAmPm ? " AP" : "");
     }
 
     function getEffectiveDateFormat(fallback) {

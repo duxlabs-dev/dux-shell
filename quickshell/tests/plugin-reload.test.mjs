@@ -27,7 +27,7 @@ function service({ enabled = true, type = "widget" } = {}) {
         DMSService: { update: (id, callback) => requests.push(callback), installedPlugins: [] },
         ShellVersionService: { checkVersionRequirement: requirement => !requirement.startsWith(">=99"), getParsedShellVersion: () => ({}) },
         Component: { Error: 3, PreferSynchronous: 0 },
-        I18n: { tr: text => ({ arg: value => text.replace("%1", value) }) },
+        I18n: { tr: text => Object.assign(new String(text), { arg: value => text.replace("%1", value) }) },
         ToastService: { showError() {} },
         // Like Qt's type loader, a URL keeps whatever it first compiled to, errors included.
         Qt: { createComponent(url) {
@@ -257,5 +257,21 @@ test("enabling again after a failed load compiles the fixed files", () => {
         context.enablePlugin("fixture");
         assert.equal(context.isPluginLoaded("fixture"), true, file);
         assert.equal(context[key].fixture.value, 30, file);
+    }
+});
+
+test("a stale directory listing explains that the shell needs a restart", () => {
+    const cases = [
+        ["Script file:///plugins/fixture/Helper.js unavailable\nfile:///plugins/fixture/Helper.js: File name case mismatch", /Restart DMS/],
+        ["Widget.qml:3:1: Type Helper unavailable", /^$/]
+    ];
+    for (const [message, details] of cases) {
+        const { context, files } = service({ enabled: false });
+        const errors = [];
+        context._setLoadError = (id, error) => errors.push(error);
+        files.set("file:///plugins/fixture/Widget.qml", new Error(message));
+        assert.equal(context.loadPlugin("fixture"), false);
+        assert.equal(errors.at(-1).title, message);
+        assert.match(String(errors.at(-1).details), details);
     }
 });

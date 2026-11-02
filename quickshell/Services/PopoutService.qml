@@ -1171,7 +1171,7 @@ Singleton {
     }
 
     function showNotificationModal() {
-        notificationModal?.show();
+        notificationModal?.open();
     }
 
     function hideNotificationModal() {

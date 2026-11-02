@@ -16,11 +16,30 @@ FocusScope {
     property int currentTab: 0
     property var transientSurfaceTracker: null
     property real swipeBleed: 0
+    property bool sizeToContent: false
+    property bool settingsAction: false
     readonly property var surfaces: transientSurfaceTracker ?? localSurfaces
     readonly property bool hasNotifications: list.count > 0
     readonly property Item focusTarget: root
+    readonly property bool showKeyboardHints: currentTab === 1 ? (historyLoader.item?.showKeyboardHints ?? false) : keyboard.showKeyboardHints
+    readonly property real contentHeight: {
+        let listHeight = NotificationMetrics.emptyHeight;
+        if (currentTab === 0) {
+            if (NotificationService.groupedNotifications.length > 0)
+                listHeight = live && list.stableContentHeight > 0 ? list.stableContentHeight : list.listContentHeight;
+        } else if (NotificationService.historyList.length > 0) {
+            listHeight = Math.max(NotificationMetrics.emptyHeight, NotificationService.historyList.length * NotificationMetrics.estimatedCardHeight);
+        }
+        return listHeight + footer.height + Theme.spacingM;
+    }
     property bool blocksTabNavigation: false
     activeFocusOnTab: interactive
+
+    signal settingsRequested
+
+    function forceLayout() {
+        list.forceLayout();
+    }
 
     function handleKeyEvent(event) {
         event.accepted = false;
@@ -148,7 +167,7 @@ FocusScope {
         keyboardController: keyboard
         focusAllowed: root.activeFocus
         transientSurfaceTracker: root.surfaces
-        trackStableContentHeight: false
+        trackStableContentHeight: root.sizeToContent
     }
 
     Loader {
@@ -185,7 +204,7 @@ FocusScope {
         }
 
         DButton {
-            width: Math.max(0, footer.width - dndButton.width - (historyButton.visible ? historyButton.width + footer.spacing : 0) - footer.spacing)
+            width: Math.max(0, footer.width - dndButton.width - (historyButton.visible ? historyButton.width + footer.spacing : 0) - (settingsButton.visible ? settingsButton.width + footer.spacing : 0) - footer.spacing)
             text: I18n.tr("Clear All")
             buttonHeight: Theme.iconButtonSize
             backgroundColor: Theme.secondaryContainer
@@ -209,6 +228,26 @@ FocusScope {
             tooltipText: I18n.tr("Do not disturb")
             onClicked: duration.showDropdownMenu()
         }
+
+        DActionButton {
+            id: settingsButton
+            visible: root.settingsAction
+            buttonSize: Theme.iconButtonSize
+            iconName: "settings"
+            backgroundColor: Theme.secondaryContainer
+            iconColor: Theme.onSecondaryContainer
+            tooltipText: I18n.tr("Settings")
+            onClicked: root.settingsRequested()
+        }
+    }
+
+    NotificationKeyboardHints {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: footer.top
+        anchors.bottomMargin: Theme.spacingM
+        showHints: root.showKeyboardHints
+        historyTab: root.currentTab === 1
     }
 
     DDropdown {
