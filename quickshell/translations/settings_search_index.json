@@ -668,6 +668,24 @@
     "page": "theme_surfaces"
   },
   {
+    "section": "surfaceControls",
+    "label": "Controls",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "controls",
+      "focus",
+      "interface",
+      "keyboard",
+      "ring",
+      "scrollbar",
+      "scrollbars",
+      "style"
+    ],
+    "page": "theme_surfaces",
+    "icon": "center_focus_strong"
+  },
+  {
     "section": "fixedRadius",
     "label": "Corner radius",
     "tabIndex": -1,
