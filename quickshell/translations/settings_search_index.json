@@ -13929,6 +13929,60 @@
     "conditionKey": "layoutCapable"
   },
   {
+    "section": "hyprlandWobbleDamping",
+    "label": "Wobble damping",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "damping",
+      "hyprland",
+      "integrations",
+      "spring",
+      "system",
+      "wobble"
+    ],
+    "conditionKey": "layoutCapable"
+  },
+  {
+    "section": "hyprlandWobbleMass",
+    "label": "Wobble mass",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "hyprland",
+      "inertia",
+      "integrations",
+      "mass",
+      "system",
+      "weight",
+      "wobble"
+    ],
+    "conditionKey": "layoutCapable"
+  },
+  {
+    "section": "hyprlandWobbleMesh",
+    "label": "Wobble mesh",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "cost",
+      "detail",
+      "flex",
+      "higher",
+      "hyprland",
+      "integrations",
+      "mesh",
+      "more",
+      "smoothly",
+      "system",
+      "values",
+      "vertices",
+      "wobble"
+    ],
+    "description": "Higher values flex more smoothly and cost more GPU",
+    "conditionKey": "layoutCapable"
+  },
+  {
     "section": "hyprlandWobbleStiffness",
     "label": "Wobble stiffness",
     "tabIndex": 37,

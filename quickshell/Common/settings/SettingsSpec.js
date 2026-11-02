@@ -246,6 +246,18 @@ var LOCAL_SPEC = {
         def: 200,
         onChange: "updateCompositorLayout"
     },
+    hyprlandWobbleDamping: {
+        def: 12,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWobbleMass: {
+        def: 100,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWobbleMesh: {
+        def: 12,
+        onChange: "updateCompositorLayout"
+    },
     hyprlandMotionBlurEnabled: {
         def: false,
         onChange: "updateCompositorLayout"
