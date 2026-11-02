@@ -11,16 +11,25 @@ Usage:
   release-notes.py v1.4.6..v1.5.0 --format changelog  # danklinux-docs changelog.mdx entry
   release-notes.py v1.4.6..v1.5.0 --format blog       # MDX contributor tables for danklinux-docs
   release-notes.py v1.4.6..v1.5.0 --format checklist  # flat PR/author review list
+  release-notes.py v1.4.6..v1.5.0 --format translators  # strings translated per language
 
 Requires: git (full history), gh authenticated. --repo defaults to origin.
+
+Translation counts (blog and translators formats) come from git history.
+Translators are not named: they have not agreed to be listed. Language names
+come from the public contributors feed at https://api.duxlabs.dev/contributors
+(CONTRIBUTORS_FEED overrides it); POEditor codes are shown if it is down.
 """
 
 import argparse
+import ast
 import json
+import os
 import re
 import subprocess
 import sys
-from collections import OrderedDict
+import urllib.request
+from collections import Counter, OrderedDict
 from pathlib import Path
 
 BOT_RE = re.compile(r"\[bot\]$|^github-actions$|^dependabot$", re.I)
@@ -326,6 +335,115 @@ def format_blog(repo, entries, rng, exclude=frozenset()):
     return "\n".join(out)
 
 
+# POEditor exports per language; (path inside the repo, submodule it lives in)
+TRANSLATION_DIRS = [
+    ("quickshell/translations/poexports", None),
+    ("DCommon/translations/poexports", "dux-qml-common"),
+]
+I18NSYNC = "quickshell/scripts/i18nsync.py"
+CONTRIBUTORS_FEED = "https://api.duxlabs.dev/contributors"
+
+
+def repo_root():
+    return Path(run(["git", "rev-parse", "--show-toplevel"]).strip())
+
+
+def range_ends(rng):
+    base, _, head = rng.partition("..")
+    return base, head.lstrip(".") or "HEAD"
+
+
+def poeditor_languages():
+    """{export filename: POEditor code}, read from i18nsync.py's LANGUAGES
+    without importing it."""
+    tree = ast.parse((repo_root() / I18NSYNC).read_text())
+    for node in tree.body:
+        if (isinstance(node, ast.Assign)
+                and any(getattr(t, "id", None) == "LANGUAGES" for t in node.targets)):
+            return {f: code for code, f in ast.literal_eval(node.value).items()}
+    return {}
+
+
+def translated_strings(data):
+    """{(term, context): translation} for every non-empty translation."""
+    out = {}
+    for term, ctxs in (data or {}).items():
+        if isinstance(ctxs, dict):
+            for ctx, val in ctxs.items():
+                if isinstance(val, str) and val.strip():
+                    out[(term, ctx)] = val
+    return out
+
+
+def translation_activity(rng):
+    """{export filename: strings newly translated or retranslated in rng}.
+
+    A source-text rename moves a translation to a new key; it only counts
+    when the translated text itself is new for that language."""
+    base, head = range_ends(rng)
+    counts, top = Counter(), repo_root()
+    for path, sub in TRANSLATION_DIRS:
+        cwd = top / sub if sub else top
+        try:
+            revs = ([run(["git", "rev-parse", f"{r}:{sub}"], cwd=top).strip() for r in (base, head)]
+                    if sub else [base, head])
+            for r in revs:
+                run(["git", "cat-file", "-e", f"{r}^{{commit}}"], cwd=cwd)
+            files = run(["git", "ls-tree", "--name-only", f"{revs[1]}:{path}"], cwd=cwd).split()
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            print(f"warning: skipping {sub or '.'}/{path} (not available at both ends of {rng})",
+                  file=sys.stderr)
+            continue
+
+        def load(rev, f):
+            try:
+                return json.loads(run(["git", "show", f"{rev}:{path}/{f}"], cwd=cwd))
+            except (subprocess.CalledProcessError, json.JSONDecodeError):
+                return {}
+
+        for f in files:
+            if not f.endswith(".json"):
+                continue
+            old = translated_strings(load(revs[0], f))
+            known = set(old.values())
+            n = sum(1 for k, v in translated_strings(load(revs[1], f)).items()
+                    if old.get(k) != v and v not in known)
+            if n:
+                counts[f] += n
+    return counts
+
+
+def language_names(url):
+    """{POEditor code: language name} from the docs server's public feed."""
+    # The edge returns 403 to urllib's default User-Agent.
+    req = urllib.request.Request(url, headers={"Accept": "application/json",
+                                               "User-Agent": "dms-release-notes"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        feed = json.load(resp)
+    return {l["code"]: l.get("name") or l["code"] for l in feed.get("languages") or []}
+
+
+def format_translators(rng):
+    activity = translation_activity(rng)
+    if not activity:
+        return f"<!-- no translation changes in {rng} -->"
+    codes = poeditor_languages()
+    try:  # names are cosmetic; never block the notes
+        names = language_names(os.environ.get("CONTRIBUTORS_FEED") or CONTRIBUTORS_FEED)
+    except Exception as e:
+        print(f"warning: language name lookup failed ({e}); showing codes", file=sys.stderr)
+        names = {}
+
+    rows = []
+    for f, n in sorted(activity.items(), key=lambda kv: (-kv[1], kv[0])):
+        code = codes.get(f, f.removesuffix(".json"))
+        rows.append(f"| {mdx_safe(names.get(code, code))} | {n:,} |")
+    total = sum(activity.values())
+    return "\n".join(["### Translators", "",
+                      f"<!-- {len(activity)} languages, {total:,} strings newly translated in {rng}. -->",
+                      "", "| Language | Strings |", "|---|---|", *rows])
+
+
 def format_checklist(entries):
     out = []
     for e in entries:
@@ -337,7 +455,7 @@ def format_checklist(entries):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("range", help="git range, e.g. v1.4.6..v1.5.0")
-    ap.add_argument("--format", choices=["github", "changelog", "blog", "checklist"], default="github")
+    ap.add_argument("--format", choices=["github", "changelog", "blog", "checklist", "translators"], default="github")
     ap.add_argument("--repo", default=None, help="owner/name (default: from origin)")
     ap.add_argument("--exclude", action="append", default=None, metavar="LOGIN",
                     help="drop this author (repeatable). Blog format defaults "
@@ -362,6 +480,9 @@ def main():
         m = re.search(r"github\.com[:/]([^/]+/[^/.]+)", url)
         repo = m.group(1) if m else "duxlabs-dev/dux-shell"
 
+    if args.format == "translators":
+        return write_output(args, format_translators(args.range))
+
     entries = build_entries(repo, args.range, use_api=not args.no_api)
     if not entries:
         print("no commits in range", file=sys.stderr)
@@ -373,6 +494,7 @@ def main():
     if args.format == "blog":
         # blog excludes from tables only; fixes list keeps everyone
         text = format_blog(repo, entries, args.range, exclude=frozenset(drop))
+        text += "\n" + format_translators(args.range)
     else:
         if drop:
             entries = [e for e in entries
@@ -384,7 +506,10 @@ def main():
             text = format_changelog(repo, entries, args.range)
         else:
             text = format_checklist(entries)
+    return write_output(args, text)
 
+
+def write_output(args, text):
     out_target = args.output or (f"~/Documents/dms-v{args.version}-changelog.md" if args.version else None)
     if out_target:
         out_path = Path(out_target).expanduser()
