@@ -27,11 +27,16 @@ function service({ enabled = true, type = "widget" } = {}) {
         DMSService: { update: (id, callback) => requests.push(callback), installedPlugins: [] },
         ShellVersionService: { checkVersionRequirement: requirement => !requirement.startsWith(">=99"), getParsedShellVersion: () => ({}) },
         Component: { Error: 3, PreferSynchronous: 0 },
-        I18n: { tr: text => ({ arg: value => text.replace("%1", value) }) },
+        I18n: { tr: text => Object.assign(new String(text), { arg: value => text.replace("%1", value) }) },
         ToastService: { showError() {} },
+        // Like Qt's type loader, a URL keeps whatever it first compiled to, errors included.
         Qt: { createComponent(url) {
-            if (!compiled.has(url))
-                compiled.set(url, { value: files.get(url.split("?")[0]), createObject() { return this.value; }, destroy() { destroyed.push(url); } });
+            if (!compiled.has(url)) {
+                const value = files.get(url.split("?")[0]);
+                compiled.set(url, value instanceof Error
+                    ? { status: 3, errorString: () => value.message, destroy() {} }
+                    : { value, createObject() { return this.value; }, destroy() { destroyed.push(url); } });
+            }
             return compiled.get(url);
         } },
         pluginLoaded() {}, pluginUnloaded() {}, pluginListUpdated() {},
@@ -231,5 +236,21 @@ test("composite updates refresh every surface without creating daemons synchrono
         for (const key of ["pluginWidgetComponents", "pluginDesktopComponents", "pluginDaemonComponents", "pluginLauncherComponents", "pluginDashComponents", "pluginDashCardComponents"])
             assert.equal(context[key].fixture.value, value);
         assert.equal(context.pluginDaemonInstances.fixture, undefined);
+    }
+});
+
+test("a stale directory listing explains that the shell needs a restart", () => {
+    const cases = [
+        ["Script file:///plugins/fixture/Helper.js unavailable\nfile:///plugins/fixture/Helper.js: File name case mismatch", /Restart DMS/],
+        ["Widget.qml:3:1: Type Helper unavailable", /^$/]
+    ];
+    for (const [message, details] of cases) {
+        const { context, files } = service({ enabled: false });
+        const errors = [];
+        context._setLoadError = (id, error) => errors.push(error);
+        files.set("file:///plugins/fixture/Widget.qml", new Error(message));
+        assert.equal(context.loadPlugin("fixture"), false);
+        assert.equal(errors.at(-1).title, message);
+        assert.match(String(errors.at(-1).details), details);
     }
 });

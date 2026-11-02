@@ -550,9 +550,10 @@ Singleton {
                     const error = comp.errorString();
                     log.error("component error", pluginId, surface, error);
                     _destroyComponents(Object.values(comps));
+                    // Qt also says this when a file was added after the running shell first listed the plugin directory.
                     _setLoadError(pluginId, {
                         title: error,
-                        details: ""
+                        details: error.includes("File name case mismatch") ? I18n.tr("A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.", "plugin load error hint shown under Qt's 'File name case mismatch' error") : ""
                     });
                     pluginLoadFailed(pluginId, error);
                     return false;
