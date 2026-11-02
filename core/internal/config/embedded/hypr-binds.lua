@@ -1,4 +1,6 @@
 -- DMS default keybinds (Hyprland 0.55+ Lua)
+-- dms setup replaces this file with the stock set; a changed copy is kept in ../.dms-backups/.
+-- Put your own binds and overrides in binds-user.lua, which setup never touches.
 
 -- Hyprland emits no socket2 event when a window moves or resizes, so these
 -- dispatchers announce one for the shell (dock smart auto-hide, #3168)

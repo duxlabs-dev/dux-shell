@@ -11,6 +11,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
 	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
@@ -520,7 +521,8 @@ func (h *HyprlandProvider) generateBindsContent(binds map[string]*hyprlandOverri
 	})
 
 	var sb strings.Builder
-	sb.WriteString("-- DMS user keybind overrides (edit via Control Center or dms; do not remove this header)\n\n")
+	sb.WriteString(config.DMSBindsUserLuaConfig)
+	sb.WriteString("\n")
 	for _, bind := range bindList {
 		writeLuaBindLine(&sb, bind)
 	}
