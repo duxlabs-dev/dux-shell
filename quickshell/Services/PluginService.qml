@@ -353,6 +353,11 @@ Singleton {
                     continue;
                 paths[surface] = path;
             }
+            // A desktop card's root can't also be a bar pill; in a bar or dock it renders at card size and overflows.
+            if (paths.widget && paths.widget === paths.desktop) {
+                log.warn("widget surface reuses the desktop component, ignoring it in", dir);
+                delete paths.widget;
+            }
             return paths;
         }
         const legacyPath = _pluginFilePath(dir, manifest.component);
