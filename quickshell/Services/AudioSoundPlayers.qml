@@ -15,7 +15,9 @@ Item {
 
     component SoundPlayer: MediaPlayer {
         required property string soundEvent
-        source: AudioService.getSoundPath(soundEvent)
+        // setSource stops playback before its same-url check, so only forward real path changes
+        readonly property string resolvedSource: AudioService.getSoundPath(soundEvent)
+        source: resolvedSource
         audioOutput: AudioOutput {
             device: devices.defaultAudioOutput
             volume: AudioService.notificationsVolume
