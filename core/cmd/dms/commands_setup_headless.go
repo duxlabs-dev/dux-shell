@@ -68,7 +68,8 @@ func runSetupHeadless(compositor, terminal string, noSystemd, force, skipExistin
 		}
 	}
 
-	if !deployCompositor && !deployTerminal {
+	refreshHyprlandBinds := !deployCompositor && wm == deps.WindowManagerHyprland
+	if !deployCompositor && !deployTerminal && !refreshHyprlandBinds {
 		return nil
 	}
 
@@ -85,14 +86,20 @@ func runSetupHeadless(compositor, terminal string, noSystemd, force, skipExistin
 
 	var results []config.DeploymentResult
 	var deployErr error
+	terminalCommand := defaultTerminalCommand()
+	if termSelected {
+		terminalCommand = term.Command()
+	}
+	if wm == deps.WindowManagerHyprland {
+		deployer.SetHyprlandVersion(installedHyprlandVersion())
+	}
+	if refreshHyprlandBinds {
+		if result, ok := deployer.RefreshHyprlandDMSBinds(terminalCommand); ok {
+			results = append(results, result)
+			deployErr = result.Error
+		}
+	}
 	if deployCompositor {
-		terminalCommand := defaultTerminalCommand()
-		if termSelected {
-			terminalCommand = term.Command()
-		}
-		if wm == deps.WindowManagerHyprland {
-			deployer.SetHyprlandVersion(installedHyprlandVersion())
-		}
 		result, err := deployer.DeployCompositor(wm, terminalCommand, headlessUseSystemd(wm, noSystemd))
 		results = append(results, result)
 		deployErr = err
