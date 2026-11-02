@@ -139,9 +139,7 @@ func (b *NetworkManagerBackend) GetWiFiNetworkDetails(ssid string) (*NetworkInfo
 		maxBitrate, _ := ap.GetPropertyMaxBitrate()
 		bssid, _ := ap.GetPropertyHWAddress()
 
-		secured := flags&uint32(gonetworkmanager.Nm80211APFlagsPrivacy) != 0 ||
-			wpaFlags != uint32(gonetworkmanager.Nm80211APSecNone) ||
-			rsnFlags != uint32(gonetworkmanager.Nm80211APSecNone)
+		secured := apNeedsCredentials(flags, wpaFlags, rsnFlags)
 
 		enterprise := (rsnFlags&uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X) != 0) ||
 			(wpaFlags&uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X) != 0)
@@ -419,6 +417,21 @@ func (b *NetworkManagerBackend) ForgetWiFiNetwork(ssid string) error {
 	return nil
 }
 
+func apNeedsCredentials(flags, wpaFlags, rsnFlags uint32) bool {
+	const (
+		keyMgmtOwe        = uint32(gonetworkmanager.Nm80211APSecKeyMgmtOWE) | uint32(gonetworkmanager.Nm80211APSecKeyMgmtOWETM)
+		keyMgmtCredential = uint32(gonetworkmanager.Nm80211APSecKeyMgmtPSK) | uint32(gonetworkmanager.Nm80211APSecKeyMgmtSAE) | uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X)
+	)
+
+	keyMgmt := wpaFlags | rsnFlags
+	if keyMgmt&keyMgmtOwe != 0 && keyMgmt&keyMgmtCredential == 0 {
+		return false
+	}
+	return flags&uint32(gonetworkmanager.Nm80211APFlagsPrivacy) != 0 ||
+		wpaFlags != uint32(gonetworkmanager.Nm80211APSecNone) ||
+		rsnFlags != uint32(gonetworkmanager.Nm80211APSecNone)
+}
+
 func getSavedWiFiProfiles(connections []gonetworkmanager.Connection) map[string]savedWiFiProfile {
 	profiles := make(map[string]savedWiFiProfile)
 
@@ -450,8 +463,8 @@ func getSavedWiFiProfiles(connections []gonetworkmanager.Connection) map[string]
 		if mode, ok := wifiSettings["mode"].(string); ok && mode != "" {
 			profile.Mode = mode
 		}
-		if _, ok := connSettings["802-11-wireless-security"]; ok {
-			profile.Secured = true
+		if sec, ok := connSettings["802-11-wireless-security"]; ok {
+			profile.Secured = sec["key-mgmt"] != "owe"
 		}
 		if _, ok := connSettings["802-1x"]; ok {
 			profile.Enterprise = true
@@ -548,9 +561,7 @@ func (b *NetworkManagerBackend) updateWiFiNetworks() ([]WiFiNetwork, error) {
 		maxBitrate, _ := ap.GetPropertyMaxBitrate()
 		bssid, _ := ap.GetPropertyHWAddress()
 
-		secured := flags&uint32(gonetworkmanager.Nm80211APFlagsPrivacy) != 0 ||
-			wpaFlags != uint32(gonetworkmanager.Nm80211APSecNone) ||
-			rsnFlags != uint32(gonetworkmanager.Nm80211APSecNone)
+		secured := apNeedsCredentials(flags, wpaFlags, rsnFlags)
 
 		enterprise := (rsnFlags&uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X) != 0) ||
 			(wpaFlags&uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X) != 0)
@@ -1229,9 +1240,7 @@ func (b *NetworkManagerBackend) updateAllWiFiDevices() {
 				maxBitrate, _ := ap.GetPropertyMaxBitrate()
 				apBSSID, _ := ap.GetPropertyHWAddress()
 
-				secured := flags&uint32(gonetworkmanager.Nm80211APFlagsPrivacy) != 0 ||
-					wpaFlags != uint32(gonetworkmanager.Nm80211APSecNone) ||
-					rsnFlags != uint32(gonetworkmanager.Nm80211APSecNone)
+				secured := apNeedsCredentials(flags, wpaFlags, rsnFlags)
 
 				enterprise := (rsnFlags&uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X) != 0) ||
 					(wpaFlags&uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X) != 0)
