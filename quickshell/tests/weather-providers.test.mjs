@@ -125,6 +125,23 @@ test("metno polar day does not depend on the machine time zone", () => {
     }
 });
 
+test("metno day and night follow the location when the machine is half a day away", () => {
+    process.env.TZ = "Pacific/Auckland";
+    try {
+        const start = Date.parse("2026-11-02T00:00:00Z");
+        const data = providers.parse("metno", metno(start), 46.95, 7.45, Date.parse("2026-11-02T11:20:00Z"));
+        const isDay = {};
+        weatherData.fromOpenMeteo(data, labels).hourlyForecast.forEach(hour => isDay[hour.rawTime] = hour.isDay);
+        // Machine time 12:00, 20:00 and 00:00 are 00:00, 08:00 and 12:00 in Bern.
+        assert.equal(isDay["2026-11-02T12:00"], false);
+        assert.equal(isDay["2026-11-02T20:00"], true);
+        assert.equal(isDay["2026-11-03T00:00"], true);
+        assert.equal(data.current.is_day, 1);
+    } finally {
+        process.env.TZ = "Europe/Zurich";
+    }
+});
+
 test("parse rejects a provider response without data", () => {
     assert.throws(() => providers.parse("metno", "{\"properties\":{\"timeseries\":[]}}", 47, 7.45, Date.now()));
     assert.throws(() => weatherData.fromOpenMeteo(providers.parse("openmeteo", "{}", 47, 7.45, Date.now()), labels));

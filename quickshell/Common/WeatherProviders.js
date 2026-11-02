@@ -60,12 +60,17 @@ function sunTimes(dayMs, lat, lon) {
     // Polar day and night have no sunrise or sunset. Like Open-Meteo, polar
     // night gets both at midnight and polar day runs from midnight to
     // midnight, so day/night checks keep working.
-    const polarDay = SunCalc.getPosition(times.solarNoon, lat, lon).altitude > 0;
+    const polarDay = sunUp(times.solarNoon.getTime(), lat, lon) === 1;
     const nextMidnight = localMidnight(dayMs + 36 * HOUR_MS);
     return {
         sunrise: localIso(valid(times.sunrise) ? times.sunrise.getTime() : dayMs),
         sunset: localIso(valid(times.sunset) ? times.sunset.getTime() : polarDay ? nextMidnight : dayMs)
     };
+}
+
+// Day while the sun is above -0.833°, the same horizon as SunCalc's sunrise and sunset.
+function sunUp(ms, lat, lon) {
+    return SunCalc.getPosition(new Date(ms), lat, lon).altitude > -0.833 * Math.PI / 180 ? 1 : 0;
 }
 
 function openMeteoUrl(lat, lon) {
@@ -146,7 +151,10 @@ function fromMetno(json, lat, lon, now) {
         cloud_cover: [],
         wind_speed_10m: [],
         weather_code: [],
-        precipitation_probability: []
+        precipitation_probability: [],
+        // Per hour, so day and night stay right when the machine's time zone
+        // is far from the location's and its days split the location's nights.
+        is_day: []
     };
     for (let ms = midnight; ms <= hourlySteps[hourlySteps.length - 1].ms; ms += HOUR_MS) {
         const step = hourlySteps.find(item => item.ms === ms) ?? hourlySteps[0];
@@ -160,6 +168,7 @@ function fromMetno(json, lat, lon, now) {
         hourly.wind_speed_10m.push(Number.isFinite(d.wind_speed) ? d.wind_speed * 3.6 : null);
         hourly.weather_code.push(metnoCode(metnoSymbol(step.entry, "next_1_hours", "next_6_hours")));
         hourly.precipitation_probability.push(finiteOr(step.entry.data?.next_1_hours?.details?.probability_of_precipitation, null));
+        hourly.is_day.push(sunUp(ms, lat, lon));
     }
 
     const daily = {
@@ -193,8 +202,6 @@ function fromMetno(json, lat, lon, now) {
     }
 
     const first = series.find(item => item.ms <= now && now < item.ms + HOUR_MS) ?? series[0];
-    const sunrise = Date.parse(daily.sunrise[0]);
-    const sunset = Date.parse(daily.sunset[0]);
     return {
         utc_offset_seconds: utcOffsetSeconds(),
         current: {
@@ -205,7 +212,7 @@ function fromMetno(json, lat, lon, now) {
             wind_speed_10m: Number.isFinite(first.details.wind_speed) ? first.details.wind_speed * 3.6 : null,
             wind_direction_10m: finiteOr(first.details.wind_from_direction, null),
             weather_code: metnoCode(metnoSymbol(first.entry, "next_1_hours", "next_6_hours")),
-            is_day: sunrise <= now && now < sunset ? 1 : 0
+            is_day: sunUp(now, lat, lon)
         },
         hourly: hourly,
         daily: daily
