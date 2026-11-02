@@ -505,6 +505,16 @@ Singleton {
                 Hyprland.refreshWorkspaces();
                 return;
             }
+            // Sent by the move/resize wrappers in dms/binds.lua; Hyprland has no geometry event of its own
+            if (event.name === "custom") {
+                if (event.data !== "dms:geometry")
+                    return;
+                try {
+                    Hyprland.refreshToplevels();
+                } catch (e) {}
+                root.scheduleSort();
+                return;
+            }
             if (event.name === "openwindow" || event.name === "closewindow" || event.name === "movewindow" || event.name === "movewindowv2" || event.name === "workspace" || event.name === "workspacev2" || event.name === "focusedmon" || event.name === "focusedmonv2" || event.name === "activewindow" || event.name === "activewindowv2" || event.name === "changefloatingmode" || event.name === "fullscreen" || event.name === "moveintogroup" || event.name === "moveoutofgroup" || event.name === "activespecial") {
                 try {
                     Hyprland.refreshToplevels();
