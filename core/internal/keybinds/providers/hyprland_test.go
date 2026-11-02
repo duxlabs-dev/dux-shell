@@ -254,3 +254,42 @@ hl.bind("SUPER + C", cycle_ws, { description = "Next workspace" })
 		t.Fatalf("Workspace binds = %+v, want the named-function bind filed by its description", ws)
 	}
 }
+
+func TestHyprlandCheatSheetCategories(t *testing.T) {
+	dir := t.TempDir()
+	config := `hl.bind("SUPER + F", hl.dsp.layout("colresize 1.0"))
+hl.bind("SUPER + R", hl.dsp.exec_raw("kitty"))
+hl.bind("SUPER + N", remove_notification)
+hl.bind("SUPER + D", clear_popups, { description = "Remove notification" })
+hl.bind("SUPER + M", max_col, { description = "Toggle maximize column" })
+hl.bind("SUPER + W", moveToWorkspace)
+hl.bind("SUPER + G", window_grow)
+`
+	if err := os.WriteFile(filepath.Join(dir, "hyprland.lua"), []byte(config), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sheet, err := NewHyprlandProvider(dir).GetCheatSheet()
+	if err != nil {
+		t.Fatalf("GetCheatSheet: %v", err)
+	}
+	got := map[string]string{}
+	for category, binds := range sheet.Binds {
+		for _, b := range binds {
+			got[b.Key] = category
+		}
+	}
+	want := map[string]string{
+		"SUPER+F": "Window",
+		"SUPER+R": "Execute",
+		"SUPER+N": "Other",
+		"SUPER+D": "Other",
+		"SUPER+M": "Window",
+		"SUPER+W": "Workspace",
+		"SUPER+G": "Window",
+	}
+	for key, category := range want {
+		if got[key] != category {
+			t.Errorf("%s category = %q, want %q", key, got[key], category)
+		}
+	}
+}
