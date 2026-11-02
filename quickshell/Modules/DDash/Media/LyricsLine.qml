@@ -51,7 +51,7 @@ Item {
     signal activated
 
     function relayout() {
-        if (isBreak || isPlain || width <= 0 || !leadMetrics || !backgroundMetrics) {
+        if (item.kind !== "line" || width <= 0 || !leadMetrics || !backgroundMetrics) {
             layouts = [];
             return;
         }
