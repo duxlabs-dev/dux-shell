@@ -204,6 +204,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         text: root.windowTitle || root.tooltipText
         elide: Text.ElideRight
+        maximumLineCount: 1
         color: Theme.surfaceText
         font.pixelSize: Theme.fontSizeSmall
     }
