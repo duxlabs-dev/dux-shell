@@ -28,9 +28,14 @@ Item {
     readonly property string clockDisplay: root.controller.homeClockDisplay
     readonly property real edgePad: Math.max(root.groupSpacing, ((root.isVertical ? root.height - compactColumn.height : root.width - compactRow.width)) / 2)
     readonly property bool weatherSlotEnabled: root.controller.homeWeatherEnabled
-    readonly property var brightnessDevice: BrightnessService.getCurrentDeviceInfo()
+    readonly property string brightnessDeviceId: BrightnessService.screenLeadDevice(root.controller.screen)
+    readonly property var brightnessDevice: BrightnessService.getCurrentDeviceInfoByName(root.brightnessDeviceId)
+    readonly property real brightnessLevel: {
+        BrightnessService.brightnessVersion;
+        return BrightnessService.getDeviceBrightness(root.brightnessDeviceId);
+    }
     readonly property real brightnessMaximum: BrightnessService.brightnessMaximum(root.brightnessDevice)
-    readonly property int brightnessPercent: root.brightnessMaximum > 0 ? Math.round(BrightnessService.brightnessLevel / root.brightnessMaximum * 100) : 0
+    readonly property int brightnessPercent: root.brightnessMaximum > 0 ? Math.round(root.brightnessLevel / root.brightnessMaximum * 100) : 0
     readonly property int volumePercent: AudioService.sinkVolumePercent
     readonly property var groupIds: root.groupsForSide("left").concat(["clock"]).concat(root.groupsForSide("right"))
     readonly property real touchpadThreshold: 100
@@ -283,8 +288,8 @@ Item {
         if (!root.brightnessDevice)
             return;
         SessionData.suppressOSDTemporarily();
-        const next = Math.max(BrightnessService.brightnessMinimum(root.brightnessDevice), Math.min(root.brightnessMaximum, BrightnessService.brightnessLevel + direction * 5));
-        BrightnessService.setGroupBrightness(next, BrightnessService.lastIpcTargets(), true);
+        const next = Math.max(BrightnessService.brightnessMinimum(root.brightnessDevice), Math.min(root.brightnessMaximum, root.brightnessLevel + direction * 5));
+        BrightnessService.setGroupBrightness(next, BrightnessService.screenTargets(root.controller.screen), true);
     }
 
     function connectivityIconName(type) {
@@ -588,7 +593,7 @@ Item {
 
             DIcon {
                 visible: group.isSystemLevel && (group.vertical || group.levelDisplay !== "percentage")
-                name: group.isVolume ? AudioService.sinkVolumeIconName : BrightnessService.brightnessIconName(root.brightnessDevice, BrightnessService.brightnessLevel)
+                name: group.isVolume ? AudioService.sinkVolumeIconName : BrightnessService.brightnessIconName(root.brightnessDevice, root.brightnessLevel)
                 size: root.statusIconSize
                 color: Theme.surfaceTextSecondary
             }
