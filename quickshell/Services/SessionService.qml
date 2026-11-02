@@ -699,10 +699,11 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
         }
         const bootIndex = bootEntryActions.indexOf(action);
         if (bootIndex >= 0) {
+            const entry = SettingsData.powerMenuBootEntries[bootIndex];
             // Boot entries take the digit keys in the order they were added
             return {
                 "icon": "restart_alt",
-                "label": I18n.tr("Reboot to %1", "power menu action, %1 is a boot entry such as Windows Boot Manager").arg(SettingsData.powerMenuBootEntries[bootIndex].label),
+                "label": I18n.tr("Reboot to %1", "power menu action, %1 is a boot entry such as Windows Boot Manager").arg(entry.customName || entry.label),
                 "key": bootIndex < 9 ? String(bootIndex + 1) : ""
             };
         }

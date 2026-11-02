@@ -27,6 +27,20 @@ function parseEntries(text) {
     return result;
 }
 
+// Saved entries are [{id, label, customName?}]. customName is only shown in DMS: label stays the
+// firmware's because rebootTo checks it against efibootmgr. An empty name or the label clears it.
+function withCustomName(saved, id, customName) {
+    return saved.map(entry => {
+        if (entry.id !== id)
+            return entry;
+        const renamed = Object.assign({}, entry);
+        delete renamed.customName;
+        if (customName && customName !== entry.label)
+            renamed.customName = customName;
+        return renamed;
+    });
+}
+
 // Entries that can still be added to the power menu, skipping the running OS and saved ones.
 // name is the text shown in the picker. Firmware can hold several entries with the same label,
 // one per disk or install, so those get their id appended.
