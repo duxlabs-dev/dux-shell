@@ -8908,6 +8908,21 @@
     ]
   },
   {
+    "section": "osdInputMethodEnabled",
+    "label": "Input method",
+    "tabIndex": 18,
+    "category": "On-screen displays",
+    "keywords": [
+      "displays",
+      "indicator",
+      "input",
+      "method",
+      "osd",
+      "popup",
+      "screen"
+    ]
+  },
+  {
     "section": "osdKeyboardLayoutEnabled",
     "label": "Keyboard layout",
     "tabIndex": 18,

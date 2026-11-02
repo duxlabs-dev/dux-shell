@@ -1328,6 +1328,12 @@ Item {
                 }
 
                 Variants {
+                    model: (SettingsData.osdInputMethodEnabled && Fcitx5Service.available) ? SettingsData.getFilteredScreens("osd") : []
+
+                    delegate: InputMethodOSD {}
+                }
+
+                Variants {
                     model: (SettingsData.osdTouchpadEnabled && CompositorService.isNiri) ? root.legacySystemLevelOsdScreens : []
 
                     delegate: TouchpadOSD {}

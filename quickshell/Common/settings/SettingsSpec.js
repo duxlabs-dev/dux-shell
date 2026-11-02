@@ -1488,6 +1488,9 @@ var LOCAL_SPEC = {
     osdKeyboardLayoutEnabled: {
         def: false
     },
+    osdInputMethodEnabled: {
+        def: true
+    },
     osdTouchpadEnabled: {
         def: true
     },
