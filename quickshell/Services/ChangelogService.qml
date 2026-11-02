@@ -19,7 +19,7 @@ Singleton {
         const m = v.match(/^\d+\.\d+/);
         return m ? m[0] : "";
     }
-    readonly property bool changelogEnabled: false
+    readonly property bool changelogEnabled: true
     // A dotfile in the config dir, not session.json: the Nix home module can make session.json read-only
     readonly property string markerPath: currentVersion !== "" ? Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation)) + "/dms/.changelog-" + currentVersion : ""
     property bool markerChecked: false
