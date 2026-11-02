@@ -122,6 +122,48 @@ Item {
         }
 
         SettingsCard {
+            title: I18n.tr("Weather providers", "Weather data source priority settings")
+            tab: "weather"
+            settingKey: "weatherProviders"
+            tags: ["weather", "provider", "source", "fallback", "priority", "order", "open-meteo", "met norway"]
+
+            headerActions: DActionButton {
+                iconName: "restart_alt"
+                tooltipText: I18n.tr("Reset to default")
+                enabled: !SettingsData.isDefault(["weatherProviders"])
+                onClicked: SettingsData.resetToDefault(["weatherProviders"])
+            }
+
+            SettingsRow {
+                title: I18n.tr("Drag to reorder")
+                subtitle: I18n.tr("The next enabled provider is used when one fails.", "weather providers fallback hint")
+            }
+
+            SettingsReorderList {
+                id: weatherProviderList
+                model: WeatherService.providerOrder.split(",")
+                onReordered: indices => WeatherService.reorderProviders(indices)
+
+                delegate: SettingsReorderRow {
+                    id: providerRow
+                    required property string modelData
+                    readonly property var provider: WeatherService.providers.find(provider => provider.id === modelData)
+                    reorderList: weatherProviderList
+                    title: provider?.text ?? ""
+                    clickable: true
+                    onClicked: WeatherService.setProviderEnabled(modelData, !provider?.enabled)
+
+                    DToggle {
+                        hideText: true
+                        Accessible.name: providerRow.title
+                        checked: providerRow.provider?.enabled ?? false
+                        onToggled: checked => WeatherService.setProviderEnabled(providerRow.modelData, checked)
+                    }
+                }
+            }
+        }
+
+        SettingsCard {
             title: I18n.tr("Display")
             tab: "weather"
             settingKey: "weatherDisplay"

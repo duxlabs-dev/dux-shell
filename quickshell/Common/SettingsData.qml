@@ -512,6 +512,7 @@ Singleton {
     readonly property string weatherCoordinates: SessionData.weatherCoordinates
     property bool useAutoLocation: Spec.SPEC.useAutoLocation.def
     property bool weatherEnabled: Spec.SPEC.weatherEnabled.def
+    property var weatherProviders: Spec.SPEC.weatherProviders.def
 
     readonly property var _dashTabsDefault: [
         {

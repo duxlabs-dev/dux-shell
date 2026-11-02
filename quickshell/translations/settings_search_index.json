@@ -17526,6 +17526,31 @@
     "parentLabel": "Date, time & region"
   },
   {
+    "section": "weatherProviders",
+    "label": "Weather providers",
+    "tabIndex": 56,
+    "category": "Weather",
+    "keywords": [
+      "climate",
+      "date,",
+      "fallback",
+      "forecast",
+      "met norway",
+      "open-meteo",
+      "order",
+      "priority",
+      "provider",
+      "providers",
+      "region",
+      "source",
+      "temperature",
+      "time",
+      "weather"
+    ],
+    "parentLabel": "Date, time & region",
+    "icon": "restart_alt"
+  },
+  {
     "section": "windSpeedUnit",
     "label": "Wind speed in m/s",
     "tabIndex": 56,
