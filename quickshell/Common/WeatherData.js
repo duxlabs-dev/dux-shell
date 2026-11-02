@@ -45,7 +45,7 @@ function fromOpenMeteo(data, labels) {
             "pressure": roundOrNull(hourly.surface_pressure?.[i]),
             "precipitationProbability": roundOrNull(hourly.precipitation_probability?.[i]),
             "visibility": roundOrNull(hourly.visibility?.[i]),
-            "isDay": sunrise < time && time < sunset
+            "isDay": sunrise <= time && time < sunset
         });
     }
 

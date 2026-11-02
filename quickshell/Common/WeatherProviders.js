@@ -54,12 +54,17 @@ function minOf(values) {
 }
 
 function sunTimes(dayMs, lat, lon) {
-    const times = SunCalc.getTimes(new Date(dayMs + 12 * HOUR_MS), lat, lon);
-    // Polar day and night have no sunrise or sunset.
+    const noon = new Date(dayMs + 12 * HOUR_MS);
+    const times = SunCalc.getTimes(noon, lat, lon);
     const valid = date => Number.isFinite(date?.getTime?.());
+    // Polar day and night have no sunrise or sunset. Like Open-Meteo, polar
+    // night gets both at midnight and polar day runs from midnight to
+    // midnight, so day/night checks keep working.
+    const polarDay = SunCalc.getPosition(times.solarNoon, lat, lon).altitude > 0;
+    const nextMidnight = localMidnight(dayMs + 36 * HOUR_MS);
     return {
-        sunrise: valid(times.sunrise) ? localIso(times.sunrise.getTime()) : "",
-        sunset: valid(times.sunset) ? localIso(times.sunset.getTime()) : ""
+        sunrise: localIso(valid(times.sunrise) ? times.sunrise.getTime() : dayMs),
+        sunset: localIso(valid(times.sunset) ? times.sunset.getTime() : polarDay ? nextMidnight : dayMs)
     };
 }
 
@@ -183,7 +188,8 @@ function fromMetno(json, lat, lon, now) {
         daily.temperature_2m_max.push(maxOf(steps.map(item => item.details.air_temperature).concat(sixHourly.map(d => d.air_temperature_max))));
         daily.temperature_2m_min.push(minOf(steps.map(item => item.details.air_temperature).concat(sixHourly.map(d => d.air_temperature_min))));
         daily.weather_code.push(metnoCode(metnoSymbol(summary.entry, "next_12_hours", "next_6_hours", "next_1_hours")));
-        daily.precipitation_probability_max.push(maxOf(steps.map(item => item.entry.data?.next_1_hours?.details?.probability_of_precipitation)));
+        // After about two days MET Norway only has 6-hourly steps.
+        daily.precipitation_probability_max.push(maxOf(steps.map(item => item.entry.data?.next_1_hours?.details?.probability_of_precipitation ?? item.entry.data?.next_6_hours?.details?.probability_of_precipitation)));
     }
 
     const first = series.find(item => item.ms <= now && now < item.ms + HOUR_MS) ?? series[0];
@@ -199,7 +205,7 @@ function fromMetno(json, lat, lon, now) {
             wind_speed_10m: Number.isFinite(first.details.wind_speed) ? first.details.wind_speed * 3.6 : null,
             wind_direction_10m: finiteOr(first.details.wind_from_direction, null),
             weather_code: metnoCode(metnoSymbol(first.entry, "next_1_hours", "next_6_hours")),
-            is_day: sunrise < now && now < sunset ? 1 : 0
+            is_day: sunrise <= now && now < sunset ? 1 : 0
         },
         hourly: hourly,
         daily: daily

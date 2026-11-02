@@ -15,21 +15,20 @@ function step(ms, temp, extra = {}) {
         time: new Date(ms).toISOString().replace(".000", ""),
         data: {
             instant: { details: { air_temperature: temp, relative_humidity: 70, wind_speed: 5, wind_from_direction: 60 } },
-            next_1_hours: extra.next1 ?? { summary: { symbol_code: "cloudy" }, details: {} },
-            next_6_hours: extra.next6 ?? { summary: { symbol_code: "cloudy" }, details: {} },
-            next_12_hours: extra.next12 ?? { summary: { symbol_code: "cloudy" }, details: {} }
+            next_1_hours: "next1" in extra ? extra.next1 : { summary: { symbol_code: "cloudy" }, details: {} },
+            next_6_hours: "next6" in extra ? extra.next6 : { summary: { symbol_code: "cloudy" }, details: {} },
+            next_12_hours: "next12" in extra ? extra.next12 : { summary: { symbol_code: "cloudy" }, details: {} }
         }
     };
 }
 
 // 15:00 local on 2 Nov, hourly until 23:00 on 3 Nov, then two 6-hourly steps.
-function metno() {
-    const start = Date.parse("2026-11-02T14:00:00Z");
+function metno(start = Date.parse("2026-11-02T14:00:00Z")) {
     const series = [];
     for (let h = 0; h <= 32; h++)
         series.push(step(start + h * HOUR_MS, 5 + h % 3, h === 15 ? { next12: { summary: { symbol_code: "rain" } } } : {}));
     const last = start + 32 * HOUR_MS;
-    series.push(step(last + 6 * HOUR_MS, 2, { next1: null, next6: { summary: { symbol_code: "lightsnowshowers_night" }, details: { air_temperature_min: -1, air_temperature_max: 3 } } }));
+    series.push(step(last + 6 * HOUR_MS, 2, { next1: null, next6: { summary: { symbol_code: "lightsnowshowers_night" }, details: { air_temperature_min: -1, air_temperature_max: 3, probability_of_precipitation: 40 } } }));
     series.push(step(last + 12 * HOUR_MS, 4, { next1: null }));
     return JSON.stringify({ properties: { timeseries: series } });
 }
@@ -67,6 +66,63 @@ test("metno daily values use the daytime summary and the 6-hourly extremes", () 
     assert.equal(daily.weather_code[1], 63);
     assert.equal(daily.temperature_2m_min[2], -1);
     assert.ok(daily.sunrise[1] < daily.sunset[1]);
+});
+
+test("metno days with only 6-hourly steps still get a precipitation probability", () => {
+    const daily = providers.parse("metno", metno(), 47, 7.45, Date.parse("2026-11-02T14:20:00Z")).daily;
+    assert.equal(daily.precipitation_probability_max[2], 40);
+});
+
+test("metno polar night is night all day", () => {
+    const data = providers.parse("metno", metno(), 78.22, 15.65, Date.parse("2026-11-02T14:20:00Z"));
+    assert.equal(data.daily.sunrise[0], "2026-11-02T00:00");
+    assert.equal(data.daily.sunset[0], "2026-11-02T00:00");
+    assert.equal(data.current.is_day, 0);
+    assert.ok(weatherData.fromOpenMeteo(data, labels).hourlyForecast.every(hour => !hour.isDay));
+});
+
+test("metno midnight sun is day all day", () => {
+    const now = Date.parse("2026-06-21T10:20:00Z");
+    const data = providers.parse("metno", metno(Date.parse("2026-06-21T10:00:00Z")), 69.65, 18.96, now);
+    assert.equal(data.daily.sunrise[0], "2026-06-21T00:00");
+    assert.equal(data.daily.sunset[0], "2026-06-22T00:00");
+    assert.equal(data.current.is_day, 1);
+    assert.ok(weatherData.fromOpenMeteo(data, labels).hourlyForecast.every(hour => hour.isDay));
+});
+
+test("metno midnight sun works in the southern hemisphere", () => {
+    const now = Date.parse("2026-12-21T10:20:00Z");
+    const data = providers.parse("metno", metno(Date.parse("2026-12-21T10:00:00Z")), -77.85, 166.67, now);
+    assert.equal(data.daily.sunrise[0], "2026-12-21T00:00");
+    assert.equal(data.daily.sunset[0], "2026-12-22T00:00");
+    assert.equal(data.current.is_day, 1);
+});
+
+test("metno day and night follow sunrise and sunset near the equator", () => {
+    process.env.TZ = "America/Manaus";
+    try {
+        const start = Date.parse("2026-11-02T14:00:00Z");
+        const data = providers.parse("metno", metno(start), -3.12, -60.02, start + 20 * 60000);
+        assert.ok(data.daily.sunrise[0].startsWith("2026-11-02T05:"));
+        assert.ok(data.daily.sunset[0].startsWith("2026-11-02T17:"));
+        assert.equal(data.current.is_day, 1);
+        const hours = weatherData.fromOpenMeteo(data, labels).hourlyForecast;
+        assert.ok(hours.some(hour => hour.isDay) && hours.some(hour => !hour.isDay));
+    } finally {
+        process.env.TZ = "Europe/Zurich";
+    }
+});
+
+test("metno polar day does not depend on the machine time zone", () => {
+    process.env.TZ = "Pacific/Auckland";
+    try {
+        const start = Date.parse("2026-04-20T10:00:00Z");
+        const data = providers.parse("metno", metno(start), 78.22, 15.65, start + 20 * 60000);
+        assert.equal(data.daily.sunrise[0], "2026-04-20T00:00");
+        assert.equal(data.daily.sunset[0], "2026-04-21T00:00");
+    } finally {
+        process.env.TZ = "Europe/Zurich";
+    }
 });
 
 test("parse rejects a provider response without data", () => {
