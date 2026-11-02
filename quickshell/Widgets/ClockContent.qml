@@ -41,7 +41,7 @@ Item {
         const lines = [pad(SettingsData.use24HourClock ? hours : (hours % 12 || 12)), pad(date.getMinutes())];
         if (SettingsData.showSeconds)
             lines.push(pad(date.getSeconds()));
-        if (!SettingsData.use24HourClock)
+        if (!SettingsData.use24HourClock && SettingsData.showAmPm)
             lines.push(hours >= 12 ? locale.pmText : locale.amText);
         return lines;
     }
