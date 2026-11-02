@@ -3182,6 +3182,30 @@
     "description": "Preview: %1"
   },
   {
+    "section": "showAmPm",
+    "label": "Show AM/PM",
+    "tabIndex": 1,
+    "category": "Time & weather",
+    "keywords": [
+      "12hour",
+      "am",
+      "climate",
+      "clock",
+      "date",
+      "date,",
+      "forecast",
+      "format",
+      "meridiem",
+      "pm",
+      "region",
+      "show",
+      "temperature",
+      "time",
+      "weather"
+    ],
+    "parentLabel": "Date, time & region"
+  },
+  {
     "section": "showSeconds",
     "label": "Show seconds",
     "tabIndex": 1,
