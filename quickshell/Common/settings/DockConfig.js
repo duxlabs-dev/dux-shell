@@ -286,6 +286,37 @@ function unitList(widgets, pins, order) {
     return result;
 }
 
+function widgetOrder(widgets, order) {
+    return unitList(widgets, [], (order || []).filter(id => !id.startsWith("pin:")));
+}
+
+// Pins ride with the widget right after them, so moving the apps widget keeps its pins in front of it.
+function reorderWidgets(widgets, order, ids) {
+    const saved = order || [];
+    const attached = new Map();
+    let run = [];
+    for (const id of unitList(widgets, saved.filter(id => id.startsWith("pin:")), saved)) {
+        if (id.startsWith("pin:")) {
+            run.push(id);
+            continue;
+        }
+        attached.set(id, run);
+        run = [];
+    }
+    const byId = new Map(widgets.map(widget => [widget.id, widget]));
+    const placed = ids.filter(id => byId.has(id));
+    const rest = widgets.map(widget => widget.id).filter(id => !placed.includes(id));
+    const sequence = placed.concat(rest);
+    // QV4 has no Array.prototype.flatMap.
+    const units = [];
+    for (const id of sequence)
+        units.push(...(attached.get(id) || []), id);
+    return {
+        widgets: sequence.map(id => byId.get(id)),
+        order: units.concat(run)
+    };
+}
+
 function surfaceItems(widgets, apps, order) {
     const items = [];
     const byId = new Map(widgets.map(widget => [widget.id, widget]));
