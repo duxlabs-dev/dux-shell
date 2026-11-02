@@ -2376,6 +2376,7 @@ Singleton {
             switch (exitCode) {
             case 0:
                 log.info("Matugen worker completed successfully");
+                dynamicColorsFileView.reload();
                 root.matugenCompleted(currentMode, "success");
                 break;
             case 2:
