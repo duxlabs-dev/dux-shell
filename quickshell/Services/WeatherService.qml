@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import "../Common/suncalc.js" as SunCalc
+import "../Common/WeatherData.js" as WeatherData
 
 Singleton {
     id: root
@@ -915,119 +916,13 @@ Singleton {
                 }
 
                 try {
-                    const data = JSON.parse(raw);
-
-                    if (!data.current || !data.daily || !data.hourly) {
-                        throw new Error("Required weather data fields missing");
-                    }
-
-                    const hourly = data.hourly;
-                    const hourly_forecast = [];
-                    if (hourly.time && hourly.time.length > 0) {
-                        for (let i = 0; i < hourly.time.length; i++) {
-                            const tempMinC = hourly.temperature_2m_min?.[i] || 0;
-                            const tempMaxC = hourly.temperature_2m_max?.[i] || 0;
-                            const tempMinF = tempMinC * 9 / 5 + 32;
-                            const tempMaxF = tempMaxC * 9 / 5 + 32;
-
-                            const tempC = hourly.temperature_2m?.[i] || 0;
-                            const tempF = tempC * 9 / 5 + 32;
-                            const feelsLikeC = hourly.apparent_temperature?.[i] || tempC;
-                            const feelsLikeF = feelsLikeC * 9 / 5 + 32;
-
-                            const sunrise = new Date(data.daily.sunrise?.[Math.floor(i / 24)]);
-                            const sunset = new Date(data.daily.sunset?.[Math.floor(i / 24)]);
-                            const time = new Date(hourly.time[i]);
-                            const isDay = sunrise < time && time < sunset;
-
-                            hourly_forecast.push({
-                                "time": formatTime(hourly.time[i]),
-                                "rawTime": hourly.time[i],
-                                "temp": Math.round(tempC),
-                                "tempF": Math.round(tempF),
-                                "feelsLike": Math.round(feelsLikeC),
-                                "feelsLikeF": Math.round(feelsLikeF),
-                                "wCode": hourly.weather_code?.[i] || 0,
-                                "humidity": Math.round(hourly.relative_humidity_2m?.[i] || 0),
-                                "wind": Math.round(hourly.wind_speed_10m?.[i] || 0),
-                                "pressure": Math.round(hourly.surface_pressure?.[i] || 0),
-                                "precipitationProbability": Math.round(hourly.precipitation_probability?.[i] || 0),
-                                "visibility": Math.round(hourly.visibility?.[i] || 0),
-                                "isDay": isDay
-                            });
-                        }
-                    }
-
-                    const daily = data.daily;
-                    const forecast = [];
-                    if (daily.time && daily.time.length > 0) {
-                        for (let i = 0; i < daily.time.length; i++) {
-                            const tempMinC = daily.temperature_2m_min?.[i] || 0;
-                            const tempMaxC = daily.temperature_2m_max?.[i] || 0;
-                            const tempMinF = (tempMinC * 9 / 5 + 32);
-                            const tempMaxF = (tempMaxC * 9 / 5 + 32);
-
-                            forecast.push({
-                                "rawDate": daily.time[i],
-                                "day": formatForecastDay(daily.time[i], i),
-                                "wCode": daily.weather_code?.[i] || 0,
-                                "tempMin": Math.round(tempMinC),
-                                "tempMax": Math.round(tempMaxC),
-                                "tempMinF": Math.round(tempMinF),
-                                "tempMaxF": Math.round(tempMaxF),
-                                "precipitationProbability": Math.round(daily.precipitation_probability_max?.[i] || 0),
-                                "sunrise": daily.sunrise?.[i] ? formatTime(daily.sunrise[i]) : "",
-                                "sunset": daily.sunset?.[i] ? formatTime(daily.sunset[i]) : "",
-                                "rawSunrise": daily.sunrise?.[i] || "",
-                                "rawSunset": daily.sunset?.[i] || ""
-                            });
-                        }
-                    }
-
-                    const current = data.current;
-                    const currentUnits = data.current_units || {};
-
-                    const tempC = current.temperature_2m || 0;
-                    const tempF = tempC * 9 / 5 + 32;
-                    const feelsLikeC = current.apparent_temperature || tempC;
-                    const feelsLikeF = feelsLikeC * 9 / 5 + 32;
-
-                    const currentHour = hourly.time?.findIndex(time => time.slice(0, 13) === current.time?.slice(0, 13)) ?? -1;
-                    const hourlyValue = key => {
-                        const value = hourly[key]?.[currentHour];
-                        return Number.isFinite(value) ? value : null;
-                    };
+                    root.weather = WeatherData.fromOpenMeteo(JSON.parse(raw), {
+                        formatTime: root.formatTime,
+                        formatDay: root.formatForecastDay,
+                        city: root.location?.city || I18n.tr("Unknown"),
+                        country: root.location?.country || I18n.tr("Unknown")
+                    });
                     root.lastFetchError = "";
-                    root.weather = {
-                        "available": true,
-                        "loading": false,
-                        "temp": Math.round(tempC),
-                        "tempF": Math.round(tempF),
-                        "feelsLike": Math.round(feelsLikeC),
-                        "feelsLikeF": Math.round(feelsLikeF),
-                        "city": root.location?.city || I18n.tr("Unknown"),
-                        "country": root.location?.country || I18n.tr("Unknown"),
-                        "wCode": current.weather_code || 0,
-                        "humidity": Math.round(current.relative_humidity_2m || 0),
-                        "wind": Math.round(current.wind_speed_10m || 0),
-                        "sunrise": formatTime(daily.sunrise?.[0]) || "06:00",
-                        "sunset": formatTime(daily.sunset?.[0]) || "18:00",
-                        "rawSunrise": daily.sunrise?.[0] || "",
-                        "rawSunset": daily.sunset?.[0] || "",
-                        "moonrise": daily.moonrise?.[0] ?? "",
-                        "moonset": daily.moonset?.[0] ?? "",
-                        "utcOffsetSeconds": data.utc_offset_seconds ?? null,
-                        "currentHourIndex": currentHour >= 0 ? currentHour : null,
-                        "uv": hourlyValue("uv_index"),
-                        "visibility": hourlyValue("visibility"),
-                        "dewPoint": hourlyValue("dew_point_2m"),
-                        "windDirection": Number.isFinite(current.wind_direction_10m) ? current.wind_direction_10m : null,
-                        "pressure": Math.round(current.surface_pressure || 0),
-                        "precipitationProbability": Math.round(daily.precipitation_probability_max?.[0] || 0),
-                        "isDay": Boolean(current.is_day),
-                        "forecast": forecast,
-                        "hourlyForecast": hourly_forecast
-                    };
                     root.handleWeatherSuccess();
                 } catch (e) {
                     root.handleWeatherFailure();
