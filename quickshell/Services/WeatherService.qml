@@ -56,11 +56,28 @@ Singleton {
     // After a provider succeeds, the remaining ones only fill readings it lacks.
     property bool _supplementing: false
 
+    readonly property var pluginProviders: {
+        const loaded = PluginService.loadedPlugins;
+        const providers = [];
+        for (const pluginId in loaded) {
+            const plugin = loaded[pluginId];
+            const command = plugin.weather?.command;
+            if (!command)
+                continue;
+            providers.push({
+                id: "plugin_" + pluginId,
+                text: I18n.trFor(pluginId, plugin.weather.name ?? plugin.name),
+                command: plugin.pluginDirectory + "/" + command
+            });
+        }
+        return providers;
+    }
+    readonly property var providerCatalog: WeatherProviders.catalog.concat(pluginProviders)
     readonly property var providers: {
         const saved = Array.isArray(SettingsData.weatherProviders) ? SettingsData.weatherProviders : [];
         const rows = [];
         for (const entry of saved) {
-            const provider = WeatherProviders.catalog.find(provider => provider.id === entry?.id);
+            const provider = root.providerCatalog.find(provider => provider.id === entry?.id);
             if (!provider || rows.some(row => row.id === provider.id))
                 continue;
             rows.push({
@@ -69,7 +86,7 @@ Singleton {
                 enabled: entry.enabled === true
             });
         }
-        for (const provider of WeatherProviders.catalog) {
+        for (const provider of root.providerCatalog) {
             if (!rows.some(row => row.id === provider.id))
                 rows.push({
                     id: provider.id,
@@ -81,7 +98,8 @@ Singleton {
     }
     readonly property var enabledProviders: providers.filter(provider => provider.enabled).map(provider => provider.id)
     readonly property string providerOrder: providers.map(provider => provider.id).join(",")
-    // Only a new first provider changes what is shown; the others apply on the next refresh.
+    // Only a new first provider changes what is shown; the others apply on the next
+    // refresh. This also refetches when a plugin provider loads after the first fetch.
     readonly property string primaryProvider: enabledProviders[0] ?? "openmeteo"
     onPrimaryProviderChanged: {
         root.cancelFetch();
@@ -89,15 +107,21 @@ Singleton {
         root.forceRefresh();
     }
 
+    // Keep saved entries of plugins that are not loaded right now.
+    function saveProviders(rows) {
+        const saved = Array.isArray(SettingsData.weatherProviders) ? SettingsData.weatherProviders : [];
+        SettingsData.set("weatherProviders", rows.concat(saved.filter(entry => entry?.id && !rows.some(row => row.id === entry.id))));
+    }
+
     function setProviderEnabled(id, enabled) {
-        SettingsData.set("weatherProviders", providers.map(provider => ({
+        saveProviders(providers.map(provider => ({
                     id: provider.id,
                     enabled: provider.id === id ? enabled : provider.enabled
                 })));
     }
 
     function reorderProviders(indices) {
-        SettingsData.set("weatherProviders", indices.map(index => ({
+        saveProviders(indices.map(index => ({
                     id: providers[index].id,
                     enabled: providers[index].enabled
                 })));
@@ -106,6 +130,8 @@ Singleton {
     // ionice is util-linux only; the BSDs get plain nice
     readonly property var lowPriorityCmd: Qt.platform.os === "linux" ? ["nice", "-n", "19", "ionice", "-c3"] : ["nice", "-n", "19"]
     readonly property var fetchCmd: [Proc.dmsBin, "dl", "--connect-timeout", "8", "--timeout", "20"]
+    // A hung plugin would block every later fetch.
+    readonly property var pluginCmd: ["timeout", "30"]
 
     property var weatherIcons: ({
             "0": "clear_day",
@@ -713,11 +739,22 @@ Singleton {
         }
         if (reason)
             log.info("Weather provider failed, trying", id + ":", reason);
-        const req = WeatherProviders.request(id, root._fetchCoords.latitude, root._fetchCoords.longitude);
+        const plugin = root.pluginProviders.find(provider => provider.id === id);
+        if (id.startsWith("plugin_") && !plugin) {
+            root.tryNextProvider(id + ": plugin not loaded");
+            return;
+        }
+        const lat = root._fetchCoords.latitude;
+        const lon = root._fetchCoords.longitude;
         weatherFetcher.providerId = id;
         weatherFetcher.failure = "";
         weatherFetcher.supplement = false;
-        weatherFetcher.command = lowPriorityCmd.concat(root.fetchCmd, req.userAgent ? ["--user-agent", req.userAgent] : [], [req.url]);
+        if (plugin) {
+            weatherFetcher.command = lowPriorityCmd.concat(root.pluginCmd, [plugin.command, String(lat), String(lon)]);
+        } else {
+            const req = WeatherProviders.request(id, lat, lon);
+            weatherFetcher.command = lowPriorityCmd.concat(root.fetchCmd, req.userAgent ? ["--user-agent", req.userAgent] : [], [req.url]);
+        }
         weatherFetcher.running = true;
     }
 

@@ -237,6 +237,9 @@ function request(id, lat, lon) {
 
 function parse(id, raw, lat, lon, now) {
     const json = JSON.parse(raw);
+    // Plugin providers print an Open-Meteo shaped response themselves.
+    if (id.startsWith("plugin_"))
+        return json;
     switch (id) {
     case "openmeteo":
         return json;
