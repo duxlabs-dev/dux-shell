@@ -1509,15 +1509,21 @@
     "page": "input",
     "category": "Input",
     "keywords": [
+      "addons",
       "bindings",
+      "extensions",
+      "framework",
       "hotkeys",
       "input",
       "keybinds",
       "keyboard",
       "keys",
+      "method",
       "mouse",
+      "plugins",
       "shortcuts",
-      "touchpad"
+      "touchpad",
+      "widgets"
     ],
     "icon": "keyboard",
     "description": "Shortcuts, keyboard, mouse"
@@ -19399,5 +19405,132 @@
       "wellbeing"
     ],
     "icon": "show_chart"
+  },
+  {
+    "section": "fcitx5Behavior",
+    "label": "Behavior",
+    "tabIndex": 68,
+    "category": "Input Method Framework",
+    "keywords": [
+      "behavior",
+      "fcitx5",
+      "framework",
+      "input",
+      "input method",
+      "method",
+      "preedit",
+      "share",
+      "state"
+    ],
+    "parentLabel": "Input",
+    "icon": "tune",
+    "conditionKey": "fcitx5Available"
+  },
+  {
+    "section": "fcitx5Groups",
+    "label": "Groups",
+    "tabIndex": 68,
+    "category": "Input Method Framework",
+    "keywords": [
+      "fcitx5",
+      "framework",
+      "group",
+      "groups",
+      "input",
+      "input method",
+      "method"
+    ],
+    "parentLabel": "Input",
+    "icon": "folder",
+    "conditionKey": "fcitx5Available"
+  },
+  {
+    "section": "fcitx5InputMethods",
+    "label": "Input Method Framework",
+    "tabIndex": 68,
+    "category": "Input Method Framework",
+    "keywords": [
+      "fcitx5",
+      "framework",
+      "ime",
+      "input",
+      "input method",
+      "language",
+      "layout",
+      "method"
+    ],
+    "parentLabel": "Input",
+    "icon": "language",
+    "conditionKey": "fcitx5Available"
+  },
+  {
+    "section": "fcitx5Hotkeys",
+    "label": "Keyboard shortcuts",
+    "tabIndex": 68,
+    "category": "Input Method Framework",
+    "keywords": [
+      "bindings",
+      "fcitx5",
+      "framework",
+      "hotkey",
+      "hotkeys",
+      "input",
+      "input method",
+      "keybinds",
+      "keyboard",
+      "keys",
+      "method",
+      "shortcut",
+      "shortcuts",
+      "switch",
+      "toggle"
+    ],
+    "parentLabel": "Input",
+    "icon": "keyboard_command_key",
+    "conditionKey": "fcitx5Available"
+  },
+  {
+    "section": "fcitx5Plugins",
+    "label": "Plugins",
+    "tabIndex": 68,
+    "category": "Input Method Framework",
+    "keywords": [
+      "addon",
+      "addons",
+      "extensions",
+      "fcitx5",
+      "framework",
+      "input",
+      "input method",
+      "method",
+      "module",
+      "plugin",
+      "plugins",
+      "widgets"
+    ],
+    "parentLabel": "Input",
+    "icon": "extension",
+    "conditionKey": "fcitx5Available"
+  },
+  {
+    "section": "_tab_69",
+    "label": "Input: Plugins",
+    "tabIndex": 69,
+    "category": "Plugins",
+    "keywords": [
+      "addon",
+      "addons",
+      "extend",
+      "extensions",
+      "input",
+      "options",
+      "plugin",
+      "plugins",
+      "widgets"
+    ],
+    "icon": "extension",
+    "parentLabel": "Input",
+    "description": "Options of a fcitx5 plugin",
+    "conditionKey": "fcitx5Available"
   }
 ]

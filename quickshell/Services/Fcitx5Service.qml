@@ -15,8 +15,12 @@ Singleton {
     readonly property var fcitxItem: findItem(SystemTray.items.values)
     readonly property bool available: fcitxItem !== null
     property string currentIM: ""
+    property bool configtoolFound: false
+    property bool configtoolProbed: false
     readonly property string currentIMLabel: displayName(fcitxItem ? fcitxItem.tooltipTitle : "", currentIM)
     readonly property string trayIdentity: trayIdentityOf(fcitxItem)
+    // Older cores lack the fcitx5.* methods
+    readonly property bool editable: available && DMSService.isConnected && DMSService.capabilities.includes("fcitx5")
 
     onTrayIdentityChanged: {
         if (active && available)
@@ -51,6 +55,46 @@ Singleton {
             return rawName;
         const separator = title.lastIndexOf(" - ");
         return separator > 0 ? title.slice(separator + 3) : title;
+    }
+
+    function request(method, params, callback) {
+        DMSService.sendRequest("fcitx5." + method, params, response => {
+            if (callback)
+                callback(response?.result ?? null, response?.error ?? "");
+        });
+    }
+
+    function getConfig(uri, callback) {
+        request("getConfig", {
+            "uri": uri
+        }, (result, error) => {
+            if (error) {
+                ToastService.showError(error);
+                return;
+            }
+            callback(result);
+        });
+    }
+
+    // Reloads after any outcome, so a rejected value is replaced by the stored one.
+    function setConfig(uri, tree, reload) {
+        request("setConfig", {
+            "uri": uri,
+            "value": tree
+        }, (result, error) => {
+            if (error)
+                ToastService.showError(error);
+            reload();
+        });
+    }
+
+    function probeConfigtool() {
+        if (configtoolProbed)
+            return;
+        configtoolProbed = true;
+        Proc.runCommand("fcitx5-configtool-check", ["sh", "-c", "command -v fcitx5-configtool"], (output, exitCode) => {
+            root.configtoolFound = exitCode === 0;
+        });
     }
 
     function resolve() {

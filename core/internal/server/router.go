@@ -15,6 +15,7 @@ import (
 	serverDgop "github.com/duxlabs-dev/dux-shell/core/internal/server/dgop"
 	serverDrives "github.com/duxlabs-dev/dux-shell/core/internal/server/drives"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/evdev"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/fcitx5"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/freedesktop"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/location"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
@@ -140,6 +141,8 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 	}))
 
 	mux.HandlePrefix("mime.", requestHandler(mime.HandleRequest))
+
+	mux.HandlePrefix("fcitx5.", requestHandler(fcitx5.HandleRequest))
 
 	mux.HandlePrefix("files.", func(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, _ *ipc.Subscriber) {
 		if filesService == nil {

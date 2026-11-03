@@ -155,6 +155,8 @@ TAB_INDEX_MAP = {
     "BatteryTab.qml": 42,
     "MouseTouchpadTab.qml": 44,
     "KeyboardTab.qml": 45,
+    "Fcitx5Tab.qml": 68,
+    "Fcitx5AddonTab.qml": 69,
 }
 
 SIDEBAR_GATE_CONDITIONS = [
@@ -170,6 +172,7 @@ SIDEBAR_GATE_CONDITIONS = [
     ("windowRulesCapable", "windowRulesCapable"),
     ("layoutCapable", "layoutCapable"),
     ("cellularOnly", "cellularAvailable"),
+    ("fcitx5Only", "fcitx5Available"),
 ]
 
 FILE_PAGE_MAP = {
