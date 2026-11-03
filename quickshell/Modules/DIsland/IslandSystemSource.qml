@@ -29,11 +29,13 @@ QtObject {
         case "mic":
             return AudioService.sourceVolumePercent;
         case "brightness":
-            return BrightnessService.brightnessLevel;
+            BrightnessService.brightnessVersion;
+            return BrightnessService.getDeviceBrightness(brightnessDeviceId);
         }
         return 0;
     }
-    readonly property var brightnessDevice: BrightnessService.getCurrentDeviceInfo()
+    readonly property string brightnessDeviceId: BrightnessService.screenLeadDevice(controller.screen)
+    readonly property var brightnessDevice: BrightnessService.getCurrentDeviceInfoByName(brightnessDeviceId)
     readonly property real maximum: {
         switch (kind) {
         case "volume":
@@ -141,7 +143,7 @@ QtObject {
             AudioService.setMicVolume(Math.round(clampedRatio * maximum));
             return;
         case "brightness":
-            BrightnessService.setGroupBrightness(Math.round(clampedRatio * maximum), BrightnessService.lastIpcTargets(), true);
+            BrightnessService.setGroupBrightness(Math.round(clampedRatio * maximum), BrightnessService.screenTargets(controller.screen), true);
             return;
         }
     }
@@ -197,7 +199,7 @@ QtObject {
         enabled: root.enabled
 
         function onBrightnessChanged(showOsd) {
-            if (showOsd && SettingsData.osdBrightnessEnabled)
+            if (showOsd && SettingsData.osdBrightnessEnabled && BrightnessService.screenTargetsLastDevice(root.controller.screen))
                 root.show("brightness");
         }
     }
