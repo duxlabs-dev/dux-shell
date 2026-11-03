@@ -65,6 +65,26 @@ Item {
         dockApps?.refreshDesktopEntries();
     }
 
+    function launchAppInstance() {
+        if (!appData?.appId)
+            return;
+        if (appData.isCoreApp && appData.coreAppData) {
+            AppSearchService.executeCoreApp(appData.coreAppData);
+            return;
+        }
+        const desktopEntry = cachedDesktopEntry;
+        if (!desktopEntry)
+            return;
+        AppUsageHistoryData.addAppUsage({
+            "id": appData.appId,
+            "name": desktopEntry.name || appData.appId,
+            "icon": desktopEntry.icon ? String(desktopEntry.icon) : "",
+            "exec": desktopEntry.exec || "",
+            "comment": desktopEntry.comment || ""
+        });
+        SessionService.launchDesktopEntry(desktopEntry);
+    }
+
     property bool isWindowFocused: {
         if (!appData) {
             return false;
@@ -369,6 +389,10 @@ Item {
                 return;
 
             if (mouse.button === Qt.MiddleButton) {
+                if (root.options.middleClickAction === "launch") {
+                    root.launchAppInstance();
+                    return;
+                }
                 switch (appData.type) {
                 case "window":
                     appData.toplevel?.close();
@@ -384,17 +408,7 @@ Item {
                 default:
                     if (!appData.appId)
                         return;
-                    const desktopEntry = cachedDesktopEntry;
-                    if (desktopEntry) {
-                        AppUsageHistoryData.addAppUsage({
-                            "id": appData.appId,
-                            "name": desktopEntry.name || appData.appId,
-                            "icon": desktopEntry.icon ? String(desktopEntry.icon) : "",
-                            "exec": desktopEntry.exec || "",
-                            "comment": desktopEntry.comment || ""
-                        });
-                    }
-                    SessionService.launchDesktopEntry(desktopEntry);
+                    root.launchAppInstance();
                     break;
                 }
             } else if (mouse.button === Qt.RightButton) {

@@ -5072,6 +5072,48 @@
     "icon": "view_compact"
   },
   {
+    "section": "dockMiddleClickAction",
+    "label": "Middle-click action",
+    "tabIndex": 5,
+    "category": "General",
+    "keywords": [
+      "action",
+      "click",
+      "close",
+      "dock",
+      "general",
+      "instance",
+      "launch",
+      "launcher bar",
+      "middle",
+      "middle-click",
+      "panel",
+      "taskbar"
+    ],
+    "parentLabel": "Dock"
+  },
+  {
+    "section": "dockMouseBehavior",
+    "label": "Mouse behavior",
+    "tabIndex": 5,
+    "category": "General",
+    "keywords": [
+      "behavior",
+      "close",
+      "dock",
+      "general",
+      "instance",
+      "launch",
+      "launcher bar",
+      "middle-click",
+      "mouse",
+      "panel",
+      "taskbar"
+    ],
+    "parentLabel": "Dock",
+    "icon": "mouse"
+  },
+  {
     "section": "dockEditOnRightClick",
     "label": "Right-click empty space to edit",
     "tabIndex": 5,
