@@ -175,7 +175,7 @@ DFloatingWindow {
                 iconSize: Theme.iconSizeSmall
                 iconColor: Theme.surfaceText
                 busy: root.isLoading
-                onClicked: root.refresh()
+                onClicked: root.refresh(true)
             }
         }
 

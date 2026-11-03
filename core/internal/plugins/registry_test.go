@@ -379,6 +379,31 @@ func TestRegistriesDisabledByPolicy(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
+	t.Run("skips the pull while the clone is fresh", func(t *testing.T) {
+		registry, fs, tmpDir := setupTestRegistry(t)
+		registry.maxAge = registryMaxAge
+		dir := filepath.Join(tmpDir, "test")
+		require.NoError(t, fs.MkdirAll(dir, 0o755))
+
+		pulls := 0
+		registry.git = &mockGitClient{
+			originFunc: func(path string) (string, error) {
+				return testRegistryURL, nil
+			},
+			pullFunc: func(path string) error {
+				pulls++
+				return nil
+			},
+		}
+
+		require.NoError(t, registry.Update())
+		require.NoError(t, registry.Update())
+		assert.Equal(t, 1, pulls, "second update within maxAge must reuse the clone")
+
+		require.NoError(t, registry.Refresh())
+		assert.Equal(t, 2, pulls, "refresh pulls regardless of age")
+	})
+
 	t.Run("clones repository when cache doesn't exist", func(t *testing.T) {
 		registry, fs, tmpDir := setupTestRegistry(t)
 
