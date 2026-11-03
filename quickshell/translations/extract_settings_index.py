@@ -159,6 +159,9 @@ TAB_INDEX_MAP = {
     "Fcitx5AddonTab.qml": 69,
 }
 
+# Extra sidebar tabIndexes that reuse a file already in TAB_INDEX_MAP.
+TAB_INDEX_ALIASES = {70}
+
 SIDEBAR_GATE_CONDITIONS = [
     ("shortcutsOnly", "keybindsAvailable"),
     ("soundsOnly", "soundsAvailable"),
@@ -931,7 +934,7 @@ def validate(all_entries, leaves, hubs, sidebar_file, root_dir):
         sidebar_content = f.read()
     sidebar_tabs = {leaf["tabIndex"] for leaf in leaves}
     file_backed_tabs = {leaf["tabIndex"] for leaf in leaves if not leaf["children"]}
-    mapped_tabs = set(TAB_INDEX_MAP.values())
+    mapped_tabs = set(TAB_INDEX_MAP.values()) | TAB_INDEX_ALIASES
     for tab_index in sorted(file_backed_tabs - mapped_tabs):
         errors.append(f"tabIndex {tab_index} in sidebar has no file in TAB_INDEX_MAP")
     with open(Path(__file__).parent / "en.json", "r", encoding="utf-8") as f:

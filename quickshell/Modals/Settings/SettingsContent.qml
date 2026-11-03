@@ -203,6 +203,11 @@ FocusScope {
         const properties = {};
         if (pagesWithParentModal.includes(page))
             properties.parentModal = Qt.binding(() => root.parentModal);
+        if (page === "fcitx5_addon" || page === "fcitx5_addon_sub") {
+            const sub = page === "fcitx5_addon_sub";
+            properties.parentModal = Qt.binding(() => root.parentModal);
+            properties.addon = sub ? SettingsUiState.selectedFcitx5SubAddon : SettingsUiState.selectedFcitx5Addon;
+        }
         if (page === "keybinds")
             properties.requestedSearchQuery = Qt.binding(() => root.parentModal?.keybindSearchQuery ?? "");
         return properties;
@@ -557,6 +562,7 @@ FocusScope {
             "keyboard": "KeyboardTab.qml",
             "fcitx5": "Fcitx5Tab.qml",
             "fcitx5_addon": "Fcitx5AddonTab.qml",
+            "fcitx5_addon_sub": "Fcitx5AddonTab.qml",
             "plugins_manage": "PluginsManageTab.qml"
         })
 

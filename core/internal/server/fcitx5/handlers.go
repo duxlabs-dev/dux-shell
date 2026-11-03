@@ -243,18 +243,22 @@ func renameGroup(req ipc.Request) (any, error) {
 		return nil, err
 	}
 	if _, err := call("SetInputMethodGroupInfo", newName, defaultLayout, items); err != nil {
-		log.Warnf("Fcitx5: rename of %q aborted, removing copy %q", name, newName)
-		_, _ = call("RemoveInputMethodGroup", newName)
-		return nil, err
+		return nil, rollbackRename(name, newName, err)
 	}
 	if cur == name {
 		if _, err := call("SwitchInputMethodGroup", newName); err != nil {
-			log.Warnf("Fcitx5: could not switch to %q, removing copy", newName)
-			_, _ = call("RemoveInputMethodGroup", newName)
-			return nil, err
+			return nil, rollbackRename(name, newName, err)
 		}
 	}
 	return ok(call("RemoveInputMethodGroup", name))
+}
+
+func rollbackRename(name, newName string, cause error) error {
+	log.Warnf("Fcitx5: rename of %q aborted, removing copy %q: %v", name, newName, cause)
+	if _, err := call("RemoveInputMethodGroup", newName); err != nil {
+		log.Warnf("Fcitx5: could not remove copy %q: %v", newName, err)
+	}
+	return cause
 }
 
 func availableIMs() (any, error) {

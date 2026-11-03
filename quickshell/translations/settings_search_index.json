@@ -19574,5 +19574,26 @@
     "parentLabel": "Input",
     "description": "Options of a fcitx5 plugin",
     "conditionKey": "fcitx5Available"
+  },
+  {
+    "section": "_tab_70",
+    "label": "Input: Plugins",
+    "tabIndex": 70,
+    "category": "Plugins",
+    "keywords": [
+      "addon",
+      "addons",
+      "extend",
+      "extensions",
+      "input",
+      "options",
+      "plugin",
+      "plugins",
+      "widgets"
+    ],
+    "icon": "extension",
+    "parentLabel": "Input",
+    "description": "Options of a fcitx5 plugin",
+    "conditionKey": "fcitx5Available"
   }
 ]

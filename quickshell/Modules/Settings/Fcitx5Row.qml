@@ -1,7 +1,6 @@
 import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
-import qs.DCommon.Common as DCommon
 import qs.Modules.Settings.Widgets
 import "../../Common/fcitx5Schema.js" as Fcitx5Schema
 
@@ -11,28 +10,21 @@ SettingsRow {
     required property var row
     property var value
     readonly property var keyList: Fcitx5Schema.keyList(value)
-    readonly property var fontParts: Fcitx5Schema.parseFont(value)
-    property var fontFamilies: []
-    readonly property var fontStyleValues: {
-        const styles = ["", "Light", "Medium", "Bold", "Italic", "Bold Italic"];
-        return styles.includes(fontParts.style) ? styles : [fontParts.style].concat(styles);
-    }
-    readonly property var fontStyleLabels: fontStyleValues.map(v => ({
-                "": I18n.tr("Regular", "font style"),
-                "Light": I18n.tr("Light", "font style"),
-                "Medium": I18n.tr("Medium", "font style"),
-                "Bold": I18n.tr("Bold", "font style"),
-                "Italic": I18n.tr("Italic", "font style"),
-                "Bold Italic": I18n.tr("Bold Italic", "font style")
-            }[v] ?? v))
 
     signal valueEdited(var path, var value)
+    signal subOpened(string addon, string title)
 
     title: row.label
     subtitle: row.tooltip
     resetKeys: []
-    clickable: row.kind === "bool"
-    onClicked: valueEdited(row.path, Fcitx5Schema.boolString(!Fcitx5Schema.boolValue(value)))
+    clickable: row.kind === "bool" || row.kind === "sub"
+    showChevron: row.kind === "sub"
+    onClicked: {
+        if (row.kind === "sub")
+            subOpened(row.addon, row.label);
+        else
+            valueEdited(row.path, Fcitx5Schema.boolString(!Fcitx5Schema.boolValue(value)));
+    }
 
     Row {
         anchors.verticalCenter: parent.verticalCenter
@@ -57,55 +49,19 @@ SettingsRow {
             optionValues: Fcitx5Schema.toArray(root.row.choices?.values)
             currentValue: String(root.value ?? "")
             Accessible.name: root.title
-            onValueChanged: value => root.valueEdited(root.row.path, value)
-        }
-
-        DDropdown {
-            id: fontDropdown
-            anchors.verticalCenter: parent.verticalCenter
-            visible: root.row.kind === "font"
-            backgroundColor: SettingsMetrics.controlSurface
-            enableFuzzySearch: true
-            popupWidthOffset: SettingsMetrics.fontMenuExtraWidth
-            options: root.fontFamilies
-            currentValue: root.fontParts.family
-            Accessible.name: root.title
             onValueChanged: value => {
-                if (value !== root.fontParts.family)
-                    root.valueEdited(root.row.path, Fcitx5Schema.buildFont(Object.assign({}, root.fontParts, {
-                        "family": value
-                    })));
+                if (value !== String(root.value ?? ""))
+                    root.valueEdited(root.row.path, value);
             }
         }
 
-        DDropdown {
+        Loader {
             anchors.verticalCenter: parent.verticalCenter
-            visible: root.row.kind === "font"
-            backgroundColor: SettingsMetrics.controlSurface
-            options: root.fontStyleLabels
-            optionValues: root.fontStyleValues
-            currentValue: root.fontParts.style
-            Accessible.name: I18n.tr("Style", "font style")
-            onValueChanged: value => {
-                if (value !== root.fontParts.style)
-                    root.valueEdited(root.row.path, Fcitx5Schema.buildFont(Object.assign({}, root.fontParts, {
-                        "style": value
-                    })));
-            }
-        }
-
-        DTextField {
-            anchors.verticalCenter: parent.verticalCenter
-            visible: root.row.kind === "font"
-            width: Theme.iconButtonSize * 1.5
-            text: root.fontParts.size
-            validator: sizeValidator
-            Accessible.name: I18n.tr("Size", "font size")
-            onEditingFinished: {
-                if (text !== "" && text !== root.fontParts.size)
-                    root.valueEdited(root.row.path, Fcitx5Schema.buildFont(Object.assign({}, root.fontParts, {
-                        "size": text
-                    })));
+            active: root.row.kind === "font"
+            sourceComponent: Fcitx5FontControls {
+                value: root.value
+                title: root.title
+                onFontEdited: font => root.valueEdited(root.row.path, font)
             }
         }
 
@@ -122,6 +78,18 @@ SettingsRow {
             }
         }
 
+        DTextField {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.row.kind === "strings"
+            width: Theme.iconButtonSize * 8
+            text: Fcitx5Schema.joinList(root.value)
+            Accessible.name: root.title
+            onEditingFinished: {
+                if (text !== Fcitx5Schema.joinList(root.value))
+                    root.valueEdited(root.row.path, Fcitx5Schema.splitList(text));
+            }
+        }
+
         Fcitx5KeyChips {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.row.kind === "key" || root.row.kind === "keys"
@@ -135,19 +103,5 @@ SettingsRow {
 
     IntValidator {
         id: intValidator
-    }
-
-    IntValidator {
-        id: sizeValidator
-        bottom: 1
-        top: 999
-    }
-
-    Component.onCompleted: {
-        if (row.kind !== "font")
-            return;
-        const families = DCommon.Fonts.selectableFamilies("");
-        const current = fontParts.family;
-        fontFamilies = current && !families.includes(current) ? [current].concat(families) : families;
     }
 }

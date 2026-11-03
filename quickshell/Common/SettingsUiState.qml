@@ -22,6 +22,8 @@ Singleton {
     property string selectedWidgetIcon: ""
     property string selectedFcitx5Addon: ""
     property string selectedFcitx5AddonTitle: ""
+    property string selectedFcitx5SubAddon: ""
+    property string selectedFcitx5SubAddonTitle: ""
 
     // The dot has its own page, so bar selection never lands on it.
     function normalizeSelectedBar() {

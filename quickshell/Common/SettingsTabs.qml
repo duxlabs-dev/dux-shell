@@ -367,6 +367,16 @@ Singleton {
                     "hint": I18n.tr("Options of a fcitx5 plugin", "Tab name for fcitx5 addon config page")
                 },
                 {
+                    "id": "fcitx5_addon_sub",
+                    "hidden": true,
+                    "titleFrom": "selectedFcitx5SubAddonTitle",
+                    "text": I18n.tr("Plugins"),
+                    "icon": "extension",
+                    "tabIndex": 70,
+                    "fcitx5Only": true,
+                    "hint": I18n.tr("Options of a fcitx5 plugin", "Tab name for fcitx5 addon config page")
+                },
+                {
                     "id": "mouse_touchpad",
                     "text": I18n.tr("Mouse & touchpad"),
                     "icon": "mouse",

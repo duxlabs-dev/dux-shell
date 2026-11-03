@@ -15,6 +15,10 @@ const FCITX_MODIFIER_NAMES = {
     "Ctrl": "Control"
 };
 
+const ADDON_URI_PREFIX = "fcitx://config/addon/";
+// Deeper URIs are mostly file editors (pinyin/customphrase, quickphrase/editor) that GetConfig cannot serve; only these list editors work.
+const SUB_ADDON_URI = /^fcitx:\/\/config\/addon\/([^\/]+|keyboard\/longpress|punctuation\/punctuationmap\/[^\/]+)$/;
+
 function boolValue(raw) {
     return raw === true || raw === "True";
 }
@@ -44,11 +48,21 @@ function keyList(value) {
     return value ? [value] : [];
 }
 
+function joinList(value) {
+    return keyList(value).join(", ");
+}
+
+function splitList(text) {
+    return String(text).split(",").map(part => part.trim()).filter(part => part !== "");
+}
+
 function fieldKind(type, props) {
     if (type === "String" && props?.IsEnum === "True")
         return "enum";
     if (type === "String" && props?.Font === "True")
         return "font";
+    if (type === "External" && SUB_ADDON_URI.test(String(props?.External ?? "")))
+        return "sub";
     switch (type) {
         case "Boolean":
             return "bool";
@@ -62,6 +76,10 @@ function fieldKind(type, props) {
             return "key";
         case "List|Key":
             return "keys";
+        case "List|String":
+            return "strings";
+        case "List|Enum":
+            return "enums";
         default:
             return "unsupported";
     }
@@ -103,13 +121,30 @@ function enumChoices(field) {
     };
 }
 
+function enumLabel(choices, value) {
+    const i = toArray(choices?.values).indexOf(value);
+    return i < 0 ? value : toArray(choices.labels)[i];
+}
+
 function buildRows(schema, structName, path) {
     const rows = [];
     const hidden = [];
     const base = path ?? [];
     for (const field of structFields(schema, structName)) {
-        const kind = fieldKind(field.type, field.props);
         const fieldPath = base.concat(field.name);
+        const itemStruct = field.type.startsWith("List|") ? field.type.slice(5) : "";
+        if (itemStruct !== "" && structFields(schema, itemStruct).length > 0) {
+            rows.push({
+                "kind": "structs",
+                "name": field.name,
+                "label": field.description || field.name,
+                "tooltip": field.props?.Tooltip ?? "",
+                "path": fieldPath,
+                "fields": buildRows(schema, itemStruct, []).rows.filter(r => r.kind !== "group")
+            });
+            continue;
+        }
+        const kind = fieldKind(field.type, field.props);
         if (kind === "unsupported") {
             const nested = structFields(schema, field.type);
             if (nested.length === 0) {
@@ -127,13 +162,14 @@ function buildRows(schema, structName, path) {
             hidden.push(...inner.hidden);
             continue;
         }
-        const choices = kind === "enum" ? enumChoices(field) : null;
+        const choices = kind === "enum" || kind === "enums" ? enumChoices(field) : null;
         rows.push({
             "kind": kind,
             "name": field.name,
             "label": field.description || field.name,
             "tooltip": field.props?.Tooltip ?? "",
             "path": fieldPath,
+            "addon": kind === "sub" ? field.props.External.slice(ADDON_URI_PREFIX.length) : "",
             "choices": choices,
             "modifierless": field.props?.ListConstrain?.AllowModifierLess !== "False",
             "modifierOnly": field.props?.ListConstrain?.AllowModifierOnly === "True"
@@ -143,6 +179,36 @@ function buildRows(schema, structName, path) {
         "rows": rows,
         "hidden": hidden
     };
+}
+
+// Each group row opens a titled section; rows before the first group form an untitled one.
+function sections(rows) {
+    const out = [];
+    for (const row of rows) {
+        if (row.kind === "group" || row.kind === "structs" || row.kind === "enums") {
+            out.push({
+                "title": row.label,
+                "rows": [],
+                "list": row.kind === "group" ? null : row
+            });
+            continue;
+        }
+        if (out.length === 0 || out[out.length - 1].list)
+            out.push({
+                "title": "",
+                "rows": [],
+                "list": null
+            });
+        out[out.length - 1].rows.push(row);
+    }
+    return out;
+}
+
+function newItem(fields) {
+    const item = {};
+    for (const f of fields)
+        item[f.name] = f.kind === "strings" ? [] : (f.kind === "bool" ? boolString(true) : "");
+    return item;
 }
 
 function getPath(tree, path) {
