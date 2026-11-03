@@ -5,8 +5,10 @@ import { loadScript } from "./qml-script.mjs";
 const keys = loadScript(new URL("../Common/KeyUtils.js", import.meta.url));
 const norm = key => keys.normalizeKeyCombo(key, "Super", "Mod");
 
-test("symbolic Mod renders with the resolved modifier's glyph", () => {
-    assert.deepEqual([...keys.formatKeyTokens("Mod+T", "Alt", "Mod")], ["⌥", "T"]);
+test("symbolic Mod uses Super labels by default and supports Mac glyphs", () => {
+    assert.deepEqual([...keys.formatKeyTokens("Mod+T", "Alt", "Mod")], ["Alt", "T"]);
+    assert.deepEqual([...keys.formatKeyTokens("Mod+T", "Alt", "Mod", "mac")], ["⌥", "T"]);
+    assert.deepEqual([...keys.formatKeyTokens("Mod+T", "Super", "Mod")], ["Super", "T"]);
 });
 
 test("conflict normalization treats sway Mod4 as Super", () => {
@@ -54,9 +56,10 @@ test("a bare modifier conflicts with its sided keysyms like niri's conflicts_wit
     assert.equal(keys.getConflictingBinds("Alt_L", "spawn dms", binds, "Super", "Mod").length, 1);
 });
 
-test("bare modifier keysyms render as glyphs", () => {
+test("symbolic Mod and bare modifiers follow the selected style", () => {
     assert.deepEqual([...keys.formatKeyTokens("Super_L", "Super", "Mod")], ["⌘ L"]);
-    assert.deepEqual([...keys.formatKeyTokens("Mod+Control_R", "Super", "Mod")], ["⌘", "⌃ R"]);
+    assert.deepEqual([...keys.formatKeyTokens("Mod+Control_R", "Super", "Mod")], ["Super", "⌃ R"]);
+    assert.deepEqual([...keys.formatKeyTokens("Mod+Control_R", "Super", "Mod", "mac")], ["⌘", "⌃ R"]);
 });
 
 test("a lone modifier capture becomes a bare-modifier trigger", () => {
