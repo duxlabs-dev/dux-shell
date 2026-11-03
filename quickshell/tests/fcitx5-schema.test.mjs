@@ -14,6 +14,7 @@ const fcitxSchema = {
                 { name: "TriggerKeys", type: "List|Key", description: "Toggle Input Method", props: { ListConstrain: { AllowModifierLess: "True", AllowModifierOnly: "True" } } },
                 { name: "Style", type: "Enum", description: "Style", props: { Enum: ["a", "b"], EnumI18n: ["Alpha", "Beta"] } },
                 { name: "Theme", type: "String", description: "Theme", props: { IsEnum: "True", LaunchSubConfig: "True", Enum: ["a", "b"], EnumI18n: ["Alpha", "Beta"] } },
+                { name: "Font", type: "String", description: "Font", props: { Font: "True" } },
                 { name: "Launcher", type: "External", description: "Editor", props: {} },
             ],
         },
@@ -24,7 +25,7 @@ const value = { Hotkey: { TriggerKeys: ["Control+space"], Style: "b" } };
 test("rows come from the schema: kinds, enum labels, constraints, unsupported counted", () => {
     const { rows, skipped } = schema.buildRows(fcitxSchema, "GlobalConfig", []);
     assert.equal(skipped, 1, "External editors are skipped, not drawn");
-    assert.deepEqual([...rows.map(r => r.kind)], ["group", "keys", "enum", "enum"]);
+    assert.deepEqual([...rows.map(r => r.kind)], ["group", "keys", "enum", "enum", "font"]);
     const [, keys, style] = rows;
     assert.deepEqual([...keys.path], ["Hotkey", "TriggerKeys"]);
     assert.equal(keys.modifierOnly, true);
@@ -74,4 +75,12 @@ test("list-like values become real arrays", () => {
     assert.ok(Array.isArray(schema.toArray(wrapper)));
     assert.deepEqual([...schema.toArray(undefined)], []);
     assert.deepEqual([...schema.keyList({ 0: "Tab", length: 1 })], ["Tab"]);
+});
+
+test("pango font strings split into family, style and size and rebuild unchanged", () => {
+    const p = schema.parseFont("Noto Sans Bold Italic 10");
+    assert.deepEqual({ ...p }, { family: "Noto Sans", style: "Bold Italic", size: "10" });
+    assert.equal(schema.buildFont({ ...p, size: "12" }), "Noto Sans Bold Italic 12");
+    assert.deepEqual({ ...schema.parseFont("Sans") }, { family: "Sans", style: "", size: "" });
+    assert.equal(schema.buildFont(schema.parseFont("Sans 10")), "Sans 10");
 });

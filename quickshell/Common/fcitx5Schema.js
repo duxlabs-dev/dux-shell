@@ -47,6 +47,8 @@ function keyList(value) {
 function fieldKind(type, props) {
     if (type === "String" && props?.IsEnum === "True")
         return "enum";
+    if (type === "String" && props?.Font === "True")
+        return "font";
     switch (type) {
         case "Boolean":
             return "bool";
@@ -63,6 +65,28 @@ function fieldKind(type, props) {
         default:
             return "unsupported";
     }
+}
+
+const fontStyleWords = ["thin", "ultralight", "extralight", "light", "semilight", "book", "regular", "medium", "semibold", "demibold", "bold", "ultrabold", "extrabold", "heavy", "black", "italic", "oblique", "condensed", "expanded"];
+
+// Pango description: "Family [style words] [size]". Style words stay with the value so editing family or size never drops them.
+function parseFont(str) {
+    const words = String(str ?? "").trim().split(/\s+/).filter(w => w !== "");
+    let size = "";
+    if (words.length > 1 && /^\d+(\.\d+)?$/.test(words[words.length - 1]))
+        size = words.pop();
+    const style = [];
+    while (words.length > 1 && fontStyleWords.includes(words[words.length - 1].toLowerCase().replace(/-/g, "")))
+        style.unshift(words.pop());
+    return {
+        "family": words.join(" "),
+        "style": style.join(" "),
+        "size": size
+    };
+}
+
+function buildFont(parts) {
+    return [parts.family, parts.style, parts.size].filter(p => p).join(" ");
 }
 
 function structFields(schema, name) {
