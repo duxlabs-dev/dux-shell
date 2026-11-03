@@ -223,14 +223,14 @@ FocusScope {
             return;
         case Qt.Key_N:
             if (hasCtrl) {
-                controller.selectNextSection();
+                controller.searchMode === "dmenu" ? controller.selectNext() : controller.selectNextSection();
                 return;
             }
             event.accepted = false;
             return;
         case Qt.Key_P:
             if (hasCtrl) {
-                controller.selectPreviousSection();
+                controller.searchMode === "dmenu" ? controller.selectPrevious() : controller.selectPreviousSection();
                 return;
             }
             event.accepted = false;
