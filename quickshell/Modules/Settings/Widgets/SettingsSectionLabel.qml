@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Common
+import qs.DCommon.Widgets
 import qs.Widgets
 
 Item {
@@ -34,8 +35,10 @@ Item {
     }
 
     FocusRing {
-        radius: Theme.cornerRadiusS + Theme.focusRingOffset
-        visible: root.activeFocus && root.collapsible
+        id: labelRing
+        anchors.fill: headerHit
+        radius: headerHit.radius + Theme.focusRingOffset
+        visible: parentFocused && !pointerFocused && root.collapsible
     }
 
     signal toggleRequested
@@ -46,6 +49,7 @@ Item {
     StyledText {
         id: label
         anchors.left: parent.left
+        anchors.leftMargin: Theme.spacingS
         anchors.right: actionsRow.left
         anchors.rightMargin: Theme.spacingS
         anchors.verticalCenter: parent.verticalCenter
@@ -61,14 +65,15 @@ Item {
     Row {
         id: actionsRow
         anchors.right: root.collapsible ? caret.left : parent.right
-        anchors.rightMargin: root.collapsible ? Theme.spacingS : 0
+        anchors.rightMargin: Theme.spacingS
         anchors.verticalCenter: label.verticalCenter
         spacing: Theme.spacingXS
     }
 
-    DankIcon {
+    DIcon {
         id: caret
         anchors.right: parent.right
+        anchors.rightMargin: Theme.spacingS
         anchors.verticalCenter: label.verticalCenter
         name: "expand_more"
         size: Theme.iconSize
@@ -94,8 +99,6 @@ Item {
         anchors.bottom: parent.bottom
         anchors.topMargin: root.topGap - Theme.spacingXS
         anchors.bottomMargin: root.bottomGap - Theme.spacingXS
-        anchors.leftMargin: -Theme.spacingS
-        anchors.rightMargin: -Theme.spacingS
         radius: Theme.cornerRadiusS
         color: "transparent"
         visible: root.collapsible
@@ -104,7 +107,12 @@ Item {
         StateLayer {
             stateColor: Theme.primary
             cornerRadius: parent.radius
-            onClicked: root.toggleRequested()
+            focused: labelRing.visible
+            onClicked: {
+                labelRing.pointerFocused = true;
+                root.forceActiveFocus(Qt.MouseFocusReason);
+                root.toggleRequested();
+            }
         }
     }
 }

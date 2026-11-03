@@ -3,7 +3,7 @@
     "name": "Stopwatch Example",
     "description": "A standalone dash tab: a stopwatch with laps that keeps time while the dash is closed",
     "version": "1.0.0",
-    "author": "DankMaterialShell",
+    "author": "Dux Shell",
     "type": "dash",
     "capabilities": ["dash-tab"],
     "component": "./StopwatchTab.qml",

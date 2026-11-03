@@ -25,7 +25,7 @@ Singleton {
     readonly property bool isRtl: _rtlLanguages.includes(_lang)
 
     readonly property url translationsFolder: Qt.resolvedUrl("../translations/poexports")
-    readonly property url commonTranslationsFolder: Qt.resolvedUrl("../DankCommon/translations/poexports")
+    readonly property url commonTranslationsFolder: Qt.resolvedUrl("../DCommon/translations/poexports")
 
     readonly property alias folder: dir.folder
     property var presentLocales: ({
@@ -97,9 +97,9 @@ Singleton {
             try {
                 root.commonTranslations = JSON.parse(text());
                 root.commonTranslationsLoaded = true;
-                log.info(`I18n: Loaded DankCommon translations (${Object.keys(root.commonTranslations).length} contexts)`);
+                log.info(`I18n: Loaded DCommon translations (${Object.keys(root.commonTranslations).length} contexts)`);
             } catch (e) {
-                log.warn("I18n: Error parsing DankCommon translations:", e);
+                log.warn("I18n: Error parsing DCommon translations:", e);
             }
         }
     }
@@ -276,16 +276,27 @@ Singleton {
     function duration(seconds) {
         if (seconds < 1)
             return I18n.tr("%1 ms", "duration in milliseconds, %1 is a number").arg(Math.round(seconds * 1000));
-        const units = [[86400, I18n.tr("%1 day", "duration, singular, %1 is 1"), I18n.tr("%1 days", "duration, plural, %1 is a number")], [3600, I18n.tr("%1 hour", "duration, singular, %1 is 1"), I18n.tr("%1 hours", "duration, plural, %1 is a number")], [60, I18n.tr("%1 minute", "duration, singular, %1 is 1"), I18n.tr("%1 minutes", "duration, plural, %1 is a number")], [1, I18n.tr("%1 second", "duration, singular, %1 is 1"), I18n.tr("%1 seconds", "duration, plural, %1 is a number")]];
+        const units = [[86400, I18n.tr("%1 day", "duration, singular, %1 is 1"), I18n.tr("%1 days", "duration, plural, %1 is a number"), I18n.tr("%1 days", "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural", true)], [3600, I18n.tr("%1 hour", "duration, singular, %1 is 1"), I18n.tr("%1 hours", "duration, plural, %1 is a number"), I18n.tr("%1 hours", "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural", true)], [60, I18n.tr("%1 minute", "duration, singular, %1 is 1"), I18n.tr("%1 minutes", "duration, plural, %1 is a number"), I18n.tr("%1 minutes", "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural", true)], [1, I18n.tr("%1 second", "duration, singular, %1 is 1"), I18n.tr("%1 seconds", "duration, plural, %1 is a number"), I18n.tr("%1 seconds", "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural", true)]];
         const parts = [];
         let rest = Math.round(seconds);
         for (const unit of units) {
             const count = Math.floor(rest / unit[0]);
             rest -= count * unit[0];
             if (count > 0)
-                parts.push(unit[count === 1 ? 1 : 2].arg(count));
+                parts.push(unit[_durationForm(count)].arg(count));
         }
         return parts.join(" ");
+    }
+
+    // uk/ru/pl few rule; cs/sk treat 22-24 as plural, no duration here reaches them
+    function _durationForm(count) {
+        if (count === 1)
+            return 1;
+        const ones = count % 10;
+        const tens = count % 100;
+        if (ones >= 2 && ones <= 4 && (tens < 12 || tens > 14))
+            return 3;
+        return 2;
     }
 
     function trContext(context, term) {

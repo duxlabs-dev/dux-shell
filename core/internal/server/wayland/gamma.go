@@ -3,7 +3,7 @@ package wayland
 import (
 	"math"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/icc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/icc"
 )
 
 type GammaRamp struct {
@@ -150,6 +150,19 @@ func GenerateGammaRamp(size uint32, temp int, gamma, contrast float64) GammaRamp
 	}
 
 	return ramp
+}
+
+func brightnessScale(percent int) float64 {
+	return outputBrightnessFloor + (1-outputBrightnessFloor)*float64(percent)/100
+}
+
+// scaleRamp dims the ramp in perceived brightness, not light output.
+func scaleRamp(ramp GammaRamp, factor float64) {
+	for _, channel := range [][]uint16{ramp.Red, ramp.Green, ramp.Blue} {
+		for i, v := range channel {
+			channel[i] = uint16(float64(v) * factor)
+		}
+	}
 }
 
 func GenerateIdentityRamp(size uint32) GammaRamp {

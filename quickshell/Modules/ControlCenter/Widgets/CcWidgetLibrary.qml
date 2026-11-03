@@ -1,18 +1,14 @@
 import QtQuick
 import qs.Common
 import qs.Modules.ControlCenter
-import qs.Widgets
+import qs.DCommon.Widgets
+import "../utils/widgets.js" as WidgetUtils
 
 Rectangle {
     id: root
 
     property var widgets: []
-    readonly property var matches: {
-        const query = searchField.text.trim().toLowerCase();
-        if (!query)
-            return widgets;
-        return widgets.filter(widget => [widget.text, widget.description, widget.id].some(value => (value || "").toLowerCase().includes(query)));
-    }
+    readonly property var matches: WidgetUtils.filterWidgets(widgets, searchField.text)
 
     signal chosen(string widgetId)
     signal dismissed
@@ -47,7 +43,7 @@ Rectangle {
             anchors.right: parent.right
             spacing: Theme.spacingM
 
-            DankIcon {
+            DIcon {
                 name: "add_circle"
                 size: Theme.iconSize
                 color: Theme.primary
@@ -63,13 +59,12 @@ Rectangle {
             }
         }
 
-        DankSearchField {
+        DSearchField {
             id: searchField
             anchors.top: headerRow.bottom
             anchors.topMargin: Theme.spacingM
             anchors.left: parent.left
             anchors.right: parent.right
-            height: Theme.fieldHeightLarge
             textColor: Theme.surfaceText
             font.pixelSize: Theme.fontSizeMedium
             placeholderText: I18n.tr("Search widgets...")
@@ -85,7 +80,7 @@ Rectangle {
             }
         }
 
-        DankListView {
+        DListView {
             id: widgetList
 
             anchors.top: searchField.bottom
@@ -110,7 +105,7 @@ Rectangle {
                 bottomRadius: index === widgetList.count - 1 ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
                 onClicked: root.chosen(modelData.id)
 
-                DankIcon {
+                DIcon {
                     name: "add"
                     size: Theme.iconSize
                     color: Theme.primary

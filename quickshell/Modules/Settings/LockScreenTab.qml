@@ -4,7 +4,7 @@ import Quickshell.Io
 import qs.Common
 import qs.Modals.FileBrowser
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 import "../../Common/KeyUtils.js" as KeyUtils
 
@@ -34,6 +34,7 @@ Item {
     property string u2fPendingApplyPath: ""
     property bool u2fShowCustom: false
 
+    readonly property string managedNote: I18n.tr("Managed by administrator policy", "settings note: the administrator lock policy sets this value")
     readonly property string authAutoLabel: I18n.tr("Auto", "automatic PAM authentication source option")
     readonly property string authCustomLabel: I18n.tr("Custom", "custom PAM authentication source option") + "…"
 
@@ -106,7 +107,7 @@ Item {
         case "missing_reader":
             return I18n.tr("No fingerprint reader detected", "fingerprint setting status");
         case "missing_pam_support":
-            return I18n.tr("Not available - install fprintd and pam_fprintd", "lock screen fingerprint setting");
+            return I18n.tr("Not available - install %1 and %2", "lock screen fingerprint setting, %1 and %2 are package names").arg("fprintd").arg("pam_fprintd");
         default:
             return I18n.tr("Fingerprint availability could not be confirmed", "fingerprint setting status");
         }
@@ -119,7 +120,7 @@ Item {
         case "missing_key_registration":
             return I18n.tr("Security-key support was detected, but no registered key was found yet. You can enable this now and register one later.", "security key setting status");
         case "missing_pam_support":
-            return I18n.tr("Not available - install or configure pam_u2f", "lock screen security key setting");
+            return I18n.tr("Not available - install or configure %1", "lock screen security key setting, %1 is a PAM module").arg("pam_u2f");
         default:
             return I18n.tr("Security-key availability could not be confirmed", "security key setting status");
         }
@@ -268,108 +269,79 @@ Item {
         }
     }
 
+    function showWidgetBrowser() {
+        lockWidgetBrowserLoader.active = true;
+        lockWidgetBrowserLoader.item?.show();
+    }
+
+    function showPluginBrowser() {
+        lockPluginBrowserLoader.active = true;
+        lockPluginBrowserLoader.item?.show();
+    }
+
+    LazyLoader {
+        id: lockWidgetBrowserLoader
+        active: false
+
+        DesktopWidgetBrowser {
+            parentModal: root.parentModal
+            listKey: "lockScreenWidgetInstances"
+            title: I18n.tr("Add widget")
+            onWidgetAdded: ToastService.showInfo(I18n.tr("Widget added"))
+        }
+    }
+
+    LazyLoader {
+        id: lockPluginBrowserLoader
+        active: false
+
+        PluginBrowser {
+            parentModal: root.parentModal
+            typeFilters: ["desktop-widget"]
+        }
+    }
+
     SettingsPage {
         id: mainColumn
 
         SettingsCard {
             width: parent.width
-            iconName: "lock"
-            title: I18n.tr("Layout")
-            settingKey: "lockLayout"
+            iconName: "widgets"
+            title: I18n.tr("Widgets")
+            settingKey: "lockScreenWidgets"
+            tags: ["lock", "screen", "widgets", "clock", "plugins"]
 
-            SettingsToggleRow {
-                settingKey: "lockScreenShowPowerActions"
-                tags: ["lock", "screen", "power", "actions", "shutdown", "reboot"]
-                text: I18n.tr("Show power actions")
-                checked: SettingsData.lockScreenShowPowerActions
-                onToggled: checked => SettingsData.set("lockScreenShowPowerActions", checked)
-            }
+            SettingsReorderList {
+                id: lockWidgetList
 
-            SettingsToggleRow {
-                settingKey: "lockScreenShowSystemIcons"
-                tags: ["lock", "screen", "system", "icons", "status"]
-                text: I18n.tr("Show system icons")
-                checked: SettingsData.lockScreenShowSystemIcons
-                onToggled: checked => SettingsData.set("lockScreenShowSystemIcons", checked)
-            }
+                model: SettingsData.lockScreenWidgetInstances || []
 
-            SettingsToggleRow {
-                settingKey: "lockScreenShowTime"
-                tags: ["lock", "screen", "time", "clock", "display"]
-                text: I18n.tr("Show time")
-                checked: SettingsData.lockScreenShowTime
-                onToggled: checked => SettingsData.set("lockScreenShowTime", checked)
-            }
+                delegate: DesktopWidgetInstanceCard {
+                    required property var modelData
 
-            SettingsButtonGroupRow {
-                settingKey: "lockScreenClockStyle"
-                tags: ["lock", "screen", "time", "clock", "style", "vertical"]
-                text: I18n.tr("Clock style")
-                visible: SettingsData.lockScreenShowTime
-                model: [I18n.tr("Horizontal", "lock screen clock style option"), I18n.tr("Vertical", "lock screen clock style option")]
-                currentIndex: SettingsData.lockScreenClockStyle === "vertical" ? 1 : 0
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    SettingsData.set("lockScreenClockStyle", index === 1 ? "vertical" : "horizontal");
-                }
-            }
+                    reorderList: lockWidgetList
+                    reorderEnabled: false
+                    instanceData: modelData
+                    fixed: modelData.widgetType === "lockAuth"
 
-            SettingsToggleRow {
-                settingKey: "lockScreenShowDate"
-                tags: ["lock", "screen", "date", "calendar", "display"]
-                text: I18n.tr("Show date")
-                checked: SettingsData.lockScreenShowDate
-                onToggled: checked => SettingsData.set("lockScreenShowDate", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "lockScreenShowProfileImage"
-                tags: ["lock", "screen", "profile", "image", "avatar", "picture"]
-                text: I18n.tr("Show profile image")
-                checked: SettingsData.lockScreenShowProfileImage
-                onToggled: checked => SettingsData.set("lockScreenShowProfileImage", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "lockScreenShowPasswordField"
-                tags: ["lock", "screen", "password", "field", "input", "visible"]
-                text: I18n.tr("Show password field")
-                description: I18n.tr("A hidden field appears as soon as a key is pressed")
-                checked: SettingsData.lockScreenShowPasswordField
-                onToggled: checked => SettingsData.set("lockScreenShowPasswordField", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "lockScreenShowMediaPlayer"
-                tags: ["lock", "screen", "media", "player", "music", "mpris"]
-                text: I18n.tr("Show media player")
-                checked: SettingsData.lockScreenShowMediaPlayer
-                onToggled: checked => SettingsData.set("lockScreenShowMediaPlayer", checked)
-            }
-
-            SettingsSplitRow {
-                settingKey: "lockScreenShowWeather"
-                tab: "lock_screen"
-                tags: ["weather", "temperature"]
-                title: I18n.tr("Weather")
-                checked: SettingsData.lockScreenShowWeather
-                onToggled: checked => SettingsData.set("lockScreenShowWeather", checked)
-                onNavigated: root.parentModal?.navigateTo("weather")
-            }
-
-            SettingsDropdownRow {
-                settingKey: "lockScreenNotificationMode"
-                tags: ["lock", "screen", "notification", "notifications", "privacy"]
-                text: I18n.tr("Notifications")
-                options: [I18n.tr("Disabled", "lock screen notification mode option"), I18n.tr("Count only", "lock screen notification mode option"), I18n.tr("App names", "lock screen notification mode option"), I18n.tr("Full content", "lock screen notification mode option")]
-                currentValue: options[SettingsData.lockScreenNotificationMode] || options[0]
-                onValueChanged: value => {
-                    const idx = options.indexOf(value);
-                    if (idx >= 0) {
-                        SettingsData.set("lockScreenNotificationMode", idx);
+                    onConfigureRequested: {
+                        SettingsUiState.selectedDesktopWidgetId = instanceId;
+                        SettingsUiState.selectedWidgetTitle = widgetName;
+                        root.parentModal?.navigateTo("desktop_widget");
+                    }
+                    onDuplicateRequested: SettingsData.duplicateDesktopWidgetInstance(instanceId)
+                    onDeleteRequested: {
+                        SettingsData.removeDesktopWidgetInstance(instanceId);
+                        ToastService.showInfo(I18n.tr("Widget removed"));
                     }
                 }
+            }
+
+            SettingsRow {
+                iconName: "restart_alt"
+                title: I18n.tr("Reset to default")
+                clickable: true
+                onClicked: SettingsData.resetLockScreenWidgets()
             }
         }
 
@@ -445,14 +417,18 @@ Item {
                 settingKey: "lockAtStartup"
                 tags: ["lock", "screen", "startup", "start", "boot", "login", "automatic"]
                 text: I18n.tr("Lock at startup")
+                description: SettingsData.isManaged("lockAtStartup") ? root.managedNote : ""
+                enabled: !SettingsData.isManaged("lockAtStartup")
                 checked: SettingsData.lockAtStartup
                 onToggled: checked => SettingsData.set("lockAtStartup", checked)
             }
 
             SettingsToggleRow {
                 settingKey: "lockBeforeSuspend"
-                tags: ["lock", "screen", "suspend", "sleep", "automatic"]
+                tags: ["lock", "screen", "suspend", "hibernate", "sleep", "automatic"]
                 text: I18n.tr("Lock before suspend")
+                description: SettingsData.isManaged("lockBeforeSuspend") ? root.managedNote : ""
+                enabled: !SettingsData.isManaged("lockBeforeSuspend")
                 checked: SettingsData.lockBeforeSuspend
                 visible: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
                 onToggled: checked => SettingsData.set("lockBeforeSuspend", checked)
@@ -494,7 +470,7 @@ Item {
                 placeholderText: "/path/to/videos"
                 onValueEdited: value => SettingsData.set("lockScreenVideoPath", value)
 
-                actions: DankButton {
+                actions: DButton {
                     text: I18n.tr("Browse")
                     onClicked: videoBrowserModal.open()
                 }
@@ -528,10 +504,10 @@ Item {
                 settingKey: "enableFprint"
                 tags: ["lock", "screen", "fingerprint", "authentication", "biometric", "fprint"]
                 text: I18n.tr("Fingerprint", "lock screen fingerprint authentication toggle")
-                description: root.lockFprintControlledByPrimary ? I18n.tr("Managed by the primary PAM source", "factor managed by PAM source status") : root.lockFingerprintDescription()
-                descriptionColor: root.lockFprintControlledByPrimary || SettingsData.lockFingerprintReason === "ready" ? Theme.surfaceVariantText : Theme.warning
+                description: SettingsData.isManaged("enableFprint") ? root.managedNote : root.lockFprintControlledByPrimary ? I18n.tr("Managed by the primary PAM source", "factor managed by PAM source status") : root.lockFingerprintDescription()
+                descriptionColor: SettingsData.isManaged("enableFprint") || root.lockFprintControlledByPrimary || SettingsData.lockFingerprintReason === "ready" ? Theme.surfaceVariantText : Theme.warning
                 checked: SettingsData.enableFprint || root.primaryPamHasFprint
-                enabled: root.lockFprintToggleAvailable && !root.lockFprintControlledByPrimary
+                enabled: root.lockFprintToggleAvailable && !root.lockFprintControlledByPrimary && !SettingsData.isManaged("enableFprint")
                 onToggled: checked => SettingsData.set("enableFprint", checked)
             }
 
@@ -539,10 +515,10 @@ Item {
                 settingKey: "enableU2f"
                 tags: ["lock", "screen", "u2f", "yubikey", "security", "key", "fido", "authentication", "hardware"]
                 text: I18n.tr("Security key")
-                description: root.lockU2fControlledByPrimary ? I18n.tr("Managed by the primary PAM source", "factor managed by PAM source status") : root.lockU2fDescription()
-                descriptionColor: root.lockU2fControlledByPrimary || SettingsData.lockU2fReason === "ready" ? Theme.surfaceVariantText : Theme.warning
+                description: SettingsData.isManaged("enableU2f") ? root.managedNote : root.lockU2fControlledByPrimary ? I18n.tr("Managed by the primary PAM source", "factor managed by PAM source status") : root.lockU2fDescription()
+                descriptionColor: SettingsData.isManaged("enableU2f") || root.lockU2fControlledByPrimary || SettingsData.lockU2fReason === "ready" ? Theme.surfaceVariantText : Theme.warning
                 checked: SettingsData.enableU2f || root.primaryPamHasU2f
-                enabled: root.lockU2fToggleAvailable && !root.lockU2fControlledByPrimary
+                enabled: root.lockU2fToggleAvailable && !root.lockU2fControlledByPrimary && !SettingsData.isManaged("enableU2f")
                 onToggled: checked => SettingsData.set("enableU2f", checked)
             }
 
@@ -550,7 +526,8 @@ Item {
                 settingKey: "u2fMode"
                 tags: ["lock", "screen", "u2f", "yubikey", "security", "key", "mode", "factor", "second"]
                 text: I18n.tr("Security key mode", "lock screen U2F security key mode setting")
-                description: I18n.tr("'Alternative' lets the key unlock on its own. 'Second factor' requires password or fingerprint first, then the key.", "lock screen U2F security key mode setting")
+                description: SettingsData.isManaged("u2fMode") ? root.managedNote : I18n.tr("'Alternative' lets the key unlock on its own. 'Second factor' requires password or fingerprint first, then the key.", "lock screen U2F security key mode setting")
+                enabled: !SettingsData.isManaged("u2fMode")
                 visible: SettingsData.enableU2f && !root.lockU2fControlledByPrimary
                 options: [I18n.tr("Alternative (OR)", "U2F mode option: key works as standalone unlock method"), I18n.tr("Second factor (AND)", "U2F mode option: key required after password or fingerprint")]
                 currentValue: SettingsData.u2fMode === "and" ? I18n.tr("Second factor (AND)", "U2F mode option: key required after password or fingerprint") : I18n.tr("Alternative (OR)", "U2F mode option: key works as standalone unlock method")
@@ -601,13 +578,12 @@ Item {
                         }
                     }
 
-                    DankButton {
+                    DButton {
                         id: securityKeyCapture
                         width: 200
                         anchors.verticalCenter: parent.verticalCenter
-                        focus: capturing
                         text: capturing ? I18n.tr("Press key...", "lock screen security key shortcut key combination capture prompt") : SettingsData.lockScreenSecurityKeyShortcut
-                        backgroundColor: capturing ? Theme.selectedContainer : Theme.chipSurface
+                        backgroundColor: capturing ? Theme.selectedContainer : SettingsMetrics.controlColor
                         textColor: Theme.surfaceText
 
                         property bool capturing: false
@@ -631,8 +607,14 @@ Item {
                                 startCapture();
                         }
 
-                        Keys.onPressed: event => {
-                            if (!securityKeyCapture.capturing)
+                        Keys.onPressed: event => captureKey(event)
+                        // Specific Tab handlers stop Qt focus traversal while capturing.
+                        Keys.onTabPressed: event => captureKey(event)
+                        Keys.onBacktabPressed: event => captureKey(event)
+
+                        function captureKey(event) {
+                            event.accepted = capturing;
+                            if (!capturing)
                                 return;
 
                             if (KeyUtils.isModifierKey(event.key))
@@ -640,7 +622,6 @@ Item {
 
                             if (event.key === Qt.Key_Escape) {
                                 securityKeyCapture.stopCapture();
-                                event.accepted = true;
                                 return;
                             }
 
@@ -692,7 +673,7 @@ Item {
             SettingsDisplayPicker {
                 width: parent.width
                 displayPreferences: SettingsData.screenPreferences?.lockScreen || ["all"]
-                onPreferencesChanged: prefs => {
+                preferencesHandler: prefs => {
                     var p = SettingsData.screenPreferences || {};
                     var updated = Object.assign({}, p);
                     updated["lockScreen"] = prefs;
@@ -708,30 +689,23 @@ Item {
                     const prefs = SettingsData.screenPreferences?.lockScreen;
                     return Array.isArray(prefs) && !prefs.includes("all") && prefs.length > 0;
                 }
+                clickable: true
+                onClicked: {
+                    if (!PopoutService.colorPickerModal)
+                        return;
+                    PopoutService.colorPickerModal.selectedColor = SettingsData.lockScreenInactiveColor;
+                    PopoutService.colorPickerModal.pickerTitle = I18n.tr("Inactive display color");
+                    PopoutService.colorPickerModal.onColorSelectedCallback = function (selectedColor) {
+                        SettingsData.set("lockScreenInactiveColor", selectedColor);
+                    };
+                    PopoutService.colorPickerModal.show();
+                }
 
-                Rectangle {
-                    width: Theme.iconButtonSize
-                    height: Theme.iconButtonSize
-                    radius: Theme.cornerRadius
-                    color: SettingsData.lockScreenInactiveColor
-                    border.color: Theme.outline
-                    border.width: Theme.outlineWidth
+                DColorSwatch {
+                    width: Theme.iconSizeMedium
+                    height: width
+                    swatchColor: SettingsData.lockScreenInactiveColor
                     anchors.verticalCenter: parent.verticalCenter
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (!PopoutService.colorPickerModal)
-                                return;
-                            PopoutService.colorPickerModal.selectedColor = SettingsData.lockScreenInactiveColor;
-                            PopoutService.colorPickerModal.pickerTitle = I18n.tr("Inactive display color");
-                            PopoutService.colorPickerModal.onColorSelectedCallback = function (selectedColor) {
-                                SettingsData.set("lockScreenInactiveColor", selectedColor);
-                            };
-                            PopoutService.colorPickerModal.show();
-                        }
-                    }
                 }
             }
         }
@@ -786,7 +760,7 @@ Item {
                     width: parent.width
                     spacing: Theme.spacingS
 
-                    DankTextField {
+                    DTextField {
                         id: customPamField
                         outlined: true
                         leftIconName: "lock"
@@ -796,7 +770,7 @@ Item {
                         text: SettingsData.lockPamPath
                     }
 
-                    DankButton {
+                    DButton {
                         id: validatePamButton
                         text: I18n.tr("Apply changes")
                         enabled: !root.authValidateRunning && customPamField.text.trim() !== ""
@@ -805,28 +779,14 @@ Item {
                 }
             }
 
-            SettingsRow {
+            SettingsNoteRow {
                 visible: root.authValidateMessage !== ""
-                body: Rectangle {
-                    width: parent.width
-                    height: Math.min(160, authStatusText.implicitHeight + Theme.spacingM * 2)
-                    radius: Theme.cornerRadius
-                    color: Theme.floatingWindowFieldColor
-                    border.color: Theme.outlineMedium
-                    border.width: Theme.layerOutlineWidth
-
-                    StyledText {
-                        id: authStatusText
-                        anchors.fill: parent
-                        anchors.margins: Theme.spacingM
-                        text: root.authValidateMessage
-                        font.pixelSize: Theme.fontSizeSmall
-                        font.family: "monospace"
-                        color: !root.authValidateOk ? Theme.error : (root.authValidateWarn ? Theme.warning : Theme.surfaceVariantText)
-                        wrapMode: Text.Wrap
-                        verticalAlignment: Text.AlignTop
-                    }
-                }
+                noteIconName: ""
+                monospace: true
+                maxHeight: SettingsMetrics.noteMaxHeight
+                text: root.authValidateMessage
+                tint: !root.authValidateOk ? Theme.error : (root.authValidateWarn ? Theme.warning : Theme.surfaceVariantText)
+                tintBackground: SettingsMetrics.controlColor
             }
 
             SettingsDropdownRow {
@@ -854,7 +814,7 @@ Item {
                     width: parent.width
                     spacing: Theme.spacingS
 
-                    DankTextField {
+                    DTextField {
                         id: customU2fPamField
                         outlined: true
                         leftIconName: "key"
@@ -864,7 +824,7 @@ Item {
                         text: SettingsData.lockU2fPamPath
                     }
 
-                    DankButton {
+                    DButton {
                         id: validateU2fPamButton
                         text: I18n.tr("Apply changes")
                         enabled: !root.u2fValidateRunning && customU2fPamField.text.trim() !== ""
@@ -873,34 +833,20 @@ Item {
                 }
             }
 
-            SettingsRow {
+            SettingsNoteRow {
                 visible: !root.lockU2fControlledByPrimary && root.u2fValidateMessage !== ""
-                body: Rectangle {
-                    width: parent.width
-                    height: Math.min(160, u2fStatusText.implicitHeight + Theme.spacingM * 2)
-                    radius: Theme.cornerRadius
-                    color: Theme.floatingWindowFieldColor
-                    border.color: Theme.outlineMedium
-                    border.width: Theme.layerOutlineWidth
-
-                    StyledText {
-                        id: u2fStatusText
-                        anchors.fill: parent
-                        anchors.margins: Theme.spacingM
-                        text: root.u2fValidateMessage
-                        font.pixelSize: Theme.fontSizeSmall
-                        font.family: "monospace"
-                        color: !root.u2fValidateOk ? Theme.error : (root.u2fValidateWarn ? Theme.warning : Theme.surfaceVariantText)
-                        wrapMode: Text.Wrap
-                        verticalAlignment: Text.AlignTop
-                    }
-                }
+                noteIconName: ""
+                monospace: true
+                maxHeight: SettingsMetrics.noteMaxHeight
+                text: root.u2fValidateMessage
+                tint: !root.u2fValidateOk ? Theme.error : (root.u2fValidateWarn ? Theme.warning : Theme.surfaceVariantText)
+                tintBackground: SettingsMetrics.controlColor
             }
 
             SettingsRow {
                 visible: !SessionService.loginctlAvailable
                 body: StyledText {
-                    text: I18n.tr("loginctl not available - lock integration requires DMS socket connection")
+                    text: I18n.tr("%1 not available - lock integration requires the DMS socket connection", "lock screen warning, %1 is the loginctl binary").arg("loginctl")
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.warning
                     width: parent.width
@@ -912,14 +858,36 @@ Item {
                 settingKey: "loginctlLockIntegration"
                 tags: ["lock", "screen", "loginctl", "dbus", "integration", "external"]
                 text: I18n.tr("loginctl integration")
-                description: I18n.tr("Disable when using an external lock screen")
+                description: SettingsData.isManaged("loginctlLockIntegration") ? root.managedNote : I18n.tr("Disable when using an external lock screen")
                 checked: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
-                enabled: SessionService.loginctlAvailable
+                enabled: SessionService.loginctlAvailable && !SettingsData.isManaged("loginctlLockIntegration")
                 onToggled: checked => {
                     if (!SessionService.loginctlAvailable)
                         return;
                     SettingsData.set("loginctlLockIntegration", checked);
                 }
+            }
+        }
+
+        SettingsFabBar {
+            DFab {
+                text: I18n.tr("Browse plugins")
+                iconName: "store"
+                colorRole: "secondaryContainer"
+                onClicked: root.showPluginBrowser()
+            }
+
+            DFab {
+                text: I18n.tr("Edit widgets")
+                iconName: "edit"
+                colorRole: "secondaryContainer"
+                onClicked: SessionService.lockEditorRequested()
+            }
+
+            DFab {
+                text: I18n.tr("Add widget")
+                iconName: "add"
+                onClicked: root.showWidgetBrowser()
             }
         }
     }

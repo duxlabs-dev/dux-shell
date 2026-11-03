@@ -3,7 +3,7 @@
     "name": "Wallpaper Watcher Daemon",
     "description": "Background daemon that monitors wallpaper changes and logs them",
     "version": "1.0.0",
-    "author": "DankMaterialShell",
+    "author": "Dux Shell",
     "type": "daemon",
     "capabilities": ["wallpaper", "monitoring"],
     "component": "./WallpaperWatcherDaemon.qml",

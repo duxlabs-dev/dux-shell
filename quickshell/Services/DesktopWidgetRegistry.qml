@@ -4,17 +4,42 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import qs.Common
+import "../Common/settings/SettingsSpec.js" as Spec
 
 Singleton {
     id: root
 
     property var registeredWidgets: ({})
     property var registeredWidgetsList: []
+    property bool editing: false
+    property string libraryScreen: ""
+    property string optionsScreen: ""
+    property string optionsInstanceId: ""
 
     signal registryChanged
 
+    onEditingChanged: {
+        if (editing)
+            return;
+        libraryScreen = "";
+        optionsScreen = "";
+        optionsInstanceId = "";
+    }
+
+    function startEditing(screen, openLibrary) {
+        libraryScreen = openLibrary ? (screen?.name ?? "") : "";
+        editing = true;
+    }
+
+    function editOptions(screen, instanceId) {
+        optionsScreen = screen?.name ?? "";
+        optionsInstanceId = instanceId;
+        startEditing(screen, false);
+    }
+
     Component.onCompleted: {
         registerBuiltins();
+        registerLockBuiltins();
         Qt.callLater(syncPluginWidgets);
     }
 
@@ -35,12 +60,13 @@ Singleton {
     function registerBuiltins() {
         registerWidget({
             id: "desktopClock",
-            name: I18n.tr("Desktop Clock", "Desktop clock widget name"),
+            name: I18n.tr("Clock"),
             icon: "schedule",
-            description: I18n.tr("Analog, digital, or stacked clock display", "Desktop clock widget description"),
+            description: I18n.tr("Analog, digital, stacked, expressive, or overlapping clock", "Desktop clock widget description"),
             type: "builtin",
             component: "qs.Modules.BuiltinDesktopPlugins.DesktopClockWidget",
             settingsComponent: "qs.Modules.Settings.DesktopWidgetSettings.ClockSettings",
+            greeter: true,
             defaultConfig: getDefaultClockConfig(),
             defaultSize: {
                 width: 280,
@@ -60,6 +86,43 @@ Singleton {
             defaultSize: {
                 width: 320,
                 height: 480
+            }
+        });
+    }
+
+    function registerLockBuiltins() {
+        const lockWidget = (id, name, icon, greeter) => registerWidget({
+                id: id,
+                name: name,
+                icon: icon,
+                description: "",
+                type: "builtin",
+                lockOnly: true,
+                greeter: greeter,
+                defaultConfig: Spec.SPEC.lockScreenWidgetInstances.def.find(inst => inst.widgetType === id)?.config ?? {},
+                defaultSize: {
+                    width: 200,
+                    height: 200
+                }
+            });
+        lockWidget("lockDate", I18n.tr("Date"), "event", true);
+        lockWidget("lockAuth", I18n.tr("Password"), "lock", true);
+        lockWidget("lockNotifications", I18n.tr("Notifications"), "notifications", false);
+        lockWidget("lockStatus", I18n.tr("Status"), "wifi", true);
+        lockWidget("lockPower", I18n.tr("Power"), "power_settings_new", true);
+        registerWidget({
+            id: "greeterSession",
+            name: I18n.tr("Session", "greeter session picker widget"),
+            icon: "login",
+            description: "",
+            type: "builtin",
+            lockOnly: true,
+            greeterOnly: true,
+            greeter: true,
+            defaultConfig: Spec.greeterSessionDefault().config,
+            defaultSize: {
+                width: 200,
+                height: 48
             }
         });
     }
@@ -133,18 +196,24 @@ Singleton {
         if (!widget)
             return {};
 
-        if (widget.type === "builtin") {
-            switch (widgetType) {
-            case "desktopClock":
-                return getDefaultClockConfig();
-            case "systemMonitor":
-                return getDefaultSystemMonitorConfig();
-            default:
-                return widget.defaultConfig ?? {};
-            }
+        switch (widgetType) {
+        case "desktopClock":
+            return getDefaultClockConfig();
+        case "systemMonitor":
+            return getDefaultSystemMonitorConfig();
         }
+        return JSON.parse(JSON.stringify(widget.defaultConfig ?? {}));
+    }
 
-        return widget.defaultConfig ?? {};
+    function showsOnScreen(prefs, screen) {
+        if (!Array.isArray(prefs) || prefs.length === 0 || prefs.includes("all"))
+            return true;
+        const screenKey = SettingsData.getScreenDisplayName(screen);
+        return prefs.some(p => {
+            if (typeof p === "string")
+                return p === screenKey || p === screen?.name;
+            return p?.name === screen?.name || p === screenKey;
+        });
     }
 
     function getDefaultSize(widgetType) {
@@ -218,7 +287,29 @@ Singleton {
     }
 
     function getBuiltinWidgets() {
-        return registeredWidgetsList.filter(w => w.type === "builtin");
+        return registeredWidgetsList.filter(w => w.type === "builtin" && !w.lockOnly);
+    }
+
+    function getDesktopWidgets() {
+        return registeredWidgetsList.filter(w => !w.lockOnly);
+    }
+
+    function getLockWidgets() {
+        return registeredWidgetsList.filter(w => !w.greeterOnly);
+    }
+
+    function getGreeterWidgets() {
+        return registeredWidgetsList.filter(w => w.greeter);
+    }
+
+    function getListWidgets(listKey) {
+        switch (listKey) {
+        case "lockScreenWidgetInstances":
+            return getLockWidgets();
+        case "greeterWidgetInstances":
+            return getGreeterWidgets();
+        }
+        return getDesktopWidgets();
     }
 
     function getPluginWidgets() {

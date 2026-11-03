@@ -1,3 +1,8 @@
-import qs.DankCommon.Widgets as DankCommon
+import QtQuick
+import qs.Common
+import qs.DCommon.Widgets as DCommon
 
-DankCommon.DankSpinner {}
+DCommon.DSpinner {
+    id: shim
+    Component.onCompleted: Deprecation.type(shim, "DankSpinner", "DSpinner", "qs.DCommon.Widgets")
+}

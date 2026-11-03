@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 // Options.IconTheme defaults to this UI label rather than a real icon theme name.
@@ -24,6 +24,11 @@ func QtengineActive() bool {
 // QtengineConfigPath returns the config qtengine serves both Qt5 and Qt6 from.
 func QtengineConfigPath() string {
 	return qtengineConfigPath("")
+}
+
+// QtengineColorSchemePath returns the KColorScheme file DMS points qtengine at.
+func QtengineColorSchemePath() string {
+	return filepath.Join(utils.XDGDataHome(), "color-schemes", "DankMatugen.colors")
 }
 
 // SyncQtengineConfig merges the DMS colour scheme path and icon theme into
@@ -70,7 +75,7 @@ func SyncQtengineConfigAt(configDir, iconTheme string) error {
 
 	// Only written if the file exists: qtengine resolves a missing path to an
 	// empty config and resets the palette to its built-in default.
-	scheme := filepath.Join(utils.XDGDataHome(), "color-schemes", "DankMatugen.colors")
+	scheme := QtengineColorSchemePath()
 	if _, err := os.Stat(scheme); err == nil {
 		theme["colorScheme"] = scheme
 	}

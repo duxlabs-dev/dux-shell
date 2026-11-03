@@ -1,6 +1,6 @@
 package windowrules
 
-import "github.com/AvengeMedia/DankMaterialShell/core/internal/configfrag"
+import "github.com/duxlabs-dev/dux-shell/core/internal/configfrag"
 
 type MatchCriteria struct {
 	AppID              string `json:"appId,omitempty"`
@@ -16,6 +16,17 @@ type MatchCriteria struct {
 	Fullscreen         *bool  `json:"fullscreen,omitempty"`
 	Pinned             *bool  `json:"pinned,omitempty"`
 	Initialised        *bool  `json:"initialised,omitempty"`
+
+	InitialClass            string `json:"initialClass,omitempty"`
+	InitialTitle            string `json:"initialTitle,omitempty"`
+	Tag                     string `json:"tag,omitempty"`
+	Workspace               string `json:"workspace,omitempty"`
+	Content                 string `json:"content,omitempty"`
+	XdgTag                  string `json:"xdgTag,omitempty"`
+	Grouped                 *bool  `json:"group,omitempty"`
+	Modal                   *bool  `json:"modal,omitempty"`
+	FullscreenStateInternal *int   `json:"fullscreenStateInternal,omitempty"`
+	FullscreenStateClient   *int   `json:"fullscreenStateClient,omitempty"`
 }
 
 type Actions struct {
@@ -30,6 +41,9 @@ type Actions struct {
 	DefaultColumnWidth   string   `json:"defaultColumnWidth,omitempty"`
 	DefaultWindowHeight  string   `json:"defaultWindowHeight,omitempty"`
 	VariableRefreshRate  *bool    `json:"variableRefreshRate,omitempty"`
+	VrrFullscreenOnly    *bool    `json:"vrrFullscreenOnly,omitempty"`
+	OnXdgActivate        string   `json:"onXdgActivate,omitempty"`
+	PinchSensitivity     *float64 `json:"pinchSensitivity,omitempty"`
 	BlockOutFrom         string   `json:"blockOutFrom,omitempty"`
 	DefaultColumnDisplay string   `json:"defaultColumnDisplay,omitempty"`
 	ScrollFactor         *float64 `json:"scrollFactor,omitempty"`
@@ -71,6 +85,18 @@ type Actions struct {
 	Opaque                    *bool  `json:"opaque,omitempty"`
 	ForcergbX                 *bool  `json:"forcergbx,omitempty"`
 	Idleinhibit               string `json:"idleinhibit,omitempty"`
+
+	NoInitialFocus  *bool    `json:"noInitialFocus,omitempty"`
+	FocusOnActivate *bool    `json:"focusOnActivate,omitempty"`
+	StayFocused     *bool    `json:"stayFocused,omitempty"`
+	ConfinePointer  *bool    `json:"confinePointer,omitempty"`
+	NoXdgDrags      *bool    `json:"noXdgDrags,omitempty"`
+	NoAutoHDR       *bool    `json:"noAutoHdr,omitempty"`
+	NoGlow          *bool    `json:"noGlow,omitempty"`
+	NoWobble        *bool    `json:"noWobble,omitempty"`
+	ScrollingWidth  *float64 `json:"scrollingWidth,omitempty"`
+	Tonemap         string   `json:"tonemap,omitempty"`
+	SuppressEvent   string   `json:"suppressEvent,omitempty"`
 }
 
 type WindowRule struct {
@@ -93,8 +119,6 @@ type DMSRulesStatus struct {
 	Effective       bool   `json:"effective"`
 	OverriddenBy    int    `json:"overriddenBy"`
 	StatusMessage   string `json:"statusMessage"`
-	ConfigFormat    string `json:"configFormat,omitempty"`
-	ReadOnly        bool   `json:"readOnly,omitempty"`
 }
 
 type RuleSet struct {
@@ -128,7 +152,5 @@ func DMSRulesStatusFrom(s configfrag.Status) *DMSRulesStatus {
 		Effective:       s.Effective,
 		OverriddenBy:    s.OverriddenBy,
 		StatusMessage:   s.StatusMessage,
-		ConfigFormat:    s.ConfigFormat,
-		ReadOnly:        s.ReadOnly,
 	}
 }

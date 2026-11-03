@@ -127,7 +127,7 @@ Singleton {
 
         if (!available)
             return;
-        if (!stateInitialized) {
+        if (refCount > 0 && !stateInitialized) {
             stateInitialized = true;
             getStatus();
         }

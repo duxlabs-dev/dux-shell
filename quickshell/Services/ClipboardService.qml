@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
@@ -31,6 +32,7 @@ Singleton {
     property int selectedIndex: 0
     property bool keyboardNavigationActive: false
     property int refCount: 0
+    property bool _pasteSupportChecked: false
     property bool _launcherCacheValid: false
     property string _launcherCachedQuery: ""
     property var _launcherCachedEntries: []
@@ -47,6 +49,11 @@ Singleton {
         onTriggered: root.sendPasteKeystroke()
     }
 
+    Process {
+        id: pasteCommand
+        onExited: pasteTimer.start()
+    }
+
     Connections {
         target: DMSService
         function onIsConnectedChanged() {
@@ -54,13 +61,21 @@ Singleton {
         }
     }
 
-    Component.onCompleted: refreshPasteSupport()
+    // subscribed for the shell's lifetime; resubscribing replays every service's snapshot
+    Component.onCompleted: DMSService.addSubscription("clipboard")
+
+    onRefCountChanged: {
+        if (refCount > 0 && !_pasteSupportChecked)
+            refreshPasteSupport();
+    }
 
     function refreshPasteSupport() {
         if (!DMSService.isConnected) {
             pasteSupported = false;
+            _pasteSupportChecked = false;
             return;
         }
+        _pasteSupportChecked = true;
         DMSService.sendRequest("clipboard.pasteSupported", null, function (response) {
             root.pasteSupported = !response.error && response.result && response.result.supported === true;
         });
@@ -72,6 +87,11 @@ Singleton {
             return false;
         }
         return terminalAppIds.includes(appId) || appId.endsWith("term") || appId.includes("terminal");
+    }
+
+    function pasteAfterCommand(command) {
+        pasteCommand.command = command;
+        pasteCommand.running = true;
     }
 
     function sendPasteKeystroke() {
@@ -99,9 +119,10 @@ Singleton {
             (entry.pinned ? pinned : unpinned).push(entry);
         }
 
-        const byIdDesc = (a, b) => b.id - a.id;
-        pinned.sort(byIdDesc);
-        unpinned.sort(byIdDesc);
+        // JS Date keeps milliseconds only, so rows sharing one get id as the tie-break.
+        const byTimestampDesc = (a, b) => (new Date(b.timestamp) - new Date(a.timestamp)) || (b.id - a.id);
+        pinned.sort(byTimestampDesc);
+        unpinned.sort(byTimestampDesc);
 
         pinnedEntries = pinned;
         unpinnedEntries = unpinned;
@@ -129,17 +150,22 @@ Singleton {
                 log.warn("Failed to get history:", response.error);
                 return;
             }
-            internalEntries = response.result || [];
-            pinnedEntries = internalEntries.filter(e => e.pinned);
-            pinnedCount = pinnedEntries.length;
-            updateFilteredModel();
+            applyHistory(response.result || []);
         });
+    }
+
+    function applyHistory(history) {
+        internalEntries = history;
+        pinnedCount = history.filter(e => e.pinned).length;
+        updateFilteredModel();
     }
 
     function requestLauncherSearch(query, limit) {
         if (!clipboardAvailable) {
             return;
         }
+        if (!_pasteSupportChecked)
+            refreshPasteSupport();
 
         const trimmed = (query || "").toString().trim();
         const maxItems = limit > 0 ? limit : 20;
@@ -297,28 +323,16 @@ Singleton {
     }
 
     function pinEntry(entry) {
-        DMSService.sendRequest("clipboard.getPinnedCount", null, function (countResponse) {
-            if (countResponse.error) {
-                ToastService.showError(I18n.tr("Failed to check pin limit"));
+        DMSService.sendRequest("clipboard.pinEntry", {
+            "id": entry.id
+        }, function (response) {
+            if (response.error) {
+                // error text from core/internal/server/clipboard
+                const limit = /^maximum pinned entries reached \((\d+)\)/.exec(response.error);
+                ToastService.showError(limit ? I18n.tr("Maximum pinned entries reached") + " (" + limit[1] + ")" : I18n.tr("Failed to pin entry"));
                 return;
             }
-
-            const maxPinned = 25;
-            if (countResponse.result.count >= maxPinned) {
-                ToastService.showError(I18n.tr("Maximum pinned entries reached") + " (" + maxPinned + ")");
-                return;
-            }
-
-            DMSService.sendRequest("clipboard.pinEntry", {
-                "id": entry.id
-            }, function (response) {
-                if (response.error) {
-                    ToastService.showError(I18n.tr("Failed to pin entry"));
-                    return;
-                }
-                ToastService.showInfo(I18n.tr("Entry pinned"));
-                refresh();
-            });
+            ToastService.showInfo(I18n.tr("Entry pinned"));
         });
     }
 
@@ -331,7 +345,6 @@ Singleton {
                 return;
             }
             ToastService.showInfo(I18n.tr("Entry unpinned"));
-            refresh();
         });
     }
 
@@ -456,15 +469,16 @@ Singleton {
         refresh();
     }
 
+    // only pinnedCount is tracked while no surface is open; the bar menu reads it, surfaces refresh on open
     Connections {
         target: DMSService
-        enabled: root.refCount > 0
         function onClipboardStateUpdate(data) {
-            const newHistory = data.history || [];
-            internalEntries = newHistory;
-            pinnedEntries = newHistory.filter(e => e.pinned);
-            pinnedCount = pinnedEntries.length;
-            updateFilteredModel();
+            const history = data.history || [];
+            if (root.refCount > 0) {
+                root.applyHistory(history);
+                return;
+            }
+            root.pinnedCount = history.filter(e => e.pinned).length;
         }
     }
 }

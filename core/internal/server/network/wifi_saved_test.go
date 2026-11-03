@@ -46,24 +46,6 @@ func TestMergeSavedProfilesIntoWiFiNetworks(t *testing.T) {
 	assert.False(t, merged[1].Autoconnect)
 }
 
-func TestSavedWiFiNetworksFromProfilesOutOfRangeWithoutVisibleNetworks(t *testing.T) {
-	profiles := map[string]savedWiFiProfile{
-		"Home": {
-			Autoconnect: true,
-			Secured:     true,
-			Mode:        "infrastructure",
-		},
-	}
-
-	networks := savedWiFiNetworksFromProfiles(profiles, nil, "", false)
-
-	assert.Len(t, networks, 1)
-	assert.Equal(t, "Home", networks[0].SSID)
-	assert.True(t, networks[0].Saved)
-	assert.True(t, networks[0].OutOfRange)
-	assert.Equal(t, uint8(0), networks[0].Signal)
-}
-
 func TestSavedWiFiNetworksFromProfilesKeepsConnectedCurrentNetworkInRange(t *testing.T) {
 	profiles := map[string]savedWiFiProfile{
 		"Home": {

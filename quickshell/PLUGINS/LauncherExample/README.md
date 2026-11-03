@@ -42,7 +42,7 @@ PLUGINS/LauncherExample/
 
 ## Installation
 
-1. **Plugin Directory**: Copy to `~/.config/DankMaterialShell/plugins/LauncherExample`
+1. **Plugin Directory**: Copy to `~/.config/dms/plugins/LauncherExample`
 2. **Enable Plugin**: Settings → Plugins → Enable "LauncherExample"
 3. **Configure**: Set custom trigger in plugin settings if desired
 

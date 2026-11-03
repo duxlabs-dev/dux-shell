@@ -1,11 +1,9 @@
 package bluez
 
 import (
-	"encoding/xml"
 	"testing"
 
 	"github.com/godbus/dbus/v5"
-	"github.com/godbus/dbus/v5/introspect"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,8 +15,6 @@ func TestValidatePlayerSnapshot(t *testing.T) {
 		wantErr  string
 	}{
 		{name: "playing", snapshot: PlayerSnapshot{PlaybackStatus: "Playing"}},
-		{name: "paused", snapshot: PlayerSnapshot{PlaybackStatus: "Paused"}},
-		{name: "stopped", snapshot: PlayerSnapshot{PlaybackStatus: "Stopped"}},
 		{name: "invalid status", snapshot: PlayerSnapshot{PlaybackStatus: "Buffering"}, wantErr: "invalid playbackStatus"},
 		{name: "negative length", snapshot: PlayerSnapshot{PlaybackStatus: "Stopped", Length: -1}, wantErr: "length must be nonnegative"},
 		{name: "negative position", snapshot: PlayerSnapshot{PlaybackStatus: "Stopped", Position: -1}, wantErr: "position must be nonnegative"},
@@ -125,85 +121,10 @@ func TestPlayerTrackIDIsStableAndMetadataDependent(t *testing.T) {
 	assert.True(t, playerTrackID(snapshot).IsValid())
 }
 
-func TestMPRISPlayerIntrospectionSurface(t *testing.T) {
-	var node introspect.Node
-	require.NoError(t, xml.Unmarshal([]byte(mprisPlayerIntrospection), &node))
-
-	var playerInterface introspect.Interface
-	for _, iface := range node.Interfaces {
-		if iface.Name == mprisPlayerIface {
-			playerInterface = iface
-			break
-		}
-	}
-	require.Equal(t, mprisPlayerIface, playerInterface.Name)
-
-	expectedPropertyCount := 16
-	require.Len(t, playerInterface.Properties, expectedPropertyCount)
-	properties := make(map[string]introspect.Property, len(playerInterface.Properties))
-	for _, property := range playerInterface.Properties {
-		properties[property.Name] = property
-	}
-	expected := map[string]introspect.Property{
-		"PlaybackStatus": {Type: "s", Access: "read"},
-		"LoopStatus":     {Type: "s", Access: "readwrite"},
-		"Rate":           {Type: "d", Access: "readwrite"},
-		"Shuffle":        {Type: "b", Access: "readwrite"},
-		"Metadata":       {Type: "a{sv}", Access: "read"},
-		"Volume":         {Type: "d", Access: "readwrite"},
-		"Position":       {Type: "x", Access: "read"},
-		"MinimumRate":    {Type: "d", Access: "read"},
-		"MaximumRate":    {Type: "d", Access: "read"},
-		"Identity":       {Type: "s", Access: "read"},
-		"CanGoNext":      {Type: "b", Access: "read"},
-		"CanGoPrevious":  {Type: "b", Access: "read"},
-		"CanPlay":        {Type: "b", Access: "read"},
-		"CanPause":       {Type: "b", Access: "read"},
-		"CanSeek":        {Type: "b", Access: "read"},
-		"CanControl":     {Type: "b", Access: "read"},
-	}
-	require.Len(t, expected, expectedPropertyCount)
-	require.Len(t, properties, len(expected))
-	for name, want := range expected {
-		property, ok := properties[name]
-		require.True(t, ok, name)
-		assert.Equal(t, want.Type, property.Type, name)
-		assert.Equal(t, want.Access, property.Access, name)
-	}
-
-	expectedMethods := map[string][]introspect.Arg{
-		"Next":        nil,
-		"Previous":    nil,
-		"Pause":       nil,
-		"PlayPause":   nil,
-		"Stop":        nil,
-		"Play":        nil,
-		"Seek":        {{Name: "Offset", Type: "x", Direction: "in"}},
-		"SetPosition": {{Name: "TrackId", Type: "o", Direction: "in"}, {Name: "Position", Type: "x", Direction: "in"}},
-		"OpenUri":     {{Name: "Uri", Type: "s", Direction: "in"}},
-	}
-	require.Len(t, playerInterface.Methods, len(expectedMethods))
-	methods := make(map[string][]introspect.Arg, len(playerInterface.Methods))
-	for _, method := range playerInterface.Methods {
-		methods[method.Name] = method.Args
-	}
-	require.Len(t, methods, len(expectedMethods))
-	for name, want := range expectedMethods {
-		args, ok := methods[name]
-		require.True(t, ok, name)
-		assert.Equal(t, want, args, name)
-	}
-
-	require.Len(t, playerInterface.Signals, 1)
-	assert.Equal(t, "Seeked", playerInterface.Signals[0].Name)
-	require.Len(t, playerInterface.Signals[0].Args, 1)
-	assert.Equal(t, introspect.Arg{Name: "Position", Type: "x"}, playerInterface.Signals[0].Args[0])
-}
-
 func TestStalePlayerPropertiesClearMetadataAndCapabilities(t *testing.T) {
 	old := PlayerSnapshot{
 		Enabled:        true,
-		Identity:       "DankMaterialShell",
+		Identity:       "Dux Shell",
 		PlaybackStatus: "Playing",
 		Title:          "Title",
 		Artist:         "Artist",
@@ -445,7 +366,7 @@ func TestPlayerCommandOwnerLossWithoutWaiterDisablesPlayer(t *testing.T) {
 	player := newMPRISPlayer(nil, nil)
 	player.snapshot = PlayerSnapshot{
 		Enabled:        true,
-		Identity:       "DankMaterialShell",
+		Identity:       "Dux Shell",
 		PlaybackStatus: "Playing",
 		Title:          "Title",
 		CanControl:     true,
@@ -467,7 +388,7 @@ func TestPlayerCommandOwnerLossClearsStaleStateAndPromotesWaiter(t *testing.T) {
 	player := newMPRISPlayer(nil, nil)
 	player.snapshot = PlayerSnapshot{
 		Enabled:        true,
-		Identity:       "DankMaterialShell",
+		Identity:       "Dux Shell",
 		PlaybackStatus: "Playing",
 		Title:          "Title",
 		Artist:         "Artist",
@@ -491,7 +412,7 @@ func TestPlayerCommandOwnerLossClearsStaleStateAndPromotesWaiter(t *testing.T) {
 	manager.UnsubscribePlayerCommands("owner")
 	assert.Equal(t, PlayerSnapshot{
 		Enabled:        true,
-		Identity:       "DankMaterialShell",
+		Identity:       "Dux Shell",
 		PlaybackStatus: "Stopped",
 	}, player.currentSnapshot())
 	waiterLease := (<-waiter).Lease

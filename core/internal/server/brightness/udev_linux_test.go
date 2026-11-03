@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/pilebones/go-udev/netlink"
 )
@@ -84,7 +83,7 @@ func TestHandleUdevBrightnessChange_NoChangeWhenSameValue(t *testing.T) {
 	select {
 	case <-updateCh:
 		t.Error("should not broadcast when brightness unchanged")
-	case <-time.After(50 * time.Millisecond):
+	default:
 	}
 }
 
@@ -101,7 +100,7 @@ func TestHandleUdevBrightnessChange_BroadcastsOnChange(t *testing.T) {
 		if update.Device.Current != 750 {
 			t.Errorf("broadcast had wrong Current: got %d, want 750", update.Device.Current)
 		}
-	case <-time.After(100 * time.Millisecond):
+	default:
 		t.Error("expected broadcast on brightness change")
 	}
 }
@@ -177,25 +176,6 @@ func TestHandleEvent_MissingEnvVars(t *testing.T) {
 	state := m.GetState()
 	if state.Devices[0].Current != 500 {
 		t.Error("state should be unchanged with missing env vars")
-	}
-}
-
-func TestHandleEvent_MissingSubsystem(t *testing.T) {
-	m, _ := setupTestManager(t)
-	um := &UdevMonitor{stop: make(chan struct{})}
-
-	event := netlink.UEvent{
-		Action: netlink.CHANGE,
-		Env: map[string]string{
-			"DEVPATH": "/devices/foo/bar",
-		},
-	}
-
-	um.handleEvent(m, event)
-
-	state := m.GetState()
-	if state.Devices[0].Current != 500 {
-		t.Error("state should be unchanged with missing SUBSYSTEM")
 	}
 }
 

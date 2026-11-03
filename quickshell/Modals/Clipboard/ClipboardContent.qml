@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import qs.Common
+import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Services
 
@@ -91,6 +92,18 @@ Item {
         }
     }
 
+    ScriptModel {
+        id: savedModel
+        values: clipboardContent.modal.pinnedEntries
+        objectProp: "id"
+    }
+
+    ScriptModel {
+        id: recentsModel
+        values: clipboardContent.modal.unpinnedEntries
+        objectProp: "id"
+    }
+
     ClipboardContextMenu {
         id: contextMenu
         modal: clipboardContent.modal
@@ -126,7 +139,7 @@ Item {
                 modal: clipboardContent.modal
             }
 
-            DankSearchField {
+            DSearchField {
                 id: searchField
 
                 anchors.left: parent.left
@@ -160,7 +173,7 @@ Item {
                 }
             }
 
-            DankActionButton {
+            DActionButton {
                 id: filterButton
 
                 anchors.right: searchField.right
@@ -183,7 +196,7 @@ Item {
             Component {
                 id: filterMenuComponent
 
-                DankDropdown {
+                DDropdown {
                     showTrigger: false
                     popupAnchorItem: filterButton
                     popupWidth: 180
@@ -211,21 +224,19 @@ Item {
         anchors.topMargin: PopoutMetrics.contentGap
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
+        anchors.bottom: keyboardHintsLoader.top
         anchors.leftMargin: PopoutMetrics.contentPadding
         anchors.rightMargin: PopoutMetrics.contentPadding
-        anchors.bottomMargin: (modal.showKeyboardHints ? (ClipboardConstants.keyboardHintsHeight + PopoutMetrics.contentPadding * 2) : 0) + Theme.spacingXS
+        anchors.bottomMargin: keyboardHintsLoader.active ? PopoutMetrics.contentGap : 0
         clip: true
 
-        DankListView {
+        DListView {
             id: clipboardListView
             reuseItems: true
             highlightSelection: clipboardContent.modal.keyboardNavigationActive && clipboardContent.modal.selectedIndex >= 0
             anchors.fill: parent
-            model: ScriptModel {
-                values: clipboardContent.entries
-                objectProp: "id"
-            }
+            // one model per tab; a shared model diffs the whole list on every tab switch
+            model: clipboardContent.modal.activeTab === "saved" ? savedModel : recentsModel
 
             currentIndex: clipboardContent.modal ? clipboardContent.modal.selectedIndex : 0
             spacing: Theme.groupedListGap
@@ -241,7 +252,7 @@ Item {
                 if (index < 0 || index >= count) {
                     return;
                 }
-                positionViewAtIndex(index, ListView.Contain);
+                revealIndex(index);
             }
 
             onCurrentIndexChanged: {
@@ -297,9 +308,9 @@ Item {
         anchors.right: parent.right
         anchors.leftMargin: PopoutMetrics.contentPadding
         anchors.rightMargin: PopoutMetrics.contentPadding
-        anchors.bottomMargin: active ? PopoutMetrics.contentPadding : 0
+        anchors.bottomMargin: PopoutMetrics.contentPadding
         active: modal.showKeyboardHints
-        height: active ? ClipboardConstants.keyboardHintsHeight : 0
+        height: item ? item.implicitHeight : 0
 
         Behavior on height {
             NumberAnimation {

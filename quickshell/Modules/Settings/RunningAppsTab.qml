@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
@@ -16,7 +16,7 @@ Item {
             settingKey: "appIdSubstitutions"
             tags: ["app", "icon", "substitution", "replacement", "pattern", "window", "class", "regex"]
 
-            headerActions: DankActionButton {
+            headerActions: DActionButton {
                 iconName: "restart_alt"
                 tooltipText: I18n.tr("Reset to default")
                 visible: JSON.stringify(SettingsData.appIdSubstitutions) !== JSON.stringify(SettingsData.getDefaultAppIdSubstitutions())
@@ -45,7 +45,7 @@ Item {
                         value: substitutionGroup.modelData.pattern
                         onEditingFinished: value => SettingsData.updateAppIdSubstitution(substitutionGroup.index, value, replacementField.value, substitutionGroup.modelData.type)
 
-                        actions: DankActionButton {
+                        actions: DActionButton {
                             iconName: "delete"
                             iconColor: Theme.error
                             Accessible.name: I18n.tr("Remove")
@@ -72,9 +72,9 @@ Item {
         }
 
         SettingsFabBar {
-            DankFab {
+            DFab {
+                text: I18n.tr("Add substitution", "running apps settings button, adds an app name or icon substitution")
                 iconName: "add"
-                Accessible.name: I18n.tr("Add")
                 onClicked: SettingsData.addAppIdSubstitution("", "", "exact")
             }
         }

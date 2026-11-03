@@ -3,6 +3,7 @@ package network
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/godbus/dbus/v5"
 )
@@ -43,19 +44,47 @@ func wpaSupplicantCtrlDirPresent() bool {
 }
 
 func DetectNetworkStack() (*DetectResult, error) {
+	// FreeBSD uses the native ifconfig/wpa_supplicant backend regardless of
+	// whether unrelated Linux-oriented D-Bus services happen to be present.
+	if runtime.GOOS == "freebsd" {
+		hasWpa := wpaSupplicantCtrlDirPresent()
+		reason := "FreeBSD detected. Using native Ethernet interfaces."
+		if hasWpa {
+			reason = "FreeBSD detected with wpa_supplicant control directory. Using native Ethernet and wpa_ctrl Wi-Fi."
+		}
+		return &DetectResult{
+			Backend:      BackendWpaSupplicant,
+			HasWpaSupp:   hasWpa,
+			ChosenReason: reason,
+		}, nil
+	}
+
 	bus, err := dbus.ConnectSystemBus()
 	if err != nil {
-		// FreeBSD and minimal Linux systems may run wpa_supplicant with no
-		// system bus at all; the control directory is the only signal there.
+		if runtime.GOOS == "freebsd" {
+			hasWpa := wpaSupplicantCtrlDirPresent()
+			reason := "FreeBSD detected. Using native Ethernet interfaces."
+			if hasWpa {
+				reason = "FreeBSD detected with wpa_supplicant control directory. Using native Ethernet and wpa_ctrl Wi-Fi."
+			}
+			return &DetectResult{
+				Backend:      BackendWpaSupplicant,
+				HasWpaSupp:   hasWpa,
+				ChosenReason: reason,
+			}, nil
+		}
+
 		if !wpaSupplicantCtrlDirPresent() {
 			return nil, fmt.Errorf("connect system bus: %w", err)
 		}
+
 		return &DetectResult{
 			Backend:      BackendWpaSupplicant,
 			HasWpaSupp:   true,
 			ChosenReason: "System bus unreachable; wpa_supplicant control directory present. Using wpa_ctrl interface.",
 		}, nil
 	}
+
 	defer bus.Close()
 
 	hasNM, _ := nameHasOwner(bus, "org.freedesktop.NetworkManager")
@@ -96,6 +125,9 @@ func DetectNetworkStack() (*DetectResult, error) {
 		res.Backend = BackendWpaSupplicant
 		res.HasWpaSupp = true
 		res.ChosenReason = "No NM/ConnMan/iwd/networkd; wpa_supplicant control directory present. Using wpa_ctrl interface."
+	case runtime.GOOS == "freebsd":
+		res.Backend = BackendWpaSupplicant
+		res.ChosenReason = "FreeBSD detected without wpa_supplicant. Using native Ethernet support."
 	default:
 		res.Backend = BackendNone
 		if hasWpa {

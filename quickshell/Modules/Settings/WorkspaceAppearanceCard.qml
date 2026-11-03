@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 SettingsCard {
@@ -55,7 +55,7 @@ SettingsCard {
             width: parent.width
             height: workspaceTabBar.height + Theme.spacingM
 
-            DankTabBar {
+            DTabBar {
                 id: workspaceTabBar
                 width: parent.width
                 tabHeight: 44
@@ -115,8 +115,6 @@ SettingsCard {
     SettingsToggleRow {
         visible: workspaceTabBar.currentIndex === 0
         settingKey: "workspaceFocusedBorderEnabled"
-        resetStore: root.store
-        resetKeys: ["workspaceFocusedBorderEnabled"]
         tags: ["workspace", "border", "outline", "focused", "ring"]
         text: I18n.tr("Focused border")
         checked: root.store.get("workspaceFocusedBorderEnabled")
@@ -146,8 +144,6 @@ SettingsCard {
     SettingsToggleRow {
         visible: (workspaceTabBar.currentIndex === 1) && (BarWidgetService.focusedScreenDetectionSupported)
         settingKey: "workspaceUnfocusedMonitorSeparateAppearance"
-        resetStore: root.store
-        resetKeys: ["workspaceUnfocusedMonitorSeparateAppearance"]
         tags: ["workspace", "unfocused", "monitor", "display", "separate", "color"]
         text: I18n.tr("Separate appearance")
         checked: root.store.get("workspaceUnfocusedMonitorSeparateAppearance")
@@ -179,8 +175,6 @@ SettingsCard {
         enabled: root.store.get("workspaceUnfocusedMonitorSeparateAppearance")
         visible: (workspaceTabBar.currentIndex === 1) && (BarWidgetService.focusedScreenDetectionSupported)
         settingKey: "workspaceUnfocusedMonitorBorderEnabled"
-        resetStore: root.store
-        resetKeys: ["workspaceUnfocusedMonitorBorderEnabled"]
         tags: ["workspace", "border", "outline", "focused", "ring", "unfocused", "monitor", "display"]
         text: I18n.tr("Focused border")
         checked: root.store.get("workspaceUnfocusedMonitorBorderEnabled")
@@ -205,7 +199,7 @@ SettingsCard {
         settingKey: "workspaceIcons"
         tags: ["workspace", "icon", "named", "scratchpad", "special"]
         title: I18n.tr("Icons")
-        subtitle: I18n.tr("Named workspaces and scratchpads")
+        subtitle: I18n.tr("Named workspaces and scratchpads", "workspace appearance row subtitle")
     }
 
     Repeater {
@@ -216,7 +210,7 @@ SettingsCard {
 
             title: modelData
 
-            DankIconPicker {
+            DIconPicker {
                 id: iconPicker
                 anchors.verticalCenter: parent.verticalCenter
 
@@ -247,7 +241,7 @@ SettingsCard {
                 }
             }
 
-            DankActionButton {
+            DActionButton {
                 buttonSize: Theme.iconButtonSize
                 iconName: "close"
                 Accessible.name: I18n.tr("Remove")

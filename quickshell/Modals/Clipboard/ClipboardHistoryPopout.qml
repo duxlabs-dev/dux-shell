@@ -8,7 +8,7 @@ import qs.Modals.Common
 import qs.Services
 import qs.Widgets
 
-DankPopout {
+DPopout {
     id: root
 
     layerNamespace: "dms:clipboard-popout"
@@ -98,6 +98,7 @@ DankPopout {
 
     Ref {
         service: ClipboardService
+        active: root.shouldBeVisible
     }
 
     ConfirmModal {

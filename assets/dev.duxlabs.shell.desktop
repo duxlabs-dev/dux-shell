@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Dux Shell
+GenericName=Desktop Shell
+Comment=Material 3 inspired shell for Wayland compositors
+Exec=dms run
+Icon=dev.duxlabs.shell
+Terminal=false
+NoDisplay=true
+StartupNotify=false
+Categories=Utility;

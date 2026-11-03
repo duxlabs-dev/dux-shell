@@ -4,9 +4,9 @@ DMS is an open-source desktop shell for Wayland compositors on linux, built to w
 
 ## Repo Structure
 
-- core/ - Go. `cmd/dms` runs quickshell, CLI utilities, and the unix socket server the UI depends on. `cmd/dankinstall` is a separate installer TUI.
-- quickshell/ - the entire UI: Common/ (singletons, Theme, settings), Services/ (system and core access), Modules/ (bar, dock, lock, ...), Modals/, Widgets/ (Dank* components), PLUGINS/, translations/
-- dank-qml-common/ - submodule of shared QML widgets
+- core/ - Go. `cmd/dms` runs quickshell, CLI utilities, and the unix socket server the UI depends on. `cmd/duxinstall` is a separate installer TUI.
+- quickshell/ - the entire UI: Common/ (singletons, Theme, settings), Services/ (system and core access), Modules/ (bar, dock, lock, ...), Modals/, Widgets/ (shell-specific widgets and deprecated Dank* shims), PLUGINS/, translations/
+- dux-qml-common/ - submodule of shared QML widgets
 - docs/, distro/ - IPC and theme docs, packaging
 
 ## Rules
@@ -18,7 +18,7 @@ DMS is an open-source desktop shell for Wayland compositors on linux, built to w
 - The shell runs 24/7. Audit every change for idle CPU, extra processes, timers, and retained memory.
 - `core` and `quickshell` share the socket protocol. Changing one means checking the other.
 - QML uses Theme tokens, never hardcoded colors, spacing, or constants.
-- Use the Dank* wrappers in Widgets/ instead of raw ListView/Flickable/ScrollView.
+- Use the D* widgets from qs.DCommon.Widgets (DListView, DFlickable, and so on) instead of raw ListView/Flickable/ScrollView. The Dank* names in Widgets/ are deprecated shims.
 - User-facing text goes through I18n.tr(). Reuse catalog terms. Never edit translation catalogs.
 - Guard clauses, early returns.
 - Comment only what the code cannot say: a non-obvious why, a trap, a workaround. Never narrate what the code does or restate a name. Keep it to a line or two, and delete useless or paragraph comments you come across.
@@ -30,6 +30,7 @@ DMS is an open-source desktop shell for Wayland compositors on linux, built to w
 - A test must fail on the broken code. Otherwise do not write it.
 - No useless tests: "main.go contains func main()", defaults, "it instantiates", behavior the change didn't touch.
 - QML tests must be fast. Call logic directly, load the smallest component, no fixed delays or animation waits, few meaningful assertions over a matrix.
+- Tests cover `.js` modules, functions of `Services/` and `Common/` singletons, and IPC handlers. Never load, slice or mock anything under `Modules/`, `Modals/` or `Widgets/`, and never spawn a compositor, display server or shell. Those tests only ever broke on UI tweaks.
 
 ## Connections vs bound properties
 

@@ -1,13 +1,13 @@
 package brightness
 
 import (
+	"errors"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 )
 
 func NewManager() (*Manager, error) {
@@ -42,12 +42,17 @@ func (m *Manager) initLogind() {
 }
 
 func (m *Manager) initDDC() {
-	if os.Getenv("DMS_NO_DDC") != "" {
+	defer func() {
+		m.ddcSettled.Store(true)
+		m.updateState()
+	}()
+
+	ddc, err := newDDCBackend(m.updateState)
+	switch {
+	case errors.Is(err, errDDCDisabled):
 		log.Info("DDC backend disabled via DMS_NO_DDC")
 		return
-	}
-	ddc, err := NewDDCBackend()
-	if err != nil {
+	case err != nil:
 		log.Debugf("Failed to initialize DDC backend: %v", err)
 		return
 	}
@@ -55,8 +60,6 @@ func (m *Manager) initDDC() {
 	m.ddcBackend = ddc
 	m.ddcReady = true
 	log.Info("DDC backend initialized")
-
-	m.updateState()
 }
 
 func (m *Manager) Rescan() {
@@ -82,7 +85,8 @@ func sortDevices(devices []Device) {
 		classOrder := map[DeviceClass]int{
 			ClassBacklight: 0,
 			ClassDDC:       1,
-			ClassLED:       2,
+			ClassSoftware:  2,
+			ClassLED:       3,
 		}
 
 		orderI := classOrder[devices[i].Class]
@@ -142,6 +146,7 @@ func (m *Manager) updateState() {
 		}
 	}
 
+	allDevices = append(allDevices, m.softwareDevices(allDevices)...)
 	sortDevices(allDevices)
 
 	m.stateMutex.Lock()
@@ -211,6 +216,13 @@ func (m *Manager) SetBrightnessWithExponent(deviceID string, percent int, expone
 			m.updateState()
 			m.debouncedBroadcast(deviceID)
 		})
+	case deviceClass == ClassSoftware:
+		gamma := m.gamma.Load()
+		if gamma == nil {
+			err = fmt.Errorf("no gamma control for %s", deviceID)
+			break
+		}
+		err = gamma.SetOutputBrightness(strings.TrimPrefix(deviceID, softwareIDPrefix), percent)
 	case m.logindReady && m.logindBackend != nil:
 		log.Debugf("Calling logind backend for %s", deviceID)
 		err = m.setViaSysfsWithLogindWithExponent(deviceID, percent, exponential, exponent)

@@ -31,6 +31,7 @@ FocusScope {
     readonly property int selectedIndex: ClipboardService.selectedIndex
     readonly property bool keyboardNavigationActive: ClipboardService.keyboardNavigationActive
     readonly property bool clearsFilteredOnly: activeTab === "recents" && ClipboardService.filterActive
+    readonly property bool canClear: clearsFilteredOnly ? unpinnedEntries.length > 0 : ClipboardService.internalEntries.length > pinnedCount
     readonly property var currentEntry: selectedEntry()
 
     readonly property var modalFocusScope: root
@@ -98,6 +99,12 @@ FocusScope {
 
     function hide() {
         requestClose(false);
+    }
+
+    function openSettings() {
+        const host = surfaceHost;
+        requestClose(false);
+        PopoutService.openSettingsWithTab("clipboard", host, () => host?.show());
     }
 
     function pasteSelected() {
@@ -181,6 +188,8 @@ FocusScope {
             }, function () {});
             return;
         }
+        if (!canClear)
+            return;
         const hasPinned = pinnedCount > 0;
         const message = hasPinned ? I18n.tr("This will delete all unpinned entries. %1 pinned entries will be kept.", "clear clipboard history confirmation, %1 is a count").arg(pinnedCount) : I18n.tr("This will permanently delete all clipboard history.");
         clearConfirmDialog.show(I18n.tr("Clear History?"), message, function () {

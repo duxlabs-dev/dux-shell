@@ -4,27 +4,32 @@ import qs.Common
 import qs.Services
 import qs.Widgets
 
-DankPopout {
+DPopout {
     id: root
 
     layerNamespace: "dms:control-center"
     fullHeightSurface: true
     resizeCurve: Theme.expressiveCurves.standard
-    resizeDuration: Theme.expressiveDurations.expressiveFastSpatial
+    resizeDuration: CcMetrics.transitionDuration
     resizeMotion: true
     resizing: contentLoader.item?.panelResizing ?? false
-    surfacePadding: PopoutMetrics.editOverflow * 2
-    inputMargin: editMode ? PopoutMetrics.editOverflow * 2 : 0
+    surfacePadding: CcMetrics.editOverflow
+    // Hangs above wherever a strip below would push the panel off its resting spot (bottom bar, low side-bar trigger).
+    readonly property bool stripAbove: alignedYFor(0, CcMetrics.editActionsHeight) !== alignedYFor(0, 0)
+    readonly property bool growsFromTop: effectiveBarPosition === SettingsData.Position.Top
+    bottomOverflow: editMode && !stripAbove ? CcMetrics.editActionsHeight : 0
+    topOverflow: editMode && stripAbove ? CcMetrics.editActionsHeight : 0
+    inputMargin: editMode ? CcMetrics.editOverflow : 0
     minimumSurfaceWidth: editMode ? CcMetrics.sheetWidthFor(gridColumnCap) : 0
 
     property string expandedSection: ""
     property string pendingSection: ""
     property var triggerScreen: null
     property bool editMode: false
-    readonly property int gridColumnCap: CcMetrics.columnCapFor((triggerScreen?.width ?? CcMetrics.sheetWidthDefault + Theme.spacingL * 2) - Theme.spacingL * 2)
+    readonly property int gridColumnCap: CcMetrics.columnCapFor(maxBodyWidth > 0 ? maxBodyWidth - PopoutMetrics.editOverflow * 2 : CcMetrics.sheetWidthDefault)
     readonly property int gridColumns: Math.min(CcMetrics.gridColumns, gridColumnCap)
     readonly property real sheetContentWidth: CcMetrics.sheetWidthFor(gridColumns)
-    readonly property real availableHeight: _maxPopupHeight()
+    readonly property real availableHeight: _maxPopupHeight(0)
     property bool powerMenuOpen: powerMenuModalLoader?.item?.shouldBeVisible ?? false
     property var colorPickerModal: null
     property var powerMenuModalLoader: null
@@ -33,6 +38,11 @@ DankPopout {
 
     function openSettings() {
         requestedWindow = "settings";
+        close();
+    }
+
+    function openAccounts() {
+        requestedWindow = "accounts";
         close();
     }
 
@@ -65,6 +75,9 @@ DankPopout {
             case "settings":
                 PopoutService.focusOrToggleSettings();
                 break;
+            case "accounts":
+                PopoutService.openSettingsWithTab("user_accounts");
+                break;
             case "colorPicker":
                 root.colorPickerModal?.show();
                 break;
@@ -81,9 +94,10 @@ DankPopout {
 
     signal lockRequested
 
-    function _maxPopupHeight() {
-        const screenHeight = triggerScreen?.height ?? CcMetrics.fallbackScreenHeight;
-        return screenHeight - CcMetrics.maxHeightInset;
+    function _maxPopupHeight(reserved) {
+        if (maxBodyHeight <= 0)
+            return CcMetrics.fallbackScreenHeight - CcMetrics.maxHeightInset;
+        return maxBodyHeight - reserved;
     }
 
     function collapseAll() {
@@ -91,7 +105,7 @@ DankPopout {
     }
 
     popupWidth: sheetContentWidth
-    popupHeight: Math.min(_maxPopupHeight(), Math.max(CcMetrics.minHeight, contentLoader.item?.targetImplicitHeight ?? CcMetrics.minHeight))
+    popupHeight: Math.min(_maxPopupHeight(editMode ? CcMetrics.editOverflow : 0), Math.max(CcMetrics.minHeight, contentLoader.item?.targetImplicitHeight ?? CcMetrics.minHeight))
     triggerWidth: CcMetrics.triggerWidth
     positioning: ""
     screen: triggerScreen

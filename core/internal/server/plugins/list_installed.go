@@ -2,34 +2,34 @@ package plugins
 
 import (
 	"fmt"
+	"sync"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/plugins"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/plugins"
 )
 
 func HandleListInstalled(conn *ipc.ConnWriter, req ipc.Request) {
 	manager, err := plugins.NewManager()
 	if err != nil {
-		models.RespondError(conn, req.ID, fmt.Sprintf("failed to create manager: %v", err))
+		conn.RespondError(req.ID, fmt.Sprintf("failed to create manager: %v", err))
 		return
 	}
 
 	installedNames, err := manager.ListInstalled()
 	if err != nil {
-		models.RespondError(conn, req.ID, fmt.Sprintf("failed to list installed plugins: %v", err))
+		conn.RespondError(req.ID, fmt.Sprintf("failed to list installed plugins: %v", err))
 		return
 	}
 
 	registry, err := plugins.NewRegistry()
 	if err != nil {
-		models.RespondError(conn, req.ID, fmt.Sprintf("failed to create registry: %v", err))
+		conn.RespondError(req.ID, fmt.Sprintf("failed to create registry: %v", err))
 		return
 	}
 
 	allPlugins, err := registry.List()
 	if err != nil {
-		models.RespondError(conn, req.ID, fmt.Sprintf("failed to list plugins: %v", err))
+		conn.RespondError(req.ID, fmt.Sprintf("failed to list plugins: %v", err))
 		return
 	}
 
@@ -38,19 +38,21 @@ func HandleListInstalled(conn *ipc.ConnWriter, req ipc.Request) {
 		pluginMap[p.ID] = p
 	}
 
+	checks := checkUpdates(manager, installedNames, pluginMap)
+
 	result := make([]PluginInfo, 0, len(installedNames))
-	for _, id := range installedNames {
+	for i, id := range installedNames {
 		if plugin, ok := pluginMap[id]; ok {
 			info := pluginInfoFromPlugin(plugin)
 			info.DiffURL = plugin.Repo
-			hasUpdate, diffURL, err := manager.HasUpdates(id, plugin)
-			if err != nil {
-				info.UpdateError = err.Error()
+			check := checks[i]
+			if check.err != nil {
+				info.UpdateError = check.err.Error()
 				result = append(result, info)
 				continue
 			}
-			info.HasUpdate = hasUpdate
-			info.DiffURL = diffURL
+			info.HasUpdate = check.hasUpdate
+			info.DiffURL = check.diffURL
 			result = append(result, info)
 		} else {
 			result = append(result, PluginInfo{
@@ -63,5 +65,38 @@ func HandleListInstalled(conn *ipc.ConnWriter, req ipc.Request) {
 
 	SortPluginInfoByFirstParty(result)
 
-	models.Respond(conn, req.ID, result)
+	conn.Respond(req.ID, result)
+}
+
+type updateCheck struct {
+	hasUpdate bool
+	diffURL   string
+	err       error
+}
+
+const updateCheckWorkers = 8
+
+// Each check is a remote ls-remote, so they run concurrently; the lockfile is
+// created up front so the workers only read it.
+func checkUpdates(manager *plugins.Manager, ids []string, known map[string]plugins.Plugin) []updateCheck {
+	_ = manager.EnsureLockfile()
+	checks := make([]updateCheck, len(ids))
+	sem := make(chan struct{}, updateCheckWorkers)
+	var wg sync.WaitGroup
+	for i, id := range ids {
+		plugin, ok := known[id]
+		if !ok {
+			continue
+		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			hasUpdate, diffURL, err := manager.HasUpdates(id, plugin)
+			checks[i] = updateCheck{hasUpdate: hasUpdate, diffURL: diffURL, err: err}
+		}()
+	}
+	wg.Wait()
+	return checks
 }

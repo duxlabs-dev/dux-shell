@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/dankgo/trash"
+	"github.com/duxlabs-dev/dux-go/trash"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/spf13/cobra"
 )
 

@@ -2,9 +2,9 @@ import QtQuick
 import qs.Common
 import qs.Modals.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
-DankModal {
+DModal {
     id: root
 
     layerNamespace: "dms:icc-profile-info"
@@ -24,7 +24,7 @@ DankModal {
 
         const kind = p.trcKind;
         if (kind === "gamma")
-            return I18n.tr("Gamma", "Gamma") + " " + (p.trcGamma ?? 0).toFixed(2);
+            return I18n.tr("Gamma %1", "%1 is a gamma value").arg((p.trcGamma ?? 0).toFixed(2));
         if (kind === "table")
             return I18n.tr("Table", "Tone curve stored as a lookup table") + " · " + p.trcEntries;
         if (kind === "identity")
@@ -151,7 +151,7 @@ DankModal {
                         }
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         iconName: "close"
                         iconSize: Theme.iconSize - 4
                         iconColor: Theme.surfaceText
@@ -168,7 +168,7 @@ DankModal {
                     border.width: Theme.layerOutlineWidth
                     clip: true
 
-                    DankFlickable {
+                    DFlickable {
                         anchors.fill: parent
                         anchors.margins: Theme.spacingM
                         contentHeight: detailColumn.implicitHeight
@@ -236,7 +236,7 @@ DankModal {
                     width: parent.width
                     height: 40
 
-                    DankButton {
+                    DButton {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
                         text: I18n.tr("Close", "Close")

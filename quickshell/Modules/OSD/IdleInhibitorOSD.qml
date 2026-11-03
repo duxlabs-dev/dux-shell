@@ -3,8 +3,10 @@ import qs.Common
 import qs.Services
 import qs.Widgets
 
-DankOSD {
+DOSD {
     id: root
+
+    osdKind: "idleInhibitor"
 
     osdWidth: Theme.osdHeight
     osdHeight: Theme.osdHeight
@@ -24,8 +26,9 @@ DankOSD {
         OsdIcon {
             tonal: false
             anchors.centerIn: parent
-            iconName: SessionService.idleInhibited ? "motion_sensor_active" : "motion_sensor_idle"
+            iconName: "local_cafe"
             iconColor: SessionService.idleInhibited ? Theme.primary : Theme.outline
+            filled: SessionService.idleInhibited
         }
     }
 }

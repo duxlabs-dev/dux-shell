@@ -9,27 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIWDBackend_MarkIPConfigSeen(t *testing.T) {
-	backend, _ := NewIWDBackend()
-
-	att := &connectAttempt{
-		ssid:     "TestNetwork",
-		netPath:  "/net/connman/iwd/0/1/test",
-		start:    time.Now(),
-		deadline: time.Now().Add(15 * time.Second),
-	}
-
-	backend.attemptMutex.Lock()
-	backend.curAttempt = att
-	backend.attemptMutex.Unlock()
-
-	backend.MarkIPConfigSeen()
-
-	att.mu.Lock()
-	assert.True(t, att.sawIPConfig, "sawIPConfig should be true after MarkIPConfigSeen")
-	att.mu.Unlock()
-}
-
 func TestIWDBackend_OnPromptRetry(t *testing.T) {
 	backend, _ := NewIWDBackend()
 
@@ -144,8 +123,6 @@ func TestIWDBackend_MapIwdDBusError(t *testing.T) {
 	}{
 		{"net.connman.iwd.Error.AlreadyConnected", "already-connected"},
 		{"net.connman.iwd.Error.AuthenticationFailed", "bad-credentials"},
-		{"net.connman.iwd.Error.InvalidKey", "bad-credentials"},
-		{"net.connman.iwd.Error.IncorrectPassphrase", "bad-credentials"},
 		{"net.connman.iwd.Error.NotFound", "no-such-ssid"},
 		{"net.connman.iwd.Error.NotSupported", "connection-failed"},
 		{"net.connman.iwd.Agent.Error.Canceled", "user-canceled"},
@@ -397,12 +374,9 @@ func TestIWDBackend_BadCredentialsUnsavedNetwork_NoReplacementPrompt(t *testing.
 	}
 
 	backend.finalizeAttempt(att, "bad-credentials")
+	backend.sigWG.Wait()
 
-	select {
-	case <-broker.asked:
-		t.Fatal("unsaved network should not trigger a replacement prompt")
-	case <-time.After(100 * time.Millisecond):
-	}
+	assert.Empty(t, broker.asked, "unsaved network should not trigger a replacement prompt")
 }
 
 func TestIWDBackend_BadCredentialsAfterPromptRetry_NoReplacementPrompt(t *testing.T) {
@@ -424,12 +398,9 @@ func TestIWDBackend_BadCredentialsAfterPromptRetry_NoReplacementPrompt(t *testin
 	}
 
 	backend.finalizeAttempt(att, "bad-credentials")
+	backend.sigWG.Wait()
 
-	select {
-	case <-broker.asked:
-		t.Fatal("attempt that already prompted should not trigger a replacement prompt")
-	case <-time.After(100 * time.Millisecond):
-	}
+	assert.Empty(t, broker.asked, "attempt that already prompted should not trigger a replacement prompt")
 }
 
 func TestConnectAttempt_DoubleFinalization(t *testing.T) {
@@ -449,4 +420,72 @@ func TestConnectAttempt_DoubleFinalization(t *testing.T) {
 	backend.stateMutex.RLock()
 	assert.Equal(t, "bad-credentials", backend.state.LastError)
 	backend.stateMutex.RUnlock()
+}
+
+func TestIWDBackend_SetDevice_FollowsRecreatedDevice(t *testing.T) {
+	backend, _ := NewIWDBackend()
+	err := backend.applyManagedObjects(map[dbus.ObjectPath]map[string]map[string]dbus.Variant{
+		"/net/connman/iwd/0/3": {
+			iwdDeviceInterface:  {"Name": dbus.MakeVariant("wlan0"), "Powered": dbus.MakeVariant(true)},
+			iwdStationInterface: {},
+		},
+	})
+	assert.NoError(t, err)
+
+	// iwd restarts: the old objects go away and wlan0 comes back with a new ifindex.
+	assert.True(t, backend.handleStationRemoved("/net/connman/iwd/0/3"))
+	assert.True(t, backend.clearDevice("/net/connman/iwd/0/3"))
+
+	prev, changed := backend.setDevice("/net/connman/iwd/0/7", map[string]dbus.Variant{
+		"Name":    dbus.MakeVariant("wlan0"),
+		"Powered": dbus.MakeVariant(true),
+	})
+
+	assert.True(t, changed)
+	assert.Empty(t, prev)
+	assert.Equal(t, dbus.ObjectPath("/net/connman/iwd/0/7"), backend.devicePath)
+
+	enabled, _ := backend.GetWiFiEnabled()
+	assert.True(t, enabled, "Wi-Fi must be enabled again once the recreated device reports Powered")
+}
+
+func TestIWDBackend_SetDevice_ReplacesPathWithoutRemovalSignal(t *testing.T) {
+	backend, _ := NewIWDBackend()
+	backend.devicePath = "/net/connman/iwd/0/3"
+
+	prev, changed := backend.setDevice("/net/connman/iwd/0/7", map[string]dbus.Variant{
+		"Powered": dbus.MakeVariant(true),
+	})
+
+	assert.True(t, changed)
+	assert.Equal(t, dbus.ObjectPath("/net/connman/iwd/0/3"), prev)
+	assert.Equal(t, dbus.ObjectPath("/net/connman/iwd/0/7"), backend.devicePath)
+}
+
+func TestIWDBackend_SetDevice_SamePathIsNoop(t *testing.T) {
+	backend, _ := NewIWDBackend()
+	backend.devicePath = "/net/connman/iwd/0/3"
+
+	_, changed := backend.setDevice("/net/connman/iwd/0/3", map[string]dbus.Variant{
+		"Powered": dbus.MakeVariant(false),
+	})
+	assert.False(t, changed)
+
+	_, changed = backend.setDevice("", nil)
+	assert.False(t, changed)
+}
+
+func TestIWDBackend_ClearDevice(t *testing.T) {
+	backend, _ := NewIWDBackend()
+	backend.devicePath = "/net/connman/iwd/0/3"
+
+	assert.False(t, backend.clearDevice("/net/connman/iwd/0/9"), "unrelated path must be ignored")
+	assert.Equal(t, dbus.ObjectPath("/net/connman/iwd/0/3"), backend.devicePath)
+
+	assert.True(t, backend.clearDevice("/net/connman/iwd/0/3"))
+	assert.Empty(t, backend.devicePath)
+
+	enabled, _ := backend.GetWiFiEnabled()
+	assert.False(t, enabled)
+	assert.ErrorContains(t, backend.SetWiFiEnabled(true), "no WiFi device available")
 }

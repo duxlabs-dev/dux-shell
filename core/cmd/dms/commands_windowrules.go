@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/windowrules"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/windowrules/providers"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/windowrules"
+	"github.com/duxlabs-dev/dux-shell/core/internal/windowrules/providers"
 	"github.com/spf13/cobra"
 )
 
@@ -216,7 +217,7 @@ func runWindowrulesList(cmd *cobra.Command, args []string) {
 		result.DMSStatus = parseResult.DMSStatus
 
 	case "mango", "mangowc":
-		configDir := filepath.Join(utils.XDGConfigHome(), "mango")
+		configDir := mangoconf.Dir()
 
 		parseResult, err := providers.ParseMangoWindowRules(configDir)
 		if err != nil {
@@ -351,7 +352,7 @@ func getWindowRulesProvider(compositor string) windowrules.WritableProvider {
 		configDir := filepath.Join(utils.XDGConfigHome(), "hypr")
 		return providers.NewHyprlandWritableProvider(configDir)
 	case "mango", "mangowc":
-		configDir := filepath.Join(utils.XDGConfigHome(), "mango")
+		configDir := mangoconf.Dir()
 		return providers.NewMangoWritableProvider(configDir)
 	default:
 		return nil

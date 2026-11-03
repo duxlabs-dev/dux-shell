@@ -1,17 +1,49 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Services
 import qs.Modules.Settings.Widgets
+import "../DBar/OverflowLayout.js" as OverflowLayout
 
 Column {
     id: root
     readonly property var log: Log.scoped("WidgetsTabSection")
 
+    Component.onCompleted: DgopService.ensureMeta()
+
     property var items: []
     property var allWidgets: []
     property string title: ""
     property string sectionId: ""
+    property string barId: ""
+    property bool overflowSettingsExpanded: false
+    readonly property var barConfig: SettingsData.getBarConfig(barId)
+    readonly property bool autoOverflow: barConfig?.[sectionId + "OverflowMode"] !== "bar"
+    readonly property int overflowPosition: barConfig?.[sectionId + "OverflowPosition"] ?? OverflowLayout.defaultPosition(sectionId, items.length)
+    // An omitted key is the default; resetting clears it so the position keeps following the widget count.
+    readonly property var overflowStore: ({
+            "isDefault": keys => keys.every(key => (root.barConfig?.[key] ?? root.overflowDefault(key)) === root.overflowDefault(key)),
+            "resetToDefault": keys => root.clearOverflowOptions(keys)
+        })
+
+    function overflowDefault(key) {
+        return key.endsWith("Mode") ? "auto" : OverflowLayout.defaultPosition(sectionId, items.length);
+    }
+
+    function clearOverflowOptions(keys) {
+        const patch = {};
+        for (const key of keys)
+            patch[key] = undefined;
+        SettingsData.updateBarConfig(barId, patch);
+    }
+
+    function setOverflowOption(name, value) {
+        SettingsData.updateBarConfig(barId, {
+            [sectionId + "Overflow" + name]: value
+        });
+    }
 
     signal itemEnabledChanged(string sectionId, string itemId, bool enabled)
     signal itemOrderChanged(string sectionId, var indices)
@@ -33,7 +65,17 @@ Column {
     SettingsSectionLabel {
         text: root.title
         actions: [
-            DankActionButton {
+            DActionButton {
+                buttonSize: Theme.buttonHeightXXS
+                iconName: "more_horiz"
+                tooltipText: I18n.tr("Overflow")
+                Accessible.name: root.title + ": " + I18n.tr("Overflow")
+                iconSize: Theme.iconSizeSmall
+                iconColor: root.overflowSettingsExpanded ? Theme.primary : Theme.outline
+                visible: root.barId !== ""
+                onClicked: root.overflowSettingsExpanded = !root.overflowSettingsExpanded
+            },
+            DActionButton {
                 buttonSize: Theme.buttonHeightXXS
                 iconName: "format_list_numbered"
                 tooltipText: I18n.tr("Index centering")
@@ -42,7 +84,7 @@ Column {
                 visible: root.sectionId === "center"
                 onClicked: SettingsData.set("centeringMode", "index")
             },
-            DankActionButton {
+            DActionButton {
                 buttonSize: Theme.buttonHeightXXS
                 iconName: "center_focus_weak"
                 tooltipText: I18n.tr("Geometric centering")
@@ -52,6 +94,37 @@ Column {
                 onClicked: SettingsData.set("centeringMode", "geometric")
             }
         ]
+    }
+
+    SettingsCard {
+        visible: root.overflowSettingsExpanded
+        title: I18n.tr("Overflow")
+
+        SettingsToggleRow {
+            text: I18n.tr("Auto overflow")
+            description: I18n.tr("Widgets in this section move into overflow when space runs out", "bar section overflow description")
+            checked: root.autoOverflow
+            onToggled: checked => root.setOverflowOption("Mode", checked ? "auto" : "bar")
+        }
+
+        SettingsDropdownRow {
+            readonly property var positionLabels: {
+                const labels = [I18n.tr("Start", "noun, overflow button position before the first widget", true)];
+                const seen = {};
+                for (const item of root.items) {
+                    seen[item.text] = (seen[item.text] ?? 0) + 1;
+                    labels.push(I18n.tr("After %1", "overflow button position option, %1 is a widget name").arg(seen[item.text] > 1 ? item.text + " " + seen[item.text] : item.text));
+                }
+                return labels;
+            }
+
+            text: I18n.tr("Overflow button position", "bar section dropdown label")
+            resetStore: root.overflowStore
+            resetKeys: [root.sectionId + "OverflowPosition"]
+            options: positionLabels
+            currentValue: positionLabels[Math.min(root.overflowPosition, positionLabels.length - 1)]
+            onValueChanged: value => root.setOverflowOption("Position", positionLabels.indexOf(value))
+        }
     }
 
     SettingsReorderList {
@@ -69,10 +142,10 @@ Column {
 
             required property var modelData
 
-            readonly property bool configurable: BarWidgetCatalog.hasOptions(modelData.id) || !!modelData.pluginId
-            readonly property bool highlighted: root.highlightedId === modelData.id && root.highlightedSection === root.sectionId
+            readonly property bool configurable: BarWidgetCatalog.configurable(modelData)
 
             reorderList: reorderArea
+            highlighted: !dragging && root.highlightedId === modelData.id && root.highlightedSection === root.sectionId
             opacity: dragging && reorderArea.crossSectionActive ? 0 : 1
             title: modelData.text
             iconName: modelData.icon
@@ -96,7 +169,7 @@ Column {
                 visible: !!widgetRow.modelData.warning
                 anchors.verticalCenter: parent.verticalCenter
 
-                DankIcon {
+                DIcon {
                     name: "warning"
                     size: Theme.iconSizeMedium
                     color: Theme.error
@@ -109,14 +182,14 @@ Column {
                     hoverEnabled: true
                 }
 
-                DankTooltipHost {
+                DTooltipHost {
                     text: widgetRow.modelData.warning
                     target: parent
                     hoverArea: warningArea
                 }
             }
 
-            DankIcon {
+            DIcon {
                 name: "chevron_right"
                 size: Theme.iconSize
                 color: Theme.onSurfaceVariant
@@ -125,15 +198,12 @@ Column {
                 anchors.verticalCenter: parent.verticalCenter
             }
 
-            Rectangle {
-                width: Theme.dividerWidth
-                height: SettingsMetrics.splitDividerHeight
-                color: Theme.outlineVariant
+            SettingsDivider {
+                vertical: true
                 visible: widgetRow.configurable
-                anchors.verticalCenter: parent.verticalCenter
             }
 
-            DankNumberStepper {
+            DNumberStepper {
                 visible: widgetRow.modelData.id === "spacer"
                 anchors.verticalCenter: parent.verticalCenter
                 text: (widgetRow.modelData.size || 20).toString()
@@ -143,7 +213,7 @@ Column {
                 onIncrement: () => root.spacerSizeChanged(root.sectionId, widgetRow.index, Math.min(5000, (widgetRow.modelData.size || 20) + 5))
             }
 
-            DankToggle {
+            DToggle {
                 hideText: true
                 visible: widgetRow.modelData.id !== "spacer"
                 checked: widgetRow.modelData.enabled
@@ -151,31 +221,17 @@ Column {
                 onToggled: value => root.itemEnabledChanged(root.sectionId, widgetRow.modelData.id, value)
             }
 
-            DankActionButton {
+            DActionButton {
                 iconName: "close"
                 iconColor: Theme.error
                 Accessible.name: I18n.tr("Remove")
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: root.removeWidget(root.sectionId, widgetRow.index)
             }
-
-            Rectangle {
-                parent: widgetRow
-                anchors.fill: parent
-                anchors.margins: Theme.focusRingWidth / 2
-                topLeftRadius: Math.max(0, widgetRow.topRadius - Theme.focusRingWidth / 2)
-                topRightRadius: topLeftRadius
-                bottomLeftRadius: Math.max(0, widgetRow.bottomRadius - Theme.focusRingWidth / 2)
-                bottomRightRadius: bottomLeftRadius
-                color: "transparent"
-                border.width: Theme.focusRingWidth
-                border.color: Theme.focusRingColor
-                visible: widgetRow.highlighted && !widgetRow.dragging
-            }
         }
     }
 
-    DankButton {
+    DButton {
         anchors.horizontalCenter: parent.horizontalCenter
         text: I18n.tr("Add widget")
         iconName: "add"

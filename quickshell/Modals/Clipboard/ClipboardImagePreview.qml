@@ -4,7 +4,7 @@ import QtQuick
 import Quickshell.Widgets
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 ClippingRectangle {
     id: root
@@ -66,7 +66,7 @@ ClippingRectangle {
 
     Rectangle {
         anchors.fill: parent
-        color: Theme.withAlpha(Theme.scrimColor, Theme.scrimAlpha)
+        color: Theme.withAlpha(Theme.backdropColor, Theme.scrimAlpha)
     }
 
     MouseArea {
@@ -93,7 +93,7 @@ ClippingRectangle {
             onWheel: wheel => wheel.accepted = true
         }
 
-        DankWindowHeader {
+        DWindowHeader {
             id: header
 
             anchors.top: parent.top
@@ -103,7 +103,6 @@ ClippingRectangle {
             controls: null
             horizontalPadding: 0
             verticalPadding: 0
-            showDivider: false
             title: I18n.tr("Preview", "noun, clipboard image preview window title")
             onCloseRequested: root.closeRequested()
         }
@@ -131,7 +130,7 @@ ClippingRectangle {
                 visible: status === Image.Ready && source != ""
             }
 
-            DankIcon {
+            DIcon {
                 anchors.centerIn: parent
                 name: "image"
                 size: Theme.iconSizeLarge

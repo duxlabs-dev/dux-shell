@@ -11,6 +11,16 @@ Singleton {
     readonly property var log: Log.scoped("ThemeAutoService")
 
     property bool active: false
+    readonly property bool backendAvailable: DMSService.isConnected && DMSService.capabilities.includes("theme.auto")
+
+    onActiveChanged: {
+        if (active) {
+            DMSService.addSubscription("theme.auto");
+            return;
+        }
+        if (DMSService.activeSubscriptions.includes("theme.auto"))
+            DMSService.removeSubscription("theme.auto");
+    }
 
     Component.onCompleted: {
         if (typeof SessionData !== "undefined" && SessionData.themeModeAutoEnabled) {
@@ -20,7 +30,6 @@ Singleton {
 
     Connections {
         target: SessionData
-        enabled: typeof SessionData !== "undefined"
 
         function onThemeModeAutoEnabledChanged() {
             if (SessionData.themeModeAutoEnabled) {
@@ -29,128 +38,112 @@ Singleton {
                 root.stop();
             }
         }
+    }
+
+    Connections {
+        target: SessionData
+        enabled: root.active
 
         function onThemeModeAutoModeChanged() {
-            if (root.active) {
-                root.evaluate();
-                root.syncTimeSchedule();
-                root.syncLocationSchedule();
-            }
-        }
-
-        function onThemeModeStartHourChanged() {
-            if (root.active && !SessionData.themeModeShareGammaSettings) {
-                root.evaluate();
-                root.syncTimeSchedule();
-            }
-        }
-
-        function onThemeModeStartMinuteChanged() {
-            if (root.active && !SessionData.themeModeShareGammaSettings) {
-                root.evaluate();
-                root.syncTimeSchedule();
-            }
-        }
-
-        function onThemeModeEndHourChanged() {
-            if (root.active && !SessionData.themeModeShareGammaSettings) {
-                root.evaluate();
-                root.syncTimeSchedule();
-            }
-        }
-
-        function onThemeModeEndMinuteChanged() {
-            if (root.active && !SessionData.themeModeShareGammaSettings) {
-                root.evaluate();
-                root.syncTimeSchedule();
-            }
+            root.evaluate();
+            root.syncTimeSchedule();
+            root.syncLocationSchedule();
         }
 
         function onThemeModeShareGammaSettingsChanged() {
-            if (root.active) {
-                root.evaluate();
-                root.syncTimeSchedule();
-                root.syncLocationSchedule();
-            }
+            root.evaluate();
+            root.syncTimeSchedule();
+            root.syncLocationSchedule();
+        }
+
+        function onThemeModeStartHourChanged() {
+            root.resyncOwnSchedule();
+        }
+
+        function onThemeModeStartMinuteChanged() {
+            root.resyncOwnSchedule();
+        }
+
+        function onThemeModeEndHourChanged() {
+            root.resyncOwnSchedule();
+        }
+
+        function onThemeModeEndMinuteChanged() {
+            root.resyncOwnSchedule();
         }
 
         function onNightModeStartHourChanged() {
-            if (root.active && SessionData.themeModeShareGammaSettings) {
-                root.evaluate();
-                root.syncTimeSchedule();
-            }
+            root.resyncSharedSchedule();
         }
 
         function onNightModeStartMinuteChanged() {
-            if (root.active && SessionData.themeModeShareGammaSettings) {
-                root.evaluate();
-                root.syncTimeSchedule();
-            }
+            root.resyncSharedSchedule();
         }
 
         function onNightModeEndHourChanged() {
-            if (root.active && SessionData.themeModeShareGammaSettings) {
-                root.evaluate();
-                root.syncTimeSchedule();
-            }
+            root.resyncSharedSchedule();
         }
 
         function onNightModeEndMinuteChanged() {
-            if (root.active && SessionData.themeModeShareGammaSettings) {
-                root.evaluate();
-                root.syncTimeSchedule();
-            }
+            root.resyncSharedSchedule();
         }
 
         function onLatitudeChanged() {
-            if (root.active && SessionData.themeModeAutoMode === "location") {
-                if (!SessionData.nightModeUseIPLocation && SessionData.latitude !== 0.0 && SessionData.longitude !== 0.0 && typeof DMSService !== "undefined") {
-                    DMSService.sendRequest("wayland.gamma.setLocation", {
-                        "latitude": SessionData.latitude,
-                        "longitude": SessionData.longitude
-                    });
-                }
-                root.evaluate();
-                root.syncLocationSchedule();
-            }
+            root.resyncCoordinates();
         }
 
         function onLongitudeChanged() {
-            if (root.active && SessionData.themeModeAutoMode === "location") {
-                if (!SessionData.nightModeUseIPLocation && SessionData.latitude !== 0.0 && SessionData.longitude !== 0.0 && typeof DMSService !== "undefined") {
+            root.resyncCoordinates();
+        }
+
+        function onNightModeUseIPLocationChanged() {
+            if (SessionData.themeModeAutoMode !== "location")
+                return;
+            DMSService.sendRequest("wayland.gamma.setUseIPLocation", {
+                "use": SessionData.nightModeUseIPLocation
+            }, response => {
+                if (!response.error && !SessionData.nightModeUseIPLocation && SessionData.latitude !== 0.0 && SessionData.longitude !== 0.0) {
                     DMSService.sendRequest("wayland.gamma.setLocation", {
                         "latitude": SessionData.latitude,
                         "longitude": SessionData.longitude
                     });
                 }
-                root.evaluate();
-                root.syncLocationSchedule();
-            }
+            });
+            root.evaluate();
+            root.syncLocationSchedule();
         }
+    }
 
-        function onNightModeUseIPLocationChanged() {
-            if (root.active && SessionData.themeModeAutoMode === "location") {
-                if (typeof DMSService !== "undefined") {
-                    DMSService.sendRequest("wayland.gamma.setUseIPLocation", {
-                        "use": SessionData.nightModeUseIPLocation
-                    }, response => {
-                        if (!response.error && !SessionData.nightModeUseIPLocation && SessionData.latitude !== 0.0 && SessionData.longitude !== 0.0) {
-                            DMSService.sendRequest("wayland.gamma.setLocation", {
-                                "latitude": SessionData.latitude,
-                                "longitude": SessionData.longitude
-                            });
-                        }
-                    });
-                }
-                root.evaluate();
-                root.syncLocationSchedule();
-            }
+    function resyncOwnSchedule() {
+        if (SessionData.themeModeShareGammaSettings)
+            return;
+        evaluate();
+        syncTimeSchedule();
+    }
+
+    function resyncSharedSchedule() {
+        if (!SessionData.themeModeShareGammaSettings)
+            return;
+        evaluate();
+        syncTimeSchedule();
+    }
+
+    function resyncCoordinates() {
+        if (SessionData.themeModeAutoMode !== "location")
+            return;
+        if (!SessionData.nightModeUseIPLocation && SessionData.latitude !== 0.0 && SessionData.longitude !== 0.0) {
+            DMSService.sendRequest("wayland.gamma.setLocation", {
+                "latitude": SessionData.latitude,
+                "longitude": SessionData.longitude
+            });
         }
+        evaluate();
+        syncLocationSchedule();
     }
 
     Connections {
         target: NightModeService
-        enabled: typeof NightModeService !== "undefined" && typeof SessionData !== "undefined" && SessionData.themeModeAutoEnabled && SessionData.themeModeAutoMode === "location" && !root.backendAvailable()
+        enabled: typeof NightModeService !== "undefined" && typeof SessionData !== "undefined" && SessionData.themeModeAutoEnabled && SessionData.themeModeAutoMode === "location" && !root.backendAvailable
 
         function onGammaIsDayChanged() {
             if (Theme.isLightMode !== NightModeService.gammaIsDay) {
@@ -178,7 +171,7 @@ Singleton {
                 root.syncLocationSchedule();
             }
 
-            if (root.backendAvailable() && SessionData.themeModeAutoEnabled) {
+            if (root.backendAvailable && SessionData.themeModeAutoEnabled) {
                 DMSService.sendRequest("theme.auto.getState", null, response => {
                     if (response && response.result) {
                         root.applyBackendState(response.result);
@@ -235,15 +228,11 @@ Singleton {
     }
 
     function refresh() {
-        if (!backendAvailable()) {
+        if (!backendAvailable) {
             evaluate();
             return;
         }
         DMSService.sendRequest("theme.auto.trigger", {});
-    }
-
-    function backendAvailable() {
-        return typeof DMSService !== "undefined" && DMSService.isConnected && Array.isArray(DMSService.capabilities) && DMSService.capabilities.includes("theme.auto");
     }
 
     function applyBackendState(state) {
@@ -349,7 +338,7 @@ Singleton {
             return;
         }
 
-        if (backendAvailable()) {
+        if (backendAvailable) {
             DMSService.sendRequest("theme.auto.getState", null, response => {
                 if (response && response.result) {
                     applyBackendState(response.result);

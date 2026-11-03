@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"math"
 
-	clipboardstore "github.com/AvengeMedia/DankMaterialShell/core/internal/clipboard"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/ipc"
-	"github.com/AvengeMedia/dankgo/ipc/params"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc/params"
+	clipboardstore "github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 )
 
 func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
@@ -35,15 +35,11 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	case "clipboard.sendPaste":
 		handleSendPaste(conn, req)
 	case "clipboard.pasteSupported":
-		models.Respond(conn, req.ID, map[string]bool{"supported": m.pasteSupported})
+		conn.Respond(req.ID, map[string]bool{"supported": m.pasteSupported})
 	case "clipboard.subscribe":
 		handleSubscribe(conn, req, m)
 	case "clipboard.search":
 		handleSearch(conn, req, m)
-	case "clipboard.getConfig":
-		handleGetConfig(conn, req, m)
-	case "clipboard.setConfig":
-		handleSetConfig(conn, req, m)
 	case "clipboard.store":
 		handleStore(conn, req, m)
 	case "clipboard.pinEntry":
@@ -59,12 +55,12 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	case "clipboard.copyFile":
 		handleCopyFile(conn, req, m)
 	default:
-		models.RespondError(conn, req.ID, "unknown method: "+req.Method)
+		conn.RespondError(req.ID, "unknown method: "+req.Method)
 	}
 }
 
 func handleGetState(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
-	models.Respond(conn, req.ID, m.GetState())
+	conn.Respond(req.ID, m.GetState())
 }
 
 func handleGetHistory(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
@@ -72,54 +68,54 @@ func handleGetHistory(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	for i := range history {
 		history[i].Data = nil
 	}
-	models.Respond(conn, req.ID, history)
+	conn.Respond(req.ID, history)
 }
 
 func handleGetEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	id, err := params.Int(req.Params, "id")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	entry, err := m.GetEntry(uint64(id))
 	if err != nil {
 		if errors.Is(err, errEntryNotFound) {
-			models.Respond[any](conn, req.ID, nil)
+			conn.Respond[any](req.ID, nil)
 			return
 		}
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, entry)
+	conn.Respond(req.ID, entry)
 }
 
 func handleDeleteEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	id, err := params.Int(req.Params, "id")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	if err := m.DeleteEntry(uint64(id)); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "entry deleted"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "entry deleted"})
 }
 
 func handleDeleteEntries(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	raw, ok := params.Any(req.Params, "ids")
 	if !ok {
-		models.RespondError(conn, req.ID, "missing 'ids' parameter")
+		conn.RespondError(req.ID, "missing 'ids' parameter")
 		return
 	}
 
 	list, ok := raw.([]any)
 	if !ok {
-		models.RespondError(conn, req.ID, "'ids' must be an array")
+		conn.RespondError(req.ID, "'ids' must be an array")
 		return
 	}
 
@@ -127,7 +123,7 @@ func handleDeleteEntries(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	for _, item := range list {
 		id, err := toEntryID(item)
 		if err != nil {
-			models.RespondError(conn, req.ID, err.Error())
+			conn.RespondError(req.ID, err.Error())
 			return
 		}
 		ids = append(ids, id)
@@ -135,11 +131,11 @@ func handleDeleteEntries(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 
 	deleted, err := m.DeleteEntries(ids)
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, map[string]int{"deleted": deleted})
+	conn.Respond(req.ID, map[string]int{"deleted": deleted})
 }
 
 // toEntryID accepts the shapes a clipboard entry id can arrive in: JSON decodes
@@ -177,34 +173,34 @@ func toEntryID(value any) (uint64, error) {
 
 func handleClearHistory(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	m.ClearHistory()
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "history cleared"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "history cleared"})
 }
 
 func handleCopy(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	text, err := params.String(req.Params, "text")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	if err := m.CopyText(text); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "copied to clipboard"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "copied to clipboard"})
 }
 
 func handleCopyEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	id, err := params.Int(req.Params, "id")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	entry, err := m.GetEntry(uint64(id))
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
@@ -214,10 +210,10 @@ func handleCopyEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		filePath := m.EntryToFile(entry)
 		if filePath != "" {
 			if err := m.CopyFile(filePath); err != nil {
-				models.RespondError(conn, req.ID, err.Error())
+				conn.RespondError(req.ID, err.Error())
 				return
 			}
-			models.Respond(conn, req.ID, map[string]any{
+			conn.Respond(req.ID, map[string]any{
 				"success":  true,
 				"filePath": filePath,
 			})
@@ -233,44 +229,44 @@ func handleCopyEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		setErr = m.SetClipboardEntry(entry)
 	}
 	if setErr != nil {
-		models.RespondError(conn, req.ID, setErr.Error())
+		conn.RespondError(req.ID, setErr.Error())
 		return
 	}
 
 	if entry.Pinned {
 		if err := m.CreateHistoryEntryFromPinned(entry); err != nil {
-			models.RespondError(conn, req.ID, err.Error())
+			conn.RespondError(req.ID, err.Error())
 			return
 		}
 	} else {
 		if err := m.TouchEntry(uint64(id)); err != nil {
-			models.RespondError(conn, req.ID, err.Error())
+			conn.RespondError(req.ID, err.Error())
 			return
 		}
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "copied to clipboard"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "copied to clipboard"})
 }
 
 func handlePaste(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	text, err := m.PasteText()
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, map[string]string{"text": text})
+	conn.Respond(req.ID, map[string]string{"text": text})
 }
 
 func handleSendPaste(conn *ipc.ConnWriter, req ipc.Request) {
-	shift, _ := models.Get[bool](req, "shift")
+	shift, _ := req.Get[bool]("shift")
 
 	if err := clipboardstore.SendPasteKeystroke(shift); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "paste sent"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "paste sent"})
 }
 
 func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
@@ -305,144 +301,110 @@ func handleSearch(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		Offset:   params.IntOpt(req.Params, "offset", 0),
 	}
 
-	if img, ok := models.Get[bool](req, "isImage"); ok {
+	if img, ok := req.Get[bool]("isImage"); ok {
 		p.IsImage = &img
 	}
-	if b, ok := models.Get[float64](req, "before"); ok {
+	if b, ok := req.Get[float64]("before"); ok {
 		v := int64(b)
 		p.Before = &v
 	}
-	if a, ok := models.Get[float64](req, "after"); ok {
+	if a, ok := req.Get[float64]("after"); ok {
 		v := int64(a)
 		p.After = &v
 	}
 
-	models.Respond(conn, req.ID, m.Search(p))
-}
-
-func handleGetConfig(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
-	models.Respond(conn, req.ID, m.GetConfig())
-}
-
-func handleSetConfig(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
-	cfg := m.GetConfig()
-
-	if v, ok := models.Get[float64](req, "maxHistory"); ok {
-		cfg.MaxHistory = int(v)
-	}
-	if v, ok := models.Get[float64](req, "maxEntrySize"); ok {
-		cfg.MaxEntrySize = int64(v)
-	}
-	if v, ok := models.Get[float64](req, "autoClearDays"); ok {
-		cfg.AutoClearDays = int(v)
-	}
-	if v, ok := models.Get[bool](req, "clearAtStartup"); ok {
-		cfg.ClearAtStartup = v
-	}
-	if v, ok := models.Get[bool](req, "disabled"); ok {
-		cfg.Disabled = v
-	}
-	if v, ok := models.Get[float64](req, "maxPinned"); ok {
-		cfg.MaxPinned = int(v)
-	}
-
-	if err := m.SetConfig(cfg); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
-		return
-	}
-
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "config updated"})
+	conn.Respond(req.ID, m.Search(p))
 }
 
 func handleStore(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	data, err := params.String(req.Params, "data")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	mimeType := params.StringOpt(req.Params, "mimeType", "text/plain;charset=utf-8")
 
 	if err := m.StoreData([]byte(data), mimeType); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "stored"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "stored"})
 }
 
 func handlePinEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	id, err := params.Int(req.Params, "id")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	if err := m.PinEntry(uint64(id)); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "entry pinned"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "entry pinned"})
 }
 
 func handleUnpinEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	id, err := params.Int(req.Params, "id")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	if err := m.UnpinEntry(uint64(id)); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "entry unpinned"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "entry unpinned"})
 }
 
 func handleGetPinnedEntries(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	pinned := m.GetPinnedEntries()
-	models.Respond(conn, req.ID, pinned)
+	conn.Respond(req.ID, pinned)
 }
 
 func handleGetPinnedCount(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	count := m.GetPinnedCount()
-	models.Respond(conn, req.ID, map[string]int{"count": count})
+	conn.Respond(req.ID, map[string]int{"count": count})
 }
 
 func handleCopyFile(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	filePath, err := params.String(req.Params, "filePath")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	if err := m.CopyFile(filePath); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "copied"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "copied"})
 }
 
 func handleEditEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	id, err := params.Int(req.Params, "id")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	text, err := params.String(req.Params, "text")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	if err := m.EditEntry(uint64(id), text); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "entry updated"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "entry updated"})
 }

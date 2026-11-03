@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_output_management"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_output_management"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 )
 
 type HeadConfig struct {
@@ -33,7 +33,7 @@ type ConfigurationRequest struct {
 
 func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	if manager == nil {
-		models.RespondError(conn, req.ID, "wlroutput manager not initialized")
+		conn.RespondError(req.ID, "wlroutput manager not initialized")
 		return
 	}
 
@@ -47,35 +47,35 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	case "wlroutput.subscribe":
 		handleSubscribe(conn, req, manager)
 	default:
-		models.RespondError(conn, req.ID, fmt.Sprintf("unknown method: %s", req.Method))
+		conn.RespondError(req.ID, fmt.Sprintf("unknown method: %s", req.Method))
 	}
 }
 
 func handleGetState(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
-	models.Respond(conn, req.ID, manager.GetState())
+	conn.Respond(req.ID, manager.GetState())
 }
 
 func handleApplyConfiguration(conn *ipc.ConnWriter, req ipc.Request, manager *Manager, test bool) {
-	headsParam, ok := models.Get[any](req, "heads")
+	headsParam, ok := req.Get[any]("heads")
 	if !ok {
-		models.RespondError(conn, req.ID, "missing 'heads' parameter")
+		conn.RespondError(req.ID, "missing 'heads' parameter")
 		return
 	}
 
 	headsJSON, err := json.Marshal(headsParam)
 	if err != nil {
-		models.RespondError(conn, req.ID, "invalid 'heads' parameter format")
+		conn.RespondError(req.ID, "invalid 'heads' parameter format")
 		return
 	}
 
 	var heads []HeadConfig
 	if err := json.Unmarshal(headsJSON, &heads); err != nil {
-		models.RespondError(conn, req.ID, fmt.Sprintf("invalid heads configuration: %v", err))
+		conn.RespondError(req.ID, fmt.Sprintf("invalid heads configuration: %v", err))
 		return
 	}
 
 	if err := manager.ApplyConfiguration(heads, test); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
@@ -83,7 +83,7 @@ func handleApplyConfiguration(conn *ipc.ConnWriter, req ipc.Request, manager *Ma
 	if test {
 		msg = "configuration test succeeded"
 	}
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: msg})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: msg})
 }
 
 func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {

@@ -1,3 +1,8 @@
-import qs.DankCommon.Widgets as DankCommon
+import QtQuick
+import qs.Common
+import qs.DCommon.Widgets as DCommon
 
-DankCommon.DankFlickable {}
+DCommon.DFlickable {
+    id: shim
+    Component.onCompleted: Deprecation.type(shim, "DankFlickable", "DFlickable", "qs.DCommon.Widgets")
+}

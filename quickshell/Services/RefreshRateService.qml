@@ -14,6 +14,8 @@ Singleton {
     readonly property int batteryRefreshRateTarget: 60000
     readonly property int batteryRefreshRateTolerance: 1000
 
+    property int _resumeRecoveryAttempt: 0
+    readonly property var _resumeRecoveryIntervals: [1000, 5000, 15000, 30000]
     property var _lastAppliedTargets: ({})
 
     Timer {
@@ -36,12 +38,40 @@ Singleton {
         id: startupRefreshRateSync
         interval: 500
         repeat: false
-        running: true
+        running: SettingsData.lowerDisplayRefreshRateOnBattery
         onTriggered: root.requestSync("startup")
+    }
+
+    Timer {
+        id: resumeRecoveryTimer
+        interval: root._resumeRecoveryIntervals[0]
+        repeat: false
+        onTriggered: {
+            root.requestSync("resume-reconcile");
+            root._resumeRecoveryAttempt++;
+            if (root._resumeRecoveryAttempt < root._resumeRecoveryIntervals.length) {
+                interval = root._resumeRecoveryIntervals[root._resumeRecoveryAttempt];
+                restart();
+                return;
+            }
+            root._resumeRecoveryAttempt = 0;
+            interval = root._resumeRecoveryIntervals[0];
+        }
+    }
+
+    Connections {
+        target: SessionService
+        enabled: SettingsData.lowerDisplayRefreshRateOnBattery
+        function onSessionResumed() {
+            root._resumeRecoveryAttempt = 0;
+            resumeRecoveryTimer.interval = root._resumeRecoveryIntervals[0];
+            resumeRecoveryTimer.restart();
+        }
     }
 
     Connections {
         target: BatteryService
+        enabled: SettingsData.lowerDisplayRefreshRateOnBattery
         function onIsPluggedInChanged() {
             root.requestSync("power-change");
         }
@@ -50,12 +80,14 @@ Singleton {
     Connections {
         target: SettingsData
         function onLowerDisplayRefreshRateOnBatteryChanged() {
+            resumeRecoveryTimer.stop();
             root.requestSync("setting-change");
         }
     }
 
     Connections {
         target: SessionData
+        enabled: SettingsData.lowerDisplayRefreshRateOnBattery
         function onActiveDisplayProfileChanged() {
             root.requestSync("profile-change");
         }
@@ -67,6 +99,7 @@ Singleton {
 
     Connections {
         target: NiriService
+        enabled: SettingsData.lowerDisplayRefreshRateOnBattery
         function onOutputsChanged() {
             root.requestSync("output-change");
         }
@@ -74,6 +107,7 @@ Singleton {
 
     Connections {
         target: WlrOutputService
+        enabled: SettingsData.lowerDisplayRefreshRateOnBattery
         function onStateChanged() {
             root.requestSync("output-change");
         }
@@ -383,9 +417,9 @@ Singleton {
                     }));
             const currentMode = target ? normalizedModes.findIndex(mode => OutputModel.modeWidth(mode) === OutputModel.modeWidth(target) && OutputModel.modeHeight(mode) === OutputModel.modeHeight(target) && Math.abs(OutputModel.modeRefresh(mode) - OutputModel.modeRefresh(target)) <= batteryRefreshRateTolerance) : -1;
 
+            // No enabled flag: a head asleep via sleep_monitor reports enabled=false, and Mango would persist that as disable:1.
             data[output.name] = {
                 "name": output.name,
-                "enabled": output.enabled !== false,
                 "make": output.make || "",
                 "model": output.model || "",
                 "serial": output.serial || output.serialNumber || "",

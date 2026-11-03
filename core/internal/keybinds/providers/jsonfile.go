@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/keybinds"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 type JSONFileProvider struct {
@@ -36,6 +36,10 @@ func NewJSONFileProvider(filePath string) (*JSONFileProvider, error) {
 
 func (j *JSONFileProvider) Name() string {
 	return j.name
+}
+
+func (j *JSONFileProvider) ModKey() keybinds.ModKey {
+	return keybinds.DefaultModKey()
 }
 
 func (j *JSONFileProvider) GetCheatSheet() (*keybinds.CheatSheet, error) {
@@ -111,9 +115,11 @@ func (j *JSONFileProvider) GetCheatSheet() (*keybinds.CheatSheet, error) {
 		return nil, fmt.Errorf("'binds' must be either an object (categorized) or array (flat)")
 	}
 
-	return &keybinds.CheatSheet{
+	sheet := &keybinds.CheatSheet{
 		Title:    title,
 		Provider: provider,
 		Binds:    categorizedBinds,
-	}, nil
+	}
+	sheet.SetMod(j.ModKey())
+	return sheet, nil
 }

@@ -2,11 +2,11 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Modals.Common
-import qs.Modals.DankLauncherV2.Components
-import qs.Widgets
+import qs.Modals.DLauncherV2.Components
+import qs.DCommon.Widgets
 import qs.Services
 
-DankModal {
+DModal {
     id: root
     readonly property var log: Log.scoped("AppPickerModal")
 
@@ -146,13 +146,13 @@ DankModal {
             });
         }
 
-        // NoDisplay entries are excluded from DesktopEntries.applications but
-        // remain valid mime handlers; resolve them by id so they stay pickable
+        // NoDisplay handlers stay hidden like in the launcher, except the shell's own (notepad)
         for (const rawId of mimeMatchedRawIds) {
             const normId = _normAppId(rawId);
-            if (normId === "dms-open" || listedIds.has(normId))
+            if (!normId.startsWith("dev.duxlabs.shell.") || listedIds.has(normId))
                 continue;
-            const entry = DesktopEntries.byId(rawId) || DesktopEntries.heuristicLookup(rawId);
+            const desktopId = rawId.replace(/\.desktop$/, "");
+            const entry = DesktopEntries.byId(desktopId) || DesktopEntries.heuristicLookup(desktopId);
             if (!entry)
                 continue;
             const name = entry.name || "";
@@ -313,7 +313,7 @@ DankModal {
                         anchors.rightMargin: Theme.spacingS
                         anchors.verticalCenter: parent.verticalCenter
 
-                        DankActionButton {
+                        DActionButton {
                             buttonSize: 36
                             circular: false
                             iconName: "view_list"
@@ -326,7 +326,7 @@ DankModal {
                             }
                         }
 
-                        DankActionButton {
+                        DActionButton {
                             buttonSize: 36
                             circular: false
                             iconName: "grid_view"
@@ -341,12 +341,11 @@ DankModal {
                     }
                 }
 
-                DankSearchField {
+                DSearchField {
                     id: searchField
 
                     width: parent.width - Theme.spacingS * 2
                     anchors.horizontalCenter: parent.horizontalCenter
-                    height: 52
                     font.pixelSize: Theme.fontSizeLarge
                     enabled: root.shouldBeVisible
                     ignoreLeftRightKeys: root.viewMode !== "list"
@@ -413,7 +412,7 @@ DankModal {
                     radius: Theme.cornerRadius
                     color: "transparent"
 
-                    DankListView {
+                    DListView {
                         id: appList
 
                         property int itemHeight: 60
@@ -471,7 +470,7 @@ DankModal {
                         }
                     }
 
-                    DankGridView {
+                    DGridView {
                         id: appGrid
 
                         function ensureVisible(index) {
@@ -546,7 +545,7 @@ DankModal {
                         visible: text.length > 0
                     }
 
-                    DankTextField {
+                    DTextField {
                         id: targetDataField
                         anchors.left: targetDataLabelText.visible ? targetDataLabelText.right : parent.left
                         anchors.leftMargin: Theme.spacingS
@@ -568,7 +567,7 @@ DankModal {
                         }
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         id: copyTargetButton
                         anchors.right: parent.right
                         anchors.rightMargin: Theme.spacingXS
@@ -587,7 +586,7 @@ DankModal {
                     height: 36
                     visible: root.mimeType.length > 0
 
-                    DankToggle {
+                    DToggle {
                         anchors.left: parent.left
                         anchors.leftMargin: Theme.spacingM
                         anchors.right: parent.right

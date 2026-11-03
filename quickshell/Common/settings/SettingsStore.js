@@ -1,9 +1,11 @@
 .pragma library
 .import "./SettingsSpec.js" as SpecModule
-.import "../../DankCommon/Common/settings/SpecUtil.js" as Util
-.import "../../DankCommon/Common/Shape.js" as Shape
+.import "../../DCommon/Common/settings/SpecUtil.js" as Util
+.import "../../DCommon/Common/Shape.js" as Shape
 .import "./BarWidgetDefaults.js" as WidgetDefaults
 .import "./DockConfig.js" as DockConfig
+.import "./DensityPresets.js" as DensityPresets
+.import "../GridLayout.js" as GridLayout
 
 var PIN_KEYS = ["brightnessDevicePins", "wifiNetworkPins", "bluetoothDevicePins", "audioInputDevicePins", "audioOutputDevicePins"];
 
@@ -15,6 +17,22 @@ var SESSION_BACKED_PLUGIN_IDS = ["dankNotepadModule"];
 var STALE_WIDGET_KEYS = ["desktopClockEnabled", "desktopClockStyle", "desktopClockTransparency", "desktopClockColorMode", "desktopClockCustomColor", "desktopClockShowDate", "desktopClockShowAnalogNumbers", "desktopClockShowAnalogSeconds", "desktopClockX", "desktopClockY", "desktopClockWidth", "desktopClockHeight", "desktopClockDisplayPreferences", "systemMonitorEnabled", "systemMonitorShowHeader", "systemMonitorTransparency", "systemMonitorColorMode", "systemMonitorCustomColor", "systemMonitorShowCpu", "systemMonitorShowCpuGraph", "systemMonitorShowCpuTemp", "systemMonitorShowGpuTemp", "systemMonitorGpuPciId", "systemMonitorShowMemory", "systemMonitorShowMemoryGraph", "systemMonitorShowNetwork", "systemMonitorShowNetworkGraph", "systemMonitorShowDisk", "systemMonitorShowTopProcesses", "systemMonitorTopProcessCount", "systemMonitorTopProcessSortBy", "systemMonitorGraphInterval", "systemMonitorLayoutMode", "systemMonitorX", "systemMonitorY", "systemMonitorWidth", "systemMonitorHeight", "systemMonitorDisplayPreferences", "systemMonitorVariants", "desktopWidgetPositions"];
 
 var BAR_WIDGET_LIST_KEYS = ["leftWidgets", "centerWidgets", "rightWidgets"];
+var CC_HEADER_IDS = ["userCard", "quickActions", "header"];
+var CC_ACTION_TILE_IDS = ["settings", "lock", "power"];
+var CC_USER_KEYS = ["w", "h", "col", "row", "hostname", "compositor", "uptime", "badge", "background"];
+var CC_FULL_HEIGHT_IDS = ["user", "volumeSlider", "inputVolumeSlider", "brightnessSlider"];
+// Grid rules as of v41, frozen for that migration.
+var CC_V41_GRID_STEP = 0.5;
+var CC_V41_DEFAULT_COLUMNS = 8;
+var CC_V41_MINIMUM_COLUMNS = 6;
+var CC_V41_SLIDER_IDS = ["volumeSlider", "inputVolumeSlider", "brightnessSlider"];
+var CC_V41_FOOTER_CELLS = {
+    "runningApps": 4,
+    "user": 3,
+    "volumeSlider": 4,
+    "inputVolumeSlider": 4,
+    "brightnessSlider": 4
+};
 
 var REMOVED_KEYS_V21 = ["showBattery", "showCapsLockIndicator", "showClipboard", "showClock", "showControlCenterButton", "showCpuUsage", "showFocusedWindow", "showLauncherButton", "showMemUsage", "showMusic", "showNotificationButton", "showPrivacyButton", "showSystemTray", "showWeather", "showWorkspaceSwitcher", "hideBrightnessSlider", "updaterHideWidget", "workspaceScrolling", "appLauncherViewMode", "spotlightModalViewMode", "audioDeviceScrollVolumeEnabled", "desktopClockX", "desktopClockY", "desktopClockWidth", "desktopClockHeight", "desktopClockDisplayPreferences", "systemMonitorX", "systemMonitorY", "systemMonitorWidth", "systemMonitorHeight", "systemMonitorDisplayPreferences", "systemMonitorVariants"];
 
@@ -48,7 +66,6 @@ var ISLAND_KEY_MOVES = {
     dankIslandSatelliteBackground: "islandSatelliteBackground",
     dankIslandSatelliteGothCorners: "islandSatelliteGothCorners",
     dankIslandSatelliteTransparency: "islandSatelliteTransparency",
-    dankIslandSatelliteSwoopRadius: "islandSatelliteSwoopRadius",
     dankIslandReducedMotion: "islandReducedMotion",
     dankIslandSpringStiffness: "islandSpringStiffness",
     dankIslandSpringDamping: "islandSpringDamping",
@@ -156,9 +173,28 @@ function extractPins(obj) {
     return pins;
 }
 
+function styleDefault(key, style) {
+    if (key === "radiusMode" && style === "classic")
+        return "fixed";
+    return undefined;
+}
+
+// Sizes absent from the file load at the saved density's preset, as a reset would; a save omits only that preset.
+function densityDefault(key, density, style) {
+    var def = styleDefault(key, style) ?? SpecModule.SPEC[key].def;
+    if (key === "barConfigs" || key === "dockConfigs") {
+        var presets = DensityPresets.values(key === "barConfigs" ? "bar" : "dock", density);
+        return def.map(function (config) {
+            return Object.assign({}, config, presets);
+        });
+    }
+    var frame = DensityPresets.value("frame", key, density);
+    return frame === undefined ? def : frame;
+}
+
 function parse(root, jsonObj) {
     jsonObj = migrateToVersion(jsonObj || {}, root.settingsConfigVersion) || jsonObj || {};
-    jsonObj.dockConfigs = DockConfig.normalize(jsonObj.dockConfigs);
+    jsonObj.dockConfigs = DockConfig.normalize(jsonObj.dockConfigs, DensityPresets.values("dock", jsonObj.density));
     // the dock pages configure whichever dock is selected, so an empty list leaves them blank
     if (!jsonObj.dockConfigs.length)
         delete jsonObj.dockConfigs;
@@ -170,13 +206,11 @@ function parse(root, jsonObj) {
     for (var k in SPEC) {
         if (k === "pluginSettings")
             continue;
-        // Runtime-only keys are never in the JSON; resetting them here
-        // would wipe values set by detection processes on every reload.
+        // Runtime-only keys are never in the JSON; a reset here would wipe values set by processes on every reload.
         if (SPEC[k].persist === false)
             continue;
-        if (!(k in jsonObj)) {
-            root[k] = Util.cloneDef(SPEC[k].def);
-        }
+        if (!(k in jsonObj))
+            assign(root, k, Util.cloneDef(densityDefault(k, jsonObj.density, jsonObj.interfaceStyle)));
     }
 
     for (var k in jsonObj) {
@@ -187,11 +221,20 @@ function parse(root, jsonObj) {
         var raw = jsonObj[k];
         var spec = SPEC[k];
         var coerce = spec.coerce;
-        root[k] = coerce ? (coerce(raw) !== undefined ? coerce(raw) : root[k]) : raw;
+        assign(root, k, coerce ? (coerce(raw) !== undefined ? coerce(raw) : root[k]) : raw);
     }
 }
 
-function toJson(root) {
+// A QML root throws on an undeclared property; a shared spec key the shell has not declared must not abort the load.
+function assign(root, key, value) {
+    try {
+        root[key] = value;
+    } catch (e) {
+        console.warn("settings: no SettingsData property for spec key, skipped:", key);
+    }
+}
+
+function toJson(root, setKeys) {
     var SPEC = SpecModule.SPEC;
     var out = {};
     for (var k in SPEC) {
@@ -200,11 +243,13 @@ function toJson(root) {
         if (k === "pluginSettings")
             continue;
         var value = root[k];
+        if (value === undefined)
+            continue;
         if (k === "desktopWidgetInstances")
             value = withoutInstancePositions(value);
         if (k === "builtInPluginSettings")
             value = withoutSessionBackedPluginState(value);
-        if (Util.isDefault(value, SPEC[k].def))
+        if (!setKeys.has(k) && Util.isDefault(value, densityDefault(k, root.density, root.interfaceStyle)))
             continue;
         out[k] = value;
     }
@@ -216,8 +261,11 @@ function migrateToVersion(obj, targetVersion) {
     if (!obj)
         return null;
 
+    // hand-written and nix-generated files carry no version and are authored against the current format
+    if (obj.configVersion === undefined)
+        return null;
     var settings = JSON.parse(JSON.stringify(obj));
-    var currentVersion = settings.configVersion || 0;
+    var currentVersion = settings.configVersion;
 
     if (currentVersion >= targetVersion) {
         return null;
@@ -515,6 +563,7 @@ function migrateToVersion(obj, targetVersion) {
         for (var dropKey in ISLAND_KEY_MOVES)
             delete settings[dropKey];
         delete settings.dankIslandBarId;
+        delete settings.dankIslandSatelliteSwoopRadius;
 
         settings.configVersion = 18;
     }
@@ -698,7 +747,248 @@ function migrateToVersion(obj, targetVersion) {
         settings.configVersion = 31;
     }
 
+    if (currentVersion < 35 && targetVersion >= 35) {
+        if (Array.isArray(settings.controlCenterWidgets))
+            settings.controlCenterWidgets = migrateControlCenterHeader(settings.controlCenterWidgets, currentVersion < 33, settings.controlCenterColumns ?? 8);
+        settings.configVersion = 35;
+    }
+
+    if (currentVersion < 37 && targetVersion >= 37) {
+        if (Array.isArray(settings.controlCenterWidgets) && !settings.controlCenterWidgets.some(widget => widget?.id === "edit"))
+            settings.controlCenterWidgets = settings.controlCenterWidgets.concat([Object.assign({}, SpecModule.SPEC.controlCenterWidgets.def.find(widget => widget.id === "edit"))]);
+        settings.configVersion = 37;
+    }
+
+    if (currentVersion < 38 && targetVersion >= 38) {
+        migrateLockScreenWidgets(settings);
+        settings.configVersion = 38;
+    }
+
+    if (currentVersion < 39 && targetVersion >= 39) {
+        migrateIslandReducedMotion(settings);
+        settings.configVersion = 39;
+    }
+
+    if (currentVersion < 40 && targetVersion >= 40) {
+        migrateScrollColumnBehavior(settings);
+        settings.configVersion = 40;
+    }
+
+    if (currentVersion < 41 && targetVersion >= 41) {
+        migrateControlCenterFooter(settings);
+        settings.configVersion = 41;
+    }
+
+    if (currentVersion < 42 && targetVersion >= 42) {
+        migrateDockAppsSizing(settings);
+        settings.configVersion = 42;
+    }
+
     return settings;
+}
+
+// v42: dock apps follow the dock's icon size and magnification instead of their own copies
+function migrateDockAppsSizing(settings) {
+    if (!Array.isArray(settings.dockConfigs))
+        return;
+    for (const dock of settings.dockConfigs) {
+        for (const widget of Array.isArray(dock?.widgets) ? dock.widgets : []) {
+            if (!widget || typeof widget !== "object")
+                continue;
+            if (widget.appsDockEnlargeOnHover === true && dock.magnification !== true) {
+                dock.magnification = true;
+                dock.magnificationScale = Math.max(105, Math.min(160, Number(widget.appsDockEnlargePercentage) || 125));
+            }
+            const percentage = Number(widget.appsDockIconSizePercentage);
+            if (percentage > 0 && percentage !== 100)
+                dock.iconSize = Math.round((Number(dock.iconSize) || DockConfig.create("", "").iconSize) * percentage / 100);
+            delete widget.appsDockEnlargeOnHover;
+            delete widget.appsDockEnlargePercentage;
+            delete widget.appsDockIconSizePercentage;
+        }
+    }
+}
+
+// v41: footer entries became a grid row under the rest, keeping their order and widths
+function migrateControlCenterFooter(settings) {
+    delete settings.controlCenterFooterPosition;
+    if (!Array.isArray(settings.controlCenterWidgets))
+        return;
+    const kept = [];
+    const starts = [];
+    const ends = [];
+    for (const widget of settings.controlCenterWidgets) {
+        if (!widget || typeof widget !== "object") {
+            kept.push(widget);
+            continue;
+        }
+        const moved = Object.assign({}, widget);
+        const inFooter = moved.footer === true;
+        const atEnd = moved.footerEnd === true;
+        const fills = moved.footerFill === true;
+        const footerW = Number(moved.footerW);
+        // Stale footer keys can sit on any entry.
+        for (const key of ["footer", "footerEnd", "footerW", "footerFill"])
+            delete moved[key];
+        if (!inFooter) {
+            kept.push(moved);
+            continue;
+        }
+        const minW = CC_V41_SLIDER_IDS.includes(moved.id) ? 3 : 1;
+        const cells = Number.isFinite(footerW) && footerW > 0 ? Math.round(footerW / CC_V41_GRID_STEP) * CC_V41_GRID_STEP : CC_V41_FOOTER_CELLS[moved.id] || 1;
+        (atEnd ? ends : starts).push({
+            "widget": moved,
+            "fill": fills,
+            "w": Math.max(minW, fills ? minW : cells)
+        });
+    }
+    settings.controlCenterWidgets = kept;
+    const footer = starts.concat(ends);
+    if (footer.length === 0)
+        return;
+
+    const saved = Number(settings.controlCenterColumns);
+    const columns = Number.isFinite(saved) && saved > 0 ? Math.max(CC_V41_MINIMUM_COLUMNS, saved) : CC_V41_DEFAULT_COLUMNS;
+    for (const entry of footer)
+        entry.w = Math.min(columns, entry.w);
+    // Fill entries split the spare width as the strip did.
+    const fillers = footer.filter(entry => entry.fill);
+    const spare = Math.max(0, columns - footer.reduce((sum, entry) => sum + entry.w, 0));
+    if (fillers.length > 0 && spare > 0) {
+        const share = Math.floor(spare / fillers.length / CC_V41_GRID_STEP) * CC_V41_GRID_STEP;
+        fillers.forEach((entry, i) => entry.w += share + (i === 0 ? spare - share * fillers.length : 0));
+    }
+
+    const cards = kept.filter(widget => widget && typeof widget === "object" && !widget.group);
+    let row = GridLayout.packCells(cards, cards.map((card, i) => i), columns, null, CC_V41_GRID_STEP, true).rows;
+    let col = 0;
+    let rowHeight = 1;
+    const endWidth = ends.reduce((sum, entry) => sum + entry.w, 0);
+    for (const entry of footer) {
+        const widget = entry.widget;
+        if (!CC_FULL_HEIGHT_IDS.includes(widget.id)) {
+            widget.h = 1;
+            widget.small = true;
+        }
+        if (entry === ends[0])
+            col = Math.max(col, columns - endWidth);
+        if (col + entry.w > columns) {
+            col = 0;
+            row += rowHeight;
+            rowHeight = 1;
+        }
+        widget.w = entry.w;
+        widget.col = col;
+        widget.row = row;
+        rowHeight = Math.max(rowHeight, Number.isFinite(widget.h) ? widget.h : 1);
+        col += entry.w;
+        kept.push(widget);
+    }
+}
+
+// v40: the niri-only "column" scroll behavior became the compositor-neutral "focusWindow"
+function migrateScrollColumnBehavior(settings) {
+    for (const bar of Array.isArray(settings.barConfigs) ? settings.barConfigs : []) {
+        if (!bar || typeof bar !== "object")
+            continue;
+        for (const key of ["scrollXBehavior", "scrollYBehavior"]) {
+            if (bar[key] === "column")
+                bar[key] = "focusWindow";
+        }
+    }
+}
+
+// v39: the per-island toggle folded into the global reduceMotion; any bar that had it on turns the global one on
+function migrateIslandReducedMotion(settings) {
+    for (const bar of Array.isArray(settings.barConfigs) ? settings.barConfigs : []) {
+        if (!bar || typeof bar !== "object")
+            continue;
+        const holders = [bar];
+        for (const sectionId of ["leftWidgets", "centerWidgets", "rightWidgets"])
+            holders.push(...(Array.isArray(bar[sectionId]) ? bar[sectionId] : []).filter(entry => entry && typeof entry === "object" && entry.id === "island"));
+        for (const holder of holders) {
+            if (holder.islandReducedMotion === true)
+                settings.reduceMotion = true;
+            delete holder.islandReducedMotion;
+        }
+    }
+}
+
+var LOCK_WIDGET_MOVED_KEYS = ["lockScreenShowSystemIcons", "lockScreenShowTime", "lockScreenClockStyle", "lockScreenShowDate", "lockScreenShowPasswordField", "lockScreenShowMediaPlayer", "lockScreenNotificationMode"];
+var LOCK_WIDGET_GREETER_KEYS = ["lockScreenShowPowerActions", "lockScreenShowProfileImage", "lockScreenShowWeather"];
+
+function migrateLockScreenWidgets(settings) {
+    if (Array.isArray(settings.lockScreenWidgetInstances))
+        return;
+    const present = key => key in settings;
+    if (!LOCK_WIDGET_MOVED_KEYS.concat(LOCK_WIDGET_GREETER_KEYS).some(present))
+        return;
+    const instances = SpecModule.lockWidgetDefaults();
+    const byId = id => instances.find(inst => inst.id === id);
+    if (present("lockScreenShowTime"))
+        byId("lock_clock").enabled = !!settings.lockScreenShowTime;
+    if (present("lockScreenClockStyle"))
+        byId("lock_clock").config.style = settings.lockScreenClockStyle === "vertical" ? "overlap" : "digital";
+    if (present("lockScreenShowDate"))
+        byId("lock_date").enabled = !!settings.lockScreenShowDate;
+    byId("lock_auth").config.profileVisibility = settings.lockScreenShowProfileImage === false ? "never" : "always";
+    byId("lock_auth").config.passwordVisibility = settings.lockScreenShowPasswordField === false ? "typing" : "always";
+    if (present("lockScreenNotificationMode")) {
+        const mode = Number(settings.lockScreenNotificationMode) || 0;
+        byId("lock_notifications").enabled = mode > 0;
+        if (mode > 0)
+            byId("lock_notifications").config.mode = mode;
+    }
+    if (present("lockScreenShowSystemIcons"))
+        byId("lock_status").enabled = !!settings.lockScreenShowSystemIcons;
+    if (present("lockScreenShowMediaPlayer"))
+        byId("lock_status").config.showMediaPlayer = !!settings.lockScreenShowMediaPlayer;
+    if (present("lockScreenShowWeather"))
+        byId("lock_status").config.showWeather = !!settings.lockScreenShowWeather;
+    if (present("lockScreenShowPowerActions"))
+        byId("lock_power").enabled = !!settings.lockScreenShowPowerActions;
+    settings.lockScreenWidgetInstances = instances;
+    for (const key of LOCK_WIDGET_MOVED_KEYS)
+        delete settings[key];
+}
+
+function migrateControlCenterHeader(widgets, fixedHeader, columns) {
+    const header = widgets.filter(widget => CC_HEADER_IDS.includes(widget?.id));
+    if (!fixedHeader && header.length === 0)
+        return widgets;
+    const rest = widgets.filter(widget => !CC_HEADER_IDS.includes(widget?.id));
+    const actions = header.find(widget => Array.isArray(widget?.actions))?.actions ?? [];
+    const wanted = id => !rest.some(widget => widget?.id === id) && actions.find(action => action?.id === id)?.enabled !== false;
+    const tiles = CC_ACTION_TILE_IDS.filter(wanted).map(id => ({
+                id: id,
+                enabled: true,
+                w: 1,
+                h: 1,
+                small: true
+            }));
+    const footer = rest.some(widget => widget?.id === "runningApps") ? [] : [
+        {
+            id: "runningApps",
+            enabled: true,
+            w: 4,
+            h: 1,
+            footer: true
+        }
+    ];
+    const identity = header.length === 0 ? {} : header.find(widget => widget.id === "userCard" || (widget.id === "header" && widget.showUser !== false));
+    if (!identity || rest.some(widget => widget?.id === "user"))
+        return tiles.concat(rest, footer);
+    const user = {
+        id: "user",
+        enabled: true,
+        w: Math.max(1, columns - tiles.length),
+        h: 1
+    };
+    for (const key of CC_USER_KEYS) {
+        if (key in identity)
+            user[key] = identity[key];
+    }
+    return [user].concat(tiles, rest, footer);
 }
 
 function migrateBarWidgetGlobals(settings) {

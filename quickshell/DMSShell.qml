@@ -9,10 +9,10 @@ import qs.Modals.Clipboard
 import qs.Modals.Common
 import qs.Modals.Greeter
 import qs.Modals.Settings
-import qs.Modals.DankLauncherV2
+import qs.Modals.DLauncherV2
 import qs.Modules
 import qs.Modules.AppDrawer
-import qs.Modules.DankDash
+import qs.Modules.DDash
 import qs.Modules.ControlCenter
 import qs.Modules.Dock
 import qs.Modules.Lock
@@ -22,7 +22,7 @@ import qs.Widgets
 import qs.Modules.Notifications.Popup
 import qs.Modules.OSD
 import qs.Modules.ProcessList
-import qs.Modules.DankBar.Popouts
+import qs.Modules.DBar.Popouts
 import qs.Modules.WorkspaceOverlays
 import qs.Modules.Settings.DisplayConfig
 import qs.Services
@@ -30,29 +30,25 @@ import qs.Services
 Item {
     id: root
     readonly property var log: Log.scoped("DMSShell")
-    readonly property var _sessionsServiceRef: SessionsService
     readonly property var _nightModeServiceRef: NightModeService
     readonly property var _brightnessServiceRef: BrightnessService
     readonly property var _refreshRateServiceRef: RefreshRateService
-    readonly property var _displayServiceRef: DisplayService
 
     property var core: null
 
     property bool osdSurfacesLoaded: false
     property int pendingOsdResumeReloads: 0
-    readonly property var dankIslandScreens: Quickshell.screens.filter(screen => SettingsData.dankIslandCoversScreen(screen))
     readonly property var notificationPopupScreens: {
-        const screens = SettingsData.notificationFocusedMonitor ? Quickshell.screens : SettingsData.getFilteredScreens("notifications");
+        const screens = SettingsData.notificationFocusedMonitor ? ShellLayout.realScreens : SettingsData.getFilteredScreens("notifications");
         if (!SettingsData.dankIslandEnabled)
             return screens;
         return screens.filter(screen => !SettingsData.dankIslandHandlesNotifications(screen));
     }
-    readonly property var legacySystemLevelOsdScreens: root.withoutDankIslandScreens(SettingsData.getFilteredScreens("osd"))
-
-    function withoutDankIslandScreens(screens) {
+    readonly property var legacySystemLevelOsdScreens: {
+        const screens = SettingsData.getFilteredScreens("osd");
         if (!SettingsData.dankIslandEnabled)
             return screens;
-        return screens.filter(screen => root.dankIslandScreens.indexOf(screen) === -1);
+        return screens.filter(screen => !SettingsData.dankIslandHandlesSystemOsd(screen));
     }
 
     function recreateOsdSurfaces() {
@@ -63,12 +59,18 @@ Item {
 
     DesktopWidgetLayer {}
 
+    DesktopWidgetEditor {}
+
+    DesktopContextMenu {
+        Component.onCompleted: PopoutService.desktopContextMenu = this
+    }
+
     Lock {
         id: lock
     }
 
     Variants {
-        model: Quickshell.screens
+        model: ShellLayout.realScreens
 
         delegate: Loader {
             id: fadeWindowLoader
@@ -115,7 +117,7 @@ Item {
     }
 
     Variants {
-        model: Quickshell.screens
+        model: ShellLayout.realScreens
 
         delegate: Loader {
             id: fadeDpmsWindowLoader
@@ -248,6 +250,8 @@ Item {
         osdStartupTimer.start();
         if (SettingsData.controlCenterWidgets.some(widget => widget.id === "diskUsage" && widget.enabled !== false))
             DgopService.initializeDiskMounts();
+        if (SettingsData.controlCenterWidgets.some(widget => widget.id === "user" && widget.enabled !== false && widget.uptime !== false))
+            DgopService.dgopAvailable;
 
         // These are dummy references just to trigger the singletons onCompleted to trigger
         PolkitService.polkitAvailable;
@@ -257,6 +261,7 @@ Item {
         TrashService.count;
         WallpaperCyclingService.cyclingActive;
         ThemeAutoService.active;
+        WellbeingService.tracking;
     }
 
     Loader {
@@ -297,7 +302,7 @@ Item {
         }
 
         sourceComponent: Component {
-            DankDashPopout {
+            DDashPopout {
                 id: dankDashPopout
 
                 onPopoutClosed: PopoutService._scheduleUnload("dankDash")
@@ -743,7 +748,7 @@ Item {
             PopoutService.dankLauncherV2ModalLoader = dankLauncherV2ModalLoader;
         }
 
-        DankLauncherV2Modal {
+        DLauncherV2Modal {
             id: dankLauncherV2Modal
 
             Component.onCompleted: {
@@ -762,7 +767,7 @@ Item {
             PopoutService.spotlightBarModalLoader = spotlightBarModalLoader;
         }
 
-        DankLauncherV2ModalHost {
+        DLauncherV2ModalHost {
             id: spotlightBarModal
             connected: false
             spotlight: true
@@ -887,7 +892,7 @@ Item {
         target: DMSService
         function onOpenUrlRequested(url) {
             if (url.startsWith("dms://theme/install/")) {
-                var themeId = url.replace("dms://theme/install/", "").split(/[?#]/)[0];
+                const themeId = url.replace("dms://theme/install/", "").split(/[?#]/)[0];
                 if (themeId) {
                     PopoutService.pendingThemeInstall = themeId;
                     PopoutService.openSettingsWithTab("theme");
@@ -895,10 +900,18 @@ Item {
                 return;
             }
             if (url.startsWith("dms://plugin/install/")) {
-                var pluginId = url.replace("dms://plugin/install/", "").split(/[?#]/)[0];
+                const pluginId = url.replace("dms://plugin/install/", "").split(/[?#]/)[0];
                 if (pluginId) {
                     PopoutService.pendingPluginInstall = pluginId;
                     PopoutService.openSettingsWithTab("plugins");
+                }
+                return;
+            }
+            if (url.startsWith("dms://wallpaper/install/")) {
+                const payload = url.replace("dms://wallpaper/install/", "").split(/[?#]/)[0];
+                if (payload) {
+                    PopoutService.pendingWallpaperInstall = payload;
+                    PopoutService.openSettingsWithTab("wallpaper");
                 }
                 return;
             }
@@ -955,8 +968,6 @@ Item {
 
         active: false
 
-        Component.onCompleted: PopoutService.workspaceRenameModalLoader = workspaceRenameModalLoader
-
         WorkspaceRenameModal {
             id: workspaceRenameModal
         }
@@ -1000,6 +1011,29 @@ Item {
     }
 
     LazyLoader {
+        id: systemUpdateModalLoader
+
+        active: false
+
+        Component.onCompleted: PopoutService.systemUpdateModalLoader = systemUpdateModalLoader
+
+        SystemUpdateModal {
+            id: systemUpdateModal
+            property bool wasShown: false
+
+            Component.onCompleted: PopoutService.systemUpdateModal = systemUpdateModal
+
+            onVisibleChanged: {
+                if (systemUpdateModal.visible) {
+                    wasShown = true;
+                } else if (wasShown) {
+                    PopoutService.unloadSystemUpdateModal();
+                }
+            }
+        }
+    }
+
+    LazyLoader {
         id: systemUpdateLoader
 
         active: false
@@ -1027,13 +1061,14 @@ Item {
         id: notepadSlideoutVariants
         model: SettingsData.getFilteredScreens("notepad")
 
-        delegate: DankSlideout {
+        delegate: DSlideout {
             id: notepadSlideout
             title: I18n.tr("Notepad")
             slideoutWidth: 480
             expandable: true
             expandedWidthValue: 960
             edgeGap: SettingsData.notepadEffectiveEdgeGap
+            frameSurfaceEnabled: true
             slideEdge: SettingsData.notepadSlideoutSide
             customTransparency: Theme.notepadTransparency
 
@@ -1117,11 +1152,7 @@ Item {
     }
 
     function _switchUserFromPowerMenu() {
-        switchUserModalLoader.active = true;
-        Qt.callLater(() => {
-            if (switchUserModalLoader.loadedModal)
-                switchUserModalLoader.loadedModal.showFromPowerMenu();
-        });
+        PopoutService.openSwitchUser();
     }
 
     LazyLoader {
@@ -1172,6 +1203,8 @@ Item {
         active: false
         readonly property SwitchUserModal loadedModal: item as SwitchUserModal
 
+        Component.onCompleted: PopoutService.switchUserModalLoader = switchUserModalLoader
+
         SwitchUserModal {
             id: switchUserModal
         }
@@ -1182,12 +1215,12 @@ Item {
 
         active: false
 
+        Component.onCompleted: PopoutService.keybindsModalLoader = hyprKeybindsModalLoader
+
         KeybindsModal {
             id: keybindsModal
 
-            Component.onCompleted: {
-                PopoutService.hyprKeybindsModal = keybindsModal;
-            }
+            Component.onCompleted: PopoutService.keybindsModal = keybindsModal
         }
     }
 
@@ -1210,24 +1243,21 @@ Item {
     }
 
     DMSShellIPC {
-        powerMenuModalLoader: powerMenuModalLoader
-        processListModalLoader: processListModalLoader
-        controlCenterLoader: controlCenterLoader
-        dankDashPopoutLoader: dankDashPopoutLoader
-        notepadSlideoutVariants: notepadSlideoutVariants
-        hyprKeybindsModalLoader: hyprKeybindsModalLoader
+        processListModalLoaderRef: processListModalLoader
+        controlCenterLoaderRef: controlCenterLoader
+        dankDashPopoutLoaderRef: dankDashPopoutLoader
+        notepadSlideoutVariantsRef: notepadSlideoutVariants
+        hyprKeybindsModalLoaderRef: hyprKeybindsModalLoader
         dankBarRepeater: root.core?.dankBarRepeater ?? null
         hyprlandOverviewLoader: root.core?.hyprlandOverviewLoader ?? null
-        workspaceRenameModalLoader: workspaceRenameModalLoader
-        windowRuleModalLoader: windowRuleModalLoader
+        workspaceRenameModalLoaderRef: workspaceRenameModalLoader
+        windowRuleModalLoaderRef: windowRuleModalLoader
     }
 
     Variants {
         model: SettingsData.getFilteredScreens("toast")
 
-        delegate: Toast {
-            visible: ToastService.toastVisible
-        }
+        delegate: Toast {}
     }
 
     Loader {
@@ -1238,55 +1268,79 @@ Item {
         sourceComponent: Component {
             Item {
                 Variants {
-                    model: root.legacySystemLevelOsdScreens
+                    model: SettingsData.osdVolumeEnabled ? root.legacySystemLevelOsdScreens : []
 
                     delegate: VolumeOSD {}
                 }
 
                 Variants {
-                    model: SettingsData.getFilteredScreens("osd")
+                    model: SettingsData.osdMediaVolumeEnabled ? SettingsData.getFilteredScreens("osd") : []
 
                     delegate: MediaVolumeOSD {}
                 }
 
                 Variants {
-                    model: SettingsData.getFilteredScreens("osd")
+                    model: SettingsData.osdMediaPlaybackEnabled ? SettingsData.getFilteredScreens("osd") : []
 
                     delegate: MediaPlaybackOSD {}
                 }
 
                 Variants {
-                    model: SettingsData.getFilteredScreens("osd")
+                    model: (SettingsData.osdMicMuteEnabled || SettingsData.osdMicVolumeEnabled) ? root.legacySystemLevelOsdScreens : []
 
                     delegate: MicVolumeOSD {}
                 }
 
                 Variants {
-                    model: root.legacySystemLevelOsdScreens
+                    model: SettingsData.osdBrightnessEnabled ? root.legacySystemLevelOsdScreens : []
 
                     delegate: BrightnessOSD {}
                 }
 
                 Variants {
-                    model: SettingsData.getFilteredScreens("osd")
+                    model: SettingsData.osdIdleInhibitorEnabled ? root.legacySystemLevelOsdScreens : []
 
                     delegate: IdleInhibitorOSD {}
                 }
 
                 Variants {
-                    model: SettingsData.osdPowerProfileEnabled ? SettingsData.getFilteredScreens("osd") : []
+                    model: SettingsData.osdPowerProfileEnabled ? root.legacySystemLevelOsdScreens : []
 
                     delegate: PowerProfileOSD {}
                 }
 
                 Variants {
-                    model: SettingsData.getFilteredScreens("osd")
+                    model: SettingsData.osdCapsLockEnabled ? root.legacySystemLevelOsdScreens : []
 
                     delegate: CapsLockOSD {}
                 }
 
                 Variants {
-                    model: SettingsData.getFilteredScreens("osd")
+                    model: SettingsData.osdNumLockEnabled ? root.legacySystemLevelOsdScreens : []
+
+                    delegate: NumLockOSD {}
+                }
+
+                Variants {
+                    model: (SettingsData.osdKeyboardLayoutEnabled && KeyboardLayoutService.available) ? SettingsData.getFilteredScreens("osd") : []
+
+                    delegate: KeyboardLayoutOSD {}
+                }
+
+                Variants {
+                    model: (SettingsData.osdInputMethodEnabled && Fcitx5Service.available) ? SettingsData.getFilteredScreens("osd") : []
+
+                    delegate: InputMethodOSD {}
+                }
+
+                Variants {
+                    model: (SettingsData.osdTouchpadEnabled && CompositorService.isNiri) ? root.legacySystemLevelOsdScreens : []
+
+                    delegate: TouchpadOSD {}
+                }
+
+                Variants {
+                    model: SettingsData.osdAudioOutputEnabled ? SettingsData.getFilteredScreens("osd") : []
 
                     delegate: AudioOutputOSD {}
                 }

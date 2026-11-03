@@ -1,3 +1,7 @@
-import qs.DankCommon.Common as DankCommon
+import QtQuick
+import qs.DCommon.Common as DCommon
 
-DankCommon.DankSocket {}
+DCommon.DSocket {
+    id: shim
+    Component.onCompleted: Deprecation.type(shim, "DankSocket", "DSocket", "qs.DCommon.Common")
+}

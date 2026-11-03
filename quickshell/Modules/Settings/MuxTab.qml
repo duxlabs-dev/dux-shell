@@ -1,7 +1,6 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
 import qs.Modules.Settings.Widgets
 import "../../Common/MuxBackends.js" as MuxBackends
 

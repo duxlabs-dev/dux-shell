@@ -4,7 +4,7 @@ import QtQuick
 import qs.Common
 import qs.Modules.Settings.Widgets
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Item {
     id: networkCellularTab
@@ -62,7 +62,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: Theme.spacingS
 
-                            DankToggle {
+                            DToggle {
                                 checked: NetworkService.cellularEnabled
                                 enabled: NetworkService.cellularHardwareEnabled && !NetworkService.cellularToggling
                                 onToggled: NetworkService.toggleCellularRadio()
@@ -96,9 +96,9 @@ Item {
                                 width: parent.width
                                 height: 56
                                 radius: Theme.cornerRadius
-                                color: modemMouseArea.containsMouse ? Theme.primaryHoverLight : Theme.floatingWindowNestedSurface
-                                border.width: isConnected ? Theme.outlineWidthFocused : Theme.layerOutlineWidth
-                                border.color: isConnected ? Theme.primary : Theme.outlineMedium
+                                color: isConnected ? Theme.selectedContainer : modemMouseArea.containsMouse ? Theme.primaryHoverLight : SettingsMetrics.controlColor
+                                border.width: Theme.layerOutlineWidth
+                                border.color: Theme.outlineMedium
 
                                 Row {
                                     anchors.left: parent.left
@@ -108,10 +108,10 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     spacing: Theme.spacingS
 
-                                    DankIcon {
+                                    DIcon {
                                         name: "network_cell"
                                         size: 20
-                                        color: modemDelegate.isConnected ? Theme.primary : Theme.surfaceText
+                                        color: modemDelegate.isConnected ? Theme.accentOnSelectedContainer : Theme.surfaceText
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
 
@@ -123,7 +123,7 @@ Item {
                                         StyledText {
                                             text: modelData.name || I18n.tr("Unknown")
                                             font.pixelSize: Theme.fontSizeMedium
-                                            color: modemDelegate.isConnected ? Theme.primary : Theme.surfaceText
+                                            color: modemDelegate.isConnected ? Theme.onSelectedContainer : Theme.surfaceText
                                             font.weight: Theme.fontWeightMedium
                                             elide: Text.ElideRight
                                             width: parent.width
@@ -152,36 +152,17 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     spacing: Theme.spacingXS
 
-                                    Rectangle {
-                                        width: 28
-                                        height: 28
-                                        radius: Theme.cornerRadiusL
-                                        color: modemActionBtn.containsMouse ? (modemDelegate.isConnected ? Theme.errorHover : Theme.primaryHover) : "transparent"
-
-                                        DankIcon {
-                                            anchors.centerIn: parent
-                                            name: modemDelegate.isConnected ? "link_off" : "link"
-                                            size: 18
-                                            color: modemActionBtn.containsMouse ? (modemDelegate.isConnected ? Theme.error : Theme.primary) : Theme.surfaceVariantText
-                                        }
-
-                                        MouseArea {
-                                            id: modemActionBtn
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: {
-                                                if (modemDelegate.isConnected)
-                                                    NetworkService.disconnectCellularDevice(modelData.name);
-                                                else
-                                                    NetworkService.connectCellular();
-                                            }
-                                        }
-
-                                        DankTooltipHost {
-                                            text: modemDelegate.isConnected ? I18n.tr("Disconnect") : I18n.tr("Connect")
-                                            target: parent
-                                            hoverArea: modemActionBtn
+                                    DActionButton {
+                                        buttonSize: Theme.buttonHeightXXS
+                                        iconName: modemDelegate.isConnected ? "link_off" : "link"
+                                        iconColor: Theme.surfaceVariantText
+                                        stateColor: modemDelegate.isConnected ? Theme.error : Theme.primary
+                                        tooltipText: modemDelegate.isConnected ? I18n.tr("Disconnect") : I18n.tr("Connect")
+                                        onClicked: {
+                                            if (modemDelegate.isConnected)
+                                                NetworkService.disconnectCellularDevice(modelData.name);
+                                            else
+                                                NetworkService.connectCellular();
                                         }
                                     }
                                 }
@@ -231,9 +212,9 @@ Item {
                             width: parent.width
                             height: 56
                             radius: Theme.cornerRadius
-                            color: profileMouseArea.containsMouse ? Theme.primaryHoverLight : Theme.floatingWindowNestedSurface
-                            border.color: isActive ? Theme.primary : Theme.outlineMedium
-                            border.width: isActive ? Theme.outlineWidthFocused : Theme.layerOutlineWidth
+                            color: isActive ? Theme.selectedContainer : profileMouseArea.containsMouse ? Theme.primaryHoverLight : SettingsMetrics.controlColor
+                            border.color: Theme.outlineMedium
+                            border.width: Theme.layerOutlineWidth
 
                             Row {
                                 anchors.left: parent.left
@@ -243,10 +224,10 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 spacing: Theme.spacingS
 
-                                DankIcon {
+                                DIcon {
                                     name: "sim_card"
                                     size: 20
-                                    color: profileDelegate.isActive ? Theme.primary : Theme.surfaceText
+                                    color: profileDelegate.isActive ? Theme.accentOnSelectedContainer : Theme.surfaceText
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
 
@@ -258,7 +239,7 @@ Item {
                                     StyledText {
                                         text: modelData.id || I18n.tr("Unknown")
                                         font.pixelSize: Theme.fontSizeMedium
-                                        color: profileDelegate.isActive ? Theme.primary : Theme.surfaceText
+                                        color: profileDelegate.isActive ? Theme.onSelectedContainer : Theme.surfaceText
                                         font.weight: Theme.fontWeightMedium
                                         elide: Text.ElideRight
                                         width: parent.width
@@ -275,15 +256,14 @@ Item {
                                 }
                             }
 
-                            DankActionButton {
+                            DActionButton {
                                 id: profileAction
                                 anchors.right: parent.right
                                 anchors.rightMargin: Theme.spacingS
                                 anchors.verticalCenter: parent.verticalCenter
                                 iconName: profileDelegate.isActive ? "link_off" : "link"
                                 tooltipText: profileDelegate.isActive ? I18n.tr("Disconnect") : I18n.tr("Connect")
-                                buttonSize: 28
-                                iconSize: 18
+                                iconSize: Theme.iconSizeSmall
                                 iconColor: profileDelegate.isActive ? Theme.error : Theme.primary
                                 onClicked: {
                                     if (profileDelegate.isActive)

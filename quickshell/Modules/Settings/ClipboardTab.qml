@@ -1,7 +1,6 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
@@ -259,34 +258,10 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        Rectangle {
-            width: parent.width
-            height: warningContent.implicitHeight + Theme.spacingM * 2
-            radius: Theme.cornerRadius
-            color: Theme.warningHover
+        SettingsNoteRow {
+            paintBackground: false
             visible: !DMSService.isConnected || configError
-
-            Row {
-                id: warningContent
-                anchors.fill: parent
-                anchors.margins: Theme.spacingM
-                spacing: Theme.spacingM
-
-                DankIcon {
-                    name: "info"
-                    size: Theme.iconSizeSmall
-                    color: Theme.warning
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                StyledText {
-                    font.pixelSize: Theme.fontSizeSmall
-                    text: !DMSService.isConnected ? I18n.tr("DMS service is not connected. Clipboard settings are unavailable.") : I18n.tr("Failed to load clipboard configuration.")
-                    wrapMode: Text.WordWrap
-                    width: parent.width - Theme.iconSizeSmall - Theme.spacingM
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
+            text: !DMSService.isConnected ? I18n.tr("DMS service is not connected. Clipboard settings are unavailable.") : I18n.tr("Failed to load clipboard configuration.")
         }
 
         SettingsCard {
@@ -546,7 +521,6 @@ Item {
                 minButtonWidth: 56
                 buttonPadding: Theme.spacingS
                 textSize: Theme.fontSizeSmall
-                spacing: Theme.groupedListGap
                 onSelectionChanged: (index, selected) => root.setVisibleEntryAction(index, selected)
             }
         }

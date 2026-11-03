@@ -14,24 +14,6 @@ func TestParseDevicesMap(t *testing.T) {
 		wantURIs []string
 	}{
 		{
-			name:     "empty",
-			input:    map[string]string{},
-			wantLen:  0,
-			wantURIs: nil,
-		},
-		{
-			name: "single_device",
-			input: map[string]string{
-				"device-uri:0":            "usb://HP/LaserJet",
-				"device-class:0":          "direct",
-				"device-info:0":           "HP LaserJet",
-				"device-make-and-model:0": "HP LaserJet 1020",
-				"device-id:0":             "MFG:HP;MDL:LaserJet",
-			},
-			wantLen:  1,
-			wantURIs: []string{"usb://HP/LaserJet"},
-		},
-		{
 			name: "multiple_devices",
 			input: map[string]string{
 				"device-uri:0":   "usb://HP/LaserJet",

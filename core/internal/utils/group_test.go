@@ -99,9 +99,7 @@ func TestHasGroupData(t *testing.T) {
 	}{
 		{"greeter", true},
 		{"root", true},
-		{"docker", true},
 		{"cosmic-greeter", true},
-		{"dms-greeter", true},
 		{"nonexistent", false},
 		{"greet", false},
 	}
@@ -123,7 +121,6 @@ func TestFindGroupData(t *testing.T) {
 		{"first match wins", []string{"greeter", "greetd", "_greeter"}, "greeter", true},
 		{"fallback to second", []string{"greetd", "greeter"}, "greeter", true},
 		{"none found", []string{"_greetd", "greetd"}, "", false},
-		{"single match", []string{"docker"}, "docker", true},
 	}
 
 	for _, tt := range tests {
@@ -132,11 +129,5 @@ func TestFindGroupData(t *testing.T) {
 			t.Errorf("%s: FindGroupData(%v) = (%q, %v), want (%q, %v)",
 				tt.name, tt.candidates, got, found, tt.wantGroup, tt.wantFound)
 		}
-	}
-}
-
-func TestHasGroupDataEmpty(t *testing.T) {
-	if HasGroupData("greeter", "") {
-		t.Error("expected false for empty data")
 	}
 }

@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Loader {
     id: root
@@ -9,6 +9,7 @@ Loader {
     property string label: ""
     property color iconColor: Theme.onSecondaryContainer
     property color backgroundColor: Theme.secondaryContainer
+    property bool filled: false
     property bool tonal: true
     property bool interactive: false
     property bool available: true
@@ -24,7 +25,7 @@ Loader {
     Component {
         id: action
 
-        DankActionButton {
+        DActionButton {
             buttonSize: root.width
             iconName: root.iconName
             iconSize: root.glyphSize
@@ -43,11 +44,12 @@ Loader {
             radius: Theme.fullRadius(width, height)
             color: !root.tonal ? "transparent" : root.available ? root.backgroundColor : Theme.onSurface_12
 
-            DankIcon {
+            DIcon {
                 anchors.centerIn: parent
                 name: root.iconName
                 size: root.glyphSize
                 color: root.available ? root.iconColor : Theme.onSurface_38
+                filled: root.filled
             }
         }
     }

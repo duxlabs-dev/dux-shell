@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 SettingsRow {
     id: root
@@ -10,6 +10,7 @@ SettingsRow {
     property color descriptionColor: Theme.surfaceVariantText
     property bool checked: false
     property bool toggling: false
+    property alias accessory: accessorySlot.data
 
     signal toggled(bool checked)
 
@@ -17,22 +18,26 @@ SettingsRow {
     subtitle: description
     subtitleColor: descriptionColor
     clickable: true
-    resetByKeys: false
-    onResetRequested: {
-        if (!resetByKeys)
-            toggled(!checked);
-    }
+    resetKeys: []
     Accessible.role: Accessible.CheckBox
     Accessible.checkable: true
     Accessible.checked: checked
-    Accessible.onToggleAction: root.clicked()
+    Accessible.onToggleAction: root.clicked(true)
     onClicked: {
         if (!enabled || toggling)
             return;
         toggled(!checked);
     }
 
-    DankToggle {
+    Row {
+        id: accessorySlot
+        spacing: Theme.spacingS
+        visible: children.length > 0
+        anchors.verticalCenter: parent.verticalCenter
+    }
+
+    DToggle {
+        anchors.verticalCenter: parent.verticalCenter
         hideText: true
         text: root.text
         description: root.description

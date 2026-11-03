@@ -12,7 +12,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("FirstLaunchService")
 
-    readonly property string configDir: Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation)) + "/DankMaterialShell"
+    readonly property string configDir: Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation)) + "/dms"
     readonly property string settingsPath: configDir + "/settings.json"
     readonly property string firstLaunchMarkerPath: configDir + "/.firstlaunch"
 
@@ -44,7 +44,16 @@ Singleton {
     }
 
     function checkFirstLaunch() {
-        firstLaunchCheckProcess.running = true;
+        markerProbe.path = root.firstLaunchMarkerPath;
+    }
+
+    function _finishCheck(firstLaunch) {
+        isFirstLaunch = firstLaunch;
+        checkComplete = true;
+        if (!firstLaunch)
+            return;
+        log.info("First launch detected, greeter will be shown");
+        greeterRequested();
     }
 
     function markFirstLaunchComplete() {
@@ -57,43 +66,30 @@ Singleton {
         greeterDismissed = true;
     }
 
-    Process {
-        id: firstLaunchCheckProcess
-
-        command: ["sh", "-c", `
-            SETTINGS='` + settingsPath + `'
-            MARKER='` + firstLaunchMarkerPath + `'
-            if [ -f "$MARKER" ]; then
-                echo 'skip'
-            elif [ -f "$SETTINGS" ]; then
-                echo 'existing_user'
-            else
-                echo 'first'
-            fi
-        `]
-        running: false
-
-        stdout: SplitParser {
-            onRead: data => {
-                const result = data.trim();
-
-                if (result === "first") {
-                    root.isFirstLaunch = true;
-                    log.info("First launch detected, greeter will be shown");
-                } else if (result === "existing_user") {
-                    root.isFirstLaunch = false;
-                    log.info("Existing user detected, silently creating marker");
-                    touchMarkerProcess.running = true;
-                } else {
-                    root.isFirstLaunch = false;
-                }
-
-                root.checkComplete = true;
-
-                if (root.isFirstLaunch)
-                    root.greeterRequested();
+    FileView {
+        id: markerProbe
+        path: ""
+        printErrors: false
+        onLoaded: root._finishCheck(false)
+        onLoadFailed: error => {
+            if (error !== FileViewError.FileNotFound) {
+                root._finishCheck(false);
+                return;
             }
+            settingsProbe.path = root.settingsPath;
         }
+    }
+
+    FileView {
+        id: settingsProbe
+        path: ""
+        printErrors: false
+        onLoaded: {
+            log.info("Existing user detected, silently creating marker");
+            touchMarkerProcess.running = true;
+            root._finishCheck(false);
+        }
+        onLoadFailed: error => root._finishCheck(error === FileViewError.FileNotFound)
     }
 
     Process {

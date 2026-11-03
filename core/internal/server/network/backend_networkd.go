@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 	"sync"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -27,23 +28,65 @@ type linkInfo struct {
 }
 
 func (l *linkInfo) isWired() bool {
-	if looksVirtual(l.name) {
+	if looksVirtual(l.name) || looksWirelessName(l.name) {
 		return false
 	}
-	if l.linkType != "" {
-		return l.linkType == "ether"
+	if l.linkType == "bridge" {
+		return hasPhysicalMember(l.name)
 	}
-	return !strings.HasPrefix(l.name, "wlan") && !strings.HasPrefix(l.name, "wlp")
+	if l.linkType != "" {
+		return isWiredLinkType(l.linkType)
+	}
+	return true
+}
+
+// isWiredLinkType reports whether a networkd link Type can carry the wired
+// uplink. Link aggregates and bridges hold the IP configuration while the
+// enslaved member NIC stays in the "enslaved" state, same as #1581 for
+// NetworkManager. Bridges are further checked in isWired.
+func isWiredLinkType(t string) bool {
+	switch t {
+	case "ether", "bridge", "bond", "team", "vlan":
+		return true
+	}
+	return false
+}
+
+// bridgeMembers lists the interfaces enslaved to a bridge. It is a variable so
+// tests can stub the sysfs lookup.
+var bridgeMembers = func(bridge string) []string {
+	entries, err := os.ReadDir("/sys/class/net/" + bridge + "/brif")
+	if err != nil {
+		return nil
+	}
+	names := make([]string, 0, len(entries))
+	for _, e := range entries {
+		names = append(names, e.Name())
+	}
+	return names
+}
+
+// hasPhysicalMember reports whether a bridge has at least one member that is
+// not virtual (veth, tap, ...). This tells a host bridge carrying the uplink
+// apart from container/VM bridges (lxc, waydroid, ...) that only hold virtual
+// members.
+func hasPhysicalMember(bridge string) bool {
+	for _, m := range bridgeMembers(bridge) {
+		if !looksVirtual(m) {
+			return true
+		}
+	}
+	return false
 }
 
 func (l *linkInfo) isWireless() bool {
 	if looksVirtual(l.name) {
 		return false
 	}
-	if l.linkType != "" {
-		return l.linkType == "wlan"
+	if looksWirelessName(l.name) {
+		return true
 	}
-	return strings.HasPrefix(l.name, "wlan") || strings.HasPrefix(l.name, "wlp")
+	return l.linkType == "wlan"
 }
 
 func looksVirtual(name string) bool {

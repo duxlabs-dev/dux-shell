@@ -22,7 +22,7 @@ func TestUpgradeCommandBuilders(t *testing.T) {
 		{
 			name: "apt full upgrade",
 			got:  aptUpgradeArgv("apt-get", pkexecOpts),
-			want: []string{"pkexec", "env", "DEBIAN_FRONTEND=noninteractive", "LC_ALL=C", "apt-get", "upgrade", "-y"},
+			want: []string{"pkexec", "env", "DEBIAN_FRONTEND=noninteractive", "LC_ALL=C", "apt-get", "upgrade", "-y", "-o", "Dpkg::Options::=--force-confdef", "-o", "Dpkg::Options::=--force-confold"},
 		},
 		{
 			name: "zypper full update",
@@ -32,27 +32,27 @@ func TestUpgradeCommandBuilders(t *testing.T) {
 		{
 			name: "pacman full sync upgrade",
 			got:  pacmanUpgradeArgv(pkexecOpts),
-			want: []string{"pkexec", "pacman", "-Syu", "--noconfirm", "--needed"},
+			want: []string{"pkexec", "pacman", "-Syu", "--needed", "--noconfirm"},
 		},
 		{
 			name: "aur helper full update with aur",
-			got:  archHelperUpgradeArgv("paru", true, nil),
-			want: []string{"paru", "-Syu", "--noconfirm", "--needed"},
+			got:  archHelperUpgradeArgv("paru", UpgradeOptions{IncludeAUR: true}),
+			want: []string{"paru", "-Syu", "--needed", "--noconfirm"},
 		},
 		{
 			name: "aur helper repo-only full update",
-			got:  archHelperUpgradeArgv("yay", false, nil),
-			want: []string{"yay", "-Syu", "--noconfirm", "--needed", "--repo"},
+			got:  archHelperUpgradeArgv("yay", UpgradeOptions{}),
+			want: []string{"yay", "-Syu", "--needed", "--noconfirm", "--repo"},
 		},
 		{
 			name: "aur helper with ignored packages",
-			got:  archHelperUpgradeArgv("paru", true, []string{"linux", "bad;name", "discord"}),
-			want: []string{"paru", "-Syu", "--noconfirm", "--needed", "--ignore", "linux,discord"},
+			got:  archHelperUpgradeArgv("paru", UpgradeOptions{IncludeAUR: true, Ignored: []string{"linux", "bad;name", "discord"}}),
+			want: []string{"paru", "-Syu", "--needed", "--noconfirm", "--ignore", "linux,discord"},
 		},
 		{
 			name: "pacman never passes --ignore",
 			got:  pacmanUpgradeArgv(UpgradeOptions{Ignored: []string{"linux"}}),
-			want: []string{"pkexec", "pacman", "-Syu", "--noconfirm", "--needed"},
+			want: []string{"pkexec", "pacman", "-Syu", "--needed", "--noconfirm"},
 		},
 		{
 			name: "dnf with ignored packages",
@@ -60,14 +60,44 @@ func TestUpgradeCommandBuilders(t *testing.T) {
 			want: []string{"pkexec", "dnf5", "upgrade", "--refresh", "-y", "--exclude=kernel,mesa"},
 		},
 		{
-			name: "apt without ignored uses plain upgrade",
-			got:  aptUpgradeArgv("apt-get", UpgradeOptions{}),
-			want: []string{"pkexec", "env", "DEBIAN_FRONTEND=noninteractive", "LC_ALL=C", "apt-get", "upgrade", "-y"},
+			name: "portage full world upgrade",
+			got:  portageUpgradeArgv(pkexecOpts),
+			want: []string{"pkexec", "emerge", "--update", "--newuse", "--deep", "--quiet", "@world"},
 		},
 		{
-			name: "zypper without ignored uses plain update",
-			got:  zypperUpgradeArgv(UpgradeOptions{}),
-			want: []string{"pkexec", "zypper", "--non-interactive", "update"},
+			name: "portage with ignored packages",
+			got:  portageUpgradeArgv(UpgradeOptions{Ignored: []string{"sys-apps/portage", "bad;name", "mail-client/thunderbird"}}),
+			want: []string{"pkexec", "emerge", "--update", "--newuse", "--deep", "--quiet", "--exclude", "sys-apps/portage", "--exclude", "mail-client/thunderbird", "@world"},
+		},
+		{
+			name: "interactive dnf leaves prompts to dnf",
+			got:  dnfUpgradeArgv("dnf5", UpgradeOptions{Interactive: true}),
+			want: []string{"pkexec", "dnf5", "upgrade", "--refresh"},
+		},
+		{
+			name: "interactive apt leaves prompts to apt and dpkg",
+			got:  aptUpgradeArgv("apt-get", UpgradeOptions{Interactive: true}),
+			want: []string{"pkexec", "env", "apt-get", "upgrade"},
+		},
+		{
+			name: "interactive zypper",
+			got:  zypperUpgradeArgv(UpgradeOptions{Interactive: true}),
+			want: []string{"pkexec", "zypper", "update"},
+		},
+		{
+			name: "interactive pacman",
+			got:  pacmanUpgradeArgv(UpgradeOptions{Interactive: true}),
+			want: []string{"pkexec", "pacman", "-Syu", "--needed"},
+		},
+		{
+			name: "interactive aur helper",
+			got:  archHelperUpgradeArgv("paru", UpgradeOptions{IncludeAUR: true, Interactive: true}),
+			want: []string{"paru", "-Syu", "--needed"},
+		},
+		{
+			name: "interactive xbps",
+			got:  xbpsUpgradeArgv(UpgradeOptions{Interactive: true}),
+			want: []string{"pkexec", "xbps-install", "-Syu"},
 		},
 		{
 			name: "flatpak full update",
@@ -126,6 +156,9 @@ func TestAptUpgradeArgvHoldsIgnored(t *testing.T) {
 	script := argv[len(argv)-1]
 	if !strings.Contains(script, "apt-mark hold") || !strings.Contains(script, "apt-mark unhold") {
 		t.Fatalf("hold script missing hold/unhold: %q", script)
+	}
+	if !strings.Contains(script, "--force-confold") {
+		t.Fatalf("hold script must keep modified config files without prompting: %q", script)
 	}
 	if !strings.Contains(script, "linux-image-generic") {
 		t.Fatalf("hold script missing ignored package: %q", script)
@@ -239,9 +272,9 @@ func TestWrapInTerminal(t *testing.T) {
 		term       string
 		wantPrefix []string
 	}{
-		{"kitty", []string{"kitty", "--class", "com.danklinux.dms", "-T", "Title"}},
+		{"kitty", []string{"kitty", "--class", "dev.duxlabs.shell", "-T", "Title"}},
 		{"gnome-terminal", []string{"gnome-terminal", "--wait", "--title=Title"}},
-		{"foot", []string{"foot", "--app-id=com.danklinux.dms", "--title=Title"}},
+		{"foot", []string{"foot", "--app-id=dev.duxlabs.shell", "--title=Title"}},
 	}
 	for _, tt := range tests {
 		got := wrapInTerminal(tt.term, "Title", "echo hi", nil)
@@ -255,5 +288,16 @@ func TestWrapInTerminal(t *testing.T) {
 		if !strings.Contains(tail[2], "echo hi") {
 			t.Errorf("wrapInTerminal(%q) command %q does not contain shell command", tt.term, tail[2])
 		}
+	}
+}
+
+func TestInteractiveUpgradeCommand(t *testing.T) {
+	got := interactiveUpgradeCommand("/opt/it's/dms", UpgradeOptions{
+		IncludeFlatpak: true,
+		Ignored:        []string{"linux", "bad;name", "discord"},
+	})
+	want := `'/opt/it'\''s/dms' system update --interactive --no-aur --ignore linux,discord`
+	if got != want {
+		t.Fatalf("command = %q, want %q", got, want)
 	}
 }

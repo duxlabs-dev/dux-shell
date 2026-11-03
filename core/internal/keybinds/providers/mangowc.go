@@ -5,12 +5,14 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/config"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/keybinds"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds"
+	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 type MangoWCProvider struct {
@@ -29,15 +31,15 @@ func NewMangoWCProvider(configPath string) *MangoWCProvider {
 }
 
 func defaultMangoWCConfigDir() string {
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(configDir, "mango")
+	return mangoconf.Dir()
 }
 
 func (m *MangoWCProvider) Name() string {
 	return "mangowc"
+}
+
+func (m *MangoWCProvider) ModKey() keybinds.ModKey {
+	return keybinds.DefaultModKey()
 }
 
 func (m *MangoWCProvider) GetCheatSheet() (*keybinds.CheatSheet, error) {
@@ -62,6 +64,7 @@ func (m *MangoWCProvider) GetCheatSheet() (*keybinds.CheatSheet, error) {
 		Binds:            categorizedBinds,
 		DMSBindsIncluded: result.DMSBindsIncluded,
 	}
+	sheet.SetMod(m.ModKey())
 
 	if result.DMSStatus != nil {
 		sheet.DMSStatus = keybinds.DMSBindsStatusFrom(*result.DMSStatus)
@@ -89,11 +92,12 @@ func (m *MangoWCProvider) categorizeByCommand(command string) string {
 	switch {
 	case strings.Contains(command, "mon"):
 		return "Monitor"
-	case command == "toggleoverview":
+	case command == "toggleoverview" || command == "togglejump":
 		return "Overview"
 	case command == "toggle_scratchpad":
 		return "Scratchpad"
-	case strings.Contains(command, "layout") || strings.Contains(command, "proportion"):
+	case strings.Contains(command, "layout") || strings.Contains(command, "proportion") ||
+		strings.Contains(command, "scroller") || strings.HasPrefix(command, "dwindle"):
 		return "Layout"
 	case strings.Contains(command, "gaps"):
 		return "Gaps"
@@ -102,6 +106,7 @@ func (m *MangoWCProvider) categorizeByCommand(command string) string {
 	case command == "focusstack" ||
 		command == "focusdir" ||
 		command == "exchange_client" ||
+		command == "move_client" ||
 		command == "killclient" ||
 		command == "togglefloating" ||
 		command == "togglefullscreen" ||
@@ -145,8 +150,7 @@ func (m *MangoWCProvider) convertKeybind(kb *MangoWCKeyBinding, conflicts map[st
 	}
 
 	if source == "dms-default" && conflicts != nil {
-		normalizedKey := strings.ToLower(keyStr)
-		if conflictKb, ok := conflicts[normalizedKey]; ok {
+		if conflictKb, ok := conflicts[mangoConflictKey(kb.Mode, strings.ToLower(keyStr))]; ok {
 			bind.Conflict = &keybinds.Keybind{
 				Key:         keyStr,
 				Description: conflictKb.Comment,
@@ -232,13 +236,24 @@ func (m *MangoWCProvider) SetBind(key, action, description string, options map[s
 		prefix = mangowcAxisBindPrefix
 	}
 
-	existingBinds[normalizedKey] = &mangowcOverrideBind{
+	bind := &mangowcOverrideBind{
 		Key:         key,
 		Action:      action,
 		Description: description,
 		Options:     options,
 		Prefix:      prefix,
 	}
+	var line strings.Builder
+	m.writeBindLine(&line, bind)
+	for l := range strings.SplitSeq(line.String(), "\n") {
+		if strings.HasPrefix(l, "#") {
+			continue
+		}
+		if err := mangoconf.CheckLine(l); err != nil {
+			return err
+		}
+	}
+	existingBinds[normalizedKey] = bind
 
 	return m.writeOverrideBinds(existingBinds)
 }
@@ -484,15 +499,21 @@ func (m *MangoWCProvider) generatePreservedBindsContent(existingContent string, 
 	return strings.Join(lines, "\n") + "\n"
 }
 
+// Only a stripped stock file is rebuilt; a file setup kept or moved, or with keymodes or mouse binds, is the user's.
 func (m *MangoWCProvider) shouldUseStockScaffold(content string) bool {
 	if strings.TrimSpace(content) == "" {
 		return true
+	}
+	if mangoconf.HasUserBindsHeader(content) || mangoUserBindLine.MatchString(content) {
+		return false
 	}
 	if strings.Contains(content, "gesturebind=") && strings.Contains(content, "# ===") {
 		return false
 	}
 	return !strings.Contains(content, "gesturebind=") && (strings.Count(content, "\nbind=")+strings.Count(content, "\nbindl=")+strings.Count(content, "\nbinds=")+strings.Count(content, "\nbindr=")+strings.Count(content, "\nbindp=") >= 10 || strings.Contains(content, "dms ipc call"))
 }
+
+var mangoUserBindLine = regexp.MustCompile(`(?m)^\s*(keymode|key_mode|mousebind|mouse_bind|axisbind|axis_bind|switchbind|switch_bind)\s*=`)
 
 func (m *MangoWCProvider) stockBindsScaffold(binds map[string]*mangowcOverrideBind) string {
 	terminalCommand := "ghostty"

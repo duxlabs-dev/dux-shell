@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	AppID = "com.danklinux.dms"
+	AppID = "dev.duxlabs.shell"
 
 	appName = "DMS"
 
@@ -22,19 +22,26 @@ const (
 	notifyPath      = "/org/freedesktop/Notifications"
 	notifyInterface = "org.freedesktop.Notifications"
 
-	maxSummaryLen = 29
-	maxBodyLen    = 80
+	signalClosed        = notifyInterface + ".NotificationClosed"
+	signalActionInvoked = notifyInterface + ".ActionInvoked"
 
 	listenerMaxLifetime = time.Hour
 )
 
 type Notification struct {
-	AppName  string
+	AppName string
+	// Notify app_icon argument. Falls back to Icon.
+	AppIcon  string
 	Icon     string
 	Summary  string
 	Body     string
 	FilePath string
-	Timeout  int32
+	// Milliseconds; 0 never expires, -1 lets the server decide.
+	Timeout   int32
+	ReplaceID uint32
+	// Pairs of id, label; ignored when FilePath is set.
+	Actions []string
+	Hints   map[string]dbus.Variant
 }
 
 func Send(n Notification) (uint32, error) {
@@ -49,23 +56,16 @@ func Send(n Notification) (uint32, error) {
 	if n.Icon == "" && n.AppName == appName {
 		n.Icon = AppID
 	}
-	if n.Timeout == 0 {
-		n.Timeout = 5000
-	}
 
-	if len(n.Summary) > maxSummaryLen {
-		n.Summary = n.Summary[:maxSummaryLen-3] + "..."
-	}
-	if len(n.Body) > maxBodyLen {
-		n.Body = n.Body[:maxBodyLen-3] + "..."
-	}
-
-	var actions []string
+	actions := n.Actions
 	if n.FilePath != "" {
 		actions = []string{
 			"open", "Open",
 			"folder", "Open Folder",
 		}
+	}
+	if actions == nil {
+		actions = []string{}
 	}
 
 	hints := map[string]dbus.Variant{}
@@ -73,11 +73,17 @@ func Send(n Notification) (uint32, error) {
 		hints["desktop-entry"] = dbus.MakeVariant(AppID)
 	}
 	if n.FilePath != "" {
-		imgPath := n.FilePath
-		if !strings.HasPrefix(imgPath, "file://") {
-			imgPath = "file://" + imgPath
+		hints["image_path"] = dbus.MakeVariant(fileURI(n.FilePath))
+	}
+	appIcon := n.Icon
+	if n.AppIcon != "" {
+		appIcon = n.AppIcon
+		if n.Icon != "" {
+			hints["image-path"] = dbus.MakeVariant(n.Icon)
 		}
-		hints["image_path"] = dbus.MakeVariant(imgPath)
+	}
+	for k, v := range n.Hints {
+		hints[k] = v
 	}
 
 	obj := conn.Object(notifyDest, notifyPath)
@@ -85,8 +91,8 @@ func Send(n Notification) (uint32, error) {
 		notifyInterface+".Notify",
 		0,
 		n.AppName,
-		uint32(0),
-		n.Icon,
+		n.ReplaceID,
+		appIcon,
 		n.Summary,
 		n.Body,
 		actions,
@@ -104,6 +110,97 @@ func Send(n Notification) (uint32, error) {
 	}
 
 	return notificationID, nil
+}
+
+func fileURI(path string) string {
+	if strings.HasPrefix(path, "file://") {
+		return path
+	}
+	return "file://" + path
+}
+
+// Waiter subscribes to notification signals. Create it before Send so an
+// instant action or close cannot slip past the subscription.
+type Waiter struct {
+	conn    *dbus.Conn
+	signals chan *dbus.Signal
+}
+
+func NewWaiter() (*Waiter, error) {
+	conn, err := dbus.SessionBus()
+	if err != nil {
+		return nil, fmt.Errorf("dbus session failed: %w", err)
+	}
+	if err := conn.AddMatchSignal(
+		dbus.WithMatchObjectPath(notifyPath),
+		dbus.WithMatchInterface(notifyInterface),
+	); err != nil {
+		return nil, fmt.Errorf("dbus match failed: %w", err)
+	}
+	w := &Waiter{conn: conn, signals: make(chan *dbus.Signal, 10)}
+	conn.Signal(w.signals)
+	return w, nil
+}
+
+func (w *Waiter) Close() {
+	w.conn.RemoveSignal(w.signals)
+	_ = w.conn.RemoveMatchSignal(
+		dbus.WithMatchObjectPath(notifyPath),
+		dbus.WithMatchInterface(notifyInterface),
+	)
+}
+
+type WaitResult struct {
+	Action   string
+	Invoked  bool
+	TimedOut bool
+}
+
+// Blocks until the notification closes or one of its actions fires.
+// A timeout of zero or less waits forever.
+func (w *Waiter) Wait(id uint32, timeout time.Duration) WaitResult {
+	var deadline <-chan time.Time
+	if timeout > 0 {
+		deadline = time.After(timeout)
+	}
+	for {
+		select {
+		case <-deadline:
+			return WaitResult{TimedOut: true}
+		case sig, ok := <-w.signals:
+			if !ok {
+				return WaitResult{}
+			}
+			res, done := matchSignal(sig, id)
+			if done {
+				return res
+			}
+		}
+	}
+}
+
+func matchSignal(sig *dbus.Signal, id uint32) (WaitResult, bool) {
+	if sig == nil || len(sig.Body) < 1 {
+		return WaitResult{}, false
+	}
+	sigID, ok := sig.Body[0].(uint32)
+	if !ok || sigID != id {
+		return WaitResult{}, false
+	}
+	switch sig.Name {
+	case signalClosed:
+		return WaitResult{}, true
+	case signalActionInvoked:
+		if len(sig.Body) < 2 {
+			return WaitResult{}, false
+		}
+		action, ok := sig.Body[1].(string)
+		if !ok {
+			return WaitResult{}, false
+		}
+		return WaitResult{Action: action, Invoked: true}, true
+	}
+	return WaitResult{}, false
 }
 
 func SpawnActionListener(notificationID uint32, filePath string) {
@@ -131,57 +228,17 @@ func RunActionListener(args []string) {
 
 	filePath := args[1]
 
-	conn, err := dbus.SessionBus()
+	w, err := NewWaiter()
 	if err != nil {
 		return
 	}
+	defer w.Close()
 
-	if err := conn.AddMatchSignal(
-		dbus.WithMatchObjectPath(notifyPath),
-		dbus.WithMatchInterface(notifyInterface),
-	); err != nil {
+	res := w.Wait(uint32(notificationID), listenerMaxLifetime)
+	if !res.Invoked {
 		return
 	}
-
-	signals := make(chan *dbus.Signal, 10)
-	conn.Signal(signals)
-	deadline := time.After(listenerMaxLifetime)
-
-	for {
-		select {
-		case <-deadline:
-			return
-		case sig := <-signals:
-			if sig == nil || handleSignal(sig, uint32(notificationID), filePath) {
-				return
-			}
-		}
-	}
-}
-
-func handleSignal(sig *dbus.Signal, notificationID uint32, filePath string) bool {
-	if len(sig.Body) < 1 {
-		return false
-	}
-	id, ok := sig.Body[0].(uint32)
-	if !ok || id != notificationID {
-		return false
-	}
-	switch sig.Name {
-	case notifyInterface + ".NotificationClosed":
-		return true
-	case notifyInterface + ".ActionInvoked":
-		if len(sig.Body) < 2 {
-			return false
-		}
-		action, ok := sig.Body[1].(string)
-		if !ok {
-			return false
-		}
-		handleAction(action, filePath)
-		return true
-	}
-	return false
+	handleAction(res.Action, filePath)
 }
 
 func handleAction(action, filePath string) {

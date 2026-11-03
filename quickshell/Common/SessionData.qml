@@ -8,16 +8,15 @@ import Quickshell.Io
 import qs.Common
 import qs.Services
 import "settings/SessionSpec.js" as Spec
+import "../DCommon/Common/MaterialWallpaper.js" as MaterialWallpaper
 import "settings/SessionStore.js" as Store
-import "../DankCommon/Common/settings/SpecUtil.js" as SpecUtil
+import "../DCommon/Common/settings/SpecUtil.js" as SpecUtil
 
 Singleton {
     id: root
     readonly property var log: Log.scoped("SessionData")
 
-readonly property int sessionConfigVersion: 7
-
-    readonly property bool isGreeterMode: Quickshell.env("DMS_RUN_GREETER") === "1" || Quickshell.env("DMS_RUN_GREETER") === "true"
+    readonly property int sessionConfigVersion: 7
 
     signal loaded
     signal brightnessDisplayHintChanged(string deviceName)
@@ -43,6 +42,9 @@ readonly property int sessionConfigVersion: 7
     property bool idleInhibited: false
     property real idleInhibitedUntil: 0
     property string terminalOverride: ""
+    property int updaterNotifiedUnix: 0
+    property int updaterNotifiedCount: 0
+    property string repoMoveNoticeVersion: ""
     property bool isSwitchingMode: false
     property bool suppressOSD: true
 
@@ -60,9 +62,15 @@ readonly property int sessionConfigVersion: 7
         return "";
     }
 
+    function probeTerminals() {
+        if (terminalProbe.running || installedTerminals.length > 0)
+            return;
+        terminalProbe.running = true;
+    }
+
     Process {
         id: terminalProbe
-        running: true
+        running: false
         command: ["sh", "-c", "for t in ghostty kitty foot alacritty wezterm konsole gnome-terminal xterm; do command -v \"$t\" >/dev/null 2>&1 && echo \"$t\"; done"]
         stdout: StdioCollector {
             onStreamFinished: {
@@ -132,6 +140,41 @@ readonly property int sessionConfigVersion: 7
         }
     }
 
+    property var materialWallpapers: ({})
+    property var materialWallpaperProfiles: ({})
+    property int wallpaperRevision: 0
+    property int wallpaperScopeRevision: 0
+    property var monitorWallpaperRevisions: ({})
+    property var previousMonitorWallpapers: ({})
+    onWallpaperPathChanged: wallpaperRevision++
+    onPerMonitorWallpaperChanged: wallpaperScopeRevision++
+    onPerModeWallpaperChanged: wallpaperScopeRevision++
+    onMonitorWallpapersChanged: {
+        const revisions = Object.assign({}, monitorWallpaperRevisions);
+        for (const screen of Quickshell.screens) {
+            if (_findMonitorValue(previousMonitorWallpapers, screen.name) !== _findMonitorValue(monitorWallpapers, screen.name))
+                revisions[screen.name] = (revisions[screen.name] ?? 0) + 1;
+        }
+        previousMonitorWallpapers = monitorWallpapers;
+        monitorWallpaperRevisions = revisions;
+    }
+
+    function wallpaperRequestRevision(screenName) {
+        const inherited = !screenName || _findMonitorValue(monitorWallpapers, screenName) === undefined;
+        const mode = perModeWallpaper ? (isLightMode ? "light" : "dark") : "shared";
+        return mode + "/" + wallpaperScopeRevision + "/" + (inherited ? wallpaperRevision : 0) + "/" + (monitorWallpaperRevisions[screenName] ?? 0);
+    }
+
+    function invalidateWallpaperRequests(screenName) {
+        if (!screenName) {
+            wallpaperRevision++;
+            return;
+        }
+        const revisions = Object.assign({}, monitorWallpaperRevisions);
+        revisions[screenName] = (revisions[screenName] ?? 0) + 1;
+        monitorWallpaperRevisions = revisions;
+    }
+
     property string wallpaperPath: ""
     property bool perMonitorWallpaper: false
     property var monitorWallpapers: ({})
@@ -173,10 +216,12 @@ readonly property int sessionConfigVersion: 7
 
     property bool wallpaperCyclingEnabled: false
     property bool wallpaperCyclingRandom: false
+    property bool wallpaperCyclingRecursive: false
     property string wallpaperCyclingMode: "interval"
     property int wallpaperCyclingInterval: 300
     property string wallpaperCyclingTime: "06:00"
     property string wallpaperCyclingFolderPath: ""
+    property bool wallpaperCyclingVideoEnd: false
     property var monitorCyclingSettings: ({})
 
     property bool nightModeEnabled: false
@@ -253,7 +298,10 @@ readonly property int sessionConfigVersion: 7
     property var activeDisplayProfile: ({})
     property var activeDisplayProfileModes: ({})
     property var desktopWidgetGridSettings: ({})
+    property var lockScreenWidgetGridSettings: ({})
     property var desktopWidgetInstancePositions: ({})
+    property var lockScreenAutoPositions: ({})
+    property var greeterAutoPositions: ({})
     property var islandFreePositions: ({})
     property var builtInPluginState: ({})
     property bool greeterSyncPending: false
@@ -277,11 +325,6 @@ readonly property int sessionConfigVersion: 7
     function loadSettings() {
         _hasUnsavedChanges = false;
         _pendingMigration = null;
-
-        if (isGreeterMode) {
-            parseSettings(greeterSessionFile.text());
-            return;
-        }
 
         try {
             const txt = settingsFile.text();
@@ -321,7 +364,7 @@ readonly property int sessionConfigVersion: 7
             _loadedSessionSnapshot = getCurrentSessionJson();
             _hasLoaded = true;
 
-            if (!isGreeterMode && typeof Theme !== "undefined")
+            if (typeof Theme !== "undefined")
                 Theme.generateSystemThemesFromCurrentTheme();
 
             loaded();
@@ -404,7 +447,7 @@ readonly property int sessionConfigVersion: 7
             _loadedSessionSnapshot = getCurrentSessionJson();
             _hasLoaded = true;
 
-            if (!isGreeterMode && typeof Theme !== "undefined")
+            if (typeof Theme !== "undefined")
                 Theme.generateSystemThemesFromCurrentTheme();
 
             loaded();
@@ -437,7 +480,7 @@ readonly property int sessionConfigVersion: 7
     }
 
     function saveSettings() {
-        if (isGreeterMode || _parseError || !_hasLoaded)
+        if (_parseError || !_hasLoaded)
             return;
         settingsFile.setText(getCurrentSessionJson());
         if (_isReadOnly)
@@ -549,25 +592,43 @@ readonly property int sessionConfigVersion: 7
         saveSettings();
     }
 
-    function getDesktopWidgetGridSetting(screenKey, property, defaultValue) {
-        const val = desktopWidgetGridSettings?.[screenKey]?.[property];
+    function getWidgetGridSetting(lockScreen, screenKey, property, defaultValue) {
+        const store = lockScreen ? lockScreenWidgetGridSettings : desktopWidgetGridSettings;
+        const val = store?.[screenKey]?.[property];
         return val !== undefined ? val : defaultValue;
     }
 
-    function setDesktopWidgetGridSetting(screenKey, property, value) {
-        const allSettings = JSON.parse(JSON.stringify(desktopWidgetGridSettings || {}));
+    function setWidgetGridSetting(lockScreen, screenKey, property, value) {
+        const allSettings = JSON.parse(JSON.stringify((lockScreen ? lockScreenWidgetGridSettings : desktopWidgetGridSettings) || {}));
         if (!allSettings[screenKey])
             allSettings[screenKey] = {};
         allSettings[screenKey][property] = value;
-        desktopWidgetGridSettings = allSettings;
+        if (lockScreen)
+            lockScreenWidgetGridSettings = allSettings;
+        else
+            desktopWidgetGridSettings = allSettings;
         saveSettings();
+    }
+
+    readonly property var widgetAnchorKeys: ({
+            x: "anchorX",
+            y: "anchorY"
+        })
+
+    function mergedWidgetPosition(current, updates) {
+        const merged = Object.assign({}, current || {}, updates);
+        for (const key in merged) {
+            if (merged[key] === undefined)
+                delete merged[key];
+        }
+        return merged;
     }
 
     function updateDesktopWidgetInstancePosition(instanceId, screenKey, positionUpdates) {
         const updated = JSON.parse(JSON.stringify(desktopWidgetInstancePositions));
         if (!updated[instanceId])
             updated[instanceId] = {};
-        updated[instanceId][screenKey] = Object.assign({}, updated[instanceId][screenKey] || {}, positionUpdates);
+        updated[instanceId][screenKey] = mergedWidgetPosition(updated[instanceId][screenKey], positionUpdates);
         desktopWidgetInstancePositions = updated;
         saveSettings();
     }
@@ -607,12 +668,69 @@ readonly property int sessionConfigVersion: 7
             synced.width = sourcePos.width;
         if (sourcePos.height !== undefined)
             synced.height = sourcePos.height;
+        if (sourcePos.anchorX !== undefined)
+            synced.anchorX = sourcePos.anchorX;
+        if (sourcePos.anchorY !== undefined)
+            synced.anchorY = sourcePos.anchorY;
         const updated = JSON.parse(JSON.stringify(desktopWidgetInstancePositions));
         updated[instanceId]["_synced"] = synced;
         desktopWidgetInstancePositions = updated;
         saveSettings();
     }
 
+    function setGreeterAutoPositions(screenKey, placement) {
+        if (JSON.stringify(greeterAutoPositions[screenKey] ?? null) === JSON.stringify(placement))
+            return;
+        const updated = Object.assign({}, greeterAutoPositions);
+        updated[screenKey] = placement;
+        greeterAutoPositions = updated;
+        saveSettings();
+    }
+    function setLockScreenAutoPositions(screenKey, placement) {
+        if (JSON.stringify(lockScreenAutoPositions[screenKey] ?? null) === JSON.stringify(placement))
+            return;
+        const updated = Object.assign({}, lockScreenAutoPositions);
+        updated[screenKey] = placement;
+        lockScreenAutoPositions = updated;
+        saveSettings();
+    }
+
+    function copyDesktopWidgetInstancePositions(fromId, toId) {
+        const source = desktopWidgetInstancePositions[fromId];
+        if (!source)
+            return;
+        const updated = JSON.parse(JSON.stringify(desktopWidgetInstancePositions));
+        updated[toId] = JSON.parse(JSON.stringify(source));
+        desktopWidgetInstancePositions = updated;
+        saveSettings();
+    }
+    // Detached greeter clocks keep the spot the lock screen picked for them.
+    function pinPublishedLockPosition(fromId, toId, synced) {
+        const updated = JSON.parse(JSON.stringify(desktopWidgetInstancePositions));
+        let pinned = false;
+        for (const screenKey in lockScreenAutoPositions) {
+            const entry = lockScreenAutoPositions[screenKey];
+            const position = entry?.positions?.[fromId];
+            if (!position || !(entry.width > 0) || !(entry.height > 0))
+                continue;
+            const key = synced ? "_synced" : screenKey;
+            if (!updated[toId])
+                updated[toId] = {};
+            updated[toId][key] = mergedWidgetPosition(updated[toId][key], {
+                x: synced ? position.x / entry.width : position.x,
+                y: synced ? position.y / entry.height : position.y,
+                anchorX: undefined,
+                anchorY: undefined
+            });
+            pinned = true;
+            if (synced)
+                break;
+        }
+        if (!pinned)
+            return;
+        desktopWidgetInstancePositions = updated;
+        saveSettings();
+    }
     function removeDesktopWidgetInstancePositions(instanceId) {
         if (!(instanceId in desktopWidgetInstancePositions))
             return;
@@ -627,8 +745,11 @@ readonly property int sessionConfigVersion: 7
             return;
         const updated = JSON.parse(JSON.stringify(desktopWidgetInstancePositions));
         for (const screenKey in updated[instanceId]) {
-            for (const key of keys)
+            for (const key of keys) {
                 delete updated[instanceId][screenKey][key];
+                if (key in widgetAnchorKeys)
+                    delete updated[instanceId][screenKey][widgetAnchorKeys[key]];
+            }
         }
         desktopWidgetInstancePositions = updated;
         saveSettings();
@@ -643,32 +764,9 @@ readonly property int sessionConfigVersion: 7
 
     function migrateFromUndefinedToV1(settings) {
         if (typeof SettingsData !== "undefined") {
-            if (settings.acMonitorTimeout !== undefined) {
-                SettingsData.set("acMonitorTimeout", settings.acMonitorTimeout);
-            }
-            if (settings.acLockTimeout !== undefined) {
-                SettingsData.set("acLockTimeout", settings.acLockTimeout);
-            }
-            if (settings.acSuspendTimeout !== undefined) {
-                SettingsData.set("acSuspendTimeout", settings.acSuspendTimeout);
-            }
-            if (settings.batteryMonitorTimeout !== undefined) {
-                SettingsData.set("batteryMonitorTimeout", settings.batteryMonitorTimeout);
-            }
-            if (settings.batteryLockTimeout !== undefined) {
-                SettingsData.set("batteryLockTimeout", settings.batteryLockTimeout);
-            }
-            if (settings.batterySuspendTimeout !== undefined) {
-                SettingsData.set("batterySuspendTimeout", settings.batterySuspendTimeout);
-            }
-            if (settings.lockBeforeSuspend !== undefined) {
-                SettingsData.set("lockBeforeSuspend", settings.lockBeforeSuspend);
-            }
-            if (settings.loginctlLockIntegration !== undefined) {
-                SettingsData.set("loginctlLockIntegration", settings.loginctlLockIntegration);
-            }
-            if (settings.launchPrefix !== undefined) {
-                SettingsData.set("launchPrefix", settings.launchPrefix);
+            for (const key of ["acMonitorTimeout", "acLockTimeout", "acSuspendTimeout", "batteryMonitorTimeout", "batteryLockTimeout", "batterySuspendTimeout", "lockBeforeSuspend", "loginctlLockIntegration", "launchPrefix"]) {
+                if (settings[key] !== undefined && !SettingsData.isManaged(key))
+                    SettingsData.set(key, settings[key]);
             }
         }
         if (typeof CacheData !== "undefined") {
@@ -733,8 +831,6 @@ readonly property int sessionConfigVersion: 7
     }
 
     function _screenShareShouldHold() {
-        if (isGreeterMode)
-            return false;
         if (typeof SettingsData === "undefined" || !SettingsData.notificationDndWhileScreenSharing)
             return false;
         if (typeof PrivacyService === "undefined" || !PrivacyService.screensharingActive)
@@ -783,9 +879,6 @@ readonly property int sessionConfigVersion: 7
     }
 
     function syncScreenShareDnd() {
-        if (isGreeterMode)
-            return;
-
         if (!_screenShareShouldHold()) {
             if (!doNotDisturbHeldByScreenShare && !screenShareDndDismissed)
                 return;
@@ -860,7 +953,152 @@ readonly property int sessionConfigVersion: 7
     }
 
     function clearWallpaper() {
-        wallpaperPath = "";
+        setWallpaper("");
+    }
+
+    function materialWallpaperTarget(screenName) {
+        const screen = perMonitorWallpaper ? _screenByName(screenName) : null;
+        return {
+            screen: perMonitorWallpaper ? screenName : "",
+            key: screen ? SettingsData.getScreenDisplayName(screen) : "",
+            separate: perModeWallpaper,
+            light: isLightMode,
+            perMonitor: perMonitorWallpaper
+        };
+    }
+
+    function materialWallpaperTargetAvailable(target) {
+        if (!target || target.separate !== perModeWallpaper || target.perMonitor !== perMonitorWallpaper)
+            return false;
+        if (!target.perMonitor)
+            return true;
+        const screen = _screenByName(target.screen);
+        return !!screen && SettingsData.getScreenDisplayName(screen) === target.key;
+    }
+
+    function materialWallpaperEntry(target) {
+        const slot = target.separate ? (target.light ? "light" : "dark") : "shared";
+        const inherits = !target.perMonitor || _findMonitorValue(monitorWallpapers, target.screen) === undefined;
+        const slots = inherits ? materialWallpapers[""] : _findMonitorValue(materialWallpapers, target.screen);
+        const key = inherits ? "" : target.key;
+        return MaterialWallpaper.entry({
+            "": materialWallpapers[""],
+            [key]: slots
+        }, key, slot);
+    }
+
+    function getMonitorMaterialWallpaper(screenName) {
+        return MaterialWallpaper.composition(materialWallpaperEntry(materialWallpaperTarget(screenName)), materialWallpaperProfiles);
+    }
+
+    function writeMonitorWallpaper(map, screenName, path, inherit = false) {
+        const screen = _screenByName(screenName);
+        if (!screen)
+            return map;
+        const identifier = SettingsData.getScreenDisplayName(screen);
+        const next = Object.assign({}, map);
+        delete next[screen.name];
+        if (screen.model)
+            delete next[screen.model];
+        delete next[identifier];
+        if (!inherit)
+            next[identifier] = path;
+        return next;
+    }
+
+    function setMaterialWallpaperPreset(target, preset) {
+        return setMaterialWallpaper(target, Object.assign({}, materialWallpaperEntry(target), {
+            preset
+        }));
+    }
+
+    function setMaterialWallpaperSeed(target, seed) {
+        if (!MaterialWallpaper.validSeed(seed))
+            return false;
+        return setMaterialWallpaper(target, Object.assign({}, materialWallpaperEntry(target), {
+            seed
+        }));
+    }
+
+    function setMaterialWallpaper(target, value) {
+        if (!materialWallpaperTargetAvailable(target))
+            return false;
+        const entry = MaterialWallpaper.normalizeEntry(value);
+        const slot = target.separate ? (target.light ? "light" : "dark") : "shared";
+        let store = Object.assign({}, materialWallpapers);
+        const existingSlots = target.perMonitor ? _findMonitorValue(store, target.screen) : store[""];
+        const slots = Object.assign({}, existingSlots ?? {});
+        slots[slot] = entry;
+        if (target.perMonitor)
+            store = writeMonitorWallpaper(store, target.screen, slots);
+        else
+            store[""] = slots;
+        materialWallpapers = store;
+        invalidateWallpaperRequests(target.screen);
+        if (target.perMonitor) {
+            setMonitorCyclingEnabled(target.screen, false);
+            setMonitorCyclingFolderPath(target.screen, "");
+            if (target.separate) {
+                if (target.light)
+                    monitorWallpapersLight = writeMonitorWallpaper(monitorWallpapersLight, target.screen, "");
+                else
+                    monitorWallpapersDark = writeMonitorWallpaper(monitorWallpapersDark, target.screen, "");
+            }
+            if (!target.separate || target.light === isLightMode)
+                monitorWallpapers = writeMonitorWallpaper(monitorWallpapers, target.screen, "");
+        } else {
+            wallpaperCyclingEnabled = false;
+            wallpaperCyclingFolderPath = "";
+            if (target.separate) {
+                if (target.light)
+                    wallpaperPathLight = "";
+                else
+                    wallpaperPathDark = "";
+            }
+            if (!target.separate || target.light === isLightMode)
+                wallpaperPath = "";
+        }
+        saveSettings();
+        if ((!target.separate || target.light === isLightMode) && (!target.perMonitor || target.screen === Theme.wallpaperSourceScreen))
+            Theme.generateSystemThemesFromCurrentTheme();
+        return true;
+    }
+
+    function materialWallpaperProfileList() {
+        return MaterialWallpaper.profiles(materialWallpaperProfiles);
+    }
+
+    function addMaterialWallpaperProfile(layout, fallbackName = "") {
+        const normalized = MaterialWallpaper.normalizeLayout(layout);
+        if (!normalized)
+            return "";
+        const id = MaterialWallpaper.profileId(normalized.name || fallbackName, materialWallpaperProfiles);
+        if (!normalized.name)
+            normalized.name = fallbackName || id;
+        materialWallpaperProfiles = Object.assign({}, materialWallpaperProfiles, {
+            [id]: normalized
+        });
+        saveSettings();
+        return id;
+    }
+
+    function removeMaterialWallpaperProfile(id) {
+        const store = Object.assign({}, materialWallpaperProfiles);
+        if (MaterialWallpaper.builtinIds.includes(id))
+            store[id] = null;
+        else
+            delete store[id];
+        materialWallpaperProfiles = store;
+        saveSettings();
+    }
+
+    function restoreMaterialWallpaperProfiles() {
+        const store = {};
+        for (const id of Object.keys(materialWallpaperProfiles)) {
+            if (materialWallpaperProfiles[id])
+                store[id] = materialWallpaperProfiles[id];
+        }
+        materialWallpaperProfiles = store;
         saveSettings();
     }
 
@@ -877,6 +1115,21 @@ readonly property int sessionConfigVersion: 7
     }
 
     function setPerModeWallpaper(enabled) {
+        if (enabled === perModeWallpaper)
+            return;
+        const compositions = {};
+        const mode = isLightMode ? "light" : "dark";
+        for (const key of Object.keys(materialWallpapers)) {
+            const slots = materialWallpapers[key];
+            const entry = MaterialWallpaper.entry(materialWallpapers, key, perModeWallpaper ? mode : "shared");
+            compositions[key] = enabled ? Object.assign({}, slots, {
+                light: entry,
+                dark: entry
+            }) : Object.assign({}, slots, {
+                shared: entry
+            });
+        }
+        materialWallpapers = compositions;
         if (enabled && wallpaperCyclingEnabled) {
             setWallpaperCyclingEnabled(false);
         }
@@ -917,62 +1170,16 @@ readonly property int sessionConfigVersion: 7
     }
 
     function setMonitorWallpaper(screenName, path) {
-        var screen = null;
-        var screens = Quickshell.screens;
-        for (var i = 0; i < screens.length; i++) {
-            if (screens[i].name === screenName) {
-                screen = screens[i];
-                break;
-            }
-        }
-
-        if (!screen) {
+        if (!_screenByName(screenName)) {
             log.warn("Screen not found");
             return;
         }
-
-        var identifier = typeof SettingsData !== "undefined" ? SettingsData.getScreenDisplayName(screen) : screen.name;
-
-        var newMonitorWallpapers = {};
-        for (var key in monitorWallpapers) {
-            var isThisScreen = key === screen.name || (screen.model && key === screen.model);
-            if (!isThisScreen) {
-                newMonitorWallpapers[key] = monitorWallpapers[key];
-            }
-        }
-
-        if (path && path !== "") {
-            newMonitorWallpapers[identifier] = path;
-        }
-
-        monitorWallpapers = newMonitorWallpapers;
-
+        monitorWallpapers = writeMonitorWallpaper(monitorWallpapers, screenName, path, !path);
         if (perModeWallpaper) {
-            if (isLightMode) {
-                var newLight = {};
-                for (var key in monitorWallpapersLight) {
-                    var isThisScreen = key === screen.name || (screen.model && key === screen.model);
-                    if (!isThisScreen) {
-                        newLight[key] = monitorWallpapersLight[key];
-                    }
-                }
-                if (path && path !== "") {
-                    newLight[identifier] = path;
-                }
-                monitorWallpapersLight = newLight;
-            } else {
-                var newDark = {};
-                for (var key in monitorWallpapersDark) {
-                    var isThisScreen = key === screen.name || (screen.model && key === screen.model);
-                    if (!isThisScreen) {
-                        newDark[key] = monitorWallpapersDark[key];
-                    }
-                }
-                if (path && path !== "") {
-                    newDark[identifier] = path;
-                }
-                monitorWallpapersDark = newDark;
-            }
+            if (isLightMode)
+                monitorWallpapersLight = writeMonitorWallpaper(monitorWallpapersLight, screenName, path, !path);
+            else
+                monitorWallpapersDark = writeMonitorWallpaper(monitorWallpapersDark, screenName, path, !path);
         }
 
         saveSettings();
@@ -1003,6 +1210,11 @@ readonly property int sessionConfigVersion: 7
         saveSettings();
     }
 
+    function setWallpaperCyclingRecursive(recursive) {
+        wallpaperCyclingRecursive = recursive;
+        saveSettings();
+    }
+
     function setWallpaperCyclingMode(mode) {
         wallpaperCyclingMode = mode;
         saveSettings();
@@ -1015,6 +1227,11 @@ readonly property int sessionConfigVersion: 7
 
     function setWallpaperCyclingTime(time) {
         wallpaperCyclingTime = time;
+        saveSettings();
+    }
+
+    function setWallpaperCyclingVideoEnd(enabled) {
+        wallpaperCyclingVideoEnd = enabled;
         saveSettings();
     }
 
@@ -1047,6 +1264,10 @@ readonly property int sessionConfigVersion: 7
         updateMonitorCyclingSetting(screenName, "random", random);
     }
 
+    function setMonitorCyclingRecursive(screenName, recursive) {
+        updateMonitorCyclingSetting(screenName, "recursive", recursive);
+    }
+
     function setMonitorCyclingMode(screenName, mode) {
         updateMonitorCyclingSetting(screenName, "mode", mode);
     }
@@ -1061,6 +1282,10 @@ readonly property int sessionConfigVersion: 7
 
     function setMonitorCyclingFolderPath(screenName, folderPath) {
         updateMonitorCyclingSetting(screenName, "folderPath", folderPath);
+    }
+
+    function setMonitorCyclingVideoEnd(screenName, enabled) {
+        updateMonitorCyclingSetting(screenName, "videoEnd", enabled);
     }
 
     function setNightModeEnabled(enabled) {
@@ -1262,6 +1487,15 @@ readonly property int sessionConfigVersion: 7
         saveSettings();
     }
 
+    function removeRecentColor(color) {
+        const colorStr = color.toString();
+        const recent = recentColors.filter(c => c !== colorStr);
+        if (recent.length === recentColors.length)
+            return;
+        recentColors = recent;
+        saveSettings();
+    }
+
     function setShowThirdPartyPlugins(enabled) {
         showThirdPartyPlugins = enabled;
         saveSettings();
@@ -1280,7 +1514,7 @@ readonly property int sessionConfigVersion: 7
     function setPluginBrowserSortMode(mode) {
         if (mode === "type" || mode === "contributor")
             mode = "author";
-        if (mode !== "default" && mode !== "name" && mode !== "author" && mode !== "category")
+        if (mode !== "default" && mode !== "recommended" && mode !== "name" && mode !== "author" && mode !== "category")
             mode = "default";
         pluginBrowserSortMode = mode;
         saveSettings();
@@ -1483,7 +1717,15 @@ readonly property int sessionConfigVersion: 7
         saveSettings();
     }
 
+    function clearLauncherHistory() {
+        launcherLastQuery = "";
+        launcherQueryHistory = [];
+        saveSettings();
+    }
+
     function addLauncherHistory(query, skipLastQuery) {
+        if (!SettingsData.launcherHistoryEnabled)
+            return;
         let q = query.trim();
 
         if (!skipLastQuery)
@@ -1565,6 +1807,11 @@ readonly property int sessionConfigVersion: 7
         return value !== undefined ? value : wallpaperPath;
     }
 
+    // Still-image surfaces (lock screen, blur) show a video wallpaper through its extracted frame.
+    function getMonitorWallpaperImage(screenName) {
+        return VideoWallpaperService.imageFor(getMonitorWallpaper(screenName));
+    }
+
     function getMonitorWallpaperFillMode(screenName) {
         var globalFillMode = (typeof SettingsData !== "undefined") ? SettingsData.wallpaperFillMode : "Fill";
         if (!perMonitorWallpaper)
@@ -1604,6 +1851,7 @@ readonly property int sessionConfigVersion: 7
         var defaults = {
             "enabled": false,
             "random": false,
+            "recursive": false,
             "mode": "interval",
             "interval": 300,
             "time": "06:00",
@@ -1616,53 +1864,18 @@ readonly property int sessionConfigVersion: 7
     FileView {
         id: settingsFile
 
-        path: isGreeterMode ? "" : StandardPaths.writableLocation(StandardPaths.GenericStateLocation) + "/DankMaterialShell/session.json"
+        path: StandardPaths.writableLocation(StandardPaths.GenericStateLocation) + "/dms/session.json"
         blockLoading: true
         blockWrites: true
         atomicWrites: true
-        watchChanges: !isGreeterMode
+        watchChanges: true
         onLoaded: {
-            if (isGreeterMode)
-                return;
             _hasUnsavedChanges = false;
             parseSettings(settingsFile.text());
         }
         onSaveFailed: error => {
             root._isReadOnly = true;
             root._hasUnsavedChanges = root._checkForUnsavedChanges();
-        }
-    }
-
-    readonly property string _greeterCacheDir: Quickshell.env("DMS_GREET_CFG_DIR") || "/var/cache/dms-greeter"
-
-    property string greeterSessionBaseDir: root._greeterCacheDir
-
-    function setGreeterSessionBaseDir(dir) {
-        const next = dir || root._greeterCacheDir;
-        if (greeterSessionBaseDir === next)
-            return;
-        greeterSessionBaseDir = next;
-        if (isGreeterMode)
-            greeterSessionFile.reload();
-    }
-
-    function resetGreeterSessionBaseDir() {
-        setGreeterSessionBaseDir(root._greeterCacheDir);
-    }
-
-    FileView {
-        id: greeterSessionFile
-
-        path: root.greeterSessionBaseDir ? (root.greeterSessionBaseDir + "/session.json") : ""
-        preload: isGreeterMode
-        blockLoading: false
-        blockWrites: true
-        watchChanges: false
-        printErrors: true
-        onLoaded: {
-            if (isGreeterMode) {
-                parseSettings(greeterSessionFile.text());
-            }
         }
     }
 

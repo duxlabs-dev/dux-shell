@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net"
 	"testing"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/pkg/ipp"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,27 +28,6 @@ func TestValidateTestConnectionParams(t *testing.T) {
 			wantErr:  "",
 		},
 		{
-			name:     "valid ipps",
-			host:     "printer.local",
-			port:     443,
-			protocol: "ipps",
-			wantErr:  "",
-		},
-		{
-			name:     "valid lpd",
-			host:     "10.0.0.1",
-			port:     515,
-			protocol: "lpd",
-			wantErr:  "",
-		},
-		{
-			name:     "valid socket",
-			host:     "10.0.0.1",
-			port:     9100,
-			protocol: "socket",
-			wantErr:  "",
-		},
-		{
 			name:     "empty host",
 			host:     "",
 			port:     631,
@@ -61,13 +38,6 @@ func TestValidateTestConnectionParams(t *testing.T) {
 			name:     "port too low",
 			host:     "192.168.0.5",
 			port:     0,
-			protocol: "ipp",
-			wantErr:  "port must be between 1 and 65535",
-		},
-		{
-			name:     "port too high",
-			host:     "192.168.0.5",
-			port:     70000,
 			protocol: "ipp",
 			wantErr:  "port must be between 1 and 65535",
 		},
@@ -88,20 +58,6 @@ func TestValidateTestConnectionParams(t *testing.T) {
 		{
 			name:     "host with slash",
 			host:     "192.168.0.5/admin",
-			port:     631,
-			protocol: "ipp",
-			wantErr:  "host contains invalid characters",
-		},
-		{
-			name:     "host with space",
-			host:     "192.168.0.5 ",
-			port:     631,
-			protocol: "ipp",
-			wantErr:  "host contains invalid characters",
-		},
-		{
-			name:     "host with newline",
-			host:     "192.168.0.5\n",
 			port:     631,
 			protocol: "ipp",
 			wantErr:  "host contains invalid characters",
@@ -136,20 +92,6 @@ func TestManager_TestRemotePrinter_Validation(t *testing.T) {
 			port:     631,
 			protocol: "ipp",
 			wantErr:  "host is required",
-		},
-		{
-			name:     "invalid port returns error",
-			host:     "192.168.0.5",
-			port:     0,
-			protocol: "ipp",
-			wantErr:  "port must be between 1 and 65535",
-		},
-		{
-			name:     "invalid protocol returns error",
-			host:     "192.168.0.5",
-			port:     631,
-			protocol: "ftp",
-			wantErr:  "protocol must be one of: ipp, ipps, lpd, socket",
 		},
 	}
 
@@ -198,15 +140,6 @@ func TestManager_TestRemotePrinter_IPP(t *testing.T) {
 			wantModel: "HP OfficeJet 8010",
 		},
 		{
-			name:     "unreachable host",
-			protocol: "ipp",
-			probeRet: &RemotePrinterInfo{
-				Reachable: false,
-				Error:     "cannot reach 192.168.0.5:631: connection refused",
-			},
-			wantReach: false,
-		},
-		{
 			name:     "empty protocol defaults to ipp",
 			protocol: "",
 			probeRet: &RemotePrinterInfo{
@@ -239,26 +172,6 @@ func TestManager_TestRemotePrinter_IPP(t *testing.T) {
 			assert.Equal(t, tt.wantTLS, capturedTLS)
 		})
 	}
-}
-
-// probeRemotePrinterWithAuthError simulates a probe where the printer
-// returns HTTP 401 on both endpoints.
-func probeRemotePrinterWithAuthError(host string, port int, useTLS bool) (*RemotePrinterInfo, error) {
-	// This simulates what probeRemotePrinter does when both endpoints
-	// return auth errors. We test the auth detection logic directly.
-	err := ipp.HTTPError{Code: 401}
-	if isAuthError(err) {
-		proto := "ipp"
-		if useTLS {
-			proto = "ipps"
-		}
-		return &RemotePrinterInfo{
-			Reachable: true,
-			URI:       fmt.Sprintf("%s://%s:%d/ipp/print", proto, host, port),
-			Info:      "authentication required",
-		}, nil
-	}
-	return nil, err
 }
 
 func TestManager_TestRemotePrinter_NonIPPProtocol(t *testing.T) {

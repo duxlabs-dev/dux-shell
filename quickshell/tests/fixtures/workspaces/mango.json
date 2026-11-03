@@ -18,7 +18,7 @@
             "HDMI-A-1": {
                 "tags": [
                     { "tag": 0, "state": 1, "clients": 0, "focused": true },
-                    { "tag": 1, "state": 1, "clients": 0, "focused": false },
+                    { "tag": 1, "state": 1, "clients": 0, "focused": false, "urgent": true },
                     { "tag": 2, "state": 0, "clients": 4, "focused": false }
                 ],
                 "activeTags": [0, 1],
@@ -36,8 +36,8 @@
             }
         },
         "windows": [
-            { "appId": "alacritty", "mangoTags": [3] },
-            { "appId": "firefox", "mangoTags": [2, 3] },
+            { "appId": "alacritty", "mangoMonitor": "DP-1", "mangoTags": [3] },
+            { "appId": "firefox", "mangoMonitor": "DP-1", "mangoTags": [2, 3] },
             { "appId": "untagged" }
         ]
     },

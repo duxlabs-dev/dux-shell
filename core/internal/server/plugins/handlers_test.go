@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/net"
-	coreplugins "github.com/AvengeMedia/DankMaterialShell/core/internal/plugins"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/mocks/net"
+	coreplugins "github.com/duxlabs-dev/dux-shell/core/internal/plugins"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -34,32 +34,6 @@ func TestHandleInstallMissingName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, resp.Error)
 	assert.Contains(t, resp.Error, "missing or invalid 'name' parameter")
-}
-
-func TestHandleInstallInvalidName(t *testing.T) {
-	mc := net.NewMockConn(t)
-	mc.EXPECT().SetWriteDeadline(mock.Anything).Return(nil).Maybe()
-	conn := ipc.NewConnWriter(mc)
-	var written []byte
-	mc.EXPECT().Write(mock.Anything).RunAndReturn(func(b []byte) (int, error) {
-		written = b
-		return len(b), nil
-	}).Maybe()
-
-	req := ipc.Request{
-		ID:     123,
-		Method: "plugins.install",
-		Params: map[string]any{
-			"name": 123,
-		},
-	}
-
-	HandleInstall(conn, req)
-
-	var resp ipc.Response[SuccessResult]
-	err := json.Unmarshal(written, &resp)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, resp.Error)
 }
 
 func TestHandleUninstallMissingName(t *testing.T) {
@@ -190,10 +164,50 @@ func TestPluginInfoFromPluginIncludesScreenshot(t *testing.T) {
 	info := pluginInfoFromPlugin(coreplugins.Plugin{
 		ID:         "dankVault",
 		Name:       "Vault",
-		Repo:       "https://github.com/AvengeMedia/dms-plugins",
-		Screenshot: "https://github.com/AvengeMedia/dms-plugins/blob/master/DankNotepadModule/screenshot.png",
+		Repo:       "https://github.com/duxlabs-dev/dux-plugins",
+		Screenshot: "https://github.com/duxlabs-dev/dux-plugins/blob/master/DankNotepadModule/screenshot.png",
 	})
 
-	assert.Equal(t, "https://raw.githubusercontent.com/AvengeMedia/dms-plugins/master/DankNotepadModule/screenshot.png", info.Screenshot)
+	assert.Equal(t, "https://raw.githubusercontent.com/duxlabs-dev/dux-plugins/master/DankNotepadModule/screenshot.png", info.Screenshot)
 	assert.True(t, info.FirstParty)
+}
+
+func TestApplyFeedbackCarriesDirectoryMetadata(t *testing.T) {
+	info := pluginInfoFromPlugin(coreplugins.Plugin{ID: "demo", Name: "Demo"})
+
+	applyFeedback(&info, coreplugins.Feedback{
+		Upvotes:     7,
+		Status:      []string{"reviewed"},
+		IssueURL:    "https://example.com/issues/1",
+		Similar:     []string{"other"},
+		Version:     "1.2.0",
+		Icon:        "extension",
+		Permissions: []string{"settings_read"},
+		CreatedAt:   "2026-01-02T03:04:05Z",
+		UpdatedAt:   "2026-02-03T04:05:06Z",
+	})
+
+	raw, err := json.Marshal(info)
+	assert.NoError(t, err)
+
+	var decoded map[string]any
+	assert.NoError(t, json.Unmarshal(raw, &decoded))
+	assert.Equal(t, float64(7), decoded["upvotes"])
+	assert.Equal(t, "1.2.0", decoded["version"])
+	assert.Equal(t, "extension", decoded["icon"])
+	assert.Equal(t, []any{"settings_read"}, decoded["permissions"])
+	assert.Equal(t, "2026-01-02T03:04:05Z", decoded["created_at"])
+	assert.Equal(t, "2026-02-03T04:05:06Z", decoded["updated_at"])
+}
+
+func TestApplyFeedbackOmitsMissingMetadata(t *testing.T) {
+	info := pluginInfoFromPlugin(coreplugins.Plugin{ID: "demo", Name: "Demo"})
+
+	applyFeedback(&info, coreplugins.Feedback{})
+
+	raw, err := json.Marshal(info)
+	assert.NoError(t, err)
+	assert.NotContains(t, string(raw), "created_at")
+	assert.NotContains(t, string(raw), "updated_at")
+	assert.NotContains(t, string(raw), "version")
 }

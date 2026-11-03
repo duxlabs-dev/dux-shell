@@ -1,6 +1,6 @@
 # DMS Backend & CLI
 
-Go-based backend for DankMaterialShell providing system integration, IPC, and installation tools.
+Go-based backend for Dux Shell providing system integration, IPC, and installation tools.
 
 **See [root README](../README.md) for project overview and installation.**
 
@@ -9,7 +9,7 @@ Go-based backend for DankMaterialShell providing system integration, IPC, and in
 **dms CLI**
 Command-line interface and daemon for shell management and system control.
 
-**dankinstall**
+**duxinstall**
 Distribution-aware installer for deploying DMS and compositor configurations on Arch, Fedora, Debian, Ubuntu, openSUSE, Gentoo, and Void. Supports both an interactive TUI and a headless (unattended) mode via CLI flags.
 
 ## System Integration
@@ -78,7 +78,7 @@ Custom IPC via unix socket (JSON API) for shell communication.
 - `dms brightness [list|set]` - Control display/monitor brightness
 - `dms color pick` - Native color picker (see below)
 - `dms update` - Update DMS and dependencies (disabled in distro packages)
-- `dms greeter` - Deprecated; forwards to the standalone [dms-greeter](https://github.com/AvengeMedia/dank-greeter) binary
+- `dms greeter` - Deprecated; forwards to the standalone [dms-greeter](https://github.com/duxlabs-dev/dux-greeter) binary
 
 ### Color Picker
 
@@ -102,7 +102,7 @@ Requires Go 1.25+
 
 ```bash
 make              # Build dms CLI
-make dankinstall  # Build installer
+make duxinstall   # Build installer
 make test         # Run tests
 ```
 
@@ -132,27 +132,27 @@ This runs gofmt, golangci-lint, tests, and builds before each commit when `core/
 
 **Regenerating Wayland Protocol Bindings:**
 
-Protocol XML files live in `internal/proto/xml/`. Bindings are generated with the [dankgo](https://github.com/AvengeMedia/dankgo) `go-wayland-scanner`:
+Protocol XML files live in `internal/proto/xml/`. Bindings are generated with the [dankgo](https://github.com/duxlabs-dev/dux-go) `go-wayland-scanner`:
 
 ```bash
-go run github.com/AvengeMedia/dankgo/cmd/go-wayland-scanner@latest \
+go run github.com/duxlabs-dev/dux-go/cmd/go-wayland-scanner@latest \
   -i internal/proto/xml/wlr-gamma-control-unstable-v1.xml \
   -pkg wlr_gamma_control -o internal/proto/wlr_gamma_control/gamma_control.go
 ```
 
 **Module Structure:**
 
-- `cmd/` - Binary entrypoints (dms, dankinstall)
+- `cmd/` - Binary entrypoints (dms, duxinstall)
 - `internal/distros/` - Distribution-specific installation logic
 - `internal/proto/` - Wayland protocol bindings
 - `pkg/` - Shared packages
 
-## Installation via dankinstall
+## Installation via duxinstall
 
 **Interactive (TUI):**
 
 ```bash
-curl -fsSL https://install.danklinux.com | sh
+curl -fsSL https://install.duxlabs.dev | sh
 ```
 
 **Headless (unattended):**
@@ -160,9 +160,9 @@ curl -fsSL https://install.danklinux.com | sh
 Headless mode requires cached credentials or a passwordless rule for your privilege escalation tool (sudo, doas, or run0). With sudo, run `sudo -v` first:
 
 ```bash
-sudo -v && curl -fsSL https://install.danklinux.com | sh -s -- -c niri -t ghostty -y
-sudo -v && curl -fsSL https://install.danklinux.com | sh -s -- -c hyprland -t kitty --dms-greeter -y
-sudo -v && curl -fsSL https://install.danklinux.com | sh -s -- -c niri -t ghostty --git-deps niri,quickshell --all-features -y
+sudo -v && curl -fsSL https://install.duxlabs.dev | sh -s -- -c niri -t ghostty -y
+sudo -v && curl -fsSL https://install.duxlabs.dev | sh -s -- -c hyprland -t kitty --dux-greeter -y
+sudo -v && curl -fsSL https://install.duxlabs.dev | sh -s -- -c niri -t ghostty --git-deps niri,quickshell --all-features -y
 ```
 
 | Flag | Short | Description |
@@ -172,11 +172,12 @@ sudo -v && curl -fsSL https://install.danklinux.com | sh -s -- -c niri -t ghostt
 | `--privesc <sudo\|doas\|run0>` | | Privilege escalation tool (default: autodetect) |
 | `--git` | | Install the git version of every dependency that has one |
 | `--git-deps <name,...>` | | Install the git version of specific dependencies (e.g. `niri,quickshell`) |
-| `--all-features` | | Enable all optional dependencies (`dms-greeter`, `danksearch`, `dankcalendar`) |
-| `--dms-greeter` | | Install dms-greeter |
-| `--danksearch` | | Install danksearch and enable its user indexing service |
-| `--dankcalendar` | | Install dankcalendar |
-| `--include-deps <name,...>` | | Enable optional dependencies (e.g. `dms-greeter`) |
+| `--all-features` | | Enable all optional dependencies (`dux-greeter`, `dux-search`, `dux-calendar`, `dux-files`) |
+| `--dux-greeter` | | Install dux-greeter |
+| `--dux-search` | | Install dux-search and enable its user indexing service |
+| `--dux-calendar` | | Install dux-calendar |
+| `--dux-files` | | Install dux-files (dfiles file manager) |
+| `--include-deps <name,...>` | | Enable optional dependencies (e.g. `dux-greeter`) |
 | `--exclude-deps <name,...>` | | Skip specific dependencies |
 | `--replace-configs <name,...>` | | Replace specific configuration files (mutually exclusive with `--replace-configs-all`) |
 | `--replace-configs-all` | | Replace all configuration files (mutually exclusive with `--replace-configs`) |
@@ -184,22 +185,23 @@ sudo -v && curl -fsSL https://install.danklinux.com | sh -s -- -c niri -t ghostt
 
 Headless mode requires `--yes` to proceed; without it, the installer exits with an error.
 Configuration files are not replaced by default unless `--replace-configs` or `--replace-configs-all` is specified.
-Optional packages (`dms-greeter`, `danksearch`, `dankcalendar`) are disabled by default; enable them with their dedicated flags, `--include-deps`, or `--all-features`.
+Optional packages (`dux-greeter`, `dux-search`, `dux-calendar`, `dux-files`) are disabled by default; enable them with their dedicated flags, `--include-deps`, or `--all-features`.
+The old `--dms-greeter`, `--danksearch` and `--dankcalendar` flags and dependency names still work but are deprecated.
 
-When no flags are provided, `dankinstall` launches the interactive TUI.
+When no flags are provided, `duxinstall` launches the interactive TUI.
 
 ### Headless mode validation rules
 
 Headless mode activates when `--compositor` or `--term` is provided.
 
 - Both `--compositor` and `--term` are required; providing only one results in an error.
-- Headless-only flags (`--privesc`, `--git`, `--git-deps`, `--all-features`, `--include-deps`, `--exclude-deps`, `--replace-configs`, `--replace-configs-all`, `--yes`, `--danksearch`, `--dankcalendar`, `--dms-greeter`) are rejected in TUI mode.
+- Headless-only flags (`--privesc`, `--git`, `--git-deps`, `--all-features`, `--include-deps`, `--exclude-deps`, `--replace-configs`, `--replace-configs-all`, `--yes`, `--dux-search`, `--dux-calendar`, `--dux-files`, `--dux-greeter` and their deprecated aliases) are rejected in TUI mode.
 - Positional arguments are not accepted.
 
 ### Log file location
 
-`dankinstall` writes logs to `/tmp` by default.
-Set the `DANKINSTALL_LOG_DIR` environment variable to override the log directory.
+`duxinstall` writes logs to `/tmp` by default.
+Set the `DUXINSTALL_LOG_DIR` environment variable to override the log directory.
 
 ## Supported Distributions
 
@@ -210,7 +212,7 @@ Uses `pacman` for system packages, builds AUR packages via `makepkg`, no AUR hel
 
 **Fedora**
 
-Uses COPR repositories (`avengemedia/danklinux`, `avengemedia/dms`).
+Uses COPR repositories (`duxlabs/dux-repo`, plus `duxlabs/dms` or `duxlabs/dms-git` for git builds).
 
 **Ubuntu**
 Requires PPA support. Most packages built from source (slow first install).
@@ -225,6 +227,6 @@ Most packages available in standard repos. Minimal building required.
 Uses Portage with GURU overlay. Automatically configures USE flags. Variable success depending on system configuration.
 
 **Void Linux**
-Uses XBPS with the DMS and DankLinux self-hosted repositories.
+Uses XBPS with the DMS and Dux Labs self-hosted repositories.
 
 See installer output for distribution-specific details during installation.

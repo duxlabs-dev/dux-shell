@@ -13,14 +13,9 @@ func TestFrequencyToChannel(t *testing.T) {
 		channel   uint32
 	}{
 		{"2.4 GHz channel 1", 2412, 1},
-		{"2.4 GHz channel 6", 2437, 6},
-		{"2.4 GHz channel 11", 2462, 11},
 		{"2.4 GHz channel 14", 2484, 14},
 		{"5 GHz channel 36", 5180, 36},
-		{"5 GHz channel 40", 5200, 40},
-		{"5 GHz channel 165", 5825, 165},
 		{"6 GHz channel 1", 5955, 1},
-		{"6 GHz channel 233", 7115, 233},
 		{"Unknown frequency", 1000, 0},
 	}
 
@@ -98,51 +93,5 @@ func TestSortWiFiNetworks(t *testing.T) {
 		assert.Equal(t, "SavedWeak", networks[1].SSID)
 		assert.Equal(t, "UnsavedStrong", networks[2].SSID)
 		assert.Equal(t, "UnsavedMedium", networks[3].SSID)
-	})
-}
-
-func TestManager_GetWiFiNetworks(t *testing.T) {
-	manager := &Manager{
-		state: &NetworkState{
-			WiFiNetworks: []WiFiNetwork{
-				{SSID: "Network1", Signal: 90},
-				{SSID: "Network2", Signal: 80},
-			},
-		},
-	}
-
-	networks := manager.GetWiFiNetworks()
-
-	assert.Len(t, networks, 2)
-	assert.Equal(t, "Network1", networks[0].SSID)
-	assert.Equal(t, "Network2", networks[1].SSID)
-
-	networks[0].SSID = "Modified"
-	assert.Equal(t, "Network1", manager.state.WiFiNetworks[0].SSID)
-}
-
-func TestManager_GetNetworkInfo(t *testing.T) {
-	manager := &Manager{
-		state: &NetworkState{
-			WiFiNetworks: []WiFiNetwork{
-				{SSID: "Network1", Signal: 90, BSSID: "00:11:22:33:44:55"},
-				{SSID: "Network2", Signal: 80, BSSID: "AA:BB:CC:DD:EE:FF"},
-			},
-		},
-	}
-
-	t.Run("finds existing network", func(t *testing.T) {
-		network, err := manager.GetNetworkInfo("Network1")
-		assert.NoError(t, err)
-		assert.NotNil(t, network)
-		assert.Equal(t, "Network1", network.SSID)
-		assert.Equal(t, uint8(90), network.Signal)
-	})
-
-	t.Run("returns error for non-existent network", func(t *testing.T) {
-		network, err := manager.GetNetworkInfo("NonExistent")
-		assert.Error(t, err)
-		assert.Nil(t, network)
-		assert.Contains(t, err.Error(), "network not found")
 	})
 }

@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 SettingsRow {
     id: root
@@ -9,37 +9,31 @@ SettingsRow {
     property string description: ""
     property string minimumLabel: ""
     property real value: 0
-    property alias minimum: slider.minimum
-    property alias maximum: slider.maximum
-    property alias step: slider.step
-    property alias showStops: slider.showStops
-    property alias unit: slider.unit
-    property alias decimals: slider.decimals
-    property alias thumbOutlineColor: slider.thumbOutlineColor
-    property alias size: slider.size
+    property alias minimum: control.minimum
+    property alias maximum: control.maximum
+    property alias step: control.step
+    property alias showStops: control.showStops
+    property alias unit: control.unit
+    property alias decimals: control.decimals
+    property alias size: control.size
+    property alias trackGradient: control.trackGradient
 
-    readonly property bool atMinimum: minimumLabel !== "" && slider.value === slider.minimum
-    readonly property int stepAmount: Math.max(1, step)
+    readonly property bool atMinimum: minimumLabel !== "" && control.currentValue === control.minimum
+    readonly property int stepAmount: control.stepAmount
 
     signal sliderValueChanged(int newValue)
     signal sliderDragFinished(int finalValue)
 
     function nudge(direction) {
-        const next = Math.max(minimum, Math.min(maximum, slider.value + direction * stepAmount));
-        if (next === slider.value)
-            return;
-        slider.value = next;
-        sliderValueChanged(next);
-        sliderDragFinished(next);
+        control.nudge(direction);
     }
 
     function resync() {
-        slider.value = Math.round(value);
+        control.resync();
     }
 
     title: text
     subtitle: description
-    onValueChanged: resync()
 
     StyledText {
         text: root.minimumLabel
@@ -49,45 +43,16 @@ SettingsRow {
         anchors.verticalCenter: parent.verticalCenter
     }
 
-    body: Row {
+    body: SettingsSliderControl {
+        id: control
         width: parent.width
-        spacing: Theme.spacingS
-
-        DankActionButton {
-            buttonSize: Theme.iconButtonSize
-            iconName: "remove"
-            Accessible.name: I18n.tr("Decrease", "verb, minus button next to a settings slider")
-            iconSize: Theme.iconSizeMedium
-            iconColor: Theme.surfaceVariantText
-            enabled: root.enabled && slider.value > slider.minimum
-            anchors.verticalCenter: parent.verticalCenter
-            onClicked: root.nudge(-1)
-        }
-
-        DankSlider {
-            id: slider
-            Accessible.name: root.text
-            Accessible.description: root.description
-            size: "s"
-            width: parent.width - (Theme.iconButtonSize + parent.spacing) * 2
-            anchors.verticalCenter: parent.verticalCenter
-            enabled: root.enabled
-            showValue: !root.atMinimum
-            wheelEnabled: root.wheelEnabled
-            Component.onCompleted: value = Math.round(root.value)
-            onSliderValueChanged: newValue => root.sliderValueChanged(newValue)
-            onSliderDragFinished: finalValue => root.sliderDragFinished(finalValue)
-        }
-
-        DankActionButton {
-            buttonSize: Theme.iconButtonSize
-            iconName: "add"
-            Accessible.name: I18n.tr("Increase", "verb, plus button next to a settings slider")
-            iconSize: Theme.iconSizeMedium
-            iconColor: Theme.surfaceVariantText
-            enabled: root.enabled && slider.value < slider.maximum
-            anchors.verticalCenter: parent.verticalCenter
-            onClicked: root.nudge(1)
-        }
+        value: root.value
+        enabled: root.enabled
+        showValue: !root.atMinimum
+        wheelEnabled: root.wheelEnabled
+        accessibleName: root.text
+        accessibleDescription: root.description
+        onSliderValueChanged: newValue => root.sliderValueChanged(newValue)
+        onSliderDragFinished: finalValue => root.sliderDragFinished(finalValue)
     }
 }

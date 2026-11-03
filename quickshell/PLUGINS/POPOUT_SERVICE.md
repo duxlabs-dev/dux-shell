@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `PopoutService` singleton provides plugins with access to all DankMaterialShell popouts and modals. It's automatically injected into plugin widgets and daemons, enabling them to control shell UI elements.
+The `PopoutService` singleton provides plugins with access to all Dux Shell popouts and modals. It's automatically injected into plugin widgets and daemons, enabling them to control shell UI elements.
 
 ## Automatic Injection
 
@@ -71,7 +71,7 @@ Rectangle {
 
     width: 100
     height: 30
-    color: Theme.surfaceContainerHigh
+    color: Theme.chipSurface
     radius: Theme.cornerRadius
 
     MouseArea {

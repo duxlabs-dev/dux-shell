@@ -16,9 +16,8 @@ layout(std140, binding = 0) uniform buf {
     vec4 shadowColor;   // straight rgba; a = 0 disables both shadow terms
     vec4 shadowParam;   // key: x = blur px, y = spread px, z,w = offset px
     vec4 ambientParam;  // ambient: x = blur px, y = spread px, z = alpha
-    // Up to four chrome slots. rect = x,y,w,h (px). corner = per-corner radii,
-    // k = per-corner junction fillet radii (both topLeft, topRight, bottomRight,
-    // bottomLeft; a corner is sharp exactly where its k > 0). param = active, 0, 0, 0
+    // Six chrome slots: rect = x,y,w,h px; corner and k = per-corner radii and junction fillets (TL, TR, BR, BL),
+    // a corner is sharp exactly where its k > 0; param.x = active.
     vec4 chromeRect0;
     vec4 chromeCorner0;
     vec4 chromeK0;
@@ -35,6 +34,14 @@ layout(std140, binding = 0) uniform buf {
     vec4 chromeCorner3;
     vec4 chromeK3;
     vec4 chromeParam3;
+    vec4 chromeRect4;
+    vec4 chromeCorner4;
+    vec4 chromeK4;
+    vec4 chromeParam4;
+    vec4 chromeRect5;
+    vec4 chromeCorner5;
+    vec4 chromeK5;
+    vec4 chromeParam5;
 } ubuf;
 
 float sdRoundBox(vec2 p, vec2 c, vec2 hs, float r) {
@@ -80,6 +87,10 @@ float sceneDist(vec2 px) {
         d = smin(d, chromeDist(px, ubuf.chromeRect2, ubuf.chromeCorner2), chromeK(px, ubuf.chromeRect2, ubuf.chromeK2));
     if (ubuf.chromeParam3.x > 0.5)
         d = smin(d, chromeDist(px, ubuf.chromeRect3, ubuf.chromeCorner3), chromeK(px, ubuf.chromeRect3, ubuf.chromeK3));
+    if (ubuf.chromeParam4.x > 0.5)
+        d = smin(d, chromeDist(px, ubuf.chromeRect4, ubuf.chromeCorner4), chromeK(px, ubuf.chromeRect4, ubuf.chromeK4));
+    if (ubuf.chromeParam5.x > 0.5)
+        d = smin(d, chromeDist(px, ubuf.chromeRect5, ubuf.chromeCorner5), chromeK(px, ubuf.chromeRect5, ubuf.chromeK5));
     return d;
 }
 
@@ -87,6 +98,12 @@ void main() {
     vec2 px = qt_TexCoord0 * vec2(ubuf.widthPx, ubuf.heightPx);
     float d = sceneDist(px);
     float fw = max(fwidth(d), 1e-4);
+    // Most of the screen is the cutout interior, far from any edge: skip the shadow pass (a second sceneDist) there.
+    float reach = max(ubuf.shadowParam.x + ubuf.shadowParam.y + length(ubuf.shadowParam.zw), ubuf.ambientParam.x + ubuf.ambientParam.y) + fw;
+    if (d > reach) {
+        fragColor = vec4(0.0);
+        return;
+    }
     float cov = 1.0 - smoothstep(-fw, fw, d);
     vec4 col = vec4(ubuf.surfaceColor.rgb, 1.0) * cov;
     if (ubuf.shadowColor.a > 0.0) {

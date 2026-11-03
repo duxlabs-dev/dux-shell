@@ -1,9 +1,9 @@
 import QtQuick
 import Quickshell.Io
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
-import qs.Modules.DankDash
+import qs.Modules.DDash
 import qs.Services
 
 Item {
@@ -58,7 +58,6 @@ Item {
             SettingsToggleRow {
                 settingKey: "mediaScrollTitle"
                 tags: ["scroll", "title", "marquee"]
-                resetKeys: ["scrollTitleEnabled"]
                 text: I18n.tr("Scroll song title")
                 checked: SettingsData.scrollTitleEnabled
                 onToggled: checked => SettingsData.set("scrollTitleEnabled", checked)
@@ -67,7 +66,6 @@ Item {
             SettingsToggleRow {
                 settingKey: "mediaVisualizer"
                 tags: ["visualizer", "cava", "spectrum"]
-                resetKeys: ["audioVisualizerEnabled"]
                 text: I18n.tr("Audio visualizer")
                 checked: SettingsData.audioVisualizerEnabled
                 onToggled: checked => SettingsData.set("audioVisualizerEnabled", checked)
@@ -76,9 +74,8 @@ Item {
             SettingsToggleRow {
                 settingKey: "bluetoothMpris"
                 tags: ["bluetooth", "headphones", "media", "mpris", "avrcp"]
-                resetKeys: ["bluetoothMprisEnabled"]
                 text: I18n.tr("Bluetooth media controls", "Title for the setting that routes Bluetooth headset media buttons through DMS")
-                description: root.mprisProxyRunning ? I18n.tr("mpris-proxy is running and will create duplicate Bluetooth players. Disable it with: systemctl --user disable --now mpris-proxy.service", "Warning shown when the legacy BlueZ MPRIS proxy conflicts with DMS Bluetooth media controls") : I18n.tr("Route Bluetooth headset controls to the active DMS media player", "Description of how Bluetooth headset media buttons select a player")
+                description: root.mprisProxyRunning ? I18n.tr("%1 is running and will create duplicate Bluetooth players. Disable it with: %2", "Warning shown when the legacy BlueZ MPRIS proxy conflicts with DMS Bluetooth media controls, %1 is the service name, %2 a shell command").arg("mpris-proxy").arg("systemctl --user disable --now mpris-proxy.service") : I18n.tr("Route Bluetooth headset controls to the active DMS media player", "Description of how Bluetooth headset media buttons select a player")
                 descriptionColor: root.mprisProxyRunning ? Theme.error : Theme.surfaceVariantText
                 checked: SettingsData.bluetoothMprisEnabled
                 onToggled: checked => SettingsData.set("bluetoothMprisEnabled", checked)
@@ -88,8 +85,8 @@ Item {
                 title: I18n.tr("Dashboard")
                 hint: I18n.tr("Media")
                 iconName: "dashboard"
-                onClicked: {
-                    root.parentModal?.navigateTo("dank_dash");
+                onClicked: keyboard => {
+                    root.parentModal?.navigateTo("dank_dash", keyboard);
                     SettingsSearchService.navigateToSection("dashOptions:media");
                 }
             }
@@ -99,7 +96,7 @@ Item {
                 resetKeys: ["audioWheelScrollAmount"]
                 title: I18n.tr("Volume step")
 
-                DankTextField {
+                DTextField {
                     outlined: true
                     leftIconName: "volume_up"
                     width: Theme.fieldHeight * 2
@@ -140,7 +137,7 @@ Item {
             settingKey: "mediaLyricsProviders"
             tags: ["lyrics", "provider", "priority", "order", "source", "lrclib", "better lyrics", "unison", "lyricsplus", "kugou", "youtube music"]
 
-            headerActions: DankActionButton {
+            headerActions: DActionButton {
                 iconName: "restart_alt"
                 tooltipText: I18n.tr("Reset to default")
                 enabled: !SettingsData.isDefault(["mediaLyricsProviders"])
@@ -166,7 +163,7 @@ Item {
                     clickable: true
                     onClicked: MediaOptions.setLyricsProviderEnabled(modelData, !provider?.enabled)
 
-                    DankToggle {
+                    DToggle {
                         hideText: true
                         Accessible.name: providerRow.title
                         checked: providerRow.provider?.enabled ?? false
@@ -192,14 +189,14 @@ Item {
                 onAccepted: root.addExcludedPlayer()
 
                 actions: [
-                    DankIconButton {
+                    DIconButton {
                         variant: "filled"
                         iconName: "add"
                         Accessible.name: I18n.tr("Add")
                         enabled: excludeEditor.value.trim() !== ""
                         onClicked: root.addExcludedPlayer()
                     },
-                    DankIconButton {
+                    DIconButton {
                         iconName: "apps"
                         tooltipText: I18n.tr("Browse")
                         onClicked: appBrowserPopup.show()
@@ -217,7 +214,7 @@ Item {
                     title: modelData
                     iconName: "music_off"
 
-                    DankActionButton {
+                    DActionButton {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: "delete"
                         iconColor: Theme.error

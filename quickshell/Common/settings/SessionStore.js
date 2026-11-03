@@ -1,6 +1,6 @@
 .pragma library
 .import "./SessionSpec.js" as SpecModule
-.import "../../DankCommon/Common/settings/SpecUtil.js" as Util
+.import "../../DCommon/Common/settings/SpecUtil.js" as Util
 
 function parse(root, jsonObj) {
     var SPEC = SpecModule.SPEC;
@@ -110,23 +110,31 @@ function migrateToVersion(obj, targetVersion, settingsData) {
         console.info("SessionData: Tray keys now use a stable id (or id::instance) instead of id::tooltipTitle");
 
         function stripTrayKeys(list) {
-            if (!list || list.constructor !== Array) return list;
+            if (!list || list.constructor !== Array)
+                return list;
             var out = [];
             for (var i = 0; i < list.length; i++) {
                 var raw = list[i];
-                if (typeof raw !== "string") continue;
+                if (typeof raw !== "string")
+                    continue;
                 var key = raw.includes("::") ? raw.split("::")[0] : raw;
                 var hasDup = false;
                 for (var j = 0; j < out.length; j++) {
-                    if (out[j] === key) { hasDup = true; break; }
+                    if (out[j] === key) {
+                        hasDup = true;
+                        break;
+                    }
                 }
-                if (key && !hasDup) out.push(key);
+                if (key && !hasDup)
+                    out.push(key);
             }
             return out;
         }
 
-        if (session.hiddenTrayIds !== undefined) session.hiddenTrayIds = stripTrayKeys(session.hiddenTrayIds);
-        if (session.trayItemOrder !== undefined) session.trayItemOrder = stripTrayKeys(session.trayItemOrder);
+        if (session.hiddenTrayIds !== undefined)
+            session.hiddenTrayIds = stripTrayKeys(session.hiddenTrayIds);
+        if (session.trayItemOrder !== undefined)
+            session.trayItemOrder = stripTrayKeys(session.trayItemOrder);
         session.configVersion = 7;
     }
     return session;

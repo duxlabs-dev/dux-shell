@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 FocusScope {
     id: root
@@ -60,7 +60,7 @@ FocusScope {
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
-                DankTextField {
+                DTextField {
                     id: triggerField
                     width: 100
                     height: 40
@@ -103,7 +103,7 @@ FocusScope {
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
-                DankTextField {
+                DTextField {
                     id: maxNotesField
                     width: 80
                     height: 40

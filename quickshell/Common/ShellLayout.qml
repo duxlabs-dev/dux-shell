@@ -9,7 +9,8 @@ import "LayoutResolver.js" as Resolver
 Singleton {
     id: root
 
-    readonly property var screens: Quickshell.screens.map(screen => ({
+    property var realScreens: []
+    readonly property var screens: realScreens.map(screen => ({
                 name: screen.name,
                 model: screen.model,
                 x: screen.x,
@@ -19,16 +20,24 @@ Singleton {
                 scale: CompositorService.getScreenScale(screen)
             }))
     readonly property var primaryBar: SettingsData.getPrimaryBarConfig()
-    readonly property var layouts: screens.map(screen => Resolver.resolveScreen(SettingsData.barConfigs.map(config => ({
-                    config,
-                    barThickness: Theme.barThickness(config.innerPadding ?? 4, screen.scale),
-                    wingSize: config.gothCornersEnabled && root.barSpansEdge(config) ? Math.max(0, config.gothCornerRadiusOverride ? config.gothCornerRadiusValue ?? 12 : Theme.windowRadius) : 0,
-                    popupThickness: Theme.barThickness(Resolver.option(config, "innerPadding", root.primaryBar, 4), screen.scale),
-                    islandThickness: Resolver.islandThickness(config, SettingsData.islandDefaults),
-                    islandFloating: SettingsData.islandSetting(config, "islandFloating"),
-                    islandPlacement: SettingsData.islandFreePlacement(config) ? "free" : "edge",
-                    islandSatellites: SettingsData.islandSetting(config, "islandSatellitesEnabled")
-                })), screen, {
+    property string maximizedScreens: ""
+    readonly property var layouts: screens.map(screen => {
+        const maximized = !!screen.name && root.maximizedScreens.split("\n").includes(screen.name);
+        return Resolver.resolveScreen(SettingsData.barConfigs.map(config => {
+            const flattened = maximized && (config.maximizeDetection ?? true);
+            return {
+                config,
+                flattened,
+                barThickness: Theme.barThickness(config.innerPadding ?? SettingsData.barInnerPaddingDefault, screen.scale),
+                wingSize: config.gothCornersEnabled && !flattened && root.barSpansEdge(config) ? Math.max(0, config.gothCornerRadiusOverride ? config.gothCornerRadiusValue ?? 12 : Theme.windowRadius) : 0,
+                popupThickness: Theme.barThickness(Resolver.option(config, "innerPadding", root.primaryBar, SettingsData.barInnerPaddingDefault), screen.scale),
+                islandThickness: Resolver.islandThickness(SettingsData.islandSettings(config), SettingsData.islandDefaultsFor(config)),
+                islandReserve: Resolver.islandReserve(SettingsData.islandSettings(config), SettingsData.islandDefaultsFor(config)),
+                islandFloating: SettingsData.islandSetting(config, "islandFloating"),
+                islandPlacement: SettingsData.islandFreePlacement(config) ? "free" : "edge",
+                islandSatellites: SettingsData.islandSetting(config, "islandSatellitesEnabled")
+            };
+        }), screen, {
             screens: root.screens,
             displayNameMode: SettingsData.displayNameMode,
             framePreferences: SettingsData.frameScreenPreferences,
@@ -36,9 +45,55 @@ Singleton {
             effectiveConnected: FrameTransitionState.effectiveConnectedFrameModeActive,
             frameThickness: SettingsData.frameThickness,
             frameBarSize: SettingsData.frameBarSize
-        }))
-    readonly property var islandKeys: layouts.reduce((keys, layout) => keys.concat(layout.instances.filter(instance => instance.kind === "island" && !instance.free).map(instance => instance.key)), [])
+        });
+    })
+    readonly property var islandKeys: layouts.reduce((keys, layout) => keys.concat(layout.instances.filter(instance => instance.hostsIsland && !instance.free).map(instance => instance.key)), [])
     readonly property var freeIslandKeys: layouts.reduce((keys, layout) => keys.concat(layout.instances.filter(instance => instance.free).map(instance => instance.key)), [])
+
+    onScreensChanged: updateMaximizedScreens()
+    Component.onCompleted: {
+        updateRealScreens();
+        updateMaximizedScreens();
+    }
+
+    Connections {
+        target: Quickshell
+        function onScreensChanged() {
+            root.updateRealScreens();
+        }
+    }
+
+    Connections {
+        target: CompositorService
+        function onIsHyprlandChanged() {
+            root.updateRealScreens();
+        }
+        function onToplevelsChanged() {
+            root.updateMaximizedScreens();
+        }
+        function onWorkspaceStateChanged() {
+            root.updateMaximizedScreens();
+        }
+    }
+
+    function updateMaximizedScreens() {
+        maximizedScreens = Quickshell.screens.filter(screen => CompositorService.maximizedWindowOnScreen(screen.name)).map(screen => screen.name).join("\n");
+    }
+
+    // Qt's placeholder screen has no name; Hyprland adds a FALLBACK head once the last output is gone.
+    function isRealScreen(screen) {
+        if (!screen?.name)
+            return false;
+        return !(CompositorService.isHyprland && screen.name === "FALLBACK");
+    }
+
+    // Emit only on real changes: removed-screen delegates outlive the event until deleteLater and rebind on a dangling screen.
+    function updateRealScreens() {
+        const next = Quickshell.screens.filter(screen => isRealScreen(screen));
+        if (next.length === realScreens.length && next.every((screen, i) => screen === realScreens[i]))
+            return;
+        realScreens = next;
+    }
 
     function barSpansEdge(config) {
         return (config?.barLengthMode ?? "full") === "full" && (config?.barLengthPadding ?? 0) <= 0;
@@ -67,7 +122,7 @@ Singleton {
     }
 
     function assignedScreens(config) {
-        return Quickshell.screens.filter(screen => coversScreen(config, screen));
+        return realScreens.filter(screen => coversScreen(config, screen));
     }
 
     function coversScreen(config, screen) {
@@ -75,11 +130,11 @@ Singleton {
     }
 
     function standaloneScreens(barId) {
-        return Quickshell.screens.filter(screen => forScreen(screen)?.instances.some(instance => instance.barId === barId && instance.kind === "bar"));
+        return realScreens.filter(screen => forScreen(screen)?.instances.some(instance => instance.barId === barId && instance.kind === "bar"));
     }
 
     function hostedScreens(barId) {
-        return Quickshell.screens.filter(screen => forScreen(screen)?.instances.some(instance => instance.barId === barId && Resolver.hostsBarWindow(instance)));
+        return realScreens.filter(screen => forScreen(screen)?.instances.some(instance => instance.barId === barId && Resolver.hostsBarWindow(instance)));
     }
 
     function frameKeys(screen) {
@@ -97,7 +152,10 @@ Singleton {
     }
 
     function frameReservation(screen, side) {
-        return edge(screen, side)?.frameReservation ?? 0;
+        const band = edge(screen, side);
+        if (SettingsData.frameShowOnOverview && CompositorService.overviewActiveOnScreen(screen))
+            return band?.overviewFrameReservation ?? 0;
+        return band?.frameReservation ?? 0;
     }
 
     function frameContentInset(screen, barId, side) {
@@ -150,8 +208,8 @@ Singleton {
         };
     }
 
-    function adjacentInfo(screen, config) {
-        return Resolver.adjacentInfo(forScreen(screen), config, primaryBar);
+    function adjacentInfo(screen, config, includeAutoHide) {
+        return Resolver.adjacentInfo(forScreen(screen), config, primaryBar, includeAutoHide);
     }
 
     function barBounds(screen, thickness, position, config) {

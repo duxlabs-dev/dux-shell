@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Settings.Widgets
 
@@ -47,7 +48,10 @@ Column {
 
     property alias resetStore: modeRow.resetStore
     property alias resetKeys: modeRow.resetKeys
+    property alias modified: modeRow.modified
+    property alias resetByKeys: modeRow.resetByKeys
 
+    signal resetRequested
     signal modeSelected(string mode)
     signal customColorSelected(color selectedColor)
 
@@ -87,6 +91,7 @@ Column {
     SettingsDropdownRow {
         id: modeRow
         groupItem: root
+        onResetRequested: root.resetRequested()
         text: root.text
         description: root.description
         tab: root.tab
@@ -102,7 +107,7 @@ Column {
 
     Item {
         width: parent.width
-        height: root.currentMode === "custom" ? customChip.height + Theme.spacingM : 0
+        height: root.currentMode === "custom" ? customChip.y + customChip.height + Theme.spacingM : 0
         opacity: root.currentMode === "custom" ? 1 : 0
         clip: true
 
@@ -126,24 +131,37 @@ Column {
             id: customChip
 
             x: SettingsMetrics.rowPaddingH
+            y: Theme.focusRingOffset
             width: parent.width - SettingsMetrics.rowPaddingH * 2
             height: Theme.listItemHeight
             radius: Theme.cornerRadiusM
-            color: Theme.chipSurface
+            color: SettingsMetrics.controlColor
+            activeFocusOnTab: root.currentMode === "custom"
+            Accessible.role: Accessible.Button
+            Accessible.name: I18n.tr("Custom color")
+            Accessible.onPressAction: root.openCustomColorPicker()
+            Keys.onSpacePressed: root.openCustomColorPicker()
+            Keys.onReturnPressed: root.openCustomColorPicker()
+            Keys.onEnterPressed: root.openCustomColorPicker()
+
+            FocusRing {
+                id: chipRing
+            }
 
             Row {
                 anchors.fill: parent
                 anchors.leftMargin: SettingsMetrics.rowPaddingH
                 anchors.rightMargin: SettingsMetrics.rowPaddingH
                 spacing: Theme.spacingM
+                opacity: root.enabled ? 1 : SettingsMetrics.disabledOpacity
 
-                DankColorSwatch {
+                DColorSwatch {
                     width: Theme.avatarSize
                     height: Theme.avatarSize
                     swatchColor: root.customColor
                     anchors.verticalCenter: parent.verticalCenter
 
-                    DankIcon {
+                    DIcon {
                         anchors.centerIn: parent
                         name: "colorize"
                         size: Theme.iconSizeSmall
@@ -175,7 +193,7 @@ Column {
                     }
                 }
 
-                DankIcon {
+                DIcon {
                     id: editIcon
                     name: "edit"
                     size: Theme.iconSizeSmall
@@ -187,7 +205,12 @@ Column {
             StateLayer {
                 stateColor: Theme.surfaceText
                 cornerRadius: customChip.radius
-                onClicked: root.openCustomColorPicker()
+                focused: chipRing.visible
+                onClicked: {
+                    chipRing.pointerFocused = true;
+                    customChip.forceActiveFocus(Qt.MouseFocusReason);
+                    root.openCustomColorPicker();
+                }
             }
         }
     }

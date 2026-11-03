@@ -1,13 +1,14 @@
 import QtQuick
 import qs.Common
+import qs.Modules.ControlCenter
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
-DankActionButton {
+DActionButton {
     property string settingsTab: ""
 
-    buttonSize: Theme.iconButtonSize
-    iconSize: Theme.iconSize
+    buttonSize: CcMetrics.headerActionSize
+    iconSize: CcMetrics.headerActionIconSize
     iconName: "settings"
     iconColor: Theme.surfaceText
     Accessible.name: I18n.tr("Settings")

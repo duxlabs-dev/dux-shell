@@ -27,6 +27,20 @@ function findSettings(item) {
     return null;
 }
 
+// mapToGlobal ignores a layer window's margins, so detached popouts need them added back
+function screenPointOf(window, item, x, y) {
+    const screen = window?.screen;
+    if (!window || !screen || !item)
+        return null;
+    const pos = item.mapToGlobal(x, y);
+    const originX = window.anchors.left ? window.margins.left : window.anchors.right ? screen.width - window.margins.right - window.width : 0;
+    const originY = window.anchors.top ? window.margins.top : window.anchors.bottom ? screen.height - window.margins.bottom - window.height : 0;
+    return {
+        x: pos.x - screen.x + originX,
+        y: pos.y - screen.y + originY
+    };
+}
+
 function normalizePinList(value) {
     if (Array.isArray(value))
         return value.filter(v => v);

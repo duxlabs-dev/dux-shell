@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/keybinds/providers"
+	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds/providers"
 )
 
 func TestKeybindEditFailure(t *testing.T) {

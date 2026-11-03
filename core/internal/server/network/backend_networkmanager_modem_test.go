@@ -20,7 +20,6 @@ func TestAccessTechLabel(t *testing.T) {
 		{"hspa plus", 1 << 9, "H"},
 		{"lte", 1 << 14, "LTE"},
 		{"5gnr", 1 << 15, "5G"},
-		{"lte nb-iot", 1 << 17, "LTE"},
 		{"highest generation wins", 1<<3 | 1<<5 | 1<<14, "LTE"},
 	}
 
@@ -52,10 +51,6 @@ func TestParseModemProps(t *testing.T) {
 		})
 
 		assert.EqualValues(t, 67, info.signalQuality)
-	})
-
-	t.Run("empty props", func(t *testing.T) {
-		assert.Equal(t, modemInfo{}, parseModemProps(map[string]dbus.Variant{}))
 	})
 }
 

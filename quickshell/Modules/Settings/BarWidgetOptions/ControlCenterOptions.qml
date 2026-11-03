@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Column {
@@ -74,7 +74,7 @@ Column {
         {
             "id": "idleInhibitor",
             "label": I18n.tr("Idle inhibitor", "feature that keeps the session from going idle"),
-            "icon": "motion_sensor_active",
+            "icon": "local_cafe",
             "setting": "showIdleInhibitorIcon"
         },
         {
@@ -146,7 +146,7 @@ Column {
                 clickable: true
                 onClicked: root.setSetting(modelData.setting, !root.page.value(modelData.setting))
 
-                DankToggle {
+                DToggle {
                     hideText: true
                     checked: root.page.value(indicatorRow.modelData.setting)
                     onToggled: value => root.setSetting(indicatorRow.modelData.setting, value)

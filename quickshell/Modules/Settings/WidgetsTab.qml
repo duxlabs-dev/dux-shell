@@ -1,9 +1,8 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
@@ -45,6 +44,15 @@ Item {
         return SettingsData.isIslandBarConfig(SettingsData.getBarConfig(selectedBarId));
     }
 
+    readonly property bool islandSatellitesHidden: {
+        SettingsData.barConfigs;
+        selectedBarId;
+        const bc = SettingsData.getBarConfig(selectedBarId);
+        if (!SettingsData.isIslandBarConfig(bc))
+            return false;
+        return SettingsData.isDotBarConfig(bc) || !SettingsData.islandSetting(bc, "islandSatellitesEnabled");
+    }
+
     property bool hasMultipleBars: SettingsData.barConfigs.length > 1
     property int pluginCatalogRevision: 0
 
@@ -61,7 +69,7 @@ Item {
     }
 
     readonly property var widgetAvailability: {
-        const dgopWarning = DgopService.dgopAvailable ? undefined : I18n.tr("Requires 'dgop' tool");
+        const dgopWarning = DgopService.dgopAvailable ? undefined : I18n.tr("Requires %1", "missing program").arg("dgop");
         return {
             "layout": {
                 "enabled": CompositorService.isMango && MangoService.available,
@@ -128,6 +136,12 @@ Item {
             return;
         var ctrl = (event.modifiers & Qt.ControlModifier) !== 0;
         if (event.key === Qt.Key_Up || event.key === Qt.Key_Down) {
+            var focusedRow = focusedWidgetRow();
+            if (focusedRow) {
+                highlightedSection = focusedRow.section;
+                highlightedId = focusedRow.id;
+            }
+            widgetsTab.forceActiveFocus();
             var dir = event.key === Qt.Key_Down ? 1 : -1;
             if (ctrl) {
                 if (highlightedId !== "")
@@ -155,9 +169,14 @@ Item {
             if (highlightedId !== "")
                 moveAcrossSections(highlightedSection, highlightedId, event.key === Qt.Key_Right ? 1 : -1);
             event.accepted = true;
-        } else if (event.key === Qt.Key_Space || event.key === Qt.Key_Return) {
+        } else if (event.key === Qt.Key_Space) {
             if (highlightedId !== "") {
                 toggleHighlighted();
+                event.accepted = true;
+            }
+        } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            if (highlightedId !== "") {
+                configureHighlighted();
                 event.accepted = true;
             }
         }
@@ -274,12 +293,27 @@ Item {
     }
 
     function getWidgetsForPopup() {
+        const config = SettingsData.getBarConfig(selectedBarId);
         return baseWidgetDefinitions.filter(widget => {
             if (widget.warning && widget.warning.includes("Plugin is disabled"))
                 return false;
             if (widget.enabled === false)
                 return false;
-            return true;
+            return !(widget.single && SettingsData.barWidgetEntry(config, widget.id));
+        }).map(widget => {
+            if (widget.id !== "island")
+                return widget;
+            if (SettingsData.isIslandBarConfig(config))
+                return Object.assign({}, widget, {
+                    "disabled": true,
+                    "description": I18n.tr("This bar is the Island", "bar widget picker: island widget unavailable on an island-layout bar")
+                });
+            if (!SettingsData.islandWidgetBlocked(config))
+                return widget;
+            return Object.assign({}, widget, {
+                "disabled": true,
+                "description": I18n.tr("An Island bar already covers a display this bar is on", "bar widget picker: island widget blocked by an island-layout bar sharing a display")
+            });
         });
     }
 
@@ -366,6 +400,23 @@ Item {
         SettingsData.updateBarConfig(selectedBarId, updates);
     }
 
+    // A row reached with Tab has focus but no cursor, so the cursor starts from it
+    function focusedWidgetRow() {
+        for (var item = Window.activeFocusItem; item; item = item.parent) {
+            if (item.reorderList === undefined || !item.modelData?.id)
+                continue;
+            for (var section = item.parent; section; section = section.parent) {
+                if (section.sectionId !== undefined)
+                    return {
+                        "section": section.sectionId,
+                        "id": item.modelData.id
+                    };
+            }
+            return null;
+        }
+        return null;
+    }
+
     function flatList() {
         var out = [];
         ["left", "center", "right"].forEach(s => {
@@ -409,6 +460,15 @@ Item {
             return;
         var en = (typeof w === "string") ? true : (w.enabled !== false);
         handleItemEnabledChanged(highlightedSection, highlightedId, !en);
+    }
+
+    function configureHighlighted() {
+        const index = getWidgetsForSection(highlightedSection).findIndex(x => (typeof x === "string" ? x : x.id) === highlightedId);
+        if (index < 0)
+            return;
+        if (!BarWidgetCatalog.configurable(getItemsForSection(highlightedSection)[index]))
+            return;
+        configureWidget(highlightedSection, index);
     }
 
     function handleSpacerSizeChanged(sectionId, widgetIndex, newSize) {
@@ -522,43 +582,19 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        StyledRect {
-            width: parent.width
-            height: barSelectorContent.implicitHeight + Theme.spacingL * 2
-            radius: Theme.cornerRadius
-            color: Theme.floatingWindowNestedSurface
-            border.color: Theme.outlineMedium
-            border.width: Theme.layerOutlineWidth
+        TapHandler {
+            onTapped: widgetsTab.forceActiveFocus()
+        }
+
+        SettingsCard {
+            iconName: "toolbar"
+            title: I18n.tr("Bar")
             visible: hasMultipleBars
 
-            Column {
-                id: barSelectorContent
-                anchors.fill: parent
-                anchors.margins: Theme.spacingL
-                spacing: Theme.spacingM
-
-                Row {
-                    width: parent.width
-                    spacing: Theme.spacingM
-
-                    DankIcon {
-                        name: "toolbar"
-                        size: Theme.iconSize
-                        color: Theme.primary
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    StyledText {
-                        text: I18n.tr("Bar")
-                        font.pixelSize: Theme.fontSizeLarge
-                        font.weight: Theme.fontWeightMedium
-                        color: Theme.surfaceText
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                }
-
-                DankButtonGroup {
+            SettingsRow {
+                body: DButtonGroup {
                     id: barSelectorGroup
+                    arrowKeysSelect: false
                     width: parent.width
                     model: SettingsData.barConfigs.map(cfg => cfg.name || ("Bar " + (SettingsData.barConfigs.indexOf(cfg) + 1)))
                     currentIndex: {
@@ -576,101 +612,39 @@ Item {
             }
         }
 
-        StyledRect {
-            width: parent.width
-            height: widgetManagementHeader.implicitHeight + Theme.spacingL * 2
-            radius: Theme.cornerRadius
-            color: Theme.floatingWindowNestedSurface
-            border.color: Theme.outlineMedium
-            border.width: Theme.layerOutlineWidth
+        SettingsCard {
+            iconName: "widgets"
+            title: I18n.tr("Sections", "bar widget settings heading for left, center, right sections")
 
-            Column {
-                id: widgetManagementHeader
-                anchors.fill: parent
-                anchors.margins: Theme.spacingL
-                spacing: Theme.spacingM
-
-                RowLayout {
-                    width: parent.width
-                    spacing: Theme.spacingM
-
-                    DankIcon {
-                        name: "widgets"
-                        size: Theme.iconSize
-                        color: Theme.primary
-                        Layout.alignment: Qt.AlignVCenter
-                    }
-
-                    StyledText {
-                        text: I18n.tr("Sections", "bar widget settings heading for left, center, right sections")
-                        font.pixelSize: Theme.fontSizeLarge
-                        font.weight: Theme.fontWeightMedium
-                        color: Theme.surfaceText
-                        Layout.alignment: Qt.AlignVCenter
-                    }
-
-                    Item {
-                        height: 1
-                        Layout.fillWidth: true
-                    }
-
-                    Rectangle {
-                        width: resetContentRow.implicitWidth + Theme.spacingM * 2
-                        height: 28
-                        radius: Theme.cornerRadius
-                        color: resetArea.containsMouse ? Theme.hoverTint(Theme.chipSurface) : Theme.chipSurface
-                        Layout.alignment: Qt.AlignVCenter
-                        border.width: 0
-
-                        Row {
-                            id: resetContentRow
-                            anchors.centerIn: parent
-                            spacing: Theme.spacingXS
-
-                            DankIcon {
-                                name: "refresh"
-                                size: 14
-                                color: Theme.surfaceText
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            StyledText {
-                                text: I18n.tr("Reset")
-                                font.pixelSize: Theme.fontSizeSmall
-                                font.weight: Theme.fontWeightMedium
-                                color: Theme.surfaceText
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-                        }
-
-                        MouseArea {
-                            id: resetArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                setWidgetsForSection("left", defaultLeftWidgets);
-                                setWidgetsForSection("center", defaultCenterWidgets);
-                                setWidgetsForSection("right", defaultRightWidgets);
-                            }
-                        }
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: Theme.shortDuration
-                                easing.type: Theme.standardEasing
-                            }
-                        }
-                    }
+            headerActions: DButton {
+                text: I18n.tr("Reset")
+                iconName: "refresh"
+                buttonHeight: Theme.buttonHeightXS
+                backgroundColor: Theme.secondaryContainer
+                textColor: Theme.onSecondaryContainer
+                onClicked: {
+                    setWidgetsForSection("left", defaultLeftWidgets);
+                    setWidgetsForSection("center", defaultCenterWidgets);
+                    setWidgetsForSection("right", defaultRightWidgets);
                 }
+            }
 
-                StyledText {
+            SettingsRow {
+                body: StyledText {
                     width: parent.width
                     text: I18n.tr("Drag the handle to reorder. Tap a widget for its settings, use the switch to hide it without changing spacing, or X to remove it.")
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
                     wrapMode: Text.WordWrap
                 }
+            }
+
+            SettingsRow {
+                iconName: "info"
+                iconColor: Theme.surfaceVariantText
+                visible: widgetsTab.islandSatellitesHidden
+                title: I18n.tr("Satellites", "island settings: satellite widgets card title")
+                subtitle: I18n.tr("Not shown on this bar, so its section widgets stay hidden", "widgets settings: island satellites are not rendered on this bar")
             }
         }
 
@@ -683,6 +657,7 @@ Item {
                 width: parent.width
                 title: selectedBarIsVertical ? I18n.tr("Top section") : I18n.tr("Left section")
                 sectionId: "left"
+                barId: widgetsTab.selectedBarId
                 allWidgets: widgetsTab.baseWidgetDefinitions
                 items: widgetsTab.getItemsForSection("left")
                 onItemEnabledChanged: (sectionId, itemId, enabled) => {
@@ -719,6 +694,13 @@ Item {
                 tags: ["island", "home", "compact", "layout", "groups", "order"]
                 visible: widgetsTab.dankIslandOwnsSelectedBarCenter
 
+                SettingsRow {
+                    iconName: "info"
+                    iconColor: Theme.surfaceVariantText
+                    title: selectedBarIsVertical ? I18n.tr("Middle section", "widgets settings: bar section replaced by the island") : I18n.tr("Center section", "widgets settings: bar section replaced by the island")
+                    subtitle: I18n.tr("The Island takes its place on this bar", "widgets settings: the island replaces the bar's center section")
+                }
+
                 Loader {
                     width: parent.width
                     readonly property bool isSettingsRow: true
@@ -736,7 +718,7 @@ Item {
                         width: parent.width
                         spacing: Theme.spacingS
 
-                        DankButton {
+                        DButton {
                             text: I18n.tr("Launcher", "island settings: button to launcher tab")
                             iconName: "grid_view"
                             onClicked: {
@@ -747,7 +729,7 @@ Item {
                             }
                         }
 
-                        DankButton {
+                        DButton {
                             text: I18n.tr("Time & weather", "island settings: button to weather tab")
                             iconName: "cloud"
                             onClicked: {
@@ -764,8 +746,10 @@ Item {
             WidgetsTabSection {
                 id: centerSection
                 width: parent.width
+                visible: !widgetsTab.dankIslandOwnsSelectedBarCenter
                 title: selectedBarIsVertical ? I18n.tr("Middle section") : I18n.tr("Center section")
                 sectionId: "center"
+                barId: widgetsTab.selectedBarId
                 allWidgets: widgetsTab.baseWidgetDefinitions
                 items: widgetsTab.getItemsForSection("center")
                 onItemEnabledChanged: (sectionId, itemId, enabled) => {
@@ -799,6 +783,7 @@ Item {
                 width: parent.width
                 title: selectedBarIsVertical ? I18n.tr("Bottom section") : I18n.tr("Right section")
                 sectionId: "right"
+                barId: widgetsTab.selectedBarId
                 allWidgets: widgetsTab.baseWidgetDefinitions
                 items: widgetsTab.getItemsForSection("right")
                 onItemEnabledChanged: (sectionId, itemId, enabled) => {

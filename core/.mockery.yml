@@ -6,13 +6,13 @@ template: testify
 template-data:
   unroll-variadic: true
 packages:
-  github.com/AvengeMedia/DankMaterialShell/core/internal/geolocation:
+  github.com/duxlabs-dev/dux-shell/core/internal/geolocation:
     config:
       dir: internal/mocks/geolocation
       pkgname: mocks_geolocation
     interfaces:
       Client: {}
-  github.com/AvengeMedia/DankMaterialShell/core/internal/server/cups:
+  github.com/duxlabs-dev/dux-shell/core/internal/server/cups:
     config:
       dir: internal/mocks/cups
       pkgname: mocks_cups
@@ -22,46 +22,46 @@ packages:
         config:
           dir: internal/mocks/cups_pkhelper
           pkgname: mocks_cups_pkhelper
-  github.com/AvengeMedia/DankMaterialShell/core/internal/server/evdev:
+  github.com/duxlabs-dev/dux-shell/core/internal/server/evdev:
     config:
       dir: internal/mocks/evdev
       pkgname: mocks_evdev
     interfaces:
       EvdevDevice: {}
-  github.com/AvengeMedia/DankMaterialShell/core/internal/server/network:
+  github.com/duxlabs-dev/dux-shell/core/internal/server/network:
     config:
       dir: internal/mocks/network
       pkgname: mocks_network
     interfaces:
       Backend: {}
-  github.com/AvengeMedia/DankMaterialShell/core/internal/server/wlcontext:
+  github.com/duxlabs-dev/dux-shell/core/internal/server/wlcontext:
     config:
       dir: internal/mocks/wlcontext
       pkgname: mocks_wlcontext
     interfaces:
       WaylandContext: {}
-  github.com/AvengeMedia/DankMaterialShell/core/internal/utils:
+  github.com/duxlabs-dev/dux-shell/core/internal/utils:
     config:
       dir: internal/mocks/utils
       pkgname: mocks_utils
     interfaces:
       AppChecker: {}
-  github.com/AvengeMedia/DankMaterialShell/core/internal/version:
+  github.com/duxlabs-dev/dux-shell/core/internal/version:
     config:
       dir: internal/mocks/version
       pkgname: mocks_version
     interfaces:
       VersionFetcher: {}
-  github.com/AvengeMedia/dankgo/wayland/client:
+  github.com/duxlabs-dev/dux-go/wayland/client:
     config:
       dir: internal/mocks/wlclient
       pkgname: mocks_wlclient
     interfaces:
       WaylandDisplay: {}
-  github.com/AvengeMedia/DankMaterialShell/core/internal/plugins:
+  github.com/duxlabs-dev/dux-shell/core/internal/plugins:
     interfaces:
       GitClient: {}
-  github.com/AvengeMedia/DankMaterialShell/core/internal/server/brightness:
+  github.com/duxlabs-dev/dux-shell/core/internal/server/brightness:
     config:
       dir: internal/mocks/brightness
       pkgname: mocks_brightness

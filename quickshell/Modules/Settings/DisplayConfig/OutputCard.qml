@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Settings.Widgets
 
@@ -58,7 +59,7 @@ Column {
                 return "";
             }
 
-            DankActionButton {
+            DActionButton {
                 visible: !root.isConnected
                 buttonSize: Theme.iconButtonSize
                 iconName: "delete"
@@ -154,8 +155,10 @@ Column {
             title: I18n.tr("Scale")
             onCurrentLabelChanged: scaleDropdown.currentValue = currentLabel
 
-            DankDropdown {
+            DDropdown {
                 id: scaleDropdown
+                downKeyOpens: false
+                backgroundColor: SettingsMetrics.controlSurface
                 visible: !scaleRow.customMode
                 width: Math.min(dropdownWidth, scaleRow.width - SettingsMetrics.rowPaddingH * 2)
                 Accessible.name: scaleRow.title
@@ -173,7 +176,7 @@ Column {
                 }
             }
 
-            DankTextField {
+            DTextField {
                 id: scaleInput
                 visible: scaleRow.customMode
                 outlined: true
@@ -201,7 +204,7 @@ Column {
         }
 
         SettingsToggleRow {
-            visible: root.isActive && root.vrrSupported && !CompositorService.isMango && !CompositorService.isHyprland && !CompositorService.isNiri
+            visible: root.isActive && root.vrrSupported && !CompositorService.isHyprland && !CompositorService.isNiri
             text: I18n.tr("Variable refresh rate")
             checked: {
                 const pendingVrr = DisplayConfigState.getPendingValue(root.outputName, "vrr");
@@ -213,21 +216,26 @@ Column {
         }
 
         SettingsDropdownRow {
-            visible: root.isActive && root.vrrSupported && CompositorService.isHyprland
+            readonly property var hyprlandCaps: {
+                void (DisplayConfigState.pendingHyprlandChanges);
+                return DisplayConfigState.getHyprlandCaps(root.outputData, root.outputName);
+            }
+            readonly property bool capable: hyprlandCaps?.vrr ?? true
+            // Index - 1 is the Lua vrr value; -1 leaves it unset so misc:vrr applies.
+            readonly property var modeLabels: [I18n.tr("Default (Global)"), I18n.tr("Off"), I18n.tr("On", "adjective, enabled state"), I18n.tr("Fullscreen only")]
+
+            visible: root.isActive && CompositorService.isHyprland && (hyprlandCaps !== null || root.vrrSupported)
+            enabled: capable
             text: I18n.tr("Variable refresh rate")
-            options: [I18n.tr("Off"), I18n.tr("On", "adjective, enabled state"), I18n.tr("Fullscreen only")]
+            description: capable ? "" : I18n.tr("This display does not report VRR support")
+            options: modeLabels
             currentValue: {
                 void (DisplayConfigState.pendingHyprlandChanges);
-                if (DisplayConfigState.getHyprlandSetting(root.outputData, root.outputName, "vrrFullscreenOnly", false))
-                    return I18n.tr("Fullscreen only");
-                const pendingVrr = DisplayConfigState.getPendingValue(root.outputName, "vrr");
-                const vrrEnabled = pendingVrr !== undefined ? pendingVrr : (DisplayConfigState.outputs[root.outputName]?.vrr_enabled ?? false);
-                return vrrEnabled ? I18n.tr("On") : I18n.tr("Off");
+                void (DisplayConfigState.savedParsedOutputs);
+                const mode = DisplayConfigState.getHyprlandVrrMode(root.outputData, root.outputName);
+                return modeLabels[mode === undefined ? 0 : Math.min(mode, 2) + 1];
             }
-            onValueChanged: value => {
-                DisplayConfigState.setPendingChange(root.outputName, "vrr", value !== I18n.tr("Off"));
-                DisplayConfigState.setHyprlandSetting(root.outputData, root.outputName, "vrrFullscreenOnly", value === I18n.tr("Fullscreen only") || null);
-            }
+            onValueChanged: value => DisplayConfigState.setHyprlandVrrMode(root.outputData, root.outputName, modeLabels.indexOf(value) - 1)
         }
 
         SettingsDropdownRow {
@@ -263,7 +271,7 @@ Column {
             }
             subtitleColor: hasProfile ? Theme.success : Theme.surfaceVariantText
 
-            DankActionButton {
+            DActionButton {
                 visible: colorProfileRow.hasProfile
                 buttonSize: Theme.iconButtonSize
                 iconName: "info"
@@ -273,7 +281,7 @@ Column {
                 onClicked: root.requestICCInfo(root.outputName)
             }
 
-            DankActionButton {
+            DActionButton {
                 visible: colorProfileRow.hasProfile
                 buttonSize: Theme.iconButtonSize
                 iconName: "close"
@@ -284,7 +292,7 @@ Column {
                 onClicked: ICCService.removeICC(root.outputName)
             }
 
-            DankButton {
+            DButton {
                 text: I18n.tr("Browse", "Browse")
                 iconName: "folder_open"
                 anchors.verticalCenter: parent.verticalCenter

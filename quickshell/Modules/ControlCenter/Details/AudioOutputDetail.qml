@@ -2,16 +2,17 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
-import Quickshell.Services.Pipewire
 import qs.Common
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import "../../../Common/QmlUtils.js" as QmlUtils
 
 Item {
     id: root
+
+    implicitHeight: column.height
 
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
@@ -34,7 +35,7 @@ Item {
         CacheData.set("audioOutputDevicePins", QmlUtils.togglePinEntry(CacheData.audioOutputDevicePins, "preferredOutput", name, CcMetrics.maxPins));
     }
 
-    DankFlickable {
+    DFlickable {
         anchors.fill: parent
         contentHeight: column.height
         clip: true
@@ -61,7 +62,7 @@ Item {
                     model: ScriptModel {
                         values: {
                             const hidden = SessionData.hiddenOutputDeviceNames ?? [];
-                            const nodes = Pipewire.nodes.values.filter(node => node.audio && node.isSink && !node.isStream && !hidden.includes(node.name));
+                            const nodes = AudioService.allNodes.filter(node => node.audio && node.isSink && !node.isStream && !hidden.includes(node.name));
                             const pinnedList = root.pinnedOutputs;
                             return nodes.sort((a, b) => {
                                 const aPinned = pinnedList.indexOf(a.name);
@@ -91,16 +92,15 @@ Item {
                         title: AudioService.displayName(modelData)
                         subtitle: active ? I18n.tr("Active") : I18n.tr("Available")
                         active: modelData === AudioService.sink
-                        showActiveCheck: true
                         clickable: true
                         onClicked: {
                             if (modelData?.name)
                                 AudioService.setDefaultSinkByName(modelData.name);
                         }
 
-                        DankActionButton {
+                        DActionButton {
                             anchors.verticalCenter: parent.verticalCenter
-                            visible: AudioService.sinkHasMultiplePorts(deviceRow.modelData)
+                            visible: (AudioService.outputChoices[deviceRow.modelData.name]?.length ?? 0) > 1
                             buttonSize: Theme.buttonHeightXS
                             iconSize: Theme.iconSizeMedium
                             iconName: "tune"
@@ -114,22 +114,6 @@ Item {
                             pinned: root.pinnedOutputs.includes(deviceRow.modelData.name)
                             onToggled: root.togglePin(deviceRow.modelData.name)
                         }
-                    }
-                }
-
-                Repeater {
-                    model: ScriptModel {
-                        values: AudioService.switchableOutputPorts
-                    }
-
-                    CcListRow {
-                        required property var modelData
-
-                        iconName: modelData.icon
-                        title: modelData.title
-                        subtitle: modelData.cardDescription
-                        clickable: true
-                        onClicked: AudioService.activateOutputPort(modelData, (ok, message) => ToastService.showToast(message, ok ? ToastService.levelInfo : ToastService.levelError))
                     }
                 }
             }
@@ -146,7 +130,7 @@ Item {
                 Repeater {
                     id: playbackRepeater
                     model: ScriptModel {
-                        values: Pipewire.nodes.values.filter(node => node.audio && node.isSink && node.isStream)
+                        values: AudioService.pipewireNodes.filter(node => node.audio && node.isSink && node.isStream && !AudioService.isOwnStream(node))
                     }
 
                     CcListRow {
@@ -160,10 +144,6 @@ Item {
                             node: streamRow.modelData
                             sliderLabel: streamRow.title
                             playFeedback: true
-                        }
-
-                        PwObjectTracker {
-                            objects: [streamRow.modelData]
                         }
                     }
                 }

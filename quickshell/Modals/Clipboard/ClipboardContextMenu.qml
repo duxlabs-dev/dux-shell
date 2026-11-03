@@ -3,7 +3,7 @@ import qs.Common
 import qs.Services
 import qs.Widgets
 
-DankContextMenu {
+DContextMenu {
     id: root
 
     property var entry: null

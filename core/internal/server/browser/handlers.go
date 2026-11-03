@@ -1,21 +1,20 @@
 package browser
 
 import (
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
 )
 
 func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	switch req.Method {
 	case "browser.open":
-		url, ok := models.Get[string](req, "url")
+		url, ok := req.Get[string]("url")
 		if !ok {
-			models.RespondError(conn, req.ID, "invalid url parameter")
+			conn.RespondError(req.ID, "invalid url parameter")
 			return
 		}
 		manager.RequestOpen(url)
-		models.Respond(conn, req.ID, "ok")
+		conn.Respond(req.ID, "ok")
 	default:
-		models.RespondError(conn, req.ID, "unknown method")
+		conn.RespondError(req.ID, "unknown method")
 	}
 }

@@ -2,22 +2,24 @@ pragma Singleton
 
 import Quickshell
 import qs.Common
+import qs.Services
 
 Singleton {
     id: root
 
     readonly property var defaults: ({
+            cardBackgrounds: false,
             seekbar: true,
             waveProgress: true,
             albumArtBackdrop: true,
             albumArtAccent: true,
             animatedArt: false,
             lyrics: true,
-            smoothLyrics: true,
-            deviceName: true
+            smoothLyrics: true
         })
 
     readonly property string defaultPlayerStyle: "bento"
+    readonly property string defaultArtStyle: "cookie"
     readonly property var playerStyles: [
         {
             "value": "bento",
@@ -30,18 +32,19 @@ Singleton {
     ]
 
     readonly property var titleFontDefaults: ({
-            bento: "Notable",
+            bento: "ui",
             material: "ui"
         })
 
     readonly property var stored: SettingsData.dashOptions?.media ?? ({})
     readonly property string defaultTitleFont: titleFontDefaults[stored.playerStyle ?? defaultPlayerStyle] ?? "ui"
+    readonly property bool cardBackgrounds: stored.cardBackgrounds ?? defaults.cardBackgrounds
     readonly property bool waveProgress: stored.waveProgress ?? defaults.waveProgress
     readonly property bool albumArtBackdrop: stored.albumArtBackdrop ?? defaults.albumArtBackdrop
     readonly property bool albumArtAccent: stored.albumArtAccent ?? defaults.albumArtAccent
     readonly property bool animatedArt: stored.animatedArt ?? defaults.animatedArt
 
-    readonly property var lyricsProviderCatalog: [
+    readonly property var builtinLyricsProviders: [
         {
             id: "betterlyrics",
             text: "Better Lyrics"
@@ -67,6 +70,23 @@ Singleton {
             text: "YouTube Music"
         }
     ]
+    readonly property var pluginLyricsProviders: {
+        if (!DMSService.capabilities.includes("lyrics.plugins"))
+            return [];
+        const loaded = PluginService.loadedPlugins;
+        const providers = [];
+        for (const pluginId in loaded) {
+            const plugin = loaded[pluginId];
+            if (!plugin.lyrics?.command)
+                continue;
+            providers.push({
+                id: "plugin_" + pluginId,
+                text: I18n.trFor(pluginId, plugin.lyrics.name ?? plugin.name)
+            });
+        }
+        return providers;
+    }
+    readonly property var lyricsProviderCatalog: builtinLyricsProviders.concat(pluginLyricsProviders)
     readonly property var lyricsProviders: {
         const saved = Array.isArray(SettingsData.mediaLyricsProviders) ? SettingsData.mediaLyricsProviders : [];
         const rows = [];

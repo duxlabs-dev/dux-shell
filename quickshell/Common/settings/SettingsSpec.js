@@ -1,7 +1,30 @@
 .pragma library
-.import "../../DankCommon/Common/settings/SharedSettingsSpec.js" as Shared
-.import "../../DankCommon/Common/settings/SpecUtil.js" as Util
+.import "../../DCommon/Common/settings/SharedSettingsSpec.js" as Shared
+.import "../../DCommon/Common/settings/SpecUtil.js" as Util
 .import "DockConfig.js" as DockConfig
+
+function lockWidgetDefaults() {
+    return Shared.lockWidgetDefaults();
+}
+
+function greeterWidgetsFromLock(lockInstances, previous) {
+    return Shared.greeterWidgetsFromLock(lockInstances, previous);
+}
+
+function greeterSessionDefault() {
+    return Shared.greeterSessionDefault();
+}
+
+function greeterWidgetDefaults() {
+    return Shared.greeterWidgetDefaults();
+}
+
+// Hyprland 0.57 turned scrolling:follow_focus from a bool into modes 0-2; stored bools stay readable
+function followFocusMode(v) {
+    if (typeof v === "boolean")
+        return v ? 1 : 0;
+    return Number.isInteger(v) && v >= 0 && v <= 2 ? v : undefined;
+}
 
 var LOCAL_SPEC = {
     dockConfigs: {
@@ -50,6 +73,9 @@ var LOCAL_SPEC = {
         coerce: Util.percentToUnit
     },
     floatingWindowSyncGlobal: {
+        def: true
+    },
+    floatingWindowTitleBars: {
         def: true
     },
     floatingWindowTransparency: {
@@ -109,6 +135,9 @@ var LOCAL_SPEC = {
     buttonColorMode: {
         def: "primary"
     },
+    containerSaturation: {
+        def: 100
+    },
     niriLayoutGapsOverride: {
         def: -1,
         onChange: "updateCompositorLayout"
@@ -138,6 +167,118 @@ var LOCAL_SPEC = {
         onChange: "updateCompositorLayout"
     },
     hyprlandResizeOnBorder: {
+        def: false,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWindowOpacity: {
+        def: 100,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBorderGrabArea: {
+        def: 15,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurVariant: {
+        def: "kawase",
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurAcrylicClarity: {
+        def: 82,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurAuroraIntensity: {
+        def: 35,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurAuroraSpeed: {
+        def: 1,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurHazeIntensity: {
+        def: 35,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurHazeIridescence: {
+        def: 70,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurRippleStrength: {
+        def: 30,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurWaterStrength: {
+        def: 32,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurDropsSpeed: {
+        def: 3,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurHeatShimmerSpeed: {
+        def: 1,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurProportional: {
+        def: false,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandGlowEnabled: {
+        def: false,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandGlowRange: {
+        def: 10,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandGlowRenderPower: {
+        def: 3,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWobbleEnabled: {
+        def: false,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWobbleIntensity: {
+        def: 20,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWobbleStiffness: {
+        def: 200,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWobbleDamping: {
+        def: 12,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWobbleMass: {
+        def: 100,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWobbleMesh: {
+        def: 12,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandMotionBlurEnabled: {
+        def: false,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandMotionBlurSamples: {
+        def: 7,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandGroupbarBlur: {
+        def: false,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandGroupbarTextPadding: {
+        def: 0,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandGroupbarMiddleClickClose: {
+        def: true,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandGroupbarDisableWhenOnly: {
         def: false,
         onChange: "updateCompositorLayout"
     },
@@ -186,7 +327,24 @@ var LOCAL_SPEC = {
         onChange: "updateCompositorLayout"
     },
     hyprlandScrollingFollowFocus: {
+        def: 1,
+        coerce: followFocusMode,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandDragCenterWindow: {
         def: true,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWorkspaceBackAndForth: {
+        def: 0,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandExitWindowRetainsFullscreen: {
+        def: 0,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBellSound: {
+        def: "default",
         onChange: "updateCompositorLayout"
     },
     mangoLayoutGapsOverride: {
@@ -205,9 +363,17 @@ var LOCAL_SPEC = {
         def: -1,
         onChange: "updateCompositorLayout"
     },
-    mangoTrackpadNaturalScrolling: {
+    focusFollowsMouse: {
+        def: -1,
+        onChange: "updateCompositorInput"
+    },
+    hyprlandSwallowFocusClick: {
+        def: false,
+        onChange: "updateCompositorInput"
+    },
+    hyprlandTabletEnabled: {
         def: true,
-        onChange: "updateCompositorCursor"
+        onChange: "updateCompositorInput"
     },
     mouseAccelProfile: {
         def: "default",
@@ -270,6 +436,10 @@ var LOCAL_SPEC = {
         onChange: "updateCompositorInput"
     },
     touchpadScrollFactor: {
+        def: 1.0,
+        onChange: "updateCompositorInput"
+    },
+    touchpadPinchSensitivity: {
         def: 1.0,
         onChange: "updateCompositorInput"
     },
@@ -336,6 +506,9 @@ var LOCAL_SPEC = {
     audioShowStreamDevices: {
         def: false
     },
+    audioMono: {
+        def: false
+    },
     windSpeedUnit: {
         def: "kmh"
     },
@@ -356,6 +529,14 @@ var LOCAL_SPEC = {
     },
     motionEffect: {
         def: 0
+    },
+    density: {
+        def: "comfortable",
+        onChange: "applyDensityPresets"
+    },
+    interfaceStyle: {
+        def: "expressive",
+        onChange: "applyInterfaceStyle"
     },
     m3ElevationEnabled: {
         def: true
@@ -384,6 +565,10 @@ var LOCAL_SPEC = {
     blurEnabled: {
         def: false
     },
+    blurStrength: {
+        def: 0,
+        onChange: "updateBlurStrength"
+    },
     blurBorderSeeded: {
         def: false
     },
@@ -396,6 +581,10 @@ var LOCAL_SPEC = {
     },
     blurLayerOutlineOpacity: {
         def: 0,
+        coerce: Util.percentToUnit
+    },
+    sectionDividerOpacity: {
+        def: 0.1,
         coerce: Util.percentToUnit
     },
     focusRingEnabled: {
@@ -431,16 +620,45 @@ var LOCAL_SPEC = {
     controlCenterWidgets: {
         def: [
             {
-                id: "volumeSlider",
+                id: "user",
                 enabled: true,
-                w: 4,
+                w: 5,
                 h: 1
+            },
+            {
+                id: "settings",
+                enabled: true,
+                w: 1,
+                h: 1,
+                small: true
+            },
+            {
+                id: "lock",
+                enabled: true,
+                w: 1,
+                h: 1,
+                small: true
+            },
+            {
+                id: "power",
+                enabled: true,
+                w: 1,
+                h: 1,
+                small: true
             },
             {
                 id: "brightnessSlider",
                 enabled: true,
                 w: 4,
-                h: 1
+                h: 1,
+                small: true
+            },
+            {
+                id: "volumeSlider",
+                enabled: true,
+                w: 4,
+                h: 1,
+                small: true
             },
             {
                 id: "wifi",
@@ -467,16 +685,54 @@ var LOCAL_SPEC = {
                 h: 1
             },
             {
+                id: "darkMode",
+                enabled: true,
+                w: 2,
+                h: 1
+            },
+            {
                 id: "nightMode",
+                enabled: true,
+                w: 2,
+                h: 1
+            },
+            {
+                id: "doNotDisturb",
+                enabled: true,
+                w: 2,
+                h: 1
+            },
+            {
+                id: "idleInhibitor",
+                enabled: true,
+                w: 2,
+                h: 1
+            },
+            {
+                id: "battery",
                 enabled: true,
                 w: 4,
                 h: 1
             },
             {
-                id: "darkMode",
+                id: "diskUsage",
                 enabled: true,
                 w: 4,
                 h: 1
+            },
+            {
+                id: "runningApps",
+                enabled: true,
+                w: 7,
+                h: 1,
+                small: true
+            },
+            {
+                id: "edit",
+                enabled: true,
+                w: 1,
+                h: 1,
+                small: true
             }
         ]
     },
@@ -526,6 +782,18 @@ var LOCAL_SPEC = {
             }
         ]
     },
+    weatherProviders: {
+        def: [
+            {
+                id: "openmeteo",
+                enabled: true
+            },
+            {
+                id: "metno",
+                enabled: false
+            }
+        ]
+    },
     appIdSubstitutions: {
         def: [
             {
@@ -565,6 +833,9 @@ var LOCAL_SPEC = {
         def: false,
         onChange: "scheduleGreeterAutoLoginSync"
     },
+    greeterFollowLockScreen: {
+        def: true
+    },
     greeterPamExternallyManaged: {
         def: false,
         onChange: "markGreeterSyncPending"
@@ -586,6 +857,13 @@ var LOCAL_SPEC = {
     },
     rememberLastQuery: {
         def: false
+    },
+    launcherHistoryEnabled: {
+        def: true,
+        onChange: "syncLauncherHistory"
+    },
+    launcherEnterAction: {
+        def: "launch"
     },
     rememberLastMode: {
         def: true
@@ -635,6 +913,9 @@ var LOCAL_SPEC = {
     launcherStyle: {
         def: "full"
     },
+    avatarRing: {
+        def: "none"
+    },
     spotlightBarShowModeChips: {
         def: false
     },
@@ -669,7 +950,15 @@ var LOCAL_SPEC = {
                 enabled: true
             },
             {
+                id: "wellbeing",
+                enabled: true
+            },
+            {
                 id: "notifications",
+                enabled: false
+            },
+            {
+                id: "settings",
                 enabled: false
             }
         ]
@@ -706,6 +995,15 @@ var LOCAL_SPEC = {
     dashOptions: {
         def: {}
     },
+    wellbeingEnabled: {
+        def: true
+    },
+    wellbeingDailyLimit: {
+        def: 0
+    },
+    wellbeingAppLimits: {
+        def: {}
+    },
     networkPreference: {
         def: "auto"
     },
@@ -740,7 +1038,8 @@ var LOCAL_SPEC = {
             hyprland: {
                 hideOnKeyPress: false,
                 hideOnTouch: false,
-                inactiveTimeout: 0
+                inactiveTimeout: 0,
+                warpOnMonitorChange: -1
             },
             dwl: {
                 cursorHideTimeout: 0
@@ -858,11 +1157,20 @@ var LOCAL_SPEC = {
     batteryChargeLimit: {
         def: 100
     },
+    batteryScaleToChargeLimit: {
+        def: false
+    },
+    batteryScaleAlertThresholds: {
+        def: false
+    },
     batteryNotifyChargeLimit: {
         def: false
     },
     batteryCriticalThreshold: {
         def: 10
+    },
+    batteryCriticalAnimation: {
+        def: true
     },
     batteryNotifyCritical: {
         def: true
@@ -914,6 +1222,14 @@ var LOCAL_SPEC = {
     },
     terminalsAlwaysDark: {
         def: false,
+        onChange: "regenSystemThemes"
+    },
+    terminalOpacity: {
+        def: 100,
+        onChange: "regenSystemThemes"
+    },
+    terminalPalette: {
+        def: "default",
         onChange: "regenSystemThemes"
     },
     muxType: {
@@ -1051,24 +1367,6 @@ var LOCAL_SPEC = {
     modalDarkenBackground: {
         def: true
     },
-    lockScreenShowSystemIcons: {
-        def: true
-    },
-    lockScreenShowTime: {
-        def: true
-    },
-    lockScreenClockStyle: {
-        def: "horizontal"
-    },
-    lockScreenShowDate: {
-        def: true
-    },
-    lockScreenShowPasswordField: {
-        def: true
-    },
-    lockScreenShowMediaPlayer: {
-        def: true
-    },
     lockScreenPowerOffMonitorsOnLock: {
         def: false
     },
@@ -1112,9 +1410,6 @@ var LOCAL_SPEC = {
     lockScreenInactiveColor: {
         def: "#000000"
     },
-    lockScreenNotificationMode: {
-        def: 0
-    },
     lockScreenVideoEnabled: {
         def: false
     },
@@ -1154,6 +1449,12 @@ var LOCAL_SPEC = {
     notificationHistoryEnabled: {
         def: true
     },
+    notificationLeadingShortcut: {
+        def: "dnd"
+    },
+    notificationTrailingShortcut: {
+        def: "history"
+    },
     notificationHistoryMaxCount: {
         def: 50
     },
@@ -1187,6 +1488,9 @@ var LOCAL_SPEC = {
     osdPosition: {
         def: 5
     },
+    osdPositionOverrides: {
+        def: {}
+    },
     osdVolumeEnabled: {
         def: true
     },
@@ -1209,6 +1513,18 @@ var LOCAL_SPEC = {
         def: true
     },
     osdCapsLockEnabled: {
+        def: true
+    },
+    osdNumLockEnabled: {
+        def: true
+    },
+    osdKeyboardLayoutEnabled: {
+        def: false
+    },
+    osdInputMethodEnabled: {
+        def: true
+    },
+    osdTouchpadEnabled: {
         def: true
     },
     osdPowerProfileEnabled: {
@@ -1241,6 +1557,12 @@ var LOCAL_SPEC = {
     customPowerButtons: {
         def: []
     },
+    powerMenuBootEntries: {
+        def: []
+    },
+    powerMenuFirmwareSetup: {
+        def: false
+    },
     updaterCheckOnStart: {
         def: false
     },
@@ -1254,7 +1576,17 @@ var LOCAL_SPEC = {
         def: ""
     },
     updaterIntervalSeconds: {
-        def: 1800
+        def: 86400
+    },
+    updaterNotify: {
+        def: false
+    },
+    updaterPauseOnBattery: {
+        def: false
+    },
+    // 0 = every time the count grows
+    updaterNotifyMinSeconds: {
+        def: 86400
     },
     updaterIncludeFlatpak: {
         def: true
@@ -1265,11 +1597,11 @@ var LOCAL_SPEC = {
     updaterReopenAfterUpgrade: {
         def: true
     },
+    updaterUpgradeInWindow: {
+        def: false
+    },
     updaterIgnoredPackages: {
         def: []
-    },
-    displayNameMode: {
-        def: "system"
     },
     screenPreferences: {
         def: {}
@@ -1308,7 +1640,7 @@ var LOCAL_SPEC = {
                 centerWidgets: ["music", "clock", "weather"],
                 rightWidgets: ["systemTray", "clipboard", "cpuUsage", "memUsage", "notificationButton", "battery", "controlCenterButton"],
                 spacing: 4,
-                innerPadding: 4,
+                innerPadding: 2,
                 barInsetPadding: -1,
                 barLengthPadding: 0,
                 barLengthMode: "full",
@@ -1351,9 +1683,13 @@ var LOCAL_SPEC = {
                 popupGapsManual: 4,
                 maximizeDetection: true,
                 useOverlayLayer: false,
+                hideOnFullscreen: false,
                 scrollEnabled: true,
-                scrollXBehavior: "column",
+                scrollXBehavior: "focusWindow",
                 scrollYBehavior: "workspace",
+                middleClickAction: "none",
+                rightClickAction: "none",
+                clickActionFollowMouse: false,
                 shadowIntensity: 0,
                 shadowOpacity: 60,
                 shadowColorMode: "default",
@@ -1372,6 +1708,9 @@ var LOCAL_SPEC = {
     },
     desktopWidgetGroups: {
         def: []
+    },
+    desktopContextMenu: {
+        def: "auto"
     },
     builtInPluginSettings: {
         def: {}
@@ -1402,6 +1741,9 @@ var LOCAL_SPEC = {
     },
     launcherPluginOrder: {
         def: []
+    },
+    launcherKeybinds: {
+        def: {}
     },
     frameEnabled: {
         def: false
@@ -1447,6 +1789,12 @@ var LOCAL_SPEC = {
     },
     frameBarInsetPadding: {
         def: -1
+    },
+    nightModeExcludeFullscreen: {
+        def: false
+    },
+    nightModeExcludedApps: {
+        def: []
     }
 };
 

@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.Services
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 SettingsCard {
@@ -34,6 +35,24 @@ SettingsCard {
         enabled: !root.isDisabled
         checked: DisplayConfigState.getNiriSetting(root.outputData, root.outputName, "focusAtStartup", false)
         onToggled: checked => DisplayConfigState.setNiriSetting(root.outputData, root.outputName, "focusAtStartup", checked)
+    }
+
+    SettingsDropdownRow {
+        readonly property var depths: [6, 8, 10, 12, 14, 16]
+
+        visible: "max_bpc" in (NiriService.outputs[root.outputName] ?? {})
+        enabled: !root.isDisabled
+        text: I18n.tr("Max bits per channel", "niri output dropdown, max-bpc sent to the display")
+        description: I18n.tr("Lower only if a mode fails for lack of bandwidth")
+        currentValue: {
+            const value = DisplayConfigState.getNiriSetting(root.outputData, root.outputName, "maxBpc", null);
+            return depths.includes(value) ? value.toString() : I18n.tr("Default");
+        }
+        options: [I18n.tr("Default")].concat(depths.map(d => d.toString()))
+        onValueChanged: value => {
+            const depth = parseInt(value);
+            DisplayConfigState.setNiriSetting(root.outputData, root.outputName, "maxBpc", depths.includes(depth) ? depth : null);
+        }
     }
 
     SettingsDropdownRow {
@@ -109,7 +128,7 @@ SettingsCard {
                 width: parent.width
                 spacing: Theme.spacingM
 
-                DankTextField {
+                DTextField {
                     outlined: true
                     leftIconName: "space_dashboard"
                     labelText: I18n.tr("Window gaps (px)")
@@ -137,7 +156,7 @@ SettingsCard {
                     }
                 }
 
-                DankTextField {
+                DTextField {
                     outlined: true
                     leftIconName: "width_normal"
                     labelText: I18n.tr("Default width (%)", "niri output field label, default column width percent")
@@ -172,7 +191,7 @@ SettingsCard {
                 }
             }
 
-            DankTextField {
+            DTextField {
                 outlined: true
                 leftIconName: "view_column"
                 labelText: I18n.tr("Preset widths (%)", "niri output field label, preset column width percents")

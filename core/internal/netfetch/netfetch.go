@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const DefaultUserAgent = "DankMaterialShell/1.0 (Linux)"
+const DefaultUserAgent = "DuxShell/1.0 (Linux)"
 
 type Options struct {
 	Headers        map[string]string
@@ -21,6 +21,8 @@ type Options struct {
 	ConnectTimeout time.Duration
 	IPv4Only       bool
 	CheckRedirect  func(req *http.Request, via []*http.Request) error
+	// 0 = unlimited; only BytesConditional honours it.
+	MaxBytes int64
 }
 
 type StatusError struct {
@@ -176,4 +178,49 @@ func ToFile(ctx context.Context, url string, opts Options, path string) error {
 		return err
 	}
 	return nil
+}
+
+type Conditional struct {
+	Body        []byte
+	ETag        string
+	NotModified bool
+}
+
+func BytesConditional(ctx context.Context, url, etag string, opts Options) (Conditional, error) {
+	if opts.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, opts.Timeout)
+		defer cancel()
+	}
+	req, err := opts.request(ctx, url)
+	if err != nil {
+		return Conditional{}, err
+	}
+	if etag != "" {
+		req.Header.Set("If-None-Match", etag)
+	}
+	resp, err := opts.client().Do(req)
+	if err != nil {
+		return Conditional{}, fmt.Errorf("download failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotModified {
+		return Conditional{ETag: etag, NotModified: true}, nil
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return Conditional{}, &StatusError{Code: resp.StatusCode}
+	}
+	var r io.Reader = resp.Body
+	if opts.MaxBytes > 0 {
+		r = io.LimitReader(resp.Body, opts.MaxBytes+1)
+	}
+	body, err := io.ReadAll(r)
+	if err != nil {
+		return Conditional{}, err
+	}
+	if opts.MaxBytes > 0 && int64(len(body)) > opts.MaxBytes {
+		return Conditional{}, fmt.Errorf("response exceeds %d bytes", opts.MaxBytes)
+	}
+	return Conditional{Body: body, ETag: resp.Header.Get("ETag")}, nil
 }

@@ -1,9 +1,10 @@
 import QtQuick
 import qs.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 
-DankFloatingWindow {
+DFloatingWindow {
     id: root
     readonly property var log: Log.scoped("WorkspaceRenameModal")
 
@@ -14,6 +15,8 @@ DankFloatingWindow {
     title: I18n.tr("Rename Workspace")
     minimumSize: Qt.size(400, renameDialog.implicitHeight)
     maximumSize: Qt.size(400, renameDialog.implicitHeight)
+    implicitWidth: minimumSize.width
+    implicitHeight: minimumSize.height
     visible: false
 
     onClosed: hide()
@@ -68,6 +71,14 @@ DankFloatingWindow {
         hide();
     }
 
+    function focusedWorkspaceName() {
+        if (CompositorService.isNiri)
+            return NiriService.workspaces[NiriService.focusedWorkspaceId]?.name ?? "";
+        if (CompositorService.isHyprland)
+            return HyprlandService.focusedWorkspaceName();
+        return "";
+    }
+
     function renameWorkspace(name) {
         if (CompositorService.isNiri) {
             NiriService.renameWorkspace(name);
@@ -88,7 +99,7 @@ DankFloatingWindow {
         renaming = false;
     }
 
-    DankDialog {
+    DDialog {
         id: renameDialog
 
         anchors.fill: parent
@@ -99,7 +110,7 @@ DankFloatingWindow {
         onAccepted: root.submitAndClose()
         onRejected: root.hide()
 
-        DankTextField {
+        DTextField {
             id: nameInput
 
             width: parent.width
@@ -112,7 +123,7 @@ DankFloatingWindow {
         }
 
         actions: [
-            DankButton {
+            DButton {
                 maximumWidth: renameDialog.actionWidth
                 wrapText: true
                 text: I18n.tr("Cancel")
@@ -120,7 +131,7 @@ DankFloatingWindow {
                 textColor: Theme.primary
                 onClicked: root.hide()
             },
-            DankButton {
+            DButton {
                 maximumWidth: renameDialog.actionWidth
                 wrapText: true
                 text: I18n.tr("Rename", "verb, rename button")

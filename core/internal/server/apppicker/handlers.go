@@ -1,10 +1,9 @@
 package apppicker
 
 import (
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/desktop"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/desktop"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 )
 
 func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
@@ -12,30 +11,30 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	case "apppicker.open", "browser.open":
 		handleOpen(conn, req, manager)
 	default:
-		models.RespondError(conn, req.ID, "unknown method")
+		conn.RespondError(req.ID, "unknown method")
 	}
 }
 
 func handleOpen(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	log.Infof("AppPicker: Received %s request with params: %+v", req.Method, req.Params)
 
-	target, ok := models.Get[string](req, "target")
+	target, ok := req.Get[string]("target")
 	if !ok {
-		target, ok = models.Get[string](req, "url")
+		target, ok = req.Get[string]("url")
 		if !ok {
 			log.Warnf("AppPicker: Invalid target parameter in request")
-			models.RespondError(conn, req.ID, "invalid target parameter")
+			conn.RespondError(req.ID, "invalid target parameter")
 			return
 		}
 	}
 
 	event := OpenEvent{
 		Target:      target,
-		RequestType: models.GetOr(req, "requestType", "url"),
-		MimeType:    desktop.StripMimeParams(models.GetOr(req, "mimeType", "")),
+		RequestType: req.GetOr("requestType", "url"),
+		MimeType:    desktop.StripMimeParams(req.GetOr("mimeType", "")),
 	}
 
-	if categories, ok := models.Get[[]any](req, "categories"); ok {
+	if categories, ok := req.Get[[]any]("categories"); ok {
 		event.Categories = make([]string, 0, len(categories))
 		for _, cat := range categories {
 			if catStr, ok := cat.(string); ok {
@@ -46,6 +45,6 @@ func handleOpen(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 
 	log.Infof("AppPicker: Broadcasting event: %+v", event)
 	manager.RequestOpen(event)
-	models.Respond(conn, req.ID, "ok")
+	conn.Respond(req.ID, "ok")
 	log.Infof("AppPicker: Request handled successfully")
 }

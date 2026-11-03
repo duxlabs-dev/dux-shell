@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	coreplugins "github.com/AvengeMedia/DankMaterialShell/core/internal/plugins"
+	coreplugins "github.com/duxlabs-dev/dux-shell/core/internal/plugins"
 )
 
 func pluginInfoFromPlugin(plugin coreplugins.Plugin) PluginInfo {
@@ -21,14 +21,22 @@ func pluginInfoFromPlugin(plugin coreplugins.Plugin) PluginInfo {
 		Capabilities: plugin.Capabilities,
 		Compositors:  plugin.Compositors,
 		Dependencies: plugin.Dependencies,
-		FirstParty:   isFirstPartyRepo(plugin.Repo),
+		FirstParty:   coreplugins.IsFirstPartyRepo(plugin.Repo),
 		Featured:     plugin.Featured,
 		RequiresDMS:  plugin.RequiresDMS,
 	}
 }
 
-func isFirstPartyRepo(repo string) bool {
-	return strings.HasPrefix(repo, "https://github.com/AvengeMedia")
+func applyFeedback(info *PluginInfo, fb coreplugins.Feedback) {
+	info.Upvotes = fb.Upvotes
+	info.Status = fb.Status
+	info.IssueURL = fb.IssueURL
+	info.Similar = fb.Similar
+	info.Version = fb.Version
+	info.Icon = fb.Icon
+	info.Permissions = fb.Permissions
+	info.CreatedAt = fb.CreatedAt
+	info.UpdatedAt = fb.UpdatedAt
 }
 
 func normalizeScreenshotURL(raw string) string {
@@ -58,8 +66,8 @@ func normalizeScreenshotURL(raw string) string {
 
 func SortPluginInfoByFirstParty(pluginInfos []PluginInfo) {
 	sort.SliceStable(pluginInfos, func(i, j int) bool {
-		isFirstPartyI := isFirstPartyRepo(pluginInfos[i].Repo)
-		isFirstPartyJ := isFirstPartyRepo(pluginInfos[j].Repo)
+		isFirstPartyI := coreplugins.IsFirstPartyRepo(pluginInfos[i].Repo)
+		isFirstPartyJ := coreplugins.IsFirstPartyRepo(pluginInfos[j].Repo)
 		if isFirstPartyI != isFirstPartyJ {
 			return isFirstPartyI
 		}

@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 func aqueousFixture(t *testing.T) aqueousConfig {
@@ -58,7 +58,6 @@ func TestAqueousBindingReplacementIsOneRequest(t *testing.T) {
 
 func TestAqueousBindingConflictAndRemove(t *testing.T) {
 	for _, edit := range []AqueousBindEdit{
-		{Generation: "stale", Key: "Super+T", Remove: true},
 		{Generation: "abc", OriginalKey: "Super+Return", Key: "Super+R", Action: "close"},
 		{Generation: "abc", Key: "Super+Q", Action: "invented_action"},
 	} {

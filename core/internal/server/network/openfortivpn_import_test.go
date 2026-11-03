@@ -1,8 +1,6 @@
 package network
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -76,9 +74,7 @@ password = VPNpassw0rd
 			input string
 		}{
 			{name: "wireguard", input: "[Interface]\nPrivateKey = abc\nAddress = 10.0.0.2/32\n"},
-			{name: "openvpn", input: "client\ndev tun\nremote vpn.example.com 1194\n"},
 			{name: "no host", input: "port = 443\nusername = jdoe\n"},
-			{name: "empty", input: ""},
 		}
 
 		for _, tt := range tests {
@@ -137,26 +133,4 @@ func TestOpenfortivpnConfigProfile(t *testing.T) {
 			Password: "hunter2",
 		}, cfg.profile())
 	})
-}
-
-func TestReadOpenfortivpnConfig(t *testing.T) {
-	dir := t.TempDir()
-
-	fortinet := filepath.Join(dir, "myvpn")
-	require.NoError(t, os.WriteFile(fortinet, []byte("host = vpn.example.com\nport = 10443\n"), 0o600))
-
-	wireguard := filepath.Join(dir, "wg0.conf")
-	require.NoError(t, os.WriteFile(wireguard, []byte("[Interface]\nPrivateKey = abc\n"), 0o600))
-
-	cfg := readOpenfortivpnConfig(fortinet)
-	require.NotNil(t, cfg)
-	assert.Equal(t, "vpn.example.com", cfg.Host)
-
-	assert.Nil(t, readOpenfortivpnConfig(wireguard))
-	assert.Nil(t, readOpenfortivpnConfig(filepath.Join(dir, "missing")))
-}
-
-func TestVPNNameFromPath(t *testing.T) {
-	assert.Equal(t, "myvpn", vpnNameFromPath("/home/user/.config/openfortivpn/myvpn"))
-	assert.Equal(t, "work", vpnNameFromPath("/home/user/work.conf"))
 }

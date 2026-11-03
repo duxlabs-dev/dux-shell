@@ -15,8 +15,6 @@ Column {
         settingKey: "barWidgetPrivacy"
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["privacyShowMicIcon"]
             iconName: "mic"
             text: I18n.tr("Microphone", "toggle for the microphone indicator icon")
             checked: root.page.value("privacyShowMicIcon")
@@ -24,8 +22,6 @@ Column {
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["privacyShowCameraIcon"]
             iconName: "camera_video"
             text: I18n.tr("Camera", "toggle for the camera indicator icon")
             checked: root.page.value("privacyShowCameraIcon")
@@ -33,8 +29,6 @@ Column {
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["privacyShowScreenShareIcon"]
             iconName: "screen_share"
             text: I18n.tr("Screen sharing")
             checked: root.page.value("privacyShowScreenShareIcon")

@@ -1,19 +1,27 @@
 package keybinds
 
-import "github.com/AvengeMedia/DankMaterialShell/core/internal/configfrag"
+import (
+	"strings"
+
+	"github.com/duxlabs-dev/dux-shell/core/internal/configfrag"
+)
 
 type Keybind struct {
 	Key             string   `json:"key"`
 	Description     string   `json:"desc"`
 	Action          string   `json:"action,omitempty"`
+	LuaAction       string   `json:"luaAction,omitempty"` // Hyprland: hl.dsp expression for `hyprctl dispatch`
 	Subcategory     string   `json:"subcat,omitempty"`
 	Source          string   `json:"source,omitempty"`
 	HideOnOverlay   bool     `json:"hideOnOverlay,omitempty"`
 	CooldownMs      int      `json:"cooldownMs,omitempty"`
-	Flags           string   `json:"flags,omitempty"` // Hyprland bind flags: e=repeat, l=locked, r=release, o=long-press
+	Flags           string   `json:"flags,omitempty"` // Hyprland hl.bind options as letters (e=repeating, l=locked, r=release, o=long_press, ...)
 	AllowWhenLocked bool     `json:"allowWhenLocked,omitempty"`
 	AllowInhibiting *bool    `json:"allowInhibiting,omitempty"` // nil=default(true), false=explicitly disabled
 	Repeat          *bool    `json:"repeat,omitempty"`          // nil=default(true), false=explicitly disabled
+	Trigger         string   `json:"trigger,omitempty"`         // niri: ""=press, "release", "both"; Action is the release action when "release"
+	ReleaseAction   string   `json:"releaseAction,omitempty"`   // niri: release action when Trigger is "both"
+	PassThrough     *bool    `json:"passThrough,omitempty"`     // niri: nil=default (forward for release-only keyboard binds)
 	Conflict        *Keybind `json:"conflict,omitempty"`
 	HasDefault      bool     `json:"hasDefault,omitempty"` // override has a DMS default to revert to
 }
@@ -27,8 +35,52 @@ type DMSBindsStatus struct {
 	Effective       bool   `json:"effective"`
 	OverriddenBy    int    `json:"overriddenBy"`
 	StatusMessage   string `json:"statusMessage"`
-	ConfigFormat    string `json:"configFormat,omitempty"`
-	ReadOnly        bool   `json:"readOnly,omitempty"`
+}
+
+const (
+	ModSourceConfig  = "config"
+	ModSourceRuntime = "runtime"
+	ModSourceDefault = "default"
+)
+
+// Symbol is the token bind keys use for the main modifier ("Mod" on niri),
+// empty when the provider expands it before keys reach the sheet.
+type ModKey struct {
+	Symbol   string `json:"symbol,omitempty"`
+	Resolved string `json:"resolved"`
+	Source   string `json:"source"`
+}
+
+func DefaultModKey() ModKey {
+	return ModKey{Resolved: "Super", Source: ModSourceDefault}
+}
+
+func ConfiguredModKey(symbol, value string) ModKey {
+	if strings.TrimSpace(value) == "" {
+		mod := DefaultModKey()
+		mod.Symbol = symbol
+		return mod
+	}
+	return ModKey{Symbol: symbol, Resolved: CanonicalModifier(value), Source: ModSourceConfig}
+}
+
+func CanonicalModifier(modifier string) string {
+	modifier = strings.TrimSpace(modifier)
+	switch strings.ToLower(modifier) {
+	case "super", "mod4", "win", "meta", "logo", "mainmod":
+		return "Super"
+	case "alt", "mod1":
+		return "Alt"
+	case "ctrl", "control":
+		return "Ctrl"
+	case "shift":
+		return "Shift"
+	case "mod3":
+		return "Mod3"
+	case "mod5":
+		return "Mod5"
+	}
+	return modifier
 }
 
 type CheatSheet struct {
@@ -36,14 +88,22 @@ type CheatSheet struct {
 	Title            string               `json:"title"`
 	Provider         string               `json:"provider"`
 	ModKey           string               `json:"modKey,omitempty"`
+	Mod              ModKey               `json:"mod"`
 	Binds            map[string][]Keybind `json:"binds"`
 	DMSBindsIncluded bool                 `json:"dmsBindsIncluded"`
 	DMSStatus        *DMSBindsStatus      `json:"dmsStatus,omitempty"`
 }
 
+// ModKey stays populated with Mod.Resolved so shells older than the mod field keep working.
+func (s *CheatSheet) SetMod(mod ModKey) {
+	s.Mod = mod
+	s.ModKey = mod.Resolved
+}
+
 type Provider interface {
 	Name() string
 	GetCheatSheet() (*CheatSheet, error)
+	ModKey() ModKey
 }
 
 type WritableProvider interface {
@@ -68,7 +128,5 @@ func DMSBindsStatusFrom(s configfrag.Status) *DMSBindsStatus {
 		Effective:       s.Effective,
 		OverriddenBy:    s.OverriddenBy,
 		StatusMessage:   s.StatusMessage,
-		ConfigFormat:    s.ConfigFormat,
-		ReadOnly:        s.ReadOnly,
 	}
 }

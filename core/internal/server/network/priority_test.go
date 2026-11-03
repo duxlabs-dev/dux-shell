@@ -3,6 +3,7 @@ package network
 import (
 	"testing"
 
+	"github.com/godbus/dbus/v5"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +21,10 @@ func TestManager_SetConnectionPreference(t *testing.T) {
 	})
 }
 
-// Note: Full testing of priority operations would require mocking NetworkManager
-// D-Bus interfaces. The tests above cover the basic logic and error handling.
-// Integration tests would be needed for complete coverage of network connection
-// priority updates and reactivation.
+func TestProfileAtDefaultsMatchesAutoTargets(t *testing.T) {
+	assert.True(t, priorityMatches(dbus.Variant{}, int64(priorityDefault)))
+	assert.True(t, routeMetricMatches(nil, metricDefault))
+	assert.True(t, routeMetricMatches(map[string]dbus.Variant{"method": dbus.MakeVariant("auto")}, metricDefault))
+	assert.False(t, routeMetricMatches(map[string]dbus.Variant{"route-metric": dbus.MakeVariant(int64(100))}, metricDefault))
+	assert.False(t, priorityMatches(dbus.MakeVariant(int32(100)), int64(priorityDefault)))
+}

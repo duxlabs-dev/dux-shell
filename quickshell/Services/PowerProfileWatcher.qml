@@ -13,7 +13,7 @@ Singleton {
     property int previousProfile: -1
     property bool daemonRunning: true
 
-    readonly property bool available: typeof PowerProfiles !== "undefined" && daemonRunning
+    readonly property bool available: daemonRunning
 
     function checkDaemon() {
         if (!DMSService.isConnected || !DMSService.capabilities.includes("dbus"))
@@ -87,17 +87,14 @@ Singleton {
     }
 
     Connections {
-        target: typeof PowerProfiles !== "undefined" ? PowerProfiles : null
+        target: PowerProfiles
 
         function onProfileChanged() {
-            if (typeof PowerProfiles !== "undefined") {
-                root.daemonRunning = true;
-                root.previousProfile = root.currentProfile;
-                root.currentProfile = PowerProfiles.profile;
-                if (root.previousProfile !== -1) {
-                    root.profileChanged(root.currentProfile);
-                }
-            }
+            root.daemonRunning = true;
+            root.previousProfile = root.currentProfile;
+            root.currentProfile = PowerProfiles.profile;
+            if (root.previousProfile !== -1)
+                root.profileChanged(root.currentProfile);
         }
     }
 
@@ -110,9 +107,7 @@ Singleton {
     }
 
     Component.onCompleted: {
-        if (typeof PowerProfiles !== "undefined") {
-            root.currentProfile = PowerProfiles.profile;
-            root.previousProfile = PowerProfiles.profile;
-        }
+        root.currentProfile = PowerProfiles.profile;
+        root.previousProfile = PowerProfiles.profile;
     }
 }

@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Rectangle {
     id: root
@@ -28,7 +28,7 @@ Rectangle {
         anchors.centerIn: parent
         spacing: Theme.spacingS
 
-        DankIcon {
+        DIcon {
             name: root.iconName
             size: Theme.iconSizeSmall + 2
             color: Theme.primary
@@ -43,7 +43,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        DankIcon {
+        DIcon {
             visible: root.isExternal
             name: "open_in_new"
             size: Theme.iconSizeSmall - 2

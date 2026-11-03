@@ -223,6 +223,8 @@ Singleton {
             return;
         cupsAvailable = DMSService.capabilities.includes("cups");
 
+        if (refCount <= 0)
+            return;
         if (cupsAvailable && !stateInitialized) {
             stateInitialized = true;
             getState();

@@ -1,10 +1,1 @@
-{
-  "policy_version": 1,
-  "blocked_commands": [
-    "greeter install",
-    "greeter enable",
-    "greeter uninstall",
-    "setup"
-  ],
-  "message": "This command is disabled on immutable/image-based systems. Use your distro-native workflow for system-level changes."
-}
+{"policy_version":1,"blocked_commands":[],"message":"This command is disabled on immutable/image-based systems. Use your distro-native workflow for system-level changes."}

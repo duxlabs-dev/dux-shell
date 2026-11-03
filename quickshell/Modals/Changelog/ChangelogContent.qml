@@ -1,273 +1,309 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
-import QtQuick.Effects
 import qs.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
+import qs.Modules.Settings.Widgets
 
 Column {
     id: root
 
-    readonly property real logoSize: Math.round(Theme.iconSize * 2.8)
-    readonly property real badgeHeight: Math.round(Theme.fontSizeSmall * 1.7)
-    readonly property string releaseNotesUrl: "https://danklinux.com/blog/v1-6-release"
-    readonly property string screenshotDocsUrl: "https://danklinux.com/docs/dankmaterialshell/cli-screenshot"
+    readonly property string migrateDocsUrl: Site.docs + "/dms/cli-migrate"
+    readonly property string compositorDocsUrl: Site.docs + "/dms/compositors"
 
-    topPadding: Theme.spacingL
+    readonly property var features: [
+        {
+            "icon": "density_medium",
+            "shape": "softBurst",
+            "hoverShape": "flower",
+            "accent": "purple",
+            "heading": "Interface density",
+            "description": "Spacious, Comfortable, Compact, or Dense, with text and fields scaling along",
+            "target": "theme_surfaces"
+        },
+        {
+            "icon": "rounded_corner",
+            "shape": "cookie9",
+            "hoverShape": "sunny",
+            "accent": "blue",
+            "heading": "DMS Classic",
+            "description": "One corner radius on every control, no pills or press morphing",
+            "target": "theme_surfaces"
+        },
+        {
+            "icon": "lyrics",
+            "shape": "clover4",
+            "hoverShape": "cookie4",
+            "accent": "pink",
+            "heading": "Media player",
+            "description": "An Expressive redesign, a reworked Bento layout, and lyrics in the island",
+            "target": "media_player"
+        },
+        {
+            "icon": "monitor_heart",
+            "shape": "sunny",
+            "hoverShape": "softBurst",
+            "accent": "green",
+            "heading": "System monitor",
+            "description": "Per-device graphs, disk health, process details, and a shareable report",
+            "target": "system_monitor"
+        },
+        {
+            "icon": "movie",
+            "shape": "gem",
+            "hoverShape": "cookie6",
+            "accent": "orange",
+            "heading": "Video wallpapers",
+            "description": "Play a video as your wallpaper, paused while locked or covered",
+            "target": "wallpaper"
+        },
+        {
+            "icon": "keyboard",
+            "shape": "puffy",
+            "hoverShape": "clover8",
+            "accent": "teal",
+            "heading": "New OSDs",
+            "description": "Keyboard layout, Num Lock, and fcitx5 input method changes",
+            "target": "osd"
+        }
+    ]
+
+    readonly property var additions: [
+        {
+            "icon": "space_dashboard",
+            "accent": "purple",
+            "title": "Dash",
+            "subtitle": "A user info card, keyboard navigation, and the tab bar on the island",
+            "target": "dank_dash"
+        },
+        {
+            "icon": "speaker",
+            "accent": "pink",
+            "title": "Audio",
+            "subtitle": "Turn audio cards off, and back on from their own list",
+            "target": "audio"
+        },
+        {
+            "icon": "partly_cloudy_day",
+            "accent": "blue",
+            "title": "Weather",
+            "subtitle": "MET Norway, with an ordered fallback when a provider is down",
+            "target": "weather"
+        },
+        {
+            "icon": "power_settings_new",
+            "accent": "red",
+            "title": "Power menu",
+            "subtitle": "Reboot into firmware setup",
+            "target": "power_sleep"
+        },
+        {
+            "icon": "view_quilt",
+            "accent": "green",
+            "title": "niri",
+            "subtitle": "Ready for the next release: release binds, lone modifier binds, and new window rules",
+            "target": root.compositorDocsUrl + "#next-niri-release"
+        },
+        {
+            "icon": "water_drop",
+            "accent": "teal",
+            "title": "Hyprland",
+            "subtitle": "Lua config only, Hyprland 0.57, and more wobbly window physics",
+            "target": root.compositorDocsUrl + "#hyprland-configuration"
+        },
+        {
+            "icon": "view_column",
+            "accent": "orange",
+            "title": "mangowm",
+            "subtitle": "Native config.toml support, for mangowm 0.18 and newer",
+            "target": root.compositorDocsUrl + "#mangowc-configuration"
+        },
+        {
+            "icon": "folder_special",
+            "accent": "yellow",
+            "title": "Dux suite",
+            "subtitle": "Folder colors and previews in Dux Files, calendar blur, and new dgop sensors",
+            "target": Site.docs + "/dfiles"
+        },
+        {
+            "icon": "deployed_code",
+            "accent": "blue",
+            "title": "Fedora Atomic",
+            "subtitle": "The Dux installer supports Silverblue, Bazzite, and other bootc images",
+            "target": Site.docs + "/duxinstall#fedora-atomic--bootc-images"
+        }
+    ]
+
+    function open(target) {
+        if (target.startsWith("https://")) {
+            Qt.openUrlExternally(target);
+            return;
+        }
+        if (target === "system_monitor") {
+            PopoutService.showProcessListModal();
+            return;
+        }
+        PopoutService.openSettingsWithTab(target);
+    }
+
     spacing: Theme.spacingL
 
-    Column {
+    ReleaseHero {
         width: parent.width
-        spacing: Theme.spacingM
+    }
+
+    Grid {
+        id: grid
+
+        readonly property real cardWidth: (width - columnSpacing * (columns - 1)) / columns
+        readonly property real cellHeight: {
+            let tallest = 0;
+            for (const card of children)
+                tallest = Math.max(tallest, card.implicitHeight ?? 0);
+            return tallest;
+        }
+
+        width: parent.width
+        columns: 3
+        rowSpacing: Theme.spacingS
+        columnSpacing: Theme.spacingS
+        layoutDirection: I18n.isRtl ? Qt.RightToLeft : Qt.LeftToRight
+
+        Repeater {
+            model: root.features
+
+            delegate: FeatureCard {
+                required property var modelData
+
+                width: grid.cardWidth
+                height: grid.cellHeight
+                iconName: modelData.icon
+                shape: modelData.shape
+                hoverShape: modelData.hoverShape
+                accent: modelData.accent
+                heading: modelData.heading
+                description: modelData.description
+                onClicked: root.open(modelData.target)
+            }
+        }
+    }
+
+    SettingsCard {
+        title: I18n.tr("More in %1", "changelog card title, %1 is a version").arg(ChangelogService.currentVersion)
+
+        Repeater {
+            model: root.additions
+
+            delegate: SettingsRow {
+                id: addition
+
+                required property var modelData
+
+                readonly property var accentPair: Theme.accent(modelData.accent)
+
+                title: modelData.title
+                subtitle: modelData.subtitle
+                resetKeys: []
+                clickable: modelData.target !== ""
+                showChevron: clickable
+                onClicked: root.open(modelData.target)
+
+                leading: Rectangle {
+                    width: SettingsMetrics.navIconSize
+                    height: width
+                    radius: Theme.fullRadius(width, height)
+                    color: addition.accentPair?.container ?? Theme.primaryContainer
+
+                    DIcon {
+                        anchors.centerIn: parent
+                        name: addition.modelData.icon
+                        size: Theme.iconSizeMedium
+                        color: addition.accentPair?.onContainer ?? Theme.onPrimaryContainer
+                    }
+                }
+            }
+        }
+    }
+
+    DCard {
+        width: parent.width
+        height: migrateNote.implicitHeight + pad * 2
+        tone: "tertiary"
+        pad: Theme.spacingL
+        restRadius: Theme.groupedListOuterRadius
 
         Row {
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: Theme.spacingM
+            id: migrateNote
+            width: parent.width
+            spacing: Theme.spacingL
+            LayoutMirroring.enabled: I18n.isRtl
 
-            Image {
-                width: root.logoSize
-                height: width * (569.94629 / 506.50931)
-                anchors.verticalCenter: parent.verticalCenter
-                fillMode: Image.PreserveAspectFit
-                smooth: true
-                mipmap: true
-                asynchronous: true
-                source: "file://" + Theme.shellDir + "/assets/danklogonormal.svg"
-                layer.enabled: true
-                layer.smooth: true
-                layer.mipmap: true
-                layer.effect: MultiEffect {
-                    saturation: 0
-                    colorization: 1
-                    colorizationColor: Theme.primary
+            DMaterialShape {
+                width: Theme.buttonHeightM
+                height: width
+                shape: "cookie6"
+                color: Theme.onTertiaryContainer
+
+                DIcon {
+                    anchors.centerIn: parent
+                    name: "move_down"
+                    size: Theme.iconSize
+                    color: Theme.tertiaryContainer
                 }
             }
 
             Column {
+                width: parent.width - Theme.buttonHeightM - docsButton.width - parent.spacing * 2
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.spacingXS
+                spacing: Theme.spacingXXS
 
-                Row {
-                    spacing: Theme.spacingS
-
-                    StyledText {
-                        text: "DMS " + ChangelogService.currentVersion
-                        font.pixelSize: Theme.fontSizeXLarge + 2
-                        color: Theme.surfaceText
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Rectangle {
-                        width: codenameText.implicitWidth + Theme.spacingM * 2
-                        height: root.badgeHeight
-                        radius: Theme.fullRadius(width, height)
-                        color: Theme.primaryContainer
-                        anchors.verticalCenter: parent.verticalCenter
-
-                        StyledText {
-                            id: codenameText
-                            anchors.centerIn: parent
-                            text: "Marble Tabby"
-                            font.pixelSize: Theme.fontSizeSmall
-                            font.weight: Theme.fontWeightMedium
-                            color: Theme.accentOnPrimaryContainer
-                        }
-                    }
+                StyledText {
+                    width: parent.width
+                    text: "Move to the Dux Labs repositories"
+                    font.pixelSize: Theme.fontSizeLarge
+                    font.weight: Theme.fontWeightBold
+                    color: Theme.onTertiaryContainer
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignLeft
                 }
 
                 StyledText {
-                    text: "Dank Island, spring motion, performance & resource optimizations"
+                    width: parent.width
+                    text: "Packaged installs now update from Dux Labs. Run dms migrate dux once, it lists every repository it moves and asks first. On Arch, pacman swaps in dux-shell on its own."
                     font.pixelSize: Theme.fontSizeMedium
-                    color: Theme.surfaceVariantText
+                    color: Theme.onTertiaryContainer
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignLeft
                 }
             }
-        }
-    }
 
-    Rectangle {
-        width: parent.width
-        height: 1
-        color: Theme.outlineMedium
-        opacity: 0.3
+            DButton {
+                id: docsButton
+                anchors.verticalCenter: parent.verticalCenter
+                text: I18n.tr("Docs")
+                iconName: "open_in_new"
+                backgroundColor: Theme.onTertiaryContainer
+                textColor: Theme.tertiaryContainer
+                onClicked: Qt.openUrlExternally(root.migrateDocsUrl)
+            }
+        }
     }
 
     Column {
         width: parent.width
-        spacing: Theme.spacingM
+        visible: ChangelogService.release !== null
+        spacing: 0
 
-        StyledText {
-            text: "What's New"
-            font.pixelSize: Theme.fontSizeMedium
-            font.weight: Theme.fontWeightMedium
-            color: Theme.surfaceText
+        SettingsSectionLabel {
+            text: I18n.tr("What changed", "changelog section heading listing the changes in a release")
         }
 
-        Grid {
+        ReleaseNotesCard {
             width: parent.width
-            columns: 2
-            rowSpacing: Theme.spacingS
-            columnSpacing: Theme.spacingS
-
-            ChangelogFeatureCard {
-                width: (parent.width - Theme.spacingS) / 2
-                iconName: "view_in_ar"
-                title: "Dank Island"
-                description: "A bar that reacts to you"
-                onClicked: {
-                    SettingsSearchService.navigateToSection("barLayout");
-                    PopoutService.openSettingsWithTab("dankbar");
-                }
-            }
-
-            ChangelogFeatureCard {
-                width: (parent.width - Theme.spacingS) / 2
-                iconName: "animation"
-                title: "Spring Motion"
-                description: "New motion physics"
-                onClicked: {
-                    SettingsSearchService.navigateToSection("springBounce");
-                    PopoutService.openSettingsWithTab("typography");
-                }
-            }
-
-            ChangelogFeatureCard {
-                width: (parent.width - Theme.spacingS) / 2
-                iconName: "speed"
-                title: "Performance"
-                description: "Big speedups, less memory"
-                onClicked: Qt.openUrlExternally(root.releaseNotesUrl)
-            }
-
-            ChangelogFeatureCard {
-                width: (parent.width - Theme.spacingS) / 2
-                iconName: "wifi_tethering"
-                title: "Network"
-                description: "Hotspot, cellular, and OWE"
-                onClicked: {
-                    SettingsSearchService.navigateToSection("networkHotspot");
-                    PopoutService.openSettingsWithTab("network_wifi");
-                }
-            }
-
-            ChangelogFeatureCard {
-                width: (parent.width - Theme.spacingS) / 2
-                iconName: "extension"
-                title: "Plugin Registries"
-                description: "Add your own sources"
-                onClicked: PopoutService.openSettingsWithTab("plugins")
-            }
-
-            ChangelogFeatureCard {
-                width: (parent.width - Theme.spacingS) / 2
-                iconName: "photo_camera"
-                title: "Capture"
-                description: "Grab regions across outputs"
-                onClicked: Qt.openUrlExternally(root.screenshotDocsUrl)
-            }
-
-            ChangelogFeatureCard {
-                width: (parent.width - Theme.spacingS) / 2
-                iconName: "login"
-                title: "Standalone Greeter"
-                description: "Now its own app"
-                onClicked: {
-                    SettingsSearchService.navigateToSection("greeterStatus");
-                    PopoutService.openSettingsWithTab("greeter");
-                }
-            }
-
-            ChangelogFeatureCard {
-                width: (parent.width - Theme.spacingS) / 2
-                iconName: "dock_to_bottom"
-                title: "Dock"
-                description: "Pinned apps, running apps"
-                onClicked: {
-                    SettingsSearchService.navigateToSection("dockSeparatePinnedAndRunningApps");
-                    PopoutService.openSettingsWithTab("dock_general");
-                }
-            }
-
-            ChangelogFeatureCard {
-                width: (parent.width - Theme.spacingS) / 2
-                iconName: "content_paste"
-                title: "Clipboard"
-                description: "Drop in anything to store it"
-                onClicked: PopoutService.openSettingsWithTab("clipboard")
-            }
-
-            ChangelogFeatureCard {
-                width: (parent.width - Theme.spacingS) / 2
-                iconName: "language"
-                title: "Translations"
-                description: "22 languages, plugin translations"
-                onClicked: {
-                    SettingsSearchService.navigateToSection("locale");
-                    PopoutService.openSettingsWithTab("locale");
-                }
-            }
-        }
-    }
-
-    Rectangle {
-        width: parent.width
-        height: 1
-        color: Theme.outlineMedium
-        opacity: 0.3
-    }
-
-    Column {
-        width: parent.width
-        spacing: Theme.spacingS
-
-        Row {
-            spacing: Theme.spacingS
-
-            DankIcon {
-                name: "warning"
-                size: Theme.iconSizeSmall
-                color: Theme.warning
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            StyledText {
-                text: "Upgrade Notes"
-                font.pixelSize: Theme.fontSizeMedium
-                font.weight: Theme.fontWeightMedium
-                color: Theme.surfaceText
-                anchors.verticalCenter: parent.verticalCenter
-            }
-        }
-
-        Rectangle {
-            width: parent.width
-            height: upgradeNotesColumn.height + Theme.spacingM * 2
-            radius: Theme.cornerRadius
-            color: Theme.withAlpha(Theme.warning, 0.08)
-            border.width: 1
-            border.color: Theme.withAlpha(Theme.warning, 0.2)
-
-            Column {
-                id: upgradeNotesColumn
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.margins: Theme.spacingM
-                spacing: Theme.spacingS
-
-                ChangelogUpgradeNote {
-                    width: parent.width
-                    text: "The shell is embedded in the dms binary. ~/.config/quickshell/dms is no longer auto-discovered, pass -c or set DMS_SHELL_DIR to override it"
-                }
-
-                ChangelogUpgradeNote {
-                    width: parent.width
-                    text: "The greeter is now a standalone application. dms greeter commands become dms-greeter"
-                }
-
-                ChangelogUpgradeNote {
-                    width: parent.width
-                    text: "settings.json only stores what differs from the defaults, and machine-specific state moved to session.json"
-                }
-            }
+            release: ChangelogService.release
+            showTitle: false
         }
     }
 }

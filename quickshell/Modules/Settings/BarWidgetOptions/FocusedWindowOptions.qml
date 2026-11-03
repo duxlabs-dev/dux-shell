@@ -14,16 +14,12 @@ Column {
         settingKey: "barWidgetFocusedWindow"
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["focusedWindowCompactMode"]
             text: I18n.tr("Compact mode")
             checked: root.page.value("focusedWindowCompactMode")
             onToggled: checked => root.page.set("focusedWindowCompactMode", checked)
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["focusedWindowShowIcon"]
             text: I18n.tr("Show icon")
             checked: root.page.value("focusedWindowShowIcon")
             onToggled: checked => root.page.set("focusedWindowShowIcon", checked)

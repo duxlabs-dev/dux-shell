@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 StyledRect {
     id: root
@@ -17,7 +17,7 @@ StyledRect {
     color: Theme.withAlpha(Theme.primary, 0.15)
     border.color: Theme.withAlpha(Theme.primary, 0.3)
     border.width: Theme.outlineWidth
-    visible: visibleCondition && (showLegacy || showSetup) && !include.checking
+    visible: visibleCondition && include.compositorSupported && (showLegacy || showSetup) && !include.checking
 
     Row {
         id: content
@@ -25,7 +25,7 @@ StyledRect {
         anchors.margins: Theme.spacingL
         spacing: Theme.spacingM
 
-        DankIcon {
+        DIcon {
             name: "warning"
             size: Theme.iconSize
             color: Theme.primary
@@ -38,7 +38,7 @@ StyledRect {
             anchors.verticalCenter: parent.verticalCenter
 
             StyledText {
-                text: root.showLegacy ? I18n.tr("Hyprland conf mode") : I18n.tr("First Time Setup")
+                text: root.showLegacy ? I18n.tr("%1 not found").arg("hyprland.lua") : I18n.tr("First Time Setup")
                 font.pixelSize: Theme.fontSizeMedium
                 font.weight: Theme.fontWeightMedium
                 color: Theme.primary
@@ -47,7 +47,7 @@ StyledRect {
             }
 
             StyledText {
-                text: root.showLegacy ? I18n.tr("This install is still using hyprland.conf. Run dms setup to migrate before changing these settings.") : I18n.tr("Click 'Setup' to create %1 and add include to your compositor config.").arg(root.include.fragmentLabel)
+                text: root.showLegacy ? I18n.tr("Run %1 to create it before changing these settings.", "hyprland.lua missing warning, %1 is a command").arg("dms setup") : I18n.tr("Click 'Setup' to create %1 and add include to your compositor config.").arg(root.include.fragmentLabel)
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.surfaceVariantText
                 wrapMode: Text.WordWrap
@@ -56,13 +56,13 @@ StyledRect {
             }
         }
 
-        DankButton {
+        DButton {
             id: fixButton
             visible: root.showSetup
             text: root.include.fixing ? I18n.tr("Setting up...") : I18n.tr("Setup")
             backgroundColor: Theme.primary
             textColor: Theme.primaryText
-            enabled: !root.include.fixing
+            enabled: !root.include.fixing && !root.include.readOnly
             anchors.verticalCenter: parent.verticalCenter
             onClicked: root.include.fix()
         }

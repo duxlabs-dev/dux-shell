@@ -9,36 +9,41 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/geolocation"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/matugen"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/apppicker"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/bluez"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/brightness"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/clipboard"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/cups"
-	serverDbus "github.com/AvengeMedia/DankMaterialShell/core/internal/server/dbus"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/evdev"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/freedesktop"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/location"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/loginctl"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/network"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/notifyactions"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/sysupdate"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/tailscale"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/thememode"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/trayrecovery"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wallpaper"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wayland"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wlcontext"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wlroutput"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
-	"github.com/AvengeMedia/dankgo/ipc"
-	"github.com/AvengeMedia/dankgo/syncmap"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/geolocation"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/matugen"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/apppicker"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/bluez"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/brightness"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/clipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/cups"
+	serverDbus "github.com/duxlabs-dev/dux-shell/core/internal/server/dbus"
+	serverDgop "github.com/duxlabs-dev/dux-shell/core/internal/server/dgop"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/evdev"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/freedesktop"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/location"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/network"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/notifyactions"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/sysupdate"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/tailscale"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/thememode"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/trayrecovery"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wallpaper"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wayland"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wellbeing"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wlcontext"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wlroutput"
+	"github.com/duxlabs-dev/dux-shell/core/internal/systemd"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
+	"github.com/spf13/afero"
 )
 
-const APIVersion = 35
+const APIVersion = 38
 
 var CLIVersion = "dev"
 
@@ -77,6 +82,7 @@ var trayRecoveryManager *trayrecovery.Manager
 var locationManager *location.Manager
 var sysUpdateManager *sysupdate.Manager
 var notifyActionsManager *notifyactions.Manager
+var wellbeingManager *wellbeing.Manager
 var geoClientInstance geolocation.Client
 
 const dbusClientID = "dms-dbus-client"
@@ -106,7 +112,19 @@ func InitializeNetworkManager() error {
 }
 
 func InitializeLoginctlManager() error {
-	manager, err := loginctl.NewManager()
+	keepLockOnUnlock, err := clipolicy.LogindUnlockDisabled(afero.NewOsFs())
+	if err != nil {
+		log.Errorf("CLI policy unreadable, keeping locks through logind Unlock: %v", err)
+		keepLockOnUnlock = true
+	}
+	lockSettings, err := clipolicy.LockSettings(afero.NewOsFs())
+	if err != nil {
+		log.Errorf("CLI policy unreadable, ignoring its lock settings: %v", err)
+	}
+	manager, err := loginctl.NewManager(keepLockOnUnlock, loginctl.LockPolicy{
+		LockBeforeSuspend:       clipolicy.LockSettingBool(lockSettings, "lockBeforeSuspend"),
+		LoginctlLockIntegration: clipolicy.LockSettingBool(lockSettings, "loginctlLockIntegration"),
+	})
 	if err != nil {
 		log.Warnf("Failed to initialize loginctl manager: %v", err)
 		return err
@@ -241,6 +259,9 @@ func InitializeBrightnessManager() error {
 	}
 
 	brightnessManager = manager
+	if waylandManager != nil {
+		manager.AttachGamma(waylandManager)
+	}
 
 	log.Info("Brightness manager initialized")
 	return nil
@@ -349,6 +370,16 @@ func InitializeTrayRecoveryManager() error {
 	return nil
 }
 
+func InitializeWellbeingManager() error {
+	manager, err := wellbeing.NewManager()
+	if err != nil {
+		return err
+	}
+	wellbeingManager = manager
+	log.Info("Wellbeing manager initialized")
+	return nil
+}
+
 func InitializeLocationManager(geoClient geolocation.Client) error {
 	manager, err := location.NewManager(geoClient)
 	if err != nil {
@@ -373,7 +404,7 @@ func InitializeNotifyActionsManager() error {
 }
 
 func InitializeSysUpdateManager() error {
-	manager, err := sysupdate.NewManager()
+	manager, err := sysupdate.NewManager(CLIVersion)
 	if err != nil {
 		log.Warnf("Failed to initialize sysupdate manager: %v", err)
 		return err
@@ -385,32 +416,34 @@ func InitializeSysUpdateManager() error {
 	return nil
 }
 
-func routeHandler(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, _ *ipc.Subscriber) {
-	routeRequestRecovered(ctx, conn, req)
+func routeHandler(mux *ipc.Mux) ipc.Handler {
+	return func(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, _ *ipc.Subscriber) {
+		routeRequestRecovered(ctx, conn, req, mux)
+	}
 }
 
 func subscribeHandler(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, _ *ipc.Subscriber) {
 	switch req.Method {
 	case "subscribe":
-		routeRequestRecovered(ctx, conn, req)
+		routeRequestRecovered(ctx, conn, req, requestMux)
 	default:
-		models.RespondError(conn, req.ID, fmt.Sprintf("unknown method: %s", req.Method))
+		conn.RespondError(req.ID, fmt.Sprintf("unknown method: %s", req.Method))
 	}
 }
 
 // routeRequestRecovered keeps a panicking handler from taking down the whole daemon
-func routeRequestRecovered(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request) {
+func routeRequestRecovered(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, mux *ipc.Mux) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Errorf("RouteRequest panic recovered: method=%s panic=%v\n%s", req.Method, r, debug.Stack())
-			models.RespondError(conn, req.ID, "internal server error")
+			conn.RespondError(req.ID, "internal server error")
 		}
 	}()
-	RouteRequest(ctx, conn, req)
+	mux.ServeIPC(ctx, conn, req, nil)
 }
 
 func getCapabilities() Capabilities {
-	caps := []string{"plugins", "dgop", "lyrics"}
+	caps := []string{"plugins", "dgop", "drives", "lyrics", "lyrics.plugins"}
 
 	if networkManager != nil {
 		caps = append(caps, "network")
@@ -472,6 +505,10 @@ func getCapabilities() Capabilities {
 		caps = append(caps, "location")
 	}
 
+	if wellbeingManager != nil {
+		caps = append(caps, "wellbeing")
+	}
+
 	if dbusManager != nil {
 		caps = append(caps, "dbus")
 	}
@@ -484,8 +521,13 @@ func getCapabilities() Capabilities {
 		caps = append(caps, "files")
 	}
 
+	caps = append(caps, niriCapabilities()...)
+
 	return Capabilities{Capabilities: caps}
 }
+
+// Probed once per process, so these never change after the first getServerInfo.
+var niriCapabilities = config.NiriCapabilities
 
 func getServerInfo() ServerInfo {
 	return ServerInfo{
@@ -514,12 +556,12 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 	clientID := fmt.Sprintf("meta-client-%p", conn)
 
 	dbusClient := dbusClientID
-	if id, ok := models.Get[string](req, "clientId"); ok && id != "" {
+	if id, ok := req.Get[string]("clientId"); ok && id != "" {
 		dbusClient = id
 	}
 
 	var services []string
-	if servicesParam, ok := models.Get[[]any](req, "services"); ok {
+	if servicesParam, ok := req.Get[[]any]("services"); ok {
 		for _, s := range servicesParam {
 			if str, ok := s.(string); ok {
 				services = append(services, str)
@@ -730,6 +772,15 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		}, mgr.GetState)
 	}
 
+	if shouldSubscribe("wellbeing") && wellbeingManager != nil {
+		mgr := wellbeingManager
+		id := clientID + "-wellbeing"
+		source := mgr.Subscribe(id)
+		forwardSubscription(&wg, eventChan, stopChan, "wellbeing", source, func() {
+			mgr.Unsubscribe(id)
+		}, mgr.Snapshot)
+	}
+
 	if shouldSubscribe("sysupdate") && sysUpdateManager != nil {
 		mgr := sysUpdateManager
 		id := clientID + "-sysupdate"
@@ -751,7 +802,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		mgr := dbusManager
 		events := mgr.SubscribeSignals(dbusClient)
 		forwardSubscription(&wg, eventChan, stopChan, "dbus", events, func() {
-			mgr.UnsubscribeSignals(dbusClient)
+			mgr.UnsubscribeSignals(dbusClient, events)
 		}, nil)
 	}
 
@@ -873,6 +924,9 @@ func cleanupManagers() {
 	if sysUpdateManager != nil {
 		sysUpdateManager.Close()
 	}
+	if wellbeingManager != nil {
+		wellbeingManager.Close()
+	}
 	if geoClientInstance != nil {
 		geoClientInstance.Close()
 	}
@@ -882,21 +936,27 @@ func cleanupManagers() {
 	if filesService != nil {
 		filesService.Close()
 	}
+	serverDgop.Close()
 }
 
 type Server struct {
-	ipc *ipc.Server
+	ipc       *ipc.Server
+	readiness *systemd.Readiness
 }
 
 func New() *Server {
-	return &Server{ipc: ipc.NewServer(ipc.Config{
+	s := &Server{readiness: systemd.NewReadiness()}
+	s.ipc = ipc.NewServer(ipc.Config{
 		AppName:          appPaths.Name,
 		APIVersion:       APIVersion,
 		CapabilitiesFunc: func() []string { return getCapabilities().Capabilities },
 		MaxLineSize:      64 * 1024 * 1024, // large clipboard payloads
 		SubscribeHandler: subscribeHandler,
-	}, routeHandler)}
+	}, routeHandler(newRequestMux(s.readiness)))
+	return s
 }
+
+func (s *Server) WaitReady(ctx context.Context) { s.readiness.Wait(ctx) }
 
 func (s *Server) Listen() error { return s.ipc.Listen() }
 
@@ -1081,17 +1141,33 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info(" clipboard.paste                       - Get current clipboard text")
 		log.Info(" clipboard.search                      - Search history (params: query?, mimeType?, isImage?, limit?, offset?, before?, after?)")
 		log.Info(" clipboard.getConfig                   - Get clipboard configuration")
-		log.Info(" clipboard.setConfig                   - Set configuration (params: maxHistory?, maxEntrySize?, autoClearDays?, clearAtStartup?)")
+		log.Info(" clipboard.setConfig                   - Set configuration (params: maxHistory?, maxEntrySize?, autoClearDays?, clearAtStartup?, disabled?, maxPinned?)")
 		log.Info(" clipboard.subscribe                   - Subscribe to clipboard state changes (streaming)")
 		log.Info("Notify:")
 		log.Info(" notify.watchAction                    - Open a file when a notification action fires (params: id, path)")
 		log.Info("Location:")
 		log.Info(" location.getState                      - Get current location state")
 		log.Info(" location.subscribe                     - Subscribe to location changes (streaming)")
+		log.Info("Wellbeing:")
+		log.Info(" wellbeing.getState                     - Today's screen time per app")
+		log.Info(" wellbeing.setState                     - Report the focused app and whether the session is active (params: appId?, active, seq?)")
+		log.Info(" wellbeing.setLimits                    - Set daily and per-app limits in seconds (params: daily?, apps?)")
+		log.Info(" wellbeing.summary                      - Per-day screen time ending today (params: days?)")
+		log.Info(" wellbeing.clear                        - Delete the screen time history")
 		log.Info("")
 	}
 	log.Info("Initializing managers...")
 	log.Info("")
+
+	go func() {
+		written, err := config.SyncNiriBindsNext()
+		switch {
+		case err != nil:
+			log.Warnf("Failed to write niri %s: %v", config.NiriBindsNextFile, err)
+		case written:
+			log.Infof("Updated niri %s", config.NiriBindsNextFile)
+		}
+	}()
 
 	go func() {
 		switch err := InitializeNetworkManager(); {
@@ -1188,6 +1264,10 @@ func (s *Server) Serve(printDocs bool) error {
 			}
 			themeModeManager.WatchLoginctl(loginctlManager)
 		}()
+	}
+
+	if err := InitializeWellbeingManager(); err != nil {
+		log.Warnf("Wellbeing manager unavailable: %v", err)
 	}
 
 	if err := InitializeWallpaperManager(); err != nil {

@@ -6,10 +6,13 @@ import qs.Common
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
+import "../../../Common/QmlUtils.js" as QmlUtils
 
 Item {
     id: root
+
+    implicitHeight: column.height
 
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
@@ -24,6 +27,17 @@ Item {
     readonly property var devices: BrightnessService.devices || []
     readonly property bool multipleDevices: devices.length > 1
     readonly property bool showPins: screenName.length > 0 && multipleDevices
+
+    readonly property Item headerActions: DActionButton {
+        visible: root.showPins && QmlUtils.normalizePinList((CacheData.brightnessDevicePins || {})[root.getScreenPinKey()]).length > 0
+        buttonSize: CcMetrics.headerActionSize
+        iconSize: CcMetrics.headerActionIconSize
+        iconName: "keep_off"
+        iconColor: Theme.surfaceText
+        tooltipText: I18n.tr("Clear All")
+        Accessible.name: I18n.tr("Clear All")
+        onClicked: root.clearScreenPins()
+    }
 
     signal deviceNameChanged(string newDeviceName)
 
@@ -41,10 +55,9 @@ Item {
     function resolveCurrentDevice() {
         if (!BrightnessService.brightnessAvailable || devices.length === 0)
             return "";
-        const pinKey = getScreenPinKey();
-        const pinnedDevice = pinKey ? (CacheData.brightnessDevicePins || {})[pinKey] : "";
-        if (pinnedDevice && devices.find(d => d.name === pinnedDevice))
-            return pinnedDevice;
+        const pinned = BrightnessService.pinnedDevices(getScreenPinKey());
+        if (pinned.length > 0)
+            return pinned[0];
         if (instanceId) {
             const widget = (SettingsData.controlCenterWidgets || []).find(w => w.id === "brightnessSlider" && w.instanceId === instanceId);
             if (widget?.deviceName && devices.find(d => d.name === widget.deviceName))
@@ -66,15 +79,9 @@ Item {
     function selectDevice(deviceName) {
         if (!deviceName || deviceName === currentDeviceName)
             return;
-        const pinKey = getScreenPinKey();
-        if (pinKey) {
-            const pins = CacheData.brightnessDevicePins || {};
-            if (pins[pinKey] && pins[pinKey] !== deviceName) {
-                const next = JSON.parse(JSON.stringify(pins));
-                delete next[pinKey];
-                CacheData.set("brightnessDevicePins", next);
-            }
-        }
+        const pinned = QmlUtils.normalizePinList((CacheData.brightnessDevicePins || {})[getScreenPinKey()]);
+        if (pinned.length > 0 && !pinned.includes(deviceName))
+            clearScreenPins();
         currentDeviceName = deviceName;
         BrightnessService.setCurrentDevice(deviceName, true);
         deviceNameChanged(deviceName);
@@ -84,29 +91,30 @@ Item {
         const pinKey = getScreenPinKey();
         if (!pinKey || !deviceName)
             return false;
-        return (CacheData.brightnessDevicePins || {})[pinKey] === deviceName;
+        return QmlUtils.normalizePinList((CacheData.brightnessDevicePins || {})[pinKey]).includes(deviceName);
     }
 
     function togglePinForDevice(deviceName) {
         const pinKey = getScreenPinKey();
         if (!pinKey || !deviceName)
             return;
+        CacheData.set("brightnessDevicePins", QmlUtils.togglePinEntry(CacheData.brightnessDevicePins, pinKey, deviceName, Infinity));
+    }
+
+    function clearScreenPins() {
         const pins = JSON.parse(JSON.stringify(CacheData.brightnessDevicePins || {}));
-        if (pins[pinKey] === deviceName)
-            delete pins[pinKey];
-        else
-            pins[pinKey] = deviceName;
+        delete pins[getScreenPinKey()];
         CacheData.set("brightnessDevicePins", pins);
     }
 
     function deviceIcon(device, brightness) {
         const deviceClass = device.class || "";
-        if (deviceClass === "backlight" || deviceClass === "ddc") {
-            if (brightness <= CcMetrics.brightnessLowMax)
-                return "brightness_low";
-            return brightness <= CcMetrics.brightnessMediumMax ? "brightness_medium" : "brightness_high";
-        }
-        return (device.name || "").includes("kbd") ? "keyboard" : "lightbulb";
+        if (deviceClass !== "backlight" && deviceClass !== "ddc" && deviceClass !== "software")
+            return (device.name || "").includes("kbd") ? "keyboard" : "lightbulb";
+        if (brightness <= CcMetrics.brightnessLowMax)
+            return "brightness_low";
+
+        return brightness <= CcMetrics.brightnessMediumMax ? "brightness_medium" : "brightness_high";
     }
 
     function deviceClassLabel(device) {
@@ -117,6 +125,8 @@ Item {
             return I18n.tr("DDC/CI monitor");
         case "leds":
             return I18n.tr("LED device");
+        case "software":
+            return I18n.tr("Software dimming", "brightness device class label, dimmed through the gamma ramp");
         default:
             return device.class || "";
         }
@@ -124,7 +134,7 @@ Item {
 
     Component.onCompleted: currentDeviceName = resolveCurrentDevice()
 
-    DankFlickable {
+    DFlickable {
         anchors.fill: parent
         contentHeight: column.height
         clip: true
@@ -142,20 +152,8 @@ Item {
             }
 
             CcSectionLabel {
-                visible: root.showPins
-                text: root.getScreenPinKey() || I18n.tr("Unknown Monitor")
-
-                actions: CcPinChip {
-                    readonly property bool pinnedHere: {
-                        CacheData.brightnessDevicePins;
-                        return root.isDevicePinnedToScreen(root.currentDeviceName);
-                    }
-
-                    iconOnly: false
-                    pinned: pinnedHere
-                    enabled: root.currentDeviceName.length > 0
-                    onToggled: root.togglePinForDevice(root.currentDeviceName)
-                }
+                visible: root.devices.length > 0
+                text: I18n.tr("Devices")
             }
 
             CcGroup {
@@ -164,12 +162,13 @@ Item {
                 Repeater {
                     model: root.devices
 
-                    CcListRow {
-                        id: deviceRow
+                    Column {
+                        id: deviceItem
 
                         required property var modelData
 
                         readonly property string deviceName: modelData.name || ""
+                        readonly property bool active: deviceName === root.currentDeviceName
                         readonly property real deviceBrightness: {
                             BrightnessService.brightnessVersion;
                             return BrightnessService.getDeviceBrightness(deviceName);
@@ -181,44 +180,43 @@ Item {
                         readonly property bool exponential: SessionData.getBrightnessExponential(deviceName)
                         readonly property real exponent: SessionData.getBrightnessExponent(deviceName)
 
-                        iconName: root.deviceIcon(modelData, deviceBrightness)
-                        active: deviceName === root.currentDeviceName
-                        showActiveCheck: true
-                        title: BrightnessService.deviceTitle(modelData)
-                        subtitle: deviceName + " • " + root.deviceClassLabel(modelData)
-                        trailingBadge: Math.round(deviceBrightness) + "%"
-                        clickable: true
-                        onClicked: root.selectDevice(deviceName)
+                        width: parent?.width ?? 0
+                        spacing: Theme.groupedListGap
 
-                        CcPinChip {
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: root.showPins
-                            pinned: deviceRow.pinnedHere
-                            onToggled: root.togglePinForDevice(deviceRow.deviceName)
+                        CcListRow {
+                            iconName: root.deviceIcon(deviceItem.modelData, deviceItem.deviceBrightness)
+                            active: deviceItem.active
+                            title: BrightnessService.deviceTitle(deviceItem.modelData)
+                            subtitle: [deviceItem.deviceName, root.deviceClassLabel(deviceItem.modelData), Math.round(deviceItem.deviceBrightness) + "%"].join(" • ")
+                            clickable: true
+                            onClicked: root.selectDevice(deviceItem.deviceName)
+
+                            CcPinChip {
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: root.showPins
+                                pinned: deviceItem.pinnedHere
+                                onToggled: root.togglePinForDevice(deviceItem.deviceName)
+                            }
                         }
 
-                        body: Row {
-                            width: parent.width
-                            spacing: Theme.spacingM
-                            visible: deviceRow.active
+                        CcToggleRow {
+                            visible: deviceItem.active && deviceItem.modelData.class !== "software"
+                            text: I18n.tr("Exponential", "adjective, toggle for an exponential brightness curve per device")
+                            checked: deviceItem.exponential
+                            onToggled: checked => SessionData.setBrightnessExponential(deviceItem.deviceName, checked)
+                        }
 
-                            DankToggle {
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: parent.width - stepper.width - parent.spacing
-                                text: I18n.tr("Exponential", "adjective, toggle for an exponential brightness curve per device")
-                                checked: deviceRow.exponential
-                                onToggled: checked => SessionData.setBrightnessExponential(deviceRow.deviceName, checked)
-                            }
+                        CcListRow {
+                            visible: deviceItem.active && deviceItem.exponential && deviceItem.modelData.class !== "software"
+                            title: I18n.tr("Curve")
 
-                            DankNumberStepper {
-                                id: stepper
+                            DNumberStepper {
                                 anchors.verticalCenter: parent.verticalCenter
-                                visible: deviceRow.exponential
-                                text: deviceRow.exponent.toFixed(1)
-                                decrementEnabled: deviceRow.exponent > CcMetrics.brightnessExponentMin
-                                incrementEnabled: deviceRow.exponent < CcMetrics.brightnessExponentMax
-                                onDecrement: () => SessionData.setBrightnessExponent(deviceRow.deviceName, Math.max(CcMetrics.brightnessExponentMin, Math.round((deviceRow.exponent - CcMetrics.brightnessExponentStep) * 10) / 10))
-                                onIncrement: () => SessionData.setBrightnessExponent(deviceRow.deviceName, Math.min(CcMetrics.brightnessExponentMax, Math.round((deviceRow.exponent + CcMetrics.brightnessExponentStep) * 10) / 10))
+                                text: deviceItem.exponent.toFixed(1)
+                                decrementEnabled: deviceItem.exponent > CcMetrics.brightnessExponentMin
+                                incrementEnabled: deviceItem.exponent < CcMetrics.brightnessExponentMax
+                                onDecrement: () => SessionData.setBrightnessExponent(deviceItem.deviceName, Math.max(CcMetrics.brightnessExponentMin, Math.round((deviceItem.exponent - CcMetrics.brightnessExponentStep) * 10) / 10))
+                                onIncrement: () => SessionData.setBrightnessExponent(deviceItem.deviceName, Math.min(CcMetrics.brightnessExponentMax, Math.round((deviceItem.exponent + CcMetrics.brightnessExponentStep) * 10) / 10))
                             }
                         }
                     }

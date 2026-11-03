@@ -3,6 +3,8 @@ pragma ComponentBehavior: Bound
 
 import Quickshell
 import qs.Services
+import qs.Common
+import "../Common/BlurStrength.js" as BlurStrength
 
 Singleton {
     id: root
@@ -63,7 +65,7 @@ Singleton {
         const request = Object.assign({}, draft, {
             protocol: 1
         });
-        request.backup_dir = request.backup_dir || (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/DankMaterialShell/aqueous-backups";
+        request.backup_dir = request.backup_dir || (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/dms/aqueous-backups";
         const input = JSON.stringify(request);
         const required = ["validate", "stdin_requests", "generation_check", "atomic_file_replace", "shell_dms"];
         for (const [key, capability] of Object.entries({
@@ -145,5 +147,25 @@ Singleton {
 
     function apply(draft, callback) {
         request("apply", draft, callback);
+    }
+
+    // 0 restores the schema default so a reset does not pin the last slider value in the user override
+    function applyBlurStrength() {
+        load((snapshot, error) => {
+            if (!snapshot)
+                return;
+            const field = snapshot.fields?.find(f => f.id === "blur.radius");
+            if (!field)
+                return;
+            const strength = SettingsData.blurStrength;
+            const radius = strength > 0 ? BlurStrength.aqueousRadius(strength) : field.default;
+            if (!Number.isFinite(radius) || radius === field.value)
+                return;
+            apply({
+                expected_generation: snapshot.generation,
+                create_user_override: true,
+                changes: [{ id: "blur.radius", value: radius }]
+            }, () => {});
+        });
     }
 }

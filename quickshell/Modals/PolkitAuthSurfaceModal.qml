@@ -4,7 +4,7 @@ import qs.Common
 import qs.Modals.Common
 import qs.Services
 
-DankModal {
+DModal {
     id: root
 
     property var parentPopout: null
@@ -20,7 +20,7 @@ DankModal {
     }
 
     layerNamespace: "dms:polkit-auth-surface"
-    modalWidth: 460
+    modalWidth: Math.min(Theme.dialogMaxWidth, screenWidth - Theme.spacingXL * 2)
     modalHeight: Math.min(screenHeight - Theme.spacingXL * 2, Math.max(220, contentLoader?.item?.implicitHeight ?? 0))
     closeOnEscapeKey: false
     closeOnBackgroundClick: false

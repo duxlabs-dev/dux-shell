@@ -1,24 +1,28 @@
 package brightness
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/pilebones/go-udev/netlink"
 )
 
 const (
-	udevRecvBufSize = 8 * 1024 * 1024
-	udevMaxRetries  = 5
-	udevBaseDelay   = 2 * time.Second
-	udevMaxDelay    = 60 * time.Second
+	udevRecvBufSize  = 8 * 1024 * 1024
+	udevMaxRetries   = 5
+	udevBaseDelay    = 2 * time.Second
+	udevMaxDelay     = 60 * time.Second
+	udevStableUptime = time.Minute
 )
+
+var errUdevStreamClosed = errors.New("event stream closed")
 
 type UdevMonitor struct {
 	stop          chan struct{}
@@ -51,6 +55,7 @@ func (m *UdevMonitor) run(manager *Manager) {
 
 	failures := 0
 	for {
+		started := time.Now()
 		if err := m.monitorLoop(manager, matcher); err != nil {
 			log.Errorf("Udev monitor error: %v", err)
 		}
@@ -59,6 +64,10 @@ func (m *UdevMonitor) run(manager *Manager) {
 		case <-m.stop:
 			return
 		default:
+		}
+
+		if time.Since(started) >= udevStableUptime {
+			failures = 0
 		}
 
 		failures++
@@ -79,29 +88,39 @@ func (m *UdevMonitor) run(manager *Manager) {
 }
 
 func (m *UdevMonitor) monitorLoop(manager *Manager, matcher *netlink.RuleDefinitions) error {
-	conn := &netlink.UEventConn{}
+	conn := &netlink.UEventConn{ReceiveBufferSize: udevRecvBufSize}
 	if err := conn.Connect(netlink.UdevEvent); err != nil {
 		return err
 	}
-	defer conn.Close()
 
-	if err := syscall.SetsockoptInt(conn.Fd, syscall.SOL_SOCKET, syscall.SO_RCVBUF, udevRecvBufSize); err != nil {
-		log.Warnf("Failed to set udev socket receive buffer: %v", err)
-	}
-
+	ctx, cancel := context.WithCancel(context.Background())
 	events := make(chan netlink.UEvent)
 	errs := make(chan error)
-	conn.Monitor(events, errs, matcher)
+	go conn.MonitorWithContext(ctx, events, errs, matcher)
+
+	defer func() {
+		cancel()
+		for range events {
+		}
+		conn.Close()
+	}()
 
 	log.Info("Udev monitor started for backlight/drm/i2c events")
 
+	return m.consume(manager, events, errs)
+}
+
+func (m *UdevMonitor) consume(manager *Manager, events <-chan netlink.UEvent, errs <-chan error) error {
 	for {
 		select {
 		case <-m.stop:
 			return nil
 		case err := <-errs:
-			return err
-		case event := <-events:
+			log.Warnf("Udev monitor: %v", err)
+		case event, ok := <-events:
+			if !ok {
+				return errUdevStreamClosed
+			}
 			m.handleEvent(manager, event)
 		}
 	}

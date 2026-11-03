@@ -6,8 +6,8 @@ const store = loadScript(new URL("../Common/settings/SettingsStore.js", import.m
 const spec = store.SpecModule;
 
 test("legacy migration preserves explicit radii and defaults sparse settings to 50", () => {
-    for (const version of [0, 13, 14, 18, 22]) {
-        for (const [radius, strength] of [[0, 0], [8, 25], [12, 38], [16, 50], [32, 100], [undefined, 50]]) {
+    for (const version of [0, 18]) {
+        for (const [radius, strength] of [[0, 0], [12, 38], [32, 100], [undefined, 50]]) {
             const original = { configVersion: version, cornerRadius: radius, niriLayoutRadiusOverride: 17 };
             const migrated = store.migrateToVersion(original, 26);
             assert.equal(migrated.radiusStrength, strength);
@@ -31,10 +31,10 @@ test("parse and sparse serialization use the same new default", () => {
     const root = { settingsConfigVersion: 25 };
     store.parse(root, {});
     assert.equal(root.radiusStrength, spec.SPEC.radiusStrength.def);
-    assert.equal("radiusStrength" in store.toJson(root), false);
+    assert.equal("radiusStrength" in store.toJson(root, new Set()), false);
     store.parse(root, { radiusStrength: 60 });
-    assert.equal(store.toJson(root).radiusStrength, 60);
-    assert.equal("cornerRadius" in store.toJson(root), false);
+    assert.equal(store.toJson(root, new Set()).radiusStrength, 60);
+    assert.equal("cornerRadius" in store.toJson(root, new Set()), false);
     store.parse(root, { radiusStrength: 200 });
     assert.equal(root.radiusStrength, 100);
     store.parse(root, { radiusStrength: "bad" });

@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 )
 
 // Default ctrl_interface directory on FreeBSD and minimal Linux setups; see
@@ -32,6 +33,7 @@ type wpaConnectAttempt struct {
 type WpaSupplicantBackend struct {
 	ctrlDir       string
 	ifname        string
+	physicalWiFi  string
 	cmd           *wpaCtrlConn
 	monitor       *wpaCtrlConn
 	state         *BackendState
@@ -87,13 +89,41 @@ func discoverWpaInterfaces(ctrlDir string) ([]string, error) {
 	return names, nil
 }
 
-func (b *WpaSupplicantBackend) Initialize() error {
-	names, err := discoverWpaInterfaces(b.ctrlDir)
+func discoverFreeBSDWiFiHardware() string {
+	out, err := exec.Command("/sbin/sysctl", "-n", "net.wlan.devices").Output()
 	if err != nil {
-		return fmt.Errorf("failed to discover wpa_supplicant interfaces: %w", err)
+		return ""
 	}
-	if len(names) == 0 {
-		return fmt.Errorf("no wpa_supplicant control sockets in %s", b.ctrlDir)
+
+	fields := strings.Fields(string(out))
+	if len(fields) == 0 {
+		return ""
+	}
+
+	return fields[0]
+}
+
+func (b *WpaSupplicantBackend) Initialize() error {
+	b.physicalWiFi = discoverFreeBSDWiFiHardware()
+
+	names, err := discoverWpaInterfaces(b.ctrlDir)
+	if err != nil || len(names) == 0 {
+		b.stateMutex.Lock()
+		b.state.WiFiEnabled = false
+
+		if b.physicalWiFi != "" {
+			b.state.WiFiDevice = b.physicalWiFi
+			log.Infof(
+				"FreeBSD Wi-Fi hardware %s found, but no wlan/wpa_supplicant control socket is configured",
+				b.physicalWiFi,
+			)
+		} else {
+			log.Info("wpa_supplicant unavailable; continuing with Ethernet-only networking")
+		}
+
+		b.stateMutex.Unlock()
+		b.updateEthernetState()
+		return nil
 	}
 
 	b.ifname = names[0]

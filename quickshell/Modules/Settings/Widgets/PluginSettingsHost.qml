@@ -13,10 +13,6 @@ FocusScope {
 
     implicitHeight: loader.item ? loader.item.implicitHeight : 0
 
-    Keys.onPressed: event => {
-        event.accepted = true;
-    }
-
     Loader {
         id: loader
         anchors.fill: parent
@@ -34,12 +30,6 @@ FocusScope {
             item.pluginService = root.pluginService;
             if ("popoutService" in item)
                 item.popoutService = PopoutService;
-            Qt.callLater(() => {
-                if (!loader.item)
-                    return;
-                root.focus = true;
-                loader.item.forceActiveFocus();
-            });
         }
     }
 }

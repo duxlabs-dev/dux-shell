@@ -1,6 +1,7 @@
 This file is more of a quick reference so I know what to account for before next releases.
 
 # Next
+- notifications: timed per-app popup mutes (1h / 4h) from the notification context menu
 - Go core migrated to dankgo (shared log/paths/errdefs/ipc/shellapp)
 - Quickshell UI embedded in the dms binary, -c / DMS_SHELL_DIR override - breaking for setups relying on ~/.config/quickshell/dms auto-discovery (XDG search removed)
 - release binaries + all -git packages build with withshell; sockets/pidfiles/env names unchanged, IPC APIVersion 28 wire-compatible

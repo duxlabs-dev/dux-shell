@@ -27,12 +27,21 @@ CcTile {
 
     iconName: "bluetooth"
     iconBlinking: BluetoothService.connecting
+
+    Ref {
+        service: BatteryService
+    }
     title: {
         if (!BluetoothService.available)
             return I18n.tr("Bluetooth", "bluetooth status");
         if (!adapter)
             return I18n.tr("No adapter", "bluetooth status");
         return adapter.enabled ? I18n.tr("Enabled", "bluetooth status") : I18n.tr("Disabled", "bluetooth status");
+    }
+    denseTitle: {
+        if (!adapter)
+            return "";
+        return primaryDevice ? deviceLabel(primaryDevice) : I18n.tr("Bluetooth", "bluetooth status");
     }
     subtitle: {
         if (!BluetoothService.available)

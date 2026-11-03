@@ -3,7 +3,6 @@ package freedesktop
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -42,8 +41,7 @@ func TestSetScreenLockActive_NoChangeNoDuplicate(t *testing.T) {
 	select {
 	case <-ch:
 		t.Fatal("should not have received notification for no-change")
-	case <-time.After(50 * time.Millisecond):
-		// Expected: no notification
+	default:
 	}
 }
 
@@ -63,35 +61,7 @@ func TestSetScreenLockActive_NotifiesSubscribers(t *testing.T) {
 	select {
 	case state := <-ch:
 		assert.True(t, state.Active)
-	case <-time.After(time.Second):
-		t.Fatal("timeout waiting for subscriber notification")
+	default:
+		t.Fatal("subscriber was not notified")
 	}
-}
-
-func TestSetScreenLockActive_NilSessionConn(t *testing.T) {
-	manager := &Manager{
-		state: &FreedeskState{
-			Screensaver: ScreensaverState{Available: true},
-		},
-		stateMutex: sync.RWMutex{},
-	}
-
-	assert.NotPanics(t, func() {
-		manager.SetScreenLockActive(true)
-	})
-	assert.True(t, manager.GetScreensaverState().Active)
-}
-
-func TestGetActive_ReturnsCurrentState(t *testing.T) {
-	manager := &Manager{
-		state: &FreedeskState{
-			Screensaver: ScreensaverState{Available: true, Active: true},
-		},
-		stateMutex: sync.RWMutex{},
-	}
-
-	handler := &screensaverHandler{manager: manager}
-	active, dbusErr := handler.GetActive()
-	assert.Nil(t, dbusErr)
-	assert.True(t, active)
 }

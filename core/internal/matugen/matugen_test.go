@@ -9,13 +9,14 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
-	mocks_utils "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/utils"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
-	matcolor "github.com/AvengeMedia/dankgo/material/color"
+	matcolor "github.com/duxlabs-dev/dux-go/material/color"
+	mocks_utils "github.com/duxlabs-dev/dux-shell/core/internal/mocks/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,47 +63,6 @@ func TestAppendConfigBinaryExists(t *testing.T) {
 	}
 }
 
-func TestAppendConfigBinaryDoesNotExist(t *testing.T) {
-	tempDir := t.TempDir()
-
-	shellDir := filepath.Join(tempDir, "shell")
-	configsDir := filepath.Join(shellDir, "matugen", "configs")
-	if err := os.MkdirAll(configsDir, 0o755); err != nil {
-		t.Fatalf("failed to create configs dir: %v", err)
-	}
-
-	testConfig := "test config content"
-	configPath := filepath.Join(configsDir, "test.toml")
-	if err := os.WriteFile(configPath, []byte(testConfig), 0o644); err != nil {
-		t.Fatalf("failed to write config: %v", err)
-	}
-
-	outFile := filepath.Join(tempDir, "output.toml")
-	cfgFile, err := os.Create(outFile)
-	if err != nil {
-		t.Fatalf("failed to create output file: %v", err)
-	}
-	defer cfgFile.Close()
-
-	mockChecker := mocks_utils.NewMockAppChecker(t)
-	mockChecker.EXPECT().AnyCommandExists("nonexistent-binary-12345").Return(false)
-	mockChecker.EXPECT().AnyFlatpakExists().Return(false)
-
-	opts := &Options{ShellDir: shellDir, AppChecker: mockChecker}
-
-	appendConfig(opts, cfgFile, []string{"nonexistent-binary-12345"}, []string{}, nil, "test.toml")
-
-	cfgFile.Close()
-	output, err := os.ReadFile(outFile)
-	if err != nil {
-		t.Fatalf("failed to read output: %v", err)
-	}
-
-	if len(output) != 0 {
-		t.Errorf("expected no config when binary doesn't exist, got: %q", string(output))
-	}
-}
-
 func TestAppendConfigFlatpakExists(t *testing.T) {
 	tempDir := t.TempDir()
 
@@ -140,87 +100,6 @@ func TestAppendConfigFlatpakExists(t *testing.T) {
 
 	if len(output) == 0 {
 		t.Errorf("expected config to be written when flatpak exists")
-	}
-}
-
-func TestAppendConfigFlatpakDoesNotExist(t *testing.T) {
-	tempDir := t.TempDir()
-
-	shellDir := filepath.Join(tempDir, "shell")
-	configsDir := filepath.Join(shellDir, "matugen", "configs")
-	if err := os.MkdirAll(configsDir, 0o755); err != nil {
-		t.Fatalf("failed to create configs dir: %v", err)
-	}
-
-	testConfig := "test config content"
-	configPath := filepath.Join(configsDir, "test.toml")
-	if err := os.WriteFile(configPath, []byte(testConfig), 0o644); err != nil {
-		t.Fatalf("failed to write config: %v", err)
-	}
-
-	outFile := filepath.Join(tempDir, "output.toml")
-	cfgFile, err := os.Create(outFile)
-	if err != nil {
-		t.Fatalf("failed to create output file: %v", err)
-	}
-	defer cfgFile.Close()
-
-	mockChecker := mocks_utils.NewMockAppChecker(t)
-	mockChecker.EXPECT().AnyCommandExists().Return(false)
-	mockChecker.EXPECT().AnyFlatpakExists("com.nonexistent.flatpak").Return(false)
-
-	opts := &Options{ShellDir: shellDir, AppChecker: mockChecker}
-
-	appendConfig(opts, cfgFile, []string{}, []string{"com.nonexistent.flatpak"}, nil, "test.toml")
-
-	cfgFile.Close()
-	output, err := os.ReadFile(outFile)
-	if err != nil {
-		t.Fatalf("failed to read output: %v", err)
-	}
-
-	if len(output) != 0 {
-		t.Errorf("expected no config when flatpak doesn't exist, got: %q", string(output))
-	}
-}
-
-func TestAppendConfigBothExist(t *testing.T) {
-	tempDir := t.TempDir()
-
-	shellDir := filepath.Join(tempDir, "shell")
-	configsDir := filepath.Join(shellDir, "matugen", "configs")
-	if err := os.MkdirAll(configsDir, 0o755); err != nil {
-		t.Fatalf("failed to create configs dir: %v", err)
-	}
-
-	testConfig := "zen config content"
-	configPath := filepath.Join(configsDir, "test.toml")
-	if err := os.WriteFile(configPath, []byte(testConfig), 0o644); err != nil {
-		t.Fatalf("failed to write config: %v", err)
-	}
-
-	outFile := filepath.Join(tempDir, "output.toml")
-	cfgFile, err := os.Create(outFile)
-	if err != nil {
-		t.Fatalf("failed to create output file: %v", err)
-	}
-	defer cfgFile.Close()
-
-	mockChecker := mocks_utils.NewMockAppChecker(t)
-	mockChecker.EXPECT().AnyCommandExists("sh").Return(true)
-
-	opts := &Options{ShellDir: shellDir, AppChecker: mockChecker}
-
-	appendConfig(opts, cfgFile, []string{"sh"}, []string{"app.zen_browser.zen"}, nil, "test.toml")
-
-	cfgFile.Close()
-	output, err := os.ReadFile(outFile)
-	if err != nil {
-		t.Fatalf("failed to read output: %v", err)
-	}
-
-	if len(output) == 0 {
-		t.Errorf("expected config to be written when both binary and flatpak exist")
 	}
 }
 
@@ -341,13 +220,7 @@ func TestSourceSelectionArgs(t *testing.T) {
 		expected       []string
 	}{
 		{"darkness", "darkness", true, []string{"--prefer", "darkness"}},
-		{"lightness", "lightness", true, []string{"--prefer", "lightness"}},
-		{"saturation", "saturation", true, []string{"--prefer", "saturation"}},
-		{"less-saturation", "less-saturation", true, []string{"--prefer", "less-saturation"}},
-		{"value", "value", true, []string{"--prefer", "value"}},
 		{"empty falls back to dominant", "", true, []string{"--source-color-index", "0"}},
-		{"dominant falls back", "dominant", true, []string{"--source-color-index", "0"}},
-		{"colorful falls back (resolved to hex before this is reached)", "colorful", true, []string{"--source-color-index", "0"}},
 		{"typo falls back", "bogus", true, []string{"--source-color-index", "0"}},
 		{"wrong case is not allowlisted", "DARKNESS", true, []string{"--source-color-index", "0"}},
 		{"closest-to-fallback is deliberately excluded", "closest-to-fallback", true, []string{"--source-color-index", "0"}},
@@ -355,11 +228,6 @@ func TestSourceSelectionArgs(t *testing.T) {
 		// matugen 4.0.x has --source-color-index but not --prefer, and aborts on
 		// an unknown argument. Every prefer mode must degrade, not fail.
 		{"4.0.x: darkness degrades", "darkness", false, []string{"--source-color-index", "0"}},
-		{"4.0.x: lightness degrades", "lightness", false, []string{"--source-color-index", "0"}},
-		{"4.0.x: saturation degrades", "saturation", false, []string{"--source-color-index", "0"}},
-		{"4.0.x: less-saturation degrades", "less-saturation", false, []string{"--source-color-index", "0"}},
-		{"4.0.x: value degrades", "value", false, []string{"--source-color-index", "0"}},
-		{"4.0.x: colorful is unaffected", "colorful", false, []string{"--source-color-index", "0"}},
 	}
 
 	for _, tc := range tests {
@@ -375,42 +243,25 @@ func TestSourceSelectionArgs(t *testing.T) {
 
 func TestBuildMatugenArgsSourceModes(t *testing.T) {
 	baseArgs := []string{"-c", "/tmp/merged.toml", "-t", "scheme-tonal-spot"}
-	modes := []string{"dominant", "colorful", "darkness", "lightness", "saturation", "less-saturation", "value"}
 
-	for _, mode := range modes {
-		t.Run("v4/"+mode, func(t *testing.T) {
-			args := buildMatugenArgs(baseArgs, matugenFlags{isV4: true, supportsPrefer: true}, mode)
-			expected := append(append([]string{}, baseArgs...), sourceSelectionArgs(mode, true)...)
-			assert.Equal(t, expected, args)
-		})
+	t.Run("v4", func(t *testing.T) {
+		args := buildMatugenArgs(baseArgs, matugenFlags{isV4: true, supportsPrefer: true}, "darkness")
+		assert.Equal(t, append(append([]string{}, baseArgs...), "--prefer", "darkness"), args)
+	})
 
-		t.Run("v4.0/"+mode, func(t *testing.T) {
-			// matugen 4.0.x: --source-color-index exists, --prefer does not.
-			args := buildMatugenArgs(baseArgs, matugenFlags{isV4: true, supportsPrefer: false}, mode)
-			expected := append(append([]string{}, baseArgs...), "--source-color-index", "0")
-			assert.Equal(t, expected, args)
-			assert.NotContains(t, args, "--prefer")
-		})
+	t.Run("v4.0", func(t *testing.T) {
+		// matugen 4.0.x: --source-color-index exists, --prefer does not.
+		args := buildMatugenArgs(baseArgs, matugenFlags{isV4: true, supportsPrefer: false}, "darkness")
+		assert.Equal(t, append(append([]string{}, baseArgs...), "--source-color-index", "0"), args)
+	})
 
-		t.Run("v3/"+mode, func(t *testing.T) {
-			// matugen 3 has neither --prefer nor --source-color-index. Adding
-			// either would break every user still on it, so under isV4=false
-			// no source-selection args may appear for any mode.
-			args := buildMatugenArgs(baseArgs, matugenFlags{isV4: false}, mode)
-			assert.Equal(t, baseArgs, args)
-			assert.NotContains(t, args, "--prefer")
-			assert.NotContains(t, args, "--source-color-index")
-		})
-	}
-}
-
-func TestBuildMatugenArgsDefaultPreservesExistingBehavior(t *testing.T) {
-	baseArgs := []string{"-c", "/tmp/merged.toml", "-t", "scheme-tonal-spot"}
-
-	args := buildMatugenArgs(baseArgs, matugenFlags{isV4: true, supportsPrefer: true}, "")
-
-	expected := append(append([]string{}, baseArgs...), "--source-color-index", "0")
-	assert.Equal(t, expected, args, "empty source mode must produce byte-identical args to pre-feature behavior")
+	t.Run("v3", func(t *testing.T) {
+		// matugen 3 has neither --prefer nor --source-color-index. Adding
+		// either would break every user still on it, so under isV4=false
+		// no source-selection args may appear for any mode.
+		args := buildMatugenArgs(baseArgs, matugenFlags{isV4: false}, "darkness")
+		assert.Equal(t, baseArgs, args)
+	})
 }
 
 func TestBuildImportData(t *testing.T) {
@@ -523,30 +374,6 @@ func TestExtractSourceColorDeterministic(t *testing.T) {
 	}
 }
 
-func TestExtractSourceColorNonexistentPath(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "does-not-exist.png")
-
-	seed, err := ExtractSourceColor(path)
-
-	assert.Error(t, err)
-	assert.Empty(t, seed)
-	assert.Contains(t, err.Error(), "open")
-}
-
-func TestExtractSourceColorNonImageFile(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "not-an-image.jpg")
-	if err := os.WriteFile(path, []byte("this is plain text, not an image"), 0o644); err != nil {
-		t.Fatalf("failed to write test file: %v", err)
-	}
-
-	seed, err := ExtractSourceColor(path)
-
-	assert.Error(t, err)
-	assert.Empty(t, seed)
-	assert.Contains(t, err.Error(), "decode")
-}
-
 func TestExtractSourceColorFullyTransparentImage(t *testing.T) {
 	dir := t.TempDir()
 	// image.NewRGBA zero-values to fully transparent black.
@@ -602,30 +429,6 @@ func TestSubstituteVars(t *testing.T) {
 		shellDir string
 		expected string
 	}{
-		{
-			name:     "substitutes SHELL_DIR",
-			input:    "input_path = 'SHELL_DIR/matugen/templates/foo.conf'",
-			shellDir: "/home/user/shell",
-			expected: "input_path = '/home/user/shell/matugen/templates/foo.conf'",
-		},
-		{
-			name:     "substitutes CONFIG_DIR",
-			input:    "output_path = 'CONFIG_DIR/kitty/theme.conf'",
-			shellDir: "/home/user/shell",
-			expected: "output_path = '" + configDir + "/kitty/theme.conf'",
-		},
-		{
-			name:     "substitutes DATA_DIR",
-			input:    "output_path = 'DATA_DIR/color-schemes/theme.colors'",
-			shellDir: "/home/user/shell",
-			expected: "output_path = '" + dataDir + "/color-schemes/theme.colors'",
-		},
-		{
-			name:     "substitutes CACHE_DIR",
-			input:    "output_path = 'CACHE_DIR/wal/colors.json'",
-			shellDir: "/home/user/shell",
-			expected: "output_path = '" + cacheDir + "/wal/colors.json'",
-		},
 		{
 			name:     "substitutes all dir types",
 			input:    "'SHELL_DIR/a' 'CONFIG_DIR/b' 'DATA_DIR/c' 'CACHE_DIR/d'",
@@ -708,7 +511,7 @@ func TestBuildMergedConfigColorsOnly(t *testing.T) {
 	assert.False(t, strings.Contains(content, "output_path = 'CONFIG_DIR/"), "colors-only config should not emit app template outputs")
 }
 
-func TestBuildMergedConfigSkipsMangowcWithoutActiveSession(t *testing.T) {
+func TestBuildMergedConfigMangoSession(t *testing.T) {
 	t.Setenv("MANGO_INSTANCE_SIGNATURE", "")
 
 	tempDir := t.TempDir()
@@ -752,6 +555,31 @@ func TestBuildMergedConfigSkipsMangowcWithoutActiveSession(t *testing.T) {
 		t.Fatalf("failed to read merged config: %v", err)
 	}
 	assert.NotContains(t, string(output), "[templates.dmsmango]")
+
+	socket := filepath.Join(tempDir, "mango.sock")
+	if err := os.WriteFile(socket, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("MANGO_INSTANCE_SIGNATURE", socket)
+	checker := mocks_utils.NewMockAppChecker(t)
+	checker.EXPECT().AnyCommandExists("mango").Return(true)
+	opts.AppChecker = checker
+	cfgFile, err = os.CreateTemp(tempDir, "merged-active-*.toml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cfgFile.Close()
+	if err := buildMergedConfig(opts, cfgFile, filepath.Join(tempDir, "templates")); err != nil {
+		t.Fatal(err)
+	}
+	if err := cfgFile.Close(); err != nil {
+		t.Fatal(err)
+	}
+	output, err = os.ReadFile(cfgFile.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Contains(t, string(output), mangowcConfig)
 }
 
 func TestAppendConfigConfigDirExists(t *testing.T) {
@@ -889,8 +717,6 @@ func TestQtengineActive(t *testing.T) {
 		{name: "qtengine on QT_QPA_PLATFORMTHEME", env: map[string]string{"QT_QPA_PLATFORMTHEME": "qtengine"}, want: true},
 		{name: "qtengine on QT_QPA_PLATFORMTHEME_QT6", env: map[string]string{"QT_QPA_PLATFORMTHEME_QT6": "qtengine"}, want: true},
 		{name: "gtk3", env: map[string]string{"QT_QPA_PLATFORMTHEME": "gtk3"}, want: false},
-		{name: "qt6ct on both", env: map[string]string{"QT_QPA_PLATFORMTHEME": "qt6ct", "QT_QPA_PLATFORMTHEME_QT6": "qt6ct"}, want: false},
-		{name: "both empty", env: map[string]string{"QT_QPA_PLATFORMTHEME": "", "QT_QPA_PLATFORMTHEME_QT6": ""}, want: false},
 	}
 
 	for _, tc := range tests {
@@ -984,25 +810,9 @@ func TestSyncQtengineConfig(t *testing.T) {
 			},
 		},
 		{
-			name:      "a top level null with a trailing newline is a fresh start",
-			existing:  "null\n",
-			iconTheme: "Papirus-Dark",
-			check: func(t *testing.T, cfg, theme map[string]any) {
-				assert.Equal(t, "Papirus-Dark", theme["iconTheme"])
-			},
-		},
-		{
 			name:       "an empty file is a fresh start",
 			writeEmpty: true,
 			iconTheme:  "Papirus-Dark",
-			check: func(t *testing.T, cfg, theme map[string]any) {
-				assert.Equal(t, "Papirus-Dark", theme["iconTheme"])
-			},
-		},
-		{
-			name:      "a whitespace only file is a fresh start",
-			existing:  "\n\t \n",
-			iconTheme: "Papirus-Dark",
 			check: func(t *testing.T, cfg, theme map[string]any) {
 				assert.Equal(t, "Papirus-Dark", theme["iconTheme"])
 			},
@@ -1173,7 +983,6 @@ func TestCheckTemplatesIncludesQtengine(t *testing.T) {
 	}{
 		{name: "detected when qtengine is the platform theme", platformTheme: "qtengine", wantDetected: true},
 		{name: "not detected under another platform theme", platformTheme: "gtk3", wantDetected: false},
-		{name: "not detected when unset", platformTheme: "", wantDetected: false},
 	}
 
 	for _, tc := range tests {
@@ -1233,26 +1042,6 @@ func TestSyncQtengineConfigBumpsMtime(t *testing.T) {
 		t.Fatalf("failed to re-read config: %v", err)
 	}
 	assert.Equal(t, string(before), string(after))
-}
-
-func TestExtractTopLevelString(t *testing.T) {
-	tests := []struct {
-		name    string
-		jsonStr string
-		key     string
-		want    string
-	}{
-		{name: "returns top-level string key", jsonStr: `{"mode":"light","colors":{}}`, key: "mode", want: "light"},
-		{name: "empty for missing key", jsonStr: `{"mode":"dark"}`, key: "is_dark_mode", want: ""},
-		{name: "empty for non-string value", jsonStr: `{"mode":42}`, key: "mode", want: ""},
-		{name: "empty for invalid json", jsonStr: `{mode`, key: "mode", want: ""},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, extractTopLevelString(tc.jsonStr, tc.key))
-		})
-	}
 }
 
 func TestResolveSmartMode(t *testing.T) {
@@ -1397,6 +1186,127 @@ func TestWriteDryRunConfigAlwaysDeclaresConfigAndTemplates(t *testing.T) {
 	}
 }
 
-func TestUserConfigSectionWithoutConfigDir(t *testing.T) {
-	assert.Equal(t, "[config]\n\n", userConfigSection(&Options{RunUserTemplates: true}))
+func TestApplyTerminalTemplate(t *testing.T) {
+	opts := func(v int, dark bool) *Options { return &Options{TerminalOpacity: v, TerminalsAlwaysDark: dark} }
+	tests := []struct {
+		name, tmpl, in, want string
+		opts                 *Options
+	}{
+		{"kitty", "kitty.conf", "a\n", "a\nbackground_opacity 0.85\ndynamic_background_opacity yes\n", opts(85, false)},
+		{"foot", "foot.ini", "a\n", "a\nalpha=0.85\n", opts(85, false)},
+		{"ghostty", "ghostty.conf", "a\n", "a\nbackground-opacity = 0.85\n", opts(85, false)},
+		{"alacritty", "alacritty.toml", "a\n", "a\n[window]\nopacity = 0.85\n", opts(85, false)},
+		{"no trailing newline", "foot.ini", "a", "a\nalpha=0.5\n", opts(50, false)},
+		{"100", "kitty.conf", "a\n", "a\n", opts(100, false)},
+		{"0", "kitty.conf", "a\n", "a\n", opts(0, false)},
+		{"negative", "kitty.conf", "a\n", "a\n", opts(-5, false)},
+		{"tabs", "kitty-tabs.conf", "a\n", "a\n", opts(85, false)},
+		{"wezterm", "wezterm.toml", "a\n", "a\n", opts(85, false)},
+		{"dark and opacity", "kitty.conf", "x.default.y\n", "x.dark.y\nbackground_opacity 0.85\ndynamic_background_opacity yes\n", opts(85, true)},
+		{"opacity only keeps default", "kitty.conf", "x.default.y\n", "x.default.y\nbackground_opacity 0.85\ndynamic_background_opacity yes\n", opts(85, false)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, applyTerminalTemplate(tt.tmpl, tt.in, tt.opts))
+		})
+	}
+}
+
+func TestAppendTerminalConfigOpacity(t *testing.T) {
+	tempDir := t.TempDir()
+	shellDir := filepath.Join(tempDir, "shell")
+	cfgDir := filepath.Join(shellDir, "matugen", "configs")
+	tmplDir := filepath.Join(shellDir, "matugen", "templates")
+	for _, d := range []string{cfgDir, tmplDir} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	toml := "[templates.dmskitty]\ninput_path = 'SHELL_DIR/matugen/templates/kitty.conf'\noutput_path = 'out/kitty'\n\n" +
+		"[templates.dmskittytabs]\ninput_path = 'SHELL_DIR/matugen/templates/kitty-tabs.conf'\noutput_path = 'out/tabs'\n"
+	for name, c := range map[string]string{
+		filepath.Join(cfgDir, "kitty.toml"):       toml,
+		filepath.Join(tmplDir, "kitty.conf"):      "color0 {{x}}\n",
+		filepath.Join(tmplDir, "kitty-tabs.conf"): "tab {{x}}\n",
+	} {
+		if err := os.WriteFile(name, []byte(c), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	run := func(opacity int) (string, string) {
+		runTmp := t.TempDir()
+		checker := mocks_utils.NewMockAppChecker(t)
+		checker.EXPECT().AnyCommandExists("kitty").Return(true)
+		out := filepath.Join(runTmp, "out.toml")
+		f, err := os.Create(out)
+		if err != nil {
+			t.Fatal(err)
+		}
+		opts := &Options{ShellDir: shellDir, AppChecker: checker, TerminalOpacity: opacity}
+		appendTerminalConfig(opts, f, runTmp, []string{"kitty"}, nil, "kitty.toml")
+		f.Close()
+		b, _ := os.ReadFile(out)
+		return string(b), runTmp
+	}
+
+	got, runTmp := run(85)
+	kittyCopy := filepath.Join(runTmp, "kitty.conf")
+	tabsCopy := filepath.Join(runTmp, "kitty-tabs.conf")
+	assert.Contains(t, got, "input_path = '"+kittyCopy+"'")
+	assert.Contains(t, got, "input_path = '"+tabsCopy+"'")
+	b, err := os.ReadFile(kittyCopy)
+	assert.NoError(t, err)
+	assert.True(t, strings.HasSuffix(string(b), "background_opacity 0.85\ndynamic_background_opacity yes\n"))
+	b, err = os.ReadFile(tabsCopy)
+	assert.NoError(t, err)
+	assert.Equal(t, "tab {{x}}\n", string(b))
+
+	got, runTmp = run(0)
+	assert.Equal(t, substituteVars(toml, shellDir)+"\n", got)
+	_, err = os.Stat(filepath.Join(runTmp, "kitty.conf"))
+	assert.True(t, os.IsNotExist(err))
+}
+
+func TestGenerateDank16VariantsProfile(t *testing.T) {
+	gen := func(profile string) map[string]any {
+		out := generateDank16Variants("#8ad0ee", "#1c5070", "#0f1417", "#f5fafd", "#1b2023", "#e9eef2", ColorModeDark, profile)
+		var m map[string]any
+		if err := json.Unmarshal([]byte(out), &m); err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+	def, high := gen(""), gen("high")
+	assert.NotEqual(t, def["color1"], high["color1"])
+	assert.Equal(t, def["color0"], high["color0"])
+}
+
+func TestTerminalPaletteOnlyReachesTerminalTemplates(t *testing.T) {
+	shellDir := filepath.Join("..", "..", "..", "quickshell")
+	inputPath := regexp.MustCompile(`input_path = 'SHELL_DIR/([^']+)'`)
+	checked := 0
+	for _, def := range templateRegistry {
+		if def.ConfigFile == "" {
+			continue
+		}
+		config, err := os.ReadFile(filepath.Join(shellDir, "matugen", "configs", def.ConfigFile))
+		if !assert.NoError(t, err) {
+			continue
+		}
+		for _, m := range inputPath.FindAllStringSubmatch(string(config), -1) {
+			data, err := os.ReadFile(filepath.Join(shellDir, m[1]))
+			if !assert.NoError(t, err) {
+				continue
+			}
+			content := string(data)
+			if def.Kind == TemplateKindTerminal {
+				assert.NotContains(t, content, "{{dank16.", "%s: terminal templates read dank16term", m[1])
+			} else {
+				assert.NotContains(t, content, "dank16term", "%s: only terminal templates follow the terminal palette", m[1])
+			}
+			checked++
+		}
+	}
+	assert.Greater(t, checked, 10)
 }

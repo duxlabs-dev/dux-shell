@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 SettingsRow {
     id: root
@@ -11,6 +11,8 @@ SettingsRow {
     property string colorMode: "primary"
     property color customColor: "#ffffff"
     property string pickerTitle: I18n.tr("Choose color", "color picker title")
+    property bool showDefault: false
+    property color defaultColor: Theme.lockScreenContentColor
 
     signal colorModeSelected(string mode)
     signal customColorSelected(color selectedColor)
@@ -22,7 +24,14 @@ SettingsRow {
         spacing: Theme.spacingS
 
         Repeater {
-            model: [
+            id: swatches
+            model: (root.showDefault ? [
+                    {
+                        id: "default",
+                        label: I18n.tr("Default"),
+                        color: root.defaultColor
+                    }
+                ] : []).concat([
                 {
                     id: "primary",
                     label: I18n.tr("Primary"),
@@ -38,16 +47,16 @@ SettingsRow {
                     label: I18n.tr("Custom"),
                     color: root.customColor
                 }
-            ]
+            ])
 
             Rectangle {
                 required property var modelData
                 required property int index
 
-                width: (parent.width - Theme.spacingS * 2) / 3
+                width: (parent.width - Theme.spacingS * (swatches.count - 1)) / swatches.count
                 height: Theme.listItemHeight + Theme.spacingXS
                 radius: Theme.cornerRadius
-                color: root.colorMode === modelData.id ? Theme.primarySelected : Theme.chipSurface
+                color: root.colorMode === modelData.id ? Theme.primarySelected : SettingsMetrics.controlColor
                 border.color: root.colorMode === modelData.id ? Theme.primary : Theme.withAlpha(Theme.primary, 0)
                 border.width: Theme.outlineWidthFocused
 
@@ -55,13 +64,13 @@ SettingsRow {
                     anchors.centerIn: parent
                     spacing: Theme.spacingXS
 
-                    DankColorSwatch {
+                    DColorSwatch {
                         width: Theme.iconSize
                         height: Theme.iconSize
                         swatchColor: modelData.color
                         anchors.horizontalCenter: parent.horizontalCenter
 
-                        DankIcon {
+                        DIcon {
                             visible: modelData.id === "custom"
                             anchors.centerIn: parent
                             name: "colorize"
@@ -92,7 +101,7 @@ SettingsRow {
                             root.customColorSelected(selectedColor);
                             root.colorModeSelected("custom");
                         };
-                        PopoutService.colorPickerModal.show();
+                        PopoutService.colorPickerModal.show(true);
                     }
                 }
             }

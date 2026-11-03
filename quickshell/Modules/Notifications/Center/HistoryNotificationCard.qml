@@ -11,7 +11,7 @@ Notifications.NotificationCard {
     property bool nested: false
 
     surfaceColor: Theme.foregroundColor(nested ? Theme.chipSurface : Theme.cardSurface, Theme.isFloatingWindow(root))
-    chipColor: nested ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerFocus) : Theme.chipSurface
+    chipColor: nested ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerFocus) : Theme.foregroundColor(Theme.chipSurface, Theme.isFloatingWindow(root))
 
     notificationData: ({
             appName: historyItem.appName || "",
@@ -38,7 +38,7 @@ Notifications.NotificationCard {
     onDismissRequested: NotificationService.removeFromHistory(historyItem.id)
 
     function formatHistoryTime(timestamp) {
-        NotificationService.timeUpdateTick;
+        NotificationService.relativeTimeNow;
         NotificationService.clockFormatChanged;
         const now = new Date();
         const date = new Date(timestamp);

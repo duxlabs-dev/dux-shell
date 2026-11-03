@@ -2,9 +2,9 @@ import QtQuick
 import qs.Common
 import qs.Modals.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
-DankModal {
+DModal {
     id: root
 
     property bool lockOnSwitch: false
@@ -67,7 +67,7 @@ DankModal {
         }
     }
 
-    content: DankDialog {
+    content: DDialog {
         id: sessionDialog
         title: I18n.tr("Switch User")
         supportingText: SessionsService.otherSessions().length > 0 ? I18n.tr("Select an active session to switch to. The current session stays running in the background.") : ""
@@ -97,7 +97,7 @@ DankModal {
                         anchors.margins: Theme.spacingM
                         spacing: Theme.spacingM
 
-                        DankIcon {
+                        DIcon {
                             name: "account_circle"
                             size: Theme.iconSize + 4
                             color: Theme.primary
@@ -133,7 +133,7 @@ DankModal {
                             }
                         }
 
-                        DankIcon {
+                        DIcon {
                             id: chevron
                             name: I18n.isRtl ? "chevron_left" : "chevron_right"
                             size: Theme.iconSize
@@ -168,7 +168,7 @@ DankModal {
                     anchors.margins: Theme.spacingM
                     spacing: Theme.spacingM
 
-                    DankIcon {
+                    DIcon {
                         name: "info"
                         size: Theme.iconSize
                         color: Theme.surfaceVariantText
@@ -190,7 +190,7 @@ DankModal {
 
                         StyledText {
                             width: parent.width
-                            text: I18n.tr("To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (greetd-flexiserver / GDM / LightDM).")
+                            text: I18n.tr("To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).", "switch user note, %1 lists multi-session greeters").arg("greetd-flexiserver / GDM / LightDM")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
                             wrapMode: Text.WordWrap
@@ -201,7 +201,7 @@ DankModal {
         }
 
         actions: [
-            DankButton {
+            DButton {
                 maximumWidth: sessionDialog.actionWidth
                 wrapText: true
                 text: I18n.tr("Close")
@@ -209,7 +209,7 @@ DankModal {
                 textColor: Theme.primary
                 onClicked: root.close()
             },
-            DankButton {
+            DButton {
                 maximumWidth: sessionDialog.actionWidth
                 wrapText: true
                 visible: SessionsService.otherSessions().length === 0 && !root.lockOnSwitch

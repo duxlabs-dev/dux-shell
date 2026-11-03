@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -9,13 +8,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-)
-
-const (
-	cliPolicyPackagedPath = "/usr/share/dms/cli-policy.json"
-	cliPolicyAdminPath    = "/etc/dms/cli-policy.json"
 )
 
 var (
@@ -32,13 +29,6 @@ type immutableCommandPolicy struct {
 	ImmutableReason string
 	BlockedCommands []string
 	Message         string
-}
-
-type cliPolicyFile struct {
-	PolicyVersion   int       `json:"policy_version"`
-	ImmutableSystem *bool     `json:"immutable_system"`
-	BlockedCommands *[]string `json:"blocked_commands"`
-	Message         *string   `json:"message"`
 }
 
 func normalizeCommandSpec(raw string) string {
@@ -82,25 +72,8 @@ func commandBlockedByPolicy(commandPath string, blocked []string) bool {
 	return false
 }
 
-func loadPolicyFile(path string) (*cliPolicyFile, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to read %s: %w", path, err)
-	}
-
-	var policy cliPolicyFile
-	if err := json.Unmarshal(data, &policy); err != nil {
-		return nil, fmt.Errorf("failed to parse %s: %w", path, err)
-	}
-
-	return &policy, nil
-}
-
 func mergePolicyFile(base *immutableCommandPolicy, path string) error {
-	policyFile, err := loadPolicyFile(path)
+	policyFile, err := clipolicy.LoadFile(afero.NewOsFs(), path)
 	if err != nil {
 		return err
 	}
@@ -124,101 +97,17 @@ func mergePolicyFile(base *immutableCommandPolicy, path string) error {
 	return nil
 }
 
-func readOSReleaseMap(path string) map[string]string {
-	values := make(map[string]string)
-
-	file, err := os.Open(path)
-	if err != nil {
-		return values
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		key := strings.ToUpper(strings.TrimSpace(parts[0]))
-		value := strings.Trim(strings.TrimSpace(parts[1]), "\"")
-		values[key] = strings.ToLower(value)
-	}
-
-	return values
-}
-
-func hasAnyToken(text string, tokens ...string) bool {
-	if text == "" {
-		return false
-	}
-	for _, token := range tokens {
-		if strings.Contains(text, token) {
-			return true
-		}
-	}
-	return false
-}
-
-func detectImmutableSystem() (bool, string) {
-	if _, err := os.Stat("/run/ostree-booted"); err == nil {
-		return true, "/run/ostree-booted is present"
-	}
-
-	osRelease := readOSReleaseMap("/etc/os-release")
-	if len(osRelease) == 0 {
-		return false, ""
-	}
-
-	id := osRelease["ID"]
-	idLike := osRelease["ID_LIKE"]
-	variantID := osRelease["VARIANT_ID"]
-	name := osRelease["NAME"]
-	prettyName := osRelease["PRETTY_NAME"]
-
-	immutableIDs := map[string]bool{
-		"bluefin":       true,
-		"bazzite":       true,
-		"silverblue":    true,
-		"kinoite":       true,
-		"sericea":       true,
-		"onyx":          true,
-		"aurora":        true,
-		"fedora-iot":    true,
-		"fedora-coreos": true,
-	}
-	if immutableIDs[id] {
-		return true, "os-release ID=" + id
-	}
-
-	markers := []string{"silverblue", "kinoite", "sericea", "onyx", "bazzite", "bluefin", "aurora", "ostree", "atomic"}
-	if hasAnyToken(variantID, markers...) {
-		return true, "os-release VARIANT_ID=" + variantID
-	}
-	if hasAnyToken(idLike, "ostree", "rpm-ostree") {
-		return true, "os-release ID_LIKE=" + idLike
-	}
-	if hasAnyToken(name, markers...) || hasAnyToken(prettyName, markers...) {
-		return true, "os-release identifies an atomic/ostree variant"
-	}
-
-	return false, ""
-}
-
 func getImmutablePolicy() (*immutableCommandPolicy, error) {
 	immutablePolicyOnce.Do(func() {
-		detectedImmutable, reason := detectImmutableSystem()
+		detectedImmutable, reason := distros.DetectImmutable()
 		immutablePolicy = immutableCommandPolicy{
 			ImmutableSystem: detectedImmutable,
 			ImmutableReason: reason,
-			BlockedCommands: []string{"greeter install", "greeter enable", "setup"},
+			BlockedCommands: nil,
 			Message:         "This command is disabled on immutable/image-based systems. Use your distro-native workflow for system-level changes.",
 		}
 
-		var defaultPolicy cliPolicyFile
+		var defaultPolicy clipolicy.File
 		if err := json.Unmarshal(defaultCLIPolicyJSON, &defaultPolicy); err != nil {
 			immutablePolicyErr = fmt.Errorf("failed to parse embedded default CLI policy: %w", err)
 			return
@@ -233,11 +122,11 @@ func getImmutablePolicy() (*immutableCommandPolicy, error) {
 			}
 		}
 
-		if err := mergePolicyFile(&immutablePolicy, cliPolicyPackagedPath); err != nil {
+		if err := mergePolicyFile(&immutablePolicy, clipolicy.PackagedPath); err != nil {
 			immutablePolicyErr = err
 			return
 		}
-		if err := mergePolicyFile(&immutablePolicy, cliPolicyAdminPath); err != nil {
+		if err := mergePolicyFile(&immutablePolicy, clipolicy.AdminPath); err != nil {
 			immutablePolicyErr = err
 			return
 		}
@@ -268,7 +157,7 @@ func requireMutableSystemCommand(cmd *cobra.Command, _ []string) error {
 		reason = "Detected immutable system: " + policy.ImmutableReason + "\n"
 	}
 
-	return fmt.Errorf("%s%s\nCommand: dms %s\nPolicy files:\n  %s\n  %s", reason, policy.Message, commandPath, cliPolicyPackagedPath, cliPolicyAdminPath)
+	return fmt.Errorf("%s%s\nCommand: dms %s\nPolicy files:\n  %s\n  %s", reason, policy.Message, commandPath, clipolicy.PackagedPath, clipolicy.AdminPath)
 }
 
 // preRunPrivileged combines the immutable-system check with a privesc tool

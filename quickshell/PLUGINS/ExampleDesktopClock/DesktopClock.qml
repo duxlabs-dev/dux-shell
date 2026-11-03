@@ -23,7 +23,7 @@ DesktopPluginComponent {
         id: background
         anchors.fill: parent
         radius: Theme.cornerRadius
-        color: Theme.surfaceContainer
+        color: Theme.hostSurface
         opacity: root.backgroundOpacity
     }
 

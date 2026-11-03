@@ -195,7 +195,7 @@ Singleton {
                 name: I18n.tr("Settings", "settings window title"),
                 icon: "svg+corner:" + dmsLogoPath + "|settings",
                 cornerIcon: "settings",
-                comment: "DMS",
+                comment: "dms",
                 action: "ipc:settings",
                 categories: ["Settings", "System"],
                 defaultTrigger: "",
@@ -206,7 +206,7 @@ Singleton {
                 name: I18n.tr("Notepad", "Notepad"),
                 icon: "svg+corner:" + dmsLogoPath + "|description",
                 cornerIcon: "description",
-                comment: "DMS",
+                comment: "dms",
                 action: "ipc:notepad",
                 categories: ["Office", "Utility"],
                 defaultTrigger: "",
@@ -217,7 +217,7 @@ Singleton {
                 name: I18n.tr("System Monitor", "sysmon window title"),
                 icon: "svg+corner:" + dmsLogoPath + "|monitor_heart",
                 cornerIcon: "monitor_heart",
-                comment: "DMS",
+                comment: "dms",
                 action: "ipc:processlist",
                 categories: ["System", "Monitor"],
                 defaultTrigger: "",
@@ -228,7 +228,7 @@ Singleton {
                 name: I18n.tr("Color Picker"),
                 icon: "svg+corner:" + dmsLogoPath + "|palette",
                 cornerIcon: "palette",
-                comment: "DMS",
+                comment: "dms",
                 action: "ipc:color-picker",
                 categories: ["Graphics", "Utility"],
                 defaultTrigger: "",
@@ -238,7 +238,7 @@ Singleton {
                 id: "dms_power",
                 name: I18n.tr("Power"),
                 cornerIcon: "power_settings_new",
-                comment: "DMS",
+                comment: "dms",
                 defaultTrigger: "pw",
                 isLauncher: true,
                 viewMode: "list",
@@ -249,7 +249,7 @@ Singleton {
                 id: "dms_vpn",
                 name: I18n.tr("VPN", "virtual private network, widget and page title"),
                 cornerIcon: "vpn_key",
-                comment: "DMS",
+                comment: "dms",
                 defaultTrigger: "",
                 isLauncher: true,
                 viewMode: "list",
@@ -261,7 +261,7 @@ Singleton {
                 name: I18n.tr("QR Generator"),
                 icon: "svg+corner:" + dmsLogoPath + "|qr_code",
                 cornerIcon: "qr_code",
-                comment: "DMS",
+                comment: "dms",
                 action: "ipc:qr-generator",
                 categories: ["Utility"],
                 defaultTrigger: "qrg",
@@ -281,7 +281,7 @@ Singleton {
                 id: "dms_clipboard_search",
                 name: I18n.tr("Clipboard"),
                 cornerIcon: "content_paste",
-                comment: "DMS",
+                comment: "dms",
                 defaultTrigger: "cb",
                 isLauncher: true,
                 viewMode: "list",
@@ -361,14 +361,14 @@ Singleton {
             hibernate: ["hibernate"],
             reboot: ["reboot", "restart"],
             softreboot: ["soft reboot"],
+            firmwaresetup: ["firmware", "bios", "uefi"],
             poweroff: ["poweroff", "shutdown", "halt"],
             restart: ["restart", "shell", "reload"]
         })
 
     function getPowerLauncherActions() {
         const ids = ["lock", "logout", "suspend", "hibernate", "reboot", "softreboot", "poweroff", "restart"];
-        const customIds = (SettingsData.customPowerButtons || []).map((button, i) => "custom:" + i);
-        return ids.filter(a => SessionService.isPowerActionSupported(a)).concat(customIds).map(a => {
+        return ids.filter(a => SessionService.isPowerActionSupported(a)).concat(SessionService.extraPowerActions).map(a => {
             const data = SessionService.getPowerActionData(a);
             return {
                 action: a,

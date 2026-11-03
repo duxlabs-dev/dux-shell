@@ -1,3 +1,7 @@
-import qs.DankCommon.Common as DankCommon
+import QtQuick
+import qs.DCommon.Common as DCommon
 
-DankCommon.DankColorAnim {}
+DCommon.DColorAnim {
+    id: shim
+    Component.onCompleted: Deprecation.type(shim, "DankColorAnim", "DColorAnim", "qs.DCommon.Common")
+}

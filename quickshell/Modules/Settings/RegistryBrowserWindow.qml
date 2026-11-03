@@ -1,10 +1,11 @@
 import QtQuick
 import qs.Common
 import qs.Modals.Common
+import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Settings.Widgets
 
-DankFloatingWindow {
+DFloatingWindow {
     id: root
 
     property var parentModal: null
@@ -13,13 +14,15 @@ DankFloatingWindow {
     property int selectedIndex: -1
     property bool keyboardNavigationActive: false
     property bool isLoading: false
+    property bool showLoadingSpinner: true
     property bool pendingInstallHandled: false
     property string headerTitle: title
     property string searchPlaceholder: ""
     property alias aboveSearch: aboveSearchSlot.data
     property alias belowSearch: belowSearchSlot.data
     property alias listContent: listSlot.data
-    property alias overlay: browserContent.data
+    property alias overlay: overlaySlot.data
+    property bool overlayActive: false
     readonly property alias installConfirm: urlInstallConfirm
     readonly property alias listArea: listSlot
 
@@ -158,7 +161,7 @@ DankFloatingWindow {
             }
         }
 
-        DankWindowHeader {
+        DWindowHeader {
             id: headerArea
             anchors.left: parent.left
             anchors.right: parent.right
@@ -167,12 +170,12 @@ DankFloatingWindow {
             title: root.headerTitle
             onCloseRequested: root.hide()
 
-            DankRefreshButton {
+            DRefreshButton {
                 buttonSize: Theme.buttonHeightXXS
                 iconSize: Theme.iconSizeSmall
                 iconColor: Theme.surfaceText
                 busy: root.isLoading
-                onClicked: root.refresh()
+                onClicked: root.refresh(true)
             }
         }
 
@@ -184,65 +187,103 @@ DankFloatingWindow {
             anchors.right: parent.right
             anchors.top: headerArea.bottom
             anchors.bottom: parent.bottom
-            anchors.leftMargin: Theme.spacingL
-            anchors.rightMargin: Theme.spacingL
-            anchors.topMargin: Theme.spacingM
-            anchors.bottomMargin: Theme.spacingL
+            anchors.leftMargin: Theme.windowInset
+            anchors.rightMargin: Theme.windowInset
+            anchors.bottomMargin: Theme.windowInset
 
-            Column {
-                id: aboveSearchSlot
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                spacing: Theme.spacingS
+            Item {
+                id: browserBody
+                anchors.fill: parent
+
+                Column {
+                    id: aboveSearchSlot
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    spacing: Theme.spacingS
+                }
+
+                DSearchField {
+                    id: browserSearchField
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: aboveSearchSlot.bottom
+                    anchors.topMargin: aboveSearchSlot.height > 0 ? Theme.spacingM : 0
+                    textColor: Theme.surfaceText
+                    font.pixelSize: Theme.fontSizeMedium
+                    placeholderText: root.searchPlaceholder
+                    text: root.searchQuery
+                    focus: true
+                    ignoreLeftRightKeys: true
+                    keyForwardTargets: [browserKeyHandler]
+                    onTextEdited: {
+                        root.searchQuery = text;
+                        root.applySearch();
+                    }
+                }
+
+                Column {
+                    id: belowSearchSlot
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: browserSearchField.bottom
+                    anchors.topMargin: height > 0 ? Theme.spacingM : 0
+                    spacing: Theme.spacingS
+                }
+
+                Item {
+                    id: listSlot
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: belowSearchSlot.bottom
+                    anchors.topMargin: Theme.spacingM
+                    anchors.bottom: parent.bottom
+
+                    Item {
+                        anchors.fill: parent
+                        visible: root.isLoading && root.showLoadingSpinner
+
+                        DSpinner {
+                            anchors.centerIn: parent
+                            running: root.isLoading && root.showLoadingSpinner
+                        }
+                    }
+                }
             }
+        }
 
-            DankSearchField {
-                id: browserSearchField
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: aboveSearchSlot.bottom
-                anchors.topMargin: aboveSearchSlot.height > 0 ? Theme.spacingM : 0
-                height: Theme.fieldHeightLarge
-                textColor: Theme.surfaceText
-                font.pixelSize: Theme.fontSizeMedium
-                placeholderText: root.searchPlaceholder
-                text: root.searchQuery
-                focus: true
-                ignoreLeftRightKeys: true
-                keyForwardTargets: [browserKeyHandler]
-                onTextEdited: {
-                    root.searchQuery = text;
-                    root.applySearch();
+        Item {
+            id: overlayLayer
+            LayoutMirroring.enabled: I18n.isRtl
+            LayoutMirroring.childrenInherit: true
+            anchors.fill: parent
+            opacity: root.overlayActive ? 1 : 0
+            visible: opacity > 0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Theme.expressiveDurations.expressiveEffects
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                 }
             }
 
-            Column {
-                id: belowSearchSlot
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: browserSearchField.bottom
-                anchors.topMargin: height > 0 ? Theme.spacingM : 0
-                spacing: Theme.spacingS
+            Rectangle {
+                anchors.fill: parent
+                color: Theme.backdropColor
+                opacity: Theme.scrimAlpha
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: root.handleEscape()
+                onWheel: wheel => wheel.accepted = true
             }
 
             Item {
-                id: listSlot
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: belowSearchSlot.bottom
-                anchors.topMargin: Theme.spacingM
-                anchors.bottom: parent.bottom
-
-                Item {
-                    anchors.fill: parent
-                    visible: root.isLoading
-
-                    DankSpinner {
-                        anchors.centerIn: parent
-                        running: root.isLoading
-                    }
-                }
+                id: overlaySlot
+                anchors.fill: parent
             }
         }
     }

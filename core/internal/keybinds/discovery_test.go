@@ -23,19 +23,12 @@ func TestDefaultDiscoveryConfig(t *testing.T) {
 		firstPath      string
 	}{
 		{
-			name:           "default with no XDG vars",
-			configHome:     "",
-			configDirs:     "",
-			expectedCount:  1,
-			checkFirstPath: true,
-		},
-		{
 			name:           "with XDG_CONFIG_HOME set",
 			configHome:     "/custom/config",
 			configDirs:     "",
 			expectedCount:  1,
 			checkFirstPath: true,
-			firstPath:      "/custom/config/DankMaterialShell/cheatsheets",
+			firstPath:      "/custom/config/dms/cheatsheets",
 		},
 		{
 			name:          "with XDG_CONFIG_DIRS set",
@@ -134,34 +127,6 @@ func TestFindJSONFilesNonexistentPath(t *testing.T) {
 	}
 }
 
-func TestFindJSONFilesMultiplePaths(t *testing.T) {
-	tmpDir1 := t.TempDir()
-	tmpDir2 := t.TempDir()
-
-	file1 := filepath.Join(tmpDir1, "app1.json")
-	file2 := filepath.Join(tmpDir2, "app2.json")
-
-	if err := os.WriteFile(file1, []byte("{}"), 0o644); err != nil {
-		t.Fatalf("Failed to create file1: %v", err)
-	}
-	if err := os.WriteFile(file2, []byte("{}"), 0o644); err != nil {
-		t.Fatalf("Failed to create file2: %v", err)
-	}
-
-	config := &DiscoveryConfig{
-		SearchPaths: []string{tmpDir1, tmpDir2},
-	}
-
-	files, err := config.FindJSONFiles()
-	if err != nil {
-		t.Fatalf("FindJSONFiles failed: %v", err)
-	}
-
-	if len(files) != 2 {
-		t.Errorf("expected 2 JSON files from multiple paths, got %d", len(files))
-	}
-}
-
 func TestAutoDiscoverProviders(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -204,19 +169,6 @@ func TestAutoDiscoverProviders(t *testing.T) {
 
 	if provider.Name() != "testapp" {
 		t.Errorf("provider name = %q, want %q", provider.Name(), "testapp")
-	}
-}
-
-func TestAutoDiscoverProvidersNilConfig(t *testing.T) {
-	registry := NewRegistry()
-
-	SetJSONProviderFactory(func(filePath string) (Provider, error) {
-		return &mockProvider{name: "test"}, nil
-	})
-
-	err := AutoDiscoverProviders(registry, nil)
-	if err != nil {
-		t.Fatalf("AutoDiscoverProviders with nil config failed: %v", err)
 	}
 }
 

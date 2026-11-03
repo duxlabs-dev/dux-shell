@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
+import qs.DCommon.Common as DCommon
 
 Singleton {
     id: root
@@ -41,8 +42,6 @@ Singleton {
     property var clipboardRequestIds: ({})
     property int requestIdCounter: 0
     property bool shownOutdatedError: false
-    property string updateCommand: "dms update"
-    property bool checkingUpdateCommand: false
 
     signal pluginsListReceived(var plugins)
     signal installedPluginsReceived(var plugins)
@@ -76,84 +75,25 @@ Singleton {
     signal locationStateUpdate(var data)
     signal sysupdateStateUpdate(var data)
     signal tailscaleStateUpdate(var data)
+    signal wellbeingStateUpdate(var data)
     signal filesEvent(var data)
 
     property bool capsLockState: false
+    property bool numLockState: false
+    property bool evdevStateInitialized: false
     property bool screensaverInhibited: false
     property var screensaverInhibitors: []
 
-    property var activeSubscriptions: ["network", "network.credentials", "loginctl", "freedesktop", "freedesktop.screensaver", "gamma", "theme.auto", "wallpaper", "bluetooth", "bluetooth.pairing", "brightness", "wlroutput", "evdev", "browser", "dbus", "clipboard", "sysupdate", "files"]
+    property var activeSubscriptions: ["network", "network.credentials", "loginctl", "freedesktop", "freedesktop.screensaver", "gamma", "wallpaper", "bluetooth", "bluetooth.pairing", "brightness", "wlroutput", "evdev", "browser", "dbus"]
     property var connectionCapabilities: null
 
     Component.onCompleted: {
         if (!socketPath || socketPath.length === 0)
             return;
-        detectUpdateCommand();
         requestSocket.connected = true;
     }
 
-    function detectUpdateCommand() {
-        checkingUpdateCommand = true;
-        checkAurHelper.running = true;
-    }
-
-    Process {
-        id: checkAurHelper
-        command: ["sh", "-c", "command -v paru || command -v yay"]
-        running: false
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const helper = text.trim();
-                if (helper.includes("paru")) {
-                    checkDmsPackage.helper = "paru";
-                    checkDmsPackage.running = true;
-                } else if (helper.includes("yay")) {
-                    checkDmsPackage.helper = "yay";
-                    checkDmsPackage.running = true;
-                } else {
-                    updateCommand = "dms update";
-                    checkingUpdateCommand = false;
-                }
-            }
-        }
-
-        onExited: exitCode => {
-            if (exitCode !== 0) {
-                updateCommand = "dms update";
-                checkingUpdateCommand = false;
-            }
-        }
-    }
-
-    Process {
-        id: checkDmsPackage
-        property string helper: ""
-        command: ["sh", "-c", "pacman -Qi dms-shell-git 2>/dev/null || pacman -Qi dms-shell-bin 2>/dev/null"]
-        running: false
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (text.includes("dms-shell-git")) {
-                    updateCommand = checkDmsPackage.helper + " -S dms-shell-git";
-                } else if (text.includes("dms-shell-bin")) {
-                    updateCommand = checkDmsPackage.helper + " -S dms-shell-bin";
-                } else {
-                    updateCommand = "dms update";
-                }
-                checkingUpdateCommand = false;
-            }
-        }
-
-        onExited: exitCode => {
-            if (exitCode !== 0) {
-                updateCommand = "dms update";
-                checkingUpdateCommand = false;
-            }
-        }
-    }
-
-    DankSocket {
+    DCommon.DSocket {
         id: requestSocket
         path: root.socketPath
         connected: false
@@ -195,7 +135,7 @@ Singleton {
         }
     }
 
-    DankSocket {
+    DCommon.DSocket {
         id: subscribeSocket
         path: root.socketPath
         connected: false
@@ -320,7 +260,7 @@ Singleton {
             if (response.error.includes("unknown method") && response.error.includes("subscribe")) {
                 if (!shownOutdatedError) {
                     log.error("Server does not support subscribe method");
-                    ToastService.showError(I18n.tr("DMS out of date"), I18n.tr("To update, run the following command:"), updateCommand);
+                    ToastService.showError(I18n.tr("DMS out of date"), I18n.tr("Update the dms package with your package manager, then restart the shell.", "shown when the running shell is older than the installed dms binary"));
                     shownOutdatedError = true;
                 }
             }
@@ -382,6 +322,10 @@ Singleton {
             if (data.capsLock !== undefined) {
                 capsLockState = data.capsLock;
             }
+            if (data.numLock !== undefined) {
+                numLockState = data.numLock;
+            }
+            evdevStateInitialized = true;
             evdevStateUpdate(data);
         } else if (service === "gamma") {
             gammaStateUpdate(data);
@@ -415,6 +359,8 @@ Singleton {
             sysupdateStateUpdate(data);
         } else if (service === "tailscale") {
             tailscaleStateUpdate(data);
+        } else if (service === "wellbeing") {
+            wellbeingStateUpdate(data);
         } else if (service === "files") {
             filesEvent(data);
         }
@@ -505,8 +451,10 @@ Singleton {
         }
     }
 
-    function listPlugins(callback) {
-        sendRequest("plugins.list", null, response => {
+    function listPlugins(callback, refresh = false) {
+        sendRequest("plugins.list", refresh ? {
+            "refresh": true
+        } : null, response => {
             if (response.result) {
                 availablePlugins = response.result;
                 pluginsListReceived(response.result);
@@ -844,9 +792,10 @@ Singleton {
         sendRequest("sysupdate.getState", null, callback);
     }
 
-    function sysupdateRefresh(force, callback) {
+    function sysupdateRefresh(force, callback, background) {
         sendRequest("sysupdate.refresh", {
-            "force": force === true
+            "force": force === true,
+            "background": background === true
         }, callback);
     }
 
@@ -871,5 +820,19 @@ Singleton {
 
     function sysupdateRelease(callback) {
         sendRequest("sysupdate.release", null, callback);
+    }
+
+    function notifySend(params, callback) {
+        sendRequest("notify.send", params, callback);
+    }
+
+    function sysupdateReleases(force, callback) {
+        sendRequest("sysupdate.releases", {
+            "force": force === true
+        }, callback);
+    }
+
+    function sysupdateRepoStatus(callback) {
+        sendRequest("sysupdate.repoStatus", null, callback);
     }
 }

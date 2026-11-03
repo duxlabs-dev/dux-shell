@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Widgets
 import qs.Common
+import qs.DCommon.Widgets
 
 Item {
     id: root
@@ -19,7 +20,7 @@ Item {
         color: Theme.primaryContainer
         antialiasing: true
 
-        DankIcon {
+        DIcon {
             anchors.centerIn: parent
             name: "music_note"
             size: root.placeholderIconSize

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/errdefs"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/errdefs"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 )
 
 type wpaScanResult struct {
@@ -393,7 +393,43 @@ func (b *WpaSupplicantBackend) GetWiFiEnabled() (bool, error) {
 // Bringing the interface itself up/down needs ifconfig(8) as root on FreeBSD;
 // there is no wpa_ctrl command for it, so this backend reports it unsupported.
 func (b *WpaSupplicantBackend) SetWiFiEnabled(enabled bool) error {
-	return fmt.Errorf("WiFi radio control not supported by wpa_supplicant backend")
+	if b.cmd == nil {
+		return fmt.Errorf("no WiFi device available")
+	}
+
+	command := "DISCONNECT"
+	if enabled {
+		command = "RECONNECT"
+	}
+
+	reply, err := b.cmd.request(command)
+	if err != nil {
+		return fmt.Errorf("%s failed: %w", command, err)
+	}
+
+	if reply != "OK" {
+		return fmt.Errorf("%s failed: %s", command, reply)
+	}
+
+	b.stateMutex.Lock()
+
+	b.state.WiFiEnabled = enabled
+
+	if !enabled {
+		b.state.WiFiConnected = false
+		b.state.WiFiSSID = ""
+		b.state.WiFiBSSID = ""
+		b.state.WiFiIP = ""
+		b.state.WiFiSignal = 0
+	}
+
+	b.stateMutex.Unlock()
+
+	if b.onStateChange != nil {
+		b.onStateChange()
+	}
+
+	return nil
 }
 
 func (b *WpaSupplicantBackend) ScanWiFi() error {

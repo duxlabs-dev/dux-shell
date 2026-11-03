@@ -35,7 +35,7 @@ namespace (`exampleComposite`), so `pluginData` is the same for every surface.
 
 ## Usage
 
-1. Copy this directory into `$CONFIGPATH/DankMaterialShell/plugins/`.
+1. Copy this directory into `$CONFIGPATH/dms/plugins/`.
 2. Settings → Plugins → **Scan for Plugins**, then enable **Composite Example**.
    (Composite plugins respect the enable toggle — unlike a pure `desktop` plugin they
    do not auto-load, because they also carry a daemon.)

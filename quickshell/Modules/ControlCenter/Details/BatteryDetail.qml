@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Modules.DankBar.Popouts
+import qs.Modules.DBar.Popouts
 import qs.Services
 
 BatteryPopoutContent {

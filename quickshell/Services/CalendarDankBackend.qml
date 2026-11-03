@@ -5,12 +5,16 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
+import qs.DCommon.Common as DCommon
 
 Item {
     id: root
     readonly property var log: Log.scoped("CalendarDankBackend")
 
     property bool enabled: false
+    property bool preferred: false
+    property int _rediscoverMisses: 0
+    readonly property int _rediscoverCap: 20
 
     property string socketPath: ""
     readonly property bool socketFound: socketPath.length > 0
@@ -19,6 +23,7 @@ Item {
     property bool binaryChecked: false
     // "dcal" for a host install, "flatpak" for a sandboxed one, "" for neither.
     property string launchKind: ""
+    property string flatpakId: ""
 
     property var calendars: []
     property var events: []
@@ -40,6 +45,7 @@ Item {
 
     onEnabledChanged: {
         if (enabled) {
+            _rediscoverMisses = 0;
             if (!connected)
                 discoverProcess.running = true;
             return;
@@ -50,18 +56,26 @@ Item {
         connected = false;
     }
 
+    onConnectedChanged: {
+        if (!connected)
+            _rediscoverMisses = 0;
+    }
+
     Component.onCompleted: {
-        binaryCheck.running = true;
+        if (!enabled)
+            return;
         discoverProcess.running = true;
     }
 
     Process {
         id: binaryCheck
-        command: ["sh", "-c", "if command -v dcal >/dev/null 2>&1; then echo dcal; elif command -v flatpak >/dev/null 2>&1 && flatpak info com.danklinux.dankcalendar >/dev/null 2>&1; then echo flatpak; fi"]
+        command: ["sh", "-c", "if command -v dcal >/dev/null 2>&1; then echo dcal; exit 0; fi; command -v flatpak >/dev/null 2>&1 || exit 0; for id in dev.duxlabs.calendar com.danklinux.dankcalendar; do if flatpak info \"$id\" >/dev/null 2>&1; then echo \"flatpak $id\"; exit 0; fi; done"]
         running: false
         stdout: StdioCollector {
             onStreamFinished: {
-                root.launchKind = text.trim();
+                const parts = text.trim().split(" ");
+                root.launchKind = parts[0] || "";
+                root.flatpakId = parts[1] || "";
                 root.binaryChecked = true;
             }
         }
@@ -70,7 +84,7 @@ Item {
     Process {
         id: discoverProcess
         running: false
-        command: ["sh", "-c", "s=\"${DANKCAL_SOCKET:-}\"; if [ -S \"$s\" ]; then echo \"$s\"; exit 0; fi; for f in \"${XDG_RUNTIME_DIR:-/tmp}\"/app/com.danklinux.dankcalendar/dankcal-*.sock; do if [ -S \"$f\" ]; then echo \"$f\"; exit 0; fi; done; for f in \"${XDG_RUNTIME_DIR:-/tmp}\"/dankcal-*.sock /tmp/dankcal-*.sock; do [ -S \"$f\" ] || continue; p=$(basename \"$f\" .sock); p=${p#dankcal-}; if kill -0 \"$p\" 2>/dev/null; then echo \"$f\"; exit 0; fi; done"]
+        command: ["sh", "-c", "s=\"${DANKCAL_SOCKET:-}\"; if [ -S \"$s\" ]; then echo \"$s\"; exit 0; fi; for f in \"${XDG_RUNTIME_DIR:-/tmp}\"/app/dev.duxlabs.calendar/dankcal-*.sock \"${XDG_RUNTIME_DIR:-/tmp}\"/app/com.danklinux.dankcalendar/dankcal-*.sock; do if [ -S \"$f\" ]; then echo \"$f\"; exit 0; fi; done; for f in \"${XDG_RUNTIME_DIR:-/tmp}\"/dankcal-*.sock /tmp/dankcal-*.sock; do [ -S \"$f\" ] || continue; p=$(basename \"$f\" .sock); p=${p#dankcal-}; if kill -0 \"$p\" 2>/dev/null; then echo \"$f\"; exit 0; fi; done"]
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -86,6 +100,8 @@ Item {
                     subscribeSocket.connected = false;
                     root.socketPath = "";
                 }
+                if (!root.binaryChecked)
+                    binaryCheck.running = true;
             }
         }
     }
@@ -94,8 +110,9 @@ Item {
         id: rediscoverTimer
         interval: 3000
         repeat: true
-        running: root.enabled && !root.connected
+        running: root.enabled && !root.connected && (root.preferred || (root.binaryChecked && root.binaryExists)) && root._rediscoverMisses < root._rediscoverCap
         onTriggered: {
+            root._rediscoverMisses++;
             if (!discoverProcess.running)
                 discoverProcess.running = true;
         }
@@ -107,13 +124,15 @@ Item {
             Quickshell.execDetached(["dcal", "run", "-d", "--hidden"]);
             break;
         case "flatpak":
-            Quickshell.execDetached(["flatpak", "run", "com.danklinux.dankcalendar", "run", "-d", "--hidden"]);
+            Quickshell.execDetached(["flatpak", "run", flatpakId, "run", "-d", "--hidden"]);
             break;
         default:
             return;
         }
-        if (enabled && !connected)
-            discoverProcess.running = true;
+        if (!enabled || connected)
+            return;
+        _rediscoverMisses = 0;
+        discoverProcess.running = true;
     }
 
     function _applySocketPath(path) {
@@ -132,7 +151,7 @@ Item {
         Qt.callLater(() => requestSocket.connected = true);
     }
 
-    DankSocket {
+    DCommon.DSocket {
         id: requestSocket
         path: root.socketPath
         connected: false
@@ -173,7 +192,7 @@ Item {
         }
     }
 
-    DankSocket {
+    DCommon.DSocket {
         id: subscribeSocket
         path: root.socketPath
         connected: false

@@ -2,7 +2,7 @@ import QtQuick
 import qs.Common
 import qs.Modules.Settings.Widgets
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Item {
     id: root
@@ -65,7 +65,7 @@ Item {
 
     readonly property bool hasKeybinds: dmsKeybinds.length > 0
 
-    DankFlickable {
+    DFlickable {
         anchors.fill: parent
         clip: true
         contentHeight: mainColumn.height + Theme.spacingL * 2
@@ -89,7 +89,7 @@ Item {
                     color: Theme.withAlpha(Theme.success, 0.15)
                     anchors.verticalCenter: parent.verticalCenter
 
-                    DankIcon {
+                    DIcon {
                         anchors.centerIn: parent
                         name: "check_circle"
                         size: Theme.iconSize + 4
@@ -113,7 +113,7 @@ Item {
                     width: parent.width
                     spacing: Theme.spacingS
 
-                    DankIcon {
+                    DIcon {
                         name: "toolbar"
                         size: root.sectionIconSize
                         color: Theme.primary
@@ -134,6 +134,44 @@ Item {
                 }
             }
 
+            Column {
+                width: parent.width
+                spacing: Theme.spacingS
+
+                Row {
+                    width: parent.width
+                    spacing: Theme.spacingS
+
+                    DIcon {
+                        name: "density_medium"
+                        size: root.sectionIconSize
+                        color: Theme.primary
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    StyledText {
+                        text: I18n.tr("Interface density", "interface density setting label")
+                        font.pixelSize: Theme.fontSizeMedium
+                        font.weight: Theme.fontWeightMedium
+                        color: Theme.surfaceText
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                DButtonGroup {
+                    readonly property var levels: ["spacious", "comfortable", "compact", "dense"]
+
+                    width: parent.width
+                    fillWidth: true
+                    model: [I18n.tr("Spacious", "interface density option with the most room between items"), I18n.tr("Comfortable", "interface density option with the default spacing"), I18n.tr("Compact", "interface density option fitting the most items on screen"), I18n.tr("Dense", "interface density option denser than compact for small text and tight rows")]
+                    currentIndex: Math.max(0, levels.indexOf(SettingsData.density))
+                    onSelectionChanged: (index, selected) => {
+                        if (selected)
+                            SettingsData.set("density", levels[index]);
+                    }
+                }
+            }
+
             Rectangle {
                 width: parent.width
                 height: 1
@@ -150,7 +188,7 @@ Item {
                     width: parent.width
                     spacing: Theme.spacingS
 
-                    DankIcon {
+                    DIcon {
                         name: "keyboard"
                         size: root.sectionIconSize
                         color: Theme.primary
@@ -227,7 +265,7 @@ Item {
                                         Repeater {
                                             model: (modelData.key || "").split("+")
 
-                                            DankKeycap {
+                                            DKeycap {
                                                 text: modelData
                                             }
                                         }
@@ -268,7 +306,7 @@ Item {
                     Row {
                         spacing: Theme.spacingS
 
-                        DankIcon {
+                        DIcon {
                             name: "keyboard"
                             size: root.sectionIconSize
                             color: Theme.surfaceVariantText
@@ -300,7 +338,7 @@ Item {
                             anchors.centerIn: parent
                             spacing: Theme.spacingS
 
-                            DankIcon {
+                            DIcon {
                                 name: "menu_book"
                                 size: root.sectionIconSize
                                 color: Theme.primary
@@ -315,7 +353,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                             }
 
-                            DankIcon {
+                            DIcon {
                                 name: "open_in_new"
                                 size: Theme.iconSizeSmall - 2
                                 color: Theme.surfaceVariantText
@@ -329,13 +367,13 @@ Item {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                let url = "https://danklinux.com/docs/dankmaterialshell/keybinds-ipc";
+                                let url = Site.docs + "/dms/keybinds-ipc";
                                 if (CompositorService.isNiri)
-                                    url = "https://danklinux.com/docs/dankmaterialshell/compositors#dms-keybindings";
+                                    url = Site.docs + "/dms/compositors#dms-keybindings";
                                 else if (CompositorService.isHyprland)
-                                    url = "https://danklinux.com/docs/dankmaterialshell/compositors#dms-keybindings-1";
+                                    url = Site.docs + "/dms/compositors#dms-keybindings-1";
                                 else if (CompositorService.isMango)
-                                    url = "https://danklinux.com/docs/dankmaterialshell/compositors#dms-keybindings-2";
+                                    url = Site.docs + "/dms/compositors#dms-keybindings-2";
                                 Qt.openUrlExternally(url);
                             }
                         }
@@ -359,7 +397,7 @@ Item {
                     width: parent.width
                     spacing: Theme.spacingS
 
-                    DankIcon {
+                    DIcon {
                         name: "settings"
                         size: root.sectionIconSize
                         color: Theme.primary
@@ -456,7 +494,7 @@ Item {
                     width: parent.width
                     spacing: Theme.spacingS
 
-                    DankIcon {
+                    DIcon {
                         name: "explore"
                         size: root.sectionIconSize
                         color: Theme.primary
@@ -481,7 +519,7 @@ Item {
                         iconName: "menu_book"
                         title: I18n.tr("Docs", "greeter documentation link")
                         isExternal: true
-                        onClicked: Qt.openUrlExternally("https://danklinux.com/docs")
+                        onClicked: Qt.openUrlExternally(Site.docs)
                     }
 
                     GreeterQuickLink {
@@ -489,7 +527,7 @@ Item {
                         iconName: "palette"
                         title: I18n.tr("Themes", "greeter themes link")
                         isExternal: true
-                        onClicked: Qt.openUrlExternally("https://danklinux.com/plugins?tab=themes")
+                        onClicked: Qt.openUrlExternally(Site.web + "/plugins?tab=themes")
                     }
                 }
             }

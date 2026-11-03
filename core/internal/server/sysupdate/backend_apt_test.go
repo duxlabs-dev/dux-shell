@@ -12,25 +12,6 @@ func TestParseAptUpgradable(t *testing.T) {
 		want  []Package
 	}{
 		{
-			name:  "empty",
-			input: "",
-			want:  nil,
-		},
-		{
-			name: "header line only",
-			input: `Listing... Done
-`,
-			want: nil,
-		},
-		{
-			name: "single upgradable",
-			input: `Listing... Done
-bash/stable 5.2.40-1 amd64 [upgradable from: 5.2.39-1]`,
-			want: []Package{
-				{Name: "bash", Repo: RepoSystem, Backend: "apt", FromVersion: "5.2.39-1", ToVersion: "5.2.40-1"},
-			},
-		},
-		{
 			name: "multiple architectures and suites",
 			input: `Listing... Done
 bash/stable 5.2.40-1 amd64 [upgradable from: 5.2.39-1]

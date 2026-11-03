@@ -36,6 +36,29 @@ QtObject {
     }
 
     function popupAnchor(item, section, visual, width, record = true) {
+        const owner = BarWidgetService.registrationForItem(item)?.context?.owner;
+        if (owner?.overflowAnchor) {
+            const anchor = popupAnchor(owner.overflowAnchor, section, null, undefined, record);
+            const overflow = owner.overflowSurface;
+            if (!anchor || !overflow?.shouldBeVisible)
+                return anchor;
+            const gap = Math.max(Theme.spacingXS, config?.spacing ?? Theme.spacingXS);
+            switch (axis?.edge) {
+            case "bottom":
+                anchor.trigger.y = overflow.renderedAlignedY - gap;
+                break;
+            case "left":
+                anchor.trigger.x = overflow.renderedAlignedX + overflow.renderedAlignedWidth + gap;
+                break;
+            case "right":
+                anchor.trigger.x = overflow.renderedAlignedX - gap;
+                break;
+            default:
+                anchor.trigger.y = overflow.renderedAlignedY + overflow.renderedAlignedHeight + gap;
+                break;
+            }
+            return anchor;
+        }
         const point = screenPoint(visual || item.visualContent || item, 0, visual && isVertical ? visual.height / 2 : 0);
         if (!point)
             return null;

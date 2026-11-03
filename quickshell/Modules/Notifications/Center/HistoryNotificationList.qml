@@ -1,10 +1,9 @@
 import QtQuick
 import qs.Modules.Notifications
-import qs.DankCommon.Common as DC
 import Quickshell
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Item {
     id: root
@@ -16,6 +15,8 @@ Item {
     property int selectedIndex: -1
     property bool showKeyboardHints: false
     property bool nested: false
+    property real swipeBleed: 0
+    property alias showScrollBar: historyListView.showScrollBar
 
     function getStartOfDay(date) {
         const d = new Date(date);
@@ -221,9 +222,10 @@ Item {
         anchors.fill: parent
         spacing: Theme.spacingS
 
-        DankFilterChips {
+        DFilterChips {
             id: filterChips
             width: parent.width
+            visible: root.visibleFilters.length > 1
             currentIndex: root.getChipIndex()
             showCounts: true
             model: root.visibleFilters
@@ -234,16 +236,17 @@ Item {
             }
         }
 
-        DankListView {
+        DListView {
             id: historyListView
-            width: parent.width
-            height: parent.height - filterChips.height - Theme.spacingS
+            x: -root.swipeBleed
+            width: parent.width + root.swipeBleed * 2
+            height: parent.height - (filterChips.visible ? filterChips.height + Theme.spacingS : 0)
             clip: true
+            leftMargin: root.swipeBleed
+            rightMargin: root.swipeBleed
             spacing: Theme.groupedListGap
-
-            add: NotificationMetrics.animationsEnabled ? DC.ListViewTransitions.add : null
-            remove: NotificationMetrics.animationsEnabled ? DC.ListViewTransitions.fadeRemove : null
-            displaced: NotificationMetrics.animationsEnabled ? DC.ListViewTransitions.displaced : null
+            rowFadeEnabled: NotificationMetrics.animationsEnabled
+            fadeInitialRows: false
 
             model: ScriptModel {
                 id: historyModel
@@ -256,90 +259,35 @@ Item {
                 visible: historyListView.count === 0
             }
 
-            delegate: Item {
+            NotificationSwipeGroup {
+                id: historySwipe
+            }
+
+            delegate: NotificationSwipeRow {
                 id: delegateRoot
                 required property var modelData
-                required property int index
 
-                property real swipeOffset: 0
-                property bool isDismissing: false
-                readonly property real dismissThreshold: width * NotificationMetrics.swipeThreshold
-                property bool __delegateInitialized: false
-
-                Timer {
-                    interval: 0
-                    running: true
-                    onTriggered: delegateRoot.__delegateInitialized = true
-                }
-
-                width: ListView.view.width
+                group: historySwipe
+                bleed: root.swipeBleed
+                width: ListView.view.width - root.swipeBleed * 2
                 height: historyCard.height
-                clip: true
+                onDismissed: root.removeWithScrollPreserve(modelData?.id || "")
+
+                Component.onCompleted: historyListView.fadeIn(delegateRoot, index)
 
                 HistoryNotificationCard {
                     id: historyCard
                     width: parent.width
-                    x: delegateRoot.swipeOffset
+                    x: delegateRoot.offset
                     historyItem: modelData
                     nested: root.nested
                     firstInGroup: index === 0
                     lastInGroup: index === historyListView.count - 1
+                    topRoundness: delegateRoot.topRoundness
+                    bottomRoundness: delegateRoot.bottomRoundness
+                    contentOpacity: delegateRoot.contentOpacity
                     isSelected: root.keyboardActive && root.focusAllowed && root.selectedIndex === index
                     keyboardNavigationActive: root.keyboardActive && root.focusAllowed
-                    opacity: Math.max(0, 1 - Math.abs(delegateRoot.swipeOffset) / delegateRoot.width)
-
-                    Behavior on x {
-                        enabled: !swipeDragHandler.active && !delegateRoot.isDismissing && delegateRoot.__delegateInitialized && NotificationMetrics.animationsEnabled
-                        NumberAnimation {
-                            duration: Theme.notificationExitDuration
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: NotificationMetrics.dismissCurve
-                        }
-                    }
-
-                    Behavior on opacity {
-                        enabled: delegateRoot.__delegateInitialized && NotificationMetrics.animationsEnabled
-                        NumberAnimation {
-                            duration: delegateRoot.__delegateInitialized ? Theme.notificationExitDuration : 0
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
-                        }
-                    }
-                }
-
-                NumberAnimation {
-                    id: swipeDismissAnimation
-                    target: delegateRoot
-                    property: "swipeOffset"
-                    to: delegateRoot.swipeOffset > 0 ? delegateRoot.width : -delegateRoot.width
-                    duration: NotificationMetrics.animationsEnabled ? Theme.notificationExitDuration : 0
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: NotificationMetrics.dismissCurve
-                    onFinished: root.removeWithScrollPreserve(delegateRoot.modelData?.id || "")
-                }
-
-                DragHandler {
-                    id: swipeDragHandler
-                    target: null
-                    yAxis.enabled: false
-                    xAxis.enabled: true
-
-                    onActiveChanged: {
-                        if (active || delegateRoot.isDismissing)
-                            return;
-                        if (Math.abs(delegateRoot.swipeOffset) <= delegateRoot.dismissThreshold) {
-                            delegateRoot.swipeOffset = 0;
-                            return;
-                        }
-                        delegateRoot.isDismissing = true;
-                        swipeDismissAnimation.restart();
-                    }
-
-                    onTranslationChanged: {
-                        if (delegateRoot.isDismissing)
-                            return;
-                        delegateRoot.swipeOffset = translation.x;
-                    }
                 }
             }
         }
@@ -350,7 +298,7 @@ Item {
             return;
         keyboardActive = true;
         selectedIndex = Math.min(selectedIndex + 1, historyModel.values.length - 1);
-        historyListView.positionViewAtIndex(selectedIndex, ListView.Contain);
+        historyListView.revealIndex(selectedIndex);
     }
 
     function selectPrevious() {
@@ -362,7 +310,7 @@ Item {
             return;
         }
         selectedIndex = Math.max(selectedIndex - 1, 0);
-        historyListView.positionViewAtIndex(selectedIndex, ListView.Contain);
+        historyListView.revealIndex(selectedIndex);
     }
 
     function clearSelected() {

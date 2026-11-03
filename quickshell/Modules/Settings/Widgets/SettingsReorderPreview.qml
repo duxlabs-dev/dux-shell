@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 SettingsRow {
     id: root
@@ -24,7 +24,7 @@ SettingsRow {
         width: Theme.iconButtonSize
         height: Theme.iconButtonSize
 
-        DankIcon {
+        DIcon {
             anchors.centerIn: parent
             name: "drag_indicator"
             size: Theme.iconSizeMedium

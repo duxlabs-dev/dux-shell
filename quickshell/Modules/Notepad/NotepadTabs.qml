@@ -3,7 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Column {
     id: root
@@ -140,7 +140,7 @@ Column {
                                 id: tabRect
                                 anchors.fill: parent
                                 radius: Theme.cornerRadius
-                                color: isActive ? Theme.primaryPressed : isHovered ? Theme.primaryHoverLight : Theme.withAlpha(Theme.primaryPressed, 0)
+                                color: isActive ? Theme.selectedContainer : isHovered ? Theme.primaryHoverLight : Theme.withAlpha(Theme.primaryPressed, 0)
                                 border.width: isActive || dragging ? 0 : 1
                                 border.color: dragging ? Theme.primary : Theme.outlineMedium
                                 clip: true
@@ -164,7 +164,7 @@ Column {
                                             return prefix + (modelData.title || "Untitled");
                                         }
                                         font.pixelSize: Theme.fontSizeSmall
-                                        color: isActive ? Theme.primary : Theme.surfaceText
+                                        color: isActive ? Theme.onSelectedContainer : Theme.surfaceText
                                         font.weight: Theme.fontWeightMedium
                                         elide: Text.ElideMiddle
                                         maximumLineCount: 1
@@ -172,7 +172,7 @@ Column {
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
 
-                                    DankTextField {
+                                    DTextField {
                                         id: renameField
                                         visible: delegateItem.editing
                                         enabled: delegateItem.editing
@@ -221,9 +221,9 @@ Column {
                                     }
 
                                     Rectangle {
+                                        id: tabCloseButton
                                         Accessible.role: Accessible.Button
                                         Accessible.name: I18n.tr("Close")
-                                        id: tabCloseButton
                                         width: 20
                                         height: 20
                                         radius: Theme.cornerRadius
@@ -231,7 +231,7 @@ Column {
                                         visible: NotepadStorageService.tabs.length > 1 && !delegateItem.editing
                                         anchors.verticalCenter: parent.verticalCenter
 
-                                        DankIcon {
+                                        DIcon {
                                             name: "close"
                                             size: 14
                                             color: Theme.surfaceTextMedium
@@ -338,7 +338,7 @@ Column {
                             }
                         }
 
-                        DankTooltipHost {
+                        DTooltipHost {
                             text: tabText.truncated ? (delegateItem.modelData.title || "Untitled") : ""
                             target: delegateItem
                             hoverArea: tabMouseArea
@@ -348,7 +348,7 @@ Column {
             }
         }
 
-        DankActionButton {
+        DActionButton {
             id: newTabButton
             width: 32
             height: 32

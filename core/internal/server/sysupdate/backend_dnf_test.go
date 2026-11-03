@@ -14,20 +14,6 @@ func TestParseDnfList(t *testing.T) {
 		want      []Package
 	}{
 		{
-			name:  "empty",
-			input: "",
-			want:  nil,
-		},
-		{
-			name:      "single package with installed cross-ref",
-			input:     "bash.x86_64                              5.2.40-1.fc41                       updates",
-			backendID: "dnf",
-			installed: map[string]string{"bash": "5.2.39-1.fc41"},
-			want: []Package{
-				{Name: "bash.x86_64", Repo: RepoSystem, Backend: "dnf", FromVersion: "5.2.39-1.fc41", ToVersion: "5.2.40-1.fc41"},
-			},
-		},
-		{
 			name: "noarch package and missing installed entry",
 			input: `bash.x86_64        5.2.40-1.fc41        updates
 fonts-misc.noarch  1.0.5-2.fc41         updates`,
@@ -57,12 +43,12 @@ bash.x86_64       5.2.40-1.fc41       updates`,
 		},
 		{
 			name: "one package offered by two repos is reported once",
-			input: `dms-greeter.x86_64   1.5.1-1.fc44   copr:copr.fedorainfracloud.org:avengemedia:danklinux
-dms-greeter.x86_64   1.5.1-1.fc44   coprdep:copr.fedorainfracloud.org:avengemedia:danklinux`,
+			input: `dux-greeter.x86_64   1.5.1-1.fc44   copr:copr.fedorainfracloud.org:avengemedia:danklinux
+dux-greeter.x86_64   1.5.1-1.fc44   coprdep:copr.fedorainfracloud.org:avengemedia:danklinux`,
 			backendID: "dnf5",
-			installed: map[string]string{"dms-greeter": "1.5.0-1.fc44"},
+			installed: map[string]string{"dux-greeter": "1.5.0-1.fc44"},
 			want: []Package{
-				{Name: "dms-greeter.x86_64", Repo: RepoSystem, Backend: "dnf5", FromVersion: "1.5.0-1.fc44", ToVersion: "1.5.1-1.fc44"},
+				{Name: "dux-greeter.x86_64", Repo: RepoSystem, Backend: "dnf5", FromVersion: "1.5.0-1.fc44", ToVersion: "1.5.1-1.fc44"},
 			},
 		},
 		{

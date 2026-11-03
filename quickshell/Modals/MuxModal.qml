@@ -1,16 +1,16 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell.Io
 import Quickshell
 import qs.Common
 import qs.Modals.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 
-DankModal {
+DModal {
     id: muxModal
 
     layerNamespace: "dms:mux"
@@ -131,8 +131,6 @@ DankModal {
     modalWidth: 600
     modalHeight: 600
     backgroundColor: Theme.floatingWindowSurface
-    borderColor: Theme.outlineMedium
-    borderWidth: 1
     enableShadow: true
     keepContentLoaded: true
 
@@ -306,11 +304,10 @@ DankModal {
             }
 
             // Search field
-            DankSearchField {
+            DSearchField {
                 id: searchField
 
                 width: parent.width
-                height: 48
                 font.pixelSize: Theme.fontSizeMedium
                 placeholderText: I18n.tr("Search sessions...")
                 keyForwardTargets: [muxPanel]
@@ -342,7 +339,7 @@ DankModal {
                         radius: Theme.fullRadius(width, height)
                         color: Theme.primaryContainer
 
-                        DankIcon {
+                        DIcon {
                             anchors.centerIn: parent
                             name: "add"
                             size: Theme.iconSize
@@ -385,11 +382,13 @@ DankModal {
                 radius: Theme.cornerRadius
                 color: "transparent"
 
-                ScrollView {
+                DFlickable {
                     anchors.fill: parent
                     clip: true
+                    contentHeight: sessionsColumn.height
 
                     Column {
+                        id: sessionsColumn
                         width: parent.width
                         spacing: Theme.spacingXS
 
@@ -475,7 +474,7 @@ DankModal {
                                         visible: MuxService.supportsRename
                                         color: renameMouse.containsMouse ? Theme.chipSurface : Theme.withAlpha(Theme.chipSurface, 0)
 
-                                        DankIcon {
+                                        DIcon {
                                             anchors.centerIn: parent
                                             name: "edit"
                                             size: Theme.iconSizeSmall
@@ -500,7 +499,7 @@ DankModal {
                                         radius: Theme.fullRadius(width, height)
                                         color: deleteMouse.containsMouse ? Theme.errorContainer : Theme.withAlpha(Theme.errorContainer, 0)
 
-                                        DankIcon {
+                                        DIcon {
                                             anchors.centerIn: parent
                                             name: "delete"
                                             size: Theme.iconSizeSmall
@@ -531,7 +530,7 @@ DankModal {
                                 anchors.centerIn: parent
                                 spacing: Theme.spacingM
 
-                                DankIcon {
+                                DIcon {
                                     name: muxModal.searchText.length > 0 ? "search_off" : "terminal"
                                     size: 48
                                     color: Theme.surfaceVariantText
@@ -557,73 +556,40 @@ DankModal {
                 }
             }
 
-            // Shortcuts bar
-            Row {
+            DKeyHints {
                 id: shortcutsBar
+
                 width: parent.width
-                spacing: Theme.spacingM
-                bottomPadding: Theme.spacingS
-
-                Repeater {
-                    model: {
-                        var shortcuts = [
-                            {
-                                key: "↑↓",
-                                label: I18n.tr("Navigate", "verb, keyboard shortcut hint for arrow keys")
-                            },
-                            {
-                                key: "↵",
-                                label: I18n.tr("Attach", "verb, shortcut hint, attach to the selected multiplexer session")
-                            },
-                            {
-                                key: "^N",
-                                label: I18n.tr("New", "adjective, shortcut or button that creates a new session or note")
-                            },
-                            {
-                                key: "^D",
-                                label: I18n.tr("Kill")
-                            },
-                            {
-                                key: "Esc",
-                                label: I18n.tr("Close")
-                            }
-                        ];
-                        if (MuxService.supportsRename)
-                            shortcuts.splice(3, 0, {
-                                key: "^R",
-                                label: I18n.tr("Rename")
-                            });
-                        return shortcuts;
-                    }
-
-                    delegate: Row {
-                        required property var modelData
-                        spacing: Theme.spacingXS
-
-                        Rectangle {
-                            width: keyText.width + Theme.spacingS
-                            height: keyText.height + 4
-                            radius: Theme.cornerRadiusXS
-                            color: Theme.foregroundColor(Theme.chipSurface, Theme.isFloatingWindow(root))
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            StyledText {
-                                id: keyText
-                                anchors.centerIn: parent
-                                text: modelData.key
-                                font.pixelSize: Theme.fontSizeSmall - 1
-                                font.weight: Theme.fontWeightMedium
-                                color: Theme.surfaceVariantText
-                            }
+                height: implicitHeight + Theme.spacingS
+                hints: {
+                    const shortcuts = [
+                        {
+                            keys: ["Up", "Down"],
+                            label: I18n.tr("Navigate", "verb, keyboard shortcut hint for arrow keys")
+                        },
+                        {
+                            keys: ["Return"],
+                            label: I18n.tr("Attach", "verb, shortcut hint, attach to the selected multiplexer session")
+                        },
+                        {
+                            keys: ["Ctrl+N"],
+                            label: I18n.tr("New", "adjective, shortcut or button that creates a new session or note")
+                        },
+                        {
+                            keys: ["Ctrl+D"],
+                            label: I18n.tr("Kill")
+                        },
+                        {
+                            keys: ["Escape"],
+                            label: I18n.tr("Close")
                         }
-
-                        StyledText {
-                            text: modelData.label
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.surfaceVariantText
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
+                    ];
+                    if (MuxService.supportsRename)
+                        shortcuts.splice(3, 0, {
+                            keys: ["Ctrl+R"],
+                            label: I18n.tr("Rename")
+                        });
+                    return shortcuts;
                 }
             }
         }

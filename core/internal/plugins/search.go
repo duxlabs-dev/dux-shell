@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 func FuzzySearch(query string, plugins []Plugin) []Plugin {
@@ -70,8 +70,8 @@ func SortByFirstParty(plugins []Plugin) []Plugin {
 		if plugins[i].Featured != plugins[j].Featured {
 			return plugins[i].Featured
 		}
-		isFirstPartyI := strings.HasPrefix(plugins[i].Repo, "https://github.com/AvengeMedia")
-		isFirstPartyJ := strings.HasPrefix(plugins[j].Repo, "https://github.com/AvengeMedia")
+		isFirstPartyI := IsFirstPartyRepo(plugins[i].Repo)
+		isFirstPartyJ := IsFirstPartyRepo(plugins[j].Repo)
 		if isFirstPartyI != isFirstPartyJ {
 			return isFirstPartyI
 		}
@@ -88,4 +88,8 @@ func FindByIDOrName(idOrName string, plugins []Plugin) *Plugin {
 		return &p
 	}
 	return nil
+}
+
+func IsFirstPartyRepo(repo string) bool {
+	return strings.HasPrefix(repo, "https://github.com/duxlabs-dev/") || strings.HasPrefix(repo, "https://github.com/AvengeMedia/")
 }

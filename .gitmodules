@@ -1,4 +1,4 @@
 [submodule "dank-qml-common"]
-	path = dank-qml-common
-	url = https://github.com/AvengeMedia/dank-qml-common.git
+	path = dux-qml-common
+	url = https://github.com/duxlabs-dev/dux-qml-common.git
 	branch = master

@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 SettingsCard {
     id: root
@@ -117,7 +117,7 @@ SettingsCard {
 
     Component.onCompleted: reload()
 
-    headerActions: DankActionButton {
+    headerActions: DActionButton {
         iconName: "refresh"
         iconColor: Theme.surfaceVariantText
         Accessible.name: I18n.tr("Refresh")
@@ -175,7 +175,7 @@ SettingsCard {
         subtitle: root.error || I18n.tr("Error")
         subtitleColor: Theme.error
 
-        DankButton {
+        DButton {
             visible: root.partial
             text: I18n.tr("Retry")
             enabled: root.supported && !root.working
@@ -191,7 +191,7 @@ SettingsCard {
             title: modelData.id
             trailingBadge: root.targetStatus(modelData)
 
-            DankBadge {
+            DBadge {
                 color: root.targetColor(modelData)
             }
         }
@@ -200,7 +200,7 @@ SettingsCard {
     SettingsFabBar {
         shown: root.hasChanges
 
-        DankFab {
+        DFab {
             text: I18n.tr("Discard")
             iconName: "undo"
             colorRole: "secondaryContainer"
@@ -208,7 +208,7 @@ SettingsCard {
             onClicked: root.changes = ({})
         }
 
-        DankFab {
+        DFab {
             text: I18n.tr("Apply changes")
             iconName: "check"
             colorRole: "primary"

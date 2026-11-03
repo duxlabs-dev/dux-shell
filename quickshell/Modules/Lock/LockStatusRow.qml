@@ -3,9 +3,9 @@ import QtQuick.Window
 import Quickshell.Services.Mpris
 import qs.Common
 import qs.Services
-import qs.Widgets
-import qs.DankCommon.Session
-import "../../DankCommon/Common/LayoutCodes.js" as LayoutCodes
+import qs.DCommon.Widgets
+import qs.DCommon.Session
+import "../../DCommon/Common/LayoutCodes.js" as LayoutCodes
 
 Row {
     id: root
@@ -60,7 +60,7 @@ Row {
             id: keyboardLayoutRow
             spacing: Theme.spacingXS
 
-            DankIcon {
+            DIcon {
                 name: "keyboard"
                 size: Theme.iconSize
                 color: root.contentColor
@@ -183,7 +183,7 @@ Row {
                     color: prevArea.containsMouse ? root.dividerColor : "transparent"
                     opacity: prevArea.enabled ? 1 : Theme.onSurface_38.a
 
-                    DankIcon {
+                    DIcon {
                         anchors.centerIn: parent
                         name: "skip_previous"
                         size: Theme.iconSizeSmall
@@ -210,7 +210,7 @@ Row {
                     anchors.verticalCenter: parent.verticalCenter
                     color: playing ? root.contentColor : root.dividerColor
 
-                    DankIcon {
+                    DIcon {
                         anchors.centerIn: parent
                         name: parent.playing ? "pause" : "play_arrow"
                         size: Theme.iconSizeSmall
@@ -236,7 +236,7 @@ Row {
                     color: nextArea.containsMouse ? root.dividerColor : "transparent"
                     opacity: nextArea.enabled ? 1 : Theme.onSurface_38.a
 
-                    DankIcon {
+                    DIcon {
                         anchors.centerIn: parent
                         name: "skip_next"
                         size: Theme.iconSizeSmall
@@ -266,7 +266,7 @@ Row {
         visible: root.weatherVisible
         anchors.verticalCenter: parent.verticalCenter
 
-        DankIcon {
+        DIcon {
             name: WeatherService.getWeatherIcon(WeatherService.weather.wCode)
             size: Theme.iconSize
             color: root.contentColor
@@ -292,7 +292,7 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
         visible: NetworkService.networkAvailable || (BluetoothService.available && BluetoothService.enabled) || (AudioService.sink && AudioService.sink.audio)
 
-        DankIcon {
+        DIcon {
             name: "screen_record"
             size: Theme.iconSizeSmall
             color: NiriService.hasActiveCast ? root.contentColor : root.dimColor
@@ -300,7 +300,7 @@ Row {
             visible: NiriService.hasCasts
         }
 
-        DankIcon {
+        DIcon {
             id: networkIcon
             name: {
                 if (NetworkService.wifiToggling)
@@ -321,13 +321,13 @@ Row {
             anchors.verticalCenter: parent.verticalCenter
             visible: NetworkService.networkAvailable
 
-            DankBlink {
+            DBlink {
                 target: networkIcon
                 running: NetworkService.isWifiConnecting
             }
         }
 
-        DankIcon {
+        DIcon {
             name: "vpn_lock"
             size: Theme.iconSizeSmall
             color: root.contentColor
@@ -335,7 +335,7 @@ Row {
             visible: NetworkService.vpnAvailable && NetworkService.vpnConnected
         }
 
-        DankIcon {
+        DIcon {
             id: bluetoothIcon
             name: "bluetooth"
             size: Theme.iconSizeSmall
@@ -343,13 +343,13 @@ Row {
             anchors.verticalCenter: parent.verticalCenter
             visible: BluetoothService.available && BluetoothService.enabled
 
-            DankBlink {
+            DBlink {
                 target: bluetoothIcon
                 running: BluetoothService.connecting
             }
         }
 
-        DankIcon {
+        DIcon {
             name: AudioService.sinkVolumeIconName
             size: Theme.iconSizeSmall
             color: AudioService.sinkSilent ? root.dimColor : root.contentColor
@@ -368,7 +368,7 @@ Row {
         visible: BatteryService.batteryAvailable
         anchors.verticalCenter: parent.verticalCenter
 
-        DankIcon {
+        DIcon {
             name: BatteryService.getBatteryIcon()
             size: Theme.iconSize
             color: root.batteryColor
@@ -376,7 +376,7 @@ Row {
         }
 
         StyledText {
-            text: BatteryService.batteryLevel + "%"
+            text: BatteryService.displayBatteryLevelText + "%"
             font.pixelSize: Theme.fontSizeLarge
             font.weight: Theme.fontWeight
             color: root.contentColor

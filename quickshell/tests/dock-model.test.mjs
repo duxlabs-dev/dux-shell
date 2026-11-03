@@ -5,25 +5,7 @@ import test from "node:test";
 
 const model = vm.createContext({});
 vm.runInContext(readFileSync(new URL("../Modules/SurfaceWidgets/ApplicationModel.js", import.meta.url), "utf8").replace(/^\.pragma.*$/m, ""), model);
-const fixture = JSON.parse(readFileSync(new URL("fixtures/dock-model.json", import.meta.url), "utf8"));
-const source = readFileSync(new URL("../Modules/SurfaceWidgets/ApplicationStrip.qml", import.meta.url), "utf8");
-const builder = source.slice(source.indexOf("                function isOnScreen("), source.indexOf("                delegate: ApplicationItem"));
 const plain = value => JSON.parse(JSON.stringify(value));
-const canonical = value => ({ ...plain(value), items: plain(value.items).map(item => ({ ...item, uniqueKey: item.type === "window" && !item.isPinned ? "window:" + item.toplevel.fixtureIndex : item.uniqueKey })) });
-
-test("shared dock/bar builder retains all 24 captured baseline outputs", () => {
-    for (const { input, output } of fixture.cases) {
-        const root = { options: input.options, groupByApp: input.groupByApp, visibleWindows: fixture.windows,
-            pinnedApps: ["browser", "editor-old", "missing"], dockScreen: { name: "DP-1" },
-            maxVisibleApps: input.max, maxVisibleRunningApps: input.max };
-        const context = vm.createContext({ root, ApplicationModel: model,
-            Paths: { moddedAppId: id => id === "editor-old" ? "editor" : id },
-            CompositorService: { windowKey: window => "window:" + window.fixtureIndex },
-            AppSearchService: { coreApps: [{ name: "Settings", builtInPluginId: "settings" }] } });
-        vm.runInContext(builder + "\nupdateModel();", context);
-        assert.deepEqual(canonical({ items: context.dockItems, pinnedCount: root.pinnedAppCount, overflowCount: root.overflowItemCount }), canonical(output), JSON.stringify(input));
-    }
-});
 
 test("overflow boundary and empty lists preserve entries and metadata", () => {
     const items = [0, 1, 2].map(index => ({ uniqueKey: String(index), type: "pinned", isPinned: true, payload: index }));

@@ -1,8 +1,10 @@
 package network
 
 import (
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"time"
+
 	"github.com/Wifx/gonetworkmanager/v2"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -10,6 +12,8 @@ const (
 	dbusNMSettingsPath                = "/org/freedesktop/NetworkManager/Settings"
 	dbusNMSettingsInterface           = "org.freedesktop.NetworkManager.Settings"
 	dbusNMSettingsConnectionInterface = "org.freedesktop.NetworkManager.Settings.Connection"
+
+	wifiNetworksUpdateDelay = 500 * time.Millisecond
 )
 
 func (b *NetworkManagerBackend) startSignalPump() error {
@@ -287,7 +291,8 @@ func (b *NetworkManagerBackend) stopSignalPump() {
 	}
 
 	b.sigWG.Wait()
-
+	b.cancelWiFiNetworksUpdate()
+	b.wifiRefreshWG.Wait()
 }
 
 func (b *NetworkManagerBackend) handleDBusSignal(sig *dbus.Signal) {
@@ -300,6 +305,9 @@ func (b *NetworkManagerBackend) handleDBusSignal(sig *dbus.Signal) {
 		}
 		b.updateHotspotState()
 		b.listCellularConnections()
+		// Device state does not change when an inactive wired profile is
+		// added or deleted, so the profile list must be refreshed here too.
+		b.listEthernetConnections()
 		if b.onStateChange != nil {
 			b.onStateChange()
 		}
@@ -537,7 +545,7 @@ func (b *NetworkManagerBackend) handleWiFiChange(changes map[string]dbus.Variant
 			needsStateUpdate = true
 			needsNetworkUpdate = true
 		case "AccessPoints":
-			needsNetworkUpdate = true
+			b.scheduleWiFiNetworksUpdate()
 		default:
 			continue
 		}
@@ -547,6 +555,7 @@ func (b *NetworkManagerBackend) handleWiFiChange(changes map[string]dbus.Variant
 		b.updateWiFiState()
 	}
 	if needsNetworkUpdate {
+		b.cancelWiFiNetworksUpdate()
 		b.updateWiFiNetworks()
 	}
 	if needsStateUpdate || needsNetworkUpdate {
@@ -554,6 +563,41 @@ func (b *NetworkManagerBackend) handleWiFiChange(changes map[string]dbus.Variant
 			b.onStateChange()
 		}
 	}
+}
+
+// A scan announces each new access point on its own, so rebuild the list
+// once per burst instead of once per access point.
+func (b *NetworkManagerBackend) scheduleWiFiNetworksUpdate() {
+	b.wifiRefreshMu.Lock()
+	defer b.wifiRefreshMu.Unlock()
+
+	if b.wifiRefreshTimer != nil {
+		return
+	}
+	b.wifiRefreshWG.Add(1)
+	b.wifiRefreshTimer = time.AfterFunc(wifiNetworksUpdateDelay, func() {
+		defer b.wifiRefreshWG.Done()
+
+		b.wifiRefreshMu.Lock()
+		b.wifiRefreshTimer = nil
+		b.wifiRefreshMu.Unlock()
+
+		b.updateWiFiNetworks()
+		if b.onStateChange != nil {
+			b.onStateChange()
+		}
+	})
+}
+
+func (b *NetworkManagerBackend) cancelWiFiNetworksUpdate() {
+	b.wifiRefreshMu.Lock()
+	defer b.wifiRefreshMu.Unlock()
+
+	if b.wifiRefreshTimer == nil || !b.wifiRefreshTimer.Stop() {
+		return
+	}
+	b.wifiRefreshTimer = nil
+	b.wifiRefreshWG.Done()
 }
 
 func (b *NetworkManagerBackend) handleAccessPointChange(changes map[string]dbus.Variant) {
@@ -594,7 +638,7 @@ func (b *NetworkManagerBackend) handleDeviceAdded(devicePath dbus.ObjectPath) {
 		return
 	}
 
-	if b.dbusConn != nil {
+	if b.dbusConn != nil && devType != gonetworkmanager.NmDeviceTypeWifi {
 		b.dbusConn.AddMatchSignal(
 			dbus.WithMatchObjectPath(devicePath),
 			dbus.WithMatchInterface(dbusPropsInterface),
@@ -603,7 +647,7 @@ func (b *NetworkManagerBackend) handleDeviceAdded(devicePath dbus.ObjectPath) {
 	}
 
 	managed, _ := dev.GetPropertyManaged()
-	if !managed {
+	if !managed && devType != gonetworkmanager.NmDeviceTypeWifi {
 		return
 	}
 
@@ -676,11 +720,6 @@ func (b *NetworkManagerBackend) handleDeviceAdded(devicePath dbus.ObjectPath) {
 			hwAddress: hwAddr,
 		})
 
-		if b.wifiDevice == nil {
-			b.wifiDevice = dev
-			b.wifiDev = w
-		}
-
 		b.updateAllWiFiDevices()
 		b.updateWiFiState()
 		b.updateHotspotState()
@@ -692,6 +731,17 @@ func (b *NetworkManagerBackend) handleDeviceAdded(devicePath dbus.ObjectPath) {
 }
 
 func (b *NetworkManagerBackend) handleDeviceRemoved(devicePath dbus.ObjectPath) {
+	if _, _, found := b.removeWifiDeviceByPath(devicePath); found {
+		b.updateAllWiFiDevices()
+		b.updateWiFiState()
+		b.updateHotspotState()
+
+		if b.onStateChange != nil {
+			b.onStateChange()
+		}
+		return
+	}
+
 	if b.dbusConn != nil {
 		b.dbusConn.RemoveMatchSignal(
 			dbus.WithMatchObjectPath(devicePath),
@@ -716,30 +766,6 @@ func (b *NetworkManagerBackend) handleDeviceRemoved(devicePath dbus.ObjectPath) 
 		b.updateEthernetState()
 		b.listEthernetConnections()
 		b.updatePrimaryConnection()
-
-		if b.onStateChange != nil {
-			b.onStateChange()
-		}
-		return
-	}
-
-	if _, remaining, found := b.removeWifiDeviceByPath(devicePath); found {
-		if b.wifiDevice != nil {
-			dev := b.wifiDevice.(gonetworkmanager.Device)
-			if dev.GetPath() == devicePath {
-				b.wifiDevice = nil
-				b.wifiDev = nil
-				for _, r := range remaining {
-					b.wifiDevice = r.device
-					b.wifiDev = r.wireless
-					break
-				}
-			}
-		}
-
-		b.updateAllWiFiDevices()
-		b.updateWiFiState()
-		b.updateHotspotState()
 
 		if b.onStateChange != nil {
 			b.onStateChange()

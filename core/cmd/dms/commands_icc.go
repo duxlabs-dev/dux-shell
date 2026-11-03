@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -9,10 +8,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/icc"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wayland"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/icc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wayland"
 	"github.com/spf13/cobra"
 )
 
@@ -268,112 +267,32 @@ func runICCInfo(cmd *cobra.Command, args []string) {
 
 func runICCApply(cmd *cobra.Command, args []string) {
 	outputName := args[0]
-	filePath := args[1]
-
-	// Resolve to absolute path
-	if !filepath.IsAbs(filePath) {
-		abs, err := filepath.Abs(filePath)
-		if err != nil {
-			log.Fatalf("Failed to resolve path: %v", err)
-		}
-		filePath = abs
+	filePath, err := filepath.Abs(args[1])
+	if err != nil {
+		log.Fatalf("Failed to resolve path: %v", err)
 	}
 
-	// Validate file exists and is a valid ICC profile. The rules the daemon
-	// enforces are checked here too: a profile it would refuse must not be copied
-	// into the profile directory first, or `dms icc list` keeps offering a file
-	// that can never be applied.
 	profile, err := icc.ParseFile(filePath)
 	if err != nil {
 		log.Fatalf("Invalid ICC profile: %v", err)
 	}
-	if profile.ColorSpace != "RGB" {
-		log.Fatalf("Unsupported color space %q, only RGB profiles can be applied", profile.ColorSpace)
-	}
-	if !profile.HasVCGT {
-		log.Fatalf("%s has no vcgt table, so it has no gamma ramp to apply", filepath.Base(filePath))
-	}
 
-	// Copy the ICC file to config dir for persistence
-	configDir := getICCConfigDir()
-	if err := os.MkdirAll(configDir, 0755); err != nil {
-		log.Fatalf("Failed to create config directory: %v", err)
-	}
-
-	destPath, copied, err := stageProfile(configDir, filePath)
-	if err != nil {
-		log.Fatalf("Failed to copy ICC file: %v", err)
-	}
-
-	// Send IPC request to running server
 	req := ipc.Request{
 		Method: "wayland.icc.apply",
 		Params: map[string]any{
 			"output": outputName,
-			"path":   destPath,
+			"path":   filePath,
 		},
 	}
 	resp, err := sendServerRequest(req)
 	if err != nil {
-		dropCopiedProfile(destPath, copied)
 		log.Fatalf("Failed to apply ICC profile: %v", err)
 	}
 	if resp.Error != "" {
-		dropCopiedProfile(destPath, copied)
 		log.Fatalf("Server error: %s", resp.Error)
 	}
 
 	fmt.Printf("Applied ICC profile '%s' to output '%s'\n", profile.Description, outputName)
-}
-
-// stageProfile places filePath in configDir and reports the path the daemon
-// should load and whether a new file was written. A file already in configDir
-// is used as it is. An existing file with the same name keeps its content: an
-// identical copy is reused, a different one gets a numbered sibling, so two
-// displays never end up sharing one file by name.
-func stageProfile(configDir, filePath string) (string, bool, error) {
-	if filepath.Dir(filepath.Clean(filePath)) == filepath.Clean(configDir) {
-		return filePath, false, nil
-	}
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return "", false, err
-	}
-
-	base := filepath.Base(filePath)
-	ext := filepath.Ext(base)
-	stem := strings.TrimSuffix(base, ext)
-	for n := 0; ; n++ {
-		name := base
-		if n > 0 {
-			name = fmt.Sprintf("%s-%d%s", stem, n, ext)
-		}
-		destPath := filepath.Join(configDir, name)
-		existing, err := os.ReadFile(destPath)
-		switch {
-		case os.IsNotExist(err):
-			if err := os.WriteFile(destPath, data, 0644); err != nil {
-				return "", false, err
-			}
-			return destPath, true, nil
-		case err != nil:
-			return "", false, err
-		case bytes.Equal(existing, data):
-			return destPath, false, nil
-		}
-	}
-}
-
-// dropCopiedProfile removes the copy this command just made, so a rejected apply
-// does not leave a profile in the config directory that was never applied (a
-// file that was already there is left alone).
-func dropCopiedProfile(path string, copied bool) {
-	if !copied {
-		return
-	}
-	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-		log.Errorf("Failed to remove %s: %v", path, err)
-	}
 }
 
 func runICCRemove(cmd *cobra.Command, args []string) {

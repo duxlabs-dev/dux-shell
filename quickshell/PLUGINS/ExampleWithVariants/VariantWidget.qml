@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Plugins
 
 PluginComponent {
@@ -17,7 +17,7 @@ PluginComponent {
         Row {
             spacing: Theme.spacingXS
 
-            DankIcon {
+            DIcon {
                 name: root.displayIcon
                 size: root.iconSize
                 color: Theme.surfaceText
@@ -38,7 +38,7 @@ PluginComponent {
         Column {
             spacing: 1
 
-            DankIcon {
+            DIcon {
                 name: root.displayIcon
                 size: root.iconSize
                 color: Theme.surfaceText

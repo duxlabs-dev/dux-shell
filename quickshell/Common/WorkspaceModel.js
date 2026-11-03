@@ -108,6 +108,22 @@ function hyprlandSpecial(ws) {
     return !(ws.id > 0) && hyprlandSpecialName(ws.name ?? "");
 }
 
+// Hyprland 0.57 gives named workspaces no id (Quickshell reports -1 for all of them), so the address is their identity
+function hyprlandKey(ws) {
+    if (ws?.id > 0)
+        return ws.id;
+    return ws?.address || ws?.name || "";
+}
+
+// "name:" resolves against the address, which a rename leaves alone; pre-main Hyprland had no address (Quickshell then echoes the id)
+function hyprlandSelector(ws) {
+    if (ws?.id > 0)
+        return ws.id;
+    const address = String(ws?.address ?? "");
+    const target = address && !/^-?\d+$/.test(address) ? address : String(ws?.name ?? "");
+    return hyprlandSpecialName(target) ? target : "name:" + target;
+}
+
 function hyprlandOrder(a, b) {
     const keyA = a.id < 0 ? Number.MAX_SAFE_INTEGER : a.id;
     const keyB = b.id < 0 ? Number.MAX_SAFE_INTEGER : b.id;
@@ -120,6 +136,7 @@ function hyprlandRecord(ws) {
     return {
         id: ws.id,
         idx: ws.id > 0 ? ws.id : null,
+        address: ws.address ?? "",
         name: ws.name ?? "",
         output: ws.monitor?.name ?? "",
         active: ws.active === true,
@@ -129,9 +146,8 @@ function hyprlandRecord(ws) {
 }
 
 function hyprlandCurrentId(raw, screenName, followFocus) {
-    if (!screenName || followFocus)
-        return raw.focusedWorkspace?.id || 1;
-    return raw.monitors.find(m => m.name === screenName)?.activeWorkspace?.id || 1;
+    const ws = !screenName || followFocus ? raw.focusedWorkspace : raw.monitors.find(m => m.name === screenName)?.activeWorkspace;
+    return hyprlandKey(ws) || 1;
 }
 
 function hyprlandMonitorWorkspaces(raw, workspaces, screenName) {
@@ -152,9 +168,8 @@ function hyprlandListedWorkspaces(raw, screenName, followFocus, occupiedOnly) {
     const workspaces = !screenName || followFocus ? regular.slice().sort(hyprlandOrder) : hyprlandMonitorWorkspaces(raw, regular, screenName);
     if (!occupiedOnly)
         return workspaces.map(hyprlandRecord);
-    const currentId = hyprlandCurrentId(raw, screenName, followFocus);
-    const toplevels = raw.toplevels;
-    return workspaces.filter(ws => ws.id === currentId || toplevels.some(tl => tl.workspace?.id === ws.id)).map(hyprlandRecord);
+    const currentKey = hyprlandCurrentId(raw, screenName, followFocus);
+    return workspaces.filter(ws => hyprlandKey(ws) === currentKey || hyprlandWorkspaceOccupied(raw.toplevels, ws)).map(hyprlandRecord);
 }
 
 function hyprlandRuleIds(workspaceString) {
@@ -234,7 +249,7 @@ function hyprlandSpecialDisplayName(name) {
 // Hyprland >= 0.56 reports every special workspace with a null id, so specials only match by name
 function hyprlandWorkspaceMatches(ws, record) {
     if (record.special !== true)
-        return ws?.id === record.id;
+        return !!ws && hyprlandKey(ws) === hyprlandKey(record);
     const name = ws?.name ?? "";
     return hyprlandSpecialName(name) && hyprlandSpecialDisplayName(name) === record.name;
 }
@@ -355,7 +370,7 @@ function mangoRecord(index, tag, output) {
         output,
         active: state === 1,
         placeholder: false,
-        urgent: state === 2,
+        urgent: tag?.urgent ?? state === 2,
         occupied: (tag?.clients ?? 0) > 0
     };
 }
@@ -424,7 +439,7 @@ function mangoActiveWorkspace(raw, screenName) {
 
 function mangoWindowsOnWorkspace(windows, workspace) {
     // mangoTags are 1-based; workspace.id is 0-based.
-    return windows.filter(win => win && (win.mangoTags || []).includes(workspace.id + 1));
+    return windows.filter(win => win && win.mangoMonitor === workspace.output && (win.mangoTags || []).includes(workspace.id + 1));
 }
 
 function i3Key(ws) {

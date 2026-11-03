@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Plugins
 
 DashCardComponent {
@@ -26,7 +26,7 @@ DashCardComponent {
         anchors.centerIn: parent
         spacing: Theme.spacingM
 
-        DankIcon {
+        DIcon {
             anchors.verticalCenter: parent.verticalCenter
             name: "counter_1"
             size: Theme.iconSizeLarge

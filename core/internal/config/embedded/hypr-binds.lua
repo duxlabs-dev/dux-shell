@@ -1,26 +1,56 @@
 -- DMS default keybinds (Hyprland 0.55+ Lua)
+-- dms setup replaces this file with the stock set; a changed copy is kept in ../.dms-backups/.
+-- Put your own binds and overrides in binds-user.lua, which setup never touches.
+
+-- Hyprland emits no socket2 event when a window moves or resizes, so these
+-- dispatchers announce one for the shell (dock smart auto-hide, #3168)
+if hl.dsp.event then
+	for _, name in ipairs({ "move", "resize", "center" }) do
+		local raw = hl.dsp.window[name]
+		hl.dsp.window[name] = function(...)
+			-- argless resize is the mouse drag bind, which needs the native dispatcher
+			if name == "resize" and select("#", ...) == 0 then
+				return raw()
+			end
+			local dispatcher = raw(...)
+			return function()
+				hl.dispatch(dispatcher)
+				hl.dispatch(hl.dsp.event("dms:geometry"))
+			end
+		end
+	end
+end
 
 -- === Application Launchers ===
 hl.bind("SUPER + T", hl.dsp.exec_cmd("{{TERMINAL_COMMAND}}"))
+hl.bind("SUPER + Return", hl.dsp.exec_cmd("{{TERMINAL_COMMAND}}"))
 hl.bind("SUPER + space", hl.dsp.exec_cmd("dms ipc call spotlight toggle"))
 hl.bind("ALT + space", hl.dsp.exec_cmd("dms ipc call spotlight-bar toggle"))
 hl.bind("SUPER + V", hl.dsp.exec_cmd("dms ipc call clipboard toggle"))
-hl.bind("SUPER + M", hl.dsp.exec_cmd("dms ipc call processlist focusOrToggle"))
+hl.bind("SUPER + M", hl.dsp.exec_cmd("dms ipc call dash toggle media"))
 hl.bind("SUPER + comma", hl.dsp.exec_cmd("dms ipc call settings focusOrToggle"))
-hl.bind("SUPER + N", hl.dsp.exec_cmd("dms ipc call notifications toggle"))
-hl.bind("SUPER + SHIFT + N", hl.dsp.exec_cmd("dms ipc call notepad toggle"))
+hl.bind("SUPER + N", hl.dsp.exec_cmd("dms ipc call notepad toggle"))
+hl.bind("SUPER + SHIFT + N", hl.dsp.exec_cmd("dms ipc call notepad toggleExpand"))
+hl.bind("SUPER + CTRL + N", hl.dsp.exec_cmd("dms ipc call notifications toggle"))
 hl.bind("SUPER + Y", hl.dsp.exec_cmd("dms ipc call dash toggle wallpaper"))
 hl.bind("SUPER + TAB", hl.dsp.exec_cmd("dms ipc call hypr toggleOverview"))
 hl.bind("SUPER + O", hl.dsp.exec_cmd("dms ipc call hypr toggleOverview"))
 hl.bind("SUPER + X", hl.dsp.exec_cmd("dms ipc call powermenu toggle"))
+hl.bind("SUPER + A", hl.dsp.exec_cmd("dms ipc call control-center toggle"))
+hl.bind("SUPER + D", hl.dsp.exec_cmd([[dms ipc call dash toggle ""]]))
+hl.bind("SUPER + SHIFT + C", hl.dsp.exec_cmd("dms ipc call color-picker toggle"))
+hl.bind("SUPER + ALT + N", hl.dsp.exec_cmd("dms ipc call night toggle"))
+hl.bind("SUPER + ALT + I", hl.dsp.exec_cmd("dms ipc call inhibit toggle"))
 
 -- === Cheat sheet
 hl.bind("SUPER + SHIFT + Slash", hl.dsp.exec_cmd("dms ipc call keybinds toggle hyprland"))
 
 -- === Security ===
 hl.bind("SUPER + ALT + L", hl.dsp.exec_cmd("dms ipc call lock lock"))
-hl.bind("SUPER + SHIFT + E", hl.dsp.exit())
+-- Routed through the power menu so a stray press can't end the session
+hl.bind("SUPER + SHIFT + E", hl.dsp.exec_cmd("dms ipc call powermenu toggle"))
 hl.bind("CTRL + ALT + Delete", hl.dsp.exec_cmd("dms ipc call processlist focusOrToggle"))
+hl.bind("CTRL + ALT + M", hl.dsp.exec_cmd("dms ipc call processlist focusOrToggle"))
 
 -- === Audio Controls ===
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("dms ipc call audio increment 3"), { locked = true, repeating = true })
@@ -99,7 +129,7 @@ hl.bind("SUPER + CTRL + U", hl.dsp.window.move({ workspace = "e+1" }))
 hl.bind("SUPER + CTRL + I", hl.dsp.window.move({ workspace = "e-1" }))
 
 -- === Workspace Management ===
-hl.bind("CTRL + SHIFT + R", hl.dsp.exec_cmd("dms ipc call workspace-rename open"))
+hl.bind("SUPER + ALT + R", hl.dsp.exec_cmd("dms ipc call workspace-rename open"))
 
 -- === Scratchpad ===
 hl.bind("SUPER + S", hl.dsp.workspace.toggle_special())
@@ -154,9 +184,6 @@ hl.bind("SUPER + CTRL + F", hl.dsp.window.fullscreen({ mode = "maximized", actio
 -- === Move/resize windows with mainMod + LMB/RMB and dragging ===
 hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true, description = "Move window" })
 hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true, description = "Resize window" })
-
-hl.bind("SUPER + code:20", hl.dsp.window.resize({ x = -100, y = 0, relative = true }), { description = "Expand window left" })
-hl.bind("SUPER + code:21", hl.dsp.window.resize({ x = 100, y = 0, relative = true }), { description = "Shrink window left" })
 
 -- === Manual Sizing ===
 hl.bind("SUPER + minus", hl.dsp.window.resize({ x = -100, y = 0, relative = true }), { repeating = true })

@@ -12,7 +12,7 @@ repos:
         entry: python3 quickshell/tests/run-qml.py
         language: system
         types: []
-        files: ^(quickshell/|dank-qml-common$|Makefile$|core/Makefile$|scripts/shell-test-excludes\.txt$|flake\.nix$|\.pre-commit-config\.yaml$|\.github/workflows/(qml-tests|prek)\.yml$)
+        files: ^(quickshell/|dux-qml-common$|Makefile$|core/Makefile$|scripts/shell-test-excludes\.txt$|flake\.nix$|\.pre-commit-config\.yaml$|\.github/workflows/(qml-tests|prek)\.yml$)
         pass_filenames: false
         require_serial: true
   - repo: local

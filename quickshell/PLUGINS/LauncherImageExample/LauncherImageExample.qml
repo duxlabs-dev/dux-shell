@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import qs.Services
+import qs.Common
 
 QtObject {
     id: root
@@ -13,32 +14,32 @@ QtObject {
     readonly property var images: [
         {
             name: "DankDash",
-            imageUrl: "https://danklinux.com/img/dankdash.png",
-            comment: "DankMaterialShell Dashboard"
+            imageUrl: Site.web + "/img/dankdash.png",
+            comment: "Dux Shell Dashboard"
         },
         {
             name: "Control Center",
-            imageUrl: "https://danklinux.com/img/cc.png",
+            imageUrl: Site.web + "/img/cc.png",
             comment: "System Control Center"
         },
         {
             name: "Desktop",
-            imageUrl: "https://danklinux.com/img/desktop.png",
+            imageUrl: Site.web + "/img/desktop.png",
             comment: "Desktop Environment"
         },
         {
             name: "Search",
-            imageUrl: "https://danklinux.com/img/dsearch.png",
+            imageUrl: Site.web + "/img/dsearch.png",
             comment: "Application Search"
         },
         {
             name: "Theme Registry",
-            imageUrl: "https://danklinux.com/img/blog/v1.2/themeregistry.png",
+            imageUrl: Site.web + "/img/blog/v1.2/themeregistry.png",
             comment: "Theme Registry Browser"
         },
         {
             name: "Monitor Settings",
-            imageUrl: "https://danklinux.com/img/blog/v1.2/monitordark.png",
+            imageUrl: Site.web + "/img/blog/v1.2/monitordark.png",
             comment: "Display Configuration"
         }
     ]

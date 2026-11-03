@@ -66,10 +66,14 @@ Item {
             id: slot
 
             required property var modelData
+            // Keep the last resolved config so the body never sees a shapeless one while the delegate is torn down.
+            property var config: modelData
+            onModelDataChanged: if (modelData)
+                config = modelData
             readonly property alias body: dockBody
 
             anchors.fill: parent
-            visible: slot.modelData.enabled || (slot.modelData.openOnOverview && CompositorService.isNiri)
+            visible: (slot.config?.enabled ?? false) || ((slot.config?.openOnOverview ?? false) && CompositorService.isNiri)
 
             onVisibleChanged: dockRepeater.revision++
             Component.onCompleted: dockRepeater.revision++
@@ -79,7 +83,7 @@ Item {
                 id: dockBody
 
                 anchors.fill: parent
-                config: slot.modelData
+                config: slot.config
                 hostWindow: host.frameWindow
                 modelData: host.targetScreen
                 contextMenu: BarWidgetService.dockContextMenu

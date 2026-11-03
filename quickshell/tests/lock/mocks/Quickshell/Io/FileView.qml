@@ -4,7 +4,7 @@ Item {
     property string path
     property bool printErrors
     property bool watchChanges
-    property bool loaded: true
+    readonly property bool loaded: path !== "" && !MockFiles.missing.includes(path)
     function reload() {
     }
 }

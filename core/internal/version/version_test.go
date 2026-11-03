@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	mocks_version "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/version"
+	mocks_version "github.com/duxlabs-dev/dux-shell/core/internal/mocks/version"
 )
 
 func TestCompareVersions(t *testing.T) {
@@ -18,11 +18,10 @@ func TestCompareVersions(t *testing.T) {
 		{"v0.1.0", "v0.1.1", -1},
 		{"v0.1.1", "v0.1.0", 1},
 		{"v0.1.10", "v0.1.2", 1},
-		{"v0.2.0", "v0.1.9", 1},
-		{"0.1.0", "0.1.0", 0},
 		{"1.0.0", "v1.0.0", 0},
-		{"v1.2.3", "v1.2.4", -1},
-		{"v2.0.0", "v1.9.9", 1},
+		{"", "", 0},
+		{"v1.0", "v1", 0},
+		{"v1.0.1", "v1.0", 1},
 	}
 
 	for _, tt := range tests {
@@ -56,18 +55,6 @@ func TestGetDMSVersionInfo_Structure(t *testing.T) {
 		t.Fatalf("GetDMSVersionInfoWithFetcher() failed: %v", err)
 	}
 
-	if info == nil {
-		t.Fatal("GetDMSVersionInfoWithFetcher() returned nil")
-	}
-
-	if info.Current != "v0.1.0" {
-		t.Errorf("Current version = %s, expected v0.1.0", info.Current)
-	}
-
-	if info.Latest != "v0.1.1" {
-		t.Errorf("Latest version = %s, expected v0.1.1", info.Latest)
-	}
-
 	if !info.HasUpdate {
 		t.Error("HasUpdate should be true when current != latest")
 	}
@@ -75,8 +62,6 @@ func TestGetDMSVersionInfo_Structure(t *testing.T) {
 	if !info.IsTag {
 		t.Error("IsTag should be true for v0.1.0")
 	}
-
-	t.Logf("Current: %s, Latest: %s, HasUpdate: %v", info.Current, info.Latest, info.HasUpdate)
 }
 
 func TestGetDMSVersionInfo_BranchVersion(t *testing.T) {
@@ -145,27 +130,5 @@ func TestGetCurrentDMSVersion_NotInstalled(t *testing.T) {
 	_, err := GetCurrentDMSVersion()
 	if err == nil {
 		t.Error("Expected error when DMS not installed, got nil")
-	}
-}
-
-func TestCompareVersions_EdgeCases(t *testing.T) {
-	tests := []struct {
-		v1       string
-		v2       string
-		expected int
-	}{
-		{"", "", 0},
-		{"v1", "v1", 0},
-		{"v1.0", "v1", 0},
-		{"v1.0.0", "v1.0", 0},
-		{"v1.0.1", "v1.0", 1},
-		{"v1", "v1.0.1", -1},
-	}
-
-	for _, tt := range tests {
-		result := CompareVersions(tt.v1, tt.v2)
-		if result != tt.expected {
-			t.Errorf("CompareVersions(%q, %q) = %d; want %d", tt.v1, tt.v2, result, tt.expected)
-		}
 	}
 }

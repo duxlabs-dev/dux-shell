@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Common
+import qs.DCommon.Widgets
 import qs.Widgets
 import "../../Common/QmlUtils.js" as QmlUtils
 
@@ -68,7 +69,8 @@ Column {
         }
     }
 
-    DankDropdown {
+    DDropdown {
+        downKeyOpens: false
         width: parent.width
         text: root.label
         description: root.description

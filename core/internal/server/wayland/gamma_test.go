@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/icc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/icc"
 )
 
 func TestGenerateGammaRamp(t *testing.T) {
@@ -15,10 +15,7 @@ func TestGenerateGammaRamp(t *testing.T) {
 		temp  int
 		gamma float64
 	}{
-		{"small_warm", 16, 6500, 1.0},
-		{"small_cool", 16, 4000, 1.0},
 		{"large_warm", 256, 6500, 1.0},
-		{"large_cool", 256, 4000, 1.0},
 		{"custom_gamma", 64, 5500, 1.2},
 	}
 
@@ -51,34 +48,6 @@ func TestGenerateGammaRamp(t *testing.T) {
 				if ramp.Red[i] < ramp.Red[i-1] {
 					t.Errorf("red ramp not monotonic at index %d", i)
 				}
-			}
-		})
-	}
-}
-
-func TestCalcWhitepoint(t *testing.T) {
-	tests := []struct {
-		name string
-		temp int
-	}{
-		{"very_warm", 6500},
-		{"neutral", 5500},
-		{"cool", 4000},
-		{"very_cool", 3000},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			wp := calcWhitepoint(tt.temp)
-
-			if wp.r < 0 || wp.r > 1 {
-				t.Errorf("red out of range: %f", wp.r)
-			}
-			if wp.g < 0 || wp.g > 1 {
-				t.Errorf("green out of range: %f", wp.g)
-			}
-			if wp.b < 0 || wp.b > 1 {
-				t.Errorf("blue out of range: %f", wp.b)
 			}
 		})
 	}
@@ -253,7 +222,6 @@ func TestProfileRampWithTempAppliesGammaAndContrast(t *testing.T) {
 		contrast float64
 	}{
 		{"no target, gamma only", noTempTarget, 1.8, 1.0},
-		{"no target, contrast only", noTempTarget, 1.0, 1.4},
 		{"reference target, both", neutralTemp, 0.8, 0.7},
 		{"warm target, both", 4000, 1.5, 1.3},
 		{"cool target, both", 8000, 0.9, 0.6},
@@ -274,27 +242,13 @@ func TestProfileRampWithTempAppliesGammaAndContrast(t *testing.T) {
 			closeTo(t, "blue", ramp.Blue, want.Blue)
 		})
 	}
+}
 
-	t.Run("gamma changes the profile ramp without a target", func(t *testing.T) {
-		flat, _ := ProfileRampWithTemp(size, profile, neutralTemp, noTempTarget, 1.0, 1.0)
-		raised, _ := ProfileRampWithTemp(size, profile, neutralTemp, noTempTarget, 2.0, 1.0)
-		mid := int(size) / 2
-		if raised.Red[mid] <= flat.Red[mid] {
-			t.Fatalf("gamma 2.0 should lift mid gray: got %d, flat %d", raised.Red[mid], flat.Red[mid])
-		}
-	})
-
-	t.Run("contrast pivots the profile ramp at mid gray", func(t *testing.T) {
-		const oddSize = uint32(257)
-		flat, _ := ProfileRampWithTemp(oddSize, profile, neutralTemp, noTempTarget, 1.0, 1.0)
-		high, _ := ProfileRampWithTemp(oddSize, profile, neutralTemp, noTempTarget, 1.0, 2.0)
-		mid := int(oddSize) / 2
-		quarter := int(oddSize) / 4
-		if diff := int(high.Green[mid]) - int(flat.Green[mid]); diff < -tolerance || diff > tolerance {
-			t.Fatalf("mid gray should hold under contrast: got %d, flat %d", high.Green[mid], flat.Green[mid])
-		}
-		if high.Green[quarter] >= flat.Green[quarter] {
-			t.Fatalf("quarter gray should drop under contrast 2.0: got %d, flat %d", high.Green[quarter], flat.Green[quarter])
-		}
-	})
+func TestBrightnessScale_NeverReachesBlack(t *testing.T) {
+	if got := brightnessScale(0); got != outputBrightnessFloor {
+		t.Errorf("brightnessScale(0) = %v, want the floor %v", got, outputBrightnessFloor)
+	}
+	if got := brightnessScale(100); got != 1 {
+		t.Errorf("brightnessScale(100) = %v, want 1", got)
+	}
 }

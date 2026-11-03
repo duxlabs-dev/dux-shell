@@ -163,7 +163,84 @@ func TestSelectedLogicalGeometryPreSelection(t *testing.T) {
 	}
 }
 
+func TestSelectedLogicalGeometryPreSelectionScaled(t *testing.T) {
+	surface := &OutputSurface{
+		logicalW: 1920,
+		logicalH: 1080,
+		output: &WaylandOutput{
+			name:            "eDP-1",
+			fractionalScale: 2,
+		},
+		screenBuf: &ShmBuffer{
+			Width:  3840,
+			Height: 2160,
+			Stride: 3840 * 4,
+		},
+	}
+	r := &RegionSelector{
+		preSelect: Region{
+			X:      200,
+			Y:      100,
+			Width:  400,
+			Height: 300,
+			Output: "eDP-1",
+		},
+	}
+
+	r.applyPreSelection(surface)
+	got, ok := r.selectedLogicalGeometry()
+	if !ok {
+		t.Fatal("expected scaled preselection to produce valid geometry")
+	}
+	if got.X != 200 || got.Y != 100 || got.Width != 400 || got.Height != 300 {
+		t.Fatalf("got (%d, %d, %d, %d), want (200, 100, 400, 300)",
+			got.X, got.Y, got.Width, got.Height)
+	}
+}
+
+func TestLogicalRegionFromDevicePixels(t *testing.T) {
+	out := &WaylandOutput{
+		name:            "eDP-1",
+		x:               0,
+		y:               0,
+		fractionalScale: 2.0,
+	}
+
+	reg := logicalRegionFromDevicePixels(out, 3155, 50, 640, 442)
+	if reg.X != 1578 || reg.Y != 25 || reg.Width != 320 || reg.Height != 221 {
+		t.Fatalf("logicalRegionFromDevicePixels() = (%d, %d, %d, %d), want (1578, 25, 320, 221)",
+			reg.X, reg.Y, reg.Width, reg.Height)
+	}
+	if reg.Output != "eDP-1" {
+		t.Fatalf("Output = %q, want %q", reg.Output, "eDP-1")
+	}
+}
+
+func TestRegionCaptureScales(t *testing.T) {
+	tests := []struct {
+		name                    string
+		compositor              Compositor
+		wantCapture, wantResult float64
+	}{
+		{"protocol compositor", CompositorNiri, 1, 2},
+		{"Mango", CompositorMango, 2, 2},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			captureScale, resultScale := regionCaptureScales(tc.compositor, 2)
+			if captureScale != tc.wantCapture || resultScale != tc.wantResult {
+				t.Fatalf("regionCaptureScales() = (%v, %v), want (%v, %v)",
+					captureScale, resultScale, tc.wantCapture, tc.wantResult)
+			}
+		})
+	}
+}
+
 func TestWaylandOutputBoundsScaled(t *testing.T) {
+	// DetectCompositor caches its result, so inside a live Hyprland session the test would exec hyprctl
+	prev := detectedCompositor
+	detectedCompositor = CompositorUnknown
+	t.Cleanup(func() { detectedCompositor = prev })
 	out := &WaylandOutput{
 		name:            "DP-2",
 		x:               1920,

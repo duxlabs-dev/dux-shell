@@ -9,11 +9,14 @@ import qs.Common
 Singleton {
     id: root
 
+    readonly property var log: Log.scoped("DSearchService")
+
     property bool dsearchAvailable: false
     property int searchIdCounter: 0
     property int indexVersion: 0
     property bool supportsTypeFilter: false
     property bool versionChecked: false
+    property bool _checked: false
 
     signal searchResultsReceived(var results)
     signal statsReceived(var stats)
@@ -22,22 +25,15 @@ Singleton {
     Process {
         id: checkProcess
         command: ["sh", "-c", "command -v dsearch"]
-        running: true
-
-        stdout: SplitParser {
-            onRead: line => {
-                if (line && line.trim().length > 0) {
-                    root.dsearchAvailable = true;
-                }
-            }
-        }
+        running: false
 
         onExited: exitCode => {
-            if (exitCode !== 0) {
-                root.dsearchAvailable = false;
-            } else {
-                root._checkVersion();
+            root.dsearchAvailable = exitCode === 0;
+            if (!root.dsearchAvailable) {
+                root.log.warn("dsearch not found, command -v exit", exitCode, "PATH", Quickshell.env("PATH"));
+                return;
             }
+            root._checkVersion();
         }
     }
 
@@ -52,36 +48,17 @@ Singleton {
         });
     }
 
-    function ping(callback) {
-        if (!dsearchAvailable) {
-            if (callback) {
-                callback({
-                    "error": "dsearch not available"
-                });
-            }
+    function ensureChecked() {
+        if (_checked)
             return;
-        }
+        recheck();
+    }
 
-        Proc.runCommand("dsearch-ping", ["dsearch", "ping", "--json"], (stdout, exitCode) => {
-            if (callback) {
-                if (exitCode === 0) {
-                    try {
-                        const response = JSON.parse(stdout);
-                        callback({
-                            "result": response
-                        });
-                    } catch (e) {
-                        callback({
-                            "error": "failed to parse ping response"
-                        });
-                    }
-                } else {
-                    callback({
-                        "error": "ping failed"
-                    });
-                }
-            }
-        });
+    function recheck() {
+        _checked = true;
+        if (dsearchAvailable || checkProcess.running)
+            return;
+        checkProcess.running = true;
     }
 
     function search(query, params, callback) {
@@ -94,6 +71,7 @@ Singleton {
             return;
         }
 
+        ensureChecked();
         if (!dsearchAvailable) {
             if (callback) {
                 callback({
@@ -176,9 +154,5 @@ Singleton {
                 }
             }
         }, 100, 5000);
-    }
-
-    function rediscover() {
-        checkProcess.running = true;
     }
 }

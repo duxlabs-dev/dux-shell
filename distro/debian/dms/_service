@@ -3,19 +3,19 @@
   <service name="download_url">
     <param name="protocol">https</param>
     <param name="host">github.com</param>
-    <param name="path">/AvengeMedia/DankMaterialShell/releases/download/v1.2.3/dms-source.tar.gz</param>
+    <param name="path">/duxlabs-dev/dux-shell/releases/download/v1.2.3/dms-source.tar.gz</param>
     <param name="filename">dms-source.tar.gz</param>
   </service>
   <!-- Download amd64 binary -->
   <service name="download_url">
     <param name="protocol">https</param>
     <param name="host">github.com</param>
-    <param name="path">/AvengeMedia/DankMaterialShell/releases/download/v1.2.3/dms-distropkg-amd64.gz</param>
+    <param name="path">/duxlabs-dev/dux-shell/releases/download/v1.2.3/dms-distropkg-amd64.gz</param>
   </service>
   <!-- Download arm64 binary -->
   <service name="download_url">
     <param name="protocol">https</param>
     <param name="host">github.com</param>
-    <param name="path">/AvengeMedia/DankMaterialShell/releases/download/v1.2.3/dms-distropkg-arm64.gz</param>
+    <param name="path">/duxlabs-dev/dux-shell/releases/download/v1.2.3/dms-distropkg-arm64.gz</param>
   </service>
 </services>

@@ -164,3 +164,46 @@ func TestAReadOnlyConfigIsRefusedBeforeTheFragmentIsRead(t *testing.T) {
 		}
 	}
 }
+
+func TestDMSOpaqueRuleIsPinnedLast(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(*fakeStore) error
+		have []string
+		want []string
+	}{
+		{
+			name: "Set keeps opaque last",
+			run:  func(s *fakeStore) error { return Set(s, WindowRule{ID: "new"}) },
+			have: []string{"a", OpaqueRuleID},
+			want: []string{"a", "new", OpaqueRuleID},
+		},
+		{
+			name: "Remove keeps opaque last",
+			run:  func(s *fakeStore) error { return Remove(s, "b") },
+			have: []string{"a", "b", OpaqueRuleID, "c"},
+			want: []string{"a", "c", OpaqueRuleID},
+		},
+		{
+			name: "Reorder with only user IDs",
+			run:  func(s *fakeStore) error { return Reorder(s, []string{"b", "a"}) },
+			have: []string{"a", OpaqueRuleID, "b"},
+			want: []string{"b", "a", OpaqueRuleID},
+		},
+		{
+			name: "Set replacing mid-list opaque moves it last",
+			run:  func(s *fakeStore) error { return Set(s, WindowRule{ID: OpaqueRuleID}) },
+			have: []string{"a", OpaqueRuleID, "b"},
+			want: []string{"a", "b", OpaqueRuleID},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := storeWith(tt.have...)
+			if err := tt.run(store); err != nil {
+				t.Fatal(err)
+			}
+			assertIDs(t, store, tt.want...)
+		})
+	}
+}

@@ -25,11 +25,23 @@ Singleton {
     readonly property string _album: MprisController.activePlayer?.trackAlbum || ""
     readonly property string _cacheKey: _artist !== "" && _album !== "" ? (_artist + "\n" + _album).toLowerCase() : ""
 
+    property bool _pruned: false
+
     on_CacheKeyChanged: _schedule()
-    onEnabledChanged: _schedule()
-    Component.onCompleted: {
-        _prune();
+    onEnabledChanged: {
+        _pruneOnce();
         _schedule();
+    }
+    Component.onCompleted: {
+        _pruneOnce();
+        _schedule();
+    }
+
+    function _pruneOnce() {
+        if (_pruned || !enabled)
+            return;
+        _pruned = true;
+        _prune();
     }
 
     // Downloaded covers are a few MB each; drop anything untouched for 30 days so the

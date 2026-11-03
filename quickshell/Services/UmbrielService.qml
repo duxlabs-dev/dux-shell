@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
+import qs.DCommon.Common as DCommon
 
 Singleton {
     id: root
@@ -18,7 +19,7 @@ Singleton {
     property var windows: []
     readonly property string focusedOutput: workspaces.find(ws => ws.focused)?.output ?? ""
 
-    DankSocket {
+    DCommon.DSocket {
         path: root.socketPath
         connected: root.active && root.socketPath !== ""
 

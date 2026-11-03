@@ -7,6 +7,10 @@ Loader {
     id: root
 
     property var surfaceContext: null
+    property var overflowAnchor: null
+    property var overflowSurface: null
+    property bool live: true
+    property real allottedPrimarySize: 0
     property string instanceId: widgetData?.id ?? widgetId
     readonly property string registrationId: (surfaceContext?.kind ?? "bar") + ":" + (surfaceContext?.configId ?? barConfig?.id ?? "") + ":" + section + ":" + instanceId
     property int occurrenceOrder: 0
@@ -57,9 +61,10 @@ Loader {
 
     readonly property bool widgetEnabled: widgetData?.enabled !== false
     readonly property bool loadedOnDemand: BarWidgetService.onDemandWidgetIds.includes(widgetId)
+    readonly property string componentKey: widgetId === "music" && SettingsData.widgetOption("music", widgetData, "mediaStyle") === "activity" ? "music:activity" : widgetId
 
-    active: (widgetEnabled || loadedOnDemand) && orientationMatches && getWidgetVisible(widgetId, DgopService.dgopAvailable) && (!["music", "mediaActivity"].includes(widgetId) || MprisController.activePlayer !== null)
-    sourceComponent: getWidgetComponent(widgetId, components)
+    active: (widgetEnabled || loadedOnDemand) && orientationMatches && getWidgetVisible(widgetId, DgopService.dgopAvailable) && (widgetId !== "music" || MprisController.activePlayer !== null)
+    sourceComponent: getWidgetComponent(componentKey, components)
 
     signal contentItemReady(var item)
 
@@ -67,7 +72,7 @@ Loader {
         target: root.item
         when: root.item && "surfaceLive" in root.item && !("effectiveVisible" in root.item)
         property: "surfaceLive"
-        value: root.surfaceContext?.live ?? true
+        value: root.live && (root.surfaceContext?.live ?? true)
         restoreMode: Binding.RestoreBindingOrValue
     }
 
@@ -80,7 +85,7 @@ Loader {
     }
 
     Instantiator {
-        model: ["parentScreen", "section", "widgetThickness", "barThickness", "barSpacing", "barConfig", "blurBarWindow", "axis", "widgetData", "isFirst", "isLast", "sectionSpacing", "sectionAvailablePrimarySize", "isLeftBarEdge", "isRightBarEdge", "isTopBarEdge", "isBottomBarEdge", "crossEdgeExtension", "segmentRole", "surfaceContext", "hostContext"]
+        model: ["parentScreen", "section", "widgetThickness", "barThickness", "barSpacing", "barConfig", "blurBarWindow", "axis", "widgetData", "isFirst", "isLast", "sectionSpacing", "sectionAvailablePrimarySize", "isLeftBarEdge", "isRightBarEdge", "isTopBarEdge", "isBottomBarEdge", "crossEdgeExtension", "segmentRole", "surfaceContext", "hostContext", "allottedPrimarySize"]
         delegate: Binding {
             required property string modelData
             target: root.item
@@ -89,6 +94,14 @@ Loader {
             value: root[modelData]
             restoreMode: Binding.RestoreNone
         }
+    }
+
+    Binding {
+        target: root.item
+        when: root.item && "widgetBackground" in root.item && root.widgetData?.background !== undefined
+        property: "widgetBackground"
+        value: root.widgetData?.background === true
+        restoreMode: Binding.RestoreBinding
     }
 
     Binding {

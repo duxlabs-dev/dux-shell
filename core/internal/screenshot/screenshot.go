@@ -5,12 +5,12 @@ import (
 	"math"
 	"sync"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_screencopy"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wp_color_management"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
-	wlhelpers "github.com/AvengeMedia/DankMaterialShell/core/internal/wayland/client"
-	"github.com/AvengeMedia/dankgo/wayland/client"
+	"github.com/duxlabs-dev/dux-go/wayland/client"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_screencopy"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wp_color_management"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
+	wlhelpers "github.com/duxlabs-dev/dux-shell/core/internal/wayland/client"
 )
 
 type WaylandOutput struct {
@@ -32,6 +32,7 @@ type CaptureResult struct {
 	Format    uint32
 	Scale     float64
 	CICP      *CICP
+	CopyOnly  bool
 }
 
 func (o *WaylandOutput) effectiveScale() float64 {
@@ -48,20 +49,44 @@ func (o *WaylandOutput) effectiveScale() float64 {
 	return scale
 }
 
+// Hyprland >= 0.57 (901881c9f) sends screencopy frames in logical orientation; wlroots and niri send the native framebuffer.
+// !TODO: drop the version fallback once every distro ships hyprland >= 0.57
+func FrameInLogicalOrientation(transform, outW, outH int32, frameW, frameH int) bool {
+	switch transform {
+	case TransformNormal:
+		return true
+	case Transform90, Transform270, TransformFlipped90, TransformFlipped270:
+		if outW != outH {
+			return frameW == int(outH) && frameH == int(outW)
+		}
+	}
+	return DetectCompositor() == CompositorHyprland && hyprlandVersionAtLeast(0, 57)
+}
+
+func (o *WaylandOutput) frameInLogicalOrientation(frameW, frameH int) bool {
+	return FrameInLogicalOrientation(o.transform, o.width, o.height, frameW, frameH)
+}
+
+func (o *WaylandOutput) untransformFrame(buf *ShmBuffer) (*ShmBuffer, error) {
+	if o.frameInLogicalOrientation(buf.Width, buf.Height) {
+		return buf, nil
+	}
+	return buf.ApplyTransform(InverseTransform(o.transform))
+}
+
 func (o *WaylandOutput) bounds() Region {
 	x, y, w, h := o.x, o.y, o.width, o.height
 	if DetectCompositor() == CompositorHyprland {
 		if hx, hy, hw, hh, ok := GetHyprlandMonitorGeometry(o.name); ok {
-			x, y, w, h = hx, hy, hw, hh
+			return Region{X: hx, Y: hy, Width: hw, Height: hh, Output: o.name}
 		}
-	} else {
-		if o.transform == 1 || o.transform == 3 || o.transform == 5 || o.transform == 7 {
-			w, h = h, w
-		}
-		if scale := o.effectiveScale(); scale > 0 {
-			w = int32(math.Round(float64(w) / scale))
-			h = int32(math.Round(float64(h) / scale))
-		}
+	}
+	if o.transform == 1 || o.transform == 3 || o.transform == 5 || o.transform == 7 {
+		w, h = h, w
+	}
+	if scale := o.effectiveScale(); scale > 0 {
+		w = int32(math.Round(float64(w) / scale))
+		h = int32(math.Round(float64(h) / scale))
 	}
 	return Region{
 		X:      x,
@@ -157,21 +182,7 @@ func (s *Screenshoter) captureLastRegion() (*CaptureResult, error) {
 	}
 
 	if s.config.Geometry {
-		scale := output.effectiveScale()
-		if scale <= 0 {
-			scale = 1.0
-		}
-		localX := float64(lastRegion.X-output.x) / scale
-		localY := float64(lastRegion.Y-output.y) / scale
-		logicalW := float64(lastRegion.Width) / scale
-		logicalH := float64(lastRegion.Height) / scale
-		return geometryResult(Region{
-			X:      int32(math.Round(float64(output.x) + localX)),
-			Y:      int32(math.Round(float64(output.y) + localY)),
-			Width:  int32(math.Round(logicalW)),
-			Height: int32(math.Round(logicalH)),
-			Output: output.name,
-		}), nil
+		return geometryResult(lastRegion), nil
 	}
 
 	return s.captureRegionOnOutput(output, lastRegion)
@@ -677,12 +688,7 @@ func (s *Screenshoter) captureWholeOutput(output *WaylandOutput) (*CaptureResult
 		result.YInverted = false
 	}
 
-	if output.transform == TransformNormal {
-		return result, nil
-	}
-
-	invTransform := InverseTransform(output.transform)
-	transformed, err := result.Buffer.ApplyTransform(invTransform)
+	transformed, err := output.untransformFrame(result.Buffer)
 	if err != nil {
 		result.Buffer.Close()
 		return nil, fmt.Errorf("apply transform: %w", err)
@@ -785,16 +791,15 @@ func (s *Screenshoter) captureRegionOnOutput(output *WaylandOutput, region Regio
 		return s.captureRegionOnTransformedOutput(output, region)
 	}
 
-	scale := output.effectiveScale()
-
-	localX := int32(float64(region.X-output.x) * scale)
-	localY := int32(float64(region.Y-output.y) * scale)
-	w := int32(float64(region.Width) * scale)
-	h := int32(float64(region.Height) * scale)
+	captureScale, resultScale := regionCaptureScales(DetectCompositor(), output.effectiveScale())
+	localX := int32(float64(region.X-output.x) * captureScale)
+	localY := int32(float64(region.Y-output.y) * captureScale)
+	w := int32(float64(region.Width) * captureScale)
+	h := int32(float64(region.Height) * captureScale)
 
 	if DetectCompositor() == CompositorMango {
-		scaledOutW := int32(float64(output.width) * scale)
-		scaledOutH := int32(float64(output.height) * scale)
+		scaledOutW := int32(float64(output.width) * resultScale)
+		scaledOutH := int32(float64(output.height) * resultScale)
 		if localX >= scaledOutW {
 			localX = localX % scaledOutW
 		}
@@ -828,9 +833,17 @@ func (s *Screenshoter) captureRegionOnOutput(output *WaylandOutput, region Regio
 	if err != nil {
 		return nil, err
 	}
-	result.Scale = scale
+	result.Scale = resultScale
 	result.CICP = s.outputCICP(output)
 	return result, nil
+}
+
+func regionCaptureScales(compositor Compositor, outputScale float64) (captureScale, resultScale float64) {
+	resultScale = outputScale
+	if compositor != CompositorMango {
+		return 1, resultScale
+	}
+	return outputScale, resultScale
 }
 
 func (s *Screenshoter) captureRegionOnTransformedOutput(output *WaylandOutput, region Region) (*CaptureResult, error) {

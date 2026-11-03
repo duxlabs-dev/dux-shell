@@ -3,7 +3,7 @@
     "name": "Progress Example",
     "description": "A standalone overview card showing how much of the day, week, month or year has passed",
     "version": "1.0.0",
-    "author": "DankMaterialShell",
+    "author": "Dux Shell",
     "type": "dashCard",
     "capabilities": ["dash-card"],
     "component": "./ProgressCard.qml",

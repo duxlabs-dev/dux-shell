@@ -6,9 +6,10 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import qs.Common
-import "../Common/ConfigIncludeResolve.js" as ConfigIncludeResolve
 import qs.Services
 import "../Common/OutputModel.js" as OutputModel
+import "../Common/BlurStrength.js" as BlurStrength
+import "../Common/WorkspaceModel.js" as WorkspaceModel // qmllint disable unused-imports
 
 Singleton {
     id: root
@@ -19,8 +20,11 @@ Singleton {
     readonly property string outputsPath: hyprDmsDir + "/outputs.lua"
     readonly property string layoutPath: hyprDmsDir + "/layout.lua"
     readonly property string cursorPath: hyprDmsDir + "/cursor.lua"
+    readonly property string inputPath: hyprDmsDir + "/input.lua"
     readonly property string windowrulesPath: hyprDmsDir + "/windowrules.lua"
     readonly property bool luaConfigActive: CompositorService.isHyprland && (Hyprland.usingLua === true || luaConfigDetected)
+
+    property bool inOverview: false
 
     property int _lastGapValue: -1
     property string _monitorLayoutSignature: ""
@@ -28,9 +32,20 @@ Singleton {
     property bool luaConfigDetected: false
     property bool luaConfigStatusReady: false
     property bool luaConfigStatusLoading: false
-    property string luaConfigFormat: ""
     property bool layoutGenerationPending: false
     property bool layoutGenerationRunning: false
+    // Effect options come and go between Hyprland releases; an unknown key is a config error, so writers and rows both gate on this
+    property var hyprOptionNames: ({})
+    property bool hyprOptionsReady: false
+    property bool hyprOptionsLoading: false
+    property bool inputGenerationPending: false
+    property bool inputGenerationRunning: false
+    property bool cursorGenerationPending: false
+    property int followMouseMode: -1
+    // Hyprland only has per-device touchpad speed; probed once per compositor, a hotplugged touchpad waits for the next shell start
+    property var hyprTouchpadNames: []
+    property bool hyprDevicesReady: false
+    property bool hyprDevicesLoading: false
     property int _layoutRequestRevision: 0
     property int _layoutAppliedRevision: 0
     property int _frameTransitionRevision: 0
@@ -47,9 +62,18 @@ Singleton {
         onTriggered: root.doGenerateLayoutConfig()
     }
 
+    DeferredAction {
+        id: inputGenerationAction
+        onTriggered: root.doGenerateInputConfig()
+    }
+
     onLuaConfigStatusLoadingChanged: {
-        if (!luaConfigStatusLoading && layoutGenerationPending)
+        if (luaConfigStatusLoading)
+            return;
+        if (layoutGenerationPending)
             layoutGenerationAction.schedule();
+        if (inputGenerationPending)
+            inputGenerationAction.schedule();
     }
 
     onLuaConfigActiveChanged: {
@@ -59,6 +83,8 @@ Singleton {
 
     // workspaceString + monitor pairs from `hyprctl workspacerules`, refreshed on configreloaded
     property var workspaceRules: []
+    // Proc keeps one callback per id, so a second reload would drop the first caller's.
+    property var _reloadCallbacks: []
 
     function refreshWorkspaceRules() {
         if (!CompositorService.isHyprland)
@@ -69,9 +95,9 @@ Singleton {
             try {
                 const rules = JSON.parse(output);
                 workspaceRules = Array.isArray(rules) ? rules.filter(rule => rule.monitor).map(rule => ({
-                    "workspaceString": rule.workspaceString,
-                    "monitor": rule.monitor
-                })) : [];
+                            "workspaceString": rule.workspaceString,
+                            "monitor": rule.monitor
+                        })) : [];
             } catch (error) {
                 log.warn("workspacerules parse failed:", error);
             }
@@ -80,6 +106,7 @@ Singleton {
 
     Component.onCompleted: {
         if (CompositorService.isHyprland) {
+            refreshFollowMouse();
             refreshWorkspaceRules();
             refreshLuaConfigStatus();
             if (luaConfigActive)
@@ -89,6 +116,7 @@ Singleton {
 
     function ensureDmsLuaConfigs() {
         Qt.callLater(generateLayoutConfig);
+        Qt.callLater(generateInputConfig);
         Qt.callLater(ensureWindowrulesConfig);
     }
 
@@ -103,9 +131,8 @@ Singleton {
 
     Connections {
         target: SettingsData
+        enabled: CompositorService.isHyprland
         function onBarConfigsChanged() {
-            if (!CompositorService.isHyprland)
-                return;
             const newGaps = Math.max(4, (SettingsData.getPrimaryBarConfig()?.spacing ?? 4));
             if (newGaps === root._lastGapValue)
                 return;
@@ -118,21 +145,27 @@ Singleton {
         target: CompositorService
         function onIsHyprlandChanged() {
             if (CompositorService.isHyprland) {
+                refreshFollowMouse();
                 refreshLuaConfigStatus();
                 if (luaConfigActive)
                     ensureDmsLuaConfigs();
+                generateLayoutConfig();
                 return;
             }
+            followMouseMode = -1;
             luaConfigDetected = false;
             luaConfigStatusReady = false;
             luaConfigStatusLoading = false;
-            luaConfigFormat = "";
+            hyprOptionNames = {};
+            hyprOptionsReady = false;
+            hyprTouchpadNames = [];
+            hyprDevicesReady = false;
         }
     }
 
     function getOutputIdentifier(output, outputName) {
         if (output.explicitIdentifier)
-            return outputName;
+            return OutputModel.hyprlandProfileOutputIdentifier(output, outputName, !!liveMonitor(outputName));
         return OutputModel.hyprlandIdentifier(output, outputName, SettingsData.displayNameMode);
     }
 
@@ -140,34 +173,27 @@ Singleton {
         return JSON.stringify(String(str ?? ""));
     }
 
+    // Hyprland prefers hyprland.lua whenever it exists, so the file probe covers old Quickshell builds and a lost j/status reply
     function refreshLuaConfigStatus() {
         if (!CompositorService.isHyprland) {
             luaConfigDetected = false;
             luaConfigStatusReady = false;
             luaConfigStatusLoading = false;
-            luaConfigFormat = "";
             return;
         }
-        if (luaConfigStatusLoading)
+        if (luaConfigStatusReady || luaConfigStatusLoading)
             return;
+        // usingLua starts false until the async j/status reply lands, so only true is a decision
+        if (Hyprland.usingLua === true) {
+            luaConfigStatusReady = true;
+            return;
+        }
 
         luaConfigStatusLoading = true;
-        Proc.runCommand("hypr-lua-config-status", [Proc.dmsBin, "config", "resolve-include", ...ConfigIncludeResolve.resolveIncludeArgs("outputs", "hyprland")], (output, exitCode) => {
-            luaConfigStatusLoading = false;
+        Proc.runCommand("hypr-lua-config-status", ["test", "-f", configDir + "/hypr/hyprland.lua"], (output, exitCode) => {
+            luaConfigDetected = exitCode === 0;
             luaConfigStatusReady = true;
-            if (exitCode !== 0) {
-                luaConfigDetected = false;
-                luaConfigFormat = "";
-                return;
-            }
-            try {
-                const status = JSON.parse(output.trim());
-                luaConfigFormat = status.configFormat ?? "";
-                luaConfigDetected = luaConfigFormat === "lua" && status.readOnly !== true;
-            } catch (e) {
-                luaConfigDetected = false;
-                luaConfigFormat = "";
-            }
+            luaConfigStatusLoading = false;
         });
     }
 
@@ -182,6 +208,80 @@ Singleton {
         }
         log.info("Skipping Hyprland", name || "config", "Lua write because the active Hyprland config is not Lua");
         return false;
+    }
+
+    function hyprSupports(name) {
+        return hyprOptionNames[name] === true;
+    }
+
+    // hyprctl descriptions only gives us names, so a 0.57-only option marks the release where these bools became modes
+    function hyprIntModes() {
+        return hyprSupports("input:swallow_focus_click");
+    }
+
+    function hyprMode(value) {
+        return hyprIntModes() ? value : value !== 0;
+    }
+
+    function refreshFollowMouse() {
+        if (!CompositorService.isHyprland)
+            return;
+        Proc.runCommand("hypr-follow-mouse", ["hyprctl", "-j", "getoption", "input:follow_mouse"], (output, exitCode) => {
+            if (exitCode !== 0 || !CompositorService.isHyprland)
+                return;
+            try {
+                const mode = JSON.parse(output).int;
+                if (Number.isInteger(mode) && mode >= 0 && mode <= 3)
+                    followMouseMode = mode;
+            } catch (error) {
+                log.warn("hyprctl follow_mouse parse failed:", error);
+            }
+        });
+    }
+
+    function loadHyprOptionNames() {
+        if (!CompositorService.isHyprland || hyprOptionsReady || hyprOptionsLoading)
+            return;
+        hyprOptionsLoading = true;
+        Proc.runCommand("hypr-option-names", ["hyprctl", "-j", "descriptions"], (output, exitCode) => {
+            hyprOptionsLoading = false;
+            hyprOptionsReady = true;
+            if (exitCode !== 0)
+                return;
+            try {
+                const names = {};
+                for (const option of JSON.parse(output))
+                    names[option.name] = true;
+                hyprOptionNames = names;
+            } catch (error) {
+                log.warn("hyprctl descriptions parse failed:", error);
+            }
+            if (layoutGenerationPending)
+                layoutGenerationAction.schedule();
+            if (inputGenerationPending)
+                inputGenerationAction.schedule();
+            if (cursorGenerationPending)
+                generateCursorConfig();
+        });
+    }
+
+    function loadHyprTouchpads() {
+        if (!CompositorService.isHyprland || hyprDevicesReady || hyprDevicesLoading)
+            return;
+        hyprDevicesLoading = true;
+        Proc.runCommand("hypr-devices", ["hyprctl", "-j", "devices"], (output, exitCode) => {
+            hyprDevicesLoading = false;
+            hyprDevicesReady = true;
+            if (exitCode === 0) {
+                try {
+                    hyprTouchpadNames = touchpadNames(JSON.parse(output));
+                } catch (error) {
+                    log.warn("hyprctl devices parse failed:", error);
+                }
+            }
+            if (inputGenerationPending)
+                inputGenerationAction.schedule();
+        });
     }
 
     function forceFlagValue(value) {
@@ -205,6 +305,13 @@ Singleton {
         }
 
         const settings = hyprlandSettings || SessionData.hyprlandOutputSettings;
+        Proc.runCommand("hypr-read-outputs", ["cat", outputsPath], (existing, readExitCode) => {
+            const saved = readExitCode === 0 ? OutputModel.parseHyprlandOutputs(existing) : {};
+            writeOutputsConfig(buildOutputsLua(outputsData, settings, saved), callback, skipReload);
+        });
+    }
+
+    function buildOutputsLua(outputsData, settings, saved) {
         let lines = ["-- Auto-generated by DMS — do not edit manually", ""];
 
         const liveIdentifiers = {};
@@ -220,10 +327,12 @@ Singleton {
                 continue;
 
             const identifier = getOutputIdentifier(output, outputName);
+            if (!identifier.trim())
+                continue;
             if (!(output.make && output.model) && liveIdentifiers[identifier.trim()])
                 continue;
 
-            const outputSettings = settings[identifier] || {};
+            const outputSettings = settings[identifier] || settings[outputName] || {};
 
             if (outputSettings.disabled) {
                 lines.push(`hl.monitor({ output = ${luaQuoted(identifier)}, disabled = true })`);
@@ -237,21 +346,17 @@ Singleton {
                     resolution = mode.width + "x" + mode.height + "@" + (mode.refresh_rate / 1000).toFixed(3);
             }
 
-            const x = output.logical?.x ?? 0;
-            const y = output.logical?.y ?? 0;
-            const position = x + "x" + y;
-            const scale = output.logical?.scale ?? 1.0;
-
-            const parts = [`output = ${luaQuoted(identifier)}`, `mode = ${luaQuoted(resolution)}`, `position = ${luaQuoted(position)}`, `scale = ${Number(scale)}`];
+            const geometry = OutputModel.hyprlandLuaGeometry(output, saved[identifier] ?? saved[outputName], liveMonitor(outputName));
+            const scale = geometry.scale === "auto" ? luaQuoted("auto") : geometry.scale;
+            const parts = [`output = ${luaQuoted(identifier)}`, `mode = ${luaQuoted(resolution)}`, `position = ${luaQuoted(geometry.position)}`, `scale = ${scale}`];
 
             const transform = OutputModel.transformIndex(output.logical?.transform ?? "Normal");
             if (transform !== 0)
                 parts.push(`transform = ${transform}`);
 
-            if (output.vrr_supported) {
-                const vrrMode = outputSettings.vrrFullscreenOnly ? 2 : (output.vrr_enabled ? 1 : 0);
+            const vrrMode = OutputModel.hyprlandVrrMode(outputSettings, saved[identifier] ?? saved[outputName]);
+            if (vrrMode !== undefined)
                 parts.push(`vrr = ${vrrMode}`);
-            }
 
             if (output.mirror && output.mirror.length > 0)
                 parts.push(`mirror = ${luaQuoted(output.mirror)}`);
@@ -298,9 +403,12 @@ Singleton {
             lines.push("hl.monitor({ " + parts.join(", ") + " })");
         }
 
+        lines.push('hl.monitor({ output = "", mode = "preferred", position = "auto", scale = "auto" })');
         lines.push("");
-        const content = lines.join("\n");
+        return lines.join("\n");
+    }
 
+    function writeOutputsConfig(content, callback, skipReload) {
         Proc.runCommand("hypr-write-outputs", ["sh", "-c", `mkdir -p "${hyprDmsDir}" && cat > "${outputsPath}" << 'EOF'\n${content}EOF`], (output, exitCode) => {
             if (exitCode !== 0) {
                 log.warn("Failed to write outputs config:", output);
@@ -317,13 +425,16 @@ Singleton {
     }
 
     function reloadConfig(callback) {
+        if (callback)
+            _reloadCallbacks.push(callback);
         Proc.runCommand("hyprctl-reload", ["hyprctl", "reload"], (output, exitCode) => {
             if (exitCode !== 0)
                 log.warn("hyprctl reload failed:", output);
             else
                 Hyprland.refreshMonitors();
-            if (callback)
-                callback(exitCode === 0);
+            const callbacks = _reloadCallbacks;
+            _reloadCallbacks = [];
+            callbacks.forEach(cb => cb(exitCode === 0));
         });
     }
 
@@ -407,6 +518,11 @@ Singleton {
             _layoutAppliedRevision = Math.max(_layoutAppliedRevision, requestRevision);
             return;
         }
+        if (!hyprOptionsReady) {
+            layoutGenerationPending = true;
+            loadHyprOptionNames();
+            return;
+        }
         layoutGenerationRunning = true;
 
         const defaultGaps = typeof SettingsData !== "undefined" ? Math.max(4, (SettingsData.getPrimaryBarConfig()?.spacing ?? 4)) : 4;
@@ -434,14 +550,26 @@ Singleton {
         if (manageGaps)
             generalLines.push(`gaps_in = ${gapsIn},`, `gaps_out = ${gapsOut},`);
         generalLines.push(`border_size = ${borderSize},`, `resize_on_border = ${resizeOnBorder},`);
+        if (resizeOnBorder && SettingsData.hyprlandBorderGrabArea !== 15)
+            generalLines.push(`extend_border_grab_area = ${SettingsData.hyprlandBorderGrabArea},`);
         if (tilingLayout)
             generalLines.push(`layout = ${luaString(tilingLayout)},`);
 
-        const sections = [`\tgeneral = {\n${generalLines.map(l => "\t\t" + l).join("\n")}\n\t},`];
+        const luaSection = (name, lines) => `\t${name} = {\n${lines.map(l => "\t\t" + l).join("\n")}\n\t},`;
+        const sections = [luaSection("general", generalLines)];
         const tilingLines = tilingLayoutLines(tilingLayout);
         if (tilingLines.length)
-            sections.push(`\t${tilingLayout} = {\n${tilingLines.map(l => "\t\t" + l).join("\n")}\n\t},`);
-        sections.push(`\tdecoration = {\n\t\trounding = ${cornerRadius},\n\t},`);
+            sections.push(luaSection(tilingLayout, tilingLines));
+        sections.push(luaSection("decoration", decorationLines(SettingsData, cornerRadius)));
+        const groupLines = luaTable("groupbar", groupbarLines(SettingsData));
+        if (groupLines.length)
+            sections.push(luaSection("group", groupLines));
+        const binds = bindsLines(SettingsData);
+        if (binds.length)
+            sections.push(luaSection("binds", binds));
+        const misc = miscLines(SettingsData);
+        if (misc.length)
+            sections.push(luaSection("misc", misc));
 
         let content = `-- Auto-generated by DMS — do not edit manually
 
@@ -503,10 +631,107 @@ hl.layer_rule({
         case "master":
             return [`orientation = ${luaString(SettingsData.hyprlandMasterOrientation)},`, `new_status = ${luaString(SettingsData.hyprlandMasterNewStatus)},`, `new_on_top = ${SettingsData.hyprlandMasterNewOnTop},`, `mfact = ${SettingsData.hyprlandMasterSize / 100},`];
         case "scrolling":
-            return [`direction = ${luaString(SettingsData.hyprlandScrollingDirection)},`, `column_width = ${SettingsData.hyprlandScrollingColumnWidth / 100},`, `fullscreen_on_one_column = ${SettingsData.hyprlandScrollingFullscreenOneColumn},`, `follow_focus = ${SettingsData.hyprlandScrollingFollowFocus},`];
+            return [`direction = ${luaString(SettingsData.hyprlandScrollingDirection)},`, `column_width = ${SettingsData.hyprlandScrollingColumnWidth / 100},`, `fullscreen_on_one_column = ${SettingsData.hyprlandScrollingFullscreenOneColumn},`, `follow_focus = ${hyprMode(SettingsData.hyprlandScrollingFollowFocus)},`];
         default:
             return [];
         }
+    }
+
+    function luaTable(name, lines) {
+        return lines.length ? [`${name} = {`, ...lines.map(l => "\t" + l), "},"] : [];
+    }
+
+    function blurLines(s) {
+        const blur = BlurStrength.hyprlandBlur(s.blurStrength || BlurStrength.HYPRLAND_DEFAULT);
+        const lines = [];
+        if (blur.size !== 8)
+            lines.push(`size = ${blur.size},`);
+        if (blur.passes !== 1)
+            lines.push(`passes = ${blur.passes},`);
+        if (s.hyprlandBlurProportional && hyprSupports("decoration:blur:proportional"))
+            lines.push("proportional = true,");
+        const variant = s.hyprlandBlurVariant;
+        if (!variant || variant === "kawase" || !hyprSupports("decoration:blur:variant"))
+            return lines;
+        // A user config with blur disabled would otherwise hide the chosen variant
+        lines.push("enabled = true,", `variant = ${luaString(variant)},`);
+        switch (variant) {
+        case "ripple":
+            return lines.concat(luaTable("ripple", [`strength = ${s.hyprlandBlurRippleStrength},`]));
+        case "water":
+            return lines.concat(luaTable("water", [`strength = ${s.hyprlandBlurWaterStrength},`]));
+        case "drops":
+            if (s.hyprlandBlurDropsSpeed === 3 || !hyprSupports("decoration:blur:drops:speed"))
+                return lines;
+            return lines.concat(luaTable("drops", [`speed = ${s.hyprlandBlurDropsSpeed},`]));
+        case "heat_shimmer":
+            if (s.hyprlandBlurHeatShimmerSpeed === 1 || !hyprSupports("decoration:blur:heat_shimmer:speed"))
+                return lines;
+            return lines.concat(luaTable("heat_shimmer", [`speed = ${s.hyprlandBlurHeatShimmerSpeed},`]));
+        case "acrylic":
+            return lines.concat(luaTable("acrylic", [`clarity = ${s.hyprlandBlurAcrylicClarity / 100},`]));
+        case "aurora":
+            return lines.concat(luaTable("aurora", [`intensity = ${s.hyprlandBlurAuroraIntensity / 100},`, `speed = ${s.hyprlandBlurAuroraSpeed},`]));
+        case "haze":
+            return lines.concat(luaTable("haze", [`intensity = ${s.hyprlandBlurHazeIntensity / 100},`, `iridescence = ${s.hyprlandBlurHazeIridescence / 100},`]));
+        default:
+            return lines;
+        }
+    }
+
+    function decorationLines(s, rounding) {
+        const lines = [`rounding = ${rounding},`];
+        if (s.hyprlandWindowOpacity < 100) {
+            const opacity = (s.hyprlandWindowOpacity / 100).toFixed(2);
+            lines.push(`active_opacity = ${opacity},`, `inactive_opacity = ${opacity},`);
+        }
+        lines.push(...luaTable("blur", blurLines(s)));
+        if (s.hyprlandGlowEnabled && hyprSupports("decoration:glow:enabled"))
+            lines.push(...luaTable("glow", ["enabled = true,", `range = ${s.hyprlandGlowRange},`, `render_power = ${s.hyprlandGlowRenderPower},`]));
+        if (s.hyprlandWobbleEnabled && hyprSupports("decoration:wobble:enabled")) {
+            const wobble = ["enabled = true,", `intensity = ${s.hyprlandWobbleIntensity / 100},`, `stiffness = ${s.hyprlandWobbleStiffness},`];
+            if (s.hyprlandWobbleDamping !== 12 && hyprSupports("decoration:wobble:damping"))
+                wobble.push(`damping = ${s.hyprlandWobbleDamping},`);
+            if (s.hyprlandWobbleMass !== 100 && hyprSupports("decoration:wobble:mass"))
+                wobble.push(`mass = ${s.hyprlandWobbleMass / 100},`);
+            if (s.hyprlandWobbleMesh !== 12 && hyprSupports("decoration:wobble:mesh"))
+                wobble.push(`mesh = ${s.hyprlandWobbleMesh},`);
+            lines.push(...luaTable("wobble", wobble));
+        }
+        if (s.hyprlandMotionBlurEnabled && hyprSupports("decoration:motion_blur:enabled"))
+            lines.push(...luaTable("motion_blur", ["enabled = true,", `samples = ${s.hyprlandMotionBlurSamples},`]));
+        return lines;
+    }
+
+    function groupbarLines(s) {
+        const lines = [];
+        if (s.hyprlandGroupbarBlur && hyprSupports("group:groupbar:blur"))
+            lines.push("blur = true,");
+        if (s.hyprlandGroupbarTextPadding > 0 && hyprSupports("group:groupbar:text_padding"))
+            lines.push(`text_padding = ${s.hyprlandGroupbarTextPadding},`);
+        if (!s.hyprlandGroupbarMiddleClickClose && hyprSupports("group:groupbar:middle_click_close"))
+            lines.push("middle_click_close = false,");
+        if (s.hyprlandGroupbarDisableWhenOnly && hyprSupports("group:groupbar:disable_when_only"))
+            lines.push("disable_when_only = true,");
+        return lines;
+    }
+
+    function bindsLines(s) {
+        const lines = [];
+        if (!s.hyprlandDragCenterWindow && hyprSupports("binds:drag_center_window"))
+            lines.push("drag_center_window = false,");
+        if (s.hyprlandWorkspaceBackAndForth > 0 && hyprSupports("binds:workspace_back_and_forth"))
+            lines.push(`workspace_back_and_forth = ${hyprMode(s.hyprlandWorkspaceBackAndForth)},`);
+        return lines;
+    }
+
+    function miscLines(s) {
+        const lines = [];
+        if (s.hyprlandExitWindowRetainsFullscreen > 0 && hyprSupports("misc:exit_window_retains_fullscreen"))
+            lines.push(`exit_window_retains_fullscreen = ${hyprMode(s.hyprlandExitWindowRetainsFullscreen)},`);
+        if (s.hyprlandBellSound !== "default" && hyprSupports("misc:bell_sound"))
+            lines.push(`bell_sound = ${luaString(s.hyprlandBellSound)},`);
+        return lines;
     }
 
     function generateCursorConfig() {
@@ -514,6 +739,7 @@ hl.layer_rule({
             return;
         if (!canWriteLuaConfig("cursor"))
             return;
+        cursorGenerationPending = false;
 
         const settings = typeof SettingsData !== "undefined" ? SettingsData.cursorSettings : null;
         if (!settings) {
@@ -529,10 +755,17 @@ hl.layer_rule({
         const hideOnKeyPress = settings.hyprland?.hideOnKeyPress || false;
         const hideOnTouch = settings.hyprland?.hideOnTouch || false;
         const inactiveTimeout = settings.hyprland?.inactiveTimeout || 0;
+        const warpOnMonitorChange = settings.hyprland?.warpOnMonitorChange ?? -1;
+        if (warpOnMonitorChange !== -1 && !hyprOptionsReady) {
+            cursorGenerationPending = true;
+            loadHyprOptionNames();
+            return;
+        }
+        const writeWarp = warpOnMonitorChange !== -1 && hyprSupports("cursor:warp_on_monitor_change");
 
         const hasTheme = themeName && themeName.length > 0;
         const hasNonDefaultSize = size !== 24;
-        const hasCursorSettings = hideOnKeyPress || hideOnTouch || inactiveTimeout > 0;
+        const hasCursorSettings = hideOnKeyPress || hideOnTouch || inactiveTimeout > 0 || writeWarp;
 
         if (!hasTheme && !hasNonDefaultSize && !hasCursorSettings) {
             Proc.runCommand("hypr-write-cursor", ["sh", "-c", `mkdir -p "${hyprDmsDir}" && printf '%s\\n' "-- Auto-generated by DMS — do not edit manually" "" > "${cursorPath}"`], (output, exitCode) => {
@@ -561,6 +794,8 @@ hl.layer_rule({
                 lines.push("\t\thide_on_touch = true,");
             if (inactiveTimeout > 0)
                 lines.push(`\t\tinactive_timeout = ${inactiveTimeout},`);
+            if (writeWarp)
+                lines.push(`\t\twarp_on_monitor_change = ${warpOnMonitorChange},`);
             lines.push("\t},");
             lines.push("})");
         }
@@ -579,26 +814,194 @@ hl.layer_rule({
         });
     }
 
-    function renameWorkspace(newName) {
-        if (!Hyprland.focusedWorkspace)
+    function generateInputConfig() {
+        if (!CompositorService.isHyprland)
             return;
-        const wsId = Hyprland.focusedWorkspace.id;
-        if (!wsId)
+        inputGenerationPending = true;
+        inputGenerationAction.schedule();
+    }
+
+    function doGenerateInputConfig() {
+        if (inputGenerationRunning)
             return;
-        const fullName = wsId + " " + newName;
-        if (luaConfigActive) {
-            Hyprland.dispatch(`hl.dsp.workspace.rename({ workspace = ${luaValue(wsId)}, name = ${luaString(fullName)} })`);
-        } else {
-            Hyprland.dispatch(`renameworkspace ${wsId} ${fullName}`);
+        inputGenerationPending = false;
+        if (!canWriteLuaConfig("input")) {
+            if (luaConfigStatusLoading || !luaConfigStatusReady)
+                inputGenerationPending = true;
+            return;
+        }
+        if (!hyprOptionsReady || !hyprDevicesReady) {
+            inputGenerationPending = true;
+            loadHyprOptionNames();
+            loadHyprTouchpads();
+            return;
+        }
+        inputGenerationRunning = true;
+
+        let content = "-- Auto-generated by DMS — do not edit manually\n";
+        const lines = inputLines(SettingsData);
+        if (lines.length)
+            content += `\nhl.config({\n\tinput = {\n${lines.map(l => "\t\t" + l).join("\n")}\n\t},\n})\n`;
+        const devices = touchpadDeviceLines(SettingsData, hyprTouchpadNames);
+        if (devices.length)
+            content += "\n" + devices.join("\n") + "\n";
+
+        // Exit 3 = unchanged, so a shell start does not reload Hyprland for nothing
+        const script = `mkdir -p "${hyprDmsDir}" && cat > "${inputPath}.tmp" << 'EOF'\n${content}EOF\nif cmp -s "${inputPath}.tmp" "${inputPath}"; then rm -f "${inputPath}.tmp"; exit 3; fi\nmv -f "${inputPath}.tmp" "${inputPath}"`;
+        Proc.runCommand("hypr-write-input", ["sh", "-c", script], (output, exitCode) => {
+            const finish = () => {
+                inputGenerationRunning = false;
+                if (inputGenerationPending)
+                    inputGenerationAction.schedule();
+            };
+            if (exitCode === 3) {
+                finish();
+                return;
+            }
+            if (exitCode !== 0) {
+                log.warn("Failed to write input config:", output);
+                finish();
+                return;
+            }
+            reloadConfig(finish);
+        });
+    }
+
+    function hyprScrollMethod(method) {
+        switch (method) {
+        case "no-scroll":
+            return "no_scroll";
+        case "two-finger":
+            return "2fg";
+        case "edge":
+            return "edge";
+        case "on-button-down":
+            return "on_button_down";
+        default:
+            return "";
         }
     }
 
-    function focusWorkspace(workspace) {
-        if (luaConfigActive) {
-            Hyprland.dispatch(`hl.dsp.focus({ workspace = ${luaValue(workspace)} })`);
+    function touchpadNames(devices) {
+        return (devices?.mice ?? []).map(mouse => mouse.name).filter(name => /touchpad|trackpad|synaptics|elan/i.test(name ?? ""));
+    }
+
+    // Keys the setup template sets are always written, everything else only when it differs from Hyprland's default
+    function inputLines(s) {
+        const lines = [];
+        const add = (option, line) => {
+            if (hyprSupports(option))
+                lines.push(line);
+        };
+        // -1 leaves existing follow_mouse modes untouched until the user operates the toggle.
+        if (s.focusFollowsMouse === 0 || s.focusFollowsMouse === 1)
+            add("input:follow_mouse", `follow_mouse = ${s.focusFollowsMouse},`);
+        if (s.mouseAccelSpeed !== 0)
+            add("input:sensitivity", `sensitivity = ${s.mouseAccelSpeed.toFixed(2)},`);
+        if (s.mouseAccelProfile !== "default")
+            add("input:accel_profile", `accel_profile = ${luaString(s.mouseAccelProfile)},`);
+        if (s.mouseNaturalScroll)
+            add("input:natural_scroll", "natural_scroll = true,");
+        if (s.mouseLeftHanded)
+            add("input:left_handed", "left_handed = true,");
+        if (s.hyprlandSwallowFocusClick)
+            add("input:swallow_focus_click", "swallow_focus_click = true,");
+        if (s.mouseScrollFactor !== 1)
+            add("input:scroll_factor", `scroll_factor = ${s.mouseScrollFactor.toFixed(2)},`);
+        const scrollMethod = hyprScrollMethod(s.mouseScrollMethod);
+        if (scrollMethod)
+            add("input:scroll_method", `scroll_method = ${luaString(scrollMethod)},`);
+        // Mouse middle emulation has no global key; Hyprland reads input:touchpad:middle_button_emulation for every pointer
+
+        const touchpad = [];
+        const addTouchpad = (option, line) => {
+            if (hyprSupports("input:touchpad:" + option))
+                touchpad.push(line);
+        };
+        addTouchpad("natural_scroll", `natural_scroll = ${s.touchpadNaturalScroll},`);
+        addTouchpad("tap-to-click", `tap_to_click = ${s.touchpadTapToClick},`);
+        if (!s.touchpadTapAndDrag)
+            addTouchpad("tap-and-drag", "tap_and_drag = false,");
+        if (s.touchpadDragLock)
+            addTouchpad("drag_lock", "drag_lock = 1,");
+        if (!s.touchpadDisableWhileTyping)
+            addTouchpad("disable_while_typing", "disable_while_typing = false,");
+        if (s.touchpadMiddleEmulation)
+            addTouchpad("middle_button_emulation", "middle_button_emulation = true,");
+        if (s.touchpadScrollFactor !== 1)
+            addTouchpad("scroll_factor", `scroll_factor = ${s.touchpadScrollFactor.toFixed(2)},`);
+        if (s.touchpadClickMethod !== "default")
+            addTouchpad("clickfinger_behavior", `clickfinger_behavior = ${s.touchpadClickMethod === "clickfinger"},`);
+        lines.push(...luaTable("touchpad", touchpad));
+        if (!s.hyprlandTabletEnabled && hyprSupports("input:tablet:enabled"))
+            lines.push(...luaTable("tablet", ["enabled = false,"]));
+
+        // Unconfigured keyboard keeps the user's own kb_* keys and XKB_DEFAULT_LAYOUT
+        const keyboardConfigured = s.keyboardKeymapFile || s.keyboardLayouts || s.keyboardVariants || s.keyboardModel || s.keyboardOptions || s.keyboardRepeatDelay > 0 || s.keyboardRepeatRate > 0 || s.keyboardNumlock;
+        if (!keyboardConfigured)
+            return lines;
+        if (s.keyboardKeymapFile) {
+            add("input:kb_file", `kb_file = ${luaString(s.keyboardKeymapFile)},`);
         } else {
-            Hyprland.dispatch(`workspace ${workspace}`);
+            if (s.keyboardLayouts)
+                add("input:kb_layout", `kb_layout = ${luaString(s.keyboardLayouts)},`);
+            if (s.keyboardVariants)
+                add("input:kb_variant", `kb_variant = ${luaString(s.keyboardVariants)},`);
+            if (s.keyboardModel)
+                add("input:kb_model", `kb_model = ${luaString(s.keyboardModel)},`);
+            if (s.keyboardOptions)
+                add("input:kb_options", `kb_options = ${luaString(s.keyboardOptions)},`);
         }
+        if (s.keyboardRepeatDelay > 0)
+            add("input:repeat_delay", `repeat_delay = ${s.keyboardRepeatDelay},`);
+        if (s.keyboardRepeatRate > 0)
+            add("input:repeat_rate", `repeat_rate = ${s.keyboardRepeatRate},`);
+        add("input:numlock_by_default", `numlock_by_default = ${!!s.keyboardNumlock},`);
+        return lines;
+    }
+
+    // Global sensitivity, accel_profile, scroll_method and left_handed also reach touchpads, so pin the touchpad's own values per device
+    function touchpadDeviceLines(s, names) {
+        const fields = [];
+        if ((s.touchpadAccelSpeed !== 0 || s.mouseAccelSpeed !== 0) && hyprSupports("input:sensitivity"))
+            fields.push(`sensitivity = ${s.touchpadAccelSpeed.toFixed(2)}`);
+        if ((s.touchpadAccelProfile !== "default" || s.mouseAccelProfile !== "default") && hyprSupports("input:accel_profile"))
+            fields.push(`accel_profile = ${luaString(s.touchpadAccelProfile === "default" ? "" : s.touchpadAccelProfile)}`);
+        const scrollMethod = hyprScrollMethod(s.touchpadScrollMethod);
+        if ((scrollMethod || hyprScrollMethod(s.mouseScrollMethod)) && hyprSupports("input:scroll_method"))
+            fields.push(`scroll_method = ${luaString(scrollMethod)}`);
+        if (s.mouseLeftHanded && hyprSupports("input:left_handed"))
+            fields.push("left_handed = false");
+        if (!fields.length)
+            return [];
+        return names.map(name => `hl.device({ name = ${luaString(name)}, ${fields.join(", ")} })`);
+    }
+
+    // renameWorkspace stores "<id> <name>"; hand back only the part the user typed.
+    function focusedWorkspaceName() {
+        const ws = Hyprland.focusedWorkspace;
+        if (!ws?.id)
+            return "";
+        const prefix = ws.id + " ";
+        if (ws.name.startsWith(prefix))
+            return ws.name.slice(prefix.length);
+        return ws.name === String(ws.id) ? "" : ws.name;
+    }
+
+    function renameWorkspace(newName) {
+        if (!luaConfigActive)
+            return;
+        const ws = Hyprland.focusedWorkspace;
+        if (!ws)
+            return;
+        const name = ws.id > 0 ? ws.id + " " + newName : newName;
+        Hyprland.dispatch(`hl.dsp.workspace.rename({ workspace = ${luaValue(WorkspaceModel.hyprlandSelector(ws))}, name = ${luaString(name)} })`);
+    }
+
+    function focusWorkspace(workspace) {
+        if (!luaConfigActive)
+            return;
+        Hyprland.dispatch(`hl.dsp.focus({ workspace = ${luaValue(workspace)} })`);
     }
 
     function luaString(value) {
@@ -607,7 +1010,8 @@ hl.layer_rule({
 
     function luaValue(value) {
         const text = String(value ?? "");
-        return /^[-+]?\d+$/.test(text) ? text : luaString(text);
+        // Signed selectors are relative ("+0", "-1") and Lua has no unary plus, so only plain ids stay bare
+        return /^\d+$/.test(text) ? text : luaString(text);
     }
 
     function windowSelector(windowAddress) {
@@ -622,79 +1026,65 @@ hl.layer_rule({
     }
 
     function focusWindow(windowAddress) {
+        if (!luaConfigActive)
+            return;
         const selector = windowSelector(windowAddress);
         if (!selector)
             return;
-
-        if (luaConfigActive) {
-            Hyprland.dispatch(`hl.dsp.focus({ window = ${luaString(selector)} })`);
-        } else {
-            Hyprland.dispatch(`focuswindow ${selector}`);
-        }
+        Hyprland.dispatch(`hl.dsp.focus({ window = ${luaString(selector)} })`);
     }
 
     function closeWindow(windowAddress) {
+        if (!luaConfigActive)
+            return;
         const selector = windowSelector(windowAddress);
         if (!selector)
             return;
-
-        if (luaConfigActive) {
-            Hyprland.dispatch(`hl.dsp.window.close(${luaString(selector)})`);
-        } else {
-            Hyprland.dispatch(`closewindow ${selector}`);
-        }
+        Hyprland.dispatch(`hl.dsp.window.close({ window = ${luaString(selector)} })`);
     }
 
     function moveToWorkspace(workspace, windowAddress, follow = true) {
+        if (!luaConfigActive)
+            return;
         const selector = windowSelector(windowAddress);
         if (!selector)
             return;
+        Hyprland.dispatch(`hl.dsp.window.move({ workspace = ${luaValue(workspace)}, window = ${luaString(selector)}, follow = ${follow ? "true" : "false"} })`);
+    }
 
-        if (luaConfigActive) {
-            Hyprland.dispatch(`hl.dsp.window.move({ workspace = ${luaValue(workspace)}, window = ${luaString(selector)}, follow = ${follow ? "true" : "false"} })`);
-        } else {
-            const dispatcher = follow ? "movetoworkspace" : "movetoworkspacesilent";
-            Hyprland.dispatch(`${dispatcher} ${workspace},${selector}`);
-        }
+    function cycleWindow(forward) {
+        if (!luaConfigActive)
+            return;
+        Hyprland.dispatch(`hl.dsp.window.cycle_next({ next = ${forward ? "true" : "false"} })`);
     }
 
     function focusMonitor(monitor) {
-        if (luaConfigActive) {
-            Hyprland.dispatch(`hl.dsp.focus({ monitor = ${luaString(monitor)} })`);
-        } else {
-            Hyprland.dispatch(`focusmonitor ${monitor}`);
-        }
+        if (!luaConfigActive)
+            return;
+        Hyprland.dispatch(`hl.dsp.focus({ monitor = ${luaString(monitor)} })`);
     }
 
     function toggleSpecial(specialName) {
-        if (luaConfigActive) {
-            Hyprland.dispatch(`hl.dsp.workspace.toggle_special(${luaString(specialName)})`);
-        } else {
-            Hyprland.dispatch("togglespecialworkspace " + specialName);
-        }
+        if (!luaConfigActive)
+            return;
+        Hyprland.dispatch(specialName ? `hl.dsp.workspace.toggle_special(${luaString(specialName)})` : "hl.dsp.workspace.toggle_special()");
     }
 
     function exit() {
-        if (luaConfigActive) {
-            Hyprland.dispatch("hl.dsp.exit()");
-        } else {
-            Hyprland.dispatch("exit");
-        }
+        if (!luaConfigActive)
+            return;
+        Hyprland.dispatch("hl.dsp.exit()");
     }
 
     function dpmsOff() {
-        if (luaConfigActive) {
-            Hyprland.dispatch(`hl.dsp.dpms({ action = "disable" })`);
-        } else {
-            Hyprland.dispatch("dpms off");
-        }
+        if (!luaConfigActive)
+            return;
+        Hyprland.dispatch(`hl.dsp.dpms({ action = "disable" })`);
     }
 
     function dpmsOn() {
-        if (luaConfigActive) {
-            Hyprland.dispatch(`hl.dsp.dpms({ action = "enable" })`);
-        } else {
-            Hyprland.dispatch("dpms on");
-        }
+        if (!luaConfigActive)
+            return;
+        Hyprland.dispatch(`hl.dsp.dpms({ action = "enable" })`);
     }
 }

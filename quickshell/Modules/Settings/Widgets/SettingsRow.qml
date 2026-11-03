@@ -4,7 +4,7 @@ import QtQuick
 import QtQuick.Templates as T
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 T.Control {
     id: root
@@ -22,19 +22,24 @@ T.Control {
     property string title: ""
     property bool singleLineTitle: false
     property string subtitle: ""
-    property color subtitleColor: Theme.surfaceVariantText
+    property color subtitleColor: supportingContentColor
     property string iconName: ""
     property bool iconBox: false
     property bool clickable: false
     property bool showChevron: false
     property string trailingBadge: ""
-    property color trailingBadgeColor: Theme.surfaceVariantText
+    property color trailingBadgeColor: supportingContentColor
     property bool paintBackground: !(parent?.isSettingsGroupHost ?? false)
     property real paddingH: SettingsMetrics.rowPaddingH
     property real paddingV: SettingsMetrics.rowPaddingV
     property color rowColor: SettingsMetrics.rowColor
-    property color iconColor: Theme.primary
-    property color titleColor: Theme.surfaceText
+    property bool active: false
+    property color selectedRowColor: Theme.selectedContainer
+    property color selectedContentColor: Theme.onSelectedContainer
+    readonly property color contentColor: active ? selectedContentColor : Theme.surfaceText
+    readonly property color supportingContentColor: active ? selectedContentColor : Theme.surfaceVariantText
+    property color iconColor: active ? Theme.accentOnSelectedContainer : Theme.primary
+    property color titleColor: contentColor
 
     property var resetStore: SettingsData
     property var resetKeys: settingKey !== "" && resetStore === SettingsData && SettingsData.hasSetting(settingKey) ? [settingKey] : []
@@ -49,13 +54,29 @@ T.Control {
     readonly property bool hasBody: bodySlot.height > 0
     readonly property bool hasText: title !== "" || subtitle !== ""
     readonly property bool isHighlighted: settingKey !== "" && SettingsSearchService.highlightSection === settingKey
+    property bool highlighted: isHighlighted
+    property bool inGroup: (groupItem.parent?.isSettingsGroupHost ?? false) || (groupItem.parent?.parent?.isSettingsGroupHost ?? false)
     readonly property bool isFirstInGroup: _edge(true)
     readonly property bool isLastInGroup: _edge(false)
-    property real topRadius: isFirstInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-    property real bottomRadius: isLastInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-    property real minHeight: subtitle !== "" ? Theme.listItemTwoLineHeight : Theme.listItemHeight
+    property bool dividerBefore: inGroup && !isFirstInGroup
+    property real topRadius: isFirstInGroup ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+    property real bottomRadius: isLastInGroup ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+    property real minHeight: subtitle !== "" ? SettingsMetrics.rowMinHeightTwoLine : SettingsMetrics.rowMinHeight
+    // Keyboard focus on the row or any control inside it tints the row, so navigation reads without a focus ring
+    readonly property Item activeItem: Window.activeFocusItem
+    readonly property bool focusWithin: (activeItem?.visualFocus ?? false) && _contains(activeItem)
+    readonly property real headerBand: paddingV * 2 + headerLine.height
+    readonly property bool headerHovered: rowHover.hovered && (!hasBody || rowHover.point.position.y < headerBand)
 
-    signal clicked
+    function _contains(item) {
+        for (let p = item; p; p = p.parent) {
+            if (p === root)
+                return true;
+        }
+        return false;
+    }
+
+    signal clicked(bool keyboard)
     signal resetRequested
 
     onResetRequested: {
@@ -69,7 +90,7 @@ T.Control {
     Accessible.description: subtitle
     Accessible.onPressAction: {
         if (clickable && enabled)
-            clicked();
+            clicked(true);
     }
 
     Keys.onPressed: event => {
@@ -79,7 +100,7 @@ T.Control {
         case Qt.Key_Space:
         case Qt.Key_Return:
         case Qt.Key_Enter:
-            root.clicked();
+            root.clicked(true);
             event.accepted = true;
             break;
         }
@@ -89,10 +110,10 @@ T.Control {
         const container = groupItem.parent;
         if (container?.isSettingsGroupHost)
             return container.isEdge(groupItem, first);
-        if (!_edgeInContainer(first))
-            return false;
         const host = container?.parent;
-        return host?.isSettingsGroupHost ? host.isEdge(container, first) : true;
+        if (!host?.isSettingsGroupHost)
+            return true;
+        return host.isEdge(container, first) && _edgeInContainer(first);
     }
 
     function _edgeInContainer(first) {
@@ -123,9 +144,17 @@ T.Control {
     Rectangle {
         anchors.fill: parent
         visible: root.paintBackground
-        color: root.isHighlighted ? Theme.blend(root.rowColor, Theme.primary, SettingsMetrics.highlightBlend) : root.rowColor
-        border.width: Theme.layerOutlineWidth
+        color: root.active ? root.selectedRowColor : root.highlighted ? Theme.blend(root.rowColor, Theme.primary, SettingsMetrics.highlightBlend) : root.rowColor
+        border.width: root.inGroup ? SettingsMetrics.groupEdgeWidth : Theme.layerOutlineWidth
         border.color: Theme.outlineMedium
+
+        Rectangle {
+            x: root.paddingH
+            width: parent.width - root.paddingH * 2
+            height: Theme.dividerWidth
+            visible: SettingsMetrics.continuousGroups && root.dividerBefore
+            color: SettingsMetrics.groupDividerColor
+        }
         topLeftRadius: root.topRadius
         topRightRadius: root.topRadius
         bottomLeftRadius: root.bottomRadius
@@ -134,8 +163,8 @@ T.Control {
 
     Rectangle {
         anchors.fill: parent
-        visible: !root.paintBackground && root.isHighlighted
-        color: SettingsMetrics.rowHighlightColor
+        visible: !root.paintBackground && (root.active || root.highlighted)
+        color: root.active ? root.selectedRowColor : SettingsMetrics.rowHighlightColor
         topLeftRadius: root.topRadius
         topRightRadius: root.topRadius
         bottomLeftRadius: root.bottomRadius
@@ -144,14 +173,17 @@ T.Control {
 
     Rectangle {
         id: stateLayer
-        anchors.fill: parent
-        visible: root.clickable
-        color: Theme.surfaceText
-        opacity: !root.enabled ? 0 : (clickControl.down ? Theme.stateLayerPressed : (clickControl.hovered ? Theme.stateLayerHover : 0))
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        height: root.hasBody && !root.focusWithin ? root.headerBand : root.height
+        visible: root.clickable || root.focusWithin
+        color: root.contentColor
+        opacity: !root.enabled ? 0 : (clickControl.down ? Theme.stateLayerPressed : root.focusWithin ? Theme.stateLayerFocus : (root.headerHovered ? Theme.stateLayerHover : 0))
         topLeftRadius: root.topRadius
         topRightRadius: root.topRadius
-        bottomLeftRadius: root.bottomRadius
-        bottomRightRadius: root.bottomRadius
+        bottomLeftRadius: height < root.height ? 0 : root.bottomRadius
+        bottomRightRadius: bottomLeftRadius
 
         Behavior on opacity {
             enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
@@ -163,14 +195,39 @@ T.Control {
         }
     }
 
-    DankRipple {
-        id: ripple
-        visible: root.clickable
-        rippleColor: Theme.surfaceText
-        topLeftRadius: root.topRadius
-        topRightRadius: root.topRadius
-        bottomLeftRadius: root.bottomRadius
-        bottomRightRadius: root.bottomRadius
+    Item {
+        id: pressSurface
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        height: root.hasBody ? root.headerBand : root.height
+
+        DRipple {
+            id: ripple
+            visible: root.clickable
+            rippleColor: root.contentColor
+            topLeftRadius: root.topRadius
+            topRightRadius: root.topRadius
+            bottomLeftRadius: root.hasBody ? 0 : root.bottomRadius
+            bottomRightRadius: bottomLeftRadius
+        }
+
+        StyledButton {
+            id: clickControl
+            anchors.fill: parent
+            enabled: root.clickable && root.enabled
+            hoverEnabled: false
+            focusPolicy: Qt.NoFocus
+            background: null
+            Accessible.ignored: true
+            onPressedChanged: {
+                if (pressed) {
+                    root.forceActiveFocus(Qt.MouseFocusReason);
+                    ripple.trigger(pressX, pressY);
+                }
+            }
+            onClicked: root.clicked(false)
+        }
     }
 
     Rectangle {
@@ -186,23 +243,11 @@ T.Control {
         visible: root.visualFocus && root.clickable
     }
 
-    StyledButton {
-        id: clickControl
-        anchors.fill: parent
-        enabled: root.clickable && root.enabled
-        hoverEnabled: root.clickable
-        focusPolicy: Qt.ClickFocus
-        background: null
-        Accessible.ignored: true
-        onPressedChanged: {
-            if (pressed)
-                ripple.trigger(pressX, pressY);
-        }
-        onClicked: root.clicked()
-
-        HoverHandler {
-            cursorShape: root.clickable ? Qt.PointingHandCursor : Qt.ArrowCursor
-        }
+    // Hover must live on the row itself: Qt skips siblings once a hover-enabled child is hovered
+    HoverHandler {
+        id: rowHover
+        enabled: root.clickable
+        cursorShape: root.headerHovered ? Qt.PointingHandCursor : Qt.ArrowCursor
     }
 
     Column {
@@ -245,7 +290,7 @@ T.Control {
                     color: root.iconBox ? Theme.withAlpha(root.iconColor, Theme.tonalTintAlpha) : "transparent"
                     visible: root.iconName !== ""
 
-                    DankIcon {
+                    DIcon {
                         anchors.centerIn: parent
                         name: root.iconName
                         size: root.iconBox ? Theme.iconSizeMedium : Theme.iconSize
@@ -296,7 +341,7 @@ T.Control {
                 active: root.modified && root.resetInHeader
                 visible: active
 
-                sourceComponent: DankActionButton {
+                sourceComponent: DActionButton {
                     buttonSize: Theme.iconButtonSize
                     iconName: "restart_alt"
                     iconSize: Theme.iconSizeMedium
@@ -329,10 +374,10 @@ T.Control {
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
-                DankIcon {
+                DIcon {
                     name: "chevron_right"
                     size: Theme.iconSize
-                    color: Theme.surfaceVariantText
+                    color: root.supportingContentColor
                     rotation: I18n.isRtl ? 180 : 0
                     visible: root.showChevron
                     anchors.verticalCenter: parent.verticalCenter

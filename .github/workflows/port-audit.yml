@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: "Release branch to audit (default: newest release/*)"
+        description: "Release branch to audit (default: newest stable-*)"
         required: false
         type: string
 

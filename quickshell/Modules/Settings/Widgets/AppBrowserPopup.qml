@@ -1,8 +1,9 @@
 import QtQuick
 import qs.Common
+import qs.DCommon.Widgets
 import qs.Widgets
 
-DankFloatingWindow {
+DFloatingWindow {
     id: root
 
     property string searchQuery: ""
@@ -58,7 +59,7 @@ DankFloatingWindow {
             anchors.fill: parent
             spacing: 0
 
-            DankWindowHeader {
+            DWindowHeader {
                 id: titleBar
                 width: parent.width
                 controls: windowControls
@@ -72,13 +73,13 @@ DankFloatingWindow {
 
                 Column {
                     anchors.fill: parent
-                    anchors.margins: Theme.spacingL
+                    anchors.margins: Theme.windowInset
+                    anchors.topMargin: 0
                     spacing: Theme.spacingM
 
-                    DankSearchField {
+                    DSearchField {
                         id: searchField
                         width: parent.width
-                        height: Theme.fieldHeightLarge
                         textColor: Theme.surfaceText
                         font.pixelSize: Theme.fontSizeMedium
                         placeholderText: I18n.tr("Search applications...")
@@ -89,7 +90,7 @@ DankFloatingWindow {
                         }
                     }
 
-                    DankListView {
+                    DListView {
                         id: appList
                         width: parent.width
                         height: parent.height - searchField.height - Theme.spacingM
@@ -105,14 +106,14 @@ DankFloatingWindow {
 
                         delegate: Rectangle {
                             width: appList.width
-                            height: Theme.listItemHeight + Theme.spacingXS
+                            height: SettingsMetrics.rowMinHeight + Theme.spacingXS
                             radius: Theme.cornerRadius
                             required property int index
                             required property var modelData
 
                             readonly property bool isSelected: root.keyboardNavigationActive && index === root.selectedIndex
 
-                            color: isSelected ? Theme.withAlpha(Theme.primary, 0.16) : appArea.containsMouse ? Theme.withAlpha(Theme.primary, 0.08) : Theme.floatingWindowNestedSurface
+                            color: isSelected ? Theme.selectedContainer : appArea.containsMouse ? Theme.withAlpha(Theme.primary, 0.08) : Theme.floatingWindowNestedSurface
                             border.color: isSelected ? Theme.primary : Theme.outlineMedium
                             border.width: isSelected ? Theme.outlineWidthFocused : Theme.layerOutlineWidth
 
@@ -158,7 +159,7 @@ DankFloatingWindow {
                                     }
                                 }
 
-                                DankIcon {
+                                DIcon {
                                     name: "add"
                                     size: Theme.iconSizeMedium
                                     color: Theme.primary
@@ -180,8 +181,9 @@ DankFloatingWindow {
 
                             Behavior on color {
                                 ColorAnimation {
-                                    duration: Theme.shortDuration
-                                    easing.type: Theme.standardEasing
+                                    duration: Theme.expressiveDurations.expressiveFastEffects
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                                 }
                             }
                         }

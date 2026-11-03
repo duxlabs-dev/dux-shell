@@ -85,18 +85,25 @@ func (zypperBackend) Upgrade(ctx context.Context, opts UpgradeOptions, onLine fu
 func zypperUpgradeArgv(opts UpgradeOptions) []string {
 	ignored := shellSafeNames(opts.Ignored)
 	if len(ignored) == 0 {
-		return privilegedArgv(opts, "zypper", "--non-interactive", "update")
+		return privilegedArgv(opts, zypperUpdateArgv(opts)...)
 	}
-	return privilegedArgv(opts, "sh", "-c", zypperLockScript(ignored))
+	return privilegedArgv(opts, "sh", "-c", zypperLockScript(ignored, strings.Join(zypperUpdateArgv(opts), " ")))
+}
+
+func zypperUpdateArgv(opts UpgradeOptions) []string {
+	if opts.Interactive {
+		return []string{"zypper", "update"}
+	}
+	return []string{"zypper", "--non-interactive", "update"}
 }
 
 // zypperLockScript locks ignored packages only for the update, leaving pre-existing user locks untouched.
-func zypperLockScript(ignored []string) string {
+func zypperLockScript(ignored []string, update string) string {
 	names := strings.Join(ignored, " ")
 	return fmt.Sprintf(
 		`new=""; for p in %s; do grep -qsE "^solvable_name:[[:space:]]*$p$" /etc/zypp/locks || new="$new $p"; done; `+
 			`[ -n "$new" ] && zypper --non-interactive al $new; `+
-			`zypper --non-interactive update; rc=$?; `+
+			`%s; rc=$?; `+
 			`[ -n "$new" ] && zypper --non-interactive rl $new; exit $rc`,
-		names)
+		names, update)
 }

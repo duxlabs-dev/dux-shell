@@ -70,8 +70,16 @@ Singleton {
     Component.onCompleted: {
         _initialized = true;
         Paths.iconResolver = name => resolve(name);
-        _probeSystemTheme();
+        if (!settingsTheme)
+            _probeSystemTheme();
         Qt.callLater(_rebuild);
+    }
+
+    Timer {
+        id: rebuildDebounce
+        interval: 2000
+        repeat: false
+        onTriggered: root._rebuild()
     }
 
     Connections {
@@ -80,7 +88,7 @@ Singleton {
         function onApplicationsChanged() {
             if (!root.ready)
                 return;
-            Qt.callLater(root._rebuild);
+            rebuildDebounce.restart();
         }
     }
 
@@ -168,8 +176,12 @@ for t in $order; do for b; do d="$b/$t"; [ -d "$d" ] && echo "$d"; done; done`;
             property bool finished: false
 
             function complete() {
-                if (--remaining > 0)
+                if (finished || --remaining > 0)
                     return;
+                for (const name in looseIndex.paths) {
+                    if (!themeIndex.paths[name])
+                        themeIndex.paths[name] = looseIndex.paths[name];
+                }
                 publish();
             }
 
@@ -177,10 +189,6 @@ for t in $order; do for b; do d="$b/$t"; [ -d "$d" ] && echo "$d"; done; done`;
                 if (finished)
                     return;
                 finished = true;
-                for (const name in looseIndex.paths) {
-                    if (!themeIndex.paths[name])
-                        themeIndex.paths[name] = looseIndex.paths[name];
-                }
                 root._publishIndex(theme, themeIndex.paths);
                 destroy();
             }

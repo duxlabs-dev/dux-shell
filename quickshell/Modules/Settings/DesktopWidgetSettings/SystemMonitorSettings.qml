@@ -9,6 +9,8 @@ DesktopWidgetInstanceSettings {
     id: root
 
     readonly property var gpus: DgopService.availableGpus ?? []
+
+    Component.onCompleted: DgopService.ensureMeta()
     readonly property var gpuLabels: gpus.map(gpu => (gpu.driver ? gpu.driver.toUpperCase() + " " : "") + (gpu.displayName ?? ""))
 
     SettingsToggleRow {

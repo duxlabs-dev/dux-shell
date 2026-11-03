@@ -1,10 +1,11 @@
 import QtQuick
 import qs.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Notepad
 
-DankFloatingWindow {
+DFloatingWindow {
     id: win
 
     property alias shouldBeVisible: win.visible
@@ -42,7 +43,7 @@ DankFloatingWindow {
     Item {
         anchors.fill: parent
 
-        DankWindowHeader {
+        DWindowHeader {
             id: titleBar
             anchors.top: parent.top
             anchors.left: parent.left
@@ -59,10 +60,9 @@ DankFloatingWindow {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            anchors.topMargin: Theme.spacingM
-            anchors.leftMargin: Theme.spacingM
-            anchors.rightMargin: Theme.spacingM
-            anchors.bottomMargin: Theme.spacingM
+            anchors.leftMargin: Theme.windowInset
+            anchors.rightMargin: Theme.windowInset
+            anchors.bottomMargin: Theme.windowInset
             inPopout: true
             surfaceVisible: win.visible
             onHideRequested: win.hide()

@@ -6,10 +6,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/plugins"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/shellembed"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/plugins"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/sysupdate"
+	"github.com/duxlabs-dev/dux-shell/core/internal/shellembed"
+	"github.com/duxlabs-dev/dux-shell/core/internal/site"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +29,7 @@ var ipcCmd = &cobra.Command{
   dms ipc call <target> <function> [args...]   invoke a command
   dms ipc list                                 list all targets and functions
 
-Full reference: https://danklinux.com/docs/dankmaterialshell/keybinds-ipc`,
+Full reference: ` + site.Docs + "/dms/keybinds-ipc",
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return getShellIPCCompletions(args, toComplete), cobra.ShellCompDirectiveNoFileComp
 	},
@@ -217,21 +219,17 @@ func runVersion(cmd *cobra.Command, args []string) {
 // Git builds: dms (git) v0.6.2-XXXX
 // Stable releases: dms v0.6.2
 func formatVersion(version string) string {
-	// Arch/Debian/Ubuntu/OpenSUSE git format: 0.6.2+git2264.c5c5ce84
-	re := regexp.MustCompile(`^([\d.]+)\+git(\d+)\.`)
-	if matches := re.FindStringSubmatch(version); matches != nil {
-		return fmt.Sprintf("dms (git) v%s-%s", matches[1], matches[2])
-	}
-
-	// Fedora COPR git format: 0.0.git.2267.d430cae9
-	re = regexp.MustCompile(`^[\d.]+\.git\.(\d+)\.`)
-	if matches := re.FindStringSubmatch(version); matches != nil {
-		baseVersion := getBaseVersion()
-		return fmt.Sprintf("dms (git) v%s-%s", baseVersion, matches[1])
+	if n := sysupdate.GitBuildCount(version); n > 0 {
+		// Fedora COPR (0.0.git.2267.d430cae9) carries no real base version.
+		base, _, ok := strings.Cut(version, "+git")
+		if !ok {
+			base = getBaseVersion()
+		}
+		return fmt.Sprintf("dms (git) v%s-%d", strings.TrimPrefix(base, "v"), n)
 	}
 
 	// Stable release format: 0.6.2
-	re = regexp.MustCompile(`^([\d.]+)$`)
+	re := regexp.MustCompile(`^([\d.]+)$`)
 	if matches := re.FindStringSubmatch(version); matches != nil {
 		return fmt.Sprintf("dms v%s", matches[1])
 	}
@@ -301,7 +299,7 @@ func browsePlugins() error {
 		return nil
 	}
 
-	feedback := plugins.FetchFeedback()
+	feedback := plugins.FetchFeedback(false)
 
 	nameByID := make(map[string]string, len(pluginList))
 	for _, plugin := range pluginList {
@@ -769,6 +767,7 @@ func getCommonCommands() []*cobra.Command {
 		versionCmd,
 		ipcCmd,
 		debugSrvCmd,
+		sysmonHelperCmd,
 		pluginsCmd,
 		registryCmd,
 		dank16Cmd,
@@ -794,6 +793,10 @@ func getCommonCommands() []*cobra.Command {
 		blurCmd,
 		trashCmd,
 		systemCmd,
+		systemdCmd,
 		switchUserCmd,
+		switchCmd,
+		migrateCmd,
+		dmenuCmd,
 	}...)
 }

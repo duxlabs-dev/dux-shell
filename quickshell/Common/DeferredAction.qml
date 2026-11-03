@@ -1,12 +1,9 @@
 import QtQuick
 
-Item {
+QtObject {
     id: root
 
-    visible: false
-    width: 0
-    height: 0
-
+    property bool enabled: true
     property int interval: 0
     property bool pending: false
 
@@ -44,8 +41,7 @@ Item {
             cancel();
     }
 
-    Timer {
-        id: deferTimer
+    readonly property Timer deferTimer: Timer {
         interval: root.interval
         repeat: false
         onTriggered: root.flush()

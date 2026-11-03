@@ -105,7 +105,8 @@ Item {
     readonly property real targetSize: barHosted ? iconSize * (options.iconSizePercentage ?? 100) / 100 : iconSize
     readonly property real indicatorLane: root.barHosted && !root.options.hideIndicators ? DockConfig.indicatorLane(root.options) : 0
     readonly property real crossSize: {
-        const needed = root.targetSize + root.indicatorLane;
+        // The lane is mirrored so icons stay centered on the bar.
+        const needed = root.targetSize + root.indicatorLane * 2;
         if (!root.barHosted)
             return needed;
         // A bar pill cannot grow past its widget thickness, so the lane yields there.
@@ -397,7 +398,7 @@ Item {
         }
     }
 
-    DankTooltip {
+    DTooltip {
         id: tooltip
         screen: root.dockScreen
     }
@@ -432,7 +433,7 @@ Item {
     onDockScreenChanged: modelUpdate.schedule()
     readonly property var visibleWindows: options.currentWorkspace && dockScreen ? CompositorService.filterCurrentWorkspace(CompositorService.sortedToplevels, dockScreen.name) : CompositorService.sortedToplevels
     onVisibleWindowsChanged: modelUpdate.schedule()
-    readonly property string windowMetadata: JSON.stringify(visibleWindows.map(toplevel => [toplevel.appId, ["org.quickshell", "com.danklinux.dms"].includes(toplevel.appId) ? toplevel.title : "", options.isolateDisplays ? (toplevel.screens || []).map(screen => screen.name) : null]))
+    readonly property string windowMetadata: JSON.stringify(visibleWindows.map(toplevel => [toplevel.appId, ["org.quickshell", "dev.duxlabs.shell", "com.danklinux.dms"].includes(toplevel.appId) ? toplevel.title : "", options.isolateDisplays ? (toplevel.screens || []).map(screen => screen.name) : null]))
     onWindowMetadataChanged: modelUpdate.schedule()
     readonly property var searchCoreApps: AppSearchService.coreApps
 

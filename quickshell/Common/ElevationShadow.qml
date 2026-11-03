@@ -1,3 +1,3 @@
-import qs.DankCommon.Common as DankCommon
+import qs.DCommon.Common as DCommon
 
-DankCommon.ElevationShadow {}
+DCommon.ElevationShadow {}

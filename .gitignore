@@ -58,13 +58,14 @@ CLAUDE-activeContext.md
 CLAUDE-temp.md
 AGENTS-activeContext.md
 AGENTS-temp.md
+.agents/settings.local.json
 
 # Auto-generated theme files
 *.generated.*
 niri-colors.generated.kdl
 ghostty-colors.generated.conf
 
-# Notepad files (should be in ~/.local/state/DankMaterialShell/)
+# Notepad files (should be in ~/.local/state/dms/)
 untitled-*.txt
 file:*
 notepad-files/
@@ -130,5 +131,6 @@ distro/void/masterdir*/
 
 # Often gets built
 core/dms
+core/duxinstall
 
 core/internal/shellembed/dist

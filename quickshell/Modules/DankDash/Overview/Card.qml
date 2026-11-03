@@ -1,43 +1,8 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
-import qs.Modules.DankDash
+import qs.Modules.DDash.Overview as New
 
-DankCard {
-    id: root
-
-    property Item focusTarget: clickable ? root : null
-    property bool blocksTabNavigation: false
-
-    activeFocusOnTab: interactive && focusTarget !== null
-    showFocusRing: false
-    restRadius: DashMetrics.cardRadius
-
-    function handleKeyEvent(event) {
-        return false;
-    }
-
-    Keys.onPressed: event => {
-        event.accepted = false;
-        if (!interactive)
-            return;
-        if (handleKeyEvent(event)) {
-            event.accepted = true;
-            return;
-        }
-        if (!acceptsInput)
-            return;
-        switch (event.key) {
-        case Qt.Key_Space:
-        case Qt.Key_Return:
-        case Qt.Key_Enter:
-            root.clicked();
-            event.accepted = true;
-            break;
-        }
-    }
-
-    property string entryId: ""
-
-    readonly property var options: DashRegistry.resolvedOptions(entryId)
+New.Card {
+    id: shim
+    Component.onCompleted: Deprecation.module(shim, "Card", "qs.Modules.DankDash.Overview", "qs.Modules.DDash.Overview")
 }

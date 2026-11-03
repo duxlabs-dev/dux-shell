@@ -2,9 +2,9 @@ import QtQuick
 import qs.Common
 import qs.Modals.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
-DankModal {
+DModal {
     id: root
 
     property bool wired: false
@@ -79,7 +79,7 @@ DankModal {
                         }
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         iconName: "close"
                         Accessible.name: I18n.tr("Close")
                         iconSize: Theme.iconSize - 4
@@ -99,7 +99,7 @@ DankModal {
                     border.width: Theme.layerOutlineWidth
                     clip: true
 
-                    DankFlickable {
+                    DFlickable {
                         anchors.fill: parent
                         anchors.margins: Theme.spacingM
                         contentHeight: detailsText.contentHeight

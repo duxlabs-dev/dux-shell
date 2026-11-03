@@ -1,20 +1,29 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
-DankWindowHeader {
+Item {
     id: header
 
     required property var modal
+    readonly property bool savedTab: modal.activeTab === "saved"
 
-    controls: null
-    horizontalPadding: 0
-    verticalPadding: 0
-    showDivider: false
-    title: (modal.activeTab === "saved" ? I18n.tr("Clipboard Saved") : I18n.tr("Clipboard History")) + ` (${modal.activeTab === "saved" ? modal.pinnedEntries.length : modal.unpinnedEntries.length})`
-    onCloseRequested: modal.hide()
+    implicitHeight: actions.implicitHeight
 
     ClipboardActions {
+        id: actions
+        anchors.fill: parent
         modal: header.modal
+    }
+
+    StyledText {
+        anchors.centerIn: parent
+        width: Math.max(0, parent.width - 2 * (actions.sideWidth + Theme.spacingM))
+        text: (header.savedTab ? I18n.tr("Clipboard Saved") : I18n.tr("Clipboard History")) + ` (${header.savedTab ? header.modal.pinnedEntries.length : header.modal.unpinnedEntries.length})`
+        font.pixelSize: Theme.fontSizeMedium
+        font.weight: Theme.fontWeightMedium
+        color: Theme.surfaceText
+        horizontalAlignment: Text.AlignHCenter
+        elide: Text.ElideRight
     }
 }

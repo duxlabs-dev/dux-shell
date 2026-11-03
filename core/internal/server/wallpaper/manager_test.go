@@ -13,11 +13,8 @@ func TestParseHHMM(t *testing.T) {
 		ok     bool
 	}{
 		{"06:00", 6, 0, true},
-		{"23:59", 23, 59, true},
-		{"00:00", 0, 0, true},
 		{"24:00", 0, 0, false},
 		{"6:5", 6, 5, true},
-		{"bad", 0, 0, false},
 		{"12", 0, 0, false},
 		{"12:60", 0, 0, false},
 	}

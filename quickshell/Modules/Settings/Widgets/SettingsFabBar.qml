@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Item {
     id: root
@@ -38,11 +38,13 @@ Item {
         damping: root.scaleSpring.damping
     }
 
-    DankLayer {
+    DLayer {
         id: surface
 
         width: row.implicitWidth + root.shadowPadding * 2
         height: row.implicitHeight + root.shadowPadding * 2
+        // above the DFlickable edge fade, which sits at z 1
+        z: 2
         anchors.bottomMargin: Theme.spacingL - root.shadowPadding
         opacity: root.shown ? 1 : 0
         visible: opacity > 0

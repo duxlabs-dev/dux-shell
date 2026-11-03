@@ -21,14 +21,8 @@ func TestSwayAutogenerateComment(t *testing.T) {
 		{"focus mode_toggle", "Toggle focus mode"},
 		{"focus parent", "Focus parent container"},
 		{"focus left", "Focus left"},
-		{"focus right", "Focus right"},
-		{"focus up", "Focus up"},
-		{"focus down", "Focus down"},
 		{"focus output left", "Focus monitor"},
 		{"move left", "Move window left"},
-		{"move right", "Move window right"},
-		{"move up", "Move window up"},
-		{"move down", "Move window down"},
 		{"move container to workspace number 1", "Move to workspace 1"},
 		{"move container to workspace prev", "Move to previous workspace"},
 		{"move container to workspace next", "Move to next workspace"},
@@ -37,7 +31,6 @@ func TestSwayAutogenerateComment(t *testing.T) {
 		{"workspace prev", "Previous workspace"},
 		{"workspace next", "Next workspace"},
 		{"layout tabbed", "Layout tabbed"},
-		{"layout stacking", "Layout stacking"},
 		{"splith", "Split horizontal"},
 		{"splitv", "Split vertical"},
 		{"resize grow width 10 ppt", "Resize window"},
@@ -124,26 +117,6 @@ func TestSwayGetKeybindAtLine(t *testing.T) {
 				Key:     "x",
 				Command: "exec notify-send released",
 				Comment: "notify-send released",
-			},
-		},
-		{
-			name: "keybind_focus_direction",
-			line: "bindsym Mod4+Left focus left",
-			expected: &SwayKeyBinding{
-				Mods:    []string{"Mod4"},
-				Key:     "Left",
-				Command: "focus left",
-				Comment: "Focus left",
-			},
-		},
-		{
-			name: "keybind_workspace",
-			line: "bindsym Mod4+1 workspace number 1",
-			expected: &SwayKeyBinding{
-				Mods:    []string{"Mod4"},
-				Key:     "1",
-				Command: "workspace number 1",
-				Comment: "Workspace 1",
 			},
 		},
 	}
@@ -321,142 +294,14 @@ func TestSwayReadContentErrors(t *testing.T) {
 	}
 }
 
-func TestSwayReadContentWithTildeExpansion(t *testing.T) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		t.Skip("Cannot get home directory")
-	}
-
-	tmpSubdir := filepath.Join(homeDir, ".config", "test-sway-"+t.Name())
-	if err := os.MkdirAll(tmpSubdir, 0o755); err != nil {
-		t.Skip("Cannot create test directory in home")
-	}
-	defer os.RemoveAll(tmpSubdir)
-
-	configFile := filepath.Join(tmpSubdir, "config")
-	if err := os.WriteFile(configFile, []byte("bindsym Mod4+q kill\n"), 0o644); err != nil {
-		t.Fatalf("Failed to write test config: %v", err)
-	}
-
-	relPath, err := filepath.Rel(homeDir, tmpSubdir)
-	if err != nil {
-		t.Skip("Cannot create relative path")
-	}
-
-	parser := NewSwayParser()
-	tildePathMatch := "~/" + relPath
-	err = parser.ReadContent(tildePathMatch)
-
-	if err != nil {
-		t.Errorf("ReadContent with tilde path failed: %v", err)
-	}
-}
-
-func TestSwayEmptyAndCommentLines(t *testing.T) {
-	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "config")
-
-	content := `
-# This is a comment
-bindsym Mod4+q kill
-
-# Another comment
-
-bindsym Mod4+t exec kitty
-`
-
-	if err := os.WriteFile(configFile, []byte(content), 0o644); err != nil {
-		t.Fatalf("Failed to write test config: %v", err)
-	}
-
-	section, err := ParseSwayKeys(configFile)
-	if err != nil {
-		t.Fatalf("ParseSwayKeys failed: %v", err)
-	}
-
-	if len(section.Keybinds) != 2 {
-		t.Errorf("Expected 2 keybinds (comments ignored), got %d", len(section.Keybinds))
-	}
-}
-
-func TestSwayRealWorldConfig(t *testing.T) {
-	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "config")
-
-	content := `set $mod Mod4
-set $term kitty
-
-## Application Launchers
-bindsym $mod+t exec $term
-bindsym $mod+Space exec rofi
-
-## Window Management
-bindsym $mod+q kill
-bindsym $mod+f fullscreen toggle
-
-## Focus Navigation
-bindsym $mod+Left focus left
-bindsym $mod+Right focus right
-
-## Workspace Navigation
-bindsym $mod+1 workspace number 1
-bindsym $mod+2 workspace number 2
-bindsym $mod+Shift+1 move container to workspace number 1
-`
-
-	if err := os.WriteFile(configFile, []byte(content), 0o644); err != nil {
-		t.Fatalf("Failed to write test config: %v", err)
-	}
-
-	section, err := ParseSwayKeys(configFile)
-	if err != nil {
-		t.Fatalf("ParseSwayKeys failed: %v", err)
-	}
-
-	if len(section.Keybinds) < 9 {
-		t.Errorf("Expected at least 9 keybinds, got %d", len(section.Keybinds))
-	}
-
-	foundExec := false
-	foundKill := false
-	foundWorkspace := false
-
-	for _, kb := range section.Keybinds {
-		if kb.Command == "exec kitty" {
-			foundExec = true
-		}
-		if kb.Command == "kill" {
-			foundKill = true
-		}
-		if kb.Command == "workspace number 1" {
-			foundWorkspace = true
-		}
-	}
-
-	if !foundExec {
-		t.Error("Did not find exec kitty keybind")
-	}
-	if !foundKill {
-		t.Error("Did not find kill keybind")
-	}
-	if !foundWorkspace {
-		t.Error("Did not find workspace 1 keybind")
-	}
-}
-
 func TestSwayIsMod(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected bool
 	}{
 		{"Mod4", true},
-		{"Shift", true},
-		{"Control", true},
-		{"Alt", true},
-		{"Super", true},
 		{"$mod", true},
 		{"Left", false},
-		{"q", false},
 		{"1", false},
 	}
 

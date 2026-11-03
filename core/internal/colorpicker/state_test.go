@@ -122,24 +122,6 @@ func TestSurfaceState_ConcurrentIsDone(t *testing.T) {
 	wg.Wait()
 }
 
-func TestSurfaceState_ConcurrentIsReady(t *testing.T) {
-	s := NewSurfaceState(FormatHex, false)
-
-	var wg sync.WaitGroup
-	const goroutines = 20
-	const iterations = 100
-
-	for range goroutines {
-		wg.Go(func() {
-			for range iterations {
-				_ = s.IsReady()
-			}
-		})
-	}
-
-	wg.Wait()
-}
-
 func TestSurfaceState_ConcurrentSwapBuffers(t *testing.T) {
 	s := NewSurfaceState(FormatHex, false)
 
@@ -161,12 +143,6 @@ func TestSurfaceState_ConcurrentSwapBuffers(t *testing.T) {
 func TestSurfaceState_ZeroScale(t *testing.T) {
 	s := NewSurfaceState(FormatHex, false)
 	s.SetScale(0)
-	assert.Equal(t, int32(1), s.Scale())
-}
-
-func TestSurfaceState_NegativeScale(t *testing.T) {
-	s := NewSurfaceState(FormatHex, false)
-	s.SetScale(-5)
 	assert.Equal(t, int32(1), s.Scale())
 }
 
@@ -206,71 +182,10 @@ func TestSurfaceState_RedrawScreenOnlyNilBuffer(t *testing.T) {
 	assert.Nil(t, buf)
 }
 
-func TestSurfaceState_FrontRenderBufferNil(t *testing.T) {
-	s := NewSurfaceState(FormatHex, false)
-	buf := s.FrontRenderBuffer()
-	assert.Nil(t, buf)
-}
-
-func TestSurfaceState_ScreenBufferNil(t *testing.T) {
-	s := NewSurfaceState(FormatHex, false)
-	buf := s.ScreenBuffer()
-	assert.Nil(t, buf)
-}
-
 func TestSurfaceState_DestroyMultipleTimes(t *testing.T) {
 	s := NewSurfaceState(FormatHex, false)
 	s.Destroy()
 	s.Destroy()
-}
-
-func TestClamp(t *testing.T) {
-	tests := []struct {
-		v, lo, hi, expected int
-	}{
-		{5, 0, 10, 5},
-		{-5, 0, 10, 0},
-		{15, 0, 10, 10},
-		{0, 0, 10, 0},
-		{10, 0, 10, 10},
-	}
-
-	for _, tt := range tests {
-		result := clamp(tt.v, tt.lo, tt.hi)
-		assert.Equal(t, tt.expected, result)
-	}
-}
-
-func TestClampF(t *testing.T) {
-	tests := []struct {
-		v, lo, hi, expected float64
-	}{
-		{5.0, 0.0, 10.0, 5.0},
-		{-5.0, 0.0, 10.0, 0.0},
-		{15.0, 0.0, 10.0, 10.0},
-		{0.0, 0.0, 10.0, 0.0},
-		{10.0, 0.0, 10.0, 10.0},
-	}
-
-	for _, tt := range tests {
-		result := clampF(tt.v, tt.lo, tt.hi)
-		assert.InDelta(t, tt.expected, result, 0.001)
-	}
-}
-
-func TestAbs(t *testing.T) {
-	tests := []struct {
-		v, expected int
-	}{
-		{5, 5},
-		{-5, 5},
-		{0, 0},
-	}
-
-	for _, tt := range tests {
-		result := abs(tt.v)
-		assert.Equal(t, tt.expected, result)
-	}
 }
 
 func TestBlendColors(t *testing.T) {

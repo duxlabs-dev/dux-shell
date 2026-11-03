@@ -3,11 +3,12 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import qs.Common
+import qs.Modules.ControlCenter.Details
 import qs.Modules.Settings.Widgets
 import qs.Modals.Common
 import qs.Modals.FileBrowser
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Item {
     id: networkVpnTab
@@ -56,399 +57,67 @@ Item {
             width: parent.width
 
             SettingsRow {
-                body: Column {
-                    id: vpnSection
+                visible: !DMSNetworkService.vpnAvailable
+                subtitle: I18n.tr("Unavailable")
+            }
 
+            SettingsRow {
+                visible: DMSNetworkService.vpnAvailable && DMSNetworkService.profiles.length === 0
+                body: Item {
                     width: parent.width
-                    spacing: Theme.spacingM
-
-                    StyledText {
-                        text: I18n.tr("Unavailable")
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceVariantText
-                        width: parent.width
-                        horizontalAlignment: Text.AlignLeft
-                        visible: !DMSNetworkService.vpnAvailable
-                    }
-
-                    Row {
-                        width: parent.width
-                        spacing: Theme.spacingM
-                        visible: DMSNetworkService.vpnAvailable
-
-                        StyledText {
-                            text: {
-                                if (!DMSNetworkService.connected)
-                                    return I18n.tr("Disconnected");
-                                const names = DMSNetworkService.activeNames || [];
-                                if (names.length <= 1)
-                                    return names[0] || I18n.tr("Connected");
-                                return names[0] + " +" + (names.length - 1);
-                            }
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: DMSNetworkService.connected ? Theme.primary : Theme.surfaceVariantText
-                            width: parent.width - vpnHeaderControls.width - Theme.spacingM
-                            horizontalAlignment: Text.AlignLeft
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        Row {
-                            id: vpnHeaderControls
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: Theme.spacingS
-
-                            Rectangle {
-                                height: 28
-                                radius: Theme.cornerRadiusL
-                                width: disconnectAllRow.width + Theme.spacingM * 2
-                                color: disconnectAllArea.containsMouse ? Theme.errorHover : Theme.chipSurface
-                                visible: DMSNetworkService.connected
-                                opacity: DMSNetworkService.isBusy ? 0.5 : 1.0
-
-                                Row {
-                                    id: disconnectAllRow
-                                    anchors.centerIn: parent
-                                    spacing: Theme.spacingXS
-
-                                    DankIcon {
-                                        name: "link_off"
-                                        size: Theme.fontSizeSmall
-                                        color: Theme.surfaceText
-                                    }
-
-                                    StyledText {
-                                        text: I18n.tr("Disconnect")
-                                        font.pixelSize: Theme.fontSizeSmall
-                                        color: Theme.surfaceText
-                                        font.weight: Theme.fontWeightMedium
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: disconnectAllArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: DMSNetworkService.isBusy ? Qt.BusyCursor : Qt.PointingHandCursor
-                                    enabled: !DMSNetworkService.isBusy
-                                    onClicked: DMSNetworkService.disconnectAllActive()
-                                }
-                            }
-                        }
-                    }
-
-                    Item {
-                        width: parent.width
-                        height: 100
-                        visible: DMSNetworkService.vpnAvailable && DMSNetworkService.profiles.length === 0
-
-                        Column {
-                            anchors.centerIn: parent
-                            spacing: Theme.spacingS
-
-                            DankIcon {
-                                name: "vpn_key_off"
-                                size: 36
-                                color: Theme.surfaceVariantText
-                                anchors.horizontalCenter: parent.horizontalCenter
-                            }
-
-                            StyledText {
-                                text: I18n.tr("No VPN profiles")
-                                font.pixelSize: Theme.fontSizeMedium
-                                color: Theme.surfaceVariantText
-                                anchors.horizontalCenter: parent.horizontalCenter
-                            }
-
-                            StyledText {
-                                text: I18n.tr("Click Import to add a .ovpn or .conf")
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceVariantText
-                                anchors.horizontalCenter: parent.horizontalCenter
-                            }
-                        }
-                    }
+                    height: SettingsMetrics.emptyStateHeight
 
                     Column {
-                        width: parent.width
-                        spacing: Theme.spacingXS
-                        visible: DMSNetworkService.vpnAvailable && DMSNetworkService.profiles.length > 0
+                        anchors.centerIn: parent
+                        spacing: Theme.spacingS
 
-                        Repeater {
-                            model: DMSNetworkService.profiles
+                        DIcon {
+                            name: "vpn_key_off"
+                            size: 36
+                            color: Theme.surfaceVariantText
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
 
-                            delegate: Rectangle {
-                                id: vpnProfileRow
-                                required property var modelData
-                                required property int index
+                        StyledText {
+                            text: I18n.tr("No VPN profiles")
+                            font.pixelSize: Theme.fontSizeMedium
+                            color: Theme.surfaceVariantText
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
 
-                                readonly property bool isActive: DMSNetworkService.isActiveVpnUuid(modelData.uuid)
-                                readonly property bool isTransient: !!modelData.transient
-                                readonly property bool canExpand: modelData.canExpand !== false
-                                readonly property bool canDelete: modelData.canDelete !== false
-                                readonly property bool isExpanded: root.expandedVpnUuid === modelData.uuid
-                                readonly property var configData: (!isTransient && isExpanded) ? VPNService.editConfig : null
-
-                                width: parent.width
-                                height: isExpanded ? 56 + vpnExpandedContent.height : 56
-                                radius: Theme.cornerRadius
-                                color: vpnRowArea.containsMouse ? Theme.primaryHoverLight : (isActive ? Theme.primaryPressed : Theme.floatingWindowNestedSurface)
-                                border.width: isActive ? Theme.outlineWidthFocused : Theme.layerOutlineWidth
-                                border.color: isActive ? Theme.primary : Theme.outlineMedium
-                                opacity: DMSNetworkService.isBusy ? 0.6 : 1.0
-                                clip: true
-
-                                Behavior on height {
-                                    NumberAnimation {
-                                        duration: 150
-                                        easing.type: Easing.OutQuad
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: vpnRowArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: DMSNetworkService.isBusy ? Qt.BusyCursor : Qt.PointingHandCursor
-                                    enabled: !DMSNetworkService.isBusy
-                                    onClicked: DMSNetworkService.toggle(modelData.uuid)
-                                }
-
-                                Column {
-                                    anchors.fill: parent
-                                    anchors.margins: Theme.spacingS
-                                    spacing: Theme.spacingS
-
-                                    Row {
-                                        width: parent.width
-                                        height: 56 - Theme.spacingS * 2
-                                        spacing: Theme.spacingS
-
-                                        DankIcon {
-                                            name: isActive ? "vpn_lock" : "vpn_key_off"
-                                            size: 20
-                                            color: isActive ? Theme.primary : Theme.surfaceText
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-
-                                        Column {
-                                            spacing: Theme.spacingXXS
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            width: parent.width - 20 - ((canExpand ? 28 : 0) + (canDelete ? 28 : 0)) - Theme.spacingS * 4
-
-                                            StyledText {
-                                                text: modelData.name
-                                                font.pixelSize: Theme.fontSizeMedium
-                                                font.weight: Theme.fontWeightMedium
-                                                color: isActive ? Theme.primary : Theme.surfaceText
-                                                elide: Text.ElideRight
-                                                width: parent.width
-                                                horizontalAlignment: Text.AlignLeft
-                                            }
-
-                                            StyledText {
-                                                text: VPNService.getVpnTypeFromProfile(modelData)
-                                                font.pixelSize: Theme.fontSizeSmall
-                                                color: Theme.surfaceVariantText
-                                                anchors.left: parent.left
-                                            }
-                                        }
-
-                                        Item {
-                                            width: Theme.spacingXS
-                                            height: 1
-                                        }
-
-                                        Rectangle {
-                                            Accessible.role: Accessible.Button
-                                            Accessible.name: isExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
-                                            width: 28
-                                            height: 28
-                                            radius: Theme.cornerRadiusL
-                                            color: vpnExpandBtn.containsMouse ? Theme.surfacePressed : Theme.withAlpha(Theme.surfacePressed, 0)
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            visible: canExpand
-
-                                            DankIcon {
-                                                anchors.centerIn: parent
-                                                name: isExpanded ? "expand_less" : "expand_more"
-                                                size: 18
-                                                color: Theme.surfaceText
-                                            }
-
-                                            MouseArea {
-                                                id: vpnExpandBtn
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: {
-                                                    if (isExpanded) {
-                                                        root.expandedVpnUuid = "";
-                                                    } else {
-                                                        root.expandedVpnUuid = modelData.uuid;
-                                                        VPNService.getConfig(modelData.uuid);
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        Rectangle {
-                                            Accessible.role: Accessible.Button
-                                            Accessible.name: I18n.tr("Delete")
-                                            width: 28
-                                            height: 28
-                                            radius: Theme.cornerRadiusL
-                                            color: vpnDeleteBtn.containsMouse ? Theme.errorHover : Theme.withAlpha(Theme.errorHover, 0)
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            visible: canDelete
-
-                                            DankIcon {
-                                                anchors.centerIn: parent
-                                                name: "delete"
-                                                size: 18
-                                                color: vpnDeleteBtn.containsMouse ? Theme.error : Theme.surfaceVariantText
-                                            }
-
-                                            MouseArea {
-                                                id: vpnDeleteBtn
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: {
-                                                    root.deleteVpnConfirm.showWithOptions({
-                                                        title: I18n.tr("Delete VPN"),
-                                                        message: I18n.tr("Delete \"%1\"?", "delete confirmation, %1 is a vpn profile or printer name").arg(modelData.name),
-                                                        confirmText: I18n.tr("Delete"),
-                                                        confirmColor: Theme.error,
-                                                        onConfirm: () => VPNService.deleteVpn(modelData.uuid)
-                                                    });
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    Column {
-                                        id: vpnExpandedContent
-                                        width: parent.width
-                                        spacing: Theme.spacingXS
-                                        visible: !isTransient && isExpanded
-
-                                        Item {
-                                            width: parent.width
-                                            height: VPNService.configLoading ? 40 : 0
-                                            visible: VPNService.configLoading
-
-                                            DankSpinner {
-                                                anchors.centerIn: parent
-                                                size: 20
-                                            }
-                                        }
-
-                                        Flow {
-                                            width: parent.width
-                                            spacing: Theme.spacingXS
-                                            visible: !VPNService.configLoading && configData
-
-                                            Repeater {
-                                                model: {
-                                                    if (!configData)
-                                                        return [];
-                                                    const fields = [];
-                                                    const data = configData.data || {};
-
-                                                    if (data.remote)
-                                                        fields.push({
-                                                            label: I18n.tr("Server", "noun, vpn profile detail label, remote server address"),
-                                                            value: data.remote
-                                                        });
-                                                    if (configData.username || data.username)
-                                                        fields.push({
-                                                            label: I18n.tr("Username"),
-                                                            value: configData.username || data.username
-                                                        });
-                                                    if (data.cipher)
-                                                        fields.push({
-                                                            label: I18n.tr("Cipher", "noun, vpn profile detail label, encryption cipher"),
-                                                            value: data.cipher
-                                                        });
-                                                    if (data.auth)
-                                                        fields.push({
-                                                            label: I18n.tr("Auth", "abbreviation of authentication, vpn profile detail label"),
-                                                            value: data.auth
-                                                        });
-                                                    if (data["proto-tcp"] === "yes" || data["proto-tcp"] === "no")
-                                                        fields.push({
-                                                            label: I18n.tr("Protocol"),
-                                                            value: data["proto-tcp"] === "yes" ? "TCP" : "UDP"
-                                                        });
-                                                    if (data["tunnel-mtu"])
-                                                        fields.push({
-                                                            label: "MTU",
-                                                            value: data["tunnel-mtu"]
-                                                        });
-                                                    if (data["connection-type"])
-                                                        fields.push({
-                                                            label: I18n.tr("Auth type"),
-                                                            value: data["connection-type"]
-                                                        });
-                                                    return fields;
-                                                }
-
-                                                delegate: Rectangle {
-                                                    required property var modelData
-                                                    required property int index
-
-                                                    width: vpnFieldContent.width + Theme.spacingM * 2
-                                                    height: 32
-                                                    radius: Theme.cornerRadius - Theme.outlineWidthFocused
-                                                    color: Theme.floatingWindowFieldColor
-                                                    border.width: Theme.outlineWidth
-                                                    border.color: Theme.floatingWindowFieldBorderColor
-
-                                                    Row {
-                                                        id: vpnFieldContent
-                                                        anchors.centerIn: parent
-                                                        spacing: Theme.spacingXS
-
-                                                        StyledText {
-                                                            text: modelData.label + ":"
-                                                            font.pixelSize: Theme.fontSizeSmall
-                                                            color: Theme.surfaceVariantText
-                                                            anchors.verticalCenter: parent.verticalCenter
-                                                        }
-
-                                                        StyledText {
-                                                            text: modelData.value
-                                                            font.pixelSize: Theme.fontSizeSmall
-                                                            color: Theme.surfaceText
-                                                            font.weight: Theme.fontWeightMedium
-                                                            anchors.verticalCenter: parent.verticalCenter
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        DankToggle {
-                                            width: parent.width
-                                            text: I18n.tr("Autoconnect")
-                                            checked: configData ? (configData.autoconnect || false) : false
-                                            visible: !VPNService.configLoading && configData !== null
-                                            onToggled: checked => {
-                                                VPNService.updateConfig(modelData.uuid, {
-                                                    autoconnect: checked
-                                                });
-                                            }
-                                        }
-
-                                        Item {
-                                            width: 1
-                                            height: Theme.spacingXS
-                                        }
-                                    }
-                                }
-                            }
+                        StyledText {
+                            text: I18n.tr("Click Import to add a %1 or %2 file", "VPN import hint, %1 and %2 are file extensions").arg(".ovpn").arg(".conf")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                            anchors.horizontalCenter: parent.horizontalCenter
                         }
                     }
+                }
+            }
+
+            Repeater {
+                model: DMSNetworkService.vpnAvailable ? DMSNetworkService.profiles : []
+
+                VpnProfileDelegate {
+                    required property var modelData
+
+                    profile: modelData
+                    isExpanded: root.expandedVpnUuid === modelData.uuid
+                    onToggleExpand: {
+                        if (root.expandedVpnUuid === modelData.uuid) {
+                            root.expandedVpnUuid = "";
+                            return;
+                        }
+                        root.expandedVpnUuid = modelData.uuid;
+                        VPNService.getConfig(modelData.uuid);
+                    }
+                    onDeleteRequested: root.deleteVpnConfirm.showWithOptions({
+                        title: I18n.tr("Delete VPN"),
+                        message: I18n.tr("Delete \"%1\"?", "delete confirmation, %1 is a vpn profile or printer name").arg(modelData.name),
+                        confirmText: I18n.tr("Delete"),
+                        confirmColor: Theme.error,
+                        onConfirm: () => VPNService.deleteVpn(modelData.uuid)
+                    })
                 }
             }
         }
@@ -456,8 +125,8 @@ Item {
         SettingsFabBar {
             shown: DMSNetworkService.vpnAvailable
 
-            DankFab {
-                text: I18n.tr("Import")
+            DFab {
+                text: I18n.tr("Import VPN")
                 iconName: "add"
                 busy: VPNService.importing
                 enabled: !VPNService.importing

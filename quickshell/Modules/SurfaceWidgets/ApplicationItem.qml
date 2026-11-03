@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Modules.Dock
-import qs.Widgets
 
 Item {
     id: delegateItem
@@ -85,10 +84,9 @@ Item {
             return strip.targetSize + Theme.listItemHeight * 2;
         return strip.targetSize;
     }
-    readonly property real crossSize: itemData.type === "separator" ? strip.iconSize : strip.crossSize
 
-    width: collapsed ? 0 : (strip.isVertical ? crossSize : primarySize)
-    height: collapsed ? 0 : (strip.isVertical ? primarySize : crossSize)
+    width: collapsed ? 0 : (strip.isVertical ? strip.crossSize : primarySize)
+    height: collapsed ? 0 : (strip.isVertical ? primarySize : strip.crossSize)
 
     Behavior on opacity {
         NumberAnimation {
@@ -160,7 +158,6 @@ Item {
         anchors.centerIn: parent
         width: delegateItem.width
         height: delegateItem.height
-        indicatorLane: strip.indicatorLane
         actualIconSize: strip.iconSize * (strip.options.iconSizePercentage ?? 100) / 100
         overflowCount: itemData.overflowCount || 0
         overflowExpanded: strip.overflowExpanded
@@ -175,7 +172,6 @@ Item {
         anchors.centerIn: parent
         width: delegateItem.width
         height: delegateItem.height
-        indicatorLane: strip.indicatorLane
         actualIconSize: strip.iconSize * (strip.options.iconSizePercentage ?? 100) / 100
         dockApps: strip
     }
@@ -187,7 +183,6 @@ Item {
         anchors.centerIn: parent
         width: delegateItem.width
         height: delegateItem.height
-        indicatorLane: strip.indicatorLane
         actualIconSize: strip.iconSize * (strip.options.iconSizePercentage ?? 100) / 100
         dockApps: strip
         contextMenu: strip.trashContextMenu
@@ -201,7 +196,6 @@ Item {
         anchors.centerIn: parent
         width: delegateItem.width
         height: delegateItem.height
-        indicatorLane: strip.indicatorLane
         actualIconSize: strip.iconSize * (strip.options.iconSizePercentage ?? 100) / 100
         appData: itemData
         contextMenu: strip.contextMenu

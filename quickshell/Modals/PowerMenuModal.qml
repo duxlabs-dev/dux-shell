@@ -3,9 +3,9 @@ import qs.Common
 import qs.Modals.Common
 import qs.Services
 import qs.Modules.PowerMenu
-import qs.DankCommon.Session
+import qs.DCommon.Session
 
-DankModal {
+DModal {
     id: root
 
     layerNamespace: "dms:power-menu"
@@ -44,7 +44,7 @@ DankModal {
     customPosition: {
         if (parentBounds.width > 0) {
             const bar = SettingsData.getPrimaryBarConfig();
-            const effectiveBarThickness = Theme.barThickness(bar?.innerPadding ?? 4, CompositorService.getScreenScale(parentScreen));
+            const effectiveBarThickness = Theme.barThickness(bar?.innerPadding ?? SettingsData.barInnerPaddingDefault, CompositorService.getScreenScale(parentScreen));
             const barExclusionZone = effectiveBarThickness + (bar?.spacing ?? 4) + (bar?.bottomGap ?? 0);
             const barPosition = bar?.position ?? SettingsData.Position.Top;
             const screenW = parentScreen?.width ?? 1920;

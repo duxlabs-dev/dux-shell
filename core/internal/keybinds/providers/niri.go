@@ -1,15 +1,20 @@
 package providers
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
+	"maps"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/keybinds"
+	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds"
 	"github.com/sblinch/kdl-go/document"
 )
 
@@ -71,10 +76,10 @@ func (n *NiriProvider) GetCheatSheet() (*keybinds.CheatSheet, error) {
 	sheet := &keybinds.CheatSheet{
 		Title:            "Niri Keybinds",
 		Provider:         n.Name(),
-		ModKey:           result.ModKey,
 		Binds:            categorizedBinds,
 		DMSBindsIncluded: result.DMSBindsIncluded,
 	}
+	sheet.SetMod(niriModKey(result, niriNested()))
 
 	if result.DMSStatus != nil {
 		sheet.DMSStatus = keybinds.DMSBindsStatusFrom(*result.DMSStatus)
@@ -129,6 +134,7 @@ func (n *NiriProvider) categorizeByAction(action string) string {
 		action == "suspend" ||
 		action == "do-screen-transition" ||
 		action == "toggle-keyboard-shortcuts-inhibit" ||
+		action == "toggle-touchpad" ||
 		strings.Contains(action, "dpms"):
 		return "System"
 	case action == "spawn":
@@ -171,6 +177,12 @@ func (n *NiriProvider) convertKeybind(kb *NiriKeyBinding, subcategory string, co
 		AllowWhenLocked: kb.AllowWhenLocked,
 		AllowInhibiting: kb.AllowInhibiting,
 		Repeat:          kb.Repeat,
+		Trigger:         kb.Trigger,
+		PassThrough:     kb.PassThrough,
+	}
+	// Sent back verbatim as --release-action, so argument boundaries must survive.
+	if kb.ReleaseAction != "" {
+		bind.ReleaseAction = formatNiriAction(kb.ReleaseAction, kb.ReleaseArgs)
 	}
 
 	if source == "dms-default" && conflicts != nil {
@@ -187,28 +199,13 @@ func (n *NiriProvider) convertKeybind(kb *NiriKeyBinding, subcategory string, co
 	return bind
 }
 
+// Sent back verbatim to SetBind, so argument boundaries must survive.
 func (n *NiriProvider) formatRawAction(action string, args []string) string {
-	if len(args) == 0 {
-		return action
+	// The shell field rebuilds this quoted, so a bare one-word command would read as edited.
+	if action == "spawn" && len(args) == 3 && args[1] == "-c" && (args[0] == "sh" || args[0] == "bash") {
+		return "spawn " + args[0] + ` -c "` + niriActionArgEscaper.Replace(args[2]) + `"`
 	}
-
-	if action == "spawn" && len(args) >= 3 && args[1] == "-c" {
-		switch args[0] {
-		case "sh", "bash":
-			cmd := strings.Join(args[2:], " ")
-			return fmt.Sprintf("spawn %s -c \"%s\"", args[0], strings.ReplaceAll(cmd, "\"", "\\\""))
-		}
-	}
-
-	quotedArgs := make([]string, len(args))
-	for i, arg := range args {
-		if arg == "" {
-			quotedArgs[i] = `""`
-		} else {
-			quotedArgs[i] = arg
-		}
-	}
-	return action + " " + strings.Join(quotedArgs, " ")
+	return formatNiriAction(action, args)
 }
 
 func (n *NiriProvider) formatKey(kb *NiriKeyBinding) string {
@@ -216,6 +213,63 @@ func (n *NiriProvider) formatKey(kb *NiriKeyBinding) string {
 	parts = append(parts, kb.Mods...)
 	parts = append(parts, kb.Key)
 	return strings.Join(parts, "+")
+}
+
+func (n *NiriProvider) ModKey() keybinds.ModKey {
+	result, err := ParseNiriKeys(n.configDir)
+	if err != nil {
+		return keybinds.DefaultModKey()
+	}
+	return niriModKey(result, niriNested())
+}
+
+// Mirrors niri's Backend::mod_key: nested (winit) sessions use mod-key-nested,
+// falling back to Alt, or to Super when mod-key itself is Alt.
+func niriModKey(result *NiriParseResult, nested bool) keybinds.ModKey {
+	if !nested {
+		return keybinds.ConfiguredModKey("Mod", result.ModKey)
+	}
+	if result.ModKeyNested != "" {
+		return keybinds.ConfiguredModKey("Mod", result.ModKeyNested)
+	}
+	resolved := "Alt"
+	if keybinds.CanonicalModifier(result.ModKey) == "Alt" {
+		resolved = "Super"
+	}
+	return keybinds.ModKey{Symbol: "Mod", Resolved: resolved, Source: keybinds.ModSourceRuntime}
+}
+
+var niriNested = detectNiriNested
+
+// The winit backend exposes a single output named "winit"; niri has no IPC query for its backend.
+func detectNiriNested() bool {
+	socket := os.Getenv("NIRI_SOCKET")
+	if socket == "" {
+		return false
+	}
+	conn, err := net.DialTimeout("unix", socket, time.Second)
+	if err != nil {
+		return false
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(time.Second))
+	if _, err := conn.Write([]byte("\"Outputs\"\n")); err != nil {
+		return false
+	}
+	line, err := bufio.NewReader(conn).ReadBytes('\n')
+	if err != nil {
+		return false
+	}
+	var reply struct {
+		Ok struct {
+			Outputs map[string]json.RawMessage `json:"Outputs"`
+		} `json:"Ok"`
+	}
+	if err := json.Unmarshal(line, &reply); err != nil {
+		return false
+	}
+	_, nested := reply.Ok.Outputs["winit"]
+	return nested
 }
 
 func (n *NiriProvider) GetOverridePath() string {
@@ -257,14 +311,63 @@ func (n *NiriProvider) SetBind(key, action, description string, options map[stri
 		existingBinds = make(map[string]*overrideBind)
 	}
 
-	existingBinds[normalizeNiriBindKey(key)] = &overrideBind{
+	normalizedKey := normalizeNiriBindKey(key)
+	opts := maps.Clone(options)
+	if opts == nil {
+		opts = make(map[string]any)
+	}
+	// A trigger-unaware edit must not make a release-only Mod bind swallow every Mod chord.
+	if old, ok := existingBinds[normalizedKey]; ok {
+		if _, set := opts["trigger"]; !set {
+			for _, name := range []string{"trigger", "release-action", "pass-through"} {
+				if _, set := opts[name]; set {
+					continue
+				}
+				if v, ok := old.Options[name]; ok {
+					opts[name] = v
+				}
+			}
+		}
+	}
+	if err := n.validateBindOptions(key, opts); err != nil {
+		return err
+	}
+
+	existingBinds[normalizedKey] = &overrideBind{
 		Key:         key,
 		Action:      action,
 		Description: description,
-		Options:     options,
+		Options:     opts,
 	}
 
 	return n.writeOverrideBinds(existingBinds)
+}
+
+func (n *NiriProvider) validateBindOptions(key string, opts map[string]any) error {
+	trigger, _ := opts["trigger"].(string)
+	releaseAction, _ := opts["release-action"].(string)
+	switch trigger {
+	case "", "press", niriTriggerRelease:
+		if releaseAction != "" {
+			return fmt.Errorf("a release action requires trigger %q", niriTriggerBoth)
+		}
+	case niriTriggerBoth:
+		if releaseAction == "" {
+			return fmt.Errorf("trigger %q requires a release action", niriTriggerBoth)
+		}
+		if err := n.validateAction(releaseAction); err != nil {
+			return fmt.Errorf("release action: %w", err)
+		}
+	default:
+		return fmt.Errorf("unknown trigger %q (want press, release or both)", trigger)
+	}
+	if (trigger == niriTriggerRelease || trigger == niriTriggerBoth) && isNiriScrollTrigger(key) {
+		return fmt.Errorf("release actions are not supported for scroll binds")
+	}
+	if _, ok := opts["pass-through"]; ok && !isNiriKeyboardTrigger(key) {
+		return fmt.Errorf("pass-through is only supported for keyboard binds")
+	}
+	return nil
 }
 
 func (n *NiriProvider) RemoveBind(key string) error {
@@ -319,7 +422,11 @@ func (n *NiriProvider) loadOverrideBinds() (map[string]*overrideBind, error) {
 			}
 			keyStr := parser.formatBindKey(kb)
 
-			action := n.buildActionFromNode(child)
+			pressNode, releaseNode := niriBoundActions(child)
+			if pressNode == nil {
+				pressNode = releaseNode
+			}
+			action := n.buildActionFromNode(pressNode)
 			if action == "" {
 				action = n.formatRawAction(kb.Action, kb.Args)
 			}
@@ -336,48 +443,61 @@ func (n *NiriProvider) loadOverrideBinds() (map[string]*overrideBind, error) {
 	return binds, nil
 }
 
-func (n *NiriProvider) buildActionFromNode(bindNode *document.Node) string {
-	if len(bindNode.Children) == 0 {
+func (n *NiriProvider) buildActionFromNode(actionNode *document.Node) string {
+	if actionNode == nil {
 		return ""
 	}
 
-	actionNode := bindNode.Children[0]
-	actionName := actionNode.Name.String()
+	actionName, args := niriActionNameArgs(actionNode)
 	if actionName == "" {
 		return ""
 	}
+	return formatNiriAction(actionName, args)
+}
 
-	parts := []string{actionName}
-	for _, arg := range actionNode.Arguments {
-		val := arg.ValueString()
-		if val == "" {
-			parts = append(parts, `""`)
-		} else if strings.ContainsAny(val, " \t") {
-			parts = append(parts, `"`+strings.ReplaceAll(val, `"`, `\"`)+`"`)
-		} else {
-			parts = append(parts, val)
-		}
-	}
-
-	if actionNode.Properties != nil {
-		for _, propName := range niriActionPropertyOrder {
-			if val, ok := actionNode.Properties.Get(propName); ok {
-				parts = append(parts, propName+"="+val.String())
+// Inverse of parseActionParts: positional args are quoted so they split back exactly.
+func formatNiriAction(action string, args []string) string {
+	parts := []string{action}
+	for _, arg := range args {
+		if name, _, ok := strings.Cut(arg, "="); ok {
+			if _, isProp := niriActionProperties[name]; isProp {
+				parts = append(parts, arg)
+				continue
 			}
 		}
+		parts = append(parts, quoteNiriActionArg(arg))
 	}
-
 	return strings.Join(parts, " ")
 }
 
+var niriActionArgEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
+
+func quoteNiriActionArg(arg string) string {
+	if arg != "" && !strings.ContainsAny(arg, " \t\"\\") {
+		return arg
+	}
+	return `"` + niriActionArgEscaper.Replace(arg) + `"`
+}
+
 func (n *NiriProvider) extractOptions(node *document.Node) map[string]any {
-	if node.Properties == nil {
-		return make(map[string]any)
+	opts := make(map[string]any)
+	switch pressNode, releaseNode := niriBoundActions(node); {
+	case pressNode != nil && releaseNode != nil:
+		opts["trigger"] = niriTriggerBoth
+		opts["release-action"] = n.buildActionFromNode(releaseNode)
+	case releaseNode != nil:
+		opts["trigger"] = niriTriggerRelease
 	}
 
-	opts := make(map[string]any)
+	if node.Properties == nil {
+		return opts
+	}
+
 	if val, ok := node.Properties.Get("repeat"); ok {
 		opts["repeat"] = val.String() == "true"
+	}
+	if val, ok := node.Properties.Get("pass-through"); ok {
+		opts["pass-through"] = val.String() == "true"
 	}
 	if val, ok := node.Properties.Get("cooldown-ms"); ok {
 		if ms, err := strconv.Atoi(val.String()); err == nil {
@@ -406,9 +526,21 @@ func (n *NiriProvider) buildBindNode(bind *overrideBind) *document.Node {
 	node := document.NewNode()
 	node.SetName(bind.Key)
 
+	trigger, _ := bind.Options["trigger"].(string)
+	releaseAction, _ := bind.Options["release-action"].(string)
+	if isNiriScrollTrigger(bind.Key) || (trigger == niriTriggerBoth && releaseAction == "") {
+		trigger = ""
+	}
+
 	if bind.Options != nil {
-		if v, ok := bind.Options["repeat"]; ok && v == false {
+		switch v, ok := bind.Options["repeat"]; {
+		case ok && v == false:
 			node.AddProperty("repeat", false, "")
+		case ok && v == true && trigger != niriTriggerRelease:
+			node.AddProperty("repeat", true, "")
+		}
+		if v, ok := bind.Options["pass-through"].(bool); ok {
+			node.AddProperty("pass-through", v, "")
 		}
 		if v, ok := bind.Options["cooldown-ms"]; ok {
 			switch val := v.(type) {
@@ -432,9 +564,23 @@ func (n *NiriProvider) buildBindNode(bind *overrideBind) *document.Node {
 		node.AddProperty("hotkey-overlay-title", bind.Description, "")
 	}
 
-	actionNode := n.buildActionNode(bind.Action)
-	node.AddNode(actionNode)
+	switch trigger {
+	case niriTriggerRelease:
+		node.AddNode(n.wrapActionNode("release", bind.Action))
+	case niriTriggerBoth:
+		node.AddNode(n.wrapActionNode("press", bind.Action))
+		node.AddNode(n.wrapActionNode("release", releaseAction))
+	default:
+		node.AddNode(n.buildActionNode(bind.Action))
+	}
 
+	return node
+}
+
+func (n *NiriProvider) wrapActionNode(section, action string) *document.Node {
+	node := document.NewNode()
+	node.SetName(section)
+	node.AddNode(n.buildActionNode(action))
 	return node
 }
 
@@ -603,22 +749,42 @@ func (n *NiriProvider) writeBindNode(sb *strings.Builder, bind *overrideBind, in
 		sb.WriteString(strings.TrimLeft(node.Properties.String(), " "))
 	}
 
-	sb.WriteString(" { ")
-	if len(node.Children) > 0 {
-		child := node.Children[0]
-		actionName := child.Name.String()
-		sb.WriteString(actionName)
-		forceQuote := actionName == "spawn"
-		for _, arg := range child.Arguments {
-			sb.WriteString(" ")
-			n.writeArg(sb, arg.ValueString(), forceQuote)
-		}
-		if child.Properties.Exist() {
-			sb.WriteString(" ")
-			sb.WriteString(strings.TrimLeft(child.Properties.String(), " "))
-		}
+	pressNode, releaseNode := niriBoundActions(node)
+	if releaseNode == nil {
+		sb.WriteString(" { ")
+		n.writeActionNode(sb, pressNode)
+		sb.WriteString("; }\n")
+		return
 	}
+
+	// niri rejects the one-line `Mod { release { x; } }`; the section must close on its own line.
+	sb.WriteString(" {\n")
+	if pressNode != nil {
+		sb.WriteString(indent + "    press { ")
+		n.writeActionNode(sb, pressNode)
+		sb.WriteString("; }\n")
+	}
+	sb.WriteString(indent + "    release { ")
+	n.writeActionNode(sb, releaseNode)
 	sb.WriteString("; }\n")
+	sb.WriteString(indent + "}\n")
+}
+
+func (n *NiriProvider) writeActionNode(sb *strings.Builder, actionNode *document.Node) {
+	if actionNode == nil {
+		return
+	}
+	actionName := actionNode.Name.String()
+	sb.WriteString(actionName)
+	forceQuote := actionName == "spawn"
+	for _, arg := range actionNode.Arguments {
+		sb.WriteString(" ")
+		n.writeArg(sb, arg.ValueString(), forceQuote)
+	}
+	if actionNode.Properties.Exist() {
+		sb.WriteString(" ")
+		sb.WriteString(strings.TrimLeft(actionNode.Properties.String(), " "))
+	}
 }
 
 func (n *NiriProvider) writeArg(sb *strings.Builder, val string, forceQuote bool) {
@@ -627,7 +793,7 @@ func (n *NiriProvider) writeArg(sb *strings.Builder, val string, forceQuote bool
 		return
 	}
 	sb.WriteString("\"")
-	sb.WriteString(strings.ReplaceAll(val, "\"", "\\\""))
+	sb.WriteString(niriActionArgEscaper.Replace(val))
 	sb.WriteString("\"")
 }
 
@@ -663,11 +829,13 @@ func (n *NiriProvider) validateBindsContent(content string) error {
 	}
 	tmpFile.Close()
 
-	cmd := exec.Command("niri", "validate", "-c", tmpFile.Name())
-	output, err := cmd.CombinedOutput()
-	if err != nil {
+	if output, err := niriValidate(tmpFile.Name()); err != nil {
 		return fmt.Errorf("invalid config: %s", strings.TrimSpace(string(output)))
 	}
 
 	return nil
+}
+
+var niriValidate = func(path string) ([]byte, error) {
+	return exec.Command("niri", "validate", "-c", path).CombinedOutput()
 }

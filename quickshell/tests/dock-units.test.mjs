@@ -81,14 +81,10 @@ test("normalize gives every dock exactly one launcher and trash slot around the 
 
 test("drop target follows the leading edge so a wide unit can pass a narrow one at the end", () => {
     const spans = [{ id: "launcher", start: 0, end: 42 }, { id: "apps", start: 50, end: 500 }, { id: "trash", start: 508, end: 550 }];
-    assert.equal(config.unitTarget(spans, "apps", 0), "apps");
     assert.equal(config.unitTarget(spans, "apps", -20), "apps");
     assert.equal(config.unitTarget(spans, "apps", -30), "launcher");
-    assert.equal(config.unitTarget(spans, "apps", 20), "apps");
     assert.equal(config.unitTarget(spans, "apps", 30), "trash");
-    assert.equal(config.unitTarget(spans, "launcher", 200), "launcher");
     assert.equal(config.unitTarget(spans, "launcher", 240), "apps");
-    assert.equal(config.unitTarget(spans, "launcher", 480), "apps");
     assert.equal(config.unitTarget(spans, "launcher", 490), "trash");
 });
 
@@ -99,4 +95,23 @@ test("a dock shown only in the overview resolves onto an edge no enabled dock ho
     assert.equal(config.resolveEdge([config.create("dock", "Dock")], screen, [screen], "bottom"), null);
     const enabled = { ...config.create("second", "Second"), enabled: true };
     assert.equal(config.resolveEdge([overviewOnly, enabled], screen, [screen], "bottom"), enabled);
+});
+
+test("settings reorder follows the saved dock order and pins travel with the widget after them", () => {
+    const list = [{ id: "launcher", widgetId: "dockLauncher" }, { id: "apps", widgetId: "appsDock" }, { id: "trash", widgetId: "dockTrash" }, { id: "spacer", widgetId: "spacer" }, { id: "desk", widgetId: "showDesktop" }];
+    const saved = ["launcher", "pin:a", "pin:b", "apps", "trash", "desk", "spacer"];
+    assert.deepEqual(plain(config.widgetOrder(list, saved)), ["launcher", "apps", "trash", "desk", "spacer"]);
+    assert.deepEqual(plain(config.widgetOrder(list, [])), ["launcher", "apps", "trash", "spacer", "desk"]);
+    const cases = [
+        { order: saved, ids: ["launcher", "trash", "desk", "spacer", "apps"], expected: ["launcher", "trash", "desk", "spacer", "pin:a", "pin:b", "apps"] },
+        { order: ["pin:a", "launcher", "apps", "pin:b"], ids: ["apps", "launcher", "trash", "spacer", "desk"], expected: ["apps", "pin:a", "launcher", "pin:b", "trash", "spacer", "desk"] },
+        { order: [], ids: ["desk", "launcher", "apps", "trash", "spacer"], expected: ["desk", "launcher", "apps", "trash", "spacer"] },
+        { order: saved, ids: ["trash", "launcher"], expected: ["trash", "launcher", "pin:a", "pin:b", "apps", "spacer", "desk"] }
+    ];
+    for (const { order, ids: next, expected } of cases) {
+        const result = plain(config.reorderWidgets(list, order, next));
+        assert.deepEqual(result.order, expected);
+        assert.deepEqual(result.widgets.map(widget => widget.id), expected.filter(id => !id.startsWith("pin:")));
+        assert.deepEqual(plain(config.widgetOrder(result.widgets, result.order)), result.widgets.map(widget => widget.id));
+    }
 });

@@ -1,12 +1,12 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Plugins
 
 PluginComponent {
     id: root
     horizontalBarPill: Component {
-        DankIcon {
+        DIcon {
             name: "sticky_note_2"
             size: root.iconSize
         }
@@ -22,12 +22,12 @@ PluginComponent {
                 color: Theme.surfaceText
                 font.pixelSize: Theme.fontSizeLarge
             }
-            DankTextField {
+            DTextField {
                 width: parent.width - Theme.spacingM * 2
                 placeholderText: I18n.trFor("attachedPanelExample", "Type here…")
                 Accessible.name: I18n.trFor("attachedPanelExample", "Notes")
             }
-            DankButton {
+            DButton {
                 text: I18n.trFor("attachedPanelExample", "Close")
                 onClicked: root.surfaceContext.dismissExpansion()
             }

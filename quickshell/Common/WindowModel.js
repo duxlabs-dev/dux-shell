@@ -134,13 +134,18 @@ function hyprlandWindowPid(hyprToplevels, toplevel) {
     return hyprToplevels.find(t => t.wayland === toplevel)?.lastIpcObject?.pid || 0;
 }
 
+// Same identity as WorkspaceModel.hyprlandKey: Quickshell reports -1 for every named workspace on Hyprland 0.57
+function hyprlandWorkspaceKey(ws) {
+    return ws.id > 0 ? ws.id : ws.address || ws.name;
+}
+
 function hyprlandWindowOnActiveWorkspace(hyprToplevels, focusedWorkspace, toplevel) {
     if (!focusedWorkspace)
         return false;
     const hyprToplevel = hyprToplevels.find(t => t?.wayland === toplevel);
     if (!hyprToplevel || !hyprToplevel.workspace)
         return false;
-    return hyprToplevel.workspace.id === focusedWorkspace.id;
+    return hyprlandWorkspaceKey(hyprToplevel.workspace) === hyprlandWorkspaceKey(focusedWorkspace);
 }
 
 function hyprlandSpecialWorkspaceName(hyprToplevels, toplevel) {

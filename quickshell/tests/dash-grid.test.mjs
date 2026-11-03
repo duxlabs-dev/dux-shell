@@ -59,6 +59,14 @@ test("cards without a cell take the first free one and cells clamp to the column
     assert.deepEqual(plain(grid.packCells([{ id: "a", w: 1, h: 1, col: 0.5, row: 1.5 }], [0], 4, null, 0.5).cells[0]), { col: 0.5, row: 1.5, cols: 1, rows: 1 });
 });
 
+test("gravity pulls positioned cards up into holes without jumping over blockers", () => {
+    const board = [{ id: "a", w: 2, h: 1, col: 0, row: 0 }, { id: "b", w: 2, h: 1, col: 2, row: 0 }, { id: "c", w: 2, h: 1, col: 0, row: 2 }, { id: "d", w: 2, h: 1, col: 2, row: 3 }];
+    assert.deepEqual(plain(grid.packCells(board, [0, 1, 2, 3], 6).cells.map(c => [c.col, c.row])), [[0, 0], [2, 0], [0, 2], [2, 3]]);
+    assert.deepEqual(plain(grid.packCells(board, [0, 1, 2, 3], 6, null, 1, true).cells.map(c => [c.col, c.row])), [[0, 0], [2, 0], [0, 1], [2, 1]]);
+    const blocked = [{ id: "a", w: 2, h: 1, col: 0, row: 1 }, { id: "b", w: 2, h: 1, col: 0, row: 3 }];
+    assert.deepEqual(plain(grid.packCells(blocked, [1, 0], 6, null, 1, true).cells.map(c => [c.col, c.row])), [[0, 0], [0, 1]]);
+});
+
 test("a dragged tile snaps to the cell under its corner", () => {
     const layout = grid.packCards(cards, order, 6, 600, 0, 100, false);
     assert.deepEqual(plain(grid.cellAt(layout, 240, 160, 2, 1)), { col: 2, row: 2 });
@@ -71,4 +79,39 @@ test("panel step follows the pointer and holds on a pinned edge", () => {
     const rightEdge = step => Math.min(1000, 500 + step * 36);
     assert.equal(grid.nearestStep(rightEdge, 8, 6, 30, rightEdge(8) + 50), 9);
     assert.equal(grid.nearestStep(rightEdge, 20, 6, 30, 1400), 20);
+});
+
+const dropped = (cells, index, target, columns = 2, step = 1) => {
+    const items = cells.map((cell, i) => ({ id: String(i), w: cell.cols, h: cell.rows, col: cell.col, row: cell.row }));
+    const moved = items.map((item, i) => i === index ? Object.assign({}, item, target) : item);
+    const order = [index].concat(items.map((item, i) => i).filter(i => i !== index));
+    const pack = trial => grid.packCells(trial, order, columns, null, step, true).cells;
+    return plain(pack(grid.dropInto(moved, cells, index, target, pack, step)).map(cell => [cell.col, cell.row]));
+};
+
+test("a tile dragged down its own stack lands where dropped instead of back above the tile it covers", () => {
+    const cells = [{ col: 0, row: 0, cols: 1, rows: 1 }, { col: 0, row: 1, cols: 1, rows: 1 }, { col: 0, row: 2, cols: 1, rows: 2 }];
+    assert.deepEqual(dropped(cells, 0, { col: 0, row: 1 }), [[0, 1], [0, 0], [0, 2]]);
+    assert.deepEqual(dropped(cells, 0, { col: 0, row: 2 }), [[0, 3], [0, 0], [0, 1]]);
+    assert.deepEqual(dropped(cells, 2, { col: 0, row: 0 }), [[0, 2], [0, 3], [0, 0]]);
+    assert.deepEqual(dropped(cells, 1, { col: 0, row: 2 }), [[0, 0], [0, 3], [0, 1]]);
+});
+
+test("a half-width tile dragged down beside a blocked stack moves one step per half row", () => {
+    const cells = [{ col: 0, row: 0, cols: 1, rows: 1 }, { col: 1, row: 0, cols: 0.5, rows: 1 }, { col: 1.5, row: 0, cols: 0.5, rows: 1 }, { col: 0, row: 1, cols: 2, rows: 1 }, { col: 0, row: 2, cols: 2, rows: 1 }];
+    const rowOf = target => dropped(cells, 1, { col: 1, row: target }, 2, 0.5)[1][1];
+    assert.deepEqual([1, 1.5, 2, 2.5, 3].map(rowOf), [2, 2, 2, 3, 3]);
+});
+
+test("a tile dragged down from another column lands where dropped unless gravity would lift it back", () => {
+    const cells = [{ col: 0, row: 0, cols: 1, rows: 1 }, { col: 0, row: 1, cols: 1, rows: 1 }, { col: 0, row: 2, cols: 1, rows: 1 }, { col: 1, row: 0, cols: 1, rows: 1 }];
+    const items = cells.map((cell, i) => ({ id: "abcd"[i], col: cell.col, row: cell.row }));
+    const drop = (index, target) => {
+        const moved = items.map((item, i) => i === index ? Object.assign({}, item, target) : item);
+        const order = [index].concat(items.map((item, i) => i).filter(i => i !== index));
+        const pack = trial => grid.packCells(trial, order, 2, null, 1, true).cells;
+        return plain(grid.packCells(grid.dropInto(moved, cells, index, target, pack), order, 2, null, 1, true).cells.map(cell => [cell.col, cell.row]));
+    };
+    assert.deepEqual(drop(3, { col: 0, row: 1 }), [[0, 0], [0, 2], [0, 3], [0, 1]]);
+    assert.deepEqual(drop(0, { col: 0, row: 1 }), [[0, 1], [0, 0], [0, 2], [1, 0]]);
 });

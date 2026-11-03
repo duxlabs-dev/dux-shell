@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell.Widgets
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 ClippingRectangle {
     id: thumbnail
@@ -240,7 +240,7 @@ ClippingRectangle {
         }
     }
 
-    DankIcon {
+    DIcon {
         visible: !(entryType === "image" && thumbnailImage.status === Image.Ready && thumbnailImage.source != "")
         name: {
             switch (entryType) {

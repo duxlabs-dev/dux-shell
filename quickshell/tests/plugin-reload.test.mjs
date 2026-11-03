@@ -23,14 +23,20 @@ function service({ enabled = true, type = "widget" } = {}) {
         pluginSurfaceKeys: ["widget", "desktop", "daemon", "launcher", "dash", "dashCard"],
         log: { error() {}, warn() {} },
         Paths: { toFileUrl: path => path.startsWith("file://") ? path : "file://" + path },
-        SettingsData: { getPluginSetting: () => enabled },
-        DMSService: { update: (id, callback) => requests.push(callback) },
+        SettingsData: { getPluginSetting: () => enabled, setPluginSetting() {} },
+        DMSService: { update: (id, callback) => requests.push(callback), installedPlugins: [] },
+        ShellVersionService: { checkVersionRequirement: requirement => !requirement.startsWith(">=99"), getParsedShellVersion: () => ({}) },
         Component: { Error: 3, PreferSynchronous: 0 },
-        I18n: { tr: text => ({ arg: value => text.replace("%1", value) }) },
+        I18n: { tr: text => Object.assign(new String(text), { arg: value => text.replace("%1", value) }) },
         ToastService: { showError() {} },
+        // Like Qt's type loader, a URL keeps whatever it first compiled to, errors included.
         Qt: { createComponent(url) {
-            if (!compiled.has(url))
-                compiled.set(url, { value: files.get(url.split("?")[0]), createObject() { return this.value; }, destroy() { destroyed.push(url); } });
+            if (!compiled.has(url)) {
+                const value = files.get(url.split("?")[0]);
+                compiled.set(url, value instanceof Error
+                    ? { status: 3, errorString: () => value.message, destroy() {} }
+                    : { value, createObject() { return this.value; }, destroy() { destroyed.push(url); } });
+            }
             return compiled.get(url);
         } },
         pluginLoaded() {}, pluginUnloaded() {}, pluginListUpdated() {},
@@ -65,6 +71,19 @@ test("successful updates replace cached components and reread the manifest", () 
     pending.shift()();
     assert.equal(context.pluginWidgetComponents.fixture.value, 16);
     assert.equal(context.availablePlugins.fixture.version, "2.0.0");
+});
+
+test("an update whose registry entry needs a newer shell is refused before the download", () => {
+    const { context, requests, pending } = service();
+    context.DMSService.installedPlugins = [{ id: "fixture", requires_dms: ">=99.0.0" }];
+    let response;
+    context.updatePlugin("fixture", value => response = value);
+    assert.equal(requests.length, 0);
+    assert.equal(pending.length, 0);
+    assert.match(response.error, /99\.0\.0/);
+    context.DMSService.installedPlugins = [{ id: "fixture", requires_dms: ">=1.0.0" }];
+    context.updatePlugin("fixture");
+    assert.equal(requests.length, 1);
 });
 
 test("failed updates preserve the running plugin and forward the error", () => {
@@ -176,6 +195,33 @@ test("updated startup checks still prevent activation on failure", () => {
     context.forceRescanPlugin("fixture");
     pending.shift()();
     assert.equal(context.isPluginLoaded("fixture"), true);
+    files.set("file:///plugins/fixture/Check.qml", {
+        check: () => "dependency removed",
+        destroy() {}
+    });
+    context.reloadPlugin("fixture");
+    assert.equal(context.isPluginLoaded("fixture"), false);
+    assert.equal(failures.at(-1), "dependency removed");
+});
+
+test("startup checks that cannot run prevent activation", () => {
+    const { context, files, pending, manifest, failures } = service();
+    const createComponent = context.Qt.createComponent;
+    context.Qt.createComponent = url => url.startsWith("file:///plugins/fixture/Broken.qml") ? { status: 3, errorString: () => "module missing" } : createComponent(url);
+    const cases = [
+        ["./Broken.qml", null, "module missing"],
+        ["./Check.qml", { destroy() {} }, "startupCheck has no check function"],
+        ["./Check.qml", { check() { throw new Error("sync throw"); }, destroy() {} }, "sync throw"],
+        ["./Check.qml", { check(done) { throw new Error("async throw"); }, destroy() {} }, "async throw"]
+    ];
+    for (const [path, probe, error] of cases) {
+        manifest.startupCheck = path;
+        files.set("file:///plugins/fixture/Check.qml", probe);
+        context.forceRescanPlugin("fixture");
+        pending.shift()();
+        assert.equal(context.isPluginLoaded("fixture"), false, error);
+        assert.equal(failures.at(-1), error);
+    }
 });
 
 test("composite updates refresh every surface without creating daemons synchronously", () => {
@@ -190,5 +236,42 @@ test("composite updates refresh every surface without creating daemons synchrono
         for (const key of ["pluginWidgetComponents", "pluginDesktopComponents", "pluginDaemonComponents", "pluginLauncherComponents", "pluginDashComponents", "pluginDashCardComponents"])
             assert.equal(context[key].fixture.value, value);
         assert.equal(context.pluginDaemonInstances.fixture, undefined);
+    }
+});
+
+test("enabling again after a failed load compiles the fixed files", () => {
+    const cases = [
+        ["Widget.qml", {}, "pluginWidgetComponents"],
+        ["Check.qml", { startupCheck: "./Check.qml" }, "pluginWidgetComponents"]
+    ];
+    for (const [file, extra, key] of cases) {
+        const { context, files, pending, manifest, failures } = service({ enabled: false });
+        Object.assign(manifest, extra);
+        context.forceRescanPlugin("fixture");
+        pending.shift()();
+        files.set("file:///plugins/fixture/" + file, new Error("Script unavailable"));
+        assert.equal(context.enablePlugin("fixture") && context.isPluginLoaded("fixture"), false, file);
+        assert.match(failures.at(-1), /Script unavailable/, file);
+        files.set("file:///plugins/fixture/Widget.qml", 30);
+        files.set("file:///plugins/fixture/Check.qml", { check: () => null, destroy() {} });
+        context.enablePlugin("fixture");
+        assert.equal(context.isPluginLoaded("fixture"), true, file);
+        assert.equal(context[key].fixture.value, 30, file);
+    }
+});
+
+test("a stale directory listing explains that the shell needs a restart", () => {
+    const cases = [
+        ["Script file:///plugins/fixture/Helper.js unavailable\nfile:///plugins/fixture/Helper.js: File name case mismatch", /Restart DMS/],
+        ["Widget.qml:3:1: Type Helper unavailable", /^$/]
+    ];
+    for (const [message, details] of cases) {
+        const { context, files } = service({ enabled: false });
+        const errors = [];
+        context._setLoadError = (id, error) => errors.push(error);
+        files.set("file:///plugins/fixture/Widget.qml", new Error(message));
+        assert.equal(context.loadPlugin("fixture"), false);
+        assert.equal(errors.at(-1).title, message);
+        assert.match(String(errors.at(-1).details), details);
     }
 });

@@ -1,6 +1,6 @@
 .pragma library
-.import "../../DankCommon/Common/settings/SharedSessionSpec.js" as Shared
-.import "../../DankCommon/Common/settings/SpecUtil.js" as Util
+.import "../../DCommon/Common/settings/SharedSessionSpec.js" as Shared
+.import "../../DCommon/Common/settings/SpecUtil.js" as Util
 
 var LOCAL_SPEC = {
     doNotDisturb: {
@@ -24,11 +24,17 @@ var LOCAL_SPEC = {
     idleInhibitedUntil: {
         def: 0
     },
-    terminalOverride: {
+    updaterNotifiedUnix: {
+        def: 0
+    },
+    updaterNotifiedCount: {
+        def: 0
+    },
+    repoMoveNoticeVersion: {
         def: ""
     },
-    perModeWallpaper: {
-        def: false
+    terminalOverride: {
+        def: ""
     },
     wallpaperPathLight: {
         def: ""
@@ -54,6 +60,9 @@ var LOCAL_SPEC = {
     wallpaperCyclingRandom: {
         def: false
     },
+    wallpaperCyclingRecursive: {
+        def: false
+    },
     wallpaperCyclingMode: {
         def: "interval"
     },
@@ -65,6 +74,9 @@ var LOCAL_SPEC = {
     },
     wallpaperCyclingFolderPath: {
         def: ""
+    },
+    wallpaperCyclingVideoEnd: {
+        def: false
     },
     monitorCyclingSettings: {
         def: {}
@@ -241,7 +253,7 @@ var LOCAL_SPEC = {
     desktopWidgetGridSettings: {
         def: {}
     },
-    desktopWidgetInstancePositions: {
+    lockScreenWidgetGridSettings: {
         def: {}
     },
     islandFreePositions: {

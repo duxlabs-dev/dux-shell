@@ -1,9 +1,9 @@
 import QtQuick
 import qs.Common
 import qs.Modals.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
-DankModal {
+DModal {
     id: root
 
     layerNamespace: "dms:input-modal"
@@ -75,7 +75,7 @@ DankModal {
         });
     }
 
-    content: DankDialog {
+    content: DDialog {
         id: inputDialog
         property alias textInputRef: textInput
 
@@ -84,7 +84,7 @@ DankModal {
         onAccepted: root.confirmAndClose()
         onRejected: root.cancelAndClose()
 
-        DankTextField {
+        DTextField {
             id: textInput
 
             width: parent.width
@@ -98,7 +98,7 @@ DankModal {
         }
 
         actions: [
-            DankButton {
+            DButton {
                 maximumWidth: inputDialog.actionWidth
                 wrapText: true
                 text: root.cancelButtonText
@@ -106,7 +106,7 @@ DankModal {
                 textColor: Theme.primary
                 onClicked: root.cancelAndClose()
             },
-            DankButton {
+            DButton {
                 maximumWidth: inputDialog.actionWidth
                 wrapText: true
                 text: root.confirmButtonText

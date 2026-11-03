@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -16,7 +16,8 @@ const (
 
 	metricPreferred    = int64(100)
 	metricNonPreferred = int64(300)
-	metricDefault      = int64(100)
+	// -1 lets NetworkManager pick the metric by device type (nm-settings ipv4.route-metric)
+	metricDefault = int64(-1)
 )
 
 func (m *Manager) SetConnectionPreference(pref ConnectionPreference) error {
@@ -46,7 +47,7 @@ func (m *Manager) SetConnectionPreference(pref ConnectionPreference) error {
 	case PreferenceCellular:
 		return m.prioritizeCellular()
 	case PreferenceAuto:
-		return m.balancePriorities()
+		return m.restoreDefaultPriorities()
 	}
 
 	return nil
@@ -112,7 +113,7 @@ func (m *Manager) prioritizeCellular() error {
 	return nil
 }
 
-func (m *Manager) balancePriorities() error {
+func (m *Manager) restoreDefaultPriorities() error {
 	if err := m.setConnectionPriority("802-3-ethernet", priorityDefault, metricDefault); err != nil {
 		log.Warnf("Failed to reset Ethernet priority: %v", err)
 	}
@@ -242,16 +243,20 @@ func (m *Manager) setConnectionPriority(connType string, autoconnectPriority int
 }
 
 func priorityMatches(variant dbus.Variant, expected int64) bool {
-	value, ok := variantInt64(variant)
-	return ok && value == expected
+	return settingInt64(variant, int64(priorityDefault)) == expected
 }
 
 func routeMetricMatches(section map[string]dbus.Variant, expected int64) bool {
-	if section == nil {
-		return false
+	return settingInt64(section["route-metric"], metricDefault) == expected
+}
+
+// GetSettings omits properties at their default, so a missing key is the default value
+func settingInt64(variant dbus.Variant, def int64) int64 {
+	value, ok := variantInt64(variant)
+	if !ok {
+		return def
 	}
-	value, ok := variantInt64(section["route-metric"])
-	return ok && value == expected
+	return value
 }
 
 func variantInt64(variant dbus.Variant) (int64, bool) {

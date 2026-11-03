@@ -48,8 +48,8 @@ jobs:
           COMMITS: ${{ toJSON(github.event.commits) }}
         run: |
           set -euo pipefail
-          git config user.name "dms-ci[bot]"
-          git config user.email "dms-ci[bot]@users.noreply.github.com"
+          git config user.name "dux-ci[bot]"
+          git config user.email "344434142+dux-ci[bot]@users.noreply.github.com"
 
           for sha in $(jq -r '.[].id' <<<"$COMMITS"); do
             git cat-file -e "$sha" 2>/dev/null || continue
@@ -86,8 +86,8 @@ jobs:
           PORT_SOURCE_PR: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          git config user.name "dms-ci[bot]"
-          git config user.email "dms-ci[bot]@users.noreply.github.com"
+          git config user.name "dux-ci[bot]"
+          git config user.email "344434142+dux-ci[bot]@users.noreply.github.com"
 
           targets=$(jq -r '.[] | select(startswith("port ")) | sub("^port +"; "")' <<<"$LABELS" |
             sed -E 's,^stable-,,' | sort -u)

@@ -1,14 +1,16 @@
 package network
 
 import (
+	"bufio"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/errdefs"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/errdefs"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 )
 
 // Event strings per WPA_EVENT_* in contrib/wpa/src/common/wpa_ctrl.h
@@ -26,10 +28,154 @@ const (
 	wpaMonitorReconnectDelay = 2 * time.Second
 )
 
+const freeBSDRouteRefreshDebounce = 250 * time.Millisecond
+
 type wpaEvent struct {
 	priority int
 	name     string
 	args     string
+}
+
+func isRelevantFreeBSDRouteEvent(line string) bool {
+	return strings.Contains(line, "RTM_IFINFO") ||
+		strings.Contains(line, "RTM_NEWADDR") ||
+		strings.Contains(line, "RTM_DELADDR") ||
+		strings.Contains(line, "RTM_IFANNOUNCE")
+}
+
+func (b *WpaSupplicantBackend) startEthernetMonitor() error {
+	cmd := exec.Command("/sbin/route", "-n", "monitor")
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("failed to open route monitor output: %w", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start route monitor: %w", err)
+	}
+
+	b.sigWG.Add(1)
+	go func() {
+		defer b.sigWG.Done()
+
+		processDone := make(chan error, 1)
+		go func() {
+			processDone <- cmd.Wait()
+		}()
+
+		// Kill the route monitor when the backend shuts down. cmd.Wait above
+		// remains responsible for reaping the child process.
+		go func() {
+			select {
+			case <-b.stopChan:
+				if cmd.Process != nil {
+					_ = cmd.Process.Kill()
+				}
+			case <-processDone:
+			}
+		}()
+
+		refresh := make(chan struct{}, 1)
+		scanDone := make(chan struct{})
+
+		go func() {
+			defer close(scanDone)
+
+			scanner := bufio.NewScanner(stdout)
+			for scanner.Scan() {
+				if !isRelevantFreeBSDRouteEvent(scanner.Text()) {
+					continue
+				}
+
+				// A single interface transition can generate several route
+				// messages. Queue at most one pending refresh and debounce
+				// the burst before rescanning interfaces.
+				select {
+				case refresh <- struct{}{}:
+				default:
+				}
+			}
+
+			if err := scanner.Err(); err != nil {
+				select {
+				case <-b.stopChan:
+				default:
+					log.Warnf("FreeBSD route monitor read failed: %v", err)
+				}
+			}
+		}()
+
+		var debounce *time.Timer
+		var debounceC <-chan time.Time
+
+		stopDebounce := func() {
+			if debounce == nil {
+				return
+			}
+
+			if !debounce.Stop() {
+				select {
+				case <-debounce.C:
+				default:
+				}
+			}
+
+			debounceC = nil
+		}
+
+		defer stopDebounce()
+
+		for {
+			select {
+			case <-b.stopChan:
+				return
+
+			case err := <-processDone:
+				if err != nil {
+					select {
+					case <-b.stopChan:
+					default:
+						log.Warnf("FreeBSD route monitor stopped: %v", err)
+					}
+				}
+				return
+
+			case <-scanDone:
+				// stdout closed. The processDone case will normally follow,
+				// but there is nothing left to monitor meanwhile.
+				return
+
+			case <-refresh:
+				if debounce == nil {
+					debounce = time.NewTimer(freeBSDRouteRefreshDebounce)
+					debounceC = debounce.C
+					continue
+				}
+
+				if !debounce.Stop() {
+					select {
+					case <-debounce.C:
+					default:
+					}
+				}
+
+				debounce.Reset(freeBSDRouteRefreshDebounce)
+				debounceC = debounce.C
+
+			case <-debounceC:
+				debounceC = nil
+
+				b.updateEthernetState()
+
+				if b.onStateChange != nil {
+					b.onStateChange()
+				}
+			}
+		}
+	}()
+
+	return nil
 }
 
 func parseWpaEventLine(line string) (wpaEvent, bool) {
@@ -53,7 +199,11 @@ func parseWpaEventLine(line string) (wpaEvent, bool) {
 		return wpaEvent{}, false
 	}
 
-	return wpaEvent{priority: priority, name: name, args: args}, true
+	return wpaEvent{
+		priority: priority,
+		name:     name,
+		args:     args,
+	}, true
 }
 
 // Args format: id=%d ssid="%s" auth_failures=%u duration=%d reason=%s, per
@@ -86,20 +236,30 @@ func indexUnescapedQuote(s string) int {
 			return i
 		}
 	}
+
 	return -1
 }
 
 func (b *WpaSupplicantBackend) StartMonitoring(onStateChange func()) error {
 	b.onStateChange = onStateChange
 
+	// Ethernet is independent of wpa_supplicant. On FreeBSD an Ethernet-only
+	// machine (or a machine whose wlan clone is not configured yet) still needs
+	// link/address updates, but should not poll interfaces for the shell lifetime.
+	if b.cmd == nil || b.ifname == "" {
+		return b.startEthernetMonitor()
+	}
+
 	monitor, err := newWpaCtrlConn(filepath.Join(b.ctrlDir, b.ifname))
 	if err != nil {
 		return fmt.Errorf("failed to open wpa_ctrl monitor socket: %w", err)
 	}
+
 	if err := monitor.attach(); err != nil {
 		monitor.close()
 		return fmt.Errorf("failed to attach wpa_ctrl monitor: %w", err)
 	}
+
 	b.monitor = monitor
 
 	b.sigWG.Add(1)
@@ -123,13 +283,16 @@ func (b *WpaSupplicantBackend) monitorLoop() {
 		}
 
 		msg, err := b.monitor.readDatagram(wpaMonitorReadTimeout)
+
 		switch {
 		case err == nil:
 			lastActivity = time.Now()
+
 			if strings.HasPrefix(msg, "<") {
 				b.handleEvent(msg)
 				continue
 			}
+
 			if msg == "PONG" {
 				pingOutstanding = false
 			}
@@ -141,12 +304,14 @@ func (b *WpaSupplicantBackend) monitorLoop() {
 				lastActivity = time.Now()
 				continue
 			}
+
 			if !pingOutstanding && time.Since(lastActivity) > wpaMonitorPingInterval {
 				if b.monitor.send("PING") != nil {
 					b.reattachMonitor()
 					lastActivity = time.Now()
 					continue
 				}
+
 				pingOutstanding = true
 				pingSent = time.Now()
 			}
@@ -185,9 +350,11 @@ func (b *WpaSupplicantBackend) reattachMonitor() {
 	if err := b.updateSavedWiFiNetworks(); err != nil {
 		log.Warnf("failed to refresh saved networks after wpa reattach: %v", err)
 	}
+
 	if err := b.updateState(); err != nil {
 		log.Warnf("failed to refresh state after wpa reattach: %v", err)
 	}
+
 	if b.onStateChange != nil {
 		b.onStateChange()
 	}
@@ -202,10 +369,13 @@ func (b *WpaSupplicantBackend) handleEvent(raw string) {
 	switch event.name {
 	case wpaEventScanResults:
 		b.handleScanResults()
+
 	case wpaEventConnected:
 		b.handleConnected()
+
 	case wpaEventDisconnected:
 		b.handleDisconnected()
+
 	case wpaEventTempDisabled:
 		b.handleTempDisabled(event.args)
 	}
@@ -237,17 +407,20 @@ func (b *WpaSupplicantBackend) handleConnected() {
 
 	if att != nil && att.ssid == currentSSID {
 		b.finalizeAttempt(att, "")
+
 		b.attemptMutex.Lock()
 		if b.curAttempt == att {
 			b.curAttempt = nil
 		}
 		b.attemptMutex.Unlock()
+
 		return
 	}
 
 	if err := b.updateSavedWiFiNetworks(); err != nil {
 		log.Warnf("failed to refresh saved networks after connect event: %v", err)
 	}
+
 	if b.onStateChange != nil {
 		b.onStateChange()
 	}
@@ -257,6 +430,7 @@ func (b *WpaSupplicantBackend) handleDisconnected() {
 	if err := b.updateState(); err != nil {
 		log.Warnf("failed to update wpa state after disconnect event: %v", err)
 	}
+
 	if err := b.updateSavedWiFiNetworks(); err != nil {
 		log.Warnf("failed to refresh saved networks after disconnect event: %v", err)
 	}
@@ -282,6 +456,7 @@ func (b *WpaSupplicantBackend) handleTempDisabled(args string) {
 	att.mu.Unlock()
 
 	code := errdefs.ErrConnectionFailed
+
 	// WRONG_KEY is the reason wpas_auth_failed reports for a PSK mismatch
 	// (could_be_psk_mismatch path in contrib/wpa/wpa_supplicant/events.c).
 	if reason == "WRONG_KEY" {

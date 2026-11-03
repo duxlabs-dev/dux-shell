@@ -5,7 +5,7 @@ import Quickshell
 import qs.Common
 import qs.Modals.FileBrowser
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
@@ -21,6 +21,8 @@ Item {
     }
     readonly property bool enabled: perMonitor ? monitorSettings.enabled : SessionData.wallpaperCyclingEnabled
     readonly property bool random: perMonitor ? monitorSettings.random : SessionData.wallpaperCyclingRandom
+    readonly property bool recursive: perMonitor ? monitorSettings.recursive : SessionData.wallpaperCyclingRecursive
+    readonly property bool videoEnd: perMonitor ? !!monitorSettings.videoEnd : SessionData.wallpaperCyclingVideoEnd
     readonly property string mode: perMonitor ? monitorSettings.mode : SessionData.wallpaperCyclingMode
     readonly property int interval: perMonitor ? monitorSettings.interval : SessionData.wallpaperCyclingInterval
     readonly property string time: perMonitor ? monitorSettings.time : SessionData.wallpaperCyclingTime
@@ -84,6 +86,22 @@ Item {
         SessionData.setWallpaperCyclingRandom(value);
     }
 
+    function setRecursive(value) {
+        if (perMonitor) {
+            SessionData.setMonitorCyclingRecursive(selectedScreen, value);
+            return;
+        }
+        SessionData.setWallpaperCyclingRecursive(value);
+    }
+
+    function setVideoEnd(value) {
+        if (perMonitor) {
+            SessionData.setMonitorCyclingVideoEnd(selectedScreen, value);
+            return;
+        }
+        SessionData.setWallpaperCyclingVideoEnd(value);
+    }
+
     function setMode(value) {
         if (perMonitor) {
             SessionData.setMonitorCyclingMode(selectedScreen, value);
@@ -144,24 +162,24 @@ Item {
                 subtitle: root.wallpaperFolder
                 enabled: root.canCycle
 
-                DankActionButton {
+                DActionButton {
                     buttonSize: Theme.iconButtonSize
                     iconName: "skip_previous"
                     iconSize: Theme.iconSizeMedium
                     iconColor: Theme.surfaceText
-                    backgroundColor: Theme.chipSurface
+                    backgroundColor: SettingsMetrics.controlSurface
                     enabled: root.canCycle
                     Accessible.name: I18n.tr("Previous")
                     anchors.verticalCenter: parent.verticalCenter
                     onClicked: root.cycle(true)
                 }
 
-                DankActionButton {
+                DActionButton {
                     buttonSize: Theme.iconButtonSize
                     iconName: "skip_next"
                     iconSize: Theme.iconSizeMedium
                     iconColor: Theme.surfaceText
-                    backgroundColor: Theme.chipSurface
+                    backgroundColor: SettingsMetrics.controlSurface
                     enabled: root.canCycle
                     Accessible.name: I18n.tr("Next")
                     anchors.verticalCenter: parent.verticalCenter
@@ -185,7 +203,7 @@ Item {
                 title: I18n.tr("Folder")
                 subtitle: root.folderPath || I18n.tr("Use desktop wallpaper")
 
-                DankButton {
+                DButton {
                     text: I18n.tr("Browse")
                     horizontalPadding: Theme.spacingL
                     anchors.verticalCenter: parent.verticalCenter
@@ -199,11 +217,30 @@ Item {
 
             SettingsToggleRow {
                 tab: "wallpaper"
+                tags: ["cycling", "subfolders", "recursive", "directories", "folders"]
+                settingKey: "wallpaperCyclingRecursive"
+                text: I18n.tr("Include subfolders")
+                checked: root.recursive
+                onToggled: toggled => root.setRecursive(toggled)
+            }
+
+            SettingsToggleRow {
+                tab: "wallpaper"
                 tags: ["cycling", "automatic", "random", "shuffle"]
                 settingKey: "wallpaperCyclingRandom"
                 text: I18n.tr("Random order")
                 checked: root.random
                 onToggled: toggled => root.setRandom(toggled)
+            }
+
+            SettingsToggleRow {
+                tab: "wallpaper"
+                tags: ["cycling", "video", "live", "end"]
+                settingKey: "wallpaperCyclingVideoEnd"
+                text: I18n.tr("Advance when a video ends", "wallpaper cycling toggle")
+                description: I18n.tr("Video wallpapers play once, then the next wallpaper is shown", "wallpaper cycling toggle description")
+                checked: root.videoEnd
+                onToggled: toggled => root.setVideoEnd(toggled)
             }
 
             SettingsButtonGroupRow {

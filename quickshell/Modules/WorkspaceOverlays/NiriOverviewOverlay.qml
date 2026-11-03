@@ -3,8 +3,8 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Wayland
 import qs.Common
-import qs.Modals.DankLauncherV2
-import qs.Modals.DankLauncherV2.Components
+import qs.Modals.DLauncherV2
+import qs.Modals.DLauncherV2.Components
 import qs.Services
 import qs.Widgets
 
@@ -89,7 +89,7 @@ Scope {
         asynchronous: false
         sourceComponent: Variants {
             id: overlayVariants
-            model: Quickshell.screens
+            model: ShellLayout.realScreens
 
             PanelWindow {
                 id: overlayWindow
@@ -208,13 +208,13 @@ Scope {
                         }
 
                         if (event.key === Qt.Key_Left) {
-                            NiriService.moveColumnLeft();
+                            NiriService.focusColumnLeft();
                             event.accepted = true;
                             return;
                         }
 
                         if (event.key === Qt.Key_Right) {
-                            NiriService.moveColumnRight();
+                            NiriService.focusColumnRight();
                             event.accepted = true;
                             return;
                         }
@@ -280,7 +280,7 @@ Scope {
                     }
 
                     readonly property int baseWidth: overlayWindow.useSpotlightStyle ? LauncherMetrics.spotlightWidth : LauncherMetrics.sizeWidth(SettingsData.dankLauncherV2Size)
-                    readonly property int baseHeight: LauncherMetrics.sizeHeight(SettingsData.dankLauncherV2Size)
+                    readonly property int baseHeight: LauncherMetrics.sizeHeight(SettingsData.dankLauncherV2Size, Theme.outlineWidth, LauncherMetrics.footerShown(SettingsData.dankLauncherV2Size))
                     readonly property real cornerRadius: overlayWindow.useSpotlightStyle ? LauncherMetrics.spotlightRadius(width) : Theme.windowRadius
                     readonly property real bottomRadius: overlayWindow.useSpotlightStyle ? LauncherMetrics.spotlightBottomRadius(width, height) : cornerRadius
                     width: Math.min(baseWidth, overlayWindow.screen.width - LauncherMetrics.screenMargin)

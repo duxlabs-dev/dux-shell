@@ -7,9 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/luaconfig"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/luaconfig"
+	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -35,6 +36,7 @@ var resolveIncludeCmd = &cobra.Command{
 				"layout.lua",
 				"outputs.lua",
 				"cursor.lua",
+				"input.lua",
 				"windowrules.lua",
 				"cursor.kdl",
 				"layout.kdl",
@@ -42,6 +44,7 @@ var resolveIncludeCmd = &cobra.Command{
 				"binds.kdl",
 				"input.kdl",
 				"cursor.conf",
+				"input.conf",
 				"layout.conf",
 				"outputs.conf",
 				"binds.conf",
@@ -52,15 +55,36 @@ var resolveIncludeCmd = &cobra.Command{
 	Run: runResolveInclude,
 }
 
+var mangoMonitorRulesCmd = &cobra.Command{
+	Use:    "mango-monitor-rules",
+	Short:  "Print the monitor rules of the Mango main config as monitor_rule= lines",
+	Hidden: true,
+	Args:   cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		for _, line := range mangoMonitorRules(mangoconf.Dir()) {
+			fmt.Println(line)
+		}
+	},
+}
+
 func init() {
-	configCmd.AddCommand(resolveIncludeCmd)
+	configCmd.AddCommand(resolveIncludeCmd, mangoMonitorRulesCmd)
+}
+
+// mangoMonitorRules lets the shell carry fields it does not model when it rewrites dms/outputs.conf.
+func mangoMonitorRules(dir string) []string {
+	var out []string
+	_ = mangoconf.Walk(dir, mangoconf.MainConfig(dir), mangoconf.Vars{}, func(_ string, e mangoconf.Entry) {
+		if e.Key == "monitor_rule" && !strings.Contains(e.Value, "\n") {
+			out = append(out, "monitor_rule="+e.Value)
+		}
+	})
+	return out
 }
 
 type IncludeResult struct {
-	Exists       bool   `json:"exists"`
-	Included     bool   `json:"included"`
-	ConfigFormat string `json:"configFormat,omitempty"`
-	ReadOnly     bool   `json:"readOnly,omitempty"`
+	Exists   bool `json:"exists"`
+	Included bool `json:"included"`
 }
 
 func runResolveInclude(cmd *cobra.Command, args []string) {
@@ -104,90 +128,12 @@ func checkHyprlandInclude(filename string) (IncludeResult, error) {
 		return result, err
 	}
 
-	targetRel := filepath.ToSlash(filepath.Join("dms", filename))
-
 	mainLua := filepath.Join(configDir, "hyprland.lua")
-	if _, err := os.Stat(mainLua); err == nil {
-		result.ConfigFormat = "lua"
-		result.ReadOnly = false
-		processedLua := make(map[string]bool)
-		if luaconfig.RequiresTarget(mainLua, targetAbs, processedLua) {
-			result.Included = true
-			return result, nil
-		}
+	if _, err := os.Stat(mainLua); err != nil {
+		return result, nil
 	}
-
-	mainConf := filepath.Join(configDir, "hyprland.conf")
-	if _, err := os.Stat(mainConf); err == nil {
-		if result.ConfigFormat == "" {
-			result.ConfigFormat = "hyprlang"
-			result.ReadOnly = true
-		}
-		processed := make(map[string]bool)
-		if hyprlandFindIncludeHyprlang(mainConf, targetRel, processed) {
-			result.Included = true
-			return result, nil
-		}
-	}
-
+	result.Included = luaconfig.RequiresTarget(mainLua, targetAbs, make(map[string]bool))
 	return result, nil
-}
-
-func hyprlandFindIncludeHyprlang(filePath, target string, processed map[string]bool) bool {
-	absPath, err := filepath.Abs(filePath)
-	if err != nil {
-		return false
-	}
-
-	if processed[absPath] {
-		return false
-	}
-	processed[absPath] = true
-
-	data, err := os.ReadFile(absPath)
-	if err != nil {
-		return false
-	}
-
-	baseDir := filepath.Dir(absPath)
-	lines := strings.SplitSeq(string(data), "\n")
-
-	for line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "#") || trimmed == "" {
-			continue
-		}
-
-		if !strings.HasPrefix(trimmed, "source") {
-			continue
-		}
-
-		parts := strings.SplitN(trimmed, "=", 2)
-		if len(parts) < 2 {
-			continue
-		}
-
-		sourcePath := strings.TrimSpace(parts[1])
-		if matchesTarget(sourcePath, target) {
-			return true
-		}
-
-		fullPath := sourcePath
-		if !filepath.IsAbs(sourcePath) {
-			fullPath = filepath.Join(baseDir, sourcePath)
-		}
-
-		expanded, err := utils.ExpandPath(fullPath)
-		if err != nil {
-			continue
-		}
-
-		if hyprlandFindIncludeHyprlang(expanded, target, processed) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func checkNiriInclude(filename string) (IncludeResult, error) {
@@ -205,8 +151,13 @@ func checkNiriInclude(filename string) (IncludeResult, error) {
 		return result, nil
 	}
 
+	targetAbs, err := filepath.Abs(targetPath)
+	if err != nil {
+		return result, err
+	}
+
 	processed := make(map[string]bool)
-	result.Included = niriFindInclude(mainConfig, "dms/"+filename, processed)
+	result.Included = niriFindInclude(mainConfig, targetAbs, processed)
 	return result, nil
 }
 
@@ -248,17 +199,12 @@ func niriFindInclude(filePath, target string, processed map[string]bool) bool {
 			continue
 		}
 
-		includePath := trimmed[startQuote+1 : endQuote]
-		if matchesTarget(includePath, target) {
-			return true
+		fullPath, err := resolveSourcePath(baseDir, trimmed[startQuote+1:endQuote])
+		if err != nil {
+			continue
 		}
 
-		fullPath := includePath
-		if !filepath.IsAbs(includePath) {
-			fullPath = filepath.Join(baseDir, includePath)
-		}
-
-		if niriFindInclude(fullPath, target, processed) {
+		if fullPath == target || niriFindInclude(fullPath, target, processed) {
 			return true
 		}
 	}
@@ -267,87 +213,25 @@ func niriFindInclude(filePath, target string, processed map[string]bool) bool {
 }
 
 func checkMangoWCInclude(filename string) (IncludeResult, error) {
-	configDir := filepath.Join(utils.XDGConfigHome(), "mango")
-
+	configDir := mangoconf.Dir()
 	targetPath := filepath.Join(configDir, "dms", filename)
-	result := IncludeResult{}
-
+	var result IncludeResult
 	if _, err := os.Stat(targetPath); err == nil {
 		result.Exists = true
 	}
-
-	mainConfig := filepath.Join(configDir, "config.conf")
-	if _, err := os.Stat(mainConfig); os.IsNotExist(err) {
-		mainConfig = filepath.Join(configDir, "mango.conf")
-	}
-	if _, err := os.Stat(mainConfig); os.IsNotExist(err) {
-		return result, nil
-	}
-
-	processed := make(map[string]bool)
-	result.Included = mangowcFindInclude(mainConfig, "dms/"+filename, processed)
+	_ = mangoconf.Walk(configDir, mangoconf.MainConfig(configDir), mangoconf.Vars{}, func(_ string, e mangoconf.Entry) {
+		result.Included = result.Included || (e.IsSource() && e.Value == targetPath)
+	})
 	return result, nil
 }
 
-func mangowcFindInclude(filePath, target string, processed map[string]bool) bool {
-	absPath, err := filepath.Abs(filePath)
+func resolveSourcePath(baseDir, raw string) (string, error) {
+	expanded, err := utils.ExpandPath(raw)
 	if err != nil {
-		return false
+		return "", err
 	}
-
-	if processed[absPath] {
-		return false
+	if !filepath.IsAbs(expanded) {
+		expanded = filepath.Join(baseDir, expanded)
 	}
-	processed[absPath] = true
-
-	data, err := os.ReadFile(absPath)
-	if err != nil {
-		return false
-	}
-
-	baseDir := filepath.Dir(absPath)
-	lines := strings.SplitSeq(string(data), "\n")
-
-	for line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "#") || trimmed == "" {
-			continue
-		}
-
-		if !strings.HasPrefix(trimmed, "source") {
-			continue
-		}
-
-		parts := strings.SplitN(trimmed, "=", 2)
-		if len(parts) < 2 {
-			continue
-		}
-
-		sourcePath := strings.TrimSpace(parts[1])
-		if matchesTarget(sourcePath, target) {
-			return true
-		}
-
-		fullPath := sourcePath
-		if !filepath.IsAbs(sourcePath) {
-			fullPath = filepath.Join(baseDir, sourcePath)
-		}
-
-		expanded, err := utils.ExpandPath(fullPath)
-		if err != nil {
-			continue
-		}
-
-		if mangowcFindInclude(expanded, target, processed) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func matchesTarget(path, target string) bool {
-	path = strings.TrimPrefix(path, "./")
-	target = strings.TrimPrefix(target, "./")
-	return path == target || strings.HasSuffix(path, "/"+target)
+	return filepath.Abs(expanded)
 }

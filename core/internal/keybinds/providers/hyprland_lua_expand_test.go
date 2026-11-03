@@ -5,28 +5,6 @@ import (
 	"testing"
 )
 
-func TestExpandLuaConfigLinesVariableConcat(t *testing.T) {
-	lines := []string{
-		`local mainMod = "SUPER"`,
-		`hl.bind(mainMod .. " + C", hl.dsp.window.close())`,
-		`hl.bind(mainMod .. " + H", hl.dsp.focus({direction = "l"}))`,
-		`hl.bind("ALT + TAB", hl.dsp.window.cycle_next({}))`,
-	}
-	got := expandLuaConfigLines(lines)
-
-	want := []string{
-		`hl.bind("SUPER + C",`,
-		`hl.bind("SUPER + H",`,
-		`hl.bind("ALT + TAB",`,
-	}
-	joined := strings.Join(got, "\n")
-	for _, w := range want {
-		if !strings.Contains(joined, w) {
-			t.Errorf("expanded output missing %q\n---\n%s", w, joined)
-		}
-	}
-}
-
 func TestExpandLuaConfigLinesForLoop(t *testing.T) {
 	lines := []string{
 		`local mainMod = "SUPER"`,

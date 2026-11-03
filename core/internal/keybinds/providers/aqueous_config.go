@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 func helperResult(ctx context.Context, verb string, input []byte) (aqueousConfig, error) {
@@ -91,7 +91,7 @@ func aqueousHelper(ctx context.Context, verb string, request aqueousConfig) (aqu
 		if err != nil {
 			return nil, err
 		}
-		request["backup_dir"] = filepath.Join(configDir, "DankMaterialShell", "aqueous-backups")
+		request["backup_dir"] = filepath.Join(configDir, "dms", "aqueous-backups")
 	}
 	input, err := json.Marshal(request)
 	if err != nil {

@@ -53,7 +53,7 @@ func (b dnfBackend) Upgrade(ctx context.Context, opts UpgradeOptions, onLine fun
 }
 
 func dnfUpgradeArgv(bin string, opts UpgradeOptions) []string {
-	argv := []string{bin, "upgrade", "--refresh", "-y"}
+	argv := withAutoYes(opts, []string{bin, "upgrade", "--refresh"}, "-y")
 	if len(opts.Ignored) > 0 {
 		argv = append(argv, "--exclude="+strings.Join(opts.Ignored, ","))
 	}

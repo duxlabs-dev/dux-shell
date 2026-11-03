@@ -5,10 +5,12 @@ import qs.Common
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Item {
     id: root
+
+    implicitHeight: column.height
 
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
@@ -30,7 +32,7 @@ Item {
         return parseFloat((mount.percent || "0").replace("%", "")) || 0;
     }
 
-    DankFlickable {
+    DFlickable {
         anchors.fill: parent
         contentHeight: column.height
         clip: true
@@ -44,7 +46,7 @@ Item {
                 visible: !DgopService.dgopAvailable || root.mounts.length === 0
                 iconName: DgopService.dgopAvailable ? "storage" : "error"
                 iconColor: DgopService.dgopAvailable ? Theme.primary : Theme.error
-                title: DgopService.dgopAvailable ? I18n.tr("No disk data available") : I18n.tr("dgop not available")
+                title: DgopService.dgopAvailable ? I18n.tr("No disk data available") : I18n.tr("%1 not available", "%1 is a tool or environment variable name").arg("dgop")
             }
 
             CcGroup {
@@ -64,10 +66,9 @@ Item {
                                 return Theme.error;
                             if (usage > CcMetrics.diskWarnPercent)
                                 return Theme.warning;
-                            return active ? Theme.primary : Theme.surfaceText;
+                            return contentColor;
                         }
                         active: modelData.mount === root.currentMountPath
-                        showActiveCheck: true
                         title: modelData.mount === "/" ? I18n.tr("Root Filesystem") : modelData.mount
                         subtitle: `${modelData.used || "?"} / ${modelData.size || "?"}` + (modelData.mount === "/" ? "" : " • " + modelData.mount)
                         trailingBadge: usage.toFixed(0) + "%"

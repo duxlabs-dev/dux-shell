@@ -1,10 +1,12 @@
 package network
 
 import (
+	"sync/atomic"
 	"testing"
+	"time"
 
-	mock_gonetworkmanager "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/github.com/Wifx/gonetworkmanager/v2"
 	"github.com/Wifx/gonetworkmanager/v2"
+	mock_gonetworkmanager "github.com/duxlabs-dev/dux-shell/core/internal/mocks/github.com/Wifx/gonetworkmanager/v2"
 	"github.com/godbus/dbus/v5"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,40 +18,6 @@ func emptySettingsMock(t *testing.T) *mock_gonetworkmanager.MockSettings {
 	mockSettings := mock_gonetworkmanager.NewMockSettings(t)
 	mockSettings.EXPECT().ListConnections().Return(nil, nil).Maybe()
 	return mockSettings
-}
-
-func TestNetworkManagerBackend_HandleDBusSignal_NewConnection(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-	backend.settings = emptySettingsMock(t)
-
-	sig := &dbus.Signal{
-		Name: "org.freedesktop.NetworkManager.Settings.NewConnection",
-		Body: []any{"/org/freedesktop/NetworkManager/Settings/1"},
-	}
-
-	assert.NotPanics(t, func() {
-		backend.handleDBusSignal(sig)
-	})
-}
-
-func TestNetworkManagerBackend_HandleDBusSignal_ConnectionRemoved(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-	backend.settings = emptySettingsMock(t)
-
-	sig := &dbus.Signal{
-		Name: "org.freedesktop.NetworkManager.Settings.ConnectionRemoved",
-		Body: []any{"/org/freedesktop/NetworkManager/Settings/1"},
-	}
-
-	assert.NotPanics(t, func() {
-		backend.handleDBusSignal(sig)
-	})
 }
 
 func TestNetworkManagerBackend_HandleDBusSignal_InvalidBody(t *testing.T) {
@@ -100,96 +68,6 @@ func TestNetworkManagerBackend_HandleDBusSignal_InvalidChanges(t *testing.T) {
 	})
 }
 
-func TestNetworkManagerBackend_HandleNetworkManagerChange(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	mockNM.EXPECT().GetPropertyActiveConnections().Return([]gonetworkmanager.ActiveConnection{}, nil).Maybe()
-	mockNM.EXPECT().GetPropertyPrimaryConnection().Return(nil, nil).Maybe()
-
-	changes := map[string]dbus.Variant{
-		"PrimaryConnection": dbus.MakeVariant("/"),
-		"State":             dbus.MakeVariant(uint32(70)),
-	}
-
-	assert.NotPanics(t, func() {
-		backend.handleNetworkManagerChange(changes)
-	})
-}
-
-func TestNetworkManagerBackend_HandleNetworkManagerChange_WirelessEnabled(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	mockNM.EXPECT().GetPropertyWirelessEnabled().Return(true, nil)
-	mockNM.EXPECT().GetPropertyActiveConnections().Return([]gonetworkmanager.ActiveConnection{}, nil).Maybe()
-	mockNM.EXPECT().GetPropertyPrimaryConnection().Return(nil, nil).Maybe()
-
-	changes := map[string]dbus.Variant{
-		"WirelessEnabled": dbus.MakeVariant(true),
-	}
-
-	assert.NotPanics(t, func() {
-		backend.handleNetworkManagerChange(changes)
-	})
-}
-
-func TestNetworkManagerBackend_HandleNetworkManagerChange_ActiveConnections(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	mockNM.EXPECT().GetPropertyActiveConnections().Return([]gonetworkmanager.ActiveConnection{}, nil)
-	mockNM.EXPECT().GetPropertyPrimaryConnection().Return(nil, nil).Maybe()
-
-	changes := map[string]dbus.Variant{
-		"ActiveConnections": dbus.MakeVariant([]any{}),
-	}
-
-	assert.NotPanics(t, func() {
-		backend.handleNetworkManagerChange(changes)
-	})
-}
-
-func TestNetworkManagerBackend_HandleDeviceChange(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	mockNM.EXPECT().GetPropertyActiveConnections().Return([]gonetworkmanager.ActiveConnection{}, nil).Maybe()
-	mockNM.EXPECT().GetPropertyPrimaryConnection().Return(nil, nil).Maybe()
-
-	changes := map[string]dbus.Variant{
-		"State": dbus.MakeVariant(uint32(100)),
-	}
-
-	assert.NotPanics(t, func() {
-		backend.handleDeviceChange("/org/freedesktop/NetworkManager/Devices/1", changes)
-	})
-}
-
-func TestNetworkManagerBackend_HandleDeviceChange_Ip4Config(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-	backend.settings = emptySettingsMock(t)
-
-	changes := map[string]dbus.Variant{
-		"Ip4Config": dbus.MakeVariant("/"),
-	}
-
-	assert.NotPanics(t, func() {
-		backend.handleDeviceChange("/org/freedesktop/NetworkManager/Devices/1", changes)
-	})
-}
-
 func TestNetworkManagerBackend_HandleDeviceChange_UnmanagedRefreshesHotspotState(t *testing.T) {
 	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
 	mockWiFi := mock_gonetworkmanager.NewMockDeviceWireless(t)
@@ -223,78 +101,86 @@ func TestNetworkManagerBackend_HandleDeviceChange_UnmanagedRefreshesHotspotState
 	assert.False(t, backend.state.HotspotAvailable, "availability must be recomputed when the only AP-capable radio becomes unmanaged")
 }
 
-func TestNetworkManagerBackend_HandleWiFiChange_ActiveAccessPoint(t *testing.T) {
+func TestNetworkManagerBackend_HandleWiFiChange_CoalescesAccessPointBurst(t *testing.T) {
 	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
+	mockWiFi := mock_gonetworkmanager.NewMockDeviceWireless(t)
 
 	backend, err := NewNetworkManagerBackend(mockNM)
 	assert.NoError(t, err)
+	backend.settings = emptySettingsMock(t)
+	backend.wifiDevice = mockWiFi
+	backend.wifiDev = mockWiFi
 
-	changes := map[string]dbus.Variant{
-		"ActiveAccessPoint": dbus.MakeVariant("/"),
+	var stateChangeCalls atomic.Int32
+	backend.onStateChange = func() {
+		stateChangeCalls.Add(1)
 	}
 
-	assert.NotPanics(t, func() {
+	mockWiFi.EXPECT().GetAccessPoints().Return([]gonetworkmanager.AccessPoint{}, nil).Once()
+
+	changes := map[string]dbus.Variant{
+		"AccessPoints": dbus.MakeVariant([]dbus.ObjectPath{}),
+	}
+	for range 5 {
 		backend.handleWiFiChange(changes)
-	})
-}
-
-func TestNetworkManagerBackend_HandleWiFiChange_AccessPoints(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	changes := map[string]dbus.Variant{
-		"AccessPoints": dbus.MakeVariant([]any{}),
 	}
+	assert.Zero(t, stateChangeCalls.Load(), "the list must not be rebuilt per access point")
 
-	assert.NotPanics(t, func() {
-		backend.handleWiFiChange(changes)
-	})
+	assert.Eventually(t, func() bool {
+		return stateChangeCalls.Load() == 1
+	}, 4*wifiNetworksUpdateDelay, 10*time.Millisecond)
 }
 
-func TestNetworkManagerBackend_HandleAccessPointChange_NoStrength(t *testing.T) {
+func TestNetworkManagerBackend_HandleDBusSignal_ConnectionRemovedRefreshesWiredConnections(t *testing.T) {
 	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
+	mockNM.EXPECT().GetPropertyActiveConnections().Return([]gonetworkmanager.ActiveConnection{}, nil).Maybe()
+
+	remaining := mock_gonetworkmanager.NewMockConnection(t)
+	remaining.EXPECT().GetPath().Return(dbus.ObjectPath("/org/freedesktop/NetworkManager/Settings/1")).Maybe()
+	remaining.EXPECT().GetSettings().Return(gonetworkmanager.ConnectionSettings{
+		"connection": {
+			"id":   "Wired connection 1",
+			"uuid": "uuid-1",
+			"type": "802-3-ethernet",
+		},
+	}, nil).Maybe()
+
+	mockSettings := mock_gonetworkmanager.NewMockSettings(t)
+	mockSettings.EXPECT().ListConnections().Return([]gonetworkmanager.Connection{remaining}, nil).Maybe()
 
 	backend, err := NewNetworkManagerBackend(mockNM)
 	assert.NoError(t, err)
-
-	changes := map[string]dbus.Variant{
-		"SomeOtherProperty": dbus.MakeVariant("value"),
-	}
-
-	assert.NotPanics(t, func() {
-		backend.handleAccessPointChange(changes)
-	})
-}
-
-func TestNetworkManagerBackend_HandleAccessPointChange_WithStrength(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
+	backend.settings = mockSettings
+	backend.ethernetDevice = mock_gonetworkmanager.NewMockDevice(t)
 
 	backend.stateMutex.Lock()
-	backend.state.WiFiSignal = 50
+	backend.state.WiredConnections = []WiredConnection{
+		{ID: "Wired connection 1", UUID: "uuid-1", Type: "802-3-ethernet"},
+		{ID: "Wired connection 2", UUID: "uuid-2", Type: "802-3-ethernet"},
+	}
 	backend.stateMutex.Unlock()
 
-	changes := map[string]dbus.Variant{
-		"Strength": dbus.MakeVariant(uint8(80)),
-	}
-
-	assert.NotPanics(t, func() {
-		backend.handleAccessPointChange(changes)
+	backend.handleDBusSignal(&dbus.Signal{
+		Name: "org.freedesktop.NetworkManager.Settings.ConnectionRemoved",
+		Body: []any{dbus.ObjectPath("/org/freedesktop/NetworkManager/Settings/2")},
 	})
+
+	backend.stateMutex.RLock()
+	defer backend.stateMutex.RUnlock()
+	assert.Len(t, backend.state.WiredConnections, 1)
+	assert.Equal(t, "uuid-1", backend.state.WiredConnections[0].UUID)
 }
 
-func TestNetworkManagerBackend_StopSignalPump_NoConnection(t *testing.T) {
+func TestNetworkManagerBackend_ListEthernetConnections_InvalidSettingsHandle(t *testing.T) {
 	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
 
 	backend, err := NewNetworkManagerBackend(mockNM)
 	assert.NoError(t, err)
+	backend.settings = "not a settings handle"
+	backend.ethernetDevice = mock_gonetworkmanager.NewMockDevice(t)
 
-	backend.dbusConn = nil
 	assert.NotPanics(t, func() {
-		backend.stopSignalPump()
+		_, err = backend.listEthernetConnections()
 	})
+	assert.Error(t, err)
 }

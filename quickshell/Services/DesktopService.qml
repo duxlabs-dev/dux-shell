@@ -15,11 +15,16 @@ Singleton {
 
     property bool isSystemd: false
     property bool systemdAutostartTargetActive: false
-    property bool systemdAutostartTargetChecked: false
+    property bool systemdAutostartTargetChecked: Qt.platform.os === "unix"
     readonly property bool autostartAvailable: root.systemdAutostartTargetChecked && (!root.isSystemd || root.systemdAutostartTargetActive)
+    property bool _probed: false
 
-    Component.onCompleted: {
-        Paths.desktopIconResolver = name => resolveIconPath(name);
+    Component.onCompleted: Paths.desktopIconResolver = name => resolveIconPath(name)
+
+    function ensureProbed() {
+        if (_probed || systemdAutostartTargetChecked)
+            return;
+        _probed = true;
         initSystemCheckProcess.running = true;
     }
 

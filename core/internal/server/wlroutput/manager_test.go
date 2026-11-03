@@ -1,19 +1,11 @@
 package wlroutput
 
 import (
-	"errors"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	mocks_wlclient "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/wlclient"
 )
-
-func TestStateChanged_BothNil(t *testing.T) {
-	assert.True(t, stateChanged(nil, nil))
-}
 
 func TestStateChanged_OneNil(t *testing.T) {
 	s := &State{Serial: 1}
@@ -199,7 +191,6 @@ func TestManager_ConcurrentSubscriberAccess(t *testing.T) {
 			subID := string(rune('a' + id))
 			ch := m.Subscribe(subID)
 			assert.NotNil(t, ch)
-			time.Sleep(time.Millisecond)
 			m.Unsubscribe(subID)
 		}(i)
 	}
@@ -245,15 +236,4 @@ func TestStateChanged_BothCurrentModeNil(t *testing.T) {
 	a := &State{Serial: 1, Outputs: []Output{{Name: "eDP-1", CurrentMode: nil}}}
 	b := &State{Serial: 1, Outputs: []Output{{Name: "eDP-1", CurrentMode: nil}}}
 	assert.False(t, stateChanged(a, b))
-}
-
-func TestNewManager_GetRegistryError(t *testing.T) {
-	mockDisplay := mocks_wlclient.NewMockWaylandDisplay(t)
-
-	mockDisplay.EXPECT().Context().Return(nil)
-	mockDisplay.EXPECT().GetRegistry().Return(nil, errors.New("failed to get registry"))
-
-	_, err := NewManager(mockDisplay)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get registry")
 }

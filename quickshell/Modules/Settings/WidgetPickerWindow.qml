@@ -1,9 +1,10 @@
 import QtQuick
 import qs.Common
+import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Settings.Widgets
 
-DankFloatingWindow {
+DFloatingWindow {
     id: root
 
     property var widgets: []
@@ -41,18 +42,27 @@ DankFloatingWindow {
 
     onWidgetsChanged: updateFilteredWidgets()
 
+    function selectableIndex(from, step) {
+        for (let i = from; i >= 0 && i < filteredWidgets.length; i += step) {
+            if (!filteredWidgets[i].disabled)
+                return i;
+        }
+        return -1;
+    }
+
     function selectNext() {
-        if (filteredWidgets.length === 0)
+        const next = selectableIndex(selectedIndex + 1, 1);
+        if (next < 0)
             return;
         keyboardNavigationActive = true;
-        selectedIndex = Math.min(selectedIndex + 1, filteredWidgets.length - 1);
+        selectedIndex = next;
     }
 
     function selectPrevious() {
         if (filteredWidgets.length === 0)
             return;
         keyboardNavigationActive = true;
-        selectedIndex = Math.max(selectedIndex - 1, -1);
+        selectedIndex = selectableIndex(selectedIndex - 1, -1);
         if (selectedIndex === -1)
             keyboardNavigationActive = false;
     }
@@ -130,8 +140,8 @@ DankFloatingWindow {
             case Qt.Key_Enter:
                 if (root.keyboardNavigationActive)
                     root.selectWidget();
-                else if (root.filteredWidgets.length > 0)
-                    root.widgetChosen(root.filteredWidgets[0]);
+                else if (root.selectableIndex(0, 1) >= 0)
+                    root.widgetChosen(root.filteredWidgets[root.selectableIndex(0, 1)]);
                 event.accepted = true;
                 return;
             }
@@ -155,7 +165,7 @@ DankFloatingWindow {
             anchors.fill: parent
             spacing: 0
 
-            DankWindowHeader {
+            DWindowHeader {
                 id: titleBar
                 width: parent.width
                 controls: windowControls
@@ -169,7 +179,8 @@ DankFloatingWindow {
 
                 Column {
                     anchors.fill: parent
-                    anchors.margins: Theme.spacingL
+                    anchors.margins: Theme.windowInset
+                    anchors.topMargin: 0
                     spacing: Theme.spacingM
 
                     StyledText {
@@ -181,10 +192,9 @@ DankFloatingWindow {
                         wrapMode: Text.WordWrap
                     }
 
-                    DankSearchField {
+                    DSearchField {
                         id: searchField
                         width: parent.width
-                        height: Theme.fieldHeightLarge
                         textColor: Theme.surfaceText
                         font.pixelSize: Theme.fontSizeMedium
                         placeholderText: I18n.tr("Search widgets...")
@@ -207,7 +217,7 @@ DankFloatingWindow {
                         }
                     }
 
-                    DankListView {
+                    DListView {
                         id: widgetList
 
                         width: parent.width

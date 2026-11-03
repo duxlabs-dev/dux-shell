@@ -8,6 +8,7 @@ Item {
     property string pluginId: ""
     property string instanceId: ""
     property var instanceData: null
+    property bool lockScreen: false
 
     property real widgetWidth: 200
     property real widgetHeight: 200

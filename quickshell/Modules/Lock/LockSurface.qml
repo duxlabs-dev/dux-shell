@@ -11,6 +11,9 @@ FocusScope {
     required property var pam
     required property string sharedPasswordBuffer
     required property string screenName
+    property bool inputRevealed: false
+    signal inputRevealRequested(bool revealed)
+
     required property bool isLocked
 
     signal passwordChanged(string newPassword)
@@ -49,6 +52,8 @@ FocusScope {
         sessionLock: root.lock
         pam: root.pam
         passwordBuffer: root.sharedPasswordBuffer
+        inputRevealed: root.inputRevealed
+        onInputRevealRequested: revealed => root.inputRevealRequested(revealed)
         screenName: root.screenName
         enabled: !videoScreensaver.active
         focus: !videoScreensaver.active

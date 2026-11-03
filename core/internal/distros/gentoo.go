@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
 )
 
 var GentooGlobalUseFlags = []string{
@@ -118,6 +118,7 @@ func (g *GentooDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 
 	dependencies = append(dependencies, g.detectMatugen())
 	dependencies = append(dependencies, g.detectDanksearch())
+	dependencies = append(dependencies, g.detectDuxFiles())
 
 	return dependencies, nil
 }
@@ -128,13 +129,13 @@ func (g *GentooDistribution) detectXDGPortal() deps.Dependency {
 
 func (g *GentooDistribution) detectDMS() deps.Dependency {
 	dep := deps.Dependency{
-		Name:        "dms (DankMaterialShell)",
+		Name:        "dms (Dux Shell)",
 		Status:      deps.StatusMissing,
 		Description: "Desktop Management System configuration",
 		Required:    true,
 		CanToggle:   false,
 	}
-	if g.packageInstalled("gui-apps/dankmaterialshell") {
+	if g.packageInstalled("dux-desktop/dux-shell") {
 		dep.Status = deps.StatusInstalled
 	}
 	return dep
@@ -172,10 +173,11 @@ func (g *GentooDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 		"qtwayland":     {Name: "dev-qt/qtwayland", Repository: RepoTypeSystem},
 		"mesa":          {Name: "media-libs/mesa", Repository: RepoTypeSystem, UseFlags: "opengl vulkan"},
 
-		"quickshell":              g.getQuickshellMapping(variants["quickshell"]),
-		"matugen":                 {Name: "x11-misc/matugen", Repository: RepoTypeGURU, AcceptKeywords: archKeyword},
-		"dms (DankMaterialShell)": g.getDmsMapping(),
-		"danksearch":              {Name: "gui-apps/danksearch", Repository: RepoTypeGURU, AcceptKeywords: archKeyword},
+		"quickshell":      g.getQuickshellMapping(variants["quickshell"]),
+		"matugen":         {Name: "x11-misc/matugen", Repository: RepoTypeGURU, AcceptKeywords: archKeyword},
+		"dms (Dux Shell)": g.getDmsMapping(),
+		"dux-search":      {Name: "dux-desktop/dux-search", Repository: RepoTypeGURU, AcceptKeywords: archKeyword},
+		"dux-files":       {Name: "dux-desktop/dux-files", Repository: RepoTypeGURU, AcceptKeywords: archKeyword},
 	}
 
 	switch wm {
@@ -200,7 +202,7 @@ func (g *GentooDistribution) getQuickshellMapping(_ deps.PackageVariant) Package
 }
 
 func (g *GentooDistribution) getDmsMapping() PackageMapping {
-	return PackageMapping{Name: "gui-apps/dankmaterialshell", Repository: RepoTypeGURU, AcceptKeywords: g.getArchKeyword()}
+	return PackageMapping{Name: "dux-desktop/dux-shell", Repository: RepoTypeGURU, AcceptKeywords: g.getArchKeyword()}
 }
 
 func (g *GentooDistribution) getHyprlandMapping(_ deps.PackageVariant) PackageMapping {

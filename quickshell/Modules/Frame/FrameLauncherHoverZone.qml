@@ -10,7 +10,7 @@ import qs.Services
 Variants {
     id: root
 
-    model: Quickshell.screens
+    model: ShellLayout.realScreens
 
     delegate: Loader {
         id: zoneLoader
@@ -28,7 +28,7 @@ Variants {
 
             readonly property bool vertical: zoneLoader.emergeSide === "left" || zoneLoader.emergeSide === "right"
             readonly property real triggerThickness: Math.max(6, SettingsData.frameThickness)
-            readonly property bool launcherOpen: PopoutService.dankLauncherV2Modal?.spotlightOpen ?? false
+            readonly property bool launcherOpen: (PopoutService.dankLauncherV2Modal?.spotlightOpen ?? false) || (PopoutService.dankIslandRouter?.launcherOpen ?? false)
             property bool _openedForCurrentHover: false
 
             // Hot zone dimensions centered on the emerge edge to cover the launcher footprint.

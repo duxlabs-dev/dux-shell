@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/version"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/version"
 	"github.com/spf13/afero"
 )
 
@@ -34,7 +34,7 @@ func getThemesDir() string {
 		log.Error("failed to get user config dir", "err", err)
 		return ""
 	}
-	return filepath.Join(configDir, "DankMaterialShell", "themes")
+	return filepath.Join(configDir, "dms", "themes")
 }
 
 func (m *Manager) IsInstalled(theme Theme) (bool, error) {

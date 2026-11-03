@@ -7,16 +7,23 @@ import qs.Common
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 import "../../../Common/QmlUtils.js" as QmlUtils
 
 Item {
     id: root
 
+    Ref {
+        service: BatteryService
+    }
+
+    implicitHeight: column.height
+
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
-    property Item menuParent: root
+    property var transientSurfaceTracker: null
 
     readonly property string title: I18n.tr("Bluetooth")
     readonly property var adapter: BluetoothService.adapter
@@ -28,7 +35,7 @@ Item {
     readonly property Item headerActions: Row {
         spacing: Theme.spacingS
 
-        DankDropdown {
+        DDropdown {
             id: adapterDropdown
 
             function adapterLabel(adapter) {
@@ -51,7 +58,7 @@ Item {
             }
         }
 
-        DankButton {
+        DButton {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.adapterEnabled
             buttonHeight: Theme.buttonHeightXS
@@ -195,7 +202,7 @@ Item {
         }
     }
 
-    DankFlickable {
+    DFlickable {
         anchors.fill: parent
         contentHeight: column.height
         clip: true
@@ -257,7 +264,7 @@ Item {
                         iconColor: {
                             if (isConnecting)
                                 return Theme.warning;
-                            return isConnected ? Theme.primary : Theme.surfaceText;
+                            return contentColor;
                         }
                         active: isConnected
                         title: deviceName
@@ -289,7 +296,7 @@ Item {
                             onToggled: root.togglePin(pairedRow.modelData.address)
                         }
 
-                        DankActionButton {
+                        DActionButton {
                             id: optionsButton
                             anchors.verticalCenter: parent.verticalCenter
                             buttonSize: Theme.buttonHeightXS
@@ -362,7 +369,7 @@ Item {
 
     CcMenu {
         id: deviceMenu
-        parent: root.menuParent
+        transientSurfaceTracker: root.transientSurfaceTracker
     }
 
     Connections {

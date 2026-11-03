@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=DMS Notepad
+GenericName=Text Editor
+Comment=Quick notes and text files in Dux Shell
+Exec=dms ipc call notepad openFile %f
+Icon=dev.duxlabs.shell
+Terminal=false
+NoDisplay=true
+Categories=Utility;TextEditor;
+MimeType=text/plain;text/markdown;
+StartupNotify=false

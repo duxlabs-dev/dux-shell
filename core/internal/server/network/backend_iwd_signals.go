@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -26,12 +26,7 @@ func (b *IWDBackend) StartMonitoring(onStateChange func()) error {
 	b.conn.Signal(sigChan)
 
 	if b.devicePath != "" {
-		err := b.conn.AddMatchSignal(
-			dbus.WithMatchObjectPath(b.devicePath),
-			dbus.WithMatchInterface(dbusPropertiesInterface),
-			dbus.WithMatchMember("PropertiesChanged"),
-		)
-		if err != nil {
+		if err := b.addDeviceSignalMatch(b.devicePath); err != nil {
 			return fmt.Errorf("failed to add device signal match: %w", err)
 		}
 	}
@@ -84,6 +79,48 @@ func (b *IWDBackend) addStationSignalMatch(path dbus.ObjectPath) error {
 		dbus.WithMatchInterface(dbusPropertiesInterface),
 		dbus.WithMatchMember("PropertiesChanged"),
 	)
+}
+
+func (b *IWDBackend) addDeviceSignalMatch(path dbus.ObjectPath) error {
+	return b.conn.AddMatchSignal(
+		dbus.WithMatchObjectPath(path),
+		dbus.WithMatchInterface(dbusPropertiesInterface),
+		dbus.WithMatchMember("PropertiesChanged"),
+	)
+}
+
+func (b *IWDBackend) removeDeviceSignalMatch(path dbus.ObjectPath) {
+	err := b.conn.RemoveMatchSignal(
+		dbus.WithMatchObjectPath(path),
+		dbus.WithMatchInterface(dbusPropertiesInterface),
+		dbus.WithMatchMember("PropertiesChanged"),
+	)
+	if err != nil {
+		log.Debugf("Failed to remove iwd device signal match for %s: %v", path, err)
+	}
+}
+
+func (b *IWDBackend) handleDeviceAdded(path dbus.ObjectPath, props map[string]dbus.Variant) bool {
+	prev, changed := b.setDevice(path, props)
+	if !changed {
+		return false
+	}
+
+	if prev != "" {
+		b.removeDeviceSignalMatch(prev)
+	}
+	if err := b.addDeviceSignalMatch(path); err != nil {
+		log.Warnf("Failed to add iwd device signal match for %s: %v", path, err)
+	}
+	return true
+}
+
+func (b *IWDBackend) handleDeviceRemoved(path dbus.ObjectPath) bool {
+	if !b.clearDevice(path) {
+		return false
+	}
+	b.removeDeviceSignalMatch(path)
+	return true
 }
 
 func (b *IWDBackend) handleStationAdded(path dbus.ObjectPath) bool {
@@ -139,6 +176,12 @@ func (b *IWDBackend) signalHandler(sigChan chan *dbus.Signal) {
 				if len(sig.Body) >= 2 {
 					path, _ := sig.Body[0].(dbus.ObjectPath)
 					if interfaces, ok := sig.Body[1].(map[string]map[string]dbus.Variant); ok {
+						// Device before Station: handleStationAdded reads Powered from devicePath.
+						if props, ok := interfaces[iwdDeviceInterface]; ok {
+							if b.handleDeviceAdded(path, props) && b.onStateChange != nil {
+								b.onStateChange()
+							}
+						}
 						if _, ok := interfaces[iwdStationInterface]; ok {
 							if b.handleStationAdded(path) && b.onStateChange != nil {
 								b.onStateChange()
@@ -159,17 +202,19 @@ func (b *IWDBackend) signalHandler(sigChan chan *dbus.Signal) {
 					path, _ := sig.Body[0].(dbus.ObjectPath)
 					if interfaces, ok := sig.Body[1].([]string); ok {
 						for _, iface := range interfaces {
-							if iface == iwdStationInterface {
+							switch iface {
+							case iwdDeviceInterface:
+								if b.handleDeviceRemoved(path) && b.onStateChange != nil {
+									b.onStateChange()
+								}
+							case iwdStationInterface:
 								if b.handleStationRemoved(path) && b.onStateChange != nil {
 									b.onStateChange()
 								}
-								break
-							}
-							if iface == iwdKnownNetworkInterface {
+							case iwdKnownNetworkInterface:
 								if b.refreshWiFiNetworkState() && b.onStateChange != nil {
 									b.onStateChange()
 								}
-								break
 							}
 						}
 					}
@@ -383,6 +428,8 @@ func (b *IWDBackend) signalHandler(sigChan chan *dbus.Signal) {
 
 								b.stateMutex.Lock()
 								b.state.WiFiConnected = false
+								b.state.WiFiSSID = ""
+								b.state.WiFiSignal = 0
 								if state == "disconnected" {
 									b.state.NetworkStatus = StatusDisconnected
 								}

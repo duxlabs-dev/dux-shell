@@ -15,8 +15,33 @@ Singleton {
             "trash": true
         })
     property var userDirs: []
+    property int refCount: 0
 
     signal watchEvent(var data)
+
+    onRefCountChanged: {
+        if (refCount > 0) {
+            ensureSubscription();
+        } else if (refCount === 0 && DMSService.activeSubscriptions.includes("files")) {
+            DMSService.removeSubscription("files");
+        }
+    }
+
+    function addRef() {
+        refCount++;
+    }
+
+    function removeRef() {
+        refCount = Math.max(0, refCount - 1);
+    }
+
+    function ensureSubscription() {
+        if (DMSService.activeSubscriptions.includes("files"))
+            return;
+        if (DMSService.activeSubscriptions.includes("all"))
+            return;
+        DMSService.addSubscription("files");
+    }
 
     onConnectedChanged: {
         if (connected)
@@ -32,6 +57,7 @@ Singleton {
     }
 
     function watch(path, options, callback) {
+        ensureSubscription();
         _send("files.watch", Object.assign({
             "path": path
         }, _options(options)), callback);

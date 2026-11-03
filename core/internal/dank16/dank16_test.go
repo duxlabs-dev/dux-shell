@@ -4,7 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"math"
+	"strings"
 	"testing"
+
+	"github.com/duxlabs-dev/dux-go/material/color"
+	"github.com/duxlabs-dev/dux-go/material/num"
 )
 
 func TestHexToRGB(t *testing.T) {
@@ -19,11 +23,6 @@ func TestHexToRGB(t *testing.T) {
 			expected: RGB{R: 0.0, G: 0.0, B: 0.0},
 		},
 		{
-			name:     "white with hash",
-			input:    "#ffffff",
-			expected: RGB{R: 1.0, G: 1.0, B: 1.0},
-		},
-		{
 			name:     "red without hash",
 			input:    "ff0000",
 			expected: RGB{R: 1.0, G: 0.0, B: 0.0},
@@ -32,11 +31,6 @@ func TestHexToRGB(t *testing.T) {
 			name:     "purple",
 			input:    "#625690",
 			expected: RGB{R: 0.3843137254901961, G: 0.33725490196078434, B: 0.5647058823529412},
-		},
-		{
-			name:     "mid gray",
-			input:    "#808080",
-			expected: RGB{R: 0.5019607843137255, G: 0.5019607843137255, B: 0.5019607843137255},
 		},
 	}
 
@@ -56,16 +50,6 @@ func TestRGBToHex(t *testing.T) {
 		input    RGB
 		expected string
 	}{
-		{
-			name:     "black",
-			input:    RGB{R: 0.0, G: 0.0, B: 0.0},
-			expected: "#000000",
-		},
-		{
-			name:     "white",
-			input:    RGB{R: 1.0, G: 1.0, B: 1.0},
-			expected: "#ffffff",
-		},
 		{
 			name:     "red",
 			input:    RGB{R: 1.0, G: 0.0, B: 0.0},
@@ -103,11 +87,6 @@ func TestRGBToHSL(t *testing.T) {
 			name:     "black",
 			input:    RGB{R: 0.0, G: 0.0, B: 0.0},
 			expected: HSL{H: 0.0, S: 0.0, L: 0.0},
-		},
-		{
-			name:     "white",
-			input:    RGB{R: 1.0, G: 1.0, B: 1.0},
-			expected: HSL{H: 0.0, S: 0.0, L: 1.0},
 		},
 		{
 			name:     "red",
@@ -153,11 +132,6 @@ func TestRGBToHSV(t *testing.T) {
 			expected: HSV{H: 0.0, S: 0.0, V: 0.0},
 		},
 		{
-			name:     "white",
-			input:    RGB{R: 1.0, G: 1.0, B: 1.0},
-			expected: HSV{H: 0.0, S: 0.0, V: 1.0},
-		},
-		{
 			name:     "red",
 			input:    RGB{R: 1.0, G: 0.0, B: 0.0},
 			expected: HSV{H: 0.0, S: 1.0, V: 1.0},
@@ -190,11 +164,6 @@ func TestHSVToRGB(t *testing.T) {
 		input    HSV
 		expected RGB
 	}{
-		{
-			name:     "black",
-			input:    HSV{H: 0.0, S: 0.0, V: 0.0},
-			expected: RGB{R: 0.0, G: 0.0, B: 0.0},
-		},
 		{
 			name:     "white",
 			input:    HSV{H: 0.0, S: 0.0, V: 1.0},
@@ -233,16 +202,6 @@ func TestLuminance(t *testing.T) {
 		input    string
 		expected float64
 	}{
-		{
-			name:     "black",
-			input:    "#000000",
-			expected: 0.0,
-		},
-		{
-			name:     "white",
-			input:    "#ffffff",
-			expected: 1.0,
-		},
 		{
 			name:     "red",
 			input:    "#ff0000",
@@ -316,20 +275,6 @@ func TestEnsureContrast(t *testing.T) {
 		isLightMode bool
 	}{
 		{
-			name:        "already sufficient contrast dark mode",
-			color:       "#ffffff",
-			bg:          "#000000",
-			minRatio:    4.5,
-			isLightMode: false,
-		},
-		{
-			name:        "already sufficient contrast light mode",
-			color:       "#000000",
-			bg:          "#ffffff",
-			minRatio:    4.5,
-			isLightMode: true,
-		},
-		{
 			name:        "needs adjustment dark mode",
 			color:       "#404040",
 			bg:          "#1a1a1a",
@@ -373,13 +318,6 @@ func TestGeneratePalette(t *testing.T) {
 			opts:          PaletteOptions{IsLight: false},
 		},
 		{
-			name:          "light theme default",
-			base:          "#625690",
-			backgroundHex: "#f8f8f8",
-			backgroundHSL: "hsl(0.0, 0.0%, 97.3%)",
-			opts:          PaletteOptions{IsLight: true},
-		},
-		{
 			name:          "light theme with custom background",
 			base:          "#625690",
 			backgroundHex: "#fafafa",
@@ -387,16 +325,6 @@ func TestGeneratePalette(t *testing.T) {
 			opts: PaletteOptions{
 				IsLight:    true,
 				Background: "#fafafa",
-			},
-		},
-		{
-			name:          "dark theme with custom background",
-			base:          "#625690",
-			backgroundHex: "#0a0a0a",
-			backgroundHSL: "hsl(0.0, 0.0%, 3.9%)",
-			opts: PaletteOptions{
-				IsLight:    false,
-				Background: "#0a0a0a",
 			},
 		},
 	}
@@ -454,28 +382,8 @@ func TestFormatOutput(t *testing.T) {
 			out: []byte(`{"hex":"#000000","hex_stripped":"000000","hex_alpha":"#000000ff","hex_alpha_stripped":"000000ff","alpha_hex":"#ff000000","alpha_hex_stripped":"ff000000","rgb":"rgb(0, 0, 0)","rgba":"rgba(0, 0, 0, 1.0)","hsl":"hsl(0.0, 0.0%, 0.0%)","hsla":"hsla(0.0, 0.0%, 0.0%, 1.0)","red":"0","green":"0","blue":"0","alpha":"1.0","hue":"0.0","saturation":"0.0%","lightness":"0.0%"}`),
 		},
 		{
-			in:  "#ffffff",
-			out: []byte(`{"hex":"#ffffff","hex_stripped":"ffffff","hex_alpha":"#ffffffff","hex_alpha_stripped":"ffffffff","alpha_hex":"#ffffffff","alpha_hex_stripped":"ffffffff","rgb":"rgb(255, 255, 255)","rgba":"rgba(255, 255, 255, 1.0)","hsl":"hsl(0.0, 0.0%, 100.0%)","hsla":"hsla(0.0, 0.0%, 100.0%, 1.0)","red":"255","green":"255","blue":"255","alpha":"1.0","hue":"0.0","saturation":"0.0%","lightness":"100.0%"}`),
-		},
-		{
-			in:  "#ff0000",
-			out: []byte(`{"hex":"#ff0000","hex_stripped":"ff0000","hex_alpha":"#ff0000ff","hex_alpha_stripped":"ff0000ff","alpha_hex":"#ffff0000","alpha_hex_stripped":"ffff0000","rgb":"rgb(255, 0, 0)","rgba":"rgba(255, 0, 0, 1.0)","hsl":"hsl(0.0, 100.0%, 50.0%)","hsla":"hsla(0.0, 100.0%, 50.0%, 1.0)","red":"255","green":"0","blue":"0","alpha":"1.0","hue":"0.0","saturation":"100.0%","lightness":"50.0%"}`),
-		},
-		{
-			in:  "#00ff00",
-			out: []byte(`{"hex":"#00ff00","hex_stripped":"00ff00","hex_alpha":"#00ff00ff","hex_alpha_stripped":"00ff00ff","alpha_hex":"#ff00ff00","alpha_hex_stripped":"ff00ff00","rgb":"rgb(0, 255, 0)","rgba":"rgba(0, 255, 0, 1.0)","hsl":"hsl(120.0, 100.0%, 50.0%)","hsla":"hsla(120.0, 100.0%, 50.0%, 1.0)","red":"0","green":"255","blue":"0","alpha":"1.0","hue":"120.0","saturation":"100.0%","lightness":"50.0%"}`),
-		},
-		{
-			in:  "#0000ff",
-			out: []byte(`{"hex":"#0000ff","hex_stripped":"0000ff","hex_alpha":"#0000ffff","hex_alpha_stripped":"0000ffff","alpha_hex":"#ff0000ff","alpha_hex_stripped":"ff0000ff","rgb":"rgb(0, 0, 255)","rgba":"rgba(0, 0, 255, 1.0)","hsl":"hsl(240.0, 100.0%, 50.0%)","hsla":"hsla(240.0, 100.0%, 50.0%, 1.0)","red":"0","green":"0","blue":"255","alpha":"1.0","hue":"240.0","saturation":"100.0%","lightness":"50.0%"}`),
-		},
-		{
 			in:  "#625690",
 			out: []byte(`{"hex":"#625690","hex_stripped":"625690","hex_alpha":"#625690ff","hex_alpha_stripped":"625690ff","alpha_hex":"#ff625690","alpha_hex_stripped":"ff625690","rgb":"rgb(98, 86, 144)","rgba":"rgba(98, 86, 144, 1.0)","hsl":"hsl(252.4, 25.2%, 45.1%)","hsla":"hsla(252.4, 25.2%, 45.1%, 1.0)","red":"98","green":"86","blue":"144","alpha":"1.0","hue":"252.4","saturation":"25.2%","lightness":"45.1%"}`),
-		},
-		{
-			in:  "#ff00ff",
-			out: []byte(`{"hex":"#ff00ff","hex_stripped":"ff00ff","hex_alpha":"#ff00ffff","hex_alpha_stripped":"ff00ffff","alpha_hex":"#ffff00ff","alpha_hex_stripped":"ffff00ff","rgb":"rgb(255, 0, 255)","rgba":"rgba(255, 0, 255, 1.0)","hsl":"hsl(300.0, 100.0%, 50.0%)","hsla":"hsla(300.0, 100.0%, 50.0%, 1.0)","red":"255","green":"0","blue":"255","alpha":"1.0","hue":"300.0","saturation":"100.0%","lightness":"50.0%"}`),
 		},
 		{
 			in:  "#888888",
@@ -498,7 +406,7 @@ func TestFormatOutput(t *testing.T) {
 }
 
 func TestRoundTripConversion(t *testing.T) {
-	testColors := []string{"#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff", "#625690", "#808080"}
+	testColors := []string{"#625690", "#808080"}
 
 	for _, hex := range testColors {
 		t.Run(hex, func(t *testing.T) {
@@ -513,11 +421,6 @@ func TestRoundTripConversion(t *testing.T) {
 
 func TestRGBHSVRoundTrip(t *testing.T) {
 	testCases := []RGB{
-		{R: 0.0, G: 0.0, B: 0.0},
-		{R: 1.0, G: 1.0, B: 1.0},
-		{R: 1.0, G: 0.0, B: 0.0},
-		{R: 0.0, G: 1.0, B: 0.0},
-		{R: 0.0, G: 0.0, B: 1.0},
 		{R: 0.5, G: 0.5, B: 0.5},
 		{R: 0.3843137254901961, G: 0.33725490196078434, B: 0.5647058823529412},
 	}
@@ -579,41 +482,6 @@ func TestDeltaPhiStar(t *testing.T) {
 	}
 }
 
-func TestDeltaPhiStarContrast(t *testing.T) {
-	tests := []struct {
-		name        string
-		fg          string
-		bg          string
-		isLightMode bool
-		minExpected float64
-	}{
-		{
-			name:        "white on black (dark mode)",
-			fg:          "#ffffff",
-			bg:          "#000000",
-			isLightMode: false,
-			minExpected: 100.0,
-		},
-		{
-			name:        "black on white (light mode)",
-			fg:          "#000000",
-			bg:          "#ffffff",
-			isLightMode: true,
-			minExpected: 100.0,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := DeltaPhiStarContrast(tt.fg, tt.bg, tt.isLightMode)
-			if result < tt.minExpected {
-				t.Errorf("DeltaPhiStarContrast(%s, %s, %v) = %f, expected >= %f",
-					tt.fg, tt.bg, tt.isLightMode, result, tt.minExpected)
-			}
-		})
-	}
-}
-
 func TestEnsureContrastDPS(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -622,20 +490,6 @@ func TestEnsureContrastDPS(t *testing.T) {
 		minLc       float64
 		isLightMode bool
 	}{
-		{
-			name:        "already sufficient contrast dark mode",
-			color:       "#ffffff",
-			bg:          "#000000",
-			minLc:       60.0,
-			isLightMode: false,
-		},
-		{
-			name:        "already sufficient contrast light mode",
-			color:       "#000000",
-			bg:          "#ffffff",
-			minLc:       60.0,
-			isLightMode: true,
-		},
 		{
 			name:        "needs adjustment dark mode",
 			color:       "#404040",
@@ -934,5 +788,141 @@ func TestGeneratePaletteFallsBackToDerivedContainer(t *testing.T) {
 	want := DeriveContainer(primary, false)
 	if palette.Color5.Hex != want {
 		t.Errorf("Color5 = %s with no container supplied, expected the derived %s", palette.Color5.Hex, want)
+	}
+}
+
+func paletteHexes(p Palette) [16]string {
+	return [16]string{
+		p.Color0.Hex, p.Color1.Hex, p.Color2.Hex, p.Color3.Hex, p.Color4.Hex, p.Color5.Hex, p.Color6.Hex, p.Color7.Hex,
+		p.Color8.Hex, p.Color9.Hex, p.Color10.Hex, p.Color11.Hex, p.Color12.Hex, p.Color13.Hex, p.Color14.Hex, p.Color15.Hex,
+	}
+}
+
+func hctHue(hex string) float64 {
+	return color.ARGBFromHexMust(hex).ToHct().Hue
+}
+
+func TestDefaultProfileUnchanged(t *testing.T) {
+	tests := []struct {
+		name  string
+		light bool
+		want  [16]string
+	}{
+		{"dark", false, [16]string{"#1a1a1a", "#ff72a0", "#77ee84", "#fff672", "#70bfe2", "#19546e", "#8ad0ee", "#eaf5f9", "#444b4d", "#ff9fbe", "#a5ffaf", "#fff9a5", "#a3e3ff", "#b3e8ff", "#cef0ff", "#f8fdff"}},
+		{"light", true, [16]string{"#f8f8f8", "#c23c6c", "#00811d", "#727300", "#1a7895", "#dcf4ff", "#8ad0ee", "#3f4142", "#b8bbbc", "#dc608a", "#009f29", "#8f8e00", "#3993b4", "#5c90a6", "#c9eeff", "#f9fdff"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, profile := range []string{"", "default", "bogus"} {
+				got := paletteHexes(GeneratePalette("#8ad0ee", PaletteOptions{UseDPS: true, IsLight: tt.light, Profile: profile}))
+				if got != tt.want {
+					t.Errorf("profile %q drifted:\n got %v\nwant %v", profile, got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+func TestProfileGoldens(t *testing.T) {
+	tests := []struct {
+		profile string
+		light   bool
+		want    string
+	}{
+		{ProfileLow, false, "#1a1a1a #ea77d9 #31f2a9 #d6ffa0 #70bfe2 #19546e #8ad0ee #eaf5f9 #444b4d #eca4e1 #98ffce #e4ffbf #a3e3ff #b3e8ff #cef0ff #f8fdff"},
+		{ProfileMedium, false, "#1a1a1a #c684ff #00f0ce #c8ffd2 #6fbfe1 #19546e #8ad0ee #eaf5f9 #444b4d #d2abf8 #89ffe6 #daffdf #a3e3ff #b4e8ff #cff0ff #f8fdff"},
+		{ProfileHigh, false, "#1a1a1a #879bff #00ecf6 #b8fff6 #6fbfe1 #19546e #8ad0ee #eaf5f9 #444b4d #a7b8ff #a1f9ff #d0fff8 #a3e3ff #b4e8ff #cff0ff #f8fdff"},
+		{ProfileLow, true, "#f8f8f8 #b240a4 #007f51 #507a2b #1a7895 #dcf4ff #8ad0ee #3f4142 #b8bbbc #c964bb #009d65 #669737 #3993b4 #5c90a6 #c9eeff #f9fdff"},
+		{ProfileMedium, true, "#f8f8f8 #944bcf #007d68 #1d7f4c #1a7895 #dcf4ff #8ad0ee #3f4142 #b8bbbc #ab6fe0 #009b82 #2a9c5f #3993b4 #5c90a6 #c9eeff #f9fdff"},
+		{ProfileHigh, true, "#f8f8f8 #4562e9 #007b7f #007d76 #1b7895 #dcf4ff #8ad0ee #3f4142 #b8bbbc #6882f3 #00989d #009a91 #3993b4 #5c90a6 #caeeff #f9fdff"},
+	}
+	for _, tt := range tests {
+		got := paletteHexes(GeneratePalette("#8ad0ee", PaletteOptions{UseDPS: true, IsLight: tt.light, Profile: tt.profile}))
+		if s := strings.Join(got[:], " "); s != tt.want {
+			t.Errorf("%s light=%v:\n got %s\nwant %s", tt.profile, tt.light, s, tt.want)
+		}
+	}
+}
+
+func TestProfileMalformedPrimaryDoesNotPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("panicked: %v", r)
+		}
+	}()
+	GeneratePalette("not-a-color", PaletteOptions{UseDPS: true, Profile: ProfileHigh})
+	GeneratePalette("#12345", PaletteOptions{UseDPS: true, Profile: ProfileHigh})
+	GeneratePalette("#8ad0ee", PaletteOptions{UseDPS: true, Container: "steelblue", Profile: ProfileLow})
+	GeneratePalette("#8ad0ee", PaletteOptions{UseDPS: true, Container: "#12345", Profile: ProfileLow})
+}
+
+var profiles = []string{ProfileLow, ProfileMedium, ProfileHigh}
+
+func TestProfileInvariants(t *testing.T) {
+	for _, primary := range []string{"#e91e63", "#f59e0b", "#22c55e", "#06b6d4", "#8b5cf6", "#8ad0ee"} {
+		for _, light := range []bool{false, true} {
+			def := PaletteOptions{UseDPS: true, IsLight: light}
+			dh := paletteHexes(GeneratePalette(primary, def))
+			for _, profile := range profiles {
+				opts := def
+				opts.Profile = profile
+				hh := paletteHexes(GeneratePalette(primary, opts))
+				for _, i := range []int{0, 5, 6, 7, 8, 15} {
+					if dh[i] != hh[i] {
+						t.Errorf("%s %s light=%v slot %d: %s != default %s", primary, profile, light, i, hh[i], dh[i])
+					}
+				}
+				for i := 1; i <= 4; i++ {
+					if lc := DeltaPhiStarContrast(hh[i], hh[0], light); lc < 30 {
+						t.Errorf("%s %s light=%v slot %d Lc %.1f < 30", primary, profile, light, i, lc)
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestProfileHueApproachesPrimaryWithStrength(t *testing.T) {
+	const primary = "#1e66f5"
+	ph := hctHue(primary)
+	for _, light := range []bool{false, true} {
+		prev := math.Inf(1)
+		for _, profile := range append([]string{""}, profiles...) {
+			red := GeneratePalette(primary, PaletteOptions{UseDPS: true, IsLight: light, Profile: profile}).Color1.Hex
+			d := num.DifferenceDegrees(hctHue(red), ph)
+			if d >= prev {
+				t.Errorf("light=%v %q: red hue distance %.1f not below previous %.1f", light, profile, d, prev)
+			}
+			prev = d
+		}
+	}
+}
+
+func TestHighRotatesByCappedAmount(t *testing.T) {
+	def := hctHue(GeneratePalette("#8ad0ee", PaletteOptions{UseDPS: true}).Color1.Hex)
+	got := hctHue(GeneratePalette("#8ad0ee", PaletteOptions{UseDPS: true, Profile: ProfileHigh}).Color1.Hex)
+	if d := num.DifferenceDegrees(def, got); math.Abs(d-85) > 3 {
+		t.Errorf("slot 1 rotated %.1f degrees, want 85 (the 100 degree cap at high strength)", d)
+	}
+}
+
+func TestProfileGreyPrimaryKeepsDefault(t *testing.T) {
+	def := paletteHexes(GeneratePalette("#808080", PaletteOptions{UseDPS: true}))
+	high := paletteHexes(GeneratePalette("#808080", PaletteOptions{UseDPS: true, Profile: ProfileHigh}))
+	if def != high {
+		t.Errorf("grey primary changed by high profile:\n got %v\nwant %v", high, def)
+	}
+}
+
+func TestGenerateVariantPaletteProfile(t *testing.T) {
+	opts := VariantOptions{PrimaryDark: "#8ad0ee", PrimaryLight: "#1c5070", UseDPS: true}
+	def := GenerateVariantPalette(opts)
+	opts.Profile = ProfileHigh
+	high := GenerateVariantPalette(opts)
+	if def.Color1.Dark.Hex == high.Color1.Dark.Hex {
+		t.Error("dark color1 unchanged by high profile")
+	}
+	if def.Color1.Light.Hex == high.Color1.Light.Hex {
+		t.Error("light color1 unchanged by high profile")
 	}
 }

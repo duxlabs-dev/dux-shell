@@ -3,10 +3,10 @@ package mime
 import (
 	"fmt"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/desktop"
-	"github.com/AvengeMedia/dankgo/ipc"
-	"github.com/AvengeMedia/dankgo/ipc/params"
+	"github.com/duxlabs-dev/dux-go/desktop"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc/params"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 )
 
 type defaultResult struct {
@@ -50,19 +50,19 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request) {
 		handleQueryDefaults(conn, req)
 	case "mime.invalidate":
 		desktop.InvalidateCache()
-		models.Respond(conn, req.ID, models.SuccessResult{Success: true})
+		conn.Respond(req.ID, models.SuccessResult{Success: true})
 	default:
-		models.RespondError(conn, req.ID, fmt.Sprintf("unknown method: %s", req.Method))
+		conn.RespondError(req.ID, fmt.Sprintf("unknown method: %s", req.Method))
 	}
 }
 
 func handleGetDefault(conn *ipc.ConnWriter, req ipc.Request) {
 	mimeType, err := requestedMime(req.Params)
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
-	models.Respond(conn, req.ID, defaultResult{
+	conn.Respond(req.ID, defaultResult{
 		MimeType:  mimeType,
 		DesktopID: desktop.GetDefault(mimeType),
 	})
@@ -71,50 +71,50 @@ func handleGetDefault(conn *ipc.ConnWriter, req ipc.Request) {
 func handleSetDefault(conn *ipc.ConnWriter, req ipc.Request) {
 	mimeType, err := mimeParam(req.Params, "mimeType")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 	desktopID, err := params.StringNonEmpty(req.Params, "desktopId")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 	if err := desktop.SetDefault(mimeType, desktopID); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true})
+	conn.Respond(req.ID, models.SuccessResult{Success: true})
 }
 
 func handleSetDefaults(conn *ipc.ConnWriter, req ipc.Request) {
 	desktopID, err := params.StringNonEmpty(req.Params, "desktopId")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 	mimeTypes, err := mimeListParam(req, "mimeTypes")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 	if err := desktop.SetDefaults(mimeTypes, desktopID); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true})
+	conn.Respond(req.ID, models.SuccessResult{Success: true})
 }
 
 func handleAppsForMime(conn *ipc.ConnWriter, req ipc.Request) {
 	mimeType, err := mimeParam(req.Params, "mimeType")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 	ids := desktop.AppsForMime(mimeType)
 	if ids == nil {
 		ids = []string{}
 	}
-	models.Respond(conn, req.ID, appsResult{
+	conn.Respond(req.ID, appsResult{
 		MimeType:   mimeType,
 		DesktopIDs: ids,
 	})
@@ -123,7 +123,7 @@ func handleAppsForMime(conn *ipc.ConnWriter, req ipc.Request) {
 func handleHandlersForMime(conn *ipc.ConnWriter, req ipc.Request) {
 	mimeType, err := mimeParam(req.Params, "mimeType")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 	entries := desktop.HandlersForMime(mimeType)
@@ -135,7 +135,7 @@ func handleHandlersForMime(conn *ipc.ConnWriter, req ipc.Request) {
 			Icon: entry.Icon,
 		})
 	}
-	models.Respond(conn, req.ID, handlersResult{
+	conn.Respond(req.ID, handlersResult{
 		MimeType: mimeType,
 		Apps:     apps,
 	})
@@ -144,10 +144,10 @@ func handleHandlersForMime(conn *ipc.ConnWriter, req ipc.Request) {
 func handleQueryDefaults(conn *ipc.ConnWriter, req ipc.Request) {
 	mimeTypes, err := mimeListParam(req, "mimeTypes")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
-	models.Respond(conn, req.ID, queryResult{
+	conn.Respond(req.ID, queryResult{
 		Defaults: desktop.QueryDefaults(mimeTypes),
 	})
 }
@@ -180,7 +180,7 @@ func mimeParam(p map[string]any, key string) (string, error) {
 }
 
 func mimeListParam(req ipc.Request, key string) ([]string, error) {
-	raw, ok := models.Get[[]any](req, key)
+	raw, ok := req.Get[[]any](key)
 	if !ok {
 		return nil, fmt.Errorf("missing or invalid '%s' parameter", key)
 	}

@@ -1,7 +1,8 @@
-import qs.DankCommon.Widgets as DankCommon
-import qs.Services
+import QtQuick
+import qs.Common
+import qs.DCommon.Widgets as DCommon
 
-DankCommon.DankDropdown {
-    // Hyprland drops a focus grab when a whitelisted popup takes its own xdg grab
-    popupGrabsFocus: !(CompositorService.useHyprlandFocusGrab && transientSurfaceTracker)
+DCommon.DDropdown {
+    id: shim
+    Component.onCompleted: Deprecation.type(shim, "DankDropdown", "DDropdown", "qs.DCommon.Widgets")
 }

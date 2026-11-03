@@ -1,7 +1,8 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
+import qs.Modules.Settings.Widgets
 
 Rectangle {
     id: root
@@ -29,14 +30,14 @@ Rectangle {
 
     color: {
         if (!isConnected)
-            return Theme.floatingWindowFieldColor;
+            return SettingsMetrics.controlColor;
         if (!isValidPosition)
             return Theme.withAlpha(Theme.error, 0.3);
         if (isDragging)
             return Theme.withAlpha(Theme.primary, 0.4);
         if (dragArea.containsMouse)
             return Theme.withAlpha(Theme.primary, 0.2);
-        return Theme.floatingWindowNestedSurface;
+        return SettingsMetrics.controlColor;
     }
 
     border.color: {
@@ -71,7 +72,7 @@ Rectangle {
         anchors.centerIn: parent
         spacing: Theme.spacingXXS
 
-        DankIcon {
+        DIcon {
             name: root.isConnected ? "desktop_windows" : "desktop_access_disabled"
             size: Math.min(24, Math.min(root.width * 0.3, root.height * 0.25))
             color: root.isConnected ? (root.isValidPosition ? Theme.primary : Theme.error) : Theme.surfaceVariantText

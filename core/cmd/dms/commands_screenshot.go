@@ -9,12 +9,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime/debug"
-	"strconv"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/clipboard"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/notify"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/screenshot"
+	"github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/notify"
+	"github.com/duxlabs-dev/dux-shell/core/internal/qsipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/screenshot"
 	"github.com/spf13/cobra"
 )
 
@@ -246,7 +246,27 @@ func getScreenshotConfig(mode screenshot.Mode) screenshot.Config {
 	}
 	config.Quality = ssQuality
 
+	if mode == screenshot.ModeRegion || mode == screenshot.ModeScroll {
+		config.SnapTargets = fetchShellSnapTargets()
+	}
+
 	return config
+}
+
+func fetchShellSnapTargets() []screenshot.SnapTarget {
+	pid, ok := shellApp.SessionPID()
+	if !ok {
+		return nil
+	}
+	res, isVoid, err := qsipc.Call(qsipc.SocketPathForPID(pid), "screenshot", "getSurfaces", nil)
+	if err != nil || isVoid || res == "" {
+		return nil
+	}
+	var targets []screenshot.SnapTarget
+	if err := json.Unmarshal([]byte(res), &targets); err != nil {
+		return nil
+	}
+	return targets
 }
 
 // setPopoutScreenshotMode toggles the shell handshake so popouts drop their keyboard grab during region select.
@@ -256,18 +276,18 @@ func setPopoutScreenshotMode(begin bool) {
 	if begin {
 		fn = "begin"
 	}
-	cmdArgs := []string{"ipc"}
 	if pid, ok := shellApp.SessionPID(); ok {
-		cmdArgs = append(cmdArgs, "--pid", strconv.Itoa(pid))
-	} else {
-		if err := shellApp.ResolveConfig(nil, nil); err != nil {
-			return
-		}
-		if qsHasAnyDisplay() {
-			cmdArgs = append(cmdArgs, "--any-display")
-		}
-		cmdArgs = append(cmdArgs, "-p", shellApp.ConfigPath())
+		_, _, _ = qsipc.Call(qsipc.SocketPathForPID(pid), "screenshot", fn, nil)
+		return
 	}
+	cmdArgs := []string{"ipc"}
+	if err := shellApp.ResolveConfig(nil, nil); err != nil {
+		return
+	}
+	if qsHasAnyDisplay() {
+		cmdArgs = append(cmdArgs, "--any-display")
+	}
+	cmdArgs = append(cmdArgs, "-p", shellApp.ConfigPath())
 	cmdArgs = append(cmdArgs, "call", "screenshot", fn)
 	_ = exec.Command("qs", cmdArgs...).Start()
 }
@@ -358,6 +378,12 @@ func runScreenshot(config screenshot.Config) {
 		}
 	}
 
+	if result.CopyOnly {
+		config.SaveFile = false
+		config.Clipboard = true
+		config.Stdout = false
+	}
+
 	if config.Stdout {
 		if err := writeImageToStdout(result.Buffer, config.Format, config.Quality, result.Format, result.CICP); err != nil {
 			exitScreenshotError(" writing to stdout", err)
@@ -388,27 +414,44 @@ func runScreenshot(config screenshot.Config) {
 	}
 
 	if config.Clipboard {
-		if err := copyImageToClipboard(result.Buffer, config.Format, config.Quality, result.Format, result.CICP); err != nil {
+		var err error
+		if filePath != "" && config.Format != screenshot.FormatPPM {
+			err = copyFileToClipboard(filePath)
+		} else {
+			err = copyImageToClipboard(result.Buffer, config.Format, config.Quality, result.Format, result.CICP)
+		}
+		if err != nil {
 			exitScreenshotError(" copying to clipboard", err)
 		}
 		if !ssJSON && !config.SaveFile {
-			fmt.Println("Copied to clipboard")
+			if ssStdout {
+				fmt.Fprintln(os.Stderr, "Copied to clipboard")
+			} else {
+				fmt.Println("Copied to clipboard")
+			}
 		}
 	}
 
 	if ssJSON {
-		scale := result.Scale
-		if scale <= 0 {
-			scale = 1.0
+		if result.CopyOnly {
+			writeScreenshotJSON(screenshotMetadata{
+				Status: "aborted",
+				Error:  "User copied to clipboard",
+			})
+		} else {
+			scale := result.Scale
+			if scale <= 0 {
+				scale = 1.0
+			}
+			writeScreenshotJSON(screenshotMetadata{
+				Status: "success",
+				Path:   filePath,
+				Width:  result.Buffer.Width,
+				Height: result.Buffer.Height,
+				Scale:  scale,
+				Mime:   formatMime(config.Format),
+			})
 		}
-		writeScreenshotJSON(screenshotMetadata{
-			Status: "success",
-			Path:   filePath,
-			Width:  result.Buffer.Width,
-			Height: result.Buffer.Height,
-			Scale:  scale,
-			Mime:   formatMime(config.Format),
-		})
 	}
 
 	if config.Notify {

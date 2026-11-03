@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
@@ -10,16 +10,17 @@ Item {
     property var parentModal: null
     readonly property var coordinates: SettingsData.weatherCoordinates.split(",")
     readonly property bool validCoordinates: latitude.text.trim() !== "" && longitude.text.trim() !== "" && Number.isFinite(Number(latitude.text)) && Number.isFinite(Number(longitude.text)) && Math.abs(Number(latitude.text)) <= 90 && Math.abs(Number(longitude.text)) <= 180
+    readonly property bool coordinatesEdited: Number(latitude.text) !== Number(coordinates[0]) || Number(longitude.text) !== Number(coordinates[1])
 
     function saveCoordinates() {
-        if (!validCoordinates)
+        if (!validCoordinates || !coordinatesEdited)
             return;
         SettingsData.setWeatherLocation("", Number(latitude.text) + "," + Number(longitude.text));
     }
 
     SettingsPage {
         SettingsCard {
-            title: I18n.tr("Weather")
+            title: I18n.tr("General")
             tab: "weather"
             settingKey: "weather"
 
@@ -70,7 +71,7 @@ Item {
             SettingsRow {
                 enabled: !SettingsData.useAutoLocation
                 title: I18n.tr("Location search")
-                body: DankLocationSearch {
+                body: DLocationSearch {
                     width: parent.width
                     currentLocation: SettingsData.weatherLocation
                     placeholderText: I18n.tr("New York, NY")
@@ -89,7 +90,7 @@ Item {
                         width: parent.width
                         spacing: Theme.spacingM
 
-                        DankTextField {
+                        DTextField {
                             id: latitude
                             outlined: true
                             leftIconName: "location_on"
@@ -100,7 +101,7 @@ Item {
                             onAccepted: root.saveCoordinates()
                         }
 
-                        DankTextField {
+                        DTextField {
                             id: longitude
                             outlined: true
                             leftIconName: "location_on"
@@ -112,10 +113,52 @@ Item {
                         }
                     }
 
-                    DankButton {
+                    DButton {
                         text: I18n.tr("Apply", "verb, button that saves custom weather coordinates")
-                        enabled: root.validCoordinates
+                        enabled: root.validCoordinates && root.coordinatesEdited
                         onClicked: root.saveCoordinates()
+                    }
+                }
+            }
+        }
+
+        SettingsCard {
+            title: I18n.tr("Weather providers", "Weather data source priority settings")
+            tab: "weather"
+            settingKey: "weatherProviders"
+            tags: ["weather", "provider", "source", "fallback", "priority", "order", "open-meteo", "met norway"]
+
+            headerActions: DActionButton {
+                iconName: "restart_alt"
+                tooltipText: I18n.tr("Reset to default")
+                enabled: !SettingsData.isDefault(["weatherProviders"])
+                onClicked: SettingsData.resetToDefault(["weatherProviders"])
+            }
+
+            SettingsRow {
+                title: I18n.tr("Drag to reorder")
+                subtitle: I18n.tr("The next enabled provider is used when one fails.", "weather providers fallback hint")
+            }
+
+            SettingsReorderList {
+                id: weatherProviderList
+                model: WeatherService.providerOrder.split(",")
+                onReordered: indices => WeatherService.reorderProviders(indices)
+
+                delegate: SettingsReorderRow {
+                    id: providerRow
+                    required property string modelData
+                    readonly property var provider: WeatherService.providers.find(provider => provider.id === modelData)
+                    reorderList: weatherProviderList
+                    title: provider?.text ?? ""
+                    clickable: true
+                    onClicked: WeatherService.setProviderEnabled(modelData, !provider?.enabled)
+
+                    DToggle {
+                        hideText: true
+                        Accessible.name: providerRow.title
+                        checked: providerRow.provider?.enabled ?? false
+                        onToggled: checked => WeatherService.setProviderEnabled(providerRow.modelData, checked)
                     }
                 }
             }
@@ -127,24 +170,29 @@ Item {
             settingKey: "weatherDisplay"
 
             SettingsToggleRow {
+                readonly property var lockStatus: SettingsData.lockWidgetInstance("lockStatus")
+
                 tab: "weather"
-                settingKey: "lockScreenShowWeather"
+                settingKey: "lockStatusWeather"
                 tags: ["weather", "lock", "screen"]
+                visible: lockStatus !== null
                 text: I18n.tr("Lock screen")
-                checked: SettingsData.lockScreenShowWeather
-                onToggled: checked => SettingsData.set("lockScreenShowWeather", checked)
+                checked: lockStatus?.config?.showWeather ?? true
+                onToggled: checked => SettingsData.updateDesktopWidgetInstanceConfig(lockStatus.id, {
+                        showWeather: checked
+                    })
             }
 
             SettingsNavRow {
                 title: I18n.tr("Dashboard")
                 iconName: "space_dashboard"
-                onClicked: root.parentModal?.navigateTo("dank_dash")
+                onClicked: keyboard => root.parentModal?.navigateTo("dank_dash", keyboard)
             }
 
             SettingsNavRow {
                 title: I18n.tr("Bar widgets")
                 iconName: "widgets"
-                onClicked: root.parentModal?.navigateTo("dankbar_widgets")
+                onClicked: keyboard => root.parentModal?.navigateTo("dankbar_widgets", keyboard)
             }
         }
     }

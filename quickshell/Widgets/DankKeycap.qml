@@ -1,3 +1,8 @@
-import qs.DankCommon.Widgets as DankCommon
+import QtQuick
+import qs.Common
+import qs.DCommon.Widgets as DCommon
 
-DankCommon.DankKeycap {}
+DCommon.DKeycap {
+    id: shim
+    Component.onCompleted: Deprecation.type(shim, "DankKeycap", "DKeycap", "qs.DCommon.Widgets")
+}

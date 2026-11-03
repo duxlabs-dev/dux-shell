@@ -3,9 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import qs.Common
-import qs.Modals.Settings
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
@@ -46,12 +45,62 @@ Item {
         searchField.forceActiveFocus();
     }
 
-    function focusAfterNavigation() {
-        if (parentModal?.isCompactMode && !parentModal.menuVisible) {
-            parentModal.focusCurrentPage();
+    function focusAfterNavigation(keyboard) {
+        if (keyboard || (parentModal?.isCompactMode && !parentModal.menuVisible)) {
+            parentModal?.focusCurrentPage(keyboard);
             return;
         }
-        focusSearch();
+        parentModal?.focusSidebar();
+    }
+
+    function focusNavigation() {
+        function findRow(item) {
+            if (item.modelData?.id === root.activeCategoryId && item.visible && item.enabled)
+                return item;
+            for (const child of item.children ?? []) {
+                const row = findRow(child);
+                if (row)
+                    return row;
+            }
+            return null;
+        }
+        const row = findRow(sidebarColumn);
+        if (row && !searchActive) {
+            row.forceActiveFocus(Qt.TabFocusReason);
+            ensureRowVisible(row);
+        } else {
+            focusSearch();
+        }
+    }
+
+    function moveRowFocus(forward) {
+        const start = Window.activeFocusItem;
+        if (start === root) {
+            parentModal?.focusSidebar();
+            return true;
+        }
+        let item = start;
+        do {
+            item = item?.nextItemInFocusChain(forward);
+            if (!item || item === start)
+                return false;
+            let ancestor = item;
+            while (ancestor && ancestor !== root)
+                ancestor = ancestor.parent;
+            if (!ancestor)
+                return false;
+        } while (!item.visible || !item.enabled)
+        keyboardHighlightId = "";
+        item.forceActiveFocus(forward ? Qt.TabFocusReason : Qt.BacktabFocusReason);
+        ensureRowVisible(item);
+        return true;
+    }
+
+    Keys.onPressed: event => {
+        if ((event.modifiers & ~Qt.KeypadModifier) !== Qt.NoModifier)
+            return;
+        if (event.key === Qt.Key_Up || event.key === Qt.Key_Down)
+            event.accepted = moveRowFocus(event.key === Qt.Key_Down);
     }
 
     function navigableIds() {
@@ -79,7 +128,7 @@ Item {
             return;
         pageRequested(keyboardHighlightId);
         keyboardHighlightId = "";
-        Qt.callLater(root.focusAfterNavigation);
+        root.focusAfterNavigation(true);
     }
 
     function ensureRowVisible(item) {
@@ -120,22 +169,25 @@ Item {
             parentModal?.navigateTo("bar_widget");
     }
 
-    function selectSearchResult(result) {
+    function selectSearchResult(result, keyboard = true) {
         if (!result)
             return;
         if (result.runtimeType === "barWidget" || result.runtimeType === "barWidgetAdd") {
             openBarWidget(result.runtimeId, result.runtimeType === "barWidgetAdd");
             keyboardHighlightId = "";
-            Qt.callLater(root.focusAfterNavigation);
+            root.focusAfterNavigation(keyboard);
             return;
         }
+        const islandBar = SettingsSearchService.islandBarFor(result.conditionKey, SettingsUiState.selectedBarId);
+        if (islandBar)
+            SettingsUiState.selectedBarId = islandBar.id;
         if (result.section)
             SettingsSearchService.navigateToSection(result.section);
         const page = result.page || SettingsTabs.pageForTabIndex(result.tabIndex);
         if (page)
             pageRequested(page);
         keyboardHighlightId = "";
-        Qt.callLater(root.focusAfterNavigation);
+        root.focusAfterNavigation(keyboard);
     }
 
     function navigateSearchResults(delta) {
@@ -151,16 +203,8 @@ Item {
         if (!result || !contentItem)
             return;
 
-        const mapped = result.mapToItem(contentItem, 0, 0);
-        const margin = Theme.spacingS;
-        const top = mapped.y;
-        const bottom = top + result.height;
-        const maxContentY = Math.max(0, sidebarFlickable.contentHeight - sidebarFlickable.height);
-        if (top < sidebarFlickable.contentY + margin) {
-            sidebarFlickable.contentY = Math.max(0, top - margin);
-        } else if (bottom > sidebarFlickable.contentY + sidebarFlickable.height - margin) {
-            sidebarFlickable.contentY = Math.min(maxContentY, bottom - sidebarFlickable.height + margin);
-        }
+        const top = result.mapToItem(contentItem, 0, 0).y;
+        sidebarFlickable.revealRange(top - Theme.spacingS, top + result.height + Theme.spacingS);
     }
 
     implicitWidth: SettingsMetrics.sidebarWidth
@@ -169,26 +213,32 @@ Item {
 
     Component.onCompleted: GreeterService.refresh()
 
-    Rectangle {
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        width: Theme.dividerWidth
-        color: Theme.outlineVariant
-        visible: !(root.parentModal?.isCompactMode ?? false)
-    }
-
-    DankSearchField {
+    DSearchField {
         id: searchField
+
+        property real sideInset: root.searchActive ? Theme.spacingS : SettingsMetrics.paneMargin
+
+        Behavior on sideInset {
+            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+            NumberAnimation {
+                duration: Theme.expressiveDurations.expressiveFastSpatial
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+            }
+        }
+
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.leftMargin: Theme.spacingL
-        anchors.rightMargin: Theme.spacingL
-        anchors.topMargin: Theme.spacingM
-        height: Theme.iconButtonSize + Theme.spacingM
+        anchors.leftMargin: sideInset
+        anchors.rightMargin: sideInset
         placeholderText: I18n.tr("Search settings", "settings search field placeholder")
-        onFocusStateChanged: hasFocus => root.searchFocused = hasFocus
+        rightAccessoryWidth: avatarButton.visible ? avatarButton.width + Theme.spacingXS : 0
+        onFocusStateChanged: hasFocus => {
+            root.searchFocused = hasFocus;
+            if (!hasFocus)
+                root.keyboardHighlightId = "";
+        }
         onTextChanged: {
             SettingsSearchService.search(text);
             root.searchSelectedIndex = 0;
@@ -218,6 +268,10 @@ Item {
                     root.selectSearchResult(SettingsSearchService.results[root.searchSelectedIndex]);
                     return;
                 }
+                if (!root.searchActive && root.keyboardHighlightId === "") {
+                    root.parentModal?.focusCurrentPage();
+                    return;
+                }
                 root.selectHighlighted();
             }
             Keys.onDownPressed: event => {
@@ -228,16 +282,19 @@ Item {
                 navPrev();
                 event.accepted = true;
             }
+            // Specific key handlers accept by default; with nothing to cycle, Tab must reach the focus chain
             Keys.onTabPressed: event => {
-                if (!root.searchActive && root.keyboardHighlightId === "")
-                    return;
-                navNext();
-                event.accepted = true;
+                event.accepted = !(event.modifiers & Qt.ControlModifier) && (root.searchActive || root.keyboardHighlightId !== "");
+                if (event.accepted)
+                    navNext();
             }
             Keys.onBacktabPressed: event => {
-                if (!root.searchActive && root.keyboardHighlightId === "")
-                    return;
-                navPrev();
+                event.accepted = !(event.modifiers & Qt.ControlModifier) && (root.searchActive || root.keyboardHighlightId !== "");
+                if (event.accepted)
+                    navPrev();
+            }
+            Keys.onEnterPressed: event => {
+                navSelect();
                 event.accepted = true;
             }
             Keys.onReturnPressed: event => {
@@ -254,71 +311,113 @@ Item {
                 event.accepted = true;
             }
         }
+
+        DActionButton {
+            id: avatarButton
+
+            anchors.right: parent.right
+            anchors.rightMargin: (searchField.height - buttonSize) / 2
+            anchors.verticalCenter: parent.verticalCenter
+            visible: !root.searchActive
+            buttonSize: Theme.avatarSize
+            radius: Theme.buttonRadius(width, height, buttonSize, false, circular)
+            focusPolicy: Qt.TabFocus
+            tooltipText: I18n.tr("Users & accounts", "settings sidebar category")
+            onClicked: {
+                root.pageRequested("user_accounts");
+                root.focusAfterNavigation(visualFocus);
+            }
+
+            // Below the state layer so hover, press and focus tint the avatar
+            DCircularImage {
+                z: -1
+                anchors.fill: parent
+                ringWidth: Theme.avatarRingWidth
+                ringColor: Theme.avatarRingColor
+                imageSource: PortalService.profileImage
+                fallbackIcon: imageSource ? "material:person" : ""
+                fallbackText: (UserInfoService.fullName || I18n.tr("User")).charAt(0).toLocaleUpperCase()
+            }
+        }
     }
 
-    DankFlickable {
+    DFlickable {
         id: sidebarFlickable
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: searchField.bottom
         anchors.bottom: parent.bottom
-        anchors.topMargin: SettingsMetrics.sidebarGroupGap
+        anchors.topMargin: SettingsMetrics.searchBarGap
         clip: true
         contentHeight: sidebarColumn.height
+        fadeSideInset: SettingsMetrics.paneMargin
 
         Column {
             id: sidebarColumn
             width: parent.width
-            leftPadding: Theme.spacingL
-            rightPadding: Theme.spacingL
-            bottomPadding: Theme.spacingL
+            leftPadding: SettingsMetrics.paneMargin
+            rightPadding: SettingsMetrics.paneMargin
+            bottomPadding: SettingsMetrics.paneMargin
             spacing: SettingsMetrics.sidebarGroupGap
 
-            ProfileSection {
+            Item {
+                id: searchResultsFrame
                 width: parent.width - parent.leftPadding - parent.rightPadding
-                visible: !root.searchActive
-                onClicked: {
-                    root.pageRequested("user_accounts");
-                    Qt.callLater(root.focusAfterNavigation);
-                }
-            }
-
-            Column {
-                id: searchResultsColumn
-                width: parent.width - parent.leftPadding - parent.rightPadding
-                spacing: Theme.groupedListGap
+                height: searchResultsColumn.height
                 visible: root.searchActive
 
-                Repeater {
-                    id: searchResultsRepeater
-                    model: ScriptModel {
-                        values: SettingsSearchService.results
+                Column {
+                    id: searchResultsColumn
+                    width: parent.width
+                    spacing: SettingsMetrics.groupGap
+
+                    Repeater {
+                        id: searchResultsRepeater
+                        model: ScriptModel {
+                            values: SettingsSearchService.results
+                        }
+
+                        SettingsSidebarItem {
+                            id: resultDelegate
+                            required property int index
+                            required property var modelData
+
+                            onActiveFocusChanged: {
+                                if (activeFocus)
+                                    root.ensureRowVisible(resultDelegate);
+                            }
+                            isFirstInGroup: index === 0
+                            isLastInGroup: index === SettingsSearchService.results.length - 1
+                            iconName: modelData.icon || "settings"
+                            title: modelData.label
+                            hint: modelData.category
+                            accent: SettingsTabs.accentFor(modelData.page || SettingsTabs.pageForTabIndex(modelData.tabIndex))
+                            active: root.searchSelectedIndex === index
+                            onClicked: keyboard => {
+                                root.searchSelectedIndex = index;
+                                root.selectSearchResult(modelData, keyboard);
+                            }
+                        }
                     }
 
-                    SettingsSidebarItem {
-                        id: resultDelegate
-                        required property int index
-                        required property var modelData
-
-                        isFirstInGroup: index === 0
-                        isLastInGroup: index === SettingsSearchService.results.length - 1
-                        iconName: modelData.icon || "settings"
-                        title: modelData.label
-                        hint: modelData.category
-                        accent: SettingsTabs.accentFor(modelData.page || SettingsTabs.pageForTabIndex(modelData.tabIndex))
-                        active: root.searchSelectedIndex === index
-                        onClicked: root.selectSearchResult(modelData)
+                    StyledText {
+                        width: parent.width
+                        text: I18n.tr("No matches")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        horizontalAlignment: Text.AlignHCenter
+                        visible: searchField.text.length > 0 && SettingsSearchService.results.length === 0
+                        topPadding: Theme.spacingM
                     }
                 }
 
-                StyledText {
-                    width: parent.width
-                    text: I18n.tr("No matches")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    horizontalAlignment: Text.AlignHCenter
-                    visible: searchField.text.length > 0 && SettingsSearchService.results.length === 0
-                    topPadding: Theme.spacingM
+                Rectangle {
+                    anchors.fill: searchResultsColumn
+                    radius: Theme.groupedListOuterRadius
+                    color: "transparent"
+                    border.width: SettingsMetrics.groupFrameWidth
+                    border.color: Theme.outlineMedium
+                    visible: border.width > 0
                 }
             }
 
@@ -330,51 +429,70 @@ Item {
                 Repeater {
                     model: root.navGroups
 
-                    Column {
-                        id: groupColumn
+                    Item {
+                        id: groupFrame
                         required property var modelData
 
                         width: parent.width
-                        spacing: Theme.groupedListGap
+                        height: groupColumn.height
 
-                        readonly property var visibleIds: {
-                            const ids = [];
-                            for (const entry of modelData) {
-                                if (SettingsTabs.isVisible(SettingsTabs.page(entry.id)))
-                                    ids.push(entry.id);
+                        Column {
+                            id: groupColumn
+                            width: parent.width
+                            spacing: SettingsMetrics.groupGap
+
+                            readonly property var visibleIds: {
+                                const ids = [];
+                                for (const entry of modelData) {
+                                    if (SettingsTabs.isVisible(SettingsTabs.page(entry.id)))
+                                        ids.push(entry.id);
+                                }
+                                return ids;
                             }
-                            return ids;
+
+                            Repeater {
+                                model: groupFrame.modelData
+
+                                SettingsSidebarItem {
+                                    id: categoryRow
+                                    required property var modelData
+
+                                    onActiveFocusChanged: {
+                                        if (activeFocus)
+                                            root.ensureRowVisible(categoryRow);
+                                    }
+                                    readonly property bool isHighlighted: root.keyboardHighlightId === modelData.id
+                                    onIsHighlightedChanged: {
+                                        if (isHighlighted)
+                                            Qt.callLater(root.ensureRowVisible, categoryRow);
+                                    }
+
+                                    width: groupColumn.width
+                                    visible: SettingsTabs.isVisible(SettingsTabs.page(modelData.id))
+                                    isFirstInGroup: groupColumn.visibleIds[0] === modelData.id
+                                    isLastInGroup: groupColumn.visibleIds[groupColumn.visibleIds.length - 1] === modelData.id
+                                    iconName: modelData.icon || ""
+                                    title: modelData.text || ""
+                                    hint: SettingsTabs.hubHint(modelData)
+                                    accent: SettingsTabs.accentFor(modelData.id)
+                                    active: root.activeCategoryId === modelData.id && !SettingsTabs.isPluginPage(root.currentPage)
+                                    highlighted: isHighlighted
+                                    onClicked: keyboard => {
+                                        root.keyboardHighlightId = "";
+                                        root.pageRequested(modelData.id);
+                                        root.focusAfterNavigation(keyboard);
+                                    }
+                                }
+                            }
                         }
 
-                        Repeater {
-                            model: groupColumn.modelData
-
-                            SettingsSidebarItem {
-                                id: categoryRow
-                                required property var modelData
-
-                                readonly property bool isHighlighted: root.keyboardHighlightId === modelData.id
-                                onIsHighlightedChanged: {
-                                    if (isHighlighted)
-                                        Qt.callLater(root.ensureRowVisible, categoryRow);
-                                }
-
-                                width: groupColumn.width
-                                visible: SettingsTabs.isVisible(SettingsTabs.page(modelData.id))
-                                isFirstInGroup: groupColumn.visibleIds[0] === modelData.id
-                                isLastInGroup: groupColumn.visibleIds[groupColumn.visibleIds.length - 1] === modelData.id
-                                iconName: modelData.icon || ""
-                                title: modelData.text || ""
-                                hint: SettingsTabs.hubHint(modelData)
-                                accent: SettingsTabs.accentFor(modelData.id)
-                                active: root.activeCategoryId === modelData.id && !SettingsTabs.isPluginPage(root.currentPage)
-                                highlighted: isHighlighted
-                                onClicked: {
-                                    root.keyboardHighlightId = "";
-                                    root.pageRequested(modelData.id);
-                                    Qt.callLater(root.focusAfterNavigation);
-                                }
-                            }
+                        Rectangle {
+                            anchors.fill: groupColumn
+                            radius: Theme.groupedListOuterRadius
+                            color: "transparent"
+                            border.width: SettingsMetrics.groupFrameWidth
+                            border.color: Theme.outlineMedium
+                            visible: border.width > 0
                         }
                     }
                 }

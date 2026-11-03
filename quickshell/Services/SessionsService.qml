@@ -14,6 +14,10 @@ Singleton {
     property string currentSessionId: ""
     property string currentSeat: ""
     property bool refreshing: false
+    property bool loaded: false
+    property var _afterLoad: []
+    property bool loginctlAvailable: false
+    property bool isBSD: Qt.platform.os === "unix"
 
     signal switchFailed(string sessionId, string username, string message)
     signal switchRequested
@@ -43,20 +47,75 @@ Singleton {
         return sessions.filter(s => !s.current);
     }
 
+    function ensureLoaded(fn) {
+        if (loaded) {
+            fn();
+            return;
+        }
+        _afterLoad = _afterLoad.concat([fn]);
+        refresh();
+    }
+
+    function _finishRefresh() {
+        refreshing = false;
+        loaded = true;
+        const queued = _afterLoad;
+        _afterLoad = [];
+        for (const fn of queued)
+            fn();
+    }
+
     function refresh() {
         if (refreshing)
             return;
         refreshing = true;
-        Proc.runCommand("sessionsService-current", ["sh", "-c", "echo \"${XDG_SESSION_ID}:$(loginctl show-session \"${XDG_SESSION_ID}\" -p Seat --value 2>/dev/null)\""], (output, exitCode) => {
-            const trimmed = (output || "").trim();
-            const parts = trimmed.split(":");
-            root.currentSessionId = parts[0] || "";
-            root.currentSeat = parts[1] || "";
-            _loadSessions();
+        Proc.runCommand("sessionsService-detect", ["sh", "-c", "command -v loginctl >/dev/null 2>&1"], (output, exitCode) => {
+            root.loginctlAvailable = exitCode === 0;
+            if (root.loginctlAvailable) {
+                Proc.runCommand("sessionsService-current", ["sh", "-c", "echo \"${XDG_SESSION_ID}:$(loginctl show-session \"${XDG_SESSION_ID}\" -p Seat --value 2>/dev/null)\""], (currentOutput, currentExitCode) => {
+                    const trimmed = (currentOutput || "").trim();
+                    const parts = trimmed.split(":");
+                    root.currentSessionId = parts[0] || "";
+                    root.currentSeat = parts[1] || "";
+                    _loadSessions();
+                }, 0);
+                return;
+            }
+            _loadPortableCurrentSession();
+        }, 0);
+    }
+
+    function _loadPortableCurrentSession() {
+        const script = "uid=$(id -u); user=$(id -un); tty=$(tty 2>/dev/null || true); tty=${tty#/dev/}; sid=${XDG_SESSION_ID:-self}; printf '%s|%s|%s\n' \"$sid\" \"$uid\" \"$user\"; printf '%s\n' \"$tty\"";
+        Proc.runCommand("sessionsService-portable-current", ["sh", "-c", script], (output, exitCode) => {
+            const lines = (output || "").trim().split("\n");
+            const fields = (lines[0] || "self|0|").split("|");
+            root.currentSessionId = fields[0] || "self";
+            root.currentSeat = "";
+            root.sessions = [
+                {
+                    sessionId: root.currentSessionId,
+                    uid: parseInt(fields[1] || "0", 10),
+                    username: fields[2] || "",
+                    seat: "",
+                    tty: lines[1] || "",
+                    type: (Quickshell.env("WAYLAND_DISPLAY") || "") !== "" ? "wayland" : "",
+                    sessionClass: "user",
+                    active: true,
+                    state: "active",
+                    remote: false,
+                    current: true
+                }
+            ];
+            root._finishRefresh();
         }, 0);
     }
 
     function _loadSessions() {
+        if (!root.loginctlAvailable) {
+            _loadPortableCurrentSession();
+            return;
+        }
         const script = "loginctl list-sessions --no-legend 2>/dev/null | awk '{print $1}' | while read id; do loginctl show-session \"$id\" -p Id -p User -p Name -p Seat -p TTY -p Type -p Class -p Active -p State -p Remote 2>/dev/null | tr '\\n' '|'; echo; done";
         Proc.runCommand("sessionsService-list", ["sh", "-c", script], (output, exitCode) => {
             const lines = (output || "").trim().split("\n").filter(l => l.length > 0);
@@ -99,7 +158,7 @@ Singleton {
                 return parseInt(a.sessionId, 10) - parseInt(b.sessionId, 10);
             });
             root.sessions = list;
-            root.refreshing = false;
+            root._finishRefresh();
         }, 0);
     }
 
@@ -185,6 +244,10 @@ Singleton {
     }
 
     function _spawnActivate(sessionId, username, callback) {
+        if (!root.loginctlAvailable) {
+            _fail(sessionId, username, I18n.tr("Session switching requires loginctl/elogind"), callback);
+            return;
+        }
         const proc = activateComp.createObject(root, {
             command: ["loginctl", "activate", sessionId],
             targetSession: sessionId,
@@ -198,6 +261,8 @@ Singleton {
         target: "sessions"
 
         function list(): string {
+            if (!root.loaded)
+                root.refresh();
             const lines = [];
             for (let i = 0; i < root.sessions.length; i++) {
                 const s = root.sessions[i];
@@ -220,17 +285,15 @@ Singleton {
         function activate(sessionId: string): string {
             if (!sessionId)
                 return "ERROR: missing session id";
-            root.activate(sessionId, null);
+            root.ensureLoaded(() => root.activate(sessionId, null));
             return "ok";
         }
 
         function switchTo(target: string): string {
             if (!target)
                 return "ERROR: missing target (username or session id)";
-            root.switchToUser(target, null);
+            root.ensureLoaded(() => root.switchToUser(target, null));
             return "ok";
         }
     }
-
-    Component.onCompleted: refresh()
 }

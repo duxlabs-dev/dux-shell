@@ -1,3 +1,3 @@
-import qs.DankCommon.Widgets as DankCommon
+import qs.DCommon.Widgets as DCommon
 
-DankCommon.M3WaveProgress {}
+DCommon.M3WaveProgress {}

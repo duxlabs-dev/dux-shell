@@ -51,6 +51,15 @@ Singleton {
             "section": "left"
         },
         {
+            "id": "island",
+            "text": I18n.tr("Island"),
+            "description": I18n.tr("Live activities that grow out of the bar", "bar widget catalog: island widget description"),
+            "icon": "blur_on",
+            "section": "center",
+            "single": true,
+            "barOnly": true
+        },
+        {
             "id": "clock",
             "text": I18n.tr("Clock"),
             "description": I18n.tr("Current time and date display"),
@@ -65,16 +74,9 @@ Singleton {
             "section": "center"
         },
         {
-            "id": "mediaActivity",
-            "text": I18n.tr("Media activity"),
-            "description": I18n.tr("Show the current media activity"),
-            "icon": "music_note",
-            "section": "center"
-        },
-        {
             "id": "music",
-            "text": I18n.tr("Media controls"),
-            "description": I18n.tr("Control currently playing media"),
+            "text": I18n.tr("Media"),
+            "description": I18n.tr("Now playing and media controls"),
             "icon": "music_note",
             "section": "center"
         },
@@ -166,7 +168,7 @@ Singleton {
             "id": "idleInhibitor",
             "text": I18n.tr("Idle inhibitor", "feature that keeps the session from going idle"),
             "description": I18n.tr("Prevent screen timeout"),
-            "icon": "motion_sensor_active",
+            "icon": "local_cafe",
             "section": "right"
         },
         {
@@ -252,7 +254,9 @@ Singleton {
             "memUsage": "SystemMonitorOptions.qml",
             "gpuTemp": "SystemMonitorOptions.qml",
             "diskUsage": "SystemMonitorOptions.qml",
-            "systemUpdate": "SystemUpdateOptions.qml"
+            "network_speed_monitor": "NetworkMonitorOptions.qml",
+            "systemUpdate": "SystemUpdateOptions.qml",
+            "island": "IslandOptions.qml"
         })
 
     function get(id) {
@@ -265,5 +269,10 @@ Singleton {
 
     function hasOptions(id) {
         return optionFiles[id] !== undefined;
+    }
+
+    // Every widget reaches the general options page (placement); spacers and separators configure inline on their row.
+    function configurable(item) {
+        return !!item?.pluginId || !["spacer", "separator"].includes(item?.id);
     }
 }

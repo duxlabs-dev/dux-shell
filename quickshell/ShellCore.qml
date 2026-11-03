@@ -1,8 +1,8 @@
 import QtQuick
 import Quickshell
 import qs.Common
-import qs.Modules.DankBar
-import qs.Modules.DankIsland
+import qs.Modules.DBar
+import qs.Modules.DIsland
 import qs.Modules.Frame
 import qs.Modules.WorkspaceOverlays
 import qs.Services
@@ -142,7 +142,7 @@ Item {
             asynchronous: false
             onItemChanged: dankBarRepeater.recountHorizontalReady()
 
-            sourceComponent: DankBar {
+            sourceComponent: DBar {
                 barConfig: barLoader.barConfig
                 hyprlandOverviewLoader: dankBarRepeater.hyprlandOverviewLoaderRef
             }
@@ -152,7 +152,7 @@ Item {
     Loader {
         active: SettingsData.dankIslandEnabled
         asynchronous: false
-        sourceComponent: DankIsland {
+        sourceComponent: DIsland {
             hyprlandOverviewLoader: root.hyprlandOverviewLoader
         }
     }
@@ -164,20 +164,11 @@ Item {
     property bool _screenRecoveryPending: false
 
     function _getRealScreenNames() {
-        const names = [];
-        for (let i = 0; i < Quickshell.screens.length; i++) {
-            if (Quickshell.screens[i].name.length > 0)
-                names.push(Quickshell.screens[i].name);
-        }
-        return names;
+        return Quickshell.screens.filter(screen => ShellLayout.isRealScreen(screen)).map(screen => screen.name);
     }
 
     function _hasRealScreen() {
-        for (let i = 0; i < Quickshell.screens.length; i++) {
-            if (Quickshell.screens[i].name.length > 0)
-                return true;
-        }
-        return false;
+        return Quickshell.screens.some(screen => ShellLayout.isRealScreen(screen));
     }
 
     function triggerSurfaceRecovery(source) {
@@ -209,13 +200,11 @@ Item {
     // reflows the survivors, and the compositor may leave their layer surfaces stale at the
     // old placement until something forces a repaint (#3135), so watch geometry per screen.
     Instantiator {
-        model: Quickshell.screens
+        model: ShellLayout.realScreens
         delegate: Connections {
             required property ShellScreen modelData
             target: modelData
             function onGeometryChanged() {
-                if (modelData.name.length === 0)
-                    return;
                 root.log.info("Screen geometry changed:", modelData.name, modelData.x, modelData.y, modelData.width, modelData.height);
                 root.scheduleScreenReconnectRecovery();
             }

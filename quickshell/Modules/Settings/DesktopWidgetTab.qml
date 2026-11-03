@@ -4,18 +4,24 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 import qs.Modules.Settings.DesktopWidgetSettings as DWS
 
 Item {
     id: root
 
+    property var parentModal: null
+
     readonly property string instanceId: SettingsUiState.selectedDesktopWidgetId
-    readonly property var instanceData: (SettingsData.desktopWidgetInstances || []).find(instance => instance.id === instanceId) ?? null
+    readonly property string listKey: SettingsData.widgetInstanceListKey(instanceId)
+    readonly property bool lockScreenInstance: listKey !== "desktopWidgetInstances"
+    readonly property bool greeterInstance: listKey === "greeterWidgetInstances"
+    readonly property var instanceData: SettingsData.getDesktopWidgetInstance(instanceId)
     readonly property string widgetType: instanceData?.widgetType ?? ""
     readonly property var widgetDef: DesktopWidgetRegistry.getWidget(widgetType)
-    readonly property string widgetName: instanceData?.name ?? widgetDef?.name ?? widgetType
+    readonly property string widgetName: instanceData?.name || widgetDef?.name || widgetType
+    readonly property bool fixed: widgetType === "lockAuth"
     readonly property var cfg: instanceData?.config ?? {}
     readonly property string overlayCommand: "dms ipc call desktopWidget toggleOverlay " + instanceId
     readonly property var groupOptions: [
@@ -36,40 +42,18 @@ Item {
 
     onWidgetNameChanged: SettingsUiState.selectedWidgetTitle = widgetName
 
-    Component {
-        id: clockSettings
-
-        DWS.ClockSettings {
-            instanceId: root.instanceId
-            instanceData: root.instanceData
-        }
-    }
-
-    Component {
-        id: systemMonitorSettings
-
-        DWS.SystemMonitorSettings {
-            instanceId: root.instanceId
-            instanceData: root.instanceData
-        }
-    }
-
-    Component {
-        id: pluginSettings
-
-        DWS.PluginDesktopWidgetSettings {
-            instanceId: root.instanceId
-            instanceData: root.instanceData
-            widgetType: root.widgetType
-            widgetDef: root.widgetDef
-        }
-    }
-
     SettingsPage {
         visible: root.instanceData !== null
 
         SettingsCard {
+            SettingsRow {
+                visible: root.fixed
+                iconName: root.widgetDef?.icon ?? "widgets"
+                title: root.widgetDef?.name ?? root.widgetType
+            }
+
             SettingsToggleRow {
+                visible: !root.fixed
                 iconName: root.widgetDef?.icon ?? "widgets"
                 text: root.widgetDef?.name ?? root.widgetType
                 description: root.widgetDef?.description ?? ""
@@ -99,25 +83,19 @@ Item {
             }
         }
 
-        Loader {
+        DWS.DesktopWidgetTypeSettings {
             width: parent.width
-            active: root.instanceData !== null
-            sourceComponent: {
-                switch (root.widgetType) {
-                case "desktopClock":
-                    return clockSettings;
-                case "systemMonitor":
-                    return systemMonitorSettings;
-                default:
-                    return pluginSettings;
-                }
-            }
+            instanceId: root.instanceId
+            instanceData: root.instanceData
+            widgetDef: root.widgetDef
+            parentModal: root.parentModal
         }
 
         SettingsCard {
             title: I18n.tr("Behavior")
 
             SettingsToggleRow {
+                visible: !root.lockScreenInstance
                 text: I18n.tr("Show on overlay")
                 description: I18n.tr("Keeps the widget above windows instead of below them", "desktop widget show on overlay toggle description")
                 checked: root.cfg.showOnOverlay ?? false
@@ -125,20 +103,21 @@ Item {
             }
 
             SettingsToggleRow {
-                visible: CompositorService.isNiri
+                visible: CompositorService.isNiri && !root.lockScreenInstance
                 text: I18n.tr("Show on overview")
                 checked: root.cfg.showOnOverview ?? false
                 onToggled: checked => root.updateConfig("showOnOverview", checked)
             }
 
             SettingsToggleRow {
-                visible: CompositorService.isNiri
+                visible: CompositorService.isNiri && !root.lockScreenInstance
                 text: I18n.tr("Show on overview only")
                 checked: root.cfg.showOnOverviewOnly ?? false
                 onToggled: checked => root.updateConfig("showOnOverviewOnly", checked)
             }
 
             SettingsToggleRow {
+                visible: !root.lockScreenInstance
                 text: I18n.tr("Click through")
                 checked: root.cfg.clickThrough ?? false
                 onToggled: checked => root.updateConfig("clickThrough", checked)
@@ -156,6 +135,7 @@ Item {
         }
 
         SettingsCard {
+            visible: !root.lockScreenInstance
             title: I18n.tr("Command")
 
             SettingsRow {
@@ -173,7 +153,7 @@ Item {
                         elide: Text.ElideMiddle
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         id: copyButton
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: "content_copy"

@@ -1,7 +1,7 @@
 .pragma library
 
 function windowIdentity(toplevel, appId, coreApps) {
-    const core = ["org.quickshell", "com.danklinux.dms"].includes(toplevel.appId)
+    const core = ["org.quickshell", "dev.duxlabs.shell", "com.danklinux.dms"].includes(toplevel.appId)
         ? coreApps.find(app => app.name === toplevel.title) ?? null : null;
     return { appId: core?.builtInPluginId ?? appId, coreAppData: core, isCoreApp: core !== null };
 }

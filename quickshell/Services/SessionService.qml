@@ -7,6 +7,8 @@ import Quickshell.Io
 import Quickshell.I3
 import qs.Common
 import qs.Services
+import "../Common/SleepLock.js" as SleepLock
+import "../Common/LaunchUnit.js" as LaunchUnit
 
 Singleton {
     id: root
@@ -21,6 +23,9 @@ Singleton {
     property bool userManagerAvailable: false
     property bool hibernateSupported: false
     readonly property bool softRebootSupported: systemctlCommandAvailable
+    // The firmware advertises boot-to-setup in OsIndicationsSupported, the same bit logind checks
+    property bool firmwareSetupAdvertised: false
+    readonly property bool firmwareSetupSupported: !isBSD && firmwareSetupAdvertised && (systemctlCommandAvailable || loginctlCommandAvailable)
     property bool inhibitorAvailable: true
     property bool idleInhibited: false
     property string inhibitReason: "Keep system awake"
@@ -34,6 +39,7 @@ Singleton {
     property bool idleHint: false
     property bool lockedHint: false
     property bool preparingForSleep: false
+    property bool sleepRequested: false
     property string sessionType: ""
     property string userName: ""
     property string seat: ""
@@ -42,6 +48,8 @@ Singleton {
     signal sessionLocked
     signal sessionUnlocked
     signal sessionResumed
+    signal lockEditorRequested
+    signal greeterEditorRequested
     signal lidOpened
     signal loginctlStateChanged
 
@@ -51,6 +59,7 @@ Singleton {
     property string lidSubscriptionId: ""
     property bool lidSubscriptionPending: false
     property double lastResumeSignalTimestamp: 0
+    property var pendingSleepFn: null
 
     readonly property string socketPath: Quickshell.env("DMS_SOCKET")
 
@@ -60,12 +69,7 @@ Singleton {
         running: true
         repeat: false
         onTriggered: {
-            detectUwsmProcess.running = true;
-            detectElogindProcess.running = true;
-            detectLoginctlProcess.running = true;
-            detectSystemctlProcess.running = true;
-            detectHibernateProcess.running = true;
-            detectPrimeRunProcess.running = true;
+            detectEnvironmentProcess.running = true;
             if (!SettingsData.loginctlLockIntegration) {
                 log.debug("loginctl lock integration disabled by user");
                 return;
@@ -78,55 +82,77 @@ Singleton {
         }
     }
 
-    Process {
-        id: detectUwsmProcess
-        running: false
-        command: ["sh", "-c", "command -v uwsm > /dev/null 2>&1 && systemctl --user is-active --quiet 'wayland-wm@*.service' 2> /dev/null"]
+    Timer {
+        id: lockBeforeSleepFallback
+        // Custom lockers never set WlSessionLock.secure.
+        interval: 2000
+        repeat: false
+        onTriggered: root.flushPendingSleep()
+    }
 
-        onExited: function (exitCode) {
-            hasUwsm = (exitCode === 0);
-        }
+    Timer {
+        id: sleepRequestTimeout
+        // A refused sleep or a command that skips logind never sends PrepareForSleep.
+        interval: 10000
+        repeat: false
+        onTriggered: root.sleepRequested = false
+    }
+
+    onPreparingForSleepChanged: {
+        if (!preparingForSleep)
+            return;
+        sleepRequestTimeout.stop();
+        sleepRequested = false;
     }
 
     Process {
-        id: detectElogindProcess
+        id: detectEnvironmentProcess
         running: false
-        command: ["sh", "-c", "ps -eo comm= | grep -E '^(elogind|elogind-daemon)$'"]
+        command: ["sh", "-c", `uwsm=0; command -v uwsm >/dev/null 2>&1 && systemctl --user is-active --quiet 'wayland-wm@*.service' 2>/dev/null && uwsm=1
+elogind=0; ps -eo comm= | grep -qE '^(elogind|elogind-daemon)$' && elogind=1
+loginctl=0; command -v loginctl >/dev/null 2>&1 && loginctl=1
+systemctl=0; usermgr=0
+if command -v systemctl >/dev/null 2>&1; then systemctl=1; systemctl --user --no-pager show-environment >/dev/null 2>&1 && usermgr=1; fi
+hibernate=0; grep -q disk /sys/power/state 2>/dev/null && hibernate=1
+fwsetup=0; b=$(od -An -tu1 -j4 -N1 /sys/firmware/efi/efivars/OsIndicationsSupported-8be4df61-93ca-11d2-aa0d-00e098032b8c 2>/dev/null); [ -n "$b" ] && [ $(($b & 1)) = 1 ] && fwsetup=1
+nvidia=; command -v prime-run >/dev/null 2>&1 && nvidia=prime-run
+[ -z "$nvidia" ] && command -v nvidia-offload >/dev/null 2>&1 && nvidia=nvidia-offload
+printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s\nfwsetup=%s\nnvidia=%s\n' "$uwsm" "$elogind" "$loginctl" "$systemctl" "$usermgr" "$hibernate" "$fwsetup" "$nvidia"`]
 
-        onExited: function (exitCode) {
-            log.debug("Elogind detection exited with code", exitCode);
-            isElogind = (exitCode === 0);
-        }
-    }
-
-    Process {
-        id: detectLoginctlProcess
-        running: false
-        command: ["sh", "-c", "command -v loginctl"]
-
-        onExited: function (exitCode) {
-            loginctlCommandAvailable = (exitCode === 0);
-        }
-    }
-
-    Process {
-        id: detectSystemctlProcess
-        running: false
-        command: ["sh", "-c", "command -v systemctl > /dev/null || exit 1; systemctl --user show-environment > /dev/null 2>&1 || exit 2"]
-
-        onExited: function (exitCode) {
-            systemctlCommandAvailable = (exitCode === 0 || exitCode === 2);
-            userManagerAvailable = (exitCode === 0);
-        }
-    }
-
-    Process {
-        id: detectHibernateProcess
-        running: false
-        command: ["grep", "-q", "disk", "/sys/power/state"]
-
-        onExited: function (exitCode) {
-            hibernateSupported = (exitCode === 0);
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: line => {
+                const eq = line.indexOf("=");
+                if (eq <= 0)
+                    return;
+                const value = line.substring(eq + 1).trim();
+                switch (line.substring(0, eq)) {
+                case "uwsm":
+                    root.hasUwsm = value === "1";
+                    return;
+                case "elogind":
+                    root.isElogind = value === "1";
+                    return;
+                case "loginctl":
+                    root.loginctlCommandAvailable = value === "1";
+                    return;
+                case "systemctl":
+                    root.systemctlCommandAvailable = value === "1";
+                    return;
+                case "usermgr":
+                    root.userManagerAvailable = value === "1";
+                    return;
+                case "hibernate":
+                    root.hibernateSupported = !root.isBSD && value === "1";
+                    return;
+                case "fwsetup":
+                    root.firmwareSetupAdvertised = value === "1";
+                    return;
+                case "nvidia":
+                    root.nvidiaCommand = value;
+                    return;
+                }
+            }
         }
     }
 
@@ -148,32 +174,6 @@ Singleton {
             }
             ToastService.showError(I18n.tr("Hibernate failed"), errorOutput);
             errorOutput = "";
-        }
-    }
-
-    Process {
-        id: detectPrimeRunProcess
-        running: false
-        command: ["sh", "-c", "command -v prime-run"]
-
-        onExited: function (exitCode) {
-            if (exitCode === 0) {
-                nvidiaCommand = "prime-run";
-            } else {
-                detectNvidiaOffloadProcess.running = true;
-            }
-        }
-    }
-
-    Process {
-        id: detectNvidiaOffloadProcess
-        running: false
-        command: ["sh", "-c", "command -v nvidia-offload"]
-
-        onExited: function (exitCode) {
-            if (exitCode === 0) {
-                nvidiaCommand = "nvidia-offload";
-            }
         }
     }
 
@@ -375,7 +375,7 @@ Singleton {
         }
 
         if (prefix.length > 0)
-            cmd = prefix.split(" ").concat(cmd);
+            cmd = LaunchUnit.prefixArgs(prefix, desktopEntry.id, LaunchUnit.randomSuffix()).concat(cmd);
 
         Quickshell.execDetached({
             command: cmd,
@@ -414,7 +414,7 @@ Singleton {
         }
 
         if (prefix.length > 0)
-            cmd = prefix.split(" ").concat(cmd);
+            cmd = LaunchUnit.prefixArgs(prefix, desktopEntry.id, LaunchUnit.randomSuffix()).concat(cmd);
 
         Quickshell.execDetached({
             command: cmd,
@@ -468,7 +468,15 @@ Singleton {
                 return;
             }
 
-            HyprlandService.exit();
+            if (CompositorService.isHyprland) {
+                HyprlandService.exit();
+                return;
+            }
+
+            DMSService.sendRequest("loginctl.terminate", null, response => {
+                if (response.error)
+                    log.warn("Failed to terminate session:", response.error);
+            });
         } else {
             Quickshell.execDetached(customActionCommand(SettingsData.customPowerActionLogout));
         }
@@ -502,26 +510,66 @@ Singleton {
         }
     }
 
-    function suspend() {
-        if (SettingsData.customPowerActionSuspend.length === 0) {
-            Quickshell.execDetached(powerManagerCommand("suspend"));
-        } else {
-            Quickshell.execDetached(["sh", "-c", SettingsData.customPowerActionSuspend]);
+    function cancelPendingSleep() {
+        lockBeforeSleepFallback.stop();
+        pendingSleepFn = null;
+    }
+
+    function flushPendingSleep() {
+        lockBeforeSleepFallback.stop();
+        const run = pendingSleepFn;
+        pendingSleepFn = null;
+        if (run)
+            run();
+    }
+
+    function onSessionLockSecured() {
+        if (pendingSleepFn)
+            flushPendingSleep();
+    }
+
+    function runSleepAction(run) {
+        cancelPendingSleep();
+        sleepRequested = true;
+        sleepRequestTimeout.restart();
+        if (!SleepLock.shouldWaitForLock(SettingsData.lockBeforeSuspend, IdleService.isSessionLockSecure)) {
+            run();
+            return;
         }
+        // Custom hibernate skips logind PrepareForSleep; dump RAM only after the lock is up.
+        // Assign before lockRequested: a synchronous secure must see this closure.
+        // A second call before the first runs drops the first (last wins).
+        pendingSleepFn = run;
+        IdleService.lockRequested();
+        lockBeforeSleepFallback.restart();
+    }
+
+    function suspend() {
+        runSleepAction(() => {
+            if (SettingsData.customPowerActionSuspend.length === 0) {
+                Quickshell.execDetached(powerManagerCommand("suspend"));
+            } else {
+                Quickshell.execDetached(["sh", "-c", SettingsData.customPowerActionSuspend]);
+            }
+        });
     }
 
     function hibernate() {
-        hibernateProcess.errorOutput = "";
-        if (SettingsData.customPowerActionHibernate.length > 0) {
-            hibernateProcess.command = ["sh", "-c", SettingsData.customPowerActionHibernate];
-        } else {
-            hibernateProcess.command = powerManagerCommand("hibernate");
-        }
-        hibernateProcess.running = true;
+        runSleepAction(() => {
+            hibernateProcess.errorOutput = "";
+            if (SettingsData.customPowerActionHibernate.length > 0) {
+                hibernateProcess.command = ["sh", "-c", SettingsData.customPowerActionHibernate];
+            } else {
+                hibernateProcess.command = powerManagerCommand("hibernate");
+            }
+            hibernateProcess.running = true;
+        });
     }
 
     function suspendThenHibernate() {
-        Quickshell.execDetached(powerManagerCommand("suspend-then-hibernate"));
+        runSleepAction(() => {
+            Quickshell.execDetached(powerManagerCommand("suspend-then-hibernate"));
+        });
     }
 
     function suspendWithBehavior(behavior) {
@@ -546,6 +594,27 @@ Singleton {
         Quickshell.execDetached(["systemctl", "soft-reboot"]);
     }
 
+    // Skips customPowerActionReboot: no systemctl or loginctl command sets the firmware flag without also rebooting.
+    function rebootToFirmwareSetup() {
+        firmwareSetupProcess.running = true;
+    }
+
+    Process {
+        id: firmwareSetupProcess
+        running: false
+        command: root.powerManagerCommand("reboot").concat(["--firmware-setup"])
+
+        stderr: StdioCollector {
+            id: firmwareSetupErrors
+        }
+
+        onExited: exitCode => {
+            if (exitCode === 0)
+                return;
+            ToastService.showError(I18n.tr("Failed to reboot to firmware setup", "error toast, firmware setup is the UEFI/BIOS settings screen"), firmwareSetupErrors.text.trim());
+        }
+    }
+
     function poweroff() {
         if (SettingsData.customPowerActionPowerOff.length === 0) {
             Quickshell.execDetached(powerManagerCommand("poweroff"));
@@ -553,6 +622,13 @@ Singleton {
             Quickshell.execDetached(customActionCommand(SettingsData.customPowerActionPowerOff));
         }
     }
+
+    // Actions added in settings, listed after the built-in ones: firmware setup, boot entries, then custom buttons.
+    // The boot entry and custom lists line up index for index with their setting.
+    readonly property var bootEntryActions: (SettingsData.powerMenuBootEntries || []).map(entry => "bootnext:" + entry.id)
+    readonly property var firmwareSetupActions: SettingsData.powerMenuFirmwareSetup && firmwareSetupSupported ? ["firmwaresetup"] : []
+    readonly property var customPowerActions: (SettingsData.customPowerButtons || []).map((button, i) => "custom:" + i)
+    readonly property var extraPowerActions: firmwareSetupActions.concat(bootEntryActions, customPowerActions)
 
     function isPowerActionSupported(action) {
         switch (action) {
@@ -566,11 +642,17 @@ Singleton {
     }
 
     function executePowerAction(action) {
-        if (action.startsWith("custom:")) {
-            const button = (SettingsData.customPowerButtons || [])[parseInt(action.slice(7), 10)];
+        const customIndex = customPowerActions.indexOf(action);
+        if (customIndex >= 0) {
+            const button = SettingsData.customPowerButtons[customIndex];
             if (!button?.command)
                 return false;
             Quickshell.execDetached(customActionCommand(button.command));
+            return true;
+        }
+        const bootIndex = bootEntryActions.indexOf(action);
+        if (bootIndex >= 0) {
+            BootEntryService.rebootTo(SettingsData.powerMenuBootEntries[bootIndex]);
             return true;
         }
         switch (action) {
@@ -589,6 +671,11 @@ Singleton {
         case "softreboot":
             softReboot();
             return true;
+        case "firmwaresetup":
+            if (!firmwareSetupSupported)
+                return false;
+            rebootToFirmwareSetup();
+            return true;
         case "poweroff":
             poweroff();
             return true;
@@ -601,12 +688,22 @@ Singleton {
     }
 
     function getPowerActionData(action) {
-        if (action.startsWith("custom:")) {
-            const button = (SettingsData.customPowerButtons || [])[parseInt(action.slice(7), 10)];
+        const customIndex = customPowerActions.indexOf(action);
+        if (customIndex >= 0) {
+            const button = SettingsData.customPowerButtons[customIndex];
             return {
                 "icon": button?.icon || "terminal",
                 "label": button?.label || button?.command || "",
                 "key": ""
+            };
+        }
+        const bootIndex = bootEntryActions.indexOf(action);
+        if (bootIndex >= 0) {
+            // Boot entries take the digit keys in the order they were added
+            return {
+                "icon": "restart_alt",
+                "label": I18n.tr("Reboot to %1", "power menu action, %1 is a boot entry such as Windows Boot Manager").arg(SettingsData.powerMenuBootEntries[bootIndex].label),
+                "key": bootIndex < 9 ? String(bootIndex + 1) : ""
             };
         }
         switch (action) {
@@ -621,6 +718,12 @@ Singleton {
                 "icon": "autorenew",
                 "label": I18n.tr("Soft reboot"),
                 "key": "B"
+            };
+        case "firmwaresetup":
+            return {
+                "icon": "developer_board",
+                "label": I18n.tr("Reboot to firmware setup", "power menu action, firmware setup is the UEFI/BIOS settings screen"),
+                "key": "F"
             };
         case "logout":
             return {

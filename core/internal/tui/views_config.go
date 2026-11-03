@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/config"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/distros"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
+	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
 )
 
 type configDeploymentResult struct {
@@ -72,6 +73,9 @@ func (m Model) updateDeployingConfigsState(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.installationLogs = append(m.installationLogs, logLine)
 	}
 
+	if m.isImmutable() {
+		clearLayerResume()
+	}
 	m.state = StateInstallComplete
 	m.isLoading = false
 	return m, nil
@@ -100,14 +104,7 @@ func (m Model) optionalDepSelected(name string) bool {
 }
 
 func (m Model) useSystemdConfig() bool {
-	if m.osInfo == nil {
-		return true
-	}
-	distroConfig, exists := distros.Registry[m.osInfo.Distribution.ID]
-	if !exists {
-		return true
-	}
-	return distroConfig.Family != distros.FamilyVoid
+	return distros.HasSystemd()
 }
 
 func (m Model) viewConfigConfirmation() string {
@@ -175,7 +172,16 @@ func (m Model) configReplacementNote() string {
 		}
 		return `Replacing Hyprland writes the DMS Lua template and starts DMS from Hyprland with hl.exec_cmd("dms run").`
 	case "Mango":
-		return "Replacing Mango writes the DMS Mango template and starts DMS from Mango with exec-once=dms run."
+		carry := " Existing binds, monitor and window rules move into the dms/ files."
+		if mangoconf.IsTOML(configInfo.Path) {
+			carry = " Binds and rules in config.toml are not carried over; they stay in its backup."
+		}
+		if m.useSystemdConfig() && mangoconf.SessionTargetInstalled() {
+			return "Replacing Mango writes the DMS Mango template and starts the user systemd dms service with mango-session.target." + carry
+		}
+		return "Replacing Mango writes the DMS Mango template and starts DMS from Mango with exec_once." + carry
+	case config.BindsConfigType:
+		return "Keep uses your binds as they are; replace starts from the DMS stock binds. A timestamped backup is kept either way."
 	case "Ghostty":
 		return "Replacing Ghostty writes the DMS terminal defaults and theme include."
 	case "Kitty":
@@ -225,7 +231,8 @@ func (m Model) applyConfigCheck(result configCheckResult) (tea.Model, tea.Cmd) {
 		if !cfg.Exists {
 			continue
 		}
-		m.replaceConfigs[cfg.ConfigType] = true
+		// Binds are the user's work; replacing them is opt-in.
+		m.replaceConfigs[cfg.ConfigType] = cfg.ConfigType != config.BindsConfigType
 		if !hasExisting {
 			m.selectedConfig = i
 		}
@@ -263,13 +270,9 @@ func (m Model) wmConfigInfo() ExistingConfigInfo {
 	case deps.WindowManagerNiri:
 		return statConfig("Niri", filepath.Join(configDir, "niri", "config.kdl"))
 	case deps.WindowManagerMango:
-		return statConfig("Mango",
-			filepath.Join(configDir, "mango", "config.conf"),
-			filepath.Join(configDir, "mango", "mango.conf"))
+		return statConfig("Mango", mangoconf.MainConfigs(mangoconf.Dir())...)
 	default:
-		return statConfig("Hyprland",
-			filepath.Join(configDir, "hypr", "hyprland.lua"),
-			filepath.Join(configDir, "hypr", "hyprland.conf"))
+		return statConfig("Hyprland", filepath.Join(config.HyprlandConfigDir(), "hyprland.lua"))
 	}
 }
 
@@ -287,6 +290,10 @@ func (m Model) terminalConfigInfo() ExistingConfigInfo {
 
 func (m Model) checkExistingConfigurations() tea.Cmd {
 	return func() tea.Msg {
-		return configCheckResult{configs: []ExistingConfigInfo{m.wmConfigInfo(), m.terminalConfigInfo()}}
+		configs := []ExistingConfigInfo{m.wmConfigInfo()}
+		if path, ok := config.ExistingBinds(m.chosenWindowManager()); ok {
+			configs = append(configs, ExistingConfigInfo{ConfigType: config.BindsConfigType, Path: path, Exists: true})
+		}
+		return configCheckResult{configs: append(configs, m.terminalConfigInfo())}
 	}
 }

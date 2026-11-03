@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
+import qs.DCommon.Widgets
 import qs.Widgets
 
 Item {
@@ -11,6 +12,7 @@ Item {
     property var cachedMonoFamilies: []
     property bool fontsEnumerated: false
     property bool shortcutsExpanded: false
+    property bool frameManagesGap: false
 
     signal settingsRequested
     signal findRequested
@@ -67,7 +69,7 @@ Item {
         anchors.fill: parent
         visible: root.isVisible
         z: 50
-        color: Theme.withAlpha(Theme.surface, 0.85)
+        color: Theme.withAlpha(Theme.hostSurface, 0.85)
 
         WheelHandler {
             // Hold scroll so the editor beneath doesn't move while settings are open.
@@ -106,7 +108,7 @@ Item {
             z: parent.z - 1
         }
 
-        DankFlickable {
+        DFlickable {
             id: settingsFlickable
             anchors.fill: parent
             clip: true
@@ -142,7 +144,7 @@ Item {
                     color: Theme.outlineHeavy
                 }
 
-                DankToggle {
+                DToggle {
                     anchors.left: parent.left
                     anchors.leftMargin: -Theme.spacingM
                     width: parent.width + Theme.spacingM
@@ -154,7 +156,7 @@ Item {
                     }
                 }
 
-                DankToggle {
+                DToggle {
                     anchors.left: parent.left
                     anchors.leftMargin: -Theme.spacingM
                     width: parent.width + Theme.spacingM
@@ -166,7 +168,7 @@ Item {
                     }
                 }
 
-                DankToggle {
+                DToggle {
                     anchors.left: parent.left
                     anchors.leftMargin: -Theme.spacingM
                     width: parent.width + Theme.spacingM
@@ -201,7 +203,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: Theme.spacingM
 
-                        DankIcon {
+                        DIcon {
                             name: "search"
                             size: Theme.iconSize - 2
                             color: Theme.primary
@@ -234,7 +236,7 @@ Item {
                     color: "transparent"
                     visible: !SettingsData.notepadUseMonospace
 
-                    DankDropdown {
+                    DDropdown {
                         id: fontDropdown
                         anchors.left: parent.left
                         anchors.leftMargin: -Theme.spacingM
@@ -292,7 +294,7 @@ Item {
                             spacing: Theme.spacingS
                             anchors.verticalCenter: parent.verticalCenter
 
-                            DankActionButton {
+                            DActionButton {
                                 buttonSize: 32
                                 iconName: "remove"
                                 Accessible.name: I18n.tr("Decrease")
@@ -323,7 +325,7 @@ Item {
                                 }
                             }
 
-                            DankActionButton {
+                            DActionButton {
                                 buttonSize: 32
                                 iconName: "add"
                                 Accessible.name: I18n.tr("Increase")
@@ -350,7 +352,7 @@ Item {
                         width: parent.width
                         spacing: Theme.spacingS
 
-                        DankToggle {
+                        DToggle {
                             anchors.left: parent.left
                             anchors.leftMargin: -Theme.spacingM
                             width: parent.width + Theme.spacingM
@@ -366,7 +368,7 @@ Item {
                             }
                         }
 
-                        DankSlider {
+                        DSlider {
                             anchors.left: parent.left
                             anchors.leftMargin: -Theme.spacingM
                             width: parent.width + Theme.spacingM
@@ -407,7 +409,7 @@ Item {
                                 color: Theme.surfaceText
                             }
 
-                            DankButtonGroup {
+                            DButtonGroup {
                                 model: [I18n.tr("Slideout", "noun, notepad default mode option, side panel"), I18n.tr("Popout", "noun, option to open in a popout window")]
                                 size: "small"
                                 currentIndex: SettingsData.notepadDefaultMode === "popout" ? 1 : 0
@@ -431,7 +433,7 @@ Item {
                                 color: Theme.surfaceText
                             }
 
-                            DankButtonGroup {
+                            DButtonGroup {
                                 model: [I18n.tr("Right"), I18n.tr("Left")]
                                 size: "small"
                                 currentIndex: SettingsData.notepadSlideoutSide === "left" ? 1 : 0
@@ -443,12 +445,13 @@ Item {
                             }
                         }
 
-                        DankToggle {
+                        DToggle {
                             anchors.left: parent.left
                             anchors.leftMargin: -Theme.spacingM
                             width: parent.width + Theme.spacingM
                             text: I18n.tr("Auto Compositor Gaps")
-                            description: I18n.tr("Inset the Notepad from screen edges using the compositor's configured gaps")
+                            description: root.frameManagesGap ? I18n.tr("Managed by Frame in Connected Mode") : I18n.tr("Inset the Notepad from screen edges using the compositor's configured gaps")
+                            enabled: !root.frameManagesGap
                             checked: SettingsData.notepadUseCompositorGap
                             onToggled: checked => {
                                 SettingsData.notepadUseCompositorGap = checked;
@@ -463,11 +466,12 @@ Item {
                             color: Theme.surfaceText
                         }
 
-                        DankSlider {
+                        DSlider {
                             anchors.left: parent.left
                             anchors.leftMargin: Theme.spacingXS
                             width: parent.width - Theme.spacingXS * 2
                             visible: !SettingsData.notepadUseCompositorGap
+                            enabled: !root.frameManagesGap
                             value: SettingsData.notepadEdgeGap
                             minimum: 0
                             maximum: 64
@@ -492,7 +496,7 @@ Item {
 
                 StyledRect {
                     width: parent.width
-                    implicitHeight: shortcutsHeader.height + (root.shortcutsExpanded ? shortcutsColumn.implicitHeight + Theme.spacingM : 0)
+                    implicitHeight: shortcutsHeader.height + (shortcutsLoader.item ? shortcutsLoader.height + Theme.spacingM : 0)
                     radius: Theme.cornerRadius
                     color: root.shortcutsExpanded ? Theme.chipSurface : Theme.withAlpha(Theme.chipSurface, 0)
                     border.color: root.shortcutsExpanded ? Theme.primary : Theme.outlineMedium
@@ -515,7 +519,7 @@ Item {
                         height: 36
                         spacing: Theme.spacingS
 
-                        DankIcon {
+                        DIcon {
                             name: root.shortcutsExpanded ? "expand_less" : "expand_more"
                             size: Theme.iconSizeSmall
                             color: Theme.surfaceText
@@ -531,30 +535,48 @@ Item {
                         }
                     }
 
-                    Column {
-                        id: shortcutsColumn
-                        visible: root.shortcutsExpanded
+                    Loader {
+                        id: shortcutsLoader
+                        active: root.shortcutsExpanded
                         width: parent.width - Theme.spacingL * 2
                         anchors.top: shortcutsHeader.bottom
                         anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: Theme.spacingXXS
 
-                        StyledText {
-                            width: parent.width
-                            text: I18n.tr("Ctrl+S: Save • Ctrl+O: Open • Ctrl+N: New • Ctrl+F: Find")
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.surfaceText
-                            wrapMode: Text.WordWrap
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-
-                        StyledText {
-                            width: parent.width
-                            text: I18n.tr("Ctrl+A: Select All • Ctrl+P: Preview • Enter/Shift+Enter: Find Next/Previous • Esc: Close")
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.surfaceText
-                            wrapMode: Text.WordWrap
-                            horizontalAlignment: Text.AlignHCenter
+                        sourceComponent: DKeyHints {
+                            hints: [
+                                {
+                                    keys: ["Ctrl+S"],
+                                    label: I18n.tr("Save")
+                                },
+                                {
+                                    keys: ["Ctrl+O"],
+                                    label: I18n.tr("Open")
+                                },
+                                {
+                                    keys: ["Ctrl+N"],
+                                    label: I18n.tr("New", "adjective, shortcut or button that creates a new session or note")
+                                },
+                                {
+                                    keys: ["Ctrl+F"],
+                                    label: I18n.tr("Search", "search field placeholder")
+                                },
+                                {
+                                    keys: ["Return"],
+                                    label: I18n.tr("Next")
+                                },
+                                {
+                                    keys: ["Shift+Return"],
+                                    label: I18n.tr("Previous")
+                                },
+                                {
+                                    keys: ["Ctrl+P"],
+                                    label: I18n.tr("Preview", "verb, clipboard entry action button tooltip", true)
+                                },
+                                {
+                                    keys: ["Escape"],
+                                    label: I18n.tr("Close")
+                                }
+                            ]
                         }
                     }
                 }

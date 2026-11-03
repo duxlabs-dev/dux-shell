@@ -18,20 +18,6 @@ func TestParseZypperXML(t *testing.T) {
 			want:  []Package{},
 		},
 		{
-			name: "single package update",
-			input: `<?xml version="1.0"?>
-<stream>
-  <update-list>
-    <update name="zsh" edition="5.9-6" edition-old="5.9-5" kind="package" arch="x86_64">
-      <source url="https://download.opensuse.org/" alias="repo-oss"/>
-    </update>
-  </update-list>
-</stream>`,
-			want: []Package{
-				{Name: "zsh", Repo: RepoSystem, Backend: "zypper", FromVersion: "5.9-5", ToVersion: "5.9-6"},
-			},
-		},
-		{
 			name: "skips non-package kinds",
 			input: `<?xml version="1.0"?>
 <stream>

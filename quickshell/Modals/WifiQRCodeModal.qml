@@ -6,9 +6,9 @@ import qs.Modals.Common
 import qs.Modals.FileBrowser
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
-DankModal {
+DModal {
     id: root
     visible: false
     layerNamespace: "dms:wifi-qrcode"
@@ -104,14 +104,14 @@ DankModal {
                     width: parent.width
 
                     StyledText {
-                        text: I18n.tr("WiFi QR code for ") + theItem.wifiSSID
+                        text: I18n.tr("WiFi QR code for %1", "%1 is the network name").arg(theItem.wifiSSID)
                         font.pixelSize: Theme.fontSizeLarge
                         color: Theme.surfaceText
                         font.weight: Theme.fontWeightMedium
                         Layout.alignment: Qt.AlignLeft
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         iconName: "save"
                         Accessible.name: I18n.tr("Save QR Code")
                         iconSize: Theme.iconSize - 4
@@ -125,7 +125,7 @@ DankModal {
                         Layout.alignment: Qt.AlignRight
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         iconName: "close"
                         Accessible.name: I18n.tr("Close")
                         iconSize: Theme.iconSize - 4

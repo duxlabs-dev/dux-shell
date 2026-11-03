@@ -5,6 +5,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from extract_translations import STR_DQ, STR_SQ, decode_string_literal
+
 ABBREVIATIONS = {
     "on-screen displays": ["osd"],
     "on-screen display": ["osd"],
@@ -97,16 +99,17 @@ TAB_INDEX_MAP = {
     "TimeWeatherTab.qml": 1,
     "WeatherSettingsTab.qml": 56,
     "KeybindsTab.qml": 2,
-    "DankBarTab.qml": 3,
-    "DankDashTab.qml": 43,
+    "DBarTab.qml": 3,
+    "DDashTab.qml": 43,
+    "DigitalWellbeingTab.qml": 67,
     "CompositorLayoutTab.qml": 37,
     "WindowRulesTab.qml": 38,
     "DockGeneralTab.qml": 5,
     "DockWidgetsTab.qml": 57,
     "DockAppearanceTab.qml": 58,
     "DockAdvancedTab.qml": 59,
-    "DankBarAppearanceTab.qml": 6,
-    "DankDotTab.qml": 65,
+    "DBarAppearanceTab.qml": 6,
+    "DDotTab.qml": 65,
     "NetworkStatusTab.qml": 7,
     "NetworkEthernetTab.qml": 39,
     "NetworkWifiTab.qml": 40,
@@ -129,7 +132,8 @@ TAB_INDEX_MAP = {
     "NotificationRulesTab.qml": 55,
     "OSDTab.qml": 18,
     "RunningAppsTab.qml": 19,
-    "SystemUpdaterTab.qml": 20,
+    "SoftwareUpdatesTab.qml": 20,
+    "ChangelogTab.qml": 66,
     "PowerSleepTab.qml": 21,
     "ClipboardTab.qml": 23,
     "DisplayConfigTab.qml": 24,
@@ -161,7 +165,7 @@ SIDEBAR_GATE_CONDITIONS = [
     ("dmsOnly", "networkAvailable"),
     ("hyprlandNiriOnly", "isHyprlandOrNiri"),
     ("clipboardOnly", "dmsConnected"),
-    ("niriOnly", "isNiri"),
+    ("inputCapable", "inputCapable"),
     ("pointerCapable", "pointerCapable"),
     ("windowRulesCapable", "windowRulesCapable"),
     ("layoutCapable", "layoutCapable"),
@@ -182,7 +186,7 @@ FILE_PAGE_MAP = {
 TAB_META_DEFAULT = ("Settings", None, None)
 
 # Frame and island rows live on the bar pages; ungated ones still need their feature on.
-BAR_TAB_FILES = {"DankBarTab.qml", "DankBarAppearanceTab.qml"}
+BAR_TAB_FILES = {"DBarTab.qml", "DBarAppearanceTab.qml"}
 
 SEARCHABLE_COMPONENTS = [
     "SettingsCard",
@@ -191,6 +195,7 @@ SEARCHABLE_COMPONENTS = [
     "SettingsButtonGroupRow",
     "SettingsSliderRow",
     "SettingsToggleCard",
+    "SettingsToggleSliderRow",
     "SettingsSplitRow",
     "SettingsNavRow",
     "SettingsRow",
@@ -251,7 +256,7 @@ def enrich_keywords(label, description, category, existing_tags, parent_label=No
     keywords = set(existing_tags)
 
     label_lower = label.lower()
-    label_words = re.split(r"[\s\-_&/]+", label_lower)
+    label_words = re.split(r"[\s\-_&/\"]+", label_lower)
     keywords.update(w for w in label_words if len(w) > 2)
     keywords.update(alias_keywords(label_lower))
 
@@ -273,14 +278,42 @@ def enrich_keywords(label, description, category, existing_tags, parent_label=No
     return sorted(keywords)
 
 
+def literal_args(value):
+    """Extract literal and supported runtime .arg() values from a setting description."""
+    call_tail = value.split("I18n.tr(", 1)[-1].split("I18n.tr(", 1)[0]
+    args = []
+    pattern = r"\.arg\(\s*(?:" + STR_DQ + "|" + STR_SQ + r"|(?P<dynamic>UsersService\.(?:adminGroup|greeterGroup)))?"
+    for match in re.finditer(pattern, call_tail):
+        if match.group(1) is not None:
+            args.append(decode_string_literal(match.group(1), '"'))
+        elif match.group(2) is not None:
+            args.append(decode_string_literal(match.group(2), "'"))
+        elif match.group("dynamic") is not None:
+            service, prop = match.group("dynamic").split(".", 1)
+            args.append({"service": service, "property": prop})
+        else:
+            args.append(None)
+    return args
+
+
+def apply_args(text, args):
+    for index, arg in enumerate(args, start=1):
+        if isinstance(arg, str):
+            text = text.replace(f"%{index}", arg)
+    return text
+
+
 def extract_i18n_string(value):
-    match = re.search(r'I18n\.tr\(["\']([^"\']+)["\']', value)
-    if match:
-        return match.group(1)
-    match = re.search(r'^["\']([^"\']+)["\']$', value.strip())
-    if match:
-        return match.group(1)
+    for literal, quote in ((STR_DQ, '"'), (STR_SQ, "'")):
+        match = re.search(rf"I18n\.tr\(\s*{literal}", value) or re.fullmatch(literal, value.strip())
+        if match and match.group(1):
+            return decode_string_literal(match.group(1), quote)
     return None
+
+
+def is_status_notice(value):
+    """A description with an empty branch only shows while some state holds; it is not searchable text."""
+    return re.search(r"""\?\s*(""|'')\s*:|:\s*(""|'')\s*$""", value.strip()) is not None
 
 
 def extract_tags(value):
@@ -318,12 +351,66 @@ def extract_property(block, prop_name):
     return None
 
 
+def own_scope(block):
+    """The block with every nested component body removed, so a card without a title does not borrow one from its rows."""
+    depth = 0
+    kept = []
+    for char in block:
+        if char == "{":
+            depth += 1
+            if depth <= 1:
+                kept.append(char)
+            continue
+        if char == "}":
+            depth -= 1
+            if depth <= 0:
+                kept.append(char)
+            continue
+        if depth <= 1:
+            kept.append(char)
+    return "".join(kept)
+
+
+def child_blocks(block):
+    children = []
+    depth = 0
+    i = 0
+    while i < len(block):
+        char = block[i]
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+        elif depth == 1:
+            match = re.match(r"[A-Z]\w*\s*\{", block[i:])
+            if match and (i == 0 or not (block[i - 1].isalnum() or block[i - 1] in "_.")):
+                child = parse_component_block(block, i, None)
+                children.append(child)
+                i = block.index(child, i) + len(child)
+                continue
+        i += 1
+    return children
+
+
+def borrowed_description(block, setting_key):
+    """First description among the nested rows that have no index entry of their own."""
+    for child in child_blocks(block):
+        own = own_scope(child)
+        key = extract_property(own, "settingKey")
+        if key and key.strip("\"'") != setting_key:
+            continue
+        found = extract_property(own, "description") or extract_property(own, "summary") or borrowed_description(child, setting_key)
+        if found:
+            return found
+    return None
+
+
 def load_wrapper_components(root_dir):
     widgets_dir = Path(root_dir) / "Modules" / "Settings" / "Widgets"
     wrappers = {}
 
     for qml_file in sorted(widgets_dir.glob("*.qml")):
-        if qml_file.stem in SEARCHABLE_COMPONENTS:
+        if qml_file.stem in SEARCHABLE_COMPONENTS or SHARED_CARD_NAME.fullmatch(qml_file.stem):
             continue
 
         with open(qml_file, "r", encoding="utf-8") as f:
@@ -341,6 +428,40 @@ def load_wrapper_components(root_dir):
     return wrappers
 
 
+SHARED_CARD_NAME = re.compile(r"Island\w+Card")
+SHARED_CARD_PATTERN = re.compile(r"\b(Island\w+Card)\s*\{")
+SHARED_CARD_ROW_PATTERN = re.compile(r"\b(?:Settings\w*Row|Loader)\s*\{")
+
+
+def strip_hidden_rows(card_content, hosted, docked, dot):
+    """Drop rows the instance hides for good: `visible: !root.hosted` on a hosted page, `visible: root.docked` on an undocked one, `visible: !root.isDot` on the dot."""
+    result = card_content
+    for match in reversed(list(SHARED_CARD_ROW_PATTERN.finditer(card_content))):
+        block = parse_component_block(card_content, match.start(), "")
+        visible = extract_property(block, "visible") or ""
+        if (hosted and "!root.hosted" in visible) or (not docked and "root.docked" in visible) or (dot and "!root.isDot" in visible):
+            result = result[: match.start()] + result[match.start() + len(block):]
+    return result
+
+
+def inline_shared_cards(root_dir, content):
+    """Append each shared island card a page instantiates, with its settingKeys rewritten to the page's keyPrefix."""
+    widgets_dir = Path(root_dir) / "Modules" / "Settings" / "Widgets"
+    for match in SHARED_CARD_PATTERN.finditer(content):
+        card_file = widgets_dir / f"{match.group(1)}.qml"
+        if not card_file.exists():
+            continue
+        instance = parse_component_block(content, match.start(), match.group(1))
+        prefix_match = re.search(r'keyPrefix:\s*"(\w+)"', instance)
+        prefix = prefix_match.group(1) if prefix_match else "island"
+        hosted = "hosted: true" in instance
+        docked = "docked: false" not in instance
+        dot = "isDot: true" in instance
+        card = strip_hidden_rows(card_file.read_text(encoding="utf-8"), hosted, docked, dot)
+        content += "\n" + card.replace('settingKey: root.keyPrefix + "', f'settingKey: "{prefix}')
+    return content
+
+
 def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
     results = []
     file_tab_index = TAB_INDEX_MAP.get(filename, -1)
@@ -349,6 +470,8 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
     if file_tab_index == -1 and not file_page:
         return results
 
+    card_conditions = []
+
     for component in SEARCHABLE_COMPONENTS + sorted(wrappers):
         defaults = wrappers.get(component, {})
         pattern = rf"\b{component}\s*\{{"
@@ -356,23 +479,28 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
             block = parse_component_block(content, match.start(), component)
             if not block:
                 continue
+            block_end = content.index(block, match.start()) + len(block)
 
             setting_key = extract_property(block, "settingKey") or defaults.get("settingKey")
             if setting_key:
                 setting_key = setting_key.strip("\"'")
 
-            if not setting_key:
+            if not setting_key or not re.fullmatch(r"\w+", setting_key):
                 continue
 
             tab_index = file_tab_index
 
-            title_raw = extract_property(block, "title") or defaults.get("title")
-            text_raw = extract_property(block, "text") or defaults.get("text")
+            own = own_scope(block)
+            title_raw = extract_property(own, "title") or defaults.get("title")
+            text_raw = extract_property(own, "text") or defaults.get("text")
             label = None
             if title_raw:
                 label = extract_i18n_string(title_raw)
             if not label and text_raw:
                 label = extract_i18n_string(text_raw)
+            if not label and component == "SettingsCard":
+                page_label = hub_meta.get(file_page) if file_page else tab_meta.get(file_tab_index, TAB_META_DEFAULT)
+                label = page_label[0]
 
             if not label:
                 continue
@@ -389,12 +517,14 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
             if tags_raw:
                 tags = extract_tags(tags_raw)
 
-            desc_raw = extract_property(block, "description") or extract_property(block, "summary") or defaults.get("description")
+            desc_raw = extract_property(own, "description") or extract_property(own, "summary") or defaults.get("description") or borrowed_description(block, setting_key)
             description = None
-            if desc_raw:
+            description_args = []
+            if desc_raw and not is_status_notice(desc_raw):
                 description = extract_i18n_string(desc_raw)
+                description_args = literal_args(desc_raw)
 
-            visible_raw = extract_property(block, "visible")
+            visible_raw = extract_property(own_scope(block), "visible")
             page_meta = hub_meta.get(file_page) if file_page else None
             condition_key = page_meta[2] if page_meta else tab_meta.get(tab_index, TAB_META_DEFAULT)[2]
             if visible_raw:
@@ -413,7 +543,7 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                 elif "CompositorService.supportsPointerConfig" in visible_raw:
                     condition_key = "pointerCapable"
                 elif "CompositorService.supportsInputConfig" in visible_raw:
-                    condition_key = "isNiri"
+                    condition_key = "inputCapable"
                 elif "CompositorService.isAqueous" in visible_raw:
                     if "CompositorService.isHyprland" in visible_raw:
                         condition_key = "smartDockCapable"
@@ -423,6 +553,10 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                         condition_key = "isAqueous"
                 elif all(c in visible_raw for c in ("CompositorService.isNiri", "CompositorService.isHyprland", "CompositorService.isMango")):
                     condition_key = "windowRulesCapable"
+                elif all(c in visible_raw for c in ("CompositorService.isNiri", "CompositorService.isHyprland")):
+                    condition_key = "isHyprlandOrNiri"
+                elif all(c in visible_raw for c in ("CompositorService.isNiri", "CompositorService.isMango")):
+                    condition_key = "isNiriOrMango"
                 elif "CompositorService.isNiri" in visible_raw:
                     condition_key = "isNiri"
                 elif "CompositorService.isHyprland" in visible_raw:
@@ -441,16 +575,26 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                     condition_key = "dmsConnected"
                 elif "Theme.matugenAvailable" in visible_raw:
                     condition_key = "matugenAvailable"
+                elif "dock.config.enabled" in visible_raw:
+                    condition_key = "dockEnabled"
+                elif "selectedIslandDocked" in visible_raw or "!root.selectedIslandFree" in visible_raw:
+                    condition_key = "islandDocked"
+                elif "selectedIslandFree" in visible_raw and "!dankBarTab.selectedIslandFree" not in visible_raw:
+                    condition_key = "islandFree"
             if filename in BAR_TAB_FILES and not condition_key:
                 if setting_key.startswith("frame"):
                     condition_key = "frameEnabled"
                 elif setting_key.startswith("island"):
                     condition_key = "islandEnabled"
-            if filename == "DankDotTab.qml" and not condition_key and setting_key != "dotEnabled":
+            if filename == "DDotTab.qml" and not condition_key and setting_key != "dotEnabled":
                 condition_key = "dotEnabled"
+            if component == "SettingsCard":
+                card_conditions.append((match.start(), block_end, condition_key if extract_property(own, "visible") else None))
+            elif not condition_key:
+                condition_key = next((cond for start, end, cond in card_conditions if start < match.start() < end), None)
 
             category, parent_label, _ = page_meta if page_meta else tab_meta.get(tab_index, TAB_META_DEFAULT)
-            enriched_keywords = enrich_keywords(label, description, category, tags, parent_label)
+            enriched_keywords = enrich_keywords(label, apply_args(description, description_args) if description else description, category, tags, parent_label)
 
             entry = {
                 "section": setting_key,
@@ -468,6 +612,8 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                 entry["icon"] = icon
             if description:
                 entry["description"] = description
+            if description_args and None not in description_args:
+                entry["descriptionArgs"] = description_args
             if condition_key:
                 entry["conditionKey"] = condition_key
 
@@ -530,9 +676,11 @@ def parse_structure_entry(block, parent=None):
         own = block[: children_match.start()] + block[end + 1 :]
 
     tab_index_match = re.search(r'"tabIndex"\s*:\s*(\d+)', own)
+    label = i18n_prop(own, "text")
     entry = {
         "id": string_prop(own, "id"),
-        "label": i18n_prop(own, "text"),
+        "label": label,
+        "runtimeLabel": label is None and re.search(r'"text"\s*:', own) is not None,
         "icon": string_prop(own, "icon"),
         "tabIndex": int(tab_index_match.group(1)) if tab_index_match else None,
         "hint": i18n_prop(own, "hint"),
@@ -620,8 +768,8 @@ def generate_tab_entries(leaves, settings_entries):
 
     entries = []
     for leaf in leaves:
-        base_label = leaf["label"]
-        if not base_label or leaf["children"]:
+        base_label = leaf["label"] or ""
+        if leaf["children"] or not (base_label or leaf["runtimeLabel"]):
             continue
         label = (
             f"{leaf['parentLabel']}: {base_label}"
@@ -646,6 +794,8 @@ def generate_tab_entries(leaves, settings_entries):
             entry["description"] = leaf["hint"]
         if leaf["conditionKey"]:
             entry["conditionKey"] = leaf["conditionKey"]
+        if leaf["runtimeLabel"]:
+            entry["runtimeType"] = "pageLabel"
         entries.append(entry)
 
     return entries
@@ -662,7 +812,7 @@ def extract_settings_index(root_dir, tab_meta, hub_meta):
             continue
 
         with open(qml_file, "r", encoding="utf-8") as f:
-            content = f.read()
+            content = inline_shared_cards(root_dir, f.read())
 
         entries = find_settings_components(content, qml_file.name, wrappers, tab_meta, hub_meta)
         for entry in entries:
@@ -730,7 +880,7 @@ def extract_bar_widget_option_labels(root_dir):
     entries = []
     for qml_file in sorted(options_dir.glob("*Options.qml")):
         labels = []
-        for label in OPTION_LABEL_PATTERN.findall(qml_file.read_text(encoding="utf-8")):
+        for label in OPTION_LABEL_PATTERN.findall(inline_shared_cards(root_dir, qml_file.read_text(encoding="utf-8"))):
             if not label or label in labels:
                 continue
             labels.append(label)

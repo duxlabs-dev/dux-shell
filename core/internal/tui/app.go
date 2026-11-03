@@ -1,12 +1,12 @@
 package tui
 
 import (
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/distros"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
 )
 
 type Model struct {
@@ -14,6 +14,7 @@ type Model struct {
 	state   ApplicationState
 
 	osInfo       *distros.OSInfo
+	resume       *layerResume
 	dependencies []deps.Dependency
 	err          error
 
@@ -38,6 +39,8 @@ type Model struct {
 	selectedConfig     int
 	selectedAuthMethod int
 	reinstallItems     map[string]bool
+	detectedVariants   map[string]deps.PackageVariant
+	variantMarks       map[string]bool
 	disabledItems      map[string]bool
 	replaceConfigs     map[string]bool
 	skipGentooUseFlags bool
@@ -77,9 +80,11 @@ func NewModel(version string, logFilePath string) Model {
 		packageProgress: packageInstallProgressMsg{
 			step: "Initializing package installation",
 		},
-		reinstallItems: make(map[string]bool),
-		disabledItems:  make(map[string]bool),
-		replaceConfigs: make(map[string]bool),
+		reinstallItems:   make(map[string]bool),
+		detectedVariants: make(map[string]deps.PackageVariant),
+		variantMarks:     make(map[string]bool),
+		disabledItems:    make(map[string]bool),
+		replaceConfigs:   make(map[string]bool),
 	}
 }
 
@@ -133,6 +138,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateDetectingDepsState(msg)
 	case StateDependencyReview:
 		return m.updateDependencyReviewState(msg)
+	case StateLayerPackages:
+		return m.updateLayerPackagesState(msg)
 	case StateGentooUseFlags:
 		return m.updateGentooUseFlagsState(msg)
 	case StateGentooGCCCheck:
@@ -176,6 +183,8 @@ func (m Model) View() string {
 		return m.viewDetectingDeps()
 	case StateDependencyReview:
 		return m.viewDependencyReview()
+	case StateLayerPackages:
+		return m.viewLayerPackages()
 	case StateGentooUseFlags:
 		return m.viewGentooUseFlags()
 	case StateGentooGCCCheck:

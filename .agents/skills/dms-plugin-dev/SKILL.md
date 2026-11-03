@@ -1,7 +1,7 @@
 ---
 name: dms-plugin-dev
 description: >
-  Develop plugins for DankMaterialShell (DMS), a QML-based Linux desktop shell built on
+  Develop plugins for Dux Shell (DMS), a QML-based Linux desktop shell built on
   Quickshell. Supports widget (bar, dock + Control Center), daemon (background service),
   launcher (search + actions), desktop (draggable desktop widgets), dash (dash tab),
   dashCard (dash overview card), and composite (multi-surface) plugins. Covers manifest
@@ -11,33 +11,33 @@ description: >
   or debug a DMS plugin, or asks about the DMS plugin API.
 compatibility: Designed for Claude Code (or similar products)
 metadata:
-  author: DankMaterialShell
+  author: Dux Shell
   version: "1.2"
   domain: qml-desktop-development
-  framework: DankMaterialShell
+  framework: Dux Shell
   languages: qml, javascript
 allowed-tools: Bash Read Write Edit
 ---
 
-# DankMaterialShell Plugin Development
+# Dux Shell Plugin Development
 
 ## Overview
 
 DMS plugins extend the desktop shell with bar and dock widgets, background services, launcher
 integrations, desktop widgets, and dash tabs and cards. Plugins are QML components discovered from
-`~/.config/DankMaterialShell/plugins/`.
+`~/.config/dms/plugins/`.
 
 **Minimum plugin structure:**
 
 ```
-~/.config/DankMaterialShell/plugins/YourPlugin/
+~/.config/dms/plugins/YourPlugin/
   plugin.json        # Required: manifest with metadata
   YourComponent.qml  # Required: main QML component
   YourSettings.qml   # Optional: settings UI
   *.js               # Optional: JavaScript utilities
 ```
 
-**Plugin registry:** Community plugins are available at https://plugins.danklinux.com/
+**Plugin registry:** Community plugins are available at https://plugins.duxlabs.dev/
 
 **Plugin types:**
 
@@ -480,7 +480,7 @@ Always use `Theme.*` properties from `qs.Common` - never hardcode colors or size
 - Radius: `Theme.cornerRadius`, `Theme.cornerRadiusSmall`, `Theme.cornerRadiusLarge`
 - Icons: `Theme.iconSizeSmall` (16), `Theme.iconSize` (24), `Theme.iconSizeLarge` (32)
 
-**Common widgets from `qs.Widgets`:** `StyledText`, `StyledRect`, `DankIcon`, `DankButton`, `DankToggle`, `DankTextField`, `DankSlider`, `DankGridView`, `CachingImage`.
+**Common widgets from `qs.DCommon.Widgets`:** `StyledText`, `StyledRect`, `DIcon`, `DButton`, `DToggle`, `DTextField`, `DSlider`, `DGridView`, `CachingImage`. The old `Dank*` names in `qs.Widgets` are deprecated.
 
 See [theme-reference.md](references/theme-reference.md) for the complete property list.
 

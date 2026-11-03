@@ -2,11 +2,12 @@ import QtQuick
 import qs.Common
 import qs.Widgets
 
-DankPopout {
+DPopout {
     id: root
 
     layerNamespace: "dms:plugins:" + layerNamespacePlugin
 
+    property string pluginId: ""
     property var triggerScreen: null
     property Component pluginContent: null
     property real contentWidth: 400
@@ -59,6 +60,7 @@ DankPopout {
 
                 Loader {
                     id: popoutContentLoader
+                    property string pluginId: root.pluginId
                     width: parent.width
                     sourceComponent: root.pluginContent
 

@@ -1,8 +1,9 @@
 import QtQuick
 import qs.Common
 import qs.Modules.ControlCenter
+import qs.DCommon.Widgets
 import qs.Widgets
-import "../../../DankCommon/Common/FocusNavigation.js" as FocusNavigation
+import "../../../DCommon/Common/FocusNavigation.js" as FocusNavigation
 
 Item {
     id: root
@@ -15,8 +16,11 @@ Item {
     property bool shown: false
     property real panelWidth: CcMetrics.dialogWidth
     property vector4d cornerRadii: Qt.vector4d(Theme.windowRadius, Theme.windowRadius, Theme.windowRadius, Theme.windowRadius)
+    property Item backdrop: null
+    property bool dimsBackdrop: true
     readonly property real presence: panel.opacity
     default property alias content: contentSlot.data
+    property alias showScrollBar: contentFlickable.showScrollBar
 
     signal dismissed
 
@@ -50,7 +54,8 @@ Item {
         topRightRadius: root.cornerRadii.y
         bottomRightRadius: root.cornerRadii.z
         bottomLeftRadius: root.cornerRadii.w
-        color: Theme.withAlpha(Theme.scrimColor, Theme.scrimAlpha)
+        visible: root.dimsBackdrop
+        color: Theme.withAlpha(Theme.backdropColor, Theme.scrimAlpha)
         opacity: root.shown ? 1 : 0
 
         Behavior on opacity {
@@ -112,6 +117,17 @@ Item {
             }
         }
 
+        // In-window sheets get no compositor blur, so blur the covered content behind the panel only.
+        Loader {
+            anchors.fill: parent
+            z: -1
+            active: root.backdrop !== null && root.visible && CcMetrics.hideCoveredContent
+            sourceComponent: BackdropBlur {
+                radius: panel.radius
+                sourceItem: root.backdrop
+            }
+        }
+
         MouseArea {
             anchors.fill: parent
             hoverEnabled: true
@@ -134,7 +150,7 @@ Item {
                 width: parent.width
                 spacing: Theme.spacingM
 
-                DankIcon {
+                DIcon {
                     name: root.iconName
                     size: Theme.iconSizeLarge
                     color: Theme.primary
@@ -177,7 +193,7 @@ Item {
                 visible: text !== ""
             }
 
-            DankFlickable {
+            DFlickable {
                 id: contentFlickable
                 width: parent.width
                 height: Math.min(contentHeight, Math.max(0, root.height - Theme.spacingL * 4 - header.height - column.spacing - (status.visible ? status.height + column.spacing : 0)))
@@ -190,8 +206,7 @@ Item {
                     if (!root.shown || !item || !FocusNavigation.containsFocus(contentSlot))
                         return;
                     const top = item.mapToItem(contentSlot, 0, 0).y;
-                    const y = Math.min(top, Math.max(contentFlickable.contentY, top + item.height - contentFlickable.height));
-                    contentFlickable.contentY = Math.max(0, Math.min(contentFlickable.contentHeight - contentFlickable.height, y));
+                    contentFlickable.revealRange(top, top + item.height);
                 }
 
                 Column {

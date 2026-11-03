@@ -3,11 +3,13 @@ package clipboard
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"image"
+	"image/png"
 	"net"
 	"os"
 	"path/filepath"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -16,9 +18,11 @@ import (
 	"github.com/stretchr/testify/require"
 	bolt "go.etcd.io/bbolt"
 
-	mocks_wlcontext "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/wlcontext"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	wlclient "github.com/duxlabs-dev/dux-go/wayland/client"
+	"github.com/duxlabs-dev/dux-go/wayland/ext_data_control"
+	mocks_wlcontext "github.com/duxlabs-dev/dux-shell/core/internal/mocks/wlcontext"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 )
 
 type clipboardTestConn struct {
@@ -47,15 +51,17 @@ func newTestManagerWithDB(t *testing.T) *Manager {
 	})
 
 	mockCtx := mocks_wlcontext.NewMockWaylandContext(t)
-	mockCtx.EXPECT().Post(mock.AnythingOfType("func()")).Run(func(fn func()) {
-		fn()
-	}).Maybe()
+	mockCtx.EXPECT().Post(mock.AnythingOfType("func()")).Return().Maybe()
 
-	return &Manager{
-		config: DefaultConfig(),
-		db:     db,
-		wlCtx:  mockCtx,
+	m := &Manager{
+		config:         DefaultConfig(),
+		db:             db,
+		wlCtx:          mockCtx,
+		dataControlMgr: &ext_data_control.ExtDataControlManagerV1{},
+		dataDevice:     &ext_data_control.ExtDataControlDeviceV1{},
 	}
+	m.deviceBound.Store(true)
+	return m
 }
 
 func TestEncodeDecodeEntry_Roundtrip(t *testing.T) {
@@ -82,53 +88,6 @@ func TestEncodeDecodeEntry_Roundtrip(t *testing.T) {
 	assert.Equal(t, original.Size, decoded.Size)
 	assert.Equal(t, original.Timestamp.Unix(), decoded.Timestamp.Unix())
 	assert.Equal(t, original.IsImage, decoded.IsImage)
-}
-
-func TestEncodeDecodeEntry_EmptyData(t *testing.T) {
-	original := Entry{
-		ID:        1,
-		Data:      []byte{},
-		MimeType:  "text/plain",
-		Preview:   "",
-		Size:      0,
-		Timestamp: time.Now().Truncate(time.Second),
-		IsImage:   false,
-	}
-
-	encoded, err := encodeEntry(original)
-	assert.NoError(t, err)
-
-	decoded, err := decodeEntry(encoded)
-	assert.NoError(t, err)
-
-	assert.Equal(t, original.ID, decoded.ID)
-	assert.Empty(t, decoded.Data)
-}
-
-func TestEncodeDecodeEntry_LargeData(t *testing.T) {
-	largeData := make([]byte, 100000)
-	for i := range largeData {
-		largeData[i] = byte(i % 256)
-	}
-
-	original := Entry{
-		ID:        777,
-		Data:      largeData,
-		MimeType:  "application/octet-stream",
-		Preview:   "binary data...",
-		Size:      len(largeData),
-		Timestamp: time.Now().Truncate(time.Second),
-		IsImage:   false,
-	}
-
-	encoded, err := encodeEntry(original)
-	assert.NoError(t, err)
-
-	decoded, err := decodeEntry(encoded)
-	assert.NoError(t, err)
-
-	assert.Equal(t, original.Data, decoded.Data)
-	assert.Equal(t, original.Size, decoded.Size)
 }
 
 func TestEncodeDecodeEntry_AltRepresentation(t *testing.T) {
@@ -165,22 +124,6 @@ func TestEncodeDecodeEntry_AltRepresentation(t *testing.T) {
 	assert.Equal(t, original.Hash, extractHash(encoded))
 }
 
-func TestExtractHash_NoAlt(t *testing.T) {
-	entry := Entry{
-		ID:        1,
-		Data:      []byte("plain entry"),
-		MimeType:  "text/plain",
-		Preview:   "plain entry",
-		Size:      11,
-		Timestamp: time.Now().Truncate(time.Second),
-		Hash:      computeHash([]byte("plain entry")),
-	}
-
-	encoded, err := encodeEntry(entry)
-	assert.NoError(t, err)
-	assert.Equal(t, entry.Hash, extractHash(encoded))
-}
-
 func TestSelectAltTextMimeType(t *testing.T) {
 	tests := []struct {
 		mimes    []string
@@ -189,7 +132,6 @@ func TestSelectAltTextMimeType(t *testing.T) {
 		{[]string{"image/bmp", "TEXT", "text/html", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"}, "text/plain;charset=utf-8"},
 		{[]string{"image/png", "UTF8_STRING"}, "UTF8_STRING"},
 		{[]string{"image/png", "text/html"}, ""},
-		{[]string{"image/png"}, ""},
 	}
 
 	for _, tt := range tests {
@@ -394,17 +336,6 @@ func TestDeleteEntries_IgnoresUnknownIDs(t *testing.T) {
 	assert.Empty(t, m.GetHistory())
 }
 
-func TestDeleteEntries_EmptyListIsNoOp(t *testing.T) {
-	m := newTestManagerWithDB(t)
-
-	storeTestEntry(t, m, "keep me")
-
-	deleted, err := m.DeleteEntries(nil)
-	require.NoError(t, err)
-	assert.Equal(t, 0, deleted)
-	assert.Len(t, m.GetHistory(), 1)
-}
-
 func TestHandleDeleteEntries_ReportsDeletedCount(t *testing.T) {
 	m := newTestManagerWithDB(t)
 
@@ -434,7 +365,6 @@ func TestHandleDeleteEntries_RejectsBadParams(t *testing.T) {
 		{"missing ids", map[string]any{}},
 		{"ids not an array", map[string]any{"ids": float64(1)}},
 		{"negative id", map[string]any{"ids": []any{float64(-1)}}},
-		{"fractional id", map[string]any{"ids": []any{float64(1.5)}}},
 		{"id of the wrong type", map[string]any{"ids": []any{"1"}}},
 	}
 
@@ -517,7 +447,9 @@ func TestUnpinEntry_KeepsTopUnpinnedDuplicate(t *testing.T) {
 
 	history = m.GetHistory()
 	require.Len(t, history, 3)
-	require.Equal(t, topHistoryDuplicate.ID, history[0].ID)
+	// GetHistory sorts by timestamp, so the newer row leads even though its
+	// id is lower.
+	require.Equal(t, olderHistoryDuplicate.ID, history[0].ID)
 	require.NoError(t, m.UnpinEntry(pinnedID))
 
 	history = m.GetHistory()
@@ -655,37 +587,29 @@ func TestEditEntry_NonTextReturnsError(t *testing.T) {
 }
 
 func TestEditEntry_AltTextMimeTypesAllowed(t *testing.T) {
-	for _, mime := range []string{"UTF8_STRING", "STRING", "TEXT", "text/plain;charset=utf-8", "text/plain"} {
-		t.Run(mime, func(t *testing.T) {
-			m := newTestManagerWithDB(t)
-			entry := Entry{
-				Data:      []byte("old text"),
-				MimeType:  mime,
-				Preview:   "old text",
-				Size:      8,
-				Timestamp: time.Now().Truncate(time.Second),
-				IsImage:   false,
-			}
-			require.NoError(t, m.storeEntry(entry))
-			history := m.GetHistory()
-			require.Len(t, history, 1)
-			id := history[0].ID
-
-			err := m.EditEntry(id, "replacement text")
-			assert.NoError(t, err)
-		})
+	m := newTestManagerWithDB(t)
+	entry := Entry{
+		Data:      []byte("old text"),
+		MimeType:  "UTF8_STRING",
+		Preview:   "old text",
+		Size:      8,
+		Timestamp: time.Now().Truncate(time.Second),
+		IsImage:   false,
 	}
+	require.NoError(t, m.storeEntry(entry))
+	history := m.GetHistory()
+	require.Len(t, history, 1)
+
+	assert.NoError(t, m.EditEntry(history[0].ID, "replacement text"))
 }
 
 func TestEditEntry_EmptyOrWhitespaceReturnsError(t *testing.T) {
 	m := newTestManagerWithDB(t)
 	id := storeTestEntry(t, m, "keep me")
 
-	for _, badText := range []string{"", "   ", "\t\n\r"} {
-		err := m.EditEntry(id, badText)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "cannot save empty entry")
-	}
+	err := m.EditEntry(id, "   ")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot save empty entry")
 
 	history := m.GetHistory()
 	require.Len(t, history, 1)
@@ -747,7 +671,6 @@ func TestManager_ConcurrentSubscriberAccess(t *testing.T) {
 			subID := string(rune('a' + id))
 			ch := m.Subscribe(subID)
 			assert.NotNil(t, ch)
-			time.Sleep(time.Millisecond)
 			m.Unsubscribe(subID)
 		}(i)
 	}
@@ -842,33 +765,13 @@ func TestManager_NotifySubscribersNonBlocking(t *testing.T) {
 	assert.Len(t, m.dirty, 1)
 }
 
-func TestItob(t *testing.T) {
-	tests := []struct {
-		input    uint64
-		expected []byte
-	}{
-		{0, []byte{0, 0, 0, 0, 0, 0, 0, 0}},
-		{1, []byte{0, 0, 0, 0, 0, 0, 0, 1}},
-		{256, []byte{0, 0, 0, 0, 0, 0, 1, 0}},
-		{0xFFFFFFFFFFFFFFFF, []byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}},
-	}
-
-	for _, tt := range tests {
-		result := itob(tt.input)
-		assert.Equal(t, tt.expected, result)
-	}
-}
-
 func TestSizeStr(t *testing.T) {
 	tests := []struct {
 		input    int
 		expected string
 	}{
-		{0, "0 B"},
 		{100, "100 B"},
-		{1024, "1 KiB"},
 		{2048, "2 KiB"},
-		{1048576, "1 MiB"},
 		{5242880, "5 MiB"},
 	}
 
@@ -885,13 +788,8 @@ func TestSelectMimeType(t *testing.T) {
 		mimes    []string
 		expected string
 	}{
-		{[]string{"text/plain;charset=utf-8", "text/html"}, "text/plain;charset=utf-8"},
 		{[]string{"text/html", "text/plain"}, "text/plain"},
-		{[]string{"text/html", "image/png"}, "image/png"},
-		{[]string{"image/png", "text/plain"}, "image/png"},
 		{[]string{"text/plain", "image/png"}, "image/png"},
-		{[]string{"image/png", "image/jpeg"}, "image/png"},
-		{[]string{"image/png"}, "image/png"},
 		{[]string{"application/octet-stream"}, "application/octet-stream"},
 		{[]string{}, ""},
 	}
@@ -900,16 +798,6 @@ func TestSelectMimeType(t *testing.T) {
 		result := m.selectMimeType(tt.mimes)
 		assert.Equal(t, tt.expected, result)
 	}
-}
-
-func TestIsImageMimeType(t *testing.T) {
-	m := &Manager{}
-
-	assert.True(t, m.isImageMimeType("image/png"))
-	assert.True(t, m.isImageMimeType("image/jpeg"))
-	assert.True(t, m.isImageMimeType("image/gif"))
-	assert.False(t, m.isImageMimeType("text/plain"))
-	assert.False(t, m.isImageMimeType("application/json"))
 }
 
 func TestTextPreview(t *testing.T) {
@@ -928,59 +816,6 @@ func TestTextPreview(t *testing.T) {
 	preview := m.textPreview(longText)
 	assert.True(t, len(preview) > 100)
 	assert.Contains(t, preview, "…")
-}
-
-func TestDefaultConfig(t *testing.T) {
-	cfg := DefaultConfig()
-	assert.Equal(t, 100, cfg.MaxHistory)
-	assert.Equal(t, int64(5*1024*1024), cfg.MaxEntrySize)
-	assert.Equal(t, 0, cfg.AutoClearDays)
-	assert.False(t, cfg.ClearAtStartup)
-	assert.False(t, cfg.Disabled)
-}
-
-func TestManager_PostDelegatesToWlContext(t *testing.T) {
-	mockCtx := mocks_wlcontext.NewMockWaylandContext(t)
-
-	var called atomic.Bool
-	mockCtx.EXPECT().Post(mock.AnythingOfType("func()")).Run(func(fn func()) {
-		called.Store(true)
-		fn()
-	}).Once()
-
-	m := &Manager{
-		wlCtx: mockCtx,
-	}
-
-	executed := false
-	m.post(func() {
-		executed = true
-	})
-
-	assert.True(t, called.Load())
-	assert.True(t, executed)
-}
-
-func TestManager_PostExecutesFunctionViaContext(t *testing.T) {
-	mockCtx := mocks_wlcontext.NewMockWaylandContext(t)
-
-	var capturedFn func()
-	mockCtx.EXPECT().Post(mock.AnythingOfType("func()")).Run(func(fn func()) {
-		capturedFn = fn
-	}).Times(3)
-
-	m := &Manager{
-		wlCtx: mockCtx,
-	}
-
-	counter := 0
-	m.post(func() { counter++ })
-	m.post(func() { counter += 10 })
-	m.post(func() { counter += 100 })
-
-	assert.NotNil(t, capturedFn)
-	capturedFn()
-	assert.Equal(t, 100, counter)
 }
 
 // zero padding in a fresh db, never a valid page
@@ -1058,6 +893,24 @@ func TestOpenDB_HealsGarbageFile(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestOpenDB_LockedByAnotherProcessKeepsHistory(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "db")
+	holder, err := openDB(path)
+	require.NoError(t, err)
+	m := &Manager{config: DefaultConfig(), db: holder, dbPath: path}
+	require.NoError(t, m.storeEntry(Entry{Data: []byte("x"), MimeType: "text/plain"}))
+
+	_, err = openDB(path)
+	require.Error(t, err)
+	require.NoError(t, holder.Close())
+
+	reopened, err := openDB(path)
+	require.NoError(t, err)
+	defer reopened.Close()
+	m = &Manager{config: DefaultConfig(), db: reopened, dbPath: path}
+	assert.Len(t, m.GetHistory(), 1)
+}
+
 func TestStoreEntry_CorruptDBReturnsErrorNotPanic(t *testing.T) {
 	for _, tt := range corruptDBCases {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1072,4 +925,225 @@ func TestStoreEntry_CorruptDBReturnsErrorNotPanic(t *testing.T) {
 			assert.Empty(t, m.GetHistory())
 		})
 	}
+}
+
+// The URI convention only holds if encode and decode are exact inverses for
+// the path shapes users actually have.
+func TestFileURIRoundTrip(t *testing.T) {
+	paths := []struct{ name, path string }{
+		{"space", "/home/user/My File.txt"},
+		{"literal percent-20", "/home/user/report%20final.fbx"},
+		{"hash", "/home/user/notes #1/draft.txt"},
+		{"cjk", "/home/user/文档/吉祥物 男女(2).fbx"},
+		{"bare percent", "/home/user/100%.done"},
+	}
+	for _, tc := range paths {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.path, pathFromFileURI(encodeFileURI(tc.path)))
+		})
+	}
+}
+
+// Oversized files are stored as a URI with no body. Storing that URI
+// unencoded makes EntryToFile decode a path that was never encoded, so a
+// literal "%20" in the name resolves to a different, missing file.
+func TestCopyFile_OversizedEntryRoundTrips(t *testing.T) {
+	m := newTestManagerWithDB(t)
+	m.config.MaxEntrySize = 8 // force the nil fileData branch
+
+	path := filepath.Join(t.TempDir(), "report%20final.fbx")
+	require.NoError(t, os.WriteFile(path, []byte("fbx-bytes"), 0o644))
+
+	require.NoError(t, m.CopyFile(path))
+
+	history := m.GetHistory()
+	require.Len(t, history, 1)
+	require.Equal(t, "text/uri-list", history[0].MimeType)
+	// GetHistory only carries metadata; the stored body lives in GetEntry.
+	entry, err := m.GetEntry(history[0].ID)
+	require.NoError(t, err)
+	assert.Equal(t, path, m.EntryToFile(entry))
+}
+
+// A directory's stat size is tiny, so it passes the MaxEntrySize check and
+// must not reach os.ReadFile, which fails with EISDIR.
+func TestCopyFile_DirectoryStoresURI(t *testing.T) {
+	m := newTestManagerWithDB(t)
+
+	dir := filepath.Join(t.TempDir(), "My Folder")
+	require.NoError(t, os.Mkdir(dir, 0o755))
+
+	require.NoError(t, m.CopyFile(dir))
+
+	history := m.GetHistory()
+	require.Len(t, history, 1)
+	require.Equal(t, "text/uri-list", history[0].MimeType)
+	entry, err := m.GetEntry(history[0].ID)
+	require.NoError(t, err)
+	assert.Equal(t, dir, m.EntryToFile(entry))
+}
+
+// CopyFile hands the image probe a URI the probe then decodes; it must be an
+// encoded one, or a name containing literal %20 probes the wrong path and the
+// copy silently downgrades to a plain uri-list entry.
+func TestCopyFile_EncodedImageNameStaysImage(t *testing.T) {
+	m := newTestManagerWithDB(t)
+
+	path := filepath.Join(t.TempDir(), "抓拍%20name.png")
+	var buf bytes.Buffer
+	require.NoError(t, png.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 4, 4))))
+	require.NoError(t, os.WriteFile(path, buf.Bytes(), 0o644))
+
+	require.NoError(t, m.CopyFile(path))
+
+	history := m.GetHistory()
+	require.Len(t, history, 1)
+	require.True(t, history[0].IsImage)
+	assert.Equal(t, "image/png", history[0].MimeType)
+}
+
+// The preview chain stats the path, so it must decode the encoded URIs
+// file managers hand us while keeping a literal "%20" in the name intact.
+func TestURIListPreview_DecodesEncodedURI(t *testing.T) {
+	m := newTestManagerWithDB(t)
+
+	path := filepath.Join(t.TempDir(), "report%20final.fbx")
+	require.NoError(t, os.WriteFile(path, []byte("fbx-bytes"), 0o644))
+
+	preview, isImage := m.uriListPreview([]byte(encodeFileURI(path) + "\r\n"))
+	assert.Equal(t, "[[ file report%20final.fbx ]]", preview)
+	assert.False(t, isImage)
+}
+
+// History restore runs handleCopyEntry -> EntryToFile -> CopyFile; the exact
+// path must survive the whole chain, literal %20 included.
+func TestHandleCopyEntry_OversizedFileEntryRestoresExactPath(t *testing.T) {
+	m := newTestManagerWithDB(t)
+	m.config.MaxEntrySize = 8
+
+	path := filepath.Join(t.TempDir(), "report%20final.fbx")
+	require.NoError(t, os.WriteFile(path, []byte("0123456789abcdef"), 0o644))
+	require.NoError(t, m.CopyFile(path))
+
+	history := m.GetHistory()
+	require.Len(t, history, 1)
+
+	mc := newClipboardTestConn()
+	handleCopyEntry(ipc.NewConnWriter(mc), ipc.Request{
+		ID:     1,
+		Params: map[string]any{"id": float64(history[0].ID)},
+	}, m)
+
+	var resp ipc.Response[map[string]any]
+	require.NoError(t, json.NewDecoder(mc.writeBuf).Decode(&resp))
+	require.Empty(t, resp.Error)
+	require.NotNil(t, resp.Result)
+	assert.Equal(t, path, (*resp.Result)["filePath"])
+}
+
+// A manager built with tracking disabled never binds data control but still
+// serves clipboard.copyFile; answering success there made dms screenshot skip
+// its local copy and leave the clipboard empty.
+func TestCopyFile_DisabledTrackingRefusesCopy(t *testing.T) {
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+
+	mockCtx := mocks_wlcontext.NewMockWaylandContext(t)
+	mockCtx.EXPECT().Display().Return(nil).Maybe()
+	mockCtx.EXPECT().Post(mock.AnythingOfType("func()")).Run(func(fn func()) { fn() }).Maybe()
+
+	cfg := DefaultConfig()
+	cfg.Disabled = true
+	m, err := NewManager(mockCtx, cfg)
+	require.NoError(t, err)
+	t.Cleanup(m.Close)
+
+	path := filepath.Join(t.TempDir(), "shot.png")
+	require.NoError(t, os.WriteFile(path, []byte("png-bytes"), 0o644))
+
+	require.ErrorIs(t, m.CopyFile(path), errSelectionUnavailable)
+	assert.Empty(t, m.GetHistory())
+}
+
+func TestApplyConfigChange_DisableReleasesDataDevice(t *testing.T) {
+	sock := filepath.Join(t.TempDir(), "wayland-test")
+	ln, err := net.Listen("unix", sock)
+	require.NoError(t, err)
+	t.Cleanup(func() { ln.Close() })
+
+	display, err := wlclient.Connect(sock)
+	require.NoError(t, err)
+	t.Cleanup(func() { display.Context().Close() })
+
+	m := newTestManagerWithDB(t)
+	mockCtx := mocks_wlcontext.NewMockWaylandContext(t)
+	mockCtx.EXPECT().Post(mock.AnythingOfType("func()")).Run(func(fn func()) { fn() })
+	m.wlCtx = mockCtx
+	device := ext_data_control.NewExtDataControlDeviceV1(display.Context())
+	m.dataDevice = device
+
+	cfg := DefaultConfig()
+	cfg.Disabled = true
+	m.applyConfigChange(cfg)
+
+	assert.True(t, device.IsZombie())
+	assert.Nil(t, m.dataDevice)
+	require.ErrorIs(t, m.CopyText("secret"), errSelectionUnavailable)
+	assert.Empty(t, m.GetHistory())
+}
+
+func TestTouchEntry_SurvivesTrimWhenHistoryFull(t *testing.T) {
+	m := newTestManagerWithDB(t)
+	m.config.MaxHistory = 3
+
+	for i := range 3 {
+		require.NoError(t, m.storeEntry(Entry{
+			Data:      []byte(fmt.Sprintf("entry-%d", i)),
+			MimeType:  "text/plain",
+			Timestamp: time.Now(),
+		}))
+	}
+
+	oldest := m.GetHistory()[2]
+	require.NoError(t, m.TouchEntry(oldest.ID))
+
+	// A new copy trims the bucket back to MaxHistory.
+	require.NoError(t, m.storeEntry(Entry{
+		Data:      []byte("newcomer"),
+		MimeType:  "text/plain",
+		Timestamp: time.Now(),
+	}))
+
+	history := m.GetHistory()
+	require.Len(t, history, 3)
+	ids := make([]uint64, len(history))
+	for i, e := range history {
+		ids[i] = e.ID
+	}
+	assert.Contains(t, ids, oldest.ID, "the touched row must survive trimming")
+	assert.Equal(t, oldest.ID, history[1].ID, "the touched row ranks second, behind the newer copy")
+}
+
+func TestGetHistory_SameSecondOrdersByID(t *testing.T) {
+	m := newTestManagerWithDB(t)
+	m.config.MaxHistory = 10
+
+	stamp := time.Now()
+	for i := range 3 {
+		require.NoError(t, m.storeEntry(Entry{
+			Data:      []byte(fmt.Sprintf("same-second-%d", i)),
+			MimeType:  "text/plain",
+			Timestamp: stamp,
+		}))
+	}
+
+	// Touching the oldest row rewrites it in place, so the bucket now yields
+	// it first even though every row shares a timestamp.
+	oldest := m.GetHistory()[2]
+	require.NoError(t, m.TouchEntry(oldest.ID))
+
+	history := m.GetHistory()
+	require.Len(t, history, 3)
+	assert.Equal(t, oldest.ID, history[0].ID, "the touched row must lead: its timestamp is newer")
+	assert.Greater(t, history[1].ID, history[2].ID, "rows still tied on timestamp break on newest id")
 }

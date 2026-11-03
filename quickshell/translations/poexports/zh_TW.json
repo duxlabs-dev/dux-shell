@@ -1,4 +1,7 @@
 {
+  " (%1 left)": {
+    " (%1 left)": ""
+  },
   "%1 (+%2 more)": {
     "%1 (+%2 more)": "%1（另有 %2 項）"
   },
@@ -8,6 +11,9 @@
   "%1 DMS binds may be overridden by config binds that come after the include.": {
     "%1 DMS binds may be overridden by config binds that come after the include.": ""
   },
+  "%1 Flatpak": {
+    "%1 Flatpak": ""
+  },
   "%1 KB": {
     "%1 KB": ""
   },
@@ -16,6 +22,12 @@
   },
   "%1 Startup Failed": {
     "%1 Startup Failed": ""
+  },
+  "%1 VRAM": {
+    "%1 VRAM": ""
+  },
+  "%1 active": {
+    "%1 active": ""
   },
   "%1 active session": {
     "%1 active session": "%1 個活躍會話"
@@ -35,6 +47,12 @@
   "%1 before": {
     "%1 before": ""
   },
+  "%1 behind": {
+    "%1 behind": ""
+  },
+  "%1 breaking": {
+    "%1 breaking": ""
+  },
   "%1 character": {
     "%1 character": "%1 個字元"
   },
@@ -49,6 +67,9 @@
   },
   "%1 connected": {
     "%1 connected": "%1 已連接"
+  },
+  "%1 cores, %2 threads": {
+    "%1 cores, %2 threads": ""
   },
   "%1 day": {
     "%1 day": ""
@@ -68,8 +89,23 @@
   "%1 displays": {
     "%1 displays": "%1 個顯示器"
   },
+  "%1 errors, %2 warnings": {
+    "%1 errors, %2 warnings": ""
+  },
+  "%1 features": {
+    "%1 features": ""
+  },
   "%1 filtered": {
     "%1 filtered": "%1 個已篩選"
+  },
+  "%1 fixes": {
+    "%1 fixes": ""
+  },
+  "%1 h": {
+    "%1 h": ""
+  },
+  "%1 h %2 m": {
+    "%1 h %2 m": ""
   },
   "%1 h %2 m left": {
     "%1 h %2 m left": "剩餘 %1 小時 %2 分鐘"
@@ -89,8 +125,14 @@
   "%1 is %2 and may use a lot of memory.": {
     "%1 is %2 and may use a lot of memory.": ""
   },
+  "%1 is not installed. Install the package to manage the greeter.": {
+    "%1 is not installed. Install the package to manage the greeter.": ""
+  },
   "%1 is now included in config": {
     "%1 is now included in config": "%1 現已包含在設定中"
+  },
+  "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": {
+    "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": ""
   },
   "%1 issue found": {
     "%1 issue found": "發現 %1 個問題"
@@ -103,6 +145,12 @@
   },
   "%1 jobs": {
     "%1 jobs": ""
+  },
+  "%1 keeps your desktop running. Ending it will likely break your session. If it misbehaves, restarting it is the safer fix.": {
+    "%1 keeps your desktop running. Ending it will likely break your session. If it misbehaves, restarting it is the safer fix.": ""
+  },
+  "%1 limit reached": {
+    "%1 limit reached": ""
   },
   "%1 min": {
     "%1 min": ""
@@ -119,11 +167,38 @@
   "%1 ms": {
     "%1 ms": ""
   },
+  "%1 not available": {
+    "%1 not available": ""
+  },
+  "%1 not available - lock integration requires the DMS socket connection": {
+    "%1 not available - lock integration requires the DMS socket connection": ""
+  },
+  "%1 not available or disabled - cannot apply %2 colors": {
+    "%1 not available or disabled - cannot apply %2 colors": ""
+  },
+  "%1 not found": {
+    "%1 not found": ""
+  },
   "%1 notifications": {
     "%1 notifications": "%1 則通知"
   },
+  "%1 of %2 used": {
+    "%1 of %2 used": ""
+  },
   "%1 online": {
     "%1 online": "%1 在線"
+  },
+  "%1 only": {
+    "%1 only": ""
+  },
+  "%1 other": {
+    "%1 other": ""
+  },
+  "%1 package will be installed via %2.": {
+    "%1 package will be installed via %2.": ""
+  },
+  "%1 packages will be installed via %2.": {
+    "%1 packages will be installed via %2.": ""
   },
   "%1 position": {
     "%1 position": ""
@@ -134,6 +209,15 @@
   "%1 printers": {
     "%1 printers": ""
   },
+  "%1 process": {
+    "%1 process": ""
+  },
+  "%1 processes": {
+    "%1 processes": ""
+  },
+  "%1 procs": {
+    "%1 procs": ""
+  },
   "%1 second": {
     "%1 second": ""
   },
@@ -143,11 +227,17 @@
   "%1 tasks": {
     "%1 tasks": ""
   },
+  "%1 uninstalled": {
+    "%1 uninstalled": ""
+  },
   "%1 update": {
     "%1 update": "%1 個更新"
   },
   "%1 updates": {
     "%1 updates": "%1 個更新"
+  },
+  "%1 used": {
+    "%1 used": ""
   },
   "%1 variants": {
     "%1 variants": "%1 種變體"
@@ -158,6 +248,9 @@
   "%1 wallpapers  •  %2 / %3": {
     "%1 wallpapers  •  %2 / %3": "%1 張桌布 • %2 / %3"
   },
+  "%1 will be downloaded and installed via %2.": {
+    "%1 will be downloaded and installed via %2.": ""
+  },
   "%1 will be removed from your system.": {
     "%1 will be removed from your system.": ""
   },
@@ -167,11 +260,23 @@
   "%1 windows": {
     "%1 windows": "%1 個視窗"
   },
+  "%1 years": {
+    "%1 years": ""
+  },
   "%1: %2": {
     "%1: %2": ""
   },
+  "%1d ago": {
+    "%1d ago": ""
+  },
+  "%1h": {
+    "%1h": ""
+  },
   "%1h %2m": {
     "%1h %2m": ""
+  },
+  "%1h ago": {
+    "%1h ago": ""
   },
   "%1m": {
     "%1m": ""
@@ -185,8 +290,20 @@
   "(Unnamed)": {
     "(Unnamed)": "(未命名)"
   },
+  "(exit %1)": {
+    "(exit %1)": ""
+  },
   "+ %1 more": {
     "+ %1 more": "+ %1 個"
+  },
+  "+%1 conditions": {
+    "+%1 conditions": ""
+  },
+  "0 stops the animation and saves GPU": {
+    "0 stops the animation and saves GPU": ""
+  },
+  "1 hour before": {
+    "1 hour before": ""
   },
   "1 notification": {
     "1 notification": "1 則通知"
@@ -200,9 +317,6 @@
   "2.4 GHz": {
     "2.4 GHz": ""
   },
-  "2025 has darker surfaces in dark mode. Tonal Spot and Neutral get softer, Vibrant and Expressive get bolder": {
-    "2025 has darker surfaces in dark mode. Tonal Spot and Neutral get softer, Vibrant and Expressive get bolder": ""
-  },
   "3rd party": {
     "3rd party": "第三方"
   },
@@ -212,14 +326,23 @@
   "50 uses Material shapes. Lower values reduce rounding; higher values increase it.": {
     "50 uses Material shapes. Lower values reduce rounding; higher values increase it.": ""
   },
+  "A custom seed color overrides this": {
+    "A custom seed color overrides this": ""
+  },
   "A floating companion that works alongside any bar layout": {
     "A floating companion that works alongside any bar layout": ""
   },
-  "A hidden field appears as soon as a key is pressed": {
-    "A hidden field appears as soon as a key is pressed": ""
+  "A modern desktop shell for Wayland": {
+    "A modern desktop shell for Wayland": ""
   },
-  "A modern desktop shell for Wayland compositors": {
-    "A modern desktop shell for Wayland compositors": "適用於 Wayland 顯示合成器的現代桌面殼層"
+  "A newer dms binary is installed.": {
+    "A newer dms binary is installed.": ""
+  },
+  "A notification must match every condition": {
+    "A notification must match every condition": ""
+  },
+  "A tiled or fullscreen window dragged into floating centers on the cursor": {
+    "A tiled or fullscreen window dragged into floating centers on the cursor": ""
   },
   "A user with that name already exists.": {
     "A user with that name already exists.": "該名稱的使用者已存在。"
@@ -229,9 +352,6 @@
   },
   "AC power": {
     "AC power": ""
-  },
-  "AM": {
-    "AM": ""
   },
   "API": {
     "API": "API"
@@ -245,8 +365,14 @@
   "About": {
     "About": "關於"
   },
+  "Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.": {
+    "Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.": ""
+  },
   "Acceleration profile": {
     "Acceleration profile": ""
+  },
+  "Accent minutes": {
+    "Accent minutes": ""
   },
   "Accept jobs": {
     "Accept jobs": ""
@@ -268,6 +394,9 @@
   },
   "Accounts": {
     "Accounts": ""
+  },
+  "Acrylic": {
+    "Acrylic": ""
   },
   "Action": {
     "Action": "動作"
@@ -326,8 +455,8 @@
   "Add \"%1\" to the %2 group?": {
     "Add \"%1\" to the %2 group?": "將「%1」加入至 %2 群組嗎？"
   },
-  "Add \"%1\" to the %2 group? They must log out and back in, then run dms-greeter sync --profile to publish their login-screen theme.": {
-    "Add \"%1\" to the %2 group? They must log out and back in, then run dms-greeter sync --profile to publish their login-screen theme.": ""
+  "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": {
+    "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": ""
   },
   "Add Desktop Widget": {
     "Add Desktop Widget": "新增桌面小工具"
@@ -341,6 +470,9 @@
   "Add by address": {
     "Add by address": ""
   },
+  "Add condition": {
+    "Add condition": ""
+  },
   "Add entry": {
     "Add entry": ""
   },
@@ -353,11 +485,26 @@
   "Add notes": {
     "Add notes": ""
   },
+  "Add palette": {
+    "Add palette": ""
+  },
   "Add printer": {
     "Add printer": ""
   },
+  "Add rule": {
+    "Add rule": ""
+  },
+  "Add shortcut": {
+    "Add shortcut": ""
+  },
+  "Add substitution": {
+    "Add substitution": ""
+  },
   "Add to autostart": {
     "Add to autostart": ""
+  },
+  "Add user": {
+    "Add user": ""
   },
   "Add widget": {
     "Add widget": ""
@@ -371,29 +518,44 @@
   "Add, remove and configure dock items": {
     "Add, remove and configure dock items": ""
   },
-  "Add, remove, reorder and configure": {
-    "Add, remove, reorder and configure": ""
+  "Add, reorder, configure": {
+    "Add, reorder, configure": ""
   },
   "Added in front of every app launch command": {
     "Added in front of every app launch command": ""
   },
+  "Adds a compositor window rule so DMS windows such as Settings open floating": {
+    "Adds a compositor window rule so DMS windows such as Settings open floating": ""
+  },
   "Adds concave curves where the bar meets the screen edge": {
     "Adds concave curves where the bar meets the screen edge": ""
   },
-  "Adds them to the %1 group so they can run dms-greeter sync --profile": {
-    "Adds them to the %1 group so they can run dms-greeter sync --profile": ""
+  "Adds them to the %1 group so they can run %2": {
+    "Adds them to the %1 group so they can run %2": ""
   },
   "Adds them to the %1 group so they can use sudo": {
     "Adds them to the %1 group so they can use sudo": ""
   },
-  "Administrator access is required. Use the Sync button in Settings → Greeter to apply.": {
-    "Administrator access is required. Use the Sync button in Settings → Greeter to apply.": ""
+  "Adjustment": {
+    "Adjustment": ""
+  },
+  "Administrator access is required. Press Apply changes in Settings → Greeter.": {
+    "Administrator access is required. Press Apply changes in Settings → Greeter.": ""
+  },
+  "Advance when a video ends": {
+    "Advance when a video ends": ""
   },
   "Advanced": {
     "Advanced": "進階"
   },
+  "Advanced Matching": {
+    "Advanced Matching": ""
+  },
   "Advanced comma-separated libxkbcommon options.": {
     "Advanced comma-separated libxkbcommon options.": ""
+  },
+  "After %1": {
+    "After %1": ""
   },
   "Afternoon": {
     "Afternoon": "下午"
@@ -422,6 +584,15 @@
   "All displays": {
     "All displays": "所有螢幕"
   },
+  "All plugins": {
+    "All plugins": ""
+  },
+  "All settings": {
+    "All settings": ""
+  },
+  "All submaps": {
+    "All submaps": ""
+  },
   "Allow": {
     "Allow": "允許"
   },
@@ -443,14 +614,29 @@
   "Allow in Do Not Disturb": {
     "Allow in Do Not Disturb": ""
   },
+  "Allowed cores": {
+    "Allowed cores": ""
+  },
   "Already on that session": {
     "Already on that session": "已在該工作階段中"
   },
-  "Also runs the templates in your matugen config.toml": {
-    "Also runs the templates in your matugen config.toml": ""
+  "Already upvoted, click again to remove": {
+    "Already upvoted, click again to remove": ""
+  },
+  "Also runs the templates in your %1": {
+    "Also runs the templates in your %1": ""
+  },
+  "Also saves the screenshot to disk": {
+    "Also saves the screenshot to disk": ""
+  },
+  "Also works on the lock screen": {
+    "Also works on the lock screen": ""
   },
   "Alt + Shift": {
     "Alt + Shift": ""
+  },
+  "Alt + Shift shortcuts in apps and keybinds stop working.": {
+    "Alt + Shift shortcuts in apps and keybinds stop working.": ""
   },
   "Alternative (OR)": {
     "Alternative (OR)": "替代 (OR)"
@@ -458,8 +644,17 @@
   "Always here": {
     "Always here": ""
   },
+  "Always in overflow": {
+    "Always in overflow": ""
+  },
   "Always on icons": {
     "Always on icons": "始終顯示圖示"
+  },
+  "Always open here": {
+    "Always open here": ""
+  },
+  "Always show": {
+    "Always show": ""
   },
   "Always show percentage": {
     "Always show percentage": ""
@@ -470,6 +665,9 @@
   "Amount": {
     "Amount": "數量"
   },
+  "An Island bar already covers a display this bar is on": {
+    "An Island bar already covers a display this bar is on": ""
+  },
   "An uninstallation is already in progress": {
     "An uninstallation is already in progress": ""
   },
@@ -479,8 +677,8 @@
   "Analog": {
     "Analog": "類比"
   },
-  "Analog, digital, or stacked clock display": {
-    "Analog, digital, or stacked clock display": "類比、數位或堆疊時鐘顯示"
+  "Analog, digital, stacked, expressive, or overlapping clock": {
+    "Analog, digital, stacked, expressive, or overlapping clock": ""
   },
   "Analyzing configuration...": {
     "Analyzing configuration...": "正在分析設定..."
@@ -491,8 +689,14 @@
   "Animation duration": {
     "Animation duration": ""
   },
+  "Animation style": {
+    "Animation style": ""
+  },
   "Animations": {
     "Animations": ""
+  },
+  "Anonymous": {
+    "Anonymous": ""
   },
   "Anonymous Identity": {
     "Anonymous Identity": "匿名身份"
@@ -533,6 +737,12 @@
   "App launcher": {
     "App launcher": ""
   },
+  "App limits": {
+    "App limits": ""
+  },
+  "App name": {
+    "App name": ""
+  },
   "App name or identity (e.g., firefox)": {
     "App name or identity (e.g., firefox)": ""
   },
@@ -553,9 +763,6 @@
   },
   "Applications and commands to start automatically when you log in": {
     "Applications and commands to start automatically when you log in": "登入時自動啟動的應用程式與指令"
-  },
-  "Applies on the next greeter sync": {
-    "Applies on the next greeter sync": ""
   },
   "Applies the saved profile that matches the connected displays": {
     "Applies the saved profile that matches the connected displays": ""
@@ -602,6 +809,9 @@
   "Apps dock": {
     "Apps dock": ""
   },
+  "Apps that capture the keyboard can block it": {
+    "Apps that capture the keyboard can block it": ""
+  },
   "Apps with notification popups muted. Unmute or delete to remove.": {
     "Apps with notification popups muted. Unmute or delete to remove.": "已靜音通知彈出視窗的應用程式。解除靜音或刪除以移除。"
   },
@@ -614,8 +824,8 @@
   "Arc extender": {
     "Arc extender": ""
   },
-  "Architecture": {
-    "Architecture": "架構"
+  "Archive manager": {
+    "Archive manager": ""
   },
   "Are you sure you want to kill session \"%1\"?": {
     "Are you sure you want to kill session \"%1\"?": "您確定要終止會話「%1」嗎？"
@@ -631,6 +841,9 @@
   },
   "Artwork": {
     "Artwork": ""
+  },
+  "Asleep": {
+    "Asleep": ""
   },
   "At least one output must remain enabled": {
     "At least one output must remain enabled": "至少一個輸出必須保持啟用"
@@ -674,6 +887,9 @@
   "Audio volume control": {
     "Audio volume control": "音量控制"
   },
+  "Aurora": {
+    "Aurora": ""
+  },
   "Auth": {
     "Auth": "認證"
   },
@@ -682,9 +898,6 @@
   },
   "Authenticate": {
     "Authenticate": "驗證"
-  },
-  "Authenticating...": {
-    "Authenticating...": ""
   },
   "Authentication": {
     "Authentication": "驗證"
@@ -710,11 +923,11 @@
   "Authorize": {
     "Authorize": "授權"
   },
-  "Authorize pairing with ": {
-    "Authorize pairing with ": "授權配對 "
+  "Authorize pairing with %1": {
+    "Authorize pairing with %1": ""
   },
-  "Authorize service for ": {
-    "Authorize service for ": "授權服務 "
+  "Authorize service for %1": {
+    "Authorize service for %1": ""
   },
   "Auto": {
     "Auto": "自動"
@@ -743,6 +956,9 @@
   "Auto mode is on. Manual profile selection is disabled.": {
     "Auto mode is on. Manual profile selection is disabled.": "自動模式已開啟。手動選擇設定檔已停用。"
   },
+  "Auto moves this widget into overflow when the bar runs out of space": {
+    "Auto moves this widget into overflow when the bar runs out of space": ""
+  },
   "Auto overflow": {
     "Auto overflow": ""
   },
@@ -755,11 +971,17 @@
   "Auto saved": {
     "Auto saved": ""
   },
+  "Auto turns it off on compositors that use clicks on the empty desktop themselves": {
+    "Auto turns it off on compositors that use clicks on the empty desktop themselves": ""
+  },
   "Auto uses an installed or bundled key-only service.": {
     "Auto uses an installed or bundled key-only service.": ""
   },
   "Auto-clear after": {
     "Auto-clear after": ""
+  },
+  "Auto-consuming": {
+    "Auto-consuming": ""
   },
   "Auto-hide": {
     "Auto-hide": "自動隱藏"
@@ -794,6 +1016,9 @@
   "Automatic cycling": {
     "Automatic cycling": ""
   },
+  "Automatic placement": {
+    "Automatic placement": ""
+  },
   "Automatically enable while screen sharing": {
     "Automatically enable while screen sharing": ""
   },
@@ -808,6 +1033,9 @@
   },
   "Autostart apps": {
     "Autostart apps": ""
+  },
+  "Autostart entries will not run at login because %1 is not active.": {
+    "Autostart entries will not run at login because %1 is not active.": ""
   },
   "Available": {
     "Available": "可用"
@@ -824,8 +1052,11 @@
   "Available networks": {
     "Available networks": ""
   },
-  "Back": {
-    "Back": "返回"
+  "Avatar ring": {
+    "Avatar ring": ""
+  },
+  "BIOS": {
+    "BIOS": ""
   },
   "Backend": {
     "Backend": "後端"
@@ -884,11 +1115,11 @@
   "Bar size": {
     "Bar size": ""
   },
-  "Bar surface and spacing": {
-    "Bar surface and spacing": ""
-  },
   "Bar visibility": {
     "Bar visibility": ""
+  },
+  "Bar widget background behind the compact face": {
+    "Bar widget background behind the compact face": ""
   },
   "Bar widgets": {
     "Bar widgets": ""
@@ -898,6 +1129,9 @@
   },
   "Bars": {
     "Bars": ""
+  },
+  "Base clock": {
+    "Base clock": ""
   },
   "Battery": {
     "Battery": "電池"
@@ -926,11 +1160,11 @@
   "Behavior": {
     "Behavior": "行為"
   },
-  "Better Lyrics": {
-    "Better Lyrics": ""
-  },
   "Bind the %1 IPC action in your compositor config.": {
     "Bind the %1 IPC action in your compositor config.": ""
+  },
+  "Binds a mouse button, such as mouse:272": {
+    "Binds a mouse button, such as mouse:272": ""
   },
   "Binds include added": {
     "Binds include added": "綁定包含已新增"
@@ -956,6 +1190,12 @@
   "Blocked": {
     "Blocked": "已封鎖"
   },
+  "Bloom": {
+    "Bloom": ""
+  },
+  "Blue": {
+    "Blue": ""
+  },
   "Blue light filter": {
     "Blue light filter": "藍光濾波器"
   },
@@ -974,14 +1214,23 @@
   "Blur against the wallpaper even with xray off": {
     "Blur against the wallpaper even with xray off": ""
   },
+  "Blur follows opacity": {
+    "Blur follows opacity": ""
+  },
   "Blur layer": {
     "Blur layer": ""
   },
   "Blur on overview": {
     "Blur on overview": ""
   },
+  "Blur, shadows, corners": {
+    "Blur, shadows, corners": ""
+  },
   "Blurred surfaces show the wallpaper, not the windows beneath": {
     "Blurred surfaces show the wallpaper, not the windows beneath": ""
+  },
+  "Board": {
+    "Board": ""
   },
   "Body": {
     "Body": "主體"
@@ -992,6 +1241,12 @@
   "Body font size": {
     "Body font size": ""
   },
+  "Boot": {
+    "Boot": ""
+  },
+  "Boot entry changed. Remove it and add it again.": {
+    "Boot entry changed. Remove it and add it again.": ""
+  },
   "Border": {
     "Border": "邊框"
   },
@@ -1001,23 +1256,17 @@
   "Border off": {
     "Border off": ""
   },
-  "Border opacity": {
-    "Border opacity": ""
-  },
-  "Border size": {
-    "Border size": ""
-  },
   "Border w/ bg": {
     "Border w/ bg": ""
   },
   "Border with Background": {
     "Border with Background": "帶背景邊框"
   },
-  "Border, connected mode, arcs": {
-    "Border, connected mode, arcs": ""
-  },
   "Both": {
     "Both": ""
+  },
+  "Both Shift keys": {
+    "Both Shift keys": ""
   },
   "Bottom": {
     "Bottom": "下方"
@@ -1085,6 +1334,9 @@
   "Built-in plugins": {
     "Built-in plugins": ""
   },
+  "Busy": {
+    "Busy": ""
+  },
   "Button areas": {
     "Button areas": ""
   },
@@ -1102,6 +1354,9 @@
   },
   "CPU temperature display": {
     "CPU temperature display": "CPU 溫度顯示"
+  },
+  "CPU time": {
+    "CPU time": ""
   },
   "CPU usage": {
     "CPU usage": ""
@@ -1126,6 +1381,12 @@
   },
   "CUPS printers, jobs and classes": {
     "CUPS printers, jobs and classes": ""
+  },
+  "Cable errors": {
+    "Cable errors": ""
+  },
+  "Cached": {
+    "Cached": ""
   },
   "Calendar": {
     "Calendar": "日曆"
@@ -1205,6 +1466,9 @@
   "Center Tiling": {
     "Center Tiling": "居中平鋪"
   },
+  "Center dragged windows": {
+    "Center dragged windows": ""
+  },
   "Center section": {
     "Center section": ""
   },
@@ -1220,8 +1484,17 @@
   "Change Volume": {
     "Change Volume": "調整音量"
   },
+  "Changes save to %1": {
+    "Changes save to %1": ""
+  },
+  "Changes volume and audio devices": {
+    "Changes volume and audio devices": ""
+  },
   "Channel": {
     "Channel": "頻道"
+  },
+  "Channels": {
+    "Channels": ""
   },
   "Charge Limit Reached": {
     "Charge Limit Reached": ""
@@ -1244,6 +1517,12 @@
   "Chart": {
     "Chart": ""
   },
+  "Chassis": {
+    "Chassis": ""
+  },
+  "Cheatsheet": {
+    "Cheatsheet": ""
+  },
   "Check for system updates": {
     "Check for system updates": "檢查系統更新"
   },
@@ -1253,11 +1532,11 @@
   "Check interval": {
     "Check interval": "檢查間隔"
   },
-  "Check interval, ignored packages, custom command": {
-    "Check interval, ignored packages, custom command": ""
-  },
   "Check on startup": {
     "Check on startup": "啟動時檢查"
+  },
+  "Check status": {
+    "Check status": ""
   },
   "Check your custom command in Settings → Dock → Trash.": {
     "Check your custom command in Settings → Dock → Trash.": "請在「設定」→「Dock」→「垃圾桶」中檢查您的自訂指令。"
@@ -1271,20 +1550,20 @@
   "Checking...": {
     "Checking...": "正在檢查..."
   },
+  "Checks in the background at the check interval. Notifies only when the count grows.": {
+    "Checks in the background at the check interval. Notifies only when the count grows.": ""
+  },
   "Chip": {
     "Chip": ""
-  },
-  "Choose Dark Mode Color": {
-    "Choose Dark Mode Color": "選擇深色模式顏色"
   },
   "Choose Launcher Logo Color": {
     "Choose Launcher Logo Color": "選擇啟動器 Logo 顏色"
   },
-  "Choose Light Mode Color": {
-    "Choose Light Mode Color": "選擇淺色模式顏色"
-  },
   "Choose Wallpaper Color": {
     "Choose Wallpaper Color": "選擇壁紙顏色"
+  },
+  "Choose a clear area of the background. Drag the clock to place it yourself.": {
+    "Choose a clear area of the background. Drag the clock to place it yourself.": ""
   },
   "Choose a power profile": {
     "Choose a power profile": "選擇電源設定檔"
@@ -1298,6 +1577,12 @@
   "Choose wallpaper folder": {
     "Choose wallpaper folder": ""
   },
+  "Choose what middle-clicking empty bar space does": {
+    "Choose what middle-clicking empty bar space does": ""
+  },
+  "Choose what right-clicking empty bar space does": {
+    "Choose what right-clicking empty bar space does": ""
+  },
   "Choose which displays show this widget": {
     "Choose which displays show this widget": "選擇哪些顯示器顯示此小工具"
   },
@@ -1307,11 +1592,11 @@
   "Circle": {
     "Circle": "圓形"
   },
+  "Clarity": {
+    "Clarity": ""
+  },
   "Class": {
     "Class": ""
-  },
-  "Class regex": {
-    "Class regex": "類別正規表達式"
   },
   "Class regex (e.g. ^firefox$)": {
     "Class regex (e.g. ^firefox$)": "類別正規表示式 (例如：^firefox$)"
@@ -1319,8 +1604,8 @@
   "Classes": {
     "Classes": ""
   },
-  "Clear": {
-    "Clear": "清除"
+  "Classic": {
+    "Classic": ""
   },
   "Clear All": {
     "Clear All": "清除所有"
@@ -1349,17 +1634,14 @@
   "Click 'Setup' to create %1 and add include to your compositor config.": {
     "Click 'Setup' to create %1 and add include to your compositor config.": "點擊「設定」以建立 %1 並將其納入您的合成器設定中。"
   },
-  "Click Import to add a .ovpn or .conf": {
-    "Click Import to add a .ovpn or .conf": "點擊匯入以新增 .ovpn 或 .conf"
+  "Click Import to add a %1 or %2 file": {
+    "Click Import to add a %1 or %2 file": ""
   },
-  "Click Refresh to check status.": {
-    "Click Refresh to check status.": "點擊「重新整理」以檢查狀態。"
+  "Click action": {
+    "Click action": ""
   },
-  "Click any shortcut to edit Aqueous configuration": {
-    "Click any shortcut to edit Aqueous configuration": ""
-  },
-  "Click any shortcut to edit. Changes save to %1": {
-    "Click any shortcut to edit. Changes save to %1": "點擊任一快捷鍵進行編輯。變更會儲存到 %1"
+  "Click actions": {
+    "Click actions": ""
   },
   "Click method": {
     "Click method": ""
@@ -1391,6 +1673,9 @@
   "Clicks on empty bar space reach the windows below": {
     "Clicks on empty bar space reach the windows below": ""
   },
+  "Client fullscreen state": {
+    "Client fullscreen state": ""
+  },
   "Clip": {
     "Clip": "裁剪"
   },
@@ -1421,11 +1706,14 @@
   "Clock, calendar, system info and profile": {
     "Clock, calendar, system info and profile": ""
   },
-  "Clocks, system monitors, plugins": {
-    "Clocks, system monitors, plugins": ""
+  "Clock, weather, locale": {
+    "Clock, weather, locale": ""
   },
-  "Close": {
-    "Close": "關閉"
+  "Clocks, monitors, plugins": {
+    "Clocks, monitors, plugins": ""
+  },
+  "Close Active Window": {
+    "Close Active Window": ""
   },
   "Close All Windows": {
     "Close All Windows": "關閉所有視窗"
@@ -1442,11 +1730,11 @@
   "Codec switching is unavailable. WirePlumber wpexec was not found.": {
     "Codec switching is unavailable. WirePlumber wpexec was not found.": ""
   },
+  "Codename": {
+    "Codename": ""
+  },
   "Collapse": {
     "Collapse": ""
-  },
-  "Color": {
-    "Color": "顏色"
   },
   "Color %1 copied": {
     "Color %1 copied": "顏色 %1 已複製"
@@ -1469,11 +1757,11 @@
   "Color gamut": {
     "Color gamut": ""
   },
-  "Color mode": {
-    "Color mode": ""
-  },
   "Color override": {
     "Color override": ""
+  },
+  "Color previews unavailable": {
+    "Color previews unavailable": ""
   },
   "Color space": {
     "Color space": ""
@@ -1496,9 +1784,6 @@
   "Colors from wallpaper": {
     "Colors from wallpaper": "從桌布取色"
   },
-  "Column": {
-    "Column": "欄"
-  },
   "Column Display": {
     "Column Display": "欄顯示"
   },
@@ -1507,6 +1792,9 @@
   },
   "Columns": {
     "Columns": ""
+  },
+  "Comfortable": {
+    "Comfortable": ""
   },
   "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": {
     "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": ""
@@ -1523,23 +1811,20 @@
   "Commands": {
     "Commands": "指令"
   },
+  "Committed": {
+    "Committed": ""
+  },
+  "Community": {
+    "Community": ""
+  },
   "Community favorites to get you started": {
     "Community favorites to get you started": ""
   },
   "Compact": {
     "Compact": "精簡"
   },
-  "Compact height": {
-    "Compact height": ""
-  },
   "Compact mode": {
     "Compact mode": ""
-  },
-  "Compact pill": {
-    "Compact pill": ""
-  },
-  "Compact width": {
-    "Compact width": ""
   },
   "Completed": {
     "Completed": "已完成"
@@ -1552,6 +1837,9 @@
   },
   "Compositor and shell key bindings": {
     "Compositor and shell key bindings": ""
+  },
+  "Compression": {
+    "Compression": ""
   },
   "Config Format": {
     "Config Format": "配置格式"
@@ -1583,14 +1871,11 @@
   "Configure a new printer": {
     "Configure a new printer": "設定新印表機"
   },
-  "Configure match criteria and actions": {
-    "Configure match criteria and actions": "設定符合條件與動作"
-  },
   "Configure one in Settings → Dock → Trash.": {
     "Configure one in Settings → Dock → Trash.": "請在「設定」→「Dock」→「垃圾桶」中配置一個。"
   },
-  "Confirm": {
-    "Confirm": "確認"
+  "Confine pointer": {
+    "Confine pointer": ""
   },
   "Confirm Delete": {
     "Confirm Delete": "確認刪除"
@@ -1598,8 +1883,8 @@
   "Confirm Display Changes": {
     "Confirm Display Changes": "確認顯示變更"
   },
-  "Confirm passkey for ": {
-    "Confirm passkey for ": "確認密碼 "
+  "Confirm passkey for %1": {
+    "Confirm passkey for %1": ""
   },
   "Confirm password": {
     "Confirm password": "確認密碼"
@@ -1628,12 +1913,6 @@
   "Connected Device": {
     "Connected Device": "已連線裝置"
   },
-  "Connected Frame Mode uses the connected launcher for default launcher shortcuts.": {
-    "Connected Frame Mode uses the connected launcher for default launcher shortcuts.": "「連接框架模式」使用連接的啟動器作為預設啟動器捷徑。"
-  },
-  "Connected displays": {
-    "Connected displays": ""
-  },
   "Connected to %1": {
     "Connected to %1": "已連接至 %1"
   },
@@ -1646,17 +1925,38 @@
   "Connecting...": {
     "Connecting...": "連線中..."
   },
+  "Connection": {
+    "Connection": ""
+  },
   "Connection failed": {
     "Connection failed": "連線失敗"
   },
+  "Connections": {
+    "Connections": ""
+  },
   "Connections and autoconnect": {
     "Connections and autoconnect": ""
+  },
+  "Connects to the internet": {
+    "Connects to the internet": ""
+  },
+  "Consumes the key only when a dispatcher runs": {
+    "Consumes the key only when a dispatcher runs": ""
+  },
+  "Container": {
+    "Container": ""
+  },
+  "Container saturation": {
+    "Container saturation": ""
   },
   "Contains": {
     "Contains": "包含"
   },
   "Content": {
     "Content": "內容"
+  },
+  "Context switches": {
+    "Context switches": ""
   },
   "Contrast": {
     "Contrast": "對比"
@@ -1667,14 +1967,20 @@
   "Control Center": {
     "Control Center": "控制台"
   },
-  "Control Center tile color": {
-    "Control Center tile color": ""
+  "Control group": {
+    "Control group": ""
   },
-  "Control currently playing media": {
-    "Control currently playing media": "控制目前播放器"
+  "Controls": {
+    "Controls": ""
+  },
+  "Controls media players": {
+    "Controls media players": ""
   },
   "Convert to DMS": {
     "Convert to DMS": "轉換為 DMS"
+  },
+  "Convertible": {
+    "Convertible": ""
   },
   "Cooldown": {
     "Cooldown": "冷卻時間"
@@ -1685,8 +1991,14 @@
   "Copied!": {
     "Copied!": "已複製!"
   },
+  "Copies the screenshot to the clipboard": {
+    "Copies the screenshot to the clipboard": ""
+  },
   "Copy": {
     "Copy": "複製"
+  },
+  "Copy %1": {
+    "Copy %1": ""
   },
   "Copy Full Command": {
     "Copy Full Command": "複製完整指令"
@@ -1703,14 +2015,32 @@
   "Copy Text": {
     "Copy Text": "複製文字"
   },
+  "Copy report": {
+    "Copy report": ""
+  },
+  "Copy summary": {
+    "Copy summary": ""
+  },
   "Copy target (%1)": {
     "Copy target (%1)": ""
+  },
+  "Core clock": {
+    "Core clock": ""
+  },
+  "Cores": {
+    "Cores": ""
   },
   "Corner radius": {
     "Corner radius": ""
   },
   "Corner style": {
     "Corner style": ""
+  },
+  "Corners": {
+    "Corners": ""
+  },
+  "Cosine": {
+    "Cosine": ""
   },
   "Couldn't load hotspot password": {
     "Couldn't load hotspot password": ""
@@ -1721,14 +2051,14 @@
   "Count only": {
     "Count only": ""
   },
+  "Counts time in the focused app while the session is active. Stays on this device.": {
+    "Counts time in the focused app while the session is active. Stays on this device.": ""
+  },
   "Cover Open": {
     "Cover Open": "上蓋開啟"
   },
-  "Create": {
-    "Create": "建立"
-  },
-  "Create Window Rule": {
-    "Create Window Rule": "建立視窗規則"
+  "Cover art": {
+    "Cover art": ""
   },
   "Create a new %1 session (^N)": {
     "Create a new %1 session (^N)": ""
@@ -1741,9 +2071,6 @@
   },
   "Create rule for:": {
     "Create rule for:": "建立規則："
-  },
-  "Create user": {
-    "Create user": ""
   },
   "Creating...": {
     "Creating...": "建立中..."
@@ -1769,32 +2096,14 @@
   "Critical threshold": {
     "Critical threshold": ""
   },
-  "Ctrl + Shift": {
-    "Ctrl + Shift": ""
+  "Critical warning": {
+    "Critical warning": ""
   },
   "Ctrl+%1 is used for password editing": {
     "Ctrl+%1 is used for password editing": ""
   },
-  "Ctrl+A: Select All • Ctrl+P: Preview • Enter/Shift+Enter: Find Next/Previous • Esc: Close": {
-    "Ctrl+A: Select All • Ctrl+P: Preview • Enter/Shift+Enter: Find Next/Previous • Esc: Close": ""
-  },
-  "Ctrl+S: Save • Ctrl+O: Open • Ctrl+N: New • Ctrl+F: Find": {
-    "Ctrl+S: Save • Ctrl+O: Open • Ctrl+N: New • Ctrl+F: Find": ""
-  },
-  "Ctrl+Tab: Switch Tab • Ctrl+S: Pin/Unpin • Shift+Del: Clear All • Esc: Close": {
-    "Ctrl+Tab: Switch Tab • Ctrl+S: Pin/Unpin • Shift+Del: Clear All • Esc: Close": "Ctrl+Tab：切換分頁 • Ctrl+S：釘選/取消釘選 • Shift+Del：全部清除 • Esc：關閉"
-  },
-  "Ctrl+Tab: Switch Tabs • Ctrl+S: Pin/Unpin • Shift+Enter: Copy • Shift+Del: Clear All • F10: Help • Esc: Close": {
-    "Ctrl+Tab: Switch Tabs • Ctrl+S: Pin/Unpin • Shift+Enter: Copy • Shift+Del: Clear All • F10: Help • Esc: Close": "Ctrl+Tab：切換分頁 • Ctrl+S：釘選/取消釘選 • Shift+Enter：複製 • Shift+Del：全部清除 • F10：說明 • Esc：關閉"
-  },
-  "Ctrl+Tab: Switch Tabs • Ctrl+S: Pin/Unpin • Shift+Enter: Paste • Shift+Del: Clear All • F10: Help • Esc: Close": {
-    "Ctrl+Tab: Switch Tabs • Ctrl+S: Pin/Unpin • Shift+Enter: Paste • Shift+Del: Clear All • F10: Help • Esc: Close": "Ctrl+Tab：切換分頁 • Ctrl+S：釘選/取消釘選 • Shift+Enter：貼上 • Shift+Del：全部清除 • F10：說明 • Esc：關閉"
-  },
   "Current": {
     "Current": "目前"
-  },
-  "Current (%1)": {
-    "Current (%1)": ""
   },
   "Current Items": {
     "Current Items": "目前項目"
@@ -1807,6 +2116,9 @@
   },
   "Current display": {
     "Current display": ""
+  },
+  "Current pending sectors": {
+    "Current pending sectors": ""
   },
   "Current period": {
     "Current period": ""
@@ -1898,8 +2210,8 @@
   "DDC/CI monitor": {
     "DDC/CI monitor": "DDC/CI 顯示器"
   },
-  "DEMO MODE - Click anywhere to exit": {
-    "DEMO MODE - Click anywhere to exit": "演示模式 - 點擊任意處關閉"
+  "DMS %1 available": {
+    "DMS %1 available": ""
   },
   "DMS Settings": {
     "DMS Settings": "DMS 設定"
@@ -1910,17 +2222,20 @@
   "DMS Shortcuts": {
     "DMS Shortcuts": "DMS 捷徑"
   },
+  "DMS and system updates": {
+    "DMS and system updates": ""
+  },
   "DMS chooser": {
     "DMS chooser": ""
   },
-  "DMS is a highly customizable modern desktop shell with a %1 inspired design.<br/><br/>It is built with %2, a QT6 framework for building desktop shells, and %3, a statically typed, compiled programming language.": {
-    "DMS is a highly customizable modern desktop shell with a %1 inspired design.<br/><br/>It is built with %2, a QT6 framework for building desktop shells, and %3, a statically typed, compiled programming language.": ""
+  "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.": {
+    "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.": ""
   },
   "DMS out of date": {
     "DMS out of date": "DMS 已過期"
   },
-  "DMS removes its managed block from /etc/pam.d/greetd and stops write services": {
-    "DMS removes its managed block from /etc/pam.d/greetd and stops write services": ""
+  "DMS removes its managed block from %1 and stops write services": {
+    "DMS removes its managed block from %1 and stops write services": ""
   },
   "DMS server is outdated (API v%1, expected v%2)": {
     "DMS server is outdated (API v%1, expected v%2)": "DMS 伺服器已過時 (API v%1，預期 v%2)"
@@ -1937,26 +2252,23 @@
   "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": {
     "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": ""
   },
-  "DMS_SOCKET not available": {
-    "DMS_SOCKET not available": "DMS_SOCKET 不可用"
+  "Daemon": {
+    "Daemon": ""
   },
   "Daily": {
     "Daily": "每日"
   },
-  "Dank Island instance": {
-    "Dank Island instance": ""
+  "Daily limit": {
+    "Daily limit": ""
+  },
+  "Daily screen time limit reached": {
+    "Daily screen time limit reached": ""
+  },
+  "Dank": {
+    "Dank": ""
   },
   "DankBar": {
     "DankBar": "DankBar"
-  },
-  "DankCalendar": {
-    "DankCalendar": ""
-  },
-  "DankCalendar isn't installed": {
-    "DankCalendar isn't installed": ""
-  },
-  "DankCalendar isn't running": {
-    "DankCalendar isn't running": ""
   },
   "Dark": {
     "Dark": ""
@@ -1982,14 +2294,26 @@
   "Darkest": {
     "Darkest": ""
   },
+  "Dash card": {
+    "Dash card": ""
+  },
+  "Dash tab": {
+    "Dash tab": ""
+  },
   "Dashboard": {
     "Dashboard": ""
+  },
+  "Dashboard tabs": {
+    "Dashboard tabs": ""
   },
   "Date": {
     "Date": ""
   },
   "Date first": {
     "Date first": ""
+  },
+  "Date format": {
+    "Date format": ""
   },
   "Date, time & region": {
     "Date, time & region": ""
@@ -2002,6 +2326,9 @@
   },
   "Dawn (Nautical Twilight)": {
     "Dawn (Nautical Twilight)": "黎明 (航海曙光)"
+  },
+  "Day": {
+    "Day": ""
   },
   "Day date": {
     "Day date": ""
@@ -2018,8 +2345,8 @@
   "Deck": {
     "Deck": "Deck"
   },
-  "Decrease": {
-    "Decrease": ""
+  "Declared by the author, not enforced": {
+    "Declared by the author, not enforced": ""
   },
   "Default": {
     "Default": "預設"
@@ -2039,6 +2366,9 @@
   "Default apps": {
     "Default apps": ""
   },
+  "Default leaves it to niri, which floats dialogs and fixed-size windows and tiles the rest": {
+    "Default leaves it to niri, which floats dialogs and fixed-size windows and tiles the rest": ""
+  },
   "Default selected action": {
     "Default selected action": "預設選定的動作"
   },
@@ -2048,14 +2378,11 @@
   "Default width (%)": {
     "Default width (%)": ""
   },
-  "Defaults": {
-    "Defaults": "預設"
+  "Defaults, autostart, rules": {
+    "Defaults, autostart, rules": ""
   },
   "Define rules for window behavior. Saves to %1": {
     "Define rules for window behavior. Saves to %1": "定義視窗行為規則。儲存至 %1"
-  },
-  "Del: Clear • Shift+Del: Clear All • 1-9: Actions • F10: Help • Esc: Close": {
-    "Del: Clear • Shift+Del: Clear All • 1-9: Actions • F10: Help • Esc: Close": "Del: 清除 • Shift+Del: 清除所有 • 1-9: 動作 • F10: 幫助 • Esc: 關閉"
   },
   "Delete": {
     "Delete": "刪除"
@@ -2093,6 +2420,15 @@
   "Delete user": {
     "Delete user": "刪除使用者"
   },
+  "Delete wallpaper '%1'?": {
+    "Delete wallpaper '%1'?": ""
+  },
+  "Deletes all stored screen time": {
+    "Deletes all stored screen time": ""
+  },
+  "Dense": {
+    "Dense": ""
+  },
   "Dependencies & documentation": {
     "Dependencies & documentation": "依賴項與文件"
   },
@@ -2108,8 +2444,8 @@
   "Description": {
     "Description": "描述"
   },
-  "Desktop Clock": {
-    "Desktop Clock": "桌面時鐘"
+  "Desktop": {
+    "Desktop": ""
   },
   "Desktop Entry": {
     "Desktop Entry": "桌面項目"
@@ -2123,11 +2459,11 @@
   "Desktop widgets": {
     "Desktop widgets": ""
   },
+  "Details": {
+    "Details": ""
+  },
   "Details for \"%1": {
     "Details for \"%1\"": "「%1」的詳細資訊"
-  },
-  "Detected backends: %1": {
-    "Detected backends: %1": "偵測到的後端：%1"
   },
   "Device": {
     "Device": "設備"
@@ -2150,14 +2486,17 @@
   "Dew point %1": {
     "Dew point %1": ""
   },
+  "Did you mean": {
+    "Did you mean": ""
+  },
   "Digital": {
     "Digital": "數位"
   },
+  "Digital wellbeing": {
+    "Digital wellbeing": ""
+  },
   "Dim": {
     "Dim": ""
-  },
-  "Direct path to a .xkb keymap file. Overrides layouts/variants above.": {
-    "Direct path to a .xkb keymap file. Overrides layouts/variants above.": ""
   },
   "Direction": {
     "Direction": ""
@@ -2171,8 +2510,17 @@
   "Directory": {
     "Directory": ""
   },
+  "Disable": {
+    "Disable": ""
+  },
+  "Disable %1?": {
+    "Disable %1?": ""
+  },
   "Disable autoconnect": {
     "Disable autoconnect": ""
+  },
+  "Disable card": {
+    "Disable card": ""
   },
   "Disable output": {
     "Disable output": ""
@@ -2188,6 +2536,15 @@
   },
   "Disabled": {
     "Disabled": "已停用"
+  },
+  "Disabled (%1)": {
+    "Disabled (%1)": ""
+  },
+  "Disabled by Auto": {
+    "Disabled by Auto": ""
+  },
+  "Disabled by Click through": {
+    "Disabled by Click through": ""
   },
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "已由框架模式停用"
@@ -2231,14 +2588,17 @@
   "Disk": {
     "Disk": "硬碟"
   },
-  "Disk I/O": {
-    "Disk I/O": "磁碟I/O"
+  "Disk read": {
+    "Disk read": ""
   },
   "Disk usage": {
     "Disk usage": ""
   },
   "Disk usage format": {
     "Disk usage format": ""
+  },
+  "Disk write": {
+    "Disk write": ""
   },
   "Disks": {
     "Disks": "磁碟"
@@ -2324,6 +2684,9 @@
   "Dock": {
     "Dock": "Dock"
   },
+  "Dock %1": {
+    "Dock %1": ""
+  },
   "Dock margin, opacity, and border": {
     "Dock margin, opacity, and border": ""
   },
@@ -2342,6 +2705,9 @@
   "Docs": {
     "Docs": "文件"
   },
+  "Documents": {
+    "Documents": "文件"
+  },
   "Domain (optional)": {
     "Domain (optional)": "網域 (可選)"
   },
@@ -2354,14 +2720,26 @@
   "Don't change": {
     "Don't change": ""
   },
+  "Don't dim unfocused apps": {
+    "Don't dim unfocused apps": ""
+  },
   "Door Open": {
     "Door Open": "門開啟"
   },
   "Dot": {
     "Dot": ""
   },
+  "Dots": {
+    "Dots": ""
+  },
   "Down": {
     "Down": ""
+  },
+  "Download": {
+    "Download": ""
+  },
+  "Drag": {
+    "Drag": ""
   },
   "Drag a widget by its handle here to reorder it or drop it into another group": {
     "Drag a widget by its handle here to reorder it or drop it into another group": ""
@@ -2372,14 +2750,14 @@
   "Drag lock": {
     "Drag lock": ""
   },
+  "Drag small tiles in to group them": {
+    "Drag small tiles in to group them": ""
+  },
   "Drag the handle to reorder. Tap a widget for its settings, use the switch to hide it without changing spacing, or X to remove it.": {
     "Drag the handle to reorder. Tap a widget for its settings, use the switch to hide it without changing spacing, or X to remove it.": ""
   },
   "Drag to move, click to open activities": {
     "Drag to move, click to open activities": ""
-  },
-  "Drag to reorder": {
-    "Drag to reorder": ""
   },
   "Dragged displays line up with neighboring edges without overlapping": {
     "Dragged displays line up with neighboring edges without overlapping": ""
@@ -2396,8 +2774,17 @@
   "Drop your override for %1 so the DMS default action re-applies?": {
     "Drop your override for %1 so the DMS default action re-applies?": "捨棄您對 %1 的覆蓋設定，以便重新套用 DMS 預設操作嗎？"
   },
+  "Drops": {
+    "Drops": ""
+  },
   "Drops bar gaps and rounding while a window is maximized": {
     "Drops bar gaps and rounding while a window is maximized": ""
+  },
+  "Dune": {
+    "Dune": ""
+  },
+  "Duo": {
+    "Duo": ""
   },
   "Duplicate": {
     "Duplicate": "複製"
@@ -2413,6 +2800,18 @@
   },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "黃昏 (航海暮光)"
+  },
+  "Dux Calendar": {
+    "Dux Calendar": ""
+  },
+  "Dux Calendar isn't installed": {
+    "Dux Calendar isn't installed": ""
+  },
+  "Dux Calendar isn't running": {
+    "Dux Calendar isn't running": ""
+  },
+  "Dux Greeter docs": {
+    "Dux Greeter docs": ""
   },
   "Dwindle": {
     "Dwindle": ""
@@ -2435,6 +2834,9 @@
   "Dynamic colors, presets": {
     "Dynamic colors, presets": "動態顏色、預設集"
   },
+  "Dynamic theme is off": {
+    "Dynamic theme is off": ""
+  },
   "Dynamic width": {
     "Dynamic width": ""
   },
@@ -2443,6 +2845,9 @@
   },
   "Edge": {
     "Edge": ""
+  },
+  "Edge around popups and modals": {
+    "Edge around popups and modals": ""
   },
   "Edge hover reveal": {
     "Edge hover reveal": ""
@@ -2455,9 +2860,6 @@
   },
   "Edge to edge": {
     "Edge to edge": ""
-  },
-  "Edit": {
-    "Edit": ""
   },
   "Edit App": {
     "Edit App": "編輯應用程式"
@@ -2483,11 +2885,29 @@
   "Edit rule": {
     "Edit rule": ""
   },
+  "Edit shortcut": {
+    "Edit shortcut": ""
+  },
   "Edit widgets": {
     "Edit widgets": ""
   },
+  "Editing the lock screen": {
+    "Editing the lock screen": ""
+  },
+  "Editing the lock screen, the login screen follows it": {
+    "Editing the lock screen, the login screen follows it": ""
+  },
+  "Editing the login screen": {
+    "Editing the login screen": ""
+  },
+  "Editing the login screen, shared with the lock screen": {
+    "Editing the login screen, shared with the lock screen": ""
+  },
   "Education": {
     "Education": "教育"
+  },
+  "Elevated": {
+    "Elevated": ""
   },
   "Empty": {
     "Empty": "空白"
@@ -2506,6 +2926,9 @@
   },
   "Enable autoconnect": {
     "Enable autoconnect": ""
+  },
+  "Enable card": {
+    "Enable card": ""
   },
   "Enable plugin to access settings": {
     "Enable plugin to access settings": ""
@@ -2528,11 +2951,8 @@
   "End must be after start": {
     "End must be after start": ""
   },
-  "Enlarge on hover": {
-    "Enlarge on hover": ""
-  },
-  "Enlargement": {
-    "Enlargement": ""
+  "End process tree": {
+    "End process tree": ""
   },
   "Enter 6-digit passkey": {
     "Enter 6-digit passkey": "輸入 6 位密碼"
@@ -2540,8 +2960,8 @@
   "Enter PIN": {
     "Enter PIN": "請輸入 PIN"
   },
-  "Enter PIN for ": {
-    "Enter PIN for ": "請輸入 PIN 給 "
+  "Enter PIN for %1": {
+    "Enter PIN for %1": ""
   },
   "Enter a new name for session \"%1": {
     "Enter a new name for session \"%1\"": "為會話「%1」輸入新名稱"
@@ -2549,8 +2969,8 @@
   "Enter a new name for this workspace": {
     "Enter a new name for this workspace": "為此工作區輸入新名稱"
   },
-  "Enter credentials for ": {
-    "Enter credentials for ": "輸入憑證 "
+  "Enter credentials for %1": {
+    "Enter credentials for %1": ""
   },
   "Enter custom lock screen format (e.g., dddd, MMMM d)": {
     "Enter custom lock screen format (e.g., dddd, MMMM d)": "自訂鎖定畫面的日期格式 (例: dddd, MMMM d)"
@@ -2564,17 +2984,17 @@
   "Enter network name and password": {
     "Enter network name and password": "輸入網路名稱和密碼"
   },
-  "Enter passkey for ": {
-    "Enter passkey for ": "請輸入密碼給 "
+  "Enter passkey for %1": {
+    "Enter passkey for %1": ""
   },
-  "Enter password for ": {
-    "Enter password for ": "輸入密碼 "
+  "Enter password for %1": {
+    "Enter password for %1": ""
   },
   "Enter text to encode": {
     "Enter text to encode": ""
   },
-  "Enter this passkey on ": {
-    "Enter this passkey on ": "輸入此密碼 "
+  "Enter this passkey on %1": {
+    "Enter this passkey on %1": ""
   },
   "Enter to paste": {
     "Enter to paste": ""
@@ -2615,20 +3035,32 @@
   "Every %1": {
     "Every %1": ""
   },
+  "Every check": {
+    "Every check": ""
+  },
   "Every edge of this display is already taken": {
     "Every edge of this display is already taken": ""
   },
   "Every hour": {
     "Every hour": "每小時"
   },
+  "Every output and input of this sound card turns off until you enable it again": {
+    "Every output and input of this sound card turns off until you enable it again": ""
+  },
   "Exact": {
     "Exact": "精確"
+  },
+  "Excluded apps": {
+    "Excluded apps": ""
   },
   "Excluded players": {
     "Excluded players": ""
   },
   "Exclusive zone offset": {
     "Exclusive zone offset": ""
+  },
+  "Executable": {
+    "Executable": ""
   },
   "Exit node": {
     "Exit node": ""
@@ -2660,8 +3092,8 @@
   "Expressive": {
     "Expressive": "生動"
   },
-  "Extend DankMaterialShell with powerful plugins for widgets, launchers, and more": {
-    "Extend DankMaterialShell with powerful plugins for widgets, launchers, and more": ""
+  "Extend %1 with powerful plugins for widgets, launchers, and more": {
+    "Extend %1 with powerful plugins for widgets, launchers, and more": ""
   },
   "Extend battery life": {
     "Extend battery life": "延長電池續航力"
@@ -2716,9 +3148,6 @@
   },
   "Failed to change display power": {
     "Failed to change display power": ""
-  },
-  "Failed to check pin limit": {
-    "Failed to check pin limit": "無法檢查釘選限制"
   },
   "Failed to configure hotspot": {
     "Failed to configure hotspot": ""
@@ -2831,6 +3260,9 @@
   "Failed to read theme file: %1": {
     "Failed to read theme file: %1": "讀取主題檔案失敗：%1"
   },
+  "Failed to reboot to firmware setup": {
+    "Failed to reboot to firmware setup": ""
+  },
   "Failed to reload plugin: %1": {
     "Failed to reload plugin: %1": "重新載入外掛程式失敗：%1"
   },
@@ -2843,6 +3275,9 @@
   "Failed to remove keybind": {
     "Failed to remove keybind": "移除按鍵綁定失敗"
   },
+  "Failed to restart %1": {
+    "Failed to restart %1": ""
+  },
   "Failed to restart audio system": {
     "Failed to restart audio system": "無法重新啟動音訊系統"
   },
@@ -2852,8 +3287,8 @@
   "Failed to resume printer": {
     "Failed to resume printer": "印表機恢復失敗"
   },
-  "Failed to run 'dms-greeter status'. Ensure the dms-greeter package is installed.": {
-    "Failed to run 'dms-greeter status'. Ensure the dms-greeter package is installed.": ""
+  "Failed to run '%1'. Ensure the %2 package is installed.": {
+    "Failed to run '%1'. Ensure the %2 package is installed.": ""
   },
   "Failed to save VPN credentials": {
     "Failed to save VPN credentials": ""
@@ -2878,6 +3313,9 @@
   },
   "Failed to set brightness": {
     "Failed to set brightness": "無法設定亮度"
+  },
+  "Failed to set next boot entry": {
+    "Failed to set next boot entry": ""
   },
   "Failed to set night mode location": {
     "Failed to set night mode location": "無法設定夜間模式位置"
@@ -2918,6 +3356,9 @@
   "Failed to toggle cellular": {
     "Failed to toggle cellular": ""
   },
+  "Failed to unlock": {
+    "Failed to unlock": ""
+  },
   "Failed to unpin entry": {
     "Failed to unpin entry": "無法解除釘選項目"
   },
@@ -2945,14 +3386,17 @@
   "Failed: %1": {
     "Failed: %1": "失敗：%1"
   },
+  "Faint edge on cards, pills and widgets": {
+    "Faint edge on cards, pills and widgets": ""
+  },
   "Family": {
     "Family": ""
   },
-  "Family, weight, scale, animation speed": {
-    "Family, weight, scale, animation speed": ""
+  "Fan": {
+    "Fan": ""
   },
-  "Features": {
-    "Features": "功能"
+  "Featured plugin": {
+    "Featured plugin": ""
   },
   "Feels Like %1°": {
     "Feels Like %1°": "體感溫度 %1°"
@@ -2963,9 +3407,6 @@
   "Field": {
     "Field": "欄位"
   },
-  "File": {
-    "File": "檔案"
-  },
   "File changed on disk": {
     "File changed on disk": ""
   },
@@ -2975,11 +3416,14 @@
   "File manager": {
     "File manager": ""
   },
-  "File search requires dsearch\nInstall from github.com/AvengeMedia/danksearch": {
-    "File search requires dsearch\nInstall from github.com/AvengeMedia/danksearch": "檔案搜尋需要 dsearch\n從 github.com/morelazers/dsearch 安裝"
+  "File search requires %1\nInstall from %2": {
+    "File search requires %1\nInstall from %2": ""
   },
   "File the command writes; leave empty to read stdout": {
     "File the command writes; leave empty to read stdout": ""
+  },
+  "File-backed": {
+    "File-backed": ""
   },
   "Files": {
     "Files": "檔案"
@@ -3005,8 +3449,8 @@
   "Find in note...": {
     "Find in note...": "尋找筆記..."
   },
-  "Fingerprint": {
-    "Fingerprint": ""
+  "Fine-tune the seed around the color wheel": {
+    "Fine-tune the seed around the color wheel": ""
   },
   "Fingerprint at login": {
     "Fingerprint at login": ""
@@ -3029,6 +3473,21 @@
   "Finish": {
     "Finish": "完成"
   },
+  "Fires even when an app inhibits shortcuts": {
+    "Fires even when an app inhibits shortcuts": ""
+  },
+  "Fires even while an input capture session is active": {
+    "Fires even while an input capture session is active": ""
+  },
+  "Fires with any modifiers held": {
+    "Fires with any modifiers held": ""
+  },
+  "Firmware": {
+    "Firmware": ""
+  },
+  "Firmware setup": {
+    "Firmware setup": ""
+  },
   "First Time Setup": {
     "First Time Setup": "首次設定"
   },
@@ -3041,11 +3500,11 @@
   "Fits the song title instead of keeping a fixed width": {
     "Fits the song title instead of keeping a fixed width": ""
   },
+  "Fits your setup": {
+    "Fits your setup": ""
+  },
   "Fixed": {
     "Fixed": ""
-  },
-  "Flags": {
-    "Flags": "標幟"
   },
   "Flat": {
     "Flat": ""
@@ -3089,6 +3548,9 @@
   "Fluid": {
     "Fluid": ""
   },
+  "Fluid jar": {
+    "Fluid jar": ""
+  },
   "Flush": {
     "Flush": ""
   },
@@ -3098,6 +3560,12 @@
   "Focus at startup": {
     "Focus at startup": ""
   },
+  "Focus follows mouse": {
+    "Focus follows mouse": ""
+  },
+  "Focus on activate": {
+    "Focus on activate": ""
+  },
   "Focus ring": {
     "Focus ring": ""
   },
@@ -3106,6 +3574,12 @@
   },
   "Focus ring off": {
     "Focus ring off": ""
+  },
+  "Focus the window when it asks to be activated": {
+    "Focus the window when it asks to be activated": ""
+  },
+  "Focus window": {
+    "Focus window": ""
   },
   "Focused": {
     "Focused": "已聚焦"
@@ -3128,9 +3602,6 @@
   "Fog": {
     "Fog": "霧"
   },
-  "Folder": {
-    "Folder": "資料夾"
-  },
   "Folder, interval, daily time": {
     "Folder, interval, daily time": ""
   },
@@ -3145,6 +3616,9 @@
   },
   "Follow focus": {
     "Follow focus": "跟隨焦點"
+  },
+  "Follow lock screen": {
+    "Follow lock screen": ""
   },
   "Follow mouse": {
     "Follow mouse": ""
@@ -3167,14 +3641,23 @@
   "Fonts & motion": {
     "Fonts & motion": ""
   },
+  "Fonts, scale, animations": {
+    "Fonts, scale, animations": ""
+  },
   "For %1": {
     "For %1": ""
   },
+  "For 1 hour": {
+    "For 1 hour": ""
+  },
+  "For you": {
+    "For you": ""
+  },
+  "Force": {
+    "Force": ""
+  },
   "Force HDR": {
     "Force HDR": "強制 HDR"
-  },
-  "Force Kill (SIGKILL)": {
-    "Force Kill (SIGKILL)": "強制終止 (SIGKILL)"
   },
   "Force RGBX": {
     "Force RGBX": "強制 RGBX"
@@ -3184,6 +3667,9 @@
   },
   "Force padding": {
     "Force padding": ""
+  },
+  "Force quit": {
+    "Force quit": ""
   },
   "Force split": {
     "Force split": ""
@@ -3199,9 +3685,6 @@
   },
   "Foreground layers": {
     "Foreground layers": ""
-  },
-  "Foreground opacity": {
-    "Foreground opacity": ""
   },
   "Forever": {
     "Forever": "永遠"
@@ -3221,6 +3704,9 @@
   "Forgot network %1": {
     "Forgot network %1": "忘記網路 %1"
   },
+  "Form factor": {
+    "Form factor": ""
+  },
   "Format": {
     "Format": ""
   },
@@ -3229,12 +3715,6 @@
   },
   "Frame": {
     "Frame": "框架"
-  },
-  "Frame Blur follows Background Blur in Theme & Colors": {
-    "Frame Blur follows Background Blur in Theme & Colors": "框架模糊遵循主題與顏色中的背景模糊"
-  },
-  "Frame Border Color": {
-    "Frame Border Color": "框架邊框顏色"
   },
   "Frame xray": {
     "Frame xray": ""
@@ -3254,11 +3734,17 @@
   "From wallpaper": {
     "From wallpaper": ""
   },
+  "Frost": {
+    "Frost": ""
+  },
   "Fruit Salad": {
     "Fruit Salad": "水果沙拉"
   },
   "Full": {
     "Full": "全"
+  },
+  "Full SMART report": {
+    "Full SMART report": ""
   },
   "Full content": {
     "Full content": ""
@@ -3278,14 +3764,26 @@
   "Fullscreen single column": {
     "Fullscreen single column": ""
   },
+  "Fullscreen state": {
+    "Fullscreen state": ""
+  },
+  "Fullscreen windows": {
+    "Fullscreen windows": ""
+  },
   "Fully Charged": {
     "Fully Charged": "已充飽電"
   },
   "GPU": {
     "GPU": "GPU"
   },
+  "GPU %1": {
+    "GPU %1": ""
+  },
   "GPU Monitoring": {
     "GPU Monitoring": "GPU 監控"
+  },
+  "GPU hotspot temperature": {
+    "Hotspot": ""
   },
   "GPU temperature": {
     "GPU temperature": ""
@@ -3299,6 +3797,9 @@
   "GTK colors applied successfully": {
     "GTK colors applied successfully": "GTK 顏色已成功套用"
   },
+  "GTK theme": {
+    "GTK theme": ""
+  },
   "GTK, Qt, portal, matugen templates": {
     "GTK, Qt, portal, matugen templates": ""
   },
@@ -3307,6 +3808,9 @@
   },
   "Gamma": {
     "Gamma": ""
+  },
+  "Gamma %1": {
+    "Gamma %1": ""
   },
   "Gamma control": {
     "Gamma control": ""
@@ -3332,6 +3836,12 @@
   "Gaps, window borders, corner radius": {
     "Gaps, window borders, corner radius": ""
   },
+  "Garden": {
+    "Garden": ""
+  },
+  "Gaussian": {
+    "Gaussian": ""
+  },
   "General": {
     "General": ""
   },
@@ -3353,20 +3863,29 @@
   "Get Started": {
     "Get Started": "開始使用"
   },
+  "Git": {
+    "Git": ""
+  },
   "Global fonts can be configured in Settings → Personalization": {
     "Global fonts can be configured in Settings → Personalization": "全域字體可在「設定 → 個人化」中配置"
   },
   "Globally": {
     "Globally": ""
   },
+  "Glow": {
+    "Glow": ""
+  },
+  "Glow falloff": {
+    "Glow falloff": ""
+  },
   "Golden Hour": {
     "Golden Hour": "黃金時段"
   },
-  "Goth corner radius": {
-    "Goth corner radius": ""
-  },
   "Goth corners": {
     "Goth corners": ""
+  },
+  "Governor": {
+    "Governor": ""
   },
   "Grant": {
     "Grant": "授與"
@@ -3385,6 +3904,12 @@
   },
   "Graphics": {
     "Graphics": "圖形"
+  },
+  "Graphics driver": {
+    "Graphics driver": ""
+  },
+  "Green": {
+    "Green": ""
   },
   "Greeter": {
     "Greeter": "歡迎畫面"
@@ -3446,8 +3971,26 @@
   "HTML copied to clipboard": {
     "HTML copied to clipboard": "HTML 已複製到剪貼簿"
   },
+  "Hardware": {
+    "Hardware": ""
+  },
+  "Haze": {
+    "Haze": ""
+  },
+  "Head load cycles": {
+    "Head load cycles": ""
+  },
   "Health": {
     "Health": "健康狀態"
+  },
+  "Health %1": {
+    "Health %1": ""
+  },
+  "Healthy": {
+    "Healthy": ""
+  },
+  "Heat shimmer": {
+    "Heat shimmer": ""
   },
   "Heavy Rain": {
     "Heavy Rain": "大雨"
@@ -3485,6 +4028,9 @@
   "Hidden icons expand in place instead of in a popup": {
     "Hidden icons expand in place instead of in a popup": ""
   },
+  "Hidden until screen time tracking is enabled": {
+    "Hidden until screen time tracking is enabled": ""
+  },
   "Hidden until weather is enabled": {
     "Hidden until weather is enabled": ""
   },
@@ -3493,6 +4039,9 @@
   },
   "Hide App": {
     "Hide App": "隱藏應用程式"
+  },
+  "Hide bar on fullscreen": {
+    "Hide bar on fullscreen": ""
   },
   "Hide cursor on touch": {
     "Hide cursor on touch": ""
@@ -3509,14 +4058,23 @@
   "Hide installed": {
     "Hide installed": ""
   },
-  "Hide password": {
-    "Hide password": ""
+  "Hide on last display": {
+    "Hide on last display": ""
+  },
+  "Hide until typing": {
+    "Hide until typing": ""
+  },
+  "Hide when idle": {
+    "Hide when idle": ""
   },
   "Hide when no updates": {
     "Hide when no updates": ""
   },
   "Hide when windows open": {
     "Hide when windows open": ""
+  },
+  "Hide with one window": {
+    "Hide with one window": ""
   },
   "Hides even while a bar popout or menu is open": {
     "Hides even while a bar popout or menu is open": ""
@@ -3539,6 +4097,9 @@
   "Higher providers take priority. Turn all off to use local lyrics only.": {
     "Higher providers take priority. Turn all off to use local lyrics only.": ""
   },
+  "Higher values flex more smoothly and cost more GPU": {
+    "Higher values flex more smoothly and cost more GPU": ""
+  },
   "Highlight focused app": {
     "Highlight focused app": ""
   },
@@ -3548,14 +4109,14 @@
   "History": {
     "History": "歷史記錄"
   },
-  "History (%1)": {
-    "History (%1)": ""
-  },
   "History cleared. %1 pinned entries kept.": {
     "History cleared. %1 pinned entries kept.": "歷史記錄已清除。保留 %1 個釘選項目。"
   },
   "History size, retention, paste behavior": {
     "History size, retention, paste behavior": ""
+  },
+  "Hold Ctrl, Alt or Super and press a key. Esc cancels.": {
+    "Hold Ctrl, Alt or Super and press a key. Esc cancels.": ""
   },
   "Hold duration": {
     "Hold duration": ""
@@ -3565,9 +4126,6 @@
   },
   "Home compact": {
     "Home compact": ""
-  },
-  "Home layout, notifications, satellites": {
-    "Home layout, notifications, satellites": ""
   },
   "Horizontal": {
     "Horizontal": ""
@@ -3611,6 +4169,9 @@
   "Hover popouts": {
     "Hover popouts": ""
   },
+  "How far terminal colors shift toward the wallpaper color": {
+    "How far terminal colors shift toward the wallpaper color": ""
+  },
   "Hue": {
     "Hue": ""
   },
@@ -3629,9 +4190,6 @@
   "Hyprland Options": {
     "Hyprland Options": "Hyprland 選項"
   },
-  "Hyprland conf mode": {
-    "Hyprland conf mode": "Hyprland 設定模式"
-  },
   "Hyprland conf mode is read-only in Settings": {
     "Hyprland conf mode is read-only in Settings": "Hyprland 設定模式在「設定」中為唯讀"
   },
@@ -3643,6 +4201,12 @@
   },
   "I Understand": {
     "I Understand": "我了解"
+  },
+  "I/O priority": {
+    "I/O priority": ""
+  },
+  "I/O scheduler": {
+    "I/O scheduler": ""
   },
   "ICC Error": {
     "ICC Error": ""
@@ -3659,8 +4223,11 @@
   "IP address or hostname": {
     "IP address or hostname": "IP 位址或主機名稱"
   },
-  "IP sharing setup failed. Check that dnsmasq is installed.": {
-    "IP sharing setup failed. Check that dnsmasq is installed.": ""
+  "IP sharing setup failed. Check that %1 is installed.": {
+    "IP sharing setup failed. Check that %1 is installed.": ""
+  },
+  "IPv6": {
+    "IPv6": ""
   },
   "ISO date": {
     "ISO date": ""
@@ -3710,11 +4277,17 @@
   "If autostart app icons don't appear in the system tray, generate a systemd override to ensure DMS starts before autostart apps": {
     "If autostart app icons don't appear in the system tray, generate a systemd override to ensure DMS starts before autostart apps": "如果自動啟動的應用程式圖示未出現在系統匣中，請產生 systemd 覆蓋檔以確保 DMS 在自動啟動應用程式前執行"
   },
+  "Ignore": {
+    "Ignore": ""
+  },
   "Ignore Completely": {
     "Ignore Completely": "完全忽略"
   },
   "Ignore app-requested timeout": {
     "Ignore app-requested timeout": ""
+  },
+  "Ignore mods": {
+    "Ignore mods": ""
   },
   "Ignore package": {
     "Ignore package": ""
@@ -3730,6 +4303,9 @@
   },
   "Ignored packages only apply to the built-in updater. Your custom command controls its own exclusions.": {
     "Ignored packages only apply to the built-in updater. Your custom command controls its own exclusions.": ""
+  },
+  "Ignores drag and drop started by the window": {
+    "Ignores drag and drop started by the window": ""
   },
   "Image": {
     "Image": "圖片"
@@ -3764,8 +4340,14 @@
   "Include folders in All tab": {
     "Include folders in All tab": ""
   },
+  "Include subfolders": {
+    "Include subfolders": ""
+  },
   "Include transitions": {
     "Include transitions": ""
+  },
+  "Includes the mouse pointer": {
+    "Includes the mouse pointer": ""
   },
   "Incompatible plugins loaded": {
     "Incompatible plugins loaded": ""
@@ -3775,9 +4357,6 @@
   },
   "Incorrect password - try again": {
     "Incorrect password - try again": "密碼不正確 - 請再試一次"
-  },
-  "Increase": {
-    "Increase": ""
   },
   "Index centering": {
     "Index centering": ""
@@ -3794,9 +4373,6 @@
   "Individual Batteries": {
     "Individual Batteries": "獨立電池"
   },
-  "Individual bar configuration": {
-    "Individual bar configuration": "個別欄設定"
-  },
   "Info": {
     "Info": "資訊"
   },
@@ -3809,8 +4385,17 @@
   "Inhibitable": {
     "Inhibitable": "可抑制"
   },
+  "Init": {
+    "Init": ""
+  },
+  "Initial class": {
+    "Initial class": ""
+  },
   "Initial position for floating windows. Set both X and Y; anchor controls which corner/edge they're relative to.": {
     "Initial position for floating windows. Set both X and Y; anchor controls which corner/edge they're relative to.": ""
+  },
+  "Initial title": {
+    "Initial title": ""
   },
   "Initialised": {
     "Initialised": "已初始化"
@@ -3836,8 +4421,14 @@
   "Input Volume Slider": {
     "Input Volume Slider": "輸入音量滑桿"
   },
+  "Input capture": {
+    "Input capture": ""
+  },
   "Input devices": {
     "Input devices": ""
+  },
+  "Input method": {
+    "Input method": ""
   },
   "Insert your security key...": {
     "Insert your security key...": "插入您的安全金鑰..."
@@ -3863,20 +4454,35 @@
   "Install failed: %1": {
     "Install failed: %1": "安裝失敗：%1"
   },
-  "Install matugen package for dynamic theming": {
-    "Install matugen package for dynamic theming": "安裝 matugen 套件以實現動態主題"
-  },
   "Install plugin '%1' from the DMS registry?": {
     "Install plugin '%1' from the DMS registry?": "要從 DMS 登錄檔安裝外掛「%1」嗎？"
+  },
+  "Install smartmontools": {
+    "Install smartmontools": ""
+  },
+  "Install system updates?": {
+    "Install system updates?": ""
+  },
+  "Install the %1 package for dynamic theming": {
+    "Install the %1 package for dynamic theming": ""
   },
   "Install theme '%1' from the DMS registry?": {
     "Install theme '%1' from the DMS registry?": "要從 DMS 登錄檔安裝主題「%1」嗎？"
   },
-  "Installation and PAM setup are documented in the ": {
-    "Installation and PAM setup are documented in the ": ""
+  "Install wallpaper": {
+    "Install wallpaper": ""
+  },
+  "Install wallpaper '%1'?": {
+    "Install wallpaper '%1'?": ""
+  },
+  "Installation and PAM setup are documented in the %1.": {
+    "Installation and PAM setup are documented in the %1.": ""
   },
   "Installed": {
     "Installed": "已安裝"
+  },
+  "Installed %1, still running %2": {
+    "Installed %1, still running %2": ""
   },
   "Installed first": {
     "Installed first": ""
@@ -3902,6 +4508,9 @@
   "Interface": {
     "Interface": ""
   },
+  "Interface density": {
+    "Interface density": ""
+  },
   "Interface style": {
     "Interface style": ""
   },
@@ -3920,11 +4529,20 @@
   "Invalid configuration": {
     "Invalid configuration": "無效配置"
   },
-  "Invalid package name — letters, digits and @._+:- only.": {
-    "Invalid package name — letters, digits and @._+:- only.": ""
+  "Invalid package name — letters, digits and @._+:/- only.": {
+    "Invalid package name — letters, digits and @._+:/- only.": ""
   },
   "Invalid username": {
     "Invalid username": "無效的使用者名稱"
+  },
+  "Invalid wallpaper layout": {
+    "Invalid wallpaper layout": ""
+  },
+  "Inverse Surface": {
+    "Inverse Surface": ""
+  },
+  "Iridescence": {
+    "Iridescence": ""
   },
   "Iris Bloom": {
     "Iris Bloom": "鳶尾花開"
@@ -3934,6 +4552,12 @@
   },
   "Isolate displays": {
     "Isolate displays": ""
+  },
+  "It runs in a terminal; restart it from there.": {
+    "It runs in a terminal; restart it from there.": ""
+  },
+  "Italic": {
+    "Italic": ""
   },
   "JSON output path": {
     "JSON output path": ""
@@ -3959,17 +4583,29 @@
   "Keep clock with media": {
     "Keep clock with media": ""
   },
+  "Keep fullscreen on close": {
+    "Keep fullscreen on close": ""
+  },
   "Keep in Bar": {
     "Keep in Bar": ""
   },
   "Keeping Awake": {
     "Keeping Awake": "保持喚醒"
   },
+  "Keeps focus while the window is open": {
+    "Keeps focus while the window is open": ""
+  },
   "Keeps the dock showing over fullscreen windows": {
     "Keeps the dock showing over fullscreen windows": ""
   },
+  "Keeps the pointer inside the window": {
+    "Keeps the pointer inside the window": ""
+  },
   "Keeps the widget above windows instead of below them": {
     "Keeps the widget above windows instead of below them": ""
+  },
+  "Kept for %1 days on this device": {
+    "Kept for %1 days on this device": ""
   },
   "Kernel": {
     "Kernel": "核心"
@@ -3986,9 +4622,6 @@
   "Keybinds": {
     "Keybinds": "按鍵綁定"
   },
-  "Keyboard": {
-    "Keyboard": ""
-  },
   "Keyboard layout": {
     "Keyboard layout": ""
   },
@@ -3997,9 +4630,6 @@
   },
   "Keymap file": {
     "Keymap file": ""
-  },
-  "Keys": {
-    "Keys": "按鍵"
   },
   "Kill": {
     "Kill": "終止"
@@ -4010,11 +4640,17 @@
   "Kill Session": {
     "Kill Session": "終止會話"
   },
+  "L1 cache": {
+    "L1 cache": ""
+  },
+  "L2 cache": {
+    "L2 cache": ""
+  },
+  "L3 cache": {
+    "L3 cache": ""
+  },
   "LED device": {
     "LED device": "LED 裝置"
-  },
-  "LRCLIB": {
-    "LRCLIB": ""
   },
   "LabWC IRC channel": {
     "LabWC IRC channel": ""
@@ -4034,11 +4670,20 @@
   "Lap detected": {
     "Lap detected": ""
   },
+  "Laptop": {
+    "Laptop": ""
+  },
   "Large": {
     "Large": "大"
   },
   "Largest": {
     "Largest": "最大"
+  },
+  "Last commit %1": {
+    "Last commit %1": ""
+  },
+  "Last core": {
+    "Last core": ""
   },
   "Last hour": {
     "Last hour": "最近一小時"
@@ -4070,6 +4715,9 @@
   "Last modified": {
     "Last modified": ""
   },
+  "Last self-test": {
+    "Last self-test": ""
+  },
   "Last used on this screen": {
     "Last used on this screen": ""
   },
@@ -4097,11 +4745,11 @@
   "Launching": {
     "Launching": ""
   },
-  "Layer namespace dms:blurwallpaper, needs a niri blur rule": {
-    "Layer namespace dms:blurwallpaper, needs a niri blur rule": ""
+  "Layer namespace %1, needs a niri blur rule": {
+    "Layer namespace %1, needs a niri blur rule": ""
   },
-  "Layer outline opacity": {
-    "Layer outline opacity": ""
+  "Layer outline": {
+    "Layer outline": ""
   },
   "Layers": {
     "Layers": ""
@@ -4120,6 +4768,9 @@
   },
   "Layout, position, appearance": {
     "Layout, position, appearance": ""
+  },
+  "Layout, scale, night mode": {
+    "Layout, scale, night mode": ""
   },
   "Layouts": {
     "Layouts": ""
@@ -4187,6 +4838,12 @@
   "Lightest": {
     "Lightest": ""
   },
+  "Like your plugins": {
+    "Like your plugins": ""
+  },
+  "Limit": {
+    "Limit": ""
+  },
   "Limit set to %1%": {
     "Limit set to %1%": ""
   },
@@ -4202,14 +4859,35 @@
   "Lines: %1": {
     "Lines: %1": "行數:"
   },
+  "Link copied": {
+    "Link copied": ""
+  },
+  "Link your DMS settings so the login screen follows them.": {
+    "Link your DMS settings so the login screen follows them.": ""
+  },
+  "Link your DMS settings so the login screen follows them. Administrator access is required.": {
+    "Link your DMS settings so the login screen follows them. Administrator access is required.": ""
+  },
+  "Linked": {
+    "Linked": ""
+  },
+  "Linked as a snapshot": {
+    "Linked as a snapshot": ""
+  },
   "List": {
     "List": "清單"
+  },
+  "Listening": {
+    "Listening": ""
   },
   "Listening from": {
     "Listening from": ""
   },
   "Lists workspaces from whichever display has focus": {
     "Lists workspaces from whichever display has focus": ""
+  },
+  "Live activities that grow out of the bar": {
+    "Live activities that grow out of the bar": ""
   },
   "Lively palette with saturated accents.": {
     "Lively palette with saturated accents.": "活潑的色調，帶有飽和的色調。"
@@ -4238,11 +4916,11 @@
   "Local Weather": {
     "Local Weather": ""
   },
+  "Local network": {
+    "Local network": ""
+  },
   "Locale": {
     "Locale": "地區設定"
-  },
-  "Location": {
-    "Location": "位置"
   },
   "Location search": {
     "Location search": ""
@@ -4274,11 +4952,14 @@
   "Log out": {
     "Log out": ""
   },
-  "Login": {
-    "Login": "登入"
-  },
   "Login screen appearance and authentication": {
     "Login screen appearance and authentication": ""
+  },
+  "Login screen unlinked.": {
+    "Login screen unlinked.": ""
+  },
+  "Long": {
+    "Long": ""
   },
   "Long Text": {
     "Long Text": "長文字"
@@ -4307,20 +4988,35 @@
   "Lower display refresh rate on battery": {
     "Lower display refresh rate on battery": ""
   },
+  "Lower only if a mode fails for lack of bandwidth": {
+    "Lower only if a mode fails for lack of bandwidth": ""
+  },
+  "Lower priorities move into overflow first": {
+    "Lower priorities move into overflow first": ""
+  },
   "Lyrics": {
     "Lyrics": ""
   },
   "Lyrics providers": {
     "Lyrics providers": ""
   },
-  "LyricsPlus": {
-    "LyricsPlus": ""
+  "MAC address": {
+    "MAC address": ""
   },
   "MIT License": {
     "MIT License": ""
   },
+  "MTU": {
+    "MTU": ""
+  },
+  "Magnification": {
+    "Magnification": ""
+  },
   "Mail": {
     "Mail": "郵件"
+  },
+  "Major page faults": {
+    "Major page faults": ""
   },
   "Make admin": {
     "Make admin": "設為管理員"
@@ -4328,11 +5024,14 @@
   "Manage Registries": {
     "Manage Registries": ""
   },
-  "Managed by Frame": {
-    "Managed by Frame": "由框架管理"
-  },
   "Managed by Frame in Connected Mode": {
     "Managed by Frame in Connected Mode": "在連接模式下由框架管理"
+  },
+  "Managed by Nix": {
+    "Managed by Nix": ""
+  },
+  "Managed by administrator policy": {
+    "Managed by administrator policy": ""
   },
   "Managed by the primary PAM source": {
     "Managed by the primary PAM source": ""
@@ -4373,6 +5072,9 @@
   "Mark incomplete": {
     "Mark incomplete": ""
   },
+  "Mark urgent": {
+    "Mark urgent": ""
+  },
   "Marker Supply Empty": {
     "Marker Supply Empty": "標記耗材用盡"
   },
@@ -4387,6 +5089,9 @@
   },
   "Master": {
     "Master": ""
+  },
+  "Master branch": {
+    "Master branch": ""
   },
   "Master position": {
     "Master position": ""
@@ -4403,8 +5108,14 @@
   "Match Criteria": {
     "Match Criteria": "符合條件"
   },
+  "Match type": {
+    "Match type": ""
+  },
   "Matches player identity or desktop file name, case-insensitive": {
     "Matches player identity or desktop file name, case-insensitive": ""
+  },
+  "Material": {
+    "Material": ""
   },
   "Material Design inspired color themes": {
     "Material Design inspired color themes": "受 Material Design 啟發的色彩主題"
@@ -4414,9 +5125,6 @@
   },
   "Material palette": {
     "Material palette": ""
-  },
-  "Material scale": {
-    "Material scale": ""
   },
   "Matugen Missing": {
     "Matugen Missing": "Matugen 遺失"
@@ -4430,6 +5138,9 @@
   "Matugen templates": {
     "Matugen templates": ""
   },
+  "Max %1": {
+    "Max %1": ""
+  },
   "Max H": {
     "Max H": "最大高度"
   },
@@ -4438,6 +5149,12 @@
   },
   "Max apps to show": {
     "Max apps to show": "最多顯示App"
+  },
+  "Max bits per channel": {
+    "Max bits per channel": ""
+  },
+  "Max clock": {
+    "Max clock": ""
   },
   "Max edges": {
     "Max edges": ""
@@ -4454,9 +5171,6 @@
   "Max volume": {
     "Max volume": ""
   },
-  "Maximize": {
-    "Maximize": "最大化"
-  },
   "Maximize detection": {
     "Maximize detection": ""
   },
@@ -4465,6 +5179,12 @@
   },
   "Maximize widget text": {
     "Maximize widget text": ""
+  },
+  "Maximized": {
+    "Maximized": ""
+  },
+  "Maximized and fullscreen": {
+    "Maximized and fullscreen": ""
   },
   "Maximum entries": {
     "Maximum entries": ""
@@ -4496,11 +5216,8 @@
   "Media Needed": {
     "Media Needed": "需要媒體"
   },
-  "Media activity": {
-    "Media activity": ""
-  },
-  "Media controls": {
-    "Media controls": ""
+  "Media errors": {
+    "Media errors": ""
   },
   "Media playback": {
     "Media playback": ""
@@ -4516,6 +5233,12 @@
   },
   "Memory": {
     "Memory": "記憶體"
+  },
+  "Memory clock": {
+    "Memory clock": ""
+  },
+  "Memory controller": {
+    "Memory controller": ""
   },
   "Memory graph": {
     "Memory graph": ""
@@ -4544,6 +5267,12 @@
   "Microphone volume control": {
     "Microphone volume control": "麥克風音量控制"
   },
+  "Middle click": {
+    "Middle click": ""
+  },
+  "Middle click closes": {
+    "Middle click closes": ""
+  },
   "Middle click emulation": {
     "Middle click emulation": ""
   },
@@ -4556,11 +5285,14 @@
   "Min W": {
     "Min W": "最小寬度"
   },
+  "Mini PC": {
+    "Mini PC": ""
+  },
+  "Minimal": {
+    "Minimal": ""
+  },
   "Minimal palette built around a single hue.": {
     "Minimal palette built around a single hue.": "圍繞單一色調構建的最小調色板。"
-  },
-  "Minimize": {
-    "Minimize": ""
   },
   "Minimum workspaces": {
     "Minimum workspaces": ""
@@ -4571,8 +5303,14 @@
   "Missing Environment Variables": {
     "Missing Environment Variables": "缺少環境變數"
   },
+  "Mix all stereo content into a single channel": {
+    "Mix all stereo content into a single channel": ""
+  },
   "Mixed": {
     "Mixed": ""
+  },
+  "Modal": {
+    "Modal": ""
   },
   "Modals": {
     "Modals": "模態視窗"
@@ -4589,11 +5327,20 @@
   "Moderate": {
     "Moderate": ""
   },
+  "Modes this display does not report support for are hidden": {
+    "Modes this display does not report support for are hidden": ""
+  },
   "Modular widget bar": {
     "Modular widget bar": "模組化小工具列"
   },
   "Monitor": {
     "Monitor": "顯示器"
+  },
+  "Monitoring off": {
+    "Monitoring off": ""
+  },
+  "Mono Audio": {
+    "Mono Audio": ""
   },
   "Monochrome": {
     "Monochrome": "單色"
@@ -4603,6 +5350,12 @@
   },
   "Monospace family": {
     "Monospace family": ""
+  },
+  "Monospace font": {
+    "Monospace font": ""
+  },
+  "Month": {
+    "Month": ""
   },
   "Month date": {
     "Month date": ""
@@ -4619,6 +5372,18 @@
   "More": {
     "More": ""
   },
+  "More in %1": {
+    "More in %1": ""
+  },
+  "More samples look smoother and cost more GPU": {
+    "More samples look smoother and cost more GPU": ""
+  },
+  "More transparent areas get less blur": {
+    "More transparent areas get less blur": ""
+  },
+  "More widgets": {
+    "More widgets": ""
+  },
   "Morning": {
     "Morning": "早上"
   },
@@ -4627,6 +5392,15 @@
   },
   "Most Vivid": {
     "Most Vivid": ""
+  },
+  "Most used apps": {
+    "Most used apps": ""
+  },
+  "Motion": {
+    "Motion": ""
+  },
+  "Motion blur": {
+    "Motion blur": ""
   },
   "Mount": {
     "Mount": ""
@@ -4640,12 +5414,6 @@
   "Mouse & touchpad": {
     "Mouse & touchpad": ""
   },
-  "Move": {
-    "Move": ""
-  },
-  "Move down": {
-    "Move down": ""
-  },
   "Move out of scratchpad": {
     "Move out of scratchpad": ""
   },
@@ -4655,8 +5423,8 @@
   "Move to scratchpad: %1": {
     "Move to scratchpad: %1": ""
   },
-  "Move up": {
-    "Move up": ""
+  "Moves focus along with the column": {
+    "Moves focus along with the column": ""
   },
   "Moving to Paused": {
     "Moving to Paused": "正在移至暫停"
@@ -4687,6 +5455,12 @@
   },
   "Mute popups for %1": {
     "Mute popups for %1": "靜音 %1 的彈出視窗"
+  },
+  "Mute popups for %1 (1 hour)": {
+    "Mute popups for %1 (1 hour)": ""
+  },
+  "Mute popups for %1 (4 hours)": {
+    "Mute popups for %1 (4 hours)": ""
   },
   "Mute, ignore and priority rules per app": {
     "Mute, ignore and priority rules per app": ""
@@ -4733,6 +5507,9 @@
   "Near island": {
     "Near island": ""
   },
+  "Needs": {
+    "Needs": ""
+  },
   "Nested chip": {
     "Nested chip": ""
   },
@@ -4766,14 +5543,17 @@
   "Never": {
     "Never": "從不"
   },
+  "Never switches the monitor to HDR for this window": {
+    "Never switches the monitor to HDR for this window": ""
+  },
   "Never used": {
     "Never used": "從未使用"
   },
   "New": {
     "New": "新"
   },
-  "New Keybind": {
-    "New Keybind": "新按鍵綁定"
+  "New & updated": {
+    "New & updated": ""
   },
   "New Session": {
     "New Session": "新會話"
@@ -4799,9 +5579,6 @@
   "New profile": {
     "New profile": ""
   },
-  "New shortcut": {
-    "New shortcut": ""
-  },
   "New tab": {
     "New tab": ""
   },
@@ -4817,8 +5594,14 @@
   "Next Transition": {
     "Next Transition": "下一個轉場"
   },
+  "Next category": {
+    "Next category": ""
+  },
   "Next page": {
     "Next page": ""
+  },
+  "Nice": {
+    "Nice": ""
   },
   "Night": {
     "Night": "夜晚"
@@ -4828,6 +5611,9 @@
   },
   "Night mode & gamma": {
     "Night mode & gamma": "夜間模式與伽瑪"
+  },
+  "Night mode exceptions": {
+    "Night mode exceptions": ""
   },
   "Night mode failed: DMS gamma control not available": {
     "Night mode failed: DMS gamma control not available": "夜間模式失敗：DMS gamma 控制不可用"
@@ -4868,6 +5654,9 @@
   "No Weather": {
     "No Weather": "無天氣"
   },
+  "No XDG drags": {
+    "No XDG drags": ""
+  },
   "No action": {
     "No action": "無動作"
   },
@@ -4889,6 +5678,9 @@
   "No app customizations.": {
     "No app customizations.": "沒有應用程式自訂設定。"
   },
+  "No app limits": {
+    "No app limits": ""
+  },
   "No application selected": {
     "No application selected": "未選擇應用程式"
   },
@@ -4900,6 +5692,9 @@
   },
   "No apps muted. Right-click a notification and choose \"Mute popups\" to add one here.": {
     "No apps muted. Right-click a notification and choose \"Mute popups\" to add one here.": "未靜音任何應用程式。右鍵點擊通知並選擇「靜音彈出視窗」以在此處添加一個。"
+  },
+  "No auto HDR": {
+    "No auto HDR": ""
   },
   "No autostart entries": {
     "No autostart entries": "沒有自動啟動項目"
@@ -4915,9 +5710,6 @@
   },
   "No brightness devices available": {
     "No brightness devices available": "沒有可用的亮度裝置"
-  },
-  "No changes": {
-    "No changes": "無更改"
   },
   "No checks passed": {
     "No checks passed": "無檢查通過"
@@ -4958,6 +5750,9 @@
   "No errors": {
     "No errors": "無錯誤"
   },
+  "No excluded apps configured": {
+    "No excluded apps configured": ""
+  },
   "No excluded players configured": {
     "No excluded players configured": ""
   },
@@ -4973,6 +5768,9 @@
   "No folders found": {
     "No folders found": "未找到資料夾"
   },
+  "No glow": {
+    "No glow": ""
+  },
   "No hidden apps.": {
     "No hidden apps.": "沒有隱藏的應用程式。"
   },
@@ -4984,6 +5782,9 @@
   },
   "No information available": {
     "No information available": "無可用資訊"
+  },
+  "No initial focus": {
+    "No initial focus": ""
   },
   "No input device": {
     "No input device": "無輸入裝置"
@@ -5150,6 +5951,9 @@
   "No window rules configured": {
     "No window rules configured": "未設定任何視窗規則"
   },
+  "No wobble": {
+    "No wobble": ""
+  },
   "No writable calendar available": {
     "No writable calendar available": ""
   },
@@ -5158,6 +5962,9 @@
   },
   "Noise": {
     "Noise": "雜訊"
+  },
+  "Non-consuming": {
+    "Non-consuming": ""
   },
   "None": {
     "None": "無"
@@ -5177,20 +5984,23 @@
   "Normal routing": {
     "Normal routing": ""
   },
+  "Not active": {
+    "Not active": ""
+  },
   "Not available": {
     "Not available": "無法使用"
   },
-  "Not available - install fprintd and pam_fprintd": {
-    "Not available - install fprintd and pam_fprintd": ""
+  "Not available - install %1 and %2": {
+    "Not available - install %1 and %2": ""
   },
-  "Not available - install or configure pam_u2f": {
-    "Not available - install or configure pam_u2f": ""
+  "Not available - install %1 and %2, or configure %3 PAM": {
+    "Not available - install %1 and %2, or configure %3 PAM": ""
   },
-  "Not available — install fprintd and pam_fprintd, or configure greetd PAM.": {
-    "Not available — install fprintd and pam_fprintd, or configure greetd PAM.": "無法使用 — 請安裝 fprintd 和 pam_fprintd，或設定 greetd PAM。"
+  "Not available - install or configure %1": {
+    "Not available - install or configure %1": ""
   },
-  "Not available — install or configure pam_u2f, or configure greetd PAM.": {
-    "Not available — install or configure pam_u2f, or configure greetd PAM.": "無法使用 — 請安裝或設定 pam_u2f，或設定 greetd PAM。"
+  "Not available - install or configure %1, or configure %2 PAM": {
+    "Not available - install or configure %1, or configure %2 PAM": ""
   },
   "Not bound": {
     "Not bound": "未綁定"
@@ -5201,11 +6011,32 @@
   "Not detected": {
     "Not detected": "未偵測到"
   },
+  "Not inhibitable": {
+    "Not inhibitable": ""
+  },
+  "Not installed": {
+    "Not installed": ""
+  },
+  "Not linked": {
+    "Not linked": ""
+  },
+  "Not on click": {
+    "Not on click": ""
+  },
+  "Not readable without privileges": {
+    "Not readable without privileges": ""
+  },
   "Not set": {
     "Not set": "未設定"
   },
+  "Not shown on this bar, so its section widgets stay hidden": {
+    "Not shown on this bar, so its section widgets stay hidden": ""
+  },
   "Not synchronized": {
     "Not synchronized": ""
+  },
+  "Notch": {
+    "Notch": ""
   },
   "Notepad": {
     "Notepad": "筆記本"
@@ -5219,8 +6050,8 @@
   "Nothing": {
     "Nothing": "無內容"
   },
-  "Nothing to see here": {
-    "Nothing to see here": "這裡啥都沒有"
+  "Nothing tracked yet": {
+    "Nothing tracked yet": ""
   },
   "Notification": {
     "Notification": ""
@@ -5234,11 +6065,29 @@
   "Notification popups": {
     "Notification popups": ""
   },
+  "Notification rules": {
+    "Notification rules": ""
+  },
   "Notifications": {
     "Notifications": "通知"
   },
+  "Notifies when today's screen time passes the limit": {
+    "Notifies when today's screen time passes the limit": ""
+  },
+  "Notifies when today's use of this app passes the limit": {
+    "Notifies when today's use of this app passes the limit": ""
+  },
+  "Notify at most": {
+    "Notify at most": ""
+  },
+  "Notify me on new updates": {
+    "Notify me on new updates": ""
+  },
   "Notify when limit is reached": {
     "Notify when limit is reached": ""
+  },
+  "Now playing": {
+    "Now playing": ""
   },
   "Now playing and media controls": {
     "Now playing and media controls": ""
@@ -5246,14 +6095,14 @@
   "Num Lock at startup": {
     "Num Lock at startup": ""
   },
+  "Num lock": {
+    "Num lock": ""
+  },
   "Numeric (D/M)": {
     "Numeric (D/M)": "數字 (日/月)"
   },
   "Numeric (M/D)": {
     "Numeric (M/D)": "數字 (月/日)"
-  },
-  "OK": {
-    "OK": "確定"
   },
   "OS Logo": {
     "OS Logo": "發行版 Logo"
@@ -5270,17 +6119,29 @@
   "Off keeps the bar hidden until turned back on or shown over IPC": {
     "Off keeps the bar hidden until turned back on or shown over IPC": ""
   },
+  "Off lets the compositor decorate DMS windows. Open windows update when reopened.": {
+    "Off lets the compositor decorate DMS windows. Open windows update when reopened.": ""
+  },
   "Office": {
     "Office": "辦公"
   },
+  "Official only": {
+    "Official only": ""
+  },
   "Offline Report": {
     "Offline Report": "離線報告"
+  },
+  "Offline uncorrectable": {
+    "Offline uncorrectable": ""
   },
   "Older": {
     "Older": "舊有"
   },
   "On": {
     "On": "開啟"
+  },
+  "On activation": {
+    "On activation": ""
   },
   "On button down": {
     "On button down": ""
@@ -5300,35 +6161,38 @@
   "Once a day": {
     "Once a day": "每天一次"
   },
+  "Once a week": {
+    "Once a week": ""
+  },
   "Online": {
     "Online": "線上"
   },
   "Only continue if you recognize this server certificate fingerprint.": {
     "Only continue if you recognize this server certificate fingerprint.": ""
   },
+  "Only in groups": {
+    "Only in groups": ""
+  },
   "Only on battery": {
     "Only on battery": ""
+  },
+  "Only outside groups": {
+    "Only outside groups": ""
+  },
+  "Only the main process of a system service can be restarted.": {
+    "Only the main process of a system service can be restarted.": ""
   },
   "Opacity": {
     "Opacity": "不透明度"
   },
-  "Opacity, borders, blur, shadows, corners": {
-    "Opacity, borders, blur, shadows, corners": ""
-  },
   "Opaque": {
     "Opaque": "不透明"
-  },
-  "Open": {
-    "Open": "打開"
   },
   "Open Frame": {
     "Open Frame": "打開框架"
   },
   "Open From": {
     "Open From": ""
-  },
-  "Open Island": {
-    "Open Island": ""
   },
   "Open Notepad File": {
     "Open Notepad File": "打開筆記文件"
@@ -5345,17 +6209,20 @@
   "Open delay": {
     "Open delay": ""
   },
+  "Open files": {
+    "Open files": ""
+  },
   "Open floating": {
     "Open floating": ""
   },
   "Open folder": {
     "Open folder": "開啟資料夾"
   },
-  "Open in Browser": {
-    "Open in Browser": "在瀏覽器中開啟"
-  },
   "Open in terminal": {
     "Open in terminal": "在終端中打開"
+  },
+  "Open in the Island": {
+    "Open in the Island": ""
   },
   "Open large file?": {
     "Open large file?": ""
@@ -5372,11 +6239,29 @@
   "Open with": {
     "Open with": ""
   },
-  "Opening terminal: ": {
-    "Opening terminal: ": "正在開啟終端機："
+  "Opening GitHub to remove the upvote": {
+    "Opening GitHub to remove the upvote": ""
+  },
+  "Opening GitHub to upvote": {
+    "Opening GitHub to upvote": ""
+  },
+  "Opening terminal: %1": {
+    "Opening terminal: %1": ""
   },
   "Opens": {
     "Opens": ""
+  },
+  "Opens %1": {
+    "Opens %1": ""
+  },
+  "Opens a floating window with the live output": {
+    "Opens a floating window with the live output": ""
+  },
+  "Opens without taking keyboard focus": {
+    "Opens without taking keyboard focus": ""
+  },
+  "Operating system": {
+    "Operating system": ""
   },
   "Optional description": {
     "Optional description": "選填描述"
@@ -5396,6 +6281,15 @@
   "Options of one widget instance": {
     "Options of one widget instance": ""
   },
+  "Orange": {
+    "Orange": ""
+  },
+  "Orbit": {
+    "Orbit": ""
+  },
+  "Order": {
+    "Order": ""
+  },
   "Orientation": {
     "Orientation": ""
   },
@@ -5408,8 +6302,14 @@
   "Other": {
     "Other": "其他"
   },
+  "Other binds cannot shadow it": {
+    "Other binds cannot shadow it": ""
+  },
   "Other displays show a solid color for OLED burn-in protection": {
     "Other displays show a solid color for OLED burn-in protection": ""
+  },
+  "Out-of-memory score": {
+    "Out-of-memory score": ""
   },
   "Outer gap": {
     "Outer gap": ""
@@ -5438,17 +6338,32 @@
   "Output devices": {
     "Output devices": ""
   },
+  "Output profile switching is not available with the FreeBSD native audio backend": {
+    "Output profile switching is not available with the FreeBSD native audio backend": ""
+  },
   "Output switched": {
     "Output switched": ""
   },
   "Over fullscreen": {
     "Over fullscreen": ""
   },
+  "Overall": {
+    "Overall": ""
+  },
   "Overcast": {
     "Overcast": "陰"
   },
   "Overflow": {
     "Overflow": "溢出"
+  },
+  "Overflow button position": {
+    "Overflow button position": ""
+  },
+  "Overflow priority": {
+    "Overflow priority": ""
+  },
+  "Overlapping": {
+    "Overlapping": ""
   },
   "Overlay": {
     "Overlay": ""
@@ -5465,11 +6380,17 @@
   "Override floating window transparency for Notepad": {
     "Override floating window transparency for Notepad": ""
   },
+  "Override window radius": {
+    "Override window radius": ""
+  },
   "Overrides": {
     "Overrides": "覆蓋"
   },
   "Overview": {
     "Overview": "概覽"
+  },
+  "Own share": {
+    "Own share": ""
   },
   "Owner: %1": {
     "Owner: %1": "擁有者：%1"
@@ -5486,20 +6407,29 @@
   "PID": {
     "PID": ""
   },
+  "PID %1": {
+    "PID %1": ""
+  },
   "PIN": {
     "PIN": "PIN"
   },
-  "PM": {
-    "PM": ""
-  },
   "Package name (e.g., docker)": {
     "Package name (e.g., docker)": ""
+  },
+  "Package repositories moved": {
+    "Package repositories moved": ""
+  },
+  "Packages": {
+    "Packages": ""
   },
   "Pad": {
     "Pad": "填補"
   },
   "Padding": {
     "Padding": "內距"
+  },
+  "Page faults": {
+    "Page faults": ""
   },
   "Pair": {
     "Pair": "配對"
@@ -5525,6 +6455,9 @@
   "Palette name": {
     "Palette name": ""
   },
+  "Palette style": {
+    "Palette style": ""
+  },
   "Panel height (rows)": {
     "Panel height (rows)": ""
   },
@@ -5534,8 +6467,20 @@
   "Panel width (columns)": {
     "Panel width (columns)": ""
   },
+  "Parabolic": {
+    "Parabolic": ""
+  },
+  "Parent": {
+    "Parent": ""
+  },
+  "Parents": {
+    "Parents": ""
+  },
   "Partially synchronized": {
     "Partially synchronized": ""
+  },
+  "Partition table": {
+    "Partition table": ""
   },
   "Partly Cloudy": {
     "Partly Cloudy": "多雲"
@@ -5551,6 +6496,9 @@
   },
   "Password change failed (exit %1)": {
     "Password change failed (exit %1)": "密碼變更失敗（退出代碼 %1）"
+  },
+  "Password field": {
+    "Password field": ""
   },
   "Password must be 8 to 63 characters, or a 64-digit hex key.": {
     "Password must be 8 to 63 characters, or a 64-digit hex key.": ""
@@ -5582,8 +6530,20 @@
   "Pause": {
     "Pause": "暫停"
   },
+  "Pause checks on battery": {
+    "Pause checks on battery": ""
+  },
+  "Pause night mode while a fullscreen window has focus": {
+    "Pause night mode while a fullscreen window has focus": ""
+  },
+  "Pause night mode while one of these apps has focus": {
+    "Pause night mode while one of these apps has focus": ""
+  },
   "Paused": {
     "Paused": "暫停"
+  },
+  "Peak": {
+    "Peak": ""
   },
   "Pending": {
     "Pending": "待處理"
@@ -5593,6 +6553,12 @@
   },
   "Pending Discharge": {
     "Pending Discharge": "待解除"
+  },
+  "Per display": {
+    "Per display": ""
+  },
+  "Per thread": {
+    "Per thread": ""
   },
   "Per window": {
     "Per window": ""
@@ -5612,17 +6578,32 @@
   "Permission denied to set profile image.": {
     "Permission denied to set profile image.": "權限不足，無法設定個人資料圖片。"
   },
+  "Petal": {
+    "Petal": ""
+  },
   "Pick Color": {
     "Pick Color": ""
   },
   "Pick a different file manager in Settings → Dock → Trash.": {
     "Pick a different file manager in Settings → Dock → Trash.": "請在「設定」→「Dock」→「垃圾桶」中選擇不同的檔案管理器。"
   },
+  "Pick an app from the list above or the dashboard tab": {
+    "Pick an app from the list above or the dashboard tab": ""
+  },
   "Pick how long to pause notifications": {
     "Pick how long to pause notifications": "選擇暫停通知的時間長度"
   },
   "Pick how long to stay awake": {
     "Pick how long to stay awake": ""
+  },
+  "Pick of the day": {
+    "Pick of the day": ""
+  },
+  "Pick of the week": {
+    "Pick of the week": ""
+  },
+  "Pill": {
+    "Pill": ""
   },
   "Pills": {
     "Pills": ""
@@ -5633,6 +6614,15 @@
   "Pin to Dock": {
     "Pin to Dock": "釘選到 Dock"
   },
+  "Pinch": {
+    "Pinch": ""
+  },
+  "Pinch sensitivity": {
+    "Pinch sensitivity": ""
+  },
+  "Pink": {
+    "Pink": ""
+  },
   "Pinned": {
     "Pinned": "已釘選"
   },
@@ -5642,8 +6632,8 @@
   "Pixelate": {
     "Pixelate": "馬賽克"
   },
-  "Place plugin directories here. Each plugin should have a plugin.json manifest file.": {
-    "Place plugin directories here. Each plugin should have a plugin.json manifest file.": "將插件資料夾放在這裡。每個插件都應該有一個 plugin.json 清單檔案。"
+  "Place plugin directories here. Each plugin should have a %1 manifest file.": {
+    "Place plugin directories here. Each plugin should have a %1 manifest file.": ""
   },
   "Placement": {
     "Placement": ""
@@ -5660,8 +6650,8 @@
   "Playback": {
     "Playback": "播放"
   },
-  "Playback error: ": {
-    "Playback error: ": "播放錯誤："
+  "Playback error: %1": {
+    "Playback error: %1": ""
   },
   "Playback position": {
     "Playback position": ""
@@ -5678,6 +6668,9 @@
   "Playing": {
     "Playing": ""
   },
+  "Playing audio": {
+    "Playing audio": ""
+  },
   "Please wait...": {
     "Please wait...": "請稍候..."
   },
@@ -5689,6 +6682,12 @@
   },
   "Plugin": {
     "Plugin": "外掛程式"
+  },
+  "Plugin Source Code": {
+    "Plugin Source Code": ""
+  },
+  "Plugin authors": {
+    "Plugin authors": ""
   },
   "Plugin dependency missing": {
     "Plugin dependency missing": ""
@@ -5720,6 +6719,9 @@
   "Plugins": {
     "Plugins": "插件"
   },
+  "Plugins by %1": {
+    "Plugins by %1": ""
+  },
   "Plugins shown in All mode without a trigger. Drag to reorder": {
     "Plugins shown in All mode without a trigger. Drag to reorder": ""
   },
@@ -5743,6 +6745,9 @@
   },
   "Popouts and modals use the main animation duration": {
     "Popouts and modals use the main animation duration": ""
+  },
+  "Popular": {
+    "Popular": ""
   },
   "Popular Plugins": {
     "Popular Plugins": ""
@@ -5771,6 +6776,9 @@
   "Port switched": {
     "Port switched": ""
   },
+  "Port switching is not available with the FreeBSD native audio backend": {
+    "Port switching is not available with the FreeBSD native audio backend": ""
+  },
   "Portal": {
     "Portal": "入口"
   },
@@ -5780,14 +6788,14 @@
   "Position": {
     "Position": "位置"
   },
-  "Position, appearance, island": {
-    "Position, appearance, island": ""
-  },
   "Position, displays, auto-hide, behavior": {
     "Position, displays, auto-hide, behavior": ""
   },
   "Position, pinned apps": {
     "Position, pinned apps": "位置、釘選的應用程式"
+  },
+  "Position, pinned apps, trash": {
+    "Position, pinned apps, trash": ""
   },
   "Possible override conflicts": {
     "Possible override conflicts": ""
@@ -5810,6 +6818,9 @@
   "Power Saver": {
     "Power Saver": "省電模式"
   },
+  "Power limit": {
+    "Power limit": ""
+  },
   "Power menu": {
     "Power menu": ""
   },
@@ -5831,11 +6842,26 @@
   "Power source": {
     "Power source": "電源"
   },
+  "Power-on time": {
+    "Power-on time": ""
+  },
+  "Pre-release": {
+    "Pre-release": ""
+  },
   "Precipitation": {
     "Precipitation": "降水"
   },
+  "Preempted": {
+    "Preempted": ""
+  },
   "Preference": {
     "Preference": "偏好設定"
+  },
+  "Prefix a tag with negative: to match windows without it.": {
+    "Prefix a tag with negative: to match windows without it.": ""
+  },
+  "Presentation": {
+    "Presentation": ""
   },
   "Preserve split": {
     "Preserve split": ""
@@ -5843,8 +6869,8 @@
   "Preset widths (%)": {
     "Preset widths (%)": ""
   },
-  "Presets": {
-    "Presets": ""
+  "Press Apply changes to update the login screen": {
+    "Press Apply changes to update the login screen": ""
   },
   "Press Ctrl+N or click 'New Session' to create one": {
     "Press Ctrl+N or click 'New Session' to create one": ""
@@ -5872,6 +6898,9 @@
   },
   "Previous": {
     "Previous": ""
+  },
+  "Previous category": {
+    "Previous category": ""
   },
   "Previous page": {
     "Previous page": ""
@@ -5915,6 +6944,9 @@
   "Priority": {
     "Priority": "優先級"
   },
+  "Prism": {
+    "Prism": ""
+  },
   "Privacy": {
     "Privacy": ""
   },
@@ -5927,6 +6959,9 @@
   "Private Key Password": {
     "Private Key Password": "私鑰密碼"
   },
+  "Process": {
+    "Process": ""
+  },
   "Process count": {
     "Process count": ""
   },
@@ -5938,6 +6973,9 @@
   },
   "Processing": {
     "Processing": "正在處理"
+  },
+  "Processor": {
+    "Processor": ""
   },
   "Profile": {
     "Profile": ""
@@ -5954,6 +6992,9 @@
   "Profile error": {
     "Profile error": "設定檔錯誤"
   },
+  "Profile image": {
+    "Profile image": ""
+  },
   "Profile image is too large. Please use a smaller image.": {
     "Profile image is too large. Please use a smaller image.": "個人資料圖片太大。請使用較小的圖片。"
   },
@@ -5963,8 +7004,8 @@
   "Profile not found": {
     "Profile not found": "找不到設定檔"
   },
-  "Profile not found in monitors.json": {
-    "Profile not found in monitors.json": "在 monitors.json 中未找到設定檔"
+  "Profile not found in %1": {
+    "Profile not found in %1": ""
   },
   "Profile on AC": {
     "Profile on AC": ""
@@ -5975,6 +7016,9 @@
   "Profile saved: %1": {
     "Profile saved: %1": "設定檔已儲存：%1"
   },
+  "Profile sync failed.": {
+    "Profile sync failed.": ""
+  },
   "Profiles": {
     "Profiles": ""
   },
@@ -5984,11 +7028,23 @@
   "Protocol": {
     "Protocol": "協定"
   },
+  "Pulse animation": {
+    "Pulse animation": ""
+  },
+  "Purple": {
+    "Purple": ""
+  },
+  "Push neighboring icons": {
+    "Push neighboring icons": ""
+  },
   "QR Generator": {
     "QR Generator": ""
   },
   "Qt colors applied successfully": {
     "Qt colors applied successfully": "Qt 顏色已成功套用"
+  },
+  "Qt theme": {
+    "Qt theme": ""
   },
   "QtMultimedia is not available": {
     "QtMultimedia is not available": "QtMultimedia 不可用"
@@ -5998,6 +7054,9 @@
   },
   "Quality": {
     "Quality": "品質"
+  },
+  "Queue depth": {
+    "Queue depth": ""
   },
   "Quick access to application launcher": {
     "Quick access to application launcher": "快速存取應用程式啟動器"
@@ -6010,6 +7069,18 @@
   },
   "Quick system toggles": {
     "Quick system toggles": "快速系統切換"
+  },
+  "Quick tiles": {
+    "Quick tiles": ""
+  },
+  "Quit": {
+    "Quit": ""
+  },
+  "Quit or reload": {
+    "Quit or reload": ""
+  },
+  "Quit or restart": {
+    "Quit or restart": ""
   },
   "Radius": {
     "Radius": "半徑"
@@ -6032,23 +7103,68 @@
   "Rate": {
     "Rate": "速率"
   },
+  "Re-applies the greetd command, permissions and PAM authentication. Needs administrator access.": {
+    "Re-applies the greetd command, permissions and PAM authentication. Needs administrator access.": ""
+  },
   "Re-enter the password before saving.": {
     "Re-enter the password before saving.": ""
   },
   "Reach local network devices while using an exit node": {
     "Reach local network devices while using an exit node": ""
   },
-  "Read-only legacy config": {
-    "Read-only legacy config": "唯讀舊版設定檔"
+  "Read the blog post": {
+    "Read the blog post": ""
   },
-  "Read:": {
-    "Read:": "讀取："
+  "Read total": {
+    "Read total": ""
+  },
+  "Readings": {
+    "Readings": ""
+  },
+  "Reads audio devices and volume": {
+    "Reads audio devices and volume": ""
+  },
+  "Reads its own settings": {
+    "Reads its own settings": ""
+  },
+  "Reads its saved state": {
+    "Reads its saved state": ""
+  },
+  "Reads the clipboard": {
+    "Reads the clipboard": ""
+  },
+  "Reads the list of running programs": {
+    "Reads the list of running programs": ""
+  },
+  "Reads your files": {
+    "Reads your files": ""
   },
   "Ready": {
     "Ready": ""
   },
+  "Reallocated sectors": {
+    "Reallocated sectors": ""
+  },
   "Reason": {
     "Reason": "原因"
+  },
+  "Reboot now?": {
+    "Reboot now?": ""
+  },
+  "Reboot recommended": {
+    "Reboot recommended": ""
+  },
+  "Reboot targets": {
+    "Reboot targets": ""
+  },
+  "Reboot to %1": {
+    "Reboot to %1": ""
+  },
+  "Reboot to firmware setup": {
+    "Reboot to firmware setup": ""
+  },
+  "Received since boot": {
+    "Received since boot": ""
   },
   "Recent": {
     "Recent": "最近"
@@ -6065,11 +7181,17 @@
   "Record": {
     "Record": ""
   },
+  "Record app usage and past queries. Turning this off clears what is stored.": {
+    "Record app usage and past queries. Turning this off clears what is stored.": ""
+  },
+  "Red": {
+    "Red": ""
+  },
   "Reduce motion": {
     "Reduce motion": ""
   },
-  "Refresh": {
-    "Refresh": "重新整理"
+  "Refraction": {
+    "Refraction": ""
   },
   "Refresh Weather": {
     "Refresh Weather": "刷新天氣"
@@ -6095,8 +7217,20 @@
   "Release": {
     "Release": "放開"
   },
+  "Release notes": {
+    "Release notes": ""
+  },
+  "Release notes are unavailable": {
+    "Release notes are unavailable": ""
+  },
   "Release to confirm": {
     "Release to confirm": ""
+  },
+  "Reliability": {
+    "Reliability": ""
+  },
+  "Reload": {
+    "Reload": ""
   },
   "Reload From Disk": {
     "Reload From Disk": ""
@@ -6131,6 +7265,9 @@
   "Reminder": {
     "Reminder": ""
   },
+  "Removable": {
+    "Removable": ""
+  },
   "Remove": {
     "Remove": "刪除"
   },
@@ -6143,6 +7280,12 @@
   "Remove admin": {
     "Remove admin": "移除管理員"
   },
+  "Remove condition": {
+    "Remove condition": ""
+  },
+  "Remove from recent colors": {
+    "Remove from recent colors": ""
+  },
   "Remove greeter access?": {
     "Remove greeter access?": "移除登入畫面存取權？"
   },
@@ -6152,20 +7295,23 @@
   "Remove match": {
     "Remove match": "移除匹配"
   },
+  "Remove override": {
+    "Remove override": ""
+  },
   "Remove the shortcut %1?": {
     "Remove the shortcut %1?": "移除捷徑 %1？"
   },
-  "Remove the shortcut %1? An unbind entry will be saved to dms/binds-user.lua so it stays removed across DMS updates.": {
-    "Remove the shortcut %1? An unbind entry will be saved to dms/binds-user.lua so it stays removed across DMS updates.": "移除捷徑 %1？一個解除綁定的條目將被儲存至 dms/binds-user.lua，以確保在 DMS 更新後該捷徑保持移除狀態。"
+  "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": {
+    "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": ""
+  },
+  "Remove upvote": {
+    "Remove upvote": ""
   },
   "Removed administrator privileges": {
     "Removed administrator privileges": "已移除管理員權限"
   },
   "Removed greeter login access": {
     "Removed greeter login access": "已移除登入畫面存取權"
-  },
-  "Rename": {
-    "Rename": "重新命名"
   },
   "Rename Session": {
     "Rename Session": "重新命名會話"
@@ -6175,6 +7321,9 @@
   },
   "Renderer": {
     "Renderer": ""
+  },
+  "Rendering": {
+    "Rendering": ""
   },
   "Reopen panel after update": {
     "Reopen panel after update": ""
@@ -6191,6 +7340,9 @@
   "Repeat rate": {
     "Repeat rate": ""
   },
+  "Repeats while the key is held": {
+    "Repeats while the key is held": ""
+  },
   "Replace a displayed layout label with custom text, e.g. \"am-phonetic-alt\" → \"am": {
     "Replace a displayed layout label with custom text, e.g. \"am-phonetic-alt\" → \"am\"": ""
   },
@@ -6200,14 +7352,14 @@
   "Report": {
     "Report": "報告"
   },
-  "Required plugin: ": {
-    "Required plugin: ": "所需插件："
+  "Required plugin: %1": {
+    "Required plugin: %1": ""
   },
   "Requires %1": {
     "Requires %1": "需要 %1"
   },
-  "Requires 'dgop' tool": {
-    "Requires 'dgop' tool": "需要「dgop」工具"
+  "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": {
+    "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": ""
   },
   "Requires DMS %1": {
     "Requires DMS %1": "需要 DMS %1"
@@ -6217,9 +7369,6 @@
   },
   "Requires MangoWC compositor": {
     "Requires MangoWC compositor": ""
-  },
-  "Requires greetd, dms-greeter, and your user in the greeter group (plus fprintd/pam_fprintd for fingerprint, pam_u2f for security keys).": {
-    "Requires greetd, dms-greeter, and your user in the greeter group (plus fprintd/pam_fprintd for fingerprint, pam_u2f for security keys).": ""
   },
   "Requires night mode support": {
     "Requires night mode support": "需要夜間模式支援"
@@ -6251,8 +7400,8 @@
   "Reset to default": {
     "Reset to default": "重設為預設值"
   },
-  "Resize": {
-    "Resize": ""
+  "Resident": {
+    "Resident": ""
   },
   "Resize on border": {
     "Resize on border": ""
@@ -6263,14 +7412,20 @@
   "Resolution, position, scale": {
     "Resolution, position, scale": "解析度、位置、比例"
   },
+  "Resources": {
+    "Resources": ""
+  },
+  "Response time": {
+    "Response time": ""
+  },
+  "Restart": {
+    "Restart": ""
+  },
   "Restart DMS": {
     "Restart DMS": "重新啟動 DMS"
   },
   "Restarting audio system...": {
     "Restarting audio system...": "正在重新啟動音訊系統..."
-  },
-  "Restore": {
-    "Restore": ""
   },
   "Restore special workspace": {
     "Restore special workspace": ""
@@ -6302,6 +7457,9 @@
   "Right Tiling": {
     "Right Tiling": "右側平鋪"
   },
+  "Right click": {
+    "Right click": ""
+  },
   "Right section": {
     "Right section": ""
   },
@@ -6314,20 +7472,20 @@
   "Right-click an app in the launcher and choose 'Hide App'": {
     "Right-click an app in the launcher and choose 'Hide App'": ""
   },
-  "Right-click and drag anywhere on the widget": {
-    "Right-click and drag anywhere on the widget": "在小工具上任一處按右鍵並拖曳"
-  },
-  "Right-click and drag the bottom-right corner": {
-    "Right-click and drag the bottom-right corner": "按右鍵並拖曳右下角"
-  },
   "Right-click bar widget to cycle": {
     "Right-click bar widget to cycle": "右鍵點擊長條小工具以循環"
   },
   "Right-click empty space to edit": {
     "Right-click empty space to edit": ""
   },
+  "Right-click menu": {
+    "Right-click menu": ""
+  },
   "Ring": {
     "Ring": ""
+  },
+  "Ripple": {
+    "Ripple": ""
   },
   "Ripple effects": {
     "Ripple effects": ""
@@ -6335,14 +7493,17 @@
   "Root Filesystem": {
     "Root Filesystem": "根檔案系統"
   },
+  "Rotating Cookie": {
+    "Rotating Cookie": ""
+  },
   "Rounded": {
     "Rounded": ""
   },
   "Route Bluetooth headset controls to the active DMS media player": {
     "Route Bluetooth headset controls to the active DMS media player": ""
   },
-  "Routes launcher, dash, control center and notification shortcuts": {
-    "Routes launcher, dash, control center and notification shortcuts": ""
+  "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": {
+    "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": ""
   },
   "Rows": {
     "Rows": ""
@@ -6365,6 +7526,12 @@
   "Rules found in your compositor config. These are read-only here, use Convert to DMS to make an editable copy.": {
     "Rules found in your compositor config. These are read-only here, use Convert to DMS to make an editable copy.": "在您的合成器設定中找到的規則。此處為唯讀，請使用「轉換為 DMS」建立可編輯副本。"
   },
+  "Run %1 in a terminal.": {
+    "Run %1 in a terminal.": ""
+  },
+  "Run %1 to create it before changing these settings.": {
+    "Run %1 to create it before changing these settings.": ""
+  },
   "Run Again": {
     "Run Again": "重新執行"
   },
@@ -6377,8 +7544,11 @@
   "Run a shell command (e.g., notify-send)": {
     "Run a shell command (e.g., notify-send)": "執行 shell 指令 (例如，notify-send)"
   },
-  "Run an external command on each wallpaper change and merge its JSON palette into matugen under a namespace, so templates can use e.g. {{name.color0}}. The command receives the wallpaper as {image} / $DMS_WALLPAPER and the mode as {mode} / $DMS_MODE.": {
-    "Run an external command on each wallpaper change and merge its JSON palette into matugen under a namespace, so templates can use e.g. {{name.color0}}. The command receives the wallpaper as {image} / $DMS_WALLPAPER and the mode as {mode} / $DMS_MODE.": ""
+  "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": {
+    "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": ""
+  },
+  "Run full sync": {
+    "Run full sync": ""
   },
   "Run user templates": {
     "Run user templates": ""
@@ -6389,11 +7559,23 @@
   "Running apps": {
     "Running apps": ""
   },
+  "Running for": {
+    "Running for": ""
+  },
   "Running greeter sync...": {
     "Running greeter sync...": ""
   },
   "Running in terminal": {
     "Running in terminal": "在終端機中運行"
+  },
+  "Runs in a terminal.": {
+    "Runs in a terminal.": ""
+  },
+  "Runs programs on your computer": {
+    "Runs programs on your computer": ""
+  },
+  "Runs shell commands": {
+    "Runs shell commands": ""
   },
   "S": {
     "S": ""
@@ -6404,6 +7586,9 @@
   "SDR saturation": {
     "SDR saturation": ""
   },
+  "SDR transfer function": {
+    "SDR transfer function": ""
+  },
   "SE": {
     "SE": ""
   },
@@ -6412,6 +7597,9 @@
   },
   "SW": {
     "SW": ""
+  },
+  "Same as workspace change": {
+    "Same as workspace change": ""
   },
   "Satellites": {
     "Satellites": ""
@@ -6446,6 +7634,9 @@
   "Save password": {
     "Save password": "儲存密碼"
   },
+  "Save your work first. Open apps will close.": {
+    "Save your work first. Open apps will close.": ""
+  },
   "Saved": {
     "Saved": "已儲存"
   },
@@ -6461,11 +7652,26 @@
   "Saved networks": {
     "Saved networks": ""
   },
+  "Saves its own settings": {
+    "Saves its own settings": ""
+  },
+  "Saves its state": {
+    "Saves its state": ""
+  },
   "Saving...": {
     "Saving...": "儲存中..."
   },
   "Scale": {
     "Scale": "縮放"
+  },
+  "Scale battery level to charge limit": {
+    "Scale battery level to charge limit": ""
+  },
+  "Scale low and critical alert thresholds": {
+    "Scale low and critical alert thresholds": ""
+  },
+  "Scale the displayed battery level to the configured charge limit": {
+    "Scale the displayed battery level to the configured charge limit": ""
   },
   "Scan": {
     "Scan": "掃描"
@@ -6479,6 +7685,9 @@
   "Schedule, sunset, wallpaper brightness": {
     "Schedule, sunset, wallpaper brightness": ""
   },
+  "Scheduling": {
+    "Scheduling": ""
+  },
   "Science": {
     "Science": "科學"
   },
@@ -6487,6 +7696,15 @@
   },
   "Screen sharing": {
     "Screen sharing": "螢幕分享"
+  },
+  "Screen time": {
+    "Screen time": ""
+  },
+  "Screen time and app limits": {
+    "Screen time and app limits": ""
+  },
+  "Screen time history": {
+    "Screen time history": ""
   },
   "Screenshot unavailable": {
     "Screenshot unavailable": ""
@@ -6512,6 +7730,9 @@
   "Scroll wheel": {
     "Scroll wheel": ""
   },
+  "Scrollbars": {
+    "Scrollbars": ""
+  },
   "Scrolling": {
     "Scrolling": "滾動"
   },
@@ -6527,8 +7748,8 @@
   "Search devices...": {
     "Search devices...": "搜尋裝置..."
   },
-  "Search keybinds...": {
-    "Search keybinds...": ""
+  "Search or press a shortcut...": {
+    "Search or press a shortcut...": ""
   },
   "Search plugins...": {
     "Search plugins...": "搜尋插件..."
@@ -6560,17 +7781,23 @@
   "Secondary Container": {
     "Secondary Container": ""
   },
+  "Section dividers": {
+    "Section dividers": ""
+  },
   "Sections": {
     "Sections": ""
+  },
+  "Sector size": {
+    "Sector size": ""
+  },
+  "Secure Boot": {
+    "Secure Boot": ""
   },
   "Secured": {
     "Secured": "已保護"
   },
   "Security": {
     "Security": "安全性"
-  },
-  "Security key": {
-    "Security key": ""
   },
   "Security key (%1)": {
     "Security key (%1)": ""
@@ -6611,6 +7838,9 @@
   "Select Dock Launcher Logo": {
     "Select Dock Launcher Logo": "選擇 Dock 啟動器標誌"
   },
+  "Select Dot Icon": {
+    "Select Dot Icon": ""
+  },
   "Select ICC Profile": {
     "Select ICC Profile": ""
   },
@@ -6641,9 +7871,6 @@
   "Select an image file...": {
     "Select an image file...": "選擇一張圖片..."
   },
-  "Select background image": {
-    "Select background image": ""
-  },
   "Select device": {
     "Select device": "選取裝置"
   },
@@ -6664,6 +7891,12 @@
   },
   "Sends the playing track, artist and album name to enabled lyrics providers": {
     "Sends the playing track, artist and album name to enabled lyrics providers": ""
+  },
+  "Sensors": {
+    "Sensors": ""
+  },
+  "Sent since boot": {
+    "Sent since boot": ""
   },
   "Separate": {
     "Separate": "分離"
@@ -6689,11 +7922,23 @@
   "Separator": {
     "Separator": "分隔符"
   },
+  "Serial number": {
+    "Serial number": ""
+  },
   "Server": {
     "Server": "伺服器"
   },
+  "Service": {
+    "Service": ""
+  },
+  "Session": {
+    "Session": ""
+  },
   "Session filter": {
     "Session filter": ""
+  },
+  "Session switching requires loginctl/elogind": {
+    "Session switching requires loginctl/elogind": ""
   },
   "Set custom device name": {
     "Set custom device name": ""
@@ -6707,20 +7952,23 @@
   "Set custom names for your audio output devices": {
     "Set custom names for your audio output devices": "為您的音訊輸出裝置設定自訂名稱"
   },
-  "Set key and action to save": {
-    "Set key and action to save": "設定按鍵和動作以保存"
+  "Set limit": {
+    "Set limit": ""
   },
   "Set notification rules": {
     "Set notification rules": "設定通知規則"
   },
+  "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": {
+    "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": ""
+  },
+  "Set under Theme & colors, Derived color": {
+    "Set under Theme & colors, Derived color": ""
+  },
+  "Set up": {
+    "Set up": ""
+  },
   "Set up a Wi-Fi hotspot for sharing this connection.": {
     "Set up a Wi-Fi hotspot for sharing this connection.": ""
-  },
-  "Set up hotspot": {
-    "Set up hotspot": ""
-  },
-  "Set up hotspot in Settings": {
-    "Set up hotspot in Settings": ""
   },
   "Setting": {
     "Setting": "設定"
@@ -6734,6 +7982,12 @@
   "Settings are read-only. Changes will not persist.": {
     "Settings are read-only. Changes will not persist.": "設定為唯讀。變更將不會保留。"
   },
+  "Settings version": {
+    "Settings version": ""
+  },
+  "Setuid": {
+    "Setuid": ""
+  },
   "Setup": {
     "Setup": "設定"
   },
@@ -6746,8 +8000,17 @@
   "Shadows": {
     "Shadows": "陰影"
   },
+  "Shapes use the %1 theme's colors": {
+    "Shapes use the %1 theme's colors": ""
+  },
   "Share gamma control settings": {
     "Share gamma control settings": ""
+  },
+  "Shared": {
+    "Shared": ""
+  },
+  "Shared memory": {
+    "Shared memory": ""
   },
   "Shared shortcuts": {
     "Shared shortcuts": ""
@@ -6761,6 +8024,9 @@
   "Shift+Enter to paste": {
     "Shift+Enter to paste": "Shift+Enter 貼上"
   },
+  "Short": {
+    "Short": ""
+  },
   "Shortcut": {
     "Shortcut": ""
   },
@@ -6773,6 +8039,9 @@
   "Shortcuts (%1)": {
     "Shortcuts (%1)": "快速鍵 (%1)"
   },
+  "Shortcuts, keyboard, mouse": {
+    "Shortcuts, keyboard, mouse": ""
+  },
   "Shortens the bar at both ends": {
     "Shortens the bar at both ends": ""
   },
@@ -6781,6 +8050,9 @@
   },
   "Show \"config reloaded\" toast": {
     "Show \"config reloaded\" toast": ""
+  },
+  "Show AM/PM": {
+    "Show AM/PM": ""
   },
   "Show I/O": {
     "Show I/O": ""
@@ -6818,11 +8090,11 @@
   "Show device": {
     "Show device": "顯示裝置"
   },
-  "Show device name": {
-    "Show device name": ""
-  },
   "Show discharge rate": {
     "Show discharge rate": ""
+  },
+  "Show every author": {
+    "Show every author": ""
   },
   "Show filename": {
     "Show filename": ""
@@ -6881,9 +8153,6 @@
   "Show occupied only": {
     "Show occupied only": ""
   },
-  "Show on displays": {
-    "Show on displays": ""
-  },
   "Show on last display": {
     "Show on last display": ""
   },
@@ -6899,23 +8168,11 @@
   "Show package source badges": {
     "Show package source badges": ""
   },
-  "Show password": {
-    "Show password": ""
-  },
-  "Show password field": {
-    "Show password field": ""
-  },
   "Show percentage": {
     "Show percentage": ""
   },
-  "Show power actions": {
-    "Show power actions": ""
-  },
   "Show power off": {
     "Show power off": ""
-  },
-  "Show profile image": {
-    "Show profile image": ""
   },
   "Show readings": {
     "Show readings": ""
@@ -6950,20 +8207,17 @@
   "Show switch user": {
     "Show switch user": ""
   },
-  "Show system icons": {
-    "Show system icons": ""
-  },
   "Show temperature": {
     "Show temperature": ""
   },
-  "Show the current media activity": {
-    "Show the current media activity": ""
-  },
-  "Show time": {
-    "Show time": ""
+  "Show the battery briefly when power is connected or removed": {
+    "Show the battery briefly when power is connected or removed": ""
   },
   "Show trend": {
     "Show trend": ""
+  },
+  "Show upgrade in a window": {
+    "Show upgrade in a window": ""
   },
   "Show uptime": {
     "Show uptime": ""
@@ -6977,6 +8231,15 @@
   "Show welcome": {
     "Show welcome": ""
   },
+  "Show window": {
+    "Show window": ""
+  },
+  "Shown only while the microphone, camera or screen sharing is in use": {
+    "Shown only while the microphone, camera or screen sharing is in use": ""
+  },
+  "Shown while no image or color is set": {
+    "Shown while no image or color is set": ""
+  },
   "Shows all running applications with focus indication": {
     "Shows all running applications with focus indication": "顯示所有正在運行的應用程式並帶有焦點指示"
   },
@@ -6985,6 +8248,12 @@
   },
   "Shows only windows from the dock's own display": {
     "Shows only windows from the dock's own display": ""
+  },
+  "Shows the dashboard tab bar instead of the sheet handle": {
+    "Shows the dashboard tab bar instead of the sheet handle": ""
+  },
+  "Shows the line being sung instead of the title and artist while synced lyrics are available": {
+    "Shows the line being sung instead of the title and artist while synced lyrics are available": ""
   },
   "Shows when caps lock is active": {
     "Shows when caps lock is active": "顯示大小寫鎖定啟用時"
@@ -7034,8 +8303,17 @@
   "Slanted": {
     "Slanted": ""
   },
+  "Sleeping": {
+    "Sleeping": ""
+  },
+  "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": {
+    "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": ""
+  },
   "Slideout": {
     "Slideout": ""
+  },
+  "Slots used": {
+    "Slots used": ""
   },
   "Small": {
     "Small": "小"
@@ -7064,11 +8342,23 @@
   "Snow": {
     "Snow": "雪"
   },
+  "Sockets": {
+    "Sockets": ""
+  },
   "Soft reboot": {
     "Soft reboot": ""
   },
   "Soft square": {
     "Soft square": ""
+  },
+  "Software dimming": {
+    "Software dimming": ""
+  },
+  "Software updates": {
+    "Software updates": ""
+  },
+  "Software updates are ready to install.": {
+    "Software updates are ready to install.": ""
   },
   "Solid": {
     "Solid": ""
@@ -7112,6 +8402,12 @@
   "Spacing": {
     "Spacing": "間距"
   },
+  "Spacious": {
+    "Spacious": ""
+  },
+  "Spare blocks left": {
+    "Spare blocks left": ""
+  },
   "Speaker settings": {
     "Speaker settings": "喇叭設定"
   },
@@ -7123,6 +8419,9 @@
   },
   "Speed, scrolling, tap to click": {
     "Speed, scrolling, tap to click": ""
+  },
+  "Spin-up time": {
+    "Spin-up time": ""
   },
   "Split direction follows the cursor position in the window": {
     "Split direction follows the cursor position in the window": ""
@@ -7142,6 +8441,9 @@
   "Spotlight bar": {
     "Spotlight bar": ""
   },
+  "Spreadsheet": {
+    "Spreadsheet": ""
+  },
   "Spring": {
     "Spring": ""
   },
@@ -7156,6 +8458,9 @@
   },
   "Square": {
     "Square": ""
+  },
+  "Stable": {
+    "Stable": ""
   },
   "Stack": {
     "Stack": ""
@@ -7175,6 +8480,12 @@
   "Start typing your notes here...": {
     "Start typing your notes here...": "從這裡開始輸入您的筆記..."
   },
+  "Start/stop count": {
+    "Start/stop count": ""
+  },
+  "Started": {
+    "Started": ""
+  },
   "Starting hotspot...": {
     "Starting hotspot...": ""
   },
@@ -7189,6 +8500,9 @@
   },
   "State": {
     "State": "狀態"
+  },
+  "Stay focused": {
+    "Stay focused": ""
   },
   "Stays visible while the workspace has no windows": {
     "Stays visible while the workspace has no windows": ""
@@ -7208,6 +8522,12 @@
   "Stopping": {
     "Stopping": "正在停止"
   },
+  "Stops syncing your DMS settings to the greeter. Set up links them again.": {
+    "Stops syncing your DMS settings to the greeter. Set up links them again.": ""
+  },
+  "Storage": {
+    "Storage": ""
+  },
   "Stretch": {
     "Stretch": "延展"
   },
@@ -7220,8 +8540,11 @@
   "Style": {
     "Style": ""
   },
-  "Style, shortcuts, search, hidden apps": {
-    "Style, shortcuts, search, hidden apps": ""
+  "Style, search, hidden apps": {
+    "Style, search, hidden apps": ""
+  },
+  "Styles outside of Default use more GPU": {
+    "Styles outside of Default use more GPU": ""
   },
   "Success": {
     "Success": ""
@@ -7232,6 +8555,9 @@
   "Summary font size": {
     "Summary font size": ""
   },
+  "Summary, highlights, links": {
+    "Summary, highlights, links": ""
+  },
   "Sun": {
     "Sun": ""
   },
@@ -7241,11 +8567,14 @@
   "Sunset": {
     "Sunset": "日落"
   },
-  "Super + Space": {
-    "Super + Space": ""
+  "Support DMS": {
+    "Support DMS": ""
   },
   "Suppress duplicates": {
     "Suppress duplicates": ""
+  },
+  "Suppress events": {
+    "Suppress events": ""
   },
   "Surface": {
     "Surface": "表面"
@@ -7283,8 +8612,14 @@
   "Suspend then hibernate": {
     "Suspend then hibernate": ""
   },
+  "Swallow focus click": {
+    "Swallow focus click": ""
+  },
   "Swap": {
     "Swap": ""
+  },
+  "Swatches show the seed color itself": {
+    "Swatches show the seed color itself": ""
   },
   "Sway website": {
     "Sway website": ""
@@ -7295,14 +8630,20 @@
   "Switch layout shortcut": {
     "Switch layout shortcut": ""
   },
+  "Switch to media when playback starts": {
+    "Switch to media when playback starts": ""
+  },
   "Switches to power saver at the low battery threshold": {
     "Switches to power saver at the low battery threshold": ""
   },
+  "Switching to the current workspace returns to the previous one": {
+    "Switching to the current workspace returns to the previous one": ""
+  },
+  "Symbol": {
+    "Symbol": ""
+  },
   "Sync": {
     "Sync": "同步"
-  },
-  "Sync applies your theme and settings to the login screen. Shared users should run dms-greeter sync --profile instead of a primary user sync.": {
-    "Sync applies your theme and settings to the login screen. Shared users should run dms-greeter sync --profile instead of a primary user sync.": ""
   },
   "Sync completed successfully.": {
     "Sync completed successfully.": "同步成功完成。"
@@ -7325,9 +8666,6 @@
   "Sync position across displays": {
     "Sync position across displays": ""
   },
-  "Sync to apply": {
-    "Sync to apply": ""
-  },
   "Sync with portal": {
     "Sync with portal": ""
   },
@@ -7340,14 +8678,14 @@
   "System & integrations": {
     "System & integrations": ""
   },
-  "System Information": {
-    "System Information": "系統資訊"
-  },
   "System Monitor": {
     "System Monitor": "系統監視器"
   },
   "System Monitor Unavailable": {
     "System Monitor Unavailable": "系統監視器不可用"
+  },
+  "System bell": {
+    "System bell": ""
   },
   "System check": {
     "System check": ""
@@ -7357,6 +8695,12 @@
   },
   "System notification area icons": {
     "System notification area icons": "顯示常駐程式狀態圖示和系統通知"
+  },
+  "System packages": {
+    "System packages": ""
+  },
+  "System report": {
+    "System report": ""
   },
   "System sound theme and events": {
     "System sound theme and events": ""
@@ -7370,17 +8714,23 @@
   "System theme toggle": {
     "System theme toggle": "系統佈景主題切換"
   },
+  "System time": {
+    "System time": ""
+  },
   "System tray": {
     "System tray": ""
   },
   "System update": {
     "System update": ""
   },
-  "System updater": {
-    "System updater": ""
-  },
   "Systemd override generated": {
     "Systemd override generated": ""
+  },
+  "Systemd unit": {
+    "Systemd unit": ""
+  },
+  "TRIM": {
+    "TRIM": ""
   },
   "Tab": {
     "Tab": "分頁"
@@ -7388,11 +8738,20 @@
   "Table": {
     "Table": ""
   },
+  "Tablet": {
+    "Tablet": ""
+  },
+  "Tablet input": {
+    "Tablet input": ""
+  },
   "Tabs": {
     "Tabs": ""
   },
   "Tabs and weather": {
     "Tabs and weather": ""
+  },
+  "Tag": {
+    "Tag": ""
   },
   "Tags": {
     "Tags": ""
@@ -7424,6 +8783,9 @@
   "Taskbar": {
     "Taskbar": ""
   },
+  "Teal": {
+    "Teal": ""
+  },
   "Temperature": {
     "Temperature": ""
   },
@@ -7433,11 +8795,8 @@
   "Terminal additional parameters": {
     "Terminal additional parameters": "終端機額外參數"
   },
-  "Terminal fallback failed. Install a supported terminal emulator or run 'dms auth sync' manually.": {
-    "Terminal fallback failed. Install a supported terminal emulator or run 'dms auth sync' manually.": "終端機備用失敗。請安裝支援的終端機模擬器或手動執行 'dms auth sync'。"
-  },
-  "Terminal fallback failed. Install one of the supported terminal emulators or run 'dms-greeter sync' manually.": {
-    "Terminal fallback failed. Install one of the supported terminal emulators or run 'dms-greeter sync' manually.": ""
+  "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": {
+    "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": ""
   },
   "Terminal fallback opened. Complete authentication there; it will close automatically when done.": {
     "Terminal fallback opened. Complete authentication there; it will close automatically when done.": ""
@@ -7478,11 +8837,14 @@
   "Text style": {
     "Text style": ""
   },
+  "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": {
+    "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": ""
+  },
   "The Aqueous operation failed.": {
     "The Aqueous operation failed.": ""
   },
-  "The DMS_SOCKET environment variable is not set or the socket is unavailable. Automated plugin management requires the DMS_SOCKET.": {
-    "The DMS_SOCKET environment variable is not set or the socket is unavailable. Automated plugin management requires the DMS_SOCKET.": "DMS_SOCKET 環境變數未設定或套接字不可用。自動插件管理需要 DMS_SOCKET。"
+  "The Control Center opens at the cursor instead of its widget": {
+    "The Control Center opens at the cursor instead of its widget": ""
   },
   "The Default action only overrides priority": {
     "The Default action only overrides priority": ""
@@ -7490,14 +8852,20 @@
   "The Island holds this edge on a display this bar covers, so the bar stays hidden there": {
     "The Island holds this edge on a display this bar covers, so the bar stays hidden there": ""
   },
+  "The Island takes its place on this bar": {
+    "The Island takes its place on this bar": ""
+  },
   "The WiFi adapter could not start access point mode.": {
     "The WiFi adapter could not start access point mode.": ""
   },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": ""
   },
-  "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (qt5ct.conf|qt6ct.conf|qtengine/config.json and ~/.config/gtk-3.0|gtk-4.0).": {
-    "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (qt5ct.conf|qt6ct.conf|qtengine/config.json and ~/.config/gtk-3.0|gtk-4.0).": ""
+  "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": {
+    "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": ""
+  },
+  "The click that focuses a window does not reach the app": {
+    "The click that focuses a window does not reach the app": ""
   },
   "The compositor session changed. Discard this edit before starting a new one.": {
     "The compositor session changed. Discard this edit before starting a new one.": ""
@@ -7514,14 +8882,23 @@
   "The fill shows today's precipitation probability.": {
     "The fill shows today's precipitation probability.": ""
   },
-  "The greeter bundled with DMS is active (archinstall setup). It keeps working as is, but syncing theme and settings needs the standalone greeter. Install greetd-dms-greeter-bin from the AUR, then run Sync to migrate the login screen.": {
-    "The greeter bundled with DMS is active (archinstall setup). It keeps working as is, but syncing theme and settings needs the standalone greeter. Install greetd-dms-greeter-bin from the AUR, then run Sync to migrate the login screen.": ""
-  },
   "The highlighted marker shows the UV category: low, moderate, high, very high, or extreme.": {
     "The highlighted marker shows the UV category: low, moderate, high, very high, or extreme.": ""
   },
   "The job queue of this printer is empty": {
     "The job queue of this printer is empty": "此印表機的工作佇列為空"
+  },
+  "The key also reaches the focused window": {
+    "The key also reaches the focused window": ""
+  },
+  "The login screen follows your theme, wallpaper, widgets and behavior live. Only authentication changes need applying.": {
+    "The login screen follows your theme, wallpaper, widgets and behavior live. Only authentication changes need applying.": ""
+  },
+  "The login screen shows the lock screen widgets it supports and its own session picker. Turn off to arrange it separately.": {
+    "The login screen shows the lock screen widgets it supports and its own session picker. Turn off to arrange it separately.": ""
+  },
+  "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": {
+    "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": ""
   },
   "The new shortcut is already in use. Choose another shortcut.": {
     "The new shortcut is already in use. Choose another shortcut.": ""
@@ -7534,6 +8911,12 @@
   },
   "The quick brown fox jumps over the lazy dog": {
     "The quick brown fox jumps over the lazy dog": ""
+  },
+  "The rest follow the shared rule": {
+    "The rest follow the shared rule": ""
+  },
+  "The rest open the bar's own popouts": {
+    "The rest open the bar's own popouts": ""
   },
   "The result is unknown. Refresh before trying again.": {
     "The result is unknown. Refresh before trying again.": ""
@@ -7550,11 +8933,20 @@
   "The server certificate has changed since it was last trusted. Only continue if you recognize the new fingerprint.": {
     "The server certificate has changed since it was last trusted. Only continue if you recognize the new fingerprint.": ""
   },
+  "The shell palette is built from this color. Shapes take their colors from that palette.": {
+    "The shell palette is built from this color. Shapes take their colors from that palette.": ""
+  },
+  "The state the app believes it is in": {
+    "The state the app believes it is in": ""
+  },
   "Theme": {
     "Theme": ""
   },
   "Theme & colors": {
     "Theme & colors": ""
+  },
+  "Theme color": {
+    "Theme color": ""
   },
   "Theme colors come from this display's wallpaper": {
     "Theme colors come from this display's wallpaper": ""
@@ -7565,14 +8957,23 @@
   "Theme worker failed (%1)": {
     "Theme worker failed (%1)": "主題工作器失敗 (%1)"
   },
+  "Theme worker failed to start": {
+    "Theme worker failed to start": ""
+  },
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": ""
+  },
+  "Theme, palette, dark mode": {
+    "Theme, palette, dark mode": ""
   },
   "Themes": {
     "Themes": "主題"
   },
-  "These add entries to the XDG autostart directory (~/.config/autostart/*.desktop)": {
-    "These add entries to the XDG autostart directory (~/.config/autostart/*.desktop)": "這些會將項目新增至 XDG 自動啟動目錄 (~/.config/autostart/*.desktop)"
+  "These add entries to the XDG autostart directory (%1)": {
+    "These add entries to the XDG autostart directory (%1)": ""
+  },
+  "They load with the next update check. Release notes are also published on GitHub.": {
+    "They load with the next update check. Release notes are also published on GitHub.": ""
   },
   "Thickness": {
     "Thickness": "粗細"
@@ -7583,17 +8984,23 @@
   "Third-party plugins": {
     "Third-party plugins": ""
   },
-  "Third-party plugins are created by the community and are not officially supported by DankMaterialShell.\n\nThese plugins may pose security and privacy risks - install at your own risk.": {
-    "Third-party plugins are created by the community and are not officially supported by DankMaterialShell.\n\nThese plugins may pose security and privacy risks - install at your own risk.": "第三方外掛程式由社群建立，非 DankMaterialShell 官方支援。\n\n這些外掛程式可能存在安全和隱私風險 — 請自行承擔風險安裝。"
+  "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.": {
+    "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.": ""
   },
-  "This bind is overridden by config.kdl": {
-    "This bind is overridden by config.kdl": "此綁定已被 config.kdl 覆蓋"
+  "This bar is the Island": {
+    "This bar is the Island": ""
+  },
+  "This bind is overridden by %1": {
+    "This bind is overridden by %1": ""
   },
   "This device": {
     "This device": "此裝置"
   },
-  "This install is still using hyprland.conf. Run dms setup to migrate before changing these settings.": {
-    "This install is still using hyprland.conf. Run dms setup to migrate before changing these settings.": ""
+  "This display does not report HDR support, so Hyprland falls back to sRGB.": {
+    "This display does not report HDR support, so Hyprland falls back to sRGB.": ""
+  },
+  "This display does not report VRR support": {
+    "This display does not report VRR support": ""
   },
   "This may take a few seconds": {
     "This may take a few seconds": "這可能需要幾秒鐘"
@@ -7604,8 +9011,14 @@
   "This output is disabled in the current profile": {
     "This output is disabled in the current profile": "此輸出在當前設定檔中已停用"
   },
-  "This plugin does not have 'settings_write' permission.\n\nAdd \"permissions\": [\"settings_read\", \"settings_write\"] to plugin.json": {
-    "This plugin does not have 'settings_write' permission.\n\nAdd \"permissions\": [\"settings_read\", \"settings_write\"] to plugin.json": "意外掛程式沒有 'settings_write' 權限。\n\n請在 plugin.json 中添加 \"permissions\": [\"settings_read\", \"settings_write\"]"
+  "This plugin does not have '%1' permission.\n\nAdd %2 to %3": {
+    "This plugin does not have '%1' permission.\n\nAdd %2 to %3": ""
+  },
+  "This system cannot link settings live. Sync again after changing them.": {
+    "This system cannot link settings live. Sync again after changing them.": ""
+  },
+  "This system was not started in UEFI mode": {
+    "This system was not started in UEFI mode": ""
   },
   "This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.": {
     "This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.": "此部件可防止 GPU 電源關閉，這會嚴重影響筆記型電腦的電池續航時間。不建議在配備混合顯示卡的筆記型電腦上使用此功能。"
@@ -7621,6 +9034,9 @@
   },
   "This will permanently remove this saved clipboard item. This action cannot be undone.": {
     "This will permanently remove this saved clipboard item. This action cannot be undone.": "這將永久移除此儲存的剪貼簿項目。此動作無法復原。"
+  },
+  "Threads": {
+    "Threads": ""
   },
   "Thunderstorm": {
     "Thunderstorm": "雷暴"
@@ -7679,11 +9095,17 @@
   "Tint strength": {
     "Tint strength": ""
   },
+  "Tinted cards and badges across the shell": {
+    "Tinted cards and badges across the shell": ""
+  },
   "Title": {
     "Title": "標題"
   },
   "Title (optional)": {
     "Title (optional)": ""
+  },
+  "Title bars": {
+    "Title bars": ""
   },
   "Title font": {
     "Title font": ""
@@ -7691,20 +9113,20 @@
   "Title is required": {
     "Title is required": ""
   },
+  "Title padding": {
+    "Title padding": ""
+  },
   "Title regex (optional)": {
     "Title regex (optional)": "標題正規表達式 (選用)"
   },
   "To Full": {
     "To Full": "全部"
   },
-  "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (greetd-flexiserver / GDM / LightDM).": {
-    "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (greetd-flexiserver / GDM / LightDM).": "若要以不同使用者身分登入，請登出並從登入畫面選擇帳號。並行建立新的工作階段需要多重工作階段登入管理器（greetd-flexiserver / GDM / LightDM）。"
+  "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": {
+    "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": ""
   },
-  "To update, run the following command:": {
-    "To update, run the following command:": "若要更新，請執行以下命令："
-  },
-  "To use this DMS bind, remove or change the keybind in your config.kdl": {
-    "To use this DMS bind, remove or change the keybind in your config.kdl": "若要使用此 DMS 綁定，請在 config.kdl 中移除或更改按鍵綁定"
+  "To use this DMS bind, remove or change the keybind in your %1": {
+    "To use this DMS bind, remove or change the keybind in your %1": ""
   },
   "Toast": {
     "Toast": ""
@@ -7721,6 +9143,15 @@
   "Today's pressure forecast is steady. The gauge stays at the midpoint.": {
     "Today's pressure forecast is steady. The gauge stays at the midpoint.": ""
   },
+  "Toggle Control Center": {
+    "Toggle Control Center": ""
+  },
+  "Toggle Launcher": {
+    "Toggle Launcher": ""
+  },
+  "Toggle Settings": {
+    "Toggle Settings": ""
+  },
   "Toggle fonts": {
     "Toggle fonts": "切換字體"
   },
@@ -7736,6 +9167,9 @@
   "Tone curve": {
     "Tone curve": ""
   },
+  "Tone mapping": {
+    "Tone mapping": ""
+  },
   "Toner Empty": {
     "Toner Empty": "碳粉空"
   },
@@ -7747,6 +9181,9 @@
   },
   "Tools": {
     "Tools": "工具"
+  },
+  "Tooltip": {
+    "Tooltip": ""
   },
   "Top": {
     "Top": "上方"
@@ -7762,6 +9199,9 @@
   },
   "Top Right": {
     "Top Right": "右上角"
+  },
+  "Top process": {
+    "Top process": ""
   },
   "Top processes": {
     "Top processes": ""
@@ -7781,6 +9221,9 @@
   "Touchpad": {
     "Touchpad": ""
   },
+  "Track screen time": {
+    "Track screen time": ""
+  },
   "Transform": {
     "Transform": "變形"
   },
@@ -7789,6 +9232,9 @@
   },
   "Transition duration": {
     "Transition duration": ""
+  },
+  "Transparent": {
+    "Transparent": ""
   },
   "Trash": {
     "Trash": "垃圾桶"
@@ -7802,11 +9248,26 @@
   "Tray icon tint": {
     "Tray icon tint": ""
   },
+  "Trending": {
+    "Trending": ""
+  },
   "Trigger": {
     "Trigger": "觸發"
   },
   "Trigger: %1": {
     "Trigger: %1": "觸發條件：%1"
+  },
+  "Triggers after holding the key": {
+    "Triggers after holding the key": ""
+  },
+  "Triggers on release after the pointer moved": {
+    "Triggers on release after the pointer moved": ""
+  },
+  "Triggers on release if the pointer stayed put": {
+    "Triggers on release if the pointer stayed put": ""
+  },
+  "Triggers when the key is released": {
+    "Triggers when the key is released": ""
   },
   "Trust": {
     "Trust": "信任"
@@ -7835,6 +9296,9 @@
   "Typing in the overview opens the launcher": {
     "Typing in the overview opens the launcher": ""
   },
+  "Typing reveals the field. Escape hides it again. The editor always shows it.": {
+    "Typing reveals the field. Escape hides it again. The editor always shows it.": ""
+  },
   "URL": {
     "URL": ""
   },
@@ -7846,6 +9310,9 @@
   },
   "Uncategorized": {
     "Uncategorized": "未分類"
+  },
+  "Undo": {
+    "Undo": ""
   },
   "Unfocused color": {
     "Unfocused color": ""
@@ -7874,12 +9341,6 @@
   "Uninstalling: %1": {
     "Uninstalling: %1": "正在解除安裝：%1"
   },
-  "Unison": {
-    "Unison": ""
-  },
-  "Unknown": {
-    "Unknown": "未知"
-  },
   "Unknown App": {
     "Unknown App": "未知應用程式"
   },
@@ -7892,14 +9353,8 @@
   "Unknown Device": {
     "Unknown Device": "未知裝置"
   },
-  "Unknown GPU": {
-    "Unknown GPU": "未知 GPU"
-  },
   "Unknown Model": {
     "Unknown Model": ""
-  },
-  "Unknown Monitor": {
-    "Unknown Monitor": "未知監視器"
   },
   "Unknown Network": {
     "Unknown Network": "未知網路"
@@ -7909,6 +9364,18 @@
   },
   "Unknown Track": {
     "Unknown Track": "未知曲目"
+  },
+  "Unlink": {
+    "Unlink": ""
+  },
+  "Unlink login screen": {
+    "Unlink login screen": ""
+  },
+  "Unlink needs sudo authentication. Opening terminal so you can use password or fingerprint.": {
+    "Unlink needs sudo authentication. Opening terminal so you can use password or fingerprint.": ""
+  },
+  "Unlink now?": {
+    "Unlink now?": ""
   },
   "Unload on close": {
     "Unload on close": ""
@@ -7933,6 +9400,9 @@
   },
   "Unpin from Dock": {
     "Unpin from Dock": "取消 Dock 釘選"
+  },
+  "Unsafe shutdowns": {
+    "Unsafe shutdowns": ""
   },
   "Unsaved changes": {
     "Unsaved changes": "未儲存變更"
@@ -7967,6 +9437,9 @@
   "Up": {
     "Up": ""
   },
+  "Up %1": {
+    "Up %1": ""
+  },
   "Up to date": {
     "Up to date": "最新"
   },
@@ -7988,6 +9461,12 @@
   "Update plugin": {
     "Update plugin": ""
   },
+  "Update the dms package with your package manager, then restart the shell.": {
+    "Update the dms package with your package manager, then restart the shell.": ""
+  },
+  "Updates, clipboard, %1": {
+    "Updates, clipboard, %1": ""
+  },
   "Updating %1...": {
     "Updating %1...": ""
   },
@@ -8000,8 +9479,20 @@
   "Upgrading...": {
     "Upgrading...": "正在升級..."
   },
+  "Upload": {
+    "Upload": ""
+  },
   "Uptime": {
     "Uptime": "開機時間"
+  },
+  "Upvote on GitHub": {
+    "Upvote on GitHub": ""
+  },
+  "Upvote removed": {
+    "Upvote removed": ""
+  },
+  "Upvoted on GitHub": {
+    "Upvoted on GitHub": ""
   },
   "Urgent": {
     "Urgent": "緊急"
@@ -8009,17 +9500,17 @@
   "Urgent color": {
     "Urgent color": ""
   },
-  "Use HH:MM time format": {
-    "Use HH:MM time format": ""
+  "Usage": {
+    "Usage": ""
+  },
+  "Use Dynamic": {
+    "Use Dynamic": ""
   },
   "Use IP Location": {
     "Use IP Location": "使用 IP 位置"
   },
   "Use Monospace Font": {
     "Use Monospace Font": "使用等寬字體"
-  },
-  "Use a custom image for the lock screen, or leave empty to use your desktop wallpaper.": {
-    "Use a custom image for the lock screen, or leave empty to use your desktop wallpaper.": ""
   },
   "Use a security key for lock screen authentication": {
     "Use a security key for lock screen authentication": ""
@@ -8029,6 +9520,9 @@
   },
   "Use custom command": {
     "Use custom command": ""
+  },
+  "Use default wallpaper": {
+    "Use default wallpaper": ""
   },
   "Use desktop wallpaper": {
     "Use desktop wallpaper": "使用桌面背景"
@@ -8048,14 +9542,20 @@
   "Use overlay layer": {
     "Use overlay layer": ""
   },
+  "Use standard OSDs": {
+    "Use standard OSDs": ""
+  },
   "Use standard popups": {
     "Use standard popups": ""
   },
   "Use system PAM authentication": {
     "Use system PAM authentication": ""
   },
-  "Use system theme": {
-    "Use system theme": ""
+  "Use the scaled battery level for alert thresholds and percentages": {
+    "Use the scaled battery level for alert thresholds and percentages": ""
+  },
+  "Used": {
+    "Used": ""
   },
   "User": {
     "User": "使用者"
@@ -8080,6 +9580,9 @@
   },
   "User not found": {
     "User not found": "找不到使用者"
+  },
+  "User time": {
+    "User time": ""
   },
   "User window rules (%1)": {
     "User window rules (%1)": ""
@@ -8135,8 +9638,11 @@
   "VPN status and quick connect": {
     "VPN status and quick connect": "VPN 狀態和快速連線"
   },
+  "VRAM": {
+    "VRAM": ""
+  },
   "VRR Fullscreen Only": {
-    "VRR Fullscreen Only": "僅 VRR 全螢幕"
+    "VRR Fullscreen Only": ""
   },
   "VRR On-Demand": {
     "VRR On-Demand": "VRR 隨選啟用"
@@ -8183,8 +9689,17 @@
   "Vibrant palette with playful saturation.": {
     "Vibrant palette with playful saturation.": "色彩鮮明且飽和度活潑的調色板。"
   },
+  "Video": {
+    "Video": ""
+  },
   "Video card gamma table": {
     "Video card gamma table": ""
+  },
+  "Video decode": {
+    "Video decode": ""
+  },
+  "Video encode": {
+    "Video encode": ""
   },
   "Video player": {
     "Video player": ""
@@ -8192,14 +9707,23 @@
   "Video screensaver": {
     "Video screensaver": ""
   },
+  "Video wallpapers play once, then the next wallpaper is shown": {
+    "Video wallpapers play once, then the next wallpaper is shown": ""
+  },
   "View Changes": {
     "View Changes": ""
   },
+  "View on GitHub": {
+    "View on GitHub": ""
+  },
+  "Virtual": {
+    "Virtual": ""
+  },
+  "Virtualization": {
+    "Virtualization": ""
+  },
   "Visibility": {
     "Visibility": "能見度"
-  },
-  "Visibility, position, pinned apps, trash": {
-    "Visibility, position, pinned apps, trash": ""
   },
   "Visible entry actions": {
     "Visible entry actions": ""
@@ -8228,8 +9752,8 @@
   "Volume style": {
     "Volume style": ""
   },
-  "Volume, brightness, caps lock, position": {
-    "Volume, brightness, caps lock, position": ""
+  "Volume, brightness, caps lock": {
+    "Volume, brightness, caps lock": ""
   },
   "Votes": {
     "Votes": ""
@@ -8239,6 +9763,12 @@
   },
   "WPA2 password": {
     "WPA2 password": ""
+  },
+  "WWN": {
+    "WWN": ""
+  },
+  "Waiting": {
+    "Waiting": ""
   },
   "Wallpaper": {
     "Wallpaper": "桌布"
@@ -8267,8 +9797,17 @@
   "Warnings": {
     "Warnings": "警告"
   },
+  "Warp on display change": {
+    "Warp on display change": ""
+  },
+  "Water": {
+    "Water": ""
+  },
   "Wave progress bars": {
     "Wave progress bars": ""
+  },
+  "Wear": {
+    "Wear": ""
   },
   "Weather": {
     "Weather": "天氣"
@@ -8276,14 +9815,26 @@
   "Web browser": {
     "Web browser": ""
   },
+  "Week": {
+    "Week": ""
+  },
+  "Weekly screen time": {
+    "Weekly screen time": ""
+  },
   "Weight": {
     "Weight": ""
   },
   "Welcome": {
     "Welcome": "歡迎"
   },
-  "Welcome to DankMaterialShell": {
-    "Welcome to DankMaterialShell": "歡迎使用 DankMaterialShell"
+  "Welcome to %1": {
+    "Welcome to %1": ""
+  },
+  "What changed": {
+    "What changed": ""
+  },
+  "What's New": {
+    "What's New": ""
   },
   "When locked": {
     "When locked": "鎖定時"
@@ -8297,11 +9848,17 @@
   "Which wallpaper color the palette is built from": {
     "Which wallpaper color the palette is built from": ""
   },
+  "While download and upload are both under 1 KB/s": {
+    "While download and upload are both under 1 KB/s": ""
+  },
   "White": {
     "White": ""
   },
   "White point": {
     "White point": ""
+  },
+  "Whole numbers, at most three digits": {
+    "Whole numbers, at most three digits": ""
   },
   "Wi-Fi": {
     "Wi-Fi": ""
@@ -8318,14 +9875,17 @@
   "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": {
     "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": ""
   },
+  "Wi-Fi network": {
+    "Wi-Fi network": ""
+  },
   "Wi-Fi not available": {
     "Wi-Fi not available": "Wi-Fi 無法使用"
   },
-  "WiFi": {
-    "WiFi": "WiFi"
+  "Wi-Fi, Ethernet, VPN": {
+    "Wi-Fi, Ethernet, VPN": ""
   },
-  "WiFi QR code for ": {
-    "WiFi QR code for ": "WiFi 二維碼適用於 "
+  "WiFi QR code for %1": {
+    "WiFi QR code for %1": ""
   },
   "WiFi disabled": {
     "WiFi disabled": "關閉 WiFi"
@@ -8338,6 +9898,9 @@
   },
   "Wide (BT2020)": {
     "Wide (BT2020)": "寬廣 (BT2020)"
+  },
+  "Widget": {
+    "Widget": ""
   },
   "Widget Background Color": {
     "Widget Background Color": "部件背景顏色"
@@ -8362,6 +9925,9 @@
   },
   "Widgets": {
     "Widgets": "小工具"
+  },
+  "Widgets in this section move into overflow when space runs out": {
+    "Widgets in this section move into overflow when space runs out": ""
   },
   "Widgets, layout, style": {
     "Widgets, layout, style": "小工具、版面配置、樣式"
@@ -8390,11 +9956,20 @@
   "Window gaps (px)": {
     "Window gaps (px)": ""
   },
+  "Window groups": {
+    "Window groups": ""
+  },
+  "Window opacity": {
+    "Window opacity": ""
+  },
   "Window radius": {
     "Window radius": ""
   },
   "Window rules": {
     "Window rules": ""
+  },
+  "Windows": {
+    "Windows": ""
   },
   "Wipe": {
     "Wipe": "清除"
@@ -8402,11 +9977,38 @@
   "With Shelly, only Flatpak packages in the current update list can be ignored.": {
     "With Shelly, only Flatpak packages in the current update list can be ignored.": ""
   },
-  "With background blur on, cards and tiles keep their own backing": {
-    "With background blur on, cards and tiles keep their own backing": ""
+  "With no bar, Dot or dock launcher on, shortcuts are the only way back to settings": {
+    "With no bar, Dot or dock launcher on, shortcuts are the only way back to settings": ""
+  },
+  "Wobble damping": {
+    "Wobble damping": ""
+  },
+  "Wobble mass": {
+    "Wobble mass": ""
+  },
+  "Wobble mesh": {
+    "Wobble mesh": ""
+  },
+  "Wobble stiffness": {
+    "Wobble stiffness": ""
+  },
+  "Wobbly windows": {
+    "Wobbly windows": ""
+  },
+  "Word processor": {
+    "Word processor": ""
+  },
+  "Working directory": {
+    "Working directory": ""
   },
   "Working...": {
     "Working...": ""
+  },
+  "Works here": {
+    "Works here": ""
+  },
+  "Works in every submap": {
+    "Works in every submap": ""
   },
   "Workspace %1": {
     "Workspace %1": ""
@@ -8417,8 +10019,8 @@
   "Workspace Switch": {
     "Workspace Switch": ""
   },
-  "Workspace count": {
-    "Workspace count": ""
+  "Workspace back and forth": {
+    "Workspace back and forth": ""
   },
   "Workspace name": {
     "Workspace name": "工作區名稱"
@@ -8432,14 +10034,23 @@
   "Wrap the app command. %command% is replaced with the actual executable": {
     "Wrap the app command. %command% is replaced with the actual executable": "包裹應用程式指令。%command% 會被替換為實際的可執行檔"
   },
-  "Write:": {
-    "Write:": "寫入："
+  "Write cache": {
+    "Write cache": ""
+  },
+  "Writes to your files": {
+    "Writes to your files": ""
+  },
+  "Written total": {
+    "Written total": ""
   },
   "X axis": {
     "X axis": ""
   },
   "X-Ray": {
     "X-Ray": "X-Ray"
+  },
+  "XDG tag": {
+    "XDG tag": ""
   },
   "XKB options": {
     "XKB options": ""
@@ -8456,6 +10067,9 @@
   "Y axis": {
     "Y axis": ""
   },
+  "Yellow": {
+    "Yellow": ""
+  },
   "Yes": {
     "Yes": "是"
   },
@@ -8464,9 +10078,6 @@
   },
   "You have unsaved changes. Save before continuing?": {
     "You have unsaved changes. Save before continuing?": "您有未儲存的變更。是否先保存再繼續？"
-  },
-  "You need to set one of:\nQT_QPA_PLATFORMTHEME=gtk3 OR\nQT_QPA_PLATFORMTHEME=qt6ct OR\nQT_QPA_PLATFORMTHEME=qtengine\nas environment variables, and then restart the shell.\n\nOnly qt6ct requires qt6ct-kde to be installed.": {
-    "You need to set one of:\nQT_QPA_PLATFORMTHEME=gtk3 OR\nQT_QPA_PLATFORMTHEME=qt6ct OR\nQT_QPA_PLATFORMTHEME=qtengine\nas environment variables, and then restart the shell.\n\nOnly qt6ct requires qt6ct-kde to be installed.": ""
   },
   "You'll enter your password at the greeter after the next reboot.": {
     "You'll enter your password at the greeter after the next reboot.": "您將在下次重啟後的歡迎介面輸入密碼。"
@@ -8480,8 +10091,11 @@
   "You're all caught up": {
     "You're all caught up": ""
   },
-  "Your compositor does not support background blur (ext-background-effect-v1)": {
-    "Your compositor does not support background blur (ext-background-effect-v1)": "您的合成器不支援背景模糊 (ext-background-effect-v1)"
+  "Your compositor does not support ext-background blur": {
+    "Your compositor does not support ext-background blur": ""
+  },
+  "Your greeter slot and any cache links to your home are removed. Administrator access may be required. Set up links them again.": {
+    "Your greeter slot and any cache links to your home are removed. Administrator access may be required. Set up links them again.": ""
   },
   "Your hotspot is running.": {
     "Your hotspot is running.": ""
@@ -8489,8 +10103,14 @@
   "Your hotspot profile is saved and ready to start.": {
     "Your hotspot profile is saved and ready to start.": ""
   },
+  "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": {
+    "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": ""
+  },
   "Your system is up to date!": {
     "Your system is up to date!": "您的系統是最新版本！"
+  },
+  "Zombie": {
+    "Zombie": ""
   },
   "adjective, printer state": {
     "Idle": ""
@@ -8500,6 +10120,9 @@
   },
   "adverb, wallpaper changes every day at a set time": {
     "Daily": ""
+  },
+  "and %1 more": {
+    "and %1 more": ""
   },
   "attached": {
     "attached": "已附加"
@@ -8528,14 +10151,14 @@
   "checked just now": {
     "checked just now": ""
   },
+  "copy link": {
+    "copy link": ""
+  },
   "deprecated": {
     "deprecated": ""
   },
   "detached": {
     "detached": "已分離"
-  },
-  "dgop not available": {
-    "dgop not available": "dgop 無法使用"
   },
   "direct": {
     "direct": "直接"
@@ -8546,8 +10169,11 @@
   "display rotation option": {
     "Normal": ""
   },
-  "dms-greeter is not installed. Install the dms-greeter package to manage the greeter.": {
-    "dms-greeter is not installed. Install the dms-greeter package to manage the greeter.": ""
+  "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural": {
+    "%1 days": "",
+    "%1 hours": "",
+    "%1 minutes": "",
+    "%1 seconds": ""
   },
   "e.g. /usr/bin/my-script --flag": {
     "e.g. /usr/bin/my-script --flag": "例如：/usr/bin/my-script --flag"
@@ -8573,11 +10199,20 @@
   "e.g., scratch, /^tmp_.*/, build": {
     "e.g., scratch, /^tmp_.*/, build": "例如：scratch, /^tmp_.*/, build"
   },
+  "efibootmgr failed": {
+    "efibootmgr failed": ""
+  },
+  "expires in %1": {
+    "expires in %1": ""
+  },
   "ext": {
     "ext": "外部"
   },
   "featured": {
     "featured": "精選"
+  },
+  "greetd is not using the DMS greeter yet.": {
+    "greetd is not using the DMS greeter yet.": ""
   },
   "keyboard tab key name": {
     "Tab": ""
@@ -8597,9 +10232,6 @@
   "loginctl integration": {
     "loginctl integration": ""
   },
-  "loginctl not available - lock integration requires DMS socket connection": {
-    "loginctl not available - lock integration requires DMS socket connection": "loginctl 不可用 - 鎖定整合需要 DMS 套接字連接"
-  },
   "mango: config reloaded": {
     "mango: config reloaded": ""
   },
@@ -8612,14 +10244,8 @@
   "mangowc GitHub": {
     "mangowc GitHub": "mangowc GitHub"
   },
-  "matugen not available or disabled - cannot apply %1 colors": {
-    "matugen not available or disabled - cannot apply %1 colors": ""
-  },
-  "matugen not found - install matugen package for dynamic theming": {
-    "matugen not found - install matugen package for dynamic theming": "找不到 matugen - 請安裝 matugen 套件以實現動態主題"
-  },
-  "mpris-proxy is running and will create duplicate Bluetooth players. Disable it with: systemctl --user disable --now mpris-proxy.service": {
-    "mpris-proxy is running and will create duplicate Bluetooth players. Disable it with: systemctl --user disable --now mpris-proxy.service": ""
+  "missing program": {
+    "Requires %1": ""
   },
   "ms": {
     "ms": "毫秒"
@@ -8630,6 +10256,9 @@
   "network security type": {
     "Open": ""
   },
+  "new": {
+    "new": ""
+  },
   "niri GitHub": {
     "niri GitHub": "niri GitHub"
   },
@@ -8638,9 +10267,6 @@
   },
   "niri shortcuts config": {
     "niri shortcuts config": "niri 捷徑設定"
-  },
-  "niri/dms Discord": {
-    "niri/dms Discord": "niri/dms Discord"
   },
   "niri: config reloaded": {
     "niri: config reloaded": "niri：設定已重新載入"
@@ -8654,20 +10280,23 @@
   "noun, badge on a keybind that overrides the default": {
     "Override": ""
   },
+  "noun, overflow button position before the first widget": {
+    "Start": ""
+  },
   "now": {
     "now": "現在"
   },
   "official": {
     "official": "官方"
   },
+  "on %1": {
+    "on %1": ""
+  },
   "power-profiles-daemon not available": {
     "power-profiles-daemon not available": "power-profiles-daemon 不可用"
   },
   "primary network connection label": {
     "Primary": ""
-  },
-  "procs": {
-    "procs": "處理程序"
   },
   "pt": {
     "pt": ""
@@ -8684,6 +10313,9 @@
   "remote": {
     "remote": "遠端"
   },
+  "report a problem": {
+    "report a problem": ""
+  },
   "reviewed": {
     "reviewed": ""
   },
@@ -8699,9 +10331,6 @@
   "this app": {
     "this app": "此應用程式"
   },
-  "tmux and zellij sessions": {
-    "tmux and zellij sessions": ""
-  },
   "tmux, zellij, and herdr sessions": {
     "tmux, zellij, and herdr sessions": ""
   },
@@ -8713,6 +10342,9 @@
   },
   "up": {
     "up": "向上"
+  },
+  "updated": {
+    "updated": ""
   },
   "useradd failed (exit %1)": {
     "useradd failed (exit %1)": "useradd 失敗（結束代碼 %1）"
@@ -8764,14 +10396,5 @@
   },
   "• yyyy - Year (2024)": {
     "• yyyy - Year (2024)": "• yyyy - 年 (2024)"
-  },
-  "↑/↓: Nav • Space: Expand • Enter: Action/Expand • E: Text": {
-    "↑/↓: Nav • Space: Expand • Enter: Action/Expand • E: Text": "↑/↓: 導航 • 空格鍵: 展開 • Enter: 動作/展開 • E: 文字"
-  },
-  "↑/↓: Navigate • Enter/Ctrl+C: Copy • Del: Delete • Ctrl+E: Edit • Ctrl+S: Pin/Unpin • F10: Help": {
-    "↑/↓: Navigate • Enter/Ctrl+C: Copy • Del: Delete • Ctrl+E: Edit • Ctrl+S: Pin/Unpin • F10: Help": "↑/↓：導航 • Enter/Ctrl+C：複製 • Del：刪除 • Ctrl+E：編輯 • Ctrl+S：釘選/取消釘選 • F10：說明"
-  },
-  "↑/↓: Navigate • Enter: Paste • Ctrl+C: Copy • Del: Delete • Ctrl+E: Edit • Ctrl+S: Pin/Unpin • F10: Help": {
-    "↑/↓: Navigate • Enter: Paste • Ctrl+C: Copy • Del: Delete • Ctrl+E: Edit • Ctrl+S: Pin/Unpin • F10: Help": "↑/↓：導航 • Enter：貼上 • Ctrl+C：複製 • Del：刪除 • Ctrl+E：編輯 • Ctrl+S：釘選/取消釘選 • F10：說明"
   }
 }

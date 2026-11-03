@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Rectangle {
     id: card
@@ -129,7 +129,7 @@ Rectangle {
             Layout.fillWidth: true
             spacing: Theme.spacingS
 
-            DankIcon {
+            DIcon {
                 name: card.icon
                 size: Theme.iconSize
                 color: card.accentColor
@@ -150,7 +150,6 @@ Rectangle {
             StyledText {
                 text: card.extraInfo
                 font.pixelSize: Theme.fontSizeSmall
-                font.family: SettingsData.monoFontFamily
                 color: card.extraInfoColor
                 visible: card.extraInfo.length > 0
             }
@@ -162,12 +161,10 @@ Rectangle {
         }
 
         NumericText {
-            isMonospace: false
             Layout.maximumWidth: card.width - Theme.spacingM * 2
             elide: Text.ElideRight
             text: card.value
             font.pixelSize: Theme.fontSizeXLarge
-            font.family: SettingsData.monoFontFamily
             font.weight: Theme.fontWeightMedium
             color: Theme.surfaceText
         }
@@ -176,8 +173,8 @@ Rectangle {
             visible: !card.compact
             text: card.subtitle
             font.pixelSize: Theme.fontSizeSmall
-            font.family: SettingsData.monoFontFamily
             color: Theme.surfaceVariantText
+            wrapMode: Text.NoWrap
             elide: Text.ElideRight
             Layout.fillWidth: true
         }

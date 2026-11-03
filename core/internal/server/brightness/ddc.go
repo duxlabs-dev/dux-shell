@@ -2,6 +2,7 @@ package brightness
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -9,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"golang.org/x/sys/unix"
 )
 
@@ -20,13 +21,39 @@ const (
 	DDCCI_VCP_SET   = 0x03
 	VCP_BRIGHTNESS  = 0x10
 	DDC_SOURCE_ADDR = 0x51
+	EDID_ADDR       = 0x50
 )
 
+const (
+	ddcBusLockPoll = 100 * time.Millisecond
+	ddcBusLockWait = 3 * time.Second
+)
+
+var (
+	errDDCDisabled   = errors.New("disabled via DMS_NO_DDC")
+	errInvalidEDID   = errors.New("invalid edid")
+	errDisplayAsleep = errors.New("display asleep")
+	errNoMonitor     = errors.New("no monitor on bus")
+	errBusReused     = errors.New("bus belongs to another adapter")
+)
+
+var ddcRereadDelays = []time.Duration{5 * time.Second, 10 * time.Second, 20 * time.Second}
+
 func NewDDCBackend() (*DDCBackend, error) {
+	return newDDCBackend(nil)
+}
+
+func newDDCBackend(onReread func()) (*DDCBackend, error) {
+	if os.Getenv("DMS_NO_DDC") != "" {
+		return nil, errDDCDisabled
+	}
+
 	b := &DDCBackend{
 		scanInterval:    30 * time.Second,
 		debounceTimers:  make(map[string]*time.Timer),
 		debouncePending: make(map[string]ddcPendingSet),
+		onReread:        onReread,
+		stop:            make(chan struct{}),
 	}
 
 	if err := b.scanI2CDevices(); err != nil {
@@ -53,6 +80,7 @@ func (b *DDCBackend) scanI2CDevicesInternal(force bool) error {
 	}
 
 	activeBuses := make(map[int]bool)
+	connectors := drmConnectorsByBus()
 
 	for i := range 32 {
 		busPath := fmt.Sprintf("/dev/i2c-%d", i)
@@ -70,18 +98,37 @@ func (b *DDCBackend) scanI2CDevicesInternal(force bool) error {
 
 		// Don't re-probe identified monitors: DDC traffic during a wake
 		// sequence can disturb some monitors' own brightness handling.
-		if _, ok := b.devices.Load(id); ok {
+		if known, ok := b.devices.Load(id); ok {
+			if known.adapter == getI2CDeviceSysfsName(i) {
+				continue
+			}
+			b.devices.Delete(id)
+			log.Debugf("removed DDC device %s (bus number reused by another adapter)", id)
+		}
+
+		verdict := ddcBusVerdictFor(i, connectors)
+		if verdict == ddcBusSkip {
+			log.Debugf("i2c-%d: no monitor per DRM sysfs, not probing", i)
+			continue
+		}
+		if ddcDisplayAsleep(i, connectors) {
+			log.Debugf("i2c-%d: display asleep, not probing", i)
 			continue
 		}
 
-		dev, err := b.probeDDCDevice(i)
+		dev, err := b.probeDDCDevice(i, verdict == ddcBusNeedsEDIDRead)
 		if err != nil || dev == nil {
 			continue
 		}
 
 		dev.id = id
+		dev.connector = drmConnectorPattern.ReplaceAllString(connectors[i], "")
+		unread := dev.max == 0
 		b.devices.Store(id, dev)
 		log.Debugf("found DDC device on i2c-%d", i)
+		if unread && b.onReread != nil {
+			go b.rereadUntilKnown(dev)
+		}
 	}
 
 	b.devices.Range(func(id string, dev *ddcDevice) bool {
@@ -97,51 +144,114 @@ func (b *DDCBackend) scanI2CDevicesInternal(force bool) error {
 	return nil
 }
 
-func (b *DDCBackend) probeDDCDevice(bus int) (*ddcDevice, error) {
-	busPath := fmt.Sprintf("/dev/i2c-%d", bus)
-
-	fd, err := syscall.Open(busPath, syscall.O_RDWR, 0)
+func (b *DDCBackend) probeDDCDevice(bus int, readEDID bool) (*ddcDevice, error) {
+	fd, err := openDDCBus(bus)
 	if err != nil {
 		return nil, err
 	}
 	defer syscall.Close(fd)
 
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), I2C_SLAVE, uintptr(DDCCI_ADDR)); errno != 0 {
-		return nil, errno
-	}
-
-	dummy := make([]byte, 32)
-	syscall.Read(fd, dummy) //nolint:errcheck
-
-	writebuf := []byte{DDC_SOURCE_ADDR, 0x80}
-	writebuf = append(writebuf, ddcciChecksum(writebuf))
-	n, err := syscall.Write(fd, writebuf)
-	if err == nil && n == len(writebuf) {
-		name := b.getDDCName(bus)
-		dev := &ddcDevice{
-			bus:  bus,
-			addr: DDCCI_ADDR,
-			name: name,
+	if readEDID {
+		edid, err := readBusEDID(fd)
+		if err != nil {
+			return nil, err
 		}
-		b.readInitialBrightness(fd, dev)
-		return dev, nil
+		if isLaptopEDID(edid) {
+			return nil, errors.New("laptop panel")
+		}
 	}
 
-	readbuf := make([]byte, 4)
-	n, err = syscall.Read(fd, readbuf)
-	if err != nil || n == 0 {
+	if err := setI2CAddr(fd, DDCCI_ADDR); err != nil {
+		return nil, err
+	}
+	if !detectX37(fd) {
 		return nil, fmt.Errorf("x37 unresponsive")
 	}
 
-	name := b.getDDCName(bus)
-
 	dev := &ddcDevice{
-		bus:  bus,
-		addr: DDCCI_ADDR,
-		name: name,
+		bus:     bus,
+		addr:    DDCCI_ADDR,
+		name:    b.getDDCName(bus),
+		adapter: getI2CDeviceSysfsName(bus),
 	}
 	b.readInitialBrightness(fd, dev)
 	return dev, nil
+}
+
+// flock on the device node is how ddc tools and other dms processes take turns on a bus.
+func openDDCBus(bus int) (int, error) {
+	// Without O_CLOEXEC a process spawned mid-probe inherits the fd and the flock with it.
+	fd, err := syscall.Open(fmt.Sprintf("/dev/i2c-%d", bus), syscall.O_RDWR|syscall.O_CLOEXEC, 0)
+	if err != nil {
+		return -1, err
+	}
+	deadline := time.Now().Add(ddcBusLockWait)
+	for {
+		err = unix.Flock(fd, unix.LOCK_EX|unix.LOCK_NB)
+		if err == nil {
+			return fd, nil
+		}
+		if !errors.Is(err, unix.EWOULDBLOCK) || time.Now().After(deadline) {
+			syscall.Close(fd)
+			return -1, fmt.Errorf("lock i2c-%d: %w", bus, err)
+		}
+		time.Sleep(ddcBusLockPoll)
+	}
+}
+
+func setI2CAddr(fd, addr int) error {
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), I2C_SLAVE, uintptr(addr)); errno != 0 {
+		return errno
+	}
+	return nil
+}
+
+func detectX37(fd int) bool {
+	if n, err := syscall.Read(fd, make([]byte, 1)); err == nil && n == 1 {
+		return true
+	}
+	_, err := syscall.Write(fd, nil)
+	return err == nil
+}
+
+func readBusEDID(fd int) ([]byte, error) {
+	if err := setI2CAddr(fd, EDID_ADDR); err != nil {
+		return nil, err
+	}
+	var err error
+	consecutiveEIO := 0
+	for _, size := range []int{128, 128, 256, 256} {
+		edid := make([]byte, size)
+		if err = readEDIDOnce(fd, edid); err == nil {
+			return edid[:128], nil
+		}
+		switch {
+		case errors.Is(err, syscall.ENXIO), errors.Is(err, syscall.EOPNOTSUPP), errors.Is(err, syscall.ETIMEDOUT):
+			return nil, err
+		case errors.Is(err, syscall.EIO):
+			consecutiveEIO++
+			if consecutiveEIO >= 2 {
+				return nil, err
+			}
+		default:
+			consecutiveEIO = 0
+		}
+	}
+	return nil, err
+}
+
+func readEDIDOnce(fd int, edid []byte) error {
+	if _, err := syscall.Write(fd, []byte{0x00}); err != nil {
+		return err
+	}
+	n, err := syscall.Read(fd, edid)
+	if err != nil {
+		return err
+	}
+	if n < 128 || !isValidEDID(edid[:128]) {
+		return errInvalidEDID
+	}
+	return nil
 }
 
 func (b *DDCBackend) getDDCName(bus int) string {
@@ -176,6 +286,63 @@ func (b *DDCBackend) readInitialBrightness(fd int, dev *ddcDevice) {
 	}
 }
 
+// Bounded and spaced: extra DDC traffic can upset some monitors (#2049).
+func (b *DDCBackend) rereadUntilKnown(dev *ddcDevice) {
+	for _, delay := range ddcRereadDelays {
+		select {
+		case <-b.stop:
+			return
+		case <-time.After(delay):
+		}
+		read, retry := b.rereadBrightness(dev)
+		if read {
+			b.onReread()
+			return
+		}
+		if !retry {
+			return
+		}
+	}
+	log.Debugf("giving up on reading brightness for %s", dev.id)
+}
+
+func (b *DDCBackend) rereadBrightness(dev *ddcDevice) (read, retry bool) {
+	b.ioMutex.Lock()
+	defer b.ioMutex.Unlock()
+
+	if current, ok := b.devices.Load(dev.id); !ok || current != dev || dev.max > 0 {
+		return false, false
+	}
+	switch err := b.checkBusAlive(dev); {
+	case errors.Is(err, errBusReused):
+		return false, false
+	case err != nil:
+		return false, true
+	}
+
+	fd, err := openDDCBus(dev.bus)
+	if err != nil {
+		log.Debugf("brightness reread skipped for %s: %v", dev.id, err)
+		return false, true
+	}
+	defer syscall.Close(fd)
+
+	if err := setI2CAddr(fd, dev.addr); err != nil {
+		return false, false
+	}
+
+	cap, err := b.getVCPFeature(fd, VCP_BRIGHTNESS)
+	if err != nil {
+		log.Debugf("brightness reread failed for %s: %v", dev.id, err)
+		return false, true
+	}
+
+	dev.max = cap.max
+	dev.lastBrightness = cap.current
+	log.Debugf("read %s brightness %d/%d", dev.id, cap.current, cap.max)
+	return true, false
+}
+
 func (b *DDCBackend) GetDevices() ([]Device, error) {
 	if err := b.scanI2CDevices(); err != nil {
 		log.Debugf("DDC scan error: %v", err)
@@ -183,6 +350,8 @@ func (b *DDCBackend) GetDevices() ([]Device, error) {
 
 	devices := make([]Device, 0)
 
+	b.ioMutex.Lock()
+	defer b.ioMutex.Unlock()
 	b.devices.Range(func(id string, dev *ddcDevice) bool {
 		devices = append(devices, Device{
 			Class:          ClassDDC,
@@ -190,13 +359,25 @@ func (b *DDCBackend) GetDevices() ([]Device, error) {
 			Name:           dev.name,
 			Current:        dev.lastBrightness,
 			Max:            dev.max,
-			CurrentPercent: dev.lastBrightness,
+			CurrentPercent: ddcPercentFromRaw(dev.lastBrightness, dev.max),
 			Backend:        "ddc",
 		})
 		return true
 	})
 
 	return devices, nil
+}
+
+// ControlledOutputs returns the output names (DP-2, ...) of monitors whose brightness is driven over DDC/CI.
+func (b *DDCBackend) ControlledOutputs() []string {
+	connectors := []string{}
+	b.devices.Range(func(_ string, dev *ddcDevice) bool {
+		if dev.connector != "" {
+			connectors = append(connectors, dev.connector)
+		}
+		return true
+	})
+	return connectors
 }
 
 func (b *DDCBackend) SetBrightness(id string, value int, exponential bool, callback func()) error {
@@ -274,6 +455,9 @@ func (b *DDCBackend) setBrightnessImmediateWithExponent(id string, value int) er
 		return fmt.Errorf("device not found: %s", id)
 	}
 
+	b.ioMutex.Lock()
+	defer b.ioMutex.Unlock()
+
 	busPath := fmt.Sprintf("/dev/i2c-%d", dev.bus)
 
 	if _, err := os.Stat(busPath); os.IsNotExist(err) {
@@ -282,52 +466,84 @@ func (b *DDCBackend) setBrightnessImmediateWithExponent(id string, value int) er
 		return fmt.Errorf("device disconnected: %s", id)
 	}
 
-	fd, err := syscall.Open(busPath, syscall.O_RDWR, 0)
-	if err != nil {
+	switch err := b.checkBusAlive(dev); {
+	case errors.Is(err, errBusReused):
+		b.devices.Delete(id)
+		log.Debugf("removed DDC device %s (bus number reused by another adapter)", id)
+		return err
+	case err != nil:
+		return err
+	}
+
+	fd, err := openDDCBus(dev.bus)
+	switch {
+	case errors.Is(err, unix.EWOULDBLOCK):
+		return err
+	case err != nil:
 		b.devices.Delete(id)
 		log.Debugf("removed DDC device %s (open failed: %v)", id, err)
 		return fmt.Errorf("open i2c device: %w", err)
 	}
 	defer syscall.Close(fd)
 
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), I2C_SLAVE, uintptr(dev.addr)); errno != 0 {
-		return fmt.Errorf("set i2c slave addr: %w", errno)
+	if err := setI2CAddr(fd, dev.addr); err != nil {
+		return fmt.Errorf("set i2c slave addr: %w", err)
 	}
 
-	max := dev.max
-	if max == 0 {
+	maxValue := dev.max
+	if maxValue == 0 {
 		cap, err := b.getVCPFeature(fd, VCP_BRIGHTNESS)
 		if err != nil {
 			return fmt.Errorf("get current capability: %w", err)
 		}
-		max = cap.max
-		dev.max = max
-		b.devices.Store(id, dev)
+		maxValue = cap.max
+	}
+	if maxValue <= 0 {
+		return fmt.Errorf("%s reported max brightness %d", id, maxValue)
 	}
 
-	if err := b.setVCPFeature(fd, VCP_BRIGHTNESS, value); err != nil {
+	raw := ddcRawFromPercent(value, maxValue)
+	if err := b.setVCPFeature(fd, VCP_BRIGHTNESS, raw); err != nil {
 		return fmt.Errorf("set vcp feature: %w", err)
 	}
 
-	log.Debugf("set %s to %d/%d", id, value, max)
+	log.Debugf("set %s to %d/%d", id, raw, maxValue)
 
-	dev.max = max
-	dev.lastBrightness = value
+	dev.max = maxValue
+	dev.lastBrightness = raw
 	b.devices.Store(id, dev)
 
 	return nil
 }
 
-func (b *DDCBackend) getVCPFeature(fd int, vcp byte) (*ddcCapability, error) {
-	for range 3 {
-		dummy := make([]byte, 32)
-		n, _ := syscall.Read(fd, dummy)
-		if n == 0 {
-			break
-		}
-		time.Sleep(20 * time.Millisecond)
+// Known devices are keyed by bus number, which the kernel hands to the next adapter once one goes away.
+func (b *DDCBackend) checkBusAlive(dev *ddcDevice) error {
+	if isIgnorableI2CBus(dev.bus) || getI2CDeviceSysfsName(dev.bus) != dev.adapter {
+		return errBusReused
 	}
+	connectors := drmConnectorsByBus()
+	if ddcBusVerdictFor(dev.bus, connectors) == ddcBusSkip {
+		return errNoMonitor
+	}
+	if ddcDisplayAsleep(dev.bus, connectors) {
+		return errDisplayAsleep
+	}
+	return nil
+}
 
+func ddcRawFromPercent(percent, maxValue int) int {
+	percent = min(max(percent, 0), 100)
+	return int(math.Round(float64(percent*maxValue) / 100))
+}
+
+func ddcPercentFromRaw(raw, maxValue int) int {
+	if maxValue <= 0 {
+		return 0
+	}
+	return min(int(math.Round(float64(raw*100)/float64(maxValue))), 100)
+}
+
+func (b *DDCBackend) getVCPFeature(fd int, vcp byte) (*ddcCapability, error) {
 	data := []byte{
 		DDCCI_VCP_GET,
 		vcp,
@@ -346,25 +562,6 @@ func (b *DDCBackend) getVCPFeature(fd int, vcp byte) (*ddcCapability, error) {
 	}
 
 	time.Sleep(50 * time.Millisecond)
-
-	pollFds := []unix.PollFd{
-		{
-			Fd:     int32(fd),
-			Events: unix.POLLIN,
-		},
-	}
-
-	pollTimeout := 200
-	pollResult, err := unix.Poll(pollFds, pollTimeout)
-	if err != nil {
-		return nil, fmt.Errorf("poll i2c: %w", err)
-	}
-	if pollResult == 0 {
-		return nil, fmt.Errorf("poll timeout after %dms", pollTimeout)
-	}
-	if pollFds[0].Revents&unix.POLLIN == 0 {
-		return nil, fmt.Errorf("poll returned but POLLIN not set")
-	}
 
 	response := make([]byte, 12)
 	n, err = syscall.Read(fd, response)
@@ -520,4 +717,8 @@ func (b *DDCBackend) WaitPending() {
 }
 
 func (b *DDCBackend) Close() {
+	if b.stop == nil {
+		return
+	}
+	b.closeOnce.Do(func() { close(b.stop) })
 }

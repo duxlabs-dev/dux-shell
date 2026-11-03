@@ -12,13 +12,17 @@ Column {
     property bool allowEmpty: false
     property bool showLastDisplay: false
     property bool showOnLastDisplay: false
+    property bool allowHideOnLastDisplay: false
+    property bool hideOnLastDisplay: false
     readonly property bool localAllDisplays: !Array.isArray(displayPreferences) || displayPreferences.includes("all") || (emptyMeansAll && displayPreferences.length === 0)
 
-    signal preferencesChanged(var preferences)
+    // A callback, not a signal: Qt 6.12 hands signal array parameters over as a V4Sequence that fails Array.isArray.
+    property var preferencesHandler: null
     signal lastDisplayToggled(bool checked)
+    signal hideOnLastDisplayToggled(bool checked)
 
     width: parent?.width ?? 0
-    spacing: Theme.groupedListGap
+    spacing: SettingsMetrics.groupGap
 
     function screenPref(screen) {
         const pref = {
@@ -34,7 +38,7 @@ Column {
     SettingsToggleRow {
         text: I18n.tr("All displays")
         checked: root.localAllDisplays
-        onToggled: checked => root.preferencesChanged(checked ? ["all"] : Quickshell.screens.map(screen => root.screenPref(screen)))
+        onToggled: checked => root.preferencesHandler?.(checked ? ["all"] : Quickshell.screens.map(screen => root.screenPref(screen)))
     }
 
     SettingsToggleRow {
@@ -43,6 +47,13 @@ Column {
         enabled: !root.localAllDisplays
         checked: root.showOnLastDisplay
         onToggled: checked => root.lastDisplayToggled(checked)
+    }
+
+    SettingsToggleRow {
+        text: I18n.tr("Hide on last display", "bar display assignment option")
+        visible: root.allowHideOnLastDisplay
+        checked: root.hideOnLastDisplay
+        onToggled: checked => root.hideOnLastDisplayToggled(checked)
     }
 
     Repeater {
@@ -61,7 +72,7 @@ Column {
                     prefs.push(root.screenPref(modelData));
                 if (!root.allowEmpty && prefs.length === 0)
                     return;
-                root.preferencesChanged(prefs);
+                root.preferencesHandler?.(prefs);
             }
         }
     }

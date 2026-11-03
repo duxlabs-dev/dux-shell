@@ -277,7 +277,8 @@ const (
 
 // ipp defaults
 const (
-	CharsetLanguage      = "en-US"
+	// cups 2.4.20+ validates this case-sensitively (lowercase only), and libcups itself sends lowercase
+	CharsetLanguage      = "en-us"
 	Charset              = "utf-8"
 	ProtocolVersionMajor = int8(2)
 	ProtocolVersionMinor = int8(0)

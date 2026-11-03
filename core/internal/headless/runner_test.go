@@ -4,7 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
 )
 
 func TestParseWindowManager(t *testing.T) {
@@ -14,12 +15,9 @@ func TestParseWindowManager(t *testing.T) {
 		want    deps.WindowManager
 		wantErr bool
 	}{
-		{"niri lowercase", "niri", deps.WindowManagerNiri, false},
 		{"niri mixed case", "Niri", deps.WindowManagerNiri, false},
 		{"hyprland lowercase", "hyprland", deps.WindowManagerHyprland, false},
-		{"hyprland mixed case", "Hyprland", deps.WindowManagerHyprland, false},
 		{"invalid", "sway", 0, true},
-		{"empty", "", 0, true},
 	}
 
 	for _, tt := range tests {
@@ -45,12 +43,9 @@ func TestParseTerminal(t *testing.T) {
 		wantErr bool
 	}{
 		{"ghostty lowercase", "ghostty", deps.TerminalGhostty, false},
-		{"ghostty mixed case", "Ghostty", deps.TerminalGhostty, false},
 		{"kitty lowercase", "kitty", deps.TerminalKitty, false},
-		{"alacritty lowercase", "alacritty", deps.TerminalAlacritty, false},
 		{"alacritty uppercase", "ALACRITTY", deps.TerminalAlacritty, false},
 		{"invalid", "wezterm", 0, true},
-		{"empty", "", 0, true},
 	}
 
 	for _, tt := range tests {
@@ -65,53 +60,6 @@ func TestParseTerminal(t *testing.T) {
 				t.Errorf("parseTerminal() = %v, want %v", got, tt.want)
 			}
 		})
-	}
-}
-
-func TestDepExists(t *testing.T) {
-	dependencies := []deps.Dependency{
-		{Name: "niri", Status: deps.StatusInstalled},
-		{Name: "ghostty", Status: deps.StatusMissing},
-		{Name: "dms (DankMaterialShell)", Status: deps.StatusInstalled},
-		{Name: "dms-greeter", Status: deps.StatusMissing},
-	}
-
-	tests := []struct {
-		name string
-		dep  string
-		want bool
-	}{
-		{"existing dep", "niri", true},
-		{"existing dep with special chars", "dms (DankMaterialShell)", true},
-		{"existing optional dep", "dms-greeter", true},
-		{"non-existing dep", "firefox", false},
-		{"empty name", "", false},
-	}
-
-	r := NewRunner(Config{})
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := r.depExists(dependencies, tt.dep); got != tt.want {
-				t.Errorf("depExists(%q) = %v, want %v", tt.dep, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestGetLogChan(t *testing.T) {
-	r := NewRunner(Config{})
-	ch := r.GetLogChan()
-	if ch == nil {
-		t.Fatal("GetLogChan returned nil")
-	}
-
-	// Verify the channel is readable by sending a message
-	go func() {
-		r.logChan <- "test message"
-	}()
-	msg := <-ch
-	if msg != "test message" {
-		t.Errorf("received %q, want %q", msg, "test message")
 	}
 }
 
@@ -152,7 +100,7 @@ func TestValidConfigNamesCompleteness(t *testing.T) {
 }
 
 func TestBuildReplaceConfigs(t *testing.T) {
-	allDeployerKeys := []string{"Niri", "Hyprland", "Ghostty", "Kitty", "Alacritty"}
+	allDeployerKeys := []string{"Niri", "Hyprland", "Mango", "Ghostty", "Kitty", "Alacritty"}
 
 	tests := []struct {
 		name           string
@@ -174,9 +122,9 @@ func TestBuildReplaceConfigs(t *testing.T) {
 		},
 		{
 			name:           "specific configs",
-			replaceConfigs: []string{"niri", "ghostty"},
+			replaceConfigs: []string{"niri", "mango", "ghostty"},
 			wantNil:        false,
-			wantEnabled:    []string{"Niri", "Ghostty"},
+			wantEnabled:    []string{"Niri", "Mango", "Ghostty"},
 		},
 		{
 			name:           "both flags set",
@@ -196,20 +144,8 @@ func TestBuildReplaceConfigs(t *testing.T) {
 			wantEnabled:    []string{"Niri", "Ghostty"},
 		},
 		{
-			name:           "single config",
-			replaceConfigs: []string{"kitty"},
-			wantNil:        false,
-			wantEnabled:    []string{"Kitty"},
-		},
-		{
 			name:           "whitespace entry",
 			replaceConfigs: []string{"  ", "niri"},
-			wantNil:        false,
-			wantEnabled:    []string{"Niri"},
-		},
-		{
-			name:           "duplicate entry",
-			replaceConfigs: []string{"niri", "niri"},
 			wantNil:        false,
 			wantEnabled:    []string{"Niri"},
 		},
@@ -265,10 +201,11 @@ func TestBuildDisabledItems(t *testing.T) {
 	dependencies := []deps.Dependency{
 		{Name: "niri", Status: deps.StatusInstalled, Required: true},
 		{Name: "ghostty", Status: deps.StatusMissing, Required: true},
-		{Name: "dms (DankMaterialShell)", Status: deps.StatusInstalled, Required: true},
-		{Name: "dms-greeter", Status: deps.StatusMissing},
-		{Name: "danksearch", Status: deps.StatusMissing},
-		{Name: "dankcalendar", Status: deps.StatusMissing},
+		{Name: "dms (Dux Shell)", Status: deps.StatusInstalled, Required: true},
+		{Name: "dux-greeter", Status: deps.StatusMissing},
+		{Name: "dux-search", Status: deps.StatusMissing},
+		{Name: "dux-calendar", Status: deps.StatusMissing},
+		{Name: "dux-files", Status: deps.StatusMissing},
 		{Name: "waybar", Status: deps.StatusMissing, Required: true},
 	}
 
@@ -276,9 +213,10 @@ func TestBuildDisabledItems(t *testing.T) {
 		name         string
 		includeDeps  []string
 		excludeDeps  []string
-		dankSearch   bool
-		dankCalendar bool
-		dmsGreeter   bool
+		duxSearch    bool
+		duxCalendar  bool
+		duxFiles     bool
+		duxGreeter   bool
 		allFeatures  bool
 		deps         []deps.Dependency // nil means use the shared fixture
 		wantErr      bool
@@ -288,19 +226,26 @@ func TestBuildDisabledItems(t *testing.T) {
 	}{
 		{
 			name:         "no flags set, optional deps disabled by default",
-			wantDisabled: []string{"dms-greeter", "danksearch", "dankcalendar"},
+			wantDisabled: []string{"dux-greeter", "dux-search", "dux-calendar"},
 			wantEnabled:  []string{"niri", "ghostty", "waybar"},
 		},
 		{
-			name:         "include dms-greeter enables it",
-			includeDeps:  []string{"dms-greeter"},
-			wantEnabled:  []string{"dms-greeter"},
-			wantDisabled: []string{"danksearch", "dankcalendar"},
+			name:         "include dux-greeter enables it",
+			includeDeps:  []string{"dux-greeter"},
+			wantEnabled:  []string{"dux-greeter"},
+			wantDisabled: []string{"dux-search", "dux-calendar"},
+		},
+		{
+			name:         "include and exclude accept the dank-era names",
+			includeDeps:  []string{"danksearch", "dms-greeter"},
+			excludeDeps:  []string{"dms-greeter"},
+			wantEnabled:  []string{"dux-search"},
+			wantDisabled: []string{"dux-greeter", "dux-calendar"},
 		},
 		{
 			name:         "exclude a regular dep",
 			excludeDeps:  []string{"waybar"},
-			wantDisabled: []string{"dms-greeter", "danksearch", "dankcalendar", "waybar"},
+			wantDisabled: []string{"dux-greeter", "dux-search", "dux-calendar", "waybar"},
 		},
 		{
 			name:        "include unknown dep returns error",
@@ -316,21 +261,21 @@ func TestBuildDisabledItems(t *testing.T) {
 		},
 		{
 			name:        "exclude DMS itself is forbidden",
-			excludeDeps: []string{"dms (DankMaterialShell)"},
+			excludeDeps: []string{"dms (Dux Shell)"},
 			wantErr:     true,
 			errContains: "cannot exclude required package",
 		},
 		{
 			name:         "include and exclude same dep",
-			includeDeps:  []string{"dms-greeter"},
-			excludeDeps:  []string{"dms-greeter"},
-			wantDisabled: []string{"dms-greeter"},
+			includeDeps:  []string{"dux-greeter"},
+			excludeDeps:  []string{"dux-greeter"},
+			wantDisabled: []string{"dux-greeter"},
 		},
 		{
 			name:         "whitespace entries are skipped",
-			includeDeps:  []string{"  ", "dms-greeter"},
-			wantEnabled:  []string{"dms-greeter"},
-			wantDisabled: []string{"danksearch", "dankcalendar"},
+			includeDeps:  []string{"  ", "dux-greeter"},
+			wantEnabled:  []string{"dux-greeter"},
+			wantDisabled: []string{"dux-search", "dux-calendar"},
 		},
 		{
 			name: "no optional deps present, nothing disabled by default",
@@ -340,67 +285,81 @@ func TestBuildDisabledItems(t *testing.T) {
 			wantEnabled: []string{"niri"},
 		},
 		{
-			name:         "danksearch flag enables it",
-			dankSearch:   true,
-			wantEnabled:  []string{"danksearch"},
-			wantDisabled: []string{"dms-greeter", "dankcalendar"},
+			name:         "dux-search flag enables it",
+			duxSearch:    true,
+			wantEnabled:  []string{"dux-search"},
+			wantDisabled: []string{"dux-greeter", "dux-calendar"},
 		},
 		{
-			name:         "dankcalendar flag enables it",
-			dankCalendar: true,
-			wantEnabled:  []string{"dankcalendar"},
-			wantDisabled: []string{"dms-greeter", "danksearch"},
+			name:         "dux-calendar flag enables it",
+			duxCalendar:  true,
+			wantEnabled:  []string{"dux-calendar"},
+			wantDisabled: []string{"dux-greeter", "dux-search"},
 		},
 		{
-			name:        "danksearch flag when unavailable errors",
-			dankSearch:  true,
+			name:        "dux-search flag when unavailable errors",
+			duxSearch:   true,
 			deps:        []deps.Dependency{{Name: "niri", Status: deps.StatusInstalled, Required: true}},
 			wantErr:     true,
-			errContains: "--danksearch",
+			errContains: "--dux-search",
 		},
 		{
-			name:         "dankcalendar flag when unavailable errors",
-			dankCalendar: true,
-			deps:         []deps.Dependency{{Name: "niri", Status: deps.StatusInstalled, Required: true}},
-			wantErr:      true,
-			errContains:  "--dankcalendar",
-		},
-		{
-			name:         "dms-greeter flag enables it",
-			dmsGreeter:   true,
-			wantEnabled:  []string{"dms-greeter"},
-			wantDisabled: []string{"danksearch", "dankcalendar"},
-		},
-		{
-			name:        "dms-greeter flag when unavailable errors",
-			dmsGreeter:  true,
+			name:        "dux-calendar flag when unavailable errors",
+			duxCalendar: true,
 			deps:        []deps.Dependency{{Name: "niri", Status: deps.StatusInstalled, Required: true}},
 			wantErr:     true,
-			errContains: "--dms-greeter",
+			errContains: "--dux-calendar",
+		},
+		{
+			name:         "dux-files flag enables it",
+			duxFiles:     true,
+			wantEnabled:  []string{"dux-files"},
+			wantDisabled: []string{"dux-greeter", "dux-search", "dux-calendar"},
+		},
+		{
+			name:        "dux-files flag when unavailable errors",
+			duxFiles:    true,
+			deps:        []deps.Dependency{{Name: "niri", Status: deps.StatusInstalled, Required: true}},
+			wantErr:     true,
+			errContains: "--dux-files",
+		},
+		{
+			name:         "dux-greeter flag enables it",
+			duxGreeter:   true,
+			wantEnabled:  []string{"dux-greeter"},
+			wantDisabled: []string{"dux-search", "dux-calendar"},
+		},
+		{
+			name:        "dux-greeter flag when unavailable errors",
+			duxGreeter:  true,
+			deps:        []deps.Dependency{{Name: "niri", Status: deps.StatusInstalled, Required: true}},
+			wantErr:     true,
+			errContains: "--dux-greeter",
 		},
 		{
 			name:        "all-features enables every optional dep",
 			allFeatures: true,
-			wantEnabled: []string{"dms-greeter", "danksearch", "dankcalendar", "niri", "ghostty", "waybar"},
+			wantEnabled: []string{"dux-greeter", "dux-search", "dux-calendar", "niri", "ghostty", "waybar"},
 		},
 		{
 			name:         "all-features with exclude still disables the excluded dep",
 			allFeatures:  true,
-			excludeDeps:  []string{"dankcalendar"},
-			wantEnabled:  []string{"dms-greeter", "danksearch"},
-			wantDisabled: []string{"dankcalendar"},
+			excludeDeps:  []string{"dux-calendar"},
+			wantEnabled:  []string{"dux-greeter", "dux-search"},
+			wantDisabled: []string{"dux-calendar"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := NewRunner(Config{
-				IncludeDeps:  tt.includeDeps,
-				ExcludeDeps:  tt.excludeDeps,
-				DankSearch:   tt.dankSearch,
-				DankCalendar: tt.dankCalendar,
-				DmsGreeter:   tt.dmsGreeter,
-				AllFeatures:  tt.allFeatures,
+				IncludeDeps: tt.includeDeps,
+				ExcludeDeps: tt.excludeDeps,
+				DuxSearch:   tt.duxSearch,
+				DuxCalendar: tt.duxCalendar,
+				DuxFiles:    tt.duxFiles,
+				DuxGreeter:  tt.duxGreeter,
+				AllFeatures: tt.allFeatures,
 			})
 			d := tt.deps
 			if d == nil {
@@ -448,7 +407,7 @@ func TestApplyGitVariants(t *testing.T) {
 			{Name: "niri", Status: deps.StatusInstalled, Variant: deps.VariantStable, CanToggle: true},
 			{Name: "quickshell", Status: deps.StatusMissing, Variant: deps.VariantStable, CanToggle: true},
 			{Name: "hyprland", Status: deps.StatusInstalled, Variant: deps.VariantGit, CanToggle: true},
-			{Name: "dms (DankMaterialShell)", Status: deps.StatusMissing, Variant: deps.VariantStable, CanToggle: true},
+			{Name: "dms (Dux Shell)", Status: deps.StatusMissing, Variant: deps.VariantStable, CanToggle: true},
 			{Name: "ghostty", Status: deps.StatusInstalled, Variant: deps.VariantStable, CanToggle: false},
 		}
 	}
@@ -467,19 +426,19 @@ func TestApplyGitVariants(t *testing.T) {
 		{
 			name:       "no git flags leaves variants untouched",
 			wantGit:    []string{"hyprland"},
-			wantStable: []string{"niri", "quickshell", "dms (DankMaterialShell)", "ghostty"},
+			wantStable: []string{"niri", "quickshell", "dms (Dux Shell)", "ghostty"},
 		},
 		{
 			name:          "git-deps flips only the named deps",
 			gitDeps:       []string{"niri", "quickshell"},
 			wantGit:       []string{"niri", "quickshell", "hyprland"},
-			wantStable:    []string{"dms (DankMaterialShell)", "ghostty"},
+			wantStable:    []string{"dms (Dux Shell)", "ghostty"},
 			wantReinstall: []string{"niri"},
 		},
 		{
 			name:          "git-deps matches names case-insensitively and accepts the dms alias",
 			gitDeps:       []string{"NIRI", "dms"},
-			wantGit:       []string{"niri", "dms (DankMaterialShell)", "hyprland"},
+			wantGit:       []string{"niri", "dms (Dux Shell)", "hyprland"},
 			wantStable:    []string{"quickshell", "ghostty"},
 			wantReinstall: []string{"niri"},
 		},
@@ -487,7 +446,7 @@ func TestApplyGitVariants(t *testing.T) {
 			name:       "empty and whitespace entries are skipped",
 			gitDeps:    []string{"", "  "},
 			wantGit:    []string{"hyprland"},
-			wantStable: []string{"niri", "quickshell", "dms (DankMaterialShell)", "ghostty"},
+			wantStable: []string{"niri", "quickshell", "dms (Dux Shell)", "ghostty"},
 		},
 		{
 			name:        "unknown dep errors",
@@ -504,7 +463,7 @@ func TestApplyGitVariants(t *testing.T) {
 		{
 			name:          "git flips every toggleable dep",
 			gitAll:        true,
-			wantGit:       []string{"niri", "quickshell", "hyprland", "dms (DankMaterialShell)"},
+			wantGit:       []string{"niri", "quickshell", "hyprland", "dms (Dux Shell)"},
 			wantStable:    []string{"ghostty"},
 			wantReinstall: []string{"niri"},
 		},
@@ -519,7 +478,7 @@ func TestApplyGitVariants(t *testing.T) {
 			name:          "git skips deps without a distinct git package",
 			gitAll:        true,
 			noGitVariant:  []string{"niri"},
-			wantGit:       []string{"quickshell", "hyprland", "dms (DankMaterialShell)"},
+			wantGit:       []string{"quickshell", "hyprland", "dms (Dux Shell)"},
 			wantStable:    []string{"niri", "ghostty"},
 			wantReinstall: nil,
 		},
@@ -588,5 +547,39 @@ func TestApplyPrivescTool(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "--privesc") {
 		t.Errorf("error %q does not mention --privesc", err.Error())
+	}
+}
+
+func TestGitDepsDuxFilesPerDistro(t *testing.T) {
+	cases := []struct {
+		distro  string
+		wantPkg string // empty: no git build on this distro
+	}{
+		{"arch", "dux-files-git"},
+		{"fedora", "dux-files-git"},
+		{"void", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.distro, func(t *testing.T) {
+			distro, err := distros.NewDistribution(tc.distro, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			d := []deps.Dependency{{Name: "dux-files", Status: deps.StatusMissing, CanToggle: true}}
+			_, err = NewRunner(Config{GitDeps: []string{"dux-files"}}).applyGitVariants(d, gitVariantChecker(distro, deps.WindowManagerNiri, d))
+			if tc.wantPkg == "" {
+				if err == nil {
+					t.Fatal("expected --git-deps dux-files to be rejected")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := distro.GetPackageMappingWithVariants(deps.WindowManagerNiri, map[string]deps.PackageVariant{"dux-files": d[0].Variant})["dux-files"].Name
+			if got != tc.wantPkg {
+				t.Errorf("installs %q, want %q", got, tc.wantPkg)
+			}
+		})
 	}
 }

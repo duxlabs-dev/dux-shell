@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 type DiscoveryConfig struct {
@@ -18,14 +18,14 @@ func DefaultDiscoveryConfig() *DiscoveryConfig {
 
 	configDir, err := os.UserConfigDir()
 	if err == nil && configDir != "" {
-		searchPaths = append(searchPaths, filepath.Join(configDir, "DankMaterialShell", "cheatsheets"))
+		searchPaths = append(searchPaths, filepath.Join(configDir, "dms", "cheatsheets"))
 	}
 
 	configDirs := os.Getenv("XDG_CONFIG_DIRS")
 	if configDirs != "" {
 		for dir := range strings.SplitSeq(configDirs, ":") {
 			if dir != "" {
-				searchPaths = append(searchPaths, filepath.Join(dir, "DankMaterialShell", "cheatsheets"))
+				searchPaths = append(searchPaths, filepath.Join(dir, "dms", "cheatsheets"))
 			}
 		}
 	}

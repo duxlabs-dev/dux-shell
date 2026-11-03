@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Column {
     id: root
@@ -12,7 +12,7 @@ Column {
     width: parent.width
     spacing: Theme.spacingM
 
-    DankToggle {
+    DToggle {
         id: ipLocationToggle
         width: parent.width
         text: I18n.tr("Use IP Location")
@@ -50,7 +50,7 @@ Column {
                 width: (parent.width - Theme.spacingM) / 2
                 spacing: Theme.spacingXS
 
-                DankTextField {
+                DTextField {
                     id: latitudeField
                     outlined: true
                     leftIconName: "location_on"
@@ -59,7 +59,7 @@ Column {
                     height: Theme.iconButtonSize + Theme.spacingS
                     text: ""
                     placeholderText: "40.7128"
-                    backgroundColor: Theme.floatingWindowFieldColor
+                    backgroundColor: SettingsMetrics.controlSurface
                     normalBorderColor: Theme.primarySelected
                     keyNavigationTab: longitudeField
 
@@ -88,7 +88,7 @@ Column {
                 width: (parent.width - Theme.spacingM) / 2
                 spacing: Theme.spacingXS
 
-                DankTextField {
+                DTextField {
                     id: longitudeField
                     outlined: true
                     leftIconName: "location_on"
@@ -97,7 +97,7 @@ Column {
                     height: Theme.iconButtonSize + Theme.spacingS
                     text: ""
                     placeholderText: "-74.0060"
-                    backgroundColor: Theme.floatingWindowFieldColor
+                    backgroundColor: SettingsMetrics.controlSurface
                     normalBorderColor: Theme.primarySelected
                     keyNavigationBacktab: latitudeField
 
@@ -130,7 +130,7 @@ Column {
             font.weight: Theme.fontWeightMedium
         }
 
-        DankLocationSearch {
+        DLocationSearch {
             width: parent.width
             currentLocation: SessionData.nightModeLocationName
             onLocationSelected: (displayName, coordinates) => {

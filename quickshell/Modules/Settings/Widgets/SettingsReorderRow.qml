@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 SettingsRow {
     id: root
@@ -14,8 +14,8 @@ SettingsRow {
 
     paintBackground: true
     rowColor: dragging ? Theme.blend(SettingsMetrics.rowColor, Theme.onSurface, Theme.stateLayerDrag) : SettingsMetrics.rowColor
-    topRadius: dragging || (position === 0 && reorderList.firstInGroup) ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-    bottomRadius: dragging || (position === reorderList.count - 1 && reorderList.lastInGroup) ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
+    topRadius: dragging || (position === 0 && reorderList.firstInGroup) ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+    bottomRadius: dragging || (position === reorderList.count - 1 && reorderList.lastInGroup) ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
     z: dragging ? 100 : 0
 
     function focusHandle(reason) {
@@ -38,10 +38,12 @@ SettingsRow {
     }
 
     leading: [
-        DankDragHandle {
+        DDragHandle {
             id: handle
 
+            visible: root.reorderEnabled
             coordinateItem: root.reorderList
+            upDownKeysMove: false
             label: root.title
             enabled: root.reorderEnabled && (root.reorderList.externalDrag || root.reorderList.count > 1)
             dragging: root.dragging

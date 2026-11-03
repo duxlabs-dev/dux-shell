@@ -6,14 +6,24 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
+import "../Common/BlurStrength.js" as BlurStrength
 
 Singleton {
     id: root
     readonly property var log: Log.scoped("BlurService")
 
     property bool compositorSupported: false
+    property bool _probed: false
+    property bool probed: false
     readonly property bool available: compositorSupported
+    readonly property bool blurRequested: SettingsData.blurEnabled ?? false
+    onBlurRequestedChanged: {
+        if (blurRequested)
+            probe();
+    }
     readonly property bool enabled: available && (SettingsData.blurEnabled ?? false)
+    readonly property int defaultStrength: BlurStrength.defaultReach(CompositorService.configKey)
+    readonly property int strength: SettingsData.blurStrength || defaultStrength
 
     // These settings predate non-blurred surface borders, so keep their keys for compatibility.
     readonly property color borderColor: {
@@ -55,6 +65,7 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 root.compositorSupported = text.trim() === "supported";
+                root.probed = true;
                 if (root.compositorSupported)
                     log.info("Compositor supports ext-background-effect-v1");
                 else
@@ -68,5 +79,15 @@ Singleton {
         }
     }
 
-    Component.onCompleted: blurProbe.running = true
+    Component.onCompleted: {
+        if (blurRequested)
+            probe();
+    }
+
+    function probe() {
+        if (_probed)
+            return;
+        _probed = true;
+        blurProbe.running = true;
+    }
 }

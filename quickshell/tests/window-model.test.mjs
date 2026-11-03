@@ -20,6 +20,14 @@ const aqueousService = source("../Services/AqueousService.qml");
 const model = vm.createContext({});
 vm.runInContext(source("../Common/WindowModel.js").replace(/^\.pragma.*$/m, ""), model);
 
+test("mango monitor changes invalidate cached toplevels", () => {
+    const context = vm.createContext({});
+    lift(compositorService, "_toplevelListEquivalent", context);
+    const window = { mangoWindowId: 1, appId: "app1", mangoMonitor: "DP-1", mangoTags: [1] };
+    assert.equal(context._toplevelListEquivalent([window], [{ ...window }]), true);
+    assert.equal(context._toplevelListEquivalent([window], [{ ...window, mangoMonitor: "HDMI-A-1" }]), false);
+});
+
 function niriState(scenario) {
     const s = fixture("niri")[scenario];
     const toplevels = s.toplevels.map(t => ({ ...t }));
@@ -172,6 +180,14 @@ test("hyprland: workspace membership against the focused workspace, pid from the
     assert.deepEqual(focusedAppHyprland(hypr, hypr.wayland("w1"), null), { onActiveWorkspace: false, pid: 501 });
     assert.deepEqual(["w1", "w2", "w4", "w5"].map(id => specialWorkspaceName(hypr, hypr.wayland(id))), ["", "scratch", "notes", ""]);
     assert.equal(specialWorkspaceName(hypr, null), "");
+});
+
+test("hyprland main: named workspaces all report id -1, so active-workspace membership compares addresses", () => {
+    const music = { id: -1, address: "music", name: "music" };
+    const chat = { id: -1, address: "chat", name: "chat" };
+    const win = { id: "w", appId: "w", title: "w" };
+    const state = { toplevels: [{ wayland: win, workspace: music, lastIpcObject: { pid: 7 } }] };
+    assert.deepEqual([chat, music].map(focused => focusedAppHyprland(state, win, focused).onActiveWorkspace), [false, true]);
 });
 
 test("mango: compositor visibility covers global windows and overview without counting hidden clients", () => {

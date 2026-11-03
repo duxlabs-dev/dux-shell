@@ -3,9 +3,11 @@ import QtQuick.Layouts
 import qs.Common
 import qs.Modules.ProcessList
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
+import "ProcessColumns.js" as ProcessColumns
 
-DankPopout {
+DPopout {
     id: processListPopout
 
     layerNamespace: "dms:process-list-popout"
@@ -130,11 +132,10 @@ DankPopout {
                     Layout.fillWidth: true
                     spacing: Theme.spacingM
 
-                    DankSearchField {
+                    DSearchField {
                         id: searchField
                         Layout.fillWidth: true
                         Layout.minimumWidth: Theme.fontSizeMedium * 8
-                        Layout.preferredHeight: Theme.buttonHeightS
                         placeholderText: I18n.tr("Search", "search field placeholder") + "…"
                         text: processListPopout.searchText
                         onTextChanged: processListPopout.searchText = text
@@ -156,6 +157,7 @@ DankPopout {
                     searchText: processListPopout.searchText
                     expandedPid: processListPopout.expandedPid
                     contextMenu: processContextMenu
+                    columns: ProcessColumns.POPOUT_COLUMNS
                     onExpandedPidChanged: processListPopout.expandedPid = expandedPid
                 }
             }

@@ -2,9 +2,10 @@ import QtQuick
 import qs.Common
 import qs.Modals.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 
-DankModal {
+DModal {
     id: root
 
     layerNamespace: "dms:wifi-password"
@@ -46,13 +47,18 @@ DankModal {
     readonly property bool isCertificateChangedPrompt: promptReason === "server-certificate-changed"
     readonly property bool isCertificatePrompt: promptReason === "server-certificate" || isCertificateChangedPrompt
     readonly property string serverCertificateFingerprint: promptHints.length > 0 ? promptHints[0] : ""
+    readonly property string vpnPromptMessage: {
+        const hint = promptHints.find(h => typeof h === "string" && h.startsWith("x-vpn-message:"));
+        return hint ? hint.slice("x-vpn-message:".length) : "";
+    }
+    readonly property bool isChallengePrompt: promptHints.some(h => typeof h === "string" && h.startsWith("x-dynamic-challenge"))
     readonly property bool showUsernameField: requiresEnterprise && !isVpnPrompt && fieldsInfo.length === 0
     readonly property bool showPasswordField: fieldsInfo.length === 0 && !isCertificatePrompt
     readonly property bool showEapFields: requiresEnterprise && !isVpnPrompt && !isPromptMode
     readonly property bool showPhase2Dropdown: eapMethodValue === "peap" || eapMethodValue === "ttls"
     readonly property bool showAnonField: requiresEnterprise && !isVpnPrompt && !isPromptMode && eapMethodValue !== "pwd"
     readonly property bool showDomainField: showAnonField
-    readonly property bool showSavePasswordCheckbox: (isVpnPrompt || fieldsInfo.length > 0) && promptReason !== "pkcs11" && !isCertificatePrompt
+    readonly property bool showSavePasswordCheckbox: (isVpnPrompt || fieldsInfo.length > 0) && promptReason !== "pkcs11" && !isCertificatePrompt && !isChallengePrompt
 
     readonly property int certificateWarningHeight: certificateWarningColumn.implicitHeight + Theme.spacingM * 2
 
@@ -293,7 +299,7 @@ DankModal {
         }
     }
 
-    DankDialog {
+    DDialog {
         id: contentFocusScope
 
         anchors.fill: parent
@@ -314,16 +320,18 @@ DankModal {
         }
         supportingText: {
             if (promptReason === "pkcs11")
-                return I18n.tr("Enter PIN for ") + wifiPasswordSSID;
+                return I18n.tr("Enter PIN for %1", "%1 is the device or network name").arg(wifiPasswordSSID);
             if (isCertificatePrompt)
                 return wifiPasswordSSID;
+            if (vpnPromptMessage)
+                return vpnPromptMessage;
             if (fieldsInfo.length > 0)
-                return I18n.tr("Enter credentials for ") + wifiPasswordSSID;
+                return I18n.tr("Enter credentials for %1", "%1 is the network name").arg(wifiPasswordSSID);
             if (isVpnPrompt)
-                return I18n.tr("Enter password for ") + wifiPasswordSSID;
+                return I18n.tr("Enter password for %1", "%1 is the network name").arg(wifiPasswordSSID);
             if (isHiddenNetwork)
                 return I18n.tr("Enter network name and password");
-            return (requiresEnterprise ? I18n.tr("Enter credentials for ") : I18n.tr("Enter password for ")) + wifiPasswordSSID;
+            return (requiresEnterprise ? I18n.tr("Enter credentials for %1", "%1 is the network name") : I18n.tr("Enter password for %1", "%1 is the network name")).arg(wifiPasswordSSID);
         }
 
         Rectangle {
@@ -365,7 +373,7 @@ DankModal {
             }
         }
 
-        DankTextField {
+        DTextField {
             id: ssidInput
             visible: isHiddenNetwork
             outlined: true
@@ -385,7 +393,7 @@ DankModal {
             id: dynamicFieldsRepeater
             model: fieldsInfo
 
-            delegate: DankTextField {
+            delegate: DTextField {
                 id: fieldInput
                 required property var modelData
                 required property int index
@@ -437,7 +445,7 @@ DankModal {
                     color: Theme.surfaceVariantText
                 }
 
-                DankDropdown {
+                DDropdown {
                     width: parent.width
                     dropdownWidth: parent.width
                     compactMode: true
@@ -461,7 +469,7 @@ DankModal {
                     color: Theme.surfaceVariantText
                 }
 
-                DankDropdown {
+                DDropdown {
                     width: parent.width
                     dropdownWidth: parent.width
                     compactMode: true
@@ -472,7 +480,7 @@ DankModal {
             }
         }
 
-        DankTextField {
+        DTextField {
             id: usernameInput
             visible: showUsernameField
             outlined: true
@@ -490,7 +498,7 @@ DankModal {
             onAccepted: passwordInput.forceActiveFocus()
         }
 
-        DankTextField {
+        DTextField {
             id: passwordInput
             visible: showPasswordField
             outlined: true
@@ -518,7 +526,7 @@ DankModal {
             }
         }
 
-        DankTextField {
+        DTextField {
             id: anonInput
             visible: showAnonField
             outlined: true
@@ -536,7 +544,7 @@ DankModal {
             onAccepted: domainMatchInput.forceActiveFocus()
         }
 
-        DankTextField {
+        DTextField {
             id: domainMatchInput
             visible: showDomainField
             outlined: true
@@ -554,7 +562,7 @@ DankModal {
             onAccepted: submitCredentialsAndClose()
         }
 
-        DankToggle {
+        DToggle {
             id: savePasswordCheckbox
 
             width: parent.width
@@ -565,7 +573,7 @@ DankModal {
         }
 
         actions: [
-            DankButton {
+            DButton {
                 maximumWidth: contentFocusScope.actionWidth
                 wrapText: true
                 text: I18n.tr("Cancel")
@@ -573,7 +581,7 @@ DankModal {
                 textColor: Theme.primary
                 onClicked: clearAndClose()
             },
-            DankButton {
+            DButton {
                 id: connectButton
                 maximumWidth: contentFocusScope.actionWidth
                 wrapText: true

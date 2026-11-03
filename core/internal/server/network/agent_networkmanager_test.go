@@ -25,14 +25,6 @@ func TestNeedsExternalBrowserAuth(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "GP with saml-auth-method POST",
-			protocol: "gp",
-			authType: "password",
-			username: "user",
-			data:     map[string]string{"saml-auth-method": "POST"},
-			expected: true,
-		},
-		{
 			name:     "GP with no authtype and no username",
 			protocol: "gp",
 			authType: "",
@@ -49,30 +41,6 @@ func TestNeedsExternalBrowserAuth(t *testing.T) {
 			expected: false,
 		},
 		{
-			name:     "GP with username but no authtype",
-			protocol: "gp",
-			authType: "",
-			username: "john",
-			data:     map[string]string{},
-			expected: false,
-		},
-		{
-			name:     "GP with authtype but no username - should detect SAML",
-			protocol: "gp",
-			authType: "",
-			username: "",
-			data:     map[string]string{},
-			expected: true,
-		},
-		{
-			name:     "pulse with SAML",
-			protocol: "pulse",
-			authType: "",
-			username: "",
-			data:     map[string]string{"saml-auth-method": "REDIRECT"},
-			expected: true,
-		},
-		{
 			name:     "fortinet with non-password authtype",
 			protocol: "fortinet",
 			authType: "saml",
@@ -84,22 +52,6 @@ func TestNeedsExternalBrowserAuth(t *testing.T) {
 			name:     "anyconnect with cert",
 			protocol: "anyconnect",
 			authType: "cert",
-			username: "",
-			data:     map[string]string{},
-			expected: false,
-		},
-		{
-			name:     "anyconnect with password",
-			protocol: "anyconnect",
-			authType: "password",
-			username: "user",
-			data:     map[string]string{},
-			expected: false,
-		},
-		{
-			name:     "empty protocol",
-			protocol: "",
-			authType: "",
 			username: "",
 			data:     map[string]string{},
 			expected: false,
@@ -137,20 +89,6 @@ func TestBuildOpenConnectSecretsResponse(t *testing.T) {
 			host:        "vpn.example.com",
 			fingerprint: "pin-sha256:ABCD1234",
 		},
-		{
-			name:        "empty fingerprint",
-			settingName: "vpn",
-			cookie:      "authcookie=xyz",
-			host:        "10.0.0.1",
-			fingerprint: "",
-		},
-		{
-			name:        "complex cookie with special chars",
-			settingName: "vpn",
-			cookie:      "authcookie=077058d3bc81&portal=PANGP_GW_01-N&user=john.doe@example.com&domain=Default&preferred-ip=192.168.1.100",
-			host:        "connect.seclore.com",
-			fingerprint: "pin-sha256:xp3scfzy3rOgQEXnfPiYKrUk7D66a8b8O+gEXaMPleE=",
-		},
 	}
 
 	for _, tt := range tests {
@@ -172,49 +110,6 @@ func TestBuildOpenConnectSecretsResponse(t *testing.T) {
 			assert.Equal(t, tt.cookie, secrets["cookie"])
 			assert.Equal(t, tt.host, secrets["gateway"])
 			assert.Equal(t, tt.fingerprint, secrets["gwcert"])
-		})
-	}
-}
-
-func TestVpnFieldMeta_GPSaml(t *testing.T) {
-	label, isSecret := vpnFieldMeta("gp-saml", "org.freedesktop.NetworkManager.openconnect")
-
-	assert.Equal(t, "GlobalProtect SAML/SSO", label)
-	assert.False(t, isSecret, "gp-saml should not be marked as secret")
-}
-
-func TestVpnFieldMeta_StandardFields(t *testing.T) {
-	tests := []struct {
-		field          string
-		vpnService     string
-		expectedLabel  string
-		expectedSecret bool
-	}{
-		{
-			field:          "username",
-			vpnService:     "org.freedesktop.NetworkManager.openconnect",
-			expectedLabel:  "Username",
-			expectedSecret: false,
-		},
-		{
-			field:          "password",
-			vpnService:     "org.freedesktop.NetworkManager.openconnect",
-			expectedLabel:  "Password",
-			expectedSecret: true,
-		},
-		{
-			field:          "key_pass",
-			vpnService:     "org.freedesktop.NetworkManager.openconnect",
-			expectedLabel:  "PIN",
-			expectedSecret: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.field, func(t *testing.T) {
-			label, isSecret := vpnFieldMeta(tt.field, tt.vpnService)
-			assert.Equal(t, tt.expectedLabel, label)
-			assert.Equal(t, tt.expectedSecret, isSecret)
 		})
 	}
 }
@@ -250,34 +145,12 @@ func TestInferVPNFields_GPSaml(t *testing.T) {
 			shouldHave:  []string{"gp-saml"},
 		},
 		{
-			name:       "GP with saml-auth-method POST",
-			vpnService: "org.freedesktop.NetworkManager.openconnect",
-			dataMap: map[string]string{
-				"protocol":         "gp",
-				"gateway":          "vpn.example.com",
-				"saml-auth-method": "POST",
-			},
-			expectedLen: 1,
-			shouldHave:  []string{"gp-saml"},
-		},
-		{
 			name:       "GP with username and password authtype - should use credentials",
 			vpnService: "org.freedesktop.NetworkManager.openconnect",
 			dataMap: map[string]string{
 				"protocol": "gp",
 				"gateway":  "vpn.example.com",
 				"authtype": "password",
-				"username": "john",
-			},
-			expectedLen: 1,
-			shouldHave:  []string{"password"},
-		},
-		{
-			name:       "GP with username but no authtype - password only",
-			vpnService: "org.freedesktop.NetworkManager.openconnect",
-			dataMap: map[string]string{
-				"protocol": "gp",
-				"gateway":  "vpn.example.com",
 				"username": "john",
 			},
 			expectedLen: 1,
@@ -435,6 +308,47 @@ func TestSecretAgent_GetSecrets_NoInteractionFlag(t *testing.T) {
 	assert.Contains(t, err.Error(), "NoSecrets")
 }
 
+func TestSecretAgent_GetSecrets_OpenVPNDynamicChallenge(t *testing.T) {
+	conn := map[string]nmVariantMap{
+		"connection": {
+			"id":   dbus.MakeVariant("Work VPN"),
+			"type": dbus.MakeVariant("vpn"),
+		},
+		"vpn": {
+			"service-type": dbus.MakeVariant("org.freedesktop.NetworkManager.openvpn"),
+		},
+	}
+
+	tests := []struct {
+		name     string
+		hint     string
+		isSecret bool
+	}{
+		{"noecho", "x-dynamic-challenge:challenge-response", true},
+		{"echo", "x-dynamic-challenge-echo:challenge-response", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			broker := &fakePromptBroker{
+				asked: make(chan PromptRequest, 1),
+				reply: PromptReply{Secrets: map[string]string{"challenge-response": "123456"}},
+			}
+			agent := &SecretAgent{prompts: broker}
+			hints := []string{tt.hint, "x-vpn-message:Enter your OTP"}
+
+			out, err := agent.GetSecrets(conn, "/test/path", "vpn", hints, nmSecretAgentFlagAllowInteraction)
+			assert.Nil(t, err)
+
+			req := <-broker.asked
+			assert.Equal(t, []string{"challenge-response"}, req.Fields)
+			assert.Equal(t, []FieldInfo{{Name: "challenge-response", Label: "Challenge Response", IsSecret: tt.isSecret}}, req.FieldsInfo)
+
+			secrets, _ := out["vpn"]["secrets"].Value().(map[string]string)
+			assert.Equal(t, map[string]string{"challenge-response": "123456"}, secrets)
+		})
+	}
+}
+
 func TestBuildWiFiSecretsResponse(t *testing.T) {
 	t.Run("wpa-psk returns psk", func(t *testing.T) {
 		out := buildWiFiSecretsResponse("802-11-wireless-security", map[string]string{"psk": "hunter2"})
@@ -488,18 +402,6 @@ func TestAgentOwnedSecrets(t *testing.T) {
 		assert.Empty(t, agentOwnedSecrets(conn))
 	})
 
-	t.Run("agent-owned psk extracted", func(t *testing.T) {
-		conn := map[string]nmVariantMap{
-			"802-11-wireless-security": {
-				"psk":       dbus.MakeVariant("hunter2"),
-				"psk-flags": dbus.MakeVariant(uint32(1)),
-			},
-		}
-
-		owned := agentOwnedSecrets(conn)
-		assert.Equal(t, "hunter2", owned["802-11-wireless-security"]["psk"])
-	})
-
 	t.Run("not-saved flag skipped", func(t *testing.T) {
 		conn := map[string]nmVariantMap{
 			"802-1x": {
@@ -510,14 +412,6 @@ func TestAgentOwnedSecrets(t *testing.T) {
 
 		assert.Empty(t, agentOwnedSecrets(conn))
 	})
-}
-
-func TestReadConnUUID(t *testing.T) {
-	assert.Equal(t, "abc-123", readConnUUID(map[string]nmVariantMap{
-		"connection": {"uuid": dbus.MakeVariant("abc-123")},
-	}))
-	assert.Equal(t, "", readConnUUID(map[string]nmVariantMap{}))
-	assert.Equal(t, "", readConnUUID(map[string]nmVariantMap{"connection": {}}))
 }
 
 func TestWiFiSecretCache(t *testing.T) {

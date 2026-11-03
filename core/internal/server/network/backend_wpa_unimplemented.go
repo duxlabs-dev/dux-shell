@@ -2,22 +2,6 @@ package network
 
 import "fmt"
 
-func (b *WpaSupplicantBackend) ConnectEthernet() error {
-	return fmt.Errorf("wired control not supported by wpa_supplicant backend")
-}
-
-func (b *WpaSupplicantBackend) DisconnectEthernet() error {
-	return fmt.Errorf("wired control not supported by wpa_supplicant backend")
-}
-
-func (b *WpaSupplicantBackend) DisconnectEthernetDevice(device string) error {
-	return fmt.Errorf("wired control not supported by wpa_supplicant backend")
-}
-
-func (b *WpaSupplicantBackend) ActivateWiredConnection(uuid string) error {
-	return fmt.Errorf("wired control not supported by wpa_supplicant backend")
-}
-
 func (b *WpaSupplicantBackend) GetCellularDevices() []CellularDevice {
 	return []CellularDevice{}
 }
@@ -118,7 +102,10 @@ func (b *WpaSupplicantBackend) getWiFiDevicesLocked() []WiFiDevice {
 	}
 
 	stateStr := "disconnected"
-	if b.state.WiFiConnected {
+
+	if b.ifname == "" && b.physicalWiFi != "" {
+		stateStr = "unconfigured"
+	} else if b.state.WiFiConnected {
 		stateStr = "connected"
 	}
 

@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
+import qs.Modules.Settings.Widgets
 
 StyledRect {
     id: root
@@ -11,7 +12,7 @@ StyledRect {
     width: parent.width
     height: messageContent.implicitHeight + Theme.spacingL * 2
     radius: Theme.cornerRadius
-    color: Theme.floatingWindowNestedSurface
+    color: SettingsMetrics.rowColor
     border.color: Theme.outlineMedium
     border.width: Theme.layerOutlineWidth
 
@@ -25,7 +26,7 @@ StyledRect {
             width: parent.width
             spacing: Theme.spacingM
 
-            DankIcon {
+            DIcon {
                 name: "monitor"
                 size: Theme.iconSize
                 color: Theme.surfaceVariantText

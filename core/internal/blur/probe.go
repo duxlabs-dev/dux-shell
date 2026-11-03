@@ -1,8 +1,8 @@
 package blur
 
 import (
-	wlhelpers "github.com/AvengeMedia/DankMaterialShell/core/internal/wayland/client"
-	client "github.com/AvengeMedia/dankgo/wayland/client"
+	client "github.com/duxlabs-dev/dux-go/wayland/client"
+	wlhelpers "github.com/duxlabs-dev/dux-shell/core/internal/wayland/client"
 )
 
 const extBackgroundEffectInterface = "ext_background_effect_manager_v1"

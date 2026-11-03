@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Rectangle {
     id: root
@@ -12,6 +12,7 @@ Rectangle {
 
     signal triggered
 
+    implicitWidth: contentRow.implicitWidth + Theme.spacingS * 2
     height: 28
     radius: Theme.cornerRadius
     opacity: enabled ? 1 : 0.4
@@ -24,6 +25,7 @@ Rectangle {
     }
 
     Row {
+        id: contentRow
         anchors.left: parent.left
         anchors.leftMargin: Theme.spacingS
         anchors.right: parent.right
@@ -31,7 +33,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         spacing: Theme.spacingXS
 
-        DankIcon {
+        DIcon {
             anchors.verticalCenter: parent.verticalCenter
             name: root.iconName
             size: 14
@@ -50,7 +52,7 @@ Rectangle {
         }
     }
 
-    DankRipple {
+    DRipple {
         id: ripple
         rippleColor: root.isDestructive ? Theme.error : Theme.surfaceText
         cornerRadius: Theme.cornerRadius

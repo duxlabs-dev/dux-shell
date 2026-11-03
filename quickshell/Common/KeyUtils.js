@@ -1,5 +1,6 @@
 .pragma library
 
+// qmlformat off
 const KEY_MAP = {
     16777234: "Left",
     16777236: "Right",
@@ -38,6 +39,9 @@ const KEY_MAP = {
     16777328: "XF86AudioLowerVolume",
     16777329: "XF86AudioMute",
     16842808: "XF86AudioMicMute",
+    16777488: "XF86TouchpadToggle",
+    16777489: "XF86TouchpadOn",
+    16777490: "XF86TouchpadOff",
     16777344: "XF86AudioPlay",
     16777345: "XF86AudioStop",
     16777346: "XF86AudioPrev",
@@ -104,6 +108,7 @@ const KEY_MAP = {
     191: "questiondown",
     161: "exclamdown"
 };
+// qmlformat on
 
 // Preserve unshifted symbols from the active layout
 const SYMBOL_KEYSYM = {
@@ -162,6 +167,7 @@ const SHIFTED_US_FALLBACK = {
 // navigation keysyms (KP_Home, KP_End, ...); with NumLock on it sends KP_0..KP_9
 // (handled by the digit range in xkbKeyFromQtKey). Operators/Enter are the same
 // in both states.
+// qmlformat off
 const KP_MAP = {
     16777232: "KP_Home",
     16777235: "KP_Up",
@@ -181,6 +187,7 @@ const KP_MAP = {
     47: "KP_Divide",
     46: "KP_Decimal"
 };
+// qmlformat on
 
 // Shift+digit arrives as the layout's shifted symbol (latam Shift+0 is "="),
 // but compositors match binds on the unshifted keysym, so resolve the digit
@@ -222,6 +229,39 @@ function xkbKeyFromQtKey(qk, isKeypad, hasShift, scanCode) {
     return KEY_MAP[qk] || "";
 }
 
+function keyFromToken(token) {
+    const parts = String(token || "").split("+");
+    return parts[parts.length - 1];
+}
+
+// A compositor resolves a bind's keysym on the first level of the active layout,
+// so a keysym that lives only above it can never match: de:neo puts every
+// bracket on layer 4, which is how "Mod+bracketleft" gets stored and then never
+// fires (#3585). keymap is what `dms keybinds keymap` reports, and a key outside
+// its `named` vocabulary is one we could not name, so it counts as fine.
+function keysymUnreachable(key, keymap) {
+    if (!key || !keymap)
+        return false;
+    const vocabulary = keymap.named ?? [];
+    const byKeycode = keymap.keysyms ?? {};
+    if (vocabulary.length === 0)
+        return false;
+
+    const wanted = String(key).toLowerCase();
+    if (!vocabulary.some(name => String(name).toLowerCase() === wanted))
+        return false;
+
+    const keycodes = Object.keys(byKeycode);
+    for (let i = 0; i < keycodes.length; i++) {
+        const syms = byKeycode[keycodes[i]] ?? [];
+        for (let j = 0; j < syms.length; j++) {
+            if (String(syms[j]).toLowerCase() === wanted)
+                return false;
+        }
+    }
+    return true;
+}
+
 function modsFromEvent(mods) {
     var result = [];
     if (mods & 0x10000000)
@@ -239,42 +279,188 @@ function formatToken(mods, key) {
     return (mods.length ? mods.join("+") + "+" : "") + key;
 }
 
-function canonicalModifier(modifier) {
-    var normalized = (modifier || "").toLowerCase();
-    if (normalized === "control")
-        return "ctrl";
-    if (normalized === "win")
-        return "super";
-    return normalized;
+const QT_MODIFIER_NAMES = {
+    16777248: "Shift",
+    16777249: "Ctrl",
+    16777250: "Super",
+    16777251: "Alt",
+    16777299: "Super",
+    16777300: "Super"
+};
+const CAPTURE_MODIFIER_ORDER = ["Super", "Alt", "Ctrl", "Shift"];
+
+function modifierFromQtKey(qtKey) {
+    return QT_MODIFIER_NAMES[qtKey] || "";
 }
 
-function withSymbolicMod(mods, modKey) {
+// The pressed modifier key may be missing from the event's modifier mask.
+function heldModifiers(qtKey, modifiers, previous) {
+    const held = (previous || []).concat(modsFromEvent(modifiers), modifierFromQtKey(qtKey));
+    return CAPTURE_MODIFIER_ORDER.filter(mod => held.includes(mod));
+}
+
+function bareModifierToken(mods, modKey, modSymbol) {
+    return withSymbolicMod(mods, modKey, modSymbol).join("+");
+}
+
+function triggerName(key) {
+    const parts = String(key || "").toLowerCase().split("+");
+    return parts[parts.length - 1].trim();
+}
+
+function isScrollTrigger(key) {
+    const trigger = triggerName(key);
+    return trigger.startsWith("wheelscroll") || trigger.startsWith("touchpadscroll");
+}
+
+// niri only passes keyboard binds through to the focused window.
+function isKeyboardTrigger(key) {
+    const trigger = triggerName(key);
+    return !["mouse", "wheelscroll", "touchpadscroll", "tabletstylusbutton"].some(prefix => trigger.startsWith(prefix));
+}
+
+const MODIFIER_ALIASES = {
+    "control": "ctrl",
+    "win": "super",
+    "meta": "super",
+    "logo": "super",
+    "mod4": "super",
+    "mod1": "alt",
+    "iso_level3_shift": "mod5",
+    "iso_level5_shift": "mod3"
+};
+
+function canonicalModifier(modifier) {
+    var normalized = (modifier || "").toLowerCase();
+    return MODIFIER_ALIASES[normalized] || normalized;
+}
+
+function withSymbolicMod(mods, modKey, modSymbol) {
     var configuredMod = canonicalModifier(modKey);
-    if (!configuredMod)
+    if (!configuredMod || !modSymbol)
         return mods;
     return mods.map(function (modifier) {
-        return canonicalModifier(modifier) === configuredMod ? "Mod" : modifier;
+        return canonicalModifier(modifier) === configuredMod ? modSymbol : modifier;
     });
 }
 
-function normalizeKeyCombo(keyCombo, modKey) {
-    if (!keyCombo)
+const QT_KEY_TAB = 16777217;
+const QT_KEY_BACKTAB = 16777218;
+const QT_KEYPAD_MODIFIER = 0x20000000;
+const QT_SHORTCUT_MODIFIERS = 0x10000000 | 0x08000000;
+const QT_CONTROL_MODIFIER = 0x04000000;
+// keys a text field owns: escape, tab, backtab, backspace, return, enter, insert, delete, home, end, arrows, page up/down
+const TEXT_EDIT_KEYS = [16777216, 16777217, 16777218, 16777219, 16777220, 16777221, 16777222, 16777223, 16777232, 16777233, 16777234, 16777235, 16777236, 16777237, 16777238, 16777239];
+const QT_MODIFIER_KEYS = [16777248, 16777249, 16777250, 16777251, 16777252, 16777253, 16777254, 16777299, 16777300];
+
+function chordToken(qtKey, modifiers, mods, scanCode, modKey, modSymbol) {
+    if (qtKey === QT_KEY_BACKTAB) {
+        qtKey = QT_KEY_TAB;
+        if (!mods.includes("Shift"))
+            mods = mods.concat("Shift");
+    }
+    const key = xkbKeyFromQtKey(qtKey, !!(modifiers & QT_KEYPAD_MODIFIER), mods.includes("Shift"), scanCode);
+    if (!key)
         return "";
-    var configuredMod = canonicalModifier(modKey) || "super";
-    return keyCombo.toLowerCase().replace(/\bmod\b/g, configuredMod).replace(/\bcontrol\b/g, "ctrl").replace(/\bwin\b/g, "super");
+    return formatToken(withSymbolicMod(mods, modKey, modSymbol), key);
 }
 
-function getConflictingBinds(keyCombo, currentAction, allBinds, modKey) {
+// A focused search field keeps typing and editing keys. Super or Alt chords and
+// keys that never produce text (function, media, Print) read as a shortcut.
+function shortcutFromSearchKey(event, modKey, modSymbol) {
+    if (QT_MODIFIER_KEYS.includes(event.key))
+        return "";
+    const chord = !!(event.modifiers & QT_SHORTCUT_MODIFIERS);
+    if (!chord && (event.text !== "" || (event.modifiers & QT_CONTROL_MODIFIER) || TEXT_EDIT_KEYS.includes(event.key)))
+        return "";
+    return chordToken(event.key, event.modifiers, modsFromEvent(event.modifiers), event.nativeScanCode, modKey, modSymbol);
+}
+
+const NORMALIZED_MODIFIER_ORDER = ["super", "ctrl", "alt", "shift", "mod5", "mod3"];
+// Imply their modifier but stay distinct triggers.
+const MODIFIER_KEYSYMS = {
+    "control_l": "ctrl",
+    "control_r": "ctrl",
+    "shift_l": "shift",
+    "shift_r": "shift",
+    "alt_l": "alt",
+    "alt_r": "alt",
+    "super_l": "super",
+    "super_r": "super"
+};
+
+// Mirrors core normalizeNiriBindKey, so Shift+Alt equals Alt+Shift.
+function normalizeKeyCombo(keyCombo, modKey, modSymbol) {
+    if (!keyCombo)
+        return "";
+    const configuredMod = canonicalModifier(modKey) || "super";
+    const symbol = (modSymbol || "mod").toLowerCase();
+    const canonical = token => token === symbol ? configuredMod : canonicalModifier(token);
+    let combo = String(keyCombo).toLowerCase();
+    let trigger = "";
+    if (combo.length > 1 && combo.endsWith("++")) {
+        trigger = "+";
+        combo = combo.slice(0, -2);
+    }
+    const parts = combo.split("+").map(part => part.trim());
+    if (!trigger)
+        trigger = parts.pop();
+
+    const mods = new Set();
+    const unknown = [];
+    for (const part of parts) {
+        const mod = canonical(part);
+        if (NORMALIZED_MODIFIER_ORDER.includes(mod))
+            mods.add(mod);
+        else if (!unknown.includes(mod))
+            unknown.push(mod);
+    }
+
+    const triggerMod = canonical(trigger);
+    const bareModifier = NORMALIZED_MODIFIER_ORDER.includes(triggerMod);
+    if (bareModifier)
+        mods.add(triggerMod);
+    else if (MODIFIER_KEYSYMS[trigger])
+        mods.add(MODIFIER_KEYSYMS[trigger]);
+
+    const out = NORMALIZED_MODIFIER_ORDER.filter(mod => mods.has(mod)).concat(unknown.sort());
+    if (!bareModifier)
+        out.push(trigger);
+    return out.join("+");
+}
+
+function comboTrigger(keyCombo) {
+    const combo = String(keyCombo).toLowerCase();
+    if (combo.length > 1 && combo.endsWith("++"))
+        return "+";
+    return combo.slice(combo.lastIndexOf("+") + 1).trim();
+}
+
+// Mirrors core niriBindsConflict: Alt also takes Alt_L and Alt_R, which stay distinct.
+function keyCombosConflict(a, b, modKey, modSymbol) {
+    const na = normalizeKeyCombo(a, modKey, modSymbol);
+    const nb = normalizeKeyCombo(b, modKey, modSymbol);
+    if (na === nb)
+        return true;
+    const ta = comboTrigger(a);
+    const tb = comboTrigger(b);
+    if (MODIFIER_KEYSYMS[ta])
+        return nb + "+" + ta === na;
+    if (MODIFIER_KEYSYMS[tb])
+        return na + "+" + tb === nb;
+    return false;
+}
+
+function getConflictingBinds(keyCombo, currentAction, allBinds, modKey, modSymbol) {
     if (!keyCombo)
         return [];
     var conflicts = [];
-    var normalizedKey = normalizeKeyCombo(keyCombo, modKey);
     for (var i = 0; i < allBinds.length; i++) {
         var bind = allBinds[i];
         if (bind.action === currentAction)
             continue;
         for (var k = 0; k < bind.keys.length; k++) {
-            if (normalizeKeyCombo(bind.keys[k].key, modKey) === normalizedKey) {
+            if (keyCombosConflict(keyCombo, bind.keys[k].key, modKey, modSymbol)) {
                 conflicts.push({
                     action: bind.action,
                     desc: bind.desc || bind.action
@@ -314,9 +500,15 @@ function qtKeyFromName(name) {
     return named[n] || 0;
 }
 
+// Mirrors QPlatformInputContextFactory::requested(): QT_IM_MODULES wins, Qt loads the first entry that exists.
+function compositorTextInputSelected(imModules, imModule) {
+    const requested = (imModules || "").split(";").filter(Boolean);
+    const first = requested.length ? requested[0] : (imModule || "");
+    return first === "" || first === "wayland";
+}
+
 function isModifierKey(qk) {
-    return qk === Qt.Key_Control || qk === Qt.Key_Shift || qk === Qt.Key_Alt || qk === Qt.Key_Meta
-        || qk === Qt.Key_NumLock || qk === Qt.Key_CapsLock || qk === Qt.Key_ScrollLock;
+    return qk === Qt.Key_Control || qk === Qt.Key_Shift || qk === Qt.Key_Alt || qk === Qt.Key_Meta || qk === Qt.Key_NumLock || qk === Qt.Key_CapsLock || qk === Qt.Key_ScrollLock;
 }
 
 function eventMatchesCombo(event, combo) {
@@ -345,6 +537,19 @@ function eventMatchesCombo(event, combo) {
 }
 
 const KEY_GLYPH_MAP_COMMON = {
+    "shift_l": "⇧ L",
+    "shift_r": "⇧ R",
+    "control_l": "⌃ L",
+    "control_r": "⌃ R",
+    "alt_l": "⌥ L",
+    "alt_r": "⌥ R",
+    "super_l": "⌘ L",
+    "super_r": "⌘ R",
+    "return": "⏎",
+    "enter": "⏎",
+    "tab": "⇥",
+    "backspace": "⌫",
+    "space": "␣",
     "escape": "Esc",
     "esc": "Esc",
     "up": "↑",
@@ -481,11 +686,12 @@ const WIN_MODIFIERS = {
 
 const KEY_GLYPH_MAP_MAC = Object.assign({}, KEY_GLYPH_MAP_COMMON, MAC_MODIFIERS);
 const KEY_GLYPH_MAP_WIN = Object.assign({}, KEY_GLYPH_MAP_COMMON, WIN_MODIFIERS);
-const KEY_GLYPH_MAP = KEY_GLYPH_MAP_WIN;
 
-function formatKeyTokens(keyString, style) {
+function formatKeyTokens(keyString, modKey, modSymbol, style) {
     if (!keyString)
         return [];
+    var symbol = (modSymbol || "mod").toLowerCase();
+    var resolvedMod = canonicalModifier(modKey) || "super";
     var str = keyString;
     var plusEnds = false;
     if (str.endsWith("++")) {
@@ -500,6 +706,8 @@ function formatKeyTokens(keyString, style) {
         if (!part)
             continue;
         var lower = part.toLowerCase();
+        if (lower === symbol)
+            lower = resolvedMod;
         if (map[lower] !== undefined) {
             tokens.push(map[lower]);
         } else if (part.length === 1) {

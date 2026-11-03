@@ -1,5 +1,5 @@
 {
-  description = "Dank Material Shell";
+  description = "Dux Shell";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -8,7 +8,7 @@
       flake = false;
     };
     dank-qml-common = {
-      url = "github:AvengeMedia/dank-qml-common";
+      url = "github:duxlabs-dev/dux-qml-common";
       flake = false;
     };
   };
@@ -111,7 +111,7 @@
               inherit version;
               pname = "dms-shell";
               src = ./core;
-              vendorHash = "sha256-RTyqDctSKh52d4ucNMDVau8Jkm890iFeRh2WiasIhMk=";
+              vendorHash = "sha256-TZVq/BHFu6brw8MMdGDZWUiZUxtjNjKRKxR8SSV7W50=";
 
               subPackages = [ "cmd/dms" ];
 
@@ -131,8 +131,8 @@
                 tar -C ${rootSrc}/quickshell --mode=u+w --exclude-from=${rootSrc}/scripts/shell-test-excludes.txt -cf - . \
                   | tar -C $out/share/quickshell/dms -xf -
 
-                rm -f $out/share/quickshell/dms/DankCommon
-                tar -C ${dank-qml-common} --mode=u+w --exclude-from=${rootSrc}/scripts/shell-test-excludes.txt -cf - DankCommon \
+                rm -f $out/share/quickshell/dms/DCommon
+                tar -C ${dank-qml-common} --mode=u+w --exclude-from=${rootSrc}/scripts/shell-test-excludes.txt -cf - DCommon \
                   | tar -C $out/share/quickshell/dms -xf -
 
                 echo "${version}" > $out/share/quickshell/dms/VERSION
@@ -140,12 +140,12 @@
                 # Install desktop file and icon
                 install -D ${rootSrc}/assets/dms-open.desktop \
                   $out/share/applications/dms-open.desktop
-                install -D ${rootSrc}/assets/com.danklinux.dms.desktop \
-                  $out/share/applications/com.danklinux.dms.desktop
-                install -D ${rootSrc}/assets/com.danklinux.dms.notepad.desktop \
-                  $out/share/applications/com.danklinux.dms.notepad.desktop
-                install -D ${rootSrc}/assets/com.danklinux.dms.svg \
-                  $out/share/icons/hicolor/scalable/apps/com.danklinux.dms.svg
+                install -D ${rootSrc}/assets/dev.duxlabs.shell.desktop \
+                  $out/share/applications/dev.duxlabs.shell.desktop
+                install -D ${rootSrc}/assets/dev.duxlabs.shell.notepad.desktop \
+                  $out/share/applications/dev.duxlabs.shell.notepad.desktop
+                install -D ${rootSrc}/assets/dev.duxlabs.shell.svg \
+                  $out/share/icons/hicolor/scalable/apps/dev.duxlabs.shell.svg
 
                 # Snapshot pre-wrap Qt paths so launched apps get their own, not DMS's pins.
                 wrapProgram $out/bin/dms \
@@ -183,8 +183,8 @@
 
               meta = {
                 description = "Desktop shell for wayland compositors built with Quickshell & GO";
-                homepage = "https://danklinux.com";
-                changelog = "https://github.com/AvengeMedia/DankMaterialShell/releases/tag/v${version}";
+                homepage = "https://duxlabs.dev";
+                changelog = "https://github.com/duxlabs-dev/dux-shell/releases/tag/v${version}";
                 license = pkgs.lib.licenses.mit;
                 mainProgram = "dms";
                 platforms = pkgs.lib.platforms.linux;
@@ -222,7 +222,7 @@
 
       nixosModules.default = self.nixosModules.dank-material-shell;
 
-      nixosModules.greeter = builtins.warn "dank-material-shell: the greeter moved to the dank-greeter repo; use `inputs.dank-greeter.nixosModules.default` and `programs.dms-greeter` (https://github.com/AvengeMedia/dank-greeter)" { };
+      nixosModules.greeter = builtins.warn "dank-material-shell: the greeter moved to the dux-greeter repo; use `inputs.dank-greeter.nixosModules.default` and `programs.dms-greeter` (https://github.com/duxlabs-dev/dux-greeter)" { };
 
       nixosModules.dankMaterialShell = builtins.warn "dank-material-shell: flake output `nixosModules.dankMaterialShell` has been renamed to `nixosModules.dank-material-shell`" self.nixosModules.dank-material-shell;
 
@@ -235,22 +235,6 @@
             kdePackages.qtdeclarative
           ]
           ++ (qmlPkgs pkgs);
-          # the surface fixtures run niri on winit/X11, which dlopens these
-          niriForTests = pkgs.symlinkJoin {
-            name = "niri-x11";
-            paths = [ pkgs.niri ];
-            nativeBuildInputs = [ pkgs.makeWrapper ];
-            postBuild = ''
-              wrapProgram $out/bin/niri --prefix LD_LIBRARY_PATH : ${
-                pkgs.lib.makeLibraryPath [
-                  (pkgs.libx11 or pkgs.xorg.libX11)
-                  (pkgs.libxcb or pkgs.xorg.libxcb)
-                  (pkgs.libxcursor or pkgs.xorg.libXcursor)
-                  (pkgs.libxi or pkgs.xorg.libXi)
-                ]
-              }
-            '';
-          };
         in
         {
           default = pkgs.mkShell {
@@ -264,7 +248,8 @@
                 go-tools
                 gnumake
                 nodejs
-                (python3.withPackages (ps: [ ps.dbus-next ]))
+                lua
+                python3
                 matugen
 
                 prek
@@ -275,8 +260,7 @@
                 nixd
                 nil
               ]
-              ++ devQmlPkgs
-              ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [ niriForTests pkgs.xvfb pkgs.dbus ];
+              ++ devQmlPkgs;
 
             shellHook = ''
               touch quickshell/.qmlls.ini 2>/dev/null

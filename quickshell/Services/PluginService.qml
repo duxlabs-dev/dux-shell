@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
+import "../Common/PluginRanking.js" as PluginRanking
 
 Singleton {
     id: root
@@ -25,7 +26,7 @@ Singleton {
 
     property bool pluginDirectoryExists: false
     property string systemPluginDirectory: "/etc/xdg/quickshell/dms-plugins"
-    readonly property string previewApiBase: "https://api.danklinux.com/previews/"
+    readonly property string previewApiBase: Site.api + "/previews/"
 
     property var knownManifests: ({})
     property var pathToPluginId: ({})
@@ -93,7 +94,8 @@ Singleton {
     }
 
     Component.onCompleted: {
-        userWatcher.folder = Paths.toFileUrl(root.pluginDirectory);
+        // A FolderListModel never given a folder lists the working directory.
+        userWatcher.folder = AdminPolicy.disableUserPlugins ? "" : Paths.toFileUrl(root.pluginDirectory);
         systemWatcher.folder = Paths.toFileUrl(root.systemPluginDirectory);
         Qt.callLater(resyncAll);
         Qt.callLater(checkPluginDirectoryExists);
@@ -149,7 +151,7 @@ Singleton {
     }
 
     function resyncAll() {
-        const userList = snapshotModel(userWatcher, "user");
+        const userList = AdminPolicy.disableUserPlugins ? [] : snapshotModel(userWatcher, "user");
         const sysList = snapshotModel(systemWatcher, "system");
         const seenPaths = {};
         const modifiedTimes = {};
@@ -307,8 +309,21 @@ Singleton {
         }
     }
 
-    function _stripDotSlash(p) {
-        return p.startsWith("./") ? p.slice(2) : p;
+    function _pluginFilePath(dir, rel) {
+        if (!rel)
+            return "";
+        const path = String(rel);
+        let decoded;
+        try {
+            decoded = decodeURIComponent(path);
+        } catch (e) {
+            decoded = "..";
+        }
+        if (decoded.split("/").includes("..")) {
+            log.warn("plugin path outside its directory, refusing:", path, "in", dir);
+            return "";
+        }
+        return dir + "/" + (path.startsWith("./") ? path.slice(2) : path);
     }
 
     function _deriveLegacySurface(type, capabilities) {
@@ -333,22 +348,26 @@ Singleton {
                     log.warn("unknown plugin surface", surface, "in", dir);
                     continue;
                 }
-                const rel = manifest.components[surface];
-                if (!rel)
+                const path = _pluginFilePath(dir, manifest.components[surface]);
+                if (!path)
                     continue;
-                paths[surface] = dir + "/" + _stripDotSlash(rel);
+                paths[surface] = path;
+            }
+            // A desktop card's root can't also be a bar pill; in a bar or dock it renders at card size and overflows.
+            if (paths.widget && paths.widget === paths.desktop) {
+                log.warn("widget surface reuses the desktop component, ignoring it in", dir);
+                delete paths.widget;
             }
             return paths;
         }
-        if (manifest.component) {
-            const surface = _deriveLegacySurface(manifest.type, manifest.capabilities);
-            paths[surface] = dir + "/" + _stripDotSlash(manifest.component);
-        }
+        const legacyPath = _pluginFilePath(dir, manifest.component);
+        if (legacyPath)
+            paths[_deriveLegacySurface(manifest.type, manifest.capabilities)] = legacyPath;
         return paths;
     }
 
     function _onManifestParsed(absPath, manifest, sourceTag, mtimeEpochMs) {
-        if (!manifest || !manifest.id || !manifest.name || (!manifest.component && !manifest.components)) {
+        if (!manifest || !manifest.id || !manifest.name) {
             log.error("invalid manifest fields:", absPath);
             knownManifests[absPath] = {
                 mtime: mtimeEpochMs,
@@ -359,16 +378,12 @@ Singleton {
         }
 
         const dir = absPath.substring(0, absPath.lastIndexOf('/'));
-        let settings = manifest.settings;
-        if (settings && settings.startsWith("./"))
-            settings = settings.slice(2);
-        let startupCheck = manifest.startupCheck;
-        if (startupCheck && startupCheck.startsWith("./"))
-            startupCheck = startupCheck.slice(2);
+        const settingsPath = _pluginFilePath(dir, manifest.settings);
+        const startupCheckPath = _pluginFilePath(dir, manifest.startupCheck);
 
         const componentPaths = _resolveComponentPaths(manifest, dir);
         const surfaces = Object.keys(componentPaths);
-        if (surfaces.length === 0) {
+        if (surfaces.length === 0 && !manifest.lyrics?.command) {
             log.error("no valid component surfaces in manifest:", absPath);
             knownManifests[absPath] = {
                 mtime: mtimeEpochMs,
@@ -396,8 +411,8 @@ Singleton {
         info.componentPaths = componentPaths;
         info.surfaces = surfaces;
         info.componentPath = componentPaths.widget || componentPaths[surfaces[0]];
-        info.settingsPath = settings ? (dir + "/" + settings) : null;
-        info.startupCheckPath = startupCheck ? (dir + "/" + startupCheck) : null;
+        info.settingsPath = settingsPath || null;
+        info.startupCheckPath = startupCheckPath || null;
         info.loaded = isPluginLoaded(manifest.id);
         info.type = manifest.type || (manifest.components ? "composite" : "widget");
         info.source = sourceTag;
@@ -469,6 +484,15 @@ Singleton {
     }
 
     function updatePlugin(pluginId, callback) {
+        // Installed entries carry the registry's requires_dms, i.e. the version an update would fetch
+        const installed = (DMSService.installedPlugins || []).find(plugin => plugin.id === pluginId);
+        if (installed?.requires_dms && !checkPluginCompatibility(installed.requires_dms)) {
+            if (callback)
+                callback({
+                    error: I18n.tr("Requires DMS %1", "plugin incompatibility notice, %1 is the required DMS version").arg(installed.requires_dms)
+                });
+            return;
+        }
         DMSService.update(pluginId, response => {
             if (!response.error)
                 forceRescanPlugin(pluginId);
@@ -491,7 +515,7 @@ Singleton {
 
         const componentPaths = plugin.componentPaths || {};
         const surfaces = Object.keys(componentPaths);
-        if (surfaces.length === 0) {
+        if (surfaces.length === 0 && !plugin.lyrics?.command) {
             log.error("Plugin has no component surfaces:", pluginId);
             pluginLoadFailed(pluginId, "No component surfaces");
             return false;
@@ -531,9 +555,12 @@ Singleton {
                     const error = comp.errorString();
                     log.error("component error", pluginId, surface, error);
                     _destroyComponents(Object.values(comps));
+                    // Qt caches the failure per URL, so the next attempt needs a new revision.
+                    _invalidatePluginComponents(pluginId);
+                    // Qt also says this when a file was added after the running shell first listed the plugin directory.
                     _setLoadError(pluginId, {
                         title: error,
-                        details: ""
+                        details: error.includes("File name case mismatch") ? I18n.tr("A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.", "plugin load error hint shown under Qt's 'File name case mismatch' error") : ""
                     });
                     pluginLoadFailed(pluginId, error);
                     return false;
@@ -894,8 +921,8 @@ Singleton {
     function _makeStartupCheckObject(pluginId, plugin) {
         const comp = Qt.createComponent(pluginComponentUrl(pluginId, plugin.startupCheckPath), Component.PreferSynchronous);
         if (comp.status === Component.Error) {
-            log.error("startupCheck component error", pluginId, comp.errorString());
-            return null;
+            _invalidatePluginComponents(pluginId);
+            throw new Error(comp.errorString());
         }
         return comp.createObject(root);
     }
@@ -915,8 +942,12 @@ Singleton {
             return ok;
         }
 
-        const probe = _makeStartupCheckObject(pluginId, plugin);
+        let probe = null;
+        let settled = false;
         const finish = result => {
+            if (settled)
+                return;
+            settled = true;
             if (probe)
                 probe.destroy();
             const err = _normalizeStartupError(result);
@@ -937,28 +968,20 @@ Singleton {
                 onResult(ok);
         };
 
-        const check = probe ? probe.check : null;
-        if (typeof check !== "function") {
-            finish(null);
-            return true;
-        }
-        if (check.length >= 1) {
-            try {
-                check(finish);
-            } catch (e) {
-                log.warn("startupCheck threw for", pluginId, e.message);
-                finish(null);
-            }
-            return true;
-        }
-        let r = null;
         try {
-            r = check();
+            probe = _makeStartupCheckObject(pluginId, plugin);
+            const check = probe?.check;
+            if (typeof check !== "function")
+                throw new Error("startupCheck has no check function");
+            if (check.length >= 1)
+                check(finish);
+            else
+                finish(check());
         } catch (e) {
-            log.warn("startupCheck threw for", pluginId, e.message);
-            r = null;
+            const message = String(e?.message || e);
+            log.warn("startupCheck failed for", pluginId, message);
+            finish(message);
         }
-        finish(r);
         return true;
     }
 
@@ -973,7 +996,7 @@ Singleton {
         const plugin = availablePlugins[pluginId];
         if (plugin)
             _loadPluginTranslations(pluginId, plugin.pluginDirectory);
-        return loadPlugin(pluginId);
+        return runStartupGate(pluginId);
     }
 
     function ensureLauncherInstance(pluginId) {
@@ -1105,16 +1128,11 @@ Singleton {
         }
         const path = getPluginStatePath(pluginId);
         try {
-            const fv = stateSaveFvComp.createObject(root, {
+            const fv = stateLoadFvComp.createObject(root, {
                 path: path
             });
             _stateWriters[pluginId] = fv;
-            fv.loaded.connect(function () {
-                fv.setText(content);
-            });
-            fv.loadFailed.connect(function () {
-                fv.setText(content);
-            });
+            fv.setText(content);
         } catch (e) {
             log.warn("Failed to write state for", pluginId, e.message);
         }
@@ -1124,14 +1142,6 @@ Singleton {
         id: stateLoadFvComp
         FileView {
             blockLoading: true
-            blockWrites: true
-            atomicWrites: true
-        }
-    }
-
-    Component {
-        id: stateSaveFvComp
-        FileView {
             blockWrites: true
             atomicWrites: true
         }
@@ -1155,7 +1165,8 @@ Singleton {
         const userUrl = Paths.toFileUrl(root.pluginDirectory);
         const systemUrl = Paths.toFileUrl(root.systemPluginDirectory);
         userWatcher.folder = "";
-        userWatcher.folder = userUrl;
+        if (!AdminPolicy.disableUserPlugins)
+            userWatcher.folder = userUrl;
         systemWatcher.folder = "";
         systemWatcher.folder = systemUrl;
         resyncDebounce.restart();
@@ -1281,14 +1292,31 @@ Singleton {
         globalVarChanged(pluginId, varName);
     }
 
+    // The directory ignores the query; it keys the on-disk thumbnail cache so an updated plugin gets a fresh render.
+    function previewVersion(plugin) {
+        var stamp = plugin.updated_at || plugin.version || "";
+        return stamp ? "?v=" + encodeURIComponent(stamp) : "";
+    }
+
     function previewUrl(plugin) {
         if (!plugin)
             return "";
         if (plugin.previewUrl)
             return plugin.previewUrl;
         if (plugin.id)
-            return previewApiBase + plugin.id;
+            return previewApiBase + plugin.id + previewVersion(plugin);
         return plugin.screenshot || "";
+    }
+
+    // 16:10 screenshot-only render; the full preview card bakes in title text the card already shows
+    function thumbUrl(plugin) {
+        if (!plugin)
+            return "";
+        if (plugin.thumbUrl)
+            return plugin.thumbUrl;
+        if (plugin.id)
+            return previewApiBase + plugin.id + "/thumb" + previewVersion(plugin);
+        return "";
     }
 
     function heroUrl(plugin) {
@@ -1364,6 +1392,13 @@ Singleton {
                 icon: "",
                 tone: "warning"
             });
+        var recency = PluginRanking.recency(plugin);
+        if (recency)
+            badges.push({
+                label: recency === "new" ? I18n.tr("new", "adjective, lowercase plugin badge, recently added") : I18n.tr("updated", "adjective, lowercase plugin badge, recently updated"),
+                icon: recency === "new" ? "fiber_new" : "update",
+                tone: "secondary"
+            });
         var status = plugin.status || [];
         for (var i = 0; i < status.length; i++)
             badges.push({
@@ -1375,6 +1410,117 @@ Singleton {
     }
 
     property var installingPlugins: ({})
+
+    // The plugin removed last ({id, name, wasEnabled}), kept a few seconds so the plugins page can offer to put it back.
+    property var lastUninstalledPlugin: null
+
+    Timer {
+        id: undoUninstallTimer
+        interval: 8000
+        onTriggered: root.lastUninstalledPlugin = null
+    }
+
+    // Only a registry plugin (one with a repo in the installed list) can be put back:
+    // a plugin the registry does not know would otherwise be swapped for another one.
+    function noteUninstalled(pluginId, pluginName, wasEnabled, repo) {
+        if (!repo) {
+            undoUninstallTimer.stop();
+            lastUninstalledPlugin = null;
+            return;
+        }
+        lastUninstalledPlugin = {
+            id: pluginId,
+            name: pluginName || pluginId,
+            wasEnabled: wasEnabled === true
+        };
+        undoUninstallTimer.restart();
+    }
+
+    function undoUninstall() {
+        const plugin = lastUninstalledPlugin;
+        if (!plugin)
+            return;
+        undoUninstallTimer.stop();
+        lastUninstalledPlugin = null;
+        installFromRegistry(plugin.id, plugin.name, plugin.wasEnabled);
+    }
+
+    // Plugin id -> id of the user's own +1 reaction on the registry issue, once a click has found or created it.
+    property var upvotedPlugins: ({})
+    // Plugin id -> what this session changed on top of the registry count (+1, 0 or -1).
+    property var upvoteDeltas: ({})
+    property var upvotingPlugins: ({})
+
+    function upvoteCount(plugin) {
+        return PluginRanking.upvoteCount(plugin.upvotes, upvoteDeltas[plugin.id]);
+    }
+
+    function _setUpvote(pluginId, reactionId, delta) {
+        const voted = Object.assign({}, upvotedPlugins);
+        if (reactionId)
+            voted[pluginId] = reactionId;
+        else
+            delete voted[pluginId];
+        upvotedPlugins = voted;
+        upvoteDeltas = Object.assign({}, upvoteDeltas, {
+            [pluginId]: delta
+        });
+    }
+
+    function _setUpvoting(pluginId, active) {
+        const pending = Object.assign({}, upvotingPlugins);
+        if (active)
+            pending[pluginId] = true;
+        else
+            delete pending[pluginId];
+        upvotingPlugins = pending;
+    }
+
+    // One click: a thumbs-up on the plugin's GitHub issue through the gh CLI when
+    // it is installed and signed in, otherwise the issue opens in the browser.
+    // One click votes, a second click on a vote takes it back. GitHub keeps one +1 per account.
+    function upvotePlugin(plugin) {
+        if (!plugin || !plugin.issueUrl || upvotingPlugins[plugin.id])
+            return;
+        const path = PluginRanking.issueReactionsPath(plugin.issueUrl);
+        if (!path) {
+            if (/^https:\/\//.test(plugin.issueUrl))
+                Qt.openUrlExternally(plugin.issueUrl);
+            return;
+        }
+        const pluginId = plugin.id;
+        const issueUrl = plugin.issueUrl;
+        const delta = upvoteDeltas[pluginId] || 0;
+        const ownReaction = upvotedPlugins[pluginId];
+        _setUpvoting(pluginId, true);
+        if (ownReaction) {
+            Proc.runCommand("plugin-upvote-" + pluginId, ["gh", "api", "--method", "DELETE", path + "/" + ownReaction], (output, exitCode) => {
+                _setUpvoting(pluginId, false);
+                if (exitCode !== 0) {
+                    root.log.warn("gh upvote removal failed", pluginId, exitCode);
+                    ToastService.showInfo(I18n.tr("Opening GitHub to remove the upvote", "plugin upvote toast, shown when the GitHub CLI is missing or signed out"));
+                    Qt.openUrlExternally(issueUrl);
+                    return;
+                }
+                _setUpvote(pluginId, 0, PluginRanking.nextUpvoteDelta(delta, true, false));
+                ToastService.showInfo(I18n.tr("Upvote removed", "plugin upvote toast"));
+            }, 0, 15000);
+            return;
+        }
+        Proc.runCommand("plugin-upvote-" + pluginId, ["gh", "api", "--include", "--method", "POST", path, "-f", "content=+1"], (output, exitCode) => {
+            _setUpvoting(pluginId, false);
+            const reactionId = exitCode === 0 ? PluginRanking.reactionId(output) : 0;
+            if (!reactionId) {
+                root.log.warn("gh upvote failed", pluginId, exitCode);
+                ToastService.showInfo(I18n.tr("Opening GitHub to upvote", "plugin upvote toast, shown when the GitHub CLI is missing or signed out"));
+                Qt.openUrlExternally(issueUrl);
+                return;
+            }
+            const added = /^HTTP\/\S+ 201/.test(output || "");
+            _setUpvote(pluginId, reactionId, PluginRanking.nextUpvoteDelta(delta, false, added));
+            ToastService.showInfo(added ? I18n.tr("Upvoted on GitHub", "plugin upvote toast") : I18n.tr("Already upvoted, click again to remove", "plugin upvote toast"));
+        }, 0, 15000);
+    }
 
     Component {
         id: installedPluginWaiter

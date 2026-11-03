@@ -177,7 +177,7 @@ Singleton {
             return;
 
         const argList = Array.from(args);
-        const loc = _callerLocation();
+        const loc = (lvl >= Log.Level.Warn || root.level === Log.Level.Debug) ? _callerLocation() : null;
         const msg = argList.map(_stringify).join(" ");
 
         let tag;

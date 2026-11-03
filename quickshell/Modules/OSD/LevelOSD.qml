@@ -2,14 +2,16 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
+import qs.Modules.ControlCenter
 import qs.Widgets
 
-DankOSD {
+DOSD {
     id: root
 
     property string iconName: ""
     property string insetIconName: ""
     property string endIconName: ""
+    property string endIconLabel: ""
     property bool iconInteractive: false
     property string iconLabel: ""
     property color iconColor: Theme.onPrimary
@@ -26,6 +28,40 @@ DankOSD {
 
     readonly property real osdValueReserve: endIconName.length > 0 || SettingsData.osdAlwaysShowValue ? Theme.buttonHeightM : 0
 
+    function showEndIconTooltip(item) {
+        endIconTooltip.active = true;
+        const tip = endIconTooltip.item;
+        if (!tip)
+            return;
+        const pos = item.mapToItem(null, 0, 0);
+        const left = windowX + pos.x;
+        const top = windowY + pos.y;
+        const gap = Theme.spacingS;
+        tip.text = endIconLabel;
+        switch (alignY) {
+        case 1:
+            tip.show(endIconLabel, left + item.width / 2, top - gap - tip.implicitHeight, screen);
+            return;
+        case -1:
+            tip.show(endIconLabel, left + item.width / 2, top + item.height + gap, screen);
+            return;
+        }
+        if (alignX === 1)
+            tip.show(endIconLabel, left - gap, top + item.height / 2, screen, false, true);
+        else
+            tip.show(endIconLabel, left + item.width + gap, top + item.height / 2, screen, true, false);
+    }
+
+    function hideEndIconTooltip() {
+        endIconTooltip.item?.hide();
+        endIconTooltip.active = false;
+    }
+
+    onVisibleChanged: {
+        if (!visible)
+            hideEndIconTooltip();
+    }
+
     function requestLevel(level) {
         if (!available)
             return;
@@ -36,7 +72,14 @@ DankOSD {
     osdWidth: isVerticalLayout ? Theme.osdHeight : Math.min(Theme.osdLevelWidth + osdValueReserve, screenWidth - Theme.spacingM * 2)
     osdHeight: isVerticalLayout ? Math.min(Theme.osdLevelVerticalHeight, screenHeight - Theme.spacingM * 2) : Theme.buttonHeightS + Theme.spacingS * 2
     autoHideInterval: 3000
+    sheetWidth: CcMetrics.sheetWidthFor(CcMetrics.minimumColumns)
     enableMouseInteraction: true
+
+    Loader {
+        id: endIconTooltip
+        active: false
+        sourceComponent: DTooltip {}
+    }
 
     content: OsdLevelRow {
         vertical: root.isVerticalLayout
@@ -44,6 +87,8 @@ DankOSD {
         iconName: root.iconName
         insetIconName: root.insetIconName
         endIconName: root.endIconName
+        endIconInteractive: root.sheet !== null
+        endIconLabel: root.endIconLabel
         iconInteractive: root.iconInteractive
         iconLabel: root.iconLabel
         iconColor: root.iconColor
@@ -56,6 +101,16 @@ DankOSD {
         displayText: root.displayText
         sliderEnabled: root.available
         onIconClicked: root.iconClicked()
+        onEndIconClicked: {
+            root.hideEndIconTooltip();
+            root.expand();
+        }
+        onEndIconHoveredChanged: {
+            if (endIconHovered && root.sheet)
+                root.showEndIconTooltip(endIconItem);
+            else
+                root.hideEndIconTooltip();
+        }
         onHoverChanged: hovered => root.setChildHovered(hovered)
         onSliderValueChanged: newValue => root.requestLevel(newValue)
     }

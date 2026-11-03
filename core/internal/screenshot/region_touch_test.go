@@ -3,7 +3,7 @@ package screenshot
 import (
 	"testing"
 
-	"github.com/AvengeMedia/dankgo/wayland/client"
+	"github.com/duxlabs-dev/dux-go/wayland/client"
 )
 
 func newTestSurface(id uint32) *client.Surface {

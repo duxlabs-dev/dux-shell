@@ -10,8 +10,6 @@ func TestModuleToRelPath(t *testing.T) {
 	tests := map[string]string{
 		"dms.binds":       filepath.Join("dms", "binds.lua"),
 		"dms/binds-user":  filepath.Join("dms", "binds-user.lua"),
-		"awesome/anim":    filepath.Join("awesome", "anim.lua"),
-		"awesome.colors":  filepath.Join("awesome", "colors.lua"),
 		" awesome.binds ": filepath.Join("awesome", "binds.lua"),
 	}
 

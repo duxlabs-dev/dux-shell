@@ -8,99 +8,92 @@ import Quickshell.Io
 import qs.Common
 import qs.Services
 
+// Welcome page, once per release line: hand-authored ChangelogContent (flip changelogEnabled
+// once it's written for the line) with the feed's notes chained underneath.
 Singleton {
     id: root
-    readonly property var log: Log.scoped("ChangelogService")
 
-    readonly property string currentVersion: "1.6"
-    readonly property bool changelogEnabled: false
-
-    readonly property string configDir: Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation)) + "/DankMaterialShell"
-    readonly property string changelogMarkerPath: configDir + "/.changelog-" + currentVersion
-
-    property bool checkComplete: false
-    property bool changelogDismissed: false
-
-    readonly property bool shouldShowChangelog: {
-        if (!checkComplete)
-            return false;
-        if (!changelogEnabled)
-            return false;
-        if (changelogDismissed)
-            return false;
-        if (typeof FirstLaunchService !== "undefined" && FirstLaunchService.isFirstLaunch)
-            return false;
-        return true;
+    // Point releases don't re-trigger it.
+    readonly property string currentVersion: {
+        const v = ShellVersionService.semverVersion.replace(/^v/, "");
+        const m = v.match(/^\d+\.\d+/);
+        return m ? m[0] : "";
     }
+    readonly property bool changelogEnabled: true
+    // A dotfile in the config dir, not session.json: the Nix home module can make session.json read-only
+    readonly property string markerPath: currentVersion !== "" ? Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation)) + "/dms/.changelog-" + currentVersion : ""
+    property bool markerChecked: false
+    property bool markerSeen: false
+    readonly property bool ready: FirstLaunchService.checkComplete && markerChecked
+
+    property bool changelogDismissed: false
+    property var release: null
+    property bool releasePending: false
+
+    readonly property bool shouldShowChangelog: ready && changelogEnabled && !changelogDismissed && !FirstLaunchService.isFirstLaunch && !markerSeen
 
     signal changelogRequested
     signal changelogCompleted
 
-    Component.onCompleted: {
-        if (!changelogEnabled)
+    onReadyChanged: {
+        if (ready && FirstLaunchService.isFirstLaunch)
+            markSeen();
+    }
+
+    onShouldShowChangelogChanged: {
+        if (!shouldShowChangelog)
             return;
-        if (FirstLaunchService.checkComplete)
-            handleFirstLaunchResult();
+        changelogRequested();
+        loadRelease();
     }
 
-    function handleFirstLaunchResult() {
-        if (FirstLaunchService.isFirstLaunch) {
-            checkComplete = true;
-            changelogDismissed = true;
-            touchMarkerProcess.running = true;
-        } else {
-            changelogCheckProcess.running = true;
+    // Never blocks the welcome page: the daemon may not be up yet.
+    function loadRelease() {
+        if (!SystemUpdateService.sysupdateAvailable) {
+            releasePending = true;
+            return;
         }
+        releasePending = false;
+        DMSService.sysupdateReleases(false, resp => {
+            if (root.changelogDismissed)
+                return;
+            const list = resp?.result?.releases ?? [];
+            root.release = list.find(r => r.version === root.currentVersion || (r.version || "").startsWith(root.currentVersion + ".")) ?? null;
+        });
     }
 
-    Connections {
-        target: FirstLaunchService
-
-        function onCheckCompleteChanged() {
-            if (FirstLaunchService.checkComplete && root.changelogEnabled && !root.checkComplete)
-                root.handleFirstLaunchResult();
-        }
+    readonly property bool sysupdateAvailable: SystemUpdateService.sysupdateAvailable
+    onSysupdateAvailableChanged: {
+        if (sysupdateAvailable && releasePending)
+            loadRelease();
     }
 
     function dismissChangelog() {
         changelogDismissed = true;
-        touchMarkerProcess.running = true;
+        release = null;
+        releasePending = false;
+        markSeen();
         changelogCompleted();
     }
 
-    Process {
-        id: changelogCheckProcess
-
-        command: ["sh", "-c", "[ -f '" + changelogMarkerPath + "' ] && echo 'seen' || echo 'show'"]
-        running: false
-
-        stdout: SplitParser {
-            onRead: data => {
-                const result = data.trim();
-                root.checkComplete = true;
-
-                switch (result) {
-                case "seen":
-                    root.changelogDismissed = true;
-                    break;
-                case "show":
-                    root.changelogRequested();
-                    break;
-                }
-            }
-        }
+    function markSeen() {
+        if (markerSeen)
+            return;
+        markerSeen = true;
+        marker.setText(currentVersion + "\n");
     }
 
-    Process {
-        id: touchMarkerProcess
-
-        command: ["sh", "-c", "mkdir -p '" + configDir + "' && touch '" + changelogMarkerPath + "'"]
-        running: false
-
-        onExited: exitCode => {
-            if (exitCode !== 0) {
-                log.warn("Failed to create changelog marker");
-            }
+    FileView {
+        id: marker
+        path: root.markerPath
+        printErrors: false
+        onLoaded: {
+            root.markerSeen = true;
+            root.markerChecked = true;
+        }
+        onLoadFailed: error => {
+            root.markerSeen = error !== FileViewError.FileNotFound;
+            root.markerChecked = true;
         }
     }
 }

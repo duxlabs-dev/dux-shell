@@ -2,67 +2,44 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 import qs.Modules.Settings.BarWidgetOptions
+import "../../Common/settings/DockConfig.js" as DockConfig
 
 Item {
     id: root
 
     property var parentModal: null
     property int catalogRevision: 0
-    property string confirmingRemoveId: ""
 
     readonly property bool dockHosted: true
-    readonly property var appsEntry: dock.config?.widgets.find(item => item.widgetId === "appsDock") ?? null
+    readonly property var appsEntry: dock.appsEntry
     readonly property var appStore: ({
             "get": key => dock.config?.[key],
             "set": (key, value) => dock.setOption(key, value),
             "isDefault": keys => dock.isDefault(keys),
             "resetToDefault": keys => dock.resetToDefault(keys)
         })
-    readonly property var _dockAppsDefaults: ({
-            "appsDockHideIndicators": false,
-            "appsDockIconSizePercentage": 100,
-            "runningAppsCurrentWorkspace": false
-        })
-
-    function defaultOption(key) {
-        if (key in _dockAppsDefaults)
-            return _dockAppsDefaults[key];
-        return SettingsData.widgetDefaults("appsDock")[key];
-    }
 
     function value(key) {
-        if (key in _dockAppsDefaults)
-            return appsEntry?.[key] ?? _dockAppsDefaults[key];
-        return SettingsData.widgetOption("appsDock", appsEntry, key);
-    }
-
-    function isDefault(keys) {
-        return keys.every(key => defaultOption(key) === undefined || JSON.stringify(value(key)) === JSON.stringify(defaultOption(key)));
-    }
-
-    function resetToDefault(keys) {
-        for (const key of keys) {
-            const fallback = defaultOption(key);
-            if (fallback !== undefined)
-                set(key, fallback);
-        }
+        return dock.appsValue(key);
     }
 
     function set(key, value) {
-        if (!appsEntry)
-            return;
-        SettingsData.updateDockWidget(dock.selectedDockId, appsEntry.id, {
-            [key]: value
-        });
+        dock.setAppsOption(key, value);
+    }
+
+    function isDefault(keys) {
+        return dock.apps.isDefault(keys);
+    }
+
+    function resetToDefault(keys) {
+        dock.apps.resetToDefault(keys);
     }
 
     DockSelectionState {
         id: dock
-
-        onSelectedDockIdChanged: root.confirmingRemoveId = ""
     }
 
     Connections {
@@ -84,7 +61,7 @@ Item {
 
     readonly property var widgetChoices: {
         catalogRevision;
-        return BarWidgetCatalog.widgets.concat(PluginService.getAllPluginVariants().filter(variant => variant.loaded).map(variant => ({
+        return BarWidgetCatalog.widgets.filter(widget => !widget.barOnly).concat(PluginService.getAllPluginVariants().filter(variant => variant.loaded).map(variant => ({
                     id: variant.fullId,
                     text: variant.name,
                     icon: variant.icon
@@ -125,8 +102,19 @@ Item {
         }
     }
 
+    readonly property var orderedWidgets: {
+        const widgets = dock.config?.widgets ?? [];
+        const byId = new Map(widgets.map(item => [item.id, item]));
+        return DockConfig.widgetOrder(widgets, dock.config?.order).map(id => byId.get(id));
+    }
+
+    function reorderWidgets(indices) {
+        if (!dock.hasConfig)
+            return;
+        SettingsData.updateDockConfig(dock.selectedDockId, DockConfig.reorderWidgets(dock.config.widgets, dock.config.order, indices.map(i => root.orderedWidgets[i].id)));
+    }
+
     function updateWidgets(widgets) {
-        root.confirmingRemoveId = "";
         if (!dock.hasConfig)
             return;
         SettingsData.updateDockConfig(dock.selectedDockId, {
@@ -148,7 +136,6 @@ Item {
             width: parent.width
             visible: dock.hasConfig
             iconName: "widgets"
-            title: I18n.tr("Apps & widgets")
             settingKey: "dockWidgets"
             tags: ["dock", "widgets", "apps", "add", "remove", "order"]
 
@@ -167,20 +154,24 @@ Item {
                 }
             }
 
-            Repeater {
-                model: dock.config?.widgets ?? []
+            SettingsReorderList {
+                id: widgetList
 
-                delegate: SettingsRow {
+                model: root.orderedWidgets
+                onReordered: indices => root.reorderWidgets(indices)
+
+                delegate: SettingsReorderRow {
                     id: widgetRow
 
                     required property var modelData
-                    readonly property bool confirmingRemove: root.confirmingRemoveId === modelData.id
+
+                    reorderList: widgetList
                     readonly property string slotOption: root.slotOptions[modelData.widgetId] ?? ""
                     readonly property bool shown: slotOption ? dock.config[slotOption] === true : modelData.enabled !== false
 
                     title: root.widgetName(modelData.widgetId)
                     iconName: root.widgetIcon(modelData.widgetId)
-                    subtitle: confirmingRemove ? I18n.tr("Confirm Delete") : ""
+                    subtitle: removeButton.confirming ? I18n.tr("Confirm Delete") : ""
                     subtitleColor: Theme.error
                     body: SettingsSliderRow {
                         width: parent.width
@@ -198,14 +189,14 @@ Item {
                     Row {
                         spacing: Theme.spacingXS
 
-                        DankActionButton {
+                        DActionButton {
                             iconName: "settings"
                             visible: widgetRow.modelData.widgetId !== "appsDock" && !!BarWidgetCatalog.optionsFile(widgetRow.modelData.widgetId)
                             Accessible.name: I18n.tr("Settings")
                             onClicked: root.configureWidget(widgetRow.modelData)
                         }
 
-                        DankActionButton {
+                        DActionButton {
                             iconName: widgetRow.shown ? "visibility" : "visibility_off"
                             Accessible.name: widgetRow.shown ? I18n.tr("Hide") : I18n.tr("Show")
                             onClicked: {
@@ -219,18 +210,10 @@ Item {
                             }
                         }
 
-                        DankActionButton {
+                        SettingsDeleteButton {
+                            id: removeButton
                             visible: !widgetRow.slotOption
-                            iconName: widgetRow.confirmingRemove ? "warning" : "delete"
-                            iconColor: widgetRow.confirmingRemove ? Theme.error : Theme.surfaceVariantText
-                            Accessible.name: widgetRow.confirmingRemove ? I18n.tr("Confirm Delete") : I18n.tr("Remove")
-                            onClicked: {
-                                if (!widgetRow.confirmingRemove) {
-                                    root.confirmingRemoveId = widgetRow.modelData.id;
-                                    return;
-                                }
-                                root.updateWidgets(dock.config.widgets.filter(item => item.id !== widgetRow.modelData.id));
-                            }
+                            onDeleteRequested: root.updateWidgets(dock.config.widgets.filter(item => item.id !== widgetRow.modelData.id))
                         }
                     }
                 }
@@ -249,7 +232,7 @@ Item {
         SettingsFabBar {
             shown: dock.hasConfig
 
-            DankFab {
+            DFab {
                 text: I18n.tr("Add widget")
                 iconName: "add"
                 onClicked: {

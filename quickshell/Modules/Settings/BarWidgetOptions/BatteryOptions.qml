@@ -8,14 +8,20 @@ Column {
 
     property var page: null
 
-    readonly property var styleValues: ["icon", "solid", "outline", "ring"]
+    readonly property var styleValues: ["icon", "solid", "outline", "ring", "duo"]
     readonly property var barConfig: {
         SettingsData.barConfigs;
         return SettingsData.getBarConfig(page?.barId ?? "");
     }
     readonly property var barStore: ({
             "isDefault": keys => keys.every(key => (root.barConfig?.[key] ?? SettingsData.barConfigDefault(key)) === SettingsData.barConfigDefault(key)),
-            "resetToDefault": keys => SettingsData.updateBarConfig(root.page.barId, Object.fromEntries(keys.map(key => [key, SettingsData.barConfigDefault(key)])))
+            "resetToDefault": keys => {
+                // QV4 has no Object.fromEntries.
+                const patch = {};
+                for (const key of keys)
+                    patch[key] = SettingsData.barConfigDefault(key);
+                SettingsData.updateBarConfig(root.page.barId, patch);
+            }
         })
 
     width: parent?.width ?? 0
@@ -25,16 +31,12 @@ Column {
         settingKey: "barWidgetBattery"
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["showBatteryPercent"]
             text: I18n.tr("Show percentage")
             checked: root.page.value("showBatteryPercent")
             onToggled: checked => root.page.set("showBatteryPercent", checked)
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["showBatteryPercentOnlyOnBattery"]
             enabled: root.page.value("showBatteryPercent")
             text: I18n.tr("Only on battery")
             checked: root.page.value("showBatteryPercentOnlyOnBattery")
@@ -42,16 +44,12 @@ Column {
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["showBatteryTime"]
             text: I18n.tr("Show remaining time")
             checked: root.page.value("showBatteryTime")
             onToggled: checked => root.page.set("showBatteryTime", checked)
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["showBatteryTimeOnlyOnBattery"]
             enabled: root.page.value("showBatteryTime")
             text: I18n.tr("Only on battery")
             checked: root.page.value("showBatteryTimeOnlyOnBattery")
@@ -59,16 +57,12 @@ Column {
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["showBatteryPowerCharging"]
             text: I18n.tr("Show charge rate", "Battery bar widget setting: show how many watts are going into the battery while charging")
             checked: root.page.value("showBatteryPowerCharging")
             onToggled: checked => root.page.set("showBatteryPowerCharging", checked)
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["showBatteryPowerDischarging"]
             text: I18n.tr("Show discharge rate", "Battery bar widget setting: show how many watts the system is drawing from the battery")
             checked: root.page.value("showBatteryPowerDischarging")
             onToggled: checked => root.page.set("showBatteryPowerDischarging", checked)
@@ -78,7 +72,7 @@ Column {
             resetStore: root.page
             resetKeys: ["batteryStyle"]
             text: I18n.tr("Battery style")
-            model: [I18n.tr("Icon", "battery widget: system battery glyph"), I18n.tr("Solid", "island settings: filled battery meter style"), I18n.tr("Outline", "island settings: outlined battery meter style"), I18n.tr("Circle", "island settings: circular battery meter style")]
+            model: [I18n.tr("Icon", "battery widget: system battery glyph"), I18n.tr("Solid", "island settings: filled battery meter style"), I18n.tr("Outline", "island settings: outlined battery meter style"), I18n.tr("Circle", "island settings: circular battery meter style"), I18n.tr("Duo", "battery meter style: open battery arc around the network glyph")]
             currentIndex: Math.max(0, root.styleValues.indexOf(root.page.value("batteryStyle")))
             onSelectionChanged: (index, selected) => {
                 if (selected)

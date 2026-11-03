@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_output_power"
-	wlclient "github.com/AvengeMedia/dankgo/wayland/client"
+	wlclient "github.com/duxlabs-dev/dux-go/wayland/client"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_output_power"
 )
 
 type cmd struct {

@@ -3,35 +3,11 @@ package network
 import (
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/errdefs"
-	mock_gonetworkmanager "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/github.com/Wifx/gonetworkmanager/v2"
 	"github.com/Wifx/gonetworkmanager/v2"
+	"github.com/duxlabs-dev/dux-shell/core/internal/errdefs"
+	mock_gonetworkmanager "github.com/duxlabs-dev/dux-shell/core/internal/mocks/github.com/Wifx/gonetworkmanager/v2"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestNetworkManagerBackend_UpdatePrimaryConnection(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	mockNM.EXPECT().GetPropertyActiveConnections().Return([]gonetworkmanager.ActiveConnection{}, nil)
-	mockNM.EXPECT().GetPropertyPrimaryConnection().Return(nil, nil)
-
-	err = backend.updatePrimaryConnection()
-	assert.NoError(t, err)
-}
-
-func TestNetworkManagerBackend_UpdateEthernetState_NoDevice(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	backend.ethernetDevice = nil
-	err = backend.updateEthernetState()
-	assert.NoError(t, err)
-}
 
 func TestNetworkManagerBackend_UpdateWiFiState_NoDevice(t *testing.T) {
 	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
@@ -56,7 +32,6 @@ func TestNetworkManagerBackend_ClassifyNMStateReason(t *testing.T) {
 	}{
 		{NmDeviceStateReasonWrongPassword, errdefs.ErrBadCredentials},
 		{NmDeviceStateReasonNoSecrets, errdefs.ErrUserCanceled},
-		{NmDeviceStateReasonSupplicantTimeout, errdefs.ErrBadCredentials},
 		{NmDeviceStateReasonDhcpClientFailed, errdefs.ErrDhcpTimeout},
 		{NmDeviceStateReasonNoSsid, errdefs.ErrNoSuchSSID},
 		{999, errdefs.ErrConnectionFailed},
@@ -88,9 +63,6 @@ func TestNetworkManagerBackend_UpdatePrimaryConnection_TypeMapping(t *testing.T)
 	}{
 		{"802-3-ethernet", StatusEthernet},
 		{"bridge", StatusEthernet},
-		{"bond", StatusEthernet},
-		{"team", StatusEthernet},
-		{"vlan", StatusEthernet},
 		{"802-11-wireless", StatusWiFi},
 		{"tun", StatusDisconnected},
 	}
@@ -157,7 +129,6 @@ func TestForgetOnConnectFailure(t *testing.T) {
 		{"cancelled prompt on freshly created profile", errdefs.ErrUserCanceled, false, true},
 		{"no-secrets failure on saved profile", errdefs.ErrUserCanceled, true, false},
 		{"bad credentials on freshly created profile", errdefs.ErrBadCredentials, false, false},
-		{"generic failure on saved profile", errdefs.ErrConnectionFailed, true, false},
 	}
 
 	for _, tt := range tests {

@@ -2,17 +2,20 @@ package providers
 
 import (
 	"fmt"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/configfrag"
+	"github.com/duxlabs-dev/dux-shell/core/internal/configfrag"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/sblinch/kdl-go"
 	"github.com/sblinch/kdl-go/document"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/windowrules"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/windowrules"
 )
 
 type NiriMatch struct {
@@ -50,6 +53,9 @@ type NiriWindowRule struct {
 	DefaultColumnWidth      string
 	DefaultWindowHeight     string
 	VariableRefreshRate     *bool
+	VrrFullscreenOnly       *bool
+	OnXdgActivate           string
+	PinchSensitivity        *float64
 	BlockOutFrom            string
 	DefaultColumnDisplay    string
 	ScrollFactor            *float64
@@ -182,18 +188,17 @@ func (p *NiriRulesParser) handleInclude(node *document.Node, baseDir string) {
 	}
 
 	includePath := strings.Trim(node.Arguments[0].String(), "\"")
-	isDMSInclude := includePath == "dms/windowrules.kdl" || strings.HasSuffix(includePath, "/dms/windowrules.kdl")
+	fullPath := filepath.Join(baseDir, includePath)
+	if filepath.IsAbs(includePath) {
+		fullPath = includePath
+	}
+	isDMSInclude := strings.HasSuffix(fullPath, "/dms/windowrules.kdl")
 
 	p.includeCount++
 	if isDMSInclude {
 		p.dmsRulesIncluded = true
 		p.dmsIncludePos = p.includeCount
 		p.dmsProcessed = true
-	}
-
-	fullPath := filepath.Join(baseDir, includePath)
-	if filepath.IsAbs(includePath) {
-		fullPath = includePath
 	}
 
 	_ = p.parseFile(fullPath)
@@ -251,8 +256,20 @@ func (p *NiriRulesParser) parseWindowRuleNode(node *document.Node) {
 		case "default-window-height":
 			rule.DefaultWindowHeight = p.parseSizeNode(child)
 		case "variable-refresh-rate":
-			b := p.parseBoolArg(child)
-			rule.VariableRefreshRate = &b
+			if len(child.Arguments) > 0 && child.Arguments[0].ValueString() == niriVrrFullscreenOnly {
+				rule.VrrFullscreenOnly = new(true)
+			} else {
+				b := p.parseBoolArg(child)
+				rule.VariableRefreshRate = &b
+			}
+		case "on-xdg-activate":
+			if len(child.Arguments) > 0 {
+				rule.OnXdgActivate = child.Arguments[0].ValueString()
+			}
+		case "pinch-sensitivity":
+			if f, ok := p.parseFloatArg(child); ok {
+				rule.PinchSensitivity = &f
+			}
 		case "block-out-from":
 			if len(child.Arguments) > 0 {
 				rule.BlockOutFrom = child.Arguments[0].ValueString()
@@ -524,7 +541,7 @@ var niriRulesMessages = configfrag.Messages{
 
 func (p *NiriRulesParser) buildDMSStatus() *windowrules.DMSRulesStatus {
 	scan := configfrag.IncludeScan{Count: p.includeCount, DMSPosition: p.dmsIncludePos, DMSSeen: p.dmsRulesIncluded}
-	return windowrules.DMSRulesStatusFrom(configfrag.BuildStatus(scan, p.dmsRulesExists, p.rulesAfterDMS, "", false, niriRulesMessages))
+	return windowrules.DMSRulesStatusFrom(configfrag.BuildStatus(scan, p.dmsRulesExists, p.rulesAfterDMS, niriRulesMessages))
 }
 
 type NiriRulesParseResult struct {
@@ -599,6 +616,9 @@ func ConvertNiriRulesToWindowRules(niriRules []NiriWindowRule) []windowrules.Win
 				DefaultColumnWidth:        nr.DefaultColumnWidth,
 				DefaultWindowHeight:       nr.DefaultWindowHeight,
 				VariableRefreshRate:       nr.VariableRefreshRate,
+				VrrFullscreenOnly:         nr.VrrFullscreenOnly,
+				OnXdgActivate:             nr.OnXdgActivate,
+				PinchSensitivity:          nr.PinchSensitivity,
 				BlockOutFrom:              nr.BlockOutFrom,
 				DefaultColumnDisplay:      nr.DefaultColumnDisplay,
 				ScrollFactor:              nr.ScrollFactor,
@@ -766,6 +786,9 @@ func (p *NiriWritableProvider) LoadDMSRules() ([]windowrules.WindowRule, error) 
 				DefaultColumnWidth:        nr.DefaultColumnWidth,
 				DefaultWindowHeight:       nr.DefaultWindowHeight,
 				VariableRefreshRate:       nr.VariableRefreshRate,
+				VrrFullscreenOnly:         nr.VrrFullscreenOnly,
+				OnXdgActivate:             nr.OnXdgActivate,
+				PinchSensitivity:          nr.PinchSensitivity,
 				BlockOutFrom:              nr.BlockOutFrom,
 				DefaultColumnDisplay:      nr.DefaultColumnDisplay,
 				ScrollFactor:              nr.ScrollFactor,
@@ -800,21 +823,68 @@ func (p *NiriWritableProvider) LoadDMSRules() ([]windowrules.WindowRule, error) 
 func (p *NiriWritableProvider) WriteDMSRules(rules []windowrules.WindowRule) error {
 	rulesPath := p.GetOverridePath()
 
+	for _, rule := range rules {
+		if err := checkNiriRuleRanges(rule); err != nil {
+			return err
+		}
+	}
+
 	if err := os.MkdirAll(filepath.Dir(rulesPath), 0755); err != nil {
 		return err
 	}
 
+	next := !slices.ContainsFunc(rules, usesNiriNextSyntax) || niriConfigNext()
+
 	var lines []string
-	lines = append(lines, "// DMS Window Rules - Managed by DankMaterialShell")
+	lines = append(lines, "// DMS Window Rules - Managed by Dux Shell")
 	lines = append(lines, "// Do not edit manually - changes may be overwritten")
 	lines = append(lines, "")
 
 	for _, rule := range rules {
-		lines = append(lines, p.formatRule(rule))
+		lines = append(lines, p.formatRule(rule, next))
 		lines = append(lines, "")
 	}
 
-	return os.WriteFile(rulesPath, []byte(strings.Join(lines, "\n")), 0644)
+	content := strings.Join(lines, "\n")
+	// An invalid fragment breaks every later niri reload, so the old file stays until niri accepts the new one.
+	if err := niriValidateRules(content); err != nil {
+		return fmt.Errorf("window rules rejected: %w", err)
+	}
+	return os.WriteFile(rulesPath, []byte(content), 0644)
+}
+
+var niriValidateRules = func(content string) error {
+	if _, err := exec.LookPath("niri"); err != nil {
+		return nil
+	}
+	return config.NiriValidateConfig(content)
+}
+
+// Matches niri's FloatOrInt<0, 100>.
+func checkNiriRuleRanges(rule windowrules.WindowRule) error {
+	for name, v := range map[string]*float64{
+		"pinch-sensitivity": rule.Actions.PinchSensitivity,
+		"scroll-factor":     rule.Actions.ScrollFactor,
+	} {
+		if v != nil && (*v < 0 || *v > 100) {
+			return fmt.Errorf("rule %q: %s must be between 0 and 100, got %s", rule.Name, name, formatFloat(*v))
+		}
+	}
+	return nil
+}
+
+const niriVrrFullscreenOnly = "fullscreen-only"
+
+var niriXdgActivateValues = []string{"ignore", "set-urgent", "focus"}
+
+// Probed lazily: it spawns niri, and only rules with post-26.04 syntax need the answer.
+var niriConfigNext = func() bool {
+	return config.HasNiriCapability(config.NiriCapConfigNext)
+}
+
+func usesNiriNextSyntax(rule windowrules.WindowRule) bool {
+	a := rule.Actions
+	return (a.VrrFullscreenOnly != nil && *a.VrrFullscreenOnly) || a.OnXdgActivate != "" || a.PinchSensitivity != nil
 }
 
 func formatNiriMatchLine(keyword string, m windowrules.MatchCriteria) (string, bool) {
@@ -852,7 +922,8 @@ func formatNiriMatchLine(keyword string, m windowrules.MatchCriteria) (string, b
 	return "    " + keyword + " " + strings.Join(matchProps, " "), true
 }
 
-func (p *NiriWritableProvider) formatRule(rule windowrules.WindowRule) string {
+// next allows post-26.04 syntax; niri 26.04 rejects the whole config over it.
+func (p *NiriWritableProvider) formatRule(rule windowrules.WindowRule, next bool) string {
 	var lines []string
 	lines = append(lines, fmt.Sprintf("// @id=%s @name=%s", rule.ID, rule.Name))
 	lines = append(lines, "window-rule {")
@@ -891,6 +962,9 @@ func (p *NiriWritableProvider) formatRule(rule windowrules.WindowRule) string {
 	if a.OpenFocused != nil {
 		lines = append(lines, fmt.Sprintf("    open-focused %t", *a.OpenFocused))
 	}
+	if next && slices.Contains(niriXdgActivateValues, a.OnXdgActivate) {
+		lines = append(lines, fmt.Sprintf("    on-xdg-activate %q", a.OnXdgActivate))
+	}
 	if a.OpenOnOutput != "" {
 		lines = append(lines, fmt.Sprintf("    open-on-output %q", a.OpenOnOutput))
 	}
@@ -903,7 +977,10 @@ func (p *NiriWritableProvider) formatRule(rule windowrules.WindowRule) string {
 	if a.DefaultWindowHeight != "" {
 		lines = append(lines, formatSizeProperty("default-window-height", a.DefaultWindowHeight))
 	}
-	if a.VariableRefreshRate != nil && *a.VariableRefreshRate {
+	switch {
+	case next && a.VrrFullscreenOnly != nil && *a.VrrFullscreenOnly:
+		lines = append(lines, fmt.Sprintf("    variable-refresh-rate %q", niriVrrFullscreenOnly))
+	case a.VariableRefreshRate != nil && *a.VariableRefreshRate:
 		lines = append(lines, "    variable-refresh-rate true")
 	}
 	if a.BlockOutFrom != "" {
@@ -914,6 +991,9 @@ func (p *NiriWritableProvider) formatRule(rule windowrules.WindowRule) string {
 	}
 	if a.ScrollFactor != nil {
 		lines = append(lines, fmt.Sprintf("    scroll-factor %.2f", *a.ScrollFactor))
+	}
+	if next && a.PinchSensitivity != nil {
+		lines = append(lines, fmt.Sprintf("    pinch-sensitivity %s", formatFloat(*a.PinchSensitivity)))
 	}
 	if a.CornerRadius != nil {
 		lines = append(lines, fmt.Sprintf("    geometry-corner-radius %d", *a.CornerRadius))

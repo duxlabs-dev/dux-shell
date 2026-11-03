@@ -4,7 +4,7 @@ import QtQuick
 import qs.Common
 import qs.Modules.Settings.Widgets
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Item {
     id: networkStatusTab
@@ -65,9 +65,9 @@ Item {
                             spacing: Theme.spacingS
 
                             Rectangle {
-                                width: 8
-                                height: 8
-                                radius: Theme.cornerRadiusXS
+                                width: Theme.spacingS
+                                height: Theme.spacingS
+                                radius: Theme.fullRadius(width, height)
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: {
                                     switch (NetworkService.networkStatus) {
@@ -122,7 +122,7 @@ Item {
                     Row {
                         width: parent.width
                         spacing: Theme.spacingM
-                        visible: NetworkService.backend === "networkmanager" && [NetworkService.ethernetConnected, NetworkService.wifiConnected, NetworkService.cellularConnected].filter(v => v).length > 1
+                        visible: NetworkService.backend === "networkmanager" && [NetworkService.ethernetDevices, NetworkService.wifiDevices, NetworkService.cellularDevices].filter(d => (d?.length ?? 0) > 0).length > 1
 
                         StyledText {
                             text: I18n.tr("Preference", "noun, which network connection type is preferred")
@@ -136,8 +136,9 @@ Item {
                             height: 1
                         }
 
-                        DankButtonGroup {
+                        DButtonGroup {
                             id: preferenceButtons
+                            arrowKeysSelect: false
 
                             readonly property var preferenceValues: {
                                 const values = ["auto", "ethernet", "wifi"];

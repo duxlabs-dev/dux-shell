@@ -12,9 +12,11 @@ QtObject {
     property var _outputCycleState: OutputCycleState.emptyState()
 
     Component.onCompleted: resolveOutputCycle()
+    onIsNiriChanged: resolveOutputCycle()
 
     readonly property Connections outputConnection: Connections {
         target: root.wlrOutputService
+        enabled: root.isNiri
 
         function onStateChanged() {
             root.resolveOutputCycle();
@@ -23,6 +25,7 @@ QtObject {
 
     readonly property Connections socketConnection: Connections {
         target: root.socket
+        enabled: root.isNiri
 
         function onConnectionStateChanged() {
             if (root.socket.linkUp)
@@ -31,9 +34,10 @@ QtObject {
     }
 
     function outputDescriptors() {
-        return wlrOutputService.outputs
-            .filter(output => output.name)
-            .map(output => ({ id: output.name, enabled: output.enabled }));
+        return wlrOutputService.outputs.filter(output => output.name).map(output => ({
+                    id: output.name,
+                    enabled: output.enabled
+                }));
     }
 
     function sendOutputAction(outputName, action) {

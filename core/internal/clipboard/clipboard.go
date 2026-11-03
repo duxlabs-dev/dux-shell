@@ -1,21 +1,25 @@
 package clipboard
 
 import (
+	"bytes"
 	"fmt"
+	"image"
 	"io"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"syscall"
 
-	"github.com/AvengeMedia/dankgo/wayland/ext_data_control"
-	"github.com/AvengeMedia/dankgo/wlclipboard"
+	"github.com/duxlabs-dev/dux-go/wayland/ext_data_control"
+	"github.com/duxlabs-dev/dux-go/wlclipboard"
 )
 
 const envServe = "_DMS_CLIPBOARD_SERVE"
 const envMime = "_DMS_CLIPBOARD_MIME"
 const envPasteOnce = "_DMS_CLIPBOARD_PASTE_ONCE"
 const envCacheFile = "_DMS_CLIPBOARD_CACHE"
+const envReady = "_DMS_CLIPBOARD_READY"
 
 // MaybeServeAndExit intercepts before cobra when re-exec'd as a clipboard
 // child. Reads source data into memory, deletes any cache file, then serves.
@@ -82,6 +86,20 @@ func CopyMulti(offers []wlclipboard.Offer, foreground, pasteOnce bool) error {
 		return serveOffers(offers, pasteOnce)
 	}
 	return copyMultiFork(offers, pasteOnce)
+}
+
+// FileOffers builds the offers for copying a file; uriPath may differ from path when the file was exported for flatpak.
+func FileOffers(uriPath, path string, data []byte) []wlclipboard.Offer {
+	fileURI := (&url.URL{Scheme: "file", Path: uriPath}).String()
+	offers := []wlclipboard.Offer{
+		{MimeType: "x-special/gnome-copied-files", Data: []byte("copy\n" + fileURI)},
+		{MimeType: "text/uri-list", Data: []byte(fileURI + "\r\n")},
+		{MimeType: "text/plain", Data: []byte(path)},
+	}
+	if _, imgFormat, err := image.DecodeConfig(bytes.NewReader(data)); err == nil {
+		offers = append(offers, wlclipboard.Offer{MimeType: "image/" + imgFormat, Data: data})
+	}
+	return offers
 }
 
 func newForkCmd(mimeType string, pasteOnce bool, extra ...string) *exec.Cmd {
@@ -183,14 +201,17 @@ func copyMultiFork(offers []wlclipboard.Offer, pasteOnce bool) error {
 	}
 
 	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stdin = nil
-	cmd.Stdout = nil
 	cmd.Stderr = nil
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	cmd.Env = append(os.Environ(), envReady+"=1")
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return fmt.Errorf("stdin pipe: %w", err)
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("stdout pipe: %w", err)
 	}
 
 	if err := cmd.Start(); err != nil {
@@ -204,13 +225,19 @@ func copyMultiFork(offers []wlclipboard.Offer, pasteOnce bool) error {
 			return fmt.Errorf("write offer data: %w", err)
 		}
 	}
-	stdin.Close()
+	if err := stdin.Close(); err != nil {
+		return fmt.Errorf("close stdin: %w", err)
+	}
 
+	var buf [1]byte
+	if _, err := stdout.Read(buf[:]); err != nil {
+		return fmt.Errorf("waiting for clipboard ready: %w", err)
+	}
 	return nil
 }
 
 func signalReady() {
-	if os.Getenv(envServe) == "" {
+	if os.Getenv(envServe) == "" && os.Getenv(envReady) == "" {
 		return
 	}
 	os.Stdout.Write([]byte{1})

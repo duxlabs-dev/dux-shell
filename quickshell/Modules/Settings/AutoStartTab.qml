@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
@@ -20,6 +20,7 @@ Item {
     property string newEntryExec: ""
     property string newEntryDesktopId: ""
     property string newEntryCommandWrapper: "%command%"
+    readonly property bool autostartTargetInactive: DesktopService.isSystemd && DesktopService.systemdAutostartTargetChecked && !DesktopService.systemdAutostartTargetActive
 
     readonly property string autostartDir: {
         const configHome = Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation));
@@ -343,6 +344,7 @@ Item {
     }
 
     Component.onCompleted: {
+        DesktopService.ensureProbed();
         desktopApps = AppSearchService.getVisibleApplications() || [];
         autostartInitMkDirComp.createObject(root, {
             running: true
@@ -353,7 +355,7 @@ Item {
         desktopApps = [];
     }
 
-    DankFlickable {
+    DFlickable {
         anchors.fill: parent
         clip: true
         contentHeight: mainColumn.height + Theme.spacingXL
@@ -372,12 +374,28 @@ Item {
             width: Math.min(SettingsMetrics.contentMaxWidth, parent.width - Theme.spacingL * 2)
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: Theme.spacingXL
-            visible: DesktopService.autostartAvailable
+
+            SettingsNoteRow {
+                width: parent.width
+                paintBackground: false
+                visible: root.autostartTargetInactive
+                text: I18n.tr("Autostart entries will not run at login because %1 is not active.", "autostart settings warning, %1 is a systemd target").arg("xdg-desktop-autostart.target")
+            }
+
+            SettingsLinkRow {
+                width: parent.width
+                visible: root.autostartTargetInactive
+                iconName: "menu_book"
+                title: I18n.tr("Docs")
+                subtitle: Site.domain
+                url: Site.docs + "/dms/autostart#target-not-active"
+            }
 
             SettingsCard {
                 settingKey: "autostartAddEntry"
                 tags: ["autostart", "add", "entry", "command", "startup"]
                 width: parent.width
+                visible: DesktopService.autostartAvailable
                 iconName: "add_circle"
                 title: I18n.tr("Add entry")
 
@@ -392,110 +410,36 @@ Item {
                 }
 
                 SettingsRow {
+                    id: appPickerRow
+
+                    readonly property var selectedApp: root.desktopApps.find(a => (a.id || a.execString) === root.newEntryDesktopId) ?? null
+
                     visible: root.newEntryType === "desktop"
-                    body: Column {
+                    title: I18n.tr("App", "noun, application picker label in autostart add entry")
+                    subtitle: root.newEntryDesktopId ? (selectedApp?.name || selectedApp?.id || root.newEntryDesktopId) : I18n.tr("No application selected")
+                    clickable: true
+                    showChevron: true
+                    onClicked: appBrowserPopup.show()
+                    leading: AppIconRenderer {
+                        width: Theme.iconSize
+                        height: Theme.iconSize
+                        iconValue: appPickerRow.selectedApp?.icon || "application-x-executable"
+                        iconSize: Theme.iconSize
+                        fallbackText: (appPickerRow.selectedApp?.name || "?").charAt(0).toUpperCase()
+                    }
+                }
+
+                SettingsRow {
+                    visible: root.newEntryType === "desktop"
+                    body: DTextField {
+                        outlined: true
+                        leftIconName: "terminal"
+                        labelText: I18n.tr("Command")
+                        supportingText: I18n.tr("Wrap the app command. %command% is replaced with the actual executable", "autostart command field hint, keep %command% verbatim")
                         width: parent.width
-                        spacing: Theme.spacingM
-
-                        Item {
-                            width: parent.width
-                            height: appLabelColumn.height
-
-                            Column {
-                                id: appLabelColumn
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: Theme.spacingXS
-
-                                StyledText {
-                                    text: I18n.tr("App", "noun, application picker label in autostart add entry")
-                                    font.pixelSize: Theme.fontSizeMedium
-                                    font.weight: Theme.fontWeightMedium
-                                    color: Theme.surfaceText
-                                }
-                            }
-                        }
-
-                        Row {
-                            width: parent.width
-                            spacing: Theme.spacingM
-
-                            StyledRect {
-                                height: 40
-                                radius: Theme.cornerRadius
-                                color: root.newEntryDesktopId ? Theme.floatingWindowFieldColor : Theme.withAlpha(Theme.chipSurface, Theme.floatingWindowForegroundLayers ? Theme.floatingWindowForegroundTransparency * 0.5 : 0)
-                                LayoutMirroring.enabled: I18n.isRtl
-                                LayoutMirroring.childrenInherit: true
-
-                                readonly property string selectedName: {
-                                    if (!root.newEntryDesktopId)
-                                        return "";
-                                    const app = root.desktopApps.find(a => (a.id || a.execString) === root.newEntryDesktopId);
-                                    return app ? (app.name || app.id || "") : root.newEntryDesktopId;
-                                }
-
-                                width: parent.width - browseButton.width - Theme.spacingM
-
-                                Row {
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: Theme.spacingM
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    spacing: Theme.spacingM
-                                    visible: root.newEntryDesktopId !== ""
-
-                                    Image {
-                                        width: 24
-                                        height: 24
-                                        source: {
-                                            const app = root.desktopApps.find(a => (a.id || a.execString) === root.newEntryDesktopId);
-                                            return Paths.resolveIconUrl(app?.icon || "application-x-executable");
-                                        }
-                                        sourceSize.width: 24
-                                        sourceSize.height: 24
-                                        fillMode: Image.PreserveAspectFit
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        onStatusChanged: {
-                                            if (status === Image.Error)
-                                                source = "image://icon/application-x-executable";
-                                        }
-                                    }
-
-                                    StyledText {
-                                        text: parent.parent.selectedName
-                                        font.pixelSize: Theme.fontSizeMedium
-                                        color: Theme.surfaceText
-                                        anchors.verticalCenter: parent.verticalCenter
-                                    }
-                                }
-
-                                StyledText {
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: Theme.spacingM
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: I18n.tr("No application selected")
-                                    font.pixelSize: Theme.fontSizeMedium
-                                    color: Theme.surfaceVariantText
-                                    visible: root.newEntryDesktopId === ""
-                                }
-                            }
-
-                            DankButton {
-                                id: browseButton
-                                text: I18n.tr("Browse")
-                                iconName: "search"
-                                onClicked: appBrowserPopup.show()
-                            }
-                        }
-
-                        DankTextField {
-                            outlined: true
-                            leftIconName: "terminal"
-                            labelText: I18n.tr("Command")
-                            supportingText: I18n.tr("Wrap the app command. %command% is replaced with the actual executable", "autostart command field hint, keep %command% verbatim")
-                            width: parent.width
-                            placeholderText: "%command%"
-                            text: root.newEntryCommandWrapper
-                            onTextChanged: root.newEntryCommandWrapper = text
-                        }
+                        placeholderText: "%command%"
+                        text: root.newEntryCommandWrapper
+                        onTextChanged: root.newEntryCommandWrapper = text
                     }
                 }
 
@@ -505,7 +449,7 @@ Item {
                         width: parent.width
                         spacing: Theme.spacingM
 
-                        DankTextField {
+                        DTextField {
                             outlined: true
                             leftIconName: "badge"
                             labelText: I18n.tr("Name")
@@ -515,7 +459,7 @@ Item {
                             onTextChanged: root.newEntryName = text
                         }
 
-                        DankTextField {
+                        DTextField {
                             outlined: true
                             leftIconName: "terminal"
                             labelText: I18n.tr("Command", "noun, text field label for a shell command")
@@ -530,7 +474,7 @@ Item {
                 SettingsRow {
                     body: StyledText {
                         width: parent.width
-                        text: I18n.tr("These add entries to the XDG autostart directory (~/.config/autostart/*.desktop)")
+                        text: I18n.tr("These add entries to the XDG autostart directory (%1)", "autostart note, %1 is a path").arg("~/.config/autostart/*.desktop")
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceVariantText
                         wrapMode: Text.WordWrap
@@ -538,7 +482,7 @@ Item {
                     }
                 }
 
-                DankButton {
+                DButton {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: I18n.tr("Add to autostart")
                     iconName: "add"
@@ -557,6 +501,7 @@ Item {
                 iconName: "line_start"
                 title: I18n.tr("Entries", "card title listing autostart entries")
                 settingKey: "autostartEntries"
+                visible: DesktopService.autostartAvailable
                 collapsible: true
                 expanded: true
 
@@ -574,7 +519,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
-                        DankActionButton {
+                        DActionButton {
                             id: clearAllButton
                             iconName: "delete_sweep"
                             tooltipText: I18n.tr("Clear All")
@@ -590,116 +535,45 @@ Item {
                     }
                 }
 
-                SettingsRow {
-                    body: Column {
-                        id: entriesList
-                        width: parent.width
-                        spacing: Theme.spacingS
+                Repeater {
+                    model: root.entries
 
-                        Repeater {
-                            model: root.entries
+                    delegate: SettingsRow {
+                        id: entryRow
 
-                            delegate: Rectangle {
-                                width: entriesList.width
-                                height: 48
-                                radius: Theme.cornerRadius
-                                color: Theme.floatingWindowFieldColor
-                                border.width: 0
+                        required property var modelData
 
-                                Row {
-                                    anchors.left: parent.left
-                                    anchors.right: entryToggle.left
-                                    anchors.leftMargin: Theme.spacingM
-                                    anchors.rightMargin: Theme.spacingM
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    spacing: Theme.spacingM
-
-                                    StyledText {
-                                        text: (index + 1).toString()
-                                        font.pixelSize: Theme.fontSizeSmall
-                                        font.weight: Theme.fontWeightMedium
-                                        color: Theme.primary
-                                        width: 20
-                                        anchors.verticalCenter: parent.verticalCenter
-                                    }
-
-                                    Image {
-                                        width: 24
-                                        height: 24
-                                        source: Paths.resolveIconUrl(modelData.icon || "application-x-executable")
-                                        sourceSize.width: 24
-                                        sourceSize.height: 24
-                                        fillMode: Image.PreserveAspectFit
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        onStatusChanged: {
-                                            if (status === Image.Error)
-                                                source = "image://icon/application-x-executable";
-                                        }
-                                    }
-
-                                    Column {
-                                        width: parent.width - 20 - 24 - Theme.spacingM * 2
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        spacing: Theme.spacingXXS
-
-                                        StyledText {
-                                            width: parent.width
-                                            text: modelData.name
-                                            font.pixelSize: Theme.fontSizeMedium
-                                            font.weight: Theme.fontWeightMedium
-                                            color: modelData.hidden ? Theme.surfaceVariantText : Theme.surfaceText
-                                            maximumLineCount: 1
-                                            elide: Text.ElideRight
-                                            horizontalAlignment: Text.AlignLeft
-                                            opacity: modelData.hidden ? 0.6 : 1.0
-                                        }
-
-                                        StyledText {
-                                            width: parent.width
-                                            text: modelData.hidden ? I18n.tr("Disabled") : modelData.exec
-                                            font.pixelSize: Theme.fontSizeSmall
-                                            color: Theme.surfaceVariantText
-                                            maximumLineCount: 1
-                                            elide: Text.ElideRight
-                                            horizontalAlignment: Text.AlignLeft
-                                        }
-                                    }
-                                }
-
-                                DankToggle {
-                                    id: entryToggle
-                                    anchors.right: entryRemoveButton.left
-                                    anchors.rightMargin: Theme.spacingS
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    checked: !modelData.hidden
-                                    onToggled: checked => root.setHidden(modelData, !checked)
-                                }
-
-                                DankActionButton {
-                                    id: entryRemoveButton
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: Theme.spacingS
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    iconName: "close"
-                                    Accessible.name: I18n.tr("Remove")
-                                    iconSize: 16
-                                    buttonSize: 32
-                                    circular: true
-                                    iconColor: Theme.error
-                                    onClicked: root.removeEntry(modelData.filePath)
-                                }
-                            }
+                        title: modelData.name
+                        titleColor: modelData.hidden ? Theme.surfaceVariantText : Theme.surfaceText
+                        subtitle: modelData.hidden ? I18n.tr("Disabled") : modelData.exec
+                        singleLineTitle: true
+                        leading: AppIconRenderer {
+                            width: Theme.iconSize
+                            height: Theme.iconSize
+                            iconValue: entryRow.modelData.icon || "application-x-executable"
+                            iconSize: Theme.iconSize
+                            fallbackText: (entryRow.modelData.name || "?").charAt(0).toUpperCase()
                         }
 
-                        StyledText {
-                            width: parent.width
-                            text: I18n.tr("No autostart entries")
-                            font.pixelSize: Theme.fontSizeMedium
-                            color: Theme.surfaceVariantText
-                            horizontalAlignment: Text.AlignHCenter
-                            visible: root.entries.length === 0
+                        DToggle {
+                            hideText: true
+                            text: entryRow.title
+                            checked: !entryRow.modelData.hidden
+                            onToggled: checked => root.setHidden(entryRow.modelData, !checked)
+                        }
+
+                        DActionButton {
+                            iconName: "delete"
+                            iconColor: Theme.error
+                            tooltipText: I18n.tr("Remove")
+                            onClicked: root.removeEntry(entryRow.modelData.filePath)
                         }
                     }
+                }
+
+                SettingsRow {
+                    visible: root.entries.length === 0
+                    subtitle: I18n.tr("No autostart entries")
                 }
             }
 
@@ -709,7 +583,7 @@ Item {
                 width: parent.width
                 iconName: "handyman"
                 title: I18n.tr("Tray icon fix")
-                visible: DesktopService.isSystemd
+                visible: DesktopService.isSystemd && DesktopService.autostartAvailable
 
                 SettingsRow {
                     body: Column {
@@ -724,7 +598,7 @@ Item {
                             wrapMode: Text.WordWrap
                         }
 
-                        DankButton {
+                        DButton {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: I18n.tr("Generate override")
                             iconName: "build"

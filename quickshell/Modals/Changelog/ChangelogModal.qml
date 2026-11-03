@@ -1,13 +1,14 @@
 import QtQuick
 import qs.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 
-DankFloatingWindow {
+DFloatingWindow {
     id: root
 
-    readonly property int modalWidth: 680
-    readonly property int modalHeight: screen ? Math.min(720, screen.height - 80) : 720
+    readonly property int modalWidth: 720
+    readonly property int modalHeight: heightWithin(760, 80)
 
     signal changelogDismissed
 
@@ -15,8 +16,16 @@ DankFloatingWindow {
         visible = true;
     }
 
+    function dismiss() {
+        ChangelogService.dismissChangelog();
+        changelogDismissed();
+        visible = false;
+    }
+
     objectName: "changelogModal"
-    title: "What's New"
+    title: I18n.tr("What's New", "changelog window title")
+    implicitWidth: modalWidth
+    implicitHeight: modalHeight
     minimumSize: Qt.size(modalWidth, modalHeight)
     maximumSize: Qt.size(modalWidth, modalHeight)
     visible: false
@@ -43,69 +52,87 @@ DankFloatingWindow {
             }
         }
 
-        DankWindowHeader {
+        DWindowHeader {
             id: headerRow
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
             controls: windowControls
+            title: root.title
             onCloseRequested: root.dismiss()
         }
 
-        DankFlickable {
+        DFlickable {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: headerRow.bottom
-            anchors.bottom: footerRow.top
-            anchors.topMargin: Theme.spacingS
+            anchors.bottom: parent.bottom
             clip: true
-            contentHeight: mainColumn.height + Theme.spacingL * 2
+            contentHeight: mainColumn.height + fabBar.height + Theme.windowInset * 2
             contentWidth: width
 
             ChangelogContent {
                 id: mainColumn
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: Math.min(600, parent.width - Theme.spacingXL * 2)
+                x: Theme.windowInset
+                width: parent.width - Theme.windowInset * 2
             }
         }
 
         Rectangle {
-            id: footerRow
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            height: Math.round(Theme.fontSizeMedium * 4.5)
-            color: Theme.floatingWindowNestedSurface
-            border.width: Theme.layerOutlineWidth
-            border.color: Theme.outlineMedium
+            height: fabBar.height + Theme.windowInset * 2
+            z: 1
+            gradient: Gradient {
+                GradientStop {
+                    position: 0
+                    color: Theme.withAlpha(root.surfaceColor, 0)
+                }
+                GradientStop {
+                    position: 1
+                    color: root.surfaceColor
+                }
+            }
+        }
 
-            Rectangle {
-                anchors.top: parent.top
-                width: parent.width
-                height: 1
-                color: Theme.outlineMedium
-                opacity: 0.5
+        Row {
+            id: fabBar
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: Theme.windowInset
+            z: 2
+            spacing: Theme.spacingM
+            LayoutMirroring.enabled: I18n.isRtl
+
+            DButton {
+                id: notesButton
+                anchors.verticalCenter: parent.verticalCenter
+                text: I18n.tr("Release notes", "settings page and card title, notes for a DMS release")
+                iconName: "article"
+                buttonHeight: Theme.buttonHeightM
+                backgroundColor: Theme.secondaryContainer
+                textColor: Theme.onSecondaryContainer
+                onClicked: PopoutService.openSettingsWithTab("updater_changelog")
+
+                Loader {
+                    anchors.fill: parent
+                    z: -1
+                    active: Theme.elevationEnabled
+                    sourceComponent: ElevationShadow {
+                        level: Theme.elevationLevel3
+                        targetColor: notesButton.color
+                        targetRadius: notesButton.radius
+                    }
+                }
             }
 
-            Row {
-                anchors.centerIn: parent
-                spacing: Theme.spacingM
-
-                DankButton {
-                    text: I18n.tr("Open in Browser")
-                    iconName: "open_in_new"
-                    backgroundColor: Theme.chipSurface
-                    textColor: Theme.surfaceText
-                    onClicked: Qt.openUrlExternally("https://danklinux.com/blog/v1-6-release")
-                }
-
-                DankButton {
-                    text: I18n.tr("OK")
-                    iconName: "check"
-                    backgroundColor: Theme.primary
-                    textColor: Theme.primaryText
-                    onClicked: root.dismiss()
-                }
+            DFab {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Let's go"
+                iconName: "check"
+                colorRole: "primary"
+                onClicked: root.dismiss()
             }
         }
     }
@@ -113,11 +140,5 @@ DankFloatingWindow {
     FloatingWindowControls {
         id: windowControls
         targetWindow: root
-    }
-
-    function dismiss() {
-        ChangelogService.dismissChangelog();
-        changelogDismissed();
-        visible = false;
     }
 }

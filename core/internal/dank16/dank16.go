@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 
+	"github.com/duxlabs-dev/dux-go/material/color"
+	"github.com/duxlabs-dev/dux-go/material/num"
 	"github.com/lucasb-eyer/go-colorful"
 )
 
@@ -452,11 +455,64 @@ func EnsureContrastDPSBidirectional(hexColor, hexBg string, minLc float64, isLig
 	return hexColor
 }
 
+const (
+	ProfileLow    = "low"
+	ProfileMedium = "medium"
+	ProfileHigh   = "high"
+)
+
+var profileStrength = map[string]float64{ProfileLow: 0.25, ProfileMedium: 0.5, ProfileHigh: 0.85}
+
 type PaletteOptions struct {
 	IsLight    bool
 	Background string
 	Container  string
 	UseDPS     bool
+	Profile    string
+}
+
+func rotateTowardPrimary(hex string, primary color.Hct, strength float64) string {
+	argb, err := color.ARGBFromHex(hex)
+	if err != nil {
+		return hex
+	}
+	c := argb.ToHct()
+	rot := math.Min(num.DifferenceDegrees(c.Hue, primary.Hue)*0.8, 100) * strength
+	hue := num.NormalizeDegree(c.Hue + rot*num.RotationDirection(c.Hue, primary.Hue))
+	return strings.ToLower(color.NewHct(hue, c.Chroma, c.Tone).ToARGB().HexRGB())
+}
+
+func applyProfile(p *Palette, primaryColor, bg string, normalTarget, accentTarget float64, opts PaletteOptions) {
+	strength := profileStrength[opts.Profile]
+	if strength == 0 {
+		return
+	}
+	argb, err := color.ARGBFromHex(primaryColor)
+	if err != nil {
+		return
+	}
+	primary := argb.ToHct()
+	// A near-grey primary has no usable hue to rotate toward.
+	if primary.Chroma < 5 {
+		return
+	}
+	normal := func(h string) string { return ensureContrastAuto(h, bg, normalTarget, opts) }
+	accent := func(h string) string { return ensureContrastBidirectional(h, bg, accentTarget, opts) }
+	none := func(h string) string { return h }
+	// Same per-slot contrast guards GeneratePalette applies.
+	slots := []struct {
+		c     *ColorInfo
+		guard func(string) string
+	}{
+		{&p.Color1, normal}, {&p.Color2, normal}, {&p.Color3, normal}, {&p.Color4, normal},
+		{&p.Color9, accent}, {&p.Color10, accent}, {&p.Color11, accent}, {&p.Color12, accent}, {&p.Color13, none}, {&p.Color14, none},
+	}
+	if opts.IsLight {
+		slots[8].guard = accent
+	}
+	for _, s := range slots {
+		*s.c = NewColorInfo(s.guard(rotateTowardPrimary(s.c.Hex, primary, strength)))
+	}
 }
 
 func ensureContrastAuto(hexColor, hexBg string, target float64, opts PaletteOptions) string {
@@ -690,6 +746,8 @@ func GeneratePalette(primaryColor string, opts PaletteOptions) Palette {
 		palette.Color15 = NewColorInfo(ensureContrastAuto(RGBToHex(HSVToRGB(HSV{H: hsv.H, S: white15S, V: white15V})), bgColor, normalTextTarget, opts))
 	}
 
+	applyProfile(&palette, primaryColor, bgColor, normalTextTarget, accentTarget, opts)
+
 	return palette
 }
 
@@ -702,6 +760,7 @@ type VariantOptions struct {
 	ContainerLight  string
 	UseDPS          bool
 	IsLightMode     bool
+	Profile         string
 }
 
 func mergeColorInfo(dark, light ColorInfo, isLightMode bool) VariantColorInfo {
@@ -718,8 +777,8 @@ func mergeColorInfo(dark, light ColorInfo, isLightMode bool) VariantColorInfo {
 }
 
 func GenerateVariantPalette(opts VariantOptions) VariantPalette {
-	darkOpts := PaletteOptions{IsLight: false, Background: opts.BackgroundDark, Container: opts.ContainerDark, UseDPS: opts.UseDPS}
-	lightOpts := PaletteOptions{IsLight: true, Background: opts.BackgroundLight, Container: opts.ContainerLight, UseDPS: opts.UseDPS}
+	darkOpts := PaletteOptions{IsLight: false, Background: opts.BackgroundDark, Container: opts.ContainerDark, UseDPS: opts.UseDPS, Profile: opts.Profile}
+	lightOpts := PaletteOptions{IsLight: true, Background: opts.BackgroundLight, Container: opts.ContainerLight, UseDPS: opts.UseDPS, Profile: opts.Profile}
 
 	dark := GeneratePalette(opts.PrimaryDark, darkOpts)
 	light := GeneratePalette(opts.PrimaryLight, lightOpts)

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/backup"
+	"github.com/duxlabs-dev/dux-shell/core/internal/backup"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +17,7 @@ var backupCmd = &cobra.Command{
 
 var backupCreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create a tar.gz backup of ~/.config/DankMaterialShell (settings, plugins, themes)",
+	Short: "Create a tar.gz backup of ~/.config/dms (settings, plugins, themes)",
 	Args:  cobra.NoArgs,
 	Run:   runBackupCreate,
 }

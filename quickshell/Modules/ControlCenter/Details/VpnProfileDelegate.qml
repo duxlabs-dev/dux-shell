@@ -3,7 +3,7 @@ import qs.Common
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 CcListRow {
     id: root
@@ -67,7 +67,7 @@ CcListRow {
     }
 
     iconName: isConnecting ? "" : (isActive ? "vpn_lock" : (hasError ? "error" : "vpn_key_off"))
-    iconColor: hasError ? Theme.error : (isActive ? Theme.primary : Theme.surfaceText)
+    iconColor: hasError ? Theme.error : contentColor
     active: isActive
     title: profile?.name ?? ""
     subtitle: isConnecting ? I18n.tr("Connecting...") : (hasError ? DMSNetworkService.vpnError : VPNService.getVpnTypeFromProfile(profile))
@@ -76,16 +76,7 @@ CcListRow {
     clickable: true
     onClicked: DMSNetworkService.toggle(profile.uuid)
 
-    Behavior on height {
-        enabled: CcMetrics.animationsEnabled
-        NumberAnimation {
-            duration: Theme.expressiveDurations.expressiveFastSpatial
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
-        }
-    }
-
-    leading: DankSpinner {
+    leading: DSpinner {
         size: Theme.iconSizeMedium
         strokeWidth: CcMetrics.spinnerStroke
         color: Theme.warning
@@ -93,7 +84,19 @@ CcListRow {
         running: visible
     }
 
-    DankActionButton {
+    DActionButton {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.isActive
+        buttonSize: Theme.buttonHeightXS
+        iconSize: Theme.iconSizeMedium
+        iconName: "link_off"
+        Accessible.name: I18n.tr("Disconnect")
+        iconColor: root.contentColor
+        enabled: !DMSNetworkService.isBusy
+        onClicked: DMSNetworkService.toggle(root.profile.uuid)
+    }
+
+    DActionButton {
         anchors.verticalCenter: parent.verticalCenter
         visible: root.canExpand
         buttonSize: Theme.buttonHeightXS
@@ -104,7 +107,7 @@ CcListRow {
         onClicked: root.toggleExpand()
     }
 
-    DankActionButton {
+    DActionButton {
         anchors.verticalCenter: parent.verticalCenter
         visible: root.canDelete
         buttonSize: Theme.buttonHeightXS
@@ -120,7 +123,7 @@ CcListRow {
         spacing: Theme.spacingS
         visible: root.isExpanded
 
-        DankSpinner {
+        DSpinner {
             anchors.horizontalCenter: parent.horizontalCenter
             size: Theme.iconSizeMedium
             strokeWidth: CcMetrics.spinnerStroke
@@ -136,39 +139,18 @@ CcListRow {
             Repeater {
                 model: root.configFields
 
-                Rectangle {
+                DDetailChip {
                     required property var modelData
 
-                    width: fieldContent.width + Theme.spacingM * 2
-                    height: Theme.buttonHeightXS
-                    radius: Theme.cornerRadiusS
+                    label: modelData.label
+                    value: modelData.value
                     color: Theme.chipSurface
-
-                    Row {
-                        id: fieldContent
-                        anchors.centerIn: parent
-                        spacing: Theme.spacingXS
-
-                        StyledText {
-                            text: modelData.label + ":"
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.surfaceVariantText
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        StyledText {
-                            text: modelData.value
-                            font.pixelSize: Theme.fontSizeSmall
-                            font.weight: Theme.fontWeightMedium
-                            color: Theme.surfaceText
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
+                    border.width: 0
                 }
             }
         }
 
-        DankToggle {
+        DToggle {
             width: parent.width
             text: I18n.tr("Autoconnect")
             checked: root.configData ? (root.configData.autoconnect || false) : false
@@ -189,14 +171,14 @@ CcListRow {
                 color: root.hasError ? Theme.error : Theme.surfaceVariantText
             }
 
-            DankTextField {
+            DTextField {
                 id: usernameField
                 width: parent.width
                 placeholderText: I18n.tr("Username")
                 text: (root.configData && (root.configData.username || (root.configData.data && root.configData.data.username))) || ""
             }
 
-            DankTextField {
+            DTextField {
                 id: passwordField
                 width: parent.width
                 placeholderText: I18n.tr("Password")
@@ -205,7 +187,7 @@ CcListRow {
                 normalBorderColor: root.hasError ? Theme.error : Theme.outlineMedium
             }
 
-            DankButton {
+            DButton {
                 text: I18n.tr("Save credentials")
                 buttonHeight: Theme.buttonHeightXS
                 enabled: passwordField.text.length > 0

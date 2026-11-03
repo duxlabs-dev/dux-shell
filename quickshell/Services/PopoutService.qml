@@ -32,6 +32,7 @@ Singleton {
     property var clipboardHistoryPopout: null
     property var clipboardHistoryPopoutLoader: null
 
+    property var desktopContextMenu: null
     property var settingsModal: null
     property var settingsModalLoader: null
     property var clipboardHistoryModal: null
@@ -44,10 +45,15 @@ Singleton {
     property var powerMenuModalLoader: null
     property var powerMenuPopout: null
     property var powerMenuPopoutLoader: null
+    property var switchUserModalLoader: null
     property var durationPopout: null
     property var durationPopoutLoader: null
     property var processListModal: null
     property var processListModalLoader: null
+    property var keybindsModal: null
+    property var keybindsModalLoader: null
+    property var systemUpdateModal: null
+    property var systemUpdateModalLoader: null
     property var colorPickerModal: null
     property var notificationModal: null
     property var wifiPasswordModal: null
@@ -69,6 +75,7 @@ Singleton {
 
     property string pendingThemeInstall: ""
     property string pendingPluginInstall: ""
+    property string pendingWallpaperInstall: ""
 
     // Deferred unload: keep popouts warm while the session is active and reclaim them on lock/monitors-off.
     property var _pendingUnloads: ({})
@@ -193,9 +200,9 @@ Singleton {
         }
     }
 
-    function _sharedTriggerIsland(screen) {
+    function _sharedTriggerIsland(screen, activity) {
         const target = screen ?? CompositorService.getFocusedScreen();
-        const config = target ? SettingsData.sharedTriggerIslandConfig(target) : null;
+        const config = target ? SettingsData.sharedTriggerIslandConfig(target, activity) : null;
         if (!config || dankIslandRouter?.hasHostForScreen?.(target, config.id) !== true)
             return null;
         return {
@@ -209,7 +216,7 @@ Singleton {
     function routeToIsland(activityId, screen, shouldToggle, section, barId) {
         if (barId && dankIslandRouter?.hasHostForScreen(screen, barId) !== true)
             return false;
-        const shared = barId ? null : _sharedTriggerIsland(screen);
+        const shared = barId ? null : _sharedTriggerIsland(screen, activityId);
         if (!barId && !shared)
             return false;
         const targetScreen = shared?.screen ?? screen ?? null;
@@ -233,8 +240,7 @@ Singleton {
     }
 
     function closeControlCenter() {
-        if (closeIslandActivity("controlcenter"))
-            return;
+        closeIslandActivity("controlcenter");
         controlCenterPopout?.close();
     }
 
@@ -261,8 +267,7 @@ Singleton {
     }
 
     function closeNotificationCenter() {
-        if (closeIslandActivity("notificationcenter"))
-            return;
+        closeIslandActivity("notificationcenter");
         notificationCenterPopout?.close();
     }
 
@@ -365,6 +370,7 @@ Singleton {
         _dankDashWantsEdit = false;
         if (dankDashPopout)
             dankDashPopout.dashVisible = false;
+        dankIslandRouter?.closeDash?.();
     }
 
     function toggleDankDash(tab, x, y, width, section, screen) {
@@ -725,11 +731,24 @@ Singleton {
     }
 
     function openClipboardHistory() {
+        if (routeToIsland("clipboard", null, false))
+            return;
         clipboardHistoryModal?.show();
     }
 
     function closeClipboardHistory() {
+        closeIslandActivity("clipboard");
         clipboardHistoryModal?.hide();
+    }
+
+    function toggleClipboardHistory() {
+        if (clipboardHistoryModal?.shouldBeVisible) {
+            clipboardHistoryModal.hide();
+            return;
+        }
+        if (routeToIsland("clipboard", null, true))
+            return;
+        clipboardHistoryModal?.toggle();
     }
 
     function unloadClipboardHistoryPopout() {
@@ -764,9 +783,9 @@ Singleton {
 
     function _routeSharedLauncher(query, mode, toggle) {
         const screen = CompositorService.getFocusedScreen();
-        if (!SettingsData.sharedShortcutsOverridden(screen))
+        if (!SettingsData.sharedShortcutsOverridden(screen, "launcher"))
             return false;
-        const shared = _sharedTriggerIsland(screen);
+        const shared = _sharedTriggerIsland(screen, "launcher");
         if (!shared)
             return false;
         return toggle ? dankIslandRouter.toggleLauncher(query, mode, shared.screen, shared.barId) : dankIslandRouter.openLauncher(query, mode, shared.screen, shared.barId);
@@ -815,7 +834,7 @@ Singleton {
     }
 
     function closeDankLauncherV2() {
-        dankIslandRouter?.closeLauncher?.();
+        closeIslandActivity("launcher");
         dankLauncherV2Modal?.hide();
     }
 
@@ -994,22 +1013,42 @@ Singleton {
         }
     }
 
+    function _powerMenuModalItem() {
+        if (powerMenuModalLoader)
+            powerMenuModalLoader.active = true;
+        return powerMenuModalLoader?.item ?? powerMenuModal;
+    }
+
     function openPowerMenu() {
-        powerMenuModal?.openCentered();
+        if (routeToIsland("powermenu", null, false))
+            return;
+        _powerMenuModalItem()?.openCentered();
     }
 
     function closePowerMenu() {
-        powerMenuModal?.close();
+        closeIslandActivity("powermenu");
+        (powerMenuModalLoader?.item ?? powerMenuModal)?.close();
     }
 
     function togglePowerMenu() {
-        if (powerMenuModal) {
-            if (powerMenuModal.shouldBeVisible) {
-                powerMenuModal.close();
-            } else {
-                powerMenuModal.openCentered();
-            }
+        const loaded = powerMenuModalLoader?.item ?? powerMenuModal;
+        if (loaded?.shouldBeVisible) {
+            loaded.close();
+            return;
         }
+        if (routeToIsland("powermenu", null, true))
+            return;
+        _powerMenuModalItem()?.openCentered();
+    }
+
+    function openSwitchUser() {
+        if (!switchUserModalLoader)
+            return;
+        switchUserModalLoader.active = true;
+        Qt.callLater(() => {
+            if (switchUserModalLoader.loadedModal)
+                switchUserModalLoader.loadedModal.showFromPowerMenu();
+        });
     }
 
     function openPowerProfileModal() {
@@ -1059,11 +1098,38 @@ Singleton {
         processListModal?.hide();
     }
 
+    function showKeybindsModal() {
+        if (keybindsModal) {
+            keybindsModal.open();
+            return;
+        }
+        if (!keybindsModalLoader)
+            return;
+        keybindsModalLoader.active = true;
+        Qt.callLater(() => keybindsModal?.open());
+    }
+
     function unloadProcessListModal() {
         if (processListModalLoader) {
             processListModal = null;
             processListModalLoader.active = false;
         }
+    }
+
+    function showSystemUpdateModal() {
+        if (systemUpdateModal) {
+            systemUpdateModal.show();
+        } else if (systemUpdateModalLoader) {
+            systemUpdateModalLoader.active = true;
+            Qt.callLater(() => systemUpdateModal?.show());
+        }
+    }
+
+    function unloadSystemUpdateModal() {
+        if (!systemUpdateModalLoader)
+            return;
+        systemUpdateModal = null;
+        systemUpdateModalLoader.active = false;
     }
 
     function toggleProcessListModal() {
@@ -1105,7 +1171,7 @@ Singleton {
     }
 
     function showNotificationModal() {
-        notificationModal?.show();
+        notificationModal?.open();
     }
 
     function hideNotificationModal() {

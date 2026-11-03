@@ -1,7 +1,8 @@
 import QtQuick
+import Quickshell
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Column {
@@ -9,16 +10,10 @@ Column {
 
     property var parentModal: null
 
+    readonly property bool frameForcesOverlay: Quickshell.screens.length > 0 && Quickshell.screens.every(screen => CompositorService.frameWindowVisibleForScreen(screen))
+
     width: parent?.width ?? 0
     spacing: Theme.spacingL
-
-    Component.onCompleted: {
-        if (!SettingsData._pendingExpandNotificationRules)
-            return;
-        SettingsData._pendingExpandNotificationRules = false;
-        SettingsData._pendingNotificationRuleIndex = -1;
-        Qt.callLater(() => root.parentModal?.navigateTo("notification_rules"));
-    }
 
     function indexedRules(predicate) {
         return (SettingsData.notificationRules || []).map((rule, index) => ({
@@ -103,7 +98,7 @@ Column {
         title: I18n.tr("Popups", "notification settings card title, popup notifications")
         settingKey: "notificationPopups"
 
-        headerActions: DankButton {
+        headerActions: DButton {
             text: I18n.tr("Preview")
             buttonHeight: Theme.buttonHeightXS
             onClicked: NotificationService.sendTestNotifications()
@@ -169,7 +164,8 @@ Column {
             settingKey: "notificationOverlayEnabled"
             tags: ["notification", "overlay", "fullscreen", "priority"]
             text: I18n.tr("Over fullscreen")
-            checked: SettingsData.notificationOverlayEnabled
+            enabled: !root.frameForcesOverlay
+            checked: root.frameForcesOverlay || SettingsData.notificationOverlayEnabled
             onToggled: checked => SettingsData.set("notificationOverlayEnabled", checked)
         }
 
@@ -278,59 +274,23 @@ Column {
         }
 
         SettingsRow {
-            body: Column {
-                width: parent.width
-                spacing: Theme.spacingS
+            subtitle: I18n.tr("Right-click a notification and choose \"Allow in Do Not Disturb\" to add an app")
+        }
 
-                StyledText {
-                    text: I18n.tr("Right-click a notification and choose \"Allow in Do Not Disturb\" to add an app")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    wrapMode: Text.WordWrap
-                    width: parent.width
-                    bottomPadding: Theme.spacingS
-                }
+        Repeater {
+            model: root.dndBypassRules
 
-                Repeater {
-                    model: root.dndBypassRules
+            delegate: SettingsRow {
+                required property var modelData
 
-                    delegate: Rectangle {
-                        width: parent.width
-                        height: dndBypassRow.implicitHeight + Theme.spacingS * 2
-                        radius: Theme.cornerRadius
-                        color: Theme.floatingWindowFieldColor
+                title: modelData.rule?.pattern || I18n.tr("Unknown")
+                singleLineTitle: true
 
-                        Row {
-                            id: dndBypassRow
-                            anchors.fill: parent
-                            anchors.margins: Theme.spacingS
-                            spacing: Theme.spacingM
-
-                            StyledText {
-                                id: dndBypassLabel
-                                text: modelData.rule.pattern || I18n.tr("Unknown")
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceText
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            Item {
-                                width: Math.max(0, parent.width - parent.spacing * 2 - dndBypassLabel.width - dndBypassRemoveBtn.width)
-                                height: 1
-                            }
-
-                            DankActionButton {
-                                id: dndBypassRemoveBtn
-                                buttonSize: 28
-                                iconName: "delete"
-                                Accessible.name: I18n.tr("Remove")
-                                iconSize: 18
-                                iconColor: Theme.surfaceVariantText
-                                anchors.verticalCenter: parent.verticalCenter
-                                onClicked: SettingsData.removeNotificationRule(modelData.index)
-                            }
-                        }
-                    }
+                DActionButton {
+                    iconName: "delete"
+                    iconColor: Theme.error
+                    tooltipText: I18n.tr("Remove")
+                    onClicked: SettingsData.removeNotificationRule(modelData.index)
                 }
             }
         }
@@ -343,7 +303,7 @@ Column {
             iconName: "rule_settings"
             title: I18n.tr("Rules")
             hint: SettingsTabs.page("notification_rules")?.hint ?? ""
-            onClicked: root.parentModal?.navigateTo("notification_rules")
+            onClicked: keyboard => root.parentModal?.navigateTo("notification_rules", keyboard)
         }
     }
 
@@ -363,16 +323,26 @@ Column {
         }
 
         SettingsDropdownRow {
-            settingKey: "lockScreenNotificationMode"
+            readonly property var lockNotifications: SettingsData.lockWidgetInstance("lockNotifications")
+            readonly property int currentMode: !lockNotifications || lockNotifications.enabled === false ? 0 : (lockNotifications.config?.mode ?? 1)
+
+            settingKey: "lockNotificationsMode"
             tags: ["lock", "screen", "notification", "notifications", "privacy"]
+            visible: lockNotifications !== null
             text: I18n.tr("Lock screen content")
             options: [I18n.tr("Disabled", "lock screen notification mode option"), I18n.tr("Count only", "lock screen notification mode option"), I18n.tr("App names", "lock screen notification mode option"), I18n.tr("Full content", "lock screen notification mode option")]
-            currentValue: options[SettingsData.lockScreenNotificationMode] || options[0]
+            currentValue: options[currentMode] || options[0]
             onValueChanged: value => {
                 const idx = options.indexOf(value);
                 if (idx < 0)
                     return;
-                SettingsData.set("lockScreenNotificationMode", idx);
+                SettingsData.updateDesktopWidgetInstance(lockNotifications.id, {
+                    enabled: idx > 0
+                });
+                if (idx > 0)
+                    SettingsData.updateDesktopWidgetInstanceConfig(lockNotifications.id, {
+                        mode: idx
+                    });
             }
         }
     }

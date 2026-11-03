@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/errdefs"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/errdefs"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -41,6 +41,8 @@ func (b *IWDBackend) updateState() error {
 				b.state.NetworkStatus = StatusWiFi
 			} else {
 				b.state.NetworkStatus = StatusDisconnected
+				b.state.WiFiSSID = ""
+				b.state.WiFiSignal = 0
 			}
 			b.stateMutex.Unlock()
 		}
@@ -632,6 +634,10 @@ func (b *IWDBackend) ConnectWiFi(req ConnectionRequest) error {
 			b.onStateChange()
 		}
 		return fmt.Errorf("network not found: %w", err)
+	}
+
+	if req.Password != "" {
+		b.storePendingPSK(req.SSID, req.Password)
 	}
 
 	att := &connectAttempt{

@@ -1,9 +1,9 @@
 import QtQuick
 import qs.Common
 import qs.Modals.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
-DankModal {
+DModal {
     id: root
 
     property string outputName: ""
@@ -197,7 +197,7 @@ DankModal {
                 }
             }
 
-            DankActionButton {
+            DActionButton {
                 anchors.top: parent.top
                 anchors.right: parent.right
                 anchors.topMargin: Theme.spacingM

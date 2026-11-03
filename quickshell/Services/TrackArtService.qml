@@ -118,7 +118,27 @@ Singleton {
             return;
         }
         _candidateArt = candidate;
+        _quantize(url);
+    }
+
+    property bool _quantizing: false
+    property string _queuedArtUrl: ""
+
+    // Replacing a live source makes ColorQuantizer wait for the whole global thread pool on the gui thread.
+    function _quantize(url) {
+        if (_quantizing) {
+            _queuedArtUrl = url;
+            return;
+        }
+        _queuedArtUrl = "";
+        const previous = quantizer.source.toString();
         quantizer.source = url;
+        _quantizing = quantizer.source.toString() !== previous;
+    }
+
+    function _startQueued() {
+        if (_queuedArtUrl !== "" && !_quantizing)
+            _quantize(_queuedArtUrl);
     }
 
     ColorQuantizer {
@@ -126,14 +146,17 @@ Singleton {
         depth: 4
         rescaleSize: 64
         onColorsChanged: {
+            root._quantizing = false;
             root._quantizedArt = {
                 url: source.toString(),
                 colors: Array.from(colors)
             };
             const candidate = root._candidateArt;
-            if (!candidate || candidate.serial !== root._requestSerial || candidate.url !== source.toString())
-                return;
-            root._publish(candidate, root._quantizedArt.colors);
+            if (candidate && candidate.serial === root._requestSerial && candidate.url === source.toString())
+                root._publish(candidate, root._quantizedArt.colors);
+            // colorsChanged fires twice per run; start the queued source after both have seen this one.
+            if (root._queuedArtUrl !== "")
+                Qt.callLater(root._startQueued);
         }
     }
 
@@ -291,22 +314,25 @@ Singleton {
         }
     }
 
-    Instantiator {
-        model: MprisController.availablePlayers
-        delegate: QtObject {
-            required property MprisPlayer modelData
-            readonly property bool playerIsPlaying: modelData.isPlaying
-            readonly property string playerTrackTitle: modelData.trackTitle
-            readonly property string playerTrackArtist: modelData.trackArtist
-            readonly property string playerTrackAlbum: modelData.trackAlbum
-            readonly property string playerTrackArtUrl: modelData.trackArtUrl
-            readonly property var playerMetadata: modelData.metadata
-            onPlayerIsPlayingChanged: root._updateArtUrl()
-            onPlayerTrackTitleChanged: root._updateArtUrl()
-            onPlayerTrackArtistChanged: root._updateArtUrl()
-            onPlayerTrackAlbumChanged: root._updateArtUrl()
-            onPlayerTrackArtUrlChanged: root._updateArtUrl()
-            onPlayerMetadataChanged: root._updateArtUrl()
+    Connections {
+        target: root.activePlayer
+        function onIsPlayingChanged() {
+            root._updateArtUrl();
+        }
+        function onTrackTitleChanged() {
+            root._updateArtUrl();
+        }
+        function onTrackArtistChanged() {
+            root._updateArtUrl();
+        }
+        function onTrackAlbumChanged() {
+            root._updateArtUrl();
+        }
+        function onTrackArtUrlChanged() {
+            root._updateArtUrl();
+        }
+        function onMetadataChanged() {
+            root._updateArtUrl();
         }
     }
 

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/ipc"
-	"github.com/AvengeMedia/dankgo/ipc/params"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc/params"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 )
 
 type PoweredResult struct {
@@ -53,30 +53,30 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	case "bluetooth.pairing.cancel":
 		handlePairingCancel(conn, req, manager)
 	default:
-		models.RespondError(conn, req.ID, fmt.Sprintf("unknown method: %s", req.Method))
+		conn.RespondError(req.ID, fmt.Sprintf("unknown method: %s", req.Method))
 	}
 }
 
 func handleGetState(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
-	models.Respond(conn, req.ID, manager.GetState())
+	conn.Respond(req.ID, manager.GetState())
 }
 
 func handleMPRISPublish(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	lease, err := params.String(req.Params, "lease")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 	snapshot, err := playerSnapshotFromParams(req.Params)
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 	if err := manager.PublishMPRIS(lease, snapshot); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "MPRIS state published"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "MPRIS state published"})
 }
 
 func playerSnapshotFromParams(values map[string]any) (PlayerSnapshot, error) {
@@ -157,139 +157,139 @@ func int64Param(values map[string]any, key string) (int64, error) {
 
 func handleStartDiscovery(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	if err := manager.StartDiscovery(params.StringOpt(req.Params, "adapter", "")); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "discovery started"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "discovery started"})
 }
 
 func handleStopDiscovery(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	if err := manager.StopDiscovery(params.StringOpt(req.Params, "adapter", "")); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "discovery stopped"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "discovery stopped"})
 }
 
 func handleSetPowered(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	powered, err := params.Bool(req.Params, "powered")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	if err := manager.SetPowered(params.StringOpt(req.Params, "adapter", ""), powered); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "powered state updated"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "powered state updated"})
 }
 
 func handleTogglePowered(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	powered, err := manager.TogglePowered(params.StringOpt(req.Params, "adapter", ""))
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, PoweredResult{Success: true, Powered: powered})
+	conn.Respond(req.ID, PoweredResult{Success: true, Powered: powered})
 }
 
 func handlePairDevice(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	devicePath, err := params.String(req.Params, "device")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	if err := manager.PairDevice(devicePath); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "pairing initiated"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "pairing initiated"})
 }
 
 func handleConnectDevice(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	devicePath, err := params.String(req.Params, "device")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	if err := manager.ConnectDevice(devicePath); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "connecting"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "connecting"})
 }
 
 func handleDisconnectDevice(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	devicePath, err := params.String(req.Params, "device")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	if err := manager.DisconnectDevice(devicePath); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "disconnected"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "disconnected"})
 }
 
 func handleRemoveDevice(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	devicePath, err := params.String(req.Params, "device")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	if err := manager.RemoveDevice(devicePath); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "device removed"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "device removed"})
 }
 
 func handleTrustDevice(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	devicePath, err := params.String(req.Params, "device")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	if err := manager.TrustDevice(devicePath, true); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "device trusted"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "device trusted"})
 }
 
 func handleUntrustDevice(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	devicePath, err := params.String(req.Params, "device")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	if err := manager.TrustDevice(devicePath, false); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "device untrusted"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "device untrusted"})
 }
 
 func handlePairingSubmit(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	token, err := params.String(req.Params, "token")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
@@ -297,26 +297,26 @@ func handlePairingSubmit(conn *ipc.ConnWriter, req ipc.Request, manager *Manager
 	accept := params.BoolOpt(req.Params, "accept", false)
 
 	if err := manager.SubmitPairing(token, secrets, accept); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "pairing response submitted"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "pairing response submitted"})
 }
 
 func handlePairingCancel(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	token, err := params.String(req.Params, "token")
 	if err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
 	if err := manager.CancelPairing(token); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{Success: true, Message: "pairing cancelled"})
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "pairing cancelled"})
 }
 
 func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {

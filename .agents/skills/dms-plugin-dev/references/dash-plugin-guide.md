@@ -32,6 +32,7 @@ Add the optional `dash` block for labels, card size and options (see plugin-mani
 import QtQuick
 import qs.Common
 import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Plugins
 import qs.Modules.DankDash
 
@@ -79,7 +80,7 @@ DashTabComponent {
             color: Theme.surfaceText
         }
 
-        DankButton {
+        DButton {
             id: button
             text: I18n.trFor("myPlugin", "Refresh")
             onClicked: root.refresh()
@@ -92,7 +93,7 @@ Injected: `pluginId`, `pluginService`, `popoutService`, `entryId`, `dashHost` (`
 
 Base provides: `options`, `pluginData`, `getData(key, def)`, `setData(key, value)`.
 
-Optional: `implicitHeight`, `focusTarget`, `restoreFocus()`, `handleKeyEvent(event)` (return true to consume; Ctrl+Tab is reserved), `blocksTabNavigation`, `menuActions`, `signal tabRequested(string id)`, `signal navFocusRequested`.
+Optional: `implicitHeight`, `focusTarget`, `restoreFocus()`, `handleKeyEvent(event)` (return true to consume; Tab, Ctrl+Tab, F6 and Ctrl+PgUp/PgDown are reserved), `blocksTabNavigation`, `menuActions`, `signal tabRequested(string id)`, `signal navFocusRequested`.
 
 For tiles inside a tab, use `Card` from `qs.Modules.DankDash.Overview` so colors, radius and tones match the overview.
 

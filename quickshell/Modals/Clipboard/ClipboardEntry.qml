@@ -1,9 +1,9 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
-DankListItem {
+DListItem {
     id: root
 
     required property var entry
@@ -54,7 +54,7 @@ DankListItem {
         spacing: Theme.spacingXS
         visible: root.showAnyAction
 
-        DankActionButton {
+        DActionButton {
             Keys.forwardTo: [root.modal.modalFocusScope]
             objectName: "previewEntry"
             iconName: "preview"
@@ -70,7 +70,7 @@ DankListItem {
             height: Theme.iconButtonSize
             visible: root.showPinnedIndicator
 
-            DankIcon {
+            DIcon {
                 anchors.centerIn: parent
                 name: "push_pin"
                 size: Theme.iconSizeSmall
@@ -78,7 +78,7 @@ DankListItem {
             }
         }
 
-        DankActionButton {
+        DActionButton {
             Keys.forwardTo: [root.modal.modalFocusScope]
             iconName: "content_copy"
             Accessible.name: I18n.tr("Copy")
@@ -88,7 +88,7 @@ DankListItem {
             onClicked: copyRequested()
         }
 
-        DankActionButton {
+        DActionButton {
             Keys.forwardTo: [root.modal.modalFocusScope]
             iconName: "content_paste"
             Accessible.name: I18n.tr("Paste")
@@ -98,7 +98,7 @@ DankListItem {
             onClicked: pasteRequested()
         }
 
-        DankActionButton {
+        DActionButton {
             Keys.forwardTo: [root.modal.modalFocusScope]
             iconName: "push_pin"
             Accessible.name: root.effectivePinned ? I18n.tr("Unpin") : I18n.tr("Pin", "verb, keep an item pinned in place")
@@ -119,7 +119,7 @@ DankListItem {
             }
         }
 
-        DankActionButton {
+        DActionButton {
             Keys.forwardTo: [root.modal.modalFocusScope]
             iconName: "edit"
             Accessible.name: I18n.tr("Edit")
@@ -136,7 +136,7 @@ DankListItem {
             }
         }
 
-        DankActionButton {
+        DActionButton {
             Keys.forwardTo: [root.modal.modalFocusScope]
             iconName: "close"
             Accessible.name: I18n.tr("Delete")
@@ -202,7 +202,7 @@ DankListItem {
                 color: root.contentColor
                 width: parent.width
                 wrapMode: Text.WordWrap
-                maximumLineCount: entryType === "long_text" ? 3 : 1
+                maximumLineCount: entryType === "long_text" ? 3 + Math.min(0, Theme.densityLevel) : 1
                 elide: Text.ElideRight
                 textFormat: Text.PlainText
             }

@@ -1,12 +1,12 @@
 name: Support Request
-description: Help with installation, usage, or general questions about DankMaterialShell
+description: Help with installation, usage, or general questions about Dux Shell
 labels:
   - support
 body:
   - type: markdown
     attributes:
       value: |
-        ## DankMaterialShell Support Request
+        ## Dux Shell Support Request
   - type: dropdown
     id: compositor
     attributes:
@@ -54,7 +54,7 @@ body:
     attributes:
       label: Select your Installation Method
       options:
-        - DankInstaller
+        - Dux Installer
         - Distro Packaging
         - Source
     validations:

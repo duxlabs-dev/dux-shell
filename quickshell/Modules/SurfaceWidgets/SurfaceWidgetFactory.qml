@@ -1,10 +1,12 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import Quickshell
 import Quickshell.Services.SystemTray
 import qs.Common
 import qs.Services
-import qs.Modules.DankBar.Widgets
-import "../DankBar/WidgetModel.js" as WidgetModel
+import qs.Modules.DBar.Widgets
+import qs.Modules.DDash
+import "../DBar/WidgetModel.js" as WidgetModel
 
 Item {
     id: root
@@ -14,7 +16,6 @@ Item {
     readonly property string _barScreenName: surfaceContext.screen?.name ?? ""
     property bool spacingTight: false
     property bool overlapping: false
-    property real leadingSectionLimit: Infinity
     function getWidgetSection(item) {
         for (let current = item; current; current = current.parent) {
             if (typeof current.section === "string")
@@ -40,6 +41,7 @@ Item {
             return false;
         spec.registration = BarWidgetService.registrationForItem(spec.widgetItem);
         surfaceContext.ensureVisible(spec.widgetItem);
+        // A bar widget always opens its own popout where it was clicked; routing is for shortcuts, IPC and the dock.
         if (surfaceContext.kind === "dock" && !surfaceContext.inlineExpansion && spec.islandActivity && PopoutService.routeToIsland(spec.islandActivity, surfaceContext.screen, spec.mode !== "hover", spec.section || ""))
             return true;
         if (!spec.loader)
@@ -84,7 +86,7 @@ Item {
     }
 
     function _finishWidgetPopoutOpen(spec, popout) {
-        if (spec.registration && !BarWidgetService.registrationActive(spec.registration))
+        if (spec.registration && !BarWidgetService.registrationActive(spec.registration, true))
             return false;
         const effectiveBarConfig = barConfig;
         const barPosition = getBarPosition();
@@ -98,8 +100,11 @@ Item {
             popout.triggerScreen = surfaceContext.screen;
 
         if (spec.widgetItem) {
-            const visual = spec.useCenterSection && widgetSection === "center" ? surfaceContext.centerSection : spec.visualItem;
-            surfaceContext.positionPopout(popout, spec.widgetItem, widgetSection, visual, spec.triggerWidth, mode !== "hover");
+            // A section the island sits in is not an anchor: the popout would open under the island.
+            const centred = spec.useCenterSection && widgetSection === "center" && !(surfaceContext.host?.hostsIsland && SettingsData.islandWidgetSection(surfaceContext.config) === "center");
+            const visual = centred ? surfaceContext.centerSection : spec.visualItem;
+            const context = spec.registration?.context?.surface ?? surfaceContext;
+            context.positionPopout(popout, spec.widgetItem, widgetSection, visual, spec.triggerWidth, mode !== "hover");
         }
 
         if (typeof popout.prepareForTrigger === "function")
@@ -158,7 +163,8 @@ Item {
             notepadButtonComponent,
             colorPickerComponent,
             systemUpdateComponent,
-            powerMenuButtonComponent
+            powerMenuButtonComponent,
+            islandComponent
         });
 
         let pluginMap = PluginService.getWidgetComponents();
@@ -187,6 +193,7 @@ Item {
                     widgetItem: clipboardWidget,
                     section: root.getWidgetSection(parent) || "right",
                     triggerSource: "clipboard",
+                    islandActivity: "clipboard",
                     mode: mode || "click",
                     prepare: popout => {
                         if (initialTab)
@@ -236,6 +243,7 @@ Item {
                     widgetItem: powerMenuWidget,
                     section: root.getWidgetSection(parent) || "right",
                     triggerSource: "powerMenu",
+                    islandActivity: "powermenu",
                     mode: "click"
                 });
             }
@@ -323,12 +331,6 @@ Item {
         FocusedApp {
             id: focusedWindowWidget
             axis: surfaceContext.axis
-            availableWidth: {
-                const container = focusedWindowWidget.parent?.parent;
-                if (!container || !isFinite(root.leadingSectionLimit) || root.getWidgetSection(focusedWindowWidget) !== "left")
-                    return focusedWindowWidget.maxWidth;
-                return Math.max(0, root.leadingSectionLimit - container.x);
-            }
             widgetThickness: surfaceContext.widgetThickness
             barThickness: surfaceContext.thickness
             barSpacing: barConfig?.spacing ?? 4
@@ -393,15 +395,30 @@ Item {
             }
 
             onClockClicked: {
+                const action = SettingsData.widgetOption("clock", clockWidget.widgetData, "clockClickAction");
+                if (action === "none")
+                    return;
+                if (action === "settings") {
+                    PopoutService.focusOrToggleSettingsWithTab("time_weather");
+                    return;
+                }
+                if (action === "command") {
+                    const command = SettingsData.widgetOption("clock", clockWidget.widgetData, "clockClickCommand");
+                    if (command)
+                        Quickshell.execDetached(["sh", "-c", command]);
+                    return;
+                }
+                // A disabled Overview opens as a tabless detail page, so it only wins when no tab is enabled.
+                const tabId = DashRegistry.isSelectable(DashRegistry.overviewId) ? DashRegistry.overviewId : DashRegistry.defaultTabId || DashRegistry.overviewId;
                 const section = root.getWidgetSection(parent) || "center";
                 root.openWidgetPopout({
                     loader: PopoutService.dankDashPopoutLoader,
                     widgetItem: clockWidget,
                     section,
                     useCenterSection: true,
-                    triggerSource: root._dashTriggerSource(section, "overview"),
+                    triggerSource: root._dashTriggerSource(section, tabId),
                     islandActivity: "home",
-                    prepare: popout => popout.requestTab("overview"),
+                    prepare: popout => popout.requestTab(tabId),
                     mode: "click",
                     setTriggerScreen: true
                 });
@@ -814,6 +831,32 @@ Item {
                     mode: "click",
                     setTriggerScreen: true
                 });
+            }
+        }
+    }
+
+    // Reserves the compact face's along-axis room; the morph surface is the bar's island overlay, anchored to this slot.
+    Component {
+        id: islandComponent
+
+        Item {
+            id: islandSlot
+
+            readonly property Item body: surfaceContext.kind === "bar" ? surfaceContext.host : null
+            readonly property real alongSize: body?.islandHost?.compactTargetSize ?? 0
+
+            width: surfaceContext.isVertical ? surfaceContext.widgetThickness : alongSize
+            height: surfaceContext.isVertical ? alongSize : surfaceContext.widgetThickness
+            implicitWidth: width
+            implicitHeight: height
+
+            Component.onCompleted: {
+                if (body)
+                    body.islandSlot = islandSlot;
+            }
+            Component.onDestruction: {
+                if (body && body.islandSlot === islandSlot)
+                    body.islandSlot = null;
             }
         }
     }

@@ -1,6 +1,9 @@
 package screenshot
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Mode int
 
@@ -55,6 +58,30 @@ type Output struct {
 	Transform       int32
 }
 
+type SnapTarget struct {
+	Name   string  `json:"name"`
+	Type   string  `json:"type"`
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
+}
+
+func (s SnapTarget) DisplayName() string {
+	name := strings.TrimPrefix(s.Name, "dms:")
+	for _, suffix := range []string{"-popout", "-modal", "-surface"} {
+		name = strings.TrimSuffix(name, suffix)
+	}
+	name = strings.ReplaceAll(name, "-", " ")
+	if name == "" {
+		if s.Type != "" {
+			return s.Type
+		}
+		return "surface"
+	}
+	return name
+}
+
 type Config struct {
 	Seat          string
 	Mode          Mode
@@ -74,6 +101,7 @@ type Config struct {
 	AllowMultiple bool
 	IntervalMs    int
 	HUD           string
+	SnapTargets   []SnapTarget
 	// SelectorHook runs as the interactive selector starts (true) and ends (false).
 	SelectorHook func(begin bool)
 }

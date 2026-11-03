@@ -6,27 +6,36 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/distros"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
+	"github.com/duxlabs-dev/dux-shell/core/internal/site"
 	"github.com/spf13/cobra"
 )
 
 var greeterCmd = &cobra.Command{
 	Use:                "greeter",
 	Short:              "Deprecated: moved to the standalone dms-greeter binary",
-	Long:               "The greeter has moved to the standalone dms-greeter package.\nThis command forwards to 'dms-greeter' when it is installed.",
+	Long:               "The greeter has moved to the standalone dux-greeter package.\nThis command forwards to 'dms-greeter' when it is installed.",
 	DisableFlagParsing: true,
 	SilenceUsage:       true,
 	RunE: func(_ *cobra.Command, args []string) error {
 		binary, err := exec.LookPath("dms-greeter")
 		if err != nil {
-			return fmt.Errorf("'dms greeter' has moved to the standalone dms-greeter package.\n  %s", greeterPackageInstallHint())
+			return fmt.Errorf("'dms greeter' has moved to the standalone dux-greeter package.\n  %s", greeterPackageInstallHint())
 		}
 		if isLegacyWrapperScript(binary) {
-			return fmt.Errorf("'dms greeter' has moved to the standalone dms-greeter package; %s is the old wrapper script.\n  %s", binary, greeterPackageInstallHint())
+			return fmt.Errorf("'dms greeter' has moved to the standalone dux-greeter package; %s is the old wrapper script.\n  %s", binary, greeterPackageInstallHint())
 		}
 		fmt.Fprintln(os.Stderr, "warning: 'dms greeter' is deprecated; use 'dms-greeter' directly")
 		return syscall.Exec(binary, append([]string{"dms-greeter"}, args...), os.Environ())
 	},
+}
+
+func greeterMapping(config distros.DistroConfig) distros.PackageMapping {
+	return config.Constructor(config, nil).GetPackageMapping(0)["dux-greeter"]
+}
+
+func greeterRepoURL(config distros.DistroConfig) string {
+	return greeterMapping(config).RepoURL
 }
 
 func isLegacyWrapperScript(path string) bool {
@@ -45,27 +54,32 @@ func isLegacyWrapperScript(path string) bool {
 func greeterPackageInstallHint() string {
 	osInfo, err := distros.GetOSInfo()
 	if err != nil {
-		return "Install package: dms-greeter"
+		return "Install package: dux-greeter"
 	}
 	config, exists := distros.Registry[osInfo.Distribution.ID]
 	if !exists {
-		return "Install package: dms-greeter"
+		return "Install package: dux-greeter"
+	}
+
+	if config.ID == "pika" {
+		return "Install with 'sudo apt install dms-greeter'"
 	}
 
 	switch config.Family {
 	case distros.FamilyDebian:
-		return "Install with 'sudo apt install dms-greeter' (requires DankLinux OBS repo — see https://danklinux.com/docs/dankgreeter/installation#debian)"
+		return "Install with 'sudo apt install " + greeterMapping(config).Name + "' (requires Dux Labs OBS repo — see " + site.Docs + "/dms-greeter/installation#debian)"
 	case distros.FamilySUSE:
-		return "Install with 'sudo zypper install dms-greeter' (requires DankLinux OBS repo — see https://danklinux.com/docs/dankgreeter/installation#opensuse)"
+		return "Install with 'sudo zypper install " + greeterMapping(config).Name + "' (requires Dux Labs OBS repo — see " + site.Docs + "/dms-greeter/installation#opensuse--derivatives)"
 	case distros.FamilyUbuntu:
-		return "Install with 'sudo apt install dms-greeter' (requires ppa:avengemedia/danklinux: sudo add-apt-repository ppa:avengemedia/danklinux)"
+		repo := greeterRepoURL(config)
+		return fmt.Sprintf("Install with 'sudo apt install dux-greeter' (requires %s: sudo add-apt-repository %s)", repo, repo)
 	case distros.FamilyFedora:
-		return "Install with 'sudo dnf install dms-greeter' (requires COPR: sudo dnf copr enable avengemedia/danklinux)"
+		return fmt.Sprintf("Install with 'sudo dnf install dux-greeter' (requires COPR: sudo dnf copr enable %s)", greeterRepoURL(config))
 	case distros.FamilyArch:
-		return "Install from AUR with 'paru -S greetd-dms-greeter-bin' or 'yay -S greetd-dms-greeter-bin'"
+		return "Install from AUR with 'paru -S dux-greeter-bin' or 'yay -S dux-greeter-bin'"
 	case distros.FamilyVoid:
-		return "Install with 'sudo xbps-install -S dms-greeter' (requires DMS XBPS repo: echo 'repository=https://void.danklinux.com/dms/current' | sudo tee /etc/xbps.d/dms.conf)"
+		return "Install with 'sudo xbps-install -S dux-greeter' (requires DMS XBPS repo: echo 'repository=" + distros.VoidDepsRepo + "' | sudo tee /etc/xbps.d/dux.conf)"
 	default:
-		return "Install the dms-greeter package for your distribution"
+		return "Install the dux-greeter package for your distribution"
 	}
 }

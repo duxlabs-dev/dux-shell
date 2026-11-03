@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
+import qs.Modules.Settings.Widgets
 
 Column {
     id: root
@@ -42,12 +43,7 @@ Column {
         onCustomColorSelected: selectedColor => root.store.set(root.focusedCustomColorKey, selectedColor.toString())
     }
 
-    Rectangle {
-        width: parent.width
-        height: 1
-        color: Theme.outline
-        opacity: 0.15
-    }
+    SettingsDivider {}
 
     ColorDropdownRow {
         text: I18n.tr("Occupied color")
@@ -63,11 +59,7 @@ Column {
         onCustomColorSelected: selectedColor => root.store.set(root.occupiedCustomColorKey, selectedColor.toString())
     }
 
-    Rectangle {
-        width: parent.width
-        height: 1
-        color: Theme.outline
-        opacity: 0.15
+    SettingsDivider {
         visible: root.occupiedColorVisible
     }
 
@@ -85,11 +77,7 @@ Column {
         onCustomColorSelected: selectedColor => root.store.set(root.unfocusedCustomColorKey, selectedColor.toString())
     }
 
-    Rectangle {
-        width: parent.width
-        height: 1
-        color: Theme.outline
-        opacity: 0.15
+    SettingsDivider {
         visible: root.urgentColorVisible
     }
 

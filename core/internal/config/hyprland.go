@@ -20,6 +20,9 @@ var DMSOutputsLuaConfig string
 //go:embed embedded/hypr-cursor.lua
 var DMSCursorLuaConfig string
 
+//go:embed embedded/hypr-input.lua
+var DMSInputLuaConfig string
+
 //go:embed embedded/hypr-windowrules.lua
 var DMSWindowRulesLuaConfig string
 

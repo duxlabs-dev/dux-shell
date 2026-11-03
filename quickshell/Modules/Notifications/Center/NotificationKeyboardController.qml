@@ -323,7 +323,7 @@ QtObject {
                     }
                 }
             } else {
-                listView.positionViewAtIndex(currentItem.groupIndex, ListView.Contain);
+                listView.revealIndex(currentItem.groupIndex);
             }
 
             listView.forceLayout();

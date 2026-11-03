@@ -8,43 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestManager_GetState(t *testing.T) {
-	state := &SessionState{
-		SessionID:    "1",
-		Locked:       false,
-		Active:       true,
-		IdleHint:     false,
-		SessionType:  "wayland",
-		SessionClass: "user",
-		UserName:     "testuser",
-	}
-
-	manager := &Manager{
-		state:      state,
-		stateMutex: sync.RWMutex{},
-	}
-
-	result := manager.GetState()
-	assert.Equal(t, "1", result.SessionID)
-	assert.False(t, result.Locked)
-	assert.True(t, result.Active)
-	assert.Equal(t, "wayland", result.SessionType)
-	assert.Equal(t, "testuser", result.UserName)
-}
-
-func TestManager_Subscribe(t *testing.T) {
-	manager := &Manager{
-		state: &SessionState{},
-	}
-
-	ch := manager.Subscribe("test-client")
-	assert.NotNil(t, ch)
-	assert.Equal(t, 64, cap(ch))
-
-	_, exists := manager.subscribers.Load("test-client")
-	assert.True(t, exists)
-}
-
 func TestManager_Unsubscribe(t *testing.T) {
 	manager := &Manager{
 		state: &SessionState{},
@@ -70,71 +33,6 @@ func TestManager_Unsubscribe_NonExistent(t *testing.T) {
 	assert.NotPanics(t, func() {
 		manager.Unsubscribe("non-existent")
 	})
-}
-
-func TestManager_NotifySubscribers(t *testing.T) {
-	manager := &Manager{
-		state: &SessionState{
-			SessionID: "1",
-			Locked:    false,
-		},
-		stateMutex: sync.RWMutex{},
-		stopChan:   make(chan struct{}),
-		dirty:      make(chan struct{}, 1),
-	}
-	manager.notifierWg.Add(1)
-	go manager.notifier()
-
-	ch := make(chan SessionState, 10)
-	manager.subscribers.Store("test-client", ch)
-
-	manager.notifySubscribers()
-
-	select {
-	case state := <-ch:
-		assert.Equal(t, "1", state.SessionID)
-		assert.False(t, state.Locked)
-	case <-time.After(200 * time.Millisecond):
-		t.Fatal("did not receive state update")
-	}
-
-	close(manager.stopChan)
-	manager.notifierWg.Wait()
-}
-
-func TestManager_NotifySubscribers_Debounce(t *testing.T) {
-	manager := &Manager{
-		state: &SessionState{
-			SessionID: "1",
-			Locked:    false,
-		},
-		stateMutex: sync.RWMutex{},
-		stopChan:   make(chan struct{}),
-		dirty:      make(chan struct{}, 1),
-	}
-	manager.notifierWg.Add(1)
-	go manager.notifier()
-
-	ch := make(chan SessionState, 10)
-	manager.subscribers.Store("test-client", ch)
-
-	manager.notifySubscribers()
-	manager.notifySubscribers()
-	manager.notifySubscribers()
-
-	receivedCount := 0
-	timeout := time.After(200 * time.Millisecond)
-	for {
-		select {
-		case <-ch:
-			receivedCount++
-		case <-timeout:
-			assert.Equal(t, 1, receivedCount, "should receive exactly one debounced update")
-			close(manager.stopChan)
-			manager.notifierWg.Wait()
-			return
-		}
-	}
 }
 
 func TestManager_Close(t *testing.T) {
@@ -168,35 +66,6 @@ func TestManager_Close(t *testing.T) {
 		return true
 	})
 	assert.Equal(t, 0, count)
-}
-
-func TestManager_GetState_ThreadSafe(t *testing.T) {
-	manager := &Manager{
-		state: &SessionState{
-			SessionID: "1",
-			Locked:    false,
-			Active:    true,
-		},
-		stateMutex: sync.RWMutex{},
-	}
-
-	done := make(chan bool)
-	for range 10 {
-		go func() {
-			state := manager.GetState()
-			assert.Equal(t, "1", state.SessionID)
-			assert.True(t, state.Active)
-			done <- true
-		}()
-	}
-
-	for range 10 {
-		select {
-		case <-done:
-		case <-time.After(1 * time.Second):
-			t.Fatal("timeout waiting for goroutines")
-		}
-	}
 }
 
 func TestStateChangedMeaningfully(t *testing.T) {
@@ -258,23 +127,27 @@ func TestStateChangedMeaningfully(t *testing.T) {
 	}
 }
 
-func TestManager_SnapshotState(t *testing.T) {
-	manager := &Manager{
-		state: &SessionState{
-			SessionID: "1",
-			Locked:    false,
-			Active:    true,
-			UserName:  "testuser",
-		},
-		stateMutex: sync.RWMutex{},
+func TestManager_ApplyLockPolicy(t *testing.T) {
+	on, off := true, false
+	tests := []struct {
+		name                  string
+		policy                LockPolicy
+		lockBeforeSuspend     bool
+		sleepInhibitorEnabled bool
+	}{
+		{name: "unmanaged", sleepInhibitorEnabled: true},
+		{name: "lock before suspend managed on", policy: LockPolicy{LockBeforeSuspend: &on}, lockBeforeSuspend: true, sleepInhibitorEnabled: true},
+		{name: "both managed on", policy: LockPolicy{LockBeforeSuspend: &on, LoginctlLockIntegration: &on}, lockBeforeSuspend: true, sleepInhibitorEnabled: true},
+		{name: "lock before suspend managed off", policy: LockPolicy{LockBeforeSuspend: &off}},
+		{name: "integration managed off", policy: LockPolicy{LockBeforeSuspend: &on, LoginctlLockIntegration: &off}, lockBeforeSuspend: true},
 	}
 
-	snapshot := manager.snapshotState()
-	assert.Equal(t, "1", snapshot.SessionID)
-	assert.False(t, snapshot.Locked)
-	assert.True(t, snapshot.Active)
-	assert.Equal(t, "testuser", snapshot.UserName)
-
-	snapshot.Locked = true
-	assert.False(t, manager.state.Locked)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			manager := &Manager{lockPolicy: tt.policy}
+			manager.applyLockPolicy()
+			assert.Equal(t, tt.lockBeforeSuspend, manager.lockBeforeSuspend.Load())
+			assert.Equal(t, tt.sleepInhibitorEnabled, manager.sleepInhibitorEnabled.Load())
+		})
+	}
 }

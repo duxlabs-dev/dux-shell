@@ -26,6 +26,8 @@ SettingsDropdownRow {
 
     currentValue: SessionData.terminalOverride.length > 0 ? SessionData.terminalOverride : autoLabel
 
+    Component.onCompleted: SessionData.probeTerminals()
+
     onValueChanged: label => {
         const next = label === autoLabel ? "" : label;
         SessionData.set("terminalOverride", next);

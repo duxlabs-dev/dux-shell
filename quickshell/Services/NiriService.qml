@@ -7,7 +7,9 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
+import qs.DCommon.Common as DCommon
 import "../Common/OutputModel.js" as OutputModel
+import "../Common/BlurStrength.js" as BlurStrength
 
 Singleton {
     id: root
@@ -38,6 +40,13 @@ Singleton {
 
     property int currentKeyboardLayoutIndex: 0
     property var keyboardLayoutNames: []
+
+    property bool touchpadEnabled: true
+    property bool _touchpadStateInitialized: false
+    signal touchpadToggled
+
+    // Not bound to capabilities: they empty on every socket drop and would rewrite input.kdl twice.
+    property bool configNextSupported: false
 
     property string configValidationOutput: ""
     property bool hasInitialConnection: false
@@ -85,23 +94,21 @@ Singleton {
     }
 
     Component.onCompleted: {
+        configNextSupported = DMSService.capabilities.includes("niri.config-next");
         fetchOutputs();
         generateNiriInputConfig();
     }
 
     Connections {
         target: Theme
+        enabled: CompositorService.isNiri
 
         function onScreenTransitionNeeded() {
-            if (CompositorService.isNiri) {
-                root.doScreenTransition();
-            }
+            root.doScreenTransition();
         }
 
         function onThemeGenerationStarting() {
-            if (CompositorService.isNiri) {
-                root.suppressNextToast();
-            }
+            root.suppressNextToast();
         }
     }
 
@@ -132,6 +139,7 @@ Singleton {
 
     Connections {
         target: SettingsData
+        enabled: CompositorService.isNiri
         function onBarConfigsChanged() {
             const newGaps = Math.max(4, (SettingsData.getPrimaryBarConfig()?.spacing ?? 4));
             if (newGaps === root._lastGapValue)
@@ -142,11 +150,25 @@ Singleton {
     }
 
     Connections {
+        target: DMSService
+        function onCapabilitiesReceived() {
+            const supported = DMSService.capabilities.includes("niri.config-next");
+            if (supported === root.configNextSupported)
+                return;
+            root.configNextSupported = supported;
+            // input.kdl is first written before the DMS socket reports capabilities
+            if (SettingsData.touchpadPinchSensitivity !== 1.0)
+                root.generateNiriInputConfig();
+        }
+    }
+
+    Connections {
         target: CompositorService
         function onIsNiriChanged() {
-            if (CompositorService.isNiri) {
-                generateNiriInputConfig();
-            }
+            if (!CompositorService.isNiri)
+                return;
+            generateNiriInputConfig();
+            generateNiriLayoutConfig();
         }
     }
 
@@ -248,13 +270,14 @@ Singleton {
         }
     }
 
-    DankSocket {
+    DCommon.DSocket {
         id: eventStreamSocket
         path: root.socketPath
         connected: CompositorService.isNiri
 
         onConnectionStateChanged: {
-            if (connected) {
+            root._touchpadStateInitialized = false;
+            if (linkUp) {
                 send('"EventStream"');
                 fetchOutputs();
             }
@@ -272,18 +295,21 @@ Singleton {
         }
     }
 
-    DankSocket {
+    DCommon.DSocket {
         id: requestSocket
         path: root.socketPath
         connected: CompositorService.isNiri
     }
 
-    NiriOutputCycle {
-        id: outputCycle
-        wlrOutputService: WlrOutputService
-        socket: requestSocket
-        isNiri: CompositorService.isNiri
-        currentOutput: root.currentOutput
+    Loader {
+        id: outputCycleLoader
+        active: CompositorService.isNiri
+        sourceComponent: NiriOutputCycle {
+            wlrOutputService: WlrOutputService
+            socket: requestSocket
+            isNiri: CompositorService.isNiri
+            currentOutput: root.currentOutput
+        }
     }
 
     function fetchOutputs() {
@@ -309,7 +335,9 @@ Singleton {
     }
 
     function cycleSingleOutput() {
-        return outputCycle.cycleSingleOutput();
+        if (!outputCycleLoader.item)
+            return "OUTPUT_CYCLE_UNSUPPORTED";
+        return outputCycleLoader.item.cycleSingleOutput();
     }
 
     function updateDisplayScales() {
@@ -323,7 +351,16 @@ Singleton {
             }
         }
 
+        if (sameScales(displayScales, scales))
+            return;
         displayScales = scales;
+    }
+
+    function sameScales(a, b) {
+        const names = Object.keys(a);
+        if (names.length !== Object.keys(b).length)
+            return false;
+        return names.every(name => a[name] === b[name]);
     }
 
     function sortWindowsByLayout(windowList) {
@@ -418,6 +455,9 @@ Singleton {
         case 'KeyboardLayoutSwitched':
             handleKeyboardLayoutSwitched(event.KeyboardLayoutSwitched);
             break;
+        case 'TouchpadToggled':
+            handleTouchpadToggled(event.TouchpadToggled);
+            break;
         case 'WorkspaceUrgencyChanged':
             handleWorkspaceUrgencyChanged(event.WorkspaceUrgencyChanged);
             break;
@@ -439,13 +479,26 @@ Singleton {
         }
     }
 
+    function updateTouchpadState(enabled, forceOsd) {
+        const showOsd = forceOsd || (_touchpadStateInitialized && touchpadEnabled !== enabled);
+        touchpadEnabled = enabled;
+        _touchpadStateInitialized = true;
+        if (showOsd)
+            touchpadToggled();
+    }
+
+    function handleTouchpadToggled(data) {
+        // Each subscription starts with a snapshot; only later changes show the OSD.
+        updateTouchpadState(data.on, false);
+    }
+
     function handleWorkspacesChanged(data) {
         const newWorkspaces = {};
 
         for (const ws of data.workspaces) {
             const oldWs = root.workspaces[ws.id];
             newWorkspaces[ws.id] = ws;
-            if (oldWs && oldWs.active_window_id !== undefined) {
+            if (ws.active_window_id === undefined && oldWs && oldWs.active_window_id !== undefined) {
                 newWorkspaces[ws.id].active_window_id = oldWs.active_window_id;
             }
         }
@@ -496,6 +549,11 @@ Singleton {
 
         setWorkspaces(updatedWorkspaces);
 
+        if (!data.focused) {
+            updateCurrentOutputWorkspaces();
+            return;
+        }
+
         focusedWorkspaceId = data.id;
         focusedWorkspaceIndex = allWorkspaces.findIndex(w => w.id === data.id);
 
@@ -545,13 +603,17 @@ Singleton {
     }
 
     function handleWorkspaceActiveWindowChanged(data) {
-        if (root.workspaces[data.workspace_id]) {
-            if (data.active_window_id !== null && data.active_window_id !== undefined)
+        const ws = root.workspaces[data.workspace_id];
+        if (ws) {
+            if (ws.is_focused && data.active_window_id !== null && data.active_window_id !== undefined)
                 lastFocusedWindowId = data.active_window_id;
             updateWorkspace(data.workspace_id, {
                 "active_window_id": data.active_window_id
             });
         }
+
+        if (!ws?.is_focused)
+            return;
 
         let changed = false;
         const updatedWindows = new Array(windows.length);
@@ -825,7 +887,7 @@ Singleton {
         });
     }
 
-    function moveColumnLeft(outputName) {
+    function focusColumnLeft(outputName) {
         if (outputName && outputName !== currentOutput)
             focusMonitor(outputName);
         return send({
@@ -835,7 +897,7 @@ Singleton {
         });
     }
 
-    function moveColumnRight(outputName) {
+    function focusColumnRight(outputName) {
         if (outputName && outputName !== currentOutput)
             focusMonitor(outputName);
         return send({
@@ -1204,6 +1266,19 @@ Singleton {
         configGenerationAction.schedule();
     }
 
+    // niri's own defaults stay untouched until the user moves the shell-wide slider
+    function niriBlurBlock(strength) {
+        if (!(strength > 0))
+            return "";
+        const blur = BlurStrength.niriBlur(strength);
+        return `
+
+blur {
+    passes ${blur.passes}
+    offset ${blur.offset}
+}`;
+    }
+
     function doGenerateNiriLayoutConfig() {
         if (writeConfigProcess.running || _awaitingLayoutReloadRevision > _layoutAppliedRevision)
             return;
@@ -1242,7 +1317,7 @@ layer-rule {${excludeLines}
 }
 
 window-rule {
-    match app-id="^com.danklinux.dms$"
+    match app-id="^(dev.duxlabs.shell|com.danklinux.dms|dev.duxlabs.files|dev.duxlabs.calendar)$"
     background-effect {
         xray false
     }
@@ -1275,7 +1350,7 @@ window-rule {
     clip-to-geometry true
     tiled-state true
     draw-border-with-background false
-}` + xrayRules;
+}` + niriBlurBlock(typeof SettingsData !== "undefined" ? SettingsData.blurStrength : 0) + xrayRules;
 
         const alttabContent = dmsWarning + `recent-windows {
     highlight {
@@ -1303,13 +1378,20 @@ window-rule {
             writeAlttabProcess.running = true;
         }
 
-        for (const name of ["outputs", "binds", "cursor", "windowrules", "colors", "alttab", "layout", "input"]) {
-            const path = niriDmsDir + "/" + name + ".kdl";
-            Proc.runCommand("niri-ensure-" + name, ["sh", "-c", `mkdir -p "${niriDmsDir}" && [ ! -f "${path}" ] && touch "${path}" || true`], (output, exitCode) => {
-                if (exitCode !== 0)
-                    log.warn("Failed to ensure " + name + ".kdl, exit code:", exitCode);
-            });
-        }
+        ensureDmsConfigFiles(niriDmsDir);
+    }
+
+    property bool _dmsConfigFilesEnsured: false
+
+    function ensureDmsConfigFiles(niriDmsDir) {
+        if (_dmsConfigFilesEnsured)
+            return;
+        _dmsConfigFilesEnsured = true;
+        const script = `mkdir -p "${niriDmsDir}" && for f in outputs binds cursor windowrules colors alttab layout input; do [ -f "${niriDmsDir}/$f.kdl" ] || touch "${niriDmsDir}/$f.kdl"; done`;
+        Proc.runCommand("niri-ensure-dms-configs", ["sh", "-c", script], (output, exitCode) => {
+            if (exitCode !== 0)
+                log.warn("Failed to ensure dms config files, exit code:", exitCode);
+        });
     }
 
     function generateNiriBlurrule() {
@@ -1480,6 +1562,11 @@ window-rule {
         return SessionData.getNiriOutputSettings(identifier);
     }
 
+    // niri 26.04 rejects max-bpc in config; newer builds report the max_bpc key in IPC outputs
+    function maxBpcSupported() {
+        return Object.values(outputs).some(o => o && "max_bpc" in o);
+    }
+
     function buildOutputsConfig(outputsData, niriSettings) {
         const data = outputsData || outputs;
         if (!data || Object.keys(data).length === 0)
@@ -1525,6 +1612,11 @@ window-rule {
             if (output.vrr_enabled || outputSettings.vrrOnDemand) {
                 const vrrOnDemand = outputSettings.vrrOnDemand ?? false;
                 kdlContent += vrrOnDemand ? `    variable-refresh-rate on-demand=true\n` : `    variable-refresh-rate\n`;
+            }
+
+            const maxBpc = OutputModel.niriMaxBpc(outputSettings.maxBpc);
+            if (maxBpc && maxBpcSupported()) {
+                kdlContent += `    max-bpc ${maxBpc}\n`;
             }
 
             if (outputSettings.focusAtStartup) {
@@ -1694,6 +1786,7 @@ window-rule {
         const touchpadNaturalScroll = typeof SettingsData !== "undefined" ? SettingsData.touchpadNaturalScroll : defaultTouchpadNaturalScroll;
         const touchpadProfile = typeof SettingsData !== "undefined" ? SettingsData.touchpadAccelProfile : defaultTouchpadProfile;
         const touchpadScrollFactor = typeof SettingsData !== "undefined" ? SettingsData.touchpadScrollFactor : defaultTouchpadScrollFactor;
+        const touchpadPinchSensitivity = typeof SettingsData !== "undefined" ? SettingsData.touchpadPinchSensitivity : 1.0;
         const touchpadScrollMethod = typeof SettingsData !== "undefined" ? SettingsData.touchpadScrollMethod : defaultTouchpadScrollMethod;
         const touchpadSpeed = typeof SettingsData !== "undefined" ? SettingsData.touchpadAccelSpeed : defaultTouchpadSpeed;
         const touchpadTap = typeof SettingsData !== "undefined" ? SettingsData.touchpadTapToClick : defaultTouchpadTap;
@@ -1717,6 +1810,10 @@ window-rule {
 `;
 
         let inputContent = dmsWarning + "input {\n";
+        // Niri flags take no false, so off can only leave it out
+        if (typeof SettingsData !== "undefined" && SettingsData.focusFollowsMouse === 1) {
+            inputContent += "    focus-follows-mouse max-scroll-amount=\"0%\"\n";
+        }
 
         // Mouse block
         inputContent += "    mouse {\n";
@@ -1767,6 +1864,9 @@ window-rule {
         }
         if (touchpadScrollFactor !== 1.0) {
             inputContent += `        scroll-factor ${touchpadScrollFactor.toFixed(1)}\n`;
+        }
+        if (touchpadPinchSensitivity !== 1.0 && configNextSupported) {
+            inputContent += `        pinch-sensitivity ${touchpadPinchSensitivity.toFixed(1)}\n`;
         }
         if (touchpadScrollMethod !== "default") {
             inputContent += `        scroll-method "${touchpadScrollMethod}"\n`;
@@ -1858,6 +1958,14 @@ window-rule {
     }
 
     IpcHandler {
+        function showTouchpadOsd(enabled: bool): string {
+            if (!CompositorService.isNiri)
+                return "NIRI_NOT_AVAILABLE";
+
+            root.updateTouchpadState(enabled, true);
+            return "TOUCHPAD_OSD_SHOWN";
+        }
+
         function screenshot(): string {
             if (!CompositorService.isNiri) {
                 return "NIRI_NOT_AVAILABLE";

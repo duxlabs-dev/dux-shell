@@ -8,9 +8,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/matugen"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/matugen"
 	"github.com/spf13/cobra"
 )
 
@@ -70,11 +70,13 @@ func init() {
 		cmd.Flags().String("stock-colors", "", "Stock theme colors JSON")
 		cmd.Flags().Bool("sync-mode-with-portal", false, "Sync color scheme with GNOME portal")
 		cmd.Flags().Bool("terminals-always-dark", false, "Force terminal themes to dark variant")
+		cmd.Flags().Int("terminal-opacity", 0, "Terminal background opacity percent, 1-99 (0 or 100 leaves the terminal's own setting)")
+		cmd.Flags().String("terminal-palette", "", "Terminal palette: default, low, medium or high")
 		cmd.Flags().String("skip-templates", "", "Comma-separated list of templates to skip")
 		cmd.Flags().Float64("contrast", 0, "Contrast value from -1 to 1 (0 = standard)")
 		cmd.Flags().String("source-mode", "", "Source color selection: dominant, colorful, darkness, lightness, saturation, less-saturation, value")
 		cmd.Flags().String("seed-color", "", "Hex color to build the palette from instead of extracting one from the wallpaper")
-		cmd.Flags().String("spec", "", "Material color spec: 2021 (matugen native, default) or 2025 (Material 3 Expressive)")
+		cmd.Flags().String("spec", "", "Material color spec: 2021 (matugen native, default), 2025 (Material 3 Expressive) or dms (2025 accents on neutral surfaces)")
 	}
 
 	matugenQueueCmd.Flags().Bool("wait", true, "Wait for completion")
@@ -82,7 +84,7 @@ func init() {
 	matugenPreviewCmd.Flags().String("source-color", "", "Source color used to generate previews")
 	matugenPreviewCmd.Flags().String("image", "", "Wallpaper image used to resolve the scheme-smart preview")
 	matugenPreviewCmd.Flags().Float64("contrast", 0, "Contrast value from -1 to 1 (0 = standard)")
-	matugenPreviewCmd.Flags().String("spec", "", "Material color spec: 2021 (matugen native, default) or 2025 (Material 3 Expressive)")
+	matugenPreviewCmd.Flags().String("spec", "", "Material color spec: 2021 (matugen native, default), 2025 (Material 3 Expressive) or dms (2025 accents on neutral surfaces)")
 	matugenQtengineCmd.Flags().String("config-dir", "", "User config directory")
 	matugenQtengineCmd.Flags().String("icon-theme", "", "Icon theme name")
 }
@@ -100,6 +102,8 @@ func buildMatugenOptions(cmd *cobra.Command) matugen.Options {
 	stockColors, _ := cmd.Flags().GetString("stock-colors")
 	syncModeWithPortal, _ := cmd.Flags().GetBool("sync-mode-with-portal")
 	terminalsAlwaysDark, _ := cmd.Flags().GetBool("terminals-always-dark")
+	terminalOpacity, _ := cmd.Flags().GetInt("terminal-opacity")
+	terminalPalette, _ := cmd.Flags().GetString("terminal-palette")
 	skipTemplates, _ := cmd.Flags().GetString("skip-templates")
 	contrast, _ := cmd.Flags().GetFloat64("contrast")
 	sourceMode, _ := cmd.Flags().GetString("source-mode")
@@ -120,6 +124,8 @@ func buildMatugenOptions(cmd *cobra.Command) matugen.Options {
 		StockColors:         stockColors,
 		SyncModeWithPortal:  syncModeWithPortal,
 		TerminalsAlwaysDark: terminalsAlwaysDark,
+		TerminalOpacity:     terminalOpacity,
+		TerminalPalette:     terminalPalette,
 		SkipTemplates:       skipTemplates,
 		SourceMode:          sourceMode,
 		SeedColor:           seedColor,
@@ -159,6 +165,8 @@ func runMatugenQueue(cmd *cobra.Command, args []string) {
 			"stockColors":         opts.StockColors,
 			"syncModeWithPortal":  opts.SyncModeWithPortal,
 			"terminalsAlwaysDark": opts.TerminalsAlwaysDark,
+			"terminalOpacity":     opts.TerminalOpacity,
+			"terminalPalette":     opts.TerminalPalette,
 			"skipTemplates":       opts.SkipTemplates,
 			"contrast":            opts.Contrast,
 			"sourceMode":          opts.SourceMode,

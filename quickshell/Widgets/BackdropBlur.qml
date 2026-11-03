@@ -36,6 +36,7 @@ Item {
         visible: root.blurActive
         blurEnabled: root.blurActive
         blurMax: root.blurMax
+        autoPaddingEnabled: false
         blur: root.blurAmount
         maskEnabled: true
         maskSource: maskRect

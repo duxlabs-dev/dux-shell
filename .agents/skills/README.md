@@ -8,7 +8,7 @@ Each skill is a directory with a `SKILL.md` entrypoint, optional reference docs,
 
 | Skill | Description |
 |-------|-------------|
-| [dms-plugin-dev](dms-plugin-dev/) | Develop plugins for DankMaterialShell - covers all 4 plugin types (widget, daemon, launcher, desktop), manifest creation, QML components, settings UI, data persistence, theme integration, and PopoutService usage. |
+| [dms-plugin-dev](dms-plugin-dev/) | Develop plugins for Dux Shell - covers all 4 plugin types (widget, daemon, launcher, desktop), manifest creation, QML components, settings UI, data persistence, theme integration, and PopoutService usage. |
 
 ## Installation
 
@@ -28,7 +28,7 @@ ln -s ../../.agents/skills/dms-plugin-dev .claude/skills/dms-plugin-dev
 **Personal** (all your projects):
 
 ```bash
-ln -s /path/to/DankMaterialShell/.agents/skills/dms-plugin-dev ~/.claude/skills/dms-plugin-dev
+ln -s /path/to/dms/.agents/skills/dms-plugin-dev ~/.claude/skills/dms-plugin-dev
 ```
 
 After linking, the skill appears in Claude Code's `/` menu as `/dms-plugin-dev`, and Claude loads it automatically when you ask about DMS plugin development.

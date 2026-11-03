@@ -15,6 +15,11 @@ Singleton {
     property bool accountsServiceAvailable: false
     property string systemProfileImage: ""
     property string profileImage: ""
+    readonly property string profileImageUrl: {
+        if (!profileImage.startsWith("/"))
+            return profileImage;
+        return "file://" + profileImage.split("/").map(part => encodeURIComponent(part)).join("/");
+    }
     property bool settingsPortalAvailable: false
     property int systemColorScheme: 0
     property bool colorSchemeInitialized: false
@@ -53,11 +58,6 @@ Singleton {
             profileImage = "";
             return;
         }
-        if (Quickshell.env("DMS_RUN_GREETER") === "1" || Quickshell.env("DMS_RUN_GREETER") === "true") {
-            profileImage = "";
-            return;
-        }
-
         if (!freedeskAvailable) {
             profileImage = "";
             return;
@@ -139,10 +139,6 @@ Singleton {
     }
 
     function setSystemColorScheme(isLightMode) {
-        if (typeof SettingsData !== "undefined" && SettingsData.syncModeWithPortal === false) {
-            return;
-        }
-
         const preferLight = isLightMode && systemColorScheme === 2;
         const targetScheme = isLightMode ? (preferLight ? "prefer-light" : "default") : "prefer-dark";
 
@@ -204,9 +200,19 @@ Singleton {
 
     Connections {
         target: Theme
+        enabled: SettingsData.syncModeWithPortal
 
+        // The matugen worker writes color-scheme after the new GTK css lands;
+        // writing it here first makes GTK4 apps re-read the previous mode's colors.
         function onIsLightModeChanged() {
+            if (Theme.matugenAvailable)
+                return;
             root.setSystemColorScheme(Theme.isLightMode);
+        }
+
+        function onMatugenCompleted(mode, result) {
+            if (result === "error")
+                root.setSystemColorScheme(Theme.isLightMode);
         }
     }
 
@@ -292,52 +298,6 @@ Singleton {
                 handlePortalColorScheme(response.result.settings.colorScheme || 0);
             }
         });
-    }
-
-    property string pendingGreeterProfileUser: ""
-
-    function getGreeterUserProfileImage(username) {
-        if (!username) {
-            profileImage = "";
-            pendingGreeterProfileUser = "";
-            return;
-        }
-        if (typeof GreeterUsersService !== "undefined") {
-            const cachedPath = GreeterUsersService.profileImagePath(username);
-            if (cachedPath) {
-                profileImage = cachedPath;
-                pendingGreeterProfileUser = "";
-                return;
-            }
-        }
-        pendingGreeterProfileUser = username;
-        userProfileCheckProcess.command = ["bash", "-c", `uid=$(id -u ${username} 2>/dev/null) && [ -n "$uid" ] && dbus-send --system --print-reply --dest=org.freedesktop.Accounts /org/freedesktop/Accounts/User$uid org.freedesktop.DBus.Properties.Get string:org.freedesktop.Accounts.User string:IconFile 2>/dev/null | grep -oP 'string "\\K[^"]+' || echo ""`];
-        userProfileCheckProcess.running = true;
-    }
-
-    Process {
-        id: userProfileCheckProcess
-        command: []
-        running: false
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const trimmed = text.trim();
-                if (trimmed && trimmed !== "" && !trimmed.includes("Error") && trimmed !== "/var/lib/AccountsService/icons/") {
-                    root.profileImage = trimmed;
-                } else {
-                    root.profileImage = "";
-                }
-                root.pendingGreeterProfileUser = "";
-            }
-        }
-
-        onExited: exitCode => {
-            if (exitCode !== 0 && root.pendingGreeterProfileUser !== "") {
-                root.profileImage = "";
-                root.pendingGreeterProfileUser = "";
-            }
-        }
     }
 
     IpcHandler {

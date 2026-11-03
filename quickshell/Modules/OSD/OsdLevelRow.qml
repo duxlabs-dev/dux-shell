@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Item {
     id: root
@@ -10,6 +10,8 @@ Item {
     property string iconName: "volume_up"
     property string insetIconName: ""
     property string endIconName: ""
+    property bool endIconInteractive: false
+    property string endIconLabel: ""
     property string iconLabel: ""
     property bool iconInteractive: false
     property bool tonalIcon: true
@@ -24,10 +26,11 @@ Item {
     property bool sliderEnabled: true
     property string sliderSize: "xs"
     property bool vertical: false
-    property color thumbOutlineColor: Theme.hostSurface
     property real horizontalPadding: -1
 
-    readonly property bool containsMouse: levelSlider.containsMouse || icon.hovered
+    readonly property bool containsMouse: levelSlider.containsMouse || icon.hovered || endIcon.hovered
+    readonly property bool endIconHovered: endIcon.hovered
+    readonly property Item endIconItem: endIcon
     readonly property bool showValueColumn: SettingsData.osdAlwaysShowValue
     readonly property bool showEndIcon: endIconName.length > 0
     readonly property alias isDragging: levelSlider.isDragging
@@ -41,6 +44,7 @@ Item {
 
     signal sliderValueChanged(int newValue)
     signal iconClicked
+    signal endIconClicked
     signal hoverChanged(bool hovered)
 
     onContainsMouseChanged: root.hoverChanged(root.containsMouse)
@@ -73,7 +77,7 @@ Item {
         width: Math.max(0, root.vertical ? parent.width - root.effectiveHorizontalPadding * 2 : parent.width - root.endPadding * 2 - icon.width - root.itemSpacing - root.valueExtent)
         height: Math.max(0, root.vertical ? parent.height - y - root.endPadding - root.valueExtent : parent.height)
 
-        DankSlider {
+        DSlider {
             id: levelSlider
 
             anchors.centerIn: parent
@@ -81,7 +85,7 @@ Item {
             rotation: root.vertical ? -90 : 0
             LayoutMirroring.enabled: !root.vertical && I18n.isRtl
             size: root.sliderSize
-            insetIcon: root.insetIconName
+            insetIcon: root.vertical ? root.insetIconName : ""
             insetIconPosition: root.vertical ? "end" : "start"
             insetIconRotation: root.vertical ? 90 : 0
             minimum: root.minimum
@@ -90,7 +94,6 @@ Item {
             showValue: false
             unit: root.unit
             fillColor: root.fillColor
-            thumbOutlineColor: root.thumbOutlineColor
             valueOverride: root.value
             onSliderValueChanged: newValue => root.sliderValueChanged(newValue)
 
@@ -126,12 +129,18 @@ Item {
             visible: root.showValueColumn
         }
 
-        DankIcon {
-            anchors.centerIn: parent
-            name: root.endIconName
-            size: Theme.iconSize
-            color: root.sliderEnabled ? root.fillColor : Theme.onSurface_38
+        OsdIcon {
+            id: endIcon
+
+            anchors.fill: parent
+            iconName: root.endIconName
+            iconColor: root.fillColor
+            tonal: false
+            label: root.endIconLabel
+            interactive: root.endIconInteractive
+            available: root.sliderEnabled
             visible: !root.showValueColumn
+            onClicked: root.endIconClicked()
         }
     }
 }

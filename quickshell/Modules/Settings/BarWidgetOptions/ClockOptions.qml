@@ -14,8 +14,6 @@ Column {
         settingKey: "barWidgetClock"
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["clockCompactMode"]
             text: I18n.tr("Compact mode")
             checked: root.page.value("clockCompactMode")
             onToggled: checked => root.page.set("clockCompactMode", checked)
@@ -36,18 +34,37 @@ Column {
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["clockNotificationBadge"]
             text: I18n.tr("Notification badge", "clock widget option: unread notification count next to the time")
             checked: root.page.value("clockNotificationBadge")
             onToggled: checked => root.page.set("clockNotificationBadge", checked)
+        }
+
+        SettingsDropdownRow {
+            readonly property var actions: ["dash", "settings", "command", "none"]
+
+            resetStore: root.page
+            resetKeys: ["clockClickAction"]
+            text: I18n.tr("Click action", "clock widget option: what clicking the clock opens")
+            options: [I18n.tr("Dashboard"), I18n.tr("Time & weather"), I18n.tr("Custom command"), I18n.tr("None", "bar click action")]
+            currentValue: options[actions.indexOf(root.page.value("clockClickAction"))] ?? options[0]
+            onValueChanged: value => root.page.set("clockClickAction", actions[options.indexOf(value)] ?? "dash")
+        }
+
+        SettingsTextFieldRow {
+            resetStore: root.page
+            resetKeys: ["clockClickCommand"]
+            text: I18n.tr("Custom command")
+            visible: root.page.value("clockClickAction") === "command"
+            placeholderText: "gnome-clocks"
+            value: root.page.value("clockClickCommand")
+            onEditingFinished: value => root.page.set("clockClickCommand", value.trim())
         }
 
         SettingsNavRow {
             iconName: "schedule"
             title: I18n.tr("Time & weather")
             hint: I18n.tr("Clock format, calendar, weather location")
-            onClicked: root.page.parentModal?.navigateTo("time_weather")
+            onClicked: keyboard => root.page.parentModal?.navigateTo("time_weather", keyboard)
         }
     }
 }

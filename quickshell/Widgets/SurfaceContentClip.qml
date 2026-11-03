@@ -17,11 +17,13 @@ Item {
     property real revealY: 0
     property real revealWidth: 0
     property real revealHeight: 0
+    property real topOverflow: 0
+    property real bottomOverflow: 0
 
     x: active ? body.x : (revealActive ? revealX : 0)
-    y: active ? body.y : (revealActive ? revealY : 0)
+    y: (active ? body.y : (revealActive ? revealY : 0)) - topOverflow
     width: active ? body.width : (revealActive ? revealWidth : targetRect.width)
-    height: active ? body.height : (revealActive ? revealHeight : targetRect.height)
+    height: (active ? body.height : (revealActive ? revealHeight : targetRect.height)) + topOverflow + bottomOverflow
     clip: active ? (body.width < targetRect.width || body.height < targetRect.height) : revealActive
 
     Item {

@@ -9,7 +9,7 @@ import (
 )
 
 func TestLockScreenPasswordFieldBypassesTextInputIME(t *testing.T) {
-	data, err := os.ReadFile("../../../quickshell/Modules/Lock/LockScreenContent.qml")
+	data, err := os.ReadFile("../../../quickshell/Modules/Lock/Widgets/LockAuthWidget.qml")
 	if err != nil {
 		t.Fatalf("read lock screen QML: %v", err)
 	}
@@ -32,6 +32,13 @@ func TestLockScreenPasswordFieldBypassesTextInputIME(t *testing.T) {
 	}
 	if !strings.Contains(content, "Qt.ImhSensitiveData") {
 		t.Fatalf("imeCommitSink must advertise hidden-text hints so IMEs treat it as a password field")
+	}
+
+	// fcitx5-qt parents its candidate xdg_popup to the focus window, and an
+	// ext-session-lock surface cannot parent popups (#3669).
+	sinkGate := regexp.MustCompile(`(?s)Loader\s*\{[^{}]*active:\s*KeyUtils\.compositorTextInputSelected\([^{}]*sourceComponent:\s*TextInput\s*\{\s*id:\s*imeCommitSink`)
+	if !sinkGate.MatchString(content) {
+		t.Fatalf("imeCommitSink must only load when Qt uses its wayland text-input context (#3669)")
 	}
 }
 

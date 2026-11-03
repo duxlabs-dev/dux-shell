@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://danklinux.com/schemas/plugin.json",
-  "title": "DankMaterialShell Plugin Manifest",
-  "description": "Schema for DankMaterialShell plugin.json manifest files",
+  "$id": "https://duxlabs.dev/schemas/plugin.json",
+  "title": "Dux Shell Plugin Manifest",
+  "description": "Schema for Dux Shell plugin.json manifest files",
   "type": "object",
   "required": [
     "id",

@@ -5,13 +5,14 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/godbus/dbus/v5"
 	bolt "go.etcd.io/bbolt"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/wlcontext"
-	wlclient "github.com/AvengeMedia/dankgo/wayland/client"
+	wlclient "github.com/duxlabs-dev/dux-go/wayland/client"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/wlcontext"
 )
 
 const largeEntryBytes = 1 << 20
@@ -40,26 +41,34 @@ func getConfigPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(configDir, "DankMaterialShell", "clsettings.json"), nil
+	return filepath.Join(configDir, "dms", "clsettings.json"), nil
 }
 
 func LoadConfig() Config {
+	cfg, err := readConfig()
+	if err != nil {
+		return DefaultConfig()
+	}
+	return cfg
+}
+
+func readConfig() (Config, error) {
 	cfg := DefaultConfig()
 
 	path, err := getConfigPath()
 	if err != nil {
-		return cfg
+		return cfg, err
 	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return cfg
+		return cfg, err
 	}
 
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return DefaultConfig()
+		return DefaultConfig(), err
 	}
-	return cfg
+	return cfg, nil
 }
 
 func SaveConfig(cfg Config) error {
@@ -140,6 +149,7 @@ type Manager struct {
 	pasteSupported bool
 
 	initialized bool
+	deviceBound atomic.Bool
 
 	alive    bool
 	stopChan chan struct{}

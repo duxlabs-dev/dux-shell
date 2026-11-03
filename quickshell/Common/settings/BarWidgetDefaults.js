@@ -2,7 +2,75 @@
 
 var CONTROL_CENTER_GROUP_ORDER = ["network", "vpn", "bluetooth", "audio", "microphone", "brightness", "battery", "printer", "screenSharing", "idleInhibitor", "doNotDisturb"];
 
+// Island-layout bars and dots keep these keys on the bar config; the island widget carries them on its entry.
+var ISLAND_DEFAULTS = {
+    islandFloating: false,
+    islandPlacement: "edge",
+    islandFreeSize: 48,
+    islandFreeIcon: "blur_on",
+    islandFreeIconMode: "icon",
+    islandFreeIconPath: "",
+    islandFreeIconColor: "primary",
+    islandFreeEdgeMargin: 2,
+    islandFreeIdleDelay: 2500,
+    islandFreeIdleOpacity: 0.45,
+    islandFreeIdleScale: 0.4,
+    islandSharedRouting: "normal",
+    islandRouteLauncher: "follow",
+    islandRouteControlCenter: "follow",
+    islandRouteNotificationCenter: "follow",
+    islandRouteClipboard: "follow",
+    islandRoutePowerMenu: "follow",
+    islandRouteDash: "island",
+    islandRouteMedia: "island",
+    islandRouteWeather: "island",
+    islandRouteWallpaper: "island",
+    islandUseOverlayLayer: false,
+    islandReserveThickness: 40,
+    islandCompactThickness: 38,
+    islandOuterGap: 4,
+    islandNotch: false,
+    islandAlongOffset: 0,
+    islandInteractionMode: "hybrid",
+    islandHoverOpenDelay: 150,
+    islandHoverCloseDelay: 150,
+    islandPalette: "default",
+    islandHighContrast: false,
+    islandDashTabs: false,
+    islandMediaClockVisible: true,
+    islandMediaLyrics: false,
+    islandMediaAutoSwitch: false,
+    islandNotificationBadgeClearOnOpen: false,
+    islandNotificationExpand: false,
+    islandNotificationPopups: false,
+    islandSystemOsd: true,
+    islandChargingPulse: true,
+    islandHomeCompactTight: false,
+    islandHomeClockDisplay: "both",
+    islandHomeVolumeDisplay: "both",
+    islandHomeBrightnessDisplay: "both",
+    islandHomeStatusContent: "battery",
+    islandBatteryStyle: "duo",
+    islandSatellitesEnabled: true,
+    islandSatellitePosition: "edges",
+    islandSatelliteGap: 12,
+    islandSatelliteBackground: false,
+    islandSatelliteGothCorners: true,
+    islandSatelliteFollowInterfaceStyle: true,
+    islandSatelliteTransparency: 1,
+    islandSpringStiffness: 560,
+    islandSpringDamping: 37,
+    islandSpringMass: 1
+};
+
 var DEFAULTS = {
+    // A hosted island starts with popups, OSDs and hover left to the bar; island-layout bars take them by default.
+    island: Object.assign({}, ISLAND_DEFAULTS, {
+        islandNotificationPopups: true,
+        islandSystemOsd: false,
+        islandInteractionMode: "click",
+        islandWidgetBackground: true
+    }),
     spacer: {
         size: 20
     },
@@ -16,6 +84,8 @@ var DEFAULTS = {
     },
     workspaceSwitcher: {
         workspaceIndicatorStyle: "pills",
+        workspaceIndicatorRoundness: -1,
+        workspaceIndicatorCompact: false,
         showWorkspaceIndex: false,
         showWorkspaceName: false,
         showWorkspacePadding: false,
@@ -32,6 +102,7 @@ var DEFAULTS = {
         reverseScrolling: false,
         dwlShowAllTags: false,
         workspaceActiveAppHighlightEnabled: false,
+        workspaceUnfocusedAppsFullOpacity: false,
         workspaceColorMode: "default",
         workspaceFocusedCustomColor: "#6750A4",
         workspaceOccupiedColorMode: "none",
@@ -61,11 +132,17 @@ var DEFAULTS = {
     clock: {
         clockCompactMode: false,
         clockDateOrder: "timeFirst",
-        clockNotificationBadge: false
+        clockNotificationBadge: false,
+        clockClickAction: "dash",
+        clockClickCommand: ""
     },
     music: {
+        mediaStyle: "controls",
         mediaSize: 1,
         mediaAdaptiveWidthEnabled: true,
+        mediaShowLyrics: true,
+        mediaSmoothLyrics: false,
+        mediaShowCoverArt: true,
         audioScrollMode: "volume"
     },
     focusedWindow: {
@@ -83,6 +160,13 @@ var DEFAULTS = {
         barMaxVisibleApps: 0,
         barMaxVisibleRunningApps: 0,
         barShowOverflowBadge: true,
+        launcherEnabled: false,
+        launcherLogoMode: "os",
+        launcherLogoCustomPath: "",
+        launcherLogoColorOverride: "",
+        launcherLogoSizeOffset: 0,
+        launcherLogoBrightness: 0.5,
+        launcherLogoContrast: 1,
         runningAppsCompactMode: true,
         runningAppsCurrentWorkspace: true,
         appsDockHideIndicators: true,
@@ -157,6 +241,10 @@ var DEFAULTS = {
         mountPath: "/",
         diskUsageMode: 0,
         showMountPath: true
+    },
+    network_speed_monitor: {
+        hideWhenIdle: false,
+        compactMode: false
     },
     systemUpdate: {
         hideWhenIdle: false

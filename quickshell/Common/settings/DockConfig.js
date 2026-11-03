@@ -1,6 +1,8 @@
 .pragma library
 
 var EDGES = ["top", "bottom", "left", "right"];
+var MAGNIFICATION_PROFILES = ["parabolic", "cosine", "gaussian"];
+var DEFAULT_MAGNIFICATION_PROFILE = "parabolic";
 
 function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -15,6 +17,7 @@ function create(id, name) {
         showOnLastDisplay: true,
         position: 1,
         mode: "compact",
+        middleClickAction: "close",
         taskbarAlign: "center",
         widgetExpansion: "popout",
         iconSize: 42,
@@ -52,6 +55,10 @@ function create(id, name) {
         showTrash: false,
         trashFileManager: "default",
         trashCustomCommand: "",
+        magnification: false,
+        magnificationScale: 130,
+        magnificationProfile: DEFAULT_MAGNIFICATION_PROFILE,
+        magnificationExpand: false,
         order: [],
         widgets: [
             {
@@ -78,7 +85,7 @@ function bounded(value, fallback, minimum, maximum) {
     return Number.isFinite(number) ? Math.max(minimum, Math.min(maximum, number)) : fallback;
 }
 
-function normalize(configs) {
+function normalize(configs, presets) {
     if (!Array.isArray(configs))
         return [];
     const ids = new Set();
@@ -88,11 +95,12 @@ function normalize(configs) {
         ids.add(config.id);
         return true;
     }).map(config => {
-        const defaults = create(config.id, config.id);
+        const defaults = Object.assign(create(config.id, config.id), presets);
         const result = Object.assign({}, defaults, clone(config));
         result.name = typeof config.name === "string" && config.name.trim() ? config.name : config.id;
         result.position = Number.isInteger(config.position) && config.position >= 0 && config.position < 4 ? config.position : 1;
         result.mode = config.mode === "taskbar" ? "taskbar" : "compact";
+        result.middleClickAction = ["close", "launch"].includes(config.middleClickAction) ? config.middleClickAction : defaults.middleClickAction;
         result.taskbarAlign = ["start", "center", "end"].includes(config.taskbarAlign) ? config.taskbarAlign : "center";
         result.widgetExpansion = config.widgetExpansion === "inline" ? "inline" : "popout";
         result.iconSize = bounded(result.iconSize, defaults.iconSize, 16, 96);
@@ -104,6 +112,8 @@ function normalize(configs) {
             result[key] = bounded(result[key], 1, 0, 1);
         for (const key of ["maxVisibleApps", "maxVisibleRunningApps"])
             result[key] = Math.floor(bounded(result[key], 0, 0, 100));
+        result.magnificationScale = bounded(result.magnificationScale, defaults.magnificationScale, 105, 160);
+        result.magnificationProfile = MAGNIFICATION_PROFILES.includes(result.magnificationProfile) ? result.magnificationProfile : defaults.magnificationProfile;
         for (const key of Object.keys(defaults)) {
             if (typeof defaults[key] === "boolean")
                 result[key] = result[key] === true;
@@ -278,6 +288,37 @@ function unitList(widgets, pins, order) {
     return result;
 }
 
+function widgetOrder(widgets, order) {
+    return unitList(widgets, [], (order || []).filter(id => !id.startsWith("pin:")));
+}
+
+// Pins ride with the widget right after them, so moving the apps widget keeps its pins in front of it.
+function reorderWidgets(widgets, order, ids) {
+    const saved = order || [];
+    const attached = new Map();
+    let run = [];
+    for (const id of unitList(widgets, saved.filter(id => id.startsWith("pin:")), saved)) {
+        if (id.startsWith("pin:")) {
+            run.push(id);
+            continue;
+        }
+        attached.set(id, run);
+        run = [];
+    }
+    const byId = new Map(widgets.map(widget => [widget.id, widget]));
+    const placed = ids.filter(id => byId.has(id));
+    const rest = widgets.map(widget => widget.id).filter(id => !placed.includes(id));
+    const sequence = placed.concat(rest);
+    // QV4 has no Array.prototype.flatMap.
+    const units = [];
+    for (const id of sequence)
+        units.push(...(attached.get(id) || []), id);
+    return {
+        widgets: sequence.map(id => byId.get(id)),
+        order: units.concat(run)
+    };
+}
+
 function surfaceItems(widgets, apps, order) {
     const items = [];
     const byId = new Map(widgets.map(widget => [widget.id, widget]));
@@ -384,4 +425,26 @@ function indicatorLane(config) {
 // Thickness is derived, never set: content decides it and padding surrounds it.
 function effectiveThickness(config) {
     return config.iconSize + config.spacing * 2;
+}
+
+// Proximity magnification influence radius per profile curve.
+function magnificationRadius(baseSize, profile) {
+    const size = baseSize > 0 ? baseSize : 42;
+    if (profile === "parabolic")
+        return size * 1.8;
+    if (profile === "gaussian")
+        return size * 2.2;
+    return size * 2.5;
+}
+
+// Magnification scale decay factor (1.0 at dist=0, tapering to 0.0 at dist>=radius).
+function magnificationFactor(dist, radius, profile) {
+    if (dist >= radius)
+        return 0;
+    const u = dist / radius;
+    if (profile === "cosine")
+        return 0.5 * (1 + Math.cos(Math.PI * u));
+    if (profile === "gaussian")
+        return (Math.exp(-3 * u * u) - Math.exp(-3)) / (1 - Math.exp(-3));
+    return 1 - (u * u);
 }

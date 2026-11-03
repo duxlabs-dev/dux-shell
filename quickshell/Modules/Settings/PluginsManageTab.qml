@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 FocusScope {
@@ -52,7 +52,7 @@ FocusScope {
                     text: PluginService.pluginDirectory
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
-                    font.family: "monospace"
+                    isMonospace: true
                     width: parent.width
                     elide: Text.ElideMiddle
                     horizontalAlignment: Text.AlignLeft
@@ -61,7 +61,7 @@ FocusScope {
 
             SettingsRow {
                 body: StyledText {
-                    text: I18n.tr("Place plugin directories here. Each plugin should have a plugin.json manifest file.")
+                    text: I18n.tr("Place plugin directories here. Each plugin should have a %1 manifest file.", "plugin directory note, %1 is the manifest file name").arg("plugin.json")
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
                     wrapMode: Text.WordWrap
@@ -74,7 +74,7 @@ FocusScope {
                 width: parent.width
                 spacing: Theme.spacingS
 
-                DankButton {
+                DButton {
                     text: PluginService.pluginDirectoryExists ? I18n.tr("Open folder") : I18n.tr("Create folder")
                     iconName: PluginService.pluginDirectoryExists ? "folder_open" : "create_new_folder"
                     maximumWidth: parent.width
@@ -87,7 +87,7 @@ FocusScope {
                         PluginService.createPluginDirectory();
                     }
                 }
-                DankButton {
+                DButton {
                     text: I18n.tr("Scan", "verb, button that scans for plugins, wifi networks or bluetooth devices")
                     iconName: "refresh"
                     backgroundColor: Theme.secondaryContainer
@@ -127,7 +127,7 @@ FocusScope {
                 title: I18n.tr("Error")
                 subtitle: root.registryError
                 subtitleColor: Theme.error
-                DankButton {
+                DButton {
                     text: I18n.tr("Retry", "retry failed action button")
                     enabled: !root.registryBusy
                     onClicked: root.refreshRegistries()
@@ -145,7 +145,7 @@ FocusScope {
                     subtitle: modelData.url
                     trailingBadge: modelData.official ? I18n.tr("official") : ""
 
-                    DankActionButton {
+                    DActionButton {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: "delete"
                         iconColor: Theme.error
@@ -176,7 +176,7 @@ FocusScope {
                 text: I18n.tr("URL", "Plugin registry repository address")
                 placeholderText: "https://github.com/user/registry.git"
 
-                actions: DankButton {
+                actions: DButton {
                     text: I18n.tr("Add")
                     enabled: !root.registryBusy && registryNameField.value.trim() !== "" && registryUrlField.value.trim() !== ""
                     onClicked: {

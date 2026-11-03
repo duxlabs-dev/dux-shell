@@ -6,7 +6,7 @@ import QtQuick.Layouts
 import Quickshell.Io
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Column {
     id: root
@@ -390,11 +390,10 @@ Column {
             anchors.rightMargin: Theme.spacingM
             spacing: Theme.spacingS
 
-            DankSearchField {
+            DSearchField {
                 id: searchField
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
-                Layout.preferredHeight: Theme.buttonHeightXS
                 leftIconSize: Theme.iconSizeSmall
                 font.pixelSize: Theme.fontSizeMedium
                 placeholderText: I18n.tr("Find in note...")
@@ -458,7 +457,7 @@ Column {
             }
 
             // Navigation buttons
-            DankActionButton {
+            DActionButton {
                 id: prevButton
                 Layout.alignment: Qt.AlignVCenter
                 iconName: "keyboard_arrow_up"
@@ -469,7 +468,7 @@ Column {
                 onClicked: root.findPrevious()
             }
 
-            DankActionButton {
+            DActionButton {
                 id: nextButton
                 Layout.alignment: Qt.AlignVCenter
                 iconName: "keyboard_arrow_down"
@@ -480,7 +479,7 @@ Column {
                 onClicked: root.findNext()
             }
 
-            DankActionButton {
+            DActionButton {
                 id: closeSearchButton
                 Layout.alignment: Qt.AlignVCenter
                 iconName: "close"
@@ -514,7 +513,7 @@ Column {
                 Layout.preferredWidth: inlinePreviewVisible ? parent.width * 0.55 : parent.width
                 clip: true
 
-                DankFlickable {
+                DFlickable {
                     id: flickable
                     anchors.fill: parent
                     clip: true
@@ -594,7 +593,7 @@ Column {
                         topPadding: Theme.spacingM
                         rightPadding: Theme.spacingM
                         bottomPadding: Theme.spacingM
-                        cursorDelegate: DankTextCursor {
+                        cursorDelegate: DTextCursor {
                             id: notepadCursor
                             width: 1.5
                             color: Theme.surfaceText
@@ -697,7 +696,7 @@ Column {
                         color: Theme.surfaceTextSecondary
                         font.family: textArea.font.family
                         font.pixelSize: textArea.font.pixelSize
-                        visible: textArea.text.length === 0
+                        visible: textArea.text.length === 0 && !textArea.inputMethodComposing
                         anchors.left: textArea.left
                         anchors.top: textArea.top
                         anchors.leftMargin: textArea.leftPadding
@@ -742,7 +741,7 @@ Column {
                         spacing: Theme.spacingS
 
                         // Copy plain text button
-                        DankActionButton {
+                        DActionButton {
                             iconName: "content_copy"
                             Accessible.name: I18n.tr("Copy Text")
                             iconSize: Theme.iconSize - 4
@@ -765,7 +764,7 @@ Column {
                         }
 
                         // Copy HTML button
-                        DankActionButton {
+                        DActionButton {
                             iconName: "code"
                             Accessible.name: I18n.tr("Copy HTML")
                             iconSize: Theme.iconSize - 4
@@ -782,7 +781,7 @@ Column {
                     }
                 }
 
-                DankFlickable {
+                DFlickable {
                     id: previewFlickable
                     anchors.top: previewHeader.bottom
                     anchors.left: parent.left
@@ -829,7 +828,7 @@ Column {
 
                 Row {
                     spacing: Theme.spacingS
-                    DankActionButton {
+                    DActionButton {
                         iconName: "save"
                         Accessible.name: I18n.tr("Save")
                         iconSize: Theme.iconSize - 2
@@ -847,7 +846,7 @@ Column {
 
                 Row {
                     spacing: Theme.spacingS
-                    DankActionButton {
+                    DActionButton {
                         iconName: "folder_open"
                         Accessible.name: I18n.tr("Open")
                         iconSize: Theme.iconSize - 2
@@ -864,7 +863,7 @@ Column {
 
                 Row {
                     spacing: Theme.spacingS
-                    DankActionButton {
+                    DActionButton {
                         iconName: "note_add"
                         Accessible.name: I18n.tr("New")
                         iconSize: Theme.iconSize - 2
@@ -882,7 +881,7 @@ Column {
                 Row {
                     spacing: Theme.spacingS
                     visible: PluginService.isPluginLoaded("dankNotepadModule")
-                    DankActionButton {
+                    DActionButton {
                         iconName: inlinePreviewVisible ? "visibility" : "visibility_off"
                         Accessible.name: I18n.tr("Preview")
                         iconSize: Theme.iconSize - 2
@@ -905,7 +904,7 @@ Column {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.spacingS
 
-                DankActionButton {
+                DActionButton {
                     visible: !root.inPopout
                     iconName: "open_in_new"
                     tooltipText: I18n.tr("Open as window")
@@ -914,7 +913,7 @@ Column {
                     onClicked: root.popoutRequested()
                 }
 
-                DankActionButton {
+                DActionButton {
                     visible: root.inPopout
                     iconName: "dock_to_right"
                     tooltipText: I18n.tr("Dock")
@@ -923,7 +922,7 @@ Column {
                     onClicked: root.dockRequested()
                 }
 
-                DankActionButton {
+                DActionButton {
                     iconName: "more_horiz"
                     tooltipText: I18n.tr("Settings")
                     iconSize: Theme.iconSize - 2
@@ -955,7 +954,7 @@ Column {
                     anchors.rightMargin: Theme.spacingM
                     spacing: Theme.spacingS
 
-                    DankIcon {
+                    DIcon {
                         name: currentTab && currentTab.isTemporary ? "draft" : "description"
                         size: Theme.iconSize - 4
                         color: Theme.surfaceVariantText
@@ -971,7 +970,7 @@ Column {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         id: copyPathButton
                         iconName: "content_copy"
                         Accessible.name: I18n.tr("Copy path")
@@ -1049,7 +1048,7 @@ Column {
                     }
                 }
 
-                DankActionButton {
+                DActionButton {
                     anchors.verticalCenter: parent.verticalCenter
                     iconName: "info"
                     tooltipText: I18n.tr("File info")

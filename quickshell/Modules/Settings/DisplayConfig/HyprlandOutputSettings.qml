@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 SettingsCard {
@@ -17,6 +17,11 @@ SettingsCard {
         return DisplayConfigState.getHyprlandSetting(root.outputData, root.outputName, "colorManagement", "auto");
     }
     readonly property bool isHdrMode: colorManagement === "hdr" || colorManagement === "hdredid"
+    readonly property var caps: {
+        void (DisplayConfigState.pendingHyprlandChanges);
+        return DisplayConfigState.getHyprlandCaps(root.outputData, root.outputName);
+    }
+    readonly property bool hdrCapable: caps?.hdr ?? true
     readonly property bool isDisabled: {
         void (DisplayConfigState.pendingHyprlandChanges);
         return DisplayConfigState.getHyprlandSetting(root.outputData, root.outputName, "disabled", false);
@@ -69,15 +74,15 @@ SettingsCard {
     }
 
     SettingsDropdownRow {
+        readonly property var cmValues: ["auto", "wide", "dcip3", "dp3", "adobe", "edid", "hdr", "hdredid"]
+        readonly property var supportedCmValues: cmValues.filter(cm => cm === root.colorManagement || DisplayConfigState.hyprlandCmAllowed(cm, root.caps))
+
         visible: root.is10Bit
         text: I18n.tr("Color gamut")
         enabled: !root.isDisabled
-        currentValue: {
-            void (DisplayConfigState.pendingHyprlandChanges);
-            const val = DisplayConfigState.getHyprlandSetting(root.outputData, root.outputName, "colorManagement", "auto");
-            return cmLabelMap[val] || I18n.tr("Auto (Wide)");
-        }
-        options: [I18n.tr("Auto (Wide)"), I18n.tr("Wide (BT2020)"), "DCI-P3", "Apple P3", "Adobe RGB", "EDID", "HDR", I18n.tr("HDR (EDID)")]
+        description: supportedCmValues.length < cmValues.length ? I18n.tr("Modes this display does not report support for are hidden") : ""
+        currentValue: cmLabelMap[root.colorManagement] || I18n.tr("Auto (Wide)")
+        options: supportedCmValues.map(cm => cmLabelMap[cm])
 
         property var cmValueMap: ({
                 [I18n.tr("Auto (Wide)")]: "auto",
@@ -107,25 +112,47 @@ SettingsCard {
         }
     }
 
+    // Hyprland ignores sdr_eotf in HDR modes.
+    SettingsDropdownRow {
+        readonly property string eotf: {
+            void (DisplayConfigState.pendingHyprlandChanges);
+            return String(DisplayConfigState.getHyprlandSetting(root.outputData, root.outputName, "sdrEotf", ""));
+        }
+        readonly property var eotfValues: ["", "auto", "srgb", "gamma22"]
+        readonly property var eotfLabels: [I18n.tr("Default"), I18n.tr("Auto"), "sRGB", "Gamma 2.2"]
+
+        visible: !root.isHdrMode
+        text: I18n.tr("SDR transfer function")
+        enabled: !root.isDisabled
+        options: eotfValues.includes(eotf) ? eotfLabels : eotfLabels.concat([eotf])
+        currentValue: eotfValues.includes(eotf) ? eotfLabels[eotfValues.indexOf(eotf)] : eotf
+        onValueChanged: value => {
+            const index = eotfLabels.indexOf(value);
+            if (index < 0)
+                return;
+            DisplayConfigState.setHyprlandSetting(root.outputData, root.outputName, "sdrEotf", eotfValues[index] || null);
+        }
+    }
+
     SettingsRow {
         visible: root.is10Bit && root.isHdrMode
         iconName: "warning"
         iconColor: Theme.warning
         title: I18n.tr("Experimental feature")
         titleColor: Theme.warning
-        subtitle: I18n.tr("HDR mode is experimental. Verify your monitor supports HDR before enabling.")
+        subtitle: root.hdrCapable ? I18n.tr("HDR mode is experimental. Verify your monitor supports HDR before enabling.") : I18n.tr("This display does not report HDR support, so Hyprland falls back to sRGB.")
     }
 
     SettingsRow {
         visible: root.is10Bit && root.isHdrMode
         title: I18n.tr("HDR tone mapping")
-        enabled: !root.isDisabled
+        enabled: !root.isDisabled && root.hdrCapable
 
         body: Row {
             width: parent.width
             spacing: Theme.spacingM
 
-            DankTextField {
+            DTextField {
                 outlined: true
                 leftIconName: "brightness_6"
                 labelText: I18n.tr("SDR brightness")
@@ -149,7 +176,7 @@ SettingsCard {
                 }
             }
 
-            DankTextField {
+            DTextField {
                 outlined: true
                 leftIconName: "palette"
                 labelText: I18n.tr("SDR saturation")

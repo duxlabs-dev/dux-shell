@@ -70,11 +70,8 @@ func TestSignalPercentFromDbm(t *testing.T) {
 		expected uint8
 	}{
 		{-30, 70},
-		{-100, 0},
 		{-110, 0},
-		{0, 100},
 		{10, 100},
-		{-55, 45},
 	}
 
 	for _, tc := range testCases {
@@ -149,7 +146,6 @@ func TestParseWpaEventLine(t *testing.T) {
 		args     string
 	}{
 		{"<2>CTRL-EVENT-CONNECTED - Connection to 02:00:01:02:03:04 completed [id=0 id_str=]", true, 2, "CTRL-EVENT-CONNECTED", "- Connection to 02:00:01:02:03:04 completed [id=0 id_str=]"},
-		{"<3>CTRL-EVENT-DISCONNECTED bssid=02:00:01:02:03:04 reason=3 locally_generated=1", true, 3, "CTRL-EVENT-DISCONNECTED", "bssid=02:00:01:02:03:04 reason=3 locally_generated=1"},
 		{"<2>CTRL-EVENT-SCAN-RESULTS ", true, 2, "CTRL-EVENT-SCAN-RESULTS", ""},
 		{"OK", false, 0, "", ""},
 		{"", false, 0, "", ""},

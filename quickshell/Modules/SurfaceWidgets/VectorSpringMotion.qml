@@ -16,6 +16,7 @@ QtObject {
     property real velocityEpsilon: 0.035
     property real maximumFrameTime: 1 / 30
     property real integrationStep: 1 / 240
+    property int maximumSubsteps: 256
     readonly property real timeConstantMs: reducedMotion ? 0 : 2000 * mass / Math.max(1, damping)
 
     property real currentWidth: 176
@@ -44,6 +45,9 @@ QtObject {
     property real velocityTopRightRadius: 0
     property real velocityBottomLeftRadius: 0
     property real velocityBottomRightRadius: 0
+
+    // One per integration step, so consumers copy the body once instead of binding to eight currents.
+    signal stepped()
 
     function matchesTarget(target) {
         return targetWidth === target.width && targetHeight === target.height && targetOffsetAlong === target.offsetAlong && targetOffsetCross === target.offsetCross && targetTopLeftRadius === target.topLeftRadius && targetTopRightRadius === target.topRightRadius && targetBottomLeftRadius === target.bottomLeftRadius && targetBottomRightRadius === target.bottomRightRadius;
@@ -103,6 +107,7 @@ QtObject {
         velocityBottomLeftRadius = 0;
         velocityBottomRightRadius = 0;
         running = false;
+        stepped();
     }
 
     function isSettled() {
@@ -130,6 +135,7 @@ QtObject {
         velocityBottomLeftRadius = 0;
         velocityBottomRightRadius = 0;
         running = false;
+        stepped();
     }
 
     function advance(rawFrameTime) {
@@ -140,32 +146,51 @@ QtObject {
         if (frameTime <= 0)
             return;
 
-        const steps = Math.max(1, Math.ceil(frameTime / integrationStep));
-        const step = frameTime / steps;
         const inverseMass = 1 / Math.max(0.001, mass);
+        // Short animation speeds scale stiffness by 1/f², so shrink the step until explicit Euler stays stable.
+        const stableStep = 1 / Math.max(1, damping * inverseMass, Math.sqrt(stiffness * inverseMass));
+        const steps = Math.min(maximumSubsteps, Math.max(1, Math.ceil(frameTime / Math.min(integrationStep, stableStep))));
+        const step = frameTime / steps;
+        const k = stiffness;
+        const c = damping;
+        const target = [targetWidth, targetHeight, targetOffsetAlong, targetOffsetCross, targetTopLeftRadius, targetTopRightRadius, targetBottomLeftRadius, targetBottomRightRadius];
+        const current = [currentWidth, currentHeight, currentOffsetAlong, currentOffsetCross, currentTopLeftRadius, currentTopRightRadius, currentBottomLeftRadius, currentBottomRightRadius];
+        const velocity = [velocityWidth, velocityHeight, velocityOffsetAlong, velocityOffsetCross, velocityTopLeftRadius, velocityTopRightRadius, velocityBottomLeftRadius, velocityBottomRightRadius];
 
+        // Integrate in locals and write once per frame; every property write re-runs its bindings.
         for (let i = 0; i < steps; i++) {
-            velocityWidth += (stiffness * (targetWidth - currentWidth) - damping * velocityWidth) * inverseMass * step;
-            velocityHeight += (stiffness * (targetHeight - currentHeight) - damping * velocityHeight) * inverseMass * step;
-            velocityOffsetAlong += (stiffness * (targetOffsetAlong - currentOffsetAlong) - damping * velocityOffsetAlong) * inverseMass * step;
-            velocityOffsetCross += (stiffness * (targetOffsetCross - currentOffsetCross) - damping * velocityOffsetCross) * inverseMass * step;
-            velocityTopLeftRadius += (stiffness * (targetTopLeftRadius - currentTopLeftRadius) - damping * velocityTopLeftRadius) * inverseMass * step;
-            velocityTopRightRadius += (stiffness * (targetTopRightRadius - currentTopRightRadius) - damping * velocityTopRightRadius) * inverseMass * step;
-            velocityBottomLeftRadius += (stiffness * (targetBottomLeftRadius - currentBottomLeftRadius) - damping * velocityBottomLeftRadius) * inverseMass * step;
-            velocityBottomRightRadius += (stiffness * (targetBottomRightRadius - currentBottomRightRadius) - damping * velocityBottomRightRadius) * inverseMass * step;
-
-            currentWidth += velocityWidth * step;
-            currentHeight += velocityHeight * step;
-            currentOffsetAlong += velocityOffsetAlong * step;
-            currentOffsetCross += velocityOffsetCross * step;
-            currentTopLeftRadius += velocityTopLeftRadius * step;
-            currentTopRightRadius += velocityTopRightRadius * step;
-            currentBottomLeftRadius += velocityBottomLeftRadius * step;
-            currentBottomRightRadius += velocityBottomRightRadius * step;
+            for (let j = 0; j < 8; j++) {
+                velocity[j] += (k * (target[j] - current[j]) - c * velocity[j]) * inverseMass * step;
+                current[j] += velocity[j] * step;
+            }
         }
+
+        if (!current.every(Number.isFinite) || !velocity.every(Number.isFinite)) {
+            settle();
+            return;
+        }
+
+        velocityWidth = velocity[0];
+        velocityHeight = velocity[1];
+        velocityOffsetAlong = velocity[2];
+        velocityOffsetCross = velocity[3];
+        velocityTopLeftRadius = velocity[4];
+        velocityTopRightRadius = velocity[5];
+        velocityBottomLeftRadius = velocity[6];
+        velocityBottomRightRadius = velocity[7];
+        currentWidth = current[0];
+        currentHeight = current[1];
+        currentOffsetAlong = current[2];
+        currentOffsetCross = current[3];
+        currentTopLeftRadius = current[4];
+        currentTopRightRadius = current[5];
+        currentBottomLeftRadius = current[6];
+        currentBottomRightRadius = current[7];
 
         if (isSettled())
             settle();
+        else
+            stepped();
     }
 
     onEnabledChanged: {

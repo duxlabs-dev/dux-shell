@@ -7,7 +7,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "dms",
 	Short: "dms CLI",
-	Long:  "dms is the DankMaterialShell management CLI and backend server.",
+	Long:  "dms is the Dux Shell management CLI and backend server.",
 }
 
 func init() {

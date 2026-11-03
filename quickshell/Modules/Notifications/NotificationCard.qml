@@ -3,7 +3,7 @@ import Quickshell.Widgets
 import Quickshell.Services.Notifications
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Rectangle {
     id: root
@@ -18,6 +18,7 @@ Rectangle {
     property bool showActions: true
     property bool showDismiss: true
     property bool showClose: false
+    property bool revealControls: true
     property string dismissText: I18n.tr("Dismiss")
     property bool showTime: true
     property bool bodyInvokesAction: false
@@ -30,9 +31,13 @@ Rectangle {
     property real outerRadius: Theme.groupedListOuterRadius
     property bool firstInGroup: true
     property bool lastInGroup: true
+    property real topRoundness: 0
+    property real bottomRoundness: 0
+    property real contentOpacity: 1
     readonly property bool hasMoreText: bodyText.truncated || summaryText.truncated
     readonly property bool hasBody: (notificationData?.htmlBody || "").replace(/<[^>]*>/g, "").trim().length > 0
     readonly property string appIcon: NotificationService.notificationAppIcon(notificationData?.appIcon || "", notificationData?.desktopEntry || "")
+    readonly property bool dmsIcon: appIcon === "dev.duxlabs.shell" || appIcon === "com.danklinux.dms"
     readonly property string contentImageSource: notificationData?.hasDisplayImage ? notificationData?.displayImage || "" : ""
     readonly property bool hasContentImage: contentImageSource.length > 0 && contentImage.status !== Image.Error
     readonly property bool contentVisible: !headerOnly && (!privacyMode || descriptionExpanded)
@@ -50,7 +55,7 @@ Rectangle {
 
     function saveDisplayImage() {
         const data = root.notificationData;
-        if (!root.persistImage || !data?.hasDisplayImage || data.persistedImagePath)
+        if (!root.persistImage || !data?.notification || !data.hasDisplayImage || data.persistedImagePath)
             return;
         const image = data.image || "";
         if (!image.startsWith("image://qsimage/") && !NotificationService.notificationIconFromImage(image).startsWith("/"))
@@ -69,11 +74,11 @@ Rectangle {
     implicitHeight: targetHeight
     height: targetHeight
     radius: Theme.groupedListInnerRadius
-    topLeftRadius: firstInGroup ? outerRadius : radius
+    topLeftRadius: radius + (outerRadius - radius) * (firstInGroup ? 1 : topRoundness)
     topRightRadius: topLeftRadius
-    bottomLeftRadius: lastInGroup ? outerRadius : radius
+    bottomLeftRadius: radius + (outerRadius - radius) * (lastInGroup ? 1 : bottomRoundness)
     bottomRightRadius: bottomLeftRadius
-    color: surfaceColor
+    color: keyboardSelected ? Theme.selectedContainer : surfaceColor
     border.width: Theme.layerOutlineWidth
     border.color: Theme.outlineMedium
     clip: true
@@ -127,6 +132,7 @@ Rectangle {
         height: parent.height - NotificationMetrics.cardPadding * 2
         radius: Theme.fullRadius(width, height)
         color: Theme.primary
+        opacity: root.contentOpacity
         visible: root.notificationData?.urgency === NotificationUrgency.Critical
     }
 
@@ -151,6 +157,7 @@ Rectangle {
         anchors.left: parent.left
         anchors.leftMargin: NotificationMetrics.cardPadding
         y: NotificationMetrics.cardPadding
+        opacity: root.contentOpacity
 
         Image {
             id: appImage
@@ -166,9 +173,10 @@ Rectangle {
         AppIconRenderer {
             anchors.fill: parent
             visible: !appImage.visible
-            iconValue: NotificationService.notificationFallbackIcon(root.headerOnly ? "" : root.notificationData?.image || "", root.appIcon)
+            iconValue: root.dmsIcon ? "svg:" + Theme.shellDir + "/assets/danklogonormal.svg" : NotificationService.notificationFallbackIcon(root.headerOnly ? "" : root.notificationData?.image || "", root.appIcon)
             iconSize: NotificationMetrics.appIconSize
             iconColor: Theme.onSurfaceVariant
+            colorOverride: root.dmsIcon ? Theme.primary : "transparent"
             fallbackText: (root.notificationData?.appName || "?").charAt(0).toUpperCase()
             fallbackRadius: Theme.fullRadius(width, height)
             fallbackBackgroundColor: Theme.secondaryContainer
@@ -184,89 +192,104 @@ Rectangle {
         anchors.rightMargin: NotificationMetrics.cardPadding
         y: NotificationMetrics.cardPadding
         spacing: NotificationMetrics.contentSpacing
+        opacity: root.contentOpacity
 
         Item {
+            id: messageBlock
+            readonly property real thumbnailReserve: !root.descriptionExpanded && imagePreview.visible ? imagePreview.width + Theme.spacingM : 0
+            readonly property real thumbnailTop: header.height + Theme.spacingS
+            readonly property real textHeight: header.height + (root.headerOnly ? 0 : NotificationMetrics.contentSpacing + messageText.implicitHeight)
             width: parent.width
-            height: NotificationMetrics.controlSize
+            height: root.descriptionExpanded ? textHeight + (imagePreview.visible ? NotificationMetrics.contentSpacing + imagePreview.height : 0) : Math.max(textHeight, imagePreview.visible ? thumbnailTop + imagePreview.height : 0)
 
-            StyledText {
+            Item {
+                id: header
                 anchors.left: parent.left
-                anchors.right: controls.left
-                anchors.rightMargin: Theme.spacingXS
-                anchors.verticalCenter: parent.verticalCenter
-                text: (root.notificationData?.appName || "") + (root.showTime && root.notificationData?.timeStr ? " · " + root.notificationData.timeStr : "")
-                horizontalAlignment: Text.AlignLeft
-                font.pixelSize: Theme.fontSizeSmall
-                color: Theme.onSurfaceVariant
-                elide: Text.ElideRight
-            }
-
-            Row {
-                id: controls
                 anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.spacingXXS
+                height: NotificationMetrics.controlSize
 
-                Rectangle {
-                    visible: !root.interactive && root.groupCount > 1
-                    width: notificationCount.implicitWidth + Theme.spacingS * 2
-                    height: Theme.iconSize
-                    radius: Theme.fullRadius(width, height)
-                    color: root.chipColor
+                StyledText {
+                    anchors.left: parent.left
+                    anchors.right: controls.left
+                    anchors.rightMargin: Theme.spacingXS
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: (root.notificationData?.appName || "") + (root.showTime && root.notificationData?.timeStr ? " · " + root.notificationData.timeStr : "")
+                    horizontalAlignment: Text.AlignLeft
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.onSurfaceVariant
+                    elide: Text.ElideRight
+                }
 
-                    StyledText {
-                        id: notificationCount
-                        anchors.centerIn: parent
+                Row {
+                    id: controls
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Theme.spacingXXS
+                    opacity: root.revealControls ? 1 : 0
+                    visible: opacity > 0
+
+                    Behavior on opacity {
+                        enabled: NotificationMetrics.animationsEnabled
+                        NumberAnimation {
+                            duration: Theme.shortDuration
+                            easing.type: Theme.standardEasing
+                        }
+                    }
+
+                    Rectangle {
+                        visible: !root.interactive && root.groupCount > 1
+                        width: notificationCount.implicitWidth + Theme.spacingS * 2
+                        height: Theme.iconSize
+                        radius: Theme.fullRadius(width, height)
+                        color: root.chipColor
+
+                        StyledText {
+                            id: notificationCount
+                            anchors.centerIn: parent
+                            text: root.groupCount.toString()
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.onSurfaceVariant
+                        }
+                    }
+
+                    DButton {
+                        visible: root.interactive && root.groupCount > 1
                         text: root.groupCount.toString()
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.onSurfaceVariant
+                        iconName: root.groupExpanded ? "expand_less" : "expand_more"
+                        buttonHeight: NotificationMetrics.controlSize
+                        horizontalPadding: Theme.spacingS
+                        backgroundColor: root.chipColor
+                        textColor: Theme.onSurfaceVariant
+                        Accessible.name: root.groupExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
+                        onClicked: root.groupToggleRequested()
+                    }
+
+                    DActionButton {
+                        visible: root.interactive && root.canExpand && root.groupCount <= 1
+                        iconName: root.descriptionExpanded ? "expand_less" : "expand_more"
+                        buttonSize: NotificationMetrics.controlSize
+                        iconSize: Theme.iconSizeSmall
+                        Accessible.name: root.descriptionExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
+                        onClicked: root.expandRequested()
+                    }
+
+                    DActionButton {
+                        visible: root.interactive && root.showClose
+                        iconName: "close"
+                        buttonSize: NotificationMetrics.controlSize
+                        iconSize: Theme.iconSizeSmall
+                        Accessible.name: I18n.tr("Dismiss")
+                        onClicked: root.closeRequested()
                     }
                 }
-
-                DankButton {
-                    visible: root.interactive && root.groupCount > 1
-                    text: root.groupCount.toString()
-                    iconName: root.groupExpanded ? "expand_less" : "expand_more"
-                    buttonHeight: NotificationMetrics.controlSize
-                    horizontalPadding: Theme.spacingS
-                    backgroundColor: root.chipColor
-                    textColor: Theme.onSurfaceVariant
-                    Accessible.name: root.groupExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
-                    onClicked: root.groupToggleRequested()
-                }
-
-                DankActionButton {
-                    visible: root.interactive && root.canExpand && root.groupCount <= 1
-                    iconName: root.descriptionExpanded ? "expand_less" : "expand_more"
-                    backgroundColor: root.chipColor
-                    width: NotificationMetrics.controlSize + Theme.spacingS
-                    buttonSize: NotificationMetrics.controlSize
-                    iconSize: Theme.iconSizeSmall
-                    Accessible.name: root.descriptionExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
-                    onClicked: root.expandRequested()
-                }
-
-                DankActionButton {
-                    visible: root.interactive && root.showClose
-                    iconName: "close"
-                    buttonSize: NotificationMetrics.controlSize
-                    iconSize: Theme.iconSizeSmall
-                    Accessible.name: I18n.tr("Dismiss")
-                    onClicked: root.closeRequested()
-                }
             }
-        }
-
-        Item {
-            id: messageContent
-            width: parent.width
-            visible: !root.headerOnly
-            height: root.descriptionExpanded ? messageText.implicitHeight + (imagePreview.visible ? NotificationMetrics.contentSpacing + imagePreview.height : 0) : Math.max(messageText.implicitHeight, imagePreview.visible ? imagePreview.height : 0)
 
             Column {
                 id: messageText
                 anchors.left: parent.left
-                width: Math.max(0, parent.width - (!root.descriptionExpanded && imagePreview.visible ? imagePreview.width + Theme.spacingS : 0))
+                y: header.height + NotificationMetrics.contentSpacing
+                width: Math.max(0, parent.width - messageBlock.thumbnailReserve)
+                visible: !root.headerOnly
                 spacing: NotificationMetrics.contentSpacing
 
                 StyledText {
@@ -336,7 +359,7 @@ Rectangle {
                 id: imagePreview
                 readonly property bool alignRight: root.descriptionExpanded ? I18n.isRtl : !I18n.isRtl
                 x: alignRight ? parent.width - width : 0
-                y: root.descriptionExpanded ? messageText.implicitHeight + NotificationMetrics.contentSpacing : 0
+                y: root.descriptionExpanded ? messageBlock.textHeight + NotificationMetrics.contentSpacing : messageBlock.thumbnailTop
                 width: root.descriptionExpanded ? Math.min(parent.width, NotificationMetrics.imageMaxHeight * contentImage.aspectRatio) : Math.min(NotificationMetrics.thumbnailSize, NotificationMetrics.thumbnailSize * contentImage.aspectRatio)
                 height: width / contentImage.aspectRatio
                 radius: Theme.cornerRadiusM
@@ -377,7 +400,7 @@ Rectangle {
 
                 Repeater {
                     model: root.showActions ? (root.notificationData?.actions || []) : []
-                    DankButton {
+                    DButton {
                         required property var modelData
                         required property int index
                         text: (modelData.text || I18n.tr("Open")) + (root.keyboardHints && index < 9 ? " (" + (index + 1) + ")" : "")
@@ -392,7 +415,7 @@ Rectangle {
                     }
                 }
 
-                DankButton {
+                DButton {
                     visible: root.showDismiss
                     text: root.dismissText
                     maximumWidth: actions.width

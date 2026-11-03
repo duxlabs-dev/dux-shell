@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/dank16"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/dank16"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/spf13/cobra"
 )
 
@@ -28,9 +28,13 @@ func init() {
 	dank16Cmd.Flags().Bool("wezterm", false, "Output in Wezterm terminal format")
 	dank16Cmd.Flags().String("background", "", "Custom background color")
 	dank16Cmd.Flags().String("contrast", "dps", "Contrast algorithm: dps (Delta Phi Star, default) or wcag")
+	dank16Cmd.Flags().String("profile", "default", "Palette: default, low, medium or high")
 	dank16Cmd.Flags().Bool("variants", false, "Output all variants (dark/light/default) in JSON")
 	dank16Cmd.Flags().String("primary-dark", "", "Primary color for dark mode (use with --variants)")
 	dank16Cmd.Flags().String("primary-light", "", "Primary color for light mode (use with --variants)")
+	_ = dank16Cmd.RegisterFlagCompletionFunc("profile", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"default", "low", "medium", "high"}, cobra.ShellCompDirectiveNoFileComp
+	})
 	_ = dank16Cmd.RegisterFlagCompletionFunc("contrast", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"dps", "wcag"}, cobra.ShellCompDirectiveNoFileComp
 	})
@@ -47,6 +51,7 @@ func runDank16(cmd *cobra.Command, args []string) {
 	isWezterm, _ := cmd.Flags().GetBool("wezterm")
 	background, _ := cmd.Flags().GetString("background")
 	contrastAlgo, _ := cmd.Flags().GetString("contrast")
+	profile, _ := cmd.Flags().GetString("profile")
 	useVariants, _ := cmd.Flags().GetBool("variants")
 	primaryDark, _ := cmd.Flags().GetString("primary-dark")
 	primaryLight, _ := cmd.Flags().GetString("primary-light")
@@ -84,6 +89,7 @@ func runDank16(cmd *cobra.Command, args []string) {
 			BackgroundDark: background,
 			UseDPS:         contrastAlgo == "dps",
 			IsLightMode:    isLight,
+			Profile:        profile,
 		}
 		variantColors := dank16.GenerateVariantPalette(variantOpts)
 		fmt.Print(dank16.GenerateVariantJSON(variantColors))
@@ -102,6 +108,7 @@ func runDank16(cmd *cobra.Command, args []string) {
 		IsLight:    isLight,
 		Background: background,
 		UseDPS:     contrastAlgo == "dps",
+		Profile:    profile,
 	}
 
 	colors := dank16.GeneratePalette(primaryColor, opts)

@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
+import qs.DCommon.Common as DCommon
 import "../Common/AqueousIpc.js" as Ipc
 
 Singleton {
@@ -106,7 +107,7 @@ Singleton {
                 valid = typeof value === "number" && Number.isFinite(value);
                 break;
             case "a":
-                valid = Array.isArray(value) && value.every(v => typeof v === "string");
+                valid = value instanceof Array && value.every(v => typeof v === "string");
                 break;
             case "r":
                 valid = value && ["x", "y", "width", "height"].every(k => Number.isSafeInteger(value[k]));
@@ -567,7 +568,7 @@ Singleton {
         onTriggered: root.reconnecting = false
     }
 
-    component IpcConnection: DankSocket {
+    component IpcConnection: DCommon.DSocket {
         id: connection
         property bool events: false
         property var handshake: null

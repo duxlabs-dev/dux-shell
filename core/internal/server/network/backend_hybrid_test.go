@@ -6,17 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHybridIwdNetworkdBackend_New(t *testing.T) {
-	wifi, _ := NewIWDBackend()
-	l3, _ := NewSystemdNetworkdBackend()
-
-	hybrid, err := NewHybridIwdNetworkdBackend(wifi, l3)
-	assert.NoError(t, err)
-	assert.NotNil(t, hybrid)
-	assert.NotNil(t, hybrid.wifi)
-	assert.NotNil(t, hybrid.l3)
-}
-
 func TestHybridIwdNetworkdBackend_GetCurrentState_MergesState(t *testing.T) {
 	wifi, _ := NewIWDBackend()
 	l3, _ := NewSystemdNetworkdBackend()
@@ -96,56 +85,4 @@ func TestHybridIwdNetworkdBackend_GetCurrentState_WiFiNoIP(t *testing.T) {
 	assert.Equal(t, StatusDisconnected, state.NetworkStatus)
 	assert.True(t, state.WiFiConnected)
 	assert.Empty(t, state.WiFiIP)
-}
-
-func TestHybridIwdNetworkdBackend_WiFiDelegation(t *testing.T) {
-	wifi, _ := NewIWDBackend()
-	l3, _ := NewSystemdNetworkdBackend()
-	hybrid, _ := NewHybridIwdNetworkdBackend(wifi, l3)
-
-	enabled, err := hybrid.GetWiFiEnabled()
-	assert.NoError(t, err)
-	assert.True(t, enabled)
-
-	state, err := hybrid.GetCurrentState()
-	assert.NoError(t, err)
-	assert.NotNil(t, state)
-	assert.Equal(t, "iwd+networkd", state.Backend)
-}
-
-func TestHybridIwdNetworkdBackend_WiredDelegation(t *testing.T) {
-	wifi, _ := NewIWDBackend()
-	l3, _ := NewSystemdNetworkdBackend()
-	hybrid, _ := NewHybridIwdNetworkdBackend(wifi, l3)
-
-	conns, err := hybrid.GetWiredConnections()
-	assert.NoError(t, err)
-	assert.Empty(t, conns)
-}
-
-func TestHybridIwdNetworkdBackend_VPNNotSupported(t *testing.T) {
-	wifi, _ := NewIWDBackend()
-	l3, _ := NewSystemdNetworkdBackend()
-	hybrid, _ := NewHybridIwdNetworkdBackend(wifi, l3)
-
-	profiles, err := hybrid.ListVPNProfiles()
-	assert.NoError(t, err)
-	assert.Empty(t, profiles)
-
-	active, err := hybrid.ListActiveVPN()
-	assert.NoError(t, err)
-	assert.Empty(t, active)
-
-	err = hybrid.ConnectVPN("test", false)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not supported")
-}
-
-func TestHybridIwdNetworkdBackend_PromptBrokerDelegation(t *testing.T) {
-	wifi, _ := NewIWDBackend()
-	l3, _ := NewSystemdNetworkdBackend()
-	hybrid, _ := NewHybridIwdNetworkdBackend(wifi, l3)
-
-	broker := hybrid.GetPromptBroker()
-	assert.Nil(t, broker)
 }

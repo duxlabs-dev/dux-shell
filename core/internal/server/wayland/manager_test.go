@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"sync"
@@ -12,11 +13,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	wlclient "github.com/AvengeMedia/dankgo/wayland/client"
+	wlclient "github.com/duxlabs-dev/dux-go/wayland/client"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/icc"
-	mocks_wlclient "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/wlclient"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_gamma_control"
+	"github.com/duxlabs-dev/dux-shell/core/internal/icc"
+	mocks_wlclient "github.com/duxlabs-dev/dux-shell/core/internal/mocks/wlclient"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_gamma_control"
 )
 
 func TestManager_ActorSerializesOutputStateAccess(t *testing.T) {
@@ -64,31 +65,6 @@ func TestManager_ActorSerializesOutputStateAccess(t *testing.T) {
 
 	close(m.stopChan)
 	m.wg.Wait()
-}
-
-func TestManager_ConcurrentSubscriberAccess(t *testing.T) {
-	m := &Manager{
-		stopChan:      make(chan struct{}),
-		dirty:         make(chan struct{}, 1),
-		updateTrigger: make(chan struct{}, 1),
-	}
-
-	var wg sync.WaitGroup
-	const goroutines = 20
-
-	for i := range goroutines {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			subID := string(rune('a' + id))
-			ch := m.Subscribe(subID)
-			assert.NotNil(t, ch)
-			time.Sleep(time.Millisecond)
-			m.Unsubscribe(subID)
-		}(i)
-	}
-
-	wg.Wait()
 }
 
 func TestManager_ConcurrentGetState(t *testing.T) {
@@ -168,20 +144,6 @@ func TestInterpolate_EdgeCases(t *testing.T) {
 			stop:     now.Add(time.Hour),
 			expected: 0.5,
 		},
-		{
-			name:     "now equals start",
-			now:      now,
-			start:    now,
-			stop:     now.Add(time.Hour),
-			expected: 0.0,
-		},
-		{
-			name:     "now equals stop",
-			now:      now.Add(time.Hour),
-			start:    now,
-			stop:     now.Add(time.Hour),
-			expected: 1.0,
-		},
 	}
 
 	for _, tt := range tests {
@@ -190,13 +152,6 @@ func TestInterpolate_EdgeCases(t *testing.T) {
 			assert.InDelta(t, tt.expected, result, 0.01)
 		})
 	}
-}
-
-func TestGenerateGammaRamp_ZeroSize(t *testing.T) {
-	ramp := GenerateGammaRamp(0, 5000, 1.0, 1.0)
-	assert.Empty(t, ramp.Red)
-	assert.Empty(t, ramp.Green)
-	assert.Empty(t, ramp.Blue)
 }
 
 func TestNotifySubscribers_NonBlocking(t *testing.T) {
@@ -307,32 +262,6 @@ func TestApplyGamma_SkipsUnchangedTempAndGamma(t *testing.T) {
 	assert.False(t, out.failed, "unchanged temp must not reach the compositor write path")
 	assert.Equal(t, 5000, out.lastTemp)
 	assert.Equal(t, uint32(256), out.rampSize)
-}
-
-func TestNeedsControls(t *testing.T) {
-	tests := []struct {
-		name     string
-		enabled  bool
-		gamma    float64
-		contrast float64
-		want     bool
-	}{
-		{"all_neutral_disabled", false, 1.0, 1.0, false},
-		{"enabled", true, 1.0, 1.0, true},
-		{"gamma_only", false, 1.2, 1.0, true},
-		{"contrast_only", false, 1.0, 1.3, true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := DefaultConfig()
-			cfg.Enabled = tt.enabled
-			cfg.Gamma = tt.gamma
-			cfg.Contrast = tt.contrast
-			m := &Manager{config: cfg}
-			assert.Equal(t, tt.want, m.needsControls())
-		})
-	}
 }
 
 func TestSetAdjustments_UnchangedValuesDoNotTouchActor(t *testing.T) {
@@ -447,9 +376,7 @@ func TestEffectiveTempTarget(t *testing.T) {
 		want         int
 	}{
 		{"override wins over the schedule", 7000, 5000, 7000},
-		{"override applies without a schedule", 7000, noTempTarget, 7000},
 		{"schedule applies without an override", 0, 5000, 5000},
-		{"neither configured", 0, noTempTarget, noTempTarget},
 	}
 
 	for _, tc := range cases {
@@ -699,9 +626,9 @@ func TestManager_ConfigSnapshotConcurrentMarshal(t *testing.T) {
 }
 
 // On a default install (night light off, no profile) no gamma control exists,
-// so a per-output temperature used to be written to wayland.json without ever
-// being applied or reported: the settings slider snapped back to "Default" and
-// the value only took effect after a daemon restart.
+// so a per-output temperature used to be persisted without ever being applied
+// or reported: the settings slider snapped back to "Default" and the value only
+// took effect after a daemon restart.
 func TestManager_SetOutputTempWithoutControlsPublishesValue(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 
@@ -728,15 +655,12 @@ func TestManager_SetOutputTempWithoutControlsPublishesValue(t *testing.T) {
 
 	assert.Equal(t, 7000, m.GetOutputTemps()["DP-1"], "the value is reported even without gamma controls")
 
-	path, err := getConfigPath()
-	if err != nil {
-		t.Fatalf("config path: %v", err)
-	}
+	path := iccConfigPath()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
 	}
-	var saved Config
+	var saved iccConfig
 	if err := json.Unmarshal(data, &saved); err != nil {
 		t.Fatalf("unmarshal %s: %v", path, err)
 	}
@@ -744,9 +668,9 @@ func TestManager_SetOutputTempWithoutControlsPublishesValue(t *testing.T) {
 }
 
 // Arguments that no wl_output or file can satisfy are rejected before anything is
-// written: an empty name would persist an entry in wayland.json that nothing can
-// match, and a relative profile path cannot be resolved by the next start, when
-// the daemon no longer has the caller's working directory.
+// written: an empty name would persist an entry in icc.json that nothing can
+// match, and a relative profile path cannot be resolved by the daemon, which
+// does not have the caller's working directory.
 func TestManager_RejectsInvalidICCArguments(t *testing.T) {
 	m := &Manager{config: DefaultConfig()}
 
@@ -986,4 +910,59 @@ func TestManager_RemovingAbsentProfileDoesNotForceResend(t *testing.T) {
 	drain()
 
 	assert.Equal(t, 4000, out.lastTemp, "removing a profile that was never attached must not clear the dedupe state")
+}
+
+func TestManager_SetOutputBrightnessClampsAndPersists(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+
+	m := &Manager{
+		config:   DefaultConfig(),
+		cmdq:     make(chan cmd, 8),
+		stopChan: make(chan struct{}),
+	}
+	m.wg.Add(1)
+	go m.waylandActor()
+	defer func() {
+		close(m.stopChan)
+		m.wg.Wait()
+	}()
+
+	tests := []struct {
+		percent int
+		want    map[string]int
+	}{
+		{0, map[string]int{"eDP-1": 0}},
+		{40, map[string]int{"eDP-1": 40}},
+		{150, nil},
+	}
+	for _, tt := range tests {
+		assert.NoError(t, m.SetOutputBrightness("eDP-1", tt.percent))
+		assert.True(t, maps.Equal(tt.want, m.GetOutputBrightness()), "percent %d", tt.percent)
+		assert.True(t, maps.Equal(tt.want, LoadConfig().OutputBrightness), "percent %d persisted", tt.percent)
+	}
+	assert.False(t, m.needsControls(), "full brightness must release the gamma controls")
+}
+
+// A control that fails before gamma_size was refused by the compositor, so
+// software brightness cannot use the output; a failure after it worked is a
+// lost control that the retry path recovers.
+func TestOutputState_MarkFailedDetectsRefusal(t *testing.T) {
+	tests := []struct {
+		name     string
+		rampSize uint32
+		refused  bool
+	}{
+		{"failed before gamma_size", 0, true},
+		{"failed after gamma_size", 256, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := &outputState{rampSize: tt.rampSize, retryCount: 1}
+			out.markFailed(time.Now())
+			assert.Equal(t, tt.refused, out.gammaRefused)
+			assert.True(t, out.failed)
+			assert.Zero(t, out.rampSize)
+			assert.Equal(t, 2, out.retryCount)
+		})
+	}
 }

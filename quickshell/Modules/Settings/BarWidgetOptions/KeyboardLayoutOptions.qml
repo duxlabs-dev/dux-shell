@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Modules.Settings.Widgets
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Column {
     id: root
@@ -41,16 +41,12 @@ Column {
         settingKey: "barWidgetKeyboardLayout"
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["keyboardLayoutNameCompactMode"]
             text: I18n.tr("Compact mode")
             checked: root.page.value("keyboardLayoutNameCompactMode")
             onToggled: checked => root.page.set("keyboardLayoutNameCompactMode", checked)
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["keyboardLayoutNameShowIcon"]
             text: I18n.tr("Show icon")
             checked: root.page.value("keyboardLayoutNameShowIcon")
             onToggled: checked => root.page.set("keyboardLayoutNameShowIcon", checked)
@@ -72,7 +68,7 @@ Column {
                 width: parent.width
                 spacing: Theme.spacingS
 
-                DankTextField {
+                DTextField {
                     id: rawField
                     outlined: true
                     labelText: I18n.tr("Displayed label", "keyboard layout override, the label currently shown")
@@ -82,7 +78,7 @@ Column {
                     onAccepted: root.addOverride()
                 }
 
-                DankTextField {
+                DTextField {
                     id: customField
                     outlined: true
                     labelText: I18n.tr("Custom label", "keyboard layout override, the replacement label")
@@ -92,7 +88,7 @@ Column {
                     onAccepted: root.addOverride()
                 }
 
-                DankButton {
+                DButton {
                     id: addOverrideBtn
                     iconName: "add"
                     text: I18n.tr("Add")
@@ -118,7 +114,7 @@ Column {
                         width: overridesList.width
                         height: 48
                         radius: Theme.cornerRadius
-                        color: Theme.floatingWindowFieldColor
+                        color: SettingsMetrics.controlColor
                         border.width: 0
 
                         StyledText {
@@ -133,7 +129,7 @@ Column {
                             elide: Text.ElideRight
                         }
 
-                        DankActionButton {
+                        DActionButton {
                             id: removeOverrideBtn
                             anchors.right: parent.right
                             anchors.rightMargin: Theme.spacingS

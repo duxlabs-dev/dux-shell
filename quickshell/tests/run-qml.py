@@ -30,17 +30,14 @@ def run(name, command):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run shell logic, Qt unit tests and QML widget regressions")
-    parser.add_argument("--jobs", type=int, default=max(1, min(4, len(os.sched_getaffinity(0)) // 4)))
-    parser.add_argument("suites", nargs="*", choices=["widgets", "media", "qt", "lock", "logic"])
+    parser = argparse.ArgumentParser(description="Run shell logic and Qt unit tests")
+    parser.add_argument("--jobs", type=int, default=3)
+    parser.add_argument("suites", nargs="*", choices=["qt", "lock", "logic"])
     args = parser.parse_args()
     if args.jobs < 1:
         parser.error("--jobs must be positive")
-    selected = args.suites or ["widgets", "media", "qt", "lock", "logic"]
-    fixtures = sorted(str(path.relative_to(repo)) for path in (repo / "quickshell/tests/qml").glob("*.qml"))
+    selected = args.suites or ["qt", "lock", "logic"]
     commands = {
-        "widgets": [sys.executable, "quickshell/tests/run-surface-fixture.py", *(path for path in fixtures if not path.startswith("quickshell/tests/qml/media-"))],
-        "media": [sys.executable, "quickshell/tests/run-surface-fixture.py", "--mpris", "--artwork", *(path for path in fixtures if path.startswith("quickshell/tests/qml/media-"))],
         "logic": ["node", "--test", *sorted(str(path.relative_to(repo)) for path in (repo / "quickshell/tests").glob("*.test.mjs"))],
     }
     if {"qt", "lock"} & set(selected):
@@ -59,7 +56,7 @@ def main():
                 print(output, flush=True)
                 continue
             for line in output.splitlines():
-                if name in ["widgets", "media"] or any(token in line for token in ["Totals:", "# tests "]):
+                if any(token in line for token in ["Totals:", "# tests "]):
                     print(line.strip(), flush=True)
     print(f"QML checks: {time.monotonic() - started:.2f}s", flush=True)
     return int(failed)

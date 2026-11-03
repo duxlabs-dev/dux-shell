@@ -5,7 +5,7 @@
 package mocks_cups_pkhelper
 
 import (
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/cups"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/cups"
 	mock "github.com/stretchr/testify/mock"
 )
 

@@ -6,6 +6,9 @@ import Quickshell.Wayland
 import qs.Common
 import qs.Widgets
 import qs.Services
+import qs.Modules.Lock
+import "../Common/WorkspaceModel.js" as WorkspaceModel
+import "../Common/WallpaperFormats.js" as WallpaperFormats
 
 Variants {
     id: variants
@@ -13,6 +16,9 @@ Variants {
     // An entry present in PanelWindow.onCompleted means we're recreating
     // after a wl_output rebind, not at initial startup.
     property var _seenScreens: ({})
+    readonly property bool desktopMenuEnabled: CompositorService.desktopContextMenuEnabled
+    // niri skips place-within-backdrop surfaces when hit-testing, so the wallpaper never sees clicks there.
+    readonly property bool desktopMenuOnWallpaper: desktopMenuEnabled && !CompositorService.isNiri
     model: SettingsData.getFilteredScreens("wallpaper")
 
     PanelWindow {
@@ -36,8 +42,42 @@ Variants {
 
         updatesEnabled: root.renderActive || root._settleFrames > 0
 
-        mask: Region {
-            item: Item {}
+        Region {
+            id: emptyRegion
+        }
+
+        mask: variants.desktopMenuOnWallpaper ? null : emptyRegion
+
+        MouseArea {
+            anchors.fill: parent
+            z: 1
+            enabled: variants.desktopMenuOnWallpaper
+            acceptedButtons: Qt.RightButton
+            onClicked: mouse => PopoutService.desktopContextMenu?.open(wallpaperWindow.screen, mouse.x, mouse.y, false)
+        }
+
+        Loader {
+            active: variants.desktopMenuEnabled && CompositorService.isNiri
+
+            sourceComponent: PanelWindow {
+                screen: wallpaperWindow.screen
+                color: "transparent"
+
+                WlrLayershell.namespace: "dms:desktop-input"
+                WlrLayershell.layer: WlrLayer.Background
+                WlrLayershell.exclusionMode: ExclusionMode.Ignore
+
+                anchors.top: true
+                anchors.bottom: true
+                anchors.left: true
+                anchors.right: true
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.RightButton
+                    onClicked: mouse => PopoutService.desktopContextMenu?.open(wallpaperWindow.screen, mouse.x, mouse.y, false)
+                }
+            }
         }
 
         Item {
@@ -55,7 +95,13 @@ Variants {
                 return "file://" + path.split('/').map(s => encodeURIComponent(s)).join('/');
             }
 
-            property string source: SessionData.getMonitorWallpaper(modelData.name) || ""
+            property string wallpaperSource: SessionData.getMonitorWallpaper(modelData.name) || ""
+            readonly property bool isVideoSource: WallpaperFormats.isVideo(wallpaperSource)
+            // A video drives the image pipeline below with its still frame.
+            readonly property string resolvedSource: VideoWallpaperService.imageFor(wallpaperSource)
+            readonly property bool framePending: VideoWallpaperService.framePending(wallpaperSource)
+            // Holds the previous wallpaper while a new video's frame is still being extracted.
+            property string source: ""
             property bool isColorSource: source.startsWith("#")
             property string transitionType: SessionData.wallpaperTransition
             property string actualTransitionType: transitionType
@@ -64,8 +110,7 @@ Variants {
             property bool contentReady: false
             property bool surfaceBounce: false
 
-            property string scrollMode: SettingsData.wallpaperFillMode
-            property bool scrollingEnabled: scrollMode === "Scrolling"
+            readonly property bool scrollingEnabled: SessionData.getMonitorWallpaperFillMode(modelData.name) === "Scrolling"
             property int currentWorkspaceIndex: 0
             property int totalWorkspaces: 1
             // Also requires the image to overflow on the compositor's scroll
@@ -75,18 +120,17 @@ Variants {
 
             Connections {
                 target: SessionData
+                enabled: SessionData.perModeWallpaper
+
                 function onIsLightModeChanged() {
-                    if (SessionData.perModeWallpaper) {
-                        var newSource = SessionData.getMonitorWallpaper(modelData.name) || "";
-                        if (newSource !== root.source) {
-                            root.source = newSource;
-                        }
-                    }
+                    const newSource = SessionData.getMonitorWallpaper(modelData.name) || "";
+                    if (newSource !== root.wallpaperSource)
+                        root.wallpaperSource = newSource;
                 }
             }
 
             Connections {
-                target: NiriService
+                target: CompositorService.isNiri ? NiriService : null
                 enabled: CompositorService.isNiri && root.scrollingEnabled
 
                 function onAllWorkspacesChanged() {
@@ -137,12 +181,17 @@ Variants {
             property string currentSource: ""
             property bool frozenValid: false
             property int _freezeWaitFrames: 0
-            readonly property bool overviewBlurActive: CompositorService.isNiri && SettingsData.blurWallpaperOnOverview && NiriService.inOverview && currentSource !== ""
+            readonly property bool overviewBlurActive: CompositorService.isNiri && SettingsData.blurWallpaperOnOverview && NiriService.inOverview && (currentSource !== "" || showsBackdrop)
             readonly property var backingWindow: Window.window
             readonly property bool showsBackdrop: !source || isColorSource || currentWallpaper.status === Image.Error
             readonly property bool backdropBusy: showsBackdrop && !(backdropLoader.item?.ready ?? false)
-            readonly property bool renderActive: backdropBusy || effectActive || overviewBlurActive || pendingWallpaper !== "" || _deferredSource !== "" || changePending || _freezeWaitFrames > 0 || frameAnim.running || currentWallpaper.status === Image.Loading || nextWallpaper.status === Image.Loading
+            readonly property bool renderActive: backdropBusy || effectActive || overviewBlurActive || pendingWallpaper !== "" || _deferredSource !== "" || changePending || _freezeWaitFrames > 0 || frameAnim.running || currentWallpaper.status === Image.Loading || nextWallpaper.status === Image.Loading || parallaxImage.status === Image.Loading || lockScrollSampler.busy || videoRendering
             property int _settleFrames: 3
+
+            readonly property bool fullscreenOnScreen: isVideoSource && CompositorService.fullscreenToplevelOnScreen(modelData)
+            // Nothing decodes while the video cannot be seen.
+            readonly property bool videoShouldPlay: isVideoSource && wallpaperWindow.visible && !IdleService.isShellLocked && !IdleService.monitorsOff && !overviewBlurActive && !fullscreenOnScreen
+            readonly property bool videoRendering: videoLoader.item?.rendering ?? false
 
             function invalidate() {
                 _settleFrames = 3;
@@ -176,7 +225,7 @@ Variants {
 
             function regenerate() {
                 invalidate();
-                if (!root.currentSource || currentWallpaper.source.toString())
+                if (!root.currentSource || currentWallpaper.source.toString() || nextWallpaper.source.toString())
                     return;
                 currentWallpaper.source = root.currentSource;
             }
@@ -268,7 +317,7 @@ Variants {
             onSessionMonitorWallpaperFillModesChanged: regenerate()
             onSessionPerMonitorWallpaperChanged: regenerate()
 
-            // Theme changes repaint DankBackdrop but nothing else wakes the render loop
+            // Theme changes repaint DBackdrop but nothing else wakes the render loop
             readonly property color themePrimary: Theme.primary
             readonly property color themeBackground: Theme.background
 
@@ -402,8 +451,8 @@ Variants {
                     const monitorWorkspaces = workspaces.filter(ws => ws.monitor?.name === modelData.name).sort((a, b) => a.id - b.id);
 
                     totalWorkspaces = monitorWorkspaces.length;
-                    const focusedId = Hyprland.focusedWorkspace?.id;
-                    currentWorkspaceIndex = monitorWorkspaces.findIndex(ws => ws.id === focusedId);
+                    const focusedKey = WorkspaceModel.hyprlandKey(Hyprland.focusedWorkspace);
+                    currentWorkspaceIndex = monitorWorkspaces.findIndex(ws => WorkspaceModel.hyprlandKey(ws) === focusedKey);
 
                     if (currentWorkspaceIndex < 0)
                         currentWorkspaceIndex = 0;
@@ -538,7 +587,17 @@ Variants {
                 }
             }
 
+            // Switches once the frame exists, or once it never will (extraction failed, no ffmpeg).
+            function syncSource() {
+                if (resolvedSource || !framePending)
+                    source = resolvedSource;
+            }
+
+            onResolvedSourceChanged: syncSource()
+            onFramePendingChanged: syncSource()
+
             Component.onCompleted: {
+                source = resolvedSource;
                 isInitialized = true;
                 if (!source || isColorSource) {
                     contentReady = true;
@@ -605,6 +664,9 @@ Variants {
             }
 
             function setWallpaperImmediate(newSource) {
+                root.pendingWallpaper = "";
+                root._deferredSource = "";
+                root._freezeWaitFrames = 0;
                 transitionDelayTimer.stop();
                 transitionAnimation.stop();
                 root.transitionProgress = 0.0;
@@ -655,6 +717,9 @@ Variants {
             }
 
             function changeWallpaper(newPath) {
+                const expectedSource = root.source.startsWith("file://") ? root.source : encodeFileUrl(root.source);
+                if (newPath !== expectedSource)
+                    return;
                 if (!newPath || newPath.startsWith("#")) {
                     root.changePending = false;
                     return;
@@ -719,8 +784,9 @@ Variants {
                 active: root.showsBackdrop
                 asynchronous: true
 
-                sourceComponent: DankBackdrop {
+                sourceComponent: DBackdrop {
                     screenName: modelData.name
+                    onInvalidated: root.invalidate()
                 }
             }
 
@@ -728,6 +794,11 @@ Variants {
             property real screenScale: 1
             property int textureWidth: Math.min(Math.round(modelData.width * screenScale), maxTextureSize)
             property int textureHeight: Math.min(Math.round(modelData.height * screenScale), maxTextureSize)
+
+            LockScrollSampler {
+                id: lockScrollSampler
+                screen: modelData
+            }
 
             QtObject {
                 id: imageMetrics
@@ -1165,13 +1236,61 @@ Variants {
             }
 
             Loader {
+                id: videoLoader
+                anchors.fill: parent
+                // Stays loaded until the outgoing video has faded off the still frame below.
+                active: root.isVideoSource || (item?.opacity ?? 0) > 0
+                // By url, so without QtMultimedia only this layer fails and the still frame stays.
+                source: "VideoWallpaperLayer.qml"
+                onStatusChanged: {
+                    if (status === Loader.Error)
+                        log.warn("QtMultimedia not available, video wallpapers show their still frame");
+                }
+
+                Binding {
+                    target: videoLoader.item
+                    property: "screenName"
+                    value: modelData.name
+                    when: videoLoader.item !== null
+                }
+
+                Binding {
+                    target: videoLoader.item
+                    property: "wantedSource"
+                    value: root.wallpaperSource
+                    when: videoLoader.item !== null
+                }
+
+                Binding {
+                    target: videoLoader.item
+                    property: "fillMode"
+                    value: SessionData.getMonitorWallpaperFillMode(modelData.name)
+                    when: videoLoader.item !== null
+                }
+
+                Binding {
+                    target: videoLoader.item
+                    property: "settled"
+                    value: !root.transitioning && !root.effectActive && !root.changePending
+                    when: videoLoader.item !== null
+                }
+
+                Binding {
+                    target: videoLoader.item
+                    property: "shouldPlay"
+                    value: root.videoShouldPlay
+                    when: videoLoader.item !== null
+                }
+            }
+
+            Loader {
                 id: overviewBlurLoader
                 anchors.fill: parent
                 active: root.overviewBlurActive
 
                 sourceComponent: MultiEffect {
                     anchors.fill: parent
-                    source: effectLoader.active ? effectLoader.item : (parallaxLoader.active ? parallaxLoader.item : srcCurrent)
+                    source: root.showsBackdrop ? backdropLoader.item : (effectLoader.active ? effectLoader.item : (parallaxLoader.active ? parallaxLoader.item : srcCurrent))
                     blurEnabled: true
                     blur: 0.8
                     blurMax: 75

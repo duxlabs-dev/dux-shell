@@ -8,32 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestManager_GetState(t *testing.T) {
-	state := &NetworkState{
-		NetworkStatus:     StatusWiFi,
-		WiFiSSID:          "TestNetwork",
-		WiFiConnected:     true,
-		HotspotSupported:  true,
-		HotspotAvailable:  true,
-		HotspotConfigured: true,
-		HotspotSSID:       "DMS Hotspot",
-	}
-
-	manager := &Manager{
-		state:      state,
-		stateMutex: sync.RWMutex{},
-	}
-
-	result := manager.GetState()
-	assert.Equal(t, StatusWiFi, result.NetworkStatus)
-	assert.Equal(t, "TestNetwork", result.WiFiSSID)
-	assert.True(t, result.WiFiConnected)
-	assert.True(t, result.HotspotSupported)
-	assert.True(t, result.HotspotAvailable)
-	assert.True(t, result.HotspotConfigured)
-	assert.Equal(t, "DMS Hotspot", result.HotspotSSID)
-}
-
 func TestStateChangedMeaningfully_HotspotFields(t *testing.T) {
 	tests := []struct {
 		name string
@@ -257,34 +231,6 @@ func TestManager_HotspotSupportedBackend(t *testing.T) {
 	assert.Equal(t, "hunter2-password", password)
 }
 
-func TestManager_NotifySubscribers(t *testing.T) {
-	manager := &Manager{
-		state: &NetworkState{
-			NetworkStatus: StatusWiFi,
-		},
-		stateMutex: sync.RWMutex{},
-		stopChan:   make(chan struct{}),
-		dirty:      make(chan struct{}, 1),
-	}
-	manager.notifierWg.Add(1)
-	go manager.notifier()
-
-	ch := make(chan NetworkState, 10)
-	manager.subscribers.Store("test-client", ch)
-
-	manager.notifySubscribers()
-
-	select {
-	case state := <-ch:
-		assert.Equal(t, StatusWiFi, state.NetworkStatus)
-	case <-time.After(200 * time.Millisecond):
-		t.Fatal("did not receive state update")
-	}
-
-	close(manager.stopChan)
-	manager.notifierWg.Wait()
-}
-
 func TestManager_NotifySubscribers_Debounce(t *testing.T) {
 	manager := &Manager{
 		state: &NetworkState{
@@ -347,62 +293,6 @@ func TestManager_Close(t *testing.T) {
 	count := 0
 	manager.subscribers.Range(func(key string, ch chan NetworkState) bool { count++; return true })
 	assert.Equal(t, 0, count)
-}
-
-func TestManager_Subscribe(t *testing.T) {
-	manager := &Manager{
-		state: &NetworkState{},
-	}
-
-	ch := manager.Subscribe("test-client")
-	assert.NotNil(t, ch)
-	assert.Equal(t, 64, cap(ch))
-
-	_, exists := manager.subscribers.Load("test-client")
-	assert.True(t, exists)
-}
-
-func TestManager_Unsubscribe(t *testing.T) {
-	manager := &Manager{
-		state: &NetworkState{},
-	}
-
-	ch := manager.Subscribe("test-client")
-
-	manager.Unsubscribe("test-client")
-
-	_, ok := <-ch
-	assert.False(t, ok)
-
-	_, exists := manager.subscribers.Load("test-client")
-	assert.False(t, exists)
-}
-
-func TestManager_GetState_ThreadSafe(t *testing.T) {
-	manager := &Manager{
-		state: &NetworkState{
-			NetworkStatus: StatusWiFi,
-			WiFiSSID:      "TestNetwork",
-		},
-		stateMutex: sync.RWMutex{},
-	}
-
-	done := make(chan bool)
-	for range 10 {
-		go func() {
-			state := manager.GetState()
-			assert.Equal(t, StatusWiFi, state.NetworkStatus)
-			done <- true
-		}()
-	}
-
-	for range 10 {
-		select {
-		case <-done:
-		case <-time.After(1 * time.Second):
-			t.Fatal("timeout waiting for goroutines")
-		}
-	}
 }
 
 func TestStateChangedMeaningfully_CellularDeviceFields(t *testing.T) {

@@ -1,7 +1,6 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
@@ -47,18 +46,17 @@ Item {
                 settingKey: "keyboardOptions"
                 resetKeys: []
                 text: I18n.tr("Switch layout shortcut")
-                options: [I18n.tr("Alt + Shift"), I18n.tr("Ctrl + Shift"), I18n.tr("Caps lock"), I18n.tr("Super + Space"), I18n.tr("Custom / None")]
+                options: [I18n.tr("Alt + Shift"), I18n.tr("Both Shift keys"), I18n.tr("Caps lock"), I18n.tr("Custom / None")]
+                description: currentValue === options[0] ? I18n.tr("Alt + Shift shortcuts in apps and keybinds stop working.") : ""
                 currentValue: {
                     const opt = SettingsData.keyboardOptions;
                     if (opt.includes("grp:alt_shift_toggle"))
                         return options[0];
-                    if (opt.includes("grp:ctrl_shift_toggle"))
+                    if (opt.includes("grp:shifts_toggle"))
                         return options[1];
                     if (opt.includes("grp:caps_toggle"))
                         return options[2];
-                    if (opt.includes("grp:win_space_toggle"))
-                        return options[3];
-                    return options[4];
+                    return options[3];
                 }
                 onValueChanged: value => {
                     const idx = options.indexOf(value);
@@ -70,13 +68,10 @@ Item {
                         newGrp = "grp:alt_shift_toggle";
                         break;
                     case 1:
-                        newGrp = "grp:ctrl_shift_toggle";
+                        newGrp = "grp:shifts_toggle";
                         break;
                     case 2:
                         newGrp = "grp:caps_toggle";
-                        break;
-                    case 3:
-                        newGrp = "grp:win_space_toggle";
                         break;
                     }
 
@@ -115,10 +110,11 @@ Item {
             }
 
             SettingsTextFieldRow {
+                visible: CompositorService.isNiri || CompositorService.isHyprland
                 resetKeys: ["keyboardKeymapFile"]
                 leftIconName: "description"
                 text: I18n.tr("Keymap file")
-                description: I18n.tr("Direct path to a .xkb keymap file. Overrides layouts/variants above.")
+                description: I18n.tr("Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.")
                 value: SettingsData.keyboardKeymapFile
                 placeholderText: "~/.config/keymap.xkb"
                 onValueEdited: value => SettingsData.set("keyboardKeymapFile", value)
@@ -133,6 +129,7 @@ Item {
             iconName: "settings"
 
             SettingsButtonGroupRow {
+                visible: CompositorService.isNiri
                 tags: ["keyboard", "track", "layout"]
                 settingKey: "keyboardTrackLayout"
                 text: I18n.tr("Remember layout")

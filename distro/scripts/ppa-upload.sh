@@ -28,6 +28,7 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 AVAILABLE_PACKAGES=(dms dms-git)
+export PPA_OWNER="${PPA_OWNER:-duxlabs}"
 
 KEEP_BUILDS=false
 REBUILD_RELEASE=""
@@ -217,16 +218,15 @@ PACKAGE_DIR=$(cd "$PACKAGE_DIR" && pwd)
 PARENT_DIR=$(dirname "$PACKAGE_DIR")
 
 setup_launchpad_sftp() {
-    if [[ -z "${LAUNCHPAD_SSH_PRIVATE_KEY:-}" ]]; then
-        error "LAUNCHPAD_SSH_PRIVATE_KEY is required for CI SFTP uploads."
-        error "Add a GitHub Actions secret containing a private SSH key whose public key is registered in Launchpad."
-        error "Optional: set LAUNCHPAD_SSH_LOGIN if the Launchpad login is not 'avengemedia'."
+    if [[ -z "${LAUNCHPAD_SSH_PRIVATE_KEY:-}" || -z "${LAUNCHPAD_SSH_LOGIN:-}" ]]; then
+        error "LAUNCHPAD_SSH_PRIVATE_KEY and LAUNCHPAD_SSH_LOGIN are required for CI SFTP uploads."
+        error "The key's public half must be registered on the Launchpad account named by LAUNCHPAD_SSH_LOGIN."
         exit 1
     fi
 
     local ssh_dir="$HOME/.ssh"
     local key_file="$ssh_dir/launchpad_ppa"
-    local login="${LAUNCHPAD_SSH_LOGIN:-avengemedia}"
+    local login="$LAUNCHPAD_SSH_LOGIN"
     local strict_host_key_checking="yes"
 
     mkdir -p "$ssh_dir"
@@ -296,7 +296,7 @@ UBUNTU_SERIES="${SERIES_LIST[0]}"
 
 info "Building and uploading: $PACKAGE_NAME"
 info "Package directory: $PACKAGE_DIR"
-info "PPA: ppa:avengemedia/$PPA_NAME"
+info "PPA: ppa:${PPA_OWNER}/$PPA_NAME"
 info "Ubuntu series: $UBUNTU_SERIES"
 if [[ -n "$REBUILD_RELEASE" ]]; then
     info "Rebuild release number: ppa$REBUILD_RELEASE"
@@ -369,16 +369,16 @@ if [ "$PPA_NAME" = "dms" ] || [ "$PPA_NAME" = "dms-git" ]; then
         setup_launchpad_sftp
         DPUT_CONFIG=$(mktemp)
         cat >"$DPUT_CONFIG" <<EOF
-[avengemedia-${PPA_NAME}]
+[${PPA_OWNER}-${PPA_NAME}]
 fqdn = ppa.launchpad.net
 method = sftp
-incoming = ~avengemedia/ubuntu/${PPA_NAME}/
-login = ${LAUNCHPAD_SSH_LOGIN:-avengemedia}
+incoming = ~${PPA_OWNER}/ubuntu/${PPA_NAME}/
+login = ${LAUNCHPAD_SSH_LOGIN}
 allow_unsigned_uploads = 0
 EOF
 
         info "Using dput for CI upload (SFTP)"
-        if dput -c "$DPUT_CONFIG" "avengemedia-${PPA_NAME}" "$CHANGES_FILE"; then
+        if dput -c "$DPUT_CONFIG" "${PPA_OWNER}-${PPA_NAME}" "$CHANGES_FILE"; then
             success "Upload successful!"
             rm -f "$DPUT_CONFIG"
         else
@@ -389,7 +389,7 @@ EOF
     else
         LFTP_SCRIPT=$(mktemp)
         cat >"$LFTP_SCRIPT" <<EOF
-cd ~avengemedia/ubuntu/$PPA_NAME/
+cd ~${PPA_OWNER}/ubuntu/$PPA_NAME/
 lcd $BUILD_DIR
 mput $CHANGES_BASENAME
 mput $DSC_FILE
@@ -418,7 +418,7 @@ fi
 echo
 success "Package uploaded successfully!"
 info "Monitor build progress at:"
-echo "  https://launchpad.net/~avengemedia/+archive/ubuntu/$PPA_NAME/+packages"
+echo "  https://launchpad.net/~${PPA_OWNER}/+archive/ubuntu/$PPA_NAME/+packages"
 echo
 
 if [ "$KEEP_BUILDS" = "false" ]; then
@@ -452,7 +452,7 @@ if [ "$KEEP_BUILDS" = "false" ]; then
     done
 
     case "$PACKAGE_NAME" in
-    danksearch)
+    dux-search)
         if [ -f "$PACKAGE_DIR/dsearch-amd64" ]; then
             rm -f "$PACKAGE_DIR/dsearch-amd64"
             REMOVED=$((REMOVED + 1))

@@ -73,6 +73,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: ./core/go.mod
+          cache-dependency-path: core/go.sum
 
       - name: Format check
         if: matrix.goos == 'linux'
@@ -87,7 +88,7 @@ jobs:
         if: matrix.goos == 'linux'
         run: go test -v ./...
 
-      - name: Build dankinstall (${{ env.ASSET }})
+      - name: Build duxinstall (${{ env.ASSET }})
         if: matrix.goos == 'linux'
         env:
           GOOS: ${{ matrix.goos }}
@@ -95,12 +96,12 @@ jobs:
           GOARCH: ${{ matrix.arch }}
         run: |
           set -eux
-          cd cmd/dankinstall
+          cd cmd/duxinstall
           go build -trimpath -ldflags "-s -w -X main.Version=${TAG}" \
-            -o ../../dankinstall-${{ env.ASSET }}
+            -o ../../duxinstall-${{ env.ASSET }}
           cd ../..
-          gzip -9 -k dankinstall-${{ env.ASSET }}
-          sha256sum dankinstall-${{ env.ASSET }}.gz > dankinstall-${{ env.ASSET }}.gz.sha256
+          gzip -9 -k duxinstall-${{ env.ASSET }}
+          sha256sum duxinstall-${{ env.ASSET }}.gz > duxinstall-${{ env.ASSET }}.gz.sha256
 
       - name: Sync embedded shell
         run: make sync-shell
@@ -148,8 +149,8 @@ jobs:
         with:
           name: core-assets-${{ env.ASSET }}
           path: |
-            core/dankinstall-${{ env.ASSET }}.gz
-            core/dankinstall-${{ env.ASSET }}.gz.sha256
+            core/duxinstall-${{ env.ASSET }}.gz
+            core/duxinstall-${{ env.ASSET }}.gz.sha256
             core/dms-${{ env.ASSET }}.gz
             core/dms-${{ env.ASSET }}.gz.sha256
             core/dms-distropkg-${{ env.ASSET }}.gz
@@ -174,8 +175,8 @@ jobs:
         with:
           name: core-assets-${{ env.ASSET }}
           path: |
-            core/dankinstall-${{ env.ASSET }}.gz
-            core/dankinstall-${{ env.ASSET }}.gz.sha256
+            core/duxinstall-${{ env.ASSET }}.gz
+            core/duxinstall-${{ env.ASSET }}.gz.sha256
             core/dms-${{ env.ASSET }}.gz
             core/dms-${{ env.ASSET }}.gz.sha256
             core/dms-distropkg-${{ env.ASSET }}.gz
@@ -207,8 +208,8 @@ jobs:
   #         GH_TOKEN: ${{ steps.app_token.outputs.token }}
   #       run: |
   #         set -euo pipefail
-  #         git config user.name "dms-ci[bot]"
-  #         git config user.email "dms-ci[bot]@users.noreply.github.com"
+  #         git config user.name "dux-ci[bot]"
+  #         git config user.email "344434142+dux-ci[bot]@users.noreply.github.com"
 
   #         version="${GITHUB_REF#refs/tags/}"
   #         echo "Updating to version: $version"
@@ -247,6 +248,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: ./core/go.mod
+          cache-dependency-path: core/go.sum
 
       - name: Download core artifacts
         uses: actions/download-artifact@v5
@@ -280,7 +282,7 @@ jobs:
           ## Installation
 
           ```bash
-          curl -fsSL https://install.danklinux.com | sh
+          curl -fsSL https://install.duxlabs.dev | sh
           ```
 
           ## Assets
@@ -300,11 +302,11 @@ jobs:
           - **`dms-distropkg-arm64.gz`** - DMS CLI binary built with distro_package tag for ARM64 systems
           - **`dms-distropkg-freebsd-amd64.gz`** - DMS CLI binary built with distro_package tag for FreeBSD x86_64 systems
           - **`dms-distropkg-freebsd-arm64.gz`** - DMS CLI binary built with distro_package tag for FreeBSD ARM64 systems
-          - **`dankinstall-amd64.gz`** - Installer binary for x86_64 systems
-          - **`dankinstall-arm64.gz`** - Installer binary for ARM64 systems
+          - **`duxinstall-amd64.gz`** - Installer binary for x86_64 systems
+          - **`duxinstall-arm64.gz`** - Installer binary for ARM64 systems
           - **`dms-cli-<version>.tar.gz`** - Go source code with vendored modules (for distro packaging)
           - **`dms-qml.tar.gz`** - QML source code only
-          - **`dms-source.tar.gz`** - Full repository source with bundled DankCommon (for distro packaging)
+          - **`dms-source.tar.gz`** - Full repository source with bundled DCommon (for distro packaging)
 
           ### Checksums
           - **`*.sha256`** - SHA256 checksums for verifying download integrity
@@ -346,21 +348,21 @@ jobs:
             fi
           done
 
-          # Copy dankinstall binaries
-          cp _core_assets/dankinstall-*.gz* _release_assets/
+          # Copy duxinstall binaries
+          cp _core_assets/duxinstall-*.gz* _release_assets/
 
           # Copy completions
           cp _core_assets/completion.* _release_assets/ 2>/dev/null || true
 
-          # Replace the DankCommon symlink with real submodule content for packaging
-          rm quickshell/DankCommon
-          cp -r dank-qml-common/DankCommon quickshell/DankCommon
+          # Replace the DCommon symlink with real submodule content for packaging
+          rm quickshell/DCommon
+          cp -r dux-qml-common/DCommon quickshell/DCommon
 
           # Create full source tarball (GitHub tag archives never contain submodule content)
           VERSION_NUM=${TAG#v}
           tar --exclude='.git' \
               --exclude='.github' \
-              --exclude='dank-qml-common' \
+              --exclude='dux-qml-common' \
               --exclude='_release_assets' \
               --exclude='_core_assets' \
               --exclude='RELEASE_BODY.md' \
@@ -420,7 +422,7 @@ jobs:
 
             # Create installation guide
             cat > _temp_full/INSTALL.md << 'EOFINSTALL'
-          # DankMaterialShell Installation
+          # Dux Shell Installation
 
           ## Requirements
 
@@ -458,8 +460,8 @@ jobs:
 
           ## Configuration
 
-          - Settings are stored in `~/.config/DankMaterialShell/settings.json`
-          - Plugins go in `~/.config/DankMaterialShell/plugins/`
+          - Settings are stored in `~/.config/dms/settings.json`
+          - Plugins go in `~/.config/dms/plugins/`
           - See the documentation in the `dms/` directory for more details
 
           ## Troubleshooting
@@ -520,8 +522,8 @@ jobs:
           bash scripts/notify-issues.sh "$PREVIOUS_TAG" "$TAG"
 
   # Pin the satellite repos to this release's version. Each dispatch target
-  # decides for itself whether to tag: X.Y.0 always tags, X.Y.Z skips when the
-  # repo has no commits of its own since its last tag.
+  # decides for itself whether to tag: X.Y.0 always tags master and cuts
+  # stable-X.Y, X.Y.Z tags stable-X.Y and skips when it has nothing new.
   fanout:
     name: Pin ${{ matrix.repo }}
     runs-on: ubuntu-latest
@@ -531,12 +533,13 @@ jobs:
       fail-fast: false
       matrix:
         repo:
-          - dgop
-          - dankgo
-          - dank-qml-common
-          - dankcalendar
-          - danksearch
-          - dank-greeter
+          - dux-gop
+          - dux-go
+          - dux-qml-common
+          - dux-calendar
+          - dux-search
+          - dux-greeter
+          - dux-files
     steps:
       - name: Create GitHub App token
         id: app_token
@@ -556,3 +559,38 @@ jobs:
           set -euo pipefail
           gh workflow run pin-release.yml --repo "$REPO" -f version="$TAG"
           echo "dispatched pin-release ${TAG} to ${REPO}" >> "$GITHUB_STEP_SUMMARY"
+
+  # Build the stable dms package on every distro channel. Runs after the
+  # release job so every asset the packaging scripts download already exists.
+  distros:
+    name: Dispatch ${{ matrix.workflow }}
+    runs-on: ubuntu-latest
+    needs: [release]
+    if: ${{ !contains(inputs.tag, '-') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - workflow: run-copr.yml
+            args: -f package=dms -f version=__VERSION__ -f release=1
+          - workflow: run-obs.yml
+            args: -f package=dms
+          - workflow: run-ppa.yml
+            args: -f package=dms
+          - workflow: run-xbps.yml
+            args: -f version=__TAG__ -f build_dms=true -f build_git=false
+    steps:
+      - name: Dispatch packaging workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW: ${{ matrix.workflow }}
+          ARGS: ${{ matrix.args }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          ARGS="${ARGS//__VERSION__/$VERSION}"
+          ARGS="${ARGS//__TAG__/$TAG}"
+          # shellcheck disable=SC2086
+          gh workflow run "$WORKFLOW" --repo "${{ github.repository }}" $ARGS
+          echo "dispatched ${WORKFLOW} for ${TAG} (${ARGS})" >> "$GITHUB_STEP_SUMMARY"

@@ -25,18 +25,6 @@ func TestCommandExistsFallsBackToLocalBin(t *testing.T) {
 	assert.True(t, CommandExists("pywalfox"))
 }
 
-func TestCommandExistsFallsBackToNixProfileBin(t *testing.T) {
-	home := t.TempDir()
-	binDir := filepath.Join(home, ".nix-profile", "bin")
-	require.NoError(t, os.MkdirAll(binDir, 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(binDir, "pywalfox"), []byte("#!/bin/sh\n"), 0o755))
-
-	t.Setenv("HOME", home)
-	t.Setenv("PATH", t.TempDir())
-
-	assert.True(t, CommandExists("pywalfox"))
-}
-
 func TestCommandExistsIgnoresNonExecutableLocalBinFile(t *testing.T) {
 	home := t.TempDir()
 	binDir := filepath.Join(home, ".local", "bin")

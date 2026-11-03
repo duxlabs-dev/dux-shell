@@ -4,9 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/matugen"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/matugen"
 )
 
 type MatugenQueueResult struct {
@@ -16,32 +15,34 @@ type MatugenQueueResult struct {
 
 func handleMatugenQueue(conn *ipc.ConnWriter, req ipc.Request) {
 	opts := matugen.Options{
-		StateDir:            models.GetOr(req, "stateDir", ""),
-		ShellDir:            models.GetOr(req, "shellDir", ""),
-		ConfigDir:           models.GetOr(req, "configDir", ""),
-		Kind:                models.GetOr(req, "kind", ""),
-		Value:               models.GetOr(req, "value", ""),
-		Mode:                matugen.ColorMode(models.GetOr(req, "mode", "")),
-		IconTheme:           models.GetOr(req, "iconTheme", ""),
-		MatugenType:         models.GetOr(req, "matugenType", ""),
-		RunUserTemplates:    models.GetOr(req, "runUserTemplates", true),
-		StockColors:         models.GetOr(req, "stockColors", ""),
-		SyncModeWithPortal:  models.GetOr(req, "syncModeWithPortal", false),
-		TerminalsAlwaysDark: models.GetOr(req, "terminalsAlwaysDark", false),
-		SkipTemplates:       models.GetOr(req, "skipTemplates", ""),
-		Contrast:            models.GetOr(req, "contrast", 0.0),
-		SourceMode:          models.GetOr(req, "sourceMode", ""),
-		SeedColor:           models.GetOr(req, "seedColor", ""),
-		Spec:                models.GetOr(req, "spec", ""),
+		StateDir:            req.GetOr("stateDir", ""),
+		ShellDir:            req.GetOr("shellDir", ""),
+		ConfigDir:           req.GetOr("configDir", ""),
+		Kind:                req.GetOr("kind", ""),
+		Value:               req.GetOr("value", ""),
+		Mode:                matugen.ColorMode(req.GetOr("mode", "")),
+		IconTheme:           req.GetOr("iconTheme", ""),
+		MatugenType:         req.GetOr("matugenType", ""),
+		RunUserTemplates:    req.GetOr("runUserTemplates", true),
+		StockColors:         req.GetOr("stockColors", ""),
+		SyncModeWithPortal:  req.GetOr("syncModeWithPortal", false),
+		TerminalsAlwaysDark: req.GetOr("terminalsAlwaysDark", false),
+		TerminalOpacity:     int(req.GetOr("terminalOpacity", 0.0)),
+		TerminalPalette:     req.GetOr("terminalPalette", ""),
+		SkipTemplates:       req.GetOr("skipTemplates", ""),
+		Contrast:            req.GetOr("contrast", 0.0),
+		SourceMode:          req.GetOr("sourceMode", ""),
+		SeedColor:           req.GetOr("seedColor", ""),
+		Spec:                req.GetOr("spec", ""),
 	}
 
-	wait := models.GetOr(req, "wait", true)
+	wait := req.GetOr("wait", true)
 
 	queue := matugen.GetQueue()
 	resultCh := queue.Submit(opts)
 
 	if !wait {
-		models.Respond(conn, req.ID, MatugenQueueResult{
+		conn.Respond(req.ID, MatugenQueueResult{
 			Success: true,
 			Message: "queued",
 		})
@@ -55,27 +56,27 @@ func handleMatugenQueue(conn *ipc.ConnWriter, req ipc.Request) {
 	case result := <-resultCh:
 		if result.Error != nil {
 			if result.Error == context.Canceled {
-				models.Respond(conn, req.ID, MatugenQueueResult{
+				conn.Respond(req.ID, MatugenQueueResult{
 					Success: false,
 					Message: "cancelled",
 				})
 				return
 			}
-			models.RespondError(conn, req.ID, result.Error.Error())
+			conn.RespondError(req.ID, result.Error.Error())
 			return
 		}
-		models.Respond(conn, req.ID, MatugenQueueResult{
+		conn.Respond(req.ID, MatugenQueueResult{
 			Success: true,
 			Message: "completed",
 		})
 	case <-ctx.Done():
-		models.RespondError(conn, req.ID, "timeout waiting for theme generation")
+		conn.RespondError(req.ID, "timeout waiting for theme generation")
 	}
 }
 
 func handleMatugenStatus(conn *ipc.ConnWriter, req ipc.Request) {
 	queue := matugen.GetQueue()
-	models.Respond(conn, req.ID, map[string]bool{
+	conn.Respond(req.ID, map[string]bool{
 		"running":        queue.IsRunning(),
 		"pending":        queue.HasPending(),
 		"smartSupported": matugen.SupportsSmart(),

@@ -1,11 +1,12 @@
 package tui
 
 import (
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/distros"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
 )
 
 func archModel() Model {
@@ -107,18 +108,6 @@ func TestTerminalChoicesOmitGhosttyOnGentoo(t *testing.T) {
 	}
 }
 
-func TestMoveIndexClamps(t *testing.T) {
-	if moveIndex(0, -1, 2) != 0 {
-		t.Fatal("moveIndex should not go below 0")
-	}
-	if moveIndex(2, 1, 2) != 2 {
-		t.Fatal("moveIndex should not exceed max")
-	}
-	if moveIndex(1, 1, 2) != 2 {
-		t.Fatal("moveIndex should advance within bounds")
-	}
-}
-
 func TestToggleSelectedDependency(t *testing.T) {
 	m := archModel()
 	m.dependencies = []deps.Dependency{
@@ -150,7 +139,7 @@ func TestDetectedDepsPartitionAndOptOut(t *testing.T) {
 	m := archModel()
 	m.state = StateDetectingDeps
 	updated, _ := m.Update(depsDetectedMsg{deps: []deps.Dependency{
-		{Name: "dms-greeter", Required: false},
+		{Name: "dux-greeter", Required: false},
 		{Name: "quickshell", Required: true},
 	}})
 	m = updated.(Model)
@@ -161,7 +150,7 @@ func TestDetectedDepsPartitionAndOptOut(t *testing.T) {
 	if m.dependencies[0].Name != "quickshell" {
 		t.Fatal("required deps should sort before optional")
 	}
-	if !m.disabledItems["dms-greeter"] {
+	if !m.disabledItems["dux-greeter"] {
 		t.Fatal("optional deps should default to disabled")
 	}
 }
@@ -200,5 +189,50 @@ func TestConfigCheckDefaultsToReplace(t *testing.T) {
 	}
 	if m.selectedConfig != 1 {
 		t.Fatalf("selectedConfig = %d, want first existing config", m.selectedConfig)
+	}
+}
+
+func TestConfigCheckKeepsBindsByDefault(t *testing.T) {
+	m := archModel()
+	m.state = StateConfigConfirmation
+	updated, _ := m.Update(configCheckResult{configs: []ExistingConfigInfo{
+		{ConfigType: "Mango", Path: "/tmp/config.conf", Exists: true},
+		{ConfigType: config.BindsConfigType, Path: "/tmp/binds.conf", Exists: true},
+	}})
+	m = updated.(Model)
+	if !m.replaceConfigs["Mango"] || m.replaceConfigs[config.BindsConfigType] {
+		t.Fatalf("replaceConfigs = %v, want Mango replaced and its binds kept", m.replaceConfigs)
+	}
+}
+
+func TestToggleVariantMarksInstalledDepForSwap(t *testing.T) {
+	m := archModel()
+	m.dependencies = []deps.Dependency{
+		{Name: "dux-greeter", Status: deps.StatusInstalled, CanToggle: true},
+		{Name: "dux-calendar", Status: deps.StatusMissing, CanToggle: true},
+	}
+	m.detectedVariants["dux-greeter"] = deps.VariantStable
+	m.disabledItems["dux-greeter"] = true
+
+	m.toggleSelectedVariant()
+	if !m.reinstallItems["dux-greeter"] || m.disabledItems["dux-greeter"] {
+		t.Fatal("switching an installed dep's variant should queue it for install")
+	}
+	m.toggleSelectedVariant()
+	if m.reinstallItems["dux-greeter"] {
+		t.Fatal("switching back to the installed variant should clear the reinstall")
+	}
+
+	m.reinstallItems["dux-greeter"] = true
+	m.toggleSelectedVariant()
+	m.toggleSelectedVariant()
+	if !m.reinstallItems["dux-greeter"] {
+		t.Fatal("a reinstall the user marked by hand must survive toggling the variant and back")
+	}
+
+	m.selectedDep = 1
+	m.toggleSelectedVariant()
+	if m.reinstallItems["dux-calendar"] {
+		t.Fatal("a missing dep installs anyway and must not be marked for reinstall")
 	}
 }

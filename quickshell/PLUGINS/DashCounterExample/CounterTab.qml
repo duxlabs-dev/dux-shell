@@ -1,9 +1,9 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Plugins
-import qs.Modules.DankDash
-import qs.Modules.DankDash.Overview
+import qs.Modules.DDash
+import qs.Modules.DDash.Overview
 
 DashTabComponent {
     id: root
@@ -51,7 +51,8 @@ DashTabComponent {
                 minW: 2,
                 minH: 2,
                 maxW: 4,
-                maxH: 3
+                maxH: 3,
+                options: [DashRegistry.toneOption("primary")]
             },
             {
                 id: "reset",
@@ -74,7 +75,10 @@ DashTabComponent {
 
         Card {
             id: counterCard
-            tone: "primary"
+
+            property var widgetOptions: ({})
+
+            tone: widgetOptions.tone ?? "primary"
 
             Column {
                 anchors.centerIn: parent
@@ -92,7 +96,7 @@ DashTabComponent {
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: Theme.spacingS
 
-                    DankActionButton {
+                    DActionButton {
                         buttonSize: Theme.buttonHeightM
                         iconSize: Theme.iconSize
                         iconName: "remove"
@@ -101,7 +105,7 @@ DashTabComponent {
                         onClicked: root.bump(-1)
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         buttonSize: Theme.buttonHeightM
                         iconSize: Theme.iconSize
                         iconName: "add"
@@ -119,7 +123,7 @@ DashTabComponent {
         id: resetWidget
 
         Card {
-            DankButton {
+            DButton {
                 anchors.centerIn: parent
                 text: I18n.trFor("dashCounterExample", "Reset")
                 iconName: "restart_alt"

@@ -174,7 +174,7 @@ Retrieve a plugin's installation directory at runtime:
 var dir = pluginService.getPluginPath(pluginId)
 ```
 
-Returns the absolute path to the plugin's directory (e.g., `~/.config/DankMaterialShell/plugins/MyPlugin`), or an empty string if the plugin is not found. Useful for loading bundled assets (images, data files) relative to the plugin's location.
+Returns the absolute path to the plugin's directory (e.g., `~/.config/dms/plugins/MyPlugin`), or an empty string if the plugin is not found. Useful for loading bundled assets (images, data files) relative to the plugin's location.
 
 ## Important Notes
 

@@ -3,14 +3,13 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Column {
     id: root
 
     property var parentModal: null
-    property string confirmingRemoveId: ""
     property string editingBarId: ""
     property string renameDraft: ""
     readonly property bool dotEnabled: SettingsData.dotBarConfig?.enabled ?? false
@@ -19,10 +18,7 @@ Column {
     BarSelectionState {
         id: bar
 
-        onSelectedBarIdChanged: {
-            root.editingBarId = "";
-            root.confirmingRemoveId = "";
-        }
+        onSelectedBarIdChanged: root.editingBarId = ""
     }
 
     function finishRename(value) {
@@ -51,30 +47,23 @@ Column {
             enabled: true,
             position: freeEdge >= 0 ? freeEdge : (defaultBar.position ?? 0),
             screenPreferences: ["all"],
-            showOnLastDisplay: true
+            showOnLastDisplay: true,
+            hideOnLastDisplay: false
         });
         delete newBar.island;
         delete newBar.dot;
+        SettingsData.stripIslandWidget(newBar);
         SettingsData.addBarConfig(newBar);
         bar.select(newId);
     }
 
     function canDeleteBar(config) {
-        return config.id !== "default" && (SettingsData.getBarKindConfigs().length > 1 || SettingsData.isIslandBarConfig(config));
+        return config.id !== "default" && SettingsData.edgeBarConfigCount > 1;
     }
 
     function deleteBar(barId) {
-        if (confirmingRemoveId !== barId) {
-            confirmingRemoveId = barId;
-            return;
-        }
-        confirmingRemoveId = "";
         SettingsData.deleteBarConfig(barId);
         bar.select("default");
-    }
-
-    function canToggleBar(config) {
-        return config.id !== "default" || SettingsData.isIslandBarConfig(config);
     }
 
     function setBarEnabled(barId, enabled) {
@@ -94,7 +83,7 @@ Column {
             parts.push(I18n.tr("All displays"));
         else
             parts.push(prefs.length === 1 ? I18n.tr("%1 display", "singular, bar summary of assigned monitors, %1 is 1").arg(prefs.length) : I18n.tr("%1 displays", "plural, bar summary of assigned monitors, %1 is a count").arg(prefs.length));
-        if (SettingsData.isIslandBarConfig(config))
+        if (SettingsData.hostsIsland(config))
             parts.push(I18n.tr("Island"));
         return parts.join(" • ");
     }
@@ -107,7 +96,7 @@ Column {
         title: I18n.tr("Bars", "plural noun, the shell bars or panels, settings title")
         settingKey: "barConfigurations"
         tags: ["bar", "configuration", "add", "remove", "enable", "multiple", "name"]
-        headerActions: DankButton {
+        headerActions: DButton {
             text: I18n.tr("Add")
             iconName: "add"
             buttonHeight: Theme.buttonHeightXS
@@ -125,9 +114,7 @@ Column {
                 summary: root.barSummary(modelData)
                 selected: bar.selectedBarId === modelData.id
                 checked: modelData.enabled ?? false
-                toggleVisible: root.canToggleBar(modelData)
                 deletable: root.canDeleteBar(modelData)
-                confirmingDelete: root.confirmingRemoveId === modelData.id
                 onClicked: bar.select(modelData.id)
                 onToggled: checked => {
                     bar.select(modelData.id);
@@ -135,6 +122,14 @@ Column {
                 }
                 onDeleteRequested: root.deleteBar(modelData.id)
             }
+        }
+
+        SettingsNavRow {
+            iconName: "keyboard_command_key"
+            title: I18n.tr("Keyboard shortcuts")
+            hint: I18n.tr("With no bar, Dot or dock launcher on, shortcuts are the only way back to settings", "bars card hint shown when every bar, the Dot and every dock launcher button are off")
+            visible: !root.dotEnabled && !SettingsData.barConfigs.some(config => config.enabled && !SettingsData.isDotBarConfig(config)) && !SettingsData.dockConfigs.some(dock => dock.enabled && dock.launcherEnabled)
+            onClicked: keyboard => root.parentModal?.navigateTo("keybinds", keyboard)
         }
     }
 
@@ -149,7 +144,7 @@ Column {
             title: I18n.tr("Name")
             subtitle: root.editingBarId ? "" : bar.selectedBarName
 
-            DankActionButton {
+            DActionButton {
                 iconName: root.editingBarId ? "check" : "edit"
                 Accessible.name: root.editingBarId ? I18n.tr("Save") : I18n.tr("Rename")
                 onClicked: {
@@ -161,7 +156,7 @@ Column {
                     root.editingBarId = bar.selectedBarId;
                 }
             }
-            DankActionButton {
+            DActionButton {
                 visible: root.editingBarId !== ""
                 iconName: "close"
                 Accessible.name: I18n.tr("Cancel")
@@ -172,7 +167,7 @@ Column {
                 width: parent.width
                 active: root.editingBarId !== ""
                 visible: active
-                sourceComponent: DankTextField {
+                sourceComponent: DTextField {
                     id: renameField
                     width: parent.width
                     outlined: true
@@ -204,46 +199,21 @@ Column {
                 iconName: modelData.icon
                 title: modelData.text
                 hint: modelData.hint ?? ""
-                onClicked: root.parentModal?.navigateTo(modelData.id)
+                onClicked: keyboard => root.parentModal?.navigateTo(modelData.id, keyboard)
             }
         }
     }
 
-    SettingsRow {
-        id: dotRow
-
+    SettingsSplitRow {
         settingKey: "dotEnabled"
         tags: ["dot", "dankdot", "companion", "floating", "island", "enable"]
         iconName: "blur_on"
         iconColor: root.dotEnabled ? Theme.primary : Theme.onSurfaceVariant
         title: I18n.tr("Dot", "bar layout: free-floating dot that opens island activities")
         subtitle: I18n.tr("A floating companion that works alongside any bar layout", "bar settings: what the dot is")
-        clickable: root.dotEnabled
-        onClicked: root.parentModal?.navigateTo("dankbar_dot")
-
-        DankIcon {
-            name: "chevron_right"
-            size: Theme.iconSize
-            color: Theme.onSurfaceVariant
-            rotation: I18n.isRtl ? 180 : 0
-            visible: root.dotEnabled
-            anchors.verticalCenter: parent.verticalCenter
-        }
-
-        Rectangle {
-            width: Theme.dividerWidth
-            height: SettingsMetrics.splitDividerHeight
-            color: Theme.outlineVariant
-            visible: root.dotEnabled
-            anchors.verticalCenter: parent.verticalCenter
-        }
-
-        DankToggle {
-            hideText: true
-            text: dotRow.title
-            checked: root.dotEnabled
-            anchors.verticalCenter: parent.verticalCenter
-            onToggled: value => SettingsData.setDotEnabled(value, bar.selectedBarId)
-        }
+        navigable: root.dotEnabled
+        checked: root.dotEnabled
+        onNavigated: keyboard => root.parentModal?.navigateTo("dankbar_dot", keyboard)
+        onToggled: value => SettingsData.setDotEnabled(value, bar.selectedBarId)
     }
 }

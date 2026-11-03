@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
@@ -17,6 +17,8 @@ Item {
     property string pendingConfirm: ""
     property bool pendingAdmin: false
     property bool pendingGreeter: false
+
+    Component.onCompleted: UsersService.refresh()
 
     function _resetForm() {
         pendingUsername = "";
@@ -62,7 +64,6 @@ Item {
         SettingsCard {
             width: parent.width
             iconName: "person_add"
-            title: I18n.tr("Create user")
             settingKey: "createUser"
             visible: PolkitService.polkitAvailable
 
@@ -71,7 +72,7 @@ Item {
                     width: parent.width
                     spacing: Theme.spacingXS
 
-                    DankTextField {
+                    DTextField {
                         id: usernameField
                         outlined: true
                         leftIconName: "person"
@@ -112,7 +113,7 @@ Item {
                     width: parent.width
                     spacing: Theme.spacingXS
 
-                    DankTextField {
+                    DTextField {
                         id: passwordField
                         outlined: true
                         leftIconName: "lock"
@@ -130,7 +131,7 @@ Item {
                     width: parent.width
                     spacing: Theme.spacingXS
 
-                    DankTextField {
+                    DTextField {
                         id: confirmField
                         outlined: true
                         leftIconName: "lock"
@@ -168,7 +169,7 @@ Item {
                 settingKey: "createUserGreeter"
                 tags: ["user", "greeter", "login", "sync"]
                 text: I18n.tr("Allow greeter login access")
-                description: I18n.tr("Adds them to the %1 group so they can run dms-greeter sync --profile", "create user greeter toggle description, %1 is a group name").arg(UsersService.greeterGroup)
+                description: I18n.tr("Adds them to the %1 group so they can run %2", "create user greeter toggle description, %1 is a group name, %2 a command").arg(UsersService.greeterGroup).arg("dms-greeter sync --profile")
                 checked: root.pendingGreeter
                 onToggled: checked => root.pendingGreeter = checked
             }
@@ -178,8 +179,8 @@ Item {
                     width: parent.width
                     spacing: Theme.spacingM
 
-                    DankButton {
-                        text: root.operationPending ? I18n.tr("Working...", "create user button text while the operation runs") : I18n.tr("Create user")
+                    DButton {
+                        text: root.operationPending ? I18n.tr("Working...", "create user button text while the operation runs") : I18n.tr("Add user", "button and settings page title, creates a new user account")
                         iconName: "person_add"
                         backgroundColor: Theme.primary
                         textColor: Theme.primaryText

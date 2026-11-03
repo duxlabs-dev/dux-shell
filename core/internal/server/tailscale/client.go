@@ -1,7 +1,6 @@
 package tailscale
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -103,35 +102,8 @@ func convertPeerStatus(ps *ipnstate.PeerStatus, users map[tailcfg.UserID]tailcfg
 	}
 
 	if !ps.LastSeen.IsZero() {
-		peer.LastSeen = formatRelativeTime(ps.LastSeen)
+		peer.LastSeen = ps.LastSeen.UTC().Format(time.RFC3339)
 	}
 
 	return peer
-}
-
-// formatRelativeTime formats a time as a human-readable relative duration (e.g., "5 minutes ago").
-func formatRelativeTime(t time.Time) string {
-	d := time.Since(t)
-	switch {
-	case d < time.Minute:
-		return "just now"
-	case d < time.Hour:
-		m := int(d.Minutes())
-		if m == 1 {
-			return "1 minute ago"
-		}
-		return fmt.Sprintf("%d minutes ago", m)
-	case d < 24*time.Hour:
-		h := int(d.Hours())
-		if h == 1 {
-			return "1 hour ago"
-		}
-		return fmt.Sprintf("%d hours ago", h)
-	default:
-		days := int(d.Hours() / 24)
-		if days == 1 {
-			return "1 day ago"
-		}
-		return fmt.Sprintf("%d days ago", days)
-	}
 }

@@ -8,10 +8,10 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_layer_shell"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_screencopy"
-	"github.com/AvengeMedia/dankgo/wayland/client"
+	"github.com/duxlabs-dev/dux-go/wayland/client"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_layer_shell"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_screencopy"
 	"golang.org/x/sys/unix"
 )
 
@@ -140,20 +140,7 @@ func (r *RegionSelector) enterScrollPhase(os *OutputSurface, x, y, w, h int) {
 		interval = r.screenshoter.config.IntervalMs
 	}
 
-	capX, capY, capW, capH := x, y, w, h
-	switch DetectCompositor() {
-	case CompositorHyprland, CompositorMango:
-		// both take device pixels, deviating from spec (observed)
-	default:
-		// spec: logical coordinates, scaled by the compositor
-		// https://wayland.app/protocols/wlr-screencopy-unstable-v1#zwlr_screencopy_manager_v1:request:capture_output_region
-		if scale := os.output.fractionalScale; scale > 1 {
-			capX = int(float64(x)/scale + 0.5)
-			capY = int(float64(y)/scale + 0.5)
-			capW = int(float64(w)/scale + 0.5)
-			capH = int(float64(h)/scale + 0.5)
-		}
-	}
+	capX, capY, capW, capH := scrollCaptureRect(DetectCompositor(), os.output.fractionalScale, x, y, w, h)
 
 	r.scroll = &scrollSession{
 		output:   os.output,
@@ -186,6 +173,17 @@ func (r *RegionSelector) enterScrollPhase(os *OutputSurface, x, y, w, h int) {
 	for _, surf := range r.surfaces {
 		r.redrawSurface(surf)
 	}
+}
+
+func scrollCaptureRect(comp Compositor, scale float64, x, y, w, h int) (int, int, int, int) {
+	// mango takes device pixels, deviating from spec (observed); Hyprland scales the box itself, so it stays on the spec path
+	if comp == CompositorMango || scale <= 1 {
+		return x, y, w, h
+	}
+	// spec: logical coordinates, scaled by the compositor
+	// https://wayland.app/protocols/wlr-screencopy-unstable-v1#zwlr_screencopy_manager_v1:request:capture_output_region
+	return int(float64(x)/scale + 0.5), int(float64(y)/scale + 0.5),
+		int(float64(w)/scale + 0.5), int(float64(h)/scale + 0.5)
 }
 
 // sized for the worst-case counter so the input region is set once
@@ -362,7 +360,7 @@ func (r *RegionSelector) enterHyprlandScrollInput(osurf *OutputSurface) {
 
 	s.sigCh = make(chan os.Signal, 2)
 	signal.Notify(s.sigCh, unix.SIGUSR1, unix.SIGUSR2)
-	s.keysBound = hyprlandBindScrollKeys(os.Getpid())
+	s.keysBound = exec.Command("hyprctl", hyprlandBindScrollKeysArgs(os.Getpid())...).Run() == nil
 }
 
 func hyprlandFocusWindowAt(x, y int) {
@@ -397,16 +395,19 @@ func hyprlandFocusWindowAt(x, y int) {
 	if best < 0 {
 		return
 	}
-	_ = exec.Command("hyprctl", "dispatch", "focuswindow", "address:"+clients[best].Address).Run()
+	_ = exec.Command("hyprctl", hyprlandFocusArgs(clients[best].Address)...).Run()
 }
 
-func hyprlandBindScrollKeys(pid int) bool {
-	batch := fmt.Sprintf("keyword bind ,Return,exec,kill -USR1 %d ; keyword bind ,Escape,exec,kill -USR2 %d", pid, pid)
-	return exec.Command("hyprctl", "--batch", batch).Run() == nil
+func hyprlandFocusArgs(address string) []string {
+	return []string{"dispatch", fmt.Sprintf("hl.dsp.focus({ window = %q })", "address:"+address)}
 }
 
-func hyprlandUnbindScrollKeys() {
-	_ = exec.Command("hyprctl", "--batch", "keyword unbind ,Return ; keyword unbind ,Escape").Run()
+func hyprlandBindScrollKeysArgs(pid int) []string {
+	return []string{"eval", fmt.Sprintf(`hl.bind("Return", hl.dsp.exec_cmd("kill -USR1 %d")); hl.bind("Escape", hl.dsp.exec_cmd("kill -USR2 %d"))`, pid, pid)}
+}
+
+func hyprlandUnbindScrollKeysArgs() []string {
+	return []string{"eval", `hl.unbind("Return"); hl.unbind("Escape")`}
 }
 
 func (r *RegionSelector) scrollBarHit(x, y float64) string {
@@ -651,14 +652,8 @@ func (r *RegionSelector) finishScroll() {
 		Height: int32(s.holeH),
 		Output: s.output.name,
 	}
-	// same convention as finishSelection or preselect breaks on scaled outputs
-	r.result = Region{
-		X:      int32(s.holeX) + s.output.x,
-		Y:      int32(s.holeY) + s.output.y,
-		Width:  int32(s.holeW),
-		Height: int32(s.holeH),
-		Output: s.output.name,
-	}
+	// same convention as finishSelection: keep the saved region in logical coords.
+	r.result = logicalRegionFromDevicePixels(s.output, s.holeX, s.holeY, s.holeW, s.holeH)
 	r.running = false
 }
 
@@ -676,7 +671,7 @@ func (r *RegionSelector) cleanupScroll() {
 		return
 	}
 	if s.keysBound {
-		hyprlandUnbindScrollKeys()
+		_ = exec.Command("hyprctl", hyprlandUnbindScrollKeysArgs()...).Run()
 	}
 	if s.sigCh != nil {
 		signal.Stop(s.sigCh)

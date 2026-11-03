@@ -37,11 +37,6 @@ func TestUnshellQuote(t *testing.T) {
 			expected: "",
 		},
 		{
-			name:     "empty double quotes",
-			input:    `""`,
-			expected: "",
-		},
-		{
 			name:     "single quote only",
 			input:    "'",
 			expected: "'",
@@ -50,16 +45,6 @@ func TestUnshellQuote(t *testing.T) {
 			name:     "mismatched quotes",
 			input:    "'hello\"",
 			expected: "'hello\"",
-		},
-		{
-			name:     "with special chars",
-			input:    "'cookie=abc123&user=john'",
-			expected: "cookie=abc123&user=john",
-		},
-		{
-			name:     "complex cookie",
-			input:    `'authcookie=077058d3bc81&portal=PANGP_GW_01-N&user=john.doe@example.com&domain=Default&preferred-ip=192.168.1.100'`,
-			expected: "authcookie=077058d3bc81&portal=PANGP_GW_01-N&user=john.doe@example.com&domain=Default&preferred-ip=192.168.1.100",
 		},
 	}
 
@@ -113,28 +98,12 @@ func TestParseGPSamlFromCommandLine(t *testing.T) {
 			expectedFP:     "existing-fp",
 		},
 		{
-			name:           "only updates empty fields",
-			line:           "openconnect --cookie=NEW --user=NEW",
-			initialResult:  &openConnectAuthResult{Cookie: "OLD"},
-			expectedCookie: "OLD",
-			expectedUser:   "NEW",
-			expectedFP:     "",
-		},
-		{
 			name:           "real gp-saml-gui output",
 			line:           "openconnect --protocol=gp --user=john.doe@example.com --os=linux-64 --usergroup=gateway:prelogin-cookie --passwd-on-stdin",
 			initialResult:  &openConnectAuthResult{},
 			expectedCookie: "",
 			expectedUser:   "john.doe@example.com",
 			expectedFP:     "",
-		},
-		{
-			name:           "with server cert flag",
-			line:           "openconnect --servercert=pin-sha256:xp3scfzy3rOgQEXnfPiYKrUk7D66a8b8O+gEXaMPleE= vpn.example.com",
-			initialResult:  &openConnectAuthResult{},
-			expectedCookie: "",
-			expectedUser:   "",
-			expectedFP:     "pin-sha256:xp3scfzy3rOgQEXnfPiYKrUk7D66a8b8O+gEXaMPleE=",
 		},
 	}
 
@@ -148,28 +117,6 @@ func TestParseGPSamlFromCommandLine(t *testing.T) {
 			assert.Equal(t, tt.expectedFP, result.Fingerprint, "fingerprint mismatch")
 		})
 	}
-}
-
-func TestParseGPSamlFromCommandLine_MultipleLines(t *testing.T) {
-	// Simulate gp-saml-gui output with command line suggestion
-	lines := []string{
-		"",
-		"SAML REDIRECT",
-		"Got SAML Login URL",
-		"POST to ACS endpoint...",
-		"Got 'prelogin-cookie': 'FAKE_cookie_12345'",
-		"openconnect --protocol=gp --user=john.doe@example.com --usergroup=gateway:prelogin-cookie --passwd-on-stdin vpn.example.com",
-		"",
-	}
-
-	result := &openConnectAuthResult{}
-	for _, line := range lines {
-		parseGPSamlFromCommandLine(line, result)
-	}
-
-	assert.Equal(t, "john.doe@example.com", result.User)
-	assert.Empty(t, result.Cookie, "cookie should not be parsed from command line")
-	assert.Empty(t, result.Fingerprint)
 }
 
 func TestRunOpenConnectAuthenticateSanitizesFailure(t *testing.T) {

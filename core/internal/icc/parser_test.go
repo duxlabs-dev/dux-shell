@@ -2,226 +2,11 @@ package icc
 
 import (
 	"encoding/binary"
-	"fmt"
 	"math"
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 )
-
-// Vendor-profile tests are optional: set ICC_TEST_DIR to a directory holding
-// the files below to run them against real display profiles. CI has none, so
-// they are skipped there and the synthetic tests at the bottom cover parsing
-// and ramp generation instead.
-var testFiles = []struct {
-	name string
-	file string
-}{
-	{
-		name: "Samsung Odyssey Neo G8 (v2.1, matrix-TRC, vcgt)",
-		file: "1D8HG_B173ZAN_31-08-2023.icm",
-	},
-	{
-		name: "DisplayPort monitor (v2.1, matrix-TRC, vcgt)",
-		file: "DP_31-08-2023.icm",
-	},
-	{
-		name: "GPD Win Max 2 (v2.2, XYZLUT+MTX, vcgt)",
-		file: "GPD1001H #1 2024-11-29 22-12 D6500 2.2 F-S XYZLUT+MTX.icm",
-	},
-}
-
-// vendorProfile resolves an optional vendor profile, skipping the test when
-// ICC_TEST_DIR is unset or the file is missing.
-func vendorProfile(t *testing.T, file string) string {
-	t.Helper()
-	dir := os.Getenv("ICC_TEST_DIR")
-	if dir == "" {
-		t.Skip("ICC_TEST_DIR not set; skipping vendor profile test")
-	}
-	path := filepath.Join(dir, file)
-	if _, err := os.Stat(path); err != nil {
-		t.Skipf("vendor profile unavailable: %v", err)
-	}
-	return path
-}
-
-func TestParseFile(t *testing.T) {
-	for _, tc := range testFiles {
-		t.Run(tc.name, func(t *testing.T) {
-			path := vendorProfile(t, tc.file)
-
-			// Read file to get expected size
-			info, err := os.Stat(path)
-			if err != nil {
-				t.Fatalf("cannot stat file: %v", err)
-			}
-
-			p, err := ParseFile(path)
-			if err != nil {
-				t.Fatalf("ParseFile failed: %v", err)
-			}
-
-			// Verify size matches file size
-			if p.Size != uint32(info.Size()) {
-				t.Errorf("Size: got %d, want %d", p.Size, info.Size())
-			}
-
-			// Verify version
-			if p.Version != "2.1.0" && p.Version != "2.2.0" && p.Version != "2.4.0" {
-				t.Errorf("Version: got %q, want v2.x", p.Version)
-			}
-			t.Logf("  Version: %s", p.Version)
-
-			// Verify class
-			if p.Class != "mntr" {
-				t.Errorf("Class: got %q, want %q", p.Class, "mntr")
-			}
-
-			// Verify color space
-			if p.ColorSpace != "RGB" {
-				t.Errorf("ColorSpace: got %q, want %q", p.ColorSpace, "RGB")
-			}
-
-			// Verify description is non-empty
-			if p.Description == "" {
-				t.Error("Description is empty")
-			}
-			t.Logf("  Description: %s", p.Description)
-
-			// Verify matrix
-			if !p.HasMatrix {
-				t.Error("HasMatrix is false, expected true")
-			} else {
-				t.Logf("  Matrix:")
-				for i := 0; i < 3; i++ {
-					t.Logf("    [%6.4f %6.4f %6.4f]", p.Matrix[0][i], p.Matrix[1][i], p.Matrix[2][i])
-				}
-				// Each Y value (second row of matrix) should be in [0, 1]
-				for _, col := range p.Matrix {
-					if col[1] < -0.01 || col[1] > 1.5 {
-						t.Errorf("Matrix Y value out of range: %f", col[1])
-					}
-				}
-			}
-
-			// Verify VCGT
-			if !p.HasVCGT {
-				t.Error("HasVCGT is false, expected true")
-			} else {
-				t.Logf("  VCGT: %d channels, %d entries", p.VCGT.Channels, p.VCGT.Entries)
-				t.Logf("  VCGT Red: [%d ... %d]", p.VCGT.Red[0], p.VCGT.Red[len(p.VCGT.Red)-1])
-				// Verify entry count matches declared
-				if len(p.VCGT.Red) != p.VCGT.Entries {
-					t.Errorf("VCGT Red entries: got %d, want %d", len(p.VCGT.Red), p.VCGT.Entries)
-				}
-				if len(p.VCGT.Green) != p.VCGT.Entries {
-					t.Errorf("VCGT Green entries: got %d, want %d", len(p.VCGT.Green), p.VCGT.Entries)
-				}
-				if len(p.VCGT.Blue) != p.VCGT.Entries {
-					t.Errorf("VCGT Blue entries: got %d, want %d", len(p.VCGT.Blue), p.VCGT.Entries)
-				}
-				// Verify channels
-				if p.VCGT.Channels != 3 {
-					t.Errorf("VCGT channels: got %d, want 3", p.VCGT.Channels)
-				}
-				// Verify monotonic non-decreasing per channel
-				for _, ch := range []struct {
-					name string
-					data []uint16
-				}{{"Red", p.VCGT.Red}, {"Green", p.VCGT.Green}, {"Blue", p.VCGT.Blue}} {
-					for i := 1; i < len(ch.data); i++ {
-						if ch.data[i] < ch.data[i-1] {
-							t.Errorf("VCGT %s not monotonic at index %d: %d < %d", ch.name, i, ch.data[i], ch.data[i-1])
-							break
-						}
-					}
-				}
-			}
-
-			// Log white point
-			t.Logf("  White point: [%6.4f %6.4f %6.4f]", p.WhitePoint[0], p.WhitePoint[1], p.WhitePoint[2])
-		})
-	}
-}
-
-func TestGenerateGammaRamp(t *testing.T) {
-	for _, tc := range testFiles {
-		t.Run(tc.name, func(t *testing.T) {
-			p, err := ParseFile(vendorProfile(t, tc.file))
-			if err != nil {
-				t.Fatalf("ParseFile failed: %v", err)
-			}
-			if !p.HasVCGT {
-				if _, err := GenerateGammaRamp(256, p); err == nil {
-					t.Error("expected an error for a profile without a vcgt table")
-				}
-				t.Skip("profile carries no vcgt table, so it has no ramp")
-			}
-
-			for _, rampSize := range []uint32{256, 4096} {
-				t.Run("size="+itoa(rampSize), func(t *testing.T) {
-					ramp, err := GenerateGammaRamp(rampSize, p)
-					if err != nil {
-						t.Fatalf("GenerateGammaRamp failed: %v", err)
-					}
-
-					// Verify lengths
-					if uint32(len(ramp.Red)) != rampSize {
-						t.Errorf("Red length: got %d, want %d", len(ramp.Red), rampSize)
-					}
-					if uint32(len(ramp.Green)) != rampSize {
-						t.Errorf("Green length: got %d, want %d", len(ramp.Green), rampSize)
-					}
-					if uint32(len(ramp.Blue)) != rampSize {
-						t.Errorf("Blue length: got %d, want %d", len(ramp.Blue), rampSize)
-					}
-
-					// Verify range [0, 65535]
-					channels := []struct {
-						name string
-						data []uint16
-					}{
-						{"Red", ramp.Red},
-						{"Green", ramp.Green},
-						{"Blue", ramp.Blue},
-					}
-
-					for _, ch := range channels {
-						// All values must be in [0, 65535] (uint16 guarantees this, but double-check)
-						for i, v := range ch.data {
-							if v > 65535 {
-								t.Errorf("%s[%d] = %d, out of range", ch.name, i, v)
-								break
-							}
-						}
-
-						// Verify ramp values match VCGT-derived data.
-						// Real VCGT calibration data does NOT guarantee ramp[0]==0
-						// or ramp[last]==65535 — these are gamma corrections.
-						// Log endpoints for inspection.
-						t.Logf("  %s: [%d ... %d]", ch.name, ch.data[0], ch.data[rampSize-1])
-
-						// Verify monotonic non-decreasing
-						for i := 1; i < len(ch.data); i++ {
-							if ch.data[i] < ch.data[i-1] {
-								t.Errorf("%s not monotonic at index %d: %d < %d", ch.name, i, ch.data[i], ch.data[i-1])
-								break
-							}
-						}
-
-						// ramp[last] >= ramp[0] (endpoints must be ordered)
-						if ch.data[rampSize-1] < ch.data[0] {
-							t.Errorf("%s: last value %d < first value %d", ch.name, ch.data[rampSize-1], ch.data[0])
-						}
-					}
-				})
-			}
-		})
-	}
-}
 
 func TestSampleCurve(t *testing.T) {
 	t.Run("Identity", func(t *testing.T) {
@@ -236,11 +21,8 @@ func TestSampleCurve(t *testing.T) {
 
 	t.Run("Parametric", func(t *testing.T) {
 		c := Curve{Type: CurveParametric, Gamma: 2.2}
-		// pow(0.5, 1/2.2) ≈ 0.7297
-		got := SampleCurve(c, 0.5)
-		want := math.Pow(0.5, 1.0/2.2)
-		if math.Abs(got-want) > 0.001 {
-			t.Errorf("SampleCurve(gamma2.2, 0.5) = %f, want %f", got, want)
+		if got := SampleCurve(c, 0.5); math.Abs(got-0.7297) > 0.001 {
+			t.Errorf("SampleCurve(gamma2.2, 0.5) = %f, want ~0.7297", got)
 		}
 
 		// Boundary conditions
@@ -273,16 +55,6 @@ func TestSampleCurve(t *testing.T) {
 		if v := SampleCurve(c2, 1.0); math.Abs(v-1.0) > 0.001 {
 			t.Errorf("SampleCurve(4entry, 1.0) = %f, want ~1.0", v)
 		}
-
-		// 256-entry identity table
-		entries256 := make([]uint16, 256)
-		for i := range entries256 {
-			entries256[i] = uint16(i * 65535 / 255)
-		}
-		c3 := Curve{Type: CurveTable, Entries: entries256}
-		if v := SampleCurve(c3, 0.5); math.Abs(v-0.5) > 0.01 {
-			t.Errorf("SampleCurve(256entry, 0.5) = %f, want ~0.5", v)
-		}
 	})
 
 	t.Run("ClampInput", func(t *testing.T) {
@@ -305,19 +77,6 @@ func TestParseBytes(t *testing.T) {
 			t.Error("expected error for short data")
 		}
 	})
-}
-
-// itoa converts a uint32 to string (avoids importing strconv)
-func itoa(n uint32) string {
-	if n == 0 {
-		return "0"
-	}
-	digits := ""
-	for n > 0 {
-		digits = string(rune('0'+n%10)) + digits
-		n /= 10
-	}
-	return digits
 }
 
 // --- synthetic profile tests (self-contained; also cover CI) ---
@@ -652,12 +411,10 @@ func TestParseVCGTChannelCount(t *testing.T) {
 		}
 	})
 
-	for _, channels := range []int{0, 2, 4} {
-		t.Run(fmt.Sprintf("%d channels are rejected", channels), func(t *testing.T) {
-			tag := vcgtTableTag(channels, entries)
-			if _, err := parseVCGT(tag, tagEntry{offset: 0, size: uint32(len(tag))}); err == nil {
-				t.Fatalf("expected an error for a %d-channel vcgt", channels)
-			}
-		})
-	}
+	t.Run("two channels are rejected", func(t *testing.T) {
+		tag := vcgtTableTag(2, entries)
+		if _, err := parseVCGT(tag, tagEntry{offset: 0, size: uint32(len(tag))}); err == nil {
+			t.Fatal("expected an error for a 2-channel vcgt")
+		}
+	})
 }

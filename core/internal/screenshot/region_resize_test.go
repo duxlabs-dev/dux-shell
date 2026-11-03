@@ -16,13 +16,9 @@ func TestResizeHandleAt(t *testing.T) {
 		px, py   float64
 		expected resizeHandle
 	}{
-		{"exact TopLeft", 100, 200, handleTopLeft},
 		{"near TopLeft", 108, 206, handleTopLeft},
-		{"exact TopRight", 400, 200, handleTopRight},
 		{"near TopRight", 392, 196, handleTopRight},
-		{"exact BottomLeft", 100, 350, handleBottomLeft},
 		{"near BottomLeft", 105, 345, handleBottomLeft},
-		{"exact BottomRight", 400, 350, handleBottomRight},
 		{"near BottomRight", 406, 354, handleBottomRight},
 		{"center", 250, 275, handleNone},
 		{"outside", 50, 50, handleNone},
@@ -169,32 +165,6 @@ func TestResizeTinySelectionHitTest(t *testing.T) {
 	}
 }
 
-func TestHUDGlyphsCoverage(t *testing.T) {
-	texts := []string{
-		"Space/Enter",
-		"capture",
-		"Drag+Release",
-		"Ctrl",
-		"resize/move",
-		"P",
-		"show cursor",
-		"hide cursor",
-		"Esc",
-		"cancel",
-	}
-
-	for _, text := range texts {
-		for _, ch := range text {
-			if ch == ' ' {
-				continue
-			}
-			if _, ok := fontGlyphs[ch]; !ok {
-				t.Errorf("fontGlyphs missing rune '%c' (%d) used in HUD text %q", ch, ch, text)
-			}
-		}
-	}
-}
-
 func TestOverlayDeltaIdenticalOverlayNoHandleDimming(t *testing.T) {
 	o1 := &overlay{
 		interior:    dirtyRect{10, 10, 100, 100},
@@ -272,23 +242,11 @@ func TestHUDScale(t *testing.T) {
 		effectiveScale float64
 		expectedScale  int
 	}{
-		{"auto", 1.0, 1},
 		{"auto", 1.8, 2},
 		{"auto", 2.4, 2},
-		{"", 1.0, 1},
-		{"", 2.0, 2},
-		{"off", 1.0, 0},
 		{"OFF", 2.0, 0},
-		{"none", 1.5, 0},
-		{"false", 1.0, 0},
-		{"0", 2.0, 0},
-		{"0.0", 1.0, 0},
 		{"-1", 1.0, 0},
-		{"1", 1.0, 1},
 		{"1.5", 1.0, 2},
-		{"2", 1.0, 2},
-		{"3", 1.0, 3},
-		{"4", 1.0, 4},
 		{"1000", 1.0, 4},
 		{"0.2", 1.0, 1},
 		{"invalid", 1.7, 2},

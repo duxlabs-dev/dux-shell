@@ -1,432 +1,137 @@
 import QtQuick
 import QtQuick.Effects
 import qs.Common
-import qs.DankCommon.Common as DankCommon
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
+import qs.Widgets
 
 Item {
-    id: aboutTab
+    id: root
+
+    property var parentModal: null
 
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
-    property bool isHyprland: CompositorService.isHyprland
-    property bool isNiri: CompositorService.isNiri
-    property bool isSway: CompositorService.isSway
-    property bool isScroll: CompositorService.isScroll
-    property bool isMiracle: CompositorService.isMiracle
-    property bool isMango: CompositorService.isMango
-    property bool isLabwc: CompositorService.isLabwc
-    property bool isAqueous: CompositorService.isAqueous
-    property bool isUmbriel: CompositorService.isUmbriel
+    readonly property string assetsDir: "file://" + Theme.shellDir + "/assets/"
+    readonly property string githubUrl: "https://github.com/duxlabs-dev/dux-shell"
+    readonly property string kofiUrl: "https://ko-fi.com/duxlabs"
+    readonly property string discordUrl: "https://discord.gg/ppWTpKmPgT"
 
-    property string compositorName: {
-        if (isHyprland)
-            return "hyprland";
-        if (isSway)
-            return "sway";
-        if (isScroll)
-            return "scroll";
-        if (isMiracle)
-            return "miracle";
-        if (isMango)
-            return "mangowc";
-        if (isLabwc)
-            return "labwc";
-        if (isAqueous)
-            return "aqueous";
-        return "niri";
+    readonly property var compositor: {
+        switch (true) {
+        case CompositorService.isHyprland:
+            return {
+                logo: "hyprland.svg",
+                url: "https://hypr.land",
+                label: I18n.tr("Hyprland website"),
+                discordUrl: "https://discord.com/invite/hQ9XvMUjjr",
+                discordLabel: I18n.tr("Hyprland Discord server")
+            };
+        case CompositorService.isSway:
+            return {
+                logo: "sway.svg",
+                url: "https://swaywm.org",
+                label: I18n.tr("Sway website")
+            };
+        case CompositorService.isScroll:
+            return {
+                logo: "sway.svg",
+                url: "https://github.com/dawsers/scroll",
+                label: I18n.tr("Scroll GitHub")
+            };
+        case CompositorService.isMiracle:
+            return {
+                logo: "miraclewm.svg",
+                url: "https://github.com/miracle-wm-org/miracle-wm",
+                label: "miracle-wm"
+            };
+        case CompositorService.isMango:
+            return {
+                logo: "mango.png",
+                url: "https://github.com/mangowm/mango",
+                label: I18n.tr("mangowc GitHub"),
+                discordUrl: "https://discord.gg/CPjbDxesh5",
+                discordLabel: I18n.tr("mangowc Discord server")
+            };
+        case CompositorService.isLabwc:
+            return {
+                logo: "labwc.png",
+                url: "https://labwc.github.io/",
+                label: I18n.tr("LabWC website"),
+                ircUrl: "https://web.libera.chat/gamja/?channels=#labwc"
+            };
+        case CompositorService.isAqueous:
+            return {
+                logo: "aqueous.svg",
+                url: "",
+                label: "Aqueous"
+            };
+        case CompositorService.isUmbriel:
+            return {
+                logo: "umbriel.svg",
+                url: "https://github.com/noctalia-dev/umbriel",
+                label: "Umbriel"
+            };
+        case CompositorService.isNiri:
+            return {
+                logo: "niri.svg",
+                url: "https://github.com/niri-wm/niri",
+                label: I18n.tr("niri GitHub"),
+                matrixUrl: "https://matrix.to/#/#niri:matrix.org",
+                redditUrl: "https://reddit.com/r/niri"
+            };
+        default:
+            return {
+                logo: "niri.svg",
+                url: "https://github.com/niri-wm/niri",
+                label: I18n.tr("niri GitHub")
+            };
+        }
     }
 
-    property string compositorLogo: {
-        if (isHyprland)
-            return "/assets/hyprland.svg";
-        if (isSway)
-            return "/assets/sway.svg";
-        if (isScroll)
-            return "/assets/sway.svg";
-        if (isMiracle)
-            return "/assets/miraclewm.svg";
-        if (isMango)
-            return "/assets/mango.png";
-        if (isLabwc)
-            return "/assets/labwc.png";
-        if (isAqueous)
-            return "/assets/aqueous.svg";
-        if (isUmbriel)
-            return "/assets/umbriel.svg";
-        return "/assets/niri.svg";
+    function host(url) {
+        return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
     }
 
-    property string compositorUrl: {
-        if (isHyprland)
-            return "https://hypr.land";
-        if (isSway)
-            return "https://swaywm.org";
-        if (isScroll)
-            return "https://github.com/dawsers/scroll";
-        if (isMiracle)
-            return "https://github.com/miracle-wm-org/miracle-wm";
-        if (isMango)
-            return "https://github.com/DreamMaoMao/mangowc";
-        if (isLabwc)
-            return "https://labwc.github.io/";
-        if (isAqueous)
-            return "";
-        if (isUmbriel)
-            return "https://github.com/noctalia-dev/umbriel";
-        return "https://github.com/niri-wm/niri";
+    function versionText() {
+        const running = SystemUpdateService.shellRunning;
+        if (!SystemUpdateService.sysupdateAvailable || !running)
+            return ShellVersionService.shellVersion ? `dms ${ShellVersionService.shellVersion}` : "dms";
+        if (SystemUpdateService.shellChannel !== "git")
+            return /^\d/.test(running) ? `dms v${running}` : `dms ${running}`;
+        // COPR builds (0.0.git.N.hash) carry no base version; the VERSION file does.
+        const base = running.startsWith("0.0.git") ? ShellVersionService.semverVersion : running.replace(/^v/, "").split("+")[0];
+        const build = SystemUpdateService.shellGitBuild;
+        return build > 0 ? `dms (git) v${base}-${build}` : `dms (git) ${running}`;
     }
 
-    property string compositorTooltip: {
-        if (isHyprland)
-            return I18n.tr("Hyprland website");
-        if (isSway)
-            return I18n.tr("Sway website");
-        if (isScroll)
-            return I18n.tr("Scroll GitHub");
-        if (isMiracle)
-            return I18n.tr("Scroll GitHub");
-        if (isMango)
-            return I18n.tr("mangowc GitHub");
-        if (isLabwc)
-            return I18n.tr("LabWC website");
-        if (isAqueous)
-            return "Aqueous";
-        if (isUmbriel)
-            return "Umbriel";
-        return I18n.tr("niri GitHub");
+    component LogoImage: Image {
+        width: Theme.iconSize
+        height: Theme.iconSize
+        sourceSize: Qt.size(Theme.iconSize, Theme.iconSize)
+        smooth: true
+        fillMode: Image.PreserveAspectFit
     }
-
-    property string dmsDiscordUrl: "https://discord.gg/ppWTpKmPgT"
-    property string dmsDiscordTooltip: I18n.tr("niri/dms Discord")
-
-    property string compositorDiscordUrl: {
-        if (isHyprland)
-            return "https://discord.com/invite/hQ9XvMUjjr";
-        if (isMango)
-            return "https://discord.gg/CPjbDxesh5";
-        return "";
-    }
-
-    property string compositorDiscordTooltip: {
-        if (isHyprland)
-            return I18n.tr("Hyprland Discord server");
-        if (isMango)
-            return I18n.tr("mangowc Discord server");
-        return "";
-    }
-
-    property string redditUrl: "https://reddit.com/r/niri"
-    property string redditTooltip: I18n.tr("r/niri subreddit")
-
-    property string ircUrl: "https://web.libera.chat/gamja/?channels=#labwc"
-    property string ircTooltip: I18n.tr("LabWC IRC channel")
-
-    property bool showMatrix: isNiri && !isHyprland && !isSway && !isScroll && !isMiracle && !isMango && !isLabwc
-    property bool showCompositorDiscord: isHyprland || isMango
-    property bool showReddit: isNiri && !isHyprland && !isSway && !isScroll && !isMiracle && !isMango && !isLabwc
-    property bool showIrc: isLabwc
 
     SettingsPage {
-        id: mainColumn
-
-        SettingsCard {
-            width: parent.width
-
-            SettingsRow {
-                body: Column {
-                    id: asciiSection
-                    width: parent.width
-                    spacing: Theme.spacingM
-
-                    Row {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: parent.width < 350 ? Theme.spacingM : Theme.spacingL
-
-                        property bool compactLogo: parent.width < 400
-                        property bool hideLogo: parent.width < 280
-
-                        Image {
-                            id: logoImage
-
-                            visible: !parent.hideLogo
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.compactLogo ? 80 : 120
-                            height: width * (569.94629 / 506.50931)
-                            fillMode: Image.PreserveAspectFit
-                            smooth: true
-                            mipmap: true
-                            asynchronous: true
-                            source: "file://" + Theme.shellDir + "/assets/danklogonormal.svg"
-                            layer.enabled: true
-                            layer.smooth: true
-                            layer.mipmap: true
-                            layer.effect: MultiEffect {
-                                saturation: 0
-                                colorization: 1
-                                colorizationColor: Theme.primary
-                            }
-                        }
-
-                        StyledText {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "DANK LINUX"
-                            font.pixelSize: parent.compactLogo ? 32 : 48
-                            font.weight: Theme.fontWeightMedium
-                            font.family: DankCommon.Fonts.sans
-                            color: Theme.surfaceText
-                            antialiasing: true
-                        }
-                    }
-
-                    StyledText {
-                        text: {
-                            if (!ShellVersionService.shellVersion && !DMSService.cliVersion)
-                                return "dms";
-
-                            let version = ShellVersionService.shellVersion || "";
-                            let cliVersion = DMSService.cliVersion || "";
-
-                            // Debian/Ubuntu/OpenSUSE git format: 1.0.3+git2264.c5c5ce84
-                            let match = version.match(/^([\d.]+)\+git(\d+)\./);
-                            if (match) {
-                                return `dms (git) v${match[1]}-${match[2]}`;
-                            }
-
-                            // Fedora COPR git format: 0.0.git.2267.d430cae9
-                            match = version.match(/^[\d.]+\.git\.(\d+)\./);
-                            if (match) {
-                                function extractBaseVersion(value) {
-                                    if (!value)
-                                        return "";
-                                    let baseMatch = value.match(/(\d+\.\d+\.\d+)/);
-                                    if (baseMatch)
-                                        return baseMatch[1];
-                                    baseMatch = value.match(/(\d+\.\d+)/);
-                                    if (baseMatch)
-                                        return baseMatch[1];
-                                    return "";
-                                }
-
-                                let baseVersion = extractBaseVersion(cliVersion);
-                                if (!baseVersion)
-                                    baseVersion = extractBaseVersion(ShellVersionService.semverVersion);
-                                if (baseVersion) {
-                                    return `dms (git) v${baseVersion}-${match[1]}`;
-                                }
-                                return `dms (git) v${match[1]}`;
-                            }
-
-                            // Stable release format: 1.0.3
-                            match = version.match(/^([\d.]+)$/);
-                            if (match) {
-                                return `dms v${match[1]}`;
-                            }
-
-                            if (!version && cliVersion) {
-                                match = cliVersion.match(/^([\d.]+)\+git(\d+)\./);
-                                if (match) {
-                                    return `dms (git) v${match[1]}-${match[2]}`;
-                                }
-                                match = cliVersion.match(/^([\d.]+)$/);
-                                if (match) {
-                                    return `dms v${match[1]}`;
-                                }
-                                return `dms ${cliVersion}`;
-                            }
-
-                            return `dms ${version}`;
-                        }
-                        font.pixelSize: Theme.fontSizeXLarge
-                        color: Theme.surfaceText
-                        horizontalAlignment: Text.AlignHCenter
-                        width: parent.width
-                    }
-
-                    StyledText {
-                        visible: ShellVersionService.shellCodename.length > 0
-                        text: `"${ShellVersionService.shellCodename}"`
-                        font.pixelSize: Theme.fontSizeMedium
-                        font.italic: true
-                        color: Theme.surfaceVariantText
-                        horizontalAlignment: Text.AlignHCenter
-                        width: parent.width
-                    }
-
-                    Row {
-                        id: resourceButtonsRow
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: Theme.spacingS
-
-                        property bool compactMode: parent.width < 450
-
-                        DankButton {
-                            id: docsButton
-                            tooltipText: resourceButtonsRow.compactMode ? I18n.tr("Docs") + " - danklinux.com/docs" : "danklinux.com/docs"
-                            text: resourceButtonsRow.compactMode ? "" : I18n.tr("Docs")
-                            iconName: "menu_book"
-                            iconSize: 18
-                            backgroundColor: Theme.chipSurface
-                            textColor: Theme.surfaceText
-                            onClicked: Qt.openUrlExternally("https://danklinux.com/docs")
-                        }
-
-                        DankButton {
-                            id: pluginsButton
-                            tooltipText: resourceButtonsRow.compactMode ? I18n.tr("Plugins") + " - plugins.danklinux.com" : "plugins.danklinux.com"
-                            text: resourceButtonsRow.compactMode ? "" : I18n.tr("Plugins")
-                            iconName: "extension"
-                            iconSize: 18
-                            backgroundColor: Theme.chipSurface
-                            textColor: Theme.surfaceText
-                            onClicked: Qt.openUrlExternally("https://plugins.danklinux.com")
-                        }
-
-                        DankButton {
-                            id: githubButton
-                            tooltipText: resourceButtonsRow.compactMode ? "GitHub - AvengeMedia/DankMaterialShell" : "github.com/AvengeMedia/DankMaterialShell"
-                            text: resourceButtonsRow.compactMode ? "" : "GitHub"
-                            iconName: "code"
-                            iconSize: 18
-                            backgroundColor: Theme.chipSurface
-                            textColor: Theme.surfaceText
-                            onClicked: Qt.openUrlExternally("https://github.com/AvengeMedia/DankMaterialShell")
-                        }
-
-                        DankButton {
-                            id: kofiButton
-                            tooltipText: resourceButtonsRow.compactMode ? "Ko-fi" + " - ko-fi.com/danklinux" : "ko-fi.com/danklinux"
-                            text: resourceButtonsRow.compactMode ? "" : "Ko-fi"
-                            iconName: "favorite"
-                            iconSize: 18
-                            backgroundColor: Theme.primaryHover
-                            textColor: Theme.primary
-                            onClicked: Qt.openUrlExternally("https://ko-fi.com/danklinux")
-                        }
-                    }
-
-                    Row {
-                        id: communityIcons
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: Theme.spacingXS
-
-                        DankActionButton {
-                            tooltipText: compositorTooltip
-                            tooltipSide: "top"
-                            onClicked: {
-                                if (compositorUrl === "")
-                                    return;
-                                Qt.openUrlExternally(compositorUrl);
-                            }
-
-                            Image {
-                                anchors.centerIn: parent
-                                width: Theme.iconSize
-                                height: Theme.iconSize
-                                source: Qt.resolvedUrl(".").toString().replace("file://", "").replace("/Modules/Settings/", "") + compositorLogo
-                                sourceSize: Qt.size(24, 24)
-                                smooth: true
-                                fillMode: Image.PreserveAspectFit
-                            }
-                        }
-
-                        DankActionButton {
-                            visible: showMatrix
-                            tooltipText: I18n.tr("niri Matrix chat")
-                            tooltipSide: "top"
-                            onClicked: Qt.openUrlExternally("https://matrix.to/#/#niri:matrix.org")
-
-                            Image {
-                                anchors.fill: parent
-                                anchors.margins: Theme.spacingXXS
-                                source: Qt.resolvedUrl(".").toString().replace("file://", "").replace("/Modules/Settings/", "") + "/assets/matrix-logo-white.svg"
-                                sourceSize: Qt.size(28, 18)
-                                smooth: true
-                                fillMode: Image.PreserveAspectFit
-                                layer.enabled: true
-
-                                layer.effect: MultiEffect {
-                                    colorization: 1
-                                    colorizationColor: Theme.surfaceText
-                                }
-                            }
-                        }
-
-                        DankActionButton {
-                            visible: showIrc
-                            iconName: "forum"
-                            iconSize: Theme.iconSizeMedium
-                            iconColor: Theme.surfaceText
-                            tooltipText: ircTooltip
-                            tooltipSide: "top"
-                            onClicked: Qt.openUrlExternally(ircUrl)
-                        }
-
-                        DankActionButton {
-                            tooltipText: dmsDiscordTooltip
-                            tooltipSide: "top"
-                            onClicked: Qt.openUrlExternally(dmsDiscordUrl)
-
-                            Image {
-                                anchors.centerIn: parent
-                                width: Theme.iconSizeMedium
-                                height: Theme.iconSizeMedium
-                                source: Qt.resolvedUrl(".").toString().replace("file://", "").replace("/Modules/Settings/", "") + "/assets/discord.svg"
-                                sourceSize: Qt.size(20, 20)
-                                smooth: true
-                                fillMode: Image.PreserveAspectFit
-                            }
-                        }
-
-                        DankActionButton {
-                            visible: showCompositorDiscord
-                            tooltipText: compositorDiscordTooltip
-                            tooltipSide: "top"
-                            onClicked: Qt.openUrlExternally(compositorDiscordUrl)
-
-                            Image {
-                                anchors.centerIn: parent
-                                width: Theme.iconSizeMedium
-                                height: Theme.iconSizeMedium
-                                source: Qt.resolvedUrl(".").toString().replace("file://", "").replace("/Modules/Settings/", "") + "/assets/discord.svg"
-                                sourceSize: Qt.size(20, 20)
-                                smooth: true
-                                fillMode: Image.PreserveAspectFit
-                            }
-                        }
-
-                        DankActionButton {
-                            visible: showReddit
-                            tooltipText: redditTooltip
-                            tooltipSide: "top"
-                            onClicked: Qt.openUrlExternally(redditUrl)
-
-                            Image {
-                                anchors.centerIn: parent
-                                width: Theme.iconSizeMedium
-                                height: Theme.iconSizeMedium
-                                source: Qt.resolvedUrl(".").toString().replace("file://", "").replace("/Modules/Settings/", "") + "/assets/reddit.svg"
-                                sourceSize: Qt.size(20, 20)
-                                smooth: true
-                                fillMode: Image.PreserveAspectFit
-                            }
-                        }
-                    }
-                }
+        ReleaseHero {
+            DButton {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: I18n.tr("Support DMS", "about page hero button, opens the Ko-fi donation page")
+                iconName: "favorite"
+                backgroundColor: Theme.primary
+                textColor: Theme.onPrimary
+                tooltipText: root.host(root.kofiUrl)
+                onClicked: Qt.openUrlExternally(root.kofiUrl)
             }
         }
 
         SettingsCard {
-            width: parent.width
-            iconName: "info"
-            title: I18n.tr("About")
-
             SettingsRow {
                 body: StyledText {
-                    text: I18n.tr('DMS is a highly customizable modern desktop shell with a %1 inspired design.<br/><br/>It is built with %2, a QT6 framework for building desktop shells, and %3, a statically typed, compiled programming language.', 'about page blurb, %1 is a Material 3 link, %2 is a Quickshell link, %3 is a Go link').arg(`<a href="https://m3.material.io/" style="text-decoration:none; color:${Theme.primary};">Material Design 3</a>`).arg(`<a href="https://quickshell.org" style="text-decoration:none; color:${Theme.primary};">Quickshell</a>`).arg(`<a href="https://go.dev" style="text-decoration:none; color:${Theme.primary};">Go</a>`)
+                    text: I18n.tr('DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.', 'about page blurb, %1 is a Quickshell link, %2 is a Go link').arg(`<a href="https://quickshell.org" style="text-decoration:none; color:${Theme.primary};">Quickshell</a>`).arg(`<a href="https://go.dev" style="text-decoration:none; color:${Theme.primary};">Go</a>`)
                     textFormat: Text.RichText
                     font.pixelSize: Theme.fontSizeMedium
                     linkColor: Theme.primary
@@ -443,8 +148,97 @@ Item {
         }
 
         SettingsCard {
+            SettingsLinkRow {
+                iconName: "menu_book"
+                title: I18n.tr("Docs")
+                subtitle: root.host(Site.docs)
+                url: Site.docs
+            }
+
+            SettingsLinkRow {
+                iconName: "extension"
+                title: I18n.tr("Plugins")
+                subtitle: root.host(Site.plugins)
+                url: Site.plugins
+            }
+
+            SettingsLinkRow {
+                iconName: "code"
+                title: "GitHub"
+                subtitle: root.host(root.githubUrl)
+                url: root.githubUrl
+            }
+        }
+
+        SettingsCard {
+            title: I18n.tr("Community", "about page card title, chat and community links")
+
+            SettingsLinkRow {
+                visible: root.compositor.url !== ""
+                title: root.compositor.label
+                subtitle: root.host(root.compositor.url)
+                url: root.compositor.url
+                leading: LogoImage {
+                    source: root.assetsDir + root.compositor.logo
+                }
+            }
+
+            SettingsLinkRow {
+                title: "niri/dux Discord"
+                subtitle: root.host(root.discordUrl)
+                url: root.discordUrl
+                leading: LogoImage {
+                    source: root.assetsDir + "discord.svg"
+                }
+            }
+
+            SettingsLinkRow {
+                visible: (root.compositor.discordUrl ?? "") !== ""
+                title: root.compositor.discordLabel ?? ""
+                subtitle: root.host(root.compositor.discordUrl ?? "")
+                url: root.compositor.discordUrl ?? ""
+                leading: LogoImage {
+                    source: root.assetsDir + "discord.svg"
+                }
+            }
+
+            SettingsLinkRow {
+                visible: (root.compositor.matrixUrl ?? "") !== ""
+                title: I18n.tr("niri Matrix chat")
+                subtitle: "matrix.org"
+                url: root.compositor.matrixUrl ?? ""
+                leading: LogoImage {
+                    source: root.assetsDir + "matrix-logo-white.svg"
+                    sourceSize: Qt.size(28, 18)
+                    layer.enabled: true
+                    layer.effect: MultiEffect {
+                        colorization: 1
+                        colorizationColor: Theme.surfaceText
+                    }
+                }
+            }
+
+            SettingsLinkRow {
+                visible: (root.compositor.redditUrl ?? "") !== ""
+                title: I18n.tr("r/niri subreddit")
+                subtitle: root.host(root.compositor.redditUrl ?? "")
+                url: root.compositor.redditUrl ?? ""
+                leading: LogoImage {
+                    source: root.assetsDir + "reddit.svg"
+                }
+            }
+
+            SettingsLinkRow {
+                visible: (root.compositor.ircUrl ?? "") !== ""
+                iconName: "forum"
+                title: I18n.tr("LabWC IRC channel")
+                subtitle: "libera.chat"
+                url: root.compositor.ircUrl ?? ""
+            }
+        }
+
+        SettingsCard {
             visible: DMSService.isConnected
-            width: parent.width
             iconName: "dns"
             title: I18n.tr("Backend", "noun, settings label for the backend service in use")
 
@@ -462,7 +256,7 @@ Item {
                 title: I18n.tr("Status")
                 trailingBadge: I18n.tr("Connected")
 
-                DankBadge {
+                DBadge {
                     color: Theme.success
                 }
             }
@@ -477,7 +271,8 @@ Item {
                     Repeater {
                         model: DMSService.capabilities
 
-                        DankBadge {
+                        DBadge {
+                            required property string modelData
                             text: modelData
                             color: Theme.primaryHover
                             textColor: Theme.primary
@@ -488,9 +283,15 @@ Item {
         }
 
         SettingsCard {
-            width: parent.width
             iconName: "build"
             title: I18n.tr("Tools", "about page card title for welcome and system check")
+
+            SettingsNavRow {
+                iconName: "system_update_alt"
+                title: I18n.tr("Software updates", "settings page, modal and bar widget title, DMS and system package updates")
+                hint: root.versionText()
+                onClicked: keyboard => root.parentModal?.navigateTo("updater", keyboard)
+            }
 
             SettingsNavRow {
                 iconName: "waving_hand"
@@ -507,7 +308,7 @@ Item {
 
         StyledText {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: `<a href="https://github.com/AvengeMedia/DankMaterialShell/blob/master/LICENSE" style="text-decoration:none; color:${Theme.surfaceVariantText};">${I18n.tr('MIT License')}</a>`
+            text: `<a href="${root.githubUrl}/blob/master/LICENSE" style="text-decoration:none; color:${Theme.surfaceVariantText};">${I18n.tr('MIT License')}</a>`
             font.pixelSize: Theme.fontSizeMedium
             color: Theme.surfaceVariantText
             textFormat: Text.RichText

@@ -25,13 +25,13 @@ in
   ];
 
   options.programs.dank-material-shell = {
-    enable = lib.mkEnableOption "DankMaterialShell";
+    enable = lib.mkEnableOption "Dux Shell";
     package = lib.mkPackageOption dmsPkgs "dms-shell" {
-      extraDescription = "The DankMaterialShell package to use (defaults to be built from source)";
+      extraDescription = "The Dux Shell package to use (defaults to be built from source)";
     };
 
     systemd = {
-      enable = lib.mkEnableOption "DankMaterialShell systemd startup";
+      enable = lib.mkEnableOption "Dux Shell systemd startup";
       restartIfChanged = lib.mkOption {
         type = types.bool;
         default = true;

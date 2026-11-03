@@ -95,7 +95,7 @@ CcTile {
         }
     }
     showExpand: true
-    enabled: widgetDef?.enabled ?? true
+    available: widgetDef?.enabled ?? true
 
     onClicked: {
         if (status === "ethernet" || status === "cellular" || NetworkService.wifiToggling)

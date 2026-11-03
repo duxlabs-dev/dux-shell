@@ -14,32 +14,24 @@ Column {
         settingKey: "barWidgetRunningApps"
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["runningAppsCompactMode"]
             text: I18n.tr("Compact mode")
             checked: root.page.value("runningAppsCompactMode")
             onToggled: checked => root.page.set("runningAppsCompactMode", checked)
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["runningAppsGroupByApp"]
             text: I18n.tr("Group by app")
             checked: root.page.value("runningAppsGroupByApp")
             onToggled: checked => root.page.set("runningAppsGroupByApp", checked)
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["runningAppsCurrentWorkspace"]
             text: I18n.tr("Current workspace", "Running apps filter: only show apps from the active workspace")
             checked: root.page.value("runningAppsCurrentWorkspace")
             onToggled: checked => root.page.set("runningAppsCurrentWorkspace", checked)
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["runningAppsCurrentMonitor"]
             text: I18n.tr("Current display", "Running apps filter: only show apps from the same monitor")
             checked: root.page.value("runningAppsCurrentMonitor")
             onToggled: checked => root.page.set("runningAppsCurrentMonitor", checked)

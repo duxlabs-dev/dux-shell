@@ -4,7 +4,7 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
@@ -15,8 +15,8 @@ Item {
 
     property var groupCollapsedStates: ({})
     property var parentModal: null
-    property string editingGroupId: ""
     property string newGroupName: ""
+    property string renamingGroupId: ""
 
     readonly property var allInstances: SettingsData.desktopWidgetInstances || []
     readonly property var allGroups: SettingsData.desktopWidgetGroups || []
@@ -46,6 +46,18 @@ Item {
         SettingsUiState.selectedDesktopWidgetId = instanceId;
         SettingsUiState.selectedWidgetTitle = title;
         parentModal?.navigateTo("desktop_widget");
+    }
+
+    function openRenameDialog(group) {
+        renamingGroupId = group.id;
+        renameDialog.show(group.name);
+    }
+
+    function saveGroupName(name) {
+        SettingsData.updateDesktopWidgetGroup(renamingGroupId, {
+            name: name
+        });
+        renameDialog.hide();
     }
 
     function showWidgetBrowser() {
@@ -78,12 +90,30 @@ Item {
 
         PluginBrowser {
             parentModal: root.parentModal
-            typeFilter: "desktop-widget"
+            typeFilters: ["desktop-widget"]
         }
     }
 
     SettingsPage {
         id: mainColumn
+
+        SettingsCard {
+            settingKey: "desktopGeneral"
+            tags: ["desktop", "context", "menu", "right click", "wallpaper"]
+            width: parent.width
+            iconName: "mouse"
+            title: I18n.tr("General")
+
+            SettingsDropdownRow {
+                settingKey: "desktopContextMenu"
+                text: I18n.tr("Right-click menu")
+                description: I18n.tr("Auto turns it off on compositors that use clicks on the empty desktop themselves", "desktop context menu dropdown description")
+                options: [I18n.tr("Auto"), I18n.tr("On"), I18n.tr("Off")]
+                readonly property var values: ["auto", "on", "off"]
+                currentValue: options[Math.max(0, values.indexOf(SettingsData.desktopContextMenu))]
+                onValueChanged: value => SettingsData.set("desktopContextMenu", values[options.indexOf(value)])
+            }
+        }
 
         SettingsCard {
             settingKey: "desktopWidgetGroups"
@@ -95,140 +125,66 @@ Item {
             expanded: root.allGroups.length > 0
 
             SettingsRow {
-                body: Column {
+                body: Row {
+                    spacing: Theme.spacingS
                     width: parent.width
-                    spacing: Theme.spacingM
 
-                    Row {
-                        spacing: Theme.spacingS
-                        width: parent.width
-
-                        DankTextField {
-                            id: newGroupField
-                            outlined: true
-                            leftIconName: "folder"
-                            labelText: I18n.tr("Name")
-                            width: parent.width - addGroupBtn.width - Theme.spacingS
-                            text: root.newGroupName
-                            onTextChanged: root.newGroupName = text
-                            onAccepted: {
-                                if (!text.trim())
-                                    return;
-                                SettingsData.createDesktopWidgetGroup(text.trim());
-                                root.newGroupName = "";
-                                text = "";
-                            }
-                        }
-
-                        DankButton {
-                            id: addGroupBtn
-                            iconName: "add"
-                            text: I18n.tr("Add")
-                            enabled: root.newGroupName.trim().length > 0
-                            onClicked: {
-                                SettingsData.createDesktopWidgetGroup(root.newGroupName.trim());
-                                root.newGroupName = "";
-                                newGroupField.text = "";
-                            }
+                    DTextField {
+                        id: newGroupField
+                        outlined: true
+                        leftIconName: "folder"
+                        labelText: I18n.tr("Name")
+                        width: parent.width - addGroupBtn.width - Theme.spacingS
+                        text: root.newGroupName
+                        onTextChanged: root.newGroupName = text
+                        onAccepted: {
+                            if (!text.trim())
+                                return;
+                            SettingsData.createDesktopWidgetGroup(text.trim());
+                            root.newGroupName = "";
+                            text = "";
                         }
                     }
 
-                    Column {
-                        width: parent.width
-                        spacing: Theme.spacingXS
-                        visible: root.allGroups.length > 0
+                    DButton {
+                        id: addGroupBtn
+                        iconName: "add"
+                        text: I18n.tr("Add")
+                        enabled: root.newGroupName.trim().length > 0
+                        onClicked: {
+                            SettingsData.createDesktopWidgetGroup(root.newGroupName.trim());
+                            root.newGroupName = "";
+                            newGroupField.text = "";
+                        }
+                    }
+                }
+            }
 
-                        Repeater {
-                            model: root.allGroups
+            Repeater {
+                model: root.allGroups
 
-                            Rectangle {
-                                id: groupItem
-                                required property var modelData
-                                required property int index
+                delegate: SettingsRow {
+                    id: groupRow
 
-                                width: parent.width
-                                height: Math.max(Theme.iconButtonSize, groupNameLoader.height + Theme.spacingS)
-                                radius: Theme.cornerRadius
-                                color: groupMouseArea.containsMouse ? Theme.surfaceHover : Theme.floatingWindowFieldColor
+                    required property var modelData
 
-                                Row {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: Theme.spacingS
-                                    anchors.rightMargin: Theme.spacingS
-                                    spacing: Theme.spacingS
+                    iconName: "folder"
+                    title: modelData.name
+                    singleLineTitle: true
 
-                                    DankIcon {
-                                        name: "folder"
-                                        visible: !groupNameLoader.active
-                                        size: Theme.iconSizeSmall
-                                        color: Theme.surfaceText
-                                        anchors.verticalCenter: parent.verticalCenter
-                                    }
+                    DActionButton {
+                        iconName: "edit"
+                        tooltipText: I18n.tr("Rename")
+                        onClicked: root.openRenameDialog(groupRow.modelData)
+                    }
 
-                                    Loader {
-                                        id: groupNameLoader
-                                        active: root.editingGroupId === groupItem.modelData.id
-                                        width: active ? parent.width - deleteGroupBtn.width - Theme.spacingS : 0
-                                        height: active && item ? item.implicitHeight : 0
-                                        anchors.verticalCenter: parent.verticalCenter
-
-                                        sourceComponent: DankTextField {
-                                            outlined: true
-                                            leftIconName: "folder"
-                                            labelText: I18n.tr("Name")
-                                            text: groupItem.modelData.name
-                                            onAccepted: {
-                                                if (!text.trim())
-                                                    return;
-                                                SettingsData.updateDesktopWidgetGroup(groupItem.modelData.id, {
-                                                    name: text.trim()
-                                                });
-                                                root.editingGroupId = "";
-                                            }
-                                            onEditingFinished: {
-                                                if (!text.trim())
-                                                    return;
-                                                SettingsData.updateDesktopWidgetGroup(groupItem.modelData.id, {
-                                                    name: text.trim()
-                                                });
-                                                root.editingGroupId = "";
-                                            }
-                                            Component.onCompleted: forceActiveFocus()
-                                        }
-                                    }
-
-                                    StyledText {
-                                        visible: root.editingGroupId !== groupItem.modelData.id
-                                        text: groupItem.modelData.name
-                                        font.pixelSize: Theme.fontSizeMedium
-                                        color: Theme.surfaceText
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        elide: Text.ElideRight
-                                        width: parent.width - Theme.iconSizeSmall - deleteGroupBtn.width - Theme.spacingS * 3
-                                    }
-
-                                    DankActionButton {
-                                        id: deleteGroupBtn
-                                        iconName: "delete"
-                                        Accessible.name: I18n.tr("Delete")
-                                        backgroundColor: Theme.withAlpha(Theme.error, 0.15)
-                                        iconColor: Theme.error
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        onClicked: {
-                                            SettingsData.removeDesktopWidgetGroup(groupItem.modelData.id);
-                                            ToastService.showInfo(I18n.tr("Group removed"));
-                                        }
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: groupMouseArea
-                                    anchors.fill: parent
-                                    z: -1
-                                    hoverEnabled: true
-                                    onDoubleClicked: root.editingGroupId = groupItem.modelData.id
-                                }
-                            }
+                    DActionButton {
+                        iconName: "delete"
+                        iconColor: Theme.error
+                        tooltipText: I18n.tr("Delete")
+                        onClicked: {
+                            SettingsData.removeDesktopWidgetGroup(groupRow.modelData.id);
+                            ToastService.showInfo(I18n.tr("Group removed"));
                         }
                     }
                 }
@@ -307,149 +263,29 @@ Item {
             title: I18n.tr("Help", "noun, card title for desktop widget usage tips")
 
             SettingsRow {
-                body: Column {
-                    width: parent.width
-                    spacing: Theme.spacingM
-
-                    Row {
-                        width: parent.width
-                        spacing: Theme.spacingM
-
-                        Rectangle {
-                            width: 40
-                            height: 40
-                            radius: Theme.fullRadius(width, height)
-                            color: Theme.primarySelected
-
-                            DankIcon {
-                                anchors.centerIn: parent
-                                name: "drag_pan"
-                                size: Theme.iconSize
-                                color: Theme.primary
-                            }
-                        }
-
-                        Column {
-                            spacing: Theme.spacingXXS
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - 40 - Theme.spacingM
-
-                            StyledText {
-                                text: I18n.tr("Move", "verb, help item title for moving a desktop widget")
-                                font.pixelSize: Theme.fontSizeMedium
-                                font.weight: Theme.fontWeightMedium
-                                color: Theme.surfaceText
-                                width: parent.width
-                                horizontalAlignment: Text.AlignLeft
-                            }
-
-                            StyledText {
-                                text: I18n.tr("Right-click and drag anywhere on the widget")
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceVariantText
-                                width: parent.width
-                                horizontalAlignment: Text.AlignLeft
-                            }
-                        }
-                    }
-
-                    Row {
-                        width: parent.width
-                        spacing: Theme.spacingM
-
-                        Rectangle {
-                            width: 40
-                            height: 40
-                            radius: Theme.fullRadius(width, height)
-                            color: Theme.primarySelected
-
-                            DankIcon {
-                                anchors.centerIn: parent
-                                name: "open_in_full"
-                                size: Theme.iconSize
-                                color: Theme.primary
-                            }
-                        }
-
-                        Column {
-                            spacing: Theme.spacingXXS
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - 40 - Theme.spacingM
-
-                            StyledText {
-                                text: I18n.tr("Resize", "verb, help item title for resizing a desktop widget")
-                                font.pixelSize: Theme.fontSizeMedium
-                                font.weight: Theme.fontWeightMedium
-                                color: Theme.surfaceText
-                                width: parent.width
-                                horizontalAlignment: Text.AlignLeft
-                            }
-
-                            StyledText {
-                                text: I18n.tr("Right-click and drag the bottom-right corner")
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceVariantText
-                                width: parent.width
-                                horizontalAlignment: Text.AlignLeft
-                            }
-                        }
-                    }
-
-                    Row {
-                        width: parent.width
-                        spacing: Theme.spacingM
-
-                        Rectangle {
-                            width: 40
-                            height: 40
-                            radius: Theme.fullRadius(width, height)
-                            color: Theme.primarySelected
-
-                            DankIcon {
-                                anchors.centerIn: parent
-                                name: "drag_indicator"
-                                size: Theme.iconSize
-                                color: Theme.primary
-                            }
-                        }
-
-                        Column {
-                            spacing: Theme.spacingXXS
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - 40 - Theme.spacingM
-
-                            StyledText {
-                                text: I18n.tr("Reorder & group")
-                                font.pixelSize: Theme.fontSizeMedium
-                                font.weight: Theme.fontWeightMedium
-                                color: Theme.surfaceText
-                                width: parent.width
-                                horizontalAlignment: Text.AlignLeft
-                            }
-
-                            StyledText {
-                                text: I18n.tr("Drag a widget by its handle here to reorder it or drop it into another group")
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceVariantText
-                                width: parent.width
-                                wrapMode: Text.WordWrap
-                                horizontalAlignment: Text.AlignLeft
-                            }
-                        }
-                    }
-                }
+                iconName: "drag_indicator"
+                iconBox: true
+                title: I18n.tr("Reorder & group")
+                subtitle: I18n.tr("Drag a widget by its handle here to reorder it or drop it into another group")
             }
         }
 
         SettingsFabBar {
-            DankFab {
+            DFab {
                 text: I18n.tr("Browse plugins")
                 iconName: "store"
                 colorRole: "secondaryContainer"
                 onClicked: root.showDesktopPluginBrowser()
             }
 
-            DankFab {
+            DFab {
+                text: I18n.tr("Edit widgets")
+                iconName: "edit"
+                colorRole: "secondaryContainer"
+                onClicked: DesktopWidgetRegistry.editing = true
+            }
+
+            DFab {
                 text: I18n.tr("Add widget")
                 iconName: "add"
                 onClicked: root.showWidgetBrowser()
@@ -459,5 +295,13 @@ Item {
 
     SettingsReorderPreview {
         group: dragGroup
+    }
+
+    SettingsRenameDialog {
+        id: renameDialog
+        parent: root.parentModal?.modalFocusScope ?? root
+        supportingText: root.allGroups.find(g => g.id === root.renamingGroupId)?.name ?? ""
+        leftIconName: "folder"
+        onAccepted: name => root.saveGroupName(name)
     }
 }

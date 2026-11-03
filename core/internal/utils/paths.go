@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AvengeMedia/dankgo/paths"
+	"github.com/duxlabs-dev/dux-go/paths"
 )
 
-var app = paths.New("danklinux")
+var app = paths.New("dms")
 
 func App() paths.App { return app }
 

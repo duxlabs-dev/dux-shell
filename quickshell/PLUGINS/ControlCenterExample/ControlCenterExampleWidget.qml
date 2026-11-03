@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Plugins
 
 PluginComponent {
@@ -29,7 +29,7 @@ PluginComponent {
         Row {
             spacing: Theme.spacingXS
 
-            DankIcon {
+            DIcon {
                 name: root.isEnabled ? "toggle_on" : "toggle_off"
                 color: root.isEnabled ? Theme.primary : Theme.surfaceVariantText
                 size: root.iconSize
@@ -49,7 +49,7 @@ PluginComponent {
         Column {
             spacing: Theme.spacingXS
 
-            DankIcon {
+            DIcon {
                 name: root.isEnabled ? "toggle_on" : "toggle_off"
                 color: root.isEnabled ? Theme.primary : Theme.surfaceVariantText
                 size: root.iconSize

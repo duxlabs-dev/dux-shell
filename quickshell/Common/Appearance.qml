@@ -1,11 +1,11 @@
 pragma Singleton
 
 import Quickshell
-import qs.DankCommon.Common as DankCommon
+import qs.DCommon.Common as DCommon
 
 Singleton {
-    readonly property var rounding: DankCommon.Appearance.rounding
-    readonly property var spacing: DankCommon.Appearance.spacing
-    readonly property var fontSize: DankCommon.Appearance.fontSize
-    readonly property var anim: DankCommon.Appearance.anim
+    readonly property var rounding: DCommon.Appearance.rounding
+    readonly property var spacing: DCommon.Appearance.spacing
+    readonly property var fontSize: DCommon.Appearance.fontSize
+    readonly property var anim: DCommon.Appearance.anim
 }

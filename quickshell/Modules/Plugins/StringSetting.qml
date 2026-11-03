@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 import "../../Common/QmlUtils.js" as QmlUtils
 
 Column {
@@ -61,7 +61,7 @@ Column {
         visible: root.description !== ""
     }
 
-    DankTextField {
+    DTextField {
         id: textField
         width: parent.width
         placeholderText: root.placeholder

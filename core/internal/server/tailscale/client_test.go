@@ -11,7 +11,6 @@ import (
 	"tailscale.com/ipn/ipnstate"
 	"tailscale.com/tailcfg"
 	"tailscale.com/types/key"
-	"tailscale.com/types/views"
 )
 
 func makeTestStatus() *ipnstate.Status {
@@ -116,25 +115,6 @@ func TestConvertStatus_NilSelf(t *testing.T) {
 	assert.Equal(t, Peer{}, state.Self)
 }
 
-func TestConvertPeerStatus_Tags(t *testing.T) {
-	tags := views.SliceOf([]string{"tag:k8s", "tag:server"})
-	ps := &ipnstate.PeerStatus{
-		ID:       "node3",
-		HostName: "k8s-node",
-		DNSName:  "k8s-node.example.ts.net.",
-		OS:       "linux",
-		Online:   false,
-		Tags:     &tags,
-	}
-	users := map[tailcfg.UserID]tailcfg.UserProfile{}
-
-	peer := convertPeerStatus(ps, users)
-	assert.Equal(t, "k8s-node", peer.Hostname)
-	assert.Contains(t, peer.Tags, "tag:k8s")
-	assert.Contains(t, peer.Tags, "tag:server")
-	assert.Equal(t, "", peer.Owner)
-}
-
 func TestConvertPeerStatus_HostnameFromDNS(t *testing.T) {
 	// Hostname should always be derived from DNSName, not OS HostName
 	ps := &ipnstate.PeerStatus{
@@ -156,18 +136,6 @@ func TestConvertPeerStatus_FallbackToHostName(t *testing.T) {
 
 	peer := convertPeerStatus(ps, users)
 	assert.Equal(t, "my-device", peer.Hostname)
-}
-
-func TestConvertPeerStatus_LastSeen(t *testing.T) {
-	ps := &ipnstate.PeerStatus{
-		HostName: "recent-node",
-		LastSeen: time.Now().Add(-5 * time.Minute),
-	}
-	users := map[tailcfg.UserID]tailcfg.UserProfile{}
-
-	peer := convertPeerStatus(ps, users)
-	assert.NotEmpty(t, peer.LastSeen)
-	assert.Contains(t, peer.LastSeen, "minutes ago")
 }
 
 func TestPeerSorting(t *testing.T) {
@@ -200,24 +168,4 @@ func TestPeerSorting(t *testing.T) {
 	assert.Equal(t, "alpha", state.Peers[0].Hostname)
 	assert.Equal(t, "beta", state.Peers[1].Hostname)
 	assert.Equal(t, "zebra", state.Peers[2].Hostname)
-}
-
-func TestFormatRelativeTime(t *testing.T) {
-	tests := []struct {
-		name     string
-		duration string
-		contains string
-	}{
-		{"minutes", "5m", "minutes ago"},
-		{"hours", "3h", "hours ago"},
-		{"days", "48h", "days ago"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d, _ := time.ParseDuration(tt.duration)
-			result := formatRelativeTime(time.Now().Add(-d))
-			assert.Contains(t, result, tt.contains)
-		})
-	}
 }

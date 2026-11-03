@@ -337,4 +337,166 @@ Singleton {
     function requestHoverPopout(popout, tabIndex, triggerSource) {
         _requestPopout(popout, tabIndex, triggerSource, true);
     }
+
+    function _islandBarBand(host, screen) {
+        const vertical = host.edge === "left" || host.edge === "right";
+        if (host.embedded) {
+            const start = vertical ? host.hostOriginX : host.hostOriginY;
+            return {
+                "start": start,
+                "end": start + host.bandThickness
+            };
+        }
+        if (host.freeMode)
+            return null;
+
+        const extent = vertical ? screen.width : screen.height;
+        const instances = ShellLayout.forScreen(screen)?.instances ?? [];
+        let start = Infinity;
+        let end = -Infinity;
+        for (const instance of instances) {
+            if (instance.edge !== host.edge || instance.barId === host.barId || (instance.kind !== "bar" && instance.kind !== "frame") || instance.rowThickness <= 0)
+                continue;
+            const config = SettingsData.getBarConfig(instance.barId);
+            if (!config || config.enabled === false || config.visible === false)
+                continue;
+            const near = instance.rowOffset ?? 0;
+            const far = near + instance.rowThickness;
+            const bandStart = host.edge === "top" || host.edge === "left" ? near : extent - far;
+            const bandEnd = host.edge === "top" || host.edge === "left" ? far : extent - near;
+            start = Math.min(start, bandStart);
+            end = Math.max(end, bandEnd);
+        }
+        return end > start ? {
+            "start": start,
+            "end": end
+        } : null;
+    }
+
+    function getActiveSurfaces() {
+        const results = [];
+
+        // The host registry covers embedded, standalone, and free Islands with their live visual bounds.
+        for (const key of Object.keys(IslandHostRegistry.hosts || {})) {
+            const host = IslandHostRegistry.hosts[key];
+            const screen = host?.screen;
+            const controller = host?.islandController;
+            const snapVisible = controller?.expanded || (!host?.embedded && host?.motionRunning);
+            if (!screen?.name || !snapVisible || host.surfaceOpacity <= 0)
+                continue;
+            const rect = host.surfaceBodyRect?.();
+            if (!rect || rect.width <= 0 || rect.height <= 0)
+                continue;
+            let x = rect.x;
+            let y = rect.y;
+            let width = rect.width;
+            let height = rect.height;
+            const barBand = _islandBarBand(host, screen);
+            if (barBand) {
+                switch (host.edge) {
+                case "top":
+                    if (y < barBand.end && y + height > barBand.start) {
+                        const inset = Math.max(0, Math.min(height, barBand.end - y));
+                        y += inset;
+                        height -= inset;
+                    }
+                    break;
+                case "bottom":
+                    if (y + height > barBand.start && y < barBand.end)
+                        height = Math.max(0, barBand.start - y);
+                    break;
+                case "left":
+                    if (x < barBand.end && x + width > barBand.start) {
+                        const inset = Math.max(0, Math.min(width, barBand.end - x));
+                        x += inset;
+                        width -= inset;
+                    }
+                    break;
+                case "right":
+                    if (x + width > barBand.start && x < barBand.end)
+                        width = Math.max(0, barBand.start - x);
+                    break;
+                }
+            }
+            const left = Math.max(0, x);
+            const top = Math.max(0, y);
+            const right = Math.min(screen.width, x + width);
+            const bottom = Math.min(screen.height, y + height);
+            if (right <= left || bottom <= top)
+                continue;
+            results.push({
+                "name": "dms:dankisland-surface",
+                "type": "island",
+                "x": Math.round((screen.x ?? 0) + left),
+                "y": Math.round((screen.y ?? 0) + top),
+                "width": Math.round(right - left),
+                "height": Math.round(bottom - top)
+            });
+        }
+
+        for (const screenName in currentPopoutsByScreen) {
+            const popout = currentPopoutsByScreen[screenName];
+            if (!popout || !popout.shouldBeVisible)
+                continue;
+
+            const host = popout.impl?.item ?? popout;
+            if (!host || !host.shouldBeVisible || host.isClosing)
+                continue;
+
+            const screen = host.surfaceScreen ?? popout.screen ?? null;
+            const sx = screen?.x ?? 0;
+            const sy = screen?.y ?? 0;
+            const px = host.renderedAlignedX;
+            const py = host.renderedAlignedY;
+            const pw = host.renderedAlignedWidth ?? popout.popupWidth ?? 0;
+            const ph = host.renderedAlignedHeight ?? popout.popupHeight ?? 0;
+
+            // Skip if origin is not yet laid out (undefined/null means not positioned).
+            if (px == null || py == null || pw <= 0 || ph <= 0)
+                continue;
+
+            results.push({
+                "name": popout.layerNamespace || "popout",
+                "type": "popout",
+                "x": Math.round(sx + px),
+                "y": Math.round(sy + py),
+                "width": Math.round(pw),
+                "height": Math.round(ph)
+            });
+        }
+
+        const modals = ModalManager.currentModalsByScreen || {};
+        for (const screenName in modals) {
+            const modal = modals[screenName];
+            if (!modal || !modal.shouldBeVisible)
+                continue;
+
+            const host = modal.impl?.item ?? modal;
+            if (!host || !host.shouldBeVisible || host.isClosing)
+                continue;
+
+            const screen = host.effectiveScreen ?? modal.targetScreen ?? null;
+            const sx = screen?.x ?? 0;
+            const sy = screen?.y ?? 0;
+            const mx = host.alignedX;
+            const my = host.alignedY;
+            const mw = host.alignedWidth ?? modal.modalWidth ?? 0;
+            const mh = host.alignedHeight ?? modal.modalHeight ?? 0;
+
+            // Skip if origin is not yet laid out.
+            if (mx == null || my == null || mw <= 0 || mh <= 0)
+                continue;
+
+            results.push({
+                "name": modal.layerNamespace || "modal",
+                "type": "modal",
+                "x": Math.round(sx + mx),
+                "y": Math.round(sy + my),
+                "width": Math.round(mw),
+                "height": Math.round(mh)
+            });
+        }
+
+        return results;
+    }
 }

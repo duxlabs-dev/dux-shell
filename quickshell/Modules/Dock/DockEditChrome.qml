@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Rectangle {
     id: root
@@ -44,7 +44,7 @@ Rectangle {
             elide: Text.ElideRight
         }
 
-        DankButton {
+        DButton {
             id: addButton
             anchors.verticalCenter: parent.verticalCenter
             buttonHeight: Theme.buttonHeightS
@@ -58,7 +58,7 @@ Rectangle {
             onClicked: root.addRequested(addButton)
         }
 
-        DankActionButton {
+        DActionButton {
             id: settingsButton
             anchors.verticalCenter: parent.verticalCenter
             buttonSize: Theme.buttonHeightS
@@ -69,7 +69,7 @@ Rectangle {
             onClicked: root.settingsRequested()
         }
 
-        DankButton {
+        DButton {
             id: finishButton
             anchors.verticalCenter: parent.verticalCenter
             buttonHeight: Theme.buttonHeightS

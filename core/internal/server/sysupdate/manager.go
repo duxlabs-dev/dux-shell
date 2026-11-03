@@ -8,22 +8,25 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/dankgo/syncmap"
+	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/lowprio"
 )
 
 const (
-	defaultIntervalSeconds   = 30 * 60
-	minIntervalSeconds       = 5 * 60
-	recentLogCapacity        = 200
-	checkTimeout             = 5 * time.Minute
-	retryIntervalSeconds     = 5 * 60
-	upgradeTimeout           = 30 * time.Minute
-	postUpgradeCompleteDelay = 3 * time.Second
+	defaultIntervalSeconds = 24 * 60 * 60
+	minIntervalSeconds     = 5 * 60
+	startupGraceSeconds    = 2 * 60
+	recentLogCapacity      = 200
+	checkTimeout           = 5 * time.Minute
+	retryIntervalSeconds   = 5 * 60
+	upgradeTimeout         = 30 * time.Minute
 )
+
+// A var so tests can skip the linger.
+var postUpgradeCompleteDelay = 3 * time.Second
 
 type Manager struct {
 	mu          sync.RWMutex
@@ -37,27 +40,42 @@ type Manager struct {
 	notifierWG  sync.WaitGroup
 	schedulerWG sync.WaitGroup
 
-	acquireCount int32
-	wakeSched    chan struct{}
+	holdMu    sync.Mutex
+	holders   map[any]func() bool
+	probeOnce sync.Once
+	wakeSched chan struct{}
 
 	refreshSerial sync.Mutex
+	releasesMu    sync.Mutex
 
 	opMu     sync.Mutex
 	opCtx    context.Context
 	opCancel context.CancelFunc
 }
 
-func NewManager() (*Manager, error) {
+func NewManager(runningVersion string) (*Manager, error) {
 	m := &Manager{
 		notifyDirty: make(chan struct{}, 1),
 		stopChan:    make(chan struct{}),
 		wakeSched:   make(chan struct{}, 1),
+		holders:     make(map[any]func() bool),
+	}
+	persisted := loadPersisted()
+	if persisted.Packages == nil {
+		persisted.Packages = []Package{}
 	}
 	m.state = State{
 		Phase:           PhaseIdle,
 		IntervalSeconds: defaultIntervalSeconds,
 		Backends:        []BackendInfo{},
-		Packages:        []Package{},
+		Packages:        persisted.Packages,
+		Count:           len(persisted.Packages),
+		LastCheckUnix:   persisted.LastCheckUnix,
+		LastSuccessUnix: persisted.LastSuccessUnix,
+		Shell:           unprobedShell(runningVersion),
+	}
+	if persisted.RebootBootID != "" && persisted.RebootBootID == bootID() {
+		m.state.Reboot = RebootInfo{Recommended: true, Packages: persisted.RebootPackages}
 	}
 
 	id, pretty := readOSRelease()
@@ -70,7 +88,7 @@ func NewManager() (*Manager, error) {
 		m.state.Error = &ErrorInfo{
 			Code:    ErrCodeNoBackend,
 			Message: "no supported package manager found",
-			Hint:    "install a supported package manager (pacman, dnf, apt, zypper) or flatpak",
+			Hint:    "install a supported package manager (pacman, dnf, apt, zypper, xbps, pkg) or flatpak",
 		}
 	}
 
@@ -81,6 +99,45 @@ func NewManager() (*Manager, error) {
 	go m.scheduler()
 
 	return m, nil
+}
+
+func (m *Manager) probeShell() {
+	m.mu.RLock()
+	running := m.state.Shell.Running
+	m.mu.RUnlock()
+
+	info := ProbeShell(context.Background(), running)
+
+	feed, _ := LoadReleases()
+	m.mu.Lock()
+	info.UpdatePackage = findShellPackage(m.state.Packages, info.PackageName)
+	info.CommitsBehind = commitsBehind(info, feed.Master)
+	m.state.Shell = info
+	m.mu.Unlock()
+	m.markDirty()
+}
+
+func (m *Manager) Releases(force bool) ReleasesFeed {
+	var feed ReleasesFeed
+	lowprio.Run(func() {
+		var err error
+		feed, err = m.refreshReleases(context.Background(), force)
+		if err != nil {
+			log.Debugf("[sysupdate] releases feed: %v", err)
+		}
+	})
+	return feed
+}
+
+// Scheduled from the persisted last check so shell restarts (which re-send the interval) don't push a daily cadence out.
+func (m *Manager) nextCheckLocked() int64 {
+	now := time.Now().Unix()
+	interval := int64(m.state.IntervalSeconds)
+	// A failed last check keeps its short retry across restarts.
+	if m.state.LastSuccessUnix < m.state.LastCheckUnix {
+		interval = min(interval, retryIntervalSeconds)
+	}
+	return max(m.state.LastCheckUnix+interval, now+startupGraceSeconds)
 }
 
 func (m *Manager) GetState() State {
@@ -126,13 +183,17 @@ func (m *Manager) Close() {
 	})
 }
 
+// Zero turns scheduled checks off; manual and startup checks still run.
 func (m *Manager) SetInterval(seconds int) {
-	if seconds < minIntervalSeconds {
+	if seconds > 0 && seconds < minIntervalSeconds {
 		seconds = minIntervalSeconds
 	}
 	m.mu.Lock()
-	m.state.IntervalSeconds = seconds
-	m.state.NextCheckUnix = time.Now().Unix() + int64(seconds)
+	m.state.IntervalSeconds = max(seconds, 0)
+	m.state.NextCheckUnix = 0
+	if seconds > 0 {
+		m.state.NextCheckUnix = m.nextCheckLocked()
+	}
 	m.mu.Unlock()
 	m.wake()
 	m.markDirty()
@@ -151,7 +212,7 @@ func (m *Manager) Refresh(opts RefreshOptions) {
 		m.refreshSerial.Unlock()
 		return
 	}
-	m.runRefresh(context.Background(), true)
+	m.runRefresh(context.Background(), !opts.Background)
 }
 
 func (m *Manager) Upgrade(opts UpgradeOptions) error {
@@ -169,7 +230,7 @@ func (m *Manager) Upgrade(opts UpgradeOptions) error {
 	m.opCancel = cancel
 	m.opMu.Unlock()
 
-	go m.runUpgrade(ctx, opts)
+	lowprio.Go(func() { m.runUpgrade(ctx, opts) })
 	return nil
 }
 
@@ -183,20 +244,38 @@ func (m *Manager) Cancel() {
 	cancel()
 }
 
-func (m *Manager) Acquire() {
-	atomic.AddInt32(&m.acquireCount, 1)
+// A hold ends with its context, so a client that disconnects without releasing cannot leave the scheduler running.
+func (m *Manager) Acquire(ctx context.Context, holder any) {
+	m.holdMu.Lock()
+	if _, held := m.holders[holder]; !held {
+		m.holders[holder] = context.AfterFunc(ctx, func() { m.Release(holder) })
+	}
+	m.holdMu.Unlock()
+
+	m.probeOnce.Do(func() { lowprio.Go(m.probeShell) })
+
 	m.mu.Lock()
 	if m.state.NextCheckUnix == 0 {
-		m.state.NextCheckUnix = time.Now().Unix() + int64(m.state.IntervalSeconds)
+		m.state.NextCheckUnix = m.nextCheckLocked()
 	}
 	m.mu.Unlock()
 	m.wake()
 }
 
-func (m *Manager) Release() {
-	if atomic.AddInt32(&m.acquireCount, -1) < 0 {
-		atomic.StoreInt32(&m.acquireCount, 0)
+func (m *Manager) Release(holder any) {
+	m.holdMu.Lock()
+	stop, held := m.holders[holder]
+	delete(m.holders, holder)
+	m.holdMu.Unlock()
+	if held {
+		stop()
 	}
+}
+
+func (m *Manager) held() bool {
+	m.holdMu.Lock()
+	defer m.holdMu.Unlock()
+	return len(m.holders) > 0
 }
 
 func (m *Manager) wake() {
@@ -209,7 +288,11 @@ func (m *Manager) wake() {
 func (m *Manager) scheduler() {
 	defer m.schedulerWG.Done()
 	for {
-		if atomic.LoadInt32(&m.acquireCount) == 0 {
+		m.mu.RLock()
+		interval := m.state.IntervalSeconds
+		next := m.state.NextCheckUnix
+		m.mu.RUnlock()
+		if !m.held() || interval == 0 {
 			select {
 			case <-m.stopChan:
 				return
@@ -218,10 +301,6 @@ func (m *Manager) scheduler() {
 			continue
 		}
 
-		m.mu.RLock()
-		interval := m.state.IntervalSeconds
-		next := m.state.NextCheckUnix
-		m.mu.RUnlock()
 		if interval < minIntervalSeconds {
 			interval = minIntervalSeconds
 		}
@@ -247,16 +326,25 @@ func (m *Manager) runRefresh(parent context.Context, manual bool) {
 	m.refreshSerial.Lock()
 	defer m.refreshSerial.Unlock()
 
-	if len(m.selection.All()) == 0 {
-		return
-	}
-
 	ctx, cancel := context.WithTimeout(parent, checkTimeout)
 	defer cancel()
 
+	// Move the deadline or the scheduler spins.
+	if len(m.selection.All()) == 0 {
+		m.mu.Lock()
+		m.state.NextCheckUnix = time.Now().Unix() + int64(m.state.IntervalSeconds)
+		m.mu.Unlock()
+		m.wake()
+		m.markDirty()
+		return
+	}
+
 	m.mu.Lock()
 	if m.state.Phase == PhaseUpgrading {
+		// Same spin hazard mid-upgrade.
+		m.state.NextCheckUnix = time.Now().Unix() + retryIntervalSeconds
 		m.mu.Unlock()
+		m.wake()
 		return
 	}
 	m.state.Phase = PhaseRefreshing
@@ -274,15 +362,16 @@ func (m *Manager) runRefresh(parent context.Context, manual bool) {
 	var wg sync.WaitGroup
 	for i, b := range backends {
 		wg.Add(1)
-		go func(i int, b Backend) {
+		lowprio.Go(func() {
 			defer wg.Done()
 			pkgs, err := b.CheckUpdates(ctx)
 			results[i] = backendResult{pkgs: pkgs, err: err}
-		}(i, b)
+		})
 	}
 	wg.Wait()
 
 	now := time.Now().Unix()
+	replaced := binaryReplaced(dmsBinaryPath())
 	m.mu.Lock()
 	m.state.LastCheckUnix = now
 	prev := m.state.Packages
@@ -306,6 +395,10 @@ func (m *Manager) runRefresh(parent context.Context, manual bool) {
 	m.state.Packages = next
 	m.state.Count = len(next)
 	m.state.NextCheckUnix = now + int64(m.state.IntervalSeconds)
+	m.state.Shell.UpdatePackage = findShellPackage(next, m.state.Shell.PackageName)
+	// An upgrade outside DMS changes the installed version only the probe knows.
+	reprobe := replaced && !m.state.Shell.RestartPending
+	m.state.Shell.RestartPending = replaced
 	switch {
 	case firstErr == nil:
 		m.state.Phase = PhaseIdle
@@ -320,7 +413,12 @@ func (m *Manager) runRefresh(parent context.Context, manual bool) {
 		m.state.NextCheckUnix = now + retry
 		log.Warnf("[sysupdate] background check failed, retrying in %ds: %v", retry, firstErr)
 	}
+	persist := m.persistedLocked()
 	m.mu.Unlock()
+	savePersisted(persist)
+	if reprobe {
+		lowprio.Go(m.probeShell)
+	}
 	m.wake()
 	m.markDirty()
 }
@@ -336,7 +434,7 @@ func (m *Manager) runUpgrade(ctx context.Context, opts UpgradeOptions) {
 	}()
 
 	if opts.CustomCommand != "" {
-		m.runCustomUpgrade(ctx, opts)
+		m.runCustomUpgrade(ctx, opts.CustomCommand, "DMS — System Update (custom)", opts)
 		return
 	}
 
@@ -349,6 +447,16 @@ func (m *Manager) runUpgrade(ctx context.Context, opts UpgradeOptions) {
 		opts.Ignored = dropPacmanRepoIgnores(opts.Ignored, opts.Targets)
 	}
 	opts.Targets = dropIgnoredTargets(opts.Targets, opts.Ignored)
+
+	if opts.Interactive {
+		exe, err := os.Executable()
+		if err != nil {
+			m.setError(ErrCodeBackendFailed, err.Error())
+			return
+		}
+		m.runCustomUpgrade(ctx, interactiveUpgradeCommand(exe, opts), "DMS — System Update", opts)
+		return
+	}
 
 	backends := upgradeBackends(m.selection, opts)
 	if len(backends) == 0 {
@@ -371,14 +479,17 @@ func (m *Manager) runUpgrade(ctx context.Context, opts UpgradeOptions) {
 	m.markDirty()
 
 	onLine := func(line string) { m.appendLog(line) }
+	var installed []Package
 	for _, b := range backends {
 		m.appendLog(fmt.Sprintf("== %s ==", b.DisplayName()))
 		if err := b.Upgrade(ctx, opts, onLine); err != nil {
+			if errors.Is(ctx.Err(), context.Canceled) || isAuthDismissed(err) {
+				m.stopUpgrade(installed, ctx.Err() != nil || len(installed) > 0)
+				return
+			}
 			code := ErrCodeBackendFailed
 			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 				code = ErrCodeTimeout
-			} else if errors.Is(ctx.Err(), context.Canceled) {
-				code = ErrCodeCancelled
 			}
 			m.mu.Lock()
 			m.state.Phase = PhaseError
@@ -387,12 +498,17 @@ func (m *Manager) runUpgrade(ctx context.Context, opts UpgradeOptions) {
 			m.markDirty()
 			return
 		}
+		for _, p := range opts.Targets {
+			if p.Backend == b.ID() {
+				installed = append(installed, p)
+			}
+		}
 	}
 
-	m.finishSuccessfulUpgrade(true)
+	m.finishSuccessfulUpgrade(true, opts.Targets)
 }
 
-func (m *Manager) runCustomUpgrade(ctx context.Context, opts UpgradeOptions) {
+func (m *Manager) runCustomUpgrade(ctx context.Context, command, title string, opts UpgradeOptions) {
 	term := findTerminal(opts.Terminal)
 	if term == "" {
 		m.setError(ErrCodeBackendFailed, "no terminal found (pick one in DMS settings, set $TERMINAL, or install kitty/ghostty/foot/alacritty)")
@@ -410,22 +526,39 @@ func (m *Manager) runCustomUpgrade(ctx context.Context, opts UpgradeOptions) {
 	m.markDirty()
 
 	onLine := func(line string) { m.appendLog(line) }
-	argv := wrapInTerminal(term, "DMS — System Update (custom)", opts.CustomCommand, opts.TerminalArgs)
+	argv := wrapInTerminal(term, title, command, opts.TerminalArgs)
 	if err := Run(ctx, argv, RunOptions{OnLine: onLine}); err != nil {
 		switch {
 		case errors.Is(ctx.Err(), context.DeadlineExceeded):
 			m.failCustomUpgrade(ErrCodeTimeout, err)
 			return
 		case errors.Is(ctx.Err(), context.Canceled):
-			m.failCustomUpgrade(ErrCodeCancelled, err)
+			m.stopUpgrade(nil, true)
 			return
 		}
 		m.failCustomUpgrade(ErrCodeBackendFailed, err)
 		return
 	}
 
-	m.finishSuccessfulUpgrade(false)
+	m.mu.RLock()
+	installed := append([]Package(nil), m.state.Packages...)
+	m.mu.RUnlock()
+	m.finishSuccessfulUpgrade(false, installed)
 	m.runRefresh(context.Background(), false)
+}
+
+func interactiveUpgradeCommand(exe string, opts UpgradeOptions) string {
+	parts := []string{"'" + strings.ReplaceAll(exe, "'", `'\''`) + "'", "system", "update", "--interactive"}
+	if !opts.IncludeFlatpak {
+		parts = append(parts, "--no-flatpak")
+	}
+	if !opts.IncludeAUR {
+		parts = append(parts, "--no-aur")
+	}
+	if ignored := shellSafeNames(opts.Ignored); len(ignored) > 0 {
+		parts = append(parts, "--ignore", strings.Join(ignored, ","))
+	}
+	return strings.Join(parts, " ")
 }
 
 func (m *Manager) failCustomUpgrade(code ErrorCode, err error) {
@@ -436,7 +569,27 @@ func (m *Manager) failCustomUpgrade(code ErrorCode, err error) {
 	m.markDirty()
 }
 
-func (m *Manager) finishSuccessfulUpgrade(clearPackages bool) {
+// A cancel or a dismissed password prompt is the user's choice, not a failure.
+func (m *Manager) stopUpgrade(installed []Package, refresh bool) {
+	m.appendLog("Upgrade stopped.")
+	m.mu.Lock()
+	m.state.Phase = PhaseIdle
+	m.state.OperationID = ""
+	m.state.OperationStarted = 0
+	if names := rebootPackages(installed); len(names) > 0 {
+		m.state.Reboot = RebootInfo{Recommended: true, Packages: names}
+	}
+	persist := m.persistedLocked()
+	m.mu.Unlock()
+	savePersisted(persist)
+	m.markDirty()
+	// Packages may have landed before the stop, so the cached list is stale.
+	if refresh {
+		m.runRefresh(context.Background(), false)
+	}
+}
+
+func (m *Manager) finishSuccessfulUpgrade(clearPackages bool, installed []Package) {
 	m.appendLog("Upgrade complete.")
 
 	timer := time.NewTimer(postUpgradeCompleteDelay)
@@ -455,9 +608,25 @@ func (m *Manager) finishSuccessfulUpgrade(clearPackages bool) {
 	if clearPackages {
 		m.state.Packages = m.state.Packages[:0]
 		m.state.Count = 0
+		m.state.Shell.UpdatePackage = nil
 	}
+	if names := rebootPackages(installed); len(names) > 0 {
+		m.state.Reboot = RebootInfo{Recommended: true, Packages: names}
+	}
+	persist := m.persistedLocked()
 	m.mu.Unlock()
+	savePersisted(persist)
 	m.markDirty()
+	lowprio.Go(m.probeShell)
+}
+
+func (m *Manager) persistedLocked() persistedState {
+	p := persistedState{LastCheckUnix: m.state.LastCheckUnix, LastSuccessUnix: m.state.LastSuccessUnix, Packages: m.state.Packages}
+	if m.state.Reboot.Recommended {
+		p.RebootBootID = bootID()
+		p.RebootPackages = m.state.Reboot.Packages
+	}
+	return p
 }
 
 func dropIgnoredTargets(targets []Package, ignored []string) []Package {
@@ -553,9 +722,18 @@ func cloneState(s State) State {
 	out.Backends = append([]BackendInfo(nil), s.Backends...)
 	out.Packages = append([]Package(nil), s.Packages...)
 	out.RecentLog = append([]string(nil), s.RecentLog...)
+	out.Reboot.Packages = append([]string(nil), s.Reboot.Packages...)
 	if s.Error != nil {
 		errCopy := *s.Error
 		out.Error = &errCopy
+	}
+	if s.Shell.UpdatePackage != nil {
+		pkg := *s.Shell.UpdatePackage
+		out.Shell.UpdatePackage = &pkg
+	}
+	if s.Shell.CommitsBehind != nil {
+		n := *s.Shell.CommitsBehind
+		out.Shell.CommitsBehind = &n
 	}
 	return out
 }

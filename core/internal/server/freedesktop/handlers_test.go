@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	mockdbus "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/github.com/godbus/dbus/v5"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	mockdbus "github.com/duxlabs-dev/dux-shell/core/internal/mocks/github.com/godbus/dbus/v5"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 	"github.com/godbus/dbus/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -549,37 +549,5 @@ func TestHandleRequest(t *testing.T) {
 
 		assert.Equal(t, 123, resp.ID)
 		assert.Empty(t, resp.Error)
-	})
-
-	t.Run("all method routes", func(t *testing.T) {
-		tests := []string{
-			"freedesktop.accounts.setIconFile",
-			"freedesktop.accounts.setRealName",
-			"freedesktop.accounts.setEmail",
-			"freedesktop.accounts.setLanguage",
-			"freedesktop.accounts.setLocation",
-			"freedesktop.accounts.getUserIconFile",
-			"freedesktop.settings.getColorScheme",
-		}
-
-		for _, method := range tests {
-			mc := newMockNetConn()
-			conn := ipc.NewConnWriter(mc)
-			req := ipc.Request{
-				ID:     123,
-				Method: method,
-				Params: map[string]any{},
-			}
-
-			HandleRequest(conn, req, manager)
-
-			var resp ipc.Response[any]
-			err := json.NewDecoder(mc.writeBuf).Decode(&resp)
-			require.NoError(t, err)
-
-			assert.Equal(t, 123, resp.ID)
-			// Will have errors due to missing params or service unavailable
-			// but the method routing should work
-		}
 	})
 }

@@ -67,6 +67,13 @@ var fontGlyphs = map[rune][fontCharH]uint8{
 	'/': {0x00, 0x02, 0x06, 0x0C, 0x18, 0x18, 0x30, 0x60, 0x40, 0x00, 0x00, 0x00},
 	'[': {0x3C, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x3C, 0x00, 0x00},
 	']': {0x3C, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x3C, 0x00, 0x00},
+	'b': {0x00, 0x60, 0x60, 0x60, 0x7C, 0x66, 0x66, 0x66, 0x66, 0x7C, 0x00, 0x00},
+	'f': {0x00, 0x0E, 0x18, 0x18, 0x7E, 0x18, 0x18, 0x18, 0x18, 0x18, 0x00, 0x00},
+	'j': {0x00, 0x0C, 0x00, 0x1C, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x4C, 0x38, 0x00},
+	'k': {0x00, 0x60, 0x60, 0x60, 0x66, 0x6C, 0x78, 0x6C, 0x66, 0x66, 0x00, 0x00},
+	'q': {0x00, 0x00, 0x00, 0x3E, 0x66, 0x66, 0x66, 0x3E, 0x06, 0x06, 0x00, 0x00},
+	'y': {0x00, 0x00, 0x00, 0x66, 0x66, 0x66, 0x66, 0x3E, 0x06, 0x7C, 0x00, 0x00},
+	'-': {0x00, 0x00, 0x00, 0x00, 0x00, 0x7E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 }
 
 type OverlayStyle struct {
@@ -299,6 +306,53 @@ func (r *RegionSelector) selectionRenderBounds(os *OutputSurface) (selectionRend
 		return selectionRenderBounds{}, false
 	}
 
+	if (!r.selection.hasSelection || r.selection.fromPreSelect) && r.hoveredTarget != nil {
+		t := r.hoveredTarget
+		srcBuf := r.getSourceBuffer(os)
+		if srcBuf == nil {
+			return selectionRenderBounds{}, false
+		}
+		outputMinX := float64(os.output.x)
+		outputMinY := float64(os.output.y)
+		outputMaxX := outputMinX + float64(os.logicalW)
+		outputMaxY := outputMinY + float64(os.logicalH)
+
+		minX := t.X
+		minY := t.Y
+		maxX := t.X + t.Width
+		maxY := t.Y + t.Height
+
+		if math.Max(minX, outputMinX) >= math.Min(maxX, outputMaxX) ||
+			math.Max(minY, outputMinY) >= math.Min(maxY, outputMaxY) {
+			return selectionRenderBounds{}, false
+		}
+
+		scaleX, scaleY := 1.0, 1.0
+		if os.logicalW > 0 && os.logicalH > 0 {
+			scaleX = float64(srcBuf.Width) / float64(os.logicalW)
+			scaleY = float64(srcBuf.Height) / float64(os.logicalH)
+		}
+		x1 := clamp(int(math.Floor((minX-outputMinX)*scaleX)), 0, srcBuf.Width-1)
+		y1 := clamp(int(math.Floor((minY-outputMinY)*scaleY)), 0, srcBuf.Height-1)
+		w := int(math.Round(t.Width * scaleX))
+		h := int(math.Round(t.Height * scaleY))
+		x2 := clamp(x1+w-1, 0, srcBuf.Width-1)
+		y2 := clamp(y1+h-1, 0, srcBuf.Height-1)
+		w = x2 - x1 + 1
+		h = y2 - y1 + 1
+
+		labelText := fmt.Sprintf("[%s] %dx%d", t.DisplayName(), w, h)
+
+		return selectionRenderBounds{
+			x: x1, y: y1, w: w, h: h, labelText: labelText,
+			top:    minY >= outputMinY && minY < outputMaxY,
+			bottom: maxY > outputMinY && maxY <= outputMaxY,
+			left:   minX >= outputMinX && minX < outputMaxX,
+			right:  maxX > outputMinX && maxX <= outputMaxX,
+			scaleX: scaleX,
+		}, true
+	}
+
 	ext, ok := r.selectionExtent()
 	if !ok || !ext.intersects(os) {
 		return selectionRenderBounds{}, false
@@ -365,7 +419,7 @@ func (r *RegionSelector) overlayFor(os *OutputSurface, buf *ShmBuffer) *overlay 
 		bottom:      bounds.bottom,
 		left:        bounds.left,
 		right:       bounds.right,
-		showHandles: (r.resizingHandle != handleNone || r.ctrlHeld) && r.selection.hasSelection && r.phase != phaseScroll,
+		showHandles: (r.resizingHandle != handleNone || (r.ctrlHeld && !r.selection.dragging)) && r.selection.hasSelection && r.phase != phaseScroll,
 		scaleX:      bounds.scaleX,
 	}
 }
@@ -705,6 +759,7 @@ func (r *RegionSelector) hudItems() []hudItem {
 
 	return []hudItem{
 		{captureKey, "capture"},
+		{"Ctrl+C", "copy"},
 		{"Ctrl", "resize/move"},
 		{"P", cursorLabel + " cursor"},
 		{"Esc", "cancel"},

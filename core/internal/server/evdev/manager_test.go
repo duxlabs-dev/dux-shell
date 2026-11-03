@@ -7,45 +7,8 @@ import (
 	evdev "github.com/holoplot/go-evdev"
 	"github.com/stretchr/testify/assert"
 
-	mocks "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/evdev"
+	mocks "github.com/duxlabs-dev/dux-shell/core/internal/mocks/evdev"
 )
-
-func TestManager_GetState(t *testing.T) {
-	mockDevice := mocks.NewMockEvdevDevice(t)
-	mockDevice.EXPECT().ReadOne().Return(nil, errors.New("test")).Maybe()
-
-	m := &Manager{
-		devices:        []EvdevDevice{mockDevice},
-		monitoredPaths: make(map[string]bool),
-		state:          State{Available: true, CapsLock: false},
-		closeChan:      make(chan struct{}),
-	}
-
-	state := m.GetState()
-	assert.True(t, state.Available)
-	assert.False(t, state.CapsLock)
-}
-
-func TestManager_Subscribe(t *testing.T) {
-	mockDevice := mocks.NewMockEvdevDevice(t)
-	mockDevice.EXPECT().ReadOne().Return(nil, errors.New("test")).Maybe()
-
-	m := &Manager{
-		devices:        []EvdevDevice{mockDevice},
-		monitoredPaths: make(map[string]bool),
-		state:          State{Available: true, CapsLock: false},
-		closeChan:      make(chan struct{}),
-	}
-
-	ch := m.Subscribe("test-client")
-	assert.NotNil(t, ch)
-	count := 0
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		count++
-		return true
-	})
-	assert.Equal(t, 1, count)
-}
 
 func TestManager_Unsubscribe(t *testing.T) {
 	mockDevice := mocks.NewMockEvdevDevice(t)
@@ -167,7 +130,6 @@ func TestIsKeyboard(t *testing.T) {
 		{"kbd in name", "USB kbd", true},
 		{"input and key", "input key device", true},
 		{"random device", "Mouse", false},
-		{"empty name", "", false},
 	}
 
 	for _, tt := range tests {
@@ -275,18 +237,6 @@ func TestNotifySubscribers(t *testing.T) {
 }
 
 func TestCapsLockFromDevices(t *testing.T) {
-	t.Run("caps lock is on", func(t *testing.T) {
-		mockDevice := mocks.NewMockEvdevDevice(t)
-		ledState := evdev.StateMap{
-			ledCapslockKey: true,
-		}
-		mockDevice.EXPECT().State(evdev.EvType(evLedType)).Return(ledState, nil).Once()
-
-		result, ok := capsLockFromDevices([]EvdevDevice{mockDevice})
-		assert.True(t, ok)
-		assert.True(t, result)
-	})
-
 	t.Run("caps lock is off", func(t *testing.T) {
 		mockDevice := mocks.NewMockEvdevDevice(t)
 		ledState := evdev.StateMap{

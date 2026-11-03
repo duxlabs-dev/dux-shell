@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 )
 
 func init() {
@@ -51,7 +51,7 @@ func (b pacmanBackend) Upgrade(ctx context.Context, opts UpgradeOptions, onLine 
 }
 
 func pacmanUpgradeArgv(opts UpgradeOptions) []string {
-	return privilegedArgv(opts, "pacman", "-Syu", "--noconfirm", "--needed")
+	return privilegedArgv(opts, withAutoYes(opts, []string{"pacman", "-Syu", "--needed"}, "--noconfirm")...)
 }
 
 // Arch repository packages must upgrade together; AUR packages may be held.
@@ -133,24 +133,27 @@ func (b archHelperBackend) Upgrade(ctx context.Context, opts UpgradeOptions, onL
 		return nil
 	}
 	if os.Getenv("DMS_FORCE_PKEXEC") == "1" {
-		argv := append([]string{"pkexec"}, archHelperUpgradeArgv(b.id, opts.IncludeAUR, opts.Ignored)...)
+		argv := append([]string{"pkexec"}, archHelperUpgradeArgv(b.id, opts)...)
 		return Run(ctx, argv, RunOptions{OnLine: onLine, AttachStdio: opts.AttachStdio})
+	}
+	if opts.AttachStdio {
+		return Run(ctx, archHelperUpgradeArgv(b.id, opts), RunOptions{OnLine: onLine, AttachStdio: true})
 	}
 	term := findTerminal(opts.Terminal)
 	if term == "" {
 		return fmt.Errorf("no terminal found (pick one in DMS settings, set $TERMINAL, or install kitty/ghostty/foot/alacritty)")
 	}
-	cmd := strings.Join(archHelperUpgradeArgv(b.id, opts.IncludeAUR, opts.Ignored), " ")
+	cmd := strings.Join(archHelperUpgradeArgv(b.id, opts), " ")
 	title := fmt.Sprintf("DMS — System Update (%s)", b.id)
 	return Run(ctx, wrapInTerminal(term, title, cmd, opts.TerminalArgs), RunOptions{OnLine: onLine})
 }
 
-func archHelperUpgradeArgv(id string, includeAUR bool, ignored []string) []string {
-	argv := []string{id, "-Syu", "--noconfirm", "--needed"}
-	if !includeAUR {
+func archHelperUpgradeArgv(id string, opts UpgradeOptions) []string {
+	argv := withAutoYes(opts, []string{id, "-Syu", "--needed"}, "--noconfirm")
+	if !opts.IncludeAUR {
 		argv = append(argv, "--repo")
 	}
-	ignored = shellSafeNames(ignored)
+	ignored := shellSafeNames(opts.Ignored)
 	if len(ignored) > 0 {
 		argv = append(argv, "--ignore", strings.Join(ignored, ","))
 	}

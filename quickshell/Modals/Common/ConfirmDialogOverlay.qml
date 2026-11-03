@@ -38,14 +38,15 @@ Item {
         onConfirm = options.onConfirm || (() => {});
         onCancel = options.onCancel || (() => {});
         visible = true;
-        dialogContent.reset();
-        Qt.callLater(focusDialog);
+        dialogContent.keyboardNavigation = false;
+        dialogContent.selectedButton = options.confirmByDefault === true ? 1 : 0;
+        focusDialog();
     }
 
     function focusDialog() {
         if (!visible)
             return;
-        dialogContent.focusSelection();
+        overlayFocusScope.forceActiveFocus();
     }
 
     function close() {
@@ -92,7 +93,7 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            color: Theme.scrimColor
+            color: Theme.backdropColor
             opacity: root.backgroundOpacity
         }
 

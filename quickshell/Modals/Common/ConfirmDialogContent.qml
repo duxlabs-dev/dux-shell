@@ -1,3 +1,3 @@
-import qs.Widgets
+import qs.DCommon.Widgets
 
-DankConfirmDialogContent {}
+DConfirmDialogContent {}

@@ -13,6 +13,7 @@ const GAP_FILL_CLEARANCE = 4;
 const LOGICAL_PIXEL_TOLERANCE = 0.01;
 const FALLBACK_SCALE_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
 const NIRI_TRANSFORMS = ["normal", "90", "180", "270", "flipped", "flipped-90", "flipped-180", "flipped-270"];
+const NIRI_MAX_BPC = [6, 8, 10, 12, 14, 16];
 
 function transformName(index) {
     if (!Number.isInteger(index))
@@ -46,6 +47,13 @@ function hyprlandIdentifier(output, name, displayNameMode) {
     return ("desc:" + [output.make, output.model, output.serial].filter(p => p).join(" ")).replace(/,/g, "");
 }
 
+// monitors.json keys Hyprland profiles by bare "Make Model", which hl.monitor ignores; only a connector or desc: matches
+function hyprlandProfileOutputIdentifier(output, key, isConnector) {
+    if (isConnector || key.startsWith("desc:") || !output?.make || !output?.model)
+        return key;
+    return hyprlandIdentifier(output, key, "model");
+}
+
 function modelIdentifier(output) {
     return output.make + " " + output.model;
 }
@@ -61,9 +69,33 @@ function profileIdentifier(output, name, displayNameMode, compositor) {
     }
 }
 
+// index just past the string starting at i, or -1; raw strings (r#"…"#, #"…"#) have no escapes
+function kdlStringEnd(text, i) {
+    const ch = text[i];
+    if (ch !== '"' && ch !== "r" && ch !== "#")
+        return -1;
+    // a raw string only starts a value, never mid-identifier
+    if (ch !== '"' && i > 0 && !/[\s=(){};]/.test(text[i - 1]))
+        return -1;
+    const opener = /(r?)(#*)"/y;
+    opener.lastIndex = i;
+    const raw = opener.exec(text);
+    if (!raw)
+        return -1;
+    if (raw[1] || raw[2]) {
+        const close = text.indexOf('"' + raw[2], i + raw[0].length);
+        return close < 0 ? text.length : close + 1 + raw[2].length;
+    }
+    let j = i + 1;
+    while (j < text.length && text[j] !== '"')
+        j += text[j] === "\\" ? 2 : 1;
+    return j + 1;
+}
+
+// a /- slashdash comments out the whole output node, so its body is skipped but not kept
 function extractNiriOutputBlocks(content) {
     const blocks = [];
-    const headerRegex = /output\s+"([^"]+)"\s*\{/g;
+    const headerRegex = /(\/-\s*)?\boutput\s+"([^"]+)"\s*\{/g;
     let match;
     while ((match = headerRegex.exec(content)) !== null) {
         const start = headerRegex.lastIndex;
@@ -71,19 +103,70 @@ function extractNiriOutputBlocks(content) {
         let i = start;
         while (i < content.length && depth > 0) {
             const ch = content[i];
+            const stringEnd = kdlStringEnd(content, i);
+            if (stringEnd > 0) {
+                i = stringEnd;
+                continue;
+            }
             if (ch === '{')
                 depth++;
             else if (ch === '}')
                 depth--;
             i++;
         }
-        blocks.push({
-            "name": match[1],
-            "body": content.slice(start, i - 1)
-        });
+        if (!match[1])
+            blocks.push({
+                "name": match[2],
+                "body": content.slice(start, i - 1)
+            });
         headerRegex.lastIndex = i;
     }
     return blocks;
+}
+
+// blanks comments in place, keeping strings and line breaks; KDL block comments nest
+function stripKdlComments(text) {
+    let out = "";
+    let i = 0;
+    while (i < text.length) {
+        let end = kdlStringEnd(text, i);
+        if (end > 0) {
+            out += text.slice(i, end);
+            i = end;
+            continue;
+        }
+        if (text.startsWith("//", i)) {
+            end = text.indexOf("\n", i);
+            if (end < 0)
+                end = text.length;
+        } else if (text.startsWith("/*", i)) {
+            let depth = 0;
+            end = i;
+            do {
+                if (text.startsWith("/*", end)) {
+                    depth++;
+                    end += 2;
+                } else if (text.startsWith("*/", end)) {
+                    depth--;
+                    end += 2;
+                } else {
+                    end++;
+                }
+            } while (depth > 0 && end < text.length)
+        } else {
+            out += text[i];
+            i++;
+            continue;
+        }
+        out += text.slice(i, end).replace(/[^\n]/g, " ");
+        i = end;
+    }
+    return out;
+}
+
+// KDL also ends a node at ';', which the anchored matches need on its own line
+function niriTopLevelNodes(body) {
+    return stripNestedBlocks(body).replace(/;/g, "\n");
 }
 
 function stripNestedBlocks(body) {
@@ -131,18 +214,20 @@ function parsedMode(width, height, refresh) {
 
 function parseNiriOutputs(content) {
     const result = {};
-    for (const block of extractNiriOutputBlocks(content)) {
+    for (const block of extractNiriOutputBlocks(stripKdlComments(content))) {
         const name = block.name;
         const body = block.body;
+        const topLevel = niriTopLevelNodes(body);
 
         // top-level off only, nested hot-corners { off } must not count (#2966)
-        const disabled = /^\s*off\s*$/m.test(stripNestedBlocks(body));
+        const disabled = /^\s*off\s*$/m.test(topLevel);
         const modeMatch = body.match(/mode\s+"(\d+)x(\d+)@([\d.]+)"/);
         const posMatch = body.match(/position\s+x=(-?\d+)\s+y=(-?\d+)/);
         const scaleMatch = body.match(/scale\s+([\d.]+)/);
         const transformMatch = body.match(/transform\s+"([^"]+)"/);
         const vrrMatch = body.match(/variable-refresh-rate/);
         const vrrOnDemandMatch = body.match(/variable-refresh-rate\s+on-demand=true/);
+        const maxBpcMatch = topLevel.match(/^\s*max-bpc\s+(\d+)\s*$/m);
 
         result[name] = {
             "name": name,
@@ -157,14 +242,20 @@ function parseNiriOutputs(content) {
             "current_mode": 0,
             "vrr_enabled": !!vrrMatch,
             "vrr_on_demand": !!vrrOnDemandMatch,
-            "vrr_supported": true
+            "vrr_supported": true,
+            "max_bpc": maxBpcMatch ? niriMaxBpc(parseInt(maxBpcMatch[1])) : undefined
         };
     }
     return result;
 }
 
+function niriMaxBpc(value) {
+    return NIRI_MAX_BPC.includes(value) ? value : undefined;
+}
+
 function hyprLuaSettings(line, disabled, vrrMode) {
     return {
+        "vrr": vrrMode,
         "disabled": disabled || undefined,
         "bitdepth": hyprLuaField(line, "bitdepth"),
         "colorManagement": hyprLuaField(line, "cm"),
@@ -178,8 +269,7 @@ function hyprLuaSettings(line, disabled, vrrMode) {
         "sdrMaxLuminance": hyprLuaField(line, "sdr_max_luminance"),
         "minLuminance": hyprLuaField(line, "min_luminance"),
         "maxLuminance": hyprLuaField(line, "max_luminance"),
-        "maxAvgLuminance": hyprLuaField(line, "max_avg_luminance"),
-        "vrrFullscreenOnly": vrrMode === 2 ? true : undefined
+        "maxAvgLuminance": hyprLuaField(line, "max_avg_luminance")
     };
 }
 
@@ -187,14 +277,16 @@ function parseHyprlandLuaMonitorLine(line) {
     if (!line.match(/^\s*hl\.monitor\s*\(/))
         return null;
     const name = hyprLuaField(line, "output");
-    if (name === undefined)
+    // output = "" is the catch-all fallback, not a monitor; the writer re-emits it verbatim.
+    if (name === undefined || String(name).trim() === "")
         return null;
     const disabled = hyprLuaField(line, "disabled") === true;
     const mode = hyprLuaField(line, "mode") || "preferred";
     const position = hyprLuaField(line, "position") || "0x0";
     const scaleValue = hyprLuaField(line, "scale");
     const transform = Number(hyprLuaField(line, "transform") ?? 0);
-    const vrrMode = Number(hyprLuaField(line, "vrr") ?? 0);
+    const vrrField = hyprLuaField(line, "vrr");
+    const vrrMode = vrrField === undefined || isNaN(Number(vrrField)) ? undefined : Number(vrrField);
     const posMatch = String(position).match(/^(-?\d+)x(-?\d+)$/);
     const modeMatch = String(mode).match(/^(\d+)x(\d+)@([\d.]+)/);
     return {
@@ -210,8 +302,98 @@ function parseHyprlandLuaMonitorLine(line) {
         "vrr_enabled": vrrMode >= 1,
         "vrr_supported": vrrMode > 0,
         "hyprlandSettings": hyprLuaSettings(line, disabled, vrrMode),
-        "mirror": hyprLuaField(line, "mirror") || ""
+        "mirror": hyprLuaField(line, "mirror") || "",
+        "autoPosition": posMatch ? undefined : String(position),
+        "autoScale": scaleValue === "auto" ? true : undefined
     };
+}
+
+// Keeps Hyprland's "auto" words while the written value still equals what Hyprland resolved them to.
+function hyprlandLuaGeometry(output, saved, live) {
+    const x = output?.logical?.x ?? 0;
+    const y = output?.logical?.y ?? 0;
+    const scale = Number(output?.logical?.scale ?? 1.0);
+    const resolved = live || saved?.logical || {};
+    const keepPosition = !!saved?.autoPosition && x === resolved.x && y === resolved.y;
+    const keepScale = saved?.autoScale === true && Math.abs(scale - Number(resolved.scale)) <= WLR_SCALE_STEP;
+    return {
+        "position": keepPosition ? saved.autoPosition : x + "x" + y,
+        "scale": keepScale ? "auto" : hyprlandScaleValue(scale)
+    };
+}
+
+// Hyprland snaps to the nearest n/120 itself; writing that keeps a live float32 scale and the UI preset byte-identical.
+function hyprlandScaleValue(scale) {
+    const value = Number(scale);
+    if (!isFinite(value) || value <= 0)
+        return 1;
+    const numerator = Math.round(value * SCALE_DENOMINATOR);
+    if (Math.abs(numerator / SCALE_DENOMINATOR - value) <= WLR_SCALE_STEP)
+        return scaleFromNumerator(numerator);
+    return parseFloat(value.toFixed(6));
+}
+
+// Unset per-monitor vrr inherits misc:vrr (Hyprland 0.56); -1 is the explicit "inherit" choice.
+// A bare vrr = 0 in the file is what DMS used to write for every untouched monitor, so it is not a choice.
+function hyprlandVrrMode(settings, saved) {
+    const chosen = settings?.vrr;
+    if (Number.isInteger(chosen))
+        return chosen < 0 ? undefined : chosen;
+    if (settings?.vrrFullscreenOnly)
+        return 2;
+    const fromFile = saved?.hyprlandSettings?.vrr;
+    return Number.isInteger(fromFile) && fromFile > 0 ? fromFile : undefined;
+}
+
+// hardwareDetails exists from Hyprland 0.57; null means unknown and gates nothing.
+function hyprlandHardware(ipcObject) {
+    const details = ipcObject?.hardwareDetails;
+    if (!details || typeof details !== "object")
+        return null;
+    return {
+        "hdr": details.hdr === true,
+        "chroma": details.chroma === true,
+        "bt2020": details.bt2020 === true,
+        "vrrCapable": details.vrrCapable === true
+    };
+}
+
+function forcedFlag(value, fallback) {
+    if (value === true || value === 1)
+        return true;
+    if (value === false || value === -1)
+        return false;
+    return fallback;
+}
+
+// Mirrors CMonitor::supportsWideColor/supportsHDR: a forced supports_* flag beats the EDID.
+function hyprlandCaps(hardware, settings) {
+    if (!hardware)
+        return null;
+    const wideColor = forcedFlag(settings?.supportsWideColor, hardware.bt2020);
+    return {
+        "vrr": hardware.vrrCapable,
+        "wideColor": wideColor,
+        "hdr": wideColor && forcedFlag(settings?.supportsHdr, hardware.hdr),
+        "edidColor": hardware.chroma
+    };
+}
+
+// Hyprland falls back to sRGB for edid without EDID primaries and for hdr/hdredid without HDR support.
+function hyprlandCmAllowed(cm, caps) {
+    if (!caps)
+        return true;
+    switch (cm) {
+    case "wide":
+        return caps.wideColor;
+    case "edid":
+        return caps.edidColor;
+    case "hdr":
+    case "hdredid":
+        return caps.hdr;
+    default:
+        return true;
+    }
 }
 
 function parseHyprlandDisableLine(line) {
@@ -229,33 +411,7 @@ function parseHyprlandDisableLine(line) {
         "modes": [],
         "current_mode": -1,
         "vrr_enabled": false,
-        "vrr_supported": false,
-        "hyprlandSettings": {
-            "disabled": true
-        }
-    };
-}
-
-function hyprlandConfExtras(rest) {
-    const transformMatch = rest.match(/,\s*transform,\s*(\d+)/);
-    const vrrMatch = rest.match(/,\s*vrr,\s*(\d+)/);
-    const bitdepthMatch = rest.match(/,\s*bitdepth,\s*(\d+)/);
-    const cmMatch = rest.match(/,\s*cm,\s*(\w+)/);
-    const sdrBrightnessMatch = rest.match(/,\s*sdrbrightness,\s*([\d.]+)/);
-    const sdrSaturationMatch = rest.match(/,\s*sdrsaturation,\s*([\d.]+)/);
-    const mirrorMatch = rest.match(/,\s*mirror,\s*([^,\s]+)/);
-    const vrrMode = vrrMatch ? parseInt(vrrMatch[1]) : 0;
-    return {
-        "transform": transformMatch ? parseInt(transformMatch[1]) : 0,
-        "vrrMode": vrrMode,
-        "mirror": mirrorMatch ? mirrorMatch[1] : "",
-        "settings": {
-            "bitdepth": bitdepthMatch ? parseInt(bitdepthMatch[1]) : undefined,
-            "colorManagement": cmMatch ? cmMatch[1] : undefined,
-            "sdrBrightness": sdrBrightnessMatch ? parseFloat(sdrBrightnessMatch[1]) : undefined,
-            "sdrSaturation": sdrSaturationMatch ? parseFloat(sdrSaturationMatch[1]) : undefined,
-            "vrrFullscreenOnly": vrrMode === 2 ? true : undefined
-        }
+        "vrr_supported": false
     };
 }
 
@@ -263,33 +419,44 @@ function parseHyprlandMonitorLine(line) {
     const match = line.match(/^\s*monitor\s*=\s*([^,]+),\s*(\d+)x(\d+)@([\d.]+),\s*(-?\d+)x(-?\d+),\s*([\d.]+)/);
     if (!match)
         return null;
-    const extras = hyprlandConfExtras(line.substring(line.indexOf(match[7]) + match[7].length));
+    const rest = line.substring(match[0].length);
+    const transformMatch = rest.match(/,\s*transform,\s*(\d+)/);
+    const vrrMatch = rest.match(/,\s*vrr,\s*(\d+)/);
+    const mirrorMatch = rest.match(/,\s*mirror,\s*([^,\s]+)/);
     return {
         "name": match[1].trim(),
         "logical": {
             "x": parseInt(match[5]),
             "y": parseInt(match[6]),
             "scale": parseFloat(match[7]),
-            "transform": transformName(extras.transform)
+            "transform": transformName(transformMatch ? parseInt(transformMatch[1]) : 0)
         },
         "modes": [parsedMode(match[2], match[3], match[4])],
         "current_mode": 0,
-        "vrr_enabled": extras.vrrMode >= 1,
+        "vrr_enabled": vrrMatch ? parseInt(vrrMatch[1]) >= 1 : false,
         "vrr_supported": true,
-        "hyprlandSettings": extras.settings,
-        "mirror": extras.mirror
+        "mirror": mirrorMatch ? mirrorMatch[1] : ""
     };
 }
 
-function parseHyprlandOutputs(content) {
+function collectOutputs(content, parseLine) {
     const result = {};
     for (const line of content.split("\n")) {
-        const entry = parseHyprlandLuaMonitorLine(line) || parseHyprlandDisableLine(line) || parseHyprlandMonitorLine(line);
+        const entry = parseLine(line);
         if (!entry)
             continue;
         result[entry.name] = entry;
     }
     return result;
+}
+
+function parseHyprlandOutputs(content) {
+    return collectOutputs(content, parseHyprlandLuaMonitorLine);
+}
+
+// Only for migrating DMS 1.x display profiles saved as hypr/dms/profiles/*.conf
+function parseHyprlandConfProfile(content) {
+    return collectOutputs(content, line => parseHyprlandDisableLine(line) || parseHyprlandMonitorLine(line));
 }
 
 function parseMangoRule(rule) {
@@ -328,14 +495,85 @@ function parseMangoOutputs(content) {
     const result = {};
     for (const line of content.split("\n")) {
         const trimmed = line.trim();
-        if (!trimmed.startsWith("monitorrule="))
+        const match = trimmed.match(/^monitor_rule\s*=\s*(.*)$/);
+        if (!match)
             continue;
-        const entry = parseMangoRule(trimmed.substring("monitorrule=".length));
+        const entry = parseMangoRule(match[1]);
         if (!entry)
             continue;
         result[entry.name] = entry;
     }
     return result;
+}
+
+const mangoModeledRuleKeys = ["name", "width", "height", "refresh", "x", "y", "scale", "rr", "vrr"];
+
+function mangoRuleFields(rule) {
+    const fields = [];
+    for (const pair of rule.split(",")) {
+        const colonIdx = pair.indexOf(":");
+        if (colonIdx > 0)
+            fields.push([pair.substring(0, colonIdx).trim(), pair.substring(colonIdx + 1).trim()]);
+    }
+    return fields;
+}
+
+// Mango applies only the first matching monitor rule and resets hdr/icc/disable a rule omits,
+// so unmodeled fields of every existing rule for an output are carried into DMS's rule, first one winning.
+function mangoMonitorRuleLines(outputsData, existingText) {
+    const carried = {};
+    for (const line of (existingText || "").split("\n")) {
+        const match = line.trim().match(/^monitor_rule\s*=\s*(.*)$/);
+        if (!match)
+            continue;
+        const fields = mangoRuleFields(match[1]);
+        const name = (fields.find(f => f[0] === "name")?.[1] || "").replace(/^\^/, "").replace(/\$$/, "");
+        if (!name)
+            continue;
+        if (!carried[name])
+            carried[name] = [];
+        const kept = carried[name];
+        for (const field of fields) {
+            if (!mangoModeledRuleKeys.includes(field[0]) && !kept.some(k => k[0] === field[0]))
+                kept.push(field);
+        }
+    }
+
+    const lines = [];
+    for (const outputName in outputsData) {
+        const output = outputsData[outputName];
+        if (!output)
+            continue;
+        let width = 1920;
+        let height = 1080;
+        let refreshRate = 60;
+        const configured = (output.configured_mode || "").match(/^(\d+)x(\d+)@([\d.]+)$/);
+        if (configured) {
+            width = parseInt(configured[1], 10);
+            height = parseInt(configured[2], 10);
+            refreshRate = parseFloat(configured[3]);
+        } else if (output.modes && output.current_mode !== undefined) {
+            const mode = output.modes[output.current_mode];
+            if (mode) {
+                width = mode.width || 1920;
+                height = mode.height || 1080;
+                refreshRate = (mode.refresh_rate || 60000) / 1000;
+            }
+        }
+
+        // Anchored: mango matches `name:` unanchored, so "DP-1" would also match "eDP-1".
+        // Mango picks the nearest mode, so the refresh keeps its fraction.
+        const fields = ["name:^" + outputName + "$", "width:" + width, "height:" + height, "refresh:" + Number(refreshRate.toFixed(3)), "x:" + (output.logical?.x ?? 0), "y:" + (output.logical?.y ?? 0), "scale:" + (output.logical?.scale ?? 1.0), "rr:" + transformIndex(output.logical?.transform ?? "Normal"), "vrr:" + (output.vrr_enabled ? 1 : 0)];
+        for (const [key, value] of carried[outputName] || []) {
+            if (key === "disable" && output.enabled !== undefined)
+                continue;
+            fields.push(key + ":" + value);
+        }
+        if (output.enabled === false)
+            fields.push("disable:1");
+        lines.push("monitor_rule=" + fields.join(","));
+    }
+    return lines;
 }
 
 function outputsFromWlr(wlrOutputs, liveMonitors) {
@@ -370,6 +608,8 @@ function outputsFromWlr(wlrOutputs, liveMonitors) {
         const live = liveMonitors[output.name];
         if (!live)
             continue;
+        if (live.hardware)
+            map[output.name].hardware = live.hardware;
         map[output.name].logical.x = live.x;
         map[output.name].logical.y = live.y;
         map[output.name].logical.scale = live.scale || 1.0;
@@ -464,6 +704,8 @@ function outputsDataFromConfigEntry(configEntry, outputs, displayNameMode, compo
         };
         if (cfg.hyprland?.mirror)
             entry.mirror = cfg.hyprland.mirror;
+        if (liveOutput?.hardware)
+            entry.hardware = liveOutput.hardware;
         result[outputId] = entry;
     }
     return result;
@@ -666,6 +908,16 @@ function physicalSize(output) {
     };
 }
 
+function roundLogical(value, compositor) {
+    switch (compositor) {
+    case "niri":
+        // niri rounds the placed output, smithay's Space ceils mapped ones, only ceil never overlaps in either order (#3875)
+        return Math.ceil(value);
+    default:
+        return Math.round(value);
+    }
+}
+
 function logicalSize(output, compositor) {
     if (!output)
         return {
@@ -674,19 +926,10 @@ function logicalSize(output, compositor) {
         };
     const phys = physicalSize(output);
     const scale = output.logical?.scale || 1.0;
-    switch (compositor) {
-    case "niri":
-        // niri floors logical sizes, rounding up by one leaves a dead seam at snapped edges (#2526)
-        return {
-            "w": Math.floor(phys.w / scale),
-            "h": Math.floor(phys.h / scale)
-        };
-    default:
-        return {
-            "w": Math.round(phys.w / scale),
-            "h": Math.round(phys.h / scale)
-        };
-    }
+    return {
+        "w": roundLogical(phys.w / scale, compositor),
+        "h": roundLogical(phys.h / scale, compositor)
+    };
 }
 
 function defaultBounds() {
@@ -824,8 +1067,8 @@ function recalculateAdjacentPositions(outputs, pendingChanges, changedOutput, ne
     if (!output?.logical)
         return [];
     const oldPhys = physicalSize(output);
-    const oldLogicalW = Math.round(oldPhys.w / (output.logical.scale || 1.0));
-    const newLogicalW = Math.round(oldPhys.w / newScale);
+    const oldLogicalW = roundLogical(oldPhys.w / (output.logical.scale || 1.0), compositor);
+    const newLogicalW = roundLogical(oldPhys.w / newScale, compositor);
     const changedX = pendingChanges[changedOutput]?.position?.x ?? output.logical.x;
     const changedY = pendingChanges[changedOutput]?.position?.y ?? output.logical.y;
     const moves = [];

@@ -10,7 +10,7 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 func aqueousSnapshot(ctx context.Context) (aqueousSnapshotModel, error) {

@@ -9,6 +9,8 @@ Item {
     id: root
     readonly property var log: Log.scoped("CalendarKhalBackend")
 
+    property bool enabled: false
+    property bool _checked: false
     property bool installed: false
     property var eventsByDate: ({})
     property bool isLoading: false
@@ -18,9 +20,13 @@ Item {
     property string dateFormat: "MM/dd/yyyy"
 
     function checkAvailability() {
-        if (!formatProcess.running)
-            formatProcess.running = true;
+        if (_checked || !enabled)
+            return;
+        _checked = true;
+        formatProcess.running = true;
     }
+
+    onEnabledChanged: checkAvailability()
 
     function loadCurrentMonth() {
         let today = new Date();
@@ -61,8 +67,9 @@ Item {
         command: ["khal", "printformats"]
         running: false
         onExited: exitCode => {
-            if (exitCode !== 0)
-                checkProcess.running = true;
+            if (exitCode === 127)
+                return;
+            checkProcess.running = true;
         }
 
         stdout: StdioCollector {
@@ -75,7 +82,6 @@ Item {
                     root.dateFormat = root._parseDateFormat(formatExample);
                     break;
                 }
-                checkProcess.running = true;
             }
         }
     }

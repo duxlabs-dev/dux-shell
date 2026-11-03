@@ -3,7 +3,7 @@ import Quickshell
 import qs.Common
 import qs.Modals.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 import "../../Common/ThemePalette.js" as ThemePalette
 
@@ -50,7 +50,7 @@ RegistryBrowserWindow {
 
     function ensureSelectedVisible() {
         if (selectedIndex >= 0)
-            themeGrid.positionViewAtIndex(selectedIndex, GridView.Contain);
+            themeGrid.revealIndex(selectedIndex);
     }
 
     function selectNext() {
@@ -111,7 +111,7 @@ RegistryBrowserWindow {
     }
 
     function themePreviewUrl(theme) {
-        const base = "https://raw.githubusercontent.com/AvengeMedia/dms-plugin-registry/main/themes/" + (theme.sourceDir || theme.id) + "/";
+        const base = "https://raw.githubusercontent.com/duxlabs-dev/dux-plugin-registry/master/themes/" + (theme.sourceDir || theme.id) + "/";
         const variants = theme.variants || null;
         if (!variants)
             return base + "preview.svg";
@@ -171,7 +171,7 @@ RegistryBrowserWindow {
             var theme = installedThemes[i];
             if (theme.id === themeId) {
                 var sourceDir = theme.sourceDir || theme.id;
-                var themePath = Quickshell.env("HOME") + "/.config/DankMaterialShell/themes/" + sourceDir + "/theme.json";
+                var themePath = Quickshell.env("HOME") + "/.config/dms/themes/" + sourceDir + "/theme.json";
                 SettingsData.set("customThemeFile", themePath);
                 Theme.switchThemeCategory("registry", "custom");
                 Theme.switchTheme("custom", true, true);
@@ -307,7 +307,7 @@ RegistryBrowserWindow {
             anchors.right: parent.right
             spacing: Theme.spacingS
 
-            DankFilterChips {
+            DFilterChips {
                 width: parent.width
                 model: [I18n.tr("All"), I18n.tr("Installed"), I18n.tr("Available")]
                 currentIndex: root.filterIndex
@@ -330,7 +330,7 @@ RegistryBrowserWindow {
                 color: Theme.error
                 wrapMode: Text.Wrap
             }
-            DankButton {
+            DButton {
                 visible: root.loadError !== ""
                 text: I18n.tr("Retry", "retry failed action button")
                 iconName: "refresh"
@@ -340,7 +340,7 @@ RegistryBrowserWindow {
     ]
 
     listContent: [
-        DankGridView {
+        DGridView {
             id: themeGrid
 
             property int columns: Math.max(1, Math.floor(width / (Theme.smallBreakpoint / 2 + Theme.spacingXL * 2)))
@@ -372,6 +372,7 @@ RegistryBrowserWindow {
                     busy: !!root.pendingThemes[cardCell.modelData.id]
                     fallbackIcon: "palette"
                     previewSource: root.themePreviewUrl(cardCell.modelData)
+                    previewFallback: ""
                     badges: root.themeBadges(cardCell.modelData)
                     palette: root.themePalette(cardCell.modelData)
                     allowUninstall: true

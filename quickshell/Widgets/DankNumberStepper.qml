@@ -1,3 +1,8 @@
-import qs.DankCommon.Widgets as DankCommon
+import QtQuick
+import qs.Common
+import qs.DCommon.Widgets as DCommon
 
-DankCommon.DankNumberStepper {}
+DCommon.DNumberStepper {
+    id: shim
+    Component.onCompleted: Deprecation.type(shim, "DankNumberStepper", "DNumberStepper", "qs.DCommon.Widgets")
+}

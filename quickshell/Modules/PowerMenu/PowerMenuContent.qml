@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.DankCommon.Session
+import qs.DCommon.Session
 
 FocusScope {
     id: root
@@ -172,8 +172,7 @@ FocusScope {
 
     function updateVisibleActions() {
         const allActions = SettingsData.powerMenuActions || ["reboot", "logout", "poweroff", "lock", "suspend", "restart"];
-        const customButtons = SettingsData.customPowerButtons || [];
-        visibleActions = allActions.filter(action => SessionService.isPowerActionSupported(action)).concat(customButtons.map((button, i) => "custom:" + i));
+        visibleActions = allActions.filter(action => SessionService.isPowerActionSupported(action)).concat(SessionService.extraPowerActions);
 
         if (!SettingsData.powerMenuGridLayout)
             return;
@@ -260,80 +259,40 @@ FocusScope {
         handleKeyRelease(event);
     }
 
+    function isEnterKey(event) {
+        return event.key === Qt.Key_Return || event.key === Qt.Key_Enter;
+    }
+
+    // The shortcut of each visible action is the key its hint shows. Ctrl combinations navigate.
+    // fromCharCode truncates to 16 bits, so special keys (0x01xxxxxx) must be rejected first.
+    function actionForKey(event) {
+        if (event.modifiers & Qt.ControlModifier || event.key > Qt.Key_Z)
+            return "";
+        const key = String.fromCharCode(event.key);
+        if (!/^[A-Z0-9]$/.test(key))
+            return "";
+        return visibleActions.find(action => getActionData(action).key === key) ?? "";
+    }
+
     function handleKeyRelease(event) {
-        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_R || event.key === Qt.Key_B || event.key === Qt.Key_X || event.key === Qt.Key_L || event.key === Qt.Key_S || event.key === Qt.Key_H || event.key === Qt.Key_D || (event.key === Qt.Key_P && !(event.modifiers & Qt.ControlModifier))) {
+        if (isEnterKey(event) || actionForKey(event) !== "") {
             cancelHold();
             event.accepted = true;
         }
     }
 
     function handleActionShortcut(event) {
-        switch (event.key) {
-        case Qt.Key_Return:
-        case Qt.Key_Enter:
+        if (isEnterKey(event)) {
             startHold(getActionAtIndex(selectedIndex), selectedIndex);
             event.accepted = true;
             return true;
-        case Qt.Key_P:
-            if (!(event.modifiers & Qt.ControlModifier)) {
-                if (visibleActions.includes("poweroff")) {
-                    startHold("poweroff", visibleActions.indexOf("poweroff"));
-                    event.accepted = true;
-                    return true;
-                }
-            }
-            break;
-        case Qt.Key_R:
-            if (visibleActions.includes("reboot")) {
-                startHold("reboot", visibleActions.indexOf("reboot"));
-                event.accepted = true;
-                return true;
-            }
-            break;
-        case Qt.Key_B:
-            if (visibleActions.includes("softreboot")) {
-                startHold("softreboot", visibleActions.indexOf("softreboot"));
-                event.accepted = true;
-                return true;
-            }
-            break;
-        case Qt.Key_X:
-            if (visibleActions.includes("logout")) {
-                startHold("logout", visibleActions.indexOf("logout"));
-                event.accepted = true;
-                return true;
-            }
-            break;
-        case Qt.Key_L:
-            if (visibleActions.includes("lock")) {
-                startHold("lock", visibleActions.indexOf("lock"));
-                event.accepted = true;
-                return true;
-            }
-            break;
-        case Qt.Key_S:
-            if (visibleActions.includes("suspend")) {
-                startHold("suspend", visibleActions.indexOf("suspend"));
-                event.accepted = true;
-                return true;
-            }
-            break;
-        case Qt.Key_H:
-            if (visibleActions.includes("hibernate")) {
-                startHold("hibernate", visibleActions.indexOf("hibernate"));
-                event.accepted = true;
-                return true;
-            }
-            break;
-        case Qt.Key_D:
-            if (visibleActions.includes("restart")) {
-                startHold("restart", visibleActions.indexOf("restart"));
-                event.accepted = true;
-                return true;
-            }
-            break;
         }
-        return false;
+        const action = actionForKey(event);
+        if (action === "")
+            return false;
+        startHold(action, visibleActions.indexOf(action));
+        event.accepted = true;
+        return true;
     }
 
     function handleListNavigation(event) {

@@ -1,8 +1,10 @@
 import QtQuick
 import qs.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Settings.Widgets
+import "../../Services/BootEntries.js" as BootEntries
 
 Item {
     id: root
@@ -13,6 +15,7 @@ Item {
     readonly property var timeoutOptions: timeoutValues.map(seconds => seconds === 0 ? I18n.tr("Never", "timeout option meaning the action never happens") : I18n.duration(seconds))
     readonly property var gracePeriodValues: [1, 2, 3, 4, 5, 10, 15, 20, 30]
     readonly property var gracePeriodOptions: gracePeriodValues.map(seconds => I18n.duration(seconds))
+    readonly property string managedNote: I18n.tr("Managed by administrator policy", "settings note: the administrator lock policy sets this value")
 
     function sourceKey(suffix) {
         return (onAc ? "ac" : "battery") + suffix;
@@ -68,6 +71,8 @@ Item {
                 settingKey: "lockTimeout"
                 tags: ["lock", "timeout", "idle", "automatic", "security"]
                 text: I18n.tr("Automatically lock after")
+                description: SettingsData.isManaged(root.sourceKey("LockTimeout")) ? root.managedNote : ""
+                enabled: !SettingsData.isManaged(root.sourceKey("LockTimeout"))
                 resetKeys: [root.sourceKey("LockTimeout")]
                 options: root.timeoutOptions
                 currentValue: root.timeoutText(root.sourceKey("LockTimeout"))
@@ -122,8 +127,10 @@ Item {
 
             SettingsToggleRow {
                 settingKey: "lockBeforeSuspend"
-                tags: ["lock", "suspend", "sleep", "security"]
+                tags: ["lock", "suspend", "hibernate", "sleep", "security"]
                 text: I18n.tr("Lock before suspend")
+                description: SettingsData.isManaged("lockBeforeSuspend") ? root.managedNote : ""
+                enabled: !SettingsData.isManaged("lockBeforeSuspend")
                 checked: SettingsData.lockBeforeSuspend
                 visible: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
                 onToggled: checked => SettingsData.set("lockBeforeSuspend", checked)
@@ -141,7 +148,8 @@ Item {
                 settingKey: "fadeToLockEnabled"
                 tags: ["fade", "lock", "screen", "idle", "grace period"]
                 text: I18n.tr("Fade to lock screen")
-                description: I18n.tr("Fades the screen out first. Input during the fade cancels it", "idle fade toggle description")
+                description: SettingsData.isManaged("fadeToLockEnabled") ? root.managedNote : I18n.tr("Fades the screen out first. Input during the fade cancels it", "idle fade toggle description")
+                enabled: !SettingsData.isManaged("fadeToLockEnabled")
                 checked: SettingsData.fadeToLockEnabled
                 onToggled: checked => SettingsData.set("fadeToLockEnabled", checked)
             }
@@ -150,6 +158,8 @@ Item {
                 settingKey: "fadeToLockGracePeriod"
                 tags: ["fade", "grace", "period", "timeout", "lock"]
                 text: I18n.tr("Lock fade grace period")
+                description: SettingsData.isManaged("fadeToLockGracePeriod") ? root.managedNote : ""
+                enabled: !SettingsData.isManaged("fadeToLockGracePeriod")
                 visible: SettingsData.fadeToLockEnabled
                 options: root.gracePeriodOptions
                 currentValue: root.gracePeriodText("fadeToLockGracePeriod")
@@ -275,6 +285,95 @@ Item {
 
         SettingsCard {
             width: parent.width
+            iconName: "restart_alt"
+            title: I18n.tr("Reboot targets", "settings card title, firmware setup and EFI boot entries the power menu can reboot into once")
+            settingKey: "powerMenuBootEntries"
+            tags: ["power", "menu", "reboot", "boot", "efi", "uefi", "bios", "firmware", "windows", "dual boot", "bootnext"]
+            // Saved entries stay listed wherever this config lands, so they can always be removed
+            visible: SessionService.firmwareSetupSupported || SettingsData.powerMenuBootEntries.length > 0 || (BootEntryService.status !== "unknown" && BootEntryService.status !== "noEfi")
+
+            Component.onCompleted: BootEntryService.refresh()
+
+            SettingsToggleRow {
+                settingKey: "powerMenuFirmwareSetup"
+                tags: ["power", "menu", "reboot", "firmware", "setup", "bios", "uefi"]
+                visible: SessionService.firmwareSetupSupported
+                iconName: "developer_board"
+                text: I18n.tr("Firmware setup", "settings toggle, adds a power menu action that reboots into the UEFI/BIOS settings screen")
+                checked: SettingsData.powerMenuFirmwareSetup
+                onToggled: checked => SettingsData.set("powerMenuFirmwareSetup", checked)
+            }
+
+            SettingsRow {
+                visible: BootEntryService.unavailableReason !== ""
+                title: BootEntryService.unavailableReason
+                titleColor: Theme.surfaceVariantText
+            }
+
+            SettingsRow {
+                id: bootEntryPicker
+
+                readonly property var options: BootEntries.pickerOptions(BootEntryService.entries, BootEntryService.currentId, SettingsData.powerMenuBootEntries)
+
+                visible: BootEntryService.status === "ready"
+                title: I18n.tr("Add entry", "settings row that adds an EFI boot entry to the power menu")
+
+                DDropdown {
+                    id: bootEntryDropdown
+                    downKeyOpens: false
+                    backgroundColor: SettingsMetrics.controlSurface
+                    enabled: bootEntryPicker.options.length > 0
+                    Accessible.name: bootEntryPicker.title
+                    width: Math.min(dropdownWidth, bootEntryPicker.width - SettingsMetrics.rowPaddingH * 2)
+                    options: bootEntryPicker.options.map(option => option.name)
+                    emptyText: I18n.tr("Select", "verb, dropdown placeholder or option that opens a picker")
+                    onValueChanged: value => {
+                        const option = bootEntryPicker.options.find(option => option.name === value);
+                        currentValue = "";
+                        if (!option)
+                            return;
+                        SettingsData.set("powerMenuBootEntries", SettingsData.powerMenuBootEntries.concat([
+                            {
+                                id: option.id,
+                                label: option.label
+                            }
+                        ]));
+                    }
+                }
+            }
+
+            Repeater {
+                model: SettingsData.powerMenuBootEntries
+
+                delegate: SettingsRow {
+                    id: bootEntryRow
+
+                    required property var modelData
+                    required property int index
+
+                    title: modelData.label
+                    subtitle: "Boot" + modelData.id
+                    iconName: "restart_alt"
+
+                    DActionButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        iconName: "delete"
+                        iconColor: Theme.error
+                        Accessible.name: I18n.tr("Remove", "verb, button that removes an item from a list")
+                        onClicked: SettingsData.set("powerMenuBootEntries", SettingsData.powerMenuBootEntries.filter((entry, i) => i !== bootEntryRow.index))
+                    }
+                }
+            }
+
+            SettingsRow {
+                visible: BootEntryService.status === "ready" && !SettingsData.powerMenuBootEntries.length
+                title: I18n.tr("No items added yet", "empty list of saved EFI boot entries")
+                titleColor: Theme.surfaceVariantText
+            }
+        }
+
+        SettingsCard {
+            width: parent.width
             iconName: "check_circle"
             title: I18n.tr("Confirmation", "power settings card title, hold to confirm power actions")
             settingKey: "powerConfirmation"
@@ -362,6 +461,8 @@ Item {
                     tags: ["power", "command", "override", modelData.label]
                     text: modelData.label
                     leftIconName: modelData.icon
+                    description: SettingsData.isManaged(modelData.key) ? root.managedNote : ""
+                    enabled: !SettingsData.isManaged(modelData.key)
                     value: SettingsData[modelData.key] || ""
                     placeholderText: modelData.placeholder
                     onValueEdited: value => SettingsData.set(modelData.key, value.trim())

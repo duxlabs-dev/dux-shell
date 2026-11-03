@@ -33,7 +33,49 @@ type luaForHeader struct {
 }
 
 func expandLuaConfigLines(lines []string) []string {
-	return expandLuaBlock(lines, luaVarEnv{})
+	lines, _ = expandLuaConfigLinesEnv(lines)
+	return lines
+}
+
+func expandLuaConfigLinesEnv(lines []string) ([]string, luaVarEnv) {
+	env := luaVarEnv{}
+	return expandLuaBlock(joinLuaBindSpans(lines), env), env
+}
+
+// The bind parser is line based; fold wrapped hl.bind( calls, keeping only the closing line's comment.
+func joinLuaBindSpans(lines []string) []string {
+	out := make([]string, 0, len(lines))
+	for i := 0; i < len(lines); i++ {
+		masked := luaMaskStrings(lines[i])
+		depth := luaParenDelta(masked)
+		if depth <= 0 || !strings.Contains(masked, "hl.bind") {
+			out = append(out, lines[i])
+			continue
+		}
+		parts := []string{strings.TrimSpace(luaStripLineComment(lines[i]))}
+		j := i + 1
+		for ; j < len(lines) && depth > 0; j++ {
+			depth += luaParenDelta(luaMaskStrings(lines[j]))
+			part := lines[j]
+			if depth > 0 {
+				part = luaStripLineComment(part)
+			}
+			if part = strings.TrimSpace(part); part != "" {
+				parts = append(parts, part)
+			}
+		}
+		if depth > 0 {
+			out = append(out, lines[i])
+			continue
+		}
+		out = append(out, strings.Join(parts, " "))
+		i = j - 1
+	}
+	return out
+}
+
+func luaParenDelta(masked string) int {
+	return strings.Count(masked, "(") - strings.Count(masked, ")")
 }
 
 func expandLuaBlock(lines []string, env luaVarEnv) []string {

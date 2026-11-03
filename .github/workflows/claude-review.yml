@@ -64,7 +64,17 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
+      - name: Resolve base branch
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "base=$(gh pr view ${{ github.event.issue.number }} --json baseRefName --jq .baseRefName)" >> "$GITHUB_OUTPUT"
+
       - uses: anthropics/claude-code-action@9ca9355b36297178e28d37c799d1c9c8a28e6507
+        env:
+          CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
+          CLAUDE_CODE_EFFORT_LEVEL: high
+        id: claude
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
@@ -75,12 +85,13 @@ jobs:
             ---
 
             Text after `/claude review` is an optional focus. Honor it but still report anything serious outside it.
-            The PR head is checked out. Use `gh pr view ${{ github.event.issue.number }}` and `gh pr diff ${{ github.event.issue.number }}`, read surrounding code as needed.
+            The PR head is checked out and the base branch is fetched as `origin/${{ steps.pr.outputs.base }}`. Use `gh pr view ${{ github.event.issue.number }}` for title and description.
+            Get the diff from git, never `gh pr diff` (GitHub refuses diffs over 20000 lines): `git diff --stat origin/${{ steps.pr.outputs.base }}...HEAD`, then `git diff origin/${{ steps.pr.outputs.base }}...HEAD -- <path>` per file or directory. Read surrounding code as needed. Split a large PR across Task agents by area.
 
             Steps:
             1. Read CONTRIBUTING.md.
             2. Read the PR title, description and diff.
-            3. Check existing comments so you don't repeat them: `gh api repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}/comments` and `gh pr view ${{ github.event.issue.number }} --comments`. Skip findings already covered by a comment that still applies.
+            3. Check existing comments so you don't repeat them: `gh api --method GET repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}/comments` and `gh pr view ${{ github.event.issue.number }} --comments`. Skip findings already covered by a comment that still applies.
             4. Verify each candidate finding against the code. Drop anything you can't confirm.
             5. Post one inline comment per confirmed finding with `mcp__github_inline_comment__create_inline_comment` (`confirmed: true`). Say what's wrong, why, and the fix. Add a committable suggestion only if it alone fully fixes the issue.
             6. Post one new summary comment with `gh pr comment ${{ github.event.issue.number }} --body ...`. Never edit earlier comments. Format:
@@ -94,18 +105,36 @@ jobs:
 
             Flag only issues introduced by this PR:
             - Bugs: wrong logic, crashes, nil/undefined access, races, leaks (timers, connections, processes, handles), bad Go error handling, edge cases that will clearly be hit.
-            - QML: undefined refs, missing imports, binding loops, bindings that never update, handlers on the wrong object, raw Flickable/ListView/ScrollView instead of the Dank* wrappers.
+            - QML: undefined refs, missing imports, binding loops, bindings that never update, handlers on the wrong object, raw Flickable/ListView/ScrollView instead of the D* wrappers (DFlickable, DListView, DGridView).
+            - Deprecated shims: added code that uses a deprecated type or imports a deprecated module. Every shim calls `Deprecation.type(` or `Deprecation.module(`; list them with `git grep -h -e "Deprecation.type(" -e "Deprecation.module(" origin/${{ steps.pr.outputs.base }} -- quickshell`, which gives the old and new name. Grep the base, not HEAD, since a PR branched before the rename has no shims. Flag it even when the rest of the file still uses old names on the PR's base; suggest the new name and a rebase if the base predates it.
             - Security: command injection, path traversal, unsafe file permissions, secrets in code.
-            - CONTRIBUTING.md rules: user-facing strings in `I18n.tr()` with translator context, reuse existing terms from quickshell/translations/en.json; en.json and template.json must not be touched in a PR; mocks under core/internal/mocks/ are regenerated not hand-edited; new dank-qml-common contract properties need the matching library change.
+            - CONTRIBUTING.md rules: user-facing strings in `I18n.tr()` with translator context, reuse existing terms from quickshell/translations/en.json; en.json and template.json must not be touched in a PR; mocks under core/internal/mocks/ are regenerated not hand-edited; new dux-qml-common contract properties need the matching library change.
 
-            Don't flag style or naming, pre-existing issues, anything a linter or compiler catches, speculative input-dependent problems, missing tests or docs, or refactor ideas. Not sure it's real: don't post it.
+            Don't flag style or naming (deprecated shims are not naming), pre-existing issues, anything a linter or compiler catches, speculative input-dependent problems, missing tests or docs, or refactor ideas. Not sure it's real: don't post it.
 
             Review only. Never edit files, commit, push, approve or request changes. Do not build, vet, format or run tests; CI already does that and the tools are not available here. Post each finding once. Keep comments short.
           claude_args: |
             --model claude-opus-5-5
             --max-turns 120
-            --allowedTools "Read,Grep,Glob,LS,Task,mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh api repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}/comments:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git blame:*)"
+            --allowedTools "Read,Grep,Glob,LS,Task,mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api --method GET repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}/comments:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git blame:*),Bash(git merge-base:*),Bash(git grep:*)"
             --disallowedTools "Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch"
+
+      - name: Upload transcript
+        if: always() && steps.claude.outputs.execution_file != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-review-${{ github.event.issue.number }}-${{ github.run_id }}
+          path: ${{ steps.claude.outputs.execution_file }}
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Require a summary comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SINCE: ${{ github.event.comment.created_at }}
+        run: |
+          gh api "repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments?since=$SINCE&per_page=100" \
+            --jq '[.[] | select(.body | startswith("## Claude review"))] | length' | grep -qv '^0$'
 
       - if: failure()
         env:

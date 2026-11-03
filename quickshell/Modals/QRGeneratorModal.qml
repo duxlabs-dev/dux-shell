@@ -6,9 +6,9 @@ import qs.Modals.Common
 import qs.Modals.FileBrowser
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
-DankModal {
+DModal {
     id: root
     visible: false
     layerNamespace: "dms:qr-generator"
@@ -164,7 +164,7 @@ DankModal {
                         Layout.fillWidth: true
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         iconName: "close"
                         Accessible.name: I18n.tr("Close")
                         iconSize: Theme.iconSize - 4
@@ -174,7 +174,7 @@ DankModal {
                     }
                 }
 
-                DankTextField {
+                DTextField {
                     id: textInput
                     width: parent.width
                     placeholderText: I18n.tr("Enter text to encode")
@@ -234,7 +234,7 @@ DankModal {
                         Layout.fillWidth: true
                     }
 
-                    DankButton {
+                    DButton {
                         text: I18n.tr("Save")
                         iconName: "save"
                         backgroundColor: Theme.chipSurface
@@ -247,7 +247,7 @@ DankModal {
                         }
                     }
 
-                    DankButton {
+                    DButton {
                         text: I18n.tr("Copy")
                         iconName: "content_copy"
                         backgroundColor: Theme.primary

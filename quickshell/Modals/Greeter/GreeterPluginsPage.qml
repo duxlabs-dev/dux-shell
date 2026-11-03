@@ -2,14 +2,14 @@ import QtQuick
 import qs.Common
 import qs.Modules.Settings
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Item {
     id: root
 
     property var greeterRoot: parent ? parent.greeterRoot : null
 
-    readonly property var curatedPluginIds: ["quickCapture", "dankKDEConnect", "wallpaperCarousel", "calculator", "emojiLauncher", "dockerManager", "amdGpuMonitor", "bongoCat"]
+    readonly property var curatedPluginIds: ["quickCapture", "dankKDEConnect", "calculator", "wallpaperCarousel", "dankSoftwareDepot", "emojiLauncher", "aiOverviewControl", "bongoCat"]
 
     readonly property real headerIconContainerSize: Math.round(Theme.iconSize * 2)
 
@@ -74,7 +74,7 @@ Item {
         }
     }
 
-    DankFlickable {
+    DFlickable {
         anchors.fill: parent
         clip: true
         contentHeight: mainColumn.height + Theme.spacingL * 2
@@ -98,7 +98,7 @@ Item {
                     color: Theme.primaryContainer
                     anchors.verticalCenter: parent.verticalCenter
 
-                    DankIcon {
+                    DIcon {
                         anchors.centerIn: parent
                         name: "extension"
                         size: Theme.iconSize + 4
@@ -129,7 +129,7 @@ Item {
                 height: Math.round(Theme.fontSizeMedium * 8)
                 visible: root.isLoading
 
-                DankSpinner {
+                DSpinner {
                     anchors.centerIn: parent
                     running: root.isLoading
                 }
@@ -140,7 +140,7 @@ Item {
                 spacing: Theme.spacingS
                 visible: !root.isLoading && root.loadError !== ""
 
-                DankIcon {
+                DIcon {
                     anchors.horizontalCenter: parent.horizontalCenter
                     name: "cloud_off"
                     size: Theme.iconSize + 16
@@ -161,7 +161,7 @@ Item {
                     color: Theme.outline
                 }
 
-                DankButton {
+                DButton {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: I18n.tr("Retry", "retry failed action button")
                     iconName: "refresh"

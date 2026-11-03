@@ -16,7 +16,7 @@ Singleton {
     readonly property int largeFileBytes: 5 * 1024 * 1024
     property var approvedLargeFiles: ({})
 
-    readonly property string baseDir: Paths.strip(StandardPaths.writableLocation(StandardPaths.GenericStateLocation) + "/DankMaterialShell")
+    readonly property string baseDir: Paths.strip(StandardPaths.writableLocation(StandardPaths.GenericStateLocation) + "/dms")
     readonly property string filesDir: baseDir + "/notepad-files"
     readonly property string metadataPath: baseDir + "/notepad-session.json"
 
@@ -71,10 +71,6 @@ Singleton {
         conflictDiskContent = "";
     }
 
-    Component.onCompleted: {
-        ensureDirectories();
-    }
-
     FileView {
         id: metadataFile
         path: root.refCount > 0 ? root.metadataPath : ""
@@ -100,13 +96,21 @@ Singleton {
     }
 
     onRefCountChanged: {
-        if (refCount === 1 && !metadataLoaded) {
-            metadataFile.path = "";
-            metadataFile.path = root.metadataPath;
-        }
+        if (refCount !== 1)
+            return;
+        ensureDirectories();
+        if (metadataLoaded)
+            return;
+        metadataFile.path = "";
+        metadataFile.path = root.metadataPath;
     }
 
+    property bool _directoriesEnsured: false
+
     function ensureDirectories() {
+        if (_directoriesEnsured)
+            return;
+        _directoriesEnsured = true;
         Proc.runCommand("", ["mkdir", "-p", root.baseDir, root.filesDir], null);
     }
 

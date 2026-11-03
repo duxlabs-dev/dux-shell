@@ -3,27 +3,27 @@ package themes
 import (
 	"fmt"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/themes"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
+	"github.com/duxlabs-dev/dux-shell/core/internal/themes"
 )
 
 func HandleUpdate(conn *ipc.ConnWriter, req ipc.Request) {
-	idOrName, ok := models.Get[string](req, "name")
+	idOrName, ok := req.Get[string]("name")
 	if !ok {
-		models.RespondError(conn, req.ID, "missing or invalid 'name' parameter")
+		conn.RespondError(req.ID, "missing or invalid 'name' parameter")
 		return
 	}
 
 	manager, err := themes.NewManager()
 	if err != nil {
-		models.RespondError(conn, req.ID, fmt.Sprintf("failed to create manager: %v", err))
+		conn.RespondError(req.ID, fmt.Sprintf("failed to create manager: %v", err))
 		return
 	}
 
 	registry, err := themes.NewRegistry()
 	if err != nil {
-		models.RespondError(conn, req.ID, fmt.Sprintf("failed to create registry: %v", err))
+		conn.RespondError(req.ID, fmt.Sprintf("failed to create registry: %v", err))
 		return
 	}
 
@@ -31,26 +31,26 @@ func HandleUpdate(conn *ipc.ConnWriter, req ipc.Request) {
 	theme := themes.FindByIDOrName(idOrName, themeList)
 
 	if theme == nil {
-		models.RespondError(conn, req.ID, fmt.Sprintf("theme not found in registry: %s", idOrName))
+		conn.RespondError(req.ID, fmt.Sprintf("theme not found in registry: %s", idOrName))
 		return
 	}
 
 	installed, err := manager.IsInstalled(*theme)
 	if err != nil {
-		models.RespondError(conn, req.ID, fmt.Sprintf("failed to check if theme is installed: %v", err))
+		conn.RespondError(req.ID, fmt.Sprintf("failed to check if theme is installed: %v", err))
 		return
 	}
 	if !installed {
-		models.RespondError(conn, req.ID, fmt.Sprintf("theme not installed: %s", idOrName))
+		conn.RespondError(req.ID, fmt.Sprintf("theme not installed: %s", idOrName))
 		return
 	}
 
 	if err := manager.Update(*theme); err != nil {
-		models.RespondError(conn, req.ID, fmt.Sprintf("failed to update theme: %v", err))
+		conn.RespondError(req.ID, fmt.Sprintf("failed to update theme: %v", err))
 		return
 	}
 
-	models.Respond(conn, req.ID, models.SuccessResult{
+	conn.Respond(req.ID, models.SuccessResult{
 		Success: true,
 		Message: fmt.Sprintf("theme updated: %s", theme.Name),
 	})

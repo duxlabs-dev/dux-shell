@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
 )
 
 // ManualPackageInstaller provides methods for installing packages from source
@@ -55,9 +55,9 @@ func (m *ManualPackageInstaller) InstallManualPackages(ctx context.Context, pack
 	for _, pkg := range packages {
 		variant := variantMap[pkg]
 		switch pkg {
-		case "dms (DankMaterialShell)", "dms":
+		case "dms (Dux Shell)", "dms":
 			if err := m.installDankMaterialShell(ctx, variant, sudoPassword, progressChan); err != nil {
-				return fmt.Errorf("failed to install DankMaterialShell: %w", err)
+				return fmt.Errorf("failed to install Dux Shell: %w", err)
 			}
 		case "niri":
 			if err := m.installNiri(ctx, sudoPassword, progressChan); err != nil {
@@ -95,8 +95,8 @@ func (m *ManualPackageInstaller) installNiri(ctx context.Context, sudoPassword s
 	m.log("Installing niri from source...")
 
 	homeDir, _ := os.UserHomeDir()
-	buildDir := filepath.Join(homeDir, ".cache", "dankinstall", "niri-build")
-	tmpDir := filepath.Join(homeDir, ".cache", "dankinstall", "tmp")
+	buildDir := filepath.Join(homeDir, ".cache", "duxinstall", "niri-build")
+	tmpDir := filepath.Join(homeDir, ".cache", "duxinstall", "tmp")
 	if err := os.MkdirAll(buildDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create build directory: %w", err)
 	}
@@ -173,7 +173,7 @@ func (m *ManualPackageInstaller) installQuickshell(ctx context.Context, variant 
 		return fmt.Errorf("HOME environment variable not set")
 	}
 
-	cacheDir := filepath.Join(homeDir, ".cache", "dankinstall")
+	cacheDir := filepath.Join(homeDir, ".cache", "duxinstall")
 	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
@@ -279,7 +279,7 @@ func (m *ManualPackageInstaller) installHyprland(ctx context.Context, sudoPasswo
 		return fmt.Errorf("HOME environment variable not set")
 	}
 
-	cacheDir := filepath.Join(homeDir, ".cache", "dankinstall")
+	cacheDir := filepath.Join(homeDir, ".cache", "duxinstall")
 	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
@@ -342,7 +342,7 @@ func (m *ManualPackageInstaller) installGhostty(ctx context.Context, sudoPasswor
 		return fmt.Errorf("HOME environment variable not set")
 	}
 
-	cacheDir := filepath.Join(homeDir, ".cache", "dankinstall")
+	cacheDir := filepath.Join(homeDir, ".cache", "duxinstall")
 	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
@@ -442,7 +442,7 @@ func (m *ManualPackageInstaller) installMatugen(ctx context.Context, sudoPasswor
 }
 
 func (m *ManualPackageInstaller) installDankMaterialShell(ctx context.Context, variant deps.PackageVariant, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
-	m.log("Installing DankMaterialShell (DMS)...")
+	m.log("Installing Dux Shell (DMS)...")
 
 	if err := m.installDMSBinary(ctx, sudoPassword, progressChan); err != nil {
 		m.logError("Failed to install DMS binary", err)
@@ -454,9 +454,9 @@ func (m *ManualPackageInstaller) installDankMaterialShell(ctx context.Context, v
 		progressChan <- InstallProgressMsg{
 			Phase:       PhaseSystemPackages,
 			Progress:    0.90,
-			Step:        "Cloning DankMaterialShell...",
+			Step:        "Cloning Dux Shell...",
 			IsComplete:  false,
-			CommandInfo: "git clone --recurse-submodules https://github.com/AvengeMedia/DankMaterialShell.git",
+			CommandInfo: "git clone --recurse-submodules https://github.com/duxlabs-dev/dux-shell.git",
 		}
 
 		configDir := filepath.Dir(dmsPath)
@@ -465,9 +465,9 @@ func (m *ManualPackageInstaller) installDankMaterialShell(ctx context.Context, v
 		}
 
 		cloneCmd := exec.CommandContext(ctx, "git", "clone", "--recurse-submodules",
-			"https://github.com/AvengeMedia/DankMaterialShell.git", dmsPath)
+			"https://github.com/duxlabs-dev/dux-shell.git", dmsPath)
 		if err := cloneCmd.Run(); err != nil {
-			return fmt.Errorf("failed to clone DankMaterialShell: %w", err)
+			return fmt.Errorf("failed to clone Dux Shell: %w", err)
 		}
 
 		if forceDMSGit || variant == deps.VariantGit {
@@ -492,14 +492,14 @@ func (m *ManualPackageInstaller) installDankMaterialShell(ctx context.Context, v
 		m.syncDMSSubmodules(ctx, dmsPath)
 
 		m.log(fmt.Sprintf("Checked out latest tag: %s", latestTag))
-		m.log("DankMaterialShell cloned successfully")
+		m.log("Dux Shell cloned successfully")
 		return nil
 	}
 
 	progressChan <- InstallProgressMsg{
 		Phase:       PhaseSystemPackages,
 		Progress:    0.90,
-		Step:        "Updating DankMaterialShell...",
+		Step:        "Updating Dux Shell...",
 		IsComplete:  false,
 		CommandInfo: "Updating ~/.config/quickshell/dms",
 	}
@@ -531,7 +531,7 @@ func (m *ManualPackageInstaller) installDankMaterialShell(ctx context.Context, v
 
 		m.syncDMSSubmodules(ctx, dmsPath)
 
-		m.log("DankMaterialShell updated successfully (git variant)")
+		m.log("Dux Shell updated successfully (git variant)")
 		return nil
 	}
 

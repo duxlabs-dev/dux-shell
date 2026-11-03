@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
 import qs.Modules.Plugins
@@ -69,7 +69,7 @@ PluginComponent {
                 settingsTab: "displays"
             }
 
-            DankFlickable {
+            DFlickable {
                 anchors.fill: parent
                 contentHeight: detailColumn.height
                 clip: true
@@ -106,7 +106,6 @@ PluginComponent {
                                 iconName: "monitor"
                                 title: modelData.name
                                 active: modelData.id === root.activeProfileId && !root.autoMode
-                                showActiveCheck: true
                                 enabled: !root.autoMode
                                 clickable: true
                                 onClicked: DisplayConfigState.activateProfile(modelData.id)
@@ -121,7 +120,7 @@ PluginComponent {
     horizontalBarPill: Component {
         Row {
             spacing: Theme.spacingXS
-            DankIcon {
+            DIcon {
                 name: "monitor"
                 color: Theme.primary
                 size: root.iconSize
@@ -139,7 +138,7 @@ PluginComponent {
     verticalBarPill: Component {
         Column {
             spacing: Theme.spacingXXS
-            DankIcon {
+            DIcon {
                 name: "monitor"
                 color: Theme.primary
                 size: root.iconSize

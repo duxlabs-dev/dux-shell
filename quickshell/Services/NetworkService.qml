@@ -253,18 +253,6 @@ Singleton {
         }
     }
 
-    function setConnectionPriority(type) {
-        if (activeService && activeService.setConnectionPriority) {
-            activeService.setConnectionPriority(type);
-        }
-    }
-
-    function connectToWifiAndSetPreference(ssid, password, username = "", anonymousIdentity = "", domainSuffixMatch = "", hidden = false, eapMethod = "", phase2Auth = "") {
-        if (activeService && activeService.connectToWifiAndSetPreference) {
-            activeService.connectToWifiAndSetPreference(ssid, password, username, anonymousIdentity, domainSuffixMatch, hidden, eapMethod, phase2Auth);
-        }
-    }
-
     function toggleNetworkConnection(type) {
         if (activeService && activeService.toggleNetworkConnection) {
             activeService.toggleNetworkConnection(type);

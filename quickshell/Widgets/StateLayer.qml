@@ -1,3 +1,3 @@
-import qs.DankCommon.Widgets as DankCommon
+import qs.DCommon.Widgets as DCommon
 
-DankCommon.StateLayer {}
+DCommon.StateLayer {}

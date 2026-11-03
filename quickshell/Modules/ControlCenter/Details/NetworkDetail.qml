@@ -9,16 +9,19 @@ import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
 import qs.Modules.Network
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 import "../../../Common/QmlUtils.js" as QmlUtils
 
 Item {
     id: root
 
+    implicitHeight: pageList.contentHeight
+
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
-    property Item menuParent: root
+    property var transientSurfaceTracker: null
 
     readonly property string title: I18n.tr("Network")
 
@@ -49,7 +52,7 @@ Item {
     readonly property string currentConnectionType: {
         if (selectedType && connectionTypes.includes(selectedType))
             return selectedType;
-        return connectionTypes[Math.max(0, currentPreferenceIndex)] || "wifi";
+        return connectionTypes[defaultTypeIndex] || "wifi";
     }
     readonly property bool wifiMode: currentConnectionType === "wifi"
     readonly property bool ethernetMode: currentConnectionType === "ethernet"
@@ -57,30 +60,33 @@ Item {
     readonly property bool networkManager: NetworkService.backend === "networkmanager"
     // hosting on the sole wifi radio with no ethernet uplink drops connectivity
     readonly property bool hotspotRelevant: NetworkService.hotspotEnabled || NetworkService.hotspotActivating || NetworkService.hotspotBusy || NetworkService.ethernetConnected || (NetworkService.wifiDevices?.length ?? 0) > 1
-    readonly property bool showHotspotRow: wifiMode && NetworkService.hotspotAvailable && hotspotRelevant
+    readonly property bool showHotspotRow: wifiMode && NetworkService.hotspotAvailable && NetworkService.hotspotConfigured && hotspotRelevant
     readonly property bool hotspotWorking: NetworkService.hotspotBusy || NetworkService.hotspotActivating
     readonly property var pinnedNetworks: QmlUtils.normalizePinList((CacheData.wifiNetworkPins || {})["preferredWifi"])
     readonly property bool wifiScanningEmpty: wifiMode && NetworkService.wifiEnabled && !NetworkService.wifiToggling && NetworkService.wifiInterface && (NetworkService.wifiNetworks?.length ?? 0) < 1 && (NetworkService.isScanning || transitioning)
     readonly property bool wifiListVisible: wifiMode && NetworkService.wifiEnabled && !NetworkService.wifiToggling && !wifiScanningEmpty
 
-    readonly property int currentPreferenceIndex: {
-        if (DMSService.apiVersion < 5)
-            return 1;
-        if (!networkManager || DMSService.apiVersion <= 10)
-            return 1;
-        const pref = NetworkService.userPreference;
-        if (connectionTypes.indexOf(pref) !== -1)
-            return connectionTypes.indexOf(pref);
-        if (connectionTypes.indexOf(NetworkService.networkStatus) !== -1)
-            return connectionTypes.indexOf(NetworkService.networkStatus);
-        const wifiIndex = connectionTypes.indexOf("wifi");
-        return wifiIndex !== -1 ? wifiIndex : 0;
+    readonly property bool paneSwitchSupported: connectionTypes.length > 1 && networkManager && DMSService.apiVersion > 10
+    readonly property var typeLabels: ({
+            "ethernet": I18n.tr("Ethernet"),
+            "wifi": I18n.tr("Wi-Fi", "wireless network, page and section title"),
+            "cellular": I18n.tr("Cellular")
+        })
+    readonly property int defaultTypeIndex: {
+        const wifiIndex = Math.max(0, connectionTypes.indexOf("wifi"));
+        if (!paneSwitchSupported)
+            return wifiIndex;
+        const byStatus = connectionTypes.indexOf(NetworkService.networkStatus);
+        if (byStatus !== -1)
+            return byStatus;
+        const byPreference = connectionTypes.indexOf(NetworkService.userPreference);
+        return byPreference !== -1 ? byPreference : wifiIndex;
     }
 
     readonly property Item headerActions: Row {
         spacing: Theme.spacingS
 
-        DankDropdown {
+        DDropdown {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.wifiMode && (NetworkService.wifiDevices?.length ?? 0) > 1
             compactMode: true
@@ -92,11 +98,11 @@ Item {
             onValueChanged: value => NetworkService.setWifiDeviceOverride(value === I18n.tr("Auto") ? "" : value)
         }
 
-        DankRefreshButton {
+        DRefreshButton {
             Accessible.name: I18n.tr("Scan")
             anchors.verticalCenter: parent.verticalCenter
-            buttonSize: Theme.iconButtonSize
-            iconSize: Theme.iconSize
+            buttonSize: CcMetrics.headerActionSize
+            iconSize: CcMetrics.headerActionIconSize
             iconColor: Theme.surfaceText
             visible: root.wifiMode && NetworkService.wifiEnabled && !NetworkService.wifiToggling
             busy: NetworkService.isScanning
@@ -147,11 +153,6 @@ Item {
             confirmText: I18n.tr("Start", "hotspot start confirmation action"),
             onConfirm: () => NetworkService.startHotspot()
         });
-    }
-
-    function openHotspotSettings() {
-        PopoutService.closeControlCenter();
-        PopoutService.openSettingsWithTab("network_wifi");
     }
 
     function togglePin(ssid) {
@@ -249,6 +250,10 @@ Item {
                     return -1;
                 if (b.ssid === ssid)
                     return 1;
+                const aKnown = !!a.saved && (a.signal || 0) > 0;
+                const bKnown = !!b.saved && (b.signal || 0) > 0;
+                if (aKnown !== bKnown)
+                    return aKnown ? -1 : 1;
                 const aBucket = Math.floor((a.signal || 0) / CcMetrics.wifiSignalBucket);
                 const bBucket = Math.floor((b.signal || 0) / CcMetrics.wifiSignalBucket);
                 if (aBucket !== bBucket)
@@ -298,8 +303,9 @@ Item {
         }
     }
 
-    DankListView {
+    DListView {
         id: pageList
+        objectName: "networkList"
 
         anchors.fill: parent
         clip: true
@@ -314,24 +320,17 @@ Item {
             spacing: CcMetrics.detailContentGap
             bottomPadding: pageList.count > 0 ? CcMetrics.detailContentGap : 0
 
-            DankButtonGroup {
-                readonly property var labelsByType: ({
-                        "ethernet": I18n.tr("Ethernet"),
-                        "wifi": I18n.tr("WiFi", "wireless network, control center section title"),
-                        "cellular": I18n.tr("Cellular")
-                    })
-
+            DButtonGroup {
                 anchors.horizontalCenter: parent.horizontalCenter
                 size: "small"
-                visible: root.connectionTypes.length > 1 && root.networkManager && DMSService.apiVersion > 10
-                model: root.connectionTypes.map(t => labelsByType[t] || t)
+                visible: root.paneSwitchSupported
+                model: root.connectionTypes.map(t => root.typeLabels[t] || t)
                 currentIndex: Math.max(0, root.connectionTypes.indexOf(root.currentConnectionType))
                 selectionMode: "single"
                 onSelectionChanged: (index, selected) => {
                     if (!selected)
                         return;
                     root.selectedType = root.connectionTypes[index] || "wifi";
-                    NetworkService.setNetworkPreference(root.selectedType);
                 }
             }
 
@@ -341,7 +340,7 @@ Item {
                 CcToggleRow {
                     iconName: NetworkService.wifiEnabled ? "wifi" : "wifi_off"
                     iconColor: NetworkService.wifiEnabled ? Theme.primary : Theme.surfaceText
-                    text: I18n.tr("WiFi", "wireless network, control center section title")
+                    text: I18n.tr("Wi-Fi", "wireless network, page and section title")
                     description: {
                         if (NetworkService.wifiToggling)
                             return NetworkService.wifiEnabled ? I18n.tr("Disabling WiFi...") : I18n.tr("Enabling WiFi...");
@@ -357,17 +356,15 @@ Item {
                 CcListRow {
                     id: hotspotRow
 
-                    readonly property bool warnsWifiDrop: NetworkService.hotspotConfigured && NetworkService.wifiEnabled && !root.hotspotWorking && !NetworkService.hotspotEnabled && NetworkService.hotspotWouldDisconnectWifi
+                    readonly property bool warnsWifiDrop: NetworkService.wifiEnabled && !root.hotspotWorking && !NetworkService.hotspotEnabled && NetworkService.hotspotWouldDisconnectWifi
 
                     visible: root.showHotspotRow
                     iconName: NetworkService.hotspotEnabled ? "wifi_tethering" : "wifi_tethering_off"
                     active: NetworkService.hotspotEnabled
-                    title: NetworkService.hotspotConfigured ? I18n.tr("Hotspot", "hotspot control label") : I18n.tr("Set up hotspot", "hotspot setup action label")
+                    title: I18n.tr("Hotspot", "hotspot control label")
                     subtitle: {
                         if (warnsWifiDrop)
                             return (NetworkService.hotspotSSID || I18n.tr("Ready", "hotspot ready status")) + " • " + I18n.tr("Will disconnect \"%1\"", "hotspot WiFi disconnection warning").arg(NetworkService.currentWifiSSID);
-                        if (!NetworkService.hotspotConfigured)
-                            return I18n.tr("Set up hotspot in Settings", "unconfigured hotspot status message");
                         if (root.hotspotWorking)
                             return I18n.tr("Starting...", "hotspot activation status");
                         if (NetworkService.hotspotEnabled)
@@ -377,23 +374,20 @@ Item {
                         return NetworkService.hotspotSSID || I18n.tr("Ready", "hotspot ready status");
                     }
                     subtitleColor: warnsWifiDrop ? Theme.warning : Theme.surfaceVariantText
-                    clickable: !NetworkService.hotspotConfigured
-                    showChevron: !NetworkService.hotspotConfigured
-                    onClicked: root.openHotspotSettings()
 
-                    DankSpinner {
+                    DSpinner {
                         anchors.verticalCenter: parent.verticalCenter
                         size: Theme.iconSizeMedium
                         strokeWidth: CcMetrics.spinnerStroke
                         color: Theme.primary
-                        visible: NetworkService.hotspotConfigured && root.hotspotWorking
+                        visible: root.hotspotWorking
                         running: visible
                     }
 
-                    DankToggle {
+                    DToggle {
                         anchors.verticalCenter: parent.verticalCenter
                         hideText: true
-                        visible: NetworkService.hotspotConfigured && !root.hotspotWorking
+                        visible: !root.hotspotWorking
                         checked: NetworkService.hotspotEnabled
                         onToggled: checked => {
                             if (!checked) {
@@ -446,7 +440,6 @@ Item {
 
                         iconName: "lan"
                         active: modelData.isActive
-                        showActiveCheck: true
                         title: modelData.id || I18n.tr("Unknown Config")
                         subtitle: active ? I18n.tr("Connected") : I18n.tr("Available")
                         clickable: true
@@ -456,7 +449,7 @@ Item {
                             NetworkService.connectToSpecificWiredConfig(modelData.uuid);
                         }
 
-                        DankActionButton {
+                        DActionButton {
                             id: wiredOptionsButton
                             anchors.verticalCenter: parent.verticalCenter
                             buttonSize: Theme.buttonHeightXS
@@ -516,7 +509,7 @@ Item {
                         clickable: true
                         onClicked: NetworkService.toggleNetworkConnection("cellular")
 
-                        DankActionButton {
+                        DActionButton {
                             anchors.verticalCenter: parent.verticalCenter
                             buttonSize: Theme.buttonHeightXS
                             iconSize: Theme.iconSizeMedium
@@ -544,7 +537,7 @@ Item {
                         clickable: !active
                         onClicked: NetworkService.connectToSpecificCellularConfig(modelData.uuid)
 
-                        DankActionButton {
+                        DActionButton {
                             anchors.verticalCenter: parent.verticalCenter
                             buttonSize: Theme.buttonHeightXS
                             iconSize: Theme.iconSizeMedium
@@ -618,7 +611,8 @@ Item {
 
             leading: Loader {
                 active: wifiRow.isConnecting
-                sourceComponent: DankSpinner {
+                visible: active
+                sourceComponent: DSpinner {
                     size: Theme.iconSizeMedium
                     strokeWidth: CcMetrics.spinnerStroke
                     color: Theme.warning
@@ -628,7 +622,8 @@ Item {
             Loader {
                 anchors.verticalCenter: parent.verticalCenter
                 active: wifiRow.sharesQrCode
-                sourceComponent: DankActionButton {
+                visible: active
+                sourceComponent: DActionButton {
                     buttonSize: Theme.buttonHeightXS
                     iconSize: Theme.iconSizeMedium
                     iconName: "qr_code"
@@ -644,7 +639,7 @@ Item {
                 onToggled: root.togglePin(wifiRow.modelData.ssid)
             }
 
-            DankActionButton {
+            DActionButton {
                 id: wifiOptionsButton
                 anchors.verticalCenter: parent.verticalCenter
                 buttonSize: Theme.buttonHeightXS
@@ -659,12 +654,12 @@ Item {
 
     CcMenu {
         id: wifiMenu
-        parent: root.menuParent
+        transientSurfaceTracker: root.transientSurfaceTracker
     }
 
     CcMenu {
         id: wiredMenu
-        parent: root.menuParent
+        transientSurfaceTracker: root.transientSurfaceTracker
     }
 
     Loader {

@@ -3,16 +3,16 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Column {
     id: root
 
     property var parentModal: null
-    property string confirmingRemoveId: ""
     property string editingDockId: ""
     property string renameDraft: ""
+    readonly property var dockPages: ["dock_general", "dock_widgets", "dock_appearance"].map(id => SettingsTabs.page(id)).filter(page => page)
 
     function finishRename(value) {
         const id = editingDockId;
@@ -26,18 +26,12 @@ Column {
     }
 
     function addDock() {
-        confirmingRemoveId = "";
         dock.selectedDockId = SettingsData.createDockConfig();
         if (!dock.config?.enabled)
             ToastService.showWarning(I18n.tr("Every edge of this display is already taken"));
     }
 
     function removeDock(id) {
-        if (confirmingRemoveId !== id) {
-            confirmingRemoveId = id;
-            return;
-        }
-        confirmingRemoveId = "";
         SettingsData.removeDockConfig(id);
     }
 
@@ -47,19 +41,15 @@ Column {
     DockSelectionState {
         id: dock
 
-        onSelectedDockIdChanged: {
-            root.editingDockId = "";
-            root.confirmingRemoveId = "";
-        }
+        onSelectedDockIdChanged: root.editingDockId = ""
     }
 
     SettingsCard {
-        width: parent.width
         iconName: "dock_to_bottom"
         title: I18n.tr("Docks", "noun plural, settings card title listing configured docks")
         settingKey: "dockConfiguration"
-        tags: ["dock", "configuration", "add", "remove", "name", "show", "enable"]
-        headerActions: DankButton {
+        tags: ["dock", "configuration", "add", "remove", "show", "enable"]
+        headerActions: DButton {
             text: I18n.tr("Add", "verb, button that adds a new item to a list")
             iconName: "add"
             buttonHeight: Theme.buttonHeightXS
@@ -77,7 +67,6 @@ Column {
                 selected: dock.selectedDockId === modelData.id
                 checked: modelData.enabled
                 deletable: SettingsData.dockConfigs.length > 1
-                confirmingDelete: root.confirmingRemoveId === modelData.id
                 onClicked: dock.selectedDockId = modelData.id
                 onToggled: checked => {
                     dock.selectedDockId = modelData.id;
@@ -86,13 +75,20 @@ Column {
                 onDeleteRequested: root.removeDock(modelData.id)
             }
         }
+    }
+
+    SettingsCard {
+        iconName: "dock_to_bottom"
+        title: dock.config?.name ?? ""
+        settingKey: "dockPlacement"
+        tags: ["dock", "layout", "placement", "position", "edge", "name", "rename"]
+        visible: dock.hasConfig
 
         SettingsRow {
             title: I18n.tr("Name")
             subtitle: root.editingDockId ? "" : dock.config?.name ?? ""
-            visible: dock.hasConfig
 
-            DankActionButton {
+            DActionButton {
                 iconName: root.editingDockId ? "check" : "edit"
                 Accessible.name: root.editingDockId ? I18n.tr("Save") : I18n.tr("Rename")
                 onClicked: {
@@ -104,7 +100,7 @@ Column {
                     root.editingDockId = dock.selectedDockId;
                 }
             }
-            DankActionButton {
+            DActionButton {
                 visible: root.editingDockId !== ""
                 iconName: "close"
                 Accessible.name: I18n.tr("Cancel")
@@ -115,7 +111,7 @@ Column {
                 width: parent.width
                 active: root.editingDockId !== ""
                 visible: active
-                sourceComponent: DankTextField {
+                sourceComponent: DTextField {
                     id: renameField
                     width: parent.width
                     outlined: true
@@ -131,25 +127,33 @@ Column {
                 }
             }
         }
-    }
 
-    SettingsCard {
-        width: parent.width
-        visible: dock.hasConfig
-        iconName: "dock_to_bottom"
-        title: I18n.tr("Layout")
-        settingKey: "dockPlacement"
-        tags: ["dock", "layout", "placement", "position", "edge"]
+        SettingsRow {
+            title: I18n.tr("Layout", "noun, settings section title for arrangement options")
 
-        SettingsLayoutPicker {
-            edgePlacement: true
-            choices: [SettingsData.Position.Top, SettingsData.Position.Bottom, SettingsData.Position.Left, SettingsData.Position.Right].map(position => ({
-                        key: String(position),
-                        label: dock.positionLabel(position),
-                        enabled: dock.positionChoices.includes(position)
-                    }))
-            selectedKey: String(dock.config?.position ?? SettingsData.Position.Bottom)
-            onSelected: key => dock.setEnabled(true, Number(key))
+            body: SettingsLayoutPicker {
+                edgePlacement: true
+                choices: [SettingsData.Position.Top, SettingsData.Position.Bottom, SettingsData.Position.Left, SettingsData.Position.Right].map(position => ({
+                            key: String(position),
+                            label: dock.positionLabel(position),
+                            enabled: dock.positionChoices.includes(position)
+                        }))
+                selectedKey: String(dock.config?.position ?? SettingsData.Position.Bottom)
+                onSelected: key => dock.setEnabled(true, Number(key))
+            }
+        }
+
+        Repeater {
+            model: root.dockPages
+
+            delegate: SettingsNavRow {
+                required property var modelData
+
+                iconName: modelData.icon
+                title: modelData.text
+                hint: modelData.hint ?? ""
+                onClicked: keyboard => root.parentModal?.navigateTo(modelData.id, keyboard)
+            }
         }
     }
 }

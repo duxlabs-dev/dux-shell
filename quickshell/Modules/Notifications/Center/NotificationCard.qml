@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Notifications
 import qs.Modules.Notifications as Notifications
@@ -19,8 +20,12 @@ Item {
     property bool firstInList: true
     property bool lastInList: true
     property bool nested: false
+    property real topRoundness: 0
+    property real bottomRoundness: 0
+    property real contentOpacity: 1
+    property real swipeBleed: 0
     readonly property color cardSurfaceColor: Theme.foregroundColor(nested ? Theme.chipSurface : Theme.cardSurface, Theme.isFloatingWindow(root))
-    readonly property color cardChipColor: nested ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerFocus) : Theme.chipSurface
+    readonly property color cardChipColor: nested ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerFocus) : Theme.foregroundColor(Theme.chipSurface, Theme.isFloatingWindow(root))
     readonly property real expandedTargetHeight: {
         let total = groupHeader.height;
         for (const child of expandedContent.children) {
@@ -35,7 +40,7 @@ Item {
 
     width: parent ? parent.width : NotificationMetrics.popupWidth
     height: targetHeight
-    clip: true
+    clip: isAnimating
 
     function toggleGroup() {
         NotificationService.toggleGroupExpansion(notificationGroup?.key || "");
@@ -48,12 +53,17 @@ Item {
         PopoutService.closeNotificationCenter();
     }
 
-    function openContextMenu(item, x, y) {
+    function openContextMenu(item, notification) {
+        contextActions.notification = notification;
         notificationCardContextMenu.popupAnchorItem = item;
         notificationCardContextMenu.showDropdownMenu();
     }
 
     Component.onDestruction: transientSurfaceTracker?.unregister(root)
+
+    NotificationSwipeGroup {
+        id: rowSwipe
+    }
 
     Connections {
         target: root.transientSurfaceTracker
@@ -84,6 +94,9 @@ Item {
         descriptionExpanded: NotificationService.expandedMessages[(notificationData?.notification?.id || "") + "_desc"] || false
         firstInGroup: root.firstInList
         lastInGroup: root.lastInList
+        topRoundness: root.topRoundness
+        bottomRoundness: root.bottomRoundness
+        contentOpacity: root.contentOpacity
         keyboardSelected: root.keyboardNavigationActive && root.isGroupSelected
         keyboardHints: keyboardSelected
         animateHeight: false
@@ -98,16 +111,15 @@ Item {
             }
             root.invokeAction(contextActions.defaultAction(notificationData));
         }
-        onContextMenuRequested: (x, y) => root.openContextMenu(collapsedCard, x, y)
+        onContextMenuRequested: (x, y) => root.openContextMenu(collapsedCard, collapsedCard.notificationData)
     }
 
     Column {
         id: expandedContent
         objectName: "expandedContent"
-        property int swipingIndex: -1
-        property real swipingOffset: 0
         width: parent.width
         visible: root.expanded
+        opacity: root.contentOpacity
         spacing: Theme.groupedListGap
 
         Rectangle {
@@ -135,7 +147,7 @@ Item {
                 anchors.rightMargin: NotificationMetrics.cardPadding
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.spacingXS
-                DankButton {
+                DButton {
                     anchors.verticalCenter: parent.verticalCenter
                     text: I18n.tr("Dismiss")
                     buttonHeight: NotificationMetrics.controlSize
@@ -144,7 +156,7 @@ Item {
                     textColor: Theme.primary
                     onClicked: NotificationService.dismissGroup(root.notificationGroup?.key || "")
                 }
-                DankButton {
+                DButton {
                     anchors.verticalCenter: parent.verticalCenter
                     text: (root.notificationGroup?.count || 0).toString()
                     iconName: "expand_less"
@@ -165,30 +177,34 @@ Item {
                 values: root.expanded ? (root.notificationGroup?.notifications?.slice(0, NotificationMetrics.expandedLimit) || []) : []
             }
 
-            Item {
+            NotificationSwipeRow {
                 id: row
                 required property var modelData
-                required property int index
-                property real swipeOffset: 0
-                property bool dismissing: false
                 property bool collapsing: false
                 property var notificationToDismiss: null
                 readonly property real targetHeight: collapsing ? 0 : message.targetHeight
-                readonly property bool adjacentToSwipe: expandedContent.swipingIndex !== -1 && Math.abs(index - expandedContent.swipingIndex) === 1
-                readonly property real adjacentSwipeInfluence: adjacentToSwipe ? expandedContent.swipingOffset * NotificationMetrics.adjacentSwipeInfluence : 0
+                group: rowSwipe
+                bleed: root.swipeBleed
                 width: expandedContent.width
                 height: message.height
-                clip: true
+                clip: collapsing
+                onDismissed: {
+                    notificationToDismiss = modelData;
+                    collapseAnimation.start();
+                }
 
                 Notifications.NotificationCard {
                     id: message
                     surfaceColor: root.cardSurfaceColor
                     chipColor: root.cardChipColor
-                    x: row.swipeOffset + row.adjacentSwipeInfluence
+                    x: row.offset
                     width: parent.width
                     notificationData: row.modelData
                     firstInGroup: row.index === 0
                     lastInGroup: row.index === notificationRepeater.count - 1
+                    topRoundness: row.topRoundness
+                    bottomRoundness: row.bottomRoundness
+                    contentOpacity: row.contentOpacity
                     keyboardSelected: root.keyboardNavigationActive && root.selectedNotificationIndex === row.index
                     keyboardHints: keyboardSelected
                     descriptionExpanded: NotificationService.expandedMessages[(notificationData?.notification?.id || "") + "_desc"] || false
@@ -196,57 +212,12 @@ Item {
                     onDismissRequested: NotificationService.dismissNotification(row.modelData)
                     onActionRequested: action => root.invokeAction(action)
                     onBodyClicked: root.invokeAction(contextActions.defaultAction(notificationData))
-                    onContextMenuRequested: (x, y) => root.openContextMenu(message, x, y)
-                    Behavior on x {
-                        enabled: !swipe.active && !row.dismissing && !row.adjacentToSwipe && NotificationMetrics.animationsEnabled
-                        NumberAnimation {
-                            duration: Theme.notificationExitDuration
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: NotificationMetrics.dismissCurve
-                        }
-                    }
+                    onContextMenuRequested: (x, y) => root.openContextMenu(message, row.modelData)
                 }
 
-                DragHandler {
-                    id: swipe
-                    target: null
-                    yAxis.enabled: false
-                    grabPermissions: PointerHandler.CanTakeOverFromItems | PointerHandler.CanTakeOverFromHandlersOfDifferentType
-                    onTranslationChanged: {
-                        if (row.dismissing)
-                            return;
-                        row.swipeOffset = translation.x;
-                        expandedContent.swipingOffset = translation.x;
-                    }
-                    onActiveChanged: {
-                        if (active) {
-                            expandedContent.swipingIndex = row.index;
-                            return;
-                        }
-                        expandedContent.swipingIndex = -1;
-                        expandedContent.swipingOffset = 0;
-                        if (row.dismissing)
-                            return;
-                        if (Math.abs(row.swipeOffset) <= row.width * NotificationMetrics.swipeThreshold) {
-                            row.swipeOffset = 0;
-                            return;
-                        }
-                        row.notificationToDismiss = row.modelData;
-                        row.dismissing = true;
-                        dismissAnimation.start();
-                    }
-                }
                 SequentialAnimation {
-                    id: dismissAnimation
+                    id: collapseAnimation
 
-                    NumberAnimation {
-                        target: row
-                        property: "swipeOffset"
-                        to: row.swipeOffset > 0 ? row.width : -row.width
-                        duration: NotificationMetrics.animationsEnabled ? Theme.notificationExitDuration : 0
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: NotificationMetrics.dismissCurve
-                    }
                     PropertyAction {
                         target: row
                         property: "collapsing"
@@ -276,7 +247,7 @@ Item {
         onAppMuted: NotificationService.dismissGroup(root.notificationGroup?.key || "")
     }
 
-    DankDropdown {
+    DDropdown {
         id: notificationCardContextMenu
         showTrigger: false
         popupWidth: NotificationMetrics.menuWidth

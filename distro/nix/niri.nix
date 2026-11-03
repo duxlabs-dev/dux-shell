@@ -11,8 +11,8 @@ in {
 
   options.programs.dank-material-shell = {
     niri = {
-      enableKeybinds = lib.mkEnableOption "DankMaterialShell niri keybinds";
-      enableSpawn = lib.mkEnableOption "DankMaterialShell niri spawn-at-startup";
+      enableKeybinds = lib.mkEnableOption "Dux Shell niri keybinds";
+      enableSpawn = lib.mkEnableOption "Dux Shell niri spawn-at-startup";
       includes = {
         enable =
           (lib.mkEnableOption "includes for niri-flake")
@@ -42,6 +42,7 @@ in {
           '';
           default = [
             "alttab"
+            "binds-next"
             "binds"
             "colors"
             "cursor"
@@ -86,13 +87,17 @@ in {
             layout { border { on; }; }
           ''
         );
+
+        # binds-next holds DMS defaults, so it goes first and never overrides the user's binds.
+        bindsNext = lib.optional (lib.elem "binds-next" cfg'.filesToInclude) "dms/binds-next";
       in {
         niri-config.target = lib.mkForce "niri/${cfg'.originalFileName}.kdl";
         niri-config-dms = {
           target = "niri/config.kdl";
-          text = lib.pipe cfg'.filesToInclude [
+          text = lib.pipe (lib.remove "binds-next" cfg'.filesToInclude) [
             (map (filename: "dms/${filename}"))
             withOriginalConfig
+            (files: bindsNext ++ files)
             (map (filename: "include optional=true \"${filename}.kdl\""))
             (files: files ++ fixes)
             (builtins.concatStringsSep "\n")
@@ -154,6 +159,11 @@ in {
             "XF86MonBrightnessDown" = {
               allow-when-locked = true;
               action = dms-ipc "brightness" "decrement" "5" "";
+            };
+            "XF86TouchpadToggle" = {
+              allow-when-locked = true;
+              repeat = false;
+              action = spawn "niri" "msg" "action" "toggle-touchpad";
             };
             "Mod+Alt+N" = {
               allow-when-locked = true;

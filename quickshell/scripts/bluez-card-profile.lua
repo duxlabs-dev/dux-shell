@@ -29,32 +29,6 @@ local function profile_available(profile)
   return profile and profile.available ~= "no"
 end
 
-local codec_profile_prefixes = {
-  "^a2dp%-sink%-(.+)$",
-  "^a2dp%-source%-(.+)$",
-  "^headset%-head%-unit%-(.+)$",
-  "^headset%-audio%-gateway%-(.+)$",
-}
-
-local function codec_from_profile(profile)
-  if not profile then
-    return ""
-  end
-  local name = profile.name or ""
-  for _, pattern in ipairs(codec_profile_prefixes) do
-    local codec = name:match(pattern)
-    if codec then
-      return codec:gsub("%-", "_"):upper()
-    end
-  end
-  local desc = profile.description or ""
-  local codec = desc:match("[Cc]odec%s+([%w%+%-%._]+)")
-  if not codec then
-    return ""
-  end
-  return codec:gsub("%-", "_"):upper()
-end
-
 local function handle_device(device)
   if handled then
     return
@@ -77,11 +51,9 @@ local function handle_device(device)
     for p in device:iterate_params("EnumProfile") do
       local profile = cutils.parseParam(p, "EnumProfile")
       if profile_available(profile) then
-        local codec = codec_from_profile(profile)
-        if codec ~= "" then
-          local current = (active_index ~= nil and profile.index == active_index) and "1" or "0"
-          print(string.format("CODEC\t%s\t%s\t%s\t%s", codec, profile.name, profile.description or "", current))
-        end
+        local current = (active_index ~= nil and profile.index == active_index) and "1" or "0"
+        print(string.format("CODEC\t%s\t%s\t%s\t%s",
+          tostring(profile.index), profile.name or "", profile.description or "", current))
       end
     end
     Core.quit()
@@ -89,28 +61,43 @@ local function handle_device(device)
   end
 
   if mode == "set" then
-    if target == "" then
+    local target_index = tonumber(args.index)
+    local target_codec = tostring(args.codec or "")
+    if target == "" and target_index == nil and target_codec == "" then
       fail("missing target")
       return
     end
 
+    -- A stale index must not outrank the profile the UI picked: try the exact
+    -- profile name first, then the codec literal, then the index.
     local target_lower = tostring(target):lower()
     local match = nil
+    local best_rank = 4
     for p in device:iterate_params("EnumProfile") do
       local profile = cutils.parseParam(p, "EnumProfile")
       if profile_available(profile) then
         local pname = profile.name or ""
-        local codec = codec_from_profile(profile):lower()
-        if pname == target or pname:lower() == target_lower or codec == target_lower
-            or codec == target_lower:gsub("%-", "_") then
+        local description = tostring(profile.description or ""):lower()
+        local rank = 4
+        if target ~= "" and (pname == target or pname:lower() == target_lower) then
+          rank = 1
+        elseif target_codec ~= "" and description:find(target_codec:lower(), 1, true) then
+          rank = 2
+        elseif target_index ~= nil and tonumber(profile.index) == target_index then
+          rank = 3
+        end
+        if rank < best_rank then
+          best_rank = rank
           match = profile
-          break
+          if rank == 1 then
+            break
+          end
         end
       end
     end
 
     if not match then
-      fail("profile not found: " .. target)
+      fail("profile not found: " .. (target ~= "" and target or target_codec))
       return
     end
 

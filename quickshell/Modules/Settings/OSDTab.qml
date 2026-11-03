@@ -1,10 +1,100 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.Services
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
     id: root
+
+    property string positionScope: ""
+    readonly property var positionScopes: [
+        {
+            "value": "",
+            "label": I18n.tr("Default"),
+            "shown": true
+        },
+        {
+            "value": "volume",
+            "label": I18n.tr("Volume"),
+            "shown": SettingsData.osdVolumeEnabled
+        },
+        {
+            "value": "mediaVolume",
+            "label": I18n.tr("Media volume"),
+            "shown": SettingsData.osdMediaVolumeEnabled
+        },
+        {
+            "value": "mediaPlayback",
+            "label": I18n.tr("Media playback"),
+            "shown": SettingsData.osdMediaPlaybackEnabled
+        },
+        {
+            "value": "brightness",
+            "label": I18n.tr("Brightness"),
+            "shown": SettingsData.osdBrightnessEnabled
+        },
+        {
+            "value": "idleInhibitor",
+            "label": I18n.tr("Idle inhibitor", "feature that keeps the session from going idle"),
+            "shown": SettingsData.osdIdleInhibitorEnabled
+        },
+        {
+            "value": "mic",
+            "label": I18n.tr("Microphone"),
+            "shown": SettingsData.osdMicMuteEnabled || SettingsData.osdMicVolumeEnabled
+        },
+        {
+            "value": "capsLock",
+            "label": I18n.tr("Caps lock"),
+            "shown": SettingsData.osdCapsLockEnabled
+        },
+        {
+            "value": "numLock",
+            "label": I18n.tr("Num lock", "OSD toggle for the Num Lock indicator"),
+            "shown": SettingsData.osdNumLockEnabled
+        },
+        {
+            "value": "keyboardLayout",
+            "label": I18n.tr("Keyboard layout"),
+            "shown": SettingsData.osdKeyboardLayoutEnabled && KeyboardLayoutService.available
+        },
+        {
+            "value": "inputMethod",
+            "label": I18n.tr("Input method", "OSD toggle for the IME (fcitx5) indicator"),
+            "shown": SettingsData.osdInputMethodEnabled && Fcitx5Service.available
+        },
+        {
+            "value": "touchpad",
+            "label": I18n.tr("Touchpad"),
+            "shown": SettingsData.osdTouchpadEnabled && CompositorService.isNiri
+        },
+        {
+            "value": "powerProfile",
+            "label": I18n.tr("Power profile"),
+            "shown": SettingsData.osdPowerProfileEnabled
+        },
+        {
+            "value": "audioOutput",
+            "label": I18n.tr("Audio output switch"),
+            "shown": SettingsData.osdAudioOutputEnabled
+        },
+        {
+            "value": "workspace",
+            "label": I18n.tr("Workspace Switch", "toggle label for workspace change OSD"),
+            "shown": SettingsData.osdWorkspaceEnabled
+        }
+    ].filter(scope => scope.shown).map(scope => ({
+                "value": scope.value,
+                "label": scope.label,
+                "icon": SettingsData.hasOsdPositionOverride(scope.value) ? "pin_drop" : "",
+                "tooltip": SettingsData.hasOsdPositionOverride(scope.value) ? I18n.tr("Custom") : ""
+            }))
+
+    onPositionScopesChanged: {
+        if (!positionScopes.some(scope => scope.value === positionScope))
+            positionScope = "";
+    }
 
     SettingsPage {
         id: mainColumn
@@ -13,51 +103,37 @@ Item {
             width: parent.width
             settingKey: "osd"
 
-            SettingsDropdownRow {
+            SettingsRow {
+                id: positionRow
+
+                readonly property bool overridden: root.positionScope !== "" && SettingsData.hasOsdPositionOverride(root.positionScope)
+
                 settingKey: "osdPosition"
-                text: I18n.tr("Position")
-                currentValue: {
-                    switch (SettingsData.osdPosition) {
-                    case SettingsData.Position.Top:
-                        return I18n.tr("Top Right", "screen position option");
-                    case SettingsData.Position.Left:
-                        return I18n.tr("Top Left", "screen position option");
-                    case SettingsData.Position.TopCenter:
-                        return I18n.tr("Top Center", "screen position option");
-                    case SettingsData.Position.Right:
-                        return I18n.tr("Bottom Right", "screen position option");
-                    case SettingsData.Position.Bottom:
-                        return I18n.tr("Bottom Left", "screen position option");
-                    case SettingsData.Position.BottomCenter:
-                        return I18n.tr("Bottom Center", "screen position option");
-                    case SettingsData.Position.LeftCenter:
-                        return I18n.tr("Left Center", "screen position option");
-                    case SettingsData.Position.RightCenter:
-                        return I18n.tr("Right Center", "screen position option");
-                    default:
-                        return I18n.tr("Bottom Center", "screen position option");
-                    }
+                title: I18n.tr("Position")
+                subtitle: {
+                    const label = positionPicker.labelFor(SettingsData.osdPositionFor(root.positionScope));
+                    return root.positionScope !== "" && !overridden ? I18n.tr("Default") + " · " + label : label;
                 }
-                options: [I18n.tr("Top Right", "screen position option"), I18n.tr("Top Left", "screen position option"), I18n.tr("Top Center", "screen position option"), I18n.tr("Bottom Right", "screen position option"), I18n.tr("Bottom Left", "screen position option"), I18n.tr("Bottom Center", "screen position option"), I18n.tr("Left Center", "screen position option"), I18n.tr("Right Center", "screen position option")]
-                onValueChanged: value => {
-                    if (value === I18n.tr("Top Right", "screen position option")) {
-                        SettingsData.set("osdPosition", SettingsData.Position.Top);
-                    } else if (value === I18n.tr("Top Left", "screen position option")) {
-                        SettingsData.set("osdPosition", SettingsData.Position.Left);
-                    } else if (value === I18n.tr("Top Center", "screen position option")) {
-                        SettingsData.set("osdPosition", SettingsData.Position.TopCenter);
-                    } else if (value === I18n.tr("Bottom Right", "screen position option")) {
-                        SettingsData.set("osdPosition", SettingsData.Position.Right);
-                    } else if (value === I18n.tr("Bottom Left", "screen position option")) {
-                        SettingsData.set("osdPosition", SettingsData.Position.Bottom);
-                    } else if (value === I18n.tr("Bottom Center", "screen position option")) {
-                        SettingsData.set("osdPosition", SettingsData.Position.BottomCenter);
-                    } else if (value === I18n.tr("Left Center", "screen position option")) {
-                        SettingsData.set("osdPosition", SettingsData.Position.LeftCenter);
-                    } else if (value === I18n.tr("Right Center", "screen position option")) {
-                        SettingsData.set("osdPosition", SettingsData.Position.RightCenter);
+                modified: root.positionScope === "" ? !SettingsData.isDefault(["osdPosition"]) : overridden
+                resetByKeys: false
+                onResetRequested: SettingsData.resetOsdPosition(root.positionScope)
+
+                body: [
+                    DFilterChips {
+                        model: root.positionScopes
+                        Binding on currentIndex {
+                            value: Math.max(0, root.positionScopes.findIndex(scope => scope.value === root.positionScope))
+                            restoreMode: Binding.RestoreNone
+                        }
+                        showCounts: false
+                        onSelectionChanged: index => root.positionScope = root.positionScopes[index].value
+                    },
+                    SettingsScreenPositionPicker {
+                        id: positionPicker
+                        selected: SettingsData.osdPositionFor(root.positionScope)
+                        onPicked: position => SettingsData.setOsdPosition(root.positionScope, position)
                     }
-                }
+                ]
             }
 
             SettingsToggleRow {
@@ -127,6 +203,37 @@ Item {
                 text: I18n.tr("Caps lock")
                 checked: SettingsData.osdCapsLockEnabled
                 onToggled: checked => SettingsData.set("osdCapsLockEnabled", checked)
+            }
+
+            SettingsToggleRow {
+                settingKey: "osdNumLockEnabled"
+                text: I18n.tr("Num lock", "OSD toggle for the Num Lock indicator")
+                checked: SettingsData.osdNumLockEnabled
+                onToggled: checked => SettingsData.set("osdNumLockEnabled", checked)
+            }
+
+            SettingsToggleRow {
+                settingKey: "osdKeyboardLayoutEnabled"
+                visible: KeyboardLayoutService.available
+                text: I18n.tr("Keyboard layout")
+                checked: SettingsData.osdKeyboardLayoutEnabled
+                onToggled: checked => SettingsData.set("osdKeyboardLayoutEnabled", checked)
+            }
+
+            SettingsToggleRow {
+                settingKey: "osdInputMethodEnabled"
+                visible: Fcitx5Service.available
+                text: I18n.tr("Input method", "OSD toggle for the IME (fcitx5) indicator")
+                checked: SettingsData.osdInputMethodEnabled
+                onToggled: checked => SettingsData.set("osdInputMethodEnabled", checked)
+            }
+
+            SettingsToggleRow {
+                settingKey: "osdTouchpadEnabled"
+                visible: CompositorService.isNiri
+                text: I18n.tr("Touchpad")
+                checked: SettingsData.osdTouchpadEnabled
+                onToggled: checked => SettingsData.set("osdTouchpadEnabled", checked)
             }
 
             SettingsToggleRow {

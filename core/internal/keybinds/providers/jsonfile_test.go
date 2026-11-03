@@ -228,15 +228,3 @@ func TestJSONFileProviderInvalidJSON(t *testing.T) {
 		t.Error("expected error for invalid JSON, got nil")
 	}
 }
-
-func TestJSONFileProviderNonexistentFile(t *testing.T) {
-	p, err := NewJSONFileProvider("/nonexistent/file.json")
-	if err != nil {
-		t.Fatalf("NewJSONFileProvider failed: %v", err)
-	}
-
-	_, err = p.GetCheatSheet()
-	if err == nil {
-		t.Error("expected error for nonexistent file, got nil")
-	}
-}

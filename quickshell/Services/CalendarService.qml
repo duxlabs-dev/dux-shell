@@ -56,12 +56,14 @@ Singleton {
 
     CalendarKhalBackend {
         id: khalBackend
+        enabled: root.backendPref !== "dankcal"
         onEventsByDateChanged: root.mergeEvents()
     }
 
     CalendarDankBackend {
         id: dankBackend
         enabled: root.backendPref === "dankcal" || root.backendPref === "auto"
+        preferred: root.backendPref === "dankcal"
         onEventsByDateChanged: root.mergeEvents()
         onTasksByDateChanged: root.mergeEvents()
         onConnectedChanged: {

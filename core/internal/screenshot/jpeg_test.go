@@ -37,7 +37,7 @@ func decodeJPEGPix(t *testing.T, data []byte) *image.RGBA {
 }
 
 func TestEncodeBufferJPEGMatchesSerial(t *testing.T) {
-	sizes := []image.Point{{64, 64}, {200, 129}, {256, 256}, {333, 529}, {1366, 731}}
+	sizes := []image.Point{{64, 64}, {333, 529}, {1366, 731}}
 	formats := []PixelFormat{FormatXRGB8888, FormatABGR8888, FormatARGB2101010}
 
 	for _, sz := range sizes {

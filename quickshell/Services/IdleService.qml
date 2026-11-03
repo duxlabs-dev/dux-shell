@@ -24,8 +24,6 @@ Singleton {
     readonly property int postLockMonitorTimeout: isOnBattery ? SettingsData.batteryPostLockMonitorTimeout : SettingsData.acPostLockMonitorTimeout
     readonly property bool postLockMonitorActive: isShellLocked && postLockMonitorTimeout > 0
 
-    readonly property bool mediaPlaying: MprisController.activePlayer !== null && MprisController.activePlayer.isPlaying
-
     onEnabledChanged: _applyMonitorEnableds()
     onPostLockMonitorActiveChanged: _applyMonitorEnableds()
     onMonitorTimeoutChanged: _rearmIdleMonitors()
@@ -67,7 +65,14 @@ Singleton {
     property var lockComponent: null
     property bool monitorsOff: false
     property bool isShellLocked: false
+    property bool isSessionLockSecure: false
     property bool lockPowerOffRequested: false
+    property bool sleepBlocked: false
+
+    function _updateSleepBlocked(blockInhibited) {
+        if (typeof blockInhibited === "string")
+            sleepBlocked = blockInhibited.split(":").includes("sleep");
+    }
 
     function reapplyDpmsIfNeeded() {
         if (monitorsOff)
@@ -148,14 +153,13 @@ Singleton {
         }
     }
 
-    // Wakes monitors powered off by the "power off monitors on lock" path.
-    // Lock.qml's own wake handlers sit outside the session-lock surface and
-    // never receive input, so wake on input via seat-level idle-notify instead.
+    // Rearming the timeout monitors while idle resets their isIdle without a wake
+    // transition, so this listener, never rearmed, catches input while outputs are off.
     IdleMonitor {
-        id: lockWakeMonitor
+        id: wakeMonitor
         timeout: 1
         respectInhibitors: false
-        enabled: root.enabled && root.isShellLocked && root.monitorsOff && (SettingsData.lockScreenPowerOffMonitorsOnLock || root.lockPowerOffRequested)
+        enabled: root.enabled && root.monitorsOff
         onIsIdleChanged: {
             if (!enabled)
                 return;
@@ -169,6 +173,22 @@ Singleton {
 
         function onIdleInhibitedChanged() {
             root._rearmIdleMonitors();
+        }
+    }
+
+    Connections {
+        target: DMSService
+
+        function onCapabilitiesReceived() {
+            if (!DMSService.capabilities.includes("dbus"))
+                return;
+            DMSService.dbusSubscribe("system", "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.DBus.Properties", "PropertiesChanged");
+            DMSService.dbusGetProperty("system", "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", "BlockInhibited", r => root._updateSleepBlocked(r.result?.value));
+        }
+
+        function onDbusSignalReceived(subscriptionId, data) {
+            if (data.path === "/org/freedesktop/login1")
+                root._updateSleepBlocked(data.body?.[1]?.BlockInhibited);
         }
     }
 
@@ -197,6 +217,14 @@ Singleton {
             log.info("External idle inhibit released");
         }
         _rearmIdleMonitors();
+    }
+
+    onSleepBlockedChanged: {
+        log.info(sleepBlocked ? "Sleep blocked by logind inhibitor" : "Sleep inhibitor released");
+        if (sleepBlocked || !suspendMonitor.enabled || !suspendMonitor.isIdle)
+            return;
+        log.info("Sleep inhibitor released while idle, retrying suspend");
+        requestSuspend();
     }
 
     Component.onCompleted: _applyMonitorEnableds()

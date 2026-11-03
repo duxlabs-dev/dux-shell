@@ -18,8 +18,6 @@ Column {
         settingKey: "barWidgetTray"
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["trayUseInlineExpansion"]
             text: I18n.tr("Use inline expansion")
             description: I18n.tr("Hidden icons expand in place instead of in a popup", "system tray inline expansion toggle description")
             checked: root.inlineExpansion
@@ -27,8 +25,6 @@ Column {
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["trayPopupSingleLine"]
             text: I18n.tr("Single-line popup")
             enabled: !root.inlineExpansion
             checked: root.page.value("trayPopupSingleLine")
@@ -36,8 +32,6 @@ Column {
         }
 
         SettingsToggleRow {
-            resetStore: root.page
-            resetKeys: ["trayAutoOverflow"]
             text: I18n.tr("Auto overflow")
             checked: root.autoOverflow
             onToggled: checked => root.page.set("trayAutoOverflow", checked)

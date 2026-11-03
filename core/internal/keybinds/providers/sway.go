@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/keybinds"
+	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds"
 )
 
 type SwayProvider struct {
@@ -58,24 +58,34 @@ func (s *SwayProvider) Name() string {
 }
 
 func (s *SwayProvider) GetCheatSheet() (*keybinds.CheatSheet, error) {
-	section, err := ParseSwayKeys(s.configPath)
-	if err != nil {
+	parser := NewSwayParser()
+	if err := parser.ReadContent(s.configPath); err != nil {
 		return nil, fmt.Errorf("failed to parse sway config: %w", err)
 	}
 
 	categorizedBinds := make(map[string][]keybinds.Keybind)
-	s.convertSection(section, "", categorizedBinds)
+	s.convertSection(parser.ParseKeys(), "", categorizedBinds)
 
 	cheatSheetTitle := "Sway Keybinds"
 	if s != nil && s.isScroll {
 		cheatSheetTitle = "Scroll Keybinds"
 	}
 
-	return &keybinds.CheatSheet{
+	sheet := &keybinds.CheatSheet{
 		Title:    cheatSheetTitle,
 		Provider: s.Name(),
 		Binds:    categorizedBinds,
-	}, nil
+	}
+	sheet.SetMod(keybinds.ConfiguredModKey("", parser.ModVariable()))
+	return sheet, nil
+}
+
+func (s *SwayProvider) ModKey() keybinds.ModKey {
+	parser := NewSwayParser()
+	if err := parser.ReadContent(s.configPath); err != nil {
+		return keybinds.DefaultModKey()
+	}
+	return keybinds.ConfiguredModKey("", parser.ModVariable())
 }
 
 func (s *SwayProvider) convertSection(section *SwaySection, subcategory string, categorizedBinds map[string][]keybinds.Keybind) {
@@ -144,7 +154,9 @@ func (s *SwayProvider) convertKeybind(kb *SwayKeyBinding, subcategory string) ke
 
 func (s *SwayProvider) formatKey(kb *SwayKeyBinding) string {
 	parts := make([]string, 0, len(kb.Mods)+1)
-	parts = append(parts, kb.Mods...)
+	for _, mod := range kb.Mods {
+		parts = append(parts, keybinds.CanonicalModifier(mod))
+	}
 	parts = append(parts, kb.Key)
 	return strings.Join(parts, "+")
 }

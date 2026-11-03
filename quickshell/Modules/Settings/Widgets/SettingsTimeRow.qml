@@ -3,13 +3,15 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Window
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Item {
     id: root
 
     readonly property bool isSettingsRow: true
     readonly property bool transparentSlot: true
+    readonly property bool inGroup: parent?.isSettingsGroupHost ?? false
+    readonly property bool isFirstInGroup: inGroup ? parent.isEdge(root, true) : true
 
     property string startTitle: ""
     property int startHour: 7
@@ -48,6 +50,15 @@ Item {
     width: parent?.width ?? 0
     height: halves.implicitHeight
 
+    Rectangle {
+        x: SettingsMetrics.rowPaddingH
+        z: 1
+        width: parent.width - SettingsMetrics.rowPaddingH * 2
+        height: Theme.dividerWidth
+        visible: SettingsMetrics.continuousGroups && root.inGroup && !root.isFirstInGroup
+        color: SettingsMetrics.groupDividerColor
+    }
+
     Row {
         id: halves
         width: parent.width
@@ -62,6 +73,8 @@ Item {
 
                 width: root.showEnd ? (root.width - Theme.groupedListGap) / 2 : root.width
                 paintBackground: true
+                inGroup: root.inGroup
+                dividerBefore: false
                 topRadius: Theme.groupedListOuterRadius
                 bottomRadius: Theme.groupedListOuterRadius
                 title: isStart ? root.startTitle : root.endTitle
@@ -71,7 +84,7 @@ Item {
                 enabled: root.enabled
                 onClicked: root.edit(isStart)
 
-                DankIcon {
+                DIcon {
                     name: "schedule"
                     size: Theme.iconSize
                     color: Theme.surfaceVariantText
@@ -85,7 +98,7 @@ Item {
         id: pickerLoader
         active: false
 
-        sourceComponent: DankTimePicker {
+        sourceComponent: DTimePicker {
             parent: root.Window.contentItem
             is24Hour: root.is24Hour
             onAccepted: (hour, minute) => {

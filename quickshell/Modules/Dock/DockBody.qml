@@ -4,8 +4,8 @@ import qs.Common
 import qs.Services
 import qs.Widgets
 import qs.Modules.SurfaceWidgets
-import qs.Modules.DankBar
-import qs.Modules.DankBar.Widgets as BarWidgets
+import qs.Modules.DBar
+import qs.Modules.DBar.Widgets as BarWidgets
 import qs.Modules.ControlCenter.Widgets
 import "../../Common/settings/DockConfig.js" as DockConfig
 
@@ -216,7 +216,6 @@ FocusScope {
     readonly property real adjacentLeftBarWidth: !isVertical && !autoHide ? ShellLayout.dockAdjacentThickness(screen, "left") : 0
 
     readonly property real dockMargin: dock.config.margin
-    readonly property bool effectiveBlurEnabled: Theme.connectedSurfaceBlurEnabled
     readonly property real effectiveDockMargin: dockGeometry.effectiveMargin
     readonly property real joinedEdgeMargin: dockGeometry.joinedEdgeMargin
     readonly property real _dpr: (dock.screen && dock.screen.devicePixelRatio) ? dock.screen.devicePixelRatio : 1
@@ -263,9 +262,10 @@ FocusScope {
     readonly property rect surfaceBounds: Qt.rect(_dockWindowOriginX() + dockBackground.x + dockContainer.x + dockMouseArea.x + dockCore.x + dockSlide.x, _dockWindowOriginY() + dockBackground.y + dockContainer.y + dockMouseArea.y + dockCore.y + dockSlide.y, dockBackground.width, dockBackground.height)
 
     function _syncDockChromeState() {
-        if (dockLease.dockId !== dock.config.id) {
+        const currentDockId = dock.config?.id ?? "";
+        if (dockLease.dockId !== currentDockId) {
             dockLease.release();
-            dockLease.dockId = dock.config.id;
+            dockLease.dockId = currentDockId;
         }
         const presented = dock.geometryReady && (hostWindow?.visible ?? true) && (dock.reveal || slideXSpring.running || slideYSpring.running) && dock.hasApps;
         const phase = !presented ? "hidden" : ((!dock.reveal && (slideXSpring.running || slideYSpring.running)) ? "closing" : ((slideXSpring.running || slideYSpring.running) ? "opening" : "open"));
@@ -311,7 +311,7 @@ FocusScope {
 
     ConnectedSurfaceLease {
         id: dockLease
-        property string dockId: ""
+        property string dockId: dock.config?.id ?? ""
         property bool superseded: false
         claimPrefix: "dock"
         slot: ConnectedModeState.surfaceSlot("dock", dockId)
@@ -578,9 +578,10 @@ FocusScope {
 
     readonly property var hoveredButton: widgetStrip.hoveredButton
 
-    DankTooltip {
+    DTooltip {
         id: dockTooltip
         targetScreen: dock.screen
+        persistent: dock.config.enabled && (dock.hostWindow?.visible ?? false) && !dock.fullscreenOnScreen
     }
 
     Timer {
@@ -627,7 +628,7 @@ FocusScope {
 
     Rectangle {
         anchors.fill: parent
-        color: Theme.withAlpha(Theme.scrimColor, Theme.scrimAlpha)
+        color: Theme.withAlpha(Theme.backdropColor, Theme.scrimAlpha)
         opacity: dock.editMode ? 1 : 0
         visible: opacity > 0
 
@@ -767,11 +768,12 @@ FocusScope {
                     x: !dock.isVertical ? Math.round((parent.width - width + dock.primaryStartInset - dock.primaryEndInset) / 2) : (dock.config.position === SettingsData.Position.Right ? parent.width - width - dockGeometry.bodyEdgeMargin : dockGeometry.bodyEdgeMargin)
                     y: dock.isVertical ? Math.round((parent.height - height + dock.primaryStartInset - dock.primaryEndInset) / 2) : (dock.config.position === SettingsData.Position.Bottom ? parent.height - height - dockGeometry.bodyEdgeMargin : dockGeometry.bodyEdgeMargin)
 
-                    readonly property real targetPrimary: dock.config.mode === "taskbar" ? dock.availablePrimary : Math.min(widgetStrip.preferredLength + dock.config.spacing * 2, dock.availablePrimary)
+                    readonly property real targetPrimary: dock.config.mode === "taskbar" ? dock.availablePrimary : Math.min(widgetStrip.restLength + dock.config.spacing * 2, dock.availablePrimary)
                     readonly property real targetWidth: dock.isVertical ? dock.effectiveBarThickness + dock.expansionExtent : targetPrimary
                     readonly property real targetHeight: dock.isVertical ? targetPrimary : dock.effectiveBarThickness + dock.expansionExtent
-                    implicitWidth: surfaceMotion.currentWidth
-                    implicitHeight: surfaceMotion.currentHeight
+                    // Magnification expansion bypasses the spring so icons and background stay in sync
+                    implicitWidth: surfaceMotion.currentWidth + (dock.isVertical ? 0 : widgetStrip.totalMagnificationExpansion)
+                    implicitHeight: surfaceMotion.currentHeight + (dock.isVertical ? widgetStrip.totalMagnificationExpansion : 0)
                     width: implicitWidth
                     height: implicitHeight
 
@@ -859,6 +861,7 @@ FocusScope {
                             isInOverflow: false
                         }) : item), dock.config.order)
                     availableSize: dock.isVertical ? height : width
+                    expansionLimit: Math.max(0, dock.availablePrimary - widgetStrip.restLength - dock.config.spacing * 2)
                     fillAvailable: dock.config.mode === "taskbar"
                     align: dock.config.mode === "taskbar" ? dock.config.taskbarAlign : "start"
                     onReorderRequested: (from, to) => dock.reorderUnits(from, to)
@@ -908,7 +911,7 @@ FocusScope {
                     text: variant.name,
                     icon: variant.icon
                 }));
-        return BarWidgetCatalog.widgets.concat(plugins).filter(widget => widget.id !== "appsDock" || !hasApps);
+        return BarWidgetCatalog.widgets.concat(plugins).filter(widget => !widget.barOnly && (widget.id !== "appsDock" || !hasApps));
     }
 
     MouseArea {

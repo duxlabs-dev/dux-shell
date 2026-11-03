@@ -2,10 +2,10 @@ import QtQuick
 import Quickshell.Io
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import "../Common/PamStack.js" as PamStack
 
-DankDialog {
+DDialog {
     id: root
 
     property var currentFlow: PolkitService.agent?.flow
@@ -84,7 +84,6 @@ DankDialog {
             }
             root.awaitingFprintForPassword = false;
             root.isLoading = false;
-            root.passwordInput = "";
             passwordField.forceActiveFocus();
         }
 
@@ -146,7 +145,7 @@ DankDialog {
         visible: text !== ""
     }
 
-    DankTextField {
+    DTextField {
         id: passwordField
 
         width: parent.width
@@ -156,9 +155,6 @@ DankDialog {
         isError: PolkitService.authFailed
         supportingText: isError ? I18n.tr("Authentication failed - try again") : ""
         leftIconName: root.polkitPamHasFprint ? "fingerprint" : "lock"
-        leftIconSize: Theme.iconSizeSmall
-        leftIconColor: Theme.primary
-        leftIconFocusedColor: Theme.primary
         font.pixelSize: Theme.fontSizeMedium
         textColor: Theme.surfaceText
         text: root.passwordInput
@@ -171,7 +167,7 @@ DankDialog {
     }
 
     actions: [
-        DankButton {
+        DButton {
             maximumWidth: root.actionWidth
             wrapText: true
             text: I18n.tr("Cancel")
@@ -179,7 +175,7 @@ DankDialog {
             textColor: Theme.primary
             onClicked: root.cancelAuth()
         },
-        DankButton {
+        DButton {
             maximumWidth: root.actionWidth
             wrapText: true
             text: I18n.tr("Authenticate", "verb, polkit password dialog submit button")

@@ -81,8 +81,8 @@ jobs:
           if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
             echo "::error::tag ${TAG} already exists"; exit 1
           fi
-          git config user.name "dms-ci[bot]"
-          git config user.email "dms-ci[bot]@users.noreply.github.com"
+          git config user.name "dux-ci[bot]"
+          git config user.email "344434142+dux-ci[bot]@users.noreply.github.com"
 
           echo "${TAG}" > quickshell/VERSION
           git add quickshell/VERSION
@@ -103,5 +103,5 @@ jobs:
           {
             echo "## ${{ steps.derive.outputs.tag }} tagged on ${{ steps.derive.outputs.branch }} — Release workflow dispatched"
             echo ""
-            echo "Distro builds are manual: run the per-distro workflows (COPR/OBS/PPA/XBPS) once the release is published."
+            echo "Distro builds (COPR/OBS/PPA/XBPS) are dispatched by the Release workflow once the release is published."
           } >> "$GITHUB_STEP_SUMMARY"

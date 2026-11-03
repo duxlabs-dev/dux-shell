@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 ListSetting {
     id: root
@@ -36,7 +36,7 @@ ListSetting {
             Repeater {
                 model: root.fields
 
-                DankTextField {
+                DTextField {
                     width: modelData.width || 200
                     placeholderText: modelData.placeholder || ""
 
@@ -46,7 +46,7 @@ ListSetting {
                 }
             }
 
-            DankButton {
+            DButton {
                 id: addButton
                 width: 50
                 height: 36

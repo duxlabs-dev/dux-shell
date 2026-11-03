@@ -24,6 +24,11 @@ type PluginInfo struct {
 	Status       []string `json:"status,omitempty"`
 	IssueURL     string   `json:"issueUrl,omitempty"`
 	Similar      []string `json:"similar,omitempty"`
+	Version      string   `json:"version,omitempty"`
+	Icon         string   `json:"icon,omitempty"`
+	Permissions  []string `json:"permissions,omitempty"`
+	CreatedAt    string   `json:"created_at,omitempty"`
+	UpdatedAt    string   `json:"updated_at,omitempty"`
 }
 
 type SuccessResult struct {

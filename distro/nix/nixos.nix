@@ -34,7 +34,7 @@ in
   };
   config = lib.mkIf cfg.enable {
     systemd.user.services.dms = lib.mkIf cfg.systemd.enable {
-      description = "DankMaterialShell";
+      description = "Dux Shell";
       path = lib.mkForce [ ];
 
       partOf = [ cfg.systemd.target ];
@@ -43,6 +43,10 @@ in
       restartIfChanged = cfg.systemd.restartIfChanged;
 
       serviceConfig = {
+        Type = "notify";
+        BusName = "org.freedesktop.Notifications";
+        NotifyAccess = "main";
+        Environment = [ "QS_DISABLE_CRASH_HANDLER=1" ];
         ExecStart = lib.getExe cfg.package + " run --session";
         Restart = "on-failure";
         RestartForceExitStatus = "TEMPFAIL";

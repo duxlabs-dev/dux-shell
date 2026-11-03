@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
@@ -29,7 +29,8 @@ Item {
     }
 
     function _dayNames() {
-        return Array(7).fill(0).map((_, i) => new Date(Date.UTC(2026, 2, 1 + i, 0, 0, 0)).toLocaleDateString(I18n.locale(), "dddd")).map(d => d[0].toUpperCase() + d.slice(1));
+        // Local noon on Sunday 1 March 2026 onwards; a UTC midnight is the day before west of UTC.
+        return Array(7).fill(0).map((_, i) => new Date(2026, 2, 1 + i, 12, 0, 0).toLocaleDateString(I18n.locale(), "dddd")).map(d => d[0].toUpperCase() + d.slice(1));
     }
 
     SettingsPage {
@@ -91,6 +92,16 @@ Item {
                 text: I18n.tr("Leading zero on hours")
                 checked: SettingsData.padHours12Hour
                 onToggled: checked => SettingsData.set("padHours12Hour", checked)
+            }
+
+            SettingsToggleRow {
+                enabled: !SettingsData.use24HourClock
+                tab: "time"
+                tags: ["time", "12hour", "format", "am", "pm", "meridiem"]
+                settingKey: "showAmPm"
+                text: I18n.tr("Show AM/PM")
+                checked: SettingsData.showAmPm
+                onToggled: checked => SettingsData.set("showAmPm", checked)
             }
         }
 
@@ -195,13 +206,11 @@ Item {
                 }
             }
 
-            DankTextField {
+            DTextField {
                 id: customFormatInput
                 outlined: true
                 leftIconName: "calendar_today"
                 labelText: I18n.tr("Format")
-                width: parent.width - Theme.spacingM * 2
-                x: Theme.spacingM
                 visible: root.editingBarFormat || root.isCustomFormat(SettingsData.clockDateFormat)
                 placeholderText: I18n.tr("Enter custom top bar format (e.g., ddd MMM d)")
                 text: SettingsData.clockDateFormat
@@ -276,13 +285,11 @@ Item {
                 }
             }
 
-            DankTextField {
+            DTextField {
                 id: customLockFormatInput
                 outlined: true
                 leftIconName: "calendar_today"
                 labelText: I18n.tr("Format")
-                width: parent.width - Theme.spacingM * 2
-                x: Theme.spacingM
                 visible: root.editingLockFormat || root.isCustomFormat(SettingsData.lockDateFormat)
                 placeholderText: I18n.tr("Enter custom lock screen format (e.g., dddd, MMMM d)")
                 text: SettingsData.lockDateFormat
@@ -294,92 +301,80 @@ Item {
 
             SettingsRow {
                 visible: customFormatInput.visible || customLockFormatInput.visible
-                body: Rectangle {
-                    width: parent.width - Theme.spacingM * 2
-                    x: Theme.spacingM
-                    height: formatHelp.implicitHeight + Theme.spacingM * 2
-                    radius: Theme.cornerRadius
-                    color: Theme.floatingWindowNestedSurface
-                    border.color: Theme.outlineMedium
-                    border.width: Theme.layerOutlineWidth
+                body: Column {
+                    width: parent.width
+                    spacing: Theme.spacingXS
 
-                    Column {
-                        id: formatHelp
-                        anchors.fill: parent
-                        anchors.margins: Theme.spacingM
-                        spacing: Theme.spacingXS
+                    StyledText {
+                        text: I18n.tr("Format legend")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.primary
+                        font.weight: Theme.fontWeightMedium
+                    }
 
-                        StyledText {
-                            text: I18n.tr("Format legend")
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.primary
-                            font.weight: Theme.fontWeightMedium
+                    Row {
+                        width: parent.width
+                        spacing: Theme.spacingL
+
+                        Column {
+                            width: (parent.width - Theme.spacingL) / 2
+                            spacing: Theme.spacingXXS
+
+                            StyledText {
+                                text: I18n.tr("• d - Day (1-31)")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                            }
+                            StyledText {
+                                text: I18n.tr("• dd - Day (01-31)")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                            }
+                            StyledText {
+                                text: I18n.tr("• ddd - Day name (Mon)")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                            }
+                            StyledText {
+                                text: I18n.tr("• dddd - Day name (Monday)")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                            }
+                            StyledText {
+                                text: I18n.tr("• M - Month (1-12)")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                            }
                         }
 
-                        Row {
-                            width: parent.width
-                            spacing: Theme.spacingL
+                        Column {
+                            width: (parent.width - Theme.spacingL) / 2
+                            spacing: Theme.spacingXXS
 
-                            Column {
-                                width: (parent.width - Theme.spacingL) / 2
-                                spacing: Theme.spacingXXS
-
-                                StyledText {
-                                    text: I18n.tr("• d - Day (1-31)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• dd - Day (01-31)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• ddd - Day name (Mon)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• dddd - Day name (Monday)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• M - Month (1-12)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
+                            StyledText {
+                                text: I18n.tr("• MM - Month (01-12)")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
                             }
-
-                            Column {
-                                width: (parent.width - Theme.spacingL) / 2
-                                spacing: Theme.spacingXXS
-
-                                StyledText {
-                                    text: I18n.tr("• MM - Month (01-12)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• MMM - Month (Jan)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• MMMM - Month (January)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• yy - Year (24)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• yyyy - Year (2024)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
+                            StyledText {
+                                text: I18n.tr("• MMM - Month (Jan)")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                            }
+                            StyledText {
+                                text: I18n.tr("• MMMM - Month (January)")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                            }
+                            StyledText {
+                                text: I18n.tr("• yy - Year (24)")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                            }
+                            StyledText {
+                                text: I18n.tr("• yyyy - Year (2024)")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
                             }
                         }
                     }
@@ -400,7 +395,7 @@ Item {
                 settingKey: "calendarBackend"
                 text: I18n.tr("Calendar backend")
                 readonly property var _backendValues: ["auto", "khal", "dankcal"]
-                readonly property var _backendLabels: [I18n.tr("Auto", "calendar backend option"), I18n.tr("khal", "calendar backend option"), I18n.tr("DankCalendar", "calendar backend option")]
+                readonly property var _backendLabels: [I18n.tr("Auto", "calendar backend option"), I18n.tr("khal", "calendar backend option"), I18n.tr("Dux Calendar", "calendar backend option")]
                 options: _backendLabels
                 currentValue: _backendLabels[Math.max(0, _backendValues.indexOf(SettingsData.calendarBackend))]
                 onValueChanged: value => {
@@ -438,7 +433,7 @@ Item {
                 tags: ["weather", "location", "units"]
                 title: I18n.tr("Weather")
                 iconName: "partly_cloudy_day"
-                onClicked: root.parentModal?.navigateTo("weather")
+                onClicked: keyboard => root.parentModal?.navigateTo("weather", keyboard)
             }
         }
     }

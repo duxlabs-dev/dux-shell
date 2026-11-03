@@ -11,9 +11,17 @@ Singleton {
     signal modalChanged
 
     property var currentModalsByScreen: ({})
+    property var _stackedModals: []
+
+    // Frame-painted chrome sits under every Top-layer window, so a surface opened over one must paint its own.
+    function hasStackedModal(screenName) {
+        return _stackedModals.some(modal => modal.shouldBeVisible && !modal.useOverlayLayer && modal.effectiveScreen?.name === screenName);
+    }
 
     function openModal(modal) {
         PopoutManager.screenshotActive = false;
+        if (modal.allowStacking)
+            _stackedModals = _stackedModals.filter(other => other !== modal && other.shouldBeVisible).concat([modal]);
         const screenName = modal.effectiveScreen?.name ?? "unknown";
         var next = {};
         for (var k in currentModalsByScreen)
@@ -36,6 +44,7 @@ Singleton {
     }
 
     function closeModal(modal) {
+        _stackedModals = _stackedModals.filter(other => other !== modal);
         const screenName = modal.effectiveScreen?.name ?? "unknown";
         if (currentModalsByScreen[screenName] === modal) {
             var next = {};

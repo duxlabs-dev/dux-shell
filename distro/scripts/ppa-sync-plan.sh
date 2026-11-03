@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-PPA_OWNER="avengemedia"
+PPA_OWNER="${PPA_OWNER:-duxlabs}"
 LAUNCHPAD_API="https://api.launchpad.net/1.0"
 SERIES_LIST=(resolute stonking)
 PACKAGE_FILTER="dms-git"
@@ -37,7 +37,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 latest_tag() {
-    git ls-remote --tags --refs --sort='-v:refname' https://github.com/AvengeMedia/DankMaterialShell.git |
+    git ls-remote --tags --refs --sort='-v:refname' https://github.com/duxlabs-dev/dux-shell.git |
         sed -n '1s|.*/v\{0,1\}||p'
 }
 
@@ -100,7 +100,7 @@ include_package() {
     [[ "$PACKAGE_FILTER" == "all" || "$PACKAGE_FILTER" == "$package" ]]
 }
 
-CURRENT_COMMIT="$(git rev-parse --short=8 HEAD)"
+CURRENT_COMMIT="$(git rev-parse HEAD)"
 LATEST_TAG=""
 TARGETS=()
 
@@ -118,9 +118,9 @@ for pkg_info in "${PACKAGES[@]}"; do
             reason="missing from ${series}"
         elif [[ "$type" == "git" ]]; then
             ppa_commit="$(embedded_commit "$ppa_version")"
-            if [[ "$ppa_commit" != "$CURRENT_COMMIT" ]]; then
+            if [[ -z "$ppa_commit" || "${CURRENT_COMMIT:0:${#ppa_commit}}" != "$ppa_commit" ]]; then
                 needs_update=true
-                reason="commit ${ppa_commit:-none} -> ${CURRENT_COMMIT}"
+                reason="commit ${ppa_commit:-none} -> ${CURRENT_COMMIT:0:9}"
             fi
         else
             if [[ -z "$LATEST_TAG" ]]; then

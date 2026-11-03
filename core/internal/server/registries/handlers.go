@@ -3,9 +3,8 @@ package registries
 import (
 	"fmt"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/registries"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/registries"
 	"github.com/spf13/afero"
 )
 
@@ -29,7 +28,7 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request) {
 	case "registries.remove":
 		HandleRemove(conn, req)
 	default:
-		models.RespondError(conn, req.ID, fmt.Sprintf("unknown method: %s", req.Method))
+		conn.RespondError(req.ID, fmt.Sprintf("unknown method: %s", req.Method))
 	}
 }
 
@@ -39,45 +38,45 @@ func HandleList(conn *ipc.ConnWriter, req ipc.Request) {
 	for i, s := range sources {
 		result[i] = RegistryInfo{Name: s.Name, URL: s.URL, Official: s.Official()}
 	}
-	models.Respond(conn, req.ID, result)
+	conn.Respond(req.ID, result)
 }
 
 func HandleAdd(conn *ipc.ConnWriter, req ipc.Request) {
-	name, ok := models.Get[string](req, "name")
+	name, ok := req.Get[string]("name")
 	if !ok {
-		models.RespondError(conn, req.ID, "missing or invalid 'name' parameter")
+		conn.RespondError(req.ID, "missing or invalid 'name' parameter")
 		return
 	}
-	url, ok := models.Get[string](req, "url")
+	url, ok := req.Get[string]("url")
 	if !ok {
-		models.RespondError(conn, req.ID, "missing or invalid 'url' parameter")
+		conn.RespondError(req.ID, "missing or invalid 'url' parameter")
 		return
 	}
 
 	if err := registries.Add(afero.NewOsFs(), name, url); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, SuccessResult{
+	conn.Respond(req.ID, SuccessResult{
 		Success: true,
 		Message: fmt.Sprintf("registry added: %s", name),
 	})
 }
 
 func HandleRemove(conn *ipc.ConnWriter, req ipc.Request) {
-	name, ok := models.Get[string](req, "name")
+	name, ok := req.Get[string]("name")
 	if !ok {
-		models.RespondError(conn, req.ID, "missing or invalid 'name' parameter")
+		conn.RespondError(req.ID, "missing or invalid 'name' parameter")
 		return
 	}
 
 	if err := registries.Remove(afero.NewOsFs(), name); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
-	models.Respond(conn, req.ID, SuccessResult{
+	conn.Respond(req.ID, SuccessResult{
 		Success: true,
 		Message: fmt.Sprintf("registry removed: %s", name),
 	})

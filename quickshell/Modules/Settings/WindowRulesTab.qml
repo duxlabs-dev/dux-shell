@@ -5,7 +5,9 @@ import Quickshell
 import Quickshell.Wayland
 import qs.Common
 import "../../Common/ConfigIncludeResolve.js" as ConfigIncludeResolve
+import "../../Common/WindowRuleSize.js" as WindowRuleSize
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Settings.Widgets
 
@@ -57,7 +59,17 @@ Item {
             "xwayland": "XWayland",
             "fullscreen": I18n.tr("Fullscreen"),
             "pinned": I18n.tr("Pinned"),
-            "initialised": I18n.tr("Initialised")
+            "initialised": I18n.tr("Initialised"),
+            "initialClass": I18n.tr("Initial class"),
+            "initialTitle": I18n.tr("Initial title"),
+            "tag": I18n.tr("Tag"),
+            "xdgTag": I18n.tr("XDG tag"),
+            "workspace": I18n.tr("Workspace"),
+            "content": I18n.tr("Content"),
+            "group": I18n.tr("Group"),
+            "modal": I18n.tr("Modal"),
+            "fullscreenStateInternal": I18n.tr("Fullscreen state"),
+            "fullscreenStateClient": I18n.tr("Client fullscreen state")
         })
 
     function matchesOf(rule) {
@@ -65,6 +77,18 @@ Item {
         if (m && m.length > 0)
             return m;
         return [rule.matchCriteria || {}];
+    }
+
+    function actionChips(actions) {
+        const a = actions || {};
+        return Object.keys(a).filter(k => a[k] !== undefined && a[k] !== null && a[k] !== "").map(k => {
+            const label = root.actionLabels[k] || k;
+            if (typeof a[k] === "boolean")
+                return a[k] ? label : label + ": " + I18n.tr("Off");
+            if (k === "defaultColumnWidth" || k === "defaultWindowHeight")
+                return label + ": " + WindowRuleSize.label(a[k]);
+            return label + ": " + a[k];
+        });
     }
 
     function formatCriteria(obj, labels) {
@@ -105,9 +129,12 @@ Item {
             "defaultColumnWidth": I18n.tr("Width"),
             "defaultWindowHeight": I18n.tr("Height"),
             "variableRefreshRate": "VRR",
+            "vrrFullscreenOnly": I18n.tr("VRR Fullscreen Only"),
+            "onXdgActivate": I18n.tr("On activation", "window rule option, what niri does when the window asks to be activated"),
             "blockOutFrom": I18n.tr("Block out"),
             "defaultColumnDisplay": I18n.tr("Display"),
             "scrollFactor": I18n.tr("Scroll"),
+            "pinchSensitivity": I18n.tr("Pinch", "short window rule property label for touchpad pinch sensitivity"),
             "cornerRadius": I18n.tr("Radius"),
             "clipToGeometry": I18n.tr("Clip", "verb, short window rule property label for clip to geometry"),
             "tiledState": I18n.tr("Tiled", "adjective, short window rule property label for tiled state"),
@@ -144,7 +171,18 @@ Item {
             "focusRingOff": I18n.tr("Focus ring off"),
             "borderOff": I18n.tr("Border off"),
             "forcergbx": I18n.tr("Force RGBX"),
-            "idleinhibit": I18n.tr("Idle inhibitor", "feature that keeps the session from going idle")
+            "idleinhibit": I18n.tr("Idle inhibitor", "feature that keeps the session from going idle"),
+            "noInitialFocus": I18n.tr("No initial focus"),
+            "focusOnActivate": I18n.tr("Focus on activate"),
+            "stayFocused": I18n.tr("Stay focused"),
+            "confinePointer": I18n.tr("Confine pointer"),
+            "noXdgDrags": I18n.tr("No XDG drags"),
+            "noAutoHdr": I18n.tr("No auto HDR"),
+            "noGlow": I18n.tr("No glow"),
+            "noWobble": I18n.tr("No wobble"),
+            "scrollingWidth": I18n.tr("Column Width"),
+            "tonemap": I18n.tr("Tone mapping"),
+            "suppressEvent": I18n.tr("Suppress events")
         })
 
     signal rulesChanged
@@ -185,7 +223,7 @@ Item {
                 const result = JSON.parse(output.trim());
                 const allRules = result.rules || [];
                 CompositorService.syncDmsWindowFloatingRule(allRules);
-                windowRules = allRules.filter(r => (r.source || "").includes("dms/windowrules"));
+                windowRules = allRules.filter(r => (r.source || "").includes("dms/windowrules") && r.id !== CompositorService.dmsOpaqueRuleId);
                 externalRules = allRules.filter(r => !(r.source || "").includes("dms/windowrules"));
                 windowRulesInclude.applyStatus(result.dmsStatus);
             } catch (e) {
@@ -197,7 +235,7 @@ Item {
 
     function removeRule(ruleId) {
         if (readOnly) {
-            showHyprlandReadOnlyWarning();
+            windowRulesInclude.showReadOnlyWarning();
             return;
         }
         const compositor = CompositorService.compositor;
@@ -206,8 +244,7 @@ Item {
 
         Proc.runCommand("remove-windowrule", [Proc.dmsBin, "config", "windowrules", "remove", compositor, ruleId], (output, exitCode) => {
             if (exitCode === 0) {
-                if (CompositorService.isMango)
-                    MangoService.reloadConfig();
+                CompositorService.reloadAfterWindowRuleWrite();
                 loadWindowRules();
                 rulesChanged();
             }
@@ -218,7 +255,7 @@ Item {
         if (savingRuleOrder)
             return;
         if (readOnly) {
-            showHyprlandReadOnlyWarning();
+            windowRulesInclude.showReadOnlyWarning();
             return;
         }
         const compositor = CompositorService.compositor;
@@ -236,57 +273,68 @@ Item {
                 windowRules = previous;
                 return;
             }
-            if (CompositorService.isMango)
-                MangoService.reloadConfig();
+            CompositorService.reloadAfterWindowRuleWrite();
             loadWindowRules();
             rulesChanged();
         });
     }
 
+    property bool editorOpen: false
+    property bool editorMounted: false
+    property var editorRequest: null
+
     function openRuleModal(window) {
-        if (readOnly) {
-            showHyprlandReadOnlyWarning();
-            return;
-        }
-        if (!PopoutService.windowRuleModalLoader)
-            return;
-        PopoutService.windowRuleModalLoader.active = true;
-        if (PopoutService.windowRuleModalLoader.item) {
-            PopoutService.windowRuleModalLoader.item.onRuleSubmitted.connect(loadWindowRules);
-            PopoutService.windowRuleModalLoader.item.show(window || null);
-        }
+        openEditor("new", window || null);
     }
 
     function editRule(rule) {
-        if (readOnly) {
-            showHyprlandReadOnlyWarning();
-            return;
-        }
-        if (!PopoutService.windowRuleModalLoader)
-            return;
-        PopoutService.windowRuleModalLoader.active = true;
-        if (PopoutService.windowRuleModalLoader.item) {
-            PopoutService.windowRuleModalLoader.item.onRuleSubmitted.connect(loadWindowRules);
-            PopoutService.windowRuleModalLoader.item.showEdit(rule);
-        }
+        openEditor("edit", rule);
     }
 
     function copyRuleToDms(rule) {
+        openEditor("copy", rule);
+    }
+
+    function openEditor(mode, payload) {
         if (readOnly) {
-            showHyprlandReadOnlyWarning();
+            windowRulesInclude.showReadOnlyWarning();
             return;
         }
-        if (!PopoutService.windowRuleModalLoader)
+        if (editorOpen)
             return;
-        PopoutService.windowRuleModalLoader.active = true;
-        if (PopoutService.windowRuleModalLoader.item) {
-            PopoutService.windowRuleModalLoader.item.onRuleSubmitted.connect(loadWindowRules);
-            PopoutService.windowRuleModalLoader.item.showCopy(rule);
+        editorRequest = {
+            mode,
+            payload
+        };
+        editorOpen = true;
+        editorMounted = true;
+        if (editorLoader.item)
+            presentEditor();
+    }
+
+    function presentEditor() {
+        const request = editorRequest;
+        if (!request)
+            return;
+        switch (request.mode) {
+        case "edit":
+            editorLoader.item.showEdit(request.payload);
+            return;
+        case "copy":
+            editorLoader.item.showCopy(request.payload);
+            return;
+        default:
+            editorLoader.item.show(request.payload);
         }
     }
 
-    function showHyprlandReadOnlyWarning() {
-        ToastService.showWarning(I18n.tr("Hyprland conf mode"), I18n.tr("This install is still using hyprland.conf. Run dms setup to migrate before changing these settings."), "dms setup", "hyprland-migration");
+    function closeEditor() {
+        if (!editorOpen)
+            return;
+        editorOpen = false;
+        editorRequest = null;
+        if (editorLoader.item)
+            editorLoader.item.opened = false;
     }
 
     Component.onCompleted: {
@@ -305,7 +353,6 @@ Item {
             id: headerSection
             width: parent.width
             iconName: "select_window"
-            title: I18n.tr("Window rules")
 
             SettingsRow {
                 subtitle: I18n.tr("Define rules for window behavior. Saves to %1", "window rules settings description, %1 is a config file name").arg(root.dmsRulesFileName)
@@ -316,8 +363,10 @@ Item {
                 visible: root.activeWindows.length > 0
                 title: I18n.tr("Create rule for:")
 
-                DankDropdown {
+                DDropdown {
                     id: windowSelector
+                    downKeyOpens: false
+                    backgroundColor: SettingsMetrics.controlSurface
                     anchors.verticalCenter: parent.verticalCenter
                     dropdownWidth: Math.min(400, createRuleRow.width - SettingsMetrics.rowPaddingH * 2)
                     compactMode: true
@@ -356,12 +405,11 @@ Item {
                     width: parent.width
                     spacing: Theme.spacingXS
 
-                    DankIcon {
+                    DIcon {
                         name: "select_window"
-                        size: 40
+                        size: Theme.iconSizeLarge
                         color: Theme.surfaceVariantText
                         anchors.horizontalCenter: parent.horizontalCenter
-                        opacity: 0.5
                     }
 
                     StyledText {
@@ -392,7 +440,6 @@ Item {
                     readonly property var liveRuleData: (root.windowRules || []).find(rule => rule.id === ruleIdRef) ?? modelData
 
                     title: liveRuleData.name || liveRuleData.matchCriteria?.appId || liveRuleData.matchCriteria?.title || I18n.tr("Unnamed rule")
-                    titleColor: liveRuleData.enabled !== false ? Theme.surfaceText : Theme.surfaceVariantText
                     subtitle: {
                         const criteria = liveRuleData.matchCriteria || {};
                         const parts = [];
@@ -403,7 +450,7 @@ Item {
                         return parts.length > 0 ? parts.join(" · ") : I18n.tr("No match criteria");
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: "edit"
                         enabled: !root.readOnly
@@ -411,7 +458,7 @@ Item {
                         onClicked: root.editRule(ruleRow.liveRuleData)
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: "delete"
                         iconColor: Theme.error
@@ -427,35 +474,15 @@ Item {
 
                         Repeater {
                             id: actionRepeater
-                            model: {
-                                const actions = ruleRow.liveRuleData.actions || {};
-                                const labels = root.actionLabels;
-                                return Object.keys(actions).filter(key => actions[key] !== undefined && actions[key] !== null && actions[key] !== "").map(key => {
-                                    const value = actions[key];
-                                    if (typeof value === "boolean")
-                                        return value ? (labels[key] || key) : (labels[key] || key) + ": " + I18n.tr("Off");
-                                    return (labels[key] || key) + ": " + value;
-                                });
-                            }
+                            model: root.actionChips(ruleRow.liveRuleData.actions)
 
-                            delegate: Rectangle {
+                            delegate: DBadge {
                                 required property string modelData
-
-                                width: Math.min(parent?.width ?? 0, chipText.implicitWidth + Theme.spacingS * 2)
-                                height: chipText.height + Theme.spacingXS * 2
-                                radius: Theme.cornerRadiusS
+                                maximumWidth: parent?.width ?? 0
+                                text: modelData
                                 color: Theme.primaryContainer
-
-                                StyledText {
-                                    id: chipText
-                                    anchors.centerIn: parent
-                                    width: Math.min(implicitWidth, parent.width - Theme.spacingS * 2)
-                                    text: modelData
-                                    font.weight: Theme.fontWeightMedium
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.onPrimaryContainer
-                                    wrapMode: Text.Wrap
-                                }
+                                textColor: Theme.onPrimaryContainer
+                                tooltipText: truncated ? modelData : null
                             }
                         }
                     }
@@ -517,29 +544,25 @@ Item {
                     clickable: true
                     onClicked: root.expandedExternalId = externalCard.expanded ? "" : externalCard.modelData.id
 
-                    DankBadge {
+                    DBadge {
                         visible: externalCard.sourceFile.length > 0
                         anchors.verticalCenter: parent.verticalCenter
                         text: externalCard.sourceFile
-                        color: Theme.withAlpha(Theme.surfaceVariantText, 0.15)
+                        color: SettingsMetrics.controlColor
                         textColor: Theme.surfaceVariantText
                     }
 
-                    DankIcon {
+                    DIcon {
                         name: externalCard.expanded ? "expand_less" : "expand_more"
-                        size: 20
+                        size: Theme.iconSize
                         color: Theme.surfaceVariantText
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
-                    DankActionButton {
-                        buttonSize: 28
+                    DActionButton {
                         iconName: "content_copy"
-                        iconSize: 16
-                        backgroundColor: "transparent"
                         iconColor: Theme.surfaceVariantText
                         enabled: !root.readOnly
-                        opacity: enabled ? 1 : 0.5
                         anchors.verticalCenter: parent.verticalCenter
                         tooltipText: I18n.tr("Convert to DMS")
                         tooltipSide: "left"
@@ -557,22 +580,15 @@ Item {
                             visible: externalCard.hasActions
 
                             Repeater {
-                                model: {
-                                    const a = externalCard.modelData.actions || {};
-                                    const labels = root.actionLabels;
-                                    return Object.keys(a).filter(k => a[k] !== undefined && a[k] !== null && a[k] !== "").map(k => {
-                                        const val = a[k];
-                                        if (typeof val === "boolean")
-                                            return val ? (labels[k] || k) : (labels[k] || k) + ": " + I18n.tr("Off");
-                                        return (labels[k] || k) + ": " + val;
-                                    });
-                                }
+                                model: root.actionChips(externalCard.modelData.actions)
 
-                                delegate: DankBadge {
+                                delegate: DBadge {
                                     required property string modelData
+                                    maximumWidth: parent?.width ?? 0
                                     text: modelData
-                                    color: Theme.withAlpha(Theme.primary, 0.15)
-                                    textColor: Theme.primary
+                                    color: Theme.primaryContainer
+                                    textColor: Theme.onPrimaryContainer
+                                    tooltipText: truncated ? modelData : null
                                 }
                             }
                         }
@@ -629,7 +645,7 @@ Item {
                             StyledText {
                                 width: parent.width
                                 text: I18n.tr("Source: %1", "window rule detail, %1 is the config file path").arg(externalCard.modelData.source || "")
-                                font.pixelSize: Theme.fontSizeSmall - 1
+                                font.pixelSize: Theme.fontSizeXSmall
                                 color: Theme.surfaceVariantText
                                 elide: Text.ElideMiddle
                                 topPadding: Theme.spacingXS
@@ -643,10 +659,32 @@ Item {
         SettingsFabBar {
             shown: !root.readOnly
 
-            DankFab {
+            DFab {
                 text: I18n.tr("Add window rule")
                 iconName: "add"
                 onClicked: root.openRuleModal()
+            }
+        }
+    }
+
+    Loader {
+        id: editorLoader
+        parent: root.parentModal?.modalFocusScope ?? root
+        anchors.fill: parent
+        z: 100
+        active: root.editorMounted
+        onLoaded: root.presentEditor()
+
+        sourceComponent: WindowRuleEditorDialog {
+            supportingText: I18n.tr("Changes save to %1", "hint under the keybind and window rule editors, %1 is the config file the changes are written to").arg(root.dmsRulesFileName)
+            onRejected: root.closeEditor()
+            onRuleSubmitted: {
+                root.loadWindowRules();
+                root.closeEditor();
+            }
+            onActiveChanged: {
+                if (!active && !root.editorOpen)
+                    root.editorMounted = false;
             }
         }
     }

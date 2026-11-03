@@ -5,15 +5,15 @@ import (
 	"math"
 	"sync"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/keyboard_shortcuts_inhibit"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_layer_shell"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wlr_screencopy"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wp_cursor_shape"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/proto/wp_viewporter"
-	wlhelpers "github.com/AvengeMedia/DankMaterialShell/core/internal/wayland/client"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/wayland/keymap"
-	"github.com/AvengeMedia/dankgo/wayland/client"
+	"github.com/duxlabs-dev/dux-go/wayland/client"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/keyboard_shortcuts_inhibit"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_layer_shell"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_screencopy"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wp_cursor_shape"
+	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wp_viewporter"
+	wlhelpers "github.com/duxlabs-dev/dux-shell/core/internal/wayland/client"
+	"github.com/duxlabs-dev/dux-shell/core/internal/wayland/keymap"
 )
 
 type resizeHandle int
@@ -32,9 +32,10 @@ const (
 )
 
 type SelectionState struct {
-	hasSelection bool           // There's a selection to display (pre-loaded or user-drawn)
-	dragging     bool           // User is actively drawing a new selection
-	surface      *OutputSurface // Surface where selection was made
+	hasSelection  bool           // There's a selection to display (pre-loaded or user-drawn)
+	fromPreSelect bool           // hasSelection was set by applyPreSelection, not by user interaction
+	dragging      bool           // User is actively drawing a new selection
+	surface       *OutputSurface // Surface where selection was made
 	// Global logical coordinates. Keeping these independent of the active
 	// surface lets a drag continue across output boundaries.
 	anchorX  float64
@@ -161,8 +162,15 @@ type RegionSelector struct {
 	phase  selectorPhase
 	scroll *scrollSession
 
+	snapTargets   []SnapTarget
+	hoveredTarget *SnapTarget
+	clickedTarget *SnapTarget
+	dragStartX    float64
+	dragStartY    float64
+
 	running   bool
 	cancelled bool
+	copyOnly  bool
 	result    Region
 
 	capturedBuffer *ShmBuffer
@@ -175,6 +183,7 @@ func NewRegionSelector(s *Screenshoter) *RegionSelector {
 		outputs:            make(map[uint32]*WaylandOutput),
 		preCapture:         make(map[*WaylandOutput]*PreCapture),
 		showCapturedCursor: s.config.Cursor == CursorOn,
+		snapTargets:        s.config.SnapTargets,
 	}
 }
 
@@ -286,6 +295,7 @@ func (r *RegionSelector) Run() (*CaptureResult, bool, error) {
 		YInverted: yInverted,
 		Format:    format,
 		Scale:     scale,
+		CopyOnly:  r.copyOnly,
 	}, false, nil
 }
 
@@ -375,6 +385,12 @@ func (r *RegionSelector) handleGlobal(e client.RegistryGlobalEvent) {
 		}
 
 	case client.SeatInterfaceName:
+		// Keep the first seat: compositors may advertise additional seats
+		// (automation, second keyboard), and the last one used to win, which
+		// left the selector listening to a seat the user never types on.
+		if r.seat != nil {
+			return
+		}
 		seat := client.NewSeat(r.ctx)
 		if err := r.registry.Bind(e.Name, e.Interface, e.Version, seat); err == nil {
 			r.seat = seat
@@ -599,15 +615,12 @@ func (r *RegionSelector) preCaptureOutput(output *WaylandOutput, pc *PreCapture,
 			pc.yInverted = false
 		}
 
-		if output.transform != TransformNormal {
-			invTransform := InverseTransform(output.transform)
-			transformed, err := capturedBuf.ApplyTransform(invTransform)
-			if err != nil {
-				log.Error("apply transform failed", "err", err)
-			} else if transformed != capturedBuf {
-				capturedBuf.Close()
-				capturedBuf = transformed
-			}
+		transformed, err := output.untransformFrame(capturedBuf)
+		if err != nil {
+			log.Error("apply transform failed", "err", err)
+		} else if transformed != capturedBuf {
+			capturedBuf.Close()
+			capturedBuf = transformed
 		}
 
 		if withCursor {
@@ -746,7 +759,7 @@ func (r *RegionSelector) setNativeCursor(serial uint32) {
 		shape = cursorShapeForHandle(r.resizingHandle)
 	} else if r.movingSelection && r.selection.dragging {
 		shape = uint32(wp_cursor_shape.WpCursorShapeDeviceV1ShapeGrabbing)
-	} else if r.ctrlHeld && r.selection.hasSelection {
+	} else if r.ctrlHeld && r.selection.hasSelection && !r.selection.dragging {
 		if r.activeSurface != nil && r.activeSurface.output != nil {
 			pointerGlobalX := r.pointerX + float64(r.activeSurface.output.x)
 			pointerGlobalY := r.pointerY + float64(r.activeSurface.output.y)
@@ -754,7 +767,7 @@ func (r *RegionSelector) setNativeCursor(serial uint32) {
 		} else {
 			shape = uint32(wp_cursor_shape.WpCursorShapeDeviceV1ShapeGrab)
 		}
-	} else if r.ctrlHeld {
+	} else if r.ctrlHeld && !r.selection.dragging {
 		shape = uint32(wp_cursor_shape.WpCursorShapeDeviceV1ShapeGrab)
 	}
 	if r.cursorDevice == nil {
@@ -976,13 +989,14 @@ func (r *RegionSelector) applyPreSelection(os *OutputSurface) {
 	scaleX := float64(os.logicalW) / float64(os.screenBuf.Width)
 	scaleY := float64(os.logicalH) / float64(os.screenBuf.Height)
 
-	x1 := float64(r.preSelect.X-os.output.x) * scaleX
-	y1 := float64(r.preSelect.Y-os.output.y) * scaleY
+	x1 := float64(r.preSelect.X - os.output.x)
+	y1 := float64(r.preSelect.Y - os.output.y)
 	// selection edges are inclusive; the exclusive width edge is one device px past it
-	x2 := float64(r.preSelect.X-os.output.x+r.preSelect.Width)*scaleX - scaleX
-	y2 := float64(r.preSelect.Y-os.output.y+r.preSelect.Height)*scaleY - scaleY
+	x2 := x1 + float64(r.preSelect.Width) - scaleX
+	y2 := y1 + float64(r.preSelect.Height) - scaleY
 
 	r.selection.hasSelection = true
+	r.selection.fromPreSelect = true
 	r.selection.dragging = false
 	r.selection.surface = os
 	r.selection.anchorX = float64(os.output.x) + x1
@@ -1031,7 +1045,7 @@ func (r *RegionSelector) renderSurface(os *OutputSurface) {
 		slot.overlay, os.shown = nil, nil
 	default:
 		cur := r.overlayFor(os, slot.shm)
-		handles := (r.resizingHandle != handleNone || r.ctrlHeld) && r.selection.hasSelection && r.phase != phaseScroll
+		handles := (r.resizingHandle != handleNone || (r.ctrlHeld && !r.selection.dragging)) && r.selection.hasSelection && r.phase != phaseScroll
 		shift := r.shiftHeld && r.selection.hasSelection
 		switch {
 		case !slot.cacheValid(srcBuf, r.selection.dragging, r.showCapturedCursor, r.phase, handles, shift):

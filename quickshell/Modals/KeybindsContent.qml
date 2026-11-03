@@ -1,9 +1,11 @@
 import QtQml
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
+import Quickshell.Wayland
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import "../Common/KeyUtils.js" as KeyUtils
 import "../Common/KeybindActions.js" as Actions
 
@@ -35,16 +37,22 @@ FocusScope {
         }
         if (label.startsWith("Media: "))
             label = label.slice(7).trim();
+        if (bind.trigger === "both" && bind.releaseAction && !bind.desc)
+            label += " • " + releaseLabel(Actions.getActionLabel(bind.releaseAction, KeybindsService.currentProvider) || bind.releaseAction);
         return label;
+    }
+
+    function releaseLabel(text) {
+        return I18n.tr("Release", "noun, hyprland bind flag toggle, trigger on key release") + ": " + text;
     }
 
     Component {
         id: keybindItemDelegate
 
-        DankListItem {
+        DListItem {
             id: keybindRow
             required property var modelData
-            readonly property bool canExecute: !keybindRow.modelData.isRange && KeybindsService.canExecuteAction(keybindRow.modelData.action)
+            readonly property bool canExecute: !keybindRow.modelData.isRange && keybindRow.modelData.trigger !== "both" && KeybindsService.canExecuteAction(keybindRow.modelData.action, keybindRow.modelData.luaAction)
 
             Layout.fillWidth: true
             Layout.preferredHeight: implicitHeight
@@ -55,7 +63,7 @@ FocusScope {
             Accessible.name: keybindRow.modelData.label || content.getBindLabel(keybindRow.modelData)
             Accessible.description: (keybindRow.modelData.allKeys ? keybindRow.modelData.allKeys.join(", ") : (keybindRow.modelData.key || "")) + " • " + (keybindRow.modelData.action || "")
             onClicked: {
-                if (keybindRow.canExecute && KeybindsService.executeAction(keybindRow.modelData.action))
+                if (keybindRow.canExecute && KeybindsService.executeAction(keybindRow.modelData.action, keybindRow.modelData.luaAction))
                     content.closeRequested();
             }
 
@@ -79,7 +87,18 @@ FocusScope {
                     wrapMode: Text.NoWrap
                 }
 
-                // DankKeycap items (Trailing - stacked vertically if multiple combos)
+                Loader {
+                    Layout.alignment: Qt.AlignVCenter
+                    active: keybindRow.modelData.trigger === "release"
+                    visible: active
+                    sourceComponent: DBadge {
+                        text: I18n.tr("Release", "noun, hyprland bind flag toggle, trigger on key release")
+                        color: Theme.primaryHover
+                        textColor: Theme.primary
+                    }
+                }
+
+                // DKeycap items (Trailing - stacked vertically if multiple combos)
                 Column {
                     id: keycapsCol
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
@@ -87,7 +106,7 @@ FocusScope {
 
                     Repeater {
                         id: combosRepeater
-                        model: keybindRow.modelData.keyCombos || (keybindRow.modelData.key ? [KeyUtils.formatKeyTokens(keybindRow.modelData.key, content.modifierStyle)] : [])
+                        model: keybindRow.modelData.keyCombos || (keybindRow.modelData.key ? [KeyUtils.formatKeyTokens(keybindRow.modelData.key, KeybindsService.modKey, KeybindsService.modSymbol, content.modifierStyle)] : [])
 
                         Row {
                             anchors.right: parent ? parent.right : undefined
@@ -96,7 +115,7 @@ FocusScope {
                             Repeater {
                                 model: modelData
 
-                                DankKeycap {
+                                DKeycap {
                                     text: modelData
                                     textColor: Theme.primary
                                 }
@@ -114,8 +133,8 @@ FocusScope {
                 cursorShape: keybindRow.canExecute ? Qt.PointingHandCursor : Qt.ArrowCursor
             }
 
-            DankTooltipHost {
-                text: keybindRow.canExecute ? ((keybindRow.modelData.action || keybindRow.modelData.desc || "") + " • " + I18n.tr("Click to run", "cheatsheet action tooltip suffix")) : (keybindRow.modelData.label || keybindRow.modelData.action || keybindRow.modelData.desc || "")
+            DTooltipHost {
+                text: keybindRow.canExecute ? ((keybindRow.modelData.action || keybindRow.modelData.desc || "") + " • " + I18n.tr("Click to run", "cheatsheet action tooltip suffix")) : keybindRow.modelData.releaseAction ? (keybindRow.modelData.action + " • " + content.releaseLabel(keybindRow.modelData.releaseAction)) : (keybindRow.modelData.label || keybindRow.modelData.action || keybindRow.modelData.desc || "")
                 target: keybindRow
                 hoverArea: rowHoverArea
             }
@@ -128,6 +147,7 @@ FocusScope {
     property bool floating: false
     property alias searchField: searchField
     property string selectedCategory: "All"
+    property bool searchFocused: false
 
     signal closeRequested
     signal floatingToggleRequested
@@ -155,12 +175,51 @@ FocusScope {
         }
     }
 
+    function captureShortcut(event) {
+        if (!searchFocused)
+            return false;
+        const chord = KeyUtils.shortcutFromSearchKey(event, KeybindsService.modKey, KeybindsService.modSymbol);
+        if (!chord)
+            return false;
+        if (ownToggleCombos().includes(KeyUtils.normalizeKeyCombo(chord, KeybindsService.modKey, KeybindsService.modSymbol))) {
+            closeRequested();
+            return true;
+        }
+        searchField.text = chord;
+        return true;
+    }
+
+    // the bind that opened the cheatsheet keeps closing it instead of becoming a search
+    function ownToggleCombos() {
+        const combos = [];
+        for (const cat in rawBinds) {
+            const binds = rawBinds[cat];
+            if (!Array.isArray(binds))
+                continue;
+            for (let i = 0; i < binds.length; i++) {
+                if (/\bkeybinds (toggle|close)\b/.test(binds[i].action || ""))
+                    combos.push(KeyUtils.normalizeKeyCombo(binds[i].key, KeybindsService.modKey, KeybindsService.modSymbol));
+            }
+        }
+        return combos;
+    }
+
+    ShortcutInhibitor {
+        id: searchInhibitor
+        window: content.QsWindow.window
+        enabled: content.searchFocused
+    }
+
     Shortcut {
         sequence: "Ctrl+F"
         onActivated: content.focusSearch()
     }
 
     Keys.onPressed: event => {
+        if (captureShortcut(event)) {
+            event.accepted = true;
+            return;
+        }
         if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_F) {
             focusSearch();
             event.accepted = true;
@@ -366,18 +425,19 @@ FocusScope {
 
                 const label = content.getBindLabel(bind);
                 const labelLower = label.toLowerCase();
-                const keyTokens = KeyUtils.formatKeyTokens(bind.key, content.modifierStyle);
+                const keyTokens = KeyUtils.formatKeyTokens(bind.key, KeybindsService.modKey, KeybindsService.modSymbol, content.modifierStyle);
                 const tokenSig = keyTokens.join("+");
                 const keyLower = (bind.key || "").toLowerCase();
+                const keyCombo = KeyUtils.normalizeKeyCombo(bind.key, KeybindsService.modKey, KeybindsService.modSymbol);
                 const descLower = (bind.desc || "").toLowerCase();
-                const actionLower = (bind.action || "").toLowerCase();
+                const actionLower = ((bind.action || "") + " " + (bind.releaseAction || "")).toLowerCase();
 
                 let matched = true;
                 for (let j = 0; j < lowerQueryWords.length; j++) {
                     const word = lowerQueryWords[j];
                     if (!word)
                         continue;
-                    if (!keyLower.includes(word) && !labelLower.includes(word) && !descLower.includes(word) && !catLower.includes(word) && !actionLower.includes(word) && !tokenSig.toLowerCase().includes(word)) {
+                    if (!keyLower.includes(word) && !keyCombo.includes(KeyUtils.normalizeKeyCombo(word, KeybindsService.modKey, KeybindsService.modSymbol)) && !labelLower.includes(word) && !descLower.includes(word) && !catLower.includes(word) && !actionLower.includes(word) && !tokenSig.toLowerCase().includes(word)) {
                         matched = false;
                         break;
                     }
@@ -391,7 +451,9 @@ FocusScope {
 
                 const isGraveAltTab = (bind.action === "next-window" || bind.action === "previous-window") && (bind.key || "").toLowerCase().includes("grave") && !bind.action.includes("filter=");
                 const bindAction = isGraveAltTab ? (bind.action + ' filter="app-id"') : (bind.action || "");
-                const groupKey = (label + "||" + bindAction).toLowerCase();
+                const trigger = bind.trigger === "press" ? "" : (bind.trigger || "");
+                const releaseAction = trigger === "both" ? (bind.releaseAction || "") : "";
+                const groupKey = (label + "||" + bindAction + "||" + trigger + "||" + releaseAction).toLowerCase();
                 if (subcatMap[subcatName][groupKey]) {
                     const existing = subcatMap[subcatName][groupKey];
                     if (tokenSig && !existing.tokenSigs[tokenSig] && keyTokens.length > 0) {
@@ -405,6 +467,9 @@ FocusScope {
                         sigs[tokenSig] = true;
                     subcatMap[subcatName][groupKey] = {
                         action: bindAction,
+                        luaAction: bind.luaAction || "",
+                        trigger: trigger,
+                        releaseAction: releaseAction,
                         desc: bind.desc,
                         label: label,
                         key: bind.key,
@@ -487,7 +552,8 @@ FocusScope {
 
     Item {
         anchors.fill: parent
-        anchors.margins: Theme.spacingL
+        anchors.margins: Theme.windowInset
+        anchors.topMargin: content.floating ? 0 : Theme.windowInset
 
         // Sidebar
         Item {
@@ -505,11 +571,12 @@ FocusScope {
                 anchors.top: parent.top
                 spacing: Theme.spacingS
 
-                DankSearchField {
+                DSearchField {
                     id: searchField
                     Layout.fillWidth: true
-                    placeholderText: I18n.tr("Search keybinds...", "keybinds cheatsheet search placeholder")
+                    placeholderText: I18n.tr("Search")
                     keyForwardTargets: [content]
+                    onFocusStateChanged: hasFocus => content.searchFocused = hasFocus
                     onTextChanged: {
                         if (text.trim() === "") {
                             searchDebounce.stop();
@@ -525,7 +592,7 @@ FocusScope {
                     }
                 }
 
-                DankActionButton {
+                DActionButton {
                     visible: content.showFloatingToggle
                     buttonSize: Theme.iconButtonSize
                     iconName: content.floating ? "close_fullscreen" : "open_in_new"
@@ -535,7 +602,7 @@ FocusScope {
                 }
             }
 
-            DankFlickable {
+            DFlickable {
                 id: sidebarFlickable
                 anchors.left: parent.left
                 anchors.right: parent.right
@@ -553,7 +620,7 @@ FocusScope {
                     spacing: Theme.spacingXXS
 
                     // "All" Category Tab
-                    DankListItem {
+                    DListItem {
                         id: allTab
                         width: sidebarCol.width
                         implicitHeight: Theme.menuItemHeight
@@ -574,7 +641,7 @@ FocusScope {
                             anchors.rightMargin: Theme.spacingL
                             spacing: Theme.spacingS
 
-                            DankIcon {
+                            DIcon {
                                 name: "apps"
                                 size: Theme.iconSizeSmall
                                 color: allTab.contentColor
@@ -583,12 +650,12 @@ FocusScope {
                             StyledText {
                                 text: I18n.tr("All")
                                 color: allTab.contentColor
-                                font.weight: allTab.isSelected ? Theme.fontWeightMedium : Theme.fontWeightNormal
+                                font.weight: allTab.isSelected ? Theme.fontWeightMedium : Theme.fontWeight
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
 
-                            DankBadge {
+                            DBadge {
                                 text: content.dataModel.totalCount.toString()
                                 color: allTab.isSelected ? Theme.primary : Theme.surfaceVariant
                                 textColor: allTab.isSelected ? Theme.onPrimary : Theme.surfaceVariantText
@@ -597,20 +664,11 @@ FocusScope {
                         }
                     }
 
-                    // Divider between All and specific categories
-                    Rectangle {
-                        width: sidebarCol.width - Theme.spacingS * 2
-                        height: Theme.dividerWidth
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        color: Theme.outlineVariant
-                        opacity: 0.3
-                    }
-
                     // Category Tabs
                     Repeater {
                         model: content.dataModel.sortedKeys
 
-                        DankListItem {
+                        DListItem {
                             id: catTab
                             required property var modelData
 
@@ -636,7 +694,7 @@ FocusScope {
                                 anchors.rightMargin: Theme.spacingL
                                 spacing: Theme.spacingS
 
-                                DankIcon {
+                                DIcon {
                                     name: content.getCategoryIcon(catTab.catName)
                                     size: Theme.iconSizeSmall
                                     color: catTab.contentColor
@@ -645,12 +703,12 @@ FocusScope {
                                 StyledText {
                                     text: I18n.tr(catTab.catName)
                                     color: catTab.contentColor
-                                    font.weight: catTab.isSelected ? Theme.fontWeightMedium : Theme.fontWeightNormal
+                                    font.weight: catTab.isSelected ? Theme.fontWeightMedium : Theme.fontWeight
                                     Layout.fillWidth: true
                                     elide: Text.ElideRight
                                 }
 
-                                DankBadge {
+                                DBadge {
                                     text: (catTab.catInfo?.count || 0).toString()
                                     color: catTab.isSelected ? Theme.primary : Theme.surfaceVariant
                                     textColor: catTab.isSelected ? Theme.onPrimary : Theme.surfaceVariantText
@@ -705,28 +763,16 @@ FocusScope {
             }
         }
 
-        // Vertical Divider between Sidebar and Main Content
-        Rectangle {
-            id: vDivider
-            anchors.left: sidebar.right
-            anchors.leftMargin: Theme.spacingM
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            width: Theme.dividerWidth
-            color: Theme.outlineVariant
-            opacity: 0.4
-        }
-
         // Main Content Area
         Item {
             id: mainArea
-            anchors.left: vDivider.right
-            anchors.leftMargin: Theme.spacingM
+            anchors.left: sidebar.right
+            anchors.leftMargin: Theme.spacingL
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.bottom: parent.bottom
 
-            DankFlickable {
+            DFlickable {
                 id: rightFlickable
                 anchors.fill: parent
                 contentWidth: width
@@ -755,7 +801,7 @@ FocusScope {
                                 width: parent.width
                                 spacing: Theme.spacingS
 
-                                DankIcon {
+                                DIcon {
                                     name: content.getCategoryIcon(sectionCol.sectionCatName)
                                     size: Theme.iconSizeMedium
                                     color: Theme.primary
@@ -766,13 +812,6 @@ FocusScope {
                                     font.pixelSize: Theme.fontSizeMedium
                                     font.weight: Theme.fontWeightMedium
                                     color: Theme.primary
-                                }
-
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    height: Theme.dividerWidth
-                                    color: Theme.outlineVariant
-                                    opacity: 0.3
                                 }
                             }
 
@@ -843,7 +882,7 @@ FocusScope {
                 spacing: Theme.spacingM
                 visible: content.dataModel.totalCount === 0
 
-                DankIcon {
+                DIcon {
                     anchors.horizontalCenter: parent.horizontalCenter
                     name: content.activeSearchQuery.trim() !== "" ? "search_off" : "keyboard"
                     size: Theme.iconSizeLarge + Theme.spacingL

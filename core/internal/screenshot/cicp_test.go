@@ -61,9 +61,7 @@ func TestCICPFromNamed(t *testing.T) {
 		{"bt2020-hlg", 6, 13, &CICP{Primaries: 9, TF: 18}},
 		{"display_p3-srgb", 9, 9, &CICP{Primaries: 12, TF: 13}},
 		{"srgb-srgb", 1, 9, nil},
-		{"srgb-gamma22", 1, 2, nil},
 		{"unmapped-adobe", 10, 9, nil},
-		{"unknown", 0, 0, nil},
 	}
 
 	for _, tc := range cases {

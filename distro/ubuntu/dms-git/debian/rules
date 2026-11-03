@@ -11,7 +11,7 @@ export HOME := $(CURDIR)/debian/tmp-home
 export GOCACHE := $(CURDIR)/debian/tmp-home/go-cache
 export GOMODCACHE := $(CURDIR)/debian/tmp-home/go-mod
 
-# Launchpad has no network access, so use local toolchain only
+# Launchpad has no network access; build with the bundled toolchain only
 export GOTOOLCHAIN := local
 
 %:
@@ -28,22 +28,18 @@ override_dh_auto_build:
 	# Launchpad build environment has no internet access
 	test -d dms-git-repo || (echo "ERROR: dms-git-repo directory not found!" && exit 1)
 
-	# Patch go.mod for Launchpad: align go directive w/latest Go toolchain
-	GO_VERSION=$$(go env GOVERSION | sed -E 's/^go([0-9]+\.[0-9]+).*/\1/'); \
-	if [ -n "$$GO_VERSION" ]; then \
-		sed -E -i "s/^go 1\.[0-9]+(\.[0-9]+)?/go $$GO_VERSION/" dms-git-repo/core/go.mod; \
-		if [ -f dms-git-repo/core/vendor/modules.txt ]; then \
-			sed -E -i "s/^(## explicit; go )1\.[0-9]+(\.[0-9]+)?$$/\1$$GO_VERSION/" dms-git-repo/core/vendor/modules.txt; \
-		fi; \
-	else \
-		echo "Warning: Could not detect Go version, leaving go.mod go directive unchanged"; \
-	fi
-	sed -E -i '/^toolchain go[0-9.]+$$/d' dms-git-repo/core/go.mod
-
-	# Build dms-cli from source
-	# Detect architecture
+	# Bundled Go (dms-git-repo/go$$VER.linux-{amd64,arm64}.tar.gz), staged by ppa-build.sh
 	$(eval DEB_HOST_ARCH := $(shell dpkg-architecture -qDEB_HOST_ARCH))
-	@if [ -f dms-git-repo/.dms-version ]; then \
+	GO_TARBALL=$$(ls "$(CURDIR)"/dms-git-repo/go[0-9]*.linux-$(DEB_HOST_ARCH).tar.gz 2>/dev/null | head -n1); \
+	test -f "$$GO_TARBALL" || (echo "ERROR: Missing bundled Go toolchain for $(DEB_HOST_ARCH)" && exit 1); \
+	rm -rf "$(CURDIR)/go-bootstrap" "$(CURDIR)/.go-toolchain"; \
+	mkdir -p "$(CURDIR)/go-bootstrap"; \
+	tar -xzf "$$GO_TARBALL" -C "$(CURDIR)/go-bootstrap"; \
+	mv "$(CURDIR)/go-bootstrap/go" "$(CURDIR)/.go-toolchain"; \
+	export PATH="$(CURDIR)/.go-toolchain/bin:$$PATH"; \
+	export GOROOT="$(CURDIR)/.go-toolchain"; \
+	go version; \
+	if [ -f dms-git-repo/.dms-version ]; then \
 		. dms-git-repo/.dms-version; \
 		echo "Building with VERSION=$$VERSION COMMIT=$$COMMIT ARCH=$(DEB_HOST_ARCH)"; \
 		cd dms-git-repo/core && $(MAKE) GOFLAGS="-mod=vendor" dist ARCH=$(DEB_HOST_ARCH) VERSION="$$VERSION" COMMIT="$$COMMIT"; \
@@ -65,12 +61,12 @@ override_dh_auto_install:
 	# Install desktop file and icon
 	install -Dm644 dms-git-repo/assets/dms-open.desktop \
 		debian/dms-git/usr/share/applications/dms-open.desktop
-	install -Dm644 dms-git-repo/assets/com.danklinux.dms.desktop \
-		debian/dms-git/usr/share/applications/com.danklinux.dms.desktop
-	install -Dm644 dms-git-repo/assets/com.danklinux.dms.notepad.desktop \
-		debian/dms-git/usr/share/applications/com.danklinux.dms.notepad.desktop
-	install -Dm644 dms-git-repo/assets/com.danklinux.dms.svg \
-		debian/dms-git/usr/share/icons/hicolor/scalable/apps/com.danklinux.dms.svg
+	install -Dm644 dms-git-repo/assets/dev.duxlabs.shell.desktop \
+		debian/dms-git/usr/share/applications/dev.duxlabs.shell.desktop
+	install -Dm644 dms-git-repo/assets/dev.duxlabs.shell.notepad.desktop \
+		debian/dms-git/usr/share/applications/dev.duxlabs.shell.notepad.desktop
+	install -Dm644 dms-git-repo/assets/dev.duxlabs.shell.svg \
+		debian/dms-git/usr/share/icons/hicolor/scalable/apps/dev.duxlabs.shell.svg
 
 override_dh_auto_clean:
 	# Don't delete dms-git-repo directory - it's part of the source package (native format)
@@ -78,4 +74,5 @@ override_dh_auto_clean:
 	rm -f dms
 	rm -rf dms-git-repo/core/bin
 	rm -rf debian/tmp-home
+	rm -rf go-bootstrap .go-toolchain
 	dh_auto_clean

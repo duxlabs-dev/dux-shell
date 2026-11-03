@@ -10,7 +10,7 @@ Item {
     visible: false
 
     required property var targetWindow
-    property bool blurEnabled: Theme.connectedSurfaceBlurEnabled
+    property bool blurEnabled: true
     property color surfaceColor: "transparent"
     property real blurX: 0
     property real blurY: 0

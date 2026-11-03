@@ -1,12 +1,12 @@
 pragma Singleton
 pragma ComponentBehavior: Bound
 
-import QtCore
 import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
+import qs.DCommon.Common as DCommon
 import "../Common/OutputModel.js" as OutputModel
 
 // Native MangoWM IPC client. mango advertises a JSON-over-Unix-socket protocol
@@ -20,19 +20,27 @@ Singleton {
     readonly property string socketPath: Quickshell.env("MANGO_INSTANCE_SIGNATURE")
     readonly property bool available: socketPath.length > 0
 
-    readonly property string configDir: Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation))
-    readonly property string configPath: configDir + "/mango/config.conf"
+    // Mango reads only $HOME/.config/mango, whatever XDG_CONFIG_HOME says.
+    readonly property string configDir: Quickshell.env("HOME") + "/.config"
+    // Mango loads config.conf if it exists, readable or not, else config.toml. The watchers reload themselves to notice.
+    property bool confExists: false
+    property bool tomlExists: false
+    readonly property string configName: !confExists && tomlExists ? "config.toml" : "config.conf"
+    readonly property string configPath: configDir + "/mango/" + configName
     readonly property string mangoDmsDir: configDir + "/mango/dms"
     readonly property string bindsPath: mangoDmsDir + "/binds.conf"
-    readonly property string colorsPath: mangoDmsDir + "/colors.conf"
     readonly property string outputsPath: mangoDmsDir + "/outputs.conf"
     readonly property string layoutPath: mangoDmsDir + "/layout.conf"
     readonly property string cursorPath: mangoDmsDir + "/cursor.conf"
+    readonly property string inputPath: mangoDmsDir + "/input.conf"
     readonly property string windowRulesPath: mangoDmsDir + "/windowrules.conf"
 
+    property bool inputGenerationPending: false
+    property bool inputGenerationRunning: false
     property int _lastGapValue: -1
     property real _ignoreWatchedReloadUntil: 0
-    property real _lastWatchedReloadAt: 0
+    property string _lastMonitorsLine: ""
+    property string _lastClientsLine: ""
 
     // name -> { name, active, x, y, width, height, scale, layoutIndex,
     //           layoutSymbol, lastOpenSurface, kbLayout, keymode,
@@ -54,21 +62,33 @@ Singleton {
 
     FileView {
         id: mangoConfigWatcher
-        path: CompositorService.isMango ? root.configPath : ""
+        path: CompositorService.isMango ? root.configDir + "/mango/config.conf" : ""
         watchChanges: CompositorService.isMango
-        onFileChanged: root.handleWatchedConfigChanged()
+        printErrors: false
+        onLoaded: root.confExists = true
+        onLoadFailed: error => root.confExists = error !== FileViewError.FileNotFound
+        onFileChanged: {
+            mangoConfigWatcher.reload();
+            root.handleWatchedConfigChanged();
+        }
+    }
+
+    FileView {
+        id: mangoTomlWatcher
+        path: CompositorService.isMango ? root.configDir + "/mango/config.toml" : ""
+        watchChanges: CompositorService.isMango
+        printErrors: false
+        onLoaded: root.tomlExists = true
+        onLoadFailed: error => root.tomlExists = error !== FileViewError.FileNotFound
+        onFileChanged: {
+            mangoTomlWatcher.reload();
+            root.handleWatchedConfigChanged();
+        }
     }
 
     FileView {
         id: mangoBindsWatcher
         path: CompositorService.isMango ? root.bindsPath : ""
-        watchChanges: CompositorService.isMango
-        onFileChanged: root.handleWatchedConfigChanged()
-    }
-
-    FileView {
-        id: mangoColorsWatcher
-        path: CompositorService.isMango ? root.colorsPath : ""
         watchChanges: CompositorService.isMango
         onFileChanged: root.handleWatchedConfigChanged()
     }
@@ -88,6 +108,13 @@ Singleton {
     }
 
     FileView {
+        id: mangoInputWatcher
+        path: CompositorService.isMango ? root.inputPath : ""
+        watchChanges: CompositorService.isMango
+        onFileChanged: root.handleWatchedConfigChanged()
+    }
+
+    FileView {
         id: mangoOutputsWatcher
         path: CompositorService.isMango ? root.outputsPath : ""
         watchChanges: CompositorService.isMango
@@ -101,10 +128,10 @@ Singleton {
         onFileChanged: root.handleWatchedConfigChanged()
     }
 
-    DankSocket {
+    DCommon.DSocket {
         id: monitorsSocket
         path: root.socketPath
-        connected: root.available
+        connected: CompositorService.isMango && root.available
 
         onConnectionStateChanged: {
             if (linkUp) {
@@ -118,10 +145,10 @@ Singleton {
         }
     }
 
-    DankSocket {
+    DCommon.DSocket {
         id: clientsSocket
         path: root.socketPath
-        connected: root.available
+        connected: CompositorService.isMango && root.available
 
         onConnectionStateChanged: {
             if (linkUp)
@@ -135,10 +162,10 @@ Singleton {
 
     // mango closes the connection after each non-watch command; queued
     // dispatches drain one per reconnect cycle.
-    DankSocket {
+    DCommon.DSocket {
         id: dispatchSocket
         path: root.socketPath
-        connected: root.available
+        connected: CompositorService.isMango && root.available
         reconnectBaseMs: 25
 
         onConnectionStateChanged: {
@@ -192,8 +219,10 @@ Singleton {
     }
 
     function _handleMonitors(line) {
-        if (!line || !line.trim())
+        // Mango resends the full snapshot on every arrange/focus change, mostly unchanged.
+        if (!line || !line.trim() || line === root._lastMonitorsLine)
             return;
+        root._lastMonitorsLine = line;
         let data;
         try {
             data = JSON.parse(line);
@@ -219,7 +248,7 @@ Singleton {
             const tags = (m.tags || []).map(t => ({
                         // 0-based to match the legacy dwl tag model used by consumers
                         "tag": (t.index ?? 1) - 1,
-                        "state": t.is_urgent ? 2 : (!inOverview && t.is_active ? 1 : 0),
+                        "state": !inOverview && t.is_active ? 1 : (t.is_urgent ? 2 : 0),
                         "clients": t.client_count ?? 0,
                         "focused": !inOverview && !!t.is_active,
                         "urgent": !!t.is_urgent,
@@ -264,8 +293,9 @@ Singleton {
     }
 
     function _handleClients(line) {
-        if (!line || !line.trim())
+        if (!line || !line.trim() || line === root._lastClientsLine)
             return;
+        root._lastClientsLine = line;
         let data;
         try {
             data = JSON.parse(line);
@@ -380,7 +410,8 @@ Singleton {
                 "activated": !!client.is_focused,
                 "mangoWindowId": client.id,
                 "mangoTags": client.tags || [],
-                "mangoMonitor": client.monitor
+                "mangoMonitor": client.monitor,
+                "mangoVisible": client.is_visible === true
             };
             for (let prop in bestMatch) {
                 if (!(prop in enriched))
@@ -395,11 +426,10 @@ Singleton {
         if (!toplevels || toplevels.length === 0 || windows.length === 0)
             return [...toplevels];
         const enriched = _matchAndEnrich(toplevels, _orderedClients());
-        const used = new Set(enriched.map(e => e.mangoWindowId));
-        // Append wlr toplevels that had no mango client match (rare).
-        const matchedTitles = new Set(enriched.map(e => e.title + "\u0000" + e.appId));
+        // Toplevels with no mango client yet (the client list lags) go last instead of vanishing.
+        const matched = new Set(enriched.map(e => e.sourceToplevel));
         for (const t of toplevels) {
-            if (!matchedTitles.has((t.title || "") + "\u0000" + (t.appId || "")))
+            if (!matched.has(t))
                 enriched.push(t);
         }
         return enriched;
@@ -421,12 +451,13 @@ Singleton {
         if (active.size === 0)
             return toplevels;
 
+        // is_visible covers global windows; tags still keep minimized ones listed.
         const onActive = tags => (tags || []).some(t => active.has(t));
 
         if (toplevels.length > 0 && toplevels[0].mangoTags !== undefined)
-            return toplevels.filter(t => t.mangoMonitor === screenName && onActive(t.mangoTags));
+            return toplevels.filter(t => t.mangoMonitor === screenName && (t.mangoVisible || onActive(t.mangoTags)));
 
-        const clients = (windows || []).filter(c => c.monitor === screenName && onActive(c.tags));
+        const clients = (windows || []).filter(c => c.monitor === screenName && (c.is_visible === true || onActive(c.tags)));
         return _matchAndEnrich(toplevels, clients);
     }
 
@@ -446,16 +477,24 @@ Singleton {
         root._ignoreWatchedReloadUntil = Math.max(root._ignoreWatchedReloadUntil, Date.now() + (ms || 1500));
     }
 
+    // Trailing edge: an editor's save arrives as several events and the first may see a half-written file.
+    Timer {
+        id: watchedReloadTimer
+        interval: 400
+        onTriggered: root.reloadConfig(false, false)
+    }
+
+    DeferredAction {
+        id: inputGenerationAction
+        onTriggered: root.doGenerateInputConfig()
+    }
+
     function handleWatchedConfigChanged() {
         if (!CompositorService.isMango || !root.available)
             return;
-        const now = Date.now();
-        if (now < root._ignoreWatchedReloadUntil)
+        if (Date.now() < root._ignoreWatchedReloadUntil)
             return;
-        if (now - root._lastWatchedReloadAt < 700)
-            return;
-        root._lastWatchedReloadAt = now;
-        root.reloadConfig(false, false);
+        watchedReloadTimer.restart();
     }
 
     function reloadConfig(showToast, suppressWatch) {
@@ -466,6 +505,9 @@ Singleton {
         if (shouldSuppressWatch)
             suppressWatchedConfigReloads(1500);
         dispatch("reload_config", line => {
+            // Empty means the socket dropped before replying; the reload may still have run.
+            if (!line)
+                return;
             let ok = false;
             try {
                 ok = JSON.parse(line).success === true;
@@ -552,9 +594,8 @@ Singleton {
 
     Connections {
         target: SettingsData
+        enabled: CompositorService.isMango
         function onBarConfigsChanged() {
-            if (!CompositorService.isMango)
-                return;
             const newGaps = Math.max(4, (SettingsData.getPrimaryBarConfig()?.spacing ?? 4));
             if (newGaps === root._lastGapValue)
                 return;
@@ -566,8 +607,10 @@ Singleton {
     Connections {
         target: CompositorService
         function onIsMangoChanged() {
-            if (CompositorService.isMango)
-                generateLayoutConfig();
+            if (!CompositorService.isMango)
+                return;
+            generateLayoutConfig();
+            generateInputConfig();
         }
     }
 
@@ -577,59 +620,31 @@ Singleton {
                 callback(false);
             return;
         }
-        let lines = ["# Auto-generated by DMS - do not edit manually", ""];
-
-        for (const outputName in outputsData) {
-            const output = outputsData[outputName];
-            if (!output)
-                continue;
-            let width = 1920;
-            let height = 1080;
-            let refreshRate = 60;
-            const configured = (output.configured_mode || "").match(/^(\d+)x(\d+)@([\d.]+)$/);
-            if (configured) {
-                width = parseInt(configured[1], 10);
-                height = parseInt(configured[2], 10);
-                refreshRate = Math.round(parseFloat(configured[3]));
-            } else if (output.modes && output.current_mode !== undefined) {
-                const mode = output.modes[output.current_mode];
-                if (mode) {
-                    width = mode.width || 1920;
-                    height = mode.height || 1080;
-                    refreshRate = Math.round((mode.refresh_rate || 60000) / 1000);
-                }
-            }
-
-            const x = output.logical?.x ?? 0;
-            const y = output.logical?.y ?? 0;
-            const scale = output.logical?.scale ?? 1.0;
-            const transform = OutputModel.transformIndex(output.logical?.transform ?? "Normal");
-            const vrr = output.vrr_enabled ? 1 : 0;
-
-            // Anchor the name regex: mango matches `name:` unanchored (first-match
-            // wins), so a bare "DP-1" would also match "eDP-1" and collapse outputs.
-            const rule = ["name:^" + outputName + "$", "width:" + width, "height:" + height, "refresh:" + refreshRate, "x:" + x, "y:" + y, "scale:" + scale, "rr:" + transform, "vrr:" + vrr].join(",");
-
-            lines.push("monitorrule=" + rule);
-        }
-
-        lines.push("");
-
-        const content = lines.join("\n");
-
-        suppressWatchedConfigReloads(1500);
-        Proc.runCommand("mango-write-outputs", ["sh", "-c", `mkdir -p "${mangoDmsDir}" && cat > "${outputsPath}" << 'EOF'\n${content}EOF`], (output, exitCode) => {
-            if (exitCode !== 0) {
-                log.warn("Failed to write outputs config:", output);
+        // outputs.conf is sourced first, so its rules win over the main config's; read both for carried fields.
+        Proc.runCommand("mango-read-outputs", ["sh", "-c", 'cat "$1" 2>/dev/null; exec "$2" config mango-monitor-rules', "sh", outputsPath, Proc.dmsBin], (existing, readCode) => {
+            if (readCode !== 0) {
+                log.warn("Not writing outputs config: could not read monitor rules from", configPath);
                 if (callback)
                     callback(false);
                 return;
             }
-            log.info("Generated outputs config at", outputsPath);
-            if (CompositorService.isMango && !skipReload)
-                reloadConfig(false);
-            if (callback)
-                callback(true);
+            const lines = ["# Auto-generated by DMS - do not edit manually", ""].concat(OutputModel.mangoMonitorRuleLines(outputsData, existing), [""]);
+            const content = lines.join("\n");
+
+            suppressWatchedConfigReloads(1500);
+            Proc.runCommand("mango-write-outputs", ["sh", "-c", `mkdir -p "${mangoDmsDir}" && cat > "${outputsPath}" << 'EOF'\n${content}EOF`], (output, exitCode) => {
+                if (exitCode !== 0) {
+                    log.warn("Failed to write outputs config:", output);
+                    if (callback)
+                        callback(false);
+                    return;
+                }
+                log.info("Generated outputs config at", outputsPath);
+                if (CompositorService.isMango && !skipReload)
+                    reloadConfig(false);
+                if (callback)
+                    callback(true);
+            });
         });
     }
 
@@ -647,16 +662,19 @@ Singleton {
         const gapsOut = (gapsOverride >= 0 && SettingsData.mangoLayoutGapsOutOverride >= 0) ? SettingsData.mangoLayoutGapsOutOverride : gapsIn;
         const borderSize = (typeof SettingsData !== "undefined" && SettingsData.mangoLayoutBorderSize >= 0) ? SettingsData.mangoLayoutBorderSize : defaultBorderSize;
 
+        // layer_animations would tween the dot lift and the island sheet
         let content = `# Auto-generated by DMS - do not edit manually
 border_radius=${cornerRadius}
-borderpx=${borderSize}
+border_px=${borderSize}
+layer_rule=no_animation:1,layer_name:^(quickshell)$
+layer_rule=no_animation:1,layer_name:^dms:.*
 `;
 
         if (manageGaps)
-            content += `gappih=${gapsIn}
-gappiv=${gapsIn}
-gappoh=${gapsOut}
-gappov=${gapsOut}
+            content += `gap_inner_horizontal=${gapsIn}
+gap_inner_vertical=${gapsIn}
+gap_outer_horizontal=${gapsOut}
+gap_outer_vertical=${gapsOut}
 `;
 
         suppressWatchedConfigReloads(1500);
@@ -687,10 +705,8 @@ gappov=${gapsOut}
         const themeName = settings.theme === "System Default" ? (SettingsData.systemDefaultCursorTheme || "") : settings.theme;
         const size = settings.size || 24;
         const hideTimeout = settings.mango?.cursorHideTimeout || 0;
-        const naturalScrolling = SettingsData.mangoTrackpadNaturalScrolling ? 1 : 0;
 
         let content = `# Auto-generated by DMS - do not edit manually
-trackpad_natural_scrolling=${naturalScrolling}
 cursor_size=${size}`;
 
         if (themeName)
@@ -710,5 +726,96 @@ cursor_size=${size}`;
             log.info("Generated cursor config at", cursorPath);
             reloadConfig(false);
         });
+    }
+
+    function generateInputConfig() {
+        if (!CompositorService.isMango)
+            return;
+        inputGenerationPending = true;
+        inputGenerationAction.schedule();
+    }
+
+    function doGenerateInputConfig() {
+        if (inputGenerationRunning)
+            return;
+        inputGenerationPending = false;
+        if (!CompositorService.isMango)
+            return;
+        inputGenerationRunning = true;
+
+        const content = ["# Auto-generated by DMS - do not edit manually"].concat(mangoInputLines(SettingsData), [""]).join("\n");
+        // Exit 3 = unchanged, so a shell start does not reload Mango for nothing
+        const script = `mkdir -p "${mangoDmsDir}" && cat > "${inputPath}.tmp" << 'EOF'\n${content}EOF\nif cmp -s "${inputPath}.tmp" "${inputPath}"; then rm -f "${inputPath}.tmp"; exit 3; fi\nmv -f "${inputPath}.tmp" "${inputPath}"`;
+        suppressWatchedConfigReloads(1500);
+        Proc.runCommand("mango-write-input", ["sh", "-c", script], (output, exitCode) => {
+            inputGenerationRunning = false;
+            if (exitCode === 3) {
+                if (inputGenerationPending)
+                    inputGenerationAction.schedule();
+                return;
+            }
+            if (exitCode !== 0) {
+                log.warn("Failed to write input config:", output);
+            } else {
+                log.info("Generated input config at", inputPath);
+                reloadConfig(false);
+            }
+            if (inputGenerationPending)
+                inputGenerationAction.schedule();
+        });
+    }
+
+    // Mouse and trackpad keys are the split names Mango has had since 0.16.1; libinput enums are numeric
+    function mangoInputLines(s) {
+        const flag = value => value ? 1 : 0;
+        const profile = name => name === "flat" ? 1 : name === "adaptive" ? 2 : -1;
+        const scrollMethod = name => ({
+                    "no-scroll": 0,
+                    "two-finger": 1,
+                    "edge": 2,
+                    "on-button-down": 4
+                })[name] ?? -1;
+        const clickMethod = name => name === "button-areas" ? 1 : name === "clickfinger" ? 2 : -1;
+        const lines = [];
+        // -1 is a "default" choice: the key stays out so Mango's own default applies
+        const add = (key, value) => {
+            if (value !== -1 && value !== "")
+                lines.push(`${key}=${value}`);
+        };
+        add("mouse_accel_speed", s.mouseAccelSpeed.toFixed(2));
+        add("mouse_accel_profile", profile(s.mouseAccelProfile));
+        add("mouse_natural_scrolling", flag(s.mouseNaturalScroll));
+        add("mouse_left_handed", flag(s.mouseLeftHanded));
+        add("mouse_middle_button_emulation", flag(s.mouseMiddleEmulation));
+        add("axis_scroll_factor", s.mouseScrollFactor.toFixed(2));
+        add("mouse_scroll_method", scrollMethod(s.mouseScrollMethod));
+        add("sloppy_focus", s.focusFollowsMouse);
+        add("tap_to_click", flag(s.touchpadTapToClick));
+        add("tap_and_drag", flag(s.touchpadTapAndDrag));
+        add("drag_lock", flag(s.touchpadDragLock));
+        add("trackpad_accel_speed", s.touchpadAccelSpeed.toFixed(2));
+        add("trackpad_accel_profile", profile(s.touchpadAccelProfile));
+        add("trackpad_natural_scrolling", flag(s.touchpadNaturalScroll));
+        add("trackpad_scroll_factor", s.touchpadScrollFactor.toFixed(2));
+        add("trackpad_scroll_method", scrollMethod(s.touchpadScrollMethod));
+        add("trackpad_click_method", clickMethod(s.touchpadClickMethod));
+        add("trackpad_disable_while_typing", flag(s.touchpadDisableWhileTyping));
+        add("trackpad_middle_button_emulation", flag(s.touchpadMiddleEmulation));
+        add("trackpad_send_events_mode", s.touchpadDisableOnExternalMouse ? 2 : 0);
+
+        // Unconfigured keyboard keeps the user's own xkb_rules_* keys and the XKB defaults
+        const keyboardConfigured = s.keyboardLayouts || s.keyboardVariants || s.keyboardModel || s.keyboardOptions || s.keyboardRepeatDelay > 0 || s.keyboardRepeatRate > 0 || s.keyboardNumlock;
+        if (!keyboardConfigured)
+            return lines;
+        add("xkb_rules_layout", s.keyboardLayouts);
+        add("xkb_rules_variant", s.keyboardVariants);
+        add("xkb_rules_model", s.keyboardModel);
+        add("xkb_rules_options", s.keyboardOptions);
+        if (s.keyboardRepeatDelay > 0)
+            add("repeat_delay", s.keyboardRepeatDelay);
+        if (s.keyboardRepeatRate > 0)
+            add("repeat_rate", s.keyboardRepeatRate);
+        add("numlock_on", flag(s.keyboardNumlock));
+        return lines;
     }
 }

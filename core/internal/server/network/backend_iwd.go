@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -154,23 +154,7 @@ func (b *IWDBackend) applyManagedObjects(objects map[dbus.ObjectPath]map[string]
 		}
 		if _, hasDevice := interfaces[iwdDeviceInterface]; hasDevice {
 			b.devicePath = path
-
-			if devProps, ok := interfaces[iwdDeviceInterface]; ok {
-				if nameVar, ok := devProps["Name"]; ok {
-					if name, ok := nameVar.Value().(string); ok {
-						b.stateMutex.Lock()
-						b.state.WiFiDevice = name
-						b.stateMutex.Unlock()
-					}
-				}
-				if poweredVar, ok := devProps["Powered"]; ok {
-					if powered, ok := poweredVar.Value().(bool); ok {
-						b.stateMutex.Lock()
-						b.state.WiFiEnabled = powered
-						b.stateMutex.Unlock()
-					}
-				}
-			}
+			b.applyDeviceProps(interfaces[iwdDeviceInterface])
 		}
 		if _, hasAdapter := interfaces[iwdAdapterInterface]; hasAdapter {
 			b.adapterPath = path
@@ -191,6 +175,47 @@ func (b *IWDBackend) applyManagedObjects(objects map[dbus.ObjectPath]map[string]
 	}
 
 	return nil
+}
+
+func (b *IWDBackend) applyDeviceProps(props map[string]dbus.Variant) {
+	if nameVar, ok := props["Name"]; ok {
+		if name, ok := nameVar.Value().(string); ok {
+			b.stateMutex.Lock()
+			b.state.WiFiDevice = name
+			b.stateMutex.Unlock()
+		}
+	}
+	if poweredVar, ok := props["Powered"]; ok {
+		if powered, ok := poweredVar.Value().(bool); ok {
+			b.stateMutex.Lock()
+			b.state.WiFiEnabled = powered
+			b.stateMutex.Unlock()
+		}
+	}
+}
+
+// setDevice records a device that appeared at a new path, which is what
+// happens when iwd restarts and recreates wlan0. It returns the path it
+// replaced so the caller can move the signal match over.
+func (b *IWDBackend) setDevice(path dbus.ObjectPath, props map[string]dbus.Variant) (prev dbus.ObjectPath, changed bool) {
+	if path == "" || path == b.devicePath {
+		return "", false
+	}
+	prev = b.devicePath
+	b.devicePath = path
+	b.applyDeviceProps(props)
+	return prev, true
+}
+
+func (b *IWDBackend) clearDevice(path dbus.ObjectPath) bool {
+	if path == "" || path != b.devicePath {
+		return false
+	}
+	b.devicePath = ""
+	b.stateMutex.Lock()
+	b.state.WiFiEnabled = false
+	b.stateMutex.Unlock()
+	return true
 }
 
 func (b *IWDBackend) GetCurrentState() (*BackendState, error) {

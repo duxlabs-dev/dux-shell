@@ -210,6 +210,10 @@ Singleton {
                     head.scale = output.logical.scale ?? 1.0;
                     head.transform = OutputModel.transformIndex(output.logical.transform);
                 }
+
+                // Only heads that reported adaptive sync (wlr-output-management v4) accept set_adaptive_sync.
+                if (output.vrr_supported)
+                    head.adaptiveSync = output.vrr_enabled ? 1 : 0;
             }
             heads.push(head);
         }

@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
-import qs.DankCommon.Common as DankCommon
+import qs.DCommon.Common as DCommon
 
 SettingsDropdownRow {
     id: root
@@ -17,10 +17,7 @@ SettingsDropdownRow {
     function _enumerate() {
         if (_enumerated)
             return;
-        const bundled = DankCommon.Fonts.bundledFamilies.filter(f => f !== root.defaultFamily);
-        const system = Qt.fontFamilies().filter(f => !f.startsWith(".") && f !== root.defaultFamily && !bundled.includes(f));
-        system.sort();
-        _families = ["Default"].concat(bundled, system);
+        _families = ["Default"].concat(DCommon.Fonts.selectableFamilies(root.defaultFamily));
         _enumerated = true;
     }
 

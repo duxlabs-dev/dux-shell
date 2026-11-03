@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	mocks "github.com/AvengeMedia/DankMaterialShell/core/internal/mocks/evdev"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	mocks "github.com/duxlabs-dev/dux-shell/core/internal/mocks/evdev"
 )
 
 type mockNetConn struct {

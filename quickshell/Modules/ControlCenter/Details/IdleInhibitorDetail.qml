@@ -5,11 +5,13 @@ import qs.Common
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import "../../../Common/Format.js" as Format
 
 Item {
     id: root
+
+    implicitHeight: column.height
 
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
@@ -61,7 +63,7 @@ Item {
         return Format.formatRemaining(ms, "", I18n.tr("%1 min left"), I18n.tr("%1 h left"), I18n.tr("%1 h %2 m left"));
     }
 
-    DankFlickable {
+    DFlickable {
         anchors.fill: parent
         contentHeight: column.height
         clip: true
@@ -73,7 +75,7 @@ Item {
 
             CcGroup {
                 CcToggleRow {
-                    iconName: SessionService.idleInhibited ? "motion_sensor_active" : "motion_sensor_idle"
+                    iconName: "local_cafe"
                     iconColor: SessionService.idleInhibited ? Theme.primary : Theme.surfaceText
                     text: I18n.tr("Prevent screen timeout")
                     description: {
@@ -97,7 +99,7 @@ Item {
                     Repeater {
                         model: root.presets
 
-                        DankButton {
+                        DButton {
                             required property var modelData
 
                             buttonHeight: Theme.buttonHeightXS

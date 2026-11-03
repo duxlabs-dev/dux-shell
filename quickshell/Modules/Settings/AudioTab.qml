@@ -1,27 +1,61 @@
 import QtQuick
-import Quickshell.Services.Pipewire
 import qs.Common
+import qs.Modals.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
     id: root
+
+    readonly property var log: Log.scoped("AudioTab")
 
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
     property var outputDevices: []
     property var inputDevices: []
-    property bool showEditDialog: false
+    property var parentModal: null
     property var editingDevice: null
     property string editingDeviceType: ""
-    property string newDeviceName: ""
     property bool isReloadingAudio: false
     property var hiddenOutputDeviceNames: SessionData.hiddenOutputDeviceNames ?? []
     property var hiddenInputDeviceNames: SessionData.hiddenInputDeviceNames ?? []
+    // Hidden names persist for absent devices (unplugged, card disabled), so count only the present ones
+    readonly property var shownOutputDevices: outputDevices.filter(d => !hiddenOutputDeviceNames.includes(d.name))
+    readonly property var hiddenOutputDevices: outputDevices.filter(d => hiddenOutputDeviceNames.includes(d.name))
+    readonly property var shownInputDevices: inputDevices.filter(d => !hiddenInputDeviceNames.includes(d.name))
+    readonly property var hiddenInputDevices: inputDevices.filter(d => hiddenInputDeviceNames.includes(d.name))
     property bool showHiddenOutputDevices: false
+    property bool showDisabledOutputCards: false
+    property var deviceSetKey: null
     property bool showHiddenInputDevices: false
+
+    function openRenameDialog(device, type) {
+        editingDevice = device;
+        editingDeviceType = type;
+        renameDialog.show(AudioService.displayName(device));
+    }
+
+    function confirmDisableCard(card) {
+        disableCardConfirm.showWithOptions({
+            "title": I18n.tr("Disable %1?", "audio settings confirmation title, %1 is the sound card name").arg(card.description),
+            "message": I18n.tr("Every output and input of this sound card turns off until you enable it again", "audio settings confirmation message before disabling a sound card"),
+            "confirmText": I18n.tr("Disable", "audio settings button that turns a sound card off"),
+            "confirmColor": Theme.error,
+            "onConfirm": () => AudioService.setCardProfile(card.name, "off", (ok, message) => {
+                if (!ok)
+                    ToastService.showToast(message, ToastService.levelError);
+            })
+        });
+    }
+
+    function saveDeviceName(name) {
+        if (!editingDevice)
+            return;
+        AudioService.setDeviceAlias(editingDevice.name, name);
+        renameDialog.hide();
+    }
 
     function persistHiddenOutputDeviceNames(deviceNames) {
         const uniqueNames = [...new Set(deviceNames)];
@@ -36,7 +70,7 @@ Item {
     }
 
     function updateDeviceList() {
-        const allNodes = Pipewire.nodes.values;
+        const allNodes = AudioService.allNodes;
 
         // Sort devices: active first, then alphabetically by name
         const sortDevices = (a, b) => {
@@ -69,17 +103,27 @@ Item {
         };
 
         inputDevices = inputs.sort(sortInputs);
+
+        // deviceRevision also bumps on app streams, so re-read cards only when the device set changes
+        const key = outputs.concat(inputs).filter(node => !node.isStream).map(node => node.name).sort().join("\n");
+        if (key === deviceSetKey)
+            return;
+        deviceSetKey = key;
+        AudioService.refreshCards();
     }
 
     Component.onCompleted: {
+        AudioService.addRef();
+        AudioService.queryMonoSetting(() => {});
         hiddenOutputDeviceNames = SessionData.hiddenOutputDeviceNames ?? [];
         hiddenInputDeviceNames = SessionData.hiddenInputDeviceNames ?? [];
         updateDeviceList();
     }
+    Component.onDestruction: AudioService.removeRef()
 
     Connections {
-        target: Pipewire.nodes
-        function onValuesChanged() {
+        target: AudioService
+        function onDeviceRevisionChanged() {
             root.updateDeviceList();
         }
     }
@@ -116,8 +160,39 @@ Item {
         }
     }
 
+    ConfirmDialogOverlay {
+        id: disableCardConfirm
+        parent: root.parentModal?.modalFocusScope ?? root
+    }
+
     SettingsPage {
         id: mainColumn
+
+        SettingsCard {
+            tab: "audio"
+            tags: ["audio", "accessibility", "mono"]
+            title: I18n.tr("Mono Audio", "Audio settings: mono audio toggle")
+            settingKey: "audioMono"
+            iconName: "a11y"
+
+            SettingsToggleRow {
+                tab: "audio"
+                tags: ["audio", "mono"]
+                settingKey: "audioMono"
+                text: I18n.tr("Mono Audio", "Audio settings: mono audio toggle")
+                description: I18n.tr("Mix all stereo content into a single channel", "Audio settings mono description")
+                enabled: AudioService.monoSettingSupported
+                checked: SettingsData.audioMono
+                onToggled: checked => {
+                    SettingsData.set("audioMono", checked);
+                    AudioService.setMonoSetting(checked, (ok, message) => {
+                        if (!ok) {
+                            SettingsData.set("audioMono", !checked);
+                        }
+                    });
+                }
+            }
+        }
 
         SettingsCard {
             tab: "audio"
@@ -147,7 +222,7 @@ Item {
             }
 
             Repeater {
-                model: root.outputDevices.filter(d => !root.hiddenOutputDeviceNames.includes(d.name))
+                model: root.shownOutputDevices
 
                 delegate: Column {
                     required property var modelData
@@ -155,19 +230,27 @@ Item {
                     spacing: 0
 
                     DeviceAliasRow {
+                        id: outputRow
+
+                        readonly property var card: AudioService.cardForSink(modelData)
+
                         deviceNode: modelData
                         deviceType: "output"
                         showHideButton: true
 
-                        onEditRequested: device => {
-                            root.editingDevice = device;
-                            root.editingDeviceType = "output";
-                            root.newDeviceName = AudioService.displayName(device);
-                            root.showEditDialog = true;
-                        }
+                        onEditRequested: device => root.openRenameDialog(device, "output")
 
                         onHideRequested: device => {
                             root.persistHiddenOutputDeviceNames([...root.hiddenOutputDeviceNames, device.name]);
+                        }
+
+                        DActionButton {
+                            visible: outputRow.card !== null
+                            iconName: "power_settings_new"
+                            iconSize: Theme.iconSizeMedium
+                            iconColor: Theme.error
+                            tooltipText: I18n.tr("Disable card", "audio settings button that turns a sound card off")
+                            onClicked: root.confirmDisableCard(outputRow.card)
                         }
                     }
 
@@ -186,8 +269,9 @@ Item {
                             horizontalAlignment: Text.AlignLeft
                         }
 
-                        DankSlider {
+                        DSlider {
                             id: maxVolSlider
+                            upDownKeysStep: false
                             anchors.left: maxVolLabel.right
                             anchors.leftMargin: Theme.spacingS
                             anchors.right: parent.right
@@ -215,7 +299,7 @@ Item {
             }
 
             SettingsRow {
-                visible: root.outputDevices.filter(d => !root.hiddenOutputDeviceNames.includes(d.name)).length === 0 && root.hiddenOutputDeviceNames.length === 0
+                visible: root.shownOutputDevices.length === 0 && root.hiddenOutputDevices.length === 0 && AudioService.disabledOutputCards.length === 0
                 body: StyledText {
                     width: parent.width
                     text: I18n.tr("No output devices found", "Audio settings empty state")
@@ -227,7 +311,7 @@ Item {
             }
 
             SettingsRow {
-                visible: root.hiddenOutputDeviceNames.length > 0
+                visible: root.hiddenOutputDevices.length > 0
                 body: Column {
                     width: parent.width
                     spacing: 0
@@ -241,7 +325,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: Theme.spacingS
 
-                            DankIcon {
+                            DIcon {
                                 name: "visibility_off"
                                 size: Theme.iconSizeMedium
                                 color: Theme.surfaceVariantText
@@ -249,14 +333,14 @@ Item {
                             }
 
                             StyledText {
-                                text: I18n.tr("Hidden (%1)", "count of hidden audio devices").arg(root.hiddenOutputDeviceNames.length)
+                                text: I18n.tr("Hidden (%1)", "count of hidden audio devices").arg(root.hiddenOutputDevices.length)
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceVariantText
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                         }
 
-                        DankIcon {
+                        DIcon {
                             name: root.showHiddenOutputDevices ? "expand_less" : "expand_more"
                             size: Theme.iconSizeMedium
                             color: Theme.surfaceVariantText
@@ -277,7 +361,7 @@ Item {
                         visible: root.showHiddenOutputDevices
 
                         Repeater {
-                            model: root.outputDevices.filter(d => root.hiddenOutputDeviceNames.includes(d.name))
+                            model: root.hiddenOutputDevices
 
                             delegate: DeviceAliasRow {
                                 required property var modelData
@@ -288,6 +372,81 @@ Item {
 
                                 onHideRequested: device => {
                                     root.persistHiddenOutputDeviceNames(root.hiddenOutputDeviceNames.filter(n => n !== device.name));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            SettingsRow {
+                visible: AudioService.disabledOutputCards.length > 0
+                body: Column {
+                    width: parent.width
+                    spacing: 0
+
+                    Item {
+                        width: parent.width
+                        height: 36
+
+                        Row {
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: Theme.spacingS
+
+                            DIcon {
+                                name: "power_off"
+                                size: Theme.iconSizeMedium
+                                color: Theme.surfaceVariantText
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            StyledText {
+                                text: I18n.tr("Disabled (%1)", "count of disabled audio output cards").arg(AudioService.disabledOutputCards.length)
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        DIcon {
+                            name: root.showDisabledOutputCards ? "expand_less" : "expand_more"
+                            size: Theme.iconSizeMedium
+                            color: Theme.surfaceVariantText
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.showDisabledOutputCards = !root.showDisabledOutputCards
+                        }
+                    }
+
+                    Column {
+                        width: parent.width
+                        spacing: 0
+                        visible: root.showDisabledOutputCards
+
+                        Repeater {
+                            model: AudioService.disabledOutputCards
+
+                            delegate: SettingsRow {
+                                required property var modelData
+
+                                iconName: "speaker"
+                                title: modelData.cardDescription
+                                subtitle: modelData.cardName
+
+                                DActionButton {
+                                    iconName: "power_settings_new"
+                                    iconSize: Theme.iconSizeMedium
+                                    tooltipText: I18n.tr("Enable card", "audio settings button that turns a disabled sound card back on")
+                                    onClicked: AudioService.setCardProfile(modelData.cardName, modelData.profile, (ok, message) => {
+                                        if (!ok)
+                                            ToastService.showToast(message, ToastService.levelError);
+                                    })
                                 }
                             }
                         }
@@ -318,7 +477,7 @@ Item {
                     }
 
                     Repeater {
-                        model: root.inputDevices.filter(d => !root.hiddenInputDeviceNames.includes(d.name))
+                        model: root.shownInputDevices
 
                         delegate: DeviceAliasRow {
                             required property var modelData
@@ -327,12 +486,7 @@ Item {
                             deviceType: "input"
                             showHideButton: true
 
-                            onEditRequested: device => {
-                                root.editingDevice = device;
-                                root.editingDeviceType = "input";
-                                root.newDeviceName = AudioService.displayName(device);
-                                root.showEditDialog = true;
-                            }
+                            onEditRequested: device => root.openRenameDialog(device, "input")
 
                             onHideRequested: device => {
                                 root.persistHiddenInputDeviceNames([...root.hiddenInputDeviceNames, device.name]);
@@ -346,14 +500,14 @@ Item {
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceVariantText
                         horizontalAlignment: Text.AlignHCenter
-                        visible: root.inputDevices.filter(d => !root.hiddenInputDeviceNames.includes(d.name)).length === 0 && root.hiddenInputDeviceNames.length === 0
+                        visible: root.shownInputDevices.length === 0 && root.hiddenInputDevices.length === 0
                         topPadding: Theme.spacingM
                     }
 
                     Column {
                         width: parent.width
                         spacing: 0
-                        visible: root.hiddenInputDeviceNames.length > 0
+                        visible: root.hiddenInputDevices.length > 0
 
                         Item {
                             width: parent.width
@@ -364,7 +518,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 spacing: Theme.spacingS
 
-                                DankIcon {
+                                DIcon {
                                     name: "visibility_off"
                                     size: Theme.iconSizeMedium
                                     color: Theme.surfaceVariantText
@@ -372,14 +526,14 @@ Item {
                                 }
 
                                 StyledText {
-                                    text: I18n.tr("Hidden (%1)", "count of hidden audio devices").arg(root.hiddenInputDeviceNames.length)
+                                    text: I18n.tr("Hidden (%1)", "count of hidden audio devices").arg(root.hiddenInputDevices.length)
                                     font.pixelSize: Theme.fontSizeSmall
                                     color: Theme.surfaceVariantText
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
                             }
 
-                            DankIcon {
+                            DIcon {
                                 name: root.showHiddenInputDevices ? "expand_less" : "expand_more"
                                 size: Theme.iconSizeMedium
                                 color: Theme.surfaceVariantText
@@ -400,7 +554,7 @@ Item {
                             visible: root.showHiddenInputDevices
 
                             Repeater {
-                                model: root.inputDevices.filter(d => root.hiddenInputDeviceNames.includes(d.name))
+                                model: root.hiddenInputDevices
 
                                 delegate: DeviceAliasRow {
                                     required property var modelData
@@ -424,7 +578,7 @@ Item {
     Rectangle {
         id: loadingOverlay
         anchors.fill: parent
-        color: Theme.withAlpha(Theme.surface, 0.9)
+        color: Theme.withAlpha(Theme.hostSurface, 0.9)
         visible: root.isReloadingAudio
         z: 100
 
@@ -432,30 +586,9 @@ Item {
             anchors.centerIn: parent
             spacing: Theme.spacingL
 
-            Rectangle {
-                width: 80
-                height: 80
-                radius: Theme.fullRadius(width, height)
-                color: Theme.primaryContainer
+            DLoadingIndicator {
+                contained: true
                 anchors.horizontalCenter: parent.horizontalCenter
-
-                DankIcon {
-                    id: spinningIcon
-                    name: "refresh"
-                    size: 40
-                    color: Theme.accentOnPrimaryContainer
-                    anchors.centerIn: parent
-                    smoothTransform: loadingOverlay.visible
-
-                    RotationAnimator {
-                        target: spinningIcon
-                        from: 0
-                        to: 360
-                        duration: 1500
-                        loops: Animation.Infinite
-                        running: loadingOverlay.visible
-                    }
-                }
             }
 
             Column {
@@ -480,222 +613,34 @@ Item {
                 }
             }
         }
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: Theme.shortDuration
-                easing.type: Theme.standardEasing
-            }
-        }
     }
 
-    Rectangle {
-        id: dialogOverlay
-        anchors.fill: parent
-        visible: root.showEditDialog
-        color: Theme.withAlpha(Theme.surface, 0.8)
-        z: 1000
+    SettingsRenameDialog {
+        id: renameDialog
+        parent: root.parentModal?.modalFocusScope ?? root
+        title: I18n.tr("Set custom device name")
+        supportingText: root.editingDevice?.name ?? ""
+        labelText: I18n.tr("Custom name")
+        leftIconName: root.editingDeviceType === "input" ? "mic" : "speaker"
+        onAccepted: name => root.saveDeviceName(name)
 
-        MouseArea {
-            anchors.fill: parent
-            onClicked: {
-                root.showEditDialog = false;
-            }
+        aboveField: StyledText {
+            visible: AudioService.hasDeviceAlias(root.editingDevice?.name ?? "")
+            text: I18n.tr("Original: %1", "Shows the original device name before renaming").arg(AudioService.originalName(root.editingDevice))
+            font.pixelSize: Theme.fontSizeSmall
+            color: Theme.surfaceVariantText
+            width: parent.width
+            elide: Text.ElideRight
+            horizontalAlignment: Text.AlignLeft
         }
 
-        Rectangle {
-            id: editDialog
-            anchors.centerIn: parent
-            width: Math.min(500, parent.width - Theme.spacingL * 4)
-            height: dialogContent.implicitHeight + Theme.spacingL * 2
-            radius: Theme.cornerRadius
-            color: Theme.floatingWindowNestedSurface
-            border.width: Theme.layerOutlineWidth
-            border.color: Theme.outlineMedium
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {}
-            }
-
-            Column {
-                id: dialogContent
-                anchors.fill: parent
-                anchors.margins: Theme.spacingL
-                spacing: Theme.spacingL
-
-                Row {
-                    width: parent.width
-                    spacing: Theme.spacingM
-
-                    DankIcon {
-                        name: root.editingDeviceType === "input" ? "mic" : "speaker"
-                        size: Theme.iconSizeLarge
-                        color: Theme.primary
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Column {
-                        width: parent.width - Theme.iconSize - Theme.spacingM - 8
-                        spacing: Theme.spacingXS
-
-                        StyledText {
-                            text: I18n.tr("Set custom device name")
-                            font.pixelSize: Theme.fontSizeLarge
-                            font.weight: Theme.fontWeightMedium
-                            color: Theme.surfaceText
-                            width: parent.width
-                            wrapMode: Text.Wrap
-                            horizontalAlignment: Text.AlignLeft
-                        }
-
-                        StyledText {
-                            text: root.editingDevice?.name ?? ""
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.surfaceVariantText
-                            width: parent.width
-                            elide: Text.ElideRight
-                            horizontalAlignment: Text.AlignLeft
-                        }
-
-                        StyledText {
-                            visible: AudioService.hasDeviceAlias(root.editingDevice?.name ?? "")
-                            text: I18n.tr("Original: %1", "Shows the original device name before renaming").arg(AudioService.originalName(root.editingDevice))
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.surfaceVariantText
-                            width: parent.width
-                            elide: Text.ElideRight
-                            opacity: 0.7
-                            horizontalAlignment: Text.AlignLeft
-                        }
-                    }
-                }
-
-                Column {
-                    width: parent.width
-                    spacing: Theme.spacingM
-
-                    DankTextField {
-                        id: nameInput
-                        outlined: true
-                        leftIconName: "edit"
-                        labelText: I18n.tr("Custom name")
-                        width: parent.width
-                        text: root.newDeviceName
-                        showClearButton: true
-
-                        onTextChanged: {
-                            root.newDeviceName = text;
-                        }
-
-                        Keys.onReturnPressed: {
-                            if (text.trim() !== "") {
-                                saveButtonMouseArea.clicked(null);
-                            }
-                        }
-
-                        Keys.onEscapePressed: {
-                            root.showEditDialog = false;
-                        }
-
-                        Component.onCompleted: {
-                            Qt.callLater(() => {
-                                forceActiveFocus();
-                                selectAll();
-                            });
-                        }
-                    }
-
-                    StyledText {
-                        width: parent.width
-                        text: I18n.tr("Press Enter and the audio system will restart to apply the change", "Audio device rename dialog hint")
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceVariantText
-                        wrapMode: Text.WordWrap
-                        horizontalAlignment: Text.AlignLeft
-                    }
-                }
-
-                Row {
-                    LayoutMirroring.enabled: false
-                    width: parent.width
-                    spacing: Theme.spacingM
-                    layoutDirection: Qt.RightToLeft
-
-                    Rectangle {
-                        id: saveButton
-                        width: saveButtonContent.width + Theme.spacingL * 2
-                        height: Theme.iconButtonSize
-                        radius: Theme.cornerRadius
-                        color: saveButtonMouseArea.containsMouse ? Theme.blend(Theme.primary, Theme.onPrimary, Theme.stateLayerHover) : Theme.primary
-                        enabled: root.newDeviceName.trim() !== ""
-                        opacity: enabled ? 1.0 : 0.5
-
-                        Row {
-                            id: saveButtonContent
-                            anchors.centerIn: parent
-                            spacing: Theme.spacingS
-
-                            DankIcon {
-                                name: "check"
-                                size: Theme.iconSizeMedium
-                                color: Theme.onPrimary
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            StyledText {
-                                text: I18n.tr("Save")
-                                font.pixelSize: Theme.fontSizeMedium
-                                font.weight: Theme.fontWeightMedium
-                                color: Theme.onPrimary
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-                        }
-
-                        MouseArea {
-                            id: saveButtonMouseArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            enabled: parent.enabled
-                            onClicked: {
-                                if (root.editingDevice && root.newDeviceName.trim() !== "") {
-                                    AudioService.setDeviceAlias(root.editingDevice.name, root.newDeviceName);
-                                    root.showEditDialog = false;
-                                }
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        width: cancelButtonText.width + Theme.spacingL * 2
-                        height: Theme.iconButtonSize
-                        radius: Theme.cornerRadius
-                        color: cancelButtonMouseArea.containsMouse ? Theme.surfaceHover : Theme.withAlpha(Theme.surfaceHover, 0)
-                        border.width: Theme.outlineWidth
-                        border.color: Theme.outline
-
-                        StyledText {
-                            id: cancelButtonText
-                            text: I18n.tr("Cancel")
-                            font.pixelSize: Theme.fontSizeMedium
-                            font.weight: Theme.fontWeightMedium
-                            color: Theme.surfaceText
-                            anchors.centerIn: parent
-                        }
-
-                        MouseArea {
-                            id: cancelButtonMouseArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.showEditDialog = false;
-                            }
-                        }
-                    }
-                }
-            }
+        belowField: StyledText {
+            width: parent.width
+            text: I18n.tr("Press Enter and the audio system will restart to apply the change", "Audio device rename dialog hint")
+            font.pixelSize: Theme.fontSizeSmall
+            color: Theme.surfaceVariantText
+            wrapMode: Text.WordWrap
+            horizontalAlignment: Text.AlignLeft
         }
     }
 }

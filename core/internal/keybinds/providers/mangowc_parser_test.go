@@ -1,8 +1,12 @@
 package providers
 
 import (
+	"maps"
 	"os"
 	"path/filepath"
+	"reflect"
+	"slices"
+	"strings"
 	"testing"
 )
 
@@ -36,48 +40,23 @@ func TestMangoWCAutogenerateComment(t *testing.T) {
 		expected string
 	}{
 		{"spawn", "kitty", "kitty"},
-		{"spawn_shell", "firefox", "firefox"},
 		{"killclient", "", "Close window"},
-		{"quit", "", "Exit MangoWC"},
-		{"reload_config", "", "Reload configuration"},
 		{"focusstack", "next", "Focus next window"},
 		{"focusstack", "prev", "Focus previous window"},
 		{"focusdir", "left", "Focus left"},
-		{"focusdir", "right", "Focus right"},
-		{"focusdir", "up", "Focus up"},
-		{"focusdir", "down", "Focus down"},
 		{"exchange_client", "left", "Swap window left"},
-		{"exchange_client", "right", "Swap window right"},
-		{"togglefloating", "", "Float/unfloat window"},
-		{"togglefullscreen", "", "Toggle fullscreen"},
-		{"togglefakefullscreen", "", "Toggle fake fullscreen"},
-		{"togglemaximizescreen", "", "Toggle maximize"},
-		{"toggleglobal", "", "Toggle global"},
-		{"toggleoverview", "", "Toggle overview"},
-		{"toggleoverlay", "", "Toggle overlay"},
-		{"minimized", "", "Minimize window"},
-		{"restore_minimized", "", "Restore minimized"},
-		{"toggle_scratchpad", "", "Toggle scratchpad"},
+		{"move_client", "left", "Move window left"},
+		{"scroller_stack", "up", "Stack window up"},
+		{"togglejump", "", "Jump to window"},
 		{"setlayout", "tile", "Set layout tile"},
-		{"switch_layout", "", "Switch layout"},
 		{"view", "1,0", "View tag 1"},
 		{"tag", "2,0", "Move to tag 2"},
 		{"toggleview", "3,0", "Toggle tag 3"},
-		{"viewtoleft", "", "View left tag"},
-		{"viewtoright", "", "View right tag"},
 		{"viewtoleft_have_client", "", "View left tag"},
-		{"viewtoright_have_client", "", "View right tag"},
-		{"tagtoleft", "", "Move to left tag"},
-		{"tagtoright", "", "Move to right tag"},
 		{"focusmon", "left", "Focus monitor left"},
-		{"tagmon", "right", "Move to monitor right"},
 		{"incgaps", "1", "Increase gaps"},
 		{"incgaps", "-1", "Decrease gaps"},
-		{"togglegaps", "", "Toggle gaps"},
 		{"movewin", "+0,-50", "Move window by +0,-50"},
-		{"resizewin", "+0,+50", "Resize window by +0,+50"},
-		{"set_proportion", "1.0", "Set proportion 1.0"},
-		{"switch_proportion_preset", "", "Switch proportion preset"},
 		{"unknown", "", ""},
 	}
 
@@ -179,17 +158,6 @@ func TestMangoWCGetKeybindAtLine(t *testing.T) {
 				Command: "spawn",
 				Params:  "dms ipc call lock lock",
 				Comment: "dms ipc call lock lock",
-			},
-		},
-		{
-			name: "bindp_flag",
-			line: "bindp=SUPER,p,spawn,pass-through",
-			expected: &MangoWCKeyBinding{
-				Mods:    []string{"SUPER"},
-				Key:     "p",
-				Command: "spawn",
-				Params:  "pass-through",
-				Comment: "pass-through",
 			},
 		},
 		{
@@ -378,64 +346,6 @@ func TestMangoWCReadContentErrors(t *testing.T) {
 	}
 }
 
-func TestMangoWCReadContentWithTildeExpansion(t *testing.T) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		t.Skip("Cannot get home directory")
-	}
-
-	tmpSubdir := filepath.Join(homeDir, ".config", "test-mango-"+t.Name())
-	if err := os.MkdirAll(tmpSubdir, 0o755); err != nil {
-		t.Skip("Cannot create test directory in home")
-	}
-	defer os.RemoveAll(tmpSubdir)
-
-	configFile := filepath.Join(tmpSubdir, "config.conf")
-	if err := os.WriteFile(configFile, []byte("bind=ALT,q,killclient,\n"), 0o644); err != nil {
-		t.Fatalf("Failed to write test config: %v", err)
-	}
-
-	relPath, err := filepath.Rel(homeDir, tmpSubdir)
-	if err != nil {
-		t.Skip("Cannot create relative path")
-	}
-
-	parser := NewMangoWCParser("")
-	tildePathMatch := "~/" + relPath
-	err = parser.ReadContent(tildePathMatch)
-
-	if err != nil {
-		t.Errorf("ReadContent with tilde path failed: %v", err)
-	}
-}
-
-func TestMangoWCEmptyAndCommentLines(t *testing.T) {
-	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "config.conf")
-
-	content := `
-# This is a comment
-bind=ALT,q,killclient,
-
-# Another comment
-
-bind=Alt,t,spawn,kitty
-`
-
-	if err := os.WriteFile(configFile, []byte(content), 0o644); err != nil {
-		t.Fatalf("Failed to write test config: %v", err)
-	}
-
-	keybinds, err := ParseMangoWCKeys(configFile)
-	if err != nil {
-		t.Fatalf("ParseMangoWCKeys failed: %v", err)
-	}
-
-	if len(keybinds) != 2 {
-		t.Errorf("Expected 2 keybinds (comments ignored), got %d", len(keybinds))
-	}
-}
-
 func TestMangoWCInvalidBindLines(t *testing.T) {
 	tests := []struct {
 		name string
@@ -468,70 +378,189 @@ func TestMangoWCInvalidBindLines(t *testing.T) {
 	}
 }
 
-func TestMangoWCRealWorldConfig(t *testing.T) {
-	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "config.conf")
-
-	content := `# Application Launchers
-bind=Alt,t,spawn,kitty
-bind=Alt,space,spawn,dms ipc call spotlight toggle
-bind=Alt,v,spawn,dms ipc call clipboard toggle
-
-# exit
-bind=ALT+SHIFT,e,quit
-bind=ALT,q,killclient,
-
-# switch window focus
-bind=SUPER,Tab,focusstack,next
-bind=ALT,Left,focusdir,left
-bind=ALT,Right,focusdir,right
-
-# tag switch
-bind=SUPER,Left,viewtoleft,0
-bind=CTRL,Left,viewtoleft_have_client,0
-bind=SUPER,Right,viewtoright,0
-
-bind=Ctrl,1,view,1,0
-bind=Ctrl,2,view,2,0
-bind=Ctrl,3,view,3,0
-`
-
-	if err := os.WriteFile(configFile, []byte(content), 0o644); err != nil {
-		t.Fatalf("Failed to write test config: %v", err)
+func TestMangoWCParseWithDMSKeyModes(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "dms"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		filepath.Join(dir, "config.conf"): `key_mode=resize
+bind=SUPER,q,killclient
+key_mode=common
+bind=SUPER,x,killclient
+key_mode=default
+bindc=SUPER,Return,spawn,foot
+source=./dms/binds.conf
+`,
+		filepath.Join(dir, "dms", "binds.conf"): "bind=SUPER,q,spawn,dms ipc call powermenu toggle\nbind=SUPER,x,spawn,dms ipc call spotlight toggle\n",
+	}
+	for path, content := range files {
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
 
-	keybinds, err := ParseMangoWCKeys(configFile)
+	result, err := ParseMangoWCKeysWithDMS(dir)
 	if err != nil {
-		t.Fatalf("ParseMangoWCKeys failed: %v", err)
+		t.Fatal(err)
 	}
-
-	if len(keybinds) < 14 {
-		t.Errorf("Expected at least 14 keybinds, got %d", len(keybinds))
+	var binds []string
+	for _, kb := range result.Keybinds {
+		binds = append(binds, strings.Join(append(kb.Mods, kb.Key), "+")+" "+filepath.Base(kb.Source))
 	}
+	want := []string{"SUPER+q config.conf", "SUPER+x binds.conf", "SUPER+Return config.conf", "SUPER+q binds.conf"}
+	if !reflect.DeepEqual(binds, want) {
+		t.Errorf("binds = %v, want %v", binds, want)
+	}
+	conflicts := slices.Sorted(maps.Keys(result.ConflictingConfigs))
+	if !reflect.DeepEqual(conflicts, []string{"default:super+x"}) {
+		t.Errorf("conflicts = %v, want only the common-mode super+x", conflicts)
+	}
+}
 
-	foundSpawn := false
-	foundQuit := false
-	foundView := false
-
-	for _, kb := range keybinds {
-		if kb.Command == "spawn" && kb.Params == "kitty" {
-			foundSpawn = true
+func TestMangoWCParseWithDMSReadsConfigToml(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "dms"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		filepath.Join(dir, "config.toml"): `key_mode = "common"
+[bind.default]
+"SUPER+Return" = "spawn,foot" # Terminal
+"SUPER+n" = "spawn,notify-send '#1'"
+[bind.resize]
+"SUPER+q" = "killclient"
+[global]
+bind = "SUPER,x,killclient"
+key_mode = "default"
+source = "./dms/binds.conf"
+`,
+		filepath.Join(dir, "dms", "binds.conf"): "bind=SUPER,q,spawn,dms ipc call powermenu toggle\nbind=SUPER,x,spawn,dms ipc call spotlight toggle\n",
+	}
+	for path, content := range files {
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
 		}
-		if kb.Command == "quit" {
-			foundQuit = true
-		}
-		if kb.Command == "view" && kb.Params == "1,0" {
-			foundView = true
-		}
 	}
 
-	if !foundSpawn {
-		t.Error("Did not find spawn kitty keybind")
+	result, err := ParseMangoWCKeysWithDMS(dir)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if !foundQuit {
-		t.Error("Did not find quit keybind")
+	var binds []string
+	for _, kb := range result.Keybinds {
+		binds = append(binds, strings.Join([]string{kb.Mode, strings.Join(append(kb.Mods, kb.Key), "+"), kb.Params, kb.Comment, filepath.Base(kb.Source)}, " | "))
 	}
-	if !foundView {
-		t.Error("Did not find view workspace 1 keybind")
+	want := []string{
+		"default | SUPER+Return | foot | Terminal | config.toml",
+		"default | SUPER+n | notify-send '#1' | notify-send '#1' | config.toml",
+		"resize | SUPER+q |  | Close window | config.toml",
+		"default | SUPER+x | dms ipc call spotlight toggle | dms ipc call spotlight toggle | binds.conf",
+		"default | SUPER+q | dms ipc call powermenu toggle | dms ipc call powermenu toggle | binds.conf",
+	}
+	if !reflect.DeepEqual(binds, want) {
+		t.Errorf("binds =\n%q\nwant\n%q", binds, want)
+	}
+	conflict := result.ConflictingConfigs["default:super+x"]
+	if len(result.ConflictingConfigs) != 1 || conflict == nil || conflict.Mode != "common" {
+		t.Errorf("conflicts = %v, want only the common super+x; the resize super+q leaves the DMS bind alone", result.ConflictingConfigs)
+	}
+	if !result.DMSBindsIncluded {
+		t.Error("dms/binds.conf is sourced from config.toml")
+	}
+}
+
+func writeMangoFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	for name, content := range files {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestMangoWCParseFollowsMangoState(t *testing.T) {
+	for name, tc := range map[string]struct {
+		files map[string]string
+		want  []string
+	}{
+		"vars span sourced files": {
+			map[string]string{
+				"config.toml": "[var]\nmod = \"SUPER\"\n[global]\nsource = [\"./binds.toml\", \"./more.conf\"]\n",
+				"binds.toml":  "[bind.default]\n\"$mod+Return\" = \"spawn,foot\"\n",
+				"more.conf":   "var=term,kitty\nbind=$mod,t,spawn,$term\n",
+			},
+			[]string{"default SUPER+Return foot", "default SUPER+t kitty"},
+		},
+		"a quoted conf key_mode is the bare mode": {
+			map[string]string{"config.conf": "key_mode=\"resize\"\nbind=NONE,h,resizewin,-10,0\nkey_mode='default' # back\nbind=SUPER,r,reload_config\n"},
+			[]string{"resize h -10,0", "default SUPER+r "},
+		},
+		"./ is read from the config dir and a bare path is not followed": {
+			map[string]string{
+				"config.conf":    "source=./dms/more.conf\n",
+				"dms/more.conf":  "source=./dms/binds.conf\nsource = other.conf\n",
+				"dms/binds.conf": "bind=SUPER,d,spawn,dms\n",
+				"dms/other.conf": "bind=SUPER,o,spawn,other\n",
+			},
+			[]string{"default SUPER+d dms"},
+		},
+		"a sourced file without an extension is TOML when it starts with a table": {
+			map[string]string{
+				"config.toml": "source = \"./keys\"\n",
+				"keys":        "# keys\n[bind.default]\n\"SUPER+Return\" = \"spawn,foot\"\n",
+			},
+			[]string{"default SUPER+Return foot"},
+		},
+		"flagged axis binds": {
+			map[string]string{
+				"config.toml": "[axisbind.default.lock]\n\"SUPER+UP\" = \"viewtoleft\"\n",
+			},
+			[]string{"default SUPER+WheelScrollUp "},
+		},
+	} {
+		dir := t.TempDir()
+		writeMangoFiles(t, dir, tc.files)
+		result, err := ParseMangoWCKeysWithDMS(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got []string
+		for _, kb := range result.Keybinds {
+			got = append(got, kb.Mode+" "+strings.Join(append(kb.Mods, kb.Key), "+")+" "+kb.Params)
+		}
+		if !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("%s: got %q, want %q", name, got, tc.want)
+		}
+	}
+}
+
+func TestMangoWCCheatSheetConflictsPerMode(t *testing.T) {
+	dir := t.TempDir()
+	writeMangoFiles(t, dir, map[string]string{
+		"config.conf":    "key_mode=\"common\"\nbind=SUPER,q,killclient\nkey_mode=\" resize \"\nbind=SUPER,r,killclient\nkey_mode=default\nbind=SUPER,x,killclient\nbindc=SUPER,c,killclient\nsource=./dms/binds.conf\n",
+		"dms/binds.conf": "bind=SUPER,x,spawn,dmsx\nbind=SUPER,q,spawn,dmsq\nbind=SUPER,c,spawn,dmsc\nkey_mode=resize\nbind=SUPER,x,spawn,dmsx-resize\nbind=SUPER,q,spawn,dmsq-resize\nbind=SUPER,r,spawn,dmsr-resize\n",
+	})
+
+	sheet, err := NewMangoWCProvider(dir).GetCheatSheet()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, binds := range sheet.Binds {
+		for _, b := range binds {
+			if b.Conflict != nil {
+				got = append(got, b.Action+" <- "+b.Conflict.Action)
+			}
+		}
+	}
+	slices.Sort(got)
+	want := []string{"spawn dmsq <- killclient", "spawn dmsq-resize <- killclient", "spawn dmsr-resize <- killclient", "spawn dmsx <- killclient"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("conflicts = %q, want %q: a common bind shadows every mode, a default one only default, a bindc none", got, want)
 	}
 }

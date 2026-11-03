@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -105,10 +105,6 @@ func ParseMiracleConfig(configPath string) (*MiracleConfig, error) {
 	var config MiracleConfig
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, err
-	}
-
-	if config.ActionKey == "" {
-		config.ActionKey = "meta"
 	}
 
 	return &config, nil

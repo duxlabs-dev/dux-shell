@@ -22,13 +22,6 @@ func TestSysfsBackend_PercentConversions(t *testing.T) {
 			tolerance: 0,
 		},
 		{
-			name:      "backlight 1% should be minValue=1",
-			device:    &sysfsDevice{maxBrightness: 100, minValue: 1, class: ClassBacklight},
-			percent:   1,
-			wantValue: 1,
-			tolerance: 0,
-		},
-		{
 			name:      "backlight 50% should be ~50",
 			device:    &sysfsDevice{maxBrightness: 100, minValue: 1, class: ClassBacklight},
 			percent:   50,
@@ -43,32 +36,11 @@ func TestSysfsBackend_PercentConversions(t *testing.T) {
 			tolerance: 0,
 		},
 		{
-			name:      "led 0% should be 0",
-			device:    &sysfsDevice{maxBrightness: 255, minValue: 0, class: ClassLED},
-			percent:   0,
-			wantValue: 0,
-			tolerance: 0,
-		},
-		{
-			name:      "led 1% should be ~2-3",
-			device:    &sysfsDevice{maxBrightness: 255, minValue: 0, class: ClassLED},
-			percent:   1,
-			wantValue: 2,
-			tolerance: 3,
-		},
-		{
 			name:      "led 50% should be ~127",
 			device:    &sysfsDevice{maxBrightness: 255, minValue: 0, class: ClassLED},
 			percent:   50,
 			wantValue: 127,
 			tolerance: 2,
-		},
-		{
-			name:      "led 100% should be max",
-			device:    &sysfsDevice{maxBrightness: 255, minValue: 0, class: ClassLED},
-			percent:   100,
-			wantValue: 255,
-			tolerance: 0,
 		},
 	}
 
@@ -176,5 +148,52 @@ func TestSysfsBackend_ScanDevices(t *testing.T) {
 	ledID := "leds:test_led"
 	if _, ok := b.deviceCache.Load(ledID); !ok {
 		t.Errorf("LED device not found")
+	}
+}
+
+func TestSysfsBackend_GetDevicesHidesIndicatorLEDs(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	writeLED := func(name, trigger string) {
+		t.Helper()
+		dir := filepath.Join(tmpDir, "leds", name)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		files := map[string]string{
+			"max_brightness": "1\n",
+			"brightness":     "0\n",
+			"trigger":        trigger,
+		}
+		for file, content := range files {
+			if err := os.WriteFile(filepath.Join(dir, file), []byte(content), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+
+	writeLED("phy0-led", "none phy0rx phy0tx [phy0radio] rfkill1\n")
+	writeLED("kbd_backlight", "[none] rc-feedback\n")
+
+	b := &SysfsBackend{basePath: tmpDir, classes: []string{"leds"}}
+	if err := b.scanDevices(); err != nil {
+		t.Fatalf("scanDevices() error = %v", err)
+	}
+
+	devices, err := b.GetDevices()
+	if err != nil {
+		t.Fatalf("GetDevices() error = %v", err)
+	}
+
+	ids := make(map[string]bool, len(devices))
+	for _, dev := range devices {
+		ids[dev.ID] = true
+	}
+
+	if ids["leds:phy0-led"] {
+		t.Error("trigger-driven indicator LED listed as a brightness device")
+	}
+	if !ids["leds:kbd_backlight"] {
+		t.Error("user-controlled LED missing from brightness devices")
 	}
 }

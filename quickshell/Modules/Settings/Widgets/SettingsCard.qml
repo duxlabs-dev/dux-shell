@@ -15,6 +15,7 @@ Column {
     property string settingKey: ""
 
     property string title: ""
+    // Not drawn; extract_settings_index.py reads it for the search result icon
     property string iconName: ""
     property bool collapsible: false
     property bool expanded: true

@@ -26,6 +26,7 @@ ALLOWED = [
     {"Device", "device"},      # label vs inline generic-noun fallback
     {"Until %1", "until %1"},  # sentence-initial vs mid-sentence position
     {"Up", "up"},              # scroll direction vs uptime prefix
+    {"New", "new"},            # create action vs lowercase plugin recency badge
     {"Custom Color", "Custom color"},  # dms-plugins checkout, not this repo
     {"Media Player", "Media player"},  # dms-plugins checkout, not this repo
 ]

@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/keybinds"
+	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds"
 )
 
 type AqueousProvider struct{}
@@ -30,7 +30,8 @@ func AqueousCheatSheet(snapshot aqueousConfig) (*keybinds.CheatSheet, error) {
 	if err := requireAqueousCapabilities(snapshot, "keybinds"); err != nil {
 		return nil, err
 	}
-	sheet := &keybinds.CheatSheet{Title: "Aqueous", Provider: "aqueous", Generation: snapshot.String("generation"), ModKey: "Super", DMSBindsIncluded: true, Binds: map[string][]keybinds.Keybind{"Compositor": {}, "Custom": {}}}
+	sheet := &keybinds.CheatSheet{Title: "Aqueous", Provider: "aqueous", Generation: snapshot.String("generation"), DMSBindsIncluded: true, Binds: map[string][]keybinds.Keybind{"Compositor": {}, "Custom": {}}}
+	sheet.SetMod(keybinds.DefaultModKey())
 	for _, field := range aqueousObjects(snapshot, "fields") {
 		if field.String("category") != "keybinds" || field.String("type") != "string_list" {
 			continue
@@ -63,6 +64,10 @@ func AqueousCheatSheet(snapshot aqueousConfig) (*keybinds.CheatSheet, error) {
 		}
 	}
 	return sheet, nil
+}
+
+func (*AqueousProvider) ModKey() keybinds.ModKey {
+	return keybinds.DefaultModKey()
 }
 
 func (*AqueousProvider) GetCheatSheet() (*keybinds.CheatSheet, error) {

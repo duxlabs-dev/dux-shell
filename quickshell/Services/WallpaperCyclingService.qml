@@ -8,13 +8,15 @@ import Quickshell.Io
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
+import "../Common/WallpaperFormats.js" as WallpaperFormats
 
 Singleton {
     id: root
 
     property bool cyclingActive: false
+    property bool _lastPushedEnabled: true
     readonly property bool fullscreenShowing: {
-        if (!ToplevelManager.toplevels?.values)
+        if (!cyclingActive || !ToplevelManager.toplevels?.values)
             return false;
         for (const toplevel of ToplevelManager.toplevels.values) {
             if (toplevel.fullscreen && toplevel.activated)
@@ -26,6 +28,7 @@ Singleton {
     readonly property bool serverSchedulingAvailable: DMSService.capabilities.includes("wallpaper")
     property real lastCycleSeq: -1
     property var monitorProcesses: ({})
+    property real _lastVideoAdvance: 0
 
     Connections {
         target: DMSService
@@ -53,6 +56,7 @@ Singleton {
 
         function onCapabilitiesReceived() {
             lastCycleSeq = -1;
+            _lastPushedEnabled = true;
             updateCyclingState();
         }
     }
@@ -93,8 +97,17 @@ Singleton {
         }
     }
 
+    // Created late from the async DMSShell loader, after loaded and capabilitiesReceived may have fired.
+    Component.onCompleted: {
+        if (SessionData._hasLoaded)
+            updateCyclingState();
+    }
+
     function updateCyclingState() {
         cyclingActive = serverSchedulingAvailable && (SessionData.wallpaperCyclingEnabled || SessionData.perMonitorWallpaper);
+        if (!cyclingActive && !_lastPushedEnabled)
+            return;
+        _lastPushedEnabled = cyclingActive;
         pushConfigToServer();
     }
 
@@ -134,8 +147,9 @@ Singleton {
         }, null);
     }
 
-    function findCommand(wallpaperDir) {
-        return ["sh", "-c", `find -L "${wallpaperDir}" -maxdepth 1 -type f \\( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.bmp" -o -iname "*.gif" -o -iname "*.webp" -o -iname "*.jxl" -o -iname "*.avif" -o -iname "*.heif" -o -iname "*.exr" -o -iname "*.svg" \\) 2>/dev/null | sort`];
+    function findCommand(wallpaperDir, recursive) {
+        const depthArg = recursive ? "" : "-maxdepth 1 ";
+        return ["sh", "-c", `find -L "${wallpaperDir}" ${depthArg}-type f ${WallpaperFormats.findPredicate(true)} 2>/dev/null | sort`];
     }
 
     function monitorProcessFor(screenName) {
@@ -150,39 +164,50 @@ Singleton {
     }
     function cycle(screenName, wallpaperPath, goToPrevious) {
         const currentWallpaper = wallpaperPath || (screenName ? SessionData.getMonitorWallpaper(screenName) : SessionData.wallpaperPath);
-        if (!currentWallpaper)
+        if (!currentWallpaper || currentWallpaper.startsWith("#"))
             return;
         let wallpaperDir;
+        let recursive = false;
 
         if (screenName) {
             const monitorSettings = SessionData.getMonitorCyclingSettings(screenName);
+            recursive = !!monitorSettings.recursive;
             if (monitorSettings.folderPath && currentWallpaper.startsWith(monitorSettings.folderPath + "/")) {
                 wallpaperDir = monitorSettings.folderPath;
             } else {
                 wallpaperDir = currentWallpaper.substring(0, currentWallpaper.lastIndexOf('/'));
+                if (recursive && wallpaperDir)
+                    SessionData.setMonitorCyclingFolderPath(screenName, wallpaperDir);
             }
         } else {
+            recursive = !!SessionData.wallpaperCyclingRecursive;
             if (SessionData.wallpaperCyclingFolderPath && currentWallpaper.startsWith(SessionData.wallpaperCyclingFolderPath + "/")) {
                 wallpaperDir = SessionData.wallpaperCyclingFolderPath;
             } else {
                 wallpaperDir = currentWallpaper.substring(0, currentWallpaper.lastIndexOf('/'));
+                if (recursive && wallpaperDir) {
+                    SessionData.wallpaperCyclingFolderPath = wallpaperDir;
+                    SessionData.saveSettings();
+                }
             }
         }
 
         if (screenName && monitorProcessComponent.status === Component.Ready) {
             var process = monitorProcessFor(screenName);
-            process.command = findCommand(wallpaperDir);
+            process.command = findCommand(wallpaperDir, recursive);
             process.targetScreenName = screenName;
             process.currentWallpaper = currentWallpaper;
             process.goToPrevious = goToPrevious;
+            process.revision = SessionData.wallpaperRequestRevision(screenName);
             process.running = true;
             return;
         }
 
         var globalProcess = goToPrevious ? prevCyclingProcess : cyclingProcess;
-        globalProcess.command = findCommand(wallpaperDir);
+        globalProcess.command = findCommand(wallpaperDir, recursive);
         globalProcess.targetScreenName = screenName || "";
         globalProcess.currentWallpaper = currentWallpaper;
+        globalProcess.revision = SessionData.wallpaperRequestRevision(screenName || "");
         globalProcess.running = true;
     }
 
@@ -198,28 +223,33 @@ Singleton {
         if (!folderPath)
             return;
 
+        let recursive = false;
         if (screenName) {
             SessionData.setMonitorCyclingFolderPath(screenName, folderPath);
+            recursive = !!SessionData.getMonitorCyclingSettings(screenName).recursive;
         } else {
             SessionData.wallpaperCyclingFolderPath = folderPath;
             SessionData.saveSettings();
+            recursive = !!SessionData.wallpaperCyclingRecursive;
         }
 
         if (screenName && monitorProcessComponent.status === Component.Ready) {
             var process = monitorProcessFor(screenName);
-            process.command = findCommand(folderPath);
+            process.command = findCommand(folderPath, recursive);
             process.targetScreenName = screenName;
             process.currentWallpaper = "";
             process.goToPrevious = false;
+            process.revision = SessionData.wallpaperRequestRevision(screenName);
             process.running = true;
             return;
         }
 
         var globalProcess = cyclingProcess;
-        globalProcess.command = findCommand(folderPath);
+        globalProcess.command = findCommand(folderPath, recursive);
         globalProcess.targetScreenName = screenName || "";
         globalProcess.currentWallpaper = "";
         globalProcess.goToPrevious = false;
+        globalProcess.revision = SessionData.wallpaperRequestRevision(screenName || "");
         globalProcess.running = true;
     }
 
@@ -229,6 +259,34 @@ Singleton {
         DMSService.sendRequest("wallpaper.trigger", {
             "target": ""
         }, null);
+    }
+
+    // A video set to advance plays once and hands over to the next wallpaper when it ends.
+    function advancesOnVideoEnd(screenName) {
+        if (!serverSchedulingAvailable)
+            return false;
+        if (SessionData.perMonitorWallpaper) {
+            const settings = SessionData.getMonitorCyclingSettings(screenName);
+            return !!(settings.enabled && settings.videoEnd);
+        }
+        return SessionData.wallpaperCyclingEnabled && SessionData.wallpaperCyclingVideoEnd;
+    }
+
+    function handleVideoEnded(screenName) {
+        if (!advancesOnVideoEnd(screenName) || shouldPauseCycling)
+            return;
+        if (SessionData.perMonitorWallpaper) {
+            cycleNextForMonitor(screenName);
+            DMSService.sendRequest("wallpaper.trigger", {
+                "target": screenName
+            }, null);
+            return;
+        }
+        // Every output plays the shared video and reports its end; the first one advances.
+        if (Date.now() - _lastVideoAdvance < 2000)
+            return;
+        _lastVideoAdvance = Date.now();
+        cycleNextManually();
     }
 
     function cycleNextManually() {
@@ -263,7 +321,9 @@ Singleton {
         }
     }
 
-    function applyCycledWallpaper(text, currentPath, targetScreenName, goToPrevious) {
+    function applyCycledWallpaper(text, currentPath, targetScreenName, goToPrevious, revision) {
+        if (revision !== SessionData.wallpaperRequestRevision(targetScreenName))
+            return;
         if (!text || !text.trim())
             return;
         const files = text.trim().split('\n').filter(file => file.length > 0);
@@ -317,35 +377,38 @@ Singleton {
     Component {
         id: monitorProcessComponent
         Process {
+            property string revision: ""
             property string targetScreenName: ""
             property string currentWallpaper: ""
             property bool goToPrevious: false
             running: false
             stdout: StdioCollector {
-                onStreamFinished: root.applyCycledWallpaper(text, currentWallpaper, targetScreenName, goToPrevious)
+                onStreamFinished: root.applyCycledWallpaper(text, currentWallpaper, targetScreenName, goToPrevious, revision)
             }
         }
     }
 
     Process {
         id: cyclingProcess
+        property string revision: ""
         property string targetScreenName: ""
         property string currentWallpaper: ""
         property bool goToPrevious: false
         running: false
         stdout: StdioCollector {
-            onStreamFinished: root.applyCycledWallpaper(text, cyclingProcess.currentWallpaper, cyclingProcess.targetScreenName, cyclingProcess.goToPrevious)
+            onStreamFinished: root.applyCycledWallpaper(text, cyclingProcess.currentWallpaper, cyclingProcess.targetScreenName, cyclingProcess.goToPrevious, cyclingProcess.revision)
         }
     }
 
     Process {
         id: prevCyclingProcess
+        property string revision: ""
         property string targetScreenName: ""
         property string currentWallpaper: ""
         property bool goToPrevious: true
         running: false
         stdout: StdioCollector {
-            onStreamFinished: root.applyCycledWallpaper(text, prevCyclingProcess.currentWallpaper, prevCyclingProcess.targetScreenName, prevCyclingProcess.goToPrevious)
+            onStreamFinished: root.applyCycledWallpaper(text, prevCyclingProcess.currentWallpaper, prevCyclingProcess.targetScreenName, prevCyclingProcess.goToPrevious, prevCyclingProcess.revision)
         }
     }
 

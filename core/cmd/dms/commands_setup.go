@@ -8,12 +8,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/config"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/distros"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -144,8 +145,12 @@ var dmsConfigSpecs = map[string]dmsConfigSpec{
 		niriContent: func(_ string) string { return config.NiriAlttabConfig },
 	},
 	"input": {
-		niriFile:    "input.kdl",
-		niriContent: func(_ string) string { return config.NiriInputConfig },
+		niriFile:     "input.kdl",
+		hyprFile:     "input.lua",
+		mangoFile:    "input.conf",
+		niriContent:  func(_ string) string { return config.NiriInputConfig },
+		hyprContent:  func(_ string) string { return config.DMSInputLuaConfig },
+		mangoContent: func(_ string) string { return "" },
 	},
 	"outputs": {
 		niriFile:     "outputs.kdl",
@@ -173,15 +178,43 @@ var dmsConfigSpecs = map[string]dmsConfigSpec{
 	},
 }
 
-func detectTerminal() (string, error) {
-	terminals := []string{"ghostty", "foot", "kitty", "alacritty"}
+var knownTerminals = []string{"ghostty", "foot", "kitty", "alacritty"}
+
+func terminalFromEnv() string {
+	return strings.TrimSpace(os.Getenv("TERMINAL"))
+}
+
+func installedTerminals() []string {
 	var found []string
-	for _, t := range terminals {
+	for _, t := range knownTerminals {
 		if utils.CommandExists(t) {
 			found = append(found, t)
 		}
 	}
+	return found
+}
 
+func installedHyprlandVersion() string {
+	_, ver := getVersionFromCommand("Hyprland", "--version", distros.ParseHyprlandVersion)
+	return ver
+}
+
+func defaultTerminalCommand() string {
+	if env := terminalFromEnv(); env != "" {
+		return env
+	}
+	if found := installedTerminals(); len(found) > 0 {
+		return found[0]
+	}
+	return "ghostty"
+}
+
+func detectTerminal() (string, error) {
+	if env := terminalFromEnv(); env != "" {
+		return env, nil
+	}
+
+	found := installedTerminals()
 	switch len(found) {
 	case 0:
 		return "ghostty", nil
@@ -276,7 +309,7 @@ func runSetupDmsConfig(name string) error {
 	case "hyprland":
 		dmsDir = filepath.Join(utils.XDGConfigHome(), "hypr", "dms")
 	case "mango", "mangowc":
-		dmsDir = filepath.Join(utils.XDGConfigHome(), "mango", "dms")
+		dmsDir = filepath.Join(mangoconf.Dir(), "dms")
 	}
 
 	if err := os.MkdirAll(dmsDir, 0o755); err != nil {
@@ -284,7 +317,9 @@ func runSetupDmsConfig(name string) error {
 	}
 
 	path := filepath.Join(dmsDir, filename)
-	if info, err := os.Stat(path); err == nil && info.Size() > 0 {
+	// Hyprland's binds.lua is DMS-owned (user binds sit in binds-user.lua), so it is refreshed, not kept
+	dmsOwned := compositor == "hyprland" && name == "binds"
+	if info, err := os.Stat(path); err == nil && info.Size() > 0 && !dmsOwned {
 		return fmt.Errorf("%s already exists and is not empty: %s", name, path)
 	}
 
@@ -296,12 +331,38 @@ func runSetupDmsConfig(name string) error {
 		}
 	}
 
+	if dmsOwned {
+		backupPath, written, err := config.WriteHyprlandStockBinds(filepath.Dir(dmsDir), terminal)
+		if backupPath != "" {
+			fmt.Printf("Backed up previous binds to %s\n", backupPath)
+		}
+		if err != nil {
+			return err
+		}
+		if !written {
+			fmt.Printf("binds is already the DMS stock set: %s\n", path)
+			return nil
+		}
+		fmt.Printf("Deployed binds to %s\n", path)
+		return nil
+	}
+
 	content := contentFn(terminal)
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("failed to write %s: %w", filename, err)
 	}
 
 	fmt.Printf("Deployed %s to %s\n", name, path)
+
+	// Stock binds leave the version-dependent ones to binds-next.kdl.
+	if compositor == "niri" && name == "binds" {
+		if _, err := config.WriteNiriBindsNext(dmsDir, config.ProbeNiriCapabilities()); err != nil {
+			return fmt.Errorf("failed to write %s: %w", config.NiriBindsNextFile, err)
+		}
+		if config.NiriConfigMissingBindsNext(dmsDir) {
+			fmt.Println(config.NiriBindsNextIncludeHint)
+		}
+	}
 	return nil
 }
 
@@ -314,8 +375,9 @@ func runSetup() error {
 	terminal, terminalSelected := promptTerminal()
 	useSystemd := true
 	if wmSelected {
-		if wm == deps.WindowManagerMango {
+		if wm == deps.WindowManagerMango && !mangoconf.SessionTargetInstalled() {
 			useSystemd = false
+			fmt.Println("\nThis Mango has no mango-session.target (added in 0.17.1); DMS will start from the Mango config.")
 		} else if isVoidSetup() {
 			useSystemd = false
 			fmt.Println("\nVoid Linux detected; deploying non-systemd session config.")
@@ -327,6 +389,13 @@ func runSetup() error {
 	if !wmSelected && !terminalSelected {
 		fmt.Println("No configurations selected. Exiting.")
 		return nil
+	}
+
+	replaceBinds := false
+	if wmSelected {
+		if path, ok := config.ExistingBinds(wm); ok {
+			replaceBinds = promptBinds(path)
+		}
 	}
 
 	if wmSelected || terminalSelected {
@@ -349,6 +418,7 @@ func runSetup() error {
 	fmt.Println("\nDeploying configurations...")
 	logChan := make(chan string, 100)
 	deployer := config.NewConfigDeployer(logChan)
+	deployer.SetReplaceBinds(replaceBinds)
 
 	go func() {
 		for msg := range logChan {
@@ -360,8 +430,15 @@ func runSetup() error {
 	var err error
 
 	if wmSelected {
+		terminalCommand := defaultTerminalCommand()
+		if terminalSelected {
+			terminalCommand = terminal.Command()
+		}
+		if wm == deps.WindowManagerHyprland {
+			deployer.SetHyprlandVersion(installedHyprlandVersion())
+		}
 		var result config.DeploymentResult
-		result, err = deployer.DeployCompositor(wm, terminal, useSystemd)
+		result, err = deployer.DeployCompositor(wm, terminalCommand, useSystemd)
 		results = append(results, result)
 	}
 	if err == nil && terminalSelected {
@@ -477,6 +554,17 @@ func promptTerminal() (deps.Terminal, bool) {
 	}
 }
 
+func promptBinds(path string) bool {
+	fmt.Printf("\nFound your keybinds in %s.\n", path)
+	fmt.Println("  1) Keep my binds as they are")
+	fmt.Println("  2) Start from the DMS stock binds")
+	fmt.Println("Either way a timestamped backup is kept.")
+	fmt.Print("Choice (1-2) [1]: ")
+	var response string
+	fmt.Scanln(&response)
+	return strings.TrimSpace(response) == "2"
+}
+
 func promptSystemd() bool {
 	fmt.Println("\nUse systemd for session management?")
 	fmt.Println("1) Yes (recommended for most distros)")
@@ -503,15 +591,9 @@ func compositorPrimaryPaths(wm deps.WindowManager) []string {
 	case deps.WindowManagerNiri:
 		return []string{filepath.Join(homeDir, ".config", "niri", "config.kdl")}
 	case deps.WindowManagerHyprland:
-		return []string{
-			filepath.Join(homeDir, ".config", "hypr", "hyprland.lua"),
-			filepath.Join(homeDir, ".config", "hypr", "hyprland.conf"),
-		}
+		return []string{filepath.Join(config.HyprlandConfigDir(), "hyprland.lua")}
 	case deps.WindowManagerMango:
-		return []string{
-			filepath.Join(homeDir, ".config", "mango", "config.conf"),
-			filepath.Join(homeDir, ".config", "mango", "mango.conf"),
-		}
+		return mangoconf.MainConfigs(mangoconf.Dir())
 	default:
 		return nil
 	}

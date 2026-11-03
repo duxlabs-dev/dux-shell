@@ -4,11 +4,13 @@ import QtQuick
 import qs.Common
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
-import qs.Widgets
+import qs.DCommon.Widgets
 import "../../../Common/Format.js" as Format
 
 Item {
     id: root
+
+    implicitHeight: column.height
 
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
@@ -65,7 +67,7 @@ Item {
         return Math.max(1, Math.round((target.getTime() - now.getTime()) / 60000));
     }
 
-    DankFlickable {
+    DFlickable {
         anchors.fill: parent
         contentHeight: column.height
         clip: true
@@ -101,7 +103,7 @@ Item {
                     Repeater {
                         model: root.presets
 
-                        DankButton {
+                        DButton {
                             required property var modelData
 
                             buttonHeight: Theme.buttonHeightXS

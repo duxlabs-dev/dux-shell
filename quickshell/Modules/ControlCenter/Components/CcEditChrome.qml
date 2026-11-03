@@ -1,17 +1,20 @@
 import QtQuick
 import qs.Common
 import qs.Widgets
+import "../utils/widgets.js" as WidgetUtils
 import qs.Modules.ControlCenter
 
-DankGridEditChrome {
+DGridEditChrome {
     id: root
 
     property var widgetData: ({})
 
     signal configRequested(var anchor)
 
-    hasOptions: widgetData.id === "diskUsage" || widgetData.id === "brightnessSlider" || widgetData.id === "idleInhibitor" || String(widgetData.id ?? "").startsWith("plugin_")
-    buttonSize: Theme.iconSize
+    hasOptions: WidgetUtils.hasOptions(widgetData.id)
+    removable: WidgetUtils.isRemovable(widgetData)
+    removeIcon: "remove"
+    buttonSize: CcMetrics.editChromeButtonSize
     hitOverflow: CcMetrics.gridGap / 2
     iconSize: PopoutMetrics.chromeIconSize
 

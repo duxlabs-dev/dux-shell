@@ -49,7 +49,7 @@
     "list.focusOutline": "{{colors.primary.default.hex}}",
     "list.focusBackground": "{{colors.surface_container_high.default.hex}}",
     "list.highlightForeground": "{{colors.primary.default.hex}}",
-    "list.focusHighlightForeground": "{{colors.primary.default.hex}}",
+    "list.focusHighlightForeground": "{{colors.on_primary.default.hex}}",
     "list.errorForeground": "{{colors.error.default.hex}}",
     "list.warningForeground": "{{colors.secondary.default.hex}}",
     "input.background": "{{colors.surface_container_low.default.hex}}",
@@ -61,10 +61,13 @@
     "dropdown.border": "{{colors.outline_variant.default.hex}}",
     "quickInput.background": "{{colors.surface_container_low.default.hex}}",
     "quickInput.foreground": "{{colors.on_surface.default.hex}}",
+    "quickInputList.focusBackground": "{{colors.primary.default.hex}}",
+    "quickInputList.focusForeground": "{{colors.on_primary.default.hex}}",
+    "quickInputList.focusIconForeground": "{{colors.on_primary.default.hex}}",
     "widget.shadow": "{{colors.background.default.hex}}80",
     "button.background": "{{colors.primary.default.hex}}",
     "button.foreground": "{{colors.on_primary.default.hex}}",
-    "button.hoverBackground": "{{colors.primary_container.default.hex}}",
+    "button.hoverBackground": "{{colors.primary_fixed.default.hex}}",
     "statusBar.background": "{{colors.background.default.hex}}",
     "statusBar.foreground": "{{colors.on_surface.default.hex}}",
     "statusBar.border": "{{colors.outline_variant.default.hex}}",
@@ -113,9 +116,10 @@
     "editorHoverWidget.border": "{{colors.outline.default.hex}}",
     "editorSuggestWidget.background": "{{colors.surface_container.default.hex}}",
     "editorSuggestWidget.foreground": "{{colors.on_surface.default.hex}}",
-    "editorSuggestWidget.selectedBackground": "{{colors.surface_container_high.default.hex}}",
-    "editorSuggestWidget.selectedForeground": "{{colors.on_surface.default.hex}}",
+    "editorSuggestWidget.selectedBackground": "{{colors.primary.default.hex}}",
+    "editorSuggestWidget.selectedForeground": "{{colors.on_primary.default.hex}}",
     "editorSuggestWidget.highlightForeground": "{{colors.primary.default.hex}}",
+    "editorSuggestWidget.focusHighlightForeground": "{{colors.on_primary.default.hex}}",
     "scrollbarSlider.background": "{{colors.on_surface_variant.default.hex}}50",
     "scrollbarSlider.hoverBackground": "{{colors.on_surface_variant.default.hex}}80",
     "scrollbarSlider.activeBackground": "{{colors.on_surface_variant.default.hex}}AA",
@@ -147,9 +151,9 @@
       }
     },
     {
-      "scope": ["keyword"],
+      "scope": ["keyword", "storage"],
       "settings": {
-        "foreground": "{{dank16.color6.default.hex}}"
+        "foreground": "{{dank16.color4.default.hex}}"
       }
     },
     {
@@ -171,15 +175,21 @@
       }
     },
     {
-      "scope": ["entity.name.function"],
+      "scope": ["entity.name.namespace", "entity.name.type.namespace"],
       "settings": {
-        "foreground": "{{dank16.color4.default.hex}}"
+        "foreground": "{{colors.on_surface.default.hex}}"
       }
     },
     {
-      "scope": ["entity.name.class", "support.type"],
+      "scope": ["entity.name.function"],
       "settings": {
-        "foreground": "{{colors.secondary.default.hex}}"
+        "foreground": "{{dank16.color13.default.hex}}"
+      }
+    },
+    {
+      "scope": ["entity.name.class", "entity.name.type", "support.class", "support.type"],
+      "settings": {
+        "foreground": "{{dank16.color11.default.hex}}"
       }
     },
     {
@@ -252,19 +262,37 @@
       "foreground": "{{colors.on_surface.default.hex}}"
     },
     "property": {
-      "foreground": "{{dank16.color4.default.hex}}"
+      "foreground": "{{colors.secondary.default.hex}}"
     },
     "function": {
-      "foreground": "{{dank16.color4.default.hex}}"
+      "foreground": "{{dank16.color13.default.hex}}"
     },
     "method": {
-      "foreground": "{{dank16.color4.default.hex}}"
+      "foreground": "{{dank16.color13.default.hex}}"
     },
     "type": {
-      "foreground": "{{colors.secondary.default.hex}}"
+      "foreground": "{{dank16.color11.default.hex}}"
     },
     "class": {
-      "foreground": "{{colors.secondary.default.hex}}"
+      "foreground": "{{dank16.color11.default.hex}}"
+    },
+    "struct": {
+      "foreground": "{{dank16.color11.default.hex}}"
+    },
+    "interface": {
+      "foreground": "{{dank16.color11.default.hex}}"
+    },
+    "enum": {
+      "foreground": "{{dank16.color11.default.hex}}"
+    },
+    "typeParameter": {
+      "foreground": "{{dank16.color11.default.hex}}"
+    },
+    "enumMember": {
+      "foreground": "{{dank16.color13.default.hex}}"
+    },
+    "namespace": {
+      "foreground": "{{colors.on_surface.default.hex}}"
     },
     "string": {
       "foreground": "{{dank16.color2.default.hex}}"
@@ -273,7 +301,7 @@
       "foreground": "{{dank16.color12.default.hex}}"
     },
     "keyword": {
-      "foreground": "{{dank16.color6.default.hex}}"
+      "foreground": "{{dank16.color4.default.hex}}"
     },
     "comment": {
       "foreground": "{{colors.outline.default.hex}}"

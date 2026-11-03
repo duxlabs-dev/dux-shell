@@ -13,6 +13,9 @@ Singleton {
     property list<int> values: Array(6)
     property int refCount: 0
     property bool cavaAvailable: false
+    property bool _cavaChecked: false
+    readonly property bool cavaWanted: SettingsData.audioVisualizerEnabled || refCount > 0
+    onCavaWantedChanged: _checkCava()
     readonly property string _confPath: `${Paths.strip(StandardPaths.writableLocation(StandardPaths.TempLocation))}/dms-cava-${Date.now()}-${Math.floor(Math.random() * 1000000)}.conf`
 
     Process {
@@ -21,11 +24,16 @@ Singleton {
         command: ["sh", "-c", "command -v cava"]
         running: false
         onExited: exitCode => {
+            root._cavaChecked = true;
             root.cavaAvailable = exitCode === 0 && Quickshell.env("DMS_DISABLE_CAVA") !== "1";
         }
     }
 
-    Component.onCompleted: {
+    Component.onCompleted: _checkCava()
+
+    function _checkCava() {
+        if (!cavaWanted || _cavaChecked || cavaCheck.running)
+            return;
         cavaCheck.running = true;
     }
 
@@ -33,6 +41,11 @@ Singleton {
         id: cavaProcess
 
         running: root.cavaAvailable && root.refCount > 0
+        // cava asks for 512 frames, which drags the graph quantum down on spawn and back up on exit, audible on some hardware (#810)
+        environment: ({
+                "PIPEWIRE_LATENCY": "2400/48000",
+                "PULSE_LATENCY_MSEC": "50"
+            })
         command: ["sh", "-c", `cat <<'CAVACONF' > ${root._confPath}
 [general]
 framerate=25

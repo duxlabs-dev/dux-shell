@@ -7,10 +7,11 @@ import Quickshell.I3
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs.Common
-import qs.DankCommon.Common as DankCommon
+import qs.DCommon.Common as DCommon
 import qs.Services
 import "../Common/WorkspaceModel.js" as WorkspaceModel
 import "../Common/WindowModel.js" as WindowModel
+import "NiriFullscreen.js" as NiriFullscreen
 
 Singleton {
     id: root
@@ -25,11 +26,14 @@ Singleton {
     property bool isLabwc: false
     property bool isAqueous: false
     property bool isUmbriel: false
+    property bool isKwin: false
     property string compositor: "unknown"
     property bool compositorDetected: false
     property bool outputPowerAvailable: false
     readonly property bool genericPowerBackend: compositorDetected && !isNiri && !isHyprland && !isMango && !isSway && !isScroll && !isMiracle && !isLabwc && !isUmbriel
     onGenericPowerBackendChanged: probeOutputPower()
+
+    readonly property bool inOverview: (isHyprland && HyprlandService.inOverview) || (isNiri && NiriService.inOverview) || (isMango && MangoService.inOverview)
 
     function probeOutputPower() {
         outputPowerAvailable = false;
@@ -63,6 +67,7 @@ Singleton {
         target: Quickshell
         function onScreensChanged() {
             root.probeOutputPower();
+            root.refreshHyprlandMonitorLayout();
         }
     }
     readonly property bool frameCompositorLayoutReady: (!isNiri || NiriService.frameLayoutReady) && (!isHyprland || HyprlandService.frameLayoutReady)
@@ -97,7 +102,7 @@ Singleton {
             right: SettingsData.Position.Right
         })
 
-    readonly property bool supportsMinimize: isAqueous && AqueousService.available ? AqueousService.capabilities.commands && !AqueousService.locked : DankCommon.Compositor.supportsMinimize
+    readonly property bool supportsMinimize: isAqueous && AqueousService.available ? AqueousService.capabilities.commands && !AqueousService.locked : DCommon.Compositor.supportsMinimize
 
     readonly property bool hasWorkspaceIpc: {
         switch (compositor) {
@@ -132,6 +137,7 @@ Singleton {
     readonly property bool supportsWindowRules: isNiri || isHyprland || isMango
     readonly property string dmsFloatingRuleId: "dms-floating-windows"
     property bool dmsWindowFloatingActive: false
+    readonly property string dmsOpaqueRuleId: "dms-window-opaque"
     readonly property bool supportsLayoutConfig: isNiri || isHyprland || isMango
     readonly property bool supportsCursorConfig: isNiri || isHyprland || isMango
     readonly property bool supportsDisplayConfig: isNiri || isHyprland || isMango || isAqueous
@@ -141,15 +147,27 @@ Singleton {
     readonly property bool supportsPersistentWorkspaces: isHyprland || isMango || isSway || isScroll || isMiracle
     readonly property bool supportsWorkspaceUrgency: isKnownCompositor && !isLabwc
     readonly property bool supportsWorkspaceFollowFocus: isKnownCompositor && !isLabwc
+    // labwc root menu and desktop scroll, sway/scroll --whole-window binds, plasmashell desktop menu
+    readonly property bool reservesDesktopInput: isLabwc || isSway || isScroll || isKwin
+    readonly property bool desktopContextMenuEnabled: {
+        switch (SettingsData.desktopContextMenu) {
+        case "on":
+            return true;
+        case "off":
+            return false;
+        default:
+            return !reservesDesktopInput;
+        }
+    }
     readonly property bool supportsSmartDock: isNiri || isHyprland || isMango || isAqueous
     readonly property bool supportsNativeOverview: isNiri || isAqueous
-    readonly property bool supportsPointerConfig: isNiri || isMango
-    readonly property bool supportsInputConfig: isNiri
+    readonly property bool supportsPointerConfig: isNiri || isHyprland || isMango
+    readonly property bool supportsInputConfig: isNiri || isHyprland || isMango
 
     readonly property string displayName: {
         switch (compositor) {
         case "niri":
-            return "Niri";
+            return "niri";
         case "hyprland":
             return "Hyprland";
         case "mango":
@@ -166,6 +184,8 @@ Singleton {
             return "Aqueous";
         case "umbriel":
             return "Umbriel";
+        case "kwin":
+            return "KWin";
         default:
             return "";
         }
@@ -192,9 +212,8 @@ Singleton {
 
     Connections {
         target: AqueousService
+        enabled: root.isAqueous
         function onStateChanged() {
-            if (!root.isAqueous)
-                return;
             root.scheduleSort();
             if (AqueousService.available)
                 root.workspaceStateChanged();
@@ -328,16 +347,17 @@ Singleton {
             return screen.devicePixelRatio || 1;
         }
 
-        const randrScale = randrScales[screen.name];
-        if (randrScale !== undefined && randrScale > 0)
-            return fractionalScale(randrScale);
-
-        if (WlrOutputService.wlrOutputAvailable && screen) {
+        // Live wlr-output state outranks the one-shot randr snapshot so scale changes propagate
+        if (WlrOutputService.wlrOutputAvailable) {
             const wlrOutput = WlrOutputService.getOutput(screen.name);
             if (wlrOutput?.enabled && wlrOutput.scale !== undefined && wlrOutput.scale > 0) {
                 return fractionalScale(wlrOutput.scale);
             }
         }
+
+        const randrScale = randrScales[screen.name];
+        if (randrScale !== undefined && randrScale > 0)
+            return fractionalScale(randrScale);
 
         if (isNiri && screen) {
             const niriScale = NiriService.displayScales[screen.name];
@@ -450,7 +470,7 @@ Singleton {
             const yKey = y.niriWindowId !== undefined ? y.niriWindowId : y.mangoWindowId;
             if (xKey === undefined || yKey === undefined)
                 return false;
-            if (xKey !== yKey || x.niriWorkspaceId !== y.niriWorkspaceId || x.appId !== y.appId || x.title !== y.title || !!x.activated !== !!y.activated || !!x.fullscreen !== !!y.fullscreen || !!x.maximized !== !!y.maximized || !!x.minimized !== !!y.minimized)
+            if (xKey !== yKey || x.niriWorkspaceId !== y.niriWorkspaceId || x.mangoMonitor !== y.mangoMonitor || x.appId !== y.appId || x.title !== y.title || !!x.activated !== !!y.activated || !!x.fullscreen !== !!y.fullscreen || !!x.maximized !== !!y.maximized || !!x.minimized !== !!y.minimized)
                 return false;
         }
         return true;
@@ -475,7 +495,24 @@ Singleton {
 
         function onRawEvent(event) {
             if (event.name === "monitoraddedv2" || event.name === "monitorremoved" || event.name === "configreloaded") {
+                if (event.name === "configreloaded")
+                    HyprlandService.refreshFollowMouse();
                 root.refreshHyprlandMonitorLayout();
+                return;
+            }
+            // Hyprland 0.57 emits this when a workspace id changes (e.g. after a rename); Quickshell 0.3.2 ignores it
+            if (event.name === "changeworkspaceid") {
+                Hyprland.refreshWorkspaces();
+                return;
+            }
+            // Sent by the move/resize wrappers in dms/binds.lua; Hyprland has no geometry event of its own
+            if (event.name === "custom") {
+                if (event.data !== "dms:geometry")
+                    return;
+                try {
+                    Hyprland.refreshToplevels();
+                } catch (e) {}
+                root.scheduleSort();
                 return;
             }
             if (event.name === "openwindow" || event.name === "closewindow" || event.name === "movewindow" || event.name === "movewindowv2" || event.name === "workspace" || event.name === "workspacev2" || event.name === "focusedmon" || event.name === "focusedmonv2" || event.name === "activewindow" || event.name === "activewindowv2" || event.name === "changefloatingmode" || event.name === "fullscreen" || event.name === "moveintogroup" || event.name === "moveoutofgroup" || event.name === "activespecial") {
@@ -494,6 +531,7 @@ Singleton {
     }
     Connections {
         target: NiriService
+        enabled: root.isNiri
         function onWindowsChanged() {
             root.scheduleSort();
         }
@@ -504,23 +542,17 @@ Singleton {
         detectCompositor();
         updateHyprlandVisibleSpecialWorkspaces(null);
         scheduleSort();
-        Qt.callLater(() => {
-            NiriService.generateNiriLayoutConfig();
-            HyprlandService.generateLayoutConfig();
-        });
     }
 
     Connections {
         target: MangoService
+        enabled: root.isMango
         function onStateChanged() {
-            if (!root.isMango)
-                return;
             root.scheduleSort();
             root.workspaceStateChanged();
         }
         function onWindowsChanged() {
-            if (isMango)
-                scheduleSort();
+            root.scheduleSort();
         }
     }
 
@@ -790,6 +822,57 @@ Singleton {
         return toplevels;
     }
 
+    readonly property string toplevelKey: {
+        switch (compositor) {
+        case "aqueous":
+            return AqueousService.available ? "aqueousKey" : "address";
+        case "niri":
+            return "niriWindowId";
+        case "mango":
+            return "mangoWindowId";
+        default:
+            return "address";
+        }
+    }
+
+    function toplevelPlacement(toplevel) {
+        if (!toplevel)
+            return {
+                "workspace": "",
+                "output": ""
+            };
+        if (isAqueous && AqueousService.available) {
+            const workspace = AqueousService.workspaces.find(w => w.id === toplevel.aqueousWorkspaceId);
+            return {
+                "workspace": String(workspace?.name || workspace?.number || ""),
+                "output": AqueousService.outputs.find(o => o.id === toplevel.aqueousOutputId)?.name ?? ""
+            };
+        }
+        if (useNiriSorting) {
+            const workspace = NiriService.allWorkspaces.find(w => w.id === toplevel.niriWorkspaceId);
+            return {
+                "workspace": String(workspace?.name || workspace?.idx || ""),
+                "output": workspace?.output ?? ""
+            };
+        }
+        if (useMangoSorting)
+            return {
+                "workspace": (toplevel.mangoTags || []).join(", "),
+                "output": toplevel.mangoMonitor ?? ""
+            };
+        if (isHyprland) {
+            const workspace = WindowModel.hyprlandToplevelFor(Array.from(Hyprland.toplevels?.values || []), toplevel)?.workspace;
+            return {
+                "workspace": workspace?.name ?? "",
+                "output": workspace?.monitor?.name ?? ""
+            };
+        }
+        return {
+            "workspace": "",
+            "output": toplevel.screens?.[0]?.name ?? ""
+        };
+    }
+
     function fullscreenToplevelOnScreen(screenOrName) {
         const screenName = _screenName(screenOrName);
         if (isAqueous && AqueousService.available)
@@ -804,6 +887,12 @@ Singleton {
                 return true;
         }
         return false;
+    }
+
+    function visibleNiriFullscreenToplevelOnScreen(screenOrName) {
+        if (!isNiri || !NiriService.hasInitialConnection)
+            return false;
+        return NiriFullscreen.isFullscreenOnScreen(_screenName(screenOrName), NiriService.allWorkspaces, NiriService.windows, ToplevelManager.toplevels?.values);
     }
 
     function filterCurrentDisplay(toplevels, screenName) {
@@ -919,8 +1008,8 @@ Singleton {
         const t = _hyprlandToplevelFor(window);
         if (!t?.address)
             return;
-        const target = t.monitor?.activeWorkspace?.id;
-        HyprlandService.moveToWorkspace(target > 0 ? target : "+0", t.address, true);
+        const target = t.monitor?.activeWorkspace;
+        HyprlandService.moveToWorkspace(target?.name ? WorkspaceModel.hyprlandSelector(target) : "+0", t.address, true);
     }
 
     function moveWindowToSpecial(window, name) {
@@ -944,13 +1033,6 @@ Singleton {
             return _specialWorkspaceNameFromMonitor(monitor);
         } catch (e) {
             return "";
-        }
-    }
-
-    Connections {
-        target: Quickshell
-        function onScreensChanged() {
-            root.refreshHyprlandMonitorLayout();
         }
     }
 
@@ -1260,6 +1342,10 @@ Singleton {
         return toplevels.filter(w => monitorWindows.has(w));
     }
 
+    function _workspaceKeyOf(ws) {
+        return ws ? (WorkspaceModel.hyprlandKey(ws) || null) : null;
+    }
+
     function filterHyprlandCurrentWorkspaceSafe(toplevels, screenName) {
         if (!toplevels || toplevels.length === 0 || !Hyprland.toplevels)
             return toplevels;
@@ -1269,14 +1355,14 @@ Singleton {
             if (Hyprland.monitors) {
                 const monitor = Hyprland.monitors.values.find(m => m.name === screenName);
                 if (monitor)
-                    currentWorkspaceId = _get(monitor, ["activeWorkspace", "id"], null);
+                    currentWorkspaceId = _workspaceKeyOf(_get(monitor, ["activeWorkspace"], null));
             }
 
             if (currentWorkspaceId === null) {
                 const hy = Array.from(Hyprland.toplevels.values);
                 for (const t of hy) {
                     const mon = _get(t, ["monitor", "name"], "");
-                    const wsId = _get(t, ["workspace", "id"], null);
+                    const wsId = _workspaceKeyOf(_get(t, ["workspace"], null));
                     const active = !!_get(t, ["activated"], false);
                     if (mon === screenName && wsId !== null) {
                         if (active) {
@@ -1291,10 +1377,10 @@ Singleton {
 
             if (currentWorkspaceId === null && Hyprland.workspaces) {
                 const wss = Array.from(Hyprland.workspaces.values);
-                const focusedId = _get(Hyprland, ["focusedWorkspace", "id"], null);
+                const focusedId = _workspaceKeyOf(Hyprland.focusedWorkspace);
                 for (const ws of wss) {
                     const monName = _get(ws, ["monitor", "name"], "");
-                    const wsId = _get(ws, ["id"], null);
+                    const wsId = _workspaceKeyOf(ws);
                     if (monName === screenName && wsId !== null) {
                         if (focusedId !== null && wsId === focusedId) {
                             currentWorkspaceId = wsId;
@@ -1316,29 +1402,13 @@ Singleton {
         try {
             const hy = Array.from(Hyprland.toplevels.values);
             for (const t of hy) {
-                const wsId = _get(t, ["workspace", "id"], null);
+                const wsId = _workspaceKeyOf(_get(t, ["workspace"], null));
                 if (t && t.wayland && wsId !== null)
                     map.set(t.wayland, wsId);
             }
         } catch (e) {}
 
         return toplevels.filter(w => map.get(w) === currentWorkspaceId);
-    }
-
-    Timer {
-        id: compositorInitTimer
-        interval: 100
-        running: true
-        repeat: false
-        onTriggered: {
-            detectCompositor();
-            compositorDetected = true;
-            Qt.callLater(() => {
-                NiriService.generateNiriLayoutConfig();
-                HyprlandService.generateLayoutConfig();
-                MangoService.generateLayoutConfig();
-            });
-        }
     }
 
     // Primary detection asks the kernel which process owns the $WAYLAND_DISPLAY
@@ -1387,6 +1457,8 @@ Singleton {
             return "aqueous";
         case "umbriel":
             return "umbriel";
+        case "kwin_wayland":
+            return "kwin";
         default:
             return "";
         }
@@ -1402,6 +1474,7 @@ Singleton {
         isLabwc = name === "labwc";
         isAqueous = name === "aqueous";
         isUmbriel = name === "umbriel";
+        isKwin = name === "kwin";
         compositor = name;
         compositorDetected = true;
         if (isNiri)
@@ -1413,57 +1486,117 @@ Singleton {
         if (!supportsWindowRules)
             return;
         if (SettingsData.dmsWindowsFloatingSeeded.includes(compositor)) {
-            refreshDmsWindowFloatingRule();
+            refreshDmsWindowFloatingRule(true);
             return;
         }
         const seeded = compositor;
-        setDmsWindowFloatingRule(true, () => SettingsData.set("dmsWindowsFloatingSeeded", SettingsData.dmsWindowsFloatingSeeded.concat([seeded])));
-    }
-
-    function refreshDmsWindowFloatingRule() {
-        if (!supportsWindowRules)
-            return;
-        Proc.runCommand("dms-windowrule-float-list", [Proc.dmsBin, "config", "windowrules", "list", compositor], (output, exitCode) => {
-            if (exitCode !== 0)
-                return;
-            try {
-                syncDmsWindowFloatingRule(JSON.parse(output.trim()).rules || []);
-            } catch (e) {
-                log.warn("failed to parse window rules", e);
-            }
+        setDmsWindowFloatingRule(true, () => {
+            SettingsData.set("dmsWindowsFloatingSeeded", SettingsData.dmsWindowsFloatingSeeded.concat([seeded]));
+            refreshDmsWindowFloatingRule(true);
         });
     }
 
-    function syncDmsWindowFloatingRule(rules) {
-        dmsWindowFloatingActive = rules.some(rule => rule.id === dmsFloatingRuleId && rule.enabled !== false && rule.actions?.openFloating === true);
+    function refreshDmsWindowFloatingRule(ensureOpaque) {
+        if (!supportsWindowRules)
+            return;
+        const procId = ensureOpaque ? "dms-windowrule-startup-list" : "dms-windowrule-float-list";
+        Proc.runCommand(procId, [Proc.dmsBin, "config", "windowrules", "list", compositor], (output, exitCode) => {
+            if (exitCode !== 0) {
+                if (ensureOpaque)
+                    log.warn("failed to list window rules:", exitCode, output);
+                return;
+            }
+            let rules;
+            try {
+                rules = JSON.parse(output.trim()).rules || [];
+            } catch (e) {
+                log.warn("failed to parse window rules", e);
+                return;
+            }
+            // Each rule write rewrites the whole rules file, so writes must not overlap.
+            syncDmsWindowFloatingRule(rules, () => {
+                if (ensureOpaque)
+                    ensureDmsOpaqueRule(rules);
+            });
+        });
+    }
+
+    function dmsRuleMatchesCurrentAppId(rule) {
+        return (rule.matchCriteria?.appId || "").includes("duxlabs");
+    }
+
+    function syncDmsWindowFloatingRule(rules, onDone) {
+        const rule = rules.find(rule => rule.id === dmsFloatingRuleId && rule.enabled !== false && rule.actions?.openFloating === true);
+        dmsWindowFloatingActive = rule !== undefined;
+        if (!rule || dmsRuleMatchesCurrentAppId(rule)) {
+            onDone?.();
+            return;
+        }
+        setDmsWindowFloatingRule(true, onDone);
+    }
+
+    function reloadAfterWindowRuleWrite() {
+        if (isNiri)
+            NiriService.validate();
+        else if (isMango)
+            MangoService.reloadConfig();
+        else if (isHyprland)
+            HyprlandService.reloadConfig();
+    }
+
+    function setDmsRule(id, rule, onDone) {
+        if (!supportsWindowRules)
+            return;
+        const args = rule ? ["add", compositor, JSON.stringify(Object.assign({
+                "id": id,
+                "enabled": true
+            }, rule))] : ["remove", compositor, id];
+        Proc.runCommand("dms-windowrule-" + id, [Proc.dmsBin, "config", "windowrules", ...args], (output, exitCode) => {
+            if (exitCode !== 0) {
+                log.warn("failed to update DMS window rule", id, exitCode, output);
+                return;
+            }
+            reloadAfterWindowRuleWrite();
+            onDone?.();
+        });
     }
 
     function setDmsWindowFloatingRule(enabled, onDone) {
-        if (!supportsWindowRules)
-            return;
-        const ruleJson = JSON.stringify({
-            "id": dmsFloatingRuleId,
+        setDmsRule(dmsFloatingRuleId, enabled ? {
             "name": "DMS Floating Windows",
-            "enabled": true,
             "matchCriteria": {
-                "appId": "^com.danklinux.dms$"
+                "appId": "^(dev\\.duxlabs\\.shell|com\\.danklinux\\.dms)$"
             },
             "actions": {
                 "openFloating": true
             }
-        });
-        const args = enabled ? ["add", compositor, ruleJson] : ["remove", compositor, dmsFloatingRuleId];
-        Proc.runCommand("dms-windowrule-float", [Proc.dmsBin, "config", "windowrules", ...args], (output, exitCode) => {
-            if (exitCode !== 0) {
-                log.warn("failed to update DMS floating window rule", exitCode, output);
-                return;
-            }
+        } : null, () => {
             dmsWindowFloatingActive = enabled;
-            if (isNiri)
-                NiriService.validate();
-            if (isMango)
-                MangoService.reloadConfig();
             onDone?.();
+        });
+    }
+
+    function ensureDmsOpaqueRule(rules) {
+        if (rules.some(rule => rule.id === dmsOpaqueRuleId && dmsRuleMatchesCurrentAppId(rule)))
+            return;
+        // DMS windows are translucent via client alpha; Hyprland's opaque keeps that alpha, force_rgbx would drop it.
+        let actions;
+        if (isHyprland)
+            actions = {
+                "opaque": true
+            };
+        else if (isNiri)
+            actions = {
+                "opacity": 1.0
+            };
+        else
+            return;
+        setDmsRule(dmsOpaqueRuleId, {
+            "name": "DMS Window Opaque",
+            "matchCriteria": {
+                "appId": "^(dev\\.duxlabs\\.shell|com\\.danklinux\\.dms)$"
+            },
+            "actions": actions
         });
     }
 
@@ -1527,6 +1660,12 @@ Singleton {
                 present: !!hyprlandSignature,
                 test: ["test", "-S", runtimeDir + "/hypr/" + hyprlandSignature + "/.socket.sock"],
                 detail: "HYPRLAND_INSTANCE_SIGNATURE " + hyprlandSignature
+            },
+            {
+                name: "kwin",
+                present: !!Quickshell.env("KDE_FULL_SESSION"),
+                test: ["pgrep", "-x", "kwin_wayland"],
+                detail: "KDE_FULL_SESSION"
             }
         ];
     }
@@ -1708,6 +1847,8 @@ Singleton {
         switch (compositor) {
         case "niri":
             return record.idx;
+        case "hyprland":
+            return WorkspaceModel.hyprlandKey(record);
         default:
             return record.id;
         }
@@ -1769,7 +1910,7 @@ Singleton {
         case "aqueous":
             return record.active === true;
         case "hyprland":
-            return record.special === true ? record.active === true : record.id === currentKey;
+            return record.special === true ? record.active === true : WorkspaceModel.hyprlandKey(record) === currentKey;
         default:
             return _workspaceKey(record) === currentKey;
         }
@@ -1893,7 +2034,7 @@ Singleton {
                 HyprlandService.toggleSpecial(record.name === "special" ? "" : record.name);
                 return;
             }
-            HyprlandService.focusWorkspace(record.id > 0 ? record.id : "name:" + (record.name ?? ""));
+            HyprlandService.focusWorkspace(WorkspaceModel.hyprlandSelector(record));
             return;
         case "mango":
             MangoService.switchToTag(record.output, record.id);
@@ -2011,7 +2152,10 @@ Singleton {
             NiriService.toggleOverview();
             return;
         case "mango":
-            MangoService.dispatch("toggleoverview");
+            if (MangoService.getOutputState(screenName))
+                MangoService.dispatchOnOutput(screenName, "toggleoverview");
+            else
+                MangoService.dispatch("toggleoverview");
             return;
         }
     }
@@ -2026,6 +2170,35 @@ Singleton {
             if (record)
                 MangoService.toggleTag(screenName, record.id);
             return;
+        }
+    }
+
+    readonly property bool canStepWindowFocus: compositor === "niri" || compositor === "hyprland" || compositor === "mango"
+
+    function stepWindowFocus(screenName, direction) {
+        switch (compositor) {
+        case "niri":
+            if (direction > 0)
+                NiriService.focusColumnRight(screenName);
+            else
+                NiriService.focusColumnLeft(screenName);
+            return true;
+        case "hyprland":
+            if (screenName && screenName !== Hyprland.focusedMonitor?.name)
+                HyprlandService.focusMonitor(screenName);
+            HyprlandService.cycleWindow(direction > 0);
+            return true;
+        case "mango":
+            {
+                const command = direction > 0 ? "focusstack,next" : "focusstack,prev";
+                if (screenName)
+                    MangoService.dispatchOnOutput(screenName, command);
+                else
+                    MangoService.dispatch(command);
+                return true;
+            }
+        default:
+            return false;
         }
     }
 
@@ -2074,9 +2247,21 @@ Singleton {
                 MangoService.generateLayoutConfig();
         }
 
+        function onBlurStrengthRefreshNeeded() {
+            if (root.isAqueous && typeof AqueousConfigService !== "undefined") {
+                AqueousConfigService.applyBlurStrength();
+                return;
+            }
+            onCompositorLayoutRefreshNeeded(false);
+        }
+
         function onCompositorInputRefreshNeeded() {
             if (root.isNiri && typeof NiriService !== "undefined")
                 NiriService.generateNiriInputConfig();
+            if (root.isHyprland && typeof HyprlandService !== "undefined")
+                HyprlandService.generateInputConfig();
+            if (root.isMango && typeof MangoService !== "undefined")
+                MangoService.generateInputConfig();
         }
 
         function onCompositorCursorRefreshNeeded() {

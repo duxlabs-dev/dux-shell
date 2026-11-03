@@ -2,8 +2,9 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtCore
+import Qt.labs.folderlistmodel
 import QtQuick
-import "../DankCommon/Common/Shape.js" as Shape
+import "../DCommon/Common/Shape.js" as Shape
 import Quickshell
 import Quickshell.Io
 import qs.Common
@@ -11,19 +12,19 @@ import qs.Common.settings
 import qs.Services
 import "GSettings.js" as GSettings
 import "LayoutResolver.js" as LayoutResolver
+import "NotificationRuleExpiry.js" as RuleExpiry
 import "settings/SettingsSpec.js" as Spec
 import "settings/SettingsStore.js" as Store
-import "../DankCommon/Common/settings/SpecUtil.js" as SpecUtil
+import "../DCommon/Common/settings/SpecUtil.js" as SpecUtil
 import "settings/BarWidgetDefaults.js" as WidgetDefaults
 import "settings/DockConfig.js" as DockConfig
+import "settings/DensityPresets.js" as DensityPresets
 
 Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 31
-
-    readonly property bool isGreeterMode: Quickshell.env("DMS_RUN_GREETER") === "1" || Quickshell.env("DMS_RUN_GREETER") === "true"
+    readonly property int settingsConfigVersion: 42
 
     enum Position {
         Top,
@@ -79,7 +80,8 @@ Singleton {
     readonly property string _homeUrl: StandardPaths.writableLocation(StandardPaths.HomeLocation)
     readonly property string _configUrl: StandardPaths.writableLocation(StandardPaths.ConfigLocation)
     readonly property string _configDir: Paths.strip(_configUrl)
-    readonly property string pluginSettingsPath: _configDir + "/DankMaterialShell/plugin_settings.json"
+    readonly property string _iconThemeBackup: _configDir + "/gtk-3.0/icon-theme.dms-backup"
+    readonly property string pluginSettingsPath: _configDir + "/dms/plugin_settings.json"
     readonly property bool qtengineActive: Quickshell.env("QT_QPA_PLATFORMTHEME") === "qtengine" || Quickshell.env("QT_QPA_PLATFORMTHEME_QT6") === "qtengine"
 
     property bool _loading: false
@@ -87,10 +89,8 @@ Singleton {
     property bool _parseError: false
     property bool _pluginParseError: false
     property bool _hasLoaded: false
-    property bool _isReadOnly: false
-    property bool _hasUnsavedChanges: false
-    property bool _selfWrite: false
-    property var _loadedSettingsSnapshot: null
+    property bool isReadOnly: false
+    property bool unsavedUserChanges: false
     property var pluginSettings: ({})
     property var builtInPluginSettings: Spec.SPEC.builtInPluginSettings.def
 
@@ -138,6 +138,7 @@ Singleton {
         saveSettings();
     }
 
+    property var launcherKeybinds: Spec.SPEC.launcherKeybinds.def
     property var launcherPluginOrder: Spec.SPEC.launcherPluginOrder.def
     onLauncherPluginOrderChanged: saveSettings()
 
@@ -175,6 +176,7 @@ Singleton {
     property string matugenTargetMonitor: Spec.SPEC.matugenTargetMonitor.def
     property real popupTransparency: Spec.SPEC.popupTransparency.def
     property bool floatingWindowSyncGlobal: Spec.SPEC.floatingWindowSyncGlobal.def
+    property bool floatingWindowTitleBars: Spec.SPEC.floatingWindowTitleBars.def
     property real floatingWindowTransparency: Spec.SPEC.floatingWindowTransparency.def
     property bool floatingWindowForegroundLayers: Spec.SPEC.floatingWindowForegroundLayers.def
     property real floatingWindowForegroundTransparency: Spec.SPEC.floatingWindowForegroundTransparency.def
@@ -183,6 +185,8 @@ Singleton {
     property string hostSurfaceCustomColor: Spec.SPEC.hostSurfaceCustomColor.def
     property string cardSurfaceColor: Spec.SPEC.cardSurfaceColor.def
     property string cardSurfaceCustomColor: Spec.SPEC.cardSurfaceCustomColor.def
+    property string tooltipSurfaceColor: Spec.SPEC.tooltipSurfaceColor.def
+    property string tooltipSurfaceCustomColor: Spec.SPEC.tooltipSurfaceCustomColor.def
     property string chipSurfaceColor: Spec.SPEC.chipSurfaceColor.def
     property string chipSurfaceCustomColor: Spec.SPEC.chipSurfaceCustomColor.def
     property string chipSurfaceNestedColor: Spec.SPEC.chipSurfaceNestedColor.def
@@ -193,6 +197,7 @@ Singleton {
     property string widgetColorMode: Spec.SPEC.widgetColorMode.def
     property string controlCenterTileColorMode: Spec.SPEC.controlCenterTileColorMode.def
     property string buttonColorMode: Spec.SPEC.buttonColorMode.def
+    property int containerSaturation: Spec.SPEC.containerSaturation.def
     property int radiusStrength: Spec.SPEC.radiusStrength.def
     property string radiusMode: Spec.SPEC.radiusMode.def
     property int fixedRadius: Spec.SPEC.fixedRadius.def
@@ -205,6 +210,34 @@ Singleton {
     property int hyprlandLayoutRadiusOverride: Spec.SPEC.hyprlandLayoutRadiusOverride.def
     property int hyprlandLayoutBorderSize: Spec.SPEC.hyprlandLayoutBorderSize.def
     property bool hyprlandResizeOnBorder: Spec.SPEC.hyprlandResizeOnBorder.def
+    property int hyprlandWindowOpacity: Spec.SPEC.hyprlandWindowOpacity.def
+    property int hyprlandBorderGrabArea: Spec.SPEC.hyprlandBorderGrabArea.def
+    property string hyprlandBlurVariant: Spec.SPEC.hyprlandBlurVariant.def
+    property int hyprlandBlurAcrylicClarity: Spec.SPEC.hyprlandBlurAcrylicClarity.def
+    property int hyprlandBlurAuroraIntensity: Spec.SPEC.hyprlandBlurAuroraIntensity.def
+    property int hyprlandBlurAuroraSpeed: Spec.SPEC.hyprlandBlurAuroraSpeed.def
+    property int hyprlandBlurHazeIntensity: Spec.SPEC.hyprlandBlurHazeIntensity.def
+    property int hyprlandBlurHazeIridescence: Spec.SPEC.hyprlandBlurHazeIridescence.def
+    property int hyprlandBlurRippleStrength: Spec.SPEC.hyprlandBlurRippleStrength.def
+    property int hyprlandBlurWaterStrength: Spec.SPEC.hyprlandBlurWaterStrength.def
+    property int hyprlandBlurDropsSpeed: Spec.SPEC.hyprlandBlurDropsSpeed.def
+    property int hyprlandBlurHeatShimmerSpeed: Spec.SPEC.hyprlandBlurHeatShimmerSpeed.def
+    property bool hyprlandBlurProportional: Spec.SPEC.hyprlandBlurProportional.def
+    property bool hyprlandGlowEnabled: Spec.SPEC.hyprlandGlowEnabled.def
+    property int hyprlandGlowRange: Spec.SPEC.hyprlandGlowRange.def
+    property int hyprlandGlowRenderPower: Spec.SPEC.hyprlandGlowRenderPower.def
+    property bool hyprlandWobbleEnabled: Spec.SPEC.hyprlandWobbleEnabled.def
+    property int hyprlandWobbleIntensity: Spec.SPEC.hyprlandWobbleIntensity.def
+    property int hyprlandWobbleStiffness: Spec.SPEC.hyprlandWobbleStiffness.def
+    property int hyprlandWobbleDamping: Spec.SPEC.hyprlandWobbleDamping.def
+    property int hyprlandWobbleMass: Spec.SPEC.hyprlandWobbleMass.def
+    property int hyprlandWobbleMesh: Spec.SPEC.hyprlandWobbleMesh.def
+    property bool hyprlandMotionBlurEnabled: Spec.SPEC.hyprlandMotionBlurEnabled.def
+    property int hyprlandMotionBlurSamples: Spec.SPEC.hyprlandMotionBlurSamples.def
+    property bool hyprlandGroupbarBlur: Spec.SPEC.hyprlandGroupbarBlur.def
+    property int hyprlandGroupbarTextPadding: Spec.SPEC.hyprlandGroupbarTextPadding.def
+    property bool hyprlandGroupbarMiddleClickClose: Spec.SPEC.hyprlandGroupbarMiddleClickClose.def
+    property bool hyprlandGroupbarDisableWhenOnly: Spec.SPEC.hyprlandGroupbarDisableWhenOnly.def
     property string hyprlandTilingLayout: Spec.SPEC.hyprlandTilingLayout.def
     property bool hyprlandDwindlePreserveSplit: Spec.SPEC.hyprlandDwindlePreserveSplit.def
     property bool hyprlandDwindleSmartSplit: Spec.SPEC.hyprlandDwindleSmartSplit.def
@@ -216,12 +249,18 @@ Singleton {
     property string hyprlandScrollingDirection: Spec.SPEC.hyprlandScrollingDirection.def
     property int hyprlandScrollingColumnWidth: Spec.SPEC.hyprlandScrollingColumnWidth.def
     property bool hyprlandScrollingFullscreenOneColumn: Spec.SPEC.hyprlandScrollingFullscreenOneColumn.def
-    property bool hyprlandScrollingFollowFocus: Spec.SPEC.hyprlandScrollingFollowFocus.def
+    property int hyprlandScrollingFollowFocus: Spec.SPEC.hyprlandScrollingFollowFocus.def
+    property bool hyprlandDragCenterWindow: Spec.SPEC.hyprlandDragCenterWindow.def
+    property int hyprlandWorkspaceBackAndForth: Spec.SPEC.hyprlandWorkspaceBackAndForth.def
+    property int hyprlandExitWindowRetainsFullscreen: Spec.SPEC.hyprlandExitWindowRetainsFullscreen.def
+    property string hyprlandBellSound: Spec.SPEC.hyprlandBellSound.def
     property int mangoLayoutGapsOverride: Spec.SPEC.mangoLayoutGapsOverride.def
     property int mangoLayoutGapsOutOverride: Spec.SPEC.mangoLayoutGapsOutOverride.def
     property int mangoLayoutRadiusOverride: Spec.SPEC.mangoLayoutRadiusOverride.def
     property int mangoLayoutBorderSize: Spec.SPEC.mangoLayoutBorderSize.def
-    property bool mangoTrackpadNaturalScrolling: Spec.SPEC.mangoTrackpadNaturalScrolling.def
+    property int focusFollowsMouse: Spec.SPEC.focusFollowsMouse.def
+    property bool hyprlandSwallowFocusClick: Spec.SPEC.hyprlandSwallowFocusClick.def
+    property bool hyprlandTabletEnabled: Spec.SPEC.hyprlandTabletEnabled.def
     property string mouseAccelProfile: Spec.SPEC.mouseAccelProfile.def
     property real mouseAccelSpeed: Spec.SPEC.mouseAccelSpeed.def
     property bool mouseLeftHanded: Spec.SPEC.mouseLeftHanded.def
@@ -238,6 +277,7 @@ Singleton {
     property bool touchpadMiddleEmulation: Spec.SPEC.touchpadMiddleEmulation.def
     property bool touchpadNaturalScroll: Spec.SPEC.touchpadNaturalScroll.def
     property real touchpadScrollFactor: Spec.SPEC.touchpadScrollFactor.def
+    property real touchpadPinchSensitivity: Spec.SPEC.touchpadPinchSensitivity.def
     property string touchpadScrollMethod: Spec.SPEC.touchpadScrollMethod.def
     property bool touchpadTapAndDrag: Spec.SPEC.touchpadTapAndDrag.def
     property bool touchpadTapToClick: Spec.SPEC.touchpadTapToClick.def
@@ -257,6 +297,7 @@ Singleton {
     property string calendarBackend: Spec.SPEC.calendarBackend.def
     property string defaultTaskCalendarId: Spec.SPEC.defaultTaskCalendarId.def
     property bool audioShowStreamDevices: Spec.SPEC.audioShowStreamDevices.def
+    property bool audioMono: Spec.SPEC.audioMono.def
     property string clockFormat: Spec.SPEC.clockFormat.def
     readonly property bool localeUses24Hour: {
         const fmt = Qt.locale().timeFormat(Locale.ShortFormat).replace(/'[^']*'/g, "");
@@ -265,6 +306,7 @@ Singleton {
     readonly property bool use24HourClock: clockFormat === "24h" ? true : (clockFormat === "12h" ? false : localeUses24Hour)
     property bool showSeconds: Spec.SPEC.showSeconds.def
     property bool padHours12Hour: Spec.SPEC.padHours12Hour.def
+    property bool showAmPm: Spec.SPEC.showAmPm.def
     property bool useFahrenheit: Spec.SPEC.useFahrenheit.def
     property string windSpeedUnit: Spec.SPEC.windSpeedUnit.def
     property int animationDuration: Spec.SPEC.animationDuration.def
@@ -278,8 +320,12 @@ Singleton {
     onSpringBounceChanged: saveSettings()
     property bool enableRippleEffects: Spec.SPEC.enableRippleEffects.def
     onEnableRippleEffectsChanged: saveSettings()
+    property bool scrollbarsEnabled: Spec.SPEC.scrollbarsEnabled.def
+    onScrollbarsEnabledChanged: saveSettings()
     property int motionEffect: SettingsData.AnimationEffect.Standard
     onMotionEffectChanged: saveSettings()
+    property string density: Spec.SPEC.density.def
+    property string interfaceStyle: Spec.SPEC.interfaceStyle.def
     property bool m3ElevationEnabled: Spec.SPEC.m3ElevationEnabled.def
     onM3ElevationEnabledChanged: saveSettings()
     property int m3ElevationIntensity: Spec.SPEC.m3ElevationIntensity.def
@@ -301,6 +347,7 @@ Singleton {
 
     property bool blurEnabled: Spec.SPEC.blurEnabled.def
     onBlurEnabledChanged: saveSettings()
+    property int blurStrength: Spec.SPEC.blurStrength.def
     property bool blurBorderSeeded: Spec.SPEC.blurBorderSeeded.def
     onBlurBorderSeededChanged: saveSettings()
     property bool blurForegroundLayers: Spec.SPEC.blurForegroundLayers.def
@@ -308,6 +355,8 @@ Singleton {
     property real foregroundLayerTransparency: Spec.SPEC.foregroundLayerTransparency.def
     property real blurLayerOutlineOpacity: Spec.SPEC.blurLayerOutlineOpacity.def
     onBlurLayerOutlineOpacityChanged: saveSettings()
+    property real sectionDividerOpacity: Spec.SPEC.sectionDividerOpacity.def
+    onSectionDividerOpacityChanged: saveSettings()
     property bool blurBorderEnabled: Spec.SPEC.blurBorderEnabled.def
     onBlurBorderEnabledChanged: saveSettings()
     property string blurBorderColor: Spec.SPEC.blurBorderColor.def
@@ -325,6 +374,9 @@ Singleton {
     property string wallpaperBackgroundColorMode: Spec.SPEC.wallpaperBackgroundColorMode.def
     property string wallpaperBackgroundCustomColor: Spec.SPEC.wallpaperBackgroundCustomColor.def
     readonly property color effectiveWallpaperBackgroundColor: wallpaperBackgroundColorFor(wallpaperBackgroundColorMode)
+
+    property bool nightModeExcludeFullscreen: Spec.SPEC.nightModeExcludeFullscreen.def
+    property var nightModeExcludedApps: Spec.SPEC.nightModeExcludedApps.def
 
     function wallpaperBackgroundColorFor(mode) {
         switch (mode) {
@@ -358,7 +410,11 @@ Singleton {
     property real frameRounding: Spec.SPEC.frameRounding.def
     onFrameRoundingChanged: saveSettings()
     property var frameScreenPreferences: Spec.SPEC.frameScreenPreferences.def
-    onFrameScreenPreferencesChanged: saveSettings()
+    onFrameScreenPreferencesChanged: {
+        saveSettings();
+        if (!_loading)
+            Qt.callLater(_reconcileConnectedFrameBarStyles);
+    }
     property real frameBarSize: Spec.SPEC.frameBarSize.def
     onFrameBarSizeChanged: saveSettings()
     property bool frameShowOnOverview: Spec.SPEC.frameShowOnOverview.def
@@ -389,19 +445,9 @@ Singleton {
         _reconcileConnectedFrameBarStyles();
     }
 
-    function _frameBarConfig() {
-        return barConfigs.find(bc => bc.enabled !== false && !isIslandBarConfig(bc));
-    }
-
-    readonly property real frameSurfaceOpacity: {
-        barConfigs;
-        return barTransparency(_frameBarConfig());
-    }
-
-    readonly property color frameSurfaceBase: {
-        barConfigs;
-        return barSurfaceColor(_frameBarConfig());
-    }
+    readonly property var frameBarConfig: barConfigs.find(bc => bc.enabled !== false && !isIslandBarConfig(bc)) ?? null
+    readonly property real frameSurfaceOpacity: barTransparency(frameBarConfig)
+    readonly property color frameSurfaceBase: barSurfaceColor(frameBarConfig)
 
     property string systemTrayIconTintMode: Spec.SPEC.systemTrayIconTintMode.def
     property int systemTrayIconTintSaturation: Spec.SPEC.systemTrayIconTintSaturation.def
@@ -434,6 +480,8 @@ Singleton {
     property int appLauncherGridColumns: Spec.SPEC.appLauncherGridColumns.def
     property bool closeNiriOverviewOnWindowFocus: Spec.SPEC.closeNiriOverviewOnWindowFocus.def
     property bool rememberLastQuery: Spec.SPEC.rememberLastQuery.def
+    property bool launcherHistoryEnabled: Spec.SPEC.launcherHistoryEnabled.def
+    property string launcherEnterAction: Spec.SPEC.launcherEnterAction.def
     property bool rememberLastMode: Spec.SPEC.rememberLastMode.def
     property var spotlightSectionViewModes: Spec.SPEC.spotlightSectionViewModes.def
     onSpotlightSectionViewModesChanged: saveSettings()
@@ -452,6 +500,7 @@ Singleton {
     property bool dankLauncherV2IncludeFoldersInAll: Spec.SPEC.dankLauncherV2IncludeFoldersInAll.def
     property bool launcherUseOverlayLayer: Spec.SPEC.launcherUseOverlayLayer.def
     property string launcherStyle: Spec.SPEC.launcherStyle.def
+    property string avatarRing: Spec.SPEC.avatarRing.def
     property bool spotlightBarShowModeChips: Spec.SPEC.spotlightBarShowModeChips.def
     property bool keybindsFloatingWindow: Spec.SPEC.keybindsFloatingWindow.def
     onKeybindsFloatingWindowChanged: saveSettings()
@@ -465,6 +514,7 @@ Singleton {
     readonly property string weatherCoordinates: SessionData.weatherCoordinates
     property bool useAutoLocation: Spec.SPEC.useAutoLocation.def
     property bool weatherEnabled: Spec.SPEC.weatherEnabled.def
+    property var weatherProviders: Spec.SPEC.weatherProviders.def
 
     readonly property var _dashTabsDefault: [
         {
@@ -484,7 +534,15 @@ Singleton {
             "enabled": true
         },
         {
+            "id": "wellbeing",
+            "enabled": true
+        },
+        {
             "id": "notifications",
+            "enabled": false
+        },
+        {
+            "id": "settings",
             "enabled": false
         }
     ]
@@ -524,6 +582,9 @@ Singleton {
     onDashCardsChanged: saveSettings()
     property var dashOptions: Spec.SPEC.dashOptions.def
     onDashOptionsChanged: saveSettings()
+    property bool wellbeingEnabled: Spec.SPEC.wellbeingEnabled.def
+    property int wellbeingDailyLimit: Spec.SPEC.wellbeingDailyLimit.def
+    property var wellbeingAppLimits: Spec.SPEC.wellbeingAppLimits.def
 
     function getDashTabs() {
         const stored = Array.isArray(dashTabs) ? dashTabs : [];
@@ -693,8 +754,11 @@ Singleton {
     property string batteryProfileName: Spec.SPEC.batteryProfileName.def
     property int batteryPostLockMonitorTimeout: Spec.SPEC.batteryPostLockMonitorTimeout.def
     property int batteryChargeLimit: Spec.SPEC.batteryChargeLimit.def
+    property bool batteryScaleToChargeLimit: Spec.SPEC.batteryScaleToChargeLimit.def
+    property bool batteryScaleAlertThresholds: Spec.SPEC.batteryScaleAlertThresholds.def
     property bool batteryNotifyChargeLimit: Spec.SPEC.batteryNotifyChargeLimit.def
     property int batteryCriticalThreshold: Spec.SPEC.batteryCriticalThreshold.def
+    property bool batteryCriticalAnimation: Spec.SPEC.batteryCriticalAnimation.def
     property bool batteryNotifyCritical: Spec.SPEC.batteryNotifyCritical.def
     property int batteryLowThreshold: Spec.SPEC.batteryLowThreshold.def
     property bool batteryNotifyLow: Spec.SPEC.batteryNotifyLow.def
@@ -713,6 +777,8 @@ Singleton {
 
     property bool syncModeWithPortal: Spec.SPEC.syncModeWithPortal.def
     property bool terminalsAlwaysDark: Spec.SPEC.terminalsAlwaysDark.def
+    property int terminalOpacity: Spec.SPEC.terminalOpacity.def
+    property string terminalPalette: Spec.SPEC.terminalPalette.def
 
     property string muxType: Spec.SPEC.muxType.def
     property bool muxUseCustomCommand: Spec.SPEC.muxUseCustomCommand.def
@@ -761,18 +827,16 @@ Singleton {
     property bool modalDarkenBackground: Spec.SPEC.modalDarkenBackground.def
 
     property bool lockScreenShowPowerActions: Spec.SPEC.lockScreenShowPowerActions.def
-    property bool lockScreenShowSystemIcons: Spec.SPEC.lockScreenShowSystemIcons.def
-    property bool lockScreenShowTime: Spec.SPEC.lockScreenShowTime.def
-    property string lockScreenClockStyle: Spec.SPEC.lockScreenClockStyle.def
-    property bool lockScreenShowDate: Spec.SPEC.lockScreenShowDate.def
     property bool lockScreenShowProfileImage: Spec.SPEC.lockScreenShowProfileImage.def
-    property bool lockScreenShowPasswordField: Spec.SPEC.lockScreenShowPasswordField.def
-    property bool lockScreenShowMediaPlayer: Spec.SPEC.lockScreenShowMediaPlayer.def
     property bool lockScreenShowWeather: Spec.SPEC.lockScreenShowWeather.def
     property bool lockScreenPowerOffMonitorsOnLock: Spec.SPEC.lockScreenPowerOffMonitorsOnLock.def
     property bool lockAtStartup: Spec.SPEC.lockAtStartup.def
 
     property bool enableFprint: Spec.SPEC.enableFprint.def
+    onEnableFprintChanged: {
+        if (enableFprint)
+            refreshAuthAvailability();
+    }
     property int maxFprintTries: Spec.SPEC.maxFprintTries.def
     readonly property bool fprintdAvailable: Processes.fprintdAvailable
     readonly property bool lockFingerprintCanEnable: Processes.lockFingerprintCanEnable
@@ -783,6 +847,10 @@ Singleton {
     readonly property string greeterFingerprintReason: Processes.greeterFingerprintReason
     readonly property string greeterFingerprintSource: Processes.greeterFingerprintSource
     property bool enableU2f: Spec.SPEC.enableU2f.def
+    onEnableU2fChanged: {
+        if (enableU2f)
+            refreshAuthAvailability();
+    }
     property string u2fMode: Spec.SPEC.u2fMode.def
     readonly property bool u2fAvailable: Processes.u2fAvailable
     readonly property bool lockU2fCanEnable: Processes.lockU2fCanEnable
@@ -801,7 +869,6 @@ Singleton {
     property bool lockScreenSecurityKeyShortcutEnabled: Spec.SPEC.lockScreenSecurityKeyShortcutEnabled.def
     property bool greeterPamExternallyManaged: Spec.SPEC.greeterPamExternallyManaged.def
     property string lockScreenInactiveColor: Spec.SPEC.lockScreenInactiveColor.def
-    property int lockScreenNotificationMode: Spec.SPEC.lockScreenNotificationMode.def
     property bool lockScreenVideoEnabled: Spec.SPEC.lockScreenVideoEnabled.def
     property string lockScreenVideoPath: Spec.SPEC.lockScreenVideoPath.def
     property bool lockScreenVideoCycling: Spec.SPEC.lockScreenVideoCycling.def
@@ -819,6 +886,8 @@ Singleton {
     property int notificationPopupPosition: SettingsData.Position.Top
     property int notificationAnimationDuration: Spec.SPEC.notificationAnimationDuration.def
     property bool notificationHistoryEnabled: Spec.SPEC.notificationHistoryEnabled.def
+    property string notificationLeadingShortcut: Spec.SPEC.notificationLeadingShortcut.def
+    property string notificationTrailingShortcut: Spec.SPEC.notificationTrailingShortcut.def
     property int notificationHistoryMaxCount: Spec.SPEC.notificationHistoryMaxCount.def
     property int notificationHistoryMaxAgeDays: Spec.SPEC.notificationHistoryMaxAgeDays.def
     property bool notificationHistorySaveLow: Spec.SPEC.notificationHistorySaveLow.def
@@ -832,58 +901,109 @@ Singleton {
         barConfigs;
         return (barConfigs || []).filter(cfg => isIslandBarConfig(cfg));
     }
-    readonly property bool dankIslandEnabled: islandBarConfigs.some(cfg => cfg.enabled ?? false)
+    readonly property bool dankIslandEnabled: (barConfigs || []).some(cfg => (cfg.enabled ?? false) && hostsIsland(cfg))
+    readonly property var enabledIslandBarConfigs: (barConfigs || []).filter(cfg => cfg?.island === true && (cfg.enabled ?? false))
     // Session-only: which bar, island or dot last-used shared shortcuts follow on each screen.
     property var lastUsedBarByScreen: ({})
     // One slot per edge; a dot floats, so it never takes one.
     readonly property int edgeBarConfigCount: (barConfigs || []).filter(cfg => cfg && !isDotBarConfig(cfg)).length
     readonly property var dotBarConfig: (barConfigs || []).find(cfg => isDotBarConfig(cfg)) ?? null
-    readonly property var islandDefaults: ({
-            "islandFloating": false,
-            "islandPlacement": "edge",
-            "islandFreeSize": 48,
-            "islandFreeIcon": "blur_on",
-            "islandFreeEdgeMargin": 2,
-            "islandFreeIdleDelay": 2500,
-            "islandFreeIdleOpacity": 0.45,
-            "islandFreeIdleScale": 0.4,
-            "islandSharedRouting": "normal",
-            "islandUseOverlayLayer": false,
-            "islandReserveThickness": 40,
-            "islandCompactThickness": 38,
-            "islandOuterGap": 4,
-            "islandAlongOffset": 0,
-            "islandInteractionMode": "hybrid",
-            "islandHoverOpenDelay": 150,
-            "islandHoverCloseDelay": 150,
-            "islandPalette": "default",
-            "islandHighContrast": false,
-            "islandMediaClockVisible": true,
-            "islandNotificationBadgeClearOnOpen": false,
-            "islandNotificationExpand": false,
-            "islandNotificationPopups": false,
-            "islandHomeCompactTight": false,
-            "islandHomeClockDisplay": "both",
-            "islandHomeVolumeDisplay": "both",
-            "islandHomeBrightnessDisplay": "both",
-            "islandHomeStatusContent": "battery",
-            "islandBatteryStyle": "solid",
-            "islandSatellitesEnabled": true,
-            "islandSatellitePosition": "edges",
-            "islandSatelliteGap": 12,
-            "islandSatelliteBackground": false,
-            "islandSatelliteGothCorners": true,
-            "islandSatelliteTransparency": 1,
-            "islandSatelliteSwoopRadius": 24,
-            "islandReducedMotion": false,
-            "islandSpringStiffness": 560,
-            "islandSpringDamping": 37,
-            "islandSpringMass": 1
-        })
+    readonly property var islandDefaults: Object.assign({}, WidgetDefaults.ISLAND_DEFAULTS, DensityPresets.values("island", density))
+    readonly property var islandWidgetDefaults: WidgetDefaults.DEFAULTS.island
+    readonly property real barInnerPaddingDefault: barConfigDefault("innerPadding")
+    readonly property real barWidgetPaddingDefault: barConfigDefault("widgetPadding")
+
+    function islandSettings(bc) {
+        if (!bc)
+            return {};
+        return isIslandBarConfig(bc) ? bc : (islandWidgetEntry(bc) ?? {});
+    }
+
+    function islandDefaultsFor(bc) {
+        return isIslandBarConfig(bc) ? islandDefaults : islandWidgetDefaults;
+    }
+
+    function _isIslandEntry(entry) {
+        return (typeof entry === "string" ? entry : entry?.id) === "island";
+    }
+
+    // A widget toggled off in the list is still placed, but it owns no screen.
+    function _islandWidgetLocation(cfg, enabledOnly) {
+        for (const sectionId of ["left", "center", "right"]) {
+            const list = cfg?.[sectionId + "Widgets"] ?? [];
+            const index = list.findIndex(entry => _isIslandEntry(entry));
+            if (index < 0)
+                continue;
+            if (enabledOnly && list[index]?.enabled === false)
+                return null;
+            return {
+                sectionId,
+                index
+            };
+        }
+        return null;
+    }
+
+    function islandWidgetSection(cfg) {
+        return _islandWidgetLocation(cfg, true)?.sectionId ?? "";
+    }
+
+    // Mutates cfg in place, so callers pass a clone; a bare string entry is upgraded to carry settings.
+    function _writableIslandSettings(cfg) {
+        if (isIslandBarConfig(cfg))
+            return cfg;
+        const location = _islandWidgetLocation(cfg);
+        if (!location)
+            return {};
+        const list = cfg[location.sectionId + "Widgets"];
+        if (typeof list[location.index] === "string")
+            list[location.index] = {
+                "id": "island",
+                "enabled": true
+            };
+        return list[location.index];
+    }
+
+    function setIslandSettings(barId, patch) {
+        const config = getBarConfig(barId);
+        if (!config)
+            return;
+        if ("islandRouteDash" in patch) {
+            patch = Object.assign({}, patch);
+            const settings = islandSettings(config);
+            for (const activity of islandDashActivities) {
+                const key = islandRouteKey(activity);
+                if (patch[key] === undefined && (settings[key] === undefined || settings[key] === null))
+                    patch[key] = islandSetting(config, key);
+            }
+        }
+        if (isIslandBarConfig(config)) {
+            updateBarConfig(barId, patch);
+            return;
+        }
+        const location = _islandWidgetLocation(config);
+        if (!location)
+            return;
+        updateBarWidget(barId, location.sectionId, location.index, patch);
+    }
 
     function islandSetting(bc, key) {
-        const value = bc?.[key];
-        return value === undefined || value === null ? islandDefaults[key] : value;
+        const value = islandSettings(bc)[key];
+        if (value !== undefined && value !== null)
+            return value;
+        switch (key) {
+        case "islandRouteMedia":
+        case "islandRouteWeather":
+        case "islandRouteWallpaper":
+            return islandSetting(bc, "islandRouteDash");
+        }
+        return islandDefaultsFor(bc)[key];
+    }
+
+    function islandSatelliteTransparency(bc) {
+        if (islandSetting(bc, "islandSatelliteFollowInterfaceStyle"))
+            return barTransparency(bc);
+        return islandSetting(bc, "islandSatelliteTransparency");
     }
 
     function islandLevelDisplay(bc, key) {
@@ -911,10 +1031,17 @@ Singleton {
     }
 
     function islandStripThickness(bc) {
-        return LayoutResolver.islandThickness(bc, islandDefaults);
+        return LayoutResolver.islandThickness(islandSettings(bc), islandDefaultsFor(bc));
     }
-    readonly property var _islandHomeGroupIds: ["media", "clock", "weather", "status", "volume", "brightness", "notifications"]
+    function islandReserveThickness(bc) {
+        return LayoutResolver.islandReserve(islandSettings(bc), islandDefaultsFor(bc));
+    }
+    readonly property var _islandHomeGroupIds: ["workspaces", "media", "clock", "weather", "status", "volume", "brightness", "notifications", "privacy", "tray"]
     readonly property var _islandHomeLayoutDefault: [
+        {
+            "id": "workspaces",
+            "enabled": false
+        },
         {
             "id": "media",
             "enabled": true
@@ -942,10 +1069,19 @@ Singleton {
         {
             "id": "notifications",
             "enabled": true
+        },
+        {
+            "id": "privacy",
+            "enabled": true
+        },
+        {
+            "id": "tray",
+            "enabled": false
         }
     ]
     function getIslandHomeLayout(bc) {
-        const stored = Array.isArray(bc?.islandHomeLayout) ? bc.islandHomeLayout : [];
+        const layout = islandSettings(bc).islandHomeLayout;
+        const stored = Array.isArray(layout) ? layout : [];
         const result = [];
         const seen = {};
         for (const entry of stored) {
@@ -980,7 +1116,7 @@ Singleton {
             if (ids.indexOf(entry.id) < 0)
                 ordered.push(entry);
         }
-        updateBarConfig(barId, {
+        setIslandSettings(barId, {
             islandHomeLayout: ordered
         });
     }
@@ -988,7 +1124,7 @@ Singleton {
     function setIslandHomeGroupEnabled(barId, id, on) {
         if (id === "clock")
             return;
-        updateBarConfig(barId, {
+        setIslandSettings(barId, {
             islandHomeLayout: getIslandHomeLayout(getBarConfig(barId)).map(g => g.id === id ? {
                     "id": g.id,
                     "enabled": on
@@ -998,6 +1134,7 @@ Singleton {
 
     property bool osdAlwaysShowValue: Spec.SPEC.osdAlwaysShowValue.def
     property int osdPosition: SettingsData.Position.BottomCenter
+    property var osdPositionOverrides: Spec.SPEC.osdPositionOverrides.def
     property bool osdVolumeEnabled: Spec.SPEC.osdVolumeEnabled.def
     property bool osdMediaVolumeEnabled: Spec.SPEC.osdMediaVolumeEnabled.def
     property bool osdMediaPlaybackEnabled: Spec.SPEC.osdMediaPlaybackEnabled.def
@@ -1006,6 +1143,10 @@ Singleton {
     property bool osdMicMuteEnabled: Spec.SPEC.osdMicMuteEnabled.def
     property bool osdMicVolumeEnabled: Spec.SPEC.osdMicVolumeEnabled.def
     property bool osdCapsLockEnabled: Spec.SPEC.osdCapsLockEnabled.def
+    property bool osdNumLockEnabled: Spec.SPEC.osdNumLockEnabled.def
+    property bool osdKeyboardLayoutEnabled: Spec.SPEC.osdKeyboardLayoutEnabled.def
+    property bool osdInputMethodEnabled: Spec.SPEC.osdInputMethodEnabled.def
+    property bool osdTouchpadEnabled: Spec.SPEC.osdTouchpadEnabled.def
     property bool osdPowerProfileEnabled: Spec.SPEC.osdPowerProfileEnabled.def
     property bool osdAudioOutputEnabled: Spec.SPEC.osdAudioOutputEnabled.def
     property bool osdWorkspaceEnabled: Spec.SPEC.osdWorkspaceEnabled.def
@@ -1022,18 +1163,28 @@ Singleton {
     property string customPowerActionReboot: Spec.SPEC.customPowerActionReboot.def
     property string customPowerActionPowerOff: Spec.SPEC.customPowerActionPowerOff.def
     property var customPowerButtons: Spec.SPEC.customPowerButtons.def
+    property var powerMenuBootEntries: Spec.SPEC.powerMenuBootEntries.def
+    property bool powerMenuFirmwareSetup: Spec.SPEC.powerMenuFirmwareSetup.def
 
     property bool updaterCheckOnStart: Spec.SPEC.updaterCheckOnStart.def
     property bool updaterUseCustomCommand: Spec.SPEC.updaterUseCustomCommand.def
     property string updaterCustomCommand: Spec.SPEC.updaterCustomCommand.def
     property string updaterTerminalAdditionalParams: Spec.SPEC.updaterTerminalAdditionalParams.def
     property int updaterIntervalSeconds: Spec.SPEC.updaterIntervalSeconds.def
+    property bool updaterNotify: Spec.SPEC.updaterNotify.def
+    property bool updaterPauseOnBattery: Spec.SPEC.updaterPauseOnBattery.def
+    property int updaterNotifyMinSeconds: Spec.SPEC.updaterNotifyMinSeconds.def
     property bool updaterIncludeFlatpak: Spec.SPEC.updaterIncludeFlatpak.def
     property bool updaterAllowAUR: Spec.SPEC.updaterAllowAUR.def
     property bool updaterReopenAfterUpgrade: Spec.SPEC.updaterReopenAfterUpgrade.def
+    property bool updaterUpgradeInWindow: Spec.SPEC.updaterUpgradeInWindow.def
     property var updaterIgnoredPackages: Spec.SPEC.updaterIgnoredPackages.def
 
     property string displayNameMode: Spec.SPEC.displayNameMode.def
+    onDisplayNameModeChanged: {
+        if (!_loading)
+            _reconcileConnectedFrameBarStyles();
+    }
     property var screenPreferences: Spec.SPEC.screenPreferences.def
     property var showOnLastDisplay: Spec.SPEC.showOnLastDisplay.def
     property var displayProfiles: Spec.SPEC.displayProfiles.def
@@ -1048,6 +1199,95 @@ Singleton {
 
     property var desktopWidgetInstances: Spec.SPEC.desktopWidgetInstances.def
     property var desktopWidgetGroups: Spec.SPEC.desktopWidgetGroups.def
+    property string desktopContextMenu: Spec.SPEC.desktopContextMenu.def
+    property var lockScreenWidgetInstances: Spec.SPEC.lockScreenWidgetInstances.def
+    property var greeterWidgetInstances: Spec.SPEC.greeterWidgetInstances.def
+    property bool greeterFollowLockScreen: Spec.SPEC.greeterFollowLockScreen.def
+    readonly property var widgetInstanceListKeys: ["desktopWidgetInstances", "lockScreenWidgetInstances", "greeterWidgetInstances"]
+
+    // Released greeters still read these three shared keys, so they follow the lock widgets.
+    onLockScreenWidgetInstancesChanged: {
+        const status = widgetInstanceOfType("lockScreenWidgetInstances", "lockStatus");
+        const auth = widgetInstanceOfType("lockScreenWidgetInstances", "lockAuth");
+        const power = widgetInstanceOfType("lockScreenWidgetInstances", "lockPower");
+        const mirror = (key, value) => {
+            if (root[key] !== value)
+                set(key, value);
+        };
+        mirror("lockScreenShowWeather", !!status && status.enabled !== false && (status.config?.showWeather ?? true));
+        mirror("lockScreenShowProfileImage", !!auth && (auth.config?.showProfileImage ?? true));
+        mirror("lockScreenShowPowerActions", !!power && power.enabled !== false);
+        syncGreeterWidgets();
+    }
+
+    function widgetInstanceOfType(listKey, widgetType) {
+        return (root[listKey] || []).find(inst => inst.widgetType === widgetType) ?? null;
+    }
+
+    function lockWidgetInstance(widgetType) {
+        return widgetInstanceOfType("lockScreenWidgetInstances", widgetType);
+    }
+
+    function syncGreeterWidgets() {
+        if (!greeterFollowLockScreen)
+            return;
+        const next = Spec.greeterWidgetsFromLock(lockScreenWidgetInstances, greeterWidgetInstances);
+        if (JSON.stringify(next) === JSON.stringify(greeterWidgetInstances))
+            return;
+        set("greeterWidgetInstances", next);
+    }
+
+    function setGreeterFollowLockScreen(follow) {
+        if (follow === greeterFollowLockScreen)
+            return;
+        if (follow) {
+            for (const inst of greeterWidgetInstances || []) {
+                if (inst.id.startsWith("gw_"))
+                    SessionData.removeDesktopWidgetInstancePositions(inst.id);
+            }
+            set("greeterFollowLockScreen", true);
+            syncGreeterWidgets();
+            return;
+        }
+        const detached = (greeterWidgetInstances || []).map(inst => {
+            if (inst.widgetType === "greeterSession")
+                return inst;
+            const copy = JSON.parse(JSON.stringify(inst));
+            copy.id = "gw_" + inst.id;
+            SessionData.copyDesktopWidgetInstancePositions(inst.id, copy.id);
+            if (inst.widgetType !== "desktopClock" || inst.config?.autoPosition === false)
+                return copy;
+            copy.config.autoPosition = false;
+            SessionData.pinPublishedLockPosition(inst.id, copy.id, inst.config?.syncPositionAcrossScreens ?? false);
+            return copy;
+        });
+        set("greeterWidgetInstances", detached);
+        set("greeterFollowLockScreen", false);
+    }
+
+    function resetLockScreenWidgets() {
+        for (const inst of lockScreenWidgetInstances || [])
+            SessionData.removeDesktopWidgetInstancePositions(inst.id);
+        for (const inst of Spec.SPEC.lockScreenWidgetInstances.def)
+            SessionData.removeDesktopWidgetInstancePositions(inst.id);
+        resetToDefault(["lockScreenWidgetInstances"]);
+    }
+
+    // Following means the lock layout is the greeter layout, so that is what resets.
+    function resetGreeterWidgets() {
+        for (const inst of greeterWidgetInstances || []) {
+            if (!greeterFollowLockScreen || inst.widgetType === "greeterSession")
+                SessionData.removeDesktopWidgetInstancePositions(inst.id);
+        }
+        if (greeterFollowLockScreen) {
+            resetLockScreenWidgets();
+            set("greeterWidgetInstances", Spec.greeterWidgetsFromLock(lockScreenWidgetInstances, []));
+            return;
+        }
+        set("greeterWidgetInstances", Spec.greeterWidgetDefaults().map(inst => inst.widgetType === "greeterSession" ? inst : Object.assign(inst, {
+                id: "gw_" + inst.id
+            })));
+    }
 
     function getDefaultSystemMonitorConfig() {
         return {
@@ -1078,45 +1318,59 @@ Singleton {
         };
     }
 
-    function createDesktopWidgetInstance(widgetType, name, config) {
-        const id = "dw_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+    function widgetInstanceListKey(instanceId) {
+        return widgetInstanceListKeys.find(key => (root[key] || []).some(inst => inst.id === instanceId)) ?? "desktopWidgetInstances";
+    }
+
+    readonly property var widgetInstanceIdPrefixes: ({
+            desktopWidgetInstances: "dw_",
+            lockScreenWidgetInstances: "lw_",
+            greeterWidgetInstances: "gw_"
+        })
+
+    function createDesktopWidgetInstance(widgetType, name, config, listKey = "desktopWidgetInstances") {
+        const lockScreen = listKey !== "desktopWidgetInstances";
         const instance = {
-            id: id,
+            id: widgetInstanceIdPrefixes[listKey] + Date.now() + "_" + Math.random().toString(36).substr(2, 9),
             widgetType: widgetType,
             name: name || widgetType,
             enabled: true,
-            config: config || {}
+            config: Object.assign(lockScreen ? {
+                syncPositionAcrossScreens: true
+            } : {}, config || {})
         };
-        const instances = JSON.parse(JSON.stringify(desktopWidgetInstances || []));
+        const instances = JSON.parse(JSON.stringify(root[listKey] || []));
         instances.push(instance);
-        desktopWidgetInstances = instances;
+        root[listKey] = instances;
         saveSettings();
         return instance;
     }
 
     function updateDesktopWidgetInstance(instanceId, updates) {
-        const instances = JSON.parse(JSON.stringify(desktopWidgetInstances || []));
+        const listKey = widgetInstanceListKey(instanceId);
+        const instances = JSON.parse(JSON.stringify(root[listKey] || []));
         const idx = instances.findIndex(inst => inst.id === instanceId);
         if (idx === -1)
             return;
         Object.assign(instances[idx], updates);
-        desktopWidgetInstances = instances;
+        root[listKey] = instances;
         saveSettings();
     }
 
     function updateDesktopWidgetInstanceConfig(instanceId, configUpdates) {
-        const instances = JSON.parse(JSON.stringify(desktopWidgetInstances || []));
+        const listKey = widgetInstanceListKey(instanceId);
+        const instances = JSON.parse(JSON.stringify(root[listKey] || []));
         const idx = instances.findIndex(inst => inst.id === instanceId);
         if (idx === -1)
             return;
         instances[idx].config = Object.assign({}, instances[idx].config || {}, configUpdates);
-        desktopWidgetInstances = instances;
+        root[listKey] = instances;
         saveSettings();
     }
 
     function removeDesktopWidgetInstance(instanceId) {
-        const instances = (desktopWidgetInstances || []).filter(inst => inst.id !== instanceId);
-        desktopWidgetInstances = instances;
+        const listKey = widgetInstanceListKey(instanceId);
+        root[listKey] = (root[listKey] || []).filter(inst => inst.id !== instanceId);
         SessionData.removeDesktopWidgetInstancePositions(instanceId);
         saveSettings();
     }
@@ -1125,23 +1379,21 @@ Singleton {
         const source = getDesktopWidgetInstance(instanceId);
         if (!source)
             return null;
-        const newId = "dw_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-        const instance = {
-            id: newId,
-            widgetType: source.widgetType,
-            name: source.name + " (Copy)",
-            enabled: source.enabled,
-            config: JSON.parse(JSON.stringify(source.config || {}))
-        };
-        const instances = JSON.parse(JSON.stringify(desktopWidgetInstances || []));
-        instances.push(instance);
-        desktopWidgetInstances = instances;
-        saveSettings();
+        const instance = createDesktopWidgetInstance(source.widgetType, source.name + " (Copy)", JSON.parse(JSON.stringify(source.config || {})), widgetInstanceListKey(instanceId));
+        if (!source.enabled)
+            updateDesktopWidgetInstance(instance.id, {
+                enabled: false
+            });
         return instance;
     }
 
     function getDesktopWidgetInstance(instanceId) {
-        return (desktopWidgetInstances || []).find(inst => inst.id === instanceId) || null;
+        for (const key of widgetInstanceListKeys) {
+            const found = (root[key] || []).find(inst => inst.id === instanceId);
+            if (found)
+                return found;
+        }
+        return null;
     }
 
     function moveDesktopWidgetInstanceToGroup(instanceId, groupId, newIndexInGroup) {
@@ -1214,24 +1466,20 @@ Singleton {
     signal widgetDataChanged
     signal workspaceIconsUpdated
     signal compositorLayoutRefreshNeeded(bool frame)
+    signal blurStrengthRefreshNeeded
     signal compositorInputRefreshNeeded
     signal compositorCursorRefreshNeeded
     signal notificationPopupsInvalidated
 
     function refreshAuthAvailability() {
-        if (isGreeterMode)
-            return;
         Processes.detectAuthCapabilities();
     }
 
-    Component.onCompleted: {
-        if (isGreeterMode)
-            return;
+    function _runStartSequence() {
         Processes.settingsRoot = root;
-        loadSettings();
+        const unsaved = _loadSettings();
         initializeListModels();
-        refreshAuthAvailability();
-        Processes.checkPluginSettings();
+        return unsaved;
     }
 
     function applyStoredTheme() {
@@ -1262,6 +1510,10 @@ Singleton {
         compositorInputRefreshNeeded();
     }
 
+    function updateBlurStrength() {
+        blurStrengthRefreshNeeded();
+    }
+
     function updateFrameCompositorLayout() {
         compositorLayoutRefreshNeeded(true);
         FrameTransitionState.begin();
@@ -1274,9 +1526,33 @@ Singleton {
     }
 
     function applyStoredIconTheme() {
-        updateGtkIconTheme();
-        updateQtIconTheme();
-        updateCosmicIconTheme();
+        if (resolveIconTheme() !== "System Default") {
+            updateGtkIconTheme();
+            updateQtIconTheme();
+            updateCosmicIconTheme();
+            return;
+        }
+        restoreIconTheme();
+    }
+
+    function _shellQuote(arg) {
+        return "'" + String(arg).replace(/'/g, "'\\''") + "'";
+    }
+
+    // Hand back the theme DMS replaced, unless something else changed it since.
+    function restoreIconTheme() {
+        const current = GSettings.getCmd("org.gnome.desktop.interface", "icon-theme");
+        const script = `b=${_shellQuote(_iconThemeBackup)}; cur=$(${current}); if saved=$(cat "$b" 2>/dev/null); then rm -f "$b"; [ "$cur" = ${_shellQuote(SessionData.lastAppliedIconTheme)} ] && { printf 'restore:%s' "$saved"; exit 0; }; fi; printf '%s' "$cur"`;
+        Proc.runCommand("restoreIconTheme", ["sh", "-c", script], output => {
+            const out = (output || "").trim();
+            const restored = out.startsWith("restore:") ? out.substring(8) : "";
+            const theme = restored || out;
+            if (theme)
+                root.systemDefaultIconTheme = theme;
+            root.updateGtkIconTheme();
+            root.updateQtIconTheme(restored);
+            root.updateCosmicIconTheme();
+        });
     }
 
     function setIconThemeUnmanaged() {
@@ -1289,8 +1565,6 @@ Singleton {
     }
 
     function checkIconThemeDrift() {
-        if (isGreeterMode)
-            return;
         if (resolveIconTheme() === "System Default")
             return;
         if (!SessionData.lastAppliedIconTheme)
@@ -1306,6 +1580,14 @@ Singleton {
             root.setIconThemeUnmanaged();
             ToastService.showWarning(I18n.tr("Icon theme changed outside DMS; switched to System Default", "shown when an external tool overrides the icon theme DMS applied"));
         });
+    }
+
+    Connections {
+        target: Quickshell
+        function onScreensChanged() {
+            if (!root._loading)
+                Qt.callLater(root._reconcileConnectedFrameBarStyles);
+        }
     }
 
     Connections {
@@ -1366,7 +1648,17 @@ Singleton {
 
     function updateGtkIconTheme() {
         const resolved = resolveIconTheme();
-        const gtkThemeName = (resolved === "System Default") ? systemDefaultIconTheme : resolved;
+        if (resolved === "System Default") {
+            _writeGtkIconTheme(systemDefaultIconTheme);
+            return;
+        }
+        // The portal write in _writeGtkIconTheme lands before its script, so back up first.
+        const current = GSettings.getCmd("org.gnome.desktop.interface", "icon-theme");
+        const backup = `b=${_shellQuote(_iconThemeBackup)}; [ -e "$b" ] && exit 0; cur=$(${current}); case "$cur" in ''|${_shellQuote(resolved)}) ;; *) mkdir -p "$(dirname "$b")" && printf '%s\\n' "$cur" > "$b" ;; esac`;
+        Proc.runCommand("backupIconTheme", ["sh", "-c", backup], () => root._writeGtkIconTheme(resolved));
+    }
+
+    function _writeGtkIconTheme(gtkThemeName) {
         if (gtkThemeName === "System Default" || gtkThemeName === "")
             return;
         SessionData.lastAppliedIconTheme = gtkThemeName;
@@ -1395,15 +1687,13 @@ Singleton {
         fi
         done
 
-        ${GSettings.setCmd("org.gnome.desktop.interface", "icon-theme", gtkThemeName)} || true
-
-        pkill -HUP -f 'gtk' 2>/dev/null || true`;
+        ${GSettings.setCmd("org.gnome.desktop.interface", "icon-theme", gtkThemeName)} || true`;
 
         Quickshell.execDetached(["sh", "-lc", configScript]);
     }
 
-    function updateQtIconTheme() {
-        const resolved = resolveIconTheme();
+    function updateQtIconTheme(restored) {
+        const resolved = restored || resolveIconTheme();
         const qtThemeName = (resolved === "System Default") ? "" : resolved;
         if (!qtThemeName)
             return;
@@ -1439,8 +1729,6 @@ Singleton {
     }
 
     function scheduleAuthApply() {
-        if (isGreeterMode)
-            return;
         Qt.callLater(() => {
             Processes.settingsRoot = root;
             Processes.scheduleAuthApply();
@@ -1448,23 +1736,42 @@ Singleton {
     }
 
     function scheduleGreeterAutoLoginSync() {
-        if (isGreeterMode)
-            return;
         Qt.callLater(() => {
             Processes.settingsRoot = root;
             Processes.scheduleGreeterAutoLoginSync();
         });
     }
 
-    function markGreeterSyncPending(who, key, oldValue) {
-        if (isGreeterMode)
+    function syncLauncherHistory(who, key) {
+        if (who[key])
             return;
+        AppUsageHistoryData.clear();
+        SessionData.clearLauncherHistory();
+    }
+
+    function markGreeterSyncPending(who, key, oldValue) {
         if (!(key in SessionData.greeterSyncBaseline)) {
             var baseline = Object.assign({}, SessionData.greeterSyncBaseline);
             baseline[key] = oldValue;
             SessionData.greeterSyncBaseline = baseline;
         }
         SessionData.greeterSyncPending = true;
+        SessionData.saveSettings();
+    }
+
+    // Older builds flagged keys the linked slot now serves live; drop them so Apply does not nag forever.
+    function pruneGreeterSyncPending() {
+        const baseline = SessionData.greeterSyncBaseline || {};
+        const keys = Object.keys(baseline);
+        const live = keys.filter(key => Spec.SPEC[key]?.onChange === "markGreeterSyncPending");
+        if (live.length === keys.length)
+            return;
+        const pruned = {};
+        for (const key of live)
+            pruned[key] = baseline[key];
+        SessionData.greeterSyncBaseline = pruned;
+        if (live.length === 0)
+            SessionData.greeterSyncPending = false;
         SessionData.saveSettings();
     }
 
@@ -1486,56 +1793,138 @@ Singleton {
         saveSettings();
     }
 
+    function applyDensityPresets(who, key, previous) {
+        // Theme renders an unknown level as comfortable.
+        const from = DensityPresets.LEVELS.includes(previous) ? previous : "comfortable";
+        const writes = Object.assign({
+            "barConfigs": DensityPresets.transitionAll(barConfigs, "bar", from, density),
+            "dockConfigs": DensityPresets.transitionAll(dockConfigs, "dock", from, density)
+        }, DensityPresets.transition({
+            "frameThickness": frameThickness,
+            "frameBarSize": frameBarSize
+        }, "frame", from, density));
+        for (const name in writes) {
+            if (writes[name] !== null && !isManaged(name))
+                root[name] = writes[name];
+        }
+    }
+
+    function applyInterfaceStyle(who, key, previous) {
+        const from = Store.styleDefault("radiusMode", previous) ?? Spec.SPEC.radiusMode.def;
+        if (radiusMode !== from || isManaged("radiusMode"))
+            return;
+        radiusMode = presetDefault("radiusMode") ?? Spec.SPEC.radiusMode.def;
+        updateCompositorLayout();
+    }
+
     readonly property var _hooks: ({
+            "applyDensityPresets": applyDensityPresets,
+            "applyInterfaceStyle": applyInterfaceStyle,
             "applyStoredTheme": applyStoredTheme,
             "regenSystemThemes": regenSystemThemes,
             "updateCompositorLayout": updateCompositorLayout,
             "updateCompositorInput": updateCompositorInput,
+            "updateBlurStrength": updateBlurStrength,
             "applyStoredIconTheme": applyStoredIconTheme,
             "updateBarConfigs": updateBarConfigs,
             "updateCompositorCursor": updateCompositorCursor,
             "scheduleAuthApply": scheduleAuthApply,
             "scheduleGreeterAutoLoginSync": scheduleGreeterAutoLoginSync,
-            "markGreeterSyncPending": markGreeterSyncPending
+            "markGreeterSyncPending": markGreeterSyncPending,
+            "syncLauncherHistory": syncLauncherHistory
         })
 
     function set(key, value) {
-        if (key === "cornerRadius") {
-            setCornerRadius(value);
-            return;
+        if (isManaged(key)) {
+            log.warn("Refusing to change a setting managed by administrator policy:", key);
+            return false;
         }
+        if (key === "density" && !DensityPresets.LEVELS.includes(value)) {
+            log.warn("Refusing an unknown density:", value);
+            return false;
+        }
+        if (key === "interfaceStyle" && !["expressive", "classic"].includes(value)) {
+            log.warn("Refusing an unknown interface style:", value);
+            return false;
+        }
+        if (key === "cornerRadius")
+            return setCornerRadius(value);
         if (key === "radiusStrength")
             value = Shape.normalizeStrength(value);
         Spec.set(root, key, value, saveSettings, _hooks);
         if (key === "frameEnabled" && value)
             clearIslandBars();
+        return true;
     }
 
     function hasSetting(key) {
         return key in Spec.SPEC;
     }
 
+    function isManaged(key) {
+        return key in AdminPolicy.lockSettings;
+    }
+
+    function presetDefault(key) {
+        return DensityPresets.value("frame", key, density) ?? Store.styleDefault(key, interfaceStyle);
+    }
+
     function specDefault(key) {
-        return SpecUtil.cloneDef(Spec.SPEC[key]?.def);
+        return presetDefault(key) ?? SpecUtil.cloneDef(Spec.SPEC[key]?.def);
     }
 
     function isDefault(keys) {
-        return keys.every(key => !(key in Spec.SPEC) || SpecUtil.isDefault(root[key], Spec.SPEC[key].def));
+        return keys.every(key => !(key in Spec.SPEC) || SpecUtil.isDefault(root[key], presetDefault(key) ?? Spec.SPEC[key].def));
     }
 
     function resetToDefault(keys) {
         for (const key of keys) {
-            if (key in Spec.SPEC)
-                Spec.set(root, key, null, saveSettings, _hooks);
+            if (key in Spec.SPEC && !isManaged(key))
+                Spec.set(root, key, presetDefault(key) ?? null, saveSettings, _hooks);
         }
     }
 
+    function osdPositionFor(kind) {
+        const override = osdPositionOverrides?.[kind];
+        return typeof override === "number" ? override : osdPosition;
+    }
+
+    function hasOsdPositionOverride(kind) {
+        return typeof osdPositionOverrides?.[kind] === "number";
+    }
+
+    function setOsdPosition(kind, position) {
+        if (!kind) {
+            set("osdPosition", position);
+            return;
+        }
+        if (position === osdPosition) {
+            resetOsdPosition(kind);
+            return;
+        }
+        set("osdPositionOverrides", Object.assign({}, osdPositionOverrides, {
+            [kind]: position
+        }));
+    }
+
+    function resetOsdPosition(kind) {
+        if (!kind) {
+            resetToDefault(["osdPosition"]);
+            return;
+        }
+        if (!hasOsdPositionOverride(kind))
+            return;
+        const next = Object.assign({}, osdPositionOverrides);
+        delete next[kind];
+        set("osdPositionOverrides", next);
+    }
+
     function barConfigDefault(field) {
-        return Spec.SPEC.barConfigs.def[0][field];
+        return DensityPresets.value("bar", field, density) ?? Spec.SPEC.barConfigs.def[0][field];
     }
 
     function dockConfigDefaults() {
-        return DockConfig.create("", "");
+        return Object.assign(DockConfig.create("", ""), DensityPresets.values("dock", density));
     }
 
     // Frame mode hosts bars inside the frame surface, which has nowhere to put an edge island; a dot floats over it.
@@ -1545,107 +1934,115 @@ Singleton {
         const configs = JSON.parse(JSON.stringify(barConfigs));
         for (const cfg of configs)
             delete cfg.island;
-        barConfigs = configs;
-        updateBarConfigs();
+        _commitBarConfigs(configs);
     }
 
-    function loadSettings() {
-        _loading = true;
-        _parseError = false;
-        _hasUnsavedChanges = false;
-        _pendingMigration = null;
+    function _loadSettings() {
+        const isInitial = !_hasLoaded || _settingsStage === SettingsData.Stage.Partial;
+        let unsavedChanges;
+        let obj = _getSettingsObjectFromFiles();
+        let loadedSettings = JSON.stringify(obj);
 
-        try {
-            const txt = settingsFile.text();
-            let obj = (txt && txt.trim()) ? JSON.parse(txt) : null;
-
-            const oldVersion = obj?.configVersion ?? 0;
-            const legacyPins = oldVersion < 13 ? Store.extractPins(obj) : null;
-            const sessionPayload = oldVersion < 15 ? Store.extractSessionPayload(obj) : null;
-            const cachePayload = oldVersion < 15 ? Store.extractCachePayload(obj) : null;
-            if (oldVersion < settingsConfigVersion) {
-                const migrated = Store.migrateToVersion(obj, settingsConfigVersion);
-                if (migrated) {
-                    _pendingMigration = migrated;
-                    obj = migrated;
-                }
-            }
-            if (legacyPins)
-                Qt.callLater(() => CacheData.migratePins(legacyPins));
-            if (cachePayload)
-                Qt.callLater(() => CacheData.migrateUsageHistories(cachePayload));
-            if (sessionPayload) {
-                Qt.callLater(() => {
-                    SessionData.importFromSettings(sessionPayload);
-                    _mergeSessionState();
-                });
-            }
-
-            if (obj?.lockScreenActiveMonitor !== undefined) {
-                var oldVal = obj.lockScreenActiveMonitor;
-                if (oldVal && oldVal !== "all") {
-                    if (!obj.screenPreferences)
-                        obj.screenPreferences = {};
-                    if (obj.screenPreferences.lockScreen === undefined) {
-                        obj.screenPreferences.lockScreen = [oldVal];
-                    }
-                }
-                delete obj.lockScreenActiveMonitor;
-            }
-
-            if (obj?.use24HourClock !== undefined && obj?.clockFormat === undefined) {
-                obj.clockFormat = obj.use24HourClock ? "24h" : "12h";
-                delete obj.use24HourClock;
-            }
-
-            Store.parse(root, obj);
-
-            // set() enforces this pair, but a hand-edited settings.json bypasses set() entirely.
-            if (frameEnabled)
-                clearIslandBars();
-
-            if (obj?.directionalAnimationMode === 3 && frameMode !== "connected")
-                frameMode = "connected";
-
-            if (obj?.iconTheme !== undefined && obj?.iconThemeDark === undefined)
-                iconThemeDark = obj.iconTheme;
-
-            if (obj?.weatherLocation !== undefined)
-                _legacyWeatherLocation = obj.weatherLocation;
-            if (obj?.weatherCoordinates !== undefined)
-                _legacyWeatherCoordinates = obj.weatherCoordinates;
-            if (obj?.vpnLastConnected !== undefined && obj.vpnLastConnected !== "") {
-                _legacyVpnLastConnected = obj.vpnLastConnected;
-                SessionData.vpnLastConnected = _legacyVpnLastConnected;
-                SessionData.saveSettings();
-            }
-
-            _loadedSettingsSnapshot = JSON.stringify(Store.toJson(root));
-            _hasLoaded = true;
-            _mergeSessionState();
-            applyStoredTheme();
-            updateCompositorCursor();
-            Qt.callLater(checkIconThemeDrift);
-
-            _checkSettingsWritable();
-        } catch (e) {
-            _parseError = true;
-            const msg = e.message;
-            log.error("Failed to parse settings.json - file will not be overwritten. Error:", msg);
-            Qt.callLater(() => ToastService.showError(I18n.tr("Failed to parse %1", "error toast, %1 is a settings file name").arg("settings.json"), msg));
-            applyStoredTheme();
-        } finally {
-            _loading = false;
+        const oldVersion = obj?.configVersion ?? settingsConfigVersion;
+        if (oldVersion > settingsConfigVersion) {
+            newerSettingsBackup.path = `${_configDir}/dms/settings.v${oldVersion}.json`;
+            newerSettingsBackup.setText(JSON.stringify(obj, null, 2));
         }
-        loadPluginSettings();
-        Qt.callLater(() => _reconcileConnectedFrameBarStyles());
-    }
+        const legacyPins = oldVersion < 13 ? Store.extractPins(obj) : null;
+        const sessionPayload = oldVersion < 15 ? Store.extractSessionPayload(obj) : null;
+        const cachePayload = oldVersion < 15 ? Store.extractCachePayload(obj) : null;
+        let migrationRan = false;
+        if (oldVersion < settingsConfigVersion) {
+            const migrated = Store.migrateToVersion(obj, settingsConfigVersion);
+            if (migrated) {
+                obj = migrated;
+                migrationRan = true;
+            }
+        }
+        if (legacyPins) {
+            Qt.callLater(() => CacheData.migratePins(legacyPins));
+        }
+        if (cachePayload) {
+            Qt.callLater(() => CacheData.migrateUsageHistories(cachePayload));
+        }
+        if (sessionPayload) {
+            Qt.callLater(() => {
+                SessionData.importFromSettings(sessionPayload);
+                _mergeSessionState();
+            });
+        }
+        if (obj?.lockScreenActiveMonitor !== undefined) {
+            var oldVal = obj.lockScreenActiveMonitor;
+            if (oldVal && oldVal !== "all") {
+                if (!obj.screenPreferences) {
+                    obj.screenPreferences = {};
+                }
+                if (obj.screenPreferences.lockScreen === undefined) {
+                    obj.screenPreferences.lockScreen = [oldVal];
+                }
+            }
+            delete obj.lockScreenActiveMonitor;
+        }
+        if (obj?.use24HourClock !== undefined && obj?.clockFormat === undefined) {
+            obj.clockFormat = obj.use24HourClock ? "24h" : "12h";
+            delete obj.use24HourClock;
+        }
 
-    property var _pendingMigration: null
+        const prevFrameEnabled = frameEnabled;
+        const prevFrameMode = frameMode;
+        unsavedChanges = loadedSettings !== JSON.stringify(obj);
+        Store.parse(root, Object.assign(obj, AdminPolicy.lockSettings));
+
+        // set() enforces this pair, but a hand-edited settings bypass set() entirely.
+        if (frameEnabled)
+            clearIslandBars();
+
+        if (obj?.directionalAnimationMode === 3 && frameMode !== "connected")
+            frameMode = "connected";
+
+        if (obj?.iconTheme !== undefined && obj?.iconThemeDark === undefined)
+            iconThemeDark = obj.iconTheme;
+
+        if (obj?.weatherLocation !== undefined)
+            _legacyWeatherLocation = obj.weatherLocation;
+        if (obj?.weatherCoordinates !== undefined)
+            _legacyWeatherCoordinates = obj.weatherCoordinates;
+        if (obj?.vpnLastConnected !== undefined && obj.vpnLastConnected !== "") {
+            _legacyVpnLastConnected = obj.vpnLastConnected;
+            SessionData.vpnLastConnected = _legacyVpnLastConnected;
+            SessionData.saveSettings();
+        }
+
+        _hasLoaded = true;
+        if (!_parseError) {
+            _settingsStage = SettingsData.Stage.Ready;
+        }
+
+        if (isInitial) {
+            _mergeSessionState();
+            Qt.callLater(checkIconThemeDrift);
+        }
+        applyStoredTheme();
+        updateCompositorCursor();
+        if (!isInitial) {
+            // External edits reload under _loading, which skips the per-property transition triggers
+            const frameChanged = (frameEnabled !== prevFrameEnabled || (frameEnabled && frameMode !== prevFrameMode));
+            if (!_parseError && frameChanged) {
+                updateFrameCompositorLayout();
+            }
+        }
+
+        if (isInitial && _settingsStage === SettingsData.Stage.Ready) {
+            loadPluginSettings();
+            Qt.callLater(() => _reconcileConnectedFrameBarStyles());
+        }
+        return unsavedChanges;
+    }
 
     function _mergeSessionState() {
         if (!_hasLoaded || !SessionData._hasLoaded)
             return;
+        pruneGreeterSyncPending();
 
         const pluginState = SessionData.builtInPluginState || {};
         if (Object.keys(pluginState).length > 0) {
@@ -1665,39 +2062,18 @@ Singleton {
         }
     }
 
-    function _checkSettingsWritable() {
-        settingsWritableCheckProcess.running = true;
-    }
-
-    function _onWritableCheckComplete(writable) {
-        const wasReadOnly = _isReadOnly;
-        _isReadOnly = !writable;
-        if (_isReadOnly) {
-            _hasUnsavedChanges = _checkForUnsavedChanges();
-            if (!wasReadOnly)
-                log.info("settings.json is now read-only");
-        } else {
-            _loadedSettingsSnapshot = JSON.stringify(Store.toJson(root));
-            _hasUnsavedChanges = false;
-            if (wasReadOnly)
-                log.info("settings.json is now writable");
-            if (_pendingMigration) {
-                _selfWrite = true;
-                settingsFile.setText(JSON.stringify(_pendingMigration, null, 2));
+    function _getCurrentSettings() {
+        const setKeys = new Set();
+        for (const path of _settingsFilesPaths) {
+            const file = _settingsFiles.get(path);
+            for (const key in file.settings) {
+                setKeys.add(key);
             }
         }
-        _pendingMigration = null;
+        return Store.toJson(root, setKeys);
     }
-
-    function _checkForUnsavedChanges() {
-        if (!_hasLoaded || !_loadedSettingsSnapshot)
-            return false;
-        const current = JSON.stringify(Store.toJson(root));
-        return current !== _loadedSettingsSnapshot;
-    }
-
     function getCurrentSettingsJson() {
-        return JSON.stringify(Store.toJson(root), null, 2);
+        return JSON.stringify(_getCurrentSettings(), null, 2);
     }
 
     function _resetPluginSettings() {
@@ -1761,20 +2137,66 @@ Singleton {
         }
     }
 
+    function _splitSettingsByFile(settings) {
+        const savedSettings = new Set();
+        const splitSettings = {};
+
+        for (let i = _settingsFilesPaths.length - 1; i >= 0; i--) {
+            const path = _settingsFilesPaths[i];
+            const file = _settingsFiles.get(path);
+            const fileSettings = file.getSettings();
+            for (const setting in fileSettings) {
+                if (isManaged(setting))
+                    continue;
+                if (!(setting in settings)) {
+                    delete fileSettings[setting];
+                    continue;
+                }
+                if (savedSettings.has(setting)) {
+                    continue;
+                }
+                fileSettings[setting] = settings[setting];
+                savedSettings.add(setting);
+            }
+            splitSettings[path] = fileSettings;
+        }
+
+        for (const setting in settings) {
+            if (!savedSettings.has(setting) && !isManaged(setting)) {
+                splitSettings[defaultSettingsFile.filePath][setting] = settings[setting];
+            }
+        }
+        return splitSettings;
+    }
     function saveSettings() {
-        if (isGreeterMode || _loading || _parseError || !_hasLoaded)
+        if (_loading || !_hasLoaded)
             return;
-        const json = JSON.stringify(Store.toJson(root), null, 2);
-        if (json === settingsFile.text())
+        unsavedUserChanges = true;
+        settingsSaveDebounce.restart();
+    }
+    function _saveSettings(userChanges) {
+        let reason = null;
+        if (_loading) {
+            reason = "some files are being loaded";
+        } else if (_parseError) {
+            reason = "failed to parse settings.";
+        }
+        if (reason !== null) {
+            log.warn("Refusing to save settings, recent changes may be lost: " + reason);
             return;
-        _selfWrite = true;
-        settingsFile.setText(json);
-        if (_isReadOnly)
-            _checkSettingsWritable();
+        }
+        const settings = _getCurrentSettings();
+        const splitSettings = _splitSettingsByFile(settings);
+        for (const path in splitSettings) {
+            const fileSettings = splitSettings[path];
+            const file = _settingsFiles.get(path);
+            file.setSettings(fileSettings, userChanges);
+        }
+        unsavedUserChanges = _anySettingsFile(file => file.fileUnsavedUserChanges);
     }
 
     function savePluginSettings() {
-        if (isGreeterMode || _pluginSettingsLoading || _pluginParseError)
+        if (_pluginSettingsLoading || _pluginParseError)
             return;
         pluginSettingsFile.setText(JSON.stringify(pluginSettings, null, 2));
     }
@@ -1789,116 +2211,48 @@ Singleton {
         };
     }
 
-    function _hasConnectedFrameBarStyleBackups() {
-        return connectedFrameBarStyleBackups && Object.keys(connectedFrameBarStyleBackups).length > 0;
+    function barUsesConnectedFrameStyle(config) {
+        if (!config || !connectedFrameModeActive)
+            return false;
+        return Quickshell.screens.some(screen => barConfigCoversScreen(config, screen) && isScreenInPreferences(screen, frameScreenPreferences));
     }
 
-    function _captureConnectedFrameBarStyleBackups(configs, overwriteExisting) {
+    function _applyConnectedFrameBarStyles(configs) {
         if (!Array.isArray(configs))
-            return;
-
-        const nextBackups = JSON.parse(JSON.stringify(connectedFrameBarStyleBackups || {}));
-        const validIds = {};
-        let changed = false;
-
-        for (let i = 0; i < configs.length; i++) {
-            const config = configs[i];
-            if (!config?.id)
-                continue;
-            validIds[config.id] = true;
-
-            if (!overwriteExisting && nextBackups[config.id] !== undefined)
-                continue;
-
-            const snapshot = _connectedFrameBarStyleSnapshot(config);
-            if (JSON.stringify(nextBackups[config.id]) !== JSON.stringify(snapshot)) {
-                nextBackups[config.id] = snapshot;
-                changed = true;
-            }
-        }
-
-        if (overwriteExisting) {
-            for (const barId in nextBackups) {
-                if (validIds[barId])
-                    continue;
-                delete nextBackups[barId];
-                changed = true;
-            }
-        }
-
-        if (changed)
-            connectedFrameBarStyleBackups = nextBackups;
-    }
-
-    function _restoreConnectedFrameBarStyleBackups() {
-        if (!_hasConnectedFrameBarStyleBackups())
-            return;
-
-        const backups = connectedFrameBarStyleBackups || {};
-        const configs = JSON.parse(JSON.stringify(barConfigs));
-        let changed = false;
-
-        for (let i = 0; i < configs.length; i++) {
-            const backup = backups[configs[i].id];
-            if (!backup)
-                continue;
-            for (const key in backup) {
-                if (configs[i][key] === backup[key])
-                    continue;
-                configs[i][key] = backup[key];
-                changed = true;
-            }
-        }
-
-        if (changed)
-            barConfigs = configs;
-        connectedFrameBarStyleBackups = ({});
-        if (changed)
-            updateBarConfigs();
-    }
-
-    // Zeroes out connected-mode-hostile fields (shadow, square/goth corners, edge attach, border).
-    // Returns { configs, changed } — `configs` is the same ref when no change.
-    function _sanitizeBarConfigsForConnectedFrame(configs) {
-        if (!connectedFrameModeActive || !Array.isArray(configs))
             return {
                 "configs": configs,
-                "changed": false
+                "changed": false,
+                "backups": null
             };
 
+        const backups = connectedFrameBarStyleBackups || {};
+        const nextBackups = {};
+        let backupsChanged = false;
         let anyChanged = false;
+        const zeroed = _connectedFrameBarStyleSnapshot(null);
         const out = configs.map(cfg => {
-            if (!cfg)
+            if (!cfg?.id)
                 return cfg;
-            let dirty = false;
-            const s = Object.assign({}, cfg);
-            if ((s.shadowIntensity ?? 0) !== 0) {
-                s.shadowIntensity = 0;
-                dirty = true;
+            const covered = barUsesConnectedFrameStyle(cfg);
+            if (covered) {
+                nextBackups[cfg.id] = backups[cfg.id] ?? _connectedFrameBarStyleSnapshot(cfg);
+                backupsChanged = backupsChanged || backups[cfg.id] === undefined;
             }
-            if (s.squareCorners ?? false) {
-                s.squareCorners = false;
-                dirty = true;
-            }
-            if (s.attachToScreenEdge ?? false) {
-                s.attachToScreenEdge = false;
-                dirty = true;
-            }
-            if (s.gothCornersEnabled ?? false) {
-                s.gothCornersEnabled = false;
-                dirty = true;
-            }
-            if (s.borderEnabled ?? false) {
-                s.borderEnabled = false;
-                dirty = true;
-            }
-            if (dirty)
-                anyChanged = true;
-            return dirty ? s : cfg;
+            const target = covered ? zeroed : backups[cfg.id];
+            if (!target)
+                return cfg;
+            const current = _connectedFrameBarStyleSnapshot(cfg);
+            if (Object.keys(target).every(key => current[key] === target[key]))
+                return cfg;
+            anyChanged = true;
+            return Object.assign({}, cfg, target);
         });
+
+        const backupsDirty = backupsChanged || Object.keys(nextBackups).length !== Object.keys(backups).length;
         return {
             "configs": anyChanged ? out : configs,
-            "changed": anyChanged
+            "changed": anyChanged,
+            "backups": backupsDirty ? nextBackups : null
         };
     }
 
@@ -1911,20 +2265,16 @@ Singleton {
         return Object.assign({}, config, backup);
     }
 
-    // Single entry point for connected-mode settings state.
-    //   !active → restore backups
     function _reconcileConnectedFrameBarStyles() {
-        if (!connectedFrameModeActive) {
-            _restoreConnectedFrameBarStyleBackups();
+        if (Quickshell.screens.length === 0)
             return;
-        }
-        if (!_hasConnectedFrameBarStyleBackups())
-            _captureConnectedFrameBarStyleBackups(barConfigs, true);
-        const result = _sanitizeBarConfigsForConnectedFrame(barConfigs);
-        if (result.changed) {
+        const result = _applyConnectedFrameBarStyles(barConfigs);
+        if (result.changed)
             barConfigs = result.configs;
+        if (result.backups)
+            connectedFrameBarStyleBackups = result.backups;
+        if (result.changed)
             updateBarConfigs();
-        }
     }
 
     function detectAvailableIconThemes() {
@@ -2007,11 +2357,10 @@ Singleton {
     }
 
     function getEffectiveTimeFormat() {
+        const seconds = showSeconds ? ":ss" : "";
         if (use24HourClock)
-            return showSeconds ? "hh:mm:ss" : "hh:mm";
-        if (padHours12Hour)
-            return showSeconds ? "hh:mm:ss AP" : "hh:mm AP";
-        return showSeconds ? "h:mm:ss AP" : "h:mm AP";
+            return "hh:mm" + seconds;
+        return (padHours12Hour ? "hh" : "h") + ":mm" + seconds + (showAmPm ? " AP" : "");
     }
 
     function getEffectiveDateFormat(fallback) {
@@ -2036,8 +2385,8 @@ Singleton {
         return ShellLayout.popupTrigger(pos, screen, barThickness, widgetWidth, barSpacing, barPosition, barConfig);
     }
 
-    function getAdjacentBarInfo(screen, barPosition, barConfig) {
-        return ShellLayout.adjacentInfo(screen, barConfig);
+    function getAdjacentBarInfo(screen, barPosition, barConfig, includeAutoHide) {
+        return ShellLayout.adjacentInfo(screen, barConfig, includeAutoHide);
     }
 
     function getBarBounds(screen, barThickness, barPosition, barConfig) {
@@ -2156,8 +2505,8 @@ Singleton {
         let name = I18n.tr("Dock");
         let number = 2;
         while (dockConfigs.some(config => config.name === name))
-            name = I18n.tr("Dock") + " " + number++;
-        const config = DockConfig.create(id, name);
+            name = I18n.tr("Dock %1", "generated dock name, %1 is a number").arg(number++);
+        const config = Object.assign(DockConfig.create(id, name), DensityPresets.values("dock", density));
         const edge = firstFreeDockEdge(id, config.screenPreferences);
         config.enabled = edge >= 0;
         config.position = Math.max(SettingsData.Position.Top, edge);
@@ -2270,6 +2619,16 @@ Singleton {
         }
         const listKey = sectionId + "Widgets";
         const list = (config[listKey] ?? []).slice();
+        if (widgetId === "island") {
+            if (isIslandBarConfig(config) || islandWidgetBlocked(config) || _islandWidgetLocation(config))
+                return -1;
+            const configs = JSON.parse(JSON.stringify(barConfigs));
+            const target = configs.find(cfg => cfg.id === barId);
+            list.push(entry);
+            target[listKey] = list;
+            _commitIslandOwner(configs, target);
+            return list.length - 1;
+        }
         list.push(entry);
         const patch = {};
         patch[listKey] = list;
@@ -2323,13 +2682,23 @@ Singleton {
             island: wantIsland,
             dot: wantDot
         };
-        if (on === true) {
-            if (!config.enabled)
-                updates.enabled = true;
-            if ((config.screenPreferences ?? []).length === 0)
-                updates.screenPreferences = ["all"];
+        const configs = JSON.parse(JSON.stringify(barConfigs));
+        const target = Object.assign(configs.find(cfg => cfg.id === barId), updates);
+        if (on !== true) {
+            _commitBarConfigs(configs);
+            return;
         }
-        updateBarConfig(barId, updates);
+        if (!config.enabled)
+            target.enabled = true;
+        // A hidden island would draw but leave routing, with no Visibility card and no `bar reveal` to bring it back.
+        if (config.visible === false)
+            target.visible = true;
+        if ((config.screenPreferences ?? []).length === 0)
+            target.screenPreferences = ["all"];
+        _stashIslandWidget(target);
+        if (wantIsland)
+            _evictIslandWidgets(configs, target);
+        _commitBarConfigs(configs);
     }
 
     function isBarIpcRevealed(barId) {
@@ -2362,9 +2731,10 @@ Singleton {
     function addBarConfig(config) {
         const configs = JSON.parse(JSON.stringify(barConfigs));
         configs.push(config);
-        if (connectedFrameModeActive)
-            _captureConnectedFrameBarStyleBackups(configs, false);
-        barConfigs = _sanitizeBarConfigsForConnectedFrame(configs).configs;
+        const result = _applyConnectedFrameBarStyles(configs);
+        barConfigs = result.configs;
+        if (result.backups)
+            connectedFrameBarStyleBackups = result.backups;
         updateBarConfigs();
     }
 
@@ -2378,8 +2748,7 @@ Singleton {
             setBarIpcReveal(barId, false);
 
         Object.assign(configs[index], updates);
-        barConfigs = _sanitizeBarConfigsForConnectedFrame(configs).configs;
-        updateBarConfigs();
+        _commitIslandOwner(configs, configs[index]);
 
         if (positionChanged) {
             notificationPopupsInvalidated();
@@ -2459,11 +2828,11 @@ Singleton {
             return [];
         }
         if (!prefs || prefs.length === 0 || prefs.includes("all") || (typeof prefs[0] === "string" && prefs[0] === "all")) {
-            return Quickshell.screens;
+            return ShellLayout.realScreens;
         }
-        var filtered = Quickshell.screens.filter(screen => isScreenInPreferences(screen, prefs));
-        if (filtered.length === 0 && showOnLastDisplay && showOnLastDisplay[componentId] && Quickshell.screens.length === 1) {
-            return Quickshell.screens;
+        var filtered = ShellLayout.realScreens.filter(screen => isScreenInPreferences(screen, prefs));
+        if (filtered.length === 0 && showOnLastDisplay && showOnLastDisplay[componentId] && ShellLayout.realScreens.length === 1) {
+            return ShellLayout.realScreens;
         }
         return filtered;
     }
@@ -2474,6 +2843,99 @@ Singleton {
 
     function isIslandBarConfig(bc) {
         return !!bc && (bc.island === true || bc.dot === true);
+    }
+
+    function islandWidgetEntry(bc) {
+        const location = isIslandBarConfig(bc) ? null : _islandWidgetLocation(bc);
+        if (!location)
+            return null;
+        const entry = bc[location.sectionId + "Widgets"][location.index];
+        return typeof entry === "string" ? {
+            "id": entry
+        } : entry;
+    }
+
+    function hostsIsland(bc) {
+        return isIslandBarConfig(bc) || !!_islandWidgetLocation(bc, true);
+    }
+
+    function _sharesScreen(a, b) {
+        return Quickshell.screens.some(screen => barConfigCoversScreen(a, screen) && barConfigCoversScreen(b, screen));
+    }
+
+    function islandWidgetBlocked(bc) {
+        if (!bc)
+            return true;
+        return (barConfigs || []).some(cfg => cfg.id !== bc.id && cfg.island === true && cfg.enabled !== false && _sharesScreen(cfg, bc));
+    }
+
+    // Clones and dots drop the widget for good; an island-layout switch stashes it first.
+    function stripIslandWidget(cfg) {
+        delete cfg.islandWidgetStash;
+        _stripIslandEntries(cfg);
+    }
+
+    function _stripIslandEntries(cfg) {
+        for (const sectionId of ["left", "center", "right"]) {
+            const key = sectionId + "Widgets";
+            if (Array.isArray(cfg[key]))
+                cfg[key] = cfg[key].filter(entry => !_isIslandEntry(entry));
+        }
+    }
+
+    // An island-layout bar cannot host the widget, but switching back should not cost the user its placement and settings.
+    function _stashIslandWidget(cfg) {
+        const location = _islandWidgetLocation(cfg);
+        if (location)
+            cfg.islandWidgetStash = Object.assign({
+                "entry": cfg[location.sectionId + "Widgets"][location.index]
+            }, location);
+        _stripIslandEntries(cfg);
+    }
+
+    // A restore never evicts: while another island holds the screen the stash waits for a later commit to free it.
+    function _restoreIslandWidget(cfg, configs) {
+        const stash = cfg.islandWidgetStash;
+        if (!stash?.entry) {
+            delete cfg.islandWidgetStash;
+            return;
+        }
+        if (isIslandBarConfig(cfg) || _islandWidgetLocation(cfg) || _islandScreenTaken(configs, cfg))
+            return;
+        delete cfg.islandWidgetStash;
+        const key = stash.sectionId + "Widgets";
+        const list = Array.isArray(cfg[key]) ? cfg[key].slice() : [];
+        list.splice(Math.min(stash.index, list.length), 0, stash.entry);
+        cfg[key] = list;
+    }
+
+    function _islandScreenTaken(configs, bc) {
+        return configs.some(cfg => cfg.id !== bc.id && cfg.enabled !== false && (cfg.island === true || _islandWidgetLocation(cfg, true)) && _sharesScreen(cfg, bc));
+    }
+
+    function _evictIslandWidgets(configs, owner) {
+        for (const cfg of configs) {
+            if (cfg.id !== owner.id && cfg.enabled !== false && _islandWidgetLocation(cfg, true) && _sharesScreen(cfg, owner))
+                _stashIslandWidget(cfg);
+        }
+    }
+
+    // Island-relevant writes must go through here, or a freed screen never gets its stashed widget back.
+    function _commitBarConfigs(configs) {
+        for (const cfg of configs)
+            _restoreIslandWidget(cfg, configs);
+        const result = _applyConnectedFrameBarStyles(configs);
+        barConfigs = result.configs;
+        if (result.backups)
+            connectedFrameBarStyleBackups = result.backups;
+        updateBarConfigs();
+    }
+
+    // The bar just written wins its screens: enabling a bar or its island entry evicts the previous host.
+    function _commitIslandOwner(configs, cfg) {
+        if (cfg.enabled !== false && !isIslandBarConfig(cfg) && _islandWidgetLocation(cfg, true))
+            _evictIslandWidgets(configs, cfg);
+        _commitBarConfigs(configs);
     }
 
     function isDotBarConfig(bc) {
@@ -2500,6 +2962,9 @@ Singleton {
             id: "dot" + Date.now(),
             name: I18n.tr("Dot", "bar layout: free-floating dot that opens island activities"),
             enabled: true,
+            // A hidden or auto-hiding base bar would switch off the dot's OSD and notifications, and bar IPC refuses dot configs.
+            visible: true,
+            autoHide: false,
             island: false,
             dot: true,
             screenPreferences: ["all"],
@@ -2509,24 +2974,68 @@ Singleton {
         });
         // An inherited "always here" would make the base island and the dot fight by config order.
         delete config.islandSharedRouting;
+        stripIslandWidget(config);
         addBarConfig(config);
     }
 
     function islandFreePlacement(bc) {
-        return isDotBarConfig(bc) || (islandSetting(bc, "islandFloating") && islandSetting(bc, "islandPlacement") === "free");
+        return isDotBarConfig(bc) || (isIslandBarConfig(bc) && islandSetting(bc, "islandFloating") && islandSetting(bc, "islandPlacement") === "free");
     }
 
+    // A hosted island shares its config id with the bar, so last-used cannot tell them apart and would degenerate into always.
     function islandSharedRoutingMode(bc) {
-        const mode = bc?.islandSharedRouting;
-        return ["always", "last-used"].includes(mode) ? mode : "normal";
+        const mode = islandSetting(bc, "islandSharedRouting");
+        if (mode === "always")
+            return mode;
+        return mode === "last-used" && isIslandBarConfig(bc) ? mode : "normal";
+    }
+
+    // Dashboard activities share an IPC close, but choose their destinations independently.
+    readonly property var islandDashActivities: ["home", "media", "weather", "wallpaper"]
+
+    function islandRouteKey(activity) {
+        switch (activity) {
+        case "controlcenter":
+            return "islandRouteControlCenter";
+        case "notificationcenter":
+            return "islandRouteNotificationCenter";
+        case "launcher":
+            return "islandRouteLauncher";
+        case "home":
+            return "islandRouteDash";
+        case "media":
+            return "islandRouteMedia";
+        case "weather":
+            return "islandRouteWeather";
+        case "wallpaper":
+            return "islandRouteWallpaper";
+        case "clipboard":
+            return "islandRouteClipboard";
+        case "powermenu":
+            return "islandRoutePowerMenu";
+        }
+        return "";
+    }
+
+    function islandActivityRoutingMode(bc, activity) {
+        const key = islandRouteKey(activity);
+        const override = key ? islandSetting(bc, key) : "follow";
+        if (override === "island")
+            return "always";
+        if (override === "bar")
+            return "never";
+        return islandSharedRoutingMode(bc);
     }
 
     function sharedShortcutsFollowLastUsed(screen) {
         return activeIslandConfigsForScreen(screen).some(cfg => islandSharedRoutingMode(cfg) === "last-used");
     }
 
-    function sharedShortcutsOverridden(screen) {
-        return activeIslandConfigsForScreen(screen).some(cfg => islandSharedRoutingMode(cfg) !== "normal");
+    function sharedShortcutsOverridden(screen, activity) {
+        return activeIslandConfigsForScreen(screen).some(cfg => {
+            const mode = islandActivityRoutingMode(cfg, activity);
+            return mode === "always" || mode === "last-used";
+        });
     }
 
     function recordBarInteraction(screen, barId) {
@@ -2538,20 +3047,45 @@ Singleton {
         });
     }
 
-    function sharedTriggerIslandConfig(screen) {
-        const configs = activeIslandConfigsForScreen(screen);
-        if (sharedShortcutsFollowLastUsed(screen)) {
+    // A satellite carrying the activity's own widget is a standard destination on this screen, same as a bar.
+    function islandSatelliteHosts(cfg, activity) {
+        const widgetId = activity === "controlcenter" ? "controlCenterButton" : activity === "notificationcenter" ? "notificationButton" : "";
+        if (!widgetId || !isIslandBarConfig(cfg) || isDotBarConfig(cfg) || !islandSetting(cfg, "islandSatellitesEnabled"))
+            return false;
+        return ["leftWidgets", "centerWidgets", "rightWidgets"].some(key => (cfg[key] ?? []).some(entry => (typeof entry === "string" ? entry : entry?.id) === widgetId && (typeof entry === "string" || entry.enabled !== false)));
+    }
+
+    function sharedTriggerIslandConfig(screen, activity) {
+        const active = activeIslandConfigsForScreen(screen);
+        const configs = active.filter(cfg => islandActivityRoutingMode(cfg, activity) !== "never");
+        const key = islandRouteKey(activity);
+        const pinned = key ? configs.find(cfg => {
+            // Saved choices outrank defaults, including legacy dashboard-family pins.
+            const settings = islandSettings(cfg);
+            const override = settings[key] ?? (islandDashActivities.indexOf(activity) >= 0 ? settings.islandRouteDash : undefined);
+            return override === "island";
+        }) : null;
+        if (pinned)
+            return pinned;
+        if (configs.some(cfg => islandActivityRoutingMode(cfg, activity) === "last-used")) {
             const lastId = lastUsedBarByScreen[screen?.name];
             const lastIsland = configs.find(cfg => cfg.id === lastId);
             if (lastIsland)
                 return lastIsland;
         } else {
-            const fixed = configs.find(cfg => islandSharedRoutingMode(cfg) === "always");
+            const fixed = configs.find(cfg => islandActivityRoutingMode(cfg, activity) === "always");
             if (fixed)
                 return fixed;
         }
-        if (getActiveBarEdgesForScreen(screen).length > 0)
+        if (getActiveBarEdgesForScreen(screen).length > 0 || active.some(cfg => islandSatelliteHosts(cfg, activity)))
             return null;
+        return configs.find(cfg => !isDotBarConfig(cfg)) ?? configs[0] ?? null;
+    }
+    function islandLauncherHostConfig(screen) {
+        const config = sharedTriggerIslandConfig(screen, "launcher");
+        if (config || launcherStyle !== "island")
+            return config;
+        const configs = activeIslandConfigsForScreen(screen).filter(cfg => islandActivityRoutingMode(cfg, "launcher") !== "never");
         return configs.find(cfg => !isDotBarConfig(cfg)) ?? configs[0] ?? null;
     }
 
@@ -2559,34 +3093,33 @@ Singleton {
     function setIslandSharedRouting(barId, mode) {
         const configs = JSON.parse(JSON.stringify(barConfigs));
         const target = configs.find(cfg => cfg.id === barId);
-        if (!target)
+        if (!target || !(isIslandBarConfig(target) || _islandWidgetLocation(target)))
             return;
-        target.islandSharedRouting = mode;
+        _writableIslandSettings(target).islandSharedRouting = mode;
         if (mode === "always") {
-            const screens = Quickshell.screens.filter(screen => barConfigCoversScreen(target, screen));
             for (const cfg of configs) {
-                if (cfg.id !== barId && isIslandBarConfig(cfg) && islandSharedRoutingMode(cfg) === "always" && screens.some(screen => barConfigCoversScreen(cfg, screen)))
-                    delete cfg.islandSharedRouting;
+                if (cfg.id !== barId && hostsIsland(cfg) && islandSharedRoutingMode(cfg) === "always" && _sharesScreen(cfg, target))
+                    delete _writableIslandSettings(cfg).islandSharedRouting;
             }
         }
-        barConfigs = configs;
-        updateBarConfigs();
+        _commitBarConfigs(configs);
     }
 
+    // A hidden bar takes its island with it, so it must not keep swallowing popups and OSDs.
     function activeIslandConfigsForScreen(screen) {
-        return ShellLayout.islandConfigs(screen);
+        return ShellLayout.islandConfigs(screen).filter(cfg => cfg.visible !== false);
     }
 
     function islandConfigForEdge(screen, edge) {
         return ShellLayout.edge(screen, edge)?.island ?? null;
     }
 
-    function dankIslandCoversScreen(screen) {
-        return activeIslandConfigsForScreen(screen).length > 0;
-    }
-
     function dankIslandHandlesNotifications(screen) {
         return activeIslandConfigsForScreen(screen).some(cfg => !islandSetting(cfg, "islandNotificationPopups"));
+    }
+
+    function dankIslandHandlesSystemOsd(screen) {
+        return activeIslandConfigsForScreen(screen).some(cfg => islandSetting(cfg, "islandSystemOsd"));
     }
 
     function dankIslandOwnsEdge(screen, edge) {
@@ -2619,9 +3152,6 @@ Singleton {
         if (matugenScheme === normalized)
             return;
         set("matugenScheme", normalized);
-        if (typeof Theme !== "undefined") {
-            Theme.generateSystemThemesFromCurrentTheme();
-        }
     }
 
     function setMatugenSmartMode(enabled) {
@@ -2634,10 +3164,6 @@ Singleton {
         var normalized = mode || "dominant";
         if (matugenSourceMode === normalized)
             return;
-        // Regeneration comes from the regenSystemThemes onChange hook in
-        // SettingsSpec.js, which set() dispatches. matugenScheme above also
-        // calls Theme.generateSystemThemesFromCurrentTheme() directly, which is
-        // redundant with its own hook.
         set("matugenSourceMode", normalized);
     }
 
@@ -2655,11 +3181,15 @@ Singleton {
     }
 
     function setMatugenSpec(spec) {
-        var normalized = spec === "2025" ? "2025" : "2021";
+        var normalized = spec === "2025" || spec === "dms" ? spec : "2021";
         if (matugenSpec === normalized)
             return;
-        if (normalized === "2025" && matugenContrast < 0)
-            set("matugenContrast", 0);
+        if (normalized !== "2021") {
+            if (matugenContrast < 0)
+                set("matugenContrast", 0);
+            if (typeof Theme !== "undefined" && !Theme.getMatugenScheme(matugenScheme).spec2025)
+                set("matugenScheme", "scheme-tonal-spot");
+        }
         set("matugenSpec", normalized);
     }
 
@@ -2667,13 +3197,10 @@ Singleton {
         if (matugenTargetMonitor === monitorName)
             return;
         set("matugenTargetMonitor", monitorName);
-        if (typeof Theme !== "undefined") {
-            Theme.generateSystemThemesFromCurrentTheme();
-        }
     }
 
     function setCornerRadius(radius) {
-        set("radiusStrength", Shape.strengthFromRadius(radius));
+        return set("radiusStrength", Shape.strengthFromRadius(radius));
     }
 
     function setWeatherLocation(displayName, coordinates) {
@@ -2875,34 +3402,57 @@ Singleton {
         saveSettings();
     }
 
-    function addMediaExcludePlayer(identity) {
-        if (identity === undefined || identity === null)
-            return;
-        var normalizedIdentity = identity.toString().trim().toLowerCase();
+    function addAppIdToList(identity: string, appList: list<string>): list<string> {
+        identity = identity ?? "";
+        appList = appList ?? [];
+        if (!identity)
+            return appList;
+
+        var normalizedIdentity = Paths.normalizeAppId(identity);
         if (!normalizedIdentity)
-            return;
-        var list = mediaExcludePlayers ? mediaExcludePlayers.slice() : [];
-        var normalizedList = list.map(function (id) {
-            return id ? id.toString().trim().toLowerCase() : "";
-        });
-        if (normalizedList.indexOf(normalizedIdentity) >= 0)
-            return;
-        list.push(normalizedIdentity);
-        mediaExcludePlayers = list;
+            return appList;
+
+        var cleanList = appList.map(id => id ? Paths.normalizeAppId(id) : "").filter(id => id !== "");
+        if (cleanList.includes(normalizedIdentity))
+            return cleanList;
+
+        cleanList.push(normalizedIdentity);
+        return cleanList;
+    }
+
+    function removeAppIdFromList(index: int, appList: list<string>): list<string> {
+        var moddedList = appList ? appList.slice() : [];
+        if (index < 0 || index >= moddedList.length)
+            return moddedList;
+        moddedList.splice(index, 1);
+        return moddedList;
+    }
+
+    function addNightModeExcludedApp(identity: string) {
+        var newList = addAppIdToList(identity, nightModeExcludedApps);
+        nightModeExcludedApps = newList;
+        saveSettings();
+    }
+
+    function removeNightModeExcludedApp(index: int) {
+        var newList = removeAppIdFromList(index, nightModeExcludedApps);
+        nightModeExcludedApps = newList;
+        saveSettings();
+    }
+
+    function addMediaExcludePlayer(identity) {
+        var newList = addAppIdToList(identity, mediaExcludePlayers);
+        mediaExcludePlayers = newList;
         saveSettings();
     }
 
     function removeMediaExcludePlayer(index) {
-        var list = mediaExcludePlayers ? mediaExcludePlayers.slice() : [];
-        if (index < 0 || index >= list.length)
-            return;
-        list.splice(index, 1);
-        mediaExcludePlayers = list;
+        var newList = removeAppIdFromList(index, mediaExcludePlayers);
+        mediaExcludePlayers = newList;
         saveSettings();
     }
 
-    property bool _pendingExpandNotificationRules: false
-    property int _pendingNotificationRuleIndex: -1
+    property var pendingNotificationRule: null
 
     function _newNotificationRule(overrides) {
         return Object.assign({
@@ -2916,27 +3466,20 @@ Singleton {
         }, overrides || {});
     }
 
-    function addNotificationRule() {
+    function addNotificationRule(ruleData) {
         var rules = JSON.parse(JSON.stringify(notificationRules || []));
-        rules.push(_newNotificationRule());
+        rules.push(_newNotificationRule(ruleData));
         notificationRules = rules;
         saveSettings();
     }
 
-    function addNotificationRuleForNotification(appName, desktopEntry) {
-        var rules = JSON.parse(JSON.stringify(notificationRules || []));
-        var pattern = desktopEntry || appName || "";
-        rules.push(_newNotificationRule(pattern ? {
+    function requestNotificationRuleForNotification(appName, desktopEntry) {
+        const pattern = desktopEntry || appName || "";
+        pendingNotificationRule = _newNotificationRule(pattern ? {
             field: desktopEntry ? "desktopEntry" : "appName",
             pattern: pattern,
             matchType: "exact"
-        } : {}));
-        notificationRules = rules;
-        saveSettings();
-        var index = rules.length - 1;
-        _pendingExpandNotificationRules = true;
-        _pendingNotificationRuleIndex = index;
-        return index;
+        } : {});
     }
 
     function _isMuteRule(rule) {
@@ -2947,16 +3490,34 @@ Singleton {
         return rule.bypassDnd === true;
     }
 
+    // Timed mute rules carry an expiresAt timestamp (ms since epoch); 0 or
+    // absent means the mute never expires. Only the mute lapses: a DND bypass
+    // or urgency on the same rule stays in force, and
+    // pruneExpiredNotificationRules() clears the lapsed mute from the
+    // persisted rule. nowMs is optional (defaults to the current time);
+    // reactive callers pass NotificationService.notificationRuleNowMs so
+    // their bindings refresh as rules expire instead of freezing on a stale
+    // Date.now().
+    function isNotificationRuleExpired(rule, nowMs) {
+        return RuleExpiry.isRuleExpired(rule, nowMs);
+    }
+
+    // True while any rule carries an expiry timestamp. Gates the expiry
+    // clock and sweeper in NotificationService so they only run when a
+    // timed rule can actually expire.
+    readonly property bool hasTimedNotificationRules: RuleExpiry.hasTimedRule(notificationRules)
+
     function _appRuleIndex(rules, appName, desktopEntry, predicate) {
         const app = (appName || "").toString().toLowerCase();
         const desktop = (desktopEntry || "").toString().toLowerCase();
         if (!app && !desktop)
             return -1;
         return rules.findIndex(rule => {
-            if (!predicate(rule))
+            if (!predicate(rule) || (rule.matchType || "contains").toString().toLowerCase() !== "exact" || (rule.conditions || []).length > 0)
                 return false;
             const pattern = (rule.pattern || "").toString().toLowerCase();
-            return pattern !== "" && (pattern === app || pattern === desktop);
+            const value = !rule.field || rule.field === "appName" ? app : rule.field === "desktopEntry" ? desktop : "";
+            return pattern !== "" && pattern === value;
         });
     }
 
@@ -2965,37 +3526,95 @@ Singleton {
         if (!pattern)
             return;
         var rules = JSON.parse(JSON.stringify(notificationRules || []));
-        rules.push(_newNotificationRule(Object.assign({
+        const rule = _newNotificationRule(Object.assign({
             field: desktopEntry ? "desktopEntry" : "appName",
             pattern: pattern,
             matchType: "exact"
-        }, overrides)));
+        }, overrides));
+        if (!rule.expiresAt)
+            delete rule.expiresAt;
+        rules.push(rule);
         notificationRules = rules;
         saveSettings();
     }
 
-    function _removeAppRule(appName, desktopEntry, predicate) {
+    function _hasNoAction(rule) {
+        return (rule.action || "default").toString().toLowerCase() === "default";
+    }
+
+    function _isNoopRule(rule) {
+        return _hasNoAction(rule) && (rule.urgency || "default").toString().toLowerCase() === "default" && !_isDndBypassRule(rule);
+    }
+
+    // Edits the first enabled matching rule and drops it once it no longer does anything.
+    function _updateAppRule(appName, desktopEntry, predicate, changes) {
         var rules = JSON.parse(JSON.stringify(notificationRules || []));
-        const index = _appRuleIndex(rules, appName, desktopEntry, predicate);
+        const index = _appRuleIndex(rules, appName, desktopEntry, rule => rule.enabled !== false && predicate(rule));
         if (index === -1)
-            return;
-        rules.splice(index, 1);
+            return false;
+        const rule = Object.assign(rules[index], changes);
+        if (!rule.expiresAt)
+            delete rule.expiresAt;
+        if (_isNoopRule(rule))
+            rules.splice(index, 1);
         notificationRules = rules;
         saveSettings();
+        return true;
     }
 
-    function addMuteRuleForApp(appName, desktopEntry) {
-        _addAppRule(appName, desktopEntry, {
-            action: "mute"
-        });
+    function addMuteRuleForApp(appName, desktopEntry, expiresAt) {
+        // Re-muting edits the app's existing no-action or mute rule (including an
+        // expired one not yet swept) so duplicates never accumulate.
+        const changes = {
+            action: "mute",
+            expiresAt: expiresAt || 0
+        };
+        if (!_updateAppRule(appName, desktopEntry, rule => _hasNoAction(rule) || _isMuteRule(rule), changes))
+            _addAppRule(appName, desktopEntry, changes);
     }
 
-    function isAppMuted(appName, desktopEntry) {
-        return _appRuleIndex(notificationRules || [], appName, desktopEntry, rule => rule.enabled !== false && _isMuteRule(rule)) !== -1;
+    function isAppMuted(appName, desktopEntry, nowMs) {
+        return _appRuleIndex(notificationRules || [], appName, desktopEntry, rule => rule.enabled !== false && _isMuteRule(rule) && !isNotificationRuleExpired(rule, nowMs)) !== -1;
+    }
+
+    // ExpiresAt of the active mute rule for an app (ms since epoch),
+    // or 0 when the app is not muted or the mute is permanent.
+    function muteExpiresAt(appName, desktopEntry, nowMs) {
+        const rules = notificationRules || [];
+        const index = _appRuleIndex(rules, appName, desktopEntry, rule => rule.enabled !== false && _isMuteRule(rule) && !isNotificationRuleExpired(rule, nowMs));
+        return index === -1 ? 0 : (rules[index].expiresAt || 0);
+    }
+
+    // Clears lapsed timed mutes from the persisted list so the settings UI
+    // stays truthful. Only the mute goes; the rule is dropped once nothing
+    // else is left on it. The idle sweep must stay cheap, so nothing is
+    // copied unless a rule actually expired.
+    function pruneExpiredNotificationRules() {
+        const rules = notificationRules || [];
+        if (!rules.some(rule => isNotificationRuleExpired(rule)))
+            return;
+        const kept = [];
+        for (const source of rules) {
+            if (!isNotificationRuleExpired(source)) {
+                kept.push(source);
+                continue;
+            }
+            const rule = Object.assign({}, source, {
+                action: "default"
+            });
+            delete rule.expiresAt;
+            if (!_isNoopRule(rule))
+                kept.push(rule);
+        }
+        notificationRules = kept;
+        saveSettings();
     }
 
     function removeMuteRuleForApp(appName, desktopEntry) {
-        _removeAppRule(appName, desktopEntry, _isMuteRule);
+        _updateAppRule(appName, desktopEntry, _isMuteRule, {
+            action: "default",
+            expiresAt: 0
+        });
     }
 
     function isAppDndBypassed(appName, desktopEntry) {
@@ -3004,14 +3623,19 @@ Singleton {
 
     function setAppDndBypass(appName, desktopEntry, enabled) {
         if (!enabled) {
-            _removeAppRule(appName, desktopEntry, _isDndBypassRule);
+            _updateAppRule(appName, desktopEntry, _isDndBypassRule, {
+                bypassDnd: false
+            });
             return;
         }
         if (isAppDndBypassed(appName, desktopEntry))
             return;
-        _addAppRule(appName, desktopEntry, {
+        if (!_updateAppRule(appName, desktopEntry, () => true, {
             bypassDnd: true
-        });
+        }))
+            _addAppRule(appName, desktopEntry, {
+                bypassDnd: true
+            });
     }
 
     function updateNotificationRule(index, ruleData) {
@@ -3170,177 +3794,363 @@ Singleton {
         id: rightWidgetsModel
     }
 
-    property alias settingsFile: settingsFile
-
-    Timer {
-        id: settingsFileReloadDebounce
-        interval: 50
-        onTriggered: settingsFile.reload()
-        repeat: false
-    }
-
-    FileView {
+    component SettingsFile: QtObject {
         id: settingsFile
 
-        path: isGreeterMode ? "" : StandardPaths.writableLocation(StandardPaths.ConfigLocation) + "/DankMaterialShell/settings.json"
-        blockLoading: true
-        blockWrites: true
-        atomicWrites: true
-        watchChanges: !isGreeterMode
-        onFileChanged: {
-            if (_selfWrite) {
-                _selfWrite = false;
+        required property string filePath
+        property var settings: ({})
+        property bool isLoading: false
+        property bool hasLoaded: false
+        property bool hasParseFailed: false
+        property bool fileUnsavedUserChanges: false
+        property bool isFileReadOnly: false
+        property bool selfWrite: false
+        function setSettings(newSettings, userChanges) {
+            const newSettingsJson = JSON.stringify(newSettings, null, 2);
+            if (JSON.stringify(settings, null, 2) === newSettingsJson) {
                 return;
             }
-            settingsFileReloadDebounce.restart();
+
+            settings = JSON.parse(newSettingsJson);
+            fileUnsavedUserChanges = fileUnsavedUserChanges || userChanges;
+
+            selfWrite = true;
+            settingsFileView.setText(newSettingsJson);
         }
-        onLoaded: {
-            if (isGreeterMode)
-                return;
-            const wasLoaded = _hasLoaded;
-            const prevFrameEnabled = frameEnabled;
-            const prevFrameMode = frameMode;
-            _loading = true;
-            _hasUnsavedChanges = false;
-            try {
-                const txt = settingsFile.text();
-                if (!txt || !txt.trim()) {
+        function getSettings() {
+            return JSON.parse(JSON.stringify(settings));
+        }
+
+        property Timer timer: Timer {
+            id: settingsFileReloadDebounce
+            interval: 50
+            onTriggered: settingsFileView.reload()
+            repeat: false
+        }
+
+        property FileView fileView: FileView {
+            id: settingsFileView
+
+            path: filePath
+            blockLoading: false
+            blockWrites: true
+            atomicWrites: true
+            watchChanges: true
+            onFileChanged: {
+                if (selfWrite) {
+                    selfWrite = false;
+                } else {
+                    isLoading = true;
+                    _loading = true;
+                    settingsFileReloadDebounce.restart();
+                }
+            }
+            onLoaded: {
+                isLoading = true;
+                _loading = true;
+                const hadParseFailed = hasParseFailed;
+                hasParseFailed = false;
+                fileUnsavedUserChanges = false;
+                if (unsavedUserChanges) {
+                    unsavedUserChanges = _anySettingsFile(file => file.fileUnsavedUserChanges);
+                }
+                const fileName = filePath?.split("/").pop();
+                try {
+                    let txt = settingsFileView.text();
+                    if (!txt || !txt.trim()) {
+                        txt = "{}";
+                    }
+                    settings = JSON.parse(txt);
+                    hasLoaded = true;
+                } catch (error) {
+                    hasParseFailed = true;
                     _parseError = true;
+
+                    const msg = error.message;
+                    log.error(`Failed to reload ${fileName} - file will not be overwritten. Error:`, msg);
+                    Qt.callLater(() => ToastService.showError(I18n.tr("Failed to parse %1").arg(fileName), msg));
+                } finally {
+                    isLoading = false;
+                    if (hadParseFailed && !hasParseFailed) {
+                        _parseError = _anySettingsFile(file => file.hasParseFailed);
+                    }
+                    _tryCompleteLoading();
+                    _loadSettingsOrStartIfReady();
+                }
+            }
+            onLoadFailed: error => {
+                isLoading = false;
+                _loading = _anySettingsFile(file => file.isLoading);
+                if (error === FileViewError.FileNotFound) {
+                    // Fake that the file has been loaded so that it gets created after a save.
+                    hasLoaded = true;
+                }
+                applyStoredTheme();
+                _tryCompleteLoading();
+                _loadSettingsOrStartIfReady();
+            }
+            onSaved: {
+                isFileReadOnly = false;
+                isReadOnly = isReadOnly ? _anySettingsFile(file => file.isFileReadOnly) : false;
+
+                fileUnsavedUserChanges = false;
+                if (unsavedUserChanges) {
+                    unsavedUserChanges = _anySettingsFile(file => file.fileUnsavedUserChanges);
+                }
+            }
+            onSaveFailed: error => {
+                selfWrite = false;
+                if (error === FileViewError.PermissionDenied) {
+                    isFileReadOnly = true;
+                    isReadOnly = true;
+                }
+                if (fileUnsavedUserChanges) {
+                    const fileName = filePath?.split("/").pop() || "unknown";
+                    log.warn(`Failed to save ${fileName}`);
+                }
+            }
+        }
+    }
+
+    enum Stage {
+        Discovering = 0,
+        Loading = 1,
+        Partial = 2,
+        Ready = 3
+    }
+    property int _settingsStage: SettingsData.Stage.Discovering
+
+    property var _settingsFiles: new Map()
+    property var _settingsFilesPaths: ([])
+    function _registerSettingsFile(file) {
+        const filePath = file.filePath;
+        if (_settingsFiles.has(filePath)) {
+            return;
+        }
+        let index;
+        if (file === defaultSettingsFile) {
+            index = 0;
+        } else {
+            index = _settingsFilesPaths.findIndex((path, i) => {
+                return path > filePath && i > 0;
+            });
+        }
+        _settingsFiles.set(filePath, file);
+        if (index >= 0) {
+            _settingsFilesPaths.splice(index, 0, filePath);
+        } else {
+            _settingsFilesPaths.push(filePath);
+        }
+        _tryCompleteDiscovery();
+    }
+    function _unregisterSettingsFile(file) {
+        _settingsFiles.delete(file.filePath);
+        _settingsFilesPaths = _settingsFilesPaths.filter(path => path != file.filePath);
+    }
+    function _tryCompleteDiscovery() {
+        if (_settingsStage !== SettingsData.Stage.Discovering || !_settingsFolderChecked) {
+            return;
+        }
+        let expectedCount = 1;
+        if (_settingsFolderExists) {
+            expectedCount += settingsFolderLoader.item.count;
+        }
+        if (_settingsFilesPaths.length == expectedCount) {
+            _settingsStage = SettingsData.Stage.Loading;
+            _tryCompleteLoading();
+            _loadSettingsOrStartIfReady();
+        }
+    }
+    function _tryCompleteLoading() {
+        if (_settingsStage !== SettingsData.Stage.Loading) {
+            return;
+        }
+        if (_everySettingsFile(file => file.hasLoaded || file.hasParseFailed)) {
+            _settingsStage = _parseError ? SettingsData.Stage.Partial : SettingsData.Stage.Ready;
+        }
+    }
+    function _loadSettingsOrStartIfReady() {
+        if (_settingsStage < SettingsData.Stage.Partial || _anySettingsFile(file => file.isLoading)) {
+            return;
+        }
+        let unsaved;
+        _loading = true;
+        if (!_hasLoaded || _settingsStage === SettingsData.Stage.Partial) {
+            unsaved = _runStartSequence();
+        } else {
+            unsaved = _loadSettings();
+        }
+        _loading = false;
+        if (unsaved) {
+            _saveSettings(false);
+        }
+    }
+    function _getSettingsObjectFromFiles() {
+        const settingsObject = {};
+        for (const path of _settingsFilesPaths) {
+            const settingsFile = _settingsFiles.get(path);
+            Object.assign(settingsObject, settingsFile.getSettings());
+        }
+        return settingsObject;
+    }
+
+    function _anySettingsFile(predicate) {
+        for (const file of _settingsFiles.values()) {
+            if (predicate(file)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    function _everySettingsFile(predicate) {
+        for (const file of _settingsFiles.values()) {
+            if (!predicate(file)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    SettingsFile {
+        id: defaultSettingsFile
+
+        filePath: StandardPaths.writableLocation(StandardPaths.ConfigLocation) + "/dms/settings.json"
+
+        Component.onCompleted: {
+            _registerSettingsFile(defaultSettingsFile);
+        }
+    }
+
+    property bool _settingsFolderExists: false
+    property bool _settingsFolderChecked: false
+    function _syncSettingsFilesModels() {
+        if (!_settingsFolderChecked) {
+            settingsFilesModelSyncDebounce.restart();
+            return;
+        }
+        if (!_settingsFolderExists) {
+            return;
+        }
+        const listModel = settingsFilesListModel;
+        const folderModel = settingsFolderLoader.item;
+
+        const folderPathsSet = new Set();
+        for (let i = 0; i < folderModel.count; i++) {
+            const filePath = folderModel.get(i, "filePath");
+            folderPathsSet.add(filePath);
+            if (!_settingsFiles.has(filePath)) {
+                listModel.append({
+                    filePath
+                });
+            }
+        }
+        for (let i = listModel.count - 1; i >= 0; i--) {
+            const filePath = listModel.get(i).filePath;
+            if (!folderPathsSet.has(filePath)) {
+                listModel.remove(i);
+            }
+        }
+    }
+    Timer {
+        id: settingsFilesModelSyncDebounce
+        interval: 50
+        repeat: false
+        running: false
+        onTriggered: _syncSettingsFilesModels()
+    }
+    ListModel {
+        id: settingsFilesListModel
+    }
+    Loader {
+        id: settingsFolderLoader
+        function unloadModel() {
+            active = false;
+        }
+        sourceComponent: FolderListModel {
+            id: settingsFolderModel
+
+            property url dir: StandardPaths.writableLocation(StandardPaths.ConfigLocation) + "/dms/config.d"
+
+            folder: dir
+            showDirs: false
+            nameFilters: ["*.json"]
+            onStatusChanged: {
+                // Folder gets reset to the CWD if the directory doesn't exist.
+                _settingsFolderExists = folder == dir;
+                if (status !== FolderListModel.Ready) {
                     return;
                 }
-                const obj = JSON.parse(txt);
-                _parseError = false;
-                Store.parse(root, obj);
-
-                if (obj.weatherLocation !== undefined)
-                    _legacyWeatherLocation = obj.weatherLocation;
-                if (obj.weatherCoordinates !== undefined)
-                    _legacyWeatherCoordinates = obj.weatherCoordinates;
-                if (obj.vpnLastConnected !== undefined && obj.vpnLastConnected !== "") {
-                    _legacyVpnLastConnected = obj.vpnLastConnected;
-                    SessionData.vpnLastConnected = _legacyVpnLastConnected;
-                    SessionData.saveSettings();
+                _settingsFolderChecked = true;
+                if (!_settingsFolderExists) {
+                    Qt.callLater(() => settingsFolderLoader.unloadModel());
                 }
 
-                _loadedSettingsSnapshot = JSON.stringify(Store.toJson(root));
-                _hasLoaded = true;
-                applyStoredTheme();
-                updateCompositorCursor();
-            } catch (e) {
-                _parseError = true;
-                const msg = e.message;
-                log.error("Failed to reload settings.json - file will not be overwritten. Error:", msg);
-                Qt.callLater(() => ToastService.showError(I18n.tr("Failed to parse %1").arg("settings.json"), msg));
-            } finally {
-                _loading = false;
+                if (_hasLoaded) {
+                    settingsFilesModelSyncDebounce.restart();
+                } else {
+                    _syncSettingsFilesModels();
+                }
+                _tryCompleteDiscovery();
             }
-            // External edits reload under _loading, which skips the per-property transition triggers
-            if (wasLoaded && !_parseError && (frameEnabled !== prevFrameEnabled || (frameEnabled && frameMode !== prevFrameMode)))
-                updateFrameCompositorLayout();
-        }
-        onLoadFailed: error => {
-            if (isGreeterMode)
-                return;
-            applyStoredTheme();
-        }
-        onSaveFailed: error => {
-            root._isReadOnly = true;
-            root._hasUnsavedChanges = root._checkForUnsavedChanges();
         }
     }
 
-    readonly property string _greeterCacheDir: Quickshell.env("DMS_GREET_CFG_DIR") || "/var/cache/dms-greeter"
+    Instantiator {
+        id: settingsLoader
 
-    property string greeterSettingsBaseDir: root._greeterCacheDir
-
-    function setGreeterSettingsBaseDir(dir) {
-        const next = dir || root._greeterCacheDir;
-        if (greeterSettingsBaseDir === next)
-            return;
-        greeterSettingsBaseDir = next;
-        if (isGreeterMode)
-            greeterSettingsFile.reload();
-    }
-
-    function resetGreeterSettingsBaseDir() {
-        setGreeterSettingsBaseDir(root._greeterCacheDir);
-    }
-
-    function loadGreeterSettings(txt) {
-        _loading = true;
-        _hasLoaded = false;
-        try {
-            Store.parse(root, (txt && txt.trim()) ? JSON.parse(txt) : {});
-            _parseError = false;
-        } catch (e) {
-            _parseError = true;
-            log.error("Failed to parse greeter settings.json:", e.message);
-            Store.parse(root, {});
-        } finally {
-            _loading = false;
+        model: settingsFilesListModel
+        onObjectAdded: (_, file) => {
+            _registerSettingsFile(file);
         }
-        _hasLoaded = true;
-        applyStoredTheme();
+        onObjectRemoved: (_, file) => {
+            _unregisterSettingsFile(file);
+            _loadSettingsOrStartIfReady();
+        }
+        delegate: SettingsFile {
+            id: settingsFile
+        }
     }
 
+    // Our first save drops the keys a newer shell wrote, so its settings are kept for going back.
     FileView {
-        id: greeterSettingsFile
+        id: newerSettingsBackup
 
-        path: root.greeterSettingsBaseDir ? (root.greeterSettingsBaseDir + "/settings.json") : ""
-        preload: isGreeterMode
-        blockLoading: false
+        preload: false
         blockWrites: true
-        watchChanges: false
+        atomicWrites: true
         printErrors: false
-        onLoaded: {
-            if (isGreeterMode)
-                loadGreeterSettings(greeterSettingsFile.text());
-        }
-        onLoadFailed: {
-            if (isGreeterMode)
-                loadGreeterSettings("");
-        }
     }
 
     FileView {
         id: pluginSettingsFile
 
-        path: isGreeterMode ? "" : pluginSettingsPath
+        path: pluginSettingsPath
         blockLoading: true
         blockWrites: true
         atomicWrites: true
         printErrors: false
-        watchChanges: !isGreeterMode
+        watchChanges: true
         onLoaded: {
-            if (isGreeterMode)
-                return;
+            pluginSettingsFileExists = true;
             parsePluginSettings(pluginSettingsFile.text());
         }
         onLoadFailed: error => {
-            if (isGreeterMode)
-                return;
             const msg = String(error || "");
-            if (!_isMissingPluginSettingsError(error))
+            const missing = _isMissingPluginSettingsError(error);
+            pluginSettingsFileExists = !missing;
+            if (!missing)
                 log.warn("Failed to load plugin_settings.json. Error:", msg);
             _resetPluginSettings();
         }
     }
 
-    property bool pluginSettingsFileExists: false
-
-    Process {
-        id: settingsWritableCheckProcess
-
-        property string settingsPath: Paths.strip(settingsFile.path)
-
-        command: ["sh", "-c", "[ ! -f \"" + settingsPath + "\" ] || [ -w \"" + settingsPath + "\" ] && echo 'writable' || echo 'readonly'"]
+    Timer {
+        id: settingsSaveDebounce
+        interval: 50
+        repeat: false
         running: false
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const result = text.trim();
-                root._onWritableCheckComplete(result === "writable");
-            }
-        }
+        onTriggered: _saveSettings(true)
     }
+
+    property bool pluginSettingsFileExists: false
 }

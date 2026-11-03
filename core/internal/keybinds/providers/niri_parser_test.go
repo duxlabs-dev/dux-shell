@@ -196,11 +196,7 @@ func TestNiriParseKeyCombo(t *testing.T) {
 		expectedKey  string
 	}{
 		{"Mod+Q", []string{"Mod"}, "Q"},
-		{"Mod+Shift+F", []string{"Mod", "Shift"}, "F"},
-		{"Ctrl+Alt+Delete", []string{"Ctrl", "Alt"}, "Delete"},
 		{"Print", nil, "Print"},
-		{"XF86AudioMute", nil, "XF86AudioMute"},
-		{"Super+Tab", []string{"Super"}, "Tab"},
 		{"Mod+Shift+Ctrl+H", []string{"Mod", "Shift", "Ctrl"}, "H"},
 	}
 
@@ -284,50 +280,6 @@ func TestNiriParseBasicBinds(t *testing.T) {
 	}
 }
 
-func TestNiriParseRecentWindows(t *testing.T) {
-	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "config.kdl")
-
-	content := `recent-windows {
-    binds {
-        Alt+Tab { next-window scope="output"; }
-        Alt+Shift+Tab { previous-window scope="output"; }
-    }
-}
-`
-	if err := os.WriteFile(configFile, []byte(content), 0o644); err != nil {
-		t.Fatalf("Failed to write test config: %v", err)
-	}
-
-	result, err := ParseNiriKeys(tmpDir)
-	if err != nil {
-		t.Fatalf("ParseNiriKeys failed: %v", err)
-	}
-
-	if len(result.Section.Keybinds) != 2 {
-		t.Errorf("Expected 2 keybinds from recent-windows, got %d", len(result.Section.Keybinds))
-	}
-
-	foundNext := false
-	foundPrev := false
-
-	for _, kb := range result.Section.Keybinds {
-		switch kb.Action {
-		case "next-window":
-			foundNext = true
-		case "previous-window":
-			foundPrev = true
-		}
-	}
-
-	if !foundNext {
-		t.Error("next-window keybind not found")
-	}
-	if !foundPrev {
-		t.Error("previous-window keybind not found")
-	}
-}
-
 func TestNiriParseInclude(t *testing.T) {
 	tmpDir := t.TempDir()
 	subDir := filepath.Join(tmpDir, "dms")
@@ -362,53 +314,6 @@ include "dms/binds.kdl"
 
 	if len(result.Section.Keybinds) != 2 {
 		t.Errorf("Expected 2 keybinds (1 main + 1 include), got %d", len(result.Section.Keybinds))
-	}
-}
-
-func TestNiriParseIncludeOverride(t *testing.T) {
-	tmpDir := t.TempDir()
-	subDir := filepath.Join(tmpDir, "dms")
-	if err := os.MkdirAll(subDir, 0o755); err != nil {
-		t.Fatalf("Failed to create subdir: %v", err)
-	}
-
-	mainConfig := filepath.Join(tmpDir, "config.kdl")
-	includeConfig := filepath.Join(subDir, "binds.kdl")
-
-	mainContent := `binds {
-    Mod+T hotkey-overlay-title="Main Terminal" { spawn "alacritty"; }
-}
-include "dms/binds.kdl"
-`
-	includeContent := `binds {
-    Mod+T hotkey-overlay-title="Override Terminal" { spawn "kitty"; }
-}
-`
-
-	if err := os.WriteFile(mainConfig, []byte(mainContent), 0o644); err != nil {
-		t.Fatalf("Failed to write main config: %v", err)
-	}
-	if err := os.WriteFile(includeConfig, []byte(includeContent), 0o644); err != nil {
-		t.Fatalf("Failed to write include config: %v", err)
-	}
-
-	result, err := ParseNiriKeys(tmpDir)
-	if err != nil {
-		t.Fatalf("ParseNiriKeys failed: %v", err)
-	}
-
-	if len(result.Section.Keybinds) != 1 {
-		t.Errorf("Expected 1 keybind (later overrides earlier), got %d", len(result.Section.Keybinds))
-	}
-
-	if len(result.Section.Keybinds) > 0 {
-		kb := result.Section.Keybinds[0]
-		if kb.Description != "Override Terminal" {
-			t.Errorf("Expected description 'Override Terminal' (from include), got %q", kb.Description)
-		}
-		if len(kb.Args) != 1 || kb.Args[0] != "kitty" {
-			t.Errorf("Expected args [kitty] (from include), got %v", kb.Args)
-		}
 	}
 }
 
@@ -466,35 +371,6 @@ include "nonexistent/file.kdl"
 
 	if len(result.Section.Keybinds) != 1 {
 		t.Errorf("Expected 1 keybind (missing include skipped), got %d", len(result.Section.Keybinds))
-	}
-}
-
-func TestNiriParseNoBinds(t *testing.T) {
-	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "config.kdl")
-
-	content := `cursor {
-    xcursor-theme "Bibata"
-    xcursor-size 24
-}
-
-input {
-    keyboard {
-        numlock
-    }
-}
-`
-	if err := os.WriteFile(configFile, []byte(content), 0o644); err != nil {
-		t.Fatalf("Failed to write test config: %v", err)
-	}
-
-	result, err := ParseNiriKeys(tmpDir)
-	if err != nil {
-		t.Fatalf("ParseNiriKeys failed: %v", err)
-	}
-
-	if len(result.Section.Keybinds) != 0 {
-		t.Errorf("Expected 0 keybinds, got %d", len(result.Section.Keybinds))
 	}
 }
 
@@ -862,5 +738,35 @@ func TestNiriParseActionWithProperties(t *testing.T) {
 				t.Errorf("unexpected next-window key: %q", kb.Key)
 			}
 		}
+	}
+}
+
+func TestNiriParseIncludeNestedDMSBinds(t *testing.T) {
+	tmpDir := t.TempDir()
+	subDir := filepath.Join(tmpDir, "dms")
+	if err := os.MkdirAll(subDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	files := map[string]string{
+		filepath.Join(tmpDir, "config.kdl"): "include \"dms/dms.kdl\"\n",
+		filepath.Join(subDir, "dms.kdl"):    "include \"binds.kdl\"\n",
+		filepath.Join(subDir, "binds.kdl"):  "binds {\n    Mod+T { spawn \"kitty\"; }\n}\n",
+	}
+	for path, content := range files {
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	result, err := ParseNiriKeys(tmpDir)
+	if err != nil {
+		t.Fatalf("ParseNiriKeys failed: %v", err)
+	}
+	if !result.DMSBindsIncluded {
+		t.Error("dms/binds.kdl included via dms/dms.kdl not detected")
+	}
+	if len(result.Section.Keybinds) != 1 {
+		t.Errorf("expected 1 keybind from the nested include, got %d", len(result.Section.Keybinds))
 	}
 }

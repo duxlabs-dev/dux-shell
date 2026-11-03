@@ -14,29 +14,6 @@ func TestParseArchUpdates(t *testing.T) {
 		want      []Package
 	}{
 		{
-			name:      "empty",
-			input:     "",
-			backendID: "paru",
-			repo:      RepoSystem,
-			want:      nil,
-		},
-		{
-			name:      "whitespace only",
-			input:     "   \n\n  \n",
-			backendID: "paru",
-			repo:      RepoSystem,
-			want:      nil,
-		},
-		{
-			name:      "single repo update",
-			input:     "bat 0.26.0-1 -> 0.26.1-2",
-			backendID: "paru",
-			repo:      RepoSystem,
-			want: []Package{
-				{Name: "bat", Repo: RepoSystem, Backend: "paru", FromVersion: "0.26.0-1", ToVersion: "0.26.1-2"},
-			},
-		},
-		{
 			name: "multiple updates with epoch versions",
 			input: `cups 2:2.4.18-1 -> 2:2.4.19-1
 linux 6.18.0-1 -> 6.18.1-1

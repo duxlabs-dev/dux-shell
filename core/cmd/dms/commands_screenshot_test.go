@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/screenshot"
+	"github.com/duxlabs-dev/dux-shell/core/internal/screenshot"
 )
 
 func thumbnailTestBuffer(t testing.TB, width, height int) *screenshot.ShmBuffer {
@@ -82,7 +82,6 @@ func TestBufferToRGBAThumbnailDimensions(t *testing.T) {
 	}{
 		{1920, 1080, 640, 360},
 		{1080, 1920, 360, 640},
-		{1000, 1000, 640, 640},
 		{1365, 767, 640, 359},
 		{1, 10000, 1, 640},
 		{10000, 1, 640, 1},

@@ -41,3 +41,17 @@ func TestRepeatedFetchesReuseOneConnection(t *testing.T) {
 	require.Equal(t, conns[0], conns[1])
 	require.Equal(t, conns[0], conns[2])
 }
+
+func TestBytesConditionalMaxBytes(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(make([]byte, 2048))
+	}))
+	defer server.Close()
+
+	_, err := BytesConditional(context.Background(), server.URL, "", Options{Timeout: 5 * time.Second, MaxBytes: 1024})
+	require.Error(t, err)
+
+	res, err := BytesConditional(context.Background(), server.URL, "", Options{Timeout: 5 * time.Second, MaxBytes: 4096})
+	require.NoError(t, err)
+	require.Len(t, res.Body, 2048)
+}

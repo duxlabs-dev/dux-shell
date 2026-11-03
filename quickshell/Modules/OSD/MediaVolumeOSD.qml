@@ -5,6 +5,8 @@ import qs.Services
 LevelOSD {
     id: root
 
+    osdKind: "mediaVolume"
+
     readonly property var player: MprisController.activePlayer
     readonly property bool volumeSupported: player?.volumeSupported ?? false
     readonly property real playerVolume: player?.volume ?? 0

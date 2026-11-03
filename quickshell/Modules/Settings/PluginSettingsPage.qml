@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modals.Common
 import qs.Modules.Settings.Widgets
 
@@ -22,6 +22,7 @@ FocusScope {
     readonly property bool hasSettings: !!pluginData?.settings && !isDesktopPlugin
     readonly property bool isSystemPlugin: pluginData?.source === "system"
     readonly property string pluginName: pluginData?.name || pluginId
+    readonly property string pluginRepo: DMSService.installedPlugins.find(entry => entry.id === pluginId)?.repo ?? ""
     readonly property string requiresDms: pluginData?.requires_dms || ""
     readonly property bool meetsRequirements: requiresDms ? PluginService.checkPluginCompatibility(requiresDms) : true
     readonly property var permissions: Array.isArray(pluginData?.permissions) ? pluginData.permissions : []
@@ -135,6 +136,9 @@ FocusScope {
         if (operationPending)
             return;
         const id = pluginId;
+        const name = pluginName;
+        const wasEnabled = isLoaded;
+        const repo = pluginRepo;
         operationPending = true;
         actionError = "";
         DMSService.uninstall(id, response => {
@@ -144,6 +148,7 @@ FocusScope {
                 return;
             }
             PluginService.scanPlugins();
+            PluginService.noteUninstalled(id, name, wasEnabled, repo);
             root.parentModal?.setPage("plugins");
         });
     }
@@ -200,7 +205,7 @@ FocusScope {
                 iconName: "widgets"
                 title: I18n.tr("Desktop widgets")
                 hint: I18n.tr("Desktop widget plugins are configured per widget instance")
-                onClicked: root.parentModal?.navigateTo("desktop_widgets")
+                onClicked: keyboard => root.parentModal?.navigateTo("desktop_widgets", keyboard)
             }
         }
 
@@ -239,6 +244,14 @@ FocusScope {
                 visible: subtitle !== ""
             }
 
+            SettingsLinkRow {
+                iconName: "code"
+                title: I18n.tr("Plugin Source Code", "plugin settings page, plugin details")
+                subtitle: I18n.tr("Opens %1", "plugin settings page, plugin details, %1 is the link to the plugin source code").arg(root.pluginRepo)
+                visible: root.pluginRepo !== ""
+                url: root.pluginRepo
+            }
+
             SettingsRow {
                 visible: root.permissions.length > 0
                 body: Flow {
@@ -248,7 +261,7 @@ FocusScope {
                     Repeater {
                         model: root.permissions
 
-                        DankBadge {
+                        DBadge {
                             required property string modelData
 
                             text: modelData

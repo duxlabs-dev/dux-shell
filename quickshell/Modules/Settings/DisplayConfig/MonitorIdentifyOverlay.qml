@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Variants {
     model: Quickshell.screens
@@ -40,8 +40,9 @@ Variants {
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: Theme.mediumDuration
-                    easing.type: Theme.emphasizedEasing
+                    duration: Theme.expressiveDurations.expressiveEffects
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                 }
             }
 

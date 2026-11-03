@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import "../../Common/Format.js" as Format
 
 Item {
@@ -68,8 +68,8 @@ Item {
         }
     }
 
-    readonly property color bgColor: Theme.withAlpha(Theme.surface, root.transparency)
-    readonly property color tileBg: Theme.withAlpha(Theme.surfaceContainerHigh, root.transparency)
+    readonly property color bgColor: Theme.withAlpha(Theme.hostSurface, root.transparency)
+    readonly property color tileBg: Theme.withAlpha(Theme.cardSurface, root.transparency)
     readonly property color textColor: Theme.surfaceText
     readonly property color dimColor: Theme.surfaceVariantText
 

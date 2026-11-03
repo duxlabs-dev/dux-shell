@@ -1,3 +1,8 @@
-import qs.DankCommon.Widgets as DankCommon
+import QtQuick
+import qs.Common
+import qs.DCommon.Widgets as DCommon
 
-DankCommon.DankRefreshButton {}
+DCommon.DRefreshButton {
+    id: shim
+    Component.onCompleted: Deprecation.type(shim, "DankRefreshButton", "DRefreshButton", "qs.DCommon.Widgets")
+}

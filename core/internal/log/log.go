@@ -1,7 +1,7 @@
 package log
 
 import (
-	danklog "github.com/AvengeMedia/dankgo/log"
+	danklog "github.com/duxlabs-dev/dux-go/log"
 )
 
 type Logger = danklog.Logger

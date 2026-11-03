@@ -8,7 +8,7 @@ import qs.Modals.FileBrowser
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Item {
     id: root
@@ -27,7 +27,7 @@ Item {
     readonly property Item headerActions: Row {
         spacing: Theme.spacingS
 
-        DankButton {
+        DButton {
             anchors.verticalCenter: parent.verticalCenter
             buttonHeight: Theme.buttonHeightXS
             iconName: VPNService.importing ? "sync" : "add"
@@ -109,7 +109,7 @@ Item {
                     return I18n.tr("Active: %1 +%2", "vpn status, %1 is a connection name, %2 counts the others").arg(names[0]).arg(names.length - 1);
                 }
 
-                DankButton {
+                DButton {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: DMSNetworkService.connected
                     buttonHeight: Theme.buttonHeightXS
@@ -133,10 +133,10 @@ Item {
                 visible: !root.hasProfiles
                 iconName: "vpn_key_off"
                 title: I18n.tr("No VPN profiles")
-                subtitle: I18n.tr("Click Import to add a .ovpn or .conf")
+                subtitle: I18n.tr("Click Import to add a %1 or %2 file", "VPN import hint, %1 and %2 are file extensions").arg(".ovpn").arg(".conf")
             }
 
-            DankListView {
+            DListView {
                 id: vpnListView
                 anchors.fill: parent
                 visible: root.hasProfiles

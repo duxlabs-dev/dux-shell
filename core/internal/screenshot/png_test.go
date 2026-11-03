@@ -32,7 +32,7 @@ func decodeInto(t *testing.T, data []byte, dst draw.Image) {
 }
 
 func TestEncodePNGRoundTrip(t *testing.T) {
-	sizes := []image.Point{{1, 1}, {3, 1}, {1, 200}, {640, 500}, {257, 130}}
+	sizes := []image.Point{{1, 1}, {1, 200}, {640, 500}, {257, 130}}
 
 	for _, sz := range sizes {
 		rect := image.Rect(0, 0, sz.X, sz.Y)

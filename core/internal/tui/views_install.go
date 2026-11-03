@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/distros"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
+	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
 )
 
 func wrapText(text string, width int) string {
@@ -122,9 +123,9 @@ func dmsPackageName(distroID string, dependencies []deps.Dependency) string {
 	switch config.Family {
 	case distros.FamilyArch:
 		if isGit {
-			return "dms-shell-git"
+			return "dux-shell-git"
 		}
-		return "dms-shell"
+		return "dux-shell"
 	case distros.FamilyFedora, distros.FamilyUbuntu, distros.FamilyDebian, distros.FamilySUSE, distros.FamilyVoid:
 		if isGit {
 			return "dms-git"
@@ -135,13 +136,23 @@ func dmsPackageName(distroID string, dependencies []deps.Dependency) string {
 	}
 }
 
+func (m Model) uninstallHint() string {
+	if m.isImmutable() {
+		if distros.Registry[m.osInfo.Distribution.ID].Family == distros.FamilyFedora {
+			return "sudo rpm-ostree uninstall " + dmsPackageName(m.osInfo.Distribution.ID, m.dependencies)
+		}
+		return ""
+	}
+	return uninstallCommand(m.osInfo.Distribution.ID, m.dependencies)
+}
+
 func uninstallCommand(distroID string, dependencies []deps.Dependency) string {
 	config, ok := distros.Registry[distroID]
 	if !ok {
 		return ""
 	}
 	if config.Family == distros.FamilyGentoo {
-		return "sudo emerge --deselect gui-apps/dankmaterialshell && sudo emerge --depclean gui-apps/dankmaterialshell"
+		return "sudo emerge --deselect dux-desktop/dux-shell && sudo emerge --depclean dux-desktop/dux-shell"
 	}
 
 	pkg := dmsPackageName(distroID, dependencies)
@@ -196,15 +207,25 @@ func (m Model) troubleshootingHints() (autostart, logs string) {
 		case deps.WindowManagerHyprland:
 			autostart = `remove hl.exec_cmd("dms run") from ~/.config/hypr/hyprland.lua`
 		default:
-			autostart = "remove 'exec-once=dms run' from ~/.config/mango/config.conf"
+			autostart = mangoAutostartHint()
 		}
 		return autostart, logs
 	}
 
 	if wm == deps.WindowManagerMango {
-		return "remove 'exec-once=dms run' from ~/.config/mango/config.conf", "qs -p ~/.config/quickshell/dms log"
+		if mangoconf.SessionTargetInstalled() {
+			return "rm ~/.config/systemd/user/mango-session.target.wants/dms.service", "journalctl --user -u dms"
+		}
+		return mangoAutostartHint(), "qs -p ~/.config/quickshell/dms log"
 	}
 	return "systemctl --user disable dms", "journalctl --user -u dms"
+}
+
+func mangoAutostartHint() string {
+	if mangoconf.IsTOML(mangoconf.MainConfig(mangoconf.Dir())) {
+		return `remove exec_once = "dms run" from ~/.config/mango/config.toml`
+	}
+	return "remove 'exec_once=dms run' from ~/.config/mango/config.conf"
 }
 
 func (m Model) viewInstallComplete() string {
@@ -214,15 +235,20 @@ func (m Model) viewInstallComplete() string {
 	b.WriteByte('\n')
 	b.WriteString(m.styles.Success.Render("Setup Complete!"))
 	b.WriteString("\n\n")
-	b.WriteString(m.styles.Success.Render("✓ All packages installed and configurations deployed."))
-	b.WriteString("\n\n")
-
+	summary := "✓ All packages installed and configurations deployed."
 	accomplishments := []string{
 		"• Window manager and dependencies installed",
 		"• Terminal and development tools configured",
 		"• Configuration files deployed with backups",
-		"• System optimized for DankMaterialShell",
+		"• System optimized for Dux Shell",
 	}
+	if m.isImmutable() {
+		summary = "✓ Configurations deployed. No packages were changed on this image."
+		accomplishments = accomplishments[1:]
+	}
+	b.WriteString(m.styles.Success.Render(summary))
+	b.WriteString("\n\n")
+
 	for _, item := range accomplishments {
 		b.WriteString(m.styles.Subtle.Render(item))
 		b.WriteByte('\n')
@@ -236,12 +262,17 @@ func (m Model) viewInstallComplete() string {
 	cmd := m.styles.Accent
 	autostart, logs := m.troubleshootingHints()
 
+	if m.isImmutable() && m.optionalDepSelected("dux-greeter") {
+		b.WriteString(label.Render("Greeter:") + "\n")
+		b.WriteString(label.Render("  Configure greetd:  ") + cmd.Render("dms-greeter install --yes") + "\n\n")
+	}
+
 	b.WriteString(label.Render("Troubleshooting:") + "\n")
 	b.WriteString(label.Render("  Disable autostart: ") + cmd.Render(autostart) + "\n")
 	b.WriteString(label.Render("  View logs:         ") + cmd.Render(logs) + "\n")
 
 	if m.osInfo != nil {
-		if uninstall := uninstallCommand(m.osInfo.Distribution.ID, m.dependencies); uninstall != "" {
+		if uninstall := m.uninstallHint(); uninstall != "" {
 			b.WriteString(label.Render("  Uninstall:         ") + cmd.Render(uninstall) + "\n")
 		}
 	}

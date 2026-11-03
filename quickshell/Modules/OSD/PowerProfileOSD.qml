@@ -3,8 +3,10 @@ import qs.Common
 import qs.Services
 import qs.Widgets
 
-DankOSD {
+DOSD {
     id: root
+
+    osdKind: "powerProfile"
 
     property int currentProfile: 0
     property string profileIcon: "settings"

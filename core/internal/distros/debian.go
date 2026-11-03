@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/privesc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
 )
 
 func init() {
@@ -62,7 +62,7 @@ func (d *DebianDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 	dependencies = append(dependencies, d.detectGit())
 	dependencies = append(dependencies, d.detectWindowManager(wm))
 	dependencies = append(dependencies, d.detectQuickshell())
-	dependencies = append(dependencies, d.detectDMSGreeter())
+	dependencies = append(dependencies, d.detectGreeterPackage(d.packageInstalled))
 	dependencies = append(dependencies, d.detectXDGPortal())
 	dependencies = append(dependencies, d.detectAccountsService())
 
@@ -70,9 +70,15 @@ func (d *DebianDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 		dependencies = append(dependencies, d.detectXwaylandSatellite())
 	}
 
+	if wm == deps.WindowManagerHyprland && d.isPika() {
+		dependencies = append(dependencies, d.detectHyprlandTools()...)
+		dependencies = append(dependencies, d.detectHyprlandGuiutils())
+	}
+
 	dependencies = append(dependencies, d.detectMatugen())
 	dependencies = append(dependencies, d.detectDanksearch())
-	dependencies = append(dependencies, d.detectDankCalendar())
+	dependencies = append(dependencies, d.detectCalendarPackage(d.packageInstalled))
+	dependencies = append(dependencies, d.detectFilesPackage(d.packageInstalled))
 
 	return dependencies, nil
 }
@@ -89,12 +95,24 @@ func (d *DebianDistribution) detectAccountsService() deps.Dependency {
 	return d.detectPackage("accountsservice", "D-Bus interface for user account query and manipulation", d.packageInstalled("accountsservice"))
 }
 
-func (d *DebianDistribution) detectDMSGreeter() deps.Dependency {
-	return d.detectOptionalPackage("dms-greeter", "DankMaterialShell greetd greeter", d.packageInstalled("dms-greeter"))
-}
-
 func (d *DebianDistribution) packageInstalled(pkg string) bool {
 	return debianPackageInstalledPrecisely(pkg)
+}
+
+func (d *DebianDistribution) InstalledVariant(stable, git PackageMapping) (deps.PackageVariant, bool) {
+	return installedVariantByName(d.packageInstalled, stable, git)
+}
+
+// SwapVariants installs the new variants directly: their Conflicts/Replaces make apt remove the old ones.
+func (d *DebianDistribution) SwapVariants(ctx context.Context, swaps []VariantSwap, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
+	if err := d.enableOBSRepos(ctx, swapTargets(swaps, RepoTypeOBS), sudoPassword, progressChan); err != nil {
+		return err
+	}
+	_, to := swapNames(swaps)
+	if err := d.ensureQuickshellBackports(ctx, to, sudoPassword, progressChan); err != nil {
+		return err
+	}
+	return d.installAPTPackages(ctx, to, sudoPassword, progressChan)
 }
 
 func debianPackageInstalledPrecisely(pkg string) bool {
@@ -122,6 +140,9 @@ func (d *DebianDistribution) GetPackageMapping(wm deps.WindowManager) map[string
 }
 
 func (d *DebianDistribution) GetPackageMappingWithVariants(wm deps.WindowManager, variants map[string]deps.PackageVariant) map[string]PackageMapping {
+	if d.isPika() {
+		return d.pikaPackageMapping(wm, variants)
+	}
 	packages := map[string]PackageMapping{
 		// Standard APT packages
 		"git":                    {Name: "git", Repository: RepoTypeSystem},
@@ -131,13 +152,14 @@ func (d *DebianDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 		"accountsservice":        {Name: "accountsservice", Repository: RepoTypeSystem},
 
 		// DMS packages from OBS with variant support
-		"dms (DankMaterialShell)": d.getDmsMapping(variants["dms (DankMaterialShell)"]),
-		"quickshell":              d.getQuickshellMapping(variants["quickshell"]),
-		"dms-greeter":             {Name: "dms-greeter", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
-		"matugen":                 {Name: "matugen", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
-		"ghostty":                 {Name: "ghostty", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
-		"danksearch":              {Name: "danksearch", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
-		"dankcalendar":            {Name: "dankcalendar-git", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"},
+		"dms (Dux Shell)": d.getDmsMapping(variants["dms (Dux Shell)"]),
+		"quickshell":      d.getQuickshellMapping(variants["quickshell"]),
+		"dux-greeter":     variantMapping("dux-greeter", variants["dux-greeter"], RepoTypeOBS, obsDeps),
+		"matugen":         {Name: "matugen", Repository: RepoTypeOBS, RepoURL: obsDeps},
+		"ghostty":         {Name: "ghostty", Repository: RepoTypeOBS, RepoURL: obsDeps},
+		"dux-search":      {Name: "dux-search", Repository: RepoTypeOBS, RepoURL: obsDeps},
+		"dux-calendar":    variantMapping("dux-calendar", variants["dux-calendar"], RepoTypeOBS, obsDeps),
+		"dux-files":       variantMapping("dux-files", variants["dux-files"], RepoTypeOBS, obsDeps),
 	}
 
 	if wm == deps.WindowManagerNiri {
@@ -151,14 +173,14 @@ func (d *DebianDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 
 func (d *DebianDistribution) getDmsMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "dms-git", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:dms-git"}
+		return PackageMapping{Name: "dms-git", Repository: RepoTypeOBS, RepoURL: obsDMSGit}
 	}
-	return PackageMapping{Name: "dms", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:dms"}
+	return PackageMapping{Name: "dms", Repository: RepoTypeOBS, RepoURL: obsDMS}
 }
 
 func (d *DebianDistribution) getQuickshellMapping(variant deps.PackageVariant) PackageMapping {
 	if forceQuickshellGit || variant == deps.VariantGit {
-		return PackageMapping{Name: "quickshell-git", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"}
+		return PackageMapping{Name: "quickshell-git", Repository: RepoTypeOBS, RepoURL: obsDeps}
 	}
 	// Debian 13 ships stable quickshell in trixie-backports only.
 	if d.debianNeedsQuickshellBackports() {
@@ -218,16 +240,16 @@ func (d *DebianDistribution) ensureQuickshellBackports(ctx context.Context, syst
 
 func (d *DebianDistribution) getNiriMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "niri-git", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"}
+		return PackageMapping{Name: "niri-git", Repository: RepoTypeOBS, RepoURL: obsDeps}
 	}
-	return PackageMapping{Name: "niri", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"}
+	return PackageMapping{Name: "niri", Repository: RepoTypeOBS, RepoURL: obsDeps}
 }
 
 func (d *DebianDistribution) getXwaylandSatelliteMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "xwayland-satellite-git", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"}
+		return PackageMapping{Name: "xwayland-satellite-git", Repository: RepoTypeOBS, RepoURL: obsDeps}
 	}
-	return PackageMapping{Name: "xwayland-satellite", Repository: RepoTypeOBS, RepoURL: "home:AvengeMedia:danklinux"}
+	return PackageMapping{Name: "xwayland-satellite", Repository: RepoTypeOBS, RepoURL: obsDeps}
 }
 
 func (d *DebianDistribution) InstallPrerequisites(ctx context.Context, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
@@ -465,6 +487,76 @@ func (d *DebianDistribution) aptInstallArgs(packages []string, minimal bool) []s
 	return append(args, packages...)
 }
 
+func (d *DebianDistribution) RepoMoves() []RepoMove {
+	if d.isPika() {
+		return nil
+	}
+	return debianOBSMoves(readAPTSources())
+}
+
+func (d *DebianDistribution) ApplyRepoMoves(ctx context.Context, moves []RepoMove, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
+	if err := d.enableOBSRepos(ctx, repoMoveAdds(moves), sudoPassword, progressChan); err != nil {
+		return err
+	}
+	if renames := aptRenames(moves, newObsRepo(projectDeps), d.packageInstalled); len(renames) > 0 {
+		if err := d.installAPTPackages(ctx, renames, sudoPassword, progressChan); err != nil {
+			return fmt.Errorf("failed to install the renamed packages %s: %w", strings.Join(renames, ", "), err)
+		}
+	}
+	removals := debianRemovals(moves, readAPTSources())
+	for _, paths := range removals {
+		command := "rm -f " + strings.Join(paths, " ")
+		progressChan <- InstallProgressMsg{
+			Phase:       PhaseSystemPackages,
+			Progress:    0.30,
+			Step:        fmt.Sprintf("Removing OBS repo %s...", paths[0]),
+			NeedsSudo:   true,
+			CommandInfo: "sudo " + command,
+		}
+		if err := d.runWithProgress(privescExec(ctx, sudoPassword, command), progressChan, PhaseSystemPackages, 0.30, 0.35); err != nil {
+			return fmt.Errorf("failed to remove OBS repo %s: %w", paths[0], err)
+		}
+	}
+	if len(removals) == 0 {
+		return nil
+	}
+	return d.aptUpdate(ctx, sudoPassword, progressChan)
+}
+
+func (d *DebianDistribution) RepoMoveCommands(moves []RepoMove) []string {
+	osInfo, err := GetOSInfo()
+	if err != nil {
+		osInfo = &OSInfo{}
+	}
+	dist := debianOBSRepoVersion(osInfo, readDebianAPTSuites())
+	return debianRepoMoveCommands(moves, readAPTSources(), aptRenames(moves, newObsRepo(projectDeps), d.packageInstalled), dist, debianRepoArchitecture(osInfo.Architecture))
+}
+
+func debianRepoMoveCommands(moves []RepoMove, sources []aptSource, renames []string, dist, arch string) []string {
+	var commands []string
+	adds := repoMoveAdds(moves)
+	for _, add := range adds {
+		baseURL := obsBaseURL(add.RepoURL, dist)
+		commands = append(commands,
+			fmt.Sprintf("curl -fsSL %s/Release.key | gpg --dearmor | sudo tee %s", baseURL, obsAptKeyring(add.RepoURL)),
+			fmt.Sprintf("echo 'deb [signed-by=%s arch=%s] %s/ /' | sudo tee %s", obsAptKeyring(add.RepoURL), arch, baseURL, obsAptListFile(add.RepoURL)))
+	}
+	if len(adds) > 0 {
+		commands = append(commands, "sudo apt-get update")
+	}
+	if len(renames) > 0 {
+		commands = append(commands, "sudo apt-get install -y "+strings.Join(renames, " "))
+	}
+	removals := debianRemovals(moves, sources)
+	for _, paths := range removals {
+		commands = append(commands, "sudo rm -f "+strings.Join(paths, " "))
+	}
+	if len(removals) > 0 {
+		commands = append(commands, "sudo apt-get update")
+	}
+	return commands
+}
+
 func (d *DebianDistribution) enableOBSRepos(ctx context.Context, obsPkgs []PackageMapping, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
 	enabledRepos := make(map[string]bool)
 
@@ -475,25 +567,23 @@ func (d *DebianDistribution) enableOBSRepos(ctx context.Context, obsPkgs []Packa
 
 	obsRepo := debianOBSRepoVersion(osInfo, readDebianAPTSuites())
 	d.log(fmt.Sprintf("Using OBS Debian repository: %s", obsRepo))
+	sources := readAPTSources()
 
 	for _, pkg := range obsPkgs {
 		if pkg.RepoURL != "" && !enabledRepos[pkg.RepoURL] {
 			d.log(fmt.Sprintf("Enabling OBS repository: %s", pkg.RepoURL))
 
-			// RepoURL format: "home:AvengeMedia:danklinux"
-			repoPath := strings.ReplaceAll(pkg.RepoURL, ":", ":/")
-			repoName := strings.ReplaceAll(pkg.RepoURL, ":", "-")
-			baseURL := fmt.Sprintf("https://download.opensuse.org/repositories/%s/%s", repoPath, obsRepo)
+			baseURL := obsBaseURL(pkg.RepoURL, obsRepo)
 
-			// Check if repository already exists
-			listFile := fmt.Sprintf("/etc/apt/sources.list.d/%s.list", repoName)
-			if debianOBSListFileMatches(listFile, obsRepo) {
+			// A second file for the same URI with another keyring makes apt refuse the Signed-By conflict.
+			listFile := obsAptListFile(pkg.RepoURL)
+			if aptSourcesPointAt(sources, pkg.RepoURL, obsRepo) {
 				d.log(fmt.Sprintf("OBS repo %s already exists, skipping", pkg.RepoURL))
 				enabledRepos[pkg.RepoURL] = true
 				continue
 			}
 
-			keyringPath := fmt.Sprintf("/etc/apt/keyrings/%s.gpg", repoName)
+			keyringPath := obsAptKeyring(pkg.RepoURL)
 
 			// Create keyrings directory if it doesn't exist
 			mkdirCmd := privesc.ExecCommand(ctx, sudoPassword, "mkdir -p /etc/apt/keyrings")

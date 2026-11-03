@@ -1,3 +1,8 @@
-import qs.DankCommon.Widgets as DankCommon
+import QtQuick
+import qs.Common
+import qs.DCommon.Widgets as DCommon
 
-DankCommon.DankNFIcon {}
+DCommon.DNFIcon {
+    id: shim
+    Component.onCompleted: Deprecation.type(shim, "DankNFIcon", "DNFIcon", "qs.DCommon.Widgets")
+}

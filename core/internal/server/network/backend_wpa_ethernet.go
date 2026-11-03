@@ -3,6 +3,8 @@ package network
 import (
 	"fmt"
 	"net"
+	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/godbus/dbus/v5"
@@ -96,9 +98,129 @@ func wiredConnectionsFromEthernetDevices(devices []EthernetDevice) []WiredConnec
 	return conns
 }
 
+func runFreeBSDNetworkAdmin(command string, args ...string) error {
+	cmd := exec.Command(command, args...)
+
+	if os.Geteuid() != 0 {
+		pkexec, err := exec.LookPath("pkexec")
+		if err != nil {
+			return fmt.Errorf("%s requires root privileges and pkexec is unavailable", command)
+		}
+
+		cmd = exec.Command(pkexec, append([]string{command}, args...)...)
+	}
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		if message := strings.TrimSpace(string(output)); message != "" {
+			return fmt.Errorf("%w: %s", err, message)
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (b *WpaSupplicantBackend) updateEthernetState() {
+	devices := b.ethernetDevices()
+
+	var device, ip string
+	connected := false
+
+	for _, dev := range devices {
+		if device == "" {
+			device = dev.Name
+		}
+
+		if dev.Connected {
+			device, ip, connected = dev.Name, dev.IP, true
+			break
+		}
+	}
+
+	b.stateMutex.Lock()
+
+	b.state.EthernetDevices = devices
+	b.state.EthernetDevice = device
+	b.state.EthernetConnected = connected
+	b.state.EthernetIP = ip
+	b.state.WiredConnections = wiredConnectionsFromEthernetDevices(devices)
+
+	if connected && ip != "" {
+		b.state.NetworkStatus = StatusEthernet
+	} else if b.state.WiFiConnected {
+		b.state.NetworkStatus = StatusWiFi
+	} else {
+		b.state.NetworkStatus = StatusDisconnected
+	}
+
+	b.stateMutex.Unlock()
+}
+
+func (b *WpaSupplicantBackend) connectEthernetDevice(device string) error {
+	if device == "" {
+		return fmt.Errorf("no Ethernet device specified")
+	}
+
+	if err := runFreeBSDNetworkAdmin("/sbin/ifconfig", device, "up"); err != nil {
+		return fmt.Errorf("bring %s up: %w", device, err)
+	}
+
+	if err := runFreeBSDNetworkAdmin("/sbin/dhclient", "-b", device); err != nil {
+		return fmt.Errorf("start DHCP on %s: %w", device, err)
+	}
+
+	b.updateEthernetState()
+	return nil
+}
+
+func (b *WpaSupplicantBackend) ConnectEthernet() error {
+	devices := b.ethernetDevices()
+	if len(devices) == 0 {
+		return fmt.Errorf("no Ethernet devices available")
+	}
+
+	return b.connectEthernetDevice(devices[0].Name)
+}
+
+func (b *WpaSupplicantBackend) DisconnectEthernet() error {
+	b.stateMutex.RLock()
+	device := b.state.EthernetDevice
+	b.stateMutex.RUnlock()
+
+	if device == "" {
+		return fmt.Errorf("no Ethernet device available")
+	}
+
+	return b.DisconnectEthernetDevice(device)
+}
+
+func (b *WpaSupplicantBackend) DisconnectEthernetDevice(device string) error {
+	if device == "" {
+		return fmt.Errorf("no Ethernet device specified")
+	}
+
+	if err := runFreeBSDNetworkAdmin("/sbin/ifconfig", device, "down"); err != nil {
+		return fmt.Errorf("bring %s down: %w", device, err)
+	}
+
+	b.updateEthernetState()
+	return nil
+}
+
+func (b *WpaSupplicantBackend) ActivateWiredConnection(uuid string) error {
+	device := strings.TrimPrefix(uuid, "wired:")
+	if device == "" {
+		return fmt.Errorf("invalid wired connection: %s", uuid)
+	}
+
+	return b.connectEthernetDevice(device)
+}
+
 func (b *WpaSupplicantBackend) GetEthernetDevices() []EthernetDevice {
 	b.stateMutex.RLock()
 	defer b.stateMutex.RUnlock()
+
 	return append([]EthernetDevice(nil), b.state.EthernetDevices...)
 }
 
@@ -115,12 +237,14 @@ func (b *WpaSupplicantBackend) GetWiredNetworkDetails(id string) (*WiredNetworkI
 	}
 
 	addrs, _ := iface.Addrs()
+
 	var ipv4s, ipv6s []string
 	for _, addr := range addrs {
 		ipnet, ok := addr.(*net.IPNet)
 		if !ok {
 			continue
 		}
+
 		if ipv4 := ipnet.IP.To4(); ipv4 != nil {
 			ipv4s = append(ipv4s, ipnet.String())
 		} else if ipv6 := ipnet.IP.To16(); ipv6 != nil {

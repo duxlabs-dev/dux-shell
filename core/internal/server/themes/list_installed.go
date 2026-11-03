@@ -3,9 +3,8 @@ package themes
 import (
 	"fmt"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/themes"
-	"github.com/AvengeMedia/dankgo/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/themes"
 )
 
 func addVariantsInfo(info *ThemeInfo, variants *themes.ThemeVariants) {
@@ -180,13 +179,13 @@ func swatchColors(scheme themes.ColorScheme) map[string]string {
 func HandleListInstalled(conn *ipc.ConnWriter, req ipc.Request) {
 	manager, err := themes.NewManager()
 	if err != nil {
-		models.RespondError(conn, req.ID, fmt.Sprintf("failed to create manager: %v", err))
+		conn.RespondError(req.ID, fmt.Sprintf("failed to create manager: %v", err))
 		return
 	}
 
 	installedIDs, err := manager.ListInstalled()
 	if err != nil {
-		models.RespondError(conn, req.ID, fmt.Sprintf("failed to list installed themes: %v", err))
+		conn.RespondError(req.ID, fmt.Sprintf("failed to list installed themes: %v", err))
 		return
 	}
 
@@ -245,5 +244,5 @@ func HandleListInstalled(conn *ipc.ConnWriter, req ipc.Request) {
 		}
 	}
 
-	models.Respond(conn, req.ID, result)
+	conn.Respond(req.ID, result)
 }

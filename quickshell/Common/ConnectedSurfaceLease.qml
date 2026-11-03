@@ -23,6 +23,7 @@ Item {
 
     property string claimId: ""
     property string claimedScreenName: ""
+    property string claimedSlot: ""
     property int _claimSerial: 0
 
     signal recoveryRequested
@@ -39,11 +40,11 @@ Item {
     }
 
     function _hasOwner(name, ownerId) {
-        return !!name && ConnectedModeState.hasSurfaceOwner(name, slot, ownerId);
+        return !!name && ConnectedModeState.hasSurfaceOwner(name, claimedSlot || slot, ownerId);
     }
 
     function _hasState(name, ownerId) {
-        return !requirePresentedState || ConnectedModeState.hasSurfaceDescriptor(name, slot, ownerId);
+        return !requirePresentedState || ConnectedModeState.hasSurfaceDescriptor(name, claimedSlot || slot, ownerId);
     }
 
     function _shouldRecover() {
@@ -89,7 +90,7 @@ Item {
             return false;
         }
 
-        if (claimedScreenName && claimedScreenName !== screenName)
+        if ((claimedScreenName && claimedScreenName !== screenName) || (claimedSlot && claimedSlot !== slot))
             release();
 
         const current = _isCurrent(screenName);
@@ -111,6 +112,7 @@ Item {
             return false;
 
         claimedScreenName = screenName;
+        claimedSlot = slot;
         _syncDockRetract();
         return true;
     }
@@ -122,7 +124,7 @@ Item {
             requestRecovery();
             return false;
         }
-        return ConnectedModeState.setSurfaceMotion(claimedScreenName, slot, claimId, patch);
+        return ConnectedModeState.setSurfaceMotion(claimedScreenName, claimedSlot || slot, claimId, patch);
     }
 
     function updateAnim(animX, animY) {
@@ -144,18 +146,21 @@ Item {
     function release() {
         if (!claimId) {
             claimedScreenName = "";
+            claimedSlot = "";
             return false;
         }
 
         const releasedClaimId = claimId;
         const releasedScreenName = claimedScreenName;
+        const releasedSlot = claimedSlot || slot;
         claimId = "";
         claimedScreenName = "";
+        claimedSlot = "";
 
         if (retractsDock)
             ConnectedModeState.releaseDockRetract(releasedClaimId);
         if (releasedScreenName)
-            return ConnectedModeState.releaseSurface(releasedScreenName, slot, releasedClaimId);
+            return ConnectedModeState.releaseSurface(releasedScreenName, releasedSlot, releasedClaimId);
         return false;
     }
 

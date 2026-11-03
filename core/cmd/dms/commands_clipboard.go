@@ -28,10 +28,10 @@ import (
 	_ "golang.org/x/image/tiff"
 	_ "golang.org/x/image/webp"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/clipboard"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/dankgo/ipc"
-	"github.com/AvengeMedia/dankgo/wlclipboard"
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-go/wlclipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/spf13/cobra"
 )
 
@@ -1004,19 +1004,25 @@ func downloadToTempFile(rawURL string) (string, error) {
 	return filePath, nil
 }
 
+// copyFileToClipboard copies through the server so the entry lands in
+// history, and serves the same offers itself when the server is down or
+// refuses (e.g. file over the history size limit).
 func copyFileToClipboard(filePath string) error {
-	req := ipc.Request{
+	if abs, err := filepath.Abs(filePath); err == nil {
+		filePath = abs
+	}
+	resp, ok := tryServerRequest(ipc.Request{
 		ID:     1,
 		Method: "clipboard.copyFile",
 		Params: map[string]any{"filePath": filePath},
+	})
+	if ok && resp.Error == "" {
+		return nil
 	}
 
-	resp, err := sendServerRequest(req)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("server request: %w", err)
+		return fmt.Errorf("read file: %w", err)
 	}
-	if resp.Error != "" {
-		return fmt.Errorf("server error: %s", resp.Error)
-	}
-	return nil
+	return clipboard.CopyMulti(clipboard.FileOffers(filePath, filePath, data), false, false)
 }

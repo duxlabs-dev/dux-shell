@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
@@ -47,6 +48,17 @@ PluginComponent {
             property int filterIndex: 0
             property string expandedHostname: ""
 
+            function formatLastSeen(iso) {
+                const date = new Date(iso);
+                const minutes = Math.floor((Date.now() - date.getTime()) / 60000);
+                if (minutes < 60)
+                    return I18n.tr("%1m ago", "Tailscale peer last seen time, %1 is a number of minutes").arg(Math.max(1, minutes));
+                const hours = Math.floor(minutes / 60);
+                if (hours < 24)
+                    return I18n.tr("%1h ago", "Tailscale peer last seen time, %1 is a number of hours").arg(hours);
+                return I18n.tr("%1d ago", "Tailscale peer last seen time, %1 is a number of days").arg(Math.floor(hours / 24));
+            }
+
             readonly property string title: I18n.tr("Tailscale", "Tailscale mesh VPN widget title")
             readonly property string noneLabel: I18n.tr("None", "Tailscale exit node: none selected")
             readonly property var filteredPeers: {
@@ -69,7 +81,7 @@ PluginComponent {
                 return base;
             }
 
-            readonly property Item headerActions: DankActionButton {
+            readonly property Item headerActions: DActionButton {
                 buttonSize: Theme.iconButtonSize
                 iconSize: Theme.iconSize
                 iconName: "sync"
@@ -78,7 +90,7 @@ PluginComponent {
                 onClicked: TailscaleService.refresh(null)
             }
 
-            DankFlickable {
+            DFlickable {
                 anchors.fill: parent
                 contentHeight: detailColumn.height
                 clip: true
@@ -116,7 +128,7 @@ PluginComponent {
                             iconName: "alt_route"
                             title: I18n.tr("Exit node", "Tailscale exit node selector label")
 
-                            DankDropdown {
+                            DDropdown {
                                 anchors.verticalCenter: parent.verticalCenter
                                 compactMode: true
                                 dropdownWidth: CcMetrics.rowDropdownWidth
@@ -145,7 +157,7 @@ PluginComponent {
                         }
                     }
 
-                    DankSearchField {
+                    DSearchField {
                         width: parent.width
                         visible: TailscaleService.available
                         placeholderText: I18n.tr("Search devices...", "Tailscale device search placeholder")
@@ -153,7 +165,7 @@ PluginComponent {
                         onTextEdited: detailRoot.searchQuery = text
                     }
 
-                    DankFilterChips {
+                    DFilterChips {
                         width: parent.width
                         visible: TailscaleService.available
                         currentIndex: detailRoot.filterIndex
@@ -206,7 +218,7 @@ PluginComponent {
                                     if (modelData.online)
                                         parts.push(modelData.relay ? I18n.tr("relay: %1", "Tailscale relay server name").arg(modelData.relay) : I18n.tr("direct", "Tailscale direct connection"));
                                     else if (modelData.lastSeen)
-                                        parts.push(I18n.tr("last seen %1", "Tailscale peer last seen time").arg(modelData.lastSeen));
+                                        parts.push(I18n.tr("last seen %1", "Tailscale peer last seen time").arg(detailRoot.formatLastSeen(modelData.lastSeen)));
                                     return parts.join(" • ");
                                 }
                                 trailingBadge: isSelf ? I18n.tr("This device", "Label for the user's own device in Tailscale") : ""
@@ -218,7 +230,7 @@ PluginComponent {
                                     color: peerRow.modelData.online ? Theme.success : Theme.surfaceVariantText
                                 }
 
-                                DankActionButton {
+                                DActionButton {
                                     anchors.verticalCenter: parent.verticalCenter
                                     buttonSize: Theme.buttonHeightXS
                                     iconSize: Theme.iconSizeSmall
@@ -247,7 +259,7 @@ PluginComponent {
                                             elide: Text.ElideRight
                                         }
 
-                                        DankActionButton {
+                                        DActionButton {
                                             id: copyDnsButton
                                             anchors.verticalCenter: parent.verticalCenter
                                             buttonSize: Theme.buttonHeightXS

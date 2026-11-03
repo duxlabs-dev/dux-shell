@@ -146,7 +146,7 @@ func (b shellyBackend) Upgrade(ctx context.Context, opts UpgradeOptions, onLine 
 		}
 		return nil
 	}
-	argv := shellyUpgradeArgv(opts.IncludeAUR)
+	argv := shellyUpgradeArgv(opts)
 	if opts.AttachStdio {
 		return Run(ctx, argv, RunOptions{OnLine: onLine, AttachStdio: true})
 	}
@@ -160,9 +160,9 @@ func (b shellyBackend) Upgrade(ctx context.Context, opts UpgradeOptions, onLine 
 	return Run(ctx, wrapInTerminal(term, "DMS — System Update (shelly)", strings.Join(argv, " "), opts.TerminalArgs), RunOptions{OnLine: onLine})
 }
 
-func shellyUpgradeArgv(includeAUR bool) []string {
-	if !includeAUR {
-		return []string{"shelly", "upgrade", "standard", "--no-confirm"}
+func shellyUpgradeArgv(opts UpgradeOptions) []string {
+	if !opts.IncludeAUR {
+		return withAutoYes(opts, []string{"shelly", "upgrade", "standard"}, "--no-confirm")
 	}
-	return []string{"shelly", "upgrade", "all", "--no-flatpak", "--no-appimage", "--no-confirm"}
+	return withAutoYes(opts, []string{"shelly", "upgrade", "all", "--no-flatpak", "--no-appimage"}, "--no-confirm")
 }

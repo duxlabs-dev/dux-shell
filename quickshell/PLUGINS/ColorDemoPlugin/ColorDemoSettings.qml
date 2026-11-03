@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Modules.Plugins
-import qs.Widgets
+import qs.DCommon.Widgets
 
 PluginSettings {
     id: root

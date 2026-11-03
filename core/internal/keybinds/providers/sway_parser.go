@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 const (
@@ -96,6 +96,10 @@ func (p *SwayParser) parseVariables() {
 			p.variables[varName] = varValue
 		}
 	}
+}
+
+func (p *SwayParser) ModVariable() string {
+	return p.variables["mod"]
 }
 
 func (p *SwayParser) expandVariables(text string) string {

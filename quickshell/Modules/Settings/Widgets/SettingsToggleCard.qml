@@ -21,13 +21,12 @@ Item {
     property bool checked: false
     property bool userToggled: false
 
-    property alias resetStore: header.resetStore
-    property alias resetKeys: header.resetKeys
-    property alias modified: header.modified
-
     default property alias content: expandedContent.data
     readonly property bool hasContent: expandedContent.height > 0
     readonly property bool standalone: !(parent?.isSettingsGroupHost ?? false)
+    readonly property bool firstInGroup: standalone || parent.isEdge(root, true)
+    readonly property bool lastInGroup: standalone || parent.isEdge(root, false)
+    readonly property bool expanded: checked && hasContent
 
     signal toggled(bool checked)
 
@@ -50,8 +49,9 @@ Item {
 
         SettingsToggleRow {
             id: header
-            groupItem: root
             width: parent.width
+            topRadius: root.firstInGroup ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+            bottomRadius: root.lastInGroup && !root.expanded ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
             tab: root.tab
             tags: root.tags
             settingKey: root.settingKey
@@ -88,6 +88,20 @@ Item {
 
             Column {
                 id: expandedContent
+
+                readonly property bool isSettingsGroupHost: true
+
+                function isEdge(item, first) {
+                    if (first || !root.lastInGroup)
+                        return false;
+                    let last = null;
+                    for (let i = 0; i < visibleChildren.length; i++) {
+                        if (visibleChildren[i].isSettingsRow === true)
+                            last = visibleChildren[i];
+                    }
+                    return last === item;
+                }
+
                 enabled: root.checked
                 anchors.left: parent.left
                 anchors.right: parent.right

@@ -90,7 +90,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: root.radius
-        color: Theme.surface
+        color: Theme.cardSurface
         opacity: root.surfaceTint
     }
 

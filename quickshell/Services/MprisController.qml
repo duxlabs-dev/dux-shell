@@ -20,29 +20,7 @@ Singleton {
         return players.filter(p => {
             const identity = (p.identity || "").toLowerCase();
             const desktopEntry = ("desktopEntry" in p && p.desktopEntry) ? String(p.desktopEntry).toLowerCase() : "";
-            return !excluded.some(ex => {
-                const exLower = String(ex).toLowerCase().trim();
-                if (!exLower)
-                    return false;
-
-                // 1. Substring match
-                if (identity.includes(exLower) || desktopEntry.includes(exLower))
-                    return true;
-
-                // 2. Match reverse-DNS segments (e.g. app.zen_browser.zen -> zen)
-                if (exLower.indexOf(".") !== -1) {
-                    const parts = exLower.split(".");
-                    const lastPart = parts[parts.length - 1];
-                    if (lastPart && (identity.includes(lastPart) || desktopEntry.includes(lastPart)))
-                        return true;
-                }
-
-                // 3. Bidirectional match (longer excluded name contains shorter player identity)
-                if (identity.length >= 3 && exLower.includes(identity))
-                    return true;
-
-                return false;
-            });
+            return !excluded.some(ex => Paths.isAppIdMatch(identity, ex, desktopEntry));
         });
     }
     property MprisPlayer activePlayer: null
@@ -55,6 +33,24 @@ Singleton {
     property bool _mprisRequestInFlight: false
     property bool _mprisPublishDirty: false
     property int _mprisConnectionEpoch: 0
+    property int positionConsumers: 0
+    property bool refreshingPosition: false
+
+    function refreshPosition(player) {
+        if (!player?.positionSupported)
+            return;
+        refreshingPosition = true;
+        player.positionChanged();
+        refreshingPosition = false;
+    }
+
+    function addPositionRef() {
+        positionConsumers++;
+    }
+
+    function removePositionRef() {
+        positionConsumers = Math.max(0, positionConsumers - 1);
+    }
 
     Connections {
         target: root.activePlayer
@@ -74,14 +70,23 @@ Singleton {
             if (root.activePlayer && root.activePlayer.lengthSupported && root.activePlayer.length > 1) {
                 root.activePlayerStableLength = root.activePlayer.length;
             }
+        }
+        function onPlaybackStateChanged() {
+            root._syncStableMeta();
+            root._checkIdle();
+        }
+    }
+
+    Connections {
+        target: root.activePlayer
+        enabled: SettingsData.bluetoothMprisEnabled
+        function onLengthChanged() {
             root._scheduleMPRISPublish();
         }
         function onMetadataChanged() {
             root._scheduleMPRISPublish();
         }
         function onPlaybackStateChanged() {
-            root._syncStableMeta();
-            root._checkIdle();
             root._scheduleMPRISPublish();
         }
         function onCanControlChanged() {
@@ -400,9 +405,9 @@ Singleton {
 
     Timer {
         interval: 1000
-        running: root.activePlayer?.playbackState === MprisPlaybackState.Playing
+        running: root.positionConsumers > 0 && root.activePlayer?.playbackState === MprisPlaybackState.Playing
         repeat: true
-        onTriggered: root.activePlayer?.positionChanged()
+        onTriggered: root.refreshPosition(root.activePlayer)
     }
 
     function _hasMPRISSubscription(): bool {
@@ -500,7 +505,7 @@ Singleton {
         return {
             "lease": lease,
             "enabled": enabled,
-            "identity": "DankMaterialShell",
+            "identity": "Dux Shell",
             "playbackStatus": _mprisPlaybackStatus(player),
             "title": player ? stableTitle : "",
             "artist": player ? stableArtist : "",

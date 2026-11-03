@@ -1,25 +1,8 @@
 import QtQuick
 import qs.Common
-import qs.Modules.Plugins
-import qs.Widgets
+import qs.Modules.DBar.Widgets as New
 
-BasePill {
-    id: root
-
-    property bool isActive: false
-
-    content: Component {
-        Item {
-            implicitWidth: icon.width
-            implicitHeight: root.contentThickness
-
-            DankIcon {
-                id: icon
-                anchors.centerIn: parent
-                name: "power_settings_new"
-                size: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
-                color: Theme.widgetIconColor
-            }
-        }
-    }
+New.PowerMenuButton {
+    id: shim
+    Component.onCompleted: Deprecation.module(shim, "PowerMenuButton", "qs.Modules.DankBar.Widgets", "qs.Modules.DBar.Widgets")
 }

@@ -23,7 +23,7 @@ from extract_translations import extract_plugin_strings, create_plugin_poeditor_
 # monorepo plus every registry plugin flagged "i18n": true. Exports are
 # written back into each checkout's translations/ dir with the prefix
 # stripped, which is the shape PluginService loads at runtime.
-PLUGIN_REGISTRY_REPO = "https://github.com/AvengeMedia/dms-plugin-registry.git"
+PLUGIN_REGISTRY_REPO = "https://github.com/duxlabs-dev/dux-plugin-registry.git"
 EXTERNAL_PLUGINS_DIR = REPO_ROOT / "dms-plugins-external"
 REGISTRY_DIR = EXTERNAL_PLUGINS_DIR / ".registry"
 SYNC_STATE = REPO_ROOT / ".git" / "i18n_plugins_sync_state.json"

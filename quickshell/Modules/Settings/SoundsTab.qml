@@ -1,7 +1,6 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
@@ -75,7 +74,7 @@ Item {
                 tab: "sounds"
                 tags: ["sound", "theme", "system", "gsettings", "select"]
                 settingKey: "soundTheme"
-                text: I18n.tr("Sound theme")
+                text: I18n.tr("Sound theme", "sounds settings dropdown label, which set of system sounds to use")
                 options: {
                     const themes = AudioService.availableSoundThemes;
                     const current = AudioService.currentSoundTheme;
@@ -138,34 +137,10 @@ Item {
             }
         }
 
-        Rectangle {
-            width: parent.width
-            height: notAvailableText.implicitHeight + Theme.spacingM * 2
-            radius: Theme.cornerRadius
-            color: Theme.warningHover
+        SettingsNoteRow {
+            paintBackground: false
             visible: MultimediaService.unavailable
-
-            Row {
-                anchors.fill: parent
-                anchors.margins: Theme.spacingM
-                spacing: Theme.spacingM
-
-                DankIcon {
-                    name: "info"
-                    size: Theme.iconSizeSmall
-                    color: Theme.warning
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                StyledText {
-                    id: notAvailableText
-                    font.pixelSize: Theme.fontSizeSmall
-                    text: I18n.tr("System sounds are not available. Install %1 for sound support.", "sounds settings warning, %1 is a package name").arg(root.multimediaPackage)
-                    wrapMode: Text.WordWrap
-                    width: parent.width - Theme.iconSizeSmall - Theme.spacingM
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
+            text: I18n.tr("System sounds are not available. Install %1 for sound support.", "sounds settings warning, %1 is a package name").arg(root.multimediaPackage)
         }
     }
 }

@@ -11,6 +11,7 @@ Item {
     property var surfaceContext: null
     property var hostContext: null
     property string widgetInstanceId: ""
+    readonly property string popoutTriggerId: widgetInstanceId || pluginId
     property Component attachedContent: null
     readonly property bool usesAttachedExpansion: !!attachedContent && ((surfaceContext?.inlineExpansion ?? false) || !hasPopout)
     readonly property bool surfaceLive: (surfaceContext?.live ?? true) && effectiveVisible
@@ -66,6 +67,8 @@ Item {
     property bool ccWidgetIsActive: false
     property bool ccWidgetIsToggle: true
     property Component ccExpandedContent: null
+    // Unused; kept so older plugins still load.
+    property Component ccFooterContent: null
     property real ccExpandedMinimumHeight: Theme.listItemHeight
     property Component ccDetailContent: null
     property real ccDetailHeight: 250
@@ -350,21 +353,22 @@ Item {
         if (usesAttachedExpansion && surfaceContext?.requestExpansion(root))
             return;
         if (hasPopout && positionPopout())
-            pluginPopout.toggle();
+            PopoutManager.requestPopout(pluginPopout, undefined, popoutTriggerId);
     }
 
-    function triggerHoverPopout(widgetHostId) {
+    function triggerHoverPopout() {
         if (pillClickAction) {
             triggerPopout();
             return;
         }
         if (!hasPopout || !positionPopout())
             return;
-        PopoutManager.requestHoverPopout(pluginPopout, undefined, widgetHostId || pluginId);
+        PopoutManager.requestHoverPopout(pluginPopout, undefined, popoutTriggerId);
     }
 
     PluginPopout {
         id: pluginPopout
+        pluginId: root.pluginId
         contentWidth: root.popoutWidth
         contentHeight: root.popoutHeight
         pluginContent: root.popoutContent

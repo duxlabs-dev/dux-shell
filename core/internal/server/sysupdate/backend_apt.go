@@ -83,21 +83,34 @@ func (aptBackend) Upgrade(ctx context.Context, opts UpgradeOptions, onLine func(
 
 func aptUpgradeArgv(bin string, opts UpgradeOptions) []string {
 	ignored := shellSafeNames(opts.Ignored)
-	if len(ignored) == 0 {
-		return privilegedArgv(opts, "env", "DEBIAN_FRONTEND=noninteractive", "LC_ALL=C", bin, "upgrade", "-y")
+	upgrade := aptUpgradeCmd(bin, opts)
+	env := []string{"env", "DEBIAN_FRONTEND=noninteractive", "LC_ALL=C"}
+	if opts.Interactive {
+		env = []string{"env"}
 	}
-	return privilegedArgv(opts, "env", "DEBIAN_FRONTEND=noninteractive", "LC_ALL=C", "sh", "-c", aptHoldScript(bin, ignored))
+	if len(ignored) == 0 {
+		return privilegedArgv(opts, append(env, upgrade...)...)
+	}
+	return privilegedArgv(opts, append(env, "sh", "-c", aptHoldScript(strings.Join(upgrade, " "), ignored))...)
+}
+
+// DEBIAN_FRONTEND only silences debconf; dpkg still asks about modified config files and fails on EOF.
+func aptUpgradeCmd(bin string, opts UpgradeOptions) []string {
+	if opts.Interactive {
+		return []string{bin, "upgrade"}
+	}
+	return []string{bin, "upgrade", "-y", "-o", "Dpkg::Options::=--force-confdef", "-o", "Dpkg::Options::=--force-confold"}
 }
 
 // aptHoldScript holds ignored packages only for the upgrade, leaving pre-existing user holds untouched.
-func aptHoldScript(bin string, ignored []string) string {
+func aptHoldScript(upgrade string, ignored []string) string {
 	names := strings.Join(ignored, " ")
 	return fmt.Sprintf(
 		`new=""; for p in %s; do apt-mark showhold | grep -qx "$p" || new="$new $p"; done; `+
 			`[ -n "$new" ] && apt-mark hold $new; `+
-			`%s upgrade -y; rc=$?; `+
+			`%s; rc=$?; `+
 			`[ -n "$new" ] && apt-mark unhold $new; exit $rc`,
-		names, bin)
+		names, upgrade)
 }
 
 func parseAptUpgradable(text string) []Package {

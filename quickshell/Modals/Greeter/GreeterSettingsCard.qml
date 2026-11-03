@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Rectangle {
     id: root
@@ -40,7 +40,7 @@ Rectangle {
             color: Theme.primary
             anchors.verticalCenter: parent.verticalCenter
 
-            DankIcon {
+            DIcon {
                 anchors.centerIn: parent
                 name: root.iconName
                 size: Theme.iconSize - 4
@@ -62,7 +62,7 @@ Rectangle {
 
             StyledText {
                 text: root.description
-                font.pixelSize: Theme.fontSizeSmall - 1
+                font.pixelSize: Theme.fontSizeXSmall
                 color: Theme.surfaceVariantText
                 width: parent.width
                 elide: Text.ElideRight

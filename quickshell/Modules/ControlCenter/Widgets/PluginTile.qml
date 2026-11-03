@@ -14,13 +14,15 @@ CcTile {
     iconName: instance?.ccWidgetIcon || widgetDef?.icon || "extension"
     title: instance?.ccWidgetPrimaryText || widgetDef?.text || I18n.tr("Plugin")
     subtitle: instance?.ccWidgetSecondaryText || ""
+    // Primary text can be generic ("Display"); the registered name always identifies the plugin.
+    denseTitle: widgetDef?.text ?? ""
     active: instance?.ccWidgetIsActive ?? false
     toggle: instance?.ccWidgetIsToggle ?? true
     showExpand: hasDetail
     opensPage: (!toggle || compact) && hasDetail
     expandedContent: instance?.ccExpandedContent ?? null
     expandedMinimumHeight: instance?.ccExpandedMinimumHeight ?? Theme.listItemHeight
-    enabled: instance !== null
+    available: instance !== null
 
     onClicked: {
         if ((compact || !toggle) && hasDetail) {

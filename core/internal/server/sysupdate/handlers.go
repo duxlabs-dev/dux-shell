@@ -1,40 +1,49 @@
 package sysupdate
 
 import (
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/server/models"
-	"github.com/AvengeMedia/dankgo/ipc"
-	"github.com/AvengeMedia/dankgo/ipc/params"
+	"context"
+
+	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-go/ipc/params"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 )
 
-func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
+func HandleRequest(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	switch req.Method {
 	case "sysupdate.getState":
-		models.Respond(conn, req.ID, m.GetState())
+		conn.Respond(req.ID, m.GetState())
 	case "sysupdate.refresh":
 		force := params.BoolOpt(req.Params, "force", false)
-		m.Refresh(RefreshOptions{Force: force})
-		models.Respond(conn, req.ID, m.GetState())
+		background := params.BoolOpt(req.Params, "background", false)
+		m.Refresh(RefreshOptions{Force: force, Background: background})
+		conn.Respond(req.ID, m.GetState())
 	case "sysupdate.upgrade":
 		handleUpgrade(conn, req, m)
 	case "sysupdate.cancel":
 		m.Cancel()
-		models.Respond(conn, req.ID, m.GetState())
+		conn.Respond(req.ID, m.GetState())
 	case "sysupdate.acquire":
-		m.Acquire()
-		models.Respond(conn, req.ID, models.SuccessResult{Success: true})
+		m.Acquire(ctx, conn)
+		conn.Respond(req.ID, models.SuccessResult{Success: true})
 	case "sysupdate.release":
-		m.Release()
-		models.Respond(conn, req.ID, models.SuccessResult{Success: true})
+		m.Release(conn)
+		conn.Respond(req.ID, models.SuccessResult{Success: true})
+	case "sysupdate.releases":
+		force := params.BoolOpt(req.Params, "force", false)
+		conn.Respond(req.ID, m.Releases(force))
+	case "sysupdate.repoStatus":
+		conn.Respond(req.ID, hostRepoStatus())
 	case "sysupdate.setInterval":
 		seconds, err := params.Int(req.Params, "seconds")
 		if err != nil {
-			models.RespondError(conn, req.ID, err.Error())
+			conn.RespondError(req.ID, err.Error())
 			return
 		}
 		m.SetInterval(seconds)
-		models.Respond(conn, req.ID, m.GetState())
+		conn.Respond(req.ID, m.GetState())
 	default:
-		models.RespondError(conn, req.ID, "unknown method: "+req.Method)
+		conn.RespondError(req.ID, "unknown method: "+req.Method)
 	}
 }
 
@@ -43,16 +52,50 @@ func handleUpgrade(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		IncludeFlatpak: params.BoolOpt(req.Params, "includeFlatpak", true),
 		IncludeAUR:     params.BoolOpt(req.Params, "includeAUR", true),
 		DryRun:         params.BoolOpt(req.Params, "dry", false),
+		Interactive:    params.BoolOpt(req.Params, "interactive", false),
 		CustomCommand:  params.StringOpt(req.Params, "customCommand", ""),
 		Terminal:       params.StringOpt(req.Params, "terminal", ""),
 		TerminalArgs:   stringSliceOpt(req.Params, "terminalArgs"),
 		Ignored:        stringSliceOpt(req.Params, "ignored"),
 	}
 	if err := m.Upgrade(opts); err != nil {
-		models.RespondError(conn, req.ID, err.Error())
+		conn.RespondError(req.ID, err.Error())
 		return
 	}
-	models.Respond(conn, req.ID, m.GetState())
+	conn.Respond(req.ID, m.GetState())
+}
+
+type RepoStatus struct {
+	Legacy  []string `json:"legacy"`
+	Command string   `json:"command"`
+}
+
+const repoMigrateCommand = "dms migrate dux"
+
+// Per call and file stats only: the shell asks once per connect.
+func hostRepoStatus() RepoStatus {
+	osInfo, err := distros.GetOSInfo()
+	if err != nil {
+		return repoStatus(nil)
+	}
+	distro, err := distros.NewDistribution(osInfo.Distribution.ID, nil)
+	if err != nil {
+		return repoStatus(nil)
+	}
+	return repoStatus(distro)
+}
+
+func repoStatus(distro distros.Distribution) RepoStatus {
+	status := RepoStatus{Legacy: []string{}, Command: repoMigrateCommand}
+	if distro == nil {
+		return status
+	}
+	moves, ok := distros.PlanRepoMoves(distro)
+	if !ok {
+		return status
+	}
+	status.Legacy = distros.LegacyRepoPaths(moves)
+	return status
 }
 
 func stringSliceOpt(p map[string]any, key string) []string {

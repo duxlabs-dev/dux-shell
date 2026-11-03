@@ -7,5 +7,6 @@ this directory.
 
 `PamContext` models start/abort/completion and records attempts. Tests explicitly
 supply completion results; Qt timers and QML bindings run normally. File and
-process doubles do no I/O. These tests cover authentication flow control, not
+process doubles do no I/O; a `FileView` is loaded unless its path is empty or
+listed in `MockFiles.missing`. These tests cover authentication flow control, not
 PAM policy enforcement, daemon behavior, or fingerprint hardware.

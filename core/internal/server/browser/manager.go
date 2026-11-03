@@ -3,7 +3,7 @@ package browser
 import (
 	"sync"
 
-	"github.com/AvengeMedia/dankgo/syncmap"
+	"github.com/duxlabs-dev/dux-go/syncmap"
 )
 
 type Manager struct {

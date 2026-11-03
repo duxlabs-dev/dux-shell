@@ -2,7 +2,7 @@ import QtQuick
 import qs.Common
 import qs.Modules.ControlCenter
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 CcTile {
     id: root
@@ -31,10 +31,10 @@ CcTile {
     }
     active: !!audio && !audio.muted
     showExpand: true
-    enabled: widgetDef?.enabled ?? true
+    available: widgetDef?.enabled ?? true
     tallContent: Component {
         Item {
-            DankRingGauge {
+            DRingGauge {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.min(parent.width, parent.height)

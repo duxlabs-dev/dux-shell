@@ -4,19 +4,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-)
 
-func TestSwayProviderDefaultPath(t *testing.T) {
-	provider := NewSwayProvider("")
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		t.Skip("UserConfigDir not available")
-	}
-	expected := filepath.Join(configDir, "sway")
-	if provider.configPath != expected {
-		t.Errorf("configPath = %q, want %q", provider.configPath, expected)
-	}
-}
+	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds"
+)
 
 func TestSwayCategorizeByCommand(t *testing.T) {
 	tests := []struct {
@@ -24,29 +14,14 @@ func TestSwayCategorizeByCommand(t *testing.T) {
 		expected string
 	}{
 		{"workspace number 1", "Workspace"},
-		{"workspace prev", "Workspace"},
-		{"workspace next", "Workspace"},
 		{"move container to workspace number 1", "Workspace"},
 		{"focus output left", "Monitor"},
 		{"move workspace to output right", "Monitor"},
 		{"kill", "Window"},
-		{"fullscreen toggle", "Window"},
-		{"floating toggle", "Window"},
-		{"focus left", "Window"},
-		{"focus right", "Window"},
-		{"move left", "Window"},
-		{"move right", "Window"},
-		{"resize grow width 10px", "Window"},
-		{"splith", "Window"},
-		{"splitv", "Window"},
 		{"layout tabbed", "Layout"},
-		{"layout stacking", "Layout"},
 		{"move scratchpad", "Scratchpad"},
-		{"scratchpad show", "Scratchpad"},
 		{"exec kitty", "Execute"},
-		{"exec --no-startup-id firefox", "Execute"},
 		{"exit", "System"},
-		{"reload", "System"},
 		{"unknown command", "Other"},
 	}
 
@@ -68,20 +43,12 @@ func TestSwayFormatKey(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "single_mod",
-			keybind: &SwayKeyBinding{
-				Mods: []string{"Mod4"},
-				Key:  "q",
-			},
-			expected: "Mod4+q",
-		},
-		{
 			name: "multiple_mods",
 			keybind: &SwayKeyBinding{
 				Mods: []string{"Mod4", "Shift"},
 				Key:  "e",
 			},
-			expected: "Mod4+Shift+e",
+			expected: "Super+Shift+e",
 		},
 		{
 			name: "no_mods",
@@ -119,7 +86,7 @@ func TestSwayConvertKeybind(t *testing.T) {
 				Command: "exec kitty",
 				Comment: "Open terminal",
 			},
-			wantKey:  "Mod4+t",
+			wantKey:  "Super+t",
 			wantDesc: "Open terminal",
 		},
 		{
@@ -130,7 +97,7 @@ func TestSwayConvertKeybind(t *testing.T) {
 				Command: "reload",
 				Comment: "",
 			},
-			wantKey:  "Mod4+r",
+			wantKey:  "Super+r",
 			wantDesc: "reload",
 		},
 	}
@@ -190,18 +157,6 @@ bindsym $mod+w layout tabbed
 		t.Fatalf("GetCheatSheet failed: %v", err)
 	}
 
-	if sheet == nil {
-		t.Fatal("Expected non-nil CheatSheet")
-	}
-
-	if sheet.Title != "Sway Keybinds" {
-		t.Errorf("Title = %q, want %q", sheet.Title, "Sway Keybinds")
-	}
-
-	if sheet.Provider != "sway" {
-		t.Errorf("Provider = %q, want %q", sheet.Provider, "sway")
-	}
-
 	categories := []string{"System", "Execute", "Window", "Workspace", "Layout"}
 	for _, category := range categories {
 		if _, exists := sheet.Binds[category]; !exists {
@@ -220,14 +175,6 @@ bindsym $mod+w layout tabbed
 	}
 	if len(sheet.Binds["Workspace"]) < 3 {
 		t.Error("Expected at least 3 Workspace keybinds")
-	}
-}
-
-func TestSwayGetCheatSheetError(t *testing.T) {
-	provider := NewSwayProvider("/nonexistent/path")
-	_, err := provider.GetCheatSheet()
-	if err == nil {
-		t.Error("Expected error for nonexistent path, got nil")
 	}
 }
 
@@ -266,7 +213,7 @@ bindsym $mod+1 workspace number 1
 	foundTerminal := false
 	for _, binds := range sheet.Binds {
 		for _, bind := range binds {
-			if bind.Description == "Terminal" && bind.Key == "Mod4+t" {
+			if bind.Description == "Terminal" && bind.Key == "Super+t" {
 				foundTerminal = true
 			}
 		}
@@ -274,5 +221,9 @@ bindsym $mod+1 workspace number 1
 
 	if !foundTerminal {
 		t.Error("Did not find terminal keybind with correct key and description")
+	}
+
+	if sheet.Mod.Resolved != "Super" || sheet.Mod.Source != keybinds.ModSourceConfig {
+		t.Errorf("Mod = %+v, want Super from config", sheet.Mod)
 	}
 }

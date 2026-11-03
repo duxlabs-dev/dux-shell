@@ -3,7 +3,6 @@ import Quickshell
 import qs.Common
 import qs.Modules.Settings.Widgets
 import qs.Services
-import qs.Widgets
 
 Item {
     id: root
@@ -91,8 +90,11 @@ Item {
     function setShowOnLastDisplay(componentId, enabled) {
         if (componentId.startsWith("bar:")) {
             const barId = componentId.substring(4);
-            SettingsData.updateBarConfig(barId, {
-                "showOnLastDisplay": enabled
+            SettingsData.updateBarConfig(barId, enabled ? {
+                "showOnLastDisplay": true,
+                "hideOnLastDisplay": false
+            } : {
+                "showOnLastDisplay": false
             });
             return;
         }
@@ -100,6 +102,25 @@ Item {
         var newPrefs = Object.assign({}, prefs);
         newPrefs[componentId] = enabled;
         SettingsData.set("showOnLastDisplay", newPrefs);
+    }
+
+    function getHideOnLastDisplay(componentId) {
+        if (!componentId.startsWith("bar:"))
+            return false;
+        const barId = componentId.substring(4);
+        return SettingsData.getBarConfig(barId)?.hideOnLastDisplay ?? false;
+    }
+
+    function setHideOnLastDisplay(componentId, enabled) {
+        if (!componentId.startsWith("bar:"))
+            return;
+        const barId = componentId.substring(4);
+        SettingsData.updateBarConfig(barId, enabled ? {
+            "hideOnLastDisplay": true,
+            "showOnLastDisplay": false
+        } : {
+            "hideOnLastDisplay": false
+        });
     }
 
     SettingsPage {
@@ -155,12 +176,14 @@ Item {
                     allowEmpty: true
                     showLastDisplay: ["notifications", "osd", "toast", "notepad"].includes(componentCard.modelData.id) || componentCard.modelData.id.startsWith("bar:")
                     showOnLastDisplay: root.getShowOnLastDisplay(componentCard.modelData.id)
-                    onPreferencesChanged: prefs => root.setScreenPreferences(componentCard.modelData.id, prefs)
+                    allowHideOnLastDisplay: componentCard.modelData.id.startsWith("bar:")
+                    hideOnLastDisplay: root.getHideOnLastDisplay(componentCard.modelData.id)
+                    preferencesHandler: prefs => root.setScreenPreferences(componentCard.modelData.id, prefs)
                     onLastDisplayToggled: checked => root.setShowOnLastDisplay(componentCard.modelData.id, checked)
+                    onHideOnLastDisplayToggled: checked => root.setHideOnLastDisplay(componentCard.modelData.id, checked)
                 }
 
                 SettingsToggleRow {
-                    resetKeys: ["notificationFocusedMonitor"]
                     visible: componentCard.modelData.id === "notifications"
                     text: I18n.tr("Focused display only")
                     checked: SettingsData.notificationFocusedMonitor

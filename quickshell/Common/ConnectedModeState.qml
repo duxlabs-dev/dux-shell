@@ -240,6 +240,26 @@ Singleton {
         return changed ? next : null;
     }
 
+    function _pruneOrphanDocks() {
+        if (typeof SettingsData === "undefined" || !SettingsData.dockConfigs)
+            return;
+        const validDockIds = new Set((SettingsData.dockConfigs || []).map(config => config?.id).filter(Boolean));
+        for (const screenName of Object.keys(surfaceDescriptors)) {
+            const screen = surfaceDescriptors[screenName];
+            if (!screen)
+                continue;
+            for (const slot of Object.keys(screen)) {
+                if (slot.startsWith("dock:")) {
+                    const dockId = slot.substring(5);
+                    if (!validDockIds.has(dockId))
+                        releaseSurface(screenName, slot, "");
+                } else if (slot === "dock" && !validDockIds.has("")) {
+                    releaseSurface(screenName, slot, "");
+                }
+            }
+        }
+    }
+
     function _pruneToLiveScreens() {
         const live = new Set((Quickshell.screens || []).map(screen => screen?.name).filter(Boolean));
         const descriptors = _pruneKeyed(surfaceDescriptors, name => live.has(name));
@@ -252,6 +272,7 @@ Singleton {
         if (retract)
             dockRetractRequests = retract;
         _dropMotion(Object.keys(surfaceMotion).filter(key => !live.has(key.split("|")[0])));
+        _pruneOrphanDocks();
     }
 
     Connections {
@@ -261,8 +282,20 @@ Singleton {
         }
     }
 
+    Connections {
+        target: SettingsData
+        function onDockConfigsChanged() {
+            dockPruneAction.schedule();
+        }
+    }
+
     DeferredAction {
         id: screenPruneAction
         onTriggered: root._pruneToLiveScreens()
+    }
+
+    DeferredAction {
+        id: dockPruneAction
+        onTriggered: root._pruneOrphanDocks()
     }
 }

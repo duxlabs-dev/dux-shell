@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/lowprio"
+	"github.com/duxlabs-dev/dux-shell/core/internal/lowprio"
 )
 
 var (

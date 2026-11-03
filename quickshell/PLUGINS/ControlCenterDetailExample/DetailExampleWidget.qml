@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Plugins
 
 PluginComponent {
@@ -33,7 +33,7 @@ PluginComponent {
             id: detailRoot
             implicitHeight: detailColumn.implicitHeight + Theme.spacingM * 2
             radius: Theme.cornerRadius
-            color: Theme.surfaceContainerHigh
+            color: Theme.cardSurface
             border.width: 0
             visible: true
 
@@ -66,7 +66,7 @@ PluginComponent {
                         width: parent.width
                         height: 40
                         radius: Theme.cornerRadius
-                        color: optionMouseArea.containsMouse ? Theme.surfaceContainerHighest : Theme.withAlpha(Theme.surfaceContainerHighest, 0)
+                        color: optionMouseArea.containsMouse ? Theme.chipSurface : Theme.withAlpha(Theme.chipSurface, 0)
                         border.color: detailRoot.currentSelection === modelData ? Theme.primary : Theme.withAlpha(Theme.primary, 0)
                         border.width: detailRoot.currentSelection === modelData ? 2 : 0
 
@@ -91,7 +91,7 @@ PluginComponent {
                             spacing: Theme.spacingS
                             enabled: false
 
-                            DankIcon {
+                            DIcon {
                                 name: detailRoot.currentSelection === modelData ? "radio_button_checked" : "radio_button_unchecked"
                                 color: detailRoot.currentSelection === modelData ? Theme.primary : Theme.surfaceVariantText
                                 size: Theme.iconSize
@@ -115,7 +115,7 @@ PluginComponent {
         Row {
             spacing: Theme.spacingXS
 
-            DankIcon {
+            DIcon {
                 name: root.isEnabled ? "settings" : "settings_off"
                 color: root.isEnabled ? Theme.primary : Theme.surfaceVariantText
                 size: root.iconSize

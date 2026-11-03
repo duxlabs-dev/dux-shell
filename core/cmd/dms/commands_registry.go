@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/registries"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/registries"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -12,7 +12,7 @@ import (
 var registryCmd = &cobra.Command{
 	Use:   "registry",
 	Short: "Manage plugin and theme registries",
-	Long:  "Manage the registries DMS fetches plugins and themes from. The official registry is always active; additional registries can be added by name and git URL.",
+	Long:  "Manage the registries DMS fetches plugins and themes from. The official registry is always active and additional registries can be added by name and git URL, unless the CLI policy sets disable_registries.",
 }
 
 var registryListCmd = &cobra.Command{

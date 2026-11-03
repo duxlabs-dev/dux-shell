@@ -6,6 +6,22 @@ type RuleStore interface {
 	WriteDMSRules([]WindowRule) error
 }
 
+const OpaqueRuleID = "dms-window-opaque"
+
+// pinDMSRules puts the opaque rule last, since compositors apply rules in
+// order and the last match wins.
+func pinDMSRules(rules []WindowRule) []WindowRule {
+	var rest, last []WindowRule
+	for _, rule := range rules {
+		if rule.ID == OpaqueRuleID {
+			last = append(last, rule)
+		} else {
+			rest = append(rest, rule)
+		}
+	}
+	return append(rest, last...)
+}
+
 func Set(store RuleStore, rule WindowRule) error {
 	if err := store.EnsureWritable(); err != nil {
 		return err
@@ -20,10 +36,10 @@ func Set(store RuleStore, rule WindowRule) error {
 			continue
 		}
 		rules[i] = rule
-		return store.WriteDMSRules(rules)
+		return store.WriteDMSRules(pinDMSRules(rules))
 	}
 
-	return store.WriteDMSRules(append(rules, rule))
+	return store.WriteDMSRules(pinDMSRules(append(rules, rule)))
 }
 
 func Remove(store RuleStore, id string) error {
@@ -43,7 +59,7 @@ func Remove(store RuleStore, id string) error {
 		kept = append(kept, rule)
 	}
 
-	return store.WriteDMSRules(kept)
+	return store.WriteDMSRules(pinDMSRules(kept))
 }
 
 func Reorder(store RuleStore, ids []string) error {
@@ -84,5 +100,5 @@ func Reorder(store RuleStore, ids []string) error {
 		result = append(result, rule)
 	}
 
-	return store.WriteDMSRules(append(result, leftover...))
+	return store.WriteDMSRules(pinDMSRules(append(result, leftover...)))
 }

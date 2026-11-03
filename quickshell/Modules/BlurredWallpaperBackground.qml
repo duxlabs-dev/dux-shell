@@ -50,7 +50,7 @@ Variants {
                 return "file://" + path.split('/').map(s => encodeURIComponent(s)).join('/');
             }
 
-            property string source: SessionData.getMonitorWallpaper(modelData.name) || ""
+            property string source: SessionData.getMonitorWallpaperImage(modelData.name) || ""
             readonly property bool isColorSource: source.startsWith("#")
             readonly property string displaySource: {
                 if (!source || isColorSource)
@@ -223,7 +223,7 @@ Variants {
                 target: SessionData
                 function onIsLightModeChanged() {
                     if (SessionData.perModeWallpaper) {
-                        var newSource = SessionData.getMonitorWallpaper(modelData.name) || "";
+                        var newSource = SessionData.getMonitorWallpaperImage(modelData.name) || "";
                         if (newSource !== root.source) {
                             root.source = newSource;
                         }
@@ -237,7 +237,7 @@ Variants {
                 }
             }
 
-            // Theme changes repaint DankBackdrop but nothing else wakes the render loop
+            // Theme changes repaint DBackdrop but nothing else wakes the render loop
             readonly property color themePrimary: Theme.primary
             readonly property color themeBackground: Theme.background
             readonly property bool idleShellLocked: IdleService.isShellLocked
@@ -280,8 +280,10 @@ Variants {
                 active: root.showsBackdrop
                 asynchronous: true
 
-                sourceComponent: DankBackdrop {
+                sourceComponent: DBackdrop {
                     screenName: modelData.name
+                    blur: Theme.wallpaperBlur
+                    onInvalidated: root.invalidate()
                 }
             }
 

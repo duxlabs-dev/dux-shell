@@ -3,10 +3,12 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 WidgetPickerWindow {
     id: root
+
+    property string listKey: "desktopWidgetInstances"
 
     signal widgetAdded(string widgetType)
 
@@ -14,14 +16,14 @@ WidgetPickerWindow {
         const widgetType = widget.id;
         const defaultConfig = DesktopWidgetRegistry.getDefaultConfig(widgetType);
         const name = widget.name || widgetType;
-        SettingsData.createDesktopWidgetInstance(widgetType, name, defaultConfig);
+        SettingsData.createDesktopWidgetInstance(widgetType, name, defaultConfig, listKey);
         root.widgetAdded(widgetType);
         root.hide();
     }
 
     objectName: "desktopWidgetBrowser"
     title: I18n.tr("Add Desktop Widget")
-    widgets: DesktopWidgetRegistry.registeredWidgetsList || []
+    widgets: DesktopWidgetRegistry.getListWidgets(listKey).filter(widget => listKey === "desktopWidgetInstances" ? true : (widget.id !== "lockAuth" && widget.id !== "greeterSession"))
     featuredFirst: true
     showEmptyState: true
     widgetDelegate: tileDelegate
@@ -31,19 +33,17 @@ WidgetPickerWindow {
     Component {
         id: tileDelegate
 
-        Rectangle {
+        DListItem {
             id: delegateRoot
 
             required property var modelData
             required property int index
 
             width: ListView.view.width
-            height: 72
-            radius: Theme.cornerRadius
-            property bool isSelected: root.keyboardNavigationActive && index === root.selectedIndex
-            color: isSelected ? Theme.primarySelected : widgetArea.containsMouse ? Theme.primaryHover : Theme.floatingWindowNestedSurface
-            border.color: isSelected ? Theme.primary : Theme.outlineMedium
-            border.width: isSelected ? Theme.outlineWidthFocused : Theme.layerOutlineWidth
+            implicitHeight: Theme.listItemTwoLineHeight
+            isSelected: root.keyboardNavigationActive && index === root.selectedIndex
+            Accessible.name: modelData.name || modelData.id
+            onClicked: root.addWidget(delegateRoot.modelData)
 
             Row {
                 anchors.fill: parent
@@ -51,13 +51,13 @@ WidgetPickerWindow {
                 spacing: Theme.spacingM
 
                 Rectangle {
-                    width: 44
-                    height: 44
+                    width: Theme.avatarSize
+                    height: Theme.avatarSize
                     radius: Theme.cornerRadius
-                    color: Theme.primarySelected
+                    color: Theme.withAlpha(Theme.primary, Theme.tonalTintAlpha)
                     anchors.verticalCenter: parent.verticalCenter
 
-                    DankIcon {
+                    DIcon {
                         anchors.centerIn: parent
                         name: delegateRoot.modelData.icon || "widgets"
                         size: Theme.iconSize
@@ -68,7 +68,7 @@ WidgetPickerWindow {
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: Theme.spacingXXS
-                    width: parent.width - 44 - Theme.iconSize - Theme.spacingM * 3
+                    width: parent.width - Theme.avatarSize - Theme.iconSizeMedium - Theme.spacingM * 3
 
                     Row {
                         spacing: Theme.spacingS
@@ -80,53 +80,19 @@ WidgetPickerWindow {
                             color: Theme.surfaceText
                         }
 
-                        Rectangle {
+                        PluginBadge {
                             visible: delegateRoot.modelData.featured || false
-                            width: featuredWidgetRow.implicitWidth + Theme.spacingXS * 2
-                            height: 18
-                            radius: Theme.fullRadius(width, height)
-                            color: Theme.withAlpha(Theme.secondary, 0.15)
-                            border.color: Theme.withAlpha(Theme.secondary, 0.4)
-                            border.width: Theme.outlineWidth
+                            iconName: "star"
+                            label: I18n.tr("featured")
+                            tone: Theme.secondary
                             anchors.verticalCenter: parent.verticalCenter
-
-                            Row {
-                                id: featuredWidgetRow
-                                anchors.centerIn: parent
-                                spacing: Theme.spacingXXS
-
-                                DankIcon {
-                                    name: "star"
-                                    size: 10
-                                    color: Theme.secondary
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-
-                                StyledText {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: I18n.tr("featured")
-                                    font.pixelSize: Theme.fontSizeSmall - 2
-                                    color: Theme.secondary
-                                    font.weight: Theme.fontWeightMedium
-                                }
-                            }
                         }
 
-                        Rectangle {
+                        PluginBadge {
                             visible: delegateRoot.modelData.type === "plugin"
-                            width: pluginLabel.implicitWidth + Theme.spacingXS * 2
-                            height: 18
-                            radius: Theme.fullRadius(width, height)
-                            color: Theme.withAlpha(Theme.secondary, 0.15)
+                            label: I18n.tr("Plugin")
+                            tone: Theme.secondary
                             anchors.verticalCenter: parent.verticalCenter
-
-                            StyledText {
-                                id: pluginLabel
-                                anchors.centerIn: parent
-                                text: I18n.tr("Plugin")
-                                font.pixelSize: Theme.fontSizeSmall - 2
-                                color: Theme.secondary
-                            }
                         }
                     }
 
@@ -142,27 +108,11 @@ WidgetPickerWindow {
                     }
                 }
 
-                DankIcon {
+                DIcon {
                     name: "add"
                     size: Theme.iconSizeMedium
                     color: Theme.primary
                     anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-
-            MouseArea {
-                id: widgetArea
-
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.addWidget(delegateRoot.modelData)
-            }
-
-            Behavior on color {
-                ColorAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Theme.standardEasing
                 }
             }
         }

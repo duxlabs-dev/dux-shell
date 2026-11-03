@@ -5,7 +5,7 @@ import qs.Modals
 import qs.Modals.Common
 import qs.Services
 
-DankModal {
+DModal {
     id: overlay
 
     signal floatingToggleRequested

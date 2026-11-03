@@ -4,9 +4,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/errdefs"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
 	"github.com/Wifx/gonetworkmanager/v2"
+	"github.com/duxlabs-dev/dux-shell/core/internal/errdefs"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 )
 
 func (b *NetworkManagerBackend) updatePrimaryConnection() error {
@@ -192,14 +192,7 @@ func forgetOnConnectFailure(reasonCode string, preExisting bool) bool {
 // With several adapters, state must follow the associated device, not whichever
 // enumerated first (#2460).
 func (b *NetworkManagerBackend) wifiDeviceForState() (gonetworkmanager.Device, gonetworkmanager.DeviceWireless) {
-	var fallbackDev gonetworkmanager.Device
-	if b.wifiDevice != nil {
-		fallbackDev = b.wifiDevice.(gonetworkmanager.Device)
-	}
-	var fallbackWireless gonetworkmanager.DeviceWireless
-	if b.wifiDev != nil {
-		fallbackWireless = b.wifiDev.(gonetworkmanager.DeviceWireless)
-	}
+	fallbackDev, fallbackWireless := b.selectedWiFiDevice()
 
 	snapshot := b.wifiDevicesSnapshot()
 	if len(snapshot) < 2 {
@@ -260,9 +253,7 @@ func (b *NetworkManagerBackend) updateWiFiState() error {
 
 	if connected {
 		if wireless == nil {
-			if err := b.ensureWiFiDevice(); err == nil && b.wifiDev != nil {
-				wireless = b.wifiDev.(gonetworkmanager.DeviceWireless)
-			}
+			wireless, _ = b.ensureWiFiDevice()
 		}
 		if wireless != nil {
 			activeAP, err := wireless.GetPropertyActiveAccessPoint()

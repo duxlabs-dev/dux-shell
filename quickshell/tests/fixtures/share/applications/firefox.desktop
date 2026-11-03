@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Firefox
-Exec=firefox %u
-Icon=firefox
-StartupWMClass=firefox
-Categories=Network;WebBrowser;

@@ -228,6 +228,7 @@ Singleton {
 
     property int refCount: 0
     property bool stateInitialized: false
+    property var _lastRawState: null
 
     property string credentialsToken: ""
     property string credentialsSSID: ""
@@ -330,9 +331,12 @@ Singleton {
 
     function addRef() {
         refCount++;
-        if (refCount === 1 && networkAvailable) {
+        if (refCount !== 1)
+            return;
+        if (_lastRawState)
+            syncLists(_lastRawState);
+        if (networkAvailable)
             startAutoScan();
-        }
     }
 
     function removeRef() {
@@ -350,7 +354,7 @@ Singleton {
         DMSService.sendRequest("network.getState", null, response => {
             if (response.result) {
                 updateState(response.result);
-                if (!initialStateFetched && response.result.wifiEnabled && (!response.result.wifiNetworks || response.result.wifiNetworks.length === 0)) {
+                if (refCount > 0 && !initialStateFetched && response.result.wifiEnabled && (!response.result.wifiNetworks || response.result.wifiNetworks.length === 0)) {
                     initialStateFetched = true;
                     Qt.callLater(() => scanWifi());
                 }
@@ -359,7 +363,7 @@ Singleton {
     }
 
     function keepUnchanged(previous, next) {
-        if (!Array.isArray(previous) || !Array.isArray(next))
+        if (!(previous instanceof Array) || !(next instanceof Array))
             return next;
         const byContent = new Map();
         for (const item of previous)
@@ -374,7 +378,41 @@ Singleton {
         return same ? previous : merged;
     }
 
+    function syncLists(state) {
+        ethernetDevices = keepUnchanged(ethernetDevices, state.ethernetDevices || []);
+        wiredConnections = keepUnchanged(wiredConnections, state.wiredConnections || []);
+        cellularDevices = keepUnchanged(cellularDevices, state.cellularDevices || []);
+        cellularConnections = keepUnchanged(cellularConnections, state.cellularConnections || []);
+
+        if (state.wifiNetworks) {
+            wifiNetworks = keepUnchanged(wifiNetworks, state.wifiNetworks);
+        }
+
+        if (!state.wifiNetworks && !state.savedWifiNetworks)
+            return;
+        const hasSavedWifiState = DMSService.apiVersion >= savedWifiStateApiVersion && state.savedWifiNetworks instanceof Array;
+        const sourceSavedNetworks = hasSavedWifiState ? state.savedWifiNetworks : (state.wifiNetworks || []).filter(network => network.saved);
+        const normalized = sourceSavedNetworks.map(network => Object.assign({}, network, {
+                saved: true,
+                outOfRange: hasSavedWifiState ? network.outOfRange === true : false
+            }));
+        const saved = keepUnchanged(savedWifiNetworks, normalized);
+        if (saved !== savedWifiNetworks) {
+            const mapping = {};
+            for (const network of saved) {
+                if (network?.ssid)
+                    mapping[network.ssid] = network.ssid;
+            }
+            savedConnections = saved;
+            savedWifiNetworks = saved;
+            ssidToConnectionName = mapping;
+        }
+
+        networksUpdated();
+    }
+
     function updateState(state) {
+        _lastRawState = state;
         const previousConnecting = isConnecting;
         const previousConnectingSSID = connectingSSID;
 
@@ -387,9 +425,6 @@ Singleton {
         ethernetInterface = state.ethernetDevice || "";
         ethernetConnected = state.ethernetConnected || false;
         ethernetConnectionUuid = state.ethernetConnectionUuid || "";
-        ethernetDevices = keepUnchanged(ethernetDevices, state.ethernetDevices || []);
-
-        wiredConnections = keepUnchanged(wiredConnections, state.wiredConnections || []);
 
         cellularIP = state.cellularIP || "";
         cellularInterface = state.cellularDevice || "";
@@ -397,8 +432,6 @@ Singleton {
         cellularEnabled = state.cellularEnabled !== undefined ? state.cellularEnabled : true;
         cellularHardwareEnabled = state.cellularHardwareEnabled !== undefined ? state.cellularHardwareEnabled : true;
         cellularConnectionUuid = state.cellularConnectionUuid || "";
-        cellularDevices = keepUnchanged(cellularDevices, state.cellularDevices || []);
-        cellularConnections = keepUnchanged(cellularConnections, state.cellularConnections || []);
 
         wifiIP = state.wifiIP || "";
         wifiInterface = state.wifiDevice || "";
@@ -447,34 +480,11 @@ Singleton {
             backendHotspotLastError = "";
         }
 
-        currentWifiSSID = state.wifiSSID || "";
-        wifiSignalStrength = state.wifiSignal || 0;
+        currentWifiSSID = wifiConnected ? (state.wifiSSID || "") : "";
+        wifiSignalStrength = wifiConnected ? (state.wifiSignal || 0) : 0;
 
-        if (state.wifiNetworks) {
-            wifiNetworks = keepUnchanged(wifiNetworks, state.wifiNetworks);
-        }
-
-        if (state.wifiNetworks || state.savedWifiNetworks) {
-            const hasSavedWifiState = DMSService.apiVersion >= savedWifiStateApiVersion && Array.isArray(state.savedWifiNetworks);
-            const sourceSavedNetworks = hasSavedWifiState ? state.savedWifiNetworks : (state.wifiNetworks || []).filter(network => network.saved);
-            const normalized = sourceSavedNetworks.map(network => Object.assign({}, network, {
-                    saved: true,
-                    outOfRange: hasSavedWifiState ? network.outOfRange === true : false
-                }));
-            const saved = keepUnchanged(savedWifiNetworks, normalized);
-            if (saved !== savedWifiNetworks) {
-                const mapping = {};
-                for (const network of saved) {
-                    if (network?.ssid)
-                        mapping[network.ssid] = network.ssid;
-                }
-                savedConnections = saved;
-                savedWifiNetworks = saved;
-                ssidToConnectionName = mapping;
-            }
-
-            networksUpdated();
-        }
+        if (refCount > 0)
+            syncLists(state);
 
         if (state.vpnProfiles) {
             vpnProfiles = keepUnchanged(vpnProfiles, state.vpnProfiles);
@@ -537,8 +547,8 @@ Singleton {
                 log.info("Successfully connected to", pendingConnectionSSID, "in", elapsed, "ms");
                 ToastService.showInfo(I18n.tr("Connected to %1", "wifi toast, %1 is the network name").arg(pendingConnectionSSID));
 
-                if (userPreference === "wifi" || userPreference === "auto") {
-                    setConnectionPriority("wifi");
+                if (userPreference === "wifi") {
+                    applyNetworkPreference("wifi");
                 }
 
                 pendingConnectionSSID = "";
@@ -864,10 +874,13 @@ Singleton {
     function setNetworkPreference(preference) {
         if (!networkAvailable)
             return;
+        SettingsData.set("networkPreference", preference);
+        applyNetworkPreference(preference);
+    }
+
+    function applyNetworkPreference(preference) {
         changingPreference = true;
         targetPreference = preference;
-        SettingsData.set("networkPreference", preference);
-
         DMSService.sendRequest("network.preference.set", {
             preference: preference
         }, response => {
@@ -878,21 +891,6 @@ Singleton {
                 log.warn("Failed to set network preference:", response.error);
             }
         });
-    }
-
-    function setConnectionPriority(type) {
-        if (type === "wifi") {
-            setNetworkPreference("wifi");
-        } else if (type === "ethernet") {
-            setNetworkPreference("ethernet");
-        } else if (type === "cellular") {
-            setNetworkPreference("cellular");
-        }
-    }
-
-    function connectToWifiAndSetPreference(ssid, password, username = "", anonymousIdentity = "", domainSuffixMatch = "", hidden = false, eapMethod = "", phase2Auth = "") {
-        connectToWifi(ssid, password, username, anonymousIdentity, domainSuffixMatch, hidden, eapMethod, phase2Auth);
-        setNetworkPreference("wifi");
     }
 
     function toggleNetworkConnection(type) {
@@ -1359,7 +1357,7 @@ Singleton {
     function hotspotErrorMessage(code) {
         switch (code) {
         case "hotspot-ip-config-failed":
-            return I18n.tr("IP sharing setup failed. Check that dnsmasq is installed.", "hotspot IP configuration failure message");
+            return I18n.tr("IP sharing setup failed. Check that %1 is installed.", "hotspot IP configuration failure message, %1 is a package name").arg("dnsmasq");
         case "hotspot-supplicant-failed":
             return I18n.tr("The WiFi adapter could not start access point mode.", "hotspot adapter failure message");
         default:

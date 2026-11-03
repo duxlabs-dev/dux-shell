@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 SettingsRow {
     id: root
@@ -26,7 +26,7 @@ SettingsRow {
     modified: hasCustomAlias
     onResetRequested: AudioService.removeDeviceAlias(deviceNode.name)
 
-    DankActionButton {
+    DActionButton {
         visible: root.showHideButton
         iconName: root.isHidden ? "visibility" : "visibility_off"
         iconSize: Theme.iconSizeMedium
@@ -34,7 +34,7 @@ SettingsRow {
         onClicked: root.hideRequested(root.deviceNode)
     }
 
-    DankActionButton {
+    DActionButton {
         visible: !root.isHidden
         iconName: "edit"
         iconSize: Theme.iconSizeMedium

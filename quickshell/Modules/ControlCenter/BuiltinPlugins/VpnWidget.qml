@@ -8,10 +8,6 @@ import qs.Modules.Plugins
 PluginComponent {
     id: root
 
-    Ref {
-        service: DMSNetworkService
-    }
-
     readonly property bool vpnActivating: DMSNetworkService.vpnIsBusy || DMSNetworkService.activeState === "activating"
     readonly property bool vpnActivated: DMSNetworkService.connected && DMSNetworkService.activeState === "activated"
 

@@ -42,7 +42,7 @@ test("a custom duration without custom speed is dropped", () => {
 });
 
 test("saved settings keep only changed durations and no speed keys", () => {
-    const saved = store.toJson(load({ animationSpeed: 1, modalAnimationSpeed: 3 }));
+    const saved = store.toJson(load({ animationSpeed: 1, modalAnimationSpeed: 3 }), new Set());
     assert.equal(saved.modalAnimationDuration, 500);
     assert.equal(saved.animationDuration ?? store.SpecModule.SPEC.animationDuration.def, 250);
     for (const key of removedKeys)

@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Column {
@@ -22,24 +22,73 @@ Column {
             settingKey: "profileImage"
             tags: ["user", "account", "profile", "avatar", "image"]
 
-            leading: DankCircularImage {
+            leading: DCircularImage {
                 width: SettingsMetrics.avatarSize
+                ringWidth: Theme.avatarRingWidth
+                ringColor: Theme.avatarRingColor
                 height: width
                 imageSource: PortalService.profileImage
-                fallbackIcon: "person"
+                fallbackIcon: "material:person"
             }
 
-            DankActionButton {
+            DActionButton {
                 iconName: "edit"
                 tooltipText: I18n.tr("Select Profile Image", "profile image file browser title")
                 onClicked: root.parentModal?.openProfileBrowser()
             }
 
-            DankActionButton {
+            DActionButton {
                 iconName: "close"
                 Accessible.name: I18n.tr("Clear")
                 enabled: PortalService.profileImage !== ""
                 onClicked: PortalService.setProfileImage("")
+            }
+        }
+
+        SettingsDropdownRow {
+            id: ringRow
+
+            readonly property var rings: [
+                {
+                    "value": "none",
+                    "label": I18n.tr("None")
+                },
+                {
+                    "value": "outline",
+                    "label": I18n.tr("Outline")
+                },
+                {
+                    "value": "primary",
+                    "label": I18n.tr("Primary")
+                },
+                {
+                    "value": "secondary",
+                    "label": I18n.tr("Secondary")
+                },
+                {
+                    "value": "tertiary",
+                    "label": I18n.tr("Tertiary")
+                }
+            ]
+
+            settingKey: "avatarRing"
+            tags: ["user", "account", "profile", "avatar", "ring", "border", "color"]
+            text: I18n.tr("Avatar ring", "user accounts dropdown, colored ring around the profile picture")
+            options: rings.map(ring => ring.label)
+            optionColorMap: {
+                const map = {};
+                for (const ring of rings) {
+                    if (ring.value === "none")
+                        continue;
+                    map[ring.label] = ring.value === "outline" ? Theme.surfaceVariant : Theme.roleColor(ring.value);
+                }
+                return map;
+            }
+            currentValue: rings.find(ring => ring.value === SettingsData.avatarRing)?.label ?? ""
+            onValueChanged: value => {
+                const ring = rings.find(ring => ring.label === value);
+                if (ring)
+                    SettingsData.set("avatarRing", ring.value);
             }
         }
     }

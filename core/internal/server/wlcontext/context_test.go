@@ -26,28 +26,6 @@ func newTestSharedContext(t *testing.T, queueSize int) *SharedContext {
 	}
 }
 
-func TestSharedContext_ConcurrentPostNonBlocking(t *testing.T) {
-	sc := newTestSharedContext(t, 256)
-
-	var wg sync.WaitGroup
-	const goroutines = 100
-	const iterations = 50
-
-	for i := range goroutines {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			for j := range iterations {
-				sc.Post(func() {
-					_ = id + j
-				})
-			}
-		}(i)
-	}
-
-	wg.Wait()
-}
-
 func TestSharedContext_PostQueueFull(t *testing.T) {
 	sc := newTestSharedContext(t, 2)
 

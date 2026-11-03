@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
+import qs.Modules.Settings.Widgets
 
 WidgetPickerWindow {
     id: root
@@ -33,6 +34,8 @@ WidgetPickerWindow {
     widgetDelegate: rowDelegate
 
     onWidgetChosen: widget => {
+        if (widget.disabled)
+            return;
         widgetSelected(widget.id, targetSection);
         hide();
     }
@@ -47,25 +50,23 @@ WidgetPickerWindow {
     Component {
         id: rowDelegate
 
-        Rectangle {
+        DListItem {
             width: ListView.view.width
-            height: Math.max(60, textColumn.implicitHeight + 24)
-            radius: Theme.cornerRadius
-            property bool isSelected: root.keyboardNavigationActive && index === root.selectedIndex
-            color: isSelected ? Theme.withAlpha(Theme.primary, root.blurActive ? 0.22 : 0.16) : widgetArea.containsMouse ? Theme.withAlpha(Theme.primary, root.blurActive ? 0.14 : 0.08) : Theme.floatingWindowNestedSurface
-            border.color: isSelected ? Theme.primary : Theme.outlineMedium
-            border.width: isSelected ? Theme.outlineWidthFocused : Theme.layerOutlineWidth
-            antialiasing: true
+            implicitHeight: Math.max(SettingsMetrics.rowMinHeight, textColumn.implicitHeight + Theme.spacingM * 2)
+            isSelected: root.keyboardNavigationActive && index === root.selectedIndex && !modelData.disabled
+            enabled: !modelData.disabled
+            Accessible.name: modelData.text
+            onClicked: root.widgetChosen(modelData)
 
             Row {
                 anchors.fill: parent
                 anchors.margins: Theme.spacingM
                 spacing: Theme.spacingM
 
-                DankIcon {
+                DIcon {
                     name: modelData.icon
                     size: Theme.iconSize
-                    color: Theme.primary
+                    color: modelData.disabled ? Theme.onSurface_38 : Theme.primary
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
@@ -79,7 +80,7 @@ WidgetPickerWindow {
                         text: modelData.text
                         font.pixelSize: Theme.fontSizeMedium
                         font.weight: Theme.fontWeightMedium
-                        color: Theme.surfaceText
+                        color: modelData.disabled ? Theme.onSurface_38 : Theme.surfaceText
                         elide: Text.ElideRight
                         width: parent.width
                         wrapMode: Text.WordWrap
@@ -88,34 +89,18 @@ WidgetPickerWindow {
                     StyledText {
                         text: modelData.description
                         font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.outline
+                        color: modelData.disabled ? Theme.onSurface_38 : Theme.outline
                         elide: Text.ElideRight
                         width: parent.width
                         wrapMode: Text.WordWrap
                     }
                 }
 
-                DankIcon {
+                DIcon {
                     name: "add"
                     size: Theme.iconSizeMedium
-                    color: Theme.primary
+                    color: modelData.disabled ? Theme.onSurface_38 : Theme.primary
                     anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-
-            MouseArea {
-                id: widgetArea
-
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.widgetChosen(modelData)
-            }
-
-            Behavior on color {
-                ColorAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Theme.standardEasing
                 }
             }
         }

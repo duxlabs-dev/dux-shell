@@ -6,7 +6,9 @@ import Quickshell.Services.Notifications
 import qs.Common
 import qs.Modules.Notifications
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
+import qs.DCommon.Common as DCommon
 
 PanelWindow {
     id: win
@@ -38,16 +40,17 @@ PanelWindow {
     required property string notificationId
     readonly property bool hasValidData: notificationData && notificationData.notification
     readonly property alias hovered: cardHoverHandler.hovered
-    readonly property alias swipeActive: content.swipeActive
-    readonly property alias swipeDismissing: content.swipeDismissing
+    readonly property bool swipeActive: swipe.magnetActive
+    readonly property bool swipeDismissing: swipe.dismissing
     readonly property bool swipeDismissTowardEdge: {
-        if (content.swipeDismissing)
-            return _swipeDismissesTowardFrameEdge();
-        if (content.swipeActive)
-            return content.swipeOffset * _frameEdgeSwipeDirection() > 0;
+        if (swipe.dismissing)
+            return swipe.dismissDirection === _frameEdgeSwipeDirection();
+        if (swipe.magnetActive)
+            return swipe.offset * _frameEdgeSwipeDirection() > 0;
         return false;
     }
     readonly property real screenY: stackMotion.value
+    readonly property real stackTarget: stackMotion.target
     readonly property bool stackMoving: stackMotion.running
     property real presentationProgress: 0
     property real chromeRelease: 0
@@ -58,6 +61,7 @@ PanelWindow {
     readonly property bool cardShown: presenting && (presentationProgress > 0 || !exiting)
     readonly property bool layoutPinned: !exiting && (hovered || contextMenuActive || swipeActive)
     property bool exiting: false
+    property var exitSnapshot: null
     property bool exitStarted: false
     property bool collapseChromeOnExit: false
     property bool _isDestroying: false
@@ -121,6 +125,7 @@ PanelWindow {
         }
         enterAnimation.stop();
         enterDelay.stop();
+        exitSnapshot = snapshotNotification(notificationData);
         exiting = true;
         if (NotificationService.removeFromVisibleNotifications)
             NotificationService.removeFromVisibleNotifications(win.notificationData);
@@ -161,12 +166,34 @@ PanelWindow {
         _isDestroying = true;
         enterAnimation.stop();
         exitAnim.stop();
-        swipeDismissAnim.stop();
         enterDelay.stop();
         exitWatchdog.stop();
         wrapperConn.enabled = false;
         wrapperConn.target = null;
         win.exitFinished();
+    }
+
+    // The wrapper is destroyed as soon as its notification closes, which would blank the card mid-exit.
+    function snapshotNotification(data) {
+        if (!data)
+            return null;
+        return {
+            "appName": data.appName,
+            "appIcon": data.appIcon,
+            "desktopEntry": data.desktopEntry,
+            "summary": data.summary,
+            "body": data.body,
+            "htmlBody": data.htmlBody,
+            "image": data.image,
+            "hasDisplayImage": data.hasDisplayImage,
+            "displayImage": data.displayImage,
+            "persistedImagePath": data.persistedImagePath,
+            "timeStr": data.timeStr,
+            "urgency": data.urgency,
+            "actions": Array.from(data.actions || [], action => ({
+                        "text": action.text
+                    }))
+        };
     }
 
     function closeTransientUi() {
@@ -213,7 +240,7 @@ PanelWindow {
     readonly property bool contentAnchorsTop: isTopCenter || SettingsData.notificationPopupPosition === SettingsData.Position.Top || SettingsData.notificationPopupPosition === SettingsData.Position.Left
     readonly property real renderedContentOffsetY: contentAnchorsTop ? 0 : Math.max(0, allocatedAlignedHeight - renderedAlignedHeight)
     readonly property real contentTop: Theme.snap(windowShadowPad + renderedContentOffsetY, dpr)
-    implicitWidth: contentImplicitWidth + (windowShadowPad * 2)
+    implicitWidth: contentImplicitWidth + (windowShadowPad * 2) + edgeBleed
     implicitHeight: allocatedAlignedHeight + (windowShadowPad * 2)
 
     function syncInlineTargetHeight() {
@@ -330,6 +357,14 @@ PanelWindow {
     readonly property real maxPopupShadowOffsetYPx: Math.max(Math.abs(Theme.elevationOffsetY(Theme.elevationLevel3, 6)), Math.abs(Theme.elevationOffsetY(Theme.elevationLevel4, 8)))
     readonly property bool popupWindowShadowActive: Theme.elevationEnabled && SettingsData.notificationPopupShadowEnabled && !connectedFrameMode
     readonly property real windowShadowPad: popupWindowShadowActive ? Theme.snap(Math.max(16, maxPopupShadowBlurPx + Math.max(maxPopupShadowOffsetXPx, maxPopupShadowOffsetYPx) + 8), dpr) : 0
+    readonly property bool bleedsLeft: _frameEdgeSwipeDirection() < 0
+    readonly property real edgeBleed: {
+        if (isCenterPosition || !CompositorService.frameWindowVisibleForScreen(screen))
+            return 0;
+        const sideMargin = bleedsLeft ? getLeftMargin() : getRightMargin();
+        return Math.max(0, Theme.snap(sideMargin, dpr) - windowShadowPad);
+    }
+    readonly property real contentWindowX: Theme.snap(windowShadowPad + (bleedsLeft ? edgeBleed : 0), dpr)
 
     anchors.top: true
     anchors.left: true
@@ -371,7 +406,7 @@ PanelWindow {
             id: "notification-popup",
             screenPreferences: [screen.name],
             autoHide: false
-        });
+        }, true);
     }
 
     function _frameEdgeInset(side) {
@@ -492,7 +527,7 @@ PanelWindow {
     function getWindowLeftMargin() {
         if (!screen)
             return 0;
-        return Theme.snap(getContentX() - windowShadowPad, dpr);
+        return Theme.snap(getContentX() - contentWindowX, dpr);
     }
 
     function getWindowTopMargin() {
@@ -501,32 +536,24 @@ PanelWindow {
         return Theme.snap(getAllocatedContentY() - windowShadowPad, dpr);
     }
 
-    function _swipeDismissTarget() {
-        return (content.swipeDismissDirection < 0 ? -1 : 1) * content.width;
-    }
-
     function _frameEdgeSwipeDirection() {
         const popupPos = SettingsData.notificationPopupPosition;
         return (popupPos === SettingsData.Position.Left || popupPos === SettingsData.Position.Bottom) ? -1 : 1;
     }
 
-    function _swipeDismissesTowardFrameEdge() {
-        return content.swipeDismissDirection === _frameEdgeSwipeDirection();
-    }
-
     function popupChromeMotionActive() {
-        return presentationProgress < 1 || exiting || content.swipeActive || content.swipeDismissing || Math.abs(content.swipeOffset) > 0.5;
+        return presentationProgress < 1 || exiting || swipe.magnetActive || swipe.dismissing || Math.abs(swipe.offset) > 0.5;
     }
 
     function swipeReleaseProgress() {
-        if (content.swipeDismissing || (content.swipeActive && content.swipeOffset * _frameEdgeSwipeDirection() > 0))
-            return Math.max(0, Math.min(1, Math.abs(content.swipeOffset) / Math.max(1, content.swipeTravelDistance)));
+        if (swipe.dismissing || (swipe.magnetActive && swipe.offset * _frameEdgeSwipeDirection() > 0))
+            return Math.max(0, Math.min(1, Math.abs(swipe.offset) / Math.max(1, content.width)));
         return 0;
     }
 
     readonly property bool screenValid: win.screen && !_isDestroying
     readonly property real dpr: screenValid ? CompositorService.getScreenScale(win.screen) : 1
-    readonly property real alignedWidth: Theme.px(Math.max(0, implicitWidth - (windowShadowPad * 2)), dpr)
+    readonly property real alignedWidth: Theme.px(Math.max(0, implicitWidth - (windowShadowPad * 2) - edgeBleed), dpr)
     readonly property real alignedHeight: renderedAlignedHeight
     onScreenYChanged: if (connectedFrameMode)
         popupChromeGeometryChanged()
@@ -564,33 +591,15 @@ PanelWindow {
         id: content
         parent: slideClip
 
-        x: Theme.snap(windowShadowPad, dpr)
+        x: win.contentWindowX
         y: win.contentTop - slideClip.y
         width: alignedWidth
         height: alignedHeight
         visible: win.cardShown && !chromeOnlyExit
         transformOrigin: Item.Center
 
-        property real swipeOffset: 0
-        property real swipeDismissDirection: 1
         property bool chromeOnlyExit: false
-        readonly property real dismissThreshold: width * NotificationMetrics.swipeThreshold
-        readonly property real swipeFadeStartRatio: NotificationMetrics.swipeFadeStart
-        readonly property real swipeTravelDistance: width
-        readonly property real swipeFadeStartOffset: swipeTravelDistance * swipeFadeStartRatio
-        readonly property real swipeFadeDistance: Math.max(1, swipeTravelDistance - swipeFadeStartOffset)
-        readonly property bool swipeActive: swipeDragHandler.active
-        property bool swipeDismissing: false
-        onSwipeDismissingChanged: {
-            if (!win.connectedFrameMode)
-                return;
-            win.popupHeightChanged();
-            win.popupChromeGeometryChanged();
-        }
-        onSwipeOffsetChanged: {
-            if (win.connectedFrameMode)
-                win.popupChromeGeometryChanged();
-        }
+        readonly property real swipeFadeStart: width * NotificationMetrics.swipeFadeStart
 
         readonly property bool shadowsAllowed: win.popupWindowShadowActive
         readonly property var elevLevel: Theme.elevationLevel2
@@ -659,7 +668,7 @@ PanelWindow {
             anchors.fill: parent
             anchors.margins: content.cardInset
             radius: win.connectedFrameMode ? Theme.connectedSurfaceRadius : NotificationMetrics.popupRadius
-            color: Theme.notificationFloatingSurface
+            color: "transparent"
 
             HoverHandler {
                 id: cardHoverHandler
@@ -682,7 +691,7 @@ PanelWindow {
                 radius: cardSurface.radius
                 color: "transparent"
 
-                DankFlickable {
+                DFlickable {
                     anchors.fill: parent
                     anchors.bottomMargin: win.timeoutRailClearance
                     contentHeight: notificationCard.targetHeight
@@ -691,19 +700,21 @@ PanelWindow {
                     NotificationCard {
                         id: notificationCard
                         surfaceColor: Theme.notificationFloatingSurface
-                        chipColor: Theme.chipSurface
+                        chipColor: Theme.notificationChipSurface
                         width: parent.width
                         height: win.inlineHeightAnimating ? Math.min(targetHeight, cardSurface.height - win.timeoutRailClearance) : targetHeight
-                        notificationData: win.notificationData
+                        notificationData: win.exitSnapshot ?? win.notificationData
                         descriptionExpanded: win.descriptionExpanded
                         privacyMode: SettingsData.notificationPopupPrivacyMode
                         bodyInvokesAction: win.bodyClickInvokesAction
                         persistImage: true
                         showClose: true
+                        revealControls: win.hovered || win.contextMenuActive
+                        contentOpacity: swipe.contentOpacity
                         dismissText: I18n.tr("Clear")
                         animateHeight: false
                         outerRadius: win.connectedFrameMode ? Theme.connectedSurfaceRadius : NotificationMetrics.popupRadius
-                        color: Theme.notificationFloatingSurface
+                        color: "transparent"
                         onExpandRequested: win.descriptionExpanded = !win.descriptionExpanded
                         onCloseRequested: win.dismissPopupReliably()
                         onDismissRequested: {
@@ -799,71 +810,22 @@ PanelWindow {
             }
         }
 
-        DragHandler {
-            id: swipeDragHandler
-            target: null
-            xAxis.enabled: true
-            yAxis.enabled: false
-
-            onActiveChanged: {
-                if (active || win.exiting || content.swipeDismissing)
-                    return;
-
-                if (Math.abs(content.swipeOffset) > content.dismissThreshold) {
-                    content.swipeDismissDirection = content.swipeOffset < 0 ? -1 : 1;
-                    content.swipeDismissing = true;
-                    swipeDismissAnim.start();
-                } else {
-                    content.swipeOffset = 0;
-                }
-            }
-
-            onTranslationChanged: {
-                if (win.exiting || content.swipeDismissing)
-                    return;
-
-                content.swipeOffset = translation.x;
-            }
-        }
-
+        // The window edge hard-clips the surface as it leaves, so fade the shell out over the last stretch
         opacity: {
-            const swipeAmount = Math.abs(content.swipeOffset);
+            const swipeAmount = Math.abs(swipe.offset);
             const revealOpacity = win.directionalEffect ? 1 : win.presentationProgress;
-            if (swipeAmount <= content.swipeFadeStartOffset)
+            if (swipeAmount <= content.swipeFadeStart)
                 return revealOpacity;
-            const fadeProgress = (swipeAmount - content.swipeFadeStartOffset) / content.swipeFadeDistance;
+            const fadeProgress = (swipeAmount - content.swipeFadeStart) / Math.max(1, content.width - content.swipeFadeStart);
             return Math.max(0, 1 - fadeProgress) * revealOpacity;
         }
 
         scale: win.directionalEffect ? 1 : Theme.effectScaleCollapsed + (1 - Theme.effectScaleCollapsed) * win.presentationProgress
 
-        Behavior on swipeOffset {
-            enabled: !content.swipeActive && !content.swipeDismissing
-            NumberAnimation {
-                duration: NotificationMetrics.animationsEnabled ? Theme.notificationExitDuration : 0
-                easing.type: Theme.standardEasing
-            }
-        }
-
-        NumberAnimation {
-            id: swipeDismissAnim
-            target: content
-            property: "swipeOffset"
-            to: win._swipeDismissTarget()
-            duration: NotificationMetrics.animationsEnabled ? Theme.notificationExitDuration : 0
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: NotificationMetrics.dismissCurve
-            onFinished: {
-                content.chromeOnlyExit = true;
-                win.startExit();
-                NotificationService.dismissNotification(notificationData);
-            }
-        }
-
         transform: [
             Translate {
                 id: swipeTx
-                x: content.swipeOffset
+                x: swipe.offset
                 y: 0
             },
             Translate {
@@ -882,7 +844,40 @@ PanelWindow {
         ]
     }
 
-    DankAnim {
+    NotificationSwipeGroup {
+        id: swipeGroup
+    }
+
+    // Sits on the untranslated card footprint: inside content the handlers would lose the pointer once the card slides past them,
+    // and above content so they see the gesture before DFlickable's blocking vertical handler
+    NotificationSwipeRow {
+        id: swipe
+        parent: slideClip
+        index: 0
+        x: content.x
+        y: content.y
+        width: content.width
+        height: content.height
+        visible: content.visible
+        group: win.exiting ? null : swipeGroup
+        onOffsetChanged: {
+            if (win.connectedFrameMode)
+                win.popupChromeGeometryChanged();
+        }
+        onDismissingChanged: {
+            if (!win.connectedFrameMode)
+                return;
+            win.popupHeightChanged();
+            win.popupChromeGeometryChanged();
+        }
+        onDismissed: {
+            content.chromeOnlyExit = true;
+            win.startExit();
+            NotificationService.dismissNotification(win.notificationData);
+        }
+    }
+
+    DCommon.DAnim {
         id: enterAnimation
         target: win
         property: "presentationProgress"
@@ -898,7 +893,7 @@ PanelWindow {
     SequentialAnimation {
         id: exitAnim
 
-        DankAnim {
+        DCommon.DAnim {
             target: win
             property: "presentationProgress"
             to: 0
@@ -906,7 +901,7 @@ PanelWindow {
             easing.bezierCurve: NotificationMetrics.exitCurve
         }
 
-        DankAnim {
+        DCommon.DAnim {
             target: win
             property: "chromeRelease"
             to: 1
@@ -952,7 +947,7 @@ PanelWindow {
         repeat: false
         onTriggered: {
             if (notificationData && notificationData.timer && !contextMenuActive && !hovered && !exiting && !_isDestroying)
-                notificationData.timer.restart();
+                notificationData.timer.start();
         }
     }
 
@@ -988,6 +983,7 @@ PanelWindow {
             appName: notificationData?.appName ?? ""
             desktopEntry: notificationData?.desktopEntry ?? ""
             dismissText: notificationCard.dismissText
+            notification: notificationData
             onAppMuted: {
                 if (notificationData && !win.exiting)
                     NotificationService.dismissNotification(notificationData);

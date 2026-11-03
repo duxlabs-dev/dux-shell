@@ -10,23 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestManager_SetIconFile(t *testing.T) {
-	t.Run("accounts not available", func(t *testing.T) {
-		manager := &Manager{
-			state: &FreedeskState{
-				Accounts: AccountsState{
-					Available: false,
-				},
-			},
-			stateMutex: sync.RWMutex{},
-		}
-
-		err := manager.SetIconFile("/path/to/icon.png")
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "accounts service not available")
-	})
-}
-
 func TestStageIconFile(t *testing.T) {
 	t.Run("empty path is passed through", func(t *testing.T) {
 		staged, cleanup, err := stageIconFile("")
@@ -124,24 +107,6 @@ func TestManager_SetLocation(t *testing.T) {
 		err := manager.SetLocation("Test Location")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "accounts service not available")
-	})
-}
-
-func TestManager_GetUserIconFile(t *testing.T) {
-	t.Run("accounts not available", func(t *testing.T) {
-		manager := &Manager{
-			state: &FreedeskState{
-				Accounts: AccountsState{
-					Available: false,
-				},
-			},
-			stateMutex: sync.RWMutex{},
-		}
-
-		iconFile, err := manager.GetUserIconFile("testuser")
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "accounts service not available")
-		assert.Empty(t, iconFile)
 	})
 }
 

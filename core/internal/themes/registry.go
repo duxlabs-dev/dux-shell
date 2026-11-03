@@ -7,7 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/registries"
+	"github.com/duxlabs-dev/dux-shell/core/internal/gitssh"
+	"github.com/duxlabs-dev/dux-shell/core/internal/registries"
 	"github.com/go-git/go-git/v6"
 	"github.com/spf13/afero"
 )
@@ -157,8 +158,9 @@ type realGitClient struct{}
 
 func (g *realGitClient) PlainClone(path string, url string) error {
 	_, err := git.PlainClone(path, &git.CloneOptions{
-		URL:      url,
-		Progress: os.Stdout,
+		URL:           url,
+		Progress:      os.Stdout,
+		ClientOptions: gitssh.ClientOptions(),
 	})
 	return err
 }
@@ -174,7 +176,7 @@ func (g *realGitClient) Pull(path string) error {
 		return err
 	}
 
-	err = worktree.Pull(&git.PullOptions{})
+	err = worktree.Pull(&git.PullOptions{ClientOptions: gitssh.ClientOptions()})
 	if err != nil && err.Error() != "already up-to-date" {
 		return err
 	}
@@ -211,10 +213,14 @@ func NewRegistry() (*Registry, error) {
 }
 
 func NewRegistryWithFs(fs afero.Fs) (*Registry, error) {
+	sources, err := registries.Active(fs)
+	if err != nil {
+		return nil, err
+	}
 	return &Registry{
 		fs:         fs,
 		cacheDir:   getCacheDir(),
-		registries: registries.Load(fs),
+		registries: sources,
 		git:        &realGitClient{},
 	}, nil
 }
@@ -314,6 +320,12 @@ func (r *Registry) resetLegacyCache() {
 // declaration order (first occurrence of an ID wins). A failing registry is
 // reported in the joined error but does not block the others.
 func (r *Registry) Update() error {
+	unlock, err := registries.LockCache()
+	if err != nil {
+		return err
+	}
+	defer unlock()
+
 	r.resetLegacyCache()
 	r.themes = []Theme{}
 	seen := make(map[string]struct{})
@@ -405,6 +417,9 @@ func (r *Registry) GetThemeSourcePath(themeID string) string {
 			return candidate
 		}
 	}
+	if len(r.registries) == 0 {
+		return ""
+	}
 	// Fallback to first registry (legacy path semantics).
 	return filepath.Join(r.cacheDirFor(r.registries[0]), "themes", themeID, "theme.json")
 }
@@ -415,6 +430,9 @@ func (r *Registry) GetThemeDir(themeID string) string {
 		if exists, _ := afero.DirExists(r.fs, candidate); exists {
 			return candidate
 		}
+	}
+	if len(r.registries) == 0 {
+		return ""
 	}
 	return filepath.Join(r.cacheDirFor(r.registries[0]), "themes", themeID)
 }

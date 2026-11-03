@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -16,9 +17,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/dank16"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/log"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/utils"
+	"github.com/duxlabs-dev/dux-shell/core/internal/dank16"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/godbus/dbus/v5"
 	"github.com/lucasb-eyer/go-colorful"
 )
@@ -82,15 +83,6 @@ var templateRegistry = []TemplateDef{
 	{ID: "zed", Commands: []string{"zed", "zeditor", "zedit"}, ConfigFile: "zed.toml"},
 }
 
-func (c *ColorMode) GTKTheme() string {
-	switch *c {
-	case ColorModeDark:
-		return "adw-gtk3-dark"
-	default:
-		return "adw-gtk3"
-	}
-}
-
 var (
 	matugenVersionMu      sync.Mutex
 	matugenVersionOK      bool
@@ -119,6 +111,8 @@ type Options struct {
 	StockColors         string
 	SyncModeWithPortal  bool
 	TerminalsAlwaysDark bool
+	TerminalOpacity     int
+	TerminalPalette     string
 	SkipTemplates       string
 	AppChecker          utils.AppChecker
 }
@@ -176,8 +170,8 @@ func PreviewSchemes(sourceColor string, contrast float64, imagePath, spec string
 
 	previews := make(map[string]SchemePreview, len(previewSchemeTypes)+1)
 	for _, schemeType := range previewSchemeTypes {
-		if spec == Spec2025 && SpecSupportsScheme(schemeType) {
-			colors, err := GenerateSpecColors(sourceColor, schemeType, contrast, ColorModeDark, Spec2025)
+		if UsesSpecGenerator(spec, schemeType) {
+			colors, err := GenerateSpecColors(sourceColor, schemeType, contrast, ColorModeDark, spec)
 			if err != nil {
 				return nil, fmt.Errorf("preview %s: %w", schemeType, err)
 			}
@@ -424,8 +418,9 @@ func buildOnce(opts *Options) (bool, error) {
 			primaryLight = primaryDark
 		}
 
-		dank16JSON = generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode)
-		importData := fmt.Sprintf(`{"colors": %s, "dank16": %s}`, opts.StockColors, dank16JSON)
+		dank16JSON = generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode, "")
+		dank16TermJSON := generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode, opts.TerminalPalette)
+		importData := fmt.Sprintf(`{"colors": %s, "dank16": %s, "dank16term": %s}`, opts.StockColors, dank16JSON, dank16TermJSON)
 		importArgs = []string{"--import-json-string", importData}
 
 		log.Info("Running matugen color hex with stock color overrides")
@@ -462,14 +457,14 @@ func buildOnce(opts *Options) (bool, error) {
 		// overrides matugen's own roles through the import, so templates,
 		// {{image}} and the user's own config keep working unchanged.
 		var specColors string
-		if opts.Spec == Spec2025 && SpecSupportsScheme(opts.MatugenType) {
+		if UsesSpecGenerator(opts.Spec, opts.MatugenType) {
 			seed := opts.Value
 			if opts.Kind != "hex" {
 				seed = extractMatugenColor(matJSON, "source_color", "dark")
 			}
-			specColors, err = GenerateSpecColors(seed, opts.MatugenType, opts.Contrast, opts.Mode, Spec2025)
+			specColors, err = GenerateSpecColors(seed, opts.MatugenType, opts.Contrast, opts.Mode, opts.Spec)
 			if err != nil {
-				return false, fmt.Errorf("spec 2025 palette failed: %w", err)
+				return false, fmt.Errorf("spec %s palette failed: %w", opts.Spec, err)
 			}
 		}
 
@@ -493,9 +488,10 @@ func buildOnce(opts *Options) (bool, error) {
 			primaryLight = primaryDark
 		}
 
-		injections := InjectedPalettes(opts.ConfigDir, sourceImage, opts.Mode)
-
-		dank16JSON = generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode)
+		dank16JSON = generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode, "")
+		// The terminal palette only reaches the terminal templates; editor themes and user templates keep dank16.
+		dank16Term := paletteInjection{Namespace: "dank16term", JSON: generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight, opts.Mode, opts.TerminalPalette)}
+		injections := append([]paletteInjection{dank16Term}, InjectedPalettes(opts.ConfigDir, sourceImage, opts.Mode)...)
 		importArgs = []string{"--import-json-string", buildImportData(dank16JSON, sourceImage, specColors, injections)}
 
 		log.Infof("Running matugen %s with dank16 injection", opts.Kind)
@@ -520,6 +516,7 @@ func buildOnce(opts *Options) (bool, error) {
 	if err := renderTemplates(opts, args, tmpDir); err != nil {
 		return false, err
 	}
+	signalTerminals(opts)
 	if !changed {
 		return false, nil
 	}
@@ -531,7 +528,12 @@ func buildOnce(opts *Options) (bool, error) {
 		default:
 			syncAccentColor(primaryDark)
 		}
-		refreshGTKTheme(opts.Mode)
+		// Switch the mode before pulsing so apps following it never show the new
+		// colors in the old mode; the pulse reaches apps that pin their own scheme
+		if opts.SyncModeWithPortal {
+			syncColorScheme(opts.Mode)
+		}
+		pulseReducedMotion()
 		refreshGTKColorScheme()
 	}
 
@@ -552,7 +554,6 @@ func buildOnce(opts *Options) (bool, error) {
 		}
 	}
 
-	signalTerminals(opts)
 	if !opts.ShouldSkipTemplate("fcitx5") && appExists(opts.AppChecker, []string{"fcitx5"}, nil) {
 		refreshFcitx5()
 	}
@@ -646,7 +647,7 @@ func userConfigSection(opts *Options) string {
 	if err != nil {
 		return "[config]\n\n"
 	}
-	section := extractTOMLSection(string(data), "[config]", "[templates]")
+	section := extractTOMLSection(string(data), "[config]", "\n[templates")
 	if section == "" {
 		return "[config]\n\n"
 	}
@@ -692,12 +693,7 @@ output_path = '%s'
 
 		switch tmpl.Kind {
 		case TemplateKindGTK:
-			switch opts.Mode {
-			case ColorModeLight:
-				appendConfig(opts, cfgFile, nil, nil, nil, "gtk3-light.toml")
-			default:
-				appendConfig(opts, cfgFile, nil, nil, nil, "gtk3-dark.toml")
-			}
+			appendConfig(opts, cfgFile, nil, nil, nil, "gtk.toml")
 		case TemplateKindTerminal:
 			appendTerminalConfig(opts, cfgFile, tmpDir, tmpl.Commands, tmpl.Flatpaks, tmpl.ConfigFile)
 		case TemplateKindVSCode:
@@ -722,7 +718,7 @@ output_path = '%s'
 
 	if opts.RunUserTemplates {
 		if data, err := os.ReadFile(userConfigPath); err == nil {
-			templatesSection := extractTOMLSection(string(data), "[templates]", "")
+			templatesSection := extractTOMLSection("\n"+string(data), "\n[templates", "\n[config]")
 			if templatesSection != "" {
 				cfgFile.WriteString(templatesSection)
 				cfgFile.WriteString("\n")
@@ -813,7 +809,7 @@ func appendTerminalConfig(opts *Options, cfgFile *os.File, tmpDir string, checkC
 
 	content := string(data)
 
-	if !opts.TerminalsAlwaysDark {
+	if !opts.TerminalsAlwaysDark && !terminalOpacityManaged(opts) {
 		cfgFile.WriteString(substituteVars(content, opts.ShellDir))
 		cfgFile.WriteString("\n")
 		return
@@ -841,7 +837,7 @@ func appendTerminalConfig(opts *Options, cfgFile *os.File, tmpDir string, checkC
 			continue
 		}
 
-		modified := strings.ReplaceAll(string(origData), ".default.", ".dark.")
+		modified := applyTerminalTemplate(templateName, string(origData), opts)
 		tmpPath := filepath.Join(tmpDir, templateName)
 		if err := os.WriteFile(tmpPath, []byte(modified), 0o644); err != nil {
 			continue
@@ -854,6 +850,37 @@ func appendTerminalConfig(opts *Options, cfgFile *os.File, tmpDir string, checkC
 
 	cfgFile.WriteString(substituteVars(content, opts.ShellDir))
 	cfgFile.WriteString("\n")
+}
+
+func terminalOpacityManaged(opts *Options) bool {
+	return opts.TerminalOpacity >= 1 && opts.TerminalOpacity <= 99
+}
+
+func applyTerminalTemplate(name, content string, opts *Options) string {
+	if opts.TerminalsAlwaysDark {
+		content = strings.ReplaceAll(content, ".default.", ".dark.")
+	}
+	if !terminalOpacityManaged(opts) {
+		return content
+	}
+	v := strconv.FormatFloat(float64(opts.TerminalOpacity)/100, 'f', -1, 64)
+	var snippet string
+	switch name {
+	case "kitty.conf":
+		snippet = "background_opacity " + v + "\ndynamic_background_opacity yes\n"
+	case "foot.ini":
+		snippet = "alpha=" + v + "\n"
+	case "ghostty.conf":
+		snippet = "background-opacity = " + v + "\n"
+	case "alacritty.toml":
+		snippet = "[window]\nopacity = " + v + "\n"
+	default:
+		return content
+	}
+	if content != "" && !strings.HasSuffix(content, "\n") {
+		content += "\n"
+	}
+	return content + snippet
 }
 
 func templateSessionActive(tmpl TemplateDef) bool {
@@ -907,6 +934,7 @@ var vscodeEditors = []vscodeEditor{
 	{"cursor", ".cursor"},
 	{"windsurf", ".windsurf"},
 	{"positron", ".positron"},
+	{"antigravity", ".antigravity-ide"},
 	{"vscode-insiders", ".vscode-insiders"},
 }
 
@@ -1078,12 +1106,7 @@ func runMatugen(baseArgs []string, sourceMode string) error {
 		return err
 	}
 
-	args := buildMatugenArgs(baseArgs, flags, sourceMode)
-	cmd := exec.Command("matugen", args...)
-	cmd.Env = utils.EnvWithUserBinPath(nil)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	runErr := cmd.Run()
+	runErr := execMatugen(buildMatugenArgs(baseArgs, flags, sourceMode))
 	if runErr == nil {
 		return nil
 	}
@@ -1096,12 +1119,52 @@ func runMatugen(baseArgs []string, sourceMode string) error {
 	}
 
 	log.Warnf("Matugen version changed (v4: %v -> %v), retrying", flags.isV4, newFlags.isV4)
-	args = buildMatugenArgs(baseArgs, newFlags, sourceMode)
-	retryCmd := exec.Command("matugen", args...)
-	retryCmd.Env = utils.EnvWithUserBinPath(nil)
-	retryCmd.Stdout = os.Stdout
-	retryCmd.Stderr = os.Stderr
-	return retryCmd.Run()
+	return execMatugen(buildMatugenArgs(baseArgs, newFlags, sourceMode))
+}
+
+// matugen's stderr is echoed as before and its tail travels in the error, so a failure
+// reaching the shell through the socket still names the broken template or option.
+// It goes through a file, not a pipe: with a pipe, Wait blocks until every hook
+// child that inherited stderr exits, and a backgrounded post_hook never does (#3901).
+func execMatugen(args []string) error {
+	stderrFile, err := os.CreateTemp("", "matugen-stderr-*")
+	if err != nil {
+		return fmt.Errorf("matugen: %w", err)
+	}
+	defer os.Remove(stderrFile.Name())
+	defer stderrFile.Close()
+
+	cmd := exec.Command("matugen", args...)
+	cmd.Env = utils.EnvWithUserBinPath(nil)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = stderrFile
+	runErr := cmd.Run()
+
+	stderr, _ := os.ReadFile(stderrFile.Name())
+	os.Stderr.Write(stderr)
+	if runErr == nil {
+		return nil
+	}
+	tail := stderrTail(string(stderr), 6)
+	if tail == "" {
+		return fmt.Errorf("matugen: %w", runErr)
+	}
+	return fmt.Errorf("matugen: %w\n%s", runErr, tail)
+}
+
+var ansiEscapeRe = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
+
+func stderrTail(output string, maxLines int) string {
+	var lines []string
+	for _, line := range strings.Split(ansiEscapeRe.ReplaceAllString(output, ""), "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			lines = append(lines, line)
+		}
+	}
+	if len(lines) > maxLines {
+		lines = lines[len(lines)-maxLines:]
+	}
+	return strings.Join(lines, "\n")
 }
 
 func runMatugenDryRun(opts *Options) (string, error) {
@@ -1136,11 +1199,7 @@ func writeDryRunConfig(opts *Options) (string, error) {
 	}
 	defer cfgFile.Close()
 
-	section := userConfigSection(opts)
-	if idx := strings.Index(section, "\n[templates"); idx != -1 {
-		section = section[:idx+1]
-	}
-	cfgFile.WriteString(section)
+	cfgFile.WriteString(userConfigSection(opts))
 	cfgFile.WriteString("[templates]\n")
 	return cfgFile.Name(), nil
 }
@@ -1172,12 +1231,22 @@ func execDryRun(opts *Options, flags matugenFlags) (string, error) {
 	cmd.Stderr = &stderr
 	output, err := cmd.Output()
 	if err != nil {
-		if stderr.Len() > 0 {
-			return "", fmt.Errorf("matugen %v failed (v4=%v): %s", baseArgs, flags.isV4, strings.TrimSpace(stderr.String()))
+		if tail := stderrTail(stderr.String(), 6); tail != "" {
+			return "", fmt.Errorf("matugen %v failed (v4=%v): %s", baseArgs, flags.isV4, tail)
 		}
 		return "", fmt.Errorf("matugen %v failed (v4=%v): %w", baseArgs, flags.isV4, err)
 	}
-	return strings.ReplaceAll(string(output), "\n", ""), nil
+	clean := string(output)
+	// Some matugen builds print a warning line to stdout (e.g. scheme-smart
+	// falling back to defaults for a non-image source) ahead of the JSON
+	// payload. The pretty-printed JSON always opens with a line containing
+	// only '{', so drop anything before that
+	if !strings.HasPrefix(clean, "{") {
+		if idx := strings.Index(clean, "\n{\n"); idx != -1 {
+			clean = clean[idx+1:]
+		}
+	}
+	return strings.ReplaceAll(clean, "\n", ""), nil
 }
 
 func extractMatugenColor(jsonStr, colorName, variant string) string {
@@ -1274,7 +1343,7 @@ func extractNestedColor(jsonStr, colorName, variant string) string {
 	return color
 }
 
-func generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight string, mode ColorMode) string {
+func generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight, containerDark, containerLight string, mode ColorMode, profile string) string {
 	variantOpts := dank16.VariantOptions{
 		PrimaryDark:     primaryDark,
 		PrimaryLight:    primaryLight,
@@ -1284,25 +1353,28 @@ func generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight
 		ContainerLight:  containerLight,
 		UseDPS:          true,
 		IsLightMode:     mode == ColorModeLight,
+		Profile:         profile,
 	}
 	variantColors := dank16.GenerateVariantPalette(variantOpts)
 	return dank16.GenerateVariantJSON(variantColors)
 }
 
+// Must match dank_colors_active in quickshell/scripts/gtk.sh.
 func isDMSGTKActive(configDir string) bool {
-	gtkCSS := filepath.Join(configDir, "gtk-4.0", "gtk.css")
-
-	info, err := os.Lstat(gtkCSS)
-	if err != nil {
-		return false
+	for _, dir := range []string{"gtk-4.0", "gtk-3.0"} {
+		if cssUsesDankColors(filepath.Join(configDir, dir, "gtk.css")) {
+			return true
+		}
 	}
+	return false
+}
 
-	if info.Mode()&os.ModeSymlink != 0 {
-		target, err := os.Readlink(gtkCSS)
-		return err == nil && strings.Contains(target, "dank-colors.css")
+// A user-managed symlink (home-manager) points elsewhere but can still import us.
+func cssUsesDankColors(path string) bool {
+	if target, err := os.Readlink(path); err == nil && strings.Contains(target, "dank-colors.css") {
+		return true
 	}
-
-	data, err := os.ReadFile(gtkCSS)
+	data, err := os.ReadFile(path)
 	return err == nil && strings.Contains(string(data), "dank-colors.css")
 }
 
@@ -1347,36 +1419,6 @@ func applyKDEColorScheme(mode ColorMode) {
 	}
 }
 
-func gtkThemeInstalled(theme string) bool {
-	home, _ := os.UserHomeDir()
-	candidates := []string{
-		filepath.Join(home, ".local/share/themes", theme),
-		filepath.Join(home, ".themes", theme),
-		filepath.Join("/usr/share/themes", theme),
-		filepath.Join("/usr/local/share/themes", theme),
-	}
-	for _, dir := range candidates {
-		if info, err := os.Stat(dir); err == nil && info.IsDir() {
-			return true
-		}
-	}
-	return false
-}
-
-func refreshGTKTheme(mode ColorMode) {
-	theme := mode.GTKTheme()
-	if !gtkThemeInstalled(theme) {
-		log.Infof("Skipping gtk-theme refresh: %s is not installed", theme)
-		return
-	}
-	if err := utils.GsettingsSet("org.gnome.desktop.interface", "gtk-theme", ""); err != nil {
-		log.Warnf("Failed to reset gtk-theme: %v", err)
-	}
-	if err := utils.GsettingsSet("org.gnome.desktop.interface", "gtk-theme", theme); err != nil {
-		log.Warnf("Failed to set gtk-theme: %v", err)
-	}
-}
-
 var colorSchemeEchoHook func(scheme string)
 
 func SetColorSchemeEchoHook(hook func(scheme string)) {
@@ -1393,6 +1435,30 @@ func expectColorSchemeEcho(scheme string) {
 // apps reload ~/.config/gtk-4.0 CSS (a gtk-theme flip does not). But apps
 // following the portal color-scheme (Chromium) can drop the restore signal
 // mid-repaint and latch the wrong mode, so this is opt-in.
+// GTK 4.22+ re-reads gtk.css imports when prefers-reduced-motion changes, so a
+// round trip refreshes open apps without the flash of a color-scheme flip.
+func pulseReducedMotion() {
+	const schema, key = "org.gnome.desktop.a11y.interface", "reduced-motion"
+	output, err := utils.GsettingsGet(schema, key)
+	if err != nil {
+		return
+	}
+	current := strings.Trim(output, "'")
+	toggle := "reduce"
+	if current == "reduce" {
+		toggle = "no-preference"
+	}
+	if err := utils.GsettingsSet(schema, key, toggle); err != nil {
+		log.Debugf("Failed to toggle reduced-motion for GTK4 refresh: %v", err)
+		return
+	}
+	// Let the portal emit the first change before restoring.
+	time.Sleep(100 * time.Millisecond)
+	if err := utils.GsettingsSet(schema, key, current); err != nil {
+		log.Warnf("Failed to restore reduced-motion after GTK4 refresh: %v", err)
+	}
+}
+
 func refreshGTKColorScheme() {
 	if os.Getenv("DMS_ENABLE_GTK_REFRESH") != "1" {
 		return
@@ -1439,7 +1505,7 @@ func refreshFcitx5() {
 	defer conn.Close()
 
 	obj := conn.Object("org.fcitx.Fcitx5", dbus.ObjectPath("/controller"))
-	if err := obj.Call("org.fcitx.Fcitx.Controller1.ReloadAddonConfig", 0, "classicui").Err; err != nil {
+	if err := obj.Call("org.fcitx.Fcitx.Controller1.ReloadAddonConfig", dbus.FlagNoAutoStart, "classicui").Err; err != nil {
 		log.Debugf("Failed to refresh Fcitx5 theme: %v", err)
 	}
 }
@@ -1455,17 +1521,29 @@ func signalTerminals(opts *Options) {
 	}
 }
 
-func syncColorScheme(mode ColorMode) {
+func colorSchemeTarget(mode ColorMode, current string) (string, bool) {
 	scheme := "prefer-dark"
 	if mode == ColorModeLight {
 		scheme = "default"
 	}
+	if current == scheme || (mode == ColorModeLight && current == "prefer-light") {
+		return scheme, false
+	}
+	return scheme, true
+}
 
-	if cur, err := utils.GsettingsGet("org.gnome.desktop.interface", "color-scheme"); err == nil {
-		cur = strings.Trim(cur, "'")
-		if cur == scheme || (mode == ColorModeLight && cur == "prefer-light") {
-			return
-		}
+func currentColorScheme() string {
+	cur, err := utils.GsettingsGet("org.gnome.desktop.interface", "color-scheme")
+	if err != nil {
+		return ""
+	}
+	return strings.Trim(cur, "'")
+}
+
+func syncColorScheme(mode ColorMode) {
+	scheme, needed := colorSchemeTarget(mode, currentColorScheme())
+	if !needed {
+		return
 	}
 
 	if err := utils.GsettingsSet("org.gnome.desktop.interface", "color-scheme", scheme); err != nil {

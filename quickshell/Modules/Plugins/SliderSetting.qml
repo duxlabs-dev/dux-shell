@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 import "../../Common/QmlUtils.js" as QmlUtils
 
 Column {
@@ -57,7 +57,8 @@ Column {
         visible: root.description !== ""
     }
 
-    DankSlider {
+    DSlider {
+        upDownKeysStep: false
         width: parent.width
         value: root.value
         minimum: root.minimum
@@ -67,7 +68,6 @@ Column {
         iconsClickable: root.iconsClickable
         unit: root.unit
         wheelEnabled: false
-        thumbOutlineColor: Theme.withAlpha(Theme.cardSurface, Theme.popupTransparency)
         onSliderValueChanged: newValue => {
             root.value = newValue;
         }

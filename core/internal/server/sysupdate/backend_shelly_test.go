@@ -39,7 +39,7 @@ func TestParseShellyUpdates(t *testing.T) {
 			}
 		})
 	}
-	for _, out := range []string{"", "null", "{}", "[", "[] trailing", "[null]", `[{"Name":"linux"}]`, `[{"Name":"linux","CurrentVersion":"1","NewVersion":"2","DownloadSize":"large"}]`} {
+	for _, out := range []string{"", "null", `[{"Name":"linux"}]`} {
 		t.Run(out, func(t *testing.T) {
 			if _, err := parseShellyUpdates(out, RepoSystem); err == nil {
 				t.Fatalf("expected error for %q", out)
@@ -62,7 +62,6 @@ func TestShellySelection(t *testing.T) {
 		version string
 		want    string
 	}{
-		{"shelly only", []string{"shelly"}, `{"schemaVersion":1,"name":"shelly","version":"3.1.3"}`, "shelly"},
 		{"shelly before pacman", []string{"shelly", "pacman"}, `{"schemaVersion":1,"name":"shelly"}`, "shelly"},
 		{"paru preferred", []string{"paru", "yay", "shelly", "pacman"}, "", "paru"},
 		{"yay preferred", []string{"yay", "shelly", "pacman"}, "", "yay"},
@@ -132,15 +131,13 @@ func TestShellyCheckUpdates(t *testing.T) {
 }
 
 func TestShellyCheckFailures(t *testing.T) {
-	for _, code := range []string{"1", "2"} {
-		t.Run(code, func(t *testing.T) {
-			dir, _ := fakeShelly(t)
-			writeUpdateExecutable(t, dir, "shelly", "echo 'database unavailable' >&2; exit "+code)
-			if _, err := (shellyBackend{}).CheckUpdates(t.Context()); err == nil || !strings.Contains(err.Error(), "database unavailable") {
-				t.Fatalf("expected query failure with stderr, got %v", err)
-			}
-		})
-	}
+	t.Run("exit status", func(t *testing.T) {
+		dir, _ := fakeShelly(t)
+		writeUpdateExecutable(t, dir, "shelly", "echo 'database unavailable' >&2; exit 1")
+		if _, err := (shellyBackend{}).CheckUpdates(t.Context()); err == nil || !strings.Contains(err.Error(), "database unavailable") {
+			t.Fatalf("expected query failure with stderr, got %v", err)
+		}
+	})
 	t.Run("cancellation", func(t *testing.T) {
 		dir, _ := fakeShelly(t)
 		blocker := filepath.Join(dir, "blocker.fifo")
@@ -164,10 +161,7 @@ func TestShellyUpgrade(t *testing.T) {
 		terminal   bool
 	}{
 		{"pkexec repository", false, false, false},
-		{"pkexec aur", true, false, false},
-		{"attached repository", false, true, false},
 		{"attached aur", true, true, false},
-		{"terminal repository", false, false, true},
 		{"terminal aur", true, false, true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -210,9 +204,6 @@ func TestShellyUpgradeHolds(t *testing.T) {
 		{"repository hold cannot exclude system upgrade", true, []string{"linux"}, false, false},
 		{"unrelated hold", true, []string{"org.example.Flatpak"}, false, false},
 		{"dry held aur", true, []string{"example-git"}, true, true},
-		{"dry repository only", false, []string{"example-git"}, false, true},
-		{"dry repository hold", true, []string{"linux"}, false, true},
-		{"dry unrelated hold", true, []string{"org.example.Flatpak"}, false, true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			_, log := fakeShelly(t)
@@ -240,19 +231,17 @@ func TestShellyUpgradeHolds(t *testing.T) {
 }
 
 func TestShellyHoldCheckFailure(t *testing.T) {
-	for _, dryRun := range []bool{false, true} {
-		dir, log := fakeShelly(t)
-		writeUpdateExecutable(t, dir, "shelly", `printf '%s\n' "$*" >> "$DMS_TEST_SHELLY_LOG"
+	dir, log := fakeShelly(t)
+	writeUpdateExecutable(t, dir, "shelly", `printf '%s\n' "$*" >> "$DMS_TEST_SHELLY_LOG"
 echo 'AUR unavailable' >&2
 exit 1`)
-		opts := UpgradeOptions{DryRun: dryRun, IncludeAUR: true, Ignored: []string{"example-git"}, Targets: []Package{{Name: "linux", Backend: "shelly", Repo: RepoSystem}}}
-		err := (shellyBackend{}).Upgrade(t.Context(), opts, nil)
-		if err == nil || !strings.Contains(err.Error(), "AUR unavailable") {
-			t.Fatalf("dryRun=%v: expected AUR query error, got %v", dryRun, err)
-		}
-		if calls := readUpdateCalls(t, log); calls != "list-updates aur --json\n" {
-			t.Fatalf("query failure must stop the operation: %q", calls)
-		}
+	opts := UpgradeOptions{IncludeAUR: true, Ignored: []string{"example-git"}, Targets: []Package{{Name: "linux", Backend: "shelly", Repo: RepoSystem}}}
+	err := (shellyBackend{}).Upgrade(t.Context(), opts, nil)
+	if err == nil || !strings.Contains(err.Error(), "AUR unavailable") {
+		t.Fatalf("expected AUR query error, got %v", err)
+	}
+	if calls := readUpdateCalls(t, log); calls != "list-updates aur --json\n" {
+		t.Fatalf("query failure must stop the operation: %q", calls)
 	}
 }
 

@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import Quickshell
 import qs.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 import "../../Common/QmlUtils.js" as QmlUtils
 import qs.Modals.Common
@@ -230,6 +231,8 @@ Column {
 
     function uninstall(row) {
         const id = row.pluginId;
+        const wasEnabled = PluginService.isPluginLoaded(id);
+        const repo = DMSService.installedPlugins.find(entry => entry.id === id)?.repo ?? "";
         uninstalling = Object.assign({}, uninstalling, {
             [id]: true
         });
@@ -247,6 +250,7 @@ Column {
                 return;
             }
             PluginService.scanPlugins();
+            PluginService.noteUninstalled(id, row.text, wasEnabled, repo);
         });
     }
 
@@ -352,7 +356,7 @@ Column {
         SettingsRow {
             iconName: "warning"
             title: I18n.tr("Plugin manager unavailable")
-            subtitle: I18n.tr("The DMS_SOCKET environment variable is not set or the socket is unavailable. Automated plugin management requires the DMS_SOCKET.")
+            subtitle: I18n.tr("The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.", "plugin manager unavailable notice, %1 is an environment variable").arg("DMS_SOCKET")
         }
     }
 
@@ -378,7 +382,7 @@ Column {
             Layout.preferredHeight: implicitHeight
             spacing: Theme.spacingS
 
-            DankButton {
+            DButton {
                 text: root.pluginsWithUpdates.length ? I18n.tr("Update All") + " (" + root.pluginsWithUpdates.length + ")" : I18n.tr("Check for updates")
                 iconName: root.pluginsWithUpdates.length ? "download" : "refresh"
                 busy: root.checkingUpdates || pluginUpdatesDialogItem.isUpdating
@@ -398,7 +402,7 @@ Column {
                     root.checkUpdates();
                 }
             }
-            DankIconButton {
+            DIconButton {
                 iconName: "refresh"
                 widthMode: "narrow"
                 tooltipText: I18n.tr("Check for updates")
@@ -408,7 +412,7 @@ Column {
             }
         }
 
-        DankButton {
+        DButton {
             text: I18n.tr("Manage Registries", "plugin registry management")
             buttonHeight: Theme.buttonHeightXS
             horizontalPadding: Theme.spacingS
@@ -418,7 +422,7 @@ Column {
             wrapText: true
             Layout.alignment: Qt.AlignTop
             Layout.topMargin: (Theme.buttonHeightS - Theme.buttonHeightXS) / 2
-            onClicked: root.parentModal?.navigateTo("plugins_manage")
+            onClicked: keyboard => root.parentModal?.navigateTo("plugins_manage", keyboard)
         }
     }
 
@@ -430,8 +434,40 @@ Column {
         wrapMode: Text.Wrap
     }
 
-    DankCard {
+    DCard {
+        color: SettingsMetrics.rowColor
+        width: parent.width
+        implicitHeight: undoRow.implicitHeight + pad * 2
+        visible: PluginService.lastUninstalledPlugin !== null && DMSService.dmsAvailable
+        pad: Theme.spacingS
+
+        RowLayout {
+            id: undoRow
+            width: parent.width
+            spacing: Theme.spacingM
+
+            StyledText {
+                Layout.fillWidth: true
+                Layout.leftMargin: Theme.spacingS
+                text: I18n.tr("%1 uninstalled", "plugin removed notice, %1 is the plugin name").arg(PluginService.lastUninstalledPlugin?.name ?? "")
+                color: Theme.surfaceText
+                elide: Text.ElideRight
+            }
+
+            DButton {
+                text: I18n.tr("Undo", "reinstall the plugin that was just uninstalled")
+                buttonHeight: Theme.buttonHeightXS
+                horizontalPadding: Theme.spacingS
+                backgroundColor: "transparent"
+                textColor: Theme.primary
+                onClicked: PluginService.undoUninstall()
+            }
+        }
+    }
+
+    DCard {
         id: storeCard
+        color: SettingsMetrics.rowColor
         width: parent.width
         implicitHeight: storeContent.implicitHeight + pad * 2
         visible: root.plugins.length === 0
@@ -442,7 +478,7 @@ Column {
             width: parent.width
             spacing: Theme.spacingM
 
-            DankIcon {
+            DIcon {
                 name: "store"
                 size: Theme.iconSizeLarge
                 color: storeCard.accentColor
@@ -457,7 +493,7 @@ Column {
             }
             StyledText {
                 Layout.fillWidth: true
-                text: I18n.tr("Extend DankMaterialShell with powerful plugins for widgets, launchers, and more")
+                text: I18n.tr("Extend %1 with powerful plugins for widgets, launchers, and more", "plugins hub description, %1 is the product name").arg("Dux Shell")
                 color: storeCard.mutedColor
                 wrapMode: Text.Wrap
             }
@@ -466,7 +502,7 @@ Column {
                 Layout.preferredHeight: implicitHeight
                 spacing: Theme.spacingS
 
-                DankButton {
+                DButton {
                     text: I18n.tr("Browse")
                     iconName: "store"
                     backgroundColor: Theme.primary
@@ -476,13 +512,13 @@ Column {
                     enabled: DMSService.dmsAvailable
                     onClicked: root.showPluginBrowser()
                 }
-                DankButton {
+                DButton {
                     text: I18n.tr("Manage Registries", "plugin registry management")
                     backgroundColor: "transparent"
                     textColor: storeCard.accentColor
                     maximumWidth: parent.width
                     wrapText: true
-                    onClicked: root.parentModal?.navigateTo("plugins_manage")
+                    onClicked: keyboard => root.parentModal?.navigateTo("plugins_manage", keyboard)
                 }
             }
         }
@@ -493,17 +529,19 @@ Column {
         spacing: Theme.spacingS
         visible: root.plugins.length > 0
 
-        DankSearchField {
+        DSearchField {
             width: parent.width
             text: root.searchQuery
             placeholderText: I18n.tr("Search plugins...", "plugin search placeholder")
+            // matches MAX_QUERY_LENGTH in PluginRanking.js
+            maximumLength: 100
             onTextEdited: root.searchQuery = text
         }
         Flow {
             width: parent.width
             spacing: Theme.spacingS
 
-            DankSplitButton {
+            DSplitButton {
                 id: filterButton
                 text: I18n.tr("Filter") + ": " + root.filterOptions[root.filterIndex]
                 iconName: "filter_list"
@@ -519,7 +557,7 @@ Column {
                     filterMenu.openDropdownMenu();
                 }
 
-                DankDropdown {
+                DDropdown {
                     id: filterMenu
                     showTrigger: false
                     popupAnchorItem: filterButton.trailingButton
@@ -530,7 +568,7 @@ Column {
                     onValueChanged: value => root.setFilter(options.indexOf(value))
                 }
             }
-            DankSplitButton {
+            DSplitButton {
                 id: sortButton
                 text: I18n.tr("Sort by") + ": " + root.sortOptions[root.sortIndex]
                 iconName: root.descending ? "arrow_downward" : "arrow_upward"
@@ -547,7 +585,7 @@ Column {
                     sortMenu.openDropdownMenu();
                 }
 
-                DankDropdown {
+                DDropdown {
                     id: sortMenu
                     showTrigger: false
                     popupAnchorItem: sortButton.trailingButton
@@ -592,7 +630,7 @@ Column {
         Repeater {
             model: root.filteredPlugins
 
-            DankCard {
+            DCard {
                 id: installedCard
                 required property var modelData
                 readonly property bool loaded: PluginService.loadedPlugins[modelData.pluginId] !== undefined
@@ -608,10 +646,10 @@ Column {
                 pad: Theme.spacingL
                 radius: Theme.cornerRadiusM
                 readonly property string highlightKey: "installedPlugin:" + modelData.pluginId
-                color: SettingsSearchService.highlightSection === highlightKey ? Theme.blend(surfaceColor, Theme.primary, SettingsMetrics.highlightBlend) : surfaceColor
+                color: SettingsSearchService.highlightSection === highlightKey ? Theme.blend(SettingsMetrics.rowColor, Theme.primary, SettingsMetrics.highlightBlend) : SettingsMetrics.rowColor
                 clickable: true
                 Accessible.name: modelData.text
-                onClicked: root.parentModal?.navigateTo(modelData.id)
+                onClicked: keyboard => root.parentModal?.navigateTo(modelData.id, keyboard)
 
                 Timer {
                     interval: 0
@@ -637,7 +675,7 @@ Column {
                         Layout.minimumHeight: Math.ceil(pluginTitleMetrics.height) * 2 + Theme.spacingXXS + pluginMetadata.implicitHeight
                         Layout.maximumHeight: Layout.minimumHeight
                         spacing: Theme.spacingS
-                        DankIcon {
+                        DIcon {
                             id: pluginIcon
                             Layout.alignment: Qt.AlignTop
                             Layout.topMargin: Math.max(0, (pluginTitle.implicitHeight - height) / 2)
@@ -669,7 +707,7 @@ Column {
                                 Layout.minimumWidth: 0
                                 implicitHeight: Math.max(Theme.spacingL, Math.ceil(pluginDescriptionMetrics.height), versionBadge.implicitHeight)
 
-                                DankBadge {
+                                DBadge {
                                     id: versionBadge
                                     anchors.left: parent.left
                                     anchors.top: parent.top
@@ -695,7 +733,7 @@ Column {
                                 }
                             }
                         }
-                        DankToggle {
+                        DToggle {
                             Layout.alignment: Qt.AlignTop
                             enabled: !root.updatingPluginId && !pluginUpdatesDialogItem.isUpdating && !root.uninstalling[installedCard.modelData.pluginId]
                             checked: installedCard.loaded
@@ -720,7 +758,7 @@ Column {
                         Layout.fillHeight: false
                         visible: installedCard.problem !== "" || !!root.uninstalling[installedCard.modelData.pluginId]
                         spacing: Theme.spacingS
-                        DankActionButton {
+                        DActionButton {
                             visible: installedCard.problem !== ""
                             buttonSize: Theme.buttonHeightXS
                             iconName: "error"
@@ -743,14 +781,14 @@ Column {
                         Layout.fillWidth: true
                         implicitHeight: Math.max(settingsButton.implicitHeight, cardActions.implicitHeight)
 
-                        DankIconButton {
+                        DIconButton {
                             id: settingsButton
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             iconName: "settings"
                             variant: "tonal"
                             Accessible.name: I18n.tr("Settings")
-                            onClicked: root.parentModal?.navigateTo(installedCard.modelData.id)
+                            onClicked: keyboard => root.parentModal?.navigateTo(installedCard.modelData.id, keyboard)
                         }
                         Row {
                             id: cardActions
@@ -758,7 +796,7 @@ Column {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: Theme.spacingXS
 
-                            DankIconButton {
+                            DIconButton {
                                 iconName: "download"
                                 variant: "tonal"
                                 tooltipText: root.updatingPluginId === installedCard.modelData.pluginId ? I18n.tr("Updating...", "plugin update button tooltip while the update runs") : I18n.tr("Update available", "plugin row badge")
@@ -766,7 +804,7 @@ Column {
                                 enabled: DMSService.dmsAvailable && !root.checkingUpdates && !pluginUpdatesDialogItem.isUpdating && !root.updatingPluginId && !root.uninstalling[installedCard.modelData.pluginId]
                                 onClicked: root.requestUpdate(installedCard.modelData)
                             }
-                            DankIconButton {
+                            DIconButton {
                                 iconName: "delete"
                                 Accessible.name: I18n.tr("Uninstall")
                                 visible: installedCard.plugin.source !== "system"
@@ -783,7 +821,7 @@ Column {
     SettingsFabBar {
         shown: root.plugins.length > 0 && DMSService.dmsAvailable
 
-        DankFab {
+        DFab {
             text: I18n.tr("Browse")
             iconName: "store"
             onClicked: root.showPluginBrowser()

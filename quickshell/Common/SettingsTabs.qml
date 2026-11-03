@@ -14,10 +14,11 @@ Singleton {
         {
             "id": "personalization",
             "text": I18n.tr("Wallpaper & colors"),
-            "icon": "palette",
+            "icon": "wallpaper",
+            "hint": I18n.tr("Theme, palette, dark mode", "settings sidebar hint for the wallpaper and colors page"),
             "tabIndex": 0,
             "hubHeader": "WallpaperColorsTab",
-            "aliases": ["wallpaper", "theme_cursor_icons"],
+            "aliases": ["wallpaper", "colors", "wallpaper_colors", "theme_cursor_icons"],
             "children": [
                 {
                     "id": "theme",
@@ -54,20 +55,21 @@ Singleton {
                 {
                     "id": "palette_inject",
                     "advanced": true,
-                    "text": I18n.tr("Injected palettes"),
+                    "text": I18n.tr("Injected palettes", "settings page title, external palette commands merged into matugen"),
                     "icon": "colorize",
                     "tabIndex": 64,
-                    "hint": I18n.tr("External palette commands, namespaces")
+                    "hint": I18n.tr("External palette commands, namespaces", "settings sidebar hint for the injected palettes page")
                 }
             ]
         },
         {
             "id": "theme_surfaces",
+            "aliases": ["interface", "interface_style"],
             "text": I18n.tr("Interface style"),
             "icon": "layers",
             "tabIndex": 48,
             "hubHeader": "ThemeSurfacesTab",
-            "hint": I18n.tr("Opacity, borders, blur, shadows, corners"),
+            "hint": I18n.tr("Blur, shadows, corners", "settings sidebar hint for the interface style page"),
             "children": [
                 {
                     "id": "surface_shadows",
@@ -81,10 +83,11 @@ Singleton {
         },
         {
             "id": "typography",
+            "aliases": ["fonts", "fonts_motion"],
             "text": I18n.tr("Fonts & motion"),
             "icon": "text_fields",
             "tabIndex": 14,
-            "hint": I18n.tr("Family, weight, scale, animation speed")
+            "hint": I18n.tr("Fonts, scale, animations", "settings sidebar hint for the fonts and motion page")
         },
         {
             "id": "separator_1",
@@ -92,6 +95,7 @@ Singleton {
         },
         {
             "id": "dankbar",
+            "aliases": ["bar"],
             "text": I18n.tr("Bar"),
             "icon": "toolbar",
             "hint": I18n.tr("Layout, position, appearance", "settings hub hint for the bar pages"),
@@ -132,8 +136,8 @@ Singleton {
             "icon": "widgets",
             "tabIndex": 22,
             "hubHeader": "WidgetsTab",
-            "aliases": ["workspaces", "workspaces_widgets"],
-            "hint": I18n.tr("Add, remove, reorder and configure"),
+            "aliases": ["bar_widgets", "workspaces", "workspaces_widgets"],
+            "hint": I18n.tr("Add, reorder, configure", "settings sidebar hint for the bar widgets page"),
             "children": [
                 {
                     "id": "bar_widget",
@@ -152,10 +156,11 @@ Singleton {
             "aliases": ["desktop", "dock_launcher"],
             "icon": "dock_to_bottom",
             "hubHeader": "DockHubHeader",
-            "hint": I18n.tr("Visibility, position, pinned apps, trash"),
+            "hint": I18n.tr("Position, pinned apps, trash", "settings sidebar hint for the dock page"),
             "children": [
                 {
                     "id": "dock_general",
+                    "hidden": true,
                     "text": I18n.tr("General"),
                     "icon": "tune",
                     "tabIndex": 5,
@@ -163,6 +168,7 @@ Singleton {
                 },
                 {
                     "id": "dock_widgets",
+                    "hidden": true,
                     "text": I18n.tr("Apps & widgets"),
                     "icon": "widgets",
                     "tabIndex": 57,
@@ -170,6 +176,7 @@ Singleton {
                 },
                 {
                     "id": "dock_appearance",
+                    "hidden": true,
                     "text": I18n.tr("Appearance"),
                     "icon": "palette",
                     "tabIndex": 58,
@@ -190,14 +197,14 @@ Singleton {
             "text": I18n.tr("Launcher"),
             "icon": "grid_view",
             "tabIndex": 9,
-            "hint": I18n.tr("Style, shortcuts, search, hidden apps")
+            "hint": I18n.tr("Style, search, hidden apps", "settings sidebar hint for the launcher page")
         },
         {
             "id": "dank_dash",
             "text": I18n.tr("Dashboard", "settings page name for the dank dash popout"),
             "icon": "space_dashboard",
             "tabIndex": 43,
-            "aliases": ["dashboards_osd"],
+            "aliases": ["dashboard", "dashboards_osd"],
             "hint": I18n.tr("Tabs and weather")
         },
         {
@@ -206,7 +213,7 @@ Singleton {
             "icon": "widgets",
             "tabIndex": 27,
             "hubHeader": "DesktopWidgetsTab",
-            "hint": I18n.tr("Clocks, system monitors, plugins"),
+            "hint": I18n.tr("Clocks, monitors, plugins", "settings sidebar hint for the desktop widgets page"),
             "children": [
                 {
                     "id": "desktop_widget",
@@ -246,10 +253,19 @@ Singleton {
             "text": I18n.tr("On-screen displays"),
             "icon": "picture_in_picture",
             "tabIndex": 18,
-            "hint": I18n.tr("Volume, brightness, caps lock, position")
+            "hint": I18n.tr("Volume, brightness, caps lock", "settings sidebar hint for the on-screen displays page")
+        },
+        {
+            "id": "wellbeing",
+            "text": I18n.tr("Digital wellbeing", "settings page and dashboard tab title, screen time tracking"),
+            "icon": "digital_wellbeing",
+            "tabIndex": 67,
+            "aliases": ["screen_time"],
+            "hint": I18n.tr("Screen time and app limits", "settings sidebar hint and dashboard tab description for digital wellbeing")
         },
         {
             "id": "sound_media",
+            "aliases": ["sound", "media"],
             "text": I18n.tr("Sound & media"),
             "icon": "volume_up",
             "children": [
@@ -285,6 +301,7 @@ Singleton {
             "id": "displays",
             "text": I18n.tr("Displays"),
             "icon": "monitor",
+            "hint": I18n.tr("Layout, scale, night mode", "settings sidebar hint for the displays page"),
             "children": [
                 {
                     "id": "display_config",
@@ -313,6 +330,7 @@ Singleton {
             "id": "input",
             "text": I18n.tr("Input", "noun, settings page name for input devices"),
             "icon": "keyboard",
+            "hint": I18n.tr("Shortcuts, keyboard, mouse", "settings sidebar hint for the input page"),
             "children": [
                 {
                     "id": "keybinds",
@@ -327,7 +345,7 @@ Singleton {
                     "text": I18n.tr("Keyboard", "settings page name"),
                     "icon": "keyboard",
                     "tabIndex": 45,
-                    "niriOnly": true,
+                    "inputCapable": true,
                     "hint": I18n.tr("Layouts, repeat rate, num lock")
                 },
                 {
@@ -344,7 +362,7 @@ Singleton {
             "id": "power_battery",
             "text": I18n.tr("Power & battery"),
             "icon": "power_settings_new",
-            "aliases": ["power_security"],
+            "aliases": ["power", "power_security"],
             "children": [
                 {
                     "id": "power_sleep",
@@ -366,6 +384,7 @@ Singleton {
             "id": "network",
             "text": I18n.tr("Network", "noun, settings page and widget title"),
             "icon": "wifi",
+            "hint": I18n.tr("Wi-Fi, Ethernet, VPN", "settings sidebar hint for the network page"),
             "dmsOnly": true,
             "children": [
                 {
@@ -428,7 +447,7 @@ Singleton {
                 {
                     "id": "user_create",
                     "hidden": true,
-                    "text": I18n.tr("Create user"),
+                    "text": I18n.tr("Add user", "button and settings page title, creates a new user account"),
                     "icon": "person_add",
                     "tabIndex": 61
                 }
@@ -436,6 +455,7 @@ Singleton {
         },
         {
             "id": "security_accounts",
+            "aliases": ["security"],
             "text": I18n.tr("Security"),
             "icon": "lock",
             "children": [
@@ -472,6 +492,7 @@ Singleton {
             "id": "applications",
             "text": I18n.tr("Applications"),
             "icon": "apps",
+            "hint": I18n.tr("Defaults, autostart, rules", "settings sidebar hint for the applications page"),
             "children": [
                 {
                     "id": "default_apps",
@@ -485,7 +506,6 @@ Singleton {
                     "text": I18n.tr("Autostart apps"),
                     "icon": "line_start",
                     "tabIndex": 36,
-                    "autostartOnly": true,
                     "hint": I18n.tr("Apps and commands started with the session")
                 },
                 {
@@ -509,8 +529,10 @@ Singleton {
         },
         {
             "id": "date_time_region",
+            "aliases": ["datetime", "region"],
             "text": I18n.tr("Date, time & region"),
             "icon": "schedule",
+            "hint": I18n.tr("Clock, weather, locale", "settings sidebar hint for the date, time and region page"),
             "children": [
                 {
                     "id": "time_weather",
@@ -539,14 +561,22 @@ Singleton {
             "id": "system",
             "text": I18n.tr("System & integrations"),
             "icon": "memory",
+            "hint": I18n.tr("Updates, clipboard, %1", "settings sidebar hint for the system and integrations page, %1 is the compositor name").arg(CompositorService.displayName),
             "children": [
                 {
                     "id": "updater",
-                    "text": I18n.tr("System updater"),
-                    "icon": "refresh",
+                    "text": I18n.tr("Software updates", "settings page, modal and bar widget title, DMS and system package updates"),
+                    "icon": "system_update_alt",
                     "tabIndex": 20,
-                    "updaterOnly": true,
-                    "hint": I18n.tr("Check interval, ignored packages, custom command")
+                    "hint": I18n.tr("DMS and system updates", "settings sidebar hint for the software updates page")
+                },
+                {
+                    "id": "updater_changelog",
+                    "hidden": true,
+                    "text": I18n.tr("Release notes", "settings page and card title, notes for a DMS release"),
+                    "icon": "article",
+                    "tabIndex": 66,
+                    "hint": I18n.tr("Summary, highlights, links", "settings sidebar hint for the release notes page")
                 },
                 {
                     "id": "clipboard",
@@ -739,22 +769,24 @@ Singleton {
             return false;
         if (entry.soundsOnly && MultimediaService.unavailable)
             return false;
-        if (entry.hyprlandNiriOnly && !CompositorService.isNiri && !CompositorService.isHyprland)
+        if (entry.hyprlandNiriOnly && !CompositorService.isNiri && !CompositorService.isHyprland && !CompositorService.isMango)
             return false;
         if (entry.windowRulesCapable && !CompositorService.supportsWindowRules)
             return false;
         if (entry.layoutCapable && !CompositorService.supportsLayoutConfig)
             return false;
-        if (entry.niriOnly && !CompositorService.supportsInputConfig)
+        if (entry.inputCapable && !CompositorService.supportsInputConfig)
             return false;
         if (entry.pointerCapable && !CompositorService.supportsPointerConfig)
             return false;
         if (entry.clipboardOnly && (!DMSService.isConnected || DMSService.apiVersion < 23))
             return false;
-        if (entry.updaterOnly && !SystemUpdateService.sysupdateAvailable)
-            return false;
+        if (entry.greeterOnly)
+            GreeterService.ensureDetected();
         if (entry.greeterOnly && !GreeterService.available)
             return false;
+        if (entry.autostartOnly)
+            DesktopService.ensureProbed();
         if (entry.autostartOnly && !DesktopService.autostartAvailable)
             return false;
         if (entry.cellularOnly && (NetworkService.cellularDevices?.length ?? 0) === 0)
@@ -791,7 +823,7 @@ Singleton {
     }
 
     function hubHint(entry) {
-        return entry.hint || visibleLeaves(entry.id).map(child => child.text).join(", ");
+        return entry.hint || visibleLeaves(entry.id).filter(child => entry.hubHeader || !child.hidden).map(child => child.text).join(", ");
     }
 
     function hubMainRows(hubId) {

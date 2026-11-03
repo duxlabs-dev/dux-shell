@@ -7,8 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/registries"
+	"github.com/duxlabs-dev/dux-shell/core/internal/gitssh"
+	"github.com/duxlabs-dev/dux-shell/core/internal/registries"
 	"github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/spf13/afero"
@@ -44,8 +46,9 @@ type realGitClient struct{}
 
 func (g *realGitClient) PlainClone(path string, url string) error {
 	_, err := git.PlainClone(path, &git.CloneOptions{
-		URL:      url,
-		Progress: os.Stdout,
+		URL:           url,
+		Progress:      os.Stdout,
+		ClientOptions: gitssh.ClientOptions(),
 	})
 	return err
 }
@@ -61,8 +64,8 @@ func (g *realGitClient) Pull(path string) error {
 		return err
 	}
 
-	err = worktree.Pull(&git.PullOptions{})
-	if err != nil && err.Error() != "already up-to-date" {
+	err = worktree.Pull(&git.PullOptions{ClientOptions: gitssh.ClientOptions()})
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return err
 	}
 
@@ -101,7 +104,7 @@ func (g *realGitClient) HasUpdates(path string) (bool, string, string, error) {
 		return false, "", "", err
 	}
 
-	refs, err := remote.List(&git.ListOptions{})
+	refs, err := remote.List(&git.ListOptions{ClientOptions: gitssh.ClientOptions()})
 	if err != nil {
 		return false, "", "", err
 	}
@@ -116,12 +119,30 @@ func (g *realGitClient) HasUpdates(path string) (bool, string, string, error) {
 		}
 	}
 
-	localHash := head.Hash().String()
+	localHash := head.Hash()
 	if remoteHead == "" {
-		return false, localHash, "", nil
+		return false, localHash.String(), "", nil
+	}
+	if localHash.String() == remoteHead {
+		return false, localHash.String(), remoteHead, nil
 	}
 
-	return localHash != remoteHead, localHash, remoteHead, nil
+	remoteCommit, err := repo.CommitObject(plumbing.NewHash(remoteHead))
+	if errors.Is(err, plumbing.ErrObjectNotFound) {
+		return true, localHash.String(), remoteHead, nil
+	}
+	if err != nil {
+		return false, "", "", err
+	}
+	headCommit, err := repo.CommitObject(localHash)
+	if err != nil {
+		return false, "", "", err
+	}
+	contained, err := remoteCommit.IsAncestor(headCommit)
+	if err != nil {
+		return false, "", "", err
+	}
+	return !contained, localHash.String(), remoteHead, nil
 }
 
 func (g *realGitClient) CurrentRevision(path string) (string, error) {
@@ -150,7 +171,7 @@ func (g *realGitClient) CheckoutRevision(path string, revision string) error {
 		if _, remoteErr := repo.Remote("origin"); remoteErr != nil {
 			return fmt.Errorf("revision %s is not available in repository: %w", revision, objectErr)
 		}
-		fetchErr := repo.Fetch(&git.FetchOptions{})
+		fetchErr := repo.Fetch(&git.FetchOptions{ClientOptions: gitssh.ClientOptions()})
 		if fetchErr != nil && fetchErr != git.NoErrAlreadyUpToDate {
 			return fmt.Errorf("failed to fetch locked revision: %w", fetchErr)
 		}
@@ -171,19 +192,48 @@ type Registry struct {
 	registries []registries.Source
 	plugins    []Plugin
 	git        GitClient
+	maxAge     time.Duration
 }
+
+const registryMaxAge = 5 * time.Minute
 
 func NewRegistry() (*Registry, error) {
 	return NewRegistryWithFs(afero.NewOsFs())
 }
 
 func NewRegistryWithFs(fs afero.Fs) (*Registry, error) {
+	sources, err := registries.Active(fs)
+	if err != nil {
+		return nil, err
+	}
 	return &Registry{
 		fs:         fs,
 		cacheDir:   getCacheDir(),
-		registries: registries.Load(fs),
+		registries: sources,
 		git:        &realGitClient{},
+		maxAge:     registryMaxAge,
 	}, nil
+}
+
+func (r *Registry) stampPath(src registries.Source) string {
+	return r.cacheDirFor(src) + ".pulled"
+}
+
+func (r *Registry) fresh(src registries.Source) bool {
+	if r.maxAge <= 0 {
+		return false
+	}
+	info, err := r.fs.Stat(r.stampPath(src))
+	return err == nil && time.Since(info.ModTime()) < r.maxAge
+}
+
+func (r *Registry) touch(src registries.Source) {
+	path := r.stampPath(src)
+	if err := afero.WriteFile(r.fs, path, nil, 0o644); err != nil {
+		return
+	}
+	now := time.Now()
+	_ = r.fs.Chtimes(path, now, now)
 }
 
 func (r *Registry) cacheDirFor(src registries.Source) string {
@@ -196,8 +246,8 @@ func getCacheDir() string {
 
 // A cached clone is reused only when its origin still matches the configured
 // URL; renamed or re-pointed registries re-clone instead of pulling from the
-// stale remote.
-func (r *Registry) updateOne(src registries.Source) error {
+// stale remote. A clone pulled within maxAge is used as is unless forced.
+func (r *Registry) updateOne(src registries.Source, force bool) error {
 	dir := r.cacheDirFor(src)
 	exists, err := afero.DirExists(r.fs, dir)
 	if err != nil {
@@ -206,8 +256,14 @@ func (r *Registry) updateOne(src registries.Source) error {
 
 	if exists {
 		origin, originErr := r.git.OriginURL(dir)
-		if originErr == nil && origin == src.URL && r.git.Pull(dir) == nil {
-			return nil
+		if originErr == nil && origin == src.URL {
+			if !force && r.fresh(src) {
+				return nil
+			}
+			if r.git.Pull(dir) == nil {
+				r.touch(src)
+				return nil
+			}
 		}
 		if err := r.fs.RemoveAll(dir); err != nil {
 			return fmt.Errorf("failed to remove stale registry cache: %w", err)
@@ -220,6 +276,7 @@ func (r *Registry) updateOne(src registries.Source) error {
 	if err := r.git.PlainClone(dir, src.URL); err != nil {
 		return fmt.Errorf("failed to clone: %w", err)
 	}
+	r.touch(src)
 	return nil
 }
 
@@ -271,12 +328,27 @@ func (r *Registry) resetLegacyCache() {
 // declaration order (first occurrence of an ID wins). A failing registry is
 // reported in the joined error but does not block the others.
 func (r *Registry) Update() error {
+	return r.update(false)
+}
+
+// Refresh pulls every registry even when its clone is still fresh.
+func (r *Registry) Refresh() error {
+	return r.update(true)
+}
+
+func (r *Registry) update(force bool) error {
+	unlock, err := registries.LockCache()
+	if err != nil {
+		return err
+	}
+	defer unlock()
+
 	r.resetLegacyCache()
 	r.plugins = []Plugin{}
 	seen := make(map[string]struct{})
 	var errs []error
 	for _, src := range r.registries {
-		if err := r.updateOne(src); err != nil {
+		if err := r.updateOne(src, force); err != nil {
 			errs = append(errs, fmt.Errorf("registry %s: %w", src.Name, err))
 			continue
 		}

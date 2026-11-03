@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/config"
-	"github.com/AvengeMedia/DankMaterialShell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
+	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
 	"github.com/spf13/cobra"
 )
 
@@ -19,22 +19,24 @@ var setupHeadlessCmd = &cobra.Command{
 		noSystemd, _ := cmd.Flags().GetBool("no-systemd")
 		force, _ := cmd.Flags().GetBool("force")
 		skipExisting, _ := cmd.Flags().GetBool("skip-existing")
+		stockBinds, _ := cmd.Flags().GetBool("stock-binds")
 		cmd.SilenceUsage = true
-		return runSetupHeadless(compositor, terminal, noSystemd, force, skipExisting)
+		return runSetupHeadless(compositor, terminal, noSystemd, force, skipExisting, stockBinds)
 	},
 }
 
 func init() {
 	setupHeadlessCmd.Flags().String("compositor", "", "Compositor to configure: niri, hyprland, or mango")
-	setupHeadlessCmd.Flags().String("terminal", "", "Also deploy a terminal config: ghostty, kitty, or alacritty")
+	setupHeadlessCmd.Flags().String("terminal", "", "Also deploy a terminal config: ghostty, kitty, or alacritty (binds otherwise use $TERMINAL or the first installed terminal)")
 	setupHeadlessCmd.Flags().Bool("no-systemd", false, "Deploy session config without systemd integration")
 	setupHeadlessCmd.Flags().Bool("force", false, "Overwrite existing configs (timestamped backups are created)")
 	setupHeadlessCmd.Flags().Bool("skip-existing", false, "Warn and skip instead of failing when a config already exists")
+	setupHeadlessCmd.Flags().Bool("stock-binds", false, "Replace existing keybinds with the DMS stock set (a backup is kept)")
 	_ = setupHeadlessCmd.MarkFlagRequired("compositor")
 	setupHeadlessCmd.MarkFlagsMutuallyExclusive("force", "skip-existing")
 }
 
-func runSetupHeadless(compositor, terminal string, noSystemd, force, skipExisting bool) error {
+func runSetupHeadless(compositor, terminal string, noSystemd, force, skipExisting, stockBinds bool) error {
 	wm, err := parseHeadlessCompositor(compositor)
 	if err != nil {
 		return err
@@ -66,7 +68,8 @@ func runSetupHeadless(compositor, terminal string, noSystemd, force, skipExistin
 		}
 	}
 
-	if !deployCompositor && !deployTerminal {
+	refreshHyprlandBinds := !deployCompositor && wm == deps.WindowManagerHyprland
+	if !deployCompositor && !deployTerminal && !refreshHyprlandBinds {
 		return nil
 	}
 
@@ -79,11 +82,25 @@ func runSetupHeadless(compositor, terminal string, noSystemd, force, skipExistin
 		close(logDone)
 	}()
 	deployer := config.NewConfigDeployer(logChan)
+	deployer.SetReplaceBinds(stockBinds)
 
 	var results []config.DeploymentResult
 	var deployErr error
+	terminalCommand := defaultTerminalCommand()
+	if termSelected {
+		terminalCommand = term.Command()
+	}
+	if wm == deps.WindowManagerHyprland {
+		deployer.SetHyprlandVersion(installedHyprlandVersion())
+	}
+	if refreshHyprlandBinds {
+		if result, ok := deployer.RefreshHyprlandDMSBinds(terminalCommand); ok {
+			results = append(results, result)
+			deployErr = result.Error
+		}
+	}
 	if deployCompositor {
-		result, err := deployer.DeployCompositor(wm, term, headlessUseSystemd(wm, noSystemd))
+		result, err := deployer.DeployCompositor(wm, terminalCommand, headlessUseSystemd(wm, noSystemd))
 		results = append(results, result)
 		deployErr = err
 	}
@@ -141,7 +158,7 @@ func parseHeadlessTerminal(name string) (deps.Terminal, bool, error) {
 }
 
 func headlessUseSystemd(wm deps.WindowManager, noSystemd bool) bool {
-	if noSystemd || wm == deps.WindowManagerMango {
+	if noSystemd {
 		return false
 	}
 	return !isVoidSetup()

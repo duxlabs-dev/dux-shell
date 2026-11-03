@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
+import "../Common/QmlUtils.js" as QmlUtils
 
 Singleton {
     id: root
@@ -21,6 +22,7 @@ Singleton {
     property int brightnessVersion: 0
     property string currentDevice: ""
     property string lastIpcDevice: ""
+    property var lastIpcGroup: []
     property int brightnessLevel: {
         brightnessVersion;
         const deviceToUse = lastIpcDevice === "" ? getDefaultDevice() : (lastIpcDevice || currentDevice);
@@ -30,7 +32,6 @@ Singleton {
 
         return getDeviceBrightness(deviceToUse);
     }
-    property int maxBrightness: 100
     property bool brightnessInitialized: false
     property bool suppressOsd: true
 
@@ -209,9 +210,8 @@ Singleton {
             if (deviceExists) {
                 setCurrentDevice(lastDevice, false);
             } else {
-                const backlight = internalPanelActive() ? devices.find(d => d.class === "backlight") : null;
                 const nonKbdDevice = devices.find(d => !d.id.includes("kbd"));
-                const defaultDevice = backlight || nonKbdDevice || devices[0];
+                const defaultDevice = internalPanelDevice() || nonKbdDevice || devices[0];
                 setCurrentDevice(defaultDevice.id, false);
             }
         }
@@ -237,9 +237,11 @@ Singleton {
         if (actualDevice !== lastIpcDevice) {
             lastIpcDevice = actualDevice;
         }
+        if (lastIpcGroup.length > 0)
+            lastIpcGroup = [];
 
         const deviceInfo = getCurrentDeviceInfoByName(actualDevice);
-        const isExponential = SessionData.getBrightnessExponential(actualDevice);
+        const isExponential = deviceInfo?.class !== "software" && SessionData.getBrightnessExponential(actualDevice);
         const minValue = brightnessMinimum(deviceInfo);
         const maxValue = brightnessMaximum(deviceInfo);
 
@@ -298,6 +300,25 @@ Singleton {
         });
     }
 
+    function setGroupBrightness(percentage, deviceIds, suppressOsd) {
+        const lead = getCurrentDeviceInfoByName(deviceIds[0]);
+        const leadMin = brightnessMinimum(lead);
+        const leadMax = brightnessMaximum(lead);
+        const ratio = leadMax > leadMin ? Math.max(0, Math.min(1, (percentage - leadMin) / (leadMax - leadMin))) : 1;
+
+        for (const id of deviceIds.slice(1)) {
+            const info = getCurrentDeviceInfoByName(id);
+            const min = brightnessMinimum(info);
+            setBrightness(Math.round(min + ratio * (brightnessMaximum(info) - min)), id, true);
+        }
+        setBrightness(percentage, deviceIds[0], suppressOsd);
+        lastIpcGroup = deviceIds;
+    }
+
+    function lastIpcTargets() {
+        return lastIpcGroup.length > 1 && lastIpcGroup[0] === lastIpcDevice ? lastIpcGroup : [lastIpcDevice];
+    }
+
     function setCurrentDevice(deviceName, saveToSession = false) {
         if (currentDevice === deviceName) {
             return;
@@ -333,50 +354,59 @@ Singleton {
     }
 
     function internalPanelActive() {
-        return Quickshell.screens.some(s => /^(eDP|LVDS|DSI)/i.test(s.name));
+        return Quickshell.screens.some(s => isInternalPanelName(s.name));
+    }
+
+    function isInternalPanelName(name) {
+        return /^(eDP|LVDS|DSI)/i.test(name);
+    }
+
+    function internalPanelDevice() {
+        if (!internalPanelActive())
+            return null;
+        return devices.find(d => d.class === "backlight") || devices.find(d => d.class === "software" && isInternalPanelName(d.id.split(":").pop())) || null;
     }
 
     function getDefaultDevice() {
-        if (internalPanelActive()) {
-            for (const device of devices) {
-                if (device.class === "backlight") {
-                    return device.id;
-                }
-            }
-        }
+        const internal = internalPanelDevice();
+        if (internal)
+            return internal.id;
         const nonKbdDevice = devices.find(d => d.class !== "backlight" && !d.id.includes("kbd"));
         if (nonKbdDevice)
             return nonKbdDevice.id;
         return devices.length > 0 ? devices[0].id : "";
     }
 
-    function getPinnedDeviceForFocusedScreen() {
-        const focusedScreen = CompositorService.getFocusedScreen();
-        if (!focusedScreen)
-            return "";
-
-        const pins = CacheData.brightnessDevicePins || {};
-        const screenKey = SettingsData.getScreenDisplayName(focusedScreen);
-        if (!screenKey)
-            return "";
-
-        const pinnedDevice = pins[screenKey];
-        if (!pinnedDevice)
-            return "";
-
-        const deviceExists = devices.some(d => d.id === pinnedDevice);
-        if (!deviceExists)
-            return "";
-
-        return pinnedDevice;
+    function pinnedDevices(pinKey) {
+        if (!pinKey)
+            return [];
+        const pinned = QmlUtils.normalizePinList((CacheData.brightnessDevicePins || {})[pinKey]);
+        return pinned.filter(id => devices.some(d => d.id === id));
     }
 
-    function getPreferredDevice() {
-        const pinned = getPinnedDeviceForFocusedScreen();
-        if (pinned)
-            return pinned;
+    function screenPinnedDevices(screen) {
+        return screen ? pinnedDevices(SettingsData.getScreenDisplayName(screen)) : [];
+    }
 
-        return getDefaultDevice();
+    function getPreferredDevices() {
+        const pinned = screenPinnedDevices(CompositorService.getFocusedScreen());
+        return pinned.length > 0 ? pinned : [getDefaultDevice()];
+    }
+
+    function screenTargets(screen) {
+        const pinned = screenPinnedDevices(screen);
+        return pinned.length > 0 ? pinned : lastIpcTargets();
+    }
+
+    function screenTargetsLastDevice(screen) {
+        return screenTargets(screen).includes(lastIpcDevice);
+    }
+
+    function screenLeadDevice(screen) {
+        const pinned = screenPinnedDevices(screen);
+        if (pinned.length > 0)
+            return pinned[0];
+        return lastIpcDevice === "" ? getDefaultDevice() : (lastIpcDevice || currentDevice);
     }
 
     function getCurrentDeviceInfo() {
@@ -416,7 +446,7 @@ Singleton {
     }
 
     function brightnessMinimum(deviceInfo) {
-        if (!deviceInfo || SessionData.getBrightnessExponential(deviceInfo.id))
+        if (!deviceInfo || (deviceInfo.class !== "software" && SessionData.getBrightnessExponential(deviceInfo.id)))
             return 1;
         switch (deviceInfo.class) {
         case "backlight":
@@ -452,6 +482,7 @@ Singleton {
         switch (deviceInfo.class) {
         case "backlight":
         case "ddc":
+        case "software":
             break;
         default:
             return String(deviceInfo.name ?? "").includes("kbd") ? "keyboard" : "lightbulb";
@@ -520,20 +551,24 @@ Singleton {
     }
 
     Timer {
-        id: screenChangeRescanTimer
-        property int rescanAttempt: 0
-        interval: 3000
+        id: rescanTimer
+        property var schedule: []
+        property int attempt: 0
         repeat: false
+        function run(intervals) {
+            schedule = intervals;
+            attempt = 0;
+            interval = intervals[0];
+            restart();
+        }
         onTriggered: {
             rescanDevices();
-            rescanAttempt++;
-            if (rescanAttempt < 3) {
-                interval = rescanAttempt === 1 ? 5000 : 8000;
+            attempt++;
+            if (attempt < schedule.length) {
+                interval = schedule[attempt];
                 restart();
                 return;
             }
-            rescanAttempt = 0;
-            interval = 3000;
             osdSuppressTimer.restart();
         }
     }
@@ -543,9 +578,7 @@ Singleton {
 
         function onScreensChanged() {
             suppressOsd = true;
-            screenChangeRescanTimer.rescanAttempt = 0;
-            screenChangeRescanTimer.interval = 3000;
-            screenChangeRescanTimer.restart();
+            rescanTimer.run([3000, 5000, 8000]);
         }
     }
 
@@ -575,6 +608,7 @@ Singleton {
         function onSessionResumed() {
             suppressOsd = true;
             osdSuppressTimer.restart();
+            rescanTimer.run([400, 1400, 2600]);
         }
     }
 
@@ -587,7 +621,8 @@ Singleton {
             if (isNaN(value))
                 return "Invalid brightness value: " + percentage;
 
-            const actualDevice = device || root.getPreferredDevice();
+            const targets = device ? [device] : root.getPreferredDevices();
+            const actualDevice = targets[0];
 
             if (actualDevice && !root.devices.some(d => d.id === actualDevice))
                 return "Device not found: " + actualDevice;
@@ -600,7 +635,7 @@ Singleton {
             if (actualDevice && actualDevice !== root.currentDevice)
                 root.setCurrentDevice(actualDevice, false);
 
-            root.setBrightness(clampedValue, actualDevice);
+            root.setGroupBrightness(clampedValue, targets);
 
             return actualDevice ? "Brightness set to " + clampedValue + "% on " + actualDevice : "Brightness set to " + clampedValue + "%";
         }
@@ -609,7 +644,8 @@ Singleton {
             if (!root.brightnessAvailable)
                 return "Brightness control not available";
 
-            const actualDevice = device || root.getPreferredDevice();
+            const targets = device ? [device] : root.getPreferredDevices();
+            const actualDevice = targets[0];
 
             if (actualDevice && !root.devices.some(d => d.id === actualDevice))
                 return "Device not found: " + actualDevice;
@@ -625,7 +661,7 @@ Singleton {
             const maxValue = root.brightnessMaximum(deviceInfo);
             const newBrightness = Math.min(maxValue, currentBrightness + stepValue);
 
-            root.setBrightness(newBrightness, actualDevice);
+            root.setGroupBrightness(newBrightness, targets);
 
             return "Brightness increased by " + stepValue + "%" + (device ? " on " + actualDevice : "");
         }
@@ -634,7 +670,8 @@ Singleton {
             if (!root.brightnessAvailable)
                 return "Brightness control not available";
 
-            const actualDevice = device || root.getPreferredDevice();
+            const targets = device ? [device] : root.getPreferredDevices();
+            const actualDevice = targets[0];
 
             if (actualDevice && !root.devices.some(d => d.id === actualDevice))
                 return "Device not found: " + actualDevice;
@@ -651,7 +688,7 @@ Singleton {
 
             const newBrightness = Math.max(minValue, currentBrightness - stepValue);
 
-            root.setBrightness(newBrightness, actualDevice);
+            root.setGroupBrightness(newBrightness, targets);
 
             return "Brightness decreased by " + stepValue + "%" + (device ? " on " + actualDevice : "");
         }

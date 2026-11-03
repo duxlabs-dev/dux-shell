@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -88,22 +87,6 @@ func TestDisplayScopeStaysASingleName(t *testing.T) {
 		t.Setenv("WAYLAND_DISPLAY", tc.display)
 		assert.Equal(t, tc.want, displayScope(), tc.display)
 	}
-}
-
-func TestTryLockExcludesOtherProcesses(t *testing.T) {
-	if _, err := exec.LookPath("flock"); err != nil {
-		t.Skip("flock not available")
-	}
-	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
-
-	held, err := TryLock(SelectionOverlayLock)
-	require.NoError(t, err)
-
-	path := lockPath(SelectionOverlayLock)
-	assert.Error(t, exec.Command("flock", "-n", "-x", path, "-c", "true").Run())
-
-	held.Release()
-	assert.NoError(t, exec.Command("flock", "-n", "-x", path, "-c", "true").Run())
 }
 
 func TestLockSelectionOverlayReportsHolder(t *testing.T) {

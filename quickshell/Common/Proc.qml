@@ -1,17 +1,17 @@
 pragma Singleton
 
 import Quickshell
-import qs.DankCommon.Common as DankCommon
+import qs.DCommon.Common as DCommon
 
 Singleton {
-    readonly property int noTimeout: DankCommon.Proc.noTimeout
-    readonly property string dmsBin: DankCommon.Proc.dmsBin
+    readonly property int noTimeout: DCommon.Proc.noTimeout
+    readonly property string dmsBin: DCommon.Proc.dmsBin
 
     function runCommand(id, command, callback, debounceMs, timeoutMs, owner) {
-        DankCommon.Proc.runCommand(id, command, callback, debounceMs, timeoutMs, owner);
+        DCommon.Proc.runCommand(id, command, callback, debounceMs, timeoutMs, owner);
     }
 
     function release(id) {
-        DankCommon.Proc.release(id);
+        DCommon.Proc.release(id);
     }
 }
