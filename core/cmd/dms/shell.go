@@ -139,6 +139,7 @@ func runShellIPCCommand(args []string) {
 	if args[0] != "call" {
 		args = append([]string{"call"}, args...)
 	}
+	args = fillOptionalIPCArgs(args)
 	if tryDirectIPCCall(args) {
 		return
 	}
@@ -156,6 +157,26 @@ func runShellIPCCommand(args []string) {
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("Error running IPC command: %v", err)
 	}
+}
+
+// fillOptionalIPCArgs adds the empty device argument the brightness IPC handlers
+// treat as the preferred device. Quickshell's IpcHandler has no optional arguments.
+func fillOptionalIPCArgs(args []string) []string {
+	if len(args) < 3 || args[1] != "brightness" {
+		return args
+	}
+	withoutDevice := 0
+	switch args[2] {
+	case "set", "increment", "decrement":
+		withoutDevice = 1
+	case "enableExponential", "disableExponential", "toggleExponential":
+	default:
+		return args
+	}
+	if len(args)-3 != withoutDevice {
+		return args
+	}
+	return append(args[:len(args):len(args)], "")
 }
 
 // tryDirectIPCCall invokes the shell over its IPC socket without spawning qs.
