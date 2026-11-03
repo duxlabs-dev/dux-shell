@@ -199,7 +199,7 @@ QtObject {
         enabled: root.enabled
 
         function onBrightnessChanged(showOsd) {
-            if (showOsd && SettingsData.osdBrightnessEnabled)
+            if (showOsd && SettingsData.osdBrightnessEnabled && BrightnessService.screenTargetsLastDevice(root.controller.screen))
                 root.show("brightness");
         }
     }

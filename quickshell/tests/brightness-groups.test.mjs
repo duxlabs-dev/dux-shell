@@ -21,7 +21,7 @@ function service(globals) {
         lastIpcGroup: [],
         lastIpcDevice: ""
     }, globals));
-    for (const name of ["setGroupBrightness", "lastIpcTargets", "pinnedDevices", "screenPinnedDevices", "screenTargets", "screenLeadDevice"])
+    for (const name of ["setGroupBrightness", "lastIpcTargets", "pinnedDevices", "screenPinnedDevices", "screenTargets", "screenTargetsLastDevice", "screenLeadDevice"])
         vm.runInContext(functionSource(SERVICE, name), context);
     return context;
 }
@@ -96,4 +96,18 @@ test("each screen targets its own pins and only unpinned screens follow the last
     assert.deepEqual(plain(context.screenTargets({ name: "HDMI-1" })), ["backlight:a"]);
     assert.equal(context.screenLeadDevice({ name: "HDMI-1" }), "backlight:a");
     assert.deepEqual(plain(context.screenTargets(null)), ["backlight:a"]);
+});
+
+test("only screens that target the changed device react to it", () => {
+    const context = service({
+        devices: [{ id: "ddc:i2c-11" }, { id: "ddc:i2c-12" }, { id: "ddc:i2c-13" }],
+        SettingsData: { getScreenDisplayName: screen => screen.name },
+        CacheData: { brightnessDevicePins: { "DP-1": ["ddc:i2c-11"], "DP-2": ["ddc:i2c-12", "ddc:i2c-13"] } },
+        lastIpcDevice: "ddc:i2c-11"
+    });
+
+    assert.equal(context.screenTargetsLastDevice({ name: "DP-1" }), true);
+    assert.equal(context.screenTargetsLastDevice({ name: "DP-2" }), false);
+    assert.equal(context.screenTargetsLastDevice({ name: "HDMI-1" }), true);
+    assert.equal(context.screenTargetsLastDevice(null), true);
 });

@@ -398,6 +398,10 @@ Singleton {
         return pinned.length > 0 ? pinned : lastIpcTargets();
     }
 
+    function screenTargetsLastDevice(screen) {
+        return screenTargets(screen).includes(lastIpcDevice);
+    }
+
     function screenLeadDevice(screen) {
         const pinned = screenPinnedDevices(screen);
         if (pinned.length > 0)
