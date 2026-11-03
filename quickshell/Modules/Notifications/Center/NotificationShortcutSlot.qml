@@ -19,7 +19,13 @@ DIconButton {
     property color restColor: Theme.cardSurface
 
     readonly property bool empty: shortcut === ""
-    readonly property real targetScale: pressed ? 1 + Theme.buttonGroupExpandRatio : (squeezed ? 1 - Theme.buttonGroupExpandRatio : 1)
+    readonly property real targetScale: {
+        if (!Theme.shapeMorph)
+            return 1;
+        if (pressed)
+            return 1 + Theme.buttonGroupExpandRatio;
+        return squeezed ? 1 - Theme.buttonGroupExpandRatio : 1;
+    }
     readonly property var pressSpring: Theme.springPreset("fast", Theme.expressiveDurations.expressiveFastSpatial)
 
     signal editRequested

@@ -267,8 +267,6 @@ Rectangle {
                     DActionButton {
                         visible: root.interactive && root.canExpand && root.groupCount <= 1
                         iconName: root.descriptionExpanded ? "expand_less" : "expand_more"
-                        backgroundColor: root.chipColor
-                        width: NotificationMetrics.controlSize + Theme.spacingS
                         buttonSize: NotificationMetrics.controlSize
                         iconSize: Theme.iconSizeSmall
                         Accessible.name: root.descriptionExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
