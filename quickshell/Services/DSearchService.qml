@@ -25,20 +25,10 @@ Singleton {
         command: ["sh", "-c", "command -v dsearch"]
         running: false
 
-        stdout: SplitParser {
-            onRead: line => {
-                if (line && line.trim().length > 0) {
-                    root.dsearchAvailable = true;
-                }
-            }
-        }
-
         onExited: exitCode => {
-            if (exitCode !== 0) {
-                root.dsearchAvailable = false;
-            } else {
+            root.dsearchAvailable = exitCode === 0;
+            if (root.dsearchAvailable)
                 root._checkVersion();
-            }
         }
     }
 
@@ -56,40 +46,14 @@ Singleton {
     function ensureChecked() {
         if (_checked)
             return;
-        rediscover();
+        recheck();
     }
 
-    function ping(callback) {
-        ensureChecked();
-        if (!dsearchAvailable) {
-            if (callback) {
-                callback({
-                    "error": "dsearch not available"
-                });
-            }
+    function recheck() {
+        _checked = true;
+        if (dsearchAvailable || checkProcess.running)
             return;
-        }
-
-        Proc.runCommand("dsearch-ping", ["dsearch", "ping", "--json"], (stdout, exitCode) => {
-            if (callback) {
-                if (exitCode === 0) {
-                    try {
-                        const response = JSON.parse(stdout);
-                        callback({
-                            "result": response
-                        });
-                    } catch (e) {
-                        callback({
-                            "error": "failed to parse ping response"
-                        });
-                    }
-                } else {
-                    callback({
-                        "error": "ping failed"
-                    });
-                }
-            }
-        });
+        checkProcess.running = true;
     }
 
     function search(query, params, callback) {
@@ -185,10 +149,5 @@ Singleton {
                 }
             }
         }, 100, 5000);
-    }
-
-    function rediscover() {
-        _checked = true;
-        checkProcess.running = true;
     }
 }

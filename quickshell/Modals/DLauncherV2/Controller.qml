@@ -661,6 +661,7 @@ Item {
         }
         searchMode = mode;
         if (mode === "files") {
+            DSearchService.recheck();
             fileSearchType = fileTypeOverride !== undefined ? fileTypeOverride : (SessionData.launcherLastFileSearchType || "all");
         }
         modeChanged(mode, !isAutoSwitch && notPersist !== true);
@@ -724,7 +725,10 @@ Item {
             _startDmenuSession(mode.slice("dmenu:".length));
             return;
         }
-        DSearchService.ensureChecked();
+        if (mode === "files")
+            DSearchService.recheck();
+        else
+            DSearchService.ensureChecked();
         if (appCategory !== "" || Object.keys(collapsedSections).length > 0)
             _clearModeCache();
         appCategory = "";
