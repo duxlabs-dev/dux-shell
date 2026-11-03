@@ -105,7 +105,8 @@ FocusScope {
                     spacing: Theme.spacingXS
 
                     Repeater {
-                        model: keybindRow.modelData.keyCombos || (keybindRow.modelData.key ? [KeyUtils.formatKeyTokens(keybindRow.modelData.key, KeybindsService.modKey, KeybindsService.modSymbol)] : [])
+                        id: combosRepeater
+                        model: keybindRow.modelData.keyCombos || (keybindRow.modelData.key ? [KeyUtils.formatKeyTokens(keybindRow.modelData.key, KeybindsService.modKey, KeybindsService.modSymbol, content.modifierStyle)] : [])
 
                         Row {
                             anchors.right: parent ? parent.right : undefined
@@ -424,7 +425,7 @@ FocusScope {
 
                 const label = content.getBindLabel(bind);
                 const labelLower = label.toLowerCase();
-                const keyTokens = KeyUtils.formatKeyTokens(bind.key, KeybindsService.modKey, KeybindsService.modSymbol);
+                const keyTokens = KeyUtils.formatKeyTokens(bind.key, KeybindsService.modKey, KeybindsService.modSymbol, content.modifierStyle);
                 const tokenSig = keyTokens.join("+");
                 const keyLower = (bind.key || "").toLowerCase();
                 const keyCombo = KeyUtils.normalizeKeyCombo(bind.key, KeybindsService.modKey, KeybindsService.modSymbol);
@@ -521,7 +522,12 @@ FocusScope {
     }
 
     property string activeSearchQuery: ""
+    readonly property string modifierStyle: SettingsData.keybindsModifierStyle || "windows"
     property var dataModel: generateCategories("")
+
+    onModifierStyleChanged: {
+        content.dataModel = content.generateCategories(content.activeSearchQuery);
+    }
 
     Connections {
         target: KeybindsService
@@ -601,8 +607,9 @@ FocusScope {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: searchRow.bottom
-                anchors.bottom: parent.bottom
+                anchors.bottom: sidebarFooter.top
                 anchors.topMargin: Theme.spacingM
+                anchors.bottomMargin: Theme.spacingS
                 contentWidth: width
                 contentHeight: sidebarCol.implicitHeight
                 clip: true
@@ -712,6 +719,48 @@ FocusScope {
                     }
                 }
             }
+
+            // Bottom Settings Row for Keycap Modifier Style (Windows vs Mac)
+            Column {
+                id: sidebarFooter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                spacing: Theme.spacingS
+
+                Rectangle {
+                    width: parent.width - Theme.spacingS * 2
+                    height: Theme.dividerWidth
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    color: Theme.outlineVariant
+                    opacity: 0.3
+                }
+
+                RowLayout {
+                    width: parent.width
+                    spacing: Theme.spacingS
+
+                    StyledText {
+                        text: I18n.tr("Key style", "modifier icon style toggle label")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.leftMargin: Theme.spacingS
+                    }
+
+                    DButtonGroup {
+                        id: modifierStyleGroup
+                        size: "small"
+                        model: [I18n.tr("Linux", "keyboard keycap style name"), I18n.tr("Mac", "keyboard keycap style name")]
+                        currentIndex: content.modifierStyle === "mac" ? 1 : 0
+                        onSelectionChanged: (index, selected) => {
+                            if (selected)
+                                SettingsData.set("keybindsModifierStyle", index === 1 ? "mac" : "windows");
+                        }
+                    }
+                }
+            }
         }
 
         // Main Content Area
@@ -748,21 +797,30 @@ FocusScope {
                             readonly property var sectionCatInfo: content.dataModel.byCategory[sectionCatName]
 
                             // Section Header
-                            RowLayout {
+                            Row {
+                                id: categoryHeader
                                 width: parent.width
                                 spacing: Theme.spacingS
+                                height: Math.max(categoryIcon.implicitHeight, categoryTitle.implicitHeight)
 
                                 DIcon {
+                                    id: categoryIcon
                                     name: content.getCategoryIcon(sectionCol.sectionCatName)
                                     size: Theme.iconSizeMedium
                                     color: Theme.primary
+                                    anchors.verticalCenter: parent.verticalCenter
                                 }
 
                                 StyledText {
+                                    id: categoryTitle
                                     text: I18n.tr(sectionCol.sectionCatName)
+                                    width: Math.min(implicitWidth, Math.max(0, categoryHeader.width - categoryIcon.width - categoryHeader.spacing))
                                     font.pixelSize: Theme.fontSizeMedium
                                     font.weight: Theme.fontWeightMedium
                                     color: Theme.primary
+                                    horizontalAlignment: Text.AlignLeft
+                                    elide: Text.ElideRight
+                                    anchors.verticalCenter: parent.verticalCenter
                                 }
                             }
 

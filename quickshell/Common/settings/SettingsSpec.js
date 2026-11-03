@@ -922,6 +922,9 @@ var LOCAL_SPEC = {
     keybindsFloatingWindow: {
         def: false
     },
+    keybindsModifierStyle: {
+        def: "windows"
+    },
     dashTabPosition: {
         def: "auto"
     },
