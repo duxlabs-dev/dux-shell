@@ -8,6 +8,7 @@ Singleton {
     id: root
 
     readonly property var defaults: ({
+            cardBackgrounds: false,
             seekbar: true,
             waveProgress: true,
             albumArtBackdrop: true,
@@ -37,6 +38,7 @@ Singleton {
 
     readonly property var stored: SettingsData.dashOptions?.media ?? ({})
     readonly property string defaultTitleFont: titleFontDefaults[stored.playerStyle ?? defaultPlayerStyle] ?? "ui"
+    readonly property bool cardBackgrounds: stored.cardBackgrounds ?? defaults.cardBackgrounds
     readonly property bool waveProgress: stored.waveProgress ?? defaults.waveProgress
     readonly property bool albumArtBackdrop: stored.albumArtBackdrop ?? defaults.albumArtBackdrop
     readonly property bool albumArtAccent: stored.albumArtAccent ?? defaults.albumArtAccent

@@ -34,8 +34,10 @@ T.Control {
     property real paddingV: SettingsMetrics.rowPaddingV
     property color rowColor: SettingsMetrics.rowColor
     property bool active: false
-    readonly property color contentColor: active ? Theme.onSelectedContainer : Theme.surfaceText
-    readonly property color supportingContentColor: active ? Theme.onSelectedContainer : Theme.surfaceVariantText
+    property color selectedRowColor: Theme.selectedContainer
+    property color selectedContentColor: Theme.onSelectedContainer
+    readonly property color contentColor: active ? selectedContentColor : Theme.surfaceText
+    readonly property color supportingContentColor: active ? selectedContentColor : Theme.surfaceVariantText
     property color iconColor: active ? Theme.accentOnSelectedContainer : Theme.primary
     property color titleColor: contentColor
 
@@ -142,7 +144,7 @@ T.Control {
     Rectangle {
         anchors.fill: parent
         visible: root.paintBackground
-        color: root.active ? Theme.selectedContainer : root.highlighted ? Theme.blend(root.rowColor, Theme.primary, SettingsMetrics.highlightBlend) : root.rowColor
+        color: root.active ? root.selectedRowColor : root.highlighted ? Theme.blend(root.rowColor, Theme.primary, SettingsMetrics.highlightBlend) : root.rowColor
         border.width: root.inGroup ? SettingsMetrics.groupEdgeWidth : Theme.layerOutlineWidth
         border.color: Theme.outlineMedium
 
@@ -162,7 +164,7 @@ T.Control {
     Rectangle {
         anchors.fill: parent
         visible: !root.paintBackground && (root.active || root.highlighted)
-        color: root.active ? Theme.selectedContainer : SettingsMetrics.rowHighlightColor
+        color: root.active ? root.selectedRowColor : SettingsMetrics.rowHighlightColor
         topLeftRadius: root.topRadius
         topRightRadius: root.topRadius
         bottomLeftRadius: root.bottomRadius
