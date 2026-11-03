@@ -802,7 +802,7 @@ RegistryBrowserWindow {
         });
     }
 
-    function refreshPlugins() {
+    function refreshPlugins(force) {
         isLoading = true;
         loadError = "";
         DMSService.listPlugins(response => {
@@ -815,9 +815,9 @@ RegistryBrowserWindow {
             }
             allPlugins = response.result || [];
             updateFilteredPlugins();
-        });
+        }, force === true);
         if (DMSService.apiVersion >= 8)
-            DMSService.listInstalled();
+            DMSService.listInstalled(undefined, force === true);
     }
 
     function checkPendingInstall() {
@@ -845,8 +845,8 @@ RegistryBrowserWindow {
         return PopoutService.pendingPluginInstall || "";
     }
 
-    function refresh() {
-        refreshPlugins();
+    function refresh(force) {
+        refreshPlugins(force);
     }
 
     function applySearch() {
@@ -892,12 +892,18 @@ RegistryBrowserWindow {
                 if (plugin.name)
                     pluginMap[plugin.name] = true;
             }
+            var changed = false;
             var updated = root.allPlugins.map(p => {
-                var isInstalled = pluginMap[p.name] || pluginMap[p.id] || false;
+                var isInstalled = !!(pluginMap[p.name] || pluginMap[p.id]);
+                if (isInstalled === !!p.installed)
+                    return p;
+                changed = true;
                 return Object.assign({}, p, {
                     "installed": isInstalled
                 });
             });
+            if (!changed)
+                return;
             root.allPlugins = updated;
             root.updateFilteredPlugins();
             if (!selectedPluginId)

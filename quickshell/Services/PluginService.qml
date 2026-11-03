@@ -1292,13 +1292,19 @@ Singleton {
         globalVarChanged(pluginId, varName);
     }
 
+    // The directory ignores the query; it keys the on-disk thumbnail cache so an updated plugin gets a fresh render.
+    function previewVersion(plugin) {
+        var stamp = plugin.updated_at || plugin.version || "";
+        return stamp ? "?v=" + encodeURIComponent(stamp) : "";
+    }
+
     function previewUrl(plugin) {
         if (!plugin)
             return "";
         if (plugin.previewUrl)
             return plugin.previewUrl;
         if (plugin.id)
-            return previewApiBase + plugin.id;
+            return previewApiBase + plugin.id + previewVersion(plugin);
         return plugin.screenshot || "";
     }
 
@@ -1309,7 +1315,7 @@ Singleton {
         if (plugin.thumbUrl)
             return plugin.thumbUrl;
         if (plugin.id)
-            return previewApiBase + plugin.id + "/thumb";
+            return previewApiBase + plugin.id + "/thumb" + previewVersion(plugin);
         return "";
     }
 
