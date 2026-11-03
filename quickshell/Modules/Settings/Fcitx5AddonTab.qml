@@ -12,7 +12,7 @@ Item {
     property var values: ({})
     readonly property var built: schema ? Fcitx5Schema.buildRows(schema, schema.root, []) : {
         "rows": [],
-        "skipped": 0
+        "hidden": []
     }
 
     LayoutMirroring.enabled: I18n.isRtl
@@ -54,11 +54,11 @@ Item {
             }
 
             SettingsNoteRow {
-                visible: root.built.skipped > 0 && Fcitx5Service.configtoolFound
+                visible: root.built.hidden.length > 0 && Fcitx5Service.configtoolFound
                 noteIconName: "info"
                 tint: Theme.primary
                 tintBackground: Theme.primaryHover
-                text: I18n.tr("Some options are only available in fcitx5-configtool", "Displayed when not all config options are displayed in a fctix5 addon config page")
+                text: I18n.tr("Some options are only available in fcitx5-configtool: %1", "Displayed when not all config options are displayed in a fctix5 addon config page, followed by the option names").arg(root.built.hidden.join(", "))
             }
         }
     }

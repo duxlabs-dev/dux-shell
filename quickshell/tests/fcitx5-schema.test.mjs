@@ -23,8 +23,8 @@ const fcitxSchema = {
 const value = { Hotkey: { TriggerKeys: ["Control+space"], Style: "b" } };
 
 test("rows come from the schema: kinds, enum labels, constraints, unsupported counted", () => {
-    const { rows, skipped } = schema.buildRows(fcitxSchema, "GlobalConfig", []);
-    assert.equal(skipped, 1, "External editors are skipped, not drawn");
+    const { rows, hidden } = schema.buildRows(fcitxSchema, "GlobalConfig", []);
+    assert.deepEqual([...hidden], ["Editor"], "External editors are listed by label, not drawn");
     assert.deepEqual([...rows.map(r => r.kind)], ["group", "keys", "enum", "enum", "font"]);
     const [, keys, style] = rows;
     assert.deepEqual([...keys.path], ["Hotkey", "TriggerKeys"]);

@@ -105,7 +105,7 @@ function enumChoices(field) {
 
 function buildRows(schema, structName, path) {
     const rows = [];
-    let skipped = 0;
+    const hidden = [];
     const base = path ?? [];
     for (const field of structFields(schema, structName)) {
         const kind = fieldKind(field.type, field.props);
@@ -113,7 +113,7 @@ function buildRows(schema, structName, path) {
         if (kind === "unsupported") {
             const nested = structFields(schema, field.type);
             if (nested.length === 0) {
-                skipped++;
+                hidden.push(field.description || field.name);
                 continue;
             }
             const inner = buildRows(schema, field.type, fieldPath);
@@ -124,7 +124,7 @@ function buildRows(schema, structName, path) {
                     "path": fieldPath
                 });
             rows.push(...inner.rows);
-            skipped += inner.skipped;
+            hidden.push(...inner.hidden);
             continue;
         }
         const choices = kind === "enum" ? enumChoices(field) : null;
@@ -141,7 +141,7 @@ function buildRows(schema, structName, path) {
     }
     return {
         "rows": rows,
-        "skipped": skipped
+        "hidden": hidden
     };
 }
 
