@@ -68,13 +68,31 @@ DFloatingWindow {
             anchors.top: headerRow.bottom
             anchors.bottom: parent.bottom
             clip: true
-            contentHeight: mainColumn.height + fabBar.height + Theme.spacingL * 2
+            contentHeight: mainColumn.height + fabBar.height + Theme.windowInset * 2
             contentWidth: width
 
             ChangelogContent {
                 id: mainColumn
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: Math.min(640, parent.width - Theme.spacingXL * 2)
+                x: Theme.windowInset
+                width: parent.width - Theme.windowInset * 2
+            }
+        }
+
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            height: fabBar.height + Theme.windowInset * 2
+            z: 1
+            gradient: Gradient {
+                GradientStop {
+                    position: 0
+                    color: Theme.withAlpha(root.surfaceColor, 0)
+                }
+                GradientStop {
+                    position: 1
+                    color: root.surfaceColor
+                }
             }
         }
 
@@ -82,7 +100,7 @@ DFloatingWindow {
             id: fabBar
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: Theme.spacingL
+            anchors.bottomMargin: Theme.windowInset
             z: 2
             spacing: Theme.spacingM
             LayoutMirroring.enabled: I18n.isRtl

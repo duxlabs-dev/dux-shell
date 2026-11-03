@@ -144,7 +144,6 @@ Column {
         PopoutService.openSettingsWithTab(target);
     }
 
-    topPadding: 0
     spacing: Theme.spacingL
 
     ReleaseHero {
