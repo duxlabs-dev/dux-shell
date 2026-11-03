@@ -17338,29 +17338,6 @@
     "parentLabel": "Interface style"
   },
   {
-    "section": "_tab_54",
-    "label": "Bar widgets: Widget settings",
-    "tabIndex": 54,
-    "category": "Widget settings",
-    "keywords": [
-      "bar",
-      "components",
-      "instance",
-      "modules",
-      "options",
-      "panel",
-      "settings",
-      "statusbar",
-      "taskbar",
-      "topbar",
-      "widget",
-      "widgets"
-    ],
-    "icon": "tune",
-    "parentLabel": "Bar widgets",
-    "description": "Options of one widget instance"
-  },
-  {
     "section": "barWidgetGeneral",
     "label": "Widget settings",
     "tabIndex": 54,
@@ -18278,27 +18255,6 @@
       "/etc/pam.d/greetd"
     ],
     "conditionKey": "greeterAvailable"
-  },
-  {
-    "section": "_tab_63",
-    "label": "Desktop widgets: Widget settings",
-    "tabIndex": 63,
-    "category": "Widget settings",
-    "keywords": [
-      "components",
-      "conky",
-      "desktop",
-      "desktop clock",
-      "instance",
-      "modules",
-      "options",
-      "settings",
-      "widget",
-      "widgets"
-    ],
-    "icon": "tune",
-    "parentLabel": "Desktop widgets",
-    "description": "Options of one widget instance"
   },
   {
     "section": "paletteInject",
@@ -19552,48 +19508,6 @@
     ],
     "parentLabel": "Input",
     "icon": "extension",
-    "conditionKey": "fcitx5Available"
-  },
-  {
-    "section": "_tab_69",
-    "label": "Input: Plugins",
-    "tabIndex": 69,
-    "category": "Plugins",
-    "keywords": [
-      "addon",
-      "addons",
-      "extend",
-      "extensions",
-      "input",
-      "options",
-      "plugin",
-      "plugins",
-      "widgets"
-    ],
-    "icon": "extension",
-    "parentLabel": "Input",
-    "description": "Options of a fcitx5 plugin",
-    "conditionKey": "fcitx5Available"
-  },
-  {
-    "section": "_tab_70",
-    "label": "Input: Plugins",
-    "tabIndex": 70,
-    "category": "Plugins",
-    "keywords": [
-      "addon",
-      "addons",
-      "extend",
-      "extensions",
-      "input",
-      "options",
-      "plugin",
-      "plugins",
-      "widgets"
-    ],
-    "icon": "extension",
-    "parentLabel": "Input",
-    "description": "Options of a fcitx5 plugin",
     "conditionKey": "fcitx5Available"
   }
 ]

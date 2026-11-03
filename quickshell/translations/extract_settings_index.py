@@ -691,6 +691,7 @@ def parse_structure_entry(block, parent=None):
         "tabIndex": int(tab_index_match.group(1)) if tab_index_match else None,
         "hint": i18n_prop(own, "hint"),
         "separator": '"separator": true' in own,
+        "dynamicTitle": '"titleFrom"' in own,
         "conditionKey": gate_condition(own) or (parent["conditionKey"] if parent else None),
         "parentLabel": parent["label"] if parent else None,
         "own": own,
@@ -775,7 +776,7 @@ def generate_tab_entries(leaves, settings_entries):
     entries = []
     for leaf in leaves:
         base_label = leaf["label"] or ""
-        if leaf["children"] or not (base_label or leaf["runtimeLabel"]):
+        if leaf["children"] or leaf["dynamicTitle"] or not (base_label or leaf["runtimeLabel"]):
             continue
         label = (
             f"{leaf['parentLabel']}: {base_label}"
