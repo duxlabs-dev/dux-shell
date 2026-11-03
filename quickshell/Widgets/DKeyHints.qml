@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
@@ -7,6 +9,7 @@ Item {
     id: root
 
     property var hints: []
+    readonly property string modifierStyle: SettingsData.keybindsModifierStyle || "windows"
 
     readonly property real widestHint: {
         let widest = 0;
@@ -64,7 +67,7 @@ Item {
                             }
 
                             Repeater {
-                                model: KeyUtils.formatKeyTokens(combo.modelData)
+                                model: KeyUtils.formatKeyTokens(combo.modelData, "Super", "Mod", root.modifierStyle)
 
                                 DKeycap {
                                     required property string modelData
