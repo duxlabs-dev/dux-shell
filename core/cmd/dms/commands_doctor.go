@@ -858,6 +858,7 @@ func checkWindowManagers(qsVersion string) []checkResult {
 
 	var results []checkResult
 	foundAny := false
+	mangoVersion := ""
 
 	for _, c := range compositors {
 		if !slices.ContainsFunc(c.commands, utils.CommandExists) {
@@ -895,13 +896,8 @@ func checkWindowManagers(qsVersion string) []checkResult {
 		if c.name == "niri" {
 			results = append(results, checkNiriConfig(filepath.Join(utils.XDGConfigHome(), "niri"), config.ProbeNiriCapabilities(), config.NiriValidates)...)
 		}
-		if c.name == "mangowc" && mangoLacksSnakeCase(ver) {
-			results = append(results, checkResult{
-				catCompositor, "Mango config format", statusError,
-				fmt.Sprintf("Mango %s is older than 0.18", ver),
-				"DMS writes Mango config with the snake_case keys of Mango 0.18 and later, which this release rejects; upgrade Mango",
-				doctorDocsURL + "#compositor-checks",
-			})
+		if c.name == "mangowc" {
+			mangoVersion = ver
 		}
 	}
 
@@ -923,6 +919,14 @@ func checkWindowManagers(qsVersion string) []checkResult {
 	}
 
 	if os.Getenv("MANGO_INSTANCE_SIGNATURE") != "" {
+		if mangoLacksSnakeCase(mangoVersion) {
+			results = append(results, checkResult{
+				catCompositor, "Mango config format", statusError,
+				fmt.Sprintf("Mango %s is older than 0.18", mangoVersion),
+				"DMS writes Mango config with the snake_case keys of Mango 0.18 and later, which this release rejects; upgrade Mango",
+				doctorDocsURL + "#compositor-checks",
+			})
+		}
 		results = append(results, checkMangoConfig(mangoconf.Dir())...)
 	}
 
