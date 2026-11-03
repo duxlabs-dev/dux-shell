@@ -17,6 +17,7 @@ function create(id, name) {
         showOnLastDisplay: true,
         position: 1,
         mode: "compact",
+        middleClickAction: "close",
         taskbarAlign: "center",
         widgetExpansion: "popout",
         iconSize: 42,
@@ -99,6 +100,7 @@ function normalize(configs, presets) {
         result.name = typeof config.name === "string" && config.name.trim() ? config.name : config.id;
         result.position = Number.isInteger(config.position) && config.position >= 0 && config.position < 4 ? config.position : 1;
         result.mode = config.mode === "taskbar" ? "taskbar" : "compact";
+        result.middleClickAction = ["close", "launch"].includes(config.middleClickAction) ? config.middleClickAction : defaults.middleClickAction;
         result.taskbarAlign = ["start", "center", "end"].includes(config.taskbarAlign) ? config.taskbarAlign : "center";
         result.widgetExpansion = config.widgetExpansion === "inline" ? "inline" : "popout";
         result.iconSize = bounded(result.iconSize, defaults.iconSize, 16, 96);
