@@ -532,7 +532,7 @@ Item {
             visible: root.editable && Fcitx5Service.configtoolFound
             iconName: "open_in_new"
             title: I18n.tr("Open fcitx5-configtool")
-            subtitle: I18n.tr("Addons and every other option")
+            subtitle: I18n.tr("A few options are only available in fcitx5-configtool")
             clickable: true
             onClicked: Quickshell.execDetached(["fcitx5-configtool"])
         }

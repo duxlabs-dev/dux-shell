@@ -443,7 +443,7 @@ func routeRequestRecovered(ctx context.Context, conn *ipc.ConnWriter, req ipc.Re
 }
 
 func getCapabilities() Capabilities {
-	caps := []string{"plugins", "dgop", "drives", "lyrics", "lyrics.plugins"}
+	caps := []string{"plugins", "dgop", "drives", "lyrics", "lyrics.plugins", "fcitx5"}
 
 	if networkManager != nil {
 		caps = append(caps, "network")
@@ -480,8 +480,6 @@ func getCapabilities() Capabilities {
 	if brightnessManager != nil {
 		caps = append(caps, "brightness")
 	}
-
-	caps = append(caps, "fcitx5")
 
 	if wlrOutputManager != nil {
 		caps = append(caps, "wlroutput")

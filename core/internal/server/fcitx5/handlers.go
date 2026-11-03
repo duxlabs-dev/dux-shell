@@ -8,6 +8,7 @@ import (
 
 	"github.com/duxlabs-dev/dux-go/ipc"
 	"github.com/duxlabs-dev/dux-go/ipc/params"
+	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 	"github.com/godbus/dbus/v5"
 )
@@ -242,11 +243,13 @@ func renameGroup(req ipc.Request) (any, error) {
 		return nil, err
 	}
 	if _, err := call("SetInputMethodGroupInfo", newName, defaultLayout, items); err != nil {
+		log.Warnf("Fcitx5: rename of %q aborted, removing copy %q", name, newName)
 		_, _ = call("RemoveInputMethodGroup", newName)
 		return nil, err
 	}
 	if cur == name {
 		if _, err := call("SwitchInputMethodGroup", newName); err != nil {
+			log.Warnf("Fcitx5: could not switch to %q, removing copy", newName)
 			_, _ = call("RemoveInputMethodGroup", newName)
 			return nil, err
 		}
@@ -353,6 +356,7 @@ func setConfig(req ipc.Request) (any, error) {
 		return nil, err
 	}
 	payload := fromTyped(value, schema.Root, structIndex(schema.Structs))
+	log.Infof("Fcitx5: applying config %s", uri)
 	return ok(call("SetConfig", uri, payload))
 }
 
@@ -391,5 +395,6 @@ func setAddonEnabled(req ipc.Request) (any, error) {
 		Name    string
 		Enabled bool
 	}{{name, enabled}}
+	log.Infof("Fcitx5: addon %s enabled=%t", name, enabled)
 	return ok(call("SetAddonsState", state))
 }
