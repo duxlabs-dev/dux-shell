@@ -749,7 +749,7 @@ FocusScope {
                         Layout.leftMargin: Theme.spacingS
                     }
 
-                    DankButtonGroup {
+                    DButtonGroup {
                         id: modifierStyleGroup
                         size: "small"
                         model: [I18n.tr("Mod", "Mod keyboard style name"), I18n.tr("Mac", "Mac keyboard style name")]
