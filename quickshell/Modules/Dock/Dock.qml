@@ -12,7 +12,7 @@ Variants {
         SettingsData.dockConfigs;
         SettingsData.barConfigs;
         const slots = [];
-        for (const screen of Quickshell.screens) {
+        for (const screen of ShellLayout.realScreens) {
             for (const config of SettingsData.dockConfigsForScreen(screen)) {
                 if (CompositorService.frameHostsDockForConfig(screen, config))
                     continue;

@@ -24,7 +24,7 @@ Scope {
 
         sourceComponent: Variants {
             id: overviewVariants
-            model: Quickshell.screens
+            model: ShellLayout.realScreens
 
             PanelWindow {
                 id: root
