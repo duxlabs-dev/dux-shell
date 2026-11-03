@@ -122,7 +122,7 @@ Item {
                 resetKeys: ["middleClickAction"]
                 text: I18n.tr("Middle-click action", "dock middle-click behavior setting")
                 values: ["close", "launch"]
-                model: [I18n.tr("Close window", "dock middle-click action option"), I18n.tr("Launch new instance", "dock middle-click action option")]
+                model: [I18n.tr("Close Window", "dock middle-click action option"), I18n.tr("Launch new instance", "dock middle-click action option")]
                 value: dock.config?.middleClickAction ?? "close"
                 fallbackValue: "close"
                 onValueSelected: value => dock.setOption("middleClickAction", value)
