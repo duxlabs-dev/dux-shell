@@ -782,6 +782,18 @@ var LOCAL_SPEC = {
             }
         ]
     },
+    weatherProviders: {
+        def: [
+            {
+                id: "openmeteo",
+                enabled: true
+            },
+            {
+                id: "metno",
+                enabled: false
+            }
+        ]
+    },
     appIdSubstitutions: {
         def: [
             {
