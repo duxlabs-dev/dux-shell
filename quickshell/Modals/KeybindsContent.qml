@@ -752,7 +752,7 @@ FocusScope {
                     DButtonGroup {
                         id: modifierStyleGroup
                         size: "small"
-                        model: [I18n.tr("Mod", "Mod keyboard style name"), I18n.tr("Mac", "Mac keyboard style name")]
+                        model: [I18n.tr("Linux", "keyboard keycap style name"), I18n.tr("Mac", "keyboard keycap style name")]
                         currentIndex: content.modifierStyle === "mac" ? 1 : 0
                         onSelectionChanged: (index, selected) => {
                             if (selected)
@@ -797,21 +797,30 @@ FocusScope {
                             readonly property var sectionCatInfo: content.dataModel.byCategory[sectionCatName]
 
                             // Section Header
-                            RowLayout {
+                            Row {
+                                id: categoryHeader
                                 width: parent.width
                                 spacing: Theme.spacingS
+                                height: Math.max(categoryIcon.implicitHeight, categoryTitle.implicitHeight)
 
                                 DIcon {
+                                    id: categoryIcon
                                     name: content.getCategoryIcon(sectionCol.sectionCatName)
                                     size: Theme.iconSizeMedium
                                     color: Theme.primary
+                                    anchors.verticalCenter: parent.verticalCenter
                                 }
 
                                 StyledText {
+                                    id: categoryTitle
                                     text: I18n.tr(sectionCol.sectionCatName)
+                                    width: Math.min(implicitWidth, Math.max(0, categoryHeader.width - categoryIcon.width - categoryHeader.spacing))
                                     font.pixelSize: Theme.fontSizeMedium
                                     font.weight: Theme.fontWeightMedium
                                     color: Theme.primary
+                                    horizontalAlignment: Text.AlignLeft
+                                    elide: Text.ElideRight
+                                    anchors.verticalCenter: parent.verticalCenter
                                 }
                             }
 
