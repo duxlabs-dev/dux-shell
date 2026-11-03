@@ -7,7 +7,7 @@ import qs.Modules.Plugins
 
 Scope {
     Variants {
-        model: DesktopWidgetRegistry.editing ? Quickshell.screens : []
+        model: DesktopWidgetRegistry.editing ? ShellLayout.realScreens : []
 
         PanelWindow {
             id: editorWindow

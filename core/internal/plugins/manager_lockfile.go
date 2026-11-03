@@ -20,6 +20,11 @@ func (m *Manager) GetLockfilePath() string {
 	return m.lockStore().Path()
 }
 
+func (m *Manager) EnsureLockfile() error {
+	_, err := m.ensureLockfile()
+	return err
+}
+
 func (m *Manager) ensureLockfile() (PluginLockfile, error) {
 	store := m.lockStore()
 	exists, err := store.Exists()

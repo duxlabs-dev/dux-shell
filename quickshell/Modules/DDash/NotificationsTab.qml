@@ -5,6 +5,7 @@ import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Notifications
 import qs.Modules.Notifications.Center
+import "../Notifications/NotificationShortcuts.js" as Shortcuts
 
 FocusScope {
     id: root
@@ -32,7 +33,7 @@ FocusScope {
         }
         return listHeight + footer.height + Theme.spacingM;
     }
-    property bool blocksTabNavigation: false
+    readonly property bool blocksTabNavigation: shortcutSheet.opened
     activeFocusOnTab: interactive
 
     signal settingsRequested
@@ -41,8 +42,57 @@ FocusScope {
         list.forceLayout();
     }
 
+    function slotAction(action) {
+        return Shortcuts.isAvailable(action, SettingsData.notificationHistoryEnabled) ? action : "";
+    }
+
+    function triggerShortcut(slot) {
+        switch (slot.shortcut) {
+        case "dnd":
+            duration.popupAnchorItem = slot;
+            duration.showDropdownMenu();
+            return;
+        case "history":
+            currentTab = currentTab === 0 ? 1 : 0;
+            return;
+        case "hints":
+            if (currentTab === 1) {
+                if (historyLoader.item)
+                    historyLoader.item.showKeyboardHints = !historyLoader.item.showKeyboardHints;
+                return;
+            }
+            keyboard.showKeyboardHints = !keyboard.showKeyboardHints;
+            return;
+        case "settings":
+            if (settingsAction) {
+                settingsRequested();
+                return;
+            }
+            PopoutService.openSettingsWithTab("notifications");
+            return;
+        }
+        editShortcut(slot, slot.visualFocus);
+    }
+
+    function editShortcut(slot, keyboardOpened) {
+        const other = slot === leadingSlot ? trailingSlot : leadingSlot;
+        const choices = Shortcuts.choices(slot.shortcut, other.shortcut, SettingsData.notificationHistoryEnabled);
+        shortcutSheet.open(slot, choices, !slot.empty, slot === trailingSlot, keyboardOpened);
+    }
+
+    function assignShortcut(action) {
+        const slot = shortcutSheet.slot;
+        shortcutSheet.close();
+        if (slot)
+            SettingsData.set(slot.settingKey, action === "remove" ? "" : action);
+        if (leadingSlot.shortcut !== "history" && trailingSlot.shortcut !== "history")
+            currentTab = 0;
+    }
+
     function handleKeyEvent(event) {
         event.accepted = false;
+        if (shortcutSheet.opened)
+            return shortcutSheet.handleKeyEvent(event);
         if (!interactive || !enabled || !activeFocus)
             return false;
         if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab)
@@ -122,10 +172,16 @@ FocusScope {
         if (!live) {
             keyboard.reset();
             surfaces.closeAll();
+            shortcutSheet.close();
             return;
         }
         NotificationService.markNotificationsSeen();
         keyboard.rebuildFlatNavigation();
+    }
+
+    onVisibleChanged: {
+        if (!visible)
+            shortcutSheet.close();
     }
 
     readonly property bool settingsNotificationHistoryEnabled: SettingsData.notificationHistoryEnabled
@@ -148,6 +204,7 @@ FocusScope {
     Keys.onPressed: event => event.accepted = handleKeyEvent(event)
 
     TapHandler {
+        enabled: !shortcutSheet.opened
         onPressedChanged: {
             if (pressed)
                 root.forceActiveFocus(Qt.MouseFocusReason);
@@ -192,19 +249,22 @@ FocusScope {
         spacing: Theme.spacingS
         height: Theme.iconButtonSize
 
-        DActionButton {
-            id: historyButton
-            visible: SettingsData.notificationHistoryEnabled
-            buttonSize: Theme.iconButtonSize
-            iconName: root.currentTab === 1 ? "inbox" : "history"
-            backgroundColor: Theme.secondaryContainer
-            iconColor: Theme.onSecondaryContainer
-            tooltipText: root.currentTab === 1 ? I18n.tr("Current", "notification center tab") : I18n.tr("History", "notification center tab")
-            onClicked: root.currentTab = root.currentTab === 0 ? 1 : 0
+        NotificationShortcutSlot {
+            id: leadingSlot
+            settingKey: "notificationLeadingShortcut"
+            shortcut: root.slotAction(SettingsData.notificationLeadingShortcut)
+            live: root.live
+            squeezed: clearButton.pressed
+            historyActive: root.currentTab === 1
+            hintsActive: root.showKeyboardHints
+            restColor: Theme.foregroundColor(root.nested ? Theme.chipSurface : Theme.cardSurface, Theme.isFloatingWindow(root))
+            onClicked: root.triggerShortcut(leadingSlot)
+            onEditRequested: root.editShortcut(leadingSlot, leadingSlot.visualFocus)
         }
 
         DButton {
-            width: Math.max(0, footer.width - dndButton.width - (historyButton.visible ? historyButton.width + footer.spacing : 0) - (settingsButton.visible ? settingsButton.width + footer.spacing : 0) - footer.spacing)
+            id: clearButton
+            width: Math.max(0, footer.width - leadingSlot.width - trailingSlot.width - footer.spacing * 2)
             text: I18n.tr("Clear All")
             buttonHeight: Theme.iconButtonSize
             backgroundColor: Theme.secondaryContainer
@@ -219,25 +279,17 @@ FocusScope {
             }
         }
 
-        DActionButton {
-            id: dndButton
-            buttonSize: Theme.iconButtonSize
-            iconName: SessionData.doNotDisturb ? "notifications_off" : "notifications"
-            backgroundColor: SessionData.doNotDisturb ? Theme.primaryContainer : Theme.secondaryContainer
-            iconColor: SessionData.doNotDisturb ? Theme.onPrimaryContainer : Theme.onSecondaryContainer
-            tooltipText: I18n.tr("Do not disturb")
-            onClicked: duration.showDropdownMenu()
-        }
-
-        DActionButton {
-            id: settingsButton
-            visible: root.settingsAction
-            buttonSize: Theme.iconButtonSize
-            iconName: "settings"
-            backgroundColor: Theme.secondaryContainer
-            iconColor: Theme.onSecondaryContainer
-            tooltipText: I18n.tr("Settings")
-            onClicked: root.settingsRequested()
+        NotificationShortcutSlot {
+            id: trailingSlot
+            settingKey: "notificationTrailingShortcut"
+            shortcut: root.slotAction(SettingsData.notificationTrailingShortcut)
+            live: root.live
+            squeezed: clearButton.pressed
+            historyActive: root.currentTab === 1
+            hintsActive: root.showKeyboardHints
+            restColor: Theme.foregroundColor(root.nested ? Theme.chipSurface : Theme.cardSurface, Theme.isFloatingWindow(root))
+            onClicked: root.triggerShortcut(trailingSlot)
+            onEditRequested: root.editShortcut(trailingSlot, trailingSlot.visualFocus)
         }
     }
 
@@ -250,10 +302,17 @@ FocusScope {
         historyTab: root.currentTab === 1
     }
 
+    NotificationShortcutSheet {
+        id: shortcutSheet
+        anchors.fill: parent
+        bottomInset: footer.height + Theme.spacingS
+        onChosen: action => root.assignShortcut(action)
+    }
+
     DDropdown {
         id: duration
         showTrigger: false
-        popupAnchorItem: dndButton
+        popupAnchorItem: leadingSlot
         popupWidth: NotificationMetrics.menuWidth
         openUpwards: true
         transientSurfaceTracker: root.surfaces

@@ -14,6 +14,10 @@ func HandleList(conn *ipc.ConnWriter, req ipc.Request) {
 		return
 	}
 
+	refresh := req.GetOr[bool]("refresh", false)
+	if refresh {
+		_ = registry.Refresh()
+	}
 	pluginList, err := registry.List()
 	if err != nil {
 		conn.RespondError(req.ID, fmt.Sprintf("failed to list plugins: %v", err))
@@ -28,7 +32,7 @@ func HandleList(conn *ipc.ConnWriter, req ipc.Request) {
 
 	var feedback map[string]plugins.Feedback
 	if len(pluginList) > 0 {
-		feedback = plugins.FetchFeedback()
+		feedback = plugins.FetchFeedback(refresh)
 	}
 
 	result := make([]PluginInfo, len(pluginList))

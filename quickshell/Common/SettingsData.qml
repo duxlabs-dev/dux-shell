@@ -884,6 +884,8 @@ Singleton {
     property int notificationPopupPosition: SettingsData.Position.Top
     property int notificationAnimationDuration: Spec.SPEC.notificationAnimationDuration.def
     property bool notificationHistoryEnabled: Spec.SPEC.notificationHistoryEnabled.def
+    property string notificationLeadingShortcut: Spec.SPEC.notificationLeadingShortcut.def
+    property string notificationTrailingShortcut: Spec.SPEC.notificationTrailingShortcut.def
     property int notificationHistoryMaxCount: Spec.SPEC.notificationHistoryMaxCount.def
     property int notificationHistoryMaxAgeDays: Spec.SPEC.notificationHistoryMaxAgeDays.def
     property bool notificationHistorySaveLow: Spec.SPEC.notificationHistorySaveLow.def
@@ -2824,11 +2826,11 @@ Singleton {
             return [];
         }
         if (!prefs || prefs.length === 0 || prefs.includes("all") || (typeof prefs[0] === "string" && prefs[0] === "all")) {
-            return Quickshell.screens;
+            return ShellLayout.realScreens;
         }
-        var filtered = Quickshell.screens.filter(screen => isScreenInPreferences(screen, prefs));
-        if (filtered.length === 0 && showOnLastDisplay && showOnLastDisplay[componentId] && Quickshell.screens.length === 1) {
-            return Quickshell.screens;
+        var filtered = ShellLayout.realScreens.filter(screen => isScreenInPreferences(screen, prefs));
+        if (filtered.length === 0 && showOnLastDisplay && showOnLastDisplay[componentId] && ShellLayout.realScreens.length === 1) {
+            return ShellLayout.realScreens;
         }
         return filtered;
     }

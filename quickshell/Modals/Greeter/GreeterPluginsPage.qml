@@ -9,7 +9,7 @@ Item {
 
     property var greeterRoot: parent ? parent.greeterRoot : null
 
-    readonly property var curatedPluginIds: ["quickCapture", "dankKDEConnect", "wallpaperCarousel", "calculator", "emojiLauncher", "dockerManager", "dankSoftwareDepot", "homeAssistantMonitor"]
+    readonly property var curatedPluginIds: ["quickCapture", "dankKDEConnect", "calculator", "wallpaperCarousel", "dankSoftwareDepot", "emojiLauncher", "aiOverviewControl", "bongoCat"]
 
     readonly property real headerIconContainerSize: Math.round(Theme.iconSize * 2)
 

@@ -23,7 +23,7 @@ MediaChromeBase {
     readonly property bool cardBackgrounds: root.player.options?.cardBackgrounds ?? MediaOptions.defaults.cardBackgrounds
     readonly property real cardPadding: cardBackgrounds ? Theme.spacingL : 0
     // The transport takes what the artwork leaves over, so both columns end up about as tall.
-    readonly property real deckFixedHeight: sourceRow.height + titleCard.height + seekBlock.height + optionGroup.height + cardPadding * 2 + Theme.spacingXL * 2 + Theme.spacingL * 2
+    readonly property real deckFixedHeight: sourceRow.height + titleBlock.height + (seekBlock.visible ? seekBlock.height + Theme.spacingL : 0) + optionGroup.height + cardPadding * 2 + Theme.spacingXL * 2 + Theme.spacingL
     readonly property real transportSize: Math.round(Math.max(Theme.buttonHeightM, Math.min(DashMetrics.mediaTransportMaxHeight, artworkSize - deckFixedHeight)))
     readonly property real stageWidth: lyricsShown && !compact ? artColumnWidth : artworkSize
     readonly property real stageHeight: lyricsShown && !compact ? Math.max(artworkSize, deck.height) : artworkSize
@@ -112,267 +112,270 @@ MediaChromeBase {
             }
 
             Item {
-                id: titleCard
-
                 width: parent.width
-                height: titleBlock.height + root.cardPadding * 2
+                height: deckCard.height + root.cardPadding * 2
 
-                CardFill {}
-
-                Column {
-                    id: titleBlock
-
-                    x: root.cardPadding
-                    y: root.cardPadding
-                    width: parent.width - root.cardPadding * 2
-                    spacing: Theme.spacingXS
-
-                    // Measured from the token, not from titleText's font, which takes its size from here.
-                    StyledTextMetrics {
-                        id: fullSizeTitle
-                        text: root.title
-                        fontToken: root.titleFontToken
-                        font.weight: Font.Normal
-                        font.variableAxes: titleText.expressiveFont ? DashMetrics.mediaTitleFontAxes : ({})
-                        font.pixelSize: Theme.fontSizeDisplay
-                    }
-
-                    FontMetrics {
-                        id: fullSizeTitleFont
-                        font: fullSizeTitle.font
-                    }
-
-                    ScrollingText {
-                        id: titleText
-
-                        readonly property bool expressiveFont: root.titleFontToken === "ui"
-                        readonly property real fittedPixelSize: {
-                            if (fullSizeTitle.advanceWidth <= width)
-                                return Theme.fontSizeDisplay;
-                            return Math.max(Theme.fontSizeXXLarge, Math.floor(Theme.fontSizeDisplay * width / fullSizeTitle.advanceWidth));
-                        }
-
-                        width: parent.width
-                        height: Math.ceil(fullSizeTitleFont.height)
-                        text: root.title
-                        fontToken: root.titleFontToken
-                        color: MediaAccentService.readableHighlight
-                        font.pixelSize: fittedPixelSize
-                        // The bundled static weights share the family name and carry no axes, so
-                        // the regular weight selects the variable font and wght sets the weight.
-                        font.weight: Font.Normal
-                        font.variableAxes: expressiveFont ? DashMetrics.mediaTitleFontAxes : ({})
-                        horizontalAlignment: Text.AlignHCenter
-                        active: root.scrolling
-                        loop: true
-                        fadeEdges: true
-                        pxPerMs: DashMetrics.mediaTextScrollSpeed / 1000
-                        frameDriven: true
-                    }
-
-                    ScrollingText {
-                        width: parent.width
-                        text: [root.artist, root.album].filter(Boolean).join(" · ") || " "
-                        color: Theme.onSurfaceVariant
-                        font.pixelSize: Theme.fontSizeMedium
-                        horizontalAlignment: Text.AlignHCenter
-                        active: root.scrolling
-                        loop: true
-                        fadeEdges: true
-                        pxPerMs: DashMetrics.mediaTextScrollSpeed / 1000
-                        frameDriven: true
-                    }
+                Rectangle {
+                    anchors.fill: parent
+                    visible: root.cardBackgrounds
+                    radius: DashMetrics.mediaInnerRadius
+                    color: DashMetrics.cardColor
+                    border.width: Theme.layerOutlineWidth
+                    border.color: Theme.outlineMedium
                 }
-            }
-
-            Item {
-                width: parent.width
-                height: controlsBlock.height + root.cardPadding * 2
-
-                CardFill {}
 
                 Column {
-                    id: controlsBlock
+                    id: deckCard
 
                     x: root.cardPadding
                     y: root.cardPadding
                     width: parent.width - root.cardPadding * 2
-                    spacing: Theme.spacingL
+                    spacing: Theme.spacingXL
 
-                    // Kept for a length-less stream, so the deck does not resize when one comes up.
                     Column {
-                        id: seekBlock
+                        id: titleBlock
 
                         width: parent.width
                         spacing: Theme.spacingXS
-                        visible: root.seekbarEnabled && !!root.presentation
-                        LayoutMirroring.enabled: false
-                        LayoutMirroring.childrenInherit: true
 
-                        MediaSeekbar {
-                            id: seekbar
-                            width: parent.width
-                            opacity: root.hasSeekbar ? 1 : 0
-                            height: DashMetrics.mediaSeekbarExpressiveHeight
-                            player: root.player
-                            accentTrackColor: MediaAccentService.accentRail
-                            waveLineWidth: DashMetrics.mediaSeekbarExpressiveLineWidth
-                            waveAmplitude: DashMetrics.mediaSeekbarExpressiveAmplitude
-                            wavelength: DashMetrics.mediaSeekbarExpressiveWavelength
-                            showHandle: true
-                            handleSize: DashMetrics.mediaSeekbarHandleSize
-                            handleDragWidth: DashMetrics.mediaSeekbarHandleDragWidth
-                            handleDragHeight: DashMetrics.mediaSeekbarHandleDragHeight
-                            handleGap: DashMetrics.mediaSeekbarHandleGap
+                        // Measured from the token, not from titleText's font, which takes its size from here.
+                        StyledTextMetrics {
+                            id: fullSizeTitle
+                            text: root.title
+                            fontToken: root.titleFontToken
+                            font.weight: Font.Normal
+                            font.variableAxes: titleText.expressiveFont ? DashMetrics.mediaTitleFontAxes : ({})
+                            font.pixelSize: Theme.fontSizeDisplay
                         }
 
-                        Item {
+                        FontMetrics {
+                            id: fullSizeTitleFont
+                            font: fullSizeTitle.font
+                        }
+
+                        ScrollingText {
+                            id: titleText
+
+                            readonly property bool expressiveFont: root.titleFontToken === "ui"
+                            readonly property real fittedPixelSize: {
+                                if (fullSizeTitle.advanceWidth <= width)
+                                    return Theme.fontSizeDisplay;
+                                return Math.max(Theme.fontSizeXXLarge, Math.floor(Theme.fontSizeDisplay * width / fullSizeTitle.advanceWidth));
+                            }
+
                             width: parent.width
-                            height: elapsed.implicitHeight
-                            opacity: root.hasSeekbar ? 1 : 0
+                            height: Math.ceil(fullSizeTitleFont.height)
+                            text: root.title
+                            fontToken: root.titleFontToken
+                            color: MediaAccentService.readableHighlight
+                            font.pixelSize: fittedPixelSize
+                            // The bundled static weights share the family name and carry no axes, so
+                            // the regular weight selects the variable font and wght sets the weight.
+                            font.weight: Font.Normal
+                            font.variableAxes: expressiveFont ? DashMetrics.mediaTitleFontAxes : ({})
+                            horizontalAlignment: Text.AlignHCenter
+                            active: root.scrolling
+                            loop: true
+                            fadeEdges: true
+                            pxPerMs: DashMetrics.mediaTextScrollSpeed / 1000
+                            frameDriven: true
+                        }
 
-                            MediaTimeLabel {
-                                id: elapsed
-                                anchors.left: parent.left
-                                text: Format.formatDuration(seekbar.value * (root.presentation?.length ?? 0))
-                                reserveText: duration.text
-                            }
-
-                            MediaTimeLabel {
-                                id: duration
-                                anchors.right: parent.right
-                                horizontalAlignment: Text.AlignRight
-                                text: Format.formatDuration(root.presentation?.length ?? 0)
-                            }
+                        ScrollingText {
+                            width: parent.width
+                            text: [root.artist, root.album].filter(Boolean).join(" · ") || " "
+                            color: Theme.onSurfaceVariant
+                            font.pixelSize: Theme.fontSizeMedium
+                            horizontalAlignment: Text.AlignHCenter
+                            active: root.scrolling
+                            loop: true
+                            fadeEdges: true
+                            pxPerMs: DashMetrics.mediaTextScrollSpeed / 1000
+                            frameDriven: true
                         }
                     }
 
-                    MediaTransport {
-                        id: transport
+                    Column {
+                        id: controlsBlock
+
                         width: parent.width
-                        player: root.player
-                        presentation: root.presentation
-                        buttonSize: root.transportSize
-                        visible: hasControls
-                    }
+                        spacing: Theme.spacingL
 
-                    Row {
-                        id: optionGroup
+                        // Kept for a length-less stream, so the deck does not resize when one comes up.
+                        Column {
+                            id: seekBlock
 
-                        readonly property var segments: [lyricsButton, shuffleButton, repeatButton, volumeButton, outputButton]
-                        readonly property var shownSegments: segments.filter(segment => segment.visible)
-                        readonly property real segmentWidth: Theme.buttonHeightM
-                        readonly property real outerRadius: Theme.fullRadius(Theme.buttonHeightS, Theme.buttonHeightS)
-                        readonly property real innerRadius: Math.min(Theme.innerRadius("s"), outerRadius)
-                        readonly property real pressedInnerRadius: Math.min(Theme.innerRadius("xs"), outerRadius)
+                            width: parent.width
+                            spacing: Theme.spacingXS
+                            visible: root.seekbarEnabled && !!root.presentation
+                            LayoutMirroring.enabled: false
+                            LayoutMirroring.childrenInherit: true
 
-                        function joinRadius(segment) {
-                            if (!Theme.shapeMorph)
-                                return innerRadius;
-                            if (segment.pressed)
-                                return pressedInnerRadius;
-                            return segment.checked ? outerRadius : innerRadius;
-                        }
-
-                        function leadingRadius(segment) {
-                            return segment === shownSegments[0] ? outerRadius : joinRadius(segment);
-                        }
-
-                        function trailingRadius(segment) {
-                            return segment === shownSegments[shownSegments.length - 1] ? outerRadius : joinRadius(segment);
-                        }
-
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        height: Theme.buttonHeightS
-                        spacing: Theme.groupedListGap
-                        LayoutMirroring.enabled: false
-                        LayoutMirroring.childrenInherit: true
-
-                        Keys.onPressed: event => event.accepted = FocusNavigation.handleHorizontalKey(event, segments, false)
-
-                        OptionButton {
-                            id: lyricsButton
-
-                            visible: root.player.lyricsEnabled
-                            enabled: !!root.presentation
-                            iconName: "lyrics"
-                            checkable: true
-                            checked: root.player.lyricsOpen
-                            tooltipText: I18n.tr("Lyrics", "Media player lyrics button")
-                            onClicked: root.player.toggleLyrics(lyricsButton)
-                        }
-
-                        MediaTransportButton {
-                            id: shuffleButton
-                            player: root.player
-                            mediaAction: "shuffle"
-                            width: optionGroup.segmentWidth
-                            variant: "tonal"
-                            iconFilled: checked
-                            containerColor: checked ? MediaAccentService.accent : MediaAccentService.accentContainer
-                            contentColor: checked ? MediaAccentService.onAccent : MediaAccentService.onAccentContainer
-
-                            MediaSegmentShape {
-                                group: optionGroup
-                            }
-                        }
-
-                        MediaTransportButton {
-                            id: repeatButton
-                            player: root.player
-                            mediaAction: "repeat"
-                            width: optionGroup.segmentWidth
-                            variant: "tonal"
-                            iconFilled: checked
-                            containerColor: checked ? MediaAccentService.accent : MediaAccentService.accentContainer
-                            contentColor: checked ? MediaAccentService.onAccent : MediaAccentService.onAccentContainer
-
-                            MediaSegmentShape {
-                                group: optionGroup
-                            }
-                        }
-
-                        OptionButton {
-                            id: volumeButton
-
-                            readonly property string panelId: "volume"
-                            readonly property bool muted: root.player.usePlayerVolume ? root.player.currentVolume === 0 : AudioService.sinkSilent
-                            readonly property real volumeRatio: root.player.maxVolumePercent > 0 ? root.player.currentVolume * 100 / root.player.maxVolumePercent : 0
-
-                            enabled: root.player.volumeAvailable
-                            iconName: root.player.getVolumeIcon()
-                            iconSize: Theme.iconSizeSmall
-                            tooltipText: (root.player.usePlayerVolume ? I18n.tr("Media volume") : I18n.tr("Volume")) + ": " + Math.round(root.player.currentVolume * 100) + "%"
-                            onClicked: root.player.togglePanel(panelId, volumeButton)
-
-                            DRingGauge {
-                                anchors.centerIn: parent
-                                width: parent.height - Theme.spacingXS * 2
-                                height: width
-                                value: !root.player.volumeAvailable || volumeButton.muted ? 0 : volumeButton.volumeRatio
-                                startAngle: 135
-                                spanAngle: 270
-                                strokeWidth: Theme.outlineWidthFocused + Theme.dividerWidth
-                                trackGap: Theme.spacingXXS
-                                ringColor: MediaAccentService.accent
-                                trackColor: MediaAccentService.accentTrack
-                                animated: root.player.live
-                            }
-
-                            MediaVolumeWheel {
+                            MediaSeekbar {
+                                id: seekbar
+                                width: parent.width
+                                opacity: root.hasSeekbar ? 1 : 0
+                                height: DashMetrics.mediaSeekbarExpressiveHeight
                                 player: root.player
-                                button: volumeButton
+                                accentTrackColor: MediaAccentService.accentRail
+                                waveLineWidth: DashMetrics.mediaSeekbarExpressiveLineWidth
+                                waveAmplitude: DashMetrics.mediaSeekbarExpressiveAmplitude
+                                wavelength: DashMetrics.mediaSeekbarExpressiveWavelength
+                                showHandle: true
+                                handleSize: DashMetrics.mediaSeekbarHandleSize
+                                handleDragWidth: DashMetrics.mediaSeekbarHandleDragWidth
+                                handleDragHeight: DashMetrics.mediaSeekbarHandleDragHeight
+                                handleGap: DashMetrics.mediaSeekbarHandleGap
+                            }
+
+                            Item {
+                                width: parent.width
+                                height: elapsed.implicitHeight
+                                opacity: root.hasSeekbar ? 1 : 0
+
+                                MediaTimeLabel {
+                                    id: elapsed
+                                    anchors.left: parent.left
+                                    text: Format.formatDuration(seekbar.value * (root.presentation?.length ?? 0))
+                                    reserveText: duration.text
+                                }
+
+                                MediaTimeLabel {
+                                    id: duration
+                                    anchors.right: parent.right
+                                    horizontalAlignment: Text.AlignRight
+                                    text: Format.formatDuration(root.presentation?.length ?? 0)
+                                }
                             }
                         }
 
-                        OptionButton {
-                            id: outputButton
+                        MediaTransport {
+                            id: transport
+                            width: parent.width
+                            player: root.player
+                            presentation: root.presentation
+                            buttonSize: root.transportSize
+                            visible: hasControls
+                        }
 
-                            readonly property string panelId: "devices"
+                        Row {
+                            id: optionGroup
 
-                            iconName: AudioService.sinkIcon(AudioService.sink)
-                            tooltipText: I18n.tr("Devices", "Media player output device picker") + ": " + AudioService.displayName(AudioService.sink)
-                            onClicked: root.player.togglePanel(panelId, outputButton)
+                            readonly property var segments: [lyricsButton, shuffleButton, repeatButton, volumeButton, outputButton]
+                            readonly property var shownSegments: segments.filter(segment => segment.visible)
+                            readonly property real segmentWidth: Theme.buttonHeightM
+                            readonly property real outerRadius: Theme.fullRadius(Theme.buttonHeightS, Theme.buttonHeightS)
+                            readonly property real innerRadius: Math.min(Theme.innerRadius("s"), outerRadius)
+                            readonly property real pressedInnerRadius: Math.min(Theme.innerRadius("xs"), outerRadius)
+
+                            function joinRadius(segment) {
+                                if (!Theme.shapeMorph)
+                                    return innerRadius;
+                                if (segment.pressed)
+                                    return pressedInnerRadius;
+                                return segment.checked ? outerRadius : innerRadius;
+                            }
+
+                            function leadingRadius(segment) {
+                                return segment === shownSegments[0] ? outerRadius : joinRadius(segment);
+                            }
+
+                            function trailingRadius(segment) {
+                                return segment === shownSegments[shownSegments.length - 1] ? outerRadius : joinRadius(segment);
+                            }
+
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            height: Theme.buttonHeightS
+                            spacing: Theme.groupedListGap
+                            LayoutMirroring.enabled: false
+                            LayoutMirroring.childrenInherit: true
+
+                            Keys.onPressed: event => event.accepted = FocusNavigation.handleHorizontalKey(event, segments, false)
+
+                            OptionButton {
+                                id: lyricsButton
+
+                                visible: root.player.lyricsEnabled
+                                enabled: !!root.presentation
+                                iconName: "lyrics"
+                                checkable: true
+                                checked: root.player.lyricsOpen
+                                tooltipText: I18n.tr("Lyrics", "Media player lyrics button")
+                                onClicked: root.player.toggleLyrics(lyricsButton)
+                            }
+
+                            MediaTransportButton {
+                                id: shuffleButton
+                                player: root.player
+                                mediaAction: "shuffle"
+                                width: optionGroup.segmentWidth
+                                variant: "tonal"
+                                iconFilled: checked
+                                containerColor: checked ? MediaAccentService.accent : MediaAccentService.accentContainer
+                                contentColor: checked ? MediaAccentService.onAccent : MediaAccentService.onAccentContainer
+
+                                MediaSegmentShape {
+                                    group: optionGroup
+                                }
+                            }
+
+                            MediaTransportButton {
+                                id: repeatButton
+                                player: root.player
+                                mediaAction: "repeat"
+                                width: optionGroup.segmentWidth
+                                variant: "tonal"
+                                iconFilled: checked
+                                containerColor: checked ? MediaAccentService.accent : MediaAccentService.accentContainer
+                                contentColor: checked ? MediaAccentService.onAccent : MediaAccentService.onAccentContainer
+
+                                MediaSegmentShape {
+                                    group: optionGroup
+                                }
+                            }
+
+                            OptionButton {
+                                id: volumeButton
+
+                                readonly property string panelId: "volume"
+                                readonly property bool muted: root.player.usePlayerVolume ? root.player.currentVolume === 0 : AudioService.sinkSilent
+                                readonly property real volumeRatio: root.player.maxVolumePercent > 0 ? root.player.currentVolume * 100 / root.player.maxVolumePercent : 0
+
+                                enabled: root.player.volumeAvailable
+                                iconName: root.player.getVolumeIcon()
+                                iconSize: Theme.iconSizeSmall
+                                tooltipText: (root.player.usePlayerVolume ? I18n.tr("Media volume") : I18n.tr("Volume")) + ": " + Math.round(root.player.currentVolume * 100) + "%"
+                                onClicked: root.player.togglePanel(panelId, volumeButton)
+
+                                DRingGauge {
+                                    anchors.centerIn: parent
+                                    width: parent.height - Theme.spacingXS * 2
+                                    height: width
+                                    value: !root.player.volumeAvailable || volumeButton.muted ? 0 : volumeButton.volumeRatio
+                                    startAngle: 135
+                                    spanAngle: 270
+                                    strokeWidth: Theme.outlineWidthFocused + Theme.dividerWidth
+                                    trackGap: Theme.spacingXXS
+                                    ringColor: MediaAccentService.accent
+                                    trackColor: MediaAccentService.accentTrack
+                                    animated: root.player.live
+                                }
+
+                                MediaVolumeWheel {
+                                    player: root.player
+                                    button: volumeButton
+                                }
+                            }
+
+                            OptionButton {
+                                id: outputButton
+
+                                readonly property string panelId: "devices"
+
+                                iconName: AudioService.sinkIcon(AudioService.sink)
+                                tooltipText: I18n.tr("Devices", "Media player output device picker") + ": " + AudioService.displayName(AudioService.sink)
+                                onClicked: root.player.togglePanel(panelId, outputButton)
+                            }
                         }
                     }
                 }
@@ -386,15 +389,6 @@ MediaChromeBase {
             player: root.player
             returnFocusItem: root.buttonForPanel(shownPanel)
         }
-    }
-
-    component CardFill: Rectangle {
-        anchors.fill: parent
-        visible: root.cardBackgrounds
-        radius: DashMetrics.mediaInnerRadius
-        color: DashMetrics.cardColor
-        border.width: Theme.layerOutlineWidth
-        border.color: Theme.outlineMedium
     }
 
     component OptionButton: DIconButton {

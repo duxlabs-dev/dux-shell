@@ -1446,6 +1446,12 @@ var LOCAL_SPEC = {
     notificationHistoryEnabled: {
         def: true
     },
+    notificationLeadingShortcut: {
+        def: "dnd"
+    },
+    notificationTrailingShortcut: {
+        def: "history"
+    },
     notificationHistoryMaxCount: {
         def: 50
     },

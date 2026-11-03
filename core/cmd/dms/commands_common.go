@@ -299,7 +299,7 @@ func browsePlugins() error {
 		return nil
 	}
 
-	feedback := plugins.FetchFeedback()
+	feedback := plugins.FetchFeedback(false)
 
 	nameByID := make(map[string]string, len(pluginList))
 	for _, plugin := range pluginList {

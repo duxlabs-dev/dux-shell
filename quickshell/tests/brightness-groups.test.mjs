@@ -21,7 +21,7 @@ function service(globals) {
         lastIpcGroup: [],
         lastIpcDevice: ""
     }, globals));
-    for (const name of ["setGroupBrightness", "lastIpcTargets", "pinnedDevices"])
+    for (const name of ["setGroupBrightness", "lastIpcTargets", "pinnedDevices", "screenPinnedDevices", "screenTargets", "screenTargetsLastDevice", "screenLeadDevice"])
         vm.runInContext(functionSource(SERVICE, name), context);
     return context;
 }
@@ -79,4 +79,35 @@ test("pins read legacy single-device strings and skip unplugged devices", () => 
     assert.deepEqual(plain(context.pinnedDevices("eDP-1")), ["backlight:a"]);
     assert.deepEqual(plain(context.pinnedDevices("DP-1")), ["ddc:i2c-11", "backlight:a"]);
     assert.deepEqual(plain(context.pinnedDevices("")), []);
+});
+
+test("each screen targets its own pins and only unpinned screens follow the last target", () => {
+    const context = service({
+        devices: [{ id: "ddc:i2c-11" }, { id: "ddc:i2c-12" }, { id: "ddc:i2c-13" }, { id: "backlight:a" }],
+        SettingsData: { getScreenDisplayName: screen => screen.name },
+        CacheData: { brightnessDevicePins: { "DP-1": ["ddc:i2c-11"], "DP-2": ["ddc:i2c-12", "ddc:i2c-13"] } },
+        lastIpcDevice: "backlight:a"
+    });
+
+    assert.deepEqual(plain(context.screenTargets({ name: "DP-1" })), ["ddc:i2c-11"]);
+    assert.equal(context.screenLeadDevice({ name: "DP-1" }), "ddc:i2c-11");
+    assert.deepEqual(plain(context.screenTargets({ name: "DP-2" })), ["ddc:i2c-12", "ddc:i2c-13"]);
+    assert.equal(context.screenLeadDevice({ name: "DP-2" }), "ddc:i2c-12");
+    assert.deepEqual(plain(context.screenTargets({ name: "HDMI-1" })), ["backlight:a"]);
+    assert.equal(context.screenLeadDevice({ name: "HDMI-1" }), "backlight:a");
+    assert.deepEqual(plain(context.screenTargets(null)), ["backlight:a"]);
+});
+
+test("only screens that target the changed device react to it", () => {
+    const context = service({
+        devices: [{ id: "ddc:i2c-11" }, { id: "ddc:i2c-12" }, { id: "ddc:i2c-13" }],
+        SettingsData: { getScreenDisplayName: screen => screen.name },
+        CacheData: { brightnessDevicePins: { "DP-1": ["ddc:i2c-11"], "DP-2": ["ddc:i2c-12", "ddc:i2c-13"] } },
+        lastIpcDevice: "ddc:i2c-11"
+    });
+
+    assert.equal(context.screenTargetsLastDevice({ name: "DP-1" }), true);
+    assert.equal(context.screenTargetsLastDevice({ name: "DP-2" }), false);
+    assert.equal(context.screenTargetsLastDevice({ name: "HDMI-1" }), true);
+    assert.equal(context.screenTargetsLastDevice(null), true);
 });

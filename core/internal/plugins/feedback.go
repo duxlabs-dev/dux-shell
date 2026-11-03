@@ -3,6 +3,7 @@ package plugins
 import (
 	"encoding/json"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/site"
@@ -22,10 +23,34 @@ type Feedback struct {
 	UpdatedAt   string
 }
 
+const feedbackMaxAge = 5 * time.Minute
+
+var feedbackCache struct {
+	sync.Mutex
+	at   time.Time
+	data map[string]Feedback
+}
+
 // FetchFeedback retrieves community upvotes, moderator status and directory metadata
-// (version, icon, permissions, dates) from the directory API.
-// Best-effort: any failure returns a nil map.
-func FetchFeedback() map[string]Feedback {
+// (version, icon, permissions, dates) from the directory API, reusing the last
+// answer for feedbackMaxAge unless refresh is set.
+// Best-effort: a failed fetch returns the last answer, or nil when there is none.
+func FetchFeedback(refresh bool) map[string]Feedback {
+	feedbackCache.Lock()
+	defer feedbackCache.Unlock()
+	if !refresh && feedbackCache.data != nil && time.Since(feedbackCache.at) < feedbackMaxAge {
+		return feedbackCache.data
+	}
+	data := fetchFeedback()
+	if data == nil {
+		return feedbackCache.data
+	}
+	feedbackCache.at = time.Now()
+	feedbackCache.data = data
+	return data
+}
+
+func fetchFeedback() map[string]Feedback {
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	resp, err := client.Get(feedbackURL)
