@@ -215,6 +215,9 @@ Singleton {
     readonly property real mediaArtColumnRatio: 0.5
     readonly property real mediaArtLyricsScale: 0.88
     readonly property int mediaArtRotationDuration: 30000
+    readonly property int mediaArtDiscRotationDuration: 20000
+    readonly property real mediaArtSwayAngle: 10
+    readonly property int mediaArtSwayDuration: 8000
     readonly property real mediaSeekbarHeight: 22
     readonly property real mediaSeekbarHandleSize: 16
     readonly property real mediaSeekbarHandleDragWidth: 5
