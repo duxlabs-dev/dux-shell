@@ -4,6 +4,11 @@ function toF(celsius) {
     return celsius * 9 / 5 + 32;
 }
 
+// Readings beyond temperature are optional per provider; missing ones stay null so the UI shows a placeholder.
+function roundOrNull(value) {
+    return Number.isFinite(value) ? Math.round(value) : null;
+}
+
 // data is an Open-Meteo forecast response. labels carries the formatters and
 // location names, which depend on QML singletons.
 function fromOpenMeteo(data, labels) {
@@ -14,12 +19,17 @@ function fromOpenMeteo(data, labels) {
     const daily = data.daily;
     const current = data.current;
 
+    // Days with a DST change have 23 or 25 hours, so match hours to days by date.
+    const dayIndex = {};
+    (daily.time ?? []).forEach((day, i) => dayIndex[day] = i);
+
     const hourlyForecast = [];
     for (let i = 0; i < (hourly.time?.length ?? 0); i++) {
         const tempC = hourly.temperature_2m?.[i] || 0;
         const feelsLikeC = hourly.apparent_temperature?.[i] || tempC;
-        const sunrise = new Date(daily.sunrise?.[Math.floor(i / 24)]);
-        const sunset = new Date(daily.sunset?.[Math.floor(i / 24)]);
+        const day = dayIndex[hourly.time[i].slice(0, 10)];
+        const sunrise = new Date(daily.sunrise?.[day]);
+        const sunset = new Date(daily.sunset?.[day]);
         const time = new Date(hourly.time[i]);
 
         hourlyForecast.push({
@@ -30,12 +40,12 @@ function fromOpenMeteo(data, labels) {
             "feelsLike": Math.round(feelsLikeC),
             "feelsLikeF": Math.round(toF(feelsLikeC)),
             "wCode": hourly.weather_code?.[i] || 0,
-            "humidity": Math.round(hourly.relative_humidity_2m?.[i] || 0),
-            "wind": Math.round(hourly.wind_speed_10m?.[i] || 0),
-            "pressure": Math.round(hourly.surface_pressure?.[i] || 0),
-            "precipitationProbability": Math.round(hourly.precipitation_probability?.[i] || 0),
-            "visibility": Math.round(hourly.visibility?.[i] || 0),
-            "isDay": sunrise < time && time < sunset
+            "humidity": roundOrNull(hourly.relative_humidity_2m?.[i]),
+            "wind": roundOrNull(hourly.wind_speed_10m?.[i]),
+            "pressure": roundOrNull(hourly.surface_pressure?.[i]),
+            "precipitationProbability": roundOrNull(hourly.precipitation_probability?.[i]),
+            "visibility": roundOrNull(hourly.visibility?.[i]),
+            "isDay": hourly.is_day?.[i] != null ? Boolean(hourly.is_day[i]) : sunrise <= time && time < sunset
         });
     }
 
@@ -52,7 +62,7 @@ function fromOpenMeteo(data, labels) {
             "tempMax": Math.round(tempMaxC),
             "tempMinF": Math.round(toF(tempMinC)),
             "tempMaxF": Math.round(toF(tempMaxC)),
-            "precipitationProbability": Math.round(daily.precipitation_probability_max?.[i] || 0),
+            "precipitationProbability": roundOrNull(daily.precipitation_probability_max?.[i]),
             "sunrise": daily.sunrise?.[i] ? labels.formatTime(daily.sunrise[i]) : "",
             "sunset": daily.sunset?.[i] ? labels.formatTime(daily.sunset[i]) : "",
             "rawSunrise": daily.sunrise?.[i] || "",
@@ -78,8 +88,8 @@ function fromOpenMeteo(data, labels) {
         "city": labels.city,
         "country": labels.country,
         "wCode": current.weather_code || 0,
-        "humidity": Math.round(current.relative_humidity_2m || 0),
-        "wind": Math.round(current.wind_speed_10m || 0),
+        "humidity": roundOrNull(current.relative_humidity_2m),
+        "wind": roundOrNull(current.wind_speed_10m),
         "sunrise": labels.formatTime(daily.sunrise?.[0]) || "06:00",
         "sunset": labels.formatTime(daily.sunset?.[0]) || "18:00",
         "rawSunrise": daily.sunrise?.[0] || "",
@@ -92,8 +102,8 @@ function fromOpenMeteo(data, labels) {
         "visibility": hourlyValue("visibility"),
         "dewPoint": hourlyValue("dew_point_2m"),
         "windDirection": Number.isFinite(current.wind_direction_10m) ? current.wind_direction_10m : null,
-        "pressure": Math.round(current.surface_pressure || 0),
-        "precipitationProbability": Math.round(daily.precipitation_probability_max?.[0] || 0),
+        "pressure": roundOrNull(current.surface_pressure),
+        "precipitationProbability": roundOrNull(daily.precipitation_probability_max?.[0]),
         "isDay": Boolean(current.is_day),
         "forecast": forecast,
         "hourlyForecast": hourlyForecast

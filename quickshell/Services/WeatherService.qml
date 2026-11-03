@@ -7,6 +7,7 @@ import Quickshell.Io
 import qs.Common
 import "../Common/suncalc.js" as SunCalc
 import "../Common/WeatherData.js" as WeatherData
+import "../Common/WeatherProviders.js" as WeatherProviders
 
 Singleton {
     id: root
@@ -50,6 +51,55 @@ Singleton {
     property int persistentRetryCount: 0
     property int _geocodeReqId: 0
     property var _pendingCoords: null
+    property var _providerQueue: []
+    property var _fetchCoords: null
+
+    readonly property var providers: {
+        const saved = Array.isArray(SettingsData.weatherProviders) ? SettingsData.weatherProviders : [];
+        const rows = [];
+        for (const entry of saved) {
+            const provider = WeatherProviders.catalog.find(provider => provider.id === entry?.id);
+            if (!provider || rows.some(row => row.id === provider.id))
+                continue;
+            rows.push({
+                id: provider.id,
+                text: provider.text,
+                enabled: entry.enabled === true
+            });
+        }
+        for (const provider of WeatherProviders.catalog) {
+            if (!rows.some(row => row.id === provider.id))
+                rows.push({
+                    id: provider.id,
+                    text: provider.text,
+                    enabled: false
+                });
+        }
+        return rows;
+    }
+    readonly property var enabledProviders: providers.filter(provider => provider.enabled).map(provider => provider.id)
+    readonly property string providerOrder: providers.map(provider => provider.id).join(",")
+    // Only a new first provider changes what is shown; the others apply on the next refresh.
+    readonly property string primaryProvider: enabledProviders[0] ?? "openmeteo"
+    onPrimaryProviderChanged: {
+        root.cancelFetch();
+        root.lastFetchTime = 0;
+        root.forceRefresh();
+    }
+
+    function setProviderEnabled(id, enabled) {
+        SettingsData.set("weatherProviders", providers.map(provider => ({
+                    id: provider.id,
+                    enabled: provider.id === id ? enabled : provider.enabled
+                })));
+    }
+
+    function reorderProviders(indices) {
+        SettingsData.set("weatherProviders", indices.map(index => ({
+                    id: providers[index].id,
+                    enabled: providers[index].enabled
+                })));
+    }
 
     // ionice is util-linux only; the BSDs get plain nice
     readonly property var lowPriorityCmd: Qt.platform.os === "linux" ? ["nice", "-n", "19", "ionice", "-c3"] : ["nice", "-n", "19"]
@@ -451,13 +501,6 @@ Singleton {
         return locale.dayName(date.getDay(), Locale.ShortFormat);
     }
 
-    function getWeatherApiUrl() {
-        if (!location) {
-            return null;
-        }
-        return getWeatherApiUrlForCoords(location.latitude, location.longitude);
-    }
-
     function getGeocodingUrl(query) {
         return "https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(query) + "&count=1&language=en&format=json";
     }
@@ -492,15 +535,6 @@ Singleton {
                 country: country || root.weather.country
             });
         }
-    }
-
-    function getWeatherApiUrlForCoords(lat, lon) {
-        if (lat == null || lon == null)
-            return null;
-
-        const params = ["latitude=" + lat, "longitude=" + lon, "current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m", "daily=sunrise,sunset,moonrise,moonset,temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max", "hourly=temperature_2m,weather_code,precipitation_probability,wind_speed_10m,apparent_temperature,relative_humidity_2m,surface_pressure,visibility,cloud_cover,uv_index,dew_point_2m", "timezone=auto", "forecast_days=7"];
-
-        return "https://api.open-meteo.com/v1/forecast?" + params.join('&');
     }
 
     function addRef() {
@@ -604,7 +638,7 @@ Singleton {
 
     function tryNominatim(lat, lon, reqId) {
         const url = "https://nominatim.openstreetmap.org/reverse?lat=" + lat + "&lon=" + lon + "&format=json&addressdetails=1&accept-language=en";
-        nominatimFetcher.command = lowPriorityCmd.concat(fetchCmd, ["--user-agent", "Dux Shell Weather Widget", url]);
+        nominatimFetcher.command = lowPriorityCmd.concat(fetchCmd, ["--user-agent", WeatherProviders.USER_AGENT, url]);
         nominatimFetcher.reqId = reqId;
         nominatimFetcher.running = true;
     }
@@ -646,15 +680,50 @@ Singleton {
             return;
         }
 
-        const apiUrl = getWeatherApiUrlForCoords(lat, lon);
-        if (!apiUrl) {
+        if (lat == null || lon == null) {
             return;
         }
 
         root.lastFetchTime = now;
         root.weather.loading = true;
-        weatherFetcher.command = lowPriorityCmd.concat(root.fetchCmd, [apiUrl]);
+        root._fetchCoords = {
+            latitude: lat,
+            longitude: lon
+        };
+        // Turning every provider off still falls back to the default one.
+        root._providerQueue = root.enabledProviders.length ? root.enabledProviders.slice() : ["openmeteo"];
+        root.tryNextProvider();
+    }
+
+    function tryNextProvider(reason) {
+        if (root.refCount === 0 || !SettingsData.weatherEnabled) {
+            root._providerQueue = [];
+            return;
+        }
+        if (reason)
+            root.lastFetchError = reason;
+        const id = root._providerQueue.shift();
+        if (!id) {
+            root.handleWeatherFailure();
+            return;
+        }
+        if (reason)
+            log.info("Weather provider failed, trying", id + ":", reason);
+        const req = WeatherProviders.request(id, root._fetchCoords.latitude, root._fetchCoords.longitude);
+        weatherFetcher.providerId = id;
+        weatherFetcher.failure = "";
+        weatherFetcher.command = lowPriorityCmd.concat(root.fetchCmd, req.userAgent ? ["--user-agent", req.userAgent] : [], [req.url]);
         weatherFetcher.running = true;
+    }
+
+    // A chain still running for the old location would label its result with the
+    // new one. The process stops asynchronously; onExited then fetches again.
+    function cancelFetch() {
+        root._providerQueue = [];
+        if (!weatherFetcher.running)
+            return;
+        weatherFetcher.cancelled = true;
+        weatherFetcher.running = false;
     }
 
     function forceRefresh() {
@@ -901,6 +970,9 @@ Singleton {
 
     Process {
         id: weatherFetcher
+        property string providerId: ""
+        property string failure: ""
+        property bool cancelled: false
         running: false
 
         stderr: StdioCollector {
@@ -909,31 +981,44 @@ Singleton {
 
         stdout: StdioCollector {
             onStreamFinished: {
+                if (weatherFetcher.cancelled)
+                    return;
                 const raw = text.trim();
                 if (!raw || raw[0] !== "{") {
-                    root.handleWeatherFailure(weatherFetchErr.text.trim());
+                    weatherFetcher.failure = weatherFetchErr.text.trim() || "no data";
                     return;
                 }
 
                 try {
-                    root.weather = WeatherData.fromOpenMeteo(JSON.parse(raw), {
+                    const coords = root._fetchCoords;
+                    const data = WeatherProviders.parse(weatherFetcher.providerId, raw, coords.latitude, coords.longitude, Date.now());
+                    root.weather = WeatherData.fromOpenMeteo(data, {
                         formatTime: root.formatTime,
                         formatDay: root.formatForecastDay,
                         city: root.location?.city || I18n.tr("Unknown"),
                         country: root.location?.country || I18n.tr("Unknown")
                     });
                     root.lastFetchError = "";
+                    root._providerQueue = [];
                     root.handleWeatherSuccess();
                 } catch (e) {
-                    root.handleWeatherFailure();
+                    weatherFetcher.failure = e.message;
                 }
             }
         }
 
+        // stdout is collected before the process exits; start the next provider only once it has.
         onExited: exitCode => {
-            if (exitCode !== 0) {
-                root.handleWeatherFailure();
+            if (weatherFetcher.cancelled) {
+                weatherFetcher.cancelled = false;
+                // Without a location yet, the running lookup fetches once it resolves.
+                if (root.location)
+                    root.fetchWeather();
+                return;
             }
+            const failure = weatherFetcher.failure || (exitCode !== 0 ? weatherFetchErr.text.trim() || "exit code " + exitCode : "");
+            if (failure)
+                root.tryNextProvider(weatherFetcher.providerId + ": " + failure);
         }
     }
 
@@ -989,6 +1074,7 @@ Singleton {
 
     Component.onCompleted: {
         SettingsData.weatherCoordinatesChanged.connect(() => {
+            root.cancelFetch();
             root.location = null;
             root.weather = emptyWeather();
             root.lastFetchTime = 0;
@@ -996,12 +1082,14 @@ Singleton {
         });
 
         SettingsData.weatherLocationChanged.connect(() => {
+            root.cancelFetch();
             root.location = null;
             root.lastFetchTime = 0;
             root.forceRefresh();
         });
 
         SettingsData.useAutoLocationChanged.connect(() => {
+            root.cancelFetch();
             root.location = null;
             root.weather = emptyWeather();
             root.lastFetchTime = 0;
