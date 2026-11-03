@@ -491,6 +491,14 @@ Singleton {
         });
     }
 
+    readonly property var customTilingLayouts: ["tile", "right_tile", "vertical_tile", "center_tile", "deck"]
+
+    function hyprTilingLayoutTarget(layout) {
+        if (customTilingLayouts.includes(layout))
+            return "lua:dms:" + layout;
+        return layout;
+    }
+
     function generateLayoutConfig(frameTransition) {
         if (!CompositorService.isHyprland)
             return;
@@ -553,7 +561,7 @@ Singleton {
         if (resizeOnBorder && SettingsData.hyprlandBorderGrabArea !== 15)
             generalLines.push(`extend_border_grab_area = ${SettingsData.hyprlandBorderGrabArea},`);
         if (tilingLayout)
-            generalLines.push(`layout = ${luaString(tilingLayout)},`);
+            generalLines.push(`layout = ${luaString(hyprTilingLayoutTarget(tilingLayout))},`);
 
         const luaSection = (name, lines) => `\t${name} = {\n${lines.map(l => "\t\t" + l).join("\n")}\n\t},`;
         const sections = [luaSection("general", generalLines)];
@@ -577,6 +585,9 @@ hl.config({
 ${sections.join("\n")}
 })
 `;
+        const customLayout = customLayoutLua(tilingLayout);
+        if (customLayout)
+            content += customLayout;
 
         if (layoutXrayEnabled) {
             content += `
@@ -634,6 +645,150 @@ hl.layer_rule({
             return [`direction = ${luaString(SettingsData.hyprlandScrollingDirection)},`, `column_width = ${SettingsData.hyprlandScrollingColumnWidth / 100},`, `fullscreen_on_one_column = ${SettingsData.hyprlandScrollingFullscreenOneColumn},`, `follow_focus = ${hyprMode(SettingsData.hyprlandScrollingFollowFocus)},`];
         default:
             return [];
+        }
+    }
+
+    function customLayoutLua(layout) {
+        if (!customTilingLayouts.includes(layout))
+            return "";
+        // ctx:split returns plain geometry; the compositor insets gaps/borders itself
+        const fact = Math.round((SettingsData.hyprlandMasterSize / 100) * 10000) / 10000;
+        const rest = Math.round((1 - fact) * 10000) / 10000;
+        const side = Math.round(((1 - fact) / 2) * 10000) / 10000;
+        switch (layout) {
+        case "tile":
+            return `\nhl.layout.register("dms:tile", {
+\trecalculate = function(ctx)
+\t\tlocal n = #ctx.targets
+\t\tif n == 0 then
+\t\t\treturn
+\t\tend
+\t\tlocal area = ctx.area
+\t\tif n == 1 then
+\t\t\tctx.targets[1]:place(area)
+\t\t\treturn
+\t\tend
+\t\tlocal stack = ctx:split(area, "right", ${rest})
+\t\tctx.targets[1]:place(ctx:split(area, "left", ${fact}))
+\t\tfor k = 2, n do
+\t\t\tlocal remaining = n - k + 1
+\t\t\tctx.targets[k]:place(ctx:split(stack, "top", 1 / remaining))
+\t\t\tstack = ctx:split(stack, "bottom", 1 - 1 / remaining)
+\t\tend
+\tend,
+})
+`;
+        case "right_tile":
+            return `\nhl.layout.register("dms:right_tile", {
+\trecalculate = function(ctx)
+\t\tlocal n = #ctx.targets
+\t\tif n == 0 then
+\t\t\treturn
+\t\tend
+\t\tlocal area = ctx.area
+\t\tif n == 1 then
+\t\t\tctx.targets[1]:place(area)
+\t\t\treturn
+\t\tend
+\t\tlocal stack = ctx:split(area, "left", ${rest})
+\t\tctx.targets[1]:place(ctx:split(area, "right", ${fact}))
+\t\tfor k = 2, n do
+\t\t\tlocal remaining = n - k + 1
+\t\t\tctx.targets[k]:place(ctx:split(stack, "top", 1 / remaining))
+\t\t\tstack = ctx:split(stack, "bottom", 1 - 1 / remaining)
+\t\tend
+\tend,
+})
+`;
+        case "vertical_tile":
+            return `\nhl.layout.register("dms:vertical_tile", {
+\trecalculate = function(ctx)
+\t\tlocal n = #ctx.targets
+\t\tif n == 0 then
+\t\t\treturn
+\t\tend
+\t\tlocal area = ctx.area
+\t\tif n == 1 then
+\t\t\tctx.targets[1]:place(area)
+\t\t\treturn
+\t\tend
+\t\tlocal stack = ctx:split(area, "bottom", ${rest})
+\t\tctx.targets[1]:place(ctx:split(area, "top", ${fact}))
+\t\tfor k = 2, n do
+\t\t\tlocal remaining = n - k + 1
+\t\t\tctx.targets[k]:place(ctx:split(stack, "left", 1 / remaining))
+\t\t\tstack = ctx:split(stack, "right", 1 - 1 / remaining)
+\t\tend
+\tend,
+})
+`;
+        case "center_tile":
+            return `\nhl.layout.register("dms:center_tile", {
+\trecalculate = function(ctx)
+\t\tlocal n = #ctx.targets
+\t\tif n == 0 then
+\t\t\treturn
+\t\tend
+\t\tlocal area = ctx.area
+\t\tif n == 1 then
+\t\t\tctx.targets[1]:place(area)
+\t\t\treturn
+\t\tend
+\t\tlocal slaves = n - 1
+\t\tif slaves == 1 then
+\t\t\tlocal side = ${side}
+\t\t\tctx.targets[1]:place({ x = area.x + area.w * side, y = area.y, w = area.w * (1 - 2 * side), h = area.h })
+\t\t\tctx.targets[2]:place(ctx:split(area, "right", side))
+\t\t\treturn
+\t\tend
+\t\tlocal side = ${side}
+\t\tlocal left = ctx:split(area, "left", side)
+\t\tlocal right = ctx:split(area, "right", side)
+\t\tctx.targets[1]:place({ x = area.x + area.w * side, y = area.y, w = area.w * (1 - 2 * side), h = area.h })
+\t\tlocal leftCount = math.floor(slaves / 2)
+\t\tlocal rightCount = slaves - leftCount
+\t\tlocal leftIndex = 0
+\t\tlocal rightIndex = 0
+\t\tfor k = 2, n do
+\t\t\tlocal stackIndex = k - 2
+\t\t\tlocal onRight = (stackIndex % 2 == 1) ~= (n % 2 == 0)
+\t\t\tif onRight then
+\t\t\t\tlocal remaining = rightCount - rightIndex
+\t\t\t\tctx.targets[k]:place(ctx:split(right, "top", 1 / remaining))
+\t\t\t\tright = ctx:split(right, "bottom", 1 - 1 / remaining)
+\t\t\t\trightIndex = rightIndex + 1
+\t\t\telse
+\t\t\t\tlocal remaining = leftCount - leftIndex
+\t\t\t\tctx.targets[k]:place(ctx:split(left, "top", 1 / remaining))
+\t\t\t\tleft = ctx:split(left, "bottom", 1 - 1 / remaining)
+\t\t\t\tleftIndex = leftIndex + 1
+\t\t\tend
+\t\tend
+\tend,
+})
+`;
+        case "deck":
+            return `\nhl.layout.register("dms:deck", {
+\trecalculate = function(ctx)
+\t\tlocal n = #ctx.targets
+\t\tif n == 0 then
+\t\t\treturn
+\t\tend
+\t\tlocal area = ctx.area
+\t\tif n == 1 then
+\t\t\tctx.targets[1]:place(area)
+\t\t\treturn
+\t\tend
+\t\tlocal stack = ctx:split(area, "right", ${rest})
+\t\tctx.targets[1]:place(ctx:split(area, "left", ${fact}))
+\t\tfor k = 2, n do
+\t\t\tctx.targets[k]:place(stack)
+\t\tend
+\tend,
+})
+`;
+        default:
+            return "";
         }
     }
 
