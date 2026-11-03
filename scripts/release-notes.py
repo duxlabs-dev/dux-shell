@@ -15,6 +15,10 @@ Usage:
 
 Requires: git (full history), gh authenticated. --repo defaults to origin.
 
+--suite adds PRs merged in the Dux suite repos (SUITE_REPOS) during the
+release window: after the range's base tag, up to its head when that is a tag.
+Suite repos need no local clone; their PRs come from the GitHub API.
+
 Translation counts (blog and translators formats) come from git history.
 Translators are not named: they have not agreed to be listed. Language names
 come from the public contributors feed at https://api.duxlabs.dev/contributors
@@ -54,6 +58,19 @@ SUBJECT_HINTS = [
     (re.compile(r"^docs?\b", re.I), "docs"),
     (re.compile(r"^i18n", re.I), "i18n"),
     (re.compile(r"^(distro|packaging|nix|copr|obs|ppa|xbps)", re.I), "packaging"),
+]
+
+
+# Dux suite repos folded in by --suite: (owner/name, display name)
+SUITE_REPOS = [
+    ("duxlabs-dev/dux-files", "Dux Files"),
+    ("duxlabs-dev/dux-calendar", "Dux Calendar"),
+    ("duxlabs-dev/dux-greeter", "Dux Greeter"),
+    ("duxlabs-dev/dux-qml-common", "Dux QML Common"),
+    ("duxlabs-dev/dux-gop", "Dux GOP"),
+    ("duxlabs-dev/dux-go", "dux-go"),
+    ("duxlabs-dev/dux-plugins", "First-party plugins"),
+    ("duxlabs-dev/dux-repo", "Packaging"),
 ]
 
 
@@ -204,6 +221,66 @@ def build_entries(repo, rng, use_api=True):
     return entries
 
 
+def ref_is_tag(ref):
+    try:
+        run(["git", "rev-parse", "--verify", "--quiet", f"refs/tags/{ref}"])
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
+def suite_window(rng):
+    """(since, until) ISO times for the release: base tag commit time, and the
+    head's when it is a tag (None while the release is still untagged)."""
+    base, _, head = rng.partition("..")
+    head = head.lstrip(".") or "HEAD"
+    since = run(["git", "log", "-1", "--format=%cI", base]).strip()
+    until = run(["git", "log", "-1", "--format=%cI", head]).strip() if ref_is_tag(head) else None
+    return since, until
+
+
+def suite_entries(rng):
+    """Entries for PRs merged in SUITE_REPOS inside the release window."""
+    since, until = suite_window(rng)
+    merged = f"merged:{since}..{until}" if until else f"merged:>{since}"
+    entries = []
+    for repo, label in SUITE_REPOS:
+        try:
+            prs = json.loads(run(["gh", "pr", "list", "-R", repo, "--state", "merged",
+                                  "--search", merged, "--limit", "500", "--json",
+                                  "number,title,url,author,labels,mergeCommit,mergedAt"]))
+        except subprocess.CalledProcessError as e:
+            print(f"warning: {repo}: {e.stderr.strip()}", file=sys.stderr)
+            continue
+        for pr in sorted(prs, key=lambda p: p["mergedAt"]):
+            login = (pr.get("author") or {}).get("login")
+            if not login or BOT_RE.search(login) or (pr.get("author") or {}).get("is_bot"):
+                continue
+            labels = [l["name"] for l in pr.get("labels") or []]
+            entries.append({
+                "sha": (pr.get("mergeCommit") or {}).get("oid") or "",
+                "subject": pr["title"], "title": pr["title"], "number": pr["number"],
+                "pr_url": pr["url"], "login": login, "author_name": login,
+                "author_email": "", "author_url": f"https://github.com/{login}",
+                "category": categorize(labels, pr["title"]),
+                "repo": repo, "repo_label": label,
+            })
+    return entries
+
+
+def pr_ref(e, style):
+    """PR reference for one entry. Suite PRs name their repo."""
+    if not e["number"]:
+        return f"`{e['sha'][:7]}`" if style == "md" else e["sha"][:7]
+    short = e.get("repo", "").split("/")[-1]
+    if style == "gh":  # GitHub autolinks owner/name#N and #N
+        return f"{e['repo']}#{e['number']}" if short else f"#{e['number']}"
+    if style == "plain":
+        return f"{short}#{e['number']}" if short else f"#{e['number']}"
+    text = f"{short} #{e['number']}" if short else f"PR #{e['number']}"
+    return f"[{text}]({e['pr_url']})"
+
+
 def author_md(e):
     if e["login"]:
         return f"@{e['login']}"
@@ -218,7 +295,7 @@ def format_sections(entries, escape=lambda t: t):
             continue
         out.append(f"### {heading}")
         for e in group:
-            ref = f" in #{e['number']}" if e["number"] else f" ({e['sha'][:7]})"
+            ref = f" in {pr_ref(e, 'gh')}" if e["number"] else f" ({e['sha'][:7]})"
             out.append(f"- {escape(e['title'])} by {author_md(e)}{ref}")
         out.append("")
     return out
@@ -280,8 +357,7 @@ def format_blog(repo, entries, rng, exclude=frozenset()):
             name = e["login"] or e["author_name"]
             key = name.lower()
             rows.setdefault(key, {"e": e, "name": name, "items": []})
-            pr = (f"[PR #{e['number']}]({e['pr_url']})" if e["number"]
-                  else f"`{e['sha'][:7]}`")
+            pr = pr_ref(e, "md")
             rows[key]["items"].append(f"{mdx_safe(clean_title(e['title']))} ({pr})")
         lines = ["| Contributor | Contribution |", "|---|---|"]
         for key in sorted(rows):
@@ -296,7 +372,7 @@ def format_blog(repo, entries, rng, exclude=frozenset()):
 
     def fix_item(e):
         title = mdx_safe(clean_title(e["title"])).rstrip(".")
-        ref = f"[PR #{e['number']}]({e['pr_url']})" if e["number"] else f"`{e['sha'][:7]}`"
+        ref = pr_ref(e, "md")
         if not is_excluded(e) and e["author_url"]:
             name = e["login"] or e["author_name"]
             return f"- {title} (contributed by **[{name}]({e['author_url']})** {ref})."
@@ -447,7 +523,7 @@ def format_translators(rng):
 def format_checklist(entries):
     out = []
     for e in entries:
-        ref = f"#{e['number']}" if e["number"] else e["sha"][:7]
+        ref = pr_ref(e, "plain")
         out.append(f"- [ ] {ref} {e['title']} — {author_md(e)} [{e['category']}]")
     return "\n".join(out)
 
@@ -463,6 +539,10 @@ def main():
                          "--exclude to override, --exclude '' for nobody")
     ap.add_argument("--bare", action="store_true",
                     help="github format: omit heading and Full Changelog footer")
+    ap.add_argument("--suite", action="store_true",
+                    help="also include PRs merged in the Dux suite repos "
+                         "(dux-files, dux-calendar, dux-greeter, ...) in the "
+                         "release window; needs the GitHub API")
     ap.add_argument("--no-api", action="store_true",
                     help="skip GitHub API, use git data only (degraded attribution)")
     ap.add_argument("-o", "--output", default=None, metavar="PATH",
@@ -484,6 +564,10 @@ def main():
         return write_output(args, format_translators(args.range))
 
     entries = build_entries(repo, args.range, use_api=not args.no_api)
+    if args.suite:
+        if args.no_api:
+            ap.error("--suite needs the GitHub API; drop --no-api")
+        entries += suite_entries(args.range)
     if not entries:
         print("no commits in range", file=sys.stderr)
         return 1
