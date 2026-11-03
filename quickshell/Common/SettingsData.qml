@@ -884,6 +884,8 @@ Singleton {
     property int notificationPopupPosition: SettingsData.Position.Top
     property int notificationAnimationDuration: Spec.SPEC.notificationAnimationDuration.def
     property bool notificationHistoryEnabled: Spec.SPEC.notificationHistoryEnabled.def
+    property string notificationLeadingShortcut: Spec.SPEC.notificationLeadingShortcut.def
+    property string notificationTrailingShortcut: Spec.SPEC.notificationTrailingShortcut.def
     property int notificationHistoryMaxCount: Spec.SPEC.notificationHistoryMaxCount.def
     property int notificationHistoryMaxAgeDays: Spec.SPEC.notificationHistoryMaxAgeDays.def
     property bool notificationHistorySaveLow: Spec.SPEC.notificationHistorySaveLow.def
