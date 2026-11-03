@@ -2826,11 +2826,11 @@ Singleton {
             return [];
         }
         if (!prefs || prefs.length === 0 || prefs.includes("all") || (typeof prefs[0] === "string" && prefs[0] === "all")) {
-            return Quickshell.screens;
+            return ShellLayout.realScreens;
         }
-        var filtered = Quickshell.screens.filter(screen => isScreenInPreferences(screen, prefs));
-        if (filtered.length === 0 && showOnLastDisplay && showOnLastDisplay[componentId] && Quickshell.screens.length === 1) {
-            return Quickshell.screens;
+        var filtered = ShellLayout.realScreens.filter(screen => isScreenInPreferences(screen, prefs));
+        if (filtered.length === 0 && showOnLastDisplay && showOnLastDisplay[componentId] && ShellLayout.realScreens.length === 1) {
+            return ShellLayout.realScreens;
         }
         return filtered;
     }
