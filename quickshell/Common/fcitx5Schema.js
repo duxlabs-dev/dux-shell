@@ -44,7 +44,9 @@ function keyList(value) {
     return value ? [value] : [];
 }
 
-function fieldKind(type) {
+function fieldKind(type, props) {
+    if (type === "String" && props?.IsEnum === "True")
+        return "enum";
     switch (type) {
         case "Boolean":
             return "bool";
@@ -82,7 +84,7 @@ function buildRows(schema, structName, path) {
     let skipped = 0;
     const base = path ?? [];
     for (const field of structFields(schema, structName)) {
-        const kind = fieldKind(field.type);
+        const kind = fieldKind(field.type, field.props);
         const fieldPath = base.concat(field.name);
         if (kind === "unsupported") {
             const nested = structFields(schema, field.type);

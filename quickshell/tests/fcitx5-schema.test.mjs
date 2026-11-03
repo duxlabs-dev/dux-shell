@@ -13,6 +13,7 @@ const fcitxSchema = {
             fields: [
                 { name: "TriggerKeys", type: "List|Key", description: "Toggle Input Method", props: { ListConstrain: { AllowModifierLess: "True", AllowModifierOnly: "True" } } },
                 { name: "Style", type: "Enum", description: "Style", props: { Enum: ["a", "b"], EnumI18n: ["Alpha", "Beta"] } },
+                { name: "Theme", type: "String", description: "Theme", props: { IsEnum: "True", LaunchSubConfig: "True", Enum: ["a", "b"], EnumI18n: ["Alpha", "Beta"] } },
                 { name: "Launcher", type: "External", description: "Editor", props: {} },
             ],
         },
@@ -23,7 +24,7 @@ const value = { Hotkey: { TriggerKeys: ["Control+space"], Style: "b" } };
 test("rows come from the schema: kinds, enum labels, constraints, unsupported counted", () => {
     const { rows, skipped } = schema.buildRows(fcitxSchema, "GlobalConfig", []);
     assert.equal(skipped, 1, "External editors are skipped, not drawn");
-    assert.deepEqual([...rows.map(r => r.kind)], ["group", "keys", "enum"]);
+    assert.deepEqual([...rows.map(r => r.kind)], ["group", "keys", "enum", "enum"]);
     const [, keys, style] = rows;
     assert.deepEqual([...keys.path], ["Hotkey", "TriggerKeys"]);
     assert.equal(keys.modifierOnly, true);
