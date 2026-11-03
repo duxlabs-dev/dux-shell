@@ -10,9 +10,10 @@ Item {
     property var parentModal: null
     readonly property var coordinates: SettingsData.weatherCoordinates.split(",")
     readonly property bool validCoordinates: latitude.text.trim() !== "" && longitude.text.trim() !== "" && Number.isFinite(Number(latitude.text)) && Number.isFinite(Number(longitude.text)) && Math.abs(Number(latitude.text)) <= 90 && Math.abs(Number(longitude.text)) <= 180
+    readonly property bool coordinatesEdited: Number(latitude.text) !== Number(coordinates[0]) || Number(longitude.text) !== Number(coordinates[1])
 
     function saveCoordinates() {
-        if (!validCoordinates)
+        if (!validCoordinates || !coordinatesEdited)
             return;
         SettingsData.setWeatherLocation("", Number(latitude.text) + "," + Number(longitude.text));
     }
@@ -114,7 +115,7 @@ Item {
 
                     DButton {
                         text: I18n.tr("Apply", "verb, button that saves custom weather coordinates")
-                        enabled: root.validCoordinates
+                        enabled: root.validCoordinates && root.coordinatesEdited
                         onClicked: root.saveCoordinates()
                     }
                 }
