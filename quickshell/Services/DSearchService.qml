@@ -9,6 +9,8 @@ import qs.Common
 Singleton {
     id: root
 
+    readonly property var log: Log.scoped("DSearchService")
+
     property bool dsearchAvailable: false
     property int searchIdCounter: 0
     property int indexVersion: 0
@@ -27,8 +29,11 @@ Singleton {
 
         onExited: exitCode => {
             root.dsearchAvailable = exitCode === 0;
-            if (root.dsearchAvailable)
-                root._checkVersion();
+            if (!root.dsearchAvailable) {
+                root.log.warn("dsearch not found, command -v exit", exitCode, "PATH", Quickshell.env("PATH"));
+                return;
+            }
+            root._checkVersion();
         }
     }
 
