@@ -365,18 +365,38 @@ Item {
                 title: I18n.tr("Background")
                 resetKeys: ["lockScreenWallpaperPath"]
                 body: SettingsWallpaperThumb {
+                    id: lockThumb
+
+                    readonly property var previewScreen: Quickshell.screens[0] ?? null
+
                     width: (parent.width - Theme.spacingL) / 2
+                    height: previewScreen ? width * previewScreen.height / previewScreen.width : width * SettingsMetrics.wallpaperThumbRatio
                     anchors.horizontalCenter: parent.horizontalCenter
                     placeholderIcon: "lock"
-                    emptyText: I18n.tr("Use desktop wallpaper")
                     allowColor: false
-                    path: SettingsData.lockScreenWallpaperPath
+                    showFileName: false
+                    showMaterial: SettingsData.lockScreenWallpaperPath === ""
+                    materialComposition: SessionData.getMonitorMaterialWallpaper(previewScreen?.name ?? "")
+                    path: SettingsData.lockScreenWallpaperPath || SessionData.getMonitorWallpaperImage(previewScreen?.name ?? "") || ""
+                    clearable: SettingsData.lockScreenWallpaperPath !== ""
+                    fillModeName: SettingsData.lockScreenWallpaperFillMode || (SettingsData.lockScreenWallpaperPath !== "" ? "Fill" : SessionData.getMonitorWallpaperFillMode(previewScreen?.name ?? ""))
+                    blur: Theme.lockScreenBlur
+                    blurMax: previewScreen ? Theme.lockScreenBlurMax * width / previewScreen.width : 0
+                    activateIcon: "edit"
+                    activateText: I18n.tr("Edit widgets")
+                    onActivated: SessionService.lockEditorRequested()
                     onBrowse: {
                         wallpaperBrowserLoader.active = true;
                         if (wallpaperBrowserLoader.item)
                             wallpaperBrowserLoader.item.open();
                     }
                     onClear: SettingsData.set("lockScreenWallpaperPath", "")
+
+                    LockScreenMinimap {
+                        anchors.fill: parent
+                        screen: lockThumb.previewScreen
+                        active: lockThumb.visible && (root.parentModal?.shouldBeVisible ?? true)
+                    }
                 }
             }
 
