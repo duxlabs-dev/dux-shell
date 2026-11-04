@@ -20,7 +20,7 @@ ShaderEffect {
     required property real cornerRadius
 
     readonly property bool horizontal: barSide === "top" || barSide === "bottom"
-    readonly property real joinRadius: Theme.connectedCornerRadius
+    readonly property real joinRadius: edgeRadius > 0 ? edgeRadius : Theme.connectedCornerRadius
     readonly property var descriptor: {
         ConnectedModeState.surfaceRevisions[screenName];
         return ConnectedModeState.surfaceDescriptor(screenName, "popout");

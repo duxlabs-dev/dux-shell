@@ -574,16 +574,6 @@ Item {
                 onToggled: checked => bar.apply("islandSatelliteGothCorners", checked)
             }
 
-            SettingsToggleRow {
-                settingKey: "islandSatelliteConnectedPopouts"
-                tags: ["island", "satellite", "connected", "popout", "popup", "widgets"]
-                text: I18n.tr("Connected popouts", "island settings: popouts opened from a satellite join its background")
-                checked: bar.islandSetting("islandSatelliteConnectedPopouts")
-                visible: bar.islandSetting("islandSatellitesEnabled")
-                enabled: bar.islandSetting("islandSatelliteBackground") && !SettingsData.frameEnabled
-                onToggled: checked => bar.apply("islandSatelliteConnectedPopouts", checked)
-            }
-
             SettingsToggleSliderRow {
                 resetStore: bar
                 settingKey: "islandGothCornerRadius"
@@ -600,6 +590,16 @@ Item {
                 enabled: (bar.islandSetting("islandSatelliteBackground") && bar.islandSetting("islandSatelliteGothCorners")) || root.selectedIslandNotch
                 onToggled: checked => bar.apply("gothCornerRadiusOverride", checked)
                 onSliderDragFinished: finalValue => bar.apply("gothCornerRadiusValue", finalValue)
+            }
+
+            SettingsToggleRow {
+                settingKey: "islandSatelliteConnectedPopouts"
+                tags: ["island", "satellite", "connected", "popout", "popup", "widgets"]
+                text: I18n.tr("Connected popouts", "island settings: popouts opened from a satellite join its background")
+                checked: bar.islandSetting("islandSatelliteConnectedPopouts")
+                visible: bar.islandSetting("islandSatellitesEnabled")
+                enabled: bar.islandSetting("islandSatelliteBackground") && !SettingsData.frameEnabled
+                onToggled: checked => bar.apply("islandSatelliteConnectedPopouts", checked)
             }
 
             SettingsToggleSliderRow {
