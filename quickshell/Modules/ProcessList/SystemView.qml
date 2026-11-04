@@ -45,7 +45,7 @@ Item {
 
     readonly property var f: facts.facts
     readonly property var cpuInfo: DgopService.cpuInfo
-    readonly property var gpus: DgopService.availableGpus ?? []
+    readonly property var gpus: DgopService.detectedGpus
     readonly property string mesa: SystemInfo.mesaVersion(f)
     readonly property string compositorVersion: {
         const raw = f["wm." + CompositorService.compositor];
