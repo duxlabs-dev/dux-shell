@@ -62,8 +62,7 @@ DevicePane {
     loaded: off || suspended || (history.a ?? []).length > 0
     title: stat?.fullName ?? slot
     titleTooltip: title
-    subtitle: stat?.driver ?? ""
-    subtitle2: stat?.memoryTotal > 0 ? I18n.tr("%1 VRAM", "GPU memory size, e.g. 24 GiB VRAM").arg(Format.formatBytes(stat.memoryTotal * 1024, true)) : ""
+    subtitle: stat?.driver ? I18n.tr("Graphics driver", "GPU kernel driver and Mesa version") + ": " + stat.driver : ""
     showChart: live
     chartLabel: I18n.tr("Usage", "chart legend: CPU or GPU utilization")
     chartValue: pct(stat?.usage) ?? "—"
