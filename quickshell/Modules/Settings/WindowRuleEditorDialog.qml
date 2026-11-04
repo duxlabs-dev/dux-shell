@@ -15,6 +15,7 @@ DDialog {
     property var editingRule: null
     property var targetWindow: null
     property bool submitting: false
+    property bool applying: false
     readonly property bool isEditMode: editingRule !== null
     readonly property bool isNiri: CompositorService.isNiri
     readonly property bool isHyprland: CompositorService.isHyprland
@@ -225,6 +226,7 @@ DDialog {
     ]
 
     signal ruleSubmitted
+    signal ruleApplied
 
     embedded: nativeWindow
     opened: nativeWindow
@@ -691,7 +693,7 @@ DDialog {
         return actions;
     }
 
-    function submit() {
+    function submit(keepOpen = false) {
         if (submitting || !acceptEnabled)
             return;
         const {
@@ -714,12 +716,17 @@ DDialog {
         const ruleJson = JSON.stringify(ruleData);
         const args = isEditMode ? [Proc.dmsBin, "config", "windowrules", "update", compositor, editingRule.id, ruleJson] : [Proc.dmsBin, "config", "windowrules", "add", compositor, ruleJson];
         submitting = true;
+        applying = keepOpen;
         Proc.runCommand(isEditMode ? "update-windowrule" : "add-windowrule", args, (output, exitCode) => {
             root.submitting = false;
+            root.applying = false;
             if (exitCode !== 0)
                 return;
             CompositorService.reloadAfterWindowRuleWrite();
-            root.ruleSubmitted();
+            if (keepOpen)
+                root.ruleApplied();
+            else
+                root.ruleSubmitted();
         });
     }
 
@@ -845,9 +852,18 @@ DDialog {
             onClicked: root.rejected()
         },
         DButton {
+            visible: root.isEditMode
+            text: I18n.tr("Apply")
+            enabled: root.acceptEnabled
+            busy: root.applying
+            backgroundColor: Theme.secondaryContainer
+            textColor: Theme.onSecondaryContainer
+            onClicked: root.submit(true)
+        },
+        DButton {
             text: root.isEditMode ? I18n.tr("Save") : I18n.tr("Add")
             enabled: root.acceptEnabled
-            busy: root.submitting
+            busy: root.submitting && !root.applying
             onClicked: root.submit()
         }
     ]
