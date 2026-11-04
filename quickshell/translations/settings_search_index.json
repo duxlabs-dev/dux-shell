@@ -9330,7 +9330,7 @@
   },
   {
     "section": "softwareUpdatesShell",
-    "label": "Dux Shell",
+    "label": "Dux Modular Shell",
     "tabIndex": 20,
     "category": "Software updates",
     "keywords": [
@@ -9338,6 +9338,7 @@
       "dms",
       "dux",
       "integrations",
+      "modular",
       "restart",
       "shell",
       "software",

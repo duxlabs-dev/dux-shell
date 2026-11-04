@@ -91,7 +91,7 @@ func (m Model) viewLayerPackages() string {
 	}
 
 	if m.osInfo != nil && distros.Registry[m.osInfo.Distribution.ID].Family == distros.FamilyFedora {
-		b.WriteString(m.styles.Subtle.Render("Prefer a ready-made image? Zirconium ships niri and Dux Shell:"))
+		b.WriteString(m.styles.Subtle.Render("Prefer a ready-made image? Zirconium ships niri and Dux Modular Shell:"))
 		b.WriteByte('\n')
 		b.WriteString("  " + m.styles.Subtle.Render(distros.ZirconiumSwitchCommand))
 		b.WriteString("\n\n")

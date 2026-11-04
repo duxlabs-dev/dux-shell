@@ -425,7 +425,7 @@ jobs:
 
             # Create installation guide
             cat > _temp_full/INSTALL.md << 'EOFINSTALL'
-          # Dux Shell Installation
+          # Dux Modular Shell Installation
 
           ## Requirements
 

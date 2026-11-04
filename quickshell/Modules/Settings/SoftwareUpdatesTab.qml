@@ -318,7 +318,7 @@ Item {
 
         SettingsCard {
             width: parent.width
-            title: "Dux Shell"
+            title: "Dux Modular Shell"
             iconName: "deployed_code"
             settingKey: "softwareUpdatesShell"
             tags: ["dms", "shell", "version", "channel", "restart"]

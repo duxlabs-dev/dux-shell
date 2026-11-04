@@ -35,8 +35,8 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "duxinstall",
-	Short: "Install Dux Shell and its dependencies",
-	Long: `duxinstall sets up Dux Shell with your chosen compositor and terminal.
+	Short: "Install Dux Modular Shell and its dependencies",
+	Long: `duxinstall sets up Dux Modular Shell with your chosen compositor and terminal.
 
 Without flags, it launches an interactive TUI. Providing either --compositor
 or --term activates headless (unattended) mode, which requires both flags.

@@ -836,7 +836,7 @@ func (p *NiriWritableProvider) WriteDMSRules(rules []windowrules.WindowRule) err
 	next := !slices.ContainsFunc(rules, usesNiriNextSyntax) || niriConfigNext()
 
 	var lines []string
-	lines = append(lines, "// DMS Window Rules - Managed by Dux Shell")
+	lines = append(lines, "// DMS Window Rules - Managed by Dux Modular Shell")
 	lines = append(lines, "// Do not edit manually - changes may be overwritten")
 	lines = append(lines, "")
 

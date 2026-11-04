@@ -770,7 +770,7 @@ RegistryBrowserWindow {
         }
         thirdPartyConfirm.showWithOptions({
             title: I18n.tr("Third-Party Plugin Warning"),
-            message: I18n.tr("Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.", "third-party plugin warning, %1 is the product name").arg("Dux Shell"),
+            message: I18n.tr("Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.", "third-party plugin warning, %1 is the product name").arg("Dux Modular Shell"),
             confirmText: I18n.tr("I Understand"),
             cancelText: I18n.tr("Cancel"),
             onConfirm: () => {

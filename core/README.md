@@ -1,6 +1,6 @@
 # DMS Backend & CLI
 
-Go-based backend for Dux Shell providing system integration, IPC, and installation tools.
+Go-based backend for Dux Modular Shell providing system integration, IPC, and installation tools.
 
 **See [root README](../README.md) for project overview and installation.**
 
