@@ -99,6 +99,10 @@ RegistryBrowserWindow {
         {
             label: I18n.tr("Dash card", "plugin browser type filter chip"),
             value: "dash-card"
+        },
+        {
+            label: I18n.tr("Lyrics", "plugin browser type filter chip, lyrics provider plugins"),
+            value: "lyrics-provider"
         }
     ]
 
