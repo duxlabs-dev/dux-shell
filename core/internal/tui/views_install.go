@@ -240,7 +240,7 @@ func (m Model) viewInstallComplete() string {
 		"• Window manager and dependencies installed",
 		"• Terminal and development tools configured",
 		"• Configuration files deployed with backups",
-		"• System optimized for Dux Shell",
+		"• System optimized for Dux Modular Shell",
 	}
 	if m.isImmutable() {
 		summary = "✓ Configurations deployed. No packages were changed on this image."

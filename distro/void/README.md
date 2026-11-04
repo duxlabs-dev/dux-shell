@@ -1,10 +1,10 @@
 # Void Linux packaging
 
-XBPS templates for Dux Shell on [Void Linux](https://voidlinux.org).
+XBPS templates for Dux Modular Shell on [Void Linux](https://voidlinux.org).
 
 | Package | Source repo | Template |
 | --- | --- | --- |
-| `dms` | Dux Shell | [`srcpkgs/dms/template`](srcpkgs/dms/template) |
+| `dms` | Dux Modular Shell | [`srcpkgs/dms/template`](srcpkgs/dms/template) |
 | `dux-gop` | duxlabs-dev/dux-gop | maintained in the **dux-repo** repo (`distro/void/srcpkgs/dux-gop`) |
 | `dux-search` | duxlabs-dev/dux-search | maintained in the **dux-repo** repo (`distro/void/srcpkgs/dux-search`) |
 

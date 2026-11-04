@@ -157,7 +157,7 @@ func (a *ArchDistribution) detectAccountsService() deps.Dependency {
 
 func (a *ArchDistribution) detectDMSGreeter() deps.Dependency {
 	installed := a.packageInstalled("dux-greeter-git") || a.packageInstalled("dux-greeter-bin")
-	dep := a.detectOptionalPackage("dux-greeter", "Dux Shell greetd greeter", installed)
+	dep := a.detectOptionalPackage("dux-greeter", "Dux Modular Shell greetd greeter", installed)
 	dep.CanToggle = true
 	if a.packageInstalled("dux-greeter-git") {
 		dep.Variant = deps.VariantGit

@@ -5,7 +5,7 @@
 // parses them all the same way.
 
 const HOUR_MS = 3600000;
-const USER_AGENT = "Dux Shell Weather Widget (+https://github.com/duxlabs-dev/dux-shell)";
+const USER_AGENT = "Dux Modular Shell Weather Widget (+https://github.com/duxlabs-dev/dux-shell)";
 
 const catalog = [
     {

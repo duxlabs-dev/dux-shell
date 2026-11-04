@@ -1,5 +1,5 @@
 [Unit]
-Description=Dux Shell (DMS)
+Description=Dux Modular Shell (DMS)
 PartOf=graphical-session.target
 After=graphical-session.target
 Requisite=graphical-session.target

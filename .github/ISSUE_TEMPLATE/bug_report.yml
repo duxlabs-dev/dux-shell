@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        ## Dux Shell Bug Report
+        ## Dux Modular Shell Bug Report
         Limit your report to one issue per submission unless similarly related
   - type: dropdown
     id: compositor

@@ -5,7 +5,7 @@
 Name:           dms
 Version:        1.2.3
 Release:        1%{?dist}
-Summary:        Dux Shell - Material 3 inspired shell for Wayland compositors
+Summary:        Dux Modular Shell - Material 3 inspired shell for Wayland compositors
 
 License:        MIT
 URL:            https://github.com/duxlabs-dev/dux-shell
@@ -31,7 +31,7 @@ Suggests:       qt6ct
 Suggests:       (dux-gop or dgop)
 
 %description
-Dux Shell (DMS) is a modern Wayland desktop shell built with Quickshell
+Dux Modular Shell (DMS) is a modern Wayland desktop shell built with Quickshell
 and optimized for niri, Hyprland, Sway, and other wlroots compositors. Features
 notifications, app launcher, wallpaper customization, and plugin system.
 

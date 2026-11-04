@@ -1,12 +1,12 @@
 name: Support Request
-description: Help with installation, usage, or general questions about Dux Shell
+description: Help with installation, usage, or general questions about Dux Modular Shell
 labels:
   - support
 body:
   - type: markdown
     attributes:
       value: |
-        ## Dux Shell Support Request
+        ## Dux Modular Shell Support Request
   - type: dropdown
     id: compositor
     attributes:
