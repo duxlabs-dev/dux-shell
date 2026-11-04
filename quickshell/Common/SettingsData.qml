@@ -3112,12 +3112,26 @@ Singleton {
         return ShellLayout.edge(screen, edge)?.island ?? null;
     }
 
+    // Every island on a screen would otherwise show the same notification or OSD.
+    function _islandFeedHost(screen, takesFeed) {
+        const configs = activeIslandConfigsForScreen(screen).filter(takesFeed);
+        return configs.find(cfg => !isDotBarConfig(cfg)) ?? configs[0] ?? null;
+    }
+
+    function islandNotificationHost(screen) {
+        return _islandFeedHost(screen, cfg => !islandSetting(cfg, "islandNotificationPopups"));
+    }
+
+    function islandSystemOsdHost(screen) {
+        return _islandFeedHost(screen, cfg => islandSetting(cfg, "islandSystemOsd"));
+    }
+
     function dankIslandHandlesNotifications(screen) {
-        return activeIslandConfigsForScreen(screen).some(cfg => !islandSetting(cfg, "islandNotificationPopups"));
+        return islandNotificationHost(screen) !== null;
     }
 
     function dankIslandHandlesSystemOsd(screen) {
-        return activeIslandConfigsForScreen(screen).some(cfg => islandSetting(cfg, "islandSystemOsd"));
+        return islandSystemOsdHost(screen) !== null;
     }
 
     function dankIslandOwnsEdge(screen, edge) {
