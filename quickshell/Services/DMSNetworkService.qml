@@ -480,8 +480,8 @@ Singleton {
             backendHotspotLastError = "";
         }
 
-        currentWifiSSID = state.wifiSSID || "";
-        wifiSignalStrength = state.wifiSignal || 0;
+        currentWifiSSID = wifiConnected ? (state.wifiSSID || "") : "";
+        wifiSignalStrength = wifiConnected ? (state.wifiSignal || 0) : 0;
 
         if (refCount > 0)
             syncLists(state);

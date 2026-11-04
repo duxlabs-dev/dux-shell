@@ -17,6 +17,7 @@ function create(id, name) {
         showOnLastDisplay: true,
         position: 1,
         mode: "compact",
+        middleClickAction: "close",
         taskbarAlign: "center",
         widgetExpansion: "popout",
         iconSize: 42,
@@ -99,6 +100,7 @@ function normalize(configs, presets) {
         result.name = typeof config.name === "string" && config.name.trim() ? config.name : config.id;
         result.position = Number.isInteger(config.position) && config.position >= 0 && config.position < 4 ? config.position : 1;
         result.mode = config.mode === "taskbar" ? "taskbar" : "compact";
+        result.middleClickAction = ["close", "launch"].includes(config.middleClickAction) ? config.middleClickAction : defaults.middleClickAction;
         result.taskbarAlign = ["start", "center", "end"].includes(config.taskbarAlign) ? config.taskbarAlign : "center";
         result.widgetExpansion = config.widgetExpansion === "inline" ? "inline" : "popout";
         result.iconSize = bounded(result.iconSize, defaults.iconSize, 16, 96);
@@ -284,6 +286,37 @@ function unitList(widgets, pins, order) {
     const apps = result.indexOf(widgets.find(widget => widget.widgetId === "appsDock")?.id);
     result.splice(lastPin >= 0 ? lastPin + 1 : apps >= 0 ? apps : result.length, 0, ...remaining);
     return result;
+}
+
+function widgetOrder(widgets, order) {
+    return unitList(widgets, [], (order || []).filter(id => !id.startsWith("pin:")));
+}
+
+// Pins ride with the widget right after them, so moving the apps widget keeps its pins in front of it.
+function reorderWidgets(widgets, order, ids) {
+    const saved = order || [];
+    const attached = new Map();
+    let run = [];
+    for (const id of unitList(widgets, saved.filter(id => id.startsWith("pin:")), saved)) {
+        if (id.startsWith("pin:")) {
+            run.push(id);
+            continue;
+        }
+        attached.set(id, run);
+        run = [];
+    }
+    const byId = new Map(widgets.map(widget => [widget.id, widget]));
+    const placed = ids.filter(id => byId.has(id));
+    const rest = widgets.map(widget => widget.id).filter(id => !placed.includes(id));
+    const sequence = placed.concat(rest);
+    // QV4 has no Array.prototype.flatMap.
+    const units = [];
+    for (const id of sequence)
+        units.push(...(attached.get(id) || []), id);
+    return {
+        widgets: sequence.map(id => byId.get(id)),
+        order: units.concat(run)
+    };
 }
 
 function surfaceItems(widgets, apps, order) {

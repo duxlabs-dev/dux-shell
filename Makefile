@@ -1,4 +1,4 @@
-# Root Makefile for Dux Shell (DMS)
+# Root Makefile for Dux Modular Shell (DMS)
 # Orchestrates building, installation, and systemd management
 
 # Build configuration

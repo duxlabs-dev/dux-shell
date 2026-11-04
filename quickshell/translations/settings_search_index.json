@@ -668,6 +668,24 @@
     "page": "theme_surfaces"
   },
   {
+    "section": "surfaceControls",
+    "label": "Controls",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "controls",
+      "focus",
+      "interface",
+      "keyboard",
+      "ring",
+      "scrollbar",
+      "scrollbars",
+      "style"
+    ],
+    "page": "theme_surfaces",
+    "icon": "center_focus_strong"
+  },
+  {
     "section": "fixedRadius",
     "label": "Corner radius",
     "tabIndex": -1,
@@ -3158,6 +3176,30 @@
     "description": "Preview: %1"
   },
   {
+    "section": "showAmPm",
+    "label": "Show AM/PM",
+    "tabIndex": 1,
+    "category": "Time & weather",
+    "keywords": [
+      "12hour",
+      "am",
+      "climate",
+      "clock",
+      "date",
+      "date,",
+      "forecast",
+      "format",
+      "meridiem",
+      "pm",
+      "region",
+      "show",
+      "temperature",
+      "time",
+      "weather"
+    ],
+    "parentLabel": "Date, time & region"
+  },
+  {
     "section": "showSeconds",
     "label": "Show seconds",
     "tabIndex": 1,
@@ -5075,6 +5117,48 @@
     ],
     "parentLabel": "Dock",
     "icon": "view_compact"
+  },
+  {
+    "section": "dockMiddleClickAction",
+    "label": "Middle-click action",
+    "tabIndex": 5,
+    "category": "General",
+    "keywords": [
+      "action",
+      "click",
+      "close",
+      "dock",
+      "general",
+      "instance",
+      "launch",
+      "launcher bar",
+      "middle",
+      "middle-click",
+      "panel",
+      "taskbar"
+    ],
+    "parentLabel": "Dock"
+  },
+  {
+    "section": "dockMouseBehavior",
+    "label": "Mouse behavior",
+    "tabIndex": 5,
+    "category": "General",
+    "keywords": [
+      "behavior",
+      "close",
+      "dock",
+      "general",
+      "instance",
+      "launch",
+      "launcher bar",
+      "middle-click",
+      "mouse",
+      "panel",
+      "taskbar"
+    ],
+    "parentLabel": "Dock",
+    "icon": "mouse"
   },
   {
     "section": "dockEditOnRightClick",
@@ -8955,6 +9039,21 @@
     ]
   },
   {
+    "section": "osdInputMethodEnabled",
+    "label": "Input method",
+    "tabIndex": 18,
+    "category": "On-screen displays",
+    "keywords": [
+      "displays",
+      "indicator",
+      "input",
+      "method",
+      "osd",
+      "popup",
+      "screen"
+    ]
+  },
+  {
     "section": "osdKeyboardLayoutEnabled",
     "label": "Keyboard layout",
     "tabIndex": 18,
@@ -9278,7 +9377,7 @@
   },
   {
     "section": "softwareUpdatesShell",
-    "label": "Dux Shell",
+    "label": "Dux Modular Shell",
     "tabIndex": 20,
     "category": "Software updates",
     "keywords": [
@@ -9286,6 +9385,7 @@
       "dms",
       "dux",
       "integrations",
+      "modular",
       "restart",
       "shell",
       "software",
@@ -14177,6 +14277,60 @@
     "conditionKey": "layoutCapable"
   },
   {
+    "section": "hyprlandWobbleDamping",
+    "label": "Wobble damping",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "damping",
+      "hyprland",
+      "integrations",
+      "spring",
+      "system",
+      "wobble"
+    ],
+    "conditionKey": "layoutCapable"
+  },
+  {
+    "section": "hyprlandWobbleMass",
+    "label": "Wobble mass",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "hyprland",
+      "inertia",
+      "integrations",
+      "mass",
+      "system",
+      "weight",
+      "wobble"
+    ],
+    "conditionKey": "layoutCapable"
+  },
+  {
+    "section": "hyprlandWobbleMesh",
+    "label": "Wobble mesh",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "cost",
+      "detail",
+      "flex",
+      "higher",
+      "hyprland",
+      "integrations",
+      "mesh",
+      "more",
+      "smoothly",
+      "system",
+      "values",
+      "vertices",
+      "wobble"
+    ],
+    "description": "Higher values flex more smoothly and cost more GPU",
+    "conditionKey": "layoutCapable"
+  },
+  {
     "section": "hyprlandWobbleStiffness",
     "label": "Wobble stiffness",
     "tabIndex": 37,
@@ -17676,6 +17830,31 @@
       "weather"
     ],
     "parentLabel": "Date, time & region"
+  },
+  {
+    "section": "weatherProviders",
+    "label": "Weather providers",
+    "tabIndex": 56,
+    "category": "Weather",
+    "keywords": [
+      "climate",
+      "date,",
+      "fallback",
+      "forecast",
+      "met norway",
+      "open-meteo",
+      "order",
+      "priority",
+      "provider",
+      "providers",
+      "region",
+      "source",
+      "temperature",
+      "time",
+      "weather"
+    ],
+    "parentLabel": "Date, time & region",
+    "icon": "restart_alt"
   },
   {
     "section": "windSpeedUnit",

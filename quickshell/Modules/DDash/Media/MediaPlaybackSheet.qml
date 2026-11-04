@@ -316,6 +316,9 @@ FocusScope {
         paddingH: Theme.spacingL
         paddingV: Theme.spacingM
         rowColor: Theme.surfaceContainerHigh
+        selectedRowColor: MediaAccentService.artAccent ? MediaAccentService.accentContainer : Theme.selectedContainer
+        selectedContentColor: MediaAccentService.artAccent ? MediaAccentService.onAccentContainer : Theme.onSelectedContainer
+        iconColor: active ? (MediaAccentService.artAccent ? MediaAccentService.onAccentContainer : Theme.accentOnSelectedContainer) : MediaAccentService.accent
         clickable: !active
         Accessible.selected: active
     }

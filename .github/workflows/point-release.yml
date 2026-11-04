@@ -1,14 +1,14 @@
-name: Point release
+name: Release
 
-# Cuts vX.Y.Z from stable-X.Y: runs the port audit (warn-only), bumps
-# quickshell/VERSION, tags, and dispatches the Release workflow. Distro
-# builds are dispatched separately.
+# Bumps quickshell/VERSION, tags, and dispatches the Build release workflow.
+# X.Y.0 is cut from master (the tag push makes dms-stable.yml cut stable-X.Y);
+# X.Y.Z from stable-X.Y after a warn-only port audit.
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Point release version (e.g. 1.5.1)"
+        description: "Version to release (2.1.0 from master, 2.1.1 from stable-2.1)"
         required: true
         type: string
       notify_issues:
@@ -38,14 +38,16 @@ jobs:
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::version must be X.Y.Z (got '$VERSION')"; exit 1
           fi
-          echo "branch=stable-${VERSION%.*}" >> "$GITHUB_OUTPUT"
+          branch="stable-${VERSION%.*}"
+          [[ "$VERSION" == *.0 ]] && branch=master
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
           echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub App token
         id: app_token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.APP_ID }}
+          client-id: ${{ vars.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Checkout release branch
@@ -55,7 +57,7 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app_token.outputs.token }}
 
-      - name: Preflight — verify Release workflow is dispatchable
+      - name: Preflight — verify Build release workflow is dispatchable
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -64,7 +66,16 @@ jobs:
             --jq '.state' | grep -qx active ||
             { echo "::error::release.yml is not dispatchable; aborting before any push"; exit 1; }
 
+      - name: Check master is on this release line
+        if: steps.derive.outputs.branch == 'master'
+        run: |
+          set -euo pipefail
+          current=$(cat quickshell/VERSION)
+          [[ "${current#v}" == "${VERSION%.*}"-* ]] ||
+            { echo "::error::master is at ${current}, not on the ${VERSION%.*} line"; exit 1; }
+
       - name: Port audit (informational)
+        if: steps.derive.outputs.branch != 'master'
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
@@ -90,7 +101,7 @@ jobs:
           git tag "${TAG}"
           git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" "HEAD:${BRANCH}" "refs/tags/${TAG}"
 
-      - name: Dispatch Release workflow
+      - name: Dispatch Build release workflow
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -101,7 +112,11 @@ jobs:
       - name: Next steps
         run: |
           {
-            echo "## ${{ steps.derive.outputs.tag }} tagged on ${{ steps.derive.outputs.branch }} — Release workflow dispatched"
+            echo "## ${{ steps.derive.outputs.tag }} tagged on ${{ steps.derive.outputs.branch }} — Build release workflow dispatched"
             echo ""
-            echo "Distro builds (COPR/OBS/PPA/XBPS) are dispatched by the Release workflow once the release is published."
+            echo "Distro builds (COPR/OBS/PPA/XBPS) are dispatched by the Build release workflow once the release is published."
+            if [ "${{ steps.derive.outputs.branch }}" = master ]; then
+              echo ""
+              echo "stable-${VERSION%.*} is cut by dms-stable.yml from the tag. Bump master to the next beta and disable the changelog popup by hand."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"

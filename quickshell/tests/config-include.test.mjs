@@ -54,6 +54,27 @@ test("repair preserves config and fragments, backs up, and adds live includes on
     }
 });
 
+test("mango toml repair sources the fragment from config.toml under its own [global]", t => {
+    const configDir = mkdtempSync(join(tmpdir(), "dms-includes-toml-"));
+    t.after(() => rmSync(configDir, { recursive: true, force: true }));
+    const dms = configDir + "/dms";
+    writeFileSync(dms, '#!/bin/sh\n[ "$*" = "config resolve-include mangowc cursor.conf" ] || exit 2\nprintf \'{"exists":true,"included":%s}\\n\' "$INCLUDED"\n', { mode: 0o755 });
+    const configFile = configDir + "/mango/config.toml";
+    mkdirSync(dirname(configFile), { recursive: true });
+    const varSource = '[var]\ndir = "./dms"\n[global]\nsource = "$dir/cursor.conf"\n';
+    for (const [name, included, original, want] of [
+        ["a source written with a var", "true", varSource, varSource],
+        ["no trailing newline", "false", '[global]\nsource = ["./dms/layout.conf"]\n[bind.default]\n"SUPER+Return" = "spawn,foot"', '[global]\nsource = ["./dms/layout.conf"]\n[bind.default]\n"SUPER+Return" = "spawn,foot"\n[global]\nsource = "./dms/cursor.conf"\n'],
+        ["a mention core does not count", "false", '[env]\nsource = "./dms/cursor.conf"\n', '[env]\nsource = "./dms/cursor.conf"\n[global]\nsource = "./dms/cursor.conf"\n'],
+        ["no dms source yet", "false", '[bind.default]\n"SUPER+Return" = "spawn,foot"\n', '[bind.default]\n"SUPER+Return" = "spawn,foot"\n\n# DMS Include Configs\n[global]\nsource = "./dms/cursor.conf"\n']
+    ]) {
+        writeFileSync(configFile, original);
+        execFileSync("sh", ["-c", resolve.repairScriptFor("cursor", "mango", configDir, "", "config.toml", dms)], { env: { ...process.env, INCLUDED: included } });
+        assert.equal(readFileSync(configFile, "utf8"), want, name);
+    }
+    assert.ok(!existsSync(configDir + "/mango/config.conf"), "a config.conf would shadow config.toml");
+});
+
 test("mango input fragment maps choices onto libinput numbers and spells numlock in snake_case", () => {
     const SPEC = loadScript(new URL("../Common/settings/SettingsSpec.js", import.meta.url)).SPEC;
     const source = readFileSync(new URL("../Services/MangoService.qml", import.meta.url), "utf8");

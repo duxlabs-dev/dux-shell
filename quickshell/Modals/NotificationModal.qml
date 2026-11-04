@@ -1,9 +1,10 @@
 import QtQuick
 import Quickshell.Io
 import qs.Common
-import qs.Modules.Notifications
+import qs.DCommon.Widgets
 import qs.Modals.Common
-import qs.Modules.Notifications.Center
+import qs.Modules.DDash
+import qs.Modules.Notifications
 import qs.Services
 
 DModal {
@@ -11,98 +12,18 @@ DModal {
 
     layerNamespace: "dms:notification-center-modal"
 
-    property bool notificationModalOpen: false
-    property var notificationListRef: null
-    property var historyListRef: null
-    property int currentTab: 0
-
-    property var notificationHeaderRef: null
-
-    function show() {
-        notificationModalOpen = true;
-        currentTab = 0;
-        NotificationService.onOverlayOpen();
-        open();
-        modalKeyboardController.reset();
-    }
-
-    function hide() {
-        notificationModalOpen = false;
-        NotificationService.onOverlayClose();
-        close();
-        modalKeyboardController.reset();
-    }
-
-    function toggle() {
-        if (shouldBeVisible) {
-            hide();
-        } else {
-            show();
-        }
-    }
-
-    function clearAll() {
-        NotificationService.clearAllNotifications();
-    }
-
-    function dismissAllPopups() {
-        NotificationService.dismissAllPopups();
-    }
-
-    function dismissLastNotification() {
-        NotificationService.dismissLastNotification();
-    }
-
     modalWidth: Math.min(NotificationMetrics.modalWidth, screenWidth - Theme.spacingL * 2)
     modalHeight: Math.min(NotificationMetrics.modalHeight, screenHeight * NotificationMetrics.modalScreenRatio)
     backgroundColor: Theme.floatingWindowSurface
     visible: false
-    onBackgroundClicked: hide()
-    onOpened: () => {
-        Qt.callLater(() => modalFocusScope.forceActiveFocus());
-    }
-    onShouldBeVisibleChanged: shouldBeVisible => {
-        if (!shouldBeVisible) {
-            notificationModalOpen = false;
-            modalKeyboardController.reset();
-            NotificationService.onOverlayClose();
-        }
-    }
-    modalFocusScope.Keys.onPressed: event => {
-        if (event.key === Qt.Key_Escape) {
-            hide();
-            event.accepted = true;
+    onBackgroundClicked: close()
+    onOpened: Qt.callLater(() => contentLoader.item?.tab.forceActiveFocus())
+    onShouldBeVisibleChanged: {
+        if (shouldBeVisible) {
+            NotificationService.onOverlayOpen();
             return;
         }
-
-        if (event.key === Qt.Key_Left) {
-            if (notificationHeaderRef && notificationHeaderRef.currentTab > 0) {
-                notificationHeaderRef.currentTab = 0;
-                event.accepted = true;
-            }
-            return;
-        }
-        if (event.key === Qt.Key_Right) {
-            if (notificationHeaderRef && notificationHeaderRef.currentTab === 0 && SettingsData.notificationHistoryEnabled) {
-                notificationHeaderRef.currentTab = 1;
-                event.accepted = true;
-            }
-            return;
-        }
-
-        if (currentTab === 1 && historyListRef) {
-            historyListRef.handleKey(event);
-            return;
-        }
-        modalKeyboardController.handleKey(event);
-    }
-
-    NotificationKeyboardController {
-        id: modalKeyboardController
-
-        listView: null
-        isOpen: notificationModal.notificationModalOpen
-        onClose: () => notificationModal.hide()
+        NotificationService.onOverlayClose();
     }
 
     IpcHandler {
@@ -110,13 +31,13 @@ DModal {
         function open(): string {
             if (PopoutService.routeToIsland("notificationcenter", null, false))
                 return "NOTIFICATION_ISLAND_OPEN_SUCCESS";
-            notificationModal.show();
+            notificationModal.open();
             return "NOTIFICATION_MODAL_OPEN_SUCCESS";
         }
 
         function close(): string {
             const islandClosed = PopoutService.closeIslandActivity("notificationcenter");
-            notificationModal.hide();
+            notificationModal.close();
             return islandClosed ? "NOTIFICATION_ISLAND_CLOSE_SUCCESS" : "NOTIFICATION_MODAL_CLOSE_SUCCESS";
         }
 
@@ -176,17 +97,17 @@ DModal {
         }
 
         function clearAll(): string {
-            notificationModal.clearAll();
+            NotificationService.clearAllNotifications();
             return "NOTIFICATION_MODAL_CLEAR_ALL_SUCCESS";
         }
 
         function dismissAllPopups(): string {
-            notificationModal.dismissAllPopups();
+            NotificationService.dismissAllPopups();
             return "NOTIFICATION_MODAL_DISMISS_ALL_POPUPS_SUCCESS";
         }
 
         function dismiss(): string {
-            notificationModal.dismissLastNotification();
+            NotificationService.dismissLastNotification();
             return "NOTIFICATION_DISMISS_SUCCESS";
         }
 
@@ -200,69 +121,53 @@ DModal {
     }
 
     content: Component {
-        Item {
-            id: notificationKeyHandler
+        FocusScope {
+            readonly property alias tab: tab
 
+            anchors.fill: parent
             LayoutMirroring.enabled: I18n.isRtl
             LayoutMirroring.childrenInherit: true
 
-            anchors.fill: parent
-
-            Column {
-                anchors.fill: parent
-                anchors.margins: Theme.spacingL
-                spacing: Theme.spacingM
-
-                NotificationHeader {
-                    id: notificationHeader
-                    modal: true
-                    transientSurfaceTracker: notificationModal.transientSurfaceTracker
-                    onCloseRequested: notificationModal.hide()
-                    onCurrentTabChanged: notificationModal.currentTab = currentTab
-                    onSettingsRequested: {
-                        notificationModal.hide();
-                        PopoutService.openSettingsWithTab("notifications", notificationModal, () => notificationModal.show());
-                    }
-                    Component.onCompleted: notificationModal.notificationHeaderRef = notificationHeader
+            Keys.onPressed: event => {
+                if (event.key === Qt.Key_Left && tab.currentTab > 0) {
+                    tab.currentTab = 0;
+                    event.accepted = true;
+                    return;
                 }
-
-                KeyboardNavigatedNotificationList {
-                    id: notificationList
-                    x: -swipeBleed
-                    width: parent.width + swipeBleed * 2
-                    swipeBleed: Theme.spacingL
-                    height: parent.height - y
-                    visible: notificationHeader.currentTab === 0
-                    keyboardController: modalKeyboardController
-                    transientSurfaceTracker: notificationModal.transientSurfaceTracker
-                    Component.onCompleted: {
-                        notificationModal.notificationListRef = notificationList;
-                        if (modalKeyboardController) {
-                            modalKeyboardController.listView = notificationList;
-                            modalKeyboardController.rebuildFlatNavigation();
-                        }
-                    }
-                }
-
-                HistoryNotificationList {
-                    id: historyList
-                    width: parent.width
-                    height: parent.height - y
-                    visible: notificationHeader.currentTab === 1
-                    swipeBleed: Theme.spacingL
-                    Component.onCompleted: notificationModal.historyListRef = historyList
+                if (event.key === Qt.Key_Right && tab.currentTab === 0 && SettingsData.notificationHistoryEnabled) {
+                    tab.currentTab = 1;
+                    event.accepted = true;
                 }
             }
 
-            NotificationKeyboardHints {
-                id: keyboardHints
+            Column {
+                anchors.fill: parent
+                anchors.margins: PopoutMetrics.contentPadding
+                spacing: PopoutMetrics.contentGap
 
-                anchors.bottom: parent.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.margins: Theme.spacingL
-                showHints: notificationHeader.currentTab === 0 ? modalKeyboardController.showKeyboardHints : historyList.showKeyboardHints
-                historyTab: notificationHeader.currentTab === 1
+                DWindowHeader {
+                    id: header
+                    width: parent.width
+                    controls: null
+                    horizontalPadding: 0
+                    verticalPadding: 0
+                    title: I18n.tr("Notifications")
+                    onCloseRequested: notificationModal.close()
+                }
+
+                NotificationsTab {
+                    id: tab
+                    width: parent.width
+                    height: parent.height - header.height - parent.spacing
+                    live: notificationModal.shouldBeVisible
+                    settingsAction: true
+                    swipeBleed: PopoutMetrics.contentPadding
+                    transientSurfaceTracker: notificationModal.transientSurfaceTracker
+                    onSettingsRequested: {
+                        notificationModal.close();
+                        PopoutService.openSettingsWithTab("notifications", notificationModal, () => notificationModal.open());
+                    }
+                }
             }
         }
     }

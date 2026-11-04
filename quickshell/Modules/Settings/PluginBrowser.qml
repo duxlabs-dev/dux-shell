@@ -770,7 +770,7 @@ RegistryBrowserWindow {
         }
         thirdPartyConfirm.showWithOptions({
             title: I18n.tr("Third-Party Plugin Warning"),
-            message: I18n.tr("Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.", "third-party plugin warning, %1 is the product name").arg("Dux Shell"),
+            message: I18n.tr("Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.", "third-party plugin warning, %1 is the product name").arg("Dux Modular Shell"),
             confirmText: I18n.tr("I Understand"),
             cancelText: I18n.tr("Cancel"),
             onConfirm: () => {
@@ -802,7 +802,7 @@ RegistryBrowserWindow {
         });
     }
 
-    function refreshPlugins() {
+    function refreshPlugins(force) {
         isLoading = true;
         loadError = "";
         DMSService.listPlugins(response => {
@@ -815,9 +815,9 @@ RegistryBrowserWindow {
             }
             allPlugins = response.result || [];
             updateFilteredPlugins();
-        });
+        }, force === true);
         if (DMSService.apiVersion >= 8)
-            DMSService.listInstalled();
+            DMSService.listInstalled(undefined, force === true);
     }
 
     function checkPendingInstall() {
@@ -845,8 +845,8 @@ RegistryBrowserWindow {
         return PopoutService.pendingPluginInstall || "";
     }
 
-    function refresh() {
-        refreshPlugins();
+    function refresh(force) {
+        refreshPlugins(force);
     }
 
     function applySearch() {
@@ -892,12 +892,18 @@ RegistryBrowserWindow {
                 if (plugin.name)
                     pluginMap[plugin.name] = true;
             }
+            var changed = false;
             var updated = root.allPlugins.map(p => {
-                var isInstalled = pluginMap[p.name] || pluginMap[p.id] || false;
+                var isInstalled = !!(pluginMap[p.name] || pluginMap[p.id]);
+                if (isInstalled === !!p.installed)
+                    return p;
+                changed = true;
                 return Object.assign({}, p, {
                     "installed": isInstalled
                 });
             });
+            if (!changed)
+                return;
             root.allPlugins = updated;
             root.updateFilteredPlugins();
             if (!selectedPluginId)

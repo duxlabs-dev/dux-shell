@@ -10,129 +10,129 @@ import qs.Modules.Settings.Widgets
 Column {
     id: root
 
-    readonly property string pluginDocsUrl: Site.docs + "/dms/plugin-development"
+    readonly property string migrateDocsUrl: Site.docs + "/dms/cli-migrate"
     readonly property string compositorDocsUrl: Site.docs + "/dms/compositors"
 
     readonly property var features: [
         {
-            "icon": "palette",
+            "icon": "density_medium",
             "shape": "softBurst",
             "hoverShape": "flower",
             "accent": "purple",
-            "heading": "A new design",
-            "description": "Material 3 Expressive across Settings, Control Center, Dash, and every control",
+            "heading": "Interface density",
+            "description": "Spacious, Comfortable, Compact, or Dense, with text and fields scaling along",
             "target": "theme_surfaces"
         },
         {
-            "icon": "space_dashboard",
+            "icon": "rounded_corner",
             "shape": "cookie9",
             "hoverShape": "sunny",
             "accent": "blue",
-            "heading": "Dash plugins",
-            "description": "Plugins add full tabs or overview cards, sized and ordered your way",
-            "target": "dank_dash"
-        },
-        {
-            "icon": "lock",
-            "shape": "clover4",
-            "hoverShape": "cookie4",
-            "accent": "green",
-            "heading": "Build your lock screen",
-            "description": "Place the clock, media, status, and any desktop widget where you want",
-            "target": "lock_screen"
+            "heading": "DMS Classic",
+            "description": "One corner radius on every control, no pills or press morphing",
+            "target": "theme_surfaces"
         },
         {
             "icon": "lyrics",
-            "shape": "sunny",
-            "hoverShape": "softBurst",
+            "shape": "clover4",
+            "hoverShape": "cookie4",
             "accent": "pink",
-            "heading": "Lyrical Engine",
-            "description": "Word synced lyrics from six providers, right in the media player",
+            "heading": "Media player",
+            "description": "An Expressive redesign, a reworked Bento layout, and lyrics in the island",
             "target": "media_player"
         },
         {
-            "icon": "wallpaper",
+            "icon": "monitor_heart",
+            "shape": "sunny",
+            "hoverShape": "softBurst",
+            "accent": "green",
+            "heading": "System monitor",
+            "description": "Per-device graphs, disk health, process details, and a shareable report",
+            "target": "system_monitor"
+        },
+        {
+            "icon": "movie",
             "shape": "gem",
             "hoverShape": "cookie6",
             "accent": "orange",
-            "heading": "Material wallpapers",
-            "description": "Presets from your seed color, plus layouts from wallpaper.duxlabs.dev",
-            "target": "personalization"
+            "heading": "Video wallpapers",
+            "description": "Play a video as your wallpaper, paused while locked or covered",
+            "target": "wallpaper"
         },
         {
-            "icon": "digital_wellbeing",
+            "icon": "keyboard",
             "shape": "puffy",
             "hoverShape": "clover8",
             "accent": "teal",
-            "heading": "Digital wellbeing",
-            "description": "Screen time, daily and app limits, with its own Dash tab",
-            "target": "wellbeing"
+            "heading": "New OSDs",
+            "description": "Keyboard layout, Num Lock, and fcitx5 input method changes",
+            "target": "osd"
         }
     ]
 
     readonly property var additions: [
         {
-            "icon": "view_in_ar",
+            "icon": "space_dashboard",
             "accent": "purple",
-            "title": "Island",
-            "subtitle": "Notch mode, workspace switcher, tray slot, clipboard, and shadows",
-            "target": "dankbar_settings"
+            "title": "Dash",
+            "subtitle": "A user info card, keyboard navigation, and the tab bar on the island",
+            "target": "dank_dash"
         },
         {
-            "icon": "grid_view",
-            "accent": "green",
-            "title": "Launcher",
-            "subtitle": "Custom keybindings, dmenu mode, Open with, and app editing",
-            "target": "launcher"
-        },
-        {
-            "icon": "dock_to_bottom",
-            "accent": "orange",
-            "title": "Dock",
-            "subtitle": "Proximity magnification and a focused app pill",
-            "target": "dock_appearance"
-        },
-        {
-            "icon": "notifications",
+            "icon": "speaker",
             "accent": "pink",
-            "title": "Notifications",
-            "subtitle": "Rule conditions, timed app mutes, and two finger swipe to dismiss",
-            "target": "notification_rules"
+            "title": "Audio",
+            "subtitle": "Turn audio cards off, and back on from their own list",
+            "target": "audio"
         },
         {
-            "icon": "extension",
-            "accent": "teal",
-            "title": "Plugin browser",
-            "subtitle": "Discover shelves, quick filters, upvotes, and typo tolerant search",
-            "target": "plugins"
-        },
-        {
-            "icon": "format_paint",
-            "accent": "yellow",
-            "title": "Themes",
-            "subtitle": "Bold palettes, injected palettes, fixed radius, and terminal opacity",
-            "target": "theme"
-        },
-        {
-            "icon": "monitor",
-            "accent": "red",
-            "title": "Displays",
-            "subtitle": "Per-output ICC profiles and color temperature",
-            "target": "display_config"
-        },
-        {
-            "icon": "system_update_alt",
+            "icon": "partly_cloudy_day",
             "accent": "blue",
-            "title": "Software updates",
-            "subtitle": "Update dms from Settings and switch between stable and beta",
-            "target": "updater"
+            "title": "Weather",
+            "subtitle": "MET Norway, with an ordered fallback when a provider is down",
+            "target": "weather"
         },
         {
-            "icon": "devices",
+            "icon": "power_settings_new",
+            "accent": "red",
+            "title": "Power menu",
+            "subtitle": "Reboot into firmware setup",
+            "target": "power_sleep"
+        },
+        {
+            "icon": "view_quilt",
             "accent": "green",
-            "title": "More platforms",
-            "subtitle": "FreeBSD, Enterprise Linux 10, Mango, Hyprland 0.56, Umbriel, and Aqueous",
-            "target": root.compositorDocsUrl
+            "title": "niri",
+            "subtitle": "Ready for the next release: release binds, lone modifier binds, and new window rules",
+            "target": root.compositorDocsUrl + "#next-niri-release"
+        },
+        {
+            "icon": "water_drop",
+            "accent": "teal",
+            "title": "Hyprland",
+            "subtitle": "Lua config only, Hyprland 0.57, and more wobbly window physics",
+            "target": root.compositorDocsUrl + "#hyprland-configuration"
+        },
+        {
+            "icon": "view_column",
+            "accent": "orange",
+            "title": "mangowm",
+            "subtitle": "Native config.toml support, for mangowm 0.18 and newer",
+            "target": root.compositorDocsUrl + "#mangowc-configuration"
+        },
+        {
+            "icon": "folder_special",
+            "accent": "yellow",
+            "title": "Dux suite",
+            "subtitle": "Folder colors and previews in Dux Files, calendar blur, and new dgop sensors",
+            "target": Site.docs + "/dfiles"
+        },
+        {
+            "icon": "deployed_code",
+            "accent": "blue",
+            "title": "Fedora Atomic",
+            "subtitle": "The Dux installer supports Silverblue, Bazzite, and other bootc images",
+            "target": Site.docs + "/duxinstall#fedora-atomic--bootc-images"
         }
     ]
 
@@ -141,10 +141,13 @@ Column {
             Qt.openUrlExternally(target);
             return;
         }
+        if (target === "system_monitor") {
+            PopoutService.showProcessListModal();
+            return;
+        }
         PopoutService.openSettingsWithTab(target);
     }
 
-    topPadding: 0
     spacing: Theme.spacingL
 
     ReleaseHero {
@@ -226,13 +229,13 @@ Column {
 
     DCard {
         width: parent.width
-        height: pluginNote.implicitHeight + pad * 2
+        height: migrateNote.implicitHeight + pad * 2
         tone: "tertiary"
         pad: Theme.spacingL
         restRadius: Theme.groupedListOuterRadius
 
         Row {
-            id: pluginNote
+            id: migrateNote
             width: parent.width
             spacing: Theme.spacingL
             LayoutMirroring.enabled: I18n.isRtl
@@ -245,7 +248,7 @@ Column {
 
                 DIcon {
                     anchors.centerIn: parent
-                    name: "code"
+                    name: "move_down"
                     size: Theme.iconSize
                     color: Theme.tertiaryContainer
                 }
@@ -258,7 +261,7 @@ Column {
 
                 StyledText {
                     width: parent.width
-                    text: I18n.tr("Plugin authors", "changelog section heading")
+                    text: "Move to the Dux Labs repositories"
                     font.pixelSize: Theme.fontSizeLarge
                     font.weight: Theme.fontWeightBold
                     color: Theme.onTertiaryContainer
@@ -268,7 +271,7 @@ Column {
 
                 StyledText {
                     width: parent.width
-                    text: "The Dank* widget wrappers are deprecated. Import qs.DCommon.Widgets and use the D names, DankButton becomes DButton. Each old type logs its replacement."
+                    text: "Packaged installs now update from Dux Labs. Run dms migrate dux once, it lists every repository it moves and asks first. On Arch, pacman swaps in dux-shell on its own."
                     font.pixelSize: Theme.fontSizeMedium
                     color: Theme.onTertiaryContainer
                     wrapMode: Text.WordWrap
@@ -283,7 +286,7 @@ Column {
                 iconName: "open_in_new"
                 backgroundColor: Theme.onTertiaryContainer
                 textColor: Theme.tertiaryContainer
-                onClicked: Qt.openUrlExternally(root.pluginDocsUrl)
+                onClicked: Qt.openUrlExternally(root.migrateDocsUrl)
             }
         }
     }

@@ -89,7 +89,7 @@ Scope {
         asynchronous: false
         sourceComponent: Variants {
             id: overlayVariants
-            model: Quickshell.screens
+            model: ShellLayout.realScreens
 
             PanelWindow {
                 id: overlayWindow

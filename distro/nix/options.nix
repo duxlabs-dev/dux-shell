@@ -25,13 +25,13 @@ in
   ];
 
   options.programs.dank-material-shell = {
-    enable = lib.mkEnableOption "Dux Shell";
+    enable = lib.mkEnableOption "Dux Modular Shell";
     package = lib.mkPackageOption dmsPkgs "dms-shell" {
-      extraDescription = "The Dux Shell package to use (defaults to be built from source)";
+      extraDescription = "The Dux Modular Shell package to use (defaults to be built from source)";
     };
 
     systemd = {
-      enable = lib.mkEnableOption "Dux Shell systemd startup";
+      enable = lib.mkEnableOption "Dux Modular Shell systemd startup";
       restartIfChanged = lib.mkOption {
         type = types.bool;
         default = true;

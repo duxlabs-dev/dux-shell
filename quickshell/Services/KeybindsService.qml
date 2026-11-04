@@ -107,7 +107,8 @@ Singleton {
         }
     }
     readonly property string includeCompositor: currentProvider === "mangowc" ? "mango" : currentProvider
-    readonly property var includePaths: ConfigIncludeResolve.includePaths("binds", includeCompositor, includeCompositor === "mango" ? MangoService.configDir : configDir)
+    readonly property bool includeMango: includeCompositor === "mango"
+    readonly property var includePaths: ConfigIncludeResolve.includePaths("binds", includeCompositor, includeMango ? MangoService.configDir : configDir, includeMango ? MangoService.configName : "")
     readonly property string dmsBindsPath: includePaths?.fragmentFiles[0] ?? ""
     readonly property string mainConfigPath: includePaths?.configFile ?? ""
     readonly property bool readOnly: currentProvider === "hyprland" && CompositorService.isHyprland && !HyprlandService.luaConfigActive
@@ -341,7 +342,7 @@ Singleton {
         }
         const timestamp = Math.floor(Date.now() / 1000);
         const backupPath = `${mainConfigPath}.dmsbackup${timestamp}`;
-        const script = ConfigIncludeResolve.repairScriptFor("binds", includeCompositor, configDir, backupPath);
+        const script = ConfigIncludeResolve.repairScriptFor("binds", includeCompositor, includeMango ? MangoService.configDir : configDir, backupPath, includeMango ? MangoService.configName : "", Proc.dmsBin);
         if (!script)
             return;
         fixing = true;

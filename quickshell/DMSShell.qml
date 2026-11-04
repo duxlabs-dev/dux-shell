@@ -39,7 +39,7 @@ Item {
     property bool osdSurfacesLoaded: false
     property int pendingOsdResumeReloads: 0
     readonly property var notificationPopupScreens: {
-        const screens = SettingsData.notificationFocusedMonitor ? Quickshell.screens : SettingsData.getFilteredScreens("notifications");
+        const screens = SettingsData.notificationFocusedMonitor ? ShellLayout.realScreens : SettingsData.getFilteredScreens("notifications");
         if (!SettingsData.dankIslandEnabled)
             return screens;
         return screens.filter(screen => !SettingsData.dankIslandHandlesNotifications(screen));
@@ -70,7 +70,7 @@ Item {
     }
 
     Variants {
-        model: Quickshell.screens
+        model: ShellLayout.realScreens
 
         delegate: Loader {
             id: fadeWindowLoader
@@ -117,7 +117,7 @@ Item {
     }
 
     Variants {
-        model: Quickshell.screens
+        model: ShellLayout.realScreens
 
         delegate: Loader {
             id: fadeDpmsWindowLoader
@@ -1325,6 +1325,12 @@ Item {
                     model: (SettingsData.osdKeyboardLayoutEnabled && KeyboardLayoutService.available) ? SettingsData.getFilteredScreens("osd") : []
 
                     delegate: KeyboardLayoutOSD {}
+                }
+
+                Variants {
+                    model: (SettingsData.osdInputMethodEnabled && Fcitx5Service.available) ? SettingsData.getFilteredScreens("osd") : []
+
+                    delegate: InputMethodOSD {}
                 }
 
                 Variants {

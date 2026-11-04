@@ -8,6 +8,7 @@ Item {
     property NotificationSwipeGroup group: null
     property real bleed: 0
     property bool dismissing: false
+    property int dismissDirection: 1
     property real topRoundness: roundness(true)
     property real bottomRoundness: roundness(false)
     readonly property real offset: motion.value
@@ -61,8 +62,9 @@ Item {
         const projected = group.translation + velocity * NotificationMetrics.swipeFlingProjectionMs / 1000;
         if (Math.abs(projected) > width * NotificationMetrics.swipeThreshold) {
             dismissing = true;
+            dismissDirection = projected > 0 ? 1 : -1;
             motion.snapTo(motion.value);
-            dismissAnimation.to = (projected > 0 ? 1 : -1) * (width + bleed);
+            dismissAnimation.to = dismissDirection * (width + bleed);
             dismissAnimation.start();
         }
         group.end(root);

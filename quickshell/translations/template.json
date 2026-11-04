@@ -56,6 +56,20 @@
     "comment": "plugin error title, %1 is the plugin name"
   },
   {
+    "term": "%1 VRAM",
+    "translation": "",
+    "context": "%1 VRAM",
+    "reference": "",
+    "comment": "GPU memory size, e.g. 24 GiB VRAM"
+  },
+  {
+    "term": "%1 active",
+    "translation": "",
+    "context": "%1 active",
+    "reference": "",
+    "comment": "number of active VPN connections"
+  },
+  {
     "term": "%1 active session",
     "translation": "",
     "context": "%1 active session",
@@ -147,6 +161,13 @@
     "comment": "network adapter summary, %1 is a count of connected adapters"
   },
   {
+    "term": "%1 cores, %2 threads",
+    "translation": "",
+    "context": "%1 cores, %2 threads",
+    "reference": "",
+    "comment": "CPU core and thread count"
+  },
+  {
     "term": "%1 day",
     "translation": "",
     "context": "%1 day",
@@ -194,6 +215,13 @@
     "context": "%1 displays",
     "reference": "",
     "comment": "plural, bar summary of assigned monitors, %1 is a count"
+  },
+  {
+    "term": "%1 errors, %2 warnings",
+    "translation": "",
+    "context": "%1 errors, %2 warnings",
+    "reference": "",
+    "comment": "system check summary"
   },
   {
     "term": "%1 features",
@@ -329,6 +357,13 @@
     "comment": "plural, %1 is a count of print jobs"
   },
   {
+    "term": "%1 keeps your desktop running. Ending it will likely break your session. If it misbehaves, restarting it is the safer fix.",
+    "translation": "",
+    "context": "%1 keeps your desktop running. Ending it will likely break your session. If it misbehaves, restarting it is the safer fix.",
+    "reference": "",
+    "comment": "warning before ending the compositor, systemd, the session bus or the shell; %1 is the process name"
+  },
+  {
     "term": "%1 limit reached",
     "translation": "",
     "context": "%1 limit reached",
@@ -413,6 +448,13 @@
     "comment": "island compact face: unread notification count"
   },
   {
+    "term": "%1 of %2 used",
+    "translation": "",
+    "context": "%1 of %2 used",
+    "reference": "",
+    "comment": "partition space, e.g. 1.2 TB of 2 TB used"
+  },
+  {
     "term": "%1 online",
     "translation": "",
     "context": "%1 online",
@@ -467,6 +509,20 @@
     "context": "%1 printers",
     "reference": "",
     "comment": "plural, %1 is a count of printers"
+  },
+  {
+    "term": "%1 process",
+    "translation": "",
+    "context": "%1 process",
+    "reference": "",
+    "comment": "process count, singular, %1 is 1"
+  },
+  {
+    "term": "%1 processes",
+    "translation": "",
+    "context": "%1 processes",
+    "reference": "",
+    "comment": "process count, plural, %1 is a number"
   },
   {
     "term": "%1 procs",
@@ -525,6 +581,13 @@
     "comment": "plural, %1 is a count of available system updates"
   },
   {
+    "term": "%1 used",
+    "translation": "",
+    "context": "%1 used",
+    "reference": "",
+    "comment": "share of a filesystem in use, e.g. 61% used"
+  },
+  {
     "term": "%1 variants",
     "translation": "",
     "context": "%1 variants",
@@ -572,6 +635,13 @@
     "context": "%1 windows",
     "reference": "",
     "comment": "plural, %1 is a count of open windows in the control center | plural, %1 is a count of windows in a multiplexer session"
+  },
+  {
+    "term": "%1 years",
+    "translation": "",
+    "context": "%1 years",
+    "reference": "",
+    "comment": "duration in years, %1 is a number"
   },
   {
     "term": "%1: %2",
@@ -656,6 +726,13 @@
     "context": "+%1 conditions",
     "reference": "",
     "comment": "notification rule summary, %1 is the number of extra conditions"
+  },
+  {
+    "term": "0 stops the animation and saves GPU",
+    "translation": "",
+    "context": "0 stops the animation and saves GPU",
+    "reference": "",
+    "comment": "Hyprland animated blur speed slider description"
   },
   {
     "term": "1 hour before",
@@ -749,6 +826,13 @@
     "comment": "hint in the notification rule editor, all match conditions must apply"
   },
   {
+    "term": "A tiled or fullscreen window dragged into floating centers on the cursor",
+    "translation": "",
+    "context": "A tiled or fullscreen window dragged into floating centers on the cursor",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "A user with that name already exists.",
     "translation": "",
     "context": "A user with that name already exists.",
@@ -803,6 +887,13 @@
     "context": "About",
     "reference": "",
     "comment": "settings page name"
+  },
+  {
+    "term": "Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.",
+    "translation": "",
+    "context": "Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Acceleration profile",
@@ -1204,11 +1295,25 @@
     "comment": "create user admin toggle description, %1 is a group name"
   },
   {
+    "term": "Adjustment",
+    "translation": "",
+    "context": "Adjustment",
+    "reference": "",
+    "comment": "oom_score_adj"
+  },
+  {
     "term": "Administrator access is required. Press Apply changes in Settings → Greeter.",
     "translation": "",
     "context": "Administrator access is required. Press Apply changes in Settings → Greeter.",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Advance when a video ends",
+    "translation": "",
+    "context": "Advance when a video ends",
+    "reference": "",
+    "comment": "wallpaper cycling toggle"
   },
   {
     "term": "Advanced",
@@ -1372,6 +1477,13 @@
     "comment": ""
   },
   {
+    "term": "Allowed cores",
+    "translation": "",
+    "context": "Allowed cores",
+    "reference": "",
+    "comment": "CPU affinity list"
+  },
+  {
     "term": "Already on that session",
     "translation": "",
     "context": "Already on that session",
@@ -1410,6 +1522,13 @@
     "term": "Alt + Shift",
     "translation": "",
     "context": "Alt + Shift",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Alt + Shift shortcuts in apps and keybinds stop working.",
+    "translation": "",
+    "context": "Alt + Shift shortcuts in apps and keybinds stop working.",
     "reference": "",
     "comment": ""
   },
@@ -1545,6 +1664,13 @@
     "context": "Animations",
     "reference": "",
     "comment": "settings card title"
+  },
+  {
+    "term": "Anonymous",
+    "translation": "",
+    "context": "Anonymous",
+    "reference": "",
+    "comment": "resident memory not backed by a file"
   },
   {
     "term": "Anonymous Identity",
@@ -1841,13 +1967,6 @@
     "comment": ""
   },
   {
-    "term": "Architecture",
-    "translation": "",
-    "context": "Architecture",
-    "reference": "",
-    "comment": "system info label"
-  },
-  {
     "term": "Archive manager",
     "translation": "",
     "context": "Archive manager",
@@ -1887,7 +2006,7 @@
     "translation": "",
     "context": "Artwork",
     "reference": "",
-    "comment": "noun, media player album art view toggle and art style option"
+    "comment": ""
   },
   {
     "term": "Ascending",
@@ -1895,6 +2014,13 @@
     "context": "Ascending",
     "reference": "",
     "comment": "sort direction, smallest value first"
+  },
+  {
+    "term": "Asleep",
+    "translation": "",
+    "context": "Asleep",
+    "reference": "",
+    "comment": "drive is in standby and was not woken"
   },
   {
     "term": "At least one output must remain enabled",
@@ -1964,7 +2090,7 @@
     "translation": "",
     "context": "Audio Output",
     "reference": "",
-    "comment": ""
+    "comment": "default audio output device"
   },
   {
     "term": "Audio output switch",
@@ -2408,6 +2534,13 @@
     "comment": "user accounts dropdown, colored ring around the profile picture"
   },
   {
+    "term": "BIOS",
+    "translation": "",
+    "context": "BIOS",
+    "reference": "",
+    "comment": "firmware version and date"
+  },
+  {
     "term": "Back",
     "translation": "",
     "context": "Back",
@@ -2517,7 +2650,7 @@
     "translation": "",
     "context": "Bar",
     "reference": "",
-    "comment": "fallback name for an unnamed bar"
+    "comment": "fallback name for an unnamed bar | plugin browser type filter chip, bar widget plugins"
   },
   {
     "term": "Bar %1",
@@ -2581,6 +2714,13 @@
     "context": "Bars",
     "reference": "",
     "comment": "plural noun, the shell bars or panels, settings title"
+  },
+  {
+    "term": "Base clock",
+    "translation": "",
+    "context": "Base clock",
+    "reference": "",
+    "comment": "CPU nominal frequency"
   },
   {
     "term": "Battery",
@@ -2772,6 +2912,13 @@
     "comment": ""
   },
   {
+    "term": "Blur follows opacity",
+    "translation": "",
+    "context": "Blur follows opacity",
+    "reference": "",
+    "comment": "Hyprland toggle, blur strength scales with how opaque each pixel is"
+  },
+  {
     "term": "Blur layer",
     "translation": "",
     "context": "Blur layer",
@@ -2800,6 +2947,13 @@
     "comment": ""
   },
   {
+    "term": "Board",
+    "translation": "",
+    "context": "Board",
+    "reference": "",
+    "comment": "motherboard model"
+  },
+  {
     "term": "Body",
     "translation": "",
     "context": "Body",
@@ -2819,6 +2973,13 @@
     "context": "Body font size",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Boot",
+    "translation": "",
+    "context": "Boot",
+    "reference": "",
+    "comment": "boot loader and firmware mode"
   },
   {
     "term": "Boot entry changed. Remove it and add it again.",
@@ -2868,6 +3029,13 @@
     "context": "Both",
     "reference": "",
     "comment": "island settings: clock shows time and date | island settings: level shown as icon and percentage"
+  },
+  {
+    "term": "Both Shift keys",
+    "translation": "",
+    "context": "Both Shift keys",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Bottom",
@@ -3024,6 +3192,13 @@
     "comment": ""
   },
   {
+    "term": "Busy",
+    "translation": "",
+    "context": "Busy",
+    "reference": "",
+    "comment": "share of time a disk is busy"
+  },
+  {
     "term": "Button areas",
     "translation": "",
     "context": "Button areas",
@@ -3064,6 +3239,13 @@
     "context": "CPU temperature display",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "CPU time",
+    "translation": "",
+    "context": "CPU time",
+    "reference": "",
+    "comment": "process column: total CPU time used"
   },
   {
     "term": "CPU usage",
@@ -3120,6 +3302,20 @@
     "context": "CUPS printers, jobs and classes",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Cable errors",
+    "translation": "",
+    "context": "Cable errors",
+    "reference": "",
+    "comment": "drive health: data cable CRC errors"
+  },
+  {
+    "term": "Cached",
+    "translation": "",
+    "context": "Cached",
+    "reference": "",
+    "comment": "memory used as file cache"
   },
   {
     "term": "Calendar",
@@ -3217,7 +3413,7 @@
     "translation": "",
     "context": "Capabilities",
     "reference": "",
-    "comment": "plugin detail section"
+    "comment": "Linux capabilities that give a process extra rights | plugin detail section"
   },
   {
     "term": "Capacity",
@@ -3311,6 +3507,13 @@
     "comment": ""
   },
   {
+    "term": "Center dragged windows",
+    "translation": "",
+    "context": "Center dragged windows",
+    "reference": "",
+    "comment": "Hyprland toggle, a tiled or fullscreen window dragged loose centers on the cursor"
+  },
+  {
     "term": "Center section",
     "translation": "",
     "context": "Center section",
@@ -3367,6 +3570,13 @@
     "comment": "wifi network detail label, radio channel number"
   },
   {
+    "term": "Channels",
+    "translation": "",
+    "context": "Channels",
+    "reference": "",
+    "comment": "memory channels in use"
+  },
+  {
     "term": "Charge Limit Reached",
     "translation": "",
     "context": "Charge Limit Reached",
@@ -3414,6 +3624,13 @@
     "context": "Chart",
     "reference": "",
     "comment": "noun, weather forecast display option"
+  },
+  {
+    "term": "Chassis",
+    "translation": "",
+    "context": "Chassis",
+    "reference": "",
+    "comment": "computer chassis type"
   },
   {
     "term": "Cheatsheet",
@@ -3696,6 +3913,13 @@
     "comment": "VPN import hint, %1 and %2 are file extensions"
   },
   {
+    "term": "Click action",
+    "translation": "",
+    "context": "Click action",
+    "reference": "",
+    "comment": "clock widget option: what clicking the clock opens"
+  },
+  {
     "term": "Click actions",
     "translation": "",
     "context": "Click actions",
@@ -3913,6 +4137,13 @@
     "comment": "bluetooth codec selector error, wpexec is a program name"
   },
   {
+    "term": "Codename",
+    "translation": "",
+    "context": "Codename",
+    "reference": "",
+    "comment": "DMS release codename"
+  },
+  {
     "term": "Collapse",
     "translation": "",
     "context": "Collapse",
@@ -4102,6 +4333,13 @@
     "comment": "noun, launcher results section title"
   },
   {
+    "term": "Committed",
+    "translation": "",
+    "context": "Committed",
+    "reference": "",
+    "comment": "memory committed by processes, of the commit limit"
+  },
+  {
     "term": "Community",
     "translation": "",
     "context": "Community",
@@ -4156,6 +4394,13 @@
     "context": "Compositor and shell key bindings",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Compression",
+    "translation": "",
+    "context": "Compression",
+    "reference": "",
+    "comment": "memory compression (zram) ratio"
   },
   {
     "term": "Config Format",
@@ -4361,11 +4606,25 @@
     "comment": "bluetooth status | network status"
   },
   {
+    "term": "Connection",
+    "translation": "",
+    "context": "Connection",
+    "reference": "",
+    "comment": "system info label: network connection type"
+  },
+  {
     "term": "Connection failed",
     "translation": "",
     "context": "Connection failed",
     "reference": "",
     "comment": "Status message when test connection to printer fails"
+  },
+  {
+    "term": "Connections",
+    "translation": "",
+    "context": "Connections",
+    "reference": "",
+    "comment": "process column: number of open internet connections"
   },
   {
     "term": "Connections and autoconnect",
@@ -4389,6 +4648,13 @@
     "comment": "keybind option tooltip, hyprland auto-consuming flag"
   },
   {
+    "term": "Container",
+    "translation": "",
+    "context": "Container",
+    "reference": "",
+    "comment": "process runs in its own container namespace"
+  },
+  {
     "term": "Container saturation",
     "translation": "",
     "context": "Container saturation",
@@ -4410,6 +4676,13 @@
     "comment": "matugen color scheme option | noun, window content type match: photo, video or game"
   },
   {
+    "term": "Context switches",
+    "translation": "",
+    "context": "Context switches",
+    "reference": "",
+    "comment": "times the process gave up the CPU voluntarily"
+  },
+  {
     "term": "Contrast",
     "translation": "",
     "context": "Contrast",
@@ -4428,7 +4701,14 @@
     "translation": "",
     "context": "Control Center",
     "reference": "",
-    "comment": "Control Center | greeter feature card title | island compact face: control center label | island settings: battery or control center slot row"
+    "comment": "Control Center | greeter feature card title | island compact face: control center label | island settings: battery or control center slot row | plugin browser type filter chip"
+  },
+  {
+    "term": "Control group",
+    "translation": "",
+    "context": "Control group",
+    "reference": "",
+    "comment": "the cgroup path of a process"
   },
   {
     "term": "Controls",
@@ -4450,6 +4730,13 @@
     "context": "Convert to DMS",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Convertible",
+    "translation": "",
+    "context": "Convertible",
+    "reference": "",
+    "comment": "computer chassis type: laptop that turns into a tablet"
   },
   {
     "term": "Cooldown",
@@ -4536,11 +4823,39 @@
     "comment": ""
   },
   {
+    "term": "Copy report",
+    "translation": "",
+    "context": "Copy report",
+    "reference": "",
+    "comment": "button, copies the full system report without personal details"
+  },
+  {
+    "term": "Copy summary",
+    "translation": "",
+    "context": "Copy summary",
+    "reference": "",
+    "comment": "button, copies a short system overview for bug reports"
+  },
+  {
     "term": "Copy target (%1)",
     "translation": "",
     "context": "Copy target (%1)",
     "reference": "",
     "comment": "app picker copy target button tooltip"
+  },
+  {
+    "term": "Core clock",
+    "translation": "",
+    "context": "Core clock",
+    "reference": "",
+    "comment": "GPU core clock speed"
+  },
+  {
+    "term": "Cores",
+    "translation": "",
+    "context": "Cores",
+    "reference": "",
+    "comment": "CPU core and thread count"
   },
   {
     "term": "Corner radius",
@@ -4666,7 +4981,7 @@
     "translation": "",
     "context": "Critical",
     "reference": "",
-    "comment": "adjective, card title for critical battery level alerts | adjective, critical notification urgency row label"
+    "comment": "adjective, card title for critical battery level alerts | adjective, critical notification urgency row label | drive health"
   },
   {
     "term": "Critical Battery",
@@ -4704,11 +5019,11 @@
     "comment": ""
   },
   {
-    "term": "Ctrl + Shift",
+    "term": "Critical warning",
     "translation": "",
-    "context": "Ctrl + Shift",
+    "context": "Critical warning",
     "reference": "",
-    "comment": ""
+    "comment": "SSD health: critical warning flags"
   },
   {
     "term": "Ctrl+%1 is used for password editing",
@@ -4723,13 +5038,6 @@
     "context": "Current",
     "reference": "",
     "comment": "notification center tab"
-  },
-  {
-    "term": "Current (%1)",
-    "translation": "",
-    "context": "Current (%1)",
-    "reference": "",
-    "comment": "notification center tab, %1 is the notification count"
   },
   {
     "term": "Current Items",
@@ -4758,6 +5066,13 @@
     "context": "Current display",
     "reference": "",
     "comment": "Running apps filter: only show apps from the same monitor"
+  },
+  {
+    "term": "Current pending sectors",
+    "translation": "",
+    "context": "Current pending sectors",
+    "reference": "",
+    "comment": "HDD health: sectors waiting to be remapped"
   },
   {
     "term": "Current period",
@@ -4813,7 +5128,7 @@
     "translation": "",
     "context": "Cursor",
     "reference": "",
-    "comment": "settings card title for mouse cursor theme"
+    "comment": "cursor theme and size | settings card title for mouse cursor theme"
   },
   {
     "term": "Cursor Size",
@@ -5068,6 +5383,13 @@
     "comment": "Aqueous font synchronization, describing which font settings DMS can represent"
   },
   {
+    "term": "Daemon",
+    "translation": "",
+    "context": "Daemon",
+    "reference": "",
+    "comment": "plugin browser type filter chip, background plugins"
+  },
+  {
     "term": "Daily",
     "translation": "",
     "context": "Daily",
@@ -5166,11 +5488,32 @@
     "comment": "matugen source color option"
   },
   {
+    "term": "Dash card",
+    "translation": "",
+    "context": "Dash card",
+    "reference": "",
+    "comment": "plugin browser type filter chip"
+  },
+  {
+    "term": "Dash tab",
+    "translation": "",
+    "context": "Dash tab",
+    "reference": "",
+    "comment": "plugin browser type filter chip"
+  },
+  {
     "term": "Dashboard",
     "translation": "",
     "context": "Dashboard",
     "reference": "",
     "comment": "settings page name for the dank dash popout"
+  },
+  {
+    "term": "Dashboard tabs",
+    "translation": "",
+    "context": "Dashboard tabs",
+    "reference": "",
+    "comment": "island settings: dashboard tab bar toggle"
   },
   {
     "term": "Date",
@@ -5509,6 +5852,13 @@
     "comment": "noun, text field label"
   },
   {
+    "term": "Desktop",
+    "translation": "",
+    "context": "Desktop",
+    "reference": "",
+    "comment": "computer chassis type | plugin browser type filter chip, desktop widget plugins | system info section: compositor, themes, fonts"
+  },
+  {
     "term": "Desktop Entry",
     "translation": "",
     "context": "Desktop Entry",
@@ -5535,6 +5885,13 @@
     "context": "Desktop widgets",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Details",
+    "translation": "",
+    "context": "Details",
+    "reference": "",
+    "comment": "process detail tab: less used information"
   },
   {
     "term": "Details for \"%1\"",
@@ -5628,13 +5985,6 @@
     "comment": "island settings: dim surface tone"
   },
   {
-    "term": "Direct path to a .xkb keymap file. Overrides layouts/variants above.",
-    "translation": "",
-    "context": "Direct path to a .xkb keymap file. Overrides layouts/variants above.",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Direction",
     "translation": "",
     "context": "Direction",
@@ -5663,11 +6013,32 @@
     "comment": "plugin settings card title, folder where plugins are placed"
   },
   {
+    "term": "Disable",
+    "translation": "",
+    "context": "Disable",
+    "reference": "",
+    "comment": "audio settings button that turns a sound card off"
+  },
+  {
+    "term": "Disable %1?",
+    "translation": "",
+    "context": "Disable %1?",
+    "reference": "",
+    "comment": "audio settings confirmation title, %1 is the sound card name"
+  },
+  {
     "term": "Disable autoconnect",
     "translation": "",
     "context": "Disable autoconnect",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Disable card",
+    "translation": "",
+    "context": "Disable card",
+    "reference": "",
+    "comment": "audio settings button that turns a sound card off"
   },
   {
     "term": "Disable output",
@@ -5703,6 +6074,13 @@
     "context": "Disabled",
     "reference": "",
     "comment": "bluetooth status | lock screen notification mode option"
+  },
+  {
+    "term": "Disabled (%1)",
+    "translation": "",
+    "context": "Disabled (%1)",
+    "reference": "",
+    "comment": "count of disabled audio output cards"
   },
   {
     "term": "Disabled by Auto",
@@ -5814,14 +6192,14 @@
     "translation": "",
     "context": "Disk",
     "reference": "",
-    "comment": "noun, storage disk label in system monitor"
+    "comment": ""
   },
   {
-    "term": "Disk I/O",
+    "term": "Disk read",
     "translation": "",
-    "context": "Disk I/O",
+    "context": "Disk read",
     "reference": "",
-    "comment": "disk io header in system monitor"
+    "comment": "disk read rate"
   },
   {
     "term": "Disk usage",
@@ -5836,6 +6214,13 @@
     "context": "Disk usage format",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Disk write",
+    "translation": "",
+    "context": "Disk write",
+    "reference": "",
+    "comment": "disk write rate"
   },
   {
     "term": "Disks",
@@ -6150,7 +6535,14 @@
     "translation": "",
     "context": "Down",
     "reference": "",
-    "comment": "Hyprland scrolling layout direction"
+    "comment": "Hyprland scrolling layout direction | network direction"
+  },
+  {
+    "term": "Download",
+    "translation": "",
+    "context": "Download",
+    "reference": "",
+    "comment": "process column: network download rate"
   },
   {
     "term": "Drag",
@@ -6346,7 +6738,7 @@
     "translation": "",
     "context": "Dynamic",
     "reference": "",
-    "comment": "dynamic theme name"
+    "comment": "dynamic theme name | theme generated from the wallpaper"
   },
   {
     "term": "Dynamic Properties",
@@ -6559,6 +6951,13 @@
     "comment": "launcher app category"
   },
   {
+    "term": "Elevated",
+    "translation": "",
+    "context": "Elevated",
+    "reference": "",
+    "comment": "process runs with more rights than its user"
+  },
+  {
     "term": "Empty",
     "translation": "",
     "context": "Empty",
@@ -6599,6 +6998,13 @@
     "context": "Enable autoconnect",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Enable card",
+    "translation": "",
+    "context": "Enable card",
+    "reference": "",
+    "comment": "audio settings button that turns a disabled sound card back on"
   },
   {
     "term": "Enable plugin to access settings",
@@ -6648,6 +7054,13 @@
     "context": "End must be after start",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "End process tree",
+    "translation": "",
+    "context": "End process tree",
+    "reference": "",
+    "comment": "process action: quit the process and every process it started"
   },
   {
     "term": "Enter 6-digit passkey",
@@ -6860,6 +7273,13 @@
     "comment": ""
   },
   {
+    "term": "Every output and input of this sound card turns off until you enable it again",
+    "translation": "",
+    "context": "Every output and input of this sound card turns off until you enable it again",
+    "reference": "",
+    "comment": "audio settings confirmation message before disabling a sound card"
+  },
+  {
     "term": "Exact",
     "translation": "",
     "context": "Exact",
@@ -6886,6 +7306,13 @@
     "context": "Exclusive zone offset",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Executable",
+    "translation": "",
+    "context": "Executable",
+    "reference": "",
+    "comment": "path of the program file a process runs"
   },
   {
     "term": "Exit node",
@@ -7385,6 +7812,13 @@
     "comment": ""
   },
   {
+    "term": "Failed to restart %1",
+    "translation": "",
+    "context": "Failed to restart %1",
+    "reference": "",
+    "comment": "toast title, %1 is a process name"
+  },
+  {
     "term": "Failed to restart audio system",
     "translation": "",
     "context": "Failed to restart audio system",
@@ -7567,6 +8001,13 @@
     "comment": ""
   },
   {
+    "term": "Failed to unlock",
+    "translation": "",
+    "context": "Failed to unlock",
+    "reference": "",
+    "comment": "toast title when the system monitor could not get root access"
+  },
+  {
     "term": "Failed to unpin entry",
     "translation": "",
     "context": "Failed to unpin entry",
@@ -7644,6 +8085,13 @@
     "comment": "font family dropdown label"
   },
   {
+    "term": "Fan",
+    "translation": "",
+    "context": "Fan",
+    "reference": "",
+    "comment": "GPU fan speed"
+  },
+  {
     "term": "Featured plugin",
     "translation": "",
     "context": "Featured plugin",
@@ -7712,6 +8160,13 @@
     "context": "File the command writes; leave empty to read stdout",
     "reference": "",
     "comment": "injected palette JSON output path hint"
+  },
+  {
+    "term": "File-backed",
+    "translation": "",
+    "context": "File-backed",
+    "reference": "",
+    "comment": "resident memory mapped from files"
   },
   {
     "term": "Files",
@@ -7852,6 +8307,13 @@
     "context": "Fires with any modifiers held",
     "reference": "",
     "comment": "keybind option tooltip, hyprland ignore mods flag"
+  },
+  {
+    "term": "Firmware",
+    "translation": "",
+    "context": "Firmware",
+    "reference": "",
+    "comment": "drive firmware revision"
   },
   {
     "term": "Firmware setup",
@@ -8253,16 +8715,16 @@
     "comment": "plugin browser shelf, plugins ranked for this user | plugin browser sort option, plugins ranked for this user"
   },
   {
+    "term": "Force",
+    "translation": "",
+    "context": "Force",
+    "reference": "",
+    "comment": "Hyprland cursor warp option, warp even when cursor warps are disabled"
+  },
+  {
     "term": "Force HDR",
     "translation": "",
     "context": "Force HDR",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Force Kill (SIGKILL)",
-    "translation": "",
-    "context": "Force Kill (SIGKILL)",
     "reference": "",
     "comment": ""
   },
@@ -8286,6 +8748,13 @@
     "context": "Force padding",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Force quit",
+    "translation": "",
+    "context": "Force quit",
+    "reference": "",
+    "comment": "process action: kill the process immediately (SIGKILL)"
   },
   {
     "term": "Force split",
@@ -8363,6 +8832,13 @@
     "context": "Forgot network %1",
     "reference": "",
     "comment": "toast after removing a saved wifi network, %1 is its name"
+  },
+  {
+    "term": "Form factor",
+    "translation": "",
+    "context": "Form factor",
+    "reference": "",
+    "comment": "memory module form factor, e.g. DIMM"
   },
   {
     "term": "Format",
@@ -8449,6 +8925,13 @@
     "comment": "adjective, full size launcher style option | bar length option, the bar spans the whole edge"
   },
   {
+    "term": "Full SMART report",
+    "translation": "",
+    "context": "Full SMART report",
+    "reference": "",
+    "comment": "drive health report from smartctl"
+  },
+  {
     "term": "Full content",
     "translation": "",
     "context": "Full content",
@@ -8530,7 +9013,7 @@
     "translation": "",
     "context": "GPU Monitoring",
     "reference": "",
-    "comment": "gpu section header in system monitor"
+    "comment": ""
   },
   {
     "term": "GPU temperature",
@@ -8559,6 +9042,13 @@
     "context": "GTK colors applied successfully",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "GTK theme",
+    "translation": "",
+    "context": "GTK theme",
+    "reference": "",
+    "comment": "system info label"
   },
   {
     "term": "GTK, Qt, portal, matugen templates",
@@ -8757,6 +9247,13 @@
     "comment": "island settings: satellite goth corners toggle"
   },
   {
+    "term": "Governor",
+    "translation": "",
+    "context": "Governor",
+    "reference": "",
+    "comment": "CPU frequency scaling governor"
+  },
+  {
     "term": "Grant",
     "translation": "",
     "context": "Grant",
@@ -8797,6 +9294,13 @@
     "context": "Graphics",
     "reference": "",
     "comment": "launcher app category"
+  },
+  {
+    "term": "Graphics driver",
+    "translation": "",
+    "context": "Graphics driver",
+    "reference": "",
+    "comment": "GPU kernel driver and Mesa version"
   },
   {
     "term": "Green",
@@ -8946,11 +9450,25 @@
     "comment": ""
   },
   {
+    "term": "Hardware",
+    "translation": "",
+    "context": "Hardware",
+    "reference": "",
+    "comment": "system info section"
+  },
+  {
     "term": "Haze",
     "translation": "",
     "context": "Haze",
     "reference": "",
     "comment": "Hyprland blur variant"
+  },
+  {
+    "term": "Head load cycles",
+    "translation": "",
+    "context": "Head load cycles",
+    "reference": "",
+    "comment": "HDD health: read head load/unload count"
   },
   {
     "term": "Health",
@@ -8965,6 +9483,13 @@
     "context": "Health %1",
     "reference": "",
     "comment": "battery health, %1 is a percentage"
+  },
+  {
+    "term": "Healthy",
+    "translation": "",
+    "context": "Healthy",
+    "reference": "",
+    "comment": "drive health"
   },
   {
     "term": "Heat shimmer",
@@ -9233,6 +9758,13 @@
     "comment": ""
   },
   {
+    "term": "Higher values flex more smoothly and cost more GPU",
+    "translation": "",
+    "context": "Higher values flex more smoothly and cost more GPU",
+    "reference": "",
+    "comment": "Hyprland wobble mesh description"
+  },
+  {
     "term": "Highlight focused app",
     "translation": "",
     "context": "Highlight focused app",
@@ -9252,13 +9784,6 @@
     "context": "History",
     "reference": "",
     "comment": "notification center tab"
-  },
-  {
-    "term": "History (%1)",
-    "translation": "",
-    "context": "History (%1)",
-    "reference": "",
-    "comment": "notification center tab, %1 is the history entry count"
   },
   {
     "term": "History cleared. %1 pinned entries kept.",
@@ -9349,7 +9874,7 @@
     "translation": "",
     "context": "Hostname",
     "reference": "",
-    "comment": "system info label"
+    "comment": ""
   },
   {
     "term": "Hot corners",
@@ -9371,6 +9896,13 @@
     "context": "Hotspot",
     "reference": "",
     "comment": "hotspot control label | hotspot settings card title"
+  },
+  {
+    "term": "Hotspot",
+    "translation": "",
+    "context": "GPU hotspot temperature",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Hotspot activation failed.",
@@ -9471,13 +10003,6 @@
     "comment": ""
   },
   {
-    "term": "Hyprland conf mode",
-    "translation": "",
-    "context": "Hyprland conf mode",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Hyprland conf mode is read-only in Settings",
     "translation": "",
     "context": "Hyprland conf mode is read-only in Settings",
@@ -9504,6 +10029,20 @@
     "context": "I Understand",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "I/O priority",
+    "translation": "",
+    "context": "I/O priority",
+    "reference": "",
+    "comment": "disk scheduling class and level"
+  },
+  {
+    "term": "I/O scheduler",
+    "translation": "",
+    "context": "I/O scheduler",
+    "reference": "",
+    "comment": "Linux block I/O scheduler"
   },
   {
     "term": "ICC Error",
@@ -9546,6 +10085,13 @@
     "context": "IP sharing setup failed. Check that %1 is installed.",
     "reference": "",
     "comment": "hotspot IP configuration failure message, %1 is a package name"
+  },
+  {
+    "term": "IPv6",
+    "translation": "",
+    "context": "IPv6",
+    "reference": "",
+    "comment": "network IPv6 address"
   },
   {
     "term": "ISO date",
@@ -9594,7 +10140,7 @@
     "translation": "",
     "context": "Icons",
     "reference": "",
-    "comment": "settings card title for icon theme and icon options"
+    "comment": "icon theme | settings card title for icon theme and icon options"
   },
   {
     "term": "Identify",
@@ -9615,7 +10161,7 @@
     "translation": "",
     "context": "Idle",
     "reference": "",
-    "comment": "noun, settings card title for idle timeout settings"
+    "comment": "noun, settings card title for idle timeout settings | process state"
   },
   {
     "term": "Idle",
@@ -9665,6 +10211,13 @@
     "context": "If autostart app icons don't appear in the system tray, generate a systemd override to ensure DMS starts before autostart apps",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Ignore",
+    "translation": "",
+    "context": "Ignore",
+    "reference": "",
+    "comment": "verb, window rule on-activation choice, niri ignores the activation request"
   },
   {
     "term": "Ignore Completely",
@@ -9919,6 +10472,13 @@
     "comment": "adjective, niri keybind option, apps may inhibit this shortcut"
   },
   {
+    "term": "Init",
+    "translation": "",
+    "context": "Init",
+    "reference": "",
+    "comment": "init system, e.g. systemd"
+  },
+  {
     "term": "Initial class",
     "translation": "",
     "context": "Initial class",
@@ -10010,6 +10570,13 @@
     "comment": ""
   },
   {
+    "term": "Input method",
+    "translation": "",
+    "context": "Input method",
+    "reference": "",
+    "comment": "OSD toggle for the IME (fcitx5) indicator"
+  },
+  {
     "term": "Insert your security key...",
     "translation": "",
     "context": "Insert your security key...",
@@ -10071,6 +10638,13 @@
     "context": "Install plugin '%1' from the DMS registry?",
     "reference": "",
     "comment": "plugin installation confirmation"
+  },
+  {
+    "term": "Install smartmontools",
+    "translation": "",
+    "context": "Install smartmontools",
+    "reference": "",
+    "comment": "button, installs the smartmontools package"
   },
   {
     "term": "Install system updates?",
@@ -10290,6 +10864,13 @@
     "comment": ""
   },
   {
+    "term": "It runs in a terminal; restart it from there.",
+    "translation": "",
+    "context": "It runs in a terminal; restart it from there.",
+    "reference": "",
+    "comment": "toast body when restarting a terminal program"
+  },
+  {
     "term": "Italic",
     "translation": "",
     "context": "Italic",
@@ -10351,6 +10932,13 @@
     "context": "Keep clock with media",
     "reference": "",
     "comment": "island settings: clock in media face toggle"
+  },
+  {
+    "term": "Keep fullscreen on close",
+    "translation": "",
+    "context": "Keep fullscreen on close",
+    "reference": "",
+    "comment": "Hyprland option, closing a fullscreen window makes the next focused window fullscreen"
   },
   {
     "term": "Keep in Bar",
@@ -10486,6 +11074,27 @@
     "comment": ""
   },
   {
+    "term": "L1 cache",
+    "translation": "",
+    "context": "L1 cache",
+    "reference": "",
+    "comment": "CPU cache level"
+  },
+  {
+    "term": "L2 cache",
+    "translation": "",
+    "context": "L2 cache",
+    "reference": "",
+    "comment": "CPU cache level"
+  },
+  {
+    "term": "L3 cache",
+    "translation": "",
+    "context": "L3 cache",
+    "reference": "",
+    "comment": "CPU cache level"
+  },
+  {
     "term": "LED device",
     "translation": "",
     "context": "LED device",
@@ -10535,6 +11144,13 @@
     "comment": "reason for reduced power profile performance"
   },
   {
+    "term": "Laptop",
+    "translation": "",
+    "context": "Laptop",
+    "reference": "",
+    "comment": "computer chassis type"
+  },
+  {
     "term": "Large",
     "translation": "",
     "context": "Large",
@@ -10554,6 +11170,13 @@
     "context": "Last commit %1",
     "reference": "",
     "comment": "git channel row, %1 is a localized date"
+  },
+  {
+    "term": "Last core",
+    "translation": "",
+    "context": "Last core",
+    "reference": "",
+    "comment": "CPU core the process last ran on"
   },
   {
     "term": "Last hour",
@@ -10626,6 +11249,13 @@
     "comment": "plugin directory modification time"
   },
   {
+    "term": "Last self-test",
+    "translation": "",
+    "context": "Last self-test",
+    "reference": "",
+    "comment": "drive health: result of the last self-test"
+  },
+  {
     "term": "Last used on this screen",
     "translation": "",
     "context": "Last used on this screen",
@@ -10665,7 +11295,7 @@
     "translation": "",
     "context": "Launcher",
     "reference": "",
-    "comment": "island compact face: launcher label | island settings: button to launcher tab"
+    "comment": "island compact face: launcher label | island settings: button to launcher tab | plugin browser type filter chip"
   },
   {
     "term": "Launcher button",
@@ -10997,6 +11627,13 @@
     "comment": "noun, list view mode option"
   },
   {
+    "term": "Listening",
+    "translation": "",
+    "context": "Listening",
+    "reference": "",
+    "comment": "network ports a process accepts connections on"
+  },
+  {
     "term": "Listening from",
     "translation": "",
     "context": "Listening from",
@@ -11079,6 +11716,13 @@
     "context": "Local Weather",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Local network",
+    "translation": "",
+    "context": "Local network",
+    "reference": "",
+    "comment": "process detail: connections to LAN, VPN or link-local addresses, not the internet"
   },
   {
     "term": "Locale",
@@ -11263,6 +11907,20 @@
     "comment": ""
   },
   {
+    "term": "Lower only if a mode fails for lack of bandwidth",
+    "translation": "",
+    "context": "Lower only if a mode fails for lack of bandwidth",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Lower priorities move into overflow first",
+    "translation": "",
+    "context": "Lower priorities move into overflow first",
+    "reference": "",
+    "comment": "bar widget overflow priority slider description"
+  },
+  {
     "term": "Lyrics",
     "translation": "",
     "context": "Lyrics",
@@ -11277,11 +11935,25 @@
     "comment": "Lyrics source priority settings"
   },
   {
+    "term": "MAC address",
+    "translation": "",
+    "context": "MAC address",
+    "reference": "",
+    "comment": "network hardware address"
+  },
+  {
     "term": "MIT License",
     "translation": "",
     "context": "MIT License",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "MTU",
+    "translation": "",
+    "context": "MTU",
+    "reference": "",
+    "comment": "network maximum transmission unit"
   },
   {
     "term": "Magnification",
@@ -11296,6 +11968,13 @@
     "context": "Mail",
     "reference": "",
     "comment": "Mail"
+  },
+  {
+    "term": "Major page faults",
+    "translation": "",
+    "context": "Major page faults",
+    "reference": "",
+    "comment": "page faults that needed disk reads"
   },
   {
     "term": "Make admin",
@@ -11422,6 +12101,13 @@
     "context": "Mark incomplete",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Mark urgent",
+    "translation": "",
+    "context": "Mark urgent",
+    "reference": "",
+    "comment": "window rule on-activation choice, mark the window urgent instead of focusing it"
   },
   {
     "term": "Marker Supply Empty",
@@ -11571,6 +12257,13 @@
     "comment": ""
   },
   {
+    "term": "Max %1",
+    "translation": "",
+    "context": "Max %1",
+    "reference": "",
+    "comment": "chart axis maximum, %1 is a value like 12 MB/s"
+  },
+  {
     "term": "Max H",
     "translation": "",
     "context": "Max H",
@@ -11590,6 +12283,20 @@
     "context": "Max apps to show",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Max bits per channel",
+    "translation": "",
+    "context": "Max bits per channel",
+    "reference": "",
+    "comment": "niri output dropdown, max-bpc sent to the display"
+  },
+  {
+    "term": "Max clock",
+    "translation": "",
+    "context": "Max clock",
+    "reference": "",
+    "comment": "highest clock speed of a CPU or GPU"
   },
   {
     "term": "Max edges",
@@ -11746,6 +12453,13 @@
     "comment": ""
   },
   {
+    "term": "Media errors",
+    "translation": "",
+    "context": "Media errors",
+    "reference": "",
+    "comment": "SSD health: unrecovered data integrity errors"
+  },
+  {
     "term": "Media playback",
     "translation": "",
     "context": "Media playback",
@@ -11779,6 +12493,20 @@
     "context": "Memory",
     "reference": "",
     "comment": "system RAM label in system monitor"
+  },
+  {
+    "term": "Memory clock",
+    "translation": "",
+    "context": "Memory clock",
+    "reference": "",
+    "comment": "GPU memory clock speed"
+  },
+  {
+    "term": "Memory controller",
+    "translation": "",
+    "context": "Memory controller",
+    "reference": "",
+    "comment": "GPU memory controller busy percentage"
   },
   {
     "term": "Memory graph",
@@ -11886,6 +12614,13 @@
     "comment": ""
   },
   {
+    "term": "Mini PC",
+    "translation": "",
+    "context": "Mini PC",
+    "reference": "",
+    "comment": "computer chassis type"
+  },
+  {
     "term": "Minimal",
     "translation": "",
     "context": "Minimal",
@@ -11967,7 +12702,7 @@
     "translation": "",
     "context": "Model",
     "reference": "",
-    "comment": "noun, hardware model of keyboard, display or printer"
+    "comment": "computer vendor and model | noun, hardware model of keyboard, display or printer"
   },
   {
     "term": "Modem and mobile data",
@@ -12012,6 +12747,13 @@
     "comment": "noun, display output field in window rule editor"
   },
   {
+    "term": "Monitoring off",
+    "translation": "",
+    "context": "Monitoring off",
+    "reference": "",
+    "comment": "GPU monitoring is turned off in settings"
+  },
+  {
     "term": "Mono Audio",
     "translation": "",
     "context": "Mono Audio",
@@ -12038,6 +12780,13 @@
     "context": "Monospace family",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Monospace font",
+    "translation": "",
+    "context": "Monospace font",
+    "reference": "",
+    "comment": "system info label, font name"
   },
   {
     "term": "Month",
@@ -12094,6 +12843,13 @@
     "context": "More samples look smoother and cost more GPU",
     "reference": "",
     "comment": "Hyprland motion blur sample count description"
+  },
+  {
+    "term": "More transparent areas get less blur",
+    "translation": "",
+    "context": "More transparent areas get less blur",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "More widgets",
@@ -12614,6 +13370,13 @@
     "comment": ""
   },
   {
+    "term": "Nice",
+    "translation": "",
+    "context": "Nice",
+    "reference": "",
+    "comment": "process column: Linux nice value, scheduling priority"
+  },
+  {
     "term": "Night",
     "translation": "",
     "context": "Night",
@@ -12695,7 +13458,7 @@
     "translation": "",
     "context": "No GPU detected",
     "reference": "",
-    "comment": "empty state in gpu list | empty state when no graphics card is found"
+    "comment": "empty state when no graphics card is found"
   },
   {
     "term": "No History",
@@ -13594,6 +14357,20 @@
     "comment": "greeter status, no greeter slot for this user"
   },
   {
+    "term": "Not on click",
+    "translation": "",
+    "context": "Not on click",
+    "reference": "",
+    "comment": "Hyprland scrolling follow focus option, focus scrolls the view but clicking a window does not"
+  },
+  {
+    "term": "Not readable without privileges",
+    "translation": "",
+    "context": "Not readable without privileges",
+    "reference": "",
+    "comment": "process value that needs root access to read"
+  },
+  {
     "term": "Not set",
     "translation": "",
     "context": "Not set",
@@ -13755,6 +14532,13 @@
     "comment": ""
   },
   {
+    "term": "Num lock",
+    "translation": "",
+    "context": "Num lock",
+    "reference": "",
+    "comment": "OSD toggle for the Num Lock indicator"
+  },
+  {
     "term": "Numeric (D/M)",
     "translation": "",
     "context": "Numeric (D/M)",
@@ -13839,6 +14623,13 @@
     "comment": ""
   },
   {
+    "term": "Offline uncorrectable",
+    "translation": "",
+    "context": "Offline uncorrectable",
+    "reference": "",
+    "comment": "HDD health: sectors that could not be read or fixed"
+  },
+  {
     "term": "Older",
     "translation": "",
     "context": "Older",
@@ -13851,6 +14642,13 @@
     "context": "On",
     "reference": "",
     "comment": "adjective, enabled state"
+  },
+  {
+    "term": "On activation",
+    "translation": "",
+    "context": "On activation",
+    "reference": "",
+    "comment": "window rule option, what niri does when the window asks to be activated"
   },
   {
     "term": "On button down",
@@ -13906,7 +14704,7 @@
     "translation": "",
     "context": "Online",
     "reference": "",
-    "comment": "Tailscale filter: all online devices"
+    "comment": "Tailscale filter: all online devices | process filter: only processes with internet connections"
   },
   {
     "term": "Only continue if you recognize this server certificate fingerprint.",
@@ -13916,11 +14714,32 @@
     "comment": "Warning shown before trusting an unverified VPN server certificate"
   },
   {
+    "term": "Only in groups",
+    "translation": "",
+    "context": "Only in groups",
+    "reference": "",
+    "comment": "Hyprland keep fullscreen on close option, only inside tabbed window groups"
+  },
+  {
     "term": "Only on battery",
     "translation": "",
     "context": "Only on battery",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Only outside groups",
+    "translation": "",
+    "context": "Only outside groups",
+    "reference": "",
+    "comment": "Hyprland keep fullscreen on close option, only for windows not in a tabbed group"
+  },
+  {
+    "term": "Only the main process of a system service can be restarted.",
+    "translation": "",
+    "context": "Only the main process of a system service can be restarted.",
+    "reference": "",
+    "comment": "toast body when restarting another user's process"
   },
   {
     "term": "Opacity",
@@ -13998,6 +14817,13 @@
     "context": "Open delay",
     "reference": "",
     "comment": "island settings: hover open delay slider"
+  },
+  {
+    "term": "Open files",
+    "translation": "",
+    "context": "Open files",
+    "reference": "",
+    "comment": "number of files and sockets a process has open | system-wide open file handles"
   },
   {
     "term": "Open floating",
@@ -14112,6 +14938,13 @@
     "comment": "window rule option tooltip"
   },
   {
+    "term": "Operating system",
+    "translation": "",
+    "context": "Operating system",
+    "reference": "",
+    "comment": "system info label"
+  },
+  {
     "term": "Optional description",
     "translation": "",
     "context": "Optional description",
@@ -14217,6 +15050,13 @@
     "comment": ""
   },
   {
+    "term": "Out-of-memory score",
+    "translation": "",
+    "context": "Out-of-memory score",
+    "reference": "",
+    "comment": "how likely the kernel kills this process first when memory runs out"
+  },
+  {
     "term": "Outer gap",
     "translation": "",
     "context": "Outer gap",
@@ -14301,6 +15141,13 @@
     "comment": ""
   },
   {
+    "term": "Overall",
+    "translation": "",
+    "context": "Overall",
+    "reference": "",
+    "comment": "CPU chart: usage of all threads together"
+  },
+  {
     "term": "Overcast",
     "translation": "",
     "context": "Overcast",
@@ -14320,6 +15167,13 @@
     "context": "Overflow button position",
     "reference": "",
     "comment": "bar section dropdown label"
+  },
+  {
+    "term": "Overflow priority",
+    "translation": "",
+    "context": "Overflow priority",
+    "reference": "",
+    "comment": "bar widget setting, how early an auto widget moves into overflow"
   },
   {
     "term": "Overlapping",
@@ -14392,6 +15246,13 @@
     "comment": "dashboard tab name | noun, niri compositor overview mode label"
   },
   {
+    "term": "Own share",
+    "translation": "",
+    "context": "Own share",
+    "reference": "",
+    "comment": "proportional memory: the process's share of pages it shares with others"
+  },
+  {
     "term": "Owner: %1",
     "translation": "",
     "context": "Owner: %1",
@@ -14455,6 +15316,20 @@
     "comment": ""
   },
   {
+    "term": "Package repositories moved",
+    "translation": "",
+    "context": "Package repositories moved",
+    "reference": "",
+    "comment": "notification title, the DMS package repositories moved to a new owner"
+  },
+  {
+    "term": "Packages",
+    "translation": "",
+    "context": "Packages",
+    "reference": "",
+    "comment": "installed package counts per package manager"
+  },
+  {
     "term": "Pad",
     "translation": "",
     "context": "Pad",
@@ -14467,6 +15342,13 @@
     "context": "Padding",
     "reference": "",
     "comment": "noun, spacing setting label"
+  },
+  {
+    "term": "Page faults",
+    "translation": "",
+    "context": "Page faults",
+    "reference": "",
+    "comment": "minor page faults"
   },
   {
     "term": "Pair",
@@ -14560,11 +15442,32 @@
     "comment": "magnification animation profile"
   },
   {
+    "term": "Parent",
+    "translation": "",
+    "context": "Parent",
+    "reference": "",
+    "comment": "the process that started this one"
+  },
+  {
+    "term": "Parents",
+    "translation": "",
+    "context": "Parents",
+    "reference": "",
+    "comment": "chain of processes that started this one"
+  },
+  {
     "term": "Partially synchronized",
     "translation": "",
     "context": "Partially synchronized",
     "reference": "",
     "comment": "The application or toolkit cannot represent every Aqueous font setting"
+  },
+  {
+    "term": "Partition table",
+    "translation": "",
+    "context": "Partition table",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Partly Cloudy",
@@ -14707,6 +15610,13 @@
     "comment": "printer state reason"
   },
   {
+    "term": "Peak",
+    "translation": "",
+    "context": "Peak",
+    "reference": "",
+    "comment": "highest resident memory so far"
+  },
+  {
     "term": "Pending",
     "translation": "",
     "context": "Pending",
@@ -14726,6 +15636,20 @@
     "context": "Pending Discharge",
     "reference": "",
     "comment": "battery status"
+  },
+  {
+    "term": "Per display",
+    "translation": "",
+    "context": "Per display",
+    "reference": "",
+    "comment": "Hyprland workspace back and forth option, each display remembers its own previous workspace"
+  },
+  {
+    "term": "Per thread",
+    "translation": "",
+    "context": "Per thread",
+    "reference": "",
+    "comment": "CPU chart mode: one graph per thread"
   },
   {
     "term": "Per window",
@@ -14854,6 +15778,20 @@
     "comment": ""
   },
   {
+    "term": "Pinch",
+    "translation": "",
+    "context": "Pinch",
+    "reference": "",
+    "comment": "short window rule property label for touchpad pinch sensitivity"
+  },
+  {
+    "term": "Pinch sensitivity",
+    "translation": "",
+    "context": "Pinch sensitivity",
+    "reference": "",
+    "comment": "touchpad slider, how strongly pinch gestures zoom in apps"
+  },
+  {
     "term": "Pink",
     "translation": "",
     "context": "Pink",
@@ -14964,6 +15902,13 @@
     "context": "Playing",
     "reference": "",
     "comment": "Audio output currently playing media"
+  },
+  {
+    "term": "Playing audio",
+    "translation": "",
+    "context": "Playing audio",
+    "reference": "",
+    "comment": "process has an open audio playback stream"
   },
   {
     "term": "Please wait...",
@@ -15323,6 +16268,13 @@
     "comment": "power profile option"
   },
   {
+    "term": "Power limit",
+    "translation": "",
+    "context": "Power limit",
+    "reference": "",
+    "comment": "GPU power limit in watts"
+  },
+  {
     "term": "Power menu",
     "translation": "",
     "context": "Power menu",
@@ -15372,6 +16324,13 @@
     "comment": ""
   },
   {
+    "term": "Power-on time",
+    "translation": "",
+    "context": "Power-on time",
+    "reference": "",
+    "comment": "total time a drive has been powered on"
+  },
+  {
     "term": "Pre-release",
     "translation": "",
     "context": "Pre-release",
@@ -15384,6 +16343,13 @@
     "context": "Precipitation",
     "reference": "",
     "comment": "weather precipitation probability metric label"
+  },
+  {
+    "term": "Preempted",
+    "translation": "",
+    "context": "Preempted",
+    "reference": "",
+    "comment": "times the process was forced off the CPU"
   },
   {
     "term": "Preference",
@@ -15607,7 +16573,7 @@
     "translation": "",
     "context": "Priority",
     "reference": "",
-    "comment": "notification rule dropdown label, urgency assigned to matches"
+    "comment": "kernel scheduling priority | notification rule dropdown label, urgency assigned to matches"
   },
   {
     "term": "Prism",
@@ -15645,6 +16611,13 @@
     "comment": ""
   },
   {
+    "term": "Process",
+    "translation": "",
+    "context": "Process",
+    "reference": "",
+    "comment": "section title: details of one process"
+  },
+  {
     "term": "Process count",
     "translation": "",
     "context": "Process count",
@@ -15671,6 +16644,13 @@
     "context": "Processing",
     "reference": "",
     "comment": "printer job state, also printer state"
+  },
+  {
+    "term": "Processor",
+    "translation": "",
+    "context": "Processor",
+    "reference": "",
+    "comment": "system monitor device group: CPU and memory"
   },
   {
     "term": "Profile",
@@ -15827,6 +16807,13 @@
     "comment": ""
   },
   {
+    "term": "Qt theme",
+    "translation": "",
+    "context": "Qt theme",
+    "reference": "",
+    "comment": "Qt platform theme plugin, e.g. qtengine"
+  },
+  {
     "term": "QtMultimedia is not available",
     "translation": "",
     "context": "QtMultimedia is not available",
@@ -15846,6 +16833,13 @@
     "context": "Quality",
     "reference": "",
     "comment": "text render quality dropdown label"
+  },
+  {
+    "term": "Queue depth",
+    "translation": "",
+    "context": "Queue depth",
+    "reference": "",
+    "comment": "block device request queue depth"
   },
   {
     "term": "Quick access to application launcher",
@@ -15881,6 +16875,27 @@
     "context": "Quick tiles",
     "reference": "",
     "comment": "control center widget that holds small tiles in one row"
+  },
+  {
+    "term": "Quit",
+    "translation": "",
+    "context": "Quit",
+    "reference": "",
+    "comment": "process action: ask the process to exit (SIGTERM)"
+  },
+  {
+    "term": "Quit or reload",
+    "translation": "",
+    "context": "Quit or reload",
+    "reference": "",
+    "comment": "process menu: opens the quit, force quit, end tree and reload actions"
+  },
+  {
+    "term": "Quit or restart",
+    "translation": "",
+    "context": "Quit or restart",
+    "reference": "",
+    "comment": "process menu: opens the quit, force quit, end tree and restart actions"
   },
   {
     "term": "Radius",
@@ -15960,11 +16975,11 @@
     "comment": "release notes link"
   },
   {
-    "term": "Read:",
+    "term": "Read total",
     "translation": "",
-    "context": "Read:",
+    "context": "Read total",
     "reference": "",
-    "comment": "disk read label"
+    "comment": "total data read"
   },
   {
     "term": "Readings",
@@ -16023,6 +17038,13 @@
     "comment": "hotspot ready status"
   },
   {
+    "term": "Reallocated sectors",
+    "translation": "",
+    "context": "Reallocated sectors",
+    "reference": "",
+    "comment": "HDD health: sectors remapped after errors"
+  },
+  {
     "term": "Reason",
     "translation": "",
     "context": "Reason",
@@ -16070,6 +17092,13 @@
     "context": "Reboot to firmware setup",
     "reference": "",
     "comment": "power menu action, firmware setup is the UEFI/BIOS settings screen"
+  },
+  {
+    "term": "Received since boot",
+    "translation": "",
+    "context": "Received since boot",
+    "reference": "",
+    "comment": "network data received since the system started"
   },
   {
     "term": "Recent",
@@ -16219,6 +17248,20 @@
     "comment": ""
   },
   {
+    "term": "Reliability",
+    "translation": "",
+    "context": "Reliability",
+    "reference": "",
+    "comment": "drive health counters section"
+  },
+  {
+    "term": "Reload",
+    "translation": "",
+    "context": "Reload",
+    "reference": "",
+    "comment": "process action: reload a compositor's configuration"
+  },
+  {
     "term": "Reload From Disk",
     "translation": "",
     "context": "Reload From Disk",
@@ -16294,6 +17337,13 @@
     "context": "Reminder",
     "reference": "",
     "comment": "noun, calendar event reminder time dropdown label"
+  },
+  {
+    "term": "Removable",
+    "translation": "",
+    "context": "Removable",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Remove",
@@ -16625,6 +17675,13 @@
     "comment": ""
   },
   {
+    "term": "Resident",
+    "translation": "",
+    "context": "Resident",
+    "reference": "",
+    "comment": "memory pages currently in RAM"
+  },
+  {
     "term": "Resize on border",
     "translation": "",
     "context": "Resize on border",
@@ -16644,6 +17701,27 @@
     "context": "Resolution, position, scale",
     "reference": "",
     "comment": "greeter displays description"
+  },
+  {
+    "term": "Resources",
+    "translation": "",
+    "context": "Resources",
+    "reference": "",
+    "comment": "process detail tab: CPU, memory, disk and GPU use"
+  },
+  {
+    "term": "Response time",
+    "translation": "",
+    "context": "Response time",
+    "reference": "",
+    "comment": "average time a disk takes per request"
+  },
+  {
+    "term": "Restart",
+    "translation": "",
+    "context": "Restart",
+    "reference": "",
+    "comment": "process action: start the process again"
   },
   {
     "term": "Restart DMS",
@@ -16818,7 +17896,7 @@
     "translation": "",
     "context": "Root Filesystem",
     "reference": "",
-    "comment": ""
+    "comment": "the filesystem mounted at /"
   },
   {
     "term": "Rotating Cookie",
@@ -16898,6 +17976,20 @@
     "comment": ""
   },
   {
+    "term": "Run %1 in a terminal.",
+    "translation": "",
+    "context": "Run %1 in a terminal.",
+    "reference": "",
+    "comment": "%1 is a shell command"
+  },
+  {
+    "term": "Run %1 to create it before changing these settings.",
+    "translation": "",
+    "context": "Run %1 to create it before changing these settings.",
+    "reference": "",
+    "comment": "hyprland.lua missing warning, %1 is a command"
+  },
+  {
     "term": "Run Again",
     "translation": "",
     "context": "Run Again",
@@ -16951,7 +18043,7 @@
     "translation": "",
     "context": "Running",
     "reference": "",
-    "comment": "hotspot active status"
+    "comment": "hotspot active status | process state"
   },
   {
     "term": "Running apps",
@@ -16959,6 +18051,13 @@
     "context": "Running apps",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Running for",
+    "translation": "",
+    "context": "Running for",
+    "reference": "",
+    "comment": "how long a process has been running"
   },
   {
     "term": "Running greeter sync...",
@@ -17043,6 +18142,13 @@
     "context": "SW",
     "reference": "",
     "comment": "Southwest compass direction"
+  },
+  {
+    "term": "Same as workspace change",
+    "translation": "",
+    "context": "Same as workspace change",
+    "reference": "",
+    "comment": "Hyprland cursor warp option, follow the workspace change warp setting"
   },
   {
     "term": "Satellites",
@@ -17260,6 +18366,13 @@
     "context": "Schedule, sunset, wallpaper brightness",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Scheduling",
+    "translation": "",
+    "context": "Scheduling",
+    "reference": "",
+    "comment": "Linux scheduling policy"
   },
   {
     "term": "Science",
@@ -17491,6 +18604,20 @@
     "context": "Sections",
     "reference": "",
     "comment": "bar widget settings heading for left, center, right sections"
+  },
+  {
+    "term": "Sector size",
+    "translation": "",
+    "context": "Sector size",
+    "reference": "",
+    "comment": "logical and physical disk sector size"
+  },
+  {
+    "term": "Secure Boot",
+    "translation": "",
+    "context": "Secure Boot",
+    "reference": "",
+    "comment": "UEFI Secure Boot state"
   },
   {
     "term": "Secured",
@@ -17738,6 +18865,20 @@
     "comment": ""
   },
   {
+    "term": "Sensors",
+    "translation": "",
+    "context": "Sensors",
+    "reference": "",
+    "comment": "hardware sensors section"
+  },
+  {
+    "term": "Sent since boot",
+    "translation": "",
+    "context": "Sent since boot",
+    "reference": "",
+    "comment": "network data sent since the system started"
+  },
+  {
     "term": "Separate",
     "translation": "",
     "context": "Separate",
@@ -17794,18 +18935,32 @@
     "comment": "bar widget name, visual divider between widgets"
   },
   {
+    "term": "Serial number",
+    "translation": "",
+    "context": "Serial number",
+    "reference": "",
+    "comment": "drive serial number"
+  },
+  {
     "term": "Server",
     "translation": "",
     "context": "Server",
     "reference": "",
-    "comment": ""
+    "comment": "computer chassis type"
+  },
+  {
+    "term": "Service",
+    "translation": "",
+    "context": "Service",
+    "reference": "",
+    "comment": "the systemd unit or app scope a process runs in"
   },
   {
     "term": "Session",
     "translation": "",
     "context": "Session",
     "reference": "",
-    "comment": "greeter session picker widget"
+    "comment": "greeter session picker widget | login session id of a process"
   },
   {
     "term": "Session filter",
@@ -17920,6 +19075,20 @@
     "comment": "read-only settings warning for NixOS home-manager users"
   },
   {
+    "term": "Settings version",
+    "translation": "",
+    "context": "Settings version",
+    "reference": "",
+    "comment": "version number of the settings file format"
+  },
+  {
+    "term": "Setuid",
+    "translation": "",
+    "context": "Setuid",
+    "reference": "",
+    "comment": "process runs with another user's rights"
+  },
+  {
     "term": "Setup",
     "translation": "",
     "context": "Setup",
@@ -17962,6 +19131,20 @@
     "comment": ""
   },
   {
+    "term": "Shared",
+    "translation": "",
+    "context": "Shared",
+    "reference": "",
+    "comment": "RAM shared between processes (shmem) | resident shared memory (shmem)"
+  },
+  {
+    "term": "Shared memory",
+    "translation": "",
+    "context": "Shared memory",
+    "reference": "",
+    "comment": "GPU memory borrowed from system RAM (GTT)"
+  },
+  {
     "term": "Shared shortcuts",
     "translation": "",
     "context": "Shared shortcuts",
@@ -17973,7 +19156,7 @@
     "translation": "",
     "context": "Shell",
     "reference": "",
-    "comment": "noun, keybind editor field label for a shell command"
+    "comment": "command line shell, e.g. zsh | noun, keybind editor field label for a shell command"
   },
   {
     "term": "Shift+Enter to copy",
@@ -18049,6 +19232,13 @@
     "term": "Show \"config reloaded\" toast",
     "translation": "",
     "context": "Show \"config reloaded\" toast",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Show AM/PM",
+    "translation": "",
+    "context": "Show AM/PM",
     "reference": "",
     "comment": ""
   },
@@ -18135,13 +19325,6 @@
     "context": "Show device",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "Show device name",
-    "translation": "",
-    "context": "Show device name",
-    "reference": "",
-    "comment": "Media player option that puts the audio output device name on its button"
   },
   {
     "term": "Show discharge rate",
@@ -18522,6 +19705,13 @@
     "comment": "dock isolate displays toggle description"
   },
   {
+    "term": "Shows the dashboard tab bar instead of the sheet handle",
+    "translation": "",
+    "context": "Shows the dashboard tab bar instead of the sheet handle",
+    "reference": "",
+    "comment": "island settings: dashboard tab bar toggle description"
+  },
+  {
     "term": "Shows the line being sung instead of the title and artist while synced lyrics are available",
     "translation": "",
     "context": "Shows the line being sung instead of the title and artist while synced lyrics are available",
@@ -18648,6 +19838,13 @@
     "comment": "Album artwork shape"
   },
   {
+    "term": "Sleeping",
+    "translation": "",
+    "context": "Sleeping",
+    "reference": "",
+    "comment": "process state"
+  },
+  {
     "term": "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.",
     "translation": "",
     "context": "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.",
@@ -18660,6 +19857,13 @@
     "context": "Slideout",
     "reference": "",
     "comment": "noun, notepad default mode option, side panel"
+  },
+  {
+    "term": "Slots used",
+    "translation": "",
+    "context": "Slots used",
+    "reference": "",
+    "comment": "memory slots with a module installed, of all slots"
   },
   {
     "term": "Small",
@@ -18723,6 +19927,13 @@
     "context": "Snow",
     "reference": "",
     "comment": "noun, weather condition name"
+  },
+  {
+    "term": "Sockets",
+    "translation": "",
+    "context": "Sockets",
+    "reference": "",
+    "comment": "CPU sockets on the motherboard"
   },
   {
     "term": "Soft reboot",
@@ -18865,6 +20076,13 @@
     "comment": "interface density option with the most room between items"
   },
   {
+    "term": "Spare blocks left",
+    "translation": "",
+    "context": "Spare blocks left",
+    "reference": "",
+    "comment": "SSD health: share of spare blocks still available"
+  },
+  {
     "term": "Speaker settings",
     "translation": "",
     "context": "Speaker settings",
@@ -18891,6 +20109,13 @@
     "context": "Speed, scrolling, tap to click",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Spin-up time",
+    "translation": "",
+    "context": "Spin-up time",
+    "reference": "",
+    "comment": "HDD health: time to spin the platters up"
   },
   {
     "term": "Split direction follows the cursor position in the window",
@@ -19033,6 +20258,20 @@
     "comment": ""
   },
   {
+    "term": "Start/stop count",
+    "translation": "",
+    "context": "Start/stop count",
+    "reference": "",
+    "comment": "HDD health: spindle start and stop count"
+  },
+  {
+    "term": "Started",
+    "translation": "",
+    "context": "Started",
+    "reference": "",
+    "comment": "when a process was started"
+  },
+  {
     "term": "Starting hotspot...",
     "translation": "",
     "context": "Starting hotspot...",
@@ -19107,7 +20346,7 @@
     "translation": "",
     "context": "Stopped",
     "reference": "",
-    "comment": "printer job state, also printer state"
+    "comment": "printer job state, also printer state | process state"
   },
   {
     "term": "Stopped Partly",
@@ -19129,6 +20368,13 @@
     "context": "Stops syncing your DMS settings to the greeter. Set up links them again.",
     "reference": "",
     "comment": "greeter advanced action"
+  },
+  {
+    "term": "Storage",
+    "translation": "",
+    "context": "Storage",
+    "reference": "",
+    "comment": "system monitor device group: disks"
   },
   {
     "term": "Stretch",
@@ -19220,13 +20466,6 @@
     "context": "Sunset",
     "reference": "",
     "comment": "sunset time label, also time of day period name"
-  },
-  {
-    "term": "Super + Space",
-    "translation": "",
-    "context": "Super + Space",
-    "reference": "",
-    "comment": ""
   },
   {
     "term": "Support DMS",
@@ -19341,6 +20580,13 @@
     "comment": ""
   },
   {
+    "term": "Swallow focus click",
+    "translation": "",
+    "context": "Swallow focus click",
+    "reference": "",
+    "comment": "Hyprland toggle, the click that focuses a window is not passed to the app"
+  },
+  {
     "term": "Swap",
     "translation": "",
     "context": "Swap",
@@ -19395,6 +20641,13 @@
     "context": "Switches to power saver at the low battery threshold",
     "reference": "",
     "comment": "battery auto power saver toggle description"
+  },
+  {
+    "term": "Switching to the current workspace returns to the previous one",
+    "translation": "",
+    "context": "Switching to the current workspace returns to the previous one",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Symbol",
@@ -19495,13 +20748,6 @@
     "comment": ""
   },
   {
-    "term": "System Information",
-    "translation": "",
-    "context": "System Information",
-    "reference": "",
-    "comment": "system info header in system monitor"
-  },
-  {
     "term": "System Monitor",
     "translation": "",
     "context": "System Monitor",
@@ -19514,6 +20760,13 @@
     "context": "System Monitor Unavailable",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "System bell",
+    "translation": "",
+    "context": "System bell",
+    "reference": "",
+    "comment": "Hyprland toggle, play a sound when an app rings the terminal bell"
   },
   {
     "term": "System check",
@@ -19544,6 +20797,13 @@
     "comment": "software updates card title, package manager updates"
   },
   {
+    "term": "System report",
+    "translation": "",
+    "context": "System report",
+    "reference": "",
+    "comment": "title of the copied system information"
+  },
+  {
     "term": "System sound theme and events",
     "translation": "",
     "context": "System sound theme and events",
@@ -19572,6 +20832,13 @@
     "comment": ""
   },
   {
+    "term": "System time",
+    "translation": "",
+    "context": "System time",
+    "reference": "",
+    "comment": "CPU time the kernel spent on behalf of the program"
+  },
+  {
     "term": "System tray",
     "translation": "",
     "context": "System tray",
@@ -19593,6 +20860,20 @@
     "comment": ""
   },
   {
+    "term": "Systemd unit",
+    "translation": "",
+    "context": "Systemd unit",
+    "reference": "",
+    "comment": "the systemd service or scope a process runs in"
+  },
+  {
+    "term": "TRIM",
+    "translation": "",
+    "context": "TRIM",
+    "reference": "",
+    "comment": "SSD discard support"
+  },
+  {
     "term": "Tab",
     "translation": "",
     "context": "Tab",
@@ -19612,6 +20893,20 @@
     "context": "Table",
     "reference": "",
     "comment": "Tone curve stored as a lookup table"
+  },
+  {
+    "term": "Tablet",
+    "translation": "",
+    "context": "Tablet",
+    "reference": "",
+    "comment": "computer chassis type | drawing tablet input settings card title"
+  },
+  {
+    "term": "Tablet input",
+    "translation": "",
+    "context": "Tablet input",
+    "reference": "",
+    "comment": "Hyprland toggle, accept input from drawing tablets"
   },
   {
     "term": "Tabs",
@@ -19892,6 +21187,13 @@
     "context": "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).",
     "reference": "",
     "comment": "theme apps backup note, %1 and %2 are config paths"
+  },
+  {
+    "term": "The click that focuses a window does not reach the app",
+    "translation": "",
+    "context": "The click that focuses a window does not reach the app",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "The compositor session changed. Discard this edit before starting a new one.",
@@ -20209,13 +21511,6 @@
     "comment": ""
   },
   {
-    "term": "This install is still using %1. Run %2 to migrate before changing these settings.",
-    "translation": "",
-    "context": "This install is still using %1. Run %2 to migrate before changing these settings.",
-    "reference": "",
-    "comment": "hyprland legacy config warning, %1 is the config file, %2 a command"
-  },
-  {
     "term": "This may take a few seconds",
     "translation": "",
     "context": "This may take a few seconds",
@@ -20291,6 +21586,13 @@
     "context": "This will permanently remove this saved clipboard item. This action cannot be undone.",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Threads",
+    "translation": "",
+    "context": "Threads",
+    "reference": "",
+    "comment": "number of threads, CPU or process"
   },
   {
     "term": "Thunderstorm",
@@ -20671,6 +21973,13 @@
     "comment": "screen position option | shadow direction option"
   },
   {
+    "term": "Top process",
+    "translation": "",
+    "context": "Top process",
+    "reference": "",
+    "comment": "process using the most of a resource, e.g. GPU memory"
+  },
+  {
     "term": "Top processes",
     "translation": "",
     "context": "Top processes",
@@ -21004,7 +22313,7 @@
     "translation": "",
     "context": "Unknown",
     "reference": "",
-    "comment": "battery status | power profile option | unknown author"
+    "comment": "battery status | power profile option | process network rate that could not be measured | unknown author"
   },
   {
     "term": "Unknown App",
@@ -21033,13 +22342,6 @@
     "context": "Unknown Device",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "Unknown GPU",
-    "translation": "",
-    "context": "Unknown GPU",
-    "reference": "",
-    "comment": "fallback gpu name"
   },
   {
     "term": "Unknown Model",
@@ -21154,6 +22456,13 @@
     "comment": ""
   },
   {
+    "term": "Unsafe shutdowns",
+    "translation": "",
+    "context": "Unsafe shutdowns",
+    "reference": "",
+    "comment": "SSD health: power losses without a clean shutdown"
+  },
+  {
     "term": "Unsaved changes",
     "translation": "",
     "context": "Unsaved changes",
@@ -21228,7 +22537,14 @@
     "translation": "",
     "context": "Up",
     "reference": "",
-    "comment": "Hyprland scrolling layout direction"
+    "comment": "Hyprland scrolling layout direction | network direction"
+  },
+  {
+    "term": "Up %1",
+    "translation": "",
+    "context": "Up %1",
+    "reference": "",
+    "comment": "system uptime, %1 is a duration"
   },
   {
     "term": "Up to date",
@@ -21322,6 +22638,13 @@
     "comment": "system update popout status while packages upgrade"
   },
   {
+    "term": "Upload",
+    "translation": "",
+    "context": "Upload",
+    "reference": "",
+    "comment": "process column: network upload rate"
+  },
+  {
     "term": "Uptime",
     "translation": "",
     "context": "Uptime",
@@ -21362,6 +22685,13 @@
     "context": "Urgent color",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Usage",
+    "translation": "",
+    "context": "Usage",
+    "reference": "",
+    "comment": "chart legend: CPU or GPU utilization"
   },
   {
     "term": "Use Dynamic",
@@ -21483,6 +22813,13 @@
     "comment": "battery settings: explains that low and critical alerts trigger and report percentages on the scaled battery level"
   },
   {
+    "term": "Used",
+    "translation": "",
+    "context": "Used",
+    "reference": "",
+    "comment": "memory in use"
+  },
+  {
     "term": "User",
     "translation": "",
     "context": "User",
@@ -21537,6 +22874,13 @@
     "context": "User not found",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "User time",
+    "translation": "",
+    "context": "User time",
+    "reference": "",
+    "comment": "CPU time spent in the program itself"
   },
   {
     "term": "User window rules (%1)",
@@ -21665,6 +23009,20 @@
     "comment": ""
   },
   {
+    "term": "VRAM",
+    "translation": "",
+    "context": "VRAM",
+    "reference": "",
+    "comment": "GPU video memory"
+  },
+  {
+    "term": "VRR Fullscreen Only",
+    "translation": "",
+    "context": "VRR Fullscreen Only",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "VRR On-Demand",
     "translation": "",
     "context": "VRR On-Demand",
@@ -21770,11 +23128,32 @@
     "comment": ""
   },
   {
+    "term": "Video",
+    "translation": "",
+    "context": "Video",
+    "reference": "",
+    "comment": "process column: GPU video engine usage in percent"
+  },
+  {
     "term": "Video card gamma table",
     "translation": "",
     "context": "Video card gamma table",
     "reference": "",
     "comment": "Video card gamma table (vcgt) carried by the profile"
+  },
+  {
+    "term": "Video decode",
+    "translation": "",
+    "context": "Video decode",
+    "reference": "",
+    "comment": "GPU video decoder busy percentage"
+  },
+  {
+    "term": "Video encode",
+    "translation": "",
+    "context": "Video encode",
+    "reference": "",
+    "comment": "GPU video encoder busy percentage"
   },
   {
     "term": "Video player",
@@ -21791,6 +23170,13 @@
     "comment": ""
   },
   {
+    "term": "Video wallpapers play once, then the next wallpaper is shown",
+    "translation": "",
+    "context": "Video wallpapers play once, then the next wallpaper is shown",
+    "reference": "",
+    "comment": "wallpaper cycling toggle description"
+  },
+  {
     "term": "View Changes",
     "translation": "",
     "context": "View Changes",
@@ -21803,6 +23189,20 @@
     "context": "View on GitHub",
     "reference": "",
     "comment": "link to the release on GitHub"
+  },
+  {
+    "term": "Virtual",
+    "translation": "",
+    "context": "Virtual",
+    "reference": "",
+    "comment": "virtual address space size"
+  },
+  {
+    "term": "Virtualization",
+    "translation": "",
+    "context": "Virtualization",
+    "reference": "",
+    "comment": "CPU hardware virtualization, e.g. AMD-V"
   },
   {
     "term": "Visibility",
@@ -21910,6 +23310,20 @@
     "comment": "hotspot security summary"
   },
   {
+    "term": "WWN",
+    "translation": "",
+    "context": "WWN",
+    "reference": "",
+    "comment": "drive world wide name, a unique id"
+  },
+  {
+    "term": "Waiting",
+    "translation": "",
+    "context": "Waiting",
+    "reference": "",
+    "comment": "process state: uninterruptible wait, usually for disk"
+  },
+  {
     "term": "Wallpaper",
     "translation": "",
     "context": "Wallpaper",
@@ -21973,6 +23387,13 @@
     "comment": "greeter doctor page status card"
   },
   {
+    "term": "Warp on display change",
+    "translation": "",
+    "context": "Warp on display change",
+    "reference": "",
+    "comment": "Hyprland cursor option, move the pointer to the last focused window when focus moves to another display"
+  },
+  {
     "term": "Water",
     "translation": "",
     "context": "Water",
@@ -21985,6 +23406,13 @@
     "context": "Wave progress bars",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Wear",
+    "translation": "",
+    "context": "Wear",
+    "reference": "",
+    "comment": "SSD wear level, percent of rated endurance used"
   },
   {
     "term": "Weather",
@@ -22139,6 +23567,13 @@
     "context": "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.",
     "reference": "",
     "comment": "hotspot WiFi requirement explanation"
+  },
+  {
+    "term": "Wi-Fi network",
+    "translation": "",
+    "context": "Wi-Fi network",
+    "reference": "",
+    "comment": "name of the connected Wi-Fi network"
   },
   {
     "term": "Wi-Fi not available",
@@ -22351,6 +23786,13 @@
     "comment": ""
   },
   {
+    "term": "Windows",
+    "translation": "",
+    "context": "Windows",
+    "reference": "",
+    "comment": "section title: windows a process has open"
+  },
+  {
     "term": "Wipe",
     "translation": "",
     "context": "Wipe",
@@ -22372,6 +23814,27 @@
     "comment": "bars card hint shown when every bar, the Dot and every dock launcher button are off"
   },
   {
+    "term": "Wobble damping",
+    "translation": "",
+    "context": "Wobble damping",
+    "reference": "",
+    "comment": "Hyprland slider, how quickly wobbly windows stop swinging"
+  },
+  {
+    "term": "Wobble mass",
+    "translation": "",
+    "context": "Wobble mass",
+    "reference": "",
+    "comment": "Hyprland slider, inertia of the wobble spring"
+  },
+  {
+    "term": "Wobble mesh",
+    "translation": "",
+    "context": "Wobble mesh",
+    "reference": "",
+    "comment": "Hyprland slider, mesh vertices per window edge"
+  },
+  {
     "term": "Wobble stiffness",
     "translation": "",
     "context": "Wobble stiffness",
@@ -22391,6 +23854,13 @@
     "context": "Word processor",
     "reference": "",
     "comment": "default app selector label for word processor program"
+  },
+  {
+    "term": "Working directory",
+    "translation": "",
+    "context": "Working directory",
+    "reference": "",
+    "comment": "the folder a process runs in"
   },
   {
     "term": "Working...",
@@ -22442,6 +23912,13 @@
     "comment": "toggle label for workspace change OSD"
   },
   {
+    "term": "Workspace back and forth",
+    "translation": "",
+    "context": "Workspace back and forth",
+    "reference": "",
+    "comment": "Hyprland option, switching to the current workspace goes to the previous one"
+  },
+  {
     "term": "Workspace name",
     "translation": "",
     "context": "Workspace name",
@@ -22470,11 +23947,11 @@
     "comment": "autostart command field hint, keep %command% verbatim"
   },
   {
-    "term": "Write:",
+    "term": "Write cache",
     "translation": "",
-    "context": "Write:",
+    "context": "Write cache",
     "reference": "",
-    "comment": "disk write label"
+    "comment": "disk write cache mode"
   },
   {
     "term": "Writes to your files",
@@ -22482,6 +23959,13 @@
     "context": "Writes to your files",
     "reference": "",
     "comment": "plugin permission"
+  },
+  {
+    "term": "Written total",
+    "translation": "",
+    "context": "Written total",
+    "reference": "",
+    "comment": "total data written"
   },
   {
     "term": "X axis",
@@ -22636,6 +24120,13 @@
     "context": "Your system is up to date!",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Zombie",
+    "translation": "",
+    "context": "Zombie",
+    "reference": "",
+    "comment": "process state: exited, not yet reaped by its parent"
   },
   {
     "term": "admin",
@@ -22958,6 +24449,13 @@
     "context": "official",
     "reference": "",
     "comment": "adjective, lowercase first party plugin or registry badge"
+  },
+  {
+    "term": "on %1",
+    "translation": "",
+    "context": "on %1",
+    "reference": "",
+    "comment": "filesystem on an encrypted container, e.g. on LUKS2"
   },
   {
     "term": "power-profiles-daemon not available",

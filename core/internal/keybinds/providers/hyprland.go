@@ -9,7 +9,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
 	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
@@ -104,18 +106,77 @@ var luaFunctionActionPattern = regexp.MustCompile(`^(function\s*\(|[A-Za-z_][A-Z
 
 // A function or named-function action says nothing about what it does; its description does.
 func (h *HyprlandProvider) categorizeBind(kb *HyprlandKeyBinding) string {
-	if kb.Comment == "" || kb.Params != "" || !luaFunctionActionPattern.MatchString(kb.Dispatcher) {
+	if kb.Params != "" || !luaFunctionActionPattern.MatchString(kb.Dispatcher) {
 		return h.categorizeByDispatcher(kb.Dispatcher)
 	}
 	if _, known := luaActionStringFromHyprlangAction(kb.Dispatcher); known {
 		return h.categorizeByDispatcher(kb.Dispatcher)
 	}
-	return h.categorizeByDispatcher(strings.ToLower(kb.Comment))
+	if kb.Comment != "" {
+		return categorizeByWords(kb.Comment)
+	}
+	return categorizeByWords(kb.Dispatcher)
+}
+
+var hyprlandWordCategories = []struct {
+	category string
+	stems    []string
+}{
+	{"Workspace", []string{"workspace"}},
+	{"Monitor", []string{"monitor"}},
+	{"Window", []string{"window", "focus", "move", "swap", "resiz", "fullscreen", "float", "maximiz", "column"}},
+	{"System", []string{"exit", "reload", "dpms"}},
+}
+
+// Descriptions and Lua names are free text, so match word starts: "Remove notification" is not a window move.
+func categorizeByWords(text string) string {
+	words := splitCategoryWords(text)
+	for _, c := range hyprlandWordCategories {
+		for _, w := range words {
+			for _, stem := range c.stems {
+				if strings.HasPrefix(w, stem) {
+					return c.category
+				}
+			}
+		}
+	}
+	return "Other"
+}
+
+// Splits on non-alphanumerics and camelCase humps, lowercased.
+func splitCategoryWords(text string) []string {
+	var words []string
+	var cur strings.Builder
+	flush := func() {
+		if cur.Len() > 0 {
+			words = append(words, cur.String())
+			cur.Reset()
+		}
+	}
+	prevLower := false
+	for _, r := range text {
+		switch {
+		case unicode.IsUpper(r):
+			if prevLower {
+				flush()
+			}
+			cur.WriteRune(unicode.ToLower(r))
+			prevLower = false
+		case unicode.IsLetter(r) || unicode.IsDigit(r):
+			cur.WriteRune(r)
+			prevLower = true
+		default:
+			flush()
+			prevLower = false
+		}
+	}
+	flush()
+	return words
 }
 
 func (h *HyprlandProvider) categorizeByDispatcher(dispatcher string) string {
 	switch {
-	case dispatcher == "exec" || strings.HasPrefix(dispatcher, "hl.dsp.exec_cmd("):
+	case dispatcher == "exec" || dispatcher == "execr" || strings.HasPrefix(dispatcher, "hl.dsp.exec_cmd("):
 		return "Execute"
 	case strings.Contains(dispatcher, "workspace"):
 		return "Workspace"
@@ -131,6 +192,7 @@ func (h *HyprlandProvider) categorizeByDispatcher(dispatcher string) string {
 		dispatcher == "togglefloating" ||
 		dispatcher == "pin" ||
 		dispatcher == "splitratio" ||
+		dispatcher == "layoutmsg" ||
 		dispatcher == "resizeactive":
 		return "Window"
 	case dispatcher == "exit" || dispatcher == "reloadconfig" || strings.Contains(dispatcher, "dpms"):
@@ -459,7 +521,8 @@ func (h *HyprlandProvider) generateBindsContent(binds map[string]*hyprlandOverri
 	})
 
 	var sb strings.Builder
-	sb.WriteString("-- DMS user keybind overrides (edit via Control Center or dms; do not remove this header)\n\n")
+	sb.WriteString(config.DMSBindsUserLuaConfig)
+	sb.WriteString("\n")
 	for _, bind := range bindList {
 		writeLuaBindLine(&sb, bind)
 	}

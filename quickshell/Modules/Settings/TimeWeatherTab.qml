@@ -93,6 +93,16 @@ Item {
                 checked: SettingsData.padHours12Hour
                 onToggled: checked => SettingsData.set("padHours12Hour", checked)
             }
+
+            SettingsToggleRow {
+                enabled: !SettingsData.use24HourClock
+                tab: "time"
+                tags: ["time", "12hour", "format", "am", "pm", "meridiem"]
+                settingKey: "showAmPm"
+                text: I18n.tr("Show AM/PM")
+                checked: SettingsData.showAmPm
+                onToggled: checked => SettingsData.set("showAmPm", checked)
+            }
         }
 
         SettingsCard {

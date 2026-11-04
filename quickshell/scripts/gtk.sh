@@ -2,7 +2,7 @@
 
 CONFIG_DIR="$1"
 # apply: setup overrides and config dirs
-# patch: refresh overrides in adw-gtk3
+# patch: refresh overrides in adw-gtk3; exits 2 when skipped, 3 when already current
 # remove: remove all overrides
 MODE="${2:-apply}"
 IS_LIGHT="${3:-light}"
@@ -34,6 +34,14 @@ is_user_theme_dir() {
 		"$USER_DATA_THEMES"/*|"$HOME/.themes"/*) return 0 ;;
 	esac
 	return 1
+}
+
+# Patch only DMS's own copy or a theme the user ran 'apply' on (which backs it
+# up), never a user's hand-made copy that merely sits next to a dank import.
+is_patchable_theme_dir() {
+	local dir="$1"
+	is_user_theme_dir "$dir" || return 1
+	[ -f "$dir/../.dms-copy" ] || [ -f "$dir/gtk.css.dms-backup" ]
 }
 
 get_adw_gtk3_dir() {
@@ -135,10 +143,25 @@ dms_managed_css() {
 	[ -f "$gtk_css" ] && grep -q "$DANK_IMPORT_RE" "$gtk_css"
 }
 
+# Opted in when either gtk.css uses our colors, including through a user-managed
+# symlink. Must match isDMSGTKActive in core/internal/matugen.
+dank_colors_active() {
+	local config_dir="$1" gtk_css
+	for gtk_css in "$config_dir/gtk-4.0/gtk.css" "$config_dir/gtk-3.0/gtk.css"; do
+		dms_managed_css "$gtk_css" && return 0
+		grep -qs 'dank-colors\.css' "$gtk_css" && return 0
+	done
+	return 1
+}
+
 inject_dank_import() {
 	local gtk_css="$1"
 
 	if [ -L "$gtk_css" ]; then
+		if grep -qs "$DANK_IMPORT_RE" "$gtk_css"; then
+			echo "User-managed '$gtk_css' already imports dank-colors.css"
+			return 0
+		fi
 		if ! dms_managed_css "$gtk_css"; then
 			echo "Warning: '$gtk_css' is a user-managed symlink; leaving it untouched" >&2
 			echo "Import dank-colors.css from your own stylesheet to use DMS colors" >&2
@@ -190,7 +213,6 @@ remove_gtk3_colors() {
 
 	local gtk3_dir="$config_dir/gtk-3.0"
 
-	# remove global override
 	remove_dank_import "$gtk3_dir/gtk.css"
 	if [ ! -f "${gtk3_dir}/dank-colors.css" ]; then
 		echo "Nothing to remove at '${gtk3_dir}'"
@@ -202,7 +224,6 @@ remove_gtk3_colors() {
 		fi
 	fi
 
-	# remove adw-gtk3 inclusions
 	for variant in light dark; do
 		local adw_gtk3_dir && adw_gtk3_dir=$(get_adw_gtk3_dir "$variant")
 
@@ -224,12 +245,17 @@ remove_gtk3_colors() {
 do_patch() {
 	local theme_dir="$1"
 	local variant="$2"
-	if ! is_user_theme_dir "$theme_dir"; then
-		echo "Skipping '$variant' patch: no user copy of adw-gtk3 for this variant"
+	if ! is_patchable_theme_dir "$theme_dir"; then
+		echo "Skipping '$variant' patch: no DMS-managed copy of adw-gtk3 for this variant"
 		return 0
 	fi
 	local css_variant=""
 	[ "$variant" = "dark" ] && css_variant="-${variant}"
+	local theme_css="${theme_dir}/gtk${css_variant}.css"
+	if [ "$(sed -n '/\/\* BEGIN DMS OVERRIDE \*\//,/\/\* END DMS OVERRIDE \*\//p' "$theme_css" 2>/dev/null)" = "$(cat "${gtk3_dir}/dank-colors.css")" ]; then
+		return 0
+	fi
+	PATCHED=1
 	if {
 		remove_gtk3_patch "$theme_dir" "$css_variant"
 		cat "${gtk3_dir}/dank-colors.css" >>"${theme_dir}/gtk${css_variant}.css"
@@ -245,14 +271,13 @@ patch_gtk3_colors() {
 	local config_dir="$1"
 	local is_light="$2"
 
-	# Include generated colors for current variant
 	local gtk3_dir="$config_dir/gtk-3.0"
 	local variant="light"
 	[ "$is_light" = "false" ] && variant="dark"
 	local adw_gtk3_dir && adw_gtk3_dir=$(get_adw_gtk3_dir "$variant")
 
-	if ! is_user_theme_dir "$adw_gtk3_dir"; then
-		echo "No user version of adw-gtk3 ${variant} was found, skipping patch"
+	if ! is_patchable_theme_dir "$adw_gtk3_dir"; then
+		echo "No DMS-managed adw-gtk3 ${variant} was found, skipping patch"
 		exit 2
 	fi
 
@@ -262,13 +287,18 @@ patch_gtk3_colors() {
 		exit 1
 	fi
 
-	# NOTE : for adw-gtk3-dark gtk.css and gtk-dark.css are the same file
+	# adw-gtk3-dark's gtk.css is dark too, so dark mode patches both stylesheets
 	if [ "$variant" = "dark" ]; then
 		do_patch "$adw_gtk3_dir" "dark"
 		do_patch "$adw_gtk3_dir" "light"
 		do_patch "$(get_adw_gtk3_dir "light")" "dark"
 	else
 		do_patch "$adw_gtk3_dir" "light"
+	fi
+
+	if [ -z "$PATCHED" ]; then
+		echo "GTK3 colors already current"
+		exit 3
 	fi
 }
 
@@ -279,7 +309,6 @@ apply_gtk3_colors() {
 	local gtk3_override="$gtk3_dir/gtk.css"
 	ensure_user_adw_gtk3
 
-	# If no adw-gtk3 anywhere, use the global override
 	local adw_gtk3 && adw_gtk3="$(get_adw_gtk3_dir)"
 	if ! is_user_theme_dir "$adw_gtk3"; then
 		echo "Warning: No user version of adw-gtk3 found" >&2
@@ -300,7 +329,6 @@ apply_gtk3_colors() {
 	# adw-gtk3 carries the colors; ensure there's no DMS global override
 	remove_dank_import "$gtk3_override"
 
-	# Backup pristine adw-gtk3 stylesheets once
 	for variant in light dark; do
 		local adw_gtk3_dir && adw_gtk3_dir="$(get_adw_gtk3_dir "$variant")"
 		for css in gtk.css gtk-dark.css; do
@@ -347,8 +375,7 @@ apply_gtk4_colors() {
 
 case "$MODE" in
 	patch)
-		# Only refresh themes the user opted into via 'apply'
-		if ! dms_managed_css "$CONFIG_DIR/gtk-4.0/gtk.css"; then
+		if ! dank_colors_active "$CONFIG_DIR"; then
 			echo "DMS GTK theming is not applied, skipping patch"
 			exit 2
 		fi

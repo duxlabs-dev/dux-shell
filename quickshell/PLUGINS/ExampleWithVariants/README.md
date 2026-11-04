@@ -1,6 +1,6 @@
 # Example with Variants Plugin
 
-This plugin demonstrates the dynamic variant system for Dux Shell plugins.
+This plugin demonstrates the dynamic variant system for Dux Modular Shell plugins.
 
 ## What are Variants?
 

@@ -26,8 +26,8 @@ import (
 
 var updateCmd = &cobra.Command{
 	Use:     "update",
-	Short:   "Update Dux Shell to the latest version",
-	Long:    "Update Dux Shell to the latest version using the appropriate package manager for your distribution",
+	Short:   "Update Dux Modular Shell to the latest version",
+	Long:    "Update Dux Modular Shell to the latest version using the appropriate package manager for your distribution",
 	PreRunE: shellApp.ResolveConfig,
 	Run: func(cmd *cobra.Command, args []string) {
 		runUpdate()
@@ -36,7 +36,7 @@ var updateCmd = &cobra.Command{
 
 var updateCheckCmd = &cobra.Command{
 	Use:   "check",
-	Short: "Check if updates are available for Dux Shell",
+	Short: "Check if updates are available for Dux Modular Shell",
 	Long:  "Check for available updates without performing the actual update",
 	Run: func(cmd *cobra.Command, args []string) {
 		runUpdateCheck()
@@ -44,7 +44,7 @@ var updateCheckCmd = &cobra.Command{
 }
 
 func runUpdateCheck() {
-	fmt.Println("Checking for Dux Shell updates...")
+	fmt.Println("Checking for Dux Modular Shell updates...")
 	fmt.Println()
 
 	shell := sysupdate.ProbeShell(context.Background(), Version)
@@ -171,7 +171,7 @@ func updateArchLinux() error {
 		return updateOtherDistros()
 	}
 
-	fmt.Printf("This will update Dux Shell using %s.\n", helper)
+	fmt.Printf("This will update Dux Modular Shell using %s.\n", helper)
 	if !confirmUpdate() {
 		return errdefs.ErrUpdateCancelled
 	}
@@ -226,7 +226,7 @@ func updateOtherDistros() error {
 
 	fmt.Println("\nThis will update:")
 	fmt.Println("  1. The dms binary from GitHub releases")
-	fmt.Println("  2. Dux Shell configuration using git")
+	fmt.Println("  2. Dux Modular Shell configuration using git")
 	if !confirmUpdate() {
 		return errdefs.ErrUpdateCancelled
 	}

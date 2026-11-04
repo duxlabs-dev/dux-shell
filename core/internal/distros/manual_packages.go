@@ -57,7 +57,7 @@ func (m *ManualPackageInstaller) InstallManualPackages(ctx context.Context, pack
 		switch pkg {
 		case "dms (Dux Shell)", "dms":
 			if err := m.installDankMaterialShell(ctx, variant, sudoPassword, progressChan); err != nil {
-				return fmt.Errorf("failed to install Dux Shell: %w", err)
+				return fmt.Errorf("failed to install Dux Modular Shell: %w", err)
 			}
 		case "niri":
 			if err := m.installNiri(ctx, sudoPassword, progressChan); err != nil {
@@ -442,7 +442,7 @@ func (m *ManualPackageInstaller) installMatugen(ctx context.Context, sudoPasswor
 }
 
 func (m *ManualPackageInstaller) installDankMaterialShell(ctx context.Context, variant deps.PackageVariant, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
-	m.log("Installing Dux Shell (DMS)...")
+	m.log("Installing Dux Modular Shell (DMS)...")
 
 	if err := m.installDMSBinary(ctx, sudoPassword, progressChan); err != nil {
 		m.logError("Failed to install DMS binary", err)
@@ -454,7 +454,7 @@ func (m *ManualPackageInstaller) installDankMaterialShell(ctx context.Context, v
 		progressChan <- InstallProgressMsg{
 			Phase:       PhaseSystemPackages,
 			Progress:    0.90,
-			Step:        "Cloning Dux Shell...",
+			Step:        "Cloning Dux Modular Shell...",
 			IsComplete:  false,
 			CommandInfo: "git clone --recurse-submodules https://github.com/duxlabs-dev/dux-shell.git",
 		}
@@ -467,7 +467,7 @@ func (m *ManualPackageInstaller) installDankMaterialShell(ctx context.Context, v
 		cloneCmd := exec.CommandContext(ctx, "git", "clone", "--recurse-submodules",
 			"https://github.com/duxlabs-dev/dux-shell.git", dmsPath)
 		if err := cloneCmd.Run(); err != nil {
-			return fmt.Errorf("failed to clone Dux Shell: %w", err)
+			return fmt.Errorf("failed to clone Dux Modular Shell: %w", err)
 		}
 
 		if forceDMSGit || variant == deps.VariantGit {
@@ -492,14 +492,14 @@ func (m *ManualPackageInstaller) installDankMaterialShell(ctx context.Context, v
 		m.syncDMSSubmodules(ctx, dmsPath)
 
 		m.log(fmt.Sprintf("Checked out latest tag: %s", latestTag))
-		m.log("Dux Shell cloned successfully")
+		m.log("Dux Modular Shell cloned successfully")
 		return nil
 	}
 
 	progressChan <- InstallProgressMsg{
 		Phase:       PhaseSystemPackages,
 		Progress:    0.90,
-		Step:        "Updating Dux Shell...",
+		Step:        "Updating Dux Modular Shell...",
 		IsComplete:  false,
 		CommandInfo: "Updating ~/.config/quickshell/dms",
 	}
@@ -531,7 +531,7 @@ func (m *ManualPackageInstaller) installDankMaterialShell(ctx context.Context, v
 
 		m.syncDMSSubmodules(ctx, dmsPath)
 
-		m.log("Dux Shell updated successfully (git variant)")
+		m.log("Dux Modular Shell updated successfully (git variant)")
 		return nil
 	}
 

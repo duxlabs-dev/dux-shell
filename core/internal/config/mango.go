@@ -13,3 +13,6 @@ var MangoLayoutConfig string
 
 //go:embed embedded/mango-binds.conf
 var MangoBindsConfig string
+
+//go:embed embedded/mango.toml
+var MangoTOMLConfig string

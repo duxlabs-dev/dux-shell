@@ -82,6 +82,7 @@ Singleton {
     readonly property string _homeUrl: StandardPaths.writableLocation(StandardPaths.HomeLocation)
     readonly property string _configUrl: StandardPaths.writableLocation(StandardPaths.ConfigLocation)
     readonly property string _configDir: Paths.strip(_configUrl)
+    readonly property string _iconThemeBackup: _configDir + "/gtk-3.0/icon-theme.dms-backup"
     readonly property string pluginSettingsPath: _configDir + "/dms/plugin_settings.json"
     readonly property bool qtengineActive: Quickshell.env("QT_QPA_PLATFORMTHEME") === "qtengine" || Quickshell.env("QT_QPA_PLATFORMTHEME_QT6") === "qtengine"
 
@@ -230,6 +231,9 @@ Singleton {
     property bool hyprlandWobbleEnabled: Spec.SPEC.hyprlandWobbleEnabled.def
     property int hyprlandWobbleIntensity: Spec.SPEC.hyprlandWobbleIntensity.def
     property int hyprlandWobbleStiffness: Spec.SPEC.hyprlandWobbleStiffness.def
+    property int hyprlandWobbleDamping: Spec.SPEC.hyprlandWobbleDamping.def
+    property int hyprlandWobbleMass: Spec.SPEC.hyprlandWobbleMass.def
+    property int hyprlandWobbleMesh: Spec.SPEC.hyprlandWobbleMesh.def
     property bool hyprlandMotionBlurEnabled: Spec.SPEC.hyprlandMotionBlurEnabled.def
     property int hyprlandMotionBlurSamples: Spec.SPEC.hyprlandMotionBlurSamples.def
     property bool hyprlandGroupbarBlur: Spec.SPEC.hyprlandGroupbarBlur.def
@@ -304,6 +308,7 @@ Singleton {
     readonly property bool use24HourClock: clockFormat === "24h" ? true : (clockFormat === "12h" ? false : localeUses24Hour)
     property bool showSeconds: Spec.SPEC.showSeconds.def
     property bool padHours12Hour: Spec.SPEC.padHours12Hour.def
+    property bool showAmPm: Spec.SPEC.showAmPm.def
     property bool useFahrenheit: Spec.SPEC.useFahrenheit.def
     property string windSpeedUnit: Spec.SPEC.windSpeedUnit.def
     property int animationDuration: Spec.SPEC.animationDuration.def
@@ -509,6 +514,7 @@ Singleton {
     readonly property string weatherCoordinates: SessionData.weatherCoordinates
     property bool useAutoLocation: Spec.SPEC.useAutoLocation.def
     property bool weatherEnabled: Spec.SPEC.weatherEnabled.def
+    property var weatherProviders: Spec.SPEC.weatherProviders.def
 
     readonly property var _dashTabsDefault: [
         {
@@ -880,6 +886,8 @@ Singleton {
     property int notificationPopupPosition: SettingsData.Position.Top
     property int notificationAnimationDuration: Spec.SPEC.notificationAnimationDuration.def
     property bool notificationHistoryEnabled: Spec.SPEC.notificationHistoryEnabled.def
+    property string notificationLeadingShortcut: Spec.SPEC.notificationLeadingShortcut.def
+    property string notificationTrailingShortcut: Spec.SPEC.notificationTrailingShortcut.def
     property int notificationHistoryMaxCount: Spec.SPEC.notificationHistoryMaxCount.def
     property int notificationHistoryMaxAgeDays: Spec.SPEC.notificationHistoryMaxAgeDays.def
     property bool notificationHistorySaveLow: Spec.SPEC.notificationHistorySaveLow.def
@@ -1101,6 +1109,7 @@ Singleton {
     property bool osdCapsLockEnabled: Spec.SPEC.osdCapsLockEnabled.def
     property bool osdNumLockEnabled: Spec.SPEC.osdNumLockEnabled.def
     property bool osdKeyboardLayoutEnabled: Spec.SPEC.osdKeyboardLayoutEnabled.def
+    property bool osdInputMethodEnabled: Spec.SPEC.osdInputMethodEnabled.def
     property bool osdTouchpadEnabled: Spec.SPEC.osdTouchpadEnabled.def
     property bool osdPowerProfileEnabled: Spec.SPEC.osdPowerProfileEnabled.def
     property bool osdAudioOutputEnabled: Spec.SPEC.osdAudioOutputEnabled.def
@@ -1481,9 +1490,33 @@ Singleton {
     }
 
     function applyStoredIconTheme() {
-        updateGtkIconTheme();
-        updateQtIconTheme();
-        updateCosmicIconTheme();
+        if (resolveIconTheme() !== "System Default") {
+            updateGtkIconTheme();
+            updateQtIconTheme();
+            updateCosmicIconTheme();
+            return;
+        }
+        restoreIconTheme();
+    }
+
+    function _shellQuote(arg) {
+        return "'" + String(arg).replace(/'/g, "'\\''") + "'";
+    }
+
+    // Hand back the theme DMS replaced, unless something else changed it since.
+    function restoreIconTheme() {
+        const current = GSettings.getCmd("org.gnome.desktop.interface", "icon-theme");
+        const script = `b=${_shellQuote(_iconThemeBackup)}; cur=$(${current}); if saved=$(cat "$b" 2>/dev/null); then rm -f "$b"; [ "$cur" = ${_shellQuote(SessionData.lastAppliedIconTheme)} ] && { printf 'restore:%s' "$saved"; exit 0; }; fi; printf '%s' "$cur"`;
+        Proc.runCommand("restoreIconTheme", ["sh", "-c", script], output => {
+            const out = (output || "").trim();
+            const restored = out.startsWith("restore:") ? out.substring(8) : "";
+            const theme = restored || out;
+            if (theme)
+                root.systemDefaultIconTheme = theme;
+            root.updateGtkIconTheme();
+            root.updateQtIconTheme(restored);
+            root.updateCosmicIconTheme();
+        });
     }
 
     function setIconThemeUnmanaged() {
@@ -1579,7 +1612,17 @@ Singleton {
 
     function updateGtkIconTheme() {
         const resolved = resolveIconTheme();
-        const gtkThemeName = (resolved === "System Default") ? systemDefaultIconTheme : resolved;
+        if (resolved === "System Default") {
+            _writeGtkIconTheme(systemDefaultIconTheme);
+            return;
+        }
+        // The portal write in _writeGtkIconTheme lands before its script, so back up first.
+        const current = GSettings.getCmd("org.gnome.desktop.interface", "icon-theme");
+        const backup = `b=${_shellQuote(_iconThemeBackup)}; [ -e "$b" ] && exit 0; cur=$(${current}); case "$cur" in ''|${_shellQuote(resolved)}) ;; *) mkdir -p "$(dirname "$b")" && printf '%s\\n' "$cur" > "$b" ;; esac`;
+        Proc.runCommand("backupIconTheme", ["sh", "-c", backup], () => root._writeGtkIconTheme(resolved));
+    }
+
+    function _writeGtkIconTheme(gtkThemeName) {
         if (gtkThemeName === "System Default" || gtkThemeName === "")
             return;
         SessionData.lastAppliedIconTheme = gtkThemeName;
@@ -1613,8 +1656,8 @@ Singleton {
         Quickshell.execDetached(["sh", "-lc", configScript]);
     }
 
-    function updateQtIconTheme() {
-        const resolved = resolveIconTheme();
+    function updateQtIconTheme(restored) {
+        const resolved = restored || resolveIconTheme();
         const qtThemeName = (resolved === "System Default") ? "" : resolved;
         if (!qtThemeName)
             return;
@@ -2278,11 +2321,10 @@ Singleton {
     }
 
     function getEffectiveTimeFormat() {
+        const seconds = showSeconds ? ":ss" : "";
         if (use24HourClock)
-            return showSeconds ? "hh:mm:ss" : "hh:mm";
-        if (padHours12Hour)
-            return showSeconds ? "hh:mm:ss AP" : "hh:mm AP";
-        return showSeconds ? "h:mm:ss AP" : "h:mm AP";
+            return "hh:mm" + seconds;
+        return (padHours12Hour ? "hh" : "h") + ":mm" + seconds + (showAmPm ? " AP" : "");
     }
 
     function getEffectiveDateFormat(fallback) {
@@ -2750,11 +2792,11 @@ Singleton {
             return [];
         }
         if (!prefs || prefs.length === 0 || prefs.includes("all") || (typeof prefs[0] === "string" && prefs[0] === "all")) {
-            return Quickshell.screens;
+            return ShellLayout.realScreens;
         }
-        var filtered = Quickshell.screens.filter(screen => isScreenInPreferences(screen, prefs));
-        if (filtered.length === 0 && showOnLastDisplay && showOnLastDisplay[componentId] && Quickshell.screens.length === 1) {
-            return Quickshell.screens;
+        var filtered = ShellLayout.realScreens.filter(screen => isScreenInPreferences(screen, prefs));
+        if (filtered.length === 0 && showOnLastDisplay && showOnLastDisplay[componentId] && ShellLayout.realScreens.length === 1) {
+            return ShellLayout.realScreens;
         }
         return filtered;
     }

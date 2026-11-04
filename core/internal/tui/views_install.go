@@ -207,7 +207,7 @@ func (m Model) troubleshootingHints() (autostart, logs string) {
 		case deps.WindowManagerHyprland:
 			autostart = `remove hl.exec_cmd("dms run") from ~/.config/hypr/hyprland.lua`
 		default:
-			autostart = "remove 'exec_once=dms run' from ~/.config/mango/config.conf"
+			autostart = mangoAutostartHint()
 		}
 		return autostart, logs
 	}
@@ -216,9 +216,16 @@ func (m Model) troubleshootingHints() (autostart, logs string) {
 		if mangoconf.SessionTargetInstalled() {
 			return "rm ~/.config/systemd/user/mango-session.target.wants/dms.service", "journalctl --user -u dms"
 		}
-		return "remove 'exec_once=dms run' from ~/.config/mango/config.conf", "qs -p ~/.config/quickshell/dms log"
+		return mangoAutostartHint(), "qs -p ~/.config/quickshell/dms log"
 	}
 	return "systemctl --user disable dms", "journalctl --user -u dms"
+}
+
+func mangoAutostartHint() string {
+	if mangoconf.IsTOML(mangoconf.MainConfig(mangoconf.Dir())) {
+		return `remove exec_once = "dms run" from ~/.config/mango/config.toml`
+	}
+	return "remove 'exec_once=dms run' from ~/.config/mango/config.conf"
 }
 
 func (m Model) viewInstallComplete() string {
@@ -233,7 +240,7 @@ func (m Model) viewInstallComplete() string {
 		"• Window manager and dependencies installed",
 		"• Terminal and development tools configured",
 		"• Configuration files deployed with backups",
-		"• System optimized for Dux Shell",
+		"• System optimized for Dux Modular Shell",
 	}
 	if m.isImmutable() {
 		summary = "✓ Configurations deployed. No packages were changed on this image."

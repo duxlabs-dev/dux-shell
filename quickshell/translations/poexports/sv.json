@@ -23,6 +23,12 @@
   "%1 Startup Failed": {
     "%1 Startup Failed": ""
   },
+  "%1 VRAM": {
+    "%1 VRAM": ""
+  },
+  "%1 active": {
+    "%1 active": ""
+  },
   "%1 active session": {
     "%1 active session": "%1 aktiv session"
   },
@@ -62,6 +68,9 @@
   "%1 connected": {
     "%1 connected": "%1 ansluten"
   },
+  "%1 cores, %2 threads": {
+    "%1 cores, %2 threads": ""
+  },
   "%1 day": {
     "%1 day": ""
   },
@@ -79,6 +88,9 @@
   },
   "%1 displays": {
     "%1 displays": "%1 bildskärmar"
+  },
+  "%1 errors, %2 warnings": {
+    "%1 errors, %2 warnings": ""
   },
   "%1 features": {
     "%1 features": ""
@@ -134,6 +146,9 @@
   "%1 jobs": {
     "%1 jobs": ""
   },
+  "%1 keeps your desktop running. Ending it will likely break your session. If it misbehaves, restarting it is the safer fix.": {
+    "%1 keeps your desktop running. Ending it will likely break your session. If it misbehaves, restarting it is the safer fix.": ""
+  },
   "%1 limit reached": {
     "%1 limit reached": ""
   },
@@ -167,6 +182,9 @@
   "%1 notifications": {
     "%1 notifications": "%1 notiser"
   },
+  "%1 of %2 used": {
+    "%1 of %2 used": ""
+  },
   "%1 online": {
     "%1 online": ""
   },
@@ -191,6 +209,12 @@
   "%1 printers": {
     "%1 printers": ""
   },
+  "%1 process": {
+    "%1 process": ""
+  },
+  "%1 processes": {
+    "%1 processes": ""
+  },
   "%1 procs": {
     "%1 procs": ""
   },
@@ -212,6 +236,9 @@
   "%1 updates": {
     "%1 updates": "%1 uppdateringar"
   },
+  "%1 used": {
+    "%1 used": ""
+  },
   "%1 variants": {
     "%1 variants": "%1 varianter"
   },
@@ -232,6 +259,9 @@
   },
   "%1 windows": {
     "%1 windows": "%1 fönster"
+  },
+  "%1 years": {
+    "%1 years": ""
   },
   "%1: %2": {
     "%1: %2": ""
@@ -268,6 +298,9 @@
   },
   "+%1 conditions": {
     "+%1 conditions": ""
+  },
+  "0 stops the animation and saves GPU": {
+    "0 stops the animation and saves GPU": ""
   },
   "1 hour before": {
     "1 hour before": ""
@@ -308,6 +341,9 @@
   "A notification must match every condition": {
     "A notification must match every condition": ""
   },
+  "A tiled or fullscreen window dragged into floating centers on the cursor": {
+    "A tiled or fullscreen window dragged into floating centers on the cursor": ""
+  },
   "A user with that name already exists.": {
     "A user with that name already exists.": ""
   },
@@ -328,6 +364,9 @@
   },
   "About": {
     "About": "Om"
+  },
+  "Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.": {
+    "Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.": ""
   },
   "Acceleration profile": {
     "Acceleration profile": ""
@@ -497,8 +536,14 @@
   "Adds them to the %1 group so they can use sudo": {
     "Adds them to the %1 group so they can use sudo": ""
   },
+  "Adjustment": {
+    "Adjustment": ""
+  },
   "Administrator access is required. Press Apply changes in Settings → Greeter.": {
     "Administrator access is required. Press Apply changes in Settings → Greeter.": ""
+  },
+  "Advance when a video ends": {
+    "Advance when a video ends": ""
   },
   "Advanced": {
     "Advanced": "Avancerat"
@@ -569,6 +614,9 @@
   "Allow in Do Not Disturb": {
     "Allow in Do Not Disturb": ""
   },
+  "Allowed cores": {
+    "Allowed cores": ""
+  },
   "Already on that session": {
     "Already on that session": ""
   },
@@ -586,6 +634,9 @@
   },
   "Alt + Shift": {
     "Alt + Shift": ""
+  },
+  "Alt + Shift shortcuts in apps and keybinds stop working.": {
+    "Alt + Shift shortcuts in apps and keybinds stop working.": ""
   },
   "Alternative (OR)": {
     "Alternative (OR)": "Alternativ (ELLER)"
@@ -643,6 +694,9 @@
   },
   "Animations": {
     "Animations": ""
+  },
+  "Anonymous": {
+    "Anonymous": ""
   },
   "Anonymous Identity": {
     "Anonymous Identity": "Anonym identitet"
@@ -770,9 +824,6 @@
   "Arc extender": {
     "Arc extender": ""
   },
-  "Architecture": {
-    "Architecture": "Arkitektur"
-  },
   "Archive manager": {
     "Archive manager": ""
   },
@@ -790,6 +841,9 @@
   },
   "Artwork": {
     "Artwork": ""
+  },
+  "Asleep": {
+    "Asleep": ""
   },
   "At least one output must remain enabled": {
     "At least one output must remain enabled": ""
@@ -1001,6 +1055,9 @@
   "Avatar ring": {
     "Avatar ring": ""
   },
+  "BIOS": {
+    "BIOS": ""
+  },
   "Backend": {
     "Backend": "Bakgrundstjänst"
   },
@@ -1072,6 +1129,9 @@
   },
   "Bars": {
     "Bars": ""
+  },
+  "Base clock": {
+    "Base clock": ""
   },
   "Battery": {
     "Battery": "Batteri"
@@ -1154,6 +1214,9 @@
   "Blur against the wallpaper even with xray off": {
     "Blur against the wallpaper even with xray off": ""
   },
+  "Blur follows opacity": {
+    "Blur follows opacity": ""
+  },
   "Blur layer": {
     "Blur layer": ""
   },
@@ -1166,6 +1229,9 @@
   "Blurred surfaces show the wallpaper, not the windows beneath": {
     "Blurred surfaces show the wallpaper, not the windows beneath": ""
   },
+  "Board": {
+    "Board": ""
+  },
   "Body": {
     "Body": "Brödtext"
   },
@@ -1174,6 +1240,9 @@
   },
   "Body font size": {
     "Body font size": ""
+  },
+  "Boot": {
+    "Boot": ""
   },
   "Boot entry changed. Remove it and add it again.": {
     "Boot entry changed. Remove it and add it again.": ""
@@ -1195,6 +1264,9 @@
   },
   "Both": {
     "Both": ""
+  },
+  "Both Shift keys": {
+    "Both Shift keys": ""
   },
   "Bottom": {
     "Bottom": "Nederkant"
@@ -1262,6 +1334,9 @@
   "Built-in plugins": {
     "Built-in plugins": ""
   },
+  "Busy": {
+    "Busy": ""
+  },
   "Button areas": {
     "Button areas": ""
   },
@@ -1279,6 +1354,9 @@
   },
   "CPU temperature display": {
     "CPU temperature display": "Visa CPU-temperaturen"
+  },
+  "CPU time": {
+    "CPU time": ""
   },
   "CPU usage": {
     "CPU usage": ""
@@ -1303,6 +1381,12 @@
   },
   "CUPS printers, jobs and classes": {
     "CUPS printers, jobs and classes": ""
+  },
+  "Cable errors": {
+    "Cable errors": ""
+  },
+  "Cached": {
+    "Cached": ""
   },
   "Calendar": {
     "Calendar": ""
@@ -1382,6 +1466,9 @@
   "Center Tiling": {
     "Center Tiling": "Kakla i center"
   },
+  "Center dragged windows": {
+    "Center dragged windows": ""
+  },
   "Center section": {
     "Center section": ""
   },
@@ -1406,6 +1493,9 @@
   "Channel": {
     "Channel": "Kanal"
   },
+  "Channels": {
+    "Channels": ""
+  },
   "Charge Limit Reached": {
     "Charge Limit Reached": ""
   },
@@ -1426,6 +1516,9 @@
   },
   "Chart": {
     "Chart": ""
+  },
+  "Chassis": {
+    "Chassis": ""
   },
   "Cheatsheet": {
     "Cheatsheet": ""
@@ -1544,6 +1637,9 @@
   "Click Import to add a %1 or %2 file": {
     "Click Import to add a %1 or %2 file": ""
   },
+  "Click action": {
+    "Click action": ""
+  },
   "Click actions": {
     "Click actions": ""
   },
@@ -1634,6 +1730,9 @@
   "Codec switching is unavailable. WirePlumber wpexec was not found.": {
     "Codec switching is unavailable. WirePlumber wpexec was not found.": ""
   },
+  "Codename": {
+    "Codename": ""
+  },
   "Collapse": {
     "Collapse": ""
   },
@@ -1712,6 +1811,9 @@
   "Commands": {
     "Commands": "Kommandon"
   },
+  "Committed": {
+    "Committed": ""
+  },
   "Community": {
     "Community": ""
   },
@@ -1735,6 +1837,9 @@
   },
   "Compositor and shell key bindings": {
     "Compositor and shell key bindings": ""
+  },
+  "Compression": {
+    "Compression": ""
   },
   "Config Format": {
     "Config Format": "Konfigurationsformat"
@@ -1820,8 +1925,14 @@
   "Connecting...": {
     "Connecting...": "Ansluter..."
   },
+  "Connection": {
+    "Connection": ""
+  },
   "Connection failed": {
     "Connection failed": "Anslutning misslyckades"
+  },
+  "Connections": {
+    "Connections": ""
   },
   "Connections and autoconnect": {
     "Connections and autoconnect": ""
@@ -1832,6 +1943,9 @@
   "Consumes the key only when a dispatcher runs": {
     "Consumes the key only when a dispatcher runs": ""
   },
+  "Container": {
+    "Container": ""
+  },
   "Container saturation": {
     "Container saturation": ""
   },
@@ -1840,6 +1954,9 @@
   },
   "Content": {
     "Content": "Innehåll"
+  },
+  "Context switches": {
+    "Context switches": ""
   },
   "Contrast": {
     "Contrast": "Kontrast"
@@ -1850,6 +1967,9 @@
   "Control Center": {
     "Control Center": "Kontrollcenter"
   },
+  "Control group": {
+    "Control group": ""
+  },
   "Controls": {
     "Controls": ""
   },
@@ -1858,6 +1978,9 @@
   },
   "Convert to DMS": {
     "Convert to DMS": ""
+  },
+  "Convertible": {
+    "Convertible": ""
   },
   "Cooldown": {
     "Cooldown": "Nedkylningstid"
@@ -1892,8 +2015,20 @@
   "Copy Text": {
     "Copy Text": "Kopiera text"
   },
+  "Copy report": {
+    "Copy report": ""
+  },
+  "Copy summary": {
+    "Copy summary": ""
+  },
   "Copy target (%1)": {
     "Copy target (%1)": ""
+  },
+  "Core clock": {
+    "Core clock": ""
+  },
+  "Cores": {
+    "Cores": ""
   },
   "Corner radius": {
     "Corner radius": ""
@@ -1961,17 +2096,14 @@
   "Critical threshold": {
     "Critical threshold": ""
   },
-  "Ctrl + Shift": {
-    "Ctrl + Shift": ""
+  "Critical warning": {
+    "Critical warning": ""
   },
   "Ctrl+%1 is used for password editing": {
     "Ctrl+%1 is used for password editing": ""
   },
   "Current": {
     "Current": "Aktuell"
-  },
-  "Current (%1)": {
-    "Current (%1)": ""
   },
   "Current Items": {
     "Current Items": "Aktuella objekt"
@@ -1984,6 +2116,9 @@
   },
   "Current display": {
     "Current display": ""
+  },
+  "Current pending sectors": {
+    "Current pending sectors": ""
   },
   "Current period": {
     "Current period": ""
@@ -2117,6 +2252,9 @@
   "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": {
     "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": ""
   },
+  "Daemon": {
+    "Daemon": ""
+  },
   "Daily": {
     "Daily": "Dagligen"
   },
@@ -2156,8 +2294,17 @@
   "Darkest": {
     "Darkest": ""
   },
+  "Dash card": {
+    "Dash card": ""
+  },
+  "Dash tab": {
+    "Dash tab": ""
+  },
   "Dashboard": {
     "Dashboard": ""
+  },
+  "Dashboard tabs": {
+    "Dashboard tabs": ""
   },
   "Date": {
     "Date": ""
@@ -2297,6 +2444,9 @@
   "Description": {
     "Description": "Beskrivning"
   },
+  "Desktop": {
+    "Desktop": ""
+  },
   "Desktop Entry": {
     "Desktop Entry": "Skrivbordspost"
   },
@@ -2308,6 +2458,9 @@
   },
   "Desktop widgets": {
     "Desktop widgets": ""
+  },
+  "Details": {
+    "Details": ""
   },
   "Details for \"%1": {
     "Details for \"%1\"": "Detaljer för \"%1\""
@@ -2345,9 +2498,6 @@
   "Dim": {
     "Dim": ""
   },
-  "Direct path to a .xkb keymap file. Overrides layouts/variants above.": {
-    "Direct path to a .xkb keymap file. Overrides layouts/variants above.": ""
-  },
   "Direction": {
     "Direction": ""
   },
@@ -2360,8 +2510,17 @@
   "Directory": {
     "Directory": ""
   },
+  "Disable": {
+    "Disable": ""
+  },
+  "Disable %1?": {
+    "Disable %1?": ""
+  },
   "Disable autoconnect": {
     "Disable autoconnect": ""
+  },
+  "Disable card": {
+    "Disable card": ""
   },
   "Disable output": {
     "Disable output": ""
@@ -2377,6 +2536,9 @@
   },
   "Disabled": {
     "Disabled": "Avaktiverat"
+  },
+  "Disabled (%1)": {
+    "Disabled (%1)": ""
   },
   "Disabled by Auto": {
     "Disabled by Auto": ""
@@ -2426,14 +2588,17 @@
   "Disk": {
     "Disk": "Disk"
   },
-  "Disk I/O": {
-    "Disk I/O": "Disk-I/O"
+  "Disk read": {
+    "Disk read": ""
   },
   "Disk usage": {
     "Disk usage": ""
   },
   "Disk usage format": {
     "Disk usage format": ""
+  },
+  "Disk write": {
+    "Disk write": ""
   },
   "Disks": {
     "Disks": "Diskar"
@@ -2569,6 +2734,9 @@
   },
   "Down": {
     "Down": ""
+  },
+  "Download": {
+    "Download": ""
   },
   "Drag": {
     "Drag": ""
@@ -2738,6 +2906,9 @@
   "Education": {
     "Education": "Utbildning"
   },
+  "Elevated": {
+    "Elevated": ""
+  },
   "Empty": {
     "Empty": "Tom"
   },
@@ -2755,6 +2926,9 @@
   },
   "Enable autoconnect": {
     "Enable autoconnect": ""
+  },
+  "Enable card": {
+    "Enable card": ""
   },
   "Enable plugin to access settings": {
     "Enable plugin to access settings": ""
@@ -2776,6 +2950,9 @@
   },
   "End must be after start": {
     "End must be after start": ""
+  },
+  "End process tree": {
+    "End process tree": ""
   },
   "Enter 6-digit passkey": {
     "Enter 6-digit passkey": "Ange 6-siffrig lösenkod"
@@ -2867,6 +3044,9 @@
   "Every hour": {
     "Every hour": "Varje timme"
   },
+  "Every output and input of this sound card turns off until you enable it again": {
+    "Every output and input of this sound card turns off until you enable it again": ""
+  },
   "Exact": {
     "Exact": "Exakt"
   },
@@ -2878,6 +3058,9 @@
   },
   "Exclusive zone offset": {
     "Exclusive zone offset": ""
+  },
+  "Executable": {
+    "Executable": ""
   },
   "Exit node": {
     "Exit node": ""
@@ -3092,6 +3275,9 @@
   "Failed to remove keybind": {
     "Failed to remove keybind": "Misslyckades med att ta bort kortkommando"
   },
+  "Failed to restart %1": {
+    "Failed to restart %1": ""
+  },
   "Failed to restart audio system": {
     "Failed to restart audio system": "Misslyckades med att starta om ljudsystemet"
   },
@@ -3170,6 +3356,9 @@
   "Failed to toggle cellular": {
     "Failed to toggle cellular": ""
   },
+  "Failed to unlock": {
+    "Failed to unlock": ""
+  },
   "Failed to unpin entry": {
     "Failed to unpin entry": "Misslyckades med att ta bort fästning av post"
   },
@@ -3203,6 +3392,9 @@
   "Family": {
     "Family": ""
   },
+  "Fan": {
+    "Fan": ""
+  },
   "Featured plugin": {
     "Featured plugin": ""
   },
@@ -3229,6 +3421,9 @@
   },
   "File the command writes; leave empty to read stdout": {
     "File the command writes; leave empty to read stdout": ""
+  },
+  "File-backed": {
+    "File-backed": ""
   },
   "Files": {
     "Files": "Filer"
@@ -3286,6 +3481,9 @@
   },
   "Fires with any modifiers held": {
     "Fires with any modifiers held": ""
+  },
+  "Firmware": {
+    "Firmware": ""
   },
   "Firmware setup": {
     "Firmware setup": ""
@@ -3455,11 +3653,11 @@
   "For you": {
     "For you": ""
   },
+  "Force": {
+    "Force": ""
+  },
   "Force HDR": {
     "Force HDR": "Tvinga HDR"
-  },
-  "Force Kill (SIGKILL)": {
-    "Force Kill (SIGKILL)": "Tvångsavsluta (SIGKILL)"
   },
   "Force RGBX": {
     "Force RGBX": ""
@@ -3469,6 +3667,9 @@
   },
   "Force padding": {
     "Force padding": ""
+  },
+  "Force quit": {
+    "Force quit": ""
   },
   "Force split": {
     "Force split": ""
@@ -3502,6 +3703,9 @@
   },
   "Forgot network %1": {
     "Forgot network %1": "Glömde nätverket %1"
+  },
+  "Form factor": {
+    "Form factor": ""
   },
   "Format": {
     "Format": ""
@@ -3539,6 +3743,9 @@
   "Full": {
     "Full": ""
   },
+  "Full SMART report": {
+    "Full SMART report": ""
+  },
   "Full content": {
     "Full content": ""
   },
@@ -3575,6 +3782,9 @@
   "GPU Monitoring": {
     "GPU Monitoring": "Grafikkorts­övervakning"
   },
+  "GPU hotspot temperature": {
+    "Hotspot": ""
+  },
   "GPU temperature": {
     "GPU temperature": ""
   },
@@ -3586,6 +3796,9 @@
   },
   "GTK colors applied successfully": {
     "GTK colors applied successfully": ""
+  },
+  "GTK theme": {
+    "GTK theme": ""
   },
   "GTK, Qt, portal, matugen templates": {
     "GTK, Qt, portal, matugen templates": ""
@@ -3671,6 +3884,9 @@
   "Goth corners": {
     "Goth corners": ""
   },
+  "Governor": {
+    "Governor": ""
+  },
   "Grant": {
     "Grant": ""
   },
@@ -3688,6 +3904,9 @@
   },
   "Graphics": {
     "Graphics": "Grafik"
+  },
+  "Graphics driver": {
+    "Graphics driver": ""
   },
   "Green": {
     "Green": ""
@@ -3752,14 +3971,23 @@
   "HTML copied to clipboard": {
     "HTML copied to clipboard": "HTML kopierat till urklipp"
   },
+  "Hardware": {
+    "Hardware": ""
+  },
   "Haze": {
     "Haze": ""
+  },
+  "Head load cycles": {
+    "Head load cycles": ""
   },
   "Health": {
     "Health": "Hälsa"
   },
   "Health %1": {
     "Health %1": ""
+  },
+  "Healthy": {
+    "Healthy": ""
   },
   "Heat shimmer": {
     "Heat shimmer": ""
@@ -3869,6 +4097,9 @@
   "Higher providers take priority. Turn all off to use local lyrics only.": {
     "Higher providers take priority. Turn all off to use local lyrics only.": ""
   },
+  "Higher values flex more smoothly and cost more GPU": {
+    "Higher values flex more smoothly and cost more GPU": ""
+  },
   "Highlight focused app": {
     "Highlight focused app": ""
   },
@@ -3877,9 +4108,6 @@
   },
   "History": {
     "History": "Historik"
-  },
-  "History (%1)": {
-    "History (%1)": ""
   },
   "History cleared. %1 pinned entries kept.": {
     "History cleared. %1 pinned entries kept.": "Historiken rensad. %1 fästa poster behållna."
@@ -3962,9 +4190,6 @@
   "Hyprland Options": {
     "Hyprland Options": "Hyprland-alternativ"
   },
-  "Hyprland conf mode": {
-    "Hyprland conf mode": ""
-  },
   "Hyprland conf mode is read-only in Settings": {
     "Hyprland conf mode is read-only in Settings": ""
   },
@@ -3976,6 +4201,12 @@
   },
   "I Understand": {
     "I Understand": "Jag förstår"
+  },
+  "I/O priority": {
+    "I/O priority": ""
+  },
+  "I/O scheduler": {
+    "I/O scheduler": ""
   },
   "ICC Error": {
     "ICC Error": ""
@@ -3994,6 +4225,9 @@
   },
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": ""
+  },
+  "IPv6": {
+    "IPv6": ""
   },
   "ISO date": {
     "ISO date": ""
@@ -4042,6 +4276,9 @@
   },
   "If autostart app icons don't appear in the system tray, generate a systemd override to ensure DMS starts before autostart apps": {
     "If autostart app icons don't appear in the system tray, generate a systemd override to ensure DMS starts before autostart apps": ""
+  },
+  "Ignore": {
+    "Ignore": ""
   },
   "Ignore Completely": {
     "Ignore Completely": "Ignorera helt"
@@ -4148,6 +4385,9 @@
   "Inhibitable": {
     "Inhibitable": "Kan inhiberas"
   },
+  "Init": {
+    "Init": ""
+  },
   "Initial class": {
     "Initial class": ""
   },
@@ -4187,6 +4427,9 @@
   "Input devices": {
     "Input devices": ""
   },
+  "Input method": {
+    "Input method": ""
+  },
   "Insert your security key...": {
     "Insert your security key...": "Sätt i din säkerhetsnyckel..."
   },
@@ -4213,6 +4456,9 @@
   },
   "Install plugin '%1' from the DMS registry?": {
     "Install plugin '%1' from the DMS registry?": "Installera tillägget '%1' från DMS-registret?"
+  },
+  "Install smartmontools": {
+    "Install smartmontools": ""
   },
   "Install system updates?": {
     "Install system updates?": ""
@@ -4307,6 +4553,9 @@
   "Isolate displays": {
     "Isolate displays": ""
   },
+  "It runs in a terminal; restart it from there.": {
+    "It runs in a terminal; restart it from there.": ""
+  },
   "Italic": {
     "Italic": ""
   },
@@ -4333,6 +4582,9 @@
   },
   "Keep clock with media": {
     "Keep clock with media": ""
+  },
+  "Keep fullscreen on close": {
+    "Keep fullscreen on close": ""
   },
   "Keep in Bar": {
     "Keep in Bar": ""
@@ -4388,6 +4640,15 @@
   "Kill Session": {
     "Kill Session": "Avsluta session"
   },
+  "L1 cache": {
+    "L1 cache": ""
+  },
+  "L2 cache": {
+    "L2 cache": ""
+  },
+  "L3 cache": {
+    "L3 cache": ""
+  },
   "LED device": {
     "LED device": "LED-enhet"
   },
@@ -4409,6 +4670,9 @@
   "Lap detected": {
     "Lap detected": ""
   },
+  "Laptop": {
+    "Laptop": ""
+  },
   "Large": {
     "Large": "Stor"
   },
@@ -4417,6 +4681,9 @@
   },
   "Last commit %1": {
     "Last commit %1": ""
+  },
+  "Last core": {
+    "Last core": ""
   },
   "Last hour": {
     "Last hour": "Senaste timmen"
@@ -4447,6 +4714,9 @@
   },
   "Last modified": {
     "Last modified": ""
+  },
+  "Last self-test": {
+    "Last self-test": ""
   },
   "Last used on this screen": {
     "Last used on this screen": ""
@@ -4607,6 +4877,9 @@
   "List": {
     "List": "Lista"
   },
+  "Listening": {
+    "Listening": ""
+  },
   "Listening from": {
     "Listening from": ""
   },
@@ -4642,6 +4915,9 @@
   },
   "Local Weather": {
     "Local Weather": ""
+  },
+  "Local network": {
+    "Local network": ""
   },
   "Locale": {
     "Locale": "Språk"
@@ -4712,20 +4988,35 @@
   "Lower display refresh rate on battery": {
     "Lower display refresh rate on battery": ""
   },
+  "Lower only if a mode fails for lack of bandwidth": {
+    "Lower only if a mode fails for lack of bandwidth": ""
+  },
+  "Lower priorities move into overflow first": {
+    "Lower priorities move into overflow first": ""
+  },
   "Lyrics": {
     "Lyrics": ""
   },
   "Lyrics providers": {
     "Lyrics providers": ""
   },
+  "MAC address": {
+    "MAC address": ""
+  },
   "MIT License": {
     "MIT License": ""
+  },
+  "MTU": {
+    "MTU": ""
   },
   "Magnification": {
     "Magnification": ""
   },
   "Mail": {
     "Mail": ""
+  },
+  "Major page faults": {
+    "Major page faults": ""
   },
   "Make admin": {
     "Make admin": ""
@@ -4780,6 +5071,9 @@
   },
   "Mark incomplete": {
     "Mark incomplete": ""
+  },
+  "Mark urgent": {
+    "Mark urgent": ""
   },
   "Marker Supply Empty": {
     "Marker Supply Empty": "Bläckförrådet tomt"
@@ -4844,6 +5138,9 @@
   "Matugen templates": {
     "Matugen templates": ""
   },
+  "Max %1": {
+    "Max %1": ""
+  },
   "Max H": {
     "Max H": "Max H"
   },
@@ -4852,6 +5149,12 @@
   },
   "Max apps to show": {
     "Max apps to show": "Högst antal appar att visa"
+  },
+  "Max bits per channel": {
+    "Max bits per channel": ""
+  },
+  "Max clock": {
+    "Max clock": ""
   },
   "Max edges": {
     "Max edges": ""
@@ -4913,6 +5216,9 @@
   "Media Needed": {
     "Media Needed": "Media behövs"
   },
+  "Media errors": {
+    "Media errors": ""
+  },
   "Media playback": {
     "Media playback": ""
   },
@@ -4927,6 +5233,12 @@
   },
   "Memory": {
     "Memory": "Minne"
+  },
+  "Memory clock": {
+    "Memory clock": ""
+  },
+  "Memory controller": {
+    "Memory controller": ""
   },
   "Memory graph": {
     "Memory graph": ""
@@ -4972,6 +5284,9 @@
   },
   "Min W": {
     "Min W": "Min B"
+  },
+  "Mini PC": {
+    "Mini PC": ""
   },
   "Minimal": {
     "Minimal": ""
@@ -5021,6 +5336,9 @@
   "Monitor": {
     "Monitor": "Bildskärm"
   },
+  "Monitoring off": {
+    "Monitoring off": ""
+  },
   "Mono Audio": {
     "Mono Audio": ""
   },
@@ -5032,6 +5350,9 @@
   },
   "Monospace family": {
     "Monospace family": ""
+  },
+  "Monospace font": {
+    "Monospace font": ""
   },
   "Month": {
     "Month": ""
@@ -5056,6 +5377,9 @@
   },
   "More samples look smoother and cost more GPU": {
     "More samples look smoother and cost more GPU": ""
+  },
+  "More transparent areas get less blur": {
+    "More transparent areas get less blur": ""
   },
   "More widgets": {
     "More widgets": ""
@@ -5275,6 +5599,9 @@
   },
   "Next page": {
     "Next page": ""
+  },
+  "Nice": {
+    "Nice": ""
   },
   "Night": {
     "Night": "Natt"
@@ -5693,6 +6020,12 @@
   "Not linked": {
     "Not linked": ""
   },
+  "Not on click": {
+    "Not on click": ""
+  },
+  "Not readable without privileges": {
+    "Not readable without privileges": ""
+  },
   "Not set": {
     "Not set": "Inte inställt"
   },
@@ -5762,6 +6095,9 @@
   "Num Lock at startup": {
     "Num Lock at startup": ""
   },
+  "Num lock": {
+    "Num lock": ""
+  },
   "Numeric (D/M)": {
     "Numeric (D/M)": "Numeriskt (D/M)"
   },
@@ -5795,11 +6131,17 @@
   "Offline Report": {
     "Offline Report": "Offlinerapport"
   },
+  "Offline uncorrectable": {
+    "Offline uncorrectable": ""
+  },
   "Older": {
     "Older": "Äldre"
   },
   "On": {
     "On": "På"
+  },
+  "On activation": {
+    "On activation": ""
   },
   "On button down": {
     "On button down": ""
@@ -5828,8 +6170,17 @@
   "Only continue if you recognize this server certificate fingerprint.": {
     "Only continue if you recognize this server certificate fingerprint.": ""
   },
+  "Only in groups": {
+    "Only in groups": ""
+  },
   "Only on battery": {
     "Only on battery": ""
+  },
+  "Only outside groups": {
+    "Only outside groups": ""
+  },
+  "Only the main process of a system service can be restarted.": {
+    "Only the main process of a system service can be restarted.": ""
   },
   "Opacity": {
     "Opacity": "Opacitet"
@@ -5857,6 +6208,9 @@
   },
   "Open delay": {
     "Open delay": ""
+  },
+  "Open files": {
+    "Open files": ""
   },
   "Open floating": {
     "Open floating": ""
@@ -5906,6 +6260,9 @@
   "Opens without taking keyboard focus": {
     "Opens without taking keyboard focus": ""
   },
+  "Operating system": {
+    "Operating system": ""
+  },
   "Optional description": {
     "Optional description": "Valfri beskrivning"
   },
@@ -5951,6 +6308,9 @@
   "Other displays show a solid color for OLED burn-in protection": {
     "Other displays show a solid color for OLED burn-in protection": ""
   },
+  "Out-of-memory score": {
+    "Out-of-memory score": ""
+  },
   "Outer gap": {
     "Outer gap": ""
   },
@@ -5987,6 +6347,9 @@
   "Over fullscreen": {
     "Over fullscreen": ""
   },
+  "Overall": {
+    "Overall": ""
+  },
   "Overcast": {
     "Overcast": "Mulet"
   },
@@ -5995,6 +6358,9 @@
   },
   "Overflow button position": {
     "Overflow button position": ""
+  },
+  "Overflow priority": {
+    "Overflow priority": ""
   },
   "Overlapping": {
     "Overlapping": ""
@@ -6023,6 +6389,9 @@
   "Overview": {
     "Overview": "Översikt"
   },
+  "Own share": {
+    "Own share": ""
+  },
   "Owner: %1": {
     "Owner: %1": ""
   },
@@ -6047,11 +6416,20 @@
   "Package name (e.g., docker)": {
     "Package name (e.g., docker)": ""
   },
+  "Package repositories moved": {
+    "Package repositories moved": ""
+  },
+  "Packages": {
+    "Packages": ""
+  },
   "Pad": {
     "Pad": "Fyll ut"
   },
   "Padding": {
     "Padding": "Utfyllnad"
+  },
+  "Page faults": {
+    "Page faults": ""
   },
   "Pair": {
     "Pair": "Parkoppla"
@@ -6092,8 +6470,17 @@
   "Parabolic": {
     "Parabolic": ""
   },
+  "Parent": {
+    "Parent": ""
+  },
+  "Parents": {
+    "Parents": ""
+  },
   "Partially synchronized": {
     "Partially synchronized": ""
+  },
+  "Partition table": {
+    "Partition table": ""
   },
   "Partly Cloudy": {
     "Partly Cloudy": "Delvis molnigt"
@@ -6155,6 +6542,9 @@
   "Paused": {
     "Paused": "Pausad"
   },
+  "Peak": {
+    "Peak": ""
+  },
   "Pending": {
     "Pending": "Väntande"
   },
@@ -6163,6 +6553,12 @@
   },
   "Pending Discharge": {
     "Pending Discharge": "Urladdning väntar"
+  },
+  "Per display": {
+    "Per display": ""
+  },
+  "Per thread": {
+    "Per thread": ""
   },
   "Per window": {
     "Per window": ""
@@ -6218,6 +6614,12 @@
   "Pin to Dock": {
     "Pin to Dock": "Fäst på Dock"
   },
+  "Pinch": {
+    "Pinch": ""
+  },
+  "Pinch sensitivity": {
+    "Pinch sensitivity": ""
+  },
   "Pink": {
     "Pink": ""
   },
@@ -6265,6 +6667,9 @@
   },
   "Playing": {
     "Playing": ""
+  },
+  "Playing audio": {
+    "Playing audio": ""
   },
   "Please wait...": {
     "Please wait...": "Vänta..."
@@ -6413,6 +6818,9 @@
   "Power Saver": {
     "Power Saver": "Energisparläge"
   },
+  "Power limit": {
+    "Power limit": ""
+  },
   "Power menu": {
     "Power menu": ""
   },
@@ -6434,11 +6842,17 @@
   "Power source": {
     "Power source": "Strömkälla"
   },
+  "Power-on time": {
+    "Power-on time": ""
+  },
   "Pre-release": {
     "Pre-release": ""
   },
   "Precipitation": {
     "Precipitation": "Nederbörd"
+  },
+  "Preempted": {
+    "Preempted": ""
   },
   "Preference": {
     "Preference": "Preferens"
@@ -6545,6 +6959,9 @@
   "Private Key Password": {
     "Private Key Password": "Lösenord för privat nyckel"
   },
+  "Process": {
+    "Process": ""
+  },
   "Process count": {
     "Process count": ""
   },
@@ -6556,6 +6973,9 @@
   },
   "Processing": {
     "Processing": "Bearbetar"
+  },
+  "Processor": {
+    "Processor": ""
   },
   "Profile": {
     "Profile": ""
@@ -6623,6 +7043,9 @@
   "Qt colors applied successfully": {
     "Qt colors applied successfully": ""
   },
+  "Qt theme": {
+    "Qt theme": ""
+  },
   "QtMultimedia is not available": {
     "QtMultimedia is not available": "QtMultimedia är inte tillgängligt"
   },
@@ -6631,6 +7054,9 @@
   },
   "Quality": {
     "Quality": ""
+  },
+  "Queue depth": {
+    "Queue depth": ""
   },
   "Quick access to application launcher": {
     "Quick access to application launcher": "Snabb åtkomst till appstartare"
@@ -6646,6 +7072,15 @@
   },
   "Quick tiles": {
     "Quick tiles": ""
+  },
+  "Quit": {
+    "Quit": ""
+  },
+  "Quit or reload": {
+    "Quit or reload": ""
+  },
+  "Quit or restart": {
+    "Quit or restart": ""
   },
   "Radius": {
     "Radius": "Radie"
@@ -6680,8 +7115,8 @@
   "Read the blog post": {
     "Read the blog post": ""
   },
-  "Read:": {
-    "Read:": "Läst:"
+  "Read total": {
+    "Read total": ""
   },
   "Readings": {
     "Readings": ""
@@ -6707,6 +7142,9 @@
   "Ready": {
     "Ready": ""
   },
+  "Reallocated sectors": {
+    "Reallocated sectors": ""
+  },
   "Reason": {
     "Reason": "Orsak"
   },
@@ -6724,6 +7162,9 @@
   },
   "Reboot to firmware setup": {
     "Reboot to firmware setup": ""
+  },
+  "Received since boot": {
+    "Received since boot": ""
   },
   "Recent": {
     "Recent": ""
@@ -6785,6 +7226,12 @@
   "Release to confirm": {
     "Release to confirm": ""
   },
+  "Reliability": {
+    "Reliability": ""
+  },
+  "Reload": {
+    "Reload": ""
+  },
   "Reload From Disk": {
     "Reload From Disk": ""
   },
@@ -6817,6 +7264,9 @@
   },
   "Reminder": {
     "Reminder": ""
+  },
+  "Removable": {
+    "Removable": ""
   },
   "Remove": {
     "Remove": "Ta bort"
@@ -6950,6 +7400,9 @@
   "Reset to default": {
     "Reset to default": ""
   },
+  "Resident": {
+    "Resident": ""
+  },
   "Resize on border": {
     "Resize on border": ""
   },
@@ -6958,6 +7411,15 @@
   },
   "Resolution, position, scale": {
     "Resolution, position, scale": "Upplösning, position, skala"
+  },
+  "Resources": {
+    "Resources": ""
+  },
+  "Response time": {
+    "Response time": ""
+  },
+  "Restart": {
+    "Restart": ""
   },
   "Restart DMS": {
     "Restart DMS": "Starta om DMS"
@@ -7064,6 +7526,12 @@
   "Rules found in your compositor config. These are read-only here, use Convert to DMS to make an editable copy.": {
     "Rules found in your compositor config. These are read-only here, use Convert to DMS to make an editable copy.": ""
   },
+  "Run %1 in a terminal.": {
+    "Run %1 in a terminal.": ""
+  },
+  "Run %1 to create it before changing these settings.": {
+    "Run %1 to create it before changing these settings.": ""
+  },
   "Run Again": {
     "Run Again": "Kör igen"
   },
@@ -7090,6 +7558,9 @@
   },
   "Running apps": {
     "Running apps": ""
+  },
+  "Running for": {
+    "Running for": ""
   },
   "Running greeter sync...": {
     "Running greeter sync...": ""
@@ -7126,6 +7597,9 @@
   },
   "SW": {
     "SW": ""
+  },
+  "Same as workspace change": {
+    "Same as workspace change": ""
   },
   "Satellites": {
     "Satellites": ""
@@ -7210,6 +7684,9 @@
   },
   "Schedule, sunset, wallpaper brightness": {
     "Schedule, sunset, wallpaper brightness": ""
+  },
+  "Scheduling": {
+    "Scheduling": ""
   },
   "Science": {
     "Science": "Vetenskap"
@@ -7310,6 +7787,12 @@
   "Sections": {
     "Sections": ""
   },
+  "Sector size": {
+    "Sector size": ""
+  },
+  "Secure Boot": {
+    "Secure Boot": ""
+  },
   "Secured": {
     "Secured": "Lösenordsskyddad"
   },
@@ -7409,6 +7892,12 @@
   "Sends the playing track, artist and album name to enabled lyrics providers": {
     "Sends the playing track, artist and album name to enabled lyrics providers": ""
   },
+  "Sensors": {
+    "Sensors": ""
+  },
+  "Sent since boot": {
+    "Sent since boot": ""
+  },
   "Separate": {
     "Separate": ""
   },
@@ -7433,8 +7922,14 @@
   "Separator": {
     "Separator": "Avskiljare"
   },
+  "Serial number": {
+    "Serial number": ""
+  },
   "Server": {
     "Server": "Server"
+  },
+  "Service": {
+    "Service": ""
   },
   "Session": {
     "Session": ""
@@ -7487,6 +7982,12 @@
   "Settings are read-only. Changes will not persist.": {
     "Settings are read-only. Changes will not persist.": "Inställningarna är skrivskyddade. Ändringar sparas inte."
   },
+  "Settings version": {
+    "Settings version": ""
+  },
+  "Setuid": {
+    "Setuid": ""
+  },
   "Setup": {
     "Setup": "Konfiguration"
   },
@@ -7504,6 +8005,12 @@
   },
   "Share gamma control settings": {
     "Share gamma control settings": ""
+  },
+  "Shared": {
+    "Shared": ""
+  },
+  "Shared memory": {
+    "Shared memory": ""
   },
   "Shared shortcuts": {
     "Shared shortcuts": ""
@@ -7544,6 +8051,9 @@
   "Show \"config reloaded\" toast": {
     "Show \"config reloaded\" toast": ""
   },
+  "Show AM/PM": {
+    "Show AM/PM": ""
+  },
   "Show I/O": {
     "Show I/O": ""
   },
@@ -7579,9 +8089,6 @@
   },
   "Show device": {
     "Show device": "Visa enhet"
-  },
-  "Show device name": {
-    "Show device name": ""
   },
   "Show discharge rate": {
     "Show discharge rate": ""
@@ -7742,6 +8249,9 @@
   "Shows only windows from the dock's own display": {
     "Shows only windows from the dock's own display": ""
   },
+  "Shows the dashboard tab bar instead of the sheet handle": {
+    "Shows the dashboard tab bar instead of the sheet handle": ""
+  },
   "Shows the line being sung instead of the title and artist while synced lyrics are available": {
     "Shows the line being sung instead of the title and artist while synced lyrics are available": ""
   },
@@ -7793,11 +8303,17 @@
   "Slanted": {
     "Slanted": ""
   },
+  "Sleeping": {
+    "Sleeping": ""
+  },
   "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": {
     "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": ""
   },
   "Slideout": {
     "Slideout": ""
+  },
+  "Slots used": {
+    "Slots used": ""
   },
   "Small": {
     "Small": "Liten"
@@ -7825,6 +8341,9 @@
   },
   "Snow": {
     "Snow": "Snö"
+  },
+  "Sockets": {
+    "Sockets": ""
   },
   "Soft reboot": {
     "Soft reboot": ""
@@ -7886,6 +8405,9 @@
   "Spacious": {
     "Spacious": ""
   },
+  "Spare blocks left": {
+    "Spare blocks left": ""
+  },
   "Speaker settings": {
     "Speaker settings": "Högtalarinställningar"
   },
@@ -7897,6 +8419,9 @@
   },
   "Speed, scrolling, tap to click": {
     "Speed, scrolling, tap to click": ""
+  },
+  "Spin-up time": {
+    "Spin-up time": ""
   },
   "Split direction follows the cursor position in the window": {
     "Split direction follows the cursor position in the window": ""
@@ -7955,6 +8480,12 @@
   "Start typing your notes here...": {
     "Start typing your notes here...": "Skriv dina anteckningar här..."
   },
+  "Start/stop count": {
+    "Start/stop count": ""
+  },
+  "Started": {
+    "Started": ""
+  },
   "Starting hotspot...": {
     "Starting hotspot...": ""
   },
@@ -7994,6 +8525,9 @@
   "Stops syncing your DMS settings to the greeter. Set up links them again.": {
     "Stops syncing your DMS settings to the greeter. Set up links them again.": ""
   },
+  "Storage": {
+    "Storage": ""
+  },
   "Stretch": {
     "Stretch": "Sträck ut"
   },
@@ -8032,9 +8566,6 @@
   },
   "Sunset": {
     "Sunset": "Solnedgång"
-  },
-  "Super + Space": {
-    "Super + Space": ""
   },
   "Support DMS": {
     "Support DMS": ""
@@ -8081,6 +8612,9 @@
   "Suspend then hibernate": {
     "Suspend then hibernate": ""
   },
+  "Swallow focus click": {
+    "Swallow focus click": ""
+  },
   "Swap": {
     "Swap": ""
   },
@@ -8101,6 +8635,9 @@
   },
   "Switches to power saver at the low battery threshold": {
     "Switches to power saver at the low battery threshold": ""
+  },
+  "Switching to the current workspace returns to the previous one": {
+    "Switching to the current workspace returns to the previous one": ""
   },
   "Symbol": {
     "Symbol": ""
@@ -8141,14 +8678,14 @@
   "System & integrations": {
     "System & integrations": ""
   },
-  "System Information": {
-    "System Information": "Systeminformation"
-  },
   "System Monitor": {
     "System Monitor": "Systemövervakning"
   },
   "System Monitor Unavailable": {
     "System Monitor Unavailable": "Systemövervakning otillgänglig"
+  },
+  "System bell": {
+    "System bell": ""
   },
   "System check": {
     "System check": ""
@@ -8162,6 +8699,9 @@
   "System packages": {
     "System packages": ""
   },
+  "System report": {
+    "System report": ""
+  },
   "System sound theme and events": {
     "System sound theme and events": ""
   },
@@ -8174,6 +8714,9 @@
   "System theme toggle": {
     "System theme toggle": "Växla systemtema"
   },
+  "System time": {
+    "System time": ""
+  },
   "System tray": {
     "System tray": ""
   },
@@ -8183,11 +8726,23 @@
   "Systemd override generated": {
     "Systemd override generated": ""
   },
+  "Systemd unit": {
+    "Systemd unit": ""
+  },
+  "TRIM": {
+    "TRIM": ""
+  },
   "Tab": {
     "Tab": "Flik"
   },
   "Table": {
     "Table": ""
+  },
+  "Tablet": {
+    "Tablet": ""
+  },
+  "Tablet input": {
+    "Tablet input": ""
   },
   "Tabs": {
     "Tabs": ""
@@ -8308,6 +8863,9 @@
   },
   "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": {
     "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": ""
+  },
+  "The click that focuses a window does not reach the app": {
+    "The click that focuses a window does not reach the app": ""
   },
   "The compositor session changed. Discard this edit before starting a new one.": {
     "The compositor session changed. Discard this edit before starting a new one.": ""
@@ -8444,9 +9002,6 @@
   "This display does not report VRR support": {
     "This display does not report VRR support": ""
   },
-  "This install is still using %1. Run %2 to migrate before changing these settings.": {
-    "This install is still using %1. Run %2 to migrate before changing these settings.": ""
-  },
   "This may take a few seconds": {
     "This may take a few seconds": "Detta kan ta några sekunder"
   },
@@ -8479,6 +9034,9 @@
   },
   "This will permanently remove this saved clipboard item. This action cannot be undone.": {
     "This will permanently remove this saved clipboard item. This action cannot be undone.": "Detta tar permanent bort det sparade urklippsobjektet. Åtgärden kan inte ångras."
+  },
+  "Threads": {
+    "Threads": ""
   },
   "Thunderstorm": {
     "Thunderstorm": "Åskväder"
@@ -8642,6 +9200,9 @@
   "Top Right": {
     "Top Right": "Övre höger"
   },
+  "Top process": {
+    "Top process": ""
+  },
   "Top processes": {
     "Top processes": ""
   },
@@ -8792,9 +9353,6 @@
   "Unknown Device": {
     "Unknown Device": "Okänd enhet"
   },
-  "Unknown GPU": {
-    "Unknown GPU": "Okänt grafikkort"
-  },
   "Unknown Model": {
     "Unknown Model": ""
   },
@@ -8843,6 +9401,9 @@
   "Unpin from Dock": {
     "Unpin from Dock": "Ta bort från Dock"
   },
+  "Unsafe shutdowns": {
+    "Unsafe shutdowns": ""
+  },
   "Unsaved changes": {
     "Unsaved changes": "Osparade ändringar"
   },
@@ -8875,6 +9436,9 @@
   },
   "Up": {
     "Up": ""
+  },
+  "Up %1": {
+    "Up %1": ""
   },
   "Up to date": {
     "Up to date": "Uppdaterat"
@@ -8915,6 +9479,9 @@
   "Upgrading...": {
     "Upgrading...": ""
   },
+  "Upload": {
+    "Upload": ""
+  },
   "Uptime": {
     "Uptime": "Drifttid"
   },
@@ -8932,6 +9499,9 @@
   },
   "Urgent color": {
     "Urgent color": ""
+  },
+  "Usage": {
+    "Usage": ""
   },
   "Use Dynamic": {
     "Use Dynamic": ""
@@ -8984,6 +9554,9 @@
   "Use the scaled battery level for alert thresholds and percentages": {
     "Use the scaled battery level for alert thresholds and percentages": ""
   },
+  "Used": {
+    "Used": ""
+  },
   "User": {
     "User": "Användare"
   },
@@ -9007,6 +9580,9 @@
   },
   "User not found": {
     "User not found": ""
+  },
+  "User time": {
+    "User time": ""
   },
   "User window rules (%1)": {
     "User window rules (%1)": ""
@@ -9062,6 +9638,12 @@
   "VPN status and quick connect": {
     "VPN status and quick connect": "Visa VPN-status och snabbanslutning"
   },
+  "VRAM": {
+    "VRAM": ""
+  },
+  "VRR Fullscreen Only": {
+    "VRR Fullscreen Only": ""
+  },
   "VRR On-Demand": {
     "VRR On-Demand": "VRR vid behov"
   },
@@ -9107,8 +9689,17 @@
   "Vibrant palette with playful saturation.": {
     "Vibrant palette with playful saturation.": "Livlig palett med lekfull mättnad."
   },
+  "Video": {
+    "Video": ""
+  },
   "Video card gamma table": {
     "Video card gamma table": ""
+  },
+  "Video decode": {
+    "Video decode": ""
+  },
+  "Video encode": {
+    "Video encode": ""
   },
   "Video player": {
     "Video player": ""
@@ -9116,11 +9707,20 @@
   "Video screensaver": {
     "Video screensaver": ""
   },
+  "Video wallpapers play once, then the next wallpaper is shown": {
+    "Video wallpapers play once, then the next wallpaper is shown": ""
+  },
   "View Changes": {
     "View Changes": ""
   },
   "View on GitHub": {
     "View on GitHub": ""
+  },
+  "Virtual": {
+    "Virtual": ""
+  },
+  "Virtualization": {
+    "Virtualization": ""
   },
   "Visibility": {
     "Visibility": "Synlighet"
@@ -9164,6 +9764,12 @@
   "WPA2 password": {
     "WPA2 password": ""
   },
+  "WWN": {
+    "WWN": ""
+  },
+  "Waiting": {
+    "Waiting": ""
+  },
   "Wallpaper": {
     "Wallpaper": "Bakgrundsbild"
   },
@@ -9191,11 +9797,17 @@
   "Warnings": {
     "Warnings": "Varningar"
   },
+  "Warp on display change": {
+    "Warp on display change": ""
+  },
   "Water": {
     "Water": ""
   },
   "Wave progress bars": {
     "Wave progress bars": ""
+  },
+  "Wear": {
+    "Wear": ""
   },
   "Weather": {
     "Weather": "Väder"
@@ -9262,6 +9874,9 @@
   },
   "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": {
     "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": ""
+  },
+  "Wi-Fi network": {
+    "Wi-Fi network": ""
   },
   "Wi-Fi not available": {
     "Wi-Fi not available": "Wi-Fi är inte tillgängligt"
@@ -9353,6 +9968,9 @@
   "Window rules": {
     "Window rules": ""
   },
+  "Windows": {
+    "Windows": ""
+  },
   "Wipe": {
     "Wipe": "Sudda"
   },
@@ -9362,6 +9980,15 @@
   "With no bar, Dot or dock launcher on, shortcuts are the only way back to settings": {
     "With no bar, Dot or dock launcher on, shortcuts are the only way back to settings": ""
   },
+  "Wobble damping": {
+    "Wobble damping": ""
+  },
+  "Wobble mass": {
+    "Wobble mass": ""
+  },
+  "Wobble mesh": {
+    "Wobble mesh": ""
+  },
   "Wobble stiffness": {
     "Wobble stiffness": ""
   },
@@ -9370,6 +9997,9 @@
   },
   "Word processor": {
     "Word processor": ""
+  },
+  "Working directory": {
+    "Working directory": ""
   },
   "Working...": {
     "Working...": ""
@@ -9389,6 +10019,9 @@
   "Workspace Switch": {
     "Workspace Switch": ""
   },
+  "Workspace back and forth": {
+    "Workspace back and forth": ""
+  },
   "Workspace name": {
     "Workspace name": "Arbetsytans namn"
   },
@@ -9401,11 +10034,14 @@
   "Wrap the app command. %command% is replaced with the actual executable": {
     "Wrap the app command. %command% is replaced with the actual executable": ""
   },
-  "Write:": {
-    "Write:": "Skrivit:"
+  "Write cache": {
+    "Write cache": ""
   },
   "Writes to your files": {
     "Writes to your files": ""
+  },
+  "Written total": {
+    "Written total": ""
   },
   "X axis": {
     "X axis": ""
@@ -9472,6 +10108,9 @@
   },
   "Your system is up to date!": {
     "Your system is up to date!": "Ditt system är uppdaterat!"
+  },
+  "Zombie": {
+    "Zombie": ""
   },
   "adjective, printer state": {
     "Idle": ""
@@ -9649,6 +10288,9 @@
   },
   "official": {
     "official": "officiell"
+  },
+  "on %1": {
+    "on %1": ""
   },
   "power-profiles-daemon not available": {
     "power-profiles-daemon not available": "power-profiles-daemon är inte tillgänglig"

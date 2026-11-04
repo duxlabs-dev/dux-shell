@@ -19,6 +19,7 @@ DClockWidget {
     locale: I18n.locale()
     use24HourClock: SettingsData.use24HourClock
     padHours12Hour: SettingsData.padHours12Hour
+    showAmPm: SettingsData.showAmPm
     dateFormat: lockScreen ? SettingsData.lockDateFormat : SettingsData.clockDateFormat
     fallbackFontFamily: SettingsData.lockScreenFontFamily
     accentColor: lockHost ? lockHost.contentColor(colorMode, customColor) : themeAccent

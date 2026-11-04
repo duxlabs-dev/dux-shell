@@ -1,0 +1,22 @@
+# Dux Modular Shell — MangoWM configuration (managed by `dms setup`)
+# Keybinds, colors, layout, outputs, cursor and window rules are pulled from the
+# ./dms fragments below. Add your own binds/rules here; they sit alongside DMS's.
+
+[env]
+XDG_CURRENT_DESKTOP = "mango"
+XDG_SESSION_TYPE = "wayland"
+
+[global]
+# Starts the shell when DMS is not a systemd service. Never exec: Mango re-runs
+# exec on every config reload, and DMS reloads the config.
+exec_once = "dms run"
+
+source = [
+    "./dms/colors.conf",
+    "./dms/layout.conf",
+    "./dms/cursor.conf",
+    "./dms/input.conf",
+    "./dms/outputs.conf",
+    "./dms/windowrules.conf",
+    "./dms/binds.conf",
+]

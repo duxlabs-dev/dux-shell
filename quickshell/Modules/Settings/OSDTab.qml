@@ -60,6 +60,11 @@ Item {
             "shown": SettingsData.osdKeyboardLayoutEnabled && KeyboardLayoutService.available
         },
         {
+            "value": "inputMethod",
+            "label": I18n.tr("Input method", "OSD toggle for the IME (fcitx5) indicator"),
+            "shown": SettingsData.osdInputMethodEnabled && Fcitx5Service.available
+        },
+        {
             "value": "touchpad",
             "label": I18n.tr("Touchpad"),
             "shown": SettingsData.osdTouchpadEnabled && CompositorService.isNiri
@@ -213,6 +218,14 @@ Item {
                 text: I18n.tr("Keyboard layout")
                 checked: SettingsData.osdKeyboardLayoutEnabled
                 onToggled: checked => SettingsData.set("osdKeyboardLayoutEnabled", checked)
+            }
+
+            SettingsToggleRow {
+                settingKey: "osdInputMethodEnabled"
+                visible: Fcitx5Service.available
+                text: I18n.tr("Input method", "OSD toggle for the IME (fcitx5) indicator")
+                checked: SettingsData.osdInputMethodEnabled
+                onToggled: checked => SettingsData.set("osdInputMethodEnabled", checked)
             }
 
             SettingsToggleRow {

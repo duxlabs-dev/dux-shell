@@ -202,8 +202,17 @@ Singleton {
         target: Theme
         enabled: SettingsData.syncModeWithPortal
 
+        // The matugen worker writes color-scheme after the new GTK css lands;
+        // writing it here first makes GTK4 apps re-read the previous mode's colors.
         function onIsLightModeChanged() {
+            if (Theme.matugenAvailable)
+                return;
             root.setSystemColorScheme(Theme.isLightMode);
+        }
+
+        function onMatugenCompleted(mode, result) {
+            if (result === "error")
+                root.setSystemColorScheme(Theme.isLightMode);
         }
     }
 

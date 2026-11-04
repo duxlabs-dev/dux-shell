@@ -215,6 +215,9 @@ Singleton {
     readonly property real mediaArtColumnRatio: 0.5
     readonly property real mediaArtLyricsScale: 0.88
     readonly property int mediaArtRotationDuration: 30000
+    readonly property int mediaArtDiscRotationDuration: 20000
+    readonly property real mediaArtSwayAngle: 10
+    readonly property int mediaArtSwayDuration: 8000
     readonly property real mediaSeekbarHeight: 22
     readonly property real mediaSeekbarHandleSize: 16
     readonly property real mediaSeekbarHandleDragWidth: 5
@@ -258,27 +261,33 @@ Singleton {
     readonly property real lyricsLineInactiveScale: 0.8
     readonly property real lyricsLineInactiveAlpha: 0.4
     readonly property real lyricsRestAlpha: 0.35
-    // The sweep's soft edge as a share of the cue it crosses, and its floor in pixels.
-    readonly property real lyricsSweepFeather: 0.1
-    readonly property real lyricsSweepFeatherMin: 6
-    readonly property int lyricsLineFadeDuration: lyricsTrackMoveDuration
-    readonly property int lyricsLineScaleDuration: lyricsTrackMoveDuration
+    // The soft lead ahead of the sweep's edge as a share of the row height.
+    readonly property real lyricsSweepLead: 0.9
+    // Seconds of cue time the sweep's edge is averaged over, so a word sung in a few frames still glides.
+    readonly property real lyricsSweepWindow: 0.24
     readonly property int lyricsLineLinger: 500
-    // Seconds before a line starts that the track moves it into the centre.
-    readonly property real lyricsLineLeadIn: 0.25
+    // A line moves into the centre over this share of the seconds since the line before it, within the bounds.
+    readonly property real lyricsMoveShare: 0.3
+    readonly property real lyricsMoveMin: 0.4
+    readonly property real lyricsMoveMax: 1
+    // Share of its move a line is on its way before it starts, so it is sung in place.
+    readonly property real lyricsLineLeadIn: 0.4
     // A clock that steps back less than this right after the centre advanced keeps the new row.
     readonly property real lyricsFollowBackstepSlack: 1.5
-    readonly property int lyricsTrackMoveDuration: 500
-    // A critically damped spring settles in about ten time constants, so a long scroll lands with the line move.
-    readonly property real lyricsScrollRate: 10000 / lyricsTrackMoveDuration
+    // A seek scrolls to the line on a critically damped spring that settles in about ten time constants.
+    readonly property int lyricsSeekScrollDuration: 650
+    readonly property real lyricsScrollRate: 10000 / lyricsSeekScrollDuration
     readonly property real lyricsScrollStiffness: lyricsScrollRate * lyricsScrollRate
     readonly property real lyricsScrollDamping: 2 * lyricsScrollRate
     // Below half a pixel the rounded position no longer moves, so the spring stops there.
     readonly property real lyricsScrollSettleDistance: 0.5
     readonly property real lyricsScrollSettleSpeed: 10
-    readonly property int lyricsTrackPushStep: 20
+    // Rows catch up one after another, each a share of the move behind its neighbour.
+    readonly property real lyricsTrackPushShare: 0.06
     readonly property int lyricsTrackMaxPush: 5
-    readonly property var lyricsTrackCurve: [0.25, 0.7, 0.2, 1, 1, 1]
+    // A critically damped spring that settles over the move, fitted as a bezier: a gentle start,
+    // so a row that follows its neighbour a step later never closes onto it, and a long settle.
+    readonly property var lyricsTrackCurve: [0.25, 0.3, 0.13, 1, 1, 1]
     readonly property real lyricsBreakGap: 5
     readonly property real lyricsBreakIndicatorScale: 1.2
     readonly property real lyricsEdgeFadeRatio: 0.2

@@ -414,10 +414,8 @@ Item {
                         Quickshell.execDetached(["sh", "-c", command]);
                     return;
                 }
-                // requestTab would still show a disabled Overview as a detail page.
-                const tabId = DashRegistry.isSelectable(DashRegistry.overviewId) ? DashRegistry.overviewId : DashRegistry.defaultTabId;
-                if (!tabId)
-                    return;
+                // A disabled Overview opens as a tabless detail page, so it only wins when no tab is enabled.
+                const tabId = DashRegistry.isSelectable(DashRegistry.overviewId) ? DashRegistry.overviewId : DashRegistry.defaultTabId || DashRegistry.overviewId;
                 const section = root.getWidgetSection(parent) || "center";
                 root.openWidgetPopout({
                     loader: PopoutService.dankDashPopoutLoader,

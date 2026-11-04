@@ -83,28 +83,6 @@ var templateRegistry = []TemplateDef{
 	{ID: "zed", Commands: []string{"zed", "zeditor", "zedit"}, ConfigFile: "zed.toml"},
 }
 
-func (c *ColorMode) GTKTheme() string {
-	switch *c {
-	case ColorModeDark:
-		return "adw-gtk3-dark"
-	default:
-		return "adw-gtk3"
-	}
-}
-
-// GTKRefreshTheme is the built-in theme the gtk-theme round trip passes through
-// to make GTK3 reload gtk.css. It must match the mode's polarity: an empty or
-// light name resolves to Adwaita, and toolkit-following apps (Chromium/Electron
-// without a settings portal) latch light when the restore lands mid-repaint.
-func (c *ColorMode) GTKRefreshTheme() string {
-	switch *c {
-	case ColorModeDark:
-		return "HighContrastInverse"
-	default:
-		return "Adwaita"
-	}
-}
-
 var (
 	matugenVersionMu      sync.Mutex
 	matugenVersionOK      bool
@@ -550,7 +528,12 @@ func buildOnce(opts *Options) (bool, error) {
 		default:
 			syncAccentColor(primaryDark)
 		}
-		refreshGTKTheme(opts.Mode)
+		// Switch the mode before pulsing so apps following it never show the new
+		// colors in the old mode; the pulse reaches apps that pin their own scheme
+		if opts.SyncModeWithPortal {
+			syncColorScheme(opts.Mode)
+		}
+		pulseReducedMotion()
 		refreshGTKColorScheme()
 	}
 
@@ -710,12 +693,7 @@ output_path = '%s'
 
 		switch tmpl.Kind {
 		case TemplateKindGTK:
-			switch opts.Mode {
-			case ColorModeLight:
-				appendConfig(opts, cfgFile, nil, nil, nil, "gtk3-light.toml")
-			default:
-				appendConfig(opts, cfgFile, nil, nil, nil, "gtk3-dark.toml")
-			}
+			appendConfig(opts, cfgFile, nil, nil, nil, "gtk.toml")
 		case TemplateKindTerminal:
 			appendTerminalConfig(opts, cfgFile, tmpDir, tmpl.Commands, tmpl.Flatpaks, tmpl.ConfigFile)
 		case TemplateKindVSCode:
@@ -1381,20 +1359,22 @@ func generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight
 	return dank16.GenerateVariantJSON(variantColors)
 }
 
+// Must match dank_colors_active in quickshell/scripts/gtk.sh.
 func isDMSGTKActive(configDir string) bool {
-	gtkCSS := filepath.Join(configDir, "gtk-4.0", "gtk.css")
-
-	info, err := os.Lstat(gtkCSS)
-	if err != nil {
-		return false
+	for _, dir := range []string{"gtk-4.0", "gtk-3.0"} {
+		if cssUsesDankColors(filepath.Join(configDir, dir, "gtk.css")) {
+			return true
+		}
 	}
+	return false
+}
 
-	if info.Mode()&os.ModeSymlink != 0 {
-		target, err := os.Readlink(gtkCSS)
-		return err == nil && strings.Contains(target, "dank-colors.css")
+// A user-managed symlink (home-manager) points elsewhere but can still import us.
+func cssUsesDankColors(path string) bool {
+	if target, err := os.Readlink(path); err == nil && strings.Contains(target, "dank-colors.css") {
+		return true
 	}
-
-	data, err := os.ReadFile(gtkCSS)
+	data, err := os.ReadFile(path)
 	return err == nil && strings.Contains(string(data), "dank-colors.css")
 }
 
@@ -1439,36 +1419,6 @@ func applyKDEColorScheme(mode ColorMode) {
 	}
 }
 
-func gtkThemeInstalled(theme string) bool {
-	home, _ := os.UserHomeDir()
-	candidates := []string{
-		filepath.Join(home, ".local/share/themes", theme),
-		filepath.Join(home, ".themes", theme),
-		filepath.Join("/usr/share/themes", theme),
-		filepath.Join("/usr/local/share/themes", theme),
-	}
-	for _, dir := range candidates {
-		if info, err := os.Stat(dir); err == nil && info.IsDir() {
-			return true
-		}
-	}
-	return false
-}
-
-func refreshGTKTheme(mode ColorMode) {
-	theme := mode.GTKTheme()
-	if !gtkThemeInstalled(theme) {
-		log.Infof("Skipping gtk-theme refresh: %s is not installed", theme)
-		return
-	}
-	if err := utils.GsettingsSet("org.gnome.desktop.interface", "gtk-theme", mode.GTKRefreshTheme()); err != nil {
-		log.Warnf("Failed to reset gtk-theme: %v", err)
-	}
-	if err := utils.GsettingsSet("org.gnome.desktop.interface", "gtk-theme", theme); err != nil {
-		log.Warnf("Failed to set gtk-theme: %v", err)
-	}
-}
-
 var colorSchemeEchoHook func(scheme string)
 
 func SetColorSchemeEchoHook(hook func(scheme string)) {
@@ -1485,6 +1435,30 @@ func expectColorSchemeEcho(scheme string) {
 // apps reload ~/.config/gtk-4.0 CSS (a gtk-theme flip does not). But apps
 // following the portal color-scheme (Chromium) can drop the restore signal
 // mid-repaint and latch the wrong mode, so this is opt-in.
+// GTK 4.22+ re-reads gtk.css imports when prefers-reduced-motion changes, so a
+// round trip refreshes open apps without the flash of a color-scheme flip.
+func pulseReducedMotion() {
+	const schema, key = "org.gnome.desktop.a11y.interface", "reduced-motion"
+	output, err := utils.GsettingsGet(schema, key)
+	if err != nil {
+		return
+	}
+	current := strings.Trim(output, "'")
+	toggle := "reduce"
+	if current == "reduce" {
+		toggle = "no-preference"
+	}
+	if err := utils.GsettingsSet(schema, key, toggle); err != nil {
+		log.Debugf("Failed to toggle reduced-motion for GTK4 refresh: %v", err)
+		return
+	}
+	// Let the portal emit the first change before restoring.
+	time.Sleep(100 * time.Millisecond)
+	if err := utils.GsettingsSet(schema, key, current); err != nil {
+		log.Warnf("Failed to restore reduced-motion after GTK4 refresh: %v", err)
+	}
+}
+
 func refreshGTKColorScheme() {
 	if os.Getenv("DMS_ENABLE_GTK_REFRESH") != "1" {
 		return
@@ -1547,17 +1521,29 @@ func signalTerminals(opts *Options) {
 	}
 }
 
-func syncColorScheme(mode ColorMode) {
+func colorSchemeTarget(mode ColorMode, current string) (string, bool) {
 	scheme := "prefer-dark"
 	if mode == ColorModeLight {
 		scheme = "default"
 	}
+	if current == scheme || (mode == ColorModeLight && current == "prefer-light") {
+		return scheme, false
+	}
+	return scheme, true
+}
 
-	if cur, err := utils.GsettingsGet("org.gnome.desktop.interface", "color-scheme"); err == nil {
-		cur = strings.Trim(cur, "'")
-		if cur == scheme || (mode == ColorModeLight && cur == "prefer-light") {
-			return
-		}
+func currentColorScheme() string {
+	cur, err := utils.GsettingsGet("org.gnome.desktop.interface", "color-scheme")
+	if err != nil {
+		return ""
+	}
+	return strings.Trim(cur, "'")
+}
+
+func syncColorScheme(mode ColorMode) {
+	scheme, needed := colorSchemeTarget(mode, currentColorScheme())
+	if !needed {
+		return
 	}
 
 	if err := utils.GsettingsSet("org.gnome.desktop.interface", "color-scheme", scheme); err != nil {

@@ -68,6 +68,7 @@ Singleton {
 
     signal matugenCompleted(string mode, string result)
     property var matugenColors: ({})
+    property string _appliedColorsText: ""
     property var _pendingGenerateParams: null
     property int _colorsRetryCount: 0
     property double _lastGenerateMs: 0
@@ -2147,29 +2148,37 @@ Singleton {
         return colors;
     }
 
-    function refreshGtkTheme() {
+    // A user who picked another gtk-theme keeps it; only the explicit apply claims it.
+    function refreshGtkTheme(colorsChanged, claimTheme) {
         const isLight = (typeof SessionData !== "undefined" && SessionData.isLightMode);
         const theme = isLight ? "adw-gtk3" : "adw-gtk3-dark";
         const schema = "org.gnome.desktop.interface";
         const key = "gtk-theme";
-        // Same-polarity built-in intermediate: "" resolves to light Adwaita and
-        // toolkit-following apps (Chromium without a portal) latch on it.
-        const reset = GSettings.setCmd(schema, key, isLight ? "Adwaita" : "HighContrastInverse");
+        // A light or empty intermediate latches portal-less Chromium to light;
+        // HighContrast* latches GTK4 to prefers-contrast until restart.
+        const reset = GSettings.setCmd(schema, key, isLight ? "Adwaita" : "adw-gtk3");
         const apply = GSettings.setCmd(schema, key, theme);
+        const backup = `${configDir}/gtk-3.0/gtk-theme.dms-backup`;
+        const guard = claimTheme ? `case "$cur" in adw-gtk3|adw-gtk3-dark|'') ;; *) [ -e '${backup}' ] || printf '%s\\n' "$cur" > '${backup}' ;; esac; ` : `case "$cur" in adw-gtk3|adw-gtk3-dark) ;; *) exit 0 ;; esac; `;
+        const reload = colorsChanged ? `${reset}; ${apply}` : ":";
+        const script = `cur=$(${GSettings.getCmd(schema, key)}); ${guard}if [ "$cur" != "${theme}" ]; then ${apply}; else ${reload}; fi`;
 
-        Proc.runCommand("gtkRefresher", ["sh", "-c", `${reset}; ${apply}`], (output, exitCode) => {
+        Proc.runCommand("gtkRefresher", ["sh", "-c", script], (output, exitCode) => {
             if (exitCode !== 0) {
                 log.warn("Failed to refresh gtk-theme");
             }
         });
     }
 
-    function patchGtk3colors() {
+    function patchGtk3colors(claimTheme) {
         const isLight = (typeof SessionData !== "undefined" && SessionData.isLightMode);
         Proc.runCommand("gtk3Patcher", ["bash", shellDir + "/scripts/gtk.sh", configDir, "patch", isLight], (output, exitCode) => {
             switch (exitCode) {
             case 0:
-                refreshGtkTheme();
+                refreshGtkTheme(true, claimTheme);
+                break;
+            case 3:
+                refreshGtkTheme(false, claimTheme);
                 break;
             case 2:
                 break;
@@ -2190,6 +2199,7 @@ Singleton {
         const isLight = (typeof SessionData !== "undefined" && SessionData.isLightMode) ? "true" : "false";
         Proc.runCommand("gtkApplier", ["bash", shellDir + "/scripts/gtk.sh", configDir, "apply", isLight], (output, exitCode) => {
             if (exitCode === 0) {
+                patchGtk3colors(true);
                 if (typeof ToastService !== "undefined" && !root.matugenToastSuppressed) {
                     ToastService.showInfo(I18n.tr("GTK colors applied successfully"));
                 }
@@ -2376,6 +2386,7 @@ Singleton {
             switch (exitCode) {
             case 0:
                 log.info("Matugen worker completed successfully");
+                dynamicColorsFileView.reload();
                 root.matugenCompleted(currentMode, "success");
                 break;
             case 2:
@@ -2393,7 +2404,7 @@ Singleton {
 
             if (!pendingThemeRequest) {
                 if (SettingsData.matugenTemplateGtk)
-                    patchGtk3colors();
+                    patchGtk3colors(false);
                 return;
             }
 
@@ -2442,18 +2453,22 @@ Singleton {
         function parseAndLoadColors() {
             try {
                 const colorsText = dynamicColorsFileView.text();
-                if (colorsText) {
+                if (!colorsText)
+                    return;
+                // the watch and the worker exit both reload the same write; don't parse and rebuild the palette twice
+                if (colorsText !== root._appliedColorsText) {
                     root.matugenColors = JSON.parse(colorsText);
-                    if (typeof SettingsData !== "undefined" && SettingsData.matugenSmartMode && currentTheme === dynamic && root.matugenColors && root.matugenColors.mode && typeof SessionData !== "undefined" && !SessionData.isSwitchingMode) {
-                        const resolvedLight = root.matugenColors.mode === "light";
-                        if (SessionData.isLightMode !== resolvedLight) {
-                            SessionData.setLightMode(resolvedLight, true);
-                            SettingsData.updateCosmicThemeMode(resolvedLight);
-                        }
+                    root._appliedColorsText = colorsText;
+                }
+                if (typeof SettingsData !== "undefined" && SettingsData.matugenSmartMode && currentTheme === dynamic && root.matugenColors && root.matugenColors.mode && typeof SessionData !== "undefined" && !SessionData.isSwitchingMode) {
+                    const resolvedLight = root.matugenColors.mode === "light";
+                    if (SessionData.isLightMode !== resolvedLight) {
+                        SessionData.setLightMode(resolvedLight, true);
+                        SettingsData.updateCosmicThemeMode(resolvedLight);
                     }
-                    if (typeof ToastService !== "undefined") {
-                        ToastService.clearWallpaperError();
-                    }
+                }
+                if (typeof ToastService !== "undefined") {
+                    ToastService.clearWallpaperError();
                 }
             } catch (e) {
                 log.error("Failed to parse dynamic colors:", e);

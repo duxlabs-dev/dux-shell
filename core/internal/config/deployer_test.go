@@ -759,6 +759,69 @@ func TestNiriReplaceBindsKeepsMainConfig(t *testing.T) {
 	assert.True(t, results[0].Deployed)
 }
 
+func TestHyprlandKeptConfigStillRefreshesDMSBinds(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	dmsDir := filepath.Join(home, ".config", "hypr", "dms")
+	require.NoError(t, os.MkdirAll(dmsDir, 0o755))
+	kept := map[string]string{
+		filepath.Join(home, ".config", "hypr", "hyprland.lua"): "-- user config\nrequire(\"dms.binds\")\n",
+		filepath.Join(dmsDir, "binds-user.lua"):                "hl.bind(\"SUPER + X\", hl.dsp.window.close())\n",
+		filepath.Join(dmsDir, "colors.lua"):                    "-- user colors\n",
+		filepath.Join(dmsDir, "layout.lua"):                    "",
+		filepath.Join(home, ".config", "kitty", "kitty.conf"):  "# user terminal\n",
+	}
+	for path, content := range kept {
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+	}
+	bindsPath := filepath.Join(dmsDir, "binds.lua")
+	require.NoError(t, os.WriteFile(bindsPath, []byte("-- stale stock binds\n"), 0o644))
+
+	cd := NewConfigDeployer(nil)
+	results, err := cd.DeployConfigurationsSelectiveWithReinstallsAndSystemd(
+		context.Background(), deps.WindowManagerHyprland, deps.TerminalKitty, nil,
+		map[string]bool{"Hyprland": false, "Kitty": false}, nil, false,
+	)
+	require.NoError(t, err)
+	got, err := os.ReadFile(bindsPath)
+	require.NoError(t, err)
+	assert.Equal(t, strings.ReplaceAll(DMSBindsLuaConfig, "{{TERMINAL_COMMAND}}", "kitty"), string(got))
+	for path, want := range kept {
+		got, err := os.ReadFile(path)
+		require.NoError(t, err)
+		assert.Equal(t, want, string(got), path)
+	}
+	assert.NoFileExists(t, filepath.Join(dmsDir, "input.lua"))
+	require.Len(t, results, 1)
+	assert.Equal(t, BindsConfigType, results[0].ConfigType)
+	assert.True(t, results[0].Deployed)
+	backup, err := os.ReadFile(results[0].BackupPath)
+	require.NoError(t, err)
+	assert.Equal(t, "-- stale stock binds\n", string(backup))
+
+	again, ok := cd.RefreshHyprlandDMSBinds("kitty")
+	require.True(t, ok)
+	assert.False(t, again.Deployed)
+	assert.Empty(t, again.BackupPath)
+}
+
+func TestHyprlandBindsRefreshSkipsHyprlandWithoutLua(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	bindsPath := filepath.Join(home, ".config", "hypr", "dms", "binds.lua")
+	require.NoError(t, os.MkdirAll(filepath.Dir(bindsPath), 0o755))
+	require.NoError(t, os.WriteFile(bindsPath, []byte("-- stale\n"), 0o644))
+
+	cd := NewConfigDeployer(nil)
+	cd.SetHyprlandVersion("0.54.0")
+	_, ok := cd.RefreshHyprlandDMSBinds("kitty")
+	assert.False(t, ok)
+	got, err := os.ReadFile(bindsPath)
+	require.NoError(t, err)
+	assert.Equal(t, "-- stale\n", string(got))
+}
+
 func TestDeployBindsFileReadErrorPreservesExistingFile(t *testing.T) {
 	if os.Geteuid() == 0 {
 		t.Skip("root can read files without read permission")

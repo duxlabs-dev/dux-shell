@@ -185,7 +185,7 @@ Item {
 
     readonly property var sections: [
         {
-            "title": "Dux Shell",
+            "title": "Dux Modular Shell",
             "icon": "deployed_code",
             "rows": dmsRows
         },

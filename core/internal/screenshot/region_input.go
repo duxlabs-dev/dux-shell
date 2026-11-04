@@ -805,6 +805,17 @@ func (r *RegionSelector) selectionDeviceRect() (*OutputSurface, int, int, int, i
 	return os, bounds.x, bounds.y, bounds.w, bounds.h
 }
 
+func logicalRegionFromDevicePixels(output *WaylandOutput, x, y, width, height int) Region {
+	scale := output.effectiveScale()
+	return Region{
+		X:      int32(math.Round(float64(x)/scale)) + output.x,
+		Y:      int32(math.Round(float64(y)/scale)) + output.y,
+		Width:  int32(math.Round(float64(width) / scale)),
+		Height: int32(math.Round(float64(height) / scale)),
+		Output: output.name,
+	}
+}
+
 func (r *RegionSelector) finishSelection() {
 	if r.screenshoter != nil && r.screenshoter.config.Geometry {
 		r.running = false
@@ -878,14 +889,9 @@ func (r *RegionSelector) finishSelection() {
 		Output: os.output.name,
 	}
 
-	// Also store for "last region" feature with global coords
-	r.result = Region{
-		X:      int32(bx1) + os.output.x,
-		Y:      int32(by1) + os.output.y,
-		Width:  int32(w),
-		Height: int32(h),
-		Output: os.output.name,
-	}
+	// Store the last region in logical coordinates so follow-up captures use the
+	// same coordinate space as the rest of the screenshot pipeline.
+	r.result = logicalRegionFromDevicePixels(os.output, bx1, by1, w, h)
 
 	r.running = false
 }
