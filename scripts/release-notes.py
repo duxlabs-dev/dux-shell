@@ -65,6 +65,7 @@ SUBJECT_HINTS = [
 SUITE_REPOS = [
     ("duxlabs-dev/dux-files", "Dux Files"),
     ("duxlabs-dev/dux-calendar", "Dux Calendar"),
+    ("duxlabs-dev/dux-search", "Dux Search"),
     ("duxlabs-dev/dux-greeter", "Dux Greeter"),
     ("duxlabs-dev/dux-qml-common", "Dux QML Common"),
     ("duxlabs-dev/dux-gop", "Dux GOP"),

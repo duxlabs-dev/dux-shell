@@ -1,10 +1,10 @@
-name: Release
+name: Build release
 
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g., v1.0.1)"
+        description: "Existing tag to build (e.g. v2.1.0). To bump VERSION and tag, run Release instead"
         required: true
         type: string
       notify_issues:
@@ -266,8 +266,11 @@ jobs:
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || echo "")
           CHANGELOG=""
           if [ -n "$PREVIOUS_TAG" ]; then
+            # suite PRs are picked by merge time, which only matches a release cut from master
+            SUITE=()
+            [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.0$ ]] && SUITE=(--suite)
             # PR-based notes with author credits; falls back to raw git log below
-            CHANGELOG=$(python3 scripts/release-notes.py "${PREVIOUS_TAG}..${TAG}" --format github --bare 2>/dev/null || true)
+            CHANGELOG=$(python3 scripts/release-notes.py "${PREVIOUS_TAG}..${TAG}" --format github --bare "${SUITE[@]}" 2>/dev/null || true)
           fi
           if [ -z "$CHANGELOG" ]; then
             echo "release-notes.py unavailable or empty, using git log fallback"
