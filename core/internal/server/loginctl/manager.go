@@ -710,6 +710,7 @@ func (m *Manager) Close() {
 	m.stopSignalPump()
 
 	m.releaseSleepInhibitor()
+	m.releaseKeepAwake()
 
 	m.subscribers.Range(func(key string, ch chan SessionState) bool {
 		close(ch)
