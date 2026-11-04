@@ -261,17 +261,17 @@ Singleton {
     readonly property real lyricsLineInactiveScale: 0.8
     readonly property real lyricsLineInactiveAlpha: 0.4
     readonly property real lyricsRestAlpha: 0.35
-    // The sweep's soft edge as a share of the cue it crosses, and its floor in pixels.
-    readonly property real lyricsSweepFeather: 0.1
-    readonly property real lyricsSweepFeatherMin: 6
+    // The soft lead ahead of the sweep's edge as a share of the row height.
+    readonly property real lyricsSweepLead: 0.9
     readonly property int lyricsLineFadeDuration: lyricsTrackMoveDuration
     readonly property int lyricsLineScaleDuration: lyricsTrackMoveDuration
     readonly property int lyricsLineLinger: 500
-    // Seconds before a line starts that the track moves it into the centre.
-    readonly property real lyricsLineLeadIn: 0.25
+    // Seconds before a line starts that the track moves it into the centre, so it has settled when it is sung.
+    readonly property real lyricsLineLeadIn: 0.4
     // A clock that steps back less than this right after the centre advanced keeps the new row.
     readonly property real lyricsFollowBackstepSlack: 1.5
-    readonly property int lyricsTrackMoveDuration: 500
+    // M3's slow spatial duration (650ms) at the stock base, scaled with the animation speed setting.
+    readonly property int lyricsTrackMoveDuration: Math.round(Theme.currentAnimationBaseDuration * 2.6)
     // A critically damped spring settles in about ten time constants, so a long scroll lands with the line move.
     readonly property real lyricsScrollRate: 10000 / lyricsTrackMoveDuration
     readonly property real lyricsScrollStiffness: lyricsScrollRate * lyricsScrollRate
@@ -279,9 +279,11 @@ Singleton {
     // Below half a pixel the rounded position no longer moves, so the spring stops there.
     readonly property real lyricsScrollSettleDistance: 0.5
     readonly property real lyricsScrollSettleSpeed: 10
-    readonly property int lyricsTrackPushStep: 20
+    readonly property int lyricsTrackPushStep: 40
     readonly property int lyricsTrackMaxPush: 5
-    readonly property var lyricsTrackCurve: [0.25, 0.7, 0.2, 1, 1, 1]
+    // A critically damped spring that settles over the move, fitted as a bezier: a gentle start,
+    // so a row that follows its neighbour a step later never closes onto it, and a long settle.
+    readonly property var lyricsTrackCurve: [0.25, 0.3, 0.13, 1, 1, 1]
     readonly property real lyricsBreakGap: 5
     readonly property real lyricsBreakIndicatorScale: 1.2
     readonly property real lyricsEdgeFadeRatio: 0.2

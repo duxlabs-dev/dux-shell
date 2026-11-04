@@ -167,26 +167,18 @@ function rowHeight(item, layouts, breakSize, padding, gap) {
 }
 
 // Where the fill's edge sits: each started cue sweeps across its own span over its own time, and
-// without the sweep it fills at once.
-function fillEdge(segments, at, sweep) {
-    let edge = 0;
+// without the sweep it fills at once. The soft lead runs ahead of the edge, so the row's first cue
+// starts a lead's width before its glyphs and nothing is lit before it begins.
+function fillEdge(segments, at, sweep, lead) {
+    let edge = -lead;
     for (const segment of segments) {
         if (segment.t > at)
             continue;
         const progress = sweep && segment.e > segment.t ? Math.min(1, (at - segment.t) / (segment.e - segment.t)) : 1;
-        edge = Math.max(edge, segment.x0 + (segment.x1 - segment.x0) * progress);
+        const from = segment.x0 > 0 ? segment.x0 : -lead;
+        edge = Math.max(edge, from + (segment.x1 - from) * progress);
     }
     return edge;
-}
-
-// The cue started most recently.
-function latestSegment(segments, at) {
-    let latest = null;
-    for (const segment of segments) {
-        if (segment.t <= at && (!latest || segment.t >= latest.t))
-            latest = segment;
-    }
-    return latest;
 }
 
 // The first strong character decides, so digits and punctuation do not count.

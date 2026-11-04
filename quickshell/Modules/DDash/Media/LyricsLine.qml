@@ -285,11 +285,12 @@ Item {
 
                 required property var modelData
                 required property int index
-                readonly property var latest: lyricsPart.timed ? LyricsModel.latestSegment(modelData.segments, root.shownClock) : null
-                // The edge sweeps each cue over its own time behind a soft feather. Line timed parts
+                // The edge sweeps each cue over its own time with a soft lead ahead of it, wide enough
+                // to glide through a short syllable instead of flicking across it. Line timed parts
                 // have no cues, so the whole line changes colour when it starts.
-                readonly property real edge: lyricsPart.timed && width > 0 ? Math.min(1, LyricsModel.fillEdge(modelData.segments, root.shownClock, root.sweep) / width) : 0
-                readonly property real feather: latest && root.sweep && width > 0 ? Math.max(DashMetrics.lyricsSweepFeatherMin, (latest.x1 - latest.x0) * DashMetrics.lyricsSweepFeather) / width : 0
+                readonly property real lead: root.sweep ? lyricsPart.layout.rowHeight * DashMetrics.lyricsSweepLead : 0
+                readonly property real edge: lyricsPart.timed && width > 0 ? Math.min(1, LyricsModel.fillEdge(modelData.segments, root.shownClock, root.sweep, lead) / width) : 0
+                readonly property real feather: width > 0 ? lead / width : 0
                 readonly property color restColor: !lyricsPart.timed && lyricsPart.sung ? lyricsPart.fillColor : lyricsPart.restColor
 
                 x: Math.round(lyricsPart.alignment === Text.AlignLeft ? 0 : lyricsPart.alignment === Text.AlignRight ? lyricsPart.width - width : (lyricsPart.width - width) / 2)
