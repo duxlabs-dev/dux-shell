@@ -136,10 +136,10 @@ jobs:
         run: |
           SRPM="${{ steps.build.outputs.srpm_path }}"
           echo "Uploading $(basename "$SRPM") to ${COPR_PROJECT}"
-          BUILD_OUTPUT=$(copr-cli build "$COPR_PROJECT" "$SRPM" --nowait 2>&1)
+          BUILD_OUTPUT=$(copr-cli build "$COPR_PROJECT" "$SRPM" --nowait 2>&1) || { echo "$BUILD_OUTPUT"; exit 1; }
           echo "$BUILD_OUTPUT"
 
-          BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -oP 'Build was added to.*\K[0-9]+' || echo "unknown")
+          BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -oP 'Created builds: \K[0-9]+' || echo "unknown")
           if [ "$BUILD_ID" != "unknown" ]; then
             echo "https://copr.fedorainfracloud.org/coprs/${COPR_PROJECT}/build/$BUILD_ID/"
           else
