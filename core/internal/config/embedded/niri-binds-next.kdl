@@ -6,7 +6,7 @@ binds {
     Mod {
         release { toggle-overview; }
     }
-    Mod+Shift+question hotkey-overlay-title="Keyboard Shortcuts" {
+    Mod+Shift+Slash hotkey-overlay-title="Keyboard Shortcuts" {
         spawn "dms" "ipc" "call" "keybinds" "toggle" "niri";
     }
 }
