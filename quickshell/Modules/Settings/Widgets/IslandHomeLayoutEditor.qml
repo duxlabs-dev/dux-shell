@@ -65,6 +65,11 @@ Column {
                 "text": I18n.tr("Privacy", "island settings: microphone, camera and screen share indicator slot row"),
                 "description": I18n.tr("Shown only while the microphone, camera or screen sharing is in use", "island settings: privacy slot hint")
             },
+            "keyboardLayout": {
+                "icon": "keyboard",
+                "text": I18n.tr("Keyboard layout"),
+                "description": I18n.tr("Displays the active keyboard layout and allows switching")
+            },
             "tray": {
                 "icon": "density_medium",
                 "text": I18n.tr("System tray"),

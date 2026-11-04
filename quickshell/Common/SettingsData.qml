@@ -1035,7 +1035,7 @@ Singleton {
     function islandReserveThickness(bc) {
         return LayoutResolver.islandReserve(islandSettings(bc), islandDefaultsFor(bc));
     }
-    readonly property var _islandHomeGroupIds: ["workspaces", "media", "clock", "weather", "status", "volume", "brightness", "notifications", "privacy", "tray"]
+    readonly property var _islandHomeGroupIds: ["workspaces", "media", "clock", "weather", "status", "volume", "brightness", "notifications", "privacy", "keyboardLayout", "tray"]
     readonly property var _islandHomeLayoutDefault: [
         {
             "id": "workspaces",
@@ -1072,6 +1072,10 @@ Singleton {
         {
             "id": "privacy",
             "enabled": true
+        },
+        {
+            "id": "keyboardLayout",
+            "enabled": false
         },
         {
             "id": "tray",
