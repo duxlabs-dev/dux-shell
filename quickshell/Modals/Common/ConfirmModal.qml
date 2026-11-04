@@ -13,6 +13,7 @@ DModal {
     property string confirmButtonText: I18n.tr("Confirm", "verb, default confirm button in dialogs")
     property string cancelButtonText: I18n.tr("Cancel")
     property color confirmButtonColor: Theme.primary
+    property int defaultButton: 0
     property var onConfirm: function () {}
     property var onCancel: function () {}
 
@@ -31,6 +32,7 @@ DModal {
         confirmButtonText = options.confirmText || I18n.tr("Confirm");
         cancelButtonText = options.cancelText || I18n.tr("Cancel");
         confirmButtonColor = options.confirmColor || Theme.primary;
+        defaultButton = options.defaultButton || 0;
         onConfirm = options.onConfirm || (() => {});
         onCancel = options.onCancel || (() => {});
         open();
@@ -54,6 +56,9 @@ DModal {
     onBackgroundClicked: _activate(0)
     onOpened: {
         contentLoader?.item?.dialog?.reset();
+        // reset() selects Cancel so a stray Enter never confirms; only a caller that asks for it moves the selection.
+        if (root.defaultButton !== 0 && contentLoader?.item?.dialog)
+            contentLoader.item.dialog.selectedButton = root.defaultButton;
         Qt.callLater(function () {
             modalFocusScope.forceActiveFocus();
             modalFocusScope.focus = true;

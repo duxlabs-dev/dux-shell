@@ -10,6 +10,7 @@ import qs.Services
 import qs.DCommon.Common as DCommon
 import "../Common/OutputModel.js" as OutputModel
 import "../Common/BlurStrength.js" as BlurStrength
+import "../Common/niriKdl.js" as NiriKdl
 
 Singleton {
     id: root
@@ -26,6 +27,7 @@ Singleton {
 
     property var outputs: ({})
     property var windows: []
+    onWindowsChanged: if (!titleOnlyWindowsUpdate) NiriColumnCycle.observe()
     property bool titleOnlyWindowsUpdate: false
     property var displayScales: ({})
     property var lastFocusedWindowId: null
@@ -146,6 +148,17 @@ Singleton {
                 return;
             root._lastGapValue = newGaps;
             generateNiriLayoutConfig();
+        }
+    }
+
+    // niri's event stream has no OutputsChanged event (the case below is dead code up to niri 26.04):
+    // a live `niri msg output` change only reaches us through wlr-output-management
+    // (refresh_ipc_outputs -> notify_changes), so this is the one place to refresh the cache.
+    Connections {
+        target: WlrOutputService
+        enabled: CompositorService.isNiri
+        function onStateChanged() {
+            root.fetchOutputs();
         }
     }
 
@@ -1450,7 +1463,7 @@ window-rule {
         let cursorContent = dmsWarning + `cursor {\n`;
 
         if (themeName)
-            cursorContent += `    xcursor-theme "${themeName}"\n`;
+            cursorContent += `    xcursor-theme ${NiriKdl.kdlString(themeName)}\n`;
 
         cursorContent += `    xcursor-size ${size}\n`;
 
@@ -1815,73 +1828,34 @@ window-rule {
             inputContent += "    focus-follows-mouse max-scroll-amount=\"0%\"\n";
         }
 
-        // Mouse block
-        inputContent += "    mouse {\n";
-        inputContent += `        accel-speed ${mouseSpeed.toFixed(1)}\n`;
-        if (mouseProfile !== "default") {
-            inputContent += `        accel-profile "${mouseProfile}"\n`;
-        }
-        if (mouseNaturalScroll) {
-            inputContent += "        natural-scroll\n";
-        }
-        if (mouseLeftHanded) {
-            inputContent += "        left-handed\n";
-        }
-        if (mouseMiddleEmulation) {
-            inputContent += "        middle-emulation\n";
-        }
-        if (mouseScrollFactor !== 1.0) {
-            inputContent += `        scroll-factor ${mouseScrollFactor.toFixed(1)}\n`;
-        }
-        if (mouseScrollMethod !== "default") {
-            inputContent += `        scroll-method "${mouseScrollMethod}"\n`;
-        }
-        inputContent += "    }\n";
-
-        // Touchpad block
-        inputContent += "    touchpad {\n";
-        if (touchpadTap) {
-            inputContent += "        tap\n";
-        }
-        inputContent += `        accel-speed ${touchpadSpeed.toFixed(1)}\n`;
-        if (touchpadProfile !== "default") {
-            inputContent += `        accel-profile "${touchpadProfile}"\n`;
-        }
-        if (touchpadClickMethod !== "default") {
-            inputContent += `        click-method "${touchpadClickMethod}"\n`;
-        }
-        if (touchpadNaturalScroll) {
-            inputContent += "        natural-scroll\n";
-        }
-        if (touchpadDisableOnExternalMouse) {
-            inputContent += "        disabled-on-external-mouse\n";
-        }
-        if (touchpadDisableWhileTyping) {
-            inputContent += "        dwt\n";
-        }
-        if (touchpadMiddleEmulation) {
-            inputContent += "        middle-emulation\n";
-        }
-        if (touchpadScrollFactor !== 1.0) {
-            inputContent += `        scroll-factor ${touchpadScrollFactor.toFixed(1)}\n`;
-        }
-        if (touchpadPinchSensitivity !== 1.0 && configNextSupported) {
-            inputContent += `        pinch-sensitivity ${touchpadPinchSensitivity.toFixed(1)}\n`;
-        }
-        if (touchpadScrollMethod !== "default") {
-            inputContent += `        scroll-method "${touchpadScrollMethod}"\n`;
-        }
-        if (!touchpadTapAndDrag) {
-            inputContent += "        drag false\n";
-        }
-        if (touchpadDragLock) {
-            inputContent += "        drag-lock\n";
-        }
-        inputContent += "    }\n";
+        inputContent += NiriKdl.mouseBlock({
+            "speed": mouseSpeed,
+            "profile": mouseProfile,
+            "naturalScroll": mouseNaturalScroll,
+            "leftHanded": mouseLeftHanded,
+            "middleEmulation": mouseMiddleEmulation,
+            "scrollFactor": mouseScrollFactor,
+            "scrollMethod": mouseScrollMethod
+        });
+        inputContent += NiriKdl.touchpadBlock({
+            "tap": touchpadTap,
+            "speed": touchpadSpeed,
+            "profile": touchpadProfile,
+            "clickMethod": touchpadClickMethod,
+            "naturalScroll": touchpadNaturalScroll,
+            "disableOnExternalMouse": touchpadDisableOnExternalMouse,
+            "disableWhileTyping": touchpadDisableWhileTyping,
+            "middleEmulation": touchpadMiddleEmulation,
+            "scrollFactor": touchpadScrollFactor,
+            "scrollMethod": touchpadScrollMethod,
+            "pinchSensitivity": configNextSupported ? touchpadPinchSensitivity : 1.0,
+            "tapAndDrag": touchpadTapAndDrag,
+            "dragLock": touchpadDragLock
+        });
 
         // Keyboard block — emitted only when configured so untouched settings keep
         // niri's locale1 fallback and any keyboard block in the user's own config.
-        const kdlString = value => `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+        const kdlString = NiriKdl.kdlString;
         const keyboardConfigured = keyboardKeymapFile || keyboardLayouts || keyboardVariants || keyboardModel || keyboardOptions || keyboardTrackLayout || keyboardRepeatDelay > 0 || keyboardRepeatRate > 0 || keyboardNumlock;
         if (keyboardConfigured) {
             inputContent += "    keyboard {\n";
@@ -1994,6 +1968,12 @@ window-rule {
                 return "SCREENSHOT_WINDOW_SUCCESS";
             }
             return "SCREENSHOT_WINDOW_FAILED";
+        }
+
+        function cycleColumnWidth(): string {
+            if (!CompositorService.isNiri)
+                return "NIRI_NOT_AVAILABLE";
+            return NiriColumnCycle.cycleColumnWidth();
         }
 
         target: "niri"

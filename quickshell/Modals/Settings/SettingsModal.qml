@@ -48,6 +48,7 @@ DFloatingWindow {
     readonly property bool searchFocused: sidebar.searchFocused
     property bool isCompactMode: width < SettingsMetrics.compactBreakpoint
     property bool menuVisible: !isCompactMode
+    property bool contentOnOpen: false
     property string keybindSearchQuery: ""
 
     signal closingModal
@@ -67,6 +68,7 @@ DFloatingWindow {
     }
 
     function hide() {
+        contentOnOpen = false;
         shouldBeVisible = false;
         visible = false;
     }
@@ -134,6 +136,10 @@ DFloatingWindow {
     function showWithTabName(tabName: string) {
         setPage(tabName);
         show();
+        // openNiri asks for a section: a narrow window shows it, not the menu, even when the tile narrows after mapping
+        contentOnOpen = currentPage === "niri";
+        if (contentOnOpen && isCompactMode)
+            menuVisible = false;
     }
 
     function resolveTabIndex(tabName: string): int {
@@ -170,6 +176,7 @@ DFloatingWindow {
     }
 
     function toggleMenu() {
+        contentOnOpen = false;
         menuVisible = !menuVisible;
         if (menuVisible)
             focusSearch();
@@ -192,9 +199,12 @@ DFloatingWindow {
     onIsCompactModeChanged: {
         if (!isCompactMode)
             menuVisible = true;
+        else if (contentOnOpen)
+            menuVisible = false;
     }
 
     onCurrentPageChanged: {
+        contentOnOpen = false;
         if (isCompactMode)
             menuVisible = false;
     }
@@ -206,7 +216,11 @@ DFloatingWindow {
         } else {
             const revision = contentFocusScope.focusRevision;
             Qt.callLater(() => {
-                if (settingsModal.visible && revision === contentFocusScope.focusRevision)
+                if (!settingsModal.visible || revision !== contentFocusScope.focusRevision)
+                    return;
+                if (settingsModal.contentOnOpen)
+                    settingsModal.focusCurrentPage(false);
+                else
                     settingsModal.focusSearch();
             });
         }
@@ -439,7 +453,7 @@ DFloatingWindow {
                         const slack = (body.paneSpace - width) / 2;
                         return (I18n.isRtl ? body.paneInset : sidebar.width) + slack;
                     }
-                    width: settingsModal.isCompactMode ? body.width - body.paneInset * 2 : Math.min(body.paneSpace, SettingsMetrics.paneMaxWidth)
+                    width: settingsModal.isCompactMode ? body.width - body.paneInset * 2 : Math.min(body.paneSpace, content.currentPageItem?.paneMaxWidth ?? SettingsMetrics.paneMaxWidth)
                     height: body.height - body.paneInset
                     radius: SettingsMetrics.paneRadius
                     color: SettingsMetrics.paneColor

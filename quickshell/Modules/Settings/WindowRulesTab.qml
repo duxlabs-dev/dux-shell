@@ -347,7 +347,17 @@ Item {
     }
 
     SettingsPage {
+        visible: CompositorService.isNiri
+
+        SettingsNiriLink {
+            section: "windows"
+            hint: I18n.tr("Windows", "niri page section")
+        }
+    }
+
+    SettingsPage {
         id: flickable
+        visible: !CompositorService.isNiri
 
         SettingsCard {
             id: headerSection

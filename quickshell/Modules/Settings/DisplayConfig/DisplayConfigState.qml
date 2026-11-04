@@ -10,6 +10,7 @@ import qs.Services
 import qs.Modules.Settings.Widgets
 import "../../../Common/ConfigIncludeResolve.js" as ConfigIncludeResolve
 import "../../../Common/OutputModel.js" as OutputModel
+import "../../../Common/niri/sections/corners.js" as Corners
 
 Singleton {
     id: root
@@ -1355,46 +1356,50 @@ Singleton {
     }
 
     function buildOutputsWithPendingChanges() {
+        return buildOutputs(outputs, pendingChanges);
+    }
+
+    function buildOutputs(live, changes) {
         const result = {};
 
         for (const outputName in savedOutputs) {
-            if (!outputs[outputName])
+            if (!live[outputName])
                 result[outputName] = JSON.parse(JSON.stringify(savedOutputs[outputName]));
         }
 
-        for (const outputName in outputs) {
-            const entry = JSON.parse(JSON.stringify(outputs[outputName]));
+        for (const outputName in live) {
+            const entry = JSON.parse(JSON.stringify(live[outputName]));
             if (entry.enabled === false)
                 overlaySavedDisabledOutput(entry, outputName);
             result[outputName] = entry;
         }
 
-        for (const outputName in pendingChanges) {
+        for (const outputName in changes) {
             if (!result[outputName])
                 continue;
-            const changes = pendingChanges[outputName];
-            if (changes.position && result[outputName].logical) {
-                result[outputName].logical.x = changes.position.x;
-                result[outputName].logical.y = changes.position.y;
+            const change = changes[outputName];
+            if (change.position && result[outputName].logical) {
+                result[outputName].logical.x = change.position.x;
+                result[outputName].logical.y = change.position.y;
             }
-            if (changes.mode !== undefined && result[outputName].modes) {
+            if (change.mode !== undefined && result[outputName].modes) {
                 if (result[outputName].configured_mode)
-                    result[outputName].configured_mode = changes.mode;
+                    result[outputName].configured_mode = change.mode;
                 for (var i = 0; i < result[outputName].modes.length; i++) {
-                    if (formatMode(result[outputName].modes[i]) === changes.mode) {
+                    if (formatMode(result[outputName].modes[i]) === change.mode) {
                         result[outputName].current_mode = i;
                         break;
                     }
                 }
             }
-            if (changes.scale !== undefined && result[outputName].logical)
-                result[outputName].logical.scale = changes.scale;
-            if (changes.transform !== undefined && result[outputName].logical)
-                result[outputName].logical.transform = changes.transform;
-            if (changes.vrr !== undefined)
-                result[outputName].vrr_enabled = changes.vrr;
-            if (changes.mirror !== undefined)
-                result[outputName].mirror = changes.mirror;
+            if (change.scale !== undefined && result[outputName].logical)
+                result[outputName].logical.scale = change.scale;
+            if (change.transform !== undefined && result[outputName].logical)
+                result[outputName].logical.transform = change.transform;
+            if (change.vrr !== undefined)
+                result[outputName].vrr_enabled = change.vrr;
+            if (change.mirror !== undefined)
+                result[outputName].mirror = change.mirror;
         }
         return normalizeOutputPositions(result);
     }
@@ -1713,11 +1718,53 @@ Singleton {
     }
 
     function validateAndApplyNiriConfig(changeDescriptions) {
+        const mergedOutputs = buildOutputsWithPendingChanges();
+        const mergedNiriSettings = buildMergedNiriSettings();
+        validateNiriOutputs(mergedOutputs, mergedNiriSettings, () => {
+            changesApplied(changeDescriptions);
+            if (formatChanged)
+                SettingsData.saveSettings();
+            commitNiriSettingsChanges();
+            backendWriteOutputsConfig(mergedOutputs, mergedNiriSettings);
+        });
+    }
+
+    // Writes one display's hot corners alone: pending Displays changes stay pending and are never confirmed here.
+    // Returns false when it cannot start (not niri, or a Displays check is running) so the caller can say why.
+    function applyNiriHotCorners(outputName, hotCorners, done) {
+        if (!CompositorService.isNiri || validatingConfig)
+            return false;
+        const id = getNiriOutputIdentifier(allOutputs[outputName], outputName);
+        const change = {};
+        change[id] = {
+            "hotCorners": hotCorners
+        };
+        // `outputs` already previews pending scale and position, the snapshot holds the applied layout.
+        const appliedOutputs = buildOutputs(originalOutputs ?? outputs, {});
+        const niriSettings = mergeNiriSettings(change);
+        validateNiriOutputs(appliedOutputs, niriSettings, () => {
+            SessionData.setNiriOutputSetting(id, "hotCorners", hotCorners);
+            // A later revert of other Displays changes restores this snapshot, so it must hold the new corners too.
+            if (originalNiriSettings)
+                originalNiriSettings = Corners.settingsWithCorners(originalNiriSettings, id, hotCorners);
+            backendWriteOutputsConfig(appliedOutputs, niriSettings);
+            readMonitorsJson(data => {
+                const match = findConfigEntryByFingerprint(data, currentOutputSet, true);
+                if (!match)
+                    return;
+                data.configurations[match.index] = Corners.profileWithCorners(match.entry, id, hotCorners);
+                writeMonitorsJson(data);
+            });
+            if (done)
+                done();
+        });
+        return true;
+    }
+
+    function validateNiriOutputs(mergedOutputs, mergedNiriSettings, onValid) {
         validatingConfig = true;
         validationError = "";
 
-        const mergedOutputs = buildOutputsWithPendingChanges();
-        const mergedNiriSettings = buildMergedNiriSettings();
         const configContent = NiriService.buildOutputsConfig(mergedOutputs, mergedNiriSettings);
 
         const configDir = Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation));
@@ -1738,22 +1785,22 @@ Singleton {
                     ToastService.showError(I18n.tr("Config validation failed"), validationError, "", "display-config");
                     return;
                 }
-                changesApplied(changeDescriptions);
-                if (formatChanged)
-                    SettingsData.saveSettings();
-                commitNiriSettingsChanges();
-                backendWriteOutputsConfig(mergedOutputs, mergedNiriSettings);
+                onValid();
             });
         });
     }
 
     function buildMergedNiriSettings() {
+        return mergeNiriSettings(pendingNiriChanges);
+    }
+
+    function mergeNiriSettings(pending) {
         const merged = JSON.parse(JSON.stringify(SessionData.niriOutputSettings));
-        for (const outputId in pendingNiriChanges) {
+        for (const outputId in pending) {
             if (!merged[outputId])
                 merged[outputId] = {};
-            for (const key in pendingNiriChanges[outputId]) {
-                merged[outputId][key] = pendingNiriChanges[outputId][key];
+            for (const key in pending[outputId]) {
+                merged[outputId][key] = pending[outputId][key];
             }
         }
         // Never disable the only connected output — clear any stale flag

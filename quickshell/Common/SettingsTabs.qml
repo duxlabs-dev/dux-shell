@@ -298,6 +298,14 @@ Singleton {
             "separator": true
         },
         {
+            "id": "niri",
+            "text": "Niri",
+            "icon": "view_column",
+            "tabIndex": 68,
+            "niriOnly": true,
+            "hint": I18n.tr("Windows, animations, workspaces, shortcuts", "settings sidebar hint for the niri page")
+        },
+        {
             "id": "displays",
             "text": I18n.tr("Displays"),
             "icon": "monitor",
@@ -331,6 +339,8 @@ Singleton {
             "text": I18n.tr("Input", "noun, settings page name for input devices"),
             "icon": "keyboard",
             "hint": I18n.tr("Shortcuts, keyboard, mouse", "settings sidebar hint for the input page"),
+            "hiddenOnNiri": true,
+            "niriSection": "input",
             "children": [
                 {
                     "id": "keybinds",
@@ -338,6 +348,8 @@ Singleton {
                     "icon": "keyboard_command_key",
                     "tabIndex": 2,
                     "shortcutsOnly": true,
+                    "hiddenOnNiri": true,
+                    "niriSection": "keybinds",
                     "hint": I18n.tr("Compositor and shell key bindings")
                 },
                 {
@@ -346,6 +358,8 @@ Singleton {
                     "icon": "keyboard",
                     "tabIndex": 45,
                     "inputCapable": true,
+                    "hiddenOnNiri": true,
+                    "niriSection": "input",
                     "hint": I18n.tr("Layouts, repeat rate, num lock")
                 },
                 {
@@ -354,6 +368,8 @@ Singleton {
                     "icon": "mouse",
                     "tabIndex": 44,
                     "pointerCapable": true,
+                    "hiddenOnNiri": true,
+                    "niriSection": "input",
                     "hint": I18n.tr("Speed, scrolling, tap to click")
                 }
             ]
@@ -514,6 +530,8 @@ Singleton {
                     "icon": "select_window",
                     "tabIndex": 38,
                     "windowRulesCapable": true,
+                    "hiddenOnNiri": true,
+                    "niriSection": "windows",
                     "hint": I18n.tr("Floating, opacity and placement rules per app")
                 },
                 {
@@ -592,6 +610,8 @@ Singleton {
                     "icon": "layers",
                     "tabIndex": 37,
                     "layoutCapable": true,
+                    "hiddenOnNiri": true,
+                    "niriSection": "windows",
                     "hint": I18n.tr("Gaps, window borders, corner radius")
                 },
                 {
@@ -769,6 +789,10 @@ Singleton {
             return false;
         if (entry.soundsOnly && MultimediaService.unavailable)
             return false;
+        if (entry.niriOnly && !CompositorService.isNiri)
+            return false;
+        if (entry.hiddenOnNiri && CompositorService.isNiri)
+            return false;
         if (entry.hyprlandNiriOnly && !CompositorService.isNiri && !CompositorService.isHyprland && !CompositorService.isMango)
             return false;
         if (entry.windowRulesCapable && !CompositorService.supportsWindowRules)
@@ -844,6 +868,16 @@ Singleton {
         return hubMainRows(hubId).concat(hubMoreRows(hubId));
     }
 
+    // A tab merged into the niri page resolves to it, on the section that now owns its settings.
+    function redirectNiri(pageId) {
+        const entry = pageMap[pageId];
+        if (!entry?.hiddenOnNiri || !CompositorService.isNiri)
+            return pageId;
+        if (entry.niriSection)
+            SettingsUiState.niriSection = entry.niriSection;
+        return "niri";
+    }
+
     function resolvePage(name) {
         if (!name)
             return "";
@@ -855,9 +889,9 @@ Singleton {
             return "";
         const entry = pageMap[id];
         if (entry.kind !== "hub" || entry.hubHeader)
-            return id;
+            return redirectNiri(id);
         const leaves = visibleLeaves(id);
-        return leaves.length === 1 ? leaves[0].id : id;
+        return redirectNiri(leaves.length === 1 ? leaves[0].id : id);
     }
 
     function listPageIds() {

@@ -76,6 +76,11 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 		conn.Respond(req.ID, clipboard.LoadConfig())
 	}))
 	mux.Handle("clipboard.setConfig", requestHandler(handleClipboardSetConfig))
+	mux.Handle("niri.config.read", requestHandler(handleNiriConfigRead))
+	mux.Handle("niri.config.apply", requestHandler(handleNiriConfigApply))
+	mux.Handle("niri.config.history", requestHandler(handleNiriConfigHistory))
+	mux.Handle("niri.config.restore", requestHandler(handleNiriConfigRestore))
+	mux.Handle("niri.config.doctor", requestHandler(handleNiriConfigDoctor))
 
 	mux.HandlePrefix("network.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
 		if networkManager == nil {

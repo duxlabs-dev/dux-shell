@@ -71,8 +71,8 @@ function niriWorkspacesForScreen(raw, screenName, followFocus, occupiedOnly, cac
     if (all.length === 0)
         return niriFallback().map(niriRecord);
     dropStale(cache, new Set(all.map(ws => String(ws.id))));
-    const onScreen = !screenName || followFocus ? raw.currentOutputWorkspaces : all.filter(ws => ws.output === screenName);
-    const sorted = (onScreen.length > 0 ? onScreen : niriFallback()).slice().sort((a, b) => a.idx - b.idx);
+    const selectable = !screenName || followFocus ? raw.currentOutputWorkspaces : all.filter(ws => ws.output === screenName);
+    const sorted = (selectable.length > 0 ? selectable : niriFallback()).slice().sort((a, b) => a.idx - b.idx);
     const workspaces = occupiedOnly ? sorted.filter(ws => ws.is_active || (raw.windows?.some(win => win.workspace_id === ws.id) ?? false)) : sorted;
     return workspaces.map(ws => reuse(cache, ws.id, niriRecord(ws)));
 }

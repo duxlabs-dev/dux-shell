@@ -24,9 +24,14 @@ Item {
             visibleCondition: CompositorService.supportsInputConfig
         }
 
+        SettingsNiriLink {
+            section: "input"
+            hint: I18n.tr("Input", "niri page section")
+        }
+
         SettingsCard {
             width: parent.width
-            visible: CompositorService.supportsInputConfig
+            visible: CompositorService.supportsInputConfig && !CompositorService.isNiri
             tags: ["mouse", "input", "sensitivity", "acceleration", "pointer"]
             title: I18n.tr("Mouse", "mouse input settings card title")
             settingKey: "mouseSettings"
@@ -148,7 +153,7 @@ Item {
 
         SettingsCard {
             width: parent.width
-            visible: CompositorService.supportsInputConfig
+            visible: CompositorService.supportsInputConfig && !CompositorService.isNiri
             tags: ["touchpad", "input", "sensitivity", "tap", "click", "natural"]
             title: I18n.tr("Touchpad", "touchpad input settings card title")
             settingKey: "touchpadSettings"

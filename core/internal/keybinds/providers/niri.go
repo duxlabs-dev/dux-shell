@@ -3,11 +3,11 @@ package providers
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"net"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds"
+	"github.com/duxlabs-dev/dux-shell/core/internal/niriconf"
 	"github.com/sblinch/kdl-go/document"
 )
 
@@ -392,25 +393,41 @@ type overrideBind struct {
 }
 
 func (n *NiriProvider) loadOverrideBinds() (map[string]*overrideBind, error) {
-	overridePath := n.GetOverridePath()
-	binds := make(map[string]*overrideBind)
+	list, err := n.bindsFromDoc()
+	if err != nil {
+		return nil, err
+	}
+	binds := make(map[string]*overrideBind, len(list))
+	for _, bind := range list {
+		binds[normalizeNiriBindKey(bind.Key)] = bind
+	}
+	return binds, nil
+}
 
-	data, err := os.ReadFile(overridePath)
+// bindsFromDoc reads the bind entries of every top-level binds node of dms/binds.kdl,
+// in file order. A missing file reads empty.
+func (n *NiriProvider) bindsFromDoc() ([]*overrideBind, error) {
+	data, err := os.ReadFile(n.GetOverridePath())
 	if os.IsNotExist(err) {
-		return binds, nil
+		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
+	return n.bindsFromData(data)
+}
 
-	parser := NewNiriParser(filepath.Dir(overridePath))
-	parser.currentSource = overridePath
+// bindsFromData is bindsFromDoc on raw KDL content instead of the file on disk.
+func (n *NiriProvider) bindsFromData(data []byte) ([]*overrideBind, error) {
+	parser := NewNiriParser(n.configDir)
+	parser.currentSource = "dms/binds.kdl"
 
 	doc, err := parseKDL(data)
 	if err != nil {
 		return nil, err
 	}
 
+	var binds []*overrideBind
 	for _, node := range doc.Nodes {
 		if node.Name.String() != "binds" || node.Children == nil {
 			continue
@@ -431,12 +448,12 @@ func (n *NiriProvider) loadOverrideBinds() (map[string]*overrideBind, error) {
 				action = n.formatRawAction(kb.Action, kb.Args)
 			}
 
-			binds[normalizeNiriBindKey(keyStr)] = &overrideBind{
+			binds = append(binds, &overrideBind{
 				Key:         keyStr,
 				Action:      action,
 				Description: kb.Description,
 				Options:     n.extractOptions(child),
-			}
+			})
 		}
 	}
 
@@ -664,7 +681,7 @@ func (n *NiriProvider) writeOverrideBinds(binds map[string]*overrideBind) error 
 		return err
 	}
 
-	return os.WriteFile(overridePath, []byte(content), 0o644)
+	return niriconf.WriteAtomic(overridePath, []byte(content))
 }
 
 func (n *NiriProvider) getBindSortPriority(action string) int {
@@ -817,25 +834,10 @@ func (n *NiriProvider) isNumericArg(val string) bool {
 }
 
 func (n *NiriProvider) validateBindsContent(content string) error {
-	tmpFile, err := os.CreateTemp("", "dms-binds-*.kdl")
-	if err != nil {
-		return fmt.Errorf("failed to create temp file: %w", err)
+	err := niriconf.ValidateMerged(n.configDir, "dms/binds.kdl", []byte(content))
+	var invalid *niriconf.InvalidError
+	if errors.As(err, &invalid) {
+		invalid.Output = strings.TrimSpace(invalid.Output)
 	}
-	defer os.Remove(tmpFile.Name())
-
-	if _, err := tmpFile.WriteString(content); err != nil {
-		tmpFile.Close()
-		return fmt.Errorf("failed to write temp file: %w", err)
-	}
-	tmpFile.Close()
-
-	if output, err := niriValidate(tmpFile.Name()); err != nil {
-		return fmt.Errorf("invalid config: %s", strings.TrimSpace(string(output)))
-	}
-
-	return nil
-}
-
-var niriValidate = func(path string) ([]byte, error) {
-	return exec.Command("niri", "validate", "-c", path).CombinedOutput()
+	return err
 }

@@ -607,8 +607,18 @@ Item {
         }
     }
 
+    SettingsPage {
+        visible: CompositorService.isNiri
+
+        SettingsNiriLink {
+            section: "keybinds"
+            hint: I18n.tr("Keybinds", "niri page section")
+        }
+    }
+
     DListView {
         id: flickable
+        visible: !CompositorService.isNiri
         keyNavigationEnabled: false
         // ListView hands focus to every new current row; cleared, filtering can't steal it from the header search
         currentIndex: -1
