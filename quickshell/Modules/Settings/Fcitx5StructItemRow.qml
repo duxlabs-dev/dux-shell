@@ -13,8 +13,6 @@ SettingsRow {
     signal fieldEdited(var fieldPath, var value)
     signal removed
 
-    resetKeys: []
-
     leading: Row {
         spacing: Theme.spacingS
 
@@ -48,7 +46,7 @@ SettingsRow {
                     id: field
                     anchors.verticalCenter: parent.verticalCenter
                     visible: cell.modelData.kind !== "bool"
-                    width: Theme.iconButtonSize * (cell.modelData.kind === "strings" ? 10 : (cell.index === root.fields.length - 1 ? 5 : 2))
+                    width: cell.modelData.kind === "strings" ? SettingsMetrics.fieldWidthXL : (cell.index === root.fields.length - 1 ? SettingsMetrics.fieldWidthM : SettingsMetrics.fieldWidthS)
                     placeholderText: cell.modelData.label
                     text: cell.modelData.kind === "strings" ? Fcitx5Schema.joinList(cell.fieldValue) : String(cell.fieldValue ?? "")
                     Accessible.name: cell.modelData.label

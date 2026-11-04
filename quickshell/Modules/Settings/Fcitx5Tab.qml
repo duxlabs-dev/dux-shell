@@ -30,8 +30,6 @@ Item {
     property var layoutChoices: null
     property var globalSchema: null
     property var globalValue: ({})
-    property var addons: []
-    property var addonEnabled: ({})
 
     readonly property var items: group?.items ?? []
     readonly property bool needsLayouts: items.some(item => !Fcitx5Schema.isKeyboardIM(item.name))
@@ -144,12 +142,6 @@ Item {
         return catalog[unique]?.name ?? unique;
     }
 
-    function fail(error) {
-        if (error)
-            ToastService.showError(error);
-        return error !== "";
-    }
-
     function load() {
         if (!editable)
             return;
@@ -157,7 +149,7 @@ Item {
         loadGlobal();
         loadAddons();
         Fcitx5Service.request("availableIMs", null, (result, error) => {
-            if (fail(error))
+            if (error)
                 return;
             const map = {};
             for (const im of result.inputMethods)
@@ -168,7 +160,7 @@ Item {
 
     function loadGroups() {
         Fcitx5Service.request("getGroups", null, (result, error) => {
-            if (fail(error))
+            if (error)
                 return;
             root.groupNames = result.groups;
             root.activeGroup = result.current;
@@ -182,7 +174,7 @@ Item {
         Fcitx5Service.request("getGroup", {
             "name": name
         }, (result, error) => {
-            if (!fail(error))
+            if (!error)
                 root.group = result;
         });
     }
@@ -197,31 +189,30 @@ Item {
 
     function loadAddons() {
         Fcitx5Service.request("getAddons", null, (result, error) => {
-            if (fail(error))
+            if (error)
                 return;
-            const enabled = {};
-            for (const addon of result.addons)
-                enabled[addon.uniqueName] = addon.enabled;
-            root.addonEnabled = enabled;
-            if (root.addons.length > 0)
+            if (addonModel.count > 0) {
+                for (let i = 0; i < addonModel.count; i++) {
+                    const fresh = result.addons.find(addon => addon.uniqueName === addonModel.get(i).uniqueName);
+                    if (fresh)
+                        addonModel.setProperty(i, "addonEnabled", fresh.enabled);
+                }
                 return;
+            }
             const shown = result.addons.filter(addon => root.addonIcons[addon.category] !== undefined);
             shown.sort((a, b) => a.category !== b.category ? a.category - b.category : a.name.localeCompare(b.name));
-            root.addons = shown;
+            shown.forEach(addon => addonModel.append(Object.assign({}, addon, {
+                    "addonEnabled": addon.enabled
+                })));
         });
     }
 
-    function setAddonEnabled(name, enabled) {
-        const next = Object.assign({}, addonEnabled);
-        next[name] = enabled;
-        addonEnabled = next;
+    function setAddonEnabled(index, enabled) {
+        addonModel.setProperty(index, "addonEnabled", enabled);
         Fcitx5Service.request("setAddonEnabled", {
-            "name": name,
+            "name": addonModel.get(index).uniqueName,
             "enabled": enabled
-        }, (result, error) => {
-            fail(error);
-            root.loadAddons();
-        });
+        }, () => root.loadAddons());
     }
 
     function loadLayouts() {
@@ -232,7 +223,7 @@ Item {
             "labels": []
         };
         Fcitx5Service.request("availableLayouts", null, (result, error) => {
-            if (!fail(error))
+            if (!error)
                 root.layoutChoices = Fcitx5Schema.layoutOptions(result.layouts, I18n.tr("Default"));
         });
     }
@@ -246,7 +237,6 @@ Item {
             "defaultLayout": group.defaultLayout,
             "items": newItems
         }, (result, error) => {
-            fail(error);
             root.loadGroup(root.selectedGroup);
         });
     }
@@ -272,7 +262,7 @@ Item {
             "name": old,
             "newName": target
         }, (result, error) => {
-            if (!fail(error) && root.selectedGroup === old)
+            if (!error && root.selectedGroup === old)
                 root.selectedGroup = target;
             root.loadGroups();
         });
@@ -282,7 +272,6 @@ Item {
         Fcitx5Service.request(method, {
             "name": name
         }, (result, error) => {
-            fail(error);
             root.loadGroups();
         });
     }
@@ -291,6 +280,10 @@ Item {
     onNeedsLayoutsChanged: {
         if (needsLayouts)
             loadLayouts();
+    }
+
+    ListModel {
+        id: addonModel
     }
 
     LazyLoader {
@@ -304,7 +297,7 @@ Item {
             objectName: "fcitx5ImPicker"
             parentModal: root.parentModal
             title: I18n.tr("Add input method", "Title for fcitx5 IM picker window")
-            searchPlaceholder: I18n.tr("Search...")
+            searchPlaceholder: I18n.tr("Search")
             onWidgetChosen: widget => {
                 root.saveItems(root.items.concat({
                     "name": widget.id,
@@ -386,6 +379,13 @@ Item {
             settingKey: "fcitx5InputMethods"
             iconName: "language"
 
+            headerActions: DButton {
+                text: I18n.tr("Add")
+                iconName: "add"
+                buttonHeight: Theme.buttonHeightXS
+                onClicked: root.showPicker()
+            }
+
             SettingsReorderList {
                 id: imList
 
@@ -403,13 +403,16 @@ Item {
                     subtitle: root.catalog[modelData.name]?.nativeName ?? ""
 
                     DDropdown {
+                        // DDropdown assigns currentValue on selection, which would drop a binding on it.
+                        readonly property string syncedValue: Fcitx5Schema.layoutKey(imRow.modelData.layout)
+
+                        onSyncedValueChanged: currentValue = syncedValue
                         anchors.verticalCenter: parent.verticalCenter
                         visible: imRow.hasLayout
                         backgroundColor: SettingsMetrics.controlSurface
                         enableFuzzySearch: true
                         options: root.layoutChoices?.labels ?? []
                         optionValues: root.layoutChoices?.values ?? []
-                        currentValue: Fcitx5Schema.layoutKey(imRow.modelData.layout)
                         Accessible.name: I18n.tr("Keyboard layout")
                         onValueChanged: value => root.saveItems(root.items.map((item, i) => i === imRow.index ? {
                                     "name": item.name,
@@ -426,23 +429,6 @@ Item {
                         onClicked: root.saveItems(root.items.filter((_, i) => i !== imRow.index))
                     }
                 }
-            }
-        }
-
-        Item {
-            width: parent.width
-            height: addButton.height
-            visible: root.editable
-
-            DButton {
-                id: addButton
-
-                anchors.right: parent.right
-                text: I18n.tr("Add")
-                iconName: "add"
-                backgroundColor: Theme.secondaryContainer
-                textColor: Theme.onSecondaryContainer
-                onClicked: root.showPicker()
             }
         }
 
@@ -493,7 +479,7 @@ Item {
 
         SettingsCard {
             width: parent.width
-            visible: root.editable && root.addons.length > 0
+            visible: root.editable && addonModel.count > 0
             tags: ["fcitx5", "input method", "plugin", "addon", "module"]
             title: I18n.tr("Plugins")
             settingKey: "fcitx5Plugins"
@@ -501,28 +487,34 @@ Item {
             collapsible: true
 
             Repeater {
-                model: root.addons
+                model: addonModel
 
                 delegate: SettingsSplitRow {
-                    required property var modelData
+                    required property int index
+                    required property string uniqueName
+                    required property string name
+                    required property string comment
+                    required property int category
+                    required property bool configurable
+                    required property bool addonEnabled
 
-                    iconName: root.addonIcons[modelData.category]
+                    iconName: root.addonIcons[category]
                     iconColor: checked ? Theme.primary : Theme.onSurfaceVariant
-                    title: modelData.name
-                    subtitle: modelData.comment
-                    navigable: modelData.configurable
+                    title: name
+                    subtitle: comment
+                    navigable: configurable
                     clickable: true
-                    checked: root.addonEnabled[modelData.uniqueName] ?? false
+                    checked: addonEnabled
                     onNavigated: keyboard => {
-                        if (!modelData.configurable) {
-                            root.setAddonEnabled(modelData.uniqueName, !checked);
+                        if (!configurable) {
+                            root.setAddonEnabled(index, !checked);
                             return;
                         }
-                        SettingsUiState.selectedFcitx5Addon = modelData.uniqueName;
-                        SettingsUiState.selectedFcitx5AddonTitle = modelData.name;
+                        SettingsUiState.selectedFcitx5Addon = uniqueName;
+                        SettingsUiState.selectedFcitx5AddonTitle = name;
                         root.parentModal?.navigateTo("fcitx5_addon", keyboard);
                     }
-                    onToggled: value => root.setAddonEnabled(modelData.uniqueName, value)
+                    onToggled: value => root.setAddonEnabled(index, value)
                 }
             }
         }

@@ -11,7 +11,8 @@ Row {
     property var value
     property string title
     readonly property var parts: Fcitx5Schema.parseFont(value)
-    property var families: []
+    property var installedFamilies: []
+    readonly property var families: parts.family && !installedFamilies.includes(parts.family) ? [parts.family].concat(installedFamilies) : installedFamilies
     // DDropdown shows emptyText for "", so Regular needs a non-empty key.
     readonly property string regularKey: "Regular"
     readonly property string styleKey: parts.style === "" ? regularKey : parts.style
@@ -30,6 +31,10 @@ Row {
 
     signal fontEdited(string font)
 
+    function enumerateFamilies() {
+        installedFamilies = DCommon.Fonts.selectableFamilies("");
+    }
+
     function editPart(part, text) {
         const next = part === "style" && text === regularKey ? "" : text;
         if (next === parts[part])
@@ -42,29 +47,33 @@ Row {
     spacing: Theme.spacingS
 
     DDropdown {
+        readonly property string syncedValue: root.parts.family
+
+        onSyncedValueChanged: currentValue = syncedValue
         anchors.verticalCenter: parent.verticalCenter
         backgroundColor: SettingsMetrics.controlSurface
         enableFuzzySearch: true
         popupWidthOffset: SettingsMetrics.fontMenuExtraWidth
         options: root.families
-        currentValue: root.parts.family
         Accessible.name: root.title
         onValueChanged: value => root.editPart("family", value)
     }
 
     DDropdown {
+        readonly property string syncedValue: root.styleKey
+
+        onSyncedValueChanged: currentValue = syncedValue
         anchors.verticalCenter: parent.verticalCenter
         backgroundColor: SettingsMetrics.controlSurface
         options: root.styleValues.map(v => root.styleLabels[v] ?? v)
         optionValues: root.styleValues
-        currentValue: root.styleKey
         Accessible.name: I18n.tr("Style", "font style")
         onValueChanged: value => root.editPart("style", value)
     }
 
     DTextField {
         anchors.verticalCenter: parent.verticalCenter
-        width: Theme.iconButtonSize * 1.5
+        width: SettingsMetrics.fieldWidthXS
         text: root.parts.size
         validator: sizeValidator
         Accessible.name: I18n.tr("Size", "font size")
@@ -76,13 +85,9 @@ Row {
 
     IntValidator {
         id: sizeValidator
-        bottom: 1
-        top: 999
+        bottom: 4
+        top: 100
     }
 
-    Component.onCompleted: {
-        const all = DCommon.Fonts.selectableFamilies("");
-        const current = parts.family;
-        families = current && !all.includes(current) ? [current].concat(all) : all;
-    }
+    Component.onCompleted: Qt.callLater(enumerateFamilies)
 }

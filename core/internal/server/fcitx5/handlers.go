@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/duxlabs-dev/dux-go/dbusutil"
 	"github.com/duxlabs-dev/dux-go/ipc"
 	"github.com/duxlabs-dev/dux-go/ipc/params"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
@@ -81,6 +82,8 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request) {
 
 func dispatch(req ipc.Request) (any, error) {
 	switch req.Method {
+	case "fcitx5.currentIM":
+		return currentIM()
 	case "fcitx5.getGroups":
 		return getGroups()
 	case "fcitx5.getGroup":
@@ -163,6 +166,18 @@ func groupInfo(name string) (string, []rawGroupItem, error) {
 	return defaultLayout, items, err
 }
 
+func currentIM() (any, error) {
+	c, err := call("CurrentInputMethod")
+	if err != nil {
+		return nil, err
+	}
+	var name string
+	if err := c.Store(&name); err != nil {
+		return nil, err
+	}
+	return map[string]any{"name": name}, nil
+}
+
 func getGroups() (any, error) {
 	names, err := groupNames()
 	if err != nil {
@@ -193,8 +208,10 @@ func setGroup(req ipc.Request) (any, error) {
 		return nil, err
 	}
 	defaultLayout := params.StringOpt(req.Params, "defaultLayout", "")
-	rawItems, _ := params.Any(req.Params, "items")
-	list, _ := rawItems.([]any)
+	list, err := params.Get[[]any](req.Params, "items")
+	if err != nil {
+		return nil, err
+	}
 	items := make([]rawGroupItem, 0, len(list))
 	for _, e := range list {
 		m, isMap := e.(map[string]any)
@@ -329,7 +346,7 @@ func fetchConfig(uri string) (map[string]any, Schema, error) {
 		return nil, Schema{}, err
 	}
 	schema := buildSchema(raw)
-	typed, _ := toTyped(decode(value), schema.Root, structIndex(schema.Structs)).(map[string]any)
+	typed, _ := toTyped(dbusutil.Normalize(value), schema.Root, structIndex(schema.Structs)).(map[string]any)
 	return typed, schema, nil
 }
 
@@ -355,11 +372,12 @@ func setConfig(req ipc.Request) (any, error) {
 	if !isMap {
 		return nil, errors.New("value must be an object")
 	}
-	_, schema, err := fetchConfig(uri)
+	live, schema, err := fetchConfig(uri)
 	if err != nil {
 		return nil, err
 	}
-	payload := fromTyped(value, schema.Root, structIndex(schema.Structs))
+	structs := structIndex(schema.Structs)
+	payload := fromTyped(keepHidden(value, live, schema.Root, structs), schema.Root, structs)
 	log.Infof("Fcitx5: applying config %s", uri)
 	return ok(call("SetConfig", uri, payload))
 }

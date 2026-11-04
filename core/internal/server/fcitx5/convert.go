@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/duxlabs-dev/dux-go/dbusutil"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -42,23 +43,6 @@ type rawStruct struct {
 	Fields []rawField
 }
 
-// fcitx5 sends lists and structs alike as a{sv}; only the schema tells them apart.
-func decode(v any) any {
-	switch t := v.(type) {
-	case dbus.Variant:
-		return decode(t.Value())
-	case map[string]dbus.Variant:
-		out := make(map[string]any, len(t))
-		for k, e := range t {
-			out[k] = decode(e)
-		}
-		return out
-	default:
-		return v
-	}
-}
-
-// Lists arrive as maps keyed "0","1",...
 func listify(m map[string]any) ([]any, bool) {
 	idx := make([]int, 0, len(m))
 	for k := range m {
@@ -94,7 +78,7 @@ func buildSchema(raw []rawStruct) Schema {
 		for _, f := range s.Fields {
 			props := make(map[string]any, len(f.Props))
 			for k, p := range f.Props {
-				d := decode(p)
+				d := dbusutil.Normalize(p)
 				if m, ok := d.(map[string]any); ok {
 					if l, isList := listify(m); isList {
 						d = l
@@ -106,7 +90,7 @@ func buildSchema(raw []rawStruct) Schema {
 				Name:        f.Name,
 				Type:        f.Type,
 				Description: f.Description,
-				Default:     decode(f.Default),
+				Default:     dbusutil.Normalize(f.Default),
 				Props:       props,
 			})
 		}
@@ -149,6 +133,32 @@ func toTyped(raw any, typ string, structs map[string][]Field) any {
 	out := make(map[string]any, len(m))
 	for k, v := range m {
 		out[k] = toTyped(v, byName[k], structs)
+	}
+	return out
+}
+
+func keepHidden(value, live map[string]any, typ string, structs map[string][]Field) map[string]any {
+	types := make(map[string]string, len(structs[typ]))
+	for _, f := range structs[typ] {
+		types[f.Name] = f.Type
+	}
+	out := make(map[string]any, len(value))
+	for k, v := range value {
+		if _, known := types[k]; known {
+			out[k] = v
+		}
+	}
+	for k, v := range live {
+		fieldType, known := types[k]
+		if !known {
+			out[k] = v
+			continue
+		}
+		sent, isSent := out[k].(map[string]any)
+		current, isCurrent := v.(map[string]any)
+		if _, isStruct := structs[fieldType]; isStruct && isSent && isCurrent {
+			out[k] = keepHidden(sent, current, fieldType, structs)
+		}
 	}
 	return out
 }

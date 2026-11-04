@@ -11,10 +11,12 @@ const MODIFIER_ONLY_KEYSYMS = {
     134: "Super_R"
 };
 
-const FCITX_MODIFIER_NAMES = {
-    "Ctrl": "Control"
-};
+const FCITX_LOWERCASE_KEYS = ["Comma", "Period", "Slash", "Semicolon", "Apostrophe", "BracketLeft", "BracketRight", "Backslash", "Minus", "Equal"];
+const FCITX_SHIFT_IGNORED_KEYS = ["BackSpace", "Delete", "Escape"];
+const ASCII_CAPITAL = /^[A-Z]$/;
+const ACCENTED_CAPITAL = /^[A-Z](diaeresis|acute|grave|circumflex|cedilla|tilde)$/;
 
+const LIST_PREFIX = "List|";
 const ADDON_URI_PREFIX = "fcitx://config/addon/";
 // Deeper URIs are mostly file editors (pinyin/customphrase, quickphrase/editor) that GetConfig cannot serve; only these list editors work.
 const SUB_ADDON_URI = /^fcitx:\/\/config\/addon\/([^\/]+|keyboard\/longpress|punctuation\/punctuationmap\/[^\/]+)$/;
@@ -27,14 +29,34 @@ function boolString(value) {
     return value ? "True" : "False";
 }
 
-// KeyUtils.chordToken gives "Ctrl+Shift+Tab"; fcitx5 spells the modifier "Control".
-function fcitxKey(token) {
-    return String(token).split("+").map(part => FCITX_MODIFIER_NAMES[part] || part).join("+");
+function addonUri(addon) {
+    return ADDON_URI_PREFIX + addon;
 }
 
-// Key to store when only modifiers were pressed and then released, e.g. a lone Shift as a toggle.
-function modifierOnlyKey(scanCode) {
-    return MODIFIER_ONLY_KEYSYMS[scanCode] || "";
+function fcitxKey(token, shift) {
+    const parts = String(token).split("+");
+    const last = parts.pop();
+    const held = mod => parts.includes(mod);
+    const shifted = shift || held("Shift");
+    const chorded = held("Ctrl") || held("Alt") || held("Super");
+    let key = last.replace(/^XF86/, "");
+    if (FCITX_LOWERCASE_KEYS.includes(key) || (!shifted && (ACCENTED_CAPITAL.test(key) || (!chorded && ASCII_CAPITAL.test(key)))))
+        key = key.toLowerCase();
+    const shiftIgnored = key !== "space" && (/^([a-z0-9]|KP_)/.test(key) || ACCENTED_CAPITAL.test(key) || FCITX_SHIFT_IGNORED_KEYS.includes(key));
+    const keepShift = shifted && (ASCII_CAPITAL.test(key) ? chorded : !shiftIgnored);
+    return [held("Ctrl") && "Control", held("Alt") && "Alt", keepShift && "Shift", held("Super") && "Super", key].filter(Boolean).join("+");
+}
+
+function modifierOnlyKey(modifier, scanCode, shiftHeld) {
+    const physical = MODIFIER_ONLY_KEYSYMS[scanCode] || "";
+    if (!modifier || (modifier === "Super" && shiftHeld && physical.startsWith("Alt_")))
+        return physical;
+    return (modifier === "Ctrl" ? "Control" : modifier) + (physical.endsWith("_R") ? "_R" : "_L");
+}
+
+function modifierChord(heldKeys) {
+    const earlier = heldKeys.slice(0, -1).map(key => key.split("_")[0]);
+    return ["Control", "Alt", "Shift", "Super"].filter(mod => earlier.includes(mod)).concat(heldKeys[heldKeys.length - 1]).join("+");
 }
 
 // Rows reach delegates as Qt-wrapped copies, so their lists fail Array.isArray, which DDropdown requires.
@@ -132,7 +154,7 @@ function buildRows(schema, structName, path) {
     const base = path ?? [];
     for (const field of structFields(schema, structName)) {
         const fieldPath = base.concat(field.name);
-        const itemStruct = field.type.startsWith("List|") ? field.type.slice(5) : "";
+        const itemStruct = field.type.startsWith(LIST_PREFIX) ? field.type.slice(LIST_PREFIX.length) : "";
         if (itemStruct !== "" && structFields(schema, itemStruct).length > 0) {
             rows.push({
                 "kind": "structs",
@@ -163,6 +185,9 @@ function buildRows(schema, structName, path) {
             continue;
         }
         const choices = kind === "enum" || kind === "enums" ? enumChoices(field) : null;
+        // List fields nest their key flags under ListConstrain, "" when none are set. Without any constraint fcitx5 accepts every key.
+        const keyFlags = field.props?.ListConstrain || field.props;
+        const unconstrained = field.props?.ListConstrain === undefined && keyFlags?.AllowModifierLess === undefined && keyFlags?.AllowModifierOnly === undefined;
         rows.push({
             "kind": kind,
             "name": field.name,
@@ -171,8 +196,8 @@ function buildRows(schema, structName, path) {
             "path": fieldPath,
             "addon": kind === "sub" ? field.props.External.slice(ADDON_URI_PREFIX.length) : "",
             "choices": choices,
-            "modifierless": field.props?.ListConstrain?.AllowModifierLess !== "False",
-            "modifierOnly": field.props?.ListConstrain?.AllowModifierOnly === "True"
+            "modifierless": unconstrained || keyFlags?.AllowModifierLess === "True",
+            "modifierOnly": unconstrained || keyFlags?.AllowModifierOnly === "True"
         });
     }
     return {

@@ -15,20 +15,22 @@ Singleton {
     readonly property var fcitxItem: findItem(SystemTray.items.values)
     readonly property bool available: fcitxItem !== null
     property string currentIM: ""
-    property bool configtoolFound: false
-    property bool configtoolProbed: false
     readonly property string currentIMLabel: displayName(fcitxItem ? fcitxItem.tooltipTitle : "", currentIM)
     readonly property string trayIdentity: trayIdentityOf(fcitxItem)
-    // Older cores lack the fcitx5.* methods
     readonly property bool editable: available && DMSService.isConnected && DMSService.capabilities.includes("fcitx5")
 
     onTrayIdentityChanged: {
-        if (active && available)
+        if (active && editable)
+            resolveTimer.restart();
+    }
+
+    onEditableChanged: {
+        if (active && editable)
             resolveTimer.restart();
     }
 
     onActiveChanged: {
-        if (active && available)
+        if (active && editable)
             resolveTimer.restart();
     }
 
@@ -57,10 +59,13 @@ Singleton {
         return separator > 0 ? title.slice(separator + 3) : title;
     }
 
-    function request(method, params, callback) {
+    function request(method, params, callback, quiet) {
         DMSService.sendRequest("fcitx5." + method, params, response => {
+            const error = response?.error ?? "";
+            if (error && !quiet)
+                ToastService.showError(error);
             if (callback)
-                callback(response?.result ?? null, response?.error ?? "");
+                callback(response?.result ?? null, error);
         });
     }
 
@@ -68,44 +73,25 @@ Singleton {
         request("getConfig", {
             "uri": uri
         }, (result, error) => {
-            if (error) {
-                ToastService.showError(error);
-                return;
-            }
-            callback(result);
+            if (!error)
+                callback(result);
         });
     }
 
-    // Reloads after any outcome, so a rejected value is replaced by the stored one.
     function setConfig(uri, tree, reload) {
         request("setConfig", {
             "uri": uri,
             "value": tree
-        }, (result, error) => {
-            if (error)
-                ToastService.showError(error);
-            reload();
-        });
-    }
-
-    function probeConfigtool() {
-        if (configtoolProbed)
-            return;
-        configtoolProbed = true;
-        Proc.runCommand("fcitx5-configtool-check", ["sh", "-c", "command -v fcitx5-configtool"], (output, exitCode) => {
-            root.configtoolFound = exitCode === 0;
-        });
+        }, reload);
     }
 
     function resolve() {
-        if (!active || !available)
+        if (!active || !editable)
             return;
-        Proc.runCommand("fcitx5-current-im", ["fcitx5-remote", "-n"], (output, exitCode) => {
-            if (exitCode !== 0 || !root.active)
-                return;
-            const name = String(output ?? "").trim();
+        request("currentIM", {}, (result, error) => {
+            const name = String(result?.name ?? "").trim();
             if (name !== "")
                 root.currentIM = name;
-        });
+        }, true);
     }
 }

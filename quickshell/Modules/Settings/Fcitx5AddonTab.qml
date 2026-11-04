@@ -11,7 +11,7 @@ Item {
     property var parentModal: null
     // Snapshot, not a binding: the page beneath a sub page stays alive and must keep its own addon.
     property string addon: ""
-    readonly property string uri: "fcitx://config/addon/" + addon
+    readonly property string uri: Fcitx5Schema.addonUri(addon)
     property var schema: null
     property var values: ({})
     readonly property var built: schema ? Fcitx5Schema.buildRows(schema, schema.root, []) : {
@@ -57,7 +57,6 @@ Item {
     }
 
     Component.onCompleted: {
-        Fcitx5Service.probeConfigtool();
         load();
     }
 
@@ -164,7 +163,7 @@ Item {
 
         SettingsCard {
             width: parent.width
-            visible: root.built.hidden.length > 0 && Fcitx5Service.configtoolFound
+            visible: root.built.hidden.length > 0
             iconName: "tune"
 
             SettingsNoteRow {

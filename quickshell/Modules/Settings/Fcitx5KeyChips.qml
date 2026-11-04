@@ -12,15 +12,16 @@ Flow {
     property bool allowModifierless: true
     property bool allowModifierOnly: false
     property bool recording: false
-    property var heldMods: []
-    property real maxWidth: 400
-    property var chipWidths: []
+    property var heldModifierKeys: []
+    property real maxWidth
+
     readonly property real singleRowWidth: {
-        let total = addButton.implicitWidth + spacing * keys.length;
-        for (let i = 0; i < keys.length; i++)
-            total += chipWidths[i] ?? 0;
-        if (recording)
-            total += recordingChip.implicitWidth + spacing;
+        let total = -spacing;
+        for (let i = 0; i < children.length; i++) {
+            const item = children[i];
+            if (item !== chips && (item !== recordingChip || recording))
+                total += item.implicitWidth + spacing;
+        }
         return total;
     }
 
@@ -29,15 +30,9 @@ Flow {
     width: Math.min(maxWidth, singleRowWidth)
     spacing: Theme.spacingS
 
-    function setChipWidth(index, width) {
-        const next = chipWidths.slice();
-        next[index] = width;
-        chipWidths = next;
-    }
-
     function stopRecording() {
         recording = false;
-        heldMods = [];
+        heldModifierKeys = [];
     }
 
     function commit(key) {
@@ -47,9 +42,19 @@ Flow {
         keysEdited(keys.concat(key));
     }
 
+    function modifierKey(event) {
+        const modifier = KeyUtils.modifierFromQtKey(event.key);
+        // Qt can report key 0 for the second modifier of Alt+Shift.
+        if (!modifier && event.key !== 0)
+            return "";
+        return Fcitx5Schema.modifierOnlyKey(modifier, event.nativeScanCode, event.modifiers & Qt.ShiftModifier);
+    }
+
     function capture(event) {
-        if (KeyUtils.modifierFromQtKey(event.key)) {
-            heldMods = KeyUtils.heldModifiers(event.key, event.modifiers, heldMods);
+        const heldKey = modifierKey(event);
+        if (heldKey) {
+            if (!heldModifierKeys.includes(heldKey))
+                heldModifierKeys = heldModifierKeys.concat(heldKey);
             return;
         }
         switch (event.key) {
@@ -64,21 +69,22 @@ Flow {
             }
         }
         const mods = KeyUtils.modsFromEvent(event.modifiers);
-        if (mods.length === 0 && !allowModifierless)
+        const token = KeyUtils.chordToken(event.key, event.modifiers, mods.filter(mod => mod !== "Shift"), event.nativeScanCode, "", "");
+        if (!token)
             return;
-        const token = KeyUtils.chordToken(event.key, event.modifiers, mods, event.nativeScanCode, "", "");
-        if (token)
-            commit(Fcitx5Schema.fcitxKey(token));
+        const key = Fcitx5Schema.fcitxKey(token, mods.includes("Shift"));
+        if (allowModifierless || key.includes("+"))
+            commit(key);
     }
 
-    // A modifier pressed and released alone is the key, e.g. Shift as the toggle.
     function captureRelease(event) {
-        if (!allowModifierOnly || heldMods.length !== 1 || !KeyUtils.modifierFromQtKey(event.key))
+        if (!allowModifierOnly || heldModifierKeys.length === 0 || !modifierKey(event))
             return;
-        commit(Fcitx5Schema.modifierOnlyKey(event.nativeScanCode));
+        commit(Fcitx5Schema.modifierChord(heldModifierKeys));
     }
 
     Repeater {
+        id: chips
         model: root.keys
 
         delegate: Rectangle {
@@ -88,9 +94,6 @@ Flow {
             required property int index
 
             implicitWidth: chipRow.implicitWidth + Theme.spacingM + Theme.spacingXS
-            onImplicitWidthChanged: root.setChipWidth(index, implicitWidth)
-            onIndexChanged: root.setChipWidth(index, implicitWidth)
-            Component.onCompleted: root.setChipWidth(index, implicitWidth)
             implicitHeight: Theme.buttonHeightXS
             radius: Theme.cornerRadiusS
             color: SettingsMetrics.controlSurface
@@ -147,8 +150,6 @@ Flow {
         }
     }
 
-    // The focused control is the capture target, never a text input (the active input method would
-    // swallow the combo). `capturing` tells the settings modal not to move focus away meanwhile.
     DActionButton {
         id: addButton
 
@@ -159,7 +160,6 @@ Flow {
         iconName: root.recording ? "close" : "add"
         iconColor: root.recording ? Theme.error : Theme.onSecondaryContainer
         tooltipText: root.recording ? I18n.tr("Stop") : I18n.tr("Add")
-        Keys.priority: Keys.BeforeItem
         onClicked: {
             if (root.recording) {
                 root.stopRecording();

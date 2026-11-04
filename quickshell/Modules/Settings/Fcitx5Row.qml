@@ -16,7 +16,6 @@ SettingsRow {
 
     title: row.label
     subtitle: row.tooltip
-    resetKeys: []
     clickable: row.kind === "bool" || row.kind === "sub"
     showChevron: row.kind === "sub"
     onClicked: {
@@ -26,13 +25,26 @@ SettingsRow {
             valueEdited(row.path, Fcitx5Schema.boolString(!Fcitx5Schema.boolValue(value)));
     }
 
-    Row {
+    readonly property var controls: ({
+            "bool": toggle,
+            "enum": dropdown,
+            "font": fontControls,
+            "int": textField,
+            "string": textField,
+            "strings": listField,
+            "key": keyChips,
+            "keys": keyChips
+        })
+
+    Loader {
         anchors.verticalCenter: parent.verticalCenter
-        spacing: Theme.spacingS
+        sourceComponent: root.controls[root.row.kind] ?? null
+    }
+
+    Component {
+        id: toggle
 
         DToggle {
-            anchors.verticalCenter: parent.verticalCenter
-            visible: root.row.kind === "bool"
             hideText: true
             text: root.title
             activeFocusOnTab: false
@@ -40,35 +52,42 @@ SettingsRow {
             checked: Fcitx5Schema.boolValue(root.value)
             onToggled: value => root.valueEdited(root.row.path, Fcitx5Schema.boolString(value))
         }
+    }
+
+    Component {
+        id: dropdown
 
         DDropdown {
-            anchors.verticalCenter: parent.verticalCenter
-            visible: root.row.kind === "enum"
+            readonly property string syncedValue: String(root.value ?? "")
+
+            onSyncedValueChanged: currentValue = syncedValue
             backgroundColor: SettingsMetrics.controlSurface
             options: Fcitx5Schema.toArray(root.row.choices?.labels)
             optionValues: Fcitx5Schema.toArray(root.row.choices?.values)
-            currentValue: String(root.value ?? "")
+            width: Math.min(dropdownWidth, root.width - SettingsMetrics.rowPaddingH * 2)
             Accessible.name: root.title
             onValueChanged: value => {
                 if (value !== String(root.value ?? ""))
                     root.valueEdited(root.row.path, value);
             }
         }
+    }
 
-        Loader {
-            anchors.verticalCenter: parent.verticalCenter
-            active: root.row.kind === "font"
-            sourceComponent: Fcitx5FontControls {
-                value: root.value
-                title: root.title
-                onFontEdited: font => root.valueEdited(root.row.path, font)
-            }
+    Component {
+        id: fontControls
+
+        Fcitx5FontControls {
+            value: root.value
+            title: root.title
+            onFontEdited: font => root.valueEdited(root.row.path, font)
         }
+    }
+
+    Component {
+        id: textField
 
         DTextField {
-            anchors.verticalCenter: parent.verticalCenter
-            visible: root.row.kind === "int" || root.row.kind === "string"
-            width: root.row.kind === "int" ? Theme.iconButtonSize * 2 : Theme.iconButtonSize * 5
+            width: root.row.kind === "int" ? SettingsMetrics.fieldWidthS : SettingsMetrics.fieldWidthM
             text: String(root.value ?? "")
             validator: root.row.kind === "int" ? intValidator : null
             Accessible.name: root.title
@@ -77,11 +96,13 @@ SettingsRow {
                     root.valueEdited(root.row.path, text);
             }
         }
+    }
+
+    Component {
+        id: listField
 
         DTextField {
-            anchors.verticalCenter: parent.verticalCenter
-            visible: root.row.kind === "strings"
-            width: Theme.iconButtonSize * 8
+            width: SettingsMetrics.fieldWidthL
             text: Fcitx5Schema.joinList(root.value)
             Accessible.name: root.title
             onEditingFinished: {
@@ -89,11 +110,13 @@ SettingsRow {
                     root.valueEdited(root.row.path, Fcitx5Schema.splitList(text));
             }
         }
+    }
+
+    Component {
+        id: keyChips
 
         Fcitx5KeyChips {
-            anchors.verticalCenter: parent.verticalCenter
-            visible: root.row.kind === "key" || root.row.kind === "keys"
-            maxWidth: Math.max(Theme.iconButtonSize * 6, root.width * 0.6)
+            maxWidth: Math.max(SettingsMetrics.fieldWidthL, root.width * 0.6)
             keys: root.keyList
             allowModifierless: root.row.modifierless
             allowModifierOnly: root.row.modifierOnly

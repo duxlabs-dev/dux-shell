@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/duxlabs-dev/dux-go/dbusutil"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -38,7 +39,7 @@ func hangulValue() dbus.Variant {
 
 func TestToTypedOrdersListsAndNestsStructs(t *testing.T) {
 	schema := buildSchema(hangulSchema())
-	got := toTyped(decode(hangulValue()), schema.Root, structIndex(schema.Structs))
+	got := toTyped(dbusutil.Normalize(hangulValue()), schema.Root, structIndex(schema.Structs))
 	want := map[string]any{
 		"Keyboard": "Romaja",
 		"NextPage": []any{"Down", "Tab", "Up", "F9"},
@@ -63,11 +64,11 @@ func TestSchemaListifiesEnumPropsAndDefaults(t *testing.T) {
 func TestFromTypedRoundTrip(t *testing.T) {
 	schema := buildSchema(hangulSchema())
 	structs := structIndex(schema.Structs)
-	typed := toTyped(decode(hangulValue()), schema.Root, structs)
+	typed := toTyped(dbusutil.Normalize(hangulValue()), schema.Root, structs)
 
 	back := fromTyped(typed, schema.Root, structs)
-	if !reflect.DeepEqual(decode(back), decode(canonical())) {
-		t.Fatalf("round trip differs:\n%#v\n%#v", decode(back), decode(canonical()))
+	if !reflect.DeepEqual(dbusutil.Normalize(back), dbusutil.Normalize(canonical())) {
+		t.Fatalf("round trip differs:\n%#v\n%#v", dbusutil.Normalize(back), dbusutil.Normalize(canonical()))
 	}
 }
 
@@ -86,7 +87,7 @@ func canonical() dbus.Variant {
 func TestFromTypedStringifiesScalarsAndKeepsEmptyLists(t *testing.T) {
 	schema := buildSchema(hangulSchema())
 	structs := structIndex(schema.Structs)
-	back := decode(fromTyped(map[string]any{
+	back := dbusutil.Normalize(fromTyped(map[string]any{
 		"Group":    map[string]any{"Flag": true},
 		"NextPage": []any{},
 	}, schema.Root, structs))
@@ -96,5 +97,28 @@ func TestFromTypedStringifiesScalarsAndKeepsEmptyLists(t *testing.T) {
 	}
 	if !reflect.DeepEqual(back, want) {
 		t.Fatalf("got %#v, want %#v", back, want)
+	}
+}
+
+func TestKeepHiddenTakesUnlistedKeysFromLiveConfig(t *testing.T) {
+	schema := buildSchema(hangulSchema())
+	structs := structIndex(schema.Structs)
+	sent := map[string]any{
+		"Keyboard": "Romaja",
+		"Enabled":  map[string]any{"0": "stale"},
+		"Group":    map[string]any{"Flag": "True", "Disabled": "stale"},
+	}
+	live := map[string]any{
+		"Keyboard": "Dubeolsik",
+		"Enabled":  map[string]any{"0": "fresh"},
+		"Group":    map[string]any{"Flag": "False", "Disabled": "fresh"},
+	}
+	want := map[string]any{
+		"Keyboard": "Romaja",
+		"Enabled":  map[string]any{"0": "fresh"},
+		"Group":    map[string]any{"Flag": "True", "Disabled": "fresh"},
+	}
+	if got := keepHidden(sent, live, schema.Root, structs); !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %#v, want %#v", got, want)
 	}
 }

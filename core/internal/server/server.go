@@ -1114,6 +1114,7 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info("     - brightness       : Full device list (on rescan, DDC discovery, device changes)")
 		log.Info("     - brightness.update: Single device update (on brightness change for efficiency)")
 		log.Info("Fcitx5:")
+		log.Info(" fcitx5.currentIM                       - Get the active input method's unique name")
 		log.Info(" fcitx5.getGroups                       - List input method groups and the current one")
 		log.Info(" fcitx5.getGroup                        - Get a group's input methods (params: name)")
 		log.Info(" fcitx5.setGroup                        - Replace a group's input methods (params: name, defaultLayout, items)")
