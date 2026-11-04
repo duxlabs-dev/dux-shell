@@ -196,6 +196,7 @@ FocusScope {
             anchors.verticalCenter: parent.verticalCenter
             width: Math.min(parent.width, implicitWidth)
             height: parent.height
+            availableWidth: parent.width
             transientSurfaceTracker: root.controller.transientSurfaces
             entryId: root.entryId
             tabItem: root.tab
