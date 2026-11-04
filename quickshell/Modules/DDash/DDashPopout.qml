@@ -503,6 +503,7 @@ DPopout {
                             y: (parent.height - height) / 2
                             width: Math.min(parent.width, implicitWidth)
                             height: Math.min(parent.height, implicitHeight)
+                            availableWidth: parent.width
                             visible: root.editMode
                             vertical: root.verticalNavigation
                             transientSurfaceTracker: root.transientSurfaceTracker
