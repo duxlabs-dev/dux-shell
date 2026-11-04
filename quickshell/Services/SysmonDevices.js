@@ -98,6 +98,11 @@ function gpuSlot(gpu) {
     return gpu.busId || gpu.pciId || "";
 }
 
+// A card bound to one of these belongs to a VM, so the host has nothing to show for it.
+function hostGpus(gpus) {
+    return (gpus || []).filter(g => g.driver !== "vfio-pci" && g.driver !== "pci-stub");
+}
+
 function deviceKey(type, id) {
     return type + ":" + id;
 }
