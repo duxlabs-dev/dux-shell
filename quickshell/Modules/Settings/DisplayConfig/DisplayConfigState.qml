@@ -646,6 +646,8 @@ Singleton {
                     entry.id = generateProfileId();
                     dirty = true;
                 }
+                if (CompositorService.isHyprland && OutputModel.migrateHyprlandProfileKeys(entry, outputs, SettingsData.displayNameMode))
+                    dirty = true;
                 if (ensureEnabledOutput(entry))
                     dirty = true;
                 validated[entry.id] = {

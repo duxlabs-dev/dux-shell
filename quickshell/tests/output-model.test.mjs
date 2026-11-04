@@ -30,7 +30,7 @@ test("transform lookups fall back to Normal and only our spelling counts as rota
     assert.equal(model.isRotated("flipped-90"), false);
 });
 
-test("identifier rules: niri appends the serial or Unknown, hyprland uses desc: without commas, the profile rule drops the serial off niri", () => {
+test("identifier rules: niri appends the serial or Unknown, hyprland uses desc: without commas, hyprland profile keys keep the serial without Unknown", () => {
     assert.equal(model.niriIdentifier(dell, "DP-1", "system"), "DP-1");
     assert.equal(model.niriIdentifier(dell, "DP-1", "model"), "Dell Inc. DELL U2720Q ABC123");
     assert.equal(model.niriIdentifier(boe, "DP-1", "model"), "BOE 0x0A1B Unknown");
@@ -39,7 +39,8 @@ test("identifier rules: niri appends the serial or Unknown, hyprland uses desc: 
     assert.equal(model.hyprlandIdentifier(boe, "DP-1", "model"), "desc:BOE 0x0A1B");
     assert.equal(model.hyprlandIdentifier(dell, "DP-1", "system"), "DP-1");
     assert.equal(model.profileIdentifier(dell, "DP-1", "model", "niri"), "Dell Inc. DELL U2720Q ABC123");
-    assert.equal(model.profileIdentifier(dell, "DP-1", "model", "hyprland"), "Dell Inc. DELL U2720Q");
+    assert.equal(model.profileIdentifier(dell, "DP-1", "model", "hyprland"), "Dell Inc. DELL U2720Q ABC123");
+    assert.equal(model.profileIdentifier(boe, "DP-1", "model", "hyprland"), "BOE 0x0A1B");
     assert.equal(model.profileIdentifier(boe, "DP-1", "model", "mango"), "BOE 0x0A1B");
     assert.equal(model.profileIdentifier({ make: "", model: "X", serial: "1" }, "DP-1", "model", "niri"), "DP-1");
     assert.equal(model.profileIdentifier(dell, "DP-1", "system", "niri"), "DP-1");
@@ -110,7 +111,7 @@ test("wlr snapshot normalizes modes and vrr, disabled heads keep a 1920x1080 vie
 test("current output set and fingerprints follow the naming mode", () => {
     assert.deepEqual(model.currentOutputSet(live, "system", "niri"), ["DP-1", "HDMI-A-1", "eDP-1"]);
     assert.deepEqual(model.currentOutputSet(live, "model", "niri"), ["BOE 0x0A1B Unknown", "Dell Inc. DELL U2720Q ABC123", "LG Electronics LG ULTRAGEAR 0x0001"]);
-    assert.deepEqual(model.currentOutputSet(live, "model", "hyprland"), ["BOE 0x0A1B", "Dell Inc. DELL U2720Q", "LG Electronics LG ULTRAGEAR"]);
+    assert.deepEqual(model.currentOutputSet(live, "model", "hyprland"), ["BOE 0x0A1B", "Dell Inc. DELL U2720Q ABC123", "LG Electronics LG ULTRAGEAR 0x0001"]);
     assert.deepEqual(monitors.configurations.map(c => model.configFingerprint(c)), ["DP-1+eDP-1", "BOE 0x0A1B Unknown+Dell Inc. DELL U2720Q ABC123", "desc:Dell Inc. DELL U2720Q", "DP-1+DP-9", "DP-1+eDP-1"]);
     assert.equal(model.outputSetFingerprint(["b", "a", "c"]), "a+b+c");
 });
@@ -127,16 +128,38 @@ test("profile lookup: named profiles win over auto ones, autoOnly skips named, o
     assert.equal(model.findConfigEntryByFingerprint(monitors, ["nope"], false), null);
 });
 
-test("profile keys match live outputs by name, desc prefix and model without serial", () => {
+test("profile keys match live outputs by name, desc prefix and make, model and serial", () => {
     const matches = key => Object.keys(live).filter(name => model.profileKeyMatchesOutput(key, live[name], name, "model", "hyprland"));
     assert.deepEqual(matches("DP-1"), ["DP-1"]);
     assert.deepEqual(matches("desc:Dell Inc. DELL U2720Q ABC123"), ["DP-1"]);
     assert.deepEqual(matches("desc:Dell Inc. DELL U2720Q"), ["DP-1"]);
     assert.deepEqual(matches("desc:Dell"), ["DP-1"]);
-    assert.deepEqual(matches("Dell Inc. DELL U2720Q"), ["DP-1"]);
-    assert.deepEqual(matches("Dell Inc. DELL U2720Q ABC123"), []);
+    assert.deepEqual(matches("Dell Inc. DELL U2720Q ABC123"), ["DP-1"]);
+    assert.deepEqual(matches("Dell Inc. DELL U2720Q"), []);
     assert.deepEqual(matches("desc:BOE 0x0A1B"), ["eDP-1"]);
     assert.deepEqual(matches("desc:DELL U2720Q"), []);
+});
+
+test("hyprland profiles keep identical monitors apart and still match after the connectors renumber", () => {
+    const philips = (name, serial, x) => ({ name, make: "Philips Consumer Electronics Company", model: "PHL 243V7", serial, logical: { x, y: 0 } });
+    const docked = { "eDP-1": { name: "eDP-1", make: "BOE", model: "0x0A1B", serial: "" }, "DP-3": philips("DP-3", "0x000027A0", 0), "DP-5": philips("DP-5", "0x00002791", 1920) };
+    const set = model.currentOutputSet(docked, "model", "hyprland");
+    assert.equal(new Set(set).size, 3);
+    const entry = { id: "auto_x", name: "", outputs: Object.fromEntries(set.map(id => [id, {}])) };
+    const redocked = { "eDP-1": docked["eDP-1"], "DP-4": { ...docked["DP-5"], name: "DP-4" }, "DP-7": { ...docked["DP-3"], name: "DP-7" } };
+    assert.equal(model.findConfigEntryByFingerprint({ configurations: [entry] }, model.currentOutputSet(redocked, "model", "hyprland"), false).entry.id, "auto_x");
+    const owners = Object.keys(entry.outputs).map(key => Object.keys(redocked).filter(name => model.profileKeyMatchesOutput(key, redocked[name], name, "model", "hyprland")));
+    assert.deepEqual(owners.map(o => o.length), [1, 1, 1]);
+});
+
+test("legacy hyprland profile keys gain the serial only when one live output claims them", () => {
+    const migrate = (outputs, mode = "model") => {
+        const entry = { outputs: { "Dell Inc. DELL U2720Q": { mode: "a" }, "BOE 0x0A1B": { mode: "b" }, "DP-9": { mode: "c" } } };
+        return [model.migrateHyprlandProfileKeys(entry, outputs, mode), entry.outputs];
+    };
+    assert.deepEqual(migrate(live), [true, { "BOE 0x0A1B": { mode: "b" }, "DP-9": { mode: "c" }, "Dell Inc. DELL U2720Q ABC123": { mode: "a" } }]);
+    assert.equal(migrate({ a: live["DP-1"], b: { ...live["DP-1"], serial: "XYZ" } })[0], false);
+    assert.equal(migrate(live, "system")[0], false);
 });
 
 test("ensureEnabledOutput re-enables the first real live output of an all-disabled profile and leaves virtual-only profiles alone", () => {
