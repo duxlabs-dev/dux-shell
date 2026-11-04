@@ -46,10 +46,11 @@ Rectangle {
                 "value": value,
                 "tooltip": tooltip ?? ""
             });
-        if (!asleep && rates?.busy != null)
-            add(I18n.tr("Busy", "share of time a disk is busy"), Math.round(rates.busy) + "%");
-        if (!asleep && rates?.responseTime != null)
-            add(I18n.tr("Response time", "average time a disk takes per request"), rates.responseTime.toFixed(2) + " ms");
+        // An idle disk has no response time; keeping the rows stops the list from moving.
+        if (rates) {
+            add(I18n.tr("Busy", "share of time a disk is busy"), !asleep && rates.busy != null ? Math.round(rates.busy) + "%" : "—");
+            add(I18n.tr("Response time", "average time a disk takes per request"), !asleep && rates.responseTime != null ? rates.responseTime.toFixed(2) + " ms" : "—");
+        }
         if (wear !== null)
             add(I18n.tr("Wear", "SSD wear level, percent of rated endurance used"), wear + "%");
         if (powerOn !== null)
@@ -339,6 +340,7 @@ Rectangle {
                 id: stats
                 Layout.fillWidth: true
                 Layout.horizontalStretchFactor: 2
+                Layout.maximumWidth: Theme.fontSizeMedium * 25
                 Layout.alignment: Qt.AlignTop
                 customPaddingV: 0
                 customPaddingH: Theme.spacingL
