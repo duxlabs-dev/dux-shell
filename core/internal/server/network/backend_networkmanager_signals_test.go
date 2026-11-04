@@ -232,13 +232,13 @@ func TestNetworkManagerBackend_EthernetDeviceSurvivesNetworkManagerRestart(t *te
 
 	backend.handleDBusSignal(&dbus.Signal{Name: "org.freedesktop.NetworkManager.DeviceAdded", Body: []any{path}})
 	backend.handleDBusSignal(nameOwnerChanged("org.freedesktop.NetworkManager", ":1.10928", ""))
-	assert.False(t, backend.isDeviceTracked(path), "lookup during the restart window must fail")
+	assert.NotContains(t, backend.trackedDevicePaths(), path, "lookup during the restart window must fail")
 
 	nameOwned = true
 	mockNM.EXPECT().GetDevices().Return([]gonetworkmanager.Device{dev}, nil).Once()
 	backend.handleDBusSignal(nameOwnerChanged("org.freedesktop.NetworkManager", "", ":1.10987"))
 
-	assert.True(t, backend.isDeviceTracked(path))
+	assert.Contains(t, backend.trackedDevicePaths(), path)
 	state, err := backend.GetCurrentState()
 	assert.NoError(t, err)
 	assert.Equal(t, "enp5s0", state.EthernetDevice)
@@ -254,15 +254,50 @@ func TestNetworkManagerBackend_NameOwnerChangedIgnoresOtherNames(t *testing.T) {
 	backend.handleDBusSignal(nameOwnerChanged("org.freedesktop.NetworkManager", ":1.1", ""))
 }
 
-func TestNetworkManagerBackend_IsDeviceTracked(t *testing.T) {
+// A restarted NetworkManager may give the same interface a new object path, and
+// the dead instance never emits DeviceRemoved for the old one.
+func TestNetworkManagerBackend_RestartDropsDevicesOfDeadInstance(t *testing.T) {
+	const (
+		oldPath = dbus.ObjectPath("/org/freedesktop/NetworkManager/Devices/7")
+		newPath = dbus.ObjectPath("/org/freedesktop/NetworkManager/Devices/16")
+	)
+
 	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-	wifi := mock_gonetworkmanager.NewMockDevice(t)
-	wifi.EXPECT().GetPath().Return(dbus.ObjectPath("/org/freedesktop/NetworkManager/Devices/23"))
+	mockNM.EXPECT().GetPropertyActiveConnections().Return(nil, nil).Maybe()
+	mockNM.EXPECT().GetPropertyPrimaryConnection().Return(nil, nil).Maybe()
+
+	oldDev := mock_gonetworkmanager.NewMockDevice(t)
+	oldDev.EXPECT().GetPath().Return(oldPath).Maybe()
+
+	newDev := mock_gonetworkmanager.NewMockDevice(t)
+	newDev.EXPECT().GetPath().Return(newPath).Maybe()
+	newDev.EXPECT().GetPropertyDeviceType().Return(gonetworkmanager.NmDeviceTypeEthernet, nil)
+	newDev.EXPECT().GetPropertyManaged().Return(true, nil)
+	newDev.EXPECT().GetPropertyInterface().Return("enp5s0", nil)
+	newDev.EXPECT().GetPropertyState().Return(gonetworkmanager.NmDeviceStateActivated, nil).Maybe()
+	newDev.EXPECT().GetPropertyDriver().Return("r8169", nil).Maybe()
+	newDev.EXPECT().GetPropertyIP4Config().Return(nil, nil).Maybe()
+
+	wired := mock_gonetworkmanager.NewMockDeviceWired(t)
+	wired.EXPECT().GetPropertyHwAddress().Return("94:e2:3c:c1:8d:ba", nil)
+	wired.EXPECT().GetPropertySpeed().Return(uint32(1000), nil).Maybe()
 
 	backend, err := NewNetworkManagerBackend(mockNM)
 	assert.NoError(t, err)
-	backend.wifiDevices["wlan0"] = &wifiDeviceInfo{device: wifi, name: "wlan0"}
+	backend.settings = emptySettingsMock(t)
+	backend.ethernetDevices["enp5s0"] = &ethernetDeviceInfo{device: oldDev, name: "enp5s0"}
+	backend.ethernetDevice = oldDev
+	backend.newDevice = func(p dbus.ObjectPath) (gonetworkmanager.Device, error) {
+		assert.Equal(t, newPath, p)
+		return newDev, nil
+	}
+	backend.newDeviceWired = func(dbus.ObjectPath) (gonetworkmanager.DeviceWired, error) { return wired, nil }
 
-	assert.True(t, backend.isDeviceTracked("/org/freedesktop/NetworkManager/Devices/23"))
-	assert.False(t, backend.isDeviceTracked("/org/freedesktop/NetworkManager/Devices/16"))
+	mockNM.EXPECT().GetDevices().Return([]gonetworkmanager.Device{newDev}, nil).Once()
+	backend.handleDBusSignal(nameOwnerChanged("org.freedesktop.NetworkManager", "", ":1.10987"))
+
+	tracked := backend.trackedDevicePaths()
+	assert.NotContains(t, tracked, oldPath)
+	assert.Contains(t, tracked, newPath)
+	assert.Equal(t, newPath, backend.ethernetDevice.(gonetworkmanager.Device).GetPath())
 }

@@ -650,42 +650,46 @@ func nameOwnerMatchOptions() []dbus.MatchOption {
 	}
 }
 
-// resyncDevices replays DeviceAdded for devices that are not tracked. After a
-// NetworkManager restart, DeviceAdded fires before the daemon owns its bus
-// name, so the lookups in handleDeviceAdded fail and the device would stay
-// missing until the shell restarts.
+// resyncDevices reconciles tracked devices with the restarted NetworkManager.
+// DeviceAdded fires before the daemon owns its bus name, so those lookups fail;
+// the dead instance never emits DeviceRemoved, so its paths must be dropped here.
 func (b *NetworkManagerBackend) resyncDevices() {
 	devices, err := b.nmConn.(gonetworkmanager.NetworkManager).GetDevices()
 	if err != nil {
 		log.Warnf("Failed to list devices after NetworkManager restart: %v", err)
 		return
 	}
+	live := make(map[dbus.ObjectPath]struct{}, len(devices))
 	for _, dev := range devices {
-		if path := dev.GetPath(); !b.isDeviceTracked(path) {
+		live[dev.GetPath()] = struct{}{}
+	}
+	tracked := b.trackedDevicePaths()
+	for path := range tracked {
+		if _, ok := live[path]; !ok {
+			b.handleDeviceRemoved(path)
+		}
+	}
+	for path := range live {
+		if _, ok := tracked[path]; !ok {
 			b.handleDeviceAdded(path)
 		}
 	}
 }
 
-func (b *NetworkManagerBackend) isDeviceTracked(path dbus.ObjectPath) bool {
+func (b *NetworkManagerBackend) trackedDevicePaths() map[dbus.ObjectPath]struct{} {
 	b.devMutex.RLock()
 	defer b.devMutex.RUnlock()
+	paths := make(map[dbus.ObjectPath]struct{})
 	for _, info := range b.ethernetDevices {
-		if info.device.GetPath() == path {
-			return true
-		}
+		paths[info.device.GetPath()] = struct{}{}
 	}
 	for _, info := range b.wifiDevices {
-		if info.device.GetPath() == path {
-			return true
-		}
+		paths[info.device.GetPath()] = struct{}{}
 	}
 	for _, info := range b.cellularDevices {
-		if info.device.GetPath() == path {
-			return true
-		}
+		paths[info.device.GetPath()] = struct{}{}
 	}
-	return false
+	return paths
 }
 
 func (b *NetworkManagerBackend) handleDeviceAdded(devicePath dbus.ObjectPath) {
