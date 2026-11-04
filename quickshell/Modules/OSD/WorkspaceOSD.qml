@@ -80,6 +80,19 @@ DOSD {
 
         root.lastActiveWorkspaceId = ws.id;
         root.updateWorkspaceInfo(ws);
+        if (IslandActivityService.canPresentSource("workspace", root.screen)) {
+            const screenName = root.screen?.name ?? "";
+            const screenId = screenName.replace(/[^a-zA-Z0-9_.:-]/g, "-");
+            const published = IslandActivityService.publish("workspace", `switch-${screenId}`, {
+                "title": root.workspaceLabel,
+                "icon": "view_module",
+                "duration": 1600,
+                "priority": 60,
+                "screen": screenName
+            });
+            if (published)
+                return;
+        }
         root.show();
     }
 

@@ -21,6 +21,7 @@ DDialog {
     property string ruleUrgency: ""
     property bool ruleBypassDnd: false
     property var ruleConditions: []
+    property bool ruleIslandSummary: false
     readonly property bool isEditMode: editingIndex >= 0
 
     signal ruleSubmitted
@@ -60,6 +61,9 @@ DDialog {
                     matchType: condition.matchType || matchTypeOptions[0].value,
                     pattern: condition.pattern || ""
                 }));
+        ruleIslandSummary = !!rule.islandPresentation;
+        islandIcon.value = rule.islandPresentation?.icon || "event";
+        islandTitle.value = rule.islandPresentation?.title || "{summary}";
         patternInput.text = rule.pattern || "";
         fieldDropdown.currentValue = labelOf(fieldOptions, ruleField);
         matchTypeDropdown.currentValue = labelOf(matchTypeOptions, ruleMatchType);
@@ -75,7 +79,8 @@ DDialog {
             conditions: ruleConditions.filter(condition => condition.pattern.trim() !== "").map(condition => Object.assign({}, condition)),
             action: ruleAction,
             urgency: ruleUrgency,
-            bypassDnd: ruleBypassDnd
+            bypassDnd: ruleBypassDnd,
+            islandPresentation: ruleIslandSummary ? {icon: islandIcon.value, title: islandTitle.value} : null
         };
         if (isEditMode)
             SettingsData.updateNotificationRule(editingIndex, rule);
@@ -247,4 +252,29 @@ DDialog {
             onToggled: checked => root.ruleBypassDnd = checked
         }
     }
+
+    SettingsCard {
+        title: I18n.tr("Island summary", "notification rule island summary settings")
+
+        SettingsToggleRow {
+            text: I18n.tr("Summarize matching notifications", "notification rule island summary settings")
+            description: I18n.tr("Show an icon and title in the island; keep the original notification in the notification center", "notification rule island summary settings")
+            checked: root.ruleIslandSummary
+            onToggled: checked => root.ruleIslandSummary = checked
+        }
+
+        SettingsTextFieldRow {
+            id: islandIcon
+            text: I18n.tr("Icon", "notification rule island summary settings")
+            enabled: root.ruleIslandSummary
+        }
+
+        SettingsTextFieldRow {
+            id: islandTitle
+            text: I18n.tr("Title template", "notification rule island summary settings")
+            description: I18n.tr("Use {summary}, {body}, or {appName} to insert notification text", "notification rule island summary settings")
+            enabled: root.ruleIslandSummary
+        }
+    }
+
 }

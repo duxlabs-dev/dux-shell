@@ -402,6 +402,7 @@ Item {
 
         barConfig: root.barConfig
         screen: root.screen
+        geometryTransitionActive: surface.motionRunning
         edge: root.edge
         sectionOriginX: root.sectionOriginX
         sectionOriginY: root.sectionOriginY
@@ -417,7 +418,7 @@ Item {
         outerGap: root.outerGap
         compactThickness: root.compactThickness
         cornerRadius: root.connectedChrome ? Theme.connectedSurfaceRadius : Theme.windowRadius
-        pillRadius: BarMetrics.pillRadius(root.compactThickness, root.barConfig?.widgetStyle ?? "pills")
+        pillRadius: root.setting("islandPillShape") ? root.compactThickness / 2 : BarMetrics.pillRadius(root.compactThickness, root.barConfig?.widgetStyle ?? "pills")
         homeCompactTight: root.setting("islandHomeCompactTight")
         homeStatusContent: SettingsData.islandHomeStatusContent(root.barConfig)
         homeClockDisplay: SettingsData.islandClockDisplay(root.barConfig)
@@ -429,6 +430,17 @@ Item {
         dashTabs: root.setting("islandDashTabs")
         // Home and media share the dot face; see mediaFaceToggleAvailable.
         mediaAutoSwitch: !root.dotMode && root.setting("islandMediaAutoSwitch")
+        mediaAlwaysVisible: root.setting("islandMediaAlwaysVisible")
+        mediaVisualizerIdle: root.setting("islandMediaVisualizerIdle")
+        mediaArtworkCircular: root.setting("islandMediaArtworkCircular")
+        mediaHoverActivity: root.setting("islandMediaHoverActivity")
+        liveIconAnimationMode: root.setting("islandActivityIconMotion")
+        liveIconAnimationDuration: root.setting("islandActivityIconMotionDuration")
+        liveIconAnimationIntensity: root.setting("islandActivityIconMotionIntensity")
+        presentationSession: activitySession
+        widgetHost: root.barBody ?? root
+        liveCandidate: activitySession.current?.kind === "activity" ? activitySession.current : null
+
         launcherCycleEnabled: SettingsData.launcherStyle === "island"
         dashboardAvailableWidth: Math.max(0, (root.screen?.width ?? root.referenceScreenWidth) - (root.isVertical ? root.crossInsetStart + root.crossInsetEnd + root.outerGap + root.nearInset : root.alongInset) - Theme.spacingL * 2)
         dashboardAvailableHeight: Math.max(0, (root.screen?.height ?? root.referenceScreenHeight) - (root.isVertical ? root.alongInset : root.crossInsetStart + root.crossInsetEnd + root.outerGap + root.nearInset) - Theme.spacingL * 2)
@@ -461,8 +473,25 @@ Item {
         id: systemSource
 
         controller: controller
+        presentationSession: activitySession
         enabled: root.setting("islandSystemOsd") && root.barConfig?.visible !== false
         chargingPulseEnabled: root.setting("islandChargingPulse")
+    }
+
+    IslandActivitySession {
+        id: activitySession
+        screenName: root.screen?.name ?? ""
+        barId: root.barId
+        enabled: root.setting("islandActivitiesEnabled") && root.barConfig?.visible !== false
+        systemsEnabled: root.barConfig?.visible !== false
+        notificationsEnabled: !root.setting("islandNotificationPopups") && root.barConfig?.visible !== false
+        excludedSources: root.setting("islandExcludedSources")
+        sourceOverrides: root.setting("islandActivitySourceOverrides")
+        slotLimit: root.setting("islandActivitySlotLimit")
+        defaultDuration: root.setting("islandActivityDuration")
+        blocked: controller.inputSuspended || (controller.expanded && !controller.notificationActive)
+        held: controller.inputSuspended || (controller.systemActivityActive && controller.timeoutSuspended) || (controller.notificationActive && controller.pointerInside) || (controller.expanded && controller.liveActive)
+        onOpenRequested: entry => controller.openStableEntry(entry)
     }
 
     IslandNotificationSource {
@@ -470,6 +499,7 @@ Item {
 
         controller: controller
         targetScreen: root.screen
+        activitySession: activitySession
         enabled: !root.setting("islandNotificationPopups") && root.barConfig?.visible !== false
     }
 
@@ -509,7 +539,7 @@ Item {
         springMass: Math.max(root.springMassRange[0], Math.min(root.springMassRange[1], root.setting("islandSpringMass")))
         palette: root.setting("islandPalette")
         highContrast: !root.embedded && root.setting("islandHighContrast")
-        transparency: SettingsData.barTransparency(root.barConfig)
+        transparency: controller.expanded ? (root.setting("islandExpandedOpacity") < 0 ? SettingsData.barTransparency(root.barConfig) : root.setting("islandExpandedOpacity")) : root.setting("islandCompactOpacity")
         surfaceBase: SettingsData.barSurfaceColor(root.barConfig)
         onScrollWheel: wheel => root.scrollWheel(wheel)
 

@@ -19,8 +19,8 @@ Item {
     property var launcherTransientSurfaceTracker: null
     property var effectiveScreen: null
     property bool reducedMotion: false
-    property real springStiffness: 560
-    property real springDamping: 37
+    property real springStiffness: 720
+    property real springDamping: 54
     property real springMass: 1
     property real hostOriginX: 0
     property real hostOriginY: 0
@@ -74,7 +74,65 @@ Item {
     }
     readonly property bool popupStyled: root.controller.expanded
     readonly property real islandOpacity: Math.max(0, Math.min(1, root.transparency))
-    readonly property color effectiveSurfaceColor: root.embedded ? root.bandColor : root.highContrast ? Theme.surfaceContainerHighest : Theme.withAlpha(root.surfaceColor, root.islandOpacity)
+    readonly property string compactConfiguredColor: SettingsData.islandSetting(root.controller.barConfig, "islandCompactColor") || ""
+    readonly property string expandedConfiguredColor: SettingsData.islandSetting(root.controller.barConfig, "islandExpandedColor") || ""
+    readonly property bool activityColors: SettingsData.islandSetting(root.controller.barConfig, "islandActivityColors")
+
+    function activityColor(expanded) {
+        if (!root.activityColors)
+            return "transparent";
+        const entry = root.controller.liveActive ? root.controller.liveEntry : null;
+        const override = expanded ? entry?.expandedBackground : entry?.background;
+        if (override)
+            return override;
+        if ((root.controller.notificationActive && root.notificationModel.critical) || entry?.severity === "error")
+            return Theme.error;
+        if (entry?.severity === "warning")
+            return Theme.warning;
+        return "transparent";
+    }
+
+    readonly property color compactActivityColor: activityColor(false)
+    readonly property color expandedActivityColor: activityColor(true)
+    readonly property bool ownColor: !root.highContrast && (!!root.compactConfiguredColor || !!root.expandedConfiguredColor || root.compactActivityColor.a > 0 || root.expandedActivityColor.a > 0)
+
+    function resolvedColor(configured, activity) {
+        if (root.highContrast)
+            return Theme.surfaceContainerHighest;
+        if (activity.a > 0)
+            return activity;
+        if (configured)
+            return Theme.blendAlpha(configured, root.islandOpacity);
+        return root.embedded ? root.bandColor : Theme.withAlpha(root.surfaceColor, root.islandOpacity);
+    }
+
+    property color compactSurfaceColor: resolvedColor(compactConfiguredColor, compactActivityColor)
+    property color expandedSurfaceColor: resolvedColor(expandedConfiguredColor, expandedActivityColor)
+    Behavior on compactSurfaceColor {
+        ColorAnimation {
+            duration: root.reducedMotion ? 0 : Math.round(root.springTimeConstantMs * 3)
+            easing.type: Easing.OutCubic
+        }
+    }
+    Behavior on expandedSurfaceColor {
+        ColorAnimation {
+            duration: root.reducedMotion ? 0 : Math.round(root.springTimeConstantMs * 3)
+            easing.type: Easing.OutCubic
+        }
+    }
+    readonly property color activityForeground: {
+        if (!root.highContrast && root.activityColors && root.controller.liveActive && root.controller.liveEntry?.foreground)
+            return root.controller.liveEntry.foreground;
+        if (!root.ownColor)
+            return Theme.surfaceText;
+        return Math.abs(Theme.luminance(Theme.surfaceText) - Theme.luminance(root.effectiveSurfaceColor)) >= Math.abs(Theme.luminance(Theme.surface) - Theme.luminance(root.effectiveSurfaceColor)) ? Theme.surfaceText : Theme.surface;
+    }
+    readonly property color effectiveSurfaceColor: {
+        const from = root.compactSurfaceColor;
+        const to = root.expandedSurfaceColor;
+        const t = root.morphProgress;
+        return Qt.rgba(from.r + (to.r - from.r) * t, from.g + (to.g - from.g) * t, from.b + (to.b - from.b) * t, from.a + (to.a - from.a) * t);
+    }
     readonly property real surfaceOpacity: root.effectiveSurfaceColor.a
     readonly property bool shadowEnabled: !root.chromeless && root.surfaceOpacity > 0 && Theme.elevationEnabled && SettingsData.barElevationEnabled
     readonly property string autoBarShadowDirection: root.controller.edge
@@ -367,6 +425,12 @@ Item {
         y: (motion.running ? Math.min(root.motionStartBounds.y, root.targetVisualY) : root.targetVisualY) - overshootBudget
         width: (motion.running ? Math.max(root.motionStartBounds.x + root.motionStartBounds.width, root.targetVisualX + motion.targetWidth) : root.targetVisualX + motion.targetWidth) + overshootBudget - x
         height: (motion.running ? Math.max(root.motionStartBounds.y + root.motionStartBounds.height, root.targetVisualY + motion.targetHeight) : root.targetVisualY + motion.targetHeight) + overshootBudget - y
+
+        HoverHandler {
+            id: transitionHover
+            enabled: motion.running
+            onHoveredChanged: root.updateFittsPointerInside()
+        }
     }
 
     Loader {
@@ -385,16 +449,9 @@ Item {
         width: root.currentVisualWidth
         height: root.currentVisualHeight
         // Embedded, the band already paints the in-band strip; overhangFill draws the rest, so a translucent band never double-alphas.
-        color: root.embedded ? "transparent" : root.effectiveSurfaceColor
+        color: root.embedded && !root.ownColor ? "transparent" : root.effectiveSurfaceColor
         border.width: root.notificationAccentColor !== "transparent" ? 1.5 : root.embedded ? 0 : (root.highContrast ? 2 : (root.popupStyled && !root.notch ? BlurService.borderWidth : 0))
         border.color: root.notificationAccentColor !== "transparent" ? root.notificationAccentColor : (root.highContrast ? Theme.outlineStrong : (root.popupStyled && !root.notch ? BlurService.borderColor : "transparent"))
-
-        Behavior on color {
-            ColorAnimation {
-                duration: root.reducedMotion ? 0 : Theme.shortDuration
-                easing.type: Easing.OutCubic
-            }
-        }
 
         Behavior on border.color {
             ColorAnimation {
@@ -405,7 +462,7 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            visible: root.compactBackground && opacity > 0
+            visible: root.compactBackground && !root.ownColor && opacity > 0
             opacity: 1 - root.morphProgress
             color: root.compactBackgroundColor
             topLeftRadius: parent.topLeftRadius
@@ -448,6 +505,8 @@ Item {
             expanded: root.controller.expanded
             pointerInside: root.controller.pointerInside
             activityId: root.controller.activeActivity
+            liveCompactComponent: compactLiveComponent
+            liveExpandedComponent: expandedLiveComponent
             homeCompactComponent: compactHomeComponent
             homeExpandedComponent: expandedHomeComponent
             mediaCompactComponent: compactMediaComponent
@@ -495,7 +554,7 @@ Item {
     }
 
     function updateFittsPointerInside() {
-        root.controller.updatePointerInside(islandHover.hovered || stripHover.hovered);
+        root.controller.updatePointerInside(islandHover.hovered || stripHover.hovered || transitionHover.hovered);
     }
 
     // Fitts zone from the island edge to the screen edge — hover/click count as island.
@@ -629,9 +688,26 @@ Item {
     Component {
         id: compactHomeComponent
 
-        HomeCompact {
-            controller: root.controller
-            systemModel: root.systemModel
+        Loader {
+            sourceComponent: root.controller.usesBarWidgets ? widgetHomeFace : shortcutHomeFace
+            Component {
+                id: widgetHomeFace
+                IslandWidgetsCompact {
+                    anchors.fill: parent
+                    controller: root.controller
+                    systemModel: root.systemModel
+                    mediaModel: root.mediaModel
+                }
+            }
+            Component {
+                id: shortcutHomeFace
+                HomeCompact {
+                    anchors.fill: parent
+                    controller: root.controller
+                    systemModel: root.systemModel
+                    mediaModel: root.mediaModel
+                }
+            }
         }
     }
 
@@ -642,6 +718,25 @@ Item {
             controller: root.controller
             onWindowRequested: windowName => root.openAfterCollapse(windowName)
             resizeGeometry: root.resizeGeometry
+        }
+    }
+
+    Component {
+        id: compactLiveComponent
+        LiveActivityFace {
+            controller: root.controller
+            activity: root.controller.liveEntry
+            foreground: root.activityForeground
+        }
+    }
+
+    Component {
+        id: expandedLiveComponent
+        LiveActivityFace {
+            controller: root.controller
+            activity: root.controller.liveEntry
+            foreground: root.activityForeground
+            expanded: true
         }
     }
 
@@ -836,6 +931,8 @@ Item {
         id: compactNotificationComponent
 
         NotificationCompact {
+            foreground: root.activityForeground
+            secondaryForeground: root.ownColor ? Theme.withAlpha(root.activityForeground, 0.75) : Theme.surfaceTextSecondary
             notificationModel: root.notificationModel
             controller: root.controller
             dense: root.controller.compactDense
@@ -914,6 +1011,9 @@ Item {
         id: expandedNotificationComponent
 
         NotificationExpanded {
+            bodyForeground: root.ownColor ? Theme.withAlpha(root.activityForeground, 0.75) : Theme.surfaceTextMedium
+            foreground: root.activityForeground
+            secondaryForeground: root.ownColor ? Theme.withAlpha(root.activityForeground, 0.75) : Theme.surfaceTextSecondary
             notificationModel: root.notificationModel
         }
     }

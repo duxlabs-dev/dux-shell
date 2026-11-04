@@ -7,12 +7,19 @@ import qs.Modules.DBar.Widgets
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
+import qs.Modules.SurfaceWidgets
+import "../../../Common/IslandLayout.js" as IslandLayout
 
 Item {
     id: root
 
     required property var controller
     required property var systemModel
+    property var mediaModel: null
+    property var widgetEntries: null
+    property var widgetFactory: null
+    property var widgetContext: null
+    readonly property var configuredWidgets: widgetEntries ? widgetEntries.filter(entry => entry.enabled !== false) : []
 
     readonly property bool tight: root.controller.homeCompactTight
     readonly property real slotSize: root.tight ? Theme.iconSize : Theme.iconSizeLarge
@@ -27,7 +34,7 @@ Item {
     readonly property bool isVertical: root.controller.isVertical
     readonly property string clockDisplay: root.controller.homeClockDisplay
     readonly property real edgePad: Math.max(root.groupSpacing, ((root.isVertical ? root.height - compactColumn.height : root.width - compactRow.width)) / 2)
-    readonly property bool weatherSlotEnabled: root.controller.homeWeatherEnabled
+    readonly property bool weatherSlotEnabled: widgetEntries ? configuredWidgets.some(entry => entry.id === "weather") : root.controller.homeWeatherEnabled
     readonly property string brightnessDeviceId: BrightnessService.screenLeadDevice(root.controller.screen)
     readonly property var brightnessDevice: BrightnessService.getCurrentDeviceInfoByName(root.brightnessDeviceId)
     readonly property real brightnessLevel: {
@@ -37,12 +44,12 @@ Item {
     readonly property real brightnessMaximum: BrightnessService.brightnessMaximum(root.brightnessDevice)
     readonly property int brightnessPercent: root.brightnessMaximum > 0 ? Math.round(root.brightnessLevel / root.brightnessMaximum * 100) : 0
     readonly property int volumePercent: AudioService.sinkVolumePercent
-    readonly property var groupIds: root.groupsForSide("left").concat(["clock"]).concat(root.groupsForSide("right"))
+    readonly property var groupIds: widgetEntries ? configuredWidgets.map(entry => IslandLayout.groupForWidget(entry.id)) : root.groupsForSide("left").concat(["clock"]).concat(root.groupsForSide("right"))
     readonly property real touchpadThreshold: 100
     property real wheelAccumulator: 0
     property bool weatherRefHeld: false
     // Same options as the bar's switcher widget
-    readonly property var workspaceWidgetData: SettingsData.barWidgetEntry(root.controller.barConfig, "workspaceSwitcher")
+    readonly property var workspaceWidgetData: root.widgetEntries ? root.configuredWidgets.find(entry => entry.id === "workspaceSwitcher") ?? null : SettingsData.barWidgetEntry(root.controller.barConfig, "workspaceSwitcher")
 
     function workspaceOption(key) {
         return SettingsData.widgetOption("workspaceSwitcher", root.workspaceWidgetData, key);
@@ -359,7 +366,7 @@ Item {
     }
 
     function pushMeasuredLength() {
-        root.controller.setHomeContentLength(root.isVertical ? compactColumn.implicitHeight : compactRow.implicitWidth);
+        root.controller.setHomeContentLength(Math.min(root.isVertical ? compactColumn.implicitHeight : compactRow.implicitWidth, root.isVertical ? root.controller.dashboardAvailableHeight : root.controller.dashboardAvailableWidth));
     }
 
     onWeatherSlotEnabledChanged: root.syncWeatherRef(root.weatherSlotEnabled)
@@ -418,9 +425,9 @@ Item {
 
         required property var group
 
-        enabled: !group.isClock
-        controller: root.controller
+        enabled: !group.isClock && !group.isCustom
         acceptedButtons: group.isTray ? Qt.NoButton : (Qt.LeftButton | Qt.MiddleButton)
+
 
         function connectivityTypeAt(event) {
             const clickPos = group.vertical ? event.y : event.x;
@@ -478,6 +485,8 @@ Item {
         readonly property bool vertical: root.isVertical
         readonly property real leadPad: group.slotIndex === 0 ? root.edgePad : root.groupSpacing / 2
         readonly property real trailPad: group.slotIndex === root.groupIds.length - 1 ? root.edgePad : root.groupSpacing / 2
+        readonly property var widgetData: root.widgetEntries ? root.configuredWidgets[group.slotIndex] : null
+        readonly property bool isCustom: !Object.keys(IslandLayout.GROUP_WIDGETS).includes(group.groupId)
         readonly property bool isClock: group.groupId === "clock"
         readonly property bool isMedia: group.groupId === "media"
         readonly property bool isWeather: group.groupId === "weather"
@@ -493,11 +502,12 @@ Item {
         readonly property bool usesConnectivity: group.isStatus && root.controller.homeStatusContent === "connectivity"
         readonly property bool usesBattery: group.isStatus && !group.usesConnectivity && BatteryService.batteryAvailable
         readonly property bool iconOnly: group.isMedia || (group.isStatus && !group.usesBattery && !group.usesConnectivity)
+        readonly property bool outlineEnabled: group.widgetData?.outline ?? root.controller.barConfig?.widgetOutlineEnabled ?? false
         readonly property string levelDisplay: group.isVolume ? root.controller.homeVolumeDisplay : root.controller.homeBrightnessDisplay
         readonly property int levelPercent: group.isVolume ? root.volumePercent : root.brightnessPercent
         readonly property string levelReserve: group.isVolume ? String(AudioService.sinkMaxVolume) : "100"
 
-        width: group.vertical ? root.width : (group.iconOnly ? root.iconSize : content.implicitWidth)
+        width: group.vertical ? root.width : (group.isMedia ? content.implicitWidth : group.iconOnly ? root.iconSize : content.implicitWidth)
         height: group.vertical ? content.implicitHeight : root.slotSize
 
         GroupHoverArea {
@@ -517,8 +527,11 @@ Item {
             width: group.vertical ? root.slotSize : parent.width + Theme.spacingS
             height: group.vertical ? parent.height + Theme.spacingXS : root.slotSize
             radius: group.vertical ? Theme.cornerRadius : Theme.fullRadius(width, height)
+            border.width: group.outlineEnabled ? Theme.outlineWidth : 0
+            border.color: Theme.withAlpha(Theme.primary, root.controller.barConfig?.widgetOutlineOpacity ?? 1)
             color: groupArea.containsMouse ? Theme.surfaceTextHover : "transparent"
-            visible: !group.isClock && !group.isTray && (group.vertical || !group.usesBattery)
+            visible: group.outlineEnabled || !group.isClock && !group.isTray && (group.vertical || !group.usesBattery)
+
         }
 
         Grid {
@@ -548,19 +561,41 @@ Item {
                 }
             }
 
-            AudioVisualization {
-                width: root.iconSize + Theme.spacingXS
-                height: width
-                maxBarHeight: Math.max(3, height - 2)
-                idleIconName: "graphic_eq"
-                visible: group.isMedia && root.controller.mediaAvailable
+            Loader {
+                active: group.isMedia
+                visible: active
+                sourceComponent: MediaActivityFace {
+                    mediaModel: root.mediaModel
+                    dense: true
+                    artworkSize: root.iconSize
+                    titleMaxWidth: group.widgetData ? SettingsData.widgetOption("music", group.widgetData, "mediaTitleMaxWidth") : 220
+                    isVertical: group.vertical
+                    artworkVisible: group.widgetData ? SettingsData.widgetOption("music", group.widgetData, "mediaShowCoverArt") : root.controller.mediaAlwaysVisible
+                    artworkCircular: group.widgetData ? SettingsData.widgetOption("music", group.widgetData, "mediaArtworkCircular") : root.controller.mediaArtworkCircular
+                    visualizerEnabled: group.widgetData ? SettingsData.widgetOption("music", group.widgetData, "mediaVisualizerEnabled") : true
+                    visualizerIdle: group.widgetData ? SettingsData.widgetOption("music", group.widgetData, "mediaVisualizerIdle") : root.controller.mediaVisualizerIdle
+                    titleVisible: root.controller.mediaAvailable && (group.widgetData?.mediaTitleMode === "always" || group.widgetData?.mediaTitleMode !== "never" && root.controller.mediaTitleVisible)
+                    enabled: root.visible && root.enabled
+                    onMediaClicked: root.activateGroup("media")
+                }
             }
 
-            DIcon {
-                visible: group.isMedia && !root.controller.mediaAvailable
-                name: "search"
-                size: root.iconSize
-                color: Theme.surfaceTextMedium
+            SurfaceWidgetHost {
+                visible: active
+                widgetId: group.isCustom ? group.widgetData?.id ?? "" : ""
+                widgetData: group.widgetData
+                components: root.widgetFactory?.componentMap ?? null
+                axis: root.widgetContext?.axis ?? null
+                surfaceContext: root.widgetContext
+                section: "center"
+                occurrenceOrder: group.slotIndex
+                parentScreen: root.controller.screen
+                barConfig: root.controller.barConfig
+                barThickness: root.controller.compactFaceThickness
+                widgetThickness: root.controller.compactIconSize
+                sectionAvailablePrimarySize: root.widgetContext?.availableSize ?? 0
+                isInColumn: root.isVertical
+                live: root.visible && root.enabled
             }
 
             DIcon {

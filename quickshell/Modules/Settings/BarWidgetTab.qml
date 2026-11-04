@@ -23,7 +23,8 @@ Item {
             return SettingsData.getDockConfig(dockId)?.widgets.find(item => item.id === SettingsUiState.selectedDockWidgetId) ?? null;
         SettingsData.barConfigs;
         const config = SettingsData.getBarConfig(barId);
-        const raw = (config?.[section + "Widgets"] ?? [])[index];
+        const entries = config?.[section + "Widgets"] ?? [];
+        const raw = entries[index];
         if (raw === undefined)
             return null;
         return typeof raw === "string" ? ({
@@ -34,6 +35,7 @@ Item {
     readonly property string widgetType: entry?.widgetId ?? entry?.id ?? ""
     readonly property bool sectionAutoOverflow: SettingsData.getBarConfig(barId)?.[section + "OverflowMode"] !== "bar"
     readonly property bool hasPill: !dockHosted && !["spacer", "separator", "island"].includes(widgetType)
+    readonly property bool barOutline: SettingsData.getBarConfig(barId)?.widgetOutlineEnabled ?? false
     readonly property bool barBackground: !(SettingsData.barConfigs.find(config => config.id === barId)?.noBackground ?? false)
     readonly property var store: ({
             "get": key => root.value(key),
@@ -192,6 +194,12 @@ Item {
                 text: I18n.tr("Background")
                 checked: root.entry?.background ?? root.barBackground
                 onToggled: checked => root.set("background", checked === root.barBackground ? undefined : checked)
+            }
+            SettingsToggleRow {
+                visible: root.hasPill
+                text: I18n.tr("Border", "bar widget settings: widget border toggle")
+                checked: root.entry?.outline ?? root.barOutline
+                onToggled: checked => root.set("outline", checked === root.barOutline ? undefined : checked)
             }
         }
 

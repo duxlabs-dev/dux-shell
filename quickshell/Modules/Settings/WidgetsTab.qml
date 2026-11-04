@@ -271,8 +271,6 @@ Item {
     }
 
     function setWidgetsForSection(sectionId, widgets) {
-        if (sectionId === "center" && dankIslandOwnsSelectedBarCenter)
-            return;
         switch (sectionId) {
         case "left":
             SettingsData.updateBarConfig(selectedBarId, {
@@ -318,8 +316,6 @@ Item {
     }
 
     function addWidgetToSection(widgetId, targetSection) {
-        if (targetSection === "center" && dankIslandOwnsSelectedBarCenter)
-            return;
         SettingsData.addBarWidget(selectedBarId, targetSection, widgetId);
     }
 
@@ -375,8 +371,6 @@ Item {
     }
 
     function moveWidget(fromSection, toSection, movedId, toIndex, sourceIndex = -1) {
-        if (dankIslandOwnsSelectedBarCenter && (fromSection === "center" || toSection === "center"))
-            return;
         if (fromSection === toSection) {
             var arr = getWidgetsForSection(fromSection).slice();
             var fi = arr.findIndex(w => (typeof w === "string" ? w : w.id) === movedId);
@@ -442,7 +436,7 @@ Item {
     }
 
     function moveAcrossSections(sectionId, id, delta) {
-        var order = dankIslandOwnsSelectedBarCenter ? ["left", "right"] : ["left", "center", "right"];
+        var order = ["left", "center", "right"];
         var si = order.indexOf(sectionId);
         var ti = si + delta;
         if (si < 0 || ti < 0 || ti >= order.length)
@@ -686,68 +680,10 @@ Item {
                 onConfigureWidget: (sectionId, index) => widgetsTab.configureWidget(sectionId, index)
             }
 
-            SettingsCard {
-                width: parent.width
-                iconName: "view_in_ar"
-                title: I18n.tr("Home compact", "island settings: home face card title")
-                settingKey: "islandHomeLayout"
-                tags: ["island", "home", "compact", "layout", "groups", "order"]
-                visible: widgetsTab.dankIslandOwnsSelectedBarCenter
-
-                SettingsRow {
-                    iconName: "info"
-                    iconColor: Theme.surfaceVariantText
-                    title: selectedBarIsVertical ? I18n.tr("Middle section", "widgets settings: bar section replaced by the island") : I18n.tr("Center section", "widgets settings: bar section replaced by the island")
-                    subtitle: I18n.tr("The Island takes its place on this bar", "widgets settings: the island replaces the bar's center section")
-                }
-
-                Loader {
-                    width: parent.width
-                    readonly property bool isSettingsRow: true
-                    readonly property bool transparentSlot: true
-                    height: item?.implicitHeight ?? 0
-                    active: widgetsTab.dankIslandOwnsSelectedBarCenter
-                    sourceComponent: IslandHomeLayoutEditor {
-                        settingKey: ""
-                        barId: widgetsTab.selectedBarId
-                    }
-                }
-
-                SettingsRow {
-                    body: Flow {
-                        width: parent.width
-                        spacing: Theme.spacingS
-
-                        DButton {
-                            text: I18n.tr("Launcher", "island settings: button to launcher tab")
-                            iconName: "grid_view"
-                            onClicked: {
-                                if (!widgetsTab.parentModal)
-                                    return;
-                                SettingsSearchService.navigateToSection("launcherStyle");
-                                widgetsTab.parentModal.navigateTo("launcher");
-                            }
-                        }
-
-                        DButton {
-                            text: I18n.tr("Time & weather", "island settings: button to weather tab")
-                            iconName: "cloud"
-                            onClicked: {
-                                if (!widgetsTab.parentModal)
-                                    return;
-                                SettingsSearchService.navigateToSection("weatherEnabled");
-                                widgetsTab.parentModal.navigateTo("time_weather");
-                            }
-                        }
-                    }
-                }
-            }
-
             WidgetsTabSection {
                 id: centerSection
                 width: parent.width
-                visible: !widgetsTab.dankIslandOwnsSelectedBarCenter
-                title: selectedBarIsVertical ? I18n.tr("Middle section") : I18n.tr("Center section")
+                title: widgetsTab.dankIslandOwnsSelectedBarCenter ? I18n.tr("Island widgets", "bar widget settings: widgets in the collapsed island") : selectedBarIsVertical ? I18n.tr("Middle section") : I18n.tr("Center section")
                 sectionId: "center"
                 barId: widgetsTab.selectedBarId
                 allWidgets: widgetsTab.baseWidgetDefinitions

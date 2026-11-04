@@ -39,6 +39,12 @@ Item {
     function openWidgetPopout(spec) {
         if (!spec)
             return false;
+        if (surfaceContext.islandController && spec.islandActivity) {
+            const controller = surfaceContext.islandController;
+            if (spec.islandActivity === "media" && !controller.mediaAvailable)
+                return controller.requestLauncher("", "", false);
+            return controller.requestActivity(spec.islandActivity, true, spec.mode !== "hover");
+        }
         spec.registration = BarWidgetService.registrationForItem(spec.widgetItem);
         surfaceContext.ensureVisible(spec.widgetItem);
         // A bar widget always opens its own popout where it was clicked; routing is for shortcuts, IPC and the dock.

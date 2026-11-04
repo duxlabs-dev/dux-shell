@@ -6,6 +6,9 @@ import qs.Modules.SurfaceWidgets
 MediaActivityFace {
     id: root
     required property var controller
+    titleVisible: controller.mediaTitleVisible
+    visualizerIdle: controller.mediaVisualizerIdle
+    artworkCircular: controller.mediaArtworkCircular
     dense: controller.compactDense
     isVertical: controller.isVertical
     artworkSize: controller.compactIconSize
@@ -20,16 +23,5 @@ MediaActivityFace {
     onIsVerticalChanged: updateLength()
     Component.onCompleted: updateLength()
     onClockClicked: controller.requestActivity("home", false, false)
-    property bool hoverCounted: false
-    onClockHoveredChanged: {
-        if (hoverCounted === clockHovered)
-            return;
-        hoverCounted = clockHovered;
-        if (clockHovered)
-            controller.slotHoverEntered();
-        else
-            controller.slotHoverExited();
-    }
-    Component.onDestruction: if (hoverCounted)
-        controller.slotHoverExited()
+    onMediaClicked: controller.requestActivity("media", true, false)
 }

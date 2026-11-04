@@ -137,7 +137,7 @@ SettingsCard {
         visible: root.docked && root.store.setting("islandInteractionMode") !== "click"
         body: StyledText {
             width: parent.width
-            text: I18n.tr("Hybrid peeks the current compact face on hover. Click pins a destination so it stays open", "island settings: hybrid mode hint")
+            text: I18n.tr("Hover opens the dashboard after the configured delay. Click a widget to open its controls", "island settings: hybrid mode hint")
             color: Theme.surfaceVariantText
             font.pixelSize: Theme.fontSizeSmall
             wrapMode: Text.WordWrap

@@ -650,6 +650,8 @@ Singleton {
             return false;
         }
 
+        IslandActivityService.clearSource(pluginId);
+        NotificationInterceptorService.clearSource(pluginId);
         try {
             const components = [pluginDaemonComponents, pluginLauncherComponents, pluginDesktopComponents, pluginWidgetComponents, pluginDashComponents, pluginDashCardComponents].map(map => map[pluginId]).filter(comp => !!comp);
             const instance = pluginInstances[pluginId];
