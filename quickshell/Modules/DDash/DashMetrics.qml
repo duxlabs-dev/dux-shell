@@ -12,7 +12,6 @@ Singleton {
     readonly property int minimumGridColumns: 3
     readonly property int maximumGridColumns: 8
     readonly property real preferredColumnWidth: 128
-    readonly property real minimumPopoutWidth: 700
     readonly property real popoutWidth: widthFor(false)
     readonly property real weekColumnWidth: 28
     readonly property real popoutWidthWide: popoutWidth + weekColumnWidth + Theme.spacingS
@@ -40,9 +39,7 @@ Singleton {
     }
 
     function widthFor(weekNumbers, screenWidth, columns = gridColumns) {
-        // The floor is sized at comfortable spacing, so it carries the density offsets.
-        const floorWidth = minimumPopoutWidth + (gridGap - Theme.spacingS) * (columns - 1) + (contentPadding - Theme.spacingM) * 2;
-        const panelWidth = Math.max(floorWidth, preferredColumnWidth * columns + gridGap * (columns - 1) + contentPadding * 2);
+        const panelWidth = preferredColumnWidth * columns + gridGap * (columns - 1) + contentPadding * 2;
         const extra = weekNumbers ? weekColumnWidth + Theme.spacingS : 0;
         if (!Number.isFinite(screenWidth) || screenWidth <= 0)
             return panelWidth + extra;
@@ -57,8 +54,9 @@ Singleton {
     readonly property string overviewId: "overview"
     readonly property int maximumGridRows: 8
     readonly property int maximumCardRows: 64
-    readonly property int minimumTabRows: 4
+    readonly property int minimumTabRows: 2
     readonly property int defaultTabRows: 5
+    readonly property int defaultFittedTabRows: 4
     property var panelPreview: null
 
     function clampColumns(value) {
@@ -92,7 +90,7 @@ Singleton {
     }
 
     function defaultRowsForTab(tab) {
-        return tab?.sizeToContent === true ? minimumTabRows : defaultTabRows;
+        return tab?.sizeToContent === true ? defaultFittedTabRows : defaultTabRows;
     }
 
     function defaultRowsFor(id) {
