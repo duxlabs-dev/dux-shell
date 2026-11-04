@@ -15001,12 +15001,20 @@
     "category": "Mouse & touchpad",
     "keywords": [
       "acceleration",
+      "adaptive",
+      "faster",
+      "flat",
       "input",
       "mouse",
+      "move",
+      "pointer",
       "profile",
-      "touchpad"
+      "speeds",
+      "touchpad",
+      "turns"
     ],
     "parentLabel": "Input",
+    "description": "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.",
     "conditionKey": "pointerCapable"
   },
   {
@@ -15016,12 +15024,20 @@
     "category": "Mouse & touchpad",
     "keywords": [
       "acceleration",
+      "adaptive",
+      "faster",
+      "flat",
       "input",
       "mouse",
+      "move",
+      "pointer",
       "profile",
-      "touchpad"
+      "speeds",
+      "touchpad",
+      "turns"
     ],
     "parentLabel": "Input",
+    "description": "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.",
     "conditionKey": "pointerCapable"
   },
   {
