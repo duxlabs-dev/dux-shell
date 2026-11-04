@@ -89,7 +89,12 @@ Item {
             });
         }
 
-        const disks = (DgopService.diskRates ?? []).filter(d => Devices.isWholeDisk(d.device)).slice().sort((a, b) => Devices.naturalCompare(a.device, b.device));
+        const drives = DriveService.drives ?? [];
+        const driveRank = name => {
+            const i = drives.indexOf(Drives.driveFor(name, drives));
+            return i < 0 ? drives.length : i;
+        };
+        const disks = (DgopService.diskRates ?? []).filter(d => Devices.isWholeDisk(d.device)).slice().sort((a, b) => driveRank(a.device) - driveRank(b.device) || Devices.naturalCompare(a.device, b.device));
         for (const d of disks) {
             const key = Devices.deviceKey("disk", d.device);
             items.push({
