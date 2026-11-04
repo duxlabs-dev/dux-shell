@@ -7,6 +7,7 @@ import qs.Modules.DBar.Widgets
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
+import "../../../DCommon/Common/LayoutCodes.js" as LayoutCodes
 
 Item {
     id: root
@@ -28,6 +29,8 @@ Item {
     readonly property string clockDisplay: root.controller.homeClockDisplay
     readonly property real edgePad: Math.max(root.groupSpacing, ((root.isVertical ? root.height - compactColumn.height : root.width - compactRow.width)) / 2)
     readonly property bool weatherSlotEnabled: root.controller.homeWeatherEnabled
+    readonly property bool keyboardLayoutSlotEnabled: root.controller.homeLeftGroups.indexOf("keyboardLayout") !== -1 || root.controller.homeRightGroups.indexOf("keyboardLayout") !== -1
+    readonly property string keyboardLayoutLabel: KeyboardLayoutService.layoutKnown ? LayoutCodes.layoutCode(KeyboardLayoutService.currentLayout) : ""
     readonly property string brightnessDeviceId: BrightnessService.screenLeadDevice(root.controller.screen)
     readonly property var brightnessDevice: BrightnessService.getCurrentDeviceInfoByName(root.brightnessDeviceId)
     readonly property real brightnessLevel: {
@@ -41,6 +44,7 @@ Item {
     readonly property real touchpadThreshold: 100
     property real wheelAccumulator: 0
     property bool weatherRefHeld: false
+    property bool keyboardLayoutRefHeld: false
     // Same options as the bar's switcher widget
     readonly property var workspaceWidgetData: SettingsData.barWidgetEntry(root.controller.barConfig, "workspaceSwitcher")
 
@@ -218,6 +222,8 @@ Item {
             return PrivacyService.anyPrivacyActive;
         case "workspaces":
             return workspaces.available;
+        case "keyboardLayout":
+            return KeyboardLayoutService.available && KeyboardLayoutService.layoutKnown;
         case "tray":
             return root.visibleTrayItems.length > 0 || root.hiddenTrayItems.length > 0;
         }
@@ -257,6 +263,9 @@ Item {
             return;
         case "privacy":
             root.controller.requestControlCenter("audioInput", false);
+            return;
+        case "keyboardLayout":
+            KeyboardLayoutService.cycle();
             return;
         }
         root.controller.requestControlCenter("", false);
@@ -362,14 +371,26 @@ Item {
         root.controller.setHomeContentLength(root.isVertical ? compactColumn.implicitHeight : compactRow.implicitWidth);
     }
 
+    function syncKeyboardLayoutRef(wanted) {
+        if (wanted === keyboardLayoutRefHeld)
+            return;
+        keyboardLayoutRefHeld = wanted;
+        KeyboardLayoutService.consumers += wanted ? 1 : -1;
+    }
+
     onWeatherSlotEnabledChanged: root.syncWeatherRef(root.weatherSlotEnabled)
+    onKeyboardLayoutSlotEnabledChanged: root.syncKeyboardLayoutRef(root.keyboardLayoutSlotEnabled)
     onIsVerticalChanged: root.pushMeasuredLength()
     onVisibleTrayItemsChanged: root.pushMeasuredLength()
     Component.onCompleted: {
         root.syncWeatherRef(root.weatherSlotEnabled);
+        root.syncKeyboardLayoutRef(root.keyboardLayoutSlotEnabled);
         root.pushMeasuredLength();
     }
-    Component.onDestruction: root.syncWeatherRef(false)
+    Component.onDestruction: {
+        root.syncWeatherRef(false);
+        root.syncKeyboardLayoutRef(false);
+    }
 
     component IslandClock: ClockContent {
         vertical: root.isVertical
@@ -486,6 +507,7 @@ Item {
         readonly property bool isVolume: group.groupId === "volume"
         readonly property bool isBrightness: group.groupId === "brightness"
         readonly property bool isPrivacy: group.groupId === "privacy"
+        readonly property bool isKeyboardLayout: group.groupId === "keyboardLayout"
         readonly property bool isWorkspaces: group.groupId === "workspaces"
         readonly property bool isTray: group.groupId === "tray"
         readonly property bool isSystemLevel: group.isVolume || group.isBrightness
@@ -587,6 +609,13 @@ Item {
             StyledText {
                 visible: group.isNotifications
                 text: root.controller.unreadNotificationCount
+                color: Theme.surfaceTextSecondary
+                font.pixelSize: root.textSize
+            }
+
+            NumericText {
+                visible: group.isKeyboardLayout
+                text: root.keyboardLayoutLabel
                 color: Theme.surfaceTextSecondary
                 font.pixelSize: root.textSize
             }
