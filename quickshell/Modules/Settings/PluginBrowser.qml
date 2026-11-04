@@ -637,6 +637,8 @@ RegistryBrowserWindow {
             return;
         var script = 'for c in "$@"; do command -v "$c" >/dev/null 2>&1 && echo "$c"; done; true';
         Proc.runCommand("plugin-browser-dependencies", ["sh", "-c", script, "sh"].concat(commands), (output, exitCode) => {
+            if (!root)
+                return;
             if (exitCode !== 0) {
                 root.log.warn("dependency lookup failed", exitCode);
                 return;
@@ -791,6 +793,8 @@ RegistryBrowserWindow {
         operationPending = true;
         operationMessage = I18n.tr("Installing: %1", "installation progress").arg(pluginName);
         PluginService.installFromRegistry(pluginId, pluginName, enableAfterInstall, (success, error) => {
+            if (!root)
+                return;
             operationPending = false;
             operationFailed = !success;
             operationMessage = success ? I18n.tr("Installed: %1", "installation success").arg(pluginName) : error;
@@ -810,6 +814,8 @@ RegistryBrowserWindow {
         isLoading = true;
         loadError = "";
         DMSService.listPlugins(response => {
+            if (!root)
+                return;
             isLoading = false;
             if (!visible)
                 return;
