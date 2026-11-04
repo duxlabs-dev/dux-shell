@@ -77,15 +77,14 @@ Item {
         for (const g of DgopService.availableGpus ?? []) {
             const key = Devices.deviceKey("gpu", Devices.gpuSlot(g));
             const suspended = g.state === "suspended";
-            const passthrough = g.state === "passthrough";
             const off = !Devices.gpuMonitored(DgopService.gpuPciIds, g.pciId, g.busId);
             items.push({
                 key: key,
                 group: I18n.tr("Graphics"),
                 icon: "gpu",
                 name: g.fullName,
-                value: off ? I18n.tr("Monitoring off", "GPU monitoring is turned off in settings") : passthrough ? I18n.tr("Unavailable") : suspended ? I18n.tr("Idle", "adjective, printer state", true) : (g.usage != null ? Math.round(g.usage) + "%" : "—"),
-                values: suspended || off || passthrough ? [] : (history(key).a ?? []),
+                value: off ? I18n.tr("Monitoring off", "GPU monitoring is turned off in settings") : suspended ? I18n.tr("Idle", "adjective, printer state", true) : (g.usage != null ? Math.round(g.usage) + "%" : "—"),
+                values: suspended || off ? [] : (history(key).a ?? []),
                 maximum: 100
             });
         }

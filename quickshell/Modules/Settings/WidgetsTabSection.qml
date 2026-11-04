@@ -154,8 +154,7 @@ Column {
             subtitle: {
                 if (modelData.id !== "gpuTemp")
                     return modelData.description ?? "";
-                const selectedIndex = modelData.selectedGpuIndex ?? 0;
-                const gpu = DgopService.availableGpus?.[selectedIndex];
+                const gpu = DgopService.widgetGpu(modelData.selectedGpuIndex ?? 0, modelData.pciId);
                 if (!gpu)
                     return I18n.tr("No GPU detected", "empty state when no graphics card is found");
                 return gpu.driver?.toUpperCase() ?? "";

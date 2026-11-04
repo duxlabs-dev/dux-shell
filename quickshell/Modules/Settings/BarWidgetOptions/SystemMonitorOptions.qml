@@ -51,7 +51,7 @@ Column {
             visible: root.type === "gpuTemp"
             options: root.gpuLabels
             emptyText: I18n.tr("No GPU detected", "empty state when no graphics card is found")
-            currentValue: root.gpuLabels[root.page.value("selectedGpuIndex")] ?? ""
+            currentValue: root.gpuLabels[DgopService.availableGpus.indexOf(DgopService.widgetGpu(root.page.value("selectedGpuIndex"), root.page.value("pciId")))] ?? ""
             onValueChanged: value => {
                 const index = root.gpuLabels.indexOf(value);
                 if (index < 0)
