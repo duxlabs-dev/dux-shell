@@ -363,9 +363,14 @@ QtObject {
             group.parts.push(part);
         }
         const prepared = [...groups.values()].sort((a, b) => a.t - b.t);
-        for (const group of prepared) {
+        for (let i = 0; i < prepared.length; i++) {
+            const group = prepared[i];
             group.parts.sort((a, b) => Number(a.background) - Number(b.background) || a.t - b.t);
             group.x = group.parts.map(part => part.x).join("\n");
+            // A line moves into the centre over a share of the time since the line before it, so the
+            // view paces itself to the song instead of a global animation speed.
+            const since = i > 0 ? group.t - prepared[i - 1].t : Infinity;
+            group.move = Math.min(DashMetrics.lyricsMoveMax, Math.max(DashMetrics.lyricsMoveMin, since * DashMetrics.lyricsMoveShare));
         }
         cueTimes = [...events].sort((a, b) => a - b).map(t => ({
                     t
@@ -538,7 +543,8 @@ QtObject {
         sampleTime = at;
         const nextIndex = indexFor(at, lines);
         activeIndex = nextIndex;
-        const leadIn = (lines[nextIndex + 1]?.t ?? Infinity) - DashMetrics.lyricsLineLeadIn;
+        const upcoming = lines[nextIndex + 1];
+        const leadIn = upcoming ? upcoming.t - upcoming.move * DashMetrics.lyricsLineLeadIn : Infinity;
         followIndex = at >= leadIn ? nextIndex + 1 : nextIndex;
         const next = Math.min(cueTimes[indexFor(at, cueTimes) + 1]?.t ?? Infinity, leadIn > at ? leadIn : Infinity);
         wordRevision++;

@@ -263,23 +263,27 @@ Singleton {
     readonly property real lyricsRestAlpha: 0.35
     // The soft lead ahead of the sweep's edge as a share of the row height.
     readonly property real lyricsSweepLead: 0.9
-    readonly property int lyricsLineFadeDuration: lyricsTrackMoveDuration
-    readonly property int lyricsLineScaleDuration: lyricsTrackMoveDuration
+    // Seconds of cue time the sweep's edge is averaged over, so a word sung in a few frames still glides.
+    readonly property real lyricsSweepWindow: 0.24
     readonly property int lyricsLineLinger: 500
-    // Seconds before a line starts that the track moves it into the centre, so it has settled when it is sung.
+    // A line moves into the centre over this share of the seconds since the line before it, within the bounds.
+    readonly property real lyricsMoveShare: 0.3
+    readonly property real lyricsMoveMin: 0.4
+    readonly property real lyricsMoveMax: 1
+    // Share of its move a line is on its way before it starts, so it is sung in place.
     readonly property real lyricsLineLeadIn: 0.4
     // A clock that steps back less than this right after the centre advanced keeps the new row.
     readonly property real lyricsFollowBackstepSlack: 1.5
-    // M3's slow spatial duration (650ms) at the stock base, scaled with the animation speed setting.
-    readonly property int lyricsTrackMoveDuration: Math.round(Theme.currentAnimationBaseDuration * 2.6)
-    // A critically damped spring settles in about ten time constants, so a long scroll lands with the line move.
-    readonly property real lyricsScrollRate: 10000 / lyricsTrackMoveDuration
+    // A seek scrolls to the line on a critically damped spring that settles in about ten time constants.
+    readonly property int lyricsSeekScrollDuration: 650
+    readonly property real lyricsScrollRate: 10000 / lyricsSeekScrollDuration
     readonly property real lyricsScrollStiffness: lyricsScrollRate * lyricsScrollRate
     readonly property real lyricsScrollDamping: 2 * lyricsScrollRate
     // Below half a pixel the rounded position no longer moves, so the spring stops there.
     readonly property real lyricsScrollSettleDistance: 0.5
     readonly property real lyricsScrollSettleSpeed: 10
-    readonly property int lyricsTrackPushStep: 40
+    // Rows catch up one after another, each a share of the move behind its neighbour.
+    readonly property real lyricsTrackPushShare: 0.06
     readonly property int lyricsTrackMaxPush: 5
     // A critically damped spring that settles over the move, fitted as a bezier: a gentle start,
     // so a row that follows its neighbour a step later never closes onto it, and a long settle.
