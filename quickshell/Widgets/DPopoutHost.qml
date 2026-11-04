@@ -56,7 +56,7 @@ Item {
     property bool _primeContent: false
     property bool _contentWarm: false
     property bool _backgroundWarm: false
-    property bool _contentRenderActive: Theme.isDirectionalEffect || shouldBeVisible
+    property bool _contentRenderActive: root.directionalMotion || shouldBeVisible
     // Keyboard focus grabbed one tick after emerge starts, to avoid stalling first frames.
     property bool _keyboardReady: false
     readonly property bool contentActive: focusHelper.Window.active
@@ -90,7 +90,7 @@ Item {
     property var screen: popoutHandle.screen
     property var surfaceScreen: null
     readonly property bool frameGapStandaloneActive: CompositorService.frameConfiguredForScreen(screen) && !CompositorService.usesConnectedFrameChromeForScreen(screen)
-    readonly property bool directionalRevealActive: Theme.isDirectionalEffect
+    readonly property bool directionalRevealActive: root.directionalMotion
     readonly property var effectivePopoutLayer: LayerShell.fromEnv("DMS_POPOUT_LAYER", root.triggerUsesOverlayLayer ? WlrLayer.Overlay : WlrLayer.Top, {
         "allow": ["top", "overlay"],
         "invalidLayer": WlrLayer.Top,
@@ -98,6 +98,8 @@ Item {
     })
 
     readonly property real effectiveBarThickness: {
+        if (root.joinsIslandSatellite)
+            return SettingsData.islandStripThickness(storedBarConfig);
         if (root.usesConnectedSurfaceChrome)
             return Math.max(0, storedBarThickness);
         return Theme.barThickness(storedBarConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault, dpr) + storedBarSpacing;
@@ -492,8 +494,11 @@ Item {
     }
 
     property bool _overStackedModal: false
-    readonly property bool frameOwnsConnectedChrome: connected && !_overStackedModal && effectivePopoutLayer === WlrLayer.Top && CompositorService.canShareConnectedFrameChromeForScreen(root.screen)
-    readonly property bool usesConnectedSurfaceChrome: connected && Theme.isConnectedEffect
+    // Without a frame, the bar window of the island this popout opened from paints its chrome.
+    readonly property bool joinsIslandSatellite: connected && !Theme.isConnectedEffect && SettingsData.islandConnectsPopouts(storedBarConfig)
+    readonly property bool directionalMotion: Theme.isDirectionalEffect || joinsIslandSatellite
+    readonly property bool frameOwnsConnectedChrome: connected && !_overStackedModal && effectivePopoutLayer === WlrLayer.Top && (joinsIslandSatellite || CompositorService.canShareConnectedFrameChromeForScreen(root.screen))
+    readonly property bool usesConnectedSurfaceChrome: connected && (Theme.isConnectedEffect || joinsIslandSatellite)
     readonly property bool usesLocalConnectedSurfaceChrome: usesConnectedSurfaceChrome && !frameOwnsConnectedChrome
 
     property bool animationsEnabled: true
@@ -698,9 +703,9 @@ Item {
     readonly property real screenHeight: screen ? screen.height : 0
     // devicePixelRatio rounds to integer under fractional scaling; use the real scale Qt renders at.
     readonly property real dpr: screen ? (CompositorService.getScreenScale(screen) || screen.devicePixelRatio) : 1
-    readonly property bool closeFrameGapsActive: SettingsData.frameCloseGaps && frameOwnsConnectedChrome
+    readonly property bool closeFrameGapsActive: SettingsData.frameCloseGaps && frameOwnsConnectedChrome && !joinsIslandSatellite
     readonly property real frameInset: {
-        if (!root.frameOwnsConnectedChrome)
+        if (!root.frameOwnsConnectedChrome || root.joinsIslandSatellite)
             return 0;
         const ft = SettingsData.frameThickness;
         const fr = SettingsData.frameRounding;
@@ -716,7 +721,7 @@ Item {
     }
 
     function _frameEdgeInset(side) {
-        if (!root.frameOwnsConnectedChrome)
+        if (!root.frameOwnsConnectedChrome || root.joinsIslandSatellite)
             return 0;
         return Math.max(0, SettingsData.frameEdgeReservation(root.screen, side));
     }
@@ -1200,7 +1205,9 @@ Item {
         case SettingsData.Position.Right:
             return Math.max(edgeGapLeft, Math.min(screenWidth - width - popupGap, anchorX - width));
         default:
-            const rawX = triggerX + (triggerWidth / 2) - (width / 2);
+            // Lean toward the nearer screen edge, where the satellite is.
+            const edgeBias = !joinsIslandSatellite ? 0 : (triggerX + triggerWidth / 2 > screenWidth / 2 ? width : -width) / 4;
+            const rawX = triggerX + (triggerWidth / 2) - (width / 2) + edgeBias;
             const clearLeft = adjacentBarClearance(adjacentBarInfo.leftBar);
             const clearRight = adjacentBarClearance(adjacentBarInfo.rightBar);
             const minX = Math.max(edgeGapLeft, clearLeft);
@@ -1682,7 +1689,7 @@ Item {
             readonly property bool barLeft: effectiveBarPosition === SettingsData.Position.Left
             readonly property bool barRight: effectiveBarPosition === SettingsData.Position.Right
             readonly property string connectedBarSide: barTop ? "top" : (barBottom ? "bottom" : (barLeft ? "left" : "right"))
-            readonly property bool directionalEffect: Theme.isDirectionalEffect
+            readonly property bool directionalEffect: root.directionalMotion
             readonly property bool depthEffect: Theme.isDepthEffect
             readonly property real directionalTravelX: Math.max(root.animationOffset, root.renderedAlignedWidth + Theme.spacingL)
             readonly property real directionalTravelY: Math.max(root.animationOffset, root.renderedAlignedHeight + root.topOverflow + root.bottomOverflow + Theme.spacingL)
@@ -1734,7 +1741,7 @@ Item {
                 return barBottom ? -root.animationOffset : (barTop ? root.animationOffset : 0);
             }
 
-            readonly property real computedScaleCollapsed: root.animationScaleCollapsed
+            readonly property real computedScaleCollapsed: root.joinsIslandSatellite ? 1 : root.animationScaleCollapsed
             readonly property real morphTravelPx: Math.max(1, Math.abs(offsetX), Math.abs(offsetY), (1 - computedScaleCollapsed) * Math.max(root.alignedWidth, root.alignedHeight), root._fluidMotionActive ? Math.max(root.alignedWidth, root.alignedHeight) : 0)
 
             PopoutHoverBodyTracker {
@@ -1745,7 +1752,7 @@ Item {
             SpringMotion {
                 id: morph
                 onRunningChanged: {
-                    if (!running && (Theme.isDirectionalEffect || root._fluidMotionActive) && root.isClosing && !root.shouldBeVisible)
+                    if (!running && (root.directionalMotion || root._fluidMotionActive) && root.isClosing && !root.shouldBeVisible)
                         root.closeAnimationFinished();
                 }
                 enabled: root.animationsEnabled && !(root.connected && root._fluidMotionActive)
@@ -1869,7 +1876,7 @@ Item {
                 id: directionalClipMask
 
                 visible: !root._surfaceSwitching
-                readonly property bool shouldClip: Theme.isDirectionalEffect || root.usesConnectedSurfaceChrome
+                readonly property bool shouldClip: root.directionalMotion || root.usesConnectedSurfaceChrome
                 readonly property real clipOversize: 1000
                 // inputMargin is only non-zero while a grid is being edited; let its chrome cross the connected edge instead of clipping it.
                 readonly property real connectedClipAllowance: {
@@ -1986,9 +1993,9 @@ Item {
                         height: rollOutAdjuster.baseHeight
 
                         property bool _animating: false
-                        readonly property bool _fadeWithOpacity: (!root._fluidMotionActive && !Theme.isDirectionalEffect) || root._supersededClose
+                        readonly property bool _fadeWithOpacity: (!root._fluidMotionActive && !root.directionalMotion) || root._supersededClose
                         readonly property bool _supersededFade: root._supersededClose && !root.shouldBeVisible
-                        readonly property real _targetOpacity: root._supersededClose ? (root.shouldBeVisible ? 1 : 0) : (root._fluidMotionActive ? root.fluidContentOpacity : (Theme.isDirectionalEffect ? 1 : (root.shouldBeVisible ? 1 : 0)))
+                        readonly property real _targetOpacity: root._supersededClose ? (root.shouldBeVisible ? 1 : 0) : (root._fluidMotionActive ? root.fluidContentOpacity : (root.directionalMotion ? 1 : (root.shouldBeVisible ? 1 : 0)))
                         readonly property real publishedOpacity: opacity
 
                         opacity: _targetOpacity
@@ -2150,22 +2157,22 @@ Item {
                     width: chrome.width
                     height: chrome.height
 
-                    property real publishedOpacity: Theme.isDirectionalEffect || root._fluidMotionActive ? 1 : (root.shouldBeVisible ? 1 : 0)
+                    property real publishedOpacity: root.directionalMotion || root._fluidMotionActive ? 1 : (root.shouldBeVisible ? 1 : 0)
                     readonly property real settledOpacity: publishedOpacity >= 1 - Theme.morphSettleEpsilon ? 1 : Math.max(0, publishedOpacity)
 
-                    opacity: root._fluidMotionActive || Theme.isDirectionalEffect ? 1 : settledOpacity
+                    opacity: root._fluidMotionActive || root.directionalMotion ? 1 : settledOpacity
                     visible: root._contentRenderActive
                     scale: contentContainer.scaleValue
                     transformOrigin: Item.Center
                     x: root._fluidMotionActive ? 0 : contentContainer.animX + (chrome.width - width) * (1 - contentContainer.scaleValue) * 0.5
                     y: root._fluidMotionActive ? 0 : contentContainer.animY + (chrome.height - height) * (1 - contentContainer.scaleValue) * 0.5
 
-                    layer.enabled: !Theme.isDirectionalEffect && !root._fluidMotionActive && root._contentRenderActive && (!contentContainer.morphSettled || opacity < 1)
+                    layer.enabled: !root.directionalMotion && !root._fluidMotionActive && root._contentRenderActive && (!contentContainer.morphSettled || opacity < 1)
                     layer.smooth: true
                     fallbackDevicePixelRatio: root.dpr
 
                     Behavior on publishedOpacity {
-                        enabled: !Theme.isDirectionalEffect && !root._fluidMotionActive
+                        enabled: !root.directionalMotion && !root._fluidMotionActive
                         NumberAnimation {
                             duration: Math.round(Theme.variantDuration(root.animationDuration, root.shouldBeVisible) * Theme.variantOpacityDurationScale)
                             easing.type: Easing.BezierSpline

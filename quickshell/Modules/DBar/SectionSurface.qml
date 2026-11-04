@@ -21,6 +21,7 @@ Item {
     property color fillColor: "transparent"
     property real clearEdge: NaN
     property real dpr: 1
+    property bool paintedElsewhere: false
 
     readonly property real fullAlongStart: edgeAligned && !trailing ? 0 : alongPos - pad
     readonly property real fullAlongEnd: edgeAligned && trailing ? alongExtent : alongPos + alongSize + pad
@@ -67,6 +68,7 @@ Item {
     Item {
         id: canvas
 
+        visible: !root.paintedElsewhere
         anchors.centerIn: parent
         width: root.chromeAlongSize
         height: root.crossSize

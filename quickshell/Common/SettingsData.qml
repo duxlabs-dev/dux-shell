@@ -1029,6 +1029,9 @@ Singleton {
         return edge === "left" || edge === "right";
     }
 
+    function islandConnectsPopouts(bc) {
+        return !frameEnabled && isIslandBarConfig(bc) && !isDotBarConfig(bc) && islandSetting(bc, "islandSatellitesEnabled") && islandSetting(bc, "islandSatelliteBackground") && islandSetting(bc, "islandSatelliteConnectedPopouts");
+    }
     function islandStripThickness(bc) {
         return LayoutResolver.islandThickness(islandSettings(bc), islandDefaultsFor(bc));
     }

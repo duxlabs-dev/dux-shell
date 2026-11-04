@@ -412,6 +412,22 @@ Item {
     }
 
     Component {
+        id: blurChromeRegionComp
+
+        Region {
+            property Item chrome
+            property string rectKey
+
+            readonly property vector4d rect: chrome[rectKey]
+
+            x: Math.round(rect.x)
+            y: Math.round(rect.y)
+            width: Math.round(rect.z)
+            height: Math.round(rect.w)
+        }
+    }
+
+    Component {
         id: blurSatelliteRegionComp
 
         // Sweeps hang off the body's integer bounds; converting each rect on its own could open a seam between them.
@@ -568,6 +584,16 @@ Item {
                 for (const surface of [leadingSatelliteSurface, trailingSatelliteSurface]) {
                     const sub = blurSatelliteRegionComp.createObject(region, {
                         surface: surface
+                    });
+                    if (sub)
+                        subRegions.push(sub);
+                }
+            }
+            if (satelliteTranslucent && satelliteChromeLoader.item) {
+                for (const rectKey of ["leadRect", "trailRect", "bodyRect"]) {
+                    const sub = blurChromeRegionComp.createObject(region, {
+                        chrome: satelliteChromeLoader.item,
+                        rectKey: rectKey
                     });
                     if (sub)
                         subRegions.push(sub);
@@ -782,7 +808,8 @@ Item {
     readonly property real islandSatelliteShadowBuffer: isIsland && islandSatellitesEnabled && !islandSatelliteBackground ? _shadowBuffer : 0
     // A grown layer surface jumps to its new origin before the client draws at the new size, so a far-edge host never grows for the sheet.
     readonly property bool islandReservesSheet: !!islandHost && (axis.edge === "bottom" || axis.edge === "right")
-    readonly property real hostThickness: isIsland ? Math.max(islandHost?.hostThickness ?? 0, islandStripThickness + islandSatelliteShadowBuffer) : Math.max(barSurfaceThickness, islandSheetOut || islandReservesSheet ? islandHost.hostThickness : 0)
+    readonly property bool satelliteChromeActive: SettingsData.islandConnectsPopouts(barConfig)
+    readonly property real hostThickness: isIsland ? Math.max(islandHost?.hostThickness ?? 0, islandStripThickness + islandSatelliteShadowBuffer, satelliteChromeActive ? (isVertical ? modelData.width : modelData.height) : 0) : Math.max(barSurfaceThickness, islandSheetOut || islandReservesSheet ? islandHost.hostThickness : 0)
     // The host reserves the expanded island's height, so sliding by it would move a compact island off-screen within a frame.
     readonly property real islandCompactThickness: Math.max(islandStripThickness + islandSatelliteShadowBuffer, (islandHost?.outerGap ?? 0) + (islandHost?.compactThickness ?? 0) + (islandHost?.shadowPadding ?? 0))
     readonly property real hideSlideThickness: isIsland ? islandCompactThickness : barSurfaceThickness
@@ -1152,6 +1179,25 @@ Item {
                     }
                 }
 
+                Loader {
+                    id: satelliteChromeLoader
+                    active: barWindow.satelliteChromeActive
+                    anchors.fill: parent
+                    onLoaded: _blurRebuildTimer.restart()
+                    sourceComponent: SatelliteChrome {
+                        leading: leadingSatelliteSurface
+                        trailing: trailingSatelliteSurface
+                        screenName: barWindow.screenName
+                        barSide: axis.edge
+                        originX: barUnitInset.x
+                        originY: barUnitInset.y
+                        dpr: barWindow._dpr
+                        fillColor: Theme.withAlpha(barWindow.islandSurfaceColor, barWindow.islandSatelliteOpacity)
+                        edgeRadius: SettingsData.islandSetting(barConfig, "islandSatelliteGothCorners") ? barWindow.islandGothRadius : 0
+                        cornerRadius: leadingSatelliteSurface.cornerR
+                    }
+                }
+
                 Item {
                     id: barUnitInset
                     property int spacingPx: Theme.px(barWindow.renderedSpacing, barWindow._dpr)
@@ -1191,6 +1237,7 @@ Item {
                         isVertical: barWindow.isVertical
                         crossFar: axis.edge === "bottom" || axis.edge === "right"
                         edgeAligned: !barWindow.islandSatellitesHugIsland
+                        paintedElsewhere: barWindow.satelliteChromeActive
                         pad: barWindow.islandChromePad
                         sweep: barWindow.islandGothRadius
                         gothEnabled: barWindow.isIsland && SettingsData.islandSetting(barConfig, "islandSatelliteGothCorners")
@@ -1211,6 +1258,7 @@ Item {
                         isVertical: barWindow.isVertical
                         crossFar: axis.edge === "bottom" || axis.edge === "right"
                         edgeAligned: !barWindow.islandSatellitesHugIsland
+                        paintedElsewhere: barWindow.satelliteChromeActive
                         pad: barWindow.islandChromePad
                         sweep: barWindow.islandGothRadius
                         gothEnabled: barWindow.isIsland && SettingsData.islandSetting(barConfig, "islandSatelliteGothCorners")

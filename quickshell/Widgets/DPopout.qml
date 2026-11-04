@@ -171,7 +171,7 @@ Item {
     }
 
     function _usesConnectedBackendForScreen(targetScreen) {
-        return CompositorService.usesConnectedFrameChromeForScreen(targetScreen);
+        return CompositorService.usesConnectedFrameChromeForScreen(targetScreen) || (!sourceDock && SettingsData.islandConnectsPopouts(storedBarConfig));
     }
 
     function _maybeResolveBackend() {
