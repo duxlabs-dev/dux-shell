@@ -74,7 +74,7 @@ Item {
         {
             "name": "NextPage",
             "label": I18n.tr("Next page", "Configurable keybind in the fcitx5 settings."),
-            "description": I18n.tr("Candidate list")
+            "description": I18n.tr("Candidate list", "Description for a configurable keybind in the fcitx5 settings.")
         },
         {
             "name": "PrevCandidate",
@@ -303,7 +303,7 @@ Item {
 
             objectName: "fcitx5ImPicker"
             parentModal: root.parentModal
-            title: I18n.tr("Add input method")
+            title: I18n.tr("Add input method", "Title for fcitx5 IM picker window")
             searchPlaceholder: I18n.tr("Search...")
             onWidgetChosen: widget => {
                 root.saveItems(root.items.concat({
@@ -330,7 +330,7 @@ Item {
     SettingsPage {
         SettingsNoteRow {
             visible: !root.editable
-            text: I18n.tr("Update DMS to configure fcitx5 from here")
+            text: I18n.tr("Update DMS to configure fcitx5 from here", "Tip displayed when dms core is too old for fcitx5")
         }
 
         SettingsCard {
@@ -355,7 +355,7 @@ Item {
                     required property string modelData
 
                     title: modelData
-                    summary: root.activeGroup === modelData ? I18n.tr("In use") : ""
+                    summary: root.activeGroup === modelData ? I18n.tr("Active") : ""
                     selected: root.selectedGroup === modelData
                     toggleVisible: false
                     deletable: root.groupNames.length > 1

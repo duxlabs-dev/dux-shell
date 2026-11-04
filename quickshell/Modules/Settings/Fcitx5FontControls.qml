@@ -12,8 +12,11 @@ Row {
     property string title
     readonly property var parts: Fcitx5Schema.parseFont(value)
     property var families: []
+    // DDropdown shows emptyText for "", so Regular needs a non-empty key.
+    readonly property string regularKey: "Regular"
+    readonly property string styleKey: parts.style === "" ? regularKey : parts.style
     readonly property var styleLabels: ({
-            "": I18n.tr("Regular", "font style"),
+            "Regular": I18n.tr("Regular", "font style"),
             "Light": I18n.tr("Light", "font style"),
             "Medium": I18n.tr("Medium", "font style"),
             "Bold": I18n.tr("Bold", "font style"),
@@ -22,16 +25,17 @@ Row {
         })
     readonly property var styleValues: {
         const styles = Object.keys(styleLabels);
-        return styles.includes(parts.style) ? styles : [parts.style].concat(styles);
+        return styles.includes(styleKey) ? styles : [styleKey].concat(styles);
     }
 
     signal fontEdited(string font)
 
     function editPart(part, text) {
-        if (text === parts[part])
+        const next = part === "style" && text === regularKey ? "" : text;
+        if (next === parts[part])
             return;
         const edited = Object.assign({}, parts);
-        edited[part] = text;
+        edited[part] = next;
         fontEdited(Fcitx5Schema.buildFont(edited));
     }
 
@@ -53,7 +57,7 @@ Row {
         backgroundColor: SettingsMetrics.controlSurface
         options: root.styleValues.map(v => root.styleLabels[v] ?? v)
         optionValues: root.styleValues
-        currentValue: root.parts.style
+        currentValue: root.styleKey
         Accessible.name: I18n.tr("Style", "font style")
         onValueChanged: value => root.editPart("style", value)
     }
