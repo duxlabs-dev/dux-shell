@@ -76,6 +76,7 @@ BasePill {
         screenName: root.screenName
         screen: root.parentScreen
         followFocus: root.opt("workspaceFollowFocus")
+        moveToOutput: root.opt("workspaceMoveToOutput")
         occupiedOnly: root.opt("showOccupiedWorkspacesOnly")
         showAllTags: root.opt("dwlShowAllTags")
         showPadding: root.opt("showWorkspacePadding")

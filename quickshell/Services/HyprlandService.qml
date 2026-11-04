@@ -1064,6 +1064,12 @@ hl.layer_rule({
         Hyprland.dispatch(`hl.dsp.focus({ monitor = ${luaString(monitor)} })`);
     }
 
+    function moveWorkspaceToMonitor(workspace, monitor) {
+        if (!luaConfigActive)
+            return;
+        Hyprland.dispatch(`hl.dsp.workspace.move({ workspace = ${luaValue(workspace)}, monitor = ${luaString(monitor)} })`);
+    }
+
     function toggleSpecial(specialName) {
         if (!luaConfigActive)
             return;

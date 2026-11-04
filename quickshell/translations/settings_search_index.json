@@ -10534,7 +10534,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:20",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:21",
     "label": "Drag to reorder",
     "tabIndex": 22,
     "keywords": [],
@@ -10870,6 +10870,14 @@
     "optionFile": "SystemMonitorOptions.qml"
   },
   {
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:19",
+    "label": "Move workspace to this display",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "WorkspaceSwitcherOptions.qml"
+  },
+  {
     "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:6",
     "label": "Names",
     "tabIndex": 22,
@@ -10966,7 +10974,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:19",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:20",
     "label": "Reverse scroll direction",
     "tabIndex": 22,
     "keywords": [],
@@ -11006,7 +11014,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:21",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:22",
     "label": "Show all tags",
     "tabIndex": 22,
     "keywords": [],
