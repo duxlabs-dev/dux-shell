@@ -34,9 +34,8 @@ func TestGetCapabilities(t *testing.T) {
 	t.Run("niri capabilities from the probe", func(t *testing.T) {
 		original := niriCapabilities
 		defer func() { niriCapabilities = original }()
-		niriCapabilities = func() []string { return []string{config.NiriCapBindsNext, config.NiriCapConfigNext} }
+		niriCapabilities = func() []string { return []string{config.NiriCapConfigNext} }
 		caps := getCapabilities()
-		assert.Contains(t, caps.Capabilities, "niri.binds-next")
 		assert.Contains(t, caps.Capabilities, "niri.config-next")
 	})
 }

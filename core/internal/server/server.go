@@ -1163,16 +1163,6 @@ func (s *Server) Serve(printDocs bool) error {
 	log.Info("")
 
 	go func() {
-		written, err := config.SyncNiriBindsNext()
-		switch {
-		case err != nil:
-			log.Warnf("Failed to write niri %s: %v", config.NiriBindsNextFile, err)
-		case written:
-			log.Infof("Updated niri %s", config.NiriBindsNextFile)
-		}
-	}()
-
-	go func() {
 		switch err := InitializeNetworkManager(); {
 		case err == nil:
 			notifyCapabilityChange()
