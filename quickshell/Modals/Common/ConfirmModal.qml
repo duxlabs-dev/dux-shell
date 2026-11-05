@@ -12,7 +12,7 @@ DModal {
     property string confirmMessage: ""
     property string confirmButtonText: I18n.tr("Confirm", "verb, default confirm button in dialogs")
     property string cancelButtonText: I18n.tr("Cancel")
-    property color confirmButtonColor: Theme.primary
+    property bool danger: false
     property var onConfirm: function () {}
     property var onCancel: function () {}
 
@@ -30,7 +30,7 @@ DModal {
         confirmMessage = options.message || "";
         confirmButtonText = options.confirmText || I18n.tr("Confirm");
         cancelButtonText = options.cancelText || I18n.tr("Cancel");
-        confirmButtonColor = options.confirmColor || Theme.primary;
+        danger = options.danger === true;
         onConfirm = options.onConfirm || (() => {});
         onCancel = options.onCancel || (() => {});
         open();
@@ -84,7 +84,7 @@ DModal {
                 confirmMessage: root.confirmMessage
                 confirmButtonText: root.confirmButtonText
                 cancelButtonText: root.cancelButtonText
-                confirmButtonColor: root.confirmButtonColor
+                danger: root.danger
                 onButtonActivated: button => root._activate(button)
                 onCancelled: root._activate(0)
             }

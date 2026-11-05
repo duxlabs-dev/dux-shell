@@ -16,8 +16,7 @@ DevicePane {
     readonly property bool monitored: stat !== null && Devices.gpuMonitored(DgopService.gpuPciIds, stat.pciId, stat.busId)
     readonly property bool off: stat !== null && !monitored
     readonly property bool suspended: stat?.state === "suspended"
-    readonly property bool passthrough: stat?.state === "passthrough"
-    readonly property bool live: stat !== null && !off && !suspended && !passthrough
+    readonly property bool live: stat !== null && !off && !suspended
     readonly property var history: DgopService.deviceHistory[Devices.deviceKey("gpu", slot)] ?? ({})
 
     // allProcesses can be only the top 100 by the table's sort, so a GPU-heavy process can be missing.
@@ -60,11 +59,10 @@ DevicePane {
         return max === null || max === undefined ? "" : I18n.tr("Max clock", "highest clock speed of a CPU or GPU") + ": " + num(max, unit);
     }
 
-    loaded: off || suspended || passthrough || (history.a ?? []).length > 0
+    loaded: off || suspended || (history.a ?? []).length > 0
     title: stat?.fullName ?? slot
     titleTooltip: title
-    subtitle: stat?.driver ?? ""
-    subtitle2: stat?.memoryTotal > 0 ? I18n.tr("%1 VRAM", "GPU memory size, e.g. 24 GiB VRAM").arg(Format.formatBytes(stat.memoryTotal * 1024, true)) : ""
+    subtitle: stat?.driver ? I18n.tr("Graphics driver", "GPU kernel driver and Mesa version") + ": " + stat.driver : ""
     showChart: live
     chartLabel: I18n.tr("Usage", "chart legend: CPU or GPU utilization")
     chartValue: pct(stat?.usage) ?? "—"
@@ -140,9 +138,9 @@ DevicePane {
     ] : []
 
     StyledText {
-        visible: root.off || root.suspended || root.passthrough
+        visible: root.off || root.suspended
         width: parent.width
-        text: root.off ? I18n.tr("Monitoring off", "GPU monitoring is turned off in settings") : root.passthrough ? I18n.tr("Unavailable") : I18n.tr("Idle", "adjective, printer state", true)
+        text: root.off ? I18n.tr("Monitoring off", "GPU monitoring is turned off in settings") : I18n.tr("Idle", "adjective, printer state", true)
         font.pixelSize: Theme.fontSizeLarge
         color: Theme.surfaceVariantText
     }

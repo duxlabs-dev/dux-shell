@@ -8,7 +8,7 @@ Each skill is a directory with a `SKILL.md` entrypoint, optional reference docs,
 
 | Skill | Description |
 |-------|-------------|
-| [dms-plugin-dev](dms-plugin-dev/) | Develop plugins for Dux Shell - covers all 4 plugin types (widget, daemon, launcher, desktop), manifest creation, QML components, settings UI, data persistence, theme integration, and PopoutService usage. |
+| [dms-plugin-dev](dms-plugin-dev/) | Develop plugins for Dux Modular Shell - covers all 4 plugin types (widget, daemon, launcher, desktop), manifest creation, QML components, settings UI, data persistence, theme integration, and PopoutService usage. |
 
 ## Installation
 

@@ -97,10 +97,10 @@ github.com/digitalocean/go-smbios v0.0.0-20180907143718-390a4f403a8e h1:vUmf0yez
 github.com/digitalocean/go-smbios v0.0.0-20180907143718-390a4f403a8e/go.mod h1:YTIHhz/QFSYnu/EhlF2SpU2Uk+32abacUYA5ZPljz1A=
 github.com/dlclark/regexp2/v2 v2.9.1 h1:q6bZW/NN9VodqMjYXpuic2lZxdHPfFTzGS+MJxIJmKQ=
 github.com/dlclark/regexp2/v2 v2.9.1/go.mod h1:avUrQvPaLz2DrFNHJF0taWAFFX2C1GMSSoeiqFjcBmU=
-github.com/duxlabs-dev/dux-go v1.6.3-0.20261031181736-024402301dff h1:EgolwXOzQq34J0ltRxqmHI/hh7bZ3aVTx/WDOVlIVpI=
-github.com/duxlabs-dev/dux-go v1.6.3-0.20261031181736-024402301dff/go.mod h1:b+hBqIgOVAmlFKJ+33SY2pH4kJjXpifNeioPMxwC4Nk=
-github.com/duxlabs-dev/dux-gop v1.6.3-0.20261102194112-c0cab544c0f8 h1:aVG8Un4yyl5inQqgxAHkZvcKDX/ZujM2IncGvzNP1oI=
-github.com/duxlabs-dev/dux-gop v1.6.3-0.20261102194112-c0cab544c0f8/go.mod h1:IYu4GO7zR61w3+tDmjg71dQDInXe5TcP3lHQqJpZYR0=
+github.com/duxlabs-dev/dux-go v1.6.3-0.20261104145443-699311effba8 h1:g/3K3G+IPCMKxlMpz6nAAVQD9QWdjd23bmy4z89NfVs=
+github.com/duxlabs-dev/dux-go v1.6.3-0.20261104145443-699311effba8/go.mod h1:b+hBqIgOVAmlFKJ+33SY2pH4kJjXpifNeioPMxwC4Nk=
+github.com/duxlabs-dev/dux-gop v1.6.3-0.20261104203851-b2331e7fc9b7 h1:qPLqsUxMTVkZoFgeXMgiA9/mDKKUVl54PLm+Xsq+mVY=
+github.com/duxlabs-dev/dux-gop v1.6.3-0.20261104203851-b2331e7fc9b7/go.mod h1:IYu4GO7zR61w3+tDmjg71dQDInXe5TcP3lHQqJpZYR0=
 github.com/ebitengine/purego v0.11.2 h1:WWiTx8rD8zYdOwSj8O/NiNbsOvSAgJMTlyV1XlbUSeU=
 github.com/ebitengine/purego v0.11.2/go.mod h1:DCHPP08djqhNSoTfImcnHYQRZmd0qhakvrozqaEYhGQ=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=

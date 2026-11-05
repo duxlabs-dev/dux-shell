@@ -33,6 +33,8 @@ Item {
     property real ringProgress: 0
 
     readonly property bool isBreak: item.kind === "break"
+    // The move into the centre paces itself to the song, see LyricsController.prepareLines.
+    readonly property int moveDuration: Math.round((item.move ?? DashMetrics.lyricsMoveMin) * 1000)
     readonly property bool isPlain: item.kind === "plain"
     readonly property bool lit: promoted || lingering
     readonly property real shownClock: holding ? -1 : clock
@@ -125,7 +127,7 @@ Item {
 
     Timer {
         id: fadeTimer
-        interval: DashMetrics.lyricsLineFadeDuration
+        interval: root.moveDuration
         onTriggered: {
             root.holding = false;
             root.ringProgress = 0;
@@ -143,7 +145,7 @@ Item {
             target: root
             property: "shift"
             to: 0
-            duration: DashMetrics.lyricsTrackMoveDuration
+            duration: root.moveDuration
             easing.type: Easing.BezierSpline
             easing.bezierCurve: DashMetrics.lyricsTrackCurve
         }
@@ -182,7 +184,7 @@ Item {
             Behavior on scale {
                 enabled: root.animationsEnabled
                 NumberAnimation {
-                    duration: DashMetrics.lyricsLineScaleDuration
+                    duration: root.moveDuration
                     easing.type: Easing.BezierSpline
                     easing.bezierCurve: DashMetrics.lyricsTrackCurve
                 }
@@ -197,14 +199,14 @@ Item {
                 Behavior on color {
                     enabled: root.animationsEnabled
                     ColorAnimation {
-                        duration: DashMetrics.lyricsLineFadeDuration
+                        duration: root.moveDuration
                     }
                 }
 
                 Behavior on trackColor {
                     enabled: root.animationsEnabled
                     ColorAnimation {
-                        duration: DashMetrics.lyricsLineFadeDuration
+                        duration: root.moveDuration
                     }
                 }
             }
@@ -271,7 +273,7 @@ Item {
         Behavior on scale {
             enabled: root.animationsEnabled
             NumberAnimation {
-                duration: DashMetrics.lyricsLineScaleDuration
+                duration: root.moveDuration
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: DashMetrics.lyricsTrackCurve
             }
@@ -285,11 +287,17 @@ Item {
 
                 required property var modelData
                 required property int index
-                readonly property var latest: lyricsPart.timed ? LyricsModel.latestSegment(modelData.segments, root.shownClock) : null
-                // The edge sweeps each cue over its own time behind a soft feather. Line timed parts
+                // The edge sweeps each cue over its own time with a soft lead ahead of it, wide enough
+                // to glide through a short syllable instead of flicking across it. Line timed parts
                 // have no cues, so the whole line changes colour when it starts.
-                readonly property real edge: lyricsPart.timed && width > 0 ? Math.min(1, LyricsModel.fillEdge(modelData.segments, root.shownClock, root.sweep) / width) : 0
-                readonly property real feather: latest && root.sweep && width > 0 ? Math.max(DashMetrics.lyricsSweepFeatherMin, (latest.x1 - latest.x0) * DashMetrics.lyricsSweepFeather) / width : 0
+                readonly property real lead: root.sweep ? lyricsPart.layout.rowHeight * DashMetrics.lyricsSweepLead : 0
+                readonly property real edge: {
+                    if (!lyricsPart.timed || width <= 0)
+                        return 0;
+                    const edge = root.sweep ? LyricsModel.smoothEdge(modelData.segments, root.shownClock, lead, DashMetrics.lyricsSweepWindow) : LyricsModel.fillEdge(modelData.segments, root.shownClock, false, 0);
+                    return Math.min(1, edge / width);
+                }
+                readonly property real feather: width > 0 ? lead / width : 0
                 readonly property color restColor: !lyricsPart.timed && lyricsPart.sung ? lyricsPart.fillColor : lyricsPart.restColor
 
                 x: Math.round(lyricsPart.alignment === Text.AlignLeft ? 0 : lyricsPart.alignment === Text.AlignRight ? lyricsPart.width - width : (lyricsPart.width - width) / 2)
@@ -329,14 +337,14 @@ Item {
                     Behavior on restColor {
                         enabled: root.animationsEnabled
                         ColorAnimation {
-                            duration: DashMetrics.lyricsLineFadeDuration
+                            duration: root.moveDuration
                         }
                     }
 
                     Behavior on fillColor {
                         enabled: root.animationsEnabled
                         ColorAnimation {
-                            duration: DashMetrics.lyricsLineFadeDuration
+                            duration: root.moveDuration
                         }
                     }
                 }

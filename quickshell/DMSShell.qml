@@ -371,7 +371,7 @@ Item {
                 message: I18n.tr("Permanently delete %1 item(s)? This cannot be undone.", "empty trash confirmation message, %1 is a count").arg(itemCount),
                 confirmText: I18n.tr("Empty"),
                 cancelText: I18n.tr("Cancel"),
-                confirmColor: Theme.error,
+                danger: true,
                 onConfirm: () => TrashService.emptyTrash()
             });
         }
@@ -398,7 +398,7 @@ Item {
                         message: I18n.tr("%1 will be removed from your system.", "modal confirmation text for uninstalling an app").arg(appName),
                         confirmText: I18n.tr("Uninstall", "confirm button label to proceed with uninstallation"),
                         cancelText: I18n.tr("Cancel"),
-                        confirmColor: Theme.error,
+                        danger: true,
                         onConfirm: () => AppSearchService.uninstallFlatpak(appId, appName, flatpakId)
                     });
                 }

@@ -20,6 +20,8 @@ QtObject {
         }
         ClipboardService.keyboardNavigationActive = true;
         ClipboardService.selectedIndex = Math.min(ClipboardService.selectedIndex + 1, entries.length - 1);
+        if (ClipboardService.selectedIndex >= entries.length - ClipboardService.pageSize / 2)
+            modal.loadMore();
     }
 
     function selectPrevious() {

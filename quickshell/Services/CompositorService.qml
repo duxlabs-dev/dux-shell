@@ -2019,7 +2019,7 @@ Singleton {
         }
     }
 
-    function switchToWorkspace(record, screenName) {
+    function switchToWorkspace(record, screenName, moveToOutput) {
         if (!record || record.placeholder)
             return;
         switch (compositor) {
@@ -2034,6 +2034,8 @@ Singleton {
                 HyprlandService.toggleSpecial(record.name === "special" ? "" : record.name);
                 return;
             }
+            if (moveToOutput && record.output && record.output !== moveToOutput)
+                HyprlandService.moveWorkspaceToMonitor(WorkspaceModel.hyprlandSelector(record), moveToOutput);
             HyprlandService.focusWorkspace(WorkspaceModel.hyprlandSelector(record));
             return;
         case "mango":

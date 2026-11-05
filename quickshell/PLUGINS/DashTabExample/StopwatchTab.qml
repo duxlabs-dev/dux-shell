@@ -148,8 +148,7 @@ DashTabComponent {
                 reserveText: I18n.trFor("dashTabExample", "Reset")
                 iconName: root.running ? "flag" : "restart_alt"
                 enabled: root.running || root.elapsed > 0
-                backgroundColor: Theme.secondaryContainer
-                textColor: Theme.onSecondaryContainer
+                variant: "tonal"
                 onClicked: root.running ? root.lap() : root.reset()
             }
 

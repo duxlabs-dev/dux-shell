@@ -577,8 +577,7 @@ DModal {
                 maximumWidth: contentFocusScope.actionWidth
                 wrapText: true
                 text: I18n.tr("Cancel")
-                backgroundColor: "transparent"
-                textColor: Theme.primary
+                variant: "text"
                 onClicked: clearAndClose()
             },
             DButton {

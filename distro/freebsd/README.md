@@ -1,6 +1,6 @@
 # FreeBSD support
 
-Dux Shell contains native FreeBSD code paths and does not require
+Dux Modular Shell contains native FreeBSD code paths and does not require
 PulseAudio, PipeWire, systemd, NetworkManager, or Linux sysfs to provide its
 core shell features.
 

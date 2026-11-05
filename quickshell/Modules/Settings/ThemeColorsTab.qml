@@ -554,7 +554,7 @@ Item {
                                 "title": I18n.tr("Uninstall"),
                                 "message": I18n.tr("Uninstall %1?", "plugin removal confirmation").arg(theme.name),
                                 "confirmText": I18n.tr("Uninstall"),
-                                "confirmColor": Theme.error,
+                                "danger": true,
                                 "onConfirm": () => themeColorsTab.uninstallRegistryTheme(theme)
                             });
                         }

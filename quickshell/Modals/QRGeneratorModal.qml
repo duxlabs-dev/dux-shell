@@ -250,8 +250,6 @@ DModal {
                     DButton {
                         text: I18n.tr("Copy")
                         iconName: "content_copy"
-                        backgroundColor: Theme.primary
-                        textColor: Theme.onPrimary
                         onClicked: {
                             if (root.normalQrCodePath.length > 0)
                                 DMSService.sendRequest("clipboard.copyFile", {

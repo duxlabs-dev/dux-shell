@@ -93,7 +93,6 @@ DModal {
             title: I18n.tr("Kill Session"),
             message: I18n.tr("Are you sure you want to kill session \"%1\"?", "kill session confirmation, %1 is the session name").arg(name),
             confirmText: I18n.tr("Kill", "verb, terminate a multiplexer session"),
-            confirmColor: Theme.primary,
             onConfirm: function () {
                 MuxService.killSession(name);
             }

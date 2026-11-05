@@ -1,4 +1,6 @@
 import QtQuick
+import QtQuick.Effects
+import QtQuick.Window
 import Quickshell.Widgets
 import qs.Common
 import qs.Services
@@ -14,6 +16,15 @@ Rectangle {
     property bool showMaterial: false
     property var materialComposition: null
     property bool allowColor: true
+    property bool clearable: path !== ""
+    property bool showFileName: true
+    property string fillModeName: ""
+    property real blur: 0
+    property real blurMax: 0
+    // Set to make a body click emit activated() instead of browse(); the icon joins the hover actions.
+    property string activateIcon: ""
+    property string activateText: ""
+    default property alias overlay: overlayLayer.data
 
     readonly property bool isColor: path.startsWith("#")
     readonly property bool isImage: path !== "" && !isColor
@@ -23,6 +34,7 @@ Rectangle {
     signal browse
     signal pickColor
     signal clear
+    signal activated
 
     height: width * SettingsMetrics.wallpaperThumbRatio
     radius: Theme.cornerRadiusM
@@ -33,25 +45,60 @@ Rectangle {
         radius: root.radius
         color: "transparent"
 
-        Loader {
+        Item {
             anchors.fill: parent
-            active: root.showMaterial && !root.isColor && (!root.isImage || imageLoader.item?.status === Image.Error)
-            sourceComponent: MaterialWallpaper {
-                composition: root.materialComposition
+
+            layer.enabled: root.blur > 0
+            layer.effect: MultiEffect {
+                autoPaddingEnabled: false
+                blurEnabled: true
+                blur: root.blur
+                blurMax: root.blurMax
+                blurMultiplier: 1
+            }
+
+            Loader {
+                anchors.fill: parent
+                active: root.showMaterial && !root.isColor && (!root.isImage || imageLoader.item?.status === Image.Error)
+                sourceComponent: MaterialWallpaper {
+                    composition: root.materialComposition
+                }
+            }
+
+            Loader {
+                id: imageLoader
+                anchors.fill: parent
+                active: root.isImage
+                sourceComponent: root.fillModeName !== "" ? fittedImage : cachedImage
             }
         }
 
-        Loader {
-            id: imageLoader
+        Item {
+            id: overlayLayer
             anchors.fill: parent
-            active: root.isImage
+        }
+    }
 
-            sourceComponent: CachingImage {
-                imagePath: VideoWallpaperService.imageFor(root.path)
-                maxCacheSize: SettingsMetrics.wallpaperThumbCache
-                asynchronous: false
-                animate: false
-            }
+    Component {
+        id: cachedImage
+
+        CachingImage {
+            imagePath: VideoWallpaperService.imageFor(root.path)
+            maxCacheSize: SettingsMetrics.wallpaperThumbCache
+            asynchronous: false
+            animate: false
+        }
+    }
+
+    // The thumb cache stores a cropped render keyed by path, so another fill mode would read the wrong crop.
+    Component {
+        id: fittedImage
+
+        Image {
+            source: "file://" + VideoWallpaperService.imageFor(root.path).split("/").map(encodeURIComponent).join("/")
+            sourceSize: Qt.size(imageLoader.width * Screen.devicePixelRatio, imageLoader.height * Screen.devicePixelRatio)
+            fillMode: Theme.getFillMode(root.fillModeName)
+            asynchronous: true
         }
     }
 
@@ -65,7 +112,7 @@ Rectangle {
 
     MouseArea {
         anchors.fill: parent
-        onClicked: root.browse()
+        onClicked: root.activateIcon !== "" ? root.activated() : root.browse()
     }
 
     Rectangle {
@@ -87,6 +134,17 @@ Rectangle {
         Row {
             anchors.centerIn: parent
             spacing: Theme.spacingS
+
+            DActionButton {
+                buttonSize: Theme.iconButtonSize
+                iconName: root.activateIcon
+                iconSize: Theme.iconSizeMedium
+                backgroundColor: SettingsMetrics.controlSurface
+                iconColor: Theme.surfaceText
+                visible: root.activateIcon !== ""
+                tooltipText: root.activateText
+                onClicked: root.activated()
+            }
 
             DActionButton {
                 buttonSize: Theme.iconButtonSize
@@ -115,7 +173,7 @@ Rectangle {
                 iconSize: Theme.iconSizeMedium
                 backgroundColor: SettingsMetrics.controlSurface
                 iconColor: Theme.error
-                visible: root.path !== ""
+                visible: root.clearable
                 Accessible.name: I18n.tr("Clear")
                 onClicked: root.clear()
             }
@@ -133,6 +191,7 @@ Rectangle {
         height: chipText.implicitHeight + Theme.spacingXS * 2
         radius: Theme.cornerRadiusS
         color: Theme.withAlpha(Theme.scrimColor, Theme.scrimAlpha)
+        visible: root.showFileName
 
         TextMetrics {
             id: chipMetrics

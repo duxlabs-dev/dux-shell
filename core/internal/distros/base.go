@@ -141,7 +141,7 @@ func installedName(installed func(string) bool, pkg string) (string, bool) {
 func (b *BaseDistribution) detectGreeterPackage(installed func(string) bool) deps.Dependency {
 	_, gitInstalled := installedName(installed, "dux-greeter-git")
 	_, stableInstalled := installedName(installed, "dux-greeter")
-	dep := b.detectOptionalPackage("dux-greeter", "Dux Shell greetd greeter", gitInstalled || stableInstalled)
+	dep := b.detectOptionalPackage("dux-greeter", "Dux Modular Shell greetd greeter", gitInstalled || stableInstalled)
 	return withGitVariant(dep, gitInstalled)
 }
 

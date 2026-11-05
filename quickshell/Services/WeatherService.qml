@@ -7,7 +7,6 @@ import Quickshell.Io
 import qs.Common
 import "../Common/suncalc.js" as SunCalc
 import "../Common/WeatherData.js" as WeatherData
-import "../Common/WeatherProviders.js" as WeatherProviders
 
 Singleton {
     id: root
@@ -51,14 +50,50 @@ Singleton {
     property int persistentRetryCount: 0
     property int _geocodeReqId: 0
     property var _pendingCoords: null
-    property var _providerQueue: []
-    property var _fetchCoords: null
+    property int _requestTimeout: 30000
+    property int _weatherSerial: 0
+    property var _weatherRequestId: null
+    property var _weatherCoords: null
+    readonly property bool _backendReady: DMSService.capabilities.includes("weather")
+    // The first fetch, or a retry after a reconnect, can run before the socket is up.
+    on_BackendReadyChanged: {
+        if (root._backendReady && (!root.weather.available || root.retryAttempts > 0 || persistentRetryTimer.running))
+            root.forceRefresh();
+    }
 
+    readonly property string userAgent: "Dux Modular Shell Weather Widget (+https://github.com/duxlabs-dev/dux-shell)"
+    readonly property var builtinProviders: [
+        {
+            id: "openmeteo",
+            text: "Open-Meteo"
+        },
+        {
+            id: "metno",
+            text: "MET Norway"
+        }
+    ]
+    readonly property var pluginProviders: {
+        if (!DMSService.capabilities.includes("weather.plugins"))
+            return [];
+        const loaded = PluginService.loadedPlugins;
+        const providers = [];
+        for (const pluginId in loaded) {
+            const plugin = loaded[pluginId];
+            if (!plugin.weather?.command)
+                continue;
+            providers.push({
+                id: "plugin_" + pluginId,
+                text: I18n.trFor(pluginId, plugin.weather.name ?? plugin.name)
+            });
+        }
+        return providers;
+    }
+    readonly property var providerCatalog: builtinProviders.concat(pluginProviders)
     readonly property var providers: {
         const saved = Array.isArray(SettingsData.weatherProviders) ? SettingsData.weatherProviders : [];
         const rows = [];
         for (const entry of saved) {
-            const provider = WeatherProviders.catalog.find(provider => provider.id === entry?.id);
+            const provider = root.providerCatalog.find(provider => provider.id === entry?.id);
             if (!provider || rows.some(row => row.id === provider.id))
                 continue;
             rows.push({
@@ -67,7 +102,7 @@ Singleton {
                 enabled: entry.enabled === true
             });
         }
-        for (const provider of WeatherProviders.catalog) {
+        for (const provider of root.providerCatalog) {
             if (!rows.some(row => row.id === provider.id))
                 rows.push({
                     id: provider.id,
@@ -79,7 +114,8 @@ Singleton {
     }
     readonly property var enabledProviders: providers.filter(provider => provider.enabled).map(provider => provider.id)
     readonly property string providerOrder: providers.map(provider => provider.id).join(",")
-    // Only a new first provider changes what is shown; the others apply on the next refresh.
+    // Only a new first provider changes what is shown; the others apply on the next
+    // refresh. This also refetches when a plugin provider loads after the first fetch.
     readonly property string primaryProvider: enabledProviders[0] ?? "openmeteo"
     onPrimaryProviderChanged: {
         root.cancelFetch();
@@ -87,15 +123,21 @@ Singleton {
         root.forceRefresh();
     }
 
+    // Keep saved entries of plugins that are not loaded right now.
+    function saveProviders(rows) {
+        const saved = Array.isArray(SettingsData.weatherProviders) ? SettingsData.weatherProviders : [];
+        SettingsData.set("weatherProviders", rows.concat(saved.filter(entry => entry?.id && !rows.some(row => row.id === entry.id))));
+    }
+
     function setProviderEnabled(id, enabled) {
-        SettingsData.set("weatherProviders", providers.map(provider => ({
+        saveProviders(providers.map(provider => ({
                     id: provider.id,
                     enabled: provider.id === id ? enabled : provider.enabled
                 })));
     }
 
     function reorderProviders(indices) {
-        SettingsData.set("weatherProviders", indices.map(index => ({
+        saveProviders(indices.map(index => ({
                     id: providers[index].id,
                     enabled: providers[index].enabled
                 })));
@@ -584,7 +626,16 @@ Singleton {
         }
     }
 
+    // About a kilometre, so GeoClue jitter neither refetches nor relabels.
+    function movedFrom(coords, lat, lon) {
+        if (!coords)
+            return true;
+        return Math.abs(coords.latitude - lat) > 0.01 || Math.abs(coords.longitude - lon) * Math.cos(lat * Math.PI / 180) > 0.01;
+    }
+
     function getLocationFromCoords(lat, lon) {
+        if (root.location && !root.movedFrom(root.location, lat, lon))
+            return;
         // Use coordinates immediately for weather; resolve city name in parallel with fallbacks
         setLocation(lat, lon, I18n.tr("Local Weather"), "");
         fetchWeather(lat, lon);
@@ -638,7 +689,7 @@ Singleton {
 
     function tryNominatim(lat, lon, reqId) {
         const url = "https://nominatim.openstreetmap.org/reverse?lat=" + lat + "&lon=" + lon + "&format=json&addressdetails=1&accept-language=en";
-        nominatimFetcher.command = lowPriorityCmd.concat(fetchCmd, ["--user-agent", WeatherProviders.USER_AGENT, url]);
+        nominatimFetcher.command = lowPriorityCmd.concat(fetchCmd, ["--user-agent", root.userAgent, url]);
         nominatimFetcher.reqId = reqId;
         nominatimFetcher.running = true;
     }
@@ -671,59 +722,74 @@ Singleton {
             lon = location.longitude;
         }
 
-        if (weatherFetcher.running) {
+        if (lat == null || lon == null || !root._backendReady) {
             return;
+        }
+
+        // A reply for the old coordinates would be labelled with the new location.
+        const moved = root.movedFrom(root._weatherCoords, lat, lon);
+        if (root._weatherRequestId !== null) {
+            if (!moved)
+                return;
+            root.cancelFetch();
         }
 
         const now = Date.now();
-        if (now - root.lastFetchTime < root.minFetchInterval) {
-            return;
-        }
-
-        if (lat == null || lon == null) {
+        if (!moved && now - root.lastFetchTime < root.minFetchInterval) {
             return;
         }
 
         root.lastFetchTime = now;
-        root.weather.loading = true;
-        root._fetchCoords = {
+        root._weatherCoords = {
             latitude: lat,
             longitude: lon
         };
-        // Turning every provider off still falls back to the default one.
-        root._providerQueue = root.enabledProviders.length ? root.enabledProviders.slice() : ["openmeteo"];
-        root.tryNextProvider();
+        root.weather.loading = true;
+        const token = ++root._weatherSerial;
+        root._weatherRequestId = DMSService.sendRequest("weather.get", {
+            "latitude": lat,
+            "longitude": lon,
+            "providers": root.enabledProviders
+        }, response => root.receiveWeather(token, response), root._requestTimeout) ?? null;
     }
 
-    function tryNextProvider(reason) {
-        if (root.refCount === 0 || !SettingsData.weatherEnabled) {
-            root._providerQueue = [];
+    function receiveWeather(token, response) {
+        if (token !== root._weatherSerial)
+            return;
+        root._weatherRequestId = null;
+        if (root.refCount === 0 || !SettingsData.weatherEnabled)
+            return;
+        if (response.error) {
+            root.handleWeatherFailure(response.error);
             return;
         }
-        if (reason)
-            root.lastFetchError = reason;
-        const id = root._providerQueue.shift();
-        if (!id) {
-            root.handleWeatherFailure();
+        const result = response.result;
+        if (result?.source && result.source !== root.primaryProvider)
+            log.info("Weather provider", root.primaryProvider, "failed, using", result.source);
+        if (result?.filled?.length)
+            log.debug("Weather readings from", result.source, "filled from", result.filled.join(", "));
+        try {
+            root.weather = WeatherData.fromOpenMeteo(result?.forecast, {
+                formatTime: root.formatTime,
+                formatDay: root.formatForecastDay,
+                city: root.location?.city || I18n.tr("Unknown"),
+                country: root.location?.country || I18n.tr("Unknown")
+            });
+        } catch (e) {
+            root.handleWeatherFailure(e.message);
             return;
         }
-        if (reason)
-            log.info("Weather provider failed, trying", id + ":", reason);
-        const req = WeatherProviders.request(id, root._fetchCoords.latitude, root._fetchCoords.longitude);
-        weatherFetcher.providerId = id;
-        weatherFetcher.failure = "";
-        weatherFetcher.command = lowPriorityCmd.concat(root.fetchCmd, req.userAgent ? ["--user-agent", req.userAgent] : [], [req.url]);
-        weatherFetcher.running = true;
+        root.lastFetchError = "";
+        root.handleWeatherSuccess();
     }
 
-    // A chain still running for the old location would label its result with the
-    // new one. The process stops asynchronously; onExited then fetches again.
+    // A reply for the old location would be labelled with the new one.
     function cancelFetch() {
-        root._providerQueue = [];
-        if (!weatherFetcher.running)
+        root._weatherSerial++;
+        if (root._weatherRequestId === null)
             return;
-        weatherFetcher.cancelled = true;
-        weatherFetcher.running = false;
+        DMSService.cancelRequest(root._weatherRequestId);
+        root._weatherRequestId = null;
     }
 
     function forceRefresh() {
@@ -968,60 +1034,6 @@ Singleton {
         }
     }
 
-    Process {
-        id: weatherFetcher
-        property string providerId: ""
-        property string failure: ""
-        property bool cancelled: false
-        running: false
-
-        stderr: StdioCollector {
-            id: weatherFetchErr
-        }
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (weatherFetcher.cancelled)
-                    return;
-                const raw = text.trim();
-                if (!raw || raw[0] !== "{") {
-                    weatherFetcher.failure = weatherFetchErr.text.trim() || "no data";
-                    return;
-                }
-
-                try {
-                    const coords = root._fetchCoords;
-                    const data = WeatherProviders.parse(weatherFetcher.providerId, raw, coords.latitude, coords.longitude, Date.now());
-                    root.weather = WeatherData.fromOpenMeteo(data, {
-                        formatTime: root.formatTime,
-                        formatDay: root.formatForecastDay,
-                        city: root.location?.city || I18n.tr("Unknown"),
-                        country: root.location?.country || I18n.tr("Unknown")
-                    });
-                    root.lastFetchError = "";
-                    root._providerQueue = [];
-                    root.handleWeatherSuccess();
-                } catch (e) {
-                    weatherFetcher.failure = e.message;
-                }
-            }
-        }
-
-        // stdout is collected before the process exits; start the next provider only once it has.
-        onExited: exitCode => {
-            if (weatherFetcher.cancelled) {
-                weatherFetcher.cancelled = false;
-                // Without a location yet, the running lookup fetches once it resolves.
-                if (root.location)
-                    root.fetchWeather();
-                return;
-            }
-            const failure = weatherFetcher.failure || (exitCode !== 0 ? weatherFetchErr.text.trim() || "exit code " + exitCode : "");
-            if (failure)
-                root.tryNextProvider(weatherFetcher.providerId + ": " + failure);
-        }
-    }
-
     Timer {
         id: updateTimer
         interval: nextInterval()
@@ -1103,9 +1115,7 @@ Singleton {
                 updateTimer.stop();
                 retryTimer.stop();
                 persistentRetryTimer.stop();
-                if (weatherFetcher.running) {
-                    weatherFetcher.running = false;
-                }
+                root.cancelFetch();
             }
         });
     }

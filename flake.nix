@@ -1,5 +1,5 @@
 {
-  description = "Dux Shell";
+  description = "Dux Modular Shell";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -111,7 +111,7 @@
               inherit version;
               pname = "dms-shell";
               src = ./core;
-              vendorHash = "sha256-TZVq/BHFu6brw8MMdGDZWUiZUxtjNjKRKxR8SSV7W50=";
+              vendorHash = "sha256-VP9hmrJwlnjISkLGPjn5Qd7DTbnZrv0KqlgclzXE1Bw=";
 
               subPackages = [ "cmd/dms" ];
 

@@ -1,10 +1,10 @@
-name: Release
+name: Build release
 
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g., v1.0.1)"
+        description: "Existing tag to build (e.g. v2.1.0). To bump VERSION and tag, run Release instead"
         required: true
         type: string
       notify_issues:
@@ -257,17 +257,31 @@ jobs:
           merge-multiple: true
           path: ./_core_assets
 
+      # GITHUB_TOKEN can't search PRs in the other suite repos
+      - name: Create GitHub App token
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          permission-contents: read
+          permission-pull-requests: read
+
       - name: Generate Changelog
         id: changelog
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           set -e
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || echo "")
           CHANGELOG=""
           if [ -n "$PREVIOUS_TAG" ]; then
+            # suite PRs are picked by merge time, which only matches a release cut from master
+            SUITE=()
+            [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.0$ ]] && SUITE=(--suite)
             # PR-based notes with author credits; falls back to raw git log below
-            CHANGELOG=$(python3 scripts/release-notes.py "${PREVIOUS_TAG}..${TAG}" --format github --bare 2>/dev/null || true)
+            CHANGELOG=$(python3 scripts/release-notes.py "${PREVIOUS_TAG}..${TAG}" --format github --bare "${SUITE[@]}" || true)
           fi
           if [ -z "$CHANGELOG" ]; then
             echo "release-notes.py unavailable or empty, using git log fallback"
@@ -422,7 +436,7 @@ jobs:
 
             # Create installation guide
             cat > _temp_full/INSTALL.md << 'EOFINSTALL'
-          # Dux Shell Installation
+          # Dux Modular Shell Installation
 
           ## Requirements
 
@@ -545,7 +559,7 @@ jobs:
         id: app_token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.APP_ID }}
+          client-id: ${{ vars.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ matrix.repo }}

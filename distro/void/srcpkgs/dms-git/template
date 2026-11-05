@@ -1,6 +1,6 @@
 # Template file for 'dms-git'
 #
-# Dux Shell git development release
+# Dux Modular Shell git development release
 #
 # NOTE: This template is built exclusively by CI. The workflow stages a local
 # source tarball and dynamically patches version, checksum, and distfiles
@@ -21,7 +21,7 @@ go_import_path="github.com/duxlabs-dev/dux-shell/core"
 go_package="${go_import_path}/cmd/dms"
 go_build_tags="distro_binary withshell"
 go_ldflags="-X main.Version=${version}"
-short_desc="Dux Shell — Material 3 desktop shell for Wayland (git variant)"
+short_desc="Dux Modular Shell — Material 3 desktop shell for Wayland (git variant)"
 maintainer="AvengeMedia <AvengeMedia.US@gmail.com>"
 license="MIT"
 homepage="https://duxlabs.dev"

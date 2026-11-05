@@ -184,7 +184,7 @@ FocusScope {
             if (!row.push || row.index < 0)
                 continue;
             const lag = Math.abs(centre - row.index);
-            row.push(delta, jump ? 0 : Math.min(lag, DashMetrics.lyricsTrackMaxPush) * DashMetrics.lyricsTrackPushStep);
+            row.push(delta, jump ? 0 : Math.min(lag, DashMetrics.lyricsTrackMaxPush) * row.moveDuration * DashMetrics.lyricsTrackPushShare);
         }
     }
 

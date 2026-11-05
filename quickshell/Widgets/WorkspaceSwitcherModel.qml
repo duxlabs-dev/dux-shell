@@ -13,6 +13,7 @@ QtObject {
     property string screenName: ""
     property var screen: null
     property bool followFocus: false
+    property bool moveToOutput: false
     property bool occupiedOnly: false
     property bool showAllTags: false
     property bool showPadding: false
@@ -177,7 +178,7 @@ QtObject {
         if (!data || data.placeholder)
             return;
         if (useNativeWorkspaces) {
-            CompositorService.switchToWorkspace(data, effectiveScreenName);
+            CompositorService.switchToWorkspace(data, effectiveScreenName, moveToOutput ? screenName : "");
             return;
         }
         if (useExtWorkspace && typeof data.activate === "function")

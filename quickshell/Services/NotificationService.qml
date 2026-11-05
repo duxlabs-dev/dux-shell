@@ -878,7 +878,9 @@ Singleton {
         const themed = notificationThemedAppIcon(appIcon);
         if (themed)
             return themed;
-        return appIcon || fromImage || "";
+        if (appIcon)
+            return appIcon;
+        return notificationHasImage(image) ? "" : fromImage;
     }
 
     component NotifWrapper: QtObject {

@@ -8,12 +8,7 @@ MonitorPill {
     signal gpuTempClicked
 
     readonly property int selectedGpuIndex: SettingsData.widgetOption("gpuTemp", widgetData, "selectedGpuIndex")
-    readonly property real displayTemp: {
-        const gpus = DgopService.availableGpus;
-        if (!gpus || selectedGpuIndex < 0 || selectedGpuIndex >= gpus.length)
-            return 0;
-        return gpus[selectedGpuIndex].temperature || 0;
-    }
+    readonly property real displayTemp: DgopService.widgetGpu(selectedGpuIndex, widgetData?.pciId)?.temperature || 0
 
     widgetType: "gpuTemp"
     dgopModules: ["gpu"]

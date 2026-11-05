@@ -318,7 +318,7 @@ Item {
 
         SettingsCard {
             width: parent.width
-            title: "Dux Shell"
+            title: "Dux Modular Shell"
             iconName: "deployed_code"
             settingKey: "softwareUpdatesShell"
             tags: ["dms", "shell", "version", "channel", "restart"]
@@ -352,8 +352,6 @@ Item {
                     iconName: root.primaryIcon()
                     busy: SystemUpdateService.isChecking
                     enabled: !SystemUpdateService.isChecking
-                    backgroundColor: Theme.primary
-                    textColor: Theme.onPrimary
                     onClicked: root.primaryAction()
                 }
             }

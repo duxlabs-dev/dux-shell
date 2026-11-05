@@ -235,8 +235,6 @@ Card {
                 visible: CalendarService.dankBinaryExists
                 text: I18n.tr("Launch")
                 buttonHeight: Theme.buttonHeightXS
-                backgroundColor: Theme.primary
-                textColor: Theme.onPrimary
                 onClicked: CalendarService.launchDankCalendar()
             }
         }

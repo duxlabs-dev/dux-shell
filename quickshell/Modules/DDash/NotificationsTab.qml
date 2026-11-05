@@ -267,8 +267,7 @@ FocusScope {
             width: Math.max(0, footer.width - leadingSlot.width - trailingSlot.width - footer.spacing * 2)
             text: I18n.tr("Clear All")
             buttonHeight: Theme.iconButtonSize
-            backgroundColor: Theme.secondaryContainer
-            textColor: Theme.onSecondaryContainer
+            variant: "tonal"
             enabled: root.currentTab === 0 ? NotificationService.notifications.length > 0 : NotificationService.historyList.length > 0
             onClicked: {
                 if (root.currentTab === 0) {

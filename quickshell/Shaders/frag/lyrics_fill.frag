@@ -1,6 +1,6 @@
 #version 450
 
-// Lights a row of lyric glyphs up to a soft edge.
+// Lights a row of lyric glyphs up to the edge, with a soft lead ahead of it.
 
 layout(location = 0) in vec2 qt_TexCoord0;
 layout(location = 0) out vec4 fragColor;
@@ -19,7 +19,7 @@ layout(binding = 1) uniform sampler2D source;
 
 void main() {
     float x = mix(qt_TexCoord0.x, 1.0 - qt_TexCoord0.x, ubuf.rtl);
-    float lit = 1.0 - smoothstep(ubuf.edge - ubuf.feather, ubuf.edge, x);
+    float lit = 1.0 - smoothstep(ubuf.edge, ubuf.edge + ubuf.feather, x);
     vec4 color = mix(ubuf.restColor, ubuf.fillColor, lit);
     fragColor = color * texture(source, qt_TexCoord0).a * ubuf.qt_Opacity;
 }

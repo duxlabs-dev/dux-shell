@@ -461,7 +461,7 @@ Item {
         id: systemSource
 
         controller: controller
-        enabled: root.setting("islandSystemOsd") && root.barConfig?.visible !== false
+        enabled: SettingsData.islandSystemOsdHost(root.screen)?.id === root.barId
         chargingPulseEnabled: root.setting("islandChargingPulse")
     }
 
@@ -470,7 +470,7 @@ Item {
 
         controller: controller
         targetScreen: root.screen
-        enabled: !root.setting("islandNotificationPopups") && root.barConfig?.visible !== false
+        enabled: SettingsData.islandNotificationHost(root.screen)?.id === root.barId
     }
 
     DIslandSurface {

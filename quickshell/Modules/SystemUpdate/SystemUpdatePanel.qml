@@ -413,8 +413,6 @@ FocusScope {
             DButton {
                 text: SystemUpdateService.isUpgrading ? I18n.tr("Cancel") : updaterPanel.offerReboot ? I18n.tr("Reboot", "verb, power menu action") : I18n.tr("Update All")
                 iconName: SystemUpdateService.isUpgrading ? "stop" : updaterPanel.offerReboot ? "restart_alt" : "system_update_alt"
-                backgroundColor: Theme.primary
-                textColor: Theme.onPrimary
                 maximumWidth: parent.width
                 wrapText: true
                 enabled: SystemUpdateService.isUpgrading || updaterPanel.showPackages || updaterPanel.offerReboot
@@ -424,8 +422,7 @@ FocusScope {
             DButton {
                 id: closeButton
                 text: I18n.tr("Close")
-                backgroundColor: "transparent"
-                textColor: Theme.primary
+                variant: "text"
                 maximumWidth: parent.width
                 wrapText: true
                 focus: true

@@ -89,6 +89,8 @@ Singleton {
     property string currentSort: "cpu"
     property bool sortAscending: false
     property var availableGpus: []
+    // availableGpus plus the cards bound to a VM, which only the system info lists.
+    property var detectedGpus: []
 
     property string kernelVersion: ""
     property string distribution: ""
@@ -344,6 +346,12 @@ Singleton {
         SessionData.setEnabledGpuPciIds(ids);
         if (refCount > 0)
             updateAllStats();
+    }
+
+    // The saved index shifts when a card leaves availableGpus, so the id wins; identical cards share one.
+    function widgetGpu(index, pciId) {
+        const gpu = availableGpus[index];
+        return !pciId || gpu?.pciId === pciId ? gpu : availableGpus.find(g => g.pciId === pciId);
     }
 
     function gpuHeldByWidget(pciId) {
@@ -862,11 +870,12 @@ Singleton {
 
         const gpuData = data.gpu?.gpus ?? data.gpus;
         if (Array.isArray(gpuData)) {
-            availableGpus = gpuData.map(gpu => Object.assign({}, gpu, {
+            detectedGpus = gpuData.map(gpu => Object.assign({}, gpu, {
                     "displayName": gpu.displayName || gpu.name || "Unknown GPU",
                     "fullName": gpu.fullName || gpu.name || "Unknown GPU",
                     "temperature": gpu.temperature || 0
                 }));
+            availableGpus = SysmonDevices.hostGpus(detectedGpus);
         }
 
         // dgop fills state and stats only for the GPUs in gpuPciIds.

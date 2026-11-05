@@ -99,6 +99,10 @@ RegistryBrowserWindow {
         {
             label: I18n.tr("Dash card", "plugin browser type filter chip"),
             value: "dash-card"
+        },
+        {
+            label: I18n.tr("Lyrics", "plugin browser type filter chip, lyrics provider plugins"),
+            value: "lyrics-provider"
         }
     ]
 
@@ -633,6 +637,8 @@ RegistryBrowserWindow {
             return;
         var script = 'for c in "$@"; do command -v "$c" >/dev/null 2>&1 && echo "$c"; done; true';
         Proc.runCommand("plugin-browser-dependencies", ["sh", "-c", script, "sh"].concat(commands), (output, exitCode) => {
+            if (!root)
+                return;
             if (exitCode !== 0) {
                 root.log.warn("dependency lookup failed", exitCode);
                 return;
@@ -770,7 +776,7 @@ RegistryBrowserWindow {
         }
         thirdPartyConfirm.showWithOptions({
             title: I18n.tr("Third-Party Plugin Warning"),
-            message: I18n.tr("Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.", "third-party plugin warning, %1 is the product name").arg("Dux Shell"),
+            message: I18n.tr("Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.", "third-party plugin warning, %1 is the product name").arg("Dux Modular Shell"),
             confirmText: I18n.tr("I Understand"),
             cancelText: I18n.tr("Cancel"),
             onConfirm: () => {
@@ -787,6 +793,8 @@ RegistryBrowserWindow {
         operationPending = true;
         operationMessage = I18n.tr("Installing: %1", "installation progress").arg(pluginName);
         PluginService.installFromRegistry(pluginId, pluginName, enableAfterInstall, (success, error) => {
+            if (!root)
+                return;
             operationPending = false;
             operationFailed = !success;
             operationMessage = success ? I18n.tr("Installed: %1", "installation success").arg(pluginName) : error;
@@ -806,6 +814,8 @@ RegistryBrowserWindow {
         isLoading = true;
         loadError = "";
         DMSService.listPlugins(response => {
+            if (!root)
+                return;
             isLoading = false;
             if (!visible)
                 return;
@@ -1268,8 +1278,7 @@ RegistryBrowserWindow {
                         required property var modelData
                         text: modelData.name || modelData.id
                         iconName: modelData.icon || "extension"
-                        backgroundColor: Theme.secondaryContainer
-                        textColor: Theme.onSecondaryContainer
+                        variant: "tonal"
                         onClicked: root.openPluginDetail(modelData)
                     }
                 }
@@ -1715,8 +1724,7 @@ RegistryBrowserWindow {
                                     text: modelData.name
                                     iconName: "extension"
                                     buttonHeight: Theme.buttonHeightXS
-                                    backgroundColor: Theme.secondaryContainer
-                                    textColor: Theme.onSecondaryContainer
+                                    variant: "tonal"
                                     enabled: modelData.key !== ""
                                     onClicked: root.detailPluginId = modelData.key
                                 }

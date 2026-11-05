@@ -2,7 +2,7 @@
 Type=Application
 Name=DMS Notepad
 GenericName=Text Editor
-Comment=Quick notes and text files in Dux Shell
+Comment=Quick notes and text files in Dux Modular Shell
 Exec=dms ipc call notepad openFile %f
 Icon=dev.duxlabs.shell
 Terminal=false

@@ -72,7 +72,7 @@ DOSD {
     osdWidth: isVerticalLayout ? Theme.osdHeight : Math.min(Theme.osdLevelWidth + osdValueReserve, screenWidth - Theme.spacingM * 2)
     osdHeight: isVerticalLayout ? Math.min(Theme.osdLevelVerticalHeight, screenHeight - Theme.spacingM * 2) : Theme.buttonHeightS + Theme.spacingS * 2
     autoHideInterval: 3000
-    sheetWidth: CcMetrics.sheetWidthFor(CcMetrics.minimumColumns)
+    sheetWidth: CcMetrics.sheetWidthFor(CcMetrics.osdSheetColumns)
     enableMouseInteraction: true
 
     Loader {

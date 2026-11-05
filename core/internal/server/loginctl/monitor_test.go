@@ -421,3 +421,14 @@ func TestManager_HandlePropertiesChanged(t *testing.T) {
 		})
 	})
 }
+
+func TestManager_SetKeepAwakeFalseReleasesInhibitor(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "inhibit")
+	require.NoError(t, err)
+	m := &Manager{keepAwakeFile: f}
+
+	require.NoError(t, m.SetKeepAwake(false))
+
+	assert.Nil(t, m.keepAwakeFile)
+	assert.Error(t, f.Close())
+}

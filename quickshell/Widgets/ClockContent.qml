@@ -64,12 +64,26 @@ Item {
         Repeater {
             model: stack.lines.length
 
-            NumericText {
+            Row {
+                id: line
+
                 required property int index
+                readonly property string text: stack.lines[index] ?? ""
+                readonly property var cells: root.vertical ? (text.match(/\d|\D+/g) || []) : [text]
+
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: stack.lines[index]
-                color: stack.color
-                font.pixelSize: root.fontSize
+                LayoutMirroring.enabled: false
+
+                Repeater {
+                    model: line.cells.length
+
+                    NumericText {
+                        required property int index
+                        text: line.cells[index] ?? ""
+                        color: stack.color
+                        font.pixelSize: root.fontSize
+                    }
+                }
             }
         }
     }

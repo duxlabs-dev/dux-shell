@@ -43,7 +43,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-const APIVersion = 38
+const APIVersion = 39
 
 var CLIVersion = "dev"
 
@@ -443,7 +443,7 @@ func routeRequestRecovered(ctx context.Context, conn *ipc.ConnWriter, req ipc.Re
 }
 
 func getCapabilities() Capabilities {
-	caps := []string{"plugins", "dgop", "drives", "lyrics", "lyrics.plugins", "fcitx5"}
+	caps := []string{"plugins", "dgop", "drives", "lyrics", "lyrics.plugins", "weather", "weather.plugins", "fcitx5"}
 
 	if networkManager != nil {
 		caps = append(caps, "network")
@@ -1144,15 +1144,18 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info(" evdev.getState                        - Get current evdev state (caps lock)")
 		log.Info(" evdev.subscribe                       - Subscribe to evdev state changes (streaming)")
 		log.Info("Clipboard:")
-		log.Info(" clipboard.getState                    - Get clipboard state (enabled, history, current)")
+		log.Info(" clipboard.getState                    - Get clipboard state (enabled, revision, historyCount, pinnedCount, current)")
 		log.Info(" clipboard.getHistory                  - Get clipboard history with previews")
 		log.Info(" clipboard.getEntry                    - Get full entry by ID (params: id)")
 		log.Info(" clipboard.deleteEntry                 - Delete entry by ID (params: id)")
 		log.Info(" clipboard.deleteEntries               - Delete entries by ID, skipping pinned ones (params: ids)")
+		log.Info(" clipboard.deleteMatching              - Delete unpinned entries matching search params")
+		log.Info(" clipboard.getEntries                  - Get full entries by ID (params: ids)")
+		log.Info(" clipboard.import                      - Store entries in one transaction (params: entries [{data base64, mimeType, timestamp?, pinned?}])")
 		log.Info(" clipboard.clearHistory                - Clear all clipboard history")
 		log.Info(" clipboard.copy                        - Copy text to clipboard (params: text)")
 		log.Info(" clipboard.paste                       - Get current clipboard text")
-		log.Info(" clipboard.search                      - Search history (params: query?, mimeType?, isImage?, limit?, offset?, before?, after?)")
+		log.Info(" clipboard.search                      - Search history (params: query?, type?, pinned?, mimeType?, isImage?, limit?, offset?, before?, after?)")
 		log.Info(" clipboard.getConfig                   - Get clipboard configuration")
 		log.Info(" clipboard.setConfig                   - Set configuration (params: maxHistory?, maxEntrySize?, autoClearDays?, clearAtStartup?, disabled?, maxPinned?)")
 		log.Info(" clipboard.subscribe                   - Subscribe to clipboard state changes (streaming)")
