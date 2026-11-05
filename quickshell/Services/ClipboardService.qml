@@ -20,14 +20,17 @@ Singleton {
 
     readonly property var terminalAppIds: ["kitty", "foot", "footclient", "alacritty", "st", "org.wezfurlong.wezterm", "com.mitchellh.ghostty", "ghostty", "org.kde.konsole", "konsole", "org.gnome.terminal", "gnome-terminal-server", "org.gnome.console", "kgx", "com.gexperts.tilix", "tilix", "terminator", "xfce4-terminal", "lxterminal", "deepin-terminal", "io.elementary.terminal", "rio", "contour", "wayst", "urxvt", "rxvt"]
 
-    property var internalEntries: []
-    property var clipboardEntries: []
-    property var unpinnedEntries: []
+    readonly property int pageSize: 100
+    property var allPinnedEntries: []
     property var pinnedEntries: []
+    property var unpinnedEntries: []
+    property int unpinnedTotal: 0
+    readonly property bool hasMoreUnpinned: unpinnedEntries.length < unpinnedTotal
     property int pinnedCount: 0
-    property int totalCount: 0
+    property int historyCount: 0
     property string searchText: ""
     property string activeFilter: "all"
+    property string activeTab: "recents"
     readonly property bool filterActive: searchText.trim().length > 0 || activeFilter !== "all"
     property int selectedIndex: 0
     property bool keyboardNavigationActive: false
@@ -37,6 +40,12 @@ Singleton {
     property string _launcherCachedQuery: ""
     property var _launcherCachedEntries: []
     property int _launcherSearchSeq: 0
+    property int _unpinnedSeq: 0
+    property int _pinnedSeq: 0
+    property int _allPinnedSeq: 0
+    property bool _loadingMore: false
+    property bool _fetchFromTop: false
+    property bool _fetchPinned: false
 
     signal historyCopied
     signal historyCleared
@@ -105,59 +114,142 @@ Singleton {
     }
 
     function updateFilteredModel() {
-        const query = searchText.trim().toLowerCase();
-        const filterAll = activeFilter === "all";
-        const unpinned = [];
-        const pinned = [];
+        queueFetch(true, false);
+    }
 
-        for (let i = 0; i < internalEntries.length; i++) {
-            const entry = internalEntries[i];
-            if (!filterAll && getEntryType(entry) !== activeFilter)
-                continue;
-            if (query.length > 0 && !entry.preview.toLowerCase().includes(query))
-                continue;
-            (entry.pinned ? pinned : unpinned).push(entry);
+    function refresh() {
+        queueFetch(false, true);
+    }
+
+    function queueFetch(fromTop, withAllPinned) {
+        if (!clipboardAvailable)
+            return;
+        _fetchFromTop = _fetchFromTop || fromTop;
+        _fetchPinned = _fetchPinned || withAllPinned;
+        Qt.callLater(root.fetchEntries);
+    }
+
+    function fetchEntries() {
+        const keepSelection = !_fetchFromTop;
+        const limit = _fetchFromTop ? pageSize : Math.max(pageSize, unpinnedEntries.length);
+        if (_fetchPinned)
+            fetchAllPinned(keepSelection);
+        _fetchFromTop = false;
+        _fetchPinned = false;
+        _loadingMore = false;
+
+        const pinnedSeq = ++_pinnedSeq;
+        if (filterActive) {
+            DMSService.sendRequest("clipboard.search", entryQuery(true, 0, 5000), function (response) {
+                if (pinnedSeq !== root._pinnedSeq)
+                    return;
+                if (response.error) {
+                    log.warn("Failed to search pinned entries:", response.error);
+                    return;
+                }
+                root.applyEntries(true, (response.result || {}).entries || [], keepSelection);
+            });
+        } else {
+            applyEntries(true, allPinnedEntries, keepSelection);
         }
 
-        // JS Date keeps milliseconds only, so rows sharing one get id as the tie-break.
-        const byTimestampDesc = (a, b) => (new Date(b.timestamp) - new Date(a.timestamp)) || (b.id - a.id);
-        pinned.sort(byTimestampDesc);
-        unpinned.sort(byTimestampDesc);
+        const seq = ++_unpinnedSeq;
+        DMSService.sendRequest("clipboard.search", entryQuery(false, 0, limit), function (response) {
+            if (seq !== root._unpinnedSeq)
+                return;
+            if (response.error) {
+                log.warn("Failed to get history:", response.error);
+                return;
+            }
+            const result = response.result || {};
+            root.unpinnedTotal = result.total || 0;
+            root.applyEntries(false, result.entries || [], keepSelection);
+        });
+    }
 
-        pinnedEntries = pinned;
-        unpinnedEntries = unpinned;
-        clipboardEntries = pinned.concat(unpinned);
-        totalCount = clipboardEntries.length;
+    function fetchAllPinned(keepSelection) {
+        const seq = ++_allPinnedSeq;
+        DMSService.sendRequest("clipboard.search", {
+            "pinned": true,
+            "limit": 5000
+        }, function (response) {
+            if (seq !== root._allPinnedSeq)
+                return;
+            if (response.error) {
+                log.warn("Failed to get pinned entries:", response.error);
+                return;
+            }
+            root.allPinnedEntries = (response.result || {}).entries || [];
+            if (!root.filterActive)
+                root.applyEntries(true, root.allPinnedEntries, keepSelection);
+        });
+    }
 
-        const activeCount = Math.max(unpinned.length, pinned.length);
+    function loadMore() {
+        if (_loadingMore || !hasMoreUnpinned || !clipboardAvailable)
+            return;
+        _loadingMore = true;
+        const seq = _unpinnedSeq;
+        DMSService.sendRequest("clipboard.search", entryQuery(false, unpinnedEntries.length, pageSize), function (response) {
+            if (seq !== root._unpinnedSeq)
+                return;
+            root._loadingMore = false;
+            if (response.error) {
+                log.warn("Failed to load more history:", response.error);
+                return;
+            }
+            const result = response.result || {};
+            const loaded = new Set(root.unpinnedEntries.map(e => e.id));
+            root.unpinnedEntries = root.unpinnedEntries.concat((result.entries || []).filter(e => !loaded.has(e.id)));
+            root.unpinnedTotal = result.total || 0;
+        });
+    }
 
+    function entryQuery(pinned, offset, limit) {
+        return {
+            "query": searchText.trim(),
+            "type": activeFilter === "all" ? "" : activeFilter,
+            "pinned": pinned,
+            "offset": offset,
+            "limit": limit
+        };
+    }
+
+    // a refresh keeps the selection on the same entry when rows shift around it
+    function applyEntries(pinned, entries, keepSelection) {
+        const savedTab = activeTab === "saved";
+        const shown = savedTab ? pinnedEntries : unpinnedEntries;
+        const selectedId = keepSelection && savedTab === pinned ? shown[selectedIndex]?.id : undefined;
+
+        if (pinned)
+            pinnedEntries = entries;
+        else
+            unpinnedEntries = entries;
+
+        const index = selectedId === undefined ? -1 : entries.findIndex(e => e.id === selectedId);
+        if (index >= 0)
+            selectedIndex = index;
+        clampSelection();
+    }
+
+    function clampSelection() {
+        const activeCount = (activeTab === "saved" ? pinnedEntries : unpinnedEntries).length;
         if (activeCount === 0) {
             keyboardNavigationActive = false;
             selectedIndex = 0;
             return;
         }
-
         if (selectedIndex >= activeCount)
             selectedIndex = activeCount - 1;
     }
 
-    function refresh() {
-        if (!clipboardAvailable) {
-            return;
-        }
-        DMSService.sendRequest("clipboard.getHistory", null, function (response) {
-            if (response.error) {
-                log.warn("Failed to get history:", response.error);
-                return;
-            }
-            applyHistory(response.result || []);
-        });
-    }
-
-    function applyHistory(history) {
-        internalEntries = history;
-        pinnedCount = history.filter(e => e.pinned).length;
-        updateFilteredModel();
+    function removeLocalEntry(entry) {
+        const before = unpinnedEntries.length;
+        unpinnedEntries = unpinnedEntries.filter(e => e.id !== entry.id);
+        unpinnedTotal -= before - unpinnedEntries.length;
+        allPinnedEntries = allPinnedEntries.filter(e => e.id !== entry.id);
+        pinnedEntries = pinnedEntries.filter(e => e.id !== entry.id);
+        clampSelection();
     }
 
     function requestLauncherSearch(query, limit) {
@@ -223,10 +315,16 @@ Singleton {
         searchText = "";
         selectedIndex = 0;
         keyboardNavigationActive = false;
-        internalEntries = [];
-        clipboardEntries = [];
         unpinnedEntries = [];
+        unpinnedTotal = 0;
+        allPinnedEntries = [];
         pinnedEntries = [];
+        _unpinnedSeq++;
+        _pinnedSeq++;
+        _allPinnedSeq++;
+        _loadingMore = false;
+        if (refCount > 0)
+            queueFetch(true, true);
     }
 
     function copyEntry(entry, closeCallback, textOnly) {
@@ -275,13 +373,6 @@ Singleton {
         });
     }
 
-    function pasteSelected(closeCallback) {
-        if (!keyboardNavigationActive || clipboardEntries.length === 0 || selectedIndex < 0 || selectedIndex >= clipboardEntries.length) {
-            return;
-        }
-        pasteEntry(clipboardEntries[selectedIndex], closeCallback);
-    }
-
     function deleteEntry(entry) {
         DMSService.sendRequest("clipboard.deleteEntry", {
             "id": entry.id
@@ -290,16 +381,7 @@ Singleton {
                 log.warn("Failed to delete entry:", response.error);
                 return;
             }
-            internalEntries = internalEntries.filter(e => e.id !== entry.id);
-            updateFilteredModel();
-            if (clipboardEntries.length === 0) {
-                keyboardNavigationActive = false;
-                selectedIndex = 0;
-                return;
-            }
-            if (selectedIndex >= clipboardEntries.length) {
-                selectedIndex = clipboardEntries.length - 1;
-            }
+            removeLocalEntry(entry);
         });
     }
 
@@ -315,8 +397,7 @@ Singleton {
                     log.warn("Failed to delete entry:", response.error);
                     return;
                 }
-                internalEntries = internalEntries.filter(e => e.id !== entry.id);
-                updateFilteredModel();
+                removeLocalEntry(entry);
                 ToastService.showInfo(I18n.tr("Saved item deleted"));
             });
         }, function () {});
@@ -392,12 +473,13 @@ Singleton {
     }
 
     function clearFiltered() {
-        const ids = unpinnedEntries.map(entry => entry.id);
-        if (ids.length === 0) {
+        if (unpinnedTotal === 0) {
             return;
         }
-        DMSService.sendRequest("clipboard.deleteEntries", {
-            "ids": ids
+        const filter = entryQuery(false, 0, 0);
+        DMSService.sendRequest("clipboard.deleteMatching", {
+            "query": filter.query,
+            "type": filter.type
         }, function (response) {
             if (response.error) {
                 log.warn("Failed to clear filtered entries:", response.error);
@@ -456,7 +538,7 @@ Singleton {
         if (!entryHash) {
             return null;
         }
-        return internalEntries.find(entry => entry.pinned && entry.hash === entryHash) || null;
+        return allPinnedEntries.find(entry => entry.hash === entryHash) || null;
     }
 
     function hashedPinnedEntry(entryHash) {
@@ -469,16 +551,13 @@ Singleton {
         refresh();
     }
 
-    // only pinnedCount is tracked while no surface is open; the bar menu reads it, surfaces refresh on open
     Connections {
         target: DMSService
         function onClipboardStateUpdate(data) {
-            const history = data.history || [];
-            if (root.refCount > 0) {
-                root.applyHistory(history);
-                return;
-            }
-            root.pinnedCount = history.filter(e => e.pinned).length;
+            root.pinnedCount = data.pinnedCount || 0;
+            root.historyCount = data.historyCount || 0;
+            if (root.refCount > 0)
+                root.refresh();
         }
     }
 }

@@ -12,6 +12,8 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 )
 
+const maxSearchLimit = 5000
+
 func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	switch req.Method {
 	case "clipboard.getState":
@@ -20,10 +22,16 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		handleGetHistory(conn, req, m)
 	case "clipboard.getEntry":
 		handleGetEntry(conn, req, m)
+	case "clipboard.getEntries":
+		handleGetEntries(conn, req, m)
+	case "clipboard.import":
+		handleImport(conn, req, m)
 	case "clipboard.deleteEntry":
 		handleDeleteEntry(conn, req, m)
 	case "clipboard.deleteEntries":
 		handleDeleteEntries(conn, req, m)
+	case "clipboard.deleteMatching":
+		handleDeleteMatching(conn, req, m)
 	case "clipboard.clearHistory":
 		handleClearHistory(conn, req, m)
 	case "clipboard.copy":
@@ -64,11 +72,7 @@ func handleGetState(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 }
 
 func handleGetHistory(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
-	history := m.GetHistory()
-	for i := range history {
-		history[i].Data = nil
-	}
-	conn.Respond(req.ID, history)
+	conn.Respond(req.ID, m.GetHistory())
 }
 
 func handleGetEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
@@ -89,6 +93,55 @@ func handleGetEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	}
 
 	conn.Respond(req.ID, entry)
+}
+
+func handleGetEntries(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
+	var ids []uint64
+	if err := decodeParam(req, "ids", &ids); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	entries, err := m.GetEntries(ids)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	conn.Respond(req.ID, entries)
+}
+
+func handleImport(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
+	var entries []ImportEntry
+	if err := decodeParam(req, "entries", &entries); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	imported, err := m.Import(entries)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	conn.Respond(req.ID, map[string]int{"imported": imported})
+}
+
+func decodeParam(req ipc.Request, name string, out any) error {
+	raw, ok := params.Any(req.Params, name)
+	if !ok {
+		return fmt.Errorf("missing '%s' parameter", name)
+	}
+
+	encoded, err := json.Marshal(raw)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(encoded, out); err != nil {
+		return fmt.Errorf("invalid '%s' parameter: %w", name, err)
+	}
+	return nil
 }
 
 func handleDeleteEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
@@ -169,6 +222,16 @@ func toEntryID(value any) (uint64, error) {
 	default:
 		return 0, fmt.Errorf("invalid entry id: %v", value)
 	}
+}
+
+func handleDeleteMatching(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
+	deleted, err := m.DeleteMatching(searchParams(req))
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	conn.Respond(req.ID, map[string]int{"deleted": deleted})
 }
 
 func handleClearHistory(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
@@ -294,15 +357,27 @@ func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 }
 
 func handleSearch(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
+	conn.Respond(req.ID, m.Search(searchParams(req)))
+}
+
+func searchParams(req ipc.Request) SearchParams {
 	p := SearchParams{
 		Query:    params.StringOpt(req.Params, "query", ""),
 		MimeType: params.StringOpt(req.Params, "mimeType", ""),
+		Type:     params.StringOpt(req.Params, "type", ""),
 		Limit:    params.IntOpt(req.Params, "limit", 50),
 		Offset:   params.IntOpt(req.Params, "offset", 0),
 	}
+	if p.Limit <= 0 {
+		p.Limit = 50
+	}
+	p.Limit = min(p.Limit, maxSearchLimit)
 
 	if img, ok := req.Get[bool]("isImage"); ok {
 		p.IsImage = &img
+	}
+	if pinned, ok := req.Get[bool]("pinned"); ok {
+		p.Pinned = &pinned
 	}
 	if b, ok := req.Get[float64]("before"); ok {
 		v := int64(b)
@@ -313,7 +388,7 @@ func handleSearch(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		p.After = &v
 	}
 
-	conn.Respond(req.ID, m.Search(p))
+	return p
 }
 
 func handleStore(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {

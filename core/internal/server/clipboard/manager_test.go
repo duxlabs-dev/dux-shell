@@ -150,79 +150,21 @@ func TestStateEqual_OneNil(t *testing.T) {
 }
 
 func TestStateEqual_EnabledDiffers(t *testing.T) {
-	a := &State{Enabled: true, History: []Entry{}}
-	b := &State{Enabled: false, History: []Entry{}}
+	a := &State{Enabled: true}
+	b := &State{Enabled: false}
 	assert.False(t, stateEqual(a, b))
 }
 
-func TestStateEqual_HistoryLengthDiffers(t *testing.T) {
-	a := &State{Enabled: true, History: []Entry{{ID: 1}}}
-	b := &State{Enabled: true, History: []Entry{}}
+func TestStateEqual_RevisionDiffers(t *testing.T) {
+	a := &State{Enabled: true, Revision: 2}
+	b := &State{Enabled: true, Revision: 1}
 	assert.False(t, stateEqual(a, b))
 }
 
 func TestStateEqual_BothEqual(t *testing.T) {
-	ts := time.Now().Truncate(time.Second)
-	entry := Entry{
-		ID:        1,
-		Hash:      100,
-		MimeType:  "image/png",
-		Preview:   "[[ image 1 KiB png 32x32 ]]",
-		Size:      1024,
-		Timestamp: ts,
-		IsImage:   true,
-		Pinned:    true,
-	}
-	a := &State{Enabled: true, History: []Entry{entry}}
-	b := &State{Enabled: true, History: []Entry{entry}}
+	a := &State{Enabled: true, Revision: 1}
+	b := &State{Enabled: true, Revision: 1}
 	assert.True(t, stateEqual(a, b))
-}
-
-func TestStateEqual_SameLengthDifferentIDs(t *testing.T) {
-	ts := time.Now().Truncate(time.Second)
-	a := &State{Enabled: true, History: []Entry{{ID: 1, Hash: 100, Timestamp: ts}}}
-	b := &State{Enabled: true, History: []Entry{{ID: 2, Hash: 100, Timestamp: ts}}}
-
-	assert.False(t, stateEqual(a, b))
-}
-
-func TestStateEqual_MetadataDiffers(t *testing.T) {
-	ts := time.Now().Truncate(time.Second)
-	base := Entry{
-		ID:        1,
-		Hash:      100,
-		MimeType:  "image/png",
-		Preview:   "[[ image 1 KiB png 32x32 ]]",
-		Size:      1024,
-		Timestamp: ts,
-		IsImage:   true,
-		Pinned:    false,
-	}
-
-	tests := []struct {
-		name   string
-		mutate func(*Entry)
-	}{
-		{name: "hash", mutate: func(e *Entry) { e.Hash = 101 }},
-		{name: "pinned", mutate: func(e *Entry) { e.Pinned = true }},
-		{name: "is image", mutate: func(e *Entry) { e.IsImage = false }},
-		{name: "mime type", mutate: func(e *Entry) { e.MimeType = "image/jpeg" }},
-		{name: "preview", mutate: func(e *Entry) { e.Preview = "[[ image 2 KiB jpeg 64x64 ]]" }},
-		{name: "size", mutate: func(e *Entry) { e.Size = 2048 }},
-		{name: "timestamp", mutate: func(e *Entry) { e.Timestamp = ts.Add(time.Second) }},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			changed := base
-			tt.mutate(&changed)
-
-			a := &State{Enabled: true, History: []Entry{base}}
-			b := &State{Enabled: true, History: []Entry{changed}}
-
-			assert.False(t, stateEqual(a, b))
-		})
-	}
 }
 
 func TestHandleGetEntry_ReturnsExistingEntry(t *testing.T) {
@@ -436,6 +378,7 @@ func TestUnpinEntry_KeepsTopUnpinnedDuplicate(t *testing.T) {
 			}
 			return b.Put(itob(id), encoded)
 		}))
+		m.reloadHistory()
 
 		return duplicate
 	}
@@ -681,8 +624,8 @@ func TestManager_ConcurrentSubscriberAccess(t *testing.T) {
 func TestManager_ConcurrentGetState(t *testing.T) {
 	m := &Manager{
 		state: &State{
-			Enabled: true,
-			History: []Entry{{ID: 1}, {ID: 2}},
+			Enabled:      true,
+			HistoryCount: 2,
 		},
 	}
 
@@ -695,7 +638,7 @@ func TestManager_ConcurrentGetState(t *testing.T) {
 			for range iterations {
 				s := m.GetState()
 				_ = s.Enabled
-				_ = len(s.History)
+				_ = s.HistoryCount
 			}
 		})
 	}
@@ -707,8 +650,8 @@ func TestManager_ConcurrentGetState(t *testing.T) {
 			for j := range iterations {
 				m.stateMutex.Lock()
 				m.state = &State{
-					Enabled: j%2 == 0,
-					History: []Entry{{ID: uint64(j)}},
+					Enabled:      j%2 == 0,
+					HistoryCount: j,
 				}
 				m.stateMutex.Unlock()
 			}

@@ -23,15 +23,14 @@ FocusScope {
 
     readonly property bool clipboardAvailable: ClipboardService.clipboardAvailable
     readonly property bool pasteAvailable: ClipboardService.pasteAvailable
-    readonly property int totalCount: ClipboardService.totalCount
-    readonly property var clipboardEntries: ClipboardService.clipboardEntries
     readonly property var pinnedEntries: ClipboardService.pinnedEntries
     readonly property int pinnedCount: ClipboardService.pinnedCount
     readonly property var unpinnedEntries: ClipboardService.unpinnedEntries
+    readonly property int unpinnedTotal: ClipboardService.unpinnedTotal
     readonly property int selectedIndex: ClipboardService.selectedIndex
     readonly property bool keyboardNavigationActive: ClipboardService.keyboardNavigationActive
     readonly property bool clearsFilteredOnly: activeTab === "recents" && ClipboardService.filterActive
-    readonly property bool canClear: clearsFilteredOnly ? unpinnedEntries.length > 0 : ClipboardService.internalEntries.length > pinnedCount
+    readonly property bool canClear: clearsFilteredOnly ? unpinnedTotal > 0 : ClipboardService.historyCount > 0
     readonly property var currentEntry: selectedEntry()
 
     readonly property var modalFocusScope: root
@@ -48,6 +47,7 @@ FocusScope {
     signal instantCloseRequested
 
     onActiveTabChanged: {
+        ClipboardService.activeTab = activeTab;
         if (activeTab === "saved" && pinnedCount === 0) {
             activeTab = "recents";
             return;
@@ -61,6 +61,10 @@ FocusScope {
         }
     }
     onSearchTextChanged: ClipboardService.searchText = searchText
+    onModeChanged: {
+        if (mode === "history" && visible)
+            searchField?.forceActiveFocus();
+    }
     onCurrentEntryChanged: {
         if (mode === "preview" && !ClipboardService.canPreviewEntry(currentEntry)) {
             closePreview();
@@ -141,7 +145,6 @@ FocusScope {
             return;
         }
         mode = "history";
-        searchField?.forceActiveFocus();
     }
 
     function selectedEntry() {
@@ -180,10 +183,10 @@ FocusScope {
             // The list is filtered, so clear what it shows and leave the modal
             // open on the filter the user is working through. A filter that
             // matches nothing must never fall back to clearing everything.
-            if (unpinnedEntries.length === 0) {
+            if (unpinnedTotal === 0) {
                 return;
             }
-            clearConfirmDialog.show(I18n.tr("Clear History?"), I18n.tr("This will delete the %1 entries matching the current filter. Pinned entries are kept.", "clipboard modal: clear confirmation while a search filter is active, %1 is the number of matching entries").arg(unpinnedEntries.length), function () {
+            clearConfirmDialog.show(I18n.tr("Clear History?"), I18n.tr("This will delete the %1 entries matching the current filter. Pinned entries are kept.", "clipboard modal: clear confirmation while a search filter is active, %1 is the number of matching entries").arg(unpinnedTotal), function () {
                 clearFiltered();
             }, function () {});
             return;
@@ -212,6 +215,11 @@ FocusScope {
 
     function refreshClipboard() {
         ClipboardService.refresh();
+    }
+
+    function loadMore() {
+        if (activeTab === "recents")
+            ClipboardService.loadMore();
     }
 
     function editEntry(entry) {
@@ -263,6 +271,7 @@ FocusScope {
         historyContent.closeContextMenu();
         historyContent.closeFilterMenu();
         activeFilter = SettingsData.clipboardRememberTypeFilter ? SettingsData.clipboardTypeFilter : "all";
+        ClipboardService.activeTab = activeTab;
         ClipboardService.reset();
         keyboardController.reset();
     }
