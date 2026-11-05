@@ -4616,6 +4616,37 @@
     "conditionKey": "nativeOverviewCapable"
   },
   {
+    "section": "islandOsdShowsSatellites",
+    "label": "Show satellites with OSDs",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "auto",
+      "auto-hide",
+      "autohide",
+      "bar",
+      "brightness",
+      "bring",
+      "general",
+      "hidden",
+      "island",
+      "osd",
+      "osds",
+      "panel",
+      "reveal",
+      "satellites",
+      "show",
+      "statusbar",
+      "taskbar",
+      "topbar",
+      "turn",
+      "volume"
+    ],
+    "parentLabel": "Bar",
+    "description": "Turn off to bring out only the island on an auto-hidden bar",
+    "conditionKey": "islandEnabled"
+  },
+  {
     "section": "islandSpringDamping",
     "label": "Spring damping",
     "tabIndex": 3,
@@ -10300,7 +10331,7 @@
     "optionFile": "PrivacyOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:29",
+    "section": "barWidgetOption:IslandOptions.qml:30",
     "label": "Charging",
     "tabIndex": 22,
     "keywords": [],
@@ -10308,7 +10339,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:31",
+    "section": "barWidgetOption:IslandOptions.qml:32",
     "label": "Clear badge on open",
     "tabIndex": 22,
     "keywords": [],
@@ -10548,7 +10579,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:30",
+    "section": "barWidgetOption:IslandOptions.qml:31",
     "label": "Expand by default",
     "tabIndex": 22,
     "keywords": [],
@@ -10860,7 +10891,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:32",
+    "section": "barWidgetOption:IslandOptions.qml:33",
     "label": "Motion",
     "tabIndex": 22,
     "keywords": [],
@@ -11116,6 +11147,14 @@
     "optionFile": "BatteryOptions.qml"
   },
   {
+    "section": "barWidgetOption:IslandOptions.qml:29",
+    "label": "Show satellites with OSDs",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "IslandOptions.qml"
+  },
+  {
     "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:11",
     "label": "Show scratchpads",
     "tabIndex": 22,
@@ -11204,7 +11243,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:34",
+    "section": "barWidgetOption:IslandOptions.qml:35",
     "label": "Spring damping",
     "tabIndex": 22,
     "keywords": [],
@@ -11212,7 +11251,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:35",
+    "section": "barWidgetOption:IslandOptions.qml:36",
     "label": "Spring mass",
     "tabIndex": 22,
     "keywords": [],
@@ -11220,7 +11259,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:33",
+    "section": "barWidgetOption:IslandOptions.qml:34",
     "label": "Spring stiffness",
     "tabIndex": 22,
     "keywords": [],
@@ -19051,6 +19090,37 @@
     ],
     "parentLabel": "Bar",
     "description": "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout",
+    "conditionKey": "dotEnabled"
+  },
+  {
+    "section": "dotOsdShowsSatellites",
+    "label": "Show satellites with OSDs",
+    "tabIndex": 65,
+    "category": "Dot",
+    "keywords": [
+      "auto",
+      "auto-hide",
+      "autohide",
+      "bar",
+      "brightness",
+      "bring",
+      "dot",
+      "hidden",
+      "island",
+      "osd",
+      "osds",
+      "panel",
+      "reveal",
+      "satellites",
+      "show",
+      "statusbar",
+      "taskbar",
+      "topbar",
+      "turn",
+      "volume"
+    ],
+    "parentLabel": "Bar",
+    "description": "Turn off to bring out only the island on an auto-hidden bar",
     "conditionKey": "dotEnabled"
   },
   {

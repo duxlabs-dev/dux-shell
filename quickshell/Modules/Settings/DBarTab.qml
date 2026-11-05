@@ -346,6 +346,7 @@ Item {
 
         IslandNotificationsCard {
             store: bar.islandStore
+            hasSatellites: true
             visible: dankBarTab.selectedIslandEnabled
         }
 
