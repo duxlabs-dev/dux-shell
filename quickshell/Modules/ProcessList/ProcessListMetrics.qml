@@ -104,10 +104,11 @@ Singleton {
             memo.icons = new Map();
         }
         const key = [process?.pid, process?.executablePath, process?.fullCommand, windowId].concat(extraKeys ?? []).join("\n");
-        if (memo.cache.has(key))
-            return memo.cache.get(key);
-        const entry = lookupAppEntry(process, windowId, extraKeys);
-        memo.cache.set(key, entry);
+        if (!memo.cache.has(key))
+            memo.cache.set(key, lookupAppEntry(process, windowId, extraKeys));
+        const entry = memo.cache.get(key) ?? shellAppEntry(process);
+        if (entry)
+            memo.cache.set(key, entry);
         return entry;
     }
 
@@ -119,7 +120,7 @@ Singleton {
             if (entry)
                 return entry;
         }
-        return (exe && execEntry(exe, process)) || (process?.command ? DesktopEntries.heuristicLookup(process.command) : null) || execEntry(exe.split("/").pop(), process) || execEntry(process?.command ?? "", process) || shellAppEntry(process);
+        return (exe && execEntry(exe, process)) || (process?.command ? DesktopEntries.heuristicLookup(process.command) : null) || execEntry(exe.split("/").pop(), process) || execEntry(process?.command ?? "", process);
     }
 
     // Apps built on Quickshell run "qs -p <runtime dir>/<app>-shell/..." from their own binary, often without a window.
@@ -138,6 +139,7 @@ Singleton {
     }
 
     // The app's binary and its qs both belong to the desktop entry that runs the binary, whatever arguments that entry passes.
+    // A miss isn't cached: it depends on which processes the current list holds.
     function shellAppEntry(process) {
         indexProcesses();
         const memo = _appMemo;
@@ -157,7 +159,7 @@ Singleton {
             return Paths.resolveIconPath(program);
         const name = program.toLowerCase();
         const row = ProcessIcons.PROGRAM_ICONS.find(r => r.programs.includes(name));
-        const names = row ? row.icons ?? [] : name.includes("-") ? [] : [program, name, name.replace(/[\d.]+$/, "")];
+        const names = row ? row.icons ?? [] : name.includes("-") ? [] : [...new Set([program, name, name.replace(/[\d.]+$/, "")])];
         for (const candidate of names) {
             const icon = Paths.themedIconPath(candidate);
             if (icon)
