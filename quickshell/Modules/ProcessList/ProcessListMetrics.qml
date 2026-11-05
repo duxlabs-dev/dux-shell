@@ -52,7 +52,12 @@ Singleton {
             "entries": null,
             "toplevels": null,
             "windowIds": {},
-            "cache": new Map()
+            "cache": new Map(),
+            "icons": new Map(),
+            "iconIndex": null,
+            "substitutions": null,
+            "processes": null,
+            "byPid": new Map()
         })
 
     // A window names its app more reliably than the process name does. Built on demand, so nothing runs while no process view is open.
@@ -74,8 +79,16 @@ Singleton {
     Connections {
         target: DgopService
         function onPollingActiveChanged() {
-            if (!DgopService.pollingActive)
+            if (!DgopService.pollingActive) {
                 _appMemo.cache = new Map();
+                _appMemo.icons = new Map();
+            }
+        }
+        function onAllProcessesChanged() {
+            if (!DgopService.allProcesses?.length) {
+                _appMemo.processes = null;
+                _appMemo.byPid = new Map();
+            }
         }
     }
 
@@ -85,6 +98,7 @@ Singleton {
         if (memo.entries !== execEntries || memo.cache.size > 4000) {
             memo.entries = execEntries;
             memo.cache = new Map();
+            memo.icons = new Map();
         }
         const key = [process?.pid, process?.executablePath, process?.fullCommand, windowId].concat(extraKeys ?? []).join("\n");
         if (memo.cache.has(key))
@@ -103,6 +117,53 @@ Singleton {
                 return entry;
         }
         return (exe && execEntry(exe, process)) || (process?.command ? DesktopEntries.heuristicLookup(process.command) : null) || execEntry(exe.split("/").pop(), process) || execEntry(process?.command ?? "", process);
+    }
+
+    function programName(process) {
+        const path = process?.executablePath || (process?.fullCommand ?? "").split(" ")[0] || (process?.command ?? "");
+        return path.replace(/ \(deleted\)$/, "").split("/").pop();
+    }
+
+    // Exact names only: the app id search behind Paths.getAppIcon matches parts of words, so "sh" finds any Exec line with "share" in it.
+    // Theme lookups aren't exact for names with a dash: "start-hyprland" falls back to the unrelated "start" icon.
+    function programIcon(program) {
+        if (Paths.moddedAppId(program) !== program)
+            return Paths.resolveIconPath(program);
+        return program.includes("-") ? "" : Paths.themedIconPath(program);
+    }
+
+    function ownIcon(process, entry) {
+        const memo = _appMemo;
+        const iconIndex = IconThemeService._iconPaths;
+        const substitutions = SettingsData.appIdSubstitutions;
+        if (memo.iconIndex !== iconIndex || memo.substitutions !== substitutions) {
+            memo.iconIndex = iconIndex;
+            memo.substitutions = substitutions;
+            memo.icons = new Map();
+        }
+        const program = programName(process);
+        const command = process?.command ?? "";
+        const key = [entry?.id, program, command].join("\n");
+        if (!memo.icons.has(key))
+            memo.icons.set(key, (entry ? Paths.getAppIcon(entry.id, entry) : "") || programIcon(command) || (program !== command ? programIcon(program) : ""));
+        return memo.icons.get(key);
+    }
+
+    // A process without an icon of its own shows the one of its closest parent that has one.
+    function appIcon(process, entry) {
+        const memo = _appMemo;
+        const processes = DgopService.allProcesses ?? [];
+        if (memo.processes !== processes) {
+            memo.processes = processes;
+            memo.byPid = new Map(processes.map(p => [p.pid, p]));
+        }
+        let icon = ownIcon(process, entry);
+        let parent = memo.byPid.get(process?.ppid);
+        for (let depth = 0; !icon && parent && depth < 32; depth++) {
+            icon = ownIcon(parent, appEntry(parent));
+            parent = memo.byPid.get(parent.ppid);
+        }
+        return icon;
     }
 
     function columnLabel(id) {
