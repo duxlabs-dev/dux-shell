@@ -204,6 +204,14 @@ Column {
         }
 
         SettingsToggleRow {
+            text: I18n.tr("Move workspace to this display")
+            description: I18n.tr("Clicking a workspace from another display moves it to the display of the bar you clicked", "workspace switcher move to this display toggle description")
+            visible: CompositorService.isHyprland
+            checked: root.page.value("workspaceMoveToOutput")
+            onToggled: checked => root.page.set("workspaceMoveToOutput", checked)
+        }
+
+        SettingsToggleRow {
             text: I18n.tr("Reverse scroll direction")
             visible: CompositorService.supportsWorkspaces
             checked: root.page.value("reverseScrolling")
