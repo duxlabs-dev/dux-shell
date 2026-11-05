@@ -252,8 +252,7 @@ Item {
 
                 DButton {
                     text: I18n.tr("Delete")
-                    backgroundColor: Theme.error
-                    textColor: Theme.primaryText
+                    danger: true
                     onClicked: {
                         DisplayConfigState.deleteProfile(root.selectedProfileId);
                         root.showDeleteConfirmDialog = false;
@@ -377,8 +376,7 @@ Item {
 
                 DButton {
                     text: SettingsData.displayShowDisconnected ? I18n.tr("Hide") : I18n.tr("Show")
-                    backgroundColor: "transparent"
-                    textColor: Theme.primary
+                    variant: "text"
                     onClicked: {
                         SettingsData.displayShowDisconnected = !SettingsData.displayShowDisconnected;
                         SettingsData.saveSettings();

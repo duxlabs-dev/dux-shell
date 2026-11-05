@@ -127,8 +127,7 @@ DFloatingWindow {
                 maximumWidth: renameDialog.actionWidth
                 wrapText: true
                 text: I18n.tr("Cancel")
-                backgroundColor: "transparent"
-                textColor: Theme.primary
+                variant: "text"
                 onClicked: root.hide()
             },
             DButton {

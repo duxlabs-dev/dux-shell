@@ -522,7 +522,7 @@ Item {
                                     title: I18n.tr("Delete printer"),
                                     message: I18n.tr("Delete \"%1\"?").arg(printerDelegate.modelData),
                                     confirmText: I18n.tr("Delete"),
-                                    confirmColor: Theme.error,
+                                    danger: true,
                                     onConfirm: () => CupsService.deletePrinter(printerDelegate.modelData)
                                 });
                             }
@@ -650,7 +650,7 @@ Item {
                                             title: I18n.tr("Clear all jobs"),
                                             message: I18n.tr("Cancel all jobs for \"%1\"?", "confirm dialog message, %1 is the printer name").arg(printerDelegate.modelData),
                                             confirmText: I18n.tr("Clear"),
-                                            confirmColor: Theme.error,
+                                            danger: true,
                                             onConfirm: () => CupsService.purgeJobs(printerDelegate.modelData)
                                         });
                                     }
@@ -744,7 +744,7 @@ Item {
                                 title: I18n.tr("Delete class"),
                                 message: I18n.tr("Delete class \"%1\"?", "confirm dialog message, %1 is the printer class name").arg(classRow.modelData.name),
                                 confirmText: I18n.tr("Delete"),
-                                confirmColor: Theme.error,
+                                danger: true,
                                 onConfirm: () => CupsService.deleteClass(classRow.modelData.name)
                             });
                         }

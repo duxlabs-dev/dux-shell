@@ -805,15 +805,13 @@ DDialog {
             text: I18n.tr("Reset to default")
             visible: root.canReset
             enabled: !root.busy && !root.locked
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             onClicked: root.resetRequested(root.originalKey)
         },
         DButton {
             text: I18n.tr("Cancel")
             enabled: root.closeEnabled
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             onClicked: root.rejected()
         },
         DButton {
@@ -849,8 +847,7 @@ DDialog {
             text: I18n.tr("New key")
             iconName: "add"
             buttonHeight: Theme.buttonHeightXS
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             onClicked: root.startAddingNewKey()
         }
 

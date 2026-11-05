@@ -183,7 +183,7 @@ Column {
             "message": I18n.tr("Delete wallpaper '%1'?", "material wallpaper delete confirmation").arg(label),
             "confirmText": I18n.tr("Delete"),
             "cancelText": I18n.tr("Cancel"),
-            "confirmColor": Theme.error,
+            "danger": true,
             "onConfirm": () => SessionData.removeMaterialWallpaperProfile(id)
         });
     }

@@ -90,8 +90,7 @@ FocusScope {
                 DButton {
                     text: I18n.tr("Scan", "verb, button that scans for plugins, wifi networks or bluetooth devices")
                     iconName: "refresh"
-                    backgroundColor: Theme.secondaryContainer
-                    textColor: Theme.onSecondaryContainer
+                    variant: "tonal"
                     maximumWidth: parent.width
                     wrapText: true
                     enabled: !DMSService.checkingPluginUpdates

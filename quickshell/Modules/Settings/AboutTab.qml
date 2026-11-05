@@ -121,8 +121,6 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: I18n.tr("Support DMS", "about page hero button, opens the Ko-fi donation page")
                 iconName: "favorite"
-                backgroundColor: Theme.primary
-                textColor: Theme.onPrimary
                 tooltipText: root.host(root.kofiUrl)
                 onClicked: Qt.openUrlExternally(root.kofiUrl)
             }

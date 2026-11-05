@@ -465,8 +465,7 @@ Rectangle {
                 visible: DriveService.smartctlPath === "" && DriveService.installCommand !== ""
                 text: I18n.tr("Install smartmontools", "button, installs the smartmontools package")
                 iconName: "download"
-                backgroundColor: Theme.secondaryContainer
-                textColor: Theme.onSecondaryContainer
+                variant: "tonal"
                 onClicked: root.installRequested()
             }
 
@@ -474,8 +473,7 @@ Rectangle {
                 visible: DriveService.smartctlPath !== "" && !DgopService.unlocked
                 text: I18n.tr("Full SMART report", "drive health report from smartctl")
                 iconName: "lock_open"
-                backgroundColor: Theme.secondaryContainer
-                textColor: Theme.onSecondaryContainer
+                variant: "tonal"
                 tooltipText: I18n.tr("Authentication Required")
                 enabled: !DgopService.unlocking
                 onClicked: DgopService.unlock()

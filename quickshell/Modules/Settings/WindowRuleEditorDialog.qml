@@ -847,8 +847,7 @@ DDialog {
         DButton {
             text: I18n.tr("Cancel")
             enabled: root.closeEnabled
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             onClicked: root.rejected()
         },
         DButton {
@@ -856,8 +855,7 @@ DDialog {
             text: I18n.tr("Apply")
             enabled: root.acceptEnabled
             busy: root.applying
-            backgroundColor: Theme.secondaryContainer
-            textColor: Theme.onSecondaryContainer
+            variant: "tonal"
             onClicked: root.submit(true)
         },
         DButton {
@@ -889,8 +887,7 @@ DDialog {
             text: I18n.tr("Add match")
             iconName: "add"
             buttonHeight: Theme.buttonHeightXS
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             enabled: root.fieldsEnabled
             onClicked: extraMatchModel.append({
                 "rowAppId": "",

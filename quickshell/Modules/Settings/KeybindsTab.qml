@@ -346,7 +346,6 @@ Item {
             "title": I18n.tr("Remove Shortcut?"),
             "message": KeybindsService.currentProvider === "hyprland" ? I18n.tr("Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.", "hyprland remove shortcut confirmation, %1 is the key combination, %2 the override file").arg(key).arg("dms/binds-user.lua") : I18n.tr("Remove the shortcut %1?", "remove shortcut confirmation, %1 is the key combination").arg(key),
             "confirmText": I18n.tr("Remove"),
-            "confirmColor": Theme.primary,
             "onConfirm": () => {
                 if (draft) {
                     if (keybindsTab.editDraft !== baselineDraft)
@@ -373,7 +372,6 @@ Item {
             "title": I18n.tr("Reset to default"),
             "message": I18n.tr("Drop your override for %1 so the DMS default action re-applies?", "reset shortcut confirmation, %1 is the key combination").arg(key),
             "confirmText": I18n.tr("Reset"),
-            "confirmColor": Theme.primary,
             "onConfirm": () => {
                 if (draft) {
                     if (keybindsTab.editDraft !== baselineDraft)
@@ -762,8 +760,6 @@ Item {
                             id: fixButton
                             visible: warningBox.showSetup
                             text: KeybindsService.fixing ? I18n.tr("Setting up...") : I18n.tr("Setup", "verb, button that creates the dms include config file")
-                            backgroundColor: Theme.primary
-                            textColor: Theme.primaryText
                             enabled: !KeybindsService.fixing
                             anchors.verticalCenter: parent.verticalCenter
                             onClicked: KeybindsService.fixDmsBindsInclude()

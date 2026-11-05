@@ -115,7 +115,7 @@ Item {
                         title: I18n.tr("Delete VPN"),
                         message: I18n.tr("Delete \"%1\"?", "delete confirmation, %1 is a vpn profile or printer name").arg(modelData.name),
                         confirmText: I18n.tr("Delete"),
-                        confirmColor: Theme.error,
+                        danger: true,
                         onConfirm: () => VPNService.deleteVpn(modelData.uuid)
                     })
                 }

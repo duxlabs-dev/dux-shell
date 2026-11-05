@@ -620,8 +620,7 @@ Item {
                 text: I18n.tr("Reset")
                 iconName: "refresh"
                 buttonHeight: Theme.buttonHeightXS
-                backgroundColor: Theme.secondaryContainer
-                textColor: Theme.onSecondaryContainer
+                variant: "tonal"
                 onClicked: {
                     setWidgetsForSection("left", defaultLeftWidgets);
                     setWidgetsForSection("center", defaultCenterWidgets);

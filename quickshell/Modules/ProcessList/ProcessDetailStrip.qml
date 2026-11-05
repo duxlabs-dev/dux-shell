@@ -641,8 +641,7 @@ Rectangle {
                 text: root.restartKind === "reload" ? I18n.tr("Reload", "process action: reload a compositor's configuration") : I18n.tr("Restart", "process action: start the process again")
                 iconName: "restart_alt"
                 visible: root.restartKind !== "" && !(root.restartKind === "relaunch" && (root.detail?.terminal ?? false))
-                backgroundColor: Theme.secondaryContainer
-                textColor: Theme.onSecondaryContainer
+                variant: "tonal"
                 tooltipText: root.authTip || null
                 onClicked: root.actionRequested("restart")
             }
