@@ -22,7 +22,6 @@ SettingsRow {
     title: displayedName
     subtitle: hasCustomAlias ? I18n.tr("Original: %1").arg(AudioService.originalName(deviceNode)) : (deviceNode?.name ?? "")
     iconName: deviceType === "input" ? "mic" : "speaker"
-    trailingBadge: hasCustomAlias ? I18n.tr("Custom") : ""
     modified: hasCustomAlias
     onResetRequested: AudioService.removeDeviceAlias(deviceNode.name)
 

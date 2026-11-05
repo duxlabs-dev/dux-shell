@@ -366,7 +366,6 @@ Item {
                     title: customName || modelData.label
                     subtitle: customName ? I18n.tr("Original: %1").arg(modelData.label) : "Boot" + modelData.id
                     iconName: "restart_alt"
-                    trailingBadge: customName ? I18n.tr("Custom") : ""
                     modified: customName !== ""
                     onResetRequested: root.setBootEntryName(modelData.id, "")
 
