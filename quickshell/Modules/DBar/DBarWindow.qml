@@ -112,7 +112,7 @@ PanelWindow {
         enabled: SessionService.idleInhibited || IdleService.externalInhibitActive
     }
 
-    readonly property bool sectionMasked: body.clickThroughEnabled || (isIsland && !(islandHost?.inputSuspended ?? false))
+    readonly property bool sectionMasked: !body.satellitesTucked && (body.clickThroughEnabled || (isIsland && !(islandHost?.inputSuspended ?? false)))
 
     mask: Region {
         item: body.clickThroughEnabled || (isIsland && !body.islandBandInteractive) ? null : body.inputMaskItem

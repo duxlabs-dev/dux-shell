@@ -23,6 +23,7 @@ Item {
 
     readonly property bool barRevealed: inputMask.showing
     readonly property bool autoHideActive: topBarCore.autoHide
+    readonly property bool satellitesTucked: topBarCore.satellitesTucked
     readonly property bool fullscreenAutoHide: !barWindow.isIsland
         && !usesFrameBarChrome
         && (barConfig?.hideOnFullscreen ?? false)
@@ -518,7 +519,7 @@ Item {
         readonly property bool barHasTransparency: !barWindow.isIsland && barWindow._backgroundAlpha > 0 && barWindow._backgroundAlpha < 1
         readonly property bool islandTranslucent: !!barWindow.islandHost && barWindow.islandHost.surfaceOpacity > 0 && barWindow.islandHost.surfaceOpacity < 1
         readonly property bool islandNotch: barWindow.islandHost?.notch ?? false
-        readonly property bool satelliteTranslucent: barWindow.islandSatelliteBackground && barWindow.islandSatellitesEnabled && barWindow.islandSatelliteOpacity > 0 && barWindow.islandSatelliteOpacity < 1
+        readonly property bool satelliteTranslucent: barWindow.islandSatelliteBackground && barWindow.islandSatellitesEnabled && !barWindow.satellitesTucked && barWindow.islandSatelliteOpacity > 0 && barWindow.islandSatelliteOpacity < 1
 
         function rebuild() {
             teardown();
@@ -1009,6 +1010,26 @@ Item {
 
         onPopoutPinsRevealChanged: evaluateReveal()
 
+        // A sheet or notification wants the whole bar, not just the island.
+        readonly property bool wholeBarPinned: !!barWindow.islandHost && (barWindow.islandHost.sheetOut || barWindow.islandHost.islandController.notificationActive)
+
+        // Latched through the slide-out so the satellites do not pop in while the bar leaves.
+        property bool osdPeekLatched: false
+        readonly property bool satellitesTucked: osdPeekLatched && !wholeBarPinned
+
+        // Reads the sources directly: bound properties can still be stale when this runs from a pin change.
+        function osdOnlyPinNow() {
+            const host = barWindow.islandHost;
+            return barWindow.isIsland && autoHide && !!host && host.islandController.systemActivityActive && !host.sheetOut && !host.islandController.notificationActive && !SettingsData.islandSetting(barConfig, "islandOsdShowsSatellites");
+        }
+
+        onRevealWithoutIslandChanged: {
+            if (revealWithoutIsland)
+                osdPeekLatched = false;
+        }
+
+        onSatellitesTuckedChanged: barWindow.refreshBlurRegion()
+
         onIslandPinsRevealChanged: evaluateReveal()
 
         function updateActivePopoutState() {
@@ -1040,7 +1061,12 @@ Item {
 
         onTrayActiveMenusChanged: updateActivePopoutState()
 
-        property bool reveal: {
+        property bool reveal: revealFor(islandPinsReveal)
+
+        // What reveal would be without the island's pin: tells an OSD-only reveal from a real one.
+        readonly property bool revealWithoutIsland: revealFor(false)
+
+        function revealFor(islandPin) {
             const inOverviewWithShow = CompositorService.overviewActiveOnScreen(barWindow.screenName) && barWindow.effectiveOpenOnOverview;
             if (inOverviewWithShow)
                 return true;
@@ -1051,14 +1077,14 @@ Item {
             const showOnWindowsSetting = barConfig?.showOnWindowsOpen ?? false;
             if (showOnWindowsSetting && autoHide && CompositorService.windowOverlapSupported) {
                 if (barWindow.shouldHideForWindows)
-                    return hoverReveal || popoutPinsReveal || islandPinsReveal || revealSticky || ipcReveal;
+                    return hoverReveal || popoutPinsReveal || islandPin || revealSticky || ipcReveal;
                 return true;
             }
 
             if (CompositorService.overviewActiveOnScreen(barWindow.screenName))
-                return hoverReveal || popoutPinsReveal || islandPinsReveal || revealSticky || ipcReveal;
+                return hoverReveal || popoutPinsReveal || islandPin || revealSticky || ipcReveal;
 
-            return ((barConfig?.visible ?? true) || islandPinsReveal) && (!autoHide || hoverReveal || popoutPinsReveal || islandPinsReveal || revealSticky || ipcReveal);
+            return ((barConfig?.visible ?? true) || islandPin) && (!autoHide || hoverReveal || popoutPinsReveal || islandPin || revealSticky || ipcReveal);
         }
 
         readonly property var rootWindowBarConfig: rootWindow.barConfig
@@ -1083,7 +1109,11 @@ Item {
                 return;
             }
 
-            if (popoutPinsReveal || islandPinsReveal) {
+            const osdOnly = osdOnlyPinNow();
+            if (osdOnly && !revealFor(false))
+                osdPeekLatched = true;
+
+            if (popoutPinsReveal || (islandPinsReveal && !osdOnly)) {
                 revealSticky = true;
                 revealHold.stop();
                 return;
@@ -1182,7 +1212,7 @@ Item {
 
                     SectionSurface {
                         id: leadingSatelliteSurface
-                        visible: barWindow.islandSatelliteBackground && barWindow.islandSatellitesEnabled && alongSize > 0
+                        visible: barWindow.islandSatelliteBackground && barWindow.islandSatellitesEnabled && !barWindow.satellitesTucked && alongSize > 0
                         alongPos: barWindow.isVertical ? topBarContent.y + (barWindow._leftSection?.y ?? 0) : topBarContent.x + (barWindow._leftSection?.x ?? 0)
                         alongSize: barWindow.leadingSectionSize
                         alongExtent: barWindow.isVertical ? barUnitInset.height : barUnitInset.width
@@ -1201,7 +1231,7 @@ Item {
 
                     SectionSurface {
                         id: trailingSatelliteSurface
-                        visible: barWindow.islandSatelliteBackground && barWindow.islandSatellitesEnabled && alongSize > 0
+                        visible: barWindow.islandSatelliteBackground && barWindow.islandSatellitesEnabled && !barWindow.satellitesTucked && alongSize > 0
                         trailing: true
                         alongPos: barWindow.isVertical ? topBarContent.y + (barWindow._rightSection?.y ?? 0) : topBarContent.x + (barWindow._rightSection?.x ?? 0)
                         alongSize: barWindow.trailingSectionSize
@@ -1252,7 +1282,7 @@ Item {
                         leftWidgetsModel: barWindow.leftWidgetsModel
                         centerWidgetsModel: barWindow.isIsland ? null : barWindow.centerWidgetsModel
                         rightWidgetsModel: barWindow.rightWidgetsModel
-                        visible: barWindow.islandSatellitesEnabled
+                        visible: barWindow.islandSatellitesEnabled && !barWindow.satellitesTucked
                         leadingSectionOffset: barWindow.islandLeadingOffset
                         trailingSectionOffset: barWindow.islandTrailingOffset
                         sectionCrossOffset: barWindow.islandSatelliteCrossShift

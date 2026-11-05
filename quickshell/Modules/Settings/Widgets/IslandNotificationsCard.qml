@@ -9,6 +9,8 @@ SettingsCard {
     property string keyPrefix: "island"
     // A dot has no home layout editor, so its badge row must not follow the notifications group.
     property bool badgeGated: true
+    // Only an island-layout bar has satellite sections to keep hidden.
+    property bool hasSatellites: false
 
     iconName: "notifications"
     title: I18n.tr("Notifications", "island settings: notifications card title")
@@ -30,6 +32,16 @@ SettingsCard {
         text: I18n.tr("Use standard OSDs", "island settings: show volume and brightness changes as the regular on-screen displays instead of in the island")
         checked: !root.store.setting("islandSystemOsd")
         onToggled: checked => root.store.apply("islandSystemOsd", !checked)
+    }
+
+    SettingsToggleRow {
+        settingKey: root.keyPrefix + "OsdShowsSatellites"
+        tags: ["island", "osd", "volume", "brightness", "satellites", "auto-hide", "autohide", "taskbar", "reveal"]
+        text: I18n.tr("Show satellites with OSDs", "island settings: whether an OSD in the island of an auto-hidden bar also brings out the satellite sections")
+        description: I18n.tr("Turn off to bring out only the island on an auto-hidden bar", "island settings: show satellites with OSDs toggle description")
+        visible: root.hasSatellites && root.store.setting("islandSystemOsd")
+        checked: root.store.setting("islandOsdShowsSatellites")
+        onToggled: checked => root.store.apply("islandOsdShowsSatellites", checked)
     }
 
     SettingsToggleRow {
