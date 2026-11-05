@@ -90,6 +90,7 @@ Singleton {
             if (!DgopService.allProcesses?.length) {
                 _appMemo.processes = null;
                 _appMemo.byPid = new Map();
+                _appMemo.launchers = new Set();
             }
         }
     }
