@@ -14,6 +14,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/duxlabs-dev/dux-shell/core/internal/blur"
@@ -366,20 +367,46 @@ func checkEnvVar(name string) []checkResult {
 }
 
 func checkXDGMenuPrefix() []checkResult {
-	menuPrefix := os.Getenv("XDG_MENU_PREFIX")
+	shellUnderSystemd := dmsServiceState().active == "active"
+	return xdgMenuPrefixResult(os.Getenv("XDG_MENU_PREFIX"), shellUnderSystemd, sessionEnvValue)
+}
+
+// Compositor environment blocks never reach dms.service or anything DMS launches.
+func xdgMenuPrefixResult(menuPrefix string, shellUnderSystemd bool, sessionEnv func(string) string) []checkResult {
+	url := doctorDocsURL + "#xdg-menu-prefix"
 	if menuPrefix != "" {
-		if checkXDGMenuFile(menuPrefix) {
-			return []checkResult{{catEnvironment, "XDG_MENU_PREFIX", statusInfo, menuPrefix, "", doctorDocsURL + "#xdg-menu-prefix"}}
+		if !checkXDGMenuFile(menuPrefix) {
+			return []checkResult{{catEnvironment, "XDG_MENU_PREFIX", statusWarn, fmt.Sprintf("%s (menu file not found)", menuPrefix), fmt.Sprintf("Dolphin 'Open with…' dialog may be empty. Ensure %sapplications.menu exists in ~/.config/menus or /etc/xdg/menus.", menuPrefix), url}}
 		}
-		return []checkResult{{catEnvironment, "XDG_MENU_PREFIX", statusWarn, fmt.Sprintf("%s (menu file not found)", menuPrefix), fmt.Sprintf("Dolphin 'Open with…' dialog may be empty. Ensure %sapplications.menu exists in ~/.config/menus or /etc/xdg/menus.", menuPrefix), doctorDocsURL + "#xdg-menu-prefix"}}
+		if shellUnderSystemd && sessionEnv("XDG_MENU_PREFIX") == "" {
+			return []checkResult{{catEnvironment, "XDG_MENU_PREFIX", statusWarn, fmt.Sprintf("%s (not in the systemd user environment)", menuPrefix), fmt.Sprintf("dms.service and apps launched from DMS only see the systemd user environment. Set XDG_MENU_PREFIX=%s in ~/.config/environment.d/ as well; a compositor environment block does not reach them.", menuPrefix), url}}
+		}
+		return []checkResult{{catEnvironment, "XDG_MENU_PREFIX", statusInfo, menuPrefix, "", url}}
 	}
 	if _, err := exec.LookPath("keditfiletype"); err == nil {
-		return []checkResult{{catEnvironment, "XDG_MENU_PREFIX", statusWarn, "Not set", "Dolphin file associations and 'Open with…' dialog may be empty. Set XDG_MENU_PREFIX=plasma- in your compositor's environment block.", doctorDocsURL + "#xdg-menu-prefix"}}
+		hint := "Dolphin file associations and 'Open with…' dialog may be empty. Set XDG_MENU_PREFIX=plasma- in your compositor's environment block."
+		if shellUnderSystemd {
+			hint = "Dolphin file associations and 'Open with…' dialog may be empty. dms.service and apps launched from DMS only see the systemd user environment, so set XDG_MENU_PREFIX=plasma- in ~/.config/environment.d/; a compositor environment block does not reach them."
+		}
+		return []checkResult{{catEnvironment, "XDG_MENU_PREFIX", statusWarn, "Not set", hint, url}}
 	}
 	if doctorVerbose {
-		return []checkResult{{catEnvironment, "XDG_MENU_PREFIX", statusInfo, "Not set", "", doctorDocsURL + "#xdg-menu-prefix"}}
+		return []checkResult{{catEnvironment, "XDG_MENU_PREFIX", statusInfo, "Not set", "", url}}
 	}
 	return nil
+}
+
+func sessionEnvValue(name string) string {
+	output, err := exec.Command("systemctl", "--user", "show-environment").Output()
+	if err != nil {
+		return ""
+	}
+	for line := range strings.SplitSeq(string(output), "\n") {
+		if value, ok := strings.CutPrefix(line, name+"="); ok {
+			return value
+		}
+	}
+	return ""
 }
 
 // qtQueryBinaries are the Qt build tools that can be asked where Qt looks for
@@ -1638,7 +1665,7 @@ func checkSystemdServices() []checkResult {
 
 	var results []checkResult
 
-	dmsState := getServiceState("dms", true)
+	dmsState := dmsServiceState()
 	wanted := config.SessionWanted()
 	if !dmsState.exists {
 		results = append(results, checkResult{catServices, "dms.service", statusInfo, "Not installed", "Optional user service", doctorDocsURL + "#services"})
@@ -1838,6 +1865,8 @@ type serviceState struct {
 	enabled string
 	active  string
 }
+
+var dmsServiceState = sync.OnceValue(func() serviceState { return getServiceState("dms", true) })
 
 func getServiceState(name string, userService bool) serviceState {
 	args := []string{"is-enabled", name}

@@ -384,6 +384,50 @@ func TestCheckXDGMenuFile(t *testing.T) {
 	}
 }
 
+func TestXDGMenuPrefixUnderSystemd(t *testing.T) {
+	configHome, binDir := t.TempDir(), t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", configHome)
+	t.Setenv("XDG_CONFIG_DIRS", t.TempDir())
+	t.Setenv("PATH", binDir)
+	if err := os.MkdirAll(filepath.Join(configHome, "menus"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(configHome, "menus", "plasma-applications.menu"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(binDir, "keditfiletype"), []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sessionHas := func(string) string { return "plasma-" }
+	sessionLacks := func(string) string { return "" }
+
+	cases := []struct {
+		name       string
+		prefix     string
+		systemd    bool
+		sessionEnv func(string) string
+		want       status
+		wantHint   string
+	}{
+		{"compositor block only, shell under systemd", "plasma-", true, sessionLacks, statusWarn, "environment.d"},
+		{"session env has it", "plasma-", true, sessionHas, statusInfo, ""},
+		{"compositor block only, shell spawned by compositor", "plasma-", false, sessionLacks, statusInfo, ""},
+		{"unset under systemd", "", true, sessionLacks, statusWarn, "environment.d"},
+		{"unset without systemd", "", false, sessionLacks, statusWarn, "environment block"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := xdgMenuPrefixResult(c.prefix, c.systemd, c.sessionEnv)
+			if len(got) != 1 || got[0].status != c.want {
+				t.Fatalf("got %+v, want status %v", got, c.want)
+			}
+			if !strings.Contains(got[0].details, c.wantHint) {
+				t.Fatalf("details %q should mention %q", got[0].details, c.wantHint)
+			}
+		})
+	}
+}
+
 func TestCheckMangoConfigReportsUnknownKeysAndOverviewBinds(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(dir, "dms"), 0o755); err != nil {
