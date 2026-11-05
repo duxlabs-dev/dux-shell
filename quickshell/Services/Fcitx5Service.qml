@@ -17,14 +17,20 @@ Singleton {
     property string currentIM: ""
     readonly property string currentIMLabel: displayName(fcitxItem ? fcitxItem.tooltipTitle : "", currentIM)
     readonly property string trayIdentity: trayIdentityOf(fcitxItem)
+    readonly property bool editable: available && DMSService.isConnected && DMSService.capabilities.includes("fcitx5")
 
     onTrayIdentityChanged: {
-        if (active && available)
+        if (active && editable)
+            resolveTimer.restart();
+    }
+
+    onEditableChanged: {
+        if (active && editable)
             resolveTimer.restart();
     }
 
     onActiveChanged: {
-        if (active && available)
+        if (active && editable)
             resolveTimer.restart();
     }
 
@@ -53,15 +59,39 @@ Singleton {
         return separator > 0 ? title.slice(separator + 3) : title;
     }
 
+    function request(method, params, callback, quiet) {
+        DMSService.sendRequest("fcitx5." + method, params, response => {
+            const error = response?.error ?? "";
+            if (error && !quiet)
+                ToastService.showError(error);
+            if (callback)
+                callback(response?.result ?? null, error);
+        });
+    }
+
+    function getConfig(uri, callback) {
+        request("getConfig", {
+            "uri": uri
+        }, (result, error) => {
+            if (!error)
+                callback(result);
+        });
+    }
+
+    function setConfig(uri, tree, reload) {
+        request("setConfig", {
+            "uri": uri,
+            "value": tree
+        }, reload);
+    }
+
     function resolve() {
-        if (!active || !available)
+        if (!active || !editable)
             return;
-        Proc.runCommand("fcitx5-current-im", ["fcitx5-remote", "-n"], (output, exitCode) => {
-            if (exitCode !== 0 || !root.active)
-                return;
-            const name = String(output ?? "").trim();
+        request("currentIM", {}, (result, error) => {
+            const name = String(result?.name ?? "").trim();
             if (name !== "")
                 root.currentIM = name;
-        });
+        }, true);
     }
 }
