@@ -403,6 +403,12 @@ Rectangle {
                 tip: I18n.tr("Parent", "the process that started this one") + (root.parentProcess ? ", " + I18n.tr("PID %1", "%1 is a process id").arg(root.parentProcess.pid) : "")
             }
 
+            InfoChip {
+                iconName: "speed"
+                text: ProcessActions.priorityPreset(root.live?.nice)?.label ?? ""
+                tip: I18n.tr("Priority", "process priority level")
+            }
+
             // App launch scopes and login sessions say nothing the app name doesn't; only real services get a chip.
             InfoChip {
                 iconName: "deployed_code"
@@ -635,6 +641,43 @@ Rectangle {
 
             Item {
                 Layout.fillWidth: true
+            }
+
+            DButton {
+                id: priorityButton
+                text: I18n.tr("Priority", "process action: opens the priority presets")
+                iconName: "speed"
+                visible: ProcessActions.canSetPriority(root.live)
+                backgroundColor: Theme.secondaryContainer
+                textColor: Theme.onSecondaryContainer
+                tooltipText: root.authTip || null
+                onClicked: {
+                    priorityMenu.currentValue = String(ProcessActions.priorityPreset(root.live?.nice)?.nice ?? "");
+                    priorityMenu.openDropdownMenu();
+                }
+
+                DDropdown {
+                    id: priorityMenu
+                    showTrigger: false
+                    popupAnchorItem: priorityButton
+                    focusReturnTarget: priorityButton
+                    alignPopupRight: !I18n.isRtl
+                    popupWidth: Theme.fontSizeMedium * 10
+                    options: ProcessActions.priorities.map(p => p.label)
+                    optionValues: ProcessActions.priorities.map(p => String(p.nice))
+                    onValueChanged: value => ProcessActions.setPriority(root.live, Number(value))
+                }
+            }
+
+            DButton {
+                readonly property bool paused: ProcessActions.isPaused(root.live)
+                text: paused ? I18n.tr("Resume", "process action: continue a paused process (SIGCONT)") : I18n.tr("Pause", "process action: freeze the process and everything it started (SIGSTOP)")
+                iconName: paused ? "play_arrow" : "pause"
+                visible: ProcessActions.canPause(root.live)
+                backgroundColor: Theme.secondaryContainer
+                textColor: Theme.onSecondaryContainer
+                tooltipText: root.authTip || null
+                onClicked: ProcessActions.setPaused(root.live, !paused)
             }
 
             DButton {

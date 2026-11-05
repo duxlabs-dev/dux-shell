@@ -448,6 +448,12 @@ Singleton {
         });
     }
 
+    // After a user action. Waits so CPU deltas aren't noise.
+    function refreshSoon() {
+        if (pollingActive)
+            primeTimer.restart();
+    }
+
     function initializeGpuMetadata() {
         if (!dgopAvailable)
             return;
@@ -1048,9 +1054,9 @@ Singleton {
             updateAllStats();
     }
 
-    // Name and PID read ascending by default, so sortAscending inverts for them.
+    // Name, PID and priority read ascending by default, so sortAscending inverts for them.
     function processComparator() {
-        const naturallyAscending = currentSort === "name" || currentSort === "pid";
+        const naturallyAscending = currentSort === "name" || currentSort === "pid" || currentSort === "nice";
         return ProcessSort.compare(currentSort, sortAscending !== naturallyAscending);
     }
 

@@ -33,7 +33,7 @@ Popup {
         }
     }
 
-    property bool inSubmenu: false
+    property string submenu: ""
     readonly property string endTitle: ProcessActions.restartKind(processData) === "reload" ? I18n.tr("Quit or reload", "process menu: opens the quit, force quit, end tree and reload actions") : I18n.tr("Quit or restart", "process menu: opens the quit, force quit, end tree and restart actions")
 
     readonly property var mainItems: [
@@ -57,26 +57,45 @@ Popup {
         },
         {
             type: "separator"
-        },
+        }
+    ].concat(ProcessActions.canPause(processData) ? [
+            {
+                text: ProcessActions.isPaused(processData) ? I18n.tr("Resume", "process action: continue a paused process (SIGCONT)") : I18n.tr("Pause", "process action: freeze the process and everything it started (SIGSTOP)"),
+                icon: ProcessActions.isPaused(processData) ? "play_arrow" : "pause",
+                action: () => closeAndRun(process => ProcessActions.setPaused(process, !ProcessActions.isPaused(process))),
+                enabled: true
+            }
+        ] : []).concat(ProcessActions.canSetPriority(processData) ? [
+            {
+                text: I18n.tr("Priority", "process action: opens the priority presets"),
+                icon: "speed",
+                action: () => Qt.callLater(setSubmenu, "priority"),
+                enabled: true,
+                submenu: "priority"
+            }
+        ] : []).concat([
         {
             text: endTitle,
             icon: "power_settings_new",
-            action: () => Qt.callLater(setSubmenu, true),
+            action: () => Qt.callLater(setSubmenu, "end"),
             enabled: ProcessActions.canEnd(processData) || ProcessActions.canRestart(processData),
-            submenu: true
+            submenu: "end"
         }
-    ]
+    ])
 
-    readonly property var endItems: [
+    readonly property var backItems: [
         {
             text: I18n.tr("Back"),
             icon: "arrow_back",
-            action: () => Qt.callLater(setSubmenu, false),
+            action: () => Qt.callLater(setSubmenu, ""),
             enabled: true
         },
         {
             type: "separator"
-        },
+        }
+    ]
+
+    readonly property var endItems: backItems.concat([
         {
             text: I18n.tr("Quit", "process action: ask the process to exit (SIGTERM)"),
             icon: "close",
@@ -104,16 +123,24 @@ Popup {
             action: () => requestAction("restart"),
             enabled: ProcessActions.canRestart(processData)
         }
-    ]
+    ])
 
-    readonly property var menuItems: inSubmenu ? endItems : mainItems
+    readonly property var priorityItems: backItems.concat(ProcessActions.priorities.map(preset => ({
+                text: preset.label,
+                icon: preset === ProcessActions.priorityPreset(processData?.nice) ? "check" : "",
+                action: () => closeAndRun(process => ProcessActions.setPriority(process, preset.nice)),
+                enabled: true
+            })))
 
-    function setSubmenu(on) {
-        inSubmenu = on;
-        selectedIndex = keyboardNavigation ? (on ? 2 : menuItems.length - 1) : -1;
+    readonly property var menuItems: submenu === "end" ? endItems : submenu === "priority" ? priorityItems : mainItems
+
+    function setSubmenu(name) {
+        const from = submenu;
+        submenu = name;
+        selectedIndex = !keyboardNavigation ? -1 : name ? 2 : Math.max(0, mainItems.findIndex(item => item.submenu === from));
     }
 
-    // The end actions list is taller than the main one; keep it inside the parent.
+    // The submenus can be taller than the main list; keep them inside the parent.
     onHeightChanged: {
         if (visible && parent)
             y = Math.max(0, Math.min(y, parent.height - height));
@@ -146,7 +173,7 @@ Popup {
 
         processContextMenu.x = finalX;
         processContextMenu.y = finalY;
-        inSubmenu = false;
+        submenu = "";
         keyboardNavigation = fromKeyboard || false;
         selectedIndex = fromKeyboard ? 0 : -1;
         open();
@@ -213,6 +240,14 @@ Popup {
         confirmation.open(process, action, action !== "restart" && ProcessActions.isCritical(process));
     }
 
+    function closeAndRun(action) {
+        if (!processData)
+            return;
+        const process = Object.assign({}, processData);
+        close();
+        action(process);
+    }
+
     function dismiss() {
         close();
         confirmation.close();
@@ -251,7 +286,7 @@ Popup {
 
     onClosed: {
         closePolicy = Popup.CloseOnEscape;
-        inSubmenu = false;
+        submenu = "";
         keyboardNavigation = false;
         selectedIndex = -1;
         menuClosed();
@@ -318,14 +353,14 @@ Popup {
                 case Qt.Key_Right:
                 case Qt.Key_L:
                     if (menuItems[selectedIndex]?.submenu && menuItems[selectedIndex].enabled)
-                        setSubmenu(true);
+                        setSubmenu(menuItems[selectedIndex].submenu);
                     event.accepted = true;
                     return;
                 case Qt.Key_Escape:
                 case Qt.Key_Left:
                 case Qt.Key_H:
-                    if (inSubmenu)
-                        setSubmenu(false);
+                    if (submenu)
+                        setSubmenu("");
                     else
                         close();
                     event.accepted = true;
@@ -429,7 +464,7 @@ Popup {
                                         }
 
                                         DIcon {
-                                            visible: row.entry.submenu ?? false
+                                            visible: !!row.entry.submenu
                                             name: "chevron_right"
                                             size: Theme.iconSizeSmall - 2
                                             color: row.entry.enabled ? Theme.surfaceText : Theme.onSurface_38

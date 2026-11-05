@@ -225,7 +225,7 @@ Singleton {
         case "threads":
             return I18n.tr("Threads", "number of threads, CPU or process");
         case "nice":
-            return I18n.tr("Nice", "process column: Linux nice value, scheduling priority");
+            return I18n.tr("Priority", "process column: scheduling priority level");
         case "cpuTime":
             return I18n.tr("CPU time", "process column: total CPU time used");
         case "pid":
