@@ -65,8 +65,13 @@ type NetworkManagerBackend struct {
 	cellularDevices map[string]*cellularDeviceInfo
 	wifiDevice      any
 	settings        any
-	wifiDev         any
-	wifiDevices     map[string]*wifiDeviceInfo
+
+	// Device lookups for hotplug, injectable so tests can simulate the
+	// window in which NetworkManager does not own its bus name yet.
+	newDevice      func(dbus.ObjectPath) (gonetworkmanager.Device, error)
+	newDeviceWired func(dbus.ObjectPath) (gonetworkmanager.DeviceWired, error)
+	wifiDev        any
+	wifiDevices    map[string]*wifiDeviceInfo
 
 	// devMutex guards the device maps and selected Wi-Fi device pointers.
 	// Not reentrant: never hold it across calls into other backend methods.
@@ -170,6 +175,8 @@ func NewNetworkManagerBackend(nmConn ...gonetworkmanager.NetworkManager) (*Netwo
 
 	backend := &NetworkManagerBackend{
 		nmConn:          nm,
+		newDevice:       gonetworkmanager.NewDevice,
+		newDeviceWired:  gonetworkmanager.NewDeviceWired,
 		stopChan:        make(chan struct{}),
 		ethernetDevices: make(map[string]*ethernetDeviceInfo),
 		cellularDevices: make(map[string]*cellularDeviceInfo),
