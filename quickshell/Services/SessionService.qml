@@ -457,7 +457,7 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
             }
 
             if (CompositorService.isUmbriel) {
-                UmbrielService.action("session-quit:skip-confirmation");
+                UmbrielService.action("session-quit", "skip-confirmation");
                 return;
             }
 
