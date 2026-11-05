@@ -57,8 +57,15 @@ Singleton {
             "iconIndex": null,
             "substitutions": null,
             "processes": null,
-            "byPid": new Map()
+            "byPid": new Map(),
+            "launchers": new Set()
         })
+
+    // Logos the shell ships, for programs without a desktop entry.
+    readonly property var shellLogos: new Map([["dms", "danklogo.svg"], ["dsearch", "danklogo.svg"], ["hyprland", "hyprland.svg"], ["start-hyprland", "hyprland.svg"], ["niri", "niri.svg"], ["sway", "sway.svg"], ["scroll", "sway.svg"], ["mango", "mango.png"], ["labwc", "labwc.png"], ["miracle-wm", "miraclewm.svg"], ["aqueous", "aqueous.svg"], ["umbriel", "umbriel.svg"]])
+
+    // Theme icons that go by another name than the program.
+    readonly property var themeIconNames: new Map([["jetbrainsd", ["jetbrains-toolbox"]], ["node", ["nodejs"]], ["npm", ["nodejs"]]])
 
     // A window names its app more reliably than the process name does. Built on demand, so nothing runs while no process view is open.
     function windowAppId(pid) {
@@ -116,7 +123,30 @@ Singleton {
             if (entry)
                 return entry;
         }
-        return (exe && execEntry(exe, process)) || (process?.command ? DesktopEntries.heuristicLookup(process.command) : null) || execEntry(exe.split("/").pop(), process) || execEntry(process?.command ?? "", process);
+        return (exe && execEntry(exe, process)) || (process?.command ? DesktopEntries.heuristicLookup(process.command) : null) || execEntry(exe.split("/").pop(), process) || execEntry(process?.command ?? "", process) || shellAppEntry(process);
+    }
+
+    // Apps built on Quickshell run "qs -p <runtime dir>/<app>-shell/..." from their own binary, often without a window.
+    function isShellApp(process) {
+        return /^qs -p \S+-shell\//.test(process?.fullCommand ?? "");
+    }
+
+    function indexProcesses() {
+        const memo = _appMemo;
+        const processes = DgopService.allProcesses ?? [];
+        if (memo.processes === processes)
+            return;
+        memo.processes = processes;
+        memo.byPid = new Map(processes.map(p => [p.pid, p]));
+        memo.launchers = new Set(processes.filter(isShellApp).map(p => p.ppid));
+    }
+
+    // The app's binary and its qs both belong to the desktop entry that runs the binary, whatever arguments that entry passes.
+    function shellAppEntry(process) {
+        indexProcesses();
+        const memo = _appMemo;
+        const launcher = memo.launchers.has(process?.pid) ? process : isShellApp(process) ? memo.byPid.get(process.ppid) : null;
+        return launcher ? execEntries[programName(launcher)]?.[0]?.entry ?? null : null;
     }
 
     function programName(process) {
@@ -129,7 +159,16 @@ Singleton {
     function programIcon(program) {
         if (Paths.moddedAppId(program) !== program)
             return Paths.resolveIconPath(program);
-        return program.includes("-") ? "" : Paths.themedIconPath(program);
+        const name = program.toLowerCase();
+        if (shellLogos.has(name))
+            return Qt.resolvedUrl("../../assets/" + shellLogos.get(name));
+        const names = name.startsWith("docker") ? ["docker", "docker-desktop"] : themeIconNames.get(name) ?? (name.includes("-") ? [] : [program, name, name.replace(/[\d.]+$/, "")]);
+        for (const candidate of names) {
+            const icon = Paths.themedIconPath(candidate);
+            if (icon)
+                return icon;
+        }
+        return "";
     }
 
     function ownIcon(process, entry) {
@@ -151,12 +190,8 @@ Singleton {
 
     // A process without an icon of its own shows the one of its closest parent that has one.
     function appIcon(process, entry) {
+        indexProcesses();
         const memo = _appMemo;
-        const processes = DgopService.allProcesses ?? [];
-        if (memo.processes !== processes) {
-            memo.processes = processes;
-            memo.byPid = new Map(processes.map(p => [p.pid, p]));
-        }
         let icon = ownIcon(process, entry);
         let parent = memo.byPid.get(process?.ppid);
         for (let depth = 0; !icon && parent && depth < 32; depth++) {
