@@ -130,24 +130,6 @@ DListItem {
             textFormat: Text.PlainText
             maximumLineCount: 1
             elide: Text.ElideRight
-
-            MouseArea {
-                id: nameHover
-                anchors.fill: parent
-                enabled: root.childCount > 0 || root.displayName !== root.command
-                hoverEnabled: true
-                acceptedButtons: Qt.NoButton
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: {
-                    if (containsMouse) {
-                        rowTip.text = (root.displayName !== root.command ? root.command : "");
-                        rowTip.target = nameText;
-                        rowTip.hoverArea = nameHover;
-                    } else if (rowTip.hoverArea === nameHover) {
-                        rowTip.hoverArea = null;
-                    }
-                }
-            }
         }
 
         Repeater {
