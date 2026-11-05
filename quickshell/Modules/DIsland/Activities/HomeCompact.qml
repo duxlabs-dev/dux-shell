@@ -58,6 +58,7 @@ Item {
         screenName: root.controller.screen?.name ?? ""
         screen: root.controller.screen
         followFocus: root.workspaceOption("workspaceFollowFocus")
+        moveToOutput: root.workspaceOption("workspaceMoveToOutput")
         occupiedOnly: root.workspaceOption("showOccupiedWorkspacesOnly")
         showAllTags: root.workspaceOption("dwlShowAllTags")
         showPadding: root.workspaceOption("showWorkspacePadding")
