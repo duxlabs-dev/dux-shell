@@ -50,11 +50,8 @@ FocusScope {
         useOverlayLayer: true
         onShouldBeVisibleChanged: {
             root.controller.keyboardYielded = shouldBeVisible;
-            if (shouldBeVisible) {
-                selectedButton = 0;
-                keyboardNavigation = true;
+            if (shouldBeVisible)
                 return;
-            }
             Qt.callLater(root.focusFace);
         }
     }
