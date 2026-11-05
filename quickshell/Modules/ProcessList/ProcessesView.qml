@@ -150,7 +150,7 @@ Rectangle {
         property string label: ""
         property bool alignLeft: false
         readonly property bool sorted: DgopService.currentSort === sortKey
-        readonly property bool ascending: DgopService.sortAscending !== ["name", "pid"].includes(sortKey)
+        readonly property bool ascending: DgopService.sortAscending !== ["name", "pid", "nice"].includes(sortKey)
 
         implicitHeight: ProcessListMetrics.headerHeight
         activeFocusOnTab: true

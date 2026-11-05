@@ -28,7 +28,8 @@ DListItem {
 
     readonly property real leadWidth: ProcessListMetrics.appIconSize + Theme.spacingS
     readonly property real cellsWidth: columns.reduce((sum, id) => sum + cellWidth(id) + Theme.spacingXS, 0)
-    readonly property real nameWidth: Math.max(0, cells.width - leadWidth - Theme.spacingXS - cellsWidth)
+    readonly property bool paused: ProcessActions.isPaused(process)
+    readonly property real nameWidth: Math.max(0, cells.width - leadWidth - Theme.spacingXS - cellsWidth - (paused ? Theme.iconSizeSmall + cells.spacing : 0))
 
     function cellWidth(id) {
         return Theme.fontSizeSmall * (ProcessColumns.COLUMNS.find(c => c.id === id)?.width ?? 6);
@@ -63,7 +64,7 @@ DListItem {
         details.keepAlive = true;
         Qt.callLater(details.release);
     }
-    Accessible.name: command
+    Accessible.name: paused ? command + ", " + I18n.tr("Paused", "process state: stopped by the user") : command
     Accessible.description: fullCommand
 
     Rectangle {
@@ -86,6 +87,7 @@ DListItem {
         anchors.rightMargin: Theme.spacingL
         height: root.rowHeight
         spacing: Theme.spacingXS
+        opacity: root.paused ? Theme.pendingOpacity : 1
 
         Item {
             width: root.leadWidth
@@ -116,6 +118,18 @@ DListItem {
                     font.weight: Theme.fontWeightMedium
                     color: Theme.surfaceVariantText
                 }
+            }
+        }
+
+        Loader {
+            active: root.paused
+            visible: active
+            height: root.rowHeight
+            sourceComponent: DIcon {
+                name: "pause"
+                size: Theme.iconSizeSmall
+                color: root.supportingContentColor
+                anchors.verticalCenter: parent.verticalCenter
             }
         }
 
@@ -156,7 +170,7 @@ DListItem {
                 font.features: {
                     "tnum": 1
                 }
-                text: cell.waiting ? "" : cell.absent ? "—" : cell.modelData === "status" ? ProcessListMetrics.statusLabel(cell.raw) : cell.raw
+                text: cell.waiting ? "" : cell.absent ? "—" : cell.modelData === "nice" ? ProcessActions.priorityPreset(Number(cell.raw)).label : cell.modelData === "status" ? ProcessListMetrics.statusLabel(cell.raw) : cell.raw
                 font.pixelSize: Theme.fontSizeSmall
                 color: cell.absent || cell.zero ? Theme.surfaceVariantText : cell.col.meter ? root.contentColor : root.supportingContentColor
 
