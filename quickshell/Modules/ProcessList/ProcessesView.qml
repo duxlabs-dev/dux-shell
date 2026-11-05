@@ -324,6 +324,11 @@ Rectangle {
         expandedPid = "";
     }
 
+    function scrollToTop() {
+        reset();
+        processListView.resetScroll();
+    }
+
     function forceRefresh(count) {
         forceRefreshCount = count || 3;
     }
