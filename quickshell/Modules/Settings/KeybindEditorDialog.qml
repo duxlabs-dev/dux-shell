@@ -69,9 +69,8 @@ DDialog {
     readonly property var compositorFlags: compositorFlagOptions()
     readonly property var bindOptionList: bindOptions()
     readonly property bool isNiri: KeybindsService.currentProvider === "niri"
-    // niri 26.04 rejects release and pass-through; still show a set value so it can be cleared
-    readonly property bool showReleaseOption: isNiri && editTrigger !== "both" && !KeyUtils.isScrollTrigger(editKey) && (KeybindsService.niriBindsNext || editTrigger === "release")
-    readonly property bool showPassThroughOption: isNiri && KeyUtils.isKeyboardTrigger(editKey) && (KeybindsService.niriBindsNext || editPassThrough !== undefined)
+    readonly property bool showReleaseOption: isNiri && editTrigger !== "both" && !KeyUtils.isScrollTrigger(editKey)
+    readonly property bool showPassThroughOption: isNiri && KeyUtils.isKeyboardTrigger(editKey)
     readonly property bool effectivePassThrough: editPassThrough ?? editTrigger === "release"
 
     readonly property string customCategory: I18n.tr("Custom")
@@ -308,7 +307,7 @@ DDialog {
 
     function captureKey(event) {
         if (KeyUtils.modifierFromQtKey(event.key)) {
-            if (KeybindsService.niriBindsNext)
+            if (isNiri)
                 _loneModifiers = KeyUtils.heldModifiers(event.key, event.modifiers, _loneModifiers);
             return;
         }

@@ -921,7 +921,7 @@ func checkWindowManagers(qsVersion string) []checkResult {
 			results = append(results, checkHyprlandDeprecatedConfig()...)
 		}
 		if c.name == "niri" {
-			results = append(results, checkNiriConfig(filepath.Join(utils.XDGConfigHome(), "niri"), config.NiriValidates)...)
+			results = append(results, checkNiriConfig(filepath.Join(utils.XDGConfigHome(), "niri"))...)
 		}
 		if c.name == "mangowc" {
 			mangoVersion = ver
@@ -1041,18 +1041,15 @@ func checkMangoConfig(mangoDir string) []checkResult {
 	return results
 }
 
-var (
-	niriIncludeBinds     = regexp.MustCompile(`^\s*include\b.*"dms/binds\.kdl"`)
-	niriIncludeBindsNext = regexp.MustCompile(`^\s*include\b.*"dms/binds-next\.kdl"`)
-	niriKeepMaxBpc       = regexp.MustCompile(`^\s*keep-max-bpc-unchanged\b`)
-)
+var niriKeepMaxBpc = regexp.MustCompile(`^\s*keep-max-bpc-unchanged\b`)
+
+const niriBindsNextLeftover = "binds-next.kdl"
 
 // DMS never rewrites the user's config.kdl or binds.kdl, so name the line to fix by hand.
-func checkNiriConfig(niriDir string, validates func(string) bool) []checkResult {
+func checkNiriConfig(niriDir string) []checkResult {
 	url := doctorDocsURL + "#compositor-checks"
-	mainPath := filepath.Join(niriDir, "config.kdl")
 	paths, _ := filepath.Glob(filepath.Join(niriDir, "dms", "*.kdl"))
-	paths = append([]string{mainPath}, paths...)
+	paths = append([]string{filepath.Join(niriDir, "config.kdl")}, paths...)
 
 	var results []checkResult
 	for _, path := range paths {
@@ -1061,51 +1058,142 @@ func checkNiriConfig(niriDir string, validates func(string) bool) []checkResult 
 			continue
 		}
 		rel, _ := filepath.Rel(niriDir, path)
-		isFragment := filepath.Base(path) == config.NiriBindsNextFile
-		lines := strings.Split(string(data), "\n")
-		if path == mainPath {
-			results = append(results, niriBindsNextIncludeResults(rel, lines, url)...)
-		}
-		for i, line := range lines {
-			where := fmt.Sprintf("%s:%d", rel, i+1)
-			if niriKeepMaxBpc.MatchString(line) {
-				results = append(results, checkResult{catCompositor, "keep-max-bpc", statusWarn,
-					where + " sets keep-max-bpc-unchanged",
-					"niri after 26.04 removed this debug flag and rejects the whole config. Delete the line; set max-bpc in the output section instead.", url})
-			}
-		}
-		if isFragment && strings.TrimSpace(string(data)) != "" && !validates(string(data)) {
+		if filepath.Base(path) == niriBindsNextLeftover {
 			results = append(results, checkResult{catCompositor, "binds-next.kdl", statusWarn,
-				rel + " is rejected by the installed niri",
-				"niri then rejects the whole config. Delete the file; DMS rewrites it for this niri on its next start.", url})
+				rel + " is left over from an older DMS",
+				"DMS no longer writes this file; its Keyboard Shortcuts bind is in the stock dms/binds.kdl now. Move any bind you still want into dms/binds.kdl, then delete the file and its include in config.kdl.", url})
+			continue
+		}
+		for i, line := range strings.Split(kdlMaskInactive(string(data)), "\n") {
+			if !niriKeepMaxBpc.MatchString(line) {
+				continue
+			}
+			results = append(results, checkResult{catCompositor, "keep-max-bpc", statusWarn,
+				fmt.Sprintf("%s:%d sets keep-max-bpc-unchanged", rel, i+1),
+				"niri after 26.04 removed this debug flag and rejects the whole config. Delete the line; set max-bpc in the output section instead.", url})
 		}
 	}
 	return results
 }
 
-func niriBindsNextIncludeResults(rel string, lines []string, url string) []checkResult {
-	bindsLine, nextLine := 0, 0
-	for i, line := range lines {
-		if bindsLine == 0 && niriIncludeBinds.MatchString(line) {
-			bindsLine = i + 1
-		}
-		if nextLine == 0 && niriIncludeBindsNext.MatchString(line) {
-			nextLine = i + 1
+// Blanks comments and slashdash nodes, keeping newlines, so line checks only see what niri parses.
+func kdlMaskInactive(src string) string {
+	out := []byte(src)
+	blank := func(from, to int) {
+		for i := from; i < to; i++ {
+			if out[i] != '\n' {
+				out[i] = ' '
+			}
 		}
 	}
-	switch {
-	case bindsLine == 0:
-		return nil
-	case nextLine == 0:
-		return []checkResult{{catCompositor, "binds-next include", statusWarn,
-			fmt.Sprintf("%s does not include dms/binds-next.kdl", rel),
-			fmt.Sprintf(`Add include optional=true "dms/binds-next.kdl" above line %d, or run 'dms setup', to get the DMS binds that depend on the niri version.`, bindsLine), url}}
-	case nextLine > bindsLine:
-		return []checkResult{{catCompositor, "binds-next include", statusWarn,
-			fmt.Sprintf("%s:%d includes dms/binds-next.kdl after dms/binds.kdl", rel, nextLine),
-			fmt.Sprintf("Move it above line %d so your binds in dms/binds.kdl override the DMS defaults.", bindsLine), url}}
+	for i := 0; i < len(src); {
+		switch {
+		case strings.HasPrefix(src[i:], "//"):
+			end := kdlLineEnd(src, i)
+			blank(i, end)
+			i = end
+		case strings.HasPrefix(src[i:], "/*"):
+			end := kdlBlockCommentEnd(src, i)
+			blank(i, end)
+			i = end
+		case strings.HasPrefix(src[i:], "/-"):
+			end := kdlSlashdashEnd(src, i+2)
+			blank(i, end)
+			i = end
+		case src[i] == '"' || (src[i] == 'r' && kdlRawStringStart(src, i)):
+			i = kdlStringEnd(src, i)
+		default:
+			i++
+		}
 	}
-	return nil
+	return string(out)
+}
+
+func kdlLineEnd(src string, i int) int {
+	if end := strings.IndexByte(src[i:], '\n'); end >= 0 {
+		return i + end
+	}
+	return len(src)
+}
+
+func kdlBlockCommentEnd(src string, i int) int {
+	depth := 0
+	for i < len(src) {
+		switch {
+		case strings.HasPrefix(src[i:], "/*"):
+			depth++
+			i += 2
+		case strings.HasPrefix(src[i:], "*/"):
+			depth--
+			i += 2
+			if depth == 0 {
+				return i
+			}
+		default:
+			i++
+		}
+	}
+	return len(src)
+}
+
+// A slashdash node ends at its line or ';' unless it opened a block, which ends at the matching '}'.
+func kdlSlashdashEnd(src string, i int) int {
+	depth := 0
+	for i < len(src) {
+		switch c := src[i]; {
+		case strings.HasPrefix(src[i:], "//"):
+			i = kdlLineEnd(src, i)
+		case strings.HasPrefix(src[i:], "/*"):
+			i = kdlBlockCommentEnd(src, i)
+		case c == '"' || (c == 'r' && kdlRawStringStart(src, i)):
+			i = kdlStringEnd(src, i)
+		case c == '{':
+			depth++
+			i++
+		case c == '}':
+			depth--
+			i++
+			if depth <= 0 {
+				return i
+			}
+		case (c == '\n' || c == ';') && depth == 0:
+			return i
+		default:
+			i++
+		}
+	}
+	return len(src)
+}
+
+func kdlRawStringStart(src string, i int) bool {
+	j := i + 1
+	for j < len(src) && src[j] == '#' {
+		j++
+	}
+	return j < len(src) && src[j] == '"'
+}
+
+func kdlStringEnd(src string, i int) int {
+	if src[i] == 'r' {
+		hashes := 0
+		for src[i+1+hashes] == '#' {
+			hashes++
+		}
+		closer := "\"" + strings.Repeat("#", hashes)
+		if end := strings.Index(src[i+2+hashes:], closer); end >= 0 {
+			return i + 2 + hashes + end + len(closer)
+		}
+		return len(src)
+	}
+	for j := i + 1; j < len(src); j++ {
+		switch src[j] {
+		case '\\':
+			j++
+		case '"':
+			return j + 1
+		}
+	}
+	return len(src)
 }
 
 func checkAqueousConfigHelper() checkResult {

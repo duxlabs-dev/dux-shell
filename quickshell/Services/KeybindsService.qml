@@ -112,7 +112,6 @@ Singleton {
     readonly property string dmsBindsPath: includePaths?.fragmentFiles[0] ?? ""
     readonly property string mainConfigPath: includePaths?.configFile ?? ""
     readonly property bool readOnly: currentProvider === "hyprland" && CompositorService.isHyprland && !HyprlandService.luaConfigActive
-    readonly property bool niriBindsNext: currentProvider === "niri" && DMSService.capabilities.includes("niri.binds-next")
     readonly property var actionTypes: Actions.getActionTypes()
     readonly property var dmsActions: getDmsActions()
 
