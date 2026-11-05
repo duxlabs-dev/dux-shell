@@ -81,6 +81,7 @@ func TestBuildOpenConnectSecretsResponse(t *testing.T) {
 		cookie      string
 		host        string
 		fingerprint string
+		resolve     string
 	}{
 		{
 			name:        "all fields populated",
@@ -88,12 +89,13 @@ func TestBuildOpenConnectSecretsResponse(t *testing.T) {
 			cookie:      "authcookie=abc123&portal=GATE",
 			host:        "vpn.example.com",
 			fingerprint: "pin-sha256:ABCD1234",
+			resolve:     "vpn.example.com:192.0.2.10",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := buildOpenConnectSecretsResponse(tt.settingName, tt.cookie, tt.host, tt.fingerprint)
+			result := buildOpenConnectSecretsResponse(tt.settingName, tt.cookie, tt.host, tt.fingerprint, tt.resolve)
 
 			assert.NotNil(t, result)
 			assert.Contains(t, result, tt.settingName)
@@ -110,6 +112,152 @@ func TestBuildOpenConnectSecretsResponse(t *testing.T) {
 			assert.Equal(t, tt.cookie, secrets["cookie"])
 			assert.Equal(t, tt.host, secrets["gateway"])
 			assert.Equal(t, tt.fingerprint, secrets["gwcert"])
+			assert.Contains(t, secrets, "resolve")
+			assert.Equal(t, tt.resolve, secrets["resolve"])
+		})
+	}
+}
+
+func TestSecretAgentCachedOpenConnectFullHandoff(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		protocol string
+		authtype string
+		resolve  string
+	}{
+		{name: "GP resolved endpoint", protocol: "gp", resolve: "redirect.example.test:192.0.2.10"},
+		{name: "GP clear stale resolve", protocol: "gp"},
+		{name: "Fortinet SAML resolved endpoint", protocol: "fortinet", authtype: "saml", resolve: "redirect.example.test:192.0.2.10"},
+		{name: "Fortinet SAML clear stale resolve", protocol: "fortinet", authtype: "saml"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			backend := &NetworkManagerBackend{
+				state: &BackendState{IsConnectingVPN: true, ConnectingVPNUUID: "test-uuid"},
+			}
+			backend.cacheOpenConnectAuthentication("/test/path", "test-uuid", &openConnectAuthResult{
+				Cookie:      "COOKIE-VALUE",
+				Host:        "https://redirect.example.test/ssl-vpn",
+				Resolve:     tt.resolve,
+				Fingerprint: "pin-sha256:FINGERPRINT",
+			})
+			assert.Equal(t, dbus.ObjectPath("/test/path"), backend.cachedOpenConnectAuth.ConnectionPath)
+			agent := &SecretAgent{backend: backend}
+			conn := map[string]nmVariantMap{
+				"connection": {
+					"id":   dbus.MakeVariant("Test VPN"),
+					"type": dbus.MakeVariant("vpn"),
+					"uuid": dbus.MakeVariant("test-uuid"),
+				},
+				"vpn": {
+					"service-type": dbus.MakeVariant("org.freedesktop.NetworkManager.openconnect"),
+					"data":         dbus.MakeVariant(map[string]string{"protocol": tt.protocol, "authtype": tt.authtype}),
+					"secrets": dbus.MakeVariant(map[string]string{
+						"resolve": "redirect.example.test:192.0.2.99",
+					}),
+				},
+			}
+
+			_, dbusErr := agent.GetSecrets(conn, "/test/path", "vpn", nil, nmSecretAgentFlagUserRequested)
+			if assert.NotNil(t, dbusErr) {
+				assert.Equal(t, "org.freedesktop.NetworkManager.SecretAgent.Error.NoSecrets", dbusErr.Name)
+			}
+			assert.NotNil(t, backend.cachedOpenConnectAuth, "noninteractive pass must preserve the handoff")
+			result, dbusErr := agent.GetSecrets(conn, "/test/path", "vpn", nil, nmSecretAgentFlagAllowInteraction|nmSecretAgentFlagUserRequested)
+			if !assert.Nil(t, dbusErr) {
+				return
+			}
+			secrets := result["vpn"]["secrets"].Value().(map[string]string)
+			assert.Equal(t, map[string]string{
+				"cookie":  "COOKIE-VALUE",
+				"gateway": "https://redirect.example.test/ssl-vpn",
+				"gwcert":  "pin-sha256:FINGERPRINT",
+				"resolve": tt.resolve,
+			}, secrets)
+			assert.Nil(t, backend.cachedOpenConnectAuth)
+		})
+	}
+}
+
+func TestSecretAgentExternalGPLegacyCacheOneShot(t *testing.T) {
+	backend := &NetworkManagerBackend{
+		state:                 &BackendState{}, // Authentication was started externally, not through DMS.
+		cachedOpenConnectAuth: &cachedOpenConnectAuth{ConnectionUUID: "one", Cookie: "handoff", Host: "vpn.example"},
+	}
+	broker := &fakePromptBroker{asked: make(chan PromptRequest, 1), reply: PromptReply{Secrets: map[string]string{"cookie": "fresh"}}}
+	agent := &SecretAgent{backend: backend, prompts: broker}
+	conn := helperAgentConnection("one")
+	conn["vpn"]["data"] = dbus.MakeVariant(map[string]string{"protocol": "gp"})
+	_, err := agent.GetSecrets(conn, "/settings/one", "vpn", []string{"cookie"}, nmSecretAgentFlagUserRequested)
+	if assert.NotNil(t, err) {
+		assert.Equal(t, "org.freedesktop.NetworkManager.SecretAgent.Error.NoSecrets", err.Name)
+	}
+	if assert.NotNil(t, backend.cachedOpenConnectAuth) {
+		assert.Equal(t, dbus.ObjectPath("/settings/one"), backend.cachedOpenConnectAuth.ConnectionPath)
+	}
+	out, err := agent.GetSecrets(conn, "/settings/one", "vpn", []string{"cookie"}, nmSecretAgentFlagAllowInteraction|nmSecretAgentFlagUserRequested)
+	if !assert.Nil(t, err) {
+		return
+	}
+	assert.Equal(t, "handoff", out["vpn"]["secrets"].Value().(map[string]string)["cookie"])
+	assert.Nil(t, backend.cachedOpenConnectAuth, "external activation must not retain the legacy cache")
+	// REQUEST_NEW skips keyring access and deterministically exercises fresh authentication.
+	out, err = agent.GetSecrets(conn, "/settings/one", "vpn", []string{"cookie"}, nmSecretAgentFlagAllowInteraction|nmSecretAgentFlagRequestNew)
+	if assert.Nil(t, err) {
+		assert.Equal(t, "fresh", out["vpn"]["secrets"].Value().(map[string]string)["cookie"])
+	}
+	assert.Len(t, broker.asked, 1)
+}
+
+func TestSecretAgentLegacyRequestNewInvalidatesOnlyMatchingCache(t *testing.T) {
+	for _, cachedUUID := range []string{"one", "other"} {
+		for _, interactive := range []bool{false, true} {
+			t.Run(cachedUUID+map[bool]string{false: "/noninteractive", true: "/interactive"}[interactive], func(t *testing.T) {
+				cached := &cachedOpenConnectAuth{ConnectionUUID: cachedUUID, Cookie: "stale"}
+				backend := &NetworkManagerBackend{state: &BackendState{}, cachedOpenConnectAuth: cached}
+				broker := &fakePromptBroker{asked: make(chan PromptRequest, 1), reply: PromptReply{Secrets: map[string]string{"cookie": "fresh"}}}
+				agent := &SecretAgent{backend: backend, prompts: broker}
+				conn := helperAgentConnection("one")
+				conn["vpn"]["data"] = dbus.MakeVariant(map[string]string{"protocol": "gp"})
+				flags := uint32(nmSecretAgentFlagRequestNew)
+				hints := []string{"gp-saml"}
+				if interactive {
+					flags |= nmSecretAgentFlagAllowInteraction
+					hints = []string{"cookie"}
+				}
+				out, err := agent.GetSecrets(conn, "/settings/one", "vpn", hints, flags)
+				if interactive {
+					if assert.Nil(t, err) {
+						assert.Equal(t, "fresh", out["vpn"]["secrets"].Value().(map[string]string)["cookie"])
+					}
+					assert.Len(t, broker.asked, 1)
+				} else if assert.NotNil(t, err) {
+					assert.Equal(t, "org.freedesktop.NetworkManager.SecretAgent.Error.NoSecrets", err.Name)
+					assert.Empty(t, broker.asked)
+				}
+				if cachedUUID == "one" {
+					assert.Nil(t, backend.cachedOpenConnectAuth)
+				} else {
+					assert.Same(t, cached, backend.cachedOpenConnectAuth)
+				}
+			})
+		}
+	}
+}
+
+func TestSecretAgentCancelLegacyCacheMatchesKnownPath(t *testing.T) {
+	for _, path := range []dbus.ObjectPath{"/settings/one", "/settings/other", "", "/"} {
+		t.Run(string(path), func(t *testing.T) {
+			cached := &cachedOpenConnectAuth{ConnectionUUID: "one", ConnectionPath: path, Cookie: "handoff"}
+			backend := &NetworkManagerBackend{state: &BackendState{}, cachedOpenConnectAuth: cached}
+			agent := &SecretAgent{backend: backend}
+			agent.CancelGetSecrets("/settings/one", "802-11-wireless-security")
+			assert.Same(t, cached, backend.cachedOpenConnectAuth)
+			agent.CancelGetSecrets("/settings/one", "vpn")
+			if path == "/settings/one" {
+				assert.Nil(t, backend.cachedOpenConnectAuth)
+			} else {
+				assert.Same(t, cached, backend.cachedOpenConnectAuth)
+			}
 		})
 	}
 }
