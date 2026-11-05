@@ -54,6 +54,8 @@ Singleton {
             "windowIds": {},
             "cache": new Map(),
             "icons": new Map(),
+            "iconIndex": null,
+            "substitutions": null,
             "processes": null,
             "byPid": new Map()
         })
@@ -119,7 +121,7 @@ Singleton {
 
     function programName(process) {
         const path = process?.executablePath || (process?.fullCommand ?? "").split(" ")[0] || (process?.command ?? "");
-        return path.split("/").pop();
+        return path.replace(/ \(deleted\)$/, "").split("/").pop();
     }
 
     // Exact names only: the app id search behind Paths.getAppIcon matches parts of words, so "sh" finds any Exec line with "share" in it.
@@ -132,9 +134,18 @@ Singleton {
 
     function ownIcon(process, entry) {
         const memo = _appMemo;
-        const key = entry?.id ?? programName(process);
+        const iconIndex = IconThemeService._iconPaths;
+        const substitutions = SettingsData.appIdSubstitutions;
+        if (memo.iconIndex !== iconIndex || memo.substitutions !== substitutions) {
+            memo.iconIndex = iconIndex;
+            memo.substitutions = substitutions;
+            memo.icons = new Map();
+        }
+        const program = programName(process);
+        const command = process?.command ?? "";
+        const key = [entry?.id, program, command].join("\n");
         if (!memo.icons.has(key))
-            memo.icons.set(key, (entry ? Paths.getAppIcon(entry.id, entry) : "") || programIcon(programName(process)));
+            memo.icons.set(key, (entry ? Paths.getAppIcon(entry.id, entry) : "") || programIcon(command) || (program !== command ? programIcon(program) : ""));
         return memo.icons.get(key);
     }
 
