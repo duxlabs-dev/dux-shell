@@ -6,6 +6,7 @@ import qs.Common
 import qs.DCommon.Common as DCommon
 import qs.Services
 import qs.Modules.Settings.Widgets
+import "ProcessIcons.js" as ProcessIcons
 
 Singleton {
     readonly property real rowHeight: Theme.buttonHeightXS + Theme.spacingXS
@@ -60,12 +61,6 @@ Singleton {
             "byPid": new Map(),
             "launchers": new Set()
         })
-
-    // Logos the shell ships, for programs without a desktop entry.
-    readonly property var shellLogos: new Map([["dms", "danklogo.svg"], ["dsearch", "danklogo.svg"], ["hyprland", "hyprland.svg"], ["start-hyprland", "hyprland.svg"], ["niri", "niri.svg"], ["sway", "sway.svg"], ["scroll", "sway.svg"], ["mango", "mango.png"], ["labwc", "labwc.png"], ["miracle-wm", "miraclewm.svg"], ["aqueous", "aqueous.svg"], ["umbriel", "umbriel.svg"]])
-
-    // Theme icons that go by another name than the program.
-    readonly property var themeIconNames: new Map([["jetbrainsd", ["jetbrains-toolbox"]], ["node", ["nodejs"]], ["npm", ["nodejs"]]])
 
     // A window names its app more reliably than the process name does. Built on demand, so nothing runs while no process view is open.
     function windowAppId(pid) {
@@ -160,15 +155,14 @@ Singleton {
         if (Paths.moddedAppId(program) !== program)
             return Paths.resolveIconPath(program);
         const name = program.toLowerCase();
-        if (shellLogos.has(name))
-            return Qt.resolvedUrl("../../assets/" + shellLogos.get(name));
-        const names = name.startsWith("docker") ? ["docker", "docker-desktop"] : themeIconNames.get(name) ?? (name.includes("-") ? [] : [program, name, name.replace(/[\d.]+$/, "")]);
+        const row = ProcessIcons.PROGRAM_ICONS.find(r => r.programs.includes(name));
+        const names = row ? row.icons ?? [] : name.includes("-") ? [] : [program, name, name.replace(/[\d.]+$/, "")];
         for (const candidate of names) {
             const icon = Paths.themedIconPath(candidate);
             if (icon)
                 return icon;
         }
-        return "";
+        return row?.logo ? Qt.resolvedUrl("../../assets/" + row.logo) : "";
     }
 
     function ownIcon(process, entry) {
