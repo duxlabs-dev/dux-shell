@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 
 Item {
@@ -141,7 +142,7 @@ Item {
                 title: I18n.tr("Arrange dock items", "dock settings row title for entering dock edit mode")
                 subtitle: I18n.tr("Enter edit mode on the dock to rearrange or remove items", "dock settings row description for the edit mode button")
 
-                DankButton {
+                DButton {
                     text: I18n.tr("Edit widgets")
                     iconName: "edit"
                     buttonHeight: Theme.buttonHeightS
