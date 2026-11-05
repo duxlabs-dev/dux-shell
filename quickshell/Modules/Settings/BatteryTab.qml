@@ -297,8 +297,6 @@ done
                         id: applyButton
                         text: I18n.tr("Apply to hardware")
                         iconName: "lock"
-                        backgroundColor: Theme.primary
-                        textColor: Theme.onPrimary
                         onClicked: {
                             applyLimitProcess.running = true;
                         }

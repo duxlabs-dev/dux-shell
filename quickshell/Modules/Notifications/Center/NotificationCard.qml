@@ -152,8 +152,7 @@ Item {
                     text: I18n.tr("Dismiss")
                     buttonHeight: NotificationMetrics.controlSize
                     horizontalPadding: NotificationMetrics.actionPadding
-                    backgroundColor: "transparent"
-                    textColor: Theme.primary
+                    variant: "text"
                     onClicked: NotificationService.dismissGroup(root.notificationGroup?.key || "")
                 }
                 DButton {

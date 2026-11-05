@@ -234,8 +234,7 @@ Column {
         anchors.horizontalCenter: parent.horizontalCenter
         text: I18n.tr("Add widget")
         iconName: "add"
-        backgroundColor: Theme.secondaryContainer
-        textColor: Theme.onSecondaryContainer
+        variant: "tonal"
         onClicked: root.addWidget(root.sectionId)
     }
 }

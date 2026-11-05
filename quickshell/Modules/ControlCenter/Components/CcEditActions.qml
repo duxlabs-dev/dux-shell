@@ -123,8 +123,7 @@ Item {
             buttonHeight: Theme.iconButtonSize
             iconName: "add"
             text: I18n.tr("Add widget")
-            backgroundColor: Theme.secondaryContainer
-            textColor: Theme.onSecondaryContainer
+            variant: "tonal"
             onClicked: root.addWidgetRequested()
         }
 

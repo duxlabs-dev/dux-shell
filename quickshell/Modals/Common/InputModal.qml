@@ -15,7 +15,7 @@ DModal {
     property string inputText: ""
     property string confirmButtonText: I18n.tr("Confirm")
     property string cancelButtonText: I18n.tr("Cancel")
-    property color confirmButtonColor: Theme.primary
+    property bool danger: false
     property var onConfirm: function (text) {}
     property var onCancel: function () {}
 
@@ -26,7 +26,7 @@ DModal {
         inputText = "";
         confirmButtonText = I18n.tr("Confirm");
         cancelButtonText = I18n.tr("Cancel");
-        confirmButtonColor = Theme.primary;
+        danger = false;
         onConfirm = onConfirmCallback || (text => {});
         onCancel = onCancelCallback || (() => {});
         open();
@@ -39,7 +39,7 @@ DModal {
         inputText = options.initialText || "";
         confirmButtonText = options.confirmText || I18n.tr("Confirm");
         cancelButtonText = options.cancelText || I18n.tr("Cancel");
-        confirmButtonColor = options.confirmColor || Theme.primary;
+        danger = options.danger === true;
         onConfirm = options.onConfirm || (text => {});
         onCancel = options.onCancel || (() => {});
         open();
@@ -102,15 +102,15 @@ DModal {
                 maximumWidth: inputDialog.actionWidth
                 wrapText: true
                 text: root.cancelButtonText
-                backgroundColor: "transparent"
-                textColor: Theme.primary
+                variant: "text"
                 onClicked: root.cancelAndClose()
             },
             DButton {
                 maximumWidth: inputDialog.actionWidth
                 wrapText: true
                 text: root.confirmButtonText
-                backgroundColor: root.confirmButtonColor
+                variant: root.danger ? "tonal" : "filled"
+                danger: root.danger
                 onClicked: root.confirmAndClose()
             }
         ]

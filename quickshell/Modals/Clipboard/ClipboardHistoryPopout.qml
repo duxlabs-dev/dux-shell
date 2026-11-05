@@ -104,7 +104,6 @@ DPopout {
     ConfirmModal {
         id: clearConfirmDialog
         confirmButtonText: I18n.tr("Clear All")
-        confirmButtonColor: Theme.primary
         useOverlayLayer: true
         onShouldBeVisibleChanged: {
             if (shouldBeVisible) {

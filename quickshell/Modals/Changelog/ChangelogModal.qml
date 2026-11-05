@@ -111,8 +111,7 @@ DFloatingWindow {
                 text: I18n.tr("Release notes", "settings page and card title, notes for a DMS release")
                 iconName: "article"
                 buttonHeight: Theme.buttonHeightM
-                backgroundColor: Theme.secondaryContainer
-                textColor: Theme.onSecondaryContainer
+                variant: "tonal"
                 onClicked: PopoutService.openSettingsWithTab("updater_changelog")
 
                 Loader {

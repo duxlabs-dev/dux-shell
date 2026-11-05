@@ -75,14 +75,13 @@ Loader {
         actions: [
             DButton {
                 text: I18n.tr("Cancel")
-                backgroundColor: "transparent"
-                textColor: Theme.primary
+                variant: "text"
                 onClicked: dialog.rejected()
             },
             DButton {
                 text: ProcessActions.title(root.action, root.process)
-                backgroundColor: root.offerRestart ? "transparent" : Theme.errorContainer
-                textColor: root.offerRestart ? Theme.error : Theme.onErrorContainer
+                variant: root.offerRestart ? "text" : "tonal"
+                danger: true
                 onClicked: root.choose(root.action)
             },
             DButton {

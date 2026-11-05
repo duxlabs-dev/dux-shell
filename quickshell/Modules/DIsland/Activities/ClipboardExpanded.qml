@@ -46,7 +46,6 @@ FocusScope {
         id: clearConfirmDialog
 
         confirmButtonText: I18n.tr("Clear All")
-        confirmButtonColor: Theme.primary
         useOverlayLayer: true
         onShouldBeVisibleChanged: {
             root.controller.keyboardYielded = shouldBeVisible;

@@ -1278,8 +1278,7 @@ RegistryBrowserWindow {
                         required property var modelData
                         text: modelData.name || modelData.id
                         iconName: modelData.icon || "extension"
-                        backgroundColor: Theme.secondaryContainer
-                        textColor: Theme.onSecondaryContainer
+                        variant: "tonal"
                         onClicked: root.openPluginDetail(modelData)
                     }
                 }
@@ -1725,8 +1724,7 @@ RegistryBrowserWindow {
                                     text: modelData.name
                                     iconName: "extension"
                                     buttonHeight: Theme.buttonHeightXS
-                                    backgroundColor: Theme.secondaryContainer
-                                    textColor: Theme.onSecondaryContainer
+                                    variant: "tonal"
                                     enabled: modelData.key !== ""
                                     onClicked: root.detailPluginId = modelData.key
                                 }

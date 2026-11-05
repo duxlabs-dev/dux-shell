@@ -110,7 +110,6 @@ Item {
                                     title: enableGreeter ? I18n.tr("Allow greeter access?") : I18n.tr("Remove greeter access?"),
                                     message: enableGreeter ? I18n.tr("Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.", "confirm dialog message, %1 is the username, %2 is the group name, %3 a command").arg(userRow.modelData.username).arg(UsersService.greeterGroup).arg("dms-greeter sync --profile") : I18n.tr("Remove \"%1\" from the %2 group?").arg(userRow.modelData.username).arg(UsersService.greeterGroup),
                                     confirmText: enableGreeter ? I18n.tr("Allow", "verb, confirm button granting a user greeter access") : I18n.tr("Remove"),
-                                    confirmColor: Theme.primary,
                                     onConfirm: () => {
                                         root.operationPending = true;
                                         root.statusText = "";
@@ -138,7 +137,6 @@ Item {
                                     title: makeAdmin ? I18n.tr("Make admin") : I18n.tr("Remove admin"),
                                     message: makeAdmin ? I18n.tr("Add \"%1\" to the %2 group?", "confirm dialog message, %1 is the username, %2 is the group name").arg(userRow.modelData.username).arg(UsersService.adminGroup) : I18n.tr("Remove \"%1\" from the %2 group?", "confirm dialog message, %1 is the username, %2 is the group name").arg(userRow.modelData.username).arg(UsersService.adminGroup),
                                     confirmText: makeAdmin ? I18n.tr("Grant", "verb, confirm button granting a user admin rights") : I18n.tr("Remove"),
-                                    confirmColor: Theme.primary,
                                     onConfirm: () => {
                                         root.operationPending = true;
                                         root.statusText = "";
@@ -165,7 +163,6 @@ Item {
                                     title: I18n.tr("Delete user"),
                                     message: I18n.tr("Delete \"%1\" and remove the home directory? This cannot be undone.", "confirm dialog message, %1 is the username").arg(userRow.modelData.username),
                                     confirmText: I18n.tr("Delete"),
-                                    confirmColor: Theme.primary,
                                     onConfirm: () => {
                                         root.operationPending = true;
                                         root.statusText = "";

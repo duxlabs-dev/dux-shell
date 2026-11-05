@@ -77,8 +77,7 @@ Loader {
         actions: [
             DButton {
                 text: I18n.tr("Cancel")
-                backgroundColor: "transparent"
-                textColor: Theme.primary
+                variant: "text"
                 onClicked: dialog.rejected()
             },
             DButton {

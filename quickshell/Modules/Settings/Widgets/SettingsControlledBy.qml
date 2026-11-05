@@ -100,8 +100,6 @@ StyledRect {
             id: openButton
             anchors.verticalCenter: parent.verticalCenter
             text: root.buttonText
-            backgroundColor: Theme.primary
-            textColor: Theme.primaryText
             buttonHeight: Theme.buttonHeightXS
             horizontalPadding: Theme.spacingM
             onClicked: {

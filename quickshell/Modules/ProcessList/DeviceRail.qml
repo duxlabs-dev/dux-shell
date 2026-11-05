@@ -179,8 +179,7 @@ FocusScope {
             DButton {
                 visible: root.hiddenCount > 0
                 text: root.showHidden ? I18n.tr("Hide") : I18n.tr("Show virtual devices")
-                backgroundColor: "transparent"
-                textColor: Theme.primary
+                variant: "text"
                 onClicked: root.showHiddenToggled()
             }
 

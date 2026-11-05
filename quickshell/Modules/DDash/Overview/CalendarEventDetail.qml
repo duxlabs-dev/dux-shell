@@ -205,8 +205,6 @@ Column {
             text: I18n.tr("Edit")
             iconName: "edit"
             buttonHeight: Theme.buttonHeightS
-            backgroundColor: Theme.primary
-            textColor: Theme.onPrimary
             visible: root.canEdit
             onClicked: root.editRequested()
         }

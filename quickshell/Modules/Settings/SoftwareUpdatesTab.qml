@@ -352,8 +352,6 @@ Item {
                     iconName: root.primaryIcon()
                     busy: SystemUpdateService.isChecking
                     enabled: !SystemUpdateService.isChecking
-                    backgroundColor: Theme.primary
-                    textColor: Theme.onPrimary
                     onClicked: root.primaryAction()
                 }
             }

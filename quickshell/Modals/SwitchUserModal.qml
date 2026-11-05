@@ -205,8 +205,7 @@ DModal {
                 maximumWidth: sessionDialog.actionWidth
                 wrapText: true
                 text: I18n.tr("Close")
-                backgroundColor: "transparent"
-                textColor: Theme.primary
+                variant: "text"
                 onClicked: root.close()
             },
             DButton {

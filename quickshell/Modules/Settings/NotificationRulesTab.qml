@@ -285,8 +285,7 @@ Item {
 
                     DButton {
                         text: I18n.tr("Unmute")
-                        backgroundColor: "transparent"
-                        textColor: Theme.primary
+                        variant: "text"
                         onClicked: SettingsData.removeNotificationRule(modelData.index)
                     }
                 }

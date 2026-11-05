@@ -409,8 +409,7 @@ Rectangle {
                         buttonHeight: NotificationMetrics.actionHeight
                         horizontalPadding: NotificationMetrics.actionPadding
                         minimumWidth: 0
-                        backgroundColor: "transparent"
-                        textColor: Theme.primary
+                        variant: "text"
                         onClicked: root.actionRequested(modelData)
                     }
                 }
@@ -423,8 +422,7 @@ Rectangle {
                     buttonHeight: NotificationMetrics.actionHeight
                     horizontalPadding: NotificationMetrics.actionPadding
                     minimumWidth: 0
-                    backgroundColor: "transparent"
-                    textColor: Theme.primary
+                    variant: "text"
                     onClicked: root.dismissRequested()
                 }
             }

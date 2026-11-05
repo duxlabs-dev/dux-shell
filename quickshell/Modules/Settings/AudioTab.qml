@@ -42,11 +42,11 @@ Item {
             "title": I18n.tr("Disable %1?", "audio settings confirmation title, %1 is the sound card name").arg(card.description),
             "message": I18n.tr("Every output and input of this sound card turns off until you enable it again", "audio settings confirmation message before disabling a sound card"),
             "confirmText": I18n.tr("Disable", "audio settings button that turns a sound card off"),
-            "confirmColor": Theme.error,
+            "danger": true,
             "onConfirm": () => AudioService.setCardProfile(card.name, "off", (ok, message) => {
-                if (!ok)
-                    ToastService.showToast(message, ToastService.levelError);
-            })
+                    if (!ok)
+                        ToastService.showToast(message, ToastService.levelError);
+                })
         });
     }
 
