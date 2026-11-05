@@ -1468,7 +1468,7 @@ func checkFcitx5(url string) checkResult {
 	const desc = "Input Method Framework support"
 	switch {
 	case !utils.CommandExists("fcitx5"):
-		return checkResult{catOptionalFeatures, "fcitx5", statusWarn, "Not installed", desc, url}
+		return checkResult{catOptionalFeatures, "fcitx5", statusInfo, "Not installed", desc, url}
 	case !utils.IsSessionDBusServiceAvailable("org.fcitx.Fcitx5"):
 		return checkResult{catOptionalFeatures, "fcitx5", statusWarn, "Installed but not running", desc, url}
 	default:
