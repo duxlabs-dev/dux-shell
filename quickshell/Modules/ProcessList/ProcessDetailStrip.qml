@@ -305,7 +305,7 @@ Rectangle {
                 IconImage {
                     id: appIcon
                     anchors.fill: parent
-                    source: root.command ? Paths.getAppIcon(root.desktopEntry?.id ?? root.command, root.desktopEntry) : ""
+                    source: ProcessListMetrics.appIcon(root.live, root.desktopEntry)
                     smooth: true
                     mipmap: true
                     asynchronous: true
