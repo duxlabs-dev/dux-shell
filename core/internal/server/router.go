@@ -101,13 +101,13 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 		thememode.HandleRequest(conn, req, themeModeManager)
 	}))
 
-	mux.HandlePrefix("wallpaper.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
+	mux.HandlePrefix("wallpaper.", func(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, _ *ipc.Subscriber) {
 		if wallpaperManager == nil {
 			conn.RespondError(req.ID, "wallpaper manager not initialized")
 			return
 		}
-		wallpaper.HandleRequest(conn, req, wallpaperManager)
-	}))
+		wallpaper.HandleRequest(ctx, conn, req, wallpaperManager)
+	})
 
 	mux.HandlePrefix("loginctl.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
 		if loginctlManager == nil {
