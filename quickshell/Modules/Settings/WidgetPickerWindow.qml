@@ -15,9 +15,10 @@ DFloatingWindow {
     property var parentModal: null
     property string headerTitle: title
     property string intro: ""
+    property string searchPlaceholder: I18n.tr("Search widgets...")
     property bool featuredFirst: false
     property bool showEmptyState: false
-    property Component widgetDelegate: null
+    property Component widgetDelegate: rowDelegate
     parentWindow: parentModal
 
     signal widgetChosen(var widget)
@@ -197,7 +198,7 @@ DFloatingWindow {
                         width: parent.width
                         textColor: Theme.surfaceText
                         font.pixelSize: Theme.fontSizeMedium
-                        placeholderText: I18n.tr("Search widgets...")
+                        placeholderText: root.searchPlaceholder
                         text: root.searchQuery
                         focus: true
                         ignoreLeftRightKeys: true
@@ -228,6 +229,66 @@ DFloatingWindow {
                         delegate: root.widgetDelegate
                         footer: root.showEmptyState ? emptyState : null
                     }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: rowDelegate
+
+        DListItem {
+            width: ListView.view.width
+            implicitHeight: Math.max(SettingsMetrics.rowMinHeight, textColumn.implicitHeight + Theme.spacingM * 2)
+            isSelected: root.keyboardNavigationActive && index === root.selectedIndex && !modelData.disabled
+            enabled: !modelData.disabled
+            Accessible.name: modelData.text
+            onClicked: root.widgetChosen(modelData)
+
+            Row {
+                anchors.fill: parent
+                anchors.margins: Theme.spacingM
+                spacing: Theme.spacingM
+
+                DIcon {
+                    name: modelData.icon
+                    size: Theme.iconSize
+                    color: modelData.disabled ? Theme.onSurface_38 : Theme.primary
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Column {
+                    id: textColumn
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Theme.spacingXXS
+                    width: parent.width - Theme.iconSize * 2 - Theme.spacingM * 4 + 4
+
+                    StyledText {
+                        text: modelData.text
+                        font.pixelSize: Theme.fontSizeMedium
+                        font.weight: Theme.fontWeightMedium
+                        color: modelData.disabled ? Theme.onSurface_38 : Theme.surfaceText
+                        elide: Text.ElideRight
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                    }
+
+                    StyledText {
+                        visible: text !== ""
+                        text: modelData.description ?? ""
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: modelData.disabled ? Theme.onSurface_38 : Theme.outline
+                        elide: Text.ElideRight
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                    }
+                }
+
+                DIcon {
+                    name: "add"
+                    size: Theme.iconSizeMedium
+                    color: modelData.disabled ? Theme.onSurface_38 : Theme.primary
+                    anchors.verticalCenter: parent.verticalCenter
                 }
             }
         }
