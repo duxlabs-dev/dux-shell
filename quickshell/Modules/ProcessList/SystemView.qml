@@ -18,6 +18,10 @@ Item {
     // The page's actions sit in a FAB bar, like Settings pages; SettingsFabBar finds this property.
     property var fabBar: null
 
+    function scrollToTop() {
+        scroll.contentY = 0;
+    }
+
     Ref {
         service: DgopService
         modules: ["system", "cpu", "memory", "memory-modules", "sensors", "diskmounts"]
