@@ -8,8 +8,8 @@ import qs.DCommon.Common as DCommon
 Singleton {
     readonly property real compactPillThickness: Theme.barHeight - Theme.iconSizeMedium
     readonly property real pressedRadius: Theme.cornerRadiusS
-    readonly property real segmentInnerRadius: Theme.cornerRadiusS
-    readonly property real segmentPressedInnerRadius: Theme.cornerRadiusXS
+    readonly property real segmentInnerRadius: Theme.innerRadius("s")
+    readonly property real segmentPressedInnerRadius: Theme.innerRadius("xs")
     readonly property real segmentGap: Theme.groupedListGap
     readonly property real pillGap: Theme.spacingXS
     readonly property real bareGap: Theme.spacingXXS
@@ -27,7 +27,7 @@ Singleton {
 
     function pillRadius(thickness, style) {
         if (style === "flat")
-            return Math.min(Theme.cornerRadiusS, thickness / 2);
+            return Math.min(segmentInnerRadius, thickness / 2);
         if (thickness < compactPillThickness)
             return Math.min(Theme.cornerRadiusM, thickness / 2);
         return Theme.pillControls ? Theme.fullRadius(thickness, thickness) : Math.min(Theme.cornerRadiusL, thickness / 2);
