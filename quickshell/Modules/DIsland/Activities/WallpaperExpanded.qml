@@ -29,7 +29,11 @@ DashTabFace {
 
         property var customKeyboardFocus: null
 
-        onCustomKeyboardFocusChanged: root.controller.keyboardYielded = hostContract.customKeyboardFocus !== null
+        onCustomKeyboardFocusChanged: {
+            root.controller.keyboardYielded = hostContract.customKeyboardFocus !== null;
+            if (!root.controller.keyboardYielded)
+                Qt.callLater(root.focusFace);
+        }
     }
 
     Connections {
