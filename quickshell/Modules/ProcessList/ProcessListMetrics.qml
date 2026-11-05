@@ -82,6 +82,12 @@ Singleton {
                 _appMemo.icons = new Map();
             }
         }
+        function onAllProcessesChanged() {
+            if (!DgopService.allProcesses?.length) {
+                _appMemo.processes = null;
+                _appMemo.byPid = new Map();
+            }
+        }
     }
 
     function appEntry(process, extraKeys) {
