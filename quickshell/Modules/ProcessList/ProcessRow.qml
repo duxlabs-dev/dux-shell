@@ -97,7 +97,7 @@ DListItem {
                 anchors.verticalCenter: parent.verticalCenter
                 width: ProcessListMetrics.appIconSize
                 height: width
-                source: root.command ? Paths.getAppIcon(root.appEntry?.id ?? root.command, root.appEntry) : ""
+                source: ProcessListMetrics.appIcon(root.process, root.appEntry)
                 smooth: true
                 asynchronous: true
                 visible: status === Image.Ready
