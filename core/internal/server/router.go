@@ -31,6 +31,7 @@ import (
 	serverThemes "github.com/duxlabs-dev/dux-shell/core/internal/server/themes"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/wallpaper"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/wayland"
+	serverWeather "github.com/duxlabs-dev/dux-shell/core/internal/server/weather"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/wellbeing"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/wlroutput"
 	"github.com/duxlabs-dev/dux-shell/core/internal/systemd"
@@ -154,6 +155,10 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 	mux.HandlePrefix("drives.", requestHandler(serverDrives.HandleRequest))
 
 	mux.HandlePrefix("lyrics.", requestHandler(serverLyrics.HandleRequest))
+
+	mux.HandlePrefix("weather.", func(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, _ *ipc.Subscriber) {
+		serverWeather.HandleRequest(ctx, conn, req)
+	})
 
 	appPickerHandler := requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
 		if appPickerManager == nil {

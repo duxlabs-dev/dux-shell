@@ -383,7 +383,7 @@ Singleton {
 
         const componentPaths = _resolveComponentPaths(manifest, dir);
         const surfaces = Object.keys(componentPaths);
-        if (surfaces.length === 0 && !manifest.lyrics?.command) {
+        if (surfaces.length === 0 && !manifest.lyrics?.command && !manifest.weather?.command) {
             log.error("no valid component surfaces in manifest:", absPath);
             knownManifests[absPath] = {
                 mtime: mtimeEpochMs,
@@ -515,7 +515,7 @@ Singleton {
 
         const componentPaths = plugin.componentPaths || {};
         const surfaces = Object.keys(componentPaths);
-        if (surfaces.length === 0 && !plugin.lyrics?.command) {
+        if (surfaces.length === 0 && !plugin.lyrics?.command && !plugin.weather?.command) {
             log.error("Plugin has no component surfaces:", pluginId);
             pluginLoadFailed(pluginId, "No component surfaces");
             return false;
