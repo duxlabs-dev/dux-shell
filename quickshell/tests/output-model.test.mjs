@@ -152,14 +152,22 @@ test("hyprland profiles keep identical monitors apart and still match after the 
     assert.deepEqual(owners.map(o => o.length), [1, 1, 1]);
 });
 
-test("legacy hyprland profile keys gain the serial only when one live output claims them", () => {
-    const migrate = (outputs, mode = "model") => {
-        const entry = { outputs: { "Dell Inc. DELL U2720Q": { mode: "a" }, "BOE 0x0A1B": { mode: "b" }, "DP-9": { mode: "c" } } };
+test("legacy hyprland profile keys gain the serial only when the profile is exactly the connected models", () => {
+    const legacy = { "Dell Inc. DELL U2720Q": { mode: "a" }, "BOE 0x0A1B": { mode: "b" }, "LG Electronics LG ULTRAGEAR": { mode: "c" } };
+    const migrate = (outputs, keys = legacy, mode = "model") => {
+        const entry = { outputs: clone(keys) };
         return [model.migrateHyprlandProfileKeys(entry, outputs, mode), entry.outputs];
     };
-    assert.deepEqual(migrate(live), [true, { "BOE 0x0A1B": { mode: "b" }, "DP-9": { mode: "c" }, "Dell Inc. DELL U2720Q ABC123": { mode: "a" } }]);
-    assert.equal(migrate({ a: live["DP-1"], b: { ...live["DP-1"], serial: "XYZ" } })[0], false);
-    assert.equal(migrate(live, "system")[0], false);
+    const [changed, migrated] = migrate(live);
+    assert.equal(changed, true);
+    assert.deepEqual(migrated["Dell Inc. DELL U2720Q ABC123"], { mode: "a" });
+    assert.equal("Dell Inc. DELL U2720Q" in migrated, false);
+    assert.deepEqual(migrated["BOE 0x0A1B"], { mode: "b" });
+
+    const untouched = (outputs, keys, mode) => assert.deepEqual(migrate(outputs, keys, mode), [false, keys ?? legacy]);
+    untouched({ "DP-1": live["DP-1"], "eDP-1": live["eDP-1"] }, { "Dell Inc. DELL U2720Q": {}, "BOE 0x0A1B": {}, "Acme Other": {} });
+    untouched({ a: live["DP-1"], b: { ...live["DP-1"], serial: "XYZ" } }, { "Dell Inc. DELL U2720Q": {} });
+    untouched(live, legacy, "system");
 });
 
 test("ensureEnabledOutput re-enables the first real live output of an all-disabled profile and leaves virtual-only profiles alone", () => {

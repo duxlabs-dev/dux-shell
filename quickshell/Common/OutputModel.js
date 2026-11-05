@@ -71,10 +71,12 @@ function profileIdentifier(output, name, displayNameMode, compositor) {
     }
 }
 
-// Hyprland profiles were keyed by bare "Make Model" before the serial was added; only rename keys one live output claims
+// Hyprland profiles were keyed by bare "Make Model" before the serial was added; only a profile of exactly the connected models says which unit a key meant
 function migrateHyprlandProfileKeys(configEntry, outputs, displayNameMode) {
     const cfgOutputs = configEntry.outputs;
     if (displayNameMode !== "model" || !cfgOutputs)
+        return false;
+    if (configFingerprint(configEntry) !== outputSetFingerprint(currentOutputSet(outputs || {}, displayNameMode, "")))
         return false;
     let changed = false;
     for (const key of Object.keys(cfgOutputs)) {
