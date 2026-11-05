@@ -39,6 +39,8 @@ in
 
       partOf = [ cfg.systemd.target ];
       after = [ cfg.systemd.target ];
+      # Readiness waits for the tray host, so tray apps ordered after tray.target find it.
+      before = [ "tray.target" ];
       wantedBy = [ cfg.systemd.target ];
       restartIfChanged = cfg.systemd.restartIfChanged;
 
