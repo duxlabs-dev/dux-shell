@@ -167,7 +167,7 @@ PanelWindow {
     }
 
     DFocusGrab {
-        windows: [root, dismissWindow].concat(KeyboardFocus.barWindows)
+        windows: [root, dismissWindow].concat(KeyboardFocus.barWindows, KeyboardFocus.grabPeerWindows)
         wanted: KeyboardFocus.wantsGrab(root.opened && !root.closing)
         onCleared: root.close()
     }

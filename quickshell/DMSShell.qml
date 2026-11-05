@@ -1260,6 +1260,12 @@ Item {
         delegate: Toast {}
     }
 
+    LazyLoader {
+        active: ConfigProfileService.screenshotPending
+
+        ProfileCaptureBar {}
+    }
+
     Loader {
         id: osdSurfacesLoader
         active: root.osdSurfacesLoaded

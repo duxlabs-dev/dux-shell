@@ -66,6 +66,7 @@ Column {
     spacing: Theme.spacingL
 
     Component.onCompleted: {
+        ConfigProfileService.ensureDefault();
         WallpaperCyclingService.cyclingActive;
         SettingsData.detectAvailableIconThemes();
         SettingsData.detectAvailableCursorThemes();
@@ -360,6 +361,30 @@ Column {
                     }
                 }
             }
+        }
+    }
+
+    SettingsCard {
+        tab: "wallpaper"
+        tags: ["profile", "setup", "preset", "snapshot", "switch"]
+        title: I18n.tr("Profiles", "settings page for saved setups of DMS settings")
+        iconName: "style"
+        settingKey: "configProfiles"
+
+        ProfileGrid {
+            width: parent?.width ?? 0
+            columns: width >= Theme.mediumBreakpoint ? 4 : width >= Theme.smallBreakpoint ? 3 : 2
+            cellSpacing: Theme.spacingS
+            compact: true
+            targetScreen: root.selectedDisplay
+            parentModal: root.parentModal
+        }
+
+        SettingsNavRow {
+            tab: "wallpaper"
+            title: I18n.tr("Manage profiles", "link row opening the page that creates, edits and deletes config profiles")
+            visible: ConfigProfileService.ready
+            onClicked: keyboard => root.parentModal?.navigateTo("profiles", keyboard)
         }
     }
 

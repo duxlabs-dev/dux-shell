@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell.Wayland
+import qs.Common
 import qs.Widgets
 
 DFocusGrab {
@@ -14,6 +15,6 @@ DFocusGrab {
     readonly property var maskItem: root.host && !root.host.inputSuspended ? root.host.inputMaskItem : null
     readonly property var fittsStripItem: root.host && !root.host.inputSuspended ? root.host.fittsStripItem : null
 
-    windows: [root.window].concat(root.extraWindows, root.host?.dismissWindow ?? [], root.host?.transientFocusWindows ?? [])
+    windows: [root.window].concat(root.extraWindows, root.host?.dismissWindow ?? [], root.host?.transientFocusWindows ?? [], KeyboardFocus.grabPeerWindows)
     wanted: root.host?.wantsFocusGrab ?? false
 }
