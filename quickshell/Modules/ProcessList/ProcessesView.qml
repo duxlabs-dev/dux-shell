@@ -520,6 +520,8 @@ Rectangle {
                 }
                 spacing: Theme.groupedListGap
                 currentIndex: root.selectedIndex
+                // Every sample can move the selected row; only key presses may scroll to it.
+                highlightFollowsCurrentItem: false
                 add: null
                 remove: null
                 displaced: null
