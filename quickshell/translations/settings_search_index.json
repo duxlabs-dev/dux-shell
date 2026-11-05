@@ -2905,6 +2905,32 @@
     "icon": "restore"
   },
   {
+    "section": "wallpaperFolders",
+    "label": "Wallpapers",
+    "tabIndex": -1,
+    "category": "Wallpaper & colors",
+    "keywords": [
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "directories",
+      "folders",
+      "hue",
+      "image",
+      "library",
+      "palette",
+      "picture",
+      "tint",
+      "wallpaper",
+      "wallpapers"
+    ],
+    "page": "personalization",
+    "icon": "folder"
+  },
+  {
     "section": "cursorWarpOnMonitorChange",
     "label": "Warp on display change",
     "tabIndex": -1,
@@ -2971,6 +2997,7 @@
       "dark",
       "dark mode",
       "desktop",
+      "folder",
       "hue",
       "image",
       "injected",
@@ -2984,7 +3011,8 @@
       "theme",
       "theming",
       "tint",
-      "wallpaper"
+      "wallpaper",
+      "wallpapers"
     ],
     "icon": "wallpaper",
     "description": "Theme, palette, dark mode"
@@ -19534,5 +19562,55 @@
     "parentLabel": "Input",
     "icon": "extension",
     "conditionKey": "fcitx5Available"
+  },
+  {
+    "section": "wallpaperFolderList",
+    "label": "Folders",
+    "tabIndex": 71,
+    "category": "Wallpapers",
+    "keywords": [
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "directories",
+      "folders",
+      "hue",
+      "image",
+      "library",
+      "palette",
+      "picture",
+      "tint",
+      "wallpaper",
+      "wallpapers"
+    ],
+    "parentLabel": "Wallpaper & colors"
+  },
+  {
+    "section": "_tab_71",
+    "label": "Wallpapers",
+    "tabIndex": 71,
+    "category": "Wallpapers",
+    "keywords": [
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "folders",
+      "hue",
+      "image",
+      "palette",
+      "picture",
+      "tint",
+      "wallpaper",
+      "wallpapers"
+    ],
+    "icon": "wallpaper",
+    "parentLabel": "Wallpaper & colors",
+    "description": "Folders"
   }
 ]

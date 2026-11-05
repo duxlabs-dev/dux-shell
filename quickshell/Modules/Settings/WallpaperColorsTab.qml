@@ -109,14 +109,7 @@ Column {
     }
 
     function applyWallpaper(path) {
-        if (perMonitor) {
-            SessionData.setMonitorWallpaper(selectedScreen, path);
-            SessionData.setMonitorCyclingFolderPath(selectedScreen, "");
-            return;
-        }
-        SessionData.setWallpaper(path);
-        SessionData.wallpaperCyclingFolderPath = "";
-        SessionData.saveSettings();
+        SessionData.applyWallpaperPick(selectedScreen, path);
     }
 
     function pickColor() {
@@ -525,6 +518,16 @@ Column {
                 if (screen)
                     SettingsData.setMatugenTargetMonitor(screen);
             }
+        }
+
+        SettingsNavRow {
+            tab: "wallpaper"
+            tags: ["folders", "directories", "library"]
+            settingKey: "wallpaperFolders"
+            iconName: "folder"
+            title: I18n.tr("Wallpapers", "wallpaper folders settings row")
+            hint: SettingsTabs.page("wallpaper_folders")?.hint ?? ""
+            onClicked: keyboard => root.parentModal?.navigateTo("wallpaper_folders", keyboard)
         }
 
         SettingsSplitRow {
