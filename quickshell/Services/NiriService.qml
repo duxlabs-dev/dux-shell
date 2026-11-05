@@ -1350,7 +1350,12 @@ window-rule {
     clip-to-geometry true
     tiled-state true
     draw-border-with-background false
-}` + niriBlurBlock(typeof SettingsData !== "undefined" ? SettingsData.blurStrength : 0) + xrayRules;
+}` + niriBlurBlock(typeof SettingsData !== "undefined" ? SettingsData.blurStrength : 0) + xrayRules + `
+
+layer-rule {
+    match namespace="^dms:desktop-widget:" layer="background"
+    place-within-backdrop true
+}`;
 
         const alttabContent = dmsWarning + `recent-windows {
     highlight {

@@ -55,7 +55,8 @@ Variants {
             for (const inst of instances) {
                 const prefs = inst.config?.displayPreferences ?? ["all"];
                 const prefsKey = Array.isArray(prefs) ? prefs.join(",") : "all";
-                sig += inst.id + ":" + (inst.enabled ? "1" : "0") + ":" + prefsKey + "|";
+                const layer = inst.config?.layer ?? (inst.config?.showOnOverlay ? "overlay" : "bottom");
+                sig += inst.id + ":" + (inst.enabled ? "1" : "0") + ":" + layer + ":" + prefsKey + "|";
             }
             return sig;
         }
