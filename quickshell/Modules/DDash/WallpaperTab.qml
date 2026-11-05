@@ -551,6 +551,7 @@ Item {
                 root.setCurrentWallpaper(paths[0]);
                 root.wallpaperDir = paths[0].substring(0, paths[0].lastIndexOf('/'));
             }
+            onDialogClosed: root.keyForwardTarget?.focusInitial()
         }
     }
 
