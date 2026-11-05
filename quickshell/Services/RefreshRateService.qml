@@ -1,8 +1,10 @@
 pragma Singleton
 pragma ComponentBehavior: Bound
 
+import QtCore
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import qs.Common
 import qs.Services
 import "../Common/OutputModel.js" as OutputModel
@@ -17,6 +19,24 @@ Singleton {
     property int _resumeRecoveryAttempt: 0
     readonly property var _resumeRecoveryIntervals: [1000, 5000, 15000, 30000]
     property var _lastAppliedTargets: ({})
+    property var _previousRefreshModes: ({})
+    property bool _refreshModesLoaded: false
+
+    // Runtime state must survive shell restarts without writing declarative settings.
+    FileView {
+        id: refreshModesFile
+        path: Paths.strip(StandardPaths.standardLocations(StandardPaths.RuntimeLocation)[0]) + "/dms-refresh-modes-" + encodeURIComponent(Quickshell.env("WAYLAND_DISPLAY") || "default") + ".json"
+        blockWrites: true
+        atomicWrites: true
+        printErrors: false
+        onLoaded: root.loadPreviousRefreshModes(text())
+        onLoadFailed: error => {
+            if (error !== FileViewError.FileNotFound)
+                log.warn("Failed to load refresh restore modes:", error);
+            root.loadPreviousRefreshModes("");
+        }
+        onSaveFailed: error => log.warn("Failed to save refresh restore modes:", error)
+    }
 
     Timer {
         id: cascadeGuard
@@ -114,6 +134,8 @@ Singleton {
     }
 
     function syncRefreshRates(isPluggedIn, reason) {
+        if (!_refreshModesLoaded)
+            return;
         if (!SettingsData.lowerDisplayRefreshRateOnBattery) {
             if (reason === "setting-change")
                 applyConfiguredTargets("disabled", reason);
@@ -161,8 +183,35 @@ Singleton {
         return withIdentifiers([outputName], [OutputModel.niriIdentifier(head, outputName, "model"), OutputModel.modelIdentifier(head), OutputModel.hyprlandIdentifier(head, outputName, "model")]);
     }
 
+    function loadPreviousRefreshModes(text) {
+        try {
+            const modes = JSON.parse(text || "{}");
+            if (!modes || typeof modes !== "object" || Array.isArray(modes))
+                throw new Error("Expected a refresh mode map");
+            _previousRefreshModes = modes;
+        } catch (error) {
+            log.warn("Invalid refresh restore modes:", error);
+            _previousRefreshModes = ({});
+        }
+        _refreshModesLoaded = true;
+        requestSync("restore-state-loaded");
+    }
+
     function previousRefreshModes() {
-        return SettingsData.displayPreviousRefreshModes?.[CompositorService.compositor] || {};
+        return _previousRefreshModes[CompositorService.compositor] || {};
+    }
+
+    function savePreviousRefreshModes(modes) {
+        if (JSON.stringify(previousRefreshModes()) === JSON.stringify(modes))
+            return;
+        const updated = JSON.parse(JSON.stringify(_previousRefreshModes));
+        const compositor = CompositorService.compositor;
+        if (Object.keys(modes).length > 0)
+            updated[compositor] = modes;
+        else
+            delete updated[compositor];
+        _previousRefreshModes = updated;
+        refreshModesFile.setText(JSON.stringify(updated));
     }
 
     function findPreviousRefreshMode(outputName, output) {
@@ -186,7 +235,7 @@ Singleton {
                 "mode": modeString
             };
         }
-        SettingsData.setDisplayPreviousRefreshModes(CompositorService.compositor, modes);
+        savePreviousRefreshModes(modes);
     }
 
     function clearPreviousRefreshMode(outputName, output) {
@@ -199,7 +248,7 @@ Singleton {
             changed = true;
         }
         if (changed)
-            SettingsData.setDisplayPreviousRefreshModes(CompositorService.compositor, modes);
+            savePreviousRefreshModes(modes);
     }
 
     function applyConfiguredTargets(context, reason) {
