@@ -489,16 +489,12 @@ debug { /-keep-max-bpc-unchanged; render-drm-device r#"/dev/dri/renderD128"# }
 include optional=true "dms/binds.kdl"
 `)
 	write("dms/binds.kdl", "binds {\n    Mod+O { toggle-overview; }\n}\n")
-	write("dms/binds-next.kdl", "binds { Mod { release { toggle-overview; } } }\n")
 
 	var got []string
 	for _, r := range checkNiriConfig(dir) {
 		got = append(got, r.message)
 	}
-	want := []string{
-		"config.kdl:2 sets keep-max-bpc-unchanged",
-		"dms/binds-next.kdl is left over from an older DMS",
-	}
+	want := []string{"config.kdl:2 sets keep-max-bpc-unchanged"}
 	if !slices.Equal(got, want) {
 		t.Fatalf("got %q", got)
 	}

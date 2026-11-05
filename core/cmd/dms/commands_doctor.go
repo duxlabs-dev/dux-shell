@@ -1043,8 +1043,6 @@ func checkMangoConfig(mangoDir string) []checkResult {
 
 var niriKeepMaxBpc = regexp.MustCompile(`^\s*keep-max-bpc-unchanged\b`)
 
-const niriBindsNextLeftover = "binds-next.kdl"
-
 // DMS never rewrites the user's config.kdl or binds.kdl, so name the line to fix by hand.
 func checkNiriConfig(niriDir string) []checkResult {
 	url := doctorDocsURL + "#compositor-checks"
@@ -1058,12 +1056,6 @@ func checkNiriConfig(niriDir string) []checkResult {
 			continue
 		}
 		rel, _ := filepath.Rel(niriDir, path)
-		if filepath.Base(path) == niriBindsNextLeftover {
-			results = append(results, checkResult{catCompositor, "binds-next.kdl", statusWarn,
-				rel + " is left over from an older DMS",
-				"DMS no longer writes this file; its Keyboard Shortcuts bind is in the stock dms/binds.kdl now. Move any bind you still want into dms/binds.kdl, then delete the file and its include in config.kdl.", url})
-			continue
-		}
 		for i, line := range strings.Split(kdlMaskInactive(string(data)), "\n") {
 			if !niriKeepMaxBpc.MatchString(line) {
 				continue
