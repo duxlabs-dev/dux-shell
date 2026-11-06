@@ -14,8 +14,7 @@ PanelWindow {
 
     property var modelData
     property bool shouldBeVisible: false
-    property bool _surfaceFrameReady: false
-    readonly property bool presented: shouldBeVisible && _surfaceFrameReady
+    readonly property bool presented: shouldBeVisible && frameGate.ready
     property real frozenWidth: 0
     readonly property string copiedText: I18n.tr("Copied!", "toast feedback after copying text to clipboard")
 
@@ -50,18 +49,10 @@ PanelWindow {
 
     screen: modelData
     visible: shouldBeVisible
-    onVisibleChanged: {
-        if (!visible)
-            _surfaceFrameReady = false;
-    }
 
-    Connections {
-        target: toast.Window.window
-        enabled: root.visible && !root._surfaceFrameReady
-
-        function onFrameSwapped() {
-            root._surfaceFrameReady = true;
-        }
+    SurfaceFrameGate {
+        id: frameGate
+        surfaceVisible: root.visible
     }
     WlrLayershell.layer: WlrLayershell.Overlay
     WlrLayershell.exclusiveZone: -1

@@ -48,6 +48,11 @@ PanelWindow {
     readonly property bool anchorHeld: root.dragging || root.flinging || body.sheetOut
     readonly property bool dismissActive: body.islandController.outsideClickCollapses && !body.inputSuspended
     property bool idle: false
+    // Origin stays at the output corner so scene coordinates never shift; only the far edges pull in while the island rests.
+    readonly property bool lifted: hitHover.hovered || root.pointerInside || root.expanded || root.motionRunning || root.anchorHeld || root.dismissActive
+    readonly property int restWidth: Math.min(Math.round(root.screenWidth), Math.ceil(body.currentVisualX + body.currentVisualWidth + root.hitPadding + body.shadowPadding) + 1)
+    readonly property int restHeight: Math.min(Math.round(root.screenHeight), Math.ceil(body.currentVisualY + body.currentVisualHeight + root.hitPadding + body.shadowPadding) + 1)
+    readonly property bool outputSized: root.width >= root.screenWidth - 2 && root.height >= root.screenHeight - 2
 
     function anchorLimit(size, extent) {
         const half = size / 2;
@@ -135,6 +140,10 @@ PanelWindow {
         bottom: true
         left: true
         right: true
+    }
+    WlrLayershell.margins {
+        right: root.lifted ? 0 : Math.round(root.screenWidth) - root.restWidth
+        bottom: root.lifted ? 0 : Math.round(root.screenHeight) - root.restHeight
     }
 
     Component.onCompleted: {

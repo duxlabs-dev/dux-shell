@@ -104,7 +104,6 @@ Item {
 
     property bool animationsEnabled: true
     property bool _presentPending: false
-    property bool _surfaceFrameReady: false
 
     property bool _fullSyncPending: false
 
@@ -286,7 +285,7 @@ Item {
             return;
         }
         contentWindow.visible = true;
-        if (!_surfaceFrameReady) {
+        if (!frameGate.ready) {
             _presentPending = true;
             return;
         }
@@ -299,11 +298,6 @@ Item {
         contentWindow.visible = true;
         opened();
         shouldHaveFocus = Qt.binding(() => shouldBeVisible);
-    }
-
-    on_SurfaceFrameReadyChanged: {
-        if (_surfaceFrameReady && _presentPending)
-            _reveal();
     }
 
     function close() {
@@ -484,8 +478,6 @@ Item {
         }
 
         onVisibleChanged: {
-            if (!visible)
-                root._surfaceFrameReady = false;
             if (!visible && Qt.inputMethod) {
                 Qt.inputMethod.hide();
                 Qt.inputMethod.reset();
@@ -498,12 +490,12 @@ Item {
                 root._releaseModalChrome();
         }
 
-        Connections {
-            target: modalContainer.Window.window
-            enabled: contentWindow.visible && !root._surfaceFrameReady
-
-            function onFrameSwapped() {
-                root._surfaceFrameReady = true;
+        SurfaceFrameGate {
+            id: frameGate
+            surfaceVisible: contentWindow.visible
+            onReadyChanged: {
+                if (ready && root._presentPending)
+                    root._reveal();
             }
         }
 
