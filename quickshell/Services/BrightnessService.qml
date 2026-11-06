@@ -388,6 +388,59 @@ Singleton {
         return screen ? pinnedDevices(SettingsData.getScreenDisplayName(screen)) : [];
     }
 
+    function screenBrightnessTargets(screen) {
+        const resolvedScreen = typeof screen === "string" ? (Quickshell.screens || []).find(s => s.name === screen) ?? null : screen;
+        const pinned = screenPinnedDevices(resolvedScreen);
+        if (pinned.length > 0)
+            return pinned;
+        const screenName = resolvedScreen?.name ?? (typeof screen === "string" ? screen : "");
+        if (screenName) {
+            if (isInternalPanelName(screenName)) {
+                const internal = internalPanelDevice();
+                if (internal)
+                    return [internal.id];
+            }
+            const software = devices.find(d => d.class === "software" && d.id.split(":").pop() === screenName);
+            if (software)
+                return [software.id];
+            if (!isInternalPanelName(screenName)) {
+                const externalScreens = (Quickshell.screens || []).filter(s => !isInternalPanelName(s.name));
+                const ddcDevices = devices.filter(d => d.class === "ddc");
+                if (externalScreens.length === 1 && ddcDevices.length === 1)
+                    return [ddcDevices[0].id];
+            }
+        }
+        const fallback = getDefaultDevice();
+        return fallback ? [fallback] : [];
+    }
+
+    function adjustScreenBrightness(screen, step, direction) {
+        if (!brightnessAvailable || !direction)
+            return false;
+        const targets = screenBrightnessTargets(screen);
+        const lead = targets[0] ?? "";
+        if (!lead)
+            return false;
+        const info = getCurrentDeviceInfoByName(lead);
+        const minValue = brightnessMinimum(info);
+        const maxValue = brightnessMaximum(info);
+        const current = getDeviceBrightness(lead);
+        const stepValue = Math.max(1, Math.round(step));
+        const next = Math.max(minValue, Math.min(maxValue, current + direction * stepValue));
+
+        if (lead !== currentDevice)
+            setCurrentDevice(lead, false);
+        lastIpcDevice = lead;
+        lastIpcGroup = targets;
+        if (next === current) {
+            if (!suppressOsd)
+                brightnessChanged(true);
+            return true;
+        }
+        setGroupBrightness(next, targets, false);
+        return true;
+    }
+
     function getPreferredDevices() {
         const pinned = screenPinnedDevices(CompositorService.getFocusedScreen());
         return pinned.length > 0 ? pinned : [getDefaultDevice()];

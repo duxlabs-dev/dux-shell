@@ -469,7 +469,7 @@ Item {
             id: scrollCard
             iconName: "mouse"
             settingKey: "barScrollWheel"
-            tags: ["scroll", "wheel", "workspace", "focus", "window", "axis"]
+            tags: ["scroll", "wheel", "workspace", "focus", "window", "axis", "volume", "audio", "brightness"]
             title: I18n.tr("Scroll wheel")
             visible: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarIsIsland
             checked: bar.selectedBarConfig?.scrollEnabled ?? true
@@ -477,8 +477,25 @@ Item {
                     scrollEnabled: checked
                 })
 
-            readonly property var behaviors: CompositorService.canStepWindowFocus ? ["none", "workspace", "focusWindow"] : ["none", "workspace"]
-            readonly property var behaviorLabels: CompositorService.canStepWindowFocus ? [I18n.tr("None"), I18n.tr("Workspace"), I18n.tr("Focus window")] : [I18n.tr("None"), I18n.tr("Workspace")]
+            readonly property bool showBrightnessOption: BrightnessService.brightnessAvailable || bar.selectedBarConfig?.scrollYBehavior === "brightness" || bar.selectedBarConfig?.scrollXBehavior === "brightness"
+            readonly property var behaviors: {
+                const list = ["none", "workspace"];
+                if (CompositorService.canStepWindowFocus)
+                    list.push("focusWindow");
+                list.push("volume");
+                if (showBrightnessOption)
+                    list.push("brightness");
+                return list;
+            }
+            readonly property var behaviorLabels: {
+                const list = [I18n.tr("None"), I18n.tr("Workspace")];
+                if (CompositorService.canStepWindowFocus)
+                    list.push(I18n.tr("Focus window"));
+                list.push(I18n.tr("Volume"));
+                if (showBrightnessOption)
+                    list.push(I18n.tr("Brightness"));
+                return list;
+            }
 
             SettingsButtonGroupRow {
                 text: I18n.tr("Y axis")

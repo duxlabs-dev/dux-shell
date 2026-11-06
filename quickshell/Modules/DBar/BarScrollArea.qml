@@ -12,6 +12,7 @@ MouseArea {
     property string xBehavior: "focusWindow"
     property string yBehavior: "workspace"
     property string screenName: ""
+    property var screen: null
     property var barConfig: null
     property real touchpadAccumulatorX: 0
     property real touchpadAccumulatorY: 0
@@ -29,6 +30,25 @@ MouseArea {
         id: cooldownTimer
         interval: 100
         onTriggered: root.actionInProgress = false
+    }
+
+    function isLevelBehavior(behavior) {
+        return behavior === "volume" || behavior === "brightness";
+    }
+
+    function handleLevelAction(behavior, step, direction) {
+        switch (behavior) {
+        case "volume":
+            if (!AudioService.sink?.audio)
+                return false;
+            AudioService.adjustDefaultSinkVolume(step, direction);
+            AudioService.playVolumeChangeSoundIfEnabled();
+            return true;
+        case "brightness":
+            return BrightnessService.adjustScreenBrightness(root.screen ?? root.screenName, step, direction);
+        default:
+            return false;
+        }
     }
 
     function handleScrollAction(behavior, direction) {
@@ -50,6 +70,63 @@ MouseArea {
             return;
         actionInProgress = true;
         cooldownTimer.restart();
+    }
+
+    function stepLevelAccumulator(accumulated, delta, threshold) {
+        const base = (accumulated * delta) < 0 ? 0 : accumulated;
+        const next = base + delta;
+        const units = Math.trunc(Math.abs(next) / threshold);
+        if (units <= 0)
+            return {
+                remainder: next,
+                units: 0,
+                sign: 0
+            };
+        const sign = next > 0 ? 1 : -1;
+        return {
+            remainder: next - sign * units * threshold,
+            units: units,
+            sign: sign
+        };
+    }
+
+    function levelStepAmount(behavior, isTouchpad, units) {
+        if (isTouchpad)
+            return units;
+        const perNotch = behavior === "volume" ? Math.max(1, AudioService.wheelVolumeStep) : 5;
+        return perNotch * units;
+    }
+
+    function accumulateLevelX(wheel, isTouchpad, delta, behavior) {
+        if (isTouchpad) {
+            if (wheel.phase === Qt.ScrollBegin)
+                touchpadAccumulatorX = 0;
+            const res = stepLevelAccumulator(touchpadAccumulatorX, delta, 100);
+            touchpadAccumulatorX = res.remainder;
+            if (res.units > 0)
+                handleLevelAction(behavior, levelStepAmount(behavior, true, res.units), res.sign);
+            return;
+        }
+        const res = stepLevelAccumulator(mouseAccumulatorX, delta, 120);
+        mouseAccumulatorX = res.remainder;
+        if (res.units > 0)
+            handleLevelAction(behavior, levelStepAmount(behavior, false, res.units), res.sign);
+    }
+
+    function accumulateLevelY(wheel, isTouchpad, delta, behavior) {
+        if (isTouchpad) {
+            if (wheel.phase === Qt.ScrollBegin)
+                touchpadAccumulatorY = 0;
+            const res = stepLevelAccumulator(touchpadAccumulatorY, delta, 100);
+            touchpadAccumulatorY = res.remainder;
+            if (res.units > 0)
+                handleLevelAction(behavior, levelStepAmount(behavior, true, res.units), res.sign);
+            return;
+        }
+        const res = stepLevelAccumulator(mouseAccumulatorY, delta, 120);
+        mouseAccumulatorY = res.remainder;
+        if (res.units > 0)
+            handleLevelAction(behavior, levelStepAmount(behavior, false, res.units), res.sign);
     }
 
     function accumulateX(isTouchpad, delta, behavior) {
@@ -95,9 +172,12 @@ MouseArea {
 
     function processWheel(wheel) {
         wheel.accepted = false;
-        if (wheel.phase === Qt.ScrollEnd)
+        if (wheel.phase === Qt.ScrollEnd) {
             gestureActive = false;
-        if (!scrollEnabled || actionInProgress)
+            touchpadAccumulatorX = 0;
+            touchpadAccumulatorY = 0;
+        }
+        if (!scrollEnabled)
             return;
 
         const delta = WheelInput.dominantDelta(wheel.angleDelta);
@@ -105,13 +185,23 @@ MouseArea {
             return;
         const isTouchpad = WheelInput.isTouchpad(wheel);
         if (horizontalGesture(wheel, isTouchpad)) {
-            if (xBehavior !== "none")
+            if (xBehavior === "none")
+                return;
+            if (isLevelBehavior(xBehavior)) {
+                accumulateLevelX(wheel, isTouchpad, delta, xBehavior);
+            } else if (!actionInProgress) {
                 accumulateX(isTouchpad, delta, xBehavior);
+            }
             return;
         }
         if (yBehavior === "none")
             return;
-        accumulateY(isTouchpad, delta, yBehavior);
+        if (isLevelBehavior(yBehavior)) {
+            accumulateLevelY(wheel, isTouchpad, delta, yBehavior);
+            return;
+        }
+        if (!actionInProgress)
+            accumulateY(isTouchpad, delta, yBehavior);
     }
 
     onWheel: wheel => processWheel(wheel)

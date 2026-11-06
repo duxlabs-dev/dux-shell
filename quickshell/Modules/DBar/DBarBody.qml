@@ -1234,6 +1234,7 @@ Item {
                         xBehavior: barWindow.barConfig?.scrollXBehavior ?? "focusWindow"
                         yBehavior: barWindow.barConfig?.scrollYBehavior ?? "workspace"
                         screenName: barWindow.screenName
+                        screen: barWindow.screen
                         barConfig: barWindow.barConfig
                         onWorkspaceSwitchRequested: direction => topBarContent.switchWorkspace(direction)
                     }
@@ -1309,6 +1310,10 @@ Item {
                         onWheel: wheelEvent => {
                             wheelEvent.accepted = false;
                             edgeItem.wheel(wheelEvent);
+                            if (!wheelEvent.accepted) {
+                                scrollArea.processWheel(wheelEvent);
+                                wheelEvent.accepted = true;
+                            }
                         }
 
                         Binding {

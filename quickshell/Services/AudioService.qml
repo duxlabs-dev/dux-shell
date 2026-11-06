@@ -1733,7 +1733,9 @@ EOFCONFIG
     }
 
     function adjustDefaultSinkVolume(step, direction) {
-        const audio = root.sink.audio;
+        const audio = root.sink?.audio;
+        if (!audio)
+            return 0;
         const maxVol = root.sinkMaxVolume;
         const stepValue = outputVolumeStep(step);
         const pending = root.sinkVolumeWrites;

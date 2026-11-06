@@ -4492,8 +4492,10 @@
     "tabIndex": 3,
     "category": "General",
     "keywords": [
+      "audio",
       "axis",
       "bar",
+      "brightness",
       "focus",
       "general",
       "panel",
@@ -4501,6 +4503,7 @@
       "statusbar",
       "taskbar",
       "topbar",
+      "volume",
       "wheel",
       "window",
       "workspace"

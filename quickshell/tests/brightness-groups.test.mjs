@@ -18,10 +18,50 @@ function functionSource(file, name) {
 function service(globals) {
     const context = vm.createContext(Object.assign({
         QmlUtils: loadScript(new URL("../Common/QmlUtils.js", import.meta.url)),
+        Quickshell: { screens: [] },
+        SettingsData: { getScreenDisplayName: screen => screen?.name ?? "" },
+        CacheData: { brightnessDevicePins: {} },
+        devices: [],
+        deviceBrightness: {},
+        brightnessAvailable: true,
+        suppressOsd: false,
+        currentDevice: "",
         lastIpcGroup: [],
-        lastIpcDevice: ""
+        lastIpcDevice: "",
+        getDeviceBrightness(id) {
+            return id && id in context.deviceBrightness ? context.deviceBrightness[id] : 50;
+        },
+        getCurrentDeviceInfoByName(id) {
+            return context.devices.find(d => d.id === id) ?? null;
+        },
+        brightnessMinimum(info) {
+            return info?.min ?? (info?.class === "backlight" || info?.class === "ddc" ? 1 : 0);
+        },
+        brightnessMaximum(info) {
+            return info?.max ?? 100;
+        },
+        setCurrentDevice(id) {
+            context.currentDevice = id;
+            context.lastIpcDevice = id;
+        },
+        brightnessChanged() {}
     }, globals));
-    for (const name of ["setGroupBrightness", "lastIpcTargets", "pinnedDevices", "screenPinnedDevices", "screenTargets", "screenTargetsLastDevice", "screenLeadDevice"])
+    context.root = context;
+    for (const name of [
+        "internalPanelActive",
+        "isInternalPanelName",
+        "internalPanelDevice",
+        "getDefaultDevice",
+        "setGroupBrightness",
+        "lastIpcTargets",
+        "pinnedDevices",
+        "screenPinnedDevices",
+        "screenBrightnessTargets",
+        "adjustScreenBrightness",
+        "screenTargets",
+        "screenTargetsLastDevice",
+        "screenLeadDevice"
+    ])
         vm.runInContext(functionSource(SERVICE, name), context);
     return context;
 }
@@ -110,4 +150,64 @@ test("only screens that target the changed device react to it", () => {
     assert.equal(context.screenTargetsLastDevice({ name: "DP-2" }), false);
     assert.equal(context.screenTargetsLastDevice({ name: "HDMI-1" }), true);
     assert.equal(context.screenTargetsLastDevice(null), true);
+});
+
+test("screenBrightnessTargets resolves pins, internal panel, per-screen software, and unambiguous single external DDC", () => {
+    const screens = [{ name: "eDP-1" }, { name: "DP-1" }];
+    const context = service({
+        Quickshell: { screens },
+        devices: [
+            { id: "backlight:intel_backlight", class: "backlight" },
+            { id: "ddc:i2c-7", class: "ddc" },
+            { id: "software:HDMI-A-1", class: "software" }
+        ],
+        CacheData: { brightnessDevicePins: {} }
+    });
+
+    assert.deepEqual(plain(context.screenBrightnessTargets({ name: "eDP-1" })), ["backlight:intel_backlight"]);
+    assert.deepEqual(plain(context.screenBrightnessTargets("DP-1")), ["ddc:i2c-7"]);
+    assert.deepEqual(plain(context.screenBrightnessTargets("HDMI-A-1")), ["software:HDMI-A-1"]);
+
+    context.CacheData.brightnessDevicePins = { "DP-1": ["ddc:i2c-7", "backlight:intel_backlight"] };
+    assert.deepEqual(plain(context.screenBrightnessTargets({ name: "DP-1" })), ["ddc:i2c-7", "backlight:intel_backlight"]);
+
+    // With two external screens and unpinned DDC, avoid guessing the wrong external monitor
+    context.CacheData.brightnessDevicePins = {};
+    context.Quickshell.screens = [{ name: "eDP-1" }, { name: "DP-1" }, { name: "DP-2" }];
+    assert.deepEqual(plain(context.screenBrightnessTargets({ name: "DP-1" })), ["backlight:intel_backlight"]);
+});
+
+test("adjustScreenBrightness steps groups, clamps bounds, and skips hardware writes when already at min or max", () => {
+    const calls = [];
+    const osdSignals = [];
+    const context = service({
+        Quickshell: { screens: [{ name: "DP-1" }] },
+        devices: [
+            { id: "ddc:i2c-11", class: "ddc", min: 1, max: 100 },
+            { id: "ddc:i2c-12", class: "ddc", min: 0, max: 50 }
+        ],
+        deviceBrightness: { "ddc:i2c-11": 98, "ddc:i2c-12": 49 },
+        CacheData: { brightnessDevicePins: { "DP-1": ["ddc:i2c-11", "ddc:i2c-12"] } },
+        setBrightness(value, id, suppressOsd) {
+            calls.push([value, id, suppressOsd]);
+            context.deviceBrightness[id] = value;
+            context.lastIpcDevice = id;
+            context.lastIpcGroup = [];
+        },
+        brightnessChanged(showOsd) {
+            osdSignals.push(showOsd);
+        }
+    });
+
+    assert.equal(context.adjustScreenBrightness({ name: "DP-1" }, 5, 1), true);
+    assert.deepEqual(calls, [[50, "ddc:i2c-12", true], [100, "ddc:i2c-11", false]]);
+    assert.equal(context.currentDevice, "ddc:i2c-11");
+    assert.deepEqual(plain(context.lastIpcTargets()), ["ddc:i2c-11", "ddc:i2c-12"]);
+
+    // Already at max: no duplicate I2C write, group stays intact, OSD still pings
+    calls.length = 0;
+    assert.equal(context.adjustScreenBrightness({ name: "DP-1" }, 5, 1), true);
+    assert.deepEqual(calls, []);
+    assert.deepEqual(osdSignals, [true]);
+    assert.deepEqual(plain(context.lastIpcTargets()), ["ddc:i2c-11", "ddc:i2c-12"]);
 });
