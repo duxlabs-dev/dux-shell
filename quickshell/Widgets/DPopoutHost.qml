@@ -50,8 +50,6 @@ Item {
     property bool backgroundInteractive: popoutHandle.backgroundInteractive
     property bool contentHandlesKeys: popoutHandle.contentHandlesKeys
     property bool _primeContent: false
-    property bool _contentWarm: false
-    property bool _backgroundWarm: false
     property bool _contentRenderActive: Theme.isDirectionalEffect || shouldBeVisible
     // Keyboard focus grabbed one tick after emerge starts, to avoid stalling first frames.
     property bool _keyboardReady: false
@@ -189,11 +187,6 @@ Item {
 
     function clearPrimedContent() {
         _primeContent = false;
-    }
-
-    function warmContent() {
-        _backgroundWarm = true;
-        _contentWarm = true;
     }
 
     function _captureChromeAnimTravel() {
@@ -485,7 +478,6 @@ Item {
             _fluidMotionActive = fluidMotionEnabled;
         }
         _primeContent = true;
-        _contentWarm = true;
         _supersededClose = false;
 
         if (_openScreen !== null && _openScreen !== screen)
@@ -1409,9 +1401,7 @@ Item {
                 parent: chromeLoader.item ? chromeLoader.item.contentWrapper : contentContainer
                 anchors.fill: parent
                 sourceComponent: root.popoutHandle.content
-                // _contentWarm keeps the tree loaded across close for fast re-open; reclaimed by PopoutService on lock/idle.
-                active: root._primeContent || root.shouldBeVisible || contentWindow.visible || root._contentWarm
-                asynchronous: root._backgroundWarm && !root._primeContent && !root.shouldBeVisible && !contentWindow.visible
+                active: root._primeContent || root.shouldBeVisible || contentWindow.visible
             }
         }
 

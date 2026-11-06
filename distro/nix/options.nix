@@ -24,7 +24,7 @@ in
     ) "qtmultimedia is now included on dms-shell package.")
     (lib.mkRemovedOptionModule (
       path ++ [ "quickshell" "package" ]
-    ) "The Quickshell runtime is linked into dms as dux-qt-base; set programs.dank-material-shell.duxQtBase.package instead.")
+    ) "The Quickshell runtime is embedded in dms as dux-qt-base; set programs.dank-material-shell.duxQtBase.package instead.")
     ./dms-rename.nix
   ];
 
@@ -84,7 +84,7 @@ in
 
     duxQtBase = {
       package = lib.mkPackageOption dmsPkgs "dux-qt-base" {
-        extraDescription = "The Quickshell runtime library the dms package links against (pkgs.dux-qt-base when the overlay provides it, else the dux-qt-base flake input).";
+        extraDescription = "The Quickshell runtime library embedded in the dms package (pkgs.dux-qt-base when the overlay provides it, else the dux-qt-base flake input).";
       };
     };
 

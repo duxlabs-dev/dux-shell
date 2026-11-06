@@ -120,7 +120,7 @@
               inherit version;
               pname = "dms-shell";
               src = ./core;
-              vendorHash = "sha256-pXCPtJ6FNGftgpPlV3BXn+yVF4E8Q9S+KFC71TohOnk=";
+              vendorHash = "sha256-qNG1BjF3dG7N9HhGBQSuSFNm6CjiqeckW5mURwJYn14=";
 
               subPackages = [ "cmd/dms" ];
 
@@ -133,10 +133,15 @@
               nativeBuildInputs = with pkgs; [
                 installShellFiles
                 makeWrapper
-                pkg-config
               ];
 
-              buildInputs = [ duxQtBase ];
+              tags = [ "withqtbase" ];
+
+              # embed the runtime library the same way make qtbase does
+              preBuild = ''
+                install -Dm644 ${duxQtBase}/lib/libdux-qt-base.so.0 internal/qtbaseembed/lib/libdux-qt-base.so.0
+                sha256sum internal/qtbaseembed/lib/libdux-qt-base.so.0 | cut -c1-16 > internal/qtbaseembed/lib/.dankrev
+              '';
 
               postInstall = ''
                 mkdir -p $out/share/quickshell/dms

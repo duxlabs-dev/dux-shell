@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/duxlabs-dev/dux-go/qtbase"
+	"github.com/duxlabs-dev/dux-shell/core/internal/qtbaseembed"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -763,18 +764,14 @@ func getDMSShellVersion() (version, path string) {
 }
 
 func getQuickshellVersionInfo(missingFeatures bool) (display string, st status, path, details, semver string) {
-	if !qtbase.Embedded() && !utils.CommandExists("qs") {
+	qsPath, err := qtbaseembed.Resolve()
+	if err != nil {
 		return "Not installed", statusError, "", "", ""
-	}
-
-	qsPath, _ := exec.LookPath("qs")
-	if qtbase.Embedded() {
-		qsPath, _ = os.Executable()
 	}
 
 	output, err := qtbase.Command(context.Background(), "--version").Output()
 	if err != nil {
-		details := "Run 'qs --version' to inspect the failure."
+		details := "Run '" + qsPath + " --version' to inspect the failure."
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
 			details = quickshellVersionFailureDetails(string(exitErr.Stderr))
@@ -1294,7 +1291,7 @@ func detectRunningWM() string {
 }
 
 func checkQuickshellFeatures() ([]checkResult, bool) {
-	if !qtbase.Embedded() && !utils.CommandExists("qs") {
+	if _, err := qtbaseembed.Resolve(); err != nil {
 		return nil, false
 	}
 

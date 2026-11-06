@@ -134,6 +134,7 @@ core/dms
 core/duxinstall
 
 core/internal/shellembed/dist
+core/internal/qtbaseembed/lib
 
 # in-tree dux-qt-base cmake build
 core/build/

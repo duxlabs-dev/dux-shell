@@ -13,13 +13,36 @@ Source0:        dms-git-source.tar.gz
 Source1:        go%{go_toolchain_version}.linux-amd64.tar.gz
 Source2:        go%{go_toolchain_version}.linux-arm64.tar.gz
 
-BuildRequires:  dux-qt-base-devel
-BuildRequires:  gcc
 BuildRequires:  git-core
-BuildRequires:  pkgconfig
 BuildRequires:  systemd-rpm-macros
+# dux-qt-base (quickshell runtime, built from the submodule and embedded in dms)
+BuildRequires:  cmake
+BuildRequires:  gcc-c++
+BuildRequires:  ninja
+BuildRequires:  pkgconfig
+BuildRequires:  cmake(Qt6Core) >= 6.8.0
+BuildRequires:  cmake(Qt6DBus)
+BuildRequires:  cmake(Qt6Network)
+BuildRequires:  cmake(Qt6Qml)
+BuildRequires:  cmake(Qt6Quick)
+BuildRequires:  cmake(Qt6QuickControls2)
+BuildRequires:  cmake(Qt6ShaderTools)
+BuildRequires:  cmake(Qt6WaylandClient)
+BuildRequires:  cmake(Qt6Widgets)
+BuildRequires:  qt6-base-private-devel
+BuildRequires:  qt6-declarative-private-devel
+BuildRequires:  qt6-waylandclient-private-devel
+BuildRequires:  cli11-devel
+BuildRequires:  spirv-tools
+BuildRequires:  vulkan-headers
+BuildRequires:  wayland-devel
+BuildRequires:  wayland-protocols-devel >= 1.41
+BuildRequires:  Mesa-libEGL-devel
+BuildRequires:  libgbm-devel
 
 Requires:       accountsservice
+# the embedded libdux-qt-base.so is invisible to find-requires, so its runtime deps are explicit
+Requires:       qt6-wayland
 
 Recommends:     cava
 Recommends:     (dux-search or danksearch)
