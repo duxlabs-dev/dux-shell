@@ -10,16 +10,6 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        Loader {
-            width: parent.width
-            active: CompositorService.isAqueous
-            sourceComponent: AqueousAppearanceSettings {
-                settingKey: "aqueousTypography"
-                title: I18n.tr("Aqueous typography", "Aqueous compositor font synchronization settings")
-                visible: CompositorService.isAqueous
-            }
-        }
-
         SettingsCard {
             tab: "typography"
             tags: ["font", "family", "text", "typography", "monospace"]

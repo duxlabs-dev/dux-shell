@@ -968,17 +968,6 @@ Column {
         }
     }
 
-    Loader {
-        width: parent.width
-        active: CompositorService.isAqueous
-        sourceComponent: AqueousAppearanceSettings {
-            cursor: true
-            settingKey: "aqueousCursor"
-            title: I18n.tr("Aqueous cursor", "Aqueous compositor cursor synchronization settings")
-            visible: CompositorService.isAqueous
-        }
-    }
-
     SettingsCard {
         tab: "theme"
         tags: ["cursor", "mouse", "pointer", "theme", "size", "hide", "typing", "touch", "timeout"]

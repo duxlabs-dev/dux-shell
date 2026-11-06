@@ -20,7 +20,6 @@ Singleton {
 
     readonly property bool available: {
         switch (CompositorService.compositor) {
-        case "aqueous":
         case "niri":
         case "mango":
         case "hyprland":
@@ -35,8 +34,6 @@ Singleton {
 
     readonly property var layoutNames: {
         switch (CompositorService.compositor) {
-        case "aqueous":
-            return AqueousService.keyboardLayouts;
         case "niri":
             return NiriService.keyboardLayoutNames || [];
         case "hyprland":
@@ -48,8 +45,6 @@ Singleton {
 
     readonly property string currentLayout: {
         switch (CompositorService.compositor) {
-        case "aqueous":
-            return AqueousService.keyboardLayout;
         case "niri":
             return NiriService.getCurrentKeyboardLayoutName();
         case "mango":
@@ -75,8 +70,6 @@ Singleton {
 
     readonly property int layoutCount: {
         switch (CompositorService.compositor) {
-        case "aqueous":
-            return AqueousService.keyboardLayouts.length;
         case "niri":
             return NiriService.keyboardLayoutNames.length;
         case "hyprland":
@@ -142,9 +135,6 @@ Singleton {
         switch (CompositorService.compositor) {
         case "niri":
             NiriService.cycleKeyboardLayout();
-            return;
-        case "aqueous":
-            AqueousService.cycleKeyboardLayout();
             return;
         case "hyprland":
             Quickshell.execDetached(["hyprctl", "switchxkblayout", _hyprlandKeyboard, "next"]);

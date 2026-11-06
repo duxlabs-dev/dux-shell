@@ -101,7 +101,6 @@ var (
 	mangowcVersionRegex    = regexp.MustCompile(`mango (\d+\.\d+\.\d+)`)
 	miracleVersionRegex    = regexp.MustCompile(`miracle-wm v?(\d+\.\d+\.\d+)`)
 	scrollVersionRegex     = regexp.MustCompile(`scroll version (\d+\.\d+)`)
-	aqueousVersionRegex    = regexp.MustCompile(`(?i)aqueous v?(\d+\.\d+(?:\.\d+)?)`)
 	umbrielVersionRegex    = regexp.MustCompile(`umbriel (\d+\.\d+\.\d+)`)
 )
 
@@ -879,7 +878,6 @@ func checkWindowManagers(qsVersion string) []checkResult {
 		{"mangowc", "mango", "-v", firstSubmatch(mangowcVersionRegex), []string{"mango"}},
 		{"Miracle WM", "miracle-wm", "--version", firstSubmatch(miracleVersionRegex), []string{"miracle-wm"}},
 		{"Scroll", "scroll", "--version", firstSubmatch(scrollVersionRegex), []string{"scroll"}},
-		{"Aqueous", "aqueous", "-version", firstSubmatch(aqueousVersionRegex), []string{"aqueous"}},
 		{"Umbriel", "umbriel", "--version", firstSubmatch(umbrielVersionRegex), []string{"umbriel"}},
 	}
 
@@ -932,17 +930,13 @@ func checkWindowManagers(qsVersion string) []checkResult {
 		results = append(results, checkResult{
 			catCompositor, "Compositor", statusError,
 			"No supported Wayland compositor found",
-			"Install Hyprland, niri, Sway, River, Wayfire, labwc, mangowc, miracle-wm, Scroll, Aqueous, or Umbriel",
+			"Install Hyprland, niri, Sway, River, Wayfire, labwc, mangowc, miracle-wm, Scroll, or Umbriel",
 			doctorDocsURL + "#compositor-checks",
 		})
 	}
 
 	if wm := detectRunningWM(); wm != "" {
 		results = append(results, checkResult{catCompositor, "Active", statusInfo, wm, "", doctorDocsURL + "#compositor"})
-	}
-
-	if os.Getenv("AQUEOUS_SOCKET") != "" {
-		results = append(results, checkAqueousConfigHelper())
 	}
 
 	if os.Getenv("MANGO_INSTANCE_SIGNATURE") != "" {
@@ -1188,19 +1182,6 @@ func kdlStringEnd(src string, i int) int {
 	return len(src)
 }
 
-func checkAqueousConfigHelper() checkResult {
-	url := doctorDocsURL + "#compositor-checks"
-	path, err := exec.LookPath("aqueous-config")
-	if err != nil {
-		return checkResult{catCompositor, "aqueous-config", statusWarn, "Not found", "Keybind and display settings edits from the shell need the aqueous-config helper", url}
-	}
-	details := "Keybind and display settings edits from the shell"
-	if doctorVerbose {
-		details = path
-	}
-	return checkResult{catCompositor, "aqueous-config", statusOK, "Installed", details, url}
-}
-
 func checkCompositorBlurSupport() checkResult {
 	supported, err := blur.ProbeSupport()
 	if err != nil {
@@ -1291,8 +1272,6 @@ func getVersionFromCommand(cmd, arg string, parse func(string) string) (display,
 
 func detectRunningWM() string {
 	switch {
-	case os.Getenv("AQUEOUS_SOCKET") != "":
-		return "Aqueous"
 	case os.Getenv("HYPRLAND_INSTANCE_SIGNATURE") != "":
 		return "Hyprland"
 	case os.Getenv("NIRI_SOCKET") != "":
@@ -1389,7 +1368,7 @@ ShellRoot {
 		{"Polkit", "Authentication prompts"},
 		{"IdleMonitor", "Idle detection"},
 		{"IdleInhibitor", "Prevent idle/sleep"},
-		{"ShortcutInhibitor", "Allow shortcut management (niri, Aqueous)"},
+		{"ShortcutInhibitor", "Allow shortcut management (niri)"},
 		{"BackgroundBlur", "Background blur API support in Quickshell"},
 	}
 

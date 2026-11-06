@@ -178,31 +178,6 @@
     "description": "Defaults, autostart, rules"
   },
   {
-    "section": "aqueousCursor",
-    "label": "Aqueous cursor",
-    "tabIndex": -1,
-    "category": "Wallpaper & colors",
-    "keywords": [
-      "appearance",
-      "aqueous",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "cursor",
-      "desktop",
-      "hue",
-      "image",
-      "palette",
-      "picture",
-      "tint",
-      "wallpaper"
-    ],
-    "page": "personalization",
-    "conditionKey": "isAqueous"
-  },
-  {
     "section": "wallpaperCyclingEnabled",
     "label": "Automatic cycling",
     "tabIndex": -1,
@@ -8176,24 +8151,6 @@
       "transition"
     ],
     "icon": "auto_awesome_motion"
-  },
-  {
-    "section": "aqueousTypography",
-    "label": "Aqueous typography",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animation",
-      "appearance",
-      "aqueous",
-      "font",
-      "fonts",
-      "motion",
-      "text",
-      "typeface",
-      "typography"
-    ],
-    "conditionKey": "isAqueous"
   },
   {
     "section": "displayFontFamily",

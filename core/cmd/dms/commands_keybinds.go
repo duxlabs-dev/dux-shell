@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -80,7 +79,6 @@ var keybindsKeymapCmd = &cobra.Command{
 }
 
 func init() {
-	keybindsCmd.PersistentFlags().String("expected-generation", "", "Configuration generation observed when editing Aqueous bindings")
 	for _, command := range []*cobra.Command{keybindsSetCmd, keybindsRemoveCmd, keybindsResetCmd} {
 		command.Flags().Bool("json", false, "Return structured mutation results, including errors")
 	}
@@ -115,9 +113,6 @@ func initializeProviders() {
 	registry := keybinds.GetDefaultRegistry()
 
 	hyprlandProvider := providers.NewHyprlandProvider("")
-	if err := registry.Register(providers.NewAqueousProvider()); err != nil {
-		log.Warnf("Failed to register Aqueous provider: %v", err)
-	}
 	if err := registry.Register(hyprlandProvider); err != nil {
 		log.Warnf("Failed to register Hyprland provider: %v", err)
 	}
@@ -258,15 +253,6 @@ func runKeybindsShow(cmd *cobra.Command, args []string) {
 	printCheatSheet(provider)
 }
 
-func keybindEditFailure(err error) map[string]any {
-	code := "command_failed"
-	var helperError *providers.AqueousError
-	if errors.As(err, &helperError) {
-		code = helperError.Code
-	}
-	return map[string]any{"success": false, "code": code, "message": err.Error()}
-}
-
 func runKeybindsEdit(cmd *cobra.Command, args []string) {
 	result, err := editKeybind(cmd, args)
 	if err == nil {
@@ -278,7 +264,7 @@ func runKeybindsEdit(cmd *cobra.Command, args []string) {
 		log.Fatalf("Failed to save keybind: %v", err)
 		return
 	}
-	_ = json.NewEncoder(cmd.OutOrStdout()).Encode(keybindEditFailure(err))
+	_ = json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]any{"success": false, "code": "command_failed", "message": err.Error()})
 	os.Exit(1)
 }
 
@@ -288,24 +274,6 @@ func editKeybind(cmd *cobra.Command, args []string) (map[string]any, error) {
 		return nil, err
 	}
 	key := args[1]
-	if aqueous, ok := provider.(*providers.AqueousProvider); ok {
-		generation, _ := cmd.Flags().GetString("expected-generation")
-		edit := providers.AqueousBindEdit{Generation: generation, Key: key, Remove: cmd.Name() != "set"}
-		if !edit.Remove {
-			for _, flag := range []string{"desc", "allow-when-locked", "cooldown-ms", "no-repeat", "no-inhibiting", "flags", "trigger", "release-action", "pass-through"} {
-				if cmd.Flags().Changed(flag) {
-					return nil, fmt.Errorf("aqueous does not support --%s in this provider", flag)
-				}
-			}
-			edit.Action = args[2]
-			edit.OriginalKey, _ = cmd.Flags().GetString("replace-key")
-		}
-		result, err := aqueous.Edit(cmd.Context(), edit)
-		if err != nil {
-			return nil, err
-		}
-		return map[string]any{"success": true, "code": "applied", "generation": result.String("generation"), "key": key}, nil
-	}
 	writable, ok := provider.(keybinds.WritableProvider)
 	if !ok {
 		return nil, fmt.Errorf("provider %s does not support writing keybinds", args[0])

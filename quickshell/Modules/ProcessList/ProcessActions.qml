@@ -20,7 +20,6 @@ Singleton {
             "mango": [],
             "labwc": ["labwc", "--reconfigure"],
             "miracle-wm": [],
-            "aqueous": [],
             "umbriel": [],
             "kwin_wayland": [],
             "gnome-shell": []
