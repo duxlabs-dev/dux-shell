@@ -452,12 +452,12 @@ Item {
 
         Media {
             id: mediaWidget
-            axis: surfaceContext.axis
+            axis: root.surfaceContext.axis
             compactMode: root.spacingTight || root.overlapping
-            barThickness: surfaceContext.thickness
-            widgetThickness: surfaceContext.widgetThickness
+            barThickness: root.surfaceContext.thickness
+            widgetThickness: root.surfaceContext.widgetThickness
             section: root.getWidgetSection(parent) || "center"
-            parentScreen: surfaceContext.screen
+            parentScreen: root.surfaceContext.screen
             onClicked: {
                 const section = root.getWidgetSection(parent) || "center";
                 root.openWidgetPopout({
