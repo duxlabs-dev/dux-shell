@@ -56,7 +56,7 @@ in
       };
     };
 
-    environment.systemPackages = [ cfg.quickshell.package ] ++ common.packages;
+    environment.systemPackages = common.packages;
 
     environment.etc = lib.mapAttrs' (name: value: {
       name = "xdg/quickshell/dms-plugins/${name}";

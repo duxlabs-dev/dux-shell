@@ -11,6 +11,10 @@
       url = "github:duxlabs-dev/dux-qml-common";
       flake = false;
     };
+    dux-qt-base = {
+      url = "github:duxlabs-dev/dux-qt-base";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -18,6 +22,7 @@
       self,
       nixpkgs,
       dank-qml-common,
+      dux-qt-base,
       ...
     }:
     let
@@ -50,6 +55,9 @@
         nixpkgs.lib.genAttrs [ "aarch64-linux" "x86_64-linux" ] (
           system: fn system nixpkgs.legacyPackages.${system}
         );
+
+      duxQtBaseFor =
+        pkgs: pkgs.dux-qt-base or dux-qt-base.packages.${pkgs.stdenv.hostPlatform.system}.dux-qt-base;
 
       mkModuleWithDmsPkgs =
         modulePath:
@@ -101,6 +109,7 @@
         pkgs.lib.makeOverridable (
           {
             extraQtPackages ? [ ],
+            duxQtBase ? duxQtBaseFor pkgs,
           }:
           (pkgs.buildGoModule.override { go = goForPkgs pkgs; }) (
             let
@@ -111,7 +120,7 @@
               inherit version;
               pname = "dms-shell";
               src = ./core;
-              vendorHash = "sha256-xQTkuq8ECHkGA+5pIheACcFM4RdHz8ULCccuOGR5Lm8=";
+              vendorHash = "sha256-H+BkY3u1sBk91VnlUj/T5xfesa53gockKFxKiejyuhU=";
 
               subPackages = [ "cmd/dms" ];
 
@@ -124,7 +133,10 @@
               nativeBuildInputs = with pkgs; [
                 installShellFiles
                 makeWrapper
+                pkg-config
               ];
+
+              buildInputs = [ duxQtBase ];
 
               postInstall = ''
                 mkdir -p $out/share/quickshell/dms
@@ -195,6 +207,7 @@
 
       buildDmsPkgs = pkgs: {
         dms-shell = mkDmsShell pkgs;
+        dux-qt-base = duxQtBaseFor pkgs;
       };
     in
     {

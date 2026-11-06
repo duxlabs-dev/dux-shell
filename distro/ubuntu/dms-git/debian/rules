@@ -42,12 +42,12 @@ override_dh_auto_build:
 	if [ -f dms-git-repo/.dms-version ]; then \
 		. dms-git-repo/.dms-version; \
 		echo "Building with VERSION=$$VERSION COMMIT=$$COMMIT ARCH=$(DEB_HOST_ARCH)"; \
-		cd dms-git-repo/core && $(MAKE) GOFLAGS="-mod=vendor" dist ARCH=$(DEB_HOST_ARCH) VERSION="$$VERSION" COMMIT="$$COMMIT"; \
+		cd dms-git-repo/core && $(MAKE) GOFLAGS="-mod=vendor" build-distro VERSION="$$VERSION" COMMIT="$$COMMIT"; \
 	else \
 		echo "Warning: .dms-version not found, building without version info"; \
-		cd dms-git-repo/core && $(MAKE) GOFLAGS="-mod=vendor" dist ARCH=$(DEB_HOST_ARCH); \
+		cd dms-git-repo/core && $(MAKE) GOFLAGS="-mod=vendor" build-distro; \
 	fi
-	cp dms-git-repo/core/bin/dms-linux-$(DEB_HOST_ARCH) dms
+	cp dms-git-repo/core/bin/dms dms
 	chmod +x dms
 
 override_dh_auto_install:

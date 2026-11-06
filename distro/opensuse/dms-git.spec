@@ -13,16 +13,17 @@ Source0:        dms-git-source.tar.gz
 Source1:        go%{go_toolchain_version}.linux-amd64.tar.gz
 Source2:        go%{go_toolchain_version}.linux-arm64.tar.gz
 
+BuildRequires:  dux-qt-base-devel
+BuildRequires:  gcc
 BuildRequires:  git-core
+BuildRequires:  pkgconfig
 BuildRequires:  systemd-rpm-macros
 
-Requires:       (quickshell-git or quickshell)
 Requires:       accountsservice
 
 Recommends:     cava
 Recommends:     (dux-search or danksearch)
 Recommends:     matugen
-Recommends:     quickshell-git
 Recommends:     NetworkManager
 Recommends:     qt6-multimedia-imports
 Suggests:       cups-pk-helper
@@ -90,16 +91,9 @@ VERSION="%{version}"
 COMMIT=$(echo "%{version}" | grep -oP '(?<=git)[0-9]+\.[a-f0-9]+' | cut -d. -f2 | head -c8 || echo "unknown")
 
 # Build dms-cli from source using vendored dependencies
-# Architecture mapping: RPM x86_64/aarch64 -> Makefile amd64/arm64
 cd core
-%ifarch x86_64
-make GOFLAGS="-mod=vendor" dist ARCH=amd64 VERSION="$VERSION" COMMIT="$COMMIT"
-mv bin/dms-linux-amd64 ../dms
-%endif
-%ifarch aarch64
-make GOFLAGS="-mod=vendor" dist ARCH=arm64 VERSION="$VERSION" COMMIT="$COMMIT"
-mv bin/dms-linux-arm64 ../dms
-%endif
+make GOFLAGS="-mod=vendor" build-distro VERSION="$VERSION" COMMIT="$COMMIT"
+mv bin/dms ../dms
 cd ..
 chmod +x dms
 

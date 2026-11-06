@@ -67,7 +67,7 @@ func (d *DebianDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 
 	dependencies = append(dependencies, d.detectGit())
 	dependencies = append(dependencies, d.detectWindowManager(wm))
-	dependencies = append(dependencies, d.detectQuickshell())
+	dependencies = append(dependencies, d.detectDuxQtBase())
 	dependencies = append(dependencies, d.detectGreeterPackage(d.packageInstalled))
 	dependencies = append(dependencies, d.detectXDGPortal())
 	dependencies = append(dependencies, d.detectAccountsService())
@@ -115,9 +115,6 @@ func (d *DebianDistribution) SwapVariants(ctx context.Context, swaps []VariantSw
 		return err
 	}
 	_, to := swapNames(swaps)
-	if err := d.ensureQuickshellBackports(ctx, to, sudoPassword, progressChan); err != nil {
-		return err
-	}
 	return d.installAPTPackages(ctx, to, sudoPassword, progressChan)
 }
 
@@ -159,7 +156,7 @@ func (d *DebianDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 
 		// DMS packages from OBS with variant support
 		"dms (Dux Shell)": d.getDmsMapping(variants["dms (Dux Shell)"]),
-		"quickshell":      d.getQuickshellMapping(variants["quickshell"]),
+		"dux-qt-base":     {Name: "libdux-qt-base0", Repository: RepoTypeOBS, RepoURL: obsDeps},
 		"dux-greeter":     variantMapping("dux-greeter", variants["dux-greeter"], RepoTypeOBS, obsDeps),
 		"matugen":         {Name: "matugen", Repository: RepoTypeOBS, RepoURL: obsDeps},
 		"ghostty":         {Name: "ghostty", Repository: RepoTypeOBS, RepoURL: obsDeps},
@@ -182,66 +179,6 @@ func (d *DebianDistribution) getDmsMapping(variant deps.PackageVariant) PackageM
 		return PackageMapping{Name: "dms-git", Repository: RepoTypeOBS, RepoURL: obsDMSGit}
 	}
 	return PackageMapping{Name: "dms", Repository: RepoTypeOBS, RepoURL: obsDMS}
-}
-
-func (d *DebianDistribution) getQuickshellMapping(variant deps.PackageVariant) PackageMapping {
-	if forceQuickshellGit || variant == deps.VariantGit {
-		return PackageMapping{Name: "quickshell-git", Repository: RepoTypeOBS, RepoURL: obsDeps}
-	}
-	// Debian 13 ships stable quickshell in trixie-backports only.
-	if d.debianNeedsQuickshellBackports() {
-		return PackageMapping{Name: "quickshell/trixie-backports", Repository: RepoTypeSystem}
-	}
-	return PackageMapping{Name: "quickshell", Repository: RepoTypeSystem}
-}
-
-func (d *DebianDistribution) debianNeedsQuickshellBackports() bool {
-	osInfo, err := GetOSInfo()
-	if err != nil {
-		return false
-	}
-	return debianOBSRepoVersion(osInfo, readDebianAPTSuites()) == obsRepoDebian13
-}
-
-func (d *DebianDistribution) ensureQuickshellBackports(ctx context.Context, systemPkgs []string, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
-	needsBackports := false
-	for _, pkg := range systemPkgs {
-		if strings.Contains(pkg, "trixie-backports") {
-			needsBackports = true
-			break
-		}
-	}
-	if !needsBackports {
-		return nil
-	}
-
-	policyOut, err := exec.CommandContext(ctx, "apt-cache", "policy").Output()
-	if err == nil && strings.Contains(string(policyOut), "trixie-backports") {
-		d.log("trixie-backports already configured")
-		return nil
-	}
-
-	listFile := "/etc/apt/sources.list.d/trixie-backports.list"
-	repoLine := "deb http://deb.debian.org/debian trixie-backports main contrib non-free non-free-firmware"
-
-	progressChan <- InstallProgressMsg{
-		Phase:       PhaseSystemPackages,
-		Progress:    0.30,
-		Step:        "Enabling trixie-backports for quickshell...",
-		IsComplete:  false,
-		NeedsSudo:   true,
-		CommandInfo: fmt.Sprintf("echo '%s' | sudo tee %s", repoLine, listFile),
-		LogOutput:   "Debian 13 ships quickshell in trixie-backports",
-	}
-
-	addCmd := privesc.ExecCommand(ctx, sudoPassword,
-		fmt.Sprintf("bash -c \"echo '%s' | tee %s\"", repoLine, listFile))
-	if err := d.runWithProgress(addCmd, progressChan, PhaseSystemPackages, 0.30, 0.31); err != nil {
-		return err
-	}
-
-	updateCmd := privesc.ExecCommand(ctx, sudoPassword, "apt-get update")
-	return d.runWithProgress(updateCmd, progressChan, PhaseSystemPackages, 0.31, 0.33)
 }
 
 func (d *DebianDistribution) getNiriMapping(variant deps.PackageVariant) PackageMapping {
@@ -344,10 +281,6 @@ func (d *DebianDistribution) InstallPackages(ctx context.Context, dependencies [
 		if err := d.enableOBSRepos(ctx, obsPkgs, sudoPassword, progressChan); err != nil {
 			return fmt.Errorf("failed to enable OBS repositories: %w", err)
 		}
-	}
-
-	if err := d.ensureQuickshellBackports(ctx, systemPkgs, sudoPassword, progressChan); err != nil {
-		return fmt.Errorf("failed to enable trixie-backports for quickshell: %w", err)
 	}
 
 	// System Packages
@@ -731,29 +664,6 @@ func (d *DebianDistribution) installBuildDependencies(ctx context.Context, manua
 			buildDeps["libgbm-dev"] = true
 			buildDeps["alacritty"] = true
 			buildDeps["fuzzel"] = true
-		case "quickshell":
-			buildDeps["qt6-base-dev"] = true
-			buildDeps["qt6-base-private-dev"] = true
-			buildDeps["qt6-declarative-dev"] = true
-			buildDeps["qt6-declarative-private-dev"] = true
-			buildDeps["qt6-wayland-dev"] = true
-			buildDeps["qt6-wayland-private-dev"] = true
-			buildDeps["qt6-tools-dev"] = true
-			buildDeps["libqt6svg6-dev"] = true
-			buildDeps["qt6-shadertools-dev"] = true
-			buildDeps["spirv-tools"] = true
-			buildDeps["libcli11-dev"] = true
-			buildDeps["libjemalloc-dev"] = true
-			buildDeps["libwayland-dev"] = true
-			buildDeps["wayland-protocols"] = true
-			buildDeps["libdrm-dev"] = true
-			buildDeps["libgbm-dev"] = true
-			buildDeps["libegl-dev"] = true
-			buildDeps["libgles2-mesa-dev"] = true
-			buildDeps["libgl1-mesa-dev"] = true
-			buildDeps["libxcb1-dev"] = true
-			buildDeps["libpipewire-0.3-dev"] = true
-			buildDeps["libpam0g-dev"] = true
 		case "ghostty":
 			buildDeps["curl"] = true
 		case "matugen":

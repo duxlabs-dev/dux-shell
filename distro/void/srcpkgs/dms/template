@@ -11,7 +11,8 @@ version=1.5.0
 revision=2
 build_style=go
 build_wrksrc="core"
-hostmakedepends="make tar"
+hostmakedepends="make tar pkg-config"
+makedepends="dux-qt-base-devel"
 go_import_path="github.com/duxlabs-dev/dux-shell/core"
 go_package="${go_import_path}/cmd/dms"
 go_build_tags="distro_binary withshell"
@@ -25,7 +26,7 @@ distfiles="https://github.com/duxlabs-dev/dux-shell/releases/download/v${version
 checksum=14f2678d6a15223ba069d1b8c8a21a5564b735d190c231f62ed44fd8bf48677c
 
 # Optional feature deps are listed in distro/void/README.md.
-depends="quickshell accountsservice matugen dbus elogind mesa-dri"
+depends="dux-qt-base accountsservice matugen dbus elogind mesa-dri"
 
 pre_build() {
 	make sync-shell

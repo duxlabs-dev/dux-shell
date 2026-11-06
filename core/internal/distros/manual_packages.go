@@ -32,19 +32,6 @@ func (m *ManualPackageInstaller) parseLatestTagFromGitOutput(output string) stri
 	return ""
 }
 
-// getLatestQuickshellTag fetches the latest tag from the quickshell repository
-func (m *ManualPackageInstaller) getLatestQuickshellTag(ctx context.Context) string {
-	tagCmd := exec.CommandContext(ctx, "git", "ls-remote", "--tags", "--sort=-v:refname",
-		"https://github.com/quickshell-mirror/quickshell.git")
-	tagOutput, err := tagCmd.Output()
-	if err != nil {
-		m.log(fmt.Sprintf("Warning: failed to fetch quickshell tags: %v", err))
-		return ""
-	}
-
-	return m.parseLatestTagFromGitOutput(string(tagOutput))
-}
-
 func (m *ManualPackageInstaller) InstallManualPackages(ctx context.Context, packages []string, variantMap map[string]deps.PackageVariant, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
 	if len(packages) == 0 {
 		return nil
@@ -62,10 +49,6 @@ func (m *ManualPackageInstaller) InstallManualPackages(ctx context.Context, pack
 		case "niri":
 			if err := m.installNiri(ctx, sudoPassword, progressChan); err != nil {
 				return fmt.Errorf("failed to install niri: %w", err)
-			}
-		case "quickshell":
-			if err := m.installQuickshell(ctx, variant, sudoPassword, progressChan); err != nil {
-				return fmt.Errorf("failed to install quickshell: %w", err)
 			}
 		case "hyprland":
 			if err := m.installHyprland(ctx, sudoPassword, progressChan); err != nil {
@@ -162,112 +145,6 @@ func (m *ManualPackageInstaller) installNiri(ctx context.Context, sudoPassword s
 	m.log(fmt.Sprintf("dpkg install successful. Output:\n%s", string(output)))
 
 	m.log("niri installed successfully from source")
-	return nil
-}
-
-func (m *ManualPackageInstaller) installQuickshell(ctx context.Context, variant deps.PackageVariant, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
-	m.log("Installing quickshell from source...")
-
-	homeDir := os.Getenv("HOME")
-	if homeDir == "" {
-		return fmt.Errorf("HOME environment variable not set")
-	}
-
-	cacheDir := filepath.Join(homeDir, ".cache", "duxinstall")
-	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create cache directory: %w", err)
-	}
-
-	tmpDir := filepath.Join(cacheDir, "quickshell-build")
-	if err := os.MkdirAll(tmpDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create temp directory: %w", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	progressChan <- InstallProgressMsg{
-		Phase:       PhaseSystemPackages,
-		Progress:    0.1,
-		Step:        "Cloning quickshell repository...",
-		IsComplete:  false,
-		CommandInfo: "git clone https://github.com/quickshell-mirror/quickshell.git",
-	}
-
-	var cloneCmd *exec.Cmd
-	if forceQuickshellGit || variant == deps.VariantGit {
-		cloneCmd = exec.CommandContext(ctx, "git", "clone", "https://github.com/quickshell-mirror/quickshell.git", tmpDir)
-	} else {
-		latestTag := m.getLatestQuickshellTag(ctx)
-		if latestTag != "" {
-			m.log(fmt.Sprintf("Using latest quickshell tag: %s", latestTag))
-			cloneCmd = exec.CommandContext(ctx, "git", "clone", "--branch", latestTag, "https://github.com/quickshell-mirror/quickshell.git", tmpDir)
-		} else {
-			m.log("Warning: failed to fetch latest tag, using default branch")
-			cloneCmd = exec.CommandContext(ctx, "git", "clone", "https://github.com/quickshell-mirror/quickshell.git", tmpDir)
-		}
-	}
-	if err := cloneCmd.Run(); err != nil {
-		return fmt.Errorf("failed to clone quickshell: %w", err)
-	}
-
-	buildDir := tmpDir + "/build"
-	if err := os.MkdirAll(buildDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create build directory: %w", err)
-	}
-
-	progressChan <- InstallProgressMsg{
-		Phase:       PhaseSystemPackages,
-		Progress:    0.3,
-		Step:        "Configuring quickshell build...",
-		IsComplete:  false,
-		CommandInfo: "cmake -B build -S . -G Ninja",
-	}
-
-	configureCmd := exec.CommandContext(ctx, "cmake", "-GNinja", "-B", "build",
-		"-DCMAKE_BUILD_TYPE=RelWithDebInfo",
-		"-DCRASH_REPORTER=off",
-		"-DCMAKE_CXX_STANDARD=20")
-	configureCmd.Dir = tmpDir
-	configureCmd.Env = append(os.Environ(), "TMPDIR="+cacheDir)
-
-	output, err := configureCmd.CombinedOutput()
-	if err != nil {
-		m.log(fmt.Sprintf("cmake configure failed. Output:\n%s", string(output)))
-		return fmt.Errorf("failed to configure quickshell: %w\nCMake output:\n%s", err, string(output))
-	}
-
-	m.log(fmt.Sprintf("cmake configure successful. Output:\n%s", string(output)))
-
-	progressChan <- InstallProgressMsg{
-		Phase:       PhaseSystemPackages,
-		Progress:    0.4,
-		Step:        "Building quickshell (this may take a while)...",
-		IsComplete:  false,
-		CommandInfo: "cmake --build build",
-	}
-
-	buildCmd := exec.CommandContext(ctx, "cmake", "--build", "build")
-	buildCmd.Dir = tmpDir
-	buildCmd.Env = append(os.Environ(), "TMPDIR="+cacheDir)
-	if err := m.runWithProgressStep(buildCmd, progressChan, PhaseSystemPackages, 0.4, 0.8, "Building quickshell..."); err != nil {
-		return fmt.Errorf("failed to build quickshell: %w", err)
-	}
-
-	progressChan <- InstallProgressMsg{
-		Phase:       PhaseSystemPackages,
-		Progress:    0.8,
-		Step:        "Installing quickshell...",
-		IsComplete:  false,
-		NeedsSudo:   true,
-		CommandInfo: "sudo cmake --install build",
-	}
-
-	installCmd := privesc.ExecCommand(ctx, sudoPassword, "cmake --install build")
-	installCmd.Dir = tmpDir
-	if err := installCmd.Run(); err != nil {
-		return fmt.Errorf("failed to install quickshell: %w", err)
-	}
-
-	m.log("quickshell installed successfully from source")
 	return nil
 }
 

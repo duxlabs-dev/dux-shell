@@ -32,13 +32,15 @@ Source2:        https://go.dev/dl/go%{go_toolchain_version}.linux-arm64.tar.gz
 # git_repo_pack archives skip submodule content, so pack dux-qml-common separately
 Source3:        {{{ git_pack path=$GIT_ROOT/dux-qml-common dir_name=dux-qml-common source_name=dux-qml-common.tar.gz }}}
 
+BuildRequires:  dux-qt-base-devel
+BuildRequires:  gcc
 BuildRequires:  git-core
 BuildRequires:  gzip
 BuildRequires:  make
+BuildRequires:  pkgconfig
 BuildRequires:  systemd-rpm-macros
 
 # Core requirements
-Requires:       (quickshell-git or quickshell)
 Requires:       accountsservice
 Requires:       dms-cli = %{epoch}:%{version}-%{release}
 
@@ -46,7 +48,6 @@ Requires:       dms-cli = %{epoch}:%{version}-%{release}
 Recommends:     cava
 Recommends:     (dux-search or danksearch)
 Recommends:     matugen
-Recommends:     quickshell-git
 
 # Recommended system packages
 Recommends:     NetworkManager
@@ -107,32 +108,18 @@ export GOTOOLCHAIN=local
 go version
 
 cd core
-make dist VERSION="$VERSION" COMMIT="$COMMIT"
+make build-distro VERSION="$VERSION" COMMIT="$COMMIT"
 
 %install
-# Install dms-cli binary (built from source)
-case "%{_arch}" in
-  x86_64)
-    DMS_BINARY="dms-linux-amd64"
-    ;;
-  aarch64)
-    DMS_BINARY="dms-linux-arm64"
-    ;;
-  *)
-    echo "Unsupported architecture: %{_arch}"
-    exit 1
-    ;;
-esac
-
-install -Dm755 core/bin/${DMS_BINARY} %{buildroot}%{_bindir}/dms
+install -Dm755 core/bin/dms %{buildroot}%{_bindir}/dms
 
 # Shell completions
 install -d %{buildroot}%{_datadir}/bash-completion/completions
 install -d %{buildroot}%{_datadir}/zsh/site-functions
 install -d %{buildroot}%{_datadir}/fish/vendor_completions.d
-core/bin/${DMS_BINARY} completion bash > %{buildroot}%{_datadir}/bash-completion/completions/dms || :
-core/bin/${DMS_BINARY} completion zsh > %{buildroot}%{_datadir}/zsh/site-functions/_dms || :
-core/bin/${DMS_BINARY} completion fish > %{buildroot}%{_datadir}/fish/vendor_completions.d/dms.fish || :
+core/bin/dms completion bash > %{buildroot}%{_datadir}/bash-completion/completions/dms || :
+core/bin/dms completion zsh > %{buildroot}%{_datadir}/zsh/site-functions/_dms || :
+core/bin/dms completion fish > %{buildroot}%{_datadir}/fish/vendor_completions.d/dms.fish || :
 
 # Install systemd user service
 install -Dm644 assets/systemd/dms.service %{buildroot}%{_userunitdir}/dms.service

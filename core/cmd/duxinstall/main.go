@@ -54,7 +54,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&term, "term", "t", "", "Terminal emulator to install: ghostty, kitty, or alacritty (enables headless mode)")
 	rootCmd.Flags().StringVar(&privescTool, "privesc", "", "Privilege escalation tool: sudo, doas, or run0 (default: autodetect)")
 	rootCmd.Flags().BoolVar(&gitAll, "git", false, "Install the git version of every dep that has one")
-	rootCmd.Flags().StringSliceVar(&gitDeps, "git-deps", []string{}, "Deps to install the git version of (e.g. niri,quickshell)")
+	rootCmd.Flags().StringSliceVar(&gitDeps, "git-deps", []string{}, "Deps to install the git version of (e.g. niri,hyprland)")
 	rootCmd.Flags().BoolVar(&allFeatures, "all-features", false, "Enable all optional deps (dux-greeter, dux-search, dux-calendar, dux-files)")
 	rootCmd.Flags().StringSliceVar(&includeDeps, "include-deps", []string{}, "Optional deps to enable (e.g. dux-greeter)")
 	rootCmd.Flags().StringSliceVar(&excludeDeps, "exclude-deps", []string{}, "Deps to skip during installation")

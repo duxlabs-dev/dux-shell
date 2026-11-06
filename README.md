@@ -7,7 +7,7 @@
 
 ### A modern desktop shell for Wayland
 
-Built with [Quickshell](https://quickshell.org/) and [Go](https://go.dev/)
+Built with [Quickshell](https://quickshell.org/) and [Go](https://go.dev/); the Quickshell runtime ships inside the `dms` binary as [dux-qt-base](https://github.com/duxlabs-dev/dux-qt-base)
 
 [![Documentation](https://img.shields.io/badge/docs-duxlabs.dev-9ccbfb?style=for-the-badge&labelColor=101418)](https://duxlabs.dev/docs)
 [![GitHub stars](https://img.shields.io/github/stars/duxlabs-dev/dux-shell?style=for-the-badge&labelColor=101418&color=ffd700)](https://github.com/duxlabs-dev/dux-shell/stargazers)

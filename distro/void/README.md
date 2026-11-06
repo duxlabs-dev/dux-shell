@@ -59,7 +59,7 @@ checkout at `srcpkgs/<pkg>/template` to build or submit it.
 
 ## Dependencies
 
-Installing `dms` automatically pulls in `quickshell`, `accountsservice`,
+Installing `dms` automatically pulls in `dux-qt-base`, `accountsservice`,
 `matugen` (which drives the Material You theming), `dbus`, `elogind`, and
 `mesa-dri` (GL drivers, required for compositors to render).
 The rest are optional, install whichever features you want:
