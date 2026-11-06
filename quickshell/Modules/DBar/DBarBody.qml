@@ -23,13 +23,7 @@ Item {
 
     readonly property bool barRevealed: inputMask.showing
     readonly property bool autoHideActive: topBarCore.autoHide
-    readonly property bool fullscreenAutoHide: !barWindow.isIsland
-        && !usesFrameBarChrome
-        && (barConfig?.hideOnFullscreen ?? false)
-        && hostWindow?.dBarLayer === WlrLayer.Overlay
-        && CompositorService.isNiri
-        && !CompositorService.overviewActiveOnScreen(screenName)
-        && CompositorService.visibleNiriFullscreenToplevelOnScreen(screen)
+    readonly property bool fullscreenAutoHide: !barWindow.isIsland && !usesFrameBarChrome && (barConfig?.hideOnFullscreen ?? false) && hostWindow?.dBarLayer === WlrLayer.Overlay && CompositorService.isNiri && !CompositorService.overviewActiveOnScreen(screenName) && CompositorService.visibleNiriFullscreenToplevelOnScreen(screen)
 
     readonly property bool isIsland: barConfig?.island === true
     // Resolver-owned so the body, the frame and the dismiss window agree during the frame latch.
@@ -662,7 +656,7 @@ Item {
     readonly property color _bgColor: (FrameTransitionState.effectiveFrameEnabled && usesFrameBarChrome) ? Theme.frameSurfaceColor : Theme.withAlpha(_hostSurface, _backgroundAlpha)
     readonly property real _dpr: CompositorService.getScreenScale(barWindow.screen)
 
-    property string screenName: modelData.name
+    property string screenName: modelData?.name ?? ""
 
     readonly property bool usesConnectedFrameChrome: CompositorService.usesConnectedFrameChromeForScreen(screenName)
     readonly property bool usesFrameBarChrome: CompositorService.frameWindowVisibleForScreen(screenName)
