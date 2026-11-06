@@ -171,6 +171,7 @@ type RegionSelector struct {
 	running   bool
 	cancelled bool
 	copyOnly  bool
+	ocrOnly   bool
 	result    Region
 
 	capturedBuffer *ShmBuffer
@@ -296,6 +297,7 @@ func (r *RegionSelector) Run() (*CaptureResult, bool, error) {
 		Format:    format,
 		Scale:     scale,
 		CopyOnly:  r.copyOnly,
+		OCROnly:   r.ocrOnly,
 	}, false, nil
 }
 
