@@ -91,7 +91,6 @@ Item {
     readonly property alias contentWindow: contentWindow
     readonly property bool useHyprlandFocusGrab: CompositorService.useHyprlandFocusGrab
     readonly property bool useBackground: !connected && showBackground && !FrameTransitionState.effectiveFrameEnabled && SettingsData.modalDarkenBackground
-    readonly property bool useSingleWindow: connected || CompositorService.isHyprland || useBackground
 
     signal opened
     signal dialogClosed
@@ -202,33 +201,10 @@ Item {
         modalChrome.item?.release();
     }
 
-    function _kickBlurCommit() {
-        if (typeof contentWindow.update === "function")
-            contentWindow.update();
-    }
-
-    function _kickBlurCommitUnlessConnected() {
-        if (connected)
-            return;
-        _kickBlurCommit();
-    }
-
-    // Low resource scalar writes: publish synchronously to stay in the same frame
-    function _syncAlignedGeometry() {
-        if (connected) {
-            _syncModalBody();
-            return;
-        }
-        _kickBlurCommit();
-    }
-
     onShouldBeVisibleChanged: {
         morph.retarget(shouldBeVisible ? 1 : 0);
-        if (connected) {
+        if (connected)
             _queueFullSync();
-            return;
-        }
-        _kickBlurCommit();
     }
     onFrameOwnsConnectedChromeChanged: {
         if (!connected)
@@ -245,10 +221,10 @@ Item {
             return;
         _syncModalBody();
     }
-    onAlignedXChanged: _syncAlignedGeometry()
-    onAlignedYChanged: _syncAlignedGeometry()
-    onAlignedWidthChanged: _syncAlignedGeometry()
-    onAlignedHeightChanged: _syncAlignedGeometry()
+    onAlignedXChanged: _syncModalBody()
+    onAlignedYChanged: _syncModalBody()
+    onAlignedWidthChanged: _syncModalBody()
+    onAlignedHeightChanged: _syncModalBody()
 
     function open() {
         if (!contentWindow.visible)
@@ -309,8 +285,6 @@ Item {
             _reveal();
             return;
         }
-        if (clickCatcher.item)
-            clickCatcher.item.present();
         contentWindow.visible = true;
         if (!_surfaceFrameReady) {
             _presentPending = true;
@@ -322,8 +296,6 @@ Item {
     function _reveal() {
         _presentPending = false;
         shouldBeVisible = true;
-        if (clickCatcher.item)
-            clickCatcher.item.present();
         contentWindow.visible = true;
         opened();
         shouldHaveFocus = Qt.binding(() => shouldBeVisible);
@@ -415,9 +387,6 @@ Item {
 
     readonly property var shadowLevel: Theme.elevationLevel3
     readonly property real shadowFallbackOffset: Theme.spacingS
-    readonly property real shadowRenderPadding: (root.enableShadow && Theme.elevationEnabled && SettingsData.modalElevationEnabled) ? Theme.elevationRenderPadding(shadowLevel, Theme.elevationLightDirection, shadowFallbackOffset, 8, 16) : 0
-    readonly property real shadowMotionPadding: animationType === "slide" ? 30 : Math.max(0, animationOffset)
-    readonly property real shadowBuffer: Theme.snap(shadowRenderPadding + shadowMotionPadding, dpr)
     readonly property real alignedWidth: Theme.px(modalWidth, dpr)
     readonly property real alignedHeight: Theme.px(modalHeight, dpr)
 
@@ -483,62 +452,6 @@ Item {
             }
         })(), dpr)
 
-    Loader {
-        id: clickCatcher
-        active: !root.connected
-        sourceComponent: Item {
-            id: catcher
-
-            function present() {
-                if (!root.useSingleWindow)
-                    catcherWindow.visible = true;
-            }
-
-            readonly property bool contentWindowVisible: contentWindow.visible
-
-            onContentWindowVisibleChanged: {
-                if (!contentWindowVisible && !root.useSingleWindow)
-                    catcherWindow.visible = false;
-            }
-
-            PanelWindow {
-                id: catcherWindow
-                screen: contentWindow.screen
-                visible: false
-                color: "transparent"
-                updatesEnabled: false
-
-                WlrLayershell.namespace: root.layerNamespace + ":clickcatcher"
-                WlrLayershell.layer: WlrLayershell.Top
-                WlrLayershell.exclusiveZone: -1
-                WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-
-                anchors {
-                    top: true
-                    left: true
-                    right: true
-                    bottom: true
-                }
-
-                mask: Region {
-                    item: Rectangle {
-                        x: root.alignedX
-                        y: root.alignedY
-                        width: root.alignedWidth
-                        height: root.alignedHeight
-                    }
-                    intersection: Intersection.Xor
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    enabled: root.closeOnBackgroundClick && root.shouldBeVisible
-                    onClicked: root.backgroundClicked()
-                }
-            }
-        }
-    }
-
     PanelWindow {
         id: contentWindow
         visible: false
@@ -566,19 +479,9 @@ Item {
         anchors {
             left: true
             top: true
-            right: root.useSingleWindow
-            bottom: root.useSingleWindow
+            right: true
+            bottom: true
         }
-
-        WlrLayershell.margins {
-            left: root.useSingleWindow ? 0 : Math.max(0, Theme.snap(root.alignedX - root.shadowBuffer, root.dpr))
-            top: root.useSingleWindow ? 0 : Math.max(0, Theme.snap(root.alignedY - root.shadowBuffer, root.dpr))
-            right: 0
-            bottom: 0
-        }
-
-        implicitWidth: root.useSingleWindow ? 0 : root.alignedWidth + (root.shadowBuffer * 2)
-        implicitHeight: root.useSingleWindow ? 0 : root.alignedHeight + (root.shadowBuffer * 2)
 
         onVisibleChanged: {
             if (!visible)
@@ -606,7 +509,7 @@ Item {
 
         MouseArea {
             anchors.fill: parent
-            enabled: root.useSingleWindow && root.closeOnBackgroundClick && root.shouldBeVisible
+            enabled: root.closeOnBackgroundClick && root.shouldBeVisible
             z: -2
             onClicked: root.backgroundClicked()
         }
@@ -631,8 +534,8 @@ Item {
         Item {
             id: modalReveal
             // Clip to final footprint while frame-owned chrome grows from the bar edge.
-            x: root.useSingleWindow ? root.alignedX : root.shadowBuffer
-            y: root.useSingleWindow ? root.alignedY : root.shadowBuffer
+            x: root.alignedX
+            y: root.alignedY
             width: root.alignedWidth
             height: root.alignedHeight
             clip: root.frameOwnsConnectedChrome
@@ -648,7 +551,7 @@ Item {
 
                 MouseArea {
                     anchors.fill: parent
-                    enabled: root.useSingleWindow && root.shouldBeVisible
+                    enabled: root.shouldBeVisible
                     hoverEnabled: false
                     acceptedButtons: Qt.AllButtons
                     onPressed: mouse => mouse.accepted = true
@@ -762,7 +665,6 @@ Item {
                 SpringMotion {
                     id: morph
                     enabled: root.animationsEnabled
-                    onValueChanged: root._kickBlurCommitUnlessConnected()
                     reducedMotion: root.animationDuration <= 0
                     positionEpsilon: Math.max(0.001, 0.25 / root.dpr / modalContainer.morphTravelPx)
                     velocityEpsilon: positionEpsilon * damping / Math.max(0.001, 2 * mass)

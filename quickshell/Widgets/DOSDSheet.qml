@@ -26,7 +26,6 @@ PanelWindow {
     }
 
     readonly property real dpr: host.dpr
-    readonly property real shadowBuffer: host.shadowBuffer
     readonly property int alignX: host.alignX
     readonly property int alignY: host.alignY
     readonly property rect compact: Qt.rect(host.alignedX, host.alignedY, host.alignedWidth, host.alignedHeight)
@@ -50,25 +49,17 @@ PanelWindow {
     readonly property real sheetX: Math.max(insetLeft, Math.min(alongFrom(alignX, compact.x, compact.width, sheetWidth), host.screenWidth - insetRight - sheetWidth))
     readonly property real sheetY: alongFrom(alignY, compact.y, compact.height, shownSheetHeight)
 
-    readonly property real bandHeight: Math.max(compact.height, maxSheetHeight)
-    readonly property real bandX: Math.min(compact.x, sheetX)
-    readonly property real bandY: alongFrom(alignY, compact.y, compact.height, bandHeight)
-    readonly property real bandRight: Math.max(compact.x + compact.width, sheetX + sheetWidth)
-    readonly property real originX: Math.max(0, Theme.snap(bandX - shadowBuffer, dpr))
-    readonly property real originY: Math.max(0, Theme.snap(bandY - shadowBuffer, dpr))
-
-    readonly property rect compactLocal: Qt.rect(compact.x - originX, compact.y - originY, compact.width, compact.height)
-    readonly property rect sheetLocal: Qt.rect(Theme.snap(sheetX - originX, dpr), Theme.snap(sheetY - originY, dpr), sheetWidth, shownSheetHeight)
+    readonly property rect sheetRect: Qt.rect(Theme.snap(sheetX, dpr), Theme.snap(sheetY, dpr), sheetWidth, shownSheetHeight)
 
     readonly property int animationDuration: Theme.popoutAnimationDuration
     readonly property var springParams: Theme.springPreset("default", animationDuration)
-    readonly property real morphTravelPx: Math.max(1, Math.abs(sheetLocal.x - compactLocal.x), Math.abs(sheetLocal.y - compactLocal.y), Math.abs(sheetLocal.width - compactLocal.width), Math.abs(sheetLocal.height - compactLocal.height))
+    readonly property real morphTravelPx: Math.max(1, Math.abs(sheetRect.x - compact.x), Math.abs(sheetRect.y - compact.y), Math.abs(sheetRect.width - compact.width), Math.abs(sheetRect.height - compact.height))
     readonly property bool morphSettled: !morph.running || Math.abs(morph.value - morph.target) < Theme.morphLayerEpsilon
     // A fully transparent surface renders no frames, so the spring would never advance to settle.
     readonly property bool closeFinished: closing && (morphSettled || FluidGeometry.chromeOpacity(morph.value) <= 0)
     readonly property real morphProgress: morphSettled ? morph.target : morph.value
     readonly property real progress: Math.max(0, Math.min(1, morphProgress))
-    readonly property rect body: FluidGeometry.limitOvershoot(morphRect(compactLocal, sheetLocal, morphProgress), sheetLocal, Theme.fluidOvershootLimit)
+    readonly property rect body: FluidGeometry.limitOvershoot(morphRect(compact, sheetRect, morphProgress), sheetRect, Theme.fluidOvershootLimit)
     readonly property real surfaceRadius: host.surfaceRadius + (Theme.windowRadius - host.surfaceRadius) * progress
 
     signal presented
@@ -133,16 +124,10 @@ PanelWindow {
 
     anchors {
         top: true
+        bottom: true
         left: true
+        right: true
     }
-
-    WlrLayershell.margins {
-        left: root.originX
-        top: root.originY
-    }
-
-    implicitWidth: Math.min(host.screenWidth - originX, Theme.snap(bandRight + shadowBuffer, dpr) - originX)
-    implicitHeight: Math.min(host.screenHeight - originY, Theme.snap(bandY + bandHeight + shadowBuffer, dpr) - originY)
 
     SpringMotion {
         id: morph
@@ -167,7 +152,7 @@ PanelWindow {
     }
 
     DFocusGrab {
-        windows: [root, dismissWindow].concat(KeyboardFocus.barWindows)
+        windows: [root].concat(KeyboardFocus.barWindows)
         wanted: KeyboardFocus.wantsGrab(root.opened && !root.closing)
         onCleared: root.close()
     }
@@ -244,7 +229,7 @@ PanelWindow {
                     width: root.sheetWidth
                     height: root.sheetHeight
                     sourceComponent: root.host.sheet
-                    opacity: FluidGeometry.contentOpacity(root.body, root.sheetLocal)
+                    opacity: FluidGeometry.contentOpacity(root.body, root.sheetRect)
                     visible: opacity > 0
                     focus: true
                 }
@@ -258,59 +243,6 @@ PanelWindow {
 
         function onCloseRequested() {
             root.close();
-        }
-    }
-
-    PanelWindow {
-        id: dismissWindow
-
-        property bool mapped: false
-
-        screen: root.screen
-        visible: root.opened && !root.closing
-        color: "transparent"
-        exclusiveZone: -1
-        // Input only: after the first transparent frame maps it, repainting would damage the whole screen.
-        updatesEnabled: !mapped
-        WlrLayershell.namespace: root.host.blurNamespace + ":dismiss"
-        WlrLayershell.layer: root.WlrLayershell.layer
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-
-        anchors {
-            top: true
-            bottom: true
-            left: true
-            right: true
-        }
-
-        mask: Region {
-            width: dismissWindow.width
-            height: dismissWindow.height
-
-            Region {
-                x: root.originX
-                y: root.originY
-                width: root.width
-                height: root.height
-                intersection: Intersection.Subtract
-            }
-        }
-
-        Connections {
-            target: dismissSurface.Window.window
-            enabled: !dismissWindow.mapped
-
-            function onFrameSwapped() {
-                dismissWindow.mapped = true;
-            }
-        }
-
-        MouseArea {
-            id: dismissSurface
-
-            anchors.fill: parent
-            acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-            onClicked: root.close()
         }
     }
 }

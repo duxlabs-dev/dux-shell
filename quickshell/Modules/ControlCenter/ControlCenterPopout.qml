@@ -8,19 +8,16 @@ DPopout {
     id: root
 
     layerNamespace: "dms:control-center"
-    fullHeightSurface: true
     resizeCurve: Theme.expressiveCurves.standard
     resizeDuration: CcMetrics.transitionDuration
     resizeMotion: true
     resizing: contentLoader.item?.panelResizing ?? false
-    surfacePadding: CcMetrics.editOverflow
     // Hangs above wherever a strip below would push the panel off its resting spot (bottom bar, low side-bar trigger).
     readonly property bool stripAbove: alignedYFor(0, CcMetrics.editActionsHeight) !== alignedYFor(0, 0)
     readonly property bool growsFromTop: effectiveBarPosition === SettingsData.Position.Top
     bottomOverflow: editMode && !stripAbove ? CcMetrics.editActionsHeight : 0
     topOverflow: editMode && stripAbove ? CcMetrics.editActionsHeight : 0
     inputMargin: editMode ? CcMetrics.editOverflow : 0
-    minimumSurfaceWidth: editMode ? CcMetrics.sheetWidthFor(gridColumnCap) : 0
 
     property string expandedSection: ""
     property string pendingSection: ""

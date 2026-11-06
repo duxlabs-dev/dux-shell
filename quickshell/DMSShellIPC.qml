@@ -381,8 +381,6 @@ Item {
             if (position && bar.positionDash)
                 bar.positionDash(dash, position);
             dash.requestTab(tabId);
-            if (dash.updateSurfacePosition)
-                dash.updateSurfacePosition();
             return true;
         }
 

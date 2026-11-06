@@ -19,7 +19,6 @@ PanelWindow {
     screen: targetScreen
     readonly property bool _frameVisible: CompositorService.frameWindowVisibleForScreen(win.targetScreen)
     visible: win._frameVisible
-    updatesEnabled: win._frameVisible
 
     WlrLayershell.namespace: "dms:frame"
     readonly property bool _dockEditActive: frameDockHostLoader.item?.editActive ?? false

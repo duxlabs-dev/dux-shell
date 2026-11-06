@@ -14,29 +14,15 @@ DragHandler {
     readonly property int velocityWindow: 60
     property point startAnchor
     property point startPointer
-    property point startOrigin
     property point lastPointer
     property bool tracking: false
     property bool movePending: false
-    property bool flingPending: false
     property point releaseVelocity
     property var samples: []
-    readonly property bool hostLifted: root.hostWindow.lifted
 
-    onHostLiftedChanged: {
-        if (root.hostLifted && root.flingPending)
-            root.fling();
-    }
-
-    // Scene positions are surface-local; events just after the lift can still carry the pre-lift origin, so the reading that continues the stroke wins.
     function pointerPosition() {
         const p = root.centroid.scenePosition;
-        const current = Qt.point(p.x + root.hostWindow.frameLeft, p.y + root.hostWindow.frameTop);
-        if (!root.tracking)
-            return current;
-        const previous = Qt.point(p.x + root.startOrigin.x, p.y + root.startOrigin.y);
-        const last = root.lastPointer;
-        return Math.hypot(current.x - last.x, current.y - last.y) <= Math.hypot(previous.x - last.x, previous.y - last.y) ? current : previous;
+        return Qt.point(p.x, p.y);
     }
 
     function anchorFor(pointer) {
@@ -45,7 +31,6 @@ DragHandler {
 
     function rememberPress() {
         root.startAnchor = Qt.point(root.surface.currentVisualX + root.surface.currentVisualWidth / 2, root.surface.currentVisualY + root.surface.currentVisualHeight / 2);
-        root.startOrigin = Qt.point(root.hostWindow.frameLeft, root.hostWindow.frameTop);
         root.startPointer = root.pointerPosition();
         root.lastPointer = root.startPointer;
         root.samples = [];
@@ -79,9 +64,8 @@ DragHandler {
         return Qt.point(clamp((last.x - first.x) / seconds), clamp((last.y - first.y) / seconds));
     }
 
-    // Re-based at drag start: a press just after a settle can read the old origin, and a flying dot has moved since the press.
+    // Re-based at drag start: a flying dot has moved since the press.
     function beginDrag() {
-        root.flingPending = false;
         root.tracking = false;
         root.rememberPress();
         root.hostWindow.dragging = true;
@@ -99,19 +83,14 @@ DragHandler {
         root.releaseVelocity = root.flingVelocity();
         root.movePending = false;
         root.tracking = false;
-        // Raised before dragging drops, so the lift holds through the fling.
+        // Raised before dragging drops, so the anchor stays held through the fling.
         host.flinging = true;
         host.dragging = false;
-        // A release before the lift lands waits for it, or the fling would spring out of the old buffer.
-        if (host.lifted)
-            root.fling();
-        else
-            root.flingPending = true;
+        root.fling();
     }
 
     function fling() {
         const host = root.hostWindow;
-        root.flingPending = false;
         // An expand requested mid-drag disables this handler; the sheet must not open with the release velocity.
         if (root.surface.controller.expanded) {
             host.flinging = false;
@@ -153,9 +132,9 @@ DragHandler {
             root.recordPointer();
     }
 
-    // One anchor write per frame however fast the mouse polls, and none before the lift lands.
+    // One anchor write per frame however fast the mouse polls.
     property FrameAnimation moveFrame: FrameAnimation {
-        running: root.active && root.movePending && root.hostWindow.lifted
+        running: root.active && root.movePending
         onTriggered: root.applyMove()
     }
 }
