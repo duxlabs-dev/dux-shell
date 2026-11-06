@@ -152,13 +152,18 @@ Singleton {
         return path.replace(/ \(deleted\)$/, "").split("/").pop();
     }
 
+    function programRow(program) {
+        const name = program.toLowerCase();
+        return ProcessIcons.PROGRAM_ICONS.find(r => r.programs.includes(name));
+    }
+
     // Exact names only: the app id search behind Paths.getAppIcon matches parts of words, so "sh" finds any Exec line with "share" in it.
     // Theme lookups aren't exact for names with a dash: "start-hyprland" falls back to the unrelated "start" icon.
     function programIcon(program) {
         if (Paths.moddedAppId(program) !== program)
             return Paths.resolveIconPath(program);
         const name = program.toLowerCase();
-        const row = ProcessIcons.PROGRAM_ICONS.find(r => r.programs.includes(name));
+        const row = programRow(program);
         const names = row ? row.icons ?? [] : name.includes("-") ? [] : [...new Set([program, name, name.replace(/[\d.]+$/, "")])];
         for (const candidate of names) {
             const icon = Paths.themedIconPath(candidate);
@@ -185,14 +190,16 @@ Singleton {
         return memo.icons.get(key);
     }
 
-    // A process without an icon of its own shows the one of its closest parent that has one.
+    // A process without an icon of its own shows the one of its closest parent app that has one.
     function appIcon(process, entry) {
         indexProcesses();
         const memo = _appMemo;
         let icon = ownIcon(process, entry);
         let parent = memo.byPid.get(process?.ppid);
         for (let depth = 0; !icon && parent && depth < 32; depth++) {
-            icon = ownIcon(parent, appEntry(parent));
+            const parentEntry = appEntry(parent);
+            if (parentEntry || programRow(programName(parent))?.passesIcon)
+                icon = ownIcon(parent, parentEntry);
             parent = memo.byPid.get(parent.ppid);
         }
         return icon;
