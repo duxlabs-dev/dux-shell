@@ -529,6 +529,30 @@ func ensureContrastBidirectional(hexColor, hexBg string, target float64, opts Pa
 	return EnsureContrast(hexColor, hexBg, target, opts.IsLight)
 }
 
+func contrastMeets(hex, bg string, target float64, opts PaletteOptions) bool {
+	if opts.UseDPS {
+		return DeltaPhiStarContrast(hex, bg, opts.IsLight) >= target
+	}
+	return ContrastRatio(hex, bg) >= target
+}
+
+// A light primary_container is a surface tone and vanishes as ANSI 5 text, so
+// light color5 is the primary at the lightest tone that still reads on the background.
+func lightestReadableTone(primaryColor, bg string, target float64, opts PaletteOptions) string {
+	argb, err := color.ARGBFromHex(primaryColor)
+	if err != nil {
+		return ensureContrastAuto(primaryColor, bg, target, opts)
+	}
+	p := argb.ToHct()
+	for tone := 100.0; tone >= 0; tone -= 0.5 {
+		cand := strings.ToLower(color.NewHct(p.Hue, p.Chroma, tone).ToARGB().HexRGB())
+		if contrastMeets(cand, bg, target, opts) {
+			return cand
+		}
+	}
+	return primaryColor
+}
+
 func blendHue(base, target, factor float64) float64 {
 	diff := target - base
 	if diff > 0.5 {
@@ -648,7 +672,7 @@ func GeneratePalette(primaryColor string, opts PaletteOptions) Palette {
 		blueV := math.Min(ph.V*1.05, 1.0)
 		palette.Color4 = NewColorInfo(ensureContrastAuto(RGBToHex(HSVToRGB(HSV{H: ph.H, S: blueS, V: blueV})), bgColor, normalTextTarget, opts))
 
-		palette.Color5 = NewColorInfo(baseColor)
+		palette.Color5 = NewColorInfo(lightestReadableTone(primaryColor, bgColor, normalTextTarget, opts))
 
 		palette.Color6 = NewColorInfo(primaryColor)
 
