@@ -1,5 +1,6 @@
 import QtQuick
 import QtMultimedia
+import qs.Common
 import qs.Services
 
 // Loaded by url so a missing QtMultimedia degrades to the static art underneath; the host clips it to the art shape.
@@ -12,8 +13,9 @@ Item {
 
     Behavior on opacity {
         NumberAnimation {
-            duration: 300
-            easing.type: Easing.InOutQuad
+            duration: Theme.shortDuration
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
         }
     }
 
