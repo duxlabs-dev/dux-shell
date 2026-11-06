@@ -90,6 +90,7 @@ in
       Unit = {
         Description = "Dux Modular Shell";
         PartOf = [ cfg.systemd.target ];
+        Wants = [ cfg.systemd.target ];
         After = [ cfg.systemd.target ];
         # Readiness waits for the tray host, so tray apps ordered after tray.target find it.
         Before = [ "tray.target" ];
