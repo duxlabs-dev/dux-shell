@@ -8,10 +8,7 @@ import (
 
 	"github.com/duxlabs-dev/dux-go/syncmap"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
-	"tailscale.com/client/local"
-	"tailscale.com/ipn"
 	"tailscale.com/ipn/ipnstate"
-	"tailscale.com/tailcfg"
 )
 
 const (
@@ -21,37 +18,16 @@ const (
 
 // tailscaleClient abstracts the Tailscale local API for testing.
 type tailscaleClient interface {
-	WatchIPNBus(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error)
+	WatchIPNBus(ctx context.Context, mask watchOpt) (ipnBusWatcher, error)
 	Status(ctx context.Context) (*ipnstate.Status, error)
-	GetPrefs(ctx context.Context) (*ipn.Prefs, error)
-	EditPrefs(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error)
+	GetPrefs(ctx context.Context) (*prefs, error)
+	EditPrefs(ctx context.Context, mp *maskedPrefs) error
 }
 
 // ipnBusWatcher abstracts the IPN bus watcher for testing.
 type ipnBusWatcher interface {
-	Next() (ipn.Notify, error)
+	Next() error
 	Close() error
-}
-
-// localClientWrapper wraps local.Client to satisfy tailscaleClient.
-type localClientWrapper struct {
-	client *local.Client
-}
-
-func (w *localClientWrapper) WatchIPNBus(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
-	return w.client.WatchIPNBus(ctx, mask)
-}
-
-func (w *localClientWrapper) Status(ctx context.Context) (*ipnstate.Status, error) {
-	return w.client.Status(ctx)
-}
-
-func (w *localClientWrapper) GetPrefs(ctx context.Context) (*ipn.Prefs, error) {
-	return w.client.GetPrefs(ctx)
-}
-
-func (w *localClientWrapper) EditPrefs(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error) {
-	return w.client.EditPrefs(ctx, mp)
 }
 
 // Manager manages Tailscale state via IPN bus events and subscriber notifications.
@@ -71,8 +47,7 @@ type Manager struct {
 
 // NewManager creates a new Tailscale manager and starts watching the IPN bus.
 func NewManager(socketPath string) *Manager {
-	lc := &local.Client{Socket: socketPath}
-	return newManager(&localClientWrapper{client: lc})
+	return newManager(newLocalClient(socketPath))
 }
 
 func newManager(client tailscaleClient) *Manager {
@@ -95,7 +70,7 @@ func newManager(client tailscaleClient) *Manager {
 func (m *Manager) watchLoop(ctx context.Context) {
 	defer m.watchWG.Done()
 
-	mask := ipn.NotifyInitialState | ipn.NotifyInitialPrefs | ipn.NotifyPeerChanges | ipn.NotifyPeerPatches
+	mask := notifyInitialState | notifyInitialPrefs | notifyPeerChanges | notifyPeerPatches
 	backoff := time.Second
 	unreachableSent := false
 
@@ -129,8 +104,7 @@ func (m *Manager) watchLoop(ctx context.Context) {
 		}
 
 		for {
-			_, err := watcher.Next()
-			if err != nil {
+			if err := watcher.Next(); err != nil {
 				log.Warnf("[Tailscale] IPN bus error: %v", err)
 				break
 			}
@@ -323,18 +297,12 @@ func (m *Manager) RefreshState() {
 
 // Connect brings the Tailscale backend up (WantRunning = true).
 func (m *Manager) Connect() error {
-	return m.editPrefs(&ipn.MaskedPrefs{
-		Prefs:          ipn.Prefs{WantRunning: true},
-		WantRunningSet: true,
-	})
+	return m.editPrefs(&maskedPrefs{WantRunning: true, WantRunningSet: true})
 }
 
 // Disconnect brings the Tailscale backend down (WantRunning = false).
 func (m *Manager) Disconnect() error {
-	return m.editPrefs(&ipn.MaskedPrefs{
-		Prefs:          ipn.Prefs{WantRunning: false},
-		WantRunningSet: true,
-	})
+	return m.editPrefs(&maskedPrefs{WantRunning: false, WantRunningSet: true})
 }
 
 // SetExitNode selects the exit node identified by its stable node ID. An empty
@@ -342,29 +310,22 @@ func (m *Manager) Disconnect() error {
 // which also clears any legacy IP-based exit node so a stale ExitNodeIP cannot
 // silently take precedence over the now-empty ID.
 func (m *Manager) SetExitNode(id string) error {
-	return m.editPrefs(&ipn.MaskedPrefs{
-		Prefs:         ipn.Prefs{ExitNodeID: tailcfg.StableNodeID(id)},
-		ExitNodeIDSet: true,
-		ExitNodeIPSet: true,
-	})
+	return m.editPrefs(&maskedPrefs{ExitNodeID: id, ExitNodeIDSet: true, ExitNodeIPSet: true})
 }
 
 // SetAllowLANAccess toggles whether locally accessible subnets remain
 // reachable while an exit node is in use.
 func (m *Manager) SetAllowLANAccess(enabled bool) error {
-	return m.editPrefs(&ipn.MaskedPrefs{
-		Prefs:                     ipn.Prefs{ExitNodeAllowLANAccess: enabled},
-		ExitNodeAllowLANAccessSet: true,
-	})
+	return m.editPrefs(&maskedPrefs{ExitNodeAllowLANAccess: enabled, ExitNodeAllowLANAccessSet: true})
 }
 
 // editPrefs applies a masked prefs edit and refreshes state so subscribers see
 // the result immediately, in addition to the IPN bus notification it triggers.
-func (m *Manager) editPrefs(mp *ipn.MaskedPrefs) error {
+func (m *Manager) editPrefs(mp *maskedPrefs) error {
 	ctx, cancel := context.WithTimeout(m.ctx, statusTimeout)
 	defer cancel()
 
-	if _, err := m.client.EditPrefs(ctx, mp); err != nil {
+	if err := m.client.EditPrefs(ctx, mp); err != nil {
 		return err
 	}
 
