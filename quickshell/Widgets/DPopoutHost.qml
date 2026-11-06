@@ -46,7 +46,6 @@ Item {
     property bool suspendShadowWhileResizing: popoutHandle.suspendShadowWhileResizing
     property bool shouldBeVisible: false
     property bool _presentPending: false
-    property bool _surfaceFrameReady: false
     property var customKeyboardFocus: popoutHandle.customKeyboardFocus
     property bool backgroundInteractive: popoutHandle.backgroundInteractive
     property bool contentHandlesKeys: popoutHandle.contentHandlesKeys
@@ -511,7 +510,7 @@ Item {
             showSurfaceAction.schedule();
 
         animationsEnabled = true;
-        if (!connected && !_surfaceFrameReady) {
+        if (!connected && !frameGate.ready) {
             _presentPending = true;
             return;
         }
@@ -530,11 +529,6 @@ Item {
         if (!connected)
             PopoutManager.showPopout(popoutHandle);
         opened();
-    }
-
-    on_SurfaceFrameReadyChanged: {
-        if (_surfaceFrameReady && _presentPending)
-            _present();
     }
 
     function close() {
@@ -1170,7 +1164,6 @@ Item {
         color: "transparent"
         onVisibleChanged: {
             if (!visible) {
-                root._surfaceFrameReady = false;
                 if (!root.shouldBeVisible)
                     root._contentRenderActive = false;
                 if (Qt.inputMethod) {
@@ -1186,12 +1179,12 @@ Item {
                 root._releaseConnectedChromeState();
         }
 
-        Connections {
-            target: contentContainer.Window.window
-            enabled: contentWindow.visible && !root._surfaceFrameReady
-
-            function onFrameSwapped() {
-                root._surfaceFrameReady = true;
+        SurfaceFrameGate {
+            id: frameGate
+            surfaceVisible: contentWindow.visible
+            onReadyChanged: {
+                if (ready && root._presentPending)
+                    root._present();
             }
         }
 

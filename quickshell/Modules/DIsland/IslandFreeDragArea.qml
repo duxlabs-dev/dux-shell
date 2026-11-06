@@ -132,9 +132,9 @@ DragHandler {
             root.recordPointer();
     }
 
-    // One anchor write per frame however fast the mouse polls.
+    // One anchor write per frame however fast the mouse polls, and none before the surface spans the output.
     property FrameAnimation moveFrame: FrameAnimation {
-        running: root.active && root.movePending
+        running: root.active && root.movePending && root.hostWindow.outputSized
         onTriggered: root.applyMove()
     }
 }

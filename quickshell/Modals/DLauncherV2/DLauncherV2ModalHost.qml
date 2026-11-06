@@ -63,8 +63,7 @@ Item {
     readonly property string layerNamespace: spotlight ? "dms:spotlight" : "dms:launcher"
     property bool keyboardActive: false
     property bool contentVisible: false
-    property bool _surfaceFrameReady: false
-    readonly property bool floatingMotionVisible: contentVisible && _surfaceFrameReady
+    readonly property bool floatingMotionVisible: contentVisible && frameGate.ready
     readonly property bool launcherMotionVisible: frameOwnsConnectedChrome ? _motionActive : (Theme.isDirectionalEffect ? spotlightOpen : _motionActive)
     property var spotlightContent: launcherContentLoader.item
     property bool openedFromOverview: false
@@ -750,8 +749,6 @@ Item {
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         onVisibleChanged: {
-            if (!visible)
-                root._surfaceFrameReady = false;
             if (!root.connected)
                 return;
             if (visible)
@@ -774,13 +771,9 @@ Item {
 
         mask: surfaceChrome.item ? surfaceChrome.item.inputRegion : null
 
-        Connections {
-            target: surfaceChrome.Window.window
-            enabled: contentWindow.visible && !root._surfaceFrameReady
-
-            function onFrameSwapped() {
-                root._surfaceFrameReady = true;
-            }
+        SurfaceFrameGate {
+            id: frameGate
+            surfaceVisible: contentWindow.visible
         }
 
         Loader {

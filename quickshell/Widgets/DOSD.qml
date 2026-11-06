@@ -17,8 +17,7 @@ PanelWindow {
     property string osdKind: ""
     readonly property int osdPosition: SettingsData.osdPositionFor(osdKind)
     property bool shouldBeVisible: false
-    property bool _surfaceFrameReady: false
-    readonly property bool presented: shouldBeVisible && _surfaceFrameReady
+    readonly property bool presented: shouldBeVisible && frameGate.ready
     property int autoHideInterval: 2000
     property bool enableMouseInteraction: false
     property real osdWidth: Theme.osdHeight
@@ -106,18 +105,10 @@ PanelWindow {
 
     screen: modelData
     visible: false
-    onVisibleChanged: {
-        if (!visible)
-            _surfaceFrameReady = false;
-    }
 
-    Connections {
-        target: osdContainer.Window.window
-        enabled: root.visible && !root._surfaceFrameReady
-
-        function onFrameSwapped() {
-            root._surfaceFrameReady = true;
-        }
+    SurfaceFrameGate {
+        id: frameGate
+        surfaceVisible: root.visible
     }
 
     readonly property var quickshellScreens: Quickshell.screens
