@@ -13,14 +13,12 @@ DPopout {
     id: root
 
     layerNamespace: "dms:dash"
-    fullHeightSurface: true
     contentHandlesKeys: true
     closesWithSource: false
     resizeCurve: Theme.expressiveCurves.standard
     resizeDuration: Theme.expressiveDurations.expressiveFastSpatial
     resizeMotion: true
     resizing: contentLoader.item?.panelResizing ?? false
-    surfacePadding: PopoutMetrics.editOverflow * 2
     inputMargin: editGutter * 2
     hoverDismissSuspended: editMode
     onOpened: contentFocusTimer.restart()
@@ -84,7 +82,6 @@ DPopout {
     readonly property real editGutter: editMode ? PopoutMetrics.editOverflow : 0
 
     popupWidth: panelWidthFor(DashMetrics.panelColumnsFor(activeTabId))
-    minimumSurfaceWidth: panelWidthFor(editMode ? columnCap : DashRegistry.widestPanelColumns)
     popupHeight: contentLoader.item?.implicitHeight ?? (DashMetrics.tabDefaultHeight + Theme.navigationHeight + DashMetrics.contentGap + DashMetrics.contentPadding * 2)
     triggerWidth: DashMetrics.triggerWidth
     screen: triggerScreen

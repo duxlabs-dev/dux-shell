@@ -40,8 +40,6 @@ Variants {
 
         visible: root.contentReady && !root.surfaceBounce
 
-        updatesEnabled: root.renderActive || root._settleFrames > 0
-
         Region {
             id: emptyRegion
         }
@@ -173,9 +171,6 @@ Variants {
             property bool useNextForEffect: false
             property string pendingWallpaper: ""
             property string _deferredSource: ""
-            // Held true from the moment a wallpaper change is initiated until it
-            // settles, so the paused render loop wakes and drives the async load
-            // and transition even when nothing else marks the window dirty.
             property bool changePending: false
             // Image is released after srcCurrent grabs it, only the texture stays resident
             property string currentSource: ""
@@ -184,9 +179,6 @@ Variants {
             readonly property bool overviewBlurActive: CompositorService.isNiri && SettingsData.blurWallpaperOnOverview && NiriService.inOverview && (currentSource !== "" || showsBackdrop)
             readonly property var backingWindow: Window.window
             readonly property bool showsBackdrop: !source || isColorSource || currentWallpaper.status === Image.Error
-            readonly property bool backdropBusy: showsBackdrop && !(backdropLoader.item?.ready ?? false)
-            readonly property bool renderActive: backdropBusy || effectActive || overviewBlurActive || pendingWallpaper !== "" || _deferredSource !== "" || changePending || _freezeWaitFrames > 0 || frameAnim.running || currentWallpaper.status === Image.Loading || nextWallpaper.status === Image.Loading || parallaxImage.status === Image.Loading || lockScrollSampler.busy || videoRendering
-            property int _settleFrames: 3
 
             readonly property bool fullscreenOnScreen: isVideoSource && CompositorService.fullscreenToplevelOnScreen(modelData)
             // Nothing decodes while the video cannot be seen.
@@ -194,13 +186,9 @@ Variants {
             readonly property bool videoRendering: videoLoader.item?.rendering ?? false
 
             function invalidate() {
-                _settleFrames = 3;
                 backingWindow?.update();
-                if (!_wedgeBounced)
-                    wedgeWatchdog.restart();
             }
 
-            onRenderActiveChanged: invalidate()
             onBackingWindowChanged: regenerate()
             onTextureWidthChanged: regenerate()
             onTextureHeightChanged: regenerate()
@@ -246,30 +234,9 @@ Variants {
                 Qt.callLater(() => root.changeWallpaper(pending));
             }
 
-            // No swap after a requested frame: dropped frame callback left the window
-            // unexposed (qtwayland mFrameCallbackTimedOut); only surface re-attach recovers.
-            property bool _wedgeBounced: false
-
-            Timer {
-                id: wedgeWatchdog
-                interval: 3000
-                repeat: false
-                onTriggered: {
-                    if (!root.backingWindow || !wallpaperWindow.visible || IdleService.isShellLocked)
-                        return;
-                    log.warn("no frame swapped on", modelData.name, "since last invalidate, re-attaching surface");
-                    root._wedgeBounced = true;
-                    surfaceReattach.restart();
-                }
-            }
-
             Connections {
                 target: root.backingWindow
                 function onFrameSwapped() {
-                    if (root._settleFrames > 0)
-                        root._settleFrames--;
-                    root._wedgeBounced = false;
-                    wedgeWatchdog.stop();
                     if (root._freezeWaitFrames === 0)
                         return;
                     if (--root._freezeWaitFrames === 0) {
@@ -561,9 +528,7 @@ Variants {
                     if (running) {
                         currentTime = Date.now() / 1000.0;
                     } else {
-                        root.publishScrollPosition();  // Animation settled
-                        // Hold the render loop open so the final settled frame
-                        // commits before updatesEnabled drops out from under us.
+                        root.publishScrollPosition();
                         root.invalidate();
                     }
                 }

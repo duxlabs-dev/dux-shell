@@ -9,7 +9,6 @@ DPopout {
     id: root
 
     layerNamespace: "dms:notification-center-popout"
-    fullHeightSurface: true
     contentHandlesKeys: true
     onOpened: contentFocusTimer.restart()
 

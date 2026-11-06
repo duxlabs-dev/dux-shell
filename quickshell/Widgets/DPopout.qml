@@ -25,7 +25,6 @@ Item {
     property int resizeDuration: animationDuration
     property bool resizeMotion: false
     property bool resizing: false
-    property real surfacePadding: 0
     // Content hung outside the surface, kept on screen, blurred and clickable.
     property real bottomOverflow: 0
     property real topOverflow: 0
@@ -39,8 +38,6 @@ Item {
     readonly property bool effectiveHoverDismissSuspended: hoverDismissSuspended || (transientSurfaceTracker?.active ?? false)
     property bool backgroundInteractive: true
     property bool contentHandlesKeys: false
-    property bool fullHeightSurface: false
-    property real minimumSurfaceWidth: 0
     property bool _primeContent: false
     property bool _warmContent: false
 
@@ -72,7 +69,6 @@ Item {
 
     readonly property var contentLoader: impl.item ? impl.item.contentLoader : _fallbackContentLoader
     readonly property var overlayLoader: impl.item ? impl.item.overlayLoader : _fallbackOverlayLoader
-    readonly property var backgroundWindow: impl.item ? impl.item.backgroundWindow : null
     readonly property var contentWindow: impl.item ? impl.item.contentWindow : null
 
     TransientSurfaceTracker {
@@ -86,8 +82,6 @@ Item {
             const transientWindows = root.transientSurfaceTracker?.focusWindows ?? [];
             if (!(impl.item?.contentActive ?? false) && !root.transientSurfaceTracker?.active)
                 return list.concat(transientWindows);
-            if (root.backgroundWindow && root.backgroundWindow !== root.contentWindow)
-                list.push(root.backgroundWindow);
             return list.concat(transientWindows).concat(KeyboardFocus.barWindows);
         }
         wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible, root.customKeyboardFocus)
@@ -355,11 +349,6 @@ Item {
         adjacentBarInfo = SettingsData.getAdjacentBarInfo(targetScreen, pos, barConfig);
         setBarContext(pos, bottomGap);
         _resolveBackendForScreen(targetScreen);
-    }
-
-    function updateSurfacePosition() {
-        if (impl.item)
-            impl.item.updateSurfacePosition();
     }
 
     function containsGlobalPoint(gx, gy) {
