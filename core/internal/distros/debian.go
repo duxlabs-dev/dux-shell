@@ -15,6 +15,12 @@ func init() {
 	Register("debian", "#A80030", FamilyDebian, func(config DistroConfig, logChan chan<- string) Distribution {
 		return NewDebianDistribution(config, logChan)
 	})
+	Register("lmde", "#69B53F", FamilyDebian, func(config DistroConfig, logChan chan<- string) Distribution {
+		return NewDebianDistribution(config, logChan)
+	})
+	Register("soplos", "#F8C840", FamilyDebian, func(config DistroConfig, logChan chan<- string) Distribution {
+		return NewDebianDistribution(config, logChan)
+	})
 }
 
 type DebianDistribution struct {
@@ -194,7 +200,7 @@ func (d *DebianDistribution) debianNeedsQuickshellBackports() bool {
 	if err != nil {
 		return false
 	}
-	return osInfo.VersionID == "13" || strings.EqualFold(osInfo.VersionCodename, "trixie")
+	return debianOBSRepoVersion(osInfo, readDebianAPTSuites()) == obsRepoDebian13
 }
 
 func (d *DebianDistribution) ensureQuickshellBackports(ctx context.Context, systemPkgs []string, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
