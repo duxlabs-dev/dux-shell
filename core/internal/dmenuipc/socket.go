@@ -43,6 +43,7 @@ type Header struct {
 	Size           string    `json:"size,omitempty"`
 	Icon           string    `json:"icon,omitempty"`
 	DisableHistory bool      `json:"disableHistory,omitempty"`
+	FreqKey        string    `json:"freqKey,omitempty"`
 }
 
 type ItemMeta struct {
@@ -83,6 +84,7 @@ type envelope struct {
 	Size           string        `json:"size,omitempty"`
 	Icon           string        `json:"icon,omitempty"`
 	DisableHistory bool          `json:"disableHistory,omitempty"`
+	FreqKey        string        `json:"freqKey,omitempty"`
 	Text           string        `json:"text,omitempty"`
 	Row            *ItemMeta     `json:"row,omitempty"`
 	Kind           string        `json:"kind,omitempty"`
@@ -177,6 +179,7 @@ func (c *Conn) SendHeader(h Header) error {
 		Size:           h.Size,
 		Icon:           h.Icon,
 		DisableHistory: h.DisableHistory,
+		FreqKey:        h.FreqKey,
 	})
 }
 

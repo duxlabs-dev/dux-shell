@@ -63,6 +63,7 @@ Item {
     property string dmenuSize: ""
     property string dmenuIcon: ""
     property bool dmenuDisableHistory: false
+    property string dmenuFreqKey: ""
     property bool _dmenuSelectApplied: false
 
     readonly property var _dmenuKeyNameMap: (function () {
@@ -790,6 +791,7 @@ Item {
         dmenuSize = "";
         dmenuIcon = "";
         dmenuDisableHistory = false;
+        dmenuFreqKey = "";
         _dmenuSelectApplied = false;
         sections = [];
         flatModel = [];
@@ -839,6 +841,7 @@ Item {
             dmenuSize = msg.size || "";
             dmenuIcon = msg.icon || "";
             dmenuDisableHistory = !!msg.disableHistory;
+            dmenuFreqKey = msg.freqKey || "";
             dmenuView = msg.view || "";
             if (dmenuView)
                 viewModeVersion++;
@@ -903,6 +906,15 @@ Item {
     }
 
     function _writeDmenuSelection(payload) {
+        if (dmenuFreqKey) {
+            if (payload.kind === "row") {
+                DmenuFrequencyData.recordUsage(dmenuFreqKey, payload.text);
+            } else if (payload.kind === "multi") {
+                for (var mi = 0; mi < payload.items.length; mi++)
+                    DmenuFrequencyData.recordUsage(dmenuFreqKey, payload.items[mi].text);
+            }
+        }
+
         var socket = dmenuSocketLoader.item;
         if (socket && socket.connected) {
             socket.write(JSON.stringify(Object.assign({
@@ -1271,7 +1283,7 @@ Item {
                 if (grp.items.length === 0)
                     continue;
 
-                var scoredItems = Scorer.scoreItems(grp.items, searchQuery, null);
+                var scoredItems = Scorer.scoreItems(grp.items, searchQuery, dmenuFreqKey ? getDmenuFrecencyForItem : null);
                 if (searchQuery) {
                     var scoredIdx = ({});
                     for (var si = 0; si < scoredItems.length; si++)
@@ -1298,9 +1310,22 @@ Item {
                     iconVisible: grp.iconVisible,
                     priority: 1,
                     items: scoredItems.map(function (s) {
-                        s.item.data.active = !!activeSet[s.item.data.index] || s.item.data.rowActive;
-                        s.item.data.urgent = !!urgentSet[s.item.data.index] || s.item.data.rowUrgent;
-                        s.item.data.checked = !!checkedSet[s.item.data.index];
+                        var active = !!activeSet[s.item.data.index] || s.item.data.rowActive;
+                        var urgent = !!urgentSet[s.item.data.index] || s.item.data.rowUrgent;
+                        var checked = !!checkedSet[s.item.data.index];
+                        // Bindings on `item` only re-fire when the reference changes, not on
+                        // in-place mutation (QML skips same-reference writes as no-ops) - so
+                        // give the item a fresh identity whenever its rendered state changes.
+                        if (s.item.data.active !== active || s.item.data.urgent !== urgent || s.item.data.checked !== checked) {
+                            s.item = Object.assign({}, s.item, {
+                                data: Object.assign({}, s.item.data, {
+                                    active: active,
+                                    urgent: urgent,
+                                    checked: checked
+                                })
+                            });
+                            dmenuItems[s.item.data.index] = s.item;
+                        }
                         return s.item;
                     }),
                     collapsed: false,
@@ -2275,6 +2300,12 @@ Item {
         return {
             usageCount: usageData?.usageCount || 0
         };
+    }
+
+    function getDmenuFrecencyForItem(item) {
+        if (!dmenuFreqKey || !item || item.type !== "dmenu")
+            return null;
+        return DmenuFrequencyData.getUsage(dmenuFreqKey, item.data.text);
     }
 
     function getFirstItemIndex() {
