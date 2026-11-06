@@ -43,6 +43,7 @@ Item {
         visible: !!root.islandController && root.islandController.outsideClickCollapses && !PopoutManager.screenshotActive
         color: "transparent"
         exclusiveZone: -1
+        inputOnly: true
 
         anchors {
             top: true
