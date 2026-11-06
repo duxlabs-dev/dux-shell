@@ -23,9 +23,6 @@
   "%1 Startup Failed": {
     "%1 Startup Failed": "Ошибка запуска %1"
   },
-  "%1 VRAM": {
-    "%1 VRAM": ""
-  },
   "%1 active": {
     "%1 active": ""
   },
@@ -341,6 +338,9 @@
   "A notification must match every condition": {
     "A notification must match every condition": "Уведомление должно соответствовать всем условиям."
   },
+  "A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.": {
+    "A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.": ""
+  },
   "A tiled or fullscreen window dragged into floating centers on the cursor": {
     "A tiled or fullscreen window dragged into floating centers on the cursor": ""
   },
@@ -377,9 +377,6 @@
   "Accept jobs": {
     "Accept jobs": "Принимать задания"
   },
-  "Accept reviewed changes": {
-    "Accept reviewed changes": "Подтвердить проверенные изменения"
-  },
   "Accepting": {
     "Accepting": "Принимает задания"
   },
@@ -410,6 +407,9 @@
   "Activate Greeter": {
     "Activate Greeter": "Активировать экран входа"
   },
+  "Activate input method": {
+    "Activate input method": ""
+  },
   "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.": {
     "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.": "Активировать экран входа DMS? Откроется терминал для подтверждения прав через sudo. После активации запустите синхронизацию, чтобы применить настройки."
   },
@@ -421,6 +421,9 @@
   },
   "Active VPN": {
     "Active VPN": "Активный VPN"
+  },
+  "Active by default": {
+    "Active by default": ""
   },
   "Active color": {
     "Active color": "Цвет активного приложения"
@@ -475,6 +478,9 @@
   },
   "Add entry": {
     "Add entry": "Добавить запись"
+  },
+  "Add input method": {
+    "Add input method": ""
   },
   "Add location": {
     "Add location": "Добавить местоположение"
@@ -704,9 +710,6 @@
   "Anonymous Identity (optional)": {
     "Anonymous Identity (optional)": "Анонимный идентификатор (необязательно)"
   },
-  "Another Aqueous operation is in progress.": {
-    "Another Aqueous operation is in progress.": "Другая операция Aqueous ещё выполняется."
-  },
   "Any window": {
     "Any window": "Любое окно"
   },
@@ -814,12 +817,6 @@
   },
   "Apps with notification popups muted. Unmute or delete to remove.": {
     "Apps with notification popups muted. Unmute or delete to remove.": "Приложения с отключёнными всплывающими уведомлениями. Разрешите их снова или удалите правило, чтобы убрать приложение из списка."
-  },
-  "Aqueous cursor": {
-    "Aqueous cursor": "Курсор Aqueous"
-  },
-  "Aqueous typography": {
-    "Aqueous typography": "Шрифты Aqueous"
   },
   "Arc extender": {
     "Arc extender": "Продлевать рамку до лаунчера"
@@ -1160,6 +1157,9 @@
   "Behavior": {
     "Behavior": "Поведение"
   },
+  "Bento style only": {
+    "Bento style only": ""
+  },
   "Bind the %1 IPC action in your compositor config.": {
     "Bind the %1 IPC action in your compositor config.": "Назначьте сочетание клавиш для IPC-действия %1 в конфигурации композитора."
   },
@@ -1240,6 +1240,12 @@
   },
   "Body font size": {
     "Body font size": "Размер шрифта текста"
+  },
+  "Bold": {
+    "Bold": ""
+  },
+  "Bold Italic": {
+    "Bold Italic": ""
   },
   "Boot": {
     "Boot": ""
@@ -1406,6 +1412,12 @@
   "Canceled": {
     "Canceled": "Отменено"
   },
+  "Candidate list": {
+    "Candidate list": ""
+  },
+  "Candidates per page": {
+    "Candidates per page": ""
+  },
   "Cannot delete the only administrator": {
     "Cannot delete the only administrator": "Невозможно удалить единственного администратора"
   },
@@ -1438,6 +1450,9 @@
   },
   "Caps lock": {
     "Caps lock": "Caps Lock"
+  },
+  "Card backgrounds": {
+    "Card backgrounds": ""
   },
   "Cards": {
     "Cards": "Карточки"
@@ -1670,6 +1685,9 @@
   "Clicking a window in a special workspace opens that workspace": {
     "Clicking a window in a special workspace opens that workspace": "Клик по окну из специального рабочего пространства открывает это пространство."
   },
+  "Clicking a workspace from another display moves it to the display of the bar you clicked": {
+    "Clicking a workspace from another display moves it to the display of the bar you clicked": ""
+  },
   "Clicks on empty bar space reach the windows below": {
     "Clicks on empty bar space reach the windows below": "Клики по пустому месту на панели передаются окнам под ней."
   },
@@ -1855,9 +1873,6 @@
   },
   "Configuration activated": {
     "Configuration activated": "Конфигурация активирована"
-  },
-  "Configuration changed. Refresh to continue.": {
-    "Configuration changed. Refresh to continue.": "Конфигурация изменилась. Обновите данные, чтобы продолжить."
   },
   "Configuration will be preserved when this display reconnects": {
     "Configuration will be preserved when this display reconnects": "При повторном подключении монитора эти настройки сохранятся"
@@ -2144,12 +2159,6 @@
   "Cursor": {
     "Cursor": "Курсор"
   },
-  "Cursor Size": {
-    "Cursor Size": "Размер курсора"
-  },
-  "Cursor Theme": {
-    "Cursor Theme": "Тема курсора"
-  },
   "Cursor auto-hide timeout": {
     "Cursor auto-hide timeout": "Скрывать курсор через"
   },
@@ -2249,9 +2258,6 @@
   "DMS stops drawing wallpapers on every display": {
     "DMS stops drawing wallpapers on every display": "DMS перестанет показывать обои на всех экранах."
   },
-  "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": {
-    "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": "DMS использует семейство, насыщенность и масштаб шрифта. Начертание, наклон, ширина символов и отдельный масштаб панелей могут отличаться."
-  },
   "Daemon": {
     "Daemon": ""
   },
@@ -2341,6 +2347,9 @@
   },
   "Daytime": {
     "Daytime": "День"
+  },
+  "Deactivate input method": {
+    "Deactivate input method": ""
   },
   "Deck": {
     "Deck": "Стопка"
@@ -2563,9 +2572,6 @@
   },
   "Discard": {
     "Discard": "Отменить"
-  },
-  "Discard draft and reload": {
-    "Discard draft and reload": "Отменить изменения и обновить данные"
   },
   "Discharging": {
     "Discharging": "Разряжается"
@@ -3149,6 +3155,9 @@
   "Failed to change display power": {
     "Failed to change display power": "Не удалось изменить состояние питания монитора"
   },
+  "Failed to change priority of %1": {
+    "Failed to change priority of %1": ""
+  },
   "Failed to configure hotspot": {
     "Failed to configure hotspot": "Не удалось настроить точку доступа"
   },
@@ -3236,9 +3245,6 @@
   "Failed to load clipboard entry": {
     "Failed to load clipboard entry": "Не удалось загрузить запись буфера обмена"
   },
-  "Failed to load keybinds": {
-    "Failed to load keybinds": "Не удалось загрузить сочетания клавиш"
-  },
   "Failed to load settings": {
     "Failed to load settings": "Не удалось загрузить настройки"
   },
@@ -3247,6 +3253,9 @@
   },
   "Failed to parse %1": {
     "Failed to parse %1": "Не удалось разобрать %1"
+  },
+  "Failed to pause %1": {
+    "Failed to pause %1": ""
   },
   "Failed to pause printer": {
     "Failed to pause printer": "Не удалось приостановить принтер"
@@ -3283,6 +3292,9 @@
   },
   "Failed to restart job": {
     "Failed to restart job": "Не удалось перезапустить задание"
+  },
+  "Failed to resume %1": {
+    "Failed to resume %1": ""
   },
   "Failed to resume printer": {
     "Failed to resume printer": "Не удалось возобновить принтер"
@@ -3508,6 +3520,9 @@
   },
   "Flat": {
     "Flat": "Линейный"
+  },
+  "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.": {
+    "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.": ""
   },
   "Flipped": {
     "Flipped": "Отражение"
@@ -4100,6 +4115,9 @@
   "Higher values flex more smoothly and cost more GPU": {
     "Higher values flex more smoothly and cost more GPU": ""
   },
+  "Highest": {
+    "Highest": ""
+  },
   "Highlight focused app": {
     "Highlight focused app": "Выделять активное приложение"
   },
@@ -4415,6 +4433,9 @@
   "Input": {
     "Input": "Устройства ввода"
   },
+  "Input Method Framework": {
+    "Input Method Framework": ""
+  },
   "Input Volume": {
     "Input Volume": "Громкость микрофона"
   },
@@ -4616,9 +4637,6 @@
   "Key combination": {
     "Key combination": "Сочетание клавиш"
   },
-  "Keybindings changed. Refresh and review your edit before saving.": {
-    "Keybindings changed. Refresh and review your edit before saving.": "Сочетания клавиш изменились. Обновите данные и проверьте свои изменения перед сохранением."
-  },
   "Keybinds": {
     "Keybinds": "Сочетания клавиш"
   },
@@ -4726,6 +4744,9 @@
   },
   "Launch": {
     "Launch": "Запустить"
+  },
+  "Launch new instance": {
+    "Launch new instance": ""
   },
   "Launch on dGPU": {
     "Launch on dGPU": "Запустить на дискретной видеокарте"
@@ -4993,6 +5014,9 @@
   },
   "Lower priorities move into overflow first": {
     "Lower priorities move into overflow first": ""
+  },
+  "Lowest": {
+    "Lowest": ""
   },
   "Lyrics": {
     "Lyrics": "Текст песни"
@@ -5279,6 +5303,9 @@
   "Middle section": {
     "Middle section": "Средняя секция"
   },
+  "Middle-click action": {
+    "Middle-click action": ""
+  },
   "Min H": {
     "Min H": "Мин. высота"
   },
@@ -5414,6 +5441,9 @@
   "Mouse & touchpad": {
     "Mouse & touchpad": "Мышь и тачпад"
   },
+  "Mouse behavior": {
+    "Mouse behavior": ""
+  },
   "Move out of scratchpad": {
     "Move out of scratchpad": "Вернуть из специального рабочего пространства"
   },
@@ -5422,6 +5452,9 @@
   },
   "Move to scratchpad: %1": {
     "Move to scratchpad: %1": "Переместить в специальное рабочее пространство: %1"
+  },
+  "Move workspace to this display": {
+    "Move workspace to this display": ""
   },
   "Moves focus along with the column": {
     "Moves focus along with the column": "Переключается на рабочее пространство вместе с перемещаемой колонкой."
@@ -5434,9 +5467,6 @@
   },
   "Multimedia": {
     "Multimedia": "Мультимедиа"
-  },
-  "Multiple bindings use the original shortcut. Resolve the duplicate bindings first.": {
-    "Multiple bindings use the original shortcut. Resolve the duplicate bindings first.": "Исходное сочетание назначено нескольким действиям. Сначала устраните дублирующиеся назначения."
   },
   "Multiplexers": {
     "Multiplexers": "Мультиплексоры"
@@ -5594,8 +5624,17 @@
   "Next Transition": {
     "Next Transition": "Следующее переключение"
   },
+  "Next candidate": {
+    "Next candidate": ""
+  },
   "Next category": {
     "Next category": "Следующая вкладка"
+  },
+  "Next group": {
+    "Next group": ""
+  },
+  "Next input method": {
+    "Next input method": ""
   },
   "Next page": {
     "Next page": "Следующая страница"
@@ -5975,9 +6014,6 @@
   "Normal": {
     "Normal": "Нормальное"
   },
-  "Normal Font": {
-    "Normal Font": "Обычный шрифт"
-  },
   "Normal Priority": {
     "Normal Priority": "Обычный приоритет"
   },
@@ -6031,9 +6067,6 @@
   },
   "Not shown on this bar, so its section widgets stay hidden": {
     "Not shown on this bar, so its section widgets stay hidden": "Боковые виджеты на этой панели не отображаются, поэтому виджеты секций остаются скрытыми"
-  },
-  "Not synchronized": {
-    "Not synchronized": "Не синхронизировано"
   },
   "Notch": {
     "Notch": "Вырез"
@@ -6278,6 +6311,9 @@
   "Options": {
     "Options": "Параметры"
   },
+  "Options of a fcitx5 plugin": {
+    "Options of a fcitx5 plugin": ""
+  },
   "Options of one widget instance": {
     "Options of one widget instance": "Настройки отдельного виджета"
   },
@@ -6295,9 +6331,6 @@
   },
   "Original: %1": {
     "Original: %1": "Исходное название: %1"
-  },
-  "Original: %1\nCurrent: %2\nProposed: %3\nCurrent destination: %4": {
-    "Original: %1\nCurrent: %2\nProposed: %3\nCurrent destination: %4": "Исходное назначение: %1\nТекущее назначение: %2\nПредлагаемое назначение: %3\nТекущее назначение нового сочетания: %4"
   },
   "Other": {
     "Other": "Другое"
@@ -6431,6 +6464,9 @@
   "Page faults": {
     "Page faults": ""
   },
+  "Paged grid": {
+    "Paged grid": ""
+  },
   "Pair": {
     "Pair": "Сопрячь"
   },
@@ -6475,9 +6511,6 @@
   },
   "Parents": {
     "Parents": ""
-  },
-  "Partially synchronized": {
-    "Partially synchronized": "Частично синхронизировано"
   },
   "Partition table": {
     "Partition table": ""
@@ -6685,9 +6718,6 @@
   },
   "Plugin Source Code": {
     "Plugin Source Code": "Исходный код дополнения"
-  },
-  "Plugin authors": {
-    "Plugin authors": "Авторы дополнений"
   },
   "Plugin dependency missing": {
     "Plugin dependency missing": "Отсутствует зависимость дополнения"
@@ -6899,14 +6929,20 @@
   "Previous": {
     "Previous": "Предыдущий"
   },
+  "Previous candidate": {
+    "Previous candidate": ""
+  },
   "Previous category": {
     "Previous category": "Предыдущая вкладка"
   },
+  "Previous group": {
+    "Previous group": ""
+  },
+  "Previous input method": {
+    "Previous input method": ""
+  },
   "Previous page": {
     "Previous page": "Предыдущая страница"
-  },
-  "Previous: %1\nCurrent: %2": {
-    "Previous: %1\nCurrent: %2": "Ранее: %1\nСейчас: %2"
   },
   "Primary": {
     "Primary": "Основной"
@@ -7208,6 +7244,9 @@
   "Registries": {
     "Registries": "Реестры"
   },
+  "Regular": {
+    "Regular": ""
+  },
   "Reject jobs": {
     "Reject jobs": "Не принимать задания"
   },
@@ -7445,9 +7484,6 @@
   "Revert": {
     "Revert": "Отменить изменения"
   },
-  "Review the current bindings before saving this edit.": {
-    "Review the current bindings before saving this edit.": "Перед сохранением изменений проверьте текущие сочетания клавиш."
-  },
   "Right": {
     "Right": "Справа"
   },
@@ -7627,9 +7663,6 @@
   },
   "Save credentials": {
     "Save credentials": "Сохранить учётные данные"
-  },
-  "Save or discard the current edit before editing another shortcut.": {
-    "Save or discard the current edit before editing another shortcut.": "Сохраните или отмените текущие изменения, прежде чем редактировать другое сочетание клавиш."
   },
   "Save password": {
     "Save password": "Сохранить пароль"
@@ -8006,6 +8039,9 @@
   "Share gamma control settings": {
     "Share gamma control settings": "Использовать настройки гамма-коррекции"
   },
+  "Share input state": {
+    "Share input state": ""
+  },
   "Shared": {
     "Shared": ""
   },
@@ -8135,6 +8171,9 @@
   "Show in dock": {
     "Show in dock": "Показывать в доке"
   },
+  "Show input method info on switch": {
+    "Show input method info on switch": ""
+  },
   "Show lock": {
     "Show lock": "Показывать блокировку"
   },
@@ -8174,6 +8213,9 @@
   "Show power off": {
     "Show power off": "Показывать выключение"
   },
+  "Show preedit in application": {
+    "Show preedit in application": ""
+  },
   "Show readings": {
     "Show readings": "Показывать показатели погоды"
   },
@@ -8212,6 +8254,9 @@
   },
   "Show the battery briefly when power is connected or removed": {
     "Show the battery briefly when power is connected or removed": "Ненадолго показывать батарею при подключении или отключении питания"
+  },
+  "Show the text being composed inside the app instead of the candidate window": {
+    "Show the text being composed inside the app instead of the candidate window": ""
   },
   "Show trend": {
     "Show trend": "Показывать график"
@@ -8363,6 +8408,9 @@
   "Solid": {
     "Solid": "Сплошной"
   },
+  "Some options are only available in fcitx5-configtool: %1": {
+    "Some options are only available in fcitx5-configtool: %1": ""
+  },
   "Some plugins require a newer version of DMS:": {
     "Some plugins require a newer version of DMS:": "Некоторым дополнениям нужна более новая версия DMS:"
   },
@@ -8423,6 +8471,9 @@
   "Spin-up time": {
     "Spin-up time": ""
   },
+  "Spinning Record": {
+    "Spinning Record": ""
+  },
   "Split direction follows the cursor position in the window": {
     "Split direction follows the cursor position in the window": "Направление разделения зависит от положения указателя в окне."
   },
@@ -8480,6 +8531,9 @@
   "Start typing your notes here...": {
     "Start typing your notes here...": "Начните вводить заметки здесь..."
   },
+  "Start with the input method on instead of the plain keyboard": {
+    "Start with the input method on instead of the plain keyboard": ""
+  },
   "Start/stop count": {
     "Start/stop count": ""
   },
@@ -8500,6 +8554,9 @@
   },
   "State": {
     "State": "Состояние"
+  },
+  "Stay awake with the lid closed": {
+    "Stay awake with the lid closed": ""
   },
   "Stay focused": {
     "Stay focused": "Удерживать фокус"
@@ -8624,8 +8681,14 @@
   "Sway website": {
     "Sway website": "Сайт Sway"
   },
+  "Swaying Square": {
+    "Swaying Square": ""
+  },
   "Switch between display configurations": {
     "Switch between display configurations": "Переключение между конфигурациями дисплеев"
+  },
+  "Switch between the first input method and the active one": {
+    "Switch between the first input method and the active one": ""
   },
   "Switch layout shortcut": {
     "Switch layout shortcut": "Сочетание клавиш для смены раскладки"
@@ -8648,9 +8711,6 @@
   "Sync completed successfully.": {
     "Sync completed successfully.": "Синхронизация завершена успешно."
   },
-  "Sync failed": {
-    "Sync failed": "Ошибка синхронизации"
-  },
   "Sync failed in background mode. Trying terminal mode so you can authenticate interactively.": {
     "Sync failed in background mode. Trying terminal mode so you can authenticate interactively.": "Синхронизация не удалась в фоновом режиме. Запуск в режиме терминала для интерактивной аутентификации."
   },
@@ -8668,9 +8728,6 @@
   },
   "Sync with portal": {
     "Sync with portal": "Синхронизировать с порталом"
-  },
-  "Synchronized": {
-    "Synchronized": "Синхронизировано"
   },
   "Syncing...": {
     "Syncing...": "Синхронизация..."
@@ -8840,9 +8897,6 @@
   "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": {
     "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": "Переменная окружения %1 не задана или сокет недоступен. Для автоматического управления дополнениями требуется эта переменная."
   },
-  "The Aqueous operation failed.": {
-    "The Aqueous operation failed.": "Не удалось выполнить операцию Aqueous."
-  },
   "The Control Center opens at the cursor instead of its widget": {
     "The Control Center opens at the cursor instead of its widget": ""
   },
@@ -8867,14 +8921,14 @@
   "The click that focuses a window does not reach the app": {
     "The click that focuses a window does not reach the app": ""
   },
-  "The compositor session changed. Discard this edit before starting a new one.": {
-    "The compositor session changed. Discard this edit before starting a new one.": "Сеанс композитора изменился. Отмените текущие изменения, прежде чем вносить новые."
-  },
   "The custom command used when attaching to sessions (receives the session name as the first argument)": {
     "The custom command used when attaching to sessions (receives the session name as the first argument)": "Команда для подключения к сеансу. Первым аргументом получает имя сеанса."
   },
   "The direction label shows where the wind comes from.": {
     "The direction label shows where the wind comes from.": "Подпись показывает, откуда дует ветер."
+  },
+  "The fcitx5 popup. The shell's OSD toggle is in the OSD settings.": {
+    "The fcitx5 popup. The shell's OSD toggle is in the OSD settings.": ""
   },
   "The fill shows relative humidity. The badge shows the dew point temperature.": {
     "The fill shows relative humidity. The badge shows the dew point temperature.": "Заполнение показывает относительную влажность, а метка — температуру точки росы."
@@ -8900,14 +8954,8 @@
   "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": {
     "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": "Экран входа перестанет использовать вашу тему, обои, виджеты и настройки DMS. Это не затронет greetd, аутентификацию и других пользователей."
   },
-  "The new shortcut is already in use. Choose another shortcut.": {
-    "The new shortcut is already in use. Choose another shortcut.": "Новое сочетание клавиш уже используется. Выберите другое."
-  },
-  "The original shortcut changed. Refresh and review your edit.": {
-    "The original shortcut changed. Refresh and review your edit.": "Исходное сочетание клавиш изменилось. Обновите данные и проверьте свои изменения."
-  },
-  "The original shortcut was removed. Discard this edit or add a new shortcut.": {
-    "The original shortcut was removed. Discard this edit or add a new shortcut.": "Исходное сочетание клавиш удалено. Отмените изменения или добавьте новое сочетание."
+  "The next enabled provider is used when one fails.": {
+    "The next enabled provider is used when one fails.": ""
   },
   "The quick brown fox jumps over the lazy dog": {
     "The quick brown fox jumps over the lazy dog": "Съешь же ещё этих мягких французских булок, да выпей чаю."
@@ -8918,17 +8966,8 @@
   "The rest open the bar's own popouts": {
     "The rest open the bar's own popouts": "Остальные разделы открываются во всплывающих панелях этой панели."
   },
-  "The result is unknown. Refresh before trying again.": {
-    "The result is unknown. Refresh before trying again.": "Результат операции неизвестен. Обновите данные перед повторной попыткой."
-  },
   "The rule applies to any window matching one of these.": {
     "The rule applies to any window matching one of these.": "Правило применяется к любому окну, соответствующему одному из этих условий."
-  },
-  "The save result is unknown. Refresh and check the current bindings.": {
-    "The save result is unknown. Refresh and check the current bindings.": "Результат сохранения неизвестен. Обновите данные и проверьте текущие назначения."
-  },
-  "The selected action is no longer available.": {
-    "The selected action is no longer available.": "Выбранное действие больше недоступно."
   },
   "The server certificate has changed since it was last trusted. Only continue if you recognize the new fingerprint.": {
     "The server certificate has changed since it was last trusted. Only continue if you recognize the new fingerprint.": "Сертификат сервера изменился с момента последнего подтверждения доверия. Продолжайте только в том случае, если вы уверены в подлинности нового отпечатка."
@@ -9004,9 +9043,6 @@
   },
   "This may take a few seconds": {
     "This may take a few seconds": "Это может занять несколько секунд"
-  },
-  "This operation is not supported by the installed Aqueous version.": {
-    "This operation is not supported by the installed Aqueous version.": "Установленная версия Aqueous не поддерживает эту операцию."
   },
   "This output is disabled in the current profile": {
     "This output is disabled in the current profile": "Этот монитор отключён в текущем профиле"
@@ -9154,6 +9190,12 @@
   },
   "Toggle fonts": {
     "Toggle fonts": "Переключить шрифты"
+  },
+  "Toggle input method": {
+    "Toggle input method": ""
+  },
+  "Toggle preedit in application": {
+    "Toggle preedit in application": ""
   },
   "Toggling...": {
     "Toggling...": "Переключение..."
@@ -9451,6 +9493,9 @@
   },
   "Update All": {
     "Update All": "Обновить всё"
+  },
+  "Update DMS to configure fcitx5 from here": {
+    "Update DMS to configure fcitx5 from here": ""
   },
   "Update available": {
     "Update available": "Доступно обновление"
@@ -9811,6 +9856,9 @@
   },
   "Weather": {
     "Weather": "Погода"
+  },
+  "Weather providers": {
+    "Weather providers": ""
   },
   "Web browser": {
     "Web browser": "Веб-браузер"
@@ -10208,6 +10256,9 @@
   "ext": {
     "ext": "Расширение"
   },
+  "fcitx5 input methods, keybinds, behavior": {
+    "fcitx5 input methods, keybinds, behavior": ""
+  },
   "featured": {
     "featured": "рекомендуемое"
   },
@@ -10297,9 +10348,6 @@
   },
   "primary network connection label": {
     "Primary": "Основное"
-  },
-  "pt": {
-    "pt": "пт"
   },
   "px": {
     "px": "пикс."
