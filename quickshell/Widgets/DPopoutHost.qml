@@ -500,8 +500,8 @@ Item {
     readonly property bool joinsNormalBar: joinsBar && !SettingsData.isIslandBarConfig(storedBarConfig)
     readonly property real joinedBarSpacing: joinsNormalBar ? (ShellLayout.forConfig(screen, storedBarConfig?.id)?.spacing ?? storedBarSpacing) : 0
     readonly property bool directionalMotion: Theme.isDirectionalEffect || joinsBar
-    readonly property bool frameOwnsConnectedChrome: connected && !_overStackedModal && effectivePopoutLayer === WlrLayer.Top && (joinsBar || CompositorService.canShareConnectedFrameChromeForScreen(root.screen))
-    readonly property bool usesConnectedSurfaceChrome: connected && (Theme.isConnectedEffect || joinsBar)
+    readonly property bool frameOwnsConnectedChrome: connected && !_overStackedModal && effectivePopoutLayer === WlrLayer.Top && (joinsBar ? !CompositorService.fullscreenCoversTopLayer(root.screen) : CompositorService.canShareConnectedFrameChromeForScreen(root.screen))
+    readonly property bool usesConnectedSurfaceChrome: connected
     readonly property bool usesLocalConnectedSurfaceChrome: usesConnectedSurfaceChrome && !frameOwnsConnectedChrome
 
     property bool animationsEnabled: true

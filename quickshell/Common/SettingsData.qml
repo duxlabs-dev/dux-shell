@@ -1029,12 +1029,14 @@ Singleton {
         return edge === "left" || edge === "right";
     }
 
+    // Popouts hold a snapshot of their bar's config, so this reads the live one.
     function barConnectsPopouts(bc) {
-        if (frameEnabled || !bc?.connectedPopouts || bc.visible === false)
+        const config = getBarConfig(bc?.id) ?? bc;
+        if (frameEnabled || !config?.connectedPopouts || config.visible === false)
             return false;
-        if (!isIslandBarConfig(bc))
-            return barTransparency(bc) > 0;
-        return !isDotBarConfig(bc) && islandSetting(bc, "islandSatellitesEnabled") && islandSetting(bc, "islandSatelliteBackground");
+        if (!isIslandBarConfig(config))
+            return !config.useOverlayLayer && barTransparency(config) > 0;
+        return !isDotBarConfig(config) && !islandSetting(config, "islandUseOverlayLayer") && islandSetting(config, "islandSatellitesEnabled") && islandSetting(config, "islandSatelliteBackground");
     }
     function islandStripThickness(bc) {
         return LayoutResolver.islandThickness(islandSettings(bc), islandDefaultsFor(bc));

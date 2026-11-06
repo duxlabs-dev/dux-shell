@@ -107,6 +107,22 @@ ShaderEffect {
         return Qt.vector4d(body.x - (barSide === "left" ? seamOverlap : 0), paintedStart, extent + seamOverlap, along);
     }
 
+    // The part of the body away from its rounded far corners, so blur reaches the bar.
+    readonly property vector4d bodyJoinRect: {
+        const r = paintedBody;
+        const cut = Math.min(Theme.connectedSurfaceRadius, horizontal ? r.w : r.z);
+        switch (barSide) {
+        case "bottom":
+            return Qt.vector4d(r.x, r.y + cut, r.z, r.w - cut);
+        case "left":
+            return Qt.vector4d(r.x, r.y, r.z - cut, r.w);
+        case "right":
+            return Qt.vector4d(r.x + cut, r.y, r.z - cut, r.w);
+        default:
+            return Qt.vector4d(r.x, r.y, r.z, r.w - cut);
+        }
+    }
+
     // Where the popout runs past a satellite they share one straight edge, and a fillet there would bulge out of it.
     function _joinRadius(passed) {
         return Math.min(passed ? joinRadius * (1 - emerged) : joinRadius, horizontal ? body.height : body.width);
