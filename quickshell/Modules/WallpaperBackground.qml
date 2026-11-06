@@ -61,6 +61,7 @@ Variants {
                 screen: wallpaperWindow.screen
                 color: "transparent"
 
+                inputOnly: true
                 WlrLayershell.namespace: "dms:desktop-input"
                 WlrLayershell.layer: WlrLayer.Background
                 WlrLayershell.exclusionMode: ExclusionMode.Ignore
