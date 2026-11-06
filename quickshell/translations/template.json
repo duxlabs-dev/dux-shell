@@ -56,13 +56,6 @@
     "comment": "plugin error title, %1 is the plugin name"
   },
   {
-    "term": "%1 VRAM",
-    "translation": "",
-    "context": "%1 VRAM",
-    "reference": "",
-    "comment": "GPU memory size, e.g. 24 GiB VRAM"
-  },
-  {
     "term": "%1 active",
     "translation": "",
     "context": "%1 active",
@@ -826,6 +819,13 @@
     "comment": "hint in the notification rule editor, all match conditions must apply"
   },
   {
+    "term": "A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.",
+    "translation": "",
+    "context": "A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.",
+    "reference": "",
+    "comment": "plugin load error hint shown under Qt's 'File name case mismatch' error"
+  },
+  {
     "term": "A tiled or fullscreen window dragged into floating centers on the cursor",
     "translation": "",
     "context": "A tiled or fullscreen window dragged into floating centers on the cursor",
@@ -917,13 +917,6 @@
     "comment": ""
   },
   {
-    "term": "Accept reviewed changes",
-    "translation": "",
-    "context": "Accept reviewed changes",
-    "reference": "",
-    "comment": "Aqueous keyboard shortcut editor, retaining an unsaved edit while reviewing current bindings"
-  },
-  {
     "term": "Accepting",
     "translation": "",
     "context": "Accepting",
@@ -1001,6 +994,13 @@
     "comment": "greeter action confirmation"
   },
   {
+    "term": "Activate input method",
+    "translation": "",
+    "context": "Activate input method",
+    "reference": "",
+    "comment": "Configurable keybind in the fcitx5 settings."
+  },
+  {
     "term": "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.",
     "translation": "",
     "context": "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.",
@@ -1027,6 +1027,13 @@
     "context": "Active VPN",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Active by default",
+    "translation": "",
+    "context": "Active by default",
+    "reference": "",
+    "comment": "Option on the fcitx5 config page."
   },
   {
     "term": "Active color",
@@ -1153,6 +1160,13 @@
     "context": "Add entry",
     "reference": "",
     "comment": "settings row that adds an EFI boot entry to the power menu"
+  },
+  {
+    "term": "Add input method",
+    "translation": "",
+    "context": "Add input method",
+    "reference": "",
+    "comment": "Title for fcitx5 IM picker window"
   },
   {
     "term": "Add location",
@@ -1687,13 +1701,6 @@
     "comment": ""
   },
   {
-    "term": "Another Aqueous operation is in progress.",
-    "translation": "",
-    "context": "Another Aqueous operation is in progress.",
-    "reference": "",
-    "comment": "Aqueous request rejected because another operation is running"
-  },
-  {
     "term": "Any window",
     "translation": "",
     "context": "Any window",
@@ -1944,20 +1951,6 @@
     "context": "Apps with notification popups muted. Unmute or delete to remove.",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "Aqueous cursor",
-    "translation": "",
-    "context": "Aqueous cursor",
-    "reference": "",
-    "comment": "Aqueous compositor cursor synchronization settings"
-  },
-  {
-    "term": "Aqueous typography",
-    "translation": "",
-    "context": "Aqueous typography",
-    "reference": "",
-    "comment": "Aqueous compositor font synchronization settings"
   },
   {
     "term": "Arc extender",
@@ -2786,6 +2779,13 @@
     "comment": "island settings: behavior card title"
   },
   {
+    "term": "Bento style only",
+    "translation": "",
+    "context": "Bento style only",
+    "reference": "",
+    "comment": "Hint under a media player option that only affects the Bento player style"
+  },
+  {
     "term": "Bind the %1 IPC action in your compositor config.",
     "translation": "",
     "context": "Bind the %1 IPC action in your compositor config.",
@@ -2973,6 +2973,20 @@
     "context": "Body font size",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Bold",
+    "translation": "",
+    "context": "Bold",
+    "reference": "",
+    "comment": "font style"
+  },
+  {
+    "term": "Bold Italic",
+    "translation": "",
+    "context": "Bold Italic",
+    "reference": "",
+    "comment": "font style"
   },
   {
     "term": "Boot",
@@ -3367,6 +3381,20 @@
     "comment": "printer job state"
   },
   {
+    "term": "Candidate list",
+    "translation": "",
+    "context": "Candidate list",
+    "reference": "",
+    "comment": "Description for a configurable keybind in the fcitx5 settings."
+  },
+  {
+    "term": "Candidates per page",
+    "translation": "",
+    "context": "Candidates per page",
+    "reference": "",
+    "comment": "Option on the fcitx5 config page."
+  },
+  {
     "term": "Cannot delete the only administrator",
     "translation": "",
     "context": "Cannot delete the only administrator",
@@ -3442,6 +3470,13 @@
     "context": "Caps lock",
     "reference": "",
     "comment": "island system face: caps lock title"
+  },
+  {
+    "term": "Card backgrounds",
+    "translation": "",
+    "context": "Card backgrounds",
+    "reference": "",
+    "comment": "Media player option that draws the title and controls on filled cards"
   },
   {
     "term": "Cards",
@@ -3990,6 +4025,13 @@
     "comment": "dock restore special workspace toggle description"
   },
   {
+    "term": "Clicking a workspace from another display moves it to the display of the bar you clicked",
+    "translation": "",
+    "context": "Clicking a workspace from another display moves it to the display of the bar you clicked",
+    "reference": "",
+    "comment": "workspace switcher move to this display toggle description"
+  },
+  {
     "term": "Clicks on empty bar space reach the windows below",
     "translation": "",
     "context": "Clicks on empty bar space reach the windows below",
@@ -4113,7 +4155,7 @@
     "translation": "",
     "context": "Close Window",
     "reference": "",
-    "comment": ""
+    "comment": "dock middle-click action option"
   },
   {
     "term": "Close on window focus",
@@ -4436,13 +4478,6 @@
     "context": "Configuration activated",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "Configuration changed. Refresh to continue.",
-    "translation": "",
-    "context": "Configuration changed. Refresh to continue.",
-    "reference": "",
-    "comment": "Aqueous configuration or compositor session changed while editing | Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings"
   },
   {
     "term": "Configuration will be preserved when this display reconnects",
@@ -5131,20 +5166,6 @@
     "comment": "cursor theme and size | settings card title for mouse cursor theme"
   },
   {
-    "term": "Cursor Size",
-    "translation": "",
-    "context": "Cursor Size",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Cursor Theme",
-    "translation": "",
-    "context": "Cursor Theme",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Cursor auto-hide timeout",
     "translation": "",
     "context": "Cursor auto-hide timeout",
@@ -5376,13 +5397,6 @@
     "comment": "use external wallpaper manager toggle description"
   },
   {
-    "term": "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.",
-    "translation": "",
-    "context": "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.",
-    "reference": "",
-    "comment": "Aqueous font synchronization, describing which font settings DMS can represent"
-  },
-  {
     "term": "Daemon",
     "translation": "",
     "context": "Daemon",
@@ -5598,6 +5612,13 @@
     "context": "Daytime",
     "reference": "",
     "comment": "night mode status label, current period is day"
+  },
+  {
+    "term": "Deactivate input method",
+    "translation": "",
+    "context": "Deactivate input method",
+    "reference": "",
+    "comment": "Configurable keybind in the fcitx5 settings."
   },
   {
     "term": "Deck",
@@ -6137,13 +6158,6 @@
     "context": "Discard",
     "reference": "",
     "comment": "verb, button to discard pending changes"
-  },
-  {
-    "term": "Discard draft and reload",
-    "translation": "",
-    "context": "Discard draft and reload",
-    "reference": "",
-    "comment": "Discard unsaved Aqueous display settings and refresh the current display state"
   },
   {
     "term": "Discharging",
@@ -7518,6 +7532,13 @@
     "comment": "Error shown when changing monitor power fails"
   },
   {
+    "term": "Failed to change priority of %1",
+    "translation": "",
+    "context": "Failed to change priority of %1",
+    "reference": "",
+    "comment": "toast title, %1 is a process name"
+  },
+  {
     "term": "Failed to configure hotspot",
     "translation": "",
     "context": "Failed to configure hotspot",
@@ -7721,13 +7742,6 @@
     "comment": "clipboard editor: fetching the entry's full text failed"
   },
   {
-    "term": "Failed to load keybinds",
-    "translation": "",
-    "context": "Failed to load keybinds",
-    "reference": "",
-    "comment": "Aqueous shortcut editor could not load the current bindings"
-  },
-  {
     "term": "Failed to load settings",
     "translation": "",
     "context": "Failed to load settings",
@@ -7747,6 +7761,13 @@
     "context": "Failed to parse %1",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Failed to pause %1",
+    "translation": "",
+    "context": "Failed to pause %1",
+    "reference": "",
+    "comment": "toast title, %1 is a process name"
   },
   {
     "term": "Failed to pause printer",
@@ -7831,6 +7852,13 @@
     "context": "Failed to restart job",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Failed to resume %1",
+    "translation": "",
+    "context": "Failed to resume %1",
+    "reference": "",
+    "comment": "toast title, %1 is a process name"
   },
   {
     "term": "Failed to resume printer",
@@ -8370,6 +8398,13 @@
     "context": "Flat",
     "reference": "",
     "comment": "adjective, bar widget style option | adjective, pointer acceleration profile option"
+  },
+  {
+    "term": "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.",
+    "translation": "",
+    "context": "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.",
+    "reference": "",
+    "comment": "pointer acceleration profile hint"
   },
   {
     "term": "Flipped",
@@ -9727,7 +9762,7 @@
     "translation": "",
     "context": "High",
     "reference": "",
-    "comment": "quality level option"
+    "comment": "process priority preset | quality level option"
   },
   {
     "term": "High contrast",
@@ -9763,6 +9798,13 @@
     "context": "Higher values flex more smoothly and cost more GPU",
     "reference": "",
     "comment": "Hyprland wobble mesh description"
+  },
+  {
+    "term": "Highest",
+    "translation": "",
+    "context": "Highest",
+    "reference": "",
+    "comment": "process priority preset"
   },
   {
     "term": "Highlight focused app",
@@ -10542,6 +10584,13 @@
     "comment": "noun, settings page name for input devices"
   },
   {
+    "term": "Input Method Framework",
+    "translation": "",
+    "context": "Input Method Framework",
+    "reference": "",
+    "comment": "Name of settings tab for fcitx5 configuration"
+  },
+  {
     "term": "Input Volume",
     "translation": "",
     "context": "Input Volume",
@@ -10875,7 +10924,7 @@
     "translation": "",
     "context": "Italic",
     "reference": "",
-    "comment": "clock font style toggle"
+    "comment": "clock font style toggle | font style"
   },
   {
     "term": "JSON output path",
@@ -11009,13 +11058,6 @@
     "context": "Key combination",
     "reference": "",
     "comment": "lock screen security key shortcut key combination setting"
-  },
-  {
-    "term": "Keybindings changed. Refresh and review your edit before saving.",
-    "translation": "",
-    "context": "Keybindings changed. Refresh and review your edit before saving.",
-    "reference": "",
-    "comment": "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings"
   },
   {
     "term": "Keybinds",
@@ -11277,6 +11319,13 @@
     "comment": "verb, start an application"
   },
   {
+    "term": "Launch new instance",
+    "translation": "",
+    "context": "Launch new instance",
+    "reference": "",
+    "comment": "dock middle-click action option"
+  },
+  {
     "term": "Launch on dGPU",
     "translation": "",
     "context": "Launch on dGPU",
@@ -11463,7 +11512,7 @@
     "translation": "",
     "context": "Light",
     "reference": "",
-    "comment": "adjective, wallpaper thumbnail label for light mode"
+    "comment": "adjective, wallpaper thumbnail label for light mode | font style"
   },
   {
     "term": "Light Rain",
@@ -11869,7 +11918,7 @@
     "translation": "",
     "context": "Low",
     "reference": "",
-    "comment": "quality level option"
+    "comment": "process priority preset | quality level option"
   },
   {
     "term": "Low Battery",
@@ -11921,11 +11970,18 @@
     "comment": "bar widget overflow priority slider description"
   },
   {
+    "term": "Lowest",
+    "translation": "",
+    "context": "Lowest",
+    "reference": "",
+    "comment": "process priority preset"
+  },
+  {
     "term": "Lyrics",
     "translation": "",
     "context": "Lyrics",
     "reference": "",
-    "comment": "Media player lyrics button"
+    "comment": "Media player lyrics button | plugin browser type filter chip, lyrics provider plugins"
   },
   {
     "term": "Lyrics providers",
@@ -12485,7 +12541,7 @@
     "translation": "",
     "context": "Medium",
     "reference": "",
-    "comment": "bar widget size option"
+    "comment": "bar widget size option | font style"
   },
   {
     "term": "Memory",
@@ -12598,6 +12654,13 @@
     "context": "Middle section",
     "reference": "",
     "comment": "widgets settings: bar section replaced by the island"
+  },
+  {
+    "term": "Middle-click action",
+    "translation": "",
+    "context": "Middle-click action",
+    "reference": "",
+    "comment": "dock middle-click behavior setting"
   },
   {
     "term": "Min H",
@@ -12929,6 +12992,13 @@
     "comment": ""
   },
   {
+    "term": "Mouse behavior",
+    "translation": "",
+    "context": "Mouse behavior",
+    "reference": "",
+    "comment": "dock mouse settings card title"
+  },
+  {
     "term": "Move out of scratchpad",
     "translation": "",
     "context": "Move out of scratchpad",
@@ -12948,6 +13018,13 @@
     "context": "Move to scratchpad: %1",
     "reference": "",
     "comment": "%1 is the named special workspace"
+  },
+  {
+    "term": "Move workspace to this display",
+    "translation": "",
+    "context": "Move workspace to this display",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Moves focus along with the column",
@@ -12976,13 +13053,6 @@
     "context": "Multimedia",
     "reference": "",
     "comment": "Multimedia"
-  },
-  {
-    "term": "Multiple bindings use the original shortcut. Resolve the duplicate bindings first.",
-    "translation": "",
-    "context": "Multiple bindings use the original shortcut. Resolve the duplicate bindings first.",
-    "reference": "",
-    "comment": "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings"
   },
   {
     "term": "Multiplexers",
@@ -13356,6 +13426,13 @@
     "comment": ""
   },
   {
+    "term": "Next candidate",
+    "translation": "",
+    "context": "Next candidate",
+    "reference": "",
+    "comment": "Configurable keybind in the fcitx5 settings."
+  },
+  {
     "term": "Next category",
     "translation": "",
     "context": "Next category",
@@ -13363,11 +13440,25 @@
     "comment": "launcher shortcut that switches to the next mode tab"
   },
   {
+    "term": "Next group",
+    "translation": "",
+    "context": "Next group",
+    "reference": "",
+    "comment": "Configurable keybind in the fcitx5 settings."
+  },
+  {
+    "term": "Next input method",
+    "translation": "",
+    "context": "Next input method",
+    "reference": "",
+    "comment": "Configurable keybind in the fcitx5 settings."
+  },
+  {
     "term": "Next page",
     "translation": "",
     "context": "Next page",
     "reference": "",
-    "comment": ""
+    "comment": "Configurable keybind in the fcitx5 settings."
   },
   {
     "term": "Nice",
@@ -14242,19 +14333,12 @@
     "translation": "",
     "context": "Normal",
     "reference": "",
-    "comment": "quality level option"
+    "comment": "process priority preset | quality level option"
   },
   {
     "term": "Normal",
     "translation": "",
     "context": "display rotation option",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Normal Font",
-    "translation": "",
-    "context": "Normal Font",
     "reference": "",
     "comment": ""
   },
@@ -14383,13 +14467,6 @@
     "context": "Not shown on this bar, so its section widgets stay hidden",
     "reference": "",
     "comment": "widgets settings: island satellites are not rendered on this bar"
-  },
-  {
-    "term": "Not synchronized",
-    "translation": "",
-    "context": "Not synchronized",
-    "reference": "",
-    "comment": "Aqueous appearance settings differ from this application or toolkit"
   },
   {
     "term": "Notch",
@@ -14980,6 +15057,13 @@
     "comment": ""
   },
   {
+    "term": "Options of a fcitx5 plugin",
+    "translation": "",
+    "context": "Options of a fcitx5 plugin",
+    "reference": "",
+    "comment": "Tab name for fcitx5 addon config page"
+  },
+  {
     "term": "Options of one widget instance",
     "translation": "",
     "context": "Options of one widget instance",
@@ -15020,13 +15104,6 @@
     "context": "Original: %1",
     "reference": "",
     "comment": "Shows the original device name before renaming"
-  },
-  {
-    "term": "Original: %1\nCurrent: %2\nProposed: %3\nCurrent destination: %4",
-    "translation": "",
-    "context": "Original: %1\nCurrent: %2\nProposed: %3\nCurrent destination: %4",
-    "reference": "",
-    "comment": "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings"
   },
   {
     "term": "Other",
@@ -15351,6 +15428,13 @@
     "comment": "minor page faults"
   },
   {
+    "term": "Paged grid",
+    "translation": "",
+    "context": "Paged grid",
+    "reference": "",
+    "comment": "wallpaper tab layout option"
+  },
+  {
     "term": "Pair",
     "translation": "",
     "context": "Pair",
@@ -15454,13 +15538,6 @@
     "context": "Parents",
     "reference": "",
     "comment": "chain of processes that started this one"
-  },
-  {
-    "term": "Partially synchronized",
-    "translation": "",
-    "context": "Partially synchronized",
-    "reference": "",
-    "comment": "The application or toolkit cannot represent every Aqueous font setting"
   },
   {
     "term": "Partition table",
@@ -15579,7 +15656,7 @@
     "translation": "",
     "context": "Pause",
     "reference": "",
-    "comment": "verb, button pausing media playback or a printer or print job"
+    "comment": "process action: freeze the process and everything it started (SIGSTOP) | verb, button pausing media playback or a printer or print job"
   },
   {
     "term": "Pause checks on battery",
@@ -15607,7 +15684,7 @@
     "translation": "",
     "context": "Paused",
     "reference": "",
-    "comment": "printer state reason"
+    "comment": "printer state reason | process state: stopped by the user"
   },
   {
     "term": "Peak",
@@ -15944,13 +16021,6 @@
     "context": "Plugin Source Code",
     "reference": "",
     "comment": "plugin settings page, plugin details"
-  },
-  {
-    "term": "Plugin authors",
-    "translation": "",
-    "context": "Plugin authors",
-    "reference": "",
-    "comment": "changelog section heading"
   },
   {
     "term": "Plugin dependency missing",
@@ -16464,6 +16534,13 @@
     "comment": "button going to the previous track, page, day, month or match"
   },
   {
+    "term": "Previous candidate",
+    "translation": "",
+    "context": "Previous candidate",
+    "reference": "",
+    "comment": "Configurable keybind in the fcitx5 settings."
+  },
+  {
     "term": "Previous category",
     "translation": "",
     "context": "Previous category",
@@ -16471,18 +16548,25 @@
     "comment": "launcher shortcut that switches to the previous mode tab"
   },
   {
+    "term": "Previous group",
+    "translation": "",
+    "context": "Previous group",
+    "reference": "",
+    "comment": "Configurable keybind in the fcitx5 settings."
+  },
+  {
+    "term": "Previous input method",
+    "translation": "",
+    "context": "Previous input method",
+    "reference": "",
+    "comment": "Configurable keybind in the fcitx5 settings."
+  },
+  {
     "term": "Previous page",
     "translation": "",
     "context": "Previous page",
     "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Previous: %1\nCurrent: %2",
-    "translation": "",
-    "context": "Previous: %1\nCurrent: %2",
-    "reference": "",
-    "comment": "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings"
+    "comment": "Configurable keybind in the fcitx5 settings."
   },
   {
     "term": "Primary",
@@ -16573,7 +16657,7 @@
     "translation": "",
     "context": "Priority",
     "reference": "",
-    "comment": "kernel scheduling priority | notification rule dropdown label, urgency assigned to matches"
+    "comment": "kernel scheduling priority | notification rule dropdown label, urgency assigned to matches | process action: opens the priority presets | process column: scheduling priority level | process priority level"
   },
   {
     "term": "Prism",
@@ -17206,6 +17290,13 @@
     "comment": "plugin settings card title, plugin registry sources"
   },
   {
+    "term": "Regular",
+    "translation": "",
+    "context": "Regular",
+    "reference": "",
+    "comment": "font style"
+  },
+  {
     "term": "Reject jobs",
     "translation": "",
     "context": "Reject jobs",
@@ -17756,7 +17847,7 @@
     "translation": "",
     "context": "Resume",
     "reference": "",
-    "comment": "verb, button that resumes a paused printer"
+    "comment": "process action: continue a paused process (SIGCONT) | verb, button that resumes a paused printer"
   },
   {
     "term": "Retention",
@@ -17785,13 +17876,6 @@
     "context": "Revert",
     "reference": "",
     "comment": "verb, undo display changes in confirmation dialog"
-  },
-  {
-    "term": "Review the current bindings before saving this edit.",
-    "translation": "",
-    "context": "Review the current bindings before saving this edit.",
-    "reference": "",
-    "comment": "Aqueous keyboard shortcut editor, retaining an unsaved edit while reviewing current bindings"
   },
   {
     "term": "Right",
@@ -18219,13 +18303,6 @@
     "context": "Save credentials",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "Save or discard the current edit before editing another shortcut.",
-    "translation": "",
-    "context": "Save or discard the current edit before editing another shortcut.",
-    "reference": "",
-    "comment": "Aqueous keyboard shortcut editor, retaining an unsaved edit while reviewing current bindings"
   },
   {
     "term": "Save password",
@@ -19131,6 +19208,13 @@
     "comment": ""
   },
   {
+    "term": "Share input state",
+    "translation": "",
+    "context": "Share input state",
+    "reference": "",
+    "comment": "Option on the fcitx5 config page."
+  },
+  {
     "term": "Shared",
     "translation": "",
     "context": "Shared",
@@ -19432,6 +19516,13 @@
     "comment": ""
   },
   {
+    "term": "Show input method info on switch",
+    "translation": "",
+    "context": "Show input method info on switch",
+    "reference": "",
+    "comment": "Option on the fcitx5 config page."
+  },
+  {
     "term": "Show lock",
     "translation": "",
     "context": "Show lock",
@@ -19530,6 +19621,13 @@
     "comment": ""
   },
   {
+    "term": "Show preedit in application",
+    "translation": "",
+    "context": "Show preedit in application",
+    "reference": "",
+    "comment": "Option on the fcitx5 config page."
+  },
+  {
     "term": "Show readings",
     "translation": "",
     "context": "Show readings",
@@ -19619,6 +19717,13 @@
     "context": "Show the battery briefly when power is connected or removed",
     "reference": "",
     "comment": "island settings: charging pulse toggle description"
+  },
+  {
+    "term": "Show the text being composed inside the app instead of the candidate window",
+    "translation": "",
+    "context": "Show the text being composed inside the app instead of the candidate window",
+    "reference": "",
+    "comment": "Description for an option on the fcitx5 config page."
   },
   {
     "term": "Show trend",
@@ -19772,7 +19877,7 @@
     "translation": "",
     "context": "Size",
     "reference": "",
-    "comment": "Size"
+    "comment": "Size | font size"
   },
   {
     "term": "Size & spacing",
@@ -19978,6 +20083,13 @@
     "comment": "island settings: filled battery meter style"
   },
   {
+    "term": "Some options are only available in fcitx5-configtool: %1",
+    "translation": "",
+    "context": "Some options are only available in fcitx5-configtool: %1",
+    "reference": "",
+    "comment": "Displayed when not all config options are displayed in a fcitx5 addon config page, followed by the option names"
+  },
+  {
     "term": "Some plugins require a newer version of DMS:",
     "translation": "",
     "context": "Some plugins require a newer version of DMS:",
@@ -20116,6 +20228,13 @@
     "context": "Spin-up time",
     "reference": "",
     "comment": "HDD health: time to spin the platters up"
+  },
+  {
+    "term": "Spinning Record",
+    "translation": "",
+    "context": "Spinning Record",
+    "reference": "",
+    "comment": "Album artwork shape that turns like a vinyl record"
   },
   {
     "term": "Split direction follows the cursor position in the window",
@@ -20258,6 +20377,13 @@
     "comment": ""
   },
   {
+    "term": "Start with the input method on instead of the plain keyboard",
+    "translation": "",
+    "context": "Start with the input method on instead of the plain keyboard",
+    "reference": "",
+    "comment": "Option on the fcitx5 config page."
+  },
+  {
     "term": "Start/stop count",
     "translation": "",
     "context": "Start/stop count",
@@ -20312,6 +20438,13 @@
     "context": "Status",
     "reference": "",
     "comment": "noun, settings row or section title showing current state"
+  },
+  {
+    "term": "Stay awake with the lid closed",
+    "translation": "",
+    "context": "Stay awake with the lid closed",
+    "reference": "",
+    "comment": "keep awake option that also blocks suspend on lid close"
   },
   {
     "term": "Stay focused",
@@ -20402,7 +20535,7 @@
     "translation": "",
     "context": "Style",
     "reference": "",
-    "comment": "noun, visual style option label for a widget or the dock"
+    "comment": "font style | noun, visual style option label for a widget or the dock"
   },
   {
     "term": "Style, search, hidden apps",
@@ -20608,6 +20741,13 @@
     "comment": ""
   },
   {
+    "term": "Swaying Square",
+    "translation": "",
+    "context": "Swaying Square",
+    "reference": "",
+    "comment": "Album artwork shape"
+  },
+  {
     "term": "Switch User",
     "translation": "",
     "context": "Switch User",
@@ -20620,6 +20760,13 @@
     "context": "Switch between display configurations",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Switch between the first input method and the active one",
+    "translation": "",
+    "context": "Switch between the first input method and the active one",
+    "reference": "",
+    "comment": "Description for a configurable keybind in the fcitx5 settings."
   },
   {
     "term": "Switch layout shortcut",
@@ -20671,13 +20818,6 @@
     "comment": ""
   },
   {
-    "term": "Sync failed",
-    "translation": "",
-    "context": "Sync failed",
-    "reference": "",
-    "comment": "Applying Aqueous appearance settings to this application or toolkit failed"
-  },
-  {
     "term": "Sync failed in background mode. Trying terminal mode so you can authenticate interactively.",
     "translation": "",
     "context": "Sync failed in background mode. Trying terminal mode so you can authenticate interactively.",
@@ -20718,13 +20858,6 @@
     "context": "Sync with portal",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "Synchronized",
-    "translation": "",
-    "context": "Synchronized",
-    "reference": "",
-    "comment": "Aqueous appearance settings match this application or toolkit"
   },
   {
     "term": "Syncing...",
@@ -21133,13 +21266,6 @@
     "comment": "plugin manager unavailable notice, %1 is an environment variable"
   },
   {
-    "term": "The Aqueous operation failed.",
-    "translation": "",
-    "context": "The Aqueous operation failed.",
-    "reference": "",
-    "comment": "Fallback error for an Aqueous compositor or configuration request"
-  },
-  {
     "term": "The Control Center opens at the cursor instead of its widget",
     "translation": "",
     "context": "The Control Center opens at the cursor instead of its widget",
@@ -21196,13 +21322,6 @@
     "comment": ""
   },
   {
-    "term": "The compositor session changed. Discard this edit before starting a new one.",
-    "translation": "",
-    "context": "The compositor session changed. Discard this edit before starting a new one.",
-    "reference": "",
-    "comment": "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings"
-  },
-  {
     "term": "The custom command used when attaching to sessions (receives the session name as the first argument)",
     "translation": "",
     "context": "The custom command used when attaching to sessions (receives the session name as the first argument)",
@@ -21215,6 +21334,13 @@
     "context": "The direction label shows where the wind comes from.",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "The fcitx5 popup. The shell's OSD toggle is in the OSD settings.",
+    "translation": "",
+    "context": "The fcitx5 popup. The shell's OSD toggle is in the OSD settings.",
+    "reference": "",
+    "comment": "Description for an option on the fcitx5 config page."
   },
   {
     "term": "The fill shows relative humidity. The badge shows the dew point temperature.",
@@ -21273,25 +21399,11 @@
     "comment": "greeter unlink confirmation"
   },
   {
-    "term": "The new shortcut is already in use. Choose another shortcut.",
+    "term": "The next enabled provider is used when one fails.",
     "translation": "",
-    "context": "The new shortcut is already in use. Choose another shortcut.",
+    "context": "The next enabled provider is used when one fails.",
     "reference": "",
-    "comment": "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings"
-  },
-  {
-    "term": "The original shortcut changed. Refresh and review your edit.",
-    "translation": "",
-    "context": "The original shortcut changed. Refresh and review your edit.",
-    "reference": "",
-    "comment": "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings"
-  },
-  {
-    "term": "The original shortcut was removed. Discard this edit or add a new shortcut.",
-    "translation": "",
-    "context": "The original shortcut was removed. Discard this edit or add a new shortcut.",
-    "reference": "",
-    "comment": "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings"
+    "comment": "weather providers fallback hint"
   },
   {
     "term": "The quick brown fox jumps over the lazy dog",
@@ -21315,32 +21427,11 @@
     "comment": "island widget settings: unselected activities use the bar"
   },
   {
-    "term": "The result is unknown. Refresh before trying again.",
-    "translation": "",
-    "context": "The result is unknown. Refresh before trying again.",
-    "reference": "",
-    "comment": "An Aqueous operation may have completed without a reply"
-  },
-  {
     "term": "The rule applies to any window matching one of these.",
     "translation": "",
     "context": "The rule applies to any window matching one of these.",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "The save result is unknown. Refresh and check the current bindings.",
-    "translation": "",
-    "context": "The save result is unknown. Refresh and check the current bindings.",
-    "reference": "",
-    "comment": "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings"
-  },
-  {
-    "term": "The selected action is no longer available.",
-    "translation": "",
-    "context": "The selected action is no longer available.",
-    "reference": "",
-    "comment": "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings"
   },
   {
     "term": "The server certificate has changed since it was last trusted. Only continue if you recognize the new fingerprint.",
@@ -21516,13 +21607,6 @@
     "context": "This may take a few seconds",
     "reference": "",
     "comment": "Loading overlay subtitle"
-  },
-  {
-    "term": "This operation is not supported by the installed Aqueous version.",
-    "translation": "",
-    "context": "This operation is not supported by the installed Aqueous version.",
-    "reference": "",
-    "comment": "Aqueous compositor or configuration helper lacks a required capability"
   },
   {
     "term": "This output is disabled in the current profile",
@@ -21866,6 +21950,20 @@
     "context": "Toggle fonts",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Toggle input method",
+    "translation": "",
+    "context": "Toggle input method",
+    "reference": "",
+    "comment": "Configurable keybind in the fcitx5 settings."
+  },
+  {
+    "term": "Toggle preedit in application",
+    "translation": "",
+    "context": "Toggle preedit in application",
+    "reference": "",
+    "comment": "Configurable keybind in the fcitx5 settings."
   },
   {
     "term": "Toggling...",
@@ -22573,6 +22671,13 @@
     "context": "Update All",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Update DMS to configure fcitx5 from here",
+    "translation": "",
+    "context": "Update DMS to configure fcitx5 from here",
+    "reference": "",
+    "comment": "Tip displayed when dms core is too old for fcitx5"
   },
   {
     "term": "Update available",
@@ -23420,6 +23525,13 @@
     "context": "Weather",
     "reference": "",
     "comment": "island compact face: weather label | island settings: weather slot row"
+  },
+  {
+    "term": "Weather providers",
+    "translation": "",
+    "context": "Weather providers",
+    "reference": "",
+    "comment": "Weather data source priority settings"
   },
   {
     "term": "Web browser",
@@ -24304,6 +24416,13 @@
     "comment": "launcher file search placeholder, short for file extension"
   },
   {
+    "term": "fcitx5 input methods, keybinds, behavior",
+    "translation": "",
+    "context": "fcitx5 input methods, keybinds, behavior",
+    "reference": "",
+    "comment": "Description for fcitx5 settings config page"
+  },
+  {
     "term": "featured",
     "translation": "",
     "context": "featured",
@@ -24465,18 +24584,11 @@
     "comment": ""
   },
   {
-    "term": "pt",
-    "translation": "",
-    "context": "pt",
-    "reference": "",
-    "comment": "Font size unit, points"
-  },
-  {
     "term": "px",
     "translation": "",
     "context": "px",
     "reference": "",
-    "comment": "Cursor size unit, pixels"
+    "comment": ""
   },
   {
     "term": "r/niri subreddit",

@@ -23,9 +23,6 @@
   "%1 Startup Failed": {
     "%1 Startup Failed": "Opstarten van %1 mislukt"
   },
-  "%1 VRAM": {
-    "%1 VRAM": ""
-  },
   "%1 active": {
     "%1 active": ""
   },
@@ -341,6 +338,9 @@
   "A notification must match every condition": {
     "A notification must match every condition": "Een melding moet aan elke voorwaarde voldoen"
   },
+  "A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.": {
+    "A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.": ""
+  },
   "A tiled or fullscreen window dragged into floating centers on the cursor": {
     "A tiled or fullscreen window dragged into floating centers on the cursor": ""
   },
@@ -377,9 +377,6 @@
   "Accept jobs": {
     "Accept jobs": "Taken accepteren"
   },
-  "Accept reviewed changes": {
-    "Accept reviewed changes": "Gecontroleerde wijzigingen accepteren"
-  },
   "Accepting": {
     "Accepting": "Accepteert"
   },
@@ -410,6 +407,9 @@
   "Activate Greeter": {
     "Activate Greeter": "Greeter activeren"
   },
+  "Activate input method": {
+    "Activate input method": ""
+  },
   "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.": {
     "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.": "De DMS Greeter activeren? Er wordt een terminal geopend voor sudo-authenticatie. Voer Sync uit na activering om instellingen toe te passen."
   },
@@ -421,6 +421,9 @@
   },
   "Active VPN": {
     "Active VPN": "Actieve VPN"
+  },
+  "Active by default": {
+    "Active by default": ""
   },
   "Active color": {
     "Active color": "Actieve kleur"
@@ -475,6 +478,9 @@
   },
   "Add entry": {
     "Add entry": "Item toevoegen"
+  },
+  "Add input method": {
+    "Add input method": ""
   },
   "Add location": {
     "Add location": "Locatie toevoegen"
@@ -704,9 +710,6 @@
   "Anonymous Identity (optional)": {
     "Anonymous Identity (optional)": "Anonieme identiteit (optioneel)"
   },
-  "Another Aqueous operation is in progress.": {
-    "Another Aqueous operation is in progress.": "Er wordt al een andere Aqueous-bewerking uitgevoerd."
-  },
   "Any window": {
     "Any window": "Elk venster"
   },
@@ -814,12 +817,6 @@
   },
   "Apps with notification popups muted. Unmute or delete to remove.": {
     "Apps with notification popups muted. Unmute or delete to remove.": "Apps met gedempte meldingspop-ups. Dempen opheffen of verwijderen om te wissen."
-  },
-  "Aqueous cursor": {
-    "Aqueous cursor": "Aqueous-cursor"
-  },
-  "Aqueous typography": {
-    "Aqueous typography": "Aqueous-typografie"
   },
   "Arc extender": {
     "Arc extender": "Boogverlenger"
@@ -1160,6 +1157,9 @@
   "Behavior": {
     "Behavior": "Gedrag"
   },
+  "Bento style only": {
+    "Bento style only": ""
+  },
   "Bind the %1 IPC action in your compositor config.": {
     "Bind the %1 IPC action in your compositor config.": "Bind de %1 IPC-actie in je compositor-configuratie."
   },
@@ -1240,6 +1240,12 @@
   },
   "Body font size": {
     "Body font size": "Lettergrootte inhoud"
+  },
+  "Bold": {
+    "Bold": ""
+  },
+  "Bold Italic": {
+    "Bold Italic": ""
   },
   "Boot": {
     "Boot": ""
@@ -1406,6 +1412,12 @@
   "Canceled": {
     "Canceled": "Geannuleerd"
   },
+  "Candidate list": {
+    "Candidate list": ""
+  },
+  "Candidates per page": {
+    "Candidates per page": ""
+  },
   "Cannot delete the only administrator": {
     "Cannot delete the only administrator": "Kan de enige beheerder niet verwijderen"
   },
@@ -1438,6 +1450,9 @@
   },
   "Caps lock": {
     "Caps lock": "Caps Lock"
+  },
+  "Card backgrounds": {
+    "Card backgrounds": ""
   },
   "Cards": {
     "Cards": "Kaarten"
@@ -1670,6 +1685,9 @@
   "Clicking a window in a special workspace opens that workspace": {
     "Clicking a window in a special workspace opens that workspace": "Klikken op een venster in een speciale werkruimte opent die werkruimte"
   },
+  "Clicking a workspace from another display moves it to the display of the bar you clicked": {
+    "Clicking a workspace from another display moves it to the display of the bar you clicked": ""
+  },
   "Clicks on empty bar space reach the windows below": {
     "Clicks on empty bar space reach the windows below": "Klikken op lege balkruimte bereiken de vensters eronder"
   },
@@ -1855,9 +1873,6 @@
   },
   "Configuration activated": {
     "Configuration activated": "Configuratie geactiveerd"
-  },
-  "Configuration changed. Refresh to continue.": {
-    "Configuration changed. Refresh to continue.": "Configuratie gewijzigd. Vernieuw om verder te gaan."
   },
   "Configuration will be preserved when this display reconnects": {
     "Configuration will be preserved when this display reconnects": "Configuratie wordt bewaard wanneer dit beeldscherm opnieuw verbindt"
@@ -2144,12 +2159,6 @@
   "Cursor": {
     "Cursor": "Cursor"
   },
-  "Cursor Size": {
-    "Cursor Size": "Cursorgrootte"
-  },
-  "Cursor Theme": {
-    "Cursor Theme": "Cursorthema"
-  },
   "Cursor auto-hide timeout": {
     "Cursor auto-hide timeout": "Wachttijd voor automatisch verbergen van cursor"
   },
@@ -2249,9 +2258,6 @@
   "DMS stops drawing wallpapers on every display": {
     "DMS stops drawing wallpapers on every display": "DMS stopt met het tekenen van achtergronden op alle schermen"
   },
-  "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": {
-    "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": "DMS gebruikt de lettertypefamilie, het gewicht en de schaal. De exacte letterstijl, schuinte, breedte en afzonderlijk geschaalde balken kunnen afwijken."
-  },
   "Daemon": {
     "Daemon": ""
   },
@@ -2341,6 +2347,9 @@
   },
   "Daytime": {
     "Daytime": "Overdag"
+  },
+  "Deactivate input method": {
+    "Deactivate input method": ""
   },
   "Deck": {
     "Deck": "Deck"
@@ -2563,9 +2572,6 @@
   },
   "Discard": {
     "Discard": "Verwerpen"
-  },
-  "Discard draft and reload": {
-    "Discard draft and reload": "Concept verwerpen en opnieuw laden"
   },
   "Discharging": {
     "Discharging": "Ontladen"
@@ -3149,6 +3155,9 @@
   "Failed to change display power": {
     "Failed to change display power": "In- of uitschakelen van scherm mislukt"
   },
+  "Failed to change priority of %1": {
+    "Failed to change priority of %1": ""
+  },
   "Failed to configure hotspot": {
     "Failed to configure hotspot": "Configureren van hotspot mislukt"
   },
@@ -3236,9 +3245,6 @@
   "Failed to load clipboard entry": {
     "Failed to load clipboard entry": "Laden van klembord-item mislukt"
   },
-  "Failed to load keybinds": {
-    "Failed to load keybinds": "Laden van sneltoetsen mislukt"
-  },
   "Failed to load settings": {
     "Failed to load settings": "Laden van instellingen mislukt"
   },
@@ -3247,6 +3253,9 @@
   },
   "Failed to parse %1": {
     "Failed to parse %1": "Verwerken van %1 mislukt"
+  },
+  "Failed to pause %1": {
+    "Failed to pause %1": ""
   },
   "Failed to pause printer": {
     "Failed to pause printer": "Pauzeren van printer mislukt"
@@ -3283,6 +3292,9 @@
   },
   "Failed to restart job": {
     "Failed to restart job": "Herstarten van taak mislukt"
+  },
+  "Failed to resume %1": {
+    "Failed to resume %1": ""
   },
   "Failed to resume printer": {
     "Failed to resume printer": "Hervatten van printer mislukt"
@@ -3508,6 +3520,9 @@
   },
   "Flat": {
     "Flat": "Vlak"
+  },
+  "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.": {
+    "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.": ""
   },
   "Flipped": {
     "Flipped": "Gespiegeld"
@@ -4100,6 +4115,9 @@
   "Higher values flex more smoothly and cost more GPU": {
     "Higher values flex more smoothly and cost more GPU": ""
   },
+  "Highest": {
+    "Highest": ""
+  },
   "Highlight focused app": {
     "Highlight focused app": "App met focus markeren"
   },
@@ -4415,6 +4433,9 @@
   "Input": {
     "Input": "Invoer"
   },
+  "Input Method Framework": {
+    "Input Method Framework": ""
+  },
   "Input Volume": {
     "Input Volume": "Invoervolume"
   },
@@ -4616,9 +4637,6 @@
   "Key combination": {
     "Key combination": "Toetscombinatie"
   },
-  "Keybindings changed. Refresh and review your edit before saving.": {
-    "Keybindings changed. Refresh and review your edit before saving.": "Sneltoetsen gewijzigd. Vernieuw en controleer je wijziging voordat je opslaat."
-  },
   "Keybinds": {
     "Keybinds": "Sneltoetsen"
   },
@@ -4726,6 +4744,9 @@
   },
   "Launch": {
     "Launch": "Starten"
+  },
+  "Launch new instance": {
+    "Launch new instance": ""
   },
   "Launch on dGPU": {
     "Launch on dGPU": "Starten op dGPU"
@@ -4993,6 +5014,9 @@
   },
   "Lower priorities move into overflow first": {
     "Lower priorities move into overflow first": ""
+  },
+  "Lowest": {
+    "Lowest": ""
   },
   "Lyrics": {
     "Lyrics": "Songteksten"
@@ -5279,6 +5303,9 @@
   "Middle section": {
     "Middle section": "Middelste sectie"
   },
+  "Middle-click action": {
+    "Middle-click action": ""
+  },
   "Min H": {
     "Min H": "Min. H"
   },
@@ -5414,6 +5441,9 @@
   "Mouse & touchpad": {
     "Mouse & touchpad": "Muis & touchpad"
   },
+  "Mouse behavior": {
+    "Mouse behavior": ""
+  },
   "Move out of scratchpad": {
     "Move out of scratchpad": "Uit scratchpad halen"
   },
@@ -5422,6 +5452,9 @@
   },
   "Move to scratchpad: %1": {
     "Move to scratchpad: %1": "Naar scratchpad verplaatsen: %1"
+  },
+  "Move workspace to this display": {
+    "Move workspace to this display": ""
   },
   "Moves focus along with the column": {
     "Moves focus along with the column": "Verplaatst de focus mee met de kolom"
@@ -5434,9 +5467,6 @@
   },
   "Multimedia": {
     "Multimedia": "Multimedia"
-  },
-  "Multiple bindings use the original shortcut. Resolve the duplicate bindings first.": {
-    "Multiple bindings use the original shortcut. Resolve the duplicate bindings first.": "Meerdere koppelingen gebruiken de oorspronkelijke sneltoets. Los eerst de dubbele koppelingen op."
   },
   "Multiplexers": {
     "Multiplexers": "Multiplexers"
@@ -5594,8 +5624,17 @@
   "Next Transition": {
     "Next Transition": "Volgende overgang"
   },
+  "Next candidate": {
+    "Next candidate": ""
+  },
   "Next category": {
     "Next category": "Volgende categorie"
+  },
+  "Next group": {
+    "Next group": ""
+  },
+  "Next input method": {
+    "Next input method": ""
   },
   "Next page": {
     "Next page": "Volgende pagina"
@@ -5975,9 +6014,6 @@
   "Normal": {
     "Normal": "Normaal"
   },
-  "Normal Font": {
-    "Normal Font": "Normaal lettertype"
-  },
   "Normal Priority": {
     "Normal Priority": "Normale prioriteit"
   },
@@ -6031,9 +6067,6 @@
   },
   "Not shown on this bar, so its section widgets stay hidden": {
     "Not shown on this bar, so its section widgets stay hidden": "Niet getoond op deze balk, dus de sectiewidgets blijven verborgen"
-  },
-  "Not synchronized": {
-    "Not synchronized": "Niet gesynchroniseerd"
   },
   "Notch": {
     "Notch": "Notch"
@@ -6278,6 +6311,9 @@
   "Options": {
     "Options": "Opties"
   },
+  "Options of a fcitx5 plugin": {
+    "Options of a fcitx5 plugin": ""
+  },
   "Options of one widget instance": {
     "Options of one widget instance": "Opties van één widgetinstantie"
   },
@@ -6295,9 +6331,6 @@
   },
   "Original: %1": {
     "Original: %1": "Origineel: %1"
-  },
-  "Original: %1\nCurrent: %2\nProposed: %3\nCurrent destination: %4": {
-    "Original: %1\nCurrent: %2\nProposed: %3\nCurrent destination: %4": "Oorspronkelijk: %1\nHuidig: %2\nVoorgesteld: %3\nHuidige bestemming: %4"
   },
   "Other": {
     "Other": "Overige"
@@ -6431,6 +6464,9 @@
   "Page faults": {
     "Page faults": ""
   },
+  "Paged grid": {
+    "Paged grid": ""
+  },
   "Pair": {
     "Pair": "Koppelen"
   },
@@ -6475,9 +6511,6 @@
   },
   "Parents": {
     "Parents": ""
-  },
-  "Partially synchronized": {
-    "Partially synchronized": "Gedeeltelijk gesynchroniseerd"
   },
   "Partition table": {
     "Partition table": ""
@@ -6685,9 +6718,6 @@
   },
   "Plugin Source Code": {
     "Plugin Source Code": "Broncode plug-in"
-  },
-  "Plugin authors": {
-    "Plugin authors": "Pluginauteurs"
   },
   "Plugin dependency missing": {
     "Plugin dependency missing": "Plugin-afhankelijkheid ontbreekt"
@@ -6899,14 +6929,20 @@
   "Previous": {
     "Previous": "Vorige"
   },
+  "Previous candidate": {
+    "Previous candidate": ""
+  },
   "Previous category": {
     "Previous category": "Vorige categorie"
   },
+  "Previous group": {
+    "Previous group": ""
+  },
+  "Previous input method": {
+    "Previous input method": ""
+  },
   "Previous page": {
     "Previous page": "Vorige pagina"
-  },
-  "Previous: %1\nCurrent: %2": {
-    "Previous: %1\nCurrent: %2": "Vorige: %1\nHuidig: %2"
   },
   "Primary": {
     "Primary": "Primair"
@@ -7208,6 +7244,9 @@
   "Registries": {
     "Registries": "Registers"
   },
+  "Regular": {
+    "Regular": ""
+  },
   "Reject jobs": {
     "Reject jobs": "Taken weigeren"
   },
@@ -7445,9 +7484,6 @@
   "Revert": {
     "Revert": "Terugdraaien"
   },
-  "Review the current bindings before saving this edit.": {
-    "Review the current bindings before saving this edit.": "Controleer de huidige koppelingen voordat je deze wijziging opslaat."
-  },
   "Right": {
     "Right": "Rechts"
   },
@@ -7627,9 +7663,6 @@
   },
   "Save credentials": {
     "Save credentials": "Inloggegevens opslaan"
-  },
-  "Save or discard the current edit before editing another shortcut.": {
-    "Save or discard the current edit before editing another shortcut.": "Sla de huidige wijziging op of verwerp deze voordat je een andere sneltoets bewerkt."
   },
   "Save password": {
     "Save password": "Wachtwoord opslaan"
@@ -8006,6 +8039,9 @@
   "Share gamma control settings": {
     "Share gamma control settings": "Instellingen gammaregeling delen"
   },
+  "Share input state": {
+    "Share input state": ""
+  },
   "Shared": {
     "Shared": ""
   },
@@ -8135,6 +8171,9 @@
   "Show in dock": {
     "Show in dock": "Tonen in dock"
   },
+  "Show input method info on switch": {
+    "Show input method info on switch": ""
+  },
   "Show lock": {
     "Show lock": "Vergrendelen tonen"
   },
@@ -8174,6 +8213,9 @@
   "Show power off": {
     "Show power off": "Uitschakelen tonen"
   },
+  "Show preedit in application": {
+    "Show preedit in application": ""
+  },
   "Show readings": {
     "Show readings": "Metingen tonen"
   },
@@ -8212,6 +8254,9 @@
   },
   "Show the battery briefly when power is connected or removed": {
     "Show the battery briefly when power is connected or removed": "Toon de accu kort wanneer de voeding wordt aangesloten of losgekoppeld"
+  },
+  "Show the text being composed inside the app instead of the candidate window": {
+    "Show the text being composed inside the app instead of the candidate window": ""
   },
   "Show trend": {
     "Show trend": "Trend tonen"
@@ -8363,6 +8408,9 @@
   "Solid": {
     "Solid": "Gevuld"
   },
+  "Some options are only available in fcitx5-configtool: %1": {
+    "Some options are only available in fcitx5-configtool: %1": ""
+  },
   "Some plugins require a newer version of DMS:": {
     "Some plugins require a newer version of DMS:": "Sommige plug-ins vereisen een nieuwere versie van DMS:"
   },
@@ -8423,6 +8471,9 @@
   "Spin-up time": {
     "Spin-up time": ""
   },
+  "Spinning Record": {
+    "Spinning Record": ""
+  },
   "Split direction follows the cursor position in the window": {
     "Split direction follows the cursor position in the window": "Splitsrichting volgt de cursorpositie in het venster"
   },
@@ -8480,6 +8531,9 @@
   "Start typing your notes here...": {
     "Start typing your notes here...": "Begin hier met het typen van uw notities..."
   },
+  "Start with the input method on instead of the plain keyboard": {
+    "Start with the input method on instead of the plain keyboard": ""
+  },
   "Start/stop count": {
     "Start/stop count": ""
   },
@@ -8500,6 +8554,9 @@
   },
   "State": {
     "State": "Status"
+  },
+  "Stay awake with the lid closed": {
+    "Stay awake with the lid closed": ""
   },
   "Stay focused": {
     "Stay focused": "Focus behouden"
@@ -8624,8 +8681,14 @@
   "Sway website": {
     "Sway website": "Sway-website"
   },
+  "Swaying Square": {
+    "Swaying Square": ""
+  },
   "Switch between display configurations": {
     "Switch between display configurations": "Schakelen tussen schermconfiguraties"
+  },
+  "Switch between the first input method and the active one": {
+    "Switch between the first input method and the active one": ""
   },
   "Switch layout shortcut": {
     "Switch layout shortcut": "Sneltoets voor wisselen van indeling"
@@ -8648,9 +8711,6 @@
   "Sync completed successfully.": {
     "Sync completed successfully.": "Sync is succesvol voltooid."
   },
-  "Sync failed": {
-    "Sync failed": "Synchronisatie mislukt"
-  },
   "Sync failed in background mode. Trying terminal mode so you can authenticate interactively.": {
     "Sync failed in background mode. Trying terminal mode so you can authenticate interactively.": "Sync mislukt in achtergrondmodus. Terminalmodus wordt geprobeerd zodat je interactief kunt authenticeren."
   },
@@ -8668,9 +8728,6 @@
   },
   "Sync with portal": {
     "Sync with portal": "Synchroniseren met portal"
-  },
-  "Synchronized": {
-    "Synchronized": "Gesynchroniseerd"
   },
   "Syncing...": {
     "Syncing...": "Synchroniseren..."
@@ -8840,9 +8897,6 @@
   "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": {
     "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": "De omgevingsvariabele %1 is niet ingesteld of de socket is niet beschikbaar. Deze is vereist voor automatisch pluginbeheer."
   },
-  "The Aqueous operation failed.": {
-    "The Aqueous operation failed.": "De Aqueous-bewerking is mislukt."
-  },
   "The Control Center opens at the cursor instead of its widget": {
     "The Control Center opens at the cursor instead of its widget": "Het bedieningscentrum opent bij de cursor in plaats van bij de widget"
   },
@@ -8867,14 +8921,14 @@
   "The click that focuses a window does not reach the app": {
     "The click that focuses a window does not reach the app": ""
   },
-  "The compositor session changed. Discard this edit before starting a new one.": {
-    "The compositor session changed. Discard this edit before starting a new one.": "De compositorsessie is gewijzigd. Verwerp deze wijziging voordat je een nieuwe begint."
-  },
   "The custom command used when attaching to sessions (receives the session name as the first argument)": {
     "The custom command used when attaching to sessions (receives the session name as the first argument)": "De aangepaste opdracht die wordt gebruikt bij het koppelen aan sessies (ontvangt de sessienaam als eerste argument)"
   },
   "The direction label shows where the wind comes from.": {
     "The direction label shows where the wind comes from.": "Het richtingslabel toont waar de wind vandaan komt."
+  },
+  "The fcitx5 popup. The shell's OSD toggle is in the OSD settings.": {
+    "The fcitx5 popup. The shell's OSD toggle is in the OSD settings.": ""
   },
   "The fill shows relative humidity. The badge shows the dew point temperature.": {
     "The fill shows relative humidity. The badge shows the dew point temperature.": "De vulling toont de relatieve luchtvochtigheid. De badge toont de dauwpunttemperatuur."
@@ -8900,14 +8954,8 @@
   "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": {
     "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": "Het aanmeldscherm volgt je DMS-thema, achtergrond, widgets en instellingen niet meer. greetd, authenticatie en andere gebruikers worden niet beïnvloed."
   },
-  "The new shortcut is already in use. Choose another shortcut.": {
-    "The new shortcut is already in use. Choose another shortcut.": "De nieuwe sneltoets is al in gebruik. Kies een andere sneltoets."
-  },
-  "The original shortcut changed. Refresh and review your edit.": {
-    "The original shortcut changed. Refresh and review your edit.": "De oorspronkelijke sneltoets is gewijzigd. Vernieuw en controleer je wijziging."
-  },
-  "The original shortcut was removed. Discard this edit or add a new shortcut.": {
-    "The original shortcut was removed. Discard this edit or add a new shortcut.": "De oorspronkelijke sneltoets is verwijderd. Verwerp deze wijziging of voeg een nieuwe sneltoets toe."
+  "The next enabled provider is used when one fails.": {
+    "The next enabled provider is used when one fails.": ""
   },
   "The quick brown fox jumps over the lazy dog": {
     "The quick brown fox jumps over the lazy dog": "Pa's wijze lynx bezag vroom het fikse aquaduct"
@@ -8918,17 +8966,8 @@
   "The rest open the bar's own popouts": {
     "The rest open the bar's own popouts": "De rest opent de eigen uitklappanelen van de balk"
   },
-  "The result is unknown. Refresh before trying again.": {
-    "The result is unknown. Refresh before trying again.": "Het resultaat is onbekend. Vernieuw voordat je het opnieuw probeert."
-  },
   "The rule applies to any window matching one of these.": {
     "The rule applies to any window matching one of these.": "De regel is van toepassing op elk venster dat overeenkomt met een van deze."
-  },
-  "The save result is unknown. Refresh and check the current bindings.": {
-    "The save result is unknown. Refresh and check the current bindings.": "Het resultaat van het opslaan is onbekend. Vernieuw en controleer de huidige koppelingen."
-  },
-  "The selected action is no longer available.": {
-    "The selected action is no longer available.": "De geselecteerde actie is niet meer beschikbaar."
   },
   "The server certificate has changed since it was last trusted. Only continue if you recognize the new fingerprint.": {
     "The server certificate has changed since it was last trusted. Only continue if you recognize the new fingerprint.": "Het servercertificaat is gewijzigd sinds het voor het laatst werd vertrouwd. Ga alleen verder als je de nieuwe vingerafdruk herkent."
@@ -9004,9 +9043,6 @@
   },
   "This may take a few seconds": {
     "This may take a few seconds": "Dit kan enkele seconden duren"
-  },
-  "This operation is not supported by the installed Aqueous version.": {
-    "This operation is not supported by the installed Aqueous version.": "Deze bewerking wordt niet ondersteund door de geïnstalleerde Aqueous-versie."
   },
   "This output is disabled in the current profile": {
     "This output is disabled in the current profile": "Dit beeldscherm is uitgeschakeld in het huidige profiel"
@@ -9154,6 +9190,12 @@
   },
   "Toggle fonts": {
     "Toggle fonts": "Lettertypen in-/uitschakelen"
+  },
+  "Toggle input method": {
+    "Toggle input method": ""
+  },
+  "Toggle preedit in application": {
+    "Toggle preedit in application": ""
   },
   "Toggling...": {
     "Toggling...": "Schakelen..."
@@ -9451,6 +9493,9 @@
   },
   "Update All": {
     "Update All": "Alles bijwerken"
+  },
+  "Update DMS to configure fcitx5 from here": {
+    "Update DMS to configure fcitx5 from here": ""
   },
   "Update available": {
     "Update available": "Update beschikbaar"
@@ -9811,6 +9856,9 @@
   },
   "Weather": {
     "Weather": "Weer"
+  },
+  "Weather providers": {
+    "Weather providers": ""
   },
   "Web browser": {
     "Web browser": "Webbrowser"
@@ -10208,6 +10256,9 @@
   "ext": {
     "ext": "ext"
   },
+  "fcitx5 input methods, keybinds, behavior": {
+    "fcitx5 input methods, keybinds, behavior": ""
+  },
   "featured": {
     "featured": "uitgelicht"
   },
@@ -10297,9 +10348,6 @@
   },
   "primary network connection label": {
     "Primary": "Primair"
-  },
-  "pt": {
-    "pt": "pt"
   },
   "px": {
     "px": "px"
