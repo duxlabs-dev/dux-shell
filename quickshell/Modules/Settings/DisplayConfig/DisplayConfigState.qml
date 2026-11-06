@@ -952,6 +952,9 @@ Singleton {
         if (hasPendingChanges)
             clearPendingChanges();
         currentOutputSet = newOutputSet;
+        // startup validates before the socket delivers outputs, so legacy hyprland keys can only migrate here
+        if (profilesReady && CompositorService.isHyprland)
+            validateProfiles();
         autoSelectDebounceTimer.restart();
     }
     onSavedOutputsChanged: allOutputs = buildAllOutputsMap()
