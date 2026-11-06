@@ -1,17 +1,11 @@
 import QtQuick
 import QtMultimedia
-import Quickshell.Widgets
 import qs.Services
 
-// Loaded by url so a missing QtMultimedia degrades to the static art underneath.
-ClippingRectangle {
+// Loaded by url so a missing QtMultimedia degrades to the static art underneath; the host clips it to the art shape.
+Item {
     id: root
 
-    radius: width / 2
-    color: "transparent"
-    contentInsideBorder: true
-    border.color: MediaAccentService.accent
-    border.width: 2
     // Reveal only while frames are flowing; the static art beneath covers load, stall and error.
     opacity: video.hasVideo && video.playbackState === MediaPlayer.PlayingState && video.error === MediaPlayer.NoError ? 1 : 0
     visible: opacity > 0
