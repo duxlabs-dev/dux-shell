@@ -68,6 +68,10 @@ override_dh_auto_install:
 	install -Dm644 dms-git-repo/assets/dev.duxlabs.shell.svg \
 		debian/dms-git/usr/share/icons/hicolor/scalable/apps/dev.duxlabs.shell.svg
 
+# the embedded libdux-qt-base.so is invisible to dpkg-shlibdeps, so scan the built copy
+override_dh_shlibdeps:
+	dh_shlibdeps -- -e $(CURDIR)/core/build/dux-qt-base/src/libdux-qt-base.so.0
+
 override_dh_auto_clean:
 	# Don't delete dms-git-repo directory - it's part of the source package (native format)
 	# Clean up build artifacts

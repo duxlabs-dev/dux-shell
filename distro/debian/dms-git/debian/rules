@@ -62,10 +62,14 @@ override_dh_auto_install:
 	install -Dm644 assets/dev.duxlabs.shell.notepad.desktop debian/dms-git/usr/share/applications/dev.duxlabs.shell.notepad.desktop
 	install -Dm644 assets/dev.duxlabs.shell.svg debian/dms-git/usr/share/icons/hicolor/scalable/apps/dev.duxlabs.shell.svg
 
+# the embedded libdux-qt-base.so is invisible to dpkg-shlibdeps, so scan the built copy
+override_dh_shlibdeps:
+	dh_shlibdeps -- -e $(CURDIR)/core/build/dux-qt-base/src/libdux-qt-base.so.0
+
 override_dh_auto_clean:
 	# Clean up build artifacts
 	rm -f dms
-	rm -rf core/bin
+	rm -rf core/bin core/build core/internal/qtbaseembed/lib
 	rm -rf debian/tmp-home
 	rm -rf go-bootstrap .go-toolchain
 	dh_auto_clean
