@@ -487,6 +487,8 @@ Singleton {
                     entry.id = generateProfileId();
                     dirty = true;
                 }
+                if (CompositorService.isHyprland && OutputModel.migrateHyprlandProfileKeys(entry, outputs, SettingsData.displayNameMode))
+                    dirty = true;
                 if (ensureEnabledOutput(entry))
                     dirty = true;
                 validated[entry.id] = {
@@ -791,6 +793,9 @@ Singleton {
         if (hasPendingChanges)
             clearPendingChanges();
         currentOutputSet = newOutputSet;
+        // startup validates before the socket delivers outputs, so legacy hyprland keys can only migrate here
+        if (profilesReady && CompositorService.isHyprland)
+            validateProfiles();
         autoSelectDebounceTimer.restart();
     }
     onSavedOutputsChanged: allOutputs = buildAllOutputsMap()
