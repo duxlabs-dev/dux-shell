@@ -1029,8 +1029,12 @@ Singleton {
         return edge === "left" || edge === "right";
     }
 
-    function islandConnectsPopouts(bc) {
-        return !frameEnabled && isIslandBarConfig(bc) && !isDotBarConfig(bc) && islandSetting(bc, "islandSatellitesEnabled") && islandSetting(bc, "islandSatelliteBackground") && islandSetting(bc, "islandSatelliteConnectedPopouts");
+    function barConnectsPopouts(bc) {
+        if (frameEnabled || !bc?.connectedPopouts || bc.visible === false)
+            return false;
+        if (!isIslandBarConfig(bc))
+            return barTransparency(bc) > 0;
+        return !isDotBarConfig(bc) && islandSetting(bc, "islandSatellitesEnabled") && islandSetting(bc, "islandSatelliteBackground");
     }
     function islandStripThickness(bc) {
         return LayoutResolver.islandThickness(islandSettings(bc), islandDefaultsFor(bc));

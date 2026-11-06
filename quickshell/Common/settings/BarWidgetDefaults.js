@@ -56,7 +56,6 @@ var ISLAND_DEFAULTS = {
     islandSatelliteGap: 12,
     islandSatelliteBackground: false,
     islandSatelliteGothCorners: true,
-    islandSatelliteConnectedPopouts: false,
     islandSatelliteFollowInterfaceStyle: true,
     islandSatelliteTransparency: 1,
     islandSpringStiffness: 560,

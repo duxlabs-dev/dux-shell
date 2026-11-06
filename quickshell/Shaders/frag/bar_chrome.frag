@@ -1,6 +1,6 @@
 #version 450
 
-// Island satellites + the popout opened from them as one SDF, so the join never depends on two surfaces agreeing.
+// The bar or its satellites + the popout opened from them as one SDF, so the join never depends on two surfaces agreeing.
 
 layout(location = 0) in vec2 qt_TexCoord0;
 layout(location = 0) out vec4 fragColor;

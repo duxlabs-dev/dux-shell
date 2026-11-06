@@ -21,7 +21,7 @@ Item {
     readonly property bool selectedIslandFree: bar.selectedBarIsIsland && SettingsData.islandFreePlacement(bar.selectedBarConfig)
     readonly property bool selectedIslandOverlay: bar.selectedBarIsIsland && bar.islandSetting("islandFloating") && !selectedIslandFree
     readonly property bool selectedIslandDocked: bar.selectedBarIsIsland && !selectedIslandFree
-    readonly property bool popupGapsZeroed: SettingsData.barUsesConnectedFrameStyle(bar.selectedBarConfig) && !(bar.selectedBarConfig?.useOverlayLayer ?? false)
+    readonly property bool popupGapsZeroed: (SettingsData.barUsesConnectedFrameStyle(bar.selectedBarConfig) && !(bar.selectedBarConfig?.useOverlayLayer ?? false)) || SettingsData.barConnectsPopouts(bar.selectedBarConfig)
     readonly property int placementIndex: !bar.islandSetting("islandFloating") ? 0 : (bar.islandSetting("islandPlacement") === "free" ? 2 : 1)
 
     function setBarScreenPreferences(barId, prefs) {

@@ -39,6 +39,7 @@ Item {
     readonly property bool startAttached: edgeAligned && !canonicalRightSide
     readonly property bool endAttached: edgeAligned && canonicalRightSide
     readonly property alias body: body
+    readonly property rect chromeRect: Qt.rect(x, y, width, height)
     readonly property real startAlongR: startAttached ? attachedAlongR : sweepR
     readonly property real endAlongR: endAttached ? attachedAlongR : sweepR
     readonly property real startCrossR: startAttached ? sweepR : freeCrossR

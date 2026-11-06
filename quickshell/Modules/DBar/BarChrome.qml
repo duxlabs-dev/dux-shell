@@ -4,20 +4,25 @@ import QtQuick
 import qs.Common
 import "../../Common/ConnectedSurfaceGeometry.js" as SurfaceGeometry
 
-// Paints the satellites and the popout opened from them as one shape in the bar's own window.
+// Paints the bar or its satellites and the popout opened from them as one shape in the bar's own window.
 ShaderEffect {
     id: root
 
     required property Item leading
-    required property Item trailing
+    property Item trailing: null
     required property string screenName
     required property string barSide
+    required property string barId
     required property real originX
     required property real originY
     required property real dpr
     required property color fillColor
     required property real edgeRadius
     required property real cornerRadius
+    property real nearRadius: 0
+    property bool alwaysPainted: false
+    property real windowX: 0
+    property real windowY: 0
 
     readonly property bool horizontal: barSide === "top" || barSide === "bottom"
     readonly property real joinRadius: edgeRadius > 0 ? edgeRadius : Theme.connectedCornerRadius
@@ -25,14 +30,14 @@ ShaderEffect {
         ConnectedModeState.surfaceRevisions[screenName];
         return ConnectedModeState.surfaceDescriptor(screenName, "popout");
     }
-    readonly property bool popoutActive: descriptor.visible && descriptor.barSide === barSide
-    readonly property var body: popoutActive ? SurfaceGeometry.animatedBodyRect(descriptor, dpr) : ({
+    readonly property bool popoutActive: descriptor.visible && descriptor.barSide === barSide && descriptor.barId === barId
+    readonly property var body: popoutActive ? _windowRect(SurfaceGeometry.animatedBodyRect(descriptor, dpr)) : ({
             "x": 0,
             "y": 0,
             "width": 0,
             "height": 0
         })
-    // How far the popout has come out of the bar; a satellite reaches for its edge over the first stretch of that.
+    // How far the popout has come out of the bar; the bar or satellite reaches for its edge over the first stretch of that.
     readonly property real seamOverlap: 2
     readonly property real emerged: Math.max(0, Math.min(1, ((horizontal ? body.height : body.width) - seamOverlap) / Math.max(1, joinRadius * 2)))
 
@@ -44,32 +49,41 @@ ShaderEffect {
         return horizontal ? rect.x + rect.width : rect.y + rect.height;
     }
 
-    function _farCorners(startRadius, endRadius) {
+    function _corners(startRadius, endRadius, n) {
         switch (barSide) {
         case "bottom":
-            return Qt.vector4d(startRadius, endRadius, 0, 0);
+            return Qt.vector4d(startRadius, endRadius, n, n);
         case "left":
-            return Qt.vector4d(0, startRadius, endRadius, 0);
+            return Qt.vector4d(n, startRadius, endRadius, n);
         case "right":
-            return Qt.vector4d(startRadius, 0, 0, endRadius);
+            return Qt.vector4d(startRadius, n, n, endRadius);
         default:
-            return Qt.vector4d(0, 0, endRadius, startRadius);
+            return Qt.vector4d(n, n, endRadius, startRadius);
         }
+    }
+
+    function _windowRect(screenRect) {
+        return {
+            "x": screenRect.x - windowX,
+            "y": screenRect.y - windowY,
+            "width": screenRect.width,
+            "height": screenRect.height
+        };
     }
 
     function _rectOf(surface) {
         return {
-            "x": originX + surface.x,
-            "y": originY + surface.y,
-            "width": surface.width,
-            "height": surface.height
+            "x": originX + surface.chromeRect.x,
+            "y": originY + surface.chromeRect.y,
+            "width": surface.chromeRect.width,
+            "height": surface.chromeRect.height
         };
     }
 
     // The satellite the popout hangs from.
     readonly property var anchor: {
         for (const surface of [leading, trailing]) {
-            if (!surface.visible)
+            if (!surface?.visible)
                 continue;
             const rect = _rectOf(surface);
             if (_alongStart(body) < _alongEnd(rect) && _alongEnd(body) > _alongStart(rect))
@@ -99,7 +113,7 @@ ShaderEffect {
     }
 
     function _satellite(surface) {
-        if (!surface.visible)
+        if (!surface?.visible)
             return {
                 "rect": Qt.vector4d(0, 0, 0, 0),
                 "corner": Qt.vector4d(0, 0, 0, 0)
@@ -108,8 +122,8 @@ ShaderEffect {
         const limit = horizontal ? width : height;
         let start = _alongStart(rect);
         let end = _alongEnd(rect);
-        let startRadius = start <= 1 ? 0 : cornerRadius;
-        let endRadius = end >= limit - 1 ? 0 : cornerRadius;
+        let startRadius = alwaysPainted && start <= 1 ? 0 : cornerRadius;
+        let endRadius = alwaysPainted && end >= limit - 1 ? 0 : cornerRadius;
         const bodyStart = _alongStart(body);
         const bodyEnd = _alongEnd(body);
         if (emerged > 0 && bodyStart < end && bodyEnd > start) {
@@ -124,7 +138,7 @@ ShaderEffect {
         }
         return {
             "rect": horizontal ? Qt.vector4d(start, rect.y, end - start, rect.height) : Qt.vector4d(rect.x, start, rect.width, end - start),
-            "corner": _farCorners(startRadius, endRadius)
+            "corner": _corners(startRadius, endRadius, nearRadius)
         };
     }
 
@@ -135,19 +149,20 @@ ShaderEffect {
     readonly property color _shadowTint: Theme.elevationShadowColor(_level)
     readonly property var _ambient: Theme.elevationAmbient(_level)
 
-    fragmentShader: Qt.resolvedUrl("../../Shaders/qsb/island_chrome.frag.qsb")
+    visible: alwaysPainted || popoutActive
+    fragmentShader: Qt.resolvedUrl("../../Shaders/qsb/bar_chrome.frag.qsb")
 
     property real widthPx: width
     property real heightPx: height
     property vector4d surfaceColor: Qt.vector4d(fillColor.r, fillColor.g, fillColor.b, fillColor.a)
-    property vector4d shadowColor: Qt.vector4d(_shadowTint.r, _shadowTint.g, _shadowTint.b, _shadow && popoutActive ? _shadowTint.a : 0)
+    property vector4d shadowColor: Qt.vector4d(_shadowTint.r, _shadowTint.g, _shadowTint.b, _shadow && popoutActive ? _shadowTint.a * emerged : 0)
     property vector4d shadowParam: Qt.vector4d(Math.max(0, _level.blurPx), Math.max(0, _level.spreadPx), Theme.elevationOffsetXFor(_level, Theme.elevationLightDirection, 4), Theme.elevationOffsetYFor(_level, Theme.elevationLightDirection, 4))
-    property vector4d ambientParam: Qt.vector4d(_ambient.blurPx, _ambient.spreadPx, _shadow && popoutActive ? _ambient.alpha : 0, 0)
+    property vector4d ambientParam: Qt.vector4d(_ambient.blurPx, _ambient.spreadPx, _shadow && popoutActive ? _ambient.alpha * emerged : 0, 0)
     property vector4d edgeParam: Qt.vector4d(barSide === "top" ? 0 : (barSide === "bottom" ? 1 : (barSide === "left" ? 2 : 3)), edgeRadius, _joinRadius(passesStart), _joinRadius(passesEnd))
     property vector4d leadRect: _lead.rect
     property vector4d leadCorner: _lead.corner
     property vector4d trailRect: _trail.rect
     property vector4d trailCorner: _trail.corner
     property vector4d bodyRect: paintedBody
-    property vector4d bodyCorner: _farCorners(Theme.connectedSurfaceRadius, Theme.connectedSurfaceRadius)
+    property vector4d bodyCorner: _corners(Theme.connectedSurfaceRadius, Theme.connectedSurfaceRadius, 0)
 }

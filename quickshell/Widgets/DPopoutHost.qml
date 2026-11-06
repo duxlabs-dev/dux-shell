@@ -98,11 +98,11 @@ Item {
     })
 
     readonly property real effectiveBarThickness: {
-        if (root.joinsIslandSatellite)
+        if (root.joinsBar && !root.joinsNormalBar)
             return SettingsData.islandStripThickness(storedBarConfig);
-        if (root.usesConnectedSurfaceChrome)
+        if (root.usesConnectedSurfaceChrome && !root.joinsNormalBar)
             return Math.max(0, storedBarThickness);
-        return Theme.barThickness(storedBarConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault, dpr) + storedBarSpacing;
+        return Theme.barThickness(storedBarConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault, dpr) + (root.joinsNormalBar ? joinedBarSpacing : storedBarSpacing);
     }
 
     readonly property var barBounds: {
@@ -282,7 +282,8 @@ Item {
             "omitStartConnector": root._closeGapOmitStartConnector(),
             "omitEndConnector": root._closeGapOmitEndConnector(),
             "overflowTop": Theme.snap(root.topOverflow, root.dpr),
-            "overflowBottom": Theme.snap(root.bottomOverflow, root.dpr)
+            "overflowBottom": Theme.snap(root.bottomOverflow, root.dpr),
+            "barId": root.storedBarConfig?.id ?? ""
         };
     }
 
@@ -494,11 +495,13 @@ Item {
     }
 
     property bool _overStackedModal: false
-    // Without a frame, the bar window of the island this popout opened from paints its chrome.
-    readonly property bool joinsIslandSatellite: connected && !Theme.isConnectedEffect && SettingsData.islandConnectsPopouts(storedBarConfig)
-    readonly property bool directionalMotion: Theme.isDirectionalEffect || joinsIslandSatellite
-    readonly property bool frameOwnsConnectedChrome: connected && !_overStackedModal && effectivePopoutLayer === WlrLayer.Top && (joinsIslandSatellite || CompositorService.canShareConnectedFrameChromeForScreen(root.screen))
-    readonly property bool usesConnectedSurfaceChrome: connected && (Theme.isConnectedEffect || joinsIslandSatellite)
+    // Without a frame, the window of the bar this popout opened from paints its chrome.
+    readonly property bool joinsBar: connected && !Theme.isConnectedEffect && SettingsData.barConnectsPopouts(storedBarConfig)
+    readonly property bool joinsNormalBar: joinsBar && !SettingsData.isIslandBarConfig(storedBarConfig)
+    readonly property real joinedBarSpacing: joinsNormalBar ? (ShellLayout.forConfig(screen, storedBarConfig?.id)?.spacing ?? storedBarSpacing) : 0
+    readonly property bool directionalMotion: Theme.isDirectionalEffect || joinsBar
+    readonly property bool frameOwnsConnectedChrome: connected && !_overStackedModal && effectivePopoutLayer === WlrLayer.Top && (joinsBar || CompositorService.canShareConnectedFrameChromeForScreen(root.screen))
+    readonly property bool usesConnectedSurfaceChrome: connected && (Theme.isConnectedEffect || joinsBar)
     readonly property bool usesLocalConnectedSurfaceChrome: usesConnectedSurfaceChrome && !frameOwnsConnectedChrome
 
     property bool animationsEnabled: true
@@ -703,9 +706,11 @@ Item {
     readonly property real screenHeight: screen ? screen.height : 0
     // devicePixelRatio rounds to integer under fractional scaling; use the real scale Qt renders at.
     readonly property real dpr: screen ? (CompositorService.getScreenScale(screen) || screen.devicePixelRatio) : 1
-    readonly property bool closeFrameGapsActive: SettingsData.frameCloseGaps && frameOwnsConnectedChrome && !joinsIslandSatellite
+    readonly property bool closeFrameGapsActive: SettingsData.frameCloseGaps && frameOwnsConnectedChrome && !joinsBar
     readonly property real frameInset: {
-        if (!root.frameOwnsConnectedChrome || root.joinsIslandSatellite)
+        if (root.joinsNormalBar)
+            return root.joinedBarSpacing;
+        if (!root.frameOwnsConnectedChrome || root.joinsBar)
             return 0;
         const ft = SettingsData.frameThickness;
         const fr = SettingsData.frameRounding;
@@ -721,7 +726,7 @@ Item {
     }
 
     function _frameEdgeInset(side) {
-        if (!root.frameOwnsConnectedChrome || root.joinsIslandSatellite)
+        if (!root.frameOwnsConnectedChrome || root.joinsBar)
             return 0;
         return Math.max(0, SettingsData.frameEdgeReservation(root.screen, side));
     }
@@ -765,7 +770,7 @@ Item {
 
     // Snap positions within connector radius flush to the frame edge (avoids pinched arcs).
     function _snapNearFrameBound(value, minBound, maxBound, minIsFrame, maxIsFrame) {
-        if (!root.usesConnectedSurfaceChrome || !root.closeFrameGapsActive)
+        if (!root.usesConnectedSurfaceChrome || !(root.closeFrameGapsActive || root.joinsNormalBar))
             return value;
         const snapDist = Theme.connectedCornerRadius;
         if (maxIsFrame && value < maxBound && maxBound - value < snapDist && maxBound - value <= value - minBound)
@@ -1020,14 +1025,15 @@ Item {
         _syncPopoutBody();
     }
 
+    readonly property real joinedBarWing: joinsNormalBar ? barWingSize : 0
     readonly property real connectedAnchorX: {
         if (!root.usesConnectedSurfaceChrome)
             return triggerX;
         switch (effectiveBarPosition) {
         case SettingsData.Position.Left:
-            return barX + barWidth;
+            return barX + barWidth - joinedBarWing;
         case SettingsData.Position.Right:
-            return barX;
+            return barX + joinedBarWing;
         default:
             return triggerX;
         }
@@ -1037,9 +1043,9 @@ Item {
             return triggerY;
         switch (effectiveBarPosition) {
         case SettingsData.Position.Top:
-            return barY + barHeight;
+            return barY + barHeight - joinedBarWing;
         case SettingsData.Position.Bottom:
-            return barY;
+            return barY + joinedBarWing;
         default:
             return triggerY;
         }
@@ -1206,7 +1212,7 @@ Item {
             return Math.max(edgeGapLeft, Math.min(screenWidth - width - popupGap, anchorX - width));
         default:
             // Lean toward the nearer screen edge, where the satellite is.
-            const edgeBias = !joinsIslandSatellite ? 0 : (triggerX + triggerWidth / 2 > screenWidth / 2 ? width : -width) / 4;
+            const edgeBias = !joinsBar || joinsNormalBar ? 0 : (triggerX + triggerWidth / 2 > screenWidth / 2 ? width : -width) / 4;
             const rawX = triggerX + (triggerWidth / 2) - (width / 2) + edgeBias;
             const clearLeft = adjacentBarClearance(adjacentBarInfo.leftBar);
             const clearRight = adjacentBarClearance(adjacentBarInfo.rightBar);
@@ -1741,7 +1747,7 @@ Item {
                 return barBottom ? -root.animationOffset : (barTop ? root.animationOffset : 0);
             }
 
-            readonly property real computedScaleCollapsed: root.joinsIslandSatellite ? 1 : root.animationScaleCollapsed
+            readonly property real computedScaleCollapsed: root.joinsBar ? 1 : root.animationScaleCollapsed
             readonly property real morphTravelPx: Math.max(1, Math.abs(offsetX), Math.abs(offsetY), (1 - computedScaleCollapsed) * Math.max(root.alignedWidth, root.alignedHeight), root._fluidMotionActive ? Math.max(root.alignedWidth, root.alignedHeight) : 0)
 
             PopoutHoverBodyTracker {
@@ -1781,6 +1787,9 @@ Item {
             readonly property real scaleValue: root._fluidMotionActive ? 1 : contentContainer.computedScaleCollapsed + (1.0 - contentContainer.computedScaleCollapsed) * morphProgress
 
             Component.onCompleted: root._captureChromeAnimTravel()
+            // Content that loads during the open changes the travel.
+            onOffsetXChanged: root._captureChromeAnimTravel()
+            onOffsetYChanged: root._captureChromeAnimTravel()
 
             readonly property bool rootShouldBeVisible: root.shouldBeVisible
 

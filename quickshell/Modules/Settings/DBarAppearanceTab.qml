@@ -273,6 +273,17 @@ Item {
                     })
             }
 
+            SettingsToggleRow {
+                settingKey: "connectedPopouts"
+                tags: ["connected", "popout", "popup", "gaps"]
+                text: I18n.tr("Connected popouts", "bar settings: popouts join the bar or satellite background")
+                visible: !bar.selectedBarIsIsland && !bar.selectedBarFrameSanitized && !SettingsData.frameEnabled
+                checked: bar.selectedBarConfig?.connectedPopouts ?? false
+                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                        connectedPopouts: checked
+                    })
+            }
+
             SettingsControlledBy {
                 visible: !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
                 target: "shadows"
@@ -593,13 +604,15 @@ Item {
             }
 
             SettingsToggleRow {
-                settingKey: "islandSatelliteConnectedPopouts"
+                settingKey: "connectedPopoutsSatellites"
                 tags: ["island", "satellite", "connected", "popout", "popup", "widgets"]
-                text: I18n.tr("Connected popouts", "island settings: popouts opened from a satellite join its background")
-                checked: bar.islandSetting("islandSatelliteConnectedPopouts")
+                text: I18n.tr("Connected popouts", "bar settings: popouts join the bar or satellite background")
+                checked: bar.selectedBarConfig?.connectedPopouts ?? false
                 visible: bar.islandSetting("islandSatellitesEnabled")
                 enabled: bar.islandSetting("islandSatelliteBackground") && !SettingsData.frameEnabled
-                onToggled: checked => bar.apply("islandSatelliteConnectedPopouts", checked)
+                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                        connectedPopouts: checked
+                    })
             }
 
             SettingsToggleSliderRow {
