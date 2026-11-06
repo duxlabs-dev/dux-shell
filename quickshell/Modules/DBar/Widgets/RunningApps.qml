@@ -8,6 +8,7 @@ import qs.Modules.Plugins
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
+import "../../../DCommon/Common/WheelInput.js" as WheelInput
 
 BasePill {
     id: root
@@ -169,6 +170,8 @@ BasePill {
     }
 
     onWheel: function (wheelEvent) {
+        if (WheelInput.isHorizontal(wheelEvent))
+            return;
         wheelEvent.accepted = true;
         const deltaY = wheelEvent.angleDelta.y;
         const isMouseWheel = Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;
