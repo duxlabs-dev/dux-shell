@@ -281,8 +281,15 @@ Item {
             mediaChrome.item?.focusPanelButton(panelId);
             return true;
         }
-        if (panel !== "")
+        if (panel !== "") {
+            if (panel === "volume" && volumeAvailable) {
+                if (event.key === Qt.Key_Up || event.key === Qt.Key_K)
+                    adjustVolume(AudioService.wheelVolumeStep);
+                else if (event.key === Qt.Key_Down || event.key === Qt.Key_J)
+                    adjustVolume(-AudioService.wheelVolumeStep);
+            }
             return true;
+        }
         if (!activePlayer)
             return false;
 
