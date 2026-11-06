@@ -86,3 +86,28 @@ test("center placement yields to side sections without overlapping them", () => 
     for (const [bounds, positions] of cases)
         assert.deepEqual(plain(layout.resolve([30, 80, 60], 600, 4, "geometric", bounds)), { positions, totalSize: 178 });
 });
+
+test("empty bar click actions dispatch toggle-mute only when an audio sink is present", () => {
+    const source = read("Modules/DBar/DBarBody.qml");
+    let toggled = 0;
+    const context = vm.createContext({
+        Qt: { MiddleButton: 4, RightButton: 2 },
+        barConfig: { middleClickAction: "toggle-mute", rightClickAction: "none" },
+        AudioService: {
+            sink: { audio: { muted: false } },
+            toggleMute() {
+                toggled++;
+            }
+        },
+        PopoutService: {},
+        ToplevelManager: {}
+    });
+    vm.runInContext(method(source, "runBarClickAction") + method(source, "handleEmptyBarClick"), context);
+
+    assert.equal(context.handleEmptyBarClick(4, null, 0, 0), true);
+    assert.equal(toggled, 1);
+
+    context.AudioService.sink = null;
+    assert.equal(context.handleEmptyBarClick(4, null, 0, 0), false);
+    assert.equal(toggled, 1);
+});

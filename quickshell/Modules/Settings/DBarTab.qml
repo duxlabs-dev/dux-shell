@@ -535,11 +535,20 @@ Item {
         }
 
         SettingsCard {
+            id: clickActionsCard
             iconName: "mouse"
             title: I18n.tr("Click actions")
             settingKey: "barMouseClickAction"
-            tags: ["bar", "click", "middle", "right", "mouse", "control center", "launcher", "settings"]
+            tags: ["bar", "click", "middle", "right", "mouse", "control center", "launcher", "settings", "mute", "volume", "audio"]
             visible: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarIsIsland
+
+            readonly property var clickActions: ["none", "control-center", "spotlight", "close-window", "settings", "toggle-mute"]
+            readonly property var clickActionOptions: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action"), I18n.tr("Toggle Mute", "bar click action")]
+
+            function optionForAction(action) {
+                const idx = clickActions.indexOf(action || "none");
+                return clickActionOptions[idx >= 0 ? idx : 0];
+            }
 
             SettingsToggleRow {
                 text: I18n.tr("Follow mouse")
@@ -557,29 +566,15 @@ Item {
                 text: I18n.tr("Middle click")
                 description: I18n.tr("Choose what middle-clicking empty bar space does")
                 settingKey: "barMiddleClickAction"
-                tags: ["bar", "middle", "click", "mouse", "control center", "launcher", "settings", "close"]
+                tags: ["bar", "middle", "click", "mouse", "control center", "launcher", "settings", "close", "mute", "volume", "audio"]
                 resetStore: bar
                 resetKeys: ["middleClickAction"]
-                options: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action")]
+                options: clickActionsCard.clickActionOptions
                 dropdownWidth: Theme.smallBreakpoint / 2
-                currentValue: {
-                    switch (bar.selectedBarConfig?.middleClickAction ?? "none") {
-                    case "control-center":
-                        return options[1];
-                    case "spotlight":
-                        return options[2];
-                    case "close-window":
-                        return options[3];
-                    case "settings":
-                        return options[4];
-                    default:
-                        return options[0];
-                    }
-                }
+                currentValue: clickActionsCard.optionForAction(bar.selectedBarConfig?.middleClickAction)
                 onValueChanged: value => {
-                    const actions = ["none", "control-center", "spotlight", "close-window", "settings"];
                     SettingsData.updateBarConfig(bar.selectedBarId, {
-                        middleClickAction: actions[options.indexOf(value)] ?? "none"
+                        middleClickAction: clickActionsCard.clickActions[options.indexOf(value)] ?? "none"
                     });
                 }
             }
@@ -588,29 +583,15 @@ Item {
                 text: I18n.tr("Right click")
                 description: I18n.tr("Choose what right-clicking empty bar space does")
                 settingKey: "barRightClickAction"
-                tags: ["bar", "right", "click", "mouse", "control center", "launcher", "settings", "close"]
+                tags: ["bar", "right", "click", "mouse", "control center", "launcher", "settings", "close", "mute", "volume", "audio"]
                 resetStore: bar
                 resetKeys: ["rightClickAction"]
-                options: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action")]
+                options: clickActionsCard.clickActionOptions
                 dropdownWidth: Theme.smallBreakpoint / 2
-                currentValue: {
-                    switch (bar.selectedBarConfig?.rightClickAction ?? "none") {
-                    case "control-center":
-                        return options[1];
-                    case "spotlight":
-                        return options[2];
-                    case "close-window":
-                        return options[3];
-                    case "settings":
-                        return options[4];
-                    default:
-                        return options[0];
-                    }
-                }
+                currentValue: clickActionsCard.optionForAction(bar.selectedBarConfig?.rightClickAction)
                 onValueChanged: value => {
-                    const actions = ["none", "control-center", "spotlight", "close-window", "settings"];
                     SettingsData.updateBarConfig(bar.selectedBarId, {
-                        rightClickAction: actions[options.indexOf(value)] ?? "none"
+                        rightClickAction: clickActionsCard.clickActions[options.indexOf(value)] ?? "none"
                     });
                 }
             }

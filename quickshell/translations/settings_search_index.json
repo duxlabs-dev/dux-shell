@@ -3512,6 +3512,7 @@
     "category": "General",
     "keywords": [
       "actions",
+      "audio",
       "bar",
       "click",
       "control center",
@@ -3519,12 +3520,14 @@
       "launcher",
       "middle",
       "mouse",
+      "mute",
       "panel",
       "right",
       "settings",
       "statusbar",
       "taskbar",
-      "topbar"
+      "topbar",
+      "volume"
     ],
     "parentLabel": "Bar",
     "icon": "mouse"
@@ -4166,6 +4169,7 @@
     "tabIndex": 3,
     "category": "General",
     "keywords": [
+      "audio",
       "bar",
       "choose",
       "click",
@@ -4178,12 +4182,14 @@
       "launcher",
       "middle",
       "mouse",
+      "mute",
       "panel",
       "settings",
       "space",
       "statusbar",
       "taskbar",
       "topbar",
+      "volume",
       "what"
     ],
     "parentLabel": "Bar",
@@ -4463,6 +4469,7 @@
     "tabIndex": 3,
     "category": "General",
     "keywords": [
+      "audio",
       "bar",
       "choose",
       "click",
@@ -4474,6 +4481,7 @@
       "general",
       "launcher",
       "mouse",
+      "mute",
       "panel",
       "right",
       "settings",
@@ -4481,6 +4489,7 @@
       "statusbar",
       "taskbar",
       "topbar",
+      "volume",
       "what"
     ],
     "parentLabel": "Bar",

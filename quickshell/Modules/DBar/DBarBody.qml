@@ -189,6 +189,11 @@ Item {
         case "settings":
             PopoutService.toggleSettings();
             return true;
+        case "toggle-mute":
+            if (!AudioService.sink?.audio)
+                return false;
+            AudioService.toggleMute();
+            return true;
         }
         return false;
     }
