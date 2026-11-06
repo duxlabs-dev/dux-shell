@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell
 import qs.Common
 import qs.Services
 import qs.Modules.Settings
@@ -99,7 +98,6 @@ Column {
         SettingsToggleCard {
             title: I18n.tr("Show apps")
             visible: CompositorService.supportsWorkspaces
-            enabled: !CompositorService.isAqueous || (AqueousService.available && Quickshell.env("DMS_FORCE_EXTWS") !== "1")
             checked: root.showApps
             onToggled: checked => root.page.set("showWorkspaceApps", checked)
 
@@ -129,7 +127,6 @@ Column {
         SettingsToggleRow {
             text: I18n.tr("Show occupied only")
             visible: CompositorService.supportsWorkspaces
-            enabled: !CompositorService.isAqueous || (AqueousService.available && Quickshell.env("DMS_FORCE_EXTWS") !== "1")
             checked: root.page.value("showOccupiedWorkspacesOnly")
             onToggled: checked => root.page.set("showOccupiedWorkspacesOnly", checked)
         }
@@ -201,6 +198,14 @@ Column {
             visible: CompositorService.supportsWorkspaceFollowFocus
             checked: root.page.value("workspaceFollowFocus")
             onToggled: checked => root.page.set("workspaceFollowFocus", checked)
+        }
+
+        SettingsToggleRow {
+            text: I18n.tr("Move workspace to this display")
+            description: I18n.tr("Clicking a workspace from another display moves it to the display of the bar you clicked", "workspace switcher move to this display toggle description")
+            visible: CompositorService.isHyprland
+            checked: root.page.value("workspaceMoveToOutput")
+            onToggled: checked => root.page.set("workspaceMoveToOutput", checked)
         }
 
         SettingsToggleRow {

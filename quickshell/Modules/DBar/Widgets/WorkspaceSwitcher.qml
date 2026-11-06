@@ -76,6 +76,7 @@ BasePill {
         screenName: root.screenName
         screen: root.parentScreen
         followFocus: root.opt("workspaceFollowFocus")
+        moveToOutput: root.opt("workspaceMoveToOutput")
         occupiedOnly: root.opt("showOccupiedWorkspacesOnly")
         showAllTags: root.opt("dwlShowAllTags")
         showPadding: root.opt("showWorkspacePadding")
@@ -84,7 +85,6 @@ BasePill {
         reverseScrolling: root.opt("reverseScrolling")
     }
 
-    readonly property bool useAqueous: workspaces.useAqueous
     readonly property bool useExtWorkspace: workspaces.useExtWorkspace
     readonly property bool useNativeWorkspaces: workspaces.useNativeWorkspaces
     readonly property string effectiveScreenName: workspaces.effectiveScreenName
@@ -124,7 +124,7 @@ BasePill {
             const keyBase = (w.app_id || w.appId || w.class || w.windowClass || "unknown");
             const moddedId = Paths.moddedAppId(keyBase);
             const groupThisWs = root.opt("groupWorkspaceApps") && (!isActiveWs || root.opt("groupActiveWorkspaceApps"));
-            const key = groupThisWs ? moddedId : (w.aqueousKey || `${moddedId}_${i}`);
+            const key = groupThisWs ? moddedId : `${moddedId}_${i}`;
 
             if (!byApp[key]) {
                 const isQuickshell = Paths.isDmsAppId(keyBase);
@@ -140,7 +140,6 @@ BasePill {
                     "active": !!(w.activated || w.is_focused),
                     "count": 1,
                     "windowId": w.address || w.id,
-                    "windowSession": useAqueous ? w.aqueousSession : "",
                     "fallbackText": appName || ""
                 };
             } else {
@@ -428,9 +427,6 @@ BasePill {
                 readonly property int stableIconCount: {
                     if (!root.opt("showWorkspaceApps") || isPlaceholder)
                         return 0;
-
-                    if (root.useAqueous)
-                        return loadedIcons.length;
 
                     if (!root.useNativeWorkspaces)
                         return 0;
@@ -778,11 +774,6 @@ BasePill {
                         return null;
                     const point = layout.mapFromItem(mouseArea, x, y);
                     const icon = layout.childAt(point.x, point.y);
-                    if (root.useAqueous)
-                        return icon?.windowId ? {
-                            id: icon.windowId,
-                            session: icon.windowSession
-                        } : null;
                     return icon?.windowId ?? null;
                 }
 
@@ -1051,7 +1042,6 @@ BasePill {
                                         width: root.appIconSize
                                         height: root.appIconSize
                                         readonly property var windowId: modelData.windowId
-                                        readonly property string windowSession: modelData.windowSession || ""
                                         readonly property bool appHighlightActive: root.opt("workspaceActiveAppHighlightEnabled") && modelData.active
                                         readonly property color appBorderColor: appHighlightActive ? focusedBorderColor : Theme.primarySelected
                                         readonly property color appGlyphColor: appHighlightActive ? focusedBorderColor : Theme.primary
@@ -1201,7 +1191,6 @@ BasePill {
                                         width: root.appIconSize
                                         height: root.appIconSize
                                         readonly property var windowId: modelData.windowId
-                                        readonly property string windowSession: modelData.windowSession || ""
                                         readonly property bool appHighlightActive: root.opt("workspaceActiveAppHighlightEnabled") && modelData.active
                                         readonly property color appBorderColor: appHighlightActive ? focusedBorderColor : Theme.primarySelected
                                         readonly property color appGlyphColor: appHighlightActive ? focusedBorderColor : Theme.primary

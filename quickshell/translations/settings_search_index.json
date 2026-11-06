@@ -178,31 +178,6 @@
     "description": "Defaults, autostart, rules"
   },
   {
-    "section": "aqueousCursor",
-    "label": "Aqueous cursor",
-    "tabIndex": -1,
-    "category": "Wallpaper & colors",
-    "keywords": [
-      "appearance",
-      "aqueous",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "cursor",
-      "desktop",
-      "hue",
-      "image",
-      "palette",
-      "picture",
-      "tint",
-      "wallpaper"
-    ],
-    "page": "personalization",
-    "conditionKey": "isAqueous"
-  },
-  {
     "section": "wallpaperCyclingEnabled",
     "label": "Automatic cycling",
     "tabIndex": -1,
@@ -1509,15 +1484,21 @@
     "page": "input",
     "category": "Input",
     "keywords": [
+      "addons",
       "bindings",
+      "extensions",
+      "framework",
       "hotkeys",
       "input",
       "keybinds",
       "keyboard",
       "keys",
+      "method",
       "mouse",
+      "plugins",
       "shortcuts",
-      "touchpad"
+      "touchpad",
+      "widgets"
     ],
     "icon": "keyboard",
     "description": "Shortcuts, keyboard, mouse"
@@ -8221,24 +8202,6 @@
     "icon": "auto_awesome_motion"
   },
   {
-    "section": "aqueousTypography",
-    "label": "Aqueous typography",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animation",
-      "appearance",
-      "aqueous",
-      "font",
-      "fonts",
-      "motion",
-      "text",
-      "typeface",
-      "typography"
-    ],
-    "conditionKey": "isAqueous"
-  },
-  {
     "section": "displayFontFamily",
     "label": "Display family",
     "tabIndex": 14,
@@ -10577,7 +10540,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:20",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:21",
     "label": "Drag to reorder",
     "tabIndex": 22,
     "keywords": [],
@@ -10913,6 +10876,14 @@
     "optionFile": "SystemMonitorOptions.qml"
   },
   {
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:19",
+    "label": "Move workspace to this display",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "WorkspaceSwitcherOptions.qml"
+  },
+  {
     "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:6",
     "label": "Names",
     "tabIndex": 22,
@@ -11009,7 +10980,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:19",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:20",
     "label": "Reverse scroll direction",
     "tabIndex": 22,
     "keywords": [],
@@ -11049,7 +11020,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:21",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:22",
     "label": "Show all tags",
     "tabIndex": 22,
     "keywords": [],
@@ -15044,12 +15015,20 @@
     "category": "Mouse & touchpad",
     "keywords": [
       "acceleration",
+      "adaptive",
+      "faster",
+      "flat",
       "input",
       "mouse",
+      "move",
+      "pointer",
       "profile",
-      "touchpad"
+      "speeds",
+      "touchpad",
+      "turns"
     ],
     "parentLabel": "Input",
+    "description": "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.",
     "conditionKey": "pointerCapable"
   },
   {
@@ -15059,12 +15038,20 @@
     "category": "Mouse & touchpad",
     "keywords": [
       "acceleration",
+      "adaptive",
+      "faster",
+      "flat",
       "input",
       "mouse",
+      "move",
+      "pointer",
       "profile",
-      "touchpad"
+      "speeds",
+      "touchpad",
+      "turns"
     ],
     "parentLabel": "Input",
+    "description": "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.",
     "conditionKey": "pointerCapable"
   },
   {
@@ -17376,29 +17363,6 @@
     "parentLabel": "Interface style"
   },
   {
-    "section": "_tab_54",
-    "label": "Bar widgets: Widget settings",
-    "tabIndex": 54,
-    "category": "Widget settings",
-    "keywords": [
-      "bar",
-      "components",
-      "instance",
-      "modules",
-      "options",
-      "panel",
-      "settings",
-      "statusbar",
-      "taskbar",
-      "topbar",
-      "widget",
-      "widgets"
-    ],
-    "icon": "tune",
-    "parentLabel": "Bar widgets",
-    "description": "Options of one widget instance"
-  },
-  {
     "section": "barWidgetGeneral",
     "label": "Widget settings",
     "tabIndex": 54,
@@ -18316,27 +18280,6 @@
       "/etc/pam.d/greetd"
     ],
     "conditionKey": "greeterAvailable"
-  },
-  {
-    "section": "_tab_63",
-    "label": "Desktop widgets: Widget settings",
-    "tabIndex": 63,
-    "category": "Widget settings",
-    "keywords": [
-      "components",
-      "conky",
-      "desktop",
-      "desktop clock",
-      "instance",
-      "modules",
-      "options",
-      "settings",
-      "widget",
-      "widgets"
-    ],
-    "icon": "tune",
-    "parentLabel": "Desktop widgets",
-    "description": "Options of one widget instance"
   },
   {
     "section": "paletteInject",
@@ -19485,5 +19428,111 @@
       "wellbeing"
     ],
     "icon": "show_chart"
+  },
+  {
+    "section": "fcitx5Behavior",
+    "label": "Behavior",
+    "tabIndex": 68,
+    "category": "Input Method Framework",
+    "keywords": [
+      "behavior",
+      "fcitx5",
+      "framework",
+      "input",
+      "input method",
+      "method",
+      "preedit",
+      "share",
+      "state"
+    ],
+    "parentLabel": "Input",
+    "icon": "tune",
+    "conditionKey": "fcitx5Available"
+  },
+  {
+    "section": "fcitx5Groups",
+    "label": "Groups",
+    "tabIndex": 68,
+    "category": "Input Method Framework",
+    "keywords": [
+      "fcitx5",
+      "framework",
+      "group",
+      "groups",
+      "input",
+      "input method",
+      "method"
+    ],
+    "parentLabel": "Input",
+    "icon": "folder",
+    "conditionKey": "fcitx5Available"
+  },
+  {
+    "section": "fcitx5InputMethods",
+    "label": "Input Method Framework",
+    "tabIndex": 68,
+    "category": "Input Method Framework",
+    "keywords": [
+      "fcitx5",
+      "framework",
+      "ime",
+      "input",
+      "input method",
+      "language",
+      "layout",
+      "method"
+    ],
+    "parentLabel": "Input",
+    "icon": "language",
+    "conditionKey": "fcitx5Available"
+  },
+  {
+    "section": "fcitx5Hotkeys",
+    "label": "Keyboard shortcuts",
+    "tabIndex": 68,
+    "category": "Input Method Framework",
+    "keywords": [
+      "bindings",
+      "fcitx5",
+      "framework",
+      "hotkey",
+      "hotkeys",
+      "input",
+      "input method",
+      "keybinds",
+      "keyboard",
+      "keys",
+      "method",
+      "shortcut",
+      "shortcuts",
+      "switch",
+      "toggle"
+    ],
+    "parentLabel": "Input",
+    "icon": "keyboard_command_key",
+    "conditionKey": "fcitx5Available"
+  },
+  {
+    "section": "fcitx5Plugins",
+    "label": "Plugins",
+    "tabIndex": 68,
+    "category": "Input Method Framework",
+    "keywords": [
+      "addon",
+      "addons",
+      "extensions",
+      "fcitx5",
+      "framework",
+      "input",
+      "input method",
+      "method",
+      "module",
+      "plugin",
+      "plugins",
+      "widgets"
+    ],
+    "parentLabel": "Input",
+    "icon": "extension",
+    "conditionKey": "fcitx5Available"
   }
 ]

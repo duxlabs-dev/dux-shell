@@ -155,7 +155,12 @@ TAB_INDEX_MAP = {
     "BatteryTab.qml": 42,
     "MouseTouchpadTab.qml": 44,
     "KeyboardTab.qml": 45,
+    "Fcitx5Tab.qml": 68,
+    "Fcitx5AddonTab.qml": 69,
 }
+
+# Extra sidebar tabIndexes that reuse a file already in TAB_INDEX_MAP.
+TAB_INDEX_ALIASES = {70}
 
 SIDEBAR_GATE_CONDITIONS = [
     ("shortcutsOnly", "keybindsAvailable"),
@@ -170,6 +175,7 @@ SIDEBAR_GATE_CONDITIONS = [
     ("windowRulesCapable", "windowRulesCapable"),
     ("layoutCapable", "layoutCapable"),
     ("cellularOnly", "cellularAvailable"),
+    ("fcitx5Only", "fcitx5Available"),
 ]
 
 FILE_PAGE_MAP = {
@@ -544,13 +550,6 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                     condition_key = "pointerCapable"
                 elif "CompositorService.supportsInputConfig" in visible_raw:
                     condition_key = "inputCapable"
-                elif "CompositorService.isAqueous" in visible_raw:
-                    if "CompositorService.isHyprland" in visible_raw:
-                        condition_key = "smartDockCapable"
-                    elif "CompositorService.isNiri" in visible_raw:
-                        condition_key = "nativeOverviewCapable"
-                    else:
-                        condition_key = "isAqueous"
                 elif all(c in visible_raw for c in ("CompositorService.isNiri", "CompositorService.isHyprland", "CompositorService.isMango")):
                     condition_key = "windowRulesCapable"
                 elif all(c in visible_raw for c in ("CompositorService.isNiri", "CompositorService.isHyprland")):
@@ -685,6 +684,7 @@ def parse_structure_entry(block, parent=None):
         "tabIndex": int(tab_index_match.group(1)) if tab_index_match else None,
         "hint": i18n_prop(own, "hint"),
         "separator": '"separator": true' in own,
+        "dynamicTitle": '"titleFrom"' in own,
         "conditionKey": gate_condition(own) or (parent["conditionKey"] if parent else None),
         "parentLabel": parent["label"] if parent else None,
         "own": own,
@@ -769,7 +769,7 @@ def generate_tab_entries(leaves, settings_entries):
     entries = []
     for leaf in leaves:
         base_label = leaf["label"] or ""
-        if leaf["children"] or not (base_label or leaf["runtimeLabel"]):
+        if leaf["children"] or leaf["dynamicTitle"] or not (base_label or leaf["runtimeLabel"]):
             continue
         label = (
             f"{leaf['parentLabel']}: {base_label}"
@@ -928,7 +928,7 @@ def validate(all_entries, leaves, hubs, sidebar_file, root_dir):
         sidebar_content = f.read()
     sidebar_tabs = {leaf["tabIndex"] for leaf in leaves}
     file_backed_tabs = {leaf["tabIndex"] for leaf in leaves if not leaf["children"]}
-    mapped_tabs = set(TAB_INDEX_MAP.values())
+    mapped_tabs = set(TAB_INDEX_MAP.values()) | TAB_INDEX_ALIASES
     for tab_index in sorted(file_backed_tabs - mapped_tabs):
         errors.append(f"tabIndex {tab_index} in sidebar has no file in TAB_INDEX_MAP")
     with open(Path(__file__).parent / "en.json", "r", encoding="utf-8") as f:

@@ -35,7 +35,7 @@ Item {
             "message": I18n.tr("The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.", "greeter unlink confirmation"),
             "confirmText": I18n.tr("Unlink", "verb, greeter unlink button"),
             "cancelText": I18n.tr("Cancel"),
-            "confirmColor": Theme.error,
+            "danger": true,
             "onConfirm": () => Qt.callLater(root.promptUnlinkFinal),
             "onCancel": () => {}
         });
@@ -47,7 +47,7 @@ Item {
             "message": I18n.tr("Your greeter slot and any cache links to your home are removed. Administrator access may be required. Set up links them again.", "greeter unlink second confirmation"),
             "confirmText": I18n.tr("Unlink", "verb, greeter unlink button"),
             "cancelText": I18n.tr("Cancel"),
-            "confirmColor": Theme.error,
+            "danger": true,
             "onConfirm": () => GreeterService.unlink(),
             "onCancel": () => {}
         });
@@ -165,7 +165,6 @@ Item {
             "message": I18n.tr("Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings."),
             "confirmText": I18n.tr("Activate", "verb, enable the greeter, also activate a wired network profile"),
             "cancelText": I18n.tr("Cancel"),
-            "confirmColor": Theme.primary,
             "onConfirm": () => root.runGreeterInstallAction(),
             "onCancel": () => {}
         });

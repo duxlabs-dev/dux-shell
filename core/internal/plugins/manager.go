@@ -481,9 +481,10 @@ func (m *Manager) getPluginManifest(pluginPath string) *pluginManifest {
 }
 
 type pluginManifest struct {
-	ID     string          `json:"id"`
-	Name   string          `json:"name"`
-	Lyrics *LyricsProvider `json:"lyrics"`
+	ID      string           `json:"id"`
+	Name    string           `json:"name"`
+	Lyrics  *LyricsProvider  `json:"lyrics"`
+	Weather *WeatherProvider `json:"weather"`
 }
 
 func (m *Manager) GetPluginsDir() string {

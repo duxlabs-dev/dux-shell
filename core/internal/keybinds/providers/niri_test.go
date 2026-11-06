@@ -755,7 +755,7 @@ func TestNiriSetBindRealValidator(t *testing.T) {
 	if _, err := exec.LookPath("niri"); err != nil {
 		t.Skip("niri not installed")
 	}
-	if !config.NiriValidates(config.NiriBindsNextConfig) {
+	if !config.NiriValidates("binds { Mod { release { toggle-overview; } } }\n") {
 		t.Skip("installed niri does not accept press/release binds")
 	}
 	provider := NewNiriProvider(writeNiriDMSBinds(t, niriBoundActionsBinds))

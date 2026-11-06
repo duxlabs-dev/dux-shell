@@ -16,7 +16,6 @@ function lift(text, name, context) {
 }
 
 const compositorService = source("../Services/CompositorService.qml");
-const aqueousService = source("../Services/AqueousService.qml");
 const model = vm.createContext({});
 vm.runInContext(source("../Common/WindowModel.js").replace(/^\.pragma.*$/m, ""), model);
 
@@ -50,7 +49,6 @@ function facade(compositor, globals) {
         NiriService: {},
         Hyprland: {},
         MangoService: {},
-        AqueousService: {},
         filterCurrentDisplay,
         ...globals
     });
@@ -114,17 +112,6 @@ function mangoOverlap(s, screenName, position) {
 
 function mangoMaximized(s, screenName) {
     return facade("mango", { MangoService: { windows: s.windows, outputs: s.outputs } }).maximizedWindowOnScreen(screenName);
-}
-
-function aqueousActiveWindow(focusedWindow, screenName) {
-    const activeWindow = facade("aqueous", { AqueousService: { available: true, focusedWindow } }).activeWindowForScreen(screenName, null, false);
-    return activeWindow === null ? null : activeWindow.id;
-}
-
-function aqueousOverlap(s, screenName, position) {
-    const context = vm.createContext({ outputs: s.outputs, windows: s.windows, SettingsData: { Position } });
-    lift(aqueousService, "overlapsDock", context);
-    return context.overlapsDock(screenName, Position[position], 60, 1920, 1080);
 }
 
 test("niri active window: focused window on the bar's screen wins, foreign active toplevels keep an alive previous window", () => {
@@ -215,16 +202,4 @@ test("mango: pid by window id, overlap and maximized only count visible windows 
     assert.equal(mangoMaximized(m.twoOutputs, "DP-2"), true);
     assert.equal(mangoMaximized(m.maximizedActive, "DP-1"), true);
     assert.deepEqual(positions.map(p => mangoOverlap(m.maximizedActive, "DP-1", p)), [true, true, true, true]);
-});
-
-test("aqueous: focused window must sit on the bar's screen, overlap ignores hidden and minimized windows", () => {
-    const a = fixture("aqueous");
-    assert.equal(aqueousActiveWindow(a.focusedWindow, "DP-1"), "a1");
-    assert.equal(aqueousActiveWindow(a.focusedWindow, "HDMI-A-1"), null);
-    assert.equal(aqueousActiveWindow(a.focusedWindow, null), "a1");
-    assert.equal(aqueousActiveWindow(a.focusedWindow, ""), null);
-    assert.equal(aqueousActiveWindow(null, "DP-1"), null);
-    assert.deepEqual(positions.map(p => aqueousOverlap(a, "DP-1", p)), [false, true, false, false]);
-    assert.deepEqual(positions.map(p => aqueousOverlap(a, "HDMI-A-1", p)), [true, false, true, false]);
-    assert.equal(aqueousOverlap(a, "DP-9", "Top"), false);
 });

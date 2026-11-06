@@ -65,8 +65,7 @@ Item {
             iconName: root.discovering ? "stop" : "bluetooth_searching"
             iconSize: Theme.iconSizeSmall
             text: root.discovering ? I18n.tr("Scanning...") : I18n.tr("Scan")
-            backgroundColor: Theme.secondaryContainer
-            textColor: Theme.onSecondaryContainer
+            variant: "tonal"
             onClicked: {
                 if (!root.adapter)
                     return;

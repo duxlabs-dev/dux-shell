@@ -189,28 +189,6 @@ test("filterDisconnectedOnly keeps saved outputs no live head matches, desc: key
     assert.deepEqual(Object.keys(model.filterDisconnectedOnly({ " DP-1 ": { name: "DP-1" }, "DP-7 ": { name: "DP-7" } }, live, "system", "niri")), ["DP-7 "]);
 });
 
-test("aqueous heads: fingerprint, head list and comparison tolerate scale noise and equivalent custom modes", () => {
-    assert.deepEqual(JSON.parse(model.outputFingerprint(wlr.outputs))[0], { name: "DP-1", id: 1, enabled: true, x: 0, y: 0, scale: 1.5, transform: 0, mode: [3840, 2160, 59997], adaptiveSync: 1 });
-    const heads = plain(model.outputHeads(wlr.outputs));
-    assert.deepEqual(heads[0], { name: "DP-1", enabled: true, modeId: 1, position: { x: 0, y: 0 }, scale: 1.5, transform: 0, adaptiveSync: 1 });
-    assert.deepEqual(heads[2], { name: "HDMI-A-1", enabled: false, position: { x: 0, y: 0 }, scale: 0, transform: 0, adaptiveSync: 0 });
-    assert.equal(model.outputHeadsMatch(heads, wlr.outputs, wlr.outputs), true);
-    const moved = clone(wlr.outputs);
-    moved[0].x = 10;
-    assert.equal(model.outputHeadsMatch(heads, moved, wlr.outputs), false);
-    assert.equal(model.outputHeadsMatch(heads.slice(1), wlr.outputs, wlr.outputs), false);
-    const renumbered = clone(wlr.outputs);
-    renumbered[0].id = 99;
-    assert.equal(model.outputHeadsMatch(heads, wlr.outputs, renumbered), false);
-    const scaled = clone(heads);
-    scaled[1].scale = 1.30001;
-    assert.equal(model.outputHeadsMatch(scaled, wlr.outputs, wlr.outputs), true);
-    const customMode = clone(heads);
-    customMode[0].modeId = 77;
-    customMode[0].customMode = { width: 3840, height: 2160, refresh: 59997 };
-    assert.equal(model.outputHeadsMatch(customMode, wlr.outputs, wlr.outputs), true);
-});
-
 test("sizes: rotation swaps, niri ceils and hyprland rounds logical sizes, bounds default to 1920x1080", () => {
     assert.deepEqual(model.physicalSize(live["DP-1"]), { w: 3840, h: 2160 });
     assert.deepEqual(model.physicalSize(live["eDP-1"]), { w: 1200, h: 1920 });

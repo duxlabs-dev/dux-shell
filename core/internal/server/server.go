@@ -43,7 +43,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-const APIVersion = 38
+const APIVersion = 40
 
 var CLIVersion = "dev"
 
@@ -443,7 +443,7 @@ func routeRequestRecovered(ctx context.Context, conn *ipc.ConnWriter, req ipc.Re
 }
 
 func getCapabilities() Capabilities {
-	caps := []string{"plugins", "dgop", "drives", "lyrics", "lyrics.plugins"}
+	caps := []string{"plugins", "dgop", "drives", "lyrics", "lyrics.plugins", "weather", "weather.plugins", "fcitx5"}
 
 	if networkManager != nil {
 		caps = append(caps, "network")
@@ -1113,6 +1113,19 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info("   Subscription events:")
 		log.Info("     - brightness       : Full device list (on rescan, DDC discovery, device changes)")
 		log.Info("     - brightness.update: Single device update (on brightness change for efficiency)")
+		log.Info("Fcitx5:")
+		log.Info(" fcitx5.currentIM                       - Get the active input method's unique name")
+		log.Info(" fcitx5.getGroups                       - List input method groups and the current one")
+		log.Info(" fcitx5.getGroup                        - Get a group's input methods (params: name)")
+		log.Info(" fcitx5.setGroup                        - Replace a group's input methods (params: name, defaultLayout, items)")
+		log.Info(" fcitx5.addGroup / removeGroup          - Manage groups (params: name)")
+		log.Info(" fcitx5.renameGroup                     - Rename a group (params: name, newName)")
+		log.Info(" fcitx5.availableIMs                    - List installable input methods")
+		log.Info(" fcitx5.availableLayouts                - List keyboard layouts and variants")
+		log.Info(" fcitx5.getAddons                       - List addons with category, settings and enabled state")
+		log.Info(" fcitx5.setAddonEnabled                 - Enable or disable an addon (params: name, enabled)")
+		log.Info(" fcitx5.getConfig                       - Get a config tree and schema (params: uri)")
+		log.Info(" fcitx5.setConfig                       - Apply a full config tree (params: uri, value)")
 		log.Info("WlrOutput:")
 		log.Info(" wlroutput.getState                    - Get current output configuration state")
 		log.Info(" wlroutput.applyConfiguration          - Apply output configuration (params: heads)")
@@ -1131,15 +1144,18 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info(" evdev.getState                        - Get current evdev state (caps lock)")
 		log.Info(" evdev.subscribe                       - Subscribe to evdev state changes (streaming)")
 		log.Info("Clipboard:")
-		log.Info(" clipboard.getState                    - Get clipboard state (enabled, history, current)")
+		log.Info(" clipboard.getState                    - Get clipboard state (enabled, revision, historyCount, pinnedCount, current)")
 		log.Info(" clipboard.getHistory                  - Get clipboard history with previews")
 		log.Info(" clipboard.getEntry                    - Get full entry by ID (params: id)")
 		log.Info(" clipboard.deleteEntry                 - Delete entry by ID (params: id)")
 		log.Info(" clipboard.deleteEntries               - Delete entries by ID, skipping pinned ones (params: ids)")
+		log.Info(" clipboard.deleteMatching              - Delete unpinned entries matching search params")
+		log.Info(" clipboard.getEntries                  - Get full entries by ID (params: ids)")
+		log.Info(" clipboard.import                      - Store entries in one transaction (params: entries [{data base64, mimeType, timestamp?, pinned?}])")
 		log.Info(" clipboard.clearHistory                - Clear all clipboard history")
 		log.Info(" clipboard.copy                        - Copy text to clipboard (params: text)")
 		log.Info(" clipboard.paste                       - Get current clipboard text")
-		log.Info(" clipboard.search                      - Search history (params: query?, mimeType?, isImage?, limit?, offset?, before?, after?)")
+		log.Info(" clipboard.search                      - Search history (params: query?, type?, pinned?, mimeType?, isImage?, limit?, offset?, before?, after?)")
 		log.Info(" clipboard.getConfig                   - Get clipboard configuration")
 		log.Info(" clipboard.setConfig                   - Set configuration (params: maxHistory?, maxEntrySize?, autoClearDays?, clearAtStartup?, disabled?, maxPinned?)")
 		log.Info(" clipboard.subscribe                   - Subscribe to clipboard state changes (streaming)")
@@ -1158,16 +1174,6 @@ func (s *Server) Serve(printDocs bool) error {
 	}
 	log.Info("Initializing managers...")
 	log.Info("")
-
-	go func() {
-		written, err := config.SyncNiriBindsNext()
-		switch {
-		case err != nil:
-			log.Warnf("Failed to write niri %s: %v", config.NiriBindsNextFile, err)
-		case written:
-			log.Infof("Updated niri %s", config.NiriBindsNextFile)
-		}
-	}()
 
 	go func() {
 		switch err := InitializeNetworkManager(); {

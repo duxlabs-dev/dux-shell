@@ -248,6 +248,11 @@ Item {
             pressDelay: 0
             flickableDirection: Flickable.VerticalFlick
 
+            onContentYChanged: {
+                if (contentY + height * 3 >= originY + contentHeight)
+                    clipboardContent.modal.loadMore();
+            }
+
             function ensureVisible(index) {
                 if (index < 0 || index >= count) {
                     return;
@@ -256,6 +261,12 @@ Item {
             }
 
             onCurrentIndexChanged: {
+                // ListView shifts currentIndex itself when rows are inserted above it
+                const selected = clipboardContent.modal.selectedIndex;
+                if (currentIndex >= 0 && currentIndex !== selected && selected >= 0 && selected < count) {
+                    currentIndex = Qt.binding(() => clipboardContent.modal ? clipboardContent.modal.selectedIndex : 0);
+                    return;
+                }
                 if (clipboardContent.modal?.keyboardNavigationActive && currentIndex >= 0) {
                     ensureVisible(currentIndex);
                 }

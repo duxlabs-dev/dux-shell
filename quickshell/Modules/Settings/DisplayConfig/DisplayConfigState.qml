@@ -44,165 +44,6 @@ Singleton {
 
     property bool validatingConfig: false
     property var _cancelOutputWrite: null
-    property var aqueousPreview: null
-
-    function outputFingerprint(outputs) {
-        return OutputModel.outputFingerprint(outputs);
-    }
-
-    function outputHeads(outputs) {
-        return OutputModel.outputHeads(outputs);
-    }
-
-    function outputHeadsMatch(candidate, actual, original) {
-        return OutputModel.outputHeadsMatch(candidate, actual, original);
-    }
-
-    function freshAqueousOutputs(callback) {
-        DMSService.sendRequest("wlroutput.getState", null, response => {
-            callback(response.result?.outputs || null, response.error || "");
-        }, 5000);
-    }
-
-    function aqueousDisplayError(message) {
-        validatingConfig = false;
-        validationError = AqueousService.errorMessage(message);
-        ToastService.showError(I18n.tr("Error"), validationError, message);
-    }
-
-    function discardAqueousPreview() {
-        if (validatingConfig)
-            return;
-        aqueousPreview = null;
-        restoreDisplayNameMode();
-        validationError = "";
-        clearPendingChanges();
-        WlrOutputService.requestState();
-    }
-
-    function previewAqueousOutputs(descriptions) {
-        if (validatingConfig)
-            return;
-        if (!AqueousService.available) {
-            aqueousDisplayError("unavailable: compositor state");
-            return;
-        }
-        if (aqueousPreview) {
-            observeAqueousPreview(aqueousPreview, descriptions, "");
-            return;
-        }
-        const session = AqueousService.session;
-        validatingConfig = true;
-        AqueousConfigService.load((snapshot, error) => {
-            if (!snapshot) {
-                aqueousDisplayError(error);
-                return;
-            }
-            freshAqueousOutputs((original, error) => {
-                if (AqueousService.session !== session) {
-                    aqueousDisplayError("conflict: compositor session changed");
-                    return;
-                }
-                if (!original) {
-                    aqueousDisplayError(error);
-                    return;
-                }
-                const candidate = WlrOutputService.outputsConfigHeads(buildOutputsWithPendingChanges(), outputs);
-                WlrOutputService.testConfiguration(candidate, (success, message) => {
-                    if (AqueousService.session !== session) {
-                        aqueousDisplayError("conflict: compositor session changed");
-                        return;
-                    }
-                    if (!success) {
-                        aqueousDisplayError(message);
-                        return;
-                    }
-                    const preview = {
-                        snapshot: snapshot,
-                        original: original,
-                        heads: candidate,
-                        fingerprint: null,
-                        session: session
-                    };
-                    aqueousPreview = preview;
-                    WlrOutputService.applyConfiguration(candidate, (success, message) => {
-                        observeAqueousPreview(preview, descriptions, success ? "" : message);
-                    });
-                });
-            });
-        });
-    }
-
-    function observeAqueousPreview(preview, descriptions, applyError) {
-        validatingConfig = true;
-        freshAqueousOutputs((actual, error) => {
-            if (aqueousPreview !== preview)
-                return;
-            if (!actual || AqueousService.session !== preview.session || !outputHeadsMatch(preview.heads, actual, preview.original)) {
-                if (actual && outputFingerprint(actual) === outputFingerprint(preview.original))
-                    aqueousPreview = null;
-                aqueousDisplayError(error || applyError || "conflict: display preview changed externally");
-                return;
-            }
-            preview.fingerprint = outputFingerprint(actual);
-            validatingConfig = false;
-            validationError = applyError ? AqueousService.errorMessage(applyError) : "";
-            changesApplied(descriptions);
-        });
-    }
-
-    function finishAqueousPreview(keep) {
-        if (validatingConfig || !aqueousPreview)
-            return;
-        const preview = aqueousPreview;
-        validatingConfig = true;
-        freshAqueousOutputs((actual, error) => {
-            if (!actual || AqueousService.session !== preview.session || outputFingerprint(actual) !== preview.fingerprint) {
-                aqueousDisplayError(error || "conflict: output configuration changed after preview");
-                return;
-            }
-            if (keep) {
-                let draft;
-                try {
-                    draft = AqueousConfigService.buildOutputsConfig(preview.snapshot, actual, preview.original);
-                } catch (e) {
-                    aqueousDisplayError(String(e));
-                    return;
-                }
-                AqueousConfigService.apply(draft, (snapshot, message) => {
-                    if (!snapshot) {
-                        aqueousDisplayError(message);
-                        return;
-                    }
-                    aqueousPreview = null;
-                    if (formatChanged)
-                        SettingsData.saveSettings();
-                    clearPendingChanges();
-                    freshAqueousOutputs((live, error) => {
-                        validatingConfig = false;
-                        if (!live || AqueousService.session !== preview.session || outputFingerprint(live) !== preview.fingerprint) {
-                            aqueousDisplayError("conflict: configuration saved but live display state changed");
-                            return;
-                        }
-                        changesConfirmed();
-                    });
-                });
-                return;
-            }
-            WlrOutputService.applyConfiguration(outputHeads(preview.original), (success, message) => {
-                if (!success) {
-                    aqueousDisplayError(message);
-                    return;
-                }
-                validatingConfig = false;
-                aqueousPreview = null;
-                restoreDisplayNameMode();
-                clearPendingChanges();
-                WlrOutputService.requestState();
-                changesReverted();
-            });
-        });
-    }
     property string validationError: ""
 
     property var currentOutputSet: []
@@ -1684,11 +1525,6 @@ Singleton {
             return;
         }
 
-        if (CompositorService.isAqueous) {
-            previewAqueousOutputs(changeDescriptions);
-            return;
-        }
-
         const mergedOutputs = buildOutputsWithPendingChanges();
         if (CompositorService.isHyprland || CompositorService.isMango) {
             changesApplied(changeDescriptions);
@@ -1834,10 +1670,6 @@ Singleton {
     }
 
     function confirmChanges(profileId) {
-        if (CompositorService.isAqueous) {
-            finishAqueousPreview(true);
-            return;
-        }
         const outputConfigs = buildCurrentOutputConfigs();
         lastAppliedEntry = {
             outputs: outputConfigs
@@ -1869,10 +1701,6 @@ Singleton {
     }
 
     function revertChanges() {
-        if (CompositorService.isAqueous && aqueousPreview) {
-            finishAqueousPreview(false);
-            return;
-        }
         const hadFormatChange = originalDisplayNameMode !== "";
         const hadNiriChanges = originalNiriSettings !== null;
         const hadHyprlandChanges = originalHyprlandSettings !== null;

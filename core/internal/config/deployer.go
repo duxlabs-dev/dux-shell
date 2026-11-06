@@ -129,12 +129,6 @@ func (cd *ConfigDeployer) deployConfigurationsInternal(_ context.Context, wm dep
 			}
 			stockBinds := strings.ReplaceAll(NiriBindsConfig, "{{TERMINAL_COMMAND}}", terminalCommand)
 			err := cd.deployBindsFile(bindsPath, stockBinds)
-			if err == nil {
-				err = cd.deployNiriBindsNext(filepath.Dir(bindsPath))
-			}
-			if err == nil && NiriConfigMissingBindsNext(filepath.Dir(bindsPath)) {
-				cd.log(NiriBindsNextIncludeHint)
-			}
 			results = append(results, DeploymentResult{
 				ConfigType: BindsConfigType,
 				Path:       bindsPath,
@@ -335,23 +329,9 @@ func (cd *ConfigDeployer) deployBindsFile(path, stock string) error {
 	return nil
 }
 
-func (cd *ConfigDeployer) deployNiriBindsNext(dmsDir string) error {
-	written, err := WriteNiriBindsNext(dmsDir, niriCapabilityProbe())
-	if err != nil {
-		return fmt.Errorf("failed to write %s: %w", NiriBindsNextFile, err)
-	}
-	if written {
-		cd.log("Deployed " + NiriBindsNextFile)
-	}
-	return nil
-}
-
 func (cd *ConfigDeployer) deployNiriDmsConfigs(dmsDir, terminalCommand string) error {
 	stockBinds := strings.ReplaceAll(NiriBindsConfig, "{{TERMINAL_COMMAND}}", terminalCommand)
 	if err := cd.deployBindsFile(filepath.Join(dmsDir, "binds.kdl"), stockBinds); err != nil {
-		return err
-	}
-	if err := cd.deployNiriBindsNext(dmsDir); err != nil {
 		return err
 	}
 	configs := []struct {

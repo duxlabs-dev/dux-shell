@@ -8,7 +8,6 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const KNOWN_CYCLES = [
     ["Paths", "SettingsData"],
     ["SessionData", "SessionService"],
-    ["AqueousService", "CompositorService"],
     ["CompositorService", "HyprlandService"],
     ["CompositorService", "MangoService"],
     ["CompositorService", "NiriService"],

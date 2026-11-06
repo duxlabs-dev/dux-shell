@@ -6,21 +6,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
-const (
-	NiriCapBindsNext  = "niri.binds-next"
-	NiriCapConfigNext = "niri.config-next"
-
-	NiriBindsNextFile = "binds-next.kdl"
-)
+const NiriCapConfigNext = "niri.config-next"
 
 const niriConfigNextProbe = `window-rule {
     variable-refresh-rate "fullscreen-only"
@@ -40,9 +32,6 @@ var niriCaps struct {
 	once sync.Once
 	caps []string
 }
-
-// Tests swap this so deploys never shell out to a real niri.
-var niriCapabilityProbe = ProbeNiriCapabilities
 
 // NiriCapabilities lists the post-26.04 syntax the running niri accepts.
 func NiriCapabilities() []string {
@@ -72,14 +61,10 @@ func probeNiriCapabilities(validates func(string) bool, mismatch func() bool) []
 	if mismatch() {
 		return nil
 	}
-	var caps []string
-	if validates(NiriBindsNextConfig) {
-		caps = append(caps, NiriCapBindsNext)
+	if !validates(niriConfigNextProbe) {
+		return nil
 	}
-	if validates(niriConfigNextProbe) {
-		caps = append(caps, NiriCapConfigNext)
-	}
-	return caps
+	return []string{NiriCapConfigNext}
 }
 
 func NiriValidates(content string) bool {
@@ -129,44 +114,4 @@ func niriSessionVersionMismatch() bool {
 		return true
 	}
 	return v.CLI != v.Compositor
-}
-
-// The 26.04 variant is valid on every niri.
-func NiriBindsNextContent(caps []string) string {
-	if slices.Contains(caps, NiriCapBindsNext) {
-		return NiriBindsNextConfig
-	}
-	return NiriBindsNext2604Config
-}
-
-// Every write reloads niri, so only write on change.
-func WriteNiriBindsNext(dmsDir string, caps []string) (bool, error) {
-	path := filepath.Join(dmsDir, NiriBindsNextFile)
-	want := NiriBindsNextContent(caps)
-	if got, err := os.ReadFile(path); err == nil && string(got) == want {
-		return false, nil
-	}
-	if err := os.WriteFile(path, []byte(want), 0o644); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-func SyncNiriBindsNext() (bool, error) {
-	if os.Getenv("NIRI_SOCKET") == "" {
-		return false, nil
-	}
-	dmsDir := filepath.Join(utils.XDGConfigHome(), "niri", "dms")
-	if info, err := os.Stat(dmsDir); err != nil || !info.IsDir() {
-		return false, nil
-	}
-	return WriteNiriBindsNext(dmsDir, NiriCapabilities())
-}
-
-const NiriBindsNextIncludeHint = `config.kdl does not include dms/binds-next.kdl; add include optional=true "dms/binds-next.kdl" above dms/binds.kdl to keep the Keyboard Shortcuts bind`
-
-// A pre-existing config.kdl without this include loses the cheatsheet bind.
-func NiriConfigMissingBindsNext(dmsDir string) bool {
-	data, err := os.ReadFile(filepath.Join(filepath.Dir(dmsDir), "config.kdl"))
-	return err == nil && !strings.Contains(string(data), "dms/"+NiriBindsNextFile)
 }

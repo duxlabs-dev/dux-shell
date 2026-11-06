@@ -247,6 +247,7 @@ Column {
             valueKeys: ["blurStrength"]
             text: I18n.tr("Background blur")
             visible: BlurService.available
+            sliderVisible: BlurService.strengthConfigurable
             checked: SettingsData.blurEnabled ?? false
             value: BlurService.strength
             minimum: 16

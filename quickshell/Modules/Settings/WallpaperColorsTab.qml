@@ -183,7 +183,7 @@ Column {
             "message": I18n.tr("Delete wallpaper '%1'?", "material wallpaper delete confirmation").arg(label),
             "confirmText": I18n.tr("Delete"),
             "cancelText": I18n.tr("Cancel"),
-            "confirmColor": Theme.error,
+            "danger": true,
             "onConfirm": () => SessionData.removeMaterialWallpaperProfile(id)
         });
     }
@@ -965,17 +965,6 @@ Column {
                 SettingsData.setIconThemeForMode(value, true);
                 root.warnIfMissingQtTheme();
             }
-        }
-    }
-
-    Loader {
-        width: parent.width
-        active: CompositorService.isAqueous
-        sourceComponent: AqueousAppearanceSettings {
-            cursor: true
-            settingKey: "aqueousCursor"
-            title: I18n.tr("Aqueous cursor", "Aqueous compositor cursor synchronization settings")
-            visible: CompositorService.isAqueous
         }
     }
 

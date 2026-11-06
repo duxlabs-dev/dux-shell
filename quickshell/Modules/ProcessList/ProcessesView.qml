@@ -150,7 +150,7 @@ Rectangle {
         property string label: ""
         property bool alignLeft: false
         readonly property bool sorted: DgopService.currentSort === sortKey
-        readonly property bool ascending: DgopService.sortAscending !== ["name", "pid"].includes(sortKey)
+        readonly property bool ascending: DgopService.sortAscending !== ["name", "pid", "nice"].includes(sortKey)
 
         implicitHeight: ProcessListMetrics.headerHeight
         activeFocusOnTab: true
@@ -322,6 +322,11 @@ Rectangle {
         selectedIndex = -1;
         keyboardNavigationActive = false;
         expandedPid = "";
+    }
+
+    function scrollToTop() {
+        reset();
+        processListView.resetScroll();
     }
 
     function forceRefresh(count) {
@@ -515,6 +520,8 @@ Rectangle {
                 }
                 spacing: Theme.groupedListGap
                 currentIndex: root.selectedIndex
+                // Every sample can move the selected row; only key presses may scroll to it.
+                highlightFollowsCurrentItem: false
                 add: null
                 remove: null
                 displaced: null

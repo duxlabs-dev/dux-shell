@@ -166,6 +166,10 @@ Singleton {
                         "text": I18n.tr("Grid")
                     },
                     {
+                        "value": "paged",
+                        "text": I18n.tr("Paged grid", "wallpaper tab layout option")
+                    },
+                    {
                         "value": "carousel",
                         "text": I18n.tr("Carousel", "wallpaper tab layout option")
                     }

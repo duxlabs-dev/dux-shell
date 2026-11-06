@@ -121,8 +121,6 @@ Column {
             visible: root.blogUrl !== ""
             text: I18n.tr("Read the blog post", "release notes link")
             iconName: "article"
-            backgroundColor: Theme.primary
-            textColor: Theme.onPrimary
             onClicked: Qt.openUrlExternally(root.blogUrl)
         }
 

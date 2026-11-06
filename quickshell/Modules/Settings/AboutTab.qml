@@ -62,12 +62,6 @@ Item {
                 label: I18n.tr("LabWC website"),
                 ircUrl: "https://web.libera.chat/gamja/?channels=#labwc"
             };
-        case CompositorService.isAqueous:
-            return {
-                logo: "aqueous.svg",
-                url: "",
-                label: "Aqueous"
-            };
         case CompositorService.isUmbriel:
             return {
                 logo: "umbriel.svg",
@@ -121,8 +115,6 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: I18n.tr("Support DMS", "about page hero button, opens the Ko-fi donation page")
                 iconName: "favorite"
-                backgroundColor: Theme.primary
-                textColor: Theme.onPrimary
                 tooltipText: root.host(root.kofiUrl)
                 onClicked: Qt.openUrlExternally(root.kofiUrl)
             }

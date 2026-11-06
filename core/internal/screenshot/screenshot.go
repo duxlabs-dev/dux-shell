@@ -239,9 +239,6 @@ func (s *Screenshoter) captureRegion() (*CaptureResult, error) {
 }
 
 func (s *Screenshoter) captureWindow() (*CaptureResult, error) {
-	if DetectCompositor() == CompositorAqueous {
-		return s.captureAqueousWindow()
-	}
 	if DetectCompositor() == CompositorNiri {
 		if s.config.Geometry {
 			return nil, fmt.Errorf("window geometry mode is not supported on niri")
@@ -384,13 +381,6 @@ func (s *Screenshoter) captureMangoWindow(output *WaylandOutput, region Region, 
 }
 
 func (s *Screenshoter) captureFullScreen() (*CaptureResult, error) {
-	if DetectCompositor() == CompositorAqueous {
-		name, err := aqueousFocusedOutput(s.config.Seat)
-		if err != nil {
-			return nil, err
-		}
-		return s.captureOutput(name)
-	}
 	output := s.findFocusedOutput()
 	if output == nil {
 		s.outputsMu.Lock()

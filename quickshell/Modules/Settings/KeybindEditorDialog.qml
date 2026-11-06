@@ -18,11 +18,8 @@ DDialog {
     property var bindData: ({})
     property bool isNew: false
     property bool readOnly: false
-    property bool locked: false
-    property bool saveBlocked: false
     property bool busy: false
     property var panelWindow: null
-    property alias topContent: topSlot.data
 
     property bool recording: false
     property int editingKeyIndex: -1
@@ -53,9 +50,9 @@ DDialog {
     readonly property string editKeysym: KeyUtils.keyFromToken(editKey)
     readonly property bool keysymUnreachable: KeyUtils.keysymUnreachable(editKeysym, KeybindsService.firstLevelKeymap)
     readonly property bool canReset: !isNew && !readOnly && editingKey?.isOverride === true && editingKey?.hasDefault === true
-    readonly property bool canSave: !readOnly && !saveBlocked && editKey !== "" && Actions.isValidAction(editAction)
+    readonly property bool canSave: !readOnly && editKey !== "" && Actions.isValidAction(editAction)
     readonly property bool canSubmit: canSave && (isNew || hasChanges) && !busy
-    readonly property bool formEnabled: !locked && !readOnly
+    readonly property bool formEnabled: !readOnly
     readonly property bool wideForm: actionWidth + padding * 2 >= maximumWidth
 
     readonly property var argConfig: Actions.getActionArgConfig(KeybindsService.currentProvider, editAction)
@@ -69,9 +66,8 @@ DDialog {
     readonly property var compositorFlags: compositorFlagOptions()
     readonly property var bindOptionList: bindOptions()
     readonly property bool isNiri: KeybindsService.currentProvider === "niri"
-    // niri 26.04 rejects release and pass-through; still show a set value so it can be cleared
-    readonly property bool showReleaseOption: isNiri && editTrigger !== "both" && !KeyUtils.isScrollTrigger(editKey) && (KeybindsService.niriBindsNext || editTrigger === "release")
-    readonly property bool showPassThroughOption: isNiri && KeyUtils.isKeyboardTrigger(editKey) && (KeybindsService.niriBindsNext || editPassThrough !== undefined)
+    readonly property bool showReleaseOption: isNiri && editTrigger !== "both" && !KeyUtils.isScrollTrigger(editKey)
+    readonly property bool showPassThroughOption: isNiri && KeyUtils.isKeyboardTrigger(editKey)
     readonly property bool effectivePassThrough: editPassThrough ?? editTrigger === "release"
 
     readonly property string customCategory: I18n.tr("Custom")
@@ -89,7 +85,6 @@ DDialog {
 
     signal saveRequested(string originalKey, var data)
     signal resetRequested(string key)
-    signal editChanged
 
     embedded: false
     opened: false
@@ -100,7 +95,7 @@ DDialog {
     acceptEnabled: canSubmit
     onAccepted: save()
 
-    function present(bind, keyIndex, newBind, retained) {
+    function present(bind, keyIndex, newBind) {
         // Needed to tell a key the layout cannot reach from one it can, and
         // the layout may have changed since the editor was last open.
         KeybindsService.loadFirstLevelKeymap();
@@ -108,8 +103,6 @@ DDialog {
         bindData = bind;
         isNew = newBind;
         loadKey(keyIndex);
-        if (retained)
-            restoreRetainedEdit(retained);
         opened = true;
         forceActiveFocus();
     }
@@ -131,13 +124,6 @@ DDialog {
         editPassThrough = key?.passThrough;
         useCustomCompositor = actionType === "compositor" && editAction !== "" && !KeybindsService.isKnownCompositorAction(editAction);
         hasChanges = false;
-        editChanged();
-    }
-
-    function restoreRetainedEdit(retained) {
-        editingKeyIndex = keys.findIndex(key => key.key === retained.originalKey);
-        addingNewKey = !retained.originalKey;
-        updateEdit(retained.data);
     }
 
     function startAddingNewKey() {
@@ -149,7 +135,6 @@ DDialog {
         editingKeyIndex = -1;
         editKey = "";
         hasChanges = true;
-        editChanged();
     }
 
     function changedFrom(key) {
@@ -200,7 +185,6 @@ DDialog {
         if ("passThrough" in changes)
             editPassThrough = changes.passThrough;
         hasChanges = addingNewKey || changedFrom(editingKey);
-        editChanged();
     }
 
     function selectType(type) {
@@ -308,7 +292,7 @@ DDialog {
 
     function captureKey(event) {
         if (KeyUtils.modifierFromQtKey(event.key)) {
-            if (KeybindsService.niriBindsNext)
+            if (isNiri)
                 _loneModifiers = KeyUtils.heldModifiers(event.key, event.modifiers, _loneModifiers);
             return;
         }
@@ -804,16 +788,14 @@ DDialog {
         DButton {
             text: I18n.tr("Reset to default")
             visible: root.canReset
-            enabled: !root.busy && !root.locked
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            enabled: !root.busy
+            variant: "text"
             onClicked: root.resetRequested(root.originalKey)
         },
         DButton {
             text: I18n.tr("Cancel")
             enabled: root.closeEnabled
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             onClicked: root.rejected()
         },
         DButton {
@@ -824,12 +806,6 @@ DDialog {
             onClicked: root.save()
         }
     ]
-
-    Column {
-        id: topSlot
-        width: parent.width
-        spacing: root.contentSpacing
-    }
 
     SettingsGroup {
         visible: root.configConflict !== null
@@ -849,8 +825,7 @@ DDialog {
             text: I18n.tr("New key")
             iconName: "add"
             buttonHeight: Theme.buttonHeightXS
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             onClicked: root.startAddingNewKey()
         }
 
@@ -1307,8 +1282,6 @@ DDialog {
         }
 
         SettingsRow {
-            visible: KeybindsService.currentProvider !== "aqueous"
-
             body: DTextField {
                 width: parent.width
                 outlined: true

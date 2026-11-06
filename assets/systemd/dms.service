@@ -3,6 +3,8 @@ Description=Dux Modular Shell (DMS)
 PartOf=graphical-session.target
 After=graphical-session.target
 Requisite=graphical-session.target
+# Readiness waits for the tray host, so tray apps ordered after tray.target find it.
+Before=tray.target
 
 [Service]
 Type=notify
