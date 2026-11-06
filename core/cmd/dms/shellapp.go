@@ -120,7 +120,7 @@ func dmsExtraEnv(string) []string {
 	if _, set := os.LookupEnv("MALLOC_CONF"); !set {
 		env = append(env, "MALLOC_CONF=thp:never,narenas:4,dirty_decay_ms:3000")
 	}
-	env = append(env, gpu.EGLVendorEnv()...)
+	env = append(env, gpu.ShellEnv()...)
 	policyEnv, err := clipolicy.ShellEnv(afero.NewOsFs())
 	if err != nil {
 		log.Errorf("CLI policy unreadable, enforcing every shell switch and ignoring its lock settings: %v", err)

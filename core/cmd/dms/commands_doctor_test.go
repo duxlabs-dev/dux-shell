@@ -596,7 +596,7 @@ func TestRetiredGreeterPackagesInstalled(t *testing.T) {
 		want  []string
 	}{
 		"dux successor satisfying the retired names": {"dux-greeter-git 2.0.0.r165.g7cf13f1-1\ndux-greeter-git 2.0.0.r165.g7cf13f1-1\ndux-greeter-git 2.0.0.r165.g7cf13f1-1\n", nil},
-		"retired package still installed":            {"greetd-dms-greeter-git 1:1.6.2.r0.g0175be5-1\ngreetd-dms-greeter-git 1:1.6.2.r0.g0175be5-1\n", []string{"greetd-dms-greeter-git", "greetd-dms-greeter-git"}},
+		"retired package still installed":            {"greetd-dms-greeter-git 1:1.6.2.r0.g0175be5-1\ngreetd-dms-greeter-git 1:1.6.2.r0.g0175be5-1\n", []string{"greetd-dms-greeter-git"}},
 		"nothing installed":                          {"", nil},
 	}
 	for name, tc := range tests {
