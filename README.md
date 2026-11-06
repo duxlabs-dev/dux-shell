@@ -208,7 +208,7 @@ Contributions welcome. Bug fixes, widgets, features, translation, documentation 
 
 ## Star History
 
-[![Star History Chart](https://star-history.dera.page/svg?repos=duxlabs-dev/dux-shell&type=date&legend=top-left)](https://star-history.dera.page/#duxlabs-dev/dux-shell&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=duxlabs-dev/dux-shell&type=Date&legend=top-left)](https://www.star-history.com/#duxlabs-dev/dux-shell&Date)
 
 ## License
 
