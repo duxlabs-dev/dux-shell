@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duxlabs-dev/dux-go/qtbase"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/duxlabs-dev/dux-shell/core/internal/qsipc"
 	"github.com/duxlabs-dev/dux-shell/core/internal/site"
@@ -23,7 +24,7 @@ type ipcTargets map[string]map[string][]string
 var qsHasAnyDisplay = sync.OnceValue(func() bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "qs", "ipc", "--help")
+	cmd := qtbase.Command(ctx, "ipc", "--help")
 	cmd.WaitDelay = 500 * time.Millisecond
 	out, err := cmd.Output()
 	if err != nil {
@@ -87,7 +88,7 @@ func getShellIPCCompletions(args []string, _ string) []string {
 	cmdArgs := append(baseArgs, "show")
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "qs", cmdArgs...)
+	cmd := qtbase.Command(ctx, cmdArgs...)
 	cmd.WaitDelay = 500 * time.Millisecond
 	var targets ipcTargets
 
@@ -149,7 +150,7 @@ func runShellIPCCommand(args []string) {
 		log.Fatalf("Error finding config: %v", err)
 	}
 	cmdArgs := append(baseArgs, args...)
-	cmd := exec.Command("qs", cmdArgs...)
+	cmd := qtbase.Command(context.Background(), cmdArgs...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -210,7 +211,7 @@ func printIPCHelp() {
 		return
 	}
 	cmdArgs := append(baseArgs, "show")
-	cmd := exec.Command("qs", cmdArgs...)
+	cmd := qtbase.Command(context.Background(), cmdArgs...)
 
 	output, err := cmd.Output()
 	if err != nil {

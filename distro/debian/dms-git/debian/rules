@@ -47,22 +47,10 @@ override_dh_auto_build:
 	sed -i "s/^\(## explicit; go \)[0-9]\+\.[0-9]\+\(\.[0-9]*\)\?$$/\1$$GO_TOOLCHAIN_VERSION/" core/vendor/modules.txt; \
 	VERSION="$(UPSTREAM_VERSION)"; \
 	COMMIT=$$(echo "$(UPSTREAM_VERSION)" | grep -oP '(?<=git)[0-9]+\.[a-f0-9]+' | cut -d. -f2 | head -c8 || echo "unknown"); \
-	if [ "$(DEB_HOST_ARCH)" = "amd64" ]; then \
-		MAKE_ARCH=amd64; \
-	elif [ "$(DEB_HOST_ARCH)" = "arm64" ]; then \
-		MAKE_ARCH=arm64; \
-	else \
-		echo "ERROR: Unsupported architecture: $(DEB_HOST_ARCH)" && exit 1; \
-	fi; \
-	echo "Building with VERSION=$$VERSION COMMIT=$$COMMIT ARCH=$$MAKE_ARCH"; \
-	cd core && $(MAKE) GOFLAGS="-mod=vendor" dist ARCH=$$MAKE_ARCH VERSION="$$VERSION" COMMIT="$$COMMIT"
+	echo "Building with VERSION=$$VERSION COMMIT=$$COMMIT ARCH=$(DEB_HOST_ARCH)"; \
+	cd core && $(MAKE) GOFLAGS="-mod=vendor" build-distro VERSION="$$VERSION" COMMIT="$$COMMIT"
 
-	# Copy binary to expected location
-	if [ "$(DEB_HOST_ARCH)" = "amd64" ]; then \
-		cp core/bin/dms-linux-amd64 dms; \
-	elif [ "$(DEB_HOST_ARCH)" = "arm64" ]; then \
-		cp core/bin/dms-linux-arm64 dms; \
-	fi
+	cp core/bin/dms dms
 	chmod +x dms
 
 override_dh_auto_install:

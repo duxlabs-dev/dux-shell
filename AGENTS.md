@@ -7,6 +7,7 @@ DMS is an open-source desktop shell for Wayland compositors on linux, built to w
 - core/ - Go. `cmd/dms` runs quickshell, CLI utilities, and the unix socket server the UI depends on. `cmd/duxinstall` is a separate installer TUI.
 - quickshell/ - the entire UI: Common/ (singletons, Theme, settings), Services/ (system and core access), Modules/ (bar, dock, lock, ...), Modals/, Widgets/ (shell-specific widgets and deprecated Dank* shims), PLUGINS/, translations/
 - dux-qml-common/ - submodule of shared QML widgets
+- dux-qt-base/ - submodule, the quickshell runtime fork. core/Makefile builds it with cmake into core/build and links it statically; CGO_ENABLED=0 skips it and the UI then needs `qs` on PATH.
 - docs/, distro/ - IPC and theme docs, packaging
 
 ## Rules

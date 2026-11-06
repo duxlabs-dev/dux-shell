@@ -32,10 +32,36 @@ else
 DIST_ARCHS = $(ARCH)
 endif
 
-.PHONY: all build sync-shell duxinstall dist clean install install-all install-duxinstall uninstall uninstall-all uninstall-duxinstall install-config uninstall-config test fmt vet deps print-version help
+.PHONY: all build qtbase clean-qtbase build-distro sync-shell duxinstall dist clean install install-all install-duxinstall uninstall uninstall-all uninstall-duxinstall install-config uninstall-config test fmt vet deps print-version help
 
 # Default target
 all: build
+
+# quickshell runtime built from the dux-qt-base submodule and linked in statically.
+# CGO_ENABLED=0 skips it and the UI then needs qs on PATH (CI, cross builds).
+CGO_ENABLED ?= 1
+QTBASE_SRC ?= ../dux-qt-base
+QTBASE_BUILD ?= build/dux-qt-base
+QTBASE_PC = $(QTBASE_BUILD)/pkgconfig/dux-qt-base.pc
+ifeq ($(CGO_ENABLED),0)
+QTBASE_DEP =
+QTBASE_ENV = CGO_ENABLED=0
+else
+QTBASE_DEP = qtbase
+# go's build cache ignores pkg-config output, so the link line hash goes through CGO_CFLAGS
+QTBASE_ENV = CGO_ENABLED=1 PKG_CONFIG_PATH=$(abspath $(QTBASE_BUILD))/pkgconfig CGO_LDFLAGS_ALLOW='-Wl,--export-dynamic-symbol=.*' \
+	CGO_CFLAGS="-O2 -g -DDQB_LINK_$$(sha1sum $(QTBASE_PC) | cut -c1-12)"
+endif
+
+qtbase:
+	@test -f $(QTBASE_SRC)/CMakeLists.txt || { echo "dux-qt-base missing: run git submodule update --init"; exit 1; }
+	@test -f $(QTBASE_BUILD)/build.ninja || cmake -S $(QTBASE_SRC) -B $(QTBASE_BUILD) -GNinja -DCMAKE_BUILD_TYPE=Release \
+		-DDISTRIBUTOR=$(BINARY_NAME)-source -DGIT_REVISION=$$(git -C $(QTBASE_SRC) rev-parse --short=8 HEAD 2>/dev/null || echo unknown)
+	cmake --build $(QTBASE_BUILD)
+	@python3 $(QTBASE_SRC)/scripts/cgo-link-flags.py $(QTBASE_BUILD) $(QTBASE_PC)
+
+clean-qtbase:
+	@rm -rf $(QTBASE_BUILD)
 
 sync-shell:
 	@test -e $(SHELL_SRC)/DCommon/Widgets/DIcon.qml || { echo "DCommon missing: run git submodule update --init"; exit 1; }
@@ -51,11 +77,18 @@ sync-shell:
 	@rm -f $(EMBED_DIR)/translations/*.py $(EMBED_DIR)/translations/WORKFLOW.md
 	@cd $(EMBED_DIR) && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | cut -c1-16 > .dankrev
 
-# Build the main binary (dms)
-build: sync-shell
+# Build the main binary (dms) with the quickshell runtime linked in
+build: sync-shell $(QTBASE_DEP)
 	@echo "Building $(BINARY_NAME)..."
 	@mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=0 $(GO) build -tags withshell $(BUILD_LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./$(SOURCE_DIR)
+	$(QTBASE_ENV) $(GO) build -tags withshell $(BUILD_LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./$(SOURCE_DIR)
+	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
+
+# Native distro package binary (no update/greeter support), embedded runtime
+build-distro: sync-shell $(QTBASE_DEP)
+	@echo "Building $(BINARY_NAME) for distro packaging..."
+	@mkdir -p $(BUILD_DIR)
+	$(QTBASE_ENV) $(GO) build -tags 'distro_binary withshell' $(BUILD_LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./$(SOURCE_DIR)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
 
 duxinstall:
@@ -120,7 +153,7 @@ clean:
 
 test:
 	@echo "Running tests..."
-	$(GO) test -v ./...
+	CGO_ENABLED=0 $(GO) test -v ./...
 
 fmt:
 	@echo "Formatting Go code..."
@@ -128,18 +161,18 @@ fmt:
 
 vet:
 	@echo "Running go vet..."
-	$(GO) vet $$($(GO) list ./... | grep -v internal/highlight/lexers)
-	$(GO) vet -composites=false ./internal/highlight/lexers
+	CGO_ENABLED=0 $(GO) vet $$($(GO) list ./... | grep -v internal/highlight/lexers)
+	CGO_ENABLED=0 $(GO) vet -composites=false ./internal/highlight/lexers
 
 deps:
 	@echo "Updating dependencies..."
 	$(GO) mod tidy
 	$(GO) mod download
 
-dev:
+dev: $(QTBASE_DEP)
 	@echo "Building $(BINARY_NAME) for development..."
 	@mkdir -p $(BUILD_DIR)
-	$(GO) build -o $(BUILD_DIR)/$(BINARY_NAME) ./$(SOURCE_DIR)
+	$(QTBASE_ENV) $(GO) build -o $(BUILD_DIR)/$(BINARY_NAME) ./$(SOURCE_DIR)
 	@echo "Development build complete: $(BUILD_DIR)/$(BINARY_NAME)"
 
 check-go:
@@ -158,11 +191,13 @@ print-version:
 help:
 	@echo "Available targets:"
 	@echo "  all                 - Build the main binary (dms) (default)"
-	@echo "  build               - Build the main binary (dms) with the embedded UI"
+	@echo "  build               - Build the main binary (dms) with the embedded UI and runtime (cgo, needs dux-qt-base)"
+	@echo "  build-distro        - Native build for distro packages (distro_binary tag, embedded runtime)"
 	@echo "  sync-shell          - Copy quickshell/ into the embed dir (runs before tagged builds)"
 	@echo "  duxinstall         - Build duxinstall binary"
 	@echo "  dist                - Build dms for linux/freebsd amd64/arm64 (no update/greeter)"
 	@echo "                        Use ARCH=amd64 or ARCH=arm64 and/or DIST_OSES=linux to narrow"
+	@echo "                        Cross-compiled without cgo: dist binaries still need qs on PATH"
 	@echo "  build-all           - Build both binaries"
 	@echo "  install             - Install dms to $(INSTALL_DIR)"
 	@echo "  install-all         - Install both dms and duxinstall to $(INSTALL_DIR)"

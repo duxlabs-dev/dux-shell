@@ -2,10 +2,12 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"debug/elf"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/duxlabs-dev/dux-go/qtbase"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -761,13 +763,16 @@ func getDMSShellVersion() (version, path string) {
 }
 
 func getQuickshellVersionInfo(missingFeatures bool) (display string, st status, path, details, semver string) {
-	if !utils.CommandExists("qs") {
+	if !qtbase.Embedded() && !utils.CommandExists("qs") {
 		return "Not installed", statusError, "", "", ""
 	}
 
 	qsPath, _ := exec.LookPath("qs")
+	if qtbase.Embedded() {
+		qsPath, _ = os.Executable()
+	}
 
-	output, err := exec.Command("qs", "--version").Output()
+	output, err := qtbase.Command(context.Background(), "--version").Output()
 	if err != nil {
 		details := "Run 'qs --version' to inspect the failure."
 		var exitErr *exec.ExitError
@@ -1289,7 +1294,7 @@ func detectRunningWM() string {
 }
 
 func checkQuickshellFeatures() ([]checkResult, bool) {
-	if !utils.CommandExists("qs") {
+	if !qtbase.Embedded() && !utils.CommandExists("qs") {
 		return nil, false
 	}
 
@@ -1359,7 +1364,7 @@ ShellRoot {
 		return nil, false
 	}
 
-	cmd := exec.Command("qs", "-p", testScript)
+	cmd := qtbase.Command(context.Background(), "-p", testScript)
 	cmd.Env = append(os.Environ(), "NO_COLOR=1")
 	output, _ := cmd.CombinedOutput()
 	outputStr := string(output)
