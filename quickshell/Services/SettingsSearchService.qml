@@ -75,7 +75,6 @@ Singleton {
             "inputCapable": () => CompositorService.supportsInputConfig,
             "isHyprland": () => CompositorService.isHyprland,
             "isMango": () => CompositorService.isMango,
-            "isAqueous": () => CompositorService.isAqueous,
             "nativeOverviewCapable": () => CompositorService.supportsNativeOverview,
             "smartDockCapable": () => CompositorService.supportsSmartDock,
             "workspaceFollowFocusCapable": () => CompositorService.supportsWorkspaceFollowFocus,

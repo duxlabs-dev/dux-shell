@@ -437,10 +437,6 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
 
     function _logout() {
         if (SettingsData.customPowerActionLogout.length === 0) {
-            if (CompositorService.isAqueous) {
-                AqueousService.quit();
-                return;
-            }
             if (CompositorService.isNiri) {
                 NiriService.quit();
                 return;

@@ -43,11 +43,6 @@ function mango(scenario, screenName) {
     return { available: s.available, tagCount: s.tagCount, output: output ? { tags: output.tags } : null, visibleTags: output?.visibleTags ?? [], activeTags: output?.activeTags ?? [], windows: s.windows };
 }
 
-function aqueous(screenName, focusedOutput) {
-    const s = fixture("aqueous");
-    const focused = focusedOutput ?? s.focusedOutput;
-    return { workspaces: s.workspacesByOutput[screenName || focused] ?? [], toplevels: s.toplevels };
-}
 
 test("neighbor stepping stops at the ends", () => {
     const list = ["a", "b", "c"];
@@ -344,25 +339,4 @@ test("i3 scroll order, active workspace, focus and windows", () => {
     assert.deepEqual(pick(model.i3WindowsOnWorkspace(raw.windows, { id: 2 }), "appId"), ["mpv"]);
     assert.deepEqual(pick(model.i3WindowsOnWorkspace(raw.windows, { id: "chat" }), "appId"), ["zathura"]);
     assert.deepEqual(plain(model.i3WindowsOnWorkspace(raw.windows, { id: 1 })), []);
-});
-
-test("aqueous workspaces, current id, active record and windows", () => {
-    const raw = aqueous("HDMI-A-1");
-    const cache = {};
-    const list = model.aqueousWorkspacesForScreen(raw, "HDMI-A-1", false, cache);
-    assert.deepEqual(pick(list, "id"), ["w3", "w4", "w5"]);
-    assert.deepEqual(pick(list, "idx"), [1, 2, 3]);
-    assert.deepEqual(pick(list, "active"), [false, true, false]);
-    assert.deepEqual(pick(list, "urgent"), [false, true, false]);
-    assert.deepEqual(pick(list, "session"), ["s1", "s1", "s1"]);
-    assert.equal(model.aqueousWorkspacesForScreen(raw, "HDMI-A-1", true, cache)[0], list[0]);
-    assert.deepEqual(pick(model.aqueousWorkspacesForScreen(raw, "HDMI-A-1", true, cache), "id"), ["w3", "w4"]);
-    assert.equal(model.aqueousCurrentId(raw), "w4");
-    assert.equal(model.aqueousCurrentId(aqueous("DP-2")), "");
-    assert.deepEqual(plain(model.aqueousWorkspacesForScreen(aqueous("", ""), "", false, cache)), []);
-    assert.equal(model.aqueousActiveWorkspace(raw, "HDMI-A-1").id, "w4");
-    assert.equal(model.aqueousActiveWorkspace(aqueous("DP-2"), "DP-2"), null);
-    assert.deepEqual(pick(model.aqueousWindowsOnWorkspace(raw.toplevels, { id: "w3" }), "id"), ["t1"]);
-    assert.equal(model.aqueousWorkspaceOccupied(raw.toplevels, { id: "w1" }), true);
-    assert.equal(model.aqueousWorkspaceOccupied(raw.toplevels, { id: "w5" }), false);
 });

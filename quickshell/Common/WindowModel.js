@@ -184,9 +184,3 @@ function mangoEdgeOverlap(windows, output, screenName, position, thickness, scre
 function mangoMaximizedOnScreen(windows, output, screenName) {
     return mangoVisibleWindows(windows, output, screenName).some(win => win.is_maximized || win.is_fullscreen);
 }
-
-function aqueousActiveWindow(focusedWindow, screenName) {
-    if (!focusedWindow)
-        return null;
-    return screenName === null || focusedWindow.screens.some(s => s.name === screenName) ? focusedWindow : null;
-}

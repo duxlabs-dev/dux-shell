@@ -550,13 +550,6 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                     condition_key = "pointerCapable"
                 elif "CompositorService.supportsInputConfig" in visible_raw:
                     condition_key = "inputCapable"
-                elif "CompositorService.isAqueous" in visible_raw:
-                    if "CompositorService.isHyprland" in visible_raw:
-                        condition_key = "smartDockCapable"
-                    elif "CompositorService.isNiri" in visible_raw:
-                        condition_key = "nativeOverviewCapable"
-                    else:
-                        condition_key = "isAqueous"
                 elif all(c in visible_raw for c in ("CompositorService.isNiri", "CompositorService.isHyprland", "CompositorService.isMango")):
                     condition_key = "windowRulesCapable"
                 elif all(c in visible_raw for c in ("CompositorService.isNiri", "CompositorService.isHyprland")):

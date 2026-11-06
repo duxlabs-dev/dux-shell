@@ -168,7 +168,9 @@ Singleton {
                 screenName
             }
         ] : [];
-        for (const targets of [focusedTargets, [{}]]) {
+        for (const targets of [focusedTargets, [
+                {}
+            ]]) {
             for (const eligible of tiers) {
                 for (const target of targets) {
                     const hit = Registry.select(widgetRegistry, widgetId, target, configs, screens, eligible);
@@ -230,7 +232,7 @@ Singleton {
         return resolveIpcWidget(widgetId)?.item ?? null;
     }
 
-    readonly property bool focusedScreenDetectionSupported: (CompositorService.isAqueous && AqueousService.available) || CompositorService.isHyprland || CompositorService.isNiri || CompositorService.isMango || CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle || CompositorService.isUmbriel
+    readonly property bool focusedScreenDetectionSupported: CompositorService.isHyprland || CompositorService.isNiri || CompositorService.isMango || CompositorService.isSway || CompositorService.isScroll || CompositorService.isMiracle || CompositorService.isUmbriel
 
     function getFocusedScreenName() {
         return CompositorService.getFocusedScreenName();

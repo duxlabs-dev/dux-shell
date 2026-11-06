@@ -774,49 +774,6 @@ function ensureEnabledOutput(configEntry, outputs, displayNameMode, compositor) 
     return true;
 }
 
-function outputFingerprint(outputs) {
-    return JSON.stringify(outputs.map(o => ({
-                name: o.name,
-                id: o.id,
-                enabled: o.enabled,
-                x: o.x,
-                y: o.y,
-                scale: o.scale,
-                transform: o.transform,
-                mode: o.currentMode ? [o.currentMode.width, o.currentMode.height, o.currentMode.refresh] : null,
-                adaptiveSync: o.adaptiveSync
-            })).sort((a, b) => a.name.localeCompare(b.name)));
-}
-
-function outputHeads(outputs) {
-    return outputs.map(o => ({
-                name: o.name,
-                enabled: o.enabled,
-                modeId: o.currentMode?.id,
-                position: {
-                    x: o.x,
-                    y: o.y
-                },
-                scale: o.scale,
-                transform: o.transform,
-                adaptiveSync: o.adaptiveSync
-            }));
-}
-
-function outputHeadsMatch(candidate, actual, original) {
-    if (candidate.length !== actual.length || original.length !== actual.length || original.some(o => !actual.some(a => a.id === o.id && a.name === o.name)))
-        return false;
-    return candidate.every(h => {
-        const output = actual.find(o => o.name === h.name);
-        if (!output || output.enabled !== h.enabled)
-            return false;
-        if (!h.enabled)
-            return true;
-        const mode = h.customMode || original.find(o => o.name === h.name)?.modes?.find(m => m.id === h.modeId);
-        return output.x === h.position.x && output.y === h.position.y && Math.abs(output.scale - h.scale) < 0.0001 && output.transform === h.transform && (h.adaptiveSync === undefined || output.adaptiveSync === h.adaptiveSync) && !!mode && output.currentMode?.width === mode.width && output.currentMode?.height === mode.height && output.currentMode?.refresh === mode.refresh;
-    });
-}
-
 function configEntryMatchesLiveLayout(configEntry, outputs, displayNameMode, compositor) {
     const cfgOutputs = configEntry.outputs || {};
     for (const outputId in cfgOutputs) {

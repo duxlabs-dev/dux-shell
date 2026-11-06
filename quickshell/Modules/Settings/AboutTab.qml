@@ -62,12 +62,6 @@ Item {
                 label: I18n.tr("LabWC website"),
                 ircUrl: "https://web.libera.chat/gamja/?channels=#labwc"
             };
-        case CompositorService.isAqueous:
-            return {
-                logo: "aqueous.svg",
-                url: "",
-                label: "Aqueous"
-            };
         case CompositorService.isUmbriel:
             return {
                 logo: "umbriel.svg",
