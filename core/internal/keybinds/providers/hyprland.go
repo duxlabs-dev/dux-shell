@@ -917,12 +917,17 @@ func luaActionStringFromHyprlangAction(action string) (string, bool) {
 	case "fullscreenstate":
 		internal, rest := firstParam(params)
 		client, _ := firstParam(rest)
-		if internal != "" && client != "" {
-			return luaDispatcherTableCall("hl.dsp.window.fullscreen_state",
-				luaNumberOrStringField("internal", internal),
-				luaNumberOrStringField("client", client),
-			), true
+		// hl.dsp.window.fullscreen_state requires both fields; -1 is "keep current"
+		if internal == "" {
+			internal = "-1"
 		}
+		if client == "" {
+			client = "-1"
+		}
+		return luaDispatcherTableCall("hl.dsp.window.fullscreen_state",
+			luaNumberOrStringField("internal", internal),
+			luaNumberOrStringField("client", client),
+		), true
 	case "pin":
 		if params == "" {
 			return `hl.dsp.window.pin()`, true
