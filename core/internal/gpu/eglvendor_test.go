@@ -77,3 +77,19 @@ func TestMainDeviceFromEvent(t *testing.T) {
 		t.Error("short array: want error")
 	}
 }
+
+func TestShellEnvFor(t *testing.T) {
+	unset := func(string) (string, bool) { return "", false }
+	mesa := "/usr/share/glvnd/egl_vendor.d/50_mesa.json"
+	if got := shellEnvFor("nvidia", mesa, unset); len(got) != 1 || got[0] != "QT_FFMPEG_DECODING_HW_DEVICE_TYPES=cuda" {
+		t.Errorf("nvidia: got %q, want cuda decoding only", got)
+	}
+	want := []string{"QT_FFMPEG_DECODING_HW_DEVICE_TYPES=vaapi", "__EGL_VENDOR_LIBRARY_FILENAMES=" + mesa}
+	if got := shellEnvFor("amdgpu", mesa, unset); len(got) != 2 || got[0] != want[0] || got[1] != want[1] {
+		t.Errorf("amdgpu: got %q, want %q", got, want)
+	}
+	overridden := func(name string) (string, bool) { return "", name == "QT_FFMPEG_DECODING_HW_DEVICE_TYPES" }
+	if got := shellEnvFor("nvidia", mesa, overridden); got != nil {
+		t.Errorf("user override: got %q, want nothing", got)
+	}
+}
