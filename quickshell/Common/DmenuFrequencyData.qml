@@ -63,6 +63,11 @@ Singleton {
         _saving = false;
     }
 
+    function clear() {
+        freqRanking = {};
+        saveSettings();
+    }
+
     function getUsage(freqKey, itemText) {
         var bucket = (freqRanking || {})[freqKey];
         if (!bucket || !bucket[itemText])
