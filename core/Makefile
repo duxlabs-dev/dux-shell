@@ -38,7 +38,7 @@ endif
 all: build
 
 # quickshell runtime built from the dux-qt-base submodule and embedded in dms as libdux-qt-base.so,
-# which `dms qs` dlopens. QTBASE=0 skips it and the UI then needs the library next to dms (CI, cross builds).
+# which `dms qs` dlopens. QTBASE=0 skips it and the UI then needs the library next to dms or upstream qs on PATH.
 QTBASE ?= 1
 QTBASE_SRC ?= ../dux-qt-base
 QTBASE_BUILD ?= build/dux-qt-base
