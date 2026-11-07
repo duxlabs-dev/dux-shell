@@ -4,6 +4,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.DBar
+import "../../DCommon/Common/WheelInput.js" as WheelInput
 
 Item {
     id: root
@@ -113,6 +114,16 @@ Item {
     signal pressedAt(real rootX, real rootY)
     signal rightClicked(real rootX, real rootY)
     signal wheel(var wheelEvent)
+
+    function barScrollOverridesWheel(wheelEvent) {
+        if (!(barConfig?.scrollEnabled ?? true) || barConfig?.island || !(barConfig?.overrideWidgetScroll ?? false))
+            return false;
+        const context = BarWidgetService.registrationForItem(root)?.context;
+        if (context?.surface?.kind === "dock" || context?.owner?.overflowAnchor)
+            return false;
+        const axisBehavior = WheelInput.isHorizontal(wheelEvent) ? (barConfig?.scrollXBehavior ?? "focusWindow") : (barConfig?.scrollYBehavior ?? "workspace");
+        return axisBehavior !== "none";
+    }
 
     function cornerRadius(joined, progress = pressProgress) {
         if (noBackground)
@@ -351,7 +362,8 @@ Item {
         onPressed: mouse => root.handlePress(mouse, mouseArea)
         onWheel: wheelEvent => {
             wheelEvent.accepted = false;
-            root.wheel(wheelEvent);
+            if (!root.barScrollOverridesWheel(wheelEvent))
+                root.wheel(wheelEvent);
         }
     }
 

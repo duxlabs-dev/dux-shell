@@ -208,6 +208,8 @@ test("wheel-consuming bar widgets default scrollEnabled to true and leave wheel 
         touchpadAccumulator: 0,
         scrollEnabled: true,
         parentScreen: { name: "DP-1" },
+        barScrollOverridesWheel: () => Boolean(battery.overrideActive),
+        overrideActive: false,
         BrightnessService: {
             brightnessAvailable: true,
             adjustScreenBrightness(screen, step, direction) {
@@ -238,4 +240,50 @@ test("wheel-consuming bar widgets default scrollEnabled to true and leave wheel 
     battery.handleBatteryWheel(activeVert);
     assert.equal(activeVert.accepted, true);
     assert.deepEqual(adjustments, [["DP-1", 5, 1]]);
+
+    // Temporary bar-level override yields wheel without changing battery.scrollEnabled
+    adjustments.length = 0;
+    battery.overrideActive = true;
+    const overriddenVert = mouseWheel(120);
+    battery.handleBatteryWheel(overriddenVert);
+    assert.equal(overriddenVert.accepted, false);
+    assert.equal(battery.scrollEnabled, true);
+    assert.deepEqual(adjustments, []);
+});
+
+test("BarPill.barScrollOverridesWheel temporarily overrides bar widgets without affecting dock, overflow, or disabled bar scroll", () => {
+    const WheelInput = vm.createContext({ Qt: QtStub });
+    vm.runInContext(readFileSync(new URL("../DCommon/Common/WheelInput.js", import.meta.url), "utf8").replace(/^\.pragma.*$/gm, ""), WheelInput);
+
+    const pill = vm.createContext({
+        Qt: QtStub,
+        WheelInput,
+        barConfig: {
+            scrollEnabled: true,
+            overrideWidgetScroll: true,
+            scrollYBehavior: "volume",
+            scrollXBehavior: "none"
+        },
+        registrationContext: { surface: { kind: "bar" }, owner: {} },
+        BarWidgetService: {
+            registrationForItem: () => ({ context: pill.registrationContext })
+        }
+    });
+    pill.root = pill;
+    vm.runInContext(functionSource("../Modules/SurfaceWidgets/BarPill.qml", "barScrollOverridesWheel"), pill);
+
+    // Active on Y ("volume"), inactive on X ("none")
+    assert.equal(pill.barScrollOverridesWheel(mouseWheel(120)), true);
+    assert.equal(pill.barScrollOverridesWheel(mouseWheel(0, 120)), false);
+
+    // Turning off master bar scroll restores widget scroll
+    pill.barConfig.scrollEnabled = false;
+    assert.equal(pill.barScrollOverridesWheel(mouseWheel(120)), false);
+    pill.barConfig.scrollEnabled = true;
+
+    // Dock-hosted and overflow-popout widgets keep their own scroll
+    pill.registrationContext = { surface: { kind: "dock" }, owner: {} };
+    assert.equal(pill.barScrollOverridesWheel(mouseWheel(120)), false);
+    pill.registrationContext = { surface: { kind: "bar" }, owner: { overflowAnchor: true } };
+    assert.equal(pill.barScrollOverridesWheel(mouseWheel(120)), false);
 });

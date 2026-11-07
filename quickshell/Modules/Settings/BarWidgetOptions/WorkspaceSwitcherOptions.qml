@@ -209,14 +209,16 @@ Column {
         }
 
         SettingsToggleRow {
+            enabled: !(root.page?.barScrollOverridesWidgets ?? false)
             text: I18n.tr("Scroll wheel")
+            description: enabled ? "" : root.page.barScrollOverrideHint
             visible: CompositorService.supportsWorkspaces
             checked: root.page.value("scrollEnabled")
             onToggled: checked => root.page.set("scrollEnabled", checked)
         }
 
         SettingsToggleRow {
-            enabled: root.page.value("scrollEnabled")
+            enabled: !(root.page?.barScrollOverridesWidgets ?? false) && root.page.value("scrollEnabled")
             text: I18n.tr("Reverse scroll direction")
             visible: CompositorService.supportsWorkspaces
             checked: root.page.value("reverseScrolling")

@@ -38,7 +38,9 @@ Column {
         }
 
         SettingsToggleRow {
+            enabled: !(root.page?.barScrollOverridesWidgets ?? false)
             text: I18n.tr("Scroll wheel")
+            description: enabled ? "" : root.page.barScrollOverrideHint
             checked: root.page.value("scrollEnabled")
             onToggled: checked => root.page.set("scrollEnabled", checked)
         }

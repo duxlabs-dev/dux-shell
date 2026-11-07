@@ -1687,6 +1687,7 @@ var LOCAL_SPEC = {
                 scrollEnabled: true,
                 scrollXBehavior: "focusWindow",
                 scrollYBehavior: "workspace",
+                overrideWidgetScroll: false,
                 middleClickAction: "none",
                 rightClickAction: "none",
                 clickActionFollowMouse: false,

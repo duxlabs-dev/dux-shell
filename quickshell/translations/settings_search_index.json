@@ -4362,6 +4362,33 @@
     "conditionKey": "islandDocked"
   },
   {
+    "section": "barOverrideWidgetScroll",
+    "label": "Override widget scroll",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "action",
+      "actions",
+      "anywhere",
+      "bar",
+      "brightness",
+      "general",
+      "override",
+      "panel",
+      "scroll",
+      "statusbar",
+      "taskbar",
+      "topbar",
+      "uses",
+      "volume",
+      "wheel",
+      "widget",
+      "workspace"
+    ],
+    "parentLabel": "Bar",
+    "description": "Scroll anywhere on the bar uses the bar scroll action instead of widget scroll actions"
+  },
+  {
     "section": "islandPlacement",
     "label": "Placement",
     "tabIndex": 3,

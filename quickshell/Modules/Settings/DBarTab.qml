@@ -532,6 +532,17 @@ Item {
                     });
                 }
             }
+
+            SettingsToggleRow {
+                text: I18n.tr("Override widget scroll")
+                description: I18n.tr("Scroll anywhere on the bar uses the bar scroll action instead of widget scroll actions", "bar override widget scroll toggle description")
+                settingKey: "barOverrideWidgetScroll"
+                tags: ["bar", "scroll", "wheel", "override", "widget", "volume", "brightness", "workspace"]
+                checked: bar.selectedBarConfig?.overrideWidgetScroll ?? false
+                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                        overrideWidgetScroll: checked
+                    })
+            }
         }
 
         SettingsCard {

@@ -285,7 +285,7 @@ BasePill {
     }
 
     function handleBatteryWheel(wheel) {
-        if (!battery.scrollEnabled || !BrightnessService.brightnessAvailable || WheelInput.isHorizontal(wheel)) {
+        if (battery.barScrollOverridesWheel(wheel) || !battery.scrollEnabled || !BrightnessService.brightnessAvailable || WheelInput.isHorizontal(wheel)) {
             wheel.accepted = false;
             return;
         }

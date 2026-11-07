@@ -75,9 +75,11 @@ Column {
 
         SettingsDropdownRow {
             visible: root.controls
+            enabled: !(root.page?.barScrollOverridesWidgets ?? false)
             resetStore: root.page
             resetKeys: ["audioScrollMode"]
             text: I18n.tr("Scroll wheel")
+            description: enabled ? "" : root.page.barScrollOverrideHint
             options: root.scrollLabels
             currentValue: {
                 const idx = root.scrollModes.indexOf(root.page.value("audioScrollMode"));

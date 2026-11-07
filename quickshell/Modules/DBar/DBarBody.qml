@@ -1314,7 +1314,8 @@ Item {
                         onPressed: mouse => edgeItem.handlePress(mouse, edgeStrip)
                         onWheel: wheelEvent => {
                             wheelEvent.accepted = false;
-                            edgeItem.wheel(wheelEvent);
+                            if (!edgeItem.barScrollOverridesWheel(wheelEvent))
+                                edgeItem.wheel(wheelEvent);
                             if (!wheelEvent.accepted) {
                                 scrollArea.processWheel(wheelEvent);
                                 wheelEvent.accepted = true;
