@@ -23,7 +23,6 @@ Item {
     readonly property bool selectedIslandNotch: bar.selectedBarIsIsland && !root.selectedIslandFree && bar.islandSetting("islandNotch")
     readonly property int frameInsetPaddingDisplay: Math.round(SettingsData.frameBarContentGap)
     readonly property var frameBar: SettingsData.frameBarConfig
-    readonly property bool frameBarOverridden: frameBar?.followInterfaceStyle === false
 
     function updateFrameBar(updates) {
         if (!frameBar)
@@ -137,31 +136,11 @@ Item {
                     })
             }
 
-            SettingsToggleSliderRow {
+            BarOpacityRow {
                 settingKey: "frameSurfaceOpacity"
                 tags: ["frame", "opacity", "transparency", "override", "interface", "style"]
                 visible: !!root.frameBar
-                text: I18n.tr("Opacity")
-                description: I18n.tr("Override")
-                checked: root.frameBarOverridden
-                value: Math.round((root.frameBar?.transparency ?? 1) * 100)
-                minimum: 0
-                maximum: 100
-                modified: root.frameBarOverridden
-                valueModified: (root.frameBar?.transparency ?? 1) !== 1
-                onResetRequested: root.updateFrameBar({
-                    followInterfaceStyle: true,
-                    transparency: 1
-                })
-                onValueResetRequested: root.updateFrameBar({
-                    transparency: 1
-                })
-                onToggled: checked => root.updateFrameBar({
-                        followInterfaceStyle: !checked
-                    })
-                onSliderDragFinished: finalValue => root.updateFrameBar({
-                        transparency: finalValue / 100
-                    })
+                barConfig: root.frameBar
             }
         }
 
@@ -209,12 +188,11 @@ Item {
                 onCustomColorSelected: selectedColor => bar.apply("surfaceCustomColor", selectedColor.toString())
             }
 
-            SettingsControlledBy {
-                visible: !bar.islandOwnsSelectedBarTop
-                target: "surfaces"
-                parentModal: root.parentModal
-                section: "surfaceOpacity_bar_" + bar.selectedBarId
-                settingLabel: I18n.tr("Opacity")
+            BarOpacityRow {
+                settingKey: "barOpacity"
+                tags: ["opacity", "transparency", "override", "interface", "style", "island"]
+                visible: !bar.islandShadowsSelectedBar
+                barConfig: bar.selectedBarConfig
             }
 
             SettingsButtonGroupRow {
@@ -597,8 +575,8 @@ Item {
                 settingKey: "islandSatelliteTransparency"
                 tags: ["island", "satellite", "background", "opacity", "transparency", "blur", "override", "interface", "style"]
                 valueKeys: ["islandSatelliteTransparency"]
-                text: I18n.tr("Override", "verb, toggle to override the global setting for this item")
-                description: I18n.tr("Opacity", "island settings: satellite background opacity slider")
+                text: I18n.tr("Opacity", "island settings: satellite background opacity slider")
+                description: I18n.tr("Override", "verb, toggle to override the global setting for this item")
                 checked: !bar.islandSetting("islandSatelliteFollowInterfaceStyle")
                 minimum: 0
                 maximum: 100
@@ -677,8 +655,8 @@ Item {
 
             SettingsToggleSliderRow {
                 resetStore: bar
-                text: I18n.tr("Override", "verb, toggle to override the global setting for this item")
-                description: I18n.tr("Opacity")
+                text: I18n.tr("Opacity")
+                description: I18n.tr("Override", "verb, toggle to override the global setting for this item")
                 tags: ["widget", "opacity", "transparency", "override", "foreground", "interface", "style"]
                 enabled: root.widgetBackgroundEnabled
                 valueKeys: ["widgetTransparency"]
