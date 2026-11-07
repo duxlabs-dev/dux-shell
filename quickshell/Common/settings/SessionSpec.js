@@ -156,6 +156,9 @@ var LOCAL_SPEC = {
     barPinnedApps: {
         def: []
     },
+    dockIconRules: {
+        def: []
+    },
     hiddenTrayIds: {
         def: []
     },

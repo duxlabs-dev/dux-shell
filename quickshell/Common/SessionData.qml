@@ -11,6 +11,7 @@ import "settings/SessionSpec.js" as Spec
 import "../DCommon/Common/MaterialWallpaper.js" as MaterialWallpaper
 import "settings/SessionStore.js" as Store
 import "../DCommon/Common/settings/SpecUtil.js" as SpecUtil
+import "DockIconRules.js" as DockIconRules
 
 Singleton {
     id: root
@@ -252,6 +253,7 @@ Singleton {
 
     property var dockPins: ({})
     property var barPinnedApps: []
+    property var dockIconRules: []
     property var hiddenTrayIds: []
     property var trayItemOrder: []
     property var recentColors: []
@@ -1427,6 +1429,19 @@ Singleton {
         dockPins = next;
         saveSettings();
     }
+    function setDockIconRule(appId, title, icon) {
+        dockIconRules = DockIconRules.withRule(dockIconRules, appId, title, icon);
+        saveSettings();
+    }
+
+    function removeDockIconRule(appId, title) {
+        const kept = DockIconRules.withoutRule(dockIconRules, appId, title);
+        if (kept.length === dockIconRules.length)
+            return;
+        dockIconRules = kept;
+        saveSettings();
+    }
+
     function setBarPinnedApps(apps) {
         barPinnedApps = apps;
         saveSettings();
