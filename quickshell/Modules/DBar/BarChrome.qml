@@ -153,6 +153,23 @@ ShaderEffect {
         };
     }
 
+    // The square a join fills beside the body, and the circle cut out of it, so blur can follow the curve.
+    function _fillet(atStart) {
+        const r = !anchor || emerged <= 0 || (atStart ? passesStart : passesEnd) ? 0 : _joinRadius(false);
+        const along = atStart ? _alongStart(body) - r : _alongEnd(body);
+        const nearSide = barSide === "top" || barSide === "left";
+        const cross = horizontal ? (nearSide ? anchor?.y + anchor?.height : anchor?.y - r) : (nearSide ? anchor?.x + anchor?.width : anchor?.x - r);
+        const centerAlong = (atStart ? along : along + r) - r;
+        const centerCross = (nearSide ? cross + r : cross) - r;
+        return {
+            "square": r <= 0 ? Qt.vector4d(0, 0, 0, 0) : horizontal ? Qt.vector4d(along, cross, r, r) : Qt.vector4d(cross, along, r, r),
+            "disc": r <= 0 ? Qt.vector4d(0, 0, 0, 0) : horizontal ? Qt.vector4d(centerAlong, centerCross, r * 2, r * 2) : Qt.vector4d(centerCross, centerAlong, r * 2, r * 2)
+        };
+    }
+
+    readonly property var startFillet: _fillet(true)
+    readonly property var endFillet: _fillet(false)
+
     readonly property var _lead: _satellite(leading)
     readonly property var _trail: _satellite(trailing)
     readonly property var _level: Theme.elevationLevel2

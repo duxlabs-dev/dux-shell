@@ -429,6 +429,33 @@ Item {
     }
 
     Component {
+        id: blurChromeFilletComp
+
+        Region {
+            property Item chrome
+            property string filletKey
+
+            readonly property var fillet: chrome?.[filletKey]
+            readonly property vector4d square: fillet?.square ?? Qt.vector4d(0, 0, 0, 0)
+            readonly property vector4d disc: fillet?.disc ?? Qt.vector4d(0, 0, 0, 0)
+
+            x: Math.round(square.x + topBarSlide.x)
+            y: Math.round(square.y + topBarSlide.y)
+            width: Math.round(square.z)
+            height: Math.round(square.w)
+
+            Region {
+                intersection: Intersection.Subtract
+                shape: RegionShape.Ellipse
+                x: Math.round(disc.x + topBarSlide.x)
+                y: Math.round(disc.y + topBarSlide.y)
+                width: Math.round(disc.z)
+                height: Math.round(disc.w)
+            }
+        }
+    }
+
+    Component {
         id: blurSatelliteRegionComp
 
         // Sweeps hang off the body's integer bounds; converting each rect on its own could open a seam between them.
@@ -591,6 +618,14 @@ Item {
                 }
             }
             if ((satelliteTranslucent || hasBar) && barChromeLoader.item) {
+                for (const key of ["startFillet", "endFillet"]) {
+                    const sub = blurChromeFilletComp.createObject(region, {
+                        chrome: barChromeLoader.item,
+                        filletKey: key
+                    });
+                    if (sub)
+                        subRegions.push(sub);
+                }
                 for (const rectKey of barWindow.isIsland ? ["leadRect", "trailRect", "bodyRect", "bodyJoinRect"] : ["bodyRect", "bodyJoinRect"]) {
                     const sub = blurChromeRegionComp.createObject(region, {
                         chrome: barChromeLoader.item,
