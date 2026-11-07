@@ -153,7 +153,7 @@ func (b *ufwBackend) dropHelperLocked() {
 }
 
 func (b *ufwBackend) Unlock() error {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), promptTimeout)
 	defer cancel()
 
 	b.mu.Lock()

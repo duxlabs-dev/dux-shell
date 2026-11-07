@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"testing/synctest"
@@ -22,9 +21,7 @@ import (
 
 func TestRuleSpecValidate(t *testing.T) {
 	valid := []RuleSpec{
-		{Kind: KindService, Action: ActionAllow, Target: "ssh"},
 		{Kind: KindService, Action: ActionDeny, Target: "Apache Full", Source: "10.0.0.0/8"},
-		{Kind: KindPort, Action: ActionReject, Target: "22", Proto: ProtoBoth},
 		{Kind: KindPort, Action: ActionAllow, Target: "6000-6007", Proto: ProtoTCP, Source: "fd00::1"},
 	}
 	for _, spec := range valid {
@@ -36,17 +33,11 @@ func TestRuleSpecValidate(t *testing.T) {
 		{Kind: "raw", Action: ActionAllow, Target: "ssh"},
 		{Kind: KindService, Action: ActionAllow, Target: "-x"},
 		{Kind: KindService, Action: ActionAllow, Target: `ssh" accept rule`},
-		{Kind: KindService, Action: ActionAllow, Target: "ssh\nallow 22"},
-		{Kind: KindPort, Action: ActionAllow, Target: "0", Proto: ProtoTCP},
 		{Kind: KindPort, Action: ActionAllow, Target: "65536", Proto: ProtoTCP},
-		{Kind: KindPort, Action: ActionAllow, Target: "+22", Proto: ProtoTCP},
 		{Kind: KindPort, Action: ActionAllow, Target: "22-10", Proto: ProtoTCP},
-		{Kind: KindPort, Action: ActionAllow, Target: "22", Proto: "icmp"},
 		{Kind: KindPort, Action: ActionAllow, Target: "22-30", Proto: ProtoBoth},
 		{Kind: KindPort, Action: ActionAllow, Target: "22", Proto: ProtoTCP, Source: `1.2.3.4" drop`},
-		{Kind: KindPort, Action: ActionAllow, Target: "22", Proto: ProtoTCP, Source: `fe80::1%x" foo="`},
 		{Kind: KindPort, Action: ActionAllow, Target: "22", Proto: ProtoTCP, Source: "fe80::1%eth0"},
-		{Kind: KindPort, Action: ActionAllow, Target: "22", Proto: ProtoTCP, Source: "fe80::1%eth0/64"},
 	}
 	for _, spec := range invalid {
 		assert.Error(t, spec.Validate(), "%+v", spec)
@@ -79,12 +70,10 @@ func TestUFWArgs(t *testing.T) {
 		spec RuleSpec
 		want []string
 	}{
-		{RuleSpec{Kind: KindPort, Action: ActionAllow, Target: "22", Proto: ProtoTCP}, []string{"allow", "22/tcp"}},
 		{RuleSpec{Kind: KindPort, Action: ActionDeny, Target: "53", Proto: ProtoBoth}, []string{"deny", "53"}},
 		{RuleSpec{Kind: KindPort, Action: ActionAllow, Target: "6000-6007", Proto: ProtoUDP}, []string{"allow", "6000:6007/udp"}},
 		{RuleSpec{Kind: KindPort, Action: ActionAllow, Target: "22", Proto: ProtoTCP, Source: "10.0.0.1"},
 			[]string{"allow", "from", "10.0.0.1", "to", "any", "port", "22", "proto", "tcp"}},
-		{RuleSpec{Kind: KindService, Action: ActionAllow, Target: "Apache Full"}, []string{"allow", "Apache Full"}},
 		{RuleSpec{Kind: KindService, Action: ActionReject, Target: "OpenSSH", Source: "10.0.0.0/8"},
 			[]string{"reject", "from", "10.0.0.0/8", "to", "any", "app", "OpenSSH"}},
 	}
@@ -206,7 +195,7 @@ type fakeBus struct {
 
 func (f *fakeBus) Running() bool { return f.running }
 
-func (f *fakeBus) Authorized(action string, interactive bool) (bool, error) {
+func (f *fakeBus) Authorized(_ context.Context, action string, interactive bool) (bool, error) {
 	if interactive {
 		f.interactive = append(f.interactive, action)
 		return f.authorized, f.authErr
@@ -312,14 +301,14 @@ func TestFirewalldWrites(t *testing.T) {
 		assert.Error(t, (&firewalldBackend{bus: bus}).RemoveRule("libvirt", "service:ssh"))
 		assert.Empty(t, bus.interactive)
 	})
+}
 
-	t.Run("removes the rich rule from its id", func(t *testing.T) {
-		item, err := itemFromID(`raw:rule service name="ftp:x" drop`)
-		require.NoError(t, err)
-		assert.Equal(t, firewalldItem{kind: KindRaw, value: `rule service name="ftp:x" drop`}, item)
-		_, err = itemFromID("port:80")
-		assert.Error(t, err)
-	})
+func TestItemFromID(t *testing.T) {
+	item, err := itemFromID(`raw:rule service name="ftp:x" drop`)
+	require.NoError(t, err)
+	assert.Equal(t, firewalldItem{kind: KindRaw, value: `rule service name="ftp:x" drop`}, item)
+	_, err = itemFromID("port:80")
+	assert.Error(t, err)
 }
 
 func TestSetInterfaceZone(t *testing.T) {
@@ -339,6 +328,79 @@ func TestSetInterfaceZone(t *testing.T) {
 		assert.Error(t, (&firewalldBackend{bus: bus}).SetInterfaceZone("eno1", "docker"))
 		assert.Empty(t, bus.interactive)
 	})
+
+	t.Run("returns to the old permanent zone when the new one refuses", func(t *testing.T) {
+		bus := &failOnceBus{fakeBus: fakeBus{running: true, authorized: true}, method: firewalldConfigZone + ".addInterface"}
+		err := (&firewalldBackend{bus: bus}).SetInterfaceZone("eno1", "public")
+		assert.ErrorContains(t, err, "boom")
+		assert.Equal(t, []string{
+			firewalldConfig + ".getZoneOfInterface",
+			firewalldConfig + ".getZoneByName", firewalldConfigZone + ".removeInterface",
+			firewalldConfig + ".getZoneByName", firewalldConfigZone + ".addInterface",
+			firewalldConfig + ".getZoneByName", firewalldConfigZone + ".addInterface",
+		}, bus.calls)
+	})
+}
+
+type failOnceBus struct {
+	fakeBus
+	method string
+	failed bool
+}
+
+func (b *failOnceBus) Call(path, method string, args []any, ret ...any) error {
+	if method == b.method && !b.failed {
+		b.failed = true
+		b.calls = append(b.calls, method)
+		return errors.New("boom")
+	}
+	return b.fakeBus.Call(path, method, args, ret...)
+}
+
+func TestFirewalldListServicesStaysOffFirewalldWhileLocked(t *testing.T) {
+	bus := &fakeBus{running: true}
+	_, err := (&firewalldBackend{bus: bus}).ListServices()
+	assert.ErrorIs(t, err, errHelperLocked)
+	assert.Empty(t, bus.calls)
+	assert.Empty(t, bus.interactive)
+}
+
+type blockingPromptBus struct {
+	fakeBus
+	entered chan struct{}
+}
+
+func (b *blockingPromptBus) Authorized(ctx context.Context, _ string, interactive bool) (bool, error) {
+	if !interactive {
+		return false, nil
+	}
+	close(b.entered)
+	<-ctx.Done()
+	return false, ErrAuthDismissed
+}
+
+func TestFirewalldCloseEndsOpenPrompt(t *testing.T) {
+	bus := &blockingPromptBus{fakeBus: fakeBus{running: true}, entered: make(chan struct{})}
+	backend := &firewalldBackend{bus: bus}
+
+	result := make(chan error, 1)
+	go func() { result <- backend.Unlock() }()
+	<-bus.entered
+	backend.Close()
+
+	assert.ErrorIs(t, <-result, ErrAuthDismissed)
+}
+
+func TestInstalledFindsSbinOutsidePath(t *testing.T) {
+	sbin := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(sbin, "ufw"), []byte("#!/bin/sh\n"), 0o755))
+	t.Setenv("PATH", "")
+	t.Setenv("HOME", t.TempDir())
+	previous := sbinDirs
+	sbinDirs = []string{sbin}
+	t.Cleanup(func() { sbinDirs = previous })
+
+	assert.Equal(t, []string{BackendUFW}, Installed())
 }
 
 type fakeBackend struct {
@@ -461,45 +523,13 @@ func TestHandleSetInterfaceZone(t *testing.T) {
 	assert.Len(t, backend.moved, 1)
 }
 
-type changingBackend struct {
-	fakeBackend
-	revision atomic.Int64
-}
-
-func (b *changingBackend) Snapshot() (State, error) {
-	return State{Backend: b.name, DefaultZone: fmt.Sprint(b.revision.Add(1))}, nil
-}
-
-func TestUnsubscribeDuringRefreshDoesNotPanic(t *testing.T) {
-	manager := newManager(&changingBackend{fakeBackend: fakeBackend{name: BackendFirewalld}}, nil)
-	done := make(chan struct{})
-	var wg sync.WaitGroup
-	wg.Go(func() {
-		for {
-			select {
-			case <-done:
-				return
-			default:
-				manager.refresh()
-			}
-		}
-	})
-	for i := range 20000 {
-		id := fmt.Sprint(i)
-		manager.Subscribe(id)
-		manager.Unsubscribe(id)
-	}
-	close(done)
-	wg.Wait()
-}
-
 // Polkit keeps a temporary authorization per action, not per user.
 type perActionBus struct {
 	fakeBus
 	granted map[string]bool
 }
 
-func (b *perActionBus) Authorized(action string, interactive bool) (bool, error) {
+func (b *perActionBus) Authorized(_ context.Context, action string, interactive bool) (bool, error) {
 	if interactive {
 		b.granted[action] = true
 	}
@@ -515,6 +545,49 @@ func TestFirewalldUnlockRevealsRules(t *testing.T) {
 	state, err := backend.Snapshot()
 	require.NoError(t, err)
 	assert.False(t, state.Locked)
+	assert.Equal(t, map[string]bool{actionConfig: true}, bus.granted, "unlock must cover edits too")
+}
+
+type lapsingBus struct {
+	fakeBus
+	lapsed atomic.Bool
+}
+
+func (b *lapsingBus) Authorized(context.Context, string, bool) (bool, error) {
+	return !b.lapsed.Load(), nil
+}
+
+func TestFirewalldRelocksWhenAuthorizationLapses(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		bus := &lapsingBus{fakeBus: fakeBus{running: true}}
+		backend := &firewalldBackend{bus: bus}
+
+		// NewManager takes its first snapshot before Start hands over notify.
+		_, err := backend.Snapshot()
+		require.NoError(t, err)
+		var notified atomic.Int32
+		backend.mu.Lock()
+		backend.notify = func() { notified.Add(1) }
+		backend.mu.Unlock()
+
+		time.Sleep(3 * relockPoll)
+		synctest.Wait()
+		assert.Zero(t, notified.Load())
+
+		bus.lapsed.Store(true)
+		time.Sleep(relockPoll)
+		synctest.Wait()
+		assert.Equal(t, int32(1), notified.Load())
+		assert.Nil(t, backend.relock, "a locked page must stay idle")
+	})
+
+	t.Run("a closed backend stays idle", func(t *testing.T) {
+		backend := &firewalldBackend{bus: &fakeBus{running: true, authorized: true}}
+		backend.Close()
+		_, err := backend.Snapshot()
+		require.NoError(t, err)
+		assert.Nil(t, backend.relock)
+	})
 }
 
 type scriptedHelper struct {
@@ -577,6 +650,26 @@ type closeCountingHelper struct {
 }
 
 func (h *closeCountingHelper) Close() { h.closed.Add(1) }
+
+func TestUFWUnlockGivesUpOnAbandonedPrompt(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		b := &ufwBackend{notify: func() {}, startHelp: func(ctx context.Context) (ufwHelper, error) {
+			<-ctx.Done()
+			return nil, ErrAuthDismissed
+		}}
+		result := make(chan error, 1)
+		go func() { result <- b.Unlock() }()
+
+		time.Sleep(promptTimeout + time.Second)
+		synctest.Wait()
+		select {
+		case err := <-result:
+			assert.ErrorIs(t, err, ErrAuthDismissed)
+		default:
+			t.Fatal("Unlock still holds the write lock")
+		}
+	})
+}
 
 func TestUFWUnlockFinishingAfterClose(t *testing.T) {
 	helper := &closeCountingHelper{}

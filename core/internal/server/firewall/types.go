@@ -2,6 +2,8 @@ package firewall
 
 import (
 	"errors"
+	"path/filepath"
+	"slices"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
@@ -78,12 +80,24 @@ type Backend interface {
 	Close()
 }
 
+// Debian-style user PATHs leave out sbin, where both firewalls are installed.
+var sbinDirs = []string{"/usr/sbin", "/sbin"}
+
+func commandInstalled(name string) bool {
+	if utils.CommandExists(name) {
+		return true
+	}
+	return slices.ContainsFunc(sbinDirs, func(dir string) bool {
+		return utils.CommandExists(filepath.Join(dir, name))
+	})
+}
+
 func Installed() []string {
 	installed := []string{}
-	if utils.CommandExists("firewalld") {
+	if commandInstalled("firewalld") {
 		installed = append(installed, BackendFirewalld)
 	}
-	if utils.CommandExists("ufw") {
+	if commandInstalled("ufw") {
 		installed = append(installed, BackendUFW)
 	}
 	return installed

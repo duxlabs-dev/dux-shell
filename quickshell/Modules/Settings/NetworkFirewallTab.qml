@@ -39,6 +39,7 @@ Item {
     }
     readonly property var selectableZones: FirewallService.zones.filter(z => isSelectable(z))
     readonly property var assignableZones: selectableZones.filter(z => !z.readOnly).map(z => z.name)
+    readonly property var defaultZoneChoices: selectableZones.filter(z => !z.readOnly || z.name === FirewallService.defaultZone).map(z => z.name)
     readonly property string zoneName: selectedZoneName !== "" ? selectedZoneName : (networks[0]?.zone ?? FirewallService.defaultZone)
     readonly property var zone: FirewallService.zones.find(z => z.name === zoneName) ?? null
     readonly property var zoneChoices: selectableZones.filter(z => showAllZones || z.active || z.name === FirewallService.defaultZone || z.name === zoneName).map(z => z.name)
@@ -133,7 +134,8 @@ Item {
 
     function startAdding() {
         adding = true;
-        loadServices();
+        if (services.length === 0)
+            loadServices();
     }
 
     SettingsPage {
@@ -208,7 +210,7 @@ Item {
                 text: I18n.tr("Incoming traffic")
                 options: [root.actionLabel("allow"), root.actionLabel("deny"), root.actionLabel("reject")]
                 optionValues: ["allow", "deny", "reject"]
-                enabled: !FirewallService.busy
+                enabled: !FirewallService.busy && !FirewallService.locked
                 currentValue: FirewallService.defaults?.incoming ?? ""
                 onValueChanged: value => {
                     if (value === FirewallService.defaults?.incoming)
@@ -225,7 +227,7 @@ Item {
                 text: I18n.tr("Outgoing traffic")
                 options: [root.actionLabel("allow"), root.actionLabel("deny"), root.actionLabel("reject")]
                 optionValues: ["allow", "deny", "reject"]
-                enabled: !FirewallService.busy
+                enabled: !FirewallService.busy && !FirewallService.locked
                 currentValue: FirewallService.defaults?.outgoing ?? ""
                 onValueChanged: value => {
                     if (value === FirewallService.defaults?.outgoing)
@@ -249,7 +251,7 @@ Item {
                     required property var modelData
 
                     text: modelData.name
-                    enabled: !FirewallService.busy
+                    enabled: !FirewallService.busy && !FirewallService.locked
                     options: root.assignableZones
                     optionValues: root.assignableZones
                     currentValue: modelData.zone
@@ -477,9 +479,9 @@ Item {
                 id: defaultZoneRow
                 text: I18n.tr("Default zone")
                 description: I18n.tr("Used by interfaces with no zone of their own")
-                enabled: !FirewallService.busy
-                options: root.selectableZones.map(z => z.name)
-                optionValues: root.selectableZones.map(z => z.name)
+                enabled: !FirewallService.busy && !FirewallService.locked
+                options: root.defaultZoneChoices
+                optionValues: root.defaultZoneChoices
                 currentValue: FirewallService.defaultZone
                 onValueChanged: value => {
                     if (value === FirewallService.defaultZone)

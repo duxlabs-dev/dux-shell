@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
@@ -21,17 +22,19 @@ const (
 	firewalldConfig     = firewalldName + ".config"
 	firewalldConfigZone = firewalldName + ".config.zone"
 
-	actionConfig     = firewalldName + ".config"
-	actionConfigInfo = firewalldName + ".config.info"
+	actionConfig = firewalldName + ".config"
 
-	polkitName      = "org.freedesktop.PolicyKit1"
-	polkitPath      = "/org/freedesktop/PolicyKit1/Authority"
-	polkitCheckAuth = "org.freedesktop.PolicyKit1.Authority.CheckAuthorization"
+	polkitName       = "org.freedesktop.PolicyKit1"
+	polkitPath       = "/org/freedesktop/PolicyKit1/Authority"
+	polkitCheckAuth  = "org.freedesktop.PolicyKit1.Authority.CheckAuthorization"
+	polkitCancelAuth = "org.freedesktop.PolicyKit1.Authority.CancelCheckAuthorization"
 
 	dbusDaemonIface = "org.freedesktop.DBus"
 
 	callTimeout   = 15 * time.Second
 	promptTimeout = 5 * time.Minute
+
+	relockPoll = 15 * time.Second
 )
 
 // Docker, NetworkManager and libvirt rewrite these zones, so edits would not last.
@@ -41,7 +44,7 @@ func isManagedZone(name string) bool {
 
 type firewalldBus interface {
 	Running() bool
-	Authorized(action string, interactive bool) (bool, error)
+	Authorized(ctx context.Context, action string, interactive bool) (bool, error)
 	Call(path, method string, args []any, ret ...any) error
 }
 
@@ -58,6 +61,8 @@ func (b *systemBus) Running() bool {
 	return owned
 }
 
+var promptSeq atomic.Uint64
+
 type polkitSubject struct {
 	Kind    string
 	Details map[string]dbus.Variant
@@ -65,7 +70,7 @@ type polkitSubject struct {
 
 // Authorized asks polkit directly. firewalld's own check always allows interaction and
 // blocks its main loop while a prompt is open, so nothing gated may reach firewalld first.
-func (b *systemBus) Authorized(action string, interactive bool) (bool, error) {
+func (b *systemBus) Authorized(ctx context.Context, action string, interactive bool) (bool, error) {
 	names := b.conn.Names()
 	if len(names) == 0 {
 		return false, errors.New("no bus name")
@@ -74,12 +79,18 @@ func (b *systemBus) Authorized(action string, interactive bool) (bool, error) {
 		Kind:    "system-bus-name",
 		Details: map[string]dbus.Variant{"name": dbus.MakeVariant(names[0])},
 	}
-	flags, timeout := uint32(0), callTimeout
+	flags, timeout, cancelID := uint32(0), callTimeout, ""
 	if interactive {
 		flags, timeout = 1, promptTimeout
+		cancelID = fmt.Sprintf("dms-firewall-%d", promptSeq.Add(1))
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+	if interactive {
+		// Dropping the call alone leaves the password dialog open.
+		stop := context.AfterFunc(ctx, func() { b.cancelPrompt(cancelID) })
+		defer stop()
+	}
 
 	var result struct {
 		Authorized bool
@@ -87,7 +98,10 @@ func (b *systemBus) Authorized(action string, interactive bool) (bool, error) {
 		Details    map[string]string
 	}
 	call := b.conn.Object(polkitName, polkitPath).CallWithContext(ctx, polkitCheckAuth, 0,
-		subject, action, map[string]string{}, flags, "")
+		subject, action, map[string]string{}, flags, cancelID)
+	if interactive && ctx.Err() != nil {
+		return false, ErrAuthDismissed
+	}
 	if call.Err != nil {
 		return false, call.Err
 	}
@@ -106,6 +120,15 @@ func (b *systemBus) Authorized(action string, interactive bool) (bool, error) {
 	return false, errors.New("authorization failed, is a polkit agent running?")
 }
 
+func (b *systemBus) cancelPrompt(cancelID string) {
+	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
+	defer cancel()
+	call := b.conn.Object(polkitName, polkitPath).CallWithContext(ctx, polkitCancelAuth, 0, cancelID)
+	if call.Err != nil {
+		log.Warnf("[Firewall] polkit cancel failed: %v", call.Err)
+	}
+}
+
 func (b *systemBus) Call(path, method string, args []any, ret ...any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
 	defer cancel()
@@ -122,6 +145,12 @@ func (b *systemBus) Call(path, method string, args []any, ret ...any) error {
 type firewalldBackend struct {
 	bus  firewalldBus
 	conn *dbus.Conn
+
+	mu         sync.Mutex
+	notify     func()
+	relock     *time.Timer
+	closed     bool
+	cancelAuth context.CancelFunc
 
 	signals chan *dbus.Signal
 	stop    chan struct{}
@@ -158,11 +187,14 @@ func (b *firewalldBackend) Snapshot() (State, error) {
 		return state, err
 	}
 
-	authorized, err := b.bus.Authorized(actionConfigInfo, false)
+	authorized, err := b.bus.Authorized(context.Background(), actionConfig, false)
 	if err != nil {
 		log.Warnf("[Firewall] polkit check failed: %v", err)
 	}
 	state.Locked = !authorized
+	if authorized {
+		b.armRelock()
+	}
 
 	for _, name := range names {
 		binding, isActive := active[name]
@@ -233,21 +265,64 @@ func (b *firewalldBackend) Unlock() error {
 	if !b.Running() {
 		return errors.New("firewalld is not running")
 	}
-	return b.authorize(actionConfigInfo)
+	return b.authorize()
 }
 
 func (b *firewalldBackend) authorizeWrite() error {
-	return b.authorize(actionConfig)
+	return b.authorize()
 }
 
-func (b *firewalldBackend) authorize(action string) error {
-	authorized, err := b.bus.Authorized(action, true)
+// Polkit sends no signal when a temporary authorization lapses and does not say when it
+// was granted, so poll it. Armed only while unlocked, so a locked page stays idle.
+func (b *firewalldBackend) armRelock() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.relock != nil || b.closed {
+		return
+	}
+	b.relock = time.AfterFunc(relockPoll, b.checkRelock)
+}
+
+func (b *firewalldBackend) checkRelock() {
+	authorized, err := b.bus.Authorized(context.Background(), actionConfig, false)
+	if err != nil {
+		log.Warnf("[Firewall] polkit check failed: %v", err)
+	}
+
+	b.mu.Lock()
+	b.relock = nil
+	notify := b.notify
+	b.mu.Unlock()
+
+	if authorized {
+		b.armRelock()
+		return
+	}
+	if notify != nil {
+		notify()
+	}
+}
+
+func (b *firewalldBackend) authorize() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	b.mu.Lock()
+	if b.closed {
+		b.mu.Unlock()
+		return ErrAuthDismissed
+	}
+	b.cancelAuth = cancel
+	b.mu.Unlock()
+
+	authorized, err := b.bus.Authorized(ctx, actionConfig, true)
 	if err != nil {
 		return err
 	}
 	if !authorized {
 		return errors.New("not authorized")
 	}
+	b.armRelock()
 	return nil
 }
 
@@ -343,7 +418,6 @@ func (b *firewalldBackend) configZonePath(zone string) (string, error) {
 	return string(path), nil
 }
 
-// An interface can sit in only one permanent zone, so it has to leave the old one first.
 func (b *firewalldBackend) SetInterfaceZone(iface, zone string) error {
 	if isManagedZone(zone) {
 		return fmt.Errorf("zone %s is managed by another program", zone)
@@ -357,12 +431,7 @@ func (b *firewalldBackend) SetInterfaceZone(iface, zone string) error {
 		return err
 	}
 	if previous != zone {
-		if previous != "" {
-			if err := b.changePermanentInterface(previous, iface, "remove", "NOT_ENABLED"); err != nil {
-				return err
-			}
-		}
-		if err := b.changePermanentInterface(zone, iface, "add", "ALREADY_ENABLED"); err != nil {
+		if err := b.movePermanentInterface(iface, previous, zone); err != nil {
 			return err
 		}
 	}
@@ -372,6 +441,23 @@ func (b *firewalldBackend) SetInterfaceZone(iface, zone string) error {
 		return fmt.Errorf("saved, but not applied until firewalld reloads: %w", err)
 	}
 	return nil
+}
+
+// An interface can sit in only one permanent zone, so it has to leave the old one first.
+func (b *firewalldBackend) movePermanentInterface(iface, previous, zone string) error {
+	if previous != "" {
+		if err := b.changePermanentInterface(previous, iface, "remove", "NOT_ENABLED"); err != nil {
+			return err
+		}
+	}
+	err := b.changePermanentInterface(zone, iface, "add", "ALREADY_ENABLED")
+	if err == nil || previous == "" {
+		return err
+	}
+	if restoreErr := b.changePermanentInterface(previous, iface, "add", "ALREADY_ENABLED"); restoreErr != nil {
+		return fmt.Errorf("%w, and could not return to zone %s: %v", err, previous, restoreErr)
+	}
+	return err
 }
 
 func (b *firewalldBackend) changePermanentInterface(zone, iface, verb, benign string) error {
@@ -419,6 +505,9 @@ func (b *firewalldBackend) SetDefaults(change DefaultsChange) error {
 	if change.Zone == "" {
 		return errors.New("a zone is required")
 	}
+	if isManagedZone(change.Zone) {
+		return fmt.Errorf("zone %s is managed by another program", change.Zone)
+	}
 	if err := b.authorizeWrite(); err != nil {
 		return err
 	}
@@ -426,6 +515,14 @@ func (b *firewalldBackend) SetDefaults(change DefaultsChange) error {
 }
 
 func (b *firewalldBackend) ListServices() ([]Service, error) {
+	authorized, err := b.bus.Authorized(context.Background(), actionConfig, false)
+	if err != nil {
+		return nil, err
+	}
+	if !authorized {
+		return nil, errHelperLocked
+	}
+
 	var names []string
 	if err := b.bus.Call(firewalldPath, firewalldName+".listServices", nil, &names); err != nil {
 		return nil, err
@@ -486,6 +583,9 @@ func isFirewalldSignal(sig *dbus.Signal) bool {
 }
 
 func (b *firewalldBackend) Start(notify func()) error {
+	b.mu.Lock()
+	b.notify = notify
+	b.mu.Unlock()
 	for _, rule := range firewalldMatchRules() {
 		if err := b.conn.AddMatchSignal(rule...); err != nil {
 			return err
@@ -514,6 +614,17 @@ func (b *firewalldBackend) Start(notify func()) error {
 }
 
 func (b *firewalldBackend) Close() {
+	b.mu.Lock()
+	if b.relock != nil {
+		b.relock.Stop()
+		b.relock = nil
+	}
+	b.notify = nil
+	b.closed = true
+	if b.cancelAuth != nil {
+		b.cancelAuth()
+	}
+	b.mu.Unlock()
 	if b.stop == nil {
 		return
 	}
