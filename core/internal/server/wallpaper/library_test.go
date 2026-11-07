@@ -2,10 +2,12 @@ package wallpaper
 
 import (
 	"context"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
 	"testing"
+	"time"
 )
 
 func writeFiles(t *testing.T, root string, names ...string) {
@@ -131,5 +133,119 @@ func TestListWallpapersCutShort(t *testing.T) {
 	cancel()
 	if library := ListWallpapers(ctx, folders, []string{"png"}); !library.Truncated || len(library.Missing) != 0 {
 		t.Errorf("timed out: got %+v", library)
+	}
+}
+
+func TestListWallpapersFolderOwner(t *testing.T) {
+	cases := []struct {
+		name         string
+		childRecurse bool
+		want         map[string]string
+	}{
+		{name: "recursive child", childRecurse: true, want: map[string]string{"a.png": "parent", "sub/b.png": "child", "sub/deep/c.png": "child"}},
+		{name: "non-recursive child", want: map[string]string{"a.png": "parent", "sub/b.png": "child", "sub/deep/c.png": "parent"}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			root := t.TempDir()
+			writeFiles(t, root, "a.png", "sub/b.png", "sub/deep/c.png")
+			parent, child := Folder{Path: root, Recursive: true}, Folder{Path: filepath.Join(root, "sub"), Recursive: c.childRecurse}
+			got := map[string]string{}
+			for _, item := range ListWallpapers(context.Background(), []Folder{parent, child}, []string{"png"}).Items {
+				rel, _ := filepath.Rel(root, item.Path)
+				got[rel] = map[string]string{parent.Path: "parent", child.Path: "child"}[item.Folder]
+			}
+			if !maps.Equal(got, c.want) {
+				t.Errorf("got %v, want %v", got, c.want)
+			}
+		})
+	}
+}
+
+func TestListWallpapersFileInfo(t *testing.T) {
+	root := t.TempDir()
+	when := time.Unix(1700000000, 0)
+	files := map[string]string{"a.png": "12345", "Next/metadata.json": "", "Next/contents/images/100x100.png": "12", "Next/contents/images/200x200.png": "1234567"}
+	for name, content := range files {
+		path := filepath.Join(root, name)
+		writeFiles(t, root, name)
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chtimes(path, when, when); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got := map[string]int64{}
+	for _, item := range ListWallpapers(context.Background(), []Folder{{Path: root, Recursive: true}}, []string{"png"}).Items {
+		if item.Mtime != when.Unix() {
+			t.Errorf("%s: mtime %d", item.Path, item.Mtime)
+		}
+		got[filepath.Base(item.Path)] = item.Size
+	}
+	if want := map[string]int64{"a.png": 5, "200x200.png": 7}; !maps.Equal(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestFolderListed(t *testing.T) {
+	root := t.TempDir()
+	target := filepath.Join(root, "target")
+	other := filepath.Join(root, "other")
+	link := filepath.Join(root, "link")
+	gone := filepath.Join(root, "gone")
+	for _, dir := range []string{target, other} {
+		if err := os.Mkdir(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Symlink(target, link); err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		name   string
+		path   string
+		listed []string
+		want   bool
+	}{
+		{"through a symlink", link, []string{target}, true},
+		{"listed through a symlink", target, []string{link}, true},
+		{"trailing slash", target + "/", []string{target}, true},
+		{"missing but identical", gone, []string{gone + "/"}, true},
+		{"different folder", other, []string{target}, false},
+	}
+	for _, c := range cases {
+		if got := FolderListed(c.path, c.listed); got != c.want {
+			t.Errorf("%s: got %v", c.name, got)
+		}
+	}
+}
+
+func TestSuggestFolders(t *testing.T) {
+	root := t.TempDir()
+	home, share, pictures := filepath.Join(root, "home"), filepath.Join(root, "share"), filepath.Join(root, "pics")
+	for _, dir := range []string{home + "/wallpapers", share + "/backgrounds", share + "/wallpapers", pictures + "/Wallpapers"} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeFiles(t, home, "backgrounds")
+	link := filepath.Join(root, "link")
+	if err := os.Symlink(share+"/wallpapers", link); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("XDG_DATA_HOME", home)
+	t.Setenv("XDG_DATA_DIRS", share+":"+share+"/../share:"+filepath.Join(root, "missing"))
+	t.Setenv("XDG_PICTURES_DIR", pictures)
+
+	got := SuggestFolders([]string{link})
+	want := []string{home + "/wallpapers", share + "/backgrounds", pictures + "/Wallpapers"}
+	if !slices.Equal(got, want) {
+		t.Errorf("got %q, want %q", got, want)
+	}
+	if got := SuggestFolders(want); len(got) != 1 {
+		t.Errorf("all but one listed: got %q", got)
 	}
 }

@@ -121,6 +121,8 @@ TAB_INDEX_MAP = {
     "ThemeAppsTab.qml": 50,
     "ThemeScheduleTab.qml": 51,
     "WallpaperCyclingTab.qml": 52,
+    "WallpaperFoldersTab.qml": 71,
+    "WallpaperFolderTab.qml": 72,
     "ShadowsTab.qml": 53,
     "BarWidgetTab.qml": 54,
     "LockScreenTab.qml": 11,
