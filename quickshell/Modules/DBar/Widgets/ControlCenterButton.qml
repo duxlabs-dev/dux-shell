@@ -5,6 +5,7 @@ import qs.Common
 import qs.Modules.Plugins
 import qs.Services
 import qs.DCommon.Widgets
+import "../../../DCommon/Common/WheelInput.js" as WheelInput
 
 BasePill {
     id: root
@@ -28,6 +29,7 @@ BasePill {
     property bool showScreenSharingIcon: SettingsData.widgetOption("controlCenterButton", widgetData, "showScreenSharingIcon")
     property bool showIdleInhibitorIcon: SettingsData.widgetOption("controlCenterButton", widgetData, "showIdleInhibitorIcon")
     property bool showDoNotDisturbIcon: SettingsData.widgetOption("controlCenterButton", widgetData, "showDoNotDisturbIcon")
+    property bool scrollEnabled: SettingsData.widgetOption("controlCenterButton", widgetData, "scrollEnabled")
     property real touchpadThreshold: 100
     property real micAccumulator: 0
     property real volumeAccumulator: 0
@@ -49,37 +51,46 @@ BasePill {
     onIsVerticalOrientationChanged: root.clearInteractionRefs()
 
     onWheel: function (wheelEvent) {
-        const delta = wheelEvent.angleDelta.y;
-        if (delta === 0)
+        if (!root.scrollEnabled || WheelInput.isHorizontal(wheelEvent))
             return;
+        const delta = wheelEvent.angleDelta.y;
+        if (delta === 0) {
+            if (wheelEvent.phase === Qt.ScrollEnd) {
+                micAccumulator = 0;
+                volumeAccumulator = 0;
+                brightnessAccumulator = 0;
+            }
+            return;
+        }
 
         root.refreshInteractionRefs();
 
         const rootX = wheelEvent.x - root.leftMargin;
         const rootY = wheelEvent.y - root.topMargin;
+        let handled = false;
 
         if (root.isVerticalOrientation && _vCol) {
             const pos = root.mapToItem(_vCol, rootX, rootY);
             if (_vBrightness?.visible && pos.y >= _vBrightness.y && pos.y < _vBrightness.y + _vBrightness.height) {
-                root.handleBrightnessWheel(delta);
+                handled = root.handleBrightnessWheel(wheelEvent, delta);
             } else if (_vMic?.visible && pos.y >= _vMic.y && pos.y < _vMic.y + _vMic.height) {
-                root.handleMicWheel(delta);
+                handled = root.handleMicWheel(wheelEvent, delta);
             } else {
-                root.handleVolumeWheel(delta);
+                handled = root.handleVolumeWheel(wheelEvent, delta);
             }
         } else if (_hRow) {
             const pos = root.mapToItem(_hRow, rootX, rootY);
             if (_hBrightness?.visible && pos.x >= _hBrightness.x && pos.x < _hBrightness.x + _hBrightness.width) {
-                root.handleBrightnessWheel(delta);
+                handled = root.handleBrightnessWheel(wheelEvent, delta);
             } else if (_hMic?.visible && pos.x >= _hMic.x && pos.x < _hMic.x + _hMic.width) {
-                root.handleMicWheel(delta);
+                handled = root.handleMicWheel(wheelEvent, delta);
             } else {
-                root.handleVolumeWheel(delta);
+                handled = root.handleVolumeWheel(wheelEvent, delta);
             }
         } else {
-            root.handleVolumeWheel(delta);
+            handled = root.handleVolumeWheel(wheelEvent, delta);
         }
-        wheelEvent.accepted = true;
+        wheelEvent.accepted = handled;
     }
 
     onRightClicked: function (rootX, rootY) {
@@ -190,51 +201,59 @@ BasePill {
 
     function getBrightnessTargets() {
         const pinned = BrightnessService.pinnedDevices(getScreenPinKey());
-        return pinned.length > 0 ? pinned : [BrightnessService.getDefaultDevice()];
+        if (pinned.length > 0)
+            return pinned;
+        const targets = BrightnessService.screenBrightnessTargets(root.parentScreen ?? root.screenName);
+        return targets.length > 0 ? targets : [BrightnessService.getDefaultDevice()];
     }
 
     function getEffectiveBrightnessDevice() {
         return getBrightnessTargets()[0];
     }
 
-    function handleVolumeWheel(delta) {
+    function handleVolumeWheel(wheelEvent, delta) {
         if (!AudioService.sink?.audio)
-            return;
+            return false;
 
-        var step = 5;
-        const isMouseWheel = Math.abs(delta) >= 120 && (Math.abs(delta) % 120) === 0;
-        if (!isMouseWheel) {
-            step = 1;
-            volumeAccumulator += delta;
-            if (Math.abs(volumeAccumulator) < touchpadThreshold)
-                return;
-
-            delta = volumeAccumulator;
-            volumeAccumulator = 0;
+        if (WheelInput.isTouchpad(wheelEvent)) {
+            if (wheelEvent.phase === Qt.ScrollBegin)
+                volumeAccumulator = 0;
+            volumeAccumulator = (volumeAccumulator * delta < 0 ? 0 : volumeAccumulator) + delta;
+            const units = Math.trunc(Math.abs(volumeAccumulator) / touchpadThreshold);
+            if (units <= 0)
+                return true;
+            const sign = volumeAccumulator > 0 ? 1 : -1;
+            volumeAccumulator -= sign * units * touchpadThreshold;
+            AudioService.adjustDefaultSinkVolume(units, sign);
+            AudioService.playVolumeChangeSoundIfEnabled();
+            return true;
         }
 
-        const maxVol = AudioService.sinkMaxVolume;
-        const currentVolume = AudioService.sink.audio.volume * 100;
-        const newVolume = delta > 0 ? Math.min(maxVol, currentVolume + step) : Math.max(0, currentVolume - step);
-        AudioService.sink.audio.muted = false;
-        AudioService.sink.audio.volume = newVolume / 100;
+        const notches = Math.max(1, Math.round(Math.abs(delta) / 120));
+        const step = Math.max(1, AudioService.wheelVolumeStep) * notches;
+        AudioService.adjustDefaultSinkVolume(step, delta > 0 ? 1 : -1);
         AudioService.playVolumeChangeSoundIfEnabled();
+        return true;
     }
 
-    function handleMicWheel(delta) {
+    function handleMicWheel(wheelEvent, delta) {
         if (!AudioService.source?.audio)
-            return;
+            return false;
 
-        var step = 5;
-        const isMouseWheel = Math.abs(delta) >= 120 && (Math.abs(delta) % 120) === 0;
-        if (!isMouseWheel) {
-            step = 1;
-            micAccumulator += delta;
-            if (Math.abs(micAccumulator) < touchpadThreshold)
-                return;
-
-            delta = micAccumulator;
-            micAccumulator = 0;
+        let step = 5;
+        if (WheelInput.isTouchpad(wheelEvent)) {
+            if (wheelEvent.phase === Qt.ScrollBegin)
+                micAccumulator = 0;
+            micAccumulator = (micAccumulator * delta < 0 ? 0 : micAccumulator) + delta;
+            const units = Math.trunc(Math.abs(micAccumulator) / touchpadThreshold);
+            if (units <= 0)
+                return true;
+            const sign = micAccumulator > 0 ? 1 : -1;
+            micAccumulator -= sign * units * touchpadThreshold;
+            step = units;
+            delta = sign;
+        } else {
+            step = 5 * Math.max(1, Math.round(Math.abs(delta) / 120));
         }
 
         const currentVolume = AudioService.source.audio.volume * 100;
@@ -242,29 +261,27 @@ BasePill {
         AudioService.source.audio.muted = false;
         AudioService.source.audio.volume = newVolume / 100;
         AudioService.micVolumeChanged();
+        return true;
     }
 
-    function handleBrightnessWheel(delta) {
-        const deviceName = getEffectiveBrightnessDevice();
-        if (!deviceName) {
-            return;
+    function handleBrightnessWheel(wheelEvent, delta) {
+        if (!BrightnessService.brightnessAvailable)
+            return false;
+
+        if (WheelInput.isTouchpad(wheelEvent)) {
+            if (wheelEvent.phase === Qt.ScrollBegin)
+                brightnessAccumulator = 0;
+            brightnessAccumulator = (brightnessAccumulator * delta < 0 ? 0 : brightnessAccumulator) + delta;
+            const units = Math.trunc(Math.abs(brightnessAccumulator) / touchpadThreshold);
+            if (units <= 0)
+                return true;
+            const sign = brightnessAccumulator > 0 ? 1 : -1;
+            brightnessAccumulator -= sign * units * touchpadThreshold;
+            return BrightnessService.adjustScreenBrightness(root.parentScreen ?? root.screenName, units, sign);
         }
 
-        var step = 5;
-        const isMouseWheel = Math.abs(delta) >= 120 && (Math.abs(delta) % 120) === 0;
-        if (!isMouseWheel) {
-            step = 1;
-            brightnessAccumulator += delta;
-            if (Math.abs(brightnessAccumulator) < touchpadThreshold)
-                return;
-
-            delta = brightnessAccumulator;
-            brightnessAccumulator = 0;
-        }
-
-        const currentBrightness = BrightnessService.getDeviceBrightness(deviceName);
-        const newBrightness = delta > 0 ? Math.min(100, currentBrightness + step) : Math.max(1, currentBrightness - step);
-        BrightnessService.setGroupBrightness(newBrightness, getBrightnessTargets());
+        const notches = Math.max(1, Math.round(Math.abs(delta) / 120));
+        return BrightnessService.adjustScreenBrightness(root.parentScreen ?? root.screenName, notches * 5, delta > 0 ? 1 : -1);
     }
 
     function getBrightness() {

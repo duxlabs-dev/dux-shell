@@ -8,6 +8,7 @@ import qs.Modules.Plugins
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
+import "../../../DCommon/Common/WheelInput.js" as WheelInput
 
 BasePill {
     id: root
@@ -169,19 +170,28 @@ BasePill {
     }
 
     onWheel: function (wheelEvent) {
-        wheelEvent.accepted = true;
+        if (!SettingsData.widgetOption("runningApps", widgetData, "scrollEnabled") || WheelInput.isHorizontal(wheelEvent))
+            return;
         const deltaY = wheelEvent.angleDelta.y;
-        const isMouseWheel = Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;
+        if (deltaY === 0) {
+            if (wheelEvent.phase === Qt.ScrollEnd)
+                scrollAccumulator = 0;
+            return;
+        }
 
         const windows = root.sortedToplevels.filter(w => !w.skipSwitcher);
         if (windows.length < 2)
             return;
 
+        wheelEvent.accepted = true;
+        const isMouseWheel = !WheelInput.isTouchpad(wheelEvent) && Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;
         if (isMouseWheel) {
             activateNeighbor(windows, deltaY);
             return;
         }
 
+        if (wheelEvent.phase === Qt.ScrollBegin)
+            scrollAccumulator = 0;
         scrollAccumulator += deltaY;
         if (Math.abs(scrollAccumulator) < touchpadThreshold)
             return;

@@ -189,3 +189,53 @@ test("null sink safely no-ops volume scroll while discrete workspace scroll stil
     assert.equal(context.actionInProgress, true);
     assert.equal(events.cooldownRestarts, 1);
 });
+
+test("wheel-consuming bar widgets default scrollEnabled to true and leave wheel unaccepted when disabled or horizontal", () => {
+    const defaults = vm.createContext({});
+    vm.runInContext(readFileSync(new URL("../Common/settings/BarWidgetDefaults.js", import.meta.url), "utf8").replace(/^\.pragma.*$/gm, ""), defaults);
+
+    for (const widgetType of ["workspaceSwitcher", "runningApps", "battery", "controlCenterButton"]) {
+        assert.equal(defaults.option(widgetType, null, "scrollEnabled"), true, widgetType);
+        assert.equal(defaults.option(widgetType, { scrollEnabled: false }, "scrollEnabled"), false, widgetType);
+    }
+
+    const WheelInput = vm.createContext({ Qt: QtStub });
+    vm.runInContext(readFileSync(new URL("../DCommon/Common/WheelInput.js", import.meta.url), "utf8").replace(/^\.pragma.*$/gm, ""), WheelInput);
+    const adjustments = [];
+    const battery = vm.createContext({
+        Qt: QtStub,
+        WheelInput,
+        touchpadAccumulator: 0,
+        scrollEnabled: true,
+        parentScreen: { name: "DP-1" },
+        BrightnessService: {
+            brightnessAvailable: true,
+            adjustScreenBrightness(screen, step, direction) {
+                adjustments.push([screen?.name, step, direction]);
+                return true;
+            }
+        }
+    });
+    battery.battery = battery;
+    vm.runInContext(functionSource("../Modules/DBar/Widgets/Battery.qml", "handleBatteryWheel"), battery);
+
+    // Horizontal wheel on Battery sets accepted = false so BarScrollArea receives it
+    const horiz = mouseWheel(0, 120);
+    battery.handleBatteryWheel(horiz);
+    assert.equal(horiz.accepted, false);
+    assert.deepEqual(adjustments, []);
+
+    // Vertical wheel when scrollEnabled = false sets accepted = false so bar volume scroll receives it
+    battery.scrollEnabled = false;
+    const disabledVert = mouseWheel(120);
+    battery.handleBatteryWheel(disabledVert);
+    assert.equal(disabledVert.accepted, false);
+    assert.deepEqual(adjustments, []);
+
+    // Enabled vertical wheel consumes event and targets the battery's screen
+    battery.scrollEnabled = true;
+    const activeVert = mouseWheel(120);
+    battery.handleBatteryWheel(activeVert);
+    assert.equal(activeVert.accepted, true);
+    assert.deepEqual(adjustments, [["DP-1", 5, 1]]);
+});

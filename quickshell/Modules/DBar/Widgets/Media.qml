@@ -8,6 +8,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 import "../../../Common/LyricLayout.js" as LyricLayout
+import "../../../DCommon/Common/WheelInput.js" as WheelInput
 
 BasePill {
     id: root
@@ -111,17 +112,24 @@ BasePill {
     onClicked: hideTrackTooltip()
 
     onWheel: function (wheelEvent) {
-        if (SettingsData.widgetOption("music", widgetData, "audioScrollMode") === "nothing")
+        if (WheelInput.isHorizontal(wheelEvent))
+            return;
+        const deltaY = wheelEvent.angleDelta.y;
+        if (deltaY === 0) {
+            if (wheelEvent.phase === Qt.ScrollEnd)
+                scrollAccumulatorY = 0;
+            return;
+        }
+        const scrollMode = SettingsData.widgetOption("music", widgetData, "audioScrollMode");
+        if (scrollMode === "nothing")
             return;
 
-        if (SettingsData.widgetOption("music", widgetData, "audioScrollMode") === "volume") {
+        if (scrollMode === "volume") {
             if (!usePlayerVolume)
                 return;
 
             wheelEvent.accepted = true;
-
-            const deltaY = wheelEvent.angleDelta.y;
-            const isMouseWheelY = Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;
+            const isMouseWheelY = !WheelInput.isTouchpad(wheelEvent) && Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;
 
             const currentVolume = activePlayer.volume * 100;
 
@@ -145,14 +153,12 @@ BasePill {
             }
 
             activePlayer.volume = newVolume / 100;
-        } else if (SettingsData.widgetOption("music", widgetData, "audioScrollMode") === "song") {
+        } else if (scrollMode === "song") {
             if (!activePlayer)
                 return;
 
             wheelEvent.accepted = true;
-
-            const deltaY = wheelEvent.angleDelta.y;
-            const isMouseWheelY = Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;
+            const isMouseWheelY = !WheelInput.isTouchpad(wheelEvent) && Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;
 
             if (isMouseWheelY) {
                 if (deltaY > 0) {

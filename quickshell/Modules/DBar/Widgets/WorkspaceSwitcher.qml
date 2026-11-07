@@ -261,7 +261,7 @@ BasePill {
     }
 
     onWheel: wheel => {
-        if (WheelInput.isHorizontal(wheel))
+        if (!root.opt("scrollEnabled") || WheelInput.isHorizontal(wheel))
             return;
         wheel.accepted = true;
         workspaces.handleWheel(wheel);

@@ -100,6 +100,7 @@ var DEFAULTS = {
         workspaceMoveToOutput: false,
         showOccupiedWorkspacesOnly: false,
         showSpecialWorkspaces: false,
+        scrollEnabled: true,
         reverseScrolling: false,
         dwlShowAllTags: false,
         workspaceActiveAppHighlightEnabled: false,
@@ -155,7 +156,8 @@ var DEFAULTS = {
         runningAppsCompactMode: true,
         runningAppsGroupByApp: false,
         runningAppsCurrentWorkspace: true,
-        runningAppsCurrentMonitor: false
+        runningAppsCurrentMonitor: false,
+        scrollEnabled: true
     },
     appsDock: {
         barMaxVisibleApps: 0,
@@ -192,7 +194,8 @@ var DEFAULTS = {
         showBatteryTimeOnlyOnBattery: false,
         showBatteryPowerCharging: false,
         showBatteryPowerDischarging: false,
-        batteryStyle: "icon"
+        batteryStyle: "icon",
+        scrollEnabled: true
     },
     controlCenterButton: {
         showNetworkIcon: true,
@@ -209,6 +212,7 @@ var DEFAULTS = {
         showScreenSharingIcon: true,
         showIdleInhibitorIcon: false,
         showDoNotDisturbIcon: false,
+        scrollEnabled: true,
         controlCenterGroupOrder: CONTROL_CENTER_GROUP_ORDER
     },
     privacyIndicator: {

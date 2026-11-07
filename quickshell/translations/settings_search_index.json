@@ -10213,7 +10213,7 @@
     "description": "Add, reorder, configure"
   },
   {
-    "section": "barWidgetOption:BatteryOptions.qml:7",
+    "section": "barWidgetOption:BatteryOptions.qml:8",
     "label": "Battery",
     "tabIndex": 22,
     "keywords": [],
@@ -10221,7 +10221,7 @@
     "optionFile": "BatteryOptions.qml"
   },
   {
-    "section": "barWidgetOption:BatteryOptions.qml:6",
+    "section": "barWidgetOption:BatteryOptions.qml:7",
     "label": "Battery style",
     "tabIndex": 22,
     "keywords": [],
@@ -10509,7 +10509,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:21",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:22",
     "label": "Drag to reorder",
     "tabIndex": 22,
     "keywords": [],
@@ -10701,7 +10701,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:ControlCenterOptions.qml:1",
+    "section": "barWidgetOption:ControlCenterOptions.qml:2",
     "label": "Indicators",
     "tabIndex": 22,
     "keywords": [],
@@ -10949,7 +10949,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:20",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:21",
     "label": "Reverse scroll direction",
     "tabIndex": 22,
     "keywords": [],
@@ -10965,12 +10965,44 @@
     "optionFile": "PrivacyOptions.qml"
   },
   {
+    "section": "barWidgetOption:BatteryOptions.qml:6",
+    "label": "Scroll wheel",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:ControlCenterOptions.qml:1",
+    "label": "Scroll wheel",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "ControlCenterOptions.qml"
+  },
+  {
     "section": "barWidgetOption:MusicOptions.qml:7",
     "label": "Scroll wheel",
     "tabIndex": 22,
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "MusicOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:RunningAppsOptions.qml:5",
+    "label": "Scroll wheel",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "RunningAppsOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:20",
+    "label": "Scroll wheel",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
     "section": "barWidgetOption:AppsDockOptions.qml:4",
@@ -10989,7 +11021,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:22",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:23",
     "label": "Show all tags",
     "tabIndex": 22,
     "keywords": [],
