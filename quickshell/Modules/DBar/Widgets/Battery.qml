@@ -299,21 +299,17 @@ BasePill {
         }
 
         wheel.accepted = true;
-        if (WheelInput.isTouchpad(wheel)) {
-            if (wheel.phase === Qt.ScrollBegin)
-                touchpadAccumulator = 0;
-            touchpadAccumulator = (touchpadAccumulator * delta < 0 ? 0 : touchpadAccumulator) + delta;
-            const units = Math.trunc(Math.abs(touchpadAccumulator) / 100);
-            if (units <= 0)
-                return;
-            const sign = touchpadAccumulator > 0 ? 1 : -1;
-            touchpadAccumulator -= sign * units * 100;
-            BrightnessService.adjustScreenBrightness(battery.parentScreen, units, sign);
+        const isTouchpad = WheelInput.isTouchpad(wheel);
+        if (isTouchpad && wheel.phase === Qt.ScrollBegin)
+            touchpadAccumulator = 0;
+        const threshold = isTouchpad ? 100 : 120;
+        touchpadAccumulator = (touchpadAccumulator * delta < 0 ? 0 : touchpadAccumulator) + delta;
+        const units = Math.trunc(Math.abs(touchpadAccumulator) / threshold);
+        if (units <= 0)
             return;
-        }
-
-        const notches = Math.max(1, Math.round(Math.abs(delta) / 120));
-        BrightnessService.adjustScreenBrightness(battery.parentScreen, notches * 5, delta > 0 ? 1 : -1);
+        const sign = touchpadAccumulator > 0 ? 1 : -1;
+        touchpadAccumulator -= sign * units * threshold;
+        BrightnessService.adjustScreenBrightness(battery.parentScreen, isTouchpad ? units : units * 5, sign);
     }
 
     onWheel: wheelEvent => battery.handleBatteryWheel(wheelEvent)

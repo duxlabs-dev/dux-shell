@@ -42,7 +42,6 @@ MouseArea {
             if (!AudioService.sink?.audio)
                 return false;
             AudioService.adjustDefaultSinkVolume(step, direction);
-            AudioService.playVolumeChangeSoundIfEnabled();
             return true;
         case "brightness":
             return BrightnessService.adjustScreenBrightness(root.screen ?? root.screenName, step, direction);

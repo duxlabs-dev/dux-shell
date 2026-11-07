@@ -211,28 +211,32 @@ BasePill {
         return getBrightnessTargets()[0];
     }
 
+    function stepWheelAccumulator(accumulatorKey, wheelEvent, delta) {
+        const isTouchpad = WheelInput.isTouchpad(wheelEvent);
+        if (isTouchpad && wheelEvent.phase === Qt.ScrollBegin)
+            root[accumulatorKey] = 0;
+        const threshold = isTouchpad ? touchpadThreshold : 120;
+        const prev = root[accumulatorKey];
+        const next = (prev * delta < 0 ? 0 : prev) + delta;
+        const units = Math.trunc(Math.abs(next) / threshold);
+        if (units <= 0) {
+            root[accumulatorKey] = next;
+            return { units: 0, sign: 0, isTouchpad };
+        }
+        const sign = next > 0 ? 1 : -1;
+        root[accumulatorKey] = next - sign * units * threshold;
+        return { units, sign, isTouchpad };
+    }
+
     function handleVolumeWheel(wheelEvent, delta) {
         if (!AudioService.sink?.audio)
             return false;
 
-        if (WheelInput.isTouchpad(wheelEvent)) {
-            if (wheelEvent.phase === Qt.ScrollBegin)
-                volumeAccumulator = 0;
-            volumeAccumulator = (volumeAccumulator * delta < 0 ? 0 : volumeAccumulator) + delta;
-            const units = Math.trunc(Math.abs(volumeAccumulator) / touchpadThreshold);
-            if (units <= 0)
-                return true;
-            const sign = volumeAccumulator > 0 ? 1 : -1;
-            volumeAccumulator -= sign * units * touchpadThreshold;
-            AudioService.adjustDefaultSinkVolume(units, sign);
-            AudioService.playVolumeChangeSoundIfEnabled();
+        const res = stepWheelAccumulator("volumeAccumulator", wheelEvent, delta);
+        if (res.units <= 0)
             return true;
-        }
-
-        const notches = Math.max(1, Math.round(Math.abs(delta) / 120));
-        const step = Math.max(1, AudioService.wheelVolumeStep) * notches;
-        AudioService.adjustDefaultSinkVolume(step, delta > 0 ? 1 : -1);
-        AudioService.playVolumeChangeSoundIfEnabled();
+        const step = res.isTouchpad ? res.units : Math.max(1, AudioService.wheelVolumeStep) * res.units;
+        AudioService.adjustDefaultSinkVolume(step, res.sign);
         return true;
     }
 
@@ -240,24 +244,12 @@ BasePill {
         if (!AudioService.source?.audio)
             return false;
 
-        let step = 5;
-        if (WheelInput.isTouchpad(wheelEvent)) {
-            if (wheelEvent.phase === Qt.ScrollBegin)
-                micAccumulator = 0;
-            micAccumulator = (micAccumulator * delta < 0 ? 0 : micAccumulator) + delta;
-            const units = Math.trunc(Math.abs(micAccumulator) / touchpadThreshold);
-            if (units <= 0)
-                return true;
-            const sign = micAccumulator > 0 ? 1 : -1;
-            micAccumulator -= sign * units * touchpadThreshold;
-            step = units;
-            delta = sign;
-        } else {
-            step = 5 * Math.max(1, Math.round(Math.abs(delta) / 120));
-        }
-
+        const res = stepWheelAccumulator("micAccumulator", wheelEvent, delta);
+        if (res.units <= 0)
+            return true;
+        const step = res.isTouchpad ? res.units : 5 * res.units;
         const currentVolume = AudioService.source.audio.volume * 100;
-        const newVolume = delta > 0 ? Math.min(100, currentVolume + step) : Math.max(0, currentVolume - step);
+        const newVolume = res.sign > 0 ? Math.min(100, currentVolume + step) : Math.max(0, currentVolume - step);
         AudioService.source.audio.muted = false;
         AudioService.source.audio.volume = newVolume / 100;
         AudioService.micVolumeChanged();
@@ -268,20 +260,11 @@ BasePill {
         if (!BrightnessService.brightnessAvailable)
             return false;
 
-        if (WheelInput.isTouchpad(wheelEvent)) {
-            if (wheelEvent.phase === Qt.ScrollBegin)
-                brightnessAccumulator = 0;
-            brightnessAccumulator = (brightnessAccumulator * delta < 0 ? 0 : brightnessAccumulator) + delta;
-            const units = Math.trunc(Math.abs(brightnessAccumulator) / touchpadThreshold);
-            if (units <= 0)
-                return true;
-            const sign = brightnessAccumulator > 0 ? 1 : -1;
-            brightnessAccumulator -= sign * units * touchpadThreshold;
-            return BrightnessService.adjustScreenBrightness(root.parentScreen ?? root.screenName, units, sign);
-        }
-
-        const notches = Math.max(1, Math.round(Math.abs(delta) / 120));
-        return BrightnessService.adjustScreenBrightness(root.parentScreen ?? root.screenName, notches * 5, delta > 0 ? 1 : -1);
+        const res = stepWheelAccumulator("brightnessAccumulator", wheelEvent, delta);
+        if (res.units <= 0)
+            return true;
+        const step = res.isTouchpad ? res.units : 5 * res.units;
+        return BrightnessService.adjustScreenBrightness(root.parentScreen ?? root.screenName, step, res.sign);
     }
 
     function getBrightness() {

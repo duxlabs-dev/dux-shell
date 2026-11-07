@@ -136,7 +136,7 @@ test("volume scroll increases on scroll up, ignores workspace reverseScrolling, 
     context.processWheel(mouseWheel(-120));
 
     assert.deepEqual(events.volume, [[3, 1], [3, 1], [3, -1]]);
-    assert.equal(events.volumeSound, 3);
+    assert.equal(events.volumeSound, 0);
     assert.equal(context.actionInProgress, false);
     assert.equal(events.cooldownRestarts, 0);
 });
@@ -234,9 +234,12 @@ test("wheel-consuming bar widgets default scrollEnabled to true and leave wheel 
     assert.equal(disabledVert.accepted, false);
     assert.deepEqual(adjustments, []);
 
-    // Enabled vertical wheel consumes event and targets the battery's screen
+    // Enabled vertical wheel consumes event and targets the battery's screen, accumulating sub-120 high-res detents
     battery.scrollEnabled = true;
-    const activeVert = mouseWheel(120);
+    battery.handleBatteryWheel(mouseWheel(40));
+    battery.handleBatteryWheel(mouseWheel(40));
+    assert.deepEqual(adjustments, []);
+    const activeVert = mouseWheel(40);
     battery.handleBatteryWheel(activeVert);
     assert.equal(activeVert.accepted, true);
     assert.deepEqual(adjustments, [["DP-1", 5, 1]]);
