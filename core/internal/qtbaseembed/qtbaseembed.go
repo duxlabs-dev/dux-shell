@@ -46,7 +46,7 @@ func Extract() (string, error) {
 	return filepath.Join(dir, qtbase.Soname), nil
 }
 
-// Resolve returns the runtime library path this binary would run the UI with.
+// Resolve returns the runtime this binary would run the UI with: the library, or upstream qs from PATH.
 func Resolve() (string, error) {
-	return qtbase.Locate(Extract)
+	return qtbase.Runtime(Extract)
 }
