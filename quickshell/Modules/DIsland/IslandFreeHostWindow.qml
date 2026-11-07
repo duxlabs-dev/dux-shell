@@ -154,7 +154,7 @@ PanelWindow {
     color: "transparent"
     exclusiveZone: -1
     WlrLayershell.namespace: "dms:dankisland"
-    WlrLayershell.layer: LayerShell.fromEnv("DMS_DANKISLAND_LAYER", body.usesOverlayLayer ? WlrLayer.Overlay : WlrLayer.Top)
+    WlrLayershell.layer: body.hostLayer
     WlrLayershell.keyboardFocus: islandChrome.keyboardFocusPolicy
     BackgroundEffect.blurRegion: root.blurWanted && BlurService.enabled && BlurService.available && body.surfaceOpacity > 0 && body.surfaceOpacity < 1 ? surfaceBlurRegion : null
 
@@ -204,7 +204,7 @@ PanelWindow {
 
         interval: root.idleDelay
         onTriggered: {
-            if (root.expanded || root.pointerInside || hitHover.hovered || root.liftWanted || body.islandController.transientActive)
+            if (root.expanded || root.pointerInside || hitHover.hovered || root.liftWanted || body.holdsHost)
                 return;
             root.idle = true;
         }
@@ -304,6 +304,7 @@ PanelWindow {
         anchorSnaps: root.dragging
         freeScale: root.idle ? root.idleScale : 1
         freeOpacity: root.idle ? root.idleOpacity : 1
+        onHoldsHostChanged: root.wake()
     }
 
     IslandFreeDragArea {

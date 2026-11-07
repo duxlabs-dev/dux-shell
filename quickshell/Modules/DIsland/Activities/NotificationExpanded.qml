@@ -3,6 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
+import qs.Modules.DIsland.Kit
+import "../../../Common/IslandArrival.js" as Arrival
 
 Item {
     id: root
@@ -26,14 +28,14 @@ Item {
             height: 46
             spacing: Theme.spacingM
 
-            DCircularImage {
+            IslandNoticeIcon {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 46
                 height: 46
                 imageSource: root.notificationModel.imageSource
                 fallbackIcon: root.notificationModel.fallbackIcon
                 fallbackText: root.notificationModel.fallbackText
-                cacheImages: false
+                alert: Arrival.alertOf(root.notificationModel)
             }
 
             Column {
@@ -59,14 +61,13 @@ Item {
                 }
             }
 
-            DActionButton {
+            IslandButton {
                 id: closeButton
 
                 anchors.verticalCenter: parent.verticalCenter
+                role: "plain"
                 iconName: "close"
                 Accessible.name: I18n.tr("Dismiss")
-                iconSize: 21
-                buttonSize: 38
                 onClicked: root.notificationModel.dismiss()
             }
         }
@@ -105,6 +106,26 @@ Item {
             }
         }
 
+        // Shown only when the app announced freedesktop inline reply; Enter sends.
+        DTextField {
+            id: replyField
+
+            anchors {
+                left: parent.left
+                right: actions.left
+                rightMargin: Theme.spacingS
+                verticalCenter: actions.verticalCenter
+            }
+            visible: root.notificationModel.canReply
+            placeholderText: root.notificationModel.replyPlaceholder
+            onAccepted: root.notificationModel.reply(text)
+            onVisibleChanged: {
+                text = "";
+                if (visible)
+                    Qt.callLater(forceActiveFocus);
+            }
+        }
+
         Row {
             id: actions
 
@@ -112,29 +133,18 @@ Item {
                 right: parent.right
                 bottom: parent.bottom
             }
-            height: 34
             spacing: Theme.spacingS
 
-            DButton {
-                height: parent.height
-                radius: Theme.fullRadius(width, height)
+            IslandButton {
+                role: "plain"
                 text: I18n.tr("Dismiss", "island notification face: dismiss button")
-                backgroundColor: "transparent"
-                textColor: Theme.surfaceText
-                buttonHeight: parent.height
-                horizontalPadding: Theme.spacingL
-                border.width: 1
-                border.color: Theme.withAlpha(Theme.outline, 0.5)
                 onClicked: root.notificationModel.dismiss()
             }
 
-            DButton {
+            IslandButton {
                 visible: root.notificationModel.hasAction
-                height: parent.height
-                radius: Theme.fullRadius(width, height)
+                role: "primary"
                 text: root.notificationModel.actionLabel
-                buttonHeight: parent.height
-                horizontalPadding: Theme.spacingL
                 onClicked: root.notificationModel.activate()
             }
         }

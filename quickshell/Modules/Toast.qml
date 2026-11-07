@@ -113,7 +113,7 @@ PanelWindow {
             case ToastService.levelError:
                 return Theme.error;
             case ToastService.levelWarn:
-                return Theme.warning;
+                return Theme.warningGround;
             case ToastService.levelInfo:
                 return Theme.readableSurface;
             default:

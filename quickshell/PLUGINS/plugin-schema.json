@@ -90,10 +90,36 @@
           "type": "string",
           "description": "Dashboard overview card component (DashCardComponent)",
           "pattern": "^\\./.*\\.qml$"
+        },
+        "island": {
+          "type": "string",
+          "description": "Island activity component, shown for the plugin's IslandActivityService requests",
+          "pattern": "^\\./.*\\.qml$"
+        },
+        "islandSystem": {
+          "type": "string",
+          "description": "Island system face component, for the kinds listed in island.systemFaces",
+          "pattern": "^\\./.*\\.qml$"
         }
       },
       "additionalProperties": false,
       "minProperties": 1
+    },
+    "island": {
+      "type": "object",
+      "description": "Island presentation for the island and islandSystem surfaces.",
+      "properties": {
+        "notifyApp": {
+          "type": "string",
+          "description": "App name of the notifications this plugin sends; they stay out of the island while the plugin has an activity there"
+        },
+        "systemFaces": {
+          "type": "array",
+          "description": "System kinds (volume, idleinhibitor...) the islandSystem component can draw instead of the shell's own face",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
     },
     "dash": {
       "type": "object",

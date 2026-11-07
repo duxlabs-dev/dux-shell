@@ -997,7 +997,7 @@ Item {
         property bool hasActivePopout: false
 
         readonly property bool popoutPinsReveal: !!(hasActivePopout && !(barConfig?.autoHideStrict ?? false))
-        readonly property bool islandPinsReveal: !!barWindow.islandHost && (barWindow.islandHost.sheetOut || barWindow.islandHost.transientActive)
+        readonly property bool islandPinsReveal: !!barWindow.islandHost && (barWindow.islandHost.sheetOut || barWindow.islandHost.holdsHost)
 
         onHasActivePopoutChanged: evaluateReveal()
 

@@ -17,7 +17,7 @@ One of `component` or `components` is required (not both):
 | Field | Type | Description | Validation |
 |-------|------|-------------|------------|
 | `component` | string | Path to main QML file (single-surface plugins) | Must start with `./`, end with `.qml` |
-| `components` | object | Map of surface name to QML path (multi-surface plugins) | At least 1 entry; keys: `widget`, `desktop`, `daemon`, `launcher`, `dash`, `dashCard` |
+| `components` | object | Map of surface name to QML path (multi-surface plugins) | At least 1 entry; keys: `widget`, `desktop`, `daemon`, `launcher`, `dash`, `dashCard`, `island`, `islandSystem` |
 
 ## Conditional Requirements
 
@@ -122,7 +122,7 @@ The `components` field maps surface names to QML paths, allowing a single plugin
 }
 ```
 
-Valid surface keys: `widget`, `desktop`, `daemon`, `launcher`, `dash`, `dashCard`. Provide any subset. Each surface is loaded independently in the appropriate registry.
+Valid surface keys: `widget`, `desktop`, `daemon`, `launcher`, `dash`, `dashCard`, `island`, `islandSystem`. Provide any subset. Each surface is loaded independently in the appropriate registry.
 
 ## Dash Block
 
@@ -184,6 +184,29 @@ Standalone tab and standalone card use the single file form:
 ```
 
 A tab plus a card, or dash surfaces plus a bar widget, use `components` with `"type": "composite"`.
+
+## Island Block
+
+The `island` surface is the face of the plugin's activities in the island: the plugin asks for one with
+`IslandActivityService.request(pluginId, options)` (a token, or `""` when refused; the log says why). It shows on the
+focused screen's island, or on `options.screen`; `"*"` means every island there is at request time, so a screen plugged
+in later does not get it. The `islandSystem` surface draws one of the shell's own faces instead of the shell, once the `islandSystemFaces` setting maps
+that face to the plugin (`{"volume": "<pluginId>"}`). Both are optional; neither works for a plugin listed in the
+`islandPluginsBlocked` setting.
+
+An `island` object describes them. Everything is optional.
+
+```json
+"island": {
+    "notifyApp": "Spotify",
+    "systemFaces": ["volume", "charging"]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `notifyApp` | string | The app whose do not disturb exceptions apply to the plugin's activity (default: the plugin's id) |
+| `systemFaces` | string[] | The shell faces its `islandSystem` surface can draw |
 
 ## Complete Example
 

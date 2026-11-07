@@ -2,13 +2,22 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
+import Quickshell
 import Quickshell.Wayland
+import Quickshell.Services.Notifications
 import qs.Modals.DLauncherV2 as DLauncher
 import qs.Modules.DBar
 import qs.Modules.DIsland.Activities
+import qs.Modules.Notifications
 import qs.Services
 import qs.Widgets
 import "../../Common/LayoutResolver.js" as Resolver
+import "../../Common/IslandActivities.js" as Activities
+import "../../Common/IslandActivityInput.js" as Input
+import "../../Common/IslandEcho.js" as Echo
+import "../../Common/htmlElide.js" as HtmlElide
+import "../../Common/IslandArrival.js" as Arrival
+import "../../Common/IslandKit.js" as Kit
 
 Item {
     id: root
@@ -38,7 +47,8 @@ Item {
     property var leadingSectionRect: null
     property var centerSectionRect: null
     property var trailingSectionRect: null
-    readonly property int hostLayer: root.hostWindow?.dBarLayer ?? WlrLayer.Top
+    // The free island's window has no dBarLayer: it takes its layer from here.
+    readonly property int hostLayer: root.hostWindow?.dBarLayer ?? LayerShell.fromEnv("DMS_DANKISLAND_LAYER", root.usesOverlayLayer ? WlrLayer.Overlay : WlrLayer.Top)
     property point anchor
     property bool anchorSnaps: false
     property real freeScale: 1
@@ -64,7 +74,7 @@ Item {
     readonly property real surfaceOpacity: surface.surfaceOpacity
     readonly property bool inputSuspended: controller.inputSuspended
     readonly property bool expanded: controller.expanded
-    readonly property bool transientActive: controller.transientActive
+    readonly property bool holdsHost: controller.plugin.holdsHost || controller.machineBubbleKind !== ""
     // Held from expand until the collapse spring settles, so compact-to-compact morphs never resize the bar window.
     property bool sheetOut: false
     readonly property bool surfaceFits: (root.isVertical ? root.windowWidth : root.windowHeight) >= root.hostThickness - 1
@@ -115,6 +125,7 @@ Item {
             root.sheetOut = false;
         }
         root.publishSurface();
+        Qt.callLater(root.syncPluginActivity);
     }
     onMotionRunningChanged: root.publishSurface()
     onConnectedChromeChanged: root.publishSurface()
@@ -169,6 +180,8 @@ Item {
     readonly property var springStiffnessRange: [100, 1200]
     readonly property var springDampingRange: [10, 100]
     readonly property var springMassRange: [0.25, 3]
+    // The island's spring follows DMS's animation speed as the kit's springs do (Kit.stretch, M6).
+    readonly property var islandSpring: Kit.stretch([Math.max(root.springStiffnessRange[0], Math.min(root.springStiffnessRange[1], root.setting("islandSpringStiffness"))), Math.max(root.springDampingRange[0], Math.min(root.springDampingRange[1], root.setting("islandSpringDamping"))), Math.max(root.springMassRange[0], Math.min(root.springMassRange[1], root.setting("islandSpringMass")))], Theme.currentAnimationBaseDuration)
     readonly property int destinationMaxHeight: Math.max(destinationMinHeight, Math.min(destinationMaxHeightLimit, (root.screen?.height ?? referenceScreenHeight) - screenMargin))
     readonly property int maxActivityHeight: Math.max(root.heldEditSurfaceHeight, controller.dashboardHeight, controller.controlCenterHeight, controller.launcherMaxHeight, controller.clipboardExpandedTarget.height, controller.powerMenuExpandedTarget.height, destinationMaxHeight)
     readonly property int maxActivityWidth: Math.max(controller.dashboardMaxWidth, controller.controlCenterMaxWidth, controller.launcherExpandedTarget.width, controller.clipboardExpandedTarget.width, controller.powerMenuExpandedTarget.width, Math.min(activityMaxWidth, Math.max(activityMinWidth, (root.screen?.width ?? referenceScreenWidth) - screenMargin)))
@@ -268,7 +281,302 @@ Item {
 
     onRegistryKeyChanged: syncRegistration()
     Component.onCompleted: syncRegistration()
-    Component.onDestruction: IslandHostRegistry.unregister(root.registeredKey, root)
+    Component.onDestruction: {
+        IslandHostRegistry.unregister(root.registeredKey, root);
+        IslandActivityService.removeHost(controller);
+    }
+
+    readonly property var livePluginEntry: IslandActivityService.entry(controller.pluginToken)
+    property var lastPluginEntry: null
+    onLivePluginEntryChanged: {
+        if (root.livePluginEntry)
+            root.lastPluginEntry = root.livePluginEntry;
+    }
+    readonly property var pluginEntry: Activities.shownEntry(root.livePluginEntry, root.lastPluginEntry, controller.plugin.shown)
+    readonly property var pluginActivity: pluginLoader.item
+    // A plugin that draws its own pill owns both faces; otherwise the shell draws them from its data.
+    // update() swaps data inside the same entry object, so the face follows the revision rather than the entry.
+    // ReadyActivityRing's stroke (its ringWidth): the ready sheet's ring is the icon and four of them.
+    readonly property real readyRingWidth: 3
+    readonly property var readyFace: root.pluginRevision >= 0 && root.pluginEntry && !root.pluginActivity?.compactContent ? Input.readyFace(root.pluginEntry.data, root.stateWords) : null
+    readonly property var stateWords: ({
+            "error": I18n.tr("Error", "island activity state, said beside its detail"),
+            "warning": I18n.tr("Warning", "island activity state, said beside its detail"),
+            "success": I18n.tr("Success", "island activity state, said beside its detail")
+        })
+    readonly property int pluginRevision: IslandActivityService.revision
+    readonly property bool quiet: SessionData.doNotDisturb
+    readonly property bool sessionLocked: SessionService.locked
+    onSessionLockedChanged: Qt.callLater(root.syncPluginActivity)
+    readonly property string activeActivity: controller.activeActivity
+    onPluginRevisionChanged: Qt.callLater(root.syncPluginActivity)
+    onQuietChanged: Qt.callLater(root.syncPluginActivity)
+    onActiveActivityChanged: Qt.callLater(root.syncPluginActivity)
+
+    // The plugin activity this island takes next, if any ("" when it keeps what it shows).
+    function islandTaker() {
+        if (root.sessionLocked)
+            return "";
+        const next = IslandActivityService.nextFor(controller);
+        const occupant = {
+            "activity": controller.activeActivity,
+            "expanded": controller.expanded,
+            "held": controller.userHeld,
+            "critical": notificationSource.critical,
+            "system": controller.systemActivityActive,
+            "kind": controller.pluginKind
+        };
+        return Activities.takesIsland(next, occupant, controller.pluginToken, controller.pluginActive) ? next.token : "";
+    }
+
+    function syncPluginActivity() {
+        const held = controller.pluginToken;
+        const outcome = held ? Activities.heldOutcome(!!IslandActivityService.entry(held), controller.pluginActive, root.sessionLocked) : "";
+        if (outcome === "end")
+            controller.plugin.end();
+        else if (outcome === "shown")
+            IslandActivityService.markShown(held, controller);
+        else if (outcome === "interrupted")
+            IslandActivityService.markInterrupted(held, controller);
+
+        // Nothing starts behind the lock screen; it shows once the session is back.
+        if (root.sessionLocked)
+            return;
+        notificationSource.retryHeld();
+        const next = IslandActivityService.entry(root.islandTaker());
+        if (!next)
+            return;
+        if (controller.pluginToken && controller.pluginToken !== next.token)
+            IslandActivityService.markInterrupted(controller.pluginToken, controller);
+        controller.plugin.begin(next.token, next.kind, next.state === "waiting" && next.expanded, next.timeoutMs);
+        // begin loads its faces: readyFace is set only when the plugin leaves compactContent to the shell.
+        if (root.readyFace && IslandActivityService.dropIfEmpty(next.token)) {
+            controller.plugin.end();
+            return;
+        }
+        IslandActivityService.markShown(next.token, controller);
+    }
+
+    // Bubbles show on the focused screen only, never behind the lock.
+    readonly property bool bubblesShown: !root.sessionLocked && CompositorService.getFocusedScreen()?.name === root.screenName
+    property bool mediaBubbleDismissed: false
+    readonly property string heldPluginToken: controller.pluginToken
+    onHeldPluginTokenChanged: root.mediaBubbleDismissed = false
+
+    // The system source's values, as the machine bubble reads them.
+    function machineValues() {
+        return {
+            "kind": systemSource.kind,
+            "icon": systemSource.iconName,
+            "title": systemSource.title,
+            "value": systemSource.displayValue,
+            "progress": systemSource.levelActivity ? systemSource.ratio : -1
+        };
+    }
+
+    // The machine bubble of a kind: its pill, and its card (in the wing, or in the island over its face).
+    function machineEntry(kind) {
+        return Activities.machineEntry(kind, root.machineValues());
+    }
+
+    readonly property var bubbleList: {
+        if (!root.bubblesShown)
+            return [];
+        const list = [];
+        if (controller.machineBubbleKind)
+            list.push(root.machineEntry(controller.machineBubbleKind));
+        // One the island is about to take (it does a moment later) is never a bubble, not even for a frame.
+        const taker = root.islandTaker();
+        for (const entry of IslandActivityService.waitingFor(controller, controller.pluginActive ? controller.pluginToken : "")) {
+            if (entry.token === taker)
+                continue;
+            const face = Input.bubbleFace(entry.data);
+            const ready = Input.readyFace(entry.data);
+            list.push(Object.assign(face, {
+                "id": entry.token,
+                "source": "plugin",
+                "kind": entry.kind,
+                "token": entry.token,
+                "app": PluginService.availablePlugins[entry.pluginId]?.name ?? "",
+                "seq": entry.seq,
+                "icon": face.icon || "extension",
+                "title": ready.title,
+                "detail": ready.text
+            }));
+        }
+        // A popup the island could not take (an open launcher or sheet) waits beside it, for as long as the popup lives.
+        notificationSource.heldWrappers.forEach((wrapper, index) => list.push({
+                "id": "notification:" + (wrapper.notification?.id ?? index),
+                "source": "notification",
+                "critical": wrapper.urgency === NotificationUrgency.Critical || Arrival.ringing(wrapper.notification?.hints?.category),
+                "call": Arrival.ringing(wrapper.notification?.hints?.category),
+                "wrapper": wrapper,
+                "seq": index,
+                "app": wrapper.appName,
+                "appIcon": wrapper.displayImage || "",
+                "title": HtmlElide.plainText(wrapper.summary) || wrapper.appName,
+                "detail": HtmlElide.plainText(wrapper.body),
+                "image": wrapper.displayImage || "",
+                "icon": wrapper.fallbackIconName || "material:notifications",
+                "text": "",
+                "accent": "primary"
+            }));
+        if (mediaSource.playing && controller.pluginActive && !root.mediaBubbleDismissed)
+            list.push({
+                "id": "media",
+                "source": "media",
+                "seq": 0,
+                "title": mediaSource.title,
+                "detail": mediaSource.artist,
+                "image": mediaSource.artUrl || "",
+                "icon": "music_note",
+                "text": "",
+                "accent": "primary"
+            });
+        return root.withoutEchoes(list);
+    }
+    // Never the same info twice: a bubble yields to the island's notification that says it, and a waiting notification
+    // that only repeats a bubble, or what the island shows, is left out.
+    function withoutEchoes(list) {
+        const echo = !SettingsData.islandBriefBubbles && notificationSource.currentWrapper ? Echo.kind(notificationSource.appName, notificationSource.summary, notificationSource.body) : "";
+        const told = new Set([echo, Echo.bubbleKind({
+                "source": "system",
+                "kind": controller.activeActivity
+            })]);
+        list.forEach(face => told.add(face.source === "notification" ? "" : Echo.bubbleKind(face)));
+        told.delete("");
+        return list.filter(face => face.source === "notification" ? face.critical || !told.has(Echo.kind(face.app, face.title, face.detail)) : !echo || Echo.bubbleKind(face) !== echo);
+    }
+    // Do not disturb lets a plugin's or script's bubble through as it lets its activity into the island.
+    readonly property var bubbleSides: Activities.bubbleSides(root.bubbleList, root.quiet, bubble => {
+        const entry = bubble.source === "plugin" ? IslandActivityService.entry(bubble.token) : null;
+        return !!entry && IslandActivityService.letThroughDnd(entry);
+    })
+
+    function bringBubble(bubble) {
+        switch (bubble?.source) {
+        case "system":
+            systemSource.open(bubble.kind, true);
+            return;
+        case "notification":
+            notificationSource.bringIn(bubble.wrapper);
+            return;
+        case "media":
+            controller.requestActivity("media", true, false);
+            return;
+        case "plugin":
+            root.bringPlugin(bubble.token);
+            return;
+        }
+    }
+
+    function bringPlugin(token) {
+        const entry = IslandActivityService.entry(token);
+        if (!entry)
+            return;
+        if (controller.pluginToken && controller.pluginToken !== token)
+            IslandActivityService.markInterrupted(controller.pluginToken, controller);
+        controller.plugin.begin(token, entry.kind, true, entry.timeoutMs);
+        controller.userHeld = true;
+        IslandActivityService.markShown(token, controller);
+    }
+
+    function pressBubble(bubble, action) {
+        return surface.pressBubble(bubble, action);
+    }
+
+    function dismissBubble(bubble) {
+        switch (bubble?.source) {
+        case "system":
+            controller.hideMachineBubble();
+            return;
+        case "notification":
+            notificationSource.dismissHeld(bubble.wrapper);
+            return;
+        case "media":
+            root.mediaBubbleDismissed = true;
+            return;
+        case "plugin":
+            IslandActivityService.remove(bubble.token, "dismissed");
+            return;
+        }
+    }
+
+    function holdBubble(bubble, inside) {
+        if (bubble?.source === "system") {
+            controller.machineBubbleHovered = inside;
+        }
+        else if (bubble?.source === "notification")
+            notificationSource.holdTimeout(bubble.wrapper, inside);
+    }
+
+    // The wheel on a level bubble sets it in place, like the wheel on the level face.
+    function wheelBubble(bubble, wheel) {
+        if (bubble?.source !== "system" || !systemSource.levelActivity)
+            return;
+        const step = wheel.angleDelta.y > 0 ? 0.05 : wheel.angleDelta.y < 0 ? -0.05 : 0;
+        if (!step)
+            return;
+        systemSource.setRatio(systemSource.ratio + step);
+        controller.showMachineBubble(bubble.kind);
+    }
+
+    Loader {
+        id: pluginLoader
+
+        readonly property string pluginId: root.pluginEntry?.pluginId ?? ""
+        sourceComponent: IslandActivityService.islandComponents[pluginId] ?? null
+
+        onLoaded: {
+            // A face sets only the properties it declares (as DashWidgetGrid does): one it leaves out must not stop the rest.
+            const give = (name, value) => {
+                if (name in item)
+                    item[name] = value;
+            };
+            give("pluginId", pluginId);
+            give("pluginService", PluginService);
+            give("token", Qt.binding(() => controller.pluginToken));
+            give("kind", Qt.binding(() => root.pluginEntry?.kind ?? "live"));
+            // update() swaps data inside the same entry object: follow the revision, not the entry.
+            give("activityData", Qt.binding(() => root.pluginRevision >= 0 ? root.pluginEntry?.data ?? {} : {}));
+            give("expanded", Qt.binding(() => controller.pluginActive && controller.expanded));
+            give("interrupted", Qt.binding(() => !controller.pluginActive));
+            give("screen", Qt.binding(() => root.screenName));
+            give("edge", Qt.binding(() => root.edge));
+            // Only while the plugin draws overflow; through face: item is null once the loader unloads.
+            const face = item;
+            give("islandRect", Qt.binding(() => !face.overflowContent ? Qt.rect(0, 0, 0, 0) : Qt.rect(root.hostOriginX + surface.currentVisualX, root.hostOriginY + surface.currentVisualY, surface.currentVisualWidth, surface.currentVisualHeight)));
+            give("islandRadius", Qt.binding(() => controller.expanded ? controller.cornerRadius : Math.min(controller.compactFaceThickness / 2, controller.pillRadius)));
+        }
+    }
+
+    readonly property var systemFaceChoice: IslandActivityService.systemFaceFor(systemSource.kind)
+
+    Loader {
+        id: systemFaceLoader
+
+        active: !!root.systemFaceChoice
+        sourceComponent: root.systemFaceChoice?.component ?? null
+        onLoaded: {
+            if ("pluginId" in item)
+                item.pluginId = root.systemFaceChoice.pluginId;
+            if ("pluginService" in item)
+                item.pluginService = PluginService;
+            if ("model" in item)
+                item.model = systemSource;
+        }
+    }
+
+    LazyLoader {
+        active: !!root.pluginActivity?.overflowContent
+
+        IslandOverflowWindow {
+            screen: root.screen
+            content: root.pluginActivity?.overflowContent ?? null
+            layer: root.pluginEntry?.showInFullscreen ? WlrLayer.Overlay : root.hostLayer
+            shown: controller.pluginActive
+        }
+    }
 
     function sameEdgeSlots() {
         const stored = ConnectedModeState.surfaceDescriptors[root.screenName] ?? {};
@@ -376,6 +684,23 @@ Item {
         onTriggered: root.keyboardReclaiming = false
     }
 
+    // A sheet waiting for the bar window (a frame at the grown size, or the band size) that never comes holds the island.
+    Timer {
+        // How long a sheet waits for the bar window before it goes on without it.
+        readonly property int waitMs: 3000
+
+        interval: waitMs
+        running: root.editRoomWaiting || surface.targetPending
+        onTriggered: {
+            if (root.editRoomWaiting)
+                controller.editRoomGranted = true;
+            if (!surface.targetPending)
+                return;
+            surface.targetPending = false;
+            surface.surfaceMotion.setTarget(surface.resolveTarget(controller.targetDescriptor));
+        }
+    }
+
     Timer {
         id: keyboardRearmTimer
 
@@ -403,6 +728,9 @@ Item {
     IslandController {
         id: controller
 
+        arrival.reducedMotion: SettingsData.reduceMotion || SettingsData.animationDuration <= 0
+        // The island holds the keyboard only when given it (keyboard or a deliberate open), never on a hover.
+        arrival.focused: islandFocus.activeFocus
         onKeyboardDismissRequestedChanged: root.requestKeyboardFocus()
         onKeyboardYieldedChanged: {
             if (keyboardYielded || !keyboardDismissRequested)
@@ -410,6 +738,7 @@ Item {
             root.keyboardReclaiming = true;
             keyboardReclaimTimer.restart();
         }
+        onPluginDismissed: (token, reason) => IslandActivityService.remove(token, reason)
         onLauncherSessionActiveChanged: {
             if (!launcherSessionActive)
                 islandTransientSurfaces.closeAll();
@@ -417,6 +746,7 @@ Item {
 
         barConfig: root.barConfig
         screen: root.screen
+        bubblesEnabled: root.bubblesShown
         edge: root.edge
         sectionOriginX: root.sectionOriginX
         sectionOriginY: root.sectionOriginY
@@ -449,8 +779,21 @@ Item {
         dashboardAvailableHeight: Math.max(0, (root.screen?.height ?? root.referenceScreenHeight) - (root.isVertical ? root.alongInset : root.crossInsetStart + root.crossInsetEnd + root.outerGap + root.nearInset) - Theme.spacingL * 2)
         notificationExpandAllowed: root.setting("islandNotificationExpand")
         unreadNotificationCount: root.setting("islandNotificationBadgeClearOnOpen") ? NotificationService.unreadCount : NotificationService.notifications.length
+        wingCountsNotifications: (root.bubbleSides?.apps ?? []).some(b => b.source === "notification")
         hoverOpenDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverOpenDelay")))
         hoverCloseDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverCloseDelay")))
+        pluginExpandable: root.readyFace ? (root.readyFace.text !== "" || root.readyFace.actions.length > 0) : !!root.pluginActivity?.expandedContent
+        systemFaceCompactLength: Input.systemFaceSize(systemFaceLoader.item, "compactLength")
+        systemFaceExpandedWidth: Math.min(dashboardAvailableWidth, Input.systemFaceSize(systemFaceLoader.item, "expandedWidth"))
+        systemFaceExpandedHeight: Math.min(dashboardAvailableHeight, Input.systemFaceSize(systemFaceLoader.item, "expandedHeight"))
+        pluginCompactLength: Input.faceSize(root.pluginActivity, "compactLength", !!root.readyFace)
+        pluginExpandedWidth: Math.min(dashboardAvailableWidth, Input.faceSize(root.pluginActivity, "expandedWidth", !!root.readyFace))
+        // The ready sheet on the card grid: margins, the header (one line each beside the ring, which is the icon and four
+        // of its strokes: ReadyActivityRing.ringWidth, 3 px), then the button row.
+        pluginExpandedHeight: Math.min(dashboardAvailableHeight, root.readyFace ? NotificationMetrics.cardPadding * 2 + Theme.iconSize + 4 * root.readyRingWidth + (root.readyFace.actions.length > 0 ? Theme.spacingS + Theme.buttonHeightS : 0) : Input.faceSize(root.pluginActivity, "expandedHeight"))
+        plugin.activity: root.pluginActivity
+        plugin.face: root.readyFace
+        plugin.systemFace: systemFaceLoader.item
     }
 
     DLauncher.Controller {
@@ -485,6 +828,10 @@ Item {
 
         controller: controller
         targetScreen: root.screen
+        shownKinds: [Echo.bubbleKind({
+                "source": "system",
+                "kind": controller.activeActivity
+            })]
         enabled: SettingsData.islandNotificationHost(root.screen)?.id === root.barId
     }
 
@@ -519,14 +866,20 @@ Item {
         compactBackgroundColor: BarMetrics.widgetFill(root.barConfig)
         opacity: root.freeOpacity
         reducedMotion: SettingsData.reduceMotion || SettingsData.animationDuration <= 0
-        springStiffness: Math.max(root.springStiffnessRange[0], Math.min(root.springStiffnessRange[1], root.setting("islandSpringStiffness")))
-        springDamping: Math.max(root.springDampingRange[0], Math.min(root.springDampingRange[1], root.setting("islandSpringDamping")))
-        springMass: Math.max(root.springMassRange[0], Math.min(root.springMassRange[1], root.setting("islandSpringMass")))
+        springStiffness: root.islandSpring.stiffness
+        // An arrival sets its own bounce (damping ratio) on the island's stiffness and mass while it plays.
+        springDamping: controller.arrival.dampingRatio > 0 ? 2 * controller.arrival.dampingRatio * Math.sqrt(springStiffness * springMass) : root.islandSpring.damping
+        springMass: root.islandSpring.mass
         palette: root.setting("islandPalette")
         highContrast: !root.embedded && root.setting("islandHighContrast")
         transparency: SettingsData.barTransparency(root.barConfig)
         surfaceBase: SettingsData.barSurfaceColor(root.barConfig)
         onScrollWheel: wheel => root.scrollWheel(wheel)
+        bubbleSides: root.bubbleSides
+        onBubbleActivated: bubble => root.bringBubble(bubble)
+        onBubbleDismissed: bubble => root.dismissBubble(bubble)
+        onBubbleHovered: (bubble, inside) => root.holdBubble(bubble, inside)
+        onBubbleWheeled: (bubble, wheel) => root.wheelBubble(bubble, wheel)
 
         Behavior on opacity {
             NumberAnimation {
@@ -556,5 +909,7 @@ Item {
             controller.requestCollapse();
             event.accepted = true;
         }
+        Keys.onLeftPressed: event => event.accepted = controller.arrival.step(I18n.isRtl ? 1 : -1)
+        Keys.onRightPressed: event => event.accepted = controller.arrival.step(I18n.isRtl ? -1 : 1)
     }
 }

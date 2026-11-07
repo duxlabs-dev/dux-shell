@@ -122,6 +122,25 @@ Singleton {
     property var clipboardVisibleEntryActions: Spec.SPEC.clipboardVisibleEntryActions.def
 
     property var launcherPluginVisibility: Spec.SPEC.launcherPluginVisibility.def
+    property var islandPluginsBlocked: Spec.SPEC.islandPluginsBlocked.def
+    property var islandSystemFaces: Spec.SPEC.islandSystemFaces.def
+    property bool islandLevelBubbles: Spec.SPEC.islandLevelBubbles.def
+    property bool islandBriefBubbles: Spec.SPEC.islandBriefBubbles.def
+    property string islandArrivalStyle: Spec.SPEC.islandArrivalStyle.def
+    property var islandArrivalBounce: Spec.SPEC.islandArrivalBounce.def
+    property var islandArrivalTint: Spec.SPEC.islandArrivalTint.def
+    property bool islandArrivalWheel: Spec.SPEC.islandArrivalWheel.def
+    property bool islandArrivalWheelInverted: Spec.SPEC.islandArrivalWheelInverted.def
+    property bool islandBubbleOutline: Spec.SPEC.islandBubbleOutline.def
+    property real islandBubbleMotion: Spec.SPEC.islandBubbleMotion.def
+    property string islandBubbleCorners: Spec.SPEC.islandBubbleCorners.def
+    property string islandBubbleDialStyle: Spec.SPEC.islandBubbleDialStyle.def
+    property string islandBubbleLauncherTransition: Spec.SPEC.islandBubbleLauncherTransition.def
+    property string islandBubbleShapeStyle: Spec.SPEC.islandBubbleShapeStyle.def
+    property string islandBubbleShapeTone: Spec.SPEC.islandBubbleShapeTone.def
+    property real islandBubbleOutlineWidth: Spec.SPEC.islandBubbleOutlineWidth.def
+    property real islandBubbleOutlineOpacity: Spec.SPEC.islandBubbleOutlineOpacity.def
+    property string islandBubbleOutlineColor: Spec.SPEC.islandBubbleOutlineColor.def
 
     function getPluginAllowWithoutTrigger(pluginId) {
         if (!launcherPluginVisibility[pluginId])
@@ -129,6 +148,21 @@ Singleton {
         return launcherPluginVisibility[pluginId].allowWithoutTrigger !== false;
     }
 
+    function setIslandPluginAllowed(pluginId, allowed) {
+        const others = islandPluginsBlocked.filter(id => id !== pluginId);
+        islandPluginsBlocked = allowed ? others : others.concat([pluginId]);
+        saveSettings();
+    }
+
+    function setIslandSystemFace(kind, pluginId) {
+        const next = Object.assign({}, islandSystemFaces);
+        if (pluginId)
+            next[kind] = pluginId;
+        else
+            delete next[kind];
+        islandSystemFaces = next;
+        saveSettings();
+    }
     function setPluginAllowWithoutTrigger(pluginId, allow) {
         const updated = JSON.parse(JSON.stringify(launcherPluginVisibility));
         if (!updated[pluginId])

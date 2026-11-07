@@ -2,6 +2,9 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
+import qs.Services
+import qs.Modules.DIsland.Activities
+import "../../Common/IslandArrival.js" as Arrival
 
 Item {
     id: root
@@ -26,6 +29,10 @@ Item {
     required property color surfaceColor
     property bool freeMode: false
     property Component compactFaceOverride: null
+    // The plugin's IslandActivityComponent while an activity owns this island.
+    readonly property var pluginActivity: root.controller.plugin.activity
+    // The shell-drawn face (IslandActivityInput.readyFace) when the activity has no pill of its own.
+    readonly property var pluginFace: root.controller.plugin.face
     // Hosted islands fold the slot anchor into every target; the face must pin to the same resolved slot.
     property var resolveTarget: target => target
     // Embedded sheets grow by this on the near edge; the face keeps its content size below the fold.
@@ -58,9 +65,12 @@ Item {
     readonly property real compactFade: root.fadeCompact(root.morphProgress)
     readonly property real expandedFade: root.fadeExpanded(root.morphProgress)
     readonly property real outgoingCompactFade: root.fadeCompact(root.outgoingMorph)
-    readonly property real outgoingExpandedFade: root.fadeExpanded(root.outgoingMorph)
+    // The outgoing expanded face also leaves with a collapsing surface instead of riding it down, cut by its edges.
+    readonly property real outgoingExpandedFade: root.fadeExpanded(Math.min(root.outgoingMorph, root.morphProgress))
     readonly property bool mediaSurfaceActive: root.surfaceActive("media")
     readonly property bool systemSurfaceActive: root.controller.systemActivities.some(id => root.surfaceActive(id))
+    readonly property bool pluginSurfaceActive: root.surfaceActive("plugin")
+    onPluginSurfaceActiveChanged: root.controller.plugin.shown = root.pluginSurfaceActive
 
     function systemOpacity(opacityFor) {
         const incoming = root.controller.isSystemActivity(root.renderedActivity) ? opacityFor(root.renderedActivity) : 0;
@@ -95,10 +105,13 @@ Item {
     }
 
     function expandedOpacity(activity) {
-        const incoming = root.renderedActivity === activity ? root.activityFade * root.expandedFade : 0;
+        const incoming = root.renderedActivity === activity && root.incomingExpands ? root.activityFade * root.expandedFade : 0;
         const outgoing = root.outgoingActivity === activity ? (1 - root.activityFade) * root.outgoingExpandedFade : 0;
         return Math.max(incoming, outgoing);
     }
+    // An activity taken over while the island collapses (a launcher closing onto a waiting notification) never shows its
+    // expanded face on the way down: it would flash, cut by the shrinking surface. It does again once the island expands.
+    property bool incomingExpands: true
 
     readonly property var focusableFaces: ({
             "home": homeExpandedLoader,
@@ -110,7 +123,8 @@ Item {
             "notificationcenter": notificationCenterExpandedLoader,
             "clipboard": clipboardExpandedLoader,
             "powermenu": powerMenuExpandedLoader,
-            "controlcenter": controlCenterExpandedLoader
+            "controlcenter": controlCenterExpandedLoader,
+            "plugin": pluginExpandedLoader
         })
 
     // Faces load async and stay disabled until half faded in, so ExpandedFace calls this again on each ready edge.
@@ -133,14 +147,23 @@ Item {
             root.homeExpandedTouched = true;
     }
 
-    onExpandedChanged: latchHomeExpanded()
+    onExpandedChanged: {
+        latchHomeExpanded();
+        if (expanded)
+            incomingExpands = true;
+    }
 
     onActivityIdChanged: {
         latchHomeExpanded();
         if (activityId === renderedActivity)
             return;
-        outgoingMorph = morphProgress;
-        outgoingActivity = renderedActivity;
+        incomingExpands = expanded;
+        // A hop through an activity that never showed (launcher, then home, then the waiting notification, then the alert, in one
+        // collapse) keeps the one that did as the outgoing face, so the short-lived one never flashes its expanded content.
+        if (activityFade > 0 || outgoingActivity === "") {
+            outgoingMorph = morphProgress;
+            outgoingActivity = renderedActivity;
+        }
         renderedActivity = activityId;
         activityFade = 0;
         activityTransition.restart();
@@ -150,15 +173,18 @@ Item {
         id: activityTransition
 
         PauseAnimation {
-            duration: Math.round(root.springTimeConstantMs)
+            // Collapsing, the old face starts leaving at once: the surface is already shrinking under it.
+            duration: root.incomingExpands ? Math.round(root.springTimeConstantMs) : 0
         }
 
         NumberAnimation {
             target: root
             property: "activityFade"
             to: 1
-            duration: Math.round(root.springTimeConstantMs * 3)
-            easing.type: Easing.OutCubic
+            // Collapsing, the old face fades over one time constant of the spring: it leaves with the shrinking surface rather than
+            // leaving it an empty box, and is gone before the surface cuts it.
+            duration: Math.round(root.springTimeConstantMs * (root.incomingExpands ? 3 : 1))
+            easing.type: Theme.standardEasing
         }
 
         ScriptAction {
@@ -177,7 +203,8 @@ Item {
         return root.controller.isVertical ? root.hostWidth - target.offsetCross - target.width : root.hostHeight - target.offsetCross - target.height;
     }
 
-    // Pinned to the compact target's own screen slot so the face holds still while the island morphs.
+    // Pinned to the compact target's own screen slot along the island; across it, centered in the springing shape (a swell,
+    // the arrival card, the fold back) so the room above and below stays equal. Opening a sheet keeps it pinned.
     component CompactFace: Loader {
         required property string activity
         required property Component face
@@ -185,7 +212,7 @@ Item {
         readonly property var target: root.freeMode ? root.controller.compactTargetFor(activity) : root.resolveTarget(root.controller.compactTargetFor(activity))
         readonly property bool isVertical: root.controller.isVertical
         readonly property real alongPos: !active || root.freeMode ? 0 : Math.round(root.slotAlong(target)) - Math.round(isVertical ? root.islandY : root.islandX)
-        readonly property real crossPos: !active || root.freeMode ? 0 : Math.round(root.slotCross(target)) - Math.round(isVertical ? root.islandX : root.islandY)
+        readonly property real crossPos: !active || root.freeMode ? 0 : !root.expanded ? Arrival.centered(isVertical ? root.width : root.height, isVertical ? target.width : target.height) : Math.round(root.slotCross(target)) - Math.round(isVertical ? root.islandX : root.islandY)
 
         x: root.freeMode ? Math.round((parent.width - width) / 2) : (isVertical ? crossPos : alongPos)
         y: root.freeMode ? Math.round((parent.height - height) / 2) : (isVertical ? alongPos : crossPos)
@@ -379,14 +406,50 @@ Item {
     CompactFace {
         active: root.systemSurfaceActive
         activity: "volume"
-        face: root.systemCompactComponent
+        face: root.controller.plugin.systemFace?.compactContent ?? root.systemCompactComponent
     }
 
     ExpandedFace {
         activity: "volume"
         active: root.systemSurfaceActive && (root.expanded || root.expandedFade > 0)
         asynchronous: false
-        sourceComponent: root.systemExpandedComponent
+        sourceComponent: root.controller.plugin.systemFace?.expandedContent ?? root.systemExpandedComponent
+    }
+
+    readonly property Component pluginCompactComponent: root.pluginFace ? readyCompactComponent : root.pluginActivity?.compactContent ?? null
+    readonly property Component pluginExpandedComponent: root.pluginFace ? readyExpandedComponent : root.pluginActivity?.expandedContent ?? null
+
+    Component {
+        id: readyCompactComponent
+
+        ReadyActivityCompact {
+            face: root.pluginFace
+            isVertical: root.controller.isVertical
+        }
+    }
+
+    Component {
+        id: readyExpandedComponent
+
+        ReadyActivityExpanded {
+            face: root.pluginFace
+            onTriggered: actionId => IslandActivityService.trigger(root.controller.pluginToken, actionId)
+        }
+    }
+
+    CompactFace {
+        active: root.pluginSurfaceActive && !!root.pluginCompactComponent
+        activity: "plugin"
+        face: root.pluginCompactComponent
+    }
+
+    ExpandedFace {
+        id: pluginExpandedLoader
+
+        activity: "plugin"
+        active: root.pluginSurfaceActive && !!root.pluginExpandedComponent && (root.expanded || root.expandedFade > 0)
+        asynchronous: false
+        sourceComponent: root.pluginExpandedComponent
     }
 
     CompactFace {
