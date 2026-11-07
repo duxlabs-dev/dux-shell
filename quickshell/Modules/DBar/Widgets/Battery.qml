@@ -285,7 +285,7 @@ BasePill {
     }
 
     function handleBatteryWheel(wheel) {
-        if (battery.barScrollOverridesWheel(wheel) || !battery.scrollEnabled || !BrightnessService.brightnessAvailable || WheelInput.isHorizontal(wheel)) {
+        if (!battery.scrollEnabled || !BrightnessService.brightnessAvailable || WheelInput.isHorizontal(wheel)) {
             wheel.accepted = false;
             return;
         }
@@ -300,16 +300,21 @@ BasePill {
 
         wheel.accepted = true;
         const isTouchpad = WheelInput.isTouchpad(wheel);
-        if (isTouchpad && wheel.phase === Qt.ScrollBegin)
+        if (!isTouchpad) {
+            const units = Math.max(1, Math.trunc(Math.abs(delta) / 120));
+            const step = Math.max(1, battery.barConfig?.scrollBrightnessStep ?? 5) * units;
+            BrightnessService.adjustScreenBrightness(battery.parentScreen, step, delta > 0 ? 1 : -1);
+            return;
+        }
+        if (wheel.phase === Qt.ScrollBegin)
             touchpadAccumulator = 0;
-        const threshold = isTouchpad ? 100 : 120;
         touchpadAccumulator = (touchpadAccumulator * delta < 0 ? 0 : touchpadAccumulator) + delta;
-        const units = Math.trunc(Math.abs(touchpadAccumulator) / threshold);
+        const units = Math.trunc(Math.abs(touchpadAccumulator) / 100);
         if (units <= 0)
             return;
         const sign = touchpadAccumulator > 0 ? 1 : -1;
-        touchpadAccumulator -= sign * units * threshold;
-        BrightnessService.adjustScreenBrightness(battery.parentScreen, isTouchpad ? units : units * 5, sign);
+        touchpadAccumulator -= sign * units * 100;
+        BrightnessService.adjustScreenBrightness(battery.parentScreen, units, sign);
     }
 
     onWheel: wheelEvent => battery.handleBatteryWheel(wheelEvent)

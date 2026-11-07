@@ -213,19 +213,26 @@ BasePill {
 
     function stepWheelAccumulator(accumulatorKey, wheelEvent, delta) {
         const isTouchpad = WheelInput.isTouchpad(wheelEvent);
-        if (isTouchpad && wheelEvent.phase === Qt.ScrollBegin)
+        if (!isTouchpad) {
+            return {
+                units: Math.max(1, Math.trunc(Math.abs(delta) / 120)),
+                sign: delta > 0 ? 1 : -1,
+                isTouchpad: false
+            };
+        }
+        if (wheelEvent.phase === Qt.ScrollBegin)
             root[accumulatorKey] = 0;
-        const threshold = isTouchpad ? touchpadThreshold : 120;
+        const threshold = touchpadThreshold;
         const prev = root[accumulatorKey];
         const next = (prev * delta < 0 ? 0 : prev) + delta;
         const units = Math.trunc(Math.abs(next) / threshold);
         if (units <= 0) {
             root[accumulatorKey] = next;
-            return { units: 0, sign: 0, isTouchpad };
+            return { units: 0, sign: 0, isTouchpad: true };
         }
         const sign = next > 0 ? 1 : -1;
         root[accumulatorKey] = next - sign * units * threshold;
-        return { units, sign, isTouchpad };
+        return { units, sign, isTouchpad: true };
     }
 
     function handleVolumeWheel(wheelEvent, delta) {
@@ -263,7 +270,7 @@ BasePill {
         const res = stepWheelAccumulator("brightnessAccumulator", wheelEvent, delta);
         if (res.units <= 0)
             return true;
-        const step = res.isTouchpad ? res.units : 5 * res.units;
+        const step = res.isTouchpad ? res.units : Math.max(1, root.barConfig?.scrollBrightnessStep ?? 5) * res.units;
         return BrightnessService.adjustScreenBrightness(root.parentScreen ?? root.screenName, step, res.sign);
     }
 

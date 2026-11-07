@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
+import { loadScript } from "./qml-script.mjs";
 
 const SCROLL_AREA = "../Modules/DBar/BarScrollArea.qml";
 const QtStub = Object.freeze({
@@ -44,8 +45,6 @@ function createScrollArea(overrides = {}) {
         barConfig: {},
         touchpadAccumulatorX: 0,
         touchpadAccumulatorY: 0,
-        mouseAccumulatorX: 0,
-        mouseAccumulatorY: 0,
         actionInProgress: false,
         gestureActive: false,
         gestureHorizontal: false,
@@ -93,6 +92,7 @@ function createScrollArea(overrides = {}) {
         "fire",
         "stepLevelAccumulator",
         "levelStepAmount",
+        "mouseWheelUnits",
         "accumulateLevelX",
         "accumulateLevelY",
         "accumulateX",
@@ -124,7 +124,7 @@ function touchpadWheel(dy, phase = QtStub.ScrollUpdate, dx = 0) {
     };
 }
 
-test("volume scroll increases on scroll up, ignores workspace reverseScrolling, and never drops fast wheel detents", () => {
+test("volume scroll increases on scroll up, ignores workspace reverseScrolling, and scales merged multi-detent frames", () => {
     const { context, events } = createScrollArea({
         yBehavior: "volume",
         reverseScrolling: true
@@ -132,47 +132,56 @@ test("volume scroll increases on scroll up, ignores workspace reverseScrolling, 
     context.AudioService.wheelVolumeStep = 3;
 
     context.processWheel(mouseWheel(120));
-    context.processWheel(mouseWheel(120));
+    context.processWheel(mouseWheel(240));
     context.processWheel(mouseWheel(-120));
 
-    assert.deepEqual(events.volume, [[3, 1], [3, 1], [3, -1]]);
+    assert.deepEqual(events.volume, [[3, 1], [6, 1], [3, -1]]);
     assert.equal(events.volumeSound, 0);
     assert.equal(context.actionInProgress, false);
     assert.equal(events.cooldownRestarts, 0);
 });
 
-test("high-res mouse sub-detents accumulate cleanly and reset opposite-sign remainder on reversal", () => {
-    const { context, events } = createScrollArea({ yBehavior: "volume" });
+test("compositor-scaled mouse wheel (e.g. 0.7x -> 84 angleDelta) fires immediately on first notch", () => {
+    const { context, events } = createScrollArea({
+        yBehavior: "volume",
+        xBehavior: "brightness",
+        barConfig: { scrollBrightnessStep: 12 }
+    });
 
-    context.processWheel(mouseWheel(40));
-    context.processWheel(mouseWheel(40));
-    assert.deepEqual(events.volume, []);
-    context.processWheel(mouseWheel(40));
-    assert.deepEqual(events.volume, [[5, 1]]);
-
-    // Partial upward remainder (+60) is discarded when scrolling down (-120)
-    context.processWheel(mouseWheel(60));
-    context.processWheel(mouseWheel(-120));
+    context.processWheel(mouseWheel(84));
+    context.processWheel(mouseWheel(-84));
     assert.deepEqual(events.volume, [[5, 1], [5, -1]]);
+
+    // Shift + scaled vertical wheel fires custom scrollBrightnessStep immediately on click 1
+    context.processWheel(mouseWheel(84, 0, QtStub.ShiftModifier));
+    assert.deepEqual(events.brightness, [["DP-1", 12, 1]]);
+
+    // Discrete workspace switch also fires on click 1 with scaled mouseScrollFactor
+    context.yBehavior = "workspace";
+    context.processWheel(mouseWheel(84));
+    assert.deepEqual(events.workspace, [-1]);
 });
 
-test("touchpad level scroll steps smoothly by 1% per 100 angleDelta and resets on ScrollBegin/ScrollEnd", () => {
+test("touchpad level scroll steps smoothly by 1% per 100 angleDelta and resets on reversal or ScrollBegin/ScrollEnd", () => {
     const { context, events } = createScrollArea({
         xBehavior: "brightness",
-        yBehavior: "volume"
+        yBehavior: "volume",
+        barConfig: { scrollBrightnessStep: 15 }
     });
 
     context.processWheel(touchpadWheel(60, QtStub.ScrollBegin));
     context.processWheel(touchpadWheel(60, QtStub.ScrollUpdate));
     context.processWheel(touchpadWheel(190, QtStub.ScrollUpdate));
+    // Reversing direction discards partial +10 remainder before accumulating downward
+    context.processWheel(touchpadWheel(-110, QtStub.ScrollUpdate));
     context.processWheel(touchpadWheel(0, QtStub.ScrollEnd));
 
-    assert.deepEqual(events.volume, [[1, 1], [2, 1]]);
+    assert.deepEqual(events.volume, [[1, 1], [2, 1], [1, -1]]);
     assert.equal(context.touchpadAccumulatorY, 0);
 
-    // Shift+vertical mouse wheel routes to horizontal xBehavior ("brightness")
-    context.processWheel(mouseWheel(120, 0, QtStub.ShiftModifier));
-    assert.deepEqual(events.brightness, [["DP-1", 5, 1]]);
+    // Touchpad horizontal brightness still steps 1% per 100 delta regardless of mouse scrollBrightnessStep
+    context.processWheel(touchpadWheel(0, QtStub.ScrollBegin, 150));
+    assert.deepEqual(events.brightness, [["DP-1", 1, 1]]);
 });
 
 test("null sink safely no-ops volume scroll while discrete workspace scroll still enforces cooldown", () => {
@@ -190,14 +199,19 @@ test("null sink safely no-ops volume scroll while discrete workspace scroll stil
     assert.equal(events.cooldownRestarts, 1);
 });
 
-test("wheel-consuming bar widgets default scrollEnabled to true and leave wheel unaccepted when disabled or horizontal", () => {
-    const defaults = vm.createContext({});
-    vm.runInContext(readFileSync(new URL("../Common/settings/BarWidgetDefaults.js", import.meta.url), "utf8").replace(/^\.pragma.*$/gm, ""), defaults);
+test("scrollable bar widgets default scrollEnabled to true, expose bar/island scroll defaults, and pass through disabled or horizontal wheels", () => {
+    const defaults = loadScript(new URL("../Common/settings/BarWidgetDefaults.js", import.meta.url));
 
-    for (const widgetType of ["workspaceSwitcher", "runningApps", "battery", "controlCenterButton"]) {
+    for (const widgetType of ["workspaceSwitcher", "runningApps", "music", "battery", "controlCenterButton"]) {
         assert.equal(defaults.option(widgetType, null, "scrollEnabled"), true, widgetType);
         assert.equal(defaults.option(widgetType, { scrollEnabled: false }, "scrollEnabled"), false, widgetType);
     }
+    assert.equal(defaults.ISLAND_DEFAULTS.islandScrollEmptyStrip, true);
+
+    const defaultBar = loadScript(new URL("../Common/settings/SettingsSpec.js", import.meta.url)).SPEC.barConfigs.def[0];
+    assert.equal(defaultBar.scrollBrightnessStep, 5);
+    assert.equal(defaultBar.scrollExtendToEdge, true);
+    assert.equal("overrideWidgetScroll" in defaultBar, false);
 
     const WheelInput = vm.createContext({ Qt: QtStub });
     vm.runInContext(readFileSync(new URL("../DCommon/Common/WheelInput.js", import.meta.url), "utf8").replace(/^\.pragma.*$/gm, ""), WheelInput);
@@ -207,9 +221,8 @@ test("wheel-consuming bar widgets default scrollEnabled to true and leave wheel 
         WheelInput,
         touchpadAccumulator: 0,
         scrollEnabled: true,
+        barConfig: { scrollBrightnessStep: 8 },
         parentScreen: { name: "DP-1" },
-        barScrollOverridesWheel: () => Boolean(battery.overrideActive),
-        overrideActive: false,
         BrightnessService: {
             brightnessAvailable: true,
             adjustScreenBrightness(screen, step, direction) {
@@ -227,66 +240,41 @@ test("wheel-consuming bar widgets default scrollEnabled to true and leave wheel 
     assert.equal(horiz.accepted, false);
     assert.deepEqual(adjustments, []);
 
-    // Vertical wheel when scrollEnabled = false sets accepted = false so bar volume scroll receives it
+    // Vertical wheel when scrollEnabled = false sets accepted = false so bar scroll receives it
     battery.scrollEnabled = false;
-    const disabledVert = mouseWheel(120);
+    const disabledVert = mouseWheel(84);
     battery.handleBatteryWheel(disabledVert);
     assert.equal(disabledVert.accepted, false);
     assert.deepEqual(adjustments, []);
 
-    // Enabled vertical wheel consumes event and targets the battery's screen, accumulating sub-120 high-res detents
+    // Enabled vertical wheel fires immediately on scaled mouse wheel (84) using barConfig.scrollBrightnessStep
     battery.scrollEnabled = true;
-    battery.handleBatteryWheel(mouseWheel(40));
-    battery.handleBatteryWheel(mouseWheel(40));
-    assert.deepEqual(adjustments, []);
-    const activeVert = mouseWheel(40);
+    const activeVert = mouseWheel(84);
     battery.handleBatteryWheel(activeVert);
     assert.equal(activeVert.accepted, true);
-    assert.deepEqual(adjustments, [["DP-1", 5, 1]]);
-
-    // Temporary bar-level override yields wheel without changing battery.scrollEnabled
-    adjustments.length = 0;
-    battery.overrideActive = true;
-    const overriddenVert = mouseWheel(120);
-    battery.handleBatteryWheel(overriddenVert);
-    assert.equal(overriddenVert.accepted, false);
-    assert.equal(battery.scrollEnabled, true);
-    assert.deepEqual(adjustments, []);
+    assert.deepEqual(adjustments, [["DP-1", 8, 1]]);
 });
 
-test("BarPill.barScrollOverridesWheel temporarily overrides bar widgets without affecting dock, overflow, or disabled bar scroll", () => {
-    const WheelInput = vm.createContext({ Qt: QtStub });
-    vm.runInContext(readFileSync(new URL("../DCommon/Common/WheelInput.js", import.meta.url), "utf8").replace(/^\.pragma.*$/gm, ""), WheelInput);
-
-    const pill = vm.createContext({
-        Qt: QtStub,
-        WheelInput,
-        barConfig: {
-            scrollEnabled: true,
-            overrideWidgetScroll: true,
-            scrollYBehavior: "volume",
-            scrollXBehavior: "none"
-        },
-        registrationContext: { surface: { kind: "bar" }, owner: {} },
-        BarWidgetService: {
-            registrationForItem: () => ({ context: pill.registrationContext })
-        }
+test("DBarBody.pointInIslandSatellite distinguishes satellite widget bounds from empty strip space", () => {
+    const leftSection = { visible: true, implicitWidth: 120, implicitHeight: 32, originX: 16, originY: 4 };
+    const rightSection = { visible: true, implicitWidth: 90, implicitHeight: 32, originX: 1800, originY: 4 };
+    const body = vm.createContext({
+        islandSatellitesEnabled: true,
+        _leftSection: leftSection,
+        _rightSection: rightSection
     });
-    pill.root = pill;
-    vm.runInContext(functionSource("../Modules/SurfaceWidgets/BarPill.qml", "barScrollOverridesWheel"), pill);
+    vm.runInContext(functionSource("../Modules/DBar/DBarBody.qml", "pointInIslandSatellite"), body);
 
-    // Active on Y ("volume"), inactive on X ("none")
-    assert.equal(pill.barScrollOverridesWheel(mouseWheel(120)), true);
-    assert.equal(pill.barScrollOverridesWheel(mouseWheel(0, 120)), false);
+    const sourceItem = {
+        mapToItem(section, x, y) {
+            return { x: x - section.originX, y: y - section.originY };
+        }
+    };
 
-    // Turning off master bar scroll restores widget scroll
-    pill.barConfig.scrollEnabled = false;
-    assert.equal(pill.barScrollOverridesWheel(mouseWheel(120)), false);
-    pill.barConfig.scrollEnabled = true;
+    assert.equal(body.pointInIslandSatellite(sourceItem, 50, 16), true);
+    assert.equal(body.pointInIslandSatellite(sourceItem, 1840, 20), true);
+    assert.equal(body.pointInIslandSatellite(sourceItem, 600, 16), false);
 
-    // Dock-hosted and overflow-popout widgets keep their own scroll
-    pill.registrationContext = { surface: { kind: "dock" }, owner: {} };
-    assert.equal(pill.barScrollOverridesWheel(mouseWheel(120)), false);
-    pill.registrationContext = { surface: { kind: "bar" }, owner: { overflowAnchor: true } };
-    assert.equal(pill.barScrollOverridesWheel(mouseWheel(120)), false);
+    body.islandSatellitesEnabled = false;
+    assert.equal(body.pointInIslandSatellite(sourceItem, 50, 16), false);
 });

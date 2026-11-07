@@ -35,14 +35,6 @@ Item {
     readonly property bool sectionAutoOverflow: SettingsData.getBarConfig(barId)?.[section + "OverflowMode"] !== "bar"
     readonly property bool hasPill: !dockHosted && !["spacer", "separator", "island"].includes(widgetType)
     readonly property bool barBackground: !(SettingsData.barConfigs.find(config => config.id === barId)?.noBackground ?? false)
-    readonly property bool barScrollOverridesWidgets: {
-        if (dockHosted)
-            return false;
-        SettingsData.barConfigs;
-        const config = SettingsData.getBarConfig(barId);
-        return (config?.scrollEnabled ?? true) && !config?.island && (config?.overrideWidgetScroll ?? false) && (config?.scrollYBehavior ?? "workspace") !== "none";
-    }
-    readonly property string barScrollOverrideHint: I18n.tr("Disabled by Override widget scroll", "bar widget scroll row, Override widget scroll is the Bar Scroll wheel toggle name")
     readonly property var store: ({
             "get": key => root.value(key),
             "set": (key, value) => root.set(key, value),

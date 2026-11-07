@@ -3448,6 +3448,28 @@
     "conditionKey": "islandEnabled"
   },
   {
+    "section": "barScrollBrightnessStep",
+    "label": "Brightness step",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "backlight",
+      "bar",
+      "bright",
+      "brightness",
+      "dim",
+      "general",
+      "panel",
+      "scroll",
+      "statusbar",
+      "step",
+      "taskbar",
+      "topbar",
+      "wheel"
+    ],
+    "parentLabel": "Bar"
+  },
+  {
     "section": "islandChargingPulse",
     "label": "Charging",
     "tabIndex": 3,
@@ -3825,6 +3847,35 @@
     ],
     "parentLabel": "Bar",
     "conditionKey": "frameEnabled"
+  },
+  {
+    "section": "barScrollExtendToEdge",
+    "label": "Extend to screen edge",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "bar",
+      "between",
+      "display",
+      "edge",
+      "extend",
+      "fitts",
+      "gap",
+      "general",
+      "margin",
+      "monitor",
+      "output",
+      "panel",
+      "screen",
+      "scroll",
+      "statusbar",
+      "taskbar",
+      "top",
+      "topbar",
+      "wheel"
+    ],
+    "parentLabel": "Bar",
+    "description": "Scroll in the gap between the bar and the display edge"
   },
   {
     "section": "barClickActionFollowMouse",
@@ -4362,33 +4413,6 @@
     "conditionKey": "islandDocked"
   },
   {
-    "section": "barOverrideWidgetScroll",
-    "label": "Override widget scroll",
-    "tabIndex": 3,
-    "category": "General",
-    "keywords": [
-      "action",
-      "actions",
-      "anywhere",
-      "bar",
-      "brightness",
-      "general",
-      "override",
-      "panel",
-      "scroll",
-      "statusbar",
-      "taskbar",
-      "topbar",
-      "uses",
-      "volume",
-      "wheel",
-      "widget",
-      "workspace"
-    ],
-    "parentLabel": "Bar",
-    "description": "Scroll anywhere on the bar uses the bar scroll action instead of widget scroll actions"
-  },
-  {
     "section": "islandPlacement",
     "label": "Placement",
     "tabIndex": 3,
@@ -4523,6 +4547,35 @@
     "description": "Choose what right-clicking empty bar space does"
   },
   {
+    "section": "islandScrollEmptyStrip",
+    "label": "Scroll on empty strip",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "bar",
+      "empty",
+      "gap",
+      "general",
+      "input",
+      "island",
+      "overlay",
+      "panel",
+      "passes",
+      "placement",
+      "scroll",
+      "statusbar",
+      "strip",
+      "taskbar",
+      "through",
+      "topbar",
+      "wheel",
+      "windows"
+    ],
+    "parentLabel": "Bar",
+    "description": "Overlay placement passes empty strip input through to windows",
+    "conditionKey": "islandDocked"
+  },
+  {
     "section": "barScrollWheel",
     "label": "Scroll wheel",
     "tabIndex": 3,
@@ -4532,15 +4585,19 @@
       "axis",
       "bar",
       "brightness",
+      "edge",
       "focus",
       "general",
+      "island",
       "panel",
       "scroll",
+      "shift",
       "statusbar",
       "taskbar",
       "topbar",
       "volume",
       "wheel",
+      "widget",
       "window",
       "workspace"
     ],
@@ -4937,6 +4994,29 @@
     "icon": "visibility"
   },
   {
+    "section": "barScrollVolumeStep",
+    "label": "Volume step",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "audio",
+      "bar",
+      "general",
+      "loudness",
+      "panel",
+      "scroll",
+      "sound",
+      "speaker",
+      "statusbar",
+      "step",
+      "taskbar",
+      "topbar",
+      "volume",
+      "wheel"
+    ],
+    "parentLabel": "Bar"
+  },
+  {
     "section": "islandRouteWallpaper",
     "label": "Wallpapers",
     "tabIndex": 3,
@@ -4985,6 +5065,30 @@
     ],
     "parentLabel": "Bar",
     "conditionKey": "islandEnabled"
+  },
+  {
+    "section": "barScrollableWidgets",
+    "label": "Widget scroll",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "bar",
+      "brightness",
+      "general",
+      "media",
+      "override",
+      "panel",
+      "scroll",
+      "statusbar",
+      "taskbar",
+      "topbar",
+      "volume",
+      "wheel",
+      "widget",
+      "workspace"
+    ],
+    "parentLabel": "Bar",
+    "icon": "info"
   },
   {
     "section": "dockAutoHide",
@@ -10832,7 +10936,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:MusicOptions.qml:8",
+    "section": "barWidgetOption:MusicOptions.qml:9",
     "label": "Media player",
     "tabIndex": 22,
     "keywords": [],
@@ -10990,6 +11094,14 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "PrivacyOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:MusicOptions.qml:8",
+    "label": "Scroll action",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "MusicOptions.qml"
   },
   {
     "section": "barWidgetOption:BatteryOptions.qml:6",

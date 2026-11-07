@@ -184,8 +184,7 @@ BasePill {
             return;
 
         wheelEvent.accepted = true;
-        const isMouseWheel = !WheelInput.isTouchpad(wheelEvent) && Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;
-        if (isMouseWheel) {
+        if (!WheelInput.isTouchpad(wheelEvent)) {
             activateNeighbor(windows, deltaY);
             return;
         }

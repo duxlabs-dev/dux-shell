@@ -73,7 +73,8 @@ Item {
         _blurRebuildTimer.restart();
         topBarContent.invalidateHoverCandidateCache();
     }
-    readonly property bool islandBandInteractive: isIsland && !!islandHost && !islandHost.inputSuspended && ((islandHost.scrollEnabled && !islandHost.floating) || islandHost.satelliteSurfacesOpen)
+    readonly property bool islandBandInteractive: isIsland && !!islandHost && !islandHost.inputSuspended && ((islandHost.scrollEnabled && islandHost.scrollEmptyStrip && !islandHost.floating) || islandHost.satelliteSurfacesOpen)
+    readonly property bool scrollExtendToEdge: !isIsland && !usesFrameBarChrome && (barConfig?.scrollExtendToEdge ?? true)
     readonly property real islandAlongStart: islandSatellitesHugIsland && islandHost ? Math.round(islandHost.currentAlongPos) : 0
     readonly property real islandAlongEnd: islandSatellitesHugIsland && islandHost ? Math.round(islandHost.currentAlongPos + islandHost.currentVisualAlong) : 0
     readonly property real islandFrozenStart: !islandHost ? 0 : Math.min(isVertical ? islandHost.motionStartBounds.y : islandHost.motionStartBounds.x, islandHost.targetAlongPos)
@@ -109,6 +110,19 @@ Item {
 
     function processScrollWheel(wheel) {
         scrollArea.processWheel(wheel);
+    }
+
+    function pointInIslandSatellite(sourceItem, x, y) {
+        if (!islandSatellitesEnabled)
+            return false;
+        for (const section of [_leftSection, _rightSection]) {
+            if (!section || !section.visible || section.implicitWidth <= 0 || section.implicitHeight <= 0)
+                continue;
+            const p = sourceItem.mapToItem(section, x, y);
+            if (p.x >= 0 && p.x < section.implicitWidth && p.y >= 0 && p.y < section.implicitHeight)
+                return true;
+        }
+        return false;
     }
 
     property var controlCenterButtonRef: null
@@ -1151,6 +1165,29 @@ Item {
                     }
                 }
 
+                BarScrollArea {
+                    id: scrollArea
+                    anchors.fill: parent
+                    anchors.leftMargin: barWindow.scrollExtendToEdge ? (barWindow.isVertical ? (axis.edge === "left" ? 0 : barUnitInset.anchors.leftMargin) : barWindow.lengthPaddingStartPx) : barUnitInset.anchors.leftMargin
+                    anchors.rightMargin: barWindow.scrollExtendToEdge ? (barWindow.isVertical ? (axis.edge === "right" ? 0 : barUnitInset.anchors.rightMargin) : barWindow.lengthPaddingEndPx) : barUnitInset.anchors.rightMargin
+                    anchors.topMargin: barWindow.scrollExtendToEdge ? (!barWindow.isVertical ? (axis.outerVisualEdge() === "bottom" ? barUnitInset.anchors.topMargin : 0) : barWindow.lengthPaddingStartPx) : barUnitInset.anchors.topMargin
+                    anchors.bottomMargin: barWindow.scrollExtendToEdge ? (!barWindow.isVertical ? (axis.outerVisualEdge() === "bottom" ? 0 : barUnitInset.anchors.bottomMargin) : barWindow.lengthPaddingEndPx) : barUnitInset.anchors.bottomMargin
+                    propagateComposedEvents: true
+                    z: -1
+                    scrollEnabled: barWindow.barConfig?.scrollEnabled ?? true
+                    xBehavior: barWindow.barConfig?.scrollXBehavior ?? "focusWindow"
+                    yBehavior: barWindow.barConfig?.scrollYBehavior ?? "workspace"
+                    screenName: barWindow.screenName
+                    screen: barWindow.screen
+                    barConfig: barWindow.barConfig
+                    onWorkspaceSwitchRequested: direction => topBarContent.switchWorkspace(direction)
+                    onWheel: wheel => {
+                        if (barWindow.isIsland && !(barWindow.islandHost?.scrollEmptyStrip ?? true) && !barWindow.pointInIslandSatellite(scrollArea, wheel.x, wheel.y))
+                            return;
+                        processWheel(wheel);
+                    }
+                }
+
                 Item {
                     id: barUnitInset
                     property int spacingPx: Theme.px(barWindow.renderedSpacing, barWindow._dpr)
@@ -1230,20 +1267,6 @@ Item {
                         }
                     }
 
-                    BarScrollArea {
-                        id: scrollArea
-                        anchors.fill: parent
-                        propagateComposedEvents: true
-                        z: -1
-                        scrollEnabled: barWindow.barConfig?.scrollEnabled ?? true
-                        xBehavior: barWindow.barConfig?.scrollXBehavior ?? "focusWindow"
-                        yBehavior: barWindow.barConfig?.scrollYBehavior ?? "workspace"
-                        screenName: barWindow.screenName
-                        screen: barWindow.screen
-                        barConfig: barWindow.barConfig
-                        onWorkspaceSwitchRequested: direction => topBarContent.switchWorkspace(direction)
-                    }
-
                     DBarContent {
                         id: topBarContent
                         barWindow: barWindow
@@ -1314,11 +1337,13 @@ Item {
                         onPressed: mouse => edgeItem.handlePress(mouse, edgeStrip)
                         onWheel: wheelEvent => {
                             wheelEvent.accepted = false;
-                            if (!edgeItem.barScrollOverridesWheel(wheelEvent))
-                                edgeItem.wheel(wheelEvent);
+                            edgeItem.wheel(wheelEvent);
                             if (!wheelEvent.accepted) {
-                                scrollArea.processWheel(wheelEvent);
-                                wheelEvent.accepted = true;
+                                const sp = edgeStrip.mapToItem(scrollArea, wheelEvent.x, wheelEvent.y);
+                                if (sp.x >= 0 && sp.x <= scrollArea.width && sp.y >= 0 && sp.y <= scrollArea.height && (!barWindow.isIsland || (barWindow.islandHost?.scrollEmptyStrip ?? true) || barWindow.pointInIslandSatellite(edgeStrip, wheelEvent.x, wheelEvent.y))) {
+                                    scrollArea.processWheel(wheelEvent);
+                                    wheelEvent.accepted = true;
+                                }
                             }
                         }
 

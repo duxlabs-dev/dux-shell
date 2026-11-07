@@ -112,7 +112,7 @@ BasePill {
     onClicked: hideTrackTooltip()
 
     onWheel: function (wheelEvent) {
-        if (WheelInput.isHorizontal(wheelEvent))
+        if (!SettingsData.widgetOption("music", widgetData, "scrollEnabled") || WheelInput.isHorizontal(wheelEvent))
             return;
         const deltaY = wheelEvent.angleDelta.y;
         if (deltaY === 0) {
@@ -124,12 +124,13 @@ BasePill {
         if (scrollMode === "nothing")
             return;
 
+        const isMouseWheelY = !WheelInput.isTouchpad(wheelEvent);
+
         if (scrollMode === "volume") {
             if (!usePlayerVolume)
                 return;
 
             wheelEvent.accepted = true;
-            const isMouseWheelY = !WheelInput.isTouchpad(wheelEvent) && Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;
 
             const currentVolume = activePlayer.volume * 100;
 
@@ -158,7 +159,6 @@ BasePill {
                 return;
 
             wheelEvent.accepted = true;
-            const isMouseWheelY = !WheelInput.isTouchpad(wheelEvent) && Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;
 
             if (isMouseWheelY) {
                 if (deltaY > 0) {

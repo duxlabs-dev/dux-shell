@@ -469,15 +469,19 @@ Item {
             id: scrollCard
             iconName: "mouse"
             settingKey: "barScrollWheel"
-            tags: ["scroll", "wheel", "workspace", "focus", "window", "axis", "volume", "audio", "brightness"]
+            tags: ["scroll", "wheel", "workspace", "focus", "window", "axis", "volume", "audio", "brightness", "shift", "edge", "island", "widget"]
             title: I18n.tr("Scroll wheel")
-            visible: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarIsIsland
+            visible: (bar.selectedBarConfig?.enabled ?? false) && !dankBarTab.selectedIslandFree
             checked: bar.selectedBarConfig?.scrollEnabled ?? true
             onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
                     scrollEnabled: checked
                 })
 
-            readonly property bool showBrightnessOption: BrightnessService.brightnessAvailable || bar.selectedBarConfig?.scrollYBehavior === "brightness" || bar.selectedBarConfig?.scrollXBehavior === "brightness"
+            readonly property string effectiveYBehavior: bar.selectedBarConfig?.scrollYBehavior || "workspace"
+            readonly property string effectiveXBehavior: bar.selectedBarConfig?.scrollXBehavior || "focusWindow"
+            readonly property bool showBrightnessOption: BrightnessService.brightnessAvailable || effectiveYBehavior === "brightness" || effectiveXBehavior === "brightness"
+            readonly property bool usesVolumeScroll: effectiveYBehavior === "volume" || effectiveXBehavior === "volume"
+            readonly property bool usesBrightnessScroll: showBrightnessOption && (effectiveYBehavior === "brightness" || effectiveXBehavior === "brightness")
             readonly property var behaviors: {
                 const list = ["none", "workspace"];
                 if (CompositorService.canStepWindowFocus)
@@ -496,16 +500,122 @@ Item {
                     list.push(I18n.tr("Brightness"));
                 return list;
             }
+            readonly property var scrollableWidgetSpecs: ({
+                    "workspaceSwitcher": {
+                        "visible": CompositorService.supportsWorkspaces
+                    },
+                    "runningApps": {
+                        "visible": true
+                    },
+                    "music": {
+                        "visible": true
+                    },
+                    "battery": {
+                        "visible": BrightnessService.brightnessAvailable
+                    },
+                    "controlCenterButton": {
+                        "visible": true,
+                        "tooltip": I18n.tr("Controls volume, microphone, and brightness icon zones", "control center widget scroll tooltip")
+                    }
+                })
+
+            function sectionLabelFor(sectionId) {
+                if (bar.selectedBarIsVertical) {
+                    if (sectionId === "left")
+                        return I18n.tr("Top");
+                    if (sectionId === "center")
+                        return I18n.tr("Center");
+                    return I18n.tr("Bottom");
+                }
+                if (sectionId === "left")
+                    return I18n.tr("Left");
+                if (sectionId === "center")
+                    return I18n.tr("Center");
+                return I18n.tr("Right");
+            }
+
+            readonly property var scrollableWidgets: {
+                SettingsData.barConfigs;
+                const config = bar.selectedBarConfig;
+                if (!config)
+                    return [];
+                if (bar.selectedBarIsIsland && !bar.islandSetting("islandSatellitesEnabled"))
+                    return [];
+                const sections = bar.selectedBarIsIsland ? ["left", "right"] : ["left", "center", "right"];
+                const catalogById = {};
+                for (let i = 0; i < BarWidgetCatalog.widgets.length; i++) {
+                    const w = BarWidgetCatalog.widgets[i];
+                    catalogById[w.id] = w;
+                }
+                const rawMatches = [];
+                const countByType = {};
+                const countByTypeSection = {};
+                for (let s = 0; s < sections.length; s++) {
+                    const sectionId = sections[s];
+                    const list = config[sectionId + "Widgets"] ?? [];
+                    for (let idx = 0; idx < list.length; idx++) {
+                        const raw = list[idx];
+                        const entry = typeof raw === "string" ? {
+                            "id": raw,
+                            "enabled": true
+                        } : raw;
+                        if (!entry || entry.enabled === false)
+                            continue;
+                        const widgetType = entry.widgetId ?? entry.id ?? "";
+                        const spec = scrollCard.scrollableWidgetSpecs[widgetType];
+                        if (!spec || !spec.visible)
+                            continue;
+                        countByType[widgetType] = (countByType[widgetType] || 0) + 1;
+                        const secKey = widgetType + ":" + sectionId;
+                        countByTypeSection[secKey] = (countByTypeSection[secKey] || 0) + 1;
+                        rawMatches.push({
+                            "widgetType": widgetType,
+                            "sectionId": sectionId,
+                            "index": idx,
+                            "entry": entry,
+                            "catalog": catalogById[widgetType] ?? null,
+                            "tooltip": spec.tooltip ?? ""
+                        });
+                    }
+                }
+                const seenSectionOrdinal = {};
+                return rawMatches.map(item => {
+                    const baseLabel = item.catalog?.text ?? item.widgetType;
+                    let label = baseLabel;
+                    if (countByType[item.widgetType] > 1) {
+                        const secKey = item.widgetType + ":" + item.sectionId;
+                        const secLabel = scrollCard.sectionLabelFor(item.sectionId);
+                        if (countByTypeSection[secKey] > 1) {
+                            const n = (seenSectionOrdinal[secKey] || 0) + 1;
+                            seenSectionOrdinal[secKey] = n;
+                            label = baseLabel + " (" + secLabel + " " + n + ")";
+                        } else {
+                            label = baseLabel + " (" + secLabel + ")";
+                        }
+                    }
+                    const scrollOn = SettingsData.widgetOption(item.widgetType, item.entry, "scrollEnabled") && (item.widgetType !== "music" || SettingsData.widgetOption("music", item.entry, "audioScrollMode") !== "nothing");
+                    return {
+                        "widgetType": item.widgetType,
+                        "sectionId": item.sectionId,
+                        "index": item.index,
+                        "entry": item.entry,
+                        "label": label,
+                        "icon": item.catalog?.icon ?? "widgets",
+                        "tooltip": item.tooltip,
+                        "scrollEnabled": scrollOn
+                    };
+                });
+            }
 
             SettingsButtonGroupRow {
-                text: I18n.tr("Y axis")
+                text: I18n.tr("Vertical", "bar scroll wheel vertical axis label")
                 resetStore: bar
                 resetKeys: ["scrollYBehavior"]
                 model: scrollCard.behaviorLabels
                 buttonPadding: Theme.spacingS
                 minButtonWidth: 44
                 textSize: Theme.fontSizeSmall
-                currentIndex: Math.max(0, scrollCard.behaviors.indexOf(bar.selectedBarConfig?.scrollYBehavior || "workspace"))
+                currentIndex: Math.max(0, scrollCard.behaviors.indexOf(scrollCard.effectiveYBehavior))
                 onSelectionChanged: (index, selected) => {
                     if (!selected)
                         return;
@@ -516,14 +626,14 @@ Item {
             }
 
             SettingsButtonGroupRow {
-                text: I18n.tr("X axis")
+                text: I18n.tr("Horizontal (Shift + scroll)", "bar scroll wheel horizontal axis label")
                 resetStore: bar
                 resetKeys: ["scrollXBehavior"]
                 model: scrollCard.behaviorLabels
                 buttonPadding: Theme.spacingS
                 minButtonWidth: 44
                 textSize: Theme.fontSizeSmall
-                currentIndex: Math.max(0, scrollCard.behaviors.indexOf(bar.selectedBarConfig?.scrollXBehavior || "focusWindow"))
+                currentIndex: Math.max(0, scrollCard.behaviors.indexOf(scrollCard.effectiveXBehavior))
                 onSelectionChanged: (index, selected) => {
                     if (!selected)
                         return;
@@ -533,15 +643,98 @@ Item {
                 }
             }
 
-            SettingsToggleRow {
-                text: I18n.tr("Override widget scroll")
-                description: I18n.tr("Scroll anywhere on the bar uses the bar scroll action instead of widget scroll actions", "bar override widget scroll toggle description")
-                settingKey: "barOverrideWidgetScroll"
-                tags: ["bar", "scroll", "wheel", "override", "widget", "volume", "brightness", "workspace"]
-                checked: bar.selectedBarConfig?.overrideWidgetScroll ?? false
-                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        overrideWidgetScroll: checked
+            SettingsSliderRow {
+                visible: scrollCard.usesVolumeScroll
+                settingKey: "barScrollVolumeStep"
+                tags: ["bar", "scroll", "wheel", "volume", "step", "audio"]
+                text: I18n.tr("Volume step")
+                resetKeys: ["audioWheelScrollAmount"]
+                value: Math.max(1, Math.min(25, SettingsData.audioWheelScrollAmount))
+                minimum: 1
+                maximum: 25
+                step: 1
+                unit: "%"
+                onSliderDragFinished: newValue => SettingsData.set("audioWheelScrollAmount", newValue)
+            }
+
+            SettingsSliderRow {
+                visible: scrollCard.usesBrightnessScroll
+                settingKey: "barScrollBrightnessStep"
+                tags: ["bar", "scroll", "wheel", "brightness", "step", "backlight"]
+                text: I18n.tr("Brightness step", "bar scroll wheel brightness step slider")
+                resetStore: bar
+                resetKeys: ["scrollBrightnessStep"]
+                value: bar.selectedBarConfig?.scrollBrightnessStep ?? 5
+                minimum: 1
+                maximum: 25
+                step: 1
+                unit: "%"
+                onSliderDragFinished: newValue => SettingsData.updateBarConfig(bar.selectedBarId, {
+                        scrollBrightnessStep: newValue
                     })
+            }
+
+            SettingsToggleRow {
+                visible: !bar.selectedBarIsIsland && !bar.selectedBarFrameStyled
+                text: I18n.tr("Extend to screen edge", "bar scroll wheel toggle")
+                description: I18n.tr("Scroll in the gap between the bar and the display edge", "bar extend scroll to screen edge toggle description")
+                settingKey: "barScrollExtendToEdge"
+                tags: ["bar", "scroll", "wheel", "edge", "gap", "top", "margin", "fitts"]
+                checked: bar.selectedBarConfig?.scrollExtendToEdge ?? true
+                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                        scrollExtendToEdge: checked
+                    })
+            }
+
+            SettingsToggleRow {
+                visible: dankBarTab.selectedIslandDocked
+                enabled: !dankBarTab.selectedIslandOverlay
+                text: I18n.tr("Scroll on empty strip", "island scroll wheel toggle")
+                description: dankBarTab.selectedIslandOverlay ? I18n.tr("Overlay placement passes empty strip input through to windows", "island scroll empty strip disabled hint") : I18n.tr("Scroll in the empty space next to the island and satellite widgets", "island scroll empty strip toggle description")
+                settingKey: "islandScrollEmptyStrip"
+                tags: ["island", "bar", "scroll", "wheel", "empty", "strip", "gap"]
+                checked: !dankBarTab.selectedIslandOverlay && bar.islandSetting("islandScrollEmptyStrip")
+                onToggled: checked => bar.apply("islandScrollEmptyStrip", checked)
+            }
+
+            SettingsRow {
+                visible: scrollCard.scrollableWidgets.length > 0
+                settingKey: "barScrollableWidgets"
+                tags: ["bar", "scroll", "wheel", "widget", "override", "workspace", "media", "volume", "brightness"]
+                title: I18n.tr("Widget scroll", "bar scroll wheel section header for per-widget scroll toggles")
+
+                DActionButton {
+                    iconName: "info"
+                    tooltipText: I18n.tr("Widgets listed here have their own scroll action. Turn one off to use the bar scroll action when hovering over it", "bar widget scroll info tooltip")
+                    onClicked: showTooltip()
+                }
+            }
+
+            Repeater {
+                model: scrollCard.scrollableWidgets
+
+                delegate: SettingsToggleRow {
+                    required property var modelData
+
+                    iconName: modelData.icon
+                    text: modelData.label
+                    checked: modelData.scrollEnabled
+                    onToggled: checked => {
+                        const patch = {
+                            "scrollEnabled": checked
+                        };
+                        if (checked && modelData.widgetType === "music" && SettingsData.widgetOption("music", modelData.entry, "audioScrollMode") === "nothing")
+                            patch.audioScrollMode = "volume";
+                        SettingsData.updateBarWidget(bar.selectedBarId, modelData.sectionId, modelData.index, patch);
+                    }
+
+                    accessory: DActionButton {
+                        visible: modelData.tooltip !== ""
+                        iconName: "info"
+                        tooltipText: modelData.tooltip
+                        onClicked: showTooltip()
+                    }
+                }
             }
         }
 
@@ -553,24 +746,12 @@ Item {
             tags: ["bar", "click", "middle", "right", "mouse", "control center", "launcher", "settings", "mute", "volume", "audio"]
             visible: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarIsIsland
 
-            readonly property var clickActions: ["none", "control-center", "spotlight", "close-window", "settings", "toggle-mute"]
-            readonly property var clickActionOptions: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action"), I18n.tr("Toggle Mute", "bar click action")]
+            readonly property var clickActions: ["none", "toggle-mute", "control-center", "spotlight", "close-window", "settings"]
+            readonly property var clickActionOptions: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Mute", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action")]
 
             function optionForAction(action) {
                 const idx = clickActions.indexOf(action || "none");
                 return clickActionOptions[idx >= 0 ? idx : 0];
-            }
-
-            SettingsToggleRow {
-                text: I18n.tr("Follow mouse")
-                description: I18n.tr("The Control Center opens at the cursor instead of its widget", "bar click action follow mouse description")
-                settingKey: "barClickActionFollowMouse"
-                visible: bar.selectedBarConfig?.middleClickAction === "control-center" || bar.selectedBarConfig?.rightClickAction === "control-center"
-                tags: ["bar", "click", "mouse", "cursor", "position", "anchor", "popout"]
-                checked: bar.selectedBarConfig?.clickActionFollowMouse ?? false
-                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        clickActionFollowMouse: checked
-                    })
             }
 
             SettingsDropdownRow {
@@ -605,6 +786,18 @@ Item {
                         rightClickAction: clickActionsCard.clickActions[options.indexOf(value)] ?? "none"
                     });
                 }
+            }
+
+            SettingsToggleRow {
+                text: I18n.tr("Follow mouse")
+                description: I18n.tr("The Control Center opens at the cursor instead of its widget", "bar click action follow mouse description")
+                settingKey: "barClickActionFollowMouse"
+                visible: bar.selectedBarConfig?.middleClickAction === "control-center" || bar.selectedBarConfig?.rightClickAction === "control-center"
+                tags: ["bar", "click", "mouse", "cursor", "position", "anchor", "popout"]
+                checked: bar.selectedBarConfig?.clickActionFollowMouse ?? false
+                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                        clickActionFollowMouse: checked
+                    })
             }
         }
 

@@ -207,7 +207,6 @@ QtObject {
     }
 
     property real _touchpadAccumulator: 0
-    property real _mouseAccumulator: 0
     property bool _scrollInProgress: false
     readonly property Timer _scrollCooldown: Timer {
         interval: 100
@@ -218,6 +217,8 @@ QtObject {
         if (_scrollInProgress)
             return;
         const delta = wheel.angleDelta.y;
+        if (delta === 0)
+            return;
         const isTouchpad = WheelInput.isTouchpad(wheel);
         const reverse = reverseScrolling ? -1 : 1;
 
@@ -232,12 +233,8 @@ QtObject {
             return;
         }
 
-        _mouseAccumulator += delta;
-        if (Math.abs(_mouseAccumulator) < 120)
-            return;
-        step(_mouseAccumulator * reverse < 0 ? 1 : -1);
+        step(delta * reverse < 0 ? 1 : -1);
         _scrollInProgress = true;
         _scrollCooldown.restart();
-        _mouseAccumulator = 0;
     }
 }

@@ -16,8 +16,6 @@ MouseArea {
     property var barConfig: null
     property real touchpadAccumulatorX: 0
     property real touchpadAccumulatorY: 0
-    property real mouseAccumulatorX: 0
-    property real mouseAccumulatorY: 0
     property bool actionInProgress: false
     property bool gestureActive: false
     property bool gestureHorizontal: false
@@ -92,8 +90,12 @@ MouseArea {
     function levelStepAmount(behavior, isTouchpad, units) {
         if (isTouchpad)
             return units;
-        const perNotch = behavior === "volume" ? Math.max(1, AudioService.wheelVolumeStep) : 5;
+        const perNotch = behavior === "volume" ? Math.max(1, AudioService.wheelVolumeStep) : Math.max(1, root.barConfig?.scrollBrightnessStep ?? 5);
         return perNotch * units;
+    }
+
+    function mouseWheelUnits(delta) {
+        return Math.max(1, Math.trunc(Math.abs(delta) / 120));
     }
 
     function accumulateLevelX(wheel, isTouchpad, delta, behavior) {
@@ -106,10 +108,7 @@ MouseArea {
                 handleLevelAction(behavior, levelStepAmount(behavior, true, res.units), res.sign);
             return;
         }
-        const res = stepLevelAccumulator(mouseAccumulatorX, delta, 120);
-        mouseAccumulatorX = res.remainder;
-        if (res.units > 0)
-            handleLevelAction(behavior, levelStepAmount(behavior, false, res.units), res.sign);
+        handleLevelAction(behavior, levelStepAmount(behavior, false, mouseWheelUnits(delta)), delta > 0 ? 1 : -1);
     }
 
     function accumulateLevelY(wheel, isTouchpad, delta, behavior) {
@@ -122,10 +121,7 @@ MouseArea {
                 handleLevelAction(behavior, levelStepAmount(behavior, true, res.units), res.sign);
             return;
         }
-        const res = stepLevelAccumulator(mouseAccumulatorY, delta, 120);
-        mouseAccumulatorY = res.remainder;
-        if (res.units > 0)
-            handleLevelAction(behavior, levelStepAmount(behavior, false, res.units), res.sign);
+        handleLevelAction(behavior, levelStepAmount(behavior, false, mouseWheelUnits(delta)), delta > 0 ? 1 : -1);
     }
 
     function accumulateX(isTouchpad, delta, behavior) {
@@ -137,11 +133,7 @@ MouseArea {
             touchpadAccumulatorX = 0;
             return;
         }
-        mouseAccumulatorX += delta;
-        if (Math.abs(mouseAccumulatorX) < 120)
-            return;
-        fire(mouseAccumulatorX, behavior);
-        mouseAccumulatorX = 0;
+        fire(delta, behavior);
     }
 
     function accumulateY(isTouchpad, delta, behavior) {
@@ -153,11 +145,7 @@ MouseArea {
             touchpadAccumulatorY = 0;
             return;
         }
-        mouseAccumulatorY += delta;
-        if (Math.abs(mouseAccumulatorY) < 120)
-            return;
-        fire(mouseAccumulatorY, behavior);
-        mouseAccumulatorY = 0;
+        fire(delta, behavior);
     }
 
     function horizontalGesture(wheel, isTouchpad) {

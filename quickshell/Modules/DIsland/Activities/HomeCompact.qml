@@ -484,8 +484,10 @@ Item {
                 wheel.accepted = true;
                 return;
             }
-            if (!group.isVolume && !group.isBrightness)
+            if (!group.isVolume && !group.isBrightness) {
+                wheel.accepted = false;
                 return;
+            }
             root.adjustSystemLevel(group.groupId, wheel.angleDelta.y || wheel.angleDelta.x);
             wheel.accepted = true;
         }

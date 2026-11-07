@@ -73,13 +73,23 @@ Column {
             onToggled: checked => root.page.set("mediaShowCoverArt", checked)
         }
 
+        SettingsToggleRow {
+            visible: root.controls
+            text: I18n.tr("Scroll wheel")
+            checked: root.page.value("scrollEnabled") && root.page.value("audioScrollMode") !== "nothing"
+            onToggled: checked => {
+                root.page.set("scrollEnabled", checked);
+                if (checked && root.page.value("audioScrollMode") === "nothing")
+                    root.page.set("audioScrollMode", "volume");
+            }
+        }
+
         SettingsDropdownRow {
             visible: root.controls
-            enabled: !(root.page?.barScrollOverridesWidgets ?? false)
+            enabled: root.page.value("scrollEnabled")
             resetStore: root.page
             resetKeys: ["audioScrollMode"]
-            text: I18n.tr("Scroll wheel")
-            description: enabled ? "" : root.page.barScrollOverrideHint
+            text: I18n.tr("Scroll action", "media widget scroll action dropdown")
             options: root.scrollLabels
             currentValue: {
                 const idx = root.scrollModes.indexOf(root.page.value("audioScrollMode"));

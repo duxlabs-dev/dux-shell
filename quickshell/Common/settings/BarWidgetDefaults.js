@@ -58,6 +58,7 @@ var ISLAND_DEFAULTS = {
     islandSatelliteGothCorners: true,
     islandSatelliteFollowInterfaceStyle: true,
     islandSatelliteTransparency: 1,
+    islandScrollEmptyStrip: true,
     islandSpringStiffness: 560,
     islandSpringDamping: 37,
     islandSpringMass: 1
@@ -145,6 +146,7 @@ var DEFAULTS = {
         mediaShowLyrics: true,
         mediaSmoothLyrics: false,
         mediaShowCoverArt: true,
+        scrollEnabled: true,
         audioScrollMode: "volume"
     },
     focusedWindow: {
