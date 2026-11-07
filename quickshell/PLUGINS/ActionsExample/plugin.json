@@ -1,0 +1,12 @@
+{
+    "id": "actionsExample",
+    "name": "ActionsExample",
+    "description": "Example plugin that adds a countdown timer to launcher actions and semantic search",
+    "version": "1.0.0",
+    "author": "DMS Team",
+    "icon": "timer",
+    "type": "daemon",
+    "capabilities": ["launcher-actions"],
+    "component": "./ActionsExampleDaemon.qml",
+    "permissions": ["settings_read"]
+}

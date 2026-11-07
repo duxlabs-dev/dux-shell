@@ -163,6 +163,35 @@ function transformBuiltInLauncherItem(item, pluginId, openLabel) {
     };
 }
 
+function transformActionItem(entry, stateLine, runLabel, actionLabel) {
+    var rawIcon = entry.icon || "material:bolt";
+    return {
+        id: "action:" + entry.id,
+        type: "action",
+        name: entry.title || entry.id,
+        subtitle: stateLine || "",
+        icon: Utils.stripIconPrefix(rawIcon),
+        iconType: Utils.detectIconType(rawIcon),
+        section: "actions",
+        data: {
+            actionId: entry.id,
+            category: entry.category || ""
+        },
+        keywords: entry.keywords || [],
+        actions: [],
+        badgeLabel: actionLabel,
+        primaryAction: {
+            name: runLabel,
+            icon: "play_arrow",
+            action: "execute"
+        },
+        _hName: "",
+        _hSub: "",
+        _hRich: false,
+        _preScored: undefined
+    };
+}
+
 function transformClipboardItem(entry, copyLabel, pasteLabel, primaryLabel, imageLabel, textLabel, pinnedLabel, pasteHintLabel, copyHintLabel, clipboardLabel) {
     var preview = (entry.preview || "").toString().replace(/\s+/g, " ").trim();
     var isImage = entry.isImage || false;
