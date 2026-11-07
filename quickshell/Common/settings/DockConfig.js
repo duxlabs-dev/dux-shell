@@ -31,6 +31,7 @@ function create(id, name) {
         smartAutoHide: false,
         useOverlayLayer: false,
         editOnRightClick: false,
+        showEditWidgetsInContextMenu: true,
         showOnFullscreen: false,
         openOnOverview: false,
         groupByApp: false,
