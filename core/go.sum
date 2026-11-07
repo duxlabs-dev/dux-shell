@@ -49,8 +49,8 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dlclark/regexp2/v2 v2.9.1 h1:q6bZW/NN9VodqMjYXpuic2lZxdHPfFTzGS+MJxIJmKQ=
 github.com/dlclark/regexp2/v2 v2.9.1/go.mod h1:avUrQvPaLz2DrFNHJF0taWAFFX2C1GMSSoeiqFjcBmU=
-github.com/duxlabs-dev/dux-go v1.6.3-0.20261107011904-6177a8a14cdc h1:S68wx+VvtFAPWldUGGBdAuax+I5t/CtJEoTRaN8kzuY=
-github.com/duxlabs-dev/dux-go v1.6.3-0.20261107011904-6177a8a14cdc/go.mod h1:b67p+bMQvy+LqsAXCAOERXutm4SbQuTeqKsGeEnqR8w=
+github.com/duxlabs-dev/dux-go v1.6.3-0.20261107025920-7cfa368bd490 h1:b4snYYzV+g4mZJjDRTa8vYTcV6g4KnqA7zCRMkbmLHk=
+github.com/duxlabs-dev/dux-go v1.6.3-0.20261107025920-7cfa368bd490/go.mod h1:b67p+bMQvy+LqsAXCAOERXutm4SbQuTeqKsGeEnqR8w=
 github.com/duxlabs-dev/dux-gop v1.6.3-0.20261109210928-78bcf7637c2a h1://q/lCgyuDR7a0+M0Trbo6tEYLm/mEzsYQHF52GLD6A=
 github.com/duxlabs-dev/dux-gop v1.6.3-0.20261109210928-78bcf7637c2a/go.mod h1:IYu4GO7zR61w3+tDmjg71dQDInXe5TcP3lHQqJpZYR0=
 github.com/ebitengine/purego v0.11.3 h1:OB+JLpdm7ioymhyA+6s5kbb/uOuYycAgL8NNTFc5MLg=

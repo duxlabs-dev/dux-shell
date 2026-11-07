@@ -23,11 +23,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793995455,
-        "narHash": "sha256-VifcqiDrqkWzv1fQaEtEhh4kFO9UFuGp3EqOwTOesfQ=",
+        "lastModified": 1794020339,
+        "narHash": "sha256-PMSM1FQLHsXPRlwQDgA/rY9b3U7hLw92UVutiWJGlY0=",
         "owner": "duxlabs-dev",
         "repo": "dux-qt-base",
-        "rev": "947f5d041a5c6c19676296f6791852f622fd907a",
+        "rev": "c856ed93e7c3af684d7f0e2ac9a71ef3778b0c0f",
         "type": "github"
       },
       "original": {
