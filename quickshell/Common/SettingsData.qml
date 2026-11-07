@@ -1032,12 +1032,13 @@ Singleton {
     // Popouts hold a snapshot of their bar's config, so this reads the live one.
     function barConnectsPopouts(bc) {
         const config = getBarConfig(bc?.id) ?? bc;
-        if (frameEnabled || !config?.connectedPopouts || config.visible === false)
+        if (frameEnabled || !config?.connectedPopouts || config.visible === false || config.enabled === false)
             return false;
         if (!isIslandBarConfig(config))
             return !config.useOverlayLayer && barTransparency(config) > 0;
         return !isDotBarConfig(config) && !islandSetting(config, "islandUseOverlayLayer") && islandSetting(config, "islandSatellitesEnabled") && islandSetting(config, "islandSatelliteBackground");
     }
+
     function islandStripThickness(bc) {
         return LayoutResolver.islandThickness(islandSettings(bc), islandDefaultsFor(bc));
     }

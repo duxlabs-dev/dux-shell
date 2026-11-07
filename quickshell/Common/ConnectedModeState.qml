@@ -9,6 +9,8 @@ Singleton {
     id: root
 
     property var surfaceDescriptors: ({})
+    // "wanted" or "ready" per bar window that paints popouts; absent while it keeps its idle size.
+    property var barRooms: ({})
     property var surfaceMotion: ({})
     property var surfaceRevisions: ({})
     property var dockRetractRequests: ({})
@@ -28,6 +30,21 @@ Singleton {
                     "animY": 0
                 })
         }
+    }
+
+    function barRoomKey(screenName, barId) {
+        return screenName + "/" + barId;
+    }
+
+    function setBarRoom(key, state) {
+        if ((barRooms[key] ?? "") === state)
+            return;
+        const next = Object.assign({}, barRooms);
+        if (state)
+            next[key] = state;
+        else
+            delete next[key];
+        barRooms = next;
     }
 
     function surfaceSlot(kind, instanceId) {

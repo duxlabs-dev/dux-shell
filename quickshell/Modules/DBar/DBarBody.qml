@@ -418,15 +418,13 @@ Item {
             property Item chrome
             property string rectKey
 
-            property real radiusPx: 0
-
-            readonly property vector4d rect: chrome?.[rectKey] ?? Qt.vector4d(0, 0, 0, 0)
+            // Before the popout emerges the satellites' own rounded regions cover them.
+            readonly property vector4d rect: chrome?.emerged > 0 ? chrome[rectKey] : Qt.vector4d(0, 0, 0, 0)
 
             x: Math.round(rect.x + topBarSlide.x)
             y: Math.round(rect.y + topBarSlide.y)
             width: Math.round(rect.z)
             height: Math.round(rect.w)
-            radius: radiusPx
         }
     }
 
@@ -597,7 +595,7 @@ Item {
                     const sub = blurChromeRegionComp.createObject(region, {
                         chrome: barChromeLoader.item,
                         rectKey: rectKey,
-                        radiusPx: rectKey === "bodyRect" ? Theme.connectedSurfaceRadius : 0
+                        radius: rectKey === "bodyRect" ? Theme.connectedSurfaceRadius : 0
                     });
                     if (sub)
                         subRegions.push(sub);
@@ -813,7 +811,37 @@ Item {
     // A grown layer surface jumps to its new origin before the client draws at the new size, so a far-edge host never grows for the sheet.
     readonly property bool islandReservesSheet: !!islandHost && (axis.edge === "bottom" || axis.edge === "right")
     readonly property bool barPaintsPopouts: SettingsData.barConnectsPopouts(barConfig)
-    readonly property real popoutHostThickness: !barPaintsPopouts ? 0 : (isVertical ? modelData.width : modelData.height) - (layoutInstance?.manualPlacement ? layoutInstance.rowOffset : 0)
+    readonly property string popoutRoomKey: ConnectedModeState.barRoomKey(screenName, _barId)
+    readonly property string popoutRoomState: ConnectedModeState.barRooms[popoutRoomKey] ?? ""
+    readonly property bool popoutOut: barChromeLoader.item?.popoutActive ?? false
+    // A far-edge window would jump while growing, as for the sheet above, so it keeps the room.
+    readonly property bool popoutRoomHeld: barPaintsPopouts && (axis.edge === "bottom" || axis.edge === "right" || popoutOut || popoutRoomState !== "")
+    readonly property real popoutHostThickness: !popoutRoomHeld ? 0 : ((isVertical ? modelData?.width : modelData?.height) ?? 0) - (layoutInstance?.manualPlacement ? layoutInstance.rowOffset : 0)
+    readonly property bool popoutRoomFits: popoutRoomHeld && (isVertical ? hostWindow.width : hostWindow.height) >= popoutHostThickness - 1
+
+    function _grantPopoutRoom() {
+        if (popoutRoomState === "wanted" && popoutRoomFits)
+            ConnectedModeState.setBarRoom(popoutRoomKey, "ready");
+    }
+    onPopoutRoomStateChanged: Qt.callLater(_grantPopoutRoom)
+    Component.onDestruction: ConnectedModeState.setBarRoom(popoutRoomKey, "")
+
+    Connections {
+        target: barWindow.Window.window
+        enabled: barWindow.popoutRoomState === "wanted" && barWindow.popoutRoomFits
+
+        function onFrameSwapped() {
+            ConnectedModeState.setBarRoom(barWindow.popoutRoomKey, "ready");
+        }
+    }
+
+    // Outlives the close so moving between popouts doesn't resize the window.
+    Timer {
+        interval: 1000
+        running: barWindow.popoutRoomState !== "" && !barWindow.popoutOut
+        onTriggered: ConnectedModeState.setBarRoom(barWindow.popoutRoomKey, "")
+    }
+
     readonly property real hostThickness: isIsland ? Math.max(islandHost?.hostThickness ?? 0, islandStripThickness + islandSatelliteShadowBuffer, popoutHostThickness) : Math.max(barSurfaceThickness, popoutHostThickness, islandSheetOut || islandReservesSheet ? islandHost.hostThickness : 0)
     // The host reserves the expanded island's height, so sliding by it would move a compact island off-screen within a frame.
     readonly property real islandCompactThickness: Math.max(islandStripThickness + islandSatelliteShadowBuffer, (islandHost?.outerGap ?? 0) + (islandHost?.compactThickness ?? 0) + (islandHost?.shadowPadding ?? 0))
@@ -1186,7 +1214,7 @@ Item {
 
                 Loader {
                     id: barChromeLoader
-                    readonly property bool joined: !barWindow.isIsland && (item?.popoutActive ?? false)
+                    readonly property bool joined: !barWindow.isIsland && barWindow.popoutOut
                     readonly property bool touchesEdge: barWindow.renderedSpacing <= 0
                     readonly property var windowOrigin: active ? ShellLayout.surfaceOrigin(barWindow.screen, barWindow.width, barWindow.height, barWindow.hostWindow.anchors, barWindow.hostWindow.margins) : Qt.point(0, 0)
                     active: barWindow.barPaintsPopouts

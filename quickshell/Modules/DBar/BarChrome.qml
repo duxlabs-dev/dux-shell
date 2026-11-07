@@ -4,7 +4,6 @@ import QtQuick
 import qs.Common
 import "../../Common/ConnectedSurfaceGeometry.js" as SurfaceGeometry
 
-// Paints the bar or its satellites and the popout opened from them as one shape in the bar's own window.
 ShaderEffect {
     id: root
 
@@ -26,10 +25,7 @@ ShaderEffect {
 
     readonly property bool horizontal: barSide === "top" || barSide === "bottom"
     readonly property real joinRadius: edgeRadius > 0 ? edgeRadius : Theme.connectedCornerRadius
-    readonly property var descriptor: {
-        ConnectedModeState.surfaceRevisions[screenName];
-        return ConnectedModeState.surfaceDescriptor(screenName, "popout");
-    }
+    readonly property var descriptor: ConnectedModeState.surfaceDescriptor(screenName, "popout")
     readonly property bool popoutActive: descriptor.visible && descriptor.barSide === barSide && descriptor.barId === barId
     readonly property var body: popoutActive ? _windowRect(SurfaceGeometry.animatedBodyRect(descriptor, dpr)) : ({
             "x": 0,
@@ -37,8 +33,8 @@ ShaderEffect {
             "width": 0,
             "height": 0
         })
-    // How far the popout has come out of the bar; the bar or satellite reaches for its edge over the first stretch of that.
     readonly property real seamOverlap: 2
+    // How far the popout has come out of the bar; the bar or satellite reaches for its edge over the first stretch of that.
     readonly property real emerged: Math.max(0, Math.min(1, ((horizontal ? body.height : body.width) - seamOverlap) / Math.max(1, joinRadius * 2)))
 
     function _alongStart(rect) {
@@ -80,7 +76,6 @@ ShaderEffect {
         };
     }
 
-    // The satellite the popout hangs from.
     readonly property var anchor: {
         for (const surface of [leading, trailing]) {
             if (!surface?.visible)

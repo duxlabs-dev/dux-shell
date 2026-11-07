@@ -55,16 +55,20 @@ float shapesDist(vec2 px) {
 
 // The screen edges only round the shapes into the edge. They sit a pixel off screen so their antialiasing paints nothing,
 // and they cast no shadow.
-float sceneDist(vec2 px) {
+float sceneDist(vec2 px, float shapes) {
     float side = ubuf.edgeParam.x;
     float dEdge = 1.0 + (side < 0.5 ? px.y : side < 1.5 ? (ubuf.heightPx - px.y) : side < 2.5 ? px.x : (ubuf.widthPx - px.x));
     float dEnds = 1.0 + (side < 1.5 ? min(px.x, ubuf.widthPx - px.x) : min(px.y, ubuf.heightPx - px.y));
-    return smin(smin(shapesDist(px), dEdge, ubuf.edgeParam.y), dEnds, ubuf.edgeParam.y);
+    float k = ubuf.edgeParam.y;
+    float d = smin(shapes, dEdge, k);
+    // Far from any shape the two edges would round into each other and fill the screen corner.
+    return shapes > k ? d : smin(d, dEnds, k);
 }
 
 void main() {
     vec2 px = qt_TexCoord0 * vec2(ubuf.widthPx, ubuf.heightPx);
-    float d = sceneDist(px);
+    float shapes = shapesDist(px);
+    float d = sceneDist(px, shapes);
     float fw = max(fwidth(d), 1e-4);
     float reach = max(ubuf.shadowParam.x + ubuf.shadowParam.y + length(ubuf.shadowParam.zw), ubuf.ambientParam.x + ubuf.ambientParam.y) + fw;
     if (d > reach) {
@@ -78,7 +82,7 @@ void main() {
         float bk = max(ubuf.shadowParam.x, fw);
         float covK = 1.0 - smoothstep(-bk, bk, dk);
         float ba = max(ubuf.ambientParam.x, fw);
-        float covA = 1.0 - smoothstep(-ba, ba, shapesDist(px) - ubuf.ambientParam.y);
+        float covA = 1.0 - smoothstep(-ba, ba, shapes - ubuf.ambientParam.y);
         float sh = 1.0 - (1.0 - covK * ubuf.shadowColor.a) * (1.0 - covA * ubuf.ambientParam.z);
         col += vec4(ubuf.shadowColor.rgb, 1.0) * (sh * (1.0 - col.a));
     }
