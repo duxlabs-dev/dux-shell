@@ -859,9 +859,29 @@ Item {
     readonly property string popoutRoomState: ConnectedModeState.barRooms[popoutRoomKey] ?? ""
     readonly property bool popoutOut: barChromeLoader.item?.popoutActive ?? false
     // A far-edge window would jump while growing, as for the sheet above, so it keeps the room.
-    readonly property bool popoutRoomHeld: barPaintsPopouts && (axis.edge === "bottom" || axis.edge === "right" || popoutOut || popoutRoomState !== "")
+    readonly property bool popoutRoomAlwaysHeld: axis.edge === "bottom" || axis.edge === "right"
+    property bool popoutRoomShrinking: false
+    readonly property bool popoutRoomHeld: barPaintsPopouts && (popoutRoomAlwaysHeld || popoutOut || popoutRoomState !== "" || popoutRoomShrinking)
     readonly property real popoutHostThickness: !popoutRoomHeld ? 0 : ((isVertical ? modelData?.width : modelData?.height) ?? 0) - (layoutInstance?.manualPlacement ? layoutInstance.rowOffset : 0)
     readonly property bool popoutRoomFits: popoutRoomHeld && (isVertical ? hostWindow.width : hostWindow.height) >= popoutHostThickness - 1
+
+    function _setWindowThickness(thickness) {
+        const win = barWindow.Window.window;
+        if (isVertical)
+            win.width = thickness;
+        else
+            win.height = thickness;
+    }
+
+    // Hyprland squeezes the old buffer into a shrunken layer surface until the next commit, which blanks the bar for a frame.
+    // A plain commit resizes the surface to its buffer, so the buffer goes small first.
+    function _releasePopoutRoom() {
+        const current = isVertical ? barWindow.Window.window.width : barWindow.Window.window.height;
+        popoutRoomShrinking = CompositorService.isHyprland && !popoutRoomAlwaysHeld && current > idleHostThickness;
+        ConnectedModeState.setBarRoom(popoutRoomKey, "");
+        if (popoutRoomShrinking)
+            _setWindowThickness(idleHostThickness);
+    }
 
     function _grantPopoutRoom() {
         if (popoutRoomState === "wanted" && popoutRoomFits)
@@ -879,14 +899,26 @@ Item {
         }
     }
 
+    Connections {
+        target: barWindow.Window.window
+        enabled: barWindow.popoutRoomShrinking
+
+        function onFrameSwapped() {
+            barWindow.popoutRoomShrinking = false;
+            if (barWindow.popoutRoomHeld)
+                barWindow._setWindowThickness(barWindow.popoutHostThickness);
+        }
+    }
+
     // Outlives the close so moving between popouts doesn't resize the window.
     Timer {
         interval: 1000
         running: barWindow.popoutRoomState !== "" && !barWindow.popoutOut
-        onTriggered: ConnectedModeState.setBarRoom(barWindow.popoutRoomKey, "")
+        onTriggered: barWindow._releasePopoutRoom()
     }
 
-    readonly property real hostThickness: isIsland ? Math.max(islandHost?.hostThickness ?? 0, islandStripThickness + islandSatelliteShadowBuffer, popoutHostThickness) : Math.max(barSurfaceThickness, popoutHostThickness, islandSheetOut || islandReservesSheet ? islandHost.hostThickness : 0)
+    readonly property real idleHostThickness: isIsland ? Math.max(islandHost?.hostThickness ?? 0, islandStripThickness + islandSatelliteShadowBuffer) : Math.max(barSurfaceThickness, islandSheetOut || islandReservesSheet ? islandHost.hostThickness : 0)
+    readonly property real hostThickness: Math.max(idleHostThickness, popoutHostThickness)
     // The host reserves the expanded island's height, so sliding by it would move a compact island off-screen within a frame.
     readonly property real islandCompactThickness: Math.max(islandStripThickness + islandSatelliteShadowBuffer, (islandHost?.outerGap ?? 0) + (islandHost?.compactThickness ?? 0) + (islandHost?.shadowPadding ?? 0))
     readonly property real hideSlideThickness: isIsland ? islandCompactThickness : barSurfaceThickness
