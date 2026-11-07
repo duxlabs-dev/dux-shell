@@ -7,6 +7,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.DDash
 import "WeatherVisuals.js" as Visuals
+import "../../../Common/WeatherData.js" as WeatherData
 
 Rectangle {
     id: root
@@ -66,11 +67,57 @@ Rectangle {
                 shape: "cookie7",
                 detail: root.uvCategories[root.uvCategory] ?? ""
             };
+        case "airQuality":
+            return {
+                label: I18n.tr("Air Quality", "weather air quality index metric label"),
+                icon: "aq",
+                value: root.airQualityIndex == null ? null : root.airQualityScale === "who" ? root.airQualityIndex.toFixed(1) : String(root.airQualityIndex),
+                shape: "cookie9",
+                detail: root.airQualityIndex == null ? "" : I18n.tr("%1 · %2", "air quality index scale abbreviation, then its category, e.g. EAQI · Good").arg(root.airQualityScaleName).arg(root.airQualityCategories[root.airQualityCategory] ?? ""),
+                // Too long for the tile next to the markers, read out only.
+                spokenDetail: root.airQualityScale === "who" ? I18n.tr("Mean PM2.5 of the past 24 hours in µg/m³", "unit of the WHO air quality reading") : weather.pm25 == null ? "" : I18n.tr("PM2.5 %1 µg/m³", "fine particulate matter concentration").arg(weather.pm25.toFixed(1))
+            };
         }
         return {};
     }
     readonly property var uvCategories: [I18n.tr("Low"), I18n.tr("Moderate", "uv index category"), I18n.tr("High"), I18n.tr("Very High"), I18n.tr("Extreme", "uv index category")]
     readonly property int uvCategory: Visuals.uvCategory(weather.uv)
+    readonly property string airQualityScale: WeatherData.airQualityScale(widgetOptions.scale, weather.latitude, weather.longitude)
+    readonly property string airQualityScaleName: airQualityScale === "european" ? I18n.tr("EAQI", "European Air Quality Index abbreviation") : airQualityScale === "who" ? I18n.tr("WHO", "World Health Organization abbreviation") : I18n.tr("AQI", "US Air Quality Index abbreviation")
+    readonly property var airQualityIndex: WeatherData.airQualityIndex(weather, airQualityScale)
+    readonly property int airQualityCategory: WeatherData.airQualityCategory(airQualityScale, airQualityIndex)
+    readonly property var airQualityCategories: {
+        switch (airQualityScale) {
+        case "european":
+            return [I18n.tr("Good", "air quality category"), I18n.tr("Fair", "air quality category"), I18n.tr("Moderate", "air quality category", true), I18n.tr("Poor", "air quality category"), I18n.tr("Very poor", "air quality category"), I18n.tr("Extremely poor", "air quality category")];
+        case "who":
+            {
+                // Above the guideline, how many times it is.
+                const times = airQualityIndex == null ? "" : I18n.tr("%1× guideline", "WHO air quality reading as a multiple of the guideline value").arg(WeatherData.timesGuideline(airQualityIndex).toFixed(1));
+                return [I18n.tr("Within guideline", "WHO air quality category"), times, times, times, times, times];
+            }
+        }
+        return [I18n.tr("Good", "air quality category"), I18n.tr("Moderate", "air quality category", true), I18n.tr("Unhealthy for sensitive groups", "air quality category"), I18n.tr("Unhealthy", "air quality category"), I18n.tr("Very unhealthy", "air quality category"), I18n.tr("Hazardous", "air quality category")];
+    }
+    readonly property bool categoryMarkers: markers.colors.length > 0
+    readonly property var markers: {
+        switch (widgetId) {
+        case "uv":
+            return {
+                selected: uvCategory,
+                colors: [Theme.success, Theme.warning, Theme.warning, Theme.error, Theme.tertiary]
+            };
+        case "airQuality":
+            return {
+                selected: airQualityCategory,
+                colors: airQualityScale === "european" ? [Theme.success, Theme.success, Theme.warning, Theme.warning, Theme.error, Theme.tertiary] : [Theme.success, Theme.warning, Theme.warning, Theme.error, Theme.error, Theme.tertiary]
+            };
+        }
+        return {
+            selected: -1,
+            colors: []
+        };
+    }
     readonly property string windDirection: {
         const directions = [I18n.tr("N", "North compass direction"), I18n.tr("NE", "Northeast compass direction"), I18n.tr("E", "East compass direction"), I18n.tr("SE", "Southeast compass direction"), I18n.tr("S", "South compass direction"), I18n.tr("SW", "Southwest compass direction"), I18n.tr("W", "West compass direction"), I18n.tr("NW", "Northwest compass direction")];
         return directions[Visuals.directionIndex(weather.windDirection)] ?? "";
@@ -92,6 +139,12 @@ Rectangle {
         switch (widgetId) {
         case "uv":
             return I18n.tr("The highlighted marker shows the UV category: low, moderate, high, very high, or extreme.");
+        case "airQuality":
+            if (airQualityScale === "who")
+                return I18n.tr("The highlighted marker shows the mean PM2.5 of the past 24 hours against the WHO guideline of 15 µg/m³ and its interim targets of 25, 37.5, 50 and 75 µg/m³.");
+            if (airQualityScale === "european")
+                return I18n.tr("European Air Quality Index. The highlighted marker shows the category: good, fair, moderate, poor, very poor, or extremely poor.");
+            return I18n.tr("US Air Quality Index. The highlighted marker shows the category: good, moderate, unhealthy for sensitive groups, unhealthy, very unhealthy, or hazardous.");
         case "wind":
             if (Theme.shapeScale === 0)
                 return I18n.tr("The direction label shows where the wind comes from.");
@@ -117,11 +170,11 @@ Rectangle {
     readonly property bool leadingContent: widgetId === "humidity" || widgetId === "precipitation"
 
     radius: graphics && reading.shape ? Theme.fullRadius(width, height) : Theme.cornerRadiusXL
-    color: graphics && widgetId === "uv" ? "transparent" : toneColors.surfaceColor
-    border.width: graphics && widgetId === "uv" ? 0 : Theme.layerOutlineWidth
+    color: graphics && categoryMarkers ? "transparent" : toneColors.surfaceColor
+    border.width: graphics && categoryMarkers ? 0 : Theme.layerOutlineWidth
     border.color: Theme.outlineMedium
     Accessible.role: Accessible.StaticText
-    Accessible.name: reading.label + " " + (hasValue ? reading.value : I18n.tr("Not available")) + " " + (reading.detail ?? "")
+    Accessible.name: reading.label + " " + (hasValue ? reading.value : I18n.tr("Not available")) + " " + (reading.detail ?? "") + (hasValue && reading.spokenDetail ? " " + reading.spokenDetail : "")
     Accessible.description: graphicDescription
 
     DTone {
@@ -141,11 +194,11 @@ Rectangle {
     DMaterialShape {
         anchors.centerIn: parent
         readonly property real aspectRatio: root.widgetId === "wind" && Theme.shapeScale > 0 ? 17 / 20 : 1
-        readonly property real artworkSize: Math.max(0, Math.min(parent.width, parent.height) - (root.widgetId === "uv" ? 0 : root.widgetId === "wind" ? Theme.spacingXS * 2 : Theme.spacingS * 2)) * (root.widgetId === "wind" && Theme.shapeScale > 0 ? rotationScaleForAspectRatio(aspectRatio) : 1)
+        readonly property real artworkSize: Math.max(0, Math.min(parent.width, parent.height) - (root.categoryMarkers ? 0 : root.widgetId === "wind" ? Theme.spacingXS * 2 : Theme.spacingS * 2)) * (root.widgetId === "wind" && Theme.shapeScale > 0 ? rotationScaleForAspectRatio(aspectRatio) : 1)
         width: artworkSize * aspectRatio
         height: artworkSize
         shape: root.reading.shape ?? "square"
-        color: root.widgetId === "uv" ? toneColors.surfaceColor : Theme.withAlpha(root.accent, Theme.stateLayerDrag)
+        color: root.categoryMarkers ? toneColors.surfaceColor : Theme.withAlpha(root.accent, Theme.stateLayerDrag)
         trackColor: Theme.withAlpha(root.accent, Theme.stateLayerHover)
         fillProgress: root.shapeLevel
         visible: root.graphics && !!root.reading.shape && root.widgetId !== "pressure"
@@ -258,24 +311,28 @@ Rectangle {
             color: root.foreground
             horizontalAlignment: root.leadingContent ? Text.AlignLeft : Text.AlignHCenter
             wrapMode: Text.WordWrap
+            maximumLineCount: 2
+            elide: Text.ElideRight
         }
 
         Repeater {
-            model: root.graphics && root.widgetId === "uv" ? root.uvCategories.length : 0
+            model: root.graphics ? root.markers.colors.length : 0
 
+            // Any number of categories spreads over the same 120° arc.
             Rectangle {
                 required property int index
-                readonly property bool selected: root.hasValue && root.uvCategory === index
-                readonly property real angle: (150 - (I18n.isRtl ? 4 - index : index) * 30) * Math.PI / 180
+                readonly property bool selected: root.hasValue && root.markers.selected === index
+                readonly property int last: root.markers.colors.length - 1
+                readonly property real angle: (150 - (I18n.isRtl ? last - index : index) * 120 / Math.max(1, last)) * Math.PI / 180
                 readonly property real orbit: content.width / 2 - Theme.spacingXL
-                readonly property var categoryColors: [Theme.success, Theme.warning, Theme.warning, Theme.error, Theme.tertiary]
+                readonly property color categoryColor: root.markers.colors[index]
 
                 x: content.width / 2 + Math.cos(angle) * orbit - width / 2
                 y: content.height / 2 + Math.sin(angle) * orbit - height / 2
                 width: selected ? Theme.spacingL : Theme.spacingM
                 height: width
                 radius: Theme.fullRadius(width, height)
-                color: selected ? categoryColors[index] : Theme.withAlpha(categoryColors[index], Theme.stateLayerDrag)
+                color: selected ? categoryColor : Theme.withAlpha(categoryColor, Theme.stateLayerDrag)
             }
         }
 
