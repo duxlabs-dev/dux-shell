@@ -1266,6 +1266,15 @@ Item {
         ProfileCaptureBar {}
     }
 
+    // The user closed Settings to set up the screen, so bring back the profile being edited.
+    Connections {
+        target: ConfigProfileService
+        function onScreenshotEnded() {
+            if (!(PopoutService.settingsModal?.shouldBeVisible ?? false))
+                PopoutService.openSettingsWithTab("profile_edit");
+        }
+    }
+
     Loader {
         id: osdSurfacesLoader
         active: root.osdSurfacesLoaded

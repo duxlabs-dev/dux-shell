@@ -26,6 +26,7 @@ Item {
     property var expandedCategories: []
     property bool pendingSync: true
     property bool nameInvalid: false
+    property bool editsRestored: false
     readonly property bool dirty: !!profile && (pendingName.trim() !== profile.name || pendingSync !== !!profile.sync || pendingGroups.length !== profile.groups.length || pendingGroups.some(g => !profile.groups.includes(g)))
 
     property string heldImageId: ""
@@ -53,6 +54,7 @@ Item {
             return;
         const p = profile;
         const edits = SettingsUiState.configProfileEdits?.id === profileId ? SettingsUiState.configProfileEdits : null;
+        editsRestored = !!edits;
         pendingName = edits?.name ?? p?.name ?? "";
         pendingGroups = edits?.groups ?? (p ? p.groups.slice() : Profiles.GROUPS.slice());
         expandedCategories = [];
@@ -159,6 +161,21 @@ Item {
                         root.nameInvalid = false;
                     }
                     onAccepted: root._submit()
+                }
+            }
+
+            SettingsRow {
+                visible: root.editsRestored && root.dirty
+                subtitle: I18n.tr("Unsaved changes")
+                body: DButton {
+                    text: I18n.tr("Discard")
+                    iconName: "undo"
+                    backgroundColor: Theme.secondaryContainer
+                    textColor: Theme.onSecondaryContainer
+                    onClicked: {
+                        SettingsUiState.configProfileEdits = null;
+                        root._reset();
+                    }
                 }
             }
 

@@ -76,6 +76,7 @@ Singleton {
 
     signal liveChanged
     signal profileImported(string id)
+    signal screenshotEnded
 
     on_WantedChanged: _start()
     Component.onCompleted: _start()
@@ -598,8 +599,10 @@ Singleton {
     }
 
     function cancelScreenshot() {
-        if (!capturingId)
-            screenshotTargetId = "";
+        if (capturingId || !screenshotTargetId)
+            return;
+        screenshotTargetId = "";
+        screenshotEnded();
     }
 
     function captureScreenshot() {
@@ -733,5 +736,6 @@ Singleton {
             _imageFailed(id, "preview.jpg", output);
         capturingId = "";
         screenshotTargetId = "";
+        screenshotEnded();
     }
 }

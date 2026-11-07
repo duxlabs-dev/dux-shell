@@ -101,7 +101,8 @@ function service({ profiles = [], files = {}, active = "a", applyOk = true, dir 
                 };
             }
         },
-        syncTimer: { restart() {}, stop() {} }
+        syncTimer: { restart() {}, stop() {} },
+        screenshotEnded() {}
     });
     vm.runInContext("var root = this; String.prototype.arg = function (v) { return this.replace('%1', v); };", ctx);
     for (const fn of functions)
