@@ -21,6 +21,7 @@ Singleton {
     property var _entries: ({})
     property var _views: ({})
     property var _folderIds: []
+    property bool _folderExists: false
     property bool _folderReady: false
     property bool _scanned: false
     property bool _started: false
@@ -95,18 +96,23 @@ Singleton {
                 ToastService.showError(I18n.tr("Failed to save profile"), root.profilesDir);
                 return;
             }
-            folderModel.folder = Paths.toFileUrl(root.profilesDir);
+            root._folderExists = true;
         });
     }
 
-    FolderListModel {
-        id: folderModel
-        showDirs: true
-        showFiles: false
-        showDotAndDotDot: false
-        showHidden: false
-        onCountChanged: root._scanFolder()
-        onStatusChanged: root._scanFolder()
+    // Without a folder the model lists the working directory, so it only exists once there is one.
+    Loader {
+        id: folderLoader
+        active: root._folderExists
+        sourceComponent: FolderListModel {
+            folder: Paths.toFileUrl(root.profilesDir)
+            showDirs: true
+            showFiles: false
+            showDotAndDotDot: false
+            showHidden: false
+            onCountChanged: root._scanFolder()
+            onStatusChanged: root._scanFolder()
+        }
     }
 
     Component {
@@ -159,11 +165,12 @@ Singleton {
     }
 
     function _scanFolder() {
-        if (folderModel.status !== FolderListModel.Ready)
+        const model = folderLoader.item;
+        if (model?.status !== FolderListModel.Ready)
             return;
         const names = [];
-        for (let i = 0; i < folderModel.count; i++)
-            names.push(folderModel.get(i, "fileName"));
+        for (let i = 0; i < model.count; i++)
+            names.push(model.get(i, "fileName"));
         _setFolders(names);
     }
 
@@ -349,8 +356,7 @@ Singleton {
             "session": data.session,
             "thumbnail": profile.thumbnail || "",
             "thumbnailUpdated": profile.thumbnailUpdated || 0,
-            "created": profile.created || Date.now(),
-            "updated": Date.now()
+            "created": profile.created || Date.now()
         };
         if (data.pluginSettings)
             out.pluginSettings = data.pluginSettings;

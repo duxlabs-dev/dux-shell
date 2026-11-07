@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -69,6 +70,33 @@ func readJSON(t *testing.T, path string) map[string]any {
 	return m
 }
 
+func archiveEntry(t *testing.T, path, name string) string {
+	t.Helper()
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tr := tar.NewReader(gz)
+	for {
+		h, err := tr.Next()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if h.Name == name {
+			b, err := io.ReadAll(tr)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return string(b)
+		}
+	}
+}
+
 func validProfile(extra string) string {
 	return `{"version":1,"name":"Shared","groups":["wallpaper"],"configVersion":1,"sessionConfigVersion":1` + extra + `}`
 }
@@ -86,7 +114,8 @@ func TestExportImportRoundTrip(t *testing.T) {
 			"fontFamily":              "Inter Display",
 			"desktopWidgetInstances":  []any{map[string]any{"widgetType": "desktopClock"}, map[string]any{"widgetType": "somePlugin", "config": map[string]any{"cmd": "id"}}},
 			"builtInPluginSettings":   map[string]any{"a": 1},
-			"dockConfigs":             []any{map[string]any{"trashCustomCommand": "id"}},
+			"dockConfigs":             []any{map[string]any{"trashCustomCommand": "id"}, map[string]any{"trashCustomCommand": []any{"id"}}},
+			"barConfigs":              []any{map[string]any{"launcherLogoCustomPath": "/home/me/logo.png"}},
 		},
 		"session": map[string]any{
 			"wallpaperPath":     filepath.Join(pics, "a.jpg"),
@@ -98,6 +127,9 @@ func TestExportImportRoundTrip(t *testing.T) {
 	out := filepath.Join(root, "shared.tar.gz")
 	if _, err := Export(dir, "p1", out); err != nil {
 		t.Fatal(err)
+	}
+	if shared := archiveEntry(t, out, "profile.json"); strings.Contains(shared, "pluginSettings") || strings.Contains(shared, "builtInPluginSettings") || strings.Contains(shared, `"id"`) || strings.Contains(shared, "logo.png") {
+		t.Errorf("plugin data, a command or a local path left in the archive: %s", shared)
 	}
 	id, err := Import(dir, wpDir, out)
 	if err != nil {

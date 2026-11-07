@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
 import qs.Common
 import qs.Services
 import qs.DCommon.FileBrowser
@@ -53,18 +54,21 @@ Column {
         rowSpacing: root.cellSpacing
 
         Repeater {
-            model: ConfigProfileService.profiles
+            model: ScriptModel {
+                values: ConfigProfileService.profiles
+                objectProp: "id"
+            }
 
             ProfileCard {
                 required property var modelData
 
                 width: grid.cellWidth
                 compact: root.compact
-                profile: modelData
+                profile: ConfigProfileService.find(modelData.id) ?? modelData
                 targetScreen: root.targetScreen
                 onEditRequested: id => root.openPage("profile_edit", id)
                 onMenuRequested: (x, y, keyboard) => {
-                    profileMenu.profile = modelData;
+                    profileMenu.profile = profile;
                     const point = mapToItem(root, x, y);
                     profileMenu.openAt(point.x, point.y);
                     if (keyboard)

@@ -42,20 +42,36 @@ Item {
             ConfigProfileService.discardDraft();
     }
 
-    function _reset() {
+    function _reset(keepEdits) {
         const kept = isNew ? (ConfigProfileService.draft?.id ?? "") : profileId;
         if (heldImageId !== kept)
             _release();
         leaving = false;
         frozenProfile = null;
         heldImageId = isNew ? (ConfigProfileService.draft?.id || ConfigProfileService.startDraft()) : profileId;
+        if (keepEdits)
+            return;
         const p = profile;
-        pendingName = p?.name ?? "";
-        pendingGroups = p ? p.groups.slice() : Profiles.GROUPS.slice();
+        const edits = SettingsUiState.configProfileEdits?.id === profileId ? SettingsUiState.configProfileEdits : null;
+        SettingsUiState.configProfileEdits = null;
+        pendingName = edits?.name ?? p?.name ?? "";
+        pendingGroups = edits?.groups ?? (p ? p.groups.slice() : Profiles.GROUPS.slice());
         expandedCategories = [];
-        pendingSync = p ? !!p.sync : true;
+        pendingSync = edits?.sync ?? (p ? !!p.sync : true);
         nameInvalid = false;
         nameField.text = pendingName;
+    }
+
+    // Closing Settings destroys the page, and the user may be setting up the screen for a screenshot.
+    function _keepEditsOverClose() {
+        if (leaving || (parentModal?.shouldBeVisible ?? false) || !(isNew || dirty))
+            return;
+        SettingsUiState.configProfileEdits = {
+            "id": profileId,
+            "name": pendingName,
+            "groups": pendingGroups,
+            "sync": pendingSync
+        };
     }
 
     function _setGroups(groups, on) {
@@ -65,7 +81,6 @@ Item {
         else
             ToastService.showWarning(I18n.tr("At least one group must remain selected", "config profile editor: shown when the user turns off the last settings group"));
     }
-
 
     function _toggleExpanded(id) {
         expandedCategories = expandedCategories.includes(id) ? expandedCategories.filter(c => c !== id) : expandedCategories.concat(id);
@@ -117,7 +132,7 @@ Item {
     onProfileIdChanged: _reset()
     onPageActiveChanged: {
         if (pageActive)
-            _reset();
+            _reset(dirty);
         else
             _release();
     }
@@ -125,7 +140,10 @@ Item {
         _reset();
         nameField.forceActiveFocus();
     }
-    Component.onDestruction: _release()
+    Component.onDestruction: {
+        _keepEditsOverClose();
+        _release();
+    }
 
     SettingsPage {
         SettingsCard {

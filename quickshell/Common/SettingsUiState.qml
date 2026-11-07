@@ -17,6 +17,7 @@ Singleton {
     property string selectedDesktopWidgetId: ""
     // "" = new profile
     property string selectedConfigProfileId: ""
+    property var configProfileEdits: null
     property bool selectedConfigProfileImported: false
     property string selectedWidgetSection: ""
     property int selectedWidgetIndex: -1

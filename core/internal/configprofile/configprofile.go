@@ -73,6 +73,9 @@ var shellRules = []shellRule{
 	{[]string{"settings", "iconThemeLight"}, shellQuoted + "'/"},
 }
 
+// The dock's trash command runs through sh -c, and a custom logo's path names a local file and user.
+var blankedKeys = []string{"trashCustomCommand", "launcherLogoCustomPath"}
+
 var unbundledPaths = [][]string{
 	{"session", "wallpaperCyclingFolderPath"},
 	{"session", "monitorCyclingSettings", "*", "folderPath"},
@@ -172,6 +175,7 @@ func Export(dir, id, out string) (warnings []string, err error) {
 	if err != nil {
 		return nil, err
 	}
+	stripUnshared(profile)
 	for _, path := range unbundledPaths {
 		walkPath(profile, path, nil, func(_ string, v any) {
 			if s, _ := v.(string); s != "" {
@@ -339,8 +343,7 @@ func Import(dir, wallpaperDir, archive string) (id string, err error) {
 		return "", err
 	}
 
-	stripPlugins(profile)
-	blankKey(profile["settings"], "trashCustomCommand")
+	stripUnshared(profile)
 
 	thumb, _ := profile["thumbnail"].(string)
 	if _, ok := contents.previews[thumb]; !ok {
@@ -388,7 +391,15 @@ func removeStaleStaging(dir string) {
 	}
 }
 
-// Plugin settings can hold commands and script paths, and applying them can enable plugins.
+// What never leaves or enters through an archive, on both ends so hand-made archives are covered too.
+func stripUnshared(p map[string]any) {
+	stripPlugins(p)
+	for _, key := range blankedKeys {
+		blankKey(p["settings"], key)
+	}
+}
+
+// Plugin settings can hold API keys, commands and script paths, and applying them can enable plugins.
 func stripPlugins(p map[string]any) {
 	delete(p, "pluginSettings")
 	if settings, ok := p["settings"].(map[string]any); ok {
@@ -408,13 +419,13 @@ func stripPlugins(p map[string]any) {
 	}
 }
 
-// The dock's trash command runs through sh -c.
 func blankKey(v any, key string) {
 	switch v := v.(type) {
 	case map[string]any:
 		for k, mv := range v {
-			if s, ok := mv.(string); ok && k == key && s != "" {
+			if k == key {
 				v[k] = ""
+				continue
 			}
 			blankKey(mv, key)
 		}
