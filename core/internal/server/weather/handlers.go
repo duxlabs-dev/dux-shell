@@ -59,19 +59,31 @@ func lowPriority(fetch coreweather.Fetcher) coreweather.Fetcher {
 
 // ctx ends when the shell disconnects; the shell cannot cancel a single request.
 func handleGet(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request) {
-	latitude, err := params.Float(req.Params, "latitude")
+	request, err := parseRequest(req.Params)
 	if err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return
 	}
-	longitude, err := params.Float(req.Params, "longitude")
+	result, err := client.Lookup(ctx, request)
 	if err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return
+	}
+	conn.Respond(req.ID, result)
+}
+
+func parseRequest(p map[string]any) (coreweather.Request, error) {
+	latitude, err := params.Float(p, "latitude")
+	if err != nil {
+		return coreweather.Request{}, err
+	}
+	longitude, err := params.Float(p, "longitude")
+	if err != nil {
+		return coreweather.Request{}, err
 	}
 	var providers []coreweather.Provider
-	if _, configured := req.Params["providers"]; configured {
-		ids := params.StringSlice(req.Params, "providers")
+	if _, configured := p["providers"]; configured {
+		ids := params.StringSlice(p, "providers")
 		// Switching every provider off still leaves Open-Meteo.
 		if len(ids) == 0 {
 			ids = []string{string(coreweather.OpenMeteo)}
@@ -80,15 +92,10 @@ func handleGet(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request) {
 			providers = append(providers, coreweather.Provider(id))
 		}
 	}
-
-	result, err := client.Lookup(ctx, coreweather.Request{
-		Latitude:  latitude,
-		Longitude: longitude,
-		Providers: providers,
-	})
-	if err != nil {
-		conn.RespondError(req.ID, err.Error())
-		return
-	}
-	conn.Respond(req.ID, result)
+	return coreweather.Request{
+		Latitude:   latitude,
+		Longitude:  longitude,
+		Providers:  providers,
+		AirQuality: params.BoolOpt(p, "air_quality", false),
+	}, nil
 }
