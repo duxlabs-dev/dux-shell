@@ -147,7 +147,7 @@ export GOTOOLCHAIN=local
 go version
 
 cd core
-make build-distro VERSION="$VERSION" COMMIT="$COMMIT"
+make QTBASE=1 build-distro VERSION="$VERSION" COMMIT="$COMMIT"
 
 %install
 install -Dm755 core/bin/dms %{buildroot}%{_bindir}/dms

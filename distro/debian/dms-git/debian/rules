@@ -48,7 +48,7 @@ override_dh_auto_build:
 	VERSION="$(UPSTREAM_VERSION)"; \
 	COMMIT=$$(echo "$(UPSTREAM_VERSION)" | grep -oP '(?<=git)[0-9]+\.[a-f0-9]+' | cut -d. -f2 | head -c8 || echo "unknown"); \
 	echo "Building with VERSION=$$VERSION COMMIT=$$COMMIT ARCH=$(DEB_HOST_ARCH)"; \
-	cd core && $(MAKE) GOFLAGS="-mod=vendor" build-distro VERSION="$$VERSION" COMMIT="$$COMMIT"
+	cd core && $(MAKE) GOFLAGS="-mod=vendor" QTBASE=1 build-distro VERSION="$$VERSION" COMMIT="$$COMMIT"
 
 	cp core/bin/dms dms
 	chmod +x dms

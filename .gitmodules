@@ -5,4 +5,4 @@
 [submodule "dux-qt-base"]
 	path = dux-qt-base
 	url = https://github.com/duxlabs-dev/dux-qt-base.git
-	branch = main
+	branch = master

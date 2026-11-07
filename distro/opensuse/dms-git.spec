@@ -115,7 +115,7 @@ COMMIT=$(echo "%{version}" | grep -oP '(?<=git)[0-9]+\.[a-f0-9]+' | cut -d. -f2 
 
 # Build dms-cli from source using vendored dependencies
 cd core
-make GOFLAGS="-mod=vendor" build-distro VERSION="$VERSION" COMMIT="$COMMIT"
+make GOFLAGS="-mod=vendor" QTBASE=1 build-distro VERSION="$VERSION" COMMIT="$COMMIT"
 mv bin/dms ../dms
 cd ..
 chmod +x dms

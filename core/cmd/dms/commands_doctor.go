@@ -766,7 +766,7 @@ func getDMSShellVersion() (version, path string) {
 func getQuickshellVersionInfo(missingFeatures bool) (display string, st status, path, details, semver string) {
 	qsPath, err := qtbaseembed.Resolve()
 	if err != nil {
-		return "Not installed", statusError, "", "", ""
+		return "Not installed", statusError, "", "Install the dux-qt-base package", ""
 	}
 
 	output, err := qtbase.Command(context.Background(), "--version").Output()

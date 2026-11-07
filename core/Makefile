@@ -39,10 +39,10 @@ endif
 # Default target
 all: build
 
-# quickshell runtime built from the dux-qt-base submodule and embedded in dms as libdux-qt-base.so,
-# which `dms qs` dlopens. QTBASE=0 skips it and `dms qs` then dlopens an installed libdux-qt-base.so.0
-# (next to dms or in the system library dirs, e.g. a dux-qt-base package) or falls back to upstream qs on PATH.
-QTBASE ?= 1
+# QTBASE=1 builds the quickshell runtime from the dux-qt-base submodule and embeds it in dms as libdux-qt-base.so,
+# which `dms qs` dlopens. With the default QTBASE=0, `dms qs` dlopens an installed libdux-qt-base.so.0
+# (next to dms or in the system library dirs, e.g. a dux-qt-base package). `dms run --qs-child` runs upstream qs instead.
+QTBASE ?= 0
 QTBASE_SRC ?= ../dux-qt-base
 QTBASE_BUILD ?= build/dux-qt-base
 QTBASE_LIB = $(QTBASE_BUILD)/src/libdux-qt-base.so.0
@@ -196,14 +196,14 @@ print-version:
 help:
 	@echo "Available targets:"
 	@echo "  all                 - Build the main binary (dms) (default)"
-	@echo "  build               - Build the main binary (dms) with the embedded UI and runtime (needs the dux-qt-base submodule)"
-	@echo "                        QTBASE=0 skips the runtime: dms then uses an installed dux-qt-base package or qs on PATH"
+	@echo "  build               - Build the main binary (dms) with the embedded UI"
+	@echo "                        dms needs an installed dux-qt-base; QTBASE=1 embeds the runtime from the submodule"
 	@echo "  build-distro        - Native build for distro packages (distro_binary tag, same QTBASE switch)"
 	@echo "  sync-shell          - Copy quickshell/ into the embed dir (runs before tagged builds)"
 	@echo "  duxinstall         - Build duxinstall binary"
 	@echo "  dist                - Build dms for linux/freebsd amd64/arm64 (no update/greeter)"
 	@echo "                        Use ARCH=amd64 or ARCH=arm64 and/or DIST_OSES=linux to narrow"
-	@echo "                        No embedded runtime: dist binaries need an installed dux-qt-base or qs on PATH"
+	@echo "                        No embedded runtime: dist binaries need an installed dux-qt-base"
 	@echo "  build-all           - Build both binaries"
 	@echo "  install             - Install dms to $(INSTALL_DIR)"
 	@echo "  install-all         - Install both dms and duxinstall to $(INSTALL_DIR)"
