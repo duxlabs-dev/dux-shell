@@ -53,7 +53,6 @@ Item {
             return;
         const p = profile;
         const edits = SettingsUiState.configProfileEdits?.id === profileId ? SettingsUiState.configProfileEdits : null;
-        SettingsUiState.configProfileEdits = null;
         pendingName = edits?.name ?? p?.name ?? "";
         pendingGroups = edits?.groups ?? (p ? p.groups.slice() : Profiles.GROUPS.slice());
         expandedCategories = [];
@@ -64,14 +63,13 @@ Item {
 
     // Closing Settings destroys the page, and the user may be setting up the screen for a screenshot.
     function _keepEditsOverClose() {
-        if (leaving || (parentModal?.shouldBeVisible ?? false) || !(isNew || dirty))
-            return;
-        SettingsUiState.configProfileEdits = {
+        const closing = !leaving && !(parentModal?.shouldBeVisible ?? false);
+        SettingsUiState.configProfileEdits = closing && (isNew || dirty) ? {
             "id": profileId,
             "name": pendingName,
             "groups": pendingGroups,
             "sync": pendingSync
-        };
+        } : null;
     }
 
     function _setGroups(groups, on) {

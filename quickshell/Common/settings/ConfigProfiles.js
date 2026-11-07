@@ -51,7 +51,7 @@ var SETTINGS_MAP = {
         "systemTrayIconTintMode", "systemTrayIconTintSaturation", "systemTrayIconTintStrength",
         "dankLauncherV2BorderEnabled", "dankLauncherV2BorderThickness", "dankLauncherV2BorderColor", "avatarRing",
         "modalDarkenBackground", "lockScreenInactiveColor", "notificationForegroundLayers", "density", "interfaceStyle",
-        "sectionDividerOpacity"
+        "sectionDividerOpacity", "tooltipSurfaceColor", "tooltipSurfaceCustomColor"
     ],
     shadows: [
         "popoutElevationEnabled", "m3ElevationEnabled", "m3ElevationIntensity", "m3ElevationOpacity",
@@ -114,7 +114,8 @@ var SETTINGS_MAP = {
     ],
     time_weather: [
         "clockFormat", "showSeconds", "padHours12Hour", "useFahrenheit", "lockDateFormat", "useAutoLocation",
-        "weatherEnabled", "firstDayOfWeek", "showWeekNumber", "windSpeedUnit", "clockDateFormat", "weatherProviders"
+        "weatherEnabled", "firstDayOfWeek", "showWeekNumber", "windSpeedUnit", "clockDateFormat", "weatherProviders",
+        "showAmPm"
     ],
     lock_screen: [
         "lockScreenWidgetInstances", "lockScreenShowPowerActions", "lockScreenShowProfileImage",
