@@ -52,3 +52,15 @@ test("picker skips the running and saved entries and tells duplicate labels apar
         { id: "0005", label: "Arch", name: "Arch" }
     ]);
 });
+
+test("custom names stay apart from the firmware label and clear when empty or unchanged", () => {
+    const saved = [{ id: "0000", label: "Windows Boot Manager" }, { id: "0004", label: "Arch", customName: "Daily" }];
+    const cases = [
+        ["0000", "Windows 11", [{ id: "0000", label: "Windows Boot Manager", customName: "Windows 11" }, saved[1]]],
+        ["0004", "", [saved[0], { id: "0004", label: "Arch" }]],
+        ["0004", "Arch", [saved[0], { id: "0004", label: "Arch" }]],
+        ["FFFF", "Gone", saved]
+    ];
+    for (const [id, name, expected] of cases)
+        assert.deepEqual(plain(bootEntries.withCustomName(saved, id, name)), expected, `${id} -> "${name}"`);
+});

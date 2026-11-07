@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import qs.Common
 import qs.Services
@@ -10,6 +12,8 @@ Item {
     id: root
 
     property bool onAc: true
+    property var parentModal: null
+    property string renamingBootId: ""
 
     readonly property var timeoutValues: [0, 15, 30, 60, 120, 180, 300, 600, 900, 1200, 1800, 3600, 5400, 7200, 10800]
     readonly property var timeoutOptions: timeoutValues.map(seconds => seconds === 0 ? I18n.tr("Never", "timeout option meaning the action never happens") : I18n.duration(seconds))
@@ -31,6 +35,15 @@ Item {
         if (index < 0)
             return;
         SettingsData.set(key, timeoutValues[index]);
+    }
+
+    function setBootEntryName(id, name) {
+        SettingsData.set("powerMenuBootEntries", BootEntries.withCustomName(SettingsData.powerMenuBootEntries, id, name));
+    }
+
+    function saveBootEntryName(name) {
+        setBootEntryName(renamingBootId, name);
+        renameDialog.hide();
     }
 
     function gracePeriodText(key) {
@@ -350,10 +363,23 @@ Item {
 
                     required property var modelData
                     required property int index
+                    readonly property string customName: modelData.customName ?? ""
 
-                    title: modelData.label
-                    subtitle: "Boot" + modelData.id
+                    title: customName || modelData.label
+                    subtitle: customName ? I18n.tr("Original: %1").arg(modelData.label) : "Boot" + modelData.id
                     iconName: "restart_alt"
+                    modified: customName !== ""
+                    onResetRequested: root.setBootEntryName(modelData.id, "")
+
+                    DActionButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        iconName: "edit"
+                        tooltipText: I18n.tr("Set custom name")
+                        onClicked: {
+                            root.renamingBootId = bootEntryRow.modelData.id;
+                            renameDialog.show(bootEntryRow.title);
+                        }
+                    }
 
                     DActionButton {
                         anchors.verticalCenter: parent.verticalCenter
@@ -469,5 +495,15 @@ Item {
                 }
             }
         }
+    }
+
+    SettingsRenameDialog {
+        id: renameDialog
+        parent: root.parentModal?.modalFocusScope ?? root
+        title: I18n.tr("Set custom name")
+        supportingText: SettingsData.powerMenuBootEntries.find(entry => entry.id === root.renamingBootId)?.label ?? ""
+        labelText: I18n.tr("Custom name")
+        leftIconName: "restart_alt"
+        onAccepted: name => root.saveBootEntryName(name)
     }
 }
