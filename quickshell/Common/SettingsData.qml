@@ -122,6 +122,8 @@ Singleton {
     property var clipboardVisibleEntryActions: Spec.SPEC.clipboardVisibleEntryActions.def
 
     property var launcherPluginVisibility: Spec.SPEC.launcherPluginVisibility.def
+    property var islandPluginsBlocked: Spec.SPEC.islandPluginsBlocked.def
+    property var islandSystemFaces: Spec.SPEC.islandSystemFaces.def
 
     function getPluginAllowWithoutTrigger(pluginId) {
         if (!launcherPluginVisibility[pluginId])

@@ -2,6 +2,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
+import qs.Services
+import qs.Modules.DIsland.Activities
 
 Item {
     id: root
@@ -26,6 +28,9 @@ Item {
     required property color surfaceColor
     property bool freeMode: false
     property Component compactFaceOverride: null
+    readonly property var pluginActivity: root.controller.plugin.activity
+    // The shell-drawn face (IslandActivityInput.readyFace) when the activity has no pill of its own.
+    readonly property var pluginFace: root.controller.plugin.face
     // Hosted islands fold the slot anchor into every target; the face must pin to the same resolved slot.
     property var resolveTarget: target => target
     // Embedded sheets grow by this on the near edge; the face keeps its content size below the fold.
@@ -61,6 +66,8 @@ Item {
     readonly property real outgoingExpandedFade: root.fadeExpanded(root.outgoingMorph)
     readonly property bool mediaSurfaceActive: root.surfaceActive("media")
     readonly property bool systemSurfaceActive: root.controller.systemActivities.some(id => root.surfaceActive(id))
+    readonly property bool pluginSurfaceActive: root.surfaceActive("plugin")
+    onPluginSurfaceActiveChanged: root.controller.plugin.shown = root.pluginSurfaceActive
 
     function systemOpacity(opacityFor) {
         const incoming = root.controller.isSystemActivity(root.renderedActivity) ? opacityFor(root.renderedActivity) : 0;
@@ -110,7 +117,8 @@ Item {
             "notificationcenter": notificationCenterExpandedLoader,
             "clipboard": clipboardExpandedLoader,
             "powermenu": powerMenuExpandedLoader,
-            "controlcenter": controlCenterExpandedLoader
+            "controlcenter": controlCenterExpandedLoader,
+            "plugin": pluginExpandedLoader
         })
 
     // Faces load async and stay disabled until half faded in, so ExpandedFace calls this again on each ready edge.
@@ -379,14 +387,50 @@ Item {
     CompactFace {
         active: root.systemSurfaceActive
         activity: "volume"
-        face: root.systemCompactComponent
+        face: root.controller.plugin.systemFace?.compactContent ?? root.systemCompactComponent
     }
 
     ExpandedFace {
         activity: "volume"
         active: root.systemSurfaceActive && (root.expanded || root.expandedFade > 0)
         asynchronous: false
-        sourceComponent: root.systemExpandedComponent
+        sourceComponent: root.controller.plugin.systemFace?.expandedContent ?? root.systemExpandedComponent
+    }
+
+    readonly property Component pluginCompactComponent: root.pluginFace ? readyCompactComponent : root.pluginActivity?.compactContent ?? null
+    readonly property Component pluginExpandedComponent: root.pluginFace ? readyExpandedComponent : root.pluginActivity?.expandedContent ?? null
+
+    Component {
+        id: readyCompactComponent
+
+        ReadyActivityCompact {
+            face: root.pluginFace
+            isVertical: root.controller.isVertical
+        }
+    }
+
+    Component {
+        id: readyExpandedComponent
+
+        ReadyActivityExpanded {
+            face: root.pluginFace
+            onTriggered: actionId => IslandActivityService.trigger(root.controller.pluginToken, actionId)
+        }
+    }
+
+    CompactFace {
+        active: root.pluginSurfaceActive && !!root.pluginCompactComponent
+        activity: "plugin"
+        face: root.pluginCompactComponent
+    }
+
+    ExpandedFace {
+        id: pluginExpandedLoader
+
+        activity: "plugin"
+        active: root.pluginSurfaceActive && !!root.pluginExpandedComponent && (root.expanded || root.expandedFade > 0)
+        asynchronous: false
+        sourceComponent: root.pluginExpandedComponent
     }
 
     CompactFace {

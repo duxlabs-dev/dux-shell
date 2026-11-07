@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
+import Quickshell
 import Quickshell.Wayland
 import qs.Modals.DLauncherV2 as DLauncher
 import qs.Modules.DBar
@@ -9,6 +10,8 @@ import qs.Modules.DIsland.Activities
 import qs.Services
 import qs.Widgets
 import "../../Common/LayoutResolver.js" as Resolver
+import "../../Common/IslandActivities.js" as Activities
+import "../../Common/IslandActivityInput.js" as Input
 
 Item {
     id: root
@@ -38,7 +41,8 @@ Item {
     property var leadingSectionRect: null
     property var centerSectionRect: null
     property var trailingSectionRect: null
-    readonly property int hostLayer: root.hostWindow?.dBarLayer ?? WlrLayer.Top
+    // The free island's window has no dBarLayer: it takes its layer from here.
+    readonly property int hostLayer: root.hostWindow?.dBarLayer ?? LayerShell.fromEnv("DMS_DANKISLAND_LAYER", root.usesOverlayLayer ? WlrLayer.Overlay : WlrLayer.Top)
     property point anchor
     property bool anchorSnaps: false
     property real freeScale: 1
@@ -64,7 +68,7 @@ Item {
     readonly property real surfaceOpacity: surface.surfaceOpacity
     readonly property bool inputSuspended: controller.inputSuspended
     readonly property bool expanded: controller.expanded
-    readonly property bool transientActive: controller.transientActive
+    readonly property bool holdsHost: controller.plugin.holdsHost
     // Held from expand until the collapse spring settles, so compact-to-compact morphs never resize the bar window.
     property bool sheetOut: false
     readonly property bool surfaceFits: (root.isVertical ? root.windowWidth : root.windowHeight) >= root.hostThickness - 1
@@ -115,6 +119,7 @@ Item {
             root.sheetOut = false;
         }
         root.publishSurface();
+        Qt.callLater(root.syncPluginActivity);
     }
     onMotionRunningChanged: root.publishSurface()
     onConnectedChromeChanged: root.publishSurface()
@@ -268,7 +273,126 @@ Item {
 
     onRegistryKeyChanged: syncRegistration()
     Component.onCompleted: syncRegistration()
-    Component.onDestruction: IslandHostRegistry.unregister(root.registeredKey, root)
+    Component.onDestruction: {
+        IslandHostRegistry.unregister(root.registeredKey, root);
+        IslandActivityService.removeHost(controller);
+    }
+
+    readonly property var livePluginEntry: IslandActivityService.entry(controller.pluginToken)
+    property var lastPluginEntry: null
+    onLivePluginEntryChanged: {
+        if (root.livePluginEntry)
+            root.lastPluginEntry = root.livePluginEntry;
+    }
+    readonly property var pluginEntry: Activities.shownEntry(root.livePluginEntry, root.lastPluginEntry, controller.plugin.shown)
+    readonly property var pluginActivity: pluginLoader.item
+    // A plugin that draws its own pill owns both faces; otherwise the shell draws them from its data.
+    // update() swaps data inside the same entry object, so the face follows the revision rather than the entry.
+    readonly property var readyFace: root.pluginRevision >= 0 && root.pluginEntry && !root.pluginActivity?.compactContent ? Input.readyFace(root.pluginEntry.data, root.stateWords) : null
+    readonly property var stateWords: ({
+            "error": I18n.tr("Error", "island activity state, said beside its detail"),
+            "warning": I18n.tr("Warning", "island activity state, said beside its detail"),
+            "success": I18n.tr("Success", "island activity state, said beside its detail")
+        })
+    readonly property int pluginRevision: IslandActivityService.revision
+    readonly property bool quiet: SessionData.doNotDisturb
+    readonly property bool sessionLocked: SessionService.locked
+    onSessionLockedChanged: Qt.callLater(root.syncPluginActivity)
+    readonly property string activeActivity: controller.activeActivity
+    onPluginRevisionChanged: Qt.callLater(root.syncPluginActivity)
+    onQuietChanged: Qt.callLater(root.syncPluginActivity)
+    onActiveActivityChanged: Qt.callLater(root.syncPluginActivity)
+
+    // The plugin activity this island takes next, if any ("" when it keeps what it shows).
+    function islandTaker() {
+        if (root.sessionLocked)
+            return "";
+        const next = IslandActivityService.nextFor(controller);
+        const occupant = {
+            "activity": controller.activeActivity,
+            "expanded": controller.expanded,
+            "critical": notificationSource.critical,
+            "system": controller.systemActivityActive,
+            "kind": controller.pluginKind
+        };
+        return Activities.takesIsland(next, occupant, controller.pluginToken, controller.pluginActive) ? next.token : "";
+    }
+
+    function syncPluginActivity() {
+        const held = controller.pluginToken;
+        const outcome = held ? Activities.heldOutcome(!!IslandActivityService.entry(held), controller.pluginActive, root.sessionLocked) : "";
+        if (outcome === "end")
+            controller.plugin.end();
+        else if (outcome === "shown")
+            IslandActivityService.markShown(held, controller);
+        else if (outcome === "interrupted")
+            IslandActivityService.markInterrupted(held, controller);
+
+        // Nothing starts behind the lock screen (islandTaker); it shows once the session is back.
+        const next = IslandActivityService.entry(root.islandTaker());
+        if (!next)
+            return;
+        if (controller.pluginToken && controller.pluginToken !== next.token)
+            IslandActivityService.markInterrupted(controller.pluginToken, controller);
+        controller.plugin.begin(next.token, next.kind, next.state === "waiting" && next.expanded, next.timeoutMs);
+        // begin loads its faces: readyFace is set only when the plugin leaves compactContent to the shell.
+        if (root.readyFace && IslandActivityService.dropIfEmpty(next.token)) {
+            controller.plugin.end();
+            return;
+        }
+        IslandActivityService.markShown(next.token, controller);
+    }
+
+    Loader {
+        id: pluginLoader
+
+        readonly property string pluginId: root.pluginEntry?.pluginId ?? ""
+        sourceComponent: IslandActivityService.islandComponents[pluginId] ?? null
+
+        onLoaded: {
+            // A face sets only the properties it declares (as DashWidgetGrid does): one it leaves out must not stop the rest.
+            const give = (name, value) => {
+                if (name in item)
+                    item[name] = value;
+            };
+            give("pluginId", pluginId);
+            give("pluginService", PluginService);
+            give("token", Qt.binding(() => controller.pluginToken));
+            give("kind", Qt.binding(() => root.pluginEntry?.kind ?? "live"));
+            give("expanded", Qt.binding(() => controller.pluginActive && controller.expanded));
+            give("interrupted", Qt.binding(() => !controller.pluginActive));
+            give("screen", Qt.binding(() => root.screenName));
+            give("edge", Qt.binding(() => root.edge));
+        }
+    }
+
+    readonly property var systemFaceChoice: IslandActivityService.systemFaceFor(systemSource.kind)
+
+    Loader {
+        id: systemFaceLoader
+
+        active: !!root.systemFaceChoice
+        sourceComponent: root.systemFaceChoice?.component ?? null
+        onLoaded: {
+            if ("pluginId" in item)
+                item.pluginId = root.systemFaceChoice.pluginId;
+            if ("pluginService" in item)
+                item.pluginService = PluginService;
+            if ("model" in item)
+                item.model = systemSource;
+        }
+    }
+
+    LazyLoader {
+        active: !!root.pluginActivity?.overflowContent
+
+        IslandOverflowWindow {
+            screen: root.screen
+            content: root.pluginActivity?.overflowContent ?? null
+            layer: root.pluginEntry?.showInFullscreen ? WlrLayer.Overlay : root.hostLayer
+            shown: controller.pluginActive
+        }
+    }
 
     function sameEdgeSlots() {
         const stored = ConnectedModeState.surfaceDescriptors[root.screenName] ?? {};
@@ -410,6 +534,7 @@ Item {
             root.keyboardReclaiming = true;
             keyboardReclaimTimer.restart();
         }
+        onPluginDismissed: (token, reason) => IslandActivityService.remove(token, reason)
         onLauncherSessionActiveChanged: {
             if (!launcherSessionActive)
                 islandTransientSurfaces.closeAll();
@@ -451,6 +576,16 @@ Item {
         unreadNotificationCount: root.setting("islandNotificationBadgeClearOnOpen") ? NotificationService.unreadCount : NotificationService.notifications.length
         hoverOpenDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverOpenDelay")))
         hoverCloseDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverCloseDelay")))
+        pluginExpandable: root.readyFace ? (root.readyFace.text !== "" || root.readyFace.actions.length > 0) : !!root.pluginActivity?.expandedContent
+        systemFaceCompactLength: Input.systemFaceSize(systemFaceLoader.item, "compactLength")
+        systemFaceExpandedWidth: Math.min(dashboardAvailableWidth, Input.systemFaceSize(systemFaceLoader.item, "expandedWidth"))
+        systemFaceExpandedHeight: Math.min(dashboardAvailableHeight, Input.systemFaceSize(systemFaceLoader.item, "expandedHeight"))
+        pluginCompactLength: Input.faceSize(root.pluginActivity, "compactLength", !!root.readyFace)
+        pluginExpandedWidth: Math.min(dashboardAvailableWidth, Input.faceSize(root.pluginActivity, "expandedWidth", !!root.readyFace))
+        pluginExpandedHeight: Math.min(dashboardAvailableHeight, Input.faceSize(root.pluginActivity, "expandedHeight", !!root.readyFace))
+        plugin.activity: root.pluginActivity
+        plugin.face: root.readyFace
+        plugin.systemFace: systemFaceLoader.item
     }
 
     DLauncher.Controller {

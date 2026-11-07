@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../Common/FrameCadence.js" as FrameCadence
 
 QtObject {
     id: root
@@ -45,6 +46,11 @@ QtObject {
     property real velocityTopRightRadius: 0
     property real velocityBottomLeftRadius: 0
     property real velocityBottomRightRadius: 0
+    // Seconds of frames above 120 a second, folded into the next step (FrameCadence.fold).
+    property real _foldedTime: 0
+    // One frame's integrated [current, velocity] for each of the eight axes, made once so advance() allocates nothing per
+    // frame.
+    readonly property var _frame: new Float64Array(2 * 8)
 
     // One per integration step, so consumers copy the body once instead of binding to eight currents.
     signal stepped()
@@ -138,6 +144,17 @@ QtObject {
         stepped();
     }
 
+    function _integrate(axis, target, x, v, steps, step, inverseMass) {
+        const k = stiffness;
+        const c = damping;
+        for (let i = 0; i < steps; i++) {
+            v += (k * (target - x) - c * v) * inverseMass * step;
+            x += v * step;
+        }
+        _frame[2 * axis] = x;
+        _frame[2 * axis + 1] = v;
+    }
+
     function advance(rawFrameTime) {
         if (!enabled || !running || reducedMotion)
             return;
@@ -151,41 +168,39 @@ QtObject {
         const stableStep = 1 / Math.max(1, damping * inverseMass, Math.sqrt(stiffness * inverseMass));
         const steps = Math.min(maximumSubsteps, Math.max(1, Math.ceil(frameTime / Math.min(integrationStep, stableStep))));
         const step = frameTime / steps;
-        const k = stiffness;
-        const c = damping;
-        const target = [targetWidth, targetHeight, targetOffsetAlong, targetOffsetCross, targetTopLeftRadius, targetTopRightRadius, targetBottomLeftRadius, targetBottomRightRadius];
-        const current = [currentWidth, currentHeight, currentOffsetAlong, currentOffsetCross, currentTopLeftRadius, currentTopRightRadius, currentBottomLeftRadius, currentBottomRightRadius];
-        const velocity = [velocityWidth, velocityHeight, velocityOffsetAlong, velocityOffsetCross, velocityTopLeftRadius, velocityTopRightRadius, velocityBottomLeftRadius, velocityBottomRightRadius];
 
-        // Integrate in locals and write once per frame; every property write re-runs its bindings.
-        for (let i = 0; i < steps; i++) {
-            for (let j = 0; j < 8; j++) {
-                velocity[j] += (k * (target[j] - current[j]) - c * velocity[j]) * inverseMass * step;
-                current[j] += velocity[j] * step;
-            }
-        }
-
-        if (!current.every(Number.isFinite) || !velocity.every(Number.isFinite)) {
+        // The axes are independent: each is integrated in plain locals, then all are written once per frame (no array
+        // per frame), since every property write re-runs its bindings.
+        _integrate(0, targetWidth, currentWidth, velocityWidth, steps, step, inverseMass);
+        _integrate(1, targetHeight, currentHeight, velocityHeight, steps, step, inverseMass);
+        _integrate(2, targetOffsetAlong, currentOffsetAlong, velocityOffsetAlong, steps, step, inverseMass);
+        _integrate(3, targetOffsetCross, currentOffsetCross, velocityOffsetCross, steps, step, inverseMass);
+        _integrate(4, targetTopLeftRadius, currentTopLeftRadius, velocityTopLeftRadius, steps, step, inverseMass);
+        _integrate(5, targetTopRightRadius, currentTopRightRadius, velocityTopRightRadius, steps, step, inverseMass);
+        _integrate(6, targetBottomLeftRadius, currentBottomLeftRadius, velocityBottomLeftRadius, steps, step, inverseMass);
+        _integrate(7, targetBottomRightRadius, currentBottomRightRadius, velocityBottomRightRadius, steps, step, inverseMass);
+        if (!_frame.every(Number.isFinite)) {
             settle();
             return;
         }
 
-        velocityWidth = velocity[0];
-        velocityHeight = velocity[1];
-        velocityOffsetAlong = velocity[2];
-        velocityOffsetCross = velocity[3];
-        velocityTopLeftRadius = velocity[4];
-        velocityTopRightRadius = velocity[5];
-        velocityBottomLeftRadius = velocity[6];
-        velocityBottomRightRadius = velocity[7];
-        currentWidth = current[0];
-        currentHeight = current[1];
-        currentOffsetAlong = current[2];
-        currentOffsetCross = current[3];
-        currentTopLeftRadius = current[4];
-        currentTopRightRadius = current[5];
-        currentBottomLeftRadius = current[6];
-        currentBottomRightRadius = current[7];
+        const f = _frame;
+        velocityWidth = f[1];
+        velocityHeight = f[3];
+        velocityOffsetAlong = f[5];
+        velocityOffsetCross = f[7];
+        velocityTopLeftRadius = f[9];
+        velocityTopRightRadius = f[11];
+        velocityBottomLeftRadius = f[13];
+        velocityBottomRightRadius = f[15];
+        currentWidth = f[0];
+        currentHeight = f[2];
+        currentOffsetAlong = f[4];
+        currentOffsetCross = f[6];
+        currentTopLeftRadius = f[8];
+        currentTopRightRadius = f[10];
+        currentBottomLeftRadius = f[12];
+        currentBottomRightRadius = f[14];
 
         if (isSettled())
             settle();
@@ -204,6 +219,15 @@ QtObject {
 
     property FrameAnimation frameAnimation: FrameAnimation {
         running: root.enabled && root.running && !root.reducedMotion
-        onTriggered: root.advance(frameTime)
+        onRunningChanged: root._foldedTime = 0
+        onTriggered: root._onFrame(frameTime)
+    }
+
+    // One screen frame through the fold: steps the spring (advance) at most 120 times a second, with the time folded.
+    function _onFrame(frameTime) {
+        const time = FrameCadence.fold(_foldedTime, frameTime);
+        _foldedTime = Math.max(0, -time);
+        if (time > 0)
+            advance(time);
     }
 }

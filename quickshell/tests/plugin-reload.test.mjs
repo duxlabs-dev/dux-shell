@@ -12,6 +12,7 @@ function service({ enabled = true, type = "widget" } = {}) {
     const pending = [];
     const failures = [];
     const destroyed = [];
+    const loaded = [];
     const manifest = { id: "fixture", name: "Fixture", type, component: "./Widget.qml", settings: "./Settings.qml" };
     const context = vm.createContext({
         Date, Object,
@@ -20,7 +21,7 @@ function service({ enabled = true, type = "widget" } = {}) {
         pluginLauncherComponents: {}, pluginDashComponents: {}, pluginDashCardComponents: {},
         pluginInstances: {}, pluginDaemonInstances: {}, installingPlugins: {}, _componentRevisions: {},
         _daemonSpawnQueue: [], _daemonSpawnTimer: { restart() {} },
-        pluginSurfaceKeys: ["widget", "desktop", "daemon", "launcher", "dash", "dashCard"],
+        pluginSurfaceKeys: ["widget", "desktop", "daemon", "launcher", "dash", "dashCard", "island", "islandSystem"],
         log: { error() {}, warn() {} },
         Paths: { toFileUrl: path => path.startsWith("file://") ? path : "file://" + path },
         SettingsData: { getPluginSetting: () => enabled, setPluginSetting() {} },
@@ -39,7 +40,7 @@ function service({ enabled = true, type = "widget" } = {}) {
             }
             return compiled.get(url);
         } },
-        pluginLoaded() {}, pluginUnloaded() {}, pluginListUpdated() {},
+        pluginLoaded: (id, components) => loaded.push(components), pluginUnloaded() {}, pluginListUpdated() {},
         pluginLoadFailed: (id, error) => failures.push(error),
         _clearLoadError() {}, _setLoadError() {}, _updateAvailablePluginsList() {},
         _loadPluginTranslations() {}, _cleanupPluginStateWriter() {},
@@ -54,7 +55,7 @@ function service({ enabled = true, type = "widget" } = {}) {
     }
     files.set("file:///plugins/fixture/Widget.qml", 12);
     context._onManifestParsed("/plugins/fixture/plugin.json", manifest, "user", 1);
-    return { context, files, requests, pending, failures, manifest, destroyed };
+    return { context, files, requests, pending, failures, manifest, destroyed, loaded };
 }
 
 test("successful updates replace cached components and reread the manifest", () => {
@@ -225,7 +226,7 @@ test("startup checks that cannot run prevent activation", () => {
 });
 
 test("composite updates refresh every surface without creating daemons synchronously", () => {
-    const { context, files, pending, manifest } = service();
+    const { context, files, pending, manifest, loaded } = service();
     delete manifest.component;
     manifest.components = Object.fromEntries(context.pluginSurfaceKeys.map(surface => [surface, "./" + surface + ".qml"]));
     for (const value of [12, 20]) {
@@ -235,6 +236,8 @@ test("composite updates refresh every surface without creating daemons synchrono
         pending.shift()();
         for (const key of ["pluginWidgetComponents", "pluginDesktopComponents", "pluginDaemonComponents", "pluginLauncherComponents", "pluginDashComponents", "pluginDashCardComponents"])
             assert.equal(context[key].fixture.value, value);
+        for (const surface of ["island", "islandSystem"])
+            assert.equal(loaded.at(-1)[surface].value, value, "the island gets its surfaces with the load");
         assert.equal(context.pluginDaemonInstances.fixture, undefined);
     }
 });
