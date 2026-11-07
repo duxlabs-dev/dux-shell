@@ -17,7 +17,7 @@ const QtStub = Object.freeze({
 
 function functionSource(file, name) {
     const source = readFileSync(new URL(file, import.meta.url), "utf8");
-    const found = source.match(new RegExp(`^    function ${name}\\([^)]*\\) \\{\\n[\\s\\S]*?^    \\}`, "m"));
+    const found = source.match(new RegExp(`^([ ]+)function ${name}\\([^)]*\\) \\{\\n[\\s\\S]*?^\\1\\}`, "m"));
     if (!found)
         throw new Error(`${name} not found in ${file}`);
     return found[0];
@@ -277,4 +277,60 @@ test("DBarBody.pointInIslandSatellite distinguishes satellite widget bounds from
 
     body.islandSatellitesEnabled = false;
     assert.equal(body.pointInIslandSatellite(sourceItem, 50, 16), false);
+});
+
+test("DBarTab widgetScrollActionText summarizes live widget scroll actions and openWidgetSettings routes to bar_widget", () => {
+    const defaults = loadScript(new URL("../Common/settings/BarWidgetDefaults.js", import.meta.url));
+    const navigated = [];
+    const uiState = {};
+    const tab = vm.createContext({
+        I18n: { tr: text => text },
+        BrightnessService: { brightnessAvailable: true },
+        SettingsData: {
+            widgetOption: (type, entry, key) => defaults.option(type, entry, key)
+        },
+        SettingsUiState: uiState,
+        bar: {
+            selectedBarConfig: { id: "default" },
+            selectedBarId: ""
+        },
+        dankBarTab: {
+            parentModal: {
+                navigateTo(page, keyboard) {
+                    navigated.push([page, keyboard]);
+                }
+            }
+        }
+    });
+    vm.runInContext(functionSource("../Modules/Settings/DBarTab.qml", "widgetScrollActionText"), tab);
+    vm.runInContext(functionSource("../Modules/Settings/DBarTab.qml", "openWidgetSettings"), tab);
+
+    assert.equal(tab.widgetScrollActionText("workspaceSwitcher", null), "Switches workspaces");
+    assert.equal(tab.widgetScrollActionText("workspaceSwitcher", { reverseScrolling: true }), "Switches workspaces (reversed)");
+    assert.equal(tab.widgetScrollActionText("runningApps", null), "Cycles open windows");
+    assert.equal(tab.widgetScrollActionText("music", null), "Changes player volume");
+    assert.equal(tab.widgetScrollActionText("music", { audioScrollMode: "song" }), "Changes song");
+    assert.equal(tab.widgetScrollActionText("battery", null), "Changes display brightness");
+    assert.equal(tab.widgetScrollActionText("controlCenterButton", null), "Changes volume");
+    assert.equal(tab.widgetScrollActionText("controlCenterButton", { showBrightnessIcon: true }), "Changes volume, or brightness over its icon");
+    assert.equal(tab.widgetScrollActionText("controlCenterButton", { showMicIcon: true, showBrightnessIcon: true }), "Changes volume, or microphone and brightness over their icons");
+
+    tab.openWidgetSettings({
+        sectionId: "center",
+        index: 2,
+        label: "Media",
+        catalogDescription: "Now playing and media controls",
+        icon: "music_note"
+    }, true);
+
+    assert.deepEqual(uiState, {
+        selectedDockId: "",
+        selectedBarId: "default",
+        selectedWidgetSection: "center",
+        selectedWidgetIndex: 2,
+        selectedWidgetTitle: "Media",
+        selectedWidgetDescription: "Now playing and media controls",
+        selectedWidgetIcon: "music_note"
+    });
+    assert.deepEqual(navigated, [["bar_widget", true]]);
 });

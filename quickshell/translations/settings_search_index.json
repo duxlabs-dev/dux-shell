@@ -5087,8 +5087,7 @@
       "widget",
       "workspace"
     ],
-    "parentLabel": "Bar",
-    "icon": "info"
+    "parentLabel": "Bar"
   },
   {
     "section": "dockAutoHide",

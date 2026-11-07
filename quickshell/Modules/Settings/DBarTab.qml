@@ -514,10 +514,48 @@ Item {
                         "visible": BrightnessService.brightnessAvailable
                     },
                     "controlCenterButton": {
-                        "visible": true,
-                        "tooltip": I18n.tr("Controls volume, microphone, and brightness icon zones", "control center widget scroll tooltip")
+                        "visible": true
                     }
                 })
+
+            function widgetScrollActionText(widgetType, entry) {
+                switch (widgetType) {
+                case "workspaceSwitcher":
+                    return SettingsData.widgetOption("workspaceSwitcher", entry, "reverseScrolling") ? I18n.tr("Switches workspaces (reversed)", "bar widget scroll action summary") : I18n.tr("Switches workspaces", "bar widget scroll action summary");
+                case "runningApps":
+                    return I18n.tr("Cycles open windows", "bar widget scroll action summary");
+                case "music":
+                    return SettingsData.widgetOption("music", entry, "audioScrollMode") === "song" ? I18n.tr("Changes song", "bar widget scroll action summary") : I18n.tr("Changes player volume", "bar widget scroll action summary");
+                case "battery":
+                    return I18n.tr("Changes display brightness", "bar widget scroll action summary");
+                case "controlCenterButton":
+                    {
+                        const hasMic = SettingsData.widgetOption("controlCenterButton", entry, "showMicIcon");
+                        const hasBrightness = BrightnessService.brightnessAvailable && SettingsData.widgetOption("controlCenterButton", entry, "showBrightnessIcon");
+                        if (hasMic && hasBrightness)
+                            return I18n.tr("Changes volume, or microphone and brightness over their icons", "bar widget scroll action summary");
+                        if (hasBrightness)
+                            return I18n.tr("Changes volume, or brightness over its icon", "bar widget scroll action summary");
+                        if (hasMic)
+                            return I18n.tr("Changes volume, or microphone over its icon", "bar widget scroll action summary");
+                        return I18n.tr("Changes volume", "bar widget scroll action summary");
+                    }
+                default:
+                    return "";
+                }
+            }
+
+            function openWidgetSettings(item, keyboard) {
+                const resolvedBarId = bar.selectedBarConfig?.id ?? bar.selectedBarId;
+                SettingsUiState.selectedDockId = "";
+                SettingsUiState.selectedBarId = resolvedBarId;
+                SettingsUiState.selectedWidgetSection = item.sectionId;
+                SettingsUiState.selectedWidgetIndex = item.index;
+                SettingsUiState.selectedWidgetTitle = item.label;
+                SettingsUiState.selectedWidgetDescription = item.catalogDescription;
+                SettingsUiState.selectedWidgetIcon = item.icon;
+                dankBarTab.parentModal?.navigateTo("bar_widget", keyboard);
+            }
 
             function sectionLabelFor(sectionId) {
                 if (bar.selectedBarIsVertical) {
@@ -565,6 +603,8 @@ Item {
                         const spec = scrollCard.scrollableWidgetSpecs[widgetType];
                         if (!spec || !spec.visible)
                             continue;
+                        if (widgetType === "music" && SettingsData.widgetOption("music", entry, "mediaStyle") === "activity")
+                            continue;
                         countByType[widgetType] = (countByType[widgetType] || 0) + 1;
                         const secKey = widgetType + ":" + sectionId;
                         countByTypeSection[secKey] = (countByTypeSection[secKey] || 0) + 1;
@@ -573,8 +613,7 @@ Item {
                             "sectionId": sectionId,
                             "index": idx,
                             "entry": entry,
-                            "catalog": catalogById[widgetType] ?? null,
-                            "tooltip": spec.tooltip ?? ""
+                            "catalog": catalogById[widgetType] ?? null
                         });
                     }
                 }
@@ -600,8 +639,9 @@ Item {
                         "index": item.index,
                         "entry": item.entry,
                         "label": label,
+                        "catalogDescription": item.catalog?.description ?? "",
                         "icon": item.catalog?.icon ?? "widgets",
-                        "tooltip": item.tooltip,
+                        "actionSummary": scrollCard.widgetScrollActionText(item.widgetType, item.entry),
                         "scrollEnabled": scrollOn
                     };
                 });
@@ -702,37 +742,29 @@ Item {
                 settingKey: "barScrollableWidgets"
                 tags: ["bar", "scroll", "wheel", "widget", "override", "workspace", "media", "volume", "brightness"]
                 title: I18n.tr("Widget scroll", "bar scroll wheel section header for per-widget scroll toggles")
-
-                DActionButton {
-                    iconName: "info"
-                    tooltipText: I18n.tr("Widgets listed here have their own scroll action. Turn one off to use the bar scroll action when hovering over it", "bar widget scroll info tooltip")
-                    onClicked: showTooltip()
-                }
+                subtitle: I18n.tr("Turn off a widget to use the bar scroll action over it", "bar widget scroll section subtitle")
             }
 
             Repeater {
                 model: scrollCard.scrollableWidgets
 
-                delegate: SettingsToggleRow {
+                delegate: SettingsSplitRow {
                     required property var modelData
 
                     iconName: modelData.icon
-                    text: modelData.label
+                    iconColor: modelData.scrollEnabled ? Theme.primary : Theme.onSurfaceVariant
+                    title: modelData.label
+                    subtitle: modelData.actionSummary
+                    navigable: true
                     checked: modelData.scrollEnabled
+                    onNavigated: keyboard => scrollCard.openWidgetSettings(modelData, keyboard)
                     onToggled: checked => {
                         const patch = {
                             "scrollEnabled": checked
                         };
                         if (checked && modelData.widgetType === "music" && SettingsData.widgetOption("music", modelData.entry, "audioScrollMode") === "nothing")
                             patch.audioScrollMode = "volume";
-                        SettingsData.updateBarWidget(bar.selectedBarId, modelData.sectionId, modelData.index, patch);
-                    }
-
-                    accessory: DActionButton {
-                        visible: modelData.tooltip !== ""
-                        iconName: "info"
-                        tooltipText: modelData.tooltip
-                        onClicked: showTooltip()
+                        SettingsData.updateBarWidget(bar.selectedBarConfig?.id ?? bar.selectedBarId, modelData.sectionId, modelData.index, patch);
                     }
                 }
             }
