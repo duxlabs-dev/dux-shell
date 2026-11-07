@@ -4,16 +4,13 @@ import Quickshell.Wayland
 import qs.Common
 import qs.Services
 
-PanelWindow {
+Item {
     id: root
-    readonly property var log: Log.scoped("DOSD")
-
-    property string blurNamespace: "dms:osd"
-    WlrLayershell.namespace: blurNamespace
 
     property alias content: contentLoader.sourceComponent
     property alias contentLoader: contentLoader
     property var modelData
+    readonly property var screen: modelData
     property string osdKind: ""
     readonly property int osdPosition: SettingsData.osdPositionFor(osdKind)
     property bool shouldBeVisible: false
@@ -30,6 +27,13 @@ PanelWindow {
     property real sheetWidth: 0
     property bool expanded: false
 
+    property string _attachedScreenName: ""
+    readonly property var surface: IdleSurfaces.surfaceFor("osd", _attachedScreenName)
+    readonly property bool attached: _attachedScreenName !== ""
+    readonly property Item maskItem: sheetLoader.item ?? bgShadowLayer
+    readonly property int surfaceKeyboardFocus: sheetLoader.item?.keyboardFocus ?? WlrKeyboardFocus.None
+    readonly property var blurRegion: sheetLoader.item?.blurRegion ?? blur.effectiveRegion
+
     signal osdShown
     signal osdHidden
 
@@ -40,10 +44,12 @@ PanelWindow {
             hideTimer.restart();
             return;
         }
+        _attach();
+        if (!attached)
+            return;
         OSDManager.showOSD(root);
         closeTimer.stop();
         shouldBeVisible = true;
-        visible = true;
         hideTimer.restart();
         osdShown();
     }
@@ -77,7 +83,7 @@ PanelWindow {
         shouldBeVisible = false;
         hideTimer.stop();
         closeTimer.stop();
-        visible = false;
+        _detach();
         osdHidden();
     }
 
@@ -103,18 +109,36 @@ PanelWindow {
         updateHoverState();
     }
 
-    screen: modelData
-    visible: false
+    function _attach() {
+        const name = screen?.name ?? "";
+        if (!name)
+            return;
+        const target = IdleSurfaces.surfaceFor("osd", name);
+        if (!target)
+            return;
+        surfaceRoot.parent = null;
+        surfaceRoot.parent = target.hostItem;
+        _attachedScreenName = name;
+    }
 
-    SurfaceFrameGate {
-        id: frameGate
-        surfaceVisible: root.visible
+    function _detach() {
+        surfaceRoot.parent = root;
+        _attachedScreenName = "";
+    }
+
+    onAttachedChanged: {
+        if (attached)
+            return;
+        surfaceRoot.parent = root;
+        if (!shouldBeVisible && !expanded)
+            return;
+        finishSheet();
     }
 
     readonly property var quickshellScreens: Quickshell.screens
 
     onQuickshellScreensChanged: {
-        if (!visible && !shouldBeVisible)
+        if (!attached && !shouldBeVisible)
             return;
         const currentScreenName = screen?.name;
         if (!currentScreenName) {
@@ -125,33 +149,20 @@ PanelWindow {
             if (Quickshell.screens[i].name === currentScreenName)
                 return;
         }
-        expanded = false;
-        shouldBeVisible = false;
-        visible = false;
-        hideTimer.stop();
-        closeTimer.stop();
-        osdHidden();
+        finishSheet();
     }
-
-    WlrLayershell.layer: LayerShell.fromEnv("DMS_OSD_LAYER", WlrLayer.Overlay, {
-        "allow": ["top", "overlay"],
-        "invalidLayer": WlrLayer.Overlay,
-        "label": "OSDs"
-    })
-    WlrLayershell.exclusiveZone: -1
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
     WindowBlur {
-        targetWindow: root
+        id: blur
+        targetWindow: root.surface
+        applyToWindow: false
         surfaceColor: Theme.withAlpha(root.surfaceColor, osdContainer.popupSurfaceAlpha)
-        blurX: shadowBuffer
-        blurY: shadowBuffer
-        blurWidth: presented ? alignedWidth : 0
-        blurHeight: presented ? alignedHeight : 0
+        blurX: root.frameX + root.shadowBuffer
+        blurY: root.frameY + root.shadowBuffer
+        blurWidth: root.presented ? root.alignedWidth : 0
+        blurHeight: root.presented ? root.alignedHeight : 0
         blurRadius: root.surfaceRadius
     }
-
-    color: "transparent"
 
     readonly property real dpr: CompositorService.getScreenScale(screen)
     readonly property real screenWidth: screen.width
@@ -260,21 +271,8 @@ PanelWindow {
     readonly property real alignedX: placeAlong(alignX, screenWidth, alignedWidth, "left", "right")
     readonly property real alignedY: placeAlong(alignY, screenHeight, alignedHeight, "top", "bottom")
 
-    anchors {
-        top: true
-        left: true
-    }
-
-    readonly property real windowX: Math.max(0, Theme.snap(alignedX - shadowBuffer, dpr))
-    readonly property real windowY: Math.max(0, Theme.snap(alignedY - shadowBuffer, dpr))
-
-    WlrLayershell.margins {
-        left: root.windowX
-        top: root.windowY
-    }
-
-    implicitWidth: alignedWidth + (shadowBuffer * 2)
-    implicitHeight: alignedHeight + (shadowBuffer * 2)
+    readonly property real frameX: Math.max(0, Theme.snap(alignedX - shadowBuffer, dpr))
+    readonly property real frameY: Math.max(0, Theme.snap(alignedY - shadowBuffer, dpr))
 
     readonly property var scaleSpringParams: Theme.springPreset("default", animationDuration)
 
@@ -295,13 +293,13 @@ PanelWindow {
     Timer {
         id: hideTimer
 
-        interval: autoHideInterval
+        interval: root.autoHideInterval
         repeat: false
         onTriggered: {
-            if (expanded)
+            if (root.expanded)
                 return;
-            if (!enableMouseInteraction || !mouseArea.containsMouse) {
-                hide();
+            if (!root.enableMouseInteraction || !mouseArea.containsMouse) {
+                root.hide();
             } else {
                 hideTimer.restart();
             }
@@ -310,79 +308,88 @@ PanelWindow {
 
     Timer {
         id: closeTimer
-        interval: Math.max(animationDuration + 50, Math.round(osdScaleSpring.settleDurationMs) + 50)
+        interval: Math.max(root.animationDuration + 50, Math.round(osdScaleSpring.settleDurationMs) + 50)
         onTriggered: {
-            if (!shouldBeVisible) {
-                visible = false;
-                osdHidden();
-            }
+            if (root.shouldBeVisible)
+                return;
+            root._detach();
+            root.osdHidden();
         }
     }
 
     Item {
-        id: osdContainer
-        x: shadowBuffer
-        y: shadowBuffer
-        width: alignedWidth
-        height: alignedHeight
-        opacity: presented ? 1 : 0
-        scale: osdScaleSpring.value
+        id: surfaceRoot
 
-        property bool childHovered: false
-        readonly property real popupSurfaceAlpha: Theme.popupTransparency
+        readonly property var host: root
+        anchors.fill: parent
 
-        ElevationShadow {
-            id: bgShadowLayer
-            anchors.fill: parent
-            z: -2
-            level: Theme.elevationLevel2
-            fallbackOffset: Theme.spacingXS
-            targetRadius: root.surfaceRadius
-            targetColor: Theme.withAlpha(root.surfaceColor, osdContainer.popupSurfaceAlpha)
-            borderColor: Theme.outlineVariant
-            borderWidth: 0
-            shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1"
+        SurfaceFrameGate {
+            id: frameGate
+            surfaceVisible: root.attached
         }
 
-        MouseArea {
-            id: mouseArea
-            anchors.fill: parent
-            hoverEnabled: enableMouseInteraction
-            acceptedButtons: Qt.NoButton
-            propagateComposedEvents: true
-            z: -1
-            onContainsMouseChanged: updateHoverState()
-        }
+        Item {
+            id: osdContainer
+            x: root.frameX + root.shadowBuffer
+            y: root.frameY + root.shadowBuffer
+            width: root.alignedWidth
+            height: root.alignedHeight
+            visible: !(sheetLoader.item?.opened ?? false)
+            opacity: root.presented ? 1 : 0
+            scale: osdScaleSpring.value
 
-        onChildHoveredChanged: updateHoverState()
+            property bool childHovered: false
+            readonly property real popupSurfaceAlpha: Theme.popupTransparency
 
-        Loader {
-            id: contentLoader
-            anchors.fill: parent
-            active: root.visible
-            asynchronous: false
-        }
+            ElevationShadow {
+                id: bgShadowLayer
+                anchors.fill: parent
+                z: -2
+                level: Theme.elevationLevel2
+                fallbackOffset: Theme.spacingXS
+                targetRadius: root.surfaceRadius
+                targetColor: Theme.withAlpha(root.surfaceColor, osdContainer.popupSurfaceAlpha)
+                borderColor: Theme.outlineVariant
+                borderWidth: 0
+                shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1"
+            }
 
-        Behavior on opacity {
-            NumberAnimation {
-                duration: animationDuration
-                easing.type: animationEasing
+            MouseArea {
+                id: mouseArea
+                anchors.fill: parent
+                hoverEnabled: root.enableMouseInteraction
+                acceptedButtons: Qt.NoButton
+                propagateComposedEvents: true
+                z: -1
+                onContainsMouseChanged: root.updateHoverState()
+            }
+
+            onChildHoveredChanged: root.updateHoverState()
+
+            Loader {
+                id: contentLoader
+                anchors.fill: parent
+                active: root.attached
+                asynchronous: false
+            }
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: root.animationDuration
+                    easing.type: root.animationEasing
+                }
             }
         }
-    }
 
-    mask: Region {
-        item: bgShadowLayer
-    }
+        Loader {
+            id: sheetLoader
+            anchors.fill: parent
+            active: root.expanded
 
-    LazyLoader {
-        id: sheetLoader
-        active: root.expanded
-
-        DOSDSheet {
-            host: root
-            onPresented: root.visible = false
-            onDismissed: root.finishSheet()
+            sourceComponent: DOSDSheet {
+                host: root
+                onDismissed: root.finishSheet()
+            }
         }
     }
 }

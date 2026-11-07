@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
+import qs.Widgets
 
 Item {
     id: root
@@ -36,33 +37,19 @@ Item {
         when: !!root.body
     }
 
-    PanelWindow {
+    DIdleSurface {
         id: dismissWindow
 
         screen: root.screen
-        visible: !!root.islandController && root.islandController.outsideClickCollapses && !PopoutManager.screenshotActive
-        color: "transparent"
-        exclusiveZone: -1
-
-        // Assigned, not bound: upstream quickshell has no inputOnly and a binding would fail the whole window.
-        Component.onCompleted: {
-            if ("inputOnly" in this)
-                inputOnly = true;
-        }
-
-        anchors {
-            top: true
-            bottom: true
-            left: true
-            right: true
-        }
+        active: !!root.islandController && root.islandController.outsideClickCollapses && !PopoutManager.screenshotActive
+        renders: false
 
         WlrLayershell.namespace: "dms:dankisland:dismiss"
         WlrLayershell.layer: root.islandLayer
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
         mask: Region {
-            item: dismissMask
+            item: dismissWindow.active ? dismissMask : null
 
             Region {
                 item: islandHole
@@ -101,7 +88,7 @@ Item {
         Item {
             id: islandHole
 
-            readonly property var mask: dismissWindow.visible ? root.body?.inputMaskItem ?? null : null
+            readonly property var mask: dismissWindow.active ? root.body?.inputMaskItem ?? null : null
             x: mask ? mask.x + root.hostOriginX : 0
             y: mask ? mask.y + root.hostOriginY : 0
             width: mask?.width ?? 0
@@ -111,7 +98,7 @@ Item {
         Item {
             id: fittsStripHole
 
-            readonly property var strip: dismissWindow.visible ? root.body?.fittsStripItem ?? null : null
+            readonly property var strip: dismissWindow.active ? root.body?.fittsStripItem ?? null : null
             x: strip ? strip.x + root.hostOriginX : 0
             y: strip ? strip.y + root.hostOriginY : 0
             width: strip?.visible ? strip.width : 0
@@ -121,7 +108,7 @@ Item {
         Item {
             id: leadingSectionHole
 
-            readonly property var r: dismissWindow.visible ? root.body?.leadingSectionRect ?? null : null
+            readonly property var r: dismissWindow.active ? root.body?.leadingSectionRect ?? null : null
             x: r ? r.x + root.body.sectionOriginX : 0
             y: r ? r.y + root.body.sectionOriginY : 0
             width: r?.w ?? 0
@@ -132,7 +119,7 @@ Item {
         Item {
             id: centerSectionHole
 
-            readonly property var r: dismissWindow.visible ? root.body?.centerSectionRect ?? null : null
+            readonly property var r: dismissWindow.active ? root.body?.centerSectionRect ?? null : null
             x: r ? r.x + root.body.sectionOriginX : 0
             y: r ? r.y + root.body.sectionOriginY : 0
             width: r?.w ?? 0
@@ -142,7 +129,7 @@ Item {
         Item {
             id: trailingSectionHole
 
-            readonly property var r: dismissWindow.visible ? root.body?.trailingSectionRect ?? null : null
+            readonly property var r: dismissWindow.active ? root.body?.trailingSectionRect ?? null : null
             x: r ? r.x + root.body.sectionOriginX : 0
             y: r ? r.y + root.body.sectionOriginY : 0
             width: r?.w ?? 0

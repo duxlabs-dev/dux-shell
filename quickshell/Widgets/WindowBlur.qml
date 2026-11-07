@@ -10,6 +10,7 @@ Item {
     visible: false
 
     required property var targetWindow
+    property bool applyToWindow: true
     property bool blurEnabled: true
     property color surfaceColor: "transparent"
     property real blurX: 0
@@ -25,6 +26,7 @@ Item {
     property real clipHeight: blurHeight
 
     readonly property bool _active: blurEnabled && surfaceColor.a < 1 && BlurService.enabled && !!targetWindow
+    readonly property var effectiveRegion: _active ? blurRegion : null
 
     Region {
         id: blurRegion
@@ -60,7 +62,7 @@ Item {
     }
 
     function _apply() {
-        if (!targetWindow)
+        if (!applyToWindow || !targetWindow)
             return;
         targetWindow.BackgroundEffect.blurRegion = _active ? blurRegion : null;
     }
@@ -70,7 +72,7 @@ Item {
 
     Component.onCompleted: _apply()
     Component.onDestruction: {
-        if (targetWindow && targetWindow.BackgroundEffect)
+        if (applyToWindow && targetWindow && targetWindow.BackgroundEffect)
             targetWindow.BackgroundEffect.blurRegion = null;
     }
 }

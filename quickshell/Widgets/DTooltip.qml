@@ -1,23 +1,24 @@
 import QtQuick
-import Quickshell
-import Quickshell.Wayland
 import qs.Common
 import qs.DCommon.Widgets
-import qs.Widgets
 
-PanelWindow {
+Item {
     id: root
-
-    WlrLayershell.namespace: "dms:tooltip"
 
     property string text: ""
     property real targetX: 0
     property real targetY: 0
-    property var targetScreen: null
+    property var screen: null
+    property var targetScreen: screen
     property bool alignLeft: false
     property bool alignRight: false
     property bool persistent: false
     property bool shown: false
+
+    readonly property var surface: IdleSurfaces.surfaceFor("tooltip", targetScreen?.name ?? "")
+    readonly property bool attached: shown && !!surface
+    readonly property real tooltipWidth: Math.min(Theme.tooltipMaxWidth, textContent.implicitWidth) + Theme.spacingM * 2
+    readonly property real tooltipHeight: textContent.implicitHeight + Theme.spacingS * 2
 
     function show(text, x, y, screen, leftAlign, rightAlign) {
         root.text = text;
@@ -33,44 +34,28 @@ PanelWindow {
         shown = false;
     }
 
-    screen: targetScreen
-    implicitWidth: Math.min(Theme.tooltipMaxWidth, textContent.implicitWidth) + Theme.spacingM * 2
-    implicitHeight: textContent.implicitHeight + Theme.spacingS * 2
-    color: "transparent"
-    mask: Region {}
-    visible: persistent || shown
-    WlrLayershell.layer: WlrLayershell.Overlay
-    WlrLayershell.exclusiveZone: -1
-
-    anchors {
-        top: true
-        left: true
-    }
-
-    margins {
-        left: {
-            const screenWidth = targetScreen?.width ?? Screen.width;
-            if (alignLeft) {
-                return Math.round(Math.max(Theme.spacingS, Math.min(screenWidth - implicitWidth - Theme.spacingS, targetX)));
-            } else if (alignRight) {
-                return Math.round(Math.max(Theme.spacingS, Math.min(screenWidth - implicitWidth - Theme.spacingS, targetX - implicitWidth)));
-            } else {
-                return Math.round(Math.max(Theme.spacingS, Math.min(screenWidth - implicitWidth - Theme.spacingS, targetX - implicitWidth / 2)));
-            }
-        }
-        top: {
-            const screenHeight = targetScreen?.height ?? Screen.height;
-            if (alignLeft || alignRight) {
-                return Math.round(Math.max(Theme.spacingS, Math.min(screenHeight - implicitHeight - Theme.spacingS, targetY - implicitHeight / 2)));
-            } else {
-                return Math.round(Math.max(Theme.spacingS, Math.min(screenHeight - implicitHeight - Theme.spacingS, targetY)));
-            }
-        }
-    }
-
     Rectangle {
-        anchors.fill: parent
-        visible: root.shown
+        id: body
+
+        readonly property var host: root
+        parent: root.attached ? root.surface.hostItem : root
+        visible: root.attached
+        width: root.tooltipWidth
+        height: root.tooltipHeight
+        x: {
+            const screenWidth = root.targetScreen?.width ?? 0;
+            if (root.alignLeft)
+                return Math.round(Math.max(Theme.spacingS, Math.min(screenWidth - width - Theme.spacingS, root.targetX)));
+            if (root.alignRight)
+                return Math.round(Math.max(Theme.spacingS, Math.min(screenWidth - width - Theme.spacingS, root.targetX - width)));
+            return Math.round(Math.max(Theme.spacingS, Math.min(screenWidth - width - Theme.spacingS, root.targetX - width / 2)));
+        }
+        y: {
+            const screenHeight = root.targetScreen?.height ?? 0;
+            if (root.alignLeft || root.alignRight)
+                return Math.round(Math.max(Theme.spacingS, Math.min(screenHeight - height - Theme.spacingS, root.targetY - height / 2)));
+            return Math.round(Math.max(Theme.spacingS, Math.min(screenHeight - height - Theme.spacingS, root.targetY)));
+        }
         color: Theme.tooltipSurface
         radius: Theme.cornerRadiusXS
 

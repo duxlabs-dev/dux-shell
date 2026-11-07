@@ -1111,6 +1111,7 @@ PanelWindow {
     onWindowConnected: {
         win._scheduleSurfaceRefresh();
         win._scheduleBlurRebuild();
+        IdleSurfaces.surfaceFor("popout", win._screenName)?.remap();
     }
 
     Component.onCompleted: {
