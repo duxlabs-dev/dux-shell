@@ -349,6 +349,9 @@ func dmenuOpenInput() *os.File {
 		}
 		return f
 	}
+	if stdinIsTTY() {
+		return nil
+	}
 	return os.Stdin
 }
 
