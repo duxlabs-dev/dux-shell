@@ -1269,9 +1269,14 @@ Item {
     // The user closed Settings to set up the screen, so bring back the profile being edited.
     Connections {
         target: ConfigProfileService
-        function onScreenshotEnded() {
-            if (!(PopoutService.settingsModal?.shouldBeVisible ?? false))
-                PopoutService.openSettingsWithTab("profile_edit");
+        function onScreenshotEnded(id) {
+            if (PopoutService.settingsModal?.shouldBeVisible ?? false)
+                return;
+            const profile = ConfigProfileService.find(id);
+            SettingsUiState.selectedConfigProfileId = profile ? id : "";
+            SettingsUiState.selectedConfigProfileImported = false;
+            SettingsUiState.selectedWidgetTitle = profile?.name ?? I18n.tr("New profile");
+            PopoutService.openSettingsWithTab("profile_edit");
         }
     }
 

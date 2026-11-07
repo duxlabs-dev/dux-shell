@@ -70,6 +70,7 @@ Singleton {
                 {
                     "id": "profile_edit",
                     "hidden": true,
+                    "backPage": "profiles",
                     "titleFrom": "selectedWidgetTitle",
                     "text": I18n.tr("Profile"),
                     "icon": "edit",

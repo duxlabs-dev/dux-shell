@@ -13,7 +13,7 @@ Item {
     id: root
 
     property var parentModal: null
-    property bool pageActive: true
+    property bool pageActive: false
 
     readonly property string profileId: SettingsUiState.selectedConfigProfileId
     property bool leaving: false
@@ -53,7 +53,7 @@ Item {
         if (keepEdits)
             return;
         const p = profile;
-        const edits = SettingsUiState.configProfileEdits?.id === profileId ? SettingsUiState.configProfileEdits : null;
+        const edits = SettingsUiState.configProfileEdits?.[profileId] ?? null;
         editsRestored = !!edits;
         pendingName = edits?.name ?? p?.name ?? "";
         pendingGroups = edits?.groups ?? (p ? p.groups.slice() : Profiles.GROUPS.slice());
@@ -66,12 +66,14 @@ Item {
     // Closing Settings destroys the page, and the user may be setting up the screen for a screenshot.
     function _keepEditsOverClose() {
         const closing = !leaving && !(parentModal?.shouldBeVisible ?? false);
-        SettingsUiState.configProfileEdits = closing && (isNew || dirty) ? {
-            "id": profileId,
-            "name": pendingName,
-            "groups": pendingGroups,
-            "sync": pendingSync
-        } : null;
+        if (closing && (dirty || (isNew && ConfigProfileService.screenshotTargetId === heldImageId)))
+            SettingsUiState.configProfileEdits = Object.assign({}, SettingsUiState.configProfileEdits, {
+                [profileId]: {
+                    "name": pendingName,
+                    "groups": pendingGroups,
+                    "sync": pendingSync
+                }
+            });
     }
 
     function _setGroups(groups, on) {
@@ -133,8 +135,10 @@ Item {
     onPageActiveChanged: {
         if (pageActive)
             _reset(dirty);
-        else
+        else {
+            SettingsUiState.dropConfigProfileEdits(profileId);
             _release();
+        }
     }
     Component.onCompleted: {
         _reset();
@@ -173,7 +177,7 @@ Item {
                     backgroundColor: Theme.secondaryContainer
                     textColor: Theme.onSecondaryContainer
                     onClicked: {
-                        SettingsUiState.configProfileEdits = null;
+                        SettingsUiState.dropConfigProfileEdits(root.profileId);
                         root._reset();
                     }
                 }

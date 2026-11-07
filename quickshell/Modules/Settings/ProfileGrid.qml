@@ -20,6 +20,10 @@ Column {
     property var parentModal: null
 
     function openPage(page, id, imported) {
+        if (!id && !ConfigProfileService.screenshotTargetId && !ConfigProfileService.capturingId && !ConfigProfileService.draft?.thumbnail) {
+            ConfigProfileService.discardDraft();
+            SettingsUiState.dropConfigProfileEdits("");
+        }
         SettingsUiState.selectedConfigProfileId = id;
         SettingsUiState.selectedConfigProfileImported = !!imported;
         SettingsUiState.selectedWidgetTitle = ConfigProfileService.find(id)?.name ?? I18n.tr("New profile");
