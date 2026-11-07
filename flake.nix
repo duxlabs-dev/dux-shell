@@ -78,6 +78,7 @@
 
       qmlPkgs =
         pkgs: with pkgs.kdePackages; [
+          qtdeclarative
           kirigami.unwrapped
           sonnet
           qtmultimedia
