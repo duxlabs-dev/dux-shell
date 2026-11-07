@@ -168,27 +168,27 @@ Item {
 
             SettingsNoteRow {
                 visible: FirewallService.stateError !== ""
-                text: I18n.tr("Could not read the firewall rules: %1").arg(FirewallService.stateError)
+                text: I18n.tr("Could not read the firewall rules: %1", "firewall info message").arg(FirewallService.stateError)
             }
 
             SettingsNoteRow {
                 visible: FirewallService.conflict
-                text: I18n.tr("firewalld and ufw are both running. They can override each other, so disable one of them.")
+                text: I18n.tr("firewalld and ufw are both running. They can override each other, so disable one of them.", "firewall info message")
             }
 
             SettingsNoteRow {
                 visible: root.isFirewalld && !FirewallService.active
-                text: I18n.tr("firewalld is not running, so no rules apply. Start it with: %1").arg("systemctl enable --now firewalld")
+                text: I18n.tr("firewalld is not running, so no rules apply. Start it with: %1", "firewall info message").arg("systemctl enable --now firewalld")
             }
 
             SettingsNoteRow {
                 visible: FirewallService.backend === "ufw" && !FirewallService.active
-                text: I18n.tr("ufw is inactive, so saved rules do not apply. Turn it on with: %1").arg("ufw enable")
+                text: I18n.tr("ufw is inactive, so saved rules do not apply. Turn it on with: %1", "firewall info message").arg("ufw enable")
             }
 
             SettingsNoteRow {
                 visible: FirewallService.warnings.includes("dockerBypass")
-                text: I18n.tr("Docker is present. Ports published by containers bypass ufw rules.")
+                text: I18n.tr("Docker is present. Ports published by containers bypass ufw rules.", "firewall info message")
             }
 
             SettingsNoteRow {
@@ -196,7 +196,7 @@ Item {
                 noteIconName: "lock"
                 tint: Theme.surfaceVariantText
                 tintBackground: SettingsMetrics.controlSurface
-                text: I18n.tr("Unlock to view and change rules. You will be asked for your password.")
+                text: I18n.tr("Unlock to view and change rules.", "firewall info message")
             }
         }
 
@@ -207,7 +207,7 @@ Item {
             SettingsDropdownRow {
                 id: incomingRow
                 visible: FirewallService.defaults !== null
-                text: I18n.tr("Incoming traffic")
+                text: I18n.tr("Incoming traffic", "firewall tab, incoming traffic coming into the local network")
                 options: [root.actionLabel("allow"), root.actionLabel("deny"), root.actionLabel("reject")]
                 optionValues: ["allow", "deny", "reject"]
                 enabled: !FirewallService.busy && !FirewallService.locked
@@ -224,7 +224,7 @@ Item {
             SettingsDropdownRow {
                 id: outgoingRow
                 visible: FirewallService.defaults !== null
-                text: I18n.tr("Outgoing traffic")
+                text: I18n.tr("Outgoing traffic", "firewall tab, traffic going out from the pc to the internet")
                 options: [root.actionLabel("allow"), root.actionLabel("deny"), root.actionLabel("reject")]
                 optionValues: ["allow", "deny", "reject"]
                 enabled: !FirewallService.busy && !FirewallService.locked
@@ -318,7 +318,7 @@ Item {
 
             SettingsRow {
                 iconName: "add_circle"
-                title: I18n.tr("Configure a new rule")
+                title: I18n.tr("Configure a new rule", "button to create a new firewall rule")
 
                 DActionButton {
                     iconName: "close"
@@ -398,7 +398,7 @@ Item {
 
             SettingsRow {
                 DButton {
-                    text: I18n.tr("Add rule")
+                    text: I18n.tr("Add rule", "firewall rule add button")
                     buttonHeight: Theme.buttonHeightS
                     busy: FirewallService.busy
                     enabled: addCard.canSubmit
@@ -413,7 +413,7 @@ Item {
 
             SettingsDropdownRow {
                 visible: root.isFirewalld && (root.zoneChoices.length > 1 || root.showAllZones)
-                text: I18n.tr("Zone")
+                text: I18n.tr("Zone", "text for a firewalld zone")
                 enableFuzzySearch: true
                 options: root.zoneChoices.map(name => root.zoneChoiceLabel(name))
                 optionValues: root.zoneChoices
@@ -426,12 +426,12 @@ Item {
                 noteIconName: "info"
                 tint: Theme.surfaceVariantText
                 tintBackground: SettingsMetrics.controlSurface
-                text: I18n.tr("This zone is managed by another program, so its rules can't be edited here.")
+                text: I18n.tr("This zone is managed by another program, so its rules can't be edited here.", "firewall info message")
             }
 
             SettingsRow {
                 visible: root.visibleRules.length === 0
-                subtitle: I18n.tr("No rules")
+                subtitle: I18n.tr("No rules", "firewall rules status message")
             }
 
             Repeater {
@@ -442,7 +442,7 @@ Item {
                     required property var modelData
 
                     title: root.ruleTitle(modelData)
-                    subtitle: modelData.kind === "raw" ? I18n.tr("Custom rule") : root.actionLabel(modelData.action) + " · " + (modelData.source ? I18n.tr("From %1", "firewall rule source, %1 is an address").arg(modelData.source) : I18n.tr("From anywhere"))
+                    subtitle: modelData.kind === "raw" ? I18n.tr("Custom rule", "info message when a firewall rule is custom") : root.actionLabel(modelData.action) + " · " + (modelData.source ? I18n.tr("From %1", "firewall rule source, %1 is an address").arg(modelData.source) : I18n.tr("From anywhere"))
 
                     DActionButton {
                         visible: !root.readOnly
@@ -457,7 +457,7 @@ Item {
                             const zoneName = root.zoneName;
                             const ruleId = ruleRow.modelData.id;
                             root.confirm.showWithOptions({
-                                title: I18n.tr("Delete rule"),
+                                title: I18n.tr("Delete rule", "firewall rule delete button"),
                                 message: I18n.tr("Delete \"%1\"?", "delete confirmation, %1 is a vpn profile or printer name").arg(root.ruleTitle(ruleRow.modelData)),
                                 confirmText: I18n.tr("Delete"),
                                 danger: true,
@@ -477,8 +477,8 @@ Item {
 
             SettingsDropdownRow {
                 id: defaultZoneRow
-                text: I18n.tr("Default zone")
-                description: I18n.tr("Used by interfaces with no zone of their own")
+                text: I18n.tr("Default zone", "firewall default zone selector")
+                description: I18n.tr("Used by interfaces with no zone of their own", "firewall default zone selector")
                 enabled: !FirewallService.busy && !FirewallService.locked
                 options: root.defaultZoneChoices
                 optionValues: root.defaultZoneChoices
@@ -493,7 +493,7 @@ Item {
             }
 
             SettingsToggleRow {
-                text: I18n.tr("Show all zones")
+                text: I18n.tr("Show all zones", "firewall tab visibility setting")
                 checked: root.showAllZones
                 onToggled: value => root.showAllZones = value
             }
@@ -503,7 +503,7 @@ Item {
             shown: root.showRules && !root.readOnly && !root.adding
 
             DFab {
-                text: I18n.tr("Add rule")
+                text: I18n.tr("Add rule", "firewall rule add button")
                 iconName: "add"
                 onClicked: root.startAdding()
             }
