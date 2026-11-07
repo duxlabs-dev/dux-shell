@@ -38,12 +38,17 @@ float smin(float a, float b, float k) {
     return max(k, min(a, b)) - length(max(vec2(k) - vec2(a, b), vec2(0.0)));
 }
 
-float shapesDist(vec2 px) {
+float bandDist(vec2 px) {
     float d = 1e5;
     if (ubuf.leadRect.z > 0.0)
         d = sdRoundBox4(px, ubuf.leadRect, ubuf.leadCorner);
     if (ubuf.trailRect.z > 0.0)
         d = min(d, sdRoundBox4(px, ubuf.trailRect, ubuf.trailCorner));
+    return d;
+}
+
+float shapesDist(vec2 px, float band) {
+    float d = band;
     if (ubuf.bodyRect.z > 0.0 && ubuf.bodyRect.w > 0.0) {
         bool alongX = ubuf.edgeParam.x < 1.5;
         float along = alongX ? px.x : px.y;
@@ -55,20 +60,21 @@ float shapesDist(vec2 px) {
 
 // The screen edges only round the shapes into the edge. They sit a pixel off screen so their antialiasing paints nothing,
 // and they cast no shadow.
-float sceneDist(vec2 px, float shapes) {
+float sceneDist(vec2 px, float shapes, float band) {
     float side = ubuf.edgeParam.x;
     float dEdge = 1.0 + (side < 0.5 ? px.y : side < 1.5 ? (ubuf.heightPx - px.y) : side < 2.5 ? px.x : (ubuf.widthPx - px.x));
     float dEnds = 1.0 + (side < 1.5 ? min(px.x, ubuf.widthPx - px.x) : min(px.y, ubuf.heightPx - px.y));
     float k = ubuf.edgeParam.y;
     float d = smin(shapes, dEdge, k);
-    // Far from any shape the two edges would round into each other and fill the screen corner.
-    return shapes > k ? d : smin(d, dEnds, k);
+    // Only the bar or satellite rounds into the screen end: elsewhere the two edges would fill the corner.
+    return band > k ? d : smin(d, dEnds, k);
 }
 
 void main() {
     vec2 px = qt_TexCoord0 * vec2(ubuf.widthPx, ubuf.heightPx);
-    float shapes = shapesDist(px);
-    float d = sceneDist(px, shapes);
+    float band = bandDist(px);
+    float shapes = shapesDist(px, band);
+    float d = sceneDist(px, shapes, band);
     float fw = max(fwidth(d), 1e-4);
     float reach = max(ubuf.shadowParam.x + ubuf.shadowParam.y + length(ubuf.shadowParam.zw), ubuf.ambientParam.x + ubuf.ambientParam.y) + fw;
     if (d > reach) {
@@ -78,7 +84,8 @@ void main() {
     float cov = 1.0 - smoothstep(-fw, fw, d);
     vec4 col = vec4(ubuf.surfaceColor.rgb, 1.0) * cov;
     if (ubuf.shadowColor.a > 0.0) {
-        float dk = shapesDist(px - ubuf.shadowParam.zw) - ubuf.shadowParam.y;
+        vec2 shadowPx = px - ubuf.shadowParam.zw;
+        float dk = shapesDist(shadowPx, bandDist(shadowPx)) - ubuf.shadowParam.y;
         float bk = max(ubuf.shadowParam.x, fw);
         float covK = 1.0 - smoothstep(-bk, bk, dk);
         float ba = max(ubuf.ambientParam.x, fw);

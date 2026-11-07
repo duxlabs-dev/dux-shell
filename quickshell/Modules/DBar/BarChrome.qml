@@ -24,6 +24,7 @@ ShaderEffect {
     property real windowY: 0
 
     readonly property bool horizontal: barSide === "top" || barSide === "bottom"
+    readonly property bool nearSide: barSide === "top" || barSide === "left"
     readonly property real joinRadius: edgeRadius > 0 ? edgeRadius : Theme.connectedCornerRadius
     readonly property var descriptor: ConnectedModeState.surfaceDescriptor(screenName, "popout")
     readonly property bool popoutActive: descriptor.visible && descriptor.barSide === barSide && descriptor.barId === barId
@@ -102,25 +103,24 @@ ShaderEffect {
         return Qt.vector4d(body.x - (barSide === "left" ? seamOverlap : 0), paintedStart, extent + seamOverlap, along);
     }
 
-    // The part of the body away from its rounded far corners, so blur reaches the bar.
-    readonly property vector4d bodyJoinRect: {
-        const r = paintedBody;
-        const cut = Math.min(Theme.connectedSurfaceRadius, horizontal ? r.w : r.z);
-        switch (barSide) {
-        case "bottom":
-            return Qt.vector4d(r.x, r.y + cut, r.z, r.w - cut);
-        case "left":
-            return Qt.vector4d(r.x, r.y, r.z - cut, r.w);
-        case "right":
-            return Qt.vector4d(r.x + cut, r.y, r.z - cut, r.w);
-        default:
-            return Qt.vector4d(r.x, r.y, r.z, r.w - cut);
-        }
+    function _cornerAt(along) {
+        return alwaysPainted && (along <= 1 || along >= (horizontal ? width : height) - 1) ? 0 : cornerRadius;
+    }
+
+    // Close to a satellite's end its corner and the join share the room, so the two arcs stay tangent.
+    function _fit(gap, along) {
+        return Math.min(1, gap / (_cornerAt(along) + joinRadius));
     }
 
     // Where the popout runs past a satellite they share one straight edge, and a fillet there would bulge out of it.
-    function _joinRadius(passed) {
-        return Math.min(passed ? joinRadius * (1 - emerged) : joinRadius, horizontal ? body.height : body.width);
+    function _joinRadius(atStart) {
+        const extent = horizontal ? body.height : body.width;
+        if (!anchor)
+            return Math.min(joinRadius, extent);
+        if (atStart ? passesStart : passesEnd)
+            return Math.min(joinRadius * (1 - emerged), extent);
+        const along = atStart ? _alongStart(anchor) : _alongEnd(anchor);
+        return Math.min(joinRadius * _fit(Math.abs((atStart ? _alongStart(body) : _alongEnd(body)) - along), along), extent);
     }
 
     function _satellite(surface) {
@@ -130,21 +130,24 @@ ShaderEffect {
                 "corner": Qt.vector4d(0, 0, 0, 0)
             };
         const rect = _rectOf(surface);
-        const limit = horizontal ? width : height;
         let start = _alongStart(rect);
         let end = _alongEnd(rect);
-        let startRadius = alwaysPainted && start <= 1 ? 0 : cornerRadius;
-        let endRadius = alwaysPainted && end >= limit - 1 ? 0 : cornerRadius;
+        let startRadius = _cornerAt(start);
+        let endRadius = _cornerAt(end);
         const bodyStart = _alongStart(body);
         const bodyEnd = _alongEnd(body);
         if (emerged > 0 && bodyStart < end && bodyEnd > start) {
             if (bodyStart <= start) {
                 start += (bodyStart - start) * emerged;
                 startRadius *= 1 - emerged;
+            } else {
+                startRadius *= 1 - (1 - _fit(bodyStart - start, start)) * emerged;
             }
             if (bodyEnd >= end) {
                 end += (bodyEnd - end) * emerged;
                 endRadius *= 1 - emerged;
+            } else {
+                endRadius *= 1 - (1 - _fit(end - bodyEnd, end)) * emerged;
             }
         }
         return {
@@ -153,22 +156,45 @@ ShaderEffect {
         };
     }
 
-    // The square a join fills beside the body, and the circle cut out of it, so blur can follow the curve.
-    function _fillet(atStart) {
-        const r = !anchor || emerged <= 0 || (atStart ? passesStart : passesEnd) ? 0 : _joinRadius(false);
-        const along = atStart ? _alongStart(body) - r : _alongEnd(body);
-        const nearSide = barSide === "top" || barSide === "left";
-        const cross = horizontal ? (nearSide ? anchor?.y + anchor?.height : anchor?.y - r) : (nearSide ? anchor?.x + anchor?.width : anchor?.x - r);
-        const centerAlong = (atStart ? along : along + r) - r;
-        const centerCross = (nearSide ? cross + r : cross) - r;
+
+    // The square a concave corner fills, and the circle cut out of it, so blur can follow the curve.
+    function _concave(atStart, alongEdge, crossEdge, r) {
+        if (r <= 0)
+            return {
+                "square": Qt.vector4d(0, 0, 0, 0),
+                "disc": Qt.vector4d(0, 0, 0, 0)
+            };
+        const along = atStart ? alongEdge - r : alongEdge;
+        const cross = nearSide ? crossEdge : crossEdge - r;
+        const discAlong = atStart ? along - r : along;
+        const discCross = nearSide ? cross : cross - r;
         return {
-            "square": r <= 0 ? Qt.vector4d(0, 0, 0, 0) : horizontal ? Qt.vector4d(along, cross, r, r) : Qt.vector4d(cross, along, r, r),
-            "disc": r <= 0 ? Qt.vector4d(0, 0, 0, 0) : horizontal ? Qt.vector4d(centerAlong, centerCross, r * 2, r * 2) : Qt.vector4d(centerCross, centerAlong, r * 2, r * 2)
+            "square": horizontal ? Qt.vector4d(along, cross, r, r) : Qt.vector4d(cross, along, r, r),
+            "disc": horizontal ? Qt.vector4d(discAlong, discCross, r * 2, r * 2) : Qt.vector4d(discCross, discAlong, r * 2, r * 2)
         };
+    }
+
+    function _crossEdge(far) {
+        if (!anchor)
+            return 0;
+        return horizontal ? (far ? anchor.y + anchor.height : anchor.y) : (far ? anchor.x + anchor.width : anchor.x);
+    }
+
+    function _fillet(atStart) {
+        const r = !anchor || emerged <= 0 || (atStart ? passesStart : passesEnd) ? 0 : _joinRadius(atStart);
+        return _concave(atStart, atStart ? _alongStart(body) : _alongEnd(body), _crossEdge(nearSide), r);
+    }
+
+    // Where the satellite's end follows the body out, its corner at the screen edge moves along.
+    function _wing(atStart) {
+        const r = anchor && emerged > 0 && (atStart ? passesStart : passesEnd) ? edgeRadius : 0;
+        return _concave(atStart, atStart ? paintedStart : paintedEnd, _crossEdge(!nearSide), r);
     }
 
     readonly property var startFillet: _fillet(true)
     readonly property var endFillet: _fillet(false)
+    readonly property var startWing: _wing(true)
+    readonly property var endWing: _wing(false)
 
     readonly property var _lead: _satellite(leading)
     readonly property var _trail: _satellite(trailing)
@@ -186,7 +212,7 @@ ShaderEffect {
     property vector4d shadowColor: Qt.vector4d(_shadowTint.r, _shadowTint.g, _shadowTint.b, _shadow && popoutActive ? _shadowTint.a * emerged : 0)
     property vector4d shadowParam: Qt.vector4d(Math.max(0, _level.blurPx), Math.max(0, _level.spreadPx), Theme.elevationOffsetXFor(_level, Theme.elevationLightDirection, 4), Theme.elevationOffsetYFor(_level, Theme.elevationLightDirection, 4))
     property vector4d ambientParam: Qt.vector4d(_ambient.blurPx, _ambient.spreadPx, _shadow && popoutActive ? _ambient.alpha * emerged : 0, 0)
-    property vector4d edgeParam: Qt.vector4d(barSide === "top" ? 0 : (barSide === "bottom" ? 1 : (barSide === "left" ? 2 : 3)), edgeRadius, _joinRadius(passesStart), _joinRadius(passesEnd))
+    property vector4d edgeParam: Qt.vector4d(barSide === "top" ? 0 : (barSide === "bottom" ? 1 : (barSide === "left" ? 2 : 3)), edgeRadius, _joinRadius(true), _joinRadius(false))
     property vector4d leadRect: _lead.rect
     property vector4d leadCorner: _lead.corner
     property vector4d trailRect: _trail.rect

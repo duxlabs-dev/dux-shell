@@ -417,14 +417,23 @@ Item {
         Region {
             property Item chrome
             property string rectKey
+            property string cornerKey
 
             // Before the popout emerges the satellites' own rounded regions cover them.
             readonly property vector4d rect: chrome?.emerged > 0 ? chrome[rectKey] : Qt.vector4d(0, 0, 0, 0)
+            readonly property vector4d corner: chrome?.[cornerKey] ?? Qt.vector4d(0, 0, 0, 0)
 
             x: Math.round(rect.x + topBarSlide.x)
             y: Math.round(rect.y + topBarSlide.y)
             width: Math.round(rect.z)
             height: Math.round(rect.w)
+            // The shader rounds a corner no further than half the rect's short side.
+            readonly property real cap: Math.min(width, height) / 2
+
+            topLeftRadius: Math.round(Math.min(corner.x, cap))
+            topRightRadius: Math.round(Math.min(corner.y, cap))
+            bottomRightRadius: Math.round(Math.min(corner.z, cap))
+            bottomLeftRadius: Math.round(Math.min(corner.w, cap))
         }
     }
 
@@ -618,7 +627,7 @@ Item {
                 }
             }
             if ((satelliteTranslucent || hasBar) && barChromeLoader.item) {
-                for (const key of ["startFillet", "endFillet"]) {
+                for (const key of ["startFillet", "endFillet", "startWing", "endWing"]) {
                     const sub = blurChromeFilletComp.createObject(region, {
                         chrome: barChromeLoader.item,
                         filletKey: key
@@ -626,11 +635,11 @@ Item {
                     if (sub)
                         subRegions.push(sub);
                 }
-                for (const rectKey of barWindow.isIsland ? ["leadRect", "trailRect", "bodyRect", "bodyJoinRect"] : ["bodyRect", "bodyJoinRect"]) {
+                for (const key of ["lead", "trail", "body"]) {
                     const sub = blurChromeRegionComp.createObject(region, {
                         chrome: barChromeLoader.item,
-                        rectKey: rectKey,
-                        radius: rectKey === "bodyRect" ? Theme.connectedSurfaceRadius : 0
+                        rectKey: key + "Rect",
+                        cornerKey: key + "Corner"
                     });
                     if (sub)
                         subRegions.push(sub);
