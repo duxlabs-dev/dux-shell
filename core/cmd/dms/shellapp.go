@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/duxlabs-dev/dux-go/shellapp"
@@ -109,6 +110,10 @@ func wantsSimpleAnimationDriver(settings []byte) bool {
 	return parsed.WallpaperFillMode == "Scrolling"
 }
 
+// Qt < 6.10 reserves a JS stack slot per object of the shell's whole type tree while
+// creating it, which overflows the 4 MiB default and breaks early handlers (#4175).
+const qmlJSStackSize = 16 << 20
+
 func dmsExtraEnv(string) []string {
 	var env []string
 	if selfPath, err := os.Executable(); err == nil {
@@ -119,6 +124,9 @@ func dmsExtraEnv(string) []string {
 	}
 	if _, set := os.LookupEnv("MALLOC_CONF"); !set {
 		env = append(env, "MALLOC_CONF=thp:never,narenas:4,dirty_decay_ms:3000")
+	}
+	if os.Getenv("QV4_JS_MAX_STACK_SIZE") == "" {
+		env = append(env, "QV4_JS_MAX_STACK_SIZE="+strconv.Itoa(qmlJSStackSize))
 	}
 	env = append(env, gpu.ShellEnv()...)
 	policyEnv, err := clipolicy.ShellEnv(afero.NewOsFs())
