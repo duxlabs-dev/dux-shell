@@ -1796,7 +1796,7 @@
       "wireless"
     ],
     "icon": "wifi",
-    "description": "Wi-Fi, Ethernet, VPN",
+    "description": "Wi-Fi, Ethernet, VPN, Firewall",
     "conditionKey": "networkAvailable"
   },
   {

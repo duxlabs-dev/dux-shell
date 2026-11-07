@@ -412,7 +412,7 @@ Singleton {
             "id": "network",
             "text": I18n.tr("Network", "noun, settings page and widget title"),
             "icon": "wifi",
-            "hint": I18n.tr("Wi-Fi, Ethernet, VPN", "settings sidebar hint for the network page"),
+            "hint": I18n.tr("Wi-Fi, Ethernet, VPN, Firewall", "settings sidebar hint for the network page"),
             "dmsOnly": true,
             "children": [
                 {
