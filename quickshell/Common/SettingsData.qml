@@ -1191,7 +1191,6 @@ Singleton {
     property var screenPreferences: Spec.SPEC.screenPreferences.def
     property var showOnLastDisplay: Spec.SPEC.showOnLastDisplay.def
     property var displayProfiles: Spec.SPEC.displayProfiles.def
-    property var displayPreviousRefreshModes: Spec.SPEC.displayPreviousRefreshModes.def
     property bool displayProfileAutoSelect: Spec.SPEC.displayProfileAutoSelect.def
     property bool displayShowDisconnected: Spec.SPEC.displayShowDisconnected.def
     property bool displaySnapToEdge: Spec.SPEC.displaySnapToEdge.def
@@ -3784,18 +3783,6 @@ Singleton {
         const updated = JSON.parse(JSON.stringify(displayProfiles));
         delete updated[compositor][profileId];
         displayProfiles = updated;
-        saveSettings();
-    }
-
-    function setDisplayPreviousRefreshModes(compositor, modes) {
-        if (JSON.stringify(displayPreviousRefreshModes[compositor] || {}) === JSON.stringify(modes || {}))
-            return;
-        const updated = JSON.parse(JSON.stringify(displayPreviousRefreshModes));
-        if (Object.keys(modes || {}).length > 0)
-            updated[compositor] = modes;
-        else
-            delete updated[compositor];
-        displayPreviousRefreshModes = updated;
         saveSettings();
     }
 
