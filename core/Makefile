@@ -25,6 +25,8 @@ BUILD_LDFLAGS=-ldflags='-s -w -X main.Version=$(VERSION) -X main.buildTime=$(BUI
 ARCH ?= all
 # Target OSes for dist builds
 DIST_OSES ?= linux freebsd
+# purego's fake cgo needs this to compile without cgo on freebsd
+FREEBSD_GCFLAGS=-gcflags=github.com/ebitengine/purego/internal/fakecgo=-std
 
 ifeq ($(ARCH),all)
 DIST_ARCHS = amd64 arm64
@@ -106,7 +108,8 @@ dist: sync-shell
 	@for os in $(DIST_OSES); do \
 		for arch in $(DIST_ARCHS); do \
 			echo "Building for $$os/$$arch..."; \
-			CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch $(GO) build -tags 'distro_binary withshell' $(BUILD_LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-$$os-$$arch ./$(SOURCE_DIR) || exit 1; \
+			gcflags=""; [ "$$os" = freebsd ] && gcflags="$(FREEBSD_GCFLAGS)"; \
+			CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch $(GO) build $$gcflags -tags 'distro_binary withshell' $(BUILD_LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-$$os-$$arch ./$(SOURCE_DIR) || exit 1; \
 			echo "  $(BUILD_DIR)/$(BINARY_NAME)-$$os-$$arch"; \
 		done; \
 	done
