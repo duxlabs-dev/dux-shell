@@ -2,12 +2,11 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
-import Quickshell.Wayland
 import qs.Common
 import qs.Services
 import "../Common/FluidGeometry.js" as FluidGeometry
 
-PanelWindow {
+Item {
     id: root
 
     required property var host
@@ -15,6 +14,10 @@ PanelWindow {
     property bool opened: false
     property bool closing: false
     property real shownSheetHeight: sheetHeight
+    readonly property int keyboardFocus: KeyboardFocus.keyboardFocus(opened && !closing)
+    readonly property var blurRegion: blur.effectiveRegion
+
+    anchors.fill: parent
 
     Behavior on shownSheetHeight {
         enabled: root.opened && !root.closing && !morph.running && root.animationDuration > 0 && !SettingsData.reduceMotion
@@ -115,20 +118,6 @@ PanelWindow {
             dismissed();
     }
 
-    screen: host.screen
-    color: "transparent"
-    exclusiveZone: -1
-    WlrLayershell.namespace: host.blurNamespace
-    WlrLayershell.layer: host.WlrLayershell.layer
-    WlrLayershell.keyboardFocus: KeyboardFocus.keyboardFocus(opened && !closing)
-
-    anchors {
-        top: true
-        bottom: true
-        left: true
-        right: true
-    }
-
     SpringMotion {
         id: morph
         enabled: !Theme.springMotionDisabled
@@ -142,7 +131,9 @@ PanelWindow {
     }
 
     WindowBlur {
-        targetWindow: root
+        id: blur
+        targetWindow: root.host.surface
+        applyToWindow: false
         surfaceColor: Theme.withAlpha(root.host.surfaceColor, Theme.popupTransparency)
         blurX: surface.x
         blurY: surface.y
@@ -152,7 +143,7 @@ PanelWindow {
     }
 
     DFocusGrab {
-        windows: [root].concat(KeyboardFocus.barWindows)
+        windows: [root.host.surface].concat(KeyboardFocus.barWindows)
         wanted: KeyboardFocus.wantsGrab(root.opened && !root.closing)
         onCleared: root.close()
     }

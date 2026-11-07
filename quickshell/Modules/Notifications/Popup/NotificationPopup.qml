@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Wayland
 import Quickshell.Widgets
 import Quickshell.Services.Notifications
 import qs.Common
@@ -10,31 +9,36 @@ import qs.DCommon.Widgets
 import qs.Widgets
 import qs.DCommon.Common as DCommon
 
-PanelWindow {
+Item {
     id: win
 
+    required property var screen
+    required property var surface
+    readonly property alias maskRegion: contentInputMask
+    readonly property var blurRegion: blur.effectiveRegion
+    readonly property bool wantsOverlay: CompositorService.framePeerSurfacesUseOverlayForScreen(win.screen) || (!!notificationData && (SettingsData.notificationOverlayEnabled || notificationData.urgency === NotificationUrgency.Critical))
     readonly property bool connectedFrameMode: CompositorService.usesConnectedFrameChromeForScreen(win.screen)
     readonly property bool inlineHeightAnimating: heightMotion.running
 
     WindowBlur {
-        targetWindow: win
+        id: blur
+        targetWindow: win.surface
+        applyToWindow: false
         surfaceColor: Theme.notificationFloatingSurface
         readonly property real s: Math.min(1, content.scale) * Math.max(0, content.opacity)
         readonly property real innerW: Math.max(0, content.width - content.cardInset * 2)
         readonly property real innerH: Math.max(0, content.height - content.cardInset * 2)
-        blurX: content.x + content.cardInset + swipeTx.x + tx.x + innerW * (1 - s) * 0.5
-        blurY: win.contentTop + content.cardInset + swipeTx.y + tx.y + innerH * (1 - s) * 0.5
+        blurX: win.x + content.x + content.cardInset + swipeTx.x + tx.x + innerW * (1 - s) * 0.5
+        blurY: win.y + win.contentTop + content.cardInset + swipeTx.y + tx.y + innerH * (1 - s) * 0.5
         blurWidth: win.cardShown && !win.connectedFrameMode ? innerW * s : 0
         blurHeight: win.cardShown && !win.connectedFrameMode ? innerH * s : 0
         blurRadius: win.connectedFrameMode ? Theme.connectedSurfaceRadius : NotificationMetrics.popupRadius
         clipEnabled: true
-        clipX: content.x + content.cardInset
-        clipY: win.contentTop + content.cardInset
+        clipX: win.x + content.x + content.cardInset
+        clipY: win.y + win.contentTop + content.cardInset
         clipWidth: innerW
         clipHeight: innerH
     }
-
-    WlrLayershell.namespace: "dms:notification-popup"
 
     required property var notificationData
     required property string notificationId
@@ -223,14 +227,6 @@ PanelWindow {
     }
 
     visible: !_finalized
-    WlrLayershell.layer: {
-        const shouldUseOverlay = CompositorService.framePeerSurfacesUseOverlayForScreen(win.screen) || (notificationData && (SettingsData.notificationOverlayEnabled || notificationData.urgency === NotificationUrgency.Critical));
-        const fallback = shouldUseOverlay ? WlrLayer.Overlay : WlrLayer.Top;
-        return LayerShell.fromEnv("DMS_NOTIFICATION_LAYER", fallback);
-    }
-    WlrLayershell.exclusiveZone: -1
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-    color: "transparent"
     readonly property real contentImplicitWidth: screen ? Math.min(NotificationMetrics.popupWidth, Math.max(NotificationMetrics.popupMinWidth, screen.width * NotificationMetrics.popupScreenRatio)) : NotificationMetrics.popupWidth
     readonly property real timeoutRailClearance: SettingsData.notificationShowTimeoutBar && notificationData?.timer?.interval > 0 ? Theme.spacingS : 0
     readonly property real contentImplicitHeight: Math.min(notificationCard.targetHeight + content.cardInset * 2 + timeoutRailClearance, (screen?.height ?? NotificationMetrics.centerMaxHeight) * NotificationMetrics.screenHeightRatio)
@@ -325,6 +321,8 @@ PanelWindow {
             descriptionExpanded = false;
         if (!hasValidData)
             forceExit();
+        if (surface?.idleSupported ?? false)
+            surfaceReady = true;
     }
     onNotificationDataChanged: {
         if (!_isDestroying) {
@@ -366,12 +364,11 @@ PanelWindow {
     }
     readonly property real contentWindowX: Theme.snap(windowShadowPad + (bleedsLeft ? edgeBleed : 0), dpr)
 
-    anchors.top: true
-    anchors.left: true
-    anchors.bottom: false
-    anchors.right: false
-
-    mask: contentInputMask
+    x: getWindowLeftMargin()
+    y: getWindowTopMargin()
+    width: implicitWidth
+    height: implicitHeight
+    clip: true
 
     Region {
         id: contentInputMask
@@ -385,13 +382,6 @@ PanelWindow {
         y: win.contentTop
         width: alignedWidth
         height: win.cardShown && !win.exiting && !content.chromeOnlyExit ? alignedHeight : 0
-    }
-
-    margins {
-        top: getWindowTopMargin()
-        bottom: 0
-        left: getWindowLeftMargin()
-        right: 0
     }
 
     function getBarInfo() {
@@ -751,7 +741,7 @@ PanelWindow {
                             if (!menu)
                                 return;
                             const point = mapToItem(null, x, y);
-                            menu.showAt(win.margins.left + point.x, win.margins.top + point.y, win.screen);
+                            menu.showAt(point.x, point.y, win.screen);
                         }
                     }
                 }
@@ -810,7 +800,6 @@ PanelWindow {
             }
         }
 
-        // The window edge hard-clips the surface as it leaves, so fade the shell out over the last stretch
         opacity: {
             const swipeAmount = Math.abs(swipe.offset);
             const revealOpacity = win.directionalEffect ? 1 : win.presentationProgress;

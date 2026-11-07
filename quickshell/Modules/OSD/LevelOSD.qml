@@ -34,8 +34,8 @@ DOSD {
         if (!tip)
             return;
         const pos = item.mapToItem(null, 0, 0);
-        const left = windowX + pos.x;
-        const top = windowY + pos.y;
+        const left = pos.x;
+        const top = pos.y;
         const gap = Theme.spacingS;
         tip.text = endIconLabel;
         switch (alignY) {
@@ -57,8 +57,8 @@ DOSD {
         endIconTooltip.active = false;
     }
 
-    onVisibleChanged: {
-        if (!visible)
+    onAttachedChanged: {
+        if (!attached)
             hideEndIconTooltip();
     }
 

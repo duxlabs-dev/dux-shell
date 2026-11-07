@@ -23,7 +23,13 @@ Item {
     property alias contentLoader: contentLoader
     property Component overlayContent: popoutHandle.overlayContent
     property alias overlayLoader: overlayLoader
-    readonly property alias contentWindow: contentWindow
+    property string _attachedScreenName: ""
+    readonly property var surface: IdleSurfaces.surfaceFor("popout", _attachedScreenName)
+    readonly property bool attached: _attachedScreenName !== ""
+    readonly property var contentWindow: attached ? surface : null
+    readonly property Item maskItem: (shouldBeVisible && backgroundInteractive) ? backgroundDismissalMask : contentMaskRect
+    readonly property int surfaceKeyboardFocus: KeyboardFocus.keyboardFocus(shouldBeVisible && (_keyboardReady || !connected), customKeyboardFocus)
+    readonly property var blurRegion: chromeLoader.item?.blur?.effectiveRegion ?? null
     property real popupWidth: popoutHandle.popupWidth
     property real popupHeight: popoutHandle.popupHeight
     property list<real> resizeCurve: popoutHandle.resizeCurve
@@ -128,8 +134,8 @@ Item {
         claimPrefix: root.layerNamespace
         screenName: root.screen ? root.screen.name : ""
         enabled: root.frameOwnsConnectedChrome
-        active: contentWindow.visible || root.shouldBeVisible
-        presented: contentWindow.visible || root.shouldBeVisible
+        active: root.attached || root.shouldBeVisible
+        presented: root.attached || root.shouldBeVisible
         renewTokenOnRecovery: false
         slot: "popout"
         exclusive: true
@@ -218,9 +224,9 @@ Item {
 
     function _connectedChromeState(visibleOverride) {
         // Track intent rather than the transient wl_surface state during remap.
-        const visible = visibleOverride !== undefined ? !!visibleOverride : (contentWindow.visible || root.shouldBeVisible);
-        const presented = contentWindow.visible || root.shouldBeVisible;
-        const phase = root.isClosing ? "closing" : (!presented ? "hidden" : (!contentWindow.visible && root.shouldBeVisible ? "opening" : "open"));
+        const visible = visibleOverride !== undefined ? !!visibleOverride : (root.attached || root.shouldBeVisible);
+        const presented = root.attached || root.shouldBeVisible;
+        const phase = root.isClosing ? "closing" : (!presented ? "hidden" : (!root.attached && root.shouldBeVisible ? "opening" : "open"));
         const bodyX = Theme.snap(root.pubBodyX, root.dpr);
         const bodyY = Theme.snap(root.pubBodyY, root.dpr);
         const bodyW = Theme.snap(root.pubBodyW, root.dpr);
@@ -294,7 +300,7 @@ Item {
             _releaseConnectedChromeState();
             return;
         }
-        if (!contentWindow.visible && !shouldBeVisible)
+        if (!root.attached && !shouldBeVisible)
             return;
         _publishConnectedChromeState(false);
     }
@@ -302,7 +308,7 @@ Item {
     function _syncPopoutAnim(axis) {
         if (!root.frameOwnsConnectedChrome || !chromeLease.claimId)
             return;
-        if (!contentWindow.visible && !shouldBeVisible)
+        if (!root.attached && !shouldBeVisible)
             return;
         const barSide = contentContainer.connectedBarSide;
         const syncX = axis === "x" && (barSide === "left" || barSide === "right");
@@ -315,7 +321,7 @@ Item {
     function _syncPopoutBody() {
         if (!root.frameOwnsConnectedChrome || !chromeLease.claimId)
             return;
-        if (!contentWindow.visible && !shouldBeVisible)
+        if (!root.attached && !shouldBeVisible)
             return;
         const body = root.morphTravelEnabled ? root._boundTravel(travelSpring.value) : root.travelTarget;
         const bodyX = Theme.snap(body.x, root.dpr);
@@ -390,7 +396,7 @@ Item {
         if (!connected)
             return;
         if (frameOwnsConnectedChrome) {
-            if ((contentWindow.visible || shouldBeVisible) && screen && PopoutManager.isCurrentPopout(popoutHandle, screen.name))
+            if ((root.attached || shouldBeVisible) && screen && PopoutManager.isCurrentPopout(popoutHandle, screen.name))
                 _publishConnectedChromeState(true);
         } else {
             _releaseConnectedChromeState();
@@ -452,13 +458,12 @@ Item {
         onTriggered: {
             if (!root.screen || !(root.shouldBeVisible || root._presentPending))
                 return;
-            root.surfaceScreen = root.screen;
-            contentWindow.visible = true;
+            root._attach(root.screen);
         }
     }
 
     function _canPreserveMotion() {
-        if (!contentWindow.visible || _openScreen !== screen || _supersededClose)
+        if (!root.attached || _openScreen !== screen || _supersededClose)
             return false;
         return !frameOwnsConnectedChrome || ConnectedModeState.hasSurfaceOwner(root.screen.name, "popout", chromeLease.claimId);
     }
@@ -466,7 +471,7 @@ Item {
     function open() {
         if (!screen)
             return;
-        if (!contentWindow.visible || _openScreen !== screen)
+        if (!root.attached || _openScreen !== screen)
             _overStackedModal = ModalManager.hasStackedModal(screen.name);
         const preserveMotion = _canPreserveMotion();
         _resetPublishedBody();
@@ -481,7 +486,7 @@ Item {
         _supersededClose = false;
 
         if (_openScreen !== null && _openScreen !== screen)
-            contentWindow.visible = false;
+            root._detach();
         _lastOpenedScreen = screen;
         if (connected)
             PopoutManager.showPopout(popoutHandle);
@@ -498,11 +503,11 @@ Item {
 
         _claimConnectedChrome();
 
-        if (!contentWindow.visible)
+        if (!root.attached)
             showSurfaceAction.schedule();
 
         animationsEnabled = true;
-        if (!connected && !frameGate.ready) {
+        if (!connected && !frameGate.ready && !(surface?.idleSupported ?? false)) {
             _presentPending = true;
             return;
         }
@@ -525,7 +530,7 @@ Item {
 
     function close() {
         showSurfaceAction.cancel();
-        if (!contentWindow.visible || _presentPending) {
+        if (!root.attached || _presentPending) {
             instantClose();
             return;
         }
@@ -551,7 +556,7 @@ Item {
         if (shouldBeVisible || !isClosing)
             return;
         closeTimer.stop();
-        contentWindow.visible = false;
+        root._detach();
         morph.snapTo(0);
         _endMorphTravel();
         _fluidMotionActive = false;
@@ -572,7 +577,7 @@ Item {
         shouldBeVisible = false;
         _keyboardReady = false;
         _primeContent = false;
-        contentWindow.visible = false;
+        root._detach();
         _fluidMotionActive = false;
         _snapBody();
         PopoutManager.hidePopout(popoutHandle);
@@ -737,7 +742,7 @@ Item {
     property real renderedAlignedHeight: alignedHeight
     // Snap rendered geometry while the entrance morph runs so it doesn't ride a second animation.
     readonly property bool _settlingToOpen: shouldBeVisible && (morph.running || travelSpring.running)
-    readonly property bool _geometryMotion: animationsEnabled && !SettingsData.reduceMotion && resizeDuration > 0 && contentWindow.visible && shouldBeVisible && !_settlingToOpen && !resizing
+    readonly property bool _geometryMotion: animationsEnabled && !SettingsData.reduceMotion && resizeDuration > 0 && root.attached && shouldBeVisible && !_settlingToOpen && !resizing
     property real _bodyGlide: 1
     property bool _bodyBatch: false
     property real _bodyFromY: 0
@@ -902,7 +907,7 @@ Item {
     property real _supersededContentScale: 1
 
     function beginSupersededClose() {
-        if (!frameOwnsConnectedChrome || _supersededClose || !contentWindow.visible || !root.screen)
+        if (!frameOwnsConnectedChrome || _supersededClose || !root.attached || !root.screen)
             return;
         if ((!hoverDismissEnabled && !isClosing) || !ConnectedModeState.hasSurfaceOwner(root.screen.name, "popout", chromeLease.claimId))
             return;
@@ -1149,31 +1154,55 @@ Item {
         adjacentBarInfo: root.adjacentBarInfo
     }
 
-    PanelWindow {
-        id: contentWindow
-        screen: root.surfaceScreen
-        visible: false
-        color: "transparent"
-        onVisibleChanged: {
-            if (!visible) {
-                if (!root.shouldBeVisible)
-                    root._contentRenderActive = false;
-                if (Qt.inputMethod) {
-                    Qt.inputMethod.hide();
-                    Qt.inputMethod.reset();
-                }
-            }
-            if (!root.connected)
-                return;
-            if (visible)
-                root._publishConnectedChromeState(true);
-            else
-                root._releaseConnectedChromeState();
+    function _attach(targetScreen) {
+        const name = targetScreen?.name ?? "";
+        if (!name) {
+            _detach();
+            return;
         }
+        const target = IdleSurfaces.surfaceFor("popout", name);
+        if (!target)
+            return;
+        if (_attachedScreenName !== name)
+            _detach();
+        surfaceRoot.parent = null;
+        surfaceRoot.parent = target.hostItem;
+        _attachedScreenName = name;
+        surfaceScreen = targetScreen;
+    }
+
+    function _detach() {
+        surfaceRoot.parent = root;
+        _attachedScreenName = "";
+        surfaceScreen = null;
+    }
+
+    onAttachedChanged: {
+        if (!attached) {
+            surfaceRoot.parent = root;
+            if (!shouldBeVisible)
+                _contentRenderActive = false;
+            if (Qt.inputMethod) {
+                Qt.inputMethod.hide();
+                Qt.inputMethod.reset();
+            }
+        }
+        if (!connected)
+            return;
+        if (attached)
+            _publishConnectedChromeState(true);
+        else
+            _releaseConnectedChromeState();
+    }
+
+    Item {
+        id: surfaceRoot
+        readonly property var host: root
+        anchors.fill: parent
 
         SurfaceFrameGate {
             id: frameGate
-            surfaceVisible: contentWindow.visible
+            surfaceVisible: root.attached
             onReadyChanged: {
                 if (ready && root._presentPending)
                     root._present();
@@ -1187,25 +1216,6 @@ Item {
             dismissSuspended: root.hoverDismissSuspended
             surfaceVisible: root.shouldBeVisible
             onDismissRequested: root.closeFromHoverDismiss()
-        }
-
-        WlrLayershell.namespace: root.layerNamespace
-        WlrLayershell.layer: root.effectivePopoutLayer
-        WlrLayershell.exclusiveZone: -1
-        WlrLayershell.keyboardFocus: KeyboardFocus.keyboardFocus(root.shouldBeVisible && (root._keyboardReady || !root.connected), root.customKeyboardFocus)
-
-        anchors {
-            left: true
-            top: true
-            right: true
-            bottom: true
-        }
-
-        mask: contentInputMask
-
-        Region {
-            id: contentInputMask
-            item: (root.shouldBeVisible && root.backgroundInteractive) ? backgroundDismissalMask : contentMaskRect
         }
 
         Item {
@@ -1401,7 +1411,7 @@ Item {
                 parent: chromeLoader.item ? chromeLoader.item.contentWrapper : contentContainer
                 anchors.fill: parent
                 sourceComponent: root.popoutHandle.content
-                active: root._primeContent || root.shouldBeVisible || contentWindow.visible
+                active: root._primeContent || root.shouldBeVisible || root.attached
             }
         }
 
@@ -1425,10 +1435,10 @@ Item {
 
     Loader {
         id: overlayLoader
-        parent: contentWindow.contentItem
+        parent: surfaceRoot
         z: 1
         anchors.fill: parent
-        active: root.overlayContent !== null && contentWindow.visible
+        active: root.overlayContent !== null && root.attached
         sourceComponent: root.overlayContent
     }
 
@@ -1452,7 +1462,8 @@ Item {
 
             WindowBlur {
                 id: popoutBlur
-                targetWindow: contentWindow
+                targetWindow: root.surface
+                applyToWindow: false
                 blurEnabled: !root.frameOwnsConnectedChrome && (!root.usesConnectedSurfaceChrome || Theme.connectedSurfaceBlurEnabled)
                 surfaceColor: chrome.surfaceColor
 
@@ -1678,7 +1689,8 @@ Item {
 
             WindowBlur {
                 id: popoutBlur
-                targetWindow: contentWindow
+                targetWindow: root.surface
+                applyToWindow: false
                 surfaceColor: Theme.readableSurface
                 readonly property real s: Math.min(1, contentContainer.scaleValue)
                 readonly property real op: Math.max(0, Math.min(1, (morph.value - 0.08) * 1.6))
