@@ -143,7 +143,9 @@ DragHandler {
             root.finishDrag();
     }
     onCentroidChanged: {
-        if (!(root.centroid.pressedButtons & Qt.LeftButton)) {
+        // Touch points carry no buttons, so a finger counts as pressed by its device.
+        const finger = root.centroid.device?.pointerType === PointerDevice.Finger;
+        if (!finger && !(root.centroid.pressedButtons & Qt.LeftButton)) {
             root.tracking = false;
             return;
         }
