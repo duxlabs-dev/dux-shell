@@ -17,7 +17,7 @@ function isSliderWidget(id) {
 }
 
 function canShrink(id) {
-    return id !== "user" && !isSliderWidget(id);
+    return id !== "user";
 }
 
 function isSmall(widget, rows) {
@@ -25,7 +25,7 @@ function isSmall(widget, rows) {
 }
 
 function canGroup(widget) {
-    return canShrink(widget?.id) && widget?.id !== GROUP_ID;
+    return canShrink(widget?.id) && !isSliderWidget(widget?.id) && widget?.id !== GROUP_ID;
 }
 
 // Members of a group that no longer exists fall back to the grid.
@@ -38,10 +38,12 @@ function inGroup(widget, ids) {
 }
 
 function groupMembers(widgets, groupId) {
-    return widgets.reduce((members, widget, index) => widget?.group === groupId && isShown(widget) ? members.concat([{
+    return widgets.reduce((members, widget, index) => widget?.group === groupId && isShown(widget) ? members.concat([
+            {
                 "index": index,
                 "widget": widget
-            }]) : members, []);
+            }
+        ]) : members, []);
 }
 
 function isRemovable(widget) {
@@ -135,7 +137,7 @@ function clampSize(widget, columns, rows = Infinity) {
 function addWidget(widgetId, columns) {
     const widgets = Common.SettingsData.controlCenterWidgets.slice();
     const widget = defaultWidget(widgetId, columns);
-    if (BUTTON_IDS.includes(widgetId))
+    if (BUTTON_IDS.includes(widgetId) || isSliderWidget(widgetId))
         widget.small = true;
 
     if (widgetId === "diskUsage") {

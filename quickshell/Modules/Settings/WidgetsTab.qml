@@ -69,7 +69,7 @@ Item {
     }
 
     readonly property var widgetAvailability: {
-        const dgopWarning = DgopService.dgopAvailable ? undefined : I18n.tr("Requires 'dgop' tool");
+        const dgopWarning = DgopService.dgopAvailable ? undefined : I18n.tr("Requires %1", "missing program").arg("dgop");
         return {
             "layout": {
                 "enabled": CompositorService.isMango && MangoService.available,
@@ -620,8 +620,7 @@ Item {
                 text: I18n.tr("Reset")
                 iconName: "refresh"
                 buttonHeight: Theme.buttonHeightXS
-                backgroundColor: Theme.secondaryContainer
-                textColor: Theme.onSecondaryContainer
+                variant: "tonal"
                 onClicked: {
                     setWidgetsForSection("left", defaultLeftWidgets);
                     setWidgetsForSection("center", defaultCenterWidgets);

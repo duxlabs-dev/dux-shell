@@ -109,6 +109,28 @@ Item {
 
         SettingsCard {
             width: parent.width
+            visible: dock.hasConfig
+            iconName: "mouse"
+            title: I18n.tr("Mouse behavior", "dock mouse settings card title")
+            settingKey: "dockMouseBehavior"
+            tags: ["dock", "mouse", "middle-click", "close", "launch", "instance"]
+
+            SettingsButtonGroupRow {
+                settingKey: "dockMiddleClickAction"
+                tags: ["dock", "middle-click", "close", "launch", "instance"]
+                resetStore: dock
+                resetKeys: ["middleClickAction"]
+                text: I18n.tr("Middle-click action", "dock middle-click behavior setting")
+                values: ["close", "launch"]
+                model: [I18n.tr("Close Window", "dock middle-click action option"), I18n.tr("Launch new instance", "dock middle-click action option")]
+                value: dock.config?.middleClickAction ?? "close"
+                fallbackValue: "close"
+                onValueSelected: value => dock.setOption("middleClickAction", value)
+            }
+        }
+
+        SettingsCard {
+            width: parent.width
             visible: dock.hasConfig && dock.config.enabled
             iconName: "edit"
             title: I18n.tr("Edit mode")

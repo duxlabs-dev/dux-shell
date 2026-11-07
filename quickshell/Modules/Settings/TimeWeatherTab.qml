@@ -29,7 +29,8 @@ Item {
     }
 
     function _dayNames() {
-        return Array(7).fill(0).map((_, i) => new Date(Date.UTC(2026, 2, 1 + i, 0, 0, 0)).toLocaleDateString(I18n.locale(), "dddd")).map(d => d[0].toUpperCase() + d.slice(1));
+        // Local noon on Sunday 1 March 2026 onwards; a UTC midnight is the day before west of UTC.
+        return Array(7).fill(0).map((_, i) => new Date(2026, 2, 1 + i, 12, 0, 0).toLocaleDateString(I18n.locale(), "dddd")).map(d => d[0].toUpperCase() + d.slice(1));
     }
 
     SettingsPage {
@@ -91,6 +92,16 @@ Item {
                 text: I18n.tr("Leading zero on hours")
                 checked: SettingsData.padHours12Hour
                 onToggled: checked => SettingsData.set("padHours12Hour", checked)
+            }
+
+            SettingsToggleRow {
+                enabled: !SettingsData.use24HourClock
+                tab: "time"
+                tags: ["time", "12hour", "format", "am", "pm", "meridiem"]
+                settingKey: "showAmPm"
+                text: I18n.tr("Show AM/PM")
+                checked: SettingsData.showAmPm
+                onToggled: checked => SettingsData.set("showAmPm", checked)
             }
         }
 

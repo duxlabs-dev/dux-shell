@@ -521,7 +521,6 @@ Item {
                 minButtonWidth: 56
                 buttonPadding: Theme.spacingS
                 textSize: Theme.fontSizeSmall
-                spacing: Theme.groupedListGap
                 onSelectionChanged: (index, selected) => root.setVisibleEntryAction(index, selected)
             }
         }

@@ -142,8 +142,7 @@ SettingsCard {
         DButton {
             text: I18n.tr("Cancel")
             iconName: "close"
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             onClicked: root.hide()
         }
 

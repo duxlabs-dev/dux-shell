@@ -27,27 +27,11 @@ Item {
             ArchiveManager: 14
         })
 
-    property string currentWebBrowserAppId: ""
-    property string currentFileManagerAppId: ""
-    property string currentTextEditorAppId: ""
-    property string currentImageViewerAppId: ""
-    property string currentVideoPlayerAppId: ""
-    property string currentMusicPlayerAppId: ""
-    property string currentPDFReaderAppId: ""
-    property string currentMailAppId: ""
-    property string currentTerminalAppId: ""
-    property string currentCalendarAppId: ""
-    property string currentMapsAppId: ""
-    property string currentWordProcessorAppId: ""
-    property string currentSpreadsheetAppId: ""
-    property string currentPresentationAppId: ""
-    property string currentArchiveManagerAppId: ""
-
+    // category -> bare desktop id of the current default; category -> [{name, value, icon}]
+    property var currentIds: ({})
     property var categoryModels: ({})
 
-    // A curated list of MIME types for each category.
-    // The first one is used for fetching the apps list and current default,
-    // the rest are for setting the default app.
+    // First MIME type of each category is read; all of them are written on pick.
     readonly property var mimeMapping: ({
             [root.appCategory.WebBrowser]: ["x-scheme-handler/https", "x-scheme-handler/http", "text/html", "application/xhtml+xml"],
             [root.appCategory.FileManager]: ["inode/directory", "x-scheme-handler/file", "x-scheme-handler/sftp"],
@@ -66,42 +50,45 @@ Item {
             [root.appCategory.Terminal]: ["terminal"] // Special
         })
 
-    function propertyName(type) {
-        const names = Object.keys(root.appCategory);
-        return "current" + names[type] + "AppId";
+    readonly property string dmsChooserId: "dms-open"
+    readonly property string dmsChooserLabel: I18n.tr("DMS chooser")
+    readonly property string terminalsListPath: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/xdg-terminals.list"
+
+    function stripDesktopSuffix(id) {
+        return (id || "").replace(/\.desktop$/, "");
     }
 
-    function loadAppSearchCategory(categoryName) {
-        const apps = AppSearchService.getVisibleApplications() || [];
-        return apps.filter(app => {
-            const categories = app.categories || [];
-            return categories.includes(categoryName);
-        });
+    function lookupEntry(appId) {
+        const bare = stripDesktopSuffix(appId);
+        return DesktopEntries.byId(bare) || DesktopEntries.heuristicLookup(appId) || DesktopEntries.heuristicLookup(bare);
+    }
+
+    // NoDisplay handlers stay hidden like in the launcher, except the shell's own (notepad)
+    function isShellOwn(appId) {
+        return stripDesktopSuffix(appId).startsWith("dev.duxlabs.shell.");
     }
 
     function getAppDisplayName(appId) {
-        if (appId === root.dmsChooserId || appId === "dms-open") {
+        if (stripDesktopSuffix(appId) === root.dmsChooserId) {
             return root.dmsChooserLabel;
         }
-        let entry = DesktopEntries.heuristicLookup(appId);
-        if (entry && entry.name) {
-            return entry.name;
-        }
-        const withoutSuffix = appId.replace(/\.desktop$/, "");
-        if (withoutSuffix !== appId) {
-            entry = DesktopEntries.heuristicLookup(withoutSuffix);
-            if (entry && entry.name) {
-                return entry.name;
-            }
-        }
-        return appId;
+        return lookupEntry(appId)?.name || appId;
     }
 
-    readonly property string dmsChooserId: "dms-open.desktop"
-    readonly property string dmsChooserLabel: I18n.tr("DMS chooser")
+    function getAppIcon(appId) {
+        return lookupEntry(appId)?.icon || "";
+    }
+
+    function entryFor(id, name, icon) {
+        return {
+            name: name || getAppDisplayName(id),
+            value: stripDesktopSuffix(id),
+            icon: icon || getAppIcon(id)
+        };
+    }
 
     function withDmsChooser(entries) {
-        const filtered = (entries || []).filter(e => e.value !== root.dmsChooserId && e.value !== "dms-open");
+        const filtered = (entries || []).filter(e => e.value !== root.dmsChooserId);
         return [
             {
                 name: root.dmsChooserLabel,
@@ -111,165 +98,91 @@ Item {
         ].concat(filtered);
     }
 
-    function getAppIcon(appId) {
-        const entry = DesktopEntries.heuristicLookup(appId) || DesktopEntries.heuristicLookup(stripDesktopSuffix(appId));
-        return entry?.icon || "";
-    }
-
-    function stripDesktopSuffix(id) {
-        return (id || "").replace(/\.desktop$/, "");
-    }
-
-    function labeled(entries) {
-        const counts = {};
-        entries.forEach(e => counts[e.name] = (counts[e.name] || 0) + 1);
-        return entries.map(e => Object.assign({}, e, {
-                text: counts[e.name] > 1 ? `${e.name} (${stripDesktopSuffix(e.value)})` : e.name
-            }));
-    }
-
-    function labelFor(category, id) {
-        const wanted = stripDesktopSuffix(id);
-        const found = (root.categoryModels[category] || []).find(opt => stripDesktopSuffix(opt.value) === wanted);
-        return found ? found.text : root.getAppDisplayName(id);
-    }
-
-    function loadCategoryModel(categoryKey, categorySearchName) {
-        const apps = loadAppSearchCategory(categorySearchName);
-        const appIds = apps.map(app => app.id || app.execString || "").filter(id => id);
-        let models = Object.assign({}, root.categoryModels);
-        const entries = appIds.map(id => ({
-                    name: root.getAppDisplayName(id),
-                    value: id,
-                    icon: root.getAppIcon(id)
-                }));
-        models[categoryKey] = labeled(categoryKey === root.appCategory.Terminal ? entries : root.withDmsChooser(entries));
+    function setModel(category, entries) {
+        const models = Object.assign({}, root.categoryModels);
+        models[category] = category === root.appCategory.Terminal ? entries : withDmsChooser(entries);
         root.categoryModels = models;
     }
 
-    Component.onCompleted: {
-        const categories = Object.values(root.appCategory);
-
-        categories.forEach(category => {
-            switch (category) {
-            case root.appCategory.Terminal:
-                // Terminals don't have a MIME type
-                loadCategoryModel(root.appCategory.Terminal, "TerminalEmulator");
-                getDefaultTerminal();
-                break;
-            case root.appCategory.WebBrowser:
-                // When using the MIME type, stuff like dms-run shows up.
-                // It's probably better to use the category.
-                loadCategoryModel(root.appCategory.WebBrowser, "WebBrowser");
-                DesktopService.getDefaultApp(mimeMapping[category][0], category.toString());
-                break;
-            case root.appCategory.FileManager:
-                // Use categories for file managers instead,
-                // you don't want Kate as your file manager just because it can open folders
-                loadCategoryModel(root.appCategory.FileManager, "FileManager");
-                DesktopService.getDefaultApp(mimeMapping[category][0], category.toString());
-                DesktopService.getHandlersForMimeType(mimeMapping[category][0], category.toString());
-                break;
-            default:
-                const mimeType = mimeMapping[category][0];
-                DesktopService.getDefaultApp(mimeType, category.toString());
-                DesktopService.getAppsForMimeType(mimeType, category.toString());
-                break;
-            }
-        });
+    function mergeEntries(category, entries) {
+        const existing = root.categoryModels[category] || [];
+        const known = new Set(existing.map(opt => opt.value));
+        const extra = entries.filter(e => !known.has(e.value));
+        if (extra.length === 0 && existing.length === 0) {
+            return;
+        }
+        setModel(category, existing.concat(extra));
     }
 
-    function getDefaultTerminal() {
-        // Run xdg-terminal-exec to get the default terminal
-        const proc = xdgGetDefaultTerminal.createObject(root, {
-            running: true
+    function setCurrentId(category, id) {
+        const ids = Object.assign({}, root.currentIds);
+        ids[category] = stripDesktopSuffix(id);
+        root.currentIds = ids;
+    }
+
+    function categoryEntries(categoryName) {
+        const apps = AppSearchService.getVisibleApplications() || [];
+        return apps.filter(app => (app.categories || []).includes(categoryName)).map(app => app.id || app.execString || "").filter(id => id).map(id => entryFor(id));
+    }
+
+    Component.onCompleted: {
+        Object.values(root.appCategory).forEach(category => {
+            switch (category) {
+            case root.appCategory.Terminal:
+                // Terminals have no MIME type; xdg-terminal-exec reads xdg-terminals.list instead
+                setModel(category, categoryEntries("TerminalEmulator"));
+                return;
+            case root.appCategory.WebBrowser:
+                // Menu category only: anything that registers an https handler would otherwise qualify
+                setModel(category, categoryEntries("WebBrowser"));
+                DesktopService.getDefaultApp(root.mimeMapping[category][0], category.toString());
+                return;
+            case root.appCategory.FileManager:
+                // Seed from the menu category so Kate does not lead just because it opens folders
+                setModel(category, categoryEntries("FileManager"));
+                break;
+            }
+            DesktopService.getDefaultApp(root.mimeMapping[category][0], category.toString());
+            DesktopService.getHandlersForMimeType(root.mimeMapping[category][0], category.toString());
+            DesktopService.getAppsForMimeType(root.mimeMapping[category][0], category.toString());
         });
     }
 
     function setDefaultTerminal(terminalId) {
-        // Write to xdg-terminals.list
-        const proc = xdgSetDefaultTerminal.createObject(root, {
-            terminalId: terminalId,
-            running: true
-        });
+        const id = stripDesktopSuffix(terminalId) + ".desktop";
+        const rest = terminalsList.text().split("\n").map(l => l.trim()).filter(l => l && l !== id);
+        terminalsList.setText([id].concat(rest).join("\n") + "\n");
+        setCurrentId(root.appCategory.Terminal, id);
     }
 
-    Component {
-        id: xdgSetDefaultTerminal
-        Process {
-            property string terminalId: ""
-            property string configPath: Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")
-            command: ["sh", "-c", `echo "${terminalId}.desktop" > "${configPath}/xdg-terminals.list"`]
-            onExited: (exitCode, exitStatus) => {
-                if (exitCode != 0) {
-                    log.error("Failed to write xdg-terminals.list, exit code:", exitCode);
-                }
-                destroy();
+    FileView {
+        id: terminalsList
+        path: root.terminalsListPath
+        printErrors: false
+        atomicWrites: true
+        onLoaded: {
+            const first = text().split("\n").map(l => l.trim()).find(l => l && !l.startsWith("#"));
+            if (first) {
+                root.setCurrentId(root.appCategory.Terminal, first);
             }
         }
-    }
-
-    Component {
-        id: xdgGetDefaultTerminal
-        Process {
-            property string configPath: Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")
-
-            command: ["sh", "-c", `cat '${configPath}/xdg-terminals.list'`]
-            stdout: StdioCollector {
-                onStreamFinished: {
-                    const defaultTerminal = text.trim();
-                    if (defaultTerminal) {
-                        root.currentTerminalAppId = defaultTerminal;
-                    } else {
-                        log.warn("No default terminal found");
-                    }
-                }
-            }
-            stderr: StdioCollector {
-                onStreamFinished: {
-                    if (text.trim().length > 0) {
-                        log.error("Error getting default terminal:", text);
-                    }
-                }
-            }
-            onExited: (exitCode, exitStatus) => {
-                destroy();
+        onLoadFailed: error => {
+            if (error !== FileViewError.FileNotFound) {
+                log.warn("Failed to read xdg-terminals.list:", error);
             }
         }
+        onSaveFailed: error => log.error("Failed to write xdg-terminals.list:", error)
     }
 
     Connections {
         target: DesktopService
 
-        function onGetAppsForMimeResult(mimeType, appIds, callbackId) {
-            let categoryIndex = parseInt(callbackId);
-            let models = Object.assign({}, root.categoryModels);
-
-            const entries = (appIds || []).map(id => ({
-                        name: root.getAppDisplayName(id),
-                        value: id,
-                        icon: root.getAppIcon(id)
-                    }));
-
-            models[categoryIndex] = root.labeled(root.withDmsChooser(entries));
-            root.categoryModels = models;
+        function onGetHandlersForMimeResult(mimeType, apps, callbackId) {
+            root.mergeEntries(parseInt(callbackId), (apps || []).filter(app => app.id).map(app => root.entryFor(app.id, app.name, app.icon)));
         }
 
-        function onGetHandlersForMimeResult(mimeType, apps, callbackId) {
-            const categoryIndex = parseInt(callbackId);
-            let models = Object.assign({}, root.categoryModels);
-            const existing = models[categoryIndex] || root.withDmsChooser([]);
-            const known = new Set(existing.map(opt => root.stripDesktopSuffix(opt.value)));
-            const extra = (apps || []).filter(app => app.id && !known.has(root.stripDesktopSuffix(app.id))).map(app => ({
-                        name: app.name || root.getAppDisplayName(app.id),
-                        value: app.id,
-                        icon: app.icon || root.getAppIcon(app.id)
-                    }));
-            if (extra.length === 0) {
-                return;
-            }
-            models[categoryIndex] = root.labeled(existing.concat(extra));
-            root.categoryModels = models;
+        function onGetAppsForMimeResult(mimeType, appIds, callbackId) {
+            root.mergeEntries(parseInt(callbackId), (appIds || []).filter(id => root.isShellOwn(id)).map(id => root.entryFor(id)));
         }
 
         function onGetDefaultAppResult(mimeType, desktopFileId, callbackId) {
@@ -277,38 +190,31 @@ Item {
                 log.info("No default app found for MIME type:", mimeType);
                 return;
             }
-            root[propertyName(parseInt(callbackId))] = desktopFileId;
+            root.setCurrentId(parseInt(callbackId), desktopFileId);
         }
     }
 
     component AppSelector: SettingsDropdownRow {
         property int category: -1
-        options: (root.categoryModels[category] || []).map(opt => opt.text)
-        optionImages: (root.categoryModels[category] || []).map(opt => opt.icon || "")
+        readonly property var entries: root.categoryModels[category] || []
+        options: entries.map(opt => opt.name)
+        optionValues: entries.map(opt => opt.value)
+        optionImages: entries.map(opt => opt.icon || "")
         enabled: options.length > 0
         emptyText: options.length > 0 ? I18n.tr("Unset", "Unset") : ""
-        opacity: options.length > 0 ? 1 : 0.5
-        currentValue: {
-            const id = root[propertyName(category)];
+        currentValue: root.currentIds[category] || ""
+        onValueChanged: id => {
             if (!id) {
-                return "";
+                return;
             }
-            return root.labelFor(category, id);
-        }
-        onValueChanged: val => {
-            let model = root.categoryModels[category] || [];
-            let found = model.find(opt => opt.text === val);
-            if (found) {
-                if (category === root.appCategory.Terminal) {
-                    root.setDefaultTerminal(found.value);
-                } else {
-                    DesktopService.setDefaultAppForMimes(root.mimeMapping[category], found.value, category.toString());
-                }
+            if (category === root.appCategory.Terminal) {
+                root.setDefaultTerminal(id);
+                return;
             }
+            DesktopService.setDefaultAppForMimes(root.mimeMapping[category], id, category.toString());
+            root.setCurrentId(category, id);
         }
     }
-
-    // Dropdowns
 
     SettingsPage {
         id: mainColumn

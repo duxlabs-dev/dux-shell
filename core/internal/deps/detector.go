@@ -30,6 +30,20 @@ type Dependency struct {
 	CanToggle   bool
 }
 
+// Dank-era keys, still accepted from the command line and from resume files written by older installers.
+var legacyNames = map[string]string{
+	"danksearch":   "dux-search",
+	"dankcalendar": "dux-calendar",
+	"dms-greeter":  "dux-greeter",
+}
+
+func CanonicalName(name string) string {
+	if current, ok := legacyNames[name]; ok {
+		return current
+	}
+	return name
+}
+
 type WindowManager int
 
 const (

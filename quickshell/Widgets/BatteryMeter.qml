@@ -5,6 +5,7 @@ import QtQuick.Shapes
 import Quickshell.Widgets
 import qs.Common
 import qs.Services
+import qs.DCommon.Common
 import qs.DCommon.Widgets
 import qs.Widgets
 
@@ -28,9 +29,9 @@ Item {
     readonly property bool circular: root.ring || root.duo
     readonly property real arcStart: root.duo ? 150 : -90
     readonly property real arcSpan: root.duo ? 240 : 360
-    readonly property real chargeTarget: Math.max(root.level, Math.min(100, SettingsData.batteryChargeLimit))
+    readonly property real chargeTarget: SettingsData.batteryScaleToChargeLimit ? 100 : Math.max(root.level, Math.min(100, SettingsData.batteryChargeLimit))
     readonly property real unit: root.thickness / 14
-    readonly property real level: Math.max(0, Math.min(100, BatteryService.batteryLevel))
+    readonly property real level: Math.max(0, Math.min(100, BatteryService.displayBatteryLevel))
     readonly property bool charging: BatteryService.batteryAvailable && BatteryService.isCharging
     readonly property bool lowState: BatteryService.batteryAvailable && BatteryService.isLowBattery && !BatteryService.isCharging
     readonly property color fillColor: {
@@ -99,10 +100,7 @@ Item {
 
         font.weight: root.glyphWeight
         font.pixelSize: Math.max(1, root.baseTextSize)
-        font.features: {
-            "tnum": 1
-        }
-        text: root.numberText
+        text: root.numberText.replace(/\d/g, Fonts.widestDigit(fitMetrics.font))
     }
 
     StyledTextMetrics {
@@ -299,9 +297,8 @@ Item {
     }
 
     NumericText {
-        isMonospace: false
         visible: root.ringNumberVisible
-        x: (root.width - implicitWidth) / 2
+        x: (root.width - width) / 2
         y: root.textBaseline - baselineOffset
         text: root.numberText
         color: Theme.surfaceText
@@ -382,9 +379,8 @@ Item {
         height: root.height
 
         NumericText {
-            isMonospace: false
             visible: root.numberInside
-            x: root.textCanvasLeft + (root.textCanvasWidth - implicitWidth) / 2
+            x: root.textCanvasLeft + (root.textCanvasWidth - width) / 2
             y: root.textBaseline - baselineOffset
             text: root.numberText
             color: glyphs.ink

@@ -34,8 +34,10 @@ T.Control {
     property real paddingV: SettingsMetrics.rowPaddingV
     property color rowColor: SettingsMetrics.rowColor
     property bool active: false
-    readonly property color contentColor: active ? Theme.onSelectedContainer : Theme.surfaceText
-    readonly property color supportingContentColor: active ? Theme.onSelectedContainer : Theme.surfaceVariantText
+    property color selectedRowColor: Theme.selectedContainer
+    property color selectedContentColor: Theme.onSelectedContainer
+    readonly property color contentColor: active ? selectedContentColor : Theme.surfaceText
+    readonly property color supportingContentColor: active ? selectedContentColor : Theme.surfaceVariantText
     property color iconColor: active ? Theme.accentOnSelectedContainer : Theme.primary
     property color titleColor: contentColor
 
@@ -53,11 +55,13 @@ T.Control {
     readonly property bool hasText: title !== "" || subtitle !== ""
     readonly property bool isHighlighted: settingKey !== "" && SettingsSearchService.highlightSection === settingKey
     property bool highlighted: isHighlighted
+    property bool inGroup: (groupItem.parent?.isSettingsGroupHost ?? false) || (groupItem.parent?.parent?.isSettingsGroupHost ?? false)
     readonly property bool isFirstInGroup: _edge(true)
     readonly property bool isLastInGroup: _edge(false)
-    property real topRadius: isFirstInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-    property real bottomRadius: isLastInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-    property real minHeight: subtitle !== "" ? Theme.listItemTwoLineHeight : Theme.listItemHeight
+    property bool dividerBefore: inGroup && !isFirstInGroup
+    property real topRadius: isFirstInGroup ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+    property real bottomRadius: isLastInGroup ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+    property real minHeight: subtitle !== "" ? SettingsMetrics.rowMinHeightTwoLine : SettingsMetrics.rowMinHeight
     // Keyboard focus on the row or any control inside it tints the row, so navigation reads without a focus ring
     readonly property Item activeItem: Window.activeFocusItem
     readonly property bool focusWithin: (activeItem?.visualFocus ?? false) && _contains(activeItem)
@@ -140,9 +144,17 @@ T.Control {
     Rectangle {
         anchors.fill: parent
         visible: root.paintBackground
-        color: root.active ? Theme.selectedContainer : root.highlighted ? Theme.blend(root.rowColor, Theme.primary, SettingsMetrics.highlightBlend) : root.rowColor
-        border.width: Theme.layerOutlineWidth
+        color: root.active ? root.selectedRowColor : root.highlighted ? Theme.blend(root.rowColor, Theme.primary, SettingsMetrics.highlightBlend) : root.rowColor
+        border.width: root.inGroup ? SettingsMetrics.groupEdgeWidth : Theme.layerOutlineWidth
         border.color: Theme.outlineMedium
+
+        Rectangle {
+            x: root.paddingH
+            width: parent.width - root.paddingH * 2
+            height: Theme.dividerWidth
+            visible: SettingsMetrics.continuousGroups && root.dividerBefore
+            color: SettingsMetrics.groupDividerColor
+        }
         topLeftRadius: root.topRadius
         topRightRadius: root.topRadius
         bottomLeftRadius: root.bottomRadius
@@ -152,7 +164,7 @@ T.Control {
     Rectangle {
         anchors.fill: parent
         visible: !root.paintBackground && (root.active || root.highlighted)
-        color: root.active ? Theme.selectedContainer : SettingsMetrics.rowHighlightColor
+        color: root.active ? root.selectedRowColor : SettingsMetrics.rowHighlightColor
         topLeftRadius: root.topRadius
         topRightRadius: root.topRadius
         bottomLeftRadius: root.bottomRadius

@@ -15,6 +15,7 @@ Item {
     property bool vertical: false
     property bool editMode: false
     property bool panelResizable: false
+    property real availableWidth: Infinity
     readonly property bool hasWidgets: entryId === DashRegistry.overviewId || typeof tabItem?.clearWidgets === "function"
     readonly property bool menuOpen: customMenu.open
     readonly property bool hasCustomActions: customMenu.visibleItems.length > 0
@@ -66,6 +67,7 @@ Item {
         height: root.height
         visible: root.editMode
         vertical: root.vertical
+        availableWidth: root.availableWidth
         canAdd: (root.tabItem?.addable?.length ?? 0) > 0
         hasWidgets: root.hasWidgets
         hasOptions: DashRegistry.hasOptions(root.entryId, true)

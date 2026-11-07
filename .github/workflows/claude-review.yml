@@ -1,9 +1,12 @@
 name: Claude Review
 
-# `/claude review` on a PR by a member of an allowed team. Review only, no edits or pushes.
+# Reviews a PR by a member of an allowed team when it is opened or pushed to, or when anyone on the team comments `/claude review`.
+# One review per PR at a time: a newer trigger cancels the running one. Review only, no edits or pushes.
 # Secrets: CLAUDE_CODE_OAUTH_TOKEN (claude setup-token), CLAUDE_REVIEW_ORG_READ_TOKEN (PAT, org Members: read)
 
 on:
+  pull_request_target:
+    types: [opened, synchronize]
   issue_comment:
     types: [created]
 
@@ -11,20 +14,25 @@ permissions: {}
 
 jobs:
   gate:
-    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/claude review')
+    if: >-
+      github.event_name == 'pull_request_target' ||
+      (github.event.issue.pull_request && startsWith(github.event.comment.body, '/claude review'))
     runs-on: ubuntu-latest
     permissions:
       issues: write
       pull-requests: write
     outputs:
       allowed: ${{ steps.team.outputs.allowed }}
+      pr: ${{ github.event.pull_request.number || github.event.issue.number }}
+      actor: ${{ github.event.pull_request.user.login || github.event.comment.user.login }}
+      request: ${{ github.event.comment.body || 'Automatic review of an opened or updated pull request.' }}
     steps:
       - name: Check team membership
         id: team
         env:
           GH_TOKEN: ${{ secrets.CLAUDE_REVIEW_ORG_READ_TOKEN }}
           ORG: ${{ github.repository_owner }}
-          USER: ${{ github.event.comment.user.login }}
+          USER: ${{ github.event.pull_request.user.login || github.event.comment.user.login }}
           TEAMS: dms-collaborators owners
         run: |
           allowed=false
@@ -35,6 +43,7 @@ jobs:
           echo "allowed=$allowed" >> "$GITHUB_OUTPUT"
 
       - name: React
+        if: github.event_name == 'issue_comment'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -50,17 +59,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
-      group: claude-review-${{ github.event.issue.number }}
-      cancel-in-progress: false
+      group: claude-review-${{ needs.gate.outputs.pr }}
+      cancel-in-progress: true
     permissions:
       contents: read
       pull-requests: write
       issues: write
       id-token: write
     steps:
+      - name: Announce start
+        id: start
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          id=$(gh api -X POST "repos/${{ github.repository }}/issues/${{ needs.gate.outputs.pr }}/comments" \
+            -f body="Claude review in progress: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" --jq .id)
+          echo "comment=$id" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v6
         with:
-          ref: refs/pull/${{ github.event.issue.number }}/head
+          ref: refs/pull/${{ needs.gate.outputs.pr }}/head
           fetch-depth: 0
           submodules: recursive
 
@@ -68,30 +86,33 @@ jobs:
         id: pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: echo "base=$(gh pr view ${{ github.event.issue.number }} --json baseRefName --jq .baseRefName)" >> "$GITHUB_OUTPUT"
+        run: echo "base=$(gh pr view ${{ needs.gate.outputs.pr }} --json baseRefName --jq .baseRefName)" >> "$GITHUB_OUTPUT"
 
       - uses: anthropics/claude-code-action@9ca9355b36297178e28d37c799d1c9c8a28e6507
+        env:
+          CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
+          CLAUDE_CODE_EFFORT_LEVEL: high
         id: claude
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            Review pull request #${{ github.event.issue.number }} in ${{ github.repository }}, requested by @${{ github.event.comment.user.login }}:
+            Review pull request #${{ needs.gate.outputs.pr }} in ${{ github.repository }}, requested by @${{ needs.gate.outputs.actor }}:
 
             ---
-            ${{ github.event.comment.body }}
+            ${{ needs.gate.outputs.request }}
             ---
 
             Text after `/claude review` is an optional focus. Honor it but still report anything serious outside it.
-            The PR head is checked out and the base branch is fetched as `origin/${{ steps.pr.outputs.base }}`. Use `gh pr view ${{ github.event.issue.number }}` for title and description.
+            The PR head is checked out and the base branch is fetched as `origin/${{ steps.pr.outputs.base }}`. Use `gh pr view ${{ needs.gate.outputs.pr }}` for title and description.
             Get the diff from git, never `gh pr diff` (GitHub refuses diffs over 20000 lines): `git diff --stat origin/${{ steps.pr.outputs.base }}...HEAD`, then `git diff origin/${{ steps.pr.outputs.base }}...HEAD -- <path>` per file or directory. Read surrounding code as needed. Split a large PR across Task agents by area.
 
             Steps:
             1. Read CONTRIBUTING.md.
             2. Read the PR title, description and diff.
-            3. Check existing comments so you don't repeat them: `gh api --method GET repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}/comments` and `gh pr view ${{ github.event.issue.number }} --comments`. Skip findings already covered by a comment that still applies.
+            3. Check existing comments so you don't repeat them: `gh api --method GET repos/${{ github.repository }}/pulls/${{ needs.gate.outputs.pr }}/comments` and `gh pr view ${{ needs.gate.outputs.pr }} --comments`. Skip findings already covered by a comment that still applies.
             4. Verify each candidate finding against the code. Drop anything you can't confirm.
             5. Post one inline comment per confirmed finding with `mcp__github_inline_comment__create_inline_comment` (`confirmed: true`). Say what's wrong, why, and the fix. Add a committable suggestion only if it alone fully fixes the issue.
-            6. Post one new summary comment with `gh pr comment ${{ github.event.issue.number }} --body ...`. Never edit earlier comments. Format:
+            6. Replace the body of the in-progress comment with the summary: `gh api -X PATCH repos/${{ github.repository }}/issues/comments/${{ steps.start.outputs.comment }} -f body=...`. Edit only that comment. Never post a new comment or edit any other. Format:
 
                ## Claude review
                <one line verdict>
@@ -113,28 +134,32 @@ jobs:
           claude_args: |
             --model claude-opus-5-5
             --max-turns 120
-            --allowedTools "Read,Grep,Glob,LS,Task,mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api --method GET repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}/comments:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git blame:*),Bash(git merge-base:*),Bash(git grep:*)"
+            --allowedTools "Read,Grep,Glob,LS,Task,mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh api -X PATCH repos/${{ github.repository }}/issues/comments/${{ steps.start.outputs.comment }}:*),Bash(gh api --method GET repos/${{ github.repository }}/pulls/${{ needs.gate.outputs.pr }}/comments:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git blame:*),Bash(git merge-base:*),Bash(git grep:*)"
             --disallowedTools "Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch"
 
       - name: Upload transcript
         if: always() && steps.claude.outputs.execution_file != ''
         uses: actions/upload-artifact@v4
         with:
-          name: claude-review-${{ github.event.issue.number }}-${{ github.run_id }}
+          name: claude-review-${{ needs.gate.outputs.pr }}-${{ github.run_id }}
           path: ${{ steps.claude.outputs.execution_file }}
           retention-days: 7
           if-no-files-found: ignore
 
-      - name: Require a summary comment
+      - name: Require a summary
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SINCE: ${{ github.event.comment.created_at }}
-        run: |
-          gh api "repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments?since=$SINCE&per_page=100" \
-            --jq '[.[] | select(.body | startswith("## Claude review"))] | length' | grep -qv '^0$'
+        run: gh api "repos/${{ github.repository }}/issues/comments/${{ steps.start.outputs.comment }}" --jq .body | grep -q '^## Claude review'
 
-      - if: failure()
+      - name: Drop the comment of a superseded run
+        if: cancelled() && steps.start.outputs.comment != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api -X DELETE "repos/${{ github.repository }}/issues/comments/${{ steps.start.outputs.comment }}"
+
+      - if: failure() && steps.start.outputs.comment != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr comment ${{ github.event.issue.number }} --body "Claude review failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          gh api -X PATCH "repos/${{ github.repository }}/issues/comments/${{ steps.start.outputs.comment }}" \
+            -f body="Claude review failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

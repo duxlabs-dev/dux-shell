@@ -1,6 +1,6 @@
 # DMS Quickshell Interface
 
-QML-based desktop shell interface for Dux Shell providing panels, widgets, and overlays.
+QML-based desktop shell interface for Dux Modular Shell providing panels, widgets, and overlays.
 
 **See [root README](../README.md) for project overview and installation.**
 

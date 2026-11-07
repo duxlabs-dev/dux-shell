@@ -19,6 +19,8 @@ BasePill {
     property var parentWindow: null
     property var widgetData: null
     property string section: "right"
+    // A same-named binding inside the overflow grid would resolve to its own property.
+    readonly property DPopout overflowPopoutRef: overflowPopout
     property bool isAtBottom: false
     property bool useOverflowPopup: !widgetData?.trayUseInlineExpansion
     property bool useSingleLineOverflowPopup: SettingsData.widgetOption("systemTray", widgetData, "trayPopupSingleLine")
@@ -931,7 +933,7 @@ BasePill {
                 TrayOverflowGrid {
                     id: menuGrid
                     bar: root
-                    overflowPopout: overflowPopout
+                    overflowPopout: root.overflowPopoutRef
                     popupUsesVerticalLine: overflowContent.popupUsesVerticalLine
                     anchors.verticalCenter: overflowContent.popupUsesVerticalLine ? undefined : parent.verticalCenter
                     anchors.horizontalCenter: overflowContent.popupUsesVerticalLine ? parent.horizontalCenter : undefined
@@ -993,8 +995,8 @@ BasePill {
             focus: true
             property alias entryStack: trayContent.entryStack
 
-            readonly property real _rawW: Math.min(Theme.launcherWidthMicro, Math.max(Theme.fieldDefaultWidth, trayContent.implicitWidth + Theme.spacingS * 2))
-            readonly property real _rawH: Math.min(Math.max(Theme.menuItemHeight, trayContent.implicitHeight + Theme.spacingS * 2), Math.max(Theme.menuItemHeight, (root.parentScreen?.height || Theme.launcherHeightDefault) - Theme.spacingXL))
+            readonly property real _rawW: Math.min(Theme.launcherWidthMicro, Math.max(Theme.fieldDefaultWidth, trayContent.implicitWidth + BarMetrics.menuPadding * 2))
+            readonly property real _rawH: Math.min(Math.max(BarMetrics.menuRowHeight, trayContent.implicitHeight + BarMetrics.menuPadding * 2), Math.max(BarMetrics.menuRowHeight, (root.parentScreen?.height || Theme.launcherHeightDefault) - Theme.spacingXL))
 
             implicitWidth: _rawW
             implicitHeight: _rawH
@@ -1012,7 +1014,7 @@ BasePill {
             DFlickable {
                 id: menuFlickable
                 anchors.fill: parent
-                anchors.margins: Theme.spacingS
+                anchors.margins: BarMetrics.menuPadding
                 contentWidth: width
                 contentHeight: trayContent.implicitHeight
                 clip: true

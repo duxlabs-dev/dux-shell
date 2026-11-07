@@ -14,6 +14,7 @@ type Model struct {
 	state   ApplicationState
 
 	osInfo       *distros.OSInfo
+	resume       *layerResume
 	dependencies []deps.Dependency
 	err          error
 
@@ -137,6 +138,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateDetectingDepsState(msg)
 	case StateDependencyReview:
 		return m.updateDependencyReviewState(msg)
+	case StateLayerPackages:
+		return m.updateLayerPackagesState(msg)
 	case StateGentooUseFlags:
 		return m.updateGentooUseFlagsState(msg)
 	case StateGentooGCCCheck:
@@ -180,6 +183,8 @@ func (m Model) View() string {
 		return m.viewDetectingDeps()
 	case StateDependencyReview:
 		return m.viewDependencyReview()
+	case StateLayerPackages:
+		return m.viewLayerPackages()
 	case StateGentooUseFlags:
 		return m.viewGentooUseFlags()
 	case StateGentooGCCCheck:

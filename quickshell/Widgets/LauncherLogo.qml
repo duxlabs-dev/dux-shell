@@ -63,8 +63,6 @@ Item {
             return "file://" + Theme.shellDir + "/assets/miraclewm.svg";
         case "labwc":
             return "file://" + Theme.shellDir + "/assets/labwc.png";
-        case "aqueous":
-            return "file://" + Theme.shellDir + "/assets/aqueous.svg";
         case "umbriel":
             return "file://" + Theme.shellDir + "/assets/umbriel.svg";
         default:

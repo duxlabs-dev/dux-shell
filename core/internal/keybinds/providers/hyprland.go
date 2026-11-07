@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,7 +9,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
 	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
@@ -17,8 +20,6 @@ type HyprlandProvider struct {
 	configPath       string
 	dmsBindsIncluded bool
 	parsed           bool
-	// hyprlang configs (0.55/0.56) reject hl.dsp text, so binds carry no LuaAction there
-	luaConfig bool
 }
 
 func NewHyprlandProvider(configPath string) *HyprlandProvider {
@@ -50,7 +51,6 @@ func (h *HyprlandProvider) GetCheatSheet() (*keybinds.CheatSheet, error) {
 
 	h.dmsBindsIncluded = result.DMSBindsIncluded
 	h.parsed = true
-	h.luaConfig = result.ConfigFormat == "lua"
 
 	categorizedBinds := make(map[string][]keybinds.Keybind)
 	h.convertSection(result.Section, "", categorizedBinds, result.ConflictingConfigs, result.DefaultDMSKeys)
@@ -92,7 +92,7 @@ func (h *HyprlandProvider) convertSection(section *HyprlandSection, subcategory 
 	}
 
 	for _, kb := range section.Keybinds {
-		category := h.categorizeByDispatcher(kb.Dispatcher)
+		category := h.categorizeBind(&kb)
 		bind := h.convertKeybind(&kb, currentSubcat, conflicts, defaultKeys)
 		categorizedBinds[category] = append(categorizedBinds[category], bind)
 	}
@@ -102,9 +102,81 @@ func (h *HyprlandProvider) convertSection(section *HyprlandSection, subcategory 
 	}
 }
 
+var luaFunctionActionPattern = regexp.MustCompile(`^(function\s*\(|[A-Za-z_][A-Za-z0-9_.]*$)`)
+
+// A function or named-function action says nothing about what it does; its description does.
+func (h *HyprlandProvider) categorizeBind(kb *HyprlandKeyBinding) string {
+	if kb.Params != "" || !luaFunctionActionPattern.MatchString(kb.Dispatcher) {
+		return h.categorizeByDispatcher(kb.Dispatcher)
+	}
+	if _, known := luaActionStringFromHyprlangAction(kb.Dispatcher); known {
+		return h.categorizeByDispatcher(kb.Dispatcher)
+	}
+	if kb.Comment != "" {
+		return categorizeByWords(kb.Comment)
+	}
+	return categorizeByWords(kb.Dispatcher)
+}
+
+var hyprlandWordCategories = []struct {
+	category string
+	stems    []string
+}{
+	{"Workspace", []string{"workspace"}},
+	{"Monitor", []string{"monitor"}},
+	{"Window", []string{"window", "focus", "move", "swap", "resiz", "fullscreen", "float", "maximiz", "column"}},
+	{"System", []string{"exit", "reload", "dpms"}},
+}
+
+// Descriptions and Lua names are free text, so match word starts: "Remove notification" is not a window move.
+func categorizeByWords(text string) string {
+	words := splitCategoryWords(text)
+	for _, c := range hyprlandWordCategories {
+		for _, w := range words {
+			for _, stem := range c.stems {
+				if strings.HasPrefix(w, stem) {
+					return c.category
+				}
+			}
+		}
+	}
+	return "Other"
+}
+
+// Splits on non-alphanumerics and camelCase humps, lowercased.
+func splitCategoryWords(text string) []string {
+	var words []string
+	var cur strings.Builder
+	flush := func() {
+		if cur.Len() > 0 {
+			words = append(words, cur.String())
+			cur.Reset()
+		}
+	}
+	prevLower := false
+	for _, r := range text {
+		switch {
+		case unicode.IsUpper(r):
+			if prevLower {
+				flush()
+			}
+			cur.WriteRune(unicode.ToLower(r))
+			prevLower = false
+		case unicode.IsLetter(r) || unicode.IsDigit(r):
+			cur.WriteRune(r)
+			prevLower = true
+		default:
+			flush()
+			prevLower = false
+		}
+	}
+	flush()
+	return words
+}
+
 func (h *HyprlandProvider) categorizeByDispatcher(dispatcher string) string {
 	switch {
-	case dispatcher == "exec" || strings.HasPrefix(dispatcher, "hl.dsp.exec_cmd("):
+	case dispatcher == "exec" || dispatcher == "execr" || strings.HasPrefix(dispatcher, "hl.dsp.exec_cmd("):
 		return "Execute"
 	case strings.Contains(dispatcher, "workspace"):
 		return "Workspace"
@@ -120,9 +192,10 @@ func (h *HyprlandProvider) categorizeByDispatcher(dispatcher string) string {
 		dispatcher == "togglefloating" ||
 		dispatcher == "pin" ||
 		dispatcher == "splitratio" ||
+		dispatcher == "layoutmsg" ||
 		dispatcher == "resizeactive":
 		return "Window"
-	case dispatcher == "exit" || strings.Contains(dispatcher, "dpms"):
+	case dispatcher == "exit" || dispatcher == "reloadconfig" || strings.Contains(dispatcher, "dpms"):
 		return "System"
 	default:
 		return "Other"
@@ -159,10 +232,8 @@ func (h *HyprlandProvider) convertKeybind(kb *HyprlandKeyBinding, subcategory st
 		Flags:       kb.Flags,
 		HasDefault:  hasDefault,
 	}
-	if h.luaConfig {
-		if expr, ok := luaActionStringFromHyprlangAction(rawAction); ok {
-			bind.LuaAction = expr
-		}
+	if expr, ok := luaActionStringFromHyprlangAction(rawAction); ok {
+		bind.LuaAction = expr
 	}
 
 	if (source == "dms" || source == "dms-default") && conflicts != nil {
@@ -231,7 +302,7 @@ func (h *HyprlandProvider) validateAction(action string) error {
 		return nil
 	}
 	if _, ok := luaActionStringFromHyprlangAction(action); !ok {
-		return fmt.Errorf("hyprland has no Lua dispatcher for %q", action)
+		return fmt.Errorf("hyprland %q is not a Lua dispatcher or is missing its arguments", action)
 	}
 	return nil
 }
@@ -374,31 +445,21 @@ type hyprlandOverrideBind struct {
 	RawLuaAction bool
 }
 
+// Include repair would write a stub hyprland.lua, replacing a conf-only user's whole config.
 func (h *HyprlandProvider) ensureWritableConfig() error {
-	if h.isLegacyConfigReadOnly() {
-		return fmt.Errorf("hyprland legacy conf configs are read-only; run dms setup to migrate to Lua before editing keybinds")
+	_, err := hyprlandMainConfigPath(h.configPath)
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, os.ErrNotExist):
+		return fmt.Errorf("hyprland.lua not found in %s; run `dms setup` to migrate before editing keybinds: %w", h.configPath, err)
+	default:
+		return fmt.Errorf("cannot read hyprland.lua in %s: %w", h.configPath, err)
 	}
-	return nil
-}
-
-func (h *HyprlandProvider) isLegacyConfigReadOnly() bool {
-	expanded, err := utils.ExpandPath(h.configPath)
-	if err != nil {
-		expanded = h.configPath
-	}
-	luaPath := filepath.Join(expanded, "hyprland.lua")
-	if st, err := os.Stat(luaPath); err == nil && st.Mode().IsRegular() {
-		return false
-	}
-	confPath := filepath.Join(expanded, "hyprland.conf")
-	if st, err := os.Stat(confPath); err == nil && st.Mode().IsRegular() {
-		return true
-	}
-	return false
 }
 
 func (h *HyprlandProvider) loadOverrideBinds() (map[string]*hyprlandOverrideBind, error) {
-	return readLuaOrHyprlangOverride(h.GetOverridePath())
+	return readLuaOverride(h.GetOverridePath())
 }
 
 func canonicalHyprlandOverrideKey(key string) string {
@@ -460,7 +521,8 @@ func (h *HyprlandProvider) generateBindsContent(binds map[string]*hyprlandOverri
 	})
 
 	var sb strings.Builder
-	sb.WriteString("-- DMS user keybind overrides (edit via Control Center or dms; do not remove this header)\n\n")
+	sb.WriteString(config.DMSBindsUserLuaConfig)
+	sb.WriteString("\n")
 	for _, bind := range bindList {
 		writeLuaBindLine(&sb, bind)
 	}
@@ -855,12 +917,17 @@ func luaActionStringFromHyprlangAction(action string) (string, bool) {
 	case "fullscreenstate":
 		internal, rest := firstParam(params)
 		client, _ := firstParam(rest)
-		if internal != "" && client != "" {
-			return luaDispatcherTableCall("hl.dsp.window.fullscreen_state",
-				luaNumberOrStringField("internal", internal),
-				luaNumberOrStringField("client", client),
-			), true
+		// hl.dsp.window.fullscreen_state requires both fields; -1 is "keep current"
+		if internal == "" {
+			internal = "-1"
 		}
+		if client == "" {
+			client = "-1"
+		}
+		return luaDispatcherTableCall("hl.dsp.window.fullscreen_state",
+			luaNumberOrStringField("internal", internal),
+			luaNumberOrStringField("client", client),
+		), true
 	case "pin":
 		if params == "" {
 			return `hl.dsp.window.pin()`, true
@@ -1098,13 +1165,22 @@ func luaActionStringFromHyprlangAction(action string) (string, bool) {
 			return luaDispatcherTableCall("hl.dsp.window.move", luaStringField("direction", params), luaBoolField("group_aware", true)), true
 		}
 	case "lockgroups":
-		return dispatcherToggleTableCall("hl.dsp.group.lock", params), true
+		// 0.57 locks only the active group without all; 0.56 ignores the field
+		return luaDispatcherTableCall("hl.dsp.group.lock", luaBoolField("all", true), luaStringField("action", luaToggleActionValue(params))), true
 	case "lockactivegroup":
+		lockArg, window := firstParam(params)
+		if window != "" {
+			return luaDispatcherTableCall("hl.dsp.group.lock", luaStringField("action", luaToggleActionValue(lockArg)), luaStringField("window", window)), true
+		}
+		// lock_active is deprecated on 0.57 but still the only active-group lock on 0.56
 		return dispatcherToggleTableCall("hl.dsp.group.lock_active", params), true
 	case "denywindowfromgroup":
 		return dispatcherToggleTableCall("hl.dsp.window.deny_from_group", params), true
 	case "forcerendererreload":
 		return `hl.dsp.force_renderer_reload()`, true
+	case "reloadconfig":
+		// hl.dsp.reload_config is 0.57-only; calling nil on 0.55/0.56 aborts loading the file
+		return `hl.dsp.exec_cmd("hyprctl reload")`, true
 	case "forceidle":
 		if params != "" && isBareLuaNumber(params) {
 			return fmt.Sprintf(`hl.dsp.force_idle(%s)`, params), true
@@ -1231,7 +1307,7 @@ func luaKeyComboToInternalKey(combo string) string {
 	return strings.Join(parts, "+")
 }
 
-func readLuaOrHyprlangOverride(path string) (map[string]*hyprlandOverrideBind, error) {
+func readLuaOverride(path string) (map[string]*hyprlandOverrideBind, error) {
 	binds := make(map[string]*hyprlandOverrideBind)
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
@@ -1241,7 +1317,6 @@ func readLuaOrHyprlangOverride(path string) (map[string]*hyprlandOverrideBind, e
 		return nil, err
 	}
 	lines := expandLuaConfigLines(strings.Split(string(data), "\n"))
-	parser := NewHyprlandParser("")
 	pendingUnbinds := make(map[string]string)
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -1257,28 +1332,7 @@ func readLuaOrHyprlangOverride(path string) (map[string]*hyprlandOverrideBind, e
 			normalizedKey := hyprlandOverrideMapKey(kb.Key)
 			binds[normalizedKey] = kb
 			delete(pendingUnbinds, normalizedKey)
-			continue
 		}
-		if !strings.HasPrefix(line, "bind") {
-			continue
-		}
-		kb := parser.parseBindLine(line)
-		if kb == nil {
-			continue
-		}
-		action := kb.Dispatcher
-		if kb.Params != "" {
-			action = kb.Dispatcher + " " + kb.Params
-		}
-		keyStr := canonicalHyprlandOverrideKey(parser.formatBindKey(kb))
-		normalizedKey := hyprlandOverrideMapKey(keyStr)
-		binds[normalizedKey] = &hyprlandOverrideBind{
-			Key:         keyStr,
-			Action:      action,
-			Description: kb.Comment,
-			Flags:       kb.Flags,
-		}
-		delete(pendingUnbinds, normalizedKey)
 	}
 	for normKey, origKey := range pendingUnbinds {
 		binds[normKey] = &hyprlandOverrideBind{Key: origKey, Unbind: true}

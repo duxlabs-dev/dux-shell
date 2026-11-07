@@ -89,9 +89,6 @@ Rectangle {
             text: root.tempText
             font.pixelSize: Theme.fontSizeMedium
             font.weight: Theme.fontWeightMedium
-            font.features: ({
-                    "tnum": 1
-                })
             color: root.foreground
             horizontalAlignment: Text.AlignHCenter
             elide: Text.ElideRight

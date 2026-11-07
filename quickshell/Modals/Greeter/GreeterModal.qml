@@ -87,6 +87,8 @@ DFloatingWindow {
 
     objectName: "greeterModal"
     title: I18n.tr("Welcome", "greeter modal window title")
+    implicitWidth: modalWidth
+    implicitHeight: modalHeight
     minimumSize: Qt.size(modalWidth, modalHeight)
     maximumSize: Qt.size(modalWidth, modalHeight)
     visible: false
@@ -190,8 +192,7 @@ DFloatingWindow {
                     text: I18n.tr("Back", "greeter back button")
                     iconName: "arrow_back"
                     buttonHeight: Theme.buttonHeightM
-                    backgroundColor: Theme.secondaryContainer
-                    textColor: Theme.onSecondaryContainer
+                    variant: "tonal"
                     onClicked: root.prevPage()
                 }
 
@@ -199,8 +200,7 @@ DFloatingWindow {
                     visible: root.currentPage < root.totalPages - 1
                     text: I18n.tr("Skip", "greeter skip button")
                     buttonHeight: Theme.buttonHeightM
-                    backgroundColor: "transparent"
-                    textColor: Theme.primary
+                    variant: "text"
                     onClicked: root.currentPage === 1 ? root.nextPage() : root.skip()
                 }
             }
@@ -252,8 +252,6 @@ DFloatingWindow {
                 text: lastPage ? I18n.tr("Finish", "greeter finish button") : root.currentPage === 0 ? I18n.tr("Get Started", "greeter first page button") : I18n.tr("Next", "greeter next button")
                 iconName: lastPage ? "check" : "arrow_forward"
                 buttonHeight: Theme.buttonHeightM
-                backgroundColor: Theme.primary
-                textColor: Theme.onPrimary
                 onClicked: lastPage ? root.finish() : root.nextPage()
             }
         }

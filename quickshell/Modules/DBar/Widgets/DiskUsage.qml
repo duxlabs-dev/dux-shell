@@ -36,7 +36,6 @@ MonitorPill {
 
     widgetType: "diskUsage"
     dgopModules: ["diskmounts"]
-    tabularDigits: false
     iconName: "storage"
     level: diskUsagePercent
     warnLevel: 75

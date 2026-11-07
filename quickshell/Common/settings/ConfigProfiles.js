@@ -50,7 +50,8 @@ var SETTINGS_MAP = {
         "blurLayerOutlineOpacity", "focusRingEnabled", "focusRingWidth", "focusRingColor", "controlCenterIconScale",
         "systemTrayIconTintMode", "systemTrayIconTintSaturation", "systemTrayIconTintStrength",
         "dankLauncherV2BorderEnabled", "dankLauncherV2BorderThickness", "dankLauncherV2BorderColor", "avatarRing",
-        "modalDarkenBackground", "lockScreenInactiveColor", "notificationForegroundLayers"
+        "modalDarkenBackground", "lockScreenInactiveColor", "notificationForegroundLayers", "density", "interfaceStyle",
+        "sectionDividerOpacity"
     ],
     shadows: [
         "popoutElevationEnabled", "m3ElevationEnabled", "m3ElevationIntensity", "m3ElevationOpacity",
@@ -91,7 +92,10 @@ var SETTINGS_MAP = {
         "hyprlandMasterOrientation", "hyprlandMasterNewStatus", "hyprlandMasterNewOnTop", "hyprlandMasterSize",
         "hyprlandScrollingDirection", "hyprlandScrollingColumnWidth", "hyprlandScrollingFullscreenOneColumn",
         "hyprlandScrollingFollowFocus", "mangoLayoutGapsOverride", "mangoLayoutGapsOutOverride",
-        "mangoLayoutRadiusOverride", "mangoLayoutBorderSize", "closeNiriOverviewOnWindowFocus"
+        "mangoLayoutRadiusOverride", "mangoLayoutBorderSize", "closeNiriOverviewOnWindowFocus",
+        "hyprlandBlurDropsSpeed", "hyprlandBlurHeatShimmerSpeed", "hyprlandBlurProportional", "hyprlandWobbleDamping",
+        "hyprlandWobbleMass", "hyprlandWobbleMesh", "hyprlandDragCenterWindow", "hyprlandWorkspaceBackAndForth",
+        "hyprlandExitWindowRetainsFullscreen", "hyprlandBellSound", "hyprlandSwallowFocusClick", "hyprlandTabletEnabled"
     ],
     displays: [
         "screenPreferences", "showOnLastDisplay", "frameScreenPreferences"
@@ -110,7 +114,7 @@ var SETTINGS_MAP = {
     ],
     time_weather: [
         "clockFormat", "showSeconds", "padHours12Hour", "useFahrenheit", "lockDateFormat", "useAutoLocation",
-        "weatherEnabled", "firstDayOfWeek", "showWeekNumber", "windSpeedUnit", "clockDateFormat"
+        "weatherEnabled", "firstDayOfWeek", "showWeekNumber", "windSpeedUnit", "clockDateFormat", "weatherProviders"
     ],
     lock_screen: [
         "lockScreenWidgetInstances", "lockScreenShowPowerActions", "lockScreenShowProfileImage",
@@ -132,13 +136,14 @@ var SETTINGS_MAP = {
         "notificationCompactMode", "notificationShowTimeoutBar", "notificationDedupeEnabled",
         "notificationPopupPosition", "notificationHistorySaveLow", "notificationHistorySaveNormal",
         "notificationHistorySaveCritical", "notificationRules", "notificationDndAllowCritical",
-        "notificationDndWhileScreenSharing", "notificationFocusedMonitor"
+        "notificationDndWhileScreenSharing", "notificationFocusedMonitor", "notificationLeadingShortcut",
+        "notificationTrailingShortcut"
     ],
     osd: [
         "osdAlwaysShowValue", "osdPosition", "osdVolumeEnabled", "osdMediaVolumeEnabled", "osdMediaPlaybackEnabled",
         "osdBrightnessEnabled", "osdIdleInhibitorEnabled", "osdMicMuteEnabled", "osdMicVolumeEnabled",
         "osdCapsLockEnabled", "osdTouchpadEnabled", "osdPowerProfileEnabled", "osdAudioOutputEnabled",
-        "osdWorkspaceEnabled"
+        "osdWorkspaceEnabled", "osdNumLockEnabled", "osdKeyboardLayoutEnabled", "osdInputMethodEnabled"
     ],
     sound_media: [
         "audioShowStreamDevices", "audioMono", "scrollTitleEnabled", "audioVisualizerEnabled",
@@ -158,9 +163,10 @@ var SETTINGS_MAP = {
         "muxSessionFilter", "updaterCheckOnStart", "updaterIntervalSeconds", "updaterNotify",
         "updaterPauseOnBattery", "updaterNotifyMinSeconds", "updaterReopenAfterUpgrade", "updaterUpgradeInWindow",
         "clipboardClickToPaste", "clipboardEnterToPaste", "clipboardRememberTypeFilter", "clipboardUseOverlayLayer",
-        "clipboardSize", "clipboardTypeFilter", "clipboardVisibleEntryActions"
+        "clipboardSize", "clipboardTypeFilter", "clipboardVisibleEntryActions", "powerMenuFirmwareSetup"
     ],
     never: [
+        "touchpadPinchSensitivity", "batteryScaleToChargeLimit", "batteryScaleAlertThresholds", "keepAwakeBlocksSleep",
         "greeterWidgetInstances", "displayNameMode", "greeterRememberLastSession", "greeterRememberLastUser",
         "greeterEnableFprint", "greeterEnableU2f", "dmsWindowsFloatingSeeded", "focusFollowsMouse",
         "mouseAccelProfile", "mouseAccelSpeed", "mouseLeftHanded", "mouseMiddleEmulation", "mouseNaturalScroll",
@@ -200,7 +206,7 @@ var SESSION_MAP = {
         "wallpaperPathDark", "monitorWallpapersLight", "monitorWallpapersDark", "wallpaperTransition",
         "includedTransitions", "wallpaperCyclingEnabled", "wallpaperCyclingRandom", "wallpaperCyclingRecursive",
         "wallpaperCyclingMode", "wallpaperCyclingInterval", "wallpaperCyclingTime", "wallpaperCyclingFolderPath",
-        "monitorCyclingSettings"
+        "monitorCyclingSettings", "wallpaperCyclingVideoEnd"
     ],
     dark_mode: [
         "isLightMode", "themeModeAutoEnabled", "themeModeAutoMode", "themeModeStartHour", "themeModeStartMinute",
@@ -219,7 +225,7 @@ var SESSION_MAP = {
         "lockScreenAutoPositions", "lockScreenWidgetGridSettings"
     ],
     never: [
-        "weatherLocation", "weatherCoordinates", "greeterAutoPositions", "doNotDisturb", "doNotDisturbUntil",
+        "repoMoveNoticeVersion", "weatherLocation", "weatherCoordinates", "greeterAutoPositions", "doNotDisturb", "doNotDisturbUntil",
         "doNotDisturbHeldByScreenShare", "screenShareDndDismissed", "screenShareDismissedIds", "idleInhibited",
         "idleInhibitedUntil", "updaterNotifiedUnix", "updaterNotifiedCount",
         "terminalOverride", "nightModeEnabled", "nightModeTemperature", "nightModeHighTemperature",

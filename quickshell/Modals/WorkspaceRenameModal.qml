@@ -8,36 +8,20 @@ DFloatingWindow {
     id: root
     readonly property var log: Log.scoped("WorkspaceRenameModal")
 
-    property var aqueousWorkspace: null
-    property bool renaming: false
-
     objectName: "workspaceRenameModal"
     title: I18n.tr("Rename Workspace")
     minimumSize: Qt.size(400, renameDialog.implicitHeight)
     maximumSize: Qt.size(400, renameDialog.implicitHeight)
+    implicitWidth: minimumSize.width
+    implicitHeight: minimumSize.height
     visible: false
 
     onClosed: hide()
 
     function show(name) {
-        if (CompositorService.isAqueous) {
-            if (renaming)
-                return false;
-            const workspace = AqueousService.workspaces.find(ws => ws.output === AqueousService.seat?.output && ws.active);
-            if (!AqueousService.available || !AqueousService.seat || !workspace || !AqueousService.capabilities.commands || AqueousService.locked) {
-                ToastService.showError(I18n.tr("Error"), I18n.tr("Unavailable"));
-                return false;
-            }
-            aqueousWorkspace = {
-                id: workspace.id,
-                session: workspace.aqueousSession
-            };
-            name = workspace.name;
-        }
         nameInput.text = name;
         visible = true;
         Qt.callLater(() => nameInput.forceActiveFocus());
-        return true;
     }
 
     function hide() {
@@ -47,24 +31,6 @@ DFloatingWindow {
     function submitAndClose() {
         if (!root.visible)
             return;
-        if (aqueousWorkspace || CompositorService.isAqueous) {
-            if (!aqueousWorkspace || renaming)
-                return;
-            const target = aqueousWorkspace;
-            renaming = true;
-            AqueousService.command("workspace.rename", {
-                id: target.id,
-                session: target.session,
-                name: nameInput.text
-            }, success => {
-                if (root.aqueousWorkspace !== target)
-                    return;
-                root.renaming = false;
-                if (success)
-                    root.hide();
-            });
-            return;
-        }
         renameWorkspace(nameInput.text);
         hide();
     }
@@ -93,8 +59,6 @@ DFloatingWindow {
             return;
         }
         nameInput.text = "";
-        aqueousWorkspace = null;
-        renaming = false;
     }
 
     DDialog {
@@ -104,7 +68,6 @@ DFloatingWindow {
         windowControls: renameWindowControls
         title: root.title
         supportingText: I18n.tr("Enter a new name for this workspace")
-        acceptEnabled: !root.renaming
         onAccepted: root.submitAndClose()
         onRejected: root.hide()
 
@@ -116,7 +79,7 @@ DFloatingWindow {
             controlHeight: Theme.fieldHeightLarge
             labelText: I18n.tr("Workspace name")
             leftIconName: "edit"
-            enabled: root.visible && !root.renaming
+            enabled: root.visible
             onAccepted: root.submitAndClose()
         }
 
@@ -125,16 +88,13 @@ DFloatingWindow {
                 maximumWidth: renameDialog.actionWidth
                 wrapText: true
                 text: I18n.tr("Cancel")
-                backgroundColor: "transparent"
-                textColor: Theme.primary
+                variant: "text"
                 onClicked: root.hide()
             },
             DButton {
                 maximumWidth: renameDialog.actionWidth
                 wrapText: true
                 text: I18n.tr("Rename", "verb, rename button")
-                enabled: !root.renaming
-                busy: root.renaming
                 onClicked: root.submitAndClose()
             }
         ]

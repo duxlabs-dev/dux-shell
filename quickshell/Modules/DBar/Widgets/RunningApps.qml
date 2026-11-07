@@ -8,6 +8,7 @@ import qs.Modules.Plugins
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
+import "../../../DCommon/Common/WheelInput.js" as WheelInput
 
 BasePill {
     id: root
@@ -49,7 +50,7 @@ BasePill {
         if (barThickness > 0 && barSpacing > 0) {
             return barThickness + barSpacing;
         }
-        return Theme.barThickness(barConfig?.innerPadding ?? 2, CompositorService.getScreenScale(parentScreen)) + (barConfig?.spacing ?? 4);
+        return Theme.barThickness(barConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault, CompositorService.getScreenScale(parentScreen)) + (barConfig?.spacing ?? 4);
     }
 
     readonly property var barBounds: {
@@ -169,6 +170,8 @@ BasePill {
     }
 
     onWheel: function (wheelEvent) {
+        if (WheelInput.isHorizontal(wheelEvent))
+            return;
         wheelEvent.accepted = true;
         const deltaY = wheelEvent.angleDelta.y;
         const isMouseWheel = Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;

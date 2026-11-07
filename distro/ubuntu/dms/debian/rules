@@ -38,7 +38,7 @@ override_dh_auto_build:
 		echo "Renaming $$SOURCE_DIR to DankMaterialShell-$(BASE_VERSION)"; \
 		mv "$$SOURCE_DIR" DankMaterialShell-$(BASE_VERSION); \
 	elif [ ! -d "DankMaterialShell-$(BASE_VERSION)" ]; then \
-		echo "ERROR: No Dux Shell directory found after extraction!"; \
+		echo "ERROR: No Dux Modular Shell directory found after extraction!"; \
 		ls -la; \
 		exit 1; \
 	fi

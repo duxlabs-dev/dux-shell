@@ -39,8 +39,7 @@ Item {
     property var centerSectionRect: null
     property var trailingSectionRect: null
     readonly property int hostLayer: root.hostWindow?.dBarLayer ?? WlrLayer.Top
-    property real anchorX: 0
-    property real anchorY: 0
+    property point anchor
     property bool anchorSnaps: false
     property real freeScale: 1
     property real freeOpacity: 1
@@ -60,6 +59,7 @@ Item {
     readonly property real currentVisualY: surface.currentVisualY
     readonly property real currentVisualWidth: surface.currentVisualWidth
     readonly property real currentVisualHeight: surface.currentVisualHeight
+    readonly property real currentSurfaceRadius: surface.currentSurfaceRadius
     readonly property color surfaceColor: surface.surfaceColor
     readonly property real surfaceOpacity: surface.surfaceOpacity
     readonly property bool inputSuspended: controller.inputSuspended
@@ -68,7 +68,9 @@ Item {
     // Held from expand until the collapse spring settles, so compact-to-compact morphs never resize the bar window.
     property bool sheetOut: false
     readonly property bool surfaceFits: (root.isVertical ? root.windowWidth : root.windowHeight) >= root.hostThickness - 1
-    readonly property bool hostReady: !root.embedded || root.frameHosted || root.surfaceFits
+    // A free host lifts to the whole output for the sheet; the expand waits for that size so no frame of the morph is clipped.
+    property bool hostLifted: true
+    readonly property bool hostReady: root.freeMode ? root.hostLifted : (!root.embedded || root.frameHosted || root.surfaceFits)
     // Layer surfaces glitch when they resize under a moving sheet: edit room waits for a frame at the grown size, and the grown size outlives the shrink spring.
     readonly property bool surfaceResizes: !root.freeMode && !root.frameHosted
     readonly property int editSurfaceHeight: controller.editSurfaceHeight
@@ -168,14 +170,15 @@ Item {
     readonly property var springDampingRange: [10, 100]
     readonly property var springMassRange: [0.25, 3]
     readonly property int destinationMaxHeight: Math.max(destinationMinHeight, Math.min(destinationMaxHeightLimit, (root.screen?.height ?? referenceScreenHeight) - screenMargin))
-    readonly property int maxActivityHeight: Math.max(root.heldEditSurfaceHeight, controller.dashboardHeight, controller.controlCenterHeight, controller.launcherExpandedTarget.height, controller.clipboardExpandedTarget.height, controller.powerMenuExpandedTarget.height, destinationMaxHeight)
+    readonly property int maxActivityHeight: Math.max(root.heldEditSurfaceHeight, controller.dashboardHeight, controller.controlCenterHeight, controller.launcherMaxHeight, controller.clipboardExpandedTarget.height, controller.powerMenuExpandedTarget.height, destinationMaxHeight)
     readonly property int maxActivityWidth: Math.max(controller.dashboardMaxWidth, controller.controlCenterMaxWidth, controller.launcherExpandedTarget.width, controller.clipboardExpandedTarget.width, controller.powerMenuExpandedTarget.width, Math.min(activityMaxWidth, Math.max(activityMinWidth, (root.screen?.width ?? referenceScreenWidth) - screenMargin)))
     readonly property real shadowPadding: surface.shadowEnabled ? Theme.elevationRenderPadding(Theme.elevationLevel2, surface.effectiveShadowDirection, Theme.spacingXS, Theme.spacingS, Theme.spacingL) : 0
     readonly property int hostThickness: outerGap + nearInset + (root.isVertical ? maxActivityWidth : maxActivityHeight) + Theme.spacingS + shadowPadding
     readonly property real maximumAlongOffset: root.isVertical ? Math.max(0, (height - maxActivityHeight) / 2 - Theme.spacingS - shadowPadding) : Math.max(0, (width - maxActivityWidth) / 2 - Theme.spacingS - shadowPadding)
     readonly property bool scrollEnabled: root.barConfig?.scrollEnabled ?? true
     property bool keyboardFocusArmed: true
-    readonly property int keyboardFocusPolicy: KeyboardFocus.keyboardFocus(controller.keyboardDismissRequested && root.keyboardFocusArmed && !controller.keyboardYielded, null)
+    property bool keyboardReclaiming: false
+    readonly property int keyboardFocusPolicy: root.keyboardReclaiming && controller.keyboardDismissRequested ? WlrKeyboardFocus.Exclusive : KeyboardFocus.keyboardFocus(controller.keyboardDismissRequested && root.keyboardFocusArmed && !controller.keyboardYielded, null)
     readonly property bool wantsFocusGrab: KeyboardFocus.wantsGrab(controller.keyboardDismissRequested && !controller.keyboardYielded, null)
     readonly property var transientFocusWindows: islandTransientSurfaces.focusWindows
     property var dismissWindow: null
@@ -226,14 +229,14 @@ Item {
 
     function requestKeyboardFocus() {
         if (!controller.keyboardDismissRequested) {
-            keyboardActivationTimer.stop();
             keyboardFocusArmed = false;
             keyboardRearmTimer.restart();
             return;
         }
         keyboardRearmTimer.stop();
         keyboardFocusArmed = true;
-        keyboardActivationTimer.restart();
+        islandFocus.forceActiveFocus(Qt.PopupFocusReason);
+        surface.requestActivityFocus();
     }
 
     function containsGlobalPoint(gx, gy, padding) {
@@ -365,14 +368,12 @@ Item {
         }
     }
 
+    // On-demand focus doesn't come back by itself when a surface that took the keyboard closes.
     Timer {
-        id: keyboardActivationTimer
+        id: keyboardReclaimTimer
 
-        interval: 60
-        onTriggered: {
-            if (controller.keyboardDismissRequested && !surface.requestActivityFocus())
-                islandFocus.forceActiveFocus(Qt.PopupFocusReason);
-        }
+        interval: 80
+        onTriggered: root.keyboardReclaiming = false
     }
 
     Timer {
@@ -403,6 +404,12 @@ Item {
         id: controller
 
         onKeyboardDismissRequestedChanged: root.requestKeyboardFocus()
+        onKeyboardYieldedChanged: {
+            if (keyboardYielded || !keyboardDismissRequested)
+                return;
+            root.keyboardReclaiming = true;
+            keyboardReclaimTimer.restart();
+        }
         onLauncherSessionActiveChanged: {
             if (!launcherSessionActive)
                 islandTransientSurfaces.closeAll();
@@ -433,11 +440,13 @@ Item {
         homeBrightnessDisplay: SettingsData.islandLevelDisplay(root.barConfig, "islandHomeBrightnessDisplay")
         batteryStyle: root.setting("islandBatteryStyle")
         mediaClockVisible: root.setting("islandMediaClockVisible")
-        mediaAutoSwitch: root.setting("islandMediaAutoSwitch")
+        mediaLyrics: root.setting("islandMediaLyrics")
+        dashTabs: root.setting("islandDashTabs")
+        // Home and media share the dot face; see mediaFaceToggleAvailable.
+        mediaAutoSwitch: !root.dotMode && root.setting("islandMediaAutoSwitch")
         launcherCycleEnabled: SettingsData.launcherStyle === "island"
         dashboardAvailableWidth: Math.max(0, (root.screen?.width ?? root.referenceScreenWidth) - (root.isVertical ? root.crossInsetStart + root.crossInsetEnd + root.outerGap + root.nearInset : root.alongInset) - Theme.spacingL * 2)
         dashboardAvailableHeight: Math.max(0, (root.screen?.height ?? root.referenceScreenHeight) - (root.isVertical ? root.alongInset : root.crossInsetStart + root.crossInsetEnd + root.outerGap + root.nearInset) - Theme.spacingL * 2)
-        controlCenterMaxHeight: dashboardAvailableHeight
         notificationExpandAllowed: root.setting("islandNotificationExpand")
         unreadNotificationCount: root.setting("islandNotificationBadgeClearOnOpen") ? NotificationService.unreadCount : NotificationService.notifications.length
         hoverOpenDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverOpenDelay")))
@@ -467,7 +476,7 @@ Item {
         id: systemSource
 
         controller: controller
-        enabled: root.setting("islandSystemOsd") && root.barConfig?.visible !== false
+        enabled: SettingsData.islandSystemOsdHost(root.screen)?.id === root.barId
         chargingPulseEnabled: root.setting("islandChargingPulse")
     }
 
@@ -476,7 +485,7 @@ Item {
 
         controller: controller
         targetScreen: root.screen
-        enabled: !root.setting("islandNotificationPopups") && root.barConfig?.visible !== false
+        enabled: SettingsData.islandNotificationHost(root.screen)?.id === root.barId
     }
 
     DIslandSurface {
@@ -493,8 +502,7 @@ Item {
         hostOriginX: root.hostOriginX
         hostOriginY: root.hostOriginY
         freeMode: root.freeMode
-        anchorX: root.anchorX
-        anchorY: root.anchorY
+        anchor: root.anchor
         anchorSnaps: root.anchorSnaps
         anchorAlong: root.anchorAlong
         nearInset: root.nearInset
@@ -534,6 +542,9 @@ Item {
         DotCompact {
             controller: controller
             iconName: root.setting("islandFreeIcon")
+            iconMode: root.setting("islandFreeIconMode")
+            iconPath: root.setting("islandFreeIconPath")
+            iconColor: root.setting("islandFreeIconColor")
         }
     }
 

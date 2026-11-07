@@ -133,8 +133,6 @@ Item {
                 height: parent.height
                 radius: Theme.fullRadius(width, height)
                 text: root.notificationModel.actionLabel
-                backgroundColor: Theme.primary
-                textColor: Theme.onPrimary
                 buttonHeight: parent.height
                 horizontalPadding: Theme.spacingL
                 onClicked: root.notificationModel.activate()

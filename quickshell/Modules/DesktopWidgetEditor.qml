@@ -7,7 +7,7 @@ import qs.Modules.Plugins
 
 Scope {
     Variants {
-        model: DesktopWidgetRegistry.editing ? Quickshell.screens : []
+        model: DesktopWidgetRegistry.editing ? ShellLayout.realScreens : []
 
         PanelWindow {
             id: editorWindow
@@ -53,7 +53,7 @@ Scope {
 
                 Rectangle {
                     anchors.fill: parent
-                    color: Theme.scrimColor
+                    color: Theme.backdropColor
                     opacity: Theme.scrimAlpha
                 }
 

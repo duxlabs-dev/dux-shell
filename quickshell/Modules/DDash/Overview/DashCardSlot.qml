@@ -137,21 +137,25 @@ DEditableGridSlot {
         visible: cardLoader.status === Loader.Loading
     }
 
-    DashEditChrome {
+    Loader {
         anchors.fill: parent
-        anchors.margins: -contentInset
+        anchors.margins: -PopoutMetrics.editOverflow
         z: 2
-        visible: root.grid.editMode
-        enabled: root.interactionEnabled
-        sizeText: root.previewW + "×" + root.previewH
-        dragging: root.dragging
-        resizing: root.resizing
-        hasOptions: DashRegistry.hasOptions(root.cardId)
-        onOptionsRequested: root.grid.optionsRequested(root.cardId)
-        onRemoveRequested: CardUtils.removeCard(root.index)
-        onResizeStarted: (px, py) => root.startResize(px, py)
-        onResizeCanceled: root.cancelResize()
-        onResizeMoved: (px, py) => root.resizeTo(px, py)
-        onResizeEnded: root.finishResize()
+        active: root.grid.editMode || root.resizing
+
+        sourceComponent: DashEditChrome {
+            visible: root.grid.editMode
+            enabled: root.interactionEnabled
+            sizeText: root.previewW + "×" + root.previewH
+            dragging: root.dragging
+            resizing: root.resizing
+            hasOptions: DashRegistry.hasOptions(root.cardId)
+            onOptionsRequested: root.grid.optionsRequested(root.cardId)
+            onRemoveRequested: CardUtils.removeCard(root.index)
+            onResizeStarted: (px, py) => root.startResize(px, py)
+            onResizeCanceled: root.cancelResize()
+            onResizeMoved: (px, py) => root.resizeTo(px, py)
+            onResizeEnded: root.finishResize()
+        }
     }
 }

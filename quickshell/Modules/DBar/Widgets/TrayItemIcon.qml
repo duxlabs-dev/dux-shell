@@ -17,17 +17,35 @@ Item {
     property color iconTintColor: tray ? tray.trayIconTintColor : "transparent"
     property color fallbackTextColor: tray ? (tray.trayTextColor ?? Theme.widgetTextColor) : Theme.widgetTextColor
     property real fallbackTextSize: 10
+    property string fallbackSource: ""
+    property bool hasImage: false
+
+    onSourceChanged: fallbackSource = ""
 
     IconImage {
         id: iconImg
         anchors.centerIn: parent
         width: root.iconSize
         height: root.iconSize
-        source: root.source
+        source: root.fallbackSource || root.source
         asynchronous: true
+        // Pixmap-backed items get a new URL on every icon update; keep the old frame instead of flashing the fallback.
+        backer.retainWhileLoading: true
+        onStatusChanged: {
+            if (status !== Image.Loading)
+                root.hasImage = status === Image.Ready;
+            if (status !== Image.Error || root.fallbackSource)
+                return;
+            const requested = root.source;
+            TrayMenuManager.resolveIconFallback(root.trayItem?.icon, url => {
+                if (root.source !== requested)
+                    return;
+                root.fallbackSource = url;
+            });
+        }
         smooth: true
         mipmap: true
-        visible: status === Image.Ready
+        visible: status === Image.Ready || (status === Image.Loading && root.hasImage)
         layer.enabled: root.iconTintEnabled
         layer.effect: MultiEffect {
             saturation: root.iconSaturation

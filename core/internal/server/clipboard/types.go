@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/godbus/dbus/v5"
@@ -44,22 +45,30 @@ func getConfigPath() (string, error) {
 }
 
 func LoadConfig() Config {
+	cfg, err := readConfig()
+	if err != nil {
+		return DefaultConfig()
+	}
+	return cfg
+}
+
+func readConfig() (Config, error) {
 	cfg := DefaultConfig()
 
 	path, err := getConfigPath()
 	if err != nil {
-		return cfg
+		return cfg, err
 	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return cfg
+		return cfg, err
 	}
 
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return DefaultConfig()
+		return DefaultConfig(), err
 	}
-	return cfg
+	return cfg, nil
 }
 
 func SaveConfig(cfg Config) error {
@@ -86,8 +95,17 @@ type SearchParams struct {
 	IsImage  *bool  `json:"isImage"`
 	Limit    int    `json:"limit"`
 	Offset   int    `json:"offset"`
+	Type     string `json:"type"`
+	Pinned   *bool  `json:"pinned"`
 	Before   *int64 `json:"before"`
 	After    *int64 `json:"after"`
+}
+
+type ImportEntry struct {
+	Data      []byte    `json:"data"`
+	MimeType  string    `json:"mimeType"`
+	Timestamp time.Time `json:"timestamp"`
+	Pinned    bool      `json:"pinned"`
 }
 
 type SearchResult struct {
@@ -111,9 +129,11 @@ type Entry struct {
 }
 
 type State struct {
-	Enabled bool    `json:"enabled"`
-	History []Entry `json:"history"`
-	Current *Entry  `json:"current,omitempty"`
+	Enabled      bool   `json:"enabled"`
+	Revision     uint64 `json:"revision"`
+	HistoryCount int    `json:"historyCount"`
+	PinnedCount  int    `json:"pinnedCount"`
+	Current      *Entry `json:"current,omitempty"`
 }
 
 type Manager struct {
@@ -140,12 +160,14 @@ type Manager struct {
 	pasteSupported bool
 
 	initialized bool
+	deviceBound atomic.Bool
 
 	alive    bool
 	stopChan chan struct{}
 
-	db     *bolt.DB
-	dbPath string
+	db      *bolt.DB
+	dbPath  string
+	history historyIndex
 
 	state      *State
 	stateMutex sync.RWMutex

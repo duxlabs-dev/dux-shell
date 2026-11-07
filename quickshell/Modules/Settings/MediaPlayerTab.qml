@@ -75,7 +75,7 @@ Item {
                 settingKey: "bluetoothMpris"
                 tags: ["bluetooth", "headphones", "media", "mpris", "avrcp"]
                 text: I18n.tr("Bluetooth media controls", "Title for the setting that routes Bluetooth headset media buttons through DMS")
-                description: root.mprisProxyRunning ? I18n.tr("mpris-proxy is running and will create duplicate Bluetooth players. Disable it with: systemctl --user disable --now mpris-proxy.service", "Warning shown when the legacy BlueZ MPRIS proxy conflicts with DMS Bluetooth media controls") : I18n.tr("Route Bluetooth headset controls to the active DMS media player", "Description of how Bluetooth headset media buttons select a player")
+                description: root.mprisProxyRunning ? I18n.tr("%1 is running and will create duplicate Bluetooth players. Disable it with: %2", "Warning shown when the legacy BlueZ MPRIS proxy conflicts with DMS Bluetooth media controls, %1 is the service name, %2 a shell command").arg("mpris-proxy").arg("systemctl --user disable --now mpris-proxy.service") : I18n.tr("Route Bluetooth headset controls to the active DMS media player", "Description of how Bluetooth headset media buttons select a player")
                 descriptionColor: root.mprisProxyRunning ? Theme.error : Theme.surfaceVariantText
                 checked: SettingsData.bluetoothMprisEnabled
                 onToggled: checked => SettingsData.set("bluetoothMprisEnabled", checked)

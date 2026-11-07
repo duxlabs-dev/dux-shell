@@ -8,17 +8,18 @@ Singleton {
     id: root
 
     readonly property var defaults: ({
+            cardBackgrounds: false,
             seekbar: true,
             waveProgress: true,
             albumArtBackdrop: true,
             albumArtAccent: true,
             animatedArt: false,
             lyrics: true,
-            smoothLyrics: true,
-            deviceName: true
+            smoothLyrics: true
         })
 
     readonly property string defaultPlayerStyle: "bento"
+    readonly property string defaultArtStyle: "cookie"
     readonly property var playerStyles: [
         {
             "value": "bento",
@@ -31,12 +32,13 @@ Singleton {
     ]
 
     readonly property var titleFontDefaults: ({
-            bento: "Notable",
+            bento: "ui",
             material: "ui"
         })
 
     readonly property var stored: SettingsData.dashOptions?.media ?? ({})
     readonly property string defaultTitleFont: titleFontDefaults[stored.playerStyle ?? defaultPlayerStyle] ?? "ui"
+    readonly property bool cardBackgrounds: stored.cardBackgrounds ?? defaults.cardBackgrounds
     readonly property bool waveProgress: stored.waveProgress ?? defaults.waveProgress
     readonly property bool albumArtBackdrop: stored.albumArtBackdrop ?? defaults.albumArtBackdrop
     readonly property bool albumArtAccent: stored.albumArtAccent ?? defaults.albumArtAccent

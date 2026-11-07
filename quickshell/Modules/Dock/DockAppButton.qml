@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Effects
-import Quickshell.Widgets
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
@@ -28,6 +27,12 @@ Item {
     property bool showTooltip: mouseArea.containsMouse && !dragging
     property var cachedDesktopEntry: dockApps?.desktopEntries[appData?.appId] ?? null
     property real actualIconSize: 40
+    readonly property real iconLoadScale: {
+        const config = dockApps?.surfaceContext?.config;
+        const magnified = config?.magnification ? config.magnificationScale / 100 : 1;
+        const enlarged = options?.enlargeOnHover ? (options?.enlargePercentage ?? 125) / 100 : 1;
+        return Math.max(1, magnified * enlarged);
+    }
     readonly property bool indicatorAtFarEdge: root.options.position === SettingsData.Position.Bottom || root.options.position === SettingsData.Position.Right
     readonly property bool indicatorInPadding: !(root.dockApps?.barHosted ?? false)
     readonly property real indicatorThickness: indicatorInPadding ? root.options.spacing : Math.max(0, ((isVertical ? width : height) - actualIconSize) / 2)
@@ -58,6 +63,26 @@ Item {
 
     function updateDesktopEntry() {
         dockApps?.refreshDesktopEntries();
+    }
+
+    function launchAppInstance() {
+        if (!appData?.appId)
+            return;
+        if (appData.isCoreApp && appData.coreAppData) {
+            AppSearchService.executeCoreApp(appData.coreAppData);
+            return;
+        }
+        const desktopEntry = cachedDesktopEntry;
+        if (!desktopEntry)
+            return;
+        AppUsageHistoryData.addAppUsage({
+            "id": appData.appId,
+            "name": desktopEntry.name || appData.appId,
+            "icon": desktopEntry.icon ? String(desktopEntry.icon) : "",
+            "exec": desktopEntry.exec || "",
+            "comment": desktopEntry.comment || ""
+        });
+        SessionService.launchDesktopEntry(desktopEntry);
     }
 
     property bool isWindowFocused: {
@@ -199,6 +224,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         text: root.windowTitle || root.tooltipText
         elide: Text.ElideRight
+        maximumLineCount: 1
         color: Theme.surfaceText
         font.pixelSize: Theme.fontSizeSmall
     }
@@ -363,6 +389,10 @@ Item {
                 return;
 
             if (mouse.button === Qt.MiddleButton) {
+                if (root.options.middleClickAction === "launch") {
+                    root.launchAppInstance();
+                    return;
+                }
                 switch (appData.type) {
                 case "window":
                     appData.toplevel?.close();
@@ -378,17 +408,7 @@ Item {
                 default:
                     if (!appData.appId)
                         return;
-                    const desktopEntry = cachedDesktopEntry;
-                    if (desktopEntry) {
-                        AppUsageHistoryData.addAppUsage({
-                            "id": appData.appId,
-                            "name": desktopEntry.name || appData.appId,
-                            "icon": desktopEntry.icon ? String(desktopEntry.icon) : "",
-                            "exec": desktopEntry.exec || "",
-                            "comment": desktopEntry.comment || ""
-                        });
-                    }
-                    SessionService.launchDesktopEntry(desktopEntry);
+                    root.launchAppInstance();
                     break;
                 }
             } else if (mouse.button === Qt.RightButton) {
@@ -462,11 +482,16 @@ Item {
                 visible: iconValue !== ""
             }
 
-            IconImage {
+            Image {
                 id: iconImg
 
+                readonly property real displaySize: appData && Paths.isDmsAppId(appData.appId) ? actualIconSize * 0.85 : actualIconSize
+
                 anchors.centerIn: parent
-                implicitSize: appData && Paths.isDmsAppId(appData.appId) ? actualIconSize * 0.85 : actualIconSize
+                width: displaySize
+                height: displaySize
+                fillMode: Image.PreserveAspectFit
+                sourceSize: Qt.size(displaySize * root.iconLoadScale, displaySize * root.iconLoadScale)
                 source: {
                     if (!appData || appData.appId === "__SEPARATOR__") {
                         return "";

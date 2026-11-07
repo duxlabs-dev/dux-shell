@@ -30,7 +30,7 @@ test("transform lookups fall back to Normal and only our spelling counts as rota
     assert.equal(model.isRotated("flipped-90"), false);
 });
 
-test("identifier rules: niri appends the serial or Unknown, hyprland uses desc: without commas, the profile rule drops the serial off niri", () => {
+test("identifier rules: niri appends the serial or Unknown, hyprland uses desc: without commas, hyprland profile keys keep the serial without Unknown", () => {
     assert.equal(model.niriIdentifier(dell, "DP-1", "system"), "DP-1");
     assert.equal(model.niriIdentifier(dell, "DP-1", "model"), "Dell Inc. DELL U2720Q ABC123");
     assert.equal(model.niriIdentifier(boe, "DP-1", "model"), "BOE 0x0A1B Unknown");
@@ -39,29 +39,40 @@ test("identifier rules: niri appends the serial or Unknown, hyprland uses desc: 
     assert.equal(model.hyprlandIdentifier(boe, "DP-1", "model"), "desc:BOE 0x0A1B");
     assert.equal(model.hyprlandIdentifier(dell, "DP-1", "system"), "DP-1");
     assert.equal(model.profileIdentifier(dell, "DP-1", "model", "niri"), "Dell Inc. DELL U2720Q ABC123");
-    assert.equal(model.profileIdentifier(dell, "DP-1", "model", "hyprland"), "Dell Inc. DELL U2720Q");
+    assert.equal(model.profileIdentifier(dell, "DP-1", "model", "hyprland"), "Dell Inc. DELL U2720Q ABC123");
+    assert.equal(model.profileIdentifier(boe, "DP-1", "model", "hyprland"), "BOE 0x0A1B");
     assert.equal(model.profileIdentifier(boe, "DP-1", "model", "mango"), "BOE 0x0A1B");
     assert.equal(model.profileIdentifier({ make: "", model: "X", serial: "1" }, "DP-1", "model", "niri"), "DP-1");
     assert.equal(model.profileIdentifier(dell, "DP-1", "system", "niri"), "DP-1");
 });
 
-test("niri kdl parser: top-level off disables, nested off does not, on-demand vrr, raw transform spelling", () => {
+test("niri kdl parser: top-level off disables, nested off does not, on-demand vrr, raw transform spelling, max-bpc kept", () => {
     const parsed = plain(model.parseNiriOutputs(text("niri-outputs.kdl")));
     assert.deepEqual(Object.keys(parsed), ["DP-1", "HDMI-A-1", "eDP-1", "Dell Inc. DELL U2720Q ABC123"]);
     assert.deepEqual(parsed["DP-1"], { name: "DP-1", disabled: false, logical: { x: 0, y: 0, scale: 1.25, transform: "90" }, modes: [{ width: 2560, height: 1440, refresh_rate: 143998 }], current_mode: 0, vrr_enabled: true, vrr_on_demand: true, vrr_supported: true });
     assert.equal(parsed["HDMI-A-1"].disabled, true);
     assert.equal(parsed["eDP-1"].disabled, false);
-    assert.deepEqual([parsed["eDP-1"].vrr_enabled, parsed["eDP-1"].vrr_on_demand], [true, false]);
+    assert.deepEqual([parsed["eDP-1"].vrr_enabled, parsed["eDP-1"].vrr_on_demand, parsed["eDP-1"].max_bpc], [true, false, 10]);
     assert.deepEqual(parsed["Dell Inc. DELL U2720Q ABC123"].logical, { x: -2560, y: 0, scale: 1.5, transform: "flipped-90" });
+    assert.deepEqual([parsed["HDMI-A-1"].max_bpc, parsed["Dell Inc. DELL U2720Q ABC123"].max_bpc, model.parseNiriOutputs('output "X" {\n max-bpc 6 /* x */\n}')["X"].max_bpc], [8, 12, 6]);
 });
 
-test("hyprland conf parser: extras, disable line, desc name, trailing space, mirror, bare line skipped", () => {
-    const parsed = plain(model.parseHyprlandOutputs(text("hyprland-monitors.conf")));
+test("niri kdl parser: commented-out headers, braces in comments and strings, nested block comments and slashdash nodes are not outputs", () => {
+    const parse = src => plain(model.parseNiriOutputs(src));
+    const scales = src => Object.fromEntries(Object.entries(parse(src)).map(([name, output]) => [name, output.logical.scale]));
+    assert.deepEqual(scales('// output "DP-9" {\noutput "DP-1" {\n    // }\n    scale 1.5\n}'), { "DP-1": 1.5 });
+    assert.deepEqual(scales('/-output "DP-9" {\n    scale 3\n}\noutput "DP-1" {\n    /* a /* b */ scale 3 */\n    scale 1.25\n}'), { "DP-1": 1.25 });
+    assert.deepEqual(scales('spawn-at-startup "sh" "-c" r#"printf \'"\' /*"#\nspawn-at-startup #"x" }"#\noutput "DP-1" {\n    scale 1.5\n}'), { "DP-1": 1.5 });
+    assert.deepEqual(scales('output "Odd {name}" {\n    mode "1920x1080@60" // }\n    scale 2\n}\noutput "DP-1" {\n    scale 1\n}'), { "Odd {name}": 2, "DP-1": 1 });
+});
+
+test("hyprland conf lines only parse for 1.x profile migration: extras, disable line, desc name, trailing space, mirror, bare line skipped", () => {
+    assert.deepEqual(Object.keys(plain(model.parseHyprlandOutputs(text("hyprland-monitors.conf")))), []);
+    const parsed = plain(model.parseHyprlandConfProfile(text("hyprland-monitors.conf")));
     assert.deepEqual(Object.keys(parsed), ["DP-1", "HDMI-A-1", "desc:Dell Inc. DELL U2720Q ABC123", "eDP-1", "DP-2"]);
     assert.deepEqual(parsed["DP-1"].logical, { x: 0, y: 0, scale: 1.25, transform: "90" });
-    assert.deepEqual(parsed["DP-1"].hyprlandSettings, { vrr: 2, bitdepth: 10, colorManagement: "hdr", sdrBrightness: 1.2, sdrSaturation: 0.9 });
     assert.equal(parsed["DP-1"].vrr_enabled, true);
-    assert.deepEqual(parsed["HDMI-A-1"], { name: "HDMI-A-1", logical: { x: 0, y: 0, scale: 1, transform: "Normal" }, modes: [], current_mode: -1, vrr_enabled: false, vrr_supported: false, hyprlandSettings: { disabled: true } });
+    assert.deepEqual(parsed["HDMI-A-1"], { name: "HDMI-A-1", logical: { x: 0, y: 0, scale: 1, transform: "Normal" }, modes: [], current_mode: -1, vrr_enabled: false, vrr_supported: false });
     assert.equal(parsed["desc:Dell Inc. DELL U2720Q ABC123"].logical.transform, "Flipped90");
     assert.equal(parsed["eDP-1"].mirror, "DP-1");
     assert.deepEqual(parsed["DP-2"].modes, [{ width: 1920, height: 1080, refresh_rate: 60000 }]);
@@ -79,7 +90,7 @@ test("hyprland lua parser: quoted and long-bracket strings, hdr fields, mode-les
     assert.equal(model.parseHyprlandLuaMonitorLine("hl.monitor({ scale = 1 })"), null);
 });
 
-test("mango parser: both key spellings, anchors stripped, defaults filled, nameless rule skipped, out-of-range rotation is Normal", () => {
+test("mango parser: anchors stripped, defaults filled, nameless rule skipped, out-of-range rotation is Normal", () => {
     const parsed = plain(model.parseMangoOutputs(text("mango-monitors.conf")));
     assert.deepEqual(Object.keys(parsed), ["DP-1", "eDP-1", "HDMI-A-1", "DP-2", "DP-3"]);
     assert.deepEqual(parsed["DP-1"], { name: "DP-1", logical: { x: 0, y: 0, scale: 1.25, transform: "90" }, modes: [{ width: 2560, height: 1440, refresh_rate: 143998 }], current_mode: 0, vrr_enabled: true, vrr_supported: true });
@@ -100,7 +111,7 @@ test("wlr snapshot normalizes modes and vrr, disabled heads keep a 1920x1080 vie
 test("current output set and fingerprints follow the naming mode", () => {
     assert.deepEqual(model.currentOutputSet(live, "system", "niri"), ["DP-1", "HDMI-A-1", "eDP-1"]);
     assert.deepEqual(model.currentOutputSet(live, "model", "niri"), ["BOE 0x0A1B Unknown", "Dell Inc. DELL U2720Q ABC123", "LG Electronics LG ULTRAGEAR 0x0001"]);
-    assert.deepEqual(model.currentOutputSet(live, "model", "hyprland"), ["BOE 0x0A1B", "Dell Inc. DELL U2720Q", "LG Electronics LG ULTRAGEAR"]);
+    assert.deepEqual(model.currentOutputSet(live, "model", "hyprland"), ["BOE 0x0A1B", "Dell Inc. DELL U2720Q ABC123", "LG Electronics LG ULTRAGEAR 0x0001"]);
     assert.deepEqual(monitors.configurations.map(c => model.configFingerprint(c)), ["DP-1+eDP-1", "BOE 0x0A1B Unknown+Dell Inc. DELL U2720Q ABC123", "desc:Dell Inc. DELL U2720Q", "DP-1+DP-9", "DP-1+eDP-1"]);
     assert.equal(model.outputSetFingerprint(["b", "a", "c"]), "a+b+c");
 });
@@ -117,16 +128,46 @@ test("profile lookup: named profiles win over auto ones, autoOnly skips named, o
     assert.equal(model.findConfigEntryByFingerprint(monitors, ["nope"], false), null);
 });
 
-test("profile keys match live outputs by name, desc prefix and model without serial", () => {
+test("profile keys match live outputs by name, desc prefix and make, model and serial", () => {
     const matches = key => Object.keys(live).filter(name => model.profileKeyMatchesOutput(key, live[name], name, "model", "hyprland"));
     assert.deepEqual(matches("DP-1"), ["DP-1"]);
     assert.deepEqual(matches("desc:Dell Inc. DELL U2720Q ABC123"), ["DP-1"]);
     assert.deepEqual(matches("desc:Dell Inc. DELL U2720Q"), ["DP-1"]);
     assert.deepEqual(matches("desc:Dell"), ["DP-1"]);
-    assert.deepEqual(matches("Dell Inc. DELL U2720Q"), ["DP-1"]);
-    assert.deepEqual(matches("Dell Inc. DELL U2720Q ABC123"), []);
+    assert.deepEqual(matches("Dell Inc. DELL U2720Q ABC123"), ["DP-1"]);
+    assert.deepEqual(matches("Dell Inc. DELL U2720Q"), []);
     assert.deepEqual(matches("desc:BOE 0x0A1B"), ["eDP-1"]);
     assert.deepEqual(matches("desc:DELL U2720Q"), []);
+});
+
+test("hyprland profiles keep identical monitors apart and still match after the connectors renumber", () => {
+    const philips = (name, serial, x) => ({ name, make: "Philips Consumer Electronics Company", model: "PHL 243V7", serial, logical: { x, y: 0 } });
+    const docked = { "eDP-1": { name: "eDP-1", make: "BOE", model: "0x0A1B", serial: "" }, "DP-3": philips("DP-3", "0x000027A0", 0), "DP-5": philips("DP-5", "0x00002791", 1920) };
+    const set = model.currentOutputSet(docked, "model", "hyprland");
+    assert.equal(new Set(set).size, 3);
+    const entry = { id: "auto_x", name: "", outputs: Object.fromEntries(set.map(id => [id, {}])) };
+    const redocked = { "eDP-1": docked["eDP-1"], "DP-4": { ...docked["DP-5"], name: "DP-4" }, "DP-7": { ...docked["DP-3"], name: "DP-7" } };
+    assert.equal(model.findConfigEntryByFingerprint({ configurations: [entry] }, model.currentOutputSet(redocked, "model", "hyprland"), false).entry.id, "auto_x");
+    const owners = Object.keys(entry.outputs).map(key => Object.keys(redocked).filter(name => model.profileKeyMatchesOutput(key, redocked[name], name, "model", "hyprland")));
+    assert.deepEqual(owners.map(o => o.length), [1, 1, 1]);
+});
+
+test("legacy hyprland profile keys gain the serial only when the profile is exactly the connected models", () => {
+    const legacy = { "Dell Inc. DELL U2720Q": { mode: "a" }, "BOE 0x0A1B": { mode: "b" }, "LG Electronics LG ULTRAGEAR": { mode: "c" } };
+    const migrate = (outputs, keys = legacy, mode = "model") => {
+        const entry = { outputs: clone(keys) };
+        return [model.migrateHyprlandProfileKeys(entry, outputs, mode), entry.outputs];
+    };
+    const [changed, migrated] = migrate(live);
+    assert.equal(changed, true);
+    assert.deepEqual(migrated["Dell Inc. DELL U2720Q ABC123"], { mode: "a" });
+    assert.equal("Dell Inc. DELL U2720Q" in migrated, false);
+    assert.deepEqual(migrated["BOE 0x0A1B"], { mode: "b" });
+
+    const untouched = (outputs, keys, mode) => assert.deepEqual(migrate(outputs, keys, mode), [false, keys ?? legacy]);
+    untouched({ "DP-1": live["DP-1"], "eDP-1": live["eDP-1"] }, { "Dell Inc. DELL U2720Q": {}, "BOE 0x0A1B": {}, "Acme Other": {} });
+    untouched({ a: live["DP-1"], b: { ...live["DP-1"], serial: "XYZ" } }, { "Dell Inc. DELL U2720Q": {} });
+    untouched(live, legacy, "system");
 });
 
 test("ensureEnabledOutput re-enables the first real live output of an all-disabled profile and leaves virtual-only profiles alone", () => {
@@ -179,37 +220,16 @@ test("filterDisconnectedOnly keeps saved outputs no live head matches, desc: key
     assert.deepEqual(Object.keys(model.filterDisconnectedOnly({ " DP-1 ": { name: "DP-1" }, "DP-7 ": { name: "DP-7" } }, live, "system", "niri")), ["DP-7 "]);
 });
 
-test("aqueous heads: fingerprint, head list and comparison tolerate scale noise and equivalent custom modes", () => {
-    assert.deepEqual(JSON.parse(model.outputFingerprint(wlr.outputs))[0], { name: "DP-1", id: 1, enabled: true, x: 0, y: 0, scale: 1.5, transform: 0, mode: [3840, 2160, 59997], adaptiveSync: 1 });
-    const heads = plain(model.outputHeads(wlr.outputs));
-    assert.deepEqual(heads[0], { name: "DP-1", enabled: true, modeId: 1, position: { x: 0, y: 0 }, scale: 1.5, transform: 0, adaptiveSync: 1 });
-    assert.deepEqual(heads[2], { name: "HDMI-A-1", enabled: false, position: { x: 0, y: 0 }, scale: 0, transform: 0, adaptiveSync: 0 });
-    assert.equal(model.outputHeadsMatch(heads, wlr.outputs, wlr.outputs), true);
-    const moved = clone(wlr.outputs);
-    moved[0].x = 10;
-    assert.equal(model.outputHeadsMatch(heads, moved, wlr.outputs), false);
-    assert.equal(model.outputHeadsMatch(heads.slice(1), wlr.outputs, wlr.outputs), false);
-    const renumbered = clone(wlr.outputs);
-    renumbered[0].id = 99;
-    assert.equal(model.outputHeadsMatch(heads, wlr.outputs, renumbered), false);
-    const scaled = clone(heads);
-    scaled[1].scale = 1.30001;
-    assert.equal(model.outputHeadsMatch(scaled, wlr.outputs, wlr.outputs), true);
-    const customMode = clone(heads);
-    customMode[0].modeId = 77;
-    customMode[0].customMode = { width: 3840, height: 2160, refresh: 59997 };
-    assert.equal(model.outputHeadsMatch(customMode, wlr.outputs, wlr.outputs), true);
-});
-
-test("sizes: rotation swaps, niri floors and hyprland rounds logical sizes, bounds default to 1920x1080", () => {
+test("sizes: rotation swaps, niri ceils and hyprland rounds logical sizes, bounds default to 1920x1080", () => {
     assert.deepEqual(model.physicalSize(live["DP-1"]), { w: 3840, h: 2160 });
     assert.deepEqual(model.physicalSize(live["eDP-1"]), { w: 1200, h: 1920 });
     assert.deepEqual(model.physicalSize(null), { w: 1920, h: 1080 });
     assert.deepEqual(model.logicalSize(live["DP-1"], "niri"), { w: 2560, h: 1440 });
-    assert.deepEqual(model.logicalSize(live["eDP-1"], "niri"), { w: 923, h: 1476 });
+    assert.deepEqual(model.logicalSize(live["eDP-1"], "niri"), { w: 924, h: 1477 });
+    assert.deepEqual(model.logicalSize({ modes: [{ width: 2560, height: 1600 }], current_mode: 0, logical: { scale: 1.75 } }, "niri"), { w: 1463, h: 915 });
     assert.deepEqual(model.logicalSize(live["eDP-1"], "hyprland"), { w: 923, h: 1477 });
     assert.deepEqual(model.logicalSize({ logical: { width: 2560, height: 1440, scale: 2, transform: "90" } }, "niri"), { w: 1440, h: 2560 });
-    assert.deepEqual(model.outputBounds(live, "niri"), { minX: 0, minY: 0, maxX: 3483, maxY: 1476, width: 3483, height: 1476 });
+    assert.deepEqual(model.outputBounds(live, "niri"), { minX: 0, minY: 0, maxX: 3484, maxY: 1477, width: 3484, height: 1477 });
     assert.deepEqual(model.outputBounds(live, "hyprland").maxY, 1477);
     assert.deepEqual(model.outputBounds({}, "niri"), { minX: 0, minY: 0, maxX: 1920, maxY: 1080, width: 1920, height: 1080 });
 });
@@ -222,6 +242,12 @@ test("canvas: overlap ignores disabled outputs, snapping to neighbour edges, adj
     assert.equal(model.checkOverlap(layout, "DP-1", 0, 0, 10, 10), false);
     assert.equal(model.checkOverlap({ outputs: live, disabled: {}, compositor: "hyprland" }, "DP-1", 0, 0, 10, 10), true);
     assert.deepEqual([[2570, 30], [3000, 3000], [2400, 100], [1000, 1500], [-900, 1300]].map(([x, y]) => model.snapToEdges(layout, "eDP-1", x, y, 923, 1476)), [{ x: 2560, y: 0 }, { x: 3000, y: 3000 }, { x: 2560, y: 0 }, { x: 1000, y: 1440 }, { x: -923, y: 1440 }]);
+    const issue3875 = { compositor: "niri", disabled: {}, outputs: {
+        "DP-1": { modes: [{ width: 3440, height: 1440 }], current_mode: 0, logical: { x: 0, y: 0, scale: 1 } },
+        "eDP-1": { modes: [{ width: 2560, height: 1600 }], current_mode: 0, logical: { x: 3440, y: 526, scale: 1.75 } },
+        "DP-2": { modes: [{ width: 5120, height: 1440 }], current_mode: 0, logical: { x: 10022, y: 0, scale: 1 } }
+    } };
+    assert.deepEqual(model.snapToEdges(issue3875, "DP-2", 4890, -5, 5120, 1440), { x: 4903, y: 0 });
     assert.deepEqual(model.recalculateAdjacentPositions(live, {}, "DP-1", 2, "niri"), [{ name: "eDP-1", x: 1920, y: 0 }]);
     assert.deepEqual(model.recalculateAdjacentPositions(live, { "eDP-1": { position: { x: 2563, y: 5 } } }, "eDP-1", 1, "niri"), [{ name: "eDP-1", x: 2560, y: 5 }]);
     assert.deepEqual(model.recalculateAdjacentPositions(live, {}, "HDMI-A-1", 1, "niri"), []);
@@ -306,21 +332,20 @@ test("modeAlreadyCurrent tolerates the refresh tolerance, restoreModeValue keeps
     assert.equal(model.niriCurrentMode({ current_mode: 0 }), null);
 });
 
-test("mango rule writer carries hdr/icc/disable from existing rules, keeps fractional refresh, honours the dialect", () => {
+test("mango rule writer carries hdr/icc/disable from existing rules, keeps fractional refresh, writes snake_case", () => {
     const outputs = {
         "DP-1": { configured_mode: "2560x1440@59.951", logical: { x: 0, y: 0, scale: 1, transform: "Normal" }, vrr_enabled: true, enabled: true },
         "HDMI-A-1": { modes: [{ width: 1920, height: 1080, refresh_rate: 60000 }], current_mode: 0, logical: { x: 2560, y: 0, scale: 1, transform: "90" }, enabled: false }
     };
     const existing = [
-        "monitorrule=name:^DP-1$,width:2560,height:1440,refresh:60,x:0,y:0,scale:1,rr:0,vrr:0,icc:/p.icc,disable:1",
+        "monitor_rule=name:^DP-1$,width:2560,height:1440,refresh:60,x:0,y:0,scale:1,rr:0,vrr:0,icc:/p.icc,disable:1",
         "monitor_rule=name:DP-1,hdr:1,icc:/ignored.icc",
-        "monitorrule=name:^HDMI-A-1$,primary:1"
+        "monitor_rule=name:^HDMI-A-1$,primary:1"
     ].join("\n");
-    assert.deepEqual(model.mangoMonitorRuleLines(outputs, existing, false), [
-        "monitorrule=name:^DP-1$,width:2560,height:1440,refresh:59.951,x:0,y:0,scale:1,rr:0,vrr:1,icc:/p.icc,hdr:1",
-        "monitorrule=name:^HDMI-A-1$,width:1920,height:1080,refresh:60,x:2560,y:0,scale:1,rr:1,vrr:0,primary:1,disable:1"
+    assert.deepEqual(model.mangoMonitorRuleLines(outputs, existing), [
+        "monitor_rule=name:^DP-1$,width:2560,height:1440,refresh:59.951,x:0,y:0,scale:1,rr:0,vrr:1,icc:/p.icc,hdr:1",
+        "monitor_rule=name:^HDMI-A-1$,width:1920,height:1080,refresh:60,x:2560,y:0,scale:1,rr:1,vrr:0,primary:1,disable:1"
     ]);
-    assert.ok(model.mangoMonitorRuleLines(outputs, "", true).every(line => line.startsWith("monitor_rule=")));
 });
 
 test("hyprland hardwareDetails gate vrr and color modes like Hyprland does, and gate nothing when absent", () => {

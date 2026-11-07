@@ -79,6 +79,8 @@ Singleton {
     signal filesEvent(var data)
 
     property bool capsLockState: false
+    property bool numLockState: false
+    property bool evdevStateInitialized: false
     property bool screensaverInhibited: false
     property var screensaverInhibitors: []
 
@@ -320,6 +322,10 @@ Singleton {
             if (data.capsLock !== undefined) {
                 capsLockState = data.capsLock;
             }
+            if (data.numLock !== undefined) {
+                numLockState = data.numLock;
+            }
+            evdevStateInitialized = true;
             evdevStateUpdate(data);
         } else if (service === "gamma") {
             gammaStateUpdate(data);
@@ -445,8 +451,10 @@ Singleton {
         }
     }
 
-    function listPlugins(callback) {
-        sendRequest("plugins.list", null, response => {
+    function listPlugins(callback, refresh = false) {
+        sendRequest("plugins.list", refresh ? {
+            "refresh": true
+        } : null, response => {
             if (response.result) {
                 availablePlugins = response.result;
                 pluginsListReceived(response.result);
@@ -822,5 +830,9 @@ Singleton {
         sendRequest("sysupdate.releases", {
             "force": force === true
         }, callback);
+    }
+
+    function sysupdateRepoStatus(callback) {
+        sendRequest("sysupdate.repoStatus", null, callback);
     }
 }

@@ -11,16 +11,29 @@ Usage:
   release-notes.py v1.4.6..v1.5.0 --format changelog  # danklinux-docs changelog.mdx entry
   release-notes.py v1.4.6..v1.5.0 --format blog       # MDX contributor tables for danklinux-docs
   release-notes.py v1.4.6..v1.5.0 --format checklist  # flat PR/author review list
+  release-notes.py v1.4.6..v1.5.0 --format translators  # strings translated per language
 
 Requires: git (full history), gh authenticated. --repo defaults to origin.
+
+--suite adds PRs merged in the Dux suite repos (SUITE_REPOS) during the
+release window: after the range's base tag, up to its head when that is a tag.
+Suite repos need no local clone; their PRs come from the GitHub API.
+
+Translation counts (blog and translators formats) come from git history.
+Translators are not named: they have not agreed to be listed. Language names
+come from the public contributors feed at https://api.duxlabs.dev/contributors
+(CONTRIBUTORS_FEED overrides it); POEditor codes are shown if it is down.
 """
 
 import argparse
+import ast
 import json
+import os
 import re
 import subprocess
 import sys
-from collections import OrderedDict
+import urllib.request
+from collections import Counter, OrderedDict
 from pathlib import Path
 
 BOT_RE = re.compile(r"\[bot\]$|^github-actions$|^dependabot$", re.I)
@@ -45,6 +58,20 @@ SUBJECT_HINTS = [
     (re.compile(r"^docs?\b", re.I), "docs"),
     (re.compile(r"^i18n", re.I), "i18n"),
     (re.compile(r"^(distro|packaging|nix|copr|obs|ppa|xbps)", re.I), "packaging"),
+]
+
+
+# Dux suite repos folded in by --suite: (owner/name, display name)
+SUITE_REPOS = [
+    ("duxlabs-dev/dux-files", "Dux Files"),
+    ("duxlabs-dev/dux-calendar", "Dux Calendar"),
+    ("duxlabs-dev/dux-search", "Dux Search"),
+    ("duxlabs-dev/dux-greeter", "Dux Greeter"),
+    ("duxlabs-dev/dux-qml-common", "Dux QML Common"),
+    ("duxlabs-dev/dux-gop", "Dux GOP"),
+    ("duxlabs-dev/dux-go", "dux-go"),
+    ("duxlabs-dev/dux-plugins", "First-party plugins"),
+    ("duxlabs-dev/dux-repo", "Packaging"),
 ]
 
 
@@ -195,6 +222,66 @@ def build_entries(repo, rng, use_api=True):
     return entries
 
 
+def ref_is_tag(ref):
+    try:
+        run(["git", "rev-parse", "--verify", "--quiet", f"refs/tags/{ref}"])
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
+def suite_window(rng):
+    """(since, until) ISO times for the release: base tag commit time, and the
+    head's when it is a tag (None while the release is still untagged)."""
+    base, _, head = rng.partition("..")
+    head = head.lstrip(".") or "HEAD"
+    since = run(["git", "log", "-1", "--format=%cI", base]).strip()
+    until = run(["git", "log", "-1", "--format=%cI", head]).strip() if ref_is_tag(head) else None
+    return since, until
+
+
+def suite_entries(rng):
+    """Entries for PRs merged in SUITE_REPOS inside the release window."""
+    since, until = suite_window(rng)
+    merged = f"merged:{since}..{until}" if until else f"merged:>{since}"
+    entries = []
+    for repo, label in SUITE_REPOS:
+        try:
+            prs = json.loads(run(["gh", "pr", "list", "-R", repo, "--state", "merged",
+                                  "--search", merged, "--limit", "500", "--json",
+                                  "number,title,url,author,labels,mergeCommit,mergedAt"]))
+        except subprocess.CalledProcessError as e:
+            print(f"warning: {repo}: {e.stderr.strip()}", file=sys.stderr)
+            continue
+        for pr in sorted(prs, key=lambda p: p["mergedAt"]):
+            login = (pr.get("author") or {}).get("login")
+            if not login or BOT_RE.search(login) or (pr.get("author") or {}).get("is_bot"):
+                continue
+            labels = [l["name"] for l in pr.get("labels") or []]
+            entries.append({
+                "sha": (pr.get("mergeCommit") or {}).get("oid") or "",
+                "subject": pr["title"], "title": pr["title"], "number": pr["number"],
+                "pr_url": pr["url"], "login": login, "author_name": login,
+                "author_email": "", "author_url": f"https://github.com/{login}",
+                "category": categorize(labels, pr["title"]),
+                "repo": repo, "repo_label": label,
+            })
+    return entries
+
+
+def pr_ref(e, style):
+    """PR reference for one entry. Suite PRs name their repo."""
+    if not e["number"]:
+        return f"`{e['sha'][:7]}`" if style == "md" else e["sha"][:7]
+    short = e.get("repo", "").split("/")[-1]
+    if style == "gh":  # GitHub autolinks owner/name#N and #N
+        return f"{e['repo']}#{e['number']}" if short else f"#{e['number']}"
+    if style == "plain":
+        return f"{short}#{e['number']}" if short else f"#{e['number']}"
+    text = f"{short} #{e['number']}" if short else f"PR #{e['number']}"
+    return f"[{text}]({e['pr_url']})"
+
+
 def author_md(e):
     if e["login"]:
         return f"@{e['login']}"
@@ -209,7 +296,7 @@ def format_sections(entries, escape=lambda t: t):
             continue
         out.append(f"### {heading}")
         for e in group:
-            ref = f" in #{e['number']}" if e["number"] else f" ({e['sha'][:7]})"
+            ref = f" in {pr_ref(e, 'gh')}" if e["number"] else f" ({e['sha'][:7]})"
             out.append(f"- {escape(e['title'])} by {author_md(e)}{ref}")
         out.append("")
     return out
@@ -271,8 +358,7 @@ def format_blog(repo, entries, rng, exclude=frozenset()):
             name = e["login"] or e["author_name"]
             key = name.lower()
             rows.setdefault(key, {"e": e, "name": name, "items": []})
-            pr = (f"[PR #{e['number']}]({e['pr_url']})" if e["number"]
-                  else f"`{e['sha'][:7]}`")
+            pr = pr_ref(e, "md")
             rows[key]["items"].append(f"{mdx_safe(clean_title(e['title']))} ({pr})")
         lines = ["| Contributor | Contribution |", "|---|---|"]
         for key in sorted(rows):
@@ -287,7 +373,7 @@ def format_blog(repo, entries, rng, exclude=frozenset()):
 
     def fix_item(e):
         title = mdx_safe(clean_title(e["title"])).rstrip(".")
-        ref = f"[PR #{e['number']}]({e['pr_url']})" if e["number"] else f"`{e['sha'][:7]}`"
+        ref = pr_ref(e, "md")
         if not is_excluded(e) and e["author_url"]:
             name = e["login"] or e["author_name"]
             return f"- {title} (contributed by **[{name}]({e['author_url']})** {ref})."
@@ -326,10 +412,119 @@ def format_blog(repo, entries, rng, exclude=frozenset()):
     return "\n".join(out)
 
 
+# POEditor exports per language; (path inside the repo, submodule it lives in)
+TRANSLATION_DIRS = [
+    ("quickshell/translations/poexports", None),
+    ("DCommon/translations/poexports", "dux-qml-common"),
+]
+I18NSYNC = "quickshell/scripts/i18nsync.py"
+CONTRIBUTORS_FEED = "https://api.duxlabs.dev/contributors"
+
+
+def repo_root():
+    return Path(run(["git", "rev-parse", "--show-toplevel"]).strip())
+
+
+def range_ends(rng):
+    base, _, head = rng.partition("..")
+    return base, head.lstrip(".") or "HEAD"
+
+
+def poeditor_languages():
+    """{export filename: POEditor code}, read from i18nsync.py's LANGUAGES
+    without importing it."""
+    tree = ast.parse((repo_root() / I18NSYNC).read_text())
+    for node in tree.body:
+        if (isinstance(node, ast.Assign)
+                and any(getattr(t, "id", None) == "LANGUAGES" for t in node.targets)):
+            return {f: code for code, f in ast.literal_eval(node.value).items()}
+    return {}
+
+
+def translated_strings(data):
+    """{(term, context): translation} for every non-empty translation."""
+    out = {}
+    for term, ctxs in (data or {}).items():
+        if isinstance(ctxs, dict):
+            for ctx, val in ctxs.items():
+                if isinstance(val, str) and val.strip():
+                    out[(term, ctx)] = val
+    return out
+
+
+def translation_activity(rng):
+    """{export filename: strings newly translated or retranslated in rng}.
+
+    A source-text rename moves a translation to a new key; it only counts
+    when the translated text itself is new for that language."""
+    base, head = range_ends(rng)
+    counts, top = Counter(), repo_root()
+    for path, sub in TRANSLATION_DIRS:
+        cwd = top / sub if sub else top
+        try:
+            revs = ([run(["git", "rev-parse", f"{r}:{sub}"], cwd=top).strip() for r in (base, head)]
+                    if sub else [base, head])
+            for r in revs:
+                run(["git", "cat-file", "-e", f"{r}^{{commit}}"], cwd=cwd)
+            files = run(["git", "ls-tree", "--name-only", f"{revs[1]}:{path}"], cwd=cwd).split()
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            print(f"warning: skipping {sub or '.'}/{path} (not available at both ends of {rng})",
+                  file=sys.stderr)
+            continue
+
+        def load(rev, f):
+            try:
+                return json.loads(run(["git", "show", f"{rev}:{path}/{f}"], cwd=cwd))
+            except (subprocess.CalledProcessError, json.JSONDecodeError):
+                return {}
+
+        for f in files:
+            if not f.endswith(".json"):
+                continue
+            old = translated_strings(load(revs[0], f))
+            known = set(old.values())
+            n = sum(1 for k, v in translated_strings(load(revs[1], f)).items()
+                    if old.get(k) != v and v not in known)
+            if n:
+                counts[f] += n
+    return counts
+
+
+def language_names(url):
+    """{POEditor code: language name} from the docs server's public feed."""
+    # The edge returns 403 to urllib's default User-Agent.
+    req = urllib.request.Request(url, headers={"Accept": "application/json",
+                                               "User-Agent": "dms-release-notes"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        feed = json.load(resp)
+    return {l["code"]: l.get("name") or l["code"] for l in feed.get("languages") or []}
+
+
+def format_translators(rng):
+    activity = translation_activity(rng)
+    if not activity:
+        return f"<!-- no translation changes in {rng} -->"
+    codes = poeditor_languages()
+    try:  # names are cosmetic; never block the notes
+        names = language_names(os.environ.get("CONTRIBUTORS_FEED") or CONTRIBUTORS_FEED)
+    except Exception as e:
+        print(f"warning: language name lookup failed ({e}); showing codes", file=sys.stderr)
+        names = {}
+
+    rows = []
+    for f, n in sorted(activity.items(), key=lambda kv: (-kv[1], kv[0])):
+        code = codes.get(f, f.removesuffix(".json"))
+        rows.append(f"| {mdx_safe(names.get(code, code))} | {n:,} |")
+    total = sum(activity.values())
+    return "\n".join(["### Translators", "",
+                      f"<!-- {len(activity)} languages, {total:,} strings newly translated in {rng}. -->",
+                      "", "| Language | Strings |", "|---|---|", *rows])
+
+
 def format_checklist(entries):
     out = []
     for e in entries:
-        ref = f"#{e['number']}" if e["number"] else e["sha"][:7]
+        ref = pr_ref(e, "plain")
         out.append(f"- [ ] {ref} {e['title']} — {author_md(e)} [{e['category']}]")
     return "\n".join(out)
 
@@ -337,7 +532,7 @@ def format_checklist(entries):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("range", help="git range, e.g. v1.4.6..v1.5.0")
-    ap.add_argument("--format", choices=["github", "changelog", "blog", "checklist"], default="github")
+    ap.add_argument("--format", choices=["github", "changelog", "blog", "checklist", "translators"], default="github")
     ap.add_argument("--repo", default=None, help="owner/name (default: from origin)")
     ap.add_argument("--exclude", action="append", default=None, metavar="LOGIN",
                     help="drop this author (repeatable). Blog format defaults "
@@ -345,6 +540,10 @@ def main():
                          "--exclude to override, --exclude '' for nobody")
     ap.add_argument("--bare", action="store_true",
                     help="github format: omit heading and Full Changelog footer")
+    ap.add_argument("--suite", action="store_true",
+                    help="also include PRs merged in the Dux suite repos "
+                         "(dux-files, dux-calendar, dux-greeter, ...) in the "
+                         "release window; needs the GitHub API")
     ap.add_argument("--no-api", action="store_true",
                     help="skip GitHub API, use git data only (degraded attribution)")
     ap.add_argument("-o", "--output", default=None, metavar="PATH",
@@ -362,7 +561,14 @@ def main():
         m = re.search(r"github\.com[:/]([^/]+/[^/.]+)", url)
         repo = m.group(1) if m else "duxlabs-dev/dux-shell"
 
+    if args.format == "translators":
+        return write_output(args, format_translators(args.range))
+
     entries = build_entries(repo, args.range, use_api=not args.no_api)
+    if args.suite:
+        if args.no_api:
+            ap.error("--suite needs the GitHub API; drop --no-api")
+        entries += suite_entries(args.range)
     if not entries:
         print("no commits in range", file=sys.stderr)
         return 1
@@ -373,6 +579,7 @@ def main():
     if args.format == "blog":
         # blog excludes from tables only; fixes list keeps everyone
         text = format_blog(repo, entries, args.range, exclude=frozenset(drop))
+        text += "\n" + format_translators(args.range)
     else:
         if drop:
             entries = [e for e in entries
@@ -384,7 +591,10 @@ def main():
             text = format_changelog(repo, entries, args.range)
         else:
             text = format_checklist(entries)
+    return write_output(args, text)
 
+
+def write_output(args, text):
     out_target = args.output or (f"~/Documents/dms-v{args.version}-changelog.md" if args.version else None)
     if out_target:
         out_path = Path(out_target).expanduser()

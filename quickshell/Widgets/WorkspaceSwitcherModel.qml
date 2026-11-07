@@ -13,6 +13,7 @@ QtObject {
     property string screenName: ""
     property var screen: null
     property bool followFocus: false
+    property bool moveToOutput: false
     property bool occupiedOnly: false
     property bool showAllTags: false
     property bool showPadding: false
@@ -20,18 +21,15 @@ QtObject {
     property bool showSpecial: false
     property bool reverseScrolling: false
 
-    readonly property bool useAqueous: CompositorService.isAqueous && AqueousService.available && Quickshell.env("DMS_FORCE_EXTWS") !== "1"
     readonly property bool useExtWorkspace: {
-        if (useAqueous)
-            return false;
         if (Quickshell.env("DMS_FORCE_EXTWS") === "1")
             return (WindowManager.windowsets?.length ?? 0) > 0;
         if (!CompositorService.compositorDetected || CompositorService.hasWorkspaceIpc)
             return false;
         return (WindowManager.windowsets?.length ?? 0) > 0;
     }
-    readonly property bool useNativeWorkspaces: useAqueous || (!useExtWorkspace && CompositorService.hasWorkspaceIpc)
-    readonly property var extProjection: (useExtWorkspace && screen) ? WindowManager.screenProjection(CompositorService.isAqueous ? Quickshell.screens.find(s => s.name === effectiveScreenName) || screen : screen) : null
+    readonly property bool useNativeWorkspaces: !useExtWorkspace && CompositorService.hasWorkspaceIpc
+    readonly property var extProjection: (useExtWorkspace && screen) ? WindowManager.screenProjection(screen) : null
 
     readonly property string effectiveScreenName: followFocus ? (BarWidgetService.getFocusedScreenName() || screenName) : screenName
     readonly property bool hiddenByOverview: CompositorService.workspacesHiddenByOverview(effectiveScreenName)
@@ -61,25 +59,24 @@ QtObject {
             "minCount": showPadding ? paddingCount : 0,
             "showSpecial": showSpecial
         });
-        if (CompositorService.ephemeralWorkspaces)
-            return hyprlandSlotList(baseList);
-        if (!showPadding || CompositorService.supportsPersistentWorkspaces || (useAqueous && baseList.length === 0))
-            return baseList;
-        return padWorkspaces(baseList);
+        const slots = slotList(baseList);
+        if (CompositorService.ephemeralWorkspaces || !showPadding || CompositorService.supportsPersistentWorkspaces)
+            return slots;
+        return padWorkspaces(slots);
     }
 
-    readonly property var realWorkspaces: workspaceList.filter(ws => ws && !recordOf(ws).placeholder)
+    readonly property var realWorkspaces: workspaceList.map(ws => recordOf(ws)).filter(ws => ws && !ws.placeholder)
     readonly property bool hasWorkspaces: realWorkspaces.length > 0
     readonly property bool available: useNativeWorkspaces || (useExtWorkspace && hasWorkspaces)
 
     onCompositorNameChanged: {
         _placeholderPool = [];
-        _hyprSlotPool = {};
+        _slotPool = {};
     }
 
     // Hyprland creates/destroys workspaces on empty enter/leave; slots keyed by id keep delegate identity so pills animate instead of popping
-    property var _hyprSlotPool: ({})
-    readonly property Component _hyprSlotComponent: Component {
+    property var _slotPool: ({})
+    readonly property Component _slotComponent: Component {
         QtObject {
             property var ws: null
         }
@@ -91,19 +88,33 @@ QtObject {
         return entry.ws;
     }
 
-    function _hyprSlot(key, ws) {
-        let slot = _hyprSlotPool[key];
-        if (!slot) {
-            slot = _hyprSlotComponent.createObject(root);
-            _hyprSlotPool[key] = slot;
+    function slotList(raw) {
+        const live = {};
+        const slots = raw.map(ws => {
+            const key = ws.id !== null && ws.id !== undefined && !ws.special ? ws.id : (ws.special ? "special:" : "name:") + (ws.name ?? "");
+            let entry = _slotPool[key];
+            if (!entry) {
+                entry = {
+                    "slot": _slotComponent.createObject(root),
+                    "ws": null
+                };
+                _slotPool[key] = entry;
+            }
+            // Compare against the cached record: reading slot.ws here would make workspaceList depend on the write below (binding loop)
+            if (entry.ws !== ws) {
+                entry.ws = ws;
+                entry.slot.ws = ws;
+            }
+            live[key] = true;
+            return entry.slot;
+        });
+        for (const key in _slotPool) {
+            if (live[key])
+                continue;
+            _slotPool[key].slot.destroy();
+            delete _slotPool[key];
         }
-        if (slot.ws !== ws)
-            slot.ws = ws;
-        return slot;
-    }
-
-    function hyprlandSlotList(raw) {
-        return raw.map(ws => _hyprSlot(ws.id > 0 ? ws.id : (ws.special ? "special:" : "name:") + (ws.name ?? ""), ws));
+        return slots;
     }
 
     // Stable placeholder instances so ScriptModel reuses padding delegates instead of recreating them on workspace churn
@@ -164,7 +175,7 @@ QtObject {
         if (!data || data.placeholder)
             return;
         if (useNativeWorkspaces) {
-            CompositorService.switchToWorkspace(data, effectiveScreenName);
+            CompositorService.switchToWorkspace(data, effectiveScreenName, moveToOutput ? screenName : "");
             return;
         }
         if (useExtWorkspace && typeof data.activate === "function")
@@ -172,13 +183,6 @@ QtObject {
     }
 
     function step(direction) {
-        if (useAqueous) {
-            const index = realWorkspaces.findIndex(w => w.id === currentWorkspace);
-            const next = Math.max(0, Math.min(realWorkspaces.length - 1, index + (direction > 0 ? 1 : -1)));
-            if (next !== index)
-                CompositorService.switchToWorkspace(realWorkspaces[next]);
-            return;
-        }
         if (useExtWorkspace) {
             if (realWorkspaces.length < 2)
                 return;

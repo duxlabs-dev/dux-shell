@@ -9,6 +9,7 @@
 #   ./distro/scripts/obs-upload.sh opensuse dms-git
 #   ./distro/scripts/obs-upload.sh debian dms-git 2    # Rebuild with db2 suffix
 #   ./distro/scripts/obs-upload.sh dms-git --rebuild=2 # Rebuild with db2 suffix (flag syntax)
+#   OBS_BASE_PROJECT=home:duxlabs-dev ./distro/scripts/obs-upload.sh dms   # Dux Labs projects (legacy is the default)
 
 set -e
 
@@ -66,7 +67,7 @@ if [[ ${#POSITIONAL_ARGS[@]} -gt 0 ]]; then
     fi
 fi
 
-OBS_BASE_PROJECT="home:AvengeMedia"
+OBS_BASE_PROJECT="${OBS_BASE_PROJECT:-home:AvengeMedia}"
 OBS_BASE="$HOME/.cache/osc-checkouts"
 AVAILABLE_PACKAGES=(dms dms-git)
 

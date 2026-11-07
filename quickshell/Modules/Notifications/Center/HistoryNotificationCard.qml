@@ -38,7 +38,7 @@ Notifications.NotificationCard {
     onDismissRequested: NotificationService.removeFromHistory(historyItem.id)
 
     function formatHistoryTime(timestamp) {
-        NotificationService.timeUpdateTick;
+        NotificationService.relativeTimeNow;
         NotificationService.clockFormatChanged;
         const now = new Date();
         const date = new Date(timestamp);

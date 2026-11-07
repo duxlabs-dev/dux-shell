@@ -3,9 +3,7 @@ name: Void Linux XBPS Repository
 on:
   schedule:
     - cron: "0 2,5,14,17,20,23 * * *" # 9am, 12pm, 3pm, 6pm, 9pm, 12am EST (UTC times shown)
-  # release trigger disabled; dispatch manually after a release
-  # release:
-  #   types: [published]
+  # Stable builds are dispatched by release.yml after the release assets exist.
   workflow_dispatch:
     inputs:
       version:
@@ -45,11 +43,13 @@ jobs:
       - name: Check published commit
         id: check
         env:
-          MANIFEST_URL: https://void.danklinux.com/dms/current/manifest.json
+          MANIFEST_URL: https://void.duxlabs.dev/dms/current/manifest.json
         run: |
           SHOULD_BUILD=true
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            PUBLISHED_COMMIT="$(curl -fsSL --retry 3 "$MANIFEST_URL" | jq -r '.source_commit // empty' 2>/dev/null || true)"
+            # dux-repo's legacy greeter mirror also writes dms/current; read this repo's own entry
+            PUBLISHED_COMMIT="$(curl -fsSL --retry 3 "$MANIFEST_URL" \
+              | jq -r --arg repo "${{ github.repository }}" '.sources[$repo] // .source_commit // empty' 2>/dev/null || true)"
             if [ "$PUBLISHED_COMMIT" = "${{ github.sha }}" ]; then
               SHOULD_BUILD=false
               echo "${{ github.sha }} is already published; skipping the scheduled build."
@@ -159,8 +159,8 @@ jobs:
       - name: Configure repositories
         run: |
           # Append the repository to repos-remote templates so xbps-src translates it automatically
-          echo "repository=https://void.danklinux.com/danklinux/current" >> void-packages/etc/xbps.d/repos-remote.conf
-          echo "repository=https://void.danklinux.com/danklinux/current" >> void-packages/etc/xbps.d/repos-remote-x86_64-multilib.conf
+          echo "repository=https://void.duxlabs.dev/dux-repo/current" >> void-packages/etc/xbps.d/repos-remote.conf
+          echo "repository=https://void.duxlabs.dev/dux-repo/current" >> void-packages/etc/xbps.d/repos-remote-x86_64-multilib.conf
 
           # Add any existing compiled packages to the build cache directory to avoid rebuilds
           if [ -d "r2-repo/current" ]; then
@@ -278,36 +278,9 @@ jobs:
           fi
 
       - name: Index and sign repository
-        run: |
-          cd r2-repo/current
-
-          rm -f *.sig
-
-          # Guard: nothing to index if no .xbps files exist
-          if ! ls *.xbps 1>/dev/null 2>&1; then
-            echo "⚠️ No .xbps files found to index, skipping."
-            exit 0
-          fi
-
-          # Regenerate repo index
-          xbps-rindex -a $(pwd)/*.xbps
-          xbps-rindex --remove-obsoletes $(pwd)
-
-          # Remove signatures left behind by obsolete packages. Signatures for
-          # unchanged immutable packages are retained byte-for-byte.
-          for sig in *.sig2; do
-            [ -e "$sig" ] || break
-            [ -f "${sig%.sig2}" ] || rm -f "$sig"
-          done
-
-          # Sign repository
-          echo "${{ secrets.XBPS_PRIVATE_KEY }}" > /tmp/xbps_privkey.pem
-          chmod 600 /tmp/xbps_privkey.pem
-
-          xbps-rindex --sign --signedby "AvengeMedia <AvengeMedia.US@gmail.com>" --privkey /tmp/xbps_privkey.pem $(pwd)
-          xbps-rindex --sign-pkg --privkey /tmp/xbps_privkey.pem $(pwd)/*.xbps
-
-          rm -f /tmp/xbps_privkey.pem
+        env:
+          XBPS_PRIVATE_KEY: ${{ secrets.XBPS_PRIVATE_KEY }}
+        run: bash .github/scripts/publish-void-r2.sh index
 
       - name: Publish repository to R2
         run: bash .github/scripts/publish-void-r2.sh publish

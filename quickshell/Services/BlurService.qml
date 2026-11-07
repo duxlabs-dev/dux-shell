@@ -23,6 +23,7 @@ Singleton {
     }
     readonly property bool enabled: available && (SettingsData.blurEnabled ?? false)
     readonly property int defaultStrength: BlurStrength.defaultReach(CompositorService.configKey)
+    readonly property bool strengthConfigurable: defaultStrength > 0
     readonly property int strength: SettingsData.blurStrength || defaultStrength
 
     // These settings predate non-blurred surface borders, so keep their keys for compatibility.

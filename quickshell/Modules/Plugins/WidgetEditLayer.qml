@@ -15,6 +15,8 @@ FocusScope {
     property bool greeter: false
     property var lockHost: null
     property bool editMode: false
+    // Settings minimap: lays out like the live lock but never publishes positions.
+    property bool preview: false
     property string selectedInstanceId: ""
 
     readonly property var screen: Quickshell.screens.find(s => s.name === screenName) ?? null
@@ -119,7 +121,7 @@ FocusScope {
     property var heldPlacement: ({})
     readonly property string backgroundKey: lockScreen ? LockPlacementService.backgroundKey(screenName, width, height) : ""
     readonly property var autoPositions: {
-        if (!lockScreen || !editMode || !completed)
+        if (!lockScreen || !(editMode || preview) || !completed)
             return lockedPositions;
         if (interactingItem)
             return heldPlacement;
@@ -146,7 +148,7 @@ FocusScope {
     }
 
     function refreshPlacement() {
-        if (!lockScreen || !completed || editMode || width <= 0 || height <= 0)
+        if (!lockScreen || !completed || editMode || preview || width <= 0 || height <= 0)
             return;
         lockedPositions = currentPlacement();
         SessionData.setLockScreenAutoPositions(screenKey, {

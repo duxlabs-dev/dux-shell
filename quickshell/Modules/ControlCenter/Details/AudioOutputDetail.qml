@@ -100,7 +100,7 @@ Item {
 
                         DActionButton {
                             anchors.verticalCenter: parent.verticalCenter
-                            visible: AudioService.sinkHasMultiplePorts(deviceRow.modelData)
+                            visible: (AudioService.outputChoices[deviceRow.modelData.name]?.length ?? 0) > 1
                             buttonSize: Theme.buttonHeightXS
                             iconSize: Theme.iconSizeMedium
                             iconName: "tune"
@@ -114,22 +114,6 @@ Item {
                             pinned: root.pinnedOutputs.includes(deviceRow.modelData.name)
                             onToggled: root.togglePin(deviceRow.modelData.name)
                         }
-                    }
-                }
-
-                Repeater {
-                    model: ScriptModel {
-                        values: AudioService.switchableOutputPorts
-                    }
-
-                    CcListRow {
-                        required property var modelData
-
-                        iconName: modelData.icon
-                        title: modelData.title
-                        subtitle: modelData.cardDescription
-                        clickable: true
-                        onClicked: AudioService.activateOutputPort(modelData, (ok, message) => ToastService.showToast(message, ok ? ToastService.levelInfo : ToastService.levelError))
                     }
                 }
             }

@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Window
+import qs.Services
 import "../../Common/WidgetPlacement.js" as Placement
 
 Item {
@@ -12,7 +13,7 @@ Item {
     property string capturedKey: ""
     property var capture: null
     readonly property size sourceSize: Qt.size(sourceItem.width, sourceItem.height)
-    readonly property real sampleScale: 128 / Math.max(1, sourceItem.width, sourceItem.height)
+    readonly property real sampleScale: LockPlacementService.sampleSize / Math.max(1, sourceItem.width, sourceItem.height)
     readonly property int sampleWidth: Math.max(1, Math.round(sourceItem.width * sampleScale))
     readonly property int sampleHeight: Math.max(1, Math.round(sourceItem.height * sampleScale))
     readonly property bool sourceVisible: sourceItem.visible && (sourceItem.Window.window?.visible ?? false)

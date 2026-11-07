@@ -104,13 +104,10 @@ DPopout {
     ConfirmModal {
         id: clearConfirmDialog
         confirmButtonText: I18n.tr("Clear All")
-        confirmButtonColor: Theme.primary
         useOverlayLayer: true
         onShouldBeVisibleChanged: {
             if (shouldBeVisible) {
                 root.customKeyboardFocus = WlrKeyboardFocus.None;
-                selectedButton = 0;
-                keyboardNavigation = true;
                 return;
             }
             root.customKeyboardFocus = null;
@@ -127,11 +124,13 @@ DPopout {
         Connections {
             target: clearConfirmDialog.modalFocusScope.Keys
             function onPressed(event) {
-                if (!clearConfirmDialog.shouldBeVisible || event.key !== Qt.Key_Backtab) {
+                const dialog = clearConfirmDialog.contentLoader.item?.dialog;
+                if (!clearConfirmDialog.shouldBeVisible || event.key !== Qt.Key_Backtab || !dialog) {
                     return;
                 }
-                clearConfirmDialog.selectedButton = clearConfirmDialog.selectedButton === -1 ? 1 : (clearConfirmDialog.selectedButton - 1 + 2) % 2;
-                clearConfirmDialog.keyboardNavigation = true;
+                dialog.selectedButton = 1 - dialog.selectedButton;
+                dialog.keyboardNavigation = true;
+                dialog.focusSelection();
                 event.accepted = true;
             }
         }

@@ -25,7 +25,7 @@ Scope {
     }
 
     Variants {
-        model: root.demoActive ? Quickshell.screens : []
+        model: root.demoActive ? ShellLayout.realScreens : []
 
         PanelWindow {
             id: demoWindow

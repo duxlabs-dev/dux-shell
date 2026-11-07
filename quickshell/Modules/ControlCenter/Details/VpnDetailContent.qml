@@ -33,8 +33,7 @@ Item {
             iconName: VPNService.importing ? "sync" : "add"
             iconSize: Theme.iconSizeSmall
             text: I18n.tr("Import", "verb, button that imports a vpn profile file")
-            backgroundColor: Theme.secondaryContainer
-            textColor: Theme.onSecondaryContainer
+            variant: "tonal"
             enabled: !VPNService.importing
             onClicked: root.openFileBrowser()
         }
@@ -64,7 +63,7 @@ Item {
             "title": I18n.tr("Delete VPN"),
             "message": I18n.tr("Delete \"%1\"?").arg(profile.name),
             "confirmText": I18n.tr("Delete"),
-            "confirmColor": Theme.error,
+            "danger": true,
             "onConfirm": () => VPNService.deleteVpn(profile.uuid)
         });
     }
@@ -133,7 +132,7 @@ Item {
                 visible: !root.hasProfiles
                 iconName: "vpn_key_off"
                 title: I18n.tr("No VPN profiles")
-                subtitle: I18n.tr("Click Import to add a .ovpn or .conf")
+                subtitle: I18n.tr("Click Import to add a %1 or %2 file", "VPN import hint, %1 and %2 are file extensions").arg(".ovpn").arg(".conf")
             }
 
             DListView {

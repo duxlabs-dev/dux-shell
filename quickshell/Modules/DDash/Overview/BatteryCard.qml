@@ -13,10 +13,10 @@ Card {
 
     readonly property bool wide: width >= DashMetrics.gridRowUnit * 2
     readonly property bool tall: height >= DashMetrics.gridRowUnit * 2
-    readonly property string levelText: Math.round(BatteryService.batteryLevel) + "%"
+    readonly property string levelText: Math.round(BatteryService.displayBatteryLevel) + "%"
     readonly property string meterStyle: options.style ?? "solid"
     readonly property bool levelColors: options.color !== "theme"
-    readonly property string healthText: options.health === true && BatteryService.batteryHealth.endsWith("%") ? I18n.tr("Health") + " " + BatteryService.batteryHealth : ""
+    readonly property string healthText: options.health === true && BatteryService.batteryHealth.endsWith("%") ? I18n.tr("Health %1", "battery health, %1 is a percentage").arg(BatteryService.batteryHealth) : ""
 
     entryId: "battery"
     tone: options.tone ?? ""
@@ -62,9 +62,6 @@ Card {
                 text: root.levelText
                 font.pixelSize: root.tall ? Theme.fontSizeDisplay : Theme.fontSizeXXLarge
                 font.weight: Theme.fontWeightMedium
-                font.features: ({
-                        "tnum": 1
-                    })
                 color: root.contentColor
                 elide: Text.ElideRight
             }
@@ -108,9 +105,6 @@ Card {
             text: root.levelText
             font.pixelSize: Theme.fontSizeXLarge
             font.weight: Theme.fontWeightMedium
-            font.features: ({
-                    "tnum": 1
-                })
             color: root.contentColor
             horizontalAlignment: Text.AlignHCenter
             elide: Text.ElideRight

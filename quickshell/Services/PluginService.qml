@@ -94,7 +94,8 @@ Singleton {
     }
 
     Component.onCompleted: {
-        userWatcher.folder = Paths.toFileUrl(root.pluginDirectory);
+        // A FolderListModel never given a folder lists the working directory.
+        userWatcher.folder = AdminPolicy.disableUserPlugins ? "" : Paths.toFileUrl(root.pluginDirectory);
         systemWatcher.folder = Paths.toFileUrl(root.systemPluginDirectory);
         Qt.callLater(resyncAll);
         Qt.callLater(checkPluginDirectoryExists);
@@ -150,7 +151,7 @@ Singleton {
     }
 
     function resyncAll() {
-        const userList = snapshotModel(userWatcher, "user");
+        const userList = AdminPolicy.disableUserPlugins ? [] : snapshotModel(userWatcher, "user");
         const sysList = snapshotModel(systemWatcher, "system");
         const seenPaths = {};
         const modifiedTimes = {};
@@ -308,8 +309,21 @@ Singleton {
         }
     }
 
-    function _stripDotSlash(p) {
-        return p.startsWith("./") ? p.slice(2) : p;
+    function _pluginFilePath(dir, rel) {
+        if (!rel)
+            return "";
+        const path = String(rel);
+        let decoded;
+        try {
+            decoded = decodeURIComponent(path);
+        } catch (e) {
+            decoded = "..";
+        }
+        if (decoded.split("/").includes("..")) {
+            log.warn("plugin path outside its directory, refusing:", path, "in", dir);
+            return "";
+        }
+        return dir + "/" + (path.startsWith("./") ? path.slice(2) : path);
     }
 
     function _deriveLegacySurface(type, capabilities) {
@@ -334,17 +348,21 @@ Singleton {
                     log.warn("unknown plugin surface", surface, "in", dir);
                     continue;
                 }
-                const rel = manifest.components[surface];
-                if (!rel)
+                const path = _pluginFilePath(dir, manifest.components[surface]);
+                if (!path)
                     continue;
-                paths[surface] = dir + "/" + _stripDotSlash(rel);
+                paths[surface] = path;
+            }
+            // A desktop card's root can't also be a bar pill; in a bar or dock it renders at card size and overflows.
+            if (paths.widget && paths.widget === paths.desktop) {
+                log.warn("widget surface reuses the desktop component, ignoring it in", dir);
+                delete paths.widget;
             }
             return paths;
         }
-        if (manifest.component) {
-            const surface = _deriveLegacySurface(manifest.type, manifest.capabilities);
-            paths[surface] = dir + "/" + _stripDotSlash(manifest.component);
-        }
+        const legacyPath = _pluginFilePath(dir, manifest.component);
+        if (legacyPath)
+            paths[_deriveLegacySurface(manifest.type, manifest.capabilities)] = legacyPath;
         return paths;
     }
 
@@ -360,16 +378,12 @@ Singleton {
         }
 
         const dir = absPath.substring(0, absPath.lastIndexOf('/'));
-        let settings = manifest.settings;
-        if (settings && settings.startsWith("./"))
-            settings = settings.slice(2);
-        let startupCheck = manifest.startupCheck;
-        if (startupCheck && startupCheck.startsWith("./"))
-            startupCheck = startupCheck.slice(2);
+        const settingsPath = _pluginFilePath(dir, manifest.settings);
+        const startupCheckPath = _pluginFilePath(dir, manifest.startupCheck);
 
         const componentPaths = _resolveComponentPaths(manifest, dir);
         const surfaces = Object.keys(componentPaths);
-        if (surfaces.length === 0 && !manifest.lyrics?.command) {
+        if (surfaces.length === 0 && !manifest.lyrics?.command && !manifest.weather?.command) {
             log.error("no valid component surfaces in manifest:", absPath);
             knownManifests[absPath] = {
                 mtime: mtimeEpochMs,
@@ -397,8 +411,8 @@ Singleton {
         info.componentPaths = componentPaths;
         info.surfaces = surfaces;
         info.componentPath = componentPaths.widget || componentPaths[surfaces[0]];
-        info.settingsPath = settings ? (dir + "/" + settings) : null;
-        info.startupCheckPath = startupCheck ? (dir + "/" + startupCheck) : null;
+        info.settingsPath = settingsPath || null;
+        info.startupCheckPath = startupCheckPath || null;
         info.loaded = isPluginLoaded(manifest.id);
         info.type = manifest.type || (manifest.components ? "composite" : "widget");
         info.source = sourceTag;
@@ -501,7 +515,7 @@ Singleton {
 
         const componentPaths = plugin.componentPaths || {};
         const surfaces = Object.keys(componentPaths);
-        if (surfaces.length === 0 && !plugin.lyrics?.command) {
+        if (surfaces.length === 0 && !plugin.lyrics?.command && !plugin.weather?.command) {
             log.error("Plugin has no component surfaces:", pluginId);
             pluginLoadFailed(pluginId, "No component surfaces");
             return false;
@@ -541,9 +555,12 @@ Singleton {
                     const error = comp.errorString();
                     log.error("component error", pluginId, surface, error);
                     _destroyComponents(Object.values(comps));
+                    // Qt caches the failure per URL, so the next attempt needs a new revision.
+                    _invalidatePluginComponents(pluginId);
+                    // Qt also says this when a file was added after the running shell first listed the plugin directory.
                     _setLoadError(pluginId, {
                         title: error,
-                        details: ""
+                        details: error.includes("File name case mismatch") ? I18n.tr("A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.", "plugin load error hint shown under Qt's 'File name case mismatch' error") : ""
                     });
                     pluginLoadFailed(pluginId, error);
                     return false;
@@ -903,8 +920,10 @@ Singleton {
 
     function _makeStartupCheckObject(pluginId, plugin) {
         const comp = Qt.createComponent(pluginComponentUrl(pluginId, plugin.startupCheckPath), Component.PreferSynchronous);
-        if (comp.status === Component.Error)
+        if (comp.status === Component.Error) {
+            _invalidatePluginComponents(pluginId);
             throw new Error(comp.errorString());
+        }
         return comp.createObject(root);
     }
 
@@ -1146,7 +1165,8 @@ Singleton {
         const userUrl = Paths.toFileUrl(root.pluginDirectory);
         const systemUrl = Paths.toFileUrl(root.systemPluginDirectory);
         userWatcher.folder = "";
-        userWatcher.folder = userUrl;
+        if (!AdminPolicy.disableUserPlugins)
+            userWatcher.folder = userUrl;
         systemWatcher.folder = "";
         systemWatcher.folder = systemUrl;
         resyncDebounce.restart();
@@ -1272,13 +1292,19 @@ Singleton {
         globalVarChanged(pluginId, varName);
     }
 
+    // The directory ignores the query; it keys the on-disk thumbnail cache so an updated plugin gets a fresh render.
+    function previewVersion(plugin) {
+        var stamp = plugin.updated_at || plugin.version || "";
+        return stamp ? "?v=" + encodeURIComponent(stamp) : "";
+    }
+
     function previewUrl(plugin) {
         if (!plugin)
             return "";
         if (plugin.previewUrl)
             return plugin.previewUrl;
         if (plugin.id)
-            return previewApiBase + plugin.id;
+            return previewApiBase + plugin.id + previewVersion(plugin);
         return plugin.screenshot || "";
     }
 
@@ -1289,7 +1315,7 @@ Singleton {
         if (plugin.thumbUrl)
             return plugin.thumbUrl;
         if (plugin.id)
-            return previewApiBase + plugin.id + "/thumb";
+            return previewApiBase + plugin.id + "/thumb" + previewVersion(plugin);
         return "";
     }
 

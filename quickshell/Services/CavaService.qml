@@ -12,6 +12,16 @@ Singleton {
 
     property list<int> values: Array(6)
     property int refCount: 0
+    // Island faces drop their ref on every morph; respawning cava each time recreates the capture stream, audible on some hardware (#810)
+    onRefCountChanged: {
+        if (refCount > 0) {
+            lingerTimer.stop();
+            return;
+        }
+        values = Array(6).fill(0);
+        if (cavaProcess.running)
+            lingerTimer.restart();
+    }
     property bool cavaAvailable: false
     property bool _cavaChecked: false
     readonly property bool cavaWanted: SettingsData.audioVisualizerEnabled || refCount > 0
@@ -37,10 +47,20 @@ Singleton {
         cavaCheck.running = true;
     }
 
+    Timer {
+        id: lingerTimer
+        interval: 30000
+    }
+
     Process {
         id: cavaProcess
 
-        running: root.cavaAvailable && root.refCount > 0
+        running: root.cavaAvailable && (root.refCount > 0 || lingerTimer.running)
+        // cava asks for 512 frames, which drags the graph quantum down on spawn and back up on exit, audible on some hardware (#810)
+        environment: ({
+                "PIPEWIRE_LATENCY": "2400/48000",
+                "PULSE_LATENCY_MSEC": "50"
+            })
         command: ["sh", "-c", `cat <<'CAVACONF' > ${root._confPath}
 [general]
 framerate=25

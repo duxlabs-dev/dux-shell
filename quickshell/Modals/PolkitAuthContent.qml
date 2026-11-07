@@ -171,8 +171,7 @@ DDialog {
             maximumWidth: root.actionWidth
             wrapText: true
             text: I18n.tr("Cancel")
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             onClicked: root.cancelAuth()
         },
         DButton {

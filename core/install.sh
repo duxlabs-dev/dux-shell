@@ -35,15 +35,25 @@ aarch64)
     ;;
 esac
 
-# Get the latest release version
-LATEST_VERSION=$(curl -sL https://api.github.com/repos/duxlabs-dev/dux-shell/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+REPO_URL="https://github.com/duxlabs-dev/dux-shell"
+
+# The web redirect has no per-ip quota; api.github.com allows 60 unauthenticated requests per hour per ip
+LATEST_VERSION=$(curl -sI "$REPO_URL/releases/latest" | tr -d '\r' | awk 'tolower($1) == "location:" { sub(".*/releases/tag/", "", $2); print $2 }')
+
+if [ -z "$LATEST_VERSION" ]; then
+    API_RESPONSE=$(curl -sL https://api.github.com/repos/duxlabs-dev/dux-shell/releases/latest)
+    LATEST_VERSION=$(printf "%s" "$API_RESPONSE" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+fi
 
 if [ -z "$LATEST_VERSION" ]; then
     printf "%bError: Could not fetch latest version%b\n" "$RED" "$NC"
+    if printf "%s" "$API_RESPONSE" | grep -q "rate limit"; then
+        printf "GitHub API rate limit reached for your IP address (60 requests per hour). Wait an hour or install from a different network.\n"
+    fi
     exit 1
 fi
 
-printf "%bInstalling Dankinstall %s for %s...%b\n" "$GREEN" "$LATEST_VERSION" "$ARCH" "$NC"
+printf "%bInstalling Duxinstall %s for %s...%b\n" "$GREEN" "$LATEST_VERSION" "$ARCH" "$NC"
 
 # Download and install
 TEMP_DIR=$(mktemp -d)
@@ -52,8 +62,14 @@ cd "$TEMP_DIR" || exit 1
 
 # Download the gzipped binary and its checksum
 printf "%bDownloading installer...%b\n" "$GREEN" "$NC"
-curl -L "https://github.com/duxlabs-dev/dux-shell/releases/download/$LATEST_VERSION/dankinstall-$ARCH.gz" -o "installer.gz"
-curl -L "https://github.com/duxlabs-dev/dux-shell/releases/download/$LATEST_VERSION/dankinstall-$ARCH.gz.sha256" -o "expected.sha256"
+RELEASE_URL="$REPO_URL/releases/download/$LATEST_VERSION"
+# install.duxlabs.dev serves this file from master; releases before 2.0.1 only ship dankinstall-*.gz
+ASSET="duxinstall-$ARCH.gz"
+if ! curl -fsLI "$RELEASE_URL/$ASSET" >/dev/null; then
+    ASSET="dankinstall-$ARCH.gz"
+fi
+curl -fL "$RELEASE_URL/$ASSET" -o "installer.gz"
+curl -fL "$RELEASE_URL/$ASSET.sha256" -o "expected.sha256"
 
 # Get the expected checksum
 EXPECTED_CHECKSUM=$(awk '{print $1}' expected.sha256)

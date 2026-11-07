@@ -104,7 +104,7 @@ DModal {
                     width: parent.width
 
                     StyledText {
-                        text: I18n.tr("WiFi QR code for ") + theItem.wifiSSID
+                        text: I18n.tr("WiFi QR code for %1", "%1 is the network name").arg(theItem.wifiSSID)
                         font.pixelSize: Theme.fontSizeLarge
                         color: Theme.surfaceText
                         font.weight: Theme.fontWeightMedium

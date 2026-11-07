@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
@@ -43,6 +44,10 @@ Item {
         {
             label: I18n.tr("Once a day"),
             seconds: 86400
+        },
+        {
+            label: I18n.tr("Never"),
+            seconds: 0
         }
     ]
 
@@ -61,7 +66,7 @@ Item {
     readonly property bool busy: SystemUpdateService.isChecking || SystemUpdateService.isUpgrading
     // A refresh clears the log, so a log next to an error means the upgrade itself failed.
     readonly property bool upgradeFailed: SystemUpdateService.hasError && !busy && (SystemUpdateService.recentLog || []).length > 0
-    readonly property var installablePackages: SystemUpdateService.availableUpdates.filter(p => SettingsData.updaterIncludeFlatpak || p.repo !== "flatpak")
+    readonly property var installablePackages: SystemUpdateService.availableUpdates
     readonly property bool anythingToInstall: installablePackages.length > 0 && SystemUpdateService.helperAvailable
     readonly property var notesRelease: SystemUpdateService.notesRelease
     readonly property int serviceLastCheckUnix: SystemUpdateService.lastCheckUnix
@@ -79,7 +84,7 @@ Item {
             seconds: 0
         },
         {
-            label: I18n.tr("Every %1", "update check interval option, %1 is a duration such as 30 minutes").arg(I18n.duration(3600)),
+            label: I18n.tr("Every hour"),
             seconds: 3600
         },
         {
@@ -230,6 +235,7 @@ Item {
                 title: I18n.tr("Install system updates?", "confirmation dialog title before running the system upgrade"),
                 message: root.installSummary(),
                 confirmText: I18n.tr("Install", "install action button"),
+                confirmByDefault: true,
                 onConfirm: () => root.runUpdateAll()
             });
             return;
@@ -273,12 +279,30 @@ Item {
             interactive: interactive === true
         });
         packagesExpanded = false;
+        followUpgradeLog = true;
         if (upgradeInWindow && interactive !== true)
             PopoutService.showSystemUpdateModal();
     }
 
+    property bool followUpgradeLog: false
+    readonly property bool upgrading: SystemUpdateService.isUpgrading
+
+    onUpgradingChanged: {
+        if (!upgrading)
+            followUpgradeLog = false;
+    }
+
+    function revealUpgradeLog() {
+        if (!followUpgradeLog || !upgradeLogRow.visible)
+            return;
+        const top = upgradeLogRow.mapToItem(mainColumn.contentItem, 0, 0).y;
+        mainColumn.revealRange(top, top + upgradeLogRow.height);
+    }
+
     SettingsPage {
         id: mainColumn
+
+        onContentHeightChanged: root.revealUpgradeLog()
 
         ReleaseHero {
             M3WaveProgress {
@@ -294,7 +318,7 @@ Item {
 
         SettingsCard {
             width: parent.width
-            title: "Dux Shell"
+            title: "Dux Modular Shell"
             iconName: "deployed_code"
             settingKey: "softwareUpdatesShell"
             tags: ["dms", "shell", "version", "channel", "restart"]
@@ -328,8 +352,6 @@ Item {
                     iconName: root.primaryIcon()
                     busy: SystemUpdateService.isChecking
                     enabled: !SystemUpdateService.isChecking
-                    backgroundColor: Theme.primary
-                    textColor: Theme.onPrimary
                     onClicked: root.primaryAction()
                 }
             }
@@ -399,6 +421,27 @@ Item {
                 iconColor: Theme.warning
                 subtitle: SystemUpdateService.shellInstalled ? I18n.tr("Installed %1, still running %2", "%1 is the installed version, %2 the running one").arg(SystemUpdateService.shellInstalled).arg(SystemUpdateService.shellRunning) : I18n.tr("A newer dms binary is installed.", "software updates row subtitle, the running shell is older than the installed binary")
             }
+
+            SettingsRow {
+                visible: SystemUpdateService.legacyRepos.length > 0
+                title: I18n.tr("Package repositories moved", "notification title, the DMS package repositories moved to a new owner")
+                subtitle: I18n.tr("Run %1 in a terminal.", "%1 is a shell command").arg(SystemUpdateService.migrateCommand)
+                iconName: "swap_horiz"
+                iconColor: Theme.warning
+
+                DActionButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    buttonSize: Theme.buttonHeightS
+                    iconName: "content_copy"
+                    iconColor: Theme.surfaceText
+                    backgroundColor: SettingsMetrics.controlSurface
+                    tooltipText: I18n.tr("Copy")
+                    onClicked: {
+                        Quickshell.execDetached(["dms", "cl", "copy", SystemUpdateService.migrateCommand]);
+                        ToastService.showInfo(I18n.tr("Copied to clipboard"));
+                    }
+                }
+            }
         }
 
         SettingsCard {
@@ -449,7 +492,7 @@ Item {
 
             Column {
                 width: parent?.width ?? 0
-                spacing: Theme.groupedListGap
+                spacing: SettingsMetrics.groupGap
 
                 Repeater {
                     model: root.packagesExpanded && !SystemUpdateService.isUpgrading ? SystemUpdateService.systemUpdates.slice(0, root.packageListCap) : []
@@ -501,6 +544,7 @@ Item {
             }
 
             SettingsRow {
+                id: upgradeLogRow
                 visible: (SystemUpdateService.isUpgrading && !root.upgradeInWindow) || (root.upgradeFailed && !root.upgradeRunsInTerminal)
                 body: Item {
                     readonly property real lineHeight: logText.implicitHeight / Math.max(1, logText.lineCount)

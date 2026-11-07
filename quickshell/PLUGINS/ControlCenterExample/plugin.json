@@ -3,7 +3,7 @@
     "name": "CC Toggle Example",
     "description": "Example plugin with Control Center toggle widget",
     "version": "1.0.0",
-    "author": "Dux Shell",
+    "author": "Dux Modular Shell",
     "type": "widget",
     "capabilities": ["control-center"],
     "component": "./ControlCenterExampleWidget.qml",

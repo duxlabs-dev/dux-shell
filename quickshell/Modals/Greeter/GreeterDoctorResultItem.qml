@@ -67,7 +67,7 @@ Rectangle {
         StyledText {
             width: parent.width
             text: root.resultData?.message || ""
-            font.pixelSize: Theme.fontSizeSmall - 1
+            font.pixelSize: Theme.fontSizeXSmall
             color: Theme.surfaceVariantText
             elide: Text.ElideRight
             visible: text.length > 0
@@ -89,7 +89,7 @@ Rectangle {
             id: categoryText
             anchors.centerIn: parent
             text: root.resultData?.category || ""
-            font.pixelSize: Theme.fontSizeSmall - 2
+            font.pixelSize: Theme.fontSizeXSmall
             font.weight: Theme.fontWeightMedium
             color: Theme.surfaceVariantText
         }

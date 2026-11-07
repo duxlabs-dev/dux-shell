@@ -98,7 +98,8 @@ DBottomSheet {
                     width: CcMetrics.previewSize
                     height: width
                     radius: item.modelData.id === "user" ? Theme.fullRadius(width, height) : Theme.cornerRadiusLIncreased
-                    color: CcMetrics.iconBoxInactiveColor
+                    // Solid: translucent, it vanishes against the card in light mode.
+                    color: Theme.chipSurfaceNested
 
                     DIcon {
                         anchors.centerIn: parent
@@ -108,11 +109,13 @@ DBottomSheet {
                         visible: item.modelData.id !== "user" || PortalService.profileImageUrl === ""
                     }
 
-                    DCircularImage {
+                    Loader {
                         anchors.fill: parent
-                        imageSource: PortalService.profileImageUrl
-                        fallbackIcon: "material:person"
-                        visible: item.modelData.id === "user" && PortalService.profileImageUrl !== ""
+                        active: item.modelData.id === "user" && PortalService.profileImageUrl !== ""
+                        sourceComponent: DCircularImage {
+                            imageSource: PortalService.profileImageUrl
+                            fallbackIcon: "material:person"
+                        }
                     }
 
                     FocusRing {
@@ -184,7 +187,7 @@ DBottomSheet {
                 width: Theme.avatarSize
                 height: width
                 radius: Theme.fullRadius(width, height)
-                color: CcMetrics.iconBoxInactiveColor
+                color: Theme.chipSurfaceNested
 
                 DIcon {
                     anchors.centerIn: parent
@@ -258,7 +261,6 @@ DBottomSheet {
     DSearchField {
         id: searchField
         width: parent.width
-        height: Theme.fieldHeightLarge
         placeholderText: I18n.tr("Search widgets...")
         onAccepted: {
             if (root.matches.length > 0)

@@ -477,5 +477,4 @@ Singleton {
         proc.running = true;
     }
 
-    Component.onCompleted: refresh()
 }

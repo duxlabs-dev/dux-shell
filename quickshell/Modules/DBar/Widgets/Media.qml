@@ -7,6 +7,7 @@ import qs.Modules.Plugins
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
+import "../../../Common/LyricLayout.js" as LyricLayout
 
 BasePill {
     id: root
@@ -29,7 +30,7 @@ BasePill {
     property var widgetData: null
     readonly property bool adaptiveWidthEnabled: SettingsData.widgetOption("music", widgetData, "mediaAdaptiveWidthEnabled")
     property real allottedPrimarySize: 0
-    readonly property real naturalPrimarySize: isVerticalOrientation ? height : !playerAvailable ? 0 : Theme.snap((contentItem?.naturalContentWidth ?? 0) + horizontalPadding * 2, dpr)
+    readonly property real naturalPrimarySize: isVerticalOrientation ? height : !playerAvailable ? 0 : Theme.pxCeil((contentItem?.naturalContentWidth ?? 0) + horizontalPadding * 2, dpr)
     readonly property real minimumPrimarySize: isVerticalOrientation ? height : !playerAvailable ? 0 : Theme.snap((contentItem?.fixedContentWidth ?? 0) + horizontalPadding * 2, dpr)
     readonly property bool lyricsEnabled: SettingsData.widgetOption("music", widgetData, "mediaShowLyrics") && LyricsService.allowed
     readonly property bool coverArtEnabled: SettingsData.widgetOption("music", widgetData, "mediaShowCoverArt")
@@ -47,7 +48,7 @@ BasePill {
         if (!controller.enabled || !controller.synced)
             return false;
         const parts = controller.lines[controller.activeIndex]?.parts ?? [];
-        return parts.some(part => part.x.trim() !== "");
+        return parts.some(part => LyricLayout.hasWords(part.x));
     }
     readonly property int maxTextWidth: {
         const size = SettingsData.widgetOption("music", widgetData, "mediaSize");
@@ -220,7 +221,13 @@ BasePill {
             height: parent.height
             buttonSize: parent.width
             iconSize: 14 * root.contentScale
-            radius: pressed ? Theme.cornerRadiusXS : (checked ? Theme.cornerRadiusFull : Theme.cornerRadiusS)
+            radius: {
+                if (!Theme.shapeMorph)
+                    return Theme.cornerRadiusS;
+                if (pressed)
+                    return Theme.cornerRadiusXS;
+                return checked ? Theme.cornerRadiusFull : Theme.cornerRadiusS;
+            }
             variant: "filled"
             round: false
             checkable: true
@@ -397,6 +404,7 @@ BasePill {
                             color: root.contentColor
                             font.pixelSize: mediaText.font.pixelSize
                             live: root.surfaceLive
+                            sweep: SettingsData.widgetOption("music", root.widgetData, "mediaSmoothLyrics")
                         }
 
                         MouseArea {

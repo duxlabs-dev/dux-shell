@@ -15,10 +15,12 @@ DDialog {
     property var editingRule: null
     property var targetWindow: null
     property bool submitting: false
+    property bool applying: false
     readonly property bool isEditMode: editingRule !== null
     readonly property bool isNiri: CompositorService.isNiri
     readonly property bool isHyprland: CompositorService.isHyprland
     readonly property bool isMango: CompositorService.isMango
+    readonly property bool niriConfigNext: isNiri && NiriService.configNextSupported
     readonly property bool fieldsEnabled: !submitting
     readonly property bool halfPair: isHyprland && (!!moveXInput.text.trim() !== !!moveYInput.text.trim() || !!sizeWInput.text.trim() !== !!sizeHInput.text.trim())
 
@@ -31,6 +33,9 @@ DDialog {
     property int opacityValue: 100
     property bool scrollFactorOn: false
     property int scrollFactorValue: 100
+    property bool pinchOn: false
+    property int pinchValue: 100
+    property string xdgActivateValue: ""
     property bool cornerRadiusOn: false
     property int cornerRadiusValue: 12
     property bool noiseOn: false
@@ -103,6 +108,7 @@ DDialog {
     readonly property var hyprEffectOptions: root.hyprFocusOptions.concat(root.hyprPointerOptions, root.hyprRenderOptions)
     readonly property var blockOutOptions: ["", "screencast", "screen-capture"]
     readonly property var columnDisplayOptions: ["", "tabbed"]
+    readonly property var xdgActivateOptions: ["", "ignore", "set-urgent", "focus"]
     readonly property var anchorOptions: ["top-left", "top-right", "bottom-left", "bottom-right", "top", "bottom", "left", "right"]
     readonly property var openingOptions: {
         const options = [];
@@ -138,6 +144,10 @@ DDialog {
             "value": "vrr"
         },
         {
+            "label": I18n.tr("VRR Fullscreen Only"),
+            "value": "vrrFullscreen"
+        },
+        {
             "label": I18n.tr("Clip to Geometry"),
             "value": "clip"
         },
@@ -149,7 +159,7 @@ DDialog {
             "label": I18n.tr("Border with Background"),
             "value": "borderBg"
         }
-    ]
+    ].filter(option => option.value !== "vrrFullscreen" || root.niriConfigNext)
     readonly property var hyprOptions: [
         {
             "label": I18n.tr("Tile"),
@@ -216,6 +226,7 @@ DDialog {
     ]
 
     signal ruleSubmitted
+    signal ruleApplied
 
     embedded: nativeWindow
     opened: nativeWindow
@@ -278,6 +289,15 @@ DDialog {
         return next;
     }
 
+    function toggleDynamic(value, selected) {
+        const exclusive = {
+            "vrr": "vrrFullscreen",
+            "vrrFullscreen": "vrr"
+        }[value];
+        const flags = selected ? dynamicFlags.filter(flag => flag !== exclusive) : dynamicFlags;
+        dynamicFlags = flagSet(flags, value, selected);
+    }
+
     function triFromBool(value) {
         if (value === true)
             return 1;
@@ -305,6 +325,18 @@ DDialog {
         return value === "" ? I18n.tr("Default") : value;
     }
 
+    function xdgActivateLabel(value) {
+        switch (value) {
+        case "ignore":
+            return I18n.tr("Ignore", "verb, window rule on-activation choice, niri ignores the activation request");
+        case "set-urgent":
+            return I18n.tr("Mark urgent", "window rule on-activation choice, mark the window urgent instead of focusing it");
+        case "focus":
+            return I18n.tr("Focus", "verb, window rule action to focus the window when it opens");
+        }
+        return defaultLabel(value);
+    }
+
     // A value written by hand that the list does not know must still show and save.
     function withCurrent(values, current) {
         return values.includes(current) ? values : values.concat([current]);
@@ -326,6 +358,9 @@ DDialog {
         opacityValue = 100;
         scrollFactorOn = false;
         scrollFactorValue = 100;
+        pinchOn = false;
+        pinchValue = 100;
+        xdgActivateValue = "";
         cornerRadiusOn = false;
         cornerRadiusValue = 12;
         noiseOn = false;
@@ -399,6 +434,8 @@ DDialog {
         const dynamic = [];
         if (actions.variableRefreshRate)
             dynamic.push("vrr");
+        if (niriConfigNext && actions.vrrFullscreenOnly)
+            dynamic.push("vrrFullscreen");
         if (actions.clipToGeometry)
             dynamic.push("clip");
         if (actions.tiledState)
@@ -411,6 +448,9 @@ DDialog {
         opacityValue = opacityOn ? Math.round(actions.opacity * 100) : 100;
         scrollFactorOn = actions.scrollFactor !== undefined && actions.scrollFactor !== null;
         scrollFactorValue = scrollFactorOn ? Math.round(actions.scrollFactor * 100) : 100;
+        pinchOn = actions.pinchSensitivity !== undefined && actions.pinchSensitivity !== null;
+        pinchValue = pinchOn ? Math.round(actions.pinchSensitivity * 100) : 100;
+        xdgActivateValue = actions.onXdgActivate || "";
         cornerRadiusOn = actions.cornerRadius !== undefined && actions.cornerRadius !== null;
         cornerRadiusValue = cornerRadiusOn ? actions.cornerRadius : 12;
         noiseOn = actions.backgroundNoise !== undefined && actions.backgroundNoise !== null;
@@ -515,6 +555,9 @@ DDialog {
 
     function ownedActionKeys() {
         const keys = ["opacity", "openFloating", "openMaximized", "openFullscreen", "cornerRadius"];
+        // Without the capability these stay hidden and are carried through untouched.
+        if (niriConfigNext)
+            keys.push("vrrFullscreenOnly", "onXdgActivate", "pinchSensitivity");
         if (isNiri)
             return keys.concat(["openMaximizedToEdges", "openFocused", "openOnOutput", "openOnWorkspace", "minWidth", "maxWidth", "minHeight", "maxHeight", "defaultColumnWidth", "defaultWindowHeight", "variableRefreshRate", "clipToGeometry", "tiledState", "drawBorderWithBackground", "blockOutFrom", "defaultColumnDisplay", "scrollFactor", "backgroundBlur", "backgroundXray", "backgroundNoise", "backgroundSaturation", "defaultFloatingX", "defaultFloatingY", "defaultFloatingRelativeTo"]);
         if (isHyprland)
@@ -572,6 +615,12 @@ DDialog {
                 actions.defaultWindowHeight = windowHeight;
             if (dynamicFlags.includes("vrr"))
                 actions.variableRefreshRate = true;
+            if (niriConfigNext && dynamicFlags.includes("vrrFullscreen"))
+                actions.vrrFullscreenOnly = true;
+            if (niriConfigNext && pinchOn)
+                actions.pinchSensitivity = pinchValue / 100;
+            if (niriConfigNext && xdgActivateValue)
+                actions.onXdgActivate = xdgActivateValue;
             if (dynamicFlags.includes("clip"))
                 actions.clipToGeometry = true;
             if (dynamicFlags.includes("tiled"))
@@ -644,7 +693,7 @@ DDialog {
         return actions;
     }
 
-    function submit() {
+    function submit(keepOpen = false) {
         if (submitting || !acceptEnabled)
             return;
         const {
@@ -667,12 +716,17 @@ DDialog {
         const ruleJson = JSON.stringify(ruleData);
         const args = isEditMode ? [Proc.dmsBin, "config", "windowrules", "update", compositor, editingRule.id, ruleJson] : [Proc.dmsBin, "config", "windowrules", "add", compositor, ruleJson];
         submitting = true;
+        applying = keepOpen;
         Proc.runCommand(isEditMode ? "update-windowrule" : "add-windowrule", args, (output, exitCode) => {
             root.submitting = false;
+            root.applying = false;
             if (exitCode !== 0)
                 return;
             CompositorService.reloadAfterWindowRuleWrite();
-            root.ruleSubmitted();
+            if (keepOpen)
+                root.ruleApplied();
+            else
+                root.ruleSubmitted();
         });
     }
 
@@ -793,14 +847,21 @@ DDialog {
         DButton {
             text: I18n.tr("Cancel")
             enabled: root.closeEnabled
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             onClicked: root.rejected()
+        },
+        DButton {
+            visible: root.isEditMode
+            text: I18n.tr("Apply")
+            enabled: root.acceptEnabled
+            busy: root.applying
+            variant: "tonal"
+            onClicked: root.submit(true)
         },
         DButton {
             text: root.isEditMode ? I18n.tr("Save") : I18n.tr("Add")
             enabled: root.acceptEnabled
-            busy: root.submitting
+            busy: root.submitting && !root.applying
             onClicked: root.submit()
         }
     ]
@@ -826,8 +887,7 @@ DDialog {
             text: I18n.tr("Add match")
             iconName: "add"
             buttonHeight: Theme.buttonHeightXS
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             enabled: root.fieldsEnabled
             onClicked: extraMatchModel.append({
                 "rowAppId": "",
@@ -1121,6 +1181,15 @@ DDialog {
             }
         }
 
+        SettingsDropdownRow {
+            visible: root.niriConfigNext
+            text: I18n.tr("On activation", "window rule option, what niri does when the window asks to be activated")
+            options: root.xdgActivateOptions.map(root.xdgActivateLabel)
+            currentValue: root.xdgActivateLabel(root.xdgActivateValue)
+            enabled: root.fieldsEnabled
+            onValueChanged: value => root.xdgActivateValue = root.xdgActivateOptions.find(option => root.xdgActivateLabel(option) === value) ?? ""
+        }
+
         FieldRow {
             visible: root.isNiri
 
@@ -1183,6 +1252,19 @@ DDialog {
             onSliderValueChanged: newValue => root.scrollFactorValue = newValue
         }
 
+        SettingsToggleSliderRow {
+            visible: root.niriConfigNext
+            text: I18n.tr("Pinch sensitivity", "touchpad slider, how strongly pinch gestures zoom in apps")
+            checked: root.pinchOn
+            value: root.pinchValue
+            minimum: 10
+            maximum: 200
+            unit: "%"
+            enabled: root.fieldsEnabled
+            onToggled: checked => root.pinchOn = checked
+            onSliderValueChanged: newValue => root.pinchValue = newValue
+        }
+
         SettingsRow {
             visible: root.isNiri
 
@@ -1193,7 +1275,7 @@ DDialog {
                 enabled: root.fieldsEnabled
                 model: root.dynamicOptions
                 selectedValues: root.dynamicFlags
-                onSelectionToggled: (index, selected) => root.dynamicFlags = root.flagSet(root.dynamicFlags, root.dynamicOptions[index].value, selected)
+                onSelectionToggled: (index, selected) => root.toggleDynamic(root.dynamicOptions[index].value, selected)
             }
         }
 

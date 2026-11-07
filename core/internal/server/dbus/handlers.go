@@ -1,6 +1,7 @@
 package dbus
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/duxlabs-dev/dux-go/ipc"
@@ -43,7 +44,7 @@ func extractObjectParams(p map[string]any, requirePath bool) (objectParams, erro
 	return objectParams{bus: bus, dest: dest, path: path, iface: iface}, nil
 }
 
-func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager, clientID string) {
+func HandleRequest(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, m *Manager, clientID string) {
 	switch req.Method {
 	case "dbus.call":
 		handleCall(conn, req, m)
@@ -58,7 +59,7 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager, clientID s
 	case "dbus.listNames":
 		handleListNames(conn, req, m)
 	case "dbus.subscribe":
-		handleSubscribe(conn, req, m, clientID)
+		handleSubscribe(ctx, conn, req, m, clientID)
 	case "dbus.unsubscribe":
 		handleUnsubscribe(conn, req, m)
 	default:
@@ -200,7 +201,7 @@ func handleListNames(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	conn.Respond(req.ID, result)
 }
 
-func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, m *Manager, clientID string) {
+func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, m *Manager, clientID string) {
 	if id := params.StringOpt(req.Params, "clientId", ""); id != "" {
 		clientID = id
 	}
@@ -216,12 +217,13 @@ func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, m *Manager, clientID
 	iface := params.StringOpt(req.Params, "interface", "")
 	member := params.StringOpt(req.Params, "member", "")
 
-	result, err := m.Subscribe(clientID, bus, sender, path, iface, member)
+	result, err := m.Subscribe(conn, clientID, bus, sender, path, iface, member)
 	if err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return
 	}
 
+	m.ReleaseOnClose(ctx, conn)
 	conn.Respond(req.ID, result)
 }
 

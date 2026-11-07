@@ -67,6 +67,12 @@ Singleton {
     property bool isShellLocked: false
     property bool isSessionLockSecure: false
     property bool lockPowerOffRequested: false
+    property bool sleepBlocked: false
+
+    function _updateSleepBlocked(blockInhibited) {
+        if (typeof blockInhibited === "string")
+            sleepBlocked = blockInhibited.split(":").includes("sleep");
+    }
 
     function reapplyDpmsIfNeeded() {
         if (monitorsOff)
@@ -171,6 +177,22 @@ Singleton {
     }
 
     Connections {
+        target: DMSService
+
+        function onCapabilitiesReceived() {
+            if (!DMSService.capabilities.includes("dbus"))
+                return;
+            DMSService.dbusSubscribe("system", "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.DBus.Properties", "PropertiesChanged");
+            DMSService.dbusGetProperty("system", "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", "BlockInhibited", r => root._updateSleepBlocked(r.result?.value));
+        }
+
+        function onDbusSignalReceived(subscriptionId, data) {
+            if (data.path === "/org/freedesktop/login1")
+                root._updateSleepBlocked(data.body?.[1]?.BlockInhibited);
+        }
+    }
+
+    Connections {
         target: root
         function onRequestMonitorOff() {
             monitorsOff = true;
@@ -195,6 +217,14 @@ Singleton {
             log.info("External idle inhibit released");
         }
         _rearmIdleMonitors();
+    }
+
+    onSleepBlockedChanged: {
+        log.info(sleepBlocked ? "Sleep blocked by logind inhibitor" : "Sleep inhibitor released");
+        if (sleepBlocked || !suspendMonitor.enabled || !suspendMonitor.isIdle)
+            return;
+        log.info("Sleep inhibitor released while idle, retrying suspend");
+        requestSuspend();
     }
 
     Component.onCompleted: _applyMonitorEnableds()

@@ -1,8 +1,12 @@
 package providers
 
 import (
+	"maps"
 	"os"
 	"path/filepath"
+	"reflect"
+	"slices"
+	"strings"
 	"testing"
 )
 
@@ -371,5 +375,192 @@ func TestMangoWCInvalidBindLines(t *testing.T) {
 				t.Errorf("expected nil for invalid line, got %+v", result)
 			}
 		})
+	}
+}
+
+func TestMangoWCParseWithDMSKeyModes(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "dms"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		filepath.Join(dir, "config.conf"): `key_mode=resize
+bind=SUPER,q,killclient
+key_mode=common
+bind=SUPER,x,killclient
+key_mode=default
+bindc=SUPER,Return,spawn,foot
+source=./dms/binds.conf
+`,
+		filepath.Join(dir, "dms", "binds.conf"): "bind=SUPER,q,spawn,dms ipc call powermenu toggle\nbind=SUPER,x,spawn,dms ipc call spotlight toggle\n",
+	}
+	for path, content := range files {
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	result, err := ParseMangoWCKeysWithDMS(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var binds []string
+	for _, kb := range result.Keybinds {
+		binds = append(binds, strings.Join(append(kb.Mods, kb.Key), "+")+" "+filepath.Base(kb.Source))
+	}
+	want := []string{"SUPER+q config.conf", "SUPER+x binds.conf", "SUPER+Return config.conf", "SUPER+q binds.conf"}
+	if !reflect.DeepEqual(binds, want) {
+		t.Errorf("binds = %v, want %v", binds, want)
+	}
+	conflicts := slices.Sorted(maps.Keys(result.ConflictingConfigs))
+	if !reflect.DeepEqual(conflicts, []string{"default:super+x"}) {
+		t.Errorf("conflicts = %v, want only the common-mode super+x", conflicts)
+	}
+}
+
+func TestMangoWCParseWithDMSReadsConfigToml(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "dms"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		filepath.Join(dir, "config.toml"): `key_mode = "common"
+[bind.default]
+"SUPER+Return" = "spawn,foot" # Terminal
+"SUPER+n" = "spawn,notify-send '#1'"
+[bind.resize]
+"SUPER+q" = "killclient"
+[global]
+bind = "SUPER,x,killclient"
+key_mode = "default"
+source = "./dms/binds.conf"
+`,
+		filepath.Join(dir, "dms", "binds.conf"): "bind=SUPER,q,spawn,dms ipc call powermenu toggle\nbind=SUPER,x,spawn,dms ipc call spotlight toggle\n",
+	}
+	for path, content := range files {
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	result, err := ParseMangoWCKeysWithDMS(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var binds []string
+	for _, kb := range result.Keybinds {
+		binds = append(binds, strings.Join([]string{kb.Mode, strings.Join(append(kb.Mods, kb.Key), "+"), kb.Params, kb.Comment, filepath.Base(kb.Source)}, " | "))
+	}
+	want := []string{
+		"default | SUPER+Return | foot | Terminal | config.toml",
+		"default | SUPER+n | notify-send '#1' | notify-send '#1' | config.toml",
+		"resize | SUPER+q |  | Close window | config.toml",
+		"default | SUPER+x | dms ipc call spotlight toggle | dms ipc call spotlight toggle | binds.conf",
+		"default | SUPER+q | dms ipc call powermenu toggle | dms ipc call powermenu toggle | binds.conf",
+	}
+	if !reflect.DeepEqual(binds, want) {
+		t.Errorf("binds =\n%q\nwant\n%q", binds, want)
+	}
+	conflict := result.ConflictingConfigs["default:super+x"]
+	if len(result.ConflictingConfigs) != 1 || conflict == nil || conflict.Mode != "common" {
+		t.Errorf("conflicts = %v, want only the common super+x; the resize super+q leaves the DMS bind alone", result.ConflictingConfigs)
+	}
+	if !result.DMSBindsIncluded {
+		t.Error("dms/binds.conf is sourced from config.toml")
+	}
+}
+
+func writeMangoFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	for name, content := range files {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestMangoWCParseFollowsMangoState(t *testing.T) {
+	for name, tc := range map[string]struct {
+		files map[string]string
+		want  []string
+	}{
+		"vars span sourced files": {
+			map[string]string{
+				"config.toml": "[var]\nmod = \"SUPER\"\n[global]\nsource = [\"./binds.toml\", \"./more.conf\"]\n",
+				"binds.toml":  "[bind.default]\n\"$mod+Return\" = \"spawn,foot\"\n",
+				"more.conf":   "var=term,kitty\nbind=$mod,t,spawn,$term\n",
+			},
+			[]string{"default SUPER+Return foot", "default SUPER+t kitty"},
+		},
+		"a quoted conf key_mode is the bare mode": {
+			map[string]string{"config.conf": "key_mode=\"resize\"\nbind=NONE,h,resizewin,-10,0\nkey_mode='default' # back\nbind=SUPER,r,reload_config\n"},
+			[]string{"resize h -10,0", "default SUPER+r "},
+		},
+		"./ is read from the config dir and a bare path is not followed": {
+			map[string]string{
+				"config.conf":    "source=./dms/more.conf\n",
+				"dms/more.conf":  "source=./dms/binds.conf\nsource = other.conf\n",
+				"dms/binds.conf": "bind=SUPER,d,spawn,dms\n",
+				"dms/other.conf": "bind=SUPER,o,spawn,other\n",
+			},
+			[]string{"default SUPER+d dms"},
+		},
+		"a sourced file without an extension is TOML when it starts with a table": {
+			map[string]string{
+				"config.toml": "source = \"./keys\"\n",
+				"keys":        "# keys\n[bind.default]\n\"SUPER+Return\" = \"spawn,foot\"\n",
+			},
+			[]string{"default SUPER+Return foot"},
+		},
+		"flagged axis binds": {
+			map[string]string{
+				"config.toml": "[axisbind.default.lock]\n\"SUPER+UP\" = \"viewtoleft\"\n",
+			},
+			[]string{"default SUPER+WheelScrollUp "},
+		},
+	} {
+		dir := t.TempDir()
+		writeMangoFiles(t, dir, tc.files)
+		result, err := ParseMangoWCKeysWithDMS(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got []string
+		for _, kb := range result.Keybinds {
+			got = append(got, kb.Mode+" "+strings.Join(append(kb.Mods, kb.Key), "+")+" "+kb.Params)
+		}
+		if !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("%s: got %q, want %q", name, got, tc.want)
+		}
+	}
+}
+
+func TestMangoWCCheatSheetConflictsPerMode(t *testing.T) {
+	dir := t.TempDir()
+	writeMangoFiles(t, dir, map[string]string{
+		"config.conf":    "key_mode=\"common\"\nbind=SUPER,q,killclient\nkey_mode=\" resize \"\nbind=SUPER,r,killclient\nkey_mode=default\nbind=SUPER,x,killclient\nbindc=SUPER,c,killclient\nsource=./dms/binds.conf\n",
+		"dms/binds.conf": "bind=SUPER,x,spawn,dmsx\nbind=SUPER,q,spawn,dmsq\nbind=SUPER,c,spawn,dmsc\nkey_mode=resize\nbind=SUPER,x,spawn,dmsx-resize\nbind=SUPER,q,spawn,dmsq-resize\nbind=SUPER,r,spawn,dmsr-resize\n",
+	})
+
+	sheet, err := NewMangoWCProvider(dir).GetCheatSheet()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, binds := range sheet.Binds {
+		for _, b := range binds {
+			if b.Conflict != nil {
+				got = append(got, b.Action+" <- "+b.Conflict.Action)
+			}
+		}
+	}
+	slices.Sort(got)
+	want := []string{"spawn dmsq <- killclient", "spawn dmsq-resize <- killclient", "spawn dmsr-resize <- killclient", "spawn dmsx <- killclient"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("conflicts = %q, want %q: a common bind shadows every mode, a default one only default, a bindc none", got, want)
 	}
 }

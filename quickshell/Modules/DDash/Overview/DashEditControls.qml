@@ -16,9 +16,13 @@ Item {
     property bool hasOptions: false
     property bool hasCustomActions: false
     property string pendingAction: ""
+    property real availableWidth: Infinity
     readonly property var actionButtons: [addButton, optionsButton, customButton, resetButton, clearButton, finishButton]
     readonly property var focusTargets: actionButtons.filter(item => item.visible && item.enabled)
     readonly property real focusPadding: Theme.focusRingOffset + Theme.focusRingWidth
+    readonly property var shownButtons: actionButtons.filter(item => item.visible)
+    readonly property real labeledWidth: shownButtons.reduce((sum, item) => sum + item.labeledWidth, 0) + actions.spacing * Math.max(0, shownButtons.length - 1) + focusPadding * 2
+    readonly property bool iconOnly: vertical || labeledWidth > availableWidth
 
     signal addRequested(var anchor)
     signal actionsRequested(var anchor)
@@ -57,11 +61,27 @@ Item {
 
     onVisibleChanged: cancelConfirmation()
 
+    component LabelMeasure: StyledText {
+        visible: false
+        font.pixelSize: Theme.fontSizeMedium
+        font.weight: Theme.fontWeightMedium
+        wrapMode: Text.NoWrap
+    }
+
     component EditButton: DButton {
+        id: editButton
         property string label: ""
-        text: root.vertical ? "" : label
-        tooltipText: root.vertical ? label : null
+        readonly property real labelTextWidth: labelMeasure.implicitWidth
+        property real labelWidth: labelTextWidth
+        readonly property real labeledWidth: Math.max(minimumWidth, iconSize + Theme.spacingS + labelWidth + horizontalPadding * 2)
+        text: root.iconOnly ? "" : label
+        tooltipText: root.iconOnly ? label : null
         buttonHeight: Theme.buttonHeightS
+
+        LabelMeasure {
+            id: labelMeasure
+            text: editButton.label
+        }
     }
 
     component ConfirmButton: EditButton {
@@ -72,11 +92,18 @@ Item {
         readonly property bool armed: root.pendingAction === actionId
         readonly property string confirmLabel: I18n.tr("Confirm")
         signal confirmed
-        text: root.vertical ? "" : armed ? confirmLabel : label
-        reserveText: root.vertical ? "" : armed ? label : confirmLabel
-        tooltipText: armed ? confirmLabel : root.vertical ? label : null
+        labelWidth: Math.max(labelTextWidth, confirmMeasure.implicitWidth)
+        text: root.iconOnly ? "" : armed ? confirmLabel : label
+        reserveText: root.iconOnly ? "" : armed ? label : confirmLabel
+        tooltipText: armed ? confirmLabel : root.iconOnly ? label : null
         backgroundColor: armed ? armedColor : Theme.buttonBg
         textColor: armed ? armedTextColor : Theme.buttonText
+
+        LabelMeasure {
+            id: confirmMeasure
+            text: confirmation.confirmLabel
+        }
+
         onClicked: {
             if (!armed) {
                 root.pendingAction = actionId;

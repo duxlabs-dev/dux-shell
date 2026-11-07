@@ -139,7 +139,7 @@ func TestDetectedDepsPartitionAndOptOut(t *testing.T) {
 	m := archModel()
 	m.state = StateDetectingDeps
 	updated, _ := m.Update(depsDetectedMsg{deps: []deps.Dependency{
-		{Name: "dms-greeter", Required: false},
+		{Name: "dux-greeter", Required: false},
 		{Name: "quickshell", Required: true},
 	}})
 	m = updated.(Model)
@@ -150,7 +150,7 @@ func TestDetectedDepsPartitionAndOptOut(t *testing.T) {
 	if m.dependencies[0].Name != "quickshell" {
 		t.Fatal("required deps should sort before optional")
 	}
-	if !m.disabledItems["dms-greeter"] {
+	if !m.disabledItems["dux-greeter"] {
 		t.Fatal("optional deps should default to disabled")
 	}
 }
@@ -208,31 +208,31 @@ func TestConfigCheckKeepsBindsByDefault(t *testing.T) {
 func TestToggleVariantMarksInstalledDepForSwap(t *testing.T) {
 	m := archModel()
 	m.dependencies = []deps.Dependency{
-		{Name: "dms-greeter", Status: deps.StatusInstalled, CanToggle: true},
-		{Name: "dankcalendar", Status: deps.StatusMissing, CanToggle: true},
+		{Name: "dux-greeter", Status: deps.StatusInstalled, CanToggle: true},
+		{Name: "dux-calendar", Status: deps.StatusMissing, CanToggle: true},
 	}
-	m.detectedVariants["dms-greeter"] = deps.VariantStable
-	m.disabledItems["dms-greeter"] = true
+	m.detectedVariants["dux-greeter"] = deps.VariantStable
+	m.disabledItems["dux-greeter"] = true
 
 	m.toggleSelectedVariant()
-	if !m.reinstallItems["dms-greeter"] || m.disabledItems["dms-greeter"] {
+	if !m.reinstallItems["dux-greeter"] || m.disabledItems["dux-greeter"] {
 		t.Fatal("switching an installed dep's variant should queue it for install")
 	}
 	m.toggleSelectedVariant()
-	if m.reinstallItems["dms-greeter"] {
+	if m.reinstallItems["dux-greeter"] {
 		t.Fatal("switching back to the installed variant should clear the reinstall")
 	}
 
-	m.reinstallItems["dms-greeter"] = true
+	m.reinstallItems["dux-greeter"] = true
 	m.toggleSelectedVariant()
 	m.toggleSelectedVariant()
-	if !m.reinstallItems["dms-greeter"] {
+	if !m.reinstallItems["dux-greeter"] {
 		t.Fatal("a reinstall the user marked by hand must survive toggling the variant and back")
 	}
 
 	m.selectedDep = 1
 	m.toggleSelectedVariant()
-	if m.reinstallItems["dankcalendar"] {
+	if m.reinstallItems["dux-calendar"] {
 		t.Fatal("a missing dep installs anyway and must not be marked for reinstall")
 	}
 }

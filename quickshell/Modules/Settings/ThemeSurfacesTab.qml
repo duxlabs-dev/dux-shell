@@ -78,6 +78,50 @@ Column {
 
     SettingsCard {
         tab: "theme"
+        title: I18n.tr("Appearance")
+        settingKey: "surfaceAppearance"
+
+        SettingsButtonGroupRow {
+            tab: "theme"
+            tags: ["style", "classic", "expressive", "pill", "round", "shape", "morph", "corners", "buttons"]
+            settingKey: "interfaceStyle"
+            text: I18n.tr("Style")
+            model: [I18n.tr("Expressive"), I18n.tr("Classic", "interface style option with one corner radius on controls and no shape change on press")]
+            values: ["expressive", "classic"]
+            value: SettingsData.interfaceStyle
+            fallbackValue: "expressive"
+            onValueSelected: value => SettingsData.set("interfaceStyle", value)
+        }
+
+        SettingsButtonGroupRow {
+            tab: "theme"
+            tags: ["density", "compact", "dense", "spacious", "comfortable", "spacing", "padding", "rows", "menus", "control center", "bar", "dock", "island", "frame", "size"]
+            settingKey: "density"
+            text: I18n.tr("Interface density", "interface density setting label")
+            model: [I18n.tr("Spacious", "interface density option with the most room between items"), I18n.tr("Comfortable", "interface density option with the default spacing"), I18n.tr("Compact", "interface density option fitting the most items on screen"), I18n.tr("Dense", "interface density option denser than compact for small text and tight rows")]
+            values: ["spacious", "comfortable", "compact", "dense"]
+            value: SettingsData.density
+            fallbackValue: "comfortable"
+            onValueSelected: value => SettingsData.set("density", value)
+        }
+
+        SettingsSliderRow {
+            tab: "theme"
+            tags: ["classic", "divider", "dividers", "lines", "rows", "sections", "sidebar", "outline"]
+            settingKey: "sectionDividerOpacity"
+            visible: SettingsData.interfaceStyle === "classic"
+            text: I18n.tr("Section dividers", "classic interface style: strength of the lines between rows of a settings section")
+            minimumLabel: I18n.tr("Off")
+            minimum: 0
+            maximum: 40
+            step: 1
+            value: Math.round((SettingsData.sectionDividerOpacity ?? 0) * 100)
+            onSliderValueChanged: newValue => SettingsData.set("sectionDividerOpacity", newValue / 100)
+        }
+    }
+
+    SettingsCard {
+        tab: "theme"
         tags: ["surface", "popup", "transparency", "opacity", "modal", "corner", "radius", "blur", "background", "glass", "frosted", "shadow", "elevation", "foreground", "layers"]
         title: I18n.tr("Surfaces", "plural noun, settings title, shell surfaces like popouts and modals")
         settingKey: "surfaceStyling"
@@ -203,6 +247,7 @@ Column {
             valueKeys: ["blurStrength"]
             text: I18n.tr("Background blur")
             visible: BlurService.available
+            sliderVisible: BlurService.strengthConfigurable
             checked: SettingsData.blurEnabled ?? false
             value: BlurService.strength
             minimum: 16
@@ -260,7 +305,7 @@ Column {
             tags: ["corner", "radius", "rounded", "square", "fixed", "material", "shape"]
             settingKey: "radiusMode"
             text: I18n.tr("Corner style")
-            model: [I18n.tr("Material scale", "corner style: Material shape scale with a strength slider"), I18n.tr("Fixed", "corner style: one radius for every corner")]
+            model: [I18n.tr("Material", "corner style: Material shape scale with a strength slider"), I18n.tr("Fixed", "corner style: one radius for every corner")]
             currentIndex: SettingsData.radiusMode === "fixed" ? 1 : 0
             onSelectionChanged: (index, selected) => {
                 if (selected)
@@ -310,6 +355,87 @@ Column {
             unit: "px"
             onToggled: checked => SettingsData.set(root.windowRadiusKey, checked ? Math.round(Theme.windowRadius) : -1)
             onSliderDragFinished: finalValue => SettingsData.set(root.windowRadiusKey, finalValue)
+        }
+    }
+
+    SettingsCard {
+        tab: "theme"
+        tags: ["focus", "ring", "keyboard", "scrollbar", "scrollbars"]
+        title: I18n.tr("Controls")
+        settingKey: "surfaceControls"
+
+        SettingsToggleCard {
+            tab: "theme"
+            tags: ["focus", "ring", "keyboard", "outline", "highlight"]
+            settingKey: "focusRingEnabled"
+            iconName: "center_focus_strong"
+            title: I18n.tr("Focus ring")
+            checked: SettingsData.focusRingEnabled
+            onToggled: checked => SettingsData.set("focusRingEnabled", checked)
+
+            SettingsSliderRow {
+                tab: "theme"
+                tags: ["focus", "ring", "thickness", "width"]
+                settingKey: "focusRingWidth"
+                text: I18n.tr("Thickness")
+                value: Math.round(SettingsData.focusRingWidth * 10)
+                minimum: 10
+                maximum: 40
+                step: 5
+                decimals: 1
+                unit: "px"
+                onSliderValueChanged: newValue => SettingsData.set("focusRingWidth", newValue / 10)
+            }
+
+            SettingsDropdownRow {
+                tab: "theme"
+                tags: ["focus", "ring", "color"]
+                settingKey: "focusRingColor"
+                text: I18n.tr("Color")
+                options: [I18n.tr("Primary", "surface border color"), I18n.tr("Secondary", "surface border color"), I18n.tr("Outline", "surface border color"), I18n.tr("Text Color", "surface border color")]
+                optionColorMap: ({
+                        [I18n.tr("Primary", "surface border color")]: Theme.primary,
+                        [I18n.tr("Secondary", "surface border color")]: Theme.secondary,
+                        [I18n.tr("Outline", "surface border color")]: Theme.outline,
+                        [I18n.tr("Text Color", "surface border color")]: Theme.surfaceText
+                    })
+                currentValue: {
+                    switch (SettingsData.focusRingColor) {
+                    case "secondary":
+                        return I18n.tr("Secondary", "surface border color");
+                    case "outline":
+                        return I18n.tr("Outline", "surface border color");
+                    case "surfaceText":
+                        return I18n.tr("Text Color", "surface border color");
+                    default:
+                        return I18n.tr("Primary", "surface border color");
+                    }
+                }
+                onValueChanged: value => {
+                    switch (value) {
+                    case I18n.tr("Secondary", "surface border color"):
+                        SettingsData.set("focusRingColor", "secondary");
+                        return;
+                    case I18n.tr("Outline", "surface border color"):
+                        SettingsData.set("focusRingColor", "outline");
+                        return;
+                    case I18n.tr("Text Color", "surface border color"):
+                        SettingsData.set("focusRingColor", "surfaceText");
+                        return;
+                    }
+                    SettingsData.set("focusRingColor", "primary");
+                }
+            }
+        }
+
+        SettingsToggleCard {
+            tab: "theme"
+            tags: ["scroll", "scrollbar", "scrollbars", "list", "page"]
+            settingKey: "scrollbarsEnabled"
+            iconName: "unfold_more"
+            title: I18n.tr("Scrollbars", "theme settings toggle, show scrollbars on lists and pages")
+            checked: SettingsData.scrollbarsEnabled
+            onToggled: checked => SettingsData.set("scrollbarsEnabled", checked)
         }
     }
 
@@ -488,80 +614,6 @@ Column {
                     transparency: finalValue / 100
                 })
         }
-    }
-
-    SettingsToggleCard {
-        tab: "theme"
-        tags: ["focus", "ring", "keyboard", "outline", "highlight"]
-        settingKey: "focusRingEnabled"
-        iconName: "center_focus_strong"
-        title: I18n.tr("Focus ring")
-        checked: SettingsData.focusRingEnabled
-        onToggled: checked => SettingsData.set("focusRingEnabled", checked)
-
-        SettingsSliderRow {
-            tab: "theme"
-            tags: ["focus", "ring", "thickness", "width"]
-            settingKey: "focusRingWidth"
-            text: I18n.tr("Thickness")
-            value: Math.round(SettingsData.focusRingWidth * 10)
-            minimum: 10
-            maximum: 40
-            step: 5
-            decimals: 1
-            unit: "px"
-            onSliderValueChanged: newValue => SettingsData.set("focusRingWidth", newValue / 10)
-        }
-
-        SettingsDropdownRow {
-            tab: "theme"
-            tags: ["focus", "ring", "color"]
-            settingKey: "focusRingColor"
-            text: I18n.tr("Color")
-            options: [I18n.tr("Primary", "surface border color"), I18n.tr("Secondary", "surface border color"), I18n.tr("Outline", "surface border color"), I18n.tr("Text Color", "surface border color")]
-            optionColorMap: ({
-                    [I18n.tr("Primary", "surface border color")]: Theme.primary,
-                    [I18n.tr("Secondary", "surface border color")]: Theme.secondary,
-                    [I18n.tr("Outline", "surface border color")]: Theme.outline,
-                    [I18n.tr("Text Color", "surface border color")]: Theme.surfaceText
-                })
-            currentValue: {
-                switch (SettingsData.focusRingColor) {
-                case "secondary":
-                    return I18n.tr("Secondary", "surface border color");
-                case "outline":
-                    return I18n.tr("Outline", "surface border color");
-                case "surfaceText":
-                    return I18n.tr("Text Color", "surface border color");
-                default:
-                    return I18n.tr("Primary", "surface border color");
-                }
-            }
-            onValueChanged: value => {
-                switch (value) {
-                case I18n.tr("Secondary", "surface border color"):
-                    SettingsData.set("focusRingColor", "secondary");
-                    return;
-                case I18n.tr("Outline", "surface border color"):
-                    SettingsData.set("focusRingColor", "outline");
-                    return;
-                case I18n.tr("Text Color", "surface border color"):
-                    SettingsData.set("focusRingColor", "surfaceText");
-                    return;
-                }
-                SettingsData.set("focusRingColor", "primary");
-            }
-        }
-    }
-
-    SettingsToggleCard {
-        tab: "theme"
-        tags: ["scroll", "scrollbar", "scrollbars", "list", "page"]
-        settingKey: "scrollbarsEnabled"
-        iconName: "unfold_more"
-        title: I18n.tr("Scrollbars", "theme settings toggle, show scrollbars on lists and pages")
-        checked: SettingsData.scrollbarsEnabled
-        onToggled: checked => SettingsData.set("scrollbarsEnabled", checked)
     }
 
     SettingsCard {

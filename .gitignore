@@ -58,6 +58,7 @@ CLAUDE-activeContext.md
 CLAUDE-temp.md
 AGENTS-activeContext.md
 AGENTS-temp.md
+.agents/settings.local.json
 
 # Auto-generated theme files
 *.generated.*
@@ -130,6 +131,6 @@ distro/void/masterdir*/
 
 # Often gets built
 core/dms
-core/dankinstall
+core/duxinstall
 
 core/internal/shellembed/dist

@@ -43,7 +43,7 @@ func TestDisableSessionRemovesEveryWantsLink(t *testing.T) {
 
 func TestEnableSessionMangoWithoutTarget(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	calls := stubMango(t, mangoconf.Snake, false, nil)
+	calls := stubMango(t, false, nil)
 	unit, err := EnableSession(deps.WindowManagerMango)
 	require.Error(t, err)
 	assert.Empty(t, unit)

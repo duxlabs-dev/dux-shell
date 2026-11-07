@@ -169,23 +169,3 @@ func TestPeerSorting(t *testing.T) {
 	assert.Equal(t, "beta", state.Peers[1].Hostname)
 	assert.Equal(t, "zebra", state.Peers[2].Hostname)
 }
-
-func TestFormatRelativeTime(t *testing.T) {
-	tests := []struct {
-		name     string
-		duration string
-		contains string
-	}{
-		{"minutes", "5m", "minutes ago"},
-		{"hours", "3h", "hours ago"},
-		{"days", "48h", "days ago"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d, _ := time.ParseDuration(tt.duration)
-			result := formatRelativeTime(time.Now().Add(-d))
-			assert.Contains(t, result, tt.contains)
-		})
-	}
-}

@@ -47,7 +47,6 @@ func pluginSource(provider corelyrics.Provider) (corelyrics.Source, bool) {
 	}
 	return corelyrics.Source{
 		Attribution: corelyrics.Attribution{Name: plugin.Name, URL: plugin.URL},
-		WordSync:    plugin.WordSync,
 		Fetch:       lowPriority(corelyrics.Command(plugin.Command)),
 	}, true
 }

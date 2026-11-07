@@ -60,6 +60,13 @@ Column {
         }
 
         SettingsToggleRow {
+            visible: root.controls && root.page.value("mediaShowLyrics")
+            text: I18n.tr("Smooth lyrics highlight", "Media player option that fills each sung word gradually instead of highlighting it at once")
+            checked: root.page.value("mediaSmoothLyrics")
+            onToggled: checked => root.page.set("mediaSmoothLyrics", checked)
+        }
+
+        SettingsToggleRow {
             visible: root.controls
             text: I18n.tr("Cover art", "media widget option showing the album cover in the pill")
             checked: root.page.value("mediaShowCoverArt")

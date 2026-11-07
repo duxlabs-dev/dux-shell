@@ -24,7 +24,7 @@ SettingsCard {
         step: 10
         value: Math.round(root.store.setting("islandSpringStiffness"))
         enabled: !SettingsData.reduceMotion
-        onSliderValueChanged: value => root.store.apply("islandSpringStiffness", value)
+        onSliderDragFinished: finalValue => root.store.apply("islandSpringStiffness", finalValue)
     }
 
     SettingsSliderRow {
@@ -39,7 +39,7 @@ SettingsCard {
         step: 1
         value: Math.round(root.store.setting("islandSpringDamping"))
         enabled: !SettingsData.reduceMotion
-        onSliderValueChanged: value => root.store.apply("islandSpringDamping", value)
+        onSliderDragFinished: finalValue => root.store.apply("islandSpringDamping", finalValue)
     }
 
     SettingsSliderRow {
@@ -55,6 +55,6 @@ SettingsCard {
         decimals: 2
         value: Math.round(root.store.setting("islandSpringMass") * 100)
         enabled: !SettingsData.reduceMotion
-        onSliderValueChanged: value => root.store.apply("islandSpringMass", value / 100)
+        onSliderDragFinished: finalValue => root.store.apply("islandSpringMass", finalValue / 100)
     }
 }

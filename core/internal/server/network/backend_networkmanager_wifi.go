@@ -3,10 +3,12 @@ package network
 import (
 	"bytes"
 	"fmt"
+	"os/user"
 	"sort"
 
 	"github.com/Wifx/gonetworkmanager/v2"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/godbus/dbus/v5"
 )
 
 func (b *NetworkManagerBackend) GetWiFiEnabled() (bool, error) {
@@ -137,9 +139,7 @@ func (b *NetworkManagerBackend) GetWiFiNetworkDetails(ssid string) (*NetworkInfo
 		maxBitrate, _ := ap.GetPropertyMaxBitrate()
 		bssid, _ := ap.GetPropertyHWAddress()
 
-		secured := flags&uint32(gonetworkmanager.Nm80211APFlagsPrivacy) != 0 ||
-			wpaFlags != uint32(gonetworkmanager.Nm80211APSecNone) ||
-			rsnFlags != uint32(gonetworkmanager.Nm80211APSecNone)
+		secured := apNeedsCredentials(flags, wpaFlags, rsnFlags)
 
 		enterprise := (rsnFlags&uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X) != 0) ||
 			(wpaFlags&uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X) != 0)
@@ -417,6 +417,21 @@ func (b *NetworkManagerBackend) ForgetWiFiNetwork(ssid string) error {
 	return nil
 }
 
+func apNeedsCredentials(flags, wpaFlags, rsnFlags uint32) bool {
+	const (
+		keyMgmtOwe        = uint32(gonetworkmanager.Nm80211APSecKeyMgmtOWE) | uint32(gonetworkmanager.Nm80211APSecKeyMgmtOWETM)
+		keyMgmtCredential = uint32(gonetworkmanager.Nm80211APSecKeyMgmtPSK) | uint32(gonetworkmanager.Nm80211APSecKeyMgmtSAE) | uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X)
+	)
+
+	keyMgmt := wpaFlags | rsnFlags
+	if keyMgmt&keyMgmtOwe != 0 && keyMgmt&keyMgmtCredential == 0 {
+		return false
+	}
+	return flags&uint32(gonetworkmanager.Nm80211APFlagsPrivacy) != 0 ||
+		wpaFlags != uint32(gonetworkmanager.Nm80211APSecNone) ||
+		rsnFlags != uint32(gonetworkmanager.Nm80211APSecNone)
+}
+
 func getSavedWiFiProfiles(connections []gonetworkmanager.Connection) map[string]savedWiFiProfile {
 	profiles := make(map[string]savedWiFiProfile)
 
@@ -448,8 +463,8 @@ func getSavedWiFiProfiles(connections []gonetworkmanager.Connection) map[string]
 		if mode, ok := wifiSettings["mode"].(string); ok && mode != "" {
 			profile.Mode = mode
 		}
-		if _, ok := connSettings["802-11-wireless-security"]; ok {
-			profile.Secured = true
+		if sec, ok := connSettings["802-11-wireless-security"]; ok {
+			profile.Secured = sec["key-mgmt"] != "owe"
 		}
 		if _, ok := connSettings["802-1x"]; ok {
 			profile.Enterprise = true
@@ -546,9 +561,7 @@ func (b *NetworkManagerBackend) updateWiFiNetworks() ([]WiFiNetwork, error) {
 		maxBitrate, _ := ap.GetPropertyMaxBitrate()
 		bssid, _ := ap.GetPropertyHWAddress()
 
-		secured := flags&uint32(gonetworkmanager.Nm80211APFlagsPrivacy) != 0 ||
-			wpaFlags != uint32(gonetworkmanager.Nm80211APSecNone) ||
-			rsnFlags != uint32(gonetworkmanager.Nm80211APSecNone)
+		secured := apNeedsCredentials(flags, wpaFlags, rsnFlags)
 
 		enterprise := (rsnFlags&uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X) != 0) ||
 			(wpaFlags&uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X) != 0)
@@ -768,6 +781,9 @@ func (b *NetworkManagerBackend) createAndConnectWiFiOnDevice(req ConnectionReque
 		"type":        "802-11-wireless",
 		"autoconnect": true,
 	}
+	if !b.canModifySystemConnections() {
+		restrictConnectionToCurrentUser(settings["connection"])
+	}
 
 	settings["ipv4"] = map[string]any{"method": "auto"}
 	settings["ipv6"] = map[string]any{"method": "auto"}
@@ -934,6 +950,39 @@ func (b *NetworkManagerBackend) createAndConnectWiFiOnDevice(req ConnectionReque
 // updateConnectionCredentials applies user-supplied credentials to a saved
 // profile before activation; without this a retype after a password change is
 // silently ignored in favor of the stored (stale) secret.
+const nmPermissionModifySystem = dbusNMInterface + ".settings.modify.system"
+
+// GetPermissions never prompts. Short of a silent yes, a shared profile prompts on
+// creation and on every secret-agent request (NM re-checks the agent), so own it
+// per user like gnome-control-center does.
+func (b *NetworkManagerBackend) canModifySystemConnections() bool {
+	conn := b.dbusConn
+	if conn == nil {
+		var err error
+		conn, err = dbus.ConnectSystemBus()
+		if err != nil {
+			return false
+		}
+		defer conn.Close()
+	}
+
+	var permissions map[string]string
+	obj := conn.Object(dbusNMInterface, dbus.ObjectPath(dbusNMPath))
+	if err := obj.Call(dbusNMInterface+".GetPermissions", 0).Store(&permissions); err != nil {
+		log.Warnf("[createAndConnectWiFi] GetPermissions failed, creating a user-owned profile: %v", err)
+		return false
+	}
+	return permissions[nmPermissionModifySystem] == "yes"
+}
+
+func restrictConnectionToCurrentUser(connMeta map[string]any) {
+	current, err := user.Current()
+	if err != nil || current.Username == "" {
+		return
+	}
+	connMeta["permissions"] = []string{"user:" + current.Username + ":"}
+}
+
 func updateConnectionCredentials(conn gonetworkmanager.Connection, req ConnectionRequest) error {
 	settings, err := conn.GetSettings()
 	if err != nil {
@@ -1191,9 +1240,7 @@ func (b *NetworkManagerBackend) updateAllWiFiDevices() {
 				maxBitrate, _ := ap.GetPropertyMaxBitrate()
 				apBSSID, _ := ap.GetPropertyHWAddress()
 
-				secured := flags&uint32(gonetworkmanager.Nm80211APFlagsPrivacy) != 0 ||
-					wpaFlags != uint32(gonetworkmanager.Nm80211APSecNone) ||
-					rsnFlags != uint32(gonetworkmanager.Nm80211APSecNone)
+				secured := apNeedsCredentials(flags, wpaFlags, rsnFlags)
 
 				enterprise := (rsnFlags&uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X) != 0) ||
 					(wpaFlags&uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X) != 0)

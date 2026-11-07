@@ -153,6 +153,7 @@ Column {
                 anchors.leftMargin: SettingsMetrics.rowPaddingH
                 anchors.rightMargin: SettingsMetrics.rowPaddingH
                 spacing: Theme.spacingM
+                opacity: root.enabled ? 1 : SettingsMetrics.disabledOpacity
 
                 DColorSwatch {
                     width: Theme.avatarSize

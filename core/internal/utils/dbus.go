@@ -21,6 +21,20 @@ func IsDBusServiceAvailable(busName string) bool {
 	return owned
 }
 
+func IsSessionDBusServiceAvailable(busName string) bool {
+	conn, err := dbus.ConnectSessionBus()
+	if err != nil {
+		return false
+	}
+	defer conn.Close()
+
+	var owned bool
+	if err := conn.BusObject().Call("org.freedesktop.DBus.NameHasOwner", 0, busName).Store(&owned); err != nil {
+		return false
+	}
+	return owned
+}
+
 func IsDBusServiceActivatable(busName string) bool {
 	conn, err := dbus.ConnectSystemBus()
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -21,15 +22,19 @@ import (
 const switchDMSDep = "dms (Dux Shell)"
 
 // The greeter runs the shell's QML, so it moves with dms or the login screen can break.
-var switchFamily = []string{switchDMSDep, "quickshell", "dms-greeter"}
+var switchFamily = []string{switchDMSDep, "quickshell", "dux-greeter"}
 
 var switchAliases = map[string]string{
 	"dms":          switchDMSDep,
 	"quickshell":   "quickshell",
-	"dms-greeter":  "dms-greeter",
-	"greeter":      "dms-greeter",
-	"dankcalendar": "dankcalendar",
-	"danksearch":   "danksearch",
+	"dux-greeter":  "dux-greeter",
+	"dms-greeter":  "dux-greeter",
+	"greeter":      "dux-greeter",
+	"dux-calendar": "dux-calendar",
+	"dankcalendar": "dux-calendar",
+	"dux-files":    "dux-files",
+	"dux-search":   "dux-search",
+	"danksearch":   "dux-search",
 }
 
 var switchAssumeYes bool
@@ -39,8 +44,8 @@ var switchCmd = &cobra.Command{
 	Short: "Switch DMS packages between stable and beta builds",
 	Long: `Switch installed DMS packages between stable releases and beta builds.
 
-With no packages, dms, quickshell and dms-greeter switch together. Name packages
-(dms, quickshell, greeter, dankcalendar, danksearch) to switch only those.
+With no packages, dms, quickshell and dux-greeter switch together. Name packages
+(dms, quickshell, dux-greeter, dux-calendar, dux-search, dux-files) to switch only those.
 
 Settings, plugins, themes and session state are backed up before anything changes.
 Settings written by beta can lose options on stable, so switching back to stable
@@ -142,7 +147,7 @@ func runSwitch(channel string, packages []string) error {
 	if shellChanges {
 		fmt.Println("The shell restarts when the switch is done.")
 	}
-	if !switchAssumeYes && !askSwitch("\nContinue? [y/N] ") {
+	if !switchAssumeYes && !askYes("\nContinue? [y/N] ") {
 		return errors.New("cancelled")
 	}
 
@@ -171,7 +176,7 @@ func runSwitch(channel string, packages []string) error {
 	if snapshotLabel == "beta" && !switchAssumeYes {
 		if path, ok := backup.LatestSnapshot("stable"); ok {
 			fmt.Printf("\nSettings saved by beta may lose options on stable. Restore the backup from your last\nstable run (%s)? Your beta settings stay in the beta backup. [y/N] ", path)
-			if askSwitch("") {
+			if askYes("") {
 				restore = path
 			}
 		}
@@ -185,28 +190,39 @@ func runSwitch(channel string, packages []string) error {
 }
 
 func runSwaps(ctx context.Context, swapper distros.VariantSwapper, swaps []distros.VariantSwap) error {
+	return runWithProgressOutput(func(progressChan chan<- distros.InstallProgressMsg) error {
+		return swapper.SwapVariants(ctx, swaps, "", progressChan)
+	})
+}
+
+func runWithProgressOutput(run func(chan<- distros.InstallProgressMsg) error) error {
+	return runWithProgressOutputTo(os.Stdout, run)
+}
+
+func runWithProgressOutputTo(out io.Writer, run func(chan<- distros.InstallProgressMsg) error) error {
 	progressChan := make(chan distros.InstallProgressMsg, 100)
-	swapErr := make(chan error, 1)
+	runErr := make(chan error, 1)
 	go func() {
 		defer close(progressChan)
-		swapErr <- swapper.SwapVariants(ctx, swaps, "", progressChan)
+		runErr <- run(progressChan)
 	}()
 
-	// runWithProgress repeats the step on every output line, so only print it when it changes.
-	lastStep := ""
+	// runWithProgress repeats the step and the last output line on every tick, so only print changes.
+	lastStep, lastLog := "", ""
 	for msg := range progressChan {
 		switch {
 		case msg.Error != nil:
 			fmt.Fprintf(os.Stderr, "Error: %v\n", msg.Error)
 		case msg.Step != "" && msg.Step != lastStep:
-			fmt.Println(msg.Step)
+			fmt.Fprintln(out, msg.Step)
 			lastStep = msg.Step
 		}
-		if msg.LogOutput != "" {
-			fmt.Printf("    %s\n", msg.LogOutput)
+		if msg.LogOutput != "" && msg.LogOutput != lastLog {
+			fmt.Fprintf(out, "    %s\n", msg.LogOutput)
+			lastLog = msg.LogOutput
 		}
 	}
-	return <-swapErr
+	return <-runErr
 }
 
 // restartShellAfterSwitch stops the shell before restoring, or the running one would migrate the
@@ -268,7 +284,7 @@ func switchLabel(m distros.PackageMapping) string {
 	return m.RepoURL + "/" + m.Name
 }
 
-func askSwitch(prompt string) bool {
+func askYes(prompt string) bool {
 	if !stdinIsTTY() {
 		return false
 	}

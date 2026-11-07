@@ -1,4 +1,25 @@
 -- DMS default keybinds (Hyprland 0.55+ Lua)
+-- dms setup replaces this file with the stock set; a changed copy is kept in ../.dms-backups/.
+-- Put your own binds and overrides in binds-user.lua, which setup never touches.
+
+-- Hyprland emits no socket2 event when a window moves or resizes, so these
+-- dispatchers announce one for the shell (dock smart auto-hide, #3168)
+if hl.dsp.event then
+	for _, name in ipairs({ "move", "resize", "center" }) do
+		local raw = hl.dsp.window[name]
+		hl.dsp.window[name] = function(...)
+			-- argless resize is the mouse drag bind, which needs the native dispatcher
+			if name == "resize" and select("#", ...) == 0 then
+				return raw()
+			end
+			local dispatcher = raw(...)
+			return function()
+				hl.dispatch(dispatcher)
+				hl.dispatch(hl.dsp.event("dms:geometry"))
+			end
+		end
+	end
+end
 
 -- === Application Launchers ===
 hl.bind("SUPER + T", hl.dsp.exec_cmd("{{TERMINAL_COMMAND}}"))
@@ -26,7 +47,8 @@ hl.bind("SUPER + SHIFT + Slash", hl.dsp.exec_cmd("dms ipc call keybinds toggle h
 
 -- === Security ===
 hl.bind("SUPER + ALT + L", hl.dsp.exec_cmd("dms ipc call lock lock"))
-hl.bind("SUPER + SHIFT + E", hl.dsp.exit())
+-- Routed through the power menu so a stray press can't end the session
+hl.bind("SUPER + SHIFT + E", hl.dsp.exec_cmd("dms ipc call powermenu toggle"))
 hl.bind("CTRL + ALT + Delete", hl.dsp.exec_cmd("dms ipc call processlist focusOrToggle"))
 hl.bind("CTRL + ALT + M", hl.dsp.exec_cmd("dms ipc call processlist focusOrToggle"))
 

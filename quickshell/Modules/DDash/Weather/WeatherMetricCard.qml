@@ -245,9 +245,6 @@ Rectangle {
             color: root.foreground
             horizontalAlignment: root.leadingContent ? Text.AlignLeft : Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
-            font.features: ({
-                    "tnum": 1
-                })
         }
 
         StyledText {

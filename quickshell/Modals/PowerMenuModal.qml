@@ -44,7 +44,7 @@ DModal {
     customPosition: {
         if (parentBounds.width > 0) {
             const bar = SettingsData.getPrimaryBarConfig();
-            const effectiveBarThickness = Theme.barThickness(bar?.innerPadding ?? 2, CompositorService.getScreenScale(parentScreen));
+            const effectiveBarThickness = Theme.barThickness(bar?.innerPadding ?? SettingsData.barInnerPaddingDefault, CompositorService.getScreenScale(parentScreen));
             const barExclusionZone = effectiveBarThickness + (bar?.spacing ?? 4) + (bar?.bottomGap ?? 0);
             const barPosition = bar?.position ?? SettingsData.Position.Top;
             const screenW = parentScreen?.width ?? 1920;

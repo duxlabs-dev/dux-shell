@@ -41,7 +41,7 @@ Item {
     signal optionsRequested(var anchor)
     signal resizeStarted(real px, real py, int signX)
     signal resizeCanceled
-    signal resizeMoved(real px, real py)
+    signal resizeMoved(real px, real py, int modifiers)
     signal resizeEnded
 
     component HitMask: Item {
@@ -195,7 +195,7 @@ Item {
             if (!pressed)
                 return;
             const p = mapToItem(root, mouse.x, mouse.y);
-            root.resizeMoved(p.x - root.contentInset, p.y - root.contentInset);
+            root.resizeMoved(p.x - root.contentInset, p.y - root.contentInset, mouse.modifiers);
         }
         onReleased: root.resizeEnded()
         onCanceled: root.resizeCanceled()

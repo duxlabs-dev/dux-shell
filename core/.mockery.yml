@@ -73,6 +73,7 @@ packages:
       ActiveConnection: {}
       Connection: {}
       Device: {}
+      DeviceWired: {}
       DeviceWireless: {}
       IP4Config: {}
       NetworkManager: {}

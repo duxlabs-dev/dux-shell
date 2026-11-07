@@ -8,7 +8,7 @@ const barBlock = source.slice(source.indexOf("    function getBarConfig("), sour
 const functions = [...barBlock.matchAll(/^ {4,8}function (\w+)\(([^)]*)\)(?:: \w+)? \{\n[\s\S]*?^\s{4,8}\}$/gm)];
 const untyped = functions.map(match => match[0].replace(/\((.*?)\)(?:: \w+)? \{/, (_, params) => "(" + params.replace(/: \w+/g, "") + ") {"));
 
-function shell(barConfigs, toggleResults = []) {
+function shell(barConfigs, toggleResults = [], barItems = {}) {
     const updates = [];
     const reveals = [];
     const SettingsData = {
@@ -22,7 +22,8 @@ function shell(barConfigs, toggleResults = []) {
             return toggleResults.shift();
         }
     };
-    const context = vm.createContext({ SettingsData });
+    const BarWidgetService = { dankBarItems: barItems };
+    const context = vm.createContext({ SettingsData, BarWidgetService });
     for (const body of untyped)
         vm.runInContext(body.replace(/^ {4}/gm, ""), context);
     return { context, updates, reveals };
@@ -75,6 +76,10 @@ test("toggleReveal only works on auto hide bars and unhides first", () => {
     assert.equal(context.toggleReveal("id", "hidden"), "BAR_TUCK_SUCCESS");
     assert.deepEqual(reveals.slice(1), [["toggle", "hidden"], ["toggle", "hidden"]]);
     bars[2].visible = false;
+
+    const fullscreen = shell(bars, [true], { main: { fullscreenAutoHide: true } });
+    assert.equal(fullscreen.context.toggleReveal("id", "main"), "BAR_REVEAL_SUCCESS");
+    assert.deepEqual(fullscreen.reveals, [["toggle", "main"]]);
 });
 
 const ipcBarBody = source.slice(source.indexOf("    function getPreferredBar("), source.indexOf("    readonly property var defaultAppMimeTypes"));

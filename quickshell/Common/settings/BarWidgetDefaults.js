@@ -8,6 +8,9 @@ var ISLAND_DEFAULTS = {
     islandPlacement: "edge",
     islandFreeSize: 48,
     islandFreeIcon: "blur_on",
+    islandFreeIconMode: "icon",
+    islandFreeIconPath: "",
+    islandFreeIconColor: "primary",
     islandFreeEdgeMargin: 2,
     islandFreeIdleDelay: 2500,
     islandFreeIdleOpacity: 0.45,
@@ -33,7 +36,9 @@ var ISLAND_DEFAULTS = {
     islandHoverCloseDelay: 150,
     islandPalette: "default",
     islandHighContrast: false,
+    islandDashTabs: false,
     islandMediaClockVisible: true,
+    islandMediaLyrics: false,
     islandMediaAutoSwitch: false,
     islandNotificationBadgeClearOnOpen: false,
     islandNotificationExpand: false,
@@ -92,11 +97,13 @@ var DEFAULTS = {
         groupWorkspaceApps: true,
         groupActiveWorkspaceApps: false,
         workspaceFollowFocus: false,
+        workspaceMoveToOutput: false,
         showOccupiedWorkspacesOnly: false,
         showSpecialWorkspaces: false,
         reverseScrolling: false,
         dwlShowAllTags: false,
         workspaceActiveAppHighlightEnabled: false,
+        workspaceUnfocusedAppsFullOpacity: false,
         workspaceColorMode: "default",
         workspaceFocusedCustomColor: "#6750A4",
         workspaceOccupiedColorMode: "none",
@@ -126,15 +133,18 @@ var DEFAULTS = {
     clock: {
         clockCompactMode: false,
         clockDateOrder: "timeFirst",
-        clockNotificationBadge: false
+        clockNotificationBadge: false,
+        clockClickAction: "dash",
+        clockClickCommand: ""
     },
     music: {
         mediaStyle: "controls",
         mediaSize: 1,
         mediaAdaptiveWidthEnabled: true,
         mediaShowLyrics: true,
+        mediaSmoothLyrics: false,
         mediaShowCoverArt: true,
-        audioScrollMode: "volume"
+        audioScrollMode: "nothing"
     },
     focusedWindow: {
         focusedWindowCompactMode: false,
@@ -245,7 +255,7 @@ var DEFAULTS = {
 // entry key -> settings.json key that held the value before config version 19 (launcherButton: 29)
 var MIGRATED_GLOBALS = {
     launcherButton: sameNames(["launcherLogoMode", "launcherLogoCustomPath", "launcherLogoColorOverride", "launcherLogoBrightness", "launcherLogoContrast", "launcherLogoSizeOffset"]),
-    workspaceSwitcher: sameNames(["showWorkspaceIndex", "showWorkspaceName", "showWorkspacePadding", "workspacePaddingCount", "showWorkspaceApps", "workspaceDragReorder", "maxWorkspaceIcons", "workspaceAppIconSizeOffset", "groupWorkspaceApps", "groupActiveWorkspaceApps", "workspaceFollowFocus", "showOccupiedWorkspacesOnly", "reverseScrolling", "dwlShowAllTags", "workspaceActiveAppHighlightEnabled", "workspaceColorMode", "workspaceFocusedCustomColor", "workspaceOccupiedColorMode", "workspaceOccupiedCustomColor", "workspaceUnfocusedColorMode", "workspaceUnfocusedCustomColor", "workspaceUrgentColorMode", "workspaceUrgentCustomColor", "workspaceFocusedBorderEnabled", "workspaceFocusedBorderColor", "workspaceFocusedBorderCustomColor", "workspaceFocusedBorderThickness", "workspaceUnfocusedMonitorSeparateAppearance", "workspaceUnfocusedMonitorColorMode", "workspaceUnfocusedMonitorFocusedCustomColor", "workspaceUnfocusedMonitorOccupiedColorMode", "workspaceUnfocusedMonitorOccupiedCustomColor", "workspaceUnfocusedMonitorUnfocusedColorMode", "workspaceUnfocusedMonitorUnfocusedCustomColor", "workspaceUnfocusedMonitorUrgentColorMode", "workspaceUnfocusedMonitorUrgentCustomColor", "workspaceUnfocusedMonitorBorderEnabled", "workspaceUnfocusedMonitorBorderColor", "workspaceUnfocusedMonitorBorderCustomColor", "workspaceUnfocusedMonitorBorderThickness"]),
+    workspaceSwitcher: sameNames(["showWorkspaceIndex", "showWorkspaceName", "showWorkspacePadding", "workspacePaddingCount", "showWorkspaceApps", "workspaceDragReorder", "maxWorkspaceIcons", "workspaceAppIconSizeOffset", "groupWorkspaceApps", "groupActiveWorkspaceApps", "workspaceFollowFocus", "workspaceMoveToOutput", "showOccupiedWorkspacesOnly", "reverseScrolling", "dwlShowAllTags", "workspaceActiveAppHighlightEnabled", "workspaceColorMode", "workspaceFocusedCustomColor", "workspaceOccupiedColorMode", "workspaceOccupiedCustomColor", "workspaceUnfocusedColorMode", "workspaceUnfocusedCustomColor", "workspaceUrgentColorMode", "workspaceUrgentCustomColor", "workspaceFocusedBorderEnabled", "workspaceFocusedBorderColor", "workspaceFocusedBorderCustomColor", "workspaceFocusedBorderThickness", "workspaceUnfocusedMonitorSeparateAppearance", "workspaceUnfocusedMonitorColorMode", "workspaceUnfocusedMonitorFocusedCustomColor", "workspaceUnfocusedMonitorOccupiedColorMode", "workspaceUnfocusedMonitorOccupiedCustomColor", "workspaceUnfocusedMonitorUnfocusedColorMode", "workspaceUnfocusedMonitorUnfocusedCustomColor", "workspaceUnfocusedMonitorUrgentColorMode", "workspaceUnfocusedMonitorUrgentCustomColor", "workspaceUnfocusedMonitorBorderEnabled", "workspaceUnfocusedMonitorBorderColor", "workspaceUnfocusedMonitorBorderCustomColor", "workspaceUnfocusedMonitorBorderThickness"]),
     clock: sameNames(["clockCompactMode"]),
     music: sameNames(["mediaSize", "mediaAdaptiveWidthEnabled", "audioScrollMode"]),
     focusedWindow: sameNames(["focusedWindowCompactMode", "focusedWindowShowIcon", "focusedWindowSize"]),

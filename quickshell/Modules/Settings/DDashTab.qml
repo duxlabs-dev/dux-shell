@@ -18,6 +18,23 @@ FocusScope {
 
     readonly property var tabs: DashRegistry.tabEntries
     readonly property var optionEntryIds: DashRegistry.entries.filter(e => (e.options?.length ?? 0) > 0).map(e => e.id)
+
+    function showDashPluginBrowser() {
+        dashPluginBrowserLoader.active = true;
+        if (dashPluginBrowserLoader.item)
+            dashPluginBrowserLoader.item.show();
+    }
+
+    LazyLoader {
+        id: dashPluginBrowserLoader
+        active: false
+
+        PluginBrowser {
+            parentModal: root.parentModal
+            typeFilters: ["dash-tab", "dash-card"]
+        }
+    }
+
     SettingsPage {
         SettingsCard {
             title: I18n.tr("Weather")
@@ -153,6 +170,7 @@ FocusScope {
                             iconName: "edit"
                             tooltipText: I18n.tr("Edit")
                             Accessible.description: tabRow.modelData.text
+                            visible: !tabRow.modelData.action
                             enabled: tabRow.available
                             onClicked: PopoutService.openDankDashEditor(tabRow.modelData.id, root.Window.window?.screen)
                         }
@@ -200,6 +218,15 @@ FocusScope {
                         onCommitted: next => DashRegistry.setOption(optionCard.modelData, spec.key, next)
                     }
                 }
+            }
+        }
+
+        SettingsFabBar {
+            DFab {
+                text: I18n.tr("Browse plugins")
+                iconName: "store"
+                colorRole: "secondaryContainer"
+                onClicked: root.showDashPluginBrowser()
             }
         }
     }

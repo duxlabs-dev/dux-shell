@@ -419,7 +419,7 @@ Item {
         }
 
         function close(): string {
-            const islandClosed = SettingsData.islandDashActivities.filter(activity => PopoutService.closeIslandActivity(activity)).length > 0;
+            const islandClosed = [...SettingsData.islandDashActivities, "wellbeing"].filter(activity => PopoutService.closeIslandActivity(activity)).length > 0;
             if (root.dankDashPopoutLoaderRef.item)
                 root.dankDashPopoutLoaderRef.item.dashVisible = false;
             return islandClosed || root.dankDashPopoutLoaderRef.item ? "DASH_CLOSE_SUCCESS" : "DASH_CLOSE_FAILED";
@@ -663,27 +663,14 @@ Item {
 
     IpcHandler {
         function toggle(provider: string): string {
-            if (!provider)
-                return "ERROR: No provider specified";
-
-            KeybindsService.loadCheatsheet(provider);
-            root.hyprKeybindsModalLoaderRef.active = true;
-
-            if (!root.hyprKeybindsModalLoaderRef.item)
-                return `KEYBINDS_TOGGLE_FAILED: ${provider}`;
-
-            if (root.hyprKeybindsModalLoaderRef.item.shouldBeVisible)
-                root.hyprKeybindsModalLoaderRef.item.close();
-            else
-                root.hyprKeybindsModalLoaderRef.item.open();
-            return `KEYBINDS_TOGGLE_SUCCESS: ${provider}`;
+            return toggleWithPath(provider, "");
         }
 
         function toggleWithPath(provider: string, path: string): string {
             if (!provider)
                 return "ERROR: No provider specified";
 
-            KeybindsService.loadCheatsheet(provider);
+            KeybindsService.loadCheatsheet(provider, path);
             root.hyprKeybindsModalLoaderRef.active = true;
 
             if (!root.hyprKeybindsModalLoaderRef.item)
@@ -693,35 +680,25 @@ Item {
                 root.hyprKeybindsModalLoaderRef.item.close();
             else
                 root.hyprKeybindsModalLoaderRef.item.open();
-            return `KEYBINDS_TOGGLE_SUCCESS: ${provider} (${path})`;
+            return path ? `KEYBINDS_TOGGLE_SUCCESS: ${provider} (${path})` : `KEYBINDS_TOGGLE_SUCCESS: ${provider}`;
         }
 
         function open(provider: string): string {
-            if (!provider)
-                return "ERROR: No provider specified";
-
-            KeybindsService.loadCheatsheet(provider);
-            root.hyprKeybindsModalLoaderRef.active = true;
-
-            if (!root.hyprKeybindsModalLoaderRef.item)
-                return `KEYBINDS_OPEN_FAILED: ${provider}`;
-
-            root.hyprKeybindsModalLoaderRef.item.open();
-            return `KEYBINDS_OPEN_SUCCESS: ${provider}`;
+            return openWithPath(provider, "");
         }
 
         function openWithPath(provider: string, path: string): string {
             if (!provider)
                 return "ERROR: No provider specified";
 
-            KeybindsService.loadCheatsheet(provider);
+            KeybindsService.loadCheatsheet(provider, path);
             root.hyprKeybindsModalLoaderRef.active = true;
 
             if (!root.hyprKeybindsModalLoaderRef.item)
                 return `KEYBINDS_OPEN_FAILED: ${provider}`;
 
             root.hyprKeybindsModalLoaderRef.item.open();
-            return `KEYBINDS_OPEN_SUCCESS: ${provider} (${path})`;
+            return path ? `KEYBINDS_OPEN_SUCCESS: ${provider} (${path})` : `KEYBINDS_OPEN_SUCCESS: ${provider}`;
         }
 
         function close(): string {
@@ -914,7 +891,7 @@ Item {
 
         function toggleReveal(selector: string, value: string): string {
             return withBarConfig(selector, value, false, bar => {
-                if (!bar.autoHide)
+                if (!bar.autoHide && !BarWidgetService.dankBarItems[bar.id]?.fullscreenAutoHide)
                     return "BAR_AUTO_HIDE_DISABLED";
                 if (!(bar.visible ?? true)) {
                     SettingsData.updateBarConfig(bar.id, {
@@ -1102,7 +1079,11 @@ Item {
         }
 
         function set(key: string, value: string): string {
-            if (!(key in SettingsData)) {
+            if (AdminPolicy.disableSettingsIpcSet)
+                return "SETTINGS_SET_DISABLED";
+            if (SettingsData.isManaged(key))
+                return "SETTINGS_SET_MANAGED";
+            if (!SettingsData.hasSetting(key)) {
                 log.warn("Cannot set property, not found:", key);
                 return "SETTINGS_INVALID_KEY";
             }
@@ -1137,8 +1118,8 @@ Item {
                 }
 
                 log.warn("Setting:", key, value);
-                SettingsData[key] = value;
-                SettingsData.saveSettings();
+                if (!SettingsData.set(key, value))
+                    throw `${value} is not a valid ${key}`;
                 return "SETTINGS_SET_SUCCESS";
             } catch (e) {
                 log.warn("Failed to set property:", key, "error:", e);
@@ -1882,8 +1863,6 @@ Item {
         function open(): string {
             root.workspaceRenameModalLoaderRef.active = true;
             if (root.workspaceRenameModalLoaderRef.item) {
-                if (CompositorService.isAqueous)
-                    return root.workspaceRenameModalLoaderRef.item.show("") ? "WORKSPACE_RENAME_MODAL_OPENED" : "WORKSPACE_RENAME_UNAVAILABLE";
                 root.workspaceRenameModalLoaderRef.item.show(root.workspaceRenameModalLoaderRef.item.focusedWorkspaceName());
                 return "WORKSPACE_RENAME_MODAL_OPENED";
             }
@@ -1905,8 +1884,6 @@ Item {
                     root.workspaceRenameModalLoaderRef.item.hide();
                     return "WORKSPACE_RENAME_MODAL_CLOSED";
                 }
-                if (CompositorService.isAqueous)
-                    return root.workspaceRenameModalLoaderRef.item.show("") ? "WORKSPACE_RENAME_MODAL_OPENED" : "WORKSPACE_RENAME_UNAVAILABLE";
                 root.workspaceRenameModalLoaderRef.item.show(root.workspaceRenameModalLoaderRef.item.focusedWorkspaceName());
                 return "WORKSPACE_RENAME_MODAL_OPENED";
             }

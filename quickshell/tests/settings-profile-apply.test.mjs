@@ -15,8 +15,8 @@ const defaults = Object.fromEntries(Object.entries(Spec.SPEC).map(([k, s]) => [k
 function settings(initial, flags = {}) {
     const file = { settings: Object.assign({}, initial), writes: 0, setSettings(next) { this.settings = next; this.writes++; } };
     const context = vm.createContext(Object.assign({}, defaults, initial, {
-        Spec, SpecUtil, Qt: { callLater() {} },
-        isGreeterMode: false, _parseError: false, _hasLoaded: true, _loading: false, settingsConfigVersion: 1,
+        Spec, SpecUtil, Store, Qt: { callLater() {} }, saveSettings() {},
+        _parseError: false, _hasLoaded: true, _loading: false, settingsConfigVersion: 1,
         _settingsFiles: new Map([["settings.json", file]]),
         _splitSettingsByFile: all => ({ "settings.json": all }),
         _mergeSessionState() {},

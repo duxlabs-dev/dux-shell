@@ -55,39 +55,36 @@ var resolveIncludeCmd = &cobra.Command{
 	Run: runResolveInclude,
 }
 
-var mangoMigrateMain bool
-
-var mangoMigrateCmd = &cobra.Command{
-	Use:   "mango-migrate",
-	Short: "Respell Mango config keys for the installed Mango",
-	Long:  "Detects whether the installed Mango uses legacy or snake_case config keys, rewrites the DMS fragments in mango/dms to match, and prints the dialect on the last line. --main also rewrites config.conf after a backup.",
-	Args:  cobra.NoArgs,
+var mangoMonitorRulesCmd = &cobra.Command{
+	Use:    "mango-monitor-rules",
+	Short:  "Print the monitor rules of the Mango main config as monitor_rule= lines",
+	Hidden: true,
+	Args:   cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		dialect := mangoconf.Detect()
-		changed, err := dialect.Migrate(mangoconf.Dir(), mangoMigrateMain)
-		for _, path := range changed {
-			fmt.Fprintf(os.Stderr, "migrated %s\n", path)
-		}
-		// Printed before any error: the shell needs the dialect even when a fragment failed.
-		fmt.Println(dialect)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+		for _, line := range mangoMonitorRules(mangoconf.Dir()) {
+			fmt.Println(line)
 		}
 	},
 }
 
 func init() {
-	configCmd.AddCommand(resolveIncludeCmd)
-	mangoMigrateCmd.Flags().BoolVar(&mangoMigrateMain, "main", false, "also rewrite config.conf (a backup is kept)")
-	configCmd.AddCommand(mangoMigrateCmd)
+	configCmd.AddCommand(resolveIncludeCmd, mangoMonitorRulesCmd)
+}
+
+// mangoMonitorRules lets the shell carry fields it does not model when it rewrites dms/outputs.conf.
+func mangoMonitorRules(dir string) []string {
+	var out []string
+	_ = mangoconf.Walk(dir, mangoconf.MainConfig(dir), mangoconf.Vars{}, func(_ string, e mangoconf.Entry) {
+		if e.Key == "monitor_rule" && !strings.Contains(e.Value, "\n") {
+			out = append(out, "monitor_rule="+e.Value)
+		}
+	})
+	return out
 }
 
 type IncludeResult struct {
-	Exists       bool   `json:"exists"`
-	Included     bool   `json:"included"`
-	ConfigFormat string `json:"configFormat,omitempty"`
-	ReadOnly     bool   `json:"readOnly,omitempty"`
+	Exists   bool `json:"exists"`
+	Included bool `json:"included"`
 }
 
 func runResolveInclude(cmd *cobra.Command, args []string) {
@@ -132,62 +129,11 @@ func checkHyprlandInclude(filename string) (IncludeResult, error) {
 	}
 
 	mainLua := filepath.Join(configDir, "hyprland.lua")
-	if _, err := os.Stat(mainLua); err == nil {
-		result.ConfigFormat = "lua"
-		result.Included = luaconfig.RequiresTarget(mainLua, targetAbs, make(map[string]bool))
+	if _, err := os.Stat(mainLua); err != nil {
 		return result, nil
 	}
-
-	// 0.55/0.56 installs still on hyprland.conf: read-only until migrated.
-	mainConf := filepath.Join(configDir, "hyprland.conf")
-	if _, err := os.Stat(mainConf); err != nil {
-		return result, nil
-	}
-	result.ConfigFormat = "hyprlang"
-	result.ReadOnly = true
-	result.Included = hyprlandFindIncludeHyprlang(mainConf, targetAbs, make(map[string]bool))
+	result.Included = luaconfig.RequiresTarget(mainLua, targetAbs, make(map[string]bool))
 	return result, nil
-}
-
-func hyprlandFindIncludeHyprlang(filePath, target string, processed map[string]bool) bool {
-	absPath, err := filepath.Abs(filePath)
-	if err != nil {
-		return false
-	}
-
-	if processed[absPath] {
-		return false
-	}
-	processed[absPath] = true
-
-	data, err := os.ReadFile(absPath)
-	if err != nil {
-		return false
-	}
-
-	baseDir := filepath.Dir(absPath)
-	for line := range strings.SplitSeq(string(data), "\n") {
-		trimmed := strings.TrimSpace(line)
-		if !strings.HasPrefix(trimmed, "source") {
-			continue
-		}
-
-		parts := strings.SplitN(trimmed, "=", 2)
-		if len(parts) < 2 {
-			continue
-		}
-
-		fullPath, err := resolveSourcePath(baseDir, strings.TrimSpace(parts[1]))
-		if err != nil {
-			continue
-		}
-
-		if fullPath == target || hyprlandFindIncludeHyprlang(fullPath, target, processed) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func checkNiriInclude(filename string) (IncludeResult, error) {
@@ -268,77 +214,15 @@ func niriFindInclude(filePath, target string, processed map[string]bool) bool {
 
 func checkMangoWCInclude(filename string) (IncludeResult, error) {
 	configDir := mangoconf.Dir()
-
 	targetPath := filepath.Join(configDir, "dms", filename)
-	result := IncludeResult{}
-
+	var result IncludeResult
 	if _, err := os.Stat(targetPath); err == nil {
 		result.Exists = true
 	}
-
-	mainConfig := filepath.Join(configDir, "config.conf")
-	if _, err := os.Stat(mainConfig); os.IsNotExist(err) {
-		mainConfig = filepath.Join(configDir, "mango.conf")
-	}
-	if _, err := os.Stat(mainConfig); os.IsNotExist(err) {
-		return result, nil
-	}
-
-	targetAbs, err := filepath.Abs(targetPath)
-	if err != nil {
-		return result, err
-	}
-
-	processed := make(map[string]bool)
-	result.Included = mangowcFindInclude(mainConfig, targetAbs, processed)
+	_ = mangoconf.Walk(configDir, mangoconf.MainConfig(configDir), mangoconf.Vars{}, func(_ string, e mangoconf.Entry) {
+		result.Included = result.Included || (e.IsSource() && e.Value == targetPath)
+	})
 	return result, nil
-}
-
-func mangowcFindInclude(filePath, target string, processed map[string]bool) bool {
-	absPath, err := filepath.Abs(filePath)
-	if err != nil {
-		return false
-	}
-
-	if processed[absPath] {
-		return false
-	}
-	processed[absPath] = true
-
-	data, err := os.ReadFile(absPath)
-	if err != nil {
-		return false
-	}
-
-	baseDir := filepath.Dir(absPath)
-	lines := strings.SplitSeq(string(data), "\n")
-
-	for line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "#") || trimmed == "" {
-			continue
-		}
-
-		if !strings.HasPrefix(trimmed, "source") {
-			continue
-		}
-
-		parts := strings.SplitN(trimmed, "=", 2)
-		if len(parts) < 2 {
-			continue
-		}
-
-		fullPath, err := resolveSourcePath(baseDir, strings.TrimSpace(parts[1]))
-		if err != nil {
-			continue
-		}
-
-		if fullPath == target || mangowcFindInclude(fullPath, target, processed) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func resolveSourcePath(baseDir, raw string) (string, error) {

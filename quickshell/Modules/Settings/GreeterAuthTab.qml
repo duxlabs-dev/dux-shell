@@ -25,7 +25,7 @@ Item {
         case "missing_reader":
             return I18n.tr("No fingerprint reader detected", "fingerprint setting status");
         case "missing_pam_support":
-            return I18n.tr("Not available — install fprintd and pam_fprintd, or configure greetd PAM.", "greeter fingerprint login setting");
+            return I18n.tr("Not available - install %1 and %2, or configure %3 PAM", "greeter fingerprint login setting, %1 and %2 are package names, %3 is greetd").arg("fprintd").arg("pam_fprintd").arg("greetd");
         default:
             return I18n.tr("Fingerprint availability could not be confirmed", "fingerprint setting status");
         }
@@ -43,7 +43,7 @@ Item {
         case "missing_key_registration":
             return I18n.tr("Security-key support was detected, but no registered key was found yet. You can enable this now and register one later.", "security key setting status");
         case "missing_pam_support":
-            return I18n.tr("Not available — install or configure pam_u2f, or configure greetd PAM.", "greeter security key login setting");
+            return I18n.tr("Not available - install or configure %1, or configure %2 PAM", "greeter security key login setting, %1 is a PAM module, %2 is greetd").arg("pam_u2f").arg("greetd");
         default:
             return I18n.tr("Security-key availability could not be confirmed", "security key setting status");
         }
@@ -70,7 +70,7 @@ Item {
                 settingKey: "greeterPamExternallyManaged"
                 tags: ["greeter", "pam", "managed", "external", "greetd", "auth"]
                 text: I18n.tr("Use system PAM authentication", "system PAM policy toggle")
-                description: I18n.tr("DMS removes its managed block from /etc/pam.d/greetd and stops write services", "greeter system PAM toggle description")
+                description: I18n.tr("DMS removes its managed block from %1 and stops write services", "greeter system PAM toggle description, %1 is a PAM config path").arg("/etc/pam.d/greetd")
                 checked: SettingsData.greeterPamExternallyManaged
                 onToggled: checked => SettingsData.set("greeterPamExternallyManaged", checked)
             }

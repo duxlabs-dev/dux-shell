@@ -12,7 +12,7 @@ const extract = (name) => {
 };
 
 const scope = vm.createContext({
-    SettingsData: { updaterIgnoredPackages: [], updaterAllowAUR: true },
+    SettingsData: { updaterIgnoredPackages: [], updaterAllowAUR: true, updaterIncludeFlatpak: true },
     pkgManager: "portage",
     systemHoldsAllowed: true,
 });
@@ -58,4 +58,17 @@ test("portage ignores drop the update from the list", () => {
     ];
     const kept = scope._filterUpdates(pkgs);
     assert.deepEqual(kept.map(p => p.name), ["mail-client/thunderbird"]);
+});
+
+test("excluded flatpak updates are dropped from the list", () => {
+    scope.SettingsData.updaterIgnoredPackages = [];
+    const pkgs = [
+        { name: "org.freedesktop.Platform", repo: "flatpak", backend: "flatpak" },
+        { name: "mail-client/thunderbird", repo: "gentoo (ebuild)", backend: "portage" },
+    ];
+    for (const [include, want] of [[true, ["org.freedesktop.Platform", "mail-client/thunderbird"]], [false, ["mail-client/thunderbird"]]]) {
+        scope.SettingsData.updaterIncludeFlatpak = include;
+        assert.deepEqual(scope._filterUpdates(pkgs).map(p => p.name), want, `includeFlatpak=${include}`);
+    }
+    scope.SettingsData.updaterIncludeFlatpak = true;
 });

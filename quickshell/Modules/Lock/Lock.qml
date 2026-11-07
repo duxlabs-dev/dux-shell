@@ -106,6 +106,7 @@ Scope {
     }
 
     function spawnCustomLocker() {
+        log.info("Handing the lock to the custom lock command instead of the session lock");
         IdleService.lockPowerOffRequested = false;
         Quickshell.execDetached(["sh", "-c", SettingsData.customPowerActionLock]);
         // The custom locker manages its own surface; DMS never engages
@@ -220,6 +221,8 @@ Scope {
 
         function onSessionUnlocked() {
             customLockerSpawned = false;
+            if (AdminPolicy.disableLogindUnlock)
+                return;
             if (pendingLock) {
                 pendingLock = false;
                 lockInitiatedLocally = false;
@@ -281,7 +284,7 @@ Scope {
 
     Pam {
         id: sharedPam
-        lockSecured: root.shouldLock
+        lockSecured: root.shouldLock && sessionLock.secure
         buffer: root.sharedPasswordBuffer
         onUnlockRequested: root.unlock()
     }
@@ -412,14 +415,20 @@ Scope {
         }
 
         function unlock() {
+            if (AdminPolicy.disableLockIpcUnlock)
+                return;
             root.unlock();
         }
 
         function forceReset() {
+            if (AdminPolicy.disableLockIpcUnlock)
+                return;
             root.forceReset();
         }
 
         function demo() {
+            if (AdminPolicy.disableLockIpcUnlock)
+                return;
             demoWindow.showDemo();
         }
 
@@ -435,6 +444,8 @@ Scope {
                 lockRetryAttempts: root.lockRetryAttempts,
                 lockInitiatedLocally: root.lockInitiatedLocally,
                 pendingLock: root.pendingLock,
+                customLocker: SettingsData.customPowerActionLock?.length > 0,
+                customLockerSpawned: root.customLockerSpawned,
                 loginctlLocked: SessionService.locked,
                 loginctlActive: SessionService.active
             });

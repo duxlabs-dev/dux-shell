@@ -12,13 +12,14 @@ RowLayout {
 
     required property var player
     required property var presentation
+    property real buttonSize: Theme.buttonHeightM
 
-    readonly property var focusTargets: [shuffleButton, previousButton, playButton, nextButton, repeatButton]
+    readonly property var focusTargets: [previousButton, playButton, nextButton]
     readonly property bool hasControls: !!presentation
     readonly property var pressSpring: Theme.springPreset("fast", Theme.expressiveDurations.expressiveFastSpatial)
 
     spacing: Theme.spacingS
-    implicitHeight: Theme.buttonHeightM
+    implicitHeight: root.buttonSize
     height: implicitHeight
     LayoutMirroring.enabled: false
     LayoutMirroring.childrenInherit: true
@@ -26,34 +27,27 @@ RowLayout {
     Keys.onPressed: event => event.accepted = FocusNavigation.handleHorizontalKey(event, focusTargets, false)
 
     TransportButton {
-        id: shuffleButton
-        mediaAction: "shuffle"
-    }
-
-    TransportButton {
         id: previousButton
         mediaAction: "previous"
+        containerColor: MediaAccentService.accentContainer
+        contentColor: MediaAccentService.onAccentContainer
     }
 
     TransportButton {
         id: playButton
         mediaAction: "play"
         size: "m"
-        weight: DashMetrics.mediaPlayWidthRatio + (Number(shuffleButton.visible) + Number(repeatButton.visible)) * DashMetrics.mediaPlayWidthStep
-        variant: "filled"
-        iconSize: Theme.iconSizeLarge
-        containerColor: MediaAccentService.accentContainer
-        contentColor: MediaAccentService.onAccentContainer
+        weight: DashMetrics.mediaPlayWidthRatio
+        iconSize: Math.round(root.buttonSize * Theme.iconSizeLarge / Theme.buttonHeightM)
+        containerColor: MediaAccentService.accentSecondaryContainer
+        contentColor: MediaAccentService.onAccentSecondaryContainer
     }
 
     TransportButton {
         id: nextButton
         mediaAction: "next"
-    }
-
-    TransportButton {
-        id: repeatButton
-        mediaAction: "repeat"
+        containerColor: MediaAccentService.accentContainer
+        contentColor: MediaAccentService.onAccentContainer
     }
 
     component TransportButton: MediaTransportButton {
@@ -69,11 +63,13 @@ RowLayout {
         Layout.minimumWidth: Theme.iconSizeMedium + Theme.spacingXS * 2
         Layout.alignment: Qt.AlignVCenter
         round: false
-        buttonSize: Theme.buttonHeightM
-        radius: Theme.buttonRadius(width, height, buttonSize, pressed, false)
+        buttonSize: root.buttonSize
+        iconSize: Math.round(root.buttonSize * Theme.iconSize / Theme.buttonHeightM)
+        iconFilled: true
+        radius: Theme.buttonRadius(width, height, buttonSize, pressed, true)
         variant: "tonal"
-        containerColor: checked ? MediaAccentService.accentContainer : MediaAccentService.accentSecondaryContainer
-        contentColor: checked ? MediaAccentService.onAccentContainer : MediaAccentService.onAccentSecondaryContainer
+        containerColor: MediaAccentService.accentSecondaryContainer
+        contentColor: MediaAccentService.onAccentSecondaryContainer
 
         onTargetWeightChanged: widthSpring.retarget(targetWeight)
 

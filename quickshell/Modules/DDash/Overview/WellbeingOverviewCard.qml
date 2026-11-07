@@ -24,6 +24,7 @@ Card {
     readonly property bool overLimit: limitSeconds > 0 && today.active >= limitSeconds
 
     entryId: "wellbeing"
+    clickable: true
     clipContent: true
     pad: Theme.spacingM
     Accessible.name: I18n.tr("Screen time", "dashboard card and settings card title, time spent in apps")
@@ -61,9 +62,6 @@ Card {
         text: WellbeingService.formatDuration(root.today.active)
         font.pixelSize: root.wide ? Theme.fontSizeXXLarge : DashMetrics.tileValueSizeCompact
         font.weight: Theme.fontWeightMedium
-        font.features: ({
-                "tnum": 1
-            })
         color: root.overLimit ? Theme.error : root.contentColor
         elide: Text.ElideRight
     }
@@ -111,9 +109,6 @@ Card {
                     anchors.verticalCenter: parent.verticalCenter
                     text: WellbeingService.formatDuration(appRow.modelData.seconds)
                     font.pixelSize: Theme.fontSizeSmall
-                    font.features: ({
-                            "tnum": 1
-                        })
                     color: root.mutedColor
                 }
             }

@@ -7,8 +7,9 @@
 # Examples:
 #   ./distro/scripts/obs-status.sh              # Check all packages
 #   ./distro/scripts/obs-status.sh dms          # Check specific package
+#   OBS_BASE_PROJECT=home:duxlabs-dev ./distro/scripts/obs-status.sh   # Dux Labs projects (legacy is the default)
 
-OBS_BASE_PROJECT="home:AvengeMedia"
+OBS_BASE_PROJECT="${OBS_BASE_PROJECT:-home:AvengeMedia}"
 OBS_BASE="$HOME/.cache/osc-checkouts"
 
 ALL_PACKAGES=(dms dms-git)

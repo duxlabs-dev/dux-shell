@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Widgets
 import qs.Common
 import qs.Modules.DBar
+import qs.Modules.ProcessList
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
@@ -97,7 +98,9 @@ DPopout {
 
     function killWindow() {
         if (pid > 0)
-            Quickshell.execDetached(["kill", pid.toString()]);
+            Quickshell.execDetached(ProcessActions.treeArgv({
+                "pid": pid
+            }, "CONT", "TERM"));
         close();
     }
 
@@ -208,7 +211,7 @@ DPopout {
                         readonly property real labelWidth: Theme.iconButtonSize + Theme.iconSizeLarge
 
                         width: contentColumn.width
-                        implicitHeight: Theme.listItemHeight
+                        implicitHeight: BarMetrics.popoutRowHeight
                         firstInGroup: index === 0
                         lastInGroup: index === 2
 

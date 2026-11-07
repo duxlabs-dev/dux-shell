@@ -159,7 +159,12 @@ TAB_INDEX_MAP = {
     "BatteryTab.qml": 42,
     "MouseTouchpadTab.qml": 44,
     "KeyboardTab.qml": 45,
+    "Fcitx5Tab.qml": 68,
+    "Fcitx5AddonTab.qml": 69,
 }
+
+# Extra sidebar tabIndexes that reuse a file already in TAB_INDEX_MAP.
+TAB_INDEX_ALIASES = {70}
 
 # Pages that only work for a profile picked on the Profiles page, so search never opens them directly.
 UNSEARCHABLE_TABS = {73, 74}
@@ -177,6 +182,7 @@ SIDEBAR_GATE_CONDITIONS = [
     ("windowRulesCapable", "windowRulesCapable"),
     ("layoutCapable", "layoutCapable"),
     ("cellularOnly", "cellularAvailable"),
+    ("fcitx5Only", "fcitx5Available"),
 ]
 
 FILE_PAGE_MAP = {
@@ -283,6 +289,31 @@ def enrich_keywords(label, description, category, existing_tags, parent_label=No
 
     keywords = {k for k in keywords if k not in STOPWORDS and len(k) > 1}
     return sorted(keywords)
+
+
+def literal_args(value):
+    """Extract literal and supported runtime .arg() values from a setting description."""
+    call_tail = value.split("I18n.tr(", 1)[-1].split("I18n.tr(", 1)[0]
+    args = []
+    pattern = r"\.arg\(\s*(?:" + STR_DQ + "|" + STR_SQ + r"|(?P<dynamic>UsersService\.(?:adminGroup|greeterGroup)))?"
+    for match in re.finditer(pattern, call_tail):
+        if match.group(1) is not None:
+            args.append(decode_string_literal(match.group(1), '"'))
+        elif match.group(2) is not None:
+            args.append(decode_string_literal(match.group(2), "'"))
+        elif match.group("dynamic") is not None:
+            service, prop = match.group("dynamic").split(".", 1)
+            args.append({"service": service, "property": prop})
+        else:
+            args.append(None)
+    return args
+
+
+def apply_args(text, args):
+    for index, arg in enumerate(args, start=1):
+        if isinstance(arg, str):
+            text = text.replace(f"%{index}", arg)
+    return text
 
 
 def extract_i18n_string(value):
@@ -501,8 +532,10 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
 
             desc_raw = extract_property(own, "description") or extract_property(own, "summary") or defaults.get("description") or borrowed_description(block, setting_key)
             description = None
+            description_args = []
             if desc_raw and not is_status_notice(desc_raw):
                 description = extract_i18n_string(desc_raw)
+                description_args = literal_args(desc_raw)
 
             visible_raw = extract_property(own_scope(block), "visible")
             page_meta = hub_meta.get(file_page) if file_page else None
@@ -524,13 +557,6 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                     condition_key = "pointerCapable"
                 elif "CompositorService.supportsInputConfig" in visible_raw:
                     condition_key = "inputCapable"
-                elif "CompositorService.isAqueous" in visible_raw:
-                    if "CompositorService.isHyprland" in visible_raw:
-                        condition_key = "smartDockCapable"
-                    elif "CompositorService.isNiri" in visible_raw:
-                        condition_key = "nativeOverviewCapable"
-                    else:
-                        condition_key = "isAqueous"
                 elif all(c in visible_raw for c in ("CompositorService.isNiri", "CompositorService.isHyprland", "CompositorService.isMango")):
                     condition_key = "windowRulesCapable"
                 elif all(c in visible_raw for c in ("CompositorService.isNiri", "CompositorService.isHyprland")):
@@ -574,7 +600,7 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                 condition_key = next((cond for start, end, cond in card_conditions if start < match.start() < end), None)
 
             category, parent_label, _ = page_meta if page_meta else tab_meta.get(tab_index, TAB_META_DEFAULT)
-            enriched_keywords = enrich_keywords(label, description, category, tags, parent_label)
+            enriched_keywords = enrich_keywords(label, apply_args(description, description_args) if description else description, category, tags, parent_label)
 
             entry = {
                 "section": setting_key,
@@ -592,6 +618,8 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                 entry["icon"] = icon
             if description:
                 entry["description"] = description
+            if description_args and None not in description_args:
+                entry["descriptionArgs"] = description_args
             if condition_key:
                 entry["conditionKey"] = condition_key
 
@@ -663,6 +691,7 @@ def parse_structure_entry(block, parent=None):
         "tabIndex": int(tab_index_match.group(1)) if tab_index_match else None,
         "hint": i18n_prop(own, "hint"),
         "separator": '"separator": true' in own,
+        "dynamicTitle": '"titleFrom"' in own,
         "conditionKey": gate_condition(own) or (parent["conditionKey"] if parent else None),
         "parentLabel": parent["label"] if parent else None,
         "own": own,
@@ -747,7 +776,7 @@ def generate_tab_entries(leaves, settings_entries):
     entries = []
     for leaf in leaves:
         base_label = leaf["label"] or ""
-        if leaf["children"] or not (base_label or leaf["runtimeLabel"]) or leaf["tabIndex"] in UNSEARCHABLE_TABS:
+        if leaf["children"] or leaf["dynamicTitle"] or not (base_label or leaf["runtimeLabel"]) or leaf["tabIndex"] in UNSEARCHABLE_TABS:
             continue
         label = (
             f"{leaf['parentLabel']}: {base_label}"
@@ -906,7 +935,7 @@ def validate(all_entries, leaves, hubs, sidebar_file, root_dir):
         sidebar_content = f.read()
     sidebar_tabs = {leaf["tabIndex"] for leaf in leaves}
     file_backed_tabs = {leaf["tabIndex"] for leaf in leaves if not leaf["children"]}
-    mapped_tabs = set(TAB_INDEX_MAP.values())
+    mapped_tabs = set(TAB_INDEX_MAP.values()) | TAB_INDEX_ALIASES
     for tab_index in sorted(file_backed_tabs - mapped_tabs):
         errors.append(f"tabIndex {tab_index} in sidebar has no file in TAB_INDEX_MAP")
     with open(Path(__file__).parent / "en.json", "r", encoding="utf-8") as f:

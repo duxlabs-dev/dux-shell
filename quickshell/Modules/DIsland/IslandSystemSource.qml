@@ -29,11 +29,13 @@ QtObject {
         case "mic":
             return AudioService.sourceVolumePercent;
         case "brightness":
-            return BrightnessService.brightnessLevel;
+            BrightnessService.brightnessVersion;
+            return BrightnessService.getDeviceBrightness(brightnessDeviceId);
         }
         return 0;
     }
-    readonly property var brightnessDevice: BrightnessService.getCurrentDeviceInfo()
+    readonly property string brightnessDeviceId: BrightnessService.screenLeadDevice(controller.screen)
+    readonly property var brightnessDevice: BrightnessService.getCurrentDeviceInfoByName(brightnessDeviceId)
     readonly property real maximum: {
         switch (kind) {
         case "volume":
@@ -91,7 +93,7 @@ QtObject {
         case "powerprofile":
             return Theme.getPowerProfileIcon(PowerProfileWatcher.currentProfile);
         case "idleinhibitor":
-            return SessionService.idleInhibited ? "motion_sensor_active" : "motion_sensor_idle";
+            return "local_cafe";
         case "charging":
             return BatteryService.getBatteryIcon();
         }
@@ -112,7 +114,7 @@ QtObject {
     }
 
     function chargingValue() {
-        const level = Math.round(BatteryService.batteryLevel) + "%";
+        const level = Math.round(BatteryService.displayBatteryLevel) + "%";
         const seconds = BatteryService.estimatedSeconds();
         if (!seconds)
             return level;
@@ -141,7 +143,7 @@ QtObject {
             AudioService.setMicVolume(Math.round(clampedRatio * maximum));
             return;
         case "brightness":
-            BrightnessService.setBrightness(Math.round(clampedRatio * maximum), BrightnessService.lastIpcDevice, true);
+            BrightnessService.setGroupBrightness(Math.round(clampedRatio * maximum), BrightnessService.screenTargets(controller.screen), true);
             return;
         }
     }
@@ -197,7 +199,7 @@ QtObject {
         enabled: root.enabled
 
         function onBrightnessChanged(showOsd) {
-            if (showOsd && SettingsData.osdBrightnessEnabled)
+            if (showOsd && SettingsData.osdBrightnessEnabled && BrightnessService.screenTargetsLastDevice(root.controller.screen))
                 root.show("brightness");
         }
     }

@@ -14,8 +14,8 @@ printf '0.0.git.%s.%s\n' \
     "$(git rev-list --count HEAD)" \
     "$(git rev-parse --short=8 HEAD)"
 }}}
-%global pkg_summary Dux Shell - Material 3 inspired shell for Wayland compositors
-%global go_toolchain_version 1.27.1
+%global pkg_summary Dux Modular Shell - Material 3 inspired shell for Wayland compositors
+%global go_toolchain_version 1.27.3
 
 Name:           dms
 Epoch:          2
@@ -44,7 +44,7 @@ Requires:       dms-cli = %{epoch}:%{version}-%{release}
 
 # Core utilities (Recommended for DMS functionality)
 Recommends:     cava
-Recommends:     danksearch
+Recommends:     (dux-search or danksearch)
 Recommends:     matugen
 Recommends:     quickshell-git
 
@@ -53,9 +53,10 @@ Recommends:     NetworkManager
 Recommends:     qt6-qtmultimedia
 Suggests:       cups-pk-helper
 Suggests:       qt6ct
+Suggests:       (dux-gop or dgop)
 
 %description
-Dux Shell (DMS) is a modern Wayland desktop shell built with Quickshell
+Dux Modular Shell (DMS) is a modern Wayland desktop shell built with Quickshell
 and optimized for the niri, hyprland, sway, and dwl (MangoWC) compositors. Features notifications,
 app launcher, wallpaper customization, and fully customizable with plugins.
 
@@ -64,12 +65,12 @@ process monitoring, notification center, clipboard history, dock, control center
 lock screen, and comprehensive plugin system.
 
 %package -n dms-cli
-Summary:        Dux Shell CLI tool
+Summary:        Dux Modular Shell CLI tool
 License:        MIT
 URL:            https://github.com/duxlabs-dev/dux-shell
 
 %description -n dms-cli
-Command-line interface for Dux Shell configuration and management.
+Command-line interface for Dux Modular Shell configuration and management.
 Provides native DBus bindings, NetworkManager integration, and system utilities.
 
 %prep

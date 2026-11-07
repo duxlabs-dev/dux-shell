@@ -32,6 +32,19 @@ test("index keeps the existing category, root, format, size and tie priorities",
     assert.equal(build(ties).icon, ties[0]);
 });
 
+test("index prefers rasters up to 256px over larger ones, and the smallest of those otherwise", () => {
+    const cases = [
+        ["/system/hicolor/apps/1024x1024/icon.png", "/system/hicolor/apps/256x256/icon.png"],
+        ["/system/hicolor/apps/512x512/icon.png", "/system/hicolor/apps/128x128/icon.png"],
+        ["/system/hicolor/apps/1024x1024/icon.png", "/system/hicolor/apps/512x512/icon.png"],
+        ["/system/hicolor/apps/256x256/icon.png", "/system/hicolor/apps/scalable/icon.png"]
+    ];
+    for (const [loser, winner] of cases) {
+        assert.equal(build([loser, winner]).icon, winner);
+        assert.equal(build([winner, loser]).icon, winner);
+    }
+});
+
 test("index bounds retained paths by resolvable names and handles object property names", () => {
     const paths = ["/user/theme/apps/icon.svg", "/user/theme/apps/16/icon.png", "/system/pixmaps/loose.xpm", "/user/theme/apps/__proto__.svg", "/user/theme/apps/constructor.png", "/user/theme/apps/not a name.svg"];
     const result = build(paths);

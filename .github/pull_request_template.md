@@ -28,4 +28,4 @@
 - [ ] New user-facing strings are wrapped in `I18n.tr()` with translator context, reusing existing terms where possible
 - [ ] Go changes: ran `make fmt`, added/updated tests, `make test` passes, and `go mod tidy` is clean
 - [ ] QML changes: ran `make lint-qml` with no new warnings
-- [ ] I have opened a corresponding pull request in dlx-docs to document any new behaviors: https://github.com/duxlabs-dev/dux-docs
+- [ ] I have opened a corresponding pull request in dux-docs to document any new behaviors: https://github.com/duxlabs-dev/dux-docs

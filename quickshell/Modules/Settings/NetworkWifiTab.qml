@@ -176,7 +176,7 @@ Item {
                     title: I18n.tr("Forget network"),
                     message: I18n.tr("Forget \"%1\"?", "forget wifi network confirmation, %1 is the network name").arg(ssid),
                     confirmText: I18n.tr("Forget", "verb, remove a saved wifi network, button"),
-                    confirmColor: Theme.error,
+                    danger: true,
                     onConfirm: () => NetworkService.forgetWifiNetwork(ssid)
                 });
             }
@@ -346,7 +346,7 @@ Item {
                     readonly property bool isExpanded: root.expandedWifiSsid === modelData.ssid
 
                     width: parent?.width ?? 0
-                    spacing: Theme.groupedListGap
+                    spacing: SettingsMetrics.groupGap
                     SettingsRow {
                         id: wifiNetworkRow
                         title: wifiNetworkDelegate.modelData.ssid || I18n.tr("Unknown")
@@ -525,7 +525,7 @@ Item {
                     readonly property var detailFields: networkWifiTab.wifiDetailFields(modelData)
 
                     width: parent?.width ?? 0
-                    spacing: Theme.groupedListGap
+                    spacing: SettingsMetrics.groupGap
 
                     SettingsRow {
                         id: savedWifiRow
@@ -958,8 +958,7 @@ Item {
                     iconName: NetworkService.hotspotEnabled ? "stop" : "wifi_tethering"
                     buttonHeight: 36
                     enabled: !hotspotCard.starting && (NetworkService.hotspotEnabled || hotspotCard.buildCanConfigure())
-                    backgroundColor: NetworkService.hotspotEnabled ? Theme.error : Theme.primary
-                    textColor: NetworkService.hotspotEnabled ? Theme.surfaceText : Theme.onPrimary
+                    danger: NetworkService.hotspotEnabled
                     onClicked: hotspotCard.startOrStop()
                 }
             }

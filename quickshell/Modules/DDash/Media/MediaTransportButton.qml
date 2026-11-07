@@ -9,6 +9,8 @@ import qs.DCommon.Widgets
 DIconButton {
     id: root
 
+    focusRingColor: MediaAccentService.focusRing
+
     required property var player
     required property string mediaAction
     property bool keepNavigation: false

@@ -105,6 +105,17 @@ func TestMigrateLegacyDirs(t *testing.T) {
 				assert.Equal(t, "dotfiles", readMigrationFile(t, filepath.Join(home, "config", "dms", "settings.json")))
 			},
 		},
+		{
+			name: "dangling legacy link to a deleted dms dir is not linked back",
+			setup: func(t *testing.T, home string) {
+				require.NoError(t, os.MkdirAll(filepath.Join(home, "config"), 0o755))
+				require.NoError(t, os.Symlink("dms", filepath.Join(home, "config", "DankMaterialShell")))
+			},
+			verify: func(t *testing.T, home string) {
+				_, err := os.Lstat(filepath.Join(home, "config", "dms"))
+				assert.True(t, os.IsNotExist(err))
+			},
+		},
 	}
 
 	for _, tt := range tests {

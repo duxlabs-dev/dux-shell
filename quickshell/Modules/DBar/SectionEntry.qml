@@ -23,6 +23,7 @@ Item {
     readonly property real minimumSize: available && widgetItem && "minimumPrimarySize" in widgetItem ? Math.min(preferredSize, widgetItem.minimumPrimarySize) : preferredSize
     readonly property real allottedSize: sectionContext.allottedSizes[occurrenceOrder] ?? 0
     readonly property string overflowMode: OverflowLayout.placement(itemData, sectionContext.overflowDefaultMode)
+    readonly property real overflowPriority: OverflowLayout.priority(itemData)
     readonly property bool inOverflow: overflowMode === "always" || sectionContext.overflowIndices.includes(occurrenceOrder)
     readonly property bool inPopup: inOverflow && sectionContext.overflowOpen && !!sectionContext.overflowParent
     readonly property bool participates: available && !inOverflow

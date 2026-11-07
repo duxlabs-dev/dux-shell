@@ -23,6 +23,9 @@ Singleton {
     property bool userManagerAvailable: false
     property bool hibernateSupported: false
     readonly property bool softRebootSupported: systemctlCommandAvailable
+    // The firmware advertises boot-to-setup in OsIndicationsSupported, the same bit logind checks
+    property bool firmwareSetupAdvertised: false
+    readonly property bool firmwareSetupSupported: !isBSD && firmwareSetupAdvertised && (systemctlCommandAvailable || loginctlCommandAvailable)
     property bool inhibitorAvailable: true
     property bool idleInhibited: false
     property string inhibitReason: "Keep system awake"
@@ -111,9 +114,10 @@ loginctl=0; command -v loginctl >/dev/null 2>&1 && loginctl=1
 systemctl=0; usermgr=0
 if command -v systemctl >/dev/null 2>&1; then systemctl=1; systemctl --user --no-pager show-environment >/dev/null 2>&1 && usermgr=1; fi
 hibernate=0; grep -q disk /sys/power/state 2>/dev/null && hibernate=1
+fwsetup=0; b=$(od -An -tu1 -j4 -N1 /sys/firmware/efi/efivars/OsIndicationsSupported-8be4df61-93ca-11d2-aa0d-00e098032b8c 2>/dev/null); [ -n "$b" ] && [ $(($b & 1)) = 1 ] && fwsetup=1
 nvidia=; command -v prime-run >/dev/null 2>&1 && nvidia=prime-run
 [ -z "$nvidia" ] && command -v nvidia-offload >/dev/null 2>&1 && nvidia=nvidia-offload
-printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s\nnvidia=%s\n' "$uwsm" "$elogind" "$loginctl" "$systemctl" "$usermgr" "$hibernate" "$nvidia"`]
+printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s\nfwsetup=%s\nnvidia=%s\n' "$uwsm" "$elogind" "$loginctl" "$systemctl" "$usermgr" "$hibernate" "$fwsetup" "$nvidia"`]
 
         stdout: SplitParser {
             splitMarker: "\n"
@@ -140,6 +144,9 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
                     return;
                 case "hibernate":
                     root.hibernateSupported = !root.isBSD && value === "1";
+                    return;
+                case "fwsetup":
+                    root.firmwareSetupAdvertised = value === "1";
                     return;
                 case "nvidia":
                     root.nvidiaCommand = value;
@@ -430,10 +437,6 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
 
     function _logout() {
         if (SettingsData.customPowerActionLogout.length === 0) {
-            if (CompositorService.isAqueous) {
-                AqueousService.quit();
-                return;
-            }
             if (CompositorService.isNiri) {
                 NiriService.quit();
                 return;
@@ -450,7 +453,7 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
             }
 
             if (CompositorService.isUmbriel) {
-                UmbrielService.action("session-quit:skip-confirmation");
+                UmbrielService.action("session-quit", "skip-confirmation");
                 return;
             }
 
@@ -587,6 +590,27 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
         Quickshell.execDetached(["systemctl", "soft-reboot"]);
     }
 
+    // Skips customPowerActionReboot: no systemctl or loginctl command sets the firmware flag without also rebooting.
+    function rebootToFirmwareSetup() {
+        firmwareSetupProcess.running = true;
+    }
+
+    Process {
+        id: firmwareSetupProcess
+        running: false
+        command: root.powerManagerCommand("reboot").concat(["--firmware-setup"])
+
+        stderr: StdioCollector {
+            id: firmwareSetupErrors
+        }
+
+        onExited: exitCode => {
+            if (exitCode === 0)
+                return;
+            ToastService.showError(I18n.tr("Failed to reboot to firmware setup", "error toast, firmware setup is the UEFI/BIOS settings screen"), firmwareSetupErrors.text.trim());
+        }
+    }
+
     function poweroff() {
         if (SettingsData.customPowerActionPowerOff.length === 0) {
             Quickshell.execDetached(powerManagerCommand("poweroff"));
@@ -595,11 +619,12 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
         }
     }
 
-    // Actions added in settings, listed after the built-in ones: boot entries, then custom buttons.
-    // Each list lines up index for index with its setting.
+    // Actions added in settings, listed after the built-in ones: firmware setup, boot entries, then custom buttons.
+    // The boot entry and custom lists line up index for index with their setting.
     readonly property var bootEntryActions: (SettingsData.powerMenuBootEntries || []).map(entry => "bootnext:" + entry.id)
+    readonly property var firmwareSetupActions: SettingsData.powerMenuFirmwareSetup && firmwareSetupSupported ? ["firmwaresetup"] : []
     readonly property var customPowerActions: (SettingsData.customPowerButtons || []).map((button, i) => "custom:" + i)
-    readonly property var extraPowerActions: bootEntryActions.concat(customPowerActions)
+    readonly property var extraPowerActions: firmwareSetupActions.concat(bootEntryActions, customPowerActions)
 
     function isPowerActionSupported(action) {
         switch (action) {
@@ -641,6 +666,11 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
             return true;
         case "softreboot":
             softReboot();
+            return true;
+        case "firmwaresetup":
+            if (!firmwareSetupSupported)
+                return false;
+            rebootToFirmwareSetup();
             return true;
         case "poweroff":
             poweroff();
@@ -684,6 +714,12 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
                 "icon": "autorenew",
                 "label": I18n.tr("Soft reboot"),
                 "key": "B"
+            };
+        case "firmwaresetup":
+            return {
+                "icon": "developer_board",
+                "label": I18n.tr("Reboot to firmware setup", "power menu action, firmware setup is the UEFI/BIOS settings screen"),
+                "key": "F"
             };
         case "logout":
             return {
@@ -770,6 +806,7 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
             return;
         idleInhibited = enabled;
         inhibitorChanged();
+        syncKeepAwake();
     }
 
     // Both entry points are deliberate: the singletons are created lazily in no fixed order, so
@@ -828,6 +865,7 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
 
         function onCapabilitiesReceived() {
             syncSleepInhibitor();
+            syncKeepAwake();
         }
     }
 
@@ -871,6 +909,10 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
                 syncLockBeforeSuspend();
             }
             syncSleepInhibitor();
+        }
+
+        function onKeepAwakeBlocksSleepChanged() {
+            syncKeepAwake();
         }
     }
 
@@ -939,8 +981,20 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
     function handleLidPropertiesChanged(data) {
         if (data?.path !== "/org/freedesktop/UPower" || data.body?.[0] !== "org.freedesktop.UPower")
             return;
-        if (data.body?.[1]?.LidIsClosed === false)
+        const lidClosed = data.body?.[1]?.LidIsClosed;
+        if (lidClosed === false)
             lidOpened();
+        else if (lidClosed === true)
+            lockOnLidCloseWhileKeepingAwake();
+    }
+
+    // Keep Awake blocks the suspend that would have locked the session.
+    function lockOnLidCloseWhileKeepingAwake() {
+        if (!idleInhibited || !SettingsData.keepAwakeBlocksSleep || !SettingsData.lockBeforeSuspend || locked)
+            return;
+        if (Quickshell.screens.some(screen => !/^(eDP|LVDS|DSI)/.test(screen.name)))
+            return;
+        IdleService.lockRequested();
     }
 
     function ensurePrepareForSleepSubscription() {
@@ -1024,6 +1078,17 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
             } else {
                 log.debug("Synced sleep inhibitor:", SettingsData.loginctlLockIntegration);
             }
+        });
+    }
+
+    function syncKeepAwake() {
+        if (!loginctlAvailable)
+            return;
+        DMSService.sendRequest("loginctl.setKeepAwake", {
+            enabled: idleInhibited && SettingsData.keepAwakeBlocksSleep
+        }, response => {
+            if (response.error)
+                log.warn("Failed to sync keep awake:", response.error);
         });
     }
 

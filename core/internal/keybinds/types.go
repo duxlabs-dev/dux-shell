@@ -19,6 +19,9 @@ type Keybind struct {
 	AllowWhenLocked bool     `json:"allowWhenLocked,omitempty"`
 	AllowInhibiting *bool    `json:"allowInhibiting,omitempty"` // nil=default(true), false=explicitly disabled
 	Repeat          *bool    `json:"repeat,omitempty"`          // nil=default(true), false=explicitly disabled
+	Trigger         string   `json:"trigger,omitempty"`         // niri: ""=press, "release", "both"; Action is the release action when "release"
+	ReleaseAction   string   `json:"releaseAction,omitempty"`   // niri: release action when Trigger is "both"
+	PassThrough     *bool    `json:"passThrough,omitempty"`     // niri: nil=default (forward for release-only keyboard binds)
 	Conflict        *Keybind `json:"conflict,omitempty"`
 	HasDefault      bool     `json:"hasDefault,omitempty"` // override has a DMS default to revert to
 }
@@ -32,8 +35,6 @@ type DMSBindsStatus struct {
 	Effective       bool   `json:"effective"`
 	OverriddenBy    int    `json:"overriddenBy"`
 	StatusMessage   string `json:"statusMessage"`
-	ConfigFormat    string `json:"configFormat,omitempty"`
-	ReadOnly        bool   `json:"readOnly,omitempty"`
 }
 
 const (
@@ -83,7 +84,6 @@ func CanonicalModifier(modifier string) string {
 }
 
 type CheatSheet struct {
-	Generation       string               `json:"generation,omitempty"`
 	Title            string               `json:"title"`
 	Provider         string               `json:"provider"`
 	ModKey           string               `json:"modKey,omitempty"`
@@ -127,7 +127,5 @@ func DMSBindsStatusFrom(s configfrag.Status) *DMSBindsStatus {
 		Effective:       s.Effective,
 		OverriddenBy:    s.OverriddenBy,
 		StatusMessage:   s.StatusMessage,
-		ConfigFormat:    s.ConfigFormat,
-		ReadOnly:        s.ReadOnly,
 	}
 }

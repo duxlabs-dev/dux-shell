@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Services
+import "RepoMoveNotice.js" as RepoMoveNotice
 
 Singleton {
     id: root
@@ -61,6 +62,9 @@ Singleton {
     // -1 while unknown (stable channel or no feed yet)
     property int commitsBehind: -1
     property var releases: null
+    // Repo files, not URLs: what `dms migrate dux` would move.
+    property var legacyRepos: []
+    property string migrateCommand: "dms migrate dux"
 
     readonly property int updateCount: availableUpdates.length
     readonly property var systemUpdates: availableUpdates.filter(p => !shellUpdate || p.name !== shellUpdate.name)
@@ -117,11 +121,28 @@ Singleton {
     }
 
     Connections {
+        target: SessionData
+        function onLoaded() {
+            root._maybeNotifyRepoMove();
+        }
+    }
+
+    Connections {
+        target: ShellVersionService
+        function onSemverVersionChanged() {
+            root._maybeNotifyRepoMove();
+        }
+    }
+
+    Connections {
         target: SettingsData
         function onUpdaterCheckOnStartChanged() {
             Qt.callLater(() => root._maybeStartupCheck());
         }
         function onUpdaterAllowAURChanged() {
+            root._refilter();
+        }
+        function onUpdaterIncludeFlatpakChanged() {
             root._refilter();
         }
         function onUpdaterIgnoredPackagesChanged() {
@@ -148,6 +169,7 @@ Singleton {
         const has = DMSService.capabilities.includes("sysupdate");
         if (has && !sysupdateAvailable) {
             sysupdateAvailable = true;
+            requestRepoStatus();
             if (pollWanted) {
                 requestState();
                 // The daemon persists its last check but not the interval; re-apply it on every fresh connection.
@@ -170,6 +192,39 @@ Singleton {
         });
     }
 
+    function requestRepoStatus() {
+        DMSService.sysupdateRepoStatus(resp => {
+            const result = resp?.result;
+            if (!result)
+                return;
+            root.legacyRepos = result.legacy || [];
+            root.migrateCommand = result.command || "dms migrate dux";
+            root._maybeNotifyRepoMove();
+        });
+    }
+
+    function _maybeNotifyRepoMove() {
+        if (_repoNoticeInFlight || !SessionData._hasLoaded)
+            return;
+        const current = ShellVersionService.semverVersion;
+        if (!RepoMoveNotice.repoNoticeDue(legacyRepos, SessionData.repoMoveNoticeVersion, current))
+            return;
+        _repoNoticeInFlight = true;
+        DMSService.notifySend({
+            "summary": I18n.tr("Package repositories moved", "notification title, the DMS package repositories moved to a new owner"),
+            "body": I18n.tr("Run %1 in a terminal.", "%1 is a shell command").arg(migrateCommand),
+            "actionLabel": I18n.tr("Settings"),
+            "actionArgs": ["ipc", "call", "settings", "openWith", "updater"]
+        }, resp => {
+            root._repoNoticeInFlight = false;
+            if (!resp || resp.error)
+                return;
+            SessionData.set("repoMoveNoticeVersion", current);
+        });
+    }
+
+    property bool _repoNoticeInFlight: false
+
     function _applyState(data) {
         if (!data) {
             return;
@@ -183,7 +238,7 @@ Singleton {
         distributionPretty = data.distroPretty || "";
         distributionSupported = (backends.length > 0);
         recentLog = data.recentLog || [];
-        intervalSeconds = data.intervalSeconds || 86400;
+        intervalSeconds = data.intervalSeconds ?? 86400;
         const checked = data.lastCheckUnix || 0;
         const freshCheck = _stateSeeded && checked > lastCheckUnix;
         _stateSeeded = true;
@@ -274,6 +329,8 @@ Singleton {
     function _filterUpdates(pkgs) {
         return (pkgs || []).filter(p => {
             if (!SettingsData.updaterAllowAUR && p.repo === "aur")
+                return false;
+            if (!SettingsData.updaterIncludeFlatpak && p.repo === "flatpak")
                 return false;
             if (!canIgnorePackage(p))
                 return true;

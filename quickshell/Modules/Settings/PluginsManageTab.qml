@@ -61,7 +61,7 @@ FocusScope {
 
             SettingsRow {
                 body: StyledText {
-                    text: I18n.tr("Place plugin directories here. Each plugin should have a plugin.json manifest file.")
+                    text: I18n.tr("Place plugin directories here. Each plugin should have a %1 manifest file.", "plugin directory note, %1 is the manifest file name").arg("plugin.json")
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
                     wrapMode: Text.WordWrap
@@ -90,8 +90,7 @@ FocusScope {
                 DButton {
                     text: I18n.tr("Scan", "verb, button that scans for plugins, wifi networks or bluetooth devices")
                     iconName: "refresh"
-                    backgroundColor: Theme.secondaryContainer
-                    textColor: Theme.onSecondaryContainer
+                    variant: "tonal"
                     maximumWidth: parent.width
                     wrapText: true
                     enabled: !DMSService.checkingPluginUpdates

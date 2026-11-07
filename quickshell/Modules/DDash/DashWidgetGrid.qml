@@ -173,23 +173,27 @@ Item {
                     }
                 }
 
-                DashEditChrome {
+                Loader {
                     anchors.fill: parent
-                    anchors.margins: -contentInset
+                    anchors.margins: -PopoutMetrics.editOverflow
                     z: 2
-                    visible: root.editMode
-                    enabled: slot.interactionEnabled
-                    cornerRadius: root.cardRadius
-                    dragging: slot.dragging
-                    resizing: slot.resizing
-                    hasOptions: WidgetUtils.optionSpecs(slot.spec).length > 0
-                    sizeText: (grid.sizePreview?.index === slot.index ? grid.sizePreview.changes.w : slot.widget.w) + "×" + (grid.sizePreview?.index === slot.index ? grid.sizePreview.changes.h : slot.widget.h)
-                    onRemoveRequested: root.save(root.widgets.filter((w, i) => i !== slot.index))
-                    onOptionsRequested: optionsSheet.presentFor(slot.widget.id)
-                    onResizeStarted: (px, py) => slot.beginResize(px, py)
-                    onResizeMoved: (px, py) => slot.resizeTo(px, py)
-                    onResizeEnded: slot.finishResize()
-                    onResizeCanceled: slot.cancelResize()
+                    active: root.editMode || slot.resizing
+
+                    sourceComponent: DashEditChrome {
+                        visible: root.editMode
+                        enabled: slot.interactionEnabled
+                        cornerRadius: root.cardRadius
+                        dragging: slot.dragging
+                        resizing: slot.resizing
+                        hasOptions: WidgetUtils.optionSpecs(slot.spec).length > 0
+                        sizeText: (grid.sizePreview?.index === slot.index ? grid.sizePreview.changes.w : slot.widget.w) + "×" + (grid.sizePreview?.index === slot.index ? grid.sizePreview.changes.h : slot.widget.h)
+                        onRemoveRequested: root.save(root.widgets.filter((w, i) => i !== slot.index))
+                        onOptionsRequested: optionsSheet.presentFor(slot.widget.id)
+                        onResizeStarted: (px, py) => slot.beginResize(px, py)
+                        onResizeMoved: (px, py) => slot.resizeTo(px, py)
+                        onResizeEnded: slot.finishResize()
+                        onResizeCanceled: slot.cancelResize()
+                    }
                 }
             }
         }

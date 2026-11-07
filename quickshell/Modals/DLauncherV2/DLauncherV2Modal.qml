@@ -7,6 +7,8 @@ Item {
     readonly property var log: Log.scoped("DLauncherV2Modal")
 
     readonly property bool spotlightOpen: impl.item ? impl.item.spotlightOpen : false
+    readonly property bool shouldBeVisible: impl.item ? impl.item.shouldBeVisible : false
+    readonly property string layerNamespace: impl.item ? (impl.item.layerNamespace ?? "dms:launcher") : "dms:launcher"
     readonly property bool isClosing: impl.item ? impl.item.isClosing : false
     readonly property bool keyboardActive: impl.item ? impl.item.keyboardActive : false
     readonly property bool contentVisible: impl.item ? impl.item.contentVisible : false
@@ -20,6 +22,10 @@ Item {
     readonly property int modalHeight: impl.item ? impl.item.modalHeight : Theme.launcherHeightDefault
     readonly property real modalX: impl.item ? impl.item.modalX : 0
     readonly property real modalY: impl.item ? impl.item.modalY : 0
+    readonly property real alignedX: impl.item ? impl.item.alignedX : 0
+    readonly property real alignedY: impl.item ? impl.item.alignedY : 0
+    readonly property real alignedWidth: impl.item ? impl.item.alignedWidth : 0
+    readonly property real alignedHeight: impl.item ? impl.item.alignedHeight : 0
     readonly property bool frameOwnsConnectedChrome: impl.item ? (impl.item.frameOwnsConnectedChrome ?? false) : false
     readonly property string resolvedConnectedBarSide: impl.item ? (impl.item.resolvedConnectedBarSide ?? "") : ""
     readonly property bool launcherArcExtenderActive: impl.item ? (impl.item.launcherArcExtenderActive ?? false) : false

@@ -10,6 +10,7 @@ SettingsRow {
     property string description: ""
     property string currentValue: ""
     property alias options: dropdown.options
+    property alias optionValues: dropdown.optionValues
     property alias optionIcons: dropdown.optionIcons
     property alias optionImages: dropdown.optionImages
     property alias optionIconMap: dropdown.optionIconMap

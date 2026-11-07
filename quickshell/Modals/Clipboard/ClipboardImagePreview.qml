@@ -66,7 +66,7 @@ ClippingRectangle {
 
     Rectangle {
         anchors.fill: parent
-        color: Theme.withAlpha(Theme.scrimColor, Theme.scrimAlpha)
+        color: Theme.withAlpha(Theme.backdropColor, Theme.scrimAlpha)
     }
 
     MouseArea {

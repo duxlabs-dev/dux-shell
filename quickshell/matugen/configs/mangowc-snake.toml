@@ -1,4 +1,0 @@
-[templates.dmsmango]
-input_path = 'SHELL_DIR/matugen/templates/mango-colors-snake.conf'
-output_path = 'CONFIG_DIR/mango/dms/colors.conf'
-post_hook = 'sh -c "[ -n \"$MANGO_INSTANCE_SIGNATURE\" ] && mmsg dispatch reload_config || true"'

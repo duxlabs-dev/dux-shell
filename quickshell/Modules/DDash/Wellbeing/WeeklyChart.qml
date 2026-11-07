@@ -123,9 +123,6 @@ DCard {
                 text: WellbeingService.formatDuration(root.hoverDay ? root.hoverDay.active : root.total)
                 font.pixelSize: Theme.fontSizeXLarge
                 font.weight: Theme.fontWeightBold
-                font.features: ({
-                        "tnum": 1
-                    })
                 color: root.accentColor
             }
 
@@ -164,9 +161,6 @@ DCard {
                     text: root.rangeText
                     font.pixelSize: Theme.fontSizeSmall
                     font.weight: Theme.fontWeightMedium
-                    font.features: ({
-                            "tnum": 1
-                        })
                     color: root.weekOffset === 0 ? root.accentColor : root.contentColor
                     elide: Text.ElideRight
                 }
@@ -395,9 +389,6 @@ DCard {
                         y: root.yFor(modelData * Wellbeing.secondsPerHour) - height / 2
                         text: I18n.tr("%1h", "hours abbreviation, %1 is a number").arg(modelData)
                         font.pixelSize: Theme.fontSizeSmall
-                        font.features: ({
-                                "tnum": 1
-                            })
                         color: root.mutedColor
                     }
                 }

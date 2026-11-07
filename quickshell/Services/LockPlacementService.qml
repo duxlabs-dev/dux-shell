@@ -7,8 +7,26 @@ import qs.Common
 Singleton {
     id: root
 
+    readonly property int sampleSize: 128
     property var decodedSamples: ({})
     property var layouts: ({})
+    property var scrollSamplers: ({})
+
+    function setScrollSampler(screenName, present) {
+        const next = Object.assign({}, scrollSamplers);
+        if (present)
+            next[screenName] = true;
+        else
+            delete next[screenName];
+        scrollSamplers = next;
+    }
+
+    function usesScrollAtlas(screenName) {
+        if (!scrollSamplers[screenName] || SettingsData.lockScreenWallpaperPath !== "")
+            return false;
+        const source = SessionData.getMonitorWallpaper(screenName);
+        return !!source && !source.startsWith("#") && (SettingsData.lockScreenWallpaperFillMode || SessionData.getMonitorWallpaperFillMode(screenName)) === "Scrolling";
+    }
 
     function neededFor(screen) {
         return SettingsData.lockScreenWidgetInstances.some(instance => {
@@ -21,7 +39,7 @@ Singleton {
 
     function backgroundKey(screenName, width, height) {
         const custom = SettingsData.lockScreenWallpaperPath !== "";
-        const source = custom ? SettingsData.lockScreenWallpaperPath : SessionData.getMonitorWallpaper(screenName);
+        const source = custom ? SettingsData.lockScreenWallpaperPath : SessionData.getMonitorWallpaperImage(screenName);
         const backdrop = !source || source.startsWith("#");
         const fill = SettingsData.lockScreenWallpaperFillMode || (custom ? "Fill" : SessionData.getMonitorWallpaperFillMode(screenName));
         return JSON.stringify([1, source, width, height, fill, fill === "Scrolling" ? SessionData.getMonitorScrollPosition(screenName) : null, backdrop ? SessionData.getMonitorMaterialWallpaper(screenName) : null, backdrop ? Theme.wallpaperPalette() : null, Theme.lockScreenBlur, Theme.lockScreenBlurMax, Theme.lockScreenScrimAlpha, Theme.screenOffColor.toString(), SettingsData.effectiveWallpaperBackgroundColor.toString()]);

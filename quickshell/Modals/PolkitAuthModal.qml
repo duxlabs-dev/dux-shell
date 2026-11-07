@@ -38,6 +38,8 @@ DFloatingWindow {
     title: I18n.tr("Authentication", "noun, polkit dialog title and settings section title")
     minimumSize: Qt.size(Theme.dialogMaxWidth, Math.min((screen?.height ?? 1080) - Theme.spacingXL * 2, Math.max(220, contentLoader.item?.implicitHeight ?? 0)))
     maximumSize: minimumSize
+    implicitWidth: minimumSize.width
+    implicitHeight: minimumSize.height
     visible: false
 
     onClosed: cancelAuth()

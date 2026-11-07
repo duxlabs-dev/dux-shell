@@ -1,11 +1,11 @@
 %global debug_package %{nil}
-%global go_toolchain_version 1.27.1
+%global go_toolchain_version 1.27.3
 
 Name:           dms-git
 Version:        1.4.0+git2528.d336866f
 Release:        1%{?dist}
 Epoch:          2
-Summary:        Dux Shell - Material 3 inspired shell (git nightly)
+Summary:        Dux Modular Shell - Material 3 inspired shell (git nightly)
 
 License:        MIT
 URL:            https://github.com/duxlabs-dev/dux-shell
@@ -20,20 +20,21 @@ Requires:       (quickshell-git or quickshell)
 Requires:       accountsservice
 
 Recommends:     cava
-Recommends:     danksearch
+Recommends:     (dux-search or danksearch)
 Recommends:     matugen
 Recommends:     quickshell-git
 Recommends:     NetworkManager
 Recommends:     qt6-multimedia-imports
 Suggests:       cups-pk-helper
 Suggests:       qt6ct
+Suggests:       (dux-gop or dgop)
 
 Provides:       dms
 Conflicts:      dms
 Obsoletes:      dms
 
 %description
-Dux Shell (DMS) is a modern Wayland desktop shell built with Quickshell
+Dux Modular Shell (DMS) is a modern Wayland desktop shell built with Quickshell
 and optimized for niri, Hyprland, Sway, and other wlroots compositors.
 
 This git version tracks the master branch and includes the latest features

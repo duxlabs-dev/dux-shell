@@ -299,7 +299,7 @@ func browsePlugins() error {
 		return nil
 	}
 
-	feedback := plugins.FetchFeedback()
+	feedback := plugins.FetchFeedback(false)
 
 	nameByID := make(map[string]string, len(pluginList))
 	for _, plugin := range pluginList {
@@ -767,6 +767,7 @@ func getCommonCommands() []*cobra.Command {
 		versionCmd,
 		ipcCmd,
 		debugSrvCmd,
+		sysmonHelperCmd,
 		pluginsCmd,
 		registryCmd,
 		profileCmd,
@@ -796,6 +797,7 @@ func getCommonCommands() []*cobra.Command {
 		systemdCmd,
 		switchUserCmd,
 		switchCmd,
+		migrateCmd,
 		dmenuCmd,
 	}...)
 }

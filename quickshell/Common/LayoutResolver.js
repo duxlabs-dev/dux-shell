@@ -44,9 +44,10 @@ function islandMetrics(config, defaults) {
     const compact = Math.max(24, Math.min(72, value("islandCompactThickness")));
     const gap = value("islandNotch") ? 0 : Math.max(0, Math.min(48, value("islandOuterGap")));
     const thickness = Math.max(strip, gap + compact);
-    // The default reservation follows the pill; any other value is reserved as set.
+    // The default reservation follows the pill itself, so windows stop right under it at any pill size;
+    // the default strip only pads the painted band. Any other value is reserved as set.
     return {
-        reserve: value("islandReserveThickness") === defaults.islandReserveThickness ? thickness : strip,
+        reserve: value("islandReserveThickness") === defaults.islandReserveThickness ? gap + compact : strip,
         compact,
         gap,
         thickness

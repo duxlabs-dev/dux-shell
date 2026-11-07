@@ -15,8 +15,7 @@ FocusScope {
     property real alignedWidth: 0
     property real alignedHeight: 0
     property QtObject resizeGeometry: null
-    readonly property real sideInset: Theme.spacingXS
-    property real bottomInset: Theme.spacingM
+    readonly property real inset: CcMetrics.islandInset
     property bool _heightReportPending: false
     signal windowRequested(string windowName)
 
@@ -44,7 +43,7 @@ FocusScope {
         root._heightReportPending = true;
         Qt.callLater(() => {
             root._heightReportPending = false;
-            root.controller.setDestinationContentHeight("controlcenter", content.targetImplicitHeight + Theme.spacingXS + root.bottomInset);
+            root.controller.setDestinationContentHeight("controlcenter", content.targetImplicitHeight + root.inset * 2);
         });
     }
 
@@ -58,9 +57,9 @@ FocusScope {
 
         readonly property int gridColumnCap: root.controller.controlCenterColumnCap
         readonly property int gridColumns: root.controller.controlCenterColumns
-        readonly property real availableHeight: root.controller.controlCenterMaxHeight - Theme.spacingXS - root.bottomInset
-        readonly property real sheetContentWidth: root.controller.controlCenterSheetWidth + root.controller.controlCenterSheetInset - root.sideInset * 2
-        readonly property real renderedAlignedX: (root.resizeGeometry?.renderedX ?? 0) + root.sideInset
+        readonly property real availableHeight: root.controller.controlCenterMaxHeight - root.inset * 2
+        readonly property real sheetContentWidth: root.controller.controlCenterSheetWidth
+        readonly property real renderedAlignedX: (root.resizeGeometry?.renderedX ?? 0) + root.inset
         readonly property real renderedAlignedY: root.resizeGeometry?.renderedY ?? 0
         readonly property bool shouldBeVisible: root.controller.activeActivity === "controlcenter" && root.controller.expanded
         readonly property bool headerTogglesClose: true
@@ -105,7 +104,7 @@ FocusScope {
         }
 
         function alignedXFor(width) {
-            return (root.resizeGeometry?.screenXFor(width + root.sideInset * 2) ?? 0) + root.sideInset;
+            return (root.resizeGeometry?.screenXFor(width + root.inset * 2) ?? 0) + root.inset;
         }
     }
 
@@ -155,13 +154,8 @@ FocusScope {
     ControlCenterContent {
         id: content
 
-        anchors {
-            fill: parent
-            leftMargin: root.sideInset
-            rightMargin: root.sideInset
-            topMargin: Theme.spacingXS
-            bottomMargin: root.bottomInset
-        }
+        anchors.fill: parent
+        anchors.margins: root.inset
         host: hostContract
 
         onTargetImplicitHeightChanged: root.queueHeightReport()

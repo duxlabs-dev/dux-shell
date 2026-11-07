@@ -19,6 +19,13 @@ function greeterWidgetDefaults() {
     return Shared.greeterWidgetDefaults();
 }
 
+// Hyprland 0.57 turned scrolling:follow_focus from a bool into modes 0-2; stored bools stay readable
+function followFocusMode(v) {
+    if (typeof v === "boolean")
+        return v ? 1 : 0;
+    return Number.isInteger(v) && v >= 0 && v <= 2 ? v : undefined;
+}
+
 var LOCAL_SPEC = {
     dockConfigs: {
         def: [DockConfig.create("dock", "Dock")]
@@ -203,6 +210,18 @@ var LOCAL_SPEC = {
         def: 32,
         onChange: "updateCompositorLayout"
     },
+    hyprlandBlurDropsSpeed: {
+        def: 3,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurHeatShimmerSpeed: {
+        def: 1,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBlurProportional: {
+        def: false,
+        onChange: "updateCompositorLayout"
+    },
     hyprlandGlowEnabled: {
         def: false,
         onChange: "updateCompositorLayout"
@@ -225,6 +244,18 @@ var LOCAL_SPEC = {
     },
     hyprlandWobbleStiffness: {
         def: 200,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWobbleDamping: {
+        def: 12,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWobbleMass: {
+        def: 100,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWobbleMesh: {
+        def: 12,
         onChange: "updateCompositorLayout"
     },
     hyprlandMotionBlurEnabled: {
@@ -296,7 +327,24 @@ var LOCAL_SPEC = {
         onChange: "updateCompositorLayout"
     },
     hyprlandScrollingFollowFocus: {
+        def: 1,
+        coerce: followFocusMode,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandDragCenterWindow: {
         def: true,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWorkspaceBackAndForth: {
+        def: 0,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandExitWindowRetainsFullscreen: {
+        def: 0,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandBellSound: {
+        def: "default",
         onChange: "updateCompositorLayout"
     },
     mangoLayoutGapsOverride: {
@@ -317,6 +365,14 @@ var LOCAL_SPEC = {
     },
     focusFollowsMouse: {
         def: -1,
+        onChange: "updateCompositorInput"
+    },
+    hyprlandSwallowFocusClick: {
+        def: false,
+        onChange: "updateCompositorInput"
+    },
+    hyprlandTabletEnabled: {
+        def: true,
         onChange: "updateCompositorInput"
     },
     mouseAccelProfile: {
@@ -380,6 +436,10 @@ var LOCAL_SPEC = {
         onChange: "updateCompositorInput"
     },
     touchpadScrollFactor: {
+        def: 1.0,
+        onChange: "updateCompositorInput"
+    },
+    touchpadPinchSensitivity: {
         def: 1.0,
         onChange: "updateCompositorInput"
     },
@@ -470,6 +530,14 @@ var LOCAL_SPEC = {
     motionEffect: {
         def: 0
     },
+    density: {
+        def: "comfortable",
+        onChange: "applyDensityPresets"
+    },
+    interfaceStyle: {
+        def: "expressive",
+        onChange: "applyInterfaceStyle"
+    },
     m3ElevationEnabled: {
         def: true
     },
@@ -513,6 +581,10 @@ var LOCAL_SPEC = {
     },
     blurLayerOutlineOpacity: {
         def: 0,
+        coerce: Util.percentToUnit
+    },
+    sectionDividerOpacity: {
+        def: 0.1,
         coerce: Util.percentToUnit
     },
     focusRingEnabled: {
@@ -578,13 +650,15 @@ var LOCAL_SPEC = {
                 id: "brightnessSlider",
                 enabled: true,
                 w: 4,
-                h: 1
+                h: 1,
+                small: true
             },
             {
                 id: "volumeSlider",
                 enabled: true,
                 w: 4,
-                h: 1
+                h: 1,
+                small: true
             },
             {
                 id: "wifi",
@@ -705,6 +779,18 @@ var LOCAL_SPEC = {
             {
                 id: "youtubemusic",
                 enabled: true
+            }
+        ]
+    },
+    weatherProviders: {
+        def: [
+            {
+                id: "openmeteo",
+                enabled: true
+            },
+            {
+                id: "metno",
+                enabled: false
             }
         ]
     },
@@ -867,6 +953,10 @@ var LOCAL_SPEC = {
             {
                 id: "notifications",
                 enabled: false
+            },
+            {
+                id: "settings",
+                enabled: false
             }
         ]
     },
@@ -945,7 +1035,8 @@ var LOCAL_SPEC = {
             hyprland: {
                 hideOnKeyPress: false,
                 hideOnTouch: false,
-                inactiveTimeout: 0
+                inactiveTimeout: 0,
+                warpOnMonitorChange: -1
             },
             dwl: {
                 cursorHideTimeout: 0
@@ -1063,6 +1154,12 @@ var LOCAL_SPEC = {
     batteryChargeLimit: {
         def: 100
     },
+    batteryScaleToChargeLimit: {
+        def: false
+    },
+    batteryScaleAlertThresholds: {
+        def: false
+    },
     batteryNotifyChargeLimit: {
         def: false
     },
@@ -1097,6 +1194,9 @@ var LOCAL_SPEC = {
         def: false
     },
     lockBeforeSuspend: {
+        def: false
+    },
+    keepAwakeBlocksSleep: {
         def: false
     },
     loginctlLockIntegration: {
@@ -1349,6 +1449,12 @@ var LOCAL_SPEC = {
     notificationHistoryEnabled: {
         def: true
     },
+    notificationLeadingShortcut: {
+        def: "dnd"
+    },
+    notificationTrailingShortcut: {
+        def: "history"
+    },
     notificationHistoryMaxCount: {
         def: 50
     },
@@ -1409,6 +1515,15 @@ var LOCAL_SPEC = {
     osdCapsLockEnabled: {
         def: true
     },
+    osdNumLockEnabled: {
+        def: true
+    },
+    osdKeyboardLayoutEnabled: {
+        def: false
+    },
+    osdInputMethodEnabled: {
+        def: true
+    },
     osdTouchpadEnabled: {
         def: true
     },
@@ -1444,6 +1559,9 @@ var LOCAL_SPEC = {
     },
     powerMenuBootEntries: {
         def: []
+    },
+    powerMenuFirmwareSetup: {
+        def: false
     },
     updaterCheckOnStart: {
         def: false
@@ -1565,6 +1683,7 @@ var LOCAL_SPEC = {
                 popupGapsManual: 4,
                 maximizeDetection: true,
                 useOverlayLayer: false,
+                hideOnFullscreen: false,
                 scrollEnabled: true,
                 scrollXBehavior: "focusWindow",
                 scrollYBehavior: "workspace",

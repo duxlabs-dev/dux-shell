@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -278,7 +279,7 @@ func (a *SecretAgent) GetSecrets(
 
 		a.backend.cachedVPNCredsMu.Lock()
 		cached := a.backend.cachedVPNCreds
-		if cached != nil && cached.ConnectionUUID == connUuid {
+		if cached != nil && cached.ConnectionUUID == connUuid && slices.Contains(fields, "password") {
 			a.backend.cachedVPNCreds = nil
 			a.backend.cachedVPNCredsMu.Unlock()
 
@@ -451,7 +452,7 @@ func (a *SecretAgent) GetSecrets(
 		VpnService:     vpnSvc,
 		SettingName:    settingName,
 		Fields:         fields,
-		FieldsInfo:     buildFieldsInfo(settingName, fields, vpnSvc),
+		FieldsInfo:     buildFieldsInfo(settingName, fields, hints, vpnSvc),
 		Hints:          hints,
 		Reason:         reason,
 		ConnectionId:   connId,
@@ -577,13 +578,13 @@ func (a *SecretAgent) GetSecrets(
 	default:
 		out[settingName] = sec
 	}
-	if settingName == "vpn" && a.backend != nil && !isPKCS11 && (vpnUsername != "" || reply.Save) {
-		secrets := make(map[string]string)
-		for k, v := range reply.Secrets {
-			if k != "username" {
-				secrets[k] = v
-			}
+	secrets := make(map[string]string)
+	for k, v := range reply.Secrets {
+		if k != "username" && k != "challenge-response" {
+			secrets[k] = v
 		}
+	}
+	if settingName == "vpn" && a.backend != nil && !isPKCS11 && (vpnUsername != "" || (reply.Save && len(secrets) > 0)) {
 		a.backend.pendingVPNSaveMu.Lock()
 		a.backend.pendingVPNSave = &pendingVPNCredentials{
 			ConnectionPath: string(path),
@@ -835,11 +836,44 @@ func fieldsNeeded(setting string, hints []string, conn map[string]nmVariantMap) 
 			return hints
 		}
 		return infer8021xFields(conn)
-	case "vpn", "wireguard":
+	case "vpn":
+		return parseVPNHints(hints).fields
+	case "wireguard":
 		return hints
 	default:
 		return []string{}
 	}
+}
+
+const (
+	vpnHintMessagePrefix       = "x-vpn-message:"
+	vpnHintChallengePrefix     = "x-dynamic-challenge:"
+	vpnHintChallengeEchoPrefix = "x-dynamic-challenge-echo:"
+)
+
+type vpnPromptHints struct {
+	fields []string
+	echo   map[string]bool
+}
+
+// NM-openvpn asks for a CRV1 challenge answer as x-dynamic-challenge[-echo]:<secret>
+// and NM appends the plugin's prompt text as x-vpn-message:<text>, which the modal shows.
+func parseVPNHints(hints []string) vpnPromptHints {
+	parsed := vpnPromptHints{echo: map[string]bool{}}
+	for _, hint := range hints {
+		switch {
+		case strings.HasPrefix(hint, vpnHintMessagePrefix):
+		case strings.HasPrefix(hint, vpnHintChallengeEchoPrefix):
+			field := strings.TrimPrefix(hint, vpnHintChallengeEchoPrefix)
+			parsed.echo[field] = true
+			parsed.fields = append(parsed.fields, field)
+		case strings.HasPrefix(hint, vpnHintChallengePrefix):
+			parsed.fields = append(parsed.fields, strings.TrimPrefix(hint, vpnHintChallengePrefix))
+		default:
+			parsed.fields = append(parsed.fields, hint)
+		}
+	}
+	return parsed
 }
 
 func infer8021xFields(conn map[string]nmVariantMap) []string {
@@ -877,7 +911,8 @@ func infer8021xFields(conn map[string]nmVariantMap) []string {
 	return fields
 }
 
-func buildFieldsInfo(setting string, fields []string, vpnService string) []FieldInfo {
+func buildFieldsInfo(setting string, fields []string, hints []string, vpnService string) []FieldInfo {
+	echo := parseVPNHints(hints).echo
 	result := make([]FieldInfo, 0, len(fields))
 	for _, f := range fields {
 		info := FieldInfo{Name: f}
@@ -899,6 +934,9 @@ func buildFieldsInfo(setting string, fields []string, vpnService string) []Field
 			}
 		case "vpn":
 			info.Label, info.IsSecret = vpnFieldMeta(f, vpnService)
+			if echo[f] {
+				info.IsSecret = false
+			}
 		default:
 			info.Label = f
 			info.IsSecret = true
@@ -1052,6 +1090,8 @@ func vpnFieldMeta(field, _ string) (label string, isSecret bool) {
 		return "IPSec Pre-Shared Key", true
 	case "cert-pass":
 		return "Certificate Password", true
+	case "challenge-response":
+		return "Challenge Response", true
 	case "http-proxy-password":
 		return "HTTP Proxy Password", true
 	case "username":

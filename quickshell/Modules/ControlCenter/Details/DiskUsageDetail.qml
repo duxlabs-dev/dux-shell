@@ -46,7 +46,7 @@ Item {
                 visible: !DgopService.dgopAvailable || root.mounts.length === 0
                 iconName: DgopService.dgopAvailable ? "storage" : "error"
                 iconColor: DgopService.dgopAvailable ? Theme.primary : Theme.error
-                title: DgopService.dgopAvailable ? I18n.tr("No disk data available") : I18n.tr("dgop not available")
+                title: DgopService.dgopAvailable ? I18n.tr("No disk data available") : I18n.tr("%1 not available", "%1 is a tool or environment variable name").arg("dgop")
             }
 
             CcGroup {

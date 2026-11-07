@@ -1,7 +1,7 @@
 ---
 name: dms-plugin-dev
 description: >
-  Develop plugins for Dux Shell (DMS), a QML-based Linux desktop shell built on
+  Develop plugins for Dux Modular Shell (DMS), a QML-based Linux desktop shell built on
   Quickshell. Supports widget (bar, dock + Control Center), daemon (background service),
   launcher (search + actions), desktop (draggable desktop widgets), dash (dash tab),
   dashCard (dash overview card), and composite (multi-surface) plugins. Covers manifest
@@ -11,15 +11,15 @@ description: >
   or debug a DMS plugin, or asks about the DMS plugin API.
 compatibility: Designed for Claude Code (or similar products)
 metadata:
-  author: Dux Shell
+  author: Dux Modular Shell
   version: "1.2"
   domain: qml-desktop-development
-  framework: Dux Shell
+  framework: Dux Modular Shell
   languages: qml, javascript
 allowed-tools: Bash Read Write Edit
 ---
 
-# Dux Shell Plugin Development
+# Dux Modular Shell Plugin Development
 
 ## Overview
 

@@ -18,11 +18,8 @@ DDialog {
     property var bindData: ({})
     property bool isNew: false
     property bool readOnly: false
-    property bool locked: false
-    property bool saveBlocked: false
     property bool busy: false
     property var panelWindow: null
-    property alias topContent: topSlot.data
 
     property bool recording: false
     property int editingKeyIndex: -1
@@ -35,6 +32,10 @@ DDialog {
     property bool editAllowWhenLocked: false
     property var editRepeat: undefined
     property var editAllowInhibiting: undefined
+    property string editTrigger: ""
+    property string editReleaseAction: ""
+    property var editPassThrough: undefined
+    property var _loneModifiers: []
     property bool hasChanges: false
     property bool useCustomCompositor: false
     property bool _altShiftGhost: false
@@ -49,9 +50,9 @@ DDialog {
     readonly property string editKeysym: KeyUtils.keyFromToken(editKey)
     readonly property bool keysymUnreachable: KeyUtils.keysymUnreachable(editKeysym, KeybindsService.firstLevelKeymap)
     readonly property bool canReset: !isNew && !readOnly && editingKey?.isOverride === true && editingKey?.hasDefault === true
-    readonly property bool canSave: !readOnly && !saveBlocked && editKey !== "" && Actions.isValidAction(editAction)
+    readonly property bool canSave: !readOnly && editKey !== "" && Actions.isValidAction(editAction)
     readonly property bool canSubmit: canSave && (isNew || hasChanges) && !busy
-    readonly property bool formEnabled: !locked && !readOnly
+    readonly property bool formEnabled: !readOnly
     readonly property bool wideForm: actionWidth + padding * 2 >= maximumWidth
 
     readonly property var argConfig: Actions.getActionArgConfig(KeybindsService.currentProvider, editAction)
@@ -64,6 +65,10 @@ DDialog {
     readonly property var compositorArgDefs: argConfig?.config?.args ?? []
     readonly property var compositorFlags: compositorFlagOptions()
     readonly property var bindOptionList: bindOptions()
+    readonly property bool isNiri: KeybindsService.currentProvider === "niri"
+    readonly property bool showReleaseOption: isNiri && editTrigger !== "both" && !KeyUtils.isScrollTrigger(editKey)
+    readonly property bool showPassThroughOption: isNiri && KeyUtils.isKeyboardTrigger(editKey)
+    readonly property bool effectivePassThrough: editPassThrough ?? editTrigger === "release"
 
     readonly property string customCategory: I18n.tr("Custom")
     readonly property string repeatTooltip: I18n.tr("Repeats while the key is held", "keybind option tooltip")
@@ -80,7 +85,6 @@ DDialog {
 
     signal saveRequested(string originalKey, var data)
     signal resetRequested(string key)
-    signal editChanged
 
     embedded: false
     opened: false
@@ -91,7 +95,7 @@ DDialog {
     acceptEnabled: canSubmit
     onAccepted: save()
 
-    function present(bind, keyIndex, newBind, retained) {
+    function present(bind, keyIndex, newBind) {
         // Needed to tell a key the layout cannot reach from one it can, and
         // the layout may have changed since the editor was last open.
         KeybindsService.loadFirstLevelKeymap();
@@ -99,8 +103,6 @@ DDialog {
         bindData = bind;
         isNew = newBind;
         loadKey(keyIndex);
-        if (retained)
-            restoreRetainedEdit(retained);
         opened = true;
         forceActiveFocus();
     }
@@ -117,15 +119,11 @@ DDialog {
         editAllowWhenLocked = key?.allowWhenLocked || false;
         editRepeat = key?.repeat;
         editAllowInhibiting = key?.allowInhibiting;
+        editTrigger = key?.trigger || "";
+        editReleaseAction = key?.releaseAction || "";
+        editPassThrough = key?.passThrough;
         useCustomCompositor = actionType === "compositor" && editAction !== "" && !KeybindsService.isKnownCompositorAction(editAction);
         hasChanges = false;
-        editChanged();
-    }
-
-    function restoreRetainedEdit(retained) {
-        editingKeyIndex = keys.findIndex(key => key.key === retained.originalKey);
-        addingNewKey = !retained.originalKey;
-        updateEdit(retained.data);
     }
 
     function startAddingNewKey() {
@@ -137,7 +135,6 @@ DDialog {
         editingKeyIndex = -1;
         editKey = "";
         hasChanges = true;
-        editChanged();
     }
 
     function changedFrom(key) {
@@ -153,14 +150,21 @@ DDialog {
             return true;
         if (editAllowWhenLocked !== (key?.allowWhenLocked || false))
             return true;
+        if (editTrigger !== (key?.trigger || "") || editReleaseAction !== (key?.releaseAction || "") || editPassThrough !== key?.passThrough)
+            return true;
         return editRepeat !== key?.repeat || editAllowInhibiting !== key?.allowInhibiting;
     }
 
     function updateEdit(changes) {
         if (readOnly)
             return;
-        if (changes.key !== undefined)
+        if (changes.key !== undefined) {
             editKey = changes.key;
+            if (KeyUtils.isScrollTrigger(editKey))
+                editTrigger = "";
+            if (!KeyUtils.isKeyboardTrigger(editKey))
+                editPassThrough = undefined;
+        }
         if (changes.action !== undefined)
             editAction = changes.action;
         if (changes.desc !== undefined)
@@ -171,12 +175,16 @@ DDialog {
             editFlags = changes.flags;
         if (changes.allowWhenLocked !== undefined)
             editAllowWhenLocked = changes.allowWhenLocked;
-        if (changes.repeat !== undefined)
+        // undefined is a real value here: it restores the compositor default
+        if ("repeat" in changes)
             editRepeat = changes.repeat;
-        if (changes.allowInhibiting !== undefined)
+        if ("allowInhibiting" in changes)
             editAllowInhibiting = changes.allowInhibiting;
+        if (changes.trigger !== undefined)
+            editTrigger = changes.trigger;
+        if ("passThrough" in changes)
+            editPassThrough = changes.passThrough;
         hasChanges = addingNewKey || changedFrom(editingKey);
-        editChanged();
     }
 
     function selectType(type) {
@@ -250,7 +258,7 @@ DDialog {
         if (!canSubmit)
             return;
         recording = false;
-        saveRequested(addingNewKey ? "" : originalKey, {
+        const data = {
             "key": editKey,
             "action": editAction,
             "desc": editDesc,
@@ -259,7 +267,13 @@ DDialog {
             "allowWhenLocked": editAllowWhenLocked,
             "repeat": editRepeat,
             "allowInhibiting": editAllowInhibiting
-        });
+        };
+        if (isNiri) {
+            data.trigger = editTrigger;
+            data.releaseAction = editReleaseAction;
+            data.passThrough = editPassThrough;
+        }
+        saveRequested(addingNewKey ? "" : originalKey, data);
     }
 
     function startRecording() {
@@ -267,19 +281,22 @@ DDialog {
             KeybindsService.showHyprlandReadOnlyWarning();
             return;
         }
+        _loneModifiers = [];
         recording = true;
     }
 
     function stopRecording() {
+        _loneModifiers = [];
         recording = false;
     }
 
     function captureKey(event) {
+        if (KeyUtils.modifierFromQtKey(event.key)) {
+            if (isNiri)
+                _loneModifiers = KeyUtils.heldModifiers(event.key, event.modifiers, _loneModifiers);
+            return;
+        }
         switch (event.key) {
-        case Qt.Key_Control:
-        case Qt.Key_Shift:
-        case Qt.Key_Alt:
-        case Qt.Key_Meta:
         // lock keys are toggles; NumLock picks the numpad keysym (KP_7 vs KP_Home) and must not become the bind
         case Qt.Key_NumLock:
         case Qt.Key_CapsLock:
@@ -289,8 +306,11 @@ DDialog {
 
         if (event.key === 0 && (event.modifiers & Qt.AltModifier)) {
             _altShiftGhost = true;
+            if (_loneModifiers.length)
+                _loneModifiers = KeyUtils.heldModifiers(Qt.Key_Shift, event.modifiers, _loneModifiers);
             return;
         }
+        _loneModifiers = [];
 
         const mods = KeyUtils.modsFromEvent(event.modifiers);
 
@@ -306,6 +326,19 @@ DDialog {
 
         updateEdit({
             "key": token
+        });
+        stopRecording();
+    }
+
+    // A lone modifier binds release-only so its chords keep working.
+    function captureKeyRelease(event) {
+        if (_loneModifiers.length === 0 || !KeyUtils.modifierFromQtKey(event.key))
+            return;
+        const token = KeyUtils.bareModifierToken(_loneModifiers, KeybindsService.modKey, KeybindsService.modSymbol);
+        updateEdit({
+            "key": token,
+            "trigger": "release",
+            "repeat": undefined
         });
         stopRecording();
     }
@@ -548,26 +581,42 @@ DDialog {
         return Actions.buildCompositorAction(provider, compositorParsedArgs?.base || base, args);
     }
 
+    function niriBindOptions() {
+        const options = [];
+        if (showReleaseOption)
+            options.push({
+                "label": I18n.tr("Release", "noun, hyprland bind flag toggle, trigger on key release"),
+                "value": "release",
+                "tooltip": I18n.tr("Triggers when the key is released", "keybind option tooltip, hyprland release flag")
+            });
+        if (editTrigger !== "release")
+            options.push({
+                "label": I18n.tr("Repeat"),
+                "value": "repeat",
+                "tooltip": repeatTooltip
+            });
+        options.push({
+            "label": I18n.tr("When locked"),
+            "value": "locked",
+            "tooltip": lockedTooltip
+        }, {
+            "label": I18n.tr("Inhibitable", "adjective, niri keybind option, apps may inhibit this shortcut"),
+            "value": "inhibit",
+            "tooltip": I18n.tr("Apps that capture the keyboard can block it", "keybind option tooltip, niri allow inhibiting")
+        });
+        if (showPassThroughOption)
+            options.push({
+                "label": I18n.tr("Non-consuming", "adjective, hyprland bind flag toggle, key is not swallowed"),
+                "value": "passthrough",
+                "tooltip": I18n.tr("The key also reaches the focused window", "keybind option tooltip, hyprland non-consuming flag")
+            });
+        return options;
+    }
+
     function bindOptions() {
         switch (KeybindsService.currentProvider) {
         case "niri":
-            return [
-                {
-                    "label": I18n.tr("Repeat"),
-                    "value": "repeat",
-                    "tooltip": repeatTooltip
-                },
-                {
-                    "label": I18n.tr("When locked"),
-                    "value": "locked",
-                    "tooltip": lockedTooltip
-                },
-                {
-                    "label": I18n.tr("Inhibitable", "adjective, niri keybind option, apps may inhibit this shortcut"),
-                    "value": "inhibit",
-                    "tooltip": I18n.tr("Apps that capture the keyboard can block it", "keybind option tooltip, niri allow inhibiting")
-                }
-            ];
+            return niriBindOptions();
         case "hyprland":
             return [
                 {
@@ -649,17 +698,33 @@ DDialog {
         if (KeybindsService.currentProvider === "hyprland")
             return editFlags.split("");
         const selected = [];
+        if (editTrigger === "release")
+            selected.push("release");
         if (editRepeat !== false)
             selected.push("repeat");
         if (editAllowWhenLocked)
             selected.push("locked");
         if (editAllowInhibiting !== false)
             selected.push("inhibit");
+        if (effectivePassThrough)
+            selected.push("passthrough");
         return selected;
     }
 
     function setBindOption(value, checked) {
         switch (value) {
+        case "release":
+            updateEdit({
+                "trigger": checked ? "release" : "",
+                "repeat": undefined
+            });
+            return;
+        case "passthrough":
+            // niri forwards release-only binds by default, so only write a differing value
+            updateEdit({
+                "passThrough": checked === (editTrigger === "release") ? undefined : checked
+            });
+            return;
         case "repeat":
             updateEdit({
                 "repeat": checked ? undefined : false
@@ -723,16 +788,14 @@ DDialog {
         DButton {
             text: I18n.tr("Reset to default")
             visible: root.canReset
-            enabled: !root.busy && !root.locked
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            enabled: !root.busy
+            variant: "text"
             onClicked: root.resetRequested(root.originalKey)
         },
         DButton {
             text: I18n.tr("Cancel")
             enabled: root.closeEnabled
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             onClicked: root.rejected()
         },
         DButton {
@@ -744,19 +807,13 @@ DDialog {
         }
     ]
 
-    Column {
-        id: topSlot
-        width: parent.width
-        spacing: root.contentSpacing
-    }
-
     SettingsGroup {
         visible: root.configConflict !== null
 
         SettingsRow {
             iconName: "warning"
-            title: I18n.tr("This bind is overridden by config.kdl")
-            subtitle: I18n.tr("Config action: %1", "keybind conflict notice, %1 is the action from the compositor config").arg(root.configConflict?.action ?? "") + "\n" + I18n.tr("To use this DMS bind, remove or change the keybind in your config.kdl")
+            title: I18n.tr("This bind is overridden by %1", "keybind conflict notice, %1 is the compositor config file").arg("config.kdl")
+            subtitle: I18n.tr("Config action: %1", "keybind conflict notice, %1 is the action from the compositor config").arg(root.configConflict?.action ?? "") + "\n" + I18n.tr("To use this DMS bind, remove or change the keybind in your %1", "keybind conflict hint, %1 is the compositor config file").arg("config.kdl")
         }
     }
 
@@ -768,8 +825,7 @@ DDialog {
             text: I18n.tr("New key")
             iconName: "add"
             buttonHeight: Theme.buttonHeightXS
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             onClicked: root.startAddingNewKey()
         }
 
@@ -819,6 +875,13 @@ DDialog {
                             return;
                         event.accepted = true;
                         root.captureKey(event);
+                    }
+
+                    Keys.onReleased: event => {
+                        if (!root.recording)
+                            return;
+                        event.accepted = true;
+                        root.captureKeyRelease(event);
                     }
 
                     Rectangle {
@@ -1213,8 +1276,12 @@ DDialog {
         }
 
         SettingsRow {
-            visible: KeybindsService.currentProvider !== "aqueous"
+            visible: root.editTrigger === "both"
+            title: I18n.tr("Release", "noun, hyprland bind flag toggle, trigger on key release")
+            subtitle: KeybindsService.getActionLabel(root.editReleaseAction) || root.editReleaseAction
+        }
 
+        SettingsRow {
             body: DTextField {
                 width: parent.width
                 outlined: true
