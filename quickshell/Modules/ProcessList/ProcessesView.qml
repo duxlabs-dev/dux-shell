@@ -318,9 +318,13 @@ Rectangle {
         contextMenu.show(itemPos.x, itemPos.y, true);
     }
 
-    function reset() {
+    function clearSelection() {
         selectedIndex = -1;
         keyboardNavigationActive = false;
+    }
+
+    function reset() {
+        clearSelection();
         expandedPid = "";
     }
 
@@ -362,7 +366,7 @@ Rectangle {
             }
             return;
         case Qt.Key_Delete:
-            if (!keyboardNavigationActive)
+            if (!keyboardNavigationActive || !processListView.activeFocus)
                 return;
             requestAction(selectedIndex, "quit");
             event.accepted = true;
@@ -376,7 +380,7 @@ Rectangle {
             event.accepted = true;
             return;
         case Qt.Key_Space:
-            if (keyboardNavigationActive) {
+            if (keyboardNavigationActive && processListView.activeFocus) {
                 toggleExpand();
                 event.accepted = true;
             }
@@ -551,6 +555,10 @@ Rectangle {
                         // A click that opens or dismisses the context menu is not meant for the row.
                         if (root.contextMenu?.visible || Date.now() - root.menuClosedAt < 400)
                             return;
+                        if (isExpanded) {
+                            root.reset();
+                            return;
+                        }
                         processListView.forceActiveFocus(Qt.MouseFocusReason);
                         root.keyboardNavigationActive = true;
                         root.selectedIndex = index;

@@ -141,6 +141,10 @@ DPopout {
                         onTextChanged: processListPopout.searchText = text
                         ignoreUpDownKeys: true
                         keyForwardTargets: [processListContent]
+                        onInputFocusedChanged: {
+                            if (inputFocused)
+                                processesView.clearSelection();
+                        }
                     }
 
                     ProcessFilterChips {

@@ -279,6 +279,10 @@ DFloatingWindow {
                             ignoreUpDownKeys: true
                             keyForwardTargets: [contentFocusScope]
                             KeyNavigation.backtab: viewNavigation
+                            onInputFocusedChanged: {
+                                if (inputFocused)
+                                    processesTabLoader.item?.clearSelection();
+                            }
                         }
 
                         ProcessFilterChips {
