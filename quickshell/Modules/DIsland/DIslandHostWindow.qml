@@ -43,7 +43,12 @@ Item {
         visible: !!root.islandController && root.islandController.outsideClickCollapses && !PopoutManager.screenshotActive
         color: "transparent"
         exclusiveZone: -1
-        inputOnly: true
+
+        // Assigned, not bound: upstream quickshell has no inputOnly and a binding would fail the whole window.
+        Component.onCompleted: {
+            if ("inputOnly" in this)
+                inputOnly = true;
+        }
 
         anchors {
             top: true

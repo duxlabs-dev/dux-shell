@@ -61,7 +61,6 @@ Variants {
                 screen: wallpaperWindow.screen
                 color: "transparent"
 
-                inputOnly: true
                 WlrLayershell.namespace: "dms:desktop-input"
                 WlrLayershell.layer: WlrLayer.Background
                 WlrLayershell.exclusionMode: ExclusionMode.Ignore
@@ -70,6 +69,12 @@ Variants {
                 anchors.bottom: true
                 anchors.left: true
                 anchors.right: true
+
+                // Assigned, not bound: upstream quickshell has no inputOnly and a binding would fail the whole window.
+                Component.onCompleted: {
+                    if ("inputOnly" in this)
+                        inputOnly = true;
+                }
 
                 MouseArea {
                     anchors.fill: parent
