@@ -16,6 +16,7 @@ import (
 	serverDrives "github.com/duxlabs-dev/dux-shell/core/internal/server/drives"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/evdev"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/fcitx5"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/firewall"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/freedesktop"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/location"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
@@ -188,6 +189,15 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 			return
 		}
 		tailscale.HandleRequest(conn, req, tailscaleManager)
+	}))
+
+	mux.HandlePrefix("firewall.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
+		mgr := currentFirewallManager()
+		if mgr == nil {
+			conn.RespondError(req.ID, "firewall not available")
+			return
+		}
+		firewall.HandleRequest(conn, req, mgr)
 	}))
 
 	mux.HandlePrefix("brightness.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {

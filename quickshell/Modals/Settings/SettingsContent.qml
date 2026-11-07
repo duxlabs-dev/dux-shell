@@ -527,6 +527,7 @@ FocusScope {
             "network_wifi": "NetworkWifiTab.qml",
             "network_vpn": "NetworkVpnTab.qml",
             "network_cellular": "NetworkCellularTab.qml",
+            "network_firewall": "NetworkFirewallTab.qml",
             "printers": "PrinterTab.qml",
             "launcher": "LauncherTab.qml",
             "theme": "ThemeColorsTab.qml",

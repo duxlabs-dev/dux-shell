@@ -24,6 +24,7 @@ import (
 	serverDbus "github.com/duxlabs-dev/dux-shell/core/internal/server/dbus"
 	serverDgop "github.com/duxlabs-dev/dux-shell/core/internal/server/dgop"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/evdev"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/firewall"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/freedesktop"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/location"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
@@ -43,7 +44,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-const APIVersion = 40
+const APIVersion = 41
 
 var CLIVersion = "dev"
 
@@ -88,6 +89,15 @@ var geoClientInstance geolocation.Client
 const dbusClientID = "dms-dbus-client"
 
 var capabilitySubscribers syncmap.Map[string, chan ServerInfo]
+var firewallMu sync.Mutex
+var firewallManager *firewall.Manager
+var firewallSubscriberCount int
+var firewallCloseTimer *time.Timer
+
+const firewallCloseGrace = 5 * time.Second
+
+// Serializes construction, which makes blocking D-Bus calls, without holding firewallMu.
+var firewallInitMu sync.Mutex
 var cupsMu sync.Mutex
 var cupsSubscriberCount int
 var cupsEverAvailable bool
@@ -249,6 +259,86 @@ func releaseCupsSubscriber() {
 	}
 	log.Info("Last CUPS subscriber disconnected, shutting down CUPS manager")
 	mgr.Close()
+}
+
+// In its own goroutine so a slow firewalld can't delay the services subscribed after it.
+func subscribeFirewall(wg *sync.WaitGroup, events chan<- ServiceEvent, stop <-chan struct{}, clientID string) {
+	wg.Go(func() {
+		mgr := acquireFirewallManager()
+		if mgr == nil {
+			releaseFirewallSubscriber()
+			return
+		}
+
+		id := clientID + "-firewall"
+		states := mgr.Subscribe(id)
+		forwardSubscription(wg, events, stop, "firewall", states, func() {
+			mgr.Unsubscribe(id)
+			releaseFirewallSubscriber()
+		}, mgr.GetState)
+	})
+}
+
+func acquireFirewallManager() *firewall.Manager {
+	firewallInitMu.Lock()
+	defer firewallInitMu.Unlock()
+
+	firewallMu.Lock()
+	firewallSubscriberCount++
+	if firewallCloseTimer != nil {
+		firewallCloseTimer.Stop()
+		firewallCloseTimer = nil
+	}
+	mgr := firewallManager
+	firewallMu.Unlock()
+	if mgr != nil {
+		return mgr
+	}
+
+	mgr, err := firewall.NewManager()
+	if err != nil {
+		log.Warnf("Failed to initialize firewall manager: %v", err)
+		return nil
+	}
+	firewallMu.Lock()
+	firewallManager = mgr
+	firewallMu.Unlock()
+	return mgr
+}
+
+// The root helper and D-Bus matches only live while the settings page is open.
+// Closing waits out the grace period because DMSService re-dials on any subscription change.
+func releaseFirewallSubscriber() {
+	firewallMu.Lock()
+	defer firewallMu.Unlock()
+	if firewallSubscriberCount > 0 {
+		firewallSubscriberCount--
+	}
+	if firewallSubscriberCount > 0 || firewallManager == nil || firewallCloseTimer != nil {
+		return
+	}
+	firewallCloseTimer = time.AfterFunc(firewallCloseGrace, closeIdleFirewallManager)
+}
+
+func closeIdleFirewallManager() {
+	firewallMu.Lock()
+	firewallCloseTimer = nil
+	if firewallSubscriberCount > 0 {
+		firewallMu.Unlock()
+		return
+	}
+	mgr := firewallManager
+	firewallManager = nil
+	firewallMu.Unlock()
+	if mgr != nil {
+		mgr.Close()
+	}
+}
+
+func currentFirewallManager() *firewall.Manager {
+	firewallMu.Lock()
+	defer firewallMu.Unlock()
+	return firewallManager
 }
 
 func InitializeBrightnessManager() error {
@@ -475,6 +565,10 @@ func getCapabilities() Capabilities {
 
 	if tailscaleManager != nil && tailscaleManager.IsAvailable() {
 		caps = append(caps, "tailscale")
+	}
+
+	if len(firewall.Installed()) > 0 {
+		caps = append(caps, "firewall")
 	}
 
 	if brightnessManager != nil {
@@ -722,6 +816,11 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		}, mgr.GetState)
 	}
 
+	// Explicit only: an "all" subscriber must not keep firewall watchers running.
+	if slices.Contains(services, "firewall") {
+		subscribeFirewall(&wg, eventChan, stopChan, clientID)
+	}
+
 	if shouldSubscribe("brightness") && brightnessManager != nil {
 		mgr := brightnessManager
 		stateID := clientID + "-brightness-state"
@@ -933,6 +1032,17 @@ func cleanupManagers() {
 	if tailscaleManager != nil {
 		tailscaleManager.Close()
 	}
+	firewallMu.Lock()
+	if firewallCloseTimer != nil {
+		firewallCloseTimer.Stop()
+		firewallCloseTimer = nil
+	}
+	firewallMgr := firewallManager
+	firewallManager = nil
+	firewallMu.Unlock()
+	if firewallMgr != nil {
+		firewallMgr.Close()
+	}
 	if filesService != nil {
 		filesService.Close()
 	}
@@ -1096,6 +1206,14 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info(" bluetooth.pairing.submit              - Submit pairing response (params: token, secrets?, accept?)")
 		log.Info(" bluetooth.pairing.cancel              - Cancel pairing prompt (params: token)")
 		log.Info(" bluetooth.subscribe                   - Subscribe to bluetooth state changes (streaming)")
+		log.Info("Firewall:")
+		log.Info(" firewall.getState                     - Get firewall state")
+		log.Info(" firewall.unlock                       - Ask for the password and reveal rules")
+		log.Info(" firewall.addRule                      - Add rule (params: zone?, kind, action, target, proto?, source?)")
+		log.Info(" firewall.removeRule                   - Remove rule (params: zone?, id)")
+		log.Info(" firewall.setDefaults                  - Set defaults (params: zone? or incoming?, outgoing?)")
+		log.Info(" firewall.setInterfaceZone             - Move an interface to a zone (params: interface, zone)")
+		log.Info(" firewall.listServices                 - List service or application names")
 		log.Info("CUPS:")
 		log.Info(" cups.getPrinters                      - Get printers list")
 		log.Info(" cups.getJobs                          - Get non-completed jobs list (params: printerName)")

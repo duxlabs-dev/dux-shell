@@ -33,9 +33,13 @@ func isReadOnlyCommand(args []string) bool {
 	return false
 }
 
-// sysmon-helper is started through pkexec and has to run as root.
+// These helpers are started through pkexec and have to run as root.
 func isRootHelper(args []string) bool {
-	return firstArg(args) == "sysmon-helper"
+	switch firstArg(args) {
+	case "sysmon-helper", "firewall-helper":
+		return true
+	}
+	return false
 }
 
 func isArchPackageInstalled(packageName string) bool {

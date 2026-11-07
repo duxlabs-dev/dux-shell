@@ -445,6 +445,14 @@ Singleton {
                     "hint": I18n.tr("Modem and mobile data")
                 },
                 {
+                    "id": "network_firewall",
+                    "text": I18n.tr("Firewall"),
+                    "icon": "shield",
+                    "tabIndex": 71,
+                    "firewallOnly": true,
+                    "hint": I18n.tr("Status, zones and rules")
+                },
+                {
                     "id": "network_status",
                     "advanced": true,
                     "text": I18n.tr("Status"),
@@ -820,6 +828,8 @@ Singleton {
         if (entry.fcitx5Only && !Fcitx5Service.available)
             return false;
         if (entry.cellularOnly && (NetworkService.cellularDevices?.length ?? 0) === 0)
+            return false;
+        if (entry.firewallOnly && !FirewallService.available)
             return false;
         if (entry.kind === "hub" && !entry.hubHeader && visibleLeaves(entry.id).length === 0)
             return false;

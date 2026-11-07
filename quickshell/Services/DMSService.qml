@@ -75,6 +75,7 @@ Singleton {
     signal locationStateUpdate(var data)
     signal sysupdateStateUpdate(var data)
     signal tailscaleStateUpdate(var data)
+    signal firewallStateUpdate(var data)
     signal wellbeingStateUpdate(var data)
     signal filesEvent(var data)
 
@@ -359,6 +360,8 @@ Singleton {
             sysupdateStateUpdate(data);
         } else if (service === "tailscale") {
             tailscaleStateUpdate(data);
+        } else if (service === "firewall") {
+            firewallStateUpdate(data);
         } else if (service === "wellbeing") {
             wellbeingStateUpdate(data);
         } else if (service === "files") {
