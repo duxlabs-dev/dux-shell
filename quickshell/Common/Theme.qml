@@ -471,7 +471,11 @@ Singleton {
 
     property color error: currentThemeData.error || "#F2B8B5"
     property color errorContainer: currentThemeData.errorContainer || getMatugenColor("error_container", blend(surfaceContainerHigh, error, 0.35))
-    property color warning: currentThemeData.warning || "#FF9800"
+    // The theme's warning as a ground under dark text (the toast); the stock orange reads as lightWarning on light surfaces.
+    readonly property color stockWarning: "#FF9800"
+    readonly property color warningGround: currentThemeData.warning || stockWarning
+    readonly property color lightWarning: "#904A00"
+    property color warning: isLightMode && Qt.colorEqual(warningGround, stockWarning) ? lightWarning : warningGround
     property color info: currentThemeData.info || "#2196F3"
     property color tempWarning: "#ff9933"
     property color tempDanger: "#ff5555"
