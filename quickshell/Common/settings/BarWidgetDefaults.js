@@ -147,7 +147,8 @@ var DEFAULTS = {
         audioScrollMode: "nothing"
     },
     focusedWindow: {
-        focusedWindowCompactMode: false,
+        focusedWindowShowAppName: true,
+        focusedWindowShowWindowTitle: true,
         focusedWindowShowIcon: true,
         focusedWindowSize: 1
     },
