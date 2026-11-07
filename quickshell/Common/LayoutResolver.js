@@ -160,6 +160,7 @@ function resolveScreen(inputs, screen, options) {
                 row: selected.indexOf(input),
                 rowThickness: paintedThickness,
                 rowOffset,
+                spacing,
                 reservation: contribution
             });
             reservation += contribution;
