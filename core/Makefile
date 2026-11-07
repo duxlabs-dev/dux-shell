@@ -38,7 +38,8 @@ endif
 all: build
 
 # quickshell runtime built from the dux-qt-base submodule and embedded in dms as libdux-qt-base.so,
-# which `dms qs` dlopens. QTBASE=0 skips it and the UI then needs the library next to dms or upstream qs on PATH.
+# which `dms qs` dlopens. QTBASE=0 skips it and `dms qs` then dlopens an installed libdux-qt-base.so.0
+# (next to dms or in the system library dirs, e.g. a dux-qt-base package) or falls back to upstream qs on PATH.
 QTBASE ?= 1
 QTBASE_SRC ?= ../dux-qt-base
 QTBASE_BUILD ?= build/dux-qt-base
@@ -192,13 +193,14 @@ print-version:
 help:
 	@echo "Available targets:"
 	@echo "  all                 - Build the main binary (dms) (default)"
-	@echo "  build               - Build the main binary (dms) with the embedded UI and runtime (cgo, needs dux-qt-base)"
-	@echo "  build-distro        - Native build for distro packages (distro_binary tag, embedded runtime)"
+	@echo "  build               - Build the main binary (dms) with the embedded UI and runtime (needs the dux-qt-base submodule)"
+	@echo "                        QTBASE=0 skips the runtime: dms then uses an installed dux-qt-base package or qs on PATH"
+	@echo "  build-distro        - Native build for distro packages (distro_binary tag, same QTBASE switch)"
 	@echo "  sync-shell          - Copy quickshell/ into the embed dir (runs before tagged builds)"
 	@echo "  duxinstall         - Build duxinstall binary"
 	@echo "  dist                - Build dms for linux/freebsd amd64/arm64 (no update/greeter)"
 	@echo "                        Use ARCH=amd64 or ARCH=arm64 and/or DIST_OSES=linux to narrow"
-	@echo "                        Cross-compiled without cgo: dist binaries still need qs on PATH"
+	@echo "                        No embedded runtime: dist binaries need an installed dux-qt-base or qs on PATH"
 	@echo "  build-all           - Build both binaries"
 	@echo "  install             - Install dms to $(INSTALL_DIR)"
 	@echo "  install-all         - Install both dms and duxinstall to $(INSTALL_DIR)"

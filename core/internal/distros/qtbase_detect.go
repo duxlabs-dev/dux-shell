@@ -8,7 +8,7 @@ import (
 func (b *BaseDistribution) detectDuxQtBase() deps.Dependency {
 	dep := deps.Dependency{
 		Name:        "dux-qt-base",
-		Description: "Quickshell runtime: dux-qt-base embedded in dms, or qs on PATH",
+		Description: "Quickshell runtime: dux-qt-base embedded in dms or installed as a package, or qs on PATH",
 		Required:    true,
 		Variant:     deps.VariantStable,
 		Status:      deps.StatusMissing,
