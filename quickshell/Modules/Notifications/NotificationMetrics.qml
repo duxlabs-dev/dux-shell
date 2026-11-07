@@ -24,6 +24,9 @@ Singleton {
     readonly property real popupRadius: Theme.windowRadius
     readonly property real menuRadius: Theme.cornerRadiusM
     readonly property real popupWidth: 400
+    readonly property real popupShadowBlur: Math.max(Theme.elevationLevel3?.blurPx ?? 12, Theme.elevationLevel4?.blurPx ?? 16)
+    readonly property real popupShadowOffset: Math.max(Math.abs(Theme.elevationOffsetX(Theme.elevationLevel3)), Math.abs(Theme.elevationOffsetX(Theme.elevationLevel4)), Math.abs(Theme.elevationOffsetY(Theme.elevationLevel3, 6)), Math.abs(Theme.elevationOffsetY(Theme.elevationLevel4, 8)))
+    readonly property real popupShadowPad: Math.max(16, popupShadowBlur + popupShadowOffset + 8)
     readonly property real popupMinWidth: 320
     readonly property real popupScreenRatio: 0.23
     readonly property real menuWidth: 280

@@ -139,8 +139,9 @@
 
               tags = [ "withqtbase" ];
 
-              # embed the runtime library the same way make qtbase does
-              preBuild = ''
+              # embed the runtime library the same way make qtbase does; buildGoModule copies preBuild
+              # into the vendor derivation, which would make the vendorHash build depend on dux-qt-base
+              preConfigure = ''
                 install -Dm644 ${duxQtBase}/lib/libdux-qt-base.so.0 internal/qtbaseembed/lib/libdux-qt-base.so.0
                 sha256sum internal/qtbaseembed/lib/libdux-qt-base.so.0 | cut -c1-16 > internal/qtbaseembed/lib/.dankrev
               '';

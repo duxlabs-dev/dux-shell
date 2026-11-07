@@ -46,8 +46,13 @@ Item {
     signal dialogClosed
     signal backgroundClicked
 
-    readonly property var contentLoader: impl.item ? impl.item.contentLoader : null
+    readonly property var contentLoader: impl.item ? impl.item.contentLoader : _fallbackContentLoader
     readonly property alias modalFocusScope: _modalFocusScope
+
+    Loader {
+        id: _fallbackContentLoader
+        active: false
+    }
 
     TransientSurfaceTracker {
         id: _transientSurfaceTracker

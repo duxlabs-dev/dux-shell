@@ -57,8 +57,14 @@ jobs:
       - name: Build dms
         run: go build -v ./cmd/dms
 
-      - name: Build dms (embedded shell)
-        run: make build
+      - name: Build dms (embedded shell, no runtime)
+        run: QTBASE=0 make build
+
+      - name: Build dms (embedded runtime, placeholder library)
+        run: |
+          mkdir -p internal/qtbaseembed/lib
+          touch internal/qtbaseembed/lib/libdux-qt-base.so.0 internal/qtbaseembed/lib/.dankrev
+          go build -v -tags 'withshell withqtbase' ./cmd/dms
 
       - name: Build dms (distropkg)
         run: go build -v -tags 'distro_binary withshell' ./cmd/dms
