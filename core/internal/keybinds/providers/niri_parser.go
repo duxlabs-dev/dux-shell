@@ -5,6 +5,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/configfrag"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -23,8 +24,17 @@ type NiriKeyBinding struct {
 	AllowWhenLocked bool
 	AllowInhibiting *bool
 	Repeat          *bool
+	Trigger         string // "" press, "release", "both"
+	ReleaseAction   string // set when Trigger is "both"
+	ReleaseArgs     []string
+	PassThrough     *bool
 	Source          string
 }
+
+const (
+	niriTriggerRelease = "release"
+	niriTriggerBoth    = "both"
+)
 
 type NiriSection struct {
 	Name     string
@@ -46,7 +56,6 @@ type NiriParser struct {
 	dmsIncludePos      int
 	bindsBeforeDMS     int
 	bindsAfterDMS      int
-	dmsBindKeys        map[string]bool
 	configBindKeys     map[string]bool
 	dmsProcessed       bool
 	dmsBindMap         map[string]*NiriKeyBinding
@@ -245,19 +254,165 @@ func NewNiriParser(configDir string) *NiriParser {
 		bindOrder:          []string{},
 		currentSource:      "",
 		dmsIncludePos:      -1,
-		dmsBindKeys:        make(map[string]bool),
 		configBindKeys:     make(map[string]bool),
 		dmsBindMap:         make(map[string]*NiriKeyBinding),
 		conflictingConfigs: make(map[string]*NiriKeyBinding),
 	}
 }
 
+// Mirrors the modifier spellings in niri-config/src/binds.rs.
+var niriModifierNames = map[string]string{
+	"mod":              "mod",
+	"super":            "super",
+	"win":              "super",
+	"ctrl":             "ctrl",
+	"control":          "ctrl",
+	"alt":              "alt",
+	"shift":            "shift",
+	"iso_level3_shift": "mod5",
+	"mod5":             "mod5",
+	"iso_level5_shift": "mod3",
+	"mod3":             "mod3",
+}
+
+// Imply a modifier (niri ModKey::from_keysym) but stay distinct triggers.
+var niriModifierKeysyms = map[string]string{
+	"control_l": "ctrl",
+	"control_r": "ctrl",
+	"shift_l":   "shift",
+	"shift_r":   "shift",
+	"alt_l":     "alt",
+	"alt_r":     "alt",
+	"super_l":   "super",
+	"super_r":   "super",
+}
+
+var niriModifierOrder = []string{"mod", "super", "ctrl", "alt", "shift", "mod5", "mod3"}
+
+// niri merges binds by modifier set plus trigger, so Alt+Shift and Shift+Alt are one bind.
 func normalizeNiriBindKey(key string) string {
 	parts := strings.Split(key, "+")
 	for i := range parts {
 		parts[i] = strings.ToLower(strings.TrimSpace(parts[i]))
 	}
-	return strings.Join(parts, "+")
+	trigger := parts[len(parts)-1]
+
+	mods := make(map[string]bool, len(parts))
+	var unknown []string
+	for _, part := range parts[:len(parts)-1] {
+		if mod, ok := niriModifierNames[part]; ok {
+			mods[mod] = true
+			continue
+		}
+		if !slices.Contains(unknown, part) {
+			unknown = append(unknown, part)
+		}
+	}
+
+	genericTrigger := false
+	if mod, ok := niriModifierNames[trigger]; ok {
+		mods[mod] = true
+		genericTrigger = true
+	} else if mod, ok := niriModifierKeysyms[trigger]; ok {
+		mods[mod] = true
+	}
+
+	out := make([]string, 0, len(parts)+1)
+	for _, mod := range niriModifierOrder {
+		if mods[mod] {
+			out = append(out, mod)
+		}
+	}
+	slices.Sort(unknown)
+	out = append(out, unknown...)
+	if !genericTrigger {
+		out = append(out, trigger)
+	}
+	return strings.Join(out, "+")
+}
+
+// Mirrors niri's Key::conflicts_with: Alt also takes Alt_L and Alt_R, which stay distinct.
+func niriBindsConflict(a, b string) bool {
+	na, nb := normalizeNiriBindKey(a), normalizeNiriBindKey(b)
+	if na == nb {
+		return true
+	}
+	if isNiriGenericModifierTrigger(b) {
+		a, b, na, nb = b, a, nb, na
+	}
+	if !isNiriGenericModifierTrigger(a) {
+		return false
+	}
+	trigger := niriTriggerName(b)
+	if _, ok := niriModifierKeysyms[trigger]; !ok {
+		return false
+	}
+	return nb == na+"+"+trigger
+}
+
+func isNiriGenericModifierTrigger(key string) bool {
+	_, ok := niriModifierNames[niriTriggerName(key)]
+	return ok
+}
+
+func isNiriModifierTrigger(key string) bool {
+	_, keysym := niriModifierKeysyms[niriTriggerName(key)]
+	return keysym || isNiriGenericModifierTrigger(key)
+}
+
+func niriTriggerName(key string) string {
+	return strings.ToLower(strings.TrimSpace(key[strings.LastIndex(key, "+")+1:]))
+}
+
+func isNiriScrollTrigger(key string) bool {
+	trigger := niriTriggerName(key)
+	return strings.HasPrefix(trigger, "wheelscroll") || strings.HasPrefix(trigger, "touchpadscroll")
+}
+
+func isNiriKeyboardTrigger(key string) bool {
+	trigger := niriTriggerName(key)
+	for _, prefix := range []string{"mouse", "wheelscroll", "touchpadscroll", "tabletstylusbutton"} {
+		if strings.HasPrefix(trigger, prefix) {
+			return false
+		}
+	}
+	return true
+}
+
+func niriBoundActions(bindNode *document.Node) (press, release *document.Node) {
+	for _, child := range bindNode.Children {
+		switch child.Name.String() {
+		case "press":
+			if len(child.Children) > 0 {
+				press = child.Children[0]
+			}
+		case "release":
+			if len(child.Children) > 0 {
+				release = child.Children[0]
+			}
+		default:
+			if press == nil {
+				press = child
+			}
+		}
+	}
+	return press, release
+}
+
+func niriActionNameArgs(actionNode *document.Node) (string, []string) {
+	action := actionNode.Name.String()
+	var args []string
+	for _, arg := range actionNode.Arguments {
+		args = append(args, arg.ValueString())
+	}
+	if actionNode.Properties != nil {
+		for _, propName := range niriActionPropertyOrder {
+			if val, ok := actionNode.Properties.Get(propName); ok {
+				args = append(args, propName+"="+val.String())
+			}
+		}
+	}
+	return action, args
 }
 
 func (p *NiriParser) Parse() (*NiriSection, error) {
@@ -315,21 +470,47 @@ func (p *NiriParser) addBind(kb *NiriKeyBinding) {
 	isDMSBind := strings.Contains(kb.Source, "dms/binds.kdl")
 
 	if isDMSBind {
-		p.dmsBindKeys[normalizedKey] = true
 		p.dmsBindMap[normalizedKey] = kb
-	} else if p.dmsBindKeys[normalizedKey] {
+	} else if dmsKeys := p.conflictingKeys(p.dmsBindMap, key, normalizedKey); len(dmsKeys) > 0 {
 		p.bindsAfterDMS++
-		p.conflictingConfigs[normalizedKey] = kb
+		for _, dmsKey := range dmsKeys {
+			p.conflictingConfigs[dmsKey] = kb
+		}
 		p.configBindKeys[normalizedKey] = true
 		return
 	} else {
 		p.configBindKeys[normalizedKey] = true
 	}
 
+	// niri drops every earlier bind the new one conflicts with, not just its exact identity.
+	for _, old := range p.conflictingKeys(p.bindMap, key, normalizedKey) {
+		if old != normalizedKey {
+			delete(p.bindMap, old)
+			p.bindOrder = slices.DeleteFunc(p.bindOrder, func(k string) bool { return k == old })
+		}
+	}
+
 	if _, exists := p.bindMap[normalizedKey]; !exists {
 		p.bindOrder = append(p.bindOrder, normalizedKey)
 	}
 	p.bindMap[normalizedKey] = kb
+}
+
+// Only modifier triggers conflict beyond their own identity.
+func (p *NiriParser) conflictingKeys(binds map[string]*NiriKeyBinding, key, normalizedKey string) []string {
+	var keys []string
+	if _, ok := binds[normalizedKey]; ok {
+		keys = append(keys, normalizedKey)
+	}
+	if !isNiriModifierTrigger(key) {
+		return keys
+	}
+	for other, kb := range binds {
+		if other != normalizedKey && niriBindsConflict(key, p.formatBindKey(kb)) {
+			keys = append(keys, other)
+		}
+	}
+	return keys
 }
 
 func (p *NiriParser) formatBindKey(kb *NiriKeyBinding) string {
@@ -475,21 +656,19 @@ func (p *NiriParser) parseKeybindNode(node *document.Node, _ string) *NiriKeyBin
 
 	mods, key := p.parseKeyCombo(keyCombo)
 
-	var action string
-	var args []string
-	if len(node.Children) > 0 {
-		actionNode := node.Children[0]
-		action = actionNode.Name.String()
-		for _, arg := range actionNode.Arguments {
-			args = append(args, arg.ValueString())
-		}
-		if actionNode.Properties != nil {
-			for _, propName := range []string{"focus", "show-pointer", "write-to-disk", "skip-confirmation", "delay-ms", "filter", "scope"} {
-				if val, ok := actionNode.Properties.Get(propName); ok {
-					args = append(args, propName+"="+val.String())
-				}
-			}
-		}
+	var action, trigger, releaseAction string
+	var args, releaseArgs []string
+	pressNode, releaseNode := niriBoundActions(node)
+	switch {
+	case pressNode != nil && releaseNode != nil:
+		trigger = niriTriggerBoth
+		action, args = niriActionNameArgs(pressNode)
+		releaseAction, releaseArgs = niriActionNameArgs(releaseNode)
+	case releaseNode != nil:
+		trigger = niriTriggerRelease
+		action, args = niriActionNameArgs(releaseNode)
+	case pressNode != nil:
+		action, args = niriActionNameArgs(pressNode)
 	}
 
 	var description string
@@ -497,7 +676,7 @@ func (p *NiriParser) parseKeybindNode(node *document.Node, _ string) *NiriKeyBin
 	var cooldownMs int
 	var allowWhenLocked bool
 	var allowInhibiting *bool
-	var repeat *bool
+	var repeat, passThrough *bool
 	if node.Properties != nil {
 		if val, ok := node.Properties.Get("hotkey-overlay-title"); ok {
 			switch val.ValueString() {
@@ -521,6 +700,10 @@ func (p *NiriParser) parseKeybindNode(node *document.Node, _ string) *NiriKeyBin
 			v := val.String() == "true"
 			repeat = &v
 		}
+		if val, ok := node.Properties.Get("pass-through"); ok {
+			v := val.String() == "true"
+			passThrough = &v
+		}
 	}
 
 	return &NiriKeyBinding{
@@ -534,6 +717,10 @@ func (p *NiriParser) parseKeybindNode(node *document.Node, _ string) *NiriKeyBin
 		AllowWhenLocked: allowWhenLocked,
 		AllowInhibiting: allowInhibiting,
 		Repeat:          repeat,
+		Trigger:         trigger,
+		ReleaseAction:   releaseAction,
+		ReleaseArgs:     releaseArgs,
+		PassThrough:     passThrough,
 		Source:          p.currentSource,
 	}
 }
@@ -569,7 +756,7 @@ var niriBindsMessages = configfrag.Messages{
 
 func (p *NiriParser) buildDMSStatus() *configfrag.Status {
 	scan := configfrag.IncludeScan{Count: p.includeCount, DMSPosition: p.dmsIncludePos, DMSSeen: p.dmsBindsIncluded}
-	status := configfrag.BuildStatus(scan, p.dmsBindsExists, p.bindsAfterDMS, "", false, niriBindsMessages)
+	status := configfrag.BuildStatus(scan, p.dmsBindsExists, p.bindsAfterDMS, niriBindsMessages)
 	return &status
 }
 

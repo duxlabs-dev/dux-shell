@@ -186,7 +186,6 @@ func TestHyprlandConvertKeybindLuaAction(t *testing.T) {
 		{"hl.dsp.no_op()", "", ""},
 	}
 	p := NewHyprlandProvider(t.TempDir())
-	p.luaConfig = true
 	for _, tt := range tests {
 		t.Run(tt.dispatcher+" "+tt.params, func(t *testing.T) {
 			kb := &HyprlandKeyBinding{Mods: []string{"SUPER"}, Key: "X", Dispatcher: tt.dispatcher, Params: tt.params}
@@ -217,45 +216,80 @@ func TestHyprlandLuaBindLabels(t *testing.T) {
 	}
 }
 
-func TestHyprlandCheatSheetConfigFormat(t *testing.T) {
-	const conf = "bind = SUPER, Q, killactive\n"
-	const lua = `hl.bind("SUPER + Q", hl.dsp.window.close())` + "\n"
-	tests := []struct {
-		name         string
-		files        map[string]string
-		wantFormat   string
-		wantReadOnly bool
-		wantLua      string
-	}{
-		{"hyprlang only", map[string]string{"hyprland.conf": conf}, "hyprlang", true, ""},
-		{"lua only", map[string]string{"hyprland.lua": lua}, "lua", false, `hl.dsp.window.close()`},
-		{"lua wins over leftover conf", map[string]string{"hyprland.conf": conf, "hyprland.lua": lua}, "lua", false, `hl.dsp.window.close()`},
+func TestHyprlandCheatSheetIgnoresLegacyConf(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "hyprland.conf"), []byte("bind = SUPER, Q, killactive\n"), 0o644); err != nil {
+		t.Fatal(err)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dir := t.TempDir()
-			if err := os.MkdirAll(filepath.Join(dir, "dms"), 0o755); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile(filepath.Join(dir, "dms", "binds.lua"), nil, 0o644); err != nil {
-				t.Fatal(err)
-			}
-			for name, content := range tt.files {
-				if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
-					t.Fatal(err)
-				}
-			}
-			sheet, err := NewHyprlandProvider(dir).GetCheatSheet()
-			if err != nil {
-				t.Fatalf("GetCheatSheet: %v", err)
-			}
-			if sheet.DMSStatus == nil || sheet.DMSStatus.ConfigFormat != tt.wantFormat || sheet.DMSStatus.ReadOnly != tt.wantReadOnly {
-				t.Fatalf("DMSStatus = %+v, want format %q readOnly %v", sheet.DMSStatus, tt.wantFormat, tt.wantReadOnly)
-			}
-			binds := sheet.Binds["Window"]
-			if len(binds) != 1 || binds[0].Action != "killactive" || binds[0].LuaAction != tt.wantLua {
-				t.Fatalf("Window binds = %+v, want killactive with LuaAction %q", binds, tt.wantLua)
-			}
-		})
+	if sheet, err := NewHyprlandProvider(dir).GetCheatSheet(); err == nil {
+		t.Fatalf("GetCheatSheet read hyprland.conf: %+v", sheet.Binds)
+	}
+}
+
+func TestHyprlandCheatSheetReadsWrappedBinds(t *testing.T) {
+	dir := t.TempDir()
+	config := `local function cycle_ws()
+  hl.dispatch("workspace e+1")
+end
+
+hl.bind("SUPER + T",
+  hl.dsp.exec_cmd("kitty"), -- launcher
+  { description = "Terminal", repeating = true })
+hl.bind("SUPER + C", cycle_ws, { description = "Next workspace" })
+`
+	if err := os.WriteFile(filepath.Join(dir, "hyprland.lua"), []byte(config), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sheet, err := NewHyprlandProvider(dir).GetCheatSheet()
+	if err != nil {
+		t.Fatalf("GetCheatSheet: %v", err)
+	}
+
+	exec := sheet.Binds["Execute"]
+	if len(exec) != 1 || exec[0].Key != "SUPER+T" || exec[0].Description != "Terminal" || exec[0].Flags != "ed" {
+		t.Fatalf("Execute binds = %+v, want the wrapped SUPER+T bind with its options", exec)
+	}
+	ws := sheet.Binds["Workspace"]
+	if len(ws) != 1 || ws[0].Key != "SUPER+C" || ws[0].Description != "Next workspace" {
+		t.Fatalf("Workspace binds = %+v, want the named-function bind filed by its description", ws)
+	}
+}
+
+func TestHyprlandCheatSheetCategories(t *testing.T) {
+	dir := t.TempDir()
+	config := `hl.bind("SUPER + F", hl.dsp.layout("colresize 1.0"))
+hl.bind("SUPER + R", hl.dsp.exec_raw("kitty"))
+hl.bind("SUPER + N", remove_notification)
+hl.bind("SUPER + D", clear_popups, { description = "Remove notification" })
+hl.bind("SUPER + M", max_col, { description = "Toggle maximize column" })
+hl.bind("SUPER + W", moveToWorkspace)
+hl.bind("SUPER + G", window_grow)
+`
+	if err := os.WriteFile(filepath.Join(dir, "hyprland.lua"), []byte(config), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sheet, err := NewHyprlandProvider(dir).GetCheatSheet()
+	if err != nil {
+		t.Fatalf("GetCheatSheet: %v", err)
+	}
+	got := map[string]string{}
+	for category, binds := range sheet.Binds {
+		for _, b := range binds {
+			got[b.Key] = category
+		}
+	}
+	want := map[string]string{
+		"SUPER+F": "Window",
+		"SUPER+R": "Execute",
+		"SUPER+N": "Other",
+		"SUPER+D": "Other",
+		"SUPER+M": "Window",
+		"SUPER+W": "Workspace",
+		"SUPER+G": "Window",
+	}
+	for key, category := range want {
+		if got[key] != category {
+			t.Errorf("%s category = %q, want %q", key, got[key], category)
+		}
 	}
 }

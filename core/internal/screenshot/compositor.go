@@ -1,11 +1,11 @@
 package screenshot
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+	"sync"
 
 	"github.com/duxlabs-dev/dux-go/wayland/client"
 	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_output_management"
@@ -22,7 +22,6 @@ const (
 	CompositorScroll
 	CompositorMiracle
 	CompositorMango
-	CompositorAqueous
 	CompositorUmbriel
 )
 
@@ -38,7 +37,6 @@ func DetectCompositor() Compositor {
 		needsStat  bool
 		compositor Compositor
 	}{
-		{os.Getenv("AQUEOUS_SOCKET"), true, CompositorAqueous},
 		{os.Getenv("MANGO_INSTANCE_SIGNATURE"), true, CompositorMango},
 		{os.Getenv("UMBRIEL_SOCKET"), true, CompositorUmbriel},
 		{os.Getenv("NIRI_SOCKET"), true, CompositorNiri},
@@ -83,14 +81,8 @@ func GetActiveWindow() (*WindowGeometry, error) {
 		return getHyprlandActiveWindow()
 	case CompositorMango:
 		return getMangoActiveWindow()
-	case CompositorAqueous:
-		model, err := aqueousSnapshot(context.Background())
-		if err != nil {
-			return nil, err
-		}
-		return aqueousWindowGeometry(model, "")
 	default:
-		return nil, fmt.Errorf("window capture requires Hyprland, Mango, niri, or Aqueous")
+		return nil, fmt.Errorf("window capture requires Hyprland, Mango, or niri")
 	}
 }
 
@@ -123,13 +115,14 @@ func getHyprlandActiveWindow() (*WindowGeometry, error) {
 }
 
 type hyprlandMonitor struct {
-	Name    string  `json:"name"`
-	X       int32   `json:"x"`
-	Y       int32   `json:"y"`
-	Width   int32   `json:"width"`
-	Height  int32   `json:"height"`
-	Scale   float64 `json:"scale"`
-	Focused bool    `json:"focused"`
+	Name      string  `json:"name"`
+	X         int32   `json:"x"`
+	Y         int32   `json:"y"`
+	Width     int32   `json:"width"`
+	Height    int32   `json:"height"`
+	Scale     float64 `json:"scale"`
+	Transform int32   `json:"transform"`
+	Focused   bool    `json:"focused"`
 }
 
 func GetHyprlandMonitorScale(name string) float64 {
@@ -149,6 +142,31 @@ func GetHyprlandMonitorScale(name string) float64 {
 		}
 	}
 	return 0
+}
+
+// !TODO: remove with the frameInLogicalOrientation version fallback
+var hyprlandVersion = sync.OnceValues(func() (int, int) {
+	output, err := exec.Command("hyprctl", "-j", "version").Output()
+	if err != nil {
+		return 0, 0
+	}
+	var info struct {
+		Version string `json:"version"`
+	}
+	if err := json.Unmarshal(output, &info); err != nil {
+		return 0, 0
+	}
+	var major, minor int
+	fmt.Sscanf(info.Version, "%d.%d", &major, &minor)
+	return major, minor
+})
+
+func hyprlandVersionAtLeast(major, minor int) bool {
+	haveMajor, haveMinor := hyprlandVersion()
+	if haveMajor != major {
+		return haveMajor > major
+	}
+	return haveMinor >= minor
 }
 
 func getHyprlandFocusedMonitor() string {
@@ -175,18 +193,27 @@ func GetHyprlandMonitorGeometry(name string) (x, y, w, h int32, ok bool) {
 	if err != nil {
 		return 0, 0, 0, 0, false
 	}
+	return hyprlandMonitorGeometry(output, name)
+}
 
+func hyprlandMonitorGeometry(monitorsJSON []byte, name string) (x, y, w, h int32, ok bool) {
 	var monitors []hyprlandMonitor
-	if err := json.Unmarshal(output, &monitors); err != nil {
+	if err := json.Unmarshal(monitorsJSON, &monitors); err != nil {
 		return 0, 0, 0, 0, false
 	}
 
 	for _, m := range monitors {
-		if m.Name == name {
-			logicalW := int32(float64(m.Width) / m.Scale)
-			logicalH := int32(float64(m.Height) / m.Scale)
-			return m.X, m.Y, logicalW, logicalH, true
+		if m.Name != name {
+			continue
 		}
+		// hyprctl reports width/height before the transform is applied
+		modeW, modeH := m.Width, m.Height
+		if m.Transform%2 == 1 {
+			modeW, modeH = modeH, modeW
+		}
+		logicalW := int32(float64(modeW) / m.Scale)
+		logicalH := int32(float64(modeH) / m.Scale)
+		return m.X, m.Y, logicalW, logicalH, true
 	}
 	return 0, 0, 0, 0, false
 }
@@ -390,9 +417,6 @@ func getUmbrielFocusedMonitor() string {
 
 func GetFocusedMonitor() string {
 	switch DetectCompositor() {
-	case CompositorAqueous:
-		name, _ := aqueousFocusedOutput("")
-		return name
 	case CompositorHyprland:
 		return getHyprlandFocusedMonitor()
 	case CompositorSway:

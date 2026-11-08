@@ -74,7 +74,6 @@ type scrollSession struct {
 
 	sigCh     chan os.Signal
 	keysBound bool
-	hyprLua   bool
 
 	st *stitcher
 }
@@ -357,28 +356,14 @@ func (r *RegionSelector) enterHyprlandScrollInput(osurf *OutputSurface) {
 	}
 	cx := int(float64(osurf.output.x) + float64(s.holeX+s.holeW/2)/scale)
 	cy := int(float64(osurf.output.y) + float64(s.holeY+s.holeH/2)/scale)
-	s.hyprLua = hyprlandLuaConfigActive()
-	hyprlandFocusWindowAt(s.hyprLua, cx, cy)
+	hyprlandFocusWindowAt(cx, cy)
 
 	s.sigCh = make(chan os.Signal, 2)
 	signal.Notify(s.sigCh, unix.SIGUSR1, unix.SIGUSR2)
-	s.keysBound = exec.Command("hyprctl", hyprlandBindScrollKeysArgs(s.hyprLua, os.Getpid())...).Run() == nil
+	s.keysBound = exec.Command("hyprctl", hyprlandBindScrollKeysArgs(os.Getpid())...).Run() == nil
 }
 
-// `status` exists since 0.55; older builds answer "unknown request" and have no Lua
-func hyprlandLuaConfigActive() bool {
-	out, err := exec.Command("hyprctl", "-j", "status").Output()
-	return err == nil && hyprlandStatusIsLua(out)
-}
-
-func hyprlandStatusIsLua(out []byte) bool {
-	var status struct {
-		ConfigProvider string `json:"configProvider"`
-	}
-	return json.Unmarshal(out, &status) == nil && status.ConfigProvider == "lua"
-}
-
-func hyprlandFocusWindowAt(lua bool, x, y int) {
+func hyprlandFocusWindowAt(x, y int) {
 	out, err := exec.Command("hyprctl", "-j", "clients").Output()
 	if err != nil {
 		return
@@ -410,27 +395,18 @@ func hyprlandFocusWindowAt(lua bool, x, y int) {
 	if best < 0 {
 		return
 	}
-	_ = exec.Command("hyprctl", hyprlandFocusArgs(lua, clients[best].Address)...).Run()
+	_ = exec.Command("hyprctl", hyprlandFocusArgs(clients[best].Address)...).Run()
 }
 
-func hyprlandFocusArgs(lua bool, address string) []string {
-	if !lua {
-		return []string{"dispatch", "focuswindow", "address:" + address}
-	}
+func hyprlandFocusArgs(address string) []string {
 	return []string{"dispatch", fmt.Sprintf("hl.dsp.focus({ window = %q })", "address:"+address)}
 }
 
-func hyprlandBindScrollKeysArgs(lua bool, pid int) []string {
-	if !lua {
-		return []string{"--batch", fmt.Sprintf("keyword bind ,Return,exec,kill -USR1 %d ; keyword bind ,Escape,exec,kill -USR2 %d", pid, pid)}
-	}
+func hyprlandBindScrollKeysArgs(pid int) []string {
 	return []string{"eval", fmt.Sprintf(`hl.bind("Return", hl.dsp.exec_cmd("kill -USR1 %d")); hl.bind("Escape", hl.dsp.exec_cmd("kill -USR2 %d"))`, pid, pid)}
 }
 
-func hyprlandUnbindScrollKeysArgs(lua bool) []string {
-	if !lua {
-		return []string{"--batch", "keyword unbind ,Return ; keyword unbind ,Escape"}
-	}
+func hyprlandUnbindScrollKeysArgs() []string {
 	return []string{"eval", `hl.unbind("Return"); hl.unbind("Escape")`}
 }
 
@@ -676,14 +652,8 @@ func (r *RegionSelector) finishScroll() {
 		Height: int32(s.holeH),
 		Output: s.output.name,
 	}
-	// same convention as finishSelection or preselect breaks on scaled outputs
-	r.result = Region{
-		X:      int32(s.holeX) + s.output.x,
-		Y:      int32(s.holeY) + s.output.y,
-		Width:  int32(s.holeW),
-		Height: int32(s.holeH),
-		Output: s.output.name,
-	}
+	// same convention as finishSelection: keep the saved region in logical coords.
+	r.result = logicalRegionFromDevicePixels(s.output, s.holeX, s.holeY, s.holeW, s.holeH)
 	r.running = false
 }
 
@@ -701,7 +671,7 @@ func (r *RegionSelector) cleanupScroll() {
 		return
 	}
 	if s.keysBound {
-		_ = exec.Command("hyprctl", hyprlandUnbindScrollKeysArgs(s.hyprLua)...).Run()
+		_ = exec.Command("hyprctl", hyprlandUnbindScrollKeysArgs()...).Run()
 	}
 	if s.sigCh != nil {
 		signal.Stop(s.sigCh)

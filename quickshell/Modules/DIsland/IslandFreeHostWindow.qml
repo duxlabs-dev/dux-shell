@@ -28,22 +28,43 @@ PanelWindow {
     readonly property real screenHeight: root.screen?.height ?? 1080
     readonly property string positionKey: IslandHostRegistry.key(root.screen?.name, root.barId)
     readonly property var storedAnchor: SessionData.islandFreePositions[root.positionKey] ?? null
-    readonly property real storedAnchorX: root.clampAnchorX((typeof root.storedAnchor?.x === "number" ? root.storedAnchor.x : 0.5) * root.screenWidth)
-    readonly property real storedAnchorY: root.clampAnchorY((typeof root.storedAnchor?.y === "number" ? root.storedAnchor.y : 0.5) * root.screenHeight)
+    readonly property point storedPoint: Qt.point(root.clampAnchorX((typeof root.storedAnchor?.x === "number" ? root.storedAnchor.x : 0.5) * root.screenWidth), root.clampAnchorY((typeof root.storedAnchor?.y === "number" ? root.storedAnchor.y : 0.5) * root.screenHeight))
+    readonly property real anchorX: root.anchor.x
+    readonly property real anchorY: root.anchor.y
+    // Sized from the visual's size alone, so a fractional spring position never resizes the surface.
     readonly property int surfaceX: Math.floor(body.currentVisualX - root.hitPadding - body.shadowPadding)
     readonly property int surfaceY: Math.floor(body.currentVisualY - root.hitPadding - body.shadowPadding)
+    readonly property int surfaceWidth: Math.ceil(body.currentVisualWidth + 2 * (root.hitPadding + body.shadowPadding)) + 1
+    readonly property int surfaceHeight: Math.ceil(body.currentVisualHeight + 2 * (root.hitPadding + body.shadowPadding)) + 1
+
+    // Gestures and morphs run on a surface lifted to the whole output: per-frame margin commits skew pointer coordinates and relayout Hyprland.
+    property bool lifting: false
+    property bool liftForced: false
+    property point liftOrigin
+    // True from the unlift until the tight configure lands: a re-grab in that window still reads the output size.
+    property bool sizeStale: false
+    readonly property bool outputSized: root.width >= root.screenWidth - 2 && root.height >= root.screenHeight - 2
+    // Negative far margins grow the surface in place; the origin flips only once the buffer spans the output.
+    readonly property bool lifted: root.lifting && (root.liftForced || (!root.sizeStale && root.outputSized))
+    readonly property int frameLeft: root.lifted ? 0 : root.lifting ? root.liftOrigin.x : root.surfaceX
+    readonly property int frameTop: root.lifted ? 0 : root.lifting ? root.liftOrigin.y : root.surfaceY
+    readonly property int frameRight: root.lifting ? -root.frameLeft : Math.round(root.screenWidth) - root.surfaceX - root.surfaceWidth
+    readonly property int frameBottom: root.lifting ? -root.frameTop : Math.round(root.screenHeight) - root.surfaceY - root.surfaceHeight
 
     readonly property bool expanded: body.expanded
     readonly property bool pointerInside: body.islandController.pointerInside
     readonly property string activeActivity: body.islandController.activeActivity
-    // An idle-shrunk nub keeps its full-size hit area; the drag area shares it or ring clicks would be lost.
-    readonly property real hitPadding: root.idle ? Math.max(0, (root.dotSize - root.dotSize * root.idleScale) / 2) : 0
+    readonly property bool motionRunning: body.motionRunning
+    // A shrunk nub keeps the full dot's hit area and surface, so idling and waking never resize the window.
+    readonly property real hitPadding: root.dot ? Math.max(0, (root.dotSize - body.currentVisualWidth) / 2) : 0
     // Blur regions are not antialiased and a small circle shows the jagged rim, so blur waits for the morph.
     readonly property bool blurWanted: !root.dot || Math.min(body.currentVisualWidth, body.currentVisualHeight) > root.dotSize * 1.5
 
-    property real anchorX: 0
-    property real anchorY: 0
+    property point anchor
     property bool dragging: false
+    property bool flinging: false
+    // sheetOut spans the expand through the collapse spring, so the whole morph draws into one static buffer.
+    readonly property bool liftWanted: root.dragging || root.flinging || body.sheetOut
     property bool idle: false
 
     function anchorLimit(size, extent) {
@@ -64,14 +85,22 @@ PanelWindow {
     }
 
     function storeAnchor() {
-        SessionData.setIslandFreePosition(root.positionKey, root.anchorX / root.screenWidth, root.anchorY / root.screenHeight);
+        SessionData.setIslandFreePosition(root.positionKey, root.anchor.x / root.screenWidth, root.anchor.y / root.screenHeight);
     }
 
     function moveTo(x, y) {
-        root.anchorX = root.clampAnchorX(x);
-        root.anchorY = root.clampAnchorY(y);
+        root.anchor = Qt.point(root.clampAnchorX(x), root.clampAnchorY(y));
         root.storeAnchor();
         root.wake();
+    }
+
+    function beginLift() {
+        if (root.lifting)
+            return;
+        root.liftOrigin = Qt.point(root.frameLeft, root.frameTop);
+        root.liftForced = false;
+        root.lifting = true;
+        liftTimeout.restart();
     }
 
     function wake() {
@@ -90,17 +119,37 @@ PanelWindow {
         return body.containsGlobalPoint(gx, gy, padding);
     }
 
-    onStoredAnchorXChanged: {
-        if (!root.dragging)
-            root.anchorX = root.storedAnchorX;
+    onStoredPointChanged: {
+        if (!root.liftWanted)
+            root.anchor = root.storedPoint;
     }
-    onStoredAnchorYChanged: {
-        if (!root.dragging)
-            root.anchorY = root.storedAnchorY;
+    // Stored once the fling settles; a save mid-gesture stalls the fling's first frame.
+    onLiftWantedChanged: {
+        if (root.liftWanted) {
+            root.beginLift();
+            return;
+        }
+        root.sizeStale = root.outputSized;
+        root.lifting = false;
+        liftTimeout.stop();
+        root.storeAnchor();
+    }
+    onOutputSizedChanged: {
+        if (!root.outputSized)
+            root.sizeStale = false;
+    }
+    onLiftedChanged: {
+        if (root.lifted)
+            liftTimeout.stop();
+    }
+    onMotionRunningChanged: {
+        if (!root.motionRunning)
+            root.flinging = false;
     }
     onPointerInsideChanged: root.wake()
     onExpandedChanged: root.wake()
     onActiveActivityChanged: root.wake()
+    onIdleDelayChanged: root.wake()
 
     color: "transparent"
     exclusiveZone: -1
@@ -115,23 +164,26 @@ PanelWindow {
         readonly property real left: body.x + body.currentVisualX
         readonly property real top: body.y + body.currentVisualY
 
-        x: Math.ceil(left) + 1
-        y: Math.ceil(top) + 1
-        width: Math.max(0, Math.floor(left + body.currentVisualWidth) - 1 - x)
-        height: Math.max(0, Math.floor(top + body.currentVisualHeight) - 1 - y)
-        radius: body.currentSurfaceRadius > 0 ? Math.ceil(body.currentSurfaceRadius) + 1 : 0
+        x: Math.ceil(left)
+        y: Math.ceil(top)
+        width: Math.max(0, Math.floor(left + body.currentVisualWidth) - x)
+        height: Math.max(0, Math.floor(top + body.currentVisualHeight) - y)
+        radius: Math.ceil(body.currentSurfaceRadius)
     }
 
+    // All four edges are anchored so the margins alone place and size the surface, letting a lift grow it past the output.
     anchors {
         top: true
+        bottom: true
         left: true
+        right: true
     }
     WlrLayershell.margins {
-        left: root.surfaceX
-        top: root.surfaceY
+        left: root.frameLeft
+        top: root.frameTop
+        right: root.frameRight
+        bottom: root.frameBottom
     }
-    implicitWidth: Math.ceil(body.currentVisualX + body.currentVisualWidth + root.hitPadding + body.shadowPadding) - root.surfaceX
-    implicitHeight: Math.ceil(body.currentVisualY + body.currentVisualHeight + root.hitPadding + body.shadowPadding) - root.surfaceY
 
     Component.onCompleted: {
         root.wake();
@@ -150,28 +202,50 @@ PanelWindow {
     Timer {
         id: idleTimer
 
-        interval: Math.max(1000, root.idleDelay)
+        interval: root.idleDelay
         onTriggered: {
-            if (root.expanded || root.pointerInside || root.dragging || body.islandController.transientActive)
+            if (root.expanded || root.pointerInside || hitHover.hovered || root.liftWanted || body.islandController.transientActive)
                 return;
             root.idle = true;
         }
     }
 
-    mask: Region {
+    // A compositor that never sizes the lifted surface would leave every drag frozen.
+    Timer {
+        id: liftTimeout
+
+        interval: 250
+        onTriggered: root.liftForced = true
+    }
+
+    // A quick stroke outruns the dot's rectangle between frames and the pointer leave ends the drag, so a drag takes input everywhere.
+    mask: root.dragging && root.lifted ? null : hitRegion
+    Region {
+        id: hitRegion
+
         item: body.inputSuspended ? null : hitTarget
     }
     Item {
         id: hitTarget
-        anchors.fill: parent
-        anchors.margins: body.shadowPadding
+
+        x: body.currentVisualX - root.hitPadding - root.frameLeft
+        y: body.currentVisualY - root.hitPadding - root.frameTop
+        width: body.currentVisualWidth + 2 * root.hitPadding
+        height: body.currentVisualHeight + 2 * root.hitPadding
+
+        // The idle ring around a shrunk nub takes clicks and drags, so hovering it wakes the dot too.
+        HoverHandler {
+            id: hitHover
+
+            onHoveredChanged: root.wake()
+        }
     }
 
-    // Keep the animated buffer tight; the unmoving input-only window catches outside clicks.
+    // Catches outside clicks; the lifted surface's own mask stays the island rectangle.
     PanelWindow {
         id: dismissWindow
         screen: root.screen
-        visible: root.expanded && !body.inputSuspended
+        visible: body.islandController.outsideClickCollapses && !body.inputSuspended
         color: "transparent"
         exclusiveZone: -1
         WlrLayershell.namespace: "dms:dankisland-dismiss"
@@ -182,14 +256,17 @@ PanelWindow {
             left: true
             right: true
         }
+        // The frozen spring envelope, so this full-output surface is not re-committed every frame of a morph.
         mask: Region {
             width: dismissWindow.width
             height: dismissWindow.height
             Region {
-                x: root.surfaceX + hitTarget.x
-                y: root.surfaceY + hitTarget.y
-                width: hitTarget.width
-                height: hitTarget.height
+                readonly property Item envelope: body.inputMaskItem
+
+                x: dismissWindow.visible ? envelope.x : 0
+                y: dismissWindow.visible ? envelope.y : 0
+                width: dismissWindow.visible ? envelope.width : 0
+                height: dismissWindow.visible ? envelope.height : 0
                 intersection: Intersection.Subtract
             }
         }
@@ -212,8 +289,8 @@ PanelWindow {
     IslandBarHost {
         id: body
 
-        x: -root.surfaceX
-        y: -root.surfaceY
+        x: -root.frameLeft
+        y: -root.frameTop
         width: root.screenWidth
         height: root.screenHeight
         originOffsetX: x
@@ -221,9 +298,9 @@ PanelWindow {
         barConfig: root.barConfig
         screen: root.screen
         hostWindow: root
+        hostLifted: root.lifted
         barId: root.barId
-        anchorX: root.anchorX
-        anchorY: root.anchorY
+        anchor: root.anchor
         anchorSnaps: root.dragging
         freeScale: root.idle ? root.idleScale : 1
         freeOpacity: root.idle ? root.idleOpacity : 1

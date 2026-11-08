@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Common
 import Quickshell
+import qs.Modules.ControlCenter
 import qs.DCommon.Widgets
 import qs.DCommon.Widgets as CommonWidgets
 
@@ -15,8 +16,8 @@ CcTile {
     expandedContent: Component {
         Column {
             id: colors
-            readonly property int swatchColumns: Math.max(0, Math.floor((width + Theme.spacingS) / (Theme.minimumTouchTargetSize + Theme.spacingS)))
-            readonly property int swatchRows: Math.max(0, Math.floor((height - heading.height) / (Theme.minimumTouchTargetSize + Theme.spacingS)))
+            readonly property int swatchColumns: Math.max(0, Math.floor((width + Theme.spacingS) / (CcMetrics.touchTarget + Theme.spacingS)))
+            readonly property int swatchRows: Math.max(0, Math.floor((height - heading.height) / (CcMetrics.touchTarget + Theme.spacingS)))
             spacing: Theme.spacingS
 
             StyledText {
@@ -37,7 +38,7 @@ CcTile {
 
                     CommonWidgets.DColorButton {
                         required property var modelData
-                        width: Theme.minimumTouchTargetSize
+                        width: CcMetrics.touchTarget
                         height: width
                         swatchColor: modelData
                         Accessible.role: Accessible.Button
@@ -46,7 +47,7 @@ CcTile {
                             if (enabled)
                                 click();
                         }
-                        Accessible.name: I18n.tr("Copy") + " " + modelData
+                        Accessible.name: I18n.tr("Copy %1", "%1 is a color value").arg(modelData)
                         onClicked: Quickshell.clipboardText = modelData
                     }
                 }

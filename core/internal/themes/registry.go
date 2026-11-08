@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/duxlabs-dev/dux-shell/core/internal/gitssh"
 	"github.com/duxlabs-dev/dux-shell/core/internal/registries"
 	"github.com/go-git/go-git/v6"
 	"github.com/spf13/afero"
@@ -157,8 +158,9 @@ type realGitClient struct{}
 
 func (g *realGitClient) PlainClone(path string, url string) error {
 	_, err := git.PlainClone(path, &git.CloneOptions{
-		URL:      url,
-		Progress: os.Stdout,
+		URL:           url,
+		Progress:      os.Stdout,
+		ClientOptions: gitssh.ClientOptions(),
 	})
 	return err
 }
@@ -174,7 +176,7 @@ func (g *realGitClient) Pull(path string) error {
 		return err
 	}
 
-	err = worktree.Pull(&git.PullOptions{})
+	err = worktree.Pull(&git.PullOptions{ClientOptions: gitssh.ClientOptions()})
 	if err != nil && err.Error() != "already up-to-date" {
 		return err
 	}

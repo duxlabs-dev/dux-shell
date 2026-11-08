@@ -97,8 +97,8 @@ BasePill {
                 color: Theme.error
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.rightMargin: (barConfig?.widgetPadding ?? 8) === 0 ? 0 : BarMetrics.badgeInset
-                anchors.topMargin: (barConfig?.widgetPadding ?? 8) === 0 ? 0 : BarMetrics.badgeInset
+                anchors.rightMargin: (barConfig?.widgetPadding ?? SettingsData.barWidgetPaddingDefault) === 0 ? 0 : BarMetrics.badgeInset
+                anchors.topMargin: (barConfig?.widgetPadding ?? SettingsData.barWidgetPaddingDefault) === 0 ? 0 : BarMetrics.badgeInset
                 visible: root.isVerticalOrientation && root.hasUpdates && !root.isChecking
             }
 

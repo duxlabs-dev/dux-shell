@@ -9,28 +9,26 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"tailscale.com/client/local"
-	"tailscale.com/ipn"
 	"tailscale.com/ipn/ipnstate"
 )
 
 func TestE2E_TailscaleWithoutOperatorThenGrant(t *testing.T) {
 	var permitted atomic.Bool
-	denied := &local.AccessDeniedError{}
+	denied := errAccessDenied
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		profileStatusFn: func(ctx context.Context) (ipn.LoginProfile, []ipn.LoginProfile, error) {
+		profileStatusFn: func(ctx context.Context) (loginProfile, []loginProfile, error) {
 			if !permitted.Load() {
-				return ipn.LoginProfile{}, nil, denied
+				return loginProfile{}, nil, denied
 			}
-			return ipn.LoginProfile{ID: "p1"}, []ipn.LoginProfile{{ID: "p1", Name: "me@example.com"}}, nil
+			return loginProfile{ID: "p1"}, []loginProfile{{ID: "p1", Name: "me@example.com"}}, nil
 		},
-		editPrefsFn: func(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error) {
+		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
 			if !permitted.Load() {
-				return nil, denied
+				return denied
 			}
-			return &ipn.Prefs{}, nil
+			return nil
 		},
 	}
 	var ran [][]string
@@ -62,17 +60,17 @@ func TestE2E_TailscaleWithoutOperatorThenGrant(t *testing.T) {
 func TestE2E_TailscaleAdvertiseExitNode(t *testing.T) {
 	existing := netip.MustParsePrefix("192.168.1.0/24")
 	routes := []netip.Prefix{existing}
-	var edited *ipn.MaskedPrefs
+	var edited *maskedPrefs
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		getPrefsFn: func(ctx context.Context) (*ipn.Prefs, error) {
-			return &ipn.Prefs{AdvertiseRoutes: routes}, nil
+		getPrefsFn: func(ctx context.Context) (*prefs, error) {
+			return &prefs{AdvertiseRoutes: routes}, nil
 		},
-		editPrefsFn: func(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error) {
+		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
 			edited = mp
 			routes = mp.AdvertiseRoutes
-			return &ipn.Prefs{AdvertiseRoutes: routes}, nil
+			return nil
 		},
 	}
 	m := newManager(client)

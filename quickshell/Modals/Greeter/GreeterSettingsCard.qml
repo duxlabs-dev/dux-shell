@@ -62,7 +62,7 @@ Rectangle {
 
             StyledText {
                 text: root.description
-                font.pixelSize: Theme.fontSizeSmall - 1
+                font.pixelSize: Theme.fontSizeXSmall
                 color: Theme.surfaceVariantText
                 width: parent.width
                 elide: Text.ElideRight

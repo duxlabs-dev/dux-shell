@@ -232,7 +232,6 @@ Item {
         anchors.top: parent.top
         anchors.leftMargin: sideInset
         anchors.rightMargin: sideInset
-        height: SettingsMetrics.searchBarHeight
         placeholderText: I18n.tr("Search settings", "settings search field placeholder")
         rightAccessoryWidth: avatarButton.visible ? avatarButton.width + Theme.spacingXS : 0
         onFocusStateChanged: hasFocus => {
@@ -317,7 +316,7 @@ Item {
             id: avatarButton
 
             anchors.right: parent.right
-            anchors.rightMargin: (SettingsMetrics.searchBarHeight - buttonSize) / 2
+            anchors.rightMargin: (searchField.height - buttonSize) / 2
             anchors.verticalCenter: parent.verticalCenter
             visible: !root.searchActive
             buttonSize: Theme.avatarSize
@@ -361,49 +360,64 @@ Item {
             bottomPadding: SettingsMetrics.paneMargin
             spacing: SettingsMetrics.sidebarGroupGap
 
-            Column {
-                id: searchResultsColumn
+            Item {
+                id: searchResultsFrame
                 width: parent.width - parent.leftPadding - parent.rightPadding
-                spacing: Theme.groupedListGap
+                height: searchResultsColumn.height
                 visible: root.searchActive
 
-                Repeater {
-                    id: searchResultsRepeater
-                    model: ScriptModel {
-                        values: SettingsSearchService.results
+                Column {
+                    id: searchResultsColumn
+                    width: parent.width
+                    spacing: SettingsMetrics.groupGap
+
+                    Repeater {
+                        id: searchResultsRepeater
+                        model: ScriptModel {
+                            values: SettingsSearchService.results
+                        }
+
+                        SettingsSidebarItem {
+                            id: resultDelegate
+                            required property int index
+                            required property var modelData
+
+                            onActiveFocusChanged: {
+                                if (activeFocus)
+                                    root.ensureRowVisible(resultDelegate);
+                            }
+                            isFirstInGroup: index === 0
+                            isLastInGroup: index === SettingsSearchService.results.length - 1
+                            iconName: modelData.icon || "settings"
+                            title: modelData.label
+                            hint: modelData.category
+                            accent: SettingsTabs.accentFor(modelData.page || SettingsTabs.pageForTabIndex(modelData.tabIndex))
+                            active: root.searchSelectedIndex === index
+                            onClicked: keyboard => {
+                                root.searchSelectedIndex = index;
+                                root.selectSearchResult(modelData, keyboard);
+                            }
+                        }
                     }
 
-                    SettingsSidebarItem {
-                        id: resultDelegate
-                        required property int index
-                        required property var modelData
-
-                        onActiveFocusChanged: {
-                            if (activeFocus)
-                                root.ensureRowVisible(resultDelegate);
-                        }
-                        isFirstInGroup: index === 0
-                        isLastInGroup: index === SettingsSearchService.results.length - 1
-                        iconName: modelData.icon || "settings"
-                        title: modelData.label
-                        hint: modelData.category
-                        accent: SettingsTabs.accentFor(modelData.page || SettingsTabs.pageForTabIndex(modelData.tabIndex))
-                        active: root.searchSelectedIndex === index
-                        onClicked: keyboard => {
-                            root.searchSelectedIndex = index;
-                            root.selectSearchResult(modelData, keyboard);
-                        }
+                    StyledText {
+                        width: parent.width
+                        text: I18n.tr("No matches")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        horizontalAlignment: Text.AlignHCenter
+                        visible: searchField.text.length > 0 && SettingsSearchService.results.length === 0
+                        topPadding: Theme.spacingM
                     }
                 }
 
-                StyledText {
-                    width: parent.width
-                    text: I18n.tr("No matches")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    horizontalAlignment: Text.AlignHCenter
-                    visible: searchField.text.length > 0 && SettingsSearchService.results.length === 0
-                    topPadding: Theme.spacingM
+                Rectangle {
+                    anchors.fill: searchResultsColumn
+                    radius: Theme.groupedListOuterRadius
+                    color: "transparent"
+                    border.width: SettingsMetrics.groupFrameWidth
+                    border.color: Theme.outlineMedium
+                    visible: border.width > 0
                 }
             }
 
@@ -415,55 +429,70 @@ Item {
                 Repeater {
                     model: root.navGroups
 
-                    Column {
-                        id: groupColumn
+                    Item {
+                        id: groupFrame
                         required property var modelData
 
                         width: parent.width
-                        spacing: Theme.groupedListGap
+                        height: groupColumn.height
 
-                        readonly property var visibleIds: {
-                            const ids = [];
-                            for (const entry of modelData) {
-                                if (SettingsTabs.isVisible(SettingsTabs.page(entry.id)))
-                                    ids.push(entry.id);
+                        Column {
+                            id: groupColumn
+                            width: parent.width
+                            spacing: SettingsMetrics.groupGap
+
+                            readonly property var visibleIds: {
+                                const ids = [];
+                                for (const entry of modelData) {
+                                    if (SettingsTabs.isVisible(SettingsTabs.page(entry.id)))
+                                        ids.push(entry.id);
+                                }
+                                return ids;
                             }
-                            return ids;
+
+                            Repeater {
+                                model: groupFrame.modelData
+
+                                SettingsSidebarItem {
+                                    id: categoryRow
+                                    required property var modelData
+
+                                    onActiveFocusChanged: {
+                                        if (activeFocus)
+                                            root.ensureRowVisible(categoryRow);
+                                    }
+                                    readonly property bool isHighlighted: root.keyboardHighlightId === modelData.id
+                                    onIsHighlightedChanged: {
+                                        if (isHighlighted)
+                                            Qt.callLater(root.ensureRowVisible, categoryRow);
+                                    }
+
+                                    width: groupColumn.width
+                                    visible: SettingsTabs.isVisible(SettingsTabs.page(modelData.id))
+                                    isFirstInGroup: groupColumn.visibleIds[0] === modelData.id
+                                    isLastInGroup: groupColumn.visibleIds[groupColumn.visibleIds.length - 1] === modelData.id
+                                    iconName: modelData.icon || ""
+                                    title: modelData.text || ""
+                                    hint: SettingsTabs.hubHint(modelData)
+                                    accent: SettingsTabs.accentFor(modelData.id)
+                                    active: root.activeCategoryId === modelData.id && !SettingsTabs.isPluginPage(root.currentPage)
+                                    highlighted: isHighlighted
+                                    onClicked: keyboard => {
+                                        root.keyboardHighlightId = "";
+                                        root.pageRequested(modelData.id);
+                                        root.focusAfterNavigation(keyboard);
+                                    }
+                                }
+                            }
                         }
 
-                        Repeater {
-                            model: groupColumn.modelData
-
-                            SettingsSidebarItem {
-                                id: categoryRow
-                                required property var modelData
-
-                                onActiveFocusChanged: {
-                                    if (activeFocus)
-                                        root.ensureRowVisible(categoryRow);
-                                }
-                                readonly property bool isHighlighted: root.keyboardHighlightId === modelData.id
-                                onIsHighlightedChanged: {
-                                    if (isHighlighted)
-                                        Qt.callLater(root.ensureRowVisible, categoryRow);
-                                }
-
-                                width: groupColumn.width
-                                visible: SettingsTabs.isVisible(SettingsTabs.page(modelData.id))
-                                isFirstInGroup: groupColumn.visibleIds[0] === modelData.id
-                                isLastInGroup: groupColumn.visibleIds[groupColumn.visibleIds.length - 1] === modelData.id
-                                iconName: modelData.icon || ""
-                                title: modelData.text || ""
-                                hint: SettingsTabs.hubHint(modelData)
-                                accent: SettingsTabs.accentFor(modelData.id)
-                                active: root.activeCategoryId === modelData.id && !SettingsTabs.isPluginPage(root.currentPage)
-                                highlighted: isHighlighted
-                                onClicked: keyboard => {
-                                    root.keyboardHighlightId = "";
-                                    root.pageRequested(modelData.id);
-                                    root.focusAfterNavigation(keyboard);
-                                }
-                            }
+                        Rectangle {
+                            anchors.fill: groupColumn
+                            radius: Theme.groupedListOuterRadius
+                            color: "transparent"
+                            border.width: SettingsMetrics.groupFrameWidth
+                            border.color: Theme.outlineMedium
+                            visible: border.width > 0
                         }
                     }
                 }

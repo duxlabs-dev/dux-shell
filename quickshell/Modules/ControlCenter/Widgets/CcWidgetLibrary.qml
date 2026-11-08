@@ -65,7 +65,6 @@ Rectangle {
             anchors.topMargin: Theme.spacingM
             anchors.left: parent.left
             anchors.right: parent.right
-            height: Theme.fieldHeightLarge
             textColor: Theme.surfaceText
             font.pixelSize: Theme.fontSizeMedium
             placeholderText: I18n.tr("Search widgets...")

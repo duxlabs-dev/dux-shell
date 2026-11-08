@@ -1,10 +1,10 @@
-name: Release
+name: Build release
 
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g., v1.0.1)"
+        description: "Existing tag to build (e.g. v2.1.0). To bump VERSION and tag, run Release instead"
         required: true
         type: string
       notify_issues:
@@ -88,7 +88,7 @@ jobs:
         if: matrix.goos == 'linux'
         run: go test -v ./...
 
-      - name: Build dankinstall (${{ env.ASSET }})
+      - name: Build duxinstall (${{ env.ASSET }})
         if: matrix.goos == 'linux'
         env:
           GOOS: ${{ matrix.goos }}
@@ -96,12 +96,12 @@ jobs:
           GOARCH: ${{ matrix.arch }}
         run: |
           set -eux
-          cd cmd/dankinstall
+          cd cmd/duxinstall
           go build -trimpath -ldflags "-s -w -X main.Version=${TAG}" \
-            -o ../../dankinstall-${{ env.ASSET }}
+            -o ../../duxinstall-${{ env.ASSET }}
           cd ../..
-          gzip -9 -k dankinstall-${{ env.ASSET }}
-          sha256sum dankinstall-${{ env.ASSET }}.gz > dankinstall-${{ env.ASSET }}.gz.sha256
+          gzip -9 -k duxinstall-${{ env.ASSET }}
+          sha256sum duxinstall-${{ env.ASSET }}.gz > duxinstall-${{ env.ASSET }}.gz.sha256
 
       - name: Sync embedded shell
         run: make sync-shell
@@ -149,8 +149,8 @@ jobs:
         with:
           name: core-assets-${{ env.ASSET }}
           path: |
-            core/dankinstall-${{ env.ASSET }}.gz
-            core/dankinstall-${{ env.ASSET }}.gz.sha256
+            core/duxinstall-${{ env.ASSET }}.gz
+            core/duxinstall-${{ env.ASSET }}.gz.sha256
             core/dms-${{ env.ASSET }}.gz
             core/dms-${{ env.ASSET }}.gz.sha256
             core/dms-distropkg-${{ env.ASSET }}.gz
@@ -175,8 +175,8 @@ jobs:
         with:
           name: core-assets-${{ env.ASSET }}
           path: |
-            core/dankinstall-${{ env.ASSET }}.gz
-            core/dankinstall-${{ env.ASSET }}.gz.sha256
+            core/duxinstall-${{ env.ASSET }}.gz
+            core/duxinstall-${{ env.ASSET }}.gz.sha256
             core/dms-${{ env.ASSET }}.gz
             core/dms-${{ env.ASSET }}.gz.sha256
             core/dms-distropkg-${{ env.ASSET }}.gz
@@ -257,17 +257,31 @@ jobs:
           merge-multiple: true
           path: ./_core_assets
 
+      # GITHUB_TOKEN can't search PRs in the other suite repos
+      - name: Create GitHub App token
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          permission-contents: read
+          permission-pull-requests: read
+
       - name: Generate Changelog
         id: changelog
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           set -e
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || echo "")
           CHANGELOG=""
           if [ -n "$PREVIOUS_TAG" ]; then
+            # suite PRs are picked by merge time, which only matches a release cut from master
+            SUITE=()
+            [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.0$ ]] && SUITE=(--suite)
             # PR-based notes with author credits; falls back to raw git log below
-            CHANGELOG=$(python3 scripts/release-notes.py "${PREVIOUS_TAG}..${TAG}" --format github --bare 2>/dev/null || true)
+            CHANGELOG=$(python3 scripts/release-notes.py "${PREVIOUS_TAG}..${TAG}" --format github --bare "${SUITE[@]}" || true)
           fi
           if [ -z "$CHANGELOG" ]; then
             echo "release-notes.py unavailable or empty, using git log fallback"
@@ -302,8 +316,8 @@ jobs:
           - **`dms-distropkg-arm64.gz`** - DMS CLI binary built with distro_package tag for ARM64 systems
           - **`dms-distropkg-freebsd-amd64.gz`** - DMS CLI binary built with distro_package tag for FreeBSD x86_64 systems
           - **`dms-distropkg-freebsd-arm64.gz`** - DMS CLI binary built with distro_package tag for FreeBSD ARM64 systems
-          - **`dankinstall-amd64.gz`** - Installer binary for x86_64 systems
-          - **`dankinstall-arm64.gz`** - Installer binary for ARM64 systems
+          - **`duxinstall-amd64.gz`** - Installer binary for x86_64 systems
+          - **`duxinstall-arm64.gz`** - Installer binary for ARM64 systems
           - **`dms-cli-<version>.tar.gz`** - Go source code with vendored modules (for distro packaging)
           - **`dms-qml.tar.gz`** - QML source code only
           - **`dms-source.tar.gz`** - Full repository source with bundled DCommon (for distro packaging)
@@ -348,8 +362,8 @@ jobs:
             fi
           done
 
-          # Copy dankinstall binaries
-          cp _core_assets/dankinstall-*.gz* _release_assets/
+          # Copy duxinstall binaries
+          cp _core_assets/duxinstall-*.gz* _release_assets/
 
           # Copy completions
           cp _core_assets/completion.* _release_assets/ 2>/dev/null || true
@@ -422,7 +436,7 @@ jobs:
 
             # Create installation guide
             cat > _temp_full/INSTALL.md << 'EOFINSTALL'
-          # Dux Shell Installation
+          # Dux Modular Shell Installation
 
           ## Requirements
 
@@ -545,7 +559,7 @@ jobs:
         id: app_token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.APP_ID }}
+          client-id: ${{ vars.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ matrix.repo }}
@@ -559,3 +573,38 @@ jobs:
           set -euo pipefail
           gh workflow run pin-release.yml --repo "$REPO" -f version="$TAG"
           echo "dispatched pin-release ${TAG} to ${REPO}" >> "$GITHUB_STEP_SUMMARY"
+
+  # Build the stable dms package on every distro channel. Runs after the
+  # release job so every asset the packaging scripts download already exists.
+  distros:
+    name: Dispatch ${{ matrix.workflow }}
+    runs-on: ubuntu-latest
+    needs: [release]
+    if: ${{ !contains(inputs.tag, '-') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - workflow: run-copr.yml
+            args: -f package=dms -f version=__VERSION__ -f release=1
+          - workflow: run-obs.yml
+            args: -f package=dms
+          - workflow: run-ppa.yml
+            args: -f package=dms
+          - workflow: run-xbps.yml
+            args: -f version=__TAG__ -f build_dms=true -f build_git=false
+    steps:
+      - name: Dispatch packaging workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW: ${{ matrix.workflow }}
+          ARGS: ${{ matrix.args }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          ARGS="${ARGS//__VERSION__/$VERSION}"
+          ARGS="${ARGS//__TAG__/$TAG}"
+          # shellcheck disable=SC2086
+          gh workflow run "$WORKFLOW" --repo "${{ github.repository }}" $ARGS
+          echo "dispatched ${WORKFLOW} for ${TAG} (${ARGS})" >> "$GITHUB_STEP_SUMMARY"

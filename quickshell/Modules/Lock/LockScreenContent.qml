@@ -73,7 +73,6 @@ FocusScope {
 
     Component.onCompleted: {
         WeatherService.addRef();
-        UserInfoService.getUserInfo();
 
         lockerReadyArmed = true;
     }
@@ -221,7 +220,8 @@ FocusScope {
     LockPowerMenu {
         id: powerMenu
         expressive: true
-        showLogout: true
+        // niri ignores quit while locked
+        showLogout: !CompositorService.isNiri
         onClosed: {
             if (!demoMode)
                 Qt.callLater(() => root.focusPasswordField());

@@ -106,12 +106,6 @@ def extract_qstr_strings(root_dir):
         if relative_path.parts[0] in ('PLUGINS', EXTERNAL_PLUGINS_DIR):
             continue
 
-        # Modules/Greetd terms are owned by the dux-greeter repo (tagged
-        # dms-greeter in POEditor); the embedded copy exists only for
-        # archinstall compatibility and must not upload untagged duplicates.
-        if relative_path.parts[:2] == ('Modules', 'Greetd'):
-            continue
-
         with open(qml_file, 'r', encoding='utf-8') as f:
             for line_num, line in enumerate(f, 1):
                 occ = {'file': str(relative_path), 'line': line_num}

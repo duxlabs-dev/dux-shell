@@ -1,9 +1,12 @@
 package tailscale
 
 import (
+	"cmp"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"maps"
 	"net/netip"
 	"slices"
 	"strings"
@@ -13,12 +16,7 @@ import (
 
 	"github.com/duxlabs-dev/dux-go/syncmap"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
-	"tailscale.com/client/local"
-	"tailscale.com/client/tailscale/apitype"
-	"tailscale.com/ipn"
 	"tailscale.com/ipn/ipnstate"
-	"tailscale.com/net/netutil"
-	"tailscale.com/tailcfg"
 )
 
 const (
@@ -28,72 +26,23 @@ const (
 
 // tailscaleClient abstracts the Tailscale local API for testing.
 type tailscaleClient interface {
-	WatchIPNBus(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error)
+	WatchIPNBus(ctx context.Context, mask watchOpt) (ipnBusWatcher, error)
 	Status(ctx context.Context) (*ipnstate.Status, error)
-	GetPrefs(ctx context.Context) (*ipn.Prefs, error)
-	EditPrefs(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error)
+	GetPrefs(ctx context.Context) (*prefs, error)
+	EditPrefs(ctx context.Context, mp *maskedPrefs) error
 	StartLoginInteractive(ctx context.Context) error
 	Logout(ctx context.Context) error
-	ProfileStatus(ctx context.Context) (ipn.LoginProfile, []ipn.LoginProfile, error)
-	SwitchProfile(ctx context.Context, id ipn.ProfileID) error
+	ProfileStatus(ctx context.Context) (loginProfile, []loginProfile, error)
+	SwitchProfile(ctx context.Context, id string) error
 	SwitchToEmptyProfile(ctx context.Context) error
-	SuggestExitNode(ctx context.Context) (apitype.ExitNodeSuggestionResponse, error)
+	SuggestExitNode(ctx context.Context) (ExitNodeSuggestion, error)
 	CheckIPForwarding(ctx context.Context) error
 }
 
 // ipnBusWatcher abstracts the IPN bus watcher for testing.
 type ipnBusWatcher interface {
-	Next() (ipn.Notify, error)
+	Next() (busNotify, error)
 	Close() error
-}
-
-// localClientWrapper wraps local.Client to satisfy tailscaleClient.
-type localClientWrapper struct {
-	client *local.Client
-}
-
-func (w *localClientWrapper) WatchIPNBus(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
-	return w.client.WatchIPNBus(ctx, mask)
-}
-
-func (w *localClientWrapper) Status(ctx context.Context) (*ipnstate.Status, error) {
-	return w.client.Status(ctx)
-}
-
-func (w *localClientWrapper) GetPrefs(ctx context.Context) (*ipn.Prefs, error) {
-	return w.client.GetPrefs(ctx)
-}
-
-func (w *localClientWrapper) EditPrefs(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error) {
-	return w.client.EditPrefs(ctx, mp)
-}
-
-func (w *localClientWrapper) StartLoginInteractive(ctx context.Context) error {
-	return w.client.StartLoginInteractive(ctx)
-}
-
-func (w *localClientWrapper) Logout(ctx context.Context) error {
-	return w.client.Logout(ctx)
-}
-
-func (w *localClientWrapper) ProfileStatus(ctx context.Context) (ipn.LoginProfile, []ipn.LoginProfile, error) {
-	return w.client.ProfileStatus(ctx)
-}
-
-func (w *localClientWrapper) SwitchProfile(ctx context.Context, id ipn.ProfileID) error {
-	return w.client.SwitchProfile(ctx, id)
-}
-
-func (w *localClientWrapper) SwitchToEmptyProfile(ctx context.Context) error {
-	return w.client.SwitchToEmptyProfile(ctx)
-}
-
-func (w *localClientWrapper) SuggestExitNode(ctx context.Context) (apitype.ExitNodeSuggestionResponse, error) {
-	return w.client.SuggestExitNode(ctx)
-}
-
-func (w *localClientWrapper) CheckIPForwarding(ctx context.Context) error {
-	return w.client.CheckIPForwarding(ctx)
 }
 
 // Manager manages Tailscale state via IPN bus events and subscriber notifications.
@@ -114,8 +63,7 @@ type Manager struct {
 
 // NewManager creates a new Tailscale manager and starts watching the IPN bus.
 func NewManager(socketPath string) *Manager {
-	lc := &local.Client{Socket: socketPath}
-	return newManager(&localClientWrapper{client: lc})
+	return newManager(newLocalClient(socketPath))
 }
 
 func newManager(client tailscaleClient) *Manager {
@@ -138,7 +86,7 @@ func newManager(client tailscaleClient) *Manager {
 func (m *Manager) watchLoop(ctx context.Context) {
 	defer m.watchWG.Done()
 
-	mask := ipn.NotifyInitialState | ipn.NotifyInitialPrefs | ipn.NotifyPeerChanges | ipn.NotifyPeerPatches
+	mask := notifyInitialState | notifyInitialPrefs | notifyPeerChanges | notifyPeerPatches
 	backoff := time.Second
 	unreachableSent := false
 
@@ -183,7 +131,7 @@ func (m *Manager) watchLoop(ctx context.Context) {
 			switch {
 			case n.BrowseToURL != nil:
 				m.authURL.Store(n.BrowseToURL)
-			case n.LoginFinished != nil, n.State != nil && *n.State == ipn.Running:
+			case n.LoginFinished != nil, n.State != nil && *n.State == ipnStateRunning:
 				m.authURL.Store(nil)
 			}
 
@@ -282,7 +230,7 @@ func (m *Manager) fetchState(ctx context.Context) (*TailscaleState, error) {
 	return state, nil
 }
 
-func convertPrefs(p *ipn.Prefs) TailscalePrefs {
+func convertPrefs(p *prefs) TailscalePrefs {
 	routes, exitNode := splitAdvertisedRoutes(p.AdvertiseRoutes)
 	out := TailscalePrefs{
 		AcceptRoutes:      p.RouteAll,
@@ -414,18 +362,12 @@ func (m *Manager) RefreshState() {
 
 // Connect brings the Tailscale backend up (WantRunning = true).
 func (m *Manager) Connect() error {
-	return m.editPrefs(&ipn.MaskedPrefs{
-		Prefs:          ipn.Prefs{WantRunning: true},
-		WantRunningSet: true,
-	})
+	return m.editPrefs(&maskedPrefs{WantRunning: true, WantRunningSet: true})
 }
 
 // Disconnect brings the Tailscale backend down (WantRunning = false).
 func (m *Manager) Disconnect() error {
-	return m.editPrefs(&ipn.MaskedPrefs{
-		Prefs:          ipn.Prefs{WantRunning: false},
-		WantRunningSet: true,
-	})
+	return m.editPrefs(&maskedPrefs{WantRunning: false, WantRunningSet: true})
 }
 
 // SetExitNode selects the exit node identified by its stable node ID. An empty
@@ -433,30 +375,19 @@ func (m *Manager) Disconnect() error {
 // which also clears any legacy IP-based exit node so a stale ExitNodeIP cannot
 // silently take precedence over the now-empty ID.
 func (m *Manager) SetExitNode(id string) error {
-	return m.editPrefs(&ipn.MaskedPrefs{
-		Prefs:         ipn.Prefs{ExitNodeID: tailcfg.StableNodeID(id)},
-		ExitNodeIDSet: true,
-		ExitNodeIPSet: true,
-	})
+	return m.editPrefs(&maskedPrefs{ExitNodeID: id, ExitNodeIDSet: true, ExitNodeIPSet: true})
 }
 
 // SetAllowLANAccess toggles whether locally accessible subnets remain
 // reachable while an exit node is in use.
 func (m *Manager) SetAllowLANAccess(enabled bool) error {
-	return m.editPrefs(&ipn.MaskedPrefs{
-		Prefs:                     ipn.Prefs{ExitNodeAllowLANAccess: enabled},
-		ExitNodeAllowLANAccessSet: true,
-	})
+	return m.editPrefs(&maskedPrefs{ExitNodeAllowLANAccess: enabled, ExitNodeAllowLANAccessSet: true})
 }
 
 // editPrefs applies a masked prefs edit and refreshes state so subscribers see
 // the result immediately, in addition to the IPN bus notification it triggers.
-func (m *Manager) editPrefs(mp *ipn.MaskedPrefs) error {
-	err := m.withTimeout(func(ctx context.Context) error {
-		_, err := m.client.EditPrefs(ctx, mp)
-		return err
-	})
-	if err != nil {
+func (m *Manager) editPrefs(mp *maskedPrefs) error {
+	if err := m.withTimeout(func(ctx context.Context) error { return m.client.EditPrefs(ctx, mp) }); err != nil {
 		return err
 	}
 
@@ -467,7 +398,7 @@ func (m *Manager) editPrefs(mp *ipn.MaskedPrefs) error {
 // SetPrefs returns tailscaled's IP forwarding warning, if any. AdvertiseRoutes
 // is shared by routes and the exit-node flag, so changing one keeps the other.
 func (m *Manager) SetPrefs(p PrefsPatch) (string, error) {
-	mp := &ipn.MaskedPrefs{}
+	mp := &maskedPrefs{}
 	if p.AcceptRoutes != nil {
 		mp.RouteAll, mp.RouteAllSet = *p.AcceptRoutes, true
 	}
@@ -532,7 +463,7 @@ func (m *Manager) advertisedRoutes(p PrefsPatch) ([]netip.Prefix, []netip.Prefix
 		}
 	}
 
-	var current *ipn.Prefs
+	var current *prefs
 	err := m.withTimeout(func(ctx context.Context) (err error) {
 		current, err = m.client.GetPrefs(ctx)
 		return err
@@ -555,8 +486,47 @@ func (m *Manager) advertisedRoutes(p PrefsPatch) ([]netip.Prefix, []netip.Prefix
 	if p.AdvertiseExitNode != nil {
 		exitNode = *p.AdvertiseExitNode
 	}
-	want, err := netutil.CalcAdvertiseRoutes(strings.Join(routes, ","), exitNode)
+	want, err := calcAdvertiseRoutes(routes, exitNode)
 	return want, current.AdvertiseRoutes, err
+}
+
+var viaRange = netip.MustParsePrefix("fd7a:115c:a1e0:b1a::/64")
+
+// calcAdvertiseRoutes follows `tailscale set --advertise-routes`: masked
+// prefixes, 4via6 site IDs up to 0xffff, deduplicated and sorted.
+func calcAdvertiseRoutes(routes []string, exitNode bool) ([]netip.Prefix, error) {
+	set := map[netip.Prefix]bool{}
+	for _, s := range routes {
+		p, err := netip.ParsePrefix(s)
+		if err != nil {
+			return nil, fmt.Errorf("%q is not a valid IP address or CIDR prefix", s)
+		}
+		if p != p.Masked() {
+			return nil, fmt.Errorf("%s has non-address bits set; expected %s", p, p.Masked())
+		}
+		if viaRange.Contains(p.Addr()) {
+			a := p.Addr().As16()
+			if p.Bits() < 96 || binary.BigEndian.Uint32(a[8:12]) > 0xffff {
+				return nil, fmt.Errorf("%s is not a valid 4via6 route", p)
+			}
+		}
+		set[p] = true
+	}
+	if exitNode {
+		set[netip.MustParsePrefix("0.0.0.0/0")] = true
+		set[netip.MustParsePrefix("::/0")] = true
+	}
+	if len(set) == 0 {
+		return nil, nil
+	}
+	out := slices.Collect(maps.Keys(set))
+	slices.SortFunc(out, func(a, b netip.Prefix) int {
+		if c := cmp.Compare(a.Bits(), b.Bits()); c != 0 {
+			return c
+		}
+		return a.Addr().Compare(b.Addr())
+	})
+	return out, nil
 }
 
 func (m *Manager) withTimeout(fn func(ctx context.Context) error) error {
@@ -583,13 +553,13 @@ func (m *Manager) Logout() error {
 // Profiles lists the known accounts. ProfileStatus needs LocalAPI write
 // access, so an access-denied error means DMS cannot change Tailscale.
 func (m *Manager) Profiles() (ProfilesResult, error) {
-	var current ipn.LoginProfile
-	var all []ipn.LoginProfile
+	var current loginProfile
+	var all []loginProfile
 	err := m.withTimeout(func(ctx context.Context) (err error) {
 		current, all, err = m.client.ProfileStatus(ctx)
 		return err
 	})
-	if local.IsAccessDeniedError(err) {
+	if errors.Is(err, errAccessDenied) {
 		return ProfilesResult{}, nil
 	}
 	if err != nil {
@@ -598,7 +568,7 @@ func (m *Manager) Profiles() (ProfilesResult, error) {
 
 	res := ProfilesResult{
 		CanOperate: true,
-		Current:    string(current.ID),
+		Current:    current.ID,
 		Profiles:   make([]TailscaleProfile, len(all)),
 	}
 	for i, p := range all {
@@ -606,7 +576,7 @@ func (m *Manager) Profiles() (ProfilesResult, error) {
 		if tailnet == "" {
 			tailnet = p.NetworkProfile.DomainName
 		}
-		res.Profiles[i] = TailscaleProfile{ID: string(p.ID), Name: p.Name, Tailnet: tailnet}
+		res.Profiles[i] = TailscaleProfile{ID: p.ID, Name: p.Name, Tailnet: tailnet}
 	}
 	slices.SortFunc(res.Profiles, func(a, b TailscaleProfile) int { return strings.Compare(a.Name, b.Name) })
 	return res, nil
@@ -618,7 +588,7 @@ func (m *Manager) SwitchProfile(id string) error {
 		return errors.New("profile id is required")
 	}
 	err := m.withTimeout(func(ctx context.Context) error {
-		return m.client.SwitchProfile(ctx, ipn.ProfileID(id))
+		return m.client.SwitchProfile(ctx, id)
 	})
 	if err != nil {
 		return err
@@ -639,13 +609,10 @@ func (m *Manager) AddProfile() error {
 
 // SuggestExitNode returns tailscaled's recommended exit node.
 func (m *Manager) SuggestExitNode() (ExitNodeSuggestion, error) {
-	var s apitype.ExitNodeSuggestionResponse
+	var s ExitNodeSuggestion
 	err := m.withTimeout(func(ctx context.Context) (err error) {
 		s, err = m.client.SuggestExitNode(ctx)
 		return err
 	})
-	if err != nil {
-		return ExitNodeSuggestion{}, err
-	}
-	return ExitNodeSuggestion{ID: string(s.ID), Name: s.Name}, nil
+	return s, err
 }

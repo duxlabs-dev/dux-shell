@@ -101,8 +101,7 @@ DDialog {
     actions: [
         DButton {
             text: I18n.tr("Cancel")
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             onClicked: root.rejected()
         },
         DButton {
@@ -216,8 +215,7 @@ DDialog {
             DButton {
                 text: I18n.tr("Add condition", "button in the notification rule editor, adds another match condition")
                 iconName: "add"
-                backgroundColor: "transparent"
-                textColor: Theme.primary
+                variant: "text"
                 onClicked: root.addCondition()
             }
         }

@@ -7,7 +7,7 @@ import qs.Common
 Variants {
     id: root
 
-    model: Quickshell.screens
+    model: ShellLayout.realScreens
 
     delegate: Loader {
         id: instanceLoader

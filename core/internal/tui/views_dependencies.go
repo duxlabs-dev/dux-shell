@@ -89,13 +89,20 @@ func (m Model) dependencyStatus(dep deps.Dependency) (marker, status string) {
 	switch {
 	case m.disabledItems[dep.Name]:
 		return "✗ ", m.styles.Subtle.Render("Will skip")
+	case m.variantMarks[dep.Name]:
+		return "🔄 ", m.styles.Warning.Render("Will switch to " + variantLabel(dep.Variant))
 	case m.reinstallItems[dep.Name]:
 		return "🔄 ", m.styles.Warning.Render("Will upgrade")
+	case m.isImmutable() && !dep.Required && dep.Status == deps.StatusInstalled:
+		return "✓ ", m.styles.Success.Render("✓ Selected (installed)")
 	case dep.Name == dmsDepName:
 		switch dep.Status {
 		case deps.StatusInstalled:
 			return "⚡ ", m.styles.Success.Render("✓ Required (installed)")
 		case deps.StatusMissing:
+			if m.isImmutable() {
+				return "⚡ ", m.styles.Warning.Render("○ Required (not installed)")
+			}
 			return "⚡ ", m.styles.Warning.Render("○ Required (will install)")
 		case deps.StatusNeedsUpdate:
 			return "⚡ ", m.styles.Warning.Render("△ Required (needs update)")
@@ -105,27 +112,38 @@ func (m Model) dependencyStatus(dep deps.Dependency) (marker, status string) {
 		return "⚡ ", ""
 	}
 
+	verb := "Will install"
+	if m.isImmutable() {
+		verb = "Not installed"
+	}
 	switch dep.Status {
 	case deps.StatusInstalled:
 		return "", m.styles.Subtle.Render("✓ Already installed")
 	case deps.StatusMissing:
-		return "", m.styles.Warning.Render("○ Will install")
+		return "", m.styles.Warning.Render("○ " + verb)
 	case deps.StatusNeedsUpdate:
-		return "", m.styles.Warning.Render("△ Will install")
+		return "", m.styles.Warning.Render("△ " + verb)
 	case deps.StatusNeedsReinstall:
-		return "", m.styles.Error.Render("! Will install")
+		return "", m.styles.Error.Render("! " + verb)
 	}
 	return "", ""
 }
 
+func variantLabel(variant deps.PackageVariant) string {
+	if variant == deps.VariantGit {
+		return "git"
+	}
+	return "stable"
+}
+
 func (m Model) dependencyNote(name string) string {
 	switch name {
-	case "dms-greeter":
+	case "dux-greeter":
 		return m.styles.Subtle.Render(" (selection replaces your current display manager)")
-	case "danksearch":
+	case "dux-search":
 		return m.styles.Subtle.Render(" (file search; enables dsearch.service)")
-	case "dankcalendar":
-		return m.styles.Subtle.Render(" (autostart managed in dankcalendar settings)")
+	case "dux-calendar":
+		return m.styles.Subtle.Render(" (autostart managed in dux-calendar settings)")
 	default:
 		return ""
 	}
@@ -144,6 +162,9 @@ func (m Model) updateDetectingDepsState(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.listenForLogs()
 	}
 
+	if m.isImmutable() {
+		depsMsg.deps = distros.ApplyImmutableDetection(depsMsg.deps)
+	}
 	m.dependencies = partitionOptionalLast(depsMsg.deps)
 	for _, dep := range m.dependencies {
 		m.detectedVariants[dep.Name] = dep.Variant
@@ -151,6 +172,9 @@ func (m Model) updateDetectingDepsState(msg tea.Msg) (tea.Model, tea.Cmd) {
 			continue
 		}
 		m.disabledItems[dep.Name] = true
+	}
+	if m.resume != nil {
+		return m.resumeAfterLayering()
 	}
 	m.state = StateDependencyReview
 	return m, m.listenForLogs()
@@ -172,6 +196,9 @@ func (m Model) updateDependencyReviewState(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case "g", "G":
 		m.toggleSelectedVariant()
 	case "enter":
+		if m.isImmutable() {
+			return m.continueOnImmutable()
+		}
 		if m.osInfo != nil {
 			if config, ok := distros.Registry[m.osInfo.Distribution.ID]; ok && config.Family == distros.FamilyGentoo {
 				m.state = StateGentooUseFlags
@@ -197,7 +224,8 @@ func (m Model) toggleSelectedDependency() {
 	}
 
 	installed := dep.Status == deps.StatusInstalled || dep.Status == deps.StatusNeedsReinstall
-	if installed {
+	// Nothing to reinstall on an image; enabling only drives the user-space setup.
+	if installed && !m.isImmutable() {
 		m.reinstallItems[dep.Name] = !m.reinstallItems[dep.Name]
 		m.disabledItems[dep.Name] = false
 		return
@@ -287,7 +315,7 @@ func (m Model) forwardInstallProgress(progressChan <-chan distros.InstallProgres
 }
 
 func (m Model) runPostInstallTasks() {
-	if m.optionalDepSelected("dms-greeter") {
+	if m.optionalDepSelected("dux-greeter") {
 		m.reportProgress(0.92, "Configuring DMS greeter...", "Starting automated greeter setup...")
 		logLine := func(line string) {
 			m.reportProgress(0.94, "Configuring DMS greeter...", line)
@@ -297,15 +325,15 @@ func (m Model) runPostInstallTasks() {
 		}
 	}
 
-	if !m.useSystemdConfig() || !m.optionalDepSelected("danksearch") {
+	if !m.useSystemdConfig() || !m.optionalDepSelected("dux-search") {
 		return
 	}
-	m.reportProgress(0.97, "Enabling danksearch service...", "Setting up dsearch.service...")
+	m.reportProgress(0.97, "Enabling dux-search service...", "Setting up dsearch.service...")
 	logLine := func(line string) {
-		m.reportProgress(0.97, "Enabling danksearch service...", line)
+		m.reportProgress(0.97, "Enabling dux-search service...", line)
 	}
 	if err := distros.SetupDsearchService(context.Background(), logLine); err != nil {
-		m.reportProgress(0.98, "danksearch service warning", fmt.Sprintf("danksearch service setup warning (non-fatal): %v", err))
+		m.reportProgress(0.98, "dux-search service warning", fmt.Sprintf("dux-search service setup warning (non-fatal): %v", err))
 	}
 }
 

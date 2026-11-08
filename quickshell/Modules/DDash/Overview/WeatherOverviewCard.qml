@@ -183,9 +183,6 @@ Card {
                 text: root.tempText
                 font.pixelSize: root.available ? Math.min(Theme.fontSizeDisplay * 1.5, stackedLayout.height * 0.32) : Theme.fontSizeMedium
                 font.weight: Theme.fontWeightMedium
-                font.features: ({
-                        "tnum": 1
-                    })
                 minimumPixelSize: Theme.fontSizeXLarge
                 fontSizeMode: Text.HorizontalFit
                 color: root.contentColor

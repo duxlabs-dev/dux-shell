@@ -11,8 +11,8 @@ in {
 
   options.programs.dank-material-shell = {
     niri = {
-      enableKeybinds = lib.mkEnableOption "Dux Shell niri keybinds";
-      enableSpawn = lib.mkEnableOption "Dux Shell niri spawn-at-startup";
+      enableKeybinds = lib.mkEnableOption "Dux Modular Shell niri keybinds";
+      enableSpawn = lib.mkEnableOption "Dux Modular Shell niri spawn-at-startup";
       includes = {
         enable =
           (lib.mkEnableOption "includes for niri-flake")

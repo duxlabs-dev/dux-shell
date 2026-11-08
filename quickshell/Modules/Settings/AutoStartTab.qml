@@ -474,7 +474,7 @@ Item {
                 SettingsRow {
                     body: StyledText {
                         width: parent.width
-                        text: I18n.tr("These add entries to the XDG autostart directory (~/.config/autostart/*.desktop)")
+                        text: I18n.tr("These add entries to the XDG autostart directory (%1)", "autostart note, %1 is a path").arg("~/.config/autostart/*.desktop")
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceVariantText
                         wrapMode: Text.WordWrap

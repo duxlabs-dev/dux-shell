@@ -75,7 +75,7 @@ Item {
 
             CcGroup {
                 CcToggleRow {
-                    iconName: SessionService.idleInhibited ? "motion_sensor_active" : "motion_sensor_idle"
+                    iconName: "local_cafe"
                     iconColor: SessionService.idleInhibited ? Theme.primary : Theme.surfaceText
                     text: I18n.tr("Prevent screen timeout")
                     description: {
@@ -111,6 +111,17 @@ Item {
                             onClicked: SessionService.enableIdleInhibit(modelData.minutes)
                         }
                     }
+                }
+            }
+
+            CcGroup {
+                visible: SessionService.loginctlAvailable
+
+                CcToggleRow {
+                    iconName: "laptop"
+                    text: I18n.tr("Stay awake with the lid closed", "keep awake option that also blocks suspend on lid close")
+                    checked: SettingsData.keepAwakeBlocksSleep
+                    onToggled: checked => SettingsData.set("keepAwakeBlocksSleep", checked)
                 }
             }
         }

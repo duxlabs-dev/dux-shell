@@ -511,7 +511,7 @@ func TestBuildMergedConfigColorsOnly(t *testing.T) {
 	assert.False(t, strings.Contains(content, "output_path = 'CONFIG_DIR/"), "colors-only config should not emit app template outputs")
 }
 
-func TestBuildMergedConfigSkipsMangowcWithoutActiveSession(t *testing.T) {
+func TestBuildMergedConfigMangoSession(t *testing.T) {
 	t.Setenv("MANGO_INSTANCE_SIGNATURE", "")
 
 	tempDir := t.TempDir()
@@ -555,6 +555,31 @@ func TestBuildMergedConfigSkipsMangowcWithoutActiveSession(t *testing.T) {
 		t.Fatalf("failed to read merged config: %v", err)
 	}
 	assert.NotContains(t, string(output), "[templates.dmsmango]")
+
+	socket := filepath.Join(tempDir, "mango.sock")
+	if err := os.WriteFile(socket, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("MANGO_INSTANCE_SIGNATURE", socket)
+	checker := mocks_utils.NewMockAppChecker(t)
+	checker.EXPECT().AnyCommandExists("mango").Return(true)
+	opts.AppChecker = checker
+	cfgFile, err = os.CreateTemp(tempDir, "merged-active-*.toml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cfgFile.Close()
+	if err := buildMergedConfig(opts, cfgFile, filepath.Join(tempDir, "templates")); err != nil {
+		t.Fatal(err)
+	}
+	if err := cfgFile.Close(); err != nil {
+		t.Fatal(err)
+	}
+	output, err = os.ReadFile(cfgFile.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Contains(t, string(output), mangowcConfig)
 }
 
 func TestAppendConfigConfigDirExists(t *testing.T) {

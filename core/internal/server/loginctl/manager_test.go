@@ -126,3 +126,28 @@ func TestStateChangedMeaningfully(t *testing.T) {
 		})
 	}
 }
+
+func TestManager_ApplyLockPolicy(t *testing.T) {
+	on, off := true, false
+	tests := []struct {
+		name                  string
+		policy                LockPolicy
+		lockBeforeSuspend     bool
+		sleepInhibitorEnabled bool
+	}{
+		{name: "unmanaged", sleepInhibitorEnabled: true},
+		{name: "lock before suspend managed on", policy: LockPolicy{LockBeforeSuspend: &on}, lockBeforeSuspend: true, sleepInhibitorEnabled: true},
+		{name: "both managed on", policy: LockPolicy{LockBeforeSuspend: &on, LoginctlLockIntegration: &on}, lockBeforeSuspend: true, sleepInhibitorEnabled: true},
+		{name: "lock before suspend managed off", policy: LockPolicy{LockBeforeSuspend: &off}},
+		{name: "integration managed off", policy: LockPolicy{LockBeforeSuspend: &on, LoginctlLockIntegration: &off}, lockBeforeSuspend: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			manager := &Manager{lockPolicy: tt.policy}
+			manager.applyLockPolicy()
+			assert.Equal(t, tt.lockBeforeSuspend, manager.lockBeforeSuspend.Load())
+			assert.Equal(t, tt.sleepInhibitorEnabled, manager.sleepInhibitorEnabled.Load())
+		})
+	}
+}

@@ -19,7 +19,7 @@ DDialog {
     signal failed
 
     maximumWidth: 420
-    title: I18n.tr("WiFi QR code for ") + wifiSSID
+    title: I18n.tr("WiFi QR code for %1", "%1 is the network name").arg(wifiSSID)
 
     function load(ssid) {
         cleanup();

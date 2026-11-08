@@ -14,9 +14,6 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"tailscale.com/client/local"
-	"tailscale.com/client/tailscale/apitype"
-	"tailscale.com/ipn"
 	"tailscale.com/ipn/ipnstate"
 )
 
@@ -33,10 +30,7 @@ func (m *mockConn) SetWriteDeadline(t time.Time) error { return nil }
 
 func handlerTestManager() *Manager {
 	client := &mockClient{
-		watchFn: func(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
-			<-ctx.Done()
-			return nil, ctx.Err()
-		},
+		watchFn: blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) {
 			return runningStatus(), nil
 		},
@@ -102,8 +96,8 @@ func TestHandleAction_BackendError(t *testing.T) {
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		editPrefsFn: func(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error) {
-			return nil, fmt.Errorf("backend rejected edit")
+		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
+			return fmt.Errorf("backend rejected edit")
 		},
 	}
 	m := newManager(client)
@@ -167,16 +161,16 @@ func fakeOperatorEnv(t *testing.T, found map[string]string, runner commandRunner
 }
 
 func TestHandleSetPrefs(t *testing.T) {
-	var captured *ipn.MaskedPrefs
+	var captured *maskedPrefs
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		getPrefsFn: func(ctx context.Context) (*ipn.Prefs, error) {
-			return &ipn.Prefs{}, nil
+		getPrefsFn: func(ctx context.Context) (*prefs, error) {
+			return &prefs{}, nil
 		},
-		editPrefsFn: func(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error) {
+		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
 			captured = mp
-			return &ipn.Prefs{}, nil
+			return nil
 		},
 		checkIPFwdFn: func(ctx context.Context) error { return fmt.Errorf("IP forwarding is disabled") },
 	}
@@ -222,11 +216,11 @@ func TestHandleGrantOperator(t *testing.T) {
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		profileStatusFn: func(ctx context.Context) (ipn.LoginProfile, []ipn.LoginProfile, error) {
+		profileStatusFn: func(ctx context.Context) (loginProfile, []loginProfile, error) {
 			if denied {
-				return ipn.LoginProfile{}, nil, &local.AccessDeniedError{}
+				return loginProfile{}, nil, errAccessDenied
 			}
-			return ipn.LoginProfile{ID: "a"}, []ipn.LoginProfile{{ID: "a"}}, nil
+			return loginProfile{ID: "a"}, []loginProfile{{ID: "a"}}, nil
 		},
 	}
 	m := newManager(client)
@@ -298,8 +292,8 @@ func TestHandleProfiles_GrantAvailable(t *testing.T) {
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		profileStatusFn: func(ctx context.Context) (ipn.LoginProfile, []ipn.LoginProfile, error) {
-			return ipn.LoginProfile{}, nil, &local.AccessDeniedError{}
+		profileStatusFn: func(ctx context.Context) (loginProfile, []loginProfile, error) {
+			return loginProfile{}, nil, errAccessDenied
 		},
 	}
 	m := newManager(client)
@@ -317,14 +311,14 @@ func TestHandleProfiles_GrantAvailable(t *testing.T) {
 }
 
 func TestHandleAccountMethods(t *testing.T) {
-	var switched ipn.ProfileID
+	var switched string
 	client := &mockClient{
 		watchFn:         blockingWatch,
 		statusFn:        func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		switchProfileFn: func(ctx context.Context, id ipn.ProfileID) error { switched = id; return nil },
+		switchProfileFn: func(ctx context.Context, id string) error { switched = id; return nil },
 		startLoginFn:    func(ctx context.Context) error { return nil },
-		suggestFn: func(ctx context.Context) (apitype.ExitNodeSuggestionResponse, error) {
-			return apitype.ExitNodeSuggestionResponse{ID: "n1", Name: "node"}, nil
+		suggestFn: func(ctx context.Context) (ExitNodeSuggestion, error) {
+			return ExitNodeSuggestion{ID: "n1", Name: "node"}, nil
 		},
 	}
 	m := newManager(client)
@@ -338,7 +332,7 @@ func TestHandleAccountMethods(t *testing.T) {
 
 	resp := callHandler[models.SuccessResult](t, m, "tailscale.switchProfile", map[string]any{"id": "p2"})
 	assert.Empty(t, resp.Error)
-	assert.Equal(t, ipn.ProfileID("p2"), switched)
+	assert.Equal(t, "p2", switched)
 
 	resp = callHandler[models.SuccessResult](t, m, "tailscale.switchProfile", nil)
 	assert.NotEmpty(t, resp.Error)

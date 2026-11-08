@@ -73,6 +73,9 @@ func (m Model) updateDeployingConfigsState(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.installationLogs = append(m.installationLogs, logLine)
 	}
 
+	if m.isImmutable() {
+		clearLayerResume()
+	}
 	m.state = StateInstallComplete
 	m.isLoading = false
 	return m, nil
@@ -101,14 +104,7 @@ func (m Model) optionalDepSelected(name string) bool {
 }
 
 func (m Model) useSystemdConfig() bool {
-	if m.osInfo == nil {
-		return true
-	}
-	distroConfig, exists := distros.Registry[m.osInfo.Distribution.ID]
-	if !exists {
-		return true
-	}
-	return distroConfig.Family != distros.FamilyVoid
+	return distros.HasSystemd()
 }
 
 func (m Model) viewConfigConfirmation() string {
@@ -176,10 +172,14 @@ func (m Model) configReplacementNote() string {
 		}
 		return `Replacing Hyprland writes the DMS Lua template and starts DMS from Hyprland with hl.exec_cmd("dms run").`
 	case "Mango":
-		if m.useSystemdConfig() && mangoconf.SessionTargetInstalled() {
-			return "Replacing Mango writes the DMS Mango template and starts the user systemd dms service with mango-session.target. Existing binds, monitor and window rules move into the dms/ files."
+		carry := " Existing binds, monitor and window rules move into the dms/ files."
+		if mangoconf.IsTOML(configInfo.Path) {
+			carry = " Binds and rules in config.toml are not carried over; they stay in its backup."
 		}
-		return "Replacing Mango writes the DMS Mango template and starts DMS from Mango with " + mangoconf.Detect().Key("exec_once") + "=dms run. Existing binds, monitor and window rules move into the dms/ files."
+		if m.useSystemdConfig() && mangoconf.SessionTargetInstalled() {
+			return "Replacing Mango writes the DMS Mango template and starts the user systemd dms service with mango-session.target." + carry
+		}
+		return "Replacing Mango writes the DMS Mango template and starts DMS from Mango with exec_once." + carry
 	case config.BindsConfigType:
 		return "Keep uses your binds as they are; replace starts from the DMS stock binds. A timestamped backup is kept either way."
 	case "Ghostty":
@@ -270,13 +270,9 @@ func (m Model) wmConfigInfo() ExistingConfigInfo {
 	case deps.WindowManagerNiri:
 		return statConfig("Niri", filepath.Join(configDir, "niri", "config.kdl"))
 	case deps.WindowManagerMango:
-		return statConfig("Mango",
-			filepath.Join(configDir, "mango", "config.conf"),
-			filepath.Join(configDir, "mango", "mango.conf"))
+		return statConfig("Mango", mangoconf.MainConfigs(mangoconf.Dir())...)
 	default:
-		return statConfig("Hyprland",
-			filepath.Join(configDir, "hypr", "hyprland.lua"),
-			filepath.Join(configDir, "hypr", "hyprland.conf"))
+		return statConfig("Hyprland", filepath.Join(config.HyprlandConfigDir(), "hyprland.lua"))
 	}
 }
 

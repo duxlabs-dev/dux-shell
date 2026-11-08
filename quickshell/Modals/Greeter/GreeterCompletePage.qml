@@ -134,6 +134,44 @@ Item {
                 }
             }
 
+            Column {
+                width: parent.width
+                spacing: Theme.spacingS
+
+                Row {
+                    width: parent.width
+                    spacing: Theme.spacingS
+
+                    DIcon {
+                        name: "density_medium"
+                        size: root.sectionIconSize
+                        color: Theme.primary
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    StyledText {
+                        text: I18n.tr("Interface density", "interface density setting label")
+                        font.pixelSize: Theme.fontSizeMedium
+                        font.weight: Theme.fontWeightMedium
+                        color: Theme.surfaceText
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                DButtonGroup {
+                    readonly property var levels: ["spacious", "comfortable", "compact", "dense"]
+
+                    width: parent.width
+                    fillWidth: true
+                    model: [I18n.tr("Spacious", "interface density option with the most room between items"), I18n.tr("Comfortable", "interface density option with the default spacing"), I18n.tr("Compact", "interface density option fitting the most items on screen"), I18n.tr("Dense", "interface density option denser than compact for small text and tight rows")]
+                    currentIndex: Math.max(0, levels.indexOf(SettingsData.density))
+                    onSelectionChanged: (index, selected) => {
+                        if (selected)
+                            SettingsData.set("density", levels[index]);
+                    }
+                }
+            }
+
             Rectangle {
                 width: parent.width
                 height: 1

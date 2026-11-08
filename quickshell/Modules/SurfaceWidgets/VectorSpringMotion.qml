@@ -16,6 +16,7 @@ QtObject {
     property real velocityEpsilon: 0.035
     property real maximumFrameTime: 1 / 30
     property real integrationStep: 1 / 240
+    property int maximumSubsteps: 256
     readonly property real timeConstantMs: reducedMotion ? 0 : 2000 * mass / Math.max(1, damping)
 
     property real currentWidth: 176
@@ -145,9 +146,11 @@ QtObject {
         if (frameTime <= 0)
             return;
 
-        const steps = Math.max(1, Math.ceil(frameTime / integrationStep));
-        const step = frameTime / steps;
         const inverseMass = 1 / Math.max(0.001, mass);
+        // Short animation speeds scale stiffness by 1/f², so shrink the step until explicit Euler stays stable.
+        const stableStep = 1 / Math.max(1, damping * inverseMass, Math.sqrt(stiffness * inverseMass));
+        const steps = Math.min(maximumSubsteps, Math.max(1, Math.ceil(frameTime / Math.min(integrationStep, stableStep))));
+        const step = frameTime / steps;
         const k = stiffness;
         const c = damping;
         const target = [targetWidth, targetHeight, targetOffsetAlong, targetOffsetCross, targetTopLeftRadius, targetTopRightRadius, targetBottomLeftRadius, targetBottomRightRadius];
@@ -160,6 +163,11 @@ QtObject {
                 velocity[j] += (k * (target[j] - current[j]) - c * velocity[j]) * inverseMass * step;
                 current[j] += velocity[j] * step;
             }
+        }
+
+        if (!current.every(Number.isFinite) || !velocity.every(Number.isFinite)) {
+            settle();
+            return;
         }
 
         velocityWidth = velocity[0];

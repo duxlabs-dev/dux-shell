@@ -213,8 +213,7 @@ SettingsCard {
             text: I18n.tr("Add entry")
             iconName: "add"
             buttonHeight: Theme.buttonHeightXS
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             onClicked: root.addRow("data")
         }
     }
@@ -231,8 +230,7 @@ SettingsCard {
             text: I18n.tr("Add entry")
             iconName: "add"
             buttonHeight: Theme.buttonHeightXS
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             onClicked: root.addRow("secrets")
         }
     }

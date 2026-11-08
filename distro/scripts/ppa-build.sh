@@ -10,6 +10,8 @@
 
 set -e
 
+PPA_OWNER="${PPA_OWNER:-duxlabs}"
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -152,7 +154,7 @@ check_ppa_version_exists() {
     local DISTRO_SERIES="${5:-}"
 
     # Query Launchpad API (optionally scoped to one Ubuntu series so the same version can ship to resolute and stonking)
-    local API_URL="https://api.launchpad.net/1.0/~avengemedia/+archive/ubuntu/$PPA_NAME?ws.op=getPublishedSources&source_name=$SOURCE_NAME&status=Published"
+    local API_URL="https://api.launchpad.net/1.0/~${PPA_OWNER}/+archive/ubuntu/$PPA_NAME?ws.op=getPublishedSources&source_name=$SOURCE_NAME&status=Published"
     if [[ -n "$DISTRO_SERIES" ]]; then
         API_URL+="&distro_series=https://api.launchpad.net/1.0/ubuntu/${DISTRO_SERIES}"
     fi
@@ -243,10 +245,10 @@ dms-git)
 dms)
     GIT_REPO="duxlabs-dev/dux-shell"
     ;;
-danksearch)
+dux-search)
     GIT_REPO="duxlabs-dev/dux-search"
     ;;
-dgop)
+dux-gop)
     GIT_REPO="duxlabs-dev/dux-gop"
     ;;
 esac
@@ -538,8 +540,8 @@ fi
 # Handle packages that need pre-built binaries downloaded
 cd "$WORK_PACKAGE_DIR"
 case "$PACKAGE_NAME" in
-danksearch)
-    info "Downloading pre-built binaries for danksearch..."
+dux-search)
+    info "Downloading pre-built binaries for dux-search..."
     VERSION=$(dpkg-parsechangelog -S Version | sed 's/-[^-]*$//' | sed 's/ppa[0-9]*$//')
 
     if [ ! -f "dsearch-amd64" ]; then
@@ -566,7 +568,7 @@ danksearch)
         fi
     fi
     ;;
-dgop)
+dux-gop)
     if [ ! -f "dgop" ]; then
         warn "dgop binary not found - should be committed to repo"
     fi
@@ -595,7 +597,8 @@ else
 fi
 
 # -d skips dependency checking (we're building on Fedora, not Ubuntu)
-if yes | DEBIAN_FRONTEND=noninteractive debuild -S $DEBUILD_SOURCE_FLAG -d; then
+# -k: debsign otherwise picks the key from the changelog maintainer, which need not match the CI key
+if yes | DEBIAN_FRONTEND=noninteractive debuild -S $DEBUILD_SOURCE_FLAG -d ${DEBSIGN_KEYID:+-k"$DEBSIGN_KEYID"}; then
     echo
     success "Source package built successfully!"
 
@@ -617,10 +620,10 @@ if yes | DEBIAN_FRONTEND=noninteractive debuild -S $DEBUILD_SOURCE_FLAG -d; then
     echo "     ls -lh ${SOURCE_NAME}_${CHANGELOG_VERSION}*"
     echo
     echo "  2. Upload to PPA (stable):"
-    echo "     dput ppa:avengemedia/dms ${SOURCE_NAME}_${CHANGELOG_VERSION}_source.changes"
+    echo "     dput ppa:${PPA_OWNER}/dms ${SOURCE_NAME}_${CHANGELOG_VERSION}_source.changes"
     echo
     echo "  3. Or upload to PPA (nightly):"
-    echo "     dput ppa:avengemedia/dms-git ${SOURCE_NAME}_${CHANGELOG_VERSION}_source.changes"
+    echo "     dput ppa:${PPA_OWNER}/dms-git ${SOURCE_NAME}_${CHANGELOG_VERSION}_source.changes"
     echo
     echo "  4. Or use the upload script:"
     echo "     ./upload-ppa.sh $PACKAGE_PARENT/${SOURCE_NAME}_${CHANGELOG_VERSION}_source.changes dms"

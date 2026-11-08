@@ -16,7 +16,7 @@ RegistryBrowserWindow {
     readonly property var log: Log.scoped("PluginBrowser")
     property var allPlugins: []
     property var filteredPlugins: []
-    property string typeFilter: ""
+    property var typeFilters: []
     property string categoryFilter: "all"
     property var categoryFilterOptions: []
     property var availableLetters: []
@@ -38,7 +38,7 @@ RegistryBrowserWindow {
 
     readonly property var detailPlugin: resolveDetailPlugin(detailPluginId, allPlugins)
     readonly property bool discoverVisible: {
-        if (isLoading || loadError !== "" || searchQuery !== "" || typeFilter !== "" || authorFilter !== "")
+        if (isLoading || loadError !== "" || searchQuery !== "" || typeFilters.length > 0 || authorFilter !== "")
             return false;
         if (discoverPicks.length === 0 && discoverShelves.length === 0)
             return false;
@@ -70,6 +70,41 @@ RegistryBrowserWindow {
         }
     ]
     showLoadingSpinner: false
+
+    readonly property var typeFilterOptions: [
+        {
+            label: I18n.tr("Bar", "plugin browser type filter chip, bar widget plugins"),
+            value: "dankbar-widget"
+        },
+        {
+            label: I18n.tr("Control Center", "plugin browser type filter chip"),
+            value: "control-center"
+        },
+        {
+            label: I18n.tr("Launcher", "plugin browser type filter chip"),
+            value: "launcher"
+        },
+        {
+            label: I18n.tr("Daemon", "plugin browser type filter chip, background plugins"),
+            value: "daemon"
+        },
+        {
+            label: I18n.tr("Desktop", "plugin browser type filter chip, desktop widget plugins"),
+            value: "desktop-widget"
+        },
+        {
+            label: I18n.tr("Dash tab", "plugin browser type filter chip"),
+            value: "dash-tab"
+        },
+        {
+            label: I18n.tr("Dash card", "plugin browser type filter chip"),
+            value: "dash-card"
+        },
+        {
+            label: I18n.tr("Lyrics", "plugin browser type filter chip, lyrics provider plugins"),
+            value: "lyrics-provider"
+        }
+    ]
 
     readonly property var sortChipOptions: [
         {
@@ -389,8 +424,8 @@ RegistryBrowserWindow {
 
             if (!SessionData.showThirdPartyPlugins && !isFirstParty)
                 continue;
-            if (typeFilter !== "") {
-                var hasCapability = plugin.capabilities && plugin.capabilities.includes(typeFilter);
+            if (typeFilters.length > 0) {
+                var hasCapability = typeFilters.some(type => (plugin.capabilities || []).includes(type));
                 if (!hasCapability)
                     continue;
             }
@@ -602,6 +637,8 @@ RegistryBrowserWindow {
             return;
         var script = 'for c in "$@"; do command -v "$c" >/dev/null 2>&1 && echo "$c"; done; true';
         Proc.runCommand("plugin-browser-dependencies", ["sh", "-c", script, "sh"].concat(commands), (output, exitCode) => {
+            if (!root)
+                return;
             if (exitCode !== 0) {
                 root.log.warn("dependency lookup failed", exitCode);
                 return;
@@ -739,7 +776,7 @@ RegistryBrowserWindow {
         }
         thirdPartyConfirm.showWithOptions({
             title: I18n.tr("Third-Party Plugin Warning"),
-            message: I18n.tr("Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.", "third-party plugin warning, %1 is the product name").arg("Dux Shell"),
+            message: I18n.tr("Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.", "third-party plugin warning, %1 is the product name").arg("Dux Modular Shell"),
             confirmText: I18n.tr("I Understand"),
             cancelText: I18n.tr("Cancel"),
             onConfirm: () => {
@@ -756,6 +793,8 @@ RegistryBrowserWindow {
         operationPending = true;
         operationMessage = I18n.tr("Installing: %1", "installation progress").arg(pluginName);
         PluginService.installFromRegistry(pluginId, pluginName, enableAfterInstall, (success, error) => {
+            if (!root)
+                return;
             operationPending = false;
             operationFailed = !success;
             operationMessage = success ? I18n.tr("Installed: %1", "installation success").arg(pluginName) : error;
@@ -763,7 +802,7 @@ RegistryBrowserWindow {
                 return;
             pendingRevealPluginId = pluginId;
             searchQuery = "";
-            typeFilter = "";
+            typeFilters = [];
             categoryFilter = "all";
             detailPluginId = "";
             SessionData.setPluginBrowserHideInstalled(false);
@@ -771,10 +810,12 @@ RegistryBrowserWindow {
         });
     }
 
-    function refreshPlugins() {
+    function refreshPlugins(force) {
         isLoading = true;
         loadError = "";
         DMSService.listPlugins(response => {
+            if (!root)
+                return;
             isLoading = false;
             if (!visible)
                 return;
@@ -784,9 +825,9 @@ RegistryBrowserWindow {
             }
             allPlugins = response.result || [];
             updateFilteredPlugins();
-        });
+        }, force === true);
         if (DMSService.apiVersion >= 8)
-            DMSService.listInstalled();
+            DMSService.listInstalled(undefined, force === true);
     }
 
     function checkPendingInstall() {
@@ -814,8 +855,8 @@ RegistryBrowserWindow {
         return PopoutService.pendingPluginInstall || "";
     }
 
-    function refresh() {
-        refreshPlugins();
+    function refresh(force) {
+        refreshPlugins(force);
     }
 
     function applySearch() {
@@ -861,12 +902,18 @@ RegistryBrowserWindow {
                 if (plugin.name)
                     pluginMap[plugin.name] = true;
             }
+            var changed = false;
             var updated = root.allPlugins.map(p => {
-                var isInstalled = pluginMap[p.name] || pluginMap[p.id] || false;
+                var isInstalled = !!(pluginMap[p.name] || pluginMap[p.id]);
+                if (isInstalled === !!p.installed)
+                    return p;
+                changed = true;
                 return Object.assign({}, p, {
                     "installed": isInstalled
                 });
             });
+            if (!changed)
+                return;
             root.allPlugins = updated;
             root.updateFilteredPlugins();
             if (!selectedPluginId)
@@ -958,6 +1005,17 @@ RegistryBrowserWindow {
                         next[model[index].value] = selected;
                         root.quickFilters = next;
                     }
+                    root.updateFilteredPlugins();
+                }
+            }
+            DFilterChips {
+                width: parent.width
+                model: root.typeFilterOptions
+                multiSelect: true
+                selectedValues: root.typeFilters
+                onSelectionToggled: (index, selected) => {
+                    var value = model[index].value;
+                    root.typeFilters = selected ? root.typeFilters.concat([value]) : root.typeFilters.filter(type => type !== value);
                     root.updateFilteredPlugins();
                 }
             }
@@ -1220,8 +1278,7 @@ RegistryBrowserWindow {
                         required property var modelData
                         text: modelData.name || modelData.id
                         iconName: modelData.icon || "extension"
-                        backgroundColor: Theme.secondaryContainer
-                        textColor: Theme.onSecondaryContainer
+                        variant: "tonal"
                         onClicked: root.openPluginDetail(modelData)
                     }
                 }
@@ -1577,7 +1634,9 @@ RegistryBrowserWindow {
                         visible: (detailPane.plugin.permissions || []).length > 0
 
                         StyledText {
-                            text: I18n.tr("This plugin can", "plugin detail section, introduces the permission list")
+                            width: parent.width
+                            text: I18n.tr("Declared by the author, not enforced", "plugin detail section, introduces the permission list the plugin declares about itself")
+                            wrapMode: Text.WordWrap
                             font.pixelSize: Theme.fontSizeSmall
                             font.weight: Theme.fontWeightMedium
                             color: Theme.surfaceVariantText
@@ -1665,8 +1724,7 @@ RegistryBrowserWindow {
                                     text: modelData.name
                                     iconName: "extension"
                                     buttonHeight: Theme.buttonHeightXS
-                                    backgroundColor: Theme.secondaryContainer
-                                    textColor: Theme.onSecondaryContainer
+                                    variant: "tonal"
                                     enabled: modelData.key !== ""
                                     onClicked: root.detailPluginId = modelData.key
                                 }

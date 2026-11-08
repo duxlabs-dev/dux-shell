@@ -88,7 +88,7 @@ Item {
                         }
 
                         StyledText {
-                            text: I18n.tr("Click Import to add a .ovpn or .conf")
+                            text: I18n.tr("Click Import to add a %1 or %2 file", "VPN import hint, %1 and %2 are file extensions").arg(".ovpn").arg(".conf")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
                             anchors.horizontalCenter: parent.horizontalCenter
@@ -122,7 +122,7 @@ Item {
                         title: I18n.tr("Delete VPN"),
                         message: I18n.tr("Delete \"%1\"?", "delete confirmation, %1 is a vpn profile or printer name").arg(modelData.name),
                         confirmText: I18n.tr("Delete"),
-                        confirmColor: Theme.error,
+                        danger: true,
                         onConfirm: () => VPNService.deleteVpn(modelData.uuid)
                     })
                 }

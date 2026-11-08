@@ -85,11 +85,11 @@ func TestDetectChannel(t *testing.T) {
 }
 
 func TestFindShellPackagePrefersOwner(t *testing.T) {
-	pkgs := []Package{{Name: "dms-shell"}, {Name: "dms-shell-git"}, {Name: "firefox"}}
-	if got := findShellPackage(pkgs, "dms-shell-git"); got == nil || got.Name != "dms-shell-git" {
+	pkgs := []Package{{Name: "dux-shell"}, {Name: "dux-shell-git"}, {Name: "firefox"}}
+	if got := findShellPackage(pkgs, "dux-shell-git"); got == nil || got.Name != "dux-shell-git" {
 		t.Errorf("owner match = %v", got)
 	}
-	if got := findShellPackage(pkgs, ""); got == nil || got.Name != "dms-shell" {
+	if got := findShellPackage(pkgs, ""); got == nil || got.Name != "dux-shell" {
 		t.Errorf("fallback = %v", got)
 	}
 	if got := findShellPackage([]Package{{Name: "firefox"}}, "dms"); got != nil {
@@ -221,6 +221,11 @@ func TestSetIntervalSchedulesFromLastCheck(t *testing.T) {
 	m.SetInterval(86400)
 	if next := m.GetState().NextCheckUnix; next < now+startupGraceSeconds-5 || next > now+startupGraceSeconds+5 {
 		t.Errorf("overdue next = now+%d, want now+%d", next-now, startupGraceSeconds)
+	}
+
+	m.SetInterval(0)
+	if state := m.GetState(); state.IntervalSeconds != 0 || state.NextCheckUnix != 0 {
+		t.Errorf("never: interval = %d, next = %d, want both 0", state.IntervalSeconds, state.NextCheckUnix)
 	}
 }
 

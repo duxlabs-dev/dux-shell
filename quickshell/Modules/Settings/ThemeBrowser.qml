@@ -155,6 +155,8 @@ RegistryBrowserWindow {
         operationFailed = false;
         operationMessage = I18n.tr("Installing: %1", "installation progress").arg(themeName);
         DMSService.installTheme(themeId, response => {
+            if (!root)
+                return;
             if (response.error) {
                 finishOperation(themeId, I18n.tr("Install failed: %1", "installation error").arg(response.error), true);
                 return;
@@ -190,6 +192,8 @@ RegistryBrowserWindow {
         operationFailed = false;
         operationMessage = I18n.tr("Uninstalling: %1", "uninstallation progress").arg(themeName);
         DMSService.uninstallTheme(themeId, response => {
+            if (!root)
+                return;
             if (response.error) {
                 finishOperation(themeId, I18n.tr("Uninstall failed: %1", "uninstallation error").arg(response.error), true);
                 return;
@@ -203,6 +207,8 @@ RegistryBrowserWindow {
         isLoading = true;
         loadError = "";
         DMSService.listThemes(response => {
+            if (!root)
+                return;
             isLoading = false;
             if (!visible)
                 return;
@@ -214,6 +220,8 @@ RegistryBrowserWindow {
             updateFilteredThemes();
         });
         DMSService.listInstalledThemes(response => {
+            if (!root)
+                return;
             if (!response.error)
                 return;
             pendingApplyThemeId = "";

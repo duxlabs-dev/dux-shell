@@ -6,7 +6,9 @@ import Quickshell.Wayland
 import qs.Common
 import qs.Widgets
 import qs.Services
+import qs.Modules.Lock
 import "../Common/WorkspaceModel.js" as WorkspaceModel
+import "../Common/WallpaperFormats.js" as WallpaperFormats
 
 Variants {
     id: variants
@@ -93,7 +95,13 @@ Variants {
                 return "file://" + path.split('/').map(s => encodeURIComponent(s)).join('/');
             }
 
-            property string source: SessionData.getMonitorWallpaper(modelData.name) || ""
+            property string wallpaperSource: SessionData.getMonitorWallpaper(modelData.name) || ""
+            readonly property bool isVideoSource: WallpaperFormats.isVideo(wallpaperSource)
+            // A video drives the image pipeline below with its still frame.
+            readonly property string resolvedSource: VideoWallpaperService.imageFor(wallpaperSource)
+            readonly property bool framePending: VideoWallpaperService.framePending(wallpaperSource)
+            // Holds the previous wallpaper while a new video's frame is still being extracted.
+            property string source: ""
             property bool isColorSource: source.startsWith("#")
             property string transitionType: SessionData.wallpaperTransition
             property string actualTransitionType: transitionType
@@ -102,8 +110,7 @@ Variants {
             property bool contentReady: false
             property bool surfaceBounce: false
 
-            property string scrollMode: SettingsData.wallpaperFillMode
-            property bool scrollingEnabled: scrollMode === "Scrolling"
+            readonly property bool scrollingEnabled: SessionData.getMonitorWallpaperFillMode(modelData.name) === "Scrolling"
             property int currentWorkspaceIndex: 0
             property int totalWorkspaces: 1
             // Also requires the image to overflow on the compositor's scroll
@@ -117,8 +124,8 @@ Variants {
 
                 function onIsLightModeChanged() {
                     const newSource = SessionData.getMonitorWallpaper(modelData.name) || "";
-                    if (newSource !== root.source)
-                        root.source = newSource;
+                    if (newSource !== root.wallpaperSource)
+                        root.wallpaperSource = newSource;
                 }
             }
 
@@ -178,8 +185,13 @@ Variants {
             readonly property var backingWindow: Window.window
             readonly property bool showsBackdrop: !source || isColorSource || currentWallpaper.status === Image.Error
             readonly property bool backdropBusy: showsBackdrop && !(backdropLoader.item?.ready ?? false)
-            readonly property bool renderActive: backdropBusy || effectActive || overviewBlurActive || pendingWallpaper !== "" || _deferredSource !== "" || changePending || _freezeWaitFrames > 0 || frameAnim.running || currentWallpaper.status === Image.Loading || nextWallpaper.status === Image.Loading || parallaxImage.status === Image.Loading
+            readonly property bool renderActive: backdropBusy || effectActive || overviewBlurActive || pendingWallpaper !== "" || _deferredSource !== "" || changePending || _freezeWaitFrames > 0 || frameAnim.running || currentWallpaper.status === Image.Loading || nextWallpaper.status === Image.Loading || parallaxImage.status === Image.Loading || lockScrollSampler.busy || videoRendering
             property int _settleFrames: 3
+
+            readonly property bool fullscreenOnScreen: isVideoSource && CompositorService.fullscreenToplevelOnScreen(modelData)
+            // Nothing decodes while the video cannot be seen.
+            readonly property bool videoShouldPlay: isVideoSource && wallpaperWindow.visible && !IdleService.isShellLocked && !IdleService.monitorsOff && !overviewBlurActive && !fullscreenOnScreen
+            readonly property bool videoRendering: videoLoader.item?.rendering ?? false
 
             function invalidate() {
                 _settleFrames = 3;
@@ -575,7 +587,17 @@ Variants {
                 }
             }
 
+            // Switches once the frame exists, or once it never will (extraction failed, no ffmpeg).
+            function syncSource() {
+                if (resolvedSource || !framePending)
+                    source = resolvedSource;
+            }
+
+            onResolvedSourceChanged: syncSource()
+            onFramePendingChanged: syncSource()
+
             Component.onCompleted: {
+                source = resolvedSource;
                 isInitialized = true;
                 if (!source || isColorSource) {
                     contentReady = true;
@@ -764,7 +786,6 @@ Variants {
 
                 sourceComponent: DBackdrop {
                     screenName: modelData.name
-                    blur: root.overviewBlurActive ? Theme.wallpaperBlur : 0
                     onInvalidated: root.invalidate()
                 }
             }
@@ -773,6 +794,11 @@ Variants {
             property real screenScale: 1
             property int textureWidth: Math.min(Math.round(modelData.width * screenScale), maxTextureSize)
             property int textureHeight: Math.min(Math.round(modelData.height * screenScale), maxTextureSize)
+
+            LockScrollSampler {
+                id: lockScrollSampler
+                screen: modelData
+            }
 
             QtObject {
                 id: imageMetrics
@@ -1210,13 +1236,61 @@ Variants {
             }
 
             Loader {
+                id: videoLoader
+                anchors.fill: parent
+                // Stays loaded until the outgoing video has faded off the still frame below.
+                active: root.isVideoSource || (item?.opacity ?? 0) > 0
+                // By url, so without QtMultimedia only this layer fails and the still frame stays.
+                source: "VideoWallpaperLayer.qml"
+                onStatusChanged: {
+                    if (status === Loader.Error)
+                        log.warn("QtMultimedia not available, video wallpapers show their still frame");
+                }
+
+                Binding {
+                    target: videoLoader.item
+                    property: "screenName"
+                    value: modelData.name
+                    when: videoLoader.item !== null
+                }
+
+                Binding {
+                    target: videoLoader.item
+                    property: "wantedSource"
+                    value: root.wallpaperSource
+                    when: videoLoader.item !== null
+                }
+
+                Binding {
+                    target: videoLoader.item
+                    property: "fillMode"
+                    value: SessionData.getMonitorWallpaperFillMode(modelData.name)
+                    when: videoLoader.item !== null
+                }
+
+                Binding {
+                    target: videoLoader.item
+                    property: "settled"
+                    value: !root.transitioning && !root.effectActive && !root.changePending
+                    when: videoLoader.item !== null
+                }
+
+                Binding {
+                    target: videoLoader.item
+                    property: "shouldPlay"
+                    value: root.videoShouldPlay
+                    when: videoLoader.item !== null
+                }
+            }
+
+            Loader {
                 id: overviewBlurLoader
                 anchors.fill: parent
-                active: root.overviewBlurActive && !root.showsBackdrop
+                active: root.overviewBlurActive
 
                 sourceComponent: MultiEffect {
                     anchors.fill: parent
-                    source: effectLoader.active ? effectLoader.item : (parallaxLoader.active ? parallaxLoader.item : srcCurrent)
+                    source: root.showsBackdrop ? backdropLoader.item : (effectLoader.active ? effectLoader.item : (parallaxLoader.active ? parallaxLoader.item : srcCurrent))
                     blurEnabled: true
                     blur: 0.8
                     blurMax: 75

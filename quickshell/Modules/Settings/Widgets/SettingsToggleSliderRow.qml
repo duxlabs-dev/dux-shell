@@ -15,6 +15,7 @@ Item {
     property string text: ""
     property string description: ""
     property bool checked: false
+    property bool sliderVisible: true
     property real value: 0
     property alias minimum: control.minimum
     property alias maximum: control.maximum
@@ -59,8 +60,8 @@ Item {
         SettingsToggleRow {
             id: header
             width: parent.width
-            topRadius: root.firstInGroup ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-            bottomRadius: root.lastInGroup && !root.checked ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
+            topRadius: root.firstInGroup ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+            bottomRadius: root.lastInGroup && !root.checked ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
             tab: root.tab
             tags: root.tags
             settingKey: root.settingKey
@@ -82,8 +83,8 @@ Item {
         // The slider sits outside the header so presses around it never reach the header's toggle click area
         Item {
             width: parent.width
-            visible: root.checked || height > 0
-            height: root.checked ? control.y + control.height + SettingsMetrics.rowPaddingV : 0
+            visible: root.sliderVisible && (root.checked || height > 0)
+            height: root.sliderVisible && root.checked ? control.y + control.height + SettingsMetrics.rowPaddingV : 0
             clip: true
 
             Behavior on height {

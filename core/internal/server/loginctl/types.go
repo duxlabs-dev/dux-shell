@@ -59,6 +59,8 @@ type Manager struct {
 	sigWG                 sync.WaitGroup
 	inhibitMu             sync.Mutex
 	inhibitFile           *os.File
+	keepAwakeMu           sync.Mutex
+	keepAwakeFile         *os.File
 	lockBeforeSuspend     atomic.Bool
 	inSleepCycle          atomic.Bool
 	sleepCycleID          atomic.Uint64
@@ -69,4 +71,26 @@ type Manager struct {
 	lockTimer             *time.Timer
 	sleepInhibitorEnabled atomic.Bool
 	fallbackDelay         time.Duration
+	keepLockOnUnlock      bool
+	lockPolicy            LockPolicy
+}
+
+// LockPolicy holds the lock settings an administrator policy manages; nil
+// leaves a setting to the shell.
+type LockPolicy struct {
+	LockBeforeSuspend       *bool
+	LoginctlLockIntegration *bool
+}
+
+// sleepInhibitor returns the inhibitor state the shell asks for,
+// loginctlLockIntegration && lockBeforeSuspend, when the managed settings
+// decide it on their own.
+func (p LockPolicy) sleepInhibitor() (enabled, managed bool) {
+	switch {
+	case p.LockBeforeSuspend != nil && !*p.LockBeforeSuspend, p.LoginctlLockIntegration != nil && !*p.LoginctlLockIntegration:
+		return false, true
+	case p.LockBeforeSuspend != nil && p.LoginctlLockIntegration != nil:
+		return true, true
+	}
+	return false, false
 }

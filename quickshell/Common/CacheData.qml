@@ -13,8 +13,6 @@ Singleton {
 
     readonly property int cacheConfigVersion: 3
 
-    readonly property bool isGreeterMode: Quickshell.env("DMS_RUN_GREETER") === "1" || Quickshell.env("DMS_RUN_GREETER") === "true"
-
     readonly property string _stateUrl: StandardPaths.writableLocation(StandardPaths.GenericCacheLocation)
     readonly property string _stateDir: Paths.strip(_stateUrl)
 
@@ -52,8 +50,6 @@ Singleton {
     property var fileBrowserSettings: ({})
 
     Component.onCompleted: {
-        if (isGreeterMode)
-            return;
         loadCache();
     }
 
@@ -280,7 +276,7 @@ Singleton {
     FileView {
         id: launcherCacheFile
 
-        path: isGreeterMode ? "" : _stateDir + "/dms/launcher_cache.json"
+        path: _stateDir + "/dms/launcher_cache.json"
         blockLoading: true
         blockWrites: true
         atomicWrites: true
@@ -290,19 +286,15 @@ Singleton {
     FileView {
         id: cacheFile
 
-        path: isGreeterMode ? "" : _stateDir + "/dms/cache.json"
+        path: _stateDir + "/dms/cache.json"
         blockLoading: true
         blockWrites: true
         atomicWrites: true
-        watchChanges: !isGreeterMode
+        watchChanges: true
         onLoaded: {
-            if (isGreeterMode)
-                return;
             parseCache(cacheFile.text());
         }
         onLoadFailed: error => {
-            if (isGreeterMode)
-                return;
             log.info("No cache file found, starting fresh");
         }
     }

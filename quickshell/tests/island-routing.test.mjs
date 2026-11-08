@@ -521,6 +521,28 @@ test("the privacy slot is a known home layout entry appended after stored ones",
     assert.equal(ids.indexOf("tray"), ids.length - 1, "new slots append after the stored order");
 });
 
+test("a saved keyboard layout slot keeps its position and visibility when editing island groups", () => {
+    const groupIds = JSON.parse(settingsSource.match(/_islandHomeGroupIds: (\[.*\])/)[1]);
+    const layoutDefault = JSON.parse(settingsSource.match(/_islandHomeLayoutDefault: (\[[\s\S]*?\n    \])/)[1]);
+    const config = { islandHomeLayout: [{ id: "keyboardLayout", enabled: true }, { id: "clock" }] };
+    const settings = functions(settingsSource, "    ", vm.createContext({ _islandHomeGroupIds: groupIds, _islandHomeLayoutDefault: layoutDefault }));
+    settings.islandSettings = bar => bar;
+    settings.getBarConfig = id => id === "main" ? config : null;
+    settings.setIslandSettings = (id, changes) => {
+        assert.equal(id, "main");
+        Object.assign(config, changes);
+    };
+
+    assert.deepEqual(plain(settings.getIslandHomeLayout(config).slice(0, 2)), [
+        { id: "keyboardLayout", enabled: true }, { id: "clock", enabled: true }
+    ]);
+    settings.setIslandHomeGroupEnabled("main", "keyboardLayout", false);
+    settings.setIslandHomeLayoutOrder("main", ["clock", "keyboardLayout"]);
+    assert.deepEqual(plain(settings.getIslandHomeLayout(config).slice(0, 2)), [
+        { id: "clock", enabled: true }, { id: "keyboardLayout", enabled: false }
+    ]);
+});
+
 test("power menu shortcuts open in the island before the modal", () => {
     const popoutSource = readFileSync(new URL("../Services/PopoutService.qml", import.meta.url), "utf8");
     const ipcSource = readFileSync(new URL("../DMSShellIPC.qml", import.meta.url), "utf8");

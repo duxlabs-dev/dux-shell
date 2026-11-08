@@ -65,8 +65,7 @@ CcSheetDialog {
         text: I18n.tr("Reset to default")
         iconName: "restart_alt"
         buttonHeight: Theme.buttonHeightXS
-        backgroundColor: "transparent"
-        textColor: Theme.primary
+        variant: "text"
         enabled: DashRegistry.hasStoredOptions(root.entryId)
         onClicked: DashRegistry.resetOptions(root.entryId)
     }

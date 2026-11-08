@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Widgets
 import qs.Common
+import qs.Services
 import qs.Modals.FileBrowser
 import qs.DCommon.FileBrowser as FB
 import qs.DCommon.Widgets
@@ -10,6 +11,8 @@ import qs.Widgets
 import qs.Modules.ControlCenter.Widgets
 import qs.Modules.DDash
 import "../../DCommon/Common/FocusNavigation.js" as FocusNavigation
+import "../../DCommon/Common/WheelInput.js" as WheelInput
+import "../../Common/WallpaperFormats.js" as WallpaperFormats
 
 Item {
     id: root
@@ -27,9 +30,12 @@ Item {
     property string entryId: "wallpaper"
     readonly property var options: DashRegistry.resolvedOptions(entryId)
     readonly property bool carousel: options.layout === "carousel"
+    readonly property bool paged: options.layout === "paged"
+    readonly property bool scrolling: !carousel && !paged
     readonly property int columns: Math.max(DashMetrics.wallpaperColumnsMin, Math.min(DashMetrics.wallpaperColumnsMax, Number(options.columns) || DashMetrics.wallpaperColumnsMin))
     readonly property int rows: Math.max(DashMetrics.wallpaperRowsMin, Math.min(DashMetrics.wallpaperRowsMax, Number(options.rows) || DashMetrics.wallpaperRowsMin))
-    readonly property int itemsPerPage: columns * rows
+    // The scrolling grid is one page of unlimited size.
+    readonly property int itemsPerPage: scrolling ? 2147483647 : columns * rows
     readonly property int flatIndex: currentPage * itemsPerPage + gridIndex
     readonly property int wallpaperCount: filteredWallpaperPaths.length
     property int totalPages: Math.max(1, Math.ceil(wallpaperCount / itemsPerPage))
@@ -145,6 +151,7 @@ Item {
         filteredWallpaperPaths = paths;
         gridRevision++;
         updateSelectedFileName();
+        Qt.callLater(revealSelection);
         if (selectCurrent) {
             Qt.callLater(() => {
                 enableAnimation = true;
@@ -218,6 +225,11 @@ Item {
     onGridIndexChanged: updateSelectedFileName()
 
     onItemsPerPageChanged: reselectCurrent()
+
+    function revealSelection() {
+        if (scrolling && wallpaperCount > 0)
+            scrollGrid.revealIndex(gridIndex);
+    }
 
     function selectFlat(index) {
         if (index < 0 || index >= wallpaperCount)
@@ -376,6 +388,12 @@ Item {
             return true;
         }
 
+        if (scrolling && (event.key === Qt.Key_PageUp || event.key === Qt.Key_PageDown)) {
+            const step = columns * rows * (event.key === Qt.Key_PageUp ? -1 : 1);
+            gridIndex = Math.max(0, Math.min(visibleCount - 1, gridIndex + step));
+            return true;
+        }
+
         if (event.key === Qt.Key_PageUp && totalPages > 1) {
             gridIndex = 0;
             currentPage = (currentPage - 1 + totalPages) % totalPages;
@@ -411,6 +429,7 @@ Item {
         const page = index >= 0 ? Math.floor(index / itemsPerPage) : currentPage;
         const cell = index >= 0 ? index % itemsPerPage : 0;
         updateSelectedFileName();
+        Qt.callLater(revealSelection);
         if (page === currentPage && cell === gridIndex) {
             enableAnimation = true;
             return;
@@ -476,7 +495,7 @@ Item {
         showDotAndDotDot: false
         showHidden: false
         caseSensitive: false
-        nameFilters: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp", "*.jxl", "*.avif", "*.heif", "*.exr", "*.svg"]
+        nameFilters: WallpaperFormats.nameFilters(true)
         showFiles: true
         showDirs: false
         sortField: {
@@ -526,12 +545,13 @@ Item {
             browserTitle: I18n.tr("Select Wallpaper Directory", "wallpaper directory file browser title")
             bucket: "wallpaper"
             startPath: root.getCurrentWallpaper()
-            filters: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp", "*.jxl", "*.avif", "*.heif", "*.exr", "*.svg"]
+            filters: WallpaperFormats.nameFilters(true)
             parentPopout: root.parentPopout
             onAccepted: paths => {
                 root.setCurrentWallpaper(paths[0]);
                 root.wallpaperDir = paths[0].substring(0, paths[0].lastIndexOf('/'));
             }
+            onDialogClosed: root.keyForwardTarget?.focusInitial()
         }
     }
 
@@ -544,6 +564,95 @@ Item {
             id: wallpaperView
             width: parent.width
             height: parent.height - DashMetrics.wallpaperFooterHeight
+
+            Component {
+                id: wallpaperHighlight
+
+                Item {
+                    z: DashMetrics.overlayZ
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: Theme.spacingXS - Theme.focusRingOffset / 2
+                        color: "transparent"
+                        border.width: Theme.focusRingWidth
+                        border.color: Theme.focusRingColor
+                        radius: DashMetrics.wallpaperThumbRadius + Theme.focusRingOffset / 2
+                    }
+                }
+            }
+
+            Component {
+                id: wallpaperCell
+
+                Item {
+                    width: GridView.view.cellWidth
+                    height: GridView.view.cellHeight
+
+                    property string wallpaperPath: modelData || ""
+                    property bool isSelected: root.getCurrentWallpaper() === modelData
+
+                    Rectangle {
+                        id: wallpaperCard
+                        anchors.fill: parent
+                        anchors.margins: Theme.spacingXS
+                        color: Theme.foregroundColor(Theme.cardSurface, Theme.isFloatingWindow(root))
+                        border.width: Theme.layerOutlineWidth
+                        border.color: Theme.outlineMedium
+                        radius: DashMetrics.wallpaperThumbRadius
+
+                        ClippingRectangle {
+                            anchors.fill: parent
+                            radius: wallpaperCard.radius
+                            color: "transparent"
+
+                            CachingImage {
+                                anchors.fill: parent
+                                imagePath: VideoWallpaperService.imageFor(modelData || "")
+                                maxCacheSize: DashMetrics.wallpaperThumbCache
+                                animate: false
+                                opacity: status === Image.Ready ? 1 : 0
+
+                                Behavior on opacity {
+                                    enabled: DashMetrics.animationsEnabled
+                                    NumberAnimation {
+                                        duration: DashMetrics.fadeDuration
+                                        easing.type: Easing.BezierSpline
+                                        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+                                    }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: Theme.withAlpha(Theme.primary, isSelected ? Theme.stateLayerFocus : 0)
+                            border.width: isSelected ? Theme.outlineWidthFocused : 0
+                            border.color: Theme.primary
+
+                            Behavior on color {
+                                enabled: DashMetrics.animationsEnabled
+                                ColorAnimation {
+                                    duration: DashMetrics.fadeDuration
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+                                }
+                            }
+                        }
+
+                        StateLayer {
+                            anchors.fill: parent
+                            cornerRadius: parent.radius
+                            stateColor: Theme.primary
+                            onClicked: {
+                                root.gridIndex = index;
+                                if (modelData)
+                                    root.setCurrentWallpaper(modelData);
+                            }
+                        }
+                    }
+                }
+            }
 
             Loader {
                 anchors.fill: parent
@@ -581,8 +690,8 @@ Item {
                 focus: false
                 cacheBuffer: Math.max(0, height * root.pagerCachePages)
                 reuseItems: false
-                visible: !root.carousel
-                model: !root.carousel && height > 1 ? root.totalPages : 0
+                visible: root.paged
+                model: root.paged && height > 1 ? root.totalPages : 0
 
                 onCountChanged: {
                     if (count > 0 && currentIndex !== root.currentPage)
@@ -622,17 +731,7 @@ Item {
                     highlightMoveDuration: root.enableAnimation && DashMetrics.animationsEnabled ? DashMetrics.fadeDuration : 0
                     currentIndex: root.currentPage === pageIndex ? root.gridIndex : -1
 
-                    highlight: Item {
-                        z: DashMetrics.overlayZ
-                        Rectangle {
-                            anchors.fill: parent
-                            anchors.margins: Theme.spacingXS - Theme.focusRingOffset / 2
-                            color: "transparent"
-                            border.width: Theme.focusRingWidth
-                            border.color: Theme.focusRingColor
-                            radius: DashMetrics.wallpaperThumbRadius + Theme.focusRingOffset / 2
-                        }
-                    }
+                    highlight: wallpaperHighlight
 
                     reuseItems: true
                     model: ScriptModel {
@@ -651,74 +750,58 @@ Item {
                             root.gridIndex = count - 1;
                     }
 
-                    delegate: Item {
-                        width: pageGrid.cellWidth
-                        height: pageGrid.cellHeight
+                    delegate: wallpaperCell
+                }
+            }
 
-                        property string wallpaperPath: modelData || ""
-                        property bool isSelected: root.getCurrentWallpaper() === modelData
+            DGridView {
+                id: scrollGrid
 
-                        Rectangle {
-                            id: wallpaperCard
-                            anchors.fill: parent
-                            anchors.margins: Theme.spacingXS
-                            color: Theme.foregroundColor(Theme.cardSurface, Theme.isFloatingWindow(root))
-                            border.width: Theme.layerOutlineWidth
-                            border.color: Theme.outlineMedium
-                            radius: DashMetrics.wallpaperThumbRadius
+                anchors.centerIn: parent
+                width: parent.width - Theme.spacingS
+                height: parent.height - Theme.spacingS
+                cellWidth: Math.max(1, Math.floor(width / root.columns))
+                cellHeight: Math.max(1, Math.floor(height / root.rows))
+                clip: true
+                enabled: root.active
+                interactive: root.active
+                keyNavigationEnabled: false
+                activeFocusOnTab: false
+                focus: false
+                visible: root.scrolling
+                cacheBuffer: cellHeight * 2
+                currentIndex: root.scrolling ? root.gridIndex : -1
+                highlightMoveDuration: root.enableAnimation && DashMetrics.animationsEnabled ? DashMetrics.fadeDuration : 0
+                highlight: wallpaperHighlight
+                delegate: wallpaperCell
+                model: ScriptModel {
+                    values: root.scrolling ? root.filteredWallpaperPaths : []
+                }
 
-                            ClippingRectangle {
-                                anchors.fill: parent
-                                radius: wallpaperCard.radius
-                                color: "transparent"
+                onCurrentIndexChanged: root.revealSelection()
+            }
 
-                                CachingImage {
-                                    anchors.fill: parent
-                                    imagePath: modelData || ""
-                                    maxCacheSize: DashMetrics.wallpaperThumbCache
-                                    animate: false
-                                    opacity: status === Image.Ready ? 1 : 0
+            // The pager springs back from a wheel notch unless it scrolled past half a page.
+            MouseArea {
+                property int wheelDistance: 0
 
-                                    Behavior on opacity {
-                                        enabled: DashMetrics.animationsEnabled
-                                        NumberAnimation {
-                                            duration: DashMetrics.fadeDuration
-                                            easing.type: Easing.BezierSpline
-                                            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
-                                        }
-                                    }
-                                }
-                            }
-
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: parent.radius
-                                color: Theme.withAlpha(Theme.primary, isSelected ? Theme.stateLayerFocus : 0)
-                                border.width: isSelected ? Theme.outlineWidthFocused : 0
-                                border.color: Theme.primary
-
-                                Behavior on color {
-                                    enabled: DashMetrics.animationsEnabled
-                                    ColorAnimation {
-                                        duration: DashMetrics.fadeDuration
-                                        easing.type: Easing.BezierSpline
-                                        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
-                                    }
-                                }
-                            }
-
-                            StateLayer {
-                                anchors.fill: parent
-                                cornerRadius: parent.radius
-                                stateColor: Theme.primary
-                                onClicked: {
-                                    root.gridIndex = index;
-                                    if (modelData)
-                                        root.setCurrentWallpaper(modelData);
-                                }
-                            }
-                        }
+                anchors.fill: parent
+                acceptedButtons: Qt.NoButton
+                enabled: root.active && root.paged
+                onWheel: wheel => {
+                    if (WheelInput.isTouchpad(wheel) || wheel.angleDelta.y === 0) {
+                        wheel.accepted = false;
+                        return;
                     }
+                    wheelDistance += wheel.angleDelta.y;
+                    if (Math.abs(wheelDistance) < DashMetrics.wheelNotch)
+                        return;
+                    const next = root.currentPage + (wheelDistance > 0 ? -1 : 1);
+                    wheelDistance = 0;
+                    if (next < 0 || next >= root.totalPages)
+                        return;
+                    root.gridIndex = Math.min(root.gridIndex, root.pageItemCount(next) - 1);
+                    root.currentPage = next;
                 }
             }
 
@@ -749,13 +832,13 @@ Item {
 
             Row {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: controlsRow.width + actionButtons.width + spacing
                 height: DashMetrics.wallpaperControlSize
                 spacing: Theme.spacingS
 
                 Row {
                     id: controlsRow
                     anchors.verticalCenter: parent.verticalCenter
+                    visible: !root.scrolling
                     spacing: Theme.spacingS
 
                     FooterButton {

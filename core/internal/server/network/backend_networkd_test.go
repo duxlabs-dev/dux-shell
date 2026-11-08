@@ -30,6 +30,7 @@ func TestLinkInfo_Classify(t *testing.T) {
 		// Fallback path: linkType unavailable, name-prefix heuristic applies.
 		{"fallback enp wired", "enp141s0", "", true, false},
 		{"fallback wlan wireless", "wlan0", "", false, true},
+		{"wlan with pre-udev ether type", "wlan4", "ether", false, true},
 	}
 	members := map[string][]string{
 		"br0":       {"enp42s0", "vnet0"},

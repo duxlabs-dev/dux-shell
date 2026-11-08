@@ -26,6 +26,7 @@ FocusScope {
     readonly property var addable: grid.addableEntries
     readonly property int usedColumns: grid.usedColumns
     readonly property bool cardResizing: grid.sizePreview !== null
+    readonly property bool cardInteracting: grid.interacting
     readonly property bool blocksTabNavigation: grid.blocksTabNavigation || detailSheet.shown || editorSheet.shown || optionsSheet.shown || addMenu.open
 
     implicitWidth: DashMetrics.contentWidthFor(SettingsData.showWeekNumber)

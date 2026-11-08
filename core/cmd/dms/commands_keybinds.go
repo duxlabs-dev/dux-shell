@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -80,7 +79,6 @@ var keybindsKeymapCmd = &cobra.Command{
 }
 
 func init() {
-	keybindsCmd.PersistentFlags().String("expected-generation", "", "Configuration generation observed when editing Aqueous bindings")
 	for _, command := range []*cobra.Command{keybindsSetCmd, keybindsRemoveCmd, keybindsResetCmd} {
 		command.Flags().Bool("json", false, "Return structured mutation results, including errors")
 	}
@@ -91,6 +89,9 @@ func init() {
 	keybindsSetCmd.Flags().Int("cooldown-ms", 0, "Cooldown in milliseconds")
 	keybindsSetCmd.Flags().Bool("no-repeat", false, "Disable key repeat")
 	keybindsSetCmd.Flags().Bool("no-inhibiting", false, "Keep bind active when shortcuts are inhibited (allow-inhibiting=false)")
+	keybindsSetCmd.Flags().String("trigger", "", "Niri: fire on press, release, or both (both needs --release-action). Omitted keeps the existing bind's trigger")
+	keybindsSetCmd.Flags().String("release-action", "", "Niri: action run on release when --trigger both")
+	keybindsSetCmd.Flags().Bool("pass-through", false, "Niri: also forward the key to the focused window (keyboard binds only)")
 	keybindsSetCmd.Flags().String("replace-key", "", "Original key to replace (removes old key)")
 	keybindsSetCmd.Flags().String("flags", "", "Hyprland bind flags as letters: e repeat, l locked, r release, o long-press, n non-consuming, m mouse, t transparent, i ignore-mods, u submap-universal, a auto-consuming, x allow-input-capture")
 
@@ -112,9 +113,6 @@ func initializeProviders() {
 	registry := keybinds.GetDefaultRegistry()
 
 	hyprlandProvider := providers.NewHyprlandProvider("")
-	if err := registry.Register(providers.NewAqueousProvider()); err != nil {
-		log.Warnf("Failed to register Aqueous provider: %v", err)
-	}
 	if err := registry.Register(hyprlandProvider); err != nil {
 		log.Warnf("Failed to register Hyprland provider: %v", err)
 	}
@@ -255,15 +253,6 @@ func runKeybindsShow(cmd *cobra.Command, args []string) {
 	printCheatSheet(provider)
 }
 
-func keybindEditFailure(err error) map[string]any {
-	code := "command_failed"
-	var helperError *providers.AqueousError
-	if errors.As(err, &helperError) {
-		code = helperError.Code
-	}
-	return map[string]any{"success": false, "code": code, "message": err.Error()}
-}
-
 func runKeybindsEdit(cmd *cobra.Command, args []string) {
 	result, err := editKeybind(cmd, args)
 	if err == nil {
@@ -275,7 +264,7 @@ func runKeybindsEdit(cmd *cobra.Command, args []string) {
 		log.Fatalf("Failed to save keybind: %v", err)
 		return
 	}
-	_ = json.NewEncoder(cmd.OutOrStdout()).Encode(keybindEditFailure(err))
+	_ = json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]any{"success": false, "code": "command_failed", "message": err.Error()})
 	os.Exit(1)
 }
 
@@ -285,24 +274,6 @@ func editKeybind(cmd *cobra.Command, args []string) (map[string]any, error) {
 		return nil, err
 	}
 	key := args[1]
-	if aqueous, ok := provider.(*providers.AqueousProvider); ok {
-		generation, _ := cmd.Flags().GetString("expected-generation")
-		edit := providers.AqueousBindEdit{Generation: generation, Key: key, Remove: cmd.Name() != "set"}
-		if !edit.Remove {
-			for _, flag := range []string{"desc", "allow-when-locked", "cooldown-ms", "no-repeat", "no-inhibiting", "flags"} {
-				if cmd.Flags().Changed(flag) {
-					return nil, fmt.Errorf("aqueous does not support --%s in this provider", flag)
-				}
-			}
-			edit.Action = args[2]
-			edit.OriginalKey, _ = cmd.Flags().GetString("replace-key")
-		}
-		result, err := aqueous.Edit(cmd.Context(), edit)
-		if err != nil {
-			return nil, err
-		}
-		return map[string]any{"success": true, "code": "applied", "generation": result.String("generation"), "key": key}, nil
-	}
 	writable, ok := provider.(keybinds.WritableProvider)
 	if !ok {
 		return nil, fmt.Errorf("provider %s does not support writing keybinds", args[0])
@@ -325,6 +296,23 @@ func editKeybind(cmd *cobra.Command, args []string) (map[string]any, error) {
 		}
 		if v, _ := cmd.Flags().GetString("flags"); v != "" {
 			options["flags"] = v
+		}
+		for _, flag := range []string{"trigger", "release-action", "pass-through"} {
+			if !cmd.Flags().Changed(flag) {
+				continue
+			}
+			if _, isNiri := provider.(*providers.NiriProvider); !isNiri {
+				return nil, fmt.Errorf("--%s is only supported by the niri provider", flag)
+			}
+		}
+		if cmd.Flags().Changed("trigger") {
+			options["trigger"], _ = cmd.Flags().GetString("trigger")
+		}
+		if cmd.Flags().Changed("release-action") {
+			options["release-action"], _ = cmd.Flags().GetString("release-action")
+		}
+		if cmd.Flags().Changed("pass-through") {
+			options["pass-through"], _ = cmd.Flags().GetBool("pass-through")
 		}
 		if replaceKey, _ := cmd.Flags().GetString("replace-key"); replaceKey != "" && replaceKey != key {
 			_ = writable.RemoveBind(replaceKey)

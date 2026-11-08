@@ -27,7 +27,7 @@ Item {
     readonly property bool receiving: groupId !== "" && host?.hoverGroup === groupId
     // Members keep their own input in edit mode so they can be dragged out instead of moving the group.
     readonly property Item passthrough: memberRow
-    readonly property real bodyRadius: Theme.fullRadius(width, Math.min(height, CcMetrics.tileHeight))
+    readonly property real bodyRadius: CcMetrics.pillRadius(width, Math.min(height, CcMetrics.tileHeight))
     readonly property bool memberDragging: liftedIndex >= 0
 
     property int liftedIndex: -1

@@ -20,7 +20,6 @@ BasePill {
     property string horizontalText: "--"
     property string reserveText: ""
     property string sortKey: ""
-    property bool tabularDigits: true
     readonly property bool minimumWidth: SettingsData.widgetOption(widgetType, widgetData, "minimumWidth")
     readonly property real iconSize: Theme.barIconSize(barThickness, undefined, barConfig?.maximizeWidgetIcons, barConfig?.iconScale)
     readonly property real textSize: Theme.barTextSize(barThickness, barConfig?.fontScale, barConfig?.maximizeWidgetText)
@@ -59,10 +58,6 @@ BasePill {
                 }
 
                 NumericText {
-                    isMonospace: false
-                    font.features: root.tabularDigits ? ({
-                            "tnum": 1
-                        }) : ({})
                     text: root.verticalText
                     font.pixelSize: root.textSize
                     color: root.contentColor
@@ -70,7 +65,6 @@ BasePill {
                 }
 
                 NumericText {
-                    isMonospace: false
                     visible: root.verticalSecondaryText !== ""
                     text: root.verticalSecondaryText
                     font.pixelSize: root.textSize
@@ -103,14 +97,8 @@ BasePill {
                 }
 
                 NumericText {
-                    isMonospace: false
-                    font.features: root.tabularDigits ? ({
-                            "tnum": 1
-                        }) : ({})
                     text: root.horizontalText
                     reserveText: root.minimumWidth ? root.reserveText : ""
-                    width: Math.ceil(Math.max(implicitWidth, reservedWidth))
-                    horizontalAlignment: Text.AlignHCenter
                     font.pixelSize: root.textSize
                     color: root.contentColor
                     anchors.verticalCenter: parent.verticalCenter

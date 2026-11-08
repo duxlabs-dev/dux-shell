@@ -123,18 +123,18 @@ DModal {
                         text: {
                             switch (requestType) {
                             case "confirm":
-                                return I18n.tr("Confirm passkey for ") + deviceName;
+                                return I18n.tr("Confirm passkey for %1", "%1 is the device name").arg(deviceName);
                             case "display-passkey":
-                                return I18n.tr("Enter this passkey on ") + deviceName;
+                                return I18n.tr("Enter this passkey on %1", "%1 is the device name").arg(deviceName);
                             case "authorize":
-                                return I18n.tr("Authorize pairing with ") + deviceName;
+                                return I18n.tr("Authorize pairing with %1", "%1 is the device name").arg(deviceName);
                             case "pin":
-                                return I18n.tr("Enter PIN for ") + deviceName;
+                                return I18n.tr("Enter PIN for %1", "%1 is the device or network name").arg(deviceName);
                             case "passkey":
-                                return I18n.tr("Enter passkey for ") + deviceName;
+                                return I18n.tr("Enter passkey for %1", "%1 is the device name").arg(deviceName);
                             default:
                                 if (requestType.startsWith("authorize-service"))
-                                    return I18n.tr("Authorize service for ") + deviceName;
+                                    return I18n.tr("Authorize service for %1", "%1 is the device name").arg(deviceName);
                                 return deviceName;
                             }
                         }

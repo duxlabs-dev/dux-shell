@@ -150,3 +150,50 @@ func TestSysfsBackend_ScanDevices(t *testing.T) {
 		t.Errorf("LED device not found")
 	}
 }
+
+func TestSysfsBackend_GetDevicesHidesIndicatorLEDs(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	writeLED := func(name, trigger string) {
+		t.Helper()
+		dir := filepath.Join(tmpDir, "leds", name)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		files := map[string]string{
+			"max_brightness": "1\n",
+			"brightness":     "0\n",
+			"trigger":        trigger,
+		}
+		for file, content := range files {
+			if err := os.WriteFile(filepath.Join(dir, file), []byte(content), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+
+	writeLED("phy0-led", "none phy0rx phy0tx [phy0radio] rfkill1\n")
+	writeLED("kbd_backlight", "[none] rc-feedback\n")
+
+	b := &SysfsBackend{basePath: tmpDir, classes: []string{"leds"}}
+	if err := b.scanDevices(); err != nil {
+		t.Fatalf("scanDevices() error = %v", err)
+	}
+
+	devices, err := b.GetDevices()
+	if err != nil {
+		t.Fatalf("GetDevices() error = %v", err)
+	}
+
+	ids := make(map[string]bool, len(devices))
+	for _, dev := range devices {
+		ids[dev.ID] = true
+	}
+
+	if ids["leds:phy0-led"] {
+		t.Error("trigger-driven indicator LED listed as a brightness device")
+	}
+	if !ids["leds:kbd_backlight"] {
+		t.Error("user-controlled LED missing from brightness devices")
+	}
+}

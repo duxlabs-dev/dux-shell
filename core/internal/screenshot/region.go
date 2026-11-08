@@ -385,6 +385,12 @@ func (r *RegionSelector) handleGlobal(e client.RegistryGlobalEvent) {
 		}
 
 	case client.SeatInterfaceName:
+		// Keep the first seat: compositors may advertise additional seats
+		// (automation, second keyboard), and the last one used to win, which
+		// left the selector listening to a seat the user never types on.
+		if r.seat != nil {
+			return
+		}
 		seat := client.NewSeat(r.ctx)
 		if err := r.registry.Bind(e.Name, e.Interface, e.Version, seat); err == nil {
 			r.seat = seat
@@ -609,15 +615,12 @@ func (r *RegionSelector) preCaptureOutput(output *WaylandOutput, pc *PreCapture,
 			pc.yInverted = false
 		}
 
-		if output.transform != TransformNormal {
-			invTransform := InverseTransform(output.transform)
-			transformed, err := capturedBuf.ApplyTransform(invTransform)
-			if err != nil {
-				log.Error("apply transform failed", "err", err)
-			} else if transformed != capturedBuf {
-				capturedBuf.Close()
-				capturedBuf = transformed
-			}
+		transformed, err := output.untransformFrame(capturedBuf)
+		if err != nil {
+			log.Error("apply transform failed", "err", err)
+		} else if transformed != capturedBuf {
+			capturedBuf.Close()
+			capturedBuf = transformed
 		}
 
 		if withCursor {
@@ -986,11 +989,11 @@ func (r *RegionSelector) applyPreSelection(os *OutputSurface) {
 	scaleX := float64(os.logicalW) / float64(os.screenBuf.Width)
 	scaleY := float64(os.logicalH) / float64(os.screenBuf.Height)
 
-	x1 := float64(r.preSelect.X-os.output.x) * scaleX
-	y1 := float64(r.preSelect.Y-os.output.y) * scaleY
+	x1 := float64(r.preSelect.X - os.output.x)
+	y1 := float64(r.preSelect.Y - os.output.y)
 	// selection edges are inclusive; the exclusive width edge is one device px past it
-	x2 := float64(r.preSelect.X-os.output.x+r.preSelect.Width)*scaleX - scaleX
-	y2 := float64(r.preSelect.Y-os.output.y+r.preSelect.Height)*scaleY - scaleY
+	x2 := x1 + float64(r.preSelect.Width) - scaleX
+	y2 := y1 + float64(r.preSelect.Height) - scaleY
 
 	r.selection.hasSelection = true
 	r.selection.fromPreSelect = true

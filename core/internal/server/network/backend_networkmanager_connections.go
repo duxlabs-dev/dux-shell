@@ -47,7 +47,7 @@ type activeProfile struct {
 }
 
 func (b *NetworkManagerBackend) ListConnectionProfiles() ([]ConnectionProfile, error) {
-	settingsMgr, err := b.wiredSettings()
+	settingsMgr, err := b.networkManagerSettings()
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func activeStateName(s gonetworkmanager.NmActiveConnectionState) string {
 }
 
 func (b *NetworkManagerBackend) findConnectionByUUID(uuid string) (gonetworkmanager.Connection, error) {
-	settingsMgr, err := b.wiredSettings()
+	settingsMgr, err := b.networkManagerSettings()
 	if err != nil {
 		return nil, err
 	}

@@ -94,9 +94,16 @@ binds {
     XF86TouchpadToggle allow-when-locked=true repeat=false {
         spawn "niri" "msg" "action" "toggle-touchpad";
     }
+    XF86TouchpadOn allow-when-locked=true repeat=false {
+        spawn "dms" "ipc" "call" "niri" "showTouchpadOsd" "true";
+    }
+    XF86TouchpadOff allow-when-locked=true repeat=false {
+        spawn "dms" "ipc" "call" "niri" "showTouchpadOsd" "false";
+    }
 
     // === Window Management ===
     Mod+Q repeat=false { close-window; }
+    Alt+F4 repeat=false { close-window; }
     Mod+F { maximize-column; }
     Mod+Shift+F { fullscreen-window; }
     Mod+Shift+T { toggle-window-floating; }

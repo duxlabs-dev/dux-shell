@@ -146,11 +146,10 @@ DModal {
             });
         }
 
-        // NoDisplay entries are excluded from DesktopEntries.applications but
-        // remain valid mime handlers; resolve them by id so they stay pickable
+        // NoDisplay handlers stay hidden like in the launcher, except the shell's own (notepad)
         for (const rawId of mimeMatchedRawIds) {
             const normId = _normAppId(rawId);
-            if (normId === "dms-open" || listedIds.has(normId))
+            if (!normId.startsWith("dev.duxlabs.shell.") || listedIds.has(normId))
                 continue;
             const desktopId = rawId.replace(/\.desktop$/, "");
             const entry = DesktopEntries.byId(desktopId) || DesktopEntries.heuristicLookup(desktopId);
@@ -347,7 +346,6 @@ DModal {
 
                     width: parent.width - Theme.spacingS * 2
                     anchors.horizontalCenter: parent.horizontalCenter
-                    height: 52
                     font.pixelSize: Theme.fontSizeLarge
                     enabled: root.shouldBeVisible
                     ignoreLeftRightKeys: root.viewMode !== "list"

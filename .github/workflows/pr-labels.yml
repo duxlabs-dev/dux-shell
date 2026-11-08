@@ -1,0 +1,81 @@
+name: PR Labels
+
+# pull_request_target: never check out PR code here, the token has write access
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pr-labels-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || "";
+
+            const checked = [...body.matchAll(/^\s*-\s*\[[xX]\]\s*(.+)$/gm)].map(m => m[1].trim());
+            const typeOfChange = {
+              "Bug fix": "fix",
+              "New feature": "feature",
+              "Breaking change": "breaking",
+              "Refactor / internal cleanup": "internal",
+              "Documentation": "docs",
+            };
+            const labels = new Set(
+              Object.entries(typeOfChange)
+                .filter(([item]) => checked.some(line => line.startsWith(item)))
+                .map(([, label]) => label)
+            );
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              ...context.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+            const paths = files.map(f => f.filename);
+            const pathRules = [
+              ["packaging", p => p.startsWith("distro/") || p === "flake.nix" || p === "flake.lock"],
+              ["i18n", p => p.startsWith("quickshell/translations/poexports/")],
+              ["core", p => p.startsWith("core/")],
+              ["ui", p => p.startsWith("quickshell/") && !p.startsWith("quickshell/translations/")],
+            ];
+            for (const [label, matches] of pathRules) {
+              if (paths.some(matches)) labels.add(label);
+            }
+
+            const existing = new Set(pr.labels.map(l => l.name));
+            const missing = [...labels].filter(l => !existing.has(l));
+            if (missing.length === 0) return core.info("nothing to add");
+
+            const areaLabels = {
+              core: ["Go daemon and CLI under core/", "1d76db"],
+              ui: ["Quickshell UI under quickshell/", "c5def5"],
+            };
+            for (const name of missing.filter(l => l in areaLabels)) {
+              const [description, color] = areaLabels[name];
+              try {
+                await github.rest.issues.getLabel({ ...context.repo, name });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({ ...context.repo, name, description, color });
+              }
+            }
+
+            await github.rest.issues.addLabels({
+              ...context.repo,
+              issue_number: pr.number,
+              labels: missing,
+            });
+            core.info(`added: ${missing.join(", ")}`);

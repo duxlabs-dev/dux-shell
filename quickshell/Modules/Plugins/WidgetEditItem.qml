@@ -242,9 +242,9 @@ Item {
                     }
                     resizing = true;
                 }
-                onResizeMoved: (px, py) => {
+                onResizeMoved: (px, py, modifiers) => {
                     const current = chrome.mapToItem(root.hostLayer, px, py);
-                    const next = geometry.dragResizeTo(startWidth, startHeight, current.x - startPos.x, current.y - startPos.y);
+                    const next = geometry.dragResizeTo(startWidth, startHeight, current.x - startPos.x, current.y - startPos.y, !!(modifiers & Qt.ShiftModifier));
                     geometry.dragOverrideW = next.width;
                     geometry.dragOverrideH = next.height;
                 }

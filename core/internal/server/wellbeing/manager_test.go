@@ -194,3 +194,24 @@ func TestAlertRecordSurvivesRestart(t *testing.T) {
 		assert.Nil(t, s.Limit, "the alert already fired before the restart")
 	}
 }
+
+func TestOpenDBLockedByAnotherProcessKeepsData(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "db")
+	c := &clock{now: time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)}
+	now := func() time.Time { return c.now }
+
+	m, err := newManager(path, now)
+	require.NoError(t, err)
+	m.SetState("firefox", true, 1)
+	c.advance(10 * time.Second)
+	m.Flush()
+
+	_, err = newManager(path, now)
+	require.Error(t, err)
+	m.Close()
+
+	m, err = newManager(path, now)
+	require.NoError(t, err)
+	defer m.Close()
+	assert.Equal(t, int64(10), m.Summary(1)[0].Active)
+}

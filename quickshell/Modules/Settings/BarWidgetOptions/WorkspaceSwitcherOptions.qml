@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell
 import qs.Common
 import qs.Services
 import qs.Modules.Settings
@@ -99,7 +98,6 @@ Column {
         SettingsToggleCard {
             title: I18n.tr("Show apps")
             visible: CompositorService.supportsWorkspaces
-            enabled: !CompositorService.isAqueous || (AqueousService.available && Quickshell.env("DMS_FORCE_EXTWS") !== "1")
             checked: root.showApps
             onToggled: checked => root.page.set("showWorkspaceApps", checked)
 
@@ -129,7 +127,6 @@ Column {
         SettingsToggleRow {
             text: I18n.tr("Show occupied only")
             visible: CompositorService.supportsWorkspaces
-            enabled: !CompositorService.isAqueous || (AqueousService.available && Quickshell.env("DMS_FORCE_EXTWS") !== "1")
             checked: root.page.value("showOccupiedWorkspacesOnly")
             onToggled: checked => root.page.set("showOccupiedWorkspacesOnly", checked)
         }
@@ -189,11 +186,26 @@ Column {
         }
 
         SettingsToggleRow {
+            enabled: root.showApps
+            text: I18n.tr("Don't dim unfocused apps", "workspace switcher toggle: show icons of unfocused apps at full opacity")
+            checked: root.page.value("workspaceUnfocusedAppsFullOpacity")
+            onToggled: checked => root.page.set("workspaceUnfocusedAppsFullOpacity", checked)
+        }
+
+        SettingsToggleRow {
             text: I18n.tr("Follow display focus")
             description: I18n.tr("Lists workspaces from whichever display has focus", "workspace switcher follow display focus toggle description")
             visible: CompositorService.supportsWorkspaceFollowFocus
             checked: root.page.value("workspaceFollowFocus")
             onToggled: checked => root.page.set("workspaceFollowFocus", checked)
+        }
+
+        SettingsToggleRow {
+            text: I18n.tr("Move workspace to this display")
+            description: I18n.tr("Clicking a workspace from another display moves it to the display of the bar you clicked", "workspace switcher move to this display toggle description")
+            visible: CompositorService.isHyprland
+            checked: root.page.value("workspaceMoveToOutput")
+            onToggled: checked => root.page.set("workspaceMoveToOutput", checked)
         }
 
         SettingsToggleRow {

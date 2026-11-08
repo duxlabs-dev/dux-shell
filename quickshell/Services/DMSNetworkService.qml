@@ -116,14 +116,14 @@ Singleton {
     property var savedWifiNetworks: []
     readonly property int savedWifiStateApiVersion: 26
     readonly property int hotspotApiVersion: 28
-    readonly property int connectionEditorApiVersion: 38
+    readonly property int connectionEditorApiVersion: 41
     property bool backendConnectionEditorSupported: false
     readonly property bool connectionEditorSupported: DMSService.isConnected && networkAvailable && DMSService.apiVersion >= connectionEditorApiVersion && backendConnectionEditorSupported
     readonly property bool enterpriseSupported: connectionEditorSupported
     readonly property bool connectionEditorPagesSupported: connectionEditorSupported
     readonly property bool vpnEditorSupported: connectionEditorSupported
     readonly property bool nmParitySupported: connectionEditorSupported
-    readonly property bool connectivitySupported: DMSService.isConnected && networkAvailable && DMSService.apiVersion >= 38 && backend === "networkmanager"
+    readonly property bool connectivitySupported: DMSService.isConnected && networkAvailable && DMSService.apiVersion >= connectionEditorApiVersion && backend === "networkmanager"
     property string connectivity: "unknown"
     property bool connectivityCheckEnabled: false
     property bool connectivityCheckAvailable: false
@@ -156,7 +156,7 @@ Singleton {
     property int hotspotChannel: 0
     property string hotspotAddress: ""
     property string hotspotUuid: ""
-    readonly property bool hotspotExtendedSupported: hotspotSupported && DMSService.apiVersion >= 38
+    readonly property bool hotspotExtendedSupported: hotspotSupported && DMSService.apiVersion >= connectionEditorApiVersion
     property bool hotspotBusy: false
     property string hotspotError: ""
     property string connectionStatus: ""
@@ -501,7 +501,7 @@ Singleton {
             backendHotspotLastError = "";
         }
 
-        if (DMSService.apiVersion >= 38) {
+        if (DMSService.apiVersion >= connectionEditorApiVersion) {
             connectivity = state.connectivity || "unknown";
             connectivityCheckEnabled = state.connectivityCheckEnabled === true;
             connectivityCheckAvailable = state.connectivityCheckAvailable === true;
@@ -524,8 +524,8 @@ Singleton {
         if (DMSService.apiVersion >= connectionEditorApiVersion)
             connectionProfilesRevision = state.connectionProfilesRevision || 0;
 
-        currentWifiSSID = state.wifiSSID || "";
-        wifiSignalStrength = state.wifiSignal || 0;
+        currentWifiSSID = wifiConnected ? (state.wifiSSID || "") : "";
+        wifiSignalStrength = wifiConnected ? (state.wifiSignal || 0) : 0;
 
         if (refCount > 0)
             syncLists(state);
@@ -1601,7 +1601,7 @@ Singleton {
     function hotspotErrorMessage(code) {
         switch (code) {
         case "hotspot-ip-config-failed":
-            return I18n.tr("IP sharing setup failed. Check that dnsmasq is installed.", "hotspot IP configuration failure message");
+            return I18n.tr("IP sharing setup failed. Check that %1 is installed.", "hotspot IP configuration failure message, %1 is a package name").arg("dnsmasq");
         case "hotspot-supplicant-failed":
             return I18n.tr("The WiFi adapter could not start access point mode.", "hotspot adapter failure message");
         default:

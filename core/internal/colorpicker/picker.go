@@ -11,6 +11,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_screencopy"
 	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wp_color_management"
 	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wp_viewporter"
+	"github.com/duxlabs-dev/dux-shell/core/internal/screenshot"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	wlhelpers "github.com/duxlabs-dev/dux-shell/core/internal/wayland/client"
 	"github.com/duxlabs-dev/dux-shell/core/internal/wayland/keymap"
@@ -241,6 +242,12 @@ func (p *Picker) handleGlobal(e client.RegistryGlobalEvent) {
 		}
 
 	case client.SeatInterfaceName:
+		// Keep the first seat: compositors may advertise additional seats
+		// (automation, second keyboard), and the last one used to win, which
+		// left the picker listening to a seat the user never types on.
+		if p.seat != nil {
+			return
+		}
 		seat := client.NewSeat(p.ctx)
 		if err := p.registry.Bind(e.Name, e.Interface, e.Version, seat); err == nil {
 			p.seat = seat
@@ -535,9 +542,8 @@ func (p *Picker) captureForSurface(ls *LayerSurface) {
 		ls.state.OnScreencopyReady()
 
 		screenBuf := ls.state.ScreenBuffer()
-		if screenBuf != nil && ls.output.transform != TransformNormal {
-			invTransform := InverseTransform(ls.output.transform)
-			transformed, err := screenBuf.ApplyTransform(invTransform)
+		if screenBuf != nil {
+			transformed, err := ls.output.untransformFrame(screenBuf)
 			if err != nil {
 				log.Error("apply transform failed", "err", err)
 			} else if transformed != screenBuf {
@@ -560,6 +566,13 @@ func (p *Picker) captureForSurface(ls *LayerSurface) {
 	frame.SetFailedHandler(func(e wlr_screencopy.ZwlrScreencopyFrameV1FailedEvent) {
 		frame.Destroy()
 	})
+}
+
+func (o *Output) untransformFrame(buf *ShmBuffer) (*ShmBuffer, error) {
+	if screenshot.FrameInLogicalOrientation(o.transform, o.width, o.height, buf.Width, buf.Height) {
+		return buf, nil
+	}
+	return buf.ApplyTransform(InverseTransform(o.transform))
 }
 
 func (p *Picker) redrawSurface(ls *LayerSurface) {

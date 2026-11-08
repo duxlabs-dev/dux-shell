@@ -160,6 +160,7 @@ Singleton {
             "children": [
                 {
                     "id": "dock_general",
+                    "hidden": true,
                     "text": I18n.tr("General"),
                     "icon": "tune",
                     "tabIndex": 5,
@@ -167,6 +168,7 @@ Singleton {
                 },
                 {
                     "id": "dock_widgets",
+                    "hidden": true,
                     "text": I18n.tr("Apps & widgets"),
                     "icon": "widgets",
                     "tabIndex": 57,
@@ -174,6 +176,7 @@ Singleton {
                 },
                 {
                     "id": "dock_appearance",
+                    "hidden": true,
                     "text": I18n.tr("Appearance"),
                     "icon": "palette",
                     "tabIndex": 58,
@@ -346,6 +349,34 @@ Singleton {
                     "hint": I18n.tr("Layouts, repeat rate, num lock")
                 },
                 {
+                    "id": "fcitx5",
+                    "text": I18n.tr("Input Method Framework", "Name of settings tab for fcitx5 configuration"),
+                    "icon": "language",
+                    "tabIndex": 68,
+                    "fcitx5Only": true,
+                    "hint": I18n.tr("fcitx5 input methods, keybinds, behavior", "Description for fcitx5 settings config page")
+                },
+                {
+                    "id": "fcitx5_addon",
+                    "hidden": true,
+                    "titleFrom": "selectedFcitx5AddonTitle",
+                    "text": I18n.tr("Plugins"),
+                    "icon": "extension",
+                    "tabIndex": 69,
+                    "fcitx5Only": true,
+                    "hint": I18n.tr("Options of a fcitx5 plugin", "Tab name for fcitx5 addon config page")
+                },
+                {
+                    "id": "fcitx5_addon_sub",
+                    "hidden": true,
+                    "titleFrom": "selectedFcitx5SubAddonTitle",
+                    "text": I18n.tr("Plugins"),
+                    "icon": "extension",
+                    "tabIndex": 70,
+                    "fcitx5Only": true,
+                    "hint": I18n.tr("Options of a fcitx5 plugin", "Tab name for fcitx5 addon config page")
+                },
+                {
                     "id": "mouse_touchpad",
                     "text": I18n.tr("Mouse & touchpad"),
                     "icon": "mouse",
@@ -398,7 +429,7 @@ Singleton {
                     "titleFrom": "wifiConnectTitle",
                     "text": I18n.tr("Connect to Wi-Fi"),
                     "icon": "wifi",
-                    "tabIndex": 71
+                    "tabIndex": 74
                 },
                 {
                     "id": "network_ethernet",
@@ -418,7 +449,7 @@ Singleton {
                     "id": "network_tailscale",
                     "text": I18n.tr("Tailscale", "Tailscale mesh VPN widget title"),
                     "icon": "hub",
-                    "tabIndex": 70,
+                    "tabIndex": 73,
                     "tailscaleOnly": true,
                     "hint": I18n.tr("Tailscale Network")
                 },
@@ -434,7 +465,7 @@ Singleton {
                     "id": "network_connections",
                     "text": I18n.tr("Connections", "settings page listing saved network connection profiles"),
                     "icon": "network_manage",
-                    "tabIndex": 68,
+                    "tabIndex": 71,
                     "connectionEditorOnly": true,
                     "hint": I18n.tr("Saved configurations")
                 },
@@ -446,7 +477,7 @@ Singleton {
                     "titleFrom": "selectedConnectionTitle",
                     "text": I18n.tr("Profile"),
                     "icon": "tune",
-                    "tabIndex": 69
+                    "tabIndex": 72
                 },
                 {
                     "id": "network_status",
@@ -820,6 +851,8 @@ Singleton {
         if (entry.autostartOnly)
             DesktopService.ensureProbed();
         if (entry.autostartOnly && !DesktopService.autostartAvailable)
+            return false;
+        if (entry.fcitx5Only && !Fcitx5Service.available)
             return false;
         if (entry.cellularOnly && (NetworkService.cellularDevices?.length ?? 0) === 0)
             return false;

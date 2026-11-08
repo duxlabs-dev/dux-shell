@@ -34,6 +34,7 @@ Item {
     property string u2fPendingApplyPath: ""
     property bool u2fShowCustom: false
 
+    readonly property string managedNote: I18n.tr("Managed by administrator policy", "settings note: the administrator lock policy sets this value")
     readonly property string authAutoLabel: I18n.tr("Auto", "automatic PAM authentication source option")
     readonly property string authCustomLabel: I18n.tr("Custom", "custom PAM authentication source option") + "…"
 
@@ -106,7 +107,7 @@ Item {
         case "missing_reader":
             return I18n.tr("No fingerprint reader detected", "fingerprint setting status");
         case "missing_pam_support":
-            return I18n.tr("Not available - install fprintd and pam_fprintd", "lock screen fingerprint setting");
+            return I18n.tr("Not available - install %1 and %2", "lock screen fingerprint setting, %1 and %2 are package names").arg("fprintd").arg("pam_fprintd");
         default:
             return I18n.tr("Fingerprint availability could not be confirmed", "fingerprint setting status");
         }
@@ -119,7 +120,7 @@ Item {
         case "missing_key_registration":
             return I18n.tr("Security-key support was detected, but no registered key was found yet. You can enable this now and register one later.", "security key setting status");
         case "missing_pam_support":
-            return I18n.tr("Not available - install or configure pam_u2f", "lock screen security key setting");
+            return I18n.tr("Not available - install or configure %1", "lock screen security key setting, %1 is a PAM module").arg("pam_u2f");
         default:
             return I18n.tr("Security-key availability could not be confirmed", "security key setting status");
         }
@@ -296,7 +297,7 @@ Item {
 
         PluginBrowser {
             parentModal: root.parentModal
-            typeFilter: "desktop-widget"
+            typeFilters: ["desktop-widget"]
         }
     }
 
@@ -364,18 +365,38 @@ Item {
                 title: I18n.tr("Background")
                 resetKeys: ["lockScreenWallpaperPath"]
                 body: SettingsWallpaperThumb {
+                    id: lockThumb
+
+                    readonly property var previewScreen: Quickshell.screens[0] ?? null
+
                     width: (parent.width - Theme.spacingL) / 2
+                    height: previewScreen ? width * previewScreen.height / previewScreen.width : width * SettingsMetrics.wallpaperThumbRatio
                     anchors.horizontalCenter: parent.horizontalCenter
                     placeholderIcon: "lock"
-                    emptyText: I18n.tr("Use desktop wallpaper")
                     allowColor: false
-                    path: SettingsData.lockScreenWallpaperPath
+                    showFileName: false
+                    showMaterial: SettingsData.lockScreenWallpaperPath === ""
+                    materialComposition: SessionData.getMonitorMaterialWallpaper(previewScreen?.name ?? "")
+                    path: SettingsData.lockScreenWallpaperPath || SessionData.getMonitorWallpaperImage(previewScreen?.name ?? "") || ""
+                    clearable: SettingsData.lockScreenWallpaperPath !== ""
+                    fillModeName: SettingsData.lockScreenWallpaperFillMode || (SettingsData.lockScreenWallpaperPath !== "" ? "Fill" : SessionData.getMonitorWallpaperFillMode(previewScreen?.name ?? ""))
+                    blur: Theme.lockScreenBlur
+                    blurMax: previewScreen ? Theme.lockScreenBlurMax * width / previewScreen.width : 0
+                    activateIcon: "edit"
+                    activateText: I18n.tr("Edit widgets")
+                    onActivated: SessionService.lockEditorRequested()
                     onBrowse: {
                         wallpaperBrowserLoader.active = true;
                         if (wallpaperBrowserLoader.item)
                             wallpaperBrowserLoader.item.open();
                     }
                     onClear: SettingsData.set("lockScreenWallpaperPath", "")
+
+                    LockScreenMinimap {
+                        anchors.fill: parent
+                        screen: lockThumb.previewScreen
+                        active: lockThumb.visible && (root.parentModal?.shouldBeVisible ?? true)
+                    }
                 }
             }
 
@@ -416,6 +437,8 @@ Item {
                 settingKey: "lockAtStartup"
                 tags: ["lock", "screen", "startup", "start", "boot", "login", "automatic"]
                 text: I18n.tr("Lock at startup")
+                description: SettingsData.isManaged("lockAtStartup") ? root.managedNote : ""
+                enabled: !SettingsData.isManaged("lockAtStartup")
                 checked: SettingsData.lockAtStartup
                 onToggled: checked => SettingsData.set("lockAtStartup", checked)
             }
@@ -424,6 +447,8 @@ Item {
                 settingKey: "lockBeforeSuspend"
                 tags: ["lock", "screen", "suspend", "hibernate", "sleep", "automatic"]
                 text: I18n.tr("Lock before suspend")
+                description: SettingsData.isManaged("lockBeforeSuspend") ? root.managedNote : ""
+                enabled: !SettingsData.isManaged("lockBeforeSuspend")
                 checked: SettingsData.lockBeforeSuspend
                 visible: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
                 onToggled: checked => SettingsData.set("lockBeforeSuspend", checked)
@@ -499,10 +524,10 @@ Item {
                 settingKey: "enableFprint"
                 tags: ["lock", "screen", "fingerprint", "authentication", "biometric", "fprint"]
                 text: I18n.tr("Fingerprint", "lock screen fingerprint authentication toggle")
-                description: root.lockFprintControlledByPrimary ? I18n.tr("Managed by the primary PAM source", "factor managed by PAM source status") : root.lockFingerprintDescription()
-                descriptionColor: root.lockFprintControlledByPrimary || SettingsData.lockFingerprintReason === "ready" ? Theme.surfaceVariantText : Theme.warning
+                description: SettingsData.isManaged("enableFprint") ? root.managedNote : root.lockFprintControlledByPrimary ? I18n.tr("Managed by the primary PAM source", "factor managed by PAM source status") : root.lockFingerprintDescription()
+                descriptionColor: SettingsData.isManaged("enableFprint") || root.lockFprintControlledByPrimary || SettingsData.lockFingerprintReason === "ready" ? Theme.surfaceVariantText : Theme.warning
                 checked: SettingsData.enableFprint || root.primaryPamHasFprint
-                enabled: root.lockFprintToggleAvailable && !root.lockFprintControlledByPrimary
+                enabled: root.lockFprintToggleAvailable && !root.lockFprintControlledByPrimary && !SettingsData.isManaged("enableFprint")
                 onToggled: checked => SettingsData.set("enableFprint", checked)
             }
 
@@ -510,10 +535,10 @@ Item {
                 settingKey: "enableU2f"
                 tags: ["lock", "screen", "u2f", "yubikey", "security", "key", "fido", "authentication", "hardware"]
                 text: I18n.tr("Security key")
-                description: root.lockU2fControlledByPrimary ? I18n.tr("Managed by the primary PAM source", "factor managed by PAM source status") : root.lockU2fDescription()
-                descriptionColor: root.lockU2fControlledByPrimary || SettingsData.lockU2fReason === "ready" ? Theme.surfaceVariantText : Theme.warning
+                description: SettingsData.isManaged("enableU2f") ? root.managedNote : root.lockU2fControlledByPrimary ? I18n.tr("Managed by the primary PAM source", "factor managed by PAM source status") : root.lockU2fDescription()
+                descriptionColor: SettingsData.isManaged("enableU2f") || root.lockU2fControlledByPrimary || SettingsData.lockU2fReason === "ready" ? Theme.surfaceVariantText : Theme.warning
                 checked: SettingsData.enableU2f || root.primaryPamHasU2f
-                enabled: root.lockU2fToggleAvailable && !root.lockU2fControlledByPrimary
+                enabled: root.lockU2fToggleAvailable && !root.lockU2fControlledByPrimary && !SettingsData.isManaged("enableU2f")
                 onToggled: checked => SettingsData.set("enableU2f", checked)
             }
 
@@ -521,7 +546,8 @@ Item {
                 settingKey: "u2fMode"
                 tags: ["lock", "screen", "u2f", "yubikey", "security", "key", "mode", "factor", "second"]
                 text: I18n.tr("Security key mode", "lock screen U2F security key mode setting")
-                description: I18n.tr("'Alternative' lets the key unlock on its own. 'Second factor' requires password or fingerprint first, then the key.", "lock screen U2F security key mode setting")
+                description: SettingsData.isManaged("u2fMode") ? root.managedNote : I18n.tr("'Alternative' lets the key unlock on its own. 'Second factor' requires password or fingerprint first, then the key.", "lock screen U2F security key mode setting")
+                enabled: !SettingsData.isManaged("u2fMode")
                 visible: SettingsData.enableU2f && !root.lockU2fControlledByPrimary
                 options: [I18n.tr("Alternative (OR)", "U2F mode option: key works as standalone unlock method"), I18n.tr("Second factor (AND)", "U2F mode option: key required after password or fingerprint")]
                 currentValue: SettingsData.u2fMode === "and" ? I18n.tr("Second factor (AND)", "U2F mode option: key required after password or fingerprint") : I18n.tr("Alternative (OR)", "U2F mode option: key works as standalone unlock method")
@@ -840,7 +866,7 @@ Item {
             SettingsRow {
                 visible: !SessionService.loginctlAvailable
                 body: StyledText {
-                    text: I18n.tr("loginctl not available - lock integration requires DMS socket connection")
+                    text: I18n.tr("%1 not available - lock integration requires the DMS socket connection", "lock screen warning, %1 is the loginctl binary").arg("loginctl")
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.warning
                     width: parent.width
@@ -852,9 +878,9 @@ Item {
                 settingKey: "loginctlLockIntegration"
                 tags: ["lock", "screen", "loginctl", "dbus", "integration", "external"]
                 text: I18n.tr("loginctl integration")
-                description: I18n.tr("Disable when using an external lock screen")
+                description: SettingsData.isManaged("loginctlLockIntegration") ? root.managedNote : I18n.tr("Disable when using an external lock screen")
                 checked: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
-                enabled: SessionService.loginctlAvailable
+                enabled: SessionService.loginctlAvailable && !SettingsData.isManaged("loginctlLockIntegration")
                 onToggled: checked => {
                     if (!SessionService.loginctlAvailable)
                         return;

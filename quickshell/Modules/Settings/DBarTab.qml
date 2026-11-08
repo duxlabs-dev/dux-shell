@@ -173,7 +173,7 @@ Item {
                 maximum: 64
                 step: 1
                 value: bar.islandSetting("islandFreeEdgeMargin")
-                onSliderValueChanged: value => bar.apply("islandFreeEdgeMargin", value)
+                onSliderDragFinished: value => bar.apply("islandFreeEdgeMargin", value)
             }
 
             SettingsSliderRow {
@@ -188,7 +188,7 @@ Item {
                 maximum: 48
                 step: 1
                 value: bar.islandSetting("islandOuterGap")
-                onSliderValueChanged: value => bar.apply("islandOuterGap", value)
+                onSliderDragFinished: value => bar.apply("islandOuterGap", value)
             }
 
             SettingsSliderRow {
@@ -203,7 +203,7 @@ Item {
                 maximum: 600
                 step: 1
                 value: bar.islandSetting("islandAlongOffset")
-                onSliderValueChanged: value => bar.apply("islandAlongOffset", value)
+                onSliderDragFinished: value => bar.apply("islandAlongOffset", value)
             }
 
             SettingsSliderRow {
@@ -219,7 +219,7 @@ Item {
                 step: 1
                 value: bar.islandSetting("islandReserveThickness")
                 enabled: !bar.islandSetting("islandFloating")
-                onSliderValueChanged: value => bar.apply("islandReserveThickness", value)
+                onSliderDragFinished: value => bar.apply("islandReserveThickness", value)
             }
         }
 
@@ -279,7 +279,7 @@ Item {
                     });
                     bar.notifyHorizontalBarChange();
                 }
-                onSliderValueChanged: newValue => SettingsData.updateBarConfig(bar.selectedBarId, {
+                onSliderDragFinished: newValue => SettingsData.updateBarConfig(bar.selectedBarId, {
                         autoHideDelay: newValue
                     })
             }
@@ -457,7 +457,7 @@ Item {
                 minimum: 0
                 maximum: 1000
                 unit: "ms"
-                onSliderValueChanged: newValue => {
+                onSliderDragFinished: newValue => {
                     SettingsData.updateBarConfig(bar.selectedBarId, {
                         hoverPopoutDelay: newValue
                     });
@@ -526,8 +526,9 @@ Item {
 
             SettingsToggleRow {
                 text: I18n.tr("Follow mouse")
-                description: I18n.tr("Anchored popouts open at the cursor instead of their widget")
+                description: I18n.tr("The Control Center opens at the cursor instead of its widget", "bar click action follow mouse description")
                 settingKey: "barClickActionFollowMouse"
+                visible: bar.selectedBarConfig?.middleClickAction === "control-center" || bar.selectedBarConfig?.rightClickAction === "control-center"
                 tags: ["bar", "click", "mouse", "cursor", "position", "anchor", "popout"]
                 checked: bar.selectedBarConfig?.clickActionFollowMouse ?? false
                 onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
@@ -631,6 +632,20 @@ Item {
                     });
                     bar.notifyHorizontalBarChange();
                 }
+            }
+
+            SettingsToggleRow {
+                settingKey: "barHideOnFullscreen"
+                resetStore: bar
+                resetKeys: ["hideOnFullscreen"]
+                tags: ["bar", "fullscreen", "hide", "visibility"]
+                visible: CompositorService.isNiri && !bar.islandOwnsSelectedBarTop && (bar.selectedBarConfig?.useOverlayLayer ?? false)
+                text: I18n.tr("Hide bar on fullscreen", "bar visibility toggle")
+                description: I18n.tr("Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.", "bar fullscreen auto-hide description")
+                checked: bar.selectedBarConfig?.hideOnFullscreen ?? false
+                onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
+                        hideOnFullscreen: toggled
+                    })
             }
 
             SettingsToggleRow {

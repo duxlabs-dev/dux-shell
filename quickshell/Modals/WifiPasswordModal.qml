@@ -79,8 +79,7 @@ DModal {
                 maximumWidth: dialog.actionWidth
                 wrapText: true
                 text: I18n.tr("Cancel")
-                backgroundColor: "transparent"
-                textColor: Theme.primary
+                variant: "text"
                 onClicked: form.clearAndClose()
             },
             DButton {

@@ -62,20 +62,21 @@ Singleton {
             return;
         }
         animatedArtUrl = "";
-        _debounce.restart();
+        _lookup();
     }
 
+    // Only the network path is debounced, so a cover already on disk shows without the skip-through wait.
     Timer {
         id: _debounce
         interval: 1500
-        onTriggered: root._lookup()
+        onTriggered: root._search(root._cacheKey, root._serial)
     }
 
     function _artPath(key) {
         return _artDir + "/" + Qt.md5(key) + ".mp4";
     }
 
-    // Disk cache first: a hit needs no network; touching keeps _prune from evicting active covers.
+    // Touching a disk hit keeps _prune from evicting active covers.
     function _lookup() {
         const key = _cacheKey;
         const serial = _serial;
@@ -86,8 +87,8 @@ Singleton {
                 _store(key, serial, "file://" + _artPath(key));
                 return;
             }
-            _search(key, serial);
-        }, 50, 5000);
+            _debounce.restart();
+        }, 0, 5000);
     }
 
     // Bidirectional contains, so "Album" still matches "Album (Deluxe Edition)" either way round.

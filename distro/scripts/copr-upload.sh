@@ -10,12 +10,13 @@ PACKAGE="${1:-dms}"
 VERSION="${2:-}"
 RELEASE="${3:-1}"
 
+COPR_OWNER="${COPR_OWNER:-duxlabs}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Determine Copr project based on package
 if [ "$PACKAGE" = "dms" ]; then
-    COPR_PROJECT="avengemedia/dms"
+    COPR_PROJECT="${COPR_OWNER}/dms"
 else
     echo "❌ Unknown package: $PACKAGE"
     echo "Supported packages: dms"
@@ -25,7 +26,7 @@ fi
 # Get version from latest release if not provided
 if [ -z "$VERSION" ]; then
     echo "📦 Determining latest version..."
-    VERSION=$(curl -s https://api.github.com/repos/duxlabs-dev/dux-shell/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+    VERSION=$(curl -sL https://api.github.com/repos/duxlabs-dev/dux-shell/releases/latest | jq -r '.tag_name' | sed 's/^v//')
     if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
         echo "❌ Failed to determine version. Please specify manually."
         exit 1

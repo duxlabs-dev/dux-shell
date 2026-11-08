@@ -51,19 +51,19 @@ in
     settings = lib.mkOption {
       type = jsonFormat.type;
       default = { };
-      description = "Dux Shell configuration settings as an attribute set, to be written to ~/.config/dms/settings.json.";
+      description = "Dux Modular Shell configuration settings as an attribute set, to be written to ~/.config/dms/settings.json.";
     };
 
     clipboardSettings = lib.mkOption {
       type = jsonFormat.type;
       default = { };
-      description = "Dux Shell clipboard settings as an attribute set, to be written to ~/.config/dms/clsettings.json.";
+      description = "Dux Modular Shell clipboard settings as an attribute set, to be written to ~/.config/dms/clsettings.json.";
     };
 
     session = lib.mkOption {
       type = jsonFormat.type;
       default = { };
-      description = "Dux Shell session settings as an attribute set, to be written to ~/.local/state/dms/session.json.";
+      description = "Dux Modular Shell session settings as an attribute set, to be written to ~/.local/state/dms/session.json.";
     };
 
     managePluginSettings = lib.mkOption {
@@ -88,13 +88,16 @@ in
 
     systemd.user.services.dms = lib.mkIf cfg.systemd.enable {
       Unit = {
-        Description = "Dux Shell";
+        Description = "Dux Modular Shell";
         PartOf = [ cfg.systemd.target ];
         After = [ cfg.systemd.target ];
+        # Readiness waits for the tray host, so tray apps ordered after tray.target find it.
+        Before = [ "tray.target" ];
       };
 
       Service = {
         Type = "notify";
+        BusName = "org.freedesktop.Notifications";
         NotifyAccess = "main";
         Environment = [ "QS_DISABLE_CRASH_HANDLER=1" ];
         ExecStart = lib.getExe cfg.package + " run --session";

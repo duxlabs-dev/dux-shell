@@ -28,7 +28,7 @@ Item {
                     spacing: Theme.spacingS
 
                     StyledText {
-                        text: I18n.tr("Run an external command on each wallpaper change and merge its JSON palette into matugen under a namespace, so templates can use e.g. {{name.color0}}. The command receives the wallpaper as {image} / $DMS_WALLPAPER and the mode as {mode} / $DMS_MODE.", "injected palettes settings description, the placeholders in braces and the $DMS_ variables stay as is")
+                        text: I18n.tr("Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.", "injected palettes settings description, %1 is matugen, %2 a template placeholder, %3 and %4 placeholder and variable pairs").arg("matugen").arg("{{name.color0}}").arg("{image} / $DMS_WALLPAPER").arg("{mode} / $DMS_MODE")
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceVariantText
                         wrapMode: Text.WordWrap

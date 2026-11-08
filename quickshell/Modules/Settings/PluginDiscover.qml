@@ -67,6 +67,7 @@ Column {
                         anchors.fill: parent
                         imagePath: PluginService.thumbUrl(pickCard.plugin)
                         maxCacheSize: 640
+                        cacheRemote: true
                         fillMode: Image.PreserveAspectCrop
                         animate: false
                         visible: status === Image.Ready

@@ -24,7 +24,7 @@ DModal {
 
         const kind = p.trcKind;
         if (kind === "gamma")
-            return I18n.tr("Gamma", "Gamma") + " " + (p.trcGamma ?? 0).toFixed(2);
+            return I18n.tr("Gamma %1", "%1 is a gamma value").arg((p.trcGamma ?? 0).toFixed(2));
         if (kind === "table")
             return I18n.tr("Table", "Tone curve stored as a lookup table") + " · " + p.trcEntries;
         if (kind === "identity")

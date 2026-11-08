@@ -10,7 +10,7 @@ DPopout {
     layerNamespace: "dms:control-center"
     fullHeightSurface: true
     resizeCurve: Theme.expressiveCurves.standard
-    resizeDuration: Theme.expressiveDurations.expressiveFastSpatial
+    resizeDuration: CcMetrics.transitionDuration
     resizeMotion: true
     resizing: contentLoader.item?.panelResizing ?? false
     surfacePadding: CcMetrics.editOverflow

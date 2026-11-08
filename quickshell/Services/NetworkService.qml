@@ -70,7 +70,7 @@ Singleton {
     property var savedWifiNetworks: activeService?.savedWifiNetworks ?? []
     readonly property int savedWifiStateApiVersion: activeService?.savedWifiStateApiVersion ?? 26
     readonly property int hotspotApiVersion: activeService?.hotspotApiVersion ?? 28
-    readonly property int connectionEditorApiVersion: activeService?.connectionEditorApiVersion ?? 38
+    readonly property int connectionEditorApiVersion: activeService?.connectionEditorApiVersion ?? 41
     property bool connectionEditorSupported: activeService?.connectionEditorSupported ?? false
     property bool connectionEditorPagesSupported: activeService?.connectionEditorPagesSupported ?? false
     property bool vpnEditorSupported: activeService?.vpnEditorSupported ?? false

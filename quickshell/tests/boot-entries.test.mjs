@@ -7,8 +7,9 @@ const bootEntries = vm.createContext({});
 vm.runInContext(readFileSync(new URL("../Services/BootEntries.js", import.meta.url), "utf8").replace(/^\.pragma.*$/m, ""), bootEntries);
 const plain = value => JSON.parse(JSON.stringify(value));
 
-test("parses active entries and the current boot from efibootmgr output", () => {
-    // efibootmgr 18 prints the device path after a tab, older releases print only the label
+test("parses active and inactive entries and the current boot from efibootmgr output", () => {
+    // efibootmgr 18 prints the device path after a tab, older releases print only the label.
+    // Inactive entries have no "*" and stay listed, since BootNext still boots them.
     const output = [
         "BootCurrent: 0001",
         "Timeout: 1 seconds",
@@ -17,6 +18,7 @@ test("parses active entries and the current boot from efibootmgr output", () => 
         "Boot0001* Limine\tHD(1,GPT,c28482eb,0x1000,0x830000)/\\EFI\\LIMINE\\LIMINE_X64.EFI",
         "Boot0010  UEFI OS\tHD(1,GPT,c28482eb,0x1000,0x830000)/\\EFI\\BOOT\\BOOTX64.EFI",
         "Boot001a* Fedora",
+        "Boot001B  Ubuntu",
         ""
     ].join("\n");
 
@@ -26,7 +28,9 @@ test("parses active entries and the current boot from efibootmgr output", () => 
     assert.deepEqual(plain(parsed.entries), [
         { id: "0000", label: "Windows Boot Manager" },
         { id: "0001", label: "Limine" },
-        { id: "001A", label: "Fedora" }
+        { id: "0010", label: "UEFI OS" },
+        { id: "001A", label: "Fedora" },
+        { id: "001B", label: "Ubuntu" }
     ]);
 });
 

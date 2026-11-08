@@ -339,7 +339,7 @@ PanelWindow {
                                 visible: copyDetailsButton.showTooltip
                                 width: detailsTooltipLabel.implicitWidth + Theme.spacingM * 2
                                 height: detailsTooltipLabel.implicitHeight + Theme.spacingS * 2
-                                color: Theme.inverseSurface
+                                color: Theme.tooltipSurface
                                 radius: Theme.cornerRadiusXS
                                 y: -height - Theme.spacingS
                                 x: -width / 2 + copyDetailsButton.width / 2
@@ -349,7 +349,7 @@ PanelWindow {
                                     anchors.centerIn: parent
                                     text: root.copiedText
                                     font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.inverseOnSurface
+                                    color: Theme.tooltipText
                                 }
                             }
                         }
@@ -423,7 +423,7 @@ PanelWindow {
                                 visible: copyButton.showTooltip
                                 width: tooltipLabel.implicitWidth + Theme.spacingM * 2
                                 height: tooltipLabel.implicitHeight + Theme.spacingS * 2
-                                color: Theme.inverseSurface
+                                color: Theme.tooltipSurface
                                 radius: Theme.cornerRadiusXS
                                 y: -height - Theme.spacingS
                                 x: -width / 2 + copyButton.width / 2
@@ -433,7 +433,7 @@ PanelWindow {
                                     anchors.centerIn: parent
                                     text: root.copiedText
                                     font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.inverseOnSurface
+                                    color: Theme.tooltipText
                                 }
                             }
                         }

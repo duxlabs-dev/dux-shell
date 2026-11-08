@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"github.com/duxlabs-dev/dux-shell/core/internal/luaconfig"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -10,143 +11,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/windowrules"
 )
 
-func TestParseWindowRuleV1(t *testing.T) {
-	parser := NewHyprlandRulesParser("")
-
-	tests := []struct {
-		name      string
-		line      string
-		wantClass string
-		wantFloat bool
-		wantTile  bool
-	}{
-		{name: "basic float rule", line: "windowrule = float, ^(firefox)$", wantClass: "^(firefox)$", wantFloat: true},
-		{name: "tile rule", line: "windowrule = tile, steam", wantClass: "steam", wantTile: true},
-		{name: "no match returns empty class", line: "windowrule = float"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := parser.parseWindowRuleLine(tt.line)
-			if result == nil {
-				t.Fatal("expected non-nil result")
-			}
-			if result.Match.AppID != tt.wantClass {
-				t.Errorf("AppID = %q, want %q", result.Match.AppID, tt.wantClass)
-			}
-			if (result.Actions.OpenFloating != nil) != tt.wantFloat {
-				t.Errorf("OpenFloating = %v, want %v", result.Actions.OpenFloating, tt.wantFloat)
-			}
-			if (result.Actions.Tile != nil) != tt.wantTile {
-				t.Errorf("Tile = %v, want %v", result.Actions.Tile, tt.wantTile)
-			}
-		})
-	}
-}
-
-func TestParseWindowRuleV2(t *testing.T) {
-	parser := NewHyprlandRulesParser("")
-
-	tests := []struct {
-		name        string
-		line        string
-		wantClass   string
-		wantTitle   string
-		wantOpacity float64
-		wantMax     bool
-	}{
-		{name: "float with class", line: "windowrulev2 = float, class:^(firefox)$", wantClass: "^(firefox)$"},
-		{name: "opacity with value", line: "windowrulev2 = opacity 0.8, class:^(code)$", wantClass: "^(code)$", wantOpacity: 0.8},
-		{name: "maximize", line: "windowrulev2 = maximize, class:^(steam)$", wantClass: "^(steam)$", wantMax: true},
-		{name: "size with value and title", line: "windowrulev2 = size 800 600, class:^(steam)$, title:Settings", wantClass: "^(steam)$", wantTitle: "Settings"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := parser.parseWindowRuleLine(tt.line)
-			if result == nil {
-				t.Fatal("expected non-nil result")
-			}
-			if result.Match.AppID != tt.wantClass {
-				t.Errorf("AppID = %q, want %q", result.Match.AppID, tt.wantClass)
-			}
-			if result.Match.Title != tt.wantTitle {
-				t.Errorf("Title = %q, want %q", result.Match.Title, tt.wantTitle)
-			}
-			if tt.wantOpacity != 0 && (result.Actions.Opacity == nil || *result.Actions.Opacity != tt.wantOpacity) {
-				t.Errorf("Opacity = %v, want %v", result.Actions.Opacity, tt.wantOpacity)
-			}
-			if (result.Actions.OpenMaximized != nil) != tt.wantMax {
-				t.Errorf("OpenMaximized = %v, want %v", result.Actions.OpenMaximized, tt.wantMax)
-			}
-		})
-	}
-}
-
-func TestParseHyprlangMatchSyntax(t *testing.T) {
-	tmpDir := t.TempDir()
-	conf := `
-windowrule = match:class ^(kitty)$, match:initial_title ^Login$, match:focus 1, float on, rounding 12
-windowrule = no_initial_focus on, match:fullscreen_state_client 2, match:xdg_tag ^portal$, size 800 600
-windowrule {
-    name = steam-popups
-    match:class = ^steam$
-    match:modal = true
-    match:title = ^a##b$ # trailing
-    border_color = rgb(ff0000)
-    move = 10 20
-    float = on # x
-}
-windowrule = match:class ^(mpv)$, opacity 0.8 0.9 # x
-`
-	if err := os.WriteFile(filepath.Join(tmpDir, "hyprland.conf"), []byte(conf), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	res, err := ParseHyprlandWindowRules(tmpDir)
-	if err != nil {
-		t.Fatalf("ParseHyprlandWindowRules: %v", err)
-	}
-	got := ConvertHyprlandRulesToWindowRules(res.Rules)
-	if len(got) != 4 {
-		t.Fatalf("expected 4 rules, got %d", len(got))
-	}
-
-	want := []struct {
-		match windowrules.MatchCriteria
-		act   windowrules.Actions
-	}{
-		{
-			windowrules.MatchCriteria{AppID: "^(kitty)$", InitialTitle: "^Login$", IsFocused: new(true)},
-			windowrules.Actions{OpenFloating: new(true), CornerRadius: new(12)},
-		},
-		{
-			windowrules.MatchCriteria{FullscreenStateClient: new(2), XdgTag: "^portal$"},
-			windowrules.Actions{NoInitialFocus: new(true), SizeWidth: "800", SizeHeight: "600"},
-		},
-		{
-			windowrules.MatchCriteria{AppID: "^steam$", Title: "^a#b$", Modal: new(true)},
-			windowrules.Actions{BorderColor: "rgb(ff0000)", MoveX: "10", MoveY: "20", OpenFloating: new(true)},
-		},
-		{
-			windowrules.MatchCriteria{AppID: "^(mpv)$"},
-			windowrules.Actions{Opacity: new(0.8)},
-		},
-	}
-	for i, w := range want {
-		if !reflect.DeepEqual(got[i].MatchCriteria, w.match) {
-			t.Errorf("rule %d match = %+v, want %+v", i, got[i].MatchCriteria, w.match)
-		}
-		if !reflect.DeepEqual(got[i].Actions, w.act) {
-			t.Errorf("rule %d actions = %+v, want %+v", i, got[i].Actions, w.act)
-		}
-	}
-	if res.DMSStatus.ConfigFormat != "hyprlang" || !res.DMSStatus.ReadOnly {
-		t.Errorf("status format=%q readOnly=%v, want hyprlang/true", res.DMSStatus.ConfigFormat, res.DMSStatus.ReadOnly)
-	}
-}
-
-func TestHyprlandLuaPreferredOverConf(t *testing.T) {
+func TestHyprlandIgnoresConfWhenLuaPresent(t *testing.T) {
 	tmpDir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(tmpDir, "hyprland.conf"), []byte("windowrule = match:class ^conf$, float on\n"), 0644); err != nil {
 		t.Fatal(err)
@@ -162,33 +27,8 @@ func TestHyprlandLuaPreferredOverConf(t *testing.T) {
 	if len(res.Rules) != 1 || res.Rules[0].Match.AppID != "^lua$" {
 		t.Fatalf("expected only the Lua rule, got %+v", res.Rules)
 	}
-	if res.DMSStatus.ConfigFormat != "lua" || res.DMSStatus.ReadOnly {
-		t.Errorf("status format=%q readOnly=%v, want lua/false", res.DMSStatus.ConfigFormat, res.DMSStatus.ReadOnly)
-	}
 	if err := NewHyprlandWritableProvider(tmpDir).EnsureWritable(); err != nil {
 		t.Errorf("EnsureWritable with hyprland.lua present: %v", err)
-	}
-}
-
-func TestHyprlandLoadDMSRulesFromConfFragment(t *testing.T) {
-	tmpDir := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(tmpDir, "dms"), 0755); err != nil {
-		t.Fatal(err)
-	}
-	frag := "# DMS-RULE: id=ff, name=Firefox\nwindowrulev2 = float, class:^(firefox)$\n"
-	if err := os.WriteFile(filepath.Join(tmpDir, "dms", "windowrules.conf"), []byte(frag), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	rules, err := NewHyprlandWritableProvider(tmpDir).LoadDMSRules()
-	if err != nil {
-		t.Fatalf("LoadDMSRules: %v", err)
-	}
-	if len(rules) != 1 || rules[0].ID != "ff" || rules[0].Name != "Firefox" || rules[0].MatchCriteria.AppID != "^(firefox)$" {
-		t.Fatalf("unexpected rules: %+v", rules)
-	}
-	if rules[0].Actions.OpenFloating == nil || !*rules[0].Actions.OpenFloating {
-		t.Errorf("expected OpenFloating, got %+v", rules[0].Actions)
 	}
 }
 
@@ -205,8 +45,8 @@ func TestHyprlandSetRuleLeavesConfOnlyInstallReadOnly(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected SetRule to reject conf-only Hyprland config")
 	}
-	if !strings.Contains(err.Error(), "read-only") {
-		t.Fatalf("expected read-only error, got %v", err)
+	if !strings.Contains(err.Error(), "dms setup") {
+		t.Fatalf("expected a run-dms-setup error, got %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(tmpDir, "dms", "windowrules.lua")); !os.IsNotExist(err) {
 		t.Fatalf("expected no Lua windowrules file to be created for conf-only config, stat err=%v", err)
@@ -214,7 +54,7 @@ func TestHyprlandSetRuleLeavesConfOnlyInstallReadOnly(t *testing.T) {
 }
 
 func TestHyprlandRemoveRule(t *testing.T) {
-	tmpDir := t.TempDir()
+	tmpDir := hyprLuaDir(t)
 	provider := NewHyprlandWritableProvider(tmpDir)
 
 	rule1 := newTestWindowRule("rule1", "Rule 1", "^(app1)$")
@@ -239,7 +79,7 @@ func TestHyprlandRemoveRule(t *testing.T) {
 }
 
 func TestHyprlandReorderRules(t *testing.T) {
-	tmpDir := t.TempDir()
+	tmpDir := hyprLuaDir(t)
 	provider := NewHyprlandWritableProvider(tmpDir)
 
 	rule1 := newTestWindowRule("rule1", "Rule 1", "^(app1)$")
@@ -266,35 +106,6 @@ func TestHyprlandReorderRules(t *testing.T) {
 		if rules[i].ID != expectedID {
 			t.Errorf("rule %d ID = %q, want %q", i, rules[i].ID, expectedID)
 		}
-	}
-}
-
-func TestHyprlandParseConfigWithSource(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	mainConfig := `
-windowrulev2 = float, class:^(mainapp)$
-source = ./extra.conf
-`
-	extraConfig := `
-windowrulev2 = tile, class:^(extraapp)$
-`
-
-	if err := os.WriteFile(filepath.Join(tmpDir, "hyprland.conf"), []byte(mainConfig), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "extra.conf"), []byte(extraConfig), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	parser := NewHyprlandRulesParser(tmpDir)
-	rules, err := parser.Parse()
-	if err != nil {
-		t.Fatalf("Parse failed: %v", err)
-	}
-
-	if len(rules) != 2 {
-		t.Errorf("expected 2 rules, got %d", len(rules))
 	}
 }
 
@@ -536,15 +347,21 @@ func TestFormatLuaManagedHyprRuleCornerRadiusWithoutNoRounding(t *testing.T) {
 	}
 }
 
-func TestFormatLuaManagedHyprRuleCornerRadiusCapped(t *testing.T) {
+func TestFormatLuaManagedHyprRuleCornerRadiusCappedByVersion(t *testing.T) {
+	prev := luaconfig.HyprlandVersion
+	t.Cleanup(func() { luaconfig.HyprlandVersion = prev })
 	rule := windowrules.WindowRule{
 		ID:      "radius",
 		Enabled: true,
-		Actions: windowrules.Actions{CornerRadius: new(24)},
+		Actions: windowrules.Actions{CornerRadius: new(120)},
 	}
-	joined := strings.Join(formatLuaManagedHyprRule(rule), "\n")
-	if !strings.Contains(joined, "rounding = 20") {
-		t.Errorf("rounding not capped at 20:\n%s", joined)
+	for minor, want := range map[int]string{56: "rounding = 20", 57: "rounding = 100"} {
+		m := minor
+		luaconfig.HyprlandVersion = func() (int, int) { return 0, m }
+		joined := strings.Join(formatLuaManagedHyprRule(rule), "\n")
+		if !strings.Contains(joined, want) {
+			t.Errorf("0.%d: missing %s:\n%s", minor, want, joined)
+		}
 	}
 }
 
@@ -623,7 +440,7 @@ func TestApplyLuaActionKeyBorderAndRounding(t *testing.T) {
 }
 
 func TestHyprlandLuaRoundTripMatchAndActions(t *testing.T) {
-	provider := NewHyprlandWritableProvider(t.TempDir())
+	provider := NewHyprlandWritableProvider(hyprLuaDir(t))
 	rule := newTestWindowRule("rt", "Round Trip", "^throwaway$")
 	rule.MatchCriteria.IsFloating = new(true)
 	rule.MatchCriteria.Pinned = new(false)
@@ -672,7 +489,7 @@ func ruleOrder(t *testing.T, content string, ids ...string) {
 }
 
 func TestHyprlandEndToEndWriterOrderAndKeys(t *testing.T) {
-	provider := NewHyprlandWritableProvider(t.TempDir())
+	provider := NewHyprlandWritableProvider(hyprLuaDir(t))
 
 	user1 := newTestWindowRule("user1", "User 1", "^throwaway$")
 	user1.MatchCriteria.IsFloating = new(true)
@@ -792,11 +609,11 @@ func TestHyprlandLuaRoundTripCatalogKeys(t *testing.T) {
 		{"suppress_event", `suppress_event = "maximize fullscreen"`, windowrules.MatchCriteria{}, windowrules.Actions{SuppressEvent: "maximize fullscreen"}},
 		{"monitor silent", `monitor = "DP-1 silent"`, windowrules.MatchCriteria{}, windowrules.Actions{Monitor: "DP-1 silent"}},
 		{"border_color per focus", `border_color = "rgb(ff0000)"`, windowrules.MatchCriteria{IsFocused: new(true)}, windowrules.Actions{BorderColor: "rgb(ff0000)"}},
-		{"rounding at cap", `rounding = 20`, windowrules.MatchCriteria{}, windowrules.Actions{CornerRadius: new(20)}},
+		{"rounding at pre-0.57 cap", `rounding = 20`, windowrules.MatchCriteria{}, windowrules.Actions{CornerRadius: new(20)}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			provider := NewHyprlandWritableProvider(t.TempDir())
+			provider := NewHyprlandWritableProvider(hyprLuaDir(t))
 			rule := newTestWindowRule("rt", "Round Trip", "^app$")
 			tt.match.AppID = "^app$"
 			rule.MatchCriteria = tt.match
@@ -850,4 +667,13 @@ hl.window_rule({
 	if !strings.Contains(joined, "no_initial_focus = true") || strings.Contains(joined, "no_focus") {
 		t.Errorf("no_initial_focus not re-emitted unchanged:\n%s", joined)
 	}
+}
+
+func hyprLuaDir(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "hyprland.lua"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return dir
 }

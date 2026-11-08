@@ -51,6 +51,11 @@ Singleton {
             wifiConnectTitle = I18n.tr("Connect to Wi-Fi");
     }
 
+    property string selectedFcitx5Addon: ""
+    property string selectedFcitx5AddonTitle: ""
+    property string selectedFcitx5SubAddon: ""
+    property string selectedFcitx5SubAddonTitle: ""
+
     // The dot has its own page, so bar selection never lands on it.
     function normalizeSelectedBar() {
         const config = SettingsData.getBarConfig(selectedBarId);

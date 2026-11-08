@@ -106,11 +106,52 @@ func (b *BaseDistribution) detectMatugen() deps.Dependency {
 }
 
 func (b *BaseDistribution) detectDanksearch() deps.Dependency {
-	return b.detectOptionalPackage("danksearch", "File indexing and search service", b.commandExists("dsearch") || b.commandExists("danksearch"))
+	return b.detectOptionalPackage("dux-search", "File indexing and search service", b.commandExists("dsearch") || b.commandExists("danksearch"))
 }
 
 func (b *BaseDistribution) detectDankCalendar() deps.Dependency {
-	return b.detectOptionalPackage("dankcalendar", "Calendar application", b.commandExists("dcal") || b.commandExists("dankcalendar"))
+	return b.detectOptionalPackage("dux-calendar", "Calendar application", b.commandExists("dcal") || b.commandExists("dankcalendar"))
+}
+
+func (b *BaseDistribution) detectDuxFiles() deps.Dependency {
+	return b.detectOptionalPackage("dux-files", "File manager", b.commandExists("dfiles"))
+}
+
+// renamedPackages maps distro packages to their pre-rename names. rpm -q, dpkg-query and xbps-query
+// ignore Provides, so hosts that have not upgraded since the rename only match the old name.
+var renamedPackages = map[string]string{
+	"dux-greeter":      "dms-greeter",
+	"dux-greeter-git":  "dms-greeter-git",
+	"dux-search":       "danksearch",
+	"dux-calendar":     "dankcalendar",
+	"dux-calendar-git": "dankcalendar-git",
+	"dux-gop":          "dgop",
+}
+
+func installedName(installed func(string) bool, pkg string) (string, bool) {
+	if installed(pkg) {
+		return pkg, true
+	}
+	if old, ok := renamedPackages[pkg]; ok && installed(old) {
+		return old, true
+	}
+	return "", false
+}
+
+func (b *BaseDistribution) detectGreeterPackage(installed func(string) bool) deps.Dependency {
+	_, gitInstalled := installedName(installed, "dux-greeter-git")
+	_, stableInstalled := installedName(installed, "dux-greeter")
+	dep := b.detectOptionalPackage("dux-greeter", "Dux Modular Shell greetd greeter", gitInstalled || stableInstalled)
+	return withGitVariant(dep, gitInstalled)
+}
+
+func (b *BaseDistribution) detectCalendarPackage(installed func(string) bool) deps.Dependency {
+	_, gitInstalled := installedName(installed, "dux-calendar-git")
+	return withGitVariant(b.detectDankCalendar(), gitInstalled)
+}
+
+func (b *BaseDistribution) detectFilesPackage(installed func(string) bool) deps.Dependency {
+	return withGitVariant(b.detectDuxFiles(), installed("dux-files-git"))
 }
 
 func withGitVariant(dep deps.Dependency, gitInstalled bool) deps.Dependency {
@@ -502,7 +543,7 @@ func (b *BaseDistribution) runWithProgressStepTimeout(cmd *exec.Cmd, progressCha
 			progressChan <- InstallProgressMsg{
 				Phase:      phase,
 				Progress:   endProgress,
-				Step:       "Installation step complete",
+				Step:       stepMessage,
 				IsComplete: false,
 				LogOutput:  lastOutput,
 			}
@@ -541,7 +582,7 @@ func (b *BaseDistribution) runWithProgressStepTimeout(cmd *exec.Cmd, progressCha
 				progressChan <- InstallProgressMsg{
 					Phase:      phase,
 					Progress:   progress,
-					Step:       "Installing...",
+					Step:       stepMessage,
 					IsComplete: false,
 					LogOutput:  lastOutput,
 				}
@@ -659,7 +700,7 @@ func (b *BaseDistribution) installDMSBinary(ctx context.Context, sudoPassword st
 	if err != nil {
 		return fmt.Errorf("failed to get user home directory: %w", err)
 	}
-	tmpDir := filepath.Join(homeDir, ".cache", "dankinstall", "manual-builds")
+	tmpDir := filepath.Join(homeDir, ".cache", "duxinstall", "manual-builds")
 	if err := os.MkdirAll(tmpDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}

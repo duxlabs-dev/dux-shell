@@ -1,7 +1,7 @@
 BINARY_NAME=dms
-BINARY_NAME_INSTALL=dankinstall
+BINARY_NAME_INSTALL=duxinstall
 SOURCE_DIR=cmd/dms
-SOURCE_DIR_INSTALL=cmd/dankinstall
+SOURCE_DIR_INSTALL=cmd/duxinstall
 BUILD_DIR=bin
 SHELL_SRC=../quickshell
 EMBED_DIR=internal/shellembed/dist
@@ -32,7 +32,7 @@ else
 DIST_ARCHS = $(ARCH)
 endif
 
-.PHONY: all build sync-shell dankinstall dist clean install install-all install-dankinstall uninstall uninstall-all uninstall-dankinstall install-config uninstall-config test fmt vet deps print-version help
+.PHONY: all build sync-shell duxinstall dist clean install install-all install-duxinstall uninstall uninstall-all uninstall-duxinstall install-config uninstall-config test fmt vet deps print-version help
 
 # Default target
 all: build
@@ -58,7 +58,7 @@ build: sync-shell
 	CGO_ENABLED=0 $(GO) build -tags withshell $(BUILD_LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./$(SOURCE_DIR)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
 
-dankinstall:
+duxinstall:
 	@echo "Building $(BINARY_NAME_INSTALL)..."
 	@mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=0 $(GO) build $(BUILD_LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME_INSTALL) ./$(SOURCE_DIR_INSTALL)
@@ -77,7 +77,7 @@ dist: sync-shell
 	done
 	@echo "Distribution builds complete"
 
-build-all: build dankinstall
+build-all: build duxinstall
 
 install:
 	@echo "Installing $(BINARY_NAME) to $(INSTALL_DIR)..."
@@ -91,7 +91,7 @@ install-all:
 	@install -D -m 755 $(BUILD_DIR)/$(BINARY_NAME_INSTALL) $(INSTALL_DIR)/$(BINARY_NAME_INSTALL)
 	@echo "Installation complete"
 
-install-dankinstall:
+install-duxinstall:
 	@echo "Installing $(BINARY_NAME_INSTALL) to $(INSTALL_DIR)..."
 	@install -D -m 755 $(BUILD_DIR)/$(BINARY_NAME_INSTALL) $(INSTALL_DIR)/$(BINARY_NAME_INSTALL)
 	@echo "Installation complete"
@@ -108,7 +108,7 @@ uninstall-all:
 	@rm -f $(INSTALL_DIR)/$(BINARY_NAME_INSTALL)
 	@echo "Uninstall complete"
 
-uninstall-dankinstall:
+uninstall-duxinstall:
 	@echo "Uninstalling $(BINARY_NAME_INSTALL) from $(INSTALL_DIR)..."
 	@rm -f $(INSTALL_DIR)/$(BINARY_NAME_INSTALL)
 	@echo "Uninstall complete"
@@ -160,16 +160,16 @@ help:
 	@echo "  all                 - Build the main binary (dms) (default)"
 	@echo "  build               - Build the main binary (dms) with the embedded UI"
 	@echo "  sync-shell          - Copy quickshell/ into the embed dir (runs before tagged builds)"
-	@echo "  dankinstall         - Build dankinstall binary"
+	@echo "  duxinstall         - Build duxinstall binary"
 	@echo "  dist                - Build dms for linux/freebsd amd64/arm64 (no update/greeter)"
 	@echo "                        Use ARCH=amd64 or ARCH=arm64 and/or DIST_OSES=linux to narrow"
 	@echo "  build-all           - Build both binaries"
 	@echo "  install             - Install dms to $(INSTALL_DIR)"
-	@echo "  install-all         - Install both dms and dankinstall to $(INSTALL_DIR)"
-	@echo "  install-dankinstall - Install only dankinstall to $(INSTALL_DIR)"
+	@echo "  install-all         - Install both dms and duxinstall to $(INSTALL_DIR)"
+	@echo "  install-duxinstall - Install only duxinstall to $(INSTALL_DIR)"
 	@echo "  uninstall           - Remove dms from $(INSTALL_DIR)"
 	@echo "  uninstall-all       - Remove both binaries from $(INSTALL_DIR)"
-	@echo "  uninstall-dankinstall - Remove only dankinstall from $(INSTALL_DIR)"
+	@echo "  uninstall-duxinstall - Remove only duxinstall from $(INSTALL_DIR)"
 	@echo "  clean               - Clean build artifacts"
 	@echo "  test                - Run tests"
 	@echo "  fmt                 - Format Go code"

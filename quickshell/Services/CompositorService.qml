@@ -11,6 +11,7 @@ import qs.DCommon.Common as DCommon
 import qs.Services
 import "../Common/WorkspaceModel.js" as WorkspaceModel
 import "../Common/WindowModel.js" as WindowModel
+import "NiriFullscreen.js" as NiriFullscreen
 
 Singleton {
     id: root
@@ -23,7 +24,6 @@ Singleton {
     property bool isScroll: false
     property bool isMiracle: false
     property bool isLabwc: false
-    property bool isAqueous: false
     property bool isUmbriel: false
     property bool isKwin: false
     property string compositor: "unknown"
@@ -101,7 +101,7 @@ Singleton {
             right: SettingsData.Position.Right
         })
 
-    readonly property bool supportsMinimize: isAqueous && AqueousService.available ? AqueousService.capabilities.commands && !AqueousService.locked : DCommon.Compositor.supportsMinimize
+    readonly property bool supportsMinimize: DCommon.Compositor.supportsMinimize
 
     readonly property bool hasWorkspaceIpc: {
         switch (compositor) {
@@ -124,8 +124,6 @@ Singleton {
         case "hyprland":
         case "mango":
             return true;
-        case "aqueous":
-            return AqueousService.available;
         default:
             return false;
         }
@@ -139,9 +137,9 @@ Singleton {
     readonly property string dmsOpaqueRuleId: "dms-window-opaque"
     readonly property bool supportsLayoutConfig: isNiri || isHyprland || isMango
     readonly property bool supportsCursorConfig: isNiri || isHyprland || isMango
-    readonly property bool supportsDisplayConfig: isNiri || isHyprland || isMango || isAqueous
+    readonly property bool supportsDisplayConfig: isNiri || isHyprland || isMango
     readonly property bool supportsBarAutoHideReveal: isNiri || isHyprland || isMango
-    readonly property bool supportsWorkspaces: isNiri || isHyprland || isMango || isAqueous || isUmbriel
+    readonly property bool supportsWorkspaces: isNiri || isHyprland || isMango || isUmbriel
     // compositors where a workspace that does not exist yet is still a valid switch target
     readonly property bool supportsPersistentWorkspaces: isHyprland || isMango || isSway || isScroll || isMiracle
     readonly property bool supportsWorkspaceUrgency: isKnownCompositor && !isLabwc
@@ -158,8 +156,8 @@ Singleton {
             return !reservesDesktopInput;
         }
     }
-    readonly property bool supportsSmartDock: isNiri || isHyprland || isMango || isAqueous
-    readonly property bool supportsNativeOverview: isNiri || isAqueous
+    readonly property bool supportsSmartDock: isNiri || isHyprland || isMango
+    readonly property bool supportsNativeOverview: isNiri
     readonly property bool supportsPointerConfig: isNiri || isHyprland || isMango
     readonly property bool supportsInputConfig: isNiri || isHyprland || isMango
 
@@ -179,8 +177,6 @@ Singleton {
             return "Miracle WM";
         case "labwc":
             return "Labwc";
-        case "aqueous":
-            return "Aqueous";
         case "umbriel":
             return "Umbriel";
         case "kwin":
@@ -199,7 +195,6 @@ Singleton {
         case "scroll":
         case "miracle":
         case "labwc":
-        case "aqueous":
         case "umbriel":
             return compositor;
         default:
@@ -208,16 +203,6 @@ Singleton {
     }
 
     property var _workspaceRecords: ({})
-
-    Connections {
-        target: AqueousService
-        enabled: root.isAqueous
-        function onStateChanged() {
-            root.scheduleSort();
-            if (AqueousService.available)
-                root.workspaceStateChanged();
-        }
-    }
 
     Connections {
         target: NiriService
@@ -270,8 +255,6 @@ Singleton {
     }
 
     function canMinimize(toplevel) {
-        if (isAqueous && toplevel?.aqueousWindowId)
-            return AqueousService.available && !AqueousService.locked && AqueousService.capabilities.commands && toplevel.canMinimize;
         return supportsMinimize && toplevel && toplevel.minimized !== undefined;
     }
 
@@ -283,10 +266,6 @@ Singleton {
     function activateToplevel(toplevel) {
         if (!toplevel)
             return;
-        if (isAqueous && toplevel.aqueousWindowId) {
-            toplevel.activate();
-            return;
-        }
         closeNiriOverviewOnWindowFocus();
         if (canMinimize(toplevel) && toplevel.minimized)
             toplevel.minimized = false;
@@ -346,16 +325,17 @@ Singleton {
             return screen.devicePixelRatio || 1;
         }
 
-        const randrScale = randrScales[screen.name];
-        if (randrScale !== undefined && randrScale > 0)
-            return fractionalScale(randrScale);
-
-        if (WlrOutputService.wlrOutputAvailable && screen) {
+        // Live wlr-output state outranks the one-shot randr snapshot so scale changes propagate
+        if (WlrOutputService.wlrOutputAvailable) {
             const wlrOutput = WlrOutputService.getOutput(screen.name);
             if (wlrOutput?.enabled && wlrOutput.scale !== undefined && wlrOutput.scale > 0) {
                 return fractionalScale(wlrOutput.scale);
             }
         }
+
+        const randrScale = randrScales[screen.name];
+        if (randrScale !== undefined && randrScale > 0)
+            return fractionalScale(randrScale);
 
         if (isNiri && screen) {
             const niriScale = NiriService.displayScales[screen.name];
@@ -384,8 +364,6 @@ Singleton {
     function windowKey(toplevel) {
         if (!toplevel)
             return "";
-        if (toplevel.aqueousKey)
-            return toplevel.aqueousKey;
         if (toplevel.niriWindowId !== undefined)
             return "niri:" + toplevel.niriWindowId;
         if (toplevel.mangoWindowId !== undefined)
@@ -409,8 +387,6 @@ Singleton {
     }
 
     function getFocusedScreenName() {
-        if (isAqueous && AqueousService.available)
-            return AqueousService.focusedOutput;
         if (isHyprland && Hyprland.focusedMonitor)
             return Hyprland.focusedMonitor.name;
         if (isNiri && NiriService.currentOutput)
@@ -468,7 +444,7 @@ Singleton {
             const yKey = y.niriWindowId !== undefined ? y.niriWindowId : y.mangoWindowId;
             if (xKey === undefined || yKey === undefined)
                 return false;
-            if (xKey !== yKey || x.niriWorkspaceId !== y.niriWorkspaceId || x.appId !== y.appId || x.title !== y.title || !!x.activated !== !!y.activated || !!x.fullscreen !== !!y.fullscreen || !!x.maximized !== !!y.maximized || !!x.minimized !== !!y.minimized)
+            if (xKey !== yKey || x.niriWorkspaceId !== y.niriWorkspaceId || x.mangoMonitor !== y.mangoMonitor || x.appId !== y.appId || x.title !== y.title || !!x.activated !== !!y.activated || !!x.fullscreen !== !!y.fullscreen || !!x.maximized !== !!y.maximized || !!x.minimized !== !!y.minimized)
                 return false;
         }
         return true;
@@ -496,6 +472,21 @@ Singleton {
                 if (event.name === "configreloaded")
                     HyprlandService.refreshFollowMouse();
                 root.refreshHyprlandMonitorLayout();
+                return;
+            }
+            // Hyprland 0.57 emits this when a workspace id changes (e.g. after a rename); Quickshell 0.3.2 ignores it
+            if (event.name === "changeworkspaceid") {
+                Hyprland.refreshWorkspaces();
+                return;
+            }
+            // Sent by the move/resize wrappers in dms/binds.lua; Hyprland has no geometry event of its own
+            if (event.name === "custom") {
+                if (event.data !== "dms:geometry")
+                    return;
+                try {
+                    Hyprland.refreshToplevels();
+                } catch (e) {}
+                root.scheduleSort();
                 return;
             }
             if (event.name === "openwindow" || event.name === "closewindow" || event.name === "movewindow" || event.name === "movewindowv2" || event.name === "workspace" || event.name === "workspacev2" || event.name === "focusedmon" || event.name === "focusedmonv2" || event.name === "activewindow" || event.name === "activewindowv2" || event.name === "changefloatingmode" || event.name === "fullscreen" || event.name === "moveintogroup" || event.name === "moveoutofgroup" || event.name === "activespecial") {
@@ -540,8 +531,6 @@ Singleton {
     }
 
     function computeSortedToplevels() {
-        if (isAqueous && AqueousService.available)
-            return AqueousService.toplevels;
         if (!ToplevelManager.toplevels || !ToplevelManager.toplevels.values)
             return [];
 
@@ -792,10 +781,6 @@ Singleton {
     }
 
     function filterCurrentWorkspace(toplevels, screen) {
-        if (isAqueous && AqueousService.available) {
-            const active = AqueousService.workspacesForOutput(_screenName(screen)).filter(w => w.active).map(w => w.id);
-            return toplevels.filter(t => active.includes(t.aqueousWorkspaceId));
-        }
         if (useNiriSorting)
             return NiriService.filterCurrentWorkspace(toplevels, screen);
         if (useMangoSorting)
@@ -807,8 +792,6 @@ Singleton {
 
     readonly property string toplevelKey: {
         switch (compositor) {
-        case "aqueous":
-            return AqueousService.available ? "aqueousKey" : "address";
         case "niri":
             return "niriWindowId";
         case "mango":
@@ -824,13 +807,6 @@ Singleton {
                 "workspace": "",
                 "output": ""
             };
-        if (isAqueous && AqueousService.available) {
-            const workspace = AqueousService.workspaces.find(w => w.id === toplevel.aqueousWorkspaceId);
-            return {
-                "workspace": String(workspace?.name || workspace?.number || ""),
-                "output": AqueousService.outputs.find(o => o.id === toplevel.aqueousOutputId)?.name ?? ""
-            };
-        }
         if (useNiriSorting) {
             const workspace = NiriService.allWorkspaces.find(w => w.id === toplevel.niriWorkspaceId);
             return {
@@ -858,8 +834,6 @@ Singleton {
 
     function fullscreenToplevelOnScreen(screenOrName) {
         const screenName = _screenName(screenOrName);
-        if (isAqueous && AqueousService.available)
-            return AqueousService.windows.some(w => w.output === AqueousService.outputId(screenName) && w.visible && w.fullscreen);
         if (!screenName || !ToplevelManager.toplevels?.values)
             return false;
 
@@ -870,6 +844,12 @@ Singleton {
                 return true;
         }
         return false;
+    }
+
+    function visibleNiriFullscreenToplevelOnScreen(screenOrName) {
+        if (!isNiri || !NiriService.hasInitialConnection)
+            return false;
+        return NiriFullscreen.isFullscreenOnScreen(_screenName(screenOrName), NiriService.allWorkspaces, NiriService.windows, ToplevelManager.toplevels?.values);
     }
 
     function filterCurrentDisplay(toplevels, screenName) {
@@ -1051,8 +1031,6 @@ Singleton {
     }
 
     function overviewActiveOnScreen(screenOrName) {
-        if (isAqueous && AqueousService.available)
-            return !!AqueousService.sessionState.overview_output && AqueousService.sessionState.overview_output === AqueousService.outputId(_screenName(screenOrName));
         return isNiri && NiriService.inOverview;
     }
 
@@ -1191,12 +1169,6 @@ Singleton {
     }
 
     function activeWindowForScreen(screenName, previous, includeLastFocused) {
-        switch (compositor) {
-        case "aqueous":
-            if (AqueousService.available)
-                return WindowModel.aqueousActiveWindow(AqueousService.focusedWindow, screenName);
-            break;
-        }
         const active = ToplevelManager.activeToplevel || _fallbackActiveWindow(screenName, includeLastFocused);
         if (!active)
             return _retainedWindow(screenName, previous);
@@ -1243,7 +1215,6 @@ Singleton {
             return WindowModel.niriBarHideForWindows(NiriService.windows, NiriService.allWorkspaces, screenName, position, thickness, screenWidth, screenHeight, _edgePositions);
         case "hyprland":
         case "mango":
-        case "aqueous":
             return filterCurrentWorkspace(sortedToplevels, screenName).length > 0;
         default:
             return false;
@@ -1260,8 +1231,6 @@ Singleton {
             if (!screenName || !MangoService.windows)
                 return false;
             return WindowModel.mangoEdgeOverlap(MangoService.windows, MangoService.outputs[screenName], screenName, position, thickness, screenWidth, screenHeight, _edgePositions);
-        case "aqueous":
-            return AqueousService.available && AqueousService.overlapsDock(screenName, position, thickness, screenWidth, screenHeight);
         default:
             return false;
         }
@@ -1273,7 +1242,6 @@ Singleton {
             return WindowModel.mangoMaximizedOnScreen(MangoService.windows || [], MangoService.outputs[screenName], screenName);
         case "hyprland":
         case "niri":
-        case "aqueous":
             return filterCurrentWorkspace(sortedToplevels, screenName).some(t => t?.maximized);
         default:
             return false;
@@ -1430,8 +1398,6 @@ Singleton {
             return "miracle";
         case "labwc":
             return "labwc";
-        case "aqueous":
-            return "aqueous";
         case "umbriel":
             return "umbriel";
         case "kwin_wayland":
@@ -1449,7 +1415,6 @@ Singleton {
         isScroll = name === "scroll";
         isMiracle = name === "miracle";
         isLabwc = name === "labwc";
-        isAqueous = name === "aqueous";
         isUmbriel = name === "umbriel";
         isKwin = name === "kwin";
         compositor = name;
@@ -1583,15 +1548,8 @@ Singleton {
     // of winning on a stale env var.
     function _envDetectionCandidates() {
         const runtimeDir = Quickshell.env("XDG_RUNTIME_DIR") || "";
-        const aqueousSocket = Quickshell.env("AQUEOUS_SOCKET") || "";
         const umbrielSocket = Quickshell.env("UMBRIEL_SOCKET") || "";
         return [
-            {
-                name: "aqueous",
-                present: !!aqueousSocket,
-                test: ["test", "-S", aqueousSocket],
-                detail: "AQUEOUS_SOCKET " + aqueousSocket
-            },
             {
                 name: "mango",
                 present: !!mangoSignature,
@@ -1805,17 +1763,6 @@ Singleton {
         };
     }
 
-    function _aqueousWorkspaceState(screenName) {
-        return {
-            get workspaces() {
-                return AqueousService.workspacesForOutput(screenName);
-            },
-            get toplevels() {
-                return AqueousService.toplevels;
-            }
-        };
-    }
-
     function _followedScreen(screenName, followFocus) {
         return followFocus ? (getFocusedScreenName() || screenName) : screenName;
     }
@@ -1846,11 +1793,6 @@ Singleton {
         case "scroll":
         case "miracle":
             return WorkspaceModel.i3WorkspacesForScreen(_i3WorkspaceState(), screenName, followFocus, options.minCount);
-        case "aqueous":
-            {
-                const name = _followedScreen(screenName, followFocus);
-                return WorkspaceModel.aqueousWorkspacesForScreen(_aqueousWorkspaceState(name), name, options.occupiedOnly, _workspaceRecords);
-            }
         case "umbriel":
             return WorkspaceModel.umbrielWorkspacesForScreen(UmbrielService.workspaces, _followedScreen(screenName, followFocus), options.occupiedOnly, _workspaceRecords);
         default:
@@ -1870,8 +1812,6 @@ Singleton {
         case "scroll":
         case "miracle":
             return WorkspaceModel.i3CurrentKey(_i3WorkspaceState(), screenName, followFocus);
-        case "aqueous":
-            return WorkspaceModel.aqueousCurrentId(_aqueousWorkspaceState(_followedScreen(screenName, followFocus)));
         case "umbriel":
             return WorkspaceModel.umbrielCurrentId(UmbrielService.workspaces, _followedScreen(screenName, followFocus));
         default:
@@ -1884,7 +1824,6 @@ Singleton {
             return false;
         switch (compositor) {
         case "mango":
-        case "aqueous":
             return record.active === true;
         case "hyprland":
             return record.special === true ? record.active === true : WorkspaceModel.hyprlandKey(record) === currentKey;
@@ -1905,8 +1844,6 @@ Singleton {
         case "scroll":
         case "miracle":
             return WorkspaceModel.i3ActiveWorkspace(_i3WorkspaceState(), screenName);
-        case "aqueous":
-            return WorkspaceModel.aqueousActiveWorkspace(_aqueousWorkspaceState(screenName), screenName);
         case "umbriel":
             return WorkspaceModel.umbrielActiveWorkspace(UmbrielService.workspaces, screenName);
         default:
@@ -1928,8 +1865,6 @@ Singleton {
         case "scroll":
         case "miracle":
             return WorkspaceModel.i3WindowsOnWorkspace(sortedToplevels, record);
-        case "aqueous":
-            return WorkspaceModel.aqueousWindowsOnWorkspace(sortedToplevels, record);
         case "umbriel":
             return WorkspaceModel.umbrielWindowsOnWorkspace(UmbrielService.windows, record);
         default:
@@ -1948,8 +1883,6 @@ Singleton {
         case "mango":
         case "umbriel":
             return record.occupied === true;
-        case "aqueous":
-            return AqueousService.available && WorkspaceModel.aqueousWorkspaceOccupied(AqueousService.toplevels, record);
         default:
             return false;
         }
@@ -1996,7 +1929,7 @@ Singleton {
         }
     }
 
-    function switchToWorkspace(record, screenName) {
+    function switchToWorkspace(record, screenName, moveToOutput) {
         if (!record || record.placeholder)
             return;
         switch (compositor) {
@@ -2011,6 +1944,8 @@ Singleton {
                 HyprlandService.toggleSpecial(record.name === "special" ? "" : record.name);
                 return;
             }
+            if (moveToOutput && record.output && record.output !== moveToOutput)
+                HyprlandService.moveWorkspaceToMonitor(WorkspaceModel.hyprlandSelector(record), moveToOutput);
             HyprlandService.focusWorkspace(WorkspaceModel.hyprlandSelector(record));
             return;
         case "mango":
@@ -2025,14 +1960,8 @@ Singleton {
                 "name": record.id
             });
             return;
-        case "aqueous":
-            AqueousService.activateWorkspace({
-                "id": record.id,
-                "aqueousSession": record.session
-            });
-            return;
         case "umbriel":
-            UmbrielService.action(`workspace-switch:${record.idx}/${record.output}`);
+            UmbrielService.action("workspace-switch", String(record.idx), "--output", record.output);
             return;
         }
     }
@@ -2072,9 +2001,6 @@ Singleton {
                 stepWorkspace(WorkspaceModel.i3ScrollWorkspaces(state, screenName, followFocus), WorkspaceModel.i3CurrentKey(state, screenName, followFocus), direction);
                 return;
             }
-        case "aqueous":
-            _scrollAqueousWorkspace(followFocus ? AqueousService.focusedOutput : screenName, direction);
-            return;
         case "umbriel":
             {
                 const name = _followedScreen(screenName, followFocus);
@@ -2084,28 +2010,12 @@ Singleton {
         }
     }
 
-    function _scrollAqueousWorkspace(screenName, direction) {
-        if (!AqueousService.available)
-            return;
-        const state = _aqueousWorkspaceState(screenName);
-        const workspaces = WorkspaceModel.aqueousWorkspacesForScreen(state, screenName, false, _workspaceRecords);
-        if (workspaces.length < 2)
-            return;
-        const currentId = WorkspaceModel.aqueousCurrentId(state);
-        const index = workspaces.findIndex(ws => ws.id === currentId);
-        if (index < 0)
-            return;
-        switchToWorkspace(WorkspaceModel.neighbor(workspaces, index, direction));
-    }
-
     function overviewActiveForScreen(screenName) {
         switch (compositor) {
         case "niri":
             return NiriService.inOverview;
         case "mango":
             return MangoService.isOutputInOverview(screenName);
-        case "aqueous":
-            return overviewActiveOnScreen(screenName);
         default:
             return false;
         }
@@ -2122,9 +2032,6 @@ Singleton {
 
     function toggleOverview(screenName) {
         switch (compositor) {
-        case "aqueous":
-            AqueousService.toggleOverview(screenName);
-            return;
         case "niri":
             NiriService.toggleOverview();
             return;
@@ -2139,7 +2046,6 @@ Singleton {
 
     function workspaceSecondaryAction(record, screenName) {
         switch (compositor) {
-        case "aqueous":
         case "niri":
             toggleOverview(screenName);
             return;
@@ -2181,9 +2087,6 @@ Singleton {
 
     function focusWindow(windowId) {
         switch (compositor) {
-        case "aqueous":
-            AqueousService.command("window.activate", windowId);
-            return true;
         case "hyprland":
             HyprlandService.focusWindow(windowId);
             return true;
@@ -2191,7 +2094,7 @@ Singleton {
             NiriService.focusWindow(windowId);
             return true;
         case "umbriel":
-            UmbrielService.action("window-focus:" + windowId);
+            UmbrielService.action("window-focus", String(windowId));
             return true;
         default:
             return false;
@@ -2225,10 +2128,6 @@ Singleton {
         }
 
         function onBlurStrengthRefreshNeeded() {
-            if (root.isAqueous && typeof AqueousConfigService !== "undefined") {
-                AqueousConfigService.applyBlurStrength();
-                return;
-            }
             onCompositorLayoutRefreshNeeded(false);
         }
 

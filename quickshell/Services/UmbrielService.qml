@@ -54,10 +54,10 @@ Singleton {
         }
     }
 
-    function action(name) {
-        Proc.runCommand(null, ["umbriel", "msg", name], (output, exitCode) => {
+    function action(...words) {
+        Proc.runCommand(null, ["umbriel", "msg", ...words], (output, exitCode) => {
             if (exitCode !== 0)
-                log.warn("umbriel msg", name, "exited with", exitCode);
+                log.warn("umbriel msg", words.join(" "), "exited with", exitCode);
         }, 0);
     }
 }

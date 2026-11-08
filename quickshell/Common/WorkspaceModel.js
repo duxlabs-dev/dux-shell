@@ -108,7 +108,7 @@ function hyprlandSpecial(ws) {
     return !(ws.id > 0) && hyprlandSpecialName(ws.name ?? "");
 }
 
-// Hyprland main gives named workspaces no id (Quickshell reports -1 for all of them), so the address is their identity
+// Hyprland 0.57 gives named workspaces no id (Quickshell reports -1 for all of them), so the address is their identity
 function hyprlandKey(ws) {
     if (ws?.id > 0)
         return ws.id;
@@ -439,7 +439,7 @@ function mangoActiveWorkspace(raw, screenName) {
 
 function mangoWindowsOnWorkspace(windows, workspace) {
     // mangoTags are 1-based; workspace.id is 0-based.
-    return windows.filter(win => win && (win.mangoTags || []).includes(workspace.id + 1));
+    return windows.filter(win => win && win.mangoMonitor === workspace.output && (win.mangoTags || []).includes(workspace.id + 1));
 }
 
 function i3Key(ws) {
@@ -565,43 +565,6 @@ function i3WorkspaceFocused(raw, workspace) {
 function i3WindowsOnWorkspace(windows, workspace) {
     const number = i3Number(workspace);
     return windows.filter(win => win && win.workspace?.num === number);
-}
-
-function aqueousRecord(ws, screenName) {
-    return {
-        id: ws.id,
-        idx: ws.number ?? null,
-        name: ws.name ?? "",
-        output: screenName,
-        active: ws.active === true,
-        placeholder: false,
-        urgent: ws.urgent === true,
-        session: ws.aqueousSession
-    };
-}
-
-function aqueousWorkspacesForScreen(raw, screenName, occupiedOnly, cache) {
-    const workspaces = raw.workspaces;
-    dropStale(cache, new Set(workspaces.map(ws => String(ws.id))));
-    const visible = occupiedOnly ? workspaces.filter(ws => ws.active || raw.toplevels.some(win => win.aqueousWorkspaceId === ws.id)) : workspaces;
-    return visible.map(ws => reuse(cache, ws.id, aqueousRecord(ws, screenName)));
-}
-
-function aqueousCurrentId(raw) {
-    return raw.workspaces.find(ws => ws.active)?.id || "";
-}
-
-function aqueousActiveWorkspace(raw, screenName) {
-    const ws = raw.workspaces.find(w => w.active);
-    return ws ? aqueousRecord(ws, screenName) : null;
-}
-
-function aqueousWindowsOnWorkspace(windows, workspace) {
-    return windows.filter(win => win && win.aqueousWorkspaceId === workspace.id);
-}
-
-function aqueousWorkspaceOccupied(toplevels, workspace) {
-    return toplevels.some(win => win.aqueousWorkspaceId === workspace.id);
 }
 
 function umbrielRecord(ws) {

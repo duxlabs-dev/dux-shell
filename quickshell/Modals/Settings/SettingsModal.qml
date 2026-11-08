@@ -6,6 +6,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Settings.Widgets
+import "../../Common/WallpaperFormats.js" as WallpaperFormats
 
 DFloatingWindow {
     id: settingsModal
@@ -141,6 +142,11 @@ DFloatingWindow {
 
     function showKeybindsSearch(query: string) {
         keybindSearchQuery = query || "";
+        // From inside settings keep the history so back returns to the calling page
+        if (visible) {
+            navigateTo("keybinds");
+            return;
+        }
         showWithTabName("keybinds");
     }
 
@@ -259,7 +265,7 @@ DFloatingWindow {
             browserTitle: I18n.tr("Select Wallpaper", "wallpaper file browser title")
             bucket: "wallpaper"
             showHiddenFiles: true
-            filters: ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.webp", "*.jxl", "*.avif", "*.heif", "*.exr", "*.svg"]
+            filters: WallpaperFormats.nameFilters(true)
             onAccepted: paths => {
                 SessionData.setWallpaper(paths[0]);
                 SessionData.wallpaperCyclingFolderPath = "";
@@ -366,8 +372,6 @@ DFloatingWindow {
                         visible: SettingsData.isReadOnly && SettingsData.unsavedUserChanges
                         text: "settings.json"
                         iconName: "content_copy"
-                        backgroundColor: Theme.primary
-                        textColor: Theme.primaryText
                         buttonHeight: Theme.buttonHeightXS
                         horizontalPadding: Theme.spacingM
                         anchors.verticalCenter: parent.verticalCenter
@@ -383,8 +387,6 @@ DFloatingWindow {
                         visible: SessionData._isReadOnly && SessionData._hasUnsavedChanges
                         text: "session.json"
                         iconName: "content_copy"
-                        backgroundColor: Theme.primary
-                        textColor: Theme.primaryText
                         buttonHeight: Theme.buttonHeightXS
                         horizontalPadding: Theme.spacingM
                         anchors.verticalCenter: parent.verticalCenter

@@ -102,7 +102,7 @@ SettingsCard {
                         title: I18n.tr("Forget"),
                         message: I18n.tr("Forget \"%1\"?").arg(port.id),
                         confirmText: I18n.tr("Forget"),
-                        confirmColor: Theme.error,
+                        danger: true,
                         onConfirm: () => NetworkService.deleteConnection(port.uuid, response => {
                             if (response?.error)
                                 ToastService.showError(I18n.tr("Failed to forget %1", "toast title, %1 is a network connection name").arg(port.id), response.error);

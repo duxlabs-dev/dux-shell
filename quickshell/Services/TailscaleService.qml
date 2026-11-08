@@ -45,7 +45,7 @@ Singleton {
     property var prefs: ({})
     property string authUrl: ""
     property bool loginRequested: false
-    readonly property bool prefsSupported: DMSService.apiVersion >= 38
+    readonly property bool prefsSupported: DMSService.apiVersion >= 41
     readonly property bool canWritePrefs: available && prefsSupported
 
     property bool available: false

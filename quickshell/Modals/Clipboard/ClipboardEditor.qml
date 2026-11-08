@@ -350,8 +350,6 @@ Item {
 
                 DButton {
                     text: I18n.tr("Save")
-                    backgroundColor: Theme.primary
-                    textColor: Theme.onPrimary
                     onClicked: root.saveEntry("history")
                 }
 

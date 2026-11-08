@@ -30,35 +30,29 @@ BasePill {
     readonly property bool showPower: BatteryService.isCharging ? showPowerCharging : showPowerDischarging
     readonly property bool critical: SettingsData.batteryCriticalAnimation && BatteryService.isCriticalBattery && !BatteryService.isCharging
     property real criticalPulse: 0
-    readonly property color criticalForeground: battery.mixColor(Theme.error, Theme.surface, criticalPulse)
+    readonly property color criticalForeground: noBackground ? battery.mixColor(Theme.error, defaultContentColor, criticalPulse) : battery.mixColor(Theme.error, Theme.surface, criticalPulse)
 
-    fillColor: critical ? battery.mixColor(defaultFillColor, Theme.error, criticalPulse) : defaultFillColor
-    contentColor: critical ? battery.mixColor(defaultContentColor, Theme.surface, criticalPulse) : defaultContentColor
+    fillColor: critical && !noBackground ? battery.mixColor(defaultFillColor, Theme.error, criticalPulse) : defaultFillColor
+    contentColor: critical ? (noBackground ? criticalForeground : battery.mixColor(defaultContentColor, Theme.surface, criticalPulse)) : defaultContentColor
 
     function mixColor(from, to, progress) {
         return Qt.rgba(from.r + (to.r - from.r) * progress, from.g + (to.g - from.g) * progress, from.b + (to.b - from.b) * progress, from.a + (to.a - from.a) * progress);
     }
 
-    SequentialAnimation on criticalPulse {
+    property int criticalTick: 0
+
+    // Stepped on purpose: an Animation repaints the bar at the full refresh rate.
+    Timer {
+        interval: 50
+        repeat: true
         running: battery.critical && battery.surfaceLive && !SettingsData.reduceMotion
-        loops: Animation.Infinite
         onRunningChanged: {
-            if (!running)
-                battery.criticalPulse = 0;
+            battery.criticalTick = 0;
+            battery.criticalPulse = 0;
         }
-
-        NumberAnimation {
-            from: 0
-            to: 1
-            duration: 1000
-            easing.type: Easing.Linear
-        }
-
-        NumberAnimation {
-            from: 1
-            to: 0
-            duration: 1000
-            easing.type: Easing.Linear
+        onTriggered: {
+            battery.criticalTick = (battery.criticalTick + 1) % 40;
+            battery.criticalPulse = 1 - Math.abs(20 - battery.criticalTick) / 20;
         }
     }
 
@@ -102,7 +96,7 @@ BasePill {
     readonly property string horizontalDisplayText: {
         const parts = [];
         if (showPercent) {
-            parts.push(`${BatteryService.batteryLevel}%`);
+            parts.push(`${BatteryService.displayBatteryLevelText}%`);
         }
         if (showTime && batteryTimeText) {
             parts.push(showPercent ? `(${batteryTimeText})` : batteryTimeText);
@@ -120,7 +114,7 @@ BasePill {
         }
         const parts = [];
         if (showPercent && batteryStyle === "duo") {
-            parts.push(`${BatteryService.batteryLevel}%`);
+            parts.push(`${BatteryService.displayBatteryLevelText}%`);
         }
         if (showTime && batteryTimeText) {
             parts.push(batteryTimeText);
@@ -134,7 +128,7 @@ BasePill {
     readonly property string verticalDisplayText: {
         const lines = [];
         if (showPercent) {
-            lines.push(BatteryService.batteryLevel.toString());
+            lines.push(BatteryService.displayBatteryLevelText);
         }
         if (showTime && batteryTimeText) {
             lines.push(verticalBatteryTimeText);
@@ -278,11 +272,7 @@ BasePill {
                 }
 
                 NumericText {
-                    isMonospace: false
                     text: battery.horizontalSideText
-                    reserveText: battery.horizontalSideText.replace(/\d/g, "0")
-                    width: Math.ceil(Math.max(implicitWidth, reservedWidth))
-                    horizontalAlignment: Text.AlignHCenter
                     font.pixelSize: Theme.barTextSize(battery.barThickness, battery.barConfig?.fontScale, battery.barConfig?.maximizeWidgetText)
                     color: battery.contentColor
                     anchors.verticalCenter: parent.verticalCenter

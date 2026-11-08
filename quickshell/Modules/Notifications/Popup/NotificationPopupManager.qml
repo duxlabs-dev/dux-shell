@@ -557,6 +557,13 @@ QtObject {
     }
 
     Component.onCompleted: _sync(NotificationService.visibleNotifications)
+    Component.onDestruction: {
+        for (const p of popupWindows)
+            p?.destroy();
+        const screenName = manager.modelData?.name || "";
+        if (screenName)
+            ConnectedModeState.releaseSurface(screenName, "notification", "notification:" + screenName);
+    }
     onPopupSpacingChanged: _repositionAll()
     onNotificationConnectedModeChanged: _scheduleNotificationChromeSync()
     onCloseGapNotificationsChanged: _scheduleNotificationChromeSync()

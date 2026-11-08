@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"math"
 	"os"
 	"os/exec"
@@ -20,7 +19,6 @@ import (
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/dank16"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
-	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/godbus/dbus/v5"
 	"github.com/lucasb-eyer/go-colorful"
@@ -44,7 +42,6 @@ const (
 	TemplateKindGTK
 	TemplateKindVSCode
 	TemplateKindEmacs
-	TemplateKindMango
 )
 
 type TemplateDef struct {
@@ -63,7 +60,7 @@ var templateRegistry = []TemplateDef{
 	{ID: "gtk", Kind: TemplateKindGTK, RunUnconditionally: true},
 	{ID: "niri", Commands: []string{"niri"}, ConfigFile: "niri.toml"},
 	{ID: "hyprland", Commands: []string{"Hyprland"}, ConfigFile: "hyprland.toml"},
-	{ID: "mangowc", Commands: []string{"mango"}, ConfigFile: "mangowc.toml", RequiredEnv: "MANGO_INSTANCE_SIGNATURE", Kind: TemplateKindMango},
+	{ID: "mangowc", Commands: []string{"mango"}, ConfigFile: "mangowc.toml", RequiredEnv: "MANGO_INSTANCE_SIGNATURE"},
 	{ID: "qt5ct", Commands: []string{"qt5ct"}, ConfigFile: "qt5ct.toml"},
 	{ID: "qt6ct", Commands: []string{"qt6ct"}, ConfigFile: "qt6ct.toml"},
 	{ID: "fcitx5", Commands: []string{"fcitx5"}, ConfigDirs: []string{"fcitx5"}, ConfigFile: "fcitx5.toml"},
@@ -84,28 +81,6 @@ var templateRegistry = []TemplateDef{
 	{ID: "vscode", Kind: TemplateKindVSCode},
 	{ID: "emacs", Commands: []string{"emacs"}, ConfigFile: "emacs.toml", Kind: TemplateKindEmacs},
 	{ID: "zed", Commands: []string{"zed", "zeditor", "zedit"}, ConfigFile: "zed.toml"},
-}
-
-func (c *ColorMode) GTKTheme() string {
-	switch *c {
-	case ColorModeDark:
-		return "adw-gtk3-dark"
-	default:
-		return "adw-gtk3"
-	}
-}
-
-// GTKRefreshTheme is the built-in theme the gtk-theme round trip passes through
-// to make GTK3 reload gtk.css. It must match the mode's polarity: an empty or
-// light name resolves to Adwaita, and toolkit-following apps (Chromium/Electron
-// without a settings portal) latch light when the restore lands mid-repaint.
-func (c *ColorMode) GTKRefreshTheme() string {
-	switch *c {
-	case ColorModeDark:
-		return "HighContrastInverse"
-	default:
-		return "Adwaita"
-	}
 }
 
 var (
@@ -553,7 +528,12 @@ func buildOnce(opts *Options) (bool, error) {
 		default:
 			syncAccentColor(primaryDark)
 		}
-		refreshGTKTheme(opts.Mode)
+		// Switch the mode before pulsing so apps following it never show the new
+		// colors in the old mode; the pulse reaches apps that pin their own scheme
+		if opts.SyncModeWithPortal {
+			syncColorScheme(opts.Mode)
+		}
+		pulseReducedMotion()
 		refreshGTKColorScheme()
 	}
 
@@ -667,7 +647,7 @@ func userConfigSection(opts *Options) string {
 	if err != nil {
 		return "[config]\n\n"
 	}
-	section := extractTOMLSection(string(data), "[config]", "[templates]")
+	section := extractTOMLSection(string(data), "[config]", "\n[templates")
 	if section == "" {
 		return "[config]\n\n"
 	}
@@ -713,24 +693,13 @@ output_path = '%s'
 
 		switch tmpl.Kind {
 		case TemplateKindGTK:
-			switch opts.Mode {
-			case ColorModeLight:
-				appendConfig(opts, cfgFile, nil, nil, nil, "gtk3-light.toml")
-			default:
-				appendConfig(opts, cfgFile, nil, nil, nil, "gtk3-dark.toml")
-			}
+			appendConfig(opts, cfgFile, nil, nil, nil, "gtk.toml")
 		case TemplateKindTerminal:
 			appendTerminalConfig(opts, cfgFile, tmpDir, tmpl.Commands, tmpl.Flatpaks, tmpl.ConfigFile)
 		case TemplateKindVSCode:
 			for _, editor := range vscodeEditors {
 				appendVSCodeConfig(cfgFile, editor.name, editor.extensionsDir(homeDir), opts.ShellDir)
 			}
-		case TemplateKindMango:
-			configFile := tmpl.ConfigFile
-			if mangoconf.Detect() == mangoconf.Snake {
-				configFile = "mangowc-snake.toml"
-			}
-			appendConfig(opts, cfgFile, tmpl.Commands, tmpl.Flatpaks, tmpl.ConfigDirs, configFile)
 		case TemplateKindEmacs:
 			if utils.EmacsConfigDir() != "" {
 				appendConfig(opts, cfgFile, tmpl.Commands, tmpl.Flatpaks, tmpl.ConfigDirs, tmpl.ConfigFile)
@@ -749,7 +718,7 @@ output_path = '%s'
 
 	if opts.RunUserTemplates {
 		if data, err := os.ReadFile(userConfigPath); err == nil {
-			templatesSection := extractTOMLSection(string(data), "[templates]", "")
+			templatesSection := extractTOMLSection("\n"+string(data), "\n[templates", "\n[config]")
 			if templatesSection != "" {
 				cfgFile.WriteString(templatesSection)
 				cfgFile.WriteString("\n")
@@ -965,6 +934,7 @@ var vscodeEditors = []vscodeEditor{
 	{"cursor", ".cursor"},
 	{"windsurf", ".windsurf"},
 	{"positron", ".positron"},
+	{"antigravity", ".antigravity-ide"},
 	{"vscode-insiders", ".vscode-insiders"},
 }
 
@@ -1154,21 +1124,32 @@ func runMatugen(baseArgs []string, sourceMode string) error {
 
 // matugen's stderr is echoed as before and its tail travels in the error, so a failure
 // reaching the shell through the socket still names the broken template or option.
+// It goes through a file, not a pipe: with a pipe, Wait blocks until every hook
+// child that inherited stderr exits, and a backgrounded post_hook never does (#3901).
 func execMatugen(args []string) error {
+	stderrFile, err := os.CreateTemp("", "matugen-stderr-*")
+	if err != nil {
+		return fmt.Errorf("matugen: %w", err)
+	}
+	defer os.Remove(stderrFile.Name())
+	defer stderrFile.Close()
+
 	cmd := exec.Command("matugen", args...)
 	cmd.Env = utils.EnvWithUserBinPath(nil)
 	cmd.Stdout = os.Stdout
-	var stderr bytes.Buffer
-	cmd.Stderr = io.MultiWriter(os.Stderr, &stderr)
-	err := cmd.Run()
-	if err == nil {
+	cmd.Stderr = stderrFile
+	runErr := cmd.Run()
+
+	stderr, _ := os.ReadFile(stderrFile.Name())
+	os.Stderr.Write(stderr)
+	if runErr == nil {
 		return nil
 	}
-	tail := stderrTail(stderr.String(), 6)
+	tail := stderrTail(string(stderr), 6)
 	if tail == "" {
-		return fmt.Errorf("matugen: %w", err)
+		return fmt.Errorf("matugen: %w", runErr)
 	}
-	return fmt.Errorf("matugen: %w\n%s", err, tail)
+	return fmt.Errorf("matugen: %w\n%s", runErr, tail)
 }
 
 var ansiEscapeRe = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
@@ -1218,11 +1199,7 @@ func writeDryRunConfig(opts *Options) (string, error) {
 	}
 	defer cfgFile.Close()
 
-	section := userConfigSection(opts)
-	if idx := strings.Index(section, "\n[templates"); idx != -1 {
-		section = section[:idx+1]
-	}
-	cfgFile.WriteString(section)
+	cfgFile.WriteString(userConfigSection(opts))
 	cfgFile.WriteString("[templates]\n")
 	return cfgFile.Name(), nil
 }
@@ -1382,20 +1359,22 @@ func generateDank16Variants(primaryDark, primaryLight, surfaceDark, surfaceLight
 	return dank16.GenerateVariantJSON(variantColors)
 }
 
+// Must match dank_colors_active in quickshell/scripts/gtk.sh.
 func isDMSGTKActive(configDir string) bool {
-	gtkCSS := filepath.Join(configDir, "gtk-4.0", "gtk.css")
-
-	info, err := os.Lstat(gtkCSS)
-	if err != nil {
-		return false
+	for _, dir := range []string{"gtk-4.0", "gtk-3.0"} {
+		if cssUsesDankColors(filepath.Join(configDir, dir, "gtk.css")) {
+			return true
+		}
 	}
+	return false
+}
 
-	if info.Mode()&os.ModeSymlink != 0 {
-		target, err := os.Readlink(gtkCSS)
-		return err == nil && strings.Contains(target, "dank-colors.css")
+// A user-managed symlink (home-manager) points elsewhere but can still import us.
+func cssUsesDankColors(path string) bool {
+	if target, err := os.Readlink(path); err == nil && strings.Contains(target, "dank-colors.css") {
+		return true
 	}
-
-	data, err := os.ReadFile(gtkCSS)
+	data, err := os.ReadFile(path)
 	return err == nil && strings.Contains(string(data), "dank-colors.css")
 }
 
@@ -1440,36 +1419,6 @@ func applyKDEColorScheme(mode ColorMode) {
 	}
 }
 
-func gtkThemeInstalled(theme string) bool {
-	home, _ := os.UserHomeDir()
-	candidates := []string{
-		filepath.Join(home, ".local/share/themes", theme),
-		filepath.Join(home, ".themes", theme),
-		filepath.Join("/usr/share/themes", theme),
-		filepath.Join("/usr/local/share/themes", theme),
-	}
-	for _, dir := range candidates {
-		if info, err := os.Stat(dir); err == nil && info.IsDir() {
-			return true
-		}
-	}
-	return false
-}
-
-func refreshGTKTheme(mode ColorMode) {
-	theme := mode.GTKTheme()
-	if !gtkThemeInstalled(theme) {
-		log.Infof("Skipping gtk-theme refresh: %s is not installed", theme)
-		return
-	}
-	if err := utils.GsettingsSet("org.gnome.desktop.interface", "gtk-theme", mode.GTKRefreshTheme()); err != nil {
-		log.Warnf("Failed to reset gtk-theme: %v", err)
-	}
-	if err := utils.GsettingsSet("org.gnome.desktop.interface", "gtk-theme", theme); err != nil {
-		log.Warnf("Failed to set gtk-theme: %v", err)
-	}
-}
-
 var colorSchemeEchoHook func(scheme string)
 
 func SetColorSchemeEchoHook(hook func(scheme string)) {
@@ -1486,6 +1435,30 @@ func expectColorSchemeEcho(scheme string) {
 // apps reload ~/.config/gtk-4.0 CSS (a gtk-theme flip does not). But apps
 // following the portal color-scheme (Chromium) can drop the restore signal
 // mid-repaint and latch the wrong mode, so this is opt-in.
+// GTK 4.22+ re-reads gtk.css imports when prefers-reduced-motion changes, so a
+// round trip refreshes open apps without the flash of a color-scheme flip.
+func pulseReducedMotion() {
+	const schema, key = "org.gnome.desktop.a11y.interface", "reduced-motion"
+	output, err := utils.GsettingsGet(schema, key)
+	if err != nil {
+		return
+	}
+	current := strings.Trim(output, "'")
+	toggle := "reduce"
+	if current == "reduce" {
+		toggle = "no-preference"
+	}
+	if err := utils.GsettingsSet(schema, key, toggle); err != nil {
+		log.Debugf("Failed to toggle reduced-motion for GTK4 refresh: %v", err)
+		return
+	}
+	// Let the portal emit the first change before restoring.
+	time.Sleep(100 * time.Millisecond)
+	if err := utils.GsettingsSet(schema, key, current); err != nil {
+		log.Warnf("Failed to restore reduced-motion after GTK4 refresh: %v", err)
+	}
+}
+
 func refreshGTKColorScheme() {
 	if os.Getenv("DMS_ENABLE_GTK_REFRESH") != "1" {
 		return
@@ -1548,17 +1521,29 @@ func signalTerminals(opts *Options) {
 	}
 }
 
-func syncColorScheme(mode ColorMode) {
+func colorSchemeTarget(mode ColorMode, current string) (string, bool) {
 	scheme := "prefer-dark"
 	if mode == ColorModeLight {
 		scheme = "default"
 	}
+	if current == scheme || (mode == ColorModeLight && current == "prefer-light") {
+		return scheme, false
+	}
+	return scheme, true
+}
 
-	if cur, err := utils.GsettingsGet("org.gnome.desktop.interface", "color-scheme"); err == nil {
-		cur = strings.Trim(cur, "'")
-		if cur == scheme || (mode == ColorModeLight && cur == "prefer-light") {
-			return
-		}
+func currentColorScheme() string {
+	cur, err := utils.GsettingsGet("org.gnome.desktop.interface", "color-scheme")
+	if err != nil {
+		return ""
+	}
+	return strings.Trim(cur, "'")
+}
+
+func syncColorScheme(mode ColorMode) {
+	scheme, needed := colorSchemeTarget(mode, currentColorScheme())
+	if !needed {
+		return
 	}
 
 	if err := utils.GsettingsSet("org.gnome.desktop.interface", "color-scheme", scheme); err != nil {

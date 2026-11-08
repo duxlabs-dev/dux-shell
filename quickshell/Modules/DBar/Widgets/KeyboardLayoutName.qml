@@ -12,7 +12,7 @@ BasePill {
     property bool compactMode: SettingsData.widgetOption("keyboard_layout_name", widgetData, "keyboardLayoutNameCompactMode")
     property bool showIcon: SettingsData.widgetOption("keyboard_layout_name", widgetData, "keyboardLayoutNameShowIcon")
     readonly property var labelOverrides: SettingsData.widgetOption("keyboard_layout_name", widgetData, "keyboardLayoutNameLabelOverrides") ?? ({})
-    readonly property var validVariants: ["US", "UK", "GB", "AZERTY", "QWERTY", "Dvorak", "Colemak", "Mac", "Intl", "International"]
+    readonly property var validVariants: KeyboardLayoutLabels.VALID_VARIANTS
     readonly property bool codesOnly: KeyboardLayoutService.namesAreXkbCodes
     readonly property string currentLayout: compactMode ? KeyboardLayoutService.compactLayout : KeyboardLayoutService.currentLayout
     readonly property var _allLayoutLabels: (compactMode || !codesOnly ? KeyboardLayoutService.layoutNames : []).map(n => displayLabel(n))
@@ -67,11 +67,8 @@ BasePill {
                 }
 
                 NumericText {
-                    isMonospace: false
                     text: root.verticalLabel(root.currentLayout)
                     reserveText: root.widestLabel(root._allVerticalLabels, labelMetrics)
-                    width: Math.ceil(Math.max(implicitWidth, reservedWidth))
-                    horizontalAlignment: Text.AlignHCenter
                     font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: root.contentColor
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -95,11 +92,8 @@ BasePill {
                 NumericText {
                     id: horizontalLabel
 
-                    isMonospace: false
                     text: root.displayLabel(root.currentLayout)
                     reserveText: root.widestLabel(root._allLayoutLabels, labelMetrics)
-                    width: Math.ceil(Math.max(implicitWidth, reservedWidth))
-                    horizontalAlignment: Text.AlignHCenter
                     font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     color: root.contentColor
                     anchors.verticalCenter: parent.verticalCenter

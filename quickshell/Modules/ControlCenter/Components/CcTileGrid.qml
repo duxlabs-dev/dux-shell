@@ -4,6 +4,7 @@ import QtQuick
 import qs.Common
 import qs.Widgets
 import qs.Modules.ControlCenter
+import "../utils/sections.js" as Sections
 import "../utils/widgets.js" as WidgetUtils
 import "../../../Common/GridLayout.js" as GridUtils
 
@@ -16,6 +17,17 @@ DEditableGrid {
     property int columns: CcMetrics.gridColumns
     property real availableHeight: CcMetrics.fallbackScreenHeight - CcMetrics.maxHeightInset
     readonly property int maximumRows: CcMetrics.rowCapFor(availableHeight, cellWidth - CcMetrics.gridGap)
+    // The detail band opens under this tile's row and pushes the rows below it down. While a band is shown the
+    // slots follow its animated height frame by frame instead of running their own motion, so one animation drives
+    // both; the section is the band's own, which it keeps until it has fully collapsed.
+    property string expandedSection: ""
+    property real bandHeight: 0
+    property real bandTargetHeight: 0
+    property bool bandMoving: false
+    readonly property int expandedIndex: indexForSection(expandedSection)
+    readonly property real bandY: slotLayout.bandY ?? 0
+    readonly property real baseHeight: baseLayout.totalHeight
+    readonly property real targetHeight: GridUtils.insertBand(baseLayout, expandedIndex, expandedSection !== "" ? bandTargetHeight : 0).totalHeight
 
     signal expandClicked(var widgetData)
     signal removeWidget(int index)
@@ -44,20 +56,34 @@ DEditableGrid {
     readonly property var shownIndices: savedWidgets.reduce((indices, widget, i) => !WidgetUtils.inGroup(widget, groupIds) && WidgetUtils.isShown(widget) && model?.componentForWidget(widget) ? indices.concat([i]) : indices, [])
 
     sourceItems: shownIndices.map(i => Object.assign({}, savedWidgets[i], sizeWithHiddenTwin(i)))
-    slotLayout: {
+    readonly property var baseLayout: {
         const items = clamped(layoutItems);
         const layout = GridUtils.packCards(items, placementOrder, columns, width, CcMetrics.gridGap, cellWidth - CcMetrics.gridGap, I18n.isRtl, null, CcMetrics.gridStep, true);
         return GridUtils.shrinkRows(layout, items.map(item => WidgetUtils.isSmall(item, item.h)), CcMetrics.smallRowHeight);
     }
+    // Whole pixels keep the rows crisp while they ride the band's animation.
+    slotLayout: GridUtils.insertBand(baseLayout, expandedIndex, Math.round(bandHeight))
+    holdLayout: bandMoving
     gravity: true
     rowStep: CcMetrics.gridStep
     packer: items => GridUtils.packCells(clamped(items), placementOrder, columns, null, CcMetrics.gridStep, true).cells
-    placeholderRadius: draggingSlot?.small ? Theme.fullRadius(draggingSlot.width, draggingSlot.height) : (draggingSlot?.tileItem?.bodyRadius ?? Theme.fullRadius(width, CcMetrics.tileHeight))
+    placeholderRadius: draggingSlot?.small ? CcMetrics.pillRadius(draggingSlot.width, draggingSlot.height) : (draggingSlot?.tileItem?.bodyRadius ?? CcMetrics.pillRadius(width, CcMetrics.tileHeight))
 
     commitHandler: items => model.setLayout(withHidden(items))
     onEditModeChanged: {
         if (!editMode)
             memberDragging = false;
+    }
+
+    // A grouped member expands under its group's tile.
+    function indexForSection(section) {
+        if (section === "")
+            return -1;
+        const widget = Sections.widgetForSection(section);
+        const target = widget?.group ? savedWidgets.find(other => other?.id === WidgetUtils.GROUP_ID && other.instanceId === widget.group) : widget;
+        if (!target)
+            return -1;
+        return sourceItems.findIndex(item => item.id === target.id && (item.instanceId || "") === (target.instanceId || ""));
     }
 
     function clamped(items) {

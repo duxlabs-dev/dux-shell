@@ -55,7 +55,7 @@ Rectangle {
 
     function saveDisplayImage() {
         const data = root.notificationData;
-        if (!root.persistImage || !data?.hasDisplayImage || data.persistedImagePath)
+        if (!root.persistImage || !data?.notification || !data.hasDisplayImage || data.persistedImagePath)
             return;
         const image = data.image || "";
         if (!image.startsWith("image://qsimage/") && !NotificationService.notificationIconFromImage(image).startsWith("/"))
@@ -173,7 +173,7 @@ Rectangle {
         AppIconRenderer {
             anchors.fill: parent
             visible: !appImage.visible
-            iconValue: root.dmsIcon ? "svg:" + Theme.shellDir + "/assets/danklogonormal.svg" : NotificationService.notificationFallbackIcon(root.headerOnly ? "" : root.notificationData?.image || "", root.appIcon)
+            iconValue: root.dmsIcon ? "svg:" + Theme.shellDir + "/assets/danklogonormal.svg" : NotificationService.notificationFallbackIcon(root.notificationData?.image || "", root.appIcon)
             iconSize: NotificationMetrics.appIconSize
             iconColor: Theme.onSurfaceVariant
             colorOverride: root.dmsIcon ? Theme.primary : "transparent"
@@ -267,8 +267,6 @@ Rectangle {
                     DActionButton {
                         visible: root.interactive && root.canExpand && root.groupCount <= 1
                         iconName: root.descriptionExpanded ? "expand_less" : "expand_more"
-                        backgroundColor: root.chipColor
-                        width: NotificationMetrics.controlSize + Theme.spacingS
                         buttonSize: NotificationMetrics.controlSize
                         iconSize: Theme.iconSizeSmall
                         Accessible.name: root.descriptionExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
@@ -411,8 +409,7 @@ Rectangle {
                         buttonHeight: NotificationMetrics.actionHeight
                         horizontalPadding: NotificationMetrics.actionPadding
                         minimumWidth: 0
-                        backgroundColor: "transparent"
-                        textColor: Theme.primary
+                        variant: "text"
                         onClicked: root.actionRequested(modelData)
                     }
                 }
@@ -425,8 +422,7 @@ Rectangle {
                     buttonHeight: NotificationMetrics.actionHeight
                     horizontalPadding: NotificationMetrics.actionPadding
                     minimumWidth: 0
-                    backgroundColor: "transparent"
-                    textColor: Theme.primary
+                    variant: "text"
                     onClicked: root.dismissRequested()
                 }
             }

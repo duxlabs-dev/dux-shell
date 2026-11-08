@@ -625,6 +625,7 @@ Item {
 
             leading: Loader {
                 active: wifiRow.isConnecting
+                visible: active
                 sourceComponent: DSpinner {
                     size: Theme.iconSizeMedium
                     strokeWidth: CcMetrics.spinnerStroke
@@ -635,6 +636,7 @@ Item {
             Loader {
                 anchors.verticalCenter: parent.verticalCenter
                 active: wifiRow.sharesQrCode
+                visible: active
                 sourceComponent: DActionButton {
                     buttonSize: Theme.buttonHeightXS
                     iconSize: Theme.iconSizeMedium

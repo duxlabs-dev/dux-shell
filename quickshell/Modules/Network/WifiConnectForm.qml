@@ -43,11 +43,16 @@ Column {
     readonly property bool isCertificatePrompt: promptReason === "server-certificate" || isCertificateChangedPrompt
     readonly property bool isWiredPrompt: isPromptMode && !isVpnPrompt && connectionType !== "802-11-wireless"
     readonly property string serverCertificateFingerprint: promptHints.length > 0 ? promptHints[0] : ""
+    readonly property string vpnPromptMessage: {
+        const hint = promptHints.find(h => typeof h === "string" && h.startsWith("x-vpn-message:"));
+        return hint ? hint.slice("x-vpn-message:".length) : "";
+    }
+    readonly property bool isChallengePrompt: promptHints.some(h => typeof h === "string" && h.startsWith("x-dynamic-challenge"))
     readonly property bool showEnterpriseForm: requiresEnterprise && !isVpnPrompt && !isPromptMode
     readonly property bool hiddenNeedsPassword: hiddenSecurity === "wpa-psk" || hiddenSecurity === "sae"
     readonly property bool showUsernameField: requiresEnterprise && !isVpnPrompt && isPromptMode && fieldsInfo.length === 0
     readonly property bool showPasswordField: fieldsInfo.length === 0 && !isCertificatePrompt && !showEnterpriseForm && (!isHiddenNetwork || hiddenNeedsPassword)
-    readonly property bool showSavePasswordCheckbox: isVpnPrompt && promptReason !== "pkcs11" && !isCertificatePrompt
+    readonly property bool showSavePasswordCheckbox: isVpnPrompt && promptReason !== "pkcs11" && !isCertificatePrompt && !isChallengePrompt
     readonly property var hiddenSecurityChoices: {
         const choices = [[I18n.tr("Open", "network security type", true), "none"], ["WPA/WPA2", "wpa-psk"], ["WPA3", "sae"], ["OWE", "owe"]];
         if (NetworkService.enterpriseSupported)
@@ -100,16 +105,18 @@ Column {
     }
     readonly property string supportingText: {
         if (promptReason === "pkcs11")
-            return I18n.tr("Enter PIN for ") + wifiPasswordSSID;
+            return I18n.tr("Enter PIN for %1", "%1 is the device or network name").arg(wifiPasswordSSID);
         if (isCertificatePrompt)
             return wifiPasswordSSID;
+        if (vpnPromptMessage)
+            return vpnPromptMessage;
         if (fieldsInfo.length > 0)
-            return I18n.tr("Enter credentials for ") + wifiPasswordSSID;
+            return I18n.tr("Enter credentials for %1", "%1 is the network name").arg(wifiPasswordSSID);
         if (isVpnPrompt)
-            return I18n.tr("Enter password for ") + wifiPasswordSSID;
+            return I18n.tr("Enter password for %1", "%1 is the network name").arg(wifiPasswordSSID);
         if (isHiddenNetwork)
             return hiddenNeedsPassword ? I18n.tr("Enter network name and password") : I18n.tr("Enter network name", "hidden Wi-Fi prompt subtitle when the chosen security needs no password");
-        return (requiresEnterprise ? I18n.tr("Enter credentials for ") : I18n.tr("Enter password for ")) + wifiPasswordSSID;
+        return (requiresEnterprise ? I18n.tr("Enter credentials for %1", "%1 is the network name") : I18n.tr("Enter password for %1", "%1 is the network name")).arg(wifiPasswordSSID);
     }
 
     function focusFirstField() {

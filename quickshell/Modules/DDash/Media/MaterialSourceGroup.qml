@@ -22,6 +22,7 @@ Row {
 
     DIconButton {
         id: lyricsButton
+        focusRingColor: MediaAccentService.focusRing
         variant: "outlined"
         checkable: true
         checked: root.player.lyricsOpen
@@ -66,6 +67,8 @@ Row {
 
     component GroupButton: DIconButton {
         required property string panelId
+
+        focusRingColor: MediaAccentService.focusRing
 
         readonly property bool active: root.player.panel === panelId
 

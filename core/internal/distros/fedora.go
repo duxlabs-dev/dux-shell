@@ -2,9 +2,13 @@ package distros
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"maps"
 	"os/exec"
+	"slices"
 	"strings"
+	"sync"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
 	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
@@ -21,9 +25,6 @@ func init() {
 		return NewFedoraDistribution(config, logChan)
 	})
 	Register("fedora-asahi-remix", "#0B57A4", FamilyFedora, func(config DistroConfig, logChan chan<- string) Distribution {
-		return NewFedoraDistribution(config, logChan)
-	})
-	Register("bluefin", "#0B57A4", FamilyFedora, func(config DistroConfig, logChan chan<- string) Distribution {
 		return NewFedoraDistribution(config, logChan)
 	})
 	Register("ultramarine", "#00078b", FamilyFedora, func(config DistroConfig, logChan chan<- string) Distribution {
@@ -54,6 +55,9 @@ type FedoraDistribution struct {
 	*BaseDistribution
 	*ManualPackageInstaller
 	config DistroConfig
+
+	rpmInstalled    func(pkg string) bool
+	ostreeRequested func() []string
 }
 
 func NewFedoraDistribution(config DistroConfig, logChan chan<- string) *FedoraDistribution {
@@ -106,7 +110,7 @@ func (f *FedoraDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 	}
 	dependencies = append(dependencies, wmDep)
 	dependencies = append(dependencies, f.detectQuickshell())
-	dependencies = append(dependencies, f.detectDMSGreeter())
+	dependencies = append(dependencies, f.detectGreeterPackage(f.packageInstalled))
 	dependencies = append(dependencies, f.detectXDGPortal())
 	dependencies = append(dependencies, f.detectAccountsService())
 
@@ -128,7 +132,8 @@ func (f *FedoraDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 
 	dependencies = append(dependencies, f.detectMatugen())
 	dependencies = append(dependencies, f.detectDanksearch())
-	dependencies = append(dependencies, withGitVariant(f.detectDankCalendar(), f.packageInstalled("dankcalendar-git")))
+	dependencies = append(dependencies, f.detectCalendarPackage(f.packageInstalled))
+	dependencies = append(dependencies, f.detectFilesPackage(f.packageInstalled))
 
 	return dependencies, nil
 }
@@ -138,6 +143,9 @@ func (f *FedoraDistribution) detectXDGPortal() deps.Dependency {
 }
 
 func (f *FedoraDistribution) packageInstalled(pkg string) bool {
+	if f.rpmInstalled != nil {
+		return f.rpmInstalled(pkg)
+	}
 	cmd := exec.Command("rpm", "-q", pkg)
 	err := cmd.Run()
 	return err == nil
@@ -150,19 +158,31 @@ func (f *FedoraDistribution) InstalledVariant(stable, git PackageMapping) (deps.
 	if !f.packageInstalled(stable.Name) {
 		return deps.VariantStable, false
 	}
-	if git.Repository == RepoTypeCOPR && fedoraInstalledFromCOPR(stable.Name, git.RepoURL) {
+	if git.Repository == RepoTypeCOPR && installedFromCOPR(stable.Name, git.RepoURL) {
 		return deps.VariantGit, true
 	}
 	return deps.VariantStable, true
 }
 
+var installedFromCOPR = fedoraInstalledFromCOPR
+
 // fedoraInstalledFromCOPR tells same-named variants apart (dms, niri), which only differ by COPR.
 func fedoraInstalledFromCOPR(pkg, coprRepo string) bool {
 	out, err := exec.Command("dnf", "repoquery", "--installed", "--qf", "%{from_repo}", pkg).Output()
 	if err != nil {
+		return rpmLooksLikeGitBuild(pkg)
+	}
+	return coprFromRepoMatches(string(out), coprRepo)
+}
+
+// niri-git carries "git" in its version; dms-git only differs by its Epoch of 2.
+func rpmLooksLikeGitBuild(pkg string) bool {
+	out, err := exec.Command("rpm", "-q", "--qf", "%{EPOCH} %{VERSION}-%{RELEASE}", pkg).Output()
+	if err != nil {
 		return false
 	}
-	return strings.HasSuffix(strings.TrimSpace(string(out)), ":"+strings.ReplaceAll(coprRepo, "/", ":"))
+	epoch, versionRelease, _ := strings.Cut(strings.TrimSpace(string(out)), " ")
+	return strings.Contains(versionRelease, "git") || (pkg == "dms" && epoch == "2")
 }
 
 func (f *FedoraDistribution) SwapVariants(ctx context.Context, swaps []VariantSwap, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
@@ -172,15 +192,20 @@ func (f *FedoraDistribution) SwapVariants(ctx context.Context, swaps []VariantSw
 
 	for _, swap := range swaps {
 		command := fmt.Sprintf("dnf swap -y %s %s", swap.From.Name, swap.To.Name)
-		disabledRepo := ""
+		var disabledRepos []string
 		if swap.From.Name == swap.To.Name {
 			// Left enabled, the old COPR wins distro-sync whenever its version sorts higher (dms-git has Epoch 2).
+			// An un-migrated host still has it under the legacy owner, so every alias goes.
 			if swap.From.Repository == RepoTypeCOPR {
-				disable := privesc.ExecCommand(ctx, sudoPassword, "dnf copr disable -y "+swap.From.RepoURL)
-				if err := f.runWithProgress(disable, progressChan, PhaseSystemPackages, 0.30, 0.35); err != nil {
-					return fmt.Errorf("failed to disable COPR repo %s: %w", swap.From.RepoURL, err)
+				for _, repo := range coprAliases(swap.From.RepoURL) {
+					if !repoPathExists(coprRepoFile(repo)) {
+						continue
+					}
+					if err := f.coprRepoOp(ctx, "disable", repo, sudoPassword, progressChan); err != nil {
+						return err
+					}
+					disabledRepos = append(disabledRepos, repo)
 				}
-				disabledRepo = swap.From.RepoURL
 			}
 			command = "dnf distro-sync -y " + swap.To.Name
 		}
@@ -192,17 +217,70 @@ func (f *FedoraDistribution) SwapVariants(ctx context.Context, swaps []VariantSw
 			NeedsSudo:   true,
 			CommandInfo: "sudo " + command,
 		}
-		if err := f.runWithProgress(privesc.ExecCommand(ctx, sudoPassword, command), progressChan, PhaseSystemPackages, 0.40, 0.85); err != nil {
-			if disabledRepo != "" {
-				reenable := privesc.ExecCommand(ctx, sudoPassword, "dnf copr enable -y "+disabledRepo)
-				if reErr := reenable.Run(); reErr != nil {
-					f.log(fmt.Sprintf("Warning: could not re-enable COPR repo %s: %v", disabledRepo, reErr))
+		if err := f.runWithProgress(privescExec(ctx, sudoPassword, command), progressChan, PhaseSystemPackages, 0.40, 0.85); err != nil {
+			for _, repo := range disabledRepos {
+				if reErr := privescExec(ctx, sudoPassword, "dnf copr enable -y "+repo).Run(); reErr != nil {
+					f.log(fmt.Sprintf("Warning: could not re-enable COPR repo %s: %v", repo, reErr))
 				}
 			}
 			return fmt.Errorf("failed to switch %s to %s: %w", swap.From.Name, swap.To.Name, err)
 		}
 	}
 	return nil
+}
+
+func (f *FedoraDistribution) coprRepoOp(ctx context.Context, verb, repo, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
+	command := fmt.Sprintf("dnf copr %s -y %s", verb, repo)
+	progressChan <- InstallProgressMsg{
+		Phase:       PhaseSystemPackages,
+		Progress:    0.30,
+		Step:        fmt.Sprintf("Running dnf copr %s %s...", verb, repo),
+		NeedsSudo:   true,
+		CommandInfo: "sudo " + command,
+	}
+	if err := f.runWithProgress(privescExec(ctx, sudoPassword, command), progressChan, PhaseSystemPackages, 0.30, 0.35); err != nil {
+		return fmt.Errorf("failed to %s COPR repo %s: %w", verb, repo, err)
+	}
+	return nil
+}
+
+func (f *FedoraDistribution) RepoMoves() []RepoMove {
+	return coprChannel.moves(repoPathExists)
+}
+
+func (f *FedoraDistribution) ApplyRepoMoves(ctx context.Context, moves []RepoMove, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
+	if err := f.enableCOPRRepos(ctx, repoMoveAdds(moves), sudoPassword, progressChan); err != nil {
+		return err
+	}
+	for _, move := range repoMoveRemoves(moves) {
+		if err := f.coprRepoOp(ctx, "remove", move.Old, sudoPassword, progressChan); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *FedoraDistribution) RepoMoveCommands(moves []RepoMove) []string {
+	var commands []string
+	for _, add := range repoMoveAdds(moves) {
+		commands = append(commands, "sudo dnf copr enable -y "+add.RepoURL)
+	}
+	for _, move := range repoMoveRemoves(moves) {
+		commands = append(commands, "sudo dnf copr remove -y "+move.Old)
+	}
+	return commands
+}
+
+// Shown to the user, never run: image-based Fedora has no dnf copr.
+func (f *FedoraDistribution) ImageRepoMoveCommands(moves []RepoMove) []string {
+	var commands []string
+	for _, add := range repoMoveAdds(moves) {
+		commands = append(commands, f.coprRepoFileCommand(add.RepoURL))
+	}
+	for _, move := range repoMoveRemoves(moves) {
+		commands = append(commands, "sudo rm -f "+move.OldPath)
+	}
+	return commands
 }
 
 func (f *FedoraDistribution) GetPackageMapping(wm deps.WindowManager) map[string]PackageMapping {
@@ -213,7 +291,7 @@ func (f *FedoraDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 	packages := map[string]PackageMapping{
 		// Standard DNF packages
 		"git":                    {Name: "git", Repository: RepoTypeSystem},
-		"ghostty":                {Name: "ghostty", Repository: RepoTypeCOPR, RepoURL: "avengemedia/danklinux"},
+		"ghostty":                {Name: "ghostty", Repository: RepoTypeCOPR, RepoURL: coprDeps},
 		"kitty":                  {Name: "kitty", Repository: RepoTypeSystem},
 		"alacritty":              {Name: "alacritty", Repository: RepoTypeSystem},
 		"xdg-desktop-portal-gtk": {Name: "xdg-desktop-portal-gtk", Repository: RepoTypeSystem},
@@ -221,11 +299,12 @@ func (f *FedoraDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 
 		// COPR packages
 		"quickshell":      f.getQuickshellMapping(variants["quickshell"]),
-		"dms-greeter":     variantMapping("dms-greeter", variants["dms-greeter"], RepoTypeCOPR, "avengemedia/danklinux"),
-		"matugen":         {Name: "matugen", Repository: RepoTypeCOPR, RepoURL: "avengemedia/danklinux"},
+		"dux-greeter":     variantMapping("dux-greeter", variants["dux-greeter"], RepoTypeCOPR, coprDeps),
+		"matugen":         {Name: "matugen", Repository: RepoTypeCOPR, RepoURL: coprDeps},
 		"dms (Dux Shell)": f.getDmsMapping(variants["dms (Dux Shell)"]),
-		"danksearch":      {Name: "danksearch", Repository: RepoTypeCOPR, RepoURL: "avengemedia/danklinux"},
-		"dankcalendar":    variantMapping("dankcalendar", variants["dankcalendar"], RepoTypeCOPR, "avengemedia/danklinux"),
+		"dux-search":      {Name: "dux-search", Repository: RepoTypeCOPR, RepoURL: coprDeps},
+		"dux-calendar":    variantMapping("dux-calendar", variants["dux-calendar"], RepoTypeCOPR, coprDeps),
+		"dux-files":       variantMapping("dux-files", variants["dux-files"], RepoTypeCOPR, coprDeps),
 	}
 
 	switch wm {
@@ -244,10 +323,10 @@ func (f *FedoraDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 	}
 
 	if f.isEL() {
-		// EPEL 10 has neither, so the danklinux COPR builds them for the epel-10 chroots.
+		// EPEL 10 has neither, so the deps COPR builds them for the epel-10 chroots.
 		for _, name := range []string{"alacritty", "xwayland-satellite"} {
 			if _, ok := packages[name]; ok {
-				packages[name] = PackageMapping{Name: name, Repository: RepoTypeCOPR, RepoURL: "avengemedia/danklinux"}
+				packages[name] = PackageMapping{Name: name, Repository: RepoTypeCOPR, RepoURL: coprDeps}
 			}
 		}
 	}
@@ -257,16 +336,16 @@ func (f *FedoraDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 
 func (f *FedoraDistribution) getQuickshellMapping(variant deps.PackageVariant) PackageMapping {
 	if forceQuickshellGit || variant == deps.VariantGit {
-		return PackageMapping{Name: "quickshell-git", Repository: RepoTypeCOPR, RepoURL: "avengemedia/danklinux"}
+		return PackageMapping{Name: "quickshell-git", Repository: RepoTypeCOPR, RepoURL: coprDeps}
 	}
-	return PackageMapping{Name: "quickshell", Repository: RepoTypeCOPR, RepoURL: "avengemedia/danklinux"}
+	return PackageMapping{Name: "quickshell", Repository: RepoTypeCOPR, RepoURL: coprDeps}
 }
 
 func (f *FedoraDistribution) getDmsMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "dms", Repository: RepoTypeCOPR, RepoURL: "avengemedia/dms-git"}
+		return PackageMapping{Name: "dms", Repository: RepoTypeCOPR, RepoURL: coprDMSGit}
 	}
-	return PackageMapping{Name: "dms", Repository: RepoTypeCOPR, RepoURL: "avengemedia/dms"}
+	return PackageMapping{Name: "dms", Repository: RepoTypeCOPR, RepoURL: coprDMS}
 }
 
 func (f *FedoraDistribution) getHyprlandMapping(_ deps.PackageVariant) PackageMapping {
@@ -306,12 +385,6 @@ func (f *FedoraDistribution) detectAccountsService() deps.Dependency {
 		Description: "D-Bus interface for user account query and manipulation",
 		Required:    true,
 	}
-}
-
-func (f *FedoraDistribution) detectDMSGreeter() deps.Dependency {
-	gitInstalled := f.packageInstalled("dms-greeter-git")
-	dep := f.detectOptionalPackage("dms-greeter", "Dux Shell greetd greeter", gitInstalled || f.packageInstalled("dms-greeter"))
-	return withGitVariant(dep, gitInstalled)
 }
 
 func (f *FedoraDistribution) getPrerequisites() []string {
@@ -633,7 +706,7 @@ func (f *FedoraDistribution) enableCOPRRepos(ctx context.Context, coprPkgs []Pac
 				CommandInfo: fmt.Sprintf("sudo dnf copr enable -y %s", pkg.RepoURL),
 			}
 
-			cmd := privesc.ExecCommand(ctx, sudoPassword,
+			cmd := privescExec(ctx, sudoPassword,
 				fmt.Sprintf("dnf copr enable -y %s 2>&1", pkg.RepoURL))
 			output, err := cmd.CombinedOutput()
 			if err != nil {
@@ -647,7 +720,7 @@ func (f *FedoraDistribution) enableCOPRRepos(ctx context.Context, coprPkgs []Pac
 			// Special handling for niri COPR repo - set priority=1
 			if pkg.RepoURL == "yalter/niri-git" {
 				f.log("Setting priority=1 for niri-git COPR repo...")
-				repoFile := "/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:yalter:niri-git.repo"
+				repoFile := coprRepoFile("yalter/niri-git")
 				progressChan <- InstallProgressMsg{
 					Phase:       PhaseSystemPackages,
 					Progress:    0.22,
@@ -657,7 +730,7 @@ func (f *FedoraDistribution) enableCOPRRepos(ctx context.Context, coprPkgs []Pac
 					CommandInfo: fmt.Sprintf("echo \"priority=1\" | sudo tee -a %s", repoFile),
 				}
 
-				priorityCmd := privesc.ExecCommand(ctx, sudoPassword,
+				priorityCmd := privescExec(ctx, sudoPassword,
 					fmt.Sprintf("bash -c 'echo \"priority=1\" | tee -a %s'", repoFile))
 				priorityOutput, err := priorityCmd.CombinedOutput()
 				if err != nil {
@@ -743,4 +816,126 @@ func (f *FedoraDistribution) installDNFGroups(ctx context.Context, packages []st
 		}
 	}
 	return nil
+}
+
+// Image-based Fedora has rpm-ostree but no dnf, so the .repo file is fetched directly.
+func (f *FedoraDistribution) coprRepoFileCommand(repo string) string {
+	owner, project, _ := strings.Cut(repo, "/")
+	chroot := "fedora-$(rpm -E %fedora)"
+	if f.isEL() {
+		chroot = "epel-$(rpm -E %rhel)"
+	}
+	return fmt.Sprintf("sudo curl -fsSLo %s https://copr.fedorainfracloud.org/coprs/%s/%s/repo/%s/%s-%s-%s.repo",
+		coprRepoFile(repo), owner, project, chroot, owner, project, chroot)
+}
+
+// rpm-ostree status runs over D-Bus and the layer view rebuilds its commands on every render.
+var rpmOstreeRequested = sync.OnceValue(func() []string {
+	out, err := exec.Command("rpm-ostree", "status", "--json").Output()
+	if err != nil {
+		return nil
+	}
+	var status struct {
+		Deployments []struct {
+			Requested []string `json:"requested-packages"`
+		} `json:"deployments"`
+	}
+	if json.Unmarshal(out, &status) != nil || len(status.Deployments) == 0 {
+		return nil
+	}
+	return status.Deployments[0].Requested
+})
+
+func (f *FedoraDistribution) layeredRequests() map[string]bool {
+	list := f.ostreeRequested
+	if list == nil {
+		list = rpmOstreeRequested
+	}
+	requested := map[string]bool{}
+	for _, name := range list() {
+		requested[name] = true
+	}
+	return requested
+}
+
+// layeredName is what --uninstall must name: the request, which may still be the pre-rename name
+// even when its Provides already resolved to the renamed package.
+func layeredName(requested map[string]bool, pkg string) string {
+	if old, ok := renamedPackages[pkg]; ok && !requested[pkg] && requested[old] {
+		return old
+	}
+	return pkg
+}
+
+// Shown to the user, never run. Terra-only packages have no rpm-ostree path.
+func (f *FedoraDistribution) LayerCommands(dependencies []deps.Dependency, wm deps.WindowManager, reinstallFlags, disabledFlags map[string]bool) []string {
+	var commands []string
+	var uninstall []string
+	skip := maps.Clone(disabledFlags)
+	if skip == nil {
+		skip = map[string]bool{}
+	}
+	requested := f.layeredRequests()
+	// rpm-ostree refuses to install what is already layered, so a reinstall mark only means a variant switch.
+	for _, dep := range dependencies {
+		if !reinstallFlags[dep.Name] || skip[dep.Name] || dep.Status != deps.StatusInstalled {
+			continue
+		}
+		swap, status := PlanVariantSwap(f, wm, dep.Name, dep.Variant)
+		if status != SwapNeeded {
+			skip[dep.Name] = true
+			continue
+		}
+		uninstall = append(uninstall, layeredName(requested, swap.From.Name))
+		if swap.From.Name == swap.To.Name && swap.From.Repository == RepoTypeCOPR {
+			var files []string
+			for _, repo := range coprAliases(swap.From.RepoURL) {
+				files = append(files, coprRepoFile(repo))
+			}
+			commands = append(commands, "sudo rm -f "+strings.Join(files, " "))
+		}
+	}
+	dnfPkgs, coprPkgs, manualPkgs, _ := f.categorizePackages(dependencies, wm, reinstallFlags, skip)
+
+	seen := map[string]bool{}
+	pkgs := append([]string{}, dnfPkgs...)
+	for _, pkg := range coprPkgs {
+		pkgs = append(pkgs, pkg.Name)
+		if pkg.RepoURL == "" || seen[pkg.RepoURL] {
+			continue
+		}
+		seen[pkg.RepoURL] = true
+		commands = append(commands, f.coprRepoFileCommand(pkg.RepoURL))
+		if pkg.RepoURL == "yalter/niri-git" {
+			commands = append(commands, "echo priority=1 | sudo tee -a "+coprRepoFile("yalter/niri-git"))
+		}
+	}
+	// A request keeps its old name forever and resolves by name before Provides, ignoring Obsoletes.
+	for _, name := range slices.Sorted(maps.Keys(renamedPackages)) {
+		old := renamedPackages[name]
+		if !requested[old] || slices.Contains(uninstall, old) {
+			continue
+		}
+		uninstall = append(uninstall, old)
+		if !requested[name] && !slices.Contains(pkgs, name) {
+			pkgs = append(pkgs, name)
+		}
+	}
+	for _, dep := range dependencies {
+		if dep.Status == deps.StatusNeedsUpdate && !disabledFlags[dep.Name] {
+			commands = append(commands, "sudo rpm-ostree upgrade")
+			break
+		}
+	}
+	if len(pkgs) > 0 {
+		install := "sudo rpm-ostree install " + strings.Join(pkgs, " ")
+		if len(uninstall) > 0 {
+			install += " --uninstall " + strings.Join(uninstall, " ")
+		}
+		commands = append(commands, install)
+	}
+	for _, name := range manualPkgs {
+		commands = append(commands, fmt.Sprintf("# %s has no package for image-based Fedora", name))
+	}
+	return append(commands, "systemctl reboot")
 }

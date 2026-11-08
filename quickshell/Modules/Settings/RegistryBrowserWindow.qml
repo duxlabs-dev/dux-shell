@@ -175,7 +175,7 @@ DFloatingWindow {
                 iconSize: Theme.iconSizeSmall
                 iconColor: Theme.surfaceText
                 busy: root.isLoading
-                onClicked: root.refresh()
+                onClicked: root.refresh(true)
             }
         }
 
@@ -209,7 +209,6 @@ DFloatingWindow {
                     anchors.right: parent.right
                     anchors.top: aboveSearchSlot.bottom
                     anchors.topMargin: aboveSearchSlot.height > 0 ? Theme.spacingM : 0
-                    height: Theme.fieldHeightLarge
                     textColor: Theme.surfaceText
                     font.pixelSize: Theme.fontSizeMedium
                     placeholderText: root.searchPlaceholder
@@ -271,7 +270,7 @@ DFloatingWindow {
 
             Rectangle {
                 anchors.fill: parent
-                color: Theme.scrimColor
+                color: Theme.backdropColor
                 opacity: Theme.scrimAlpha
             }
 

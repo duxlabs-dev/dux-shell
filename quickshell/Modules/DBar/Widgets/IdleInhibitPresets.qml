@@ -24,7 +24,7 @@ Singleton {
             "minutes": 30
         },
         {
-            "label": I18n.tr("For %1", "timed preset menu option, %1 is a duration such as 15 minutes").arg(I18n.duration(3600)),
+            "label": I18n.tr("For 1 hour", "timed preset menu option"),
             "minutes": 60
         },
         {

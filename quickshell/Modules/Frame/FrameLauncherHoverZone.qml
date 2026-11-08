@@ -10,7 +10,7 @@ import qs.Services
 Variants {
     id: root
 
-    model: Quickshell.screens
+    model: ShellLayout.realScreens
 
     delegate: Loader {
         id: zoneLoader

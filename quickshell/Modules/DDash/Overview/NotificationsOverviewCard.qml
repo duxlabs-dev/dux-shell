@@ -8,6 +8,7 @@ Card {
     property var transientSurfaceTracker: null
     readonly property bool opensTab: false
     focusTarget: panel
+    blocksTabNavigation: panel.blocksTabNavigation
     activeFocusOnTab: interactive
 
     function handleKeyEvent(event) {

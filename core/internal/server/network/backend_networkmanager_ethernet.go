@@ -149,20 +149,8 @@ func (p wiredProfile) fits(devName, devHw string) bool {
 	return !p.isPort && profileFitsEthernetDevice(p.ifaceName, p.mac, devName, devHw)
 }
 
-func (b *NetworkManagerBackend) wiredSettings() (gonetworkmanager.Settings, error) {
-	if s, ok := b.settings.(gonetworkmanager.Settings); ok {
-		return s, nil
-	}
-	s, err := gonetworkmanager.NewSettings()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get settings: %w", err)
-	}
-	b.settings = s
-	return s, nil
-}
-
 func (b *NetworkManagerBackend) listWiredProfiles() ([]wiredProfile, error) {
-	settingsMgr, err := b.wiredSettings()
+	settingsMgr, err := b.networkManagerSettings()
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +315,7 @@ func (b *NetworkManagerBackend) ActivateWiredConnection(uuid, device string) err
 		dev = info.device
 	}
 
-	settingsMgr, err := b.wiredSettings()
+	settingsMgr, err := b.networkManagerSettings()
 	if err != nil {
 		return err
 	}

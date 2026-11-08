@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
+	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
 	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -97,97 +97,13 @@ func mergePolicyFile(base *immutableCommandPolicy, path string) error {
 	return nil
 }
 
-func readOSReleaseMap(path string) map[string]string {
-	values := make(map[string]string)
-
-	file, err := os.Open(path)
-	if err != nil {
-		return values
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		key := strings.ToUpper(strings.TrimSpace(parts[0]))
-		value := strings.Trim(strings.TrimSpace(parts[1]), "\"")
-		values[key] = strings.ToLower(value)
-	}
-
-	return values
-}
-
-func hasAnyToken(text string, tokens ...string) bool {
-	if text == "" {
-		return false
-	}
-	for _, token := range tokens {
-		if strings.Contains(text, token) {
-			return true
-		}
-	}
-	return false
-}
-
-func detectImmutableSystem() (bool, string) {
-	if _, err := os.Stat("/run/ostree-booted"); err == nil {
-		return true, "/run/ostree-booted is present"
-	}
-
-	osRelease := readOSReleaseMap("/etc/os-release")
-	if len(osRelease) == 0 {
-		return false, ""
-	}
-
-	id := osRelease["ID"]
-	idLike := osRelease["ID_LIKE"]
-	variantID := osRelease["VARIANT_ID"]
-	name := osRelease["NAME"]
-	prettyName := osRelease["PRETTY_NAME"]
-
-	immutableIDs := map[string]bool{
-		"bluefin":       true,
-		"bazzite":       true,
-		"silverblue":    true,
-		"kinoite":       true,
-		"sericea":       true,
-		"onyx":          true,
-		"aurora":        true,
-		"fedora-iot":    true,
-		"fedora-coreos": true,
-	}
-	if immutableIDs[id] {
-		return true, "os-release ID=" + id
-	}
-
-	markers := []string{"silverblue", "kinoite", "sericea", "onyx", "bazzite", "bluefin", "aurora", "ostree", "atomic"}
-	if hasAnyToken(variantID, markers...) {
-		return true, "os-release VARIANT_ID=" + variantID
-	}
-	if hasAnyToken(idLike, "ostree", "rpm-ostree") {
-		return true, "os-release ID_LIKE=" + idLike
-	}
-	if hasAnyToken(name, markers...) || hasAnyToken(prettyName, markers...) {
-		return true, "os-release identifies an atomic/ostree variant"
-	}
-
-	return false, ""
-}
-
 func getImmutablePolicy() (*immutableCommandPolicy, error) {
 	immutablePolicyOnce.Do(func() {
-		detectedImmutable, reason := detectImmutableSystem()
+		detectedImmutable, reason := distros.DetectImmutable()
 		immutablePolicy = immutableCommandPolicy{
 			ImmutableSystem: detectedImmutable,
 			ImmutableReason: reason,
-			BlockedCommands: []string{"greeter install", "greeter enable", "setup"},
+			BlockedCommands: nil,
 			Message:         "This command is disabled on immutable/image-based systems. Use your distro-native workflow for system-level changes.",
 		}
 

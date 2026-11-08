@@ -3,10 +3,11 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.Common
 import qs.Services
 
 Variants {
-    model: Quickshell.screens
+    model: ShellLayout.realScreens
 
     Scope {
         id: scope
@@ -19,7 +20,7 @@ Variants {
 
         Loader {
             id: preparation
-            active: scope.sampling || (!IdleService.isShellLocked && LockPlacementService.neededFor(scope.modelData) && scope.failedKey !== scope.backgroundKey && !LockPlacementService.hasSample(scope.modelData.name, scope.backgroundKey))
+            active: scope.sampling || (!IdleService.isShellLocked && !LockPlacementService.usesScrollAtlas(scope.modelData.name) && LockPlacementService.neededFor(scope.modelData) && scope.failedKey !== scope.backgroundKey && !LockPlacementService.hasSample(scope.modelData.name, scope.backgroundKey))
             asynchronous: true
 
             sourceComponent: PanelWindow {
@@ -43,6 +44,7 @@ Variants {
                         id: background
                         anchors.fill: parent
                         screenName: scope.modelData.name
+                        asynchronous: true
                     }
 
                     LockBackgroundSampler {

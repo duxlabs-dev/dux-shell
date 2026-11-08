@@ -10,6 +10,8 @@ import qs.Services
 Scope {
     id: root
 
+    readonly property var log: Log.scoped("Pam")
+
     property bool lockSecured: false
     property bool unlockInProgress: false
 
@@ -96,6 +98,8 @@ Scope {
         if (!root.u2fSuppressedByPrimaryPam && SettingsData.enableU2f && SettingsData.u2fMode === "and" && u2f.available) {
             u2f.startForSecondFactor();
         } else {
+            if (AdminPolicy.disableCustomLockPam && SettingsData.enableU2f && SettingsData.u2fMode === "and" && !u2fConfigWatcher.loaded)
+                log.warn("/etc/pam.d/dankshell-u2f is missing, unlocking without the security key");
             completeUnlock();
         }
     }
@@ -113,8 +117,8 @@ Scope {
     }
 
     readonly property bool customPamActive: SettingsData.lockPamPath !== "" && customPamWatcher.loaded
-    readonly property bool fprintSuppressedByPrimaryPam: SettingsData.lockPamExternallyManaged || (customPamActive && SettingsData.lockPamInlineFprint)
-    readonly property bool u2fSuppressedByPrimaryPam: SettingsData.lockPamExternallyManaged || (customPamActive && SettingsData.lockPamInlineU2f)
+    readonly property bool fprintSuppressedByPrimaryPam: !AdminPolicy.disableCustomLockPam && (SettingsData.lockPamExternallyManaged || (customPamActive && SettingsData.lockPamInlineFprint))
+    readonly property bool u2fSuppressedByPrimaryPam: !AdminPolicy.disableCustomLockPam && (SettingsData.lockPamExternallyManaged || (customPamActive && SettingsData.lockPamInlineU2f))
     readonly property bool customU2fPamActive: SettingsData.lockU2fPamPath !== "" && customU2fPamWatcher.loaded
 
     FileView {
@@ -136,6 +140,13 @@ Scope {
 
         path: "/etc/pam.d/dankshell-u2f"
         watchChanges: true
+        printErrors: false
+    }
+
+    FileView {
+        id: fprintConfigWatcher
+
+        path: AdminPolicy.disableCustomLockPam ? "/etc/pam.d/dankshell-fprint" : ""
         printErrors: false
     }
 
@@ -169,7 +180,7 @@ Scope {
     }
 
     function ensureUserPamConfig(): void {
-        if (SettingsData.lockPamExternallyManaged || resolveUserPam.running)
+        if (AdminPolicy.disableCustomLockPam || SettingsData.lockPamExternallyManaged || resolveUserPam.running)
             return;
         resolveUserPam.running = true;
     }
@@ -180,6 +191,8 @@ Scope {
         id: passwd
 
         config: {
+            if (AdminPolicy.disableCustomLockPam)
+                return dankshellConfigWatcher.loaded ? "dankshell" : "login";
             if (root.customPamActive)
                 return SettingsData.lockPamPath.slice(SettingsData.lockPamPath.lastIndexOf("/") + 1);
             if (SettingsData.lockPamExternallyManaged)
@@ -191,6 +204,8 @@ Scope {
             return "login";
         }
         configDirectory: {
+            if (AdminPolicy.disableCustomLockPam)
+                return "/etc/pam.d";
             if (root.customPamActive) {
                 const idx = SettingsData.lockPamPath.lastIndexOf("/");
                 return idx > 0 ? SettingsData.lockPamPath.slice(0, idx) : "/";
@@ -299,14 +314,15 @@ Scope {
     PamContext {
         id: fprint
 
-        readonly property bool available: SettingsData.lockFingerprintReady
+        readonly property bool available: SettingsData.lockFingerprintReady && (!AdminPolicy.disableCustomLockPam || fprintConfigWatcher.loaded)
         property int tries: 0
         property int errorTries: 0
         property double attemptStartedAt: 0
         property bool completedDuringStart: false
         readonly property int maxErrorTries: 200
         readonly property int daemonIdleExitMs: 30000
-        // sessionTimeoutMs mirrors `timeout=` in assets/pam/fprint
+        // sessionTimeoutMs mirrors `timeout=` in assets/pam/fprint; under the
+        // policy, /etc/pam.d/dankshell-fprint must carry the same value
         readonly property int sessionTimeoutMs: 90000
         readonly property int verifyStartSlackMs: 10000
         readonly property bool retrying: errorRetry.running
@@ -401,8 +417,8 @@ Scope {
                 Qt.callLater(checkAvail);
         }
 
-        config: "fprint"
-        configDirectory: Quickshell.shellDir + "/assets/pam"
+        config: AdminPolicy.disableCustomLockPam ? "dankshell-fprint" : "fprint"
+        configDirectory: AdminPolicy.disableCustomLockPam ? "/etc/pam.d" : Quickshell.shellDir + "/assets/pam"
 
         onPamMessage: {
             if (attemptStartedAt === 0)
@@ -446,7 +462,7 @@ Scope {
     PamContext {
         id: u2f
 
-        property bool available: SettingsData.lockU2fReady
+        property bool available: SettingsData.lockU2fReady && (!AdminPolicy.disableCustomLockPam || u2fConfigWatcher.loaded)
 
         function checkAvail(): void {
             if (!available || !SettingsData.enableU2f || !root.lockSecured || root.u2fSuppressedByPrimaryPam) {
@@ -483,11 +499,15 @@ Scope {
         }
 
         config: {
+            if (AdminPolicy.disableCustomLockPam)
+                return "dankshell-u2f";
             if (root.customU2fPamActive)
                 return SettingsData.lockU2fPamPath.slice(SettingsData.lockU2fPamPath.lastIndexOf("/") + 1);
             return u2fConfigWatcher.loaded ? "dankshell-u2f" : "u2f";
         }
         configDirectory: {
+            if (AdminPolicy.disableCustomLockPam)
+                return "/etc/pam.d";
             if (root.customU2fPamActive) {
                 const idx = SettingsData.lockU2fPamPath.lastIndexOf("/");
                 return idx > 0 ? SettingsData.lockU2fPamPath.slice(0, idx) : "/";
@@ -694,6 +714,8 @@ Scope {
         }
 
         function onLockPamExternallyManagedChanged(): void {
+            if (AdminPolicy.disableCustomLockPam)
+                return;
             root.resetAuthFlows();
             if (!SettingsData.lockPamExternallyManaged)
                 root.ensureUserPamConfig();
@@ -702,6 +724,8 @@ Scope {
         }
 
         function onLockU2fPamPathChanged(): void {
+            if (AdminPolicy.disableCustomLockPam)
+                return;
             u2f.abort();
             u2f.checkAvail();
         }

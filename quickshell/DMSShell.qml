@@ -39,7 +39,7 @@ Item {
     property bool osdSurfacesLoaded: false
     property int pendingOsdResumeReloads: 0
     readonly property var notificationPopupScreens: {
-        const screens = SettingsData.notificationFocusedMonitor ? Quickshell.screens : SettingsData.getFilteredScreens("notifications");
+        const screens = SettingsData.notificationFocusedMonitor ? ShellLayout.realScreens : SettingsData.getFilteredScreens("notifications");
         if (!SettingsData.dankIslandEnabled)
             return screens;
         return screens.filter(screen => !SettingsData.dankIslandHandlesNotifications(screen));
@@ -70,7 +70,7 @@ Item {
     }
 
     Variants {
-        model: Quickshell.screens
+        model: ShellLayout.realScreens
 
         delegate: Loader {
             id: fadeWindowLoader
@@ -117,7 +117,7 @@ Item {
     }
 
     Variants {
-        model: Quickshell.screens
+        model: ShellLayout.realScreens
 
         delegate: Loader {
             id: fadeDpmsWindowLoader
@@ -371,7 +371,7 @@ Item {
                 message: I18n.tr("Permanently delete %1 item(s)? This cannot be undone.", "empty trash confirmation message, %1 is a count").arg(itemCount),
                 confirmText: I18n.tr("Empty"),
                 cancelText: I18n.tr("Cancel"),
-                confirmColor: Theme.error,
+                danger: true,
                 onConfirm: () => TrashService.emptyTrash()
             });
         }
@@ -398,7 +398,7 @@ Item {
                         message: I18n.tr("%1 will be removed from your system.", "modal confirmation text for uninstalling an app").arg(appName),
                         confirmText: I18n.tr("Uninstall", "confirm button label to proceed with uninstallation"),
                         cancelText: I18n.tr("Cancel"),
-                        confirmColor: Theme.error,
+                        danger: true,
                         onConfirm: () => AppSearchService.uninstallFlatpak(appId, appName, flatpakId)
                     });
                 }
@@ -1313,6 +1313,24 @@ Item {
                     model: SettingsData.osdCapsLockEnabled ? root.legacySystemLevelOsdScreens : []
 
                     delegate: CapsLockOSD {}
+                }
+
+                Variants {
+                    model: SettingsData.osdNumLockEnabled ? root.legacySystemLevelOsdScreens : []
+
+                    delegate: NumLockOSD {}
+                }
+
+                Variants {
+                    model: (SettingsData.osdKeyboardLayoutEnabled && KeyboardLayoutService.available) ? SettingsData.getFilteredScreens("osd") : []
+
+                    delegate: KeyboardLayoutOSD {}
+                }
+
+                Variants {
+                    model: (SettingsData.osdInputMethodEnabled && Fcitx5Service.available) ? SettingsData.getFilteredScreens("osd") : []
+
+                    delegate: InputMethodOSD {}
                 }
 
                 Variants {

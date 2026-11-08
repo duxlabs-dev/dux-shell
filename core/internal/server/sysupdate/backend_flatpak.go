@@ -3,6 +3,7 @@ package sysupdate
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os/exec"
 	"strings"
 )
@@ -21,18 +22,21 @@ func (flatpakBackend) RunsInTerminal() bool               { return false }
 func (flatpakBackend) IsAvailable(_ context.Context) bool { return commandExists("flatpak") }
 
 func (flatpakBackend) CheckUpdates(ctx context.Context) ([]Package, error) {
-	// Run `flatpak update`
-	cmd := exec.CommandContext(ctx, "flatpak", "update")
+	// Without --no-deps an update needing an uninstalled runtime prompts first, and declining aborts before the table prints.
+	cmd := exec.CommandContext(ctx, "flatpak", "update", "--no-deps")
 	cmd.Stdin = strings.NewReader("n\nn\n") // decline up to 2 installation prompts
 	out, err := cmd.Output()
-	if err != nil {
-		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok && exitErr.ExitCode() == 1 && len(out) > 0 {
-		} else if len(out) == 0 {
-			return nil, err
+	pkgs := parseFlatpakUpdateOutput(string(out), flatpakInstalled(ctx))
+	// Declining the final prompt also exits non-zero, so only a failure without a table is an error.
+	if err != nil && len(pkgs) == 0 {
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
+			if msg := lastNonEmptyLine(string(exitErr.Stderr)); msg != "" {
+				return nil, fmt.Errorf("flatpak update: %s", msg)
+			}
 		}
+		return nil, err
 	}
-	installed := flatpakInstalled(ctx)
-	return parseFlatpakUpdateOutput(string(out), installed), nil
+	return pkgs, nil
 }
 
 type flatpakInstalledEntry struct {

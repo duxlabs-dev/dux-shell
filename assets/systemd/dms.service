@@ -1,11 +1,14 @@
 [Unit]
-Description=Dux Shell (DMS)
+Description=Dux Modular Shell (DMS)
 PartOf=graphical-session.target
 After=graphical-session.target
 Requisite=graphical-session.target
+# Readiness waits for the tray host, so tray apps ordered after tray.target find it.
+Before=tray.target
 
 [Service]
 Type=notify
+BusName=org.freedesktop.Notifications
 NotifyAccess=main
 Environment=QS_DISABLE_CRASH_HANDLER=1
 ExecStart=/usr/bin/dms run --session

@@ -8,6 +8,7 @@ const (
 	StateSelectTerminal
 	StateDetectingDeps
 	StateDependencyReview
+	StateLayerPackages
 	StateGentooUseFlags
 	StateGentooGCCCheck
 	StateSelectPrivesc

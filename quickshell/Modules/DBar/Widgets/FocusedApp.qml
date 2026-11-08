@@ -13,24 +13,16 @@ BasePill {
     id: root
 
     property var widgetData: null
-    property bool compactMode: SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowCompactMode")
+    property bool showAppName: SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowShowAppName")
+    property bool showWindowTitle: SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowShowWindowTitle")
     property bool showIcon: SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowShowIcon")
-    readonly property int maxWidth: {
-        const size = SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowSize");
-        switch (size) {
-        case 0:
-            return 288;
-        case 2:
-            return 656;
-        case 3:
-            return 856;
-        default:
-            return 456;
-        }
-    }
+    readonly property real textSize: Theme.barTextSize(barThickness, barConfig?.fontScale, barConfig?.maximizeWidgetText)
+    readonly property int sizeIndex: Math.max(0, Math.min(3, SettingsData.widgetOption("focusedWindow", widgetData, "focusedWindowSize") ?? 1))
+    readonly property real maxWidth: textSize * 18 * (sizeIndex + 1)
+    readonly property real appNameMaxWidth: maxWidth / 3
     property real allottedPrimarySize: 0
-    property int availableWidth: allottedPrimarySize > 0 ? allottedPrimarySize : maxWidth
-    readonly property real naturalPrimarySize: isVerticalOrientation ? height : !hasWindowsOnCurrentWorkspace ? 0 : Theme.snap(Math.min(contentItem?.naturalWidth ?? 0, maxWidth - horizontalPadding * 2) + horizontalPadding * 2, dpr)
+    property real availableWidth: allottedPrimarySize > 0 ? allottedPrimarySize : maxWidth
+    readonly property real naturalPrimarySize: isVerticalOrientation ? height : !hasWindowsOnCurrentWorkspace ? 0 : Theme.pxCeil(Math.min(contentItem?.naturalWidth ?? 0, maxWidth - horizontalPadding * 2) + horizontalPadding * 2, dpr)
     readonly property real minimumPrimarySize: isVerticalOrientation ? height : Math.min(naturalPrimarySize, Theme.snap((contentItem?.minimumWidth ?? 0) + horizontalPadding * 2, dpr))
     readonly property real effectiveHorizontalWidth: Math.max(0, Math.min(maxWidth, availableWidth))
     readonly property real effectiveHorizontalInnerWidth: Math.max(0, effectiveHorizontalWidth - horizontalPadding * 2)
@@ -118,7 +110,7 @@ BasePill {
     content: Component {
         Item {
             readonly property bool iconShown: horizontalAppIcon.visible || horizontalSteamIcon.visible
-            readonly property real appTextNatural: appText.visible ? Math.min(appText.implicitWidth, root.compactMode ? 80 : 180) : 0
+            readonly property real appTextNatural: appText.visible ? Math.min(appText.implicitWidth, root.appNameMaxWidth) : 0
             readonly property real naturalWidth: {
                 const parts = [];
                 if (iconShown)
@@ -131,7 +123,7 @@ BasePill {
                     parts.push(titleText.implicitWidth);
                 return parts.reduce((sum, part) => sum + part, 0) + Math.max(0, parts.length - 1) * contentRow.spacing;
             }
-            readonly property real minimumWidth: (iconShown ? contentRow.iconSize + contentRow.spacing : 0) + Math.min(48, appText.visible ? appTextNatural : titleText.visible ? titleText.implicitWidth : 0)
+            readonly property real minimumWidth: (iconShown ? contentRow.iconSize + contentRow.spacing : 0) + Math.min(root.textSize * 4, appText.visible ? appTextNatural : titleText.visible ? titleText.implicitWidth : 0)
             implicitWidth: {
                 if (!root.hasWindowsOnCurrentWorkspace)
                     return 0;
@@ -240,11 +232,11 @@ BasePill {
                     StyledText {
                         id: appText
                         text: {
-                            if (compactMode || !activeWindow || !activeWindow.appId)
+                            if (!root.showAppName || !activeWindow || !activeWindow.appId)
                                 return "";
                             return Paths.getAppName(activeWindow.appId, activeDesktopEntry);
                         }
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
+                        font.pixelSize: root.textSize
                         color: root.contentColor
                         anchors.verticalCenter: parent.verticalCenter
                         wrapMode: Text.NoWrap
@@ -258,43 +250,31 @@ BasePill {
                             else if (horizontalSteamIcon.visible)
                                 used += horizontalSteamIcon.width + sp;
                             const budget = Math.max(0, root.effectiveHorizontalInnerWidth - used);
-                            return Math.min(implicitWidth, compactMode ? 80 : 180, budget);
+                            return Math.min(implicitWidth, root.appNameMaxWidth, budget);
                         }
                         visible: text.length > 0
                     }
 
                     StyledText {
                         id: appSeparator
-                        text: compactMode ? "" : "•"
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
+                        text: "•"
+                        font.pixelSize: root.textSize
                         color: Theme.outlineButton
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: !compactMode && appText.text && titleText.text
+                        visible: appText.visible && titleText.visible
                     }
 
                     StyledText {
                         id: titleText
                         text: {
-                            const title = activeWindow && activeWindow.title ? activeWindow.title : "";
-                            const appName = appText.text;
-
-                            if (compactMode) {
-                                if (!title || title === appName)
-                                    return title || appName;
-                                if (title.endsWith(appName))
-                                    return title.substring(0, title.length - appName.length).replace(/ (-|—) $/, "") || appName;
-                                return title;
-                            }
-
-                            if (!title || !appName)
-                                return title;
-
-                            if (title.endsWith(appName))
-                                return title.substring(0, title.length - appName.length).replace(/ (-|—) $/, "");
-
-                            return title;
+                            const title = activeWindow?.title ?? "";
+                            const appName = activeWindow?.appId ? Paths.getAppName(activeWindow.appId, activeDesktopEntry) : "";
+                            if (!root.showWindowTitle)
+                                return appName ? "" : title;
+                            const stripped = appName && title.endsWith(appName) ? title.substring(0, title.length - appName.length).replace(/ (-|—) $/, "") : title;
+                            return stripped || (root.showAppName ? "" : appName);
                         }
-                        font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
+                        font.pixelSize: root.textSize
                         color: root.contentColor
                         anchors.verticalCenter: parent.verticalCenter
                         wrapMode: Text.NoWrap

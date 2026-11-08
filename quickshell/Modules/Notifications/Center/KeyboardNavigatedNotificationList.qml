@@ -176,6 +176,7 @@ DListView {
     }
     spacing: Theme.groupedListGap
     rowFadeEnabled: NotificationMetrics.animationsEnabled
+    fadeInitialRows: false
 
     onIsUserScrollingChanged: {
         if (isUserScrolling && keyboardController && keyboardController.keyboardNavigationActive) {

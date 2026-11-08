@@ -44,7 +44,7 @@ Item {
     property bool _primeContent: false
     property bool _warmContent: false
 
-    property real storedBarThickness: Theme.barThickness(SettingsData.getPrimaryBarConfig()?.innerPadding ?? 2, 1)
+    property real storedBarThickness: Theme.barThickness(SettingsData.getPrimaryBarConfig()?.innerPadding ?? SettingsData.barInnerPaddingDefault, 1)
     property real storedBarSpacing: 4
     property var storedBarConfig: null
     property var sourceRegistration: null
@@ -344,7 +344,7 @@ Item {
         triggerSection = section;
         screen = targetScreen;
 
-        storedBarThickness = barThickness !== undefined ? barThickness : Theme.barThickness(SettingsData.getPrimaryBarConfig()?.innerPadding ?? 2, 1);
+        storedBarThickness = barThickness !== undefined ? barThickness : Theme.barThickness(SettingsData.getPrimaryBarConfig()?.innerPadding ?? SettingsData.barInnerPaddingDefault, 1);
         storedBarSpacing = barSpacing !== undefined ? barSpacing : 4;
         storedBarConfig = barConfig;
         triggerUsesOverlayLayer = _triggerBarUsesOverlayLayer(targetScreen, barConfig);

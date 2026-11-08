@@ -295,7 +295,7 @@ QtObject {
             "id": "idleInhibitor",
             "text": I18n.tr("Keep Awake"),
             "description": I18n.tr("Prevent screen timeout"),
-            "icon": "motion_sensor_active",
+            "icon": "local_cafe",
             "type": "toggle",
             "category": "system",
             "enabled": true
@@ -385,7 +385,7 @@ QtObject {
             "type": "action",
             "category": "system",
             "enabled": DgopService.dgopAvailable,
-            "warning": !DgopService.dgopAvailable ? I18n.tr("Requires 'dgop' tool") : undefined,
+            "warning": !DgopService.dgopAvailable ? I18n.tr("Requires %1", "missing program").arg("dgop") : undefined,
             "allowMultiple": true
         },
         {

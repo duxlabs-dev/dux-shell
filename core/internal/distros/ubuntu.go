@@ -2,13 +2,19 @@ package distros
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
+	"github.com/duxlabs-dev/dux-shell/core/internal/netfetch"
 	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
 )
+
+const hyprlandPPA = "ppa:cppiber/hyprland"
 
 func init() {
 	Register("ubuntu", "#E95420", FamilyUbuntu, func(config DistroConfig, logChan chan<- string) Distribution {
@@ -64,7 +70,7 @@ func (u *UbuntuDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 	dependencies = append(dependencies, u.detectGit())
 	dependencies = append(dependencies, u.detectWindowManager(wm))
 	dependencies = append(dependencies, u.detectQuickshell())
-	dependencies = append(dependencies, u.detectDMSGreeter())
+	dependencies = append(dependencies, u.detectGreeterPackage(u.packageInstalled))
 	dependencies = append(dependencies, u.detectXDGPortal())
 	dependencies = append(dependencies, u.detectAccountsService())
 
@@ -81,7 +87,8 @@ func (u *UbuntuDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 
 	dependencies = append(dependencies, u.detectMatugen())
 	dependencies = append(dependencies, u.detectDanksearch())
-	dependencies = append(dependencies, withGitVariant(u.detectDankCalendar(), u.packageInstalled("dankcalendar-git")))
+	dependencies = append(dependencies, u.detectCalendarPackage(u.packageInstalled))
+	dependencies = append(dependencies, u.detectFilesPackage(u.packageInstalled))
 
 	return dependencies, nil
 }
@@ -96,12 +103,6 @@ func (u *UbuntuDistribution) detectXwaylandSatellite() deps.Dependency {
 
 func (u *UbuntuDistribution) detectAccountsService() deps.Dependency {
 	return u.detectPackage("accountsservice", "D-Bus interface for user account query and manipulation", u.packageInstalled("accountsservice"))
-}
-
-func (u *UbuntuDistribution) detectDMSGreeter() deps.Dependency {
-	gitInstalled := u.packageInstalled("dms-greeter-git")
-	dep := u.detectOptionalPackage("dms-greeter", "Dux Shell greetd greeter", gitInstalled || u.packageInstalled("dms-greeter"))
-	return withGitVariant(dep, gitInstalled)
 }
 
 func (u *UbuntuDistribution) packageInstalled(pkg string) bool {
@@ -123,6 +124,63 @@ func (u *UbuntuDistribution) SwapVariants(ctx context.Context, swaps []VariantSw
 	return u.installAPTPackages(ctx, to, sudoPassword, progressChan)
 }
 
+func (u *UbuntuDistribution) RepoMoves() []RepoMove {
+	return ppaChannel.moves(ppaSourcesExists)
+}
+
+func (u *UbuntuDistribution) ApplyRepoMoves(ctx context.Context, moves []RepoMove, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
+	if adds := repoMoveAdds(moves); len(adds) > 0 {
+		if err := u.enablePPARepos(ctx, adds, sudoPassword, progressChan); err != nil {
+			return err
+		}
+	}
+	if renames := aptRenames(moves, ppaDeps, u.packageInstalled); len(renames) > 0 {
+		if err := u.installAPTPackages(ctx, renames, sudoPassword, progressChan); err != nil {
+			return fmt.Errorf("failed to install the renamed packages %s: %w", strings.Join(renames, ", "), err)
+		}
+	}
+	removes := repoMoveRemoves(moves)
+	for _, move := range removes {
+		command := "add-apt-repository -r -y " + move.Old
+		progressChan <- InstallProgressMsg{
+			Phase:       PhaseSystemPackages,
+			Progress:    0.30,
+			Step:        fmt.Sprintf("Removing PPA %s...", move.Old),
+			NeedsSudo:   true,
+			CommandInfo: "sudo " + command,
+		}
+		if err := u.runWithProgress(privescExec(ctx, sudoPassword, command), progressChan, PhaseSystemPackages, 0.30, 0.35); err != nil {
+			return fmt.Errorf("failed to remove PPA %s: %w", move.Old, err)
+		}
+	}
+	if len(removes) == 0 {
+		return nil
+	}
+	return u.aptUpdate(ctx, sudoPassword, progressChan)
+}
+
+func (u *UbuntuDistribution) RepoMoveCommands(moves []RepoMove) []string {
+	return ubuntuRepoMoveCommands(moves, aptRenames(moves, ppaDeps, u.packageInstalled))
+}
+
+func ubuntuRepoMoveCommands(moves []RepoMove, renames []string) []string {
+	var commands []string
+	for _, add := range repoMoveAdds(moves) {
+		commands = append(commands, "sudo add-apt-repository -y "+add.RepoURL)
+	}
+	if len(renames) > 0 {
+		commands = append(commands, "sudo apt-get install -y "+strings.Join(renames, " "))
+	}
+	removes := repoMoveRemoves(moves)
+	for _, move := range removes {
+		commands = append(commands, "sudo add-apt-repository -r -y "+move.Old)
+	}
+	if len(removes) > 0 {
+		commands = append(commands, "sudo apt-get update")
+	}
+	return commands
+}
+
 func (u *UbuntuDistribution) GetPackageMapping(wm deps.WindowManager) map[string]PackageMapping {
 	return u.GetPackageMappingWithVariants(wm, make(map[string]deps.PackageVariant))
 }
@@ -139,20 +197,21 @@ func (u *UbuntuDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 		// DMS packages from PPAs
 		"dms (Dux Shell)": u.getDmsMapping(variants["dms (Dux Shell)"]),
 		"quickshell":      u.getQuickshellMapping(variants["quickshell"]),
-		"dms-greeter":     variantMapping("dms-greeter", variants["dms-greeter"], RepoTypePPA, "ppa:avengemedia/danklinux"),
-		"matugen":         {Name: "matugen", Repository: RepoTypePPA, RepoURL: "ppa:avengemedia/danklinux"},
-		"ghostty":         {Name: "ghostty", Repository: RepoTypePPA, RepoURL: "ppa:avengemedia/danklinux"},
-		"danksearch":      {Name: "danksearch", Repository: RepoTypePPA, RepoURL: "ppa:avengemedia/danklinux"},
-		"dankcalendar":    variantMapping("dankcalendar", variants["dankcalendar"], RepoTypePPA, "ppa:avengemedia/danklinux"),
+		"dux-greeter":     variantMapping("dux-greeter", variants["dux-greeter"], RepoTypePPA, ppaDeps),
+		"matugen":         {Name: "matugen", Repository: RepoTypePPA, RepoURL: ppaDeps},
+		"ghostty":         {Name: "ghostty", Repository: RepoTypePPA, RepoURL: ppaDeps},
+		"dux-search":      {Name: "dux-search", Repository: RepoTypePPA, RepoURL: ppaDeps},
+		"dux-calendar":    variantMapping("dux-calendar", variants["dux-calendar"], RepoTypePPA, ppaDeps),
+		"dux-files":       variantMapping("dux-files", variants["dux-files"], RepoTypePPA, ppaDeps),
 	}
 
 	switch wm {
 	case deps.WindowManagerHyprland:
 		// Use the cppiber PPA for Hyprland
-		packages["hyprland"] = PackageMapping{Name: "hyprland", Repository: RepoTypePPA, RepoURL: "ppa:cppiber/hyprland"}
-		packages["hyprctl"] = PackageMapping{Name: "hyprland", Repository: RepoTypePPA, RepoURL: "ppa:cppiber/hyprland"}
+		packages["hyprland"] = PackageMapping{Name: "hyprland", Repository: RepoTypePPA, RepoURL: hyprlandPPA}
+		packages["hyprctl"] = PackageMapping{Name: "hyprland", Repository: RepoTypePPA, RepoURL: hyprlandPPA}
 		packages["jq"] = PackageMapping{Name: "jq", Repository: RepoTypeSystem}
-		packages["hyprland-guiutils"] = PackageMapping{Name: "hyprland-guiutils", Repository: RepoTypePPA, RepoURL: "ppa:cppiber/hyprland"}
+		packages["hyprland-guiutils"] = PackageMapping{Name: "hyprland-guiutils", Repository: RepoTypePPA, RepoURL: hyprlandPPA}
 	case deps.WindowManagerNiri:
 		niriVariant := variants["niri"]
 		packages["niri"] = u.getNiriMapping(niriVariant)
@@ -164,30 +223,30 @@ func (u *UbuntuDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 
 func (u *UbuntuDistribution) getDmsMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "dms-git", Repository: RepoTypePPA, RepoURL: "ppa:avengemedia/dms-git"}
+		return PackageMapping{Name: "dms-git", Repository: RepoTypePPA, RepoURL: ppaDMSGit}
 	}
-	return PackageMapping{Name: "dms", Repository: RepoTypePPA, RepoURL: "ppa:avengemedia/dms"}
+	return PackageMapping{Name: "dms", Repository: RepoTypePPA, RepoURL: ppaDMS}
 }
 
 func (u *UbuntuDistribution) getQuickshellMapping(variant deps.PackageVariant) PackageMapping {
 	if forceQuickshellGit || variant == deps.VariantGit {
-		return PackageMapping{Name: "quickshell-git", Repository: RepoTypePPA, RepoURL: "ppa:avengemedia/danklinux"}
+		return PackageMapping{Name: "quickshell-git", Repository: RepoTypePPA, RepoURL: ppaDeps}
 	}
-	return PackageMapping{Name: "quickshell", Repository: RepoTypePPA, RepoURL: "ppa:avengemedia/danklinux"}
+	return PackageMapping{Name: "quickshell", Repository: RepoTypePPA, RepoURL: ppaDeps}
 }
 
 func (u *UbuntuDistribution) getNiriMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "niri-git", Repository: RepoTypePPA, RepoURL: "ppa:avengemedia/danklinux"}
+		return PackageMapping{Name: "niri-git", Repository: RepoTypePPA, RepoURL: ppaDeps}
 	}
-	return PackageMapping{Name: "niri", Repository: RepoTypePPA, RepoURL: "ppa:avengemedia/danklinux"}
+	return PackageMapping{Name: "niri", Repository: RepoTypePPA, RepoURL: ppaDeps}
 }
 
 func (u *UbuntuDistribution) getXwaylandSatelliteMapping(variant deps.PackageVariant) PackageMapping {
 	if variant == deps.VariantGit {
-		return PackageMapping{Name: "xwayland-satellite-git", Repository: RepoTypePPA, RepoURL: "ppa:avengemedia/danklinux"}
+		return PackageMapping{Name: "xwayland-satellite-git", Repository: RepoTypePPA, RepoURL: ppaDeps}
 	}
-	return PackageMapping{Name: "xwayland-satellite", Repository: RepoTypePPA, RepoURL: "ppa:avengemedia/danklinux"}
+	return PackageMapping{Name: "xwayland-satellite", Repository: RepoTypePPA, RepoURL: ppaDeps}
 }
 
 func (u *UbuntuDistribution) InstallPrerequisites(ctx context.Context, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
@@ -265,6 +324,7 @@ func (u *UbuntuDistribution) InstallPackages(ctx context.Context, dependencies [
 	}
 
 	systemPkgs, ppaPkgs, manualPkgs, variantMap := u.categorizePackages(dependencies, wm, reinstallFlags, disabledFlags)
+	systemPkgs, ppaPkgs = u.fallbackUnpublishedPPAs(ctx, systemPkgs, ppaPkgs)
 
 	// Phase 2: Enable PPA repositories
 	if len(ppaPkgs) > 0 {
@@ -415,6 +475,45 @@ func (u *UbuntuDistribution) extractPackageNames(packages []PackageMapping) []st
 		names[i] = pkg.Name
 	}
 	return names
+}
+
+// Use the Ubuntu archive when the Hyprland PPA has no build for this series yet.
+func (u *UbuntuDistribution) fallbackUnpublishedPPAs(ctx context.Context, systemPkgs []string, ppaPkgs []PackageMapping) ([]string, []PackageMapping) {
+	usesHyprlandPPA := false
+	for _, pkg := range ppaPkgs {
+		usesHyprlandPPA = usesHyprlandPPA || pkg.RepoURL == hyprlandPPA
+	}
+	if !usesHyprlandPPA {
+		return systemPkgs, ppaPkgs
+	}
+
+	osInfo, err := GetOSInfo()
+	if err != nil || osInfo.VersionCodename == "" || ppaPublishesSeries(ctx, hyprlandPPA, osInfo.VersionCodename) {
+		return systemPkgs, ppaPkgs
+	}
+	u.log(fmt.Sprintf("%s has no %s build, installing its packages from the Ubuntu archive", hyprlandPPA, osInfo.VersionCodename))
+
+	kept := ppaPkgs[:0]
+	for _, pkg := range ppaPkgs {
+		if pkg.RepoURL == hyprlandPPA {
+			systemPkgs = append(systemPkgs, pkg.Name)
+			continue
+		}
+		kept = append(kept, pkg)
+	}
+	return systemPkgs, kept
+}
+
+// Only a 404 counts as unpublished; network errors keep the PPA.
+func ppaPublishesSeries(ctx context.Context, ppa, series string) bool {
+	owner, name, ok := strings.Cut(strings.TrimPrefix(ppa, "ppa:"), "/")
+	if !ok {
+		return true
+	}
+	url := fmt.Sprintf("https://ppa.launchpadcontent.net/%s/%s/ubuntu/dists/%s/Release", owner, name, series)
+	_, err := netfetch.Bytes(ctx, url, netfetch.Options{Timeout: 15 * time.Second})
+	var statusErr *netfetch.StatusError
+	return !errors.As(err, &statusErr) || statusErr.Code != http.StatusNotFound
 }
 
 func (u *UbuntuDistribution) enablePPARepos(ctx context.Context, ppaPkgs []PackageMapping, sudoPassword string, progressChan chan<- InstallProgressMsg) error {

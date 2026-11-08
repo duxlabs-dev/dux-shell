@@ -36,7 +36,7 @@ Item {
             onLoaded: {
                 item.errorOccurred.connect((error, errorString) => {
                     log.warn("playback error:", errorString);
-                    ToastService.showError(I18n.tr("Video screensaver"), I18n.tr("Playback error: ") + errorString);
+                    ToastService.showError(I18n.tr("Video screensaver"), I18n.tr("Playback error: %1", "%1 is the player error text").arg(errorString));
                     root.dismiss();
                 });
                 if (root.videoSource) {

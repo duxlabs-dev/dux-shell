@@ -3,12 +3,13 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import qs.Common
+import qs.DCommon.Common as DCommon
 
 Singleton {
     readonly property real compactPillThickness: Theme.barHeight - Theme.iconSizeMedium
     readonly property real pressedRadius: Theme.cornerRadiusS
-    readonly property real segmentInnerRadius: Theme.cornerRadiusS
-    readonly property real segmentPressedInnerRadius: Theme.cornerRadiusXS
+    readonly property real segmentInnerRadius: Theme.innerRadius("s")
+    readonly property real segmentPressedInnerRadius: Theme.innerRadius("xs")
     readonly property real segmentGap: Theme.groupedListGap
     readonly property real pillGap: Theme.spacingXS
     readonly property real bareGap: Theme.spacingXXS
@@ -17,22 +18,25 @@ Singleton {
     readonly property real badgeSize: Theme.spacingS
     readonly property real badgeInset: Theme.spacingXS
     readonly property real mediaControlSize: Theme.iconSizeMedium
-    readonly property real menuRowHeight: Theme.menuItemHeight
+    readonly property real menuRowHeight: DCommon.Style.menuRowHeight
+    readonly property real menuPadding: DCommon.Style.menuPadding
     readonly property real menuItemRadius: Theme.cornerRadiusS
-    readonly property real popoutRowHeight: Theme.listItemHeight
-    readonly property real popoutRowTwoLineHeight: Theme.listItemTwoLineHeight
+    readonly property real popoutRowHeight: Math.max(Theme.listItemHeight + Theme.densityStepM, Theme.buttonHeightS + Theme.spacingXS)
+    readonly property real popoutRowTwoLineHeight: Theme.listItemTwoLineHeight + Theme.densityStepM
     readonly property var elevationLevel: Theme.elevationLevel2
 
     function pillRadius(thickness, style) {
         if (style === "flat")
-            return Math.min(Theme.cornerRadiusS, thickness / 2);
+            return Math.min(segmentInnerRadius, thickness / 2);
         if (thickness < compactPillThickness)
             return Math.min(Theme.cornerRadiusM, thickness / 2);
-        return Theme.fullRadius(thickness, thickness);
+        return Theme.pillControls ? Theme.fullRadius(thickness, thickness) : Math.min(Theme.cornerRadiusL, thickness / 2);
     }
 
     function cornerRadius(thickness, style, joined, pressProgress) {
         const resting = joined ? Math.min(segmentInnerRadius, thickness / 2) : pillRadius(thickness, style);
+        if (!Theme.shapeMorph)
+            return resting;
         const pressed = Math.min(resting, joined || style === "flat" ? segmentPressedInnerRadius : pressedRadius);
         return Math.max(0, resting + (pressed - resting) * Math.max(0, Math.min(1, pressProgress)));
     }
@@ -70,7 +74,7 @@ Singleton {
         })
 
     readonly property real indicatorCompactScale: 0.7
-    readonly property real indicatorLabelRatio: 0.55
+    readonly property real indicatorLabelRatio: 0.65
     readonly property real indicatorLabelScale: 1.3
     readonly property real indicatorLabelMin: Math.round(Theme.fontSizeSmall * 0.75)
 

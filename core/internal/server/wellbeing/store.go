@@ -2,6 +2,7 @@ package wellbeing
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	bolt "go.etcd.io/bbolt"
+	berrors "go.etcd.io/bbolt/errors"
 )
 
 var (
@@ -30,6 +32,9 @@ func openDB(path string) (*bolt.DB, error) {
 	db, err := tryOpenDB(path)
 	if err == nil {
 		return db, nil
+	}
+	if errors.Is(err, berrors.ErrTimeout) {
+		return nil, err
 	}
 	log.Errorf("Wellbeing db unreadable, starting over: %v", err)
 	corruptPath := path + ".corrupt"

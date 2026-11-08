@@ -58,7 +58,7 @@ Column {
     }
 
     function canDeleteBar(config) {
-        return config.id !== "default" && (SettingsData.getBarKindConfigs().length > 1 || SettingsData.isIslandBarConfig(config));
+        return config.id !== "default" && SettingsData.edgeBarConfigCount > 1;
     }
 
     function deleteBar(barId) {

@@ -176,10 +176,8 @@ Card {
                     id: meterValue
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    isMonospace: false
                     text: root.meterText(meterRow.modelData)
                     reserveText: "100%"
-                    width: Math.ceil(reservedWidth)
                     font.pixelSize: Theme.fontSizeMedium
                     font.weight: Theme.fontWeightMedium
                     color: root.contentColor

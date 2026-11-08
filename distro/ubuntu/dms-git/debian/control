@@ -14,7 +14,7 @@ Depends: ${misc:Depends},
          quickshell-git | quickshell,
          accountsservice,
          cava,
-         danksearch,
+         dux-search | danksearch,
          matugen,
          qml6-module-qtcore,
          qml6-module-qtmultimedia,
@@ -27,11 +27,12 @@ Depends: ${misc:Depends},
          qml6-module-qtquick-templates,
          qml6-module-qtquick-window,
          qt6ct
+Suggests: dux-gop | dgop
 Provides: dms
 Conflicts: dms
 Replaces: dms
-Description: Dux Shell - Modern Wayland Desktop Shell (git nightly)
- DMS (Dux Shell) is a feature-rich desktop shell built on
+Description: Dux Modular Shell - Modern Wayland Desktop Shell (git nightly)
+ DMS (Dux Modular Shell) is a feature-rich desktop shell built on
  Quickshell, providing a modern and customizable user interface for
  Wayland compositors like niri, hyprland, and sway.
  .

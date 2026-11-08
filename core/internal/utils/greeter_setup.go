@@ -2,9 +2,11 @@ package utils
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os/exec"
-	"strings"
+
+	"github.com/duxlabs-dev/dux-shell/core/internal/privesc"
 )
 
 // RunDmsGreeterInstall delegates greeter setup to the standalone dms-greeter
@@ -15,12 +17,11 @@ func RunDmsGreeterInstall(sudoPassword string, logFunc func(string)) error {
 		return fmt.Errorf("dms-greeter binary not found; install the dms-greeter package and run 'dms-greeter install'")
 	}
 
-	var cmd *exec.Cmd
-	if sudoPassword == "" {
-		cmd = exec.Command(binary, "install", "--yes")
-	} else {
-		cmd = exec.Command("sudo", "-S", "-p", "", binary, "install", "--yes")
-		cmd.Stdin = strings.NewReader(sudoPassword + "\n")
+	// Without a password dms-greeter escalates on its own.
+	argv := []string{binary, "install", "--yes"}
+	cmd := exec.Command(argv[0], argv[1:]...)
+	if sudoPassword != "" {
+		cmd = privesc.ExecCommand(context.Background(), sudoPassword, privesc.QuoteArgsForShell(argv))
 	}
 
 	stdout, err := cmd.StdoutPipe()

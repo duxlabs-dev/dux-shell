@@ -224,7 +224,7 @@ Column {
             title: I18n.tr("Uninstall"),
             message: I18n.tr("Uninstall %1?", "plugin removal confirmation").arg(row.text),
             confirmText: I18n.tr("Uninstall"),
-            confirmColor: Theme.error,
+            danger: true,
             onConfirm: () => uninstall(row)
         });
     }
@@ -356,7 +356,7 @@ Column {
         SettingsRow {
             iconName: "warning"
             title: I18n.tr("Plugin manager unavailable")
-            subtitle: I18n.tr("The DMS_SOCKET environment variable is not set or the socket is unavailable. Automated plugin management requires the DMS_SOCKET.")
+            subtitle: I18n.tr("The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.", "plugin manager unavailable notice, %1 is an environment variable").arg("DMS_SOCKET")
         }
     }
 
@@ -386,8 +386,7 @@ Column {
                 text: root.pluginsWithUpdates.length ? I18n.tr("Update All") + " (" + root.pluginsWithUpdates.length + ")" : I18n.tr("Check for updates")
                 iconName: root.pluginsWithUpdates.length ? "download" : "refresh"
                 busy: root.checkingUpdates || pluginUpdatesDialogItem.isUpdating
-                backgroundColor: Theme.secondaryContainer
-                textColor: Theme.onSecondaryContainer
+                variant: "tonal"
                 maximumWidth: parent.width
                 wrapText: true
                 enabled: DMSService.dmsAvailable && !pluginUpdatesDialogItem.isUpdating && !root.updatingPluginId && Object.keys(root.uninstalling).length === 0
@@ -416,8 +415,7 @@ Column {
             text: I18n.tr("Manage Registries", "plugin registry management")
             buttonHeight: Theme.buttonHeightXS
             horizontalPadding: Theme.spacingS
-            backgroundColor: "transparent"
-            textColor: Theme.primary
+            variant: "text"
             maximumWidth: root.width / 2
             wrapText: true
             Layout.alignment: Qt.AlignTop
@@ -458,8 +456,7 @@ Column {
                 text: I18n.tr("Undo", "reinstall the plugin that was just uninstalled")
                 buttonHeight: Theme.buttonHeightXS
                 horizontalPadding: Theme.spacingS
-                backgroundColor: "transparent"
-                textColor: Theme.primary
+                variant: "text"
                 onClicked: PluginService.undoUninstall()
             }
         }
@@ -493,7 +490,7 @@ Column {
             }
             StyledText {
                 Layout.fillWidth: true
-                text: I18n.tr("Extend %1 with powerful plugins for widgets, launchers, and more", "plugins hub description, %1 is the product name").arg("Dux Shell")
+                text: I18n.tr("Extend %1 with powerful plugins for widgets, launchers, and more", "plugins hub description, %1 is the product name").arg("Dux Modular Shell")
                 color: storeCard.mutedColor
                 wrapMode: Text.Wrap
             }
@@ -505,8 +502,6 @@ Column {
                 DButton {
                     text: I18n.tr("Browse")
                     iconName: "store"
-                    backgroundColor: Theme.primary
-                    textColor: Theme.onPrimary
                     maximumWidth: parent.width
                     wrapText: true
                     enabled: DMSService.dmsAvailable

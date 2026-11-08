@@ -183,12 +183,24 @@ QtObject {
         return Qt.point(newX, newY);
     }
 
-    function dragResizeTo(startWidth, startHeight, dx, dy) {
-        let newW = Math.max(minWidth, Math.min(startWidth + dx, screenWidth - widgetX));
-        let newH = Math.max(minHeight, Math.min(startHeight + dy, screenHeight - widgetY));
+    function dragResizeTo(startWidth, startHeight, dx, dy, squareResize = false) {
+        const maxWidth = screenWidth - widgetX;
+        const maxHeight = screenHeight - widgetY;
+        let newW = Math.max(minWidth, Math.min(startWidth + dx, maxWidth));
+        let newH = Math.max(minHeight, Math.min(startHeight + dy, maxHeight));
         if (gridEnabled) {
             newW = Math.max(minWidth, snapToGrid(newW));
             newH = Math.max(minHeight, snapToGrid(newH));
+        }
+        if (squareResize) {
+            squareSnapped = true;
+            const minSize = Math.max(minWidth, minHeight);
+            const maxSquare = Math.min(maxWidth, maxHeight);
+            let size = Math.min(Math.max(newW, newH), maxSquare);
+            if (gridEnabled && size < Math.max(newW, newH))
+                size = Math.floor(size / gridSize) * gridSize;
+            size = Math.max(minSize, size);
+            return Qt.size(size, size);
         }
         if (!forceSquare) {
             squareSnapped = Math.abs(newW - newH) <= (gridEnabled ? gridSize / 2 : Theme.spacingL);

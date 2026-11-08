@@ -130,7 +130,7 @@ var dmsConfigSpecs = map[string]dmsConfigSpec{
 		mangoFile:    "layout.conf",
 		niriContent:  func(_ string) string { return config.NiriLayoutConfig },
 		hyprContent:  func(_ string) string { return config.DMSLayoutLuaConfig },
-		mangoContent: func(_ string) string { return mangoconf.Detect().Translate(config.MangoLayoutConfig) },
+		mangoContent: func(_ string) string { return config.MangoLayoutConfig },
 	},
 	"colors": {
 		niriFile:     "colors.kdl",
@@ -138,7 +138,7 @@ var dmsConfigSpecs = map[string]dmsConfigSpec{
 		mangoFile:    "colors.conf",
 		niriContent:  func(_ string) string { return config.NiriColorsConfig },
 		hyprContent:  func(_ string) string { return config.DMSColorsLuaConfig },
-		mangoContent: func(_ string) string { return mangoconf.Detect().Translate(config.MangoColorsConfig) },
+		mangoContent: func(_ string) string { return config.MangoColorsConfig },
 	},
 	"alttab": {
 		niriFile:    "alttab.kdl",
@@ -317,7 +317,9 @@ func runSetupDmsConfig(name string) error {
 	}
 
 	path := filepath.Join(dmsDir, filename)
-	if info, err := os.Stat(path); err == nil && info.Size() > 0 {
+	// Hyprland's binds.lua is DMS-owned (user binds sit in binds-user.lua), so it is refreshed, not kept
+	dmsOwned := compositor == "hyprland" && name == "binds"
+	if info, err := os.Stat(path); err == nil && info.Size() > 0 && !dmsOwned {
 		return fmt.Errorf("%s already exists and is not empty: %s", name, path)
 	}
 
@@ -327,6 +329,22 @@ func runSetupDmsConfig(name string) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if dmsOwned {
+		backupPath, written, err := config.WriteHyprlandStockBinds(filepath.Dir(dmsDir), terminal)
+		if backupPath != "" {
+			fmt.Printf("Backed up previous binds to %s\n", backupPath)
+		}
+		if err != nil {
+			return err
+		}
+		if !written {
+			fmt.Printf("binds is already the DMS stock set: %s\n", path)
+			return nil
+		}
+		fmt.Printf("Deployed binds to %s\n", path)
+		return nil
 	}
 
 	content := contentFn(terminal)
@@ -563,15 +581,9 @@ func compositorPrimaryPaths(wm deps.WindowManager) []string {
 	case deps.WindowManagerNiri:
 		return []string{filepath.Join(homeDir, ".config", "niri", "config.kdl")}
 	case deps.WindowManagerHyprland:
-		return []string{
-			filepath.Join(homeDir, ".config", "hypr", "hyprland.lua"),
-			filepath.Join(homeDir, ".config", "hypr", "hyprland.conf"),
-		}
+		return []string{filepath.Join(config.HyprlandConfigDir(), "hyprland.lua")}
 	case deps.WindowManagerMango:
-		return []string{
-			filepath.Join(homeDir, ".config", "mango", "config.conf"),
-			filepath.Join(homeDir, ".config", "mango", "mango.conf"),
-		}
+		return mangoconf.MainConfigs(mangoconf.Dir())
 	default:
 		return nil
 	}

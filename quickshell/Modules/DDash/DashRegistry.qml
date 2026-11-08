@@ -67,6 +67,13 @@ Singleton {
         };
     }
 
+    function slider(key, text, def, min, max, step, minimumLabel) {
+        return Object.assign(number(key, text, def, min, max, step), {
+            "type": "slider",
+            "minimumLabel": minimumLabel ?? ""
+        });
+    }
+
     function toneOption(def = "") {
         return choice("tone", I18n.tr("Tone", "noun, dashboard widget color tone option label"), def, toneChoices);
     }
@@ -112,7 +119,19 @@ Singleton {
                 "minW": 1,
                 "minH": 1
             },
-            "options": [choice("playerStyle", I18n.tr("Player style"), MediaOptions.defaultPlayerStyle, MediaOptions.playerStyles), choice("artStyle", I18n.tr("Artwork"), "rounded", [
+            "options": [choice("playerStyle", I18n.tr("Player style"), MediaOptions.defaultPlayerStyle, MediaOptions.playerStyles), choice("artStyle", I18n.tr("Artwork"), MediaOptions.defaultArtStyle, [
+                    {
+                        "value": "cookie",
+                        "text": I18n.tr("Rotating Cookie", "Album artwork shape")
+                    },
+                    {
+                        "value": "squircle",
+                        "text": I18n.tr("Swaying Square", "Album artwork shape")
+                    },
+                    {
+                        "value": "disc",
+                        "text": I18n.tr("Spinning Record", "Album artwork shape that turns like a vinyl record")
+                    },
                     {
                         "value": "rounded",
                         "text": I18n.tr("Rounded")
@@ -128,12 +147,8 @@ Singleton {
                     {
                         "value": "slanted",
                         "text": I18n.tr("Slanted", "Album artwork shape")
-                    },
-                    {
-                        "value": "cookie",
-                        "text": I18n.tr("Rotating Cookie", "Album artwork shape")
                     }
-                ]), choice("titleFont", I18n.tr("Title font"), MediaOptions.defaultTitleFont, Theme.fontChoices), toggle("deviceName", I18n.tr("Show device name", "Media player option that puts the audio output device name on its button"), MediaOptions.defaults.deviceName), toggle("seekbar", I18n.tr("Show seekbar"), MediaOptions.defaults.seekbar), toggle("waveProgress", I18n.tr("Wave progress bars"), MediaOptions.defaults.waveProgress), toggle("albumArtBackdrop", I18n.tr("Album art backdrop"), MediaOptions.defaults.albumArtBackdrop), toggle("albumArtAccent", I18n.tr("Use album art accent"), MediaOptions.defaults.albumArtAccent), toggle("animatedArt", I18n.tr("Apple Music animated covers"), MediaOptions.defaults.animatedArt, I18n.tr("Sends the playing artist and album name to Apple")), toggle("lyrics", I18n.tr("Lyrics", "Media player lyrics button"), MediaOptions.defaults.lyrics, I18n.tr("Sends the playing track, artist and album name to enabled lyrics providers")), toggle("smoothLyrics", I18n.tr("Smooth lyrics highlight", "Media player option that fills each sung word gradually instead of highlighting it at once"), MediaOptions.defaults.smoothLyrics)]
+                ]), choice("titleFont", I18n.tr("Title font"), MediaOptions.defaultTitleFont, Theme.fontChoices), toggle("cardBackgrounds", I18n.tr("Card backgrounds", "Media player option that draws the title and controls on filled cards"), MediaOptions.defaults.cardBackgrounds, I18n.tr("Bento style only", "Hint under a media player option that only affects the Bento player style")), toggle("seekbar", I18n.tr("Show seekbar"), MediaOptions.defaults.seekbar), toggle("waveProgress", I18n.tr("Wave progress bars"), MediaOptions.defaults.waveProgress), toggle("albumArtBackdrop", I18n.tr("Album art backdrop"), MediaOptions.defaults.albumArtBackdrop), toggle("albumArtAccent", I18n.tr("Use album art accent"), MediaOptions.defaults.albumArtAccent), toggle("animatedArt", I18n.tr("Apple Music animated covers"), MediaOptions.defaults.animatedArt, I18n.tr("Sends the playing artist and album name to Apple")), toggle("lyrics", I18n.tr("Lyrics", "Media player lyrics button"), MediaOptions.defaults.lyrics, I18n.tr("Sends the playing track, artist and album name to enabled lyrics providers")), toggle("smoothLyrics", I18n.tr("Smooth lyrics highlight", "Media player option that fills each sung word gradually instead of highlighting it at once"), MediaOptions.defaults.smoothLyrics)]
         },
         {
             "id": "wallpaper",
@@ -149,6 +164,10 @@ Singleton {
                     {
                         "value": "grid",
                         "text": I18n.tr("Grid")
+                    },
+                    {
+                        "value": "paged",
+                        "text": I18n.tr("Paged grid", "wallpaper tab layout option")
                     },
                     {
                         "value": "carousel",
@@ -212,6 +231,13 @@ Singleton {
             }
         },
         {
+            "id": "settings",
+            "text": I18n.tr("Settings"),
+            "icon": "settings",
+            "description": I18n.tr("Opens %1", "dashboard tab description, %1 is the settings window name").arg(I18n.tr("Settings")),
+            "action": true
+        },
+        {
             "id": "clock",
             "text": I18n.tr("Clock"),
             "icon": "schedule",
@@ -231,7 +257,7 @@ Singleton {
                         "value": "analog",
                         "text": I18n.tr("Analog", "clock style option")
                     }
-                ]), toggle("seconds", I18n.tr("Show seconds"), false), toggle("date", I18n.tr("Show date"), false), toggle("numbers", I18n.tr("Show hour numbers"), false), choice("tone", I18n.tr("Tone"), "primary", toneChoices)]
+                ]), slider("weight", I18n.tr("Weight"), 0, 0, Font.Black, 100, I18n.tr("Default")), toggle("seconds", I18n.tr("Show seconds"), false), toggle("date", I18n.tr("Show date"), false), toggle("numbers", I18n.tr("Show hour numbers"), false), choice("tone", I18n.tr("Tone"), "primary", toneChoices)]
         },
         {
             "id": "calendar",
@@ -429,7 +455,7 @@ Singleton {
     }
 
     readonly property var tabEntries: {
-        const known = entries.filter(e => e.tab);
+        const known = entries.filter(e => e.tab || e.action);
         const result = [];
         const seen = {};
         for (const tab of SettingsData.getDashTabs()) {
@@ -450,14 +476,16 @@ Singleton {
         }
         return result;
     }
-    readonly property var tabIds: tabEntries.filter(e => e.available !== false).map(e => e.id)
+    readonly property var tabIds: tabEntries.filter(e => !e.action && e.available !== false).map(e => e.id)
     readonly property int widestPanelColumns: Math.max(DashMetrics.defaultGridColumns, ...tabIds.map(id => DashMetrics.panelColumnsFor(id)))
-    readonly property var visibleTabIds: tabEntries.filter(e => e.available !== false && e.enabled).map(e => e.id)
-    readonly property var tabBarModel: visibleTabIds.map(id => {
+    readonly property var navigationIds: tabEntries.filter(e => e.available !== false && e.enabled).map(e => e.id)
+    readonly property var visibleTabIds: tabEntries.filter(e => !e.action && e.available !== false && e.enabled).map(e => e.id)
+    readonly property var tabBarModel: navigationIds.map(id => {
         const e = entry(id);
         return {
             "icon": e.icon,
-            "text": e.text
+            "text": e.text,
+            "action": e.action === true
         };
     })
 
@@ -632,6 +660,10 @@ Singleton {
 
     function entry(id) {
         return entries.find(e => e.id === id) ?? null;
+    }
+
+    function isAction(id) {
+        return entry(id)?.action === true;
     }
 
     function hasTab(id) {

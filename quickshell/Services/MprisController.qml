@@ -34,6 +34,15 @@ Singleton {
     property bool _mprisPublishDirty: false
     property int _mprisConnectionEpoch: 0
     property int positionConsumers: 0
+    property bool refreshingPosition: false
+
+    function refreshPosition(player) {
+        if (!player?.positionSupported)
+            return;
+        refreshingPosition = true;
+        player.positionChanged();
+        refreshingPosition = false;
+    }
 
     function addPositionRef() {
         positionConsumers++;
@@ -398,7 +407,7 @@ Singleton {
         interval: 1000
         running: root.positionConsumers > 0 && root.activePlayer?.playbackState === MprisPlaybackState.Playing
         repeat: true
-        onTriggered: root.activePlayer?.positionChanged()
+        onTriggered: root.refreshPosition(root.activePlayer)
     }
 
     function _hasMPRISSubscription(): bool {

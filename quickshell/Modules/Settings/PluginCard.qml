@@ -61,6 +61,7 @@ DCard {
                 anchors.fill: parent
                 imagePath: useFallback ? root.previewFallback : root.previewSource
                 maxCacheSize: 640
+                cacheRemote: true
                 fillMode: Image.PreserveAspectCrop
                 animate: false
                 visible: status === Image.Ready
@@ -78,12 +79,6 @@ DCard {
                 size: Theme.avatarSize
                 color: Theme.onSurfaceVariant
                 visible: cardPreview.status !== Image.Ready
-            }
-
-            DSpinner {
-                anchors.centerIn: parent
-                running: cardPreview.status === Image.Loading
-                visible: running
             }
         }
 

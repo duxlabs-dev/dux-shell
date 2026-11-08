@@ -13,7 +13,9 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/cups"
 	serverDbus "github.com/duxlabs-dev/dux-shell/core/internal/server/dbus"
 	serverDgop "github.com/duxlabs-dev/dux-shell/core/internal/server/dgop"
+	serverDrives "github.com/duxlabs-dev/dux-shell/core/internal/server/drives"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/evdev"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/fcitx5"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/freedesktop"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/location"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
@@ -30,6 +32,7 @@ import (
 	serverThemes "github.com/duxlabs-dev/dux-shell/core/internal/server/themes"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/wallpaper"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/wayland"
+	serverWeather "github.com/duxlabs-dev/dux-shell/core/internal/server/weather"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/wellbeing"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/wlroutput"
 	"github.com/duxlabs-dev/dux-shell/core/internal/systemd"
@@ -98,13 +101,13 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 		thememode.HandleRequest(conn, req, themeModeManager)
 	}))
 
-	mux.HandlePrefix("wallpaper.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
+	mux.HandlePrefix("wallpaper.", func(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, _ *ipc.Subscriber) {
 		if wallpaperManager == nil {
 			conn.RespondError(req.ID, "wallpaper manager not initialized")
 			return
 		}
-		wallpaper.HandleRequest(conn, req, wallpaperManager)
-	}))
+		wallpaper.HandleRequest(ctx, conn, req, wallpaperManager)
+	})
 
 	mux.HandlePrefix("loginctl.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
 		if loginctlManager == nil {
@@ -140,6 +143,8 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 
 	mux.HandlePrefix("mime.", requestHandler(mime.HandleRequest))
 
+	mux.HandlePrefix("fcitx5.", requestHandler(fcitx5.HandleRequest))
+
 	mux.HandlePrefix("files.", func(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, _ *ipc.Subscriber) {
 		if filesService == nil {
 			conn.RespondError(req.ID, "files service not initialized")
@@ -150,7 +155,13 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 
 	mux.HandlePrefix("dgop.", requestHandler(serverDgop.HandleRequest))
 
+	mux.HandlePrefix("drives.", requestHandler(serverDrives.HandleRequest))
+
 	mux.HandlePrefix("lyrics.", requestHandler(serverLyrics.HandleRequest))
+
+	mux.HandlePrefix("weather.", func(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, _ *ipc.Subscriber) {
+		serverWeather.HandleRequest(ctx, conn, req)
+	})
 
 	appPickerHandler := requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
 		if appPickerManager == nil {
@@ -203,13 +214,13 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 		evdev.HandleRequest(conn, req, evdevManager)
 	}))
 
-	mux.HandlePrefix("dbus.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
+	mux.HandlePrefix("dbus.", func(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, _ *ipc.Subscriber) {
 		if dbusManager == nil {
 			conn.RespondError(req.ID, "dbus manager not initialized")
 			return
 		}
-		serverDbus.HandleRequest(conn, req, dbusManager, dbusClientID)
-	}))
+		serverDbus.HandleRequest(ctx, conn, req, dbusManager, dbusClientID)
+	})
 
 	mux.HandlePrefix("clipboard.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
 		if clipboardManager == nil {
@@ -279,7 +290,11 @@ func handleClipboardSetConfig(conn *ipc.ConnWriter, req ipc.Request) {
 		cfg.MaxPinned = int(v)
 	}
 
-	if err := clipboard.SaveConfig(cfg); err != nil {
+	save := clipboard.SaveConfig
+	if clipboardManager != nil {
+		save = clipboardManager.SetConfig
+	}
+	if err := save(cfg); err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return
 	}

@@ -11,25 +11,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"tailscale.com/client/local"
-	"tailscale.com/client/tailscale/apitype"
-	"tailscale.com/ipn"
 	"tailscale.com/ipn/ipnstate"
-	"tailscale.com/tailcfg"
-	"tailscale.com/types/empty"
 )
 
 // blockingWatch is a watchFn that blocks until the context is cancelled, used
 // by tests that exercise direct manager calls rather than the watch loop.
-func blockingWatch(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
+func blockingWatch(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
 	<-ctx.Done()
 	return nil, ctx.Err()
 }
 
-// mockWatcher yields canned Notify events, then returns err or blocks until Close/context cancel.
+// mockWatcher yields a number of canned events, then returns err or blocks until Close/context cancel.
 type mockWatcher struct {
-	events []ipn.Notify
-	idx    int
+	events int
 	err    error
 	done   chan struct{}
 	ctx    context.Context
@@ -37,7 +31,7 @@ type mockWatcher struct {
 	closed bool
 }
 
-func newMockWatcher(ctx context.Context, events []ipn.Notify, err error) *mockWatcher {
+func newMockWatcher(ctx context.Context, events int, err error) *mockWatcher {
 	return &mockWatcher{
 		events: events,
 		err:    err,
@@ -46,25 +40,24 @@ func newMockWatcher(ctx context.Context, events []ipn.Notify, err error) *mockWa
 	}
 }
 
-func (w *mockWatcher) Next() (ipn.Notify, error) {
+func (w *mockWatcher) Next() (busNotify, error) {
 	w.mu.Lock()
-	if w.idx < len(w.events) {
-		n := w.events[w.idx]
-		w.idx++
+	if w.events > 0 {
+		w.events--
 		w.mu.Unlock()
-		return n, nil
+		return busNotify{}, nil
 	}
 	if w.err != nil {
 		err := w.err
 		w.mu.Unlock()
-		return ipn.Notify{}, err
+		return busNotify{}, err
 	}
 	w.mu.Unlock()
 	select {
 	case <-w.done:
-		return ipn.Notify{}, fmt.Errorf("watcher closed")
+		return busNotify{}, fmt.Errorf("watcher closed")
 	case <-w.ctx.Done():
-		return ipn.Notify{}, w.ctx.Err()
+		return busNotify{}, w.ctx.Err()
 	}
 }
 
@@ -80,17 +73,17 @@ func (w *mockWatcher) Close() error {
 
 // mockClient implements tailscaleClient for testing.
 type mockClient struct {
-	watchFn     func(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error)
+	watchFn     func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error)
 	statusFn    func(ctx context.Context) (*ipnstate.Status, error)
-	getPrefsFn  func(ctx context.Context) (*ipn.Prefs, error)
-	editPrefsFn func(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error)
+	getPrefsFn  func(ctx context.Context) (*prefs, error)
+	editPrefsFn func(ctx context.Context, mp *maskedPrefs) error
 
 	startLoginFn    func(ctx context.Context) error
 	logoutFn        func(ctx context.Context) error
-	profileStatusFn func(ctx context.Context) (ipn.LoginProfile, []ipn.LoginProfile, error)
-	switchProfileFn func(ctx context.Context, id ipn.ProfileID) error
+	profileStatusFn func(ctx context.Context) (loginProfile, []loginProfile, error)
+	switchProfileFn func(ctx context.Context, id string) error
 	switchEmptyFn   func(ctx context.Context) error
-	suggestFn       func(ctx context.Context) (apitype.ExitNodeSuggestionResponse, error)
+	suggestFn       func(ctx context.Context) (ExitNodeSuggestion, error)
 	checkIPFwdFn    func(ctx context.Context) error
 }
 
@@ -108,14 +101,14 @@ func (c *mockClient) Logout(ctx context.Context) error {
 	return nil
 }
 
-func (c *mockClient) ProfileStatus(ctx context.Context) (ipn.LoginProfile, []ipn.LoginProfile, error) {
+func (c *mockClient) ProfileStatus(ctx context.Context) (loginProfile, []loginProfile, error) {
 	if c.profileStatusFn != nil {
 		return c.profileStatusFn(ctx)
 	}
-	return ipn.LoginProfile{}, nil, nil
+	return loginProfile{}, nil, nil
 }
 
-func (c *mockClient) SwitchProfile(ctx context.Context, id ipn.ProfileID) error {
+func (c *mockClient) SwitchProfile(ctx context.Context, id string) error {
 	if c.switchProfileFn != nil {
 		return c.switchProfileFn(ctx, id)
 	}
@@ -129,11 +122,11 @@ func (c *mockClient) SwitchToEmptyProfile(ctx context.Context) error {
 	return nil
 }
 
-func (c *mockClient) SuggestExitNode(ctx context.Context) (apitype.ExitNodeSuggestionResponse, error) {
+func (c *mockClient) SuggestExitNode(ctx context.Context) (ExitNodeSuggestion, error) {
 	if c.suggestFn != nil {
 		return c.suggestFn(ctx)
 	}
-	return apitype.ExitNodeSuggestionResponse{}, nil
+	return ExitNodeSuggestion{}, nil
 }
 
 func (c *mockClient) CheckIPForwarding(ctx context.Context) error {
@@ -143,7 +136,7 @@ func (c *mockClient) CheckIPForwarding(ctx context.Context) error {
 	return nil
 }
 
-func (c *mockClient) WatchIPNBus(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
+func (c *mockClient) WatchIPNBus(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
 	return c.watchFn(ctx, mask)
 }
 
@@ -151,18 +144,18 @@ func (c *mockClient) Status(ctx context.Context) (*ipnstate.Status, error) {
 	return c.statusFn(ctx)
 }
 
-func (c *mockClient) GetPrefs(ctx context.Context) (*ipn.Prefs, error) {
+func (c *mockClient) GetPrefs(ctx context.Context) (*prefs, error) {
 	if c.getPrefsFn != nil {
 		return c.getPrefsFn(ctx)
 	}
-	return &ipn.Prefs{}, nil
+	return &prefs{}, nil
 }
 
-func (c *mockClient) EditPrefs(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error) {
+func (c *mockClient) EditPrefs(ctx context.Context, mp *maskedPrefs) error {
 	if c.editPrefsFn != nil {
 		return c.editPrefsFn(ctx, mp)
 	}
-	return &ipn.Prefs{}, nil
+	return nil
 }
 
 func runningStatus() *ipnstate.Status {
@@ -184,19 +177,15 @@ func runningStatus() *ipnstate.Status {
 }
 
 func TestWatchLoop_StateChange(t *testing.T) {
-	stateVal := ipn.Running
 	var watchCount int32
 
 	client := &mockClient{
-		watchFn: func(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
+		watchFn: func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
 			watchCount++
 			if watchCount == 1 {
-				return newMockWatcher(ctx,
-					[]ipn.Notify{{State: &stateVal}},
-					fmt.Errorf("done"),
-				), nil
+				return newMockWatcher(ctx, 1, fmt.Errorf("done")), nil
 			}
-			return newMockWatcher(ctx, nil, nil), nil
+			return newMockWatcher(ctx, 0, nil), nil
 		},
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) {
 			return runningStatus(), nil
@@ -213,17 +202,11 @@ func TestWatchLoop_StateChange(t *testing.T) {
 }
 
 func TestWatchLoop_CoalescesNotifies(t *testing.T) {
-	stateVal := ipn.Running
 	var statusCalls atomic.Int32
 
-	notifies := make([]ipn.Notify, 0, 20)
-	for range 20 {
-		notifies = append(notifies, ipn.Notify{State: &stateVal})
-	}
-
 	client := &mockClient{
-		watchFn: func(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
-			return newMockWatcher(ctx, notifies, nil), nil
+		watchFn: func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
+			return newMockWatcher(ctx, 20, nil), nil
 		},
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) {
 			statusCalls.Add(1)
@@ -246,7 +229,7 @@ func TestWatchLoop_Reconnect(t *testing.T) {
 	watchCalled := make(chan struct{}, 4)
 
 	client := &mockClient{
-		watchFn: func(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
+		watchFn: func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
 			select {
 			case watchCalled <- struct{}{}:
 			default:
@@ -254,7 +237,7 @@ func TestWatchLoop_Reconnect(t *testing.T) {
 			if len(watchCalled) <= 1 {
 				return nil, fmt.Errorf("connection refused")
 			}
-			return newMockWatcher(ctx, nil, nil), nil
+			return newMockWatcher(ctx, 0, nil), nil
 		},
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) {
 			return runningStatus(), nil
@@ -278,9 +261,9 @@ func TestWatchLoop_BacksOffOnPersistentBusError(t *testing.T) {
 	var watchCalls atomic.Int32
 
 	client := &mockClient{
-		watchFn: func(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
+		watchFn: func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
 			watchCalls.Add(1)
-			return newMockWatcher(ctx, nil, fmt.Errorf("json: cannot unmarshal object")), nil
+			return newMockWatcher(ctx, 0, fmt.Errorf("json: cannot unmarshal object")), nil
 		},
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) {
 			return runningStatus(), nil
@@ -301,12 +284,12 @@ func TestManager_Availability(t *testing.T) {
 	var watchAttempts atomic.Int32
 
 	client := &mockClient{
-		watchFn: func(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
+		watchFn: func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
 			n := watchAttempts.Add(1)
 			if n == 1 {
 				return nil, fmt.Errorf("tailscaled socket not found")
 			}
-			return newMockWatcher(ctx, nil, nil), nil
+			return newMockWatcher(ctx, 0, nil), nil
 		},
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) {
 			return runningStatus(), nil
@@ -342,8 +325,8 @@ func TestManager_RefreshState_MergesPrefs(t *testing.T) {
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		getPrefsFn: func(ctx context.Context) (*ipn.Prefs, error) {
-			return &ipn.Prefs{ExitNodeAllowLANAccess: true}, nil
+		getPrefsFn: func(ctx context.Context) (*prefs, error) {
+			return &prefs{ExitNodeAllowLANAccess: true}, nil
 		},
 	}
 
@@ -356,13 +339,13 @@ func TestManager_RefreshState_MergesPrefs(t *testing.T) {
 }
 
 func TestManager_Actions_EditPrefs(t *testing.T) {
-	var captured *ipn.MaskedPrefs
+	var captured *maskedPrefs
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		editPrefsFn: func(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error) {
+		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
 			captured = mp
-			return &ipn.Prefs{}, nil
+			return nil
 		},
 	}
 
@@ -380,14 +363,14 @@ func TestManager_Actions_EditPrefs(t *testing.T) {
 
 	require.NoError(t, m.SetExitNode("nABC123"))
 	assert.True(t, captured.ExitNodeIDSet)
-	assert.Equal(t, tailcfg.StableNodeID("nABC123"), captured.ExitNodeID)
+	assert.Equal(t, "nABC123", captured.ExitNodeID)
 	// ExitNodeIPSet must also be set so a stale legacy ExitNodeIP cannot
 	// override the ID-based selection (mirrors `tailscale set --exit-node`).
 	assert.True(t, captured.ExitNodeIPSet)
 
 	require.NoError(t, m.SetExitNode(""))
 	assert.True(t, captured.ExitNodeIDSet)
-	assert.Equal(t, tailcfg.StableNodeID(""), captured.ExitNodeID)
+	assert.Equal(t, "", captured.ExitNodeID)
 	// Clearing must zero both the ID and any legacy IP-based exit node.
 	assert.True(t, captured.ExitNodeIPSet)
 
@@ -398,18 +381,18 @@ func TestManager_Actions_EditPrefs(t *testing.T) {
 
 type dynamicWatcher struct {
 	ctx context.Context
-	ch  chan ipn.Notify
+	ch  chan busNotify
 }
 
-func (w *dynamicWatcher) Next() (ipn.Notify, error) {
+func (w *dynamicWatcher) Next() (busNotify, error) {
 	select {
 	case n, ok := <-w.ch:
 		if !ok {
-			return ipn.Notify{}, fmt.Errorf("watcher closed")
+			return n, fmt.Errorf("watcher closed")
 		}
 		return n, nil
 	case <-w.ctx.Done():
-		return ipn.Notify{}, w.ctx.Err()
+		return busNotify{}, w.ctx.Err()
 	}
 }
 
@@ -417,12 +400,12 @@ func (w *dynamicWatcher) Close() error {
 	return nil
 }
 
-func TestWatchLoop_NotifyWithoutStateOrNetMap(t *testing.T) {
+func TestWatchLoop_LateNotifyRefetches(t *testing.T) {
 	var statusCalls atomic.Int32
-	notifyCh := make(chan ipn.Notify, 1)
+	notifyCh := make(chan busNotify, 1)
 
 	client := &mockClient{
-		watchFn: func(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
+		watchFn: func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
 			return &dynamicWatcher{ctx: ctx, ch: notifyCh}, nil
 		},
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) {
@@ -439,10 +422,8 @@ func TestWatchLoop_NotifyWithoutStateOrNetMap(t *testing.T) {
 		return statusCalls.Load() == 1
 	}, 2*time.Second, 10*time.Millisecond)
 
-	// Send an event with State == nil and NetMap == nil.
-	notifyCh <- ipn.Notify{Engine: &ipn.EngineStatus{}}
+	notifyCh <- busNotify{}
 
-	// Verify that the notification without State or NetMap triggers a second status call.
 	require.Eventually(t, func() bool {
 		return statusCalls.Load() >= 2
 	}, 2*time.Second, 10*time.Millisecond)
@@ -459,16 +440,16 @@ func prefixes(ss ...string) []netip.Prefix {
 func boolPtr(b bool) *bool { return &b }
 
 func TestSetPrefs_AdvertiseExitNodeKeepsRoutesAndWarns(t *testing.T) {
-	var captured *ipn.MaskedPrefs
+	var captured *maskedPrefs
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		getPrefsFn: func(ctx context.Context) (*ipn.Prefs, error) {
-			return &ipn.Prefs{AdvertiseRoutes: prefixes("192.168.1.0/24")}, nil
+		getPrefsFn: func(ctx context.Context) (*prefs, error) {
+			return &prefs{AdvertiseRoutes: prefixes("192.168.1.0/24")}, nil
 		},
-		editPrefsFn: func(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error) {
+		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
 			captured = mp
-			return &ipn.Prefs{}, nil
+			return nil
 		},
 		checkIPFwdFn: func(ctx context.Context) error { return fmt.Errorf("IP forwarding is disabled") },
 	}
@@ -488,9 +469,9 @@ func TestSetPrefs_InvalidRouteWritesNothing(t *testing.T) {
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		editPrefsFn: func(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error) {
+		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
 			edited = true
-			return &ipn.Prefs{}, nil
+			return nil
 		},
 	}
 	m := newManager(client)
@@ -507,13 +488,13 @@ func TestSetPrefs_InvalidRouteWritesNothing(t *testing.T) {
 }
 
 func TestSetPrefs_MaskOnlyRequestedFields(t *testing.T) {
-	var captured *ipn.MaskedPrefs
+	var captured *maskedPrefs
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		editPrefsFn: func(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error) {
+		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
 			captured = mp
-			return &ipn.Prefs{}, nil
+			return nil
 		},
 		checkIPFwdFn: func(ctx context.Context) error { return fmt.Errorf("must not be called") },
 	}
@@ -524,8 +505,9 @@ func TestSetPrefs_MaskOnlyRequestedFields(t *testing.T) {
 	warning, err := m.SetPrefs(PrefsPatch{AcceptRoutes: boolPtr(true), Hostname: &host})
 	require.NoError(t, err)
 	assert.Empty(t, warning)
-	want := &ipn.MaskedPrefs{
-		Prefs:       ipn.Prefs{RouteAll: true, Hostname: "x"},
+	want := &maskedPrefs{
+		RouteAll:    true,
+		Hostname:    "x",
 		RouteAllSet: true,
 		HostnameSet: true,
 	}
@@ -537,13 +519,13 @@ func TestProfiles(t *testing.T) {
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		profileStatusFn: func(ctx context.Context) (ipn.LoginProfile, []ipn.LoginProfile, error) {
+		profileStatusFn: func(ctx context.Context) (loginProfile, []loginProfile, error) {
 			if denied {
-				return ipn.LoginProfile{}, nil, fmt.Errorf("profiles: %w", &local.AccessDeniedError{})
+				return loginProfile{}, nil, fmt.Errorf("profiles: %w", errAccessDenied)
 			}
-			work := ipn.LoginProfile{ID: "b", Name: "work@corp.com", NetworkProfile: ipn.NetworkProfile{DomainName: "corp.com"}}
-			home := ipn.LoginProfile{ID: "a", Name: "alice@example.com", NetworkProfile: ipn.NetworkProfile{DomainName: "example.com", DisplayName: "Alice's tailnet"}}
-			return work, []ipn.LoginProfile{work, home}, nil
+			work := loginProfile{ID: "b", Name: "work@corp.com", NetworkProfile: networkProfile{DomainName: "corp.com"}}
+			home := loginProfile{ID: "a", Name: "alice@example.com", NetworkProfile: networkProfile{DomainName: "example.com", DisplayName: "Alice's tailnet"}}
+			return work, []loginProfile{work, home}, nil
 		},
 	}
 	m := newManager(client)
@@ -583,12 +565,12 @@ func TestAccountActions(t *testing.T) {
 			calls = append(calls, "empty")
 			return nil
 		},
-		switchProfileFn: func(ctx context.Context, id ipn.ProfileID) error {
+		switchProfileFn: func(ctx context.Context, id string) error {
 			calls = append(calls, "switch:"+string(id))
 			return nil
 		},
-		suggestFn: func(ctx context.Context) (apitype.ExitNodeSuggestionResponse, error) {
-			return apitype.ExitNodeSuggestionResponse{ID: "nX", Name: "de-fra"}, nil
+		suggestFn: func(ctx context.Context) (ExitNodeSuggestion, error) {
+			return ExitNodeSuggestion{ID: "nX", Name: "de-fra"}, nil
 		},
 	}
 	m := newManager(client)
@@ -613,8 +595,8 @@ func TestFetchState_MapsPrefs(t *testing.T) {
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		getPrefsFn: func(ctx context.Context) (*ipn.Prefs, error) {
-			return &ipn.Prefs{
+		getPrefsFn: func(ctx context.Context) (*prefs, error) {
+			return &prefs{
 				RouteAll:        true,
 				CorpDNS:         true,
 				RunSSH:          true,
@@ -638,9 +620,9 @@ func TestFetchState_MapsPrefs(t *testing.T) {
 }
 
 func TestWatchLoop_AuthURL(t *testing.T) {
-	notifyCh := make(chan ipn.Notify, 1)
+	notifyCh := make(chan busNotify, 1)
 	client := &mockClient{
-		watchFn: func(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
+		watchFn: func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
 			return &dynamicWatcher{ctx: ctx, ch: notifyCh}, nil
 		},
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
@@ -649,22 +631,22 @@ func TestWatchLoop_AuthURL(t *testing.T) {
 	defer m.Close()
 
 	u := "https://login.tailscale.com/a/abc"
-	notifyCh <- ipn.Notify{BrowseToURL: &u}
+	notifyCh <- busNotify{BrowseToURL: &u}
 	require.Eventually(t, func() bool { return m.GetState().AuthURL == u }, 2*time.Second, 10*time.Millisecond)
 
-	notifyCh <- ipn.Notify{LoginFinished: &empty.Message{}}
+	notifyCh <- busNotify{LoginFinished: &struct{}{}}
 	require.Eventually(t, func() bool { return m.GetState().AuthURL == "" }, 2*time.Second, 10*time.Millisecond)
 }
 
 func TestWatchLoop_ReconnectClearsAuthURL(t *testing.T) {
-	notifyCh := make(chan ipn.Notify, 1)
+	notifyCh := make(chan busNotify, 1)
 	var watches atomic.Int32
 	client := &mockClient{
-		watchFn: func(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
+		watchFn: func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
 			if watches.Add(1) == 1 {
 				return &dynamicWatcher{ctx: ctx, ch: notifyCh}, nil
 			}
-			return newMockWatcher(ctx, nil, nil), nil
+			return newMockWatcher(ctx, 0, nil), nil
 		},
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
 	}
@@ -672,7 +654,7 @@ func TestWatchLoop_ReconnectClearsAuthURL(t *testing.T) {
 	defer m.Close()
 
 	u := "https://login.tailscale.com/a/abc"
-	notifyCh <- ipn.Notify{BrowseToURL: &u}
+	notifyCh <- busNotify{BrowseToURL: &u}
 	require.Eventually(t, func() bool { return m.GetState().AuthURL == u }, 2*time.Second, 10*time.Millisecond)
 
 	close(notifyCh)
@@ -684,7 +666,7 @@ func TestManager_AdvertiseRoutesNeverNull(t *testing.T) {
 	assert.NotNil(t, m.GetState().Prefs.AdvertiseRoutes)
 	m.Close()
 
-	m = newManager(&mockClient{watchFn: func(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
+	m = newManager(&mockClient{watchFn: func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
 		return nil, fmt.Errorf("connection refused")
 	}})
 	defer m.Close()
@@ -693,13 +675,13 @@ func TestManager_AdvertiseRoutesNeverNull(t *testing.T) {
 }
 
 func TestSetPrefs_DedupesRoutes(t *testing.T) {
-	var captured *ipn.MaskedPrefs
+	var captured *maskedPrefs
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		editPrefsFn: func(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error) {
+		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
 			captured = mp
-			return &ipn.Prefs{}, nil
+			return nil
 		},
 	}
 	m := newManager(client)
@@ -718,12 +700,12 @@ func TestSetPrefs_UnchangedRoutesSkipEditAndForwardingCheck(t *testing.T) {
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		getPrefsFn: func(ctx context.Context) (*ipn.Prefs, error) {
-			return &ipn.Prefs{AdvertiseRoutes: prefixes("10.0.0.0/8", "192.168.1.0/24")}, nil
+		getPrefsFn: func(ctx context.Context) (*prefs, error) {
+			return &prefs{AdvertiseRoutes: prefixes("10.0.0.0/8", "192.168.1.0/24")}, nil
 		},
-		editPrefsFn: func(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error) {
+		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
 			edits++
-			return &ipn.Prefs{}, nil
+			return nil
 		},
 		checkIPFwdFn: func(ctx context.Context) error { checks++; return fmt.Errorf("IP forwarding is disabled") },
 	}

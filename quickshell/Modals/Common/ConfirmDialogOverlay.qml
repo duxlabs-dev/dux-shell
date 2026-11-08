@@ -11,7 +11,7 @@ Item {
     property Item returnFocusItem: null
     property string confirmButtonText: I18n.tr("Confirm")
     property string cancelButtonText: I18n.tr("Cancel")
-    property color confirmButtonColor: Theme.primary
+    property bool danger: false
     property var onConfirm: function () {}
     property var onCancel: function () {}
     property real backgroundOpacity: Theme.scrimAlpha
@@ -34,12 +34,12 @@ Item {
         reviewUrl = options.reviewUrl || "";
         confirmButtonText = options.confirmText || I18n.tr("Confirm");
         cancelButtonText = options.cancelText || I18n.tr("Cancel");
-        confirmButtonColor = options.confirmColor || Theme.primary;
+        danger = options.danger === true;
         onConfirm = options.onConfirm || (() => {});
         onCancel = options.onCancel || (() => {});
         visible = true;
         dialogContent.keyboardNavigation = false;
-        dialogContent.selectedButton = 0;
+        dialogContent.selectedButton = options.confirmByDefault === true ? 1 : 0;
         focusDialog();
     }
 
@@ -93,7 +93,7 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            color: Theme.scrimColor
+            color: Theme.backdropColor
             opacity: root.backgroundOpacity
         }
 
@@ -131,7 +131,7 @@ Item {
                 reviewUrl: root.reviewUrl
                 confirmButtonText: root.confirmButtonText
                 cancelButtonText: root.cancelButtonText
-                confirmButtonColor: root.confirmButtonColor
+                danger: root.danger
                 onButtonActivated: button => root._activate(button)
                 onCancelled: root._activate(0)
             }

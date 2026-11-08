@@ -26,7 +26,7 @@ Item {
                 resetStore: dock
                 resetKeys: ["iconSize"]
                 text: I18n.tr("Icon size")
-                value: dock.config?.iconSize ?? 42
+                value: dock.config?.iconSize ?? SettingsData.dockConfigDefaults().iconSize
                 minimum: 24
                 maximum: 96
                 unit: "px"
@@ -39,7 +39,7 @@ Item {
                 resetStore: dock
                 resetKeys: ["itemSpacing"]
                 text: I18n.tr("Spacing", "slider label, gap between dock items")
-                value: dock.config?.itemSpacing ?? 8
+                value: dock.config?.itemSpacing ?? SettingsData.dockConfigDefaults().itemSpacing
                 minimum: 0
                 maximum: 32
                 unit: "px"
@@ -52,7 +52,7 @@ Item {
                 resetStore: dock
                 resetKeys: ["spacing"]
                 text: I18n.tr("Padding", "noun, spacing setting label")
-                value: dock.config?.spacing ?? 8
+                value: dock.config?.spacing ?? SettingsData.dockConfigDefaults().spacing
                 minimum: 0
                 maximum: 32
                 unit: "px"

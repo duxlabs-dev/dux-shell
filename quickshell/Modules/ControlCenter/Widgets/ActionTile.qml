@@ -9,7 +9,6 @@ CcTile {
     readonly property bool finishing: action === "edit" && (host?.editMode ?? false)
 
     toggle: false
-    active: finishing
     tooltips: !finishing
     iconName: finishing ? "check" : widgetDef?.icon ?? ""
     title: widgetDef?.text ?? ""

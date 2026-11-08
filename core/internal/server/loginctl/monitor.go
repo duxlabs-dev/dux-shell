@@ -30,13 +30,22 @@ func (m *Manager) handleDBusSignal(sig *dbus.Signal) {
 		}
 
 	case dbusSessionInterface + ".Unlock":
-		lockedHint := m.sessionLockedHint()
-		m.stateMutex.Lock()
-		m.state.Locked = false
-		m.state.LockedHint = lockedHint
-		m.stateMutex.Unlock()
-		m.notifySubscribers()
-		m.prelockedReady.Store(false)
+		if m.keepLockOnUnlock {
+			// Only the locker clears LockedHint, so take both from logind, and
+			// keep the cached state when logind cannot be read.
+			if m.sessionObj != nil && m.updateSessionState() == nil && !m.snapshotState().Locked {
+				m.prelockedReady.Store(false)
+			}
+			m.notifySubscribers()
+		} else {
+			lockedHint := m.sessionLockedHint()
+			m.stateMutex.Lock()
+			m.state.Locked = false
+			m.state.LockedHint = lockedHint
+			m.stateMutex.Unlock()
+			m.notifySubscribers()
+			m.prelockedReady.Store(false)
+		}
 
 		// Cancel the lock timer if it's still running
 		m.lockTimerMu.Lock()

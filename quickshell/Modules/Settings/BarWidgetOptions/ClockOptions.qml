@@ -39,6 +39,27 @@ Column {
             onToggled: checked => root.page.set("clockNotificationBadge", checked)
         }
 
+        SettingsDropdownRow {
+            readonly property var actions: ["dash", "settings", "command", "none"]
+
+            resetStore: root.page
+            resetKeys: ["clockClickAction"]
+            text: I18n.tr("Click action", "clock widget option: what clicking the clock opens")
+            options: [I18n.tr("Dashboard"), I18n.tr("Time & weather"), I18n.tr("Custom command"), I18n.tr("None", "bar click action")]
+            currentValue: options[actions.indexOf(root.page.value("clockClickAction"))] ?? options[0]
+            onValueChanged: value => root.page.set("clockClickAction", actions[options.indexOf(value)] ?? "dash")
+        }
+
+        SettingsTextFieldRow {
+            resetStore: root.page
+            resetKeys: ["clockClickCommand"]
+            text: I18n.tr("Custom command")
+            visible: root.page.value("clockClickAction") === "command"
+            placeholderText: "gnome-clocks"
+            value: root.page.value("clockClickCommand")
+            onEditingFinished: value => root.page.set("clockClickCommand", value.trim())
+        }
+
         SettingsNavRow {
             iconName: "schedule"
             title: I18n.tr("Time & weather")

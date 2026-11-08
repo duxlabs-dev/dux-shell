@@ -7,6 +7,7 @@ import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
 import qs.Services
 import qs.DCommon.Widgets
+import "../../../Common/QmlUtils.js" as QmlUtils
 
 Item {
     id: root
@@ -27,6 +28,17 @@ Item {
     readonly property bool multipleDevices: devices.length > 1
     readonly property bool showPins: screenName.length > 0 && multipleDevices
 
+    readonly property Item headerActions: DActionButton {
+        visible: root.showPins && QmlUtils.normalizePinList((CacheData.brightnessDevicePins || {})[root.getScreenPinKey()]).length > 0
+        buttonSize: CcMetrics.headerActionSize
+        iconSize: CcMetrics.headerActionIconSize
+        iconName: "keep_off"
+        iconColor: Theme.surfaceText
+        tooltipText: I18n.tr("Clear All")
+        Accessible.name: I18n.tr("Clear All")
+        onClicked: root.clearScreenPins()
+    }
+
     signal deviceNameChanged(string newDeviceName)
 
     function getScreenPinKey() {
@@ -43,10 +55,9 @@ Item {
     function resolveCurrentDevice() {
         if (!BrightnessService.brightnessAvailable || devices.length === 0)
             return "";
-        const pinKey = getScreenPinKey();
-        const pinnedDevice = pinKey ? (CacheData.brightnessDevicePins || {})[pinKey] : "";
-        if (pinnedDevice && devices.find(d => d.name === pinnedDevice))
-            return pinnedDevice;
+        const pinned = BrightnessService.pinnedDevices(getScreenPinKey());
+        if (pinned.length > 0)
+            return pinned[0];
         if (instanceId) {
             const widget = (SettingsData.controlCenterWidgets || []).find(w => w.id === "brightnessSlider" && w.instanceId === instanceId);
             if (widget?.deviceName && devices.find(d => d.name === widget.deviceName))
@@ -68,15 +79,9 @@ Item {
     function selectDevice(deviceName) {
         if (!deviceName || deviceName === currentDeviceName)
             return;
-        const pinKey = getScreenPinKey();
-        if (pinKey) {
-            const pins = CacheData.brightnessDevicePins || {};
-            if (pins[pinKey] && pins[pinKey] !== deviceName) {
-                const next = JSON.parse(JSON.stringify(pins));
-                delete next[pinKey];
-                CacheData.set("brightnessDevicePins", next);
-            }
-        }
+        const pinned = QmlUtils.normalizePinList((CacheData.brightnessDevicePins || {})[getScreenPinKey()]);
+        if (pinned.length > 0 && !pinned.includes(deviceName))
+            clearScreenPins();
         currentDeviceName = deviceName;
         BrightnessService.setCurrentDevice(deviceName, true);
         deviceNameChanged(deviceName);
@@ -86,18 +91,19 @@ Item {
         const pinKey = getScreenPinKey();
         if (!pinKey || !deviceName)
             return false;
-        return (CacheData.brightnessDevicePins || {})[pinKey] === deviceName;
+        return QmlUtils.normalizePinList((CacheData.brightnessDevicePins || {})[pinKey]).includes(deviceName);
     }
 
     function togglePinForDevice(deviceName) {
         const pinKey = getScreenPinKey();
         if (!pinKey || !deviceName)
             return;
+        CacheData.set("brightnessDevicePins", QmlUtils.togglePinEntry(CacheData.brightnessDevicePins, pinKey, deviceName, Infinity));
+    }
+
+    function clearScreenPins() {
         const pins = JSON.parse(JSON.stringify(CacheData.brightnessDevicePins || {}));
-        if (pins[pinKey] === deviceName)
-            delete pins[pinKey];
-        else
-            pins[pinKey] = deviceName;
+        delete pins[getScreenPinKey()];
         CacheData.set("brightnessDevicePins", pins);
     }
 

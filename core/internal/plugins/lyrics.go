@@ -3,10 +3,9 @@ package plugins
 import "path/filepath"
 
 type LyricsProvider struct {
-	Command  string `json:"command"`
-	Name     string `json:"name"`
-	URL      string `json:"url"`
-	WordSync bool   `json:"wordSync"`
+	Command string `json:"command"`
+	Name    string `json:"name"`
+	URL     string `json:"url"`
 }
 
 // LyricsProvider reads an installed plugin's lyrics block, with Command made absolute.

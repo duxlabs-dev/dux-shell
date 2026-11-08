@@ -11,19 +11,17 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/windowrules"
 )
 
-// Mango window rules are flat `windowrule=key:value,...` lines (`window_rule=`
-// with snake_case fields after the upstream rename; both are read). DMS-managed rules
-// live in dms/windowrules.conf (sourced from config.conf), each preceded by an
-// `# @id=<id> @name=<name>` comment so they round-trip.
+// DMS-managed rules live in dms/windowrules.conf (sourced from the main config),
+// each preceded by an `# @id=<id> @name=<name>` comment so they round-trip.
 
 type MangoWindowRule struct {
 	Source string
 	Fields map[string]string
 }
 
-var mangoWindowRuleRegex = regexp.MustCompile(`^(?:windowrule|window_rule)\s*=\s*(.+)$`)
+var mangoWindowRuleRegex = regexp.MustCompile(`^window_rule\s*=\s*(.+)$`)
 var mangoMetaCommentRegex = regexp.MustCompile(`^#\s*@id=(\S*)\s*@name=(.*)$`)
-var mangoOnceRuleRegex = regexp.MustCompile(`^(?:windowrule-once|window_rule_once)\s*=`)
+var mangoOnceRuleRegex = regexp.MustCompile(`^window_rule_once\s*=`)
 
 // Fields the editor models; anything else on a DMS rule line is carried through saves.
 var mangoModeledFields = map[string]bool{
@@ -42,7 +40,7 @@ func mangoUnmodeledFields(value string) [][2]string {
 		if !ok {
 			continue
 		}
-		key := mangoconf.Normalize(strings.TrimSpace(k))
+		key := strings.TrimSpace(k)
 		sized := (key == "width" || key == "height") && (!hasWidth || !hasHeight)
 		if key != "" && (!mangoModeledFields[key] || sized) {
 			extra = append(extra, [2]string{key, strings.TrimSpace(v)})
@@ -62,7 +60,7 @@ func parseMangoWindowRuleLine(value string) map[string]string {
 		if !ok {
 			continue
 		}
-		key := mangoconf.Normalize(strings.TrimSpace(before))
+		key := strings.TrimSpace(before)
 		val := strings.TrimSpace(after)
 		if key != "" {
 			fields[key] = val
@@ -71,38 +69,8 @@ func parseMangoWindowRuleLine(value string) map[string]string {
 	return fields
 }
 
-// mangoConfigPath returns the main mango config (config.conf or mango.conf).
-func mangoConfigPath(configDir string) string {
-	candidates := []string{
-		filepath.Join(configDir, "config.conf"),
-		filepath.Join(configDir, "mango.conf"),
-	}
-	for _, c := range candidates {
-		if _, err := os.Stat(c); err == nil {
-			return c
-		}
-	}
-	return candidates[0]
-}
-
 func mangoOverridePath(configDir string) string {
 	return filepath.Join(configDir, "dms", "windowrules.conf")
-}
-
-// parseMangoRulesFile reads a config file and returns its windowrule= lines.
-func parseMangoRulesFile(path, source string) []MangoWindowRule {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil
-	}
-	var rules []MangoWindowRule
-	for line := range strings.SplitSeq(string(data), "\n") {
-		trimmed := strings.TrimSpace(line)
-		if m := mangoWindowRuleRegex.FindStringSubmatch(trimmed); m != nil {
-			rules = append(rules, MangoWindowRule{Source: source, Fields: parseMangoWindowRuleLine(m[1])})
-		}
-	}
-	return rules
 }
 
 type MangoRulesParseResult struct {
@@ -112,14 +80,30 @@ type MangoRulesParseResult struct {
 }
 
 func ParseMangoWindowRules(configDir string) (*MangoRulesParseResult, error) {
-	mainPath := mangoConfigPath(configDir)
+	mainPath := mangoconf.MainConfig(configDir)
+	mainName := filepath.Base(mainPath)
 	overridePath := mangoOverridePath(configDir)
 
+	// Rules expand where Mango reads them; the override is listed even when nothing sources it.
 	var rules []MangoWindowRule
-	rules = append(rules, parseMangoRulesFile(mainPath, "config.conf")...)
-	rules = append(rules, parseMangoRulesFile(overridePath, "dms/windowrules.conf")...)
+	included := false
+	vars := mangoconf.Vars{}
+	collect := func(file string, e mangoconf.Entry) {
+		switch {
+		case e.IsSource():
+			included = included || e.Value == overridePath
+		case e.Key != "window_rule":
+		case file == mainPath:
+			rules = append(rules, MangoWindowRule{Source: mainName, Fields: parseMangoWindowRuleLine(e.Value)})
+		case file == overridePath:
+			rules = append(rules, MangoWindowRule{Source: "dms/windowrules.conf", Fields: parseMangoWindowRuleLine(e.Value)})
+		}
+	}
+	_ = mangoconf.Walk(configDir, mainPath, vars, collect)
+	if !included {
+		_ = mangoconf.Walk(configDir, overridePath, vars, collect)
+	}
 
-	included := mangoDMSRulesIncluded(mainPath)
 	return &MangoRulesParseResult{
 		Rules:            rules,
 		DMSRulesIncluded: included,
@@ -127,8 +111,7 @@ func ParseMangoWindowRules(configDir string) (*MangoRulesParseResult, error) {
 			Exists:        fileExists(overridePath),
 			Included:      included,
 			Effective:     included,
-			ConfigFormat:  "conf",
-			StatusMessage: mangoIncludeMessage(included),
+			StatusMessage: mangoIncludeMessage(included, mainName),
 		},
 	}, nil
 }
@@ -138,25 +121,11 @@ func fileExists(path string) bool {
 	return err == nil
 }
 
-func mangoDMSRulesIncluded(mainPath string) bool {
-	data, err := os.ReadFile(mainPath)
-	if err != nil {
-		return false
-	}
-	for line := range strings.SplitSeq(string(data), "\n") {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "source") && strings.Contains(trimmed, "dms/windowrules.conf") {
-			return true
-		}
-	}
-	return false
-}
-
-func mangoIncludeMessage(included bool) string {
+func mangoIncludeMessage(included bool, mainName string) string {
 	if included {
-		return "DMS window rules are sourced from config.conf"
+		return "DMS window rules are sourced from " + mainName
 	}
-	return "Add `source=./dms/windowrules.conf` to config.conf to apply DMS window rules"
+	return "Source ./dms/windowrules.conf from " + mainName + " to apply DMS window rules"
 }
 
 func mangoBoolField(fields map[string]string, key string) *bool {
@@ -215,11 +184,11 @@ func ConvertMangoRulesToWindowRules(mangoRules []MangoWindowRule) []windowrules.
 	return result
 }
 
-func formatMangoRule(rule windowrules.WindowRule, dialect mangoconf.Dialect, extra ...[2]string) string {
+func formatMangoRule(rule windowrules.WindowRule, extra ...[2]string) string {
 	var parts []string
 	add := func(k, v string) {
 		if v != "" {
-			parts = append(parts, dialect.Key(k)+":"+v)
+			parts = append(parts, k+":"+v)
 		}
 	}
 
@@ -235,7 +204,7 @@ func formatMangoRule(rule windowrules.WindowRule, dialect mangoconf.Dialect, ext
 
 	addBool := func(k string, b *bool) {
 		if b != nil {
-			parts = append(parts, dialect.Key(k)+":"+mangoBoolStr(b))
+			parts = append(parts, k+":"+mangoBoolStr(b))
 		}
 	}
 	addBool("is_floating", rule.Actions.OpenFloating)
@@ -249,19 +218,18 @@ func formatMangoRule(rule windowrules.WindowRule, dialect mangoconf.Dialect, ext
 		add(kv[0], kv[1])
 	}
 
-	return dialect.Key("window_rule") + "=" + strings.Join(parts, ",")
+	return "window_rule=" + strings.Join(parts, ",")
 }
 
 type MangoWritableProvider struct {
 	configDir string
-	dialect   mangoconf.Dialect
 	// Filled by LoadDMSRules so the following write keeps what the editor cannot show.
 	extraFields map[string][][2]string
 	onceLines   []string
 }
 
 func NewMangoWritableProvider(configDir string) *MangoWritableProvider {
-	return &MangoWritableProvider{configDir: configDir, dialect: mangoconf.Detect()}
+	return &MangoWritableProvider{configDir: configDir}
 }
 
 func (p *MangoWritableProvider) Name() string { return "mango" }
@@ -360,7 +328,7 @@ func (p *MangoWritableProvider) WriteDMSRules(rules []windowrules.WindowRule) er
 		if id == "" {
 			id = fmt.Sprintf("rule_%d", i)
 		}
-		line := formatMangoRule(r, p.dialect, p.extraFields[r.ID]...)
+		line := formatMangoRule(r, p.extraFields[r.ID]...)
 		if err := mangoconf.CheckLine(line); err != nil {
 			return fmt.Errorf("rule %q: %w", r.Name, err)
 		}
@@ -369,7 +337,7 @@ func (p *MangoWritableProvider) WriteDMSRules(rules []windowrules.WindowRule) er
 		sb.WriteString("\n\n")
 	}
 	for _, line := range p.onceLines {
-		sb.WriteString(p.dialect.Translate(line))
+		sb.WriteString(line)
 		sb.WriteString("\n")
 	}
 
