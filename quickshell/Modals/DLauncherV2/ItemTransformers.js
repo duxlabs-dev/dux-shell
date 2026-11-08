@@ -6,6 +6,14 @@ function transformDmenuItem(text, index, opts) {
     var markup = !!opts.markup;
     var row = opts.row || null;
     var display = (row && row.display) || text;
+    var displaySubtitle = "";
+    if (!markup) {
+        var lines = display.split(/\r\n|\r|\n/);
+        if (lines.length > 1) {
+            display = lines[0];
+            displaySubtitle = lines[1];
+        }
+    }
     var icon = (row && row.icon) || "";
     var nonSelectable = !!(row && row.nonSelectable);
     var isHeader = !!(row && row.header);
@@ -13,7 +21,7 @@ function transformDmenuItem(text, index, opts) {
         id: "dmenu-" + index,
         type: "dmenu",
         name: display,
-        subtitle: "",
+        subtitle: displaySubtitle,
         icon: icon || (nonSelectable || isHeader ? "" : "chevron_right"),
         iconType: icon ? "image" : "material",
         section: "dmenu",
@@ -31,7 +39,7 @@ function transformDmenuItem(text, index, opts) {
             urgent: false,
             checked: false
         },
-        keywords: (row && row.meta) ? [row.meta] : [],
+        keywords: (row && row.meta) ? [row.meta, text] : [text],
         actions: [],
         primaryAction: {
             name: "Select",
