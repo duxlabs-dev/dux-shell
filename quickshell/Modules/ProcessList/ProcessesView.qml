@@ -168,6 +168,12 @@ Rectangle {
             radius: Theme.cornerRadiusXS + Theme.focusRingOffset
         }
 
+        StateLayer {
+            id: headerHover
+            cornerRadius: Theme.cornerRadiusXS
+            onClicked: DgopService.toggleSort(sh.sortKey)
+        }
+
         Row {
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: sh.alignLeft ? parent.left : undefined
@@ -181,7 +187,7 @@ Rectangle {
                 text: sh.label
                 font.pixelSize: Theme.fontSizeSmall
                 font.weight: Theme.fontWeightMedium
-                color: sh.sorted ? Theme.primary : Theme.surfaceVariantText
+                color: sh.sorted ? Theme.primary : headerHover.hovered ? Theme.surfaceText : Theme.surfaceVariantText
                 wrapMode: Text.NoWrap
                 elide: Text.ElideRight
             }
@@ -193,12 +199,6 @@ Rectangle {
                 size: Theme.fontSizeSmall
                 color: Theme.primary
             }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: DgopService.toggleSort(sh.sortKey)
         }
     }
 
