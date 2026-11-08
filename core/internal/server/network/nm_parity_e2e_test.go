@@ -7,58 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestE2E_BridgeWithPort(t *testing.T) {
-	f := newEditorFixture(t)
-	settingsObj := f.object(t, nmSettingsPath)
-	bridge := captureAddConnection(settingsObj, nmSettingsAddConnection)
-
-	resp := e2eRequest(t, f.backend, "network.connection.add", map[string]any{
-		"settings": map[string]any{
-			"connection": map[string]any{
-				"id": "dms-test-br", "type": "bridge", "interface-name": "dmsbr0",
-				"autoconnect": false, "autoconnect-slaves": float64(1),
-			},
-			"bridge": map[string]any{"stp": true, "priority": float64(4096)},
-			"ipv4":   map[string]any{"method": "auto"},
-			"ipv6":   map[string]any{"method": "auto"},
-		},
-	})
-	require.Empty(t, resp.Error)
-
-	b := *bridge
-	assert.Equal(t, "i", b["connection"]["autoconnect-slaves"].Signature().String())
-	assert.Equal(t, int32(1), b["connection"]["autoconnect-slaves"].Value())
-	assert.Equal(t, "b", b["bridge"]["stp"].Signature().String())
-	assert.Equal(t, true, b["bridge"]["stp"].Value())
-	assert.Equal(t, "u", b["bridge"]["priority"].Signature().String())
-	assert.Equal(t, uint32(4096), b["bridge"]["priority"].Value())
-	uuid, ok := b["connection"]["uuid"].Value().(string)
-	require.True(t, ok)
-
-	port := captureAddConnection(settingsObj, nmSettingsAddConnection)
-	resp = e2eRequest(t, f.backend, "network.connection.add", map[string]any{
-		"settings": map[string]any{
-			"connection": map[string]any{
-				"id": "enp5s0-port-dmsbr0", "type": "802-3-ethernet", "interface-name": "enp5s0",
-				"master": uuid, "slave-type": "bridge",
-			},
-			"802-3-ethernet": map[string]any{},
-			"bridge-port":    map[string]any{"priority": float64(16)},
-		},
-	})
-	require.Empty(t, resp.Error)
-
-	p := *port
-	assert.Equal(t, "s", p["connection"]["master"].Signature().String())
-	assert.Equal(t, uuid, p["connection"]["master"].Value())
-	assert.Equal(t, "s", p["connection"]["slave-type"].Signature().String())
-	assert.Equal(t, "bridge", p["connection"]["slave-type"].Value())
-	assert.Equal(t, "u", p["bridge-port"]["priority"].Signature().String())
-	assert.Equal(t, uint32(16), p["bridge-port"]["priority"].Value())
-	assert.NotContains(t, p, "ipv4")
-	assert.NotContains(t, p, "ipv6")
-}
-
 func TestE2E_VlanAdd(t *testing.T) {
 	f := newEditorFixture(t)
 	added := captureAddConnection(f.object(t, nmSettingsPath), nmSettingsAddConnection)

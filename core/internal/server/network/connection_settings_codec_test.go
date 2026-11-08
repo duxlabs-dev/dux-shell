@@ -170,22 +170,12 @@ func TestVlanRowsEncode(t *testing.T) {
 	require.ErrorContains(t, err, "vlan.id")
 }
 
-func TestBridgeRowsEncode(t *testing.T) {
-	s, err := encodeNewSettings(SettingsPatch{"bridge": {"mac-address": "aa:bb:cc:dd:ee:ff", "stp": true, "priority": 4096.0}})
-	require.NoError(t, err)
-	assert.Equal(t, []byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff}, s["bridge"]["mac-address"].Value())
-}
-
 func TestLinkTypeSignaturesMatchNMSettingsDBus(t *testing.T) {
 	want := map[string]string{
 		"connection.master": "s", "connection.slave-type": "s", "connection.controller": "s",
 		"connection.port-type": "s", "connection.autoconnect-slaves": "i", "connection.autoconnect-ports": "i",
 		"vlan.parent": "s", "vlan.id": "u", "vlan.flags": "u", "vlan.protocol": "s",
 		"vlan.ingress-priority-map": "as", "vlan.egress-priority-map": "as",
-		"bridge.stp": "b", "bridge.priority": "u", "bridge.forward-delay": "u", "bridge.hello-time": "u",
-		"bridge.max-age": "u", "bridge.ageing-time": "u", "bridge.mac-address": "ay",
-		"bridge.multicast-snooping": "b", "bridge.vlan-filtering": "b", "bridge.vlan-default-pvid": "u",
-		"bridge.group-forward-mask": "u", "bridge.multicast-router": "s",
 		"bridge-port.priority": "u", "bridge-port.path-cost": "u", "bridge-port.hairpin-mode": "b",
 		"gsm.apn": "s", "gsm.auto-config": "b", "gsm.username": "s", "gsm.password": "s",
 		"gsm.password-flags": "u", "gsm.pin": "s", "gsm.pin-flags": "u", "gsm.home-only": "b",

@@ -90,8 +90,6 @@ Item {
             return "WireGuard";
         if (type === "vlan")
             return "VLAN";
-        if (type === "bridge")
-            return I18n.tr("Bridge", "network connection type: network bridge");
         if (type === "pppoe")
             return "DSL";
         if (type === "gsm")
@@ -382,8 +380,6 @@ Item {
                         return vpnDataSection;
                     case "vlan":
                         return vlanSection;
-                    case "bridge":
-                        return bridgeSection;
                     case "ports":
                         return portsSection;
                     case "port":
@@ -514,14 +510,6 @@ Item {
         id: vlanSection
 
         ConnectionVlanSection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: bridgeSection
-
-        ConnectionBridgeSection {
             editor: root
         }
     }

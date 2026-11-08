@@ -790,14 +790,6 @@ var CONNECTION_TYPES = [
         "sections": ["general", "vlan", "ipv4", "ipv6"]
     },
     {
-        "type": "bridge",
-        "group": "other",
-        "icon": "device_hub",
-        "addable": true,
-        "autoconnect": false,
-        "sections": ["general", "bridge", "ports", "ipv4", "ipv6"]
-    },
-    {
         "type": "pppoe",
         "group": "other",
         "icon": "router",

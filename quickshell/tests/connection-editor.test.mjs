@@ -99,7 +99,6 @@ test("APN edits move auto-config with them", () => {
 test("registry rows and new-profile autoconnect per type", () => {
     const rows = [
         ["vlan", "other", "lan", true, false, ["general", "vlan", "ipv4", "ipv6"]],
-        ["bridge", "other", "device_hub", true, false, ["general", "bridge", "ports", "ipv4", "ipv6"]],
         ["pppoe", "other", "router", true, false, ["general", "pppoe", "ethernet", "ppp", "ipv4", "ipv6"]],
         ["gsm", "cellular", "signal_cellular_alt", true, false, ["general", "mobile", "ppp", "ipv4", "ipv6"]],
         ["cdma", "cellular", "signal_cellular_alt", false, true, ["general", "mobile", "ppp", "ipv4", "ipv6"]],
@@ -139,7 +138,6 @@ test("ports are detected by either key pair and lose their IP sections", () => {
     assert.deepEqual(ce.sectionsFor("802-3-ethernet", port), ["general", "ethernet", "security", "port"]);
     assert.deepEqual(ce.sectionsFor("bluetooth", { bluetooth: { type: "dun" }, gsm: {}, ipv4: {} }), ["general", "bluetooth", "mobile", "ppp", "ipv4"]);
     assert.deepEqual(ce.sectionsFor("bluetooth", { bluetooth: { type: "panu" }, ipv4: {}, ipv6: {} }), ["general", "bluetooth", "ipv4", "ipv6"]);
-    assert.deepEqual(ce.sectionsFor("bridge", {}), ["general", "bridge", "ports", "ipv4", "ipv6"]);
     assert.deepEqual(ce.sectionsFor("vlan", {}), ["general", "vlan", "ipv4", "ipv6"]);
     assert.deepEqual(ce.sectionsFor("pppoe", {}), ["general", "pppoe", "ethernet", "ppp", "ipv4", "ipv6"]);
     assert.deepEqual(ce.sectionsFor("cdma", {}), ["general", "mobile", "ppp", "ipv4", "ipv6"]);
@@ -154,8 +152,6 @@ test("new ports and controllers", () => {
     assert.equal(ce.newPortSettings({ uuid: "U", ifname: "", id: "Bond", type: "bond" }, "enp5s0", true).connection.id, "Bond-port-enp5s0");
     assert.equal("bridge-port" in ce.newPortSettings({ uuid: "U", ifname: "bond0", type: "bond" }, "enp5s0", true), false);
 
-    const bridge = ce.newConnectionSettings("bridge", { name: "br" });
-    assert.deepEqual([bridge.connection["interface-name"], bridge.connection["autoconnect-slaves"], bridge.bridge], ["br0", 1, {}]);
     assert.deepEqual(ce.newConnectionSettings("vlan", { name: "v", parent: "enp5s0" }).vlan, { parent: "enp5s0" });
     assert.deepEqual(ce.newConnectionSettings("vlan", { name: "v" }).vlan, { parent: "" });
     const pppoe = ce.newConnectionSettings("pppoe", { name: "dsl" });

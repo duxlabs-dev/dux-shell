@@ -135,19 +135,6 @@ var settingSignatures = func() map[string]string {
 		"vlan.ingress-priority-map": "as",
 		"vlan.egress-priority-map":  "as",
 
-		"bridge.stp":                "b",
-		"bridge.priority":           "u",
-		"bridge.forward-delay":      "u",
-		"bridge.hello-time":         "u",
-		"bridge.max-age":            "u",
-		"bridge.ageing-time":        "u",
-		"bridge.mac-address":        "ay",
-		"bridge.multicast-snooping": "b",
-		"bridge.vlan-filtering":     "b",
-		"bridge.vlan-default-pvid":  "u",
-		"bridge.group-forward-mask": "u",
-		"bridge.multicast-router":   "s",
-
 		"bridge-port.priority":     "u",
 		"bridge-port.path-cost":    "u",
 		"bridge-port.hairpin-mode": "b",
@@ -254,7 +241,6 @@ var settingKinds = map[string]string{
 	"802-11-wireless.mac-address":        kindMAC,
 	"802-11-wireless.cloned-mac-address": kindMAC,
 	"802-11-wireless.ssid":               kindSSID,
-	"bridge.mac-address":                 kindMAC,
 	"bluetooth.bdaddr":                   kindMAC,
 }
 
