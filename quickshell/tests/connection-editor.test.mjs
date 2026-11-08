@@ -96,26 +96,37 @@ test("APN edits move auto-config with them", () => {
     assert.deepEqual(ce.applyApn({ apn: "x", "auto-config": false }, "", { "auto-config": false }), { "auto-config": false });
 });
 
-test("registry rows and new-profile autoconnect for VLAN, bond, bridge, mobile, DSL and Bluetooth", () => {
+test("registry rows and new-profile autoconnect per type", () => {
     const rows = [
-        ["vlan", "other", "lan", true, ["general", "vlan", "ipv4", "ipv6"]],
-        ["bond", "other", "link", true, ["general", "bond", "ports", "ipv4", "ipv6"]],
-        ["bridge", "other", "device_hub", true, ["general", "bridge", "ports", "ipv4", "ipv6"]],
-        ["pppoe", "other", "router", true, ["general", "pppoe", "ethernet", "ppp", "ipv4", "ipv6"]],
-        ["gsm", "cellular", "signal_cellular_alt", true, ["general", "mobile", "ppp", "ipv4", "ipv6"]],
-        ["cdma", "cellular", "signal_cellular_alt", false, ["general", "mobile", "ppp", "ipv4", "ipv6"]],
-        ["bluetooth", "other", "bluetooth", false, ["general", "bluetooth", "ipv4", "ipv6"]]
+        ["vlan", "other", "lan", true, false, ["general", "vlan", "ipv4", "ipv6"]],
+        ["bond", "other", "link", true, false, ["general", "bond", "ports", "ipv4", "ipv6"]],
+        ["bridge", "other", "device_hub", true, false, ["general", "bridge", "ports", "ipv4", "ipv6"]],
+        ["pppoe", "other", "router", true, false, ["general", "pppoe", "ethernet", "ppp", "ipv4", "ipv6"]],
+        ["gsm", "cellular", "signal_cellular_alt", true, false, ["general", "mobile", "ppp", "ipv4", "ipv6"]],
+        ["cdma", "cellular", "signal_cellular_alt", false, true, ["general", "mobile", "ppp", "ipv4", "ipv6"]],
+        ["bluetooth", "other", "bluetooth", false, true, ["general", "bluetooth", "ipv4", "ipv6"]]
     ];
-    for (const [type, group, icon, addable, sections] of rows) {
+    for (const [type, group, icon, addable, autoconnect, sections] of rows) {
         const info = ce.typeInfo(type);
         assert.deepEqual([info.group, info.icon, info.addable], [group, icon, addable], type);
         assert.equal(ce.groupOf(type), group, type);
         assert.deepEqual(ce.sectionsFor(type, { ipv4: {}, ipv6: {} }), sections, type);
+        assert.equal(ce.newConnectionSettings(type, { name: "x" }).connection.autoconnect, autoconnect, type);
     }
-    for (const type of ["wireguard", "vpn", "vlan", "bond", "bridge", "pppoe", "gsm"])
+    for (const type of ["wireguard", "vpn", "vpn:org.freedesktop.NetworkManager.openvpn"])
         assert.equal(ce.newConnectionSettings(type, { name: "x" }).connection.autoconnect, false, type);
     for (const type of ["802-3-ethernet", "802-11-wireless"])
         assert.equal(ce.newConnectionSettings(type, { name: "x" }).connection.autoconnect, true, type);
+});
+
+test("only types with a registry row are supported, ports only while their controller is", () => {
+    for (const [type, portType, supported] of [
+        ["802-3-ethernet", "", true],
+        ["team", "", false],
+        ["802-3-ethernet", "team", false],
+        ["gsm", "", true]
+    ])
+        assert.equal(ce.isSupported(type, portType), supported, type + "/" + portType);
 });
 
 test("ports are detected by either key pair and lose their IP sections", () => {
@@ -134,8 +145,6 @@ test("ports are detected by either key pair and lose their IP sections", () => {
     assert.deepEqual(ce.sectionsFor("vlan", {}), ["general", "vlan", "ipv4", "ipv6"]);
     assert.deepEqual(ce.sectionsFor("pppoe", {}), ["general", "pppoe", "ethernet", "ppp", "ipv4", "ipv6"]);
     assert.deepEqual(ce.sectionsFor("cdma", {}), ["general", "mobile", "ppp", "ipv4", "ipv6"]);
-    assert.deepEqual(["vlan", "bond", "bridge", "pppoe", "gsm", "cdma", "bluetooth"].map(t => ce.typeInfo(t).addable),
-        [true, true, true, true, true, false, false]);
 });
 
 test("new ports and controllers", () => {

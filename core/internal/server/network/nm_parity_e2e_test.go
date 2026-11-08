@@ -60,7 +60,7 @@ func TestE2E_BridgeWithPort(t *testing.T) {
 	assert.NotContains(t, p, "ipv6")
 }
 
-func TestE2E_VlanAddAndBondArpUpdate(t *testing.T) {
+func TestE2E_VlanAdd(t *testing.T) {
 	f := newEditorFixture(t)
 	added := captureAddConnection(f.object(t, nmSettingsPath), nmSettingsAddConnection)
 
@@ -80,7 +80,10 @@ func TestE2E_VlanAddAndBondArpUpdate(t *testing.T) {
 	assert.Equal(t, uint32(100), v["id"].Value())
 	assert.Equal(t, "u", v["flags"].Signature().String())
 	assert.Equal(t, uint32(3), v["flags"].Value())
+}
 
+func TestE2E_BondArpUpdate(t *testing.T) {
+	f := newEditorFixture(t)
 	obj := f.profile(t, "u-bond", "/s/bond")
 	stored := connSection("u-bond", "dms-test-bond", "bond", map[string]dbus.Variant{
 		"interface-name": dbus.MakeVariant("dmsbond0"),
@@ -92,7 +95,7 @@ func TestE2E_VlanAddAndBondArpUpdate(t *testing.T) {
 	expectGetSettings(obj, stored)
 	got := captureUpdate2(obj, 0, nil)
 
-	resp = e2eRequest(t, f.backend, "network.connection.update", map[string]any{
+	resp := e2eRequest(t, f.backend, "network.connection.update", map[string]any{
 		"uuid": "u-bond",
 		"settings": map[string]any{"bond": map[string]any{"options": map[string]any{
 			"mode": "active-backup", "miimon": "0", "arp_interval": "1000",

@@ -759,6 +759,7 @@ var CONNECTION_TYPES = [
         "group": "vpn",
         "icon": "vpn_key",
         "addable": true,
+        "autoconnect": false,
         "sections": ["general", "wireguard", "ipv4", "ipv6"]
     },
     {
@@ -766,6 +767,7 @@ var CONNECTION_TYPES = [
         "group": "vpn",
         "icon": "vpn_lock",
         "addable": true,
+        "autoconnect": false,
         "sections": s => {
             const out = ["general"];
             const form = vpnForm(s.vpn ? s.vpn["service-type"] : "");
@@ -784,6 +786,7 @@ var CONNECTION_TYPES = [
         "group": "other",
         "icon": "lan",
         "addable": true,
+        "autoconnect": false,
         "sections": ["general", "vlan", "ipv4", "ipv6"]
     },
     {
@@ -791,6 +794,7 @@ var CONNECTION_TYPES = [
         "group": "other",
         "icon": "link",
         "addable": true,
+        "autoconnect": false,
         "sections": ["general", "bond", "ports", "ipv4", "ipv6"]
     },
     {
@@ -798,6 +802,7 @@ var CONNECTION_TYPES = [
         "group": "other",
         "icon": "device_hub",
         "addable": true,
+        "autoconnect": false,
         "sections": ["general", "bridge", "ports", "ipv4", "ipv6"]
     },
     {
@@ -805,6 +810,7 @@ var CONNECTION_TYPES = [
         "group": "other",
         "icon": "router",
         "addable": true,
+        "autoconnect": false,
         "sections": ["general", "pppoe", "ethernet", "ppp", "ipv4", "ipv6"]
     },
     {
@@ -812,6 +818,7 @@ var CONNECTION_TYPES = [
         "group": "cellular",
         "icon": "signal_cellular_alt",
         "addable": true,
+        "autoconnect": false,
         "sections": ["general", "mobile", "ppp", "ipv4", "ipv6"]
     },
     {
@@ -861,16 +868,14 @@ function groupOf(type) {
     }
 }
 
+// portType is the controller's type for a port profile, "" otherwise.
+function isSupported(type, portType) {
+    return typeInfo(type) !== null && (!portType || typeInfo(portType) !== null);
+}
+
 function _baseSections(type, settings) {
     const info = typeInfo(type);
-    if (info)
-        return typeof info.sections === "function" ? info.sections(settings || {}) : info.sections.slice();
-    const out = ["general"];
-    for (const s of ["ipv4", "ipv6"]) {
-        if (settings && !_absent(settings[s]))
-            out.push(s);
-    }
-    return out;
+    return typeof info.sections === "function" ? info.sections(settings || {}) : info.sections.slice();
 }
 
 // NetworkManager ignores IP settings on a bond or bridge port.
@@ -1019,8 +1024,6 @@ function isValidHotspotAddress(text) {
     return host !== 0 && host !== Math.pow(2, 32 - c.prefix) - 1;
 }
 
-const _MANUAL_CONNECT_TYPES = ["wireguard", "vpn", "vlan", "bond", "bridge", "pppoe", "gsm"];
-
 // type is a connection type, or "vpn:<service-type>" for a VPN plugin profile.
 function newConnectionSettings(type, opts) {
     const colon = String(type ?? "").indexOf(":");
@@ -1031,7 +1034,7 @@ function newConnectionSettings(type, opts) {
         "connection": {
             "id": (opts && opts.name) || "",
             "type": type,
-            "autoconnect": _MANUAL_CONNECT_TYPES.indexOf(type) < 0
+            "autoconnect": typeInfo(type)?.autoconnect !== false
         },
         "ipv4": {
             "method": "auto"

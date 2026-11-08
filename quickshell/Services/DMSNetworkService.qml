@@ -125,8 +125,8 @@ Singleton {
     property bool connectivityCheckAvailable: false
     property string connectivityCheckUri: ""
     readonly property bool connectivityPortal: connectivitySupported && connectivityCheckEnabled && connectivity === "portal"
-    property bool nmConnectionEditorAvailable: false
-    property bool nmConnectionEditorProbed: false
+    property string externalConnectionEditor: ""
+    property bool externalConnectionEditorProbed: false
     property int connectionProfilesRevision: 0
     readonly property bool ethernetDeviceConnectSupported: DMSService.apiVersion >= connectionEditorApiVersion
     property bool backendHotspotSupported: false
@@ -1536,17 +1536,21 @@ Singleton {
         } : null, callback);
     }
 
-    function probeNmConnectionEditor() {
-        if (nmConnectionEditorProbed)
+    function probeExternalConnectionEditor() {
+        if (externalConnectionEditorProbed)
             return;
-        nmConnectionEditorProbed = true;
-        Proc.runCommand(null, ["sh", "-c", "command -v nm-connection-editor"], (out, code) => {
-            nmConnectionEditorAvailable = code === 0;
+        externalConnectionEditorProbed = true;
+        Proc.runCommand(null, ["sh", "-c", "command -v nm-connection-editor || command -v nmtui"], (out, code) => {
+            if (code === 0)
+                externalConnectionEditor = String(out).trim().split("\n")[0].split("/").pop();
         });
     }
 
-    function openInNmConnectionEditor(uuid) {
-        Quickshell.execDetached(["nm-connection-editor", "--edit", uuid]);
+    function openExternalConnectionEditor(uuid) {
+        if (externalConnectionEditor === "nm-connection-editor")
+            Quickshell.execDetached(["nm-connection-editor", "--edit=" + uuid]);
+        else if (externalConnectionEditor === "nmtui")
+            Quickshell.execDetached([SessionData.resolveTerminal() || "xterm", "-e", "nmtui", "edit", "--", uuid]);
     }
 
     function getHotspotSecrets(callback) {

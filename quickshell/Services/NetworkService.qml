@@ -84,7 +84,7 @@ Singleton {
     property bool hotspotHidden: activeService?.hotspotHidden ?? false
     property bool hotspotAutoconnect: activeService?.hotspotAutoconnect ?? false
     property bool hotspotExtendedSupported: activeService?.hotspotExtendedSupported ?? false
-    property bool nmConnectionEditorAvailable: activeService?.nmConnectionEditorAvailable ?? false
+    property string externalConnectionEditor: activeService?.externalConnectionEditor ?? ""
     property int connectionProfilesRevision: activeService?.connectionProfilesRevision ?? 0
     property bool ethernetDeviceConnectSupported: activeService?.ethernetDeviceConnectSupported ?? false
     property bool hotspotSupported: activeService?.hotspotSupported ?? false
@@ -488,14 +488,12 @@ Singleton {
         return forward("wireguardKeys", [privateKey, callback], callback);
     }
 
-    function probeNmConnectionEditor() {
-        if (activeService && activeService.probeNmConnectionEditor)
-            activeService.probeNmConnectionEditor();
+    function probeExternalConnectionEditor() {
+        forward("probeExternalConnectionEditor", []);
     }
 
-    function openInNmConnectionEditor(uuid) {
-        if (activeService && activeService.openInNmConnectionEditor)
-            activeService.openInNmConnectionEditor(uuid);
+    function openExternalConnectionEditor(uuid) {
+        forward("openExternalConnectionEditor", [uuid]);
     }
 
     function activateConnection(uuid, device, callback) {

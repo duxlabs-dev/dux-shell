@@ -30,6 +30,7 @@ Item {
 
     Component.onCompleted: {
         NetworkService.addRef();
+        NetworkService.probeExternalConnectionEditor();
         refresh();
     }
 
@@ -115,17 +116,25 @@ Item {
         required property var profile
         required property string group
         readonly property bool isHotspot: !!NetworkService.hotspotUuid && profile.uuid === NetworkService.hotspotUuid
+        readonly property bool supported: CE.isSupported(profile.type, profile.controller ? profile.portType : "")
 
         title: profile.id
-        subtitle: root.subtitleFor(profile)
+        subtitle: root.subtitleFor(profile) + (supported ? "" : " • " + I18n.tr("Not supported in Settings", "network connection list and editor: this connection type can only be edited in another tool"))
         iconName: root.profileIcon(profile, group)
         active: profile.active
-        clickable: true
+        clickable: supported
         onClicked: {
             if (!isHotspot)
                 return root.openEditor(profile.uuid, profile.id, "");
             SettingsSearchService.navigateToSection("networkHotspot");
             root.parentModal?.navigateTo("network_wifi");
+        }
+
+        DActionButton {
+            visible: !profileRow.supported && NetworkService.externalConnectionEditor !== ""
+            iconName: "open_in_new"
+            tooltipText: I18n.tr("Open in %1", "%1 is an application name").arg(NetworkService.externalConnectionEditor)
+            onClicked: NetworkService.openExternalConnectionEditor(profileRow.profile.uuid)
         }
 
         DActionButton {

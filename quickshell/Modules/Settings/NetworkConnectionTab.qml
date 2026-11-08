@@ -21,6 +21,7 @@ Item {
     property int revision: 0
     property bool readOnly: false
     property bool isNew: false
+    property bool unsupported: false
     property var profile: null
     property var profiles: []
     property var enterpriseOriginal: null
@@ -76,6 +77,7 @@ Item {
 
     Component.onCompleted: {
         NetworkService.addRef();
+        NetworkService.probeExternalConnectionEditor();
         Qt.callLater(root.load);
     }
 
@@ -159,7 +161,7 @@ Item {
         const hasMobile = hasSection("gsm") || hasSection("cdma");
         sectionIds = [];
         swapping = false;
-        sectionIds = loaded ? CE.sectionsFor(draft?.connection?.type ?? "", draft).filter(id => id !== "mobile" || hasMobile) : [];
+        sectionIds = loaded && !unsupported ? CE.sectionsFor(draft?.connection?.type ?? "", draft).filter(id => id !== "mobile" || hasMobile) : [];
     }
 
     function resetNew(type) {
@@ -169,6 +171,7 @@ Item {
         });
         clearSections();
         isNew = true;
+        unsupported = false;
         readOnly = false;
         profile = null;
         enterpriseOriginal = null;
@@ -182,6 +185,7 @@ Item {
     function fail(error) {
         clearSections();
         saving = false;
+        unsupported = false;
         loadError = String(error);
         loaded = false;
         rebuild();
@@ -196,6 +200,7 @@ Item {
         enterpriseOriginal = enterprise;
         original = CE.copy(settings);
         draft = CE.copy(settings);
+        unsupported = !CE.isSupported(settings.connection?.type ?? "", CE.portOf(settings)?.type ?? "");
         loadError = "";
         loaded = true;
         rebuild();
@@ -301,8 +306,22 @@ Item {
             noteIconName: "lock"
         }
 
+        SettingsRow {
+            visible: root.loaded && root.unsupported
+            iconName: "info"
+            title: I18n.tr("Not supported in Settings", "network connection list and editor: this connection type can only be edited in another tool")
+
+            DButton {
+                visible: NetworkService.externalConnectionEditor !== ""
+                text: I18n.tr("Open in %1", "%1 is an application name").arg(NetworkService.externalConnectionEditor)
+                iconName: "open_in_new"
+                variant: "tonal"
+                onClicked: NetworkService.openExternalConnectionEditor(root.selectedUuid)
+            }
+        }
+
         SettingsNoteRow {
-            visible: root.loaded && !root.readOnly && !root.isNew && (root.profile?.unsaved ?? false)
+            visible: root.loaded && !root.readOnly && !root.isNew && !root.unsupported && (root.profile?.unsaved ?? false)
             text: I18n.tr("This connection is temporary and is lost on reboot.", "network connection editor note")
             noteIconName: "info"
             tint: Theme.primary
@@ -310,7 +329,7 @@ Item {
         }
 
         SettingsRow {
-            visible: root.loaded && !root.readOnly && !root.isNew && (root.profile?.unsaved ?? false)
+            visible: root.loaded && !root.readOnly && !root.isNew && !root.unsupported && (root.profile?.unsaved ?? false)
 
             DButton {
                 text: I18n.tr("Save permanently", "network connection editor: keep the connection after reboot")
@@ -392,7 +411,7 @@ Item {
         }
 
         SettingsFabBar {
-            shown: root.loaded && !root.readOnly && (root.dirty || root.isNew)
+            shown: root.loaded && !root.readOnly && !root.unsupported && (root.dirty || root.isNew)
 
             DFab {
                 text: I18n.tr("Discard", "verb, button to discard pending changes")

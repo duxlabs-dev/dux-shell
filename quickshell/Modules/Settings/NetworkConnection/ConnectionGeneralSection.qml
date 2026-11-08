@@ -35,21 +35,17 @@ SettingsCard {
     }
     readonly property bool vpnTypes: NetworkService.connectionEditorSupported
     readonly property var typeOptions: {
-        const out = [
-            {
-                "value": "802-3-ethernet",
-                "label": I18n.tr("Ethernet")
-            },
-            {
-                "value": "802-11-wireless",
-                "label": I18n.tr("Wi-Fi")
+        const out = [];
+        for (const t of ConnectionEditor.CONNECTION_TYPES) {
+            if (!t.addable || (t.group === "vpn" && !vpnTypes))
+                continue;
+            if (t.type !== "vpn") {
+                out.push({
+                    "value": t.type,
+                    "label": editor.typeLabel(t.type)
+                });
+                continue;
             }
-        ];
-        if (vpnTypes) {
-            out.push({
-                "value": "wireguard",
-                "label": "WireGuard"
-            });
             for (const p of VPNService.plugins ?? []) {
                 out.push({
                     "value": "vpn:" + p.serviceType,
@@ -57,22 +53,6 @@ SettingsCard {
                 });
             }
         }
-        out.push({
-            "value": "vlan",
-            "label": "VLAN"
-        }, {
-            "value": "bond",
-            "label": I18n.tr("Bond", "network connection type: bonded interfaces")
-        }, {
-            "value": "bridge",
-            "label": I18n.tr("Bridge", "network connection type: network bridge")
-        }, {
-            "value": "pppoe",
-            "label": "DSL"
-        }, {
-            "value": "gsm",
-            "label": I18n.tr("Cellular")
-        });
         if (ConnectionEditor.groupOf(SettingsUiState.newConnectionType) === "vpn")
             return out.filter(t => ConnectionEditor.groupOf(t.value) === "vpn");
         return out;
@@ -153,11 +133,11 @@ SettingsCard {
         }
 
         DActionButton {
-            visible: !root.editor.isNew && NetworkService.nmConnectionEditorAvailable
+            visible: !root.editor.isNew && NetworkService.externalConnectionEditor !== ""
             iconName: "open_in_new"
             iconSize: Theme.iconSizeSmall
-            tooltipText: I18n.tr("Open in %1", "%1 is an application name").arg("nm-connection-editor")
-            onClicked: NetworkService.openInNmConnectionEditor(root.uuid)
+            tooltipText: I18n.tr("Open in %1", "%1 is an application name").arg(NetworkService.externalConnectionEditor)
+            onClicked: NetworkService.openExternalConnectionEditor(root.uuid)
         }
     }
 
@@ -182,7 +162,6 @@ SettingsCard {
     }
 
     Component.onCompleted: {
-        NetworkService.probeNmConnectionEditor();
         if (vpnTypes && (VPNService.plugins ?? []).length === 0)
             VPNService.fetchPlugins();
         NetworkService.listFirewallZones(response => {

@@ -153,23 +153,33 @@ func TestEncodeNewSettings(t *testing.T) {
 	}
 }
 
-func TestLinkTypeRowsEncode(t *testing.T) {
-	s, err := encodeNewSettings(SettingsPatch{
-		"connection": {"autoconnect-slaves": 1.0, "master": "u", "slave-type": "bond"},
-		"vlan":       {"id": 100.0, "flags": 3.0, "parent": "enp5s0"},
-		"bond":       {"options": map[string]any{"mode": "active-backup", "miimon": "100"}},
-		"bridge":     {"mac-address": "aa:bb:cc:dd:ee:ff", "stp": true, "priority": 4096.0},
-	})
+func TestPortConnectionRowsEncode(t *testing.T) {
+	s, err := encodeNewSettings(SettingsPatch{"connection": {"autoconnect-slaves": 1.0, "master": "u", "slave-type": "bond"}})
 	require.NoError(t, err)
 	assert.Equal(t, "i", s["connection"]["autoconnect-slaves"].Signature().String())
+}
+
+func TestVlanRowsEncode(t *testing.T) {
+	s, err := encodeNewSettings(SettingsPatch{"vlan": {"id": 100.0, "flags": 3.0, "parent": "enp5s0"}})
+	require.NoError(t, err)
 	assert.Equal(t, "u", s["vlan"]["id"].Signature().String())
 	assert.Equal(t, "u", s["vlan"]["flags"].Signature().String())
 	assert.Equal(t, "s", s["vlan"]["parent"].Signature().String())
-	assert.Equal(t, "a{ss}", s["bond"]["options"].Signature().String())
-	assert.Equal(t, []byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff}, s["bridge"]["mac-address"].Value())
 
 	_, err = encodeNewSettings(SettingsPatch{"vlan": {"id": -1.0}})
 	require.ErrorContains(t, err, "vlan.id")
+}
+
+func TestBondRowsEncode(t *testing.T) {
+	s, err := encodeNewSettings(SettingsPatch{"bond": {"options": map[string]any{"mode": "active-backup", "miimon": "100"}}})
+	require.NoError(t, err)
+	assert.Equal(t, "a{ss}", s["bond"]["options"].Signature().String())
+}
+
+func TestBridgeRowsEncode(t *testing.T) {
+	s, err := encodeNewSettings(SettingsPatch{"bridge": {"mac-address": "aa:bb:cc:dd:ee:ff", "stp": true, "priority": 4096.0}})
+	require.NoError(t, err)
+	assert.Equal(t, []byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff}, s["bridge"]["mac-address"].Value())
 }
 
 func TestLinkTypeSignaturesMatchNMSettingsDBus(t *testing.T) {
