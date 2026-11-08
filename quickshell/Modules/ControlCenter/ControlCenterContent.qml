@@ -17,6 +17,7 @@ FocusScope {
     required property var host
 
     property bool live: Window.window?.visible ?? false
+    readonly property bool hostOpen: host.shouldBeVisible ?? false
     property bool audioRefHeld: false
 
     LayoutMirroring.enabled: I18n.isRtl
@@ -102,6 +103,14 @@ FocusScope {
     }
 
     onLiveChanged: syncAudioRef(live)
+    onHostOpenChanged: {
+        if (hostOpen)
+            return;
+        // an in-flight codec switch reports failure through the open selector
+        if (!codecSelectorLoader.item?.isLoading)
+            codecSelectorLoader.item?.dismiss();
+        portSelectorLoader.item?.dismiss();
+    }
     Component.onCompleted: {
         WidgetUtils.ensureEditButton();
         syncAudioRef(live);
