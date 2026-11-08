@@ -139,12 +139,6 @@ var settingSignatures = func() map[string]string {
 		"gsm.initial-eps-bearer-apn":       "s",
 		"gsm.initial-eps-bearer-configure": "b",
 
-		"cdma.number":         "s",
-		"cdma.username":       "s",
-		"cdma.password":       "s",
-		"cdma.password-flags": "u",
-		"cdma.mtu":            "u",
-
 		"ppp.refuse-eap":        "b",
 		"ppp.refuse-pap":        "b",
 		"ppp.refuse-chap":       "b",

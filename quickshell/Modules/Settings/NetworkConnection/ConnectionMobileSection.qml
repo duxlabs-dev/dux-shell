@@ -11,18 +11,16 @@ SettingsCard {
     required property var editor
 
     readonly property int rev: editor.revision
-    readonly property bool isGsm: editor.draft?.gsm !== undefined
-    readonly property string sectionKey: isGsm ? "gsm" : "cdma"
     readonly property var sec: {
         rev;
-        return editor.draft?.[sectionKey] ?? {};
+        return editor.draft?.gsm ?? {};
     }
     // Invalid input is never written, so validity comes from the typed text.
     readonly property bool valid: netIdRow.ok && mtuRow.ok
     readonly property bool passwordSaved: CE.secretSaved(sec, "password")
 
     function put(key, v) {
-        editor.setValue(sectionKey, key, v);
+        editor.setValue("gsm", key, v);
     }
 
     function setSaved(saved) {
@@ -63,17 +61,10 @@ SettingsCard {
     title: I18n.tr("Cellular")
 
     TextRow {
-        visible: root.isGsm
         text: "APN"
         placeholderText: I18n.tr("Auto")
         key: "apn"
         writer: t => root.editor.setSection("gsm", CE.applyApn(root.sec, t, root.editor.original?.gsm))
-    }
-
-    TextRow {
-        visible: !root.isGsm
-        text: I18n.tr("Number", "phone number dialed to connect, e.g. *99#")
-        key: "number"
     }
 
     TextRow {
@@ -97,7 +88,6 @@ SettingsCard {
     }
 
     ConnectionSyncedRow {
-        visible: root.isGsm
         secret: true
         text: I18n.tr("PIN")
         enabled: !root.editor.readOnly
@@ -107,7 +97,6 @@ SettingsCard {
     }
 
     SettingsToggleRow {
-        visible: root.isGsm
         text: I18n.tr("Allow roaming", "mobile broadband")
         enabled: !root.editor.readOnly
         checked: root.sec["home-only"] !== true
@@ -116,7 +105,6 @@ SettingsCard {
 
     TextRow {
         id: netIdRow
-        visible: root.isGsm
         text: I18n.tr("Network ID", "mobile operator MCC-MNC code")
         key: "network-id"
         kind: "netid"
@@ -124,7 +112,6 @@ SettingsCard {
     }
 
     TextRow {
-        visible: root.isGsm
         text: I18n.tr("Number", "phone number dialed to connect, e.g. *99#")
         key: "number"
     }

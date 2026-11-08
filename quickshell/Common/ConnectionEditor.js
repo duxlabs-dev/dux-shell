@@ -768,13 +768,6 @@ var CONNECTION_TYPES = [
         "sections": ["general", "mobile", "ppp", "ipv4", "ipv6"]
     },
     {
-        "type": "cdma",
-        "group": "cellular",
-        "icon": "signal_cellular_alt",
-        "addable": false,
-        "sections": ["general", "mobile", "ppp", "ipv4", "ipv6"]
-    },
-    {
         "type": "bluetooth",
         "group": "other",
         "icon": "bluetooth",

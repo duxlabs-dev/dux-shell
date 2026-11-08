@@ -159,7 +159,6 @@ func TestLinkTypeSignaturesMatchNMSettingsDBus(t *testing.T) {
 		"gsm.password-flags": "u", "gsm.pin": "s", "gsm.pin-flags": "u", "gsm.home-only": "b",
 		"gsm.network-id": "s", "gsm.number": "s", "gsm.mtu": "u", "gsm.device-id": "s", "gsm.sim-id": "s",
 		"gsm.sim-operator-id": "s", "gsm.initial-eps-bearer-apn": "s", "gsm.initial-eps-bearer-configure": "b",
-		"cdma.number": "s", "cdma.username": "s", "cdma.password": "s", "cdma.password-flags": "u", "cdma.mtu": "u",
 		"ppp.refuse-eap": "b", "ppp.refuse-pap": "b", "ppp.refuse-chap": "b", "ppp.refuse-mschap": "b",
 		"ppp.refuse-mschapv2": "b", "ppp.require-mppe": "b", "ppp.require-mppe-128": "b",
 		"ppp.mppe-stateful": "b", "ppp.nobsdcomp": "b", "ppp.nodeflate": "b", "ppp.no-vj-comp": "b",

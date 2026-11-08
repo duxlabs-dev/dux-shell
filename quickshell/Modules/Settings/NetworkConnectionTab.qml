@@ -149,8 +149,8 @@ Item {
     function rebuild() {
         securitySection = null;
         revision++;
-        // Mobile settings need a gsm or cdma section (Bluetooth DUN profiles may lack one).
-        const hasMobile = hasSection("gsm") || hasSection("cdma");
+        // Mobile settings need a gsm section (Bluetooth DUN profiles may lack one).
+        const hasMobile = hasSection("gsm");
         sectionIds = [];
         swapping = false;
         sectionIds = loaded && !unsupported ? CE.sectionsFor(draft?.connection?.type ?? "", draft).filter(id => id !== "mobile" || hasMobile) : [];
