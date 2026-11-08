@@ -88,8 +88,6 @@ Item {
             return I18n.tr("Wi-Fi");
         if (type === "wireguard")
             return "WireGuard";
-        if (type === "pppoe")
-            return "DSL";
         if (type === "gsm")
             return I18n.tr("Cellular");
         if (type === "vpn" || type.startsWith("vpn:"))
@@ -380,8 +378,6 @@ Item {
                         return mobileSection;
                     case "bluetooth":
                         return bluetoothSection;
-                    case "pppoe":
-                        return pppoeSection;
                     case "ppp":
                         return pppSection;
                     }
@@ -510,14 +506,6 @@ Item {
         id: bluetoothSection
 
         ConnectionBluetoothSection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: pppoeSection
-
-        ConnectionPppoeSection {
             editor: root
         }
     }

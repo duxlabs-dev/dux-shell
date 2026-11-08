@@ -604,28 +604,6 @@ function withDataEntry(data, key, value) {
     return Object.keys(out).length === 0 ? undefined : out;
 }
 
-// Dropdown choices are [{label, value}]; an unrecognized stored value is appended as a literal option so it stays selected.
-function withChoice(list, current) {
-    if (list.some(c => c.value === current))
-        return list;
-    return list.concat([
-        {
-            "label": String(current),
-            "value": current
-        }
-    ]);
-}
-
-function choiceLabel(list, value) {
-    const hit = list.find(c => c.value === value);
-    return hit ? hit.label : String(value);
-}
-
-function choiceValue(list, label) {
-    const hit = list.find(c => c.label === label);
-    return hit ? hit.value : undefined;
-}
-
 // Enterprise (802.1X) form state -> EnterpriseConfig sent to the backend.
 function enterpriseConfig(s) {
     let identity = s.identity.trim();
@@ -780,14 +758,6 @@ var CONNECTION_TYPES = [
             }
             return out;
         }
-    },
-    {
-        "type": "pppoe",
-        "group": "other",
-        "icon": "router",
-        "addable": true,
-        "autoconnect": false,
-        "sections": ["general", "pppoe", "ethernet", "ppp", "ipv4", "ipv6"]
     },
     {
         "type": "gsm",
@@ -969,11 +939,6 @@ function newConnectionSettings(type, opts) {
         };
         if (service !== "")
             s.vpn["service-type"] = service;
-        break;
-    case "pppoe":
-        s.pppoe = {};
-        s["802-3-ethernet"] = {};
-        s.ppp = {};
         break;
     case "gsm":
         s.gsm = {

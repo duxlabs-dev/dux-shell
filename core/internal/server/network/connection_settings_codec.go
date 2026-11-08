@@ -145,12 +145,6 @@ var settingSignatures = func() map[string]string {
 		"cdma.password-flags": "u",
 		"cdma.mtu":            "u",
 
-		"pppoe.parent":         "s",
-		"pppoe.service":        "s",
-		"pppoe.username":       "s",
-		"pppoe.password":       "s",
-		"pppoe.password-flags": "u",
-
 		"ppp.refuse-eap":        "b",
 		"ppp.refuse-pap":        "b",
 		"ppp.refuse-chap":       "b",

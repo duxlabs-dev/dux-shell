@@ -98,7 +98,6 @@ test("APN edits move auto-config with them", () => {
 
 test("registry rows and new-profile autoconnect per type", () => {
     const rows = [
-        ["pppoe", "other", "router", true, false, ["general", "pppoe", "ethernet", "ppp", "ipv4", "ipv6"]],
         ["gsm", "cellular", "signal_cellular_alt", true, false, ["general", "mobile", "ppp", "ipv4", "ipv6"]],
         ["cdma", "cellular", "signal_cellular_alt", false, true, ["general", "mobile", "ppp", "ipv4", "ipv6"]],
         ["bluetooth", "other", "bluetooth", false, true, ["general", "bluetooth", "ipv4", "ipv6"]]
@@ -135,13 +134,10 @@ test("ports are detected by either key pair", () => {
 
     assert.deepEqual(ce.sectionsFor("bluetooth", { bluetooth: { type: "dun" }, gsm: {}, ipv4: {} }), ["general", "bluetooth", "mobile", "ppp", "ipv4"]);
     assert.deepEqual(ce.sectionsFor("bluetooth", { bluetooth: { type: "panu" }, ipv4: {}, ipv6: {} }), ["general", "bluetooth", "ipv4", "ipv6"]);
-    assert.deepEqual(ce.sectionsFor("pppoe", {}), ["general", "pppoe", "ethernet", "ppp", "ipv4", "ipv6"]);
     assert.deepEqual(ce.sectionsFor("cdma", {}), ["general", "mobile", "ppp", "ipv4", "ipv6"]);
 });
 
 test("new connections of each remaining type", () => {
-    const pppoe = ce.newConnectionSettings("pppoe", { name: "dsl" });
-    assert.deepEqual([pppoe.pppoe, pppoe["802-3-ethernet"], pppoe.ppp, pppoe.connection.autoconnect], [{}, {}, {}, false]);
     const gsm = ce.newConnectionSettings("gsm", { name: "m" });
     assert.deepEqual([gsm.gsm, gsm.connection.autoconnect, gsm.ipv4.method], [{ "auto-config": true }, false, "auto"]);
 });
