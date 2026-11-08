@@ -124,8 +124,8 @@ SettingsCard {
             labelText: I18n.tr("Password")
             echoMode: TextInput.Password
             showPasswordToggle: true
-            isError: !root.pskValid
-            supportingText: root.pskValid ? "" : I18n.tr("Password must be 8 to 63 characters, or a 64-digit hex key.", "hotspot password length requirement")
+            isError: !root.pskValid && (root.psk !== "" || root.editor.showErrors)
+            supportingText: !isError ? "" : I18n.tr("Password must be 8 to 63 characters, or a 64-digit hex key.", "hotspot password length requirement")
             text: root.psk
             onTextEdited: {
                 if (text === root.psk)

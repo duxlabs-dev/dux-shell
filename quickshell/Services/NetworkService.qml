@@ -61,6 +61,7 @@ Singleton {
     property string connectionError: activeService?.connectionError ?? ""
 
     property bool isScanning: activeService?.isScanning ?? false
+    property bool wifiScannedOnce: activeService?.wifiScannedOnce ?? false
     property bool autoScan: activeService?.autoScan ?? false
 
     property bool wifiAvailable: activeService?.wifiAvailable ?? true
@@ -83,7 +84,6 @@ Singleton {
     property string hotspotUuid: activeService?.hotspotUuid ?? ""
     property string hotspotSecurity: activeService?.hotspotSecurity ?? ""
     property bool hotspotHidden: activeService?.hotspotHidden ?? false
-    property bool hotspotAutoconnect: activeService?.hotspotAutoconnect ?? false
     property bool hotspotExtendedSupported: activeService?.hotspotExtendedSupported ?? false
     property string externalConnectionEditor: activeService?.externalConnectionEditor ?? ""
     property int connectionProfilesRevision: activeService?.connectionProfilesRevision ?? 0
@@ -91,7 +91,6 @@ Singleton {
     property bool hotspotSupported: activeService?.hotspotSupported ?? false
     property bool hotspotAvailable: activeService?.hotspotAvailable ?? false
     property bool hotspotConfigured: activeService?.hotspotConfigured ?? false
-    readonly property bool hotspotSectionAvailable: hotspotAvailable || hotspotConfigured
     property bool hotspotEnabled: activeService?.hotspotEnabled ?? false
     property bool hotspotActivating: activeService?.hotspotActivating ?? false
     property bool hotspotSecured: activeService?.hotspotSecured ?? false

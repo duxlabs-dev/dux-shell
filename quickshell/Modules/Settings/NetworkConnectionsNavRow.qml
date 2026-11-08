@@ -3,14 +3,16 @@ import qs.Common
 import qs.Modules.Settings.Widgets
 import qs.Services
 
-SettingsNavRow {
-    id: navRow
+SettingsCard {
+    id: navCard
 
     property var parentModal
 
     visible: NetworkService.connectionEditorSupported
-    iconName: "network_manage"
-    title: I18n.tr("Connections", "settings page listing saved network connection profiles")
-    hint: I18n.tr("Saved configurations")
-    onClicked: keyboard => navRow.parentModal?.navigateTo("network_connections", keyboard)
+
+    SettingsNavRow {
+        iconName: "network_manage"
+        title: I18n.tr("All connections", "settings link to the list of every saved network connection")
+        onClicked: keyboard => navCard.parentModal?.navigateTo("network_connections", keyboard)
+    }
 }

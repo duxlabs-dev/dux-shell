@@ -74,6 +74,7 @@ func TestHandleActions(t *testing.T) {
 		{"login", "tailscale.login", nil},
 		{"logout", "tailscale.logout", nil},
 		{"switchProfile", "tailscale.switchProfile", map[string]any{"id": "p2"}},
+		{"removeProfile", "tailscale.removeProfile", map[string]any{"id": "p2"}},
 	}
 
 	for _, tc := range cases {
@@ -148,11 +149,15 @@ func callHandler[T any](t *testing.T, m *Manager, method string, params map[stri
 }
 
 func TestHandleRequestErrors(t *testing.T) {
-	m := newManager(&mockClient{
+	client := &mockClient{
 		watchFn:     blockingWatch,
 		statusFn:    func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
 		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error { return errAccessDenied },
-	})
+		profileStatusFn: func(ctx context.Context) (loginProfile, []loginProfile, error) {
+			return loginProfile{ID: "a"}, []loginProfile{{ID: "a"}, {ID: "b"}}, nil
+		},
+	}
+	m := newManager(client)
 	m.RefreshState()
 	defer m.Close()
 	for _, tc := range []struct {
@@ -165,12 +170,16 @@ func TestHandleRequestErrors(t *testing.T) {
 		{"tailscale.setPrefs", map[string]any{"advertiseRoutes": []any{1}}, "advertiseRoutes must be a list of strings"},
 		{"tailscale.setPrefs", map[string]any{"acceptRoutes": true}, "access denied"},
 		{"tailscale.switchProfile", nil, ""},
+		{"tailscale.removeProfile", nil, "profile id is required"},
+		{"tailscale.removeProfile", map[string]any{"id": 5}, "profile id is required"},
+		{"tailscale.removeProfile", map[string]any{"id": "a"}, "current account"},
 	} {
 		resp := callHandler[map[string]any](t, m, tc.method, tc.params)
 		assert.Nil(t, resp.Result)
 		assert.Contains(t, resp.Error, tc.want)
 		assert.NotEmpty(t, resp.Error)
 	}
+	assert.Empty(t, client.deleted)
 }
 
 func TestHandleGrantOperator(t *testing.T) {

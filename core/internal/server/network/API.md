@@ -41,7 +41,6 @@ Configuration changes are rejected while the DMS hotspot is active or activating
 - `address` (string, optional, API v41+): Gateway address with prefix, for example `10.42.0.1/24`. Omit for NetworkManager's default.
 - `security` (string, optional, API v41+): `wpa-psk` (WPA2) or `sae` (WPA3), both requiring `password`. Omitted or empty means open, or WPA2 when `password` is set.
 - `hidden` (bool, optional, API v41+): Hide the SSID. Defaults to `false`.
-- `autoconnect` (bool, optional, API v41+): Let NetworkManager start the hotspot on its own. Defaults to `false`.
 
 **Response:**
 ```json
@@ -136,6 +135,7 @@ Generic profile editor (API v41+, NetworkManager only). Clients should require `
 - `network.connection.delete {uuid}`
 - `network.connection.duplicate {uuid, name}`: copies a profile, including stored secrets, under a new UUID and the given name. Returns `{"uuid": "..."}`.
 - `network.connection.export {uuid, file}` (API v41+): writes a WireGuard profile (wg-quick format) or a VPN profile (`nmcli connection export`) to the absolute path `file` with mode 0600. An existing regular file is replaced; a symlink or any other non-regular file at `file` is refused. Other profile types and NetworkManager's own errors are returned as text.
+- `network.vpn.plugins`: each plugin carries `canCreate`, true when its `.name` file names an editor plugin (`plugin=` in `[libnm]` or `properties=` in `[GNOME]`). Plugins managed by their own app (Proton VPN) have none and can't be created through NetworkManager.
 - `network.wireguard.keys {privateKey?}` (API v41+): without `privateKey`, returns a new `{privateKey, publicKey}` pair. With it, returns the same private key and its derived public key. Errors with `invalid WireGuard key` unless it is base64 of 32 bytes. Works on any backend.
 
 ```json
@@ -296,6 +296,7 @@ Served by the Tailscale manager, not the network service. Writes need permission
 - `tailscale.addProfile {server?}`: asks polkit to run `tailscale login --operator=<user> --login-server=<server>`, which creates a new account, then starts its login. `server` is an http or https URL; empty or omitted means tailscale.com. The login URL arrives as `authUrl` in state.
 - `tailscale.profiles`: returns `{canOperate, grantAvailable, current, profiles: [{id, name, tailnet}]}`.
 - `tailscale.switchProfile {id}`
+- `tailscale.removeProfile {id}`: removes an account from this device. The node stays registered on its control server. The current account is refused (log out instead).
 - `tailscale.suggestExitNode`: returns `{id, name}`.
 - `tailscale.grantOperator`: asks polkit to run `tailscale set --operator=<user>`, then returns the same result as `tailscale.profiles`.
 
@@ -361,7 +362,6 @@ State updates are sent whenever network configuration changes:
 - `hotspotUuid` (API v41+): UUID of the DMS-managed hotspot profile.
 - `hotspotSecurity` (API v41+): The hotspot's key management, `wpa-psk` or `sae`, empty when open.
 - `hotspotHidden` (API v41+): Whether the hotspot hides its SSID.
-- `hotspotAutoconnect` (API v41+): Whether NetworkManager may start the hotspot on its own.
 - `connectivity` (API v41+): `unknown`, `none`, `portal`, `limited` or `full`.
 - `connectivityCheckEnabled` (API v41+): Whether NetworkManager's connectivity checking is on.
 - `connectivityCheckAvailable` (API v41+): Whether a check URI is configured so checking can be enabled.

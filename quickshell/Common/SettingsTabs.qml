@@ -428,8 +428,7 @@ Singleton {
                     "text": I18n.tr("Hotspot", "settings page title for the Wi-Fi hotspot"),
                     "icon": "wifi_tethering",
                     "tabIndex": 75,
-                    "hotspotOnly": true,
-                    "hint": I18n.tr("Set up a Wi-Fi hotspot for sharing this connection.", "unconfigured hotspot description")
+                    "hotspotOnly": true
                 },
                 {
                     "id": "network_wifi_connect",
@@ -463,6 +462,15 @@ Singleton {
                     "hint": I18n.tr("Tailscale Network")
                 },
                 {
+                    "id": "network_tailscale_add",
+                    "hidden": true,
+                    "searchable": false,
+                    "tailscaleOnly": true,
+                    "text": I18n.tr("Add account", "Tailscale: add another account"),
+                    "icon": "person_add",
+                    "tabIndex": 76
+                },
+                {
                     "id": "network_cellular",
                     "text": I18n.tr("Cellular"),
                     "icon": "network_cell",
@@ -476,7 +484,8 @@ Singleton {
                     "icon": "network_manage",
                     "tabIndex": 71,
                     "connectionEditorOnly": true,
-                    "hint": I18n.tr("Saved configurations")
+                    "hint": I18n.tr("Saved configurations"),
+                    "hubFooter": I18n.tr("Manage all connections", "settings link on the network overview to the list of every saved network connection")
                 },
                 {
                     "id": "network_connection",
@@ -867,7 +876,7 @@ Singleton {
             return false;
         if (entry.wifiOnly && !NetworkService.wifiDevicePresent)
             return false;
-        if (entry.hotspotOnly && !NetworkService.hotspotSectionAvailable)
+        if (entry.hotspotOnly && !NetworkService.hotspotAvailable)
             return false;
         if (entry.connectionEditorOnly && !NetworkService.connectionEditorSupported)
             return false;
@@ -912,14 +921,21 @@ Singleton {
         const hub = pageMap[hubId];
         if (!hub?.children)
             return [];
-        return hub.children.filter(child => !child.advanced && !child.hidden && isVisible(child));
+        return hub.children.filter(child => !child.advanced && !child.hidden && !child.hubFooter && isVisible(child));
     }
 
     function hubMoreRows(hubId) {
         const hub = pageMap[hubId];
         if (!hub?.children)
             return [];
-        return hub.children.filter(child => child.advanced && !child.hidden && isVisible(child));
+        return hub.children.filter(child => child.advanced && !child.hidden && !child.hubFooter && isVisible(child));
+    }
+
+    function hubFooterRows(hubId) {
+        const hub = pageMap[hubId];
+        if (!hub?.children)
+            return [];
+        return hub.children.filter(child => child.hubFooter && isVisible(child));
     }
 
     function hubRows(hubId) {

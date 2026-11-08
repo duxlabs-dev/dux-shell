@@ -81,7 +81,7 @@ SettingsCard {
         visible: root.ssidDecodable
         text: I18n.tr("Network Name (SSID)")
         value: root.ssid
-        isError: root.ssid === ""
+        isError: root.editor.showErrors && root.ssid === ""
         onValueEdited: value => root.editor.setValue(root.section, "ssid", value)
     }
 

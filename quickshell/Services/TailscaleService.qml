@@ -14,8 +14,12 @@ Singleton {
     onRefCountChanged: {
         if (refCount > 0) {
             ensureSubscription();
-        } else if (refCount === 0 && DMSService.activeSubscriptions.includes("tailscale")) {
-            DMSService.removeSubscription("tailscale");
+        } else if (refCount === 0) {
+            profilesLoaded = canOperate = grantAvailable = false;
+            profiles = [];
+            currentProfile = "";
+            if (DMSService.activeSubscriptions.includes("tailscale"))
+                DMSService.removeSubscription("tailscale");
         }
     }
 
@@ -45,6 +49,17 @@ Singleton {
     property var prefs: ({})
     property string authUrl: ""
     property bool loginRequested: false
+    property bool profilesLoaded: false
+    property bool canOperate: false
+    property bool grantAvailable: false
+    property var profiles: []
+    property string currentProfile: ""
+    property int profilesRequest: 0
+    property bool addPending: false
+    property bool addBusy: false
+    property bool addAbandoned: false
+    property string addReturnProfile: ""
+    signal addCompleted
     readonly property bool prefsSupported: DMSService.apiVersion >= 41
     readonly property bool canWritePrefs: available && prefsSupported
 
@@ -155,7 +170,10 @@ Singleton {
             return;
         connected = data.connected || false;
         version = data.version || "";
+        const previousState = backendState;
         backendState = data.backendState || "";
+        if (addPending && backendState !== previousState)
+            Qt.callLater(loadProfiles);
         magicDnsSuffix = data.magicDnsSuffix || "";
         tailnetName = data.tailnetName || "";
         selfNode = data.self || null;
@@ -245,18 +263,47 @@ Singleton {
     }
 
     function addProfile(server, callback) {
-        if (!canWritePrefs)
+        if (!canWritePrefs || addBusy)
             return false;
+        if (!addPending) {
+            addPending = true;
+            addReturnProfile = currentProfile;
+        }
+        addBusy = true;
         loginRequested = true;
         sendAction("tailscale.addProfile", {
             "server": server || ""
         }, r => {
-            if (r.error)
-                loginRequested = false;
+            addBusy = false;
+            if (r.error || addAbandoned)
+                abandonAdd();
+            else
+                loadProfiles();
             if (callback)
                 callback(r);
         });
         return true;
+    }
+
+    // tailscaled stays on the new unsaved profile until its login completes, so give back the account that was active.
+    function abandonAdd() {
+        if (!addPending)
+            return;
+        if (addBusy) {
+            addAbandoned = true;
+            return;
+        }
+        const id = addReturnProfile;
+        addPending = addAbandoned = false;
+        addReturnProfile = "";
+        loginRequested = false;
+        if (id === "" || !canWritePrefs)
+            return;
+        // Ask tailscaled directly: loadProfiles drops replies once nothing holds a Ref, and a completed login must stay.
+        DMSService.sendRequest("tailscale.profiles", {}, response => {
+            if (!addPending && response?.result && (response.result.current || "") === "")
+                switchProfile(id, () => loadProfiles());
+        });
     }
 
     function logout(callback) {
@@ -277,6 +324,15 @@ Singleton {
         return true;
     }
 
+    function removeProfile(id, callback) {
+        if (!canWritePrefs)
+            return false;
+        sendAction("tailscale.removeProfile", {
+            "id": id
+        }, callback);
+        return true;
+    }
+
     function grantOperator(callback) {
         if (!canWritePrefs)
             return false;
@@ -284,11 +340,37 @@ Singleton {
         return true;
     }
 
-    function listProfiles(callback) {
+    function applyProfiles(result) {
+        if (!result)
+            return;
+        profilesLoaded = true;
+        canOperate = result.canOperate === true;
+        grantAvailable = result.grantAvailable === true;
+        profiles = result.profiles || [];
+        currentProfile = result.current || "";
+        if (addPending && !addBusy && currentProfile !== "" && currentProfile !== addReturnProfile) {
+            addPending = false;
+            addReturnProfile = "";
+            addCompleted();
+        }
+    }
+
+    // resumeAdd: an add left pending when its page closed is finished if a new account is current, else given up.
+    function loadProfiles(resumeAdd) {
         if (!canWritePrefs)
-            return false;
-        DMSService.sendRequest("tailscale.profiles", {}, callback);
-        return true;
+            return;
+        const request = ++profilesRequest;
+        DMSService.sendRequest("tailscale.profiles", {}, response => {
+            if (refCount === 0 || request !== profilesRequest)
+                return;
+            if (!response || response.error) {
+                profilesLoaded = canOperate = false;
+                return;
+            }
+            applyProfiles(response.result);
+            if (resumeAdd === true && addPending && !addBusy && currentProfile === "")
+                abandonAdd();
+        });
     }
 
     function suggestExitNode(callback) {

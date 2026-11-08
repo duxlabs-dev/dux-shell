@@ -190,7 +190,7 @@ SettingsCard {
                 labelText: I18n.tr("Private key", "WireGuard interface private key field")
                 echoMode: TextInput.Password
                 showPasswordToggle: true
-                isError: !root.keyValid
+                isError: !root.keyValid && (root.keyText.trim() !== "" || root.editor.showErrors)
                 text: root.keyText
                 onTextEdited: {
                     if (text !== root.keyText)
@@ -303,7 +303,7 @@ SettingsCard {
                     outlined: true
                     labelText: I18n.tr("Public key", "WireGuard key field")
                     text: peerRow.modelData.publicKey
-                    isError: !CE.isValidWgKey(text.trim())
+                    isError: text.trim() === "" ? root.editor.showErrors : !CE.isValidWgKey(text.trim())
                     onTextEdited: root.editPeer(peerRow.index, "publicKey", text)
                 },
                 DTextField {

@@ -203,7 +203,7 @@ func buildHotspotSettings(req HotspotRequest) gonetworkmanager.ConnectionSetting
 	connection := map[string]any{
 		"id":          dmsHotspotConnectionID,
 		"type":        "802-11-wireless",
-		"autoconnect": req.Autoconnect,
+		"autoconnect": false,
 		"stable-id":   dmsHotspotStableID,
 	}
 	if req.Device != "" {
@@ -778,7 +778,6 @@ func (b *NetworkManagerBackend) updateHotspotState() error {
 	b.state.HotspotUUID, _ = settings["connection"]["uuid"].(string)
 	b.state.HotspotSecurity = keyMgmt
 	b.state.HotspotHidden, _ = settings["802-11-wireless"]["hidden"].(bool)
-	b.state.HotspotAutoconnect = hotspotAutoconnectFromSettings(settings)
 	if wasStarting {
 		switch {
 		case enabled:
@@ -796,15 +795,6 @@ func (b *NetworkManagerBackend) updateHotspotState() error {
 	b.stateMutex.Unlock()
 
 	return nil
-}
-
-// NM omits autoconnect from GetSettings when it is at its default, true.
-func hotspotAutoconnectFromSettings(settings gonetworkmanager.ConnectionSettings) bool {
-	if settings == nil {
-		return false
-	}
-	autoconnect, ok := settings["connection"]["autoconnect"].(bool)
-	return autoconnect || !ok
 }
 
 func hotspotSecuredFromSettings(settings gonetworkmanager.ConnectionSettings) bool {

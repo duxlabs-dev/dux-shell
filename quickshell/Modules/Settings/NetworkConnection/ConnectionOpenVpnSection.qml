@@ -188,7 +188,7 @@ SettingsCard {
         host: root
         dataKey: "remote"
         text: I18n.tr("Gateway", "network IP setting label")
-        isError: !root.valid
+        isError: root.editor.showErrors && !root.valid
     }
 
     ConnectionChoiceRow {

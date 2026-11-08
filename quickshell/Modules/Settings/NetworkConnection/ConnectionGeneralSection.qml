@@ -52,7 +52,7 @@ SettingsCard {
             "value": "wireguard",
             "label": editor.typeLabel("wireguard")
         }
-    ].concat((VPNService.plugins ?? []).map(p => ({
+    ].concat((VPNService.plugins ?? []).filter(p => p.canCreate).map(p => ({
                 "value": "vpn:" + p.serviceType,
                 "label": VPNService.getPluginName(p.serviceType)
             })))
@@ -204,7 +204,7 @@ SettingsCard {
             root.rev;
             return String(root.editor.value("connection", "id", ""));
         }
-        isError: root.name === ""
+        isError: root.editor.showErrors && root.name === ""
         onValueEdited: value => root.editor.setValue("connection", "id", value)
     }
 

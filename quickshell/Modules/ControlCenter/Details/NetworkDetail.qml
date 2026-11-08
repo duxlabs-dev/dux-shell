@@ -64,7 +64,7 @@ Item {
     readonly property bool showHotspotRow: wifiMode && NetworkService.hotspotAvailable && NetworkService.hotspotConfigured && hotspotRelevant
     readonly property bool hotspotWorking: NetworkService.hotspotBusy || NetworkService.hotspotActivating
     readonly property var pinnedNetworks: QmlUtils.normalizePinList((CacheData.wifiNetworkPins || {})["preferredWifi"])
-    readonly property bool wifiScanningEmpty: wifiMode && NetworkService.wifiEnabled && !NetworkService.wifiToggling && NetworkService.wifiInterface && (NetworkService.wifiNetworks?.length ?? 0) < 1 && (NetworkService.isScanning || transitioning)
+    readonly property bool wifiScanningEmpty: wifiMode && NetworkService.wifiEnabled && !NetworkService.wifiToggling && NetworkService.wifiInterface && (NetworkService.wifiNetworks?.length ?? 0) < 1 && ((NetworkService.isScanning && !NetworkService.wifiScannedOnce) || transitioning)
     readonly property bool wifiListVisible: wifiMode && NetworkService.wifiEnabled && !NetworkService.wifiToggling && !wifiScanningEmpty
 
     readonly property bool paneSwitchSupported: connectionTypes.length > 1 && networkManager && DMSService.apiVersion > 10
@@ -86,18 +86,6 @@ Item {
 
     readonly property Item headerActions: Row {
         spacing: Theme.spacingS
-
-        DDropdown {
-            anchors.verticalCenter: parent.verticalCenter
-            visible: root.wifiMode && (NetworkService.wifiDevices?.length ?? 0) > 1
-            compactMode: true
-            dropdownWidth: CcMetrics.headerDropdownWidth
-            popupWidth: CcMetrics.headerPopupWidth
-            alignPopupRight: true
-            options: [I18n.tr("Auto")].concat((NetworkService.wifiDevices || []).map(d => d.name))
-            currentValue: NetworkService.wifiDeviceOverride || I18n.tr("Auto")
-            onValueChanged: value => NetworkService.setWifiDeviceOverride(value === I18n.tr("Auto") ? "" : value)
-        }
 
         DRefreshButton {
             Accessible.name: I18n.tr("Scan")
@@ -133,10 +121,6 @@ Item {
             return true;
         }
         return false;
-    }
-
-    function explainHotspotNeedsWiFi() {
-        ToastService.showError(I18n.tr("Wi-Fi is disabled", "hotspot start error title"), I18n.tr("Enable Wi-Fi before starting the hotspot.", "hotspot WiFi requirement message"));
     }
 
     function startHotspotWithConfirm() {
@@ -241,36 +225,7 @@ Item {
 
         readonly property bool frozen: wifiMenu.open || root.transitioning
         property var frozenNetworks: []
-        readonly property var sortedNetworks: {
-            const ssid = NetworkService.currentWifiSSID;
-            const pinnedList = root.pinnedNetworks;
-            const sorted = [...(NetworkService.wifiNetworks || [])];
-            sorted.sort((a, b) => {
-                const aPinnedIndex = pinnedList.indexOf(a.ssid);
-                const bPinnedIndex = pinnedList.indexOf(b.ssid);
-                if (aPinnedIndex !== -1 || bPinnedIndex !== -1) {
-                    if (aPinnedIndex === -1)
-                        return 1;
-                    if (bPinnedIndex === -1)
-                        return -1;
-                    return aPinnedIndex - bPinnedIndex;
-                }
-                if (a.ssid === ssid)
-                    return -1;
-                if (b.ssid === ssid)
-                    return 1;
-                const aKnown = !!a.saved && (a.signal || 0) > 0;
-                const bKnown = !!b.saved && (b.signal || 0) > 0;
-                if (aKnown !== bKnown)
-                    return aKnown ? -1 : 1;
-                const aBucket = Math.floor((a.signal || 0) / CcMetrics.wifiSignalBucket);
-                const bBucket = Math.floor((b.signal || 0) / CcMetrics.wifiSignalBucket);
-                if (aBucket !== bBucket)
-                    return bBucket - aBucket;
-                return (a.ssid || "").localeCompare(b.ssid || "");
-            });
-            return sorted;
-        }
+        readonly property var sortedNetworks: WifiConnectionActions.sortNetworks(NetworkService.wifiNetworks, NetworkService.currentWifiSSID, root.pinnedNetworks, network => !!network.saved && (network.signal || 0) > 0 ? 0 : 1)
 
         values: frozen ? frozenNetworks : sortedNetworks
 
@@ -361,6 +316,23 @@ Item {
                 }
 
                 CcListRow {
+                    visible: NetworkService.wifiEnabled && (NetworkService.wifiDevices?.length ?? 0) > 1
+                    iconName: "settings_input_antenna"
+                    title: I18n.tr("Device")
+
+                    DDropdown {
+                        anchors.verticalCenter: parent.verticalCenter
+                        compactMode: true
+                        dropdownWidth: CcMetrics.rowDropdownWidth
+                        popupWidth: CcMetrics.headerPopupWidth
+                        alignPopupRight: true
+                        options: [I18n.tr("Auto")].concat((NetworkService.wifiDevices || []).map(d => d.name))
+                        currentValue: NetworkService.wifiDeviceOverride || I18n.tr("Auto")
+                        onValueChanged: value => NetworkService.setWifiDeviceOverride(value === I18n.tr("Auto") ? "" : value)
+                    }
+                }
+
+                CcListRow {
                     id: hotspotRow
 
                     readonly property bool warnsWifiDrop: NetworkService.wifiEnabled && !root.hotspotWorking && !NetworkService.hotspotEnabled && NetworkService.hotspotWouldDisconnectWifi
@@ -406,17 +378,13 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         hideText: true
                         visible: !root.hotspotWorking
+                        enabled: NetworkService.hotspotEnabled || NetworkService.wifiEnabled
                         checked: NetworkService.hotspotEnabled
                         onToggled: checked => {
-                            if (!checked) {
+                            if (checked)
+                                root.startHotspotWithConfirm();
+                            else
                                 NetworkService.stopHotspot();
-                                return;
-                            }
-                            if (!NetworkService.wifiEnabled) {
-                                root.explainHotspotNeedsWiFi();
-                                return;
-                            }
-                            root.startHotspotWithConfirm();
                         }
                     }
                 }
@@ -426,12 +394,6 @@ Item {
                 visible: root.wifiMode && NetworkService.wifiToggling
                 spinning: true
                 title: NetworkService.wifiEnabled ? I18n.tr("Disabling WiFi...") : I18n.tr("Enabling WiFi...")
-            }
-
-            CcEmptyState {
-                visible: root.wifiMode && !NetworkService.wifiEnabled && !NetworkService.wifiToggling
-                iconName: "wifi_off"
-                title: I18n.tr("WiFi is off", "network status when the wifi radio is disabled")
             }
 
             CcEmptyState {
@@ -652,7 +614,7 @@ Item {
                     return "";
                 if (signalStrength >= CcMetrics.wifiSignalStrong)
                     return "wifi";
-                return signalStrength >= CcMetrics.wifiSignalBucket ? "wifi_2_bar" : "wifi_1_bar";
+                return signalStrength >= WifiConnectionActions.signalBucket ? "wifi_2_bar" : "wifi_1_bar";
             }
             active: isConnected
             title: modelData.ssid || I18n.tr("Unknown Network")

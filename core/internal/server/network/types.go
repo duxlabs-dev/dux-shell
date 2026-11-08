@@ -157,7 +157,6 @@ type NetworkState struct {
 	HotspotUUID                string               `json:"hotspotUuid"`
 	HotspotSecurity            string               `json:"hotspotSecurity"`
 	HotspotHidden              bool                 `json:"hotspotHidden"`
-	HotspotAutoconnect         bool                 `json:"hotspotAutoconnect"`
 	Connectivity               string               `json:"connectivity"`
 	ConnectivityCheckEnabled   bool                 `json:"connectivityCheckEnabled"`
 	ConnectivityCheckAvailable bool                 `json:"connectivityCheckAvailable"`
@@ -185,15 +184,14 @@ type ConnectionRequest struct {
 }
 
 type HotspotRequest struct {
-	SSID        string `json:"ssid"`
-	Password    string `json:"password,omitempty"`
-	Device      string `json:"device,omitempty"`
-	Band        string `json:"band,omitempty"`
-	Channel     uint32 `json:"channel,omitempty"`
-	Address     string `json:"address,omitempty"`
-	Security    string `json:"security,omitempty"`
-	Hidden      bool   `json:"hidden,omitempty"`
-	Autoconnect bool   `json:"autoconnect,omitempty"`
+	SSID     string `json:"ssid"`
+	Password string `json:"password,omitempty"`
+	Device   string `json:"device,omitempty"`
+	Band     string `json:"band,omitempty"`
+	Channel  uint32 `json:"channel,omitempty"`
+	Address  string `json:"address,omitempty"`
+	Security string `json:"security,omitempty"`
+	Hidden   bool   `json:"hidden,omitempty"`
 }
 
 type WiredConnection struct {
@@ -307,6 +305,7 @@ type VPNPlugin struct {
 	Program        string   `json:"program,omitempty"`
 	Supports       []string `json:"supports,omitempty"`
 	FileExtensions []string `json:"fileExtensions"`
+	CanCreate      bool     `json:"canCreate"`
 }
 
 type VPNConfig struct {

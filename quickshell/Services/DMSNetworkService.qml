@@ -106,6 +106,11 @@ Singleton {
     property string connectionError: ""
 
     property bool isScanning: false
+    property bool wifiScannedOnce: false
+    onWifiEnabledChanged: {
+        if (!wifiEnabled)
+            wifiScannedOnce = false;
+    }
     property bool autoScan: false
 
     property bool wifiAvailable: true
@@ -154,7 +159,6 @@ Singleton {
     property string hotspotUuid: ""
     property string hotspotSecurity: ""
     property bool hotspotHidden: false
-    property bool hotspotAutoconnect: false
     readonly property bool hotspotExtendedSupported: hotspotSupported && DMSService.apiVersion >= connectionEditorApiVersion
     property bool hotspotBusy: false
     property string hotspotError: ""
@@ -511,7 +515,6 @@ Singleton {
             hotspotUuid = state.hotspotUuid || "";
             hotspotSecurity = state.hotspotSecurity || "";
             hotspotHidden = state.hotspotHidden === true;
-            hotspotAutoconnect = state.hotspotAutoconnect === true;
         } else {
             connectivity = "unknown";
             connectivityCheckEnabled = false;
@@ -522,7 +525,6 @@ Singleton {
             hotspotUuid = "";
             hotspotSecurity = "";
             hotspotHidden = false;
-            hotspotAutoconnect = false;
         }
 
         backendConnectionEditorSupported = hasEditorApi && state.connectionEditorSupported === true;
@@ -713,6 +715,7 @@ Singleton {
         } : null;
         DMSService.sendRequest("network.wifi.scan", params, response => {
             isScanning = false;
+            wifiScannedOnce = true;
             if (response.error) {
                 log.warn("WiFi scan failed:", response.error);
             } else {
@@ -1314,7 +1317,6 @@ Singleton {
             if (params.security)
                 params.password = password;
             params.hidden = options.hidden === true;
-            params.autoconnect = options.autoconnect === true;
             if (options.channel > 0)
                 params.channel = options.channel;
             if (options.address)

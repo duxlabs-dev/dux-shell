@@ -337,3 +337,24 @@ func TestAppendServerCertPin(t *testing.T) {
 		})
 	}
 }
+
+func TestParseVPNPluginFile_CanCreate(t *testing.T) {
+	tests := []struct {
+		name, body string
+		want       bool
+	}{
+		{"libnm editor plugin", "[VPN Connection]\nname=OpenVPN\nservice=org.freedesktop.NetworkManager.openvpn\n[libnm]\nplugin=libnm-vpn-plugin-openvpn.so\n", true},
+		{"gnome properties", "[VPN Connection]\nname=X\nservice=org.x\n[GNOME]\nproperties=libnm-gtk-vpn-plugin-x.so\n", true},
+		{"no editor plugin", "[VPN Connection]\nname=Proton VPN\nservice=org.freedesktop.NetworkManager.protun\nprogram=/usr/bin/protun\n[libnm]\nplugin=\n", false},
+		{"key in wrong section", "[VPN Connection]\nname=X\nservice=org.x\nplugin=foo.so\n", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "x.name")
+			require.NoError(t, os.WriteFile(path, []byte(tt.body), 0o600))
+			p, err := parseVPNPluginFile(path)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, p.CanCreate)
+		})
+	}
+}

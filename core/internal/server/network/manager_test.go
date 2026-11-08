@@ -351,7 +351,6 @@ func TestStateChangedMeaningfully_ConnectionAndHotspotFields(t *testing.T) {
 		"hotspot uuid":     func(s *NetworkState) { s.HotspotUUID = "u" },
 		"hotspot security": func(s *NetworkState) { s.HotspotSecurity = "sae" },
 		"hotspot hidden":   func(s *NetworkState) { s.HotspotHidden = true },
-		"hotspot autoconn": func(s *NetworkState) { s.HotspotAutoconnect = true },
 		"profile uuids":    func(s *NetworkState) { s.EthernetDevices[0].ProfileUUIDs = []string{"a", "b"} },
 		"connection uuid":  func(s *NetworkState) { s.EthernetDevices[0].ConnectionUUID = "b" },
 		"wired device":     func(s *NetworkState) { s.WiredConnections[0].Device = "enp5s0" },

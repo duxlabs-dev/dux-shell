@@ -42,6 +42,9 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	case "tailscale.switchProfile":
 		id := req.GetOr("id", "")
 		handleSimple(conn, req, func() error { return manager.SwitchProfile(id) })
+	case "tailscale.removeProfile":
+		id := req.GetOr("id", "")
+		handleSimple(conn, req, func() error { return manager.RemoveProfile(id) })
 	case "tailscale.suggestExitNode":
 		handleSuggestExitNode(conn, req, manager)
 	case "tailscale.grantOperator":

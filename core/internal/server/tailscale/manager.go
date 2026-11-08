@@ -34,6 +34,7 @@ type tailscaleClient interface {
 	Logout(ctx context.Context) error
 	ProfileStatus(ctx context.Context) (loginProfile, []loginProfile, error)
 	SwitchProfile(ctx context.Context, id string) error
+	DeleteProfile(ctx context.Context, id string) error
 	SuggestExitNode(ctx context.Context) (ExitNodeSuggestion, error)
 	CheckIPForwarding(ctx context.Context) error
 }
@@ -613,6 +614,26 @@ func (m *Manager) SwitchProfile(id string) error {
 		return m.client.SwitchProfile(ctx, id)
 	})
 	if err != nil {
+		return err
+	}
+	m.RefreshState()
+	return nil
+}
+
+// RemoveProfile removes an account from this device only; the node stays registered on
+// its control server. The current account is refused, since removing it would skip the logout.
+func (m *Manager) RemoveProfile(id string) error {
+	if id == "" {
+		return errors.New("profile id is required")
+	}
+	current, _, err := m.profileStatus()
+	if err != nil {
+		return err
+	}
+	if id == current.ID {
+		return errors.New("the current account can't be removed, log out instead")
+	}
+	if err := m.withTimeout(func(ctx context.Context) error { return m.client.DeleteProfile(ctx, id) }); err != nil {
 		return err
 	}
 	m.RefreshState()

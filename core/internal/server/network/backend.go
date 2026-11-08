@@ -111,7 +111,6 @@ type BackendState struct {
 	HotspotUUID                string
 	HotspotSecurity            string
 	HotspotHidden              bool
-	HotspotAutoconnect         bool
 	Connectivity               string
 	ConnectivityCheckEnabled   bool
 	ConnectivityCheckAvailable bool

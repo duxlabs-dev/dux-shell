@@ -139,6 +139,7 @@ TAB_INDEX_MAP = {
     "NetworkConnectionsTab.qml": 71,
     "NetworkConnectionTab.qml": 72,
     "NetworkWifiConnectTab.qml": 74,
+    "NetworkTailscaleAddTab.qml": 76,
     "PowerSleepTab.qml": 21,
     "ClipboardTab.qml": 23,
     "DisplayConfigTab.qml": 24,
@@ -778,7 +779,7 @@ def generate_tab_entries(leaves, settings_entries):
         for entry in settings_entries
         if not str(entry["section"]).startswith("_tab_")
     }
-    label_counts = Counter(leaf["label"] for leaf in leaves if leaf["label"])
+    label_counts = Counter(leaf["label"] for leaf in leaves if leaf["label"] and '"searchable": false' not in leaf["own"])
 
     entries = []
     for leaf in leaves:

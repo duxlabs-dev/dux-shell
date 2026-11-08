@@ -35,7 +35,7 @@ Item {
             iconName: "wifi_tethering"
             settingKey: "networkHotspot"
             tags: ["wifi", "wi-fi", "wireless", "network", "hotspot", "access point", "sharing", "ssid", "qr code", "channel", "wpa3", "hidden", "security"]
-            visible: NetworkService.hotspotSectionAvailable
+            visible: NetworkService.hotspotAvailable
 
             property string ssid: NetworkService.hotspotSSID || ""
             property string password: ""
@@ -45,7 +45,6 @@ Item {
             property string address: NetworkService.hotspotAddress || ""
             property string security: "wpa-psk"
             property bool hidden: false
-            property bool autoconnect: false
             readonly property bool extended: NetworkService.hotspotExtendedSupported
             readonly property bool secured: !extended || security !== ""
             readonly property bool addressValid: address.trim().length === 0 || CE.isValidHotspotAddress(address.trim())
@@ -53,8 +52,7 @@ Item {
                 "channel": channel,
                 "address": address.trim(),
                 "security": security,
-                "hidden": hidden,
-                "autoconnect": autoconnect
+                "hidden": hidden
             } : ({})
             property bool editing: false
             property bool passwordLoading: false
@@ -63,6 +61,7 @@ Item {
             property int passwordEditRevision: 0
             readonly property bool showForm: !NetworkService.hotspotConfigured || editing
             readonly property bool passwordValid: !secured || (password.length === 0 ? extended === false : ((password.length >= 8 && password.length <= 63) || /^[0-9a-fA-F]{64}$/.test(password)))
+            readonly property bool canStart: NetworkService.wifiEnabled
             readonly property bool starting: NetworkService.hotspotBusy || NetworkService.hotspotActivating
             property var startConfirm: ConfirmModal {}
 
@@ -106,7 +105,6 @@ Item {
                 address = NetworkService.hotspotAddress || "";
                 security = NetworkService.hotspotConfigured ? NetworkService.hotspotSecurity : "wpa-psk";
                 hidden = NetworkService.hotspotHidden;
-                autoconnect = NetworkService.hotspotAutoconnect;
             }
 
             function beginEditing() {
@@ -154,10 +152,6 @@ Item {
                 return ssid.trim().length > 0 && passwordValid && addressValid && (!secured || (passwordResolved && !passwordLoading)) && !NetworkService.hotspotBusy && !NetworkService.hotspotEnabled && !NetworkService.hotspotActivating;
             }
 
-            function explainWiFiDisabled() {
-                ToastService.showError(I18n.tr("Wi-Fi is disabled", "hotspot start error title"), I18n.tr("Enable Wi-Fi before starting the hotspot.", "hotspot WiFi requirement message"));
-            }
-
             function saveOnly() {
                 if (!buildCanConfigure())
                     return;
@@ -175,11 +169,6 @@ Item {
                         if (!response.error)
                             ToastService.showInfo(I18n.tr("Hotspot stopped", "hotspot stop success message"));
                     });
-                    return;
-                }
-
-                if (!NetworkService.wifiEnabled) {
-                    explainWiFiDisabled();
                     return;
                 }
 
@@ -202,6 +191,7 @@ Item {
                 syncFromService()
 
             SettingsRow {
+                visible: NetworkService.hotspotEnabled || hotspotCard.starting || !NetworkService.hotspotConfigured
                 body: StyledText {
                     width: parent.width
                     text: {
@@ -209,8 +199,6 @@ Item {
                             return I18n.tr("Your hotspot is running.", "hotspot active status message");
                         if (hotspotCard.starting)
                             return I18n.tr("Starting hotspot...", "hotspot activation status message");
-                        if (NetworkService.hotspotConfigured)
-                            return I18n.tr("Your hotspot profile is saved and ready to start.", "configured hotspot status message");
                         return I18n.tr("Set up a Wi-Fi hotspot for sharing this connection.", "unconfigured hotspot description");
                     }
                     font.pixelSize: Theme.fontSizeSmall
@@ -223,7 +211,7 @@ Item {
                 visible: !NetworkService.wifiEnabled
                 body: StyledText {
                     width: parent.width
-                    text: I18n.tr("Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.", "hotspot WiFi requirement explanation")
+                    text: I18n.tr("Wi-Fi is disabled", "hotspot start error title")
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.warning
                     wrapMode: Text.WordWrap
@@ -370,13 +358,6 @@ Item {
                 onToggled: checked => hotspotCard.hidden = checked
             }
 
-            SettingsToggleRow {
-                visible: hotspotCard.showForm && hotspotCard.extended
-                text: I18n.tr("Autoconnect", "toggle, connect to this wifi or vpn automatically")
-                checked: hotspotCard.autoconnect
-                onToggled: checked => hotspotCard.autoconnect = checked
-            }
-
             SettingsRow {
                 DButton {
                     visible: hotspotCard.editing
@@ -404,8 +385,8 @@ Item {
                     iconName: "save"
                     buttonHeight: 36
                     enabled: hotspotCard.buildCanConfigure()
-                    backgroundColor: SettingsMetrics.controlSurface
-                    textColor: Theme.surfaceText
+                    backgroundColor: hotspotCard.canStart ? SettingsMetrics.controlSurface : Theme.buttonBg
+                    textColor: hotspotCard.canStart ? Theme.surfaceText : Theme.buttonText
                     onClicked: hotspotCard.saveOnly()
                 }
 
@@ -423,15 +404,13 @@ Item {
                     text: {
                         if (NetworkService.hotspotEnabled)
                             return I18n.tr("Stop", "stop hotspot action");
-                        if (!NetworkService.hotspotAvailable)
-                            return I18n.tr("No adapter", "hotspot start button when no Wi-Fi adapter can host a hotspot");
                         if (hotspotCard.starting)
                             return I18n.tr("Starting...", "hotspot activation status");
                         return hotspotCard.showForm ? I18n.tr("Save & Start", "save and start hotspot action") : I18n.tr("Start", "start hotspot action");
                     }
                     iconName: NetworkService.hotspotEnabled ? "stop" : "wifi_tethering"
                     buttonHeight: 36
-                    enabled: !hotspotCard.starting && (NetworkService.hotspotEnabled || (NetworkService.hotspotAvailable && hotspotCard.buildCanConfigure()))
+                    enabled: !hotspotCard.starting && (NetworkService.hotspotEnabled || (hotspotCard.canStart && (hotspotCard.showForm ? hotspotCard.buildCanConfigure() : NetworkService.hotspotConfigured && !NetworkService.hotspotBusy && !NetworkService.hotspotActivating)))
                     danger: NetworkService.hotspotEnabled
                     onClicked: hotspotCard.startOrStop()
                 }

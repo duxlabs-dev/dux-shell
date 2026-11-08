@@ -145,7 +145,7 @@ func TestHandleHotspotRequests(t *testing.T) {
 		}
 		for _, bad := range []map[string]any{
 			{"channel": 1.5}, {"channel": float64(-1)}, {"channel": float64(197)}, {"channel": "36"},
-			{"hidden": "true"}, {"autoconnect": float64(1)},
+			{"hidden": "true"},
 		} {
 			bad["ssid"] = "x"
 			assert.Contains(t, run(bad).Error, "parameter", bad)
@@ -153,11 +153,11 @@ func TestHandleHotspotRequests(t *testing.T) {
 		}
 		assert.Empty(t, run(map[string]any{
 			"ssid": "DMS Hotspot", "band": "a", "channel": float64(36), "address": "10.43.0.1/24",
-			"password": "hunter2-password", "security": "sae", "hidden": true, "autoconnect": true,
+			"password": "hunter2-password", "security": "sae", "hidden": true,
 		}).Error)
 		assert.Equal(t, HotspotRequest{
 			SSID: "DMS Hotspot", Band: "a", Channel: 36, Address: "10.43.0.1/24",
-			Password: "hunter2-password", Security: "sae", Hidden: true, Autoconnect: true,
+			Password: "hunter2-password", Security: "sae", Hidden: true,
 		}, backend.configureReq)
 	})
 

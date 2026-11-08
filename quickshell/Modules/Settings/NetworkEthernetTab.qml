@@ -384,10 +384,10 @@ Item {
                     }
                 }
             }
+        }
 
-            NetworkConnectionsNavRow {
-                parentModal: networkEthernetTab.parentModal
-            }
+        NetworkConnectionsNavRow {
+            parentModal: networkEthernetTab.parentModal
         }
     }
 }

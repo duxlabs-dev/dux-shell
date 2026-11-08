@@ -111,10 +111,10 @@ Item {
                     })
                 }
             }
+        }
 
-            NetworkConnectionsNavRow {
-                parentModal: networkVpnTab.parentModal
-            }
+        NetworkConnectionsNavRow {
+            parentModal: networkVpnTab.parentModal
         }
 
         SettingsFabBar {

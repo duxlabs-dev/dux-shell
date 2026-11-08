@@ -53,6 +53,9 @@ func TestLocalClient_Wire(t *testing.T) {
 	require.NoError(t, c.EditPrefs(ctx, &maskedPrefs{ExitNodeIDSet: true, ExitNodeIPSet: true}))
 	assert.Equal(t, call{"PATCH", "/localapi/v0/prefs", `{"ExitNodeIDSet":true,"ExitNodeIPSet":true}`}, <-calls)
 
+	require.NoError(t, c.DeleteProfile(ctx, "a/b"))
+	assert.Equal(t, call{"DELETE", "/localapi/v0/profiles/a%2Fb", ""}, <-calls)
+
 	w, err := c.WatchIPNBus(ctx, notifyInitialState|notifyPeerPatches)
 	require.NoError(t, err)
 	defer w.Close()

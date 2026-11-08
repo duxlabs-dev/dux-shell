@@ -125,6 +125,7 @@ Item {
         required property string group
         readonly property bool isHotspot: !!NetworkService.hotspotUuid && profile.uuid === NetworkService.hotspotUuid
         readonly property bool supported: CE.isSupported(profile.type, profile.controller ? profile.portType : "")
+        readonly property bool openable: supported && (!isHotspot || NetworkService.hotspotAvailable)
 
         readonly property bool deviceAvailable: {
             switch (profile.type) {
@@ -142,19 +143,12 @@ Item {
         subtitle: root.subtitleFor(profile) + (supported ? "" : " • " + I18n.tr("Not supported in Settings", "network connection list and editor: this connection type can only be edited in another tool"))
         iconName: root.profileIcon(profile, group)
         active: profile.active
-        clickable: supported
-        showChevron: supported
+        clickable: openable
+        showChevron: openable
         onClicked: {
             if (!isHotspot)
                 return root.openEditor(profile.uuid, profile.id, "");
             root.parentModal?.navigateTo("network_hotspot");
-        }
-
-        DActionButton {
-            visible: !profileRow.supported && NetworkService.externalConnectionEditor !== ""
-            iconName: "open_in_new"
-            tooltipText: I18n.tr("Open in %1", "%1 is an application name").arg(NetworkService.externalConnectionEditor)
-            onClicked: NetworkService.openExternalConnectionEditor(profileRow.profile.uuid)
         }
 
         DActionButton {
@@ -191,6 +185,13 @@ Item {
                 danger: true,
                 onConfirm: () => NetworkService.deleteConnection(profileRow.profile.uuid, response => root.reportError(I18n.tr("Failed to forget %1", "toast title, %1 is a network connection name").arg(profileRow.profile.id), response))
             })
+        }
+
+        DActionButton {
+            visible: !profileRow.supported && NetworkService.externalConnectionEditor !== ""
+            iconName: "open_in_new"
+            tooltipText: I18n.tr("Open in %1", "%1 is an application name").arg(NetworkService.externalConnectionEditor)
+            onClicked: NetworkService.openExternalConnectionEditor(profileRow.profile.uuid)
         }
     }
 

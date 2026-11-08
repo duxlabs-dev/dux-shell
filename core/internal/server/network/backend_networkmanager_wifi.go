@@ -655,14 +655,11 @@ func (b *NetworkManagerBackend) updateWiFiNetworks() ([]WiFiNetwork, error) {
 		}
 	}
 
-	visibleNetworks := wiFiNetworksBySSID(networks, true)
-	savedNetworks := savedWiFiNetworksFromProfiles(savedProfiles, visibleNetworks, currentSSID, wifiConnected)
-
 	sortWiFiNetworks(networks)
 
 	b.stateMutex.Lock()
 	b.state.WiFiNetworks = networks
-	b.state.SavedWiFiNetworks = savedNetworks
+	b.setSavedWiFiNetworksLocked(savedProfiles)
 	b.stateMutex.Unlock()
 
 	return networks, nil
@@ -687,20 +684,19 @@ func (b *NetworkManagerBackend) updateSavedWiFiNetworks() error {
 
 	savedProfiles := getSavedWiFiProfiles(connections)
 
-	b.stateMutex.RLock()
-	currentSSID := b.state.WiFiSSID
-	wifiConnected := b.state.WiFiConnected
-	wifiNetworks := append([]WiFiNetwork(nil), b.state.WiFiNetworks...)
-	b.stateMutex.RUnlock()
-
-	wifiNetworks, savedNetworks := refreshSavedWiFiState(wifiNetworks, savedProfiles, currentSSID, wifiConnected)
-
 	b.stateMutex.Lock()
-	b.state.WiFiNetworks = wifiNetworks
-	b.state.SavedWiFiNetworks = savedNetworks
+	b.state.WiFiNetworks = mergeSavedProfilesIntoWiFiNetworks(b.state.WiFiNetworks, savedProfiles, b.state.WiFiSSID, b.state.WiFiConnected)
+	b.setSavedWiFiNetworksLocked(savedProfiles)
 	b.stateMutex.Unlock()
 
 	return nil
+}
+
+// setSavedWiFiNetworksLocked is the only writer of SavedWiFiNetworks, so a
+// network in range on any radio reads the same whichever refresh ran last.
+func (b *NetworkManagerBackend) setSavedWiFiNetworksLocked(profiles map[string]savedWiFiProfile) {
+	visible := visibleWiFiNetworks(b.state.WiFiNetworks, b.state.WiFiDevice, b.state.WiFiDevices)
+	b.state.SavedWiFiNetworks = savedWiFiNetworksFromProfiles(profiles, visible, b.state.WiFiSSID, b.state.WiFiConnected)
 }
 
 func (b *NetworkManagerBackend) findConnection(ssid string) (gonetworkmanager.Connection, error) {
@@ -1155,12 +1151,6 @@ func (b *NetworkManagerBackend) updateAllWiFiDevices() {
 	savedProfiles := getSavedWiFiProfiles(connections)
 
 	var devices []WiFiDevice
-	visibleNetworks := make(map[string]WiFiNetwork)
-	b.stateMutex.RLock()
-	currentSSID := b.state.WiFiSSID
-	wifiConnected := b.state.WiFiConnected
-	b.stateMutex.RUnlock()
-
 	var apModeDevicePaths map[string]bool
 	for name, devInfo := range b.wifiDevicesSnapshot() {
 		state, _ := devInfo.device.GetPropertyState()
@@ -1283,9 +1273,6 @@ func (b *NetworkManagerBackend) updateAllWiFiDevices() {
 
 				networks = append(networks, network)
 				seenSSIDs[apSSID] = len(networks) - 1
-				if existing, ok := visibleNetworks[apSSID]; !ok || network.Signal > existing.Signal {
-					visibleNetworks[apSSID] = network
-				}
 			}
 
 			if connected && ssid != "" {
@@ -1305,7 +1292,6 @@ func (b *NetworkManagerBackend) updateAllWiFiDevices() {
 					}
 					networks = append(networks, hiddenNetwork)
 					seenSSIDs[ssid] = len(networks) - 1
-					visibleNetworks[ssid] = hiddenNetwork
 				}
 			}
 
@@ -1334,7 +1320,7 @@ func (b *NetworkManagerBackend) updateAllWiFiDevices() {
 
 	b.stateMutex.Lock()
 	b.state.WiFiDevices = devices
-	b.state.SavedWiFiNetworks = savedWiFiNetworksFromProfiles(savedProfiles, visibleNetworks, currentSSID, wifiConnected)
+	b.setSavedWiFiNetworksLocked(savedProfiles)
 	b.stateMutex.Unlock()
 }
 

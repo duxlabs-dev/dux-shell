@@ -97,13 +97,7 @@ func secretRemovalsFromPatch(patch SettingsPatch) secretRemovals {
 	return r
 }
 
-// updateConnectionSettings is the single write path for NM profiles. NM keeps
-// its stored secrets only when an update carries none; otherwise it drops every
-// secret the update omits. So stored secrets are merged in. A section only an
-// agent can supply is read again while DMS's agent offers the secrets mutate
-// enters there; if it stays unreadable, all secrets are left out and mutate
-// may not change any. Entries of nested secret containers that mutate omits
-// are merged back afterwards.
+// NM keeps stored secrets only when an update carries none, so they are merged in.
 // persist=false keeps the profile in whatever storage it already lives in.
 func updateConnectionSettings(obj dbus.BusObject, persist bool, mutate func(nmSettings) error) error {
 	return updateConnectionSettingsRemoving(obj, persist, secretRemovals{}, mutate)

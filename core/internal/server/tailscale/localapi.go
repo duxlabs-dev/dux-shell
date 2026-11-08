@@ -153,6 +153,10 @@ func (c *localClient) SwitchProfile(ctx context.Context, id string) error {
 	return c.send(ctx, http.MethodPost, "/localapi/v0/profiles/"+url.PathEscape(id), nil)
 }
 
+func (c *localClient) DeleteProfile(ctx context.Context, id string) error {
+	return c.send(ctx, http.MethodDelete, "/localapi/v0/profiles/"+url.PathEscape(id), nil)
+}
+
 func (c *localClient) SuggestExitNode(ctx context.Context) (ExitNodeSuggestion, error) {
 	var s ExitNodeSuggestion
 	err := c.getJSON(ctx, "/localapi/v0/suggest-exit-node", &s)

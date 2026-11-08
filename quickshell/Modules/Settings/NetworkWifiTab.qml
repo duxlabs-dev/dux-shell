@@ -169,31 +169,7 @@ Item {
             }
 
             function sortedSavedWifiNetworks() {
-                const ssid = NetworkService.currentWifiSSID;
-                const pinnedList = root.getPinnedWifiNetworks();
-                let sorted = root.mergedSavedWifiNetworks();
-
-                sorted.sort((a, b) => {
-                    const aPinnedIndex = pinnedList.indexOf(a.ssid);
-                    const bPinnedIndex = pinnedList.indexOf(b.ssid);
-                    if (aPinnedIndex !== -1 || bPinnedIndex !== -1) {
-                        if (aPinnedIndex === -1)
-                            return 1;
-                        if (bPinnedIndex === -1)
-                            return -1;
-                        return aPinnedIndex - bPinnedIndex;
-                    }
-                    if (a.ssid === ssid)
-                        return -1;
-                    if (b.ssid === ssid)
-                        return 1;
-                    if ((a.outOfRange || false) !== (b.outOfRange || false))
-                        return (a.outOfRange || false) ? 1 : -1;
-                    if ((a.signal || 0) !== (b.signal || 0))
-                        return (b.signal || 0) - (a.signal || 0);
-                    return (a.ssid || "").localeCompare(b.ssid || "");
-                });
-                return sorted;
+                return WifiConnectionActions.sortNetworks(root.mergedSavedWifiNetworks(), NetworkService.currentWifiSSID, root.getPinnedWifiNetworks(), network => network.outOfRange ? 1 : 0);
             }
 
             function showForgetNetworkConfirm(ssid) {
@@ -229,6 +205,7 @@ Item {
             SettingsDropdownRow {
                 visible: NetworkService.wifiEnabled && (NetworkService.wifiDevices?.length ?? 0) > 1
                 text: I18n.tr("Device")
+                description: NetworkService.wifiDeviceOverride || NetworkService.wifiToggling ? "" : NetworkService.wifiInterface
                 dropdownWidth: 150
                 popupWidth: 180
                 currentValue: NetworkService.wifiDeviceOverride || I18n.tr("Auto")
@@ -245,7 +222,7 @@ Item {
             }
 
             SettingsRow {
-                visible: NetworkService.wifiEnabled && !NetworkService.wifiToggling && NetworkService.wifiInterface.length > 0
+                visible: NetworkService.wifiEnabled && !NetworkService.wifiToggling && NetworkService.wifiInterface.length > 0 && (NetworkService.wifiDevices?.length ?? 0) <= 1
                 title: I18n.tr("Interface", "noun, wifi network interface name label") + ":"
                 trailingBadge: NetworkService.wifiInterface || "-"
             }
@@ -275,43 +252,12 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
-
-            NetworkConnectionsNavRow {
-                parentModal: networkWifiTab.parentModal
-            }
         }
 
         SettingsCard {
             id: availableWifiCard
 
-            readonly property var sortedNetworks: {
-                const ssid = NetworkService.currentWifiSSID;
-                const networks = NetworkService.wifiNetworks || [];
-                const pinnedList = root.getPinnedWifiNetworks();
-
-                let sorted = [...networks];
-                sorted.sort((a, b) => {
-                    const aPinnedIndex = pinnedList.indexOf(a.ssid);
-                    const bPinnedIndex = pinnedList.indexOf(b.ssid);
-                    if (aPinnedIndex !== -1 || bPinnedIndex !== -1) {
-                        if (aPinnedIndex === -1)
-                            return 1;
-                        if (bPinnedIndex === -1)
-                            return -1;
-                        return aPinnedIndex - bPinnedIndex;
-                    }
-                    if (a.ssid === ssid)
-                        return -1;
-                    if (b.ssid === ssid)
-                        return 1;
-                    const aKnown = !!a.saved && (a.signal || 0) > 0;
-                    const bKnown = !!b.saved && (b.signal || 0) > 0;
-                    if (aKnown !== bKnown)
-                        return aKnown ? -1 : 1;
-                    return b.signal - a.signal;
-                });
-                return sorted;
-            }
+            readonly property var sortedNetworks: WifiConnectionActions.sortNetworks(NetworkService.wifiNetworks, NetworkService.currentWifiSSID, root.getPinnedWifiNetworks(), network => !!network.saved && (network.signal || 0) > 0 ? 0 : 1)
 
             width: parent.width
             title: I18n.tr("Available networks")
@@ -377,7 +323,7 @@ Item {
             ]
 
             SettingsRow {
-                visible: NetworkService.isScanning && (NetworkService.wifiNetworks?.length ?? 0) === 0
+                visible: NetworkService.isScanning && !NetworkService.wifiScannedOnce && (NetworkService.wifiNetworks?.length ?? 0) === 0
                 body: Column {
                     width: parent.width
                     spacing: Theme.spacingS
@@ -396,7 +342,10 @@ Item {
             }
 
             Repeater {
-                model: availableWifiCard.sortedNetworks
+                model: ScriptModel {
+                    objectProp: "ssid"
+                    values: availableWifiCard.sortedNetworks
+                }
 
                 delegate: Column {
                     id: wifiNetworkDelegate
@@ -580,7 +529,10 @@ Item {
             ]
 
             Repeater {
-                model: savedWifiCard.expanded ? savedWifiCard.savedNetworks : []
+                model: ScriptModel {
+                    objectProp: "ssid"
+                    values: savedWifiCard.expanded ? savedWifiCard.savedNetworks : []
+                }
 
                 delegate: Column {
                     id: savedWifiDelegate
@@ -721,6 +673,10 @@ Item {
                     }
                 }
             }
+        }
+
+        NetworkConnectionsNavRow {
+            parentModal: networkWifiTab.parentModal
         }
     }
 }

@@ -187,10 +187,6 @@ Item {
                     }
                 }
             }
-
-            NetworkConnectionsNavRow {
-                parentModal: networkCellularTab.parentModal
-            }
         }
 
         SettingsCard {
@@ -309,6 +305,10 @@ Item {
                     }
                 }
             }
+        }
+
+        NetworkConnectionsNavRow {
+            parentModal: networkCellularTab.parentModal
         }
     }
 }

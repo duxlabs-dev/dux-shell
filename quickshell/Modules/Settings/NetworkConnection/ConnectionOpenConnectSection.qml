@@ -51,7 +51,7 @@ SettingsCard {
     DataRow {
         dataKey: "gateway"
         text: I18n.tr("Gateway", "network IP setting label")
-        isError: root.gatewayText.trim() === ""
+        isError: root.editor.showErrors && root.gatewayText.trim() === ""
     }
 
     ConnectionChoiceRow {

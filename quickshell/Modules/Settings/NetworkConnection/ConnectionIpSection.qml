@@ -186,7 +186,7 @@ SettingsCard {
     TextRow {
         id: addressRow
         visible: root.isManual
-        isError: !ok || !root.hasAddress
+        isError: !ok || (root.editor.showErrors && !root.hasAddress)
         text: I18n.tr("IP address")
         source: CE.addressText(root.section["address-data"])
         commit: text => {

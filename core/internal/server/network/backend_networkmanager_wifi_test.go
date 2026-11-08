@@ -308,6 +308,8 @@ func TestNetworkManagerBackend_UpdateSavedWiFiNetworksPreservesVisibleSavedNetwo
 	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
 	mockSettings := mock_gonetworkmanager.NewMockSettings(t)
 	mockConn := mock_gonetworkmanager.NewMockConnection(t)
+	mockOfficeConn := mock_gonetworkmanager.NewMockConnection(t)
+	mockCafeConn := mock_gonetworkmanager.NewMockConnection(t)
 
 	backend, err := NewNetworkManagerBackend(mockNM)
 	assert.NoError(t, err)
@@ -320,20 +322,31 @@ func TestNetworkManagerBackend_UpdateSavedWiFiNetworksPreservesVisibleSavedNetwo
 			Signal: 76,
 		},
 	}
+	// wlan0's device snapshot is stale (Cafe is gone, Home was stronger);
+	// Office is only in range of the second radio.
+	backend.state.WiFiDevice = "wlan0"
+	backend.state.WiFiDevices = []WiFiDevice{
+		{Name: "wlan0", Networks: []WiFiNetwork{{SSID: "Home", Signal: 90, Device: "wlan0"}, {SSID: "Cafe", Signal: 60, Device: "wlan0"}}},
+		{Name: "wlan1", Networks: []WiFiNetwork{{SSID: "Office", Signal: 40, Device: "wlan1"}}},
+	}
 	backend.stateMutex.Unlock()
 
-	settings := gonetworkmanager.ConnectionSettings{
-		"connection": {
-			"type":        "802-11-wireless",
-			"autoconnect": true,
-		},
-		"802-11-wireless": {
-			"ssid": []byte("Home"),
-		},
-		"802-11-wireless-security": {},
+	wifiSettings := func(ssid string) gonetworkmanager.ConnectionSettings {
+		return gonetworkmanager.ConnectionSettings{
+			"connection": {
+				"type":        "802-11-wireless",
+				"autoconnect": true,
+			},
+			"802-11-wireless": {
+				"ssid": []byte(ssid),
+			},
+			"802-11-wireless-security": {},
+		}
 	}
-	mockSettings.EXPECT().ListConnections().Return([]gonetworkmanager.Connection{mockConn}, nil)
-	mockConn.EXPECT().GetSettings().Return(settings, nil)
+	mockSettings.EXPECT().ListConnections().Return([]gonetworkmanager.Connection{mockConn, mockOfficeConn, mockCafeConn}, nil)
+	mockConn.EXPECT().GetSettings().Return(wifiSettings("Home"), nil)
+	mockOfficeConn.EXPECT().GetSettings().Return(wifiSettings("Office"), nil)
+	mockCafeConn.EXPECT().GetSettings().Return(wifiSettings("Cafe"), nil)
 
 	err = backend.updateSavedWiFiNetworks()
 	assert.NoError(t, err)
@@ -345,11 +358,17 @@ func TestNetworkManagerBackend_UpdateSavedWiFiNetworksPreservesVisibleSavedNetwo
 
 	assert.Len(t, wifiNetworks, 1)
 	assert.True(t, wifiNetworks[0].Saved)
-	assert.Len(t, savedNetworks, 1)
+	require.Len(t, savedNetworks, 3)
 	assert.Equal(t, "Home", savedNetworks[0].SSID)
 	assert.True(t, savedNetworks[0].Saved)
 	assert.False(t, savedNetworks[0].OutOfRange)
 	assert.Equal(t, uint8(76), savedNetworks[0].Signal)
+	assert.Empty(t, savedNetworks[0].Device)
+	assert.Equal(t, "Office", savedNetworks[1].SSID)
+	assert.False(t, savedNetworks[1].OutOfRange)
+	assert.Equal(t, "wlan1", savedNetworks[1].Device)
+	assert.Equal(t, "Cafe", savedNetworks[2].SSID)
+	assert.True(t, savedNetworks[2].OutOfRange)
 }
 
 func TestNetworkManagerBackend_FindConnection_NoSettings(t *testing.T) {

@@ -11,21 +11,18 @@ import "../../Common/ConnectionEditor.js" as ConnectionEditor
 Item {
     id: networkTailscaleTab
 
+    property var parentModal: null
+
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
     readonly property string statusText: TailscaleService.connected ? TailscaleService.tailnetName : I18n.tr("Not connected", "Tailscale connection switch description")
-    property bool profilesLoaded: false
-    property bool canOperate: false
-    property bool grantAvailable: false
     property bool granting: false
-    property var profiles: []
-    property string currentProfile: ""
     property string suggestedId: ""
-    property bool addingAccount: false
-    property bool addBusy: false
 
     readonly property bool queryable: TailscaleService.canWritePrefs
+    readonly property bool profilesLoaded: TailscaleService.profilesLoaded
+    readonly property bool canOperate: TailscaleService.canOperate
     readonly property bool writable: queryable && canOperate && backendState !== "Unreachable"
     readonly property bool tsConnected: TailscaleService.connected
     readonly property string backendState: TailscaleService.backendState
@@ -51,51 +48,23 @@ Item {
         return choices;
     }
 
-    readonly property var profileChoices: profiles.map(p => ({
-                "label": p.tailnet ? p.name + " · " + p.tailnet : p.name,
-                "id": p.id
-            }))
+    readonly property bool showAccounts: TailscaleService.available && backendState !== "Unreachable" && canOperate
+    property string busyId: ""
 
     onQueryableChanged: {
-        Qt.callLater(loadProfiles);
+        Qt.callLater(TailscaleService.loadProfiles);
         Qt.callLater(loadSuggestion);
     }
-    onBackendStateChanged: {
-        if (backendState === "NeedsLogin")
-            addingAccount = false;
-        Qt.callLater(loadProfiles);
-    }
-    onWritableChanged: {
-        if (!writable)
-            addingAccount = false;
-    }
-    onPrefOperatorChanged: Qt.callLater(loadProfiles)
+    onBackendStateChanged: Qt.callLater(TailscaleService.loadProfiles)
+    onPrefOperatorChanged: Qt.callLater(TailscaleService.loadProfiles)
     onTsConnectedChanged: Qt.callLater(loadSuggestion)
     onPrefHostnameChanged: hostnameField.value = prefHostname
     onPrefRoutesChanged: routesField.value = prefRoutes
     Component.onCompleted: {
         hostnameField.value = prefHostname;
         routesField.value = prefRoutes;
-    }
-
-    function applyProfiles(result) {
-        if (!result)
-            return;
-        profilesLoaded = true;
-        canOperate = result.canOperate === true;
-        grantAvailable = result.grantAvailable === true;
-        profiles = result.profiles || [];
-        currentProfile = result.current || "";
-    }
-
-    function loadProfiles() {
-        TailscaleService.listProfiles(response => {
-            if (!response || response.error) {
-                profilesLoaded = canOperate = false;
-                return;
-            }
-            applyProfiles(response.result);
-        });
+        TailscaleService.loadProfiles(true);
+        loadSuggestion();
     }
 
     function loadSuggestion() {
@@ -108,38 +77,29 @@ Item {
         });
     }
 
-    function openAddAccount() {
-        serverField.value = TailscaleService.prefs.controlUrl ?? "";
-        addingAccount = true;
-        Qt.callLater(serverField.focusField);
-    }
-
-    function submitAddAccount() {
-        if (addBusy)
-            return;
-        addBusy = true;
-        const sent = TailscaleService.addProfile(serverField.value.trim(), response => {
-            addBusy = false;
-            if (response.error)
-                return;
-            addingAccount = false;
-            loadProfiles();
-        });
-        if (!sent)
-            addBusy = false;
-    }
-
     function grant() {
         granting = true;
         const sent = TailscaleService.grantOperator(response => {
             granting = false;
             if (response.error)
                 return;
-            applyProfiles(response.result);
+            TailscaleService.applyProfiles(response.result);
             loadSuggestion();
         });
         if (!sent)
             granting = false;
+    }
+
+    function runOn(id, action) {
+        if (busyId !== "")
+            return;
+        busyId = id;
+        const sent = action(() => {
+            TailscaleService.loadProfiles();
+            busyId = "";
+        });
+        if (!sent)
+            busyId = "";
     }
 
     function parseRoutes(text) {
@@ -248,7 +208,7 @@ Item {
                     DButton {
                         id: grantButton
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: networkTailscaleTab.grantAvailable
+                        visible: TailscaleService.grantAvailable
                         width: visible ? implicitWidth : 0
                         text: I18n.tr("Grant permission", "Tailscale: button to grant operator permission")
                         iconName: "admin_panel_settings"
@@ -273,52 +233,77 @@ Item {
                 }
             }
 
-            SettingsDropdownRow {
-                id: accountRow
-                visible: TailscaleService.available && networkTailscaleTab.profiles.length > 0
-                enabled: networkTailscaleTab.writable
-                text: I18n.tr("Accounts")
-                options: networkTailscaleTab.profileChoices.map(c => c.label)
-                currentValue: networkTailscaleTab.profileChoices.find(c => c.id === networkTailscaleTab.currentProfile)?.label ?? ""
-                onValueChanged: value => {
-                    const choice = networkTailscaleTab.profileChoices.find(c => c.label === value);
-                    if (!choice || choice.id === networkTailscaleTab.currentProfile)
-                        return;
-                    TailscaleService.switchProfile(choice.id, response => {
-                        if (response.error)
-                            accountRow.resync();
-                        networkTailscaleTab.loadProfiles();
-                    });
-                }
-            }
-
-            SettingsTextFieldRow {
-                id: serverField
-                visible: networkTailscaleTab.addingAccount && networkTailscaleTab.backendState !== "NeedsLogin"
-                text: I18n.tr("Server", "Tailscale login server URL field label")
-                placeholderText: I18n.tr("leave empty for default", "Tailscale login server placeholder")
-                enabled: !networkTailscaleTab.addBusy
-                onAccepted: networkTailscaleTab.submitAddAccount()
-                actions: [
-                    DButton {
-                        text: I18n.tr("Cancel")
-                        variant: "text"
-                        enabled: !networkTailscaleTab.addBusy
-                        onClicked: networkTailscaleTab.addingAccount = false
-                    },
-                    DButton {
-                        text: I18n.tr("Add")
-                        busy: networkTailscaleTab.addBusy
-                        enabled: !networkTailscaleTab.addBusy
-                        onClicked: networkTailscaleTab.submitAddAccount()
-                    }
-                ]
-            }
-
             PeerRow {
                 visible: TailscaleService.available && (TailscaleService.selfNode?.id ?? "") !== ""
                 peer: TailscaleService.selfNode
                 onCopyRequested: text => networkTailscaleTab.copyText(text)
+            }
+        }
+
+        SettingsCard {
+            visible: networkTailscaleTab.showAccounts
+            title: I18n.tr("Accounts")
+
+            Repeater {
+                model: ScriptModel {
+                    objectProp: "id"
+                    values: TailscaleService.profiles
+                }
+
+                SettingsRow {
+                    id: accountRow
+
+                    required property var modelData
+                    readonly property string profileId: modelData.id
+                    readonly property bool isCurrent: profileId === TailscaleService.currentProfile
+
+                    title: modelData.name
+                    subtitle: modelData.tailnet ?? ""
+                    iconName: isCurrent ? "radio_button_checked" : "radio_button_unchecked"
+                    iconColor: isCurrent ? Theme.primary : Theme.surfaceVariantText
+                    clickable: true
+                    enabled: networkTailscaleTab.writable
+                    Accessible.role: Accessible.RadioButton
+                    Accessible.checkable: true
+                    Accessible.checked: isCurrent
+                    onClicked: {
+                        if (!isCurrent)
+                            networkTailscaleTab.runOn(profileId, done => TailscaleService.switchProfile(profileId, done));
+                    }
+
+                    DSpinner {
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: networkTailscaleTab.busyId === accountRow.profileId
+                        size: Theme.iconSizeMedium
+                        strokeWidth: 2
+                    }
+
+                    DActionButton {
+                        visible: accountRow.isCurrent && networkTailscaleTab.backendState !== "NeedsLogin"
+                        buttonSize: Theme.iconButtonSize
+                        iconName: "logout"
+                        iconColor: Theme.surfaceText
+                        tooltipText: I18n.tr("Log out")
+                        Accessible.name: tooltipText
+                        onClicked: networkTailscaleTab.runOn(accountRow.profileId, done => TailscaleService.logout(done))
+                    }
+
+                    SettingsDeleteButton {
+                        visible: !accountRow.isCurrent
+                        buttonSize: Theme.iconButtonSize
+                        iconName: confirming ? "warning" : "person_remove"
+                        tooltipText: confirming ? I18n.tr("Confirm") : I18n.tr("Remove")
+                        Accessible.name: tooltipText
+                        onDeleteRequested: networkTailscaleTab.runOn(accountRow.profileId, done => TailscaleService.removeProfile(accountRow.profileId, done))
+                    }
+                }
+            }
+
+            SettingsNavRow {
+                iconName: "person_add"
+                title: I18n.tr("Add account", "Tailscale: add another account")
+                enabled: networkTailscaleTab.writable && networkTailscaleTab.busyId === ""
+                onClicked: keyboard => networkTailscaleTab.parentModal?.navigateTo("network_tailscale_add", keyboard)
             }
         }
 
@@ -463,31 +448,15 @@ Item {
         }
 
         SettingsFabBar {
-            shown: TailscaleService.available && networkTailscaleTab.queryable && networkTailscaleTab.profilesLoaded
+            shown: loginFab.visible
 
             DFab {
-                visible: networkTailscaleTab.backendState !== "NeedsLogin"
-                text: I18n.tr("Log out")
-                iconName: "logout"
-                colorRole: "secondaryContainer"
-                enabled: networkTailscaleTab.writable
-                onClicked: TailscaleService.logout(() => networkTailscaleTab.loadProfiles())
-            }
-
-            DFab {
-                visible: networkTailscaleTab.backendState === "NeedsLogin"
+                id: loginFab
+                visible: networkTailscaleTab.showAccounts && networkTailscaleTab.backendState === "NeedsLogin" && TailscaleService.currentProfile !== ""
                 text: I18n.tr("Login")
                 iconName: "login"
                 enabled: networkTailscaleTab.writable
                 onClicked: TailscaleService.login()
-            }
-
-            DFab {
-                visible: networkTailscaleTab.backendState !== "NeedsLogin"
-                text: I18n.tr("Add account", "Tailscale: add another account")
-                iconName: "person_add"
-                enabled: networkTailscaleTab.writable
-                onClicked: networkTailscaleTab.openAddAccount()
             }
         }
     }

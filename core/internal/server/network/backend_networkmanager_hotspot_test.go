@@ -42,7 +42,7 @@ func TestBuildHotspotSettings(t *testing.T) {
 		"open":                {SSID: "x"},
 		"wpa2":                {SSID: "x", Password: testHotspotPSK, Security: "wpa-psk"},
 		"wpa3":                {SSID: "x", Password: testHotspotPSK, Security: "sae"},
-		"hidden autoconnect":  {SSID: "x", Hidden: true, Autoconnect: true},
+		"hidden":              {SSID: "x", Hidden: true},
 		"channel and address": {SSID: "x", Band: "bg", Channel: 11, Address: "192.168.50.1/24"},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -53,7 +53,7 @@ func TestBuildHotspotSettings(t *testing.T) {
 			assert.Equal(t, req.Security != "", securityRef)
 			_, hidden := s["802-11-wireless"]["hidden"]
 			assert.Equal(t, req.Hidden, hidden)
-			assert.Equal(t, req.Autoconnect, s["connection"]["autoconnect"])
+			assert.Equal(t, false, s["connection"]["autoconnect"])
 			assert.Equal(t, req.Channel, hotspotChannelFromSettings(s))
 			assert.Equal(t, req.Address, hotspotAddressFromSettings(s))
 			if req.Address != "" {
@@ -975,12 +975,6 @@ func TestConfigureHotspotReplacesStoredProfile(t *testing.T) {
 	assert.Equal(t, "hotspot-uuid", f.backend.state.HotspotUUID)
 	assert.Equal(t, "sae", f.backend.state.HotspotSecurity)
 	assert.True(t, f.backend.state.HotspotHidden)
-	assert.False(t, f.backend.state.HotspotAutoconnect)
-
-	// NM leaves autoconnect out of GetSettings when it is at its default, true.
-	delete(current["connection"], "autoconnect")
-	require.NoError(t, f.backend.updateHotspotState())
-	assert.True(t, f.backend.state.HotspotAutoconnect)
 }
 
 func TestConfigureHotspotRejectsBeforeDBus(t *testing.T) {
