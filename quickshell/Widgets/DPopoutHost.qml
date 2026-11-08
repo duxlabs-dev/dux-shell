@@ -764,7 +764,25 @@ Item {
     readonly property real shadowFallbackOffset: Theme.spacingXS
     readonly property real alignedWidth: Theme.px(popupWidth, dpr)
     readonly property real alignedHeight: Theme.pxCeil(popupHeight, dpr)
-    readonly property var _geometrySpringParams: Theme.springPreset("default", root.animationDuration)
+    readonly property bool _fadeWithOpacity: (!root._fluidMotionActive && !Theme.isDirectionalEffect) || root._supersededClose
+
+    OpacityMotion {
+        id: contentFade
+        enabled: root.animationsEnabled && root._fadeWithOpacity
+        duration: root._supersededClose && !root.shouldBeVisible ? Theme.shorterDuration : root.animationDuration
+        target: root.shouldBeVisible ? 1 : 0
+        onRunningChanged: root._finishContentFade()
+        onValueChanged: root._finishContentFade()
+    }
+
+    function _finishContentFade() {
+        if (!_fadeWithOpacity || contentFade.running || contentFade.value > 0 || shouldBeVisible)
+            return;
+        _contentRenderActive = false;
+        _finishClose();
+    }
+
+    readonly property var _geometrySpringParams: Theme.springPreset("defaultSpatial", root.animationDuration)
 
     readonly property real renderedAlignedX: alignedXFor(renderedAlignedWidth)
     property real renderedAlignedY: alignedY
@@ -773,24 +791,21 @@ Item {
     // Snap rendered geometry while the entrance morph runs so it doesn't ride a second animation.
     readonly property bool _settlingToOpen: shouldBeVisible && (morph.running || travelSpring.running)
     readonly property bool _geometryMotion: animationsEnabled && !SettingsData.reduceMotion && resizeDuration > 0 && root.attached && shouldBeVisible && !_settlingToOpen && !resizing
-    property real _bodyGlide: 1
     property bool _bodyBatch: false
-    property real _bodyFromY: 0
-    property real _bodyFromWidth: 0
-    property real _bodyFromHeight: 0
+    readonly property var _resizeSpringParams: Theme.springPreset("defaultSpatial", root.resizeDuration)
 
-    NumberAnimation {
-        id: bodyGlide
-        target: root
-        property: "_bodyGlide"
-        from: 0
-        to: 1
-        duration: root.resizeDuration
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: root.resizeCurve
+    RectSpringMotion {
+        id: bodySpring
+        reducedMotion: SettingsData.reduceMotion || root.resizeDuration <= 0
+        stiffness: root._resizeSpringParams.stiffness
+        damping: root._resizeSpringParams.damping
+        positionEpsilon: 0.25 / root.dpr
+        velocityEpsilon: positionEpsilon * damping / (2 * mass)
+        onValueChanged: {
+            if (root._geometryMotion)
+                root._setBody(value.y, root.resizeMotion ? value.width : root.alignedWidth, value.height);
+        }
     }
-
-    on_BodyGlideChanged: _setBody(_bodyFromY + (alignedY - _bodyFromY) * _bodyGlide, resizeMotion ? _bodyFromWidth + (alignedWidth - _bodyFromWidth) * _bodyGlide : renderedAlignedWidth, _bodyFromHeight + (alignedHeight - _bodyFromHeight) * _bodyGlide)
 
     // One notification per body change: travelTarget would otherwise fire once per component write.
     function _setBody(y, width, height) {
@@ -817,14 +832,14 @@ Item {
         if (_geometryMotion)
             return;
         if (isClosing) {
-            bodyGlide.stop();
+            bodySpring.running = false;
             return;
         }
         _snapBody();
     }
 
     function _snapBody() {
-        bodyGlide.stop();
+        bodySpring.running = false;
         _setBody(alignedY, alignedWidth, alignedHeight);
     }
 
@@ -837,19 +852,14 @@ Item {
             _snapBody();
             return;
         }
-        if (renderedAlignedY === alignedY && renderedAlignedWidth === alignedWidth && renderedAlignedHeight === alignedHeight) {
-            bodyGlide.stop();
-            return;
-        }
-        _bodyFromY = renderedAlignedY;
-        _bodyFromWidth = renderedAlignedWidth;
-        _bodyFromHeight = renderedAlignedHeight;
-        bodyGlide.restart();
+        if (!bodySpring.running)
+            bodySpring.snapTo(Qt.rect(0, renderedAlignedY, renderedAlignedWidth, renderedAlignedHeight));
+        bodySpring.retarget(Qt.rect(0, alignedY, alignedWidth, alignedHeight));
     }
 
     property bool morphTravelEnabled: false
     property bool _travelFromHandoff: false
-    readonly property string _travelSpringPreset: _travelFromHandoff ? "fast" : "default"
+    readonly property string _travelSpringPreset: _travelFromHandoff ? "fastSpatial" : "defaultSpatial"
     readonly property rect travelTarget: Qt.rect(renderedAlignedX, renderedAlignedY, renderedAlignedWidth, renderedAlignedHeight)
     readonly property point _fluidOrigin: connected ? Qt.point(0, 0) : Qt.point(renderedAlignedX, renderedAlignedY)
     readonly property rect fluidTarget: Qt.rect(renderedAlignedX - _fluidOrigin.x, renderedAlignedY - _fluidOrigin.y, renderedAlignedWidth, renderedAlignedHeight)
@@ -1394,8 +1404,11 @@ Item {
             SpringMotion {
                 id: morph
                 onRunningChanged: {
-                    if (!running && (Theme.isDirectionalEffect || root._fluidMotionActive) && root.isClosing && !root.shouldBeVisible)
-                        root.closeAnimationFinished();
+                    if (running || (!Theme.isDirectionalEffect && !root._fluidMotionActive) || !root.isClosing || root.shouldBeVisible)
+                        return;
+                    root.closeAnimationFinished();
+                    if (!root.morphTravelEnabled)
+                        root._finishClose();
                 }
                 enabled: root.animationsEnabled && !(root.connected && root._fluidMotionActive)
                 reducedMotion: root.animationDuration <= 0
@@ -1634,10 +1647,7 @@ Item {
                         width: rollOutAdjuster.baseWidth
                         height: rollOutAdjuster.baseHeight
 
-                        property bool _animating: false
-                        readonly property bool _fadeWithOpacity: (!root._fluidMotionActive && !Theme.isDirectionalEffect) || root._supersededClose
-                        readonly property bool _supersededFade: root._supersededClose && !root.shouldBeVisible
-                        readonly property real _targetOpacity: root._supersededClose ? (root.shouldBeVisible ? 1 : 0) : (root._fluidMotionActive ? root.fluidContentOpacity : (Theme.isDirectionalEffect ? 1 : (root.shouldBeVisible ? 1 : 0)))
+                        readonly property real _targetOpacity: root._fadeWithOpacity ? contentFade.value : (root._fluidMotionActive ? root.fluidContentOpacity : 1)
                         readonly property real publishedOpacity: opacity
 
                         opacity: _targetOpacity
@@ -1647,22 +1657,8 @@ Item {
                         x: root._supersededClose ? root._supersededContentX : (root._fluidMotionActive ? root.renderedAlignedX - contentContainer.x : Theme.snap(contentContainer.animX, root.dpr))
                         y: root._supersededClose ? root._supersededContentY : (root._fluidMotionActive ? root.renderedAlignedY - contentContainer.y : Theme.snap(contentContainer.animY, root.dpr))
 
-                        layer.enabled: _animating || (_fadeWithOpacity && publishedOpacity < 1)
+                        layer.enabled: root._fadeWithOpacity && (contentFade.running || publishedOpacity < 1)
                         fallbackDevicePixelRatio: root.dpr
-
-                        Behavior on opacity {
-                            enabled: contentWrapper._fadeWithOpacity
-                            NumberAnimation {
-                                duration: contentWrapper._supersededFade ? Theme.shorterDuration : Math.round(Theme.variantDuration(root.animationDuration, root.shouldBeVisible) * Theme.variantOpacityDurationScale)
-                                easing.type: Easing.BezierSpline
-                                easing.bezierCurve: root.shouldBeVisible ? root.animationEnterCurve : root.animationExitCurve
-                                onRunningChanged: {
-                                    contentWrapper._animating = running;
-                                    if (!running && !root.shouldBeVisible)
-                                        root._contentRenderActive = false;
-                                }
-                            }
-                        }
 
                         Item {
                             anchors.fill: parent
@@ -1780,10 +1776,9 @@ Item {
                     width: chrome.width
                     height: chrome.height
 
-                    property real publishedOpacity: Theme.isDirectionalEffect || root._fluidMotionActive ? 1 : (root.shouldBeVisible ? 1 : 0)
-                    readonly property real settledOpacity: publishedOpacity >= 1 - Theme.morphSettleEpsilon ? 1 : Math.max(0, publishedOpacity)
+                    readonly property real publishedOpacity: Theme.isDirectionalEffect || root._fluidMotionActive ? 1 : contentFade.value
 
-                    opacity: root._fluidMotionActive || Theme.isDirectionalEffect ? 1 : settledOpacity
+                    opacity: publishedOpacity
                     visible: root._contentRenderActive
                     scale: contentContainer.scaleValue
                     transformOrigin: Item.Center
@@ -1793,19 +1788,6 @@ Item {
                     layer.enabled: !Theme.isDirectionalEffect && !root._fluidMotionActive && root._contentRenderActive && (!contentContainer.morphSettled || opacity < 1)
                     layer.smooth: true
                     fallbackDevicePixelRatio: root.dpr
-
-                    Behavior on publishedOpacity {
-                        enabled: !Theme.isDirectionalEffect && !root._fluidMotionActive
-                        NumberAnimation {
-                            duration: Math.round(Theme.variantDuration(root.animationDuration, root.shouldBeVisible) * Theme.variantOpacityDurationScale)
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: root.shouldBeVisible ? root.animationEnterCurve : root.animationExitCurve
-                            onRunningChanged: {
-                                if (!running && !root.shouldBeVisible)
-                                    root._contentRenderActive = false;
-                            }
-                        }
-                    }
 
                     Rectangle {
                         y: -root.topOverflow

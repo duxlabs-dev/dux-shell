@@ -238,7 +238,7 @@ Item {
     }
 
     function _openConnected() {
-        if (!_fluidMotionActive || !contentWindow.visible)
+        if (!contentWindow.visible)
             animationsEnabled = false;
         const focusedScreen = root.targetScreen ?? CompositorService.getFocusedScreen();
         if (!contentWindow.visible)
@@ -312,6 +312,7 @@ Item {
         shouldHaveFocus = false;
         ModalManager.closeModal(modalHandle);
         closeTimer.restart();
+        _finishCloseIfSettled();
     }
 
     function instantClose() {
@@ -365,18 +366,37 @@ Item {
         }
     }
 
+    OpacityMotion {
+        id: contentFade
+        enabled: root.animationsEnabled && (!root._fluidMotionActive || root.useBackground)
+        duration: root.animationDuration
+        target: root.shouldBeVisible ? 1 : 0
+        onRunningChanged: root._finishCloseIfSettled()
+    }
+
+    function _finishCloseIfSettled() {
+        if (shouldBeVisible || _presentPending || !contentWindow.visible || contentFade.running || contentFade.value > 0)
+            return;
+        if ((_fluidMotionActive || (connected && Theme.isDirectionalEffect)) && morph.running)
+            return;
+        _finishClose();
+    }
+
+    function _finishClose() {
+        if (shouldBeVisible)
+            return;
+        closeTimer.stop();
+        isClosing = false;
+        contentWindow.visible = false;
+        morph.snapTo(0);
+        _fluidMotionActive = false;
+        dialogClosed();
+    }
+
     Timer {
         id: closeTimer
         interval: root.connected ? Math.max(Theme.variantCloseInterval(root.animationDuration), morph.settleDurationMs + 32) : Math.max(root.animationDuration + 50, morph.settleDurationMs + 50)
-        onTriggered: {
-            if (root.shouldBeVisible)
-                return;
-            root.isClosing = false;
-            contentWindow.visible = false;
-            morph.snapTo(0);
-            root._fluidMotionActive = false;
-            root.dialogClosed();
-        }
+        onTriggered: root._finishClose()
     }
 
     readonly property var shadowLevel: Theme.elevationLevel3
@@ -510,17 +530,8 @@ Item {
             anchors.fill: parent
             z: -1
             color: Theme.backdropColor
-            opacity: root.useBackground ? (root.shouldBeVisible ? root.backgroundOpacity : 0) : 0
+            opacity: root.useBackground ? root.backgroundOpacity * contentFade.value : 0
             visible: root.useBackground
-
-            Behavior on opacity {
-                enabled: root.animationsEnabled
-                NumberAnimation {
-                    easing.type: Easing.BezierSpline
-                    duration: root.animationDuration
-                    easing.bezierCurve: root.shouldBeVisible ? root.animationEnterCurve : root.animationExitCurve
-                }
-            }
         }
 
         Item {
@@ -653,15 +664,18 @@ Item {
                     return root.animationOffset;
                 }
 
-                // openProgress spring: 0 = collapsed, 1 = open.
                 SpringMotion {
                     id: morph
+                    onRunningChanged: {
+                        if (!running)
+                            root._finishCloseIfSettled();
+                    }
                     enabled: root.animationsEnabled
                     reducedMotion: root.animationDuration <= 0
                     positionEpsilon: Math.max(0.001, 0.25 / root.dpr / modalContainer.morphTravelPx)
                     velocityEpsilon: positionEpsilon * damping / Math.max(0.001, 2 * mass)
-                    stiffness: Theme.springPreset("default", root.animationDuration).stiffness
-                    damping: Theme.springPreset("default", root.animationDuration).damping
+                    stiffness: Theme.springPreset("defaultSpatial", root.animationDuration).stiffness
+                    damping: Theme.springPreset("defaultSpatial", root.animationDuration).damping
 
                     Component.onCompleted: snapTo(root.shouldBeVisible ? 1 : 0)
                 }
@@ -696,17 +710,8 @@ Item {
                         y: root.connected ? 0 : Theme.snap(modalContainer.animY, root.dpr)
                         clip: false
 
-                        opacity: root._fluidMotionActive || (root.connected && Theme.isDirectionalEffect && !Theme.isConnectedEffect) ? 1 : (root.shouldBeVisible ? 1 : 0)
+                        opacity: root._fluidMotionActive || (root.connected && Theme.isDirectionalEffect && !Theme.isConnectedEffect) ? 1 : contentFade.value
                         scale: modalContainer.scaleValue
-
-                        Behavior on opacity {
-                            enabled: root.animationsEnabled && !root._fluidMotionActive && (!root.connected || !Theme.isDirectionalEffect || Theme.isConnectedEffect)
-                            NumberAnimation {
-                                duration: root.connected ? Math.round(Theme.variantDuration(root.animationDuration, root.shouldBeVisible) * Theme.variantOpacityDurationScale) : root.animationDuration
-                                easing.type: Easing.BezierSpline
-                                easing.bezierCurve: root.shouldBeVisible ? root.animationEnterCurve : root.animationExitCurve
-                            }
-                        }
 
                         ElevationShadow {
                             parent: root._fluidMotionActive ? modalContainer : animatedContent

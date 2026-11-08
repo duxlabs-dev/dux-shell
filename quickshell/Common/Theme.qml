@@ -1072,21 +1072,18 @@ Singleton {
         };
     }
 
-    // Expressive spatial spring presets ([stiffness, damping], unit mass) tuned to a
-    // 500ms reference transition; runtime values scale via springPreset().
-    readonly property real morphSettleEpsilon: 0.02
     readonly property real morphLayerEpsilon: 0.002
 
     readonly property var springSpecs: {
         "expressive": [560, 37],
         "fast": [220, 23],
         "default": [300, 24],
-        "fastSpatial": [800, 33.9],
-        "defaultSpatial": [380, 31.2],
-        "slowSpatial": [200, 22.6],
-        "fastEffects": [3800, 123.3],
-        "defaultEffects": [1600, 80],
-        "slowEffects": [800, 56.6]
+        "fastSpatial": [800, 2 * 0.6 * Math.sqrt(800)],
+        "defaultSpatial": [380, 2 * 0.8 * Math.sqrt(380)],
+        "slowSpatial": [200, 2 * 0.8 * Math.sqrt(200)],
+        "fastEffects": [3800, 2 * Math.sqrt(3800)],
+        "defaultEffects": [1600, 2 * Math.sqrt(1600)],
+        "slowEffects": [800, 2 * Math.sqrt(800)]
     }
 
     // Damping multipliers for the user-facing spring bounce setting:
@@ -1101,9 +1098,9 @@ Singleton {
         return fluidOvershootLimits[Math.round(SettingsData.springBounce)] ?? 4;
     }
 
-    function tunedSpring(spec, baseDuration) {
+    function tunedSpring(spec, baseDuration, bouncy = true) {
         const f = Math.max(0.05, baseDuration / 500);
-        const bounce = typeof SettingsData !== "undefined" && SettingsData.springBounce >= 0 && SettingsData.springBounce < springDampingScales.length ? springDampingScales[Math.round(SettingsData.springBounce)] : 1;
+        const bounce = bouncy && typeof SettingsData !== "undefined" && SettingsData.springBounce >= 0 && SettingsData.springBounce < springDampingScales.length ? springDampingScales[Math.round(SettingsData.springBounce)] : 1;
         return {
             "stiffness": spec[0] / (f * f),
             "damping": spec[1] / f * bounce,
@@ -1112,7 +1109,7 @@ Singleton {
     }
 
     function springPreset(name, baseDuration) {
-        return tunedSpring(springSpecs[name] ?? springSpecs["default"], baseDuration);
+        return tunedSpring(springSpecs[name] ?? springSpecs["default"], baseDuration, !String(name).endsWith("Effects"));
     }
 
     readonly property bool springMotionDisabled: currentAnimationBaseDuration <= 0
