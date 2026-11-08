@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Synthetic: unsupported FAST first, then PEAP (inner EAP 26, two CAs, two servers), then TLS. -->
+<EAPIdentityProviderList>
+  <EAPIdentityProvider ID="example.org" version="1" lang="en">
+    <AuthenticationMethods>
+      <AuthenticationMethod>
+        <EAPMethod><Type>43</Type></EAPMethod>
+      </AuthenticationMethod>
+      <AuthenticationMethod>
+        <EAPMethod><Type>25</Type></EAPMethod>
+        <ServerSideCredential>
+          <CA format="X.509" encoding="base64">MIIBgDCCASWgAwIBAgIUe5ITVkHzNTbDAMJDjo6zcemxAzQwCgYIKoZIzj0EAwIwFDESMBAGA1UEAwwJVGVzdCBDQSBhMCAXDTI2MTAwMzEzMjMwN1oYDzIxMjYwOTA5MTMyMzA3WjAUMRIwEAYDVQQDDAlUZXN0IENBIGEwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAARd6exWGORauwAGAAzuqOVSazhvQFeA6U/LNi97PVIF4eYmyC6H4Np1qRJEKuoHdhUKMh3DuG1niaH5QChV2P4Ro1MwUTAdBgNVHQ4EFgQUnj3MFBIcjj/jOxZl3zFANqM61WMwHwYDVR0jBBgwFoAUnj3MFBIcjj/jOxZl3zFANqM61WMwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNJADBGAiEAkxdN0u9gM5bSxhZWVI7tpI4QUHgCPwb5oYqsjOMR4EACIQCrxz5JVonMu1QGBxW+pIzJXHaRfD6MaKsEZZDwHmZfpg==</CA>
+          <CA format="X.509" encoding="base64">MIIBfjCCASWgAwIBAgIUCLQA+DmHffC3ZkYWsCijNMMvW1wwCgYIKoZIzj0EAwIwFDESMBAGA1UEAwwJVGVzdCBDQSBiMCAXDTI2MTAwMzEzMjMwN1oYDzIxMjYwOTA5MTMyMzA3WjAUMRIwEAYDVQQDDAlUZXN0IENBIGIwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAARJMOddcFwt1aT87ifA5kS7K+VaUglZAgMKRz1Q7+6YcjfmuHesBdeYwI9JKnBwyhMCvB4F1VObNaA0mWGxMGNBo1MwUTAdBgNVHQ4EFgQUocp1NoyvV/K2gdNghBGysRzhxzQwHwYDVR0jBBgwFoAUocp1NoyvV/K2gdNghBGysRzhxzQwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNHADBEAiBhL51SvPxWFIQYzTBTES+YAeYW6t75dap+POXxzAYtagIgPKldoUc2KseXbT/bO0qloi8dyEUWdHT8qMe/dX3BI4M=</CA>
+          <ServerID>a.example.org</ServerID>
+          <ServerID>b.example.org</ServerID>
+        </ServerSideCredential>
+        <ClientSideCredential>
+          <OuterIdentity>anon@example.org</OuterIdentity>
+        </ClientSideCredential>
+        <InnerAuthenticationMethod>
+          <EAPMethod><Type>26</Type></EAPMethod>
+        </InnerAuthenticationMethod>
+      </AuthenticationMethod>
+      <AuthenticationMethod>
+        <EAPMethod><Type>13</Type></EAPMethod>
+      </AuthenticationMethod>
+    </AuthenticationMethods>
+    <CredentialApplicability>
+      <IEEE80211><SSID>corp</SSID></IEEE80211>
+      <IEEE80211><SSID>guest</SSID></IEEE80211>
+      <IEEE80211><SSID>corp</SSID></IEEE80211>
+    </CredentialApplicability>
+  </EAPIdentityProvider>
+</EAPIdentityProviderList>

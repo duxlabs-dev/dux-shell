@@ -322,3 +322,45 @@ func TestStateChangedMeaningfully_CellularDeviceFields(t *testing.T) {
 		})
 	}
 }
+
+func TestManager_ConnectionEditorUnsupportedBackend(t *testing.T) {
+	backend, err := NewIWDBackend()
+	assert.NoError(t, err)
+	manager := NewTestManager(backend, &NetworkState{ConnectionEditorSupported: true})
+	assert.NoError(t, manager.syncStateFromBackend())
+	assert.False(t, manager.GetState().ConnectionEditorSupported)
+	assert.ErrorIs(t, manager.DeleteConnectionProfile("u"), ErrConnectionEditorNotSupported)
+}
+
+func TestStateChangedMeaningfully_ConnectionAndHotspotFields(t *testing.T) {
+	eth := func() NetworkState {
+		return NetworkState{
+			EthernetDevices:  []EthernetDevice{{Name: "enp6s0", ConnectionUUID: "a", ProfileUUIDs: []string{"a"}}},
+			WiredConnections: []WiredConnection{{UUID: "a", Device: "enp6s0"}},
+		}
+	}
+	tests := map[string]func(s *NetworkState){
+		"editor supported": func(s *NetworkState) { s.ConnectionEditorSupported = true },
+		"revision":         func(s *NetworkState) { s.ConnectionProfilesRevision = 1 },
+		"connectivity":     func(s *NetworkState) { s.Connectivity = "portal" },
+		"check enabled":    func(s *NetworkState) { s.ConnectivityCheckEnabled = true },
+		"check available":  func(s *NetworkState) { s.ConnectivityCheckAvailable = true },
+		"check uri":        func(s *NetworkState) { s.ConnectivityCheckURI = "http://x/" },
+		"hotspot channel":  func(s *NetworkState) { s.HotspotChannel = 36 },
+		"hotspot address":  func(s *NetworkState) { s.HotspotAddress = "10.43.0.1/24" },
+		"hotspot uuid":     func(s *NetworkState) { s.HotspotUUID = "u" },
+		"hotspot security": func(s *NetworkState) { s.HotspotSecurity = "sae" },
+		"hotspot hidden":   func(s *NetworkState) { s.HotspotHidden = true },
+		"profile uuids":    func(s *NetworkState) { s.EthernetDevices[0].ProfileUUIDs = []string{"a", "b"} },
+		"connection uuid":  func(s *NetworkState) { s.EthernetDevices[0].ConnectionUUID = "b" },
+		"wired device":     func(s *NetworkState) { s.WiredConnections[0].Device = "enp5s0" },
+	}
+	for name, mutate := range tests {
+		t.Run(name, func(t *testing.T) {
+			old, new := eth(), eth()
+			assert.False(t, stateChangedMeaningfully(&old, &new))
+			mutate(&new)
+			assert.True(t, stateChangedMeaningfully(&old, &new))
+		})
+	}
+}

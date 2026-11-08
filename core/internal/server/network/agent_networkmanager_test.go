@@ -1,11 +1,35 @@
 package network
 
 import (
+	"errors"
 	"testing"
+	"time"
 
+	mock_dbus "github.com/duxlabs-dev/dux-shell/core/internal/mocks/github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestSave8021xIdentity(t *testing.T) {
+	for _, secretsFail := range []bool{false, true} {
+		obj := mock_dbus.NewMockBusObject(t)
+		expectGetSettings(obj, nmSettings{
+			"802-1x": {"eap": dbus.MakeVariant([]string{"peap"}), "identity": dbus.MakeVariant("old")},
+			"ipv4":   {"gateway": dbus.MakeVariant("192.0.2.1")},
+		})
+		if secretsFail { // the strict mock fails the test if Update2 is called
+			obj.EXPECT().Call(nmConnGetSecrets, dbus.Flags(0), "802-1x").Return(&dbus.Call{Err: errors.New("agent gone")}).Once()
+			save8021xIdentity(obj, "alice@example.com")
+			continue
+		}
+		expectGetSecrets(obj, "802-1x", nmSettings{"802-1x": {"password": dbus.MakeVariant("hunter2")}})
+		got := captureUpdate2(obj, nmUpdate2FlagToDisk, nil)
+		save8021xIdentity(obj, "alice@example.com")
+		assert.Equal(t, dbus.MakeVariant("alice@example.com"), (*got)["802-1x"]["identity"])
+		assert.Equal(t, dbus.MakeVariant("hunter2"), (*got)["802-1x"]["password"])
+		assert.Equal(t, dbus.MakeVariant("192.0.2.1"), (*got)["ipv4"]["gateway"])
+	}
+}
 
 func TestNeedsExternalBrowserAuth(t *testing.T) {
 	tests := []struct {
@@ -441,4 +465,15 @@ func TestWiFiSecretCache(t *testing.T) {
 	assert.NotNil(t, b.lookupCachedWiFiSecret("uuid-1", "802-11-wireless-security"), "ssid mismatch must not clear")
 	b.clearCachedWiFiSecretBySSID("HomeNet")
 	assert.Nil(t, b.lookupCachedWiFiSecret("uuid-1", "802-11-wireless-security"))
+
+	b.cacheWiFiSecret("uuid-1", "HomeNet", "802-11-wireless-security", map[string]string{"psk": "old"})
+	b.cachedWiFiSecret.CachedAt = time.Now().Add(-2 * time.Minute)
+	assert.Nil(t, b.lookupCachedWiFiSecret("uuid-1", "802-11-wireless-security"), "expired entry must miss")
+
+	// A stale expiry must not clear a newer entry.
+	b.cacheWiFiSecret("uuid-1", "HomeNet", "802-11-wireless-security", map[string]string{"psk": "old"})
+	stale := b.cachedWiFiSecret
+	b.cacheWiFiSecret("uuid-1", "HomeNet", "802-11-wireless-security", map[string]string{"psk": "new"})
+	b.expireCachedWiFiSecret(stale)
+	assert.Equal(t, "new", b.lookupCachedWiFiSecret("uuid-1", "802-11-wireless-security")["psk"])
 }

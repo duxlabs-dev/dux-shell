@@ -3,6 +3,8 @@ package network
 import (
 	"fmt"
 	"maps"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -44,10 +46,19 @@ type wifiDeviceInfo struct {
 }
 
 type ethernetDeviceInfo struct {
-	device    gonetworkmanager.Device
-	wired     gonetworkmanager.DeviceWired
-	name      string
-	hwAddress string
+	device        gonetworkmanager.Device
+	wired         gonetworkmanager.DeviceWired
+	name          string
+	hwAddress     string
+	permHwAddress string
+}
+
+// profileMAC is the address NM matches 802-3-ethernet.mac-address against.
+func (i *ethernetDeviceInfo) profileMAC() string {
+	if i.permHwAddress != "" {
+		return i.permHwAddress
+	}
+	return i.hwAddress
 }
 
 type cellularDeviceInfo struct {
@@ -86,6 +97,13 @@ type NetworkManagerBackend struct {
 	sigWG    sync.WaitGroup
 	stopChan chan struct{}
 
+	// Test overrides.
+	nmObjectFn        func(dbus.ObjectPath) dbus.BusObject
+	firewalldObjectFn func() dbus.BusObject
+
+	nmVersionOnce sync.Once
+	nmLegacyDNS   bool
+
 	wifiRefreshTimer *time.Timer
 	wifiRefreshMu    sync.Mutex
 	wifiRefreshWG    sync.WaitGroup
@@ -95,6 +113,8 @@ type NetworkManagerBackend struct {
 
 	state      *BackendState
 	stateMutex sync.RWMutex
+	// ethernetProfileFit maps interface name to fitting wired profile UUIDs; guarded by stateMutex.
+	ethernetProfileFit map[string][]string
 
 	lastFailedSSID string
 	lastFailedTime int64
@@ -142,13 +162,18 @@ type cachedPKCS11PIN struct {
 }
 
 // cachedWiFiSecret reuses a just-entered WiFi/802.1x secret across repeat
-// GetSecrets calls in one activation, so NM retries don't re-prompt.
+// GetSecrets calls in one activation, so NM retries don't re-prompt. Entries
+// expire after wifiSecretCacheTTL.
 type cachedWiFiSecret struct {
 	ConnectionUUID string
 	SSID           string
 	SettingName    string
 	Secrets        map[string]string
+	CachedAt       time.Time
 }
+
+// A var so tests can shorten it.
+var wifiSecretCacheTTL = 60 * time.Second
 
 type cachedOpenConnectAuth struct {
 	ConnectionUUID string
@@ -221,12 +246,14 @@ func (b *NetworkManagerBackend) Initialize() error {
 				continue
 			}
 			hwAddr, _ := w.GetPropertyHwAddress()
+			permHwAddr, _ := w.GetPropertyPermHwAddress()
 
 			b.setEthernetDeviceInfo(iface, &ethernetDeviceInfo{
-				device:    dev,
-				wired:     w,
-				name:      iface,
-				hwAddress: hwAddr,
+				device:        dev,
+				wired:         w,
+				name:          iface,
+				hwAddress:     hwAddr,
+				permHwAddress: permHwAddr,
 			})
 
 			if b.ethernetDevice == nil {
@@ -295,6 +322,7 @@ func (b *NetworkManagerBackend) Initialize() error {
 		b.stateMutex.Unlock()
 	}
 	b.updateCellularRadioState()
+	b.updateConnectivityState()
 
 	if err := b.updateWiFiState(); err != nil {
 		log.Warnf("Failed to update WiFi state: %v", err)
@@ -578,36 +606,52 @@ func (b *NetworkManagerBackend) CancelCredentials(token string) error {
 	})
 }
 
-// mergeStoredSecrets re-fetches stored secrets and folds them into settings
-// before an Update. GetSettings never returns secrets and Update replaces the
-// whole connection, so a bare GetSettings->Update wipes system-owned passwords
-// (e.g. an OpenVPN password with password-flags=0). Only fills keys that aren't
-// already being set, so an explicit credential change still wins.
-func mergeStoredSecrets(conn gonetworkmanager.Connection, settings gonetworkmanager.ConnectionSettings) {
-	for setting := range settings {
-		switch setting {
-		case "vpn", "802-11-wireless-security", "802-1x":
-		default:
-			continue
-		}
-
-		secrets, err := conn.GetSecrets(setting)
-		if err != nil {
-			continue
-		}
-
-		section, ok := secrets[setting]
-		if !ok {
-			continue
-		}
-
-		for k, v := range section {
-			if _, exists := settings[setting][k]; exists {
-				continue
-			}
-			settings[setting][k] = v
-		}
+// nmObject returns nil when there is no D-Bus connection.
+func (b *NetworkManagerBackend) nmObject(path dbus.ObjectPath) dbus.BusObject {
+	if b.nmObjectFn != nil {
+		return b.nmObjectFn(path)
 	}
+	if b.dbusConn == nil {
+		return nil
+	}
+	return b.dbusConn.Object(dbusNMInterface, path)
+}
+
+func (b *NetworkManagerBackend) firewalldObject() dbus.BusObject {
+	if b.firewalldObjectFn != nil {
+		return b.firewalldObjectFn()
+	}
+	if b.dbusConn == nil {
+		return nil
+	}
+	return b.dbusConn.Object(firewalldService, firewalldPath)
+}
+
+// legacyDNS reports whether NM predates the dns-data key (added in 1.52).
+// The version is read once; an unreadable or unparsable one counts as new.
+func (b *NetworkManagerBackend) legacyDNS() bool {
+	b.nmVersionOnce.Do(func() {
+		v, err := b.nmConn.(gonetworkmanager.NetworkManager).GetPropertyVersion()
+		if err != nil {
+			log.Warnf("unable to read NetworkManager version: %v", err)
+			return
+		}
+		b.nmLegacyDNS = nmVersionBelow(v, 1, 52)
+	})
+	return b.nmLegacyDNS
+}
+
+func nmVersionBelow(version string, major, minor int) bool {
+	parts := strings.SplitN(version, ".", 3)
+	if len(parts) < 2 {
+		return false
+	}
+	maj, err1 := strconv.Atoi(parts[0])
+	mnr, err2 := strconv.Atoi(parts[1])
+	if err1 != nil || err2 != nil {
+		return false
+	}
+	return maj < major || maj == major && mnr < minor
 }
 
 func (b *NetworkManagerBackend) cacheWiFiSecret(connUUID, ssid, settingName string, secrets map[string]string) {
@@ -618,14 +662,25 @@ func (b *NetworkManagerBackend) cacheWiFiSecret(connUUID, ssid, settingName stri
 	copied := make(map[string]string, len(secrets))
 	maps.Copy(copied, secrets)
 
-	b.cachedWiFiSecretMu.Lock()
-	b.cachedWiFiSecret = &cachedWiFiSecret{
+	entry := &cachedWiFiSecret{
 		ConnectionUUID: connUUID,
 		SSID:           ssid,
 		SettingName:    settingName,
 		Secrets:        copied,
+		CachedAt:       time.Now(),
 	}
+	b.cachedWiFiSecretMu.Lock()
+	b.cachedWiFiSecret = entry
 	b.cachedWiFiSecretMu.Unlock()
+	time.AfterFunc(wifiSecretCacheTTL, func() { b.expireCachedWiFiSecret(entry) })
+}
+
+func (b *NetworkManagerBackend) expireCachedWiFiSecret(entry *cachedWiFiSecret) {
+	b.cachedWiFiSecretMu.Lock()
+	defer b.cachedWiFiSecretMu.Unlock()
+	if b.cachedWiFiSecret == entry {
+		b.cachedWiFiSecret = nil
+	}
 }
 
 func (b *NetworkManagerBackend) lookupCachedWiFiSecret(connUUID, settingName string) map[string]string {
@@ -638,6 +693,10 @@ func (b *NetworkManagerBackend) lookupCachedWiFiSecret(connUUID, settingName str
 
 	cached := b.cachedWiFiSecret
 	if cached == nil || cached.ConnectionUUID != connUUID || cached.SettingName != settingName {
+		return nil
+	}
+	if time.Since(cached.CachedAt) > wifiSecretCacheTTL {
+		b.cachedWiFiSecret = nil
 		return nil
 	}
 

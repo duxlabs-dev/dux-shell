@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -501,43 +502,28 @@ func (b *NetworkManagerBackend) ensureOpenConnectAgentFlags(conn gonetworkmanage
 	if !setOpenConnectAgentFlags(data) {
 		return nil
 	}
-	if b.dbusConn == nil {
-		return fmt.Errorf("NetworkManager D-Bus connection is unavailable")
-	}
-
-	connObj := b.dbusConn.Object("org.freedesktop.NetworkManager", conn.GetPath())
-	var existingSettings map[string]map[string]dbus.Variant
-	if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSettings", 0).Store(&existingSettings); err != nil {
-		return fmt.Errorf("failed to get connection settings: %w", err)
-	}
-
-	vpn, ok := existingSettings["vpn"]
-	if !ok {
-		return fmt.Errorf("VPN settings are missing")
-	}
-	vpn["data"] = dbus.MakeVariant(data)
-
-	var stored map[string]map[string]dbus.Variant
-	if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSecrets", 0, "vpn").Store(&stored); err != nil {
-		return fmt.Errorf("failed to preserve VPN secrets: %w", err)
-	}
-	if storedVPN, ok := stored["vpn"]; ok {
-		if secrets, ok := storedVPN["secrets"]; ok {
-			vpn["secrets"] = secrets
+	err := updateConnectionSettings(b.nmObject(conn.GetPath()), true, func(s nmSettings) error {
+		if _, ok := s["vpn"]; !ok {
+			return fmt.Errorf("VPN settings are missing")
 		}
-	}
-
-	settings := map[string]map[string]dbus.Variant{"vpn": vpn}
-	if connection, ok := existingSettings["connection"]; ok {
-		settings["connection"] = connection
-	}
-
-	var result map[string]dbus.Variant
-	if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.Update2", 0,
-		settings, uint32(0x1), map[string]dbus.Variant{}).Store(&result); err != nil {
+		merged := vpnStringMap(s, "data")
+		maps.Copy(merged, data)
+		setSettingValue(s, "vpn", "data", merged)
+		return nil
+	})
+	if err != nil {
 		return fmt.Errorf("failed to set NetworkManager secret-agent flags: %w", err)
 	}
 	return nil
+}
+
+// vpnStringMap returns a copy of the a{ss} value at vpn.<key>, empty if unset.
+func vpnStringMap(s nmSettings, key string) map[string]string {
+	out := map[string]string{}
+	if m, ok := s["vpn"][key].Value().(map[string]string); ok {
+		maps.Copy(out, m)
+	}
+	return out
 }
 
 func (b *NetworkManagerBackend) handleOpenConnectPasswordAuth(
@@ -741,36 +727,13 @@ func (b *NetworkManagerBackend) handleOpenVPNUsernameAuth(targetConn gonetworkma
 		return nil
 	}
 
-	connObj := b.dbusConn.Object("org.freedesktop.NetworkManager", targetConn.GetPath())
-	var existingSettings map[string]map[string]dbus.Variant
-	if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSettings", 0).Store(&existingSettings); err != nil {
-		return fmt.Errorf("failed to get settings for username save: %w", err)
-	}
-
-	settings := make(map[string]map[string]dbus.Variant)
-	if connSection, ok := existingSettings["connection"]; ok {
-		settings["connection"] = connSection
-	}
-	vpn := existingSettings["vpn"]
-	var data map[string]string
-	if dataVariant, ok := vpn["data"]; ok {
-		if dm, ok := dataVariant.Value().(map[string]string); ok {
-			data = make(map[string]string)
-			maps.Copy(data, dm)
-		} else {
-			data = make(map[string]string)
-		}
-	} else {
-		data = make(map[string]string)
-	}
-	data["username"] = username
-
-	vpn["data"] = dbus.MakeVariant(data)
-	settings["vpn"] = vpn
-
-	var result map[string]dbus.Variant
-	if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.Update2", 0,
-		settings, uint32(0x1), map[string]dbus.Variant{}).Store(&result); err != nil {
+	err = updateConnectionSettings(b.nmObject(targetConn.GetPath()), true, func(s nmSettings) error {
+		data := vpnStringMap(s, "data")
+		data["username"] = username
+		setSettingValue(s, "vpn", "data", data)
+		return nil
+	})
+	if err != nil {
 		return fmt.Errorf("failed to save username: %w", err)
 	}
 	log.Infof("[ConnectVPN] Username saved to connection")
@@ -950,18 +913,19 @@ func (b *NetworkManagerBackend) ClearVPNCredentials(uuidOrName string) error {
 
 		if connUUID == uuidOrName || connID == uuidOrName {
 			if connType == "vpn" {
-				if vpnSettings, ok := settings["vpn"]; ok {
-					delete(vpnSettings, "secrets")
-
-					if dataMap, ok := vpnSettings["data"].(map[string]string); ok {
-						dataMap["password-flags"] = "1"
-						vpnSettings["data"] = dataMap
+				err := updateConnectionSettings(b.nmObject(conn.GetPath()), true, func(s nmSettings) error {
+					if _, ok := s["vpn"]; !ok {
+						return nil
 					}
+					deleteSettingValue(s, "vpn", "secrets")
+					data := vpnStringMap(s, "data")
+					data["password-flags"] = "1"
+					setSettingValue(s, "vpn", "data", data)
+					return nil
+				})
+				if err != nil {
+					return err
 				}
-			}
-
-			if err := conn.Update(settings); err != nil {
-				return fmt.Errorf("failed to update connection: %w", err)
 			}
 
 			if err := conn.ClearSecrets(); err != nil {
@@ -1098,88 +1062,45 @@ func (b *NetworkManagerBackend) saveVPNCredentials(creds *pendingVPNCredentials)
 	log.Infof("[saveVPNCredentials] Saving credentials for %s (username=%v, savePassword=%v)",
 		creds.ConnectionPath, creds.Username != "", creds.SavePassword)
 
-	connObj := b.dbusConn.Object("org.freedesktop.NetworkManager", dbus.ObjectPath(creds.ConnectionPath))
-	var existingSettings map[string]map[string]dbus.Variant
-	if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSettings", 0).Store(&existingSettings); err != nil {
-		log.Warnf("[saveVPNCredentials] GetSettings failed: %v", err)
-		return
+	newSecrets := maps.Clone(creds.PersistentSecrets)
+	if newSecrets == nil {
+		newSecrets = map[string]string{}
 	}
-
-	settings := make(map[string]map[string]dbus.Variant)
-	if connSection, ok := existingSettings["connection"]; ok {
-		settings["connection"] = connSection
-	}
-
-	vpn, ok := existingSettings["vpn"]
-	if !ok {
-		vpn = make(map[string]dbus.Variant)
-	}
-
-	// Get existing data map
-	var data map[string]string
-	if dataVariant, ok := vpn["data"]; ok {
-		if dm, ok := dataVariant.Value().(map[string]string); ok {
-			data = make(map[string]string)
-			maps.Copy(data, dm)
-		} else {
-			data = make(map[string]string)
-		}
-	} else {
-		data = make(map[string]string)
-	}
-
-	// Always save username if provided
-	if creds.Username != "" {
-		data["username"] = creds.Username
-		log.Infof("[saveVPNCredentials] Saving username")
-	}
-
-	maps.Copy(data, creds.PersistentData)
-
-	secs := map[string]string{}
-	if len(creds.PersistentSecrets) > 0 {
-		var stored map[string]map[string]dbus.Variant
-		if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSecrets", 0, "vpn").Store(&stored); err != nil {
-			log.Warnf("[saveVPNCredentials] GetSecrets failed: %v", err)
-			return
-		}
-		if storedVPN, ok := stored["vpn"]; ok {
-			if storedSecrets, ok := storedVPN["secrets"]; ok {
-				saved, _ := storedSecrets.Value().(map[string]string)
-				maps.Copy(secs, saved)
-			}
-		}
-		for field, value := range creds.PersistentSecrets {
-			secs[field] = value
-			data[field+"-flags"] = "0"
-		}
-	}
-
 	if creds.SavePassword {
 		toSave := creds.Secrets
 		if len(toSave) == 0 {
 			toSave = map[string]string{"password": creds.Password}
 		}
-		for field, value := range toSave {
-			secs[field] = value
-			data[field+"-flags"] = "0"
+		maps.Copy(newSecrets, toSave)
+	}
+	if len(newSecrets) > 0 {
+		log.Infof("[saveVPNCredentials] Saving %d secret field(s)", len(newSecrets))
+	}
+
+	err := updateConnectionSettings(b.nmObject(dbus.ObjectPath(creds.ConnectionPath)), true, func(s nmSettings) error {
+		data := vpnStringMap(s, "data")
+		if creds.Username != "" {
+			data["username"] = creds.Username
 		}
-	}
-	if len(secs) > 0 {
-		vpn["secrets"] = dbus.MakeVariant(secs)
-		log.Infof("[saveVPNCredentials] Saving %d secret field(s)", len(secs))
-	}
+		maps.Copy(data, creds.PersistentData)
 
-	vpn["data"] = dbus.MakeVariant(data)
-	settings["vpn"] = vpn
+		if len(newSecrets) > 0 {
+			secs := vpnStringMap(s, "secrets")
+			for field, value := range newSecrets {
+				secs[field] = value
+				data[field+"-flags"] = "0"
+			}
+			setSettingValue(s, "vpn", "secrets", secs)
+		}
 
-	var result map[string]dbus.Variant
-	if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.Update2", 0,
-		settings, uint32(0x1), map[string]dbus.Variant{}).Store(&result); err != nil {
-		log.Warnf("[saveVPNCredentials] Update2 failed: %v", err)
-	} else {
-		log.Infof("[saveVPNCredentials] Successfully saved credentials")
+		setSettingValue(s, "vpn", "data", data)
+		return nil
+	})
+	if err != nil {
+		log.Warnf("[saveVPNCredentials] %v", err)
+		return
 	}
+	log.Infof("[saveVPNCredentials] Successfully saved credentials")
 }
 
 func (b *NetworkManagerBackend) ListVPNPlugins() ([]VPNPlugin, error) {
@@ -1234,10 +1155,15 @@ func parseVPNPluginFile(path string) (*VPNPlugin, error) {
 
 	plugin := &VPNPlugin{}
 	scanner := bufio.NewScanner(file)
+	section := ""
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "[") {
+		if strings.HasPrefix(line, "[") {
+			section = line
+			continue
+		}
+		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
 
@@ -1248,6 +1174,10 @@ func parseVPNPluginFile(path string) (*VPNPlugin, error) {
 
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
+
+		if value != "" && (section == "[libnm]" && key == "plugin" || section == "[GNOME]" && key == "properties") {
+			plugin.CanCreate = true
+		}
 
 		switch key {
 		case "name":
@@ -1312,13 +1242,87 @@ func (b *NetworkManagerBackend) ImportVPN(filePath string, name string) (*VPNImp
 	return b.importVPNWithNmcli(filePath, name)
 }
 
+var wgImportNameRe = regexp.MustCompile(`[^A-Za-z0-9_=+.-]`)
+
+// wireGuardImportName returns the interface name libnm will derive from the
+// file name, and whether the file must be copied under that name first.
+func wireGuardImportName(path string) (ifname string, needsCopy bool) {
+	base, hasConf := strings.CutSuffix(filepath.Base(path), ".conf")
+	if hasConf && len(base) >= 1 && len(base) <= 15 && base != "." && base != ".." && !wgImportNameRe.MatchString(base) {
+		return base, false
+	}
+	clean := wgImportNameRe.ReplaceAllString(base, "")
+	if len(clean) > 15 {
+		clean = clean[:15]
+	}
+	if clean == "" || clean == "." || clean == ".." {
+		clean = "wg0"
+	}
+	return clean, true
+}
+
+// looksLikeWireGuardConfig reports whether data has an [Interface] section
+// containing a PrivateKey line.
+func looksLikeWireGuardConfig(data []byte) bool {
+	inInterface := false
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "[") {
+			inInterface = strings.EqualFold(strings.TrimSpace(strings.Trim(line, "[]")), "interface")
+			continue
+		}
+		if !inInterface {
+			continue
+		}
+		if k, _, ok := strings.Cut(line, "="); ok && strings.EqualFold(strings.TrimSpace(k), "PrivateKey") {
+			return true
+		}
+	}
+	return false
+}
+
+// stageWireGuardImport copies a wg-quick file whose name libnm would reject to
+// a private temp dir under a valid interface name. cleanup is always safe to call.
+func stageWireGuardImport(filePath string) (stagedPath string, cleanup func(), err error) {
+	cleanup = func() {}
+	data, err := readEnterpriseFile("file", filePath)
+	if err != nil || !looksLikeWireGuardConfig(data) {
+		return filePath, cleanup, nil
+	}
+	ifname, needsCopy := wireGuardImportName(filePath)
+	if !needsCopy {
+		return filePath, cleanup, nil
+	}
+	dir, err := os.MkdirTemp("", "dms-wg-import-")
+	if err != nil {
+		return "", cleanup, err
+	}
+	cleanup = func() { _ = os.RemoveAll(dir) }
+	staged := filepath.Join(dir, ifname+".conf")
+	if err := os.WriteFile(staged, data, 0o600); err != nil {
+		cleanup()
+		return "", func() {}, err
+	}
+	return staged, cleanup, nil
+}
+
 func (b *NetworkManagerBackend) importVPNWithNmcli(filePath string, name string) (*VPNImportResult, error) {
+	importPath, cleanup, err := stageWireGuardImport(filePath)
+	defer cleanup()
+	if err != nil {
+		return &VPNImportResult{Success: false, Error: err.Error()}, nil
+	}
+	if importPath != filePath && name == "" {
+		name = strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath))
+	}
+
 	vpnTypes := []string{"openvpn", "wireguard", "vpnc", "pptp", "l2tp", "openconnect", "strongswan"}
 
 	var allErrors []error
 	var outputStr string
 	for _, vpnType := range vpnTypes {
-		cmd := exec.Command("nmcli", "connection", "import", "type", vpnType, "file", filePath)
+		cmd := exec.Command("nmcli", "connection", "import", "type", vpnType, "file", importPath)
+		cmd.Env = append(os.Environ(), "LC_ALL=C")
 		output, err := cmd.CombinedOutput()
 		if err == nil {
 			outputStr = string(output)
@@ -1333,24 +1337,10 @@ func (b *NetworkManagerBackend) importVPNWithNmcli(filePath string, name string)
 			Error:   errors.Join(allErrors...).Error(),
 		}, nil
 	}
-	var connUUID, connName string
-
-	lines := strings.SplitSeq(outputStr, "\n")
-	for line := range lines {
-		if strings.Contains(line, "successfully added") {
-			parts := strings.Fields(line)
-			for i, part := range parts {
-				if part == "(" && i+1 < len(parts) {
-					connUUID = strings.TrimSuffix(parts[i+1], ")")
-					break
-				}
-			}
-		}
-	}
+	connName, connUUID := parseNmcliAddedUUID(outputStr)
 
 	if name != "" && connUUID != "" {
-		renameCmd := exec.Command("nmcli", "connection", "modify", connUUID, "connection.id", name)
-		if err := renameCmd.Run(); err != nil {
+		if err := b.renameConnection(connUUID, name); err != nil {
 			log.Warnf("Failed to rename imported VPN: %v", err)
 		} else {
 			connName = name
@@ -1370,7 +1360,7 @@ func (b *NetworkManagerBackend) importVPNWithNmcli(filePath string, name string)
 		if s != nil {
 			settingsMgr := s.(gonetworkmanager.Settings)
 			connections, _ := settingsMgr.ListConnections()
-			baseName := strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath))
+			baseName := strings.TrimSuffix(filepath.Base(importPath), filepath.Ext(importPath))
 
 			for _, conn := range connections {
 				settings, err := conn.GetSettings()
@@ -1386,7 +1376,7 @@ func (b *NetworkManagerBackend) importVPNWithNmcli(filePath string, name string)
 					continue
 				}
 				connID, _ := connMeta["id"].(string)
-				if strings.Contains(connID, baseName) || (name != "" && connID == name) {
+				if connID == baseName || (name != "" && connID == name) {
 					connUUID, _ = connMeta["uuid"].(string)
 					connName = connID
 					break
@@ -1406,6 +1396,34 @@ func (b *NetworkManagerBackend) importVPNWithNmcli(filePath string, name string)
 		UUID:    connUUID,
 		Name:    connName,
 	}, nil
+}
+
+var nmcliAddedRe = regexp.MustCompile(`'(.*)' \(([0-9a-fA-F-]{36})\)`)
+
+// parseNmcliAddedUUID reads the last "Connection '<name>' (<uuid>)" line of
+// C-locale nmcli add/import output.
+func parseNmcliAddedUUID(output string) (name, uuid string) {
+	matches := nmcliAddedRe.FindAllStringSubmatch(output, -1)
+	if len(matches) == 0 {
+		return "", ""
+	}
+	last := matches[len(matches)-1]
+	return last[1], last[2]
+}
+
+func (b *NetworkManagerBackend) renameConnection(uuid, name string) error {
+	settingsMgr, err := b.networkManagerSettings()
+	if err != nil {
+		return err
+	}
+	conn, err := settingsMgr.GetConnectionByUUID(uuid)
+	if err != nil {
+		return fmt.Errorf("connection %s not found: %w", uuid, err)
+	}
+	return updateConnectionSettings(b.nmObject(conn.GetPath()), true, func(s nmSettings) error {
+		setSettingValue(s, "connection", "id", name)
+		return nil
+	})
 }
 
 func (b *NetworkManagerBackend) GetVPNConfig(uuidOrName string) (*VPNConfig, error) {
@@ -1522,44 +1540,28 @@ func (b *NetworkManagerBackend) UpdateVPNConfig(connUUID string, updates map[str
 			continue
 		}
 
-		if name, ok := updates["name"].(string); ok && name != "" {
-			connMeta["id"] = name
-		}
-
-		if autoconnect, ok := updates["autoconnect"].(bool); ok {
-			connMeta["autoconnect"] = autoconnect
-		}
-
-		if data, ok := updates["data"].(map[string]any); ok {
-			if vpnSettings, ok := settings["vpn"]; ok {
-				existingData, _ := vpnSettings["data"].(map[string]string)
-				if existingData == nil {
-					existingData = make(map[string]string)
-				}
-				for k, v := range data {
-					if strVal, ok := v.(string); ok {
-						existingData[k] = strVal
-					}
-				}
-				vpnSettings["data"] = existingData
+		err = updateConnectionSettings(b.nmObject(conn.GetPath()), true, func(s nmSettings) error {
+			if name, ok := updates["name"].(string); ok && name != "" {
+				setSettingValue(s, "connection", "id", name)
 			}
-		}
-
-		if ipv4, ok := settings["ipv4"]; ok {
-			delete(ipv4, "addresses")
-			delete(ipv4, "routes")
-			delete(ipv4, "dns")
-		}
-		if ipv6, ok := settings["ipv6"]; ok {
-			delete(ipv6, "addresses")
-			delete(ipv6, "routes")
-			delete(ipv6, "dns")
-		}
-
-		mergeStoredSecrets(conn, settings)
-
-		if err := conn.Update(settings); err != nil {
-			return fmt.Errorf("failed to update connection: %w", err)
+			if autoconnect, ok := updates["autoconnect"].(bool); ok {
+				setSettingValue(s, "connection", "autoconnect", autoconnect)
+			}
+			if updData, ok := updates["data"].(map[string]any); ok {
+				if _, ok := s["vpn"]; ok {
+					data := vpnStringMap(s, "data")
+					for k, v := range updData {
+						if strVal, ok := v.(string); ok {
+							data[k] = strVal
+						}
+					}
+					setSettingValue(s, "vpn", "data", data)
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
 		}
 
 		b.ListVPNProfiles()
@@ -1612,50 +1614,27 @@ func (b *NetworkManagerBackend) SetVPNCredentials(connUUID string, username stri
 			continue
 		}
 
-		vpnSettings, ok := settings["vpn"]
-		if !ok {
-			vpnSettings = make(map[string]any)
-			settings["vpn"] = vpnSettings
-		}
+		err = updateConnectionSettings(b.nmObject(conn.GetPath()), true, func(s nmSettings) error {
+			data := vpnStringMap(s, "data")
+			if username != "" {
+				data["username"] = username
+			}
+			if saveToKeyring {
+				data["password-flags"] = "0"
+			} else {
+				data["password-flags"] = "2"
+			}
+			setSettingValue(s, "vpn", "data", data)
 
-		existingData, _ := vpnSettings["data"].(map[string]string)
-		if existingData == nil {
-			existingData = make(map[string]string)
-		}
-
-		if username != "" {
-			existingData["username"] = username
-		}
-
-		if saveToKeyring {
-			existingData["password-flags"] = "0"
-		} else {
-			existingData["password-flags"] = "2"
-		}
-
-		vpnSettings["data"] = existingData
-
-		if password != "" {
-			secrets := make(map[string]string)
-			secrets["password"] = password
-			vpnSettings["secrets"] = secrets
-		}
-
-		if ipv4, ok := settings["ipv4"]; ok {
-			delete(ipv4, "addresses")
-			delete(ipv4, "routes")
-			delete(ipv4, "dns")
-		}
-		if ipv6, ok := settings["ipv6"]; ok {
-			delete(ipv6, "addresses")
-			delete(ipv6, "routes")
-			delete(ipv6, "dns")
-		}
-
-		mergeStoredSecrets(conn, settings)
-
-		if err := conn.Update(settings); err != nil {
-			return fmt.Errorf("failed to update connection: %w", err)
+			if password != "" {
+				secrets := vpnStringMap(s, "secrets")
+				secrets["password"] = password
+				setSettingValue(s, "vpn", "secrets", secrets)
+			}
+			return nil
+		})
+		if err != nil {
+			return err
 		}
 
 		log.Infof("Updated VPN credentials for %s (save=%v)", connUUID, saveToKeyring)
