@@ -225,15 +225,6 @@ FocusScope {
 
                         focusTargets: (clickable ? [playerRow] : []).concat(pinButton)
 
-                        TapHandler {
-                            parent: playerRow
-                            acceptedButtons: Qt.RightButton
-                            onTapped: {
-                                if (playerRow.modelData?.identity)
-                                    MprisController.setPinned(playerRow.isPinned ? "" : playerRow.modelData.identity);
-                            }
-                        }
-
                         DActionButton {
                             id: pinButton
 
