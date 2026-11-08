@@ -382,6 +382,8 @@ Item {
                 readonly property string rowType: rowData?.type ?? ""
 
                 z: 1
+                // An integer model never arms DListView's orphan sweep, so hide released delegates here.
+                visible: index >= 0
                 width: mainListView.width
                 height: rowData?.height ?? LauncherMetrics.rowHeight
 
