@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -542,9 +543,10 @@ func (b *NetworkManagerBackend) handleOpenConnectPasswordAuth(
 	}
 
 	password := secrets["password"]
-	serverCert := secrets["certificate:"+data["gateway"]]
-	if serverCert == "" {
-		serverCert = secrets["gwcert"]
+	// A list of pins: an HA gateway answers from several nodes, each with its own certificate.
+	trustedCerts := secrets["certificate:"+data["gateway"]]
+	if trustedCerts == "" {
+		trustedCerts = secrets["gwcert"]
 	}
 
 	var reply PromptReply
@@ -592,16 +594,16 @@ func (b *NetworkManagerBackend) handleOpenConnectPasswordAuth(
 		}
 	}
 
-	auth, err := runOpenConnectPasswordAuth(ctx, data, username, password, serverCert)
+	auth, err := runOpenConnectPasswordAuth(ctx, data, username, password, trustedCerts)
 	persistentSecrets := map[string]string{}
 	var authErr *openConnectAuthError
-	if err != nil && errors.As(err, &authErr) && authErr.serverCert != "" && authErr.serverCert != serverCert {
+	if err != nil && errors.As(err, &authErr) && authErr.serverCert != "" && !serverCertPinned(trustedCerts, authErr.serverCert) {
 		if b.promptBroker == nil {
 			return nil, fmt.Errorf("VPN server certificate is untrusted: %s", authErr.serverCert)
 		}
 
 		reason := "server-certificate"
-		if serverCert != "" {
+		if trustedCerts != "" {
 			reason = "server-certificate-changed"
 		}
 
@@ -623,9 +625,10 @@ func (b *NetworkManagerBackend) handleOpenConnectPasswordAuth(
 			return nil, fmt.Errorf("certificate confirmation failed: %w", promptErr)
 		}
 
-		auth, err = runOpenConnectPasswordAuth(ctx, data, username, password, authErr.serverCert)
+		updatedCerts := appendServerCertPin(trustedCerts, authErr.serverCert)
+		auth, err = runOpenConnectPasswordAuth(ctx, data, username, password, updatedCerts)
 		if err == nil {
-			persistentSecrets["certificate:"+data["gateway"]] = authErr.serverCert
+			persistentSecrets["certificate:"+data["gateway"]] = updatedCerts
 		}
 	}
 	if err != nil {
@@ -652,6 +655,29 @@ func (b *NetworkManagerBackend) handleOpenConnectPasswordAuth(
 	}
 
 	return auth, nil
+}
+
+func serverCertPins(trusted string) []string {
+	pins := []string{}
+	for pin := range strings.SplitSeq(trusted, ",") {
+		if pin = strings.TrimSpace(pin); pin != "" {
+			pins = append(pins, pin)
+		}
+	}
+	return pins
+}
+
+// Unlike certDigestTrusted, pins are base64 and must match case sensitively.
+func serverCertPinned(trusted, pin string) bool {
+	return slices.Contains(serverCertPins(trusted), pin)
+}
+
+func appendServerCertPin(trusted, pin string) string {
+	pins := serverCertPins(trusted)
+	if !slices.Contains(pins, pin) {
+		pins = append(pins, pin)
+	}
+	return strings.Join(pins, ",")
 }
 
 func suggestedOpenConnectServerCert(output string) string {

@@ -149,6 +149,7 @@ Rectangle {
         property string sortKey: ""
         property string label: ""
         property bool alignLeft: false
+        property real contentLeftOffset: 0
         readonly property bool sorted: DgopService.currentSort === sortKey
         readonly property bool ascending: DgopService.sortAscending !== ["name", "pid", "nice"].includes(sortKey)
 
@@ -168,12 +169,19 @@ Rectangle {
             radius: Theme.cornerRadiusXS + Theme.focusRingOffset
         }
 
+        StateLayer {
+            id: headerHover
+            cornerRadius: Theme.cornerRadiusXS
+            onClicked: DgopService.toggleSort(sh.sortKey)
+        }
+
         Row {
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: sh.alignLeft ? parent.left : undefined
+            anchors.leftMargin: sh.alignLeft ? sh.contentLeftOffset : 0
             anchors.right: sh.alignLeft ? undefined : parent.right
-            anchors.rightMargin: sh.alignLeft ? 0 : Theme.spacingXS
-            width: Math.min(implicitWidth, sh.width)
+            anchors.rightMargin: sh.alignLeft ? 0 : Theme.spacingS
+            width: Math.min(implicitWidth, sh.width - (sh.alignLeft ? sh.contentLeftOffset : Theme.spacingS))
             spacing: Theme.spacingXXS
 
             StyledText {
@@ -181,7 +189,7 @@ Rectangle {
                 text: sh.label
                 font.pixelSize: Theme.fontSizeSmall
                 font.weight: Theme.fontWeightMedium
-                color: sh.sorted ? Theme.primary : Theme.surfaceVariantText
+                color: sh.sorted ? Theme.primary : headerHover.hovered ? Theme.surfaceText : Theme.surfaceVariantText
                 wrapMode: Text.NoWrap
                 elide: Text.ElideRight
             }
@@ -193,12 +201,6 @@ Rectangle {
                 size: Theme.fontSizeSmall
                 color: Theme.primary
             }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: DgopService.toggleSort(sh.sortKey)
         }
     }
 
@@ -481,10 +483,6 @@ Rectangle {
                     anchors.rightMargin: Theme.spacingL
                     spacing: Theme.spacingXS
 
-                    Item {
-                        Layout.minimumWidth: root.leadWidth
-                    }
-
                     SortHeader {
                         id: nameHeader
                         Layout.fillWidth: true
@@ -492,6 +490,7 @@ Rectangle {
                         sortKey: "name"
                         label: I18n.tr("Name")
                         alignLeft: true
+                        contentLeftOffset: root.leadWidth + header.spacing
                     }
 
                     Repeater {
