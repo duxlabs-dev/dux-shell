@@ -113,6 +113,7 @@ TAB_INDEX_MAP = {
     "NetworkStatusTab.qml": 7,
     "NetworkEthernetTab.qml": 39,
     "NetworkWifiTab.qml": 40,
+    "NetworkHotspotTab.qml": 75,
     "NetworkVpnTab.qml": 41,
     "NetworkTailscaleTab.qml": 73,
     "NetworkCellularTab.qml": 47,
@@ -180,6 +181,8 @@ SIDEBAR_GATE_CONDITIONS = [
     ("layoutCapable", "layoutCapable"),
     ("cellularOnly", "cellularAvailable"),
     ("connectionEditorOnly", "connectionEditorAvailable"),
+    ("wifiOnly", "wifiDeviceAvailable"),
+    ("hotspotOnly", "hotspotAvailable"),
     ("tailscaleOnly", "tailscaleAvailable"),
     ("fcitx5Only", "fcitx5Available"),
 ]

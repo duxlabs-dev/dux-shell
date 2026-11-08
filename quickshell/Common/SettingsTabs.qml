@@ -420,7 +420,16 @@ Singleton {
                     "text": I18n.tr("Wi-Fi", "wireless network, page and section title"),
                     "icon": "wifi",
                     "tabIndex": 40,
-                    "hint": I18n.tr("Networks, saved networks, hotspot")
+                    "wifiOnly": true,
+                    "hint": I18n.tr("Saved networks")
+                },
+                {
+                    "id": "network_hotspot",
+                    "text": I18n.tr("Hotspot", "settings page title for the Wi-Fi hotspot"),
+                    "icon": "wifi_tethering",
+                    "tabIndex": 75,
+                    "hotspotOnly": true,
+                    "hint": I18n.tr("Set up a Wi-Fi hotspot for sharing this connection.", "unconfigured hotspot description")
                 },
                 {
                     "id": "network_wifi_connect",
@@ -855,6 +864,10 @@ Singleton {
         if (entry.fcitx5Only && !Fcitx5Service.available)
             return false;
         if (entry.cellularOnly && (NetworkService.cellularDevices?.length ?? 0) === 0)
+            return false;
+        if (entry.wifiOnly && !NetworkService.wifiDevicePresent)
+            return false;
+        if (entry.hotspotOnly && !NetworkService.hotspotSectionAvailable)
             return false;
         if (entry.connectionEditorOnly && !NetworkService.connectionEditorSupported)
             return false;

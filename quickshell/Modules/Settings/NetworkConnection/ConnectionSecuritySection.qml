@@ -121,7 +121,6 @@ SettingsCard {
             id: pskField
             width: parent.width
             outlined: true
-            leftIconName: "lock"
             labelText: I18n.tr("Password")
             echoMode: TextInput.Password
             showPasswordToggle: true
@@ -151,7 +150,7 @@ SettingsCard {
     EnterpriseAuthForm {
         id: form
         showIcons: false
-        markInvalid: root.enterpriseDirty
+        markInvalid: root.enterpriseDirty && root.editor.showErrors
         visible: root.enterpriseActive
         enabled: !root.locked
     }

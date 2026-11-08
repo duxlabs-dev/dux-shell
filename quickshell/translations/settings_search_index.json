@@ -1785,6 +1785,7 @@
       "connection",
       "connectivity",
       "ethernet",
+      "hotspot",
       "internet",
       "network",
       "online",
@@ -14276,36 +14277,7 @@
     ],
     "parentLabel": "Network",
     "icon": "wifi",
-    "conditionKey": "networkAvailable"
-  },
-  {
-    "section": "networkHotspot",
-    "label": "Hotspot",
-    "tabIndex": 40,
-    "category": "Wi-Fi",
-    "keywords": [
-      "access point",
-      "channel",
-      "connection",
-      "connectivity",
-      "ethernet",
-      "hidden",
-      "hotspot",
-      "internet",
-      "network",
-      "online",
-      "qr code",
-      "security",
-      "sharing",
-      "ssid",
-      "wi-fi",
-      "wifi",
-      "wireless",
-      "wpa3"
-    ],
-    "parentLabel": "Network",
-    "icon": "wifi_tethering",
-    "conditionKey": "networkAvailable"
+    "conditionKey": "wifiDeviceAvailable"
   },
   {
     "section": "networkSavedWifi",
@@ -14331,7 +14303,7 @@
     ],
     "parentLabel": "Network",
     "icon": "bookmark",
-    "conditionKey": "networkAvailable"
+    "conditionKey": "wifiDeviceAvailable"
   },
   {
     "section": "networkWifi",
@@ -14353,7 +14325,7 @@
       "wireless"
     ],
     "parentLabel": "Network",
-    "conditionKey": "networkAvailable"
+    "conditionKey": "wifiDeviceAvailable"
   },
   {
     "section": "networkVpn",
@@ -19602,5 +19574,34 @@
     "parentLabel": "Network",
     "icon": "hub",
     "conditionKey": "tailscaleAvailable"
+  },
+  {
+    "section": "networkHotspot",
+    "label": "Hotspot",
+    "tabIndex": 75,
+    "category": "Hotspot",
+    "keywords": [
+      "access point",
+      "channel",
+      "connection",
+      "connectivity",
+      "ethernet",
+      "hidden",
+      "hotspot",
+      "internet",
+      "network",
+      "online",
+      "qr code",
+      "security",
+      "sharing",
+      "ssid",
+      "wi-fi",
+      "wifi",
+      "wireless",
+      "wpa3"
+    ],
+    "parentLabel": "Network",
+    "icon": "wifi_tethering",
+    "conditionKey": "hotspotAvailable"
   }
 ]

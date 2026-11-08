@@ -43,6 +43,7 @@ Singleton {
     property string wifiDevicePath: activeService?.wifiDevicePath ?? ""
     property string activeAccessPointPath: activeService?.activeAccessPointPath ?? ""
     property var wifiDevices: activeService?.wifiDevices ?? []
+    readonly property bool wifiDevicePresent: (wifiDevices?.length ?? 0) > 0
     property string wifiDeviceOverride: activeService?.wifiDeviceOverride ?? ""
     property string connectingDevice: activeService?.connectingDevice ?? ""
 
@@ -90,6 +91,7 @@ Singleton {
     property bool hotspotSupported: activeService?.hotspotSupported ?? false
     property bool hotspotAvailable: activeService?.hotspotAvailable ?? false
     property bool hotspotConfigured: activeService?.hotspotConfigured ?? false
+    readonly property bool hotspotSectionAvailable: hotspotAvailable || hotspotConfigured
     property bool hotspotEnabled: activeService?.hotspotEnabled ?? false
     property bool hotspotActivating: activeService?.hotspotActivating ?? false
     property bool hotspotSecured: activeService?.hotspotSecured ?? false

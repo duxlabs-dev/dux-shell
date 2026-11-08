@@ -47,6 +47,7 @@ type prefs struct {
 	RunSSH                 bool
 	Hostname               string
 	OperatorUser           string
+	ControlURL             string
 	AdvertiseRoutes        []netip.Prefix
 }
 
@@ -150,10 +151,6 @@ func (c *localClient) ProfileStatus(ctx context.Context) (current loginProfile, 
 
 func (c *localClient) SwitchProfile(ctx context.Context, id string) error {
 	return c.send(ctx, http.MethodPost, "/localapi/v0/profiles/"+url.PathEscape(id), nil)
-}
-
-func (c *localClient) SwitchToEmptyProfile(ctx context.Context) error {
-	return c.send(ctx, http.MethodPut, "/localapi/v0/profiles/", nil)
 }
 
 func (c *localClient) SuggestExitNode(ctx context.Context) (ExitNodeSuggestion, error) {

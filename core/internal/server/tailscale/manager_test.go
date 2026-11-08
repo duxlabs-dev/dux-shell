@@ -80,12 +80,15 @@ type mockClient struct {
 	editPrefsFn     func(ctx context.Context, mp *maskedPrefs) error
 	profileStatusFn func(ctx context.Context) (loginProfile, []loginProfile, error)
 	fwdErr          error
+	logins          int
 }
 
-func (c *mockClient) StartLoginInteractive(ctx context.Context) error    { return nil }
+func (c *mockClient) StartLoginInteractive(ctx context.Context) error {
+	c.logins++
+	return nil
+}
 func (c *mockClient) SwitchProfile(ctx context.Context, id string) error { return nil }
 func (c *mockClient) Logout(ctx context.Context) error                   { return nil }
-func (c *mockClient) SwitchToEmptyProfile(ctx context.Context) error     { return nil }
 func (c *mockClient) SuggestExitNode(ctx context.Context) (ExitNodeSuggestion, error) {
 	return ExitNodeSuggestion{ID: "n1"}, nil
 }

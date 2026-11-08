@@ -14,6 +14,7 @@ Item {
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
+    readonly property string statusText: TailscaleService.connected ? TailscaleService.tailnetName : I18n.tr("Not connected", "Tailscale connection switch description")
     property bool profilesLoaded: false
     property bool canOperate: false
     property bool grantAvailable: false
@@ -21,6 +22,8 @@ Item {
     property var profiles: []
     property string currentProfile: ""
     property string suggestedId: ""
+    property bool addingAccount: false
+    property bool addBusy: false
 
     readonly property bool queryable: TailscaleService.canWritePrefs
     readonly property bool writable: queryable && canOperate && backendState !== "Unreachable"
@@ -57,7 +60,15 @@ Item {
         Qt.callLater(loadProfiles);
         Qt.callLater(loadSuggestion);
     }
-    onBackendStateChanged: Qt.callLater(loadProfiles)
+    onBackendStateChanged: {
+        if (backendState === "NeedsLogin")
+            addingAccount = false;
+        Qt.callLater(loadProfiles);
+    }
+    onWritableChanged: {
+        if (!writable)
+            addingAccount = false;
+    }
     onPrefOperatorChanged: Qt.callLater(loadProfiles)
     onTsConnectedChanged: Qt.callLater(loadSuggestion)
     onPrefHostnameChanged: hostnameField.value = prefHostname
@@ -95,6 +106,27 @@ Item {
         TailscaleService.suggestExitNode(response => {
             suggestedId = response?.result?.id ?? "";
         });
+    }
+
+    function openAddAccount() {
+        serverField.value = TailscaleService.prefs.controlUrl ?? "";
+        addingAccount = true;
+        Qt.callLater(serverField.focusField);
+    }
+
+    function submitAddAccount() {
+        if (addBusy)
+            return;
+        addBusy = true;
+        const sent = TailscaleService.addProfile(serverField.value.trim(), response => {
+            addBusy = false;
+            if (response.error)
+                return;
+            addingAccount = false;
+            loadProfiles();
+        });
+        if (!sent)
+            addBusy = false;
     }
 
     function grant() {
@@ -139,7 +171,7 @@ Item {
         subtitle: peer?.tailscaleIp ?? ""
         trailingBadge: isSelf ? I18n.tr("This device") : ""
         trailingBadgeColor: Theme.primary
-        Accessible.description: peer?.online ? I18n.tr("Online") : ""
+        Accessible.description: peer?.online ? subtitle + " · " + I18n.tr("Online") : subtitle
 
         leading: Rectangle {
             width: Theme.spacingS
@@ -154,7 +186,7 @@ Item {
             iconName: "content_copy"
             iconColor: Theme.surfaceText
             tooltipText: peerRow.peer?.tailscaleIp ?? ""
-            Accessible.name: I18n.tr("Copy")
+            Accessible.name: I18n.tr("Copy") + " " + tooltipText
             onClicked: peerRow.copyRequested(peerRow.peer.tailscaleIp)
         }
 
@@ -164,7 +196,7 @@ Item {
             iconName: "file_copy"
             iconColor: Theme.surfaceText
             tooltipText: peerRow.peer?.dnsName ?? ""
-            Accessible.name: I18n.tr("Copy")
+            Accessible.name: I18n.tr("Copy") + " " + tooltipText
             onClicked: peerRow.copyRequested(peerRow.peer.dnsName)
         }
     }
@@ -229,9 +261,9 @@ Item {
 
             SettingsToggleRow {
                 visible: TailscaleService.available
-                enabled: networkTailscaleTab.writable
-                text: TailscaleService.connected ? I18n.tr("Connected") : I18n.tr("Disconnected")
-                description: TailscaleService.tailnetName
+                enabled: networkTailscaleTab.writable && networkTailscaleTab.backendState !== "NeedsLogin"
+                text: I18n.tr("Status", "Tailscale connection switch title")
+                description: networkTailscaleTab.statusText
                 checked: TailscaleService.connected
                 onToggled: checked => {
                     if (checked)
@@ -258,6 +290,29 @@ Item {
                         networkTailscaleTab.loadProfiles();
                     });
                 }
+            }
+
+            SettingsTextFieldRow {
+                id: serverField
+                visible: networkTailscaleTab.addingAccount && networkTailscaleTab.backendState !== "NeedsLogin"
+                text: I18n.tr("Server", "Tailscale login server URL field label")
+                placeholderText: I18n.tr("leave empty for default", "Tailscale login server placeholder")
+                enabled: !networkTailscaleTab.addBusy
+                onAccepted: networkTailscaleTab.submitAddAccount()
+                actions: [
+                    DButton {
+                        text: I18n.tr("Cancel")
+                        variant: "text"
+                        enabled: !networkTailscaleTab.addBusy
+                        onClicked: networkTailscaleTab.addingAccount = false
+                    },
+                    DButton {
+                        text: I18n.tr("Add")
+                        busy: networkTailscaleTab.addBusy
+                        enabled: !networkTailscaleTab.addBusy
+                        onClicked: networkTailscaleTab.submitAddAccount()
+                    }
+                ]
             }
 
             PeerRow {
@@ -432,7 +487,7 @@ Item {
                 text: I18n.tr("Add account", "Tailscale: add another account")
                 iconName: "person_add"
                 enabled: networkTailscaleTab.writable
-                onClicked: TailscaleService.addProfile()
+                onClicked: networkTailscaleTab.openAddAccount()
             }
         }
     }

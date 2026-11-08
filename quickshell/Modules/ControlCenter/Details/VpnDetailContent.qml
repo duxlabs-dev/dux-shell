@@ -4,9 +4,9 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Modals.Common
-import qs.Modals.FileBrowser
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
+import qs.Modules.Network
 import qs.Services
 import qs.DCommon.Widgets
 
@@ -35,7 +35,7 @@ Item {
             text: I18n.tr("Import", "verb, button that imports a vpn profile file")
             variant: "tonal"
             enabled: !VPNService.importing
-            onClicked: root.openFileBrowser()
+            onClicked: importBrowser.open()
         }
 
         CcSettingsButton {
@@ -54,14 +54,6 @@ Item {
             PopoutService.closeControlCenter();
     }
 
-    function openFileBrowser() {
-        fileBrowserLoader.active = true;
-        const browser = fileBrowserLoader.item;
-        if (!browser)
-            return;
-        browser.open();
-    }
-
     function confirmDelete(profile) {
         deleteConfirmLoader.active = true;
         const confirm = deleteConfirmLoader.item;
@@ -76,16 +68,10 @@ Item {
         });
     }
 
-    Loader {
-        id: fileBrowserLoader
-        active: false
-        sourceComponent: FileBrowserSurfaceModal {
-            browserTitle: I18n.tr("Import VPN")
-            bucket: "vpn"
-            filters: VPNService.getFileFilter()
-            parentPopout: root.parentPopout
-            onAccepted: paths => VPNService.importVpn(paths[0])
-        }
+    VpnImportBrowser {
+        id: importBrowser
+        surface: true
+        parentPopout: root.parentPopout
     }
 
     Loader {

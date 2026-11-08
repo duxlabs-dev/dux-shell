@@ -4,6 +4,7 @@ import QtQuick
 import "../../Common/ConnectionEditor.js" as CE
 import qs.Common
 import qs.Modals.Common
+import qs.Modules.Network
 import qs.Modules.Settings.Widgets
 import qs.Services
 import qs.DCommon.Widgets
@@ -16,12 +17,17 @@ Item {
     property bool loaded: false
     property var duplicateSource: null
     readonly property int revision: NetworkService.connectionProfilesRevision
-    readonly property var groups: CE.groupProfiles(profiles)
+    readonly property var groups: CE.groupProfiles(profiles, NetworkService.hotspotUuid)
     readonly property var groupIcons: ({
+            "hotspot": "wifi_tethering",
             "vpn": "vpn_key",
             "cellular": "signal_cellular_alt",
             "other": "settings_ethernet"
         })
+
+    VpnImportBrowser {
+        id: importBrowser
+    }
 
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
@@ -50,6 +56,8 @@ Item {
             return I18n.tr("Ethernet");
         case "wifi":
             return I18n.tr("Wi-Fi");
+        case "hotspot":
+            return I18n.tr("Hotspot", "settings page title for the Wi-Fi hotspot");
         case "vpn":
             return I18n.tr("VPN");
         case "cellular":
@@ -59,7 +67,7 @@ Item {
     }
 
     function profileIcon(profile, group) {
-        return CE.typeInfo(profile.type)?.icon ?? groupIcons[group] ?? "settings_ethernet";
+        return group === "hotspot" ? groupIcons.hotspot : CE.typeInfo(profile.type)?.icon ?? groupIcons[group] ?? "settings_ethernet";
     }
 
     function subtitleFor(profile) {
@@ -85,7 +93,7 @@ Item {
 
     function addConnection() {
         const wired = NetworkService.ethernetDevices.length > 0;
-        openEditor("", wired ? I18n.tr("Ethernet") : I18n.tr("Wi-Fi"), wired ? "802-3-ethernet" : "802-11-wireless");
+        openEditor("", I18n.tr("Add connection", "settings page title while creating a new network connection profile"), wired ? "802-3-ethernet" : "802-11-wireless");
     }
 
     function reportError(title, response) {
@@ -118,16 +126,28 @@ Item {
         readonly property bool isHotspot: !!NetworkService.hotspotUuid && profile.uuid === NetworkService.hotspotUuid
         readonly property bool supported: CE.isSupported(profile.type, profile.controller ? profile.portType : "")
 
+        readonly property bool deviceAvailable: {
+            switch (profile.type) {
+            case "802-3-ethernet":
+                return (NetworkService.ethernetDevices?.length ?? 0) > 0;
+            case "802-11-wireless":
+                return NetworkService.wifiDevicePresent;
+            case "gsm":
+                return (NetworkService.cellularDevices?.length ?? 0) > 0;
+            }
+            return true;
+        }
+
         title: profile.id
         subtitle: root.subtitleFor(profile) + (supported ? "" : " • " + I18n.tr("Not supported in Settings", "network connection list and editor: this connection type can only be edited in another tool"))
         iconName: root.profileIcon(profile, group)
         active: profile.active
         clickable: supported
+        showChevron: supported
         onClicked: {
             if (!isHotspot)
                 return root.openEditor(profile.uuid, profile.id, "");
-            SettingsSearchService.navigateToSection("networkHotspot");
-            root.parentModal?.navigateTo("network_wifi");
+            root.parentModal?.navigateTo("network_hotspot");
         }
 
         DActionButton {
@@ -138,6 +158,7 @@ Item {
         }
 
         DActionButton {
+            visible: !profileRow.isHotspot && (profileRow.profile.active || profileRow.deviceAvailable)
             iconName: profileRow.profile.active ? "link_off" : "link"
             tooltipText: profileRow.profile.active ? I18n.tr("Disconnect") : I18n.tr("Connect")
             onClicked: {
@@ -226,6 +247,16 @@ Item {
                 text: I18n.tr("Add")
                 iconName: "add"
                 onClicked: root.addConnection()
+            }
+
+            DFab {
+                visible: DMSNetworkService.vpnAvailable
+                text: I18n.tr("Import", "verb, button that imports a vpn profile file")
+                iconName: "upload_file"
+                colorRole: "secondaryContainer"
+                busy: VPNService.importing
+                enabled: !VPNService.importing
+                onClicked: importBrowser.open()
             }
         }
     }

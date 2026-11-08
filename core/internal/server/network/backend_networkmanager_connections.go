@@ -79,7 +79,7 @@ func (b *NetworkManagerBackend) ListConnectionProfiles() ([]ConnectionProfile, e
 			continue
 		}
 
-		settings, err := readConnectionSettings(obj, false)
+		settings, _, err := readConnectionSettings(obj, false)
 		if err != nil {
 			log.Errorf("unable to get settings for %s: %v", conn.GetPath(), err)
 			continue
@@ -223,7 +223,7 @@ func (b *NetworkManagerBackend) GetConnectionSettings(uuid string, withSecrets b
 	if err != nil {
 		return nil, err
 	}
-	settings, err := readConnectionSettings(obj, withSecrets)
+	settings, _, err := readConnectionSettings(obj, withSecrets)
 	if err != nil {
 		return nil, err
 	}
@@ -426,7 +426,7 @@ func (b *NetworkManagerBackend) DuplicateConnectionProfile(uuid, name string) (s
 	} else if flags&nmConnFlagUnsaved != 0 {
 		method = nmSettingsAddConnectionUnsaved
 	}
-	s, err := readConnectionSettings(obj, true)
+	s, _, err := readConnectionSettings(obj, true)
 	if err != nil {
 		return "", err
 	}
@@ -495,7 +495,7 @@ func (b *NetworkManagerBackend) ExportConnectionProfile(uuid, path string) error
 	if err != nil {
 		return err
 	}
-	s, err := readConnectionSettings(obj, false)
+	s, _, err := readConnectionSettings(obj, false)
 	if err != nil {
 		return err
 	}
@@ -503,8 +503,12 @@ func (b *NetworkManagerBackend) ExportConnectionProfile(uuid, path string) error
 	var content []byte
 	switch typ, _ := s["connection"]["type"].Value().(string); typ {
 	case "wireguard":
-		if err := mergeConnectionSecrets(obj, s); err != nil {
+		unreadable, err := mergeConnectionSecrets(obj, s, nmSecretSettings)
+		if err != nil {
 			return err
+		}
+		if err := unreadable["wireguard"]; err != nil {
+			return fmt.Errorf("failed to get secrets for wireguard: %w", err)
 		}
 		dropLegacyIPKeys(s)
 		conf, err := wgQuickConfig(decodeSettingsForJSON(s))

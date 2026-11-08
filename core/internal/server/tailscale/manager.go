@@ -34,7 +34,6 @@ type tailscaleClient interface {
 	Logout(ctx context.Context) error
 	ProfileStatus(ctx context.Context) (loginProfile, []loginProfile, error)
 	SwitchProfile(ctx context.Context, id string) error
-	SwitchToEmptyProfile(ctx context.Context) error
 	SuggestExitNode(ctx context.Context) (ExitNodeSuggestion, error)
 	CheckIPForwarding(ctx context.Context) error
 }
@@ -256,6 +255,7 @@ func convertPrefs(p *prefs) TailscalePrefs {
 		RunSSH:            p.RunSSH,
 		Hostname:          p.Hostname,
 		OperatorUser:      p.OperatorUser,
+		ControlURL:        p.ControlURL,
 		AdvertiseExitNode: exitNode,
 		AdvertiseRoutes:   make([]string, len(routes)),
 	}
@@ -572,12 +572,7 @@ func (m *Manager) Logout() error {
 // Profiles lists the known accounts. ProfileStatus needs LocalAPI write
 // access, so an access-denied error means DMS cannot change Tailscale.
 func (m *Manager) Profiles() (ProfilesResult, error) {
-	var current loginProfile
-	var all []loginProfile
-	err := m.withTimeout(func(ctx context.Context) (err error) {
-		current, all, err = m.client.ProfileStatus(ctx)
-		return err
-	})
+	current, all, err := m.profileStatus()
 	if errors.Is(err, errAccessDenied) {
 		return ProfilesResult{}, nil
 	}
@@ -601,6 +596,14 @@ func (m *Manager) Profiles() (ProfilesResult, error) {
 	return res, nil
 }
 
+func (m *Manager) profileStatus() (current loginProfile, all []loginProfile, err error) {
+	err = m.withTimeout(func(ctx context.Context) (err error) {
+		current, all, err = m.client.ProfileStatus(ctx)
+		return err
+	})
+	return
+}
+
 func (m *Manager) SwitchProfile(id string) error {
 	if id == "" {
 		return errors.New("profile id is required")
@@ -614,17 +617,6 @@ func (m *Manager) SwitchProfile(id string) error {
 	}
 	m.RefreshState()
 	return nil
-}
-
-// AddProfile switches to a new empty profile and starts logging it in.
-func (m *Manager) AddProfile() error {
-	m.setAuthURL(nil)
-	return m.withTimeout(func(ctx context.Context) error {
-		if err := m.client.SwitchToEmptyProfile(ctx); err != nil {
-			return err
-		}
-		return m.client.StartLoginInteractive(ctx)
-	})
 }
 
 func (m *Manager) SuggestExitNode() (ExitNodeSuggestion, error) {

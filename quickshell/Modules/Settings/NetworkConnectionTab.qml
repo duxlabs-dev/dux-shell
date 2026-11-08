@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import "../../Common/ConnectionEditor.js" as CE
+import "../../Common/QmlUtils.js" as QmlUtils
 import qs.Common
 import qs.Modules.Settings.NetworkConnection
 import qs.Modules.Settings.Widgets
@@ -35,30 +36,21 @@ Item {
     property var securitySection: null
     // Removed sections are only deleted later; their writes are dropped until the new ones exist.
     property bool swapping: false
+    // Set by the first Save press, so a form being filled in isn't red yet.
+    property bool showErrors: false
 
     readonly property bool dirty: {
         revision;
         return CE.settingsDiff(original, draft) !== null || (securitySection?.enterpriseDirty ?? false);
     }
 
-    function firstInvalid(item) {
-        for (const child of item.children) {
-            if (!child.visible)
-                continue;
-            if (child.isError === true)
-                return child;
-            const found = firstInvalid(child);
-            if (found)
-                return found;
-        }
-        return null;
-    }
-
     function saveOrReveal(persist) {
+        showErrors = true;
         for (let i = 0; i < sectionRepeater.count; i++) {
             const section = (sectionRepeater.itemAt(i) as Loader)?.item;
             if (section && section.valid === false) {
-                parentModal?.revealItem(firstInvalid(section) ?? section);
+                // The isError bindings follow showErrors, so look for the field once they have updated.
+                Qt.callLater(() => parentModal?.revealItem(QmlUtils.firstInvalid(section) ?? section));
                 return;
             }
         }
@@ -156,11 +148,21 @@ Item {
         sectionIds = loaded && !unsupported ? CE.sectionsFor(draft?.connection?.type ?? "", draft).filter(id => id !== "mobile" || hasMobile) : [];
     }
 
-    function resetNew(type) {
-        const label = typeLabel(type);
+    // carryOver: a type change on a new draft keeps a typed name and the General settings every type shares.
+    function resetNew(type, carryOver) {
+        const prev = carryOver && isNew ? draft?.connection ?? {} : {};
+        const prevType = prev.type === "vpn" ? "vpn:" + (draft?.vpn?.["service-type"] ?? "") : prev.type;
+        const prevName = String(prev.id ?? "");
+        const name = prevName !== "" && prevName !== typeLabel(prevType ?? "") ? prevName : typeLabel(type);
+        showErrors = false;
         const settings = CE.newConnectionSettings(type, {
-            "name": label
+            "name": name,
+            "ifname": type === "wireguard" ? CE.nextWgIfname(profiles) : ""
         });
+        for (const key of ["autoconnect-priority", "metered", "zone", "secondaries"]) {
+            if (prev[key] !== undefined && !(key === "secondaries" && CE.groupOf(type) === "vpn"))
+                settings.connection[key] = CE.copy(prev[key]);
+        }
         clearSections();
         isNew = true;
         unsupported = false;
@@ -170,7 +172,7 @@ Item {
         original = {};
         draft = settings;
         loaded = true;
-        SettingsUiState.selectedConnectionTitle = label;
+        SettingsUiState.selectedConnectionTitle = I18n.tr("Add connection", "settings page title while creating a new network connection profile");
         rebuild();
     }
 
@@ -199,6 +201,7 @@ Item {
     }
 
     function load() {
+        showErrors = false;
         const token = ++loadToken;
         const uuid = selectedUuid;
         NetworkService.listConnections(response => {
@@ -235,6 +238,7 @@ Item {
             parentModal?.goBack();
             return;
         }
+        showErrors = false;
         clearSections();
         draft = CE.copy(original);
         original = CE.copy(original);
@@ -312,16 +316,10 @@ Item {
             }
         }
 
-        SettingsNoteRow {
-            visible: root.loaded && !root.readOnly && !root.isNew && !root.unsupported && (root.profile?.unsaved ?? false)
-            text: I18n.tr("This connection is temporary and is lost on reboot.", "network connection editor note")
-            noteIconName: "info"
-            tint: Theme.primary
-            tintBackground: Theme.primaryHover
-        }
-
         SettingsRow {
             visible: root.loaded && !root.readOnly && !root.isNew && !root.unsupported && (root.profile?.unsaved ?? false)
+            iconName: "info"
+            title: I18n.tr("This connection is temporary and is lost on reboot.", "network connection editor note")
 
             DButton {
                 text: I18n.tr("Save permanently", "network connection editor: keep the connection after reboot")

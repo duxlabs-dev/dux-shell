@@ -16,7 +16,7 @@ type ConnectionProfile struct {
 	CanModify bool `json:"canModify"`
 	// SSID is set for Wi-Fi profiles whose SSID is valid UTF-8.
 	SSID string `json:"ssid,omitempty"`
-	// Controller and PortType are set for bond/bridge ports (connection.controller, else master).
+	// Controller and PortType are set for every port profile (connection.controller, else master).
 	Controller string `json:"controller,omitempty"`
 	PortType   string `json:"portType,omitempty"`
 }

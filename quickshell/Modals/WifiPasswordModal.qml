@@ -72,6 +72,7 @@ DModal {
             inputEnabled: dialog.opened
             onCloseRequested: root.close()
             onFocusSubmitRequested: connectButton.forceActiveFocus()
+            onRevealRequested: item => item.forceActiveFocus()
         }
 
         actions: [
@@ -87,7 +88,7 @@ DModal {
                 maximumWidth: dialog.actionWidth
                 wrapText: true
                 text: form.submitText
-                enabled: form.canConnect
+                enabled: form.submitEnabled
                 onClicked: form.submitCredentialsAndClose()
             }
         ]

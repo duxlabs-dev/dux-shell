@@ -36,6 +36,7 @@ func TestOperatorGrantArgv(t *testing.T) {
 	ts, pk := "/usr/bin/tailscale", "/usr/bin/pkexec"
 	for name, tc := range map[string]struct {
 		user    *string
+		server  *string
 		path    string
 		info    stubInfo
 		statErr bool
@@ -58,6 +59,17 @@ func TestOperatorGrantArgv(t *testing.T) {
 		"pkexec not setuid": {path: pk, info: stubInfo{mode: 0o755}, err: "not setuid"},
 		"relative pkexec":   {look: func(n string) (string, error) { return "./" + n, nil }, err: "not found"},
 		"lookup unreadable": {look: func(string) (string, error) { return "", os.ErrPermission }, err: "not usable"},
+		"https server":      {server: str("https://headscale.example.com")},
+		"http server, port": {server: str("http://hs.lan:8080/")},
+		"default server":    {server: str("")},
+		"ftp server":        {server: str("ftp://hs.lan"), err: "login server"},
+		"no host":           {server: str("https://"), err: "login server"},
+		"userinfo":          {server: str("https://u:p@hs.lan"), err: "login server"},
+		"query":             {server: str("https://hs.lan?q"), err: "login server"},
+		"fragment":          {server: str("https://hs.lan#f"), err: "login server"},
+		"space":             {server: str("https://hs .lan"), err: "login server"},
+		"newline":           {server: str("https://hs.lan\n"), err: "login server"},
+		"flag":              {server: str("-rf"), err: "login server"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			stat := func(p string) (os.FileInfo, error) {
@@ -77,13 +89,23 @@ func TestOperatorGrantArgv(t *testing.T) {
 			if tc.user != nil {
 				u = *tc.user
 			}
-			argv, err := operatorGrantArgv(stat, look, func() (*user.User, error) { return &user.User{Username: u}, nil })
+			cur := func() (*user.User, error) { return &user.User{Username: u}, nil }
+			argv, err := operatorGrantArgv(stat, look, cur)
+			want := []string{pk, ts, "set", "--operator=" + u}
+			if tc.server != nil {
+				argv, err = addProfileArgv(stat, look, cur, *tc.server)
+				server := *tc.server
+				if server == "" {
+					server = defaultLoginServer
+				}
+				want = []string{pk, ts, "login", "--operator=" + u, "--login-server=" + server, "--timeout=1s"}
+			}
 			if tc.err != "" {
 				require.ErrorContains(t, err, tc.err)
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, []string{pk, ts, "set", "--operator=" + u}, argv)
+			assert.Equal(t, want, argv)
 		})
 	}
 }

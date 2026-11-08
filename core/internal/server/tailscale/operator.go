@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
@@ -12,9 +13,13 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"unicode"
 )
 
-const operatorGrantTimeout = 3 * time.Minute
+const (
+	operatorGrantTimeout = 3 * time.Minute
+	defaultLoginServer   = "https://controlplane.tailscale.com"
+)
 
 var (
 	ErrOperatorGrantCancelled = errors.New("permission not granted")
@@ -23,8 +28,53 @@ var (
 
 type commandRunner func(ctx context.Context, argv []string) (output []byte, exitCode int, err error)
 
-// The argv is fixed: nothing in it comes from IPC callers, and it never goes through a shell.
-func operatorGrantArgv(stat func(string) (os.FileInfo, error), lookPath func(string) (string, error), current func() (*user.User, error)) ([]string, error) {
+type (
+	statFunc     func(string) (os.FileInfo, error)
+	lookPathFunc func(string) (string, error)
+	userFunc     func() (*user.User, error)
+)
+
+// The elevated argv never goes through a shell. Only the login server comes from IPC callers,
+// validated and passed as a single element after "=", so it can't become a flag.
+func operatorGrantArgv(stat statFunc, lookPath lookPathFunc, current userFunc) ([]string, error) {
+	pkexec, tailscale, username, err := resolveOperatorCommand(stat, lookPath, current)
+	if err != nil {
+		return nil, err
+	}
+	return []string{pkexec, tailscale, "set", "--operator=" + username}, nil
+}
+
+// addProfileArgv creates a new profile owned by the operator; --timeout=1s makes the
+// CLI exit on its own right after it has started the login.
+func addProfileArgv(stat statFunc, lookPath lookPathFunc, current userFunc, server string) ([]string, error) {
+	server, err := validLoginServer(server)
+	if err != nil {
+		return nil, err
+	}
+	pkexec, tailscale, username, err := resolveOperatorCommand(stat, lookPath, current)
+	if err != nil {
+		return nil, err
+	}
+	return []string{pkexec, tailscale, "login", "--operator=" + username, "--login-server=" + server, "--timeout=1s"}, nil
+}
+
+func validLoginServer(raw string) (string, error) {
+	if raw == "" {
+		return defaultLoginServer, nil
+	}
+	errInvalid := errors.New("login server must be an http or https URL without credentials, query or fragment")
+	if strings.IndexFunc(raw, func(r rune) bool { return unicode.IsSpace(r) || unicode.IsControl(r) }) >= 0 ||
+		strings.ContainsAny(raw, "?#") {
+		return "", errInvalid
+	}
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil {
+		return "", errInvalid
+	}
+	return raw, nil
+}
+
+func resolveOperatorCommand(stat statFunc, lookPath lookPathFunc, current userFunc) (pkexec, tailscale, username string, err error) {
 	resolve := func(name string) (string, error) {
 		p, err := lookPath(name)
 		if err != nil && !errors.Is(err, exec.ErrNotFound) {
@@ -46,46 +96,52 @@ func operatorGrantArgv(stat func(string) (os.FileInfo, error), lookPath func(str
 		}
 		return p, nil
 	}
-	pkexec, err := resolve("pkexec")
-	if err != nil {
-		return nil, err
+	if pkexec, err = resolve("pkexec"); err != nil {
+		return
 	}
-	tailscale, err := resolve("tailscale")
-	if err != nil {
-		return nil, err
+	if tailscale, err = resolve("tailscale"); err != nil {
+		return
 	}
 	u, err := current()
 	if err != nil {
-		return nil, fmt.Errorf("current user: %w", err)
+		return "", "", "", fmt.Errorf("current user: %w", err)
 	}
 	if !operatorUsernameRe.MatchString(u.Username) {
-		return nil, fmt.Errorf("unsupported user name %q", u.Username)
+		return "", "", "", fmt.Errorf("unsupported user name %q", u.Username)
 	}
-	return []string{pkexec, tailscale, "set", "--operator=" + u.Username}, nil
+	return pkexec, tailscale, u.Username, nil
 }
 
 func grantOperator(ctx context.Context, argv []string, run commandRunner) error {
+	out, code, err := runElevated(ctx, argv, run, "tailscale set --operator")
+	if err == nil && code != 0 {
+		return fmt.Errorf("tailscale set --operator failed: %s", out)
+	}
+	return err
+}
+
+// runElevated returns the trimmed output and exit code. A dismissed or refused
+// pkexec prompt returns ErrOperatorGrantCancelled.
+func runElevated(ctx context.Context, argv []string, run commandRunner, label string) (string, int, error) {
 	if len(argv) == 0 {
-		return errors.New("empty command")
+		return "", 0, errors.New("empty command")
 	}
 	ctx, cancel := context.WithTimeout(ctx, operatorGrantTimeout)
 	defer cancel()
 
-	out, code, err := run(ctx, argv)
+	raw, code, err := run(ctx, argv)
+	out := strings.TrimSpace(string(raw))
 	switch {
 	case err != nil:
-		return fmt.Errorf("tailscale set --operator failed: %w", err)
-	case code == 0:
-		return nil
+		return out, code, fmt.Errorf("%s failed: %w", label, err)
 	case code == 126 || code == 127:
 		// 126: dialog dismissed; 127: not authorized or pkexec failed
-		if msg := strings.TrimSpace(string(out)); msg != "" {
-			return fmt.Errorf("%w: %s", ErrOperatorGrantCancelled, msg)
+		if out != "" {
+			return out, code, fmt.Errorf("%w: %s", ErrOperatorGrantCancelled, out)
 		}
-		return ErrOperatorGrantCancelled
-	default:
-		return fmt.Errorf("tailscale set --operator failed: %s", strings.TrimSpace(string(out)))
+		return out, code, ErrOperatorGrantCancelled
 	}
+	return out, code, nil
 }
 
 func execCommandRunner(ctx context.Context, argv []string) ([]byte, int, error) {

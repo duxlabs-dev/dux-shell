@@ -785,7 +785,7 @@ var CONNECTION_TYPES = [
     }
 ];
 
-var GROUPS = ["ethernet", "wifi", "vpn", "cellular", "other"];
+var GROUPS = ["ethernet", "wifi", "hotspot", "vpn", "cellular", "other"];
 
 function typeInfo(type) {
     return CONNECTION_TYPES.find(t => t.type === type) || null;
@@ -797,9 +797,7 @@ function groupOf(type) {
         return info.group;
     switch (String(type ?? "").split(":")[0]) {
     case "vpn":
-    case "wireguard":
         return "vpn";
-    case "gsm":
     case "cdma":
         return "cellular";
     default:
@@ -826,7 +824,6 @@ function portOf(settings) {
     if (!controller)
         return null;
     return {
-        "controller": controller,
         "type": c["port-type"] || c["slave-type"] || ""
     };
 }
@@ -889,6 +886,16 @@ function isValidHotspotAddress(text) {
     return host !== 0 && host !== Math.pow(2, 32 - c.prefix) - 1;
 }
 
+function nextWgIfname(profiles) {
+    const used = {};
+    for (const p of profiles || [])
+        used[p.interfaceName] = true;
+    let n = 0;
+    while (used["wg" + n])
+        n++;
+    return "wg" + n;
+}
+
 // type is a connection type, or "vpn:<service-type>" for a VPN plugin profile.
 function newConnectionSettings(type, opts) {
     const colon = String(type ?? "").indexOf(":");
@@ -919,7 +926,7 @@ function newConnectionSettings(type, opts) {
         };
         break;
     case "wireguard":
-        s.connection["interface-name"] = "wg0";
+        s.connection["interface-name"] = (opts && opts.ifname) || "wg0";
         s.wireguard = opts && opts.privateKey ? {
             "private-key": opts.privateKey
         } : {};
@@ -943,10 +950,11 @@ function newConnectionSettings(type, opts) {
 }
 
 // Input keeps the backend's ID order; sorting is stable, so it survives within each group.
-function groupProfiles(profiles) {
+function groupProfiles(profiles, hotspotUuid) {
     const out = [];
+    const groupFor = p => hotspotUuid && p.uuid === hotspotUuid ? "hotspot" : groupOf(p.type);
     for (const group of GROUPS) {
-        const members = (profiles || []).filter(p => groupOf(p.type) === group);
+        const members = (profiles || []).filter(p => groupFor(p) === group);
         if (members.length === 0)
             continue;
         members.sort((a, b) => (b.active ? 1 : 0) - (a.active ? 1 : 0));

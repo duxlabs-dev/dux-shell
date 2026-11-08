@@ -192,9 +192,9 @@ Item {
 
                                             DActionButton {
                                                 buttonSize: Theme.buttonHeightXXS
-                                                iconName: "tune"
+                                                iconName: "edit"
                                                 iconColor: Theme.surfaceText
-                                                tooltipText: I18n.tr("Configure")
+                                                tooltipText: I18n.tr("Edit")
                                                 visible: isConnected && NetworkService.connectionEditorSupported && !!modelData.connectionUuid
                                                 onClicked: {
                                                     const uuid = modelData.connectionUuid;
@@ -385,12 +385,8 @@ Item {
                 }
             }
 
-            SettingsNavRow {
-                visible: NetworkService.connectionEditorSupported
-                iconName: "lan"
-                title: I18n.tr("Connections", "settings page listing saved network connection profiles")
-                hint: I18n.tr("Saved configurations")
-                onClicked: keyboard => networkEthernetTab.parentModal?.navigateTo("network_connections", keyboard)
+            NetworkConnectionsNavRow {
+                parentModal: networkEthernetTab.parentModal
             }
         }
     }

@@ -187,6 +187,10 @@ Item {
                     }
                 }
             }
+
+            NetworkConnectionsNavRow {
+                parentModal: networkCellularTab.parentModal
+            }
         }
 
         SettingsCard {
@@ -263,8 +267,8 @@ Item {
                                 anchors.right: profileAction.left
                                 anchors.rightMargin: Theme.spacingXS
                                 anchors.verticalCenter: parent.verticalCenter
-                                iconName: "tune"
-                                tooltipText: I18n.tr("Configure")
+                                iconName: "edit"
+                                tooltipText: I18n.tr("Edit")
                                 iconSize: Theme.iconSizeSmall
                                 visible: NetworkService.connectionEditorSupported
                                 onClicked: {

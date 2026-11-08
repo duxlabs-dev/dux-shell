@@ -18,7 +18,7 @@ const (
 	nmWiFiDeviceCapFreq2GHz  uint32 = 0x00000200
 	nmWiFiDeviceCapFreq5GHz  uint32 = 0x00000400
 
-	dmsHotspotConnectionID = "DankMaterialShell Hotspot"
+	dmsHotspotConnectionID = "Dux Shell Hotspot"
 	dmsHotspotStableID     = "dms-hotspot"
 )
 
@@ -52,8 +52,11 @@ func (b *NetworkManagerBackend) ConfigureHotspot(req HotspotRequest) error {
 	}
 
 	if req.Device != "" {
-		if _, err := b.getAPCapableWiFiDevice(req.Device, req.Band); err != nil {
-			return err
+		// An unplugged adapter stays the profile's interface-name so the settings remain saveable.
+		if _, present := b.wifiDeviceByIface(req.Device); present {
+			if _, err := b.getAPCapableWiFiDevice(req.Device, req.Band); err != nil {
+				return err
+			}
 		}
 	} else if err := b.validateAutoHotspotBand(req.Band); err != nil {
 		return err

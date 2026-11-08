@@ -22,6 +22,7 @@ type TailscalePrefs struct {
 	RunSSH            bool     `json:"runSsh"`
 	Hostname          string   `json:"hostname"`
 	OperatorUser      string   `json:"operatorUser"`
+	ControlURL        string   `json:"controlUrl"`
 	AdvertiseExitNode bool     `json:"advertiseExitNode"`
 	AdvertiseRoutes   []string `json:"advertiseRoutes"` // without the two default routes
 }

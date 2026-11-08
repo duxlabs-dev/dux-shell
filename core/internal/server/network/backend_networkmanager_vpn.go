@@ -1062,6 +1062,21 @@ func (b *NetworkManagerBackend) saveVPNCredentials(creds *pendingVPNCredentials)
 	log.Infof("[saveVPNCredentials] Saving credentials for %s (username=%v, savePassword=%v)",
 		creds.ConnectionPath, creds.Username != "", creds.SavePassword)
 
+	newSecrets := maps.Clone(creds.PersistentSecrets)
+	if newSecrets == nil {
+		newSecrets = map[string]string{}
+	}
+	if creds.SavePassword {
+		toSave := creds.Secrets
+		if len(toSave) == 0 {
+			toSave = map[string]string{"password": creds.Password}
+		}
+		maps.Copy(newSecrets, toSave)
+	}
+	if len(newSecrets) > 0 {
+		log.Infof("[saveVPNCredentials] Saving %d secret field(s)", len(newSecrets))
+	}
+
 	err := updateConnectionSettings(b.nmObject(dbus.ObjectPath(creds.ConnectionPath)), true, func(s nmSettings) error {
 		data := vpnStringMap(s, "data")
 		if creds.Username != "" {
@@ -1069,17 +1084,6 @@ func (b *NetworkManagerBackend) saveVPNCredentials(creds *pendingVPNCredentials)
 		}
 		maps.Copy(data, creds.PersistentData)
 
-		newSecrets := maps.Clone(creds.PersistentSecrets)
-		if newSecrets == nil {
-			newSecrets = map[string]string{}
-		}
-		if creds.SavePassword {
-			toSave := creds.Secrets
-			if len(toSave) == 0 {
-				toSave = map[string]string{"password": creds.Password}
-			}
-			maps.Copy(newSecrets, toSave)
-		}
 		if len(newSecrets) > 0 {
 			secs := vpnStringMap(s, "secrets")
 			for field, value := range newSecrets {
@@ -1087,7 +1091,6 @@ func (b *NetworkManagerBackend) saveVPNCredentials(creds *pendingVPNCredentials)
 				data[field+"-flags"] = "0"
 			}
 			setSettingValue(s, "vpn", "secrets", secs)
-			log.Infof("[saveVPNCredentials] Saving %d secret field(s)", len(newSecrets))
 		}
 
 		setSettingValue(s, "vpn", "data", data)

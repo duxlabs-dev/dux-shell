@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/errdefs"
@@ -78,6 +79,48 @@ const introspectXML = `
 		</method>
 	</interface>
 </node>`
+
+type agentAnswerKey struct{ uuid, setting string }
+
+type agentAnswer struct{ secrets nmVariantMap }
+
+// agentAnswers holds secrets the user just entered, so DMS's agent can hand
+// them to NM while a save re-reads the connection's secrets.
+var agentAnswers = struct {
+	sync.Mutex
+	m map[agentAnswerKey]*agentAnswer
+}{m: map[agentAnswerKey]*agentAnswer{}}
+
+// offerAgentSecrets lets the agent answer with secrets per setting for the
+// connection until the returned func is called.
+func offerAgentSecrets(uuid string, secrets nmSettingMap) func() {
+	added := map[agentAnswerKey]*agentAnswer{}
+	agentAnswers.Lock()
+	for setting, values := range secrets {
+		k := agentAnswerKey{uuid, setting}
+		added[k] = &agentAnswer{values}
+		agentAnswers.m[k] = added[k]
+	}
+	agentAnswers.Unlock()
+	return func() {
+		agentAnswers.Lock()
+		defer agentAnswers.Unlock()
+		for k, a := range added {
+			if agentAnswers.m[k] == a {
+				delete(agentAnswers.m, k)
+			}
+		}
+	}
+}
+
+func offeredAgentSecrets(uuid, setting string) nmVariantMap {
+	agentAnswers.Lock()
+	defer agentAnswers.Unlock()
+	if a := agentAnswers.m[agentAnswerKey{uuid, setting}]; a != nil {
+		return a.secrets
+	}
+	return nil
+}
 
 func NewSecretAgent(prompts PromptBroker, manager *Manager, backend *NetworkManagerBackend) (*SecretAgent, error) {
 	c, err := dbus.SystemBus()
@@ -151,6 +194,11 @@ func (a *SecretAgent) GetSecrets(
 	}
 
 	connUuid := readConnUUID(conn)
+
+	if offered := offeredAgentSecrets(connUuid, settingName); offered != nil {
+		log.Infof("[SecretAgent] Answering with the secrets being saved for %s", path)
+		return nmSettingMap{settingName: offered}, nil
+	}
 
 	// Phase 1: Determine if this connection is ours and what fields we need.
 	if a.backend != nil {

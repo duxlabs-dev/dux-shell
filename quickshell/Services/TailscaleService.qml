@@ -244,13 +244,17 @@ Singleton {
         return true;
     }
 
-    function addProfile() {
+    function addProfile(server, callback) {
         if (!canWritePrefs)
             return false;
         loginRequested = true;
-        sendAction("tailscale.addProfile", {}, r => {
+        sendAction("tailscale.addProfile", {
+            "server": server || ""
+        }, r => {
             if (r.error)
                 loginRequested = false;
+            if (callback)
+                callback(r);
         });
         return true;
     }

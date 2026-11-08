@@ -55,7 +55,7 @@ Item {
 
     SettingsPage {
         SettingsRow {
-            visible: form.supportingText !== ""
+            visible: form.supportingText !== "" && !form.isHiddenNetwork
             subtitle: form.supportingText
         }
 
@@ -63,6 +63,10 @@ Item {
             id: form
 
             onCloseRequested: root.parentModal?.goBack()
+            onRevealRequested: item => {
+                root.parentModal?.revealItem(item);
+                item.forceActiveFocus();
+            }
         }
 
         SettingsFabBar {
@@ -77,7 +81,7 @@ Item {
                 text: form.submitText
                 iconName: "wifi"
                 colorRole: "primary"
-                enabled: form.canConnect
+                enabled: form.submitEnabled
                 onClicked: form.submitCredentialsAndClose()
             }
         }

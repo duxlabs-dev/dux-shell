@@ -1,11 +1,13 @@
 package tailscale
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/duxlabs-dev/dux-go/ipc"
@@ -34,7 +36,7 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	case "tailscale.logout":
 		handleSimple(conn, req, manager.Logout)
 	case "tailscale.addProfile":
-		handleSimple(conn, req, manager.AddProfile)
+		handleAddProfile(conn, req, manager)
 	case "tailscale.profiles":
 		handleProfiles(conn, req, manager)
 	case "tailscale.switchProfile":
@@ -221,6 +223,86 @@ func handleGrantOperator(conn *ipc.ConnWriter, req ipc.Request, manager *Manager
 	}
 	manager.RefreshState()
 	handleProfiles(conn, req, manager)
+}
+
+// handleAddProfile creates the profile as root, since only root can give a new profile an
+// operator, then starts the login from DMS so the login URL reaches DMS's own bus watcher.
+func handleAddProfile(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	server, ok := req.Get[string]("server")
+	if _, present := req.Params["server"]; present && !ok {
+		conn.RespondError(req.ID, "invalid 'server' parameter")
+		return
+	}
+	if err := addProfile(manager, server); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, models.SuccessResult{Success: true})
+}
+
+func addProfile(manager *Manager, server string) error {
+	argv, err := addProfileArgv(operatorStat, operatorLookPath, operatorCurrentUser, server)
+	if err != nil {
+		return err
+	}
+	if !operatorGrantMu.TryLock() {
+		return errors.New("a permission request is already open")
+	}
+	defer operatorGrantMu.Unlock()
+
+	previous, _, err := manager.profileStatus()
+	if err != nil {
+		return err
+	}
+	// The exit code beyond a refused prompt says nothing: the 1 s timeout exits 1.
+	out, code, err := runElevated(manager.ctx, argv, operatorRunner, "tailscale login")
+	if err != nil {
+		return err
+	}
+	current, _, statusErr := manager.profileStatus()
+	login, err := addProfileNext(previous.ID, current.ID, statusErr, code, out)
+	if err != nil {
+		return err
+	}
+	if login {
+		if err := manager.Login(); err != nil {
+			return err
+		}
+	}
+	manager.RefreshState()
+	return nil
+}
+
+// addProfileNext decides from the profile state after `tailscale login` ran whether
+// DMS still has to start the login. A new profile that already logged in must not
+// be logged in again, which would re-authenticate the node.
+func addProfileNext(previousID, currentID string, statusErr error, code int, cliOut string) (login bool, err error) {
+	failed := func() error {
+		if cliOut == "" {
+			return errors.New("tailscale login failed")
+		}
+		return fmt.Errorf("tailscale login failed: %s", cliOut)
+	}
+	switch {
+	case errors.Is(statusErr, errAccessDenied):
+		return false, failed()
+	case statusErr != nil:
+		return false, statusErr
+	case currentID == "" && previousID == "" && !reachedLoginWait(code, cliOut):
+		// Already on an unsaved empty profile: no switch to prove the CLI got anywhere.
+		return false, failed()
+	case currentID == "":
+		return true, nil
+	case currentID == previousID:
+		return false, failed()
+	}
+	return false, nil
+}
+
+// reachedLoginWait reports whether `tailscale login --timeout` got past starting the
+// login and timed out waiting for it, as cmd/tailscale/cli/up.go reports it.
+func reachedLoginWait(code int, cliOut string) bool {
+	return code == 1 && strings.Contains(cliOut, "timeout waiting for Tailscale service to enter a Running state")
 }
 
 // lookPathResolved follows symlinks so the path that is checked is the path that is executed.

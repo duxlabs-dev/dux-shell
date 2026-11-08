@@ -108,6 +108,8 @@ test("registry rows and new-profile autoconnect per type", () => {
         assert.deepEqual(ce.sectionsFor(type, { ipv4: {}, ipv6: {} }), sections, type);
         assert.equal(ce.newConnectionSettings(type, { name: "x" }).connection.autoconnect, autoconnect, type);
     }
+    const gsm = ce.newConnectionSettings("gsm", { name: "m" });
+    assert.deepEqual([gsm.gsm, gsm.ipv4.method], [{ "auto-config": true }, "auto"]);
     for (const type of ["wireguard", "vpn", "vpn:org.freedesktop.NetworkManager.openvpn"])
         assert.equal(ce.newConnectionSettings(type, { name: "x" }).connection.autoconnect, false, type);
     for (const type of ["802-3-ethernet", "802-11-wireless"])
@@ -125,19 +127,14 @@ test("only types with a registry row are supported, ports only while their contr
 });
 
 test("ports are detected by either key pair", () => {
-    assert.deepEqual(ce.portOf({ connection: { master: "u", "slave-type": "bond" } }), { controller: "u", type: "bond" });
-    assert.deepEqual(ce.portOf({ connection: { controller: "u", "port-type": "bridge" } }), { controller: "u", type: "bridge" });
+    assert.deepEqual(ce.portOf({ connection: { master: "u", "slave-type": "bond" } }), { type: "bond" });
+    assert.deepEqual(ce.portOf({ connection: { controller: "u", "port-type": "bridge" } }), { type: "bridge" });
     assert.equal(ce.portOf({ connection: { id: "x" } }), null);
     assert.equal(ce.portOf({ connection: { controller: "" } }), null);
     assert.equal(ce.portOf(null), null);
 
     assert.deepEqual(ce.sectionsFor("bluetooth", { bluetooth: { type: "dun" }, gsm: {}, ipv4: {} }), ["general", "bluetooth", "mobile", "ppp", "ipv4"]);
     assert.deepEqual(ce.sectionsFor("bluetooth", { bluetooth: { type: "panu" }, ipv4: {}, ipv6: {} }), ["general", "bluetooth", "ipv4", "ipv6"]);
-});
-
-test("new connections of each remaining type", () => {
-    const gsm = ce.newConnectionSettings("gsm", { name: "m" });
-    assert.deepEqual([gsm.gsm, gsm.connection.autoconnect, gsm.ipv4.method], [{ "auto-config": true }, false, "auto"]);
 });
 
 test("PPP echo", () => {

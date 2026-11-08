@@ -78,19 +78,17 @@ SettingsCard {
             }
         ]
 
-        DataRow {
+        ConnectionPathRow {
             id: pathRow
 
             required property var modelData
 
-            dataKey: modelData.key
+            enabled: !root.locked
+            browser: certBrowser
+            target: modelData.key
             text: modelData.label
-            actions: DActionButton {
-                iconName: "folder_open"
-                tooltipText: I18n.tr("Select File")
-                Accessible.name: pathRow.text + ": " + tooltipText
-                onClicked: certBrowser.open(pathRow.modelData.key)
-            }
+            stored: root.vpnData[modelData.key] ?? ""
+            commit: t => root.setData(pathRow.modelData.key, t)
         }
     }
 

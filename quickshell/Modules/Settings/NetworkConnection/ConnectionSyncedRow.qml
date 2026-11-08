@@ -32,7 +32,6 @@ SettingsTextFieldRow {
     isError: !ok
     echoMode: secret ? TextInput.Password : TextInput.Normal
     showPasswordToggle: secret
-    leftIconName: secret ? "lock" : ""
     onStoredChanged: {
         if (stored === lastStored)
             return;

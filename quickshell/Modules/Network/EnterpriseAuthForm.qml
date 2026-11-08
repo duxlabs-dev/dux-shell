@@ -20,6 +20,7 @@ Column {
     property bool surfaceBrowser: false
     // Files NM already holds as blobs (keys ca, clientCert, privateKey): they count as present while their path is empty.
     property var storedFiles: ({})
+    property var original: ({})
     readonly property bool valid: CE.enterpriseConfigValid(toConfig(), {
         usernameSuffix: usernameSuffix,
         usernameSuffixRequired: usernameSuffixRequired,
@@ -68,6 +69,11 @@ Column {
         draft.peapVersion = c.peapVersion === "0" || c.peapVersion === "1" ? c.peapVersion : "";
         draft.authFlags = c.authFlags || 0;
         draft.opensslCiphers = c.opensslCiphers || "";
+        original = {
+            "ca": {"path": draft.caCertPath, "pem": draft.caCertPem, "stored": !!storedFiles.ca},
+            "clientCert": {"path": draft.clientCertPath, "pem": "", "stored": !!storedFiles.clientCert},
+            "privateKey": {"path": draft.privateKeyPath, "pem": "", "stored": !!storedFiles.privateKey}
+        };
     }
 
     function focusIdentity() {
@@ -78,21 +84,28 @@ Column {
         return path || (storedFiles[target] ? I18n.tr("Saved") : "");
     }
 
+    // An empty path puts back what the form was reset with, so a stray edit never drops a stored file.
     function setPath(target, path) {
-        if (storedFiles[target])
+        const o = path === "" ? original[target] : {
+            "path": path,
+            "pem": "",
+            "stored": false
+        };
+        if (!!storedFiles[target] !== o.stored)
             storedFiles = Object.assign({}, storedFiles, {
-                [target]: false
+                [target]: o.stored
             });
+        if (target === "ca")
+            draft.caCertPem = o.pem;
         switch (target) {
         case "ca":
-            draft.caCertPath = path;
-            draft.caCertPem = "";
+            draft.caCertPath = o.path;
             break;
         case "clientCert":
-            draft.clientCertPath = path;
+            draft.clientCertPath = o.path;
             break;
         case "privateKey":
-            draft.privateKeyPath = path;
+            draft.privateKeyPath = o.path;
             break;
         }
     }
@@ -152,36 +165,19 @@ Column {
         outlined: true
     }
 
-    component PathRow: SettingsRow {
+    component PathRow: ConnectionPathRow {
         id: pathRow
 
-        property alias text: pathInput.text
-        property alias labelText: pathInput.labelText
-        property alias leftIconName: pathInput.leftIconName
-        property string target
         property bool mandatory: false
+        property string path: ""
+        property string label: ""
 
-        body: Row {
-            width: parent.width
-            spacing: Theme.spacingS
-
-            FormField {
-                id: pathInput
-                width: parent.width - browseButton.width - parent.spacing
-                anchors.verticalCenter: parent.verticalCenter
-                readOnly: true
-                isError: root.markInvalid && pathRow.mandatory && !text
-            }
-
-            DActionButton {
-                id: browseButton
-                anchors.verticalCenter: parent.verticalCenter
-                iconName: "folder_open"
-                tooltipText: I18n.tr("Select File")
-                Accessible.name: pathInput.labelText + ": " + tooltipText
-                onClicked: certBrowser.open(pathRow.target)
-            }
-        }
+        browser: certBrowser
+        stored: path
+        supportingText: value ? "" : label
+        isError: root.markInvalid && mandatory && !value && !label
+        onAccepted: root.submitRequested()
+        commit: t => root.setPath(pathRow.target, t)
     }
 
     ConnectionChoiceRow {
@@ -266,15 +262,16 @@ Column {
         target: "ca"
         mandatory: true
         leftIconName: root.showIcons ? "verified_user" : ""
-        labelText: I18n.tr("File")
-        text: draft.caCertPem ? root.caDisplayName : root.storedLabel("ca", draft.caCertPath)
+        text: I18n.tr("File")
+        path: draft.caCertPem ? "" : draft.caCertPath
+        label: draft.caCertPem ? root.caDisplayName : root.storedLabel("ca", draft.caCertPath)
     }
 
     SettingsNoteRow {
         visible: root.usesCa && draft.ca === "none"
         text: I18n.tr("Server is not verified without a CA certificate", "802.1X warning when no CA certificate is set")
-        tint: Theme.error
-        tintBackground: Theme.errorHover
+        tint: Theme.warning
+        tintBackground: Theme.warningHover
     }
 
     SettingsRow {
@@ -282,7 +279,7 @@ Column {
         body: FormField {
             leftIconName: root.showIcons ? "domain" : ""
             labelText: I18n.tr("Server")
-            isError: draft.ca === "system" && !text.trim()
+            isError: root.markInvalid && draft.ca === "system" && !text.trim()
             text: draft.serverDomain
             onTextEdited: draft.serverDomain = text
         }
@@ -301,16 +298,18 @@ Column {
         target: "clientCert"
         mandatory: true
         leftIconName: root.showIcons ? "badge" : ""
-        labelText: I18n.tr("Client certificate", "network authentication certificate file field")
-        text: root.storedLabel("clientCert", draft.clientCertPath)
+        text: I18n.tr("Client certificate", "network authentication certificate file field")
+        path: draft.clientCertPath
+        label: root.storedLabel("clientCert", draft.clientCertPath)
     }
 
     PathRow {
         visible: root.isTls
         target: "privateKey"
         leftIconName: root.showIcons ? "key" : ""
-        labelText: I18n.tr("Private key", "network authentication key file field")
-        text: root.storedLabel("privateKey", draft.privateKeyPath)
+        text: I18n.tr("Private key", "network authentication key file field")
+        path: draft.privateKeyPath
+        label: root.storedLabel("privateKey", draft.privateKeyPath)
     }
 
     SettingsFoldRow {

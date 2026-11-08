@@ -10,10 +10,8 @@ CcListRow {
 
     required property var profile
     property bool isExpanded: false
-    property bool opensEditor: false
     property bool showsEditButton: false
     readonly property bool isTransient: !!profile?.transient
-    readonly property bool editsProfile: opensEditor && !isTransient
     readonly property bool canExpand: profile?.canExpand !== false
     readonly property bool canDelete: profile?.canDelete !== false
 
@@ -78,12 +76,7 @@ CcListRow {
     subtitleColor: isConnecting ? Theme.warning : (hasError ? Theme.error : Theme.surfaceVariantText)
     enabled: !(DMSNetworkService.isBusy && !isConnecting)
     clickable: true
-    onClicked: {
-        if (editsProfile)
-            editRequested();
-        else
-            DMSNetworkService.toggle(profile.uuid);
-    }
+    onClicked: DMSNetworkService.toggle(profile.uuid)
 
     leading: DSpinner {
         size: Theme.iconSizeMedium
@@ -108,19 +101,6 @@ CcListRow {
 
     DActionButton {
         anchors.verticalCenter: parent.verticalCenter
-        visible: root.editsProfile && !root.isActive && !root.isConnecting
-        buttonSize: Theme.buttonHeightXS
-        iconSize: Theme.iconSizeMedium
-        iconName: "link"
-        tooltipText: I18n.tr("Connect")
-        Accessible.name: I18n.tr("Connect")
-        iconColor: root.contentColor
-        enabled: !DMSNetworkService.isBusy
-        onClicked: DMSNetworkService.toggle(root.profile.uuid)
-    }
-
-    DActionButton {
-        anchors.verticalCenter: parent.verticalCenter
         visible: root.showsEditButton && !root.isTransient
         buttonSize: Theme.buttonHeightXS
         iconSize: Theme.iconSizeMedium
@@ -133,7 +113,7 @@ CcListRow {
 
     DActionButton {
         anchors.verticalCenter: parent.verticalCenter
-        visible: root.canExpand && !root.editsProfile && !(root.showsEditButton && !root.isTransient)
+        visible: root.canExpand && !(root.showsEditButton && !root.isTransient)
         buttonSize: Theme.buttonHeightXS
         iconSize: Theme.iconSizeMedium
         iconName: root.isExpanded ? "expand_less" : "expand_more"

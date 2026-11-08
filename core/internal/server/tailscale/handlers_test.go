@@ -2,6 +2,7 @@ package tailscale
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -72,7 +73,6 @@ func TestHandleActions(t *testing.T) {
 		{"setPrefs", "tailscale.setPrefs", map[string]any{"acceptRoutes": true}},
 		{"login", "tailscale.login", nil},
 		{"logout", "tailscale.logout", nil},
-		{"addProfile", "tailscale.addProfile", nil},
 		{"switchProfile", "tailscale.switchProfile", map[string]any{"id": "p2"}},
 	}
 
@@ -224,4 +224,90 @@ func TestHandleGrantOperator(t *testing.T) {
 	resp = callHandler[ProfilesResult](t, m, "tailscale.grantOperator", nil)
 	require.Empty(t, resp.Error)
 	assert.True(t, resp.Result.CanOperate)
+}
+
+func TestHandleAddProfile(t *testing.T) {
+	oldLook, oldUser, oldRun, oldStat := operatorLookPath, operatorCurrentUser, operatorRunner, operatorStat
+	t.Cleanup(func() {
+		operatorLookPath, operatorCurrentUser, operatorRunner, operatorStat = oldLook, oldUser, oldRun, oldStat
+	})
+	operatorStat = rootStat
+	operatorLookPath = func(n string) (string, error) { return "/usr/bin/" + n, nil }
+	operatorCurrentUser = func() (*user.User, error) { return &user.User{Username: "tester"}, nil }
+
+	for name, tc := range map[string]struct {
+		server    any
+		code      int
+		out       string
+		fromEmpty bool
+		after     string
+		denied    bool
+		want      string
+		logins    int
+		noCalls   bool
+	}{
+		"cancelled":       {code: 126, want: "permission not granted"},
+		"same profile":    {code: 1, after: "a", want: "tailscale login failed: cli says no"},
+		"left without op": {code: 1, denied: true, want: "tailscale login failed: cli says no"},
+		"new empty":       {code: 1, after: "", logins: 1},
+		"already in":      {code: 0, after: "b"},
+		"invalid server":  {server: "https://u:p@hs.lan", want: "login server", noCalls: true},
+		"server not text": {server: 5, want: "invalid 'server' parameter", noCalls: true},
+		"null server":     {server: "nil", want: "invalid 'server' parameter", noCalls: true},
+		"empty to empty":  {fromEmpty: true, code: 1, after: "", want: "tailscale login failed: cli says no"},
+		"empty, waited": {fromEmpty: true, code: 1, after: "", logins: 1,
+			out: "timeout waiting for Tailscale service to enter a Running state; check health"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var ran []string
+			operatorRunner = func(ctx context.Context, argv []string) ([]byte, int, error) {
+				ran = argv
+				out := cmp.Or(tc.out, "cli says no\n")
+				return []byte(out), tc.code, nil
+			}
+			calls := 0
+			client := &mockClient{
+				watchFn:  blockingWatch,
+				statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
+				profileStatusFn: func(ctx context.Context) (loginProfile, []loginProfile, error) {
+					calls++
+					if calls == 1 {
+						if tc.fromEmpty {
+							return loginProfile{}, nil, nil
+						}
+						return loginProfile{ID: "a"}, nil, nil
+					}
+					if tc.denied {
+						return loginProfile{}, nil, errAccessDenied
+					}
+					return loginProfile{ID: tc.after}, nil, nil
+				},
+			}
+			m := newManager(client)
+			defer m.Close()
+
+			params := map[string]any{}
+			switch tc.server {
+			case nil:
+			case "nil":
+				params["server"] = nil
+			default:
+				params["server"] = tc.server
+			}
+			resp := callHandler[models.SuccessResult](t, m, "tailscale.addProfile", params)
+			if tc.want != "" {
+				assert.Contains(t, resp.Error, tc.want)
+			} else {
+				require.Empty(t, resp.Error)
+				assert.True(t, resp.Result.Success)
+			}
+			assert.Equal(t, tc.logins, client.logins)
+			if tc.noCalls {
+				assert.Nil(t, ran)
+				assert.Zero(t, calls)
+			} else {
+				assert.Equal(t, "--login-server="+defaultLoginServer, ran[4])
+			}
+		})
+	}
 }

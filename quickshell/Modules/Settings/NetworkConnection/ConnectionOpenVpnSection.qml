@@ -121,15 +121,15 @@ SettingsCard {
         commit: t => textRow.host.setData(textRow.dataKey, t)
     }
 
-    component PathRow: TextRow {
+    component PathRow: ConnectionPathRow {
         id: pathRow
+        required property var host
+        required property string dataKey
 
-        actions: DActionButton {
-            iconName: "folder_open"
-            tooltipText: I18n.tr("Select File")
-            Accessible.name: tooltipText
-            onClicked: certBrowser.open(pathRow.dataKey)
-        }
+        browser: certBrowser
+        target: dataKey
+        stored: host.vpnData[dataKey] ?? ""
+        commit: t => pathRow.host.setData(pathRow.dataKey, t)
     }
 
     component NumberRow: ConnectionSyncedRow {
@@ -164,7 +164,6 @@ SettingsCard {
             id: field
             width: parent.width
             outlined: true
-            leftIconName: "lock"
             echoMode: TextInput.Password
             showPasswordToggle: true
             enabled: CE.secretSaved(secretRow.host.vpnData, secretRow.secretKey)

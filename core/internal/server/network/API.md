@@ -124,7 +124,7 @@ Both take an optional `device` (string): the interface name to use, for example 
 
 Generic profile editor (API v41+, NetworkManager only). Clients should require `connectionEditorSupported: true` in network state. Other backends return `connection editor not supported by active network backend`. Validation is left to NetworkManager, whose error text is returned unchanged.
 
-- `network.connection.list`: returns `[{uuid, id, type, device?, interfaceName?, active, activeState?, autoconnect, timestamp, unsaved, canModify, ssid?, controller?, portType?}]` (`controller` and `portType`, API v41+, are set for bond and bridge ports). `canModify` is false only when polkit denies changing the profile outright; `ssid` is set for Wi-Fi profiles. Externally managed profiles (docker0, tailscale0, ...) are omitted. `unsaved` means the profile lives in memory only.
+- `network.connection.list`: returns `[{uuid, id, type, device?, interfaceName?, active, activeState?, autoconnect, timestamp, unsaved, canModify, ssid?, controller?, portType?}]` (`controller` and `portType`, API v41+, are set for every port profile). `canModify` is false only when polkit denies changing the profile outright; `ssid` is set for Wi-Fi profiles. Externally managed profiles (docker0, tailscale0, ...) are omitted. `unsaved` means the profile lives in memory only.
 - `network.connection.get {uuid, secrets?: bool}`: returns `{section: {key: value}}`. Secrets are included only when `secrets` is `true`.
 - `network.connection.update {uuid, settings, persist?: bool, enterprise?: object}`: merges `settings` into the profile. A `null` key deletes it, a `null` section deletes the section. `persist` (default `false`) writes the profile to disk; otherwise it stays where it is stored.
 - `network.connection.add {settings, persist?: bool, enterprise?: object}`: creates a profile and returns `{"uuid": "..."}`. `settings.connection.type` is required. `persist` defaults to `true`; `false` creates an in-memory profile.
@@ -292,13 +292,14 @@ Cancel a credential prompt.
 Served by the Tailscale manager, not the network service. Writes need permission on tailscaled (root, the daemon's user or the operator); `tailscale.profiles` reports it as `canOperate`.
 
 - `tailscale.setPrefs {acceptRoutes?, acceptDns?, shieldsUp?, runSsh?, hostname?, advertiseExitNode?, advertiseRoutes?}`: returns `{success, warning?}`. `warning` is set when advertising routes while IP forwarding is off.
-- `tailscale.login`, `tailscale.logout`, `tailscale.addProfile`: take no params. The login URL arrives as `authUrl` in state.
+- `tailscale.login`, `tailscale.logout`: take no params. The login URL arrives as `authUrl` in state.
+- `tailscale.addProfile {server?}`: asks polkit to run `tailscale login --operator=<user> --login-server=<server>`, which creates a new account, then starts its login. `server` is an http or https URL; empty or omitted means tailscale.com. The login URL arrives as `authUrl` in state.
 - `tailscale.profiles`: returns `{canOperate, grantAvailable, current, profiles: [{id, name, tailnet}]}`.
 - `tailscale.switchProfile {id}`
 - `tailscale.suggestExitNode`: returns `{id, name}`.
 - `tailscale.grantOperator`: asks polkit to run `tailscale set --operator=<user>`, then returns the same result as `tailscale.profiles`.
 
-State gains `prefs` (`{acceptRoutes, acceptDns, shieldsUp, runSsh, hostname, advertiseExitNode, advertiseRoutes}`) and `authUrl` (present while interactive login is pending).
+State gains `prefs` (`{acceptRoutes, acceptDns, shieldsUp, runSsh, hostname, operatorUser, controlUrl, advertiseExitNode, advertiseRoutes}`) and `authUrl` (present while interactive login is pending).
 
 ## Event Subscriptions
 

@@ -1,11 +1,11 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
+import "../../Common/QmlUtils.js" as QmlUtils
 
 Column {
     id: root
@@ -81,10 +81,14 @@ Column {
         return showUsernameField ? (usernameInput.text.length > 0 && passwordInput.text.length > 0) : passwordInput.text.length > 0;
     }
 
+    // An invalid enterprise form keeps Connect enabled; pressing it marks the fields that need input.
+    readonly property bool submitEnabled: canConnect || showEnterpriseForm
+
     readonly property string submitText: isCertificatePrompt ? I18n.tr("Trust", "Button that approves a VPN server certificate fingerprint") : I18n.tr("Connect", "verb, connect to a network or device")
 
     signal closeRequested
     signal focusSubmitRequested
+    signal revealRequested(Item item)
 
     readonly property string title: {
         if (promptReason === "pkcs11")
@@ -113,7 +117,7 @@ Column {
         if (isVpnPrompt)
             return I18n.tr("Enter password for %1", "%1 is the network name").arg(wifiPasswordSSID);
         if (isHiddenNetwork)
-            return hiddenNeedsPassword ? I18n.tr("Enter network name and password") : I18n.tr("Enter network name", "hidden Wi-Fi prompt subtitle when the chosen security needs no password");
+            return hiddenNeedsPassword ? I18n.tr("Enter network name and password") : "";
         return (requiresEnterprise ? I18n.tr("Enter credentials for %1", "%1 is the network name") : I18n.tr("Enter password for %1", "%1 is the network name")).arg(wifiPasswordSSID);
     }
 
@@ -171,6 +175,7 @@ Column {
         enterpriseForm.usernameSuffix = "";
         enterpriseForm.usernameSuffixRequired = false;
         enterpriseForm.caDisplayName = "";
+        enterpriseForm.markInvalid = false;
         enterpriseForm.reset();
     }
 
@@ -266,8 +271,20 @@ Column {
     }
 
     function submitCredentialsAndClose() {
-        if (!canConnect || _submitted)
+        if (_submitted)
             return;
+        if (!canConnect) {
+            if (showEnterpriseForm) {
+                enterpriseForm.markInvalid = true;
+                Qt.callLater(() => {
+                    // A path row reports its field's error too; focus goes to the field.
+                    const row = QmlUtils.firstInvalid(root);
+                    if (row)
+                        root.revealRequested(QmlUtils.firstInvalid(row) ?? row);
+                });
+            }
+            return;
+        }
         _submitted = true;
         if (fieldsInfo.length > 0) {
             NetworkService.submitCredentials(promptToken, secretValues, savePassword);
@@ -395,6 +412,7 @@ Column {
                 outlined: true
                 leftIconName: "wifi"
                 labelText: I18n.tr("Network Name (SSID)")
+                isError: root.showEnterpriseForm && enterpriseForm.markInvalid && !text
                 onAccepted: {
                     if (root.showPasswordField)
                         passwordInput.forceActiveFocus();

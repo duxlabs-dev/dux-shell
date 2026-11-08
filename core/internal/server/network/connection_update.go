@@ -1,9 +1,12 @@
 package network
 
 import (
+	"errors"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
+	"strings"
 
 	"github.com/godbus/dbus/v5"
 )
@@ -18,9 +21,27 @@ const (
 	nmUpdate2FlagToDisk uint32 = 0x1
 )
 
-var nmSecretSettings = []string{
-	"802-11-wireless-security", "802-1x", "vpn", "wireguard",
-	"gsm", "cdma", "pppoe", "adsl", "macsec",
+// nmSecretKeys lists each section's secret properties; NM has no API for it.
+var nmSecretKeys = map[string][]string{
+	"802-11-wireless-security": {"psk", "wep-key0", "wep-key1", "wep-key2", "wep-key3", "leap-password"},
+	"802-1x": {"password", "password-raw", "pin", "private-key-password", "phase2-private-key-password",
+		"ca-cert-password", "client-cert-password", "phase2-ca-cert-password", "phase2-client-cert-password"},
+	"vpn":       {"secrets"},
+	"wireguard": {"private-key"},
+	"gsm":       {"password", "pin", "initial-eps-bearer-password"},
+	"cdma":      {"password"},
+	"pppoe":     {"password"},
+	"adsl":      {"password"},
+	"macsec":    {"mka-cak"},
+}
+
+var nmSecretSettings = slices.Sorted(maps.Keys(nmSecretKeys))
+
+// NM answers GetSecrets with one of these when only a secret agent holds the
+// section's secrets and none provided them.
+var nmNoSecretsErrors = []string{
+	"org.freedesktop.NetworkManager.AgentManager.NoSecrets",
+	"org.freedesktop.NetworkManager.SecretAgent.Error.NoSecrets",
 }
 
 // legacyIPKeys maps each legacy ipv4/ipv6 key to its modern twin. NM ignores
@@ -31,17 +52,19 @@ var legacyIPKeys = map[string]string{
 	"dns":       "dns-data",
 }
 
-func readConnectionSettings(obj dbus.BusObject, withSecrets bool) (nmSettings, error) {
+func readConnectionSettings(obj dbus.BusObject, withSecrets bool) (nmSettings, map[string]error, error) {
 	var settings nmSettings
 	if err := obj.Call(nmConnGetSettings, 0).Store(&settings); err != nil {
-		return nil, fmt.Errorf("failed to get connection settings: %w", err)
+		return nil, nil, fmt.Errorf("failed to get connection settings: %w", err)
 	}
-	if withSecrets {
-		if err := mergeConnectionSecrets(obj, settings); err != nil {
-			return nil, err
-		}
+	if !withSecrets {
+		return settings, nil, nil
 	}
-	return settings, nil
+	unreadable, err := mergeConnectionSecrets(obj, settings, nmSecretSettings)
+	if err != nil {
+		return nil, nil, err
+	}
+	return settings, unreadable, nil
 }
 
 // nestedSecrets are containers holding several secrets. A mutation that
@@ -74,10 +97,13 @@ func secretRemovalsFromPatch(patch SettingsPatch) secretRemovals {
 	return r
 }
 
-// updateConnectionSettings is the single write path for NM profiles. Stored
-// secrets are merged in first because NM drops every secret an update omits,
-// so a failed secrets read aborts the write. Entries of nested secret
-// containers that mutate omits are merged back afterwards.
+// updateConnectionSettings is the single write path for NM profiles. NM keeps
+// its stored secrets only when an update carries none; otherwise it drops every
+// secret the update omits. So stored secrets are merged in. A section only an
+// agent can supply is read again while DMS's agent offers the secrets mutate
+// enters there; if it stays unreadable, all secrets are left out and mutate
+// may not change any. Entries of nested secret containers that mutate omits
+// are merged back afterwards.
 // persist=false keeps the profile in whatever storage it already lives in.
 func updateConnectionSettings(obj dbus.BusObject, persist bool, mutate func(nmSettings) error) error {
 	return updateConnectionSettingsRemoving(obj, persist, secretRemovals{}, mutate)
@@ -89,9 +115,31 @@ func updateConnectionSettingsRemoving(obj dbus.BusObject, persist bool, removed 
 	if obj == nil {
 		return fmt.Errorf("D-Bus connection unavailable")
 	}
-	settings, err := readConnectionSettings(obj, true)
+	settings, unreadable, err := readConnectionSettings(obj, true)
 	if err != nil {
 		return err
+	}
+	if uuid, _ := settings["connection"]["uuid"].Value().(string); len(unreadable) > 0 && uuid != "" {
+		if entered := enteredSecrets(settings, unreadable, mutate); len(entered) > 0 {
+			name := slices.Min(slices.Collect(maps.Keys(entered)))
+			defer offerAgentSecrets(uuid, entered)()
+			again, err := mergeConnectionSecrets(obj, settings, slices.Collect(maps.Keys(entered)))
+			if err != nil {
+				return err
+			}
+			for name := range entered {
+				if again[name] == nil {
+					delete(unreadable, name)
+				}
+			}
+			// An update that leaves the held sections out can't carry the entered secrets either.
+			if len(unreadable) > 0 {
+				return heldSecretsError(name, unreadable)
+			}
+		}
+	}
+	if len(unreadable) > 0 {
+		return updateWithoutSecrets(obj, persist, settings, unreadable, removed, mutate)
 	}
 	stored := map[[2]string]dbus.Variant{}
 	for _, k := range nestedSecrets {
@@ -107,8 +155,59 @@ func updateConnectionSettingsRemoving(obj dbus.BusObject, persist bool, removed 
 			settings[k[0]][k[1]] = mergeNestedSecret(k[0], k[1], dropRemovedSecrets(k[0], v, removed), cur)
 		}
 	}
-	dropLegacyIPKeys(settings)
+	return sendConnectionUpdate(obj, persist, settings)
+}
 
+// enteredSecrets returns the secrets mutate sets in the unreadable sections,
+// which carry none yet.
+func enteredSecrets(settings nmSettings, unreadable map[string]error, mutate func(nmSettings) error) nmSettingMap {
+	plain := make(nmSettings, len(settings))
+	for section, keys := range settings {
+		plain[section] = maps.Clone(keys)
+	}
+	out := nmSettingMap{}
+	if mutate(plain) != nil {
+		return out
+	}
+	for section, values := range collectSecrets(plain, false) {
+		if unreadable[section] == nil {
+			continue
+		}
+		for k, v := range values {
+			if strings.HasPrefix(k, "peers/") {
+				continue
+			}
+			if out[section] == nil {
+				out[section] = nmVariantMap{}
+			}
+			out[section][k] = dbus.MakeVariant(v)
+		}
+	}
+	return out
+}
+
+func updateWithoutSecrets(obj dbus.BusObject, persist bool, settings nmSettings, unreadable map[string]error, removed secretRemovals, mutate func(nmSettings) error) error {
+	before := collectSecrets(settings, false)
+	if err := mutate(settings); err != nil {
+		return err
+	}
+	after := collectSecrets(settings, true)
+	for _, name := range nmSecretSettings {
+		removedHere := name == "vpn" && len(removed.vpnSecrets) > 0 || name == "wireguard" && len(removed.peerPSKs) > 0
+		if removedHere || !reflect.DeepEqual(before[name], after[name]) {
+			return heldSecretsError(name, unreadable)
+		}
+	}
+	return sendConnectionUpdate(obj, persist, settings)
+}
+
+func heldSecretsError(name string, unreadable map[string]error) error {
+	return fmt.Errorf("%s secrets can't be changed here while the %s secrets are held by a secret agent",
+		name, strings.Join(slices.Sorted(maps.Keys(unreadable)), ", "))
+}
+
+func sendConnectionUpdate(obj dbus.BusObject, persist bool, settings nmSettings) error {
+	dropLegacyIPKeys(settings)
 	var flags uint32
 	if persist {
 		flags = nmUpdate2FlagToDisk
@@ -119,8 +218,47 @@ func updateConnectionSettingsRemoving(obj dbus.BusObject, persist bool, removed 
 	return nil
 }
 
-func mergeConnectionSecrets(obj dbus.BusObject, settings nmSettings) error {
-	for _, name := range nmSecretSettings {
+// collectSecrets returns s's secrets per section; strip removes them from s.
+func collectSecrets(s nmSettings, strip bool) map[string]map[string]any {
+	out := map[string]map[string]any{}
+	add := func(section, key string, v dbus.Variant) {
+		if out[section] == nil {
+			out[section] = map[string]any{}
+		}
+		out[section][key] = v.Value()
+	}
+	for section, keys := range nmSecretKeys {
+		for _, k := range keys {
+			if v, ok := s[section][k]; ok {
+				add(section, k, v)
+				if strip {
+					delete(s[section], k)
+				}
+			}
+		}
+	}
+	peers, _ := s["wireguard"]["peers"].Value().([]map[string]dbus.Variant)
+	kept := make([]map[string]dbus.Variant, len(peers))
+	for i, p := range peers {
+		kept[i] = p
+		if psk, ok := p["preshared-key"]; ok {
+			key, _ := p["public-key"].Value().(string)
+			add("wireguard", "peers/"+key, psk)
+			kept[i] = maps.Clone(p)
+			delete(kept[i], "preshared-key")
+		}
+	}
+	if strip && peers != nil {
+		s["wireguard"]["peers"] = dbus.MakeVariant(kept)
+	}
+	return out
+}
+
+// mergeConnectionSecrets returns the sections whose secrets only an agent
+// holds, with NM's error, instead of merging them.
+func mergeConnectionSecrets(obj dbus.BusObject, settings nmSettings, sections []string) (map[string]error, error) {
+	unreadable := map[string]error{}
+	for _, name := range sections {
 		section, ok := settings[name]
 		if !ok {
 			continue
@@ -128,7 +266,12 @@ func mergeConnectionSecrets(obj dbus.BusObject, settings nmSettings) error {
 
 		var stored nmSettings
 		if err := obj.Call(nmConnGetSecrets, 0, name).Store(&stored); err != nil {
-			return fmt.Errorf("failed to get secrets for %s: %w", name, err)
+			var dbusErr dbus.Error
+			if errors.As(err, &dbusErr) && slices.Contains(nmNoSecretsErrors, dbusErr.Name) {
+				unreadable[name] = err
+				continue
+			}
+			return nil, fmt.Errorf("failed to get secrets for %s: %w", name, err)
 		}
 
 		for k, v := range stored[name] {
@@ -139,7 +282,7 @@ func mergeConnectionSecrets(obj dbus.BusObject, settings nmSettings) error {
 			}
 		}
 	}
-	return nil
+	return unreadable, nil
 }
 
 // mergeNestedSecret fills entries missing from cur with stored ones; entries in cur win.
