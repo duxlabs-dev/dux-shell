@@ -348,6 +348,21 @@ func (b *NetworkManagerBackend) DeactivateConnectionProfile(uuid string) error {
 		if id, err := ac.GetPropertyUUID(); err != nil || id != uuid {
 			continue
 		}
+		// Deactivating a wired profile lets NM autoconnect another one on the same adapter.
+		if t, _ := ac.GetPropertyType(); t == "802-3-ethernet" {
+			devs, err := ac.GetPropertyDevices()
+			if err != nil {
+				return fmt.Errorf("failed to get devices of connection: %w", err)
+			}
+			var errs []error
+			for _, dev := range devs {
+				if err := dev.Disconnect(); err != nil {
+					errs = append(errs, fmt.Errorf("failed to disconnect device: %w", err))
+				}
+			}
+			b.refreshEthernet()
+			return errors.Join(errs...)
+		}
 		if err := nm.DeactivateConnection(ac); err != nil {
 			return fmt.Errorf("failed to deactivate connection: %w", err)
 		}

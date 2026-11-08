@@ -453,7 +453,7 @@ Item {
             DFab {
                 id: loginFab
                 visible: networkTailscaleTab.showAccounts && networkTailscaleTab.backendState === "NeedsLogin" && TailscaleService.currentProfile !== ""
-                text: I18n.tr("Login")
+                text: I18n.tr("Log in", "Tailscale: start login button")
                 iconName: "login"
                 enabled: networkTailscaleTab.writable
                 onClicked: TailscaleService.login()

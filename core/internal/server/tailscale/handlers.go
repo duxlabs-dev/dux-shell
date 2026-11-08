@@ -253,6 +253,7 @@ func addProfile(manager *Manager, server string) error {
 	}
 	defer operatorGrantMu.Unlock()
 
+	manager.setAuthURL(nil)
 	previous, _, err := manager.profileStatus()
 	if err != nil {
 		return err

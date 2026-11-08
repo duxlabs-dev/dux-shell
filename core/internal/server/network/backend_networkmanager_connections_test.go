@@ -269,8 +269,24 @@ func TestConnectionProfileActions(t *testing.T) {
 	other, target := mock_gonetworkmanager.NewMockActiveConnection(t), mock_gonetworkmanager.NewMockActiveConnection(t)
 	other.EXPECT().GetPropertyUUID().Return("u2", nil)
 	target.EXPECT().GetPropertyUUID().Return("u1", nil)
+	target.EXPECT().GetPropertyType().Return("802-11-wireless", nil)
 	f.nm.EXPECT().GetPropertyActiveConnections().Return([]gonetworkmanager.ActiveConnection{other, target}, nil).Once()
 	f.nm.EXPECT().DeactivateConnection(target).Return(nil).Once()
+	require.NoError(t, f.backend.DeactivateConnectionProfile("u1"))
+}
+
+func TestDeactivateWiredProfileDisconnectsDevice(t *testing.T) {
+	f := newEthernetFixture(t)
+	dev := f.addDevice(t, "enp6s0", hwEnp6s0, gonetworkmanager.NmDeviceStateActivated, nil)
+	dev.EXPECT().Disconnect().Return(nil).Once()
+	ac := mock_gonetworkmanager.NewMockActiveConnection(t)
+	ac.EXPECT().GetPropertyUUID().Return("u1", nil)
+	ac.EXPECT().GetPropertyType().Return("802-3-ethernet", nil)
+	ac.EXPECT().GetPropertyDevices().Return([]gonetworkmanager.Device{dev}, nil).Once()
+	f.nm.ExpectedCalls = nil
+	f.nm.EXPECT().GetPropertyActiveConnections().Return([]gonetworkmanager.ActiveConnection{ac}, nil).Once()
+	f.nm.EXPECT().GetPropertyActiveConnections().Return(nil, nil).Maybe()
+	f.nm.EXPECT().GetPropertyPrimaryConnection().Return(nil, nil).Maybe()
 	require.NoError(t, f.backend.DeactivateConnectionProfile("u1"))
 }
 
