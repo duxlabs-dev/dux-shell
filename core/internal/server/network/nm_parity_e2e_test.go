@@ -3,7 +3,6 @@ package network
 import (
 	"testing"
 
-	"github.com/godbus/dbus/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -80,35 +79,6 @@ func TestE2E_VlanAdd(t *testing.T) {
 	assert.Equal(t, uint32(100), v["id"].Value())
 	assert.Equal(t, "u", v["flags"].Signature().String())
 	assert.Equal(t, uint32(3), v["flags"].Value())
-}
-
-func TestE2E_BondArpUpdate(t *testing.T) {
-	f := newEditorFixture(t)
-	obj := f.profile(t, "u-bond", "/s/bond")
-	stored := connSection("u-bond", "dms-test-bond", "bond", map[string]dbus.Variant{
-		"interface-name": dbus.MakeVariant("dmsbond0"),
-	})
-	stored["bond"] = map[string]dbus.Variant{"options": dbus.MakeVariant(map[string]string{
-		"mode": "active-backup", "miimon": "100", "primary": "enp5s0",
-		"updelay": "200", "downdelay": "200",
-	})}
-	expectGetSettings(obj, stored)
-	got := captureUpdate2(obj, 0, nil)
-
-	resp := e2eRequest(t, f.backend, "network.connection.update", map[string]any{
-		"uuid": "u-bond",
-		"settings": map[string]any{"bond": map[string]any{"options": map[string]any{
-			"mode": "active-backup", "miimon": "0", "arp_interval": "1000",
-			"arp_ip_target": "192.0.2.1,192.0.2.2", "primary": "enp5s0",
-		}}},
-	})
-	require.Empty(t, resp.Error)
-	opts := (*got)["bond"]["options"]
-	assert.Equal(t, "a{ss}", opts.Signature().String())
-	assert.Equal(t, map[string]string{
-		"mode": "active-backup", "miimon": "0", "arp_interval": "1000",
-		"arp_ip_target": "192.0.2.1,192.0.2.2", "primary": "enp5s0",
-	}, opts.Value())
 }
 
 func TestE2E_DSLAdd(t *testing.T) {

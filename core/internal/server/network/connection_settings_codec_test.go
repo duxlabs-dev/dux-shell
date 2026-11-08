@@ -170,12 +170,6 @@ func TestVlanRowsEncode(t *testing.T) {
 	require.ErrorContains(t, err, "vlan.id")
 }
 
-func TestBondRowsEncode(t *testing.T) {
-	s, err := encodeNewSettings(SettingsPatch{"bond": {"options": map[string]any{"mode": "active-backup", "miimon": "100"}}})
-	require.NoError(t, err)
-	assert.Equal(t, "a{ss}", s["bond"]["options"].Signature().String())
-}
-
 func TestBridgeRowsEncode(t *testing.T) {
 	s, err := encodeNewSettings(SettingsPatch{"bridge": {"mac-address": "aa:bb:cc:dd:ee:ff", "stp": true, "priority": 4096.0}})
 	require.NoError(t, err)
@@ -188,7 +182,6 @@ func TestLinkTypeSignaturesMatchNMSettingsDBus(t *testing.T) {
 		"connection.port-type": "s", "connection.autoconnect-slaves": "i", "connection.autoconnect-ports": "i",
 		"vlan.parent": "s", "vlan.id": "u", "vlan.flags": "u", "vlan.protocol": "s",
 		"vlan.ingress-priority-map": "as", "vlan.egress-priority-map": "as",
-		"bond.options": "a{ss}", "bond.interface-name": "s",
 		"bridge.stp": "b", "bridge.priority": "u", "bridge.forward-delay": "u", "bridge.hello-time": "u",
 		"bridge.max-age": "u", "bridge.ageing-time": "u", "bridge.mac-address": "ay",
 		"bridge.multicast-snooping": "b", "bridge.vlan-filtering": "b", "bridge.vlan-default-pvid": "u",

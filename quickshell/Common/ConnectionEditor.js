@@ -790,14 +790,6 @@ var CONNECTION_TYPES = [
         "sections": ["general", "vlan", "ipv4", "ipv6"]
     },
     {
-        "type": "bond",
-        "group": "other",
-        "icon": "link",
-        "addable": true,
-        "autoconnect": false,
-        "sections": ["general", "bond", "ports", "ipv4", "ipv6"]
-    },
-    {
         "type": "bridge",
         "group": "other",
         "icon": "device_hub",
@@ -923,47 +915,6 @@ function defaultVlanIfname(parent, id) {
         return "";
     const name = parent + "." + Number(t);
     return isValidIfname(name) ? name : "";
-}
-
-var BOND_MODES = ["balance-rr", "active-backup", "balance-xor", "broadcast", "802.3ad", "balance-tlb", "balance-alb"];
-var BOND_FORM_KEYS = ["mode", "miimon", "updelay", "downdelay", "arp_interval", "arp_ip_target"];
-
-function bondMonitoring(options) {
-    return parseInt(options ? options.arp_interval : "") > 0 ? "arp" : "mii";
-}
-
-// v: {interval, updelay, downdelay} for mii, {interval, targets} for arp. NM rejects
-// miimon and arp_interval both non-zero, so arp writes miimon "0". Empty values are
-// dropped: NM rejects arp_interval without arp_ip_target and delays with miimon 0.
-function applyBondMonitoring(options, mode, v) {
-    const out = Object.assign({}, options || {});
-    const text = k => String((v && v[k]) ?? "").trim();
-    const put = (k, val) => {
-        if (val !== "")
-            out[k] = val;
-        else
-            delete out[k];
-    };
-    if (mode === "arp") {
-        out.miimon = "0";
-        put("arp_interval", text("interval"));
-        put("arp_ip_target", _tokens(v ? v.targets : "").join(","));
-        delete out.updelay;
-        delete out.downdelay;
-        return out;
-    }
-    out.miimon = text("interval") || "100";
-    const miiOn = parseInt(out.miimon) > 0;
-    for (const k of ["updelay", "downdelay"])
-        put(k, miiOn ? text(k) : "");
-    delete out.arp_interval;
-    delete out.arp_ip_target;
-    return out;
-}
-
-function isValidArpTargets(text) {
-    const t = _tokens(text);
-    return t.length > 0 && t.every(_isIpv4);
 }
 
 // NM ignores apn while auto-config is on, so the two move together.

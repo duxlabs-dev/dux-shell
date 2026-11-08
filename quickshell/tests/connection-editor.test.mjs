@@ -99,7 +99,6 @@ test("APN edits move auto-config with them", () => {
 test("registry rows and new-profile autoconnect per type", () => {
     const rows = [
         ["vlan", "other", "lan", true, false, ["general", "vlan", "ipv4", "ipv6"]],
-        ["bond", "other", "link", true, false, ["general", "bond", "ports", "ipv4", "ipv6"]],
         ["bridge", "other", "device_hub", true, false, ["general", "bridge", "ports", "ipv4", "ipv6"]],
         ["pppoe", "other", "router", true, false, ["general", "pppoe", "ethernet", "ppp", "ipv4", "ipv6"]],
         ["gsm", "cellular", "signal_cellular_alt", true, false, ["general", "mobile", "ppp", "ipv4", "ipv6"]],
@@ -140,7 +139,6 @@ test("ports are detected by either key pair and lose their IP sections", () => {
     assert.deepEqual(ce.sectionsFor("802-3-ethernet", port), ["general", "ethernet", "security", "port"]);
     assert.deepEqual(ce.sectionsFor("bluetooth", { bluetooth: { type: "dun" }, gsm: {}, ipv4: {} }), ["general", "bluetooth", "mobile", "ppp", "ipv4"]);
     assert.deepEqual(ce.sectionsFor("bluetooth", { bluetooth: { type: "panu" }, ipv4: {}, ipv6: {} }), ["general", "bluetooth", "ipv4", "ipv6"]);
-    assert.deepEqual(ce.sectionsFor("bond", {}), ["general", "bond", "ports", "ipv4", "ipv6"]);
     assert.deepEqual(ce.sectionsFor("bridge", {}), ["general", "bridge", "ports", "ipv4", "ipv6"]);
     assert.deepEqual(ce.sectionsFor("vlan", {}), ["general", "vlan", "ipv4", "ipv6"]);
     assert.deepEqual(ce.sectionsFor("pppoe", {}), ["general", "pppoe", "ethernet", "ppp", "ipv4", "ipv6"]);
@@ -156,12 +154,6 @@ test("new ports and controllers", () => {
     assert.equal(ce.newPortSettings({ uuid: "U", ifname: "", id: "Bond", type: "bond" }, "enp5s0", true).connection.id, "Bond-port-enp5s0");
     assert.equal("bridge-port" in ce.newPortSettings({ uuid: "U", ifname: "bond0", type: "bond" }, "enp5s0", true), false);
 
-    assert.deepEqual(ce.newConnectionSettings("bond", { name: "b" }), {
-        connection: { id: "b", type: "bond", autoconnect: false, "interface-name": "bond0", "autoconnect-slaves": 1 },
-        ipv4: { method: "auto" },
-        ipv6: { method: "auto" },
-        bond: { options: { mode: "balance-rr" } }
-    });
     const bridge = ce.newConnectionSettings("bridge", { name: "br" });
     assert.deepEqual([bridge.connection["interface-name"], bridge.connection["autoconnect-slaves"], bridge.bridge], ["br0", 1, {}]);
     assert.deepEqual(ce.newConnectionSettings("vlan", { name: "v", parent: "enp5s0" }).vlan, { parent: "enp5s0" });
@@ -170,24 +162,6 @@ test("new ports and controllers", () => {
     assert.deepEqual([pppoe.pppoe, pppoe["802-3-ethernet"], pppoe.ppp, pppoe.connection.autoconnect], [{}, {}, {}, false]);
     const gsm = ce.newConnectionSettings("gsm", { name: "m" });
     assert.deepEqual([gsm.gsm, gsm.connection.autoconnect, gsm.ipv4.method], [{ "auto-config": true }, false, "auto"]);
-});
-
-test("bond monitoring keeps miimon and arp_interval exclusive and unknown options intact", () => {
-    const arp = ce.applyBondMonitoring({ mode: "active-backup", miimon: "100", updelay: "200", primary: "enp5s0" }, "arp", { interval: "1000", targets: "192.0.2.1, 192.0.2.2" });
-    assert.deepEqual(arp, { mode: "active-backup", primary: "enp5s0", miimon: "0", arp_interval: "1000", arp_ip_target: "192.0.2.1,192.0.2.2" });
-    assert.equal(ce.bondMonitoring(arp), "arp");
-
-    const mii = ce.applyBondMonitoring(arp, "mii", { interval: "", updelay: "", downdelay: "300" });
-    assert.deepEqual(mii, { mode: "active-backup", primary: "enp5s0", miimon: "100", downdelay: "300" });
-    assert.equal(ce.bondMonitoring({ arp_interval: "0" }), "mii");
-    assert.equal(ce.bondMonitoring({}), "mii");
-
-    assert.deepEqual(ce.applyBondMonitoring(arp, "arp", { interval: "", targets: "" }), { mode: "active-backup", primary: "enp5s0", miimon: "0" });
-    assert.deepEqual(ce.applyBondMonitoring({ updelay: "200" }, "mii", { interval: "0", updelay: "200", downdelay: "300" }), { miimon: "0" });
-
-    assert.equal(ce.isValidArpTargets("192.0.2.1, 192.0.2.2 192.0.2.3"), true);
-    assert.equal(ce.isValidArpTargets(""), false);
-    assert.equal(ce.isValidArpTargets("192.0.2.1, fe80::1"), false);
 });
 
 test("PPP echo and VLAN names", () => {

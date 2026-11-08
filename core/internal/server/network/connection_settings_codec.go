@@ -135,9 +135,6 @@ var settingSignatures = func() map[string]string {
 		"vlan.ingress-priority-map": "as",
 		"vlan.egress-priority-map":  "as",
 
-		"bond.options":        "a{ss}",
-		"bond.interface-name": "s",
-
 		"bridge.stp":                "b",
 		"bridge.priority":           "u",
 		"bridge.forward-delay":      "u",
