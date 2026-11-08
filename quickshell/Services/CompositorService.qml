@@ -1241,8 +1241,11 @@ Singleton {
         case "mango":
             return WindowModel.mangoMaximizedOnScreen(MangoService.windows || [], MangoService.outputs[screenName], screenName);
         case "hyprland":
-        case "niri":
             return filterCurrentWorkspace(sortedToplevels, screenName).some(t => t?.maximized);
+        case "niri":
+            if (NiriService.inOverview)
+                return false;
+            return WindowModel.niriMaximizedOnScreen(NiriService.windows, NiriService.allWorkspaces, filterCurrentWorkspace(sortedToplevels, screenName), screenName);
         default:
             return false;
         }

@@ -122,6 +122,46 @@ function niriDockOverlap(windows, allWorkspaces, screenName, position, thickness
     return false;
 }
 
+function niriMaximizedOnScreen(windows, allWorkspaces, toplevels, screenName) {
+    if (!windows || !allWorkspaces || !toplevels || !screenName)
+        return false;
+
+    const workspaceId = niriActiveWorkspaceId(allWorkspaces, screenName);
+    if (workspaceId === null)
+        return false;
+
+    const workspace = allWorkspaces.find(ws => ws.id === workspaceId);
+    const workspaceWindows = windows.filter(w => w.workspace_id === workspaceId);
+    const anyTiledHasGeometry = workspaceWindows.some(w => !w.is_floating && w.layout?.tile_pos_in_workspace_view != null);
+
+    for (const toplevel of toplevels) {
+        if (!toplevel || (!toplevel.maximized && !toplevel.fullscreen))
+            continue;
+        if (toplevel.niriWorkspaceId !== undefined && toplevel.niriWorkspaceId !== workspaceId)
+            continue;
+
+        const win = workspaceWindows.find(w => w.id === toplevel.niriWindowId)
+            || workspaceWindows.find(w => w.app_id === toplevel.appId && (!w.title || w.title === toplevel.title));
+
+        if (!win) {
+            if (toplevel.activated)
+                return true;
+            continue;
+        }
+
+        if (win.layout?.tile_pos_in_workspace_view != null)
+            return true;
+
+        if (anyTiledHasGeometry)
+            continue;
+
+        if (win.is_focused || (workspace && workspace.active_window_id === win.id) || toplevel.activated)
+            return true;
+    }
+
+    return false;
+}
+
 function hyprlandToplevelFor(hyprToplevels, toplevel) {
     for (const hyprToplevel of hyprToplevels) {
         if (hyprToplevel.wayland === toplevel)
