@@ -782,14 +782,6 @@ var CONNECTION_TYPES = [
         }
     },
     {
-        "type": "vlan",
-        "group": "other",
-        "icon": "lan",
-        "addable": true,
-        "autoconnect": false,
-        "sections": ["general", "vlan", "ipv4", "ipv6"]
-    },
-    {
         "type": "pppoe",
         "group": "other",
         "icon": "router",
@@ -874,14 +866,6 @@ function portOf(settings) {
         "controller": controller,
         "type": c["port-type"] || c["slave-type"] || ""
     };
-}
-
-function defaultVlanIfname(parent, id) {
-    const t = String(id ?? "").trim();
-    if (!parent || !/^\d{1,4}$/.test(t) || Number(t) > 4094)
-        return "";
-    const name = parent + "." + Number(t);
-    return isValidIfname(name) ? name : "";
 }
 
 // NM ignores apn while auto-config is on, so the two move together.
@@ -985,11 +969,6 @@ function newConnectionSettings(type, opts) {
         };
         if (service !== "")
             s.vpn["service-type"] = service;
-        break;
-    case "vlan":
-        s.vlan = {
-            "parent": (opts && opts.parent) || ""
-        };
         break;
     case "pppoe":
         s.pppoe = {};

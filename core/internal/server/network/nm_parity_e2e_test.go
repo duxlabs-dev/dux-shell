@@ -7,28 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestE2E_VlanAdd(t *testing.T) {
-	f := newEditorFixture(t)
-	added := captureAddConnection(f.object(t, nmSettingsPath), nmSettingsAddConnection)
-
-	resp := e2eRequest(t, f.backend, "network.connection.add", map[string]any{
-		"settings": map[string]any{
-			"connection": map[string]any{"id": "dms-test-vlan", "type": "vlan", "interface-name": "enp5s0.100", "autoconnect": false},
-			"vlan":       map[string]any{"parent": "enp5s0", "id": float64(100), "flags": float64(3)},
-			"ipv4":       map[string]any{"method": "auto"},
-			"ipv6":       map[string]any{"method": "auto"},
-		},
-	})
-	require.Empty(t, resp.Error)
-	v := (*added)["vlan"]
-	assert.Equal(t, "s", v["parent"].Signature().String())
-	assert.Equal(t, "enp5s0", v["parent"].Value())
-	assert.Equal(t, "u", v["id"].Signature().String())
-	assert.Equal(t, uint32(100), v["id"].Value())
-	assert.Equal(t, "u", v["flags"].Signature().String())
-	assert.Equal(t, uint32(3), v["flags"].Value())
-}
-
 func TestE2E_DSLAdd(t *testing.T) {
 	f := newEditorFixture(t)
 	settingsObj := f.object(t, nmSettingsPath)

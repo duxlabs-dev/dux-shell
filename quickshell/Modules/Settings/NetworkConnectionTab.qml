@@ -88,8 +88,6 @@ Item {
             return I18n.tr("Wi-Fi");
         if (type === "wireguard")
             return "WireGuard";
-        if (type === "vlan")
-            return "VLAN";
         if (type === "pppoe")
             return "DSL";
         if (type === "gsm")
@@ -378,8 +376,6 @@ Item {
                         return openConnectSection;
                     case "vpnData":
                         return vpnDataSection;
-                    case "vlan":
-                        return vlanSection;
                     case "mobile":
                         return mobileSection;
                     case "bluetooth":
@@ -498,14 +494,6 @@ Item {
         id: vpnDataSection
 
         ConnectionVpnDataSection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: vlanSection
-
-        ConnectionVlanSection {
             editor: root
         }
     }

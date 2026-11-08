@@ -153,21 +153,8 @@ func TestEncodeNewSettings(t *testing.T) {
 	}
 }
 
-func TestVlanRowsEncode(t *testing.T) {
-	s, err := encodeNewSettings(SettingsPatch{"vlan": {"id": 100.0, "flags": 3.0, "parent": "enp5s0"}})
-	require.NoError(t, err)
-	assert.Equal(t, "u", s["vlan"]["id"].Signature().String())
-	assert.Equal(t, "u", s["vlan"]["flags"].Signature().String())
-	assert.Equal(t, "s", s["vlan"]["parent"].Signature().String())
-
-	_, err = encodeNewSettings(SettingsPatch{"vlan": {"id": -1.0}})
-	require.ErrorContains(t, err, "vlan.id")
-}
-
 func TestLinkTypeSignaturesMatchNMSettingsDBus(t *testing.T) {
 	want := map[string]string{
-		"vlan.parent": "s", "vlan.id": "u", "vlan.flags": "u", "vlan.protocol": "s",
-		"vlan.ingress-priority-map": "as", "vlan.egress-priority-map": "as",
 		"gsm.apn": "s", "gsm.auto-config": "b", "gsm.username": "s", "gsm.password": "s",
 		"gsm.password-flags": "u", "gsm.pin": "s", "gsm.pin-flags": "u", "gsm.home-only": "b",
 		"gsm.network-id": "s", "gsm.number": "s", "gsm.mtu": "u", "gsm.device-id": "s", "gsm.sim-id": "s",

@@ -98,7 +98,6 @@ test("APN edits move auto-config with them", () => {
 
 test("registry rows and new-profile autoconnect per type", () => {
     const rows = [
-        ["vlan", "other", "lan", true, false, ["general", "vlan", "ipv4", "ipv6"]],
         ["pppoe", "other", "router", true, false, ["general", "pppoe", "ethernet", "ppp", "ipv4", "ipv6"]],
         ["gsm", "cellular", "signal_cellular_alt", true, false, ["general", "mobile", "ppp", "ipv4", "ipv6"]],
         ["cdma", "cellular", "signal_cellular_alt", false, true, ["general", "mobile", "ppp", "ipv4", "ipv6"]],
@@ -136,35 +135,23 @@ test("ports are detected by either key pair", () => {
 
     assert.deepEqual(ce.sectionsFor("bluetooth", { bluetooth: { type: "dun" }, gsm: {}, ipv4: {} }), ["general", "bluetooth", "mobile", "ppp", "ipv4"]);
     assert.deepEqual(ce.sectionsFor("bluetooth", { bluetooth: { type: "panu" }, ipv4: {}, ipv6: {} }), ["general", "bluetooth", "ipv4", "ipv6"]);
-    assert.deepEqual(ce.sectionsFor("vlan", {}), ["general", "vlan", "ipv4", "ipv6"]);
     assert.deepEqual(ce.sectionsFor("pppoe", {}), ["general", "pppoe", "ethernet", "ppp", "ipv4", "ipv6"]);
     assert.deepEqual(ce.sectionsFor("cdma", {}), ["general", "mobile", "ppp", "ipv4", "ipv6"]);
 });
 
 test("new connections of each remaining type", () => {
-    assert.deepEqual(ce.newConnectionSettings("vlan", { name: "v", parent: "enp5s0" }).vlan, { parent: "enp5s0" });
-    assert.deepEqual(ce.newConnectionSettings("vlan", { name: "v" }).vlan, { parent: "" });
     const pppoe = ce.newConnectionSettings("pppoe", { name: "dsl" });
     assert.deepEqual([pppoe.pppoe, pppoe["802-3-ethernet"], pppoe.ppp, pppoe.connection.autoconnect], [{}, {}, {}, false]);
     const gsm = ce.newConnectionSettings("gsm", { name: "m" });
     assert.deepEqual([gsm.gsm, gsm.connection.autoconnect, gsm.ipv4.method], [{ "auto-config": true }, false, "auto"]);
 });
 
-test("PPP echo and VLAN names", () => {
+test("PPP echo", () => {
     const on = ce.applyPppEcho({ mtu: 1400 }, true);
     assert.deepEqual(on, { mtu: 1400, "lcp-echo-interval": 30, "lcp-echo-failure": 5 });
     assert.equal(ce.pppEcho(on), true);
     assert.deepEqual(ce.applyPppEcho(on, false), { mtu: 1400 });
     assert.equal(ce.pppEcho({ "lcp-echo-interval": 0 }), false);
-
-    assert.equal(ce.defaultVlanIfname("enp5s0", 100), "enp5s0.100");
-    assert.equal(ce.defaultVlanIfname("enp5s0", 0), "enp5s0.0");
-    assert.equal(ce.defaultVlanIfname("enp5s0f1np1", 4094), "");
-    assert.equal(ce.defaultVlanIfname("", 100), "");
-    assert.equal(ce.defaultVlanIfname("enp5s0", ""), "");
-    assert.equal(ce.defaultVlanIfname("eth0", 4094), "eth0.4094");
-    assert.equal(ce.defaultVlanIfname("eth0", 4095), "");
-    assert.equal(ce.defaultVlanIfname("eth0", "12a"), "");
 });
 
 const enterpriseState = over => ({

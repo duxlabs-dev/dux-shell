@@ -122,13 +122,6 @@ var settingSignatures = func() map[string]string {
 		"vpn.data":         "a{ss}",
 		"vpn.secrets":      "a{ss}",
 
-		"vlan.parent":               "s",
-		"vlan.id":                   "u",
-		"vlan.flags":                "u",
-		"vlan.protocol":             "s",
-		"vlan.ingress-priority-map": "as",
-		"vlan.egress-priority-map":  "as",
-
 		"gsm.apn":                          "s",
 		"gsm.auto-config":                  "b",
 		"gsm.username":                     "s",
