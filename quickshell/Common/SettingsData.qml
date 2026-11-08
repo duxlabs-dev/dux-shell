@@ -24,7 +24,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 43
+    readonly property int settingsConfigVersion: 42
 
     enum Position {
         Top,

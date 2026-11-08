@@ -69,7 +69,7 @@ DOSD {
 
             OsdIcon {
                 Layout.alignment: Qt.AlignVCenter
-                iconName: "language"
+                iconName: "keyboard"
             }
 
             StyledText {

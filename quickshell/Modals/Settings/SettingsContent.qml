@@ -203,11 +203,6 @@ FocusScope {
         const properties = {};
         if (pagesWithParentModal.includes(page))
             properties.parentModal = Qt.binding(() => root.parentModal);
-        if (page === "fcitx5_addon" || page === "fcitx5_addon_sub") {
-            const sub = page === "fcitx5_addon_sub";
-            properties.parentModal = Qt.binding(() => root.parentModal);
-            properties.addon = sub ? SettingsUiState.selectedFcitx5SubAddon : SettingsUiState.selectedFcitx5Addon;
-        }
         if (page === "keybinds")
             properties.requestedSearchQuery = Qt.binding(() => root.parentModal?.keybindSearchQuery ?? "");
         return properties;
@@ -560,13 +555,10 @@ FocusScope {
             "wellbeing": "DigitalWellbeingTab.qml",
             "mouse_touchpad": "MouseTouchpadTab.qml",
             "keyboard": "KeyboardTab.qml",
-            "fcitx5": "Fcitx5Tab.qml",
-            "fcitx5_addon": "Fcitx5AddonTab.qml",
-            "fcitx5_addon_sub": "Fcitx5AddonTab.qml",
             "plugins_manage": "PluginsManageTab.qml"
         })
 
-    readonly property var pagesWithParentModal: ["dankbar_widgets", "window_rules", "notification_rules", "display_config", "users", "time_weather", "weather", "lock_screen", "greeter", "dank_dash", "wallpaper_cycling", "theme_schedule", "surface_shadows", "keybinds", "dankbar_settings", "dankbar_appearance", "bar_widget", "dock_general", "dock_widgets", "dock_appearance", "dock_advanced", "fcitx5", "launcher", "theme", "theme_apps", "media_player", "desktop_widgets", "desktop_widget", "autostart", "compositor_layout", "updater", "display_gamma", "about"]
+    readonly property var pagesWithParentModal: ["dankbar_widgets", "window_rules", "notification_rules", "display_config", "users", "time_weather", "weather", "lock_screen", "greeter", "dank_dash", "wallpaper_cycling", "theme_schedule", "surface_shadows", "keybinds", "dankbar_settings", "dankbar_appearance", "bar_widget", "dock_general", "dock_widgets", "dock_appearance", "dock_advanced", "launcher", "theme", "theme_apps", "media_player", "desktop_widgets", "desktop_widget", "autostart", "compositor_layout", "updater", "display_gamma", "about"]
 
     // The page scroller stops at the Loader edges; wheel over the header and gutters lands here instead
     WheelHandler {

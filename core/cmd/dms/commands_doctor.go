@@ -1543,18 +1543,6 @@ func getOptionalDBusStatus(busName string) (status, string) {
 	}
 }
 
-func checkFcitx5(url string) checkResult {
-	const desc = "Input Method Framework support"
-	switch {
-	case !utils.CommandExists("fcitx5"):
-		return checkResult{catOptionalFeatures, "fcitx5", statusInfo, "Not installed", desc, url}
-	case !utils.IsSessionDBusServiceAvailable("org.fcitx.Fcitx5"):
-		return checkResult{catOptionalFeatures, "fcitx5", statusWarn, "Installed but not running", desc, url}
-	default:
-		return checkResult{catOptionalFeatures, "fcitx5", statusOK, "Available", desc, url}
-	}
-}
-
 func checkOptionalDependencies() []checkResult {
 	var results []checkResult
 
@@ -1637,7 +1625,6 @@ func checkOptionalDependencies() []checkResult {
 	}
 
 	results = append(results, checkAdwGtk3())
-	results = append(results, checkFcitx5(optionalFeaturesURL))
 
 	return results
 }

@@ -77,9 +77,4 @@ Singleton {
     readonly property int pageSettleFrames: 2
     readonly property int pageSettleDeadline: 250
     readonly property int pageSpinnerDelay: 500
-    readonly property real fieldWidthXS: Theme.iconButtonSize * 1.5
-    readonly property real fieldWidthS: Theme.iconButtonSize * 2
-    readonly property real fieldWidthM: Theme.iconButtonSize * 5
-    readonly property real fieldWidthL: Theme.iconButtonSize * 8
-    readonly property real fieldWidthXL: Theme.iconButtonSize * 10
 }

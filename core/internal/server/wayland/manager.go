@@ -899,25 +899,9 @@ func (m *Manager) schedulerLoop() {
 
 func (m *Manager) applyCurrentTemp(_ string) {
 	if !m.controlsInitialized || !m.anyOutputReady() {
-		m.dropStaleFade()
 		return
 	}
 
-	if f := m.fade; f != nil && !f.running() {
-		if time.Since(f.requested) > fadePendingTTL {
-			m.endFade()
-			if !m.controlsInitialized {
-				return
-			}
-		} else {
-			m.beginFade()
-		}
-	}
-	m.applyScheduledTemp()
-	m.stepFade()
-}
-
-func (m *Manager) applyScheduledTemp() {
 	// Ensure schedule is up-to-date (handles display wake after overnight sleep)
 	m.recalcSchedule(time.Now())
 
@@ -996,7 +980,7 @@ func (m *Manager) applyGamma(temp int) {
 	var jobs []job
 
 	for _, out := range outs {
-		targetTemp := m.fadeTarget(out, effectiveTempTarget(out, temp))
+		targetTemp := effectiveTempTarget(out, temp)
 		switch {
 		case out.failed:
 			continue
@@ -1409,12 +1393,7 @@ func (m *Manager) SetEnabled(enabled bool) {
 	}
 	m.config.Enabled = enabled
 	m.configMutex.Unlock()
-	m.post(func() {
-		if enabled || (m.controlsInitialized && m.anyOutputReady()) {
-			m.requestFade()
-		}
-		m.syncControlsNow()
-	})
+	m.syncControls()
 }
 
 func (m *Manager) needsControls() bool {
@@ -1425,23 +1404,20 @@ func (m *Manager) needsControls() bool {
 		m.config.Contrast != 1.0 ||
 		len(m.config.ICCProfiles) > 0 ||
 		len(m.config.OutputTemps) > 0 ||
-		len(m.config.OutputBrightness) > 0 ||
-		m.fading.Load()
+		len(m.config.OutputBrightness) > 0
 }
 
 func (m *Manager) syncControls() {
-	m.post(m.syncControlsNow)
-}
-
-func (m *Manager) syncControlsNow() {
-	switch {
-	case m.needsControls() && !m.controlsInitialized:
-		m.createControls()
-	case !m.needsControls() && m.controlsInitialized:
-		m.destroyControls()
-	default:
-		m.triggerUpdate()
-	}
+	m.post(func() {
+		switch {
+		case m.needsControls() && !m.controlsInitialized:
+			m.createControls()
+		case !m.needsControls() && m.controlsInitialized:
+			m.destroyControls()
+		default:
+			m.triggerUpdate()
+		}
+	})
 }
 
 // ensureOutputControls creates the gamma controls when the manager has none.
@@ -1486,7 +1462,6 @@ func (m *Manager) createControls() {
 }
 
 func (m *Manager) destroyControls() {
-	m.cancelFade()
 	m.outputs.Range(func(_ uint32, out *outputState) bool {
 		if out.gammaControl != nil {
 			out.gammaControl.(*wlr_gamma_control.ZwlrGammaControlV1).Destroy()

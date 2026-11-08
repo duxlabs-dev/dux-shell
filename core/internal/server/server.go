@@ -443,7 +443,7 @@ func routeRequestRecovered(ctx context.Context, conn *ipc.ConnWriter, req ipc.Re
 }
 
 func getCapabilities() Capabilities {
-	caps := []string{"plugins", "dgop", "drives", "lyrics", "lyrics.plugins", "weather", "weather.plugins", "fcitx5"}
+	caps := []string{"plugins", "dgop", "drives", "lyrics", "lyrics.plugins", "weather", "weather.plugins"}
 
 	if networkManager != nil {
 		caps = append(caps, "network")
@@ -1113,19 +1113,6 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info("   Subscription events:")
 		log.Info("     - brightness       : Full device list (on rescan, DDC discovery, device changes)")
 		log.Info("     - brightness.update: Single device update (on brightness change for efficiency)")
-		log.Info("Fcitx5:")
-		log.Info(" fcitx5.currentIM                       - Get the active input method's unique name")
-		log.Info(" fcitx5.getGroups                       - List input method groups and the current one")
-		log.Info(" fcitx5.getGroup                        - Get a group's input methods (params: name)")
-		log.Info(" fcitx5.setGroup                        - Replace a group's input methods (params: name, defaultLayout, items)")
-		log.Info(" fcitx5.addGroup / removeGroup          - Manage groups (params: name)")
-		log.Info(" fcitx5.renameGroup                     - Rename a group (params: name, newName)")
-		log.Info(" fcitx5.availableIMs                    - List installable input methods")
-		log.Info(" fcitx5.availableLayouts                - List keyboard layouts and variants")
-		log.Info(" fcitx5.getAddons                       - List addons with category, settings and enabled state")
-		log.Info(" fcitx5.setAddonEnabled                 - Enable or disable an addon (params: name, enabled)")
-		log.Info(" fcitx5.getConfig                       - Get a config tree and schema (params: uri)")
-		log.Info(" fcitx5.setConfig                       - Apply a full config tree (params: uri, value)")
 		log.Info("WlrOutput:")
 		log.Info(" wlroutput.getState                    - Get current output configuration state")
 		log.Info(" wlroutput.applyConfiguration          - Apply output configuration (params: heads)")

@@ -1484,21 +1484,15 @@
     "page": "input",
     "category": "Input",
     "keywords": [
-      "addons",
       "bindings",
-      "extensions",
-      "framework",
       "hotkeys",
       "input",
       "keybinds",
       "keyboard",
       "keys",
-      "method",
       "mouse",
-      "plugins",
       "shortcuts",
-      "touchpad",
-      "widgets"
+      "touchpad"
     ],
     "icon": "keyboard",
     "description": "Shortcuts, keyboard, mouse"
@@ -10345,6 +10339,14 @@
     "optionFile": "ClockOptions.qml"
   },
   {
+    "section": "barWidgetOption:FocusedWindowOptions.qml:1",
+    "label": "Compact mode",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "FocusedWindowOptions.qml"
+  },
+  {
     "section": "barWidgetOption:KeyboardLayoutOptions.qml:1",
     "label": "Compact mode",
     "tabIndex": 22,
@@ -10977,14 +10979,6 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:FocusedWindowOptions.qml:1",
-    "label": "Show app name",
-    "tabIndex": 22,
-    "keywords": [],
-    "runtimeType": "barWidgetOption",
-    "optionFile": "FocusedWindowOptions.qml"
-  },
-  {
     "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:7",
     "label": "Show apps",
     "tabIndex": 22,
@@ -11017,7 +11011,7 @@
     "optionFile": "BatteryOptions.qml"
   },
   {
-    "section": "barWidgetOption:FocusedWindowOptions.qml:3",
+    "section": "barWidgetOption:FocusedWindowOptions.qml:2",
     "label": "Show icon",
     "tabIndex": 22,
     "keywords": [],
@@ -11089,14 +11083,6 @@
     "optionFile": "SystemMonitorOptions.qml"
   },
   {
-    "section": "barWidgetOption:FocusedWindowOptions.qml:2",
-    "label": "Show window title",
-    "tabIndex": 22,
-    "keywords": [],
-    "runtimeType": "barWidgetOption",
-    "optionFile": "FocusedWindowOptions.qml"
-  },
-  {
     "section": "barWidgetOption:SystemTrayOptions.qml:2",
     "label": "Single-line popup",
     "tabIndex": 22,
@@ -11105,7 +11091,7 @@
     "optionFile": "SystemTrayOptions.qml"
   },
   {
-    "section": "barWidgetOption:FocusedWindowOptions.qml:4",
+    "section": "barWidgetOption:FocusedWindowOptions.qml:3",
     "label": "Size",
     "tabIndex": 22,
     "keywords": [],
@@ -17328,6 +17314,29 @@
     "parentLabel": "Interface style"
   },
   {
+    "section": "_tab_54",
+    "label": "Bar widgets: Widget settings",
+    "tabIndex": 54,
+    "category": "Widget settings",
+    "keywords": [
+      "bar",
+      "components",
+      "instance",
+      "modules",
+      "options",
+      "panel",
+      "settings",
+      "statusbar",
+      "taskbar",
+      "topbar",
+      "widget",
+      "widgets"
+    ],
+    "icon": "tune",
+    "parentLabel": "Bar widgets",
+    "description": "Options of one widget instance"
+  },
+  {
     "section": "barWidgetGeneral",
     "label": "Widget settings",
     "tabIndex": 54,
@@ -18245,6 +18254,27 @@
       "/etc/pam.d/greetd"
     ],
     "conditionKey": "greeterAvailable"
+  },
+  {
+    "section": "_tab_63",
+    "label": "Desktop widgets: Widget settings",
+    "tabIndex": 63,
+    "category": "Widget settings",
+    "keywords": [
+      "components",
+      "conky",
+      "desktop",
+      "desktop clock",
+      "instance",
+      "modules",
+      "options",
+      "settings",
+      "widget",
+      "widgets"
+    ],
+    "icon": "tune",
+    "parentLabel": "Desktop widgets",
+    "description": "Options of one widget instance"
   },
   {
     "section": "paletteInject",
@@ -19393,111 +19423,5 @@
       "wellbeing"
     ],
     "icon": "show_chart"
-  },
-  {
-    "section": "fcitx5Behavior",
-    "label": "Behavior",
-    "tabIndex": 68,
-    "category": "Input Method Framework",
-    "keywords": [
-      "behavior",
-      "fcitx5",
-      "framework",
-      "input",
-      "input method",
-      "method",
-      "preedit",
-      "share",
-      "state"
-    ],
-    "parentLabel": "Input",
-    "icon": "tune",
-    "conditionKey": "fcitx5Available"
-  },
-  {
-    "section": "fcitx5Groups",
-    "label": "Groups",
-    "tabIndex": 68,
-    "category": "Input Method Framework",
-    "keywords": [
-      "fcitx5",
-      "framework",
-      "group",
-      "groups",
-      "input",
-      "input method",
-      "method"
-    ],
-    "parentLabel": "Input",
-    "icon": "folder",
-    "conditionKey": "fcitx5Available"
-  },
-  {
-    "section": "fcitx5InputMethods",
-    "label": "Input Method Framework",
-    "tabIndex": 68,
-    "category": "Input Method Framework",
-    "keywords": [
-      "fcitx5",
-      "framework",
-      "ime",
-      "input",
-      "input method",
-      "language",
-      "layout",
-      "method"
-    ],
-    "parentLabel": "Input",
-    "icon": "language",
-    "conditionKey": "fcitx5Available"
-  },
-  {
-    "section": "fcitx5Hotkeys",
-    "label": "Keyboard shortcuts",
-    "tabIndex": 68,
-    "category": "Input Method Framework",
-    "keywords": [
-      "bindings",
-      "fcitx5",
-      "framework",
-      "hotkey",
-      "hotkeys",
-      "input",
-      "input method",
-      "keybinds",
-      "keyboard",
-      "keys",
-      "method",
-      "shortcut",
-      "shortcuts",
-      "switch",
-      "toggle"
-    ],
-    "parentLabel": "Input",
-    "icon": "keyboard_command_key",
-    "conditionKey": "fcitx5Available"
-  },
-  {
-    "section": "fcitx5Plugins",
-    "label": "Plugins",
-    "tabIndex": 68,
-    "category": "Input Method Framework",
-    "keywords": [
-      "addon",
-      "addons",
-      "extensions",
-      "fcitx5",
-      "framework",
-      "input",
-      "input method",
-      "method",
-      "module",
-      "plugin",
-      "plugins",
-      "widgets"
-    ],
-    "parentLabel": "Input",
-    "icon": "extension",
-    "conditionKey": "fcitx5Available"
   }
 ]

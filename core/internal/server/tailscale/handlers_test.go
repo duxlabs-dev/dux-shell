@@ -13,6 +13,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"tailscale.com/ipn"
 	"tailscale.com/ipn/ipnstate"
 )
 
@@ -29,7 +30,10 @@ func (m *mockConn) SetWriteDeadline(t time.Time) error { return nil }
 
 func handlerTestManager() *Manager {
 	client := &mockClient{
-		watchFn: blockingWatch,
+		watchFn: func(ctx context.Context, mask ipn.NotifyWatchOpt) (ipnBusWatcher, error) {
+			<-ctx.Done()
+			return nil, ctx.Err()
+		},
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) {
 			return runningStatus(), nil
 		},
@@ -95,8 +99,8 @@ func TestHandleAction_BackendError(t *testing.T) {
 	client := &mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
-			return fmt.Errorf("backend rejected edit")
+		editPrefsFn: func(ctx context.Context, mp *ipn.MaskedPrefs) (*ipn.Prefs, error) {
+			return nil, fmt.Errorf("backend rejected edit")
 		},
 	}
 	m := newManager(client)
