@@ -1,6 +1,5 @@
 package network
 
-// ConnectionProfile is one saved profile as listed by the connection editor.
 type ConnectionProfile struct {
 	UUID          string `json:"uuid"`
 	ID            string `json:"id"`

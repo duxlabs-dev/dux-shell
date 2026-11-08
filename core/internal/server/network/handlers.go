@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"math"
 	"os"
 
@@ -295,23 +294,7 @@ func handleParseEAPConfig(conn *ipc.ConnWriter, req ipc.Request, manager *Manage
 		return
 	}
 
-	info, err := os.Stat(path)
-	if err != nil {
-		conn.RespondError(req.ID, err.Error())
-		return
-	}
-	if !info.Mode().IsRegular() {
-		conn.RespondError(req.ID, fmt.Sprintf("%s is not a regular file", path))
-		return
-	}
-	f, err := os.Open(path)
-	if err != nil {
-		conn.RespondError(req.ID, err.Error())
-		return
-	}
-	defer f.Close()
-
-	data, err := io.ReadAll(io.LimitReader(f, maxEAPConfigSize+1))
+	data, err := readRegularFile(path, maxEAPConfigSize)
 	if err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return

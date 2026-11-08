@@ -97,9 +97,8 @@ type NetworkManagerBackend struct {
 	sigWG    sync.WaitGroup
 	stopChan chan struct{}
 
-	// nmObjectFn overrides nmObject in tests.
-	nmObjectFn func(dbus.ObjectPath) dbus.BusObject
-	// firewalldObjectFn overrides firewalldObject in tests.
+	// Test overrides.
+	nmObjectFn        func(dbus.ObjectPath) dbus.BusObject
 	firewalldObjectFn func() dbus.BusObject
 
 	nmVersionOnce sync.Once

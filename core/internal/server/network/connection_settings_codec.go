@@ -261,7 +261,6 @@ var settingKinds = map[string]string{
 	"bluetooth.bdaddr":                   kindMAC,
 }
 
-// Inner key types for aa{sv} settings, keyed like settingSignatures.
 var nestedDictSignatures = func() map[string]map[string]string {
 	addr := map[string]string{"address": "s", "prefix": "u"}
 	addr["label"] = "s"

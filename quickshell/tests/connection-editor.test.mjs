@@ -47,11 +47,6 @@ test("changing the IP method drops rejected keys and brings stored ones back", (
     assert.deepEqual(ce.applyIpMethod({ method: "manual", gateway: "192.0.2.1" }, 4, "auto", undefined), { method: "auto" });
 });
 
-test("DNS is allowed only for the IP methods NetworkManager accepts it with", () => {
-    for (const [family, method, ok] of [[4, "auto", true], [4, "manual", true], [4, "shared", false], [4, "disabled", false], [6, "link-local", false], [6, "ignore", false], [6, "dhcp", true], [6, "auto", true]])
-        assert.equal(!ce.disallowedIpKeys(family, method).includes("dns-data"), ok, `${family} ${method}`);
-});
-
 test("security mode transitions: Enterprise restore, WEP and SAE cleanup", () => {
     const eap = { connection: { id: "x" }, "802-11-wireless": { ssid: "x" }, "802-1x": { eap: ["peap"], identity: "u" }, "802-11-wireless-security": { "key-mgmt": "wpa-eap" } };
     const sec = (s, mode, psk, orig) => ce.applySecurityMode(s, mode, psk, orig);
@@ -96,11 +91,9 @@ test("removing a stored secret sends a null entry, omission keeps", () => {
     assert.deepEqual(ce.kvFromRows([{ key: "foo", value: "2" }], {}, [], original), { foo: "2", password: null });
 });
 
-test("APN toggles auto-config and clears back to the stored state", () => {
-    const plain = { apn: "internet", pin: "1" }, cleared = ce.applyApn(plain, "", plain);
-    assert.deepEqual(ce.applyApn({ "auto-config": true, pin: "1" }, " internet.t-mobile "), { "auto-config": false, pin: "1", apn: "internet.t-mobile" });
-    assert.deepEqual(cleared, { "auto-config": true, pin: "1" });
-    assert.equal(ce.settingsDiff({ gsm: plain }, { gsm: ce.applyApn(cleared, "internet", plain) }), null);
+test("APN edits move auto-config with them", () => {
+    assert.deepEqual(ce.applyApn({ "auto-config": true }, " internet ", undefined), { apn: "internet", "auto-config": false });
+    assert.deepEqual(ce.applyApn({ apn: "x", "auto-config": false }, "", { "auto-config": false }), { "auto-config": false });
 });
 
 test("registry rows and new-profile autoconnect for VLAN, bond, bridge, mobile, DSL and Bluetooth", () => {

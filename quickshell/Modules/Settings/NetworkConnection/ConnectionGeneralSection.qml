@@ -33,7 +33,7 @@ SettingsCard {
         rev;
         return String(editor.profile?.uuid ?? editor.value("connection", "uuid", ""));
     }
-    readonly property bool vpnTypes: NetworkService.vpnEditorSupported
+    readonly property bool vpnTypes: NetworkService.connectionEditorSupported
     readonly property var typeOptions: {
         const out = [
             {
@@ -57,24 +57,22 @@ SettingsCard {
                 });
             }
         }
-        if (NetworkService.nmParitySupported) {
-            out.push({
-                "value": "vlan",
-                "label": "VLAN"
-            }, {
-                "value": "bond",
-                "label": I18n.tr("Bond", "network connection type: bonded interfaces")
-            }, {
-                "value": "bridge",
-                "label": I18n.tr("Bridge", "network connection type: network bridge")
-            }, {
-                "value": "pppoe",
-                "label": "DSL"
-            }, {
-                "value": "gsm",
-                "label": I18n.tr("Cellular")
-            });
-        }
+        out.push({
+            "value": "vlan",
+            "label": "VLAN"
+        }, {
+            "value": "bond",
+            "label": I18n.tr("Bond", "network connection type: bonded interfaces")
+        }, {
+            "value": "bridge",
+            "label": I18n.tr("Bridge", "network connection type: network bridge")
+        }, {
+            "value": "pppoe",
+            "label": "DSL"
+        }, {
+            "value": "gsm",
+            "label": I18n.tr("Cellular")
+        });
         if (ConnectionEditor.groupOf(SettingsUiState.newConnectionType) === "vpn")
             return out.filter(t => ConnectionEditor.groupOf(t.value) === "vpn");
         return out;
@@ -306,7 +304,7 @@ SettingsCard {
             const users = root.editor.value("connection", "permissions", []);
             return !users || users.length === 0;
         }
-        text: I18n.tr("All users of this computer can use this connection.", "network connection editor note")
+        text: I18n.tr("Available to all users", "network connection editor note, connection is shared with every user of the computer")
         noteIconName: "info"
         tint: Theme.primary
         tintBackground: Theme.primaryHover

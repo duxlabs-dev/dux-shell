@@ -1,6 +1,7 @@
 package network
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -15,6 +16,10 @@ const (
 	metricNonPreferred = int64(300)
 	// -1 lets NetworkManager pick the metric by device type (nm-settings ipv4.route-metric)
 	metricDefault = int64(-1)
+
+	priorityHigh    = int32(100)
+	priorityLow     = int32(10)
+	priorityDefault = int32(0)
 )
 
 func (m *Manager) SetConnectionPreference(pref ConnectionPreference) error {
@@ -66,8 +71,8 @@ func preferenceUpdate(connType string, pref ConnectionPreference, metric int64, 
 		if metric == metricPreferred || metric == metricNonPreferred {
 			newMetric, metricChange = metricDefault, true
 		}
-		if priority == 100 || priority == 10 {
-			newPriority, priorityChange = 0, true
+		if priority == priorityHigh || priority == priorityLow {
+			newPriority, priorityChange = priorityDefault, true
 		}
 		return
 	}
@@ -111,7 +116,11 @@ func (m *Manager) reapplyActiveConnections() {
 }
 
 var reapplyDevice = func(dev string) error {
-	return exec.Command("nmcli", "dev", "reapply", dev).Run()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "nmcli", "dev", "reapply", dev)
+	cmd.WaitDelay = time.Second
+	return cmd.Run()
 }
 
 // applyConnectionPreference reports whether any profile was rewritten.

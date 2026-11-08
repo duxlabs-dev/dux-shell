@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
+import qs.Modules.Settings.NetworkConnection
 import qs.Modules.Settings.Widgets
 import "../../Common/ConnectionEditor.js" as CE
 
@@ -14,6 +15,9 @@ Column {
     property string caDisplayName: ""
     property string defaultCa: "system"
     property bool advancedOpen: false
+    property bool showIcons: true
+    property bool markInvalid: false
+    property bool surfaceBrowser: false
     // Files NM already holds as blobs (keys ca, clientCert, privateKey): they count as present while their path is empty.
     property var storedFiles: ({})
     readonly property bool valid: CE.enterpriseConfigValid(toConfig(), {
@@ -22,7 +26,6 @@ Column {
         storedFiles: storedFiles
     })
 
-    signal browseRequested(string target)
     signal submitRequested
 
     readonly property var methodChoices: [{"label": "PEAP", "value": "peap"}, {"label": "TTLS", "value": "ttls"}, {"label": "TLS", "value": "tls"}, {"label": "PWD", "value": "pwd"}]
@@ -69,10 +72,6 @@ Column {
 
     function focusIdentity() {
         identityField.forceActiveFocus();
-    }
-
-    function choiceLabel(choices, selected) {
-        return choices.some(c => c.value === selected) ? CE.choiceLabel(choices, selected) : "";
     }
 
     function storedLabel(target, path) {
@@ -122,7 +121,7 @@ Column {
     }
 
     width: parent?.width ?? 0
-    spacing: Theme.groupedListGap
+    spacing: SettingsMetrics.groupGap
     // Don't overwrite a reset the host already made while being created.
     Component.onCompleted: if (draft.eap === "") reset()
 
@@ -153,20 +152,6 @@ Column {
         outlined: true
     }
 
-    component ChoiceRow: SettingsDropdownRow {
-        property var choices: []
-        property var selected
-
-        signal picked(var value)
-
-        options: choices.map(c => c.label)
-        currentValue: root.choiceLabel(choices, selected)
-        onValueChanged: value => {
-            picked(CE.choiceValue(choices, value));
-            resync();
-        }
-    }
-
     component PathRow: SettingsRow {
         id: pathRow
 
@@ -174,6 +159,7 @@ Column {
         property alias labelText: pathInput.labelText
         property alias leftIconName: pathInput.leftIconName
         property string target
+        property bool mandatory: false
 
         body: Row {
             width: parent.width
@@ -184,6 +170,7 @@ Column {
                 width: parent.width - browseButton.width - parent.spacing
                 anchors.verticalCenter: parent.verticalCenter
                 readOnly: true
+                isError: root.markInvalid && pathRow.mandatory && !text
             }
 
             DActionButton {
@@ -192,38 +179,36 @@ Column {
                 iconName: "folder_open"
                 tooltipText: I18n.tr("Select File")
                 Accessible.name: pathInput.labelText + ": " + tooltipText
-                onClicked: root.browseRequested(pathRow.target)
+                onClicked: certBrowser.open(pathRow.target)
             }
         }
     }
 
-    ChoiceRow {
+    ConnectionChoiceRow {
         text: I18n.tr("Authentication")
         choices: root.methodChoices
-        selected: draft.eap
+        stored: draft.eap
         onPicked: eap => {
-            if (eap === draft.eap)
-                return;
             draft.eap = eap;
             draft.phase2 = root.defaultInner(eap);
         }
     }
 
-    ChoiceRow {
+    ConnectionChoiceRow {
         visible: root.usesInner
         text: I18n.tr("Inner authentication", "802.1X phase 2 authentication method")
         choices: root.innerChoices[draft.eap] || []
-        selected: draft.phase2
+        stored: draft.phase2
         onPicked: value => draft.phase2 = value
     }
 
     SettingsRow {
         body: FormField {
             id: identityField
-            leftIconName: "person"
+            leftIconName: root.showIcons ? "person" : ""
             labelText: I18n.tr("Username", "text field label for network, vpn and account forms")
             supportingText: root.usernameSuffix ? "@" + root.usernameSuffix : ""
-            isError: root.usernameSuffixRequired && !CE.identityMatchesSuffix(text.trim(), root.usernameSuffix)
+            isError: (root.markInvalid && !text.trim()) || (root.usernameSuffixRequired && !CE.identityMatchesSuffix(text.trim(), root.usernameSuffix))
             text: draft.identity
             onTextEdited: draft.identity = text
             onAccepted: passwordField.visible ? passwordField.forceActiveFocus() : root.submitRequested()
@@ -234,10 +219,11 @@ Column {
         visible: draft.savePassword
         body: FormField {
             id: passwordField
-            leftIconName: "lock"
+            leftIconName: root.showIcons ? "lock" : ""
             showPasswordToggle: true
             echoMode: passwordVisible ? TextInput.Normal : TextInput.Password
             labelText: root.isTls ? I18n.tr("Private Key Password") : I18n.tr("Password")
+            isError: root.markInvalid && !root.isTls && !text
             text: root.isTls ? draft.privateKeyPassword : draft.password
             onTextEdited: {
                 if (root.isTls)
@@ -259,7 +245,7 @@ Column {
         visible: root.usesInner
         body: FormField {
             id: anonField
-            leftIconName: "person_off"
+            leftIconName: root.showIcons ? "person_off" : ""
             labelText: I18n.tr("Anonymous Identity (optional)")
             text: draft.anonymousIdentity
             onTextEdited: draft.anonymousIdentity = text
@@ -267,25 +253,26 @@ Column {
         }
     }
 
-    ChoiceRow {
+    ConnectionChoiceRow {
         visible: root.usesCa
         text: I18n.tr("CA certificate", "network authentication certificate file field")
         choices: root.caChoices
-        selected: draft.ca
+        stored: draft.ca
         onPicked: value => draft.ca = value
     }
 
     PathRow {
         visible: root.usesCa && draft.ca === "file"
         target: "ca"
-        leftIconName: "verified_user"
+        mandatory: true
+        leftIconName: root.showIcons ? "verified_user" : ""
         labelText: I18n.tr("File")
         text: draft.caCertPem ? root.caDisplayName : root.storedLabel("ca", draft.caCertPath)
     }
 
     SettingsNoteRow {
         visible: root.usesCa && draft.ca === "none"
-        text: I18n.tr("Without a CA certificate the server is not verified, and a fake network can capture the password.", "802.1X warning when no CA certificate is set")
+        text: I18n.tr("Server is not verified without a CA certificate", "802.1X warning when no CA certificate is set")
         tint: Theme.error
         tintBackground: Theme.errorHover
     }
@@ -293,7 +280,7 @@ Column {
     SettingsRow {
         visible: root.usesCa
         body: FormField {
-            leftIconName: "domain"
+            leftIconName: root.showIcons ? "domain" : ""
             labelText: I18n.tr("Server")
             isError: draft.ca === "system" && !text.trim()
             text: draft.serverDomain
@@ -301,18 +288,19 @@ Column {
         }
     }
 
-    ChoiceRow {
+    ConnectionChoiceRow {
         visible: root.usesCa
         text: I18n.tr("Match type", "802.1X server name match, exact or suffix")
         choices: root.matchChoices
-        selected: draft.serverDomainSuffix
+        stored: draft.serverDomainSuffix
         onPicked: value => draft.serverDomainSuffix = value
     }
 
     PathRow {
         visible: root.isTls
         target: "clientCert"
-        leftIconName: "badge"
+        mandatory: true
+        leftIconName: root.showIcons ? "badge" : ""
         labelText: I18n.tr("Client certificate", "network authentication certificate file field")
         text: root.storedLabel("clientCert", draft.clientCertPath)
     }
@@ -320,31 +308,23 @@ Column {
     PathRow {
         visible: root.isTls
         target: "privateKey"
-        leftIconName: "key"
+        leftIconName: root.showIcons ? "key" : ""
         labelText: I18n.tr("Private key", "network authentication key file field")
         text: root.storedLabel("privateKey", draft.privateKeyPath)
     }
 
-    SettingsRow {
+    SettingsFoldRow {
         visible: root.usesTlsOptions
         title: I18n.tr("Advanced")
-        clickable: true
-        Accessible.name: title + ": " + (root.advancedOpen ? I18n.tr("Collapse") : I18n.tr("Expand"))
-        onClicked: root.advancedOpen = !root.advancedOpen
-
-        DIcon {
-            name: root.advancedOpen ? "expand_less" : "expand_more"
-            size: Theme.iconSize
-            color: Theme.surfaceVariantText
-            anchors.verticalCenter: parent.verticalCenter
-        }
+        open: root.advancedOpen
+        onToggled: root.advancedOpen = !root.advancedOpen
     }
 
-    ChoiceRow {
+    ConnectionChoiceRow {
         visible: root.advancedOpen && draft.eap === "peap"
         text: I18n.tr("PEAP version", "802.1X advanced option")
         choices: root.peapVersionChoices
-        selected: draft.peapVersion
+        stored: draft.peapVersion
         onPicked: value => draft.peapVersion = value
     }
 
@@ -366,10 +346,16 @@ Column {
     SettingsRow {
         visible: root.advancedOpen && root.usesTlsOptions
         body: FormField {
-            leftIconName: "tune"
+            leftIconName: root.showIcons ? "tune" : ""
             labelText: I18n.tr("OpenSSL ciphers", "802.1X advanced option")
             text: draft.opensslCiphers
             onTextEdited: draft.opensslCiphers = text
         }
+    }
+
+    ConnectionCertBrowser {
+        id: certBrowser
+        surface: root.surfaceBrowser
+        onPicked: (key, path) => root.setPath(key, path)
     }
 }

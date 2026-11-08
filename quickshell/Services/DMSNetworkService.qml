@@ -119,11 +119,7 @@ Singleton {
     readonly property int connectionEditorApiVersion: 41
     property bool backendConnectionEditorSupported: false
     readonly property bool connectionEditorSupported: DMSService.isConnected && networkAvailable && DMSService.apiVersion >= connectionEditorApiVersion && backendConnectionEditorSupported
-    readonly property bool enterpriseSupported: connectionEditorSupported
-    readonly property bool connectionEditorPagesSupported: connectionEditorSupported
-    readonly property bool vpnEditorSupported: connectionEditorSupported
-    readonly property bool nmParitySupported: connectionEditorSupported
-    readonly property bool connectivitySupported: DMSService.isConnected && networkAvailable && DMSService.apiVersion >= connectionEditorApiVersion && backend === "networkmanager"
+    readonly property bool connectivitySupported: connectionEditorSupported
     property string connectivity: "unknown"
     property bool connectivityCheckEnabled: false
     property bool connectivityCheckAvailable: false
@@ -504,7 +500,8 @@ Singleton {
             backendHotspotLastError = "";
         }
 
-        if (DMSService.apiVersion >= connectionEditorApiVersion) {
+        const hasEditorApi = DMSService.apiVersion >= connectionEditorApiVersion;
+        if (hasEditorApi) {
             connectivity = state.connectivity || "unknown";
             connectivityCheckEnabled = state.connectivityCheckEnabled === true;
             connectivityCheckAvailable = state.connectivityCheckAvailable === true;
@@ -528,9 +525,9 @@ Singleton {
             hotspotAutoconnect = false;
         }
 
-        backendConnectionEditorSupported = DMSService.apiVersion >= connectionEditorApiVersion && state.connectionEditorSupported === true;
+        backendConnectionEditorSupported = hasEditorApi && state.connectionEditorSupported === true;
 
-        if (DMSService.apiVersion >= connectionEditorApiVersion)
+        if (hasEditorApi)
             connectionProfilesRevision = state.connectionProfilesRevision || 0;
 
         currentWifiSSID = wifiConnected ? (state.wifiSSID || "") : "";
@@ -937,12 +934,11 @@ Singleton {
     function setNetworkPreference(preference) {
         if (!networkAvailable)
             return;
-        const previousPreference = SettingsData.networkPreference;
         SettingsData.set("networkPreference", preference);
-        applyNetworkPreference(preference, previousPreference);
+        applyNetworkPreference(preference, true);
     }
 
-    function applyNetworkPreference(preference, previousPreference) {
+    function applyNetworkPreference(preference, interactive) {
         changingPreference = true;
         targetPreference = preference;
         DMSService.sendRequest("network.preference.set", {
@@ -952,9 +948,10 @@ Singleton {
             targetPreference = "";
 
             if (response.error) {
-                if (previousPreference !== undefined)
-                    SettingsData.set("networkPreference", previousPreference);
-                ToastService.showError(I18n.tr("Failed to set network preference", "toast title when switching between Ethernet and WiFi preference fails"), response.error);
+                if (interactive)
+                    ToastService.showError(I18n.tr("Failed to set network preference", "toast title when switching between Ethernet and WiFi preference fails"), response.error);
+                else
+                    log.warn("Failed to set network preference:", response.error);
             }
         });
     }
@@ -1439,13 +1436,8 @@ Singleton {
     }
 
     function editorRequest(method, params, callback) {
-        if (!connectionEditorSupported) {
-            if (callback)
-                callback({
-                    error: "connection editor not supported"
-                });
-            return false;
-        }
+        if (!connectionEditorSupported)
+            return unsupportedResponse(callback);
         DMSService.sendRequest(method, params, response => {
             if (callback)
                 callback(response);
@@ -1462,17 +1454,6 @@ Singleton {
             uuid: uuid,
             secrets: withSecrets
         }, callback);
-    }
-
-    function pagesRequest(method, params, callback) {
-        if (!connectionEditorPagesSupported) {
-            if (callback)
-                callback({
-                    error: "connection editor not supported"
-                });
-            return false;
-        }
-        return editorRequest(method, params, callback);
     }
 
     function updateConnection(uuid, settings, persist, callback, enterprise) {
@@ -1497,7 +1478,7 @@ Singleton {
     }
 
     function activateConnection(uuid, device, callback) {
-        return pagesRequest("network.connection.activate", {
+        return editorRequest("network.connection.activate", {
             uuid: uuid,
             device: device || ""
         }, response => {
@@ -1509,7 +1490,7 @@ Singleton {
     }
 
     function deactivateConnection(uuid, callback) {
-        return pagesRequest("network.connection.deactivate", {
+        return editorRequest("network.connection.deactivate", {
             uuid: uuid
         }, response => {
             if (response.error)
@@ -1520,13 +1501,13 @@ Singleton {
     }
 
     function getConnectionEnterprise(uuid, callback) {
-        return pagesRequest("network.connection.getEnterprise", {
+        return editorRequest("network.connection.getEnterprise", {
             uuid: uuid
         }, callback);
     }
 
     function listFirewallZones(callback) {
-        return pagesRequest("network.connection.firewallZones", {}, callback);
+        return editorRequest("network.connection.firewallZones", {}, callback);
     }
 
     function deleteConnection(uuid, callback) {
@@ -1542,26 +1523,15 @@ Singleton {
         }, callback);
     }
 
-    function vpnEditorRequest(method, params, callback) {
-        if (!vpnEditorSupported) {
-            if (callback)
-                callback({
-                    error: "connection editor not supported"
-                });
-            return false;
-        }
-        return editorRequest(method, params, callback);
-    }
-
     function exportConnection(uuid, path, callback) {
-        return vpnEditorRequest("network.connection.export", {
+        return editorRequest("network.connection.export", {
             uuid: uuid,
             file: path
         }, callback);
     }
 
     function wireguardKeys(privateKey, callback) {
-        return vpnEditorRequest("network.wireguard.keys", privateKey ? {
+        return editorRequest("network.wireguard.keys", privateKey ? {
             privateKey: privateKey
         } : null, callback);
     }
@@ -1570,7 +1540,7 @@ Singleton {
         if (nmConnectionEditorProbed)
             return;
         nmConnectionEditorProbed = true;
-        Proc.runCommand("nmConnectionEditorProbe", ["sh", "-c", "command -v nm-connection-editor"], (out, code) => {
+        Proc.runCommand(null, ["sh", "-c", "command -v nm-connection-editor"], (out, code) => {
             nmConnectionEditorAvailable = code === 0;
         });
     }

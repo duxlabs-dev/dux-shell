@@ -226,7 +226,7 @@ Singleton {
         sendAction("tailscale.setPrefs", patch, response => {
             const warning = response.result ? response.result.warning : "";
             if (warning)
-                ToastService.showWarning(I18n.tr("Warning"), warning);
+                ToastService.showWarning(I18n.tr("Tailscale", "Tailscale mesh VPN widget title"), warning);
             if (callback)
                 callback(response);
         });

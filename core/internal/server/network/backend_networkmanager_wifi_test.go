@@ -535,12 +535,21 @@ func TestStoredWiFiProfileWrites(t *testing.T) {
 func TestSaveOnly_AddsNewProfileWithoutActivating(t *testing.T) {
 	settings := mock_gonetworkmanager.NewMockSettings(t)
 	settings.EXPECT().ListConnections().Return(nil, nil)
-	settings.EXPECT().AddConnection(mock.Anything).Return(nil, nil).Once()
+	var added gonetworkmanager.ConnectionSettings
+	settings.EXPECT().AddConnection(mock.Anything).RunAndReturn(func(s gonetworkmanager.ConnectionSettings) (gonetworkmanager.Connection, error) {
+		added = s
+		return nil, nil
+	}).Once()
 	backend, err := NewNetworkManagerBackend(mock_gonetworkmanager.NewMockNetworkManager(t))
 	require.NoError(t, err)
 	backend.settings, backend.wifiDevice = settings, nil
+	nm := mock_dbus.NewMockBusObject(t)
+	backend.nmObjectFn = func(dbus.ObjectPath) dbus.BusObject { return nm }
+	nm.EXPECT().Call(gonetworkmanager.NetworkManagerGetPermissions, dbus.Flags(0)).
+		Return(&dbus.Call{Body: []any{map[string]string{nmPermModifySystem: "auth"}}}).Once()
 	require.NoError(t, backend.ConnectWiFi(ConnectionRequest{SSID: "eduroam", Security: "wpa-eap", SaveOnly: true, Enterprise: ttlsConfig(t, testCertDER(t, "ca"), "pw")}))
 	assert.False(t, backend.state.IsConnecting)
+	assert.NotEmpty(t, added["connection"]["permissions"], "a user who can't modify system profiles gets a user-owned one")
 }
 
 func TestConnectWiFi_ExistingEnterpriseUpdateFailureBlocksActivation(t *testing.T) {

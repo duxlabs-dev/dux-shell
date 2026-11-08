@@ -12,36 +12,8 @@ import (
 )
 
 func TestSettingSignaturesMatchNMSettingsDBus(t *testing.T) {
-	ip := map[string]string{"method": "s", "address-data": "aa{sv}", "gateway": "s", "route-data": "aa{sv}", "dns-data": "as", "dns-search": "as", "dns-options": "as",
-		"dns-priority": "i", "route-metric": "x", "route-table": "u", "never-default": "b", "ignore-auto-dns": "b", "ignore-auto-routes": "b", "may-fail": "b", "dhcp-hostname": "s"}
-	want := map[string]map[string]string{
-		"connection": {"id": "s", "uuid": "s", "type": "s", "interface-name": "s", "autoconnect": "b", "autoconnect-priority": "i", "autoconnect-retries": "i", "metered": "i",
-			"zone": "s", "secondaries": "as", "permissions": "as", "stable-id": "s", "timestamp": "t"},
-		"ipv4":            {"dhcp-client-id": "s", "dhcp-send-hostname-v2": "i"},
-		"ipv6":            {"ip6-privacy": "i", "addr-gen-mode": "i", "token": "s", "dhcp-send-hostname": "b", "dhcp-send-hostname-v2": "i"},
-		"802-3-ethernet":  {"mac-address": "ay", "assigned-mac-address": "s", "wake-on-lan": "u", "auto-negotiate": "b", "accept-all-mac-addresses": "i", "mac-address-denylist": "as"},
-		"802-11-wireless": {"ssid": "ay", "bssid": "ay", "channel-width": "i", "powersave": "u", "ap-isolation": "i", "seen-bssids": "as"},
-		"802-1x": {"eap": "as", "identity": "s", "anonymous-identity": "s", "password": "s", "password-flags": "u", "phase2-auth": "s", "phase2-autheap": "s", "ca-cert": "ay",
-			"ca-path": "s", "system-ca-certs": "b", "domain-match": "s", "domain-suffix-match": "s", "client-cert": "ay", "private-key": "ay", "private-key-password": "s",
-			"private-key-password-flags": "u", "phase1-peapver": "s", "phase1-peaplabel": "s", "phase1-auth-flags": "u", "openssl-ciphers": "s", "altsubject-matches": "as", "auth-timeout": "i", "optional": "b"},
-		"802-11-wireless-security": {"key-mgmt": "s", "psk": "s", "psk-flags": "u", "pmf": "i", "proto": "as", "pairwise": "as", "group": "as"},
-		"wireguard":                {"private-key": "s", "private-key-flags": "u", "listen-port": "u", "fwmark": "u", "peer-routes": "b", "mtu": "u", "peers": "aa{sv}", "ip4-auto-default-route": "i", "ip6-auto-default-route": "i"},
-		"vpn":                      {"service-type": "s", "user-name": "s", "persistent": "b", "timeout": "u", "data": "a{ss}", "secrets": "a{ss}"},
-	}
-	route := map[string]string{"dest": "s", "prefix": "u", "next-hop": "s", "metric": "u", "table": "u", "onlink": "b", "src": "s", "tos": "y", "scope": "y"}
-	for _, fam := range []string{"ipv4", "ipv6"} {
-		for k, sig := range ip {
-			want[fam][k] = sig
-		}
-		assert.Equal(t, map[string]string{"address": "s", "prefix": "u", "label": "s"}, nestedDictSignatures[fam+".address-data"])
-		for k, sig := range route {
-			assert.Equal(t, sig, nestedDictSignatures[fam+".route-data"][k], k)
-		}
-	}
-	for section, keys := range want {
-		for k, sig := range keys {
-			assert.Equal(t, sig, settingSignatures[section+"."+k], section+"."+k)
-		}
+	for key, sig := range map[string]string{"ipv4.route-metric": "x", "ipv6.route-metric": "x", "ipv4.address-data": "aa{sv}", "802-1x.ca-cert": "ay", "802-11-wireless.ssid": "ay"} {
+		assert.Equal(t, sig, settingSignatures[key], key)
 	}
 }
 

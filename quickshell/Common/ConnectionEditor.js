@@ -7,7 +7,7 @@ function _absent(v) {
     return v === undefined || v === null;
 }
 
-function _copy(v) {
+function copy(v) {
     return _absent(v) ? v : JSON.parse(JSON.stringify(v));
 }
 
@@ -61,7 +61,7 @@ function settingsDiff(original, draft) {
             continue;
         }
         if (_absent(os)) {
-            patch[name] = _copy(ds);
+            patch[name] = copy(ds);
             changed = true;
             continue;
         }
@@ -70,7 +70,7 @@ function settingsDiff(original, draft) {
         for (const key of _unionKeys(os, ds)) {
             if (deepEqual(os[key], ds[key]))
                 continue;
-            sub[key] = _absent(ds[key]) ? null : _copy(ds[key]);
+            sub[key] = _absent(ds[key]) ? null : copy(ds[key]);
             subChanged = true;
         }
         if (subChanged) {
@@ -166,7 +166,7 @@ function addressDataFromText(text, family, existing) {
         if (!parsed)
             return null;
         const match = (existing || []).find(e => e && e.address === parsed.address);
-        out.push(Object.assign({}, _copy(match) || {}, parsed));
+        out.push(Object.assign({}, copy(match) || {}, parsed));
     }
     return out;
 }
@@ -217,7 +217,7 @@ function routeRows(routeData) {
         const extra = {};
         for (const k in r) {
             if (_ROUTE_KEYS.indexOf(k) < 0)
-                extra[k] = _copy(r[k]);
+                extra[k] = copy(r[k]);
         }
         return {
             "dest": _absent(r.prefix) ? String(r.dest ?? "") : r.dest + "/" + r.prefix,
@@ -234,7 +234,7 @@ function routeDataFromRows(rows, family) {
         const dest = _parseCidr(row.dest, family, false);
         if (!dest)
             return null;
-        const route = Object.assign({}, _copy(row.extra) || {}, {
+        const route = Object.assign({}, copy(row.extra) || {}, {
             "dest": dest.address,
             "prefix": dest.prefix
         });
@@ -290,7 +290,7 @@ function applyIpMethod(section, family, method, original) {
         if (after.indexOf(key) >= 0)
             delete out[key];
         else if (before.indexOf(key) >= 0 && _absent(out[key]) && original && !_absent(original[key]))
-            out[key] = _copy(original[key]);
+            out[key] = copy(original[key]);
     }
     if ((out["address-data"] || []).length === 0)
         delete out.gateway;
@@ -405,7 +405,7 @@ function applySecurityMode(draft, mode, password, original) {
     if (mode !== "wpa-eap")
         delete out["802-1x"];
     else if (_absent(out["802-1x"]) && original && !_absent(original["802-1x"]))
-        out["802-1x"] = _copy(original["802-1x"]);
+        out["802-1x"] = copy(original["802-1x"]);
     if (mode === "none") {
         delete out[_SECURITY];
         return out;
@@ -468,7 +468,7 @@ function wgPeerRows(peers) {
         const extra = {};
         for (const k in p) {
             if (_PEER_KEYS.indexOf(k) < 0)
-                extra[k] = _copy(p[k]);
+                extra[k] = copy(p[k]);
         }
         return {
             "publicKey": p["public-key"] ?? "",
@@ -502,7 +502,7 @@ function wgPeersFromRows(rows, originalPeers) {
             return null;
         if (ips.length > 0)
             peer["allowed-ips"] = ips;
-        Object.assign(peer, _copy(row.extra) || {});
+        Object.assign(peer, copy(row.extra) || {});
         const psk = String(row.presharedKey ?? "").trim();
         if (psk === "") {
             // Flags 1/2 mean NM stores no secret; keep them so the PSK stays agent-owned.
@@ -591,6 +591,17 @@ function withSecretSaved(data, key, saved) {
     const out = Object.assign({}, data || {});
     out[key + "-flags"] = saved ? "0" : "2";
     return out;
+}
+
+// Sets one vpn.data entry (blank removes it); other keys, the *-flags ones included, are kept. An empty result is undefined.
+function withDataEntry(data, key, value) {
+    const out = Object.assign({}, data || {});
+    const t = String(value ?? "").trim();
+    if (t === "")
+        delete out[key];
+    else
+        out[key] = t;
+    return Object.keys(out).length === 0 ? undefined : out;
 }
 
 // Dropdown choices are [{label, value}]; an unrecognized stored value is appended as a literal option so it stays selected.
@@ -1049,7 +1060,7 @@ function newConnectionSettings(type, opts) {
         break;
     case "vpn":
         s.vpn = {
-            "data": _copy(_VPN_DATA_DEFAULTS[vpnForm(service)]) || {}
+            "data": copy(_VPN_DATA_DEFAULTS[vpnForm(service)]) || {}
         };
         if (service !== "")
             s.vpn["service-type"] = service;

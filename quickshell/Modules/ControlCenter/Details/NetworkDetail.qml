@@ -8,6 +8,7 @@ import qs.Modals.Common
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
 import qs.Modules.Network
+import qs.Modules.Settings.Widgets
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
@@ -183,7 +184,7 @@ Item {
             {
                 "label": I18n.tr("Edit"),
                 "iconName": "edit",
-                "visible": saved && NetworkService.connectionEditorPagesSupported,
+                "visible": saved && NetworkService.connectionEditorSupported,
                 "action": () => {
                     PopoutService.closeControlCenter();
                     NetworkService.findWifiProfile(ssid, p => p ? PopoutService.openConnectionEditor(p.uuid, ssid) : PopoutService.openSettingsWithTab("network_connections"));
@@ -219,7 +220,7 @@ Item {
             {
                 "label": I18n.tr("Edit"),
                 "iconName": "edit",
-                "visible": !!editable && NetworkService.connectionEditorPagesSupported,
+                "visible": !!editable && NetworkService.connectionEditorSupported,
                 "action": () => {
                     PopoutService.closeControlCenter();
                     PopoutService.openConnectionEditor(editable.uuid, editable.id || adapter.name);
@@ -462,6 +463,7 @@ Item {
                         }
 
                         width: parent.width
+                        spacing: SettingsMetrics.groupGap
 
                         CcListRow {
                             id: adapterRow
@@ -513,7 +515,7 @@ Item {
                         }
 
                         Repeater {
-                            model: adapterItem.profiles.length > 1 ? adapterItem.profiles : []
+                            model: NetworkService.ethernetDeviceConnectSupported && adapterItem.profiles.length > 1 ? adapterItem.profiles : []
 
                             CcListRow {
                                 id: profileRow

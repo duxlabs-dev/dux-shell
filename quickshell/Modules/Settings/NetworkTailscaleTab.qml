@@ -62,6 +62,10 @@ Item {
     onTsConnectedChanged: Qt.callLater(loadSuggestion)
     onPrefHostnameChanged: hostnameField.value = prefHostname
     onPrefRoutesChanged: routesField.value = prefRoutes
+    Component.onCompleted: {
+        hostnameField.value = prefHostname;
+        routesField.value = prefRoutes;
+    }
 
     function applyProfiles(result) {
         if (!result)
@@ -135,6 +139,7 @@ Item {
         subtitle: peer?.tailscaleIp ?? ""
         trailingBadge: isSelf ? I18n.tr("This device") : ""
         trailingBadgeColor: Theme.primary
+        Accessible.description: peer?.online ? I18n.tr("Online") : ""
 
         leading: Rectangle {
             width: Theme.spacingS
@@ -148,9 +153,8 @@ Item {
             buttonSize: Theme.iconButtonSize
             iconName: "content_copy"
             iconColor: Theme.surfaceText
-            tooltipText: I18n.tr("Copy")
-            Accessible.name: tooltipText
-            Accessible.description: peerRow.peer?.tailscaleIp ?? ""
+            tooltipText: peerRow.peer?.tailscaleIp ?? ""
+            Accessible.name: I18n.tr("Copy")
             onClicked: peerRow.copyRequested(peerRow.peer.tailscaleIp)
         }
 
@@ -159,9 +163,8 @@ Item {
             buttonSize: Theme.iconButtonSize
             iconName: "file_copy"
             iconColor: Theme.surfaceText
-            tooltipText: I18n.tr("Copy")
-            Accessible.name: tooltipText
-            Accessible.description: peerRow.peer?.dnsName ?? ""
+            tooltipText: peerRow.peer?.dnsName ?? ""
+            Accessible.name: I18n.tr("Copy")
             onClicked: peerRow.copyRequested(peerRow.peer.dnsName)
         }
     }
@@ -174,13 +177,13 @@ Item {
             tags: ["tailscale", "vpn", "tailnet", "exit node", "magicdns", "ssh", "subnet", "account", "login"]
 
             SettingsRow {
-                visible: !TailscaleService.available
+                visible: !TailscaleService.available || networkTailscaleTab.backendState === "Unreachable"
                 subtitle: I18n.tr("Tailscale not available", "Warning when Tailscale service is not running")
             }
 
             SettingsNoteRow {
                 visible: TailscaleService.available && networkTailscaleTab.profilesLoaded && !networkTailscaleTab.canOperate
-                text: I18n.tr("Changing Tailscale settings from DMS needs operator permission. Grant it with your administrator password, or run this once in a terminal:", "Tailscale operator permission explanation, followed by a terminal command")
+                text: I18n.tr("Operator permission needed", "Tailscale settings note, followed by a grant button and a terminal command")
             }
 
             SettingsRow {

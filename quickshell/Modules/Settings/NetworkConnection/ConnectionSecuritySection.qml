@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import qs.Common
-import qs.Modals.FileBrowser
 import qs.Modules.Network
 import qs.Modules.Settings.Widgets
 import qs.DCommon.Widgets
@@ -15,11 +14,14 @@ SettingsCard {
     required property var editor
 
     readonly property string securitySection: "802-11-wireless-security"
-    readonly property var modeChoices: [[I18n.tr("Open", "network security type", true), "none"], ["WPA/WPA2", "wpa-psk"], ["WPA3", "sae"], ["OWE", "owe"], [I18n.tr("Enterprise", "wifi security type value, 802.1x enterprise network"), "wpa-eap"]]
+    readonly property var modeChoices: [[I18n.tr("Open", "network security type", true), "none"], ["WPA/WPA2", "wpa-psk"], ["WPA3", "sae"], ["OWE", "owe"], [I18n.tr("Enterprise", "wifi security type value, 802.1x enterprise network"), "wpa-eap"]].map(c => ({
+                "label": c[0],
+                "value": c[1]
+            }))
 
     readonly property bool isWifi: editor.revision >= 0 && editor.hasSection("802-11-wireless")
     readonly property string mode: editor.revision >= 0 ? CE.securityMode(editor.draft) : ""
-    readonly property bool knownMode: modeChoices.some(c => c[1] === mode)
+    readonly property bool knownMode: modeChoices.some(c => c.value === mode)
     readonly property bool locked: editor.readOnly || (isWifi && !knownMode)
     readonly property bool personal: isWifi && (mode === "wpa-psk" || mode === "sae")
 
@@ -43,17 +45,6 @@ SettingsCard {
 
     // Re-prefill whenever the host loads a profile.
     readonly property string prefillKey: JSON.stringify([editor.enterpriseOriginal ?? null, editor.original?.["802-1x"] ?? null])
-
-    property string browseTarget: ""
-    property var certBrowserLoader: LazyLoader {
-        active: false
-
-        FileBrowserModal {
-            bucket: "certificate"
-            filters: ["*.pem", "*.crt", "*.cer", "*.der", "*.p12", "*.pfx", "*.key", "*"]
-            onAccepted: paths => form.setPath(root.browseTarget, paths[0])
-        }
-    }
 
     function enterpriseConfig() {
         if (!prefilled || !enterpriseActive)
@@ -107,27 +98,20 @@ SettingsCard {
         if (!on)
             editor.setSection("802-1x", null);
         else if (stored && !editor.hasSection("802-1x"))
-            editor.setSection("802-1x", JSON.parse(JSON.stringify(stored)));
+            editor.setSection("802-1x", CE.copy(stored));
     }
 
     title: I18n.tr("Security")
     onPrefillKeyChanged: Qt.callLater(reset)
     Component.onCompleted: reset()
 
-    SettingsDropdownRow {
+    ConnectionChoiceRow {
         visible: root.isWifi
         enabled: !root.locked
         text: I18n.tr("Security")
-        options: root.modeChoices.map(c => c[0]).concat(root.knownMode ? [] : [root.mode])
-        currentValue: {
-            const hit = root.modeChoices.find(c => c[1] === root.mode);
-            return hit ? hit[0] : root.mode;
-        }
-        onValueChanged: value => {
-            const hit = root.modeChoices.find(c => c[0] === value);
-            if (hit)
-                root.applyMode(hit[1]);
-        }
+        choices: root.modeChoices
+        stored: root.mode
+        onPicked: value => root.applyMode(value)
     }
 
     SettingsRow {
@@ -142,6 +126,7 @@ SettingsCard {
             echoMode: TextInput.Password
             showPasswordToggle: true
             isError: !root.pskValid
+            supportingText: root.pskValid ? "" : I18n.tr("Password must be 8 to 63 characters, or a 64-digit hex key.", "hotspot password length requirement")
             text: root.psk
             onTextEdited: {
                 if (text === root.psk)
@@ -165,13 +150,9 @@ SettingsCard {
 
     EnterpriseAuthForm {
         id: form
+        showIcons: false
+        markInvalid: root.enterpriseDirty
         visible: root.enterpriseActive
         enabled: !root.locked
-        onBrowseRequested: target => {
-            root.browseTarget = target;
-            root.certBrowserLoader.active = true;
-            if (root.certBrowserLoader.item)
-                root.certBrowserLoader.item.open();
-        }
     }
 }

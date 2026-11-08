@@ -22,6 +22,7 @@ func emptySettingsMock(t *testing.T) *mock_gonetworkmanager.MockSettings {
 
 func TestNetworkManagerBackend_ProfilesRevisionBumps(t *testing.T) {
 	backend, _ := NewNetworkManagerBackend(mock_gonetworkmanager.NewMockNetworkManager(t))
+	backend.settings = emptySettingsMock(t)
 	for _, n := range []string{"Settings.NewConnection", "Settings.ConnectionRemoved", "Settings.Connection.Updated"} {
 		before := backend.state.ConnectionProfilesRevision
 		backend.handleDBusSignal(&dbus.Signal{Name: "org.freedesktop.NetworkManager." + n})

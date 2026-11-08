@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import qs.Common
-import qs.Modals.FileBrowser
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
@@ -20,7 +19,6 @@ Column {
     property bool isHiddenNetwork: false
     property string hiddenSecurity: "wpa-psk"
     property var importProfile: null
-    property string browseTarget: ""
     property bool savePassword: true
     property bool inputEnabled: true
     property bool _submitted: false
@@ -55,7 +53,7 @@ Column {
     readonly property bool showSavePasswordCheckbox: isVpnPrompt && promptReason !== "pkcs11" && !isCertificatePrompt && !isChallengePrompt
     readonly property var hiddenSecurityChoices: {
         const choices = [[I18n.tr("Open", "network security type", true), "none"], ["WPA/WPA2", "wpa-psk"], ["WPA3", "sae"], ["OWE", "owe"]];
-        if (NetworkService.enterpriseSupported)
+        if (NetworkService.connectionEditorSupported)
             choices.push([I18n.tr("Enterprise", "wifi security type value, 802.1x enterprise network"), "wpa-eap"]);
         return choices;
     }
@@ -370,17 +368,6 @@ Column {
         }
     }
 
-    LazyLoader {
-        id: certBrowserLoader
-        active: false
-
-        FileBrowserSurfaceModal {
-            bucket: "certificate"
-            filters: ["*.pem", "*.crt", "*.cer", "*.der", "*.p12", "*.pfx", "*.key", "*"]
-            onAccepted: paths => enterpriseForm.setPath(root.browseTarget, paths[0])
-        }
-    }
-
     SettingsCard {
         enabled: root.inputEnabled
 
@@ -457,7 +444,8 @@ Column {
                 text: root.wifiPasswordInput
                 showPasswordToggle: true
                 isError: root.isPromptMode && root.promptReason === "wrong-password" && text.length === 0
-                supportingText: isError ? I18n.tr("Incorrect password") : ""
+                readonly property bool pskTooShort: root.isHiddenNetwork && root.hiddenSecurity === "wpa-psk" && text.length > 0 && text.length < 8
+                supportingText: isError ? I18n.tr("Incorrect password") : (pskTooShort ? I18n.tr("Password must be 8 to 63 characters, or a 64-digit hex key.", "hotspot password length requirement") : "")
                 echoMode: passwordVisible ? TextInput.Normal : TextInput.Password
                 labelText: root.promptReason === "pkcs11" ? I18n.tr("PIN", "noun, numeric personal identification number for a smart card") : I18n.tr("Password")
                 onTextEdited: root.wifiPasswordInput = text
@@ -469,15 +457,9 @@ Column {
             id: enterpriseForm
             // System CA needs a server domain, which most users don't know when connecting.
             defaultCa: "none"
+            surfaceBrowser: true
             visible: root.showEnterpriseForm
             onSubmitRequested: root.submitCredentialsAndClose()
-            onBrowseRequested: target => {
-                root.browseTarget = target;
-                certBrowserLoader.active = true;
-                const browser = certBrowserLoader.item as FileBrowserSurfaceModal;
-                if (browser)
-                    browser.open();
-            }
         }
 
         SettingsToggleRow {

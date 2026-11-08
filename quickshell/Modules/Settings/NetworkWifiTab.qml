@@ -362,7 +362,7 @@ Item {
                     iconName: "upload_file"
                     tooltipText: I18n.tr("Import", "verb, button that imports a vpn profile file")
                     buttonSize: Theme.buttonHeightXS
-                    visible: NetworkService.enterpriseSupported
+                    visible: NetworkService.connectionEditorSupported
                     onClicked: availableWifiCard.openEapFileBrowser()
                 },
                 DRefreshButton {
@@ -473,7 +473,7 @@ Item {
                         DActionButton {
                             iconName: "tune"
                             tooltipText: I18n.tr("Configure")
-                            visible: NetworkService.connectionEditorPagesSupported && wifiNetworkDelegate.modelData.saved
+                            visible: NetworkService.connectionEditorSupported && wifiNetworkDelegate.modelData.saved
                             onClicked: networkWifiTab.configureWifiProfile(wifiNetworkDelegate.modelData.ssid)
                         }
 
@@ -661,7 +661,7 @@ Item {
                         DActionButton {
                             iconName: "tune"
                             tooltipText: I18n.tr("Configure")
-                            visible: NetworkService.connectionEditorPagesSupported
+                            visible: NetworkService.connectionEditorSupported
                             onClicked: networkWifiTab.configureWifiProfile(savedWifiDelegate.modelData.ssid)
                         }
 
@@ -838,6 +838,7 @@ Item {
                 editing = false;
                 syncFromService();
                 password = "";
+                passwordEditRevision = 0;
                 passwordLoading = false;
                 passwordResolved = true;
             }
@@ -999,7 +1000,7 @@ Item {
             }
 
             SettingsRow {
-                visible: hotspotCard.showForm && hotspotCard.secured && !hotspotCard.passwordValid
+                visible: hotspotCard.showForm && hotspotCard.secured && !hotspotCard.passwordValid && hotspotCard.passwordEditRevision > 0
                 body: StyledText {
                     width: parent.width
                     text: I18n.tr("Password must be 8 to 63 characters, or a 64-digit hex key.", "hotspot password length requirement")

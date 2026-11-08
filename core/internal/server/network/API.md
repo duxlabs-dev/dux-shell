@@ -37,7 +37,7 @@ Configuration changes are rejected while the DMS hotspot is active or activating
 - `password` (string, optional): Hotspot password. Omit for an open hotspot when the backend allows it.
 - `device` (string, optional): Wi-Fi interface name to use, for example `wlan0`. When omitted, the backend picks an AP-capable radio at start time, preferring one that is already hosting the hotspot, then an idle radio, and only as a last resort a radio carrying an active connection (which NetworkManager will disconnect). Network state exposes `apCapable` on each `wifiDevices` entry so clients can predict this choice.
 - `band` (string, optional): Requested NetworkManager band: `bg` for 2.4GHz or `a` for 5GHz.
-- `channel` (integer, optional, API v41+): Wi-Fi channel, 0-196. `0` or omitted lets NetworkManager choose. Non-integer or out-of-range values are rejected.
+- `channel` (integer, optional, API v41+): Wi-Fi channel, 1-14 for `bg` and 1-196 for `a`; a non-zero channel requires `band`. `0` or omitted lets NetworkManager choose. Non-integer or out-of-range values are rejected.
 - `address` (string, optional, API v41+): Gateway address with prefix, for example `10.42.0.1/24`. Omit for NetworkManager's default.
 - `security` (string, optional, API v41+): `wpa-psk` (WPA2) or `sae` (WPA3), both requiring `password`. Omitted or empty means open, or WPA2 when `password` is set.
 - `hidden` (bool, optional, API v41+): Hide the SSID. Defaults to `false`.
@@ -124,7 +124,7 @@ Both take an optional `device` (string): the interface name to use, for example 
 
 Generic profile editor (API v41+, NetworkManager only). Clients should require `connectionEditorSupported: true` in network state. Other backends return `connection editor not supported by active network backend`. Validation is left to NetworkManager, whose error text is returned unchanged.
 
-- `network.connection.list`: returns `[{uuid, id, type, device?, interfaceName?, active, activeState?, autoconnect, timestamp, unsaved, controller?, portType?}]` (`controller` and `portType`, API v41+, are set for bond and bridge ports). Externally managed profiles (docker0, tailscale0, ...) are omitted. `unsaved` means the profile lives in memory only.
+- `network.connection.list`: returns `[{uuid, id, type, device?, interfaceName?, active, activeState?, autoconnect, timestamp, unsaved, canModify, ssid?, controller?, portType?}]` (`controller` and `portType`, API v41+, are set for bond and bridge ports). `canModify` is false only when polkit denies changing the profile outright; `ssid` is set for Wi-Fi profiles. Externally managed profiles (docker0, tailscale0, ...) are omitted. `unsaved` means the profile lives in memory only.
 - `network.connection.get {uuid, secrets?: bool}`: returns `{section: {key: value}}`. Secrets are included only when `secrets` is `true`.
 - `network.connection.update {uuid, settings, persist?: bool, enterprise?: object}`: merges `settings` into the profile. A `null` key deletes it, a `null` section deletes the section. `persist` (default `false`) writes the profile to disk; otherwise it stays where it is stored.
 - `network.connection.add {settings, persist?: bool, enterprise?: object}`: creates a profile and returns `{"uuid": "..."}`. `settings.connection.type` is required. `persist` defaults to `true`; `false` creates an in-memory profile.
@@ -135,7 +135,7 @@ Generic profile editor (API v41+, NetworkManager only). Clients should require `
 - `network.connection.firewallZones` (API v41+): returns the firewalld zone names, or `[]` when firewalld isn't running.
 - `network.connection.delete {uuid}`
 - `network.connection.duplicate {uuid, name}`: copies a profile, including stored secrets, under a new UUID and the given name. Returns `{"uuid": "..."}`.
-- `network.connection.export {uuid, file}` (API v41+): writes a WireGuard profile (wg-quick format) or a VPN profile (`nmcli connection export`) to the absolute path `file` with mode 0600. Other profile types and NetworkManager's own errors are returned as text.
+- `network.connection.export {uuid, file}` (API v41+): writes a WireGuard profile (wg-quick format) or a VPN profile (`nmcli connection export`) to the absolute path `file` with mode 0600. An existing regular file is replaced; a symlink or any other non-regular file at `file` is refused. Other profile types and NetworkManager's own errors are returned as text.
 - `network.wireguard.keys {privateKey?}` (API v41+): without `privateKey`, returns a new `{privateKey, publicKey}` pair. With it, returns the same private key and its derived public key. Errors with `invalid WireGuard key` unless it is base64 of 32 bytes. Works on any backend.
 
 ```json

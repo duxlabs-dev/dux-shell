@@ -58,7 +58,7 @@ FocusScope {
             const remembered = _validRemembered();
             if (remembered) {
                 remembered.forceActiveFocus(Qt.TabFocusReason);
-                _reveal(remembered);
+                reveal(remembered);
                 return;
             }
             let item = currentPageItem;
@@ -110,7 +110,7 @@ FocusScope {
             const remembered = _validRemembered();
             if (remembered) {
                 remembered.forceActiveFocus(Qt.TabFocusReason);
-                _reveal(remembered);
+                reveal(remembered);
                 return true;
             }
             start = page;
@@ -122,7 +122,7 @@ FocusScope {
                 return false;
         } while (!item.visible || !item.enabled)
         item.forceActiveFocus(forward ? Qt.TabFocusReason : Qt.BacktabFocusReason);
-        _reveal(item);
+        reveal(item);
         return true;
     }
 
@@ -139,7 +139,7 @@ FocusScope {
         return true;
     }
 
-    function _reveal(item) {
+    function reveal(item) {
         for (let f = item.parent; f; f = f.parent) {
             if (typeof f.flick !== "function" || f.contentHeight <= f.height)
                 continue;

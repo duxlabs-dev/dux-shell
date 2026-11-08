@@ -455,7 +455,6 @@ func (b *NetworkManagerBackend) handleNetworkManagerChange(changes map[string]db
 	}
 }
 
-// bumpProfilesRevision tells clients that profiles or their active state changed.
 func (b *NetworkManagerBackend) bumpProfilesRevision() {
 	b.stateMutex.Lock()
 	b.state.ConnectionProfilesRevision++

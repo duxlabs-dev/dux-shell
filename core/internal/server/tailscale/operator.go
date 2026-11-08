@@ -89,7 +89,12 @@ func grantOperator(ctx context.Context, argv []string, run commandRunner) error 
 }
 
 func execCommandRunner(ctx context.Context, argv []string) ([]byte, int, error) {
-	out, err := exec.CommandContext(ctx, argv[0], argv[1:]...).CombinedOutput()
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	cmd.WaitDelay = 5 * time.Second
+	out, err := cmd.CombinedOutput()
+	if errors.Is(err, exec.ErrWaitDelay) && cmd.ProcessState != nil && cmd.ProcessState.Success() {
+		return out, 0, nil
+	}
 	if ctxErr := ctx.Err(); ctxErr != nil {
 		return out, -1, ctxErr
 	}

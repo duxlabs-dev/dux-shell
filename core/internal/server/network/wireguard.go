@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 )
 
@@ -40,72 +39,7 @@ func wireGuardPublicKey(privateKey string) (string, error) {
 	return base64.StdEncoding.EncodeToString(priv.PublicKey().Bytes()), nil
 }
 
-// wgNumber reads a number of any Go integer type or float64; negatives,
-// non-finite or out-of-range floats and unknown types give 0.
-func wgNumber(v any) uint64 {
-	switch n := v.(type) {
-	case int:
-		return uint64(max(n, 0))
-	case int8:
-		return uint64(max(n, 0))
-	case int16:
-		return uint64(max(n, 0))
-	case int32:
-		return uint64(max(n, 0))
-	case int64:
-		return uint64(max(n, 0))
-	case uint:
-		return uint64(n)
-	case uint8:
-		return uint64(n)
-	case uint16:
-		return uint64(n)
-	case uint32:
-		return uint64(n)
-	case uint64:
-		return n
-	case float64:
-		if n >= 0 && n < math.MaxUint64 {
-			return uint64(n)
-		}
-	}
-	return 0
-}
-
-func wgStrings(v any) []string {
-	switch l := v.(type) {
-	case []string:
-		return l
-	case []any:
-		out := make([]string, 0, len(l))
-		for _, e := range l {
-			if s, ok := e.(string); ok {
-				out = append(out, s)
-			}
-		}
-		return out
-	}
-	return nil
-}
-
-func wgDicts(v any) []map[string]any {
-	switch l := v.(type) {
-	case []map[string]any:
-		return l
-	case []any:
-		out := make([]map[string]any, 0, len(l))
-		for _, e := range l {
-			if m, ok := e.(map[string]any); ok {
-				out = append(out, m)
-			}
-		}
-		return out
-	}
-	return nil
-}
-
-// wgQuickConfig renders decoded profile settings (with secrets) as a
-// wg-quick file.
+// wgQuickConfig renders decoded settings, secrets included, as a wg-quick file.
 func wgQuickConfig(s map[string]map[string]any) (string, error) {
 	wg := s["wireguard"]
 	key, _ := wg["private-key"].(string)
@@ -129,27 +63,30 @@ func wgQuickConfig(s map[string]map[string]any) (string, error) {
 	for _, f := range []struct{ key, name string }{
 		{"listen-port", "ListenPort"}, {"fwmark", "FwMark"}, {"mtu", "MTU"},
 	} {
-		if n := wgNumber(wg[f.key]); n != 0 {
+		if n, _ := wg[f.key].(uint32); n != 0 {
 			fmt.Fprintf(&b, "%s = %d\n", f.name, n)
 		}
 	}
 
 	var addrs, dns []string
 	for _, fam := range []string{"ipv4", "ipv6"} {
-		for _, a := range wgDicts(s[fam]["address-data"]) {
+		addrData, _ := s[fam]["address-data"].([]map[string]any)
+		for _, a := range addrData {
 			addr, _ := a["address"].(string)
 			if addr == "" {
 				continue
 			}
-			if prefix, ok := a["prefix"]; ok {
-				addr = fmt.Sprintf("%s/%d", addr, wgNumber(prefix))
+			if prefix, ok := a["prefix"].(uint32); ok {
+				addr = fmt.Sprintf("%s/%d", addr, prefix)
 			}
 			addrs = append(addrs, addr)
 		}
-		dns = append(dns, wgStrings(s[fam]["dns-data"])...)
+		servers, _ := s[fam]["dns-data"].([]string)
+		dns = append(dns, servers...)
 	}
 	for _, fam := range []string{"ipv4", "ipv6"} {
-		dns = append(dns, wgStrings(s[fam]["dns-search"])...)
+		search, _ := s[fam]["dns-search"].([]string)
+		dns = append(dns, search...)
 	}
 	if len(addrs) > 0 {
 		line("Address", strings.Join(addrs, ", "))
@@ -158,7 +95,8 @@ func wgQuickConfig(s map[string]map[string]any) (string, error) {
 		line("DNS", strings.Join(dns, ", "))
 	}
 
-	for _, p := range wgDicts(wg["peers"]) {
+	peers, _ := wg["peers"].([]map[string]any)
+	for _, p := range peers {
 		b.WriteString("\n[Peer]\n")
 		if v, _ := p["public-key"].(string); v != "" {
 			line("PublicKey", v)
@@ -166,13 +104,13 @@ func wgQuickConfig(s map[string]map[string]any) (string, error) {
 		if v, _ := p["preshared-key"].(string); v != "" {
 			line("PresharedKey", v)
 		}
-		if ips := wgStrings(p["allowed-ips"]); len(ips) > 0 {
+		if ips, _ := p["allowed-ips"].([]string); len(ips) > 0 {
 			line("AllowedIPs", strings.Join(ips, ", "))
 		}
 		if v, _ := p["endpoint"].(string); v != "" {
 			line("Endpoint", v)
 		}
-		if n := wgNumber(p["persistent-keepalive"]); n != 0 {
+		if n, _ := p["persistent-keepalive"].(uint32); n != 0 {
 			fmt.Fprintf(&b, "PersistentKeepalive = %d\n", n)
 		}
 	}

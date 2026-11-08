@@ -56,7 +56,7 @@ SettingsCard {
         else
             return;
         keyStored = next ?? "";
-        // An agent-owned key would be ignored, so a typed one is stored with the profile.
+        // NM ignores a key whose flags say an agent owns it, so a typed key is stored with the profile.
         if (t !== "" && Number(wg["private-key-flags"] ?? 0) !== 0)
             editor.setValue(sectionKey, "private-key-flags", 0);
         else if (t === "" && !editor.isNew)
@@ -96,11 +96,6 @@ SettingsCard {
         });
     }
 
-    function setNumber(key, text) {
-        const n = text === "" ? 0 : Number(text);
-        editor.setValue(sectionKey, key, n > 0 ? n : undefined);
-    }
-
     function writePeers() {
         peersRev++;
         const data = CE.wgPeersFromRows(peers, editor.original?.[sectionKey]?.peers);
@@ -128,10 +123,10 @@ SettingsCard {
         writePeers();
     }
 
-    // Edits mutate the row in place so the Repeater keeps its delegates (and focus) while typing.
     function editPeer(index, key, text) {
         if (String(peers[index][key] ?? "") === text)
             return;
+        // Mutates the row in place so the Repeater keeps its delegates and focus.
         peers[index][key] = text;
         writePeers();
     }
@@ -170,23 +165,6 @@ SettingsCard {
             generate();
         else
             derivePublicKey();
-    }
-
-    component NumberRow: ConnectionSyncedRow {
-        id: numberRow
-
-        property string key: ""
-        property real max: 4294967295
-
-        stored: {
-            root.rev;
-            const v = root.wg[key];
-            return v > 0 ? String(v) : "";
-        }
-        placeholderText: I18n.tr("Auto")
-        maximumLength: 10
-        check: t => /^\d*$/.test(t) && Number(t) <= numberRow.max
-        commit: t => root.setNumber(numberRow.key, t)
     }
 
     ConnectionSyncedRow {
@@ -244,24 +222,37 @@ SettingsCard {
         }
     }
 
-    NumberRow {
+    ConnectionNumberRow {
         id: portRow
         text: I18n.tr("Listen port", "WireGuard interface field")
+        editor: root.editor
+        section: root.sectionKey
         key: "listen-port"
         max: 65535
+        zeroUnset: true
+        placeholderText: I18n.tr("Auto")
     }
 
-    NumberRow {
+    ConnectionNumberRow {
         id: fwmarkRow
         text: "fwmark"
+        editor: root.editor
+        section: root.sectionKey
         key: "fwmark"
+        max: 4294967295
+        zeroUnset: true
         placeholderText: I18n.tr("None")
     }
 
-    NumberRow {
+    ConnectionNumberRow {
         id: mtuRow
         text: "MTU"
+        editor: root.editor
+        section: root.sectionKey
         key: "mtu"
+        max: 4294967295
+        zeroUnset: true
+        placeholderText: I18n.tr("Auto")
     }
 
     SettingsToggleRow {

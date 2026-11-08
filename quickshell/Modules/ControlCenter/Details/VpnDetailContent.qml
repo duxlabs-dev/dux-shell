@@ -175,7 +175,7 @@ Item {
 
                     width: vpnListView.width
                     profile: modelData
-                    opensEditor: NetworkService.vpnEditorSupported
+                    showsEditButton: NetworkService.connectionEditorSupported
                     onEditRequested: {
                         root.closeHost();
                         PopoutService.openConnectionEditor(modelData.uuid, modelData.name);

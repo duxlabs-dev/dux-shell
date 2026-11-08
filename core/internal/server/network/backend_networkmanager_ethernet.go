@@ -212,15 +212,25 @@ func (b *NetworkManagerBackend) refreshEthernet() {
 	}
 }
 
+// ConnectEthernet prefers a device that isn't connected yet.
 func (b *NetworkManagerBackend) ConnectEthernet() error {
+	var fallback string
 	for _, info := range b.sortedEthernetDevices() {
 		state, _ := info.device.GetPropertyState()
-		if state == gonetworkmanager.NmDeviceStateUnavailable || state == gonetworkmanager.NmDeviceStateUnmanaged {
-			continue
+		switch state {
+		case gonetworkmanager.NmDeviceStateUnavailable, gonetworkmanager.NmDeviceStateUnmanaged:
+		case gonetworkmanager.NmDeviceStateActivated:
+			if fallback == "" {
+				fallback = info.name
+			}
+		default:
+			return b.ConnectEthernetDevice(info.name)
 		}
-		return b.ConnectEthernetDevice(info.name)
 	}
-	return fmt.Errorf("no ethernet device available")
+	if fallback == "" {
+		return fmt.Errorf("no ethernet device available")
+	}
+	return b.ConnectEthernetDevice(fallback)
 }
 
 func (b *NetworkManagerBackend) ConnectEthernetDevice(device string) error {
@@ -312,18 +322,8 @@ func (b *NetworkManagerBackend) ActivateWiredConnection(uuid, device string) err
 		dev = info.device
 	}
 
-	settingsMgr, err := b.networkManagerSettings()
-	if err != nil {
+	if err := b.activateProfile(uuid, dev); err != nil {
 		return err
-	}
-	conn, err := settingsMgr.GetConnectionByUUID(uuid)
-	if err != nil || conn == nil {
-		return fmt.Errorf("connection with UUID %s not found", uuid)
-	}
-
-	nm := b.nmConn.(gonetworkmanager.NetworkManager)
-	if _, err := nm.ActivateConnection(conn, dev, nil); err != nil {
-		return fmt.Errorf("error activation connection: %w", err)
 	}
 
 	b.refreshEthernet()

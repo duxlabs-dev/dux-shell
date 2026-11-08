@@ -560,7 +560,6 @@ func (m *Manager) Login() error {
 	return m.withTimeout(m.client.StartLoginInteractive)
 }
 
-// Logout logs the current account out.
 func (m *Manager) Logout() error {
 	m.setAuthURL(nil)
 	if err := m.withTimeout(m.client.Logout); err != nil {
@@ -602,7 +601,6 @@ func (m *Manager) Profiles() (ProfilesResult, error) {
 	return res, nil
 }
 
-// SwitchProfile switches to the account with the given profile ID.
 func (m *Manager) SwitchProfile(id string) error {
 	if id == "" {
 		return errors.New("profile id is required")
@@ -629,7 +627,6 @@ func (m *Manager) AddProfile() error {
 	})
 }
 
-// SuggestExitNode returns tailscaled's recommended exit node.
 func (m *Manager) SuggestExitNode() (ExitNodeSuggestion, error) {
 	var s ExitNodeSuggestion
 	err := m.withTimeout(func(ctx context.Context) (err error) {

@@ -171,10 +171,9 @@ SettingsCard {
         }
     }
 
-    SettingsTextFieldRow {
-        text: I18n.tr("Plugin")
-        enabled: false
-        value: root.serviceType
+    SettingsRow {
+        title: I18n.tr("Plugin")
+        subtitle: root.serviceType
     }
 
     SettingsTextFieldRow {

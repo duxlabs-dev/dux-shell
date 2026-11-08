@@ -8,11 +8,11 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"syscall"
 
 	"github.com/godbus/dbus/v5"
 )
 
-// EnterpriseConfig is the 802.1X setup as edited in the UI.
 type EnterpriseConfig struct {
 	EAP                string `json:"eap"`              // peap | ttls | tls | pwd
 	Phase2             string `json:"phase2,omitempty"` // eap-mschapv2 maps to phase2-autheap
@@ -294,18 +294,7 @@ func isX509(der []byte) bool {
 }
 
 func readEnterpriseFile(field, path string) ([]byte, error) {
-	// Stat before opening: opening a FIFO blocks until a writer appears.
-	if fi, err := os.Stat(path); err != nil {
-		return nil, fmt.Errorf("%s: %w", field, err)
-	} else if !fi.Mode().IsRegular() {
-		return nil, fmt.Errorf("%s %s: not a regular file", field, path)
-	}
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", field, err)
-	}
-	defer f.Close()
-	data, err := io.ReadAll(io.LimitReader(f, maxEnterpriseFileSize+1))
+	data, err := readRegularFile(path, maxEnterpriseFileSize)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", field, err)
 	}
@@ -313,6 +302,22 @@ func readEnterpriseFile(field, path string) ([]byte, error) {
 		return nil, fmt.Errorf("%s %s: larger than 1 MiB", field, path)
 	}
 	return data, nil
+}
+
+// readRegularFile reads at most limit+1 bytes from a regular file. O_NONBLOCK
+// keeps a FIFO from blocking the open.
+func readRegularFile(path string, limit int64) ([]byte, error) {
+	f, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NONBLOCK, 0)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	if fi, err := f.Stat(); err != nil {
+		return nil, err
+	} else if !fi.Mode().IsRegular() {
+		return nil, fmt.Errorf("%s is not a regular file", path)
+	}
+	return io.ReadAll(io.LimitReader(f, limit+1))
 }
 
 // enterpriseConfigFromSettings rebuilds the form config from decoded profile

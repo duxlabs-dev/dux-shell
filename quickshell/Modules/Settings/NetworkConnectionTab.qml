@@ -16,7 +16,6 @@ Item {
     readonly property string selectedUuid: SettingsUiState.selectedConnectionUuid
     readonly property string newType: SettingsUiState.newConnectionType
 
-    // Editor contract read by the section components.
     property var original: ({})
     property var draft: null
     property int revision: 0
@@ -40,14 +39,29 @@ Item {
         revision;
         return CE.settingsDiff(original, draft) !== null || (securitySection?.enterpriseDirty ?? false);
     }
-    readonly property bool sectionsValid: {
-        revision;
+
+    function firstInvalid(item) {
+        for (const child of item.children) {
+            if (!child.visible)
+                continue;
+            if (child.isError === true)
+                return child;
+            const found = firstInvalid(child);
+            if (found)
+                return found;
+        }
+        return null;
+    }
+
+    function saveOrReveal(persist) {
         for (let i = 0; i < sectionRepeater.count; i++) {
             const section = (sectionRepeater.itemAt(i) as Loader)?.item;
-            if (section && section.valid === false)
-                return false;
+            if (section && section.valid === false) {
+                parentModal?.revealItem(firstInvalid(section) ?? section);
+                return;
+            }
         }
-        return true;
+        save(persist);
     }
 
     LayoutMirroring.enabled: I18n.isRtl
@@ -66,10 +80,6 @@ Item {
     }
 
     Component.onDestruction: NetworkService.removeRef()
-
-    function copy(v) {
-        return JSON.parse(JSON.stringify(v ?? {}));
-    }
 
     function typeLabel(type) {
         if (type === "802-11-wireless")
@@ -184,8 +194,8 @@ Item {
         profile = listed;
         readOnly = listed ? !listed.canModify : false;
         enterpriseOriginal = enterprise;
-        original = copy(settings);
-        draft = copy(settings);
+        original = CE.copy(settings);
+        draft = CE.copy(settings);
         loadError = "";
         loaded = true;
         rebuild();
@@ -229,8 +239,8 @@ Item {
             return;
         }
         clearSections();
-        draft = copy(original);
-        original = copy(original);
+        draft = CE.copy(original);
+        original = CE.copy(original);
         rebuild();
     }
 
@@ -260,7 +270,7 @@ Item {
         saving = true;
         saveError = "";
         if (isNew) {
-            NetworkService.addConnection(copy(draft), true, response => finishSave(response, name), enterprise);
+            NetworkService.addConnection(CE.copy(draft), true, response => finishSave(response, name), enterprise);
             return;
         }
         let patch = CE.settingsDiff(original, draft);
@@ -291,17 +301,24 @@ Item {
             noteIconName: "lock"
         }
 
+        SettingsNoteRow {
+            visible: root.loaded && !root.readOnly && !root.isNew && (root.profile?.unsaved ?? false)
+            text: I18n.tr("This connection is temporary and is lost on reboot.", "network connection editor note")
+            noteIconName: "info"
+            tint: Theme.primary
+            tintBackground: Theme.primaryHover
+        }
+
         SettingsRow {
             visible: root.loaded && !root.readOnly && !root.isNew && (root.profile?.unsaved ?? false)
-            title: I18n.tr("This connection is temporary and is lost on reboot.", "network connection editor note")
-            iconName: "info"
 
             DButton {
                 text: I18n.tr("Save permanently", "network connection editor: keep the connection after reboot")
                 iconName: "save"
+                variant: "tonal"
                 busy: root.saving
-                enabled: !root.saving && root.sectionsValid
-                onClicked: root.save(true)
+                enabled: !root.saving
+                onClicked: root.saveOrReveal(true)
             }
         }
 
@@ -390,8 +407,8 @@ Item {
                 iconName: "check"
                 colorRole: "primary"
                 busy: root.saving
-                enabled: !root.saving && root.sectionsValid
-                onClicked: root.save(false)
+                enabled: !root.saving
+                onClicked: root.saveOrReveal(false)
             }
         }
     }

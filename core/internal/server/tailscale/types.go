@@ -37,7 +37,6 @@ type PrefsPatch struct {
 	AdvertiseRoutes   *[]string
 }
 
-// TailscaleProfile is one account known to tailscaled.
 type TailscaleProfile struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`
@@ -53,7 +52,6 @@ type ProfilesResult struct {
 	Profiles       []TailscaleProfile `json:"profiles"`
 }
 
-// ExitNodeSuggestion is tailscaled's recommended exit node.
 type ExitNodeSuggestion struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`

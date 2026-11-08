@@ -2,6 +2,7 @@ package network
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/binary"
 	"errors"
@@ -12,7 +13,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"syscall"
+	"time"
 	"unicode/utf8"
 
 	"github.com/Wifx/gonetworkmanager/v2"
@@ -117,7 +118,6 @@ func (b *NetworkManagerBackend) ListConnectionProfiles() ([]ConnectionProfile, e
 	return profiles, nil
 }
 
-// firstString returns the first non-empty string value among keys.
 func firstString(sec map[string]dbus.Variant, keys ...string) string {
 	for _, k := range keys {
 		if v, _ := sec[k].Value().(string); v != "" {
@@ -316,18 +316,23 @@ func convertDNSDataToLegacy(s nmSettings, families []string) error {
 }
 
 func (b *NetworkManagerBackend) ActivateConnectionProfile(uuid, device string) error {
+	var dev gonetworkmanager.Device
+	if device != "" {
+		var err error
+		if dev, err = b.nmConn.(gonetworkmanager.NetworkManager).GetDeviceByIpIface(device); err != nil || dev == nil {
+			return fmt.Errorf("device %s not found", device)
+		}
+	}
+	return b.activateProfile(uuid, dev)
+}
+
+// activateProfile activates a saved profile; a nil dev lets NM pick the device.
+func (b *NetworkManagerBackend) activateProfile(uuid string, dev gonetworkmanager.Device) error {
 	conn, err := b.findConnectionByUUID(uuid)
 	if err != nil {
 		return err
 	}
-	nm := b.nmConn.(gonetworkmanager.NetworkManager)
-	var dev gonetworkmanager.Device
-	if device != "" {
-		if dev, err = nm.GetDeviceByIpIface(device); err != nil || dev == nil {
-			return fmt.Errorf("device %s not found", device)
-		}
-	}
-	if _, err := nm.ActivateConnection(conn, dev, nil); err != nil {
+	if _, err := b.nmConn.(gonetworkmanager.NetworkManager).ActivateConnection(conn, dev, nil); err != nil {
 		return fmt.Errorf("failed to activate connection: %w", err)
 	}
 	return nil
@@ -464,13 +469,21 @@ func newUUIDv4() string {
 	return fmt.Sprintf("%x-%x-%x-%x-%x", u[0:4], u[4:6], u[6:8], u[8:10], u[10:])
 }
 
+var nmcliTimeout = 10 * time.Second
+
 // nmcliRun runs nmcli with a C locale and returns stdout and stderr separately.
 var nmcliRun = func(args ...string) ([]byte, []byte, error) {
-	cmd := exec.Command("nmcli", args...)
+	ctx, cancel := context.WithTimeout(context.Background(), nmcliTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "nmcli", args...)
+	cmd.WaitDelay = time.Second
 	cmd.Env = append(os.Environ(), "LC_ALL=C")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	err := cmd.Run()
+	if ctx.Err() == context.DeadlineExceeded {
+		err = fmt.Errorf("timed out after %s", nmcliTimeout)
+	}
 	return stdout.Bytes(), stderr.Bytes(), err
 }
 
@@ -506,6 +519,9 @@ func (b *NetworkManagerBackend) ExportConnectionProfile(uuid, path string) error
 			if msg == "" {
 				msg = strings.TrimSpace(string(out))
 			}
+			if msg == "" {
+				msg = err.Error()
+			}
 			return fmt.Errorf("nmcli: %s", msg)
 		}
 		content = out
@@ -513,21 +529,32 @@ func (b *NetworkManagerBackend) ExportConnectionProfile(uuid, path string) error
 		return errors.New("export supports VPN and WireGuard connections only")
 	}
 
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|syscall.O_NOFOLLOW, 0o600)
+	return writeFileAtomic(path, content)
+}
+
+// writeFileAtomic replaces path with a new 0600 file, refusing an existing
+// non-regular target so a FIFO or symlink is never opened.
+func writeFileAtomic(path string, content []byte) error {
+	if info, err := os.Lstat(path); err == nil && !info.Mode().IsRegular() {
+		return fmt.Errorf("%s is not a regular file", path)
+	}
+	f, err := os.CreateTemp(filepath.Dir(path), ".dms-export-*")
 	if err != nil {
 		return err
 	}
-	if err := f.Chmod(0o600); err != nil {
-		f.Close()
-		return err
+	tmp := f.Name()
+	_, err = f.Write(content)
+	if err == nil {
+		err = f.Sync()
 	}
-	if err := f.Truncate(0); err != nil {
-		f.Close()
-		return err
+	if cerr := f.Close(); err == nil {
+		err = cerr
 	}
-	if _, err := f.Write(content); err != nil {
-		f.Close()
-		return err
+	if err == nil {
+		err = os.Rename(tmp, path)
 	}
-	return f.Close()
+	if err != nil {
+		os.Remove(tmp)
+	}
+	return err
 }

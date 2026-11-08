@@ -856,7 +856,7 @@ Singleton {
             return false;
         if (entry.cellularOnly && (NetworkService.cellularDevices?.length ?? 0) === 0)
             return false;
-        if (entry.connectionEditorOnly && !NetworkService.connectionEditorPagesSupported)
+        if (entry.connectionEditorOnly && !NetworkService.connectionEditorSupported)
             return false;
         if (entry.tailscaleOnly && !TailscaleService.available)
             return false;

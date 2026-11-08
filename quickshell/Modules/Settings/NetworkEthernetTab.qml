@@ -195,7 +195,7 @@ Item {
                                                 iconName: "tune"
                                                 iconColor: Theme.surfaceText
                                                 tooltipText: I18n.tr("Configure")
-                                                visible: isConnected && NetworkService.connectionEditorPagesSupported && !!modelData.connectionUuid
+                                                visible: isConnected && NetworkService.connectionEditorSupported && !!modelData.connectionUuid
                                                 onClicked: {
                                                     const uuid = modelData.connectionUuid;
                                                     const profile = NetworkService.wiredConnections.find(c => c.uuid === uuid);
@@ -309,7 +309,7 @@ Item {
                     Column {
                         width: parent.width
                         spacing: Theme.spacingS
-                        visible: !NetworkService.connectionEditorPagesSupported && NetworkService.wiredConnections.length > 0
+                        visible: !NetworkService.connectionEditorSupported && NetworkService.wiredConnections.length > 0
 
                         StyledText {
                             text: I18n.tr("Saved configurations")
@@ -386,7 +386,7 @@ Item {
             }
 
             SettingsNavRow {
-                visible: NetworkService.connectionEditorPagesSupported
+                visible: NetworkService.connectionEditorSupported
                 iconName: "lan"
                 title: I18n.tr("Connections", "settings page listing saved network connection profiles")
                 hint: I18n.tr("Saved configurations")

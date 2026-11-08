@@ -34,7 +34,6 @@ packages:
       pkgname: mocks_network
     interfaces:
       Backend: {}
-      ConnectionEditorBackend: {}
   github.com/duxlabs-dev/dux-shell/core/internal/server/wlcontext:
     config:
       dir: internal/mocks/wlcontext

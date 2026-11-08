@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import qs.Common
-import qs.Modals.FileBrowser
 import qs.Modules.Settings.Widgets
 import qs.DCommon.Widgets
 import "../../../Common/ConnectionEditor.js" as CE
@@ -24,6 +23,7 @@ SettingsCard {
     }
 
     readonly property string type: vpnData["connection-type"] ?? "tls"
+    property bool advancedOpen: false
     readonly property bool usesCerts: type === "tls" || type === "password-tls"
     readonly property bool usesPassword: type === "password" || type === "password-tls"
     readonly property bool valid: String(vpnData.remote ?? "").trim() !== ""
@@ -82,23 +82,13 @@ SettingsCard {
     ]
 
     // Only the keys this form owns are ever written; the rest of vpn.data/secrets is copied as is.
-    function _putData(key, v) {
-        const out = Object.assign({}, vpnData);
-        if (v === undefined)
-            delete out[key];
-        else
-            out[key] = v;
-        editor.setValue("vpn", "data", Object.keys(out).length === 0 ? undefined : out);
-    }
-
     function setData(key, text) {
-        const t = text.trim();
-        _putData(key, t === "" ? undefined : t);
+        editor.setValue("vpn", "data", CE.withDataEntry(vpnData, key, text));
     }
 
     function setNumber(key, text) {
         const n = parseInt(text, 10);
-        _putData(key, n > 0 ? String(n) : undefined);
+        setData(key, n > 0 ? String(n) : "");
     }
 
     function setSecret(key, text) {
@@ -117,22 +107,9 @@ SettingsCard {
             setSecret(key, stored);
     }
 
-    function browse(key) {
-        browseTarget = key;
-        fileBrowserLoader.active = true;
-        if (fileBrowserLoader.item)
-            fileBrowserLoader.item.open();
-    }
-
-    property string browseTarget: ""
-    property var fileBrowserLoader: LazyLoader {
-        active: false
-
-        FileBrowserModal {
-            bucket: "certificate"
-            filters: ["*.pem", "*.crt", "*.cer", "*.der", "*.p12", "*.pfx", "*.key", "*"]
-            onAccepted: paths => root.setData(root.browseTarget, paths[0])
-        }
+    ConnectionCertBrowser {
+        id: certBrowser
+        onPicked: (key, path) => root.setData(key, path)
     }
 
     component TextRow: ConnectionSyncedRow {
@@ -151,7 +128,7 @@ SettingsCard {
             iconName: "folder_open"
             tooltipText: I18n.tr("Select File")
             Accessible.name: tooltipText
-            onClicked: pathRow.host.browse(pathRow.dataKey)
+            onClicked: certBrowser.open(pathRow.dataKey)
         }
     }
 
@@ -167,22 +144,14 @@ SettingsCard {
         commit: t => numberRow.host.setNumber(numberRow.dataKey, t)
     }
 
-    component ChoiceRow: SettingsDropdownRow {
+    component ChoiceRow: ConnectionChoiceRow {
+        id: choiceRow
         required property var host
         required property string dataKey
-        required property var list
         property string fallback: ""
-        readonly property string current: host.vpnData[dataKey] ?? fallback
-        readonly property var choices: CE.withChoice(list, current)
 
-        options: choices.map(c => c.label)
-        currentValue: CE.choiceLabel(choices, current)
-        onValueChanged: value => {
-            const v = CE.choiceValue(choices, value);
-            if (v === undefined || v === current)
-                return;
-            host.setData(dataKey, v === fallback ? "" : v);
-        }
+        stored: host.vpnData[dataKey] ?? fallback
+        onPicked: v => choiceRow.host.setData(choiceRow.dataKey, v === choiceRow.fallback ? "" : v)
     }
 
     component SecretRow: SettingsRow {
@@ -223,16 +192,11 @@ SettingsCard {
         isError: !root.valid
     }
 
-    SettingsDropdownRow {
-        readonly property var choices: CE.withChoice(root.typeChoices, root.type)
+    ConnectionChoiceRow {
         text: I18n.tr("Type")
-        options: choices.map(c => c.label)
-        currentValue: CE.choiceLabel(choices, root.type)
-        onValueChanged: value => {
-            const v = CE.choiceValue(choices, value);
-            if (v !== undefined && v !== root.type)
-                root.setData("connection-type", v);
-        }
+        choices: root.typeChoices
+        stored: root.type
+        onPicked: value => root.setData("connection-type", value)
     }
 
     PathRow {
@@ -300,7 +264,7 @@ SettingsCard {
         visible: root.type === "static-key"
         host: root
         dataKey: "static-key-direction"
-        list: root.directionChoices
+        choices: root.directionChoices
         text: I18n.tr("Direction")
     }
 
@@ -318,74 +282,71 @@ SettingsCard {
         text: I18n.tr("Remote IP address", "OpenVPN tunnel field")
     }
 
-    DCollapsibleSection {
-        width: parent.width
+    SettingsFoldRow {
+        id: advanced
         title: I18n.tr("Advanced")
+        open: root.advancedOpen
+        onToggled: root.advancedOpen = !root.advancedOpen
+    }
 
-        Column {
-            width: parent.width
-            spacing: Theme.spacingS
+    NumberRow {
+        visible: advanced.open
+        host: root
+        dataKey: "port"
+        text: I18n.tr("Port")
+    }
 
-            NumberRow {
-                width: parent.width
-                host: root
-                dataKey: "port"
-                text: I18n.tr("Port")
-            }
+    ChoiceRow {
+        visible: advanced.open
+        host: root
+        dataKey: "proto-tcp"
+        fallback: "no"
+        choices: root.protocolChoices
+        text: I18n.tr("Protocol")
+    }
 
-            ChoiceRow {
-                width: parent.width
-                host: root
-                dataKey: "proto-tcp"
-                fallback: "no"
-                list: root.protocolChoices
-                text: I18n.tr("Protocol")
-            }
+    ChoiceRow {
+        visible: advanced.open
+        host: root
+        dataKey: "dev-type"
+        fallback: "tun"
+        choices: root.deviceChoices
+        text: I18n.tr("Device")
+    }
 
-            ChoiceRow {
-                width: parent.width
-                host: root
-                dataKey: "dev-type"
-                fallback: "tun"
-                list: root.deviceChoices
-                text: I18n.tr("Device")
-            }
+    TextRow {
+        visible: advanced.open
+        host: root
+        dataKey: "cipher"
+        text: I18n.tr("Cipher")
+    }
 
-            TextRow {
-                width: parent.width
-                host: root
-                dataKey: "cipher"
-                text: I18n.tr("Cipher")
-            }
+    TextRow {
+        visible: advanced.open
+        host: root
+        dataKey: "auth"
+        text: I18n.tr("Auth")
+    }
 
-            TextRow {
-                width: parent.width
-                host: root
-                dataKey: "auth"
-                text: I18n.tr("Auth")
-            }
+    NumberRow {
+        visible: advanced.open
+        host: root
+        dataKey: "tunnel-mtu"
+        text: "MTU"
+    }
 
-            NumberRow {
-                width: parent.width
-                host: root
-                dataKey: "tunnel-mtu"
-                text: "MTU"
-            }
+    PathRow {
+        visible: advanced.open
+        host: root
+        dataKey: "ta"
+        text: I18n.tr("TLS authentication key", "OpenVPN key file field")
+    }
 
-            PathRow {
-                width: parent.width
-                host: root
-                dataKey: "ta"
-                text: I18n.tr("TLS authentication key", "OpenVPN key file field")
-            }
-
-            ChoiceRow {
-                width: parent.width
-                host: root
-                dataKey: "ta-dir"
-                list: root.directionChoices
-                text: I18n.tr("Direction")
-            }
-        }
+    ChoiceRow {
+        visible: advanced.open
+        host: root
+        dataKey: "ta-dir"
+        choices: root.directionChoices
+        text: I18n.tr("Direction")
     }
 }

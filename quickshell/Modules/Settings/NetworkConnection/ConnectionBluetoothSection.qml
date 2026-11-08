@@ -16,15 +16,13 @@ SettingsCard {
 
     title: I18n.tr("Bluetooth")
 
-    SettingsTextFieldRow {
-        text: I18n.tr("Device")
-        enabled: false
-        value: String(root.bt.bdaddr ?? "")
+    SettingsRow {
+        title: I18n.tr("Device")
+        subtitle: String(root.bt.bdaddr ?? "")
     }
 
-    SettingsTextFieldRow {
-        text: I18n.tr("Type")
-        enabled: false
-        value: String(root.bt.type ?? "").toUpperCase()
+    SettingsRow {
+        title: I18n.tr("Type")
+        subtitle: String(root.bt.type ?? "").toUpperCase()
     }
 }

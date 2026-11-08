@@ -11,6 +11,7 @@ CcListRow {
     required property var profile
     property bool isExpanded: false
     property bool opensEditor: false
+    property bool showsEditButton: false
     readonly property bool isTransient: !!profile?.transient
     readonly property bool editsProfile: opensEditor && !isTransient
     readonly property bool canExpand: profile?.canExpand !== false
@@ -120,7 +121,19 @@ CcListRow {
 
     DActionButton {
         anchors.verticalCenter: parent.verticalCenter
-        visible: root.canExpand && !root.editsProfile
+        visible: root.showsEditButton && !root.isTransient
+        buttonSize: Theme.buttonHeightXS
+        iconSize: Theme.iconSizeMedium
+        iconName: "edit"
+        tooltipText: I18n.tr("Edit")
+        Accessible.name: I18n.tr("Edit")
+        iconColor: root.contentColor
+        onClicked: root.editRequested()
+    }
+
+    DActionButton {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.canExpand && !root.editsProfile && !(root.showsEditButton && !root.isTransient)
         buttonSize: Theme.buttonHeightXS
         iconSize: Theme.iconSizeMedium
         iconName: root.isExpanded ? "expand_less" : "expand_more"

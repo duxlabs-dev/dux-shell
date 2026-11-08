@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Window
 import qs.Modules.Network
+import qs.Modules.Settings.Widgets
 
 Item {
     id: root
@@ -17,11 +18,10 @@ Item {
 
     readonly property Item _openDialog: qrOpen ? qrDialog : null
     readonly property WifiQRCodeDialog qrDialog: qrLoader.item as WifiQRCodeDialog
-    readonly property Item windowFocusItem: root.Window.window?.activeFocusItem ?? null
 
-    onWindowFocusItemChanged: {
-        if (_openDialog)
-            focusTrapTimer.restart();
+    SettingsDialogFocusTrap {
+        dialog: root._openDialog
+        active: root.qrOpen && (root.Window.window?.active ?? false)
     }
 
     function openQRCode(ssid) {
@@ -50,34 +50,6 @@ Item {
         _returnFocus = null;
         if (focusItem?.visible && focusItem.enabled)
             focusItem.forceActiveFocus(Qt.OtherFocusReason);
-    }
-
-    function _trapFocus() {
-        if (!root.Window.window?.active)
-            return;
-        const dialog = _openDialog;
-        if (!dialog || dialog.activeFocus)
-            return;
-        const first = dialog.nextItemInFocusChain(true);
-        if (first && _isInside(first, dialog)) {
-            first.forceActiveFocus(Qt.TabFocusReason);
-            return;
-        }
-        dialog.forceActiveFocus();
-    }
-
-    function _isInside(item, ancestor) {
-        for (let node = item; node; node = node.parent) {
-            if (node === ancestor)
-                return true;
-        }
-        return false;
-    }
-
-    Timer {
-        id: focusTrapTimer
-        interval: 0
-        onTriggered: root._trapFocus()
     }
 
     Loader {

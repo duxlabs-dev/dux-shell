@@ -70,11 +70,7 @@ Singleton {
     property var savedWifiNetworks: activeService?.savedWifiNetworks ?? []
     readonly property int savedWifiStateApiVersion: activeService?.savedWifiStateApiVersion ?? 26
     readonly property int hotspotApiVersion: activeService?.hotspotApiVersion ?? 28
-    readonly property int connectionEditorApiVersion: activeService?.connectionEditorApiVersion ?? 41
     property bool connectionEditorSupported: activeService?.connectionEditorSupported ?? false
-    property bool connectionEditorPagesSupported: activeService?.connectionEditorPagesSupported ?? false
-    property bool vpnEditorSupported: activeService?.vpnEditorSupported ?? false
-    property bool nmParitySupported: activeService?.nmParitySupported ?? false
     property bool connectivitySupported: activeService?.connectivitySupported ?? false
     property string connectivity: activeService?.connectivity ?? "unknown"
     property bool connectivityCheckEnabled: activeService?.connectivityCheckEnabled ?? false
@@ -90,7 +86,6 @@ Singleton {
     property bool hotspotExtendedSupported: activeService?.hotspotExtendedSupported ?? false
     property bool nmConnectionEditorAvailable: activeService?.nmConnectionEditorAvailable ?? false
     property int connectionProfilesRevision: activeService?.connectionProfilesRevision ?? 0
-    property bool enterpriseSupported: activeService?.enterpriseSupported ?? false
     property bool ethernetDeviceConnectSupported: activeService?.ethernetDeviceConnectSupported ?? false
     property bool hotspotSupported: activeService?.hotspotSupported ?? false
     property bool hotspotAvailable: activeService?.hotspotAvailable ?? false
@@ -239,24 +234,22 @@ Singleton {
         }
     }
 
-    function saveWifiProfile(ssid, options, callback) {
-        if (activeService && activeService.saveWifiProfile) {
-            activeService.saveWifiProfile(ssid, options, callback);
-        } else if (callback) {
+    function forward(name, args, callback) {
+        if (activeService && activeService[name])
+            return activeService[name](...args);
+        if (callback)
             callback({
-                error: "connection editor not supported"
+                error: "not supported"
             });
-        }
+        return false;
+    }
+
+    function saveWifiProfile(ssid, options, callback) {
+        return forward("saveWifiProfile", [ssid, options, callback], callback);
     }
 
     function parseEapConfig(path, callback) {
-        if (activeService && activeService.parseEapConfig) {
-            activeService.parseEapConfig(path, callback);
-        } else if (callback) {
-            callback({
-                error: "connection editor not supported"
-            });
-        }
+        return forward("parseEapConfig", [path, callback], callback);
     }
 
     function disconnectWifi() {
@@ -442,14 +435,7 @@ Singleton {
     }
 
     function listConnections(callback) {
-        if (activeService && activeService.listConnections) {
-            return activeService.listConnections(callback);
-        }
-        if (callback)
-            callback({
-                error: "connection editor not supported"
-            });
-        return false;
+        return forward("listConnections", [callback], callback);
     }
 
     function findWifiProfile(ssid, callback) {
@@ -460,80 +446,31 @@ Singleton {
     }
 
     function getConnection(uuid, withSecrets, callback) {
-        if (activeService && activeService.getConnection) {
-            return activeService.getConnection(uuid, withSecrets, callback);
-        }
-        if (callback)
-            callback({
-                error: "connection editor not supported"
-            });
-        return false;
+        return forward("getConnection", [uuid, withSecrets, callback], callback);
     }
 
     function updateConnection(uuid, settings, persist, callback, enterprise) {
-        if (activeService && activeService.updateConnection) {
-            return activeService.updateConnection(uuid, settings, persist, callback, enterprise);
-        }
-        if (callback)
-            callback({
-                error: "connection editor not supported"
-            });
-        return false;
+        return forward("updateConnection", [uuid, settings, persist, callback, enterprise], callback);
     }
 
     function addConnection(settings, persist, callback, enterprise) {
-        if (activeService && activeService.addConnection) {
-            return activeService.addConnection(settings, persist, callback, enterprise);
-        }
-        if (callback)
-            callback({
-                error: "connection editor not supported"
-            });
-        return false;
+        return forward("addConnection", [settings, persist, callback, enterprise], callback);
     }
 
     function deleteConnection(uuid, callback) {
-        if (activeService && activeService.deleteConnection) {
-            return activeService.deleteConnection(uuid, callback);
-        }
-        if (callback)
-            callback({
-                error: "connection editor not supported"
-            });
-        return false;
+        return forward("deleteConnection", [uuid, callback], callback);
     }
 
     function duplicateConnection(uuid, name, callback) {
-        if (activeService && activeService.duplicateConnection) {
-            return activeService.duplicateConnection(uuid, name, callback);
-        }
-        if (callback)
-            callback({
-                error: "connection editor not supported"
-            });
-        return false;
+        return forward("duplicateConnection", [uuid, name, callback], callback);
     }
 
     function checkConnectivity(callback = null) {
-        if (activeService && activeService.checkConnectivity) {
-            return activeService.checkConnectivity(callback);
-        }
-        if (callback)
-            callback({
-                error: "not supported"
-            });
-        return false;
+        return forward("checkConnectivity", [callback], callback);
     }
 
     function setConnectivityCheckEnabled(enabled, callback = null) {
-        if (activeService && activeService.setConnectivityCheckEnabled) {
-            return activeService.setConnectivityCheckEnabled(enabled, callback);
-        }
-        if (callback)
-            callback({
-                error: "not supported"
-            });
-        return false;
+        return forward("setConnectivityCheckEnabled", [enabled, callback], callback);
     }
 
     function openCaptivePortal() {
@@ -544,25 +481,11 @@ Singleton {
     }
 
     function exportConnection(uuid, path, callback) {
-        if (activeService && activeService.exportConnection) {
-            return activeService.exportConnection(uuid, path, callback);
-        }
-        if (callback)
-            callback({
-                error: "connection editor not supported"
-            });
-        return false;
+        return forward("exportConnection", [uuid, path, callback], callback);
     }
 
     function wireguardKeys(privateKey, callback) {
-        if (activeService && activeService.wireguardKeys) {
-            return activeService.wireguardKeys(privateKey, callback);
-        }
-        if (callback)
-            callback({
-                error: "connection editor not supported"
-            });
-        return false;
+        return forward("wireguardKeys", [privateKey, callback], callback);
     }
 
     function probeNmConnectionEditor() {
@@ -576,47 +499,19 @@ Singleton {
     }
 
     function activateConnection(uuid, device, callback) {
-        if (activeService && activeService.activateConnection) {
-            return activeService.activateConnection(uuid, device, callback);
-        }
-        if (callback)
-            callback({
-                error: "connection editor not supported"
-            });
-        return false;
+        return forward("activateConnection", [uuid, device, callback], callback);
     }
 
     function deactivateConnection(uuid, callback) {
-        if (activeService && activeService.deactivateConnection) {
-            return activeService.deactivateConnection(uuid, callback);
-        }
-        if (callback)
-            callback({
-                error: "connection editor not supported"
-            });
-        return false;
+        return forward("deactivateConnection", [uuid, callback], callback);
     }
 
     function getConnectionEnterprise(uuid, callback) {
-        if (activeService && activeService.getConnectionEnterprise) {
-            return activeService.getConnectionEnterprise(uuid, callback);
-        }
-        if (callback)
-            callback({
-                error: "connection editor not supported"
-            });
-        return false;
+        return forward("getConnectionEnterprise", [uuid, callback], callback);
     }
 
     function listFirewallZones(callback) {
-        if (activeService && activeService.listFirewallZones) {
-            return activeService.listFirewallZones(callback);
-        }
-        if (callback)
-            callback({
-                error: "connection editor not supported"
-            });
-        return false;
+        return forward("listFirewallZones", [callback], callback);
     }
 
     function setWifiDeviceOverride(deviceName) {

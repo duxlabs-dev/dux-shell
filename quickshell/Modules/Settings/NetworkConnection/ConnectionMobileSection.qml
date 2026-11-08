@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Modules.Settings.Widgets
-import qs.DCommon.Widgets
 import "../../../Common/ConnectionEditor.js" as CE
 
 SettingsCard {
@@ -61,34 +60,6 @@ SettingsCard {
         }
     }
 
-    component SecretRow: SettingsRow {
-        id: secretRow
-        required property string key
-        property alias label: field.labelText
-        readonly property string stored: String(root.sec[key] ?? "")
-        property var same: (t, s) => t === s
-        signal edited(string text)
-
-        enabled: !root.editor.readOnly
-        onStoredChanged: {
-            if (!same(field.text, stored))
-                field.text = stored;
-        }
-        Component.onCompleted: field.text = stored
-        body: DTextField {
-            id: field
-            width: parent.width
-            outlined: true
-            leftIconName: "lock"
-            echoMode: TextInput.Password
-            showPasswordToggle: true
-            onTextEdited: {
-                if (text !== secretRow.stored)
-                    secretRow.edited(text);
-            }
-        }
-    }
-
     title: I18n.tr("Cellular")
 
     TextRow {
@@ -110,11 +81,12 @@ SettingsCard {
         key: "username"
     }
 
-    SecretRow {
-        key: "password"
-        label: I18n.tr("Password")
+    ConnectionSyncedRow {
+        secret: true
+        text: I18n.tr("Password")
         enabled: !root.editor.readOnly && root.passwordSaved
-        onEdited: text => root.put("password", text === "" ? undefined : text)
+        stored: String(root.sec.password ?? "")
+        commit: t => root.put("password", t === "" ? undefined : t)
     }
 
     SettingsToggleRow {
@@ -124,12 +96,14 @@ SettingsCard {
         onToggled: checked => root.setSaved(checked)
     }
 
-    SecretRow {
+    ConnectionSyncedRow {
         visible: root.isGsm
-        key: "pin"
-        label: I18n.tr("PIN")
+        secret: true
+        text: I18n.tr("PIN")
+        enabled: !root.editor.readOnly
+        stored: String(root.sec.pin ?? "")
         same: (t, s) => t === s || (t === "" && s === String(root.editor.original?.gsm?.pin ?? ""))
-        onEdited: text => root.setPin(text)
+        commit: t => root.setPin(t)
     }
 
     SettingsToggleRow {

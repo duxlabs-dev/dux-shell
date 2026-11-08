@@ -266,7 +266,7 @@ Item {
                                 iconName: "tune"
                                 tooltipText: I18n.tr("Configure")
                                 iconSize: Theme.iconSizeSmall
-                                visible: NetworkService.connectionEditorPagesSupported
+                                visible: NetworkService.connectionEditorSupported
                                 onClicked: {
                                     SettingsUiState.selectConnection(profileDelegate.modelData.uuid, profileDelegate.modelData.id, "");
                                     networkCellularTab.parentModal?.navigateTo("network_connection");

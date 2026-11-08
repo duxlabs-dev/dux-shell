@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 )
 
@@ -360,6 +361,12 @@ func TestExportConnectionProfile_WireGuard(t *testing.T) {
 	require.NoError(t, os.Symlink(filepath.Join(dir, "target"), link))
 	assert.Error(t, export(t, link))
 	assert.NoFileExists(t, filepath.Join(dir, "target"))
+	fifo := filepath.Join(dir, "fifo.conf")
+	require.NoError(t, syscall.Mkfifo(fifo, 0o600))
+	assert.Error(t, export(t, fifo))
+	info, err = os.Lstat(fifo)
+	require.NoError(t, err)
+	assert.Equal(t, os.ModeNamedPipe, info.Mode().Type())
 }
 
 func TestExportConnectionProfile_VPNAndRejections(t *testing.T) {

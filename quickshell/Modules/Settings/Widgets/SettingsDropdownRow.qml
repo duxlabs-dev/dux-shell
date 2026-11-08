@@ -52,7 +52,7 @@ SettingsRow {
         backgroundColor: SettingsMetrics.controlSurface
         enabled: root.enabled
         Accessible.name: root.text
-        Accessible.description: root.description + (root.description ? " · " : "") + currentValue
+        Accessible.description: root.description + (root.description ? " · " : "") + labelOf(currentValue)
         width: Math.min(dropdownWidth, root.width - SettingsMetrics.rowPaddingH * 2)
         Component.onCompleted: currentValue = root.currentValue
         onValueChanged: value => root.valueChanged(value)

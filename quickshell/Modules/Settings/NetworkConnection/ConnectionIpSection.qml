@@ -18,7 +18,7 @@ SettingsCard {
         root.editor.revision;
         return Object.assign({}, root.editor.draft?.[root.sectionKey]);
     }
-    // The host assigns a new draft object on discard and reload; text fields re-prefill then
+    // The host assigns a new draft object on discard and reload; fields re-prefill then.
     readonly property var draftObject: editor.draft
     readonly property string method: section.method ?? "auto"
     readonly property bool isManual: method === "manual"
@@ -120,10 +120,10 @@ SettingsCard {
         writeRoutes();
     }
 
-    // Edits mutate the row in place so the Repeater keeps its delegates (and focus) while typing.
     function editRoute(index, key, text) {
         if (String(routes[index][key] ?? "") === text)
             return;
+        // Mutates the row in place so the Repeater keeps its delegates and focus.
         routes[index][key] = text;
         writeRoutes();
     }
@@ -165,27 +165,6 @@ SettingsCard {
         onValueEdited: text => textRow.ok = textRow.commit(text)
     }
 
-    // Shows a stored value it can't name as an extra literal option; picking it again writes nothing.
-    component EnumRow: SettingsDropdownRow {
-        id: enumRow
-
-        property var values: []
-        property var labelFor: v => String(v)
-        property var stored
-        readonly property var allValues: values.indexOf(stored) >= 0 ? values : values.concat([stored])
-
-        signal picked(var value)
-
-        options: allValues.map(v => labelFor(v))
-        currentValue: labelFor(stored)
-        onValueChanged: label => {
-            const i = enumRow.options.indexOf(label);
-            if (i < 0 || enumRow.allValues[i] === enumRow.stored)
-                return;
-            enumRow.picked(enumRow.allValues[i]);
-        }
-    }
-
     component RouteField: DTextField {
         property int share: 2
         property Row fields
@@ -194,10 +173,12 @@ SettingsCard {
         outlined: true
     }
 
-    EnumRow {
+    ConnectionChoiceRow {
         text: I18n.tr("Method", "IP configuration method")
-        values: CE.ipMethods(root.family)
-        labelFor: m => root.methodLabel(m)
+        choices: CE.ipMethods(root.family).map(m => ({
+                    "value": m,
+                    "label": root.methodLabel(m)
+                }))
         stored: root.method
         onPicked: value => root.setMethod(value)
     }
@@ -205,6 +186,7 @@ SettingsCard {
     TextRow {
         id: addressRow
         visible: root.isManual
+        isError: !ok || !root.hasAddress
         text: I18n.tr("IP address")
         source: CE.addressText(root.section["address-data"])
         commit: text => {
@@ -303,11 +285,13 @@ SettingsCard {
         onToggled: checked => root.write("never-default", checked, false)
     }
 
-    EnumRow {
+    ConnectionChoiceRow {
         visible: root.family === 6 && !root.isOff
         text: I18n.tr("Privacy")
-        values: [-1, 0, 2]
-        labelFor: v => root.privacyLabel(v)
+        choices: [-1, 0, 2].map(v => ({
+                    "value": v,
+                    "label": root.privacyLabel(v)
+                }))
         // NM's 1 (prefer public address) displays as Enabled and stays 1 until changed
         stored: {
             const p = root.section["ip6-privacy"] ?? -1;
@@ -316,12 +300,15 @@ SettingsCard {
         onPicked: value => root.write("ip6-privacy", value, -1)
     }
 
-    EnumRow {
+    ConnectionChoiceRow {
         visible: root.family === 6 && !root.isOff
         text: I18n.tr("Address generation", "IPv6 interface identifier mode")
-        values: [3, 0, 1]
-        labelFor: v => root.addrGenLabel(v)
+        choices: [3, 0, 1].map(v => ({
+                    "value": v,
+                    "label": root.addrGenLabel(v)
+                }))
         stored: root.section["addr-gen-mode"] ?? 3
+        labelFor: v => root.addrGenLabel(v)
         onPicked: value => root.write("addr-gen-mode", value, 3)
     }
 

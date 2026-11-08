@@ -104,7 +104,7 @@ Item {
                     required property var modelData
 
                     profile: modelData
-                    opensEditor: NetworkService.vpnEditorSupported
+                    opensEditor: NetworkService.connectionEditorSupported
                     onEditRequested: {
                         SettingsUiState.selectConnection(modelData.uuid, modelData.name, "");
                         networkVpnTab.parentModal?.navigateTo("network_connection");
@@ -133,7 +133,7 @@ Item {
             shown: DMSNetworkService.vpnAvailable
 
             DFab {
-                visible: NetworkService.vpnEditorSupported
+                visible: NetworkService.connectionEditorSupported
                 text: I18n.tr("Add")
                 iconName: "add"
                 onClicked: {
@@ -144,7 +144,8 @@ Item {
 
             DFab {
                 text: I18n.tr("Import VPN")
-                iconName: "add"
+                iconName: "upload_file"
+                colorRole: "secondaryContainer"
                 busy: VPNService.importing
                 enabled: !VPNService.importing
                 onClicked: root.openVpnFileBrowser()

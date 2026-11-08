@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import qs.Common
-import qs.Modals.FileBrowser
 import qs.Modules.Settings.Widgets
 import qs.DCommon.Widgets
 import "../../../Common/ConnectionEditor.js" as CE
@@ -22,42 +21,22 @@ SettingsCard {
     readonly property bool locked: editor.readOnly
 
     readonly property string protocolKey: vpnData.protocol ?? "anyconnect"
-    readonly property var protocols: CE.withChoice([["Cisco AnyConnect", "anyconnect"], ["Juniper Network Connect", "nc"], ["GlobalProtect", "gp"], ["Pulse Connect Secure", "pulse"], ["F5", "f5"], ["Fortinet", "fortinet"], ["Array Networks", "array"]].map(p => ({
+    readonly property var protocols: [["Cisco AnyConnect", "anyconnect"], ["Juniper Network Connect", "nc"], ["GlobalProtect", "gp"], ["Pulse Connect Secure", "pulse"], ["F5", "f5"], ["Fortinet", "fortinet"], ["Array Networks", "array"]].map(p => ({
                 "label": p[0],
                 "value": p[1]
-            })), protocolKey)
+            }))
 
     readonly property string gatewayText: vpnData.gateway ?? ""
 
-    property string browseKey: ""
-    property var browserLoader: LazyLoader {
-        active: false
-
-        FileBrowserModal {
-            bucket: "certificate"
-            filters: ["*.pem", "*.crt", "*.cer", "*.der", "*.p12", "*.pfx", "*.key", "*"]
-            onAccepted: paths => root.setData(root.browseKey, paths[0])
-        }
-    }
-
     title: "OpenConnect"
 
-    // Writes one vpn.data entry (empty removes it); other keys, including the *-flags ones, are kept.
     function setData(key, value) {
-        const next = Object.assign({}, vpnData);
-        const t = (value ?? "").trim();
-        if (t === "")
-            delete next[key];
-        else
-            next[key] = t;
-        editor.setValue("vpn", "data", Object.keys(next).length === 0 ? undefined : next);
+        editor.setValue("vpn", "data", CE.withDataEntry(vpnData, key, value));
     }
 
-    function browse(key) {
-        browseKey = key;
-        browserLoader.active = true;
-        if (browserLoader.item)
-            browserLoader.item.open();
+    ConnectionCertBrowser {
+        id: certBrowser
+        onPicked: (key, path) => root.setData(key, path)
     }
 
     component DataRow: ConnectionSyncedRow {
@@ -75,12 +54,12 @@ SettingsCard {
         isError: root.gatewayText.trim() === ""
     }
 
-    SettingsDropdownRow {
+    ConnectionChoiceRow {
         text: I18n.tr("Protocol")
         enabled: !root.locked
-        options: root.protocols.map(c => c.label)
-        currentValue: CE.choiceLabel(root.protocols, root.protocolKey)
-        onValueChanged: value => root.setData("protocol", CE.choiceValue(root.protocols, value) ?? value)
+        choices: root.protocols
+        stored: root.protocolKey
+        onPicked: value => root.setData("protocol", value)
     }
 
     Repeater {
@@ -110,7 +89,7 @@ SettingsCard {
                 iconName: "folder_open"
                 tooltipText: I18n.tr("Select File")
                 Accessible.name: pathRow.text + ": " + tooltipText
-                onClicked: root.browse(pathRow.modelData.key)
+                onClicked: certBrowser.open(pathRow.modelData.key)
             }
         }
     }
