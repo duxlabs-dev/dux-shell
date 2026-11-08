@@ -93,11 +93,12 @@ CcListRow {
 
     DActionButton {
         anchors.verticalCenter: parent.verticalCenter
-        visible: root.isActive
+        visible: root.isActive || root.isConnecting
         buttonSize: Theme.buttonHeightXS
         iconSize: Theme.iconSizeMedium
         iconName: "link_off"
         Accessible.name: I18n.tr("Disconnect")
+        tooltipText: I18n.tr("Disconnect")
         iconColor: root.contentColor
         enabled: !DMSNetworkService.isBusy
         onClicked: DMSNetworkService.toggle(root.profile.uuid)

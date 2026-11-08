@@ -163,7 +163,7 @@ func applyTLSKeys(p map[string]any, cfg EnterpriseConfig, isNew bool) error {
 			p["private-key-password-flags"] = uint32(0)
 			return nil
 		}
-	case cert == nil:
+	case cert == nil || (!isNew && isX509(cert)):
 		// Keep the stored key.
 		delete(p, "private-key")
 	case isX509(cert):

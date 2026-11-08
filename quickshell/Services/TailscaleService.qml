@@ -236,11 +236,6 @@ Singleton {
     function login() {
         if (!canWritePrefs)
             return false;
-        // tailscaled keeps handing back the same URL until the login finishes.
-        if (authUrl !== "") {
-            Qt.openUrlExternally(authUrl);
-            return true;
-        }
         loginRequested = true;
         sendAction("tailscale.login", {}, r => {
             if (r.error)
@@ -252,11 +247,6 @@ Singleton {
     function addProfile() {
         if (!canWritePrefs)
             return false;
-        // tailscaled keeps handing back the same URL until the login finishes.
-        if (authUrl !== "") {
-            Qt.openUrlExternally(authUrl);
-            return true;
-        }
         loginRequested = true;
         sendAction("tailscale.addProfile", {}, r => {
             if (r.error)
@@ -268,6 +258,7 @@ Singleton {
     function logout(callback) {
         if (!canWritePrefs)
             return false;
+        loginRequested = false;
         sendAction("tailscale.logout", {}, callback);
         return true;
     }
@@ -275,6 +266,7 @@ Singleton {
     function switchProfile(id, callback) {
         if (!canWritePrefs)
             return false;
+        loginRequested = false;
         sendAction("tailscale.switchProfile", {
             "id": id
         }, callback);

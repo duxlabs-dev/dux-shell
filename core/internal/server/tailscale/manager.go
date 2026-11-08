@@ -59,6 +59,7 @@ type Manager struct {
 	available            atomic.Bool
 	availabilityCallback atomic.Pointer[func(bool)]
 	authURL              atomic.Pointer[string]
+	authGen              atomic.Uint64
 }
 
 // NewManager creates a new Tailscale manager and starts watching the IPN bus.
@@ -114,7 +115,7 @@ func (m *Manager) watchLoop(ctx context.Context) {
 		log.Info("[Tailscale] Connected to IPN bus")
 		m.markAvailable()
 		// A still-pending login URL is re-sent with the initial state.
-		m.authURL.Store(nil)
+		m.setAuthURL(nil)
 
 		select {
 		case m.dirty <- struct{}{}:
@@ -130,9 +131,9 @@ func (m *Manager) watchLoop(ctx context.Context) {
 
 			switch {
 			case n.BrowseToURL != nil:
-				m.authURL.Store(n.BrowseToURL)
+				m.setAuthURL(n.BrowseToURL)
 			case n.LoginFinished != nil, n.State != nil && *n.State == ipnStateRunning:
-				m.authURL.Store(nil)
+				m.setAuthURL(nil)
 			}
 
 			backoff = time.Second
@@ -191,13 +192,29 @@ func (m *Manager) debounceLoop(ctx context.Context) {
 	}
 }
 
+// setAuthURL stores the pending login URL and invalidates fetches already in flight.
+func (m *Manager) setAuthURL(u *string) {
+	m.authURL.Store(u)
+	m.authGen.Add(1)
+}
+
 func (m *Manager) fetchAndBroadcast(ctx context.Context) {
+	gen := m.authGen.Load()
 	statusCtx, cancel := context.WithTimeout(ctx, statusTimeout)
 	defer cancel()
 
 	state, err := m.fetchState(statusCtx)
 	if err != nil {
 		log.Warnf("[Tailscale] Failed to fetch status: %v", err)
+		return
+	}
+
+	if m.authGen.Load() != gen {
+		// The login URL changed mid-fetch; fetch again instead of broadcasting a stale one.
+		select {
+		case m.dirty <- struct{}{}:
+		default:
+		}
 		return
 	}
 
@@ -238,6 +255,7 @@ func convertPrefs(p *prefs) TailscalePrefs {
 		ShieldsUp:         p.ShieldsUp,
 		RunSSH:            p.RunSSH,
 		Hostname:          p.Hostname,
+		OperatorUser:      p.OperatorUser,
 		AdvertiseExitNode: exitNode,
 		AdvertiseRoutes:   make([]string, len(routes)),
 	}
@@ -538,11 +556,13 @@ func (m *Manager) withTimeout(fn func(ctx context.Context) error) error {
 // Login starts an interactive login; the URL to open arrives on the IPN bus
 // and surfaces as TailscaleState.AuthURL.
 func (m *Manager) Login() error {
+	m.setAuthURL(nil)
 	return m.withTimeout(m.client.StartLoginInteractive)
 }
 
 // Logout logs the current account out.
 func (m *Manager) Logout() error {
+	m.setAuthURL(nil)
 	if err := m.withTimeout(m.client.Logout); err != nil {
 		return err
 	}
@@ -587,6 +607,7 @@ func (m *Manager) SwitchProfile(id string) error {
 	if id == "" {
 		return errors.New("profile id is required")
 	}
+	m.setAuthURL(nil)
 	err := m.withTimeout(func(ctx context.Context) error {
 		return m.client.SwitchProfile(ctx, id)
 	})
@@ -599,6 +620,7 @@ func (m *Manager) SwitchProfile(id string) error {
 
 // AddProfile switches to a new empty profile and starts logging it in.
 func (m *Manager) AddProfile() error {
+	m.setAuthURL(nil)
 	return m.withTimeout(func(ctx context.Context) error {
 		if err := m.client.SwitchToEmptyProfile(ctx); err != nil {
 			return err

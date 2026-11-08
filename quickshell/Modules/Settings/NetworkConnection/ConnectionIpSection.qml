@@ -122,6 +122,8 @@ SettingsCard {
 
     // Edits mutate the row in place so the Repeater keeps its delegates (and focus) while typing.
     function editRoute(index, key, text) {
+        if (String(routes[index][key] ?? "") === text)
+            return;
         routes[index][key] = text;
         writeRoutes();
     }

@@ -102,6 +102,8 @@ SettingsCard {
     }
 
     function setSecret(key, text) {
+        if (String(secrets[key] ?? "") === text)
+            return;
         editor.setValue("vpn", "secrets", CE.secretsWith(secrets, key, text, editor.original?.vpn?.secrets));
     }
 

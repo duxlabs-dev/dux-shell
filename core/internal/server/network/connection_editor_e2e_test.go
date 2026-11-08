@@ -135,8 +135,7 @@ func TestE2E_EthernetConnectAndDisconnectPerDevice(t *testing.T) {
 	ac := activeConnection(t, "wired-a")
 	dev := f.addDevice(t, "enp6s0", hwEnp6s0, gonetworkmanager.NmDeviceStateActivated, ac)
 	f.nm.EXPECT().ActivateConnection(mock.MatchedBy(isAutoConnection), dev, (*dbus.Object)(nil)).Return(nil, nil).Once()
-	// No Device.Disconnect expectation: the strict mock fails if it is called.
-	f.nm.EXPECT().DeactivateConnection(ac).Return(nil).Once()
+	dev.EXPECT().Disconnect().Return(nil).Once()
 
 	resp := e2eRequest(t, f.backend, "network.ethernet.connect", map[string]any{"device": "enp6s0"})
 	assert.Empty(t, resp.Error)

@@ -93,6 +93,8 @@ SettingsCard {
 
     // Edits mutate the row in place so the Repeater keeps its delegates (and focus) while typing.
     function editRow(kind, index, field, text) {
+        if (String(rowsFor(kind)[index][field] ?? "") === text)
+            return;
         rowsFor(kind)[index][field] = text;
         rowsRev++;
         writeKv(kind);

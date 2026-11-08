@@ -171,7 +171,7 @@ Initiate a WiFi connection.
 - `enterprise` (object, optional): 802.1X settings, NetworkManager backend only. Unknown keys are rejected.
 - `saveOnly` (boolean, optional): Create or update the saved profile without connecting. NetworkManager backend only; an existing profile for the SSID is updated in place.
 
-The flat enterprise params (`username`, `eapMethod`, `phase2Auth`, `anonymousIdentity`, `domainSuffixMatch`, `caCertPath`, `clientCertPath`, `privateKeyPath`, `useSystemCACerts`) were removed in API 38 in favor of `enterprise`.
+The flat enterprise params (`username`, `eapMethod`, `phase2Auth`, `anonymousIdentity`, `domainSuffixMatch`, `caCertPath`, `clientCertPath`, `privateKeyPath`, `useSystemCACerts`) were removed in API 41 in favor of `enterprise`.
 
 **`enterprise` object:**
 

@@ -182,6 +182,13 @@ func TestEnterprise8021xPatchUpdateSafety(t *testing.T) {
 
 	_, err = enterprise8021xPatch(file, true)
 	assert.ErrorContains(t, err, "caCertPath")
+
+	tls := EnterpriseConfig{EAP: "tls", Identity: "u", CA: "none", PrivateKeyPassword: "k",
+		ClientCertPath: writeTemp(t, "client.pem", pemCert(testCertDER(t, "client")))}
+	p, err = enterprise8021xPatch(tls, false)
+	require.NoError(t, err)
+	assert.Contains(t, p, "client-cert")
+	assert.NotContains(t, p, "private-key", "edit keeps the stored key")
 }
 
 func TestEnterprise8021xPatchRejects(t *testing.T) {

@@ -287,8 +287,6 @@ func (b *NetworkManagerBackend) DisconnectEthernetDevice(device string) error {
 	return nil
 }
 
-// deactivateEthernetDevice avoids Device.Disconnect, which blocks the device
-// from autoconnecting until the user intervenes.
 func (b *NetworkManagerBackend) deactivateEthernetDevice(info *ethernetDeviceInfo) error {
 	active, err := info.device.GetPropertyActiveConnection()
 	if err != nil {
@@ -298,8 +296,7 @@ func (b *NetworkManagerBackend) deactivateEthernetDevice(info *ethernetDeviceInf
 		return nil
 	}
 
-	nm := b.nmConn.(gonetworkmanager.NetworkManager)
-	if err := nm.DeactivateConnection(active); err != nil {
+	if err := info.device.Disconnect(); err != nil {
 		return fmt.Errorf("failed to disconnect %s: %w", info.name, err)
 	}
 	return nil

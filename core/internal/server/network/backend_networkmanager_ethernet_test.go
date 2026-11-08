@@ -138,9 +138,8 @@ func isAutoConnection(c gonetworkmanager.Connection) bool {
 func TestNetworkManagerBackend_DisconnectEthernetDevice_DeactivatesActiveConnection(t *testing.T) {
 	f := newEthernetFixture(t)
 	ac := activeConnection(t, "wired-a")
-	f.addDevice(t, "enp6s0", hwEnp6s0, gonetworkmanager.NmDeviceStateActivated, ac)
-	// No Device.Disconnect expectation: the strict mock fails the test if it is called.
-	f.nm.EXPECT().DeactivateConnection(ac).Return(nil).Once()
+	dev := f.addDevice(t, "enp6s0", hwEnp6s0, gonetworkmanager.NmDeviceStateActivated, ac)
+	dev.EXPECT().Disconnect().Return(nil).Once()
 
 	require.NoError(t, f.backend.DisconnectEthernetDevice("enp6s0"))
 }
@@ -150,7 +149,6 @@ func TestNetworkManagerBackend_DisconnectEthernetDevice_NoActiveConnection(t *te
 	f.addDevice(t, "enp5s0", hwEnp5s0, gonetworkmanager.NmDeviceStateUnavailable, nil)
 
 	require.NoError(t, f.backend.DisconnectEthernetDevice("enp5s0"))
-	f.nm.AssertNotCalled(t, "DeactivateConnection", mock.Anything)
 }
 
 func TestNetworkManagerBackend_ConnectEthernetDevice_LetsNMPickProfile(t *testing.T) {

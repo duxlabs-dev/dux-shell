@@ -59,9 +59,15 @@ SettingsCard {
         if (!prefilled || !enterpriseActive)
             return null;
         const cfg = form.toConfig();
-        if (editor.isNew || !enterpriseBaseline || !CE.deepEqual(cfg, enterpriseBaseline))
-            return cfg;
-        return null;
+        if (!editor.isNew && enterpriseBaseline && CE.deepEqual(cfg, enterpriseBaseline))
+            return null;
+        // A path that is still the stored one stays a reference NM reads itself.
+        const eo = editor.enterpriseOriginal;
+        for (const k of ["caCertPath", "clientCertPath", "privateKeyPath"]) {
+            if (!editor.isNew && cfg[k] && cfg[k] === eo?.[k])
+                delete cfg[k];
+        }
+        return cfg;
     }
 
     function reset() {

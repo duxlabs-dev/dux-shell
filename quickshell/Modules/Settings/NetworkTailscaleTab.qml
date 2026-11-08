@@ -26,6 +26,7 @@ Item {
     readonly property bool writable: queryable && canOperate && backendState !== "Unreachable"
     readonly property bool tsConnected: TailscaleService.connected
     readonly property string backendState: TailscaleService.backendState
+    readonly property string prefOperator: TailscaleService.prefs.operatorUser ?? ""
     readonly property string prefHostname: TailscaleService.prefs.hostname ?? ""
     readonly property string prefRoutes: (TailscaleService.prefs.advertiseRoutes ?? []).join(", ")
     readonly property string noneLabel: I18n.tr("None", "Tailscale exit node: none selected")
@@ -57,6 +58,7 @@ Item {
         Qt.callLater(loadSuggestion);
     }
     onBackendStateChanged: Qt.callLater(loadProfiles)
+    onPrefOperatorChanged: Qt.callLater(loadProfiles)
     onTsConnectedChanged: Qt.callLater(loadSuggestion)
     onPrefHostnameChanged: hostnameField.value = prefHostname
     onPrefRoutesChanged: routesField.value = prefRoutes

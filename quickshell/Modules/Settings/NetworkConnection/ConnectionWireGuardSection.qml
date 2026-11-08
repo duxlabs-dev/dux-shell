@@ -130,6 +130,8 @@ SettingsCard {
 
     // Edits mutate the row in place so the Repeater keeps its delegates (and focus) while typing.
     function editPeer(index, key, text) {
+        if (String(peers[index][key] ?? "") === text)
+            return;
         peers[index][key] = text;
         writePeers();
     }

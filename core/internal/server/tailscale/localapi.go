@@ -46,6 +46,7 @@ type prefs struct {
 	ShieldsUp              bool
 	RunSSH                 bool
 	Hostname               string
+	OperatorUser           string
 	AdvertiseRoutes        []netip.Prefix
 }
 
