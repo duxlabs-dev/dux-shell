@@ -127,15 +127,13 @@ test("only types with a registry row are supported, ports only while their contr
         assert.equal(ce.isSupported(type, portType), supported, type + "/" + portType);
 });
 
-test("ports are detected by either key pair and lose their IP sections", () => {
+test("ports are detected by either key pair", () => {
     assert.deepEqual(ce.portOf({ connection: { master: "u", "slave-type": "bond" } }), { controller: "u", type: "bond" });
     assert.deepEqual(ce.portOf({ connection: { controller: "u", "port-type": "bridge" } }), { controller: "u", type: "bridge" });
     assert.equal(ce.portOf({ connection: { id: "x" } }), null);
     assert.equal(ce.portOf({ connection: { controller: "" } }), null);
     assert.equal(ce.portOf(null), null);
 
-    const port = { connection: { master: "u", "slave-type": "bridge" }, ipv4: {}, ipv6: {} };
-    assert.deepEqual(ce.sectionsFor("802-3-ethernet", port), ["general", "ethernet", "security", "port"]);
     assert.deepEqual(ce.sectionsFor("bluetooth", { bluetooth: { type: "dun" }, gsm: {}, ipv4: {} }), ["general", "bluetooth", "mobile", "ppp", "ipv4"]);
     assert.deepEqual(ce.sectionsFor("bluetooth", { bluetooth: { type: "panu" }, ipv4: {}, ipv6: {} }), ["general", "bluetooth", "ipv4", "ipv6"]);
     assert.deepEqual(ce.sectionsFor("vlan", {}), ["general", "vlan", "ipv4", "ipv6"]);
@@ -143,15 +141,7 @@ test("ports are detected by either key pair and lose their IP sections", () => {
     assert.deepEqual(ce.sectionsFor("cdma", {}), ["general", "mobile", "ppp", "ipv4", "ipv6"]);
 });
 
-test("new ports and controllers", () => {
-    assert.deepEqual(ce.newPortSettings({ uuid: "U", ifname: "dmsbr0", type: "bridge" }, "enp5s0", false), {
-        connection: { id: "dmsbr0-port-enp5s0", type: "802-3-ethernet", "interface-name": "enp5s0", master: "U", "slave-type": "bridge", autoconnect: false },
-        "802-3-ethernet": {},
-        "bridge-port": {}
-    });
-    assert.equal(ce.newPortSettings({ uuid: "U", ifname: "", id: "Bond", type: "bond" }, "enp5s0", true).connection.id, "Bond-port-enp5s0");
-    assert.equal("bridge-port" in ce.newPortSettings({ uuid: "U", ifname: "bond0", type: "bond" }, "enp5s0", true), false);
-
+test("new connections of each remaining type", () => {
     assert.deepEqual(ce.newConnectionSettings("vlan", { name: "v", parent: "enp5s0" }).vlan, { parent: "enp5s0" });
     assert.deepEqual(ce.newConnectionSettings("vlan", { name: "v" }).vlan, { parent: "" });
     const pppoe = ce.newConnectionSettings("pppoe", { name: "dsl" });

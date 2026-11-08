@@ -36,12 +36,6 @@ var settingSignatures = func() map[string]string {
 		"connection.permissions":          "as",
 		"connection.stable-id":            "s",
 		"connection.timestamp":            "t",
-		"connection.master":               "s",
-		"connection.slave-type":           "s",
-		"connection.controller":           "s",
-		"connection.port-type":            "s",
-		"connection.autoconnect-slaves":   "i",
-		"connection.autoconnect-ports":    "i",
 		"ipv6.ip6-privacy":                "i",
 		"ipv6.addr-gen-mode":              "i",
 		"ipv4.dhcp-client-id":             "s",
@@ -134,10 +128,6 @@ var settingSignatures = func() map[string]string {
 		"vlan.protocol":             "s",
 		"vlan.ingress-priority-map": "as",
 		"vlan.egress-priority-map":  "as",
-
-		"bridge-port.priority":     "u",
-		"bridge-port.path-cost":    "u",
-		"bridge-port.hairpin-mode": "b",
 
 		"gsm.apn":                          "s",
 		"gsm.auto-config":                  "b",

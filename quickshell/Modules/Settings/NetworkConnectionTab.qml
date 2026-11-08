@@ -380,10 +380,6 @@ Item {
                         return vpnDataSection;
                     case "vlan":
                         return vlanSection;
-                    case "ports":
-                        return portsSection;
-                    case "port":
-                        return portSection;
                     case "mobile":
                         return mobileSection;
                     case "bluetooth":
@@ -510,22 +506,6 @@ Item {
         id: vlanSection
 
         ConnectionVlanSection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: portsSection
-
-        ConnectionPortsSection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: portSection
-
-        ConnectionPortSection {
             editor: root
         }
     }

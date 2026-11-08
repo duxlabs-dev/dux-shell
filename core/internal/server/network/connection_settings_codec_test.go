@@ -153,12 +153,6 @@ func TestEncodeNewSettings(t *testing.T) {
 	}
 }
 
-func TestPortConnectionRowsEncode(t *testing.T) {
-	s, err := encodeNewSettings(SettingsPatch{"connection": {"autoconnect-slaves": 1.0, "master": "u", "slave-type": "bond"}})
-	require.NoError(t, err)
-	assert.Equal(t, "i", s["connection"]["autoconnect-slaves"].Signature().String())
-}
-
 func TestVlanRowsEncode(t *testing.T) {
 	s, err := encodeNewSettings(SettingsPatch{"vlan": {"id": 100.0, "flags": 3.0, "parent": "enp5s0"}})
 	require.NoError(t, err)
@@ -172,11 +166,8 @@ func TestVlanRowsEncode(t *testing.T) {
 
 func TestLinkTypeSignaturesMatchNMSettingsDBus(t *testing.T) {
 	want := map[string]string{
-		"connection.master": "s", "connection.slave-type": "s", "connection.controller": "s",
-		"connection.port-type": "s", "connection.autoconnect-slaves": "i", "connection.autoconnect-ports": "i",
 		"vlan.parent": "s", "vlan.id": "u", "vlan.flags": "u", "vlan.protocol": "s",
 		"vlan.ingress-priority-map": "as", "vlan.egress-priority-map": "as",
-		"bridge-port.priority": "u", "bridge-port.path-cost": "u", "bridge-port.hairpin-mode": "b",
 		"gsm.apn": "s", "gsm.auto-config": "b", "gsm.username": "s", "gsm.password": "s",
 		"gsm.password-flags": "u", "gsm.pin": "s", "gsm.pin-flags": "u", "gsm.home-only": "b",
 		"gsm.network-id": "s", "gsm.number": "s", "gsm.mtu": "u", "gsm.device-id": "s", "gsm.sim-id": "s",

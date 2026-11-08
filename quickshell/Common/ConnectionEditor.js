@@ -857,20 +857,12 @@ function isSupported(type, portType) {
     return typeInfo(type) !== null && (!portType || typeInfo(portType) !== null);
 }
 
-function _baseSections(type, settings) {
+function sectionsFor(type, settings) {
     const info = typeInfo(type);
     return typeof info.sections === "function" ? info.sections(settings || {}) : info.sections.slice();
 }
 
-// NetworkManager ignores IP settings on a bond or bridge port.
-function sectionsFor(type, settings) {
-    const out = _baseSections(type, settings);
-    if (!portOf(settings))
-        return out;
-    return out.filter(s => s !== "ipv4" && s !== "ipv6").concat(["port"]);
-}
-
-// Reads the 1.46+ names or their legacy aliases (master, slave-type), which DMS writes.
+// Reads the 1.46+ names or their legacy aliases (master, slave-type).
 function portOf(settings) {
     const c = settings ? settings.connection : undefined;
     if (!c)
@@ -882,23 +874,6 @@ function portOf(settings) {
         "controller": controller,
         "type": c["port-type"] || c["slave-type"] || ""
     };
-}
-
-function newPortSettings(ctrl, device, autoconnect) {
-    const s = {
-        "connection": {
-            "id": (ctrl.ifname || ctrl.id || "") + "-port-" + device,
-            "type": "802-3-ethernet",
-            "interface-name": device,
-            "master": ctrl.uuid,
-            "slave-type": ctrl.type,
-            "autoconnect": autoconnect
-        },
-        "802-3-ethernet": {}
-    };
-    if (ctrl.type === "bridge")
-        s["bridge-port"] = {};
-    return s;
 }
 
 function defaultVlanIfname(parent, id) {
@@ -1015,16 +990,6 @@ function newConnectionSettings(type, opts) {
         s.vlan = {
             "parent": (opts && opts.parent) || ""
         };
-        break;
-    case "bond":
-    case "bridge":
-        s.connection["interface-name"] = type === "bond" ? "bond0" : "br0";
-        s.connection["autoconnect-slaves"] = 1;
-        s[type] = type === "bond" ? {
-            "options": {
-                "mode": "balance-rr"
-            }
-        } : {};
         break;
     case "pppoe":
         s.pppoe = {};
