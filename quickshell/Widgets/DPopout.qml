@@ -77,7 +77,7 @@ Item {
     // Hyprland OnDemand grab: whitelist popout surfaces and bars so dismiss clicks still land.
     DFocusGrab {
         windows: {
-            const list = root.contentWindow ? [root.contentWindow] : [];
+            const list = root.contentWindow?.focusWindows ?? (root.contentWindow ? [root.contentWindow] : []);
             const transientWindows = root.transientSurfaceTracker?.focusWindows ?? [];
             if (!(impl.item?.contentActive ?? false) && !root.transientSurfaceTracker?.active)
                 return list.concat(transientWindows);

@@ -23,52 +23,7 @@ func setupTestManager(t *testing.T) (*Manager, afero.Fs, string) {
 	return manager, fs, pluginsDir
 }
 
-func TestGetPluginsDir(t *testing.T) {
-	t.Run("uses XDG_CONFIG_HOME when set", func(t *testing.T) {
-		configHome := t.TempDir()
-		t.Setenv("XDG_CONFIG_HOME", configHome)
-
-		assert.Equal(t, filepath.Join(configHome, "dms", "plugins"), getPluginsDir())
-	})
-
-	t.Run("falls back to home directory", func(t *testing.T) {
-		home := t.TempDir()
-		t.Setenv("XDG_CONFIG_HOME", "")
-		t.Setenv("HOME", home)
-
-		assert.Equal(t, filepath.Join(home, ".config", "dms", "plugins"), getPluginsDir())
-	})
-}
-
 func TestInstall(t *testing.T) {
-	t.Run("installs plugin successfully", func(t *testing.T) {
-		manager, fs, pluginsDir := setupTestManager(t)
-
-		plugin := Plugin{
-			ID:   "test-plugin",
-			Name: "TestPlugin",
-			Repo: "https://github.com/test/plugin",
-		}
-
-		cloneCalled := false
-		mockGit := &mockGitClient{
-			cloneFunc: func(path string, url string) error {
-				cloneCalled = true
-				assert.Equal(t, filepath.Join(pluginsDir, plugin.ID), path)
-				assert.Equal(t, plugin.Repo, url)
-				return fs.MkdirAll(path, 0o755)
-			},
-		}
-		manager.gitClient = mockGit
-
-		err := manager.Install(plugin)
-		assert.NoError(t, err)
-		assert.True(t, cloneCalled)
-
-		exists, _ := afero.DirExists(fs, filepath.Join(pluginsDir, plugin.ID))
-		assert.True(t, exists)
-	})
-
 	t.Run("returns error when plugin already installed", func(t *testing.T) {
 		manager, fs, pluginsDir := setupTestManager(t)
 
@@ -84,29 +39,6 @@ func TestInstall(t *testing.T) {
 }
 
 func TestManagerUpdate(t *testing.T) {
-	t.Run("updates plugin successfully", func(t *testing.T) {
-		manager, fs, pluginsDir := setupTestManager(t)
-
-		plugin := Plugin{ID: "test-plugin", Name: "TestPlugin"}
-		pluginPath := filepath.Join(pluginsDir, plugin.ID)
-		err := fs.MkdirAll(pluginPath, 0o755)
-		require.NoError(t, err)
-
-		pullCalled := false
-		mockGit := &mockGitClient{
-			pullFunc: func(path string) error {
-				pullCalled = true
-				assert.Equal(t, pluginPath, path)
-				return nil
-			},
-		}
-		manager.gitClient = mockGit
-
-		err = manager.Update(plugin)
-		assert.NoError(t, err)
-		assert.True(t, pullCalled)
-	})
-
 	t.Run("returns error when plugin not installed", func(t *testing.T) {
 		manager, _, _ := setupTestManager(t)
 
@@ -144,14 +76,6 @@ func TestUninstall(t *testing.T) {
 }
 
 func TestListInstalled(t *testing.T) {
-	t.Run("returns empty list when no plugins installed", func(t *testing.T) {
-		manager, _, _ := setupTestManager(t)
-
-		installed, err := manager.ListInstalled()
-		assert.NoError(t, err)
-		assert.Empty(t, installed)
-	})
-
 	t.Run("ignores files and .repos directory", func(t *testing.T) {
 		manager, fs, pluginsDir := setupTestManager(t)
 

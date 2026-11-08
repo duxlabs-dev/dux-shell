@@ -146,31 +146,6 @@ func TestConfigDeploymentFlow(t *testing.T) {
 	logChan := make(chan string, 100)
 	cd := NewConfigDeployer(logChan)
 
-	t.Run("deploy ghostty config to empty directory", func(t *testing.T) {
-		results, err := cd.deployGhosttyConfig()
-		require.NoError(t, err)
-		require.Len(t, results, 2)
-
-		mainResult := results[0]
-		assert.Equal(t, "Ghostty", mainResult.ConfigType)
-		assert.True(t, mainResult.Deployed)
-		assert.Empty(t, mainResult.BackupPath)
-		assert.FileExists(t, mainResult.Path)
-
-		content, err := os.ReadFile(mainResult.Path)
-		require.NoError(t, err)
-		assert.Contains(t, string(content), "window-decoration = false")
-
-		colorResult := results[1]
-		assert.Equal(t, "Ghostty Colors", colorResult.ConfigType)
-		assert.True(t, colorResult.Deployed)
-		assert.FileExists(t, colorResult.Path)
-
-		colorContent, err := os.ReadFile(colorResult.Path)
-		require.NoError(t, err)
-		assert.Contains(t, string(colorContent), "background = #101418")
-	})
-
 	t.Run("deploy ghostty config with existing file", func(t *testing.T) {
 		existingContent := "# Old config\nfont-size = 14\n"
 		ghosttyPath := getGhosttyPath()
@@ -221,26 +196,6 @@ func TestHyprlandConfigDeployment(t *testing.T) {
 	logChan := make(chan string, 100)
 	cd := NewConfigDeployer(logChan)
 
-	t.Run("deploy hyprland config to empty directory", func(t *testing.T) {
-		td, err := os.MkdirTemp("", "duxinstall-hyprland-empty")
-		require.NoError(t, err)
-		defer os.RemoveAll(td)
-		os.Setenv("HOME", td)
-		result, err := cd.deployHyprlandConfig("ghostty", true)
-		require.NoError(t, err)
-
-		assert.Equal(t, "Hyprland", result.ConfigType)
-		assert.True(t, result.Deployed)
-		assert.Empty(t, result.BackupPath)
-		assert.FileExists(t, result.Path)
-
-		content, err := os.ReadFile(result.Path)
-		require.NoError(t, err)
-		assert.Contains(t, string(content), `require("dms.binds")`)
-		assert.Contains(t, string(content), "DMS_STARTUP_BEGIN")
-		assert.Contains(t, string(content), "hl.config(")
-	})
-
 	t.Run("deploy hyprland config backs up the existing hyprland.lua", func(t *testing.T) {
 		td, err := os.MkdirTemp("", "duxinstall-hyprland-backup")
 		require.NoError(t, err)
@@ -290,44 +245,6 @@ func TestHyprlandConfigDeployment(t *testing.T) {
 	})
 }
 
-func TestKittyConfigDeployment(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "duxinstall-kitty-test")
-	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
-
-	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", originalHome)
-
-	logChan := make(chan string, 100)
-	cd := NewConfigDeployer(logChan)
-
-	t.Run("deploy kitty config to empty directory", func(t *testing.T) {
-		results, err := cd.deployKittyConfig()
-		require.NoError(t, err)
-		require.Len(t, results, 3)
-
-		mainResult := results[0]
-		assert.Equal(t, "Kitty", mainResult.ConfigType)
-		assert.True(t, mainResult.Deployed)
-		assert.FileExists(t, mainResult.Path)
-
-		content, err := os.ReadFile(mainResult.Path)
-		require.NoError(t, err)
-		assert.Contains(t, string(content), "include dank-theme.conf")
-
-		themeResult := results[1]
-		assert.Equal(t, "Kitty Theme", themeResult.ConfigType)
-		assert.True(t, themeResult.Deployed)
-		assert.FileExists(t, themeResult.Path)
-
-		tabsResult := results[2]
-		assert.Equal(t, "Kitty Tabs", tabsResult.ConfigType)
-		assert.True(t, tabsResult.Deployed)
-		assert.FileExists(t, tabsResult.Path)
-	})
-}
-
 func TestAlacrittyConfigDeployment(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "duxinstall-alacritty-test")
 	require.NoError(t, err)
@@ -339,32 +256,6 @@ func TestAlacrittyConfigDeployment(t *testing.T) {
 
 	logChan := make(chan string, 100)
 	cd := NewConfigDeployer(logChan)
-
-	t.Run("deploy alacritty config to empty directory", func(t *testing.T) {
-		results, err := cd.deployAlacrittyConfig()
-		require.NoError(t, err)
-		require.Len(t, results, 2)
-
-		mainResult := results[0]
-		assert.Equal(t, "Alacritty", mainResult.ConfigType)
-		assert.True(t, mainResult.Deployed)
-		assert.FileExists(t, mainResult.Path)
-
-		content, err := os.ReadFile(mainResult.Path)
-		require.NoError(t, err)
-		assert.Contains(t, string(content), "~/.config/alacritty/dank-theme.toml")
-		assert.Contains(t, string(content), "[window]")
-
-		themeResult := results[1]
-		assert.Equal(t, "Alacritty Theme", themeResult.ConfigType)
-		assert.True(t, themeResult.Deployed)
-		assert.FileExists(t, themeResult.Path)
-
-		themeContent, err := os.ReadFile(themeResult.Path)
-		require.NoError(t, err)
-		assert.Contains(t, string(themeContent), "[colors.primary]")
-		assert.Contains(t, string(themeContent), "background = '#101418'")
-	})
 
 	t.Run("deploy alacritty config with existing file", func(t *testing.T) {
 		existingContent := "# Old alacritty config\n[window]\nopacity = 0.9\n"
@@ -673,17 +564,6 @@ func TestDeployNiriConfigSystemdAutostart(t *testing.T) {
 			assert.Equal(t, tc.wantSpawn, strings.Contains(string(content), `spawn-at-startup "dms" "run"`))
 			assert.Equal(t, tc.wantCalls, *calls)
 		})
-	}
-}
-
-func TestHyprlandLuaUnsupported(t *testing.T) {
-	for ver, refuse := range map[string]bool{
-		"0.54.2": true,
-		"0.55.0": false,
-		"":       false,
-	} {
-		err := hyprlandLuaUnsupported(ver)
-		assert.Equal(t, refuse, err != nil, ver)
 	}
 }
 

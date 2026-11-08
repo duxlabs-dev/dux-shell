@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/duxlabs-dev/dux-shell/core/internal/blur"
@@ -769,14 +770,16 @@ func getQuickshellVersionInfo(missingFeatures bool) (display string, st status, 
 		return "Not installed", statusError, "", "Install the dux-qt-base package", ""
 	}
 
-	output, err := qtbase.Command(context.Background(), "--version").Output()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	output, err := qtbase.Command(ctx, "--version").Output()
 	if err != nil {
-		details := "Run '" + qsPath + " --version' to inspect the failure."
+		details := "Run 'dms qs --version' to inspect the failure."
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
 			details = quickshellVersionFailureDetails(string(exitErr.Stderr))
 		}
-		return "Installed (version check failed)", statusWarn, qsPath, details, ""
+		return "Unavailable (version check failed)", statusError, qsPath, details, ""
 	}
 
 	fullVersion := strings.TrimSpace(string(output))
@@ -798,7 +801,7 @@ func quickshellVersionFailureDetails(stderr string) string {
 		return "Quickshell is incompatible with the installed Qt libraries. Rebuild or reinstall Quickshell against the current Qt version."
 	}
 
-	return "Run 'qs --version' to inspect the failure."
+	return "Run 'dms qs --version' to inspect the failure."
 }
 
 func checkDMSInstallation() []checkResult {
@@ -1291,7 +1294,9 @@ func detectRunningWM() string {
 }
 
 func checkQuickshellFeatures() ([]checkResult, bool) {
-	if _, err := qtbaseembed.Resolve(); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := qtbase.Command(ctx, "--version").Run(); err != nil {
 		return nil, false
 	}
 

@@ -9,17 +9,17 @@ PanelWindow {
     property bool active: false
     property bool renders: true
     property Item maskItem: null
-    // Content that lives along one edge takes a strip there instead of the whole output; "column" and "row" are centered.
+    property rect renderBounds: Qt.rect(0, 0, 0, 0)
+    readonly property bool bounded: renderBounds.width > 0 && renderBounds.height > 0
     property string band: ""
     property real bandSize: 0
     readonly property bool _column: band === "left" || band === "right" || band === "column"
     readonly property bool _row: band === "top" || band === "bottom" || band === "row"
     readonly property real screenWidth: screen?.width ?? 0
     readonly property real screenHeight: screen?.height ?? 0
-    // Screen position of this window's origin, so hosts can keep laying out in screen coordinates.
     readonly property int bandExtent: Math.max(1, Math.ceil(bandSize))
-    readonly property real bandX: band === "right" ? screenWidth - bandExtent : band === "column" ? Math.round((screenWidth - bandExtent) / 2) : 0
-    readonly property real bandY: band === "bottom" ? screenHeight - bandExtent : band === "row" ? Math.round((screenHeight - bandExtent) / 2) : 0
+    readonly property real bandX: bounded ? renderBounds.x : band === "right" ? screenWidth - bandExtent : band === "column" ? Math.round((screenWidth - bandExtent) / 2) : 0
+    readonly property real bandY: bounded ? renderBounds.y : band === "bottom" ? screenHeight - bandExtent : band === "row" ? Math.round((screenHeight - bandExtent) / 2) : 0
     property string _registeredName: ""
     readonly property bool idleSupported: "inputOnly" in root
 
@@ -30,14 +30,17 @@ PanelWindow {
     exclusiveZone: -1
 
     anchors {
-        top: !_row || band === "top"
-        bottom: !_row || band === "bottom"
-        left: !_column || band === "left"
-        right: !_column || band === "right"
+        top: root.bounded || !_row || band === "top"
+        bottom: !root.bounded && (!_row || band === "bottom")
+        left: root.bounded || !_column || band === "left"
+        right: !root.bounded && (!_column || band === "right")
     }
 
-    implicitWidth: _column ? bandExtent : 0
-    implicitHeight: _row ? bandExtent : 0
+    margins.left: bounded ? renderBounds.x : 0
+    margins.top: bounded ? renderBounds.y : 0
+
+    implicitWidth: bounded ? renderBounds.width : _column ? bandExtent : 0
+    implicitHeight: bounded ? renderBounds.height : _row ? bandExtent : 0
 
     mask: Region {
         item: root.active ? root.maskItem : null

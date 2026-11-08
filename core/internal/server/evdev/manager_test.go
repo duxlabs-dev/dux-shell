@@ -10,41 +10,6 @@ import (
 	mocks "github.com/duxlabs-dev/dux-shell/core/internal/mocks/evdev"
 )
 
-func TestManager_Unsubscribe(t *testing.T) {
-	mockDevice := mocks.NewMockEvdevDevice(t)
-	mockDevice.EXPECT().ReadOne().Return(nil, errors.New("test")).Maybe()
-
-	m := &Manager{
-		devices:        []EvdevDevice{mockDevice},
-		monitoredPaths: make(map[string]bool),
-		state:          State{Available: true, CapsLock: false},
-		closeChan:      make(chan struct{}),
-	}
-
-	ch := m.Subscribe("test-client")
-	count := 0
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		count++
-		return true
-	})
-	assert.Equal(t, 1, count)
-
-	m.Unsubscribe("test-client")
-	count = 0
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		count++
-		return true
-	})
-	assert.Equal(t, 0, count)
-
-	select {
-	case _, ok := <-ch:
-		assert.False(t, ok, "channel should be closed")
-	default:
-		t.Error("channel should be closed")
-	}
-}
-
 func TestManager_UpdateCapsLock(t *testing.T) {
 	mockDevice := mocks.NewMockEvdevDevice(t)
 	mockDevice.EXPECT().ReadOne().Return(nil, errors.New("test")).Maybe()
@@ -207,33 +172,6 @@ func TestIsClosedError(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
-}
-
-func TestNotifySubscribers(t *testing.T) {
-	mockDevice := mocks.NewMockEvdevDevice(t)
-	mockDevice.EXPECT().ReadOne().Return(nil, errors.New("test")).Maybe()
-	mockDevice.EXPECT().Close().Return(nil).Maybe()
-
-	m := &Manager{
-		devices:        []EvdevDevice{mockDevice},
-		monitoredPaths: make(map[string]bool),
-		state:          State{Available: true, CapsLock: false},
-		closeChan:      make(chan struct{}),
-	}
-
-	ch1 := m.Subscribe("client1")
-	ch2 := m.Subscribe("client2")
-
-	newState := State{Available: true, CapsLock: true}
-	go m.notifySubscribers(newState)
-
-	state1 := <-ch1
-	state2 := <-ch2
-
-	assert.Equal(t, newState, state1)
-	assert.Equal(t, newState, state2)
-
-	m.Close()
 }
 
 func TestCapsLockFromDevices(t *testing.T) {

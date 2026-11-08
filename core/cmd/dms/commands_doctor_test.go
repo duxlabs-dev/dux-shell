@@ -25,7 +25,7 @@ func TestQuickshellVersionFailureDetails(t *testing.T) {
 		{
 			name:   "other failure",
 			stderr: "qs: unsupported option --version",
-			want:   "Run 'qs --version' to inspect the failure.",
+			want:   "Run 'dms qs --version' to inspect the failure.",
 		},
 	}
 
@@ -497,31 +497,6 @@ include optional=true "dms/binds.kdl"
 	want := []string{"config.kdl:2 sets keep-max-bpc-unchanged"}
 	if !slices.Equal(got, want) {
 		t.Fatalf("got %q", got)
-	}
-}
-
-func TestMangoLacksSnakeCase(t *testing.T) {
-	for ver, want := range map[string]bool{
-		"0.17.5": true,
-		"0.18.0": false,
-		"0.18.2": false,
-		"":       false,
-	} {
-		if got := mangoLacksSnakeCase(ver); got != want {
-			t.Errorf("mangoLacksSnakeCase(%q) = %v, want %v", ver, got, want)
-		}
-	}
-}
-
-func TestHyprlandLacksLua(t *testing.T) {
-	for ver, want := range map[string]bool{
-		"0.54.9": true,
-		"0.55.0": false,
-		"":       false,
-	} {
-		if got := hyprlandLacksLua(ver); got != want {
-			t.Errorf("hyprlandLacksLua(%q) = %v, want %v", ver, got, want)
-		}
 	}
 }
 

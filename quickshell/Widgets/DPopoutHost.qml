@@ -9,6 +9,7 @@ import qs.DCommon.Widgets
 import qs.Widgets
 import "../Common/ConnectedSurfaceGeometry.js" as SurfaceGeometry
 import "../Common/FluidGeometry.js" as FluidGeometry
+import "../Common/PopoutBounds.js" as PopoutBounds
 
 Item {
     id: root
@@ -55,6 +56,21 @@ Item {
     property var customKeyboardFocus: popoutHandle.customKeyboardFocus
     property bool backgroundInteractive: popoutHandle.backgroundInteractive
     property bool contentHandlesKeys: popoutHandle.contentHandlesKeys
+    property rect _surfaceMotionOrigin: Qt.rect(0, 0, 0, 0)
+    readonly property rect renderBounds: {
+        if (_travelFromHandoff)
+            return Qt.rect(0, 0, screenWidth, screenHeight);
+        const padding = Theme.elevationRenderPadding(shadowLevel, effectiveShadowDirection, shadowFallbackOffset, Theme.connectedCornerRadius + inputMargin, Theme.spacingL) + Theme.fluidOvershootLimit;
+        const body = {
+            x: alignedX,
+            y: alignedY - topOverflow,
+            width: alignedWidth,
+            height: alignedHeight + topOverflow + bottomOverflow
+        };
+        const area = PopoutBounds.strip(screenWidth, screenHeight, contentContainer.barLeft || contentContainer.barRight, body, _surfaceMotionOrigin, padding);
+        return Qt.rect(area.x, area.y, area.width, area.height);
+    }
+    property bool _retainedContent: false
     property bool _primeContent: false
     property bool _contentRenderActive: Theme.isDirectionalEffect || shouldBeVisible
     // Keyboard focus grabbed one tick after emerge starts, to avoid stalling first frames.
@@ -482,6 +498,8 @@ Item {
             animationsEnabled = false;
             _fluidMotionActive = fluidMotionEnabled;
         }
+        contentRetention.stop();
+        _retainedContent = true;
         _primeContent = true;
         _supersededClose = false;
 
@@ -501,6 +519,7 @@ Item {
         if (morphTravelEnabled && !preserveMotion)
             morph.retarget(1);
 
+        _surfaceMotionOrigin = morphTravelEnabled ? travelSpring.value : Qt.rect(alignedX, alignedY, alignedWidth, alignedHeight);
         _claimConnectedChrome();
 
         if (!root.attached)
@@ -563,6 +582,7 @@ Item {
         isClosing = false;
         _snapBody();
         PopoutManager.hidePopout(popoutHandle);
+        contentRetention.restart();
         popoutClosed();
     }
 
@@ -581,8 +601,18 @@ Item {
         _fluidMotionActive = false;
         _snapBody();
         PopoutManager.hidePopout(popoutHandle);
+        contentRetention.restart();
         popoutClosed();
         Qt.callLater(() => animationsEnabled = true);
+    }
+
+    Timer {
+        id: contentRetention
+        interval: 3000
+        onTriggered: {
+            if (!root.shouldBeVisible && !root.attached)
+                root._retainedContent = false;
+        }
     }
 
     function toggle() {
@@ -1211,6 +1241,8 @@ Item {
 
         PopoutHoverDismiss {
             id: hoverDismissController
+            globalOffsetX: root.surface?.bandX ?? 0
+            globalOffsetY: root.surface?.bandY ?? 0
             anchors.fill: parent
             dismissEnabled: root.hoverDismissEnabled
             dismissSuspended: root.hoverDismissSuspended
@@ -1411,7 +1443,9 @@ Item {
                 parent: chromeLoader.item ? chromeLoader.item.contentWrapper : contentContainer
                 anchors.fill: parent
                 sourceComponent: root.popoutHandle.content
-                active: root._primeContent || root.shouldBeVisible || root.attached
+                active: root._retainedContent || root._primeContent || root.shouldBeVisible || root.attached
+                visible: root.attached && root._contentRenderActive
+                enabled: root.shouldBeVisible
             }
         }
 
@@ -1474,8 +1508,8 @@ Item {
                 readonly property real _dyClamp: (contentContainer.barTop || contentContainer.barBottom) ? Math.max(-contentContainer.height - _overflowExtent, Math.min(contentContainer.animY, contentContainer.height + _overflowExtent)) : 0
                 readonly property real _dxClamp: (contentContainer.barLeft || contentContainer.barRight) ? Math.max(-contentContainer.width, Math.min(contentContainer.animX, contentContainer.width)) : 0
 
-                blurX: trackBlurFromBarEdge ? contentContainer.x + (contentContainer.barRight ? _dxClamp : 0) : contentContainer.x + contentContainer.width * (1 - s) * 0.5 + Theme.snap(contentContainer.animX, root.dpr) - contentContainer.horizontalConnectorExtent * s
-                blurY: (trackBlurFromBarEdge ? contentContainer.y + (contentContainer.barBottom ? _dyClamp : 0) : contentContainer.y + contentContainer.height * (1 - s) * 0.5 + Theme.snap(contentContainer.animY, root.dpr) - contentContainer.verticalConnectorExtent * s) - root.topOverflow
+                blurX: (trackBlurFromBarEdge ? contentContainer.x + (contentContainer.barRight ? _dxClamp : 0) : contentContainer.x + contentContainer.width * (1 - s) * 0.5 + Theme.snap(contentContainer.animX, root.dpr) - contentContainer.horizontalConnectorExtent * s) - (root.surface?.bandX ?? 0)
+                blurY: ((trackBlurFromBarEdge ? contentContainer.y + (contentContainer.barBottom ? _dyClamp : 0) : contentContainer.y + contentContainer.height * (1 - s) * 0.5 + Theme.snap(contentContainer.animY, root.dpr) - contentContainer.verticalConnectorExtent * s) - root.topOverflow) - (root.surface?.bandY ?? 0)
                 blurWidth: root.shouldBeVisible ? (trackBlurFromBarEdge ? Math.max(0, contentContainer.width - Math.abs(_dxClamp)) : (contentContainer.width + contentContainer.horizontalConnectorExtent * 2) * s) : 0
                 blurHeight: root.shouldBeVisible ? (trackBlurFromBarEdge ? Math.max(0, contentContainer.height + _overflowExtent - Math.abs(_dyClamp)) : (contentContainer.height + contentContainer.verticalConnectorExtent * 2) * s + _overflowExtent) : 0
                 blurRadius: root.usesConnectedSurfaceChrome ? Theme.connectedCornerRadius : Theme.windowRadius
@@ -1697,14 +1731,14 @@ Item {
                 readonly property real visibleScale: s * op
                 readonly property bool revealClipActive: root.directionalRevealActive || root._fluidMotionActive
 
-                blurX: revealClipActive ? contentContainer.x : contentContainer.x + contentContainer.width * (1 - visibleScale) * 0.5 + Theme.snap(contentContainer.animX, root.dpr)
-                blurY: (revealClipActive ? contentContainer.y : contentContainer.y + contentContainer.height * (1 - visibleScale) * 0.5 + Theme.snap(contentContainer.animY, root.dpr)) - root.topOverflow
+                blurX: (revealClipActive ? contentContainer.x : contentContainer.x + contentContainer.width * (1 - visibleScale) * 0.5 + Theme.snap(contentContainer.animX, root.dpr)) - (root.surface?.bandX ?? 0)
+                blurY: ((revealClipActive ? contentContainer.y : contentContainer.y + contentContainer.height * (1 - visibleScale) * 0.5 + Theme.snap(contentContainer.animY, root.dpr)) - root.topOverflow) - (root.surface?.bandY ?? 0)
                 blurWidth: root.shouldBeVisible ? (revealClipActive ? contentContainer.width : contentContainer.width * visibleScale) : 0
                 blurHeight: root.shouldBeVisible ? (revealClipActive ? contentContainer.height : contentContainer.height * visibleScale) + root.topOverflow + root.bottomOverflow : 0
                 blurRadius: Theme.windowRadius
                 clipEnabled: revealClipActive
-                clipX: contentContainer.x + (root._fluidMotionActive ? chrome.fluidBody.x : chrome.revealX)
-                clipY: contentContainer.y + (root._fluidMotionActive ? chrome.fluidBody.y : chrome.revealY) - root.topOverflow
+                clipX: (contentContainer.x + (root._fluidMotionActive ? chrome.fluidBody.x : chrome.revealX)) - (root.surface?.bandX ?? 0)
+                clipY: (contentContainer.y + (root._fluidMotionActive ? chrome.fluidBody.y : chrome.revealY) - root.topOverflow) - (root.surface?.bandY ?? 0)
                 clipWidth: root.shouldBeVisible ? (root._fluidMotionActive ? chrome.fluidBody.width : chrome.revealWidth) : 0
                 clipHeight: root.shouldBeVisible ? (root._fluidMotionActive ? chrome.fluidBody.height : chrome.revealHeight) + root.topOverflow + root.bottomOverflow : 0
             }

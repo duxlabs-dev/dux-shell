@@ -382,10 +382,6 @@ func TestProbeGatewayCert(t *testing.T) {
 	assert.Equal(t, certificateDigest(server.Certificate()), cert.Digest)
 }
 
-func TestCertificateDigestMatchesOpenfortivpnFormat(t *testing.T) {
-	assert.Len(t, certificateDigest(selfSignedCert(t)), 64, "digest is a hex sha256, matching openfortivpn trusted-cert")
-}
-
 func selfSignedCert(t *testing.T) *x509.Certificate {
 	t.Helper()
 

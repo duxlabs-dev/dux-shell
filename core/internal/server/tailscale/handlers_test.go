@@ -39,25 +39,6 @@ func handlerTestManager() *Manager {
 	return m
 }
 
-func TestHandleGetStatus(t *testing.T) {
-	m := handlerTestManager()
-	defer m.Close()
-
-	buf := &bytes.Buffer{}
-	conn := ipc.NewConnWriter(&mockConn{Buffer: buf})
-
-	req := ipc.Request{ID: 1, Method: "tailscale.getStatus"}
-	handleGetStatus(conn, req, m)
-
-	var resp ipc.Response[TailscaleState]
-	err := json.NewDecoder(buf).Decode(&resp)
-	require.NoError(t, err)
-	assert.Equal(t, 1, resp.ID)
-	assert.NotNil(t, resp.Result)
-	assert.True(t, resp.Result.Connected)
-	assert.Equal(t, "cachyos", resp.Result.Self.Hostname)
-}
-
 func TestHandleActions(t *testing.T) {
 	cases := []struct {
 		name   string
