@@ -21,19 +21,11 @@ func emptySettingsMock(t *testing.T) *mock_gonetworkmanager.MockSettings {
 }
 
 func TestNetworkManagerBackend_ProfilesRevisionBumps(t *testing.T) {
-	backend, err := NewNetworkManagerBackend(mock_gonetworkmanager.NewMockNetworkManager(t))
-	assert.NoError(t, err)
-	backend.settings = emptySettingsMock(t)
-	assert.Nil(t, backend.onStateChange)
-
-	for _, name := range []string{
-		"org.freedesktop.NetworkManager.Settings.NewConnection",
-		"org.freedesktop.NetworkManager.Settings.ConnectionRemoved",
-		"org.freedesktop.NetworkManager.Settings.Connection.Updated",
-	} {
+	backend, _ := NewNetworkManagerBackend(mock_gonetworkmanager.NewMockNetworkManager(t))
+	for _, n := range []string{"Settings.NewConnection", "Settings.ConnectionRemoved", "Settings.Connection.Updated"} {
 		before := backend.state.ConnectionProfilesRevision
-		backend.handleDBusSignal(&dbus.Signal{Name: name})
-		assert.Equal(t, before+1, backend.state.ConnectionProfilesRevision, name)
+		backend.handleDBusSignal(&dbus.Signal{Name: "org.freedesktop.NetworkManager." + n})
+		assert.Equal(t, before+1, backend.state.ConnectionProfilesRevision, n)
 	}
 }
 

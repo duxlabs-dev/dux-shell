@@ -10,40 +10,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func enterpriseProfile() nmSettings {
-	return nmSettings{
-		"connection": {"id": dbus.MakeVariant("eduroam"), "type": dbus.MakeVariant("802-11-wireless")},
-		"802-1x":     {"eap": dbus.MakeVariant([]string{"peap"}), "identity": dbus.MakeVariant("old")},
-		"ipv4": {
-			"method":   dbus.MakeVariant("manual"),
-			"gateway":  dbus.MakeVariant("192.0.2.1"),
-			"dns-data": dbus.MakeVariant([]string{"192.0.2.53"}),
-		},
+func TestSave8021xIdentity(t *testing.T) {
+	for _, secretsFail := range []bool{false, true} {
+		obj := mock_dbus.NewMockBusObject(t)
+		expectGetSettings(obj, nmSettings{
+			"802-1x": {"eap": dbus.MakeVariant([]string{"peap"}), "identity": dbus.MakeVariant("old")},
+			"ipv4":   {"gateway": dbus.MakeVariant("192.0.2.1")},
+		})
+		if secretsFail { // the strict mock fails the test if Update2 is called
+			obj.EXPECT().Call(nmConnGetSecrets, dbus.Flags(0), "802-1x").Return(&dbus.Call{Err: errors.New("agent gone")}).Once()
+			save8021xIdentity(obj, "alice@example.com")
+			continue
+		}
+		expectGetSecrets(obj, "802-1x", nmSettings{"802-1x": {"password": dbus.MakeVariant("hunter2")}})
+		got := captureUpdate2(obj, nmUpdate2FlagToDisk, nil)
+		save8021xIdentity(obj, "alice@example.com")
+		assert.Equal(t, dbus.MakeVariant("alice@example.com"), (*got)["802-1x"]["identity"])
+		assert.Equal(t, dbus.MakeVariant("hunter2"), (*got)["802-1x"]["password"])
+		assert.Equal(t, dbus.MakeVariant("192.0.2.1"), (*got)["ipv4"]["gateway"])
 	}
-}
-
-func TestSave8021xIdentity_WritesIdentityKeepingProfile(t *testing.T) {
-	obj := mock_dbus.NewMockBusObject(t)
-	expectGetSettings(obj, enterpriseProfile())
-	expectGetSecrets(obj, "802-1x", nmSettings{"802-1x": {"password": dbus.MakeVariant("hunter2")}})
-	got := captureUpdate2(obj, nmUpdate2FlagToDisk, nil)
-
-	save8021xIdentity(obj, "alice@example.com")
-
-	assert.Equal(t, dbus.MakeVariant("alice@example.com"), (*got)["802-1x"]["identity"])
-	assert.Equal(t, dbus.MakeVariant("hunter2"), (*got)["802-1x"]["password"])
-	assert.Equal(t, dbus.MakeVariant("192.0.2.1"), (*got)["ipv4"]["gateway"])
-	assert.Equal(t, dbus.MakeVariant([]string{"192.0.2.53"}), (*got)["ipv4"]["dns-data"])
-}
-
-func TestSave8021xIdentity_SecretsReadFailureWritesNothing(t *testing.T) {
-	obj := mock_dbus.NewMockBusObject(t)
-	expectGetSettings(obj, enterpriseProfile())
-	obj.EXPECT().Call(nmConnGetSecrets, dbus.Flags(0), "802-1x").
-		Return(&dbus.Call{Err: errors.New("agent gone")}).Once()
-
-	// The strict mock fails the test if Update2 is called.
-	save8021xIdentity(obj, "alice@example.com")
 }
 
 func TestNeedsExternalBrowserAuth(t *testing.T) {
@@ -481,26 +466,11 @@ func TestWiFiSecretCache(t *testing.T) {
 	b.clearCachedWiFiSecretBySSID("HomeNet")
 	assert.Nil(t, b.lookupCachedWiFiSecret("uuid-1", "802-11-wireless-security"))
 
-	// Entries older than the TTL miss and are cleared.
-	b.cacheWiFiSecret("uuid-1", "HomeNet", "802-11-wireless-security", map[string]string{"psk": "hunter2"})
-	assert.NotNil(t, b.lookupCachedWiFiSecret("uuid-1", "802-11-wireless-security"), "fresh entry must hit")
+	b.cacheWiFiSecret("uuid-1", "HomeNet", "802-11-wireless-security", map[string]string{"psk": "old"})
 	b.cachedWiFiSecret.CachedAt = time.Now().Add(-2 * time.Minute)
 	assert.Nil(t, b.lookupCachedWiFiSecret("uuid-1", "802-11-wireless-security"), "expired entry must miss")
-	assert.Nil(t, b.cachedWiFiSecret, "expired entry must be cleared")
 
-	// Expired entries are dropped from memory without a lookup.
-	origTTL := wifiSecretCacheTTL
-	wifiSecretCacheTTL = 10 * time.Millisecond
-	defer func() { wifiSecretCacheTTL = origTTL }()
-	b.cacheWiFiSecret("uuid-1", "HomeNet", "802-11-wireless-security", map[string]string{"psk": "hunter2"})
-	assert.Eventually(t, func() bool {
-		b.cachedWiFiSecretMu.Lock()
-		defer b.cachedWiFiSecretMu.Unlock()
-		return b.cachedWiFiSecret == nil
-	}, time.Second, 5*time.Millisecond)
-
-	// A stale timer must not clear a newer entry.
-	wifiSecretCacheTTL = time.Hour
+	// A stale expiry must not clear a newer entry.
 	b.cacheWiFiSecret("uuid-1", "HomeNet", "802-11-wireless-security", map[string]string{"psk": "old"})
 	stale := b.cachedWiFiSecret
 	b.cacheWiFiSecret("uuid-1", "HomeNet", "802-11-wireless-security", map[string]string{"psk": "new"})

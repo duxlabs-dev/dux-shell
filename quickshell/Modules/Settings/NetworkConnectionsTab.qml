@@ -114,13 +114,19 @@ Item {
 
         required property var profile
         required property string group
+        readonly property bool isHotspot: !!NetworkService.hotspotUuid && profile.uuid === NetworkService.hotspotUuid
 
         title: profile.id
         subtitle: root.subtitleFor(profile)
         iconName: root.profileIcon(profile, group)
         active: profile.active
         clickable: true
-        onClicked: root.openEditor(profile.uuid, profile.id, "")
+        onClicked: {
+            if (!isHotspot)
+                return root.openEditor(profile.uuid, profile.id, "");
+            SettingsSearchService.navigateToSection("networkHotspot");
+            root.parentModal?.navigateTo("network_wifi");
+        }
 
         DActionButton {
             iconName: profileRow.profile.active ? "link_off" : "link"
@@ -134,7 +140,7 @@ Item {
         }
 
         DActionButton {
-            visible: profileRow.profile.canModify
+            visible: profileRow.profile.canModify && !profileRow.isHotspot
             iconName: "content_copy"
             tooltipText: I18n.tr("Duplicate")
             onClicked: {

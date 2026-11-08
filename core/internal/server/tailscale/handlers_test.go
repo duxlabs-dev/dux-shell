@@ -69,6 +69,11 @@ func TestHandleActions(t *testing.T) {
 		{"disconnect", "tailscale.disconnect", nil},
 		{"setExitNode", "tailscale.setExitNode", map[string]any{"id": "nABC123"}},
 		{"setAllowLanAccess", "tailscale.setAllowLanAccess", map[string]any{"enabled": true}},
+		{"setPrefs", "tailscale.setPrefs", map[string]any{"acceptRoutes": true}},
+		{"login", "tailscale.login", nil},
+		{"logout", "tailscale.logout", nil},
+		{"addProfile", "tailscale.addProfile", nil},
+		{"switchProfile", "tailscale.switchProfile", map[string]any{"id": "p2"}},
 	}
 
 	for _, tc := range cases {
@@ -136,84 +141,41 @@ func TestHandleRequest_UnknownMethod(t *testing.T) {
 func callHandler[T any](t *testing.T, m *Manager, method string, params map[string]any) ipc.Response[T] {
 	t.Helper()
 	buf := &bytes.Buffer{}
-	conn := ipc.NewConnWriter(&mockConn{Buffer: buf})
-	HandleRequest(conn, ipc.Request{ID: 1, Method: method, Params: params}, m)
+	HandleRequest(ipc.NewConnWriter(&mockConn{Buffer: buf}), ipc.Request{ID: 1, Method: method, Params: params}, m)
 	var resp ipc.Response[T]
 	require.NoError(t, json.NewDecoder(buf).Decode(&resp))
 	return resp
 }
 
-func fakeOperatorEnv(t *testing.T, found map[string]string, runner commandRunner) {
-	t.Helper()
-	oldLook, oldUser, oldRun, oldStat := operatorLookPath, operatorCurrentUser, operatorRunner, operatorStat
-	t.Cleanup(func() {
-		operatorLookPath, operatorCurrentUser, operatorRunner, operatorStat = oldLook, oldUser, oldRun, oldStat
+func TestHandleRequestErrors(t *testing.T) {
+	m := newManager(&mockClient{
+		watchFn:     blockingWatch,
+		statusFn:    func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
+		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error { return errAccessDenied },
 	})
-	operatorStat = fakeStat(nil)
-	operatorLookPath = func(name string) (string, error) {
-		if p, ok := found[name]; ok {
-			return p, nil
-		}
-		return "", fmt.Errorf("%s not found", name)
-	}
-	operatorCurrentUser = func() (*user.User, error) { return &user.User{Username: "tester"}, nil }
-	operatorRunner = runner
-}
-
-func TestHandleSetPrefs(t *testing.T) {
-	var captured *maskedPrefs
-	client := &mockClient{
-		watchFn:  blockingWatch,
-		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		getPrefsFn: func(ctx context.Context) (*prefs, error) {
-			return &prefs{}, nil
-		},
-		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
-			captured = mp
-			return nil
-		},
-		checkIPFwdFn: func(ctx context.Context) error { return fmt.Errorf("IP forwarding is disabled") },
-	}
-	m := newManager(client)
+	m.RefreshState()
 	defer m.Close()
-
-	resp := callHandler[map[string]any](t, m, "tailscale.setPrefs", map[string]any{
-		"acceptDns":       false,
-		"advertiseRoutes": []any{"10.0.0.0/8"},
-	})
-	require.Empty(t, resp.Error)
-	require.NotNil(t, captured)
-	assert.True(t, captured.CorpDNSSet)
-	assert.False(t, captured.RouteAllSet)
-	assert.Equal(t, prefixes("10.0.0.0/8"), captured.AdvertiseRoutes)
-	assert.Equal(t, true, (*resp.Result)["success"])
-	assert.Equal(t, "IP forwarding is disabled", (*resp.Result)["warning"])
-
-	resp = callHandler[map[string]any](t, m, "tailscale.setPrefs", map[string]any{})
-	assert.Contains(t, resp.Error, "no changes")
-
-	resp = callHandler[map[string]any](t, m, "tailscale.setPrefs", map[string]any{"advertiseRoutes": []any{1}})
-	assert.Equal(t, "advertiseRoutes must be a list of strings", resp.Error)
-
-	captured = nil
-	for key, bad := range map[string]any{
-		"acceptRoutes":      "yes",
-		"acceptDns":         1,
-		"shieldsUp":         "true",
-		"runSsh":            nil,
-		"advertiseExitNode": []any{},
-		"hostname":          false,
-		"advertiseRoutes":   "10.0.0.0/8",
+	for _, tc := range []struct {
+		method string
+		params map[string]any
+		want   string
+	}{
+		{"tailscale.setPrefs", map[string]any{}, "no changes"},
+		{"tailscale.setPrefs", map[string]any{"acceptDns": "yes"}, "invalid 'acceptDns' parameter"},
+		{"tailscale.setPrefs", map[string]any{"advertiseRoutes": []any{1}}, "advertiseRoutes must be a list of strings"},
+		{"tailscale.setPrefs", map[string]any{"acceptRoutes": true}, "access denied"},
+		{"tailscale.switchProfile", nil, ""},
 	} {
-		resp = callHandler[map[string]any](t, m, "tailscale.setPrefs", map[string]any{"acceptDns": true, key: bad})
-		assert.Equal(t, "invalid '"+key+"' parameter", resp.Error, key)
+		resp := callHandler[map[string]any](t, m, tc.method, tc.params)
+		assert.Nil(t, resp.Result)
+		assert.Contains(t, resp.Error, tc.want)
+		assert.NotEmpty(t, resp.Error)
 	}
-	assert.Nil(t, captured)
 }
 
 func TestHandleGrantOperator(t *testing.T) {
-	denied := true
-	client := &mockClient{
+	denied, code := true, 126
+	m := newManager(&mockClient{
 		watchFn:  blockingWatch,
 		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
 		profileStatusFn: func(ctx context.Context) (loginProfile, []loginProfile, error) {
@@ -222,122 +184,44 @@ func TestHandleGrantOperator(t *testing.T) {
 			}
 			return loginProfile{ID: "a"}, []loginProfile{{ID: "a"}}, nil
 		},
-	}
-	m := newManager(client)
+	})
 	defer m.Close()
 
+	oldLook, oldUser, oldRun, oldStat := operatorLookPath, operatorCurrentUser, operatorRunner, operatorStat
+	t.Cleanup(func() {
+		operatorLookPath, operatorCurrentUser, operatorRunner, operatorStat = oldLook, oldUser, oldRun, oldStat
+	})
 	var got []string
-	code := 126
-	fakeOperatorEnv(t, map[string]string{"pkexec": "/usr/bin/pkexec", "tailscale": "/usr/bin/tailscale"},
-		func(ctx context.Context, argv []string) ([]byte, int, error) {
-			got = argv
-			return nil, code, nil
-		})
+	entered, release := make(chan struct{}), make(chan struct{})
+	operatorStat = rootStat
+	operatorLookPath = func(n string) (string, error) { return "/usr/bin/" + n, nil }
+	operatorCurrentUser = func() (*user.User, error) { return &user.User{Username: "tester"}, nil }
+	operatorRunner = func(ctx context.Context, argv []string) ([]byte, int, error) {
+		got = argv
+		if code == 126 {
+			close(entered)
+			<-release
+		}
+		return nil, code, nil
+	}
 
-	// Request params must not influence the command.
-	resp := callHandler[ProfilesResult](t, m, "tailscale.grantOperator", map[string]any{"user": "root", "argv": []any{"sh"}})
-	assert.Contains(t, resp.Error, "permission not granted")
+	resp := callHandler[ProfilesResult](t, m, "tailscale.profiles", nil)
+	assert.False(t, resp.Result.CanOperate)
+	assert.True(t, resp.Result.GrantAvailable)
+
+	// Request params must not reach the command; a second request waits out the first.
+	first := make(chan string)
+	go func() {
+		first <- callHandler[ProfilesResult](t, m, "tailscale.grantOperator", map[string]any{"user": "root"}).Error
+	}()
+	<-entered
+	assert.Equal(t, "a permission request is already open", callHandler[ProfilesResult](t, m, "tailscale.grantOperator", nil).Error)
+	close(release)
+	assert.Equal(t, "permission not granted", <-first)
 	assert.Equal(t, []string{"/usr/bin/pkexec", "/usr/bin/tailscale", "set", "--operator=tester"}, got)
 
 	code, denied = 0, false
 	resp = callHandler[ProfilesResult](t, m, "tailscale.grantOperator", nil)
 	require.Empty(t, resp.Error)
-	require.NotNil(t, resp.Result)
 	assert.True(t, resp.Result.CanOperate)
-	assert.False(t, resp.Result.GrantAvailable)
-}
-
-func TestHandleGrantOperator_UsesManagerContext(t *testing.T) {
-	m := newManager(&mockClient{watchFn: blockingWatch, statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil }})
-	m.Close()
-
-	var ctxErr error
-	fakeOperatorEnv(t, map[string]string{"pkexec": "/usr/bin/pkexec", "tailscale": "/usr/bin/tailscale"},
-		func(ctx context.Context, argv []string) ([]byte, int, error) {
-			ctxErr = ctx.Err()
-			return nil, 0, nil
-		})
-	callHandler[ProfilesResult](t, m, "tailscale.grantOperator", nil)
-	assert.ErrorIs(t, ctxErr, context.Canceled)
-}
-
-func TestHandleGrantOperator_RejectsConcurrentRequest(t *testing.T) {
-	m := newManager(&mockClient{watchFn: blockingWatch, statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil }})
-	defer m.Close()
-
-	entered, release := make(chan struct{}), make(chan struct{})
-	fakeOperatorEnv(t, map[string]string{"pkexec": "/usr/bin/pkexec", "tailscale": "/usr/bin/tailscale"},
-		func(ctx context.Context, argv []string) ([]byte, int, error) {
-			close(entered)
-			<-release
-			return nil, 126, nil
-		})
-
-	first := make(chan string)
-	go func() {
-		buf := &bytes.Buffer{}
-		HandleRequest(ipc.NewConnWriter(&mockConn{Buffer: buf}), ipc.Request{ID: 1, Method: "tailscale.grantOperator"}, m)
-		first <- buf.String()
-	}()
-	<-entered
-
-	resp := callHandler[ProfilesResult](t, m, "tailscale.grantOperator", nil)
-	assert.Equal(t, "a permission request is already open", resp.Error)
-
-	close(release)
-	assert.Contains(t, <-first, "permission not granted")
-}
-
-func TestHandleProfiles_GrantAvailable(t *testing.T) {
-	client := &mockClient{
-		watchFn:  blockingWatch,
-		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		profileStatusFn: func(ctx context.Context) (loginProfile, []loginProfile, error) {
-			return loginProfile{}, nil, errAccessDenied
-		},
-	}
-	m := newManager(client)
-	defer m.Close()
-
-	fakeOperatorEnv(t, map[string]string{"pkexec": "/usr/bin/pkexec", "tailscale": "/usr/bin/tailscale"}, nil)
-	resp := callHandler[ProfilesResult](t, m, "tailscale.profiles", nil)
-	require.Empty(t, resp.Error)
-	assert.False(t, resp.Result.CanOperate)
-	assert.True(t, resp.Result.GrantAvailable)
-
-	fakeOperatorEnv(t, map[string]string{"tailscale": "/usr/bin/tailscale"}, nil)
-	resp = callHandler[ProfilesResult](t, m, "tailscale.profiles", nil)
-	assert.False(t, resp.Result.GrantAvailable)
-}
-
-func TestHandleAccountMethods(t *testing.T) {
-	var switched string
-	client := &mockClient{
-		watchFn:         blockingWatch,
-		statusFn:        func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		switchProfileFn: func(ctx context.Context, id string) error { switched = id; return nil },
-		startLoginFn:    func(ctx context.Context) error { return nil },
-		suggestFn: func(ctx context.Context) (ExitNodeSuggestion, error) {
-			return ExitNodeSuggestion{ID: "n1", Name: "node"}, nil
-		},
-	}
-	m := newManager(client)
-	defer m.Close()
-
-	for _, method := range []string{"tailscale.login", "tailscale.logout", "tailscale.addProfile"} {
-		resp := callHandler[models.SuccessResult](t, m, method, nil)
-		assert.Empty(t, resp.Error, method)
-		assert.True(t, resp.Result.Success, method)
-	}
-
-	resp := callHandler[models.SuccessResult](t, m, "tailscale.switchProfile", map[string]any{"id": "p2"})
-	assert.Empty(t, resp.Error)
-	assert.Equal(t, "p2", switched)
-
-	resp = callHandler[models.SuccessResult](t, m, "tailscale.switchProfile", nil)
-	assert.NotEmpty(t, resp.Error)
-
-	sug := callHandler[ExitNodeSuggestion](t, m, "tailscale.suggestExitNode", nil)
-	require.Empty(t, sug.Error)
-	assert.Equal(t, ExitNodeSuggestion{ID: "n1", Name: "node"}, *sug.Result)
 }

@@ -12,7 +12,7 @@ Create or update the DMS-managed hotspot profile. Hotspot support is capability-
 
 For this implementation, only hotspot-capable backends such as NetworkManager should accept this action. Unsupported backends return an error such as `hotspot not supported by active network backend`.
 
-Configuration changes are rejected while the DMS hotspot is active or activating; stop it before updating the profile.
+Configuration changes are rejected while the DMS hotspot is active or activating; stop it before updating the profile. Each call replaces the whole profile and keeps its UUID.
 
 **Request:**
 ```json
@@ -24,18 +24,24 @@ Configuration changes are rejected while the DMS hotspot is active or activating
     "device": "wlan0",
     "band": "bg",
     "channel": 6,
-    "address": "10.42.0.1/24"
+    "address": "10.42.0.1/24",
+    "security": "sae",
+    "hidden": false,
+    "autoconnect": false
   }
 }
 ```
 
 **Parameters:**
 - `ssid` (string, required): Hotspot SSID to advertise.
-- `password` (string, optional): WPA-PSK password. Omit for an open hotspot when the backend allows it.
+- `password` (string, optional): Hotspot password. Omit for an open hotspot when the backend allows it.
 - `device` (string, optional): Wi-Fi interface name to use, for example `wlan0`. When omitted, the backend picks an AP-capable radio at start time, preferring one that is already hosting the hotspot, then an idle radio, and only as a last resort a radio carrying an active connection (which NetworkManager will disconnect). Network state exposes `apCapable` on each `wifiDevices` entry so clients can predict this choice.
 - `band` (string, optional): Requested NetworkManager band: `bg` for 2.4GHz or `a` for 5GHz.
-- `channel` (integer, optional, API v38+): Wi-Fi channel, 0-196. `0` or omitted lets NetworkManager choose. Non-integer or out-of-range values are rejected.
-- `address` (string, optional, API v38+): Gateway address with prefix, for example `10.42.0.1/24`. Omit for NetworkManager's default.
+- `channel` (integer, optional, API v41+): Wi-Fi channel, 0-196. `0` or omitted lets NetworkManager choose. Non-integer or out-of-range values are rejected.
+- `address` (string, optional, API v41+): Gateway address with prefix, for example `10.42.0.1/24`. Omit for NetworkManager's default.
+- `security` (string, optional, API v41+): `wpa-psk` (WPA2) or `sae` (WPA3), both requiring `password`. Omitted or empty means open, or WPA2 when `password` is set.
+- `hidden` (bool, optional, API v41+): Hide the SSID. Defaults to `false`.
+- `autoconnect` (bool, optional, API v41+): Let NetworkManager start the hotspot on its own. Defaults to `false`.
 
 **Response:**
 ```json
@@ -49,7 +55,7 @@ Configuration changes are rejected while the DMS hotspot is active or activating
 
 Start the previously configured DMS-managed hotspot profile. This action does not accept or require SSID/password parameters; call `network.hotspot.configure` first when changing hotspot settings.
 
-A successful response only means the activation was requested; the outcome is reported asynchronously through network state updates. While activation is in flight, `hotspotActivating` is `true`; on success `hotspotEnabled` becomes `true`; on failure `hotspotActivating` returns to `false` and `hotspotLastError` carries one of `hotspot-ip-config-failed` (IP sharing setup failed, commonly a missing `dnsmasq`, which NetworkManager's shared IPv4 method requires), `hotspot-supplicant-failed` (the Wi-Fi driver could not start AP mode), or `hotspot-failed`. `hotspotLastError` is cleared on the next successful start.
+A successful response only means the activation was requested; the outcome is reported asynchronously through network state updates. While activation is in flight, `hotspotActivating` is `true`; on success `hotspotEnabled` becomes `true`; on failure `hotspotActivating` returns to `false` and `hotspotLastError` carries one of `hotspot-ip-config-failed` (IP sharing setup failed, commonly a missing `dnsmasq`, which NetworkManager's shared IPv4 method requires), `hotspot-supplicant-failed` (the Wi-Fi driver could not start AP mode), `hotspot-wpa3-failed` (API v41+, the same failure on a WPA3 hotspot, commonly a driver or wpa_supplicant without SAE support in AP mode), or `hotspot-failed`. `hotspotLastError` is cleared on the next successful start.
 
 **Request:**
 ```json
@@ -103,7 +109,7 @@ Retrieve the stored password of the DMS-managed hotspot profile, for prefilling 
 }
 ```
 
-### network.connectivity.* (API v38+, NetworkManager only)
+### network.connectivity.* (API v41+, NetworkManager only)
 
 - `network.connectivity.check {}`: asks NetworkManager to re-probe now and returns `{"connectivity": "unknown|none|portal|limited|full"}`.
 - `network.connectivity.setCheckEnabled {enabled}`: turns NetworkManager's connectivity checking on or off (`enabled` is required). Other backends return `connection editor not supported by active network backend`.
@@ -116,21 +122,21 @@ Both take an optional `device` (string): the interface name to use, for example 
 
 ### network.connection.*
 
-Generic profile editor (API v38+, NetworkManager only). Clients should require `connectionEditorSupported: true` in network state. Other backends return `connection editor not supported by active network backend`. Validation is left to NetworkManager, whose error text is returned unchanged.
+Generic profile editor (API v41+, NetworkManager only). Clients should require `connectionEditorSupported: true` in network state. Other backends return `connection editor not supported by active network backend`. Validation is left to NetworkManager, whose error text is returned unchanged.
 
-- `network.connection.list`: returns `[{uuid, id, type, device?, interfaceName?, active, activeState?, autoconnect, timestamp, unsaved, controller?, portType?}]` (`controller` and `portType`, API v38+, are set for bond and bridge ports). Externally managed profiles (docker0, tailscale0, ...) are omitted. `unsaved` means the profile lives in memory only.
+- `network.connection.list`: returns `[{uuid, id, type, device?, interfaceName?, active, activeState?, autoconnect, timestamp, unsaved, controller?, portType?}]` (`controller` and `portType`, API v41+, are set for bond and bridge ports). Externally managed profiles (docker0, tailscale0, ...) are omitted. `unsaved` means the profile lives in memory only.
 - `network.connection.get {uuid, secrets?: bool}`: returns `{section: {key: value}}`. Secrets are included only when `secrets` is `true`.
 - `network.connection.update {uuid, settings, persist?: bool, enterprise?: object}`: merges `settings` into the profile. A `null` key deletes it, a `null` section deletes the section. `persist` (default `false`) writes the profile to disk; otherwise it stays where it is stored.
 - `network.connection.add {settings, persist?: bool, enterprise?: object}`: creates a profile and returns `{"uuid": "..."}`. `settings.connection.type` is required. `persist` defaults to `true`; `false` creates an in-memory profile.
-- `enterprise` (API v38+, on `update` and `add`): the same object as `network.wifi.connect`. DMS builds the `802-1x` section from it; any `802-1x` key in `settings` is ignored. On update, omitted certificate paths keep the stored files.
-- `network.connection.activate {uuid, device?}` (API v38+): activates a saved profile. NetworkManager picks the device when `device` is omitted.
-- `network.connection.deactivate {uuid}` (API v38+): deactivates the profile. Succeeds if it isn't active.
-- `network.connection.getEnterprise {uuid}` (API v38+): returns the profile's 802.1X settings in the `enterprise` shape, without passwords. Stored certificates come back with an empty path. Errors when the profile has no 802.1X settings.
-- `network.connection.firewallZones` (API v38+): returns the firewalld zone names, or `[]` when firewalld isn't running.
+- `enterprise` (API v41+, on `update` and `add`): the same object as `network.wifi.connect`. DMS builds the `802-1x` section from it; any `802-1x` key in `settings` is ignored. On update, omitted certificate paths keep the stored files.
+- `network.connection.activate {uuid, device?}` (API v41+): activates a saved profile. NetworkManager picks the device when `device` is omitted.
+- `network.connection.deactivate {uuid}` (API v41+): deactivates the profile. Succeeds if it isn't active.
+- `network.connection.getEnterprise {uuid}` (API v41+): returns the profile's 802.1X settings in the `enterprise` shape, without passwords. Stored certificates come back with an empty path. Errors when the profile has no 802.1X settings.
+- `network.connection.firewallZones` (API v41+): returns the firewalld zone names, or `[]` when firewalld isn't running.
 - `network.connection.delete {uuid}`
 - `network.connection.duplicate {uuid, name}`: copies a profile, including stored secrets, under a new UUID and the given name. Returns `{"uuid": "..."}`.
-- `network.connection.export {uuid, file}` (API v38+): writes a WireGuard profile (wg-quick format) or a VPN profile (`nmcli connection export`) to the absolute path `file` with mode 0600. Other profile types and NetworkManager's own errors are returned as text.
-- `network.wireguard.keys {privateKey?}` (API v38+): without `privateKey`, returns a new `{privateKey, publicKey}` pair. With it, returns the same private key and its derived public key. Errors with `invalid WireGuard key` unless it is base64 of 32 bytes. Works on any backend.
+- `network.connection.export {uuid, file}` (API v41+): writes a WireGuard profile (wg-quick format) or a VPN profile (`nmcli connection export`) to the absolute path `file` with mode 0600. Other profile types and NetworkManager's own errors are returned as text.
+- `network.wireguard.keys {privateKey?}` (API v41+): without `privateKey`, returns a new `{privateKey, publicKey}` pair. With it, returns the same private key and its derived public key. Errors with `invalid WireGuard key` unless it is base64 of 32 bytes. Works on any backend.
 
 ```json
 {
@@ -281,7 +287,7 @@ Cancel a credential prompt.
 }
 ```
 
-### tailscale.* (API v38+)
+### tailscale.* (API v41+)
 
 Served by the Tailscale manager, not the network service. Writes need permission on tailscaled (root, the daemon's user or the operator); `tailscale.profiles` reports it as `canOperate`.
 
@@ -339,23 +345,26 @@ State updates are sent whenever network configuration changes:
 - `wifiIP`: Assigned IP address (empty until DHCP completes)
 - `savedWifiNetworks` (API v26+): Saved WiFi profiles exposed at SSID granularity. If a backend has multiple profiles for the same SSID, DMS merges them into one SSID-level entry. Clients talking to older servers should derive saved visible networks from `wifiNetworks` entries where `saved` is true.
 - `savedWifiNetworks[].outOfRange` (API v26+): Whether the saved profile is not currently visible in scan results. Fallback entries derived from `wifiNetworks` should be treated as visible (`outOfRange: false`).
-- `ethernetDevices[].connectionUuid` (API v38+): UUID of the profile active on the device, if any. `profileUuids` lists the saved profiles that fit it (never `null`). Each `wiredConnections` entry carries the `device` it is active on.
+- `ethernetDevices[].connectionUuid` (API v41+): UUID of the profile active on the device, if any. `profileUuids` lists the saved profiles that fit it (never `null`). Each `wiredConnections` entry carries the `device` it is active on.
 - `hotspotSupported` (API v28+): Whether the active backend implements hotspot actions.
-- `connectionEditorSupported` (API v38+): Whether the active backend implements the `network.connection.*` editor methods.
-- `connectionProfilesRevision` (API v38+): Counter that increases when a profile is added, removed or changed, and when active connections change. Clients re-list profiles when it changes.
+- `connectionEditorSupported` (API v41+): Whether the active backend implements the `network.connection.*` editor methods.
+- `connectionProfilesRevision` (API v41+): Counter that increases when a profile is added, removed or changed, and when active connections change. Clients re-list profiles when it changes.
 - `hotspotAvailable` (API v28+): Whether hotspot support is usable on this backend/device set. For NetworkManager this means at least one AP-capable managed Wi-Fi device exists, independent of Wi-Fi radio enabled state.
 - `hotspotConfigured` (API v28+): Whether the DMS-managed hotspot profile exists.
 - `hotspotEnabled` (API v28+): Whether the DMS-managed hotspot profile is currently active.
 - `hotspotActivating` (API v28+): Whether hotspot activation is currently in progress.
 - `hotspotSecured` (API v28+): Whether the configured hotspot uses password-based security.
 - `hotspotSSID` (API v28+): Configured DMS hotspot SSID.
-- `hotspotChannel` (API v38+): Configured hotspot channel (`0` = automatic).
-- `hotspotAddress` (API v38+): Configured hotspot gateway address with prefix, empty for NetworkManager's default.
-- `hotspotUuid` (API v38+): UUID of the DMS-managed hotspot profile.
-- `connectivity` (API v38+): `unknown`, `none`, `portal`, `limited` or `full`.
-- `connectivityCheckEnabled` (API v38+): Whether NetworkManager's connectivity checking is on.
-- `connectivityCheckAvailable` (API v38+): Whether a check URI is configured so checking can be enabled.
-- `connectivityCheckUri` (API v38+): The URI NetworkManager probes; open it to reach a captive portal.
+- `hotspotChannel` (API v41+): Configured hotspot channel (`0` = automatic).
+- `hotspotAddress` (API v41+): Configured hotspot gateway address with prefix, empty for NetworkManager's default.
+- `hotspotUuid` (API v41+): UUID of the DMS-managed hotspot profile.
+- `hotspotSecurity` (API v41+): The hotspot's key management, `wpa-psk` or `sae`, empty when open.
+- `hotspotHidden` (API v41+): Whether the hotspot hides its SSID.
+- `hotspotAutoconnect` (API v41+): Whether NetworkManager may start the hotspot on its own.
+- `connectivity` (API v41+): `unknown`, `none`, `portal`, `limited` or `full`.
+- `connectivityCheckEnabled` (API v41+): Whether NetworkManager's connectivity checking is on.
+- `connectivityCheckAvailable` (API v41+): Whether a check URI is configured so checking can be enabled.
+- `connectivityCheckUri` (API v41+): The URI NetworkManager probes; open it to reach a captive portal.
 - `hotspotDevice` (API v28+): Optional configured Wi-Fi device for the DMS hotspot.
 - `hotspotBand` (API v28+): Optional configured hotspot band (`bg` or `a`).
 - `hotspotLastError` (API v28+): Machine-readable error from the most recent failed hotspot activation. Cleared when the next start succeeds.

@@ -127,6 +127,10 @@ Item {
             wifiMenu.close();
             return true;
         }
+        if (wiredMenu.open) {
+            wiredMenu.close();
+            return true;
+        }
         return false;
     }
 
@@ -177,6 +181,15 @@ Item {
                 }
             },
             {
+                "label": I18n.tr("Edit"),
+                "iconName": "edit",
+                "visible": saved && NetworkService.connectionEditorPagesSupported,
+                "action": () => {
+                    PopoutService.closeControlCenter();
+                    NetworkService.findWifiProfile(ssid, p => p ? PopoutService.openConnectionEditor(p.uuid, ssid) : PopoutService.openSettingsWithTab("network_connections"));
+                }
+            },
+            {
                 "label": network.autoconnect ? I18n.tr("Disable autoconnect") : I18n.tr("Enable autoconnect"),
                 "iconName": "autorenew",
                 "visible": showSavedOptions && DMSService.apiVersion > 13,
@@ -191,6 +204,34 @@ Item {
             }
         ];
         wifiMenu.openAt(anchor);
+    }
+
+    function wiredMenuItems(adapter, profiles) {
+        const uuid = adapter.connectionUuid;
+        const editable = profiles.find(c => c.uuid === uuid) ?? (profiles.length === 1 ? profiles[0] : null);
+        return [
+            {
+                "label": I18n.tr("Network Info"),
+                "iconName": "info",
+                "visible": !!adapter.connected && !!uuid,
+                "action": () => root.showWiredInfo(adapter, uuid)
+            },
+            {
+                "label": I18n.tr("Edit"),
+                "iconName": "edit",
+                "visible": !!editable && NetworkService.connectionEditorPagesSupported,
+                "action": () => {
+                    PopoutService.closeControlCenter();
+                    PopoutService.openConnectionEditor(editable.uuid, editable.id || adapter.name);
+                }
+            }
+        ];
+    }
+
+    function showWiredInfo(adapter, uuid) {
+        const conn = (NetworkService.wiredConnections || []).find(c => c.uuid === uuid);
+        networkWiredInfoModalLoader.active = true;
+        networkWiredInfoModalLoader.item.showNetworkInfo(conn?.id || adapter.name, NetworkService.getWiredNetworkInfo(uuid));
     }
 
     ScriptModel {
@@ -434,12 +475,7 @@ Item {
                                 return adapterItem.modelData.state === "unavailable" ? I18n.tr("Unavailable") : I18n.tr("Disconnected");
                             }
                             clickable: active && !!adapterItem.modelData.connectionUuid
-                            onClicked: {
-                                const uuid = adapterItem.modelData.connectionUuid;
-                                const conn = (NetworkService.wiredConnections || []).find(c => c.uuid === uuid);
-                                networkWiredInfoModalLoader.active = true;
-                                networkWiredInfoModalLoader.item.showNetworkInfo(conn?.id || adapterItem.modelData.name, NetworkService.getWiredNetworkInfo(uuid));
-                            }
+                            onClicked: root.showWiredInfo(adapterItem.modelData, adapterItem.modelData.connectionUuid)
 
                             DActionButton {
                                 anchors.verticalCenter: parent.verticalCenter
@@ -454,6 +490,24 @@ Item {
                                         NetworkService.disconnectEthernetDevice(adapterItem.modelData.name);
                                     else
                                         NetworkService.connectEthernetDevice(adapterItem.modelData.name);
+                                }
+                            }
+
+                            DActionButton {
+                                id: wiredOptionsButton
+
+                                readonly property var menuItems: root.wiredMenuItems(adapterItem.modelData, adapterItem.profiles)
+
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: menuItems.some(i => i.visible)
+                                buttonSize: Theme.buttonHeightXS
+                                iconSize: Theme.iconSizeMedium
+                                iconName: "more_horiz"
+                                Accessible.name: I18n.tr("Options")
+                                iconColor: Theme.surfaceText
+                                onClicked: {
+                                    wiredMenu.items = menuItems;
+                                    wiredMenu.openAt(wiredOptionsButton);
                                 }
                             }
                         }
@@ -668,6 +722,11 @@ Item {
 
     CcMenu {
         id: wifiMenu
+        transientSurfaceTracker: root.transientSurfaceTracker
+    }
+
+    CcMenu {
+        id: wiredMenu
         transientSurfaceTracker: root.transientSurfaceTracker
     }
 

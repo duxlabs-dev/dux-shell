@@ -758,13 +758,28 @@ func handleConfigureHotspot(conn *ipc.ConnWriter, req ipc.Request, manager *Mana
 		channel = uint32(ch)
 	}
 
+	flags := map[string]bool{}
+	for _, key := range []string{"hidden", "autoconnect"} {
+		if _, present := req.Params[key]; present {
+			v, ok := req.Get[bool](key)
+			if !ok {
+				conn.RespondError(req.ID, fmt.Sprintf("invalid '%s' parameter", key))
+				return
+			}
+			flags[key] = v
+		}
+	}
+
 	hotspotReq := HotspotRequest{
-		SSID:     ssid,
-		Password: params.StringOpt(req.Params, "password", ""),
-		Device:   params.StringOpt(req.Params, "device", ""),
-		Band:     params.StringOpt(req.Params, "band", ""),
-		Channel:  channel,
-		Address:  params.StringOpt(req.Params, "address", ""),
+		SSID:        ssid,
+		Password:    params.StringOpt(req.Params, "password", ""),
+		Device:      params.StringOpt(req.Params, "device", ""),
+		Band:        params.StringOpt(req.Params, "band", ""),
+		Channel:     channel,
+		Address:     params.StringOpt(req.Params, "address", ""),
+		Security:    params.StringOpt(req.Params, "security", ""),
+		Hidden:      flags["hidden"],
+		Autoconnect: flags["autoconnect"],
 	}
 
 	if err := manager.ConfigureHotspot(hotspotReq); err != nil {

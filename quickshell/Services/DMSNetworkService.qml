@@ -156,6 +156,9 @@ Singleton {
     property int hotspotChannel: 0
     property string hotspotAddress: ""
     property string hotspotUuid: ""
+    property string hotspotSecurity: ""
+    property bool hotspotHidden: false
+    property bool hotspotAutoconnect: false
     readonly property bool hotspotExtendedSupported: hotspotSupported && DMSService.apiVersion >= connectionEditorApiVersion
     property bool hotspotBusy: false
     property string hotspotError: ""
@@ -509,6 +512,9 @@ Singleton {
             hotspotChannel = state.hotspotChannel || 0;
             hotspotAddress = state.hotspotAddress || "";
             hotspotUuid = state.hotspotUuid || "";
+            hotspotSecurity = state.hotspotSecurity || "";
+            hotspotHidden = state.hotspotHidden === true;
+            hotspotAutoconnect = state.hotspotAutoconnect === true;
         } else {
             connectivity = "unknown";
             connectivityCheckEnabled = false;
@@ -517,6 +523,9 @@ Singleton {
             hotspotChannel = 0;
             hotspotAddress = "";
             hotspotUuid = "";
+            hotspotSecurity = "";
+            hotspotHidden = false;
+            hotspotAutoconnect = false;
         }
 
         backendConnectionEditorSupported = DMSService.apiVersion >= connectionEditorApiVersion && state.connectionEditorSupported === true;
@@ -1297,13 +1306,18 @@ Singleton {
         const params = {
             ssid: ssid
         };
-        if (password)
+        if (!hotspotExtendedSupported && password)
             params.password = password;
         if (device)
             params.device = device;
         if (band)
             params.band = band;
         if (hotspotExtendedSupported) {
+            params.security = options.security ?? (password ? "wpa-psk" : "");
+            if (params.security)
+                params.password = password;
+            params.hidden = options.hidden === true;
+            params.autoconnect = options.autoconnect === true;
             if (options.channel > 0)
                 params.channel = options.channel;
             if (options.address)
@@ -1604,6 +1618,8 @@ Singleton {
             return I18n.tr("IP sharing setup failed. Check that %1 is installed.", "hotspot IP configuration failure message, %1 is a package name").arg("dnsmasq");
         case "hotspot-supplicant-failed":
             return I18n.tr("The WiFi adapter could not start access point mode.", "hotspot adapter failure message");
+        case "hotspot-wpa3-failed":
+            return I18n.tr("This Wi-Fi adapter can't host a WPA3 hotspot. Use WPA2.", "hotspot WPA3 activation failure message");
         default:
             return I18n.tr("Hotspot activation failed.", "generic hotspot activation failure message");
         }

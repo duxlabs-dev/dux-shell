@@ -352,6 +352,9 @@ func (m *Manager) syncStateFromBackend() error {
 		m.state.HotspotChannel = backendState.HotspotChannel
 		m.state.HotspotAddress = backendState.HotspotAddress
 		m.state.HotspotUUID = backendState.HotspotUUID
+		m.state.HotspotSecurity = backendState.HotspotSecurity
+		m.state.HotspotHidden = backendState.HotspotHidden
+		m.state.HotspotAutoconnect = backendState.HotspotAutoconnect
 	} else {
 		m.state.HotspotAvailable = false
 		m.state.HotspotConfigured = false
@@ -365,6 +368,9 @@ func (m *Manager) syncStateFromBackend() error {
 		m.state.HotspotChannel = 0
 		m.state.HotspotAddress = ""
 		m.state.HotspotUUID = ""
+		m.state.HotspotSecurity = ""
+		m.state.HotspotHidden = false
+		m.state.HotspotAutoconnect = false
 	}
 	m.state.Connectivity = backendState.Connectivity
 	m.state.ConnectivityCheckEnabled = backendState.ConnectivityCheckEnabled
@@ -496,7 +502,10 @@ func stateChangedMeaningfully(old, new *NetworkState) bool {
 	}
 	if old.HotspotChannel != new.HotspotChannel ||
 		old.HotspotAddress != new.HotspotAddress ||
-		old.HotspotUUID != new.HotspotUUID {
+		old.HotspotUUID != new.HotspotUUID ||
+		old.HotspotSecurity != new.HotspotSecurity ||
+		old.HotspotHidden != new.HotspotHidden ||
+		old.HotspotAutoconnect != new.HotspotAutoconnect {
 		return true
 	}
 	if old.Connectivity != new.Connectivity ||

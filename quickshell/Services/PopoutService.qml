@@ -612,6 +612,11 @@ Singleton {
         }
     }
 
+    function openConnectionEditor(uuid: string, title: string) {
+        SettingsUiState.selectConnection(uuid, title, "");
+        openSettingsWithTab("network_connection");
+    }
+
     function openSettingsWithTabIndex(tabIndex: int) {
         if (settingsModal) {
             if (_settingsWindowDead()) {

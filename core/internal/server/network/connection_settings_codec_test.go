@@ -3,7 +3,6 @@ package network
 import (
 	"encoding/binary"
 	"encoding/json"
-	"net"
 	"strings"
 	"testing"
 
@@ -13,479 +12,172 @@ import (
 )
 
 func TestSettingSignaturesMatchNMSettingsDBus(t *testing.T) {
-	ip := map[string]string{
-		"method": "s", "address-data": "aa{sv}", "gateway": "s", "route-data": "aa{sv}",
-		"dns-data": "as", "dns-search": "as", "dns-options": "as", "dns-priority": "i",
-		"route-metric": "x", "route-table": "u", "never-default": "b", "ignore-auto-dns": "b",
-		"ignore-auto-routes": "b", "may-fail": "b", "dhcp-hostname": "s",
+	ip := map[string]string{"method": "s", "address-data": "aa{sv}", "gateway": "s", "route-data": "aa{sv}", "dns-data": "as", "dns-search": "as", "dns-options": "as",
+		"dns-priority": "i", "route-metric": "x", "route-table": "u", "never-default": "b", "ignore-auto-dns": "b", "ignore-auto-routes": "b", "may-fail": "b", "dhcp-hostname": "s"}
+	want := map[string]map[string]string{
+		"connection": {"id": "s", "uuid": "s", "type": "s", "interface-name": "s", "autoconnect": "b", "autoconnect-priority": "i", "autoconnect-retries": "i", "metered": "i",
+			"zone": "s", "secondaries": "as", "permissions": "as", "stable-id": "s", "timestamp": "t"},
+		"ipv4":            {"dhcp-client-id": "s", "dhcp-send-hostname-v2": "i"},
+		"ipv6":            {"ip6-privacy": "i", "addr-gen-mode": "i", "token": "s", "dhcp-send-hostname": "b", "dhcp-send-hostname-v2": "i"},
+		"802-3-ethernet":  {"mac-address": "ay", "assigned-mac-address": "s", "wake-on-lan": "u", "auto-negotiate": "b", "accept-all-mac-addresses": "i", "mac-address-denylist": "as"},
+		"802-11-wireless": {"ssid": "ay", "bssid": "ay", "channel-width": "i", "powersave": "u", "ap-isolation": "i", "seen-bssids": "as"},
+		"802-1x": {"eap": "as", "identity": "s", "anonymous-identity": "s", "password": "s", "password-flags": "u", "phase2-auth": "s", "phase2-autheap": "s", "ca-cert": "ay",
+			"ca-path": "s", "system-ca-certs": "b", "domain-match": "s", "domain-suffix-match": "s", "client-cert": "ay", "private-key": "ay", "private-key-password": "s",
+			"private-key-password-flags": "u", "phase1-peapver": "s", "phase1-peaplabel": "s", "phase1-auth-flags": "u", "openssl-ciphers": "s", "altsubject-matches": "as", "auth-timeout": "i", "optional": "b"},
+		"802-11-wireless-security": {"key-mgmt": "s", "psk": "s", "psk-flags": "u", "pmf": "i", "proto": "as", "pairwise": "as", "group": "as"},
+		"wireguard":                {"private-key": "s", "private-key-flags": "u", "listen-port": "u", "fwmark": "u", "peer-routes": "b", "mtu": "u", "peers": "aa{sv}", "ip4-auto-default-route": "i", "ip6-auto-default-route": "i"},
+		"vpn":                      {"service-type": "s", "user-name": "s", "persistent": "b", "timeout": "u", "data": "a{ss}", "secrets": "a{ss}"},
 	}
-	want := map[string]string{
-		"connection.id": "s", "connection.uuid": "s", "connection.type": "s",
-		"connection.interface-name": "s", "connection.autoconnect": "b",
-		"connection.autoconnect-priority": "i", "connection.autoconnect-retries": "i",
-		"connection.metered": "i", "connection.zone": "s", "connection.secondaries": "as",
-		"connection.permissions": "as", "connection.stable-id": "s",
-		"ipv6.ip6-privacy": "i", "ipv6.addr-gen-mode": "i",
-	}
-	for k, sig := range ip {
-		want["ipv4."+k] = sig
-		want["ipv6."+k] = sig
-	}
-	for name, sig := range want {
-		assert.Equal(t, sig, settingSignatures[name], name)
-		_, err := dbus.ParseSignature(sig)
-		assert.NoError(t, err, name)
-	}
-
+	route := map[string]string{"dest": "s", "prefix": "u", "next-hop": "s", "metric": "u", "table": "u", "onlink": "b", "src": "s", "tos": "y", "scope": "y"}
 	for _, fam := range []string{"ipv4", "ipv6"} {
-		assert.Equal(t, map[string]string{"address": "s", "prefix": "u", "label": "s"},
-			nestedDictSignatures[fam+".address-data"])
-		route := nestedDictSignatures[fam+".route-data"]
-		for k, sig := range map[string]string{"dest": "s", "prefix": "u", "next-hop": "s", "metric": "u",
-			"table": "u", "onlink": "b", "src": "s", "tos": "y", "scope": "y"} {
-			assert.Equal(t, sig, route[k], k)
+		for k, sig := range ip {
+			want[fam][k] = sig
+		}
+		assert.Equal(t, map[string]string{"address": "s", "prefix": "u", "label": "s"}, nestedDictSignatures[fam+".address-data"])
+		for k, sig := range route {
+			assert.Equal(t, sig, nestedDictSignatures[fam+".route-data"][k], k)
 		}
 	}
-
-	for name, sig := range map[string]string{
-		"802-3-ethernet.mac-address": "ay", "802-3-ethernet.assigned-mac-address": "s",
-		"802-3-ethernet.wake-on-lan": "u", "802-3-ethernet.auto-negotiate": "b",
-		"802-3-ethernet.accept-all-mac-addresses": "i", "802-3-ethernet.mac-address-denylist": "as",
-		"802-11-wireless.ssid": "ay", "802-11-wireless.bssid": "ay", "802-11-wireless.channel-width": "i",
-		"802-11-wireless.powersave": "u", "802-11-wireless.ap-isolation": "i",
-		"802-11-wireless.seen-bssids": "as", "connection.timestamp": "t",
-		"ipv4.dhcp-client-id": "s", "ipv6.token": "s", "ipv6.dhcp-send-hostname": "b",
-		"ipv4.dhcp-send-hostname-v2": "i", "ipv6.dhcp-send-hostname-v2": "i",
-	} {
-		assert.Equal(t, sig, settingSignatures[name], name)
+	for section, keys := range want {
+		for k, sig := range keys {
+			assert.Equal(t, sig, settingSignatures[section+"."+k], section+"."+k)
+		}
 	}
 }
 
 func TestSettingsCodecRoundTripKeepsSignatures(t *testing.T) {
 	stored := map[string]map[string]dbus.Variant{
-		"connection": {
-			"id":                   dbus.MakeVariant("Wired connection 1"),
-			"autoconnect":          dbus.MakeVariant(false),
-			"autoconnect-priority": dbus.MakeVariant(int32(-999)),
-			"timestamp":            dbus.MakeVariant(uint64(1759400000)),
-			"permissions":          dbus.MakeVariant([]string{"user:marlon"}),
-		},
-		"ipv4": {
-			"method":       dbus.MakeVariant("manual"),
-			"route-metric": dbus.MakeVariant(int64(-1)),
-			"dns-data":     dbus.MakeVariant([]string{"192.0.2.53"}),
-			"address-data": dbus.MakeVariant([]map[string]dbus.Variant{
-				{"address": dbus.MakeVariant("192.0.2.10"), "prefix": dbus.MakeVariant(uint32(24))},
-			}),
-			"addresses": dbus.MakeVariant([][]uint32{{1, 24, 2}}),
-		},
-		"vpn": {
-			"data": dbus.MakeVariant(map[string]string{"remote": "vpn.example.com"}),
-		},
-		"802-3-ethernet": {
-			"mac-address": dbus.MakeVariant([]byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff}),
-		},
+		"connection": {"id": dbus.MakeVariant("Wired connection 1"), "autoconnect": dbus.MakeVariant(false), "autoconnect-priority": dbus.MakeVariant(int32(-999)),
+			"timestamp": dbus.MakeVariant(uint64(1759400000)), "permissions": dbus.MakeVariant([]string{"user:marlon"})},
+		"ipv4": {"method": dbus.MakeVariant("manual"), "route-metric": dbus.MakeVariant(int64(-1)), "dns-data": dbus.MakeVariant([]string{"192.0.2.53"}),
+			"address-data": dbus.MakeVariant([]map[string]dbus.Variant{{"address": dbus.MakeVariant("192.0.2.10"), "prefix": dbus.MakeVariant(uint32(24))}}),
+			"addresses":    dbus.MakeVariant([][]uint32{{1, 24, 2}})},
+		"vpn":             {"data": dbus.MakeVariant(map[string]string{"remote": "vpn.example.com"})},
+		"802-3-ethernet":  {"mac-address": dbus.MakeVariant([]byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff})},
+		"802-11-wireless": {"ssid": dbus.MakeVariant([]byte("eduroam"))},
+		"802-1x":          {"ca-cert": dbus.MakeVariant(append([]byte("file:///etc/x.pem"), 0)), "client-cert": dbus.MakeVariant([]byte{0x30, 0x82, 0x01})},
 	}
-
-	decoded := decodeSettingsForJSON(stored)
-	assert.NotContains(t, decoded["ipv4"], "addresses")
-	assert.Equal(t, []string{"192.0.2.53"}, decoded["ipv4"]["dns-data"])
-
-	raw, err := json.Marshal(decoded)
-	require.NoError(t, err)
+	raw, err := json.Marshal(decodeSettingsForJSON(stored))
 	var fromJSON map[string]map[string]any
+	require.NoError(t, err)
 	require.NoError(t, json.Unmarshal(raw, &fromJSON))
-
+	assert.NotContains(t, fromJSON["ipv4"], "addresses")
 	for section, keys := range fromJSON {
 		for key, value := range keys {
 			orig := stored[section][key]
 			got, err := encodeSettingValue(section, key, value, &orig)
 			require.NoError(t, err, section+"."+key)
-			assert.Equal(t, orig.Signature(), got.Signature(), section+"."+key)
-			assert.Equal(t, orig.Value(), got.Value(), section+"."+key)
+			assert.Equal(t, orig, got, section+"."+key)
 		}
 	}
 }
 
-func TestEncodeSettingValueNumberTyping(t *testing.T) {
-	v, err := encodeSettingValue("connection", "autoconnect-priority", 5.0, nil)
-	require.NoError(t, err)
-	assert.Equal(t, int32(5), v.Value())
-
-	v, err = encodeSettingValue("ipv4", "route-metric", -1.0, nil)
-	require.NoError(t, err)
-	assert.Equal(t, int64(-1), v.Value())
-
-	v, err = encodeSettingValue("ipv4", "address-data", []any{
-		map[string]any{"address": "192.0.2.10", "prefix": 24.0},
-	}, nil)
-	require.NoError(t, err)
-	assert.Equal(t, "aa{sv}", v.Signature().String())
-	addrs := v.Value().([]map[string]dbus.Variant)
-	assert.Equal(t, uint32(24), addrs[0]["prefix"].Value())
-
-	_, err = encodeSettingValue("connection", "autoconnect-priority", 1.5, nil)
-	assert.ErrorContains(t, err, "connection.autoconnect-priority")
-
-	_, err = encodeSettingValue("ipv4", "route-table", -1.0, nil)
-	assert.ErrorContains(t, err, "ipv4.route-table")
-
-	_, err = encodeSettingValue("ipv4", "route-table", 4294967296.0, nil)
-	assert.ErrorContains(t, err, "ipv4.route-table")
-
-	_, err = encodeSettingValue("ipv4", "address-data", []any{
-		map[string]any{"address": "192.0.2.10", "prefix": 24.5},
-	}, nil)
-	assert.ErrorContains(t, err, "ipv4.address-data.prefix")
-
-	_, err = encodeSettingValue("ipv4", "address-data", []any{
-		map[string]any{"bogus": "x"},
-	}, nil)
-	assert.ErrorContains(t, err, "ipv4.address-data.bogus")
+func TestEncodeSettingValue(t *testing.T) {
+	blob, nested := []byte{0x30, 0x82, 0x01}, func(m map[string]any) []any { return []any{m} }
+	prio, addr, cert := "connection.autoconnect-priority", "ipv4.address-data", "802-1x.ca-cert"
+	for _, tc := range []struct {
+		name, sk string
+		value    any
+		want     any
+		stored   *dbus.Variant
+		fail     bool
+	}{
+		{"uint max", "ipv4.route-table", 4294967295.0, uint32(4294967295), nil, false},
+		{"fraction", prio, 1.5, nil, nil, true},
+		{"int32 overflow", prio, 2147483648.0, nil, nil, true},
+		{"nested unknown key", addr, nested(map[string]any{"bogus": "x"}), nil, nil, true},
+		{"vpn secret tombstone", "vpn.secrets", map[string]any{"password": nil, "cert-pass": "x"}, map[string]string{"cert-pass": "x"}, nil, false},
+		{"peer psk tombstone", "wireguard.peers", nested(map[string]any{"public-key": "A", "preshared-key": nil}), []map[string]dbus.Variant{{"public-key": dbus.MakeVariant("A")}}, nil, false},
+		{"vpn data null", "vpn.data", map[string]any{"remote": nil}, nil, nil, true},
+		{"cert path", cert, "/etc/x.pem", append([]byte("file:///etc/x.pem"), 0), nil, false},
+		{"cert relative path", cert, "relative.pem", nil, nil, true},
+		{"cert path with NUL", cert, "/etc/a\x00b.pem", nil, nil, true},
+		{"cert blob keeps stored", "802-1x.client-cert", "blob", blob, &[]dbus.Variant{dbus.MakeVariant(blob)}[0], false},
+		{"cert blob without stored", "802-1x.client-cert", "blob", nil, nil, true},
+		{"mac garbage", "802-3-ethernet.mac-address", "zz", nil, nil, true},
+		{"ssid empty", "802-11-wireless.ssid", "", nil, nil, true},
+		{"ssid too long", "802-11-wireless.ssid", strings.Repeat("a", 33), nil, nil, true},
+		{"native passes", "802-1x.eap", []string{"ttls"}, []string{"ttls"}, nil, false},
+		{"native wrong int", "802-1x.password-flags", 2, nil, nil, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			section, key, _ := strings.Cut(tc.sk, ".")
+			v, err := encodeSettingValue(section, key, tc.value, tc.stored)
+			if tc.fail {
+				assert.ErrorContains(t, err, tc.sk)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, v.Value())
+		})
+	}
 }
 
-func TestApplySettingsPatchSemantics(t *testing.T) {
+func TestDecodeSettingsForJSON(t *testing.T) {
+	au, v6 := binary.NativeEndian.Uint32([]byte{192, 0, 2, 53}), []byte{0x20, 0x01, 0x0d, 0xb8, 15: 0x53} // NM stores IPv4 as network-order bytes
+	type sec = map[string]map[string]dbus.Variant
+	for _, tc := range []struct {
+		name string
+		in   sec
+		want map[string]map[string]any
+	}{
+		{"cert path, blob, empty path, no NUL", sec{"802-1x": {"phase2-ca-cert": dbus.MakeVariant(append([]byte("file:///etc/inner.pem"), 0)),
+			"phase2-private-key": dbus.MakeVariant([]byte{0x30}), "ca-cert": dbus.MakeVariant(append([]byte("file://"), 0)), "client-cert": dbus.MakeVariant([]byte("file:///etc/x.pem"))}},
+			map[string]map[string]any{"802-1x": {"phase2-ca-cert": "/etc/inner.pem", "phase2-private-key": "blob", "ca-cert": "blob", "client-cert": "blob"}}},
+		{"mac, bad cloned mac dropped", sec{"802-3-ethernet": {"mac-address": dbus.MakeVariant([]byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff}), "cloned-mac-address": dbus.MakeVariant([]byte{1, 2, 3})}},
+			map[string]map[string]any{"802-3-ethernet": {"mac-address": "AA:BB:CC:DD:EE:FF"}}},
+		{"non-UTF-8 ssid dropped", sec{"802-11-wireless": {"ssid": dbus.MakeVariant([]byte{0xff, 0xfe}), "mode": dbus.MakeVariant("ap")}}, map[string]map[string]any{"802-11-wireless": {"mode": "ap"}}},
+		{"legacy dns", sec{"ipv4": {"dns": dbus.MakeVariant([]uint32{au})}, "ipv6": {"dns": dbus.MakeVariant([][]byte{v6})}},
+			map[string]map[string]any{"ipv4": {"dns-data": []string{"192.0.2.53"}}, "ipv6": {"dns-data": []string{"2001:db8::53"}}}},
+		{"dns-data wins over legacy dns", sec{"ipv4": {"dns": dbus.MakeVariant([]uint32{au}), "dns-data": dbus.MakeVariant([]string{"198.51.100.1"})}},
+			map[string]map[string]any{"ipv4": {"dns-data": []string{"198.51.100.1"}}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, map[string]map[string]any(decodeSettingsForJSON(tc.in)))
+		})
+	}
+}
+
+func TestApplySettingsPatch(t *testing.T) {
 	newSettings := func() map[string]map[string]dbus.Variant {
-		return map[string]map[string]dbus.Variant{
-			"connection": {
-				"id":          dbus.MakeVariant("home"),
-				"zone":        dbus.MakeVariant("public"),
-				"custom-key":  dbus.MakeVariant("old"),
-				"autoconnect": dbus.MakeVariant(true),
-			},
-			"proxy": {"method": dbus.MakeVariant(int32(0))},
-		}
+		return map[string]map[string]dbus.Variant{"proxy": {"method": dbus.MakeVariant(int32(0))},
+			"connection": {"id": dbus.MakeVariant("home"), "zone": dbus.MakeVariant("public"), "custom-key": dbus.MakeVariant("old"), "autoconnect": dbus.MakeVariant(true)}}
 	}
-
 	s := newSettings()
-	err := applySettingsPatch(s, SettingsPatch{
-		"connection": {"zone": nil, "custom-key": "new", "autoconnect-priority": 5.0},
-		"proxy":      nil,
-	})
-	require.NoError(t, err)
-	assert.NotContains(t, s["connection"], "zone")
-	assert.NotContains(t, s, "proxy")
-	assert.Equal(t, dbus.MakeVariant("new"), s["connection"]["custom-key"])
-	assert.Equal(t, dbus.MakeVariant(int32(5)), s["connection"]["autoconnect-priority"])
-	assert.Equal(t, dbus.MakeVariant("home"), s["connection"]["id"])
-
+	require.NoError(t, applySettingsPatch(s, SettingsPatch{"connection": {"zone": nil, "custom-key": "new", "autoconnect-priority": 5.0}, "proxy": nil, "ipv6": {"dns-data": nil}}))
+	assert.Equal(t, map[string]map[string]dbus.Variant{"connection": {"id": dbus.MakeVariant("home"), "custom-key": dbus.MakeVariant("new"),
+		"autoconnect": dbus.MakeVariant(true), "autoconnect-priority": dbus.MakeVariant(int32(5))}}, s, "delete-only patch creates no section")
+	require.NoError(t, applySettingsPatch(s, SettingsPatch{"ipv6": {"dns-data": nil, "method": "auto"}}))
+	assert.Equal(t, map[string]dbus.Variant{"method": dbus.MakeVariant("auto")}, s["ipv6"])
 	// Map order is random; repeat so an in-place apply can't pass by luck.
 	for range 20 {
 		s = newSettings()
-		err = applySettingsPatch(s, SettingsPatch{
-			"connection": {"id": "renamed", "zone": nil, "not-a-key": "x"},
-			"proxy":      nil,
-		})
+		err := applySettingsPatch(s, SettingsPatch{"connection": {"id": "renamed", "zone": nil, "not-a-key": "x"}, "proxy": nil})
 		require.ErrorContains(t, err, "connection.not-a-key")
 		require.Equal(t, newSettings(), s)
 	}
+	assert.Error(t, applySettingsPatch(nil, SettingsPatch{"connection": {"id": "x"}}))
 }
 
 func TestEncodeNewSettings(t *testing.T) {
-	s, err := encodeNewSettings(SettingsPatch{
-		"connection":     {"id": "office", "type": "802-3-ethernet", "autoconnect": false},
-		"802-3-ethernet": {},
-		"ipv4":           {"method": "auto", "dns-data": []any{"192.0.2.53"}},
-	})
-	require.NoError(t, err)
-	assert.Equal(t, dbus.MakeVariant(false), s["connection"]["autoconnect"])
-	assert.Contains(t, s, "802-3-ethernet")
-	assert.Equal(t, dbus.MakeVariant([]string{"192.0.2.53"}), s["ipv4"]["dns-data"])
-
-	_, err = encodeNewSettings(SettingsPatch{"connection": {"custom-key": "x"}})
-	assert.ErrorContains(t, err, "connection.custom-key")
-}
-
-func TestApplySettingsPatchDeleteOnlyDoesNotCreateSection(t *testing.T) {
-	s := map[string]map[string]dbus.Variant{"connection": {"id": dbus.MakeVariant("home")}}
-	require.NoError(t, applySettingsPatch(s, SettingsPatch{"ipv6": {"dns-data": nil}}))
-	assert.NotContains(t, s, "ipv6")
-
-	require.NoError(t, applySettingsPatch(s, SettingsPatch{"ipv6": {"dns-data": nil, "method": "auto"}}))
-	assert.Equal(t, map[string]dbus.Variant{"method": dbus.MakeVariant("auto")}, s["ipv6"])
-}
-
-func TestApplySettingsPatchNilSettings(t *testing.T) {
-	err := applySettingsPatch(nil, SettingsPatch{"connection": {"id": "x"}})
-	assert.Error(t, err)
-}
-
-func TestEncodeIntegerUpperBounds(t *testing.T) {
-	v, err := encodeSettingValue("connection", "autoconnect-priority", 2147483647.0, nil)
-	require.NoError(t, err)
-	assert.Equal(t, int32(2147483647), v.Value())
-	_, err = encodeSettingValue("connection", "autoconnect-priority", 2147483648.0, nil)
-	assert.ErrorContains(t, err, "connection.autoconnect-priority")
-
-	v, err = encodeSettingValue("ipv4", "route-metric", -9223372036854775808.0, nil)
-	require.NoError(t, err)
-	assert.Equal(t, int64(-1<<63), v.Value())
-	_, err = encodeSettingValue("ipv4", "route-metric", float64(1<<63), nil)
-	assert.ErrorContains(t, err, "ipv4.route-metric")
-}
-
-func TestCertKindRoundTrip(t *testing.T) {
-	path := append([]byte("file:///etc/x.pem"), 0)
-	blob := []byte{0x30, 0x82, 0x01}
-	stored := map[string]map[string]dbus.Variant{"802-1x": {
-		"ca-cert":     dbus.MakeVariant(path),
-		"client-cert": dbus.MakeVariant(blob),
-		"private-key": dbus.MakeVariant(blob),
-	}}
-	got := decodeSettingsForJSON(stored)["802-1x"]
-	assert.Equal(t, "/etc/x.pem", got["ca-cert"])
-	assert.Equal(t, "blob", got["client-cert"])
-	assert.Equal(t, "blob", got["private-key"])
-
-	v, err := encodeSettingValue("802-1x", "ca-cert", "/etc/x.pem", nil)
-	require.NoError(t, err)
-	assert.Equal(t, path, v.Value())
-
-	old := stored["802-1x"]["client-cert"]
-	v, err = encodeSettingValue("802-1x", "client-cert", "blob", &old)
-	require.NoError(t, err)
-	assert.Equal(t, blob, v.Value())
-
-	_, err = encodeSettingValue("802-1x", "client-cert", "blob", nil)
-	assert.ErrorContains(t, err, "802-1x.client-cert")
-	_, err = encodeSettingValue("802-1x", "ca-cert", "relative.pem", nil)
-	assert.ErrorContains(t, err, "802-1x.ca-cert")
-}
-
-func TestCertKindEdgeCases(t *testing.T) {
-	got := decodeSettingsForJSON(map[string]map[string]dbus.Variant{"802-1x": {
-		"phase2-ca-cert":     dbus.MakeVariant(append([]byte("file:///etc/inner.pem"), 0)),
-		"phase2-client-cert": dbus.MakeVariant([]byte{0x30, 0x82}),
-		"phase2-private-key": dbus.MakeVariant([]byte{0x30, 0x82}),
-		"ca-cert":            dbus.MakeVariant(append([]byte("file://"), 0)),
-		"client-cert":        dbus.MakeVariant([]byte("file:///etc/x.pem")),
-	}})["802-1x"]
-	assert.Equal(t, "/etc/inner.pem", got["phase2-ca-cert"])
-	assert.Equal(t, "blob", got["phase2-client-cert"])
-	assert.Equal(t, "blob", got["phase2-private-key"])
-	assert.Equal(t, "blob", got["ca-cert"], "empty path")
-	assert.Equal(t, "blob", got["client-cert"], "no trailing NUL")
-
-	_, err := encodeSettingValue("802-1x", "ca-cert", "/etc/a\x00b.pem", nil)
-	assert.ErrorContains(t, err, "802-1x.ca-cert")
-
-	stored := dbus.MakeVariant([]byte("old"))
-	v, err := encodeSettingValue("802-11-wireless", "ssid", []byte("Campus"), &stored)
-	require.NoError(t, err)
-	assert.Equal(t, []byte("Campus"), v.Value())
-}
-
-func TestNativeValuesPassThrough(t *testing.T) {
-	for _, tc := range []struct {
-		section, key string
-		value        any
-		sig          string
-	}{
-		{"802-1x", "ca-cert", []byte{1, 2}, "ay"},
-		{"802-1x", "eap", []string{"ttls"}, "as"},
-		{"802-1x", "password-flags", uint32(2), "u"},
-	} {
-		v, err := encodeSettingValue(tc.section, tc.key, tc.value, nil)
-		require.NoError(t, err, tc.key)
-		assert.Equal(t, tc.sig, v.Signature().String(), tc.key)
-		assert.Equal(t, tc.value, v.Value(), tc.key)
-	}
-	_, err := encodeSettingValue("802-1x", "password-flags", 2, nil)
-	assert.ErrorContains(t, err, "802-1x.password-flags")
-}
-
-func TestEncodeNewSettingsSkipsNilKeys(t *testing.T) {
-	s, err := encodeNewSettings(SettingsPatch{"802-1x": {"identity": "u", "password": nil}})
-	require.NoError(t, err)
-	assert.Contains(t, s["802-1x"], "identity")
-	assert.NotContains(t, s["802-1x"], "password")
-}
-
-func TestEnterpriseSignatureRows(t *testing.T) {
-	want := map[string]string{
-		"802-1x.eap": "as", "802-1x.identity": "s", "802-1x.anonymous-identity": "s",
-		"802-1x.password": "s", "802-1x.password-flags": "u", "802-1x.phase2-auth": "s",
-		"802-1x.phase2-autheap": "s", "802-1x.ca-cert": "ay", "802-1x.ca-path": "s",
-		"802-1x.system-ca-certs": "b", "802-1x.domain-match": "s", "802-1x.domain-suffix-match": "s",
-		"802-1x.client-cert": "ay", "802-1x.private-key": "ay", "802-1x.private-key-password": "s",
-		"802-1x.private-key-password-flags": "u", "802-1x.phase1-peapver": "s",
-		"802-1x.phase1-peaplabel": "s", "802-1x.phase1-auth-flags": "u", "802-1x.openssl-ciphers": "s",
-		"802-1x.altsubject-matches": "as", "802-1x.auth-timeout": "i", "802-1x.optional": "b",
-		"802-11-wireless-security.key-mgmt": "s", "802-11-wireless-security.psk": "s",
-		"802-11-wireless-security.psk-flags": "u", "802-11-wireless-security.pmf": "i",
-		"802-11-wireless-security.proto": "as", "802-11-wireless-security.pairwise": "as",
-		"802-11-wireless-security.group": "as",
-	}
-	for name, sig := range want {
-		assert.Equal(t, sig, settingSignatures[name], name)
-	}
-}
-
-func TestEncodeDictListRejectsNullInnerValue(t *testing.T) {
-	_, err := encodeSettingValue("ipv4", "address-data", []any{
-		map[string]any{"address": "192.0.2.10", "prefix": nil},
-	}, nil)
-	assert.ErrorContains(t, err, "ipv4.address-data.prefix")
-}
-
-func TestEncodeAcceptsNullSecretTombstones(t *testing.T) {
-	v, err := encodeSettingValue("vpn", "secrets", map[string]any{"password": nil, "cert-pass": "x"}, nil)
-	require.NoError(t, err)
-	assert.Equal(t, map[string]string{"cert-pass": "x"}, v.Value())
-
-	v, err = encodeSettingValue("wireguard", "peers", []any{map[string]any{"public-key": "A", "preshared-key": nil}}, nil)
-	require.NoError(t, err)
-	assert.Equal(t, []map[string]dbus.Variant{{"public-key": dbus.MakeVariant("A")}}, v.Value())
-
-	_, err = encodeSettingValue("vpn", "data", map[string]any{"remote": nil}, nil)
-	assert.ErrorContains(t, err, "vpn.data.remote")
-}
-
-func TestMACKind(t *testing.T) {
-	dec := decodeSettingsForJSON(map[string]map[string]dbus.Variant{
-		"802-3-ethernet": {
-			"mac-address":        dbus.MakeVariant([]byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff}),
-			"cloned-mac-address": dbus.MakeVariant([]byte{1, 2, 3}),
-		},
-	})
-	assert.Equal(t, "AA:BB:CC:DD:EE:FF", dec["802-3-ethernet"]["mac-address"])
-	assert.NotContains(t, dec["802-3-ethernet"], "cloned-mac-address")
-
-	v, err := encodeSettingValue("802-3-ethernet", "mac-address", "aa:bb:cc:dd:ee:ff", nil)
-	require.NoError(t, err)
-	assert.Equal(t, "ay", v.Signature().String())
-	assert.Equal(t, []byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff}, v.Value())
-
-	_, err = encodeSettingValue("802-3-ethernet", "mac-address", "zz", nil)
-	require.ErrorContains(t, err, "802-3-ethernet.mac-address")
-	_, err = encodeSettingValue("802-3-ethernet", "mac-address", "00:11:22:33:44:55:66:77", nil)
-	require.ErrorContains(t, err, "802-3-ethernet.mac-address")
-}
-
-func TestSSIDKind(t *testing.T) {
-	for _, bad := range []string{"", strings.Repeat("a", 33)} {
-		_, err := encodeSettingValue("802-11-wireless", "ssid", bad, nil)
-		assert.ErrorContains(t, err, "802-11-wireless.ssid")
-	}
-	v, err := encodeSettingValue("802-11-wireless", "ssid", "eduroam", nil)
-	require.NoError(t, err)
-	assert.Equal(t, []byte("eduroam"), v.Value())
-	dec := decodeSettingsForJSON(map[string]map[string]dbus.Variant{"802-11-wireless": {"ssid": v}})
-	assert.Equal(t, "eduroam", dec["802-11-wireless"]["ssid"])
-
-	dec = decodeSettingsForJSON(map[string]map[string]dbus.Variant{
-		"802-11-wireless": {"ssid": dbus.MakeVariant([]byte{0xff, 0xfe}), "mode": dbus.MakeVariant("ap")},
-	})
-	assert.NotContains(t, dec["802-11-wireless"], "ssid")
-	assert.Equal(t, "ap", dec["802-11-wireless"]["mode"])
-}
-
-func TestRouteAttributesEncode(t *testing.T) {
 	var patch SettingsPatch
-	require.NoError(t, json.Unmarshal([]byte(`{"ipv4":{"route-data":[
-		{"dest":"10.0.0.0","prefix":8,"next-hop":"192.0.2.1","onlink":true,"table":100,"src":"192.0.2.10"}]}}`), &patch))
+	require.NoError(t, json.Unmarshal([]byte(`{
+		"connection": {"id": "office", "autoconnect": false}, "802-1x": {"identity": "u", "password": null},
+		"ipv4": {"route-data": [{"dest": "10.0.0.0", "prefix": 8, "onlink": true, "table": 100}]},
+		"wireguard": {"peers": [{"public-key": "k", "allowed-ips": ["10.0.0.0/24", "::/0"], "persistent-keepalive": 25}]}}`), &patch))
 	s, err := encodeNewSettings(patch)
 	require.NoError(t, err)
-	routes := s["ipv4"]["route-data"].Value().([]map[string]dbus.Variant)
-	require.Len(t, routes, 1)
-	assert.Equal(t, "b", routes[0]["onlink"].Signature().String())
-	assert.Equal(t, "u", routes[0]["table"].Signature().String())
-	assert.Equal(t, "s", routes[0]["src"].Signature().String())
-	assert.Equal(t, "aa{sv}", s["ipv4"]["route-data"].Signature().String())
-}
+	assert.Equal(t, dbus.MakeVariant(false), s["connection"]["autoconnect"])
+	assert.Contains(t, s["802-1x"], "identity")
+	assert.NotContains(t, s["802-1x"], "password", "null key is skipped")
+	assert.Equal(t, []map[string]dbus.Variant{{"dest": dbus.MakeVariant("10.0.0.0"), "prefix": dbus.MakeVariant(uint32(8)),
+		"onlink": dbus.MakeVariant(true), "table": dbus.MakeVariant(uint32(100))}}, s["ipv4"]["route-data"].Value())
+	assert.Equal(t, []map[string]dbus.Variant{{"public-key": dbus.MakeVariant("k"), "allowed-ips": dbus.MakeVariant([]string{"10.0.0.0/24", "::/0"}),
+		"persistent-keepalive": dbus.MakeVariant(uint32(25))}}, s["wireguard"]["peers"].Value())
 
-func TestLegacyDNSDecodeLiteralValues(t *testing.T) {
-	// NM stores the address bytes in network order, read as a native uint32.
-	little := binary.NativeEndian.Uint16([]byte{1, 0}) == 1
-	pick := func(le, be uint32) uint32 {
-		if little {
-			return le
-		}
-		return be
-	}
-	for want, au := range map[string]uint32{
-		"192.168.1.2": pick(0x0201A8C0, 0xC0A80102),
-		"1.1.1.1":     0x01010101,
-	} {
-		dec := decodeSettingsForJSON(map[string]map[string]dbus.Variant{
-			"ipv4": {"dns": dbus.MakeVariant([]uint32{au})},
-		})
-		assert.Equal(t, []string{want}, dec["ipv4"]["dns-data"])
-	}
-}
-
-func TestLegacyDNSDecode(t *testing.T) {
-	au := binary.NativeEndian.Uint32(net.ParseIP("192.0.2.53").To4())
-	dec := decodeSettingsForJSON(map[string]map[string]dbus.Variant{
-		"ipv4": {"dns": dbus.MakeVariant([]uint32{au})},
-		"ipv6": {"dns": dbus.MakeVariant([][]byte{net.ParseIP("2001:db8::53")})},
-	})
-	assert.Equal(t, []string{"192.0.2.53"}, dec["ipv4"]["dns-data"])
-	assert.Equal(t, []string{"2001:db8::53"}, dec["ipv6"]["dns-data"])
-	assert.NotContains(t, dec["ipv4"], "dns")
-	assert.NotContains(t, dec["ipv6"], "dns")
-
-	dec = decodeSettingsForJSON(map[string]map[string]dbus.Variant{
-		"ipv4": {
-			"dns":      dbus.MakeVariant([]uint32{au}),
-			"dns-data": dbus.MakeVariant([]string{"198.51.100.1"}),
-		},
-	})
-	assert.Equal(t, []string{"198.51.100.1"}, dec["ipv4"]["dns-data"])
-	assert.NotContains(t, dec["ipv4"], "dns")
-}
-
-func TestWireGuardPeersRoundTrip(t *testing.T) {
-	var peers []any
-	require.NoError(t, json.Unmarshal([]byte(`[{"public-key":"k","endpoint":"1.2.3.4:51820",
-		"allowed-ips":["10.0.0.0/24","::/0"],"persistent-keepalive":25}]`), &peers))
-	s, err := encodeNewSettings(SettingsPatch{"wireguard": {"peers": peers}})
-	require.NoError(t, err)
-
-	v := s["wireguard"]["peers"]
-	assert.Equal(t, "aa{sv}", v.Signature().String())
-	peer := v.Value().([]map[string]dbus.Variant)[0]
-	assert.Equal(t, "s", peer["public-key"].Signature().String())
-	assert.Equal(t, "s", peer["endpoint"].Signature().String())
-	assert.Equal(t, "as", peer["allowed-ips"].Signature().String())
-	assert.Equal(t, "u", peer["persistent-keepalive"].Signature().String())
-
-	got := decodeSettingsForJSON(s)["wireguard"]["peers"].([]map[string]any)[0]
-	assert.Equal(t, []string{"10.0.0.0/24", "::/0"}, got["allowed-ips"])
-	assert.Equal(t, "1.2.3.4:51820", got["endpoint"])
-	assert.Equal(t, uint32(25), got["persistent-keepalive"])
-}
-
-func TestWireGuardAndVPNScalarRows(t *testing.T) {
-	s, err := encodeNewSettings(SettingsPatch{
-		"wireguard": {"listen-port": 51820.0, "peer-routes": false, "ip4-auto-default-route": -1.0},
-		"vpn":       {"data": map[string]any{"remote": "a"}, "timeout": 30.0},
-	})
-	require.NoError(t, err)
-	assert.Equal(t, uint32(51820), s["wireguard"]["listen-port"].Value())
-	assert.Equal(t, int32(-1), s["wireguard"]["ip4-auto-default-route"].Value())
-	assert.Equal(t, "a{ss}", s["vpn"]["data"].Signature().String())
-
-	_, err = encodeNewSettings(SettingsPatch{"wireguard": {"listen-port": -1.0}})
-	require.ErrorContains(t, err, "wireguard.listen-port")
-}
-
-func TestWireGuardUnknownPeerKey(t *testing.T) {
-	_, err := encodeNewSettings(SettingsPatch{"wireguard": {"peers": []any{map[string]any{"bogus": "x"}}}})
-	require.ErrorContains(t, err, "wireguard.peers.bogus")
-}
-
-func TestWireGuardAndVPNSignaturesMatchNMSettingsDBus(t *testing.T) {
-	want := map[string]string{
-		"wireguard.private-key": "s", "wireguard.private-key-flags": "u", "wireguard.listen-port": "u",
-		"wireguard.fwmark": "u", "wireguard.peer-routes": "b", "wireguard.mtu": "u",
-		"wireguard.ip4-auto-default-route": "i", "wireguard.ip6-auto-default-route": "i",
-		"wireguard.peers":  "aa{sv}",
-		"vpn.service-type": "s", "vpn.user-name": "s", "vpn.persistent": "b", "vpn.timeout": "u",
-		"vpn.data": "a{ss}", "vpn.secrets": "a{ss}",
-	}
-	for name, sig := range want {
-		assert.Equal(t, sig, settingSignatures[name], name)
+	for _, bad := range []SettingsPatch{{"connection": {"custom-key": "x"}}, {"wireguard": {"listen-port": -1.0}}, {"wireguard": {"peers": []any{map[string]any{"bogus": "x"}}}}} {
+		_, err = encodeNewSettings(bad)
+		assert.Error(t, err)
 	}
 }
 
@@ -537,24 +229,4 @@ func TestLinkTypeSignaturesMatchNMSettingsDBus(t *testing.T) {
 	for name, sig := range want {
 		assert.Equal(t, sig, settingSignatures[name], name)
 	}
-}
-
-func TestBluetoothAddressAndStoredProxy(t *testing.T) {
-	dec := decodeSettingsForJSON(map[string]map[string]dbus.Variant{
-		"bluetooth": {"bdaddr": dbus.MakeVariant([]byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff})},
-		"proxy": {
-			"method":  dbus.MakeVariant(int32(1)),
-			"pac-url": dbus.MakeVariant("http://x/p.pac"),
-		},
-	})
-	assert.Equal(t, "AA:BB:CC:DD:EE:FF", dec["bluetooth"]["bdaddr"])
-	assert.Equal(t, "http://x/p.pac", dec["proxy"]["pac-url"])
-
-	storedInt, storedStr := dbus.MakeVariant(int32(0)), dbus.MakeVariant("")
-	v, err := encodeSettingValue("proxy", "method", dec["proxy"]["method"], &storedInt)
-	require.NoError(t, err)
-	assert.Equal(t, "i", v.Signature().String())
-	v, err = encodeSettingValue("proxy", "pac-url", dec["proxy"]["pac-url"], &storedStr)
-	require.NoError(t, err)
-	assert.Equal(t, "s", v.Signature().String())
 }

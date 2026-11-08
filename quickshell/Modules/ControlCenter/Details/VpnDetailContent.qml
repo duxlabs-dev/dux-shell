@@ -41,10 +41,18 @@ Item {
         CcSettingsButton {
             anchors.verticalCenter: parent.verticalCenter
             settingsTab: "network_vpn"
+            parentPopout: root.parentPopout
         }
     }
 
     implicitHeight: fillsParent ? 0 : statusGroup.height + column.spacing + listHeight
+
+    function closeHost() {
+        if (parentPopout)
+            parentPopout.close();
+        else
+            PopoutService.closeControlCenter();
+    }
 
     function openFileBrowser() {
         fileBrowserLoader.active = true;
@@ -132,7 +140,21 @@ Item {
                 visible: !root.hasProfiles
                 iconName: "vpn_key_off"
                 title: I18n.tr("No VPN profiles")
-                subtitle: I18n.tr("Click Import to add a %1 or %2 file", "VPN import hint, %1 and %2 are file extensions").arg(".ovpn").arg(".conf")
+                subtitle: DMSNetworkService.vpnAvailable ? I18n.tr("Add a profile in Settings", "VPN empty state hint, the button below opens Settings") : ""
+
+                DButton {
+                    visible: DMSNetworkService.vpnAvailable
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    buttonHeight: Theme.buttonHeightXS
+                    iconName: "settings"
+                    iconSize: Theme.iconSizeSmall
+                    text: I18n.tr("Settings")
+                    variant: "tonal"
+                    onClicked: {
+                        root.closeHost();
+                        PopoutService.openSettingsWithTab("network_vpn");
+                    }
+                }
             }
 
             DListView {
@@ -153,6 +175,11 @@ Item {
 
                     width: vpnListView.width
                     profile: modelData
+                    opensEditor: NetworkService.vpnEditorSupported
+                    onEditRequested: {
+                        root.closeHost();
+                        PopoutService.openConnectionEditor(modelData.uuid, modelData.name);
+                    }
                     isExpanded: root.expandedUuid === modelData.uuid
                     topRadius: index === 0 ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
                     bottomRadius: index === vpnListView.count - 1 ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius

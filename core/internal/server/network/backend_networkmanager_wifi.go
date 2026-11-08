@@ -10,6 +10,7 @@ import (
 
 	"github.com/Wifx/gonetworkmanager/v2"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/qrcode"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -288,7 +289,8 @@ func qrContentForConnection(conn gonetworkmanager.Connection, connSettings gonet
 		return "", fmt.Errorf("failed to retrieve password for `%s`", ssid)
 	}
 
-	return FormatWiFiQRString("WPA", ssid, psk), nil
+	hidden, _ := connSettings["802-11-wireless"]["hidden"].(bool)
+	return qrcode.WiFiString("WPA", ssid, psk, hidden), nil
 }
 
 func (b *NetworkManagerBackend) ConnectWiFi(req ConnectionRequest) error {

@@ -12,6 +12,7 @@ CcListRow {
     property bool isExpanded: false
     property bool opensEditor: false
     readonly property bool isTransient: !!profile?.transient
+    readonly property bool editsProfile: opensEditor && !isTransient
     readonly property bool canExpand: profile?.canExpand !== false
     readonly property bool canDelete: profile?.canDelete !== false
 
@@ -77,7 +78,7 @@ CcListRow {
     enabled: !(DMSNetworkService.isBusy && !isConnecting)
     clickable: true
     onClicked: {
-        if (opensEditor)
+        if (editsProfile)
             editRequested();
         else
             DMSNetworkService.toggle(profile.uuid);
@@ -106,7 +107,7 @@ CcListRow {
 
     DActionButton {
         anchors.verticalCenter: parent.verticalCenter
-        visible: root.opensEditor && !root.isActive && !root.isConnecting
+        visible: root.editsProfile && !root.isActive && !root.isConnecting
         buttonSize: Theme.buttonHeightXS
         iconSize: Theme.iconSizeMedium
         iconName: "link"
@@ -119,7 +120,7 @@ CcListRow {
 
     DActionButton {
         anchors.verticalCenter: parent.verticalCenter
-        visible: root.canExpand && !root.opensEditor
+        visible: root.canExpand && !root.editsProfile
         buttonSize: Theme.buttonHeightXS
         iconSize: Theme.iconSizeMedium
         iconName: root.isExpanded ? "expand_less" : "expand_more"

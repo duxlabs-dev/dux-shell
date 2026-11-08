@@ -155,6 +155,9 @@ type NetworkState struct {
 	HotspotChannel             uint32               `json:"hotspotChannel"`
 	HotspotAddress             string               `json:"hotspotAddress"`
 	HotspotUUID                string               `json:"hotspotUuid"`
+	HotspotSecurity            string               `json:"hotspotSecurity"`
+	HotspotHidden              bool                 `json:"hotspotHidden"`
+	HotspotAutoconnect         bool                 `json:"hotspotAutoconnect"`
 	Connectivity               string               `json:"connectivity"`
 	ConnectivityCheckEnabled   bool                 `json:"connectivityCheckEnabled"`
 	ConnectivityCheckAvailable bool                 `json:"connectivityCheckAvailable"`
@@ -182,12 +185,15 @@ type ConnectionRequest struct {
 }
 
 type HotspotRequest struct {
-	SSID     string `json:"ssid"`
-	Password string `json:"password,omitempty"`
-	Device   string `json:"device,omitempty"`
-	Band     string `json:"band,omitempty"`
-	Channel  uint32 `json:"channel,omitempty"`
-	Address  string `json:"address,omitempty"`
+	SSID        string `json:"ssid"`
+	Password    string `json:"password,omitempty"`
+	Device      string `json:"device,omitempty"`
+	Band        string `json:"band,omitempty"`
+	Channel     uint32 `json:"channel,omitempty"`
+	Address     string `json:"address,omitempty"`
+	Security    string `json:"security,omitempty"`
+	Hidden      bool   `json:"hidden,omitempty"`
+	Autoconnect bool   `json:"autoconnect,omitempty"`
 }
 
 type WiredConnection struct {

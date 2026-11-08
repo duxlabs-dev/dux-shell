@@ -40,14 +40,12 @@ Item {
     }
 
     function configureWifiProfile(ssid) {
-        NetworkService.listConnections(response => {
-            const matches = (response.result || []).filter(p => p.ssid === ssid);
-            if (matches.length === 0) {
+        NetworkService.findWifiProfile(ssid, profile => {
+            if (!profile) {
                 parentModal?.navigateTo("network_connections");
                 return;
             }
-            const best = matches.reduce((a, b) => b.timestamp > a.timestamp ? b : a);
-            SettingsUiState.selectConnection(best.uuid, ssid, "");
+            SettingsUiState.selectConnection(profile.uuid, ssid, "");
             parentModal?.navigateTo("network_connection");
         });
     }
@@ -729,19 +727,8 @@ Item {
             title: I18n.tr("Hotspot", "hotspot settings card title")
             iconName: "wifi_tethering"
             settingKey: "networkHotspot"
-            tags: ["wifi", "wi-fi", "wireless", "network", "hotspot", "access point", "sharing", "ssid", "qr code", "channel"]
+            tags: ["wifi", "wi-fi", "wireless", "network", "hotspot", "access point", "sharing", "ssid", "qr code", "channel", "wpa3", "hidden", "security"]
             visible: NetworkService.hotspotAvailable
-
-            headerActions: DActionButton {
-                iconName: "tune"
-                tooltipText: I18n.tr("Configure")
-                buttonSize: Theme.buttonHeightXS
-                visible: NetworkService.hotspotConfigured && !!NetworkService.hotspotUuid && NetworkService.connectionEditorPagesSupported && !!networkWifiTab.parentModal
-                onClicked: {
-                    SettingsUiState.selectConnection(NetworkService.hotspotUuid, NetworkService.hotspotSSID, "");
-                    networkWifiTab.parentModal.navigateTo("network_connection");
-                }
-            }
 
             property string ssid: NetworkService.hotspotSSID || ""
             property string password: ""
@@ -749,10 +736,18 @@ Item {
             property string band: NetworkService.hotspotBand || ""
             property int channel: NetworkService.hotspotChannel || 0
             property string address: NetworkService.hotspotAddress || ""
+            property string security: "wpa-psk"
+            property bool hidden: false
+            property bool autoconnect: false
+            readonly property bool extended: NetworkService.hotspotExtendedSupported
+            readonly property bool secured: !extended || security !== ""
             readonly property bool addressValid: address.trim().length === 0 || CE.isValidHotspotAddress(address.trim())
             readonly property var hotspotOptions: NetworkService.hotspotExtendedSupported ? {
                 "channel": channel,
-                "address": address.trim()
+                "address": address.trim(),
+                "security": security,
+                "hidden": hidden,
+                "autoconnect": autoconnect
             } : ({})
             property bool editing: false
             property bool passwordLoading: false
@@ -760,7 +755,7 @@ Item {
             property int passwordRequestId: 0
             property int passwordEditRevision: 0
             readonly property bool showForm: !NetworkService.hotspotConfigured || editing
-            readonly property bool passwordValid: password.length === 0 || (password.length >= 8 && password.length <= 63) || /^[0-9a-fA-F]{64}$/.test(password)
+            readonly property bool passwordValid: !secured || (password.length === 0 ? extended === false : ((password.length >= 8 && password.length <= 63) || /^[0-9a-fA-F]{64}$/.test(password)))
             readonly property bool starting: NetworkService.hotspotBusy || NetworkService.hotspotActivating
             property var startConfirm: ConfirmModal {}
 
@@ -802,6 +797,9 @@ Item {
                 band = NetworkService.hotspotBand || "";
                 channel = NetworkService.hotspotChannel || 0;
                 address = NetworkService.hotspotAddress || "";
+                security = NetworkService.hotspotConfigured ? NetworkService.hotspotSecurity : "wpa-psk";
+                hidden = NetworkService.hotspotHidden;
+                autoconnect = NetworkService.hotspotAutoconnect;
             }
 
             function beginEditing() {
@@ -838,13 +836,14 @@ Item {
             function stopEditing() {
                 passwordRequestId++;
                 editing = false;
+                syncFromService();
                 password = "";
                 passwordLoading = false;
                 passwordResolved = true;
             }
 
             function buildCanConfigure() {
-                return ssid.trim().length > 0 && passwordValid && addressValid && passwordResolved && !passwordLoading && !NetworkService.hotspotBusy && !NetworkService.hotspotEnabled && !NetworkService.hotspotActivating;
+                return ssid.trim().length > 0 && passwordValid && addressValid && (!secured || (passwordResolved && !passwordLoading)) && !NetworkService.hotspotBusy && !NetworkService.hotspotEnabled && !NetworkService.hotspotActivating;
             }
 
             function explainWiFiDisabled() {
@@ -940,7 +939,9 @@ Item {
                 iconColor: NetworkService.hotspotEnabled ? Theme.primary : Theme.surfaceVariantText
                 title: NetworkService.hotspotSSID
                 subtitle: {
-                    const parts = [NetworkService.hotspotSecured ? I18n.tr("WPA2 password", "hotspot security summary") : I18n.tr("Open network", "hotspot security summary"), hotspotCard.bandLabel(NetworkService.hotspotBand)];
+                    const parts = [NetworkService.hotspotSecured ? (NetworkService.hotspotSecurity === "sae" ? "WPA3" : "WPA2") : I18n.tr("Open network", "hotspot security summary"), hotspotCard.bandLabel(NetworkService.hotspotBand)];
+                    if (NetworkService.hotspotHidden)
+                        parts.push(I18n.tr("Hidden", "adjective, wifi network with hidden name"));
                     if (NetworkService.hotspotDevice)
                         parts.push(NetworkService.hotspotDevice);
                     if (NetworkService.hotspotChannel > 0)
@@ -966,18 +967,28 @@ Item {
                 }
             }
 
+            SettingsDropdownRow {
+                visible: hotspotCard.showForm && hotspotCard.extended
+                text: I18n.tr("Security", "noun, settings page name and wifi security type label")
+                currentValue: hotspotCard.security === "sae" ? "WPA3" : (hotspotCard.security === "wpa-psk" ? "WPA2" : I18n.tr("Open", "network security type", true))
+                options: [I18n.tr("Open", "network security type", true), "WPA2", "WPA3"]
+                onValueChanged: value => hotspotCard.security = value === "WPA3" ? "sae" : (value === "WPA2" ? "wpa-psk" : "")
+            }
+
             SettingsRow {
-                visible: hotspotCard.showForm
+                visible: hotspotCard.showForm && hotspotCard.secured
                 body: DTextField {
                     outlined: true
                     width: parent.width
                     labelText: I18n.tr("Password", "hotspot password field label")
-                    placeholderText: I18n.tr("Optional; leave blank for open hotspot", "hotspot password field placeholder")
+                    placeholderText: hotspotCard.extended ? "" : I18n.tr("Optional; leave blank for open hotspot", "hotspot password field placeholder")
                     text: hotspotCard.password
                     leftIconName: "key"
                     showPasswordToggle: true
                     echoMode: passwordVisible ? TextInput.Normal : TextInput.Password
                     onTextEdited: {
+                        if (text === hotspotCard.password)
+                            return;
                         hotspotCard.password = text;
                         hotspotCard.passwordEditRevision++;
                         if (text.length > 0)
@@ -988,7 +999,7 @@ Item {
             }
 
             SettingsRow {
-                visible: hotspotCard.showForm && !hotspotCard.passwordValid
+                visible: hotspotCard.showForm && hotspotCard.secured && !hotspotCard.passwordValid
                 body: StyledText {
                     width: parent.width
                     text: I18n.tr("Password must be 8 to 63 characters, or a 64-digit hex key.", "hotspot password length requirement")
@@ -1041,6 +1052,20 @@ Item {
                     onTextEdited: hotspotCard.address = text
                     onAccepted: hotspotCard.saveOnly()
                 }
+            }
+
+            SettingsToggleRow {
+                visible: hotspotCard.showForm && hotspotCard.extended
+                text: I18n.tr("Hidden", "adjective, wifi network with hidden name")
+                checked: hotspotCard.hidden
+                onToggled: checked => hotspotCard.hidden = checked
+            }
+
+            SettingsToggleRow {
+                visible: hotspotCard.showForm && hotspotCard.extended
+                text: I18n.tr("Autoconnect", "toggle, connect to this wifi or vpn automatically")
+                checked: hotspotCard.autoconnect
+                onToggled: checked => hotspotCard.autoconnect = checked
             }
 
             SettingsRow {

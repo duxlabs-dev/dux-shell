@@ -10,7 +10,6 @@ import (
 	"github.com/Wifx/gonetworkmanager/v2"
 	"github.com/duxlabs-dev/dux-shell/core/internal/errdefs"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
-	"github.com/godbus/dbus/v5"
 )
 
 const (
@@ -30,6 +29,9 @@ func (b *NetworkManagerBackend) ConfigureHotspot(req HotspotRequest) error {
 		return fmt.Errorf("hotspot SSID cannot be empty")
 	}
 	if err := validateHotspotPassword(req.Password); err != nil {
+		return err
+	}
+	if _, err := hotspotKeyMgmt(req); err != nil {
 		return err
 	}
 	if err := validateHotspotBandName(req.Band); err != nil {
@@ -62,20 +64,20 @@ func (b *NetworkManagerBackend) ConfigureHotspot(req HotspotRequest) error {
 		return err
 	}
 
-	existing, _, err := b.findDMSHotspotConnection()
+	existing, existingSettings, err := b.findDMSHotspotConnection()
 	if err != nil {
 		return err
 	}
 
+	settings := buildHotspotSettings(req)
 	if existing != nil {
-		err := updateConnectionSettings(b.nmObject(existing.GetPath()), true, func(s nmSettings) error {
-			applyHotspotRequest(s, req)
-			return nil
-		})
-		if err != nil {
+		if uuid, ok := existingSettings["connection"]["uuid"].(string); ok {
+			settings["connection"]["uuid"] = uuid
+		}
+		if err := existing.Update(settings); err != nil {
 			return fmt.Errorf("failed to update hotspot profile: %w", err)
 		}
-	} else if _, err := settingsMgr.AddConnection(buildHotspotSettings(req)); err != nil {
+	} else if _, err := settingsMgr.AddConnection(settings); err != nil {
 		return fmt.Errorf("failed to create hotspot profile: %w", err)
 	}
 
@@ -198,7 +200,7 @@ func buildHotspotSettings(req HotspotRequest) gonetworkmanager.ConnectionSetting
 	connection := map[string]any{
 		"id":          dmsHotspotConnectionID,
 		"type":        "802-11-wireless",
-		"autoconnect": false,
+		"autoconnect": req.Autoconnect,
 		"stable-id":   dmsHotspotStableID,
 	}
 	if req.Device != "" {
@@ -215,6 +217,9 @@ func buildHotspotSettings(req HotspotRequest) gonetworkmanager.ConnectionSetting
 	if req.Channel > 0 {
 		wifi["channel"] = req.Channel
 	}
+	if req.Hidden {
+		wifi["hidden"] = true
+	}
 
 	settings := gonetworkmanager.ConnectionSettings{
 		"connection":      connection,
@@ -223,10 +228,10 @@ func buildHotspotSettings(req HotspotRequest) gonetworkmanager.ConnectionSetting
 		"ipv6":            {"method": "ignore"},
 	}
 
-	if req.Password != "" {
+	if keyMgmt, _ := hotspotKeyMgmt(req); keyMgmt != "" {
 		wifi["security"] = "802-11-wireless-security"
 		settings["802-11-wireless-security"] = map[string]any{
-			"key-mgmt":  "wpa-psk",
+			"key-mgmt":  keyMgmt,
 			"psk":       req.Password,
 			"psk-flags": uint32(0),
 		}
@@ -242,48 +247,22 @@ func buildHotspotSettings(req HotspotRequest) gonetworkmanager.ConnectionSetting
 	return settings
 }
 
-// applyHotspotRequest writes only the keys the hotspot card owns, leaving
-// everything set elsewhere (e.g. in the connection editor) untouched.
-// req must already be validated.
-func applyHotspotRequest(s nmSettings, req HotspotRequest) {
-	if req.Device != "" {
-		setSettingValue(s, "connection", "interface-name", req.Device)
-	} else {
-		deleteSettingValue(s, "connection", "interface-name")
-	}
-
-	setSettingValue(s, "802-11-wireless", "ssid", []byte(req.SSID))
-	setSettingValue(s, "802-11-wireless", "mode", "ap")
-	if req.Band != "" {
-		setSettingValue(s, "802-11-wireless", "band", req.Band)
-	} else {
-		deleteSettingValue(s, "802-11-wireless", "band")
-	}
-	if req.Channel > 0 {
-		setSettingValue(s, "802-11-wireless", "channel", req.Channel)
-	} else {
-		deleteSettingValue(s, "802-11-wireless", "channel")
-	}
-
-	if req.Password != "" {
-		setSettingValue(s, "802-11-wireless", "security", "802-11-wireless-security")
-		setSettingValue(s, "802-11-wireless-security", "key-mgmt", "wpa-psk")
-		setSettingValue(s, "802-11-wireless-security", "psk", req.Password)
-		setSettingValue(s, "802-11-wireless-security", "psk-flags", uint32(0))
-	} else {
-		deleteSettingValue(s, "802-11-wireless", "security")
-		delete(s, "802-11-wireless-security")
-	}
-
-	setSettingValue(s, "ipv4", "method", "shared")
-	if prefix, _ := parseHotspotAddress(req.Address); prefix.IsValid() {
-		setSettingValue(s, "ipv4", "address-data", []map[string]dbus.Variant{{
-			"address": dbus.MakeVariant(prefix.Addr().String()),
-			"prefix":  dbus.MakeVariant(uint32(prefix.Bits())),
-		}})
-	} else {
-		deleteSettingValue(s, "ipv4", "address-data")
-		deleteSettingValue(s, "ipv4", "addresses")
+// hotspotKeyMgmt returns the NM key-mgmt for req, "" for an open hotspot.
+// A password without a security mode means WPA2, as older clients send it.
+func hotspotKeyMgmt(req HotspotRequest) (string, error) {
+	switch req.Security {
+	case "":
+		if req.Password != "" {
+			return "wpa-psk", nil
+		}
+		return "", nil
+	case "wpa-psk", "sae":
+		if req.Password == "" {
+			return "", fmt.Errorf("a secured hotspot needs a password")
+		}
+		return req.Security, nil
+	default:
+		return "", fmt.Errorf("unsupported hotspot security: %s", req.Security)
 	}
 }
 
@@ -743,6 +722,7 @@ func (b *NetworkManagerBackend) updateHotspotState() error {
 	}
 
 	configured := settings != nil
+	keyMgmt, _ := settings["802-11-wireless-security"]["key-mgmt"].(string)
 	enabled := false
 	activating := false
 	if configured {
@@ -773,7 +753,7 @@ func (b *NetworkManagerBackend) updateHotspotState() error {
 			if reason == gonetworkmanager.NmDeviceStateReasonNewActivation || reason == gonetworkmanager.NmDeviceStateReasonNone {
 				activating = true
 			} else {
-				failureCode = classifyHotspotStateReason(reason)
+				failureCode = classifyHotspotStateReason(reason, keyMgmt)
 				log.Warnf("[updateHotspotState] Hotspot activation failed: device=%s, reason=%d (%s)", pendingDevice, reason, failureCode)
 			}
 		} else {
@@ -793,6 +773,9 @@ func (b *NetworkManagerBackend) updateHotspotState() error {
 	b.state.HotspotChannel = hotspotChannelFromSettings(settings)
 	b.state.HotspotAddress = hotspotAddressFromSettings(settings)
 	b.state.HotspotUUID, _ = settings["connection"]["uuid"].(string)
+	b.state.HotspotSecurity = keyMgmt
+	b.state.HotspotHidden, _ = settings["802-11-wireless"]["hidden"].(bool)
+	b.state.HotspotAutoconnect = hotspotAutoconnectFromSettings(settings)
 	if wasStarting {
 		switch {
 		case enabled:
@@ -812,6 +795,15 @@ func (b *NetworkManagerBackend) updateHotspotState() error {
 	return nil
 }
 
+// NM omits autoconnect from GetSettings when it is at its default, true.
+func hotspotAutoconnectFromSettings(settings gonetworkmanager.ConnectionSettings) bool {
+	if settings == nil {
+		return false
+	}
+	autoconnect, ok := settings["connection"]["autoconnect"].(bool)
+	return autoconnect || !ok
+}
+
 func hotspotSecuredFromSettings(settings gonetworkmanager.ConnectionSettings) bool {
 	if settings == nil {
 		return false
@@ -823,7 +815,7 @@ func hotspotSecuredFromSettings(settings gonetworkmanager.ConnectionSettings) bo
 // classifyHotspotStateReason uses the gonetworkmanager reason constants; the
 // same-named package-local aliases in backend_networkmanager.go carry wrong
 // values and must not be used here.
-func classifyHotspotStateReason(reason uint32) string {
+func classifyHotspotStateReason(reason uint32, keyMgmt string) string {
 	switch reason {
 	case gonetworkmanager.NmDeviceStateReasonIpConfigUnavailable,
 		gonetworkmanager.NmDeviceStateReasonDhcpStartFailed,
@@ -836,6 +828,9 @@ func classifyHotspotStateReason(reason uint32) string {
 		gonetworkmanager.NmDeviceStateReasonSupplicantConfigFailed,
 		gonetworkmanager.NmDeviceStateReasonSupplicantFailed,
 		gonetworkmanager.NmDeviceStateReasonSupplicantTimeout:
+		if keyMgmt == "sae" {
+			return errdefs.ErrHotspotWPA3Failed
+		}
 		return errdefs.ErrHotspotSupplicantFailed
 	default:
 		return errdefs.ErrHotspotFailed

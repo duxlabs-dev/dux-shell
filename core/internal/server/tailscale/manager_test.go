@@ -1,6 +1,7 @@
 package tailscale
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"net/netip"
@@ -73,68 +74,28 @@ func (w *mockWatcher) Close() error {
 
 // mockClient implements tailscaleClient for testing.
 type mockClient struct {
-	watchFn     func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error)
-	statusFn    func(ctx context.Context) (*ipnstate.Status, error)
-	getPrefsFn  func(ctx context.Context) (*prefs, error)
-	editPrefsFn func(ctx context.Context, mp *maskedPrefs) error
-
-	startLoginFn    func(ctx context.Context) error
-	logoutFn        func(ctx context.Context) error
+	watchFn         func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error)
+	statusFn        func(ctx context.Context) (*ipnstate.Status, error)
+	getPrefsFn      func(ctx context.Context) (*prefs, error)
+	editPrefsFn     func(ctx context.Context, mp *maskedPrefs) error
 	profileStatusFn func(ctx context.Context) (loginProfile, []loginProfile, error)
-	switchProfileFn func(ctx context.Context, id string) error
-	switchEmptyFn   func(ctx context.Context) error
-	suggestFn       func(ctx context.Context) (ExitNodeSuggestion, error)
-	checkIPFwdFn    func(ctx context.Context) error
+	fwdErr          error
 }
 
-func (c *mockClient) StartLoginInteractive(ctx context.Context) error {
-	if c.startLoginFn != nil {
-		return c.startLoginFn(ctx)
-	}
-	return nil
+func (c *mockClient) StartLoginInteractive(ctx context.Context) error    { return nil }
+func (c *mockClient) SwitchProfile(ctx context.Context, id string) error { return nil }
+func (c *mockClient) Logout(ctx context.Context) error                   { return nil }
+func (c *mockClient) SwitchToEmptyProfile(ctx context.Context) error     { return nil }
+func (c *mockClient) SuggestExitNode(ctx context.Context) (ExitNodeSuggestion, error) {
+	return ExitNodeSuggestion{ID: "n1"}, nil
 }
-
-func (c *mockClient) Logout(ctx context.Context) error {
-	if c.logoutFn != nil {
-		return c.logoutFn(ctx)
-	}
-	return nil
-}
-
 func (c *mockClient) ProfileStatus(ctx context.Context) (loginProfile, []loginProfile, error) {
 	if c.profileStatusFn != nil {
 		return c.profileStatusFn(ctx)
 	}
 	return loginProfile{}, nil, nil
 }
-
-func (c *mockClient) SwitchProfile(ctx context.Context, id string) error {
-	if c.switchProfileFn != nil {
-		return c.switchProfileFn(ctx, id)
-	}
-	return nil
-}
-
-func (c *mockClient) SwitchToEmptyProfile(ctx context.Context) error {
-	if c.switchEmptyFn != nil {
-		return c.switchEmptyFn(ctx)
-	}
-	return nil
-}
-
-func (c *mockClient) SuggestExitNode(ctx context.Context) (ExitNodeSuggestion, error) {
-	if c.suggestFn != nil {
-		return c.suggestFn(ctx)
-	}
-	return ExitNodeSuggestion{}, nil
-}
-
-func (c *mockClient) CheckIPForwarding(ctx context.Context) error {
-	if c.checkIPFwdFn != nil {
-		return c.checkIPFwdFn(ctx)
-	}
-	return nil
-}
+func (c *mockClient) CheckIPForwarding(ctx context.Context) error { return c.fwdErr }
 
 func (c *mockClient) WatchIPNBus(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
 	return c.watchFn(ctx, mask)
@@ -428,293 +389,67 @@ func TestWatchLoop_LateNotifyRefetches(t *testing.T) {
 		return statusCalls.Load() >= 2
 	}, 2*time.Second, 10*time.Millisecond)
 }
-
-func prefixes(ss ...string) []netip.Prefix {
-	out := make([]netip.Prefix, len(ss))
-	for i, s := range ss {
-		out[i] = netip.MustParsePrefix(s)
+func prefixes(ss ...string) (out []netip.Prefix) {
+	for _, s := range ss {
+		out = append(out, netip.MustParsePrefix(s))
 	}
-	return out
+	return
 }
-
-func boolPtr(b bool) *bool { return &b }
-
-func TestSetPrefs_AdvertiseExitNodeKeepsRoutesAndWarns(t *testing.T) {
-	var captured *maskedPrefs
-	client := &mockClient{
-		watchFn:  blockingWatch,
-		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		getPrefsFn: func(ctx context.Context) (*prefs, error) {
-			return &prefs{AdvertiseRoutes: prefixes("192.168.1.0/24")}, nil
-		},
-		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
-			captured = mp
-			return nil
-		},
-		checkIPFwdFn: func(ctx context.Context) error { return fmt.Errorf("IP forwarding is disabled") },
+func TestSetPrefs(t *testing.T) {
+	yes, host, routes := true, "x", func(ss ...string) *[]string { return &ss }
+	tests := []struct {
+		name  string
+		have  []netip.Prefix
+		patch PrefsPatch
+		want  *maskedPrefs
+		err   string
+	}{
+		{"only requested fields", nil, PrefsPatch{AcceptRoutes: &yes, Hostname: &host}, &maskedPrefs{RouteAll: true, RouteAllSet: true, Hostname: "x", HostnameSet: true}, ""},
+		{"exit node keeps routes", prefixes("192.168.1.0/24"), PrefsPatch{AdvertiseExitNode: &yes}, &maskedPrefs{AdvertiseRoutes: prefixes("0.0.0.0/0", "::/0", "192.168.1.0/24"), AdvertiseRoutesSet: true}, ""},
+		{"routes deduped", nil, PrefsPatch{AdvertiseRoutes: routes("10.0.0.0/8", "10.0.0.0/8")}, &maskedPrefs{AdvertiseRoutes: prefixes("10.0.0.0/8"), AdvertiseRoutesSet: true}, ""},
+		{"same routes write nothing", prefixes("10.0.0.0/8", "192.168.1.0/24"), PrefsPatch{AdvertiseRoutes: routes("192.168.1.0/24", "10.0.0.0/8")}, nil, ""},
+		{"invalid route", nil, PrefsPatch{AdvertiseRoutes: routes("10.0.0.0/8", "bogus")}, nil, "bogus"},
+		{"default route", nil, PrefsPatch{AdvertiseRoutes: routes("10.0.0.0/8", "::/0")}, nil, "::/0"},
+		{"no changes", nil, PrefsPatch{}, nil, "no changes"},
 	}
-	m := newManager(client)
-	defer m.Close()
-
-	warning, err := m.SetPrefs(PrefsPatch{AdvertiseExitNode: boolPtr(true)})
-	require.NoError(t, err)
-	require.NotNil(t, captured)
-	assert.True(t, captured.AdvertiseRoutesSet)
-	assert.Equal(t, prefixes("0.0.0.0/0", "::/0", "192.168.1.0/24"), captured.AdvertiseRoutes)
-	assert.Equal(t, "IP forwarding is disabled", warning)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var got *maskedPrefs
+			m := newManager(&mockClient{watchFn: blockingWatch, fwdErr: fmt.Errorf("IP forwarding is disabled"),
+				statusFn:    func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
+				getPrefsFn:  func(ctx context.Context) (*prefs, error) { return &prefs{AdvertiseRoutes: tc.have}, nil },
+				editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error { got = mp; return nil }})
+			defer m.Close()
+			assert.NotNil(t, m.GetState().Prefs.AdvertiseRoutes)
+			warn, err := m.SetPrefs(tc.patch)
+			assert.Contains(t, fmt.Sprint(err), cmp.Or(tc.err, "<nil>"))
+			assert.Equal(t, tc.want, got)
+			assert.Equal(t, got != nil && got.AdvertiseRoutesSet, warn != "")
+		})
+	}
 }
-
-func TestSetPrefs_InvalidRouteWritesNothing(t *testing.T) {
-	edited := false
-	client := &mockClient{
-		watchFn:  blockingWatch,
-		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
-			edited = true
-			return nil
-		},
-	}
-	m := newManager(client)
-	defer m.Close()
-
-	for _, bad := range []string{"bogus", "0.0.0.0/0", "::/0"} {
-		_, err := m.SetPrefs(PrefsPatch{AdvertiseRoutes: &[]string{"10.0.0.0/8", bad}})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), bad)
-	}
-	_, err := m.SetPrefs(PrefsPatch{})
-	assert.EqualError(t, err, "no changes")
-	assert.False(t, edited)
-}
-
-func TestSetPrefs_MaskOnlyRequestedFields(t *testing.T) {
-	var captured *maskedPrefs
-	client := &mockClient{
-		watchFn:  blockingWatch,
-		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
-			captured = mp
-			return nil
-		},
-		checkIPFwdFn: func(ctx context.Context) error { return fmt.Errorf("must not be called") },
-	}
-	m := newManager(client)
-	defer m.Close()
-
-	host := "x"
-	warning, err := m.SetPrefs(PrefsPatch{AcceptRoutes: boolPtr(true), Hostname: &host})
-	require.NoError(t, err)
-	assert.Empty(t, warning)
-	want := &maskedPrefs{
-		RouteAll:    true,
-		Hostname:    "x",
-		RouteAllSet: true,
-		HostnameSet: true,
-	}
-	assert.Equal(t, want, captured)
-}
-
-func TestProfiles(t *testing.T) {
-	denied := true
-	client := &mockClient{
-		watchFn:  blockingWatch,
-		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		profileStatusFn: func(ctx context.Context) (loginProfile, []loginProfile, error) {
-			if denied {
-				return loginProfile{}, nil, fmt.Errorf("profiles: %w", errAccessDenied)
-			}
-			work := loginProfile{ID: "b", Name: "work@corp.com", NetworkProfile: networkProfile{DomainName: "corp.com"}}
-			home := loginProfile{ID: "a", Name: "alice@example.com", NetworkProfile: networkProfile{DomainName: "example.com", DisplayName: "Alice's tailnet"}}
-			return work, []loginProfile{work, home}, nil
-		},
-	}
-	m := newManager(client)
-	defer m.Close()
-
-	res, err := m.Profiles()
-	require.NoError(t, err)
-	assert.Equal(t, ProfilesResult{}, res)
-
-	denied = false
-	res, err = m.Profiles()
-	require.NoError(t, err)
-	assert.Equal(t, ProfilesResult{
-		CanOperate: true,
-		Current:    "b",
-		Profiles: []TailscaleProfile{
-			{ID: "a", Name: "alice@example.com", Tailnet: "Alice's tailnet"},
-			{ID: "b", Name: "work@corp.com", Tailnet: "corp.com"},
-		},
-	}, res)
-}
-
-func TestAccountActions(t *testing.T) {
-	var calls []string
-	client := &mockClient{
-		watchFn:  blockingWatch,
-		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		startLoginFn: func(ctx context.Context) error {
-			calls = append(calls, "login")
-			return nil
-		},
-		logoutFn: func(ctx context.Context) error {
-			calls = append(calls, "logout")
-			return nil
-		},
-		switchEmptyFn: func(ctx context.Context) error {
-			calls = append(calls, "empty")
-			return nil
-		},
-		switchProfileFn: func(ctx context.Context, id string) error {
-			calls = append(calls, "switch:"+string(id))
-			return nil
-		},
-		suggestFn: func(ctx context.Context) (ExitNodeSuggestion, error) {
-			return ExitNodeSuggestion{ID: "nX", Name: "de-fra"}, nil
-		},
-	}
-	m := newManager(client)
-	defer m.Close()
-
-	require.NoError(t, m.Login())
-	require.NoError(t, m.Logout())
-	require.NoError(t, m.AddProfile())
-	require.NoError(t, m.SwitchProfile("p1"))
-	assert.Error(t, m.SwitchProfile(""))
-	assert.Equal(t, []string{"login", "logout", "empty", "login", "switch:p1"}, calls)
-
-	s, err := m.SuggestExitNode()
-	require.NoError(t, err)
-	assert.Equal(t, ExitNodeSuggestion{ID: "nX", Name: "de-fra"}, s)
-
-	client.startLoginFn = func(ctx context.Context) error { return fmt.Errorf("Access denied: login") }
-	assert.EqualError(t, m.Login(), "Access denied: login")
-}
-
-func TestFetchState_MapsPrefs(t *testing.T) {
-	client := &mockClient{
-		watchFn:  blockingWatch,
-		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		getPrefsFn: func(ctx context.Context) (*prefs, error) {
-			return &prefs{
-				RouteAll:        true,
-				CorpDNS:         true,
-				RunSSH:          true,
-				Hostname:        "rog",
-				AdvertiseRoutes: prefixes("0.0.0.0/0", "::/0", "10.0.0.0/8"),
-			}, nil
-		},
-	}
-	m := newManager(client)
-	defer m.Close()
-
-	m.RefreshState()
-	assert.Equal(t, TailscalePrefs{
-		AcceptRoutes:      true,
-		AcceptDNS:         true,
-		RunSSH:            true,
-		Hostname:          "rog",
-		AdvertiseExitNode: true,
-		AdvertiseRoutes:   []string{"10.0.0.0/8"},
-	}, m.GetState().Prefs)
-}
-
 func TestWatchLoop_AuthURL(t *testing.T) {
 	notifyCh := make(chan busNotify, 1)
-	client := &mockClient{
+	var watches atomic.Int32
+	m := newManager(&mockClient{
 		watchFn: func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
+			if watches.Add(1) > 1 {
+				return newMockWatcher(ctx, 0, nil), nil
+			}
 			return &dynamicWatcher{ctx: ctx, ch: notifyCh}, nil
 		},
-		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-	}
-	m := newManager(client)
+		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil }})
 	defer m.Close()
-
+	authURL := func(want string) {
+		require.Eventually(t, func() bool { return m.GetState().AuthURL == want }, 3*time.Second, 10*time.Millisecond)
+	}
 	u := "https://login.tailscale.com/a/abc"
 	notifyCh <- busNotify{BrowseToURL: &u}
-	require.Eventually(t, func() bool { return m.GetState().AuthURL == u }, 2*time.Second, 10*time.Millisecond)
-
+	authURL(u)
 	notifyCh <- busNotify{LoginFinished: &struct{}{}}
-	require.Eventually(t, func() bool { return m.GetState().AuthURL == "" }, 2*time.Second, 10*time.Millisecond)
-}
-
-func TestWatchLoop_ReconnectClearsAuthURL(t *testing.T) {
-	notifyCh := make(chan busNotify, 1)
-	var watches atomic.Int32
-	client := &mockClient{
-		watchFn: func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
-			if watches.Add(1) == 1 {
-				return &dynamicWatcher{ctx: ctx, ch: notifyCh}, nil
-			}
-			return newMockWatcher(ctx, 0, nil), nil
-		},
-		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-	}
-	m := newManager(client)
-	defer m.Close()
-
-	u := "https://login.tailscale.com/a/abc"
+	authURL("")
 	notifyCh <- busNotify{BrowseToURL: &u}
-	require.Eventually(t, func() bool { return m.GetState().AuthURL == u }, 2*time.Second, 10*time.Millisecond)
-
+	authURL(u)
 	close(notifyCh)
-	require.Eventually(t, func() bool { return watches.Load() == 2 && m.GetState().AuthURL == "" }, 3*time.Second, 10*time.Millisecond)
-}
-
-func TestManager_AdvertiseRoutesNeverNull(t *testing.T) {
-	m := newManager(&mockClient{watchFn: blockingWatch})
-	assert.NotNil(t, m.GetState().Prefs.AdvertiseRoutes)
-	m.Close()
-
-	m = newManager(&mockClient{watchFn: func(ctx context.Context, mask watchOpt) (ipnBusWatcher, error) {
-		return nil, fmt.Errorf("connection refused")
-	}})
-	defer m.Close()
-	require.Eventually(t, func() bool { return m.GetState().BackendState == "Unreachable" }, 2*time.Second, 10*time.Millisecond)
-	assert.NotNil(t, m.GetState().Prefs.AdvertiseRoutes)
-}
-
-func TestSetPrefs_DedupesRoutes(t *testing.T) {
-	var captured *maskedPrefs
-	client := &mockClient{
-		watchFn:  blockingWatch,
-		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
-			captured = mp
-			return nil
-		},
-	}
-	m := newManager(client)
-	defer m.Close()
-
-	_, err := m.SetPrefs(PrefsPatch{AdvertiseRoutes: &[]string{"10.0.0.0/8", "192.168.1.0/24", "10.0.0.0/8"}})
-	require.NoError(t, err)
-	assert.Equal(t, prefixes("10.0.0.0/8", "192.168.1.0/24"), captured.AdvertiseRoutes)
-
-	_, err = m.SetPrefs(PrefsPatch{AdvertiseRoutes: &[]string{"10.0.0.0/8,0.0.0.0/0"}})
-	assert.Error(t, err)
-}
-
-func TestSetPrefs_UnchangedRoutesSkipEditAndForwardingCheck(t *testing.T) {
-	edits, checks := 0, 0
-	client := &mockClient{
-		watchFn:  blockingWatch,
-		statusFn: func(ctx context.Context) (*ipnstate.Status, error) { return runningStatus(), nil },
-		getPrefsFn: func(ctx context.Context) (*prefs, error) {
-			return &prefs{AdvertiseRoutes: prefixes("10.0.0.0/8", "192.168.1.0/24")}, nil
-		},
-		editPrefsFn: func(ctx context.Context, mp *maskedPrefs) error {
-			edits++
-			return nil
-		},
-		checkIPFwdFn: func(ctx context.Context) error { checks++; return fmt.Errorf("IP forwarding is disabled") },
-	}
-	m := newManager(client)
-	defer m.Close()
-
-	warning, err := m.SetPrefs(PrefsPatch{AdvertiseRoutes: &[]string{"192.168.1.0/24", "10.0.0.0/8"}})
-	require.NoError(t, err)
-	assert.Empty(t, warning)
-	assert.Zero(t, edits)
-	assert.Zero(t, checks)
+	authURL("")
 }

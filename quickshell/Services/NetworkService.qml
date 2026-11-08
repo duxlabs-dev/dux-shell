@@ -84,6 +84,9 @@ Singleton {
     property int hotspotChannel: activeService?.hotspotChannel ?? 0
     property string hotspotAddress: activeService?.hotspotAddress ?? ""
     property string hotspotUuid: activeService?.hotspotUuid ?? ""
+    property string hotspotSecurity: activeService?.hotspotSecurity ?? ""
+    property bool hotspotHidden: activeService?.hotspotHidden ?? false
+    property bool hotspotAutoconnect: activeService?.hotspotAutoconnect ?? false
     property bool hotspotExtendedSupported: activeService?.hotspotExtendedSupported ?? false
     property bool nmConnectionEditorAvailable: activeService?.nmConnectionEditorAvailable ?? false
     property int connectionProfilesRevision: activeService?.connectionProfilesRevision ?? 0
@@ -447,6 +450,13 @@ Singleton {
                 error: "connection editor not supported"
             });
         return false;
+    }
+
+    function findWifiProfile(ssid, callback) {
+        listConnections(response => {
+            const matches = (response.result || []).filter(p => p.ssid === ssid && p.uuid !== hotspotUuid);
+            callback(matches.length === 0 ? null : matches.reduce((a, b) => b.timestamp > a.timestamp ? b : a));
+        });
     }
 
     function getConnection(uuid, withSecrets, callback) {

@@ -3,13 +3,17 @@ package network
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/pem"
 	"net"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/Wifx/gonetworkmanager/v2"
 	"github.com/duxlabs-dev/dux-go/ipc"
 	mock_gonetworkmanager "github.com/duxlabs-dev/dux-shell/core/internal/mocks/github.com/Wifx/gonetworkmanager/v2"
+	mock_dbus "github.com/duxlabs-dev/dux-shell/core/internal/mocks/github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -35,141 +39,186 @@ func e2eRequest(t *testing.T, b Backend, method string, params map[string]any) i
 	return resp
 }
 
-func manualIPProfile(typ string, extra nmSettings) nmSettings {
-	s := connSection("u1", "Home", typ, map[string]dbus.Variant{"autoconnect": dbus.MakeVariant(true)})
-	s["ipv4"] = map[string]dbus.Variant{
-		"method":       dbus.MakeVariant("manual"),
-		"addresses":    dbus.MakeVariant([][]uint32{{0x0100a8c0, 24, 0x0101a8c0}}),
-		"address-data": dbus.MakeVariant([]map[string]dbus.Variant{{"address": dbus.MakeVariant("192.168.0.1"), "prefix": dbus.MakeVariant(uint32(24))}}),
-		"gateway":      dbus.MakeVariant("192.168.1.1"),
-		"dns":          dbus.MakeVariant([]uint32{0x01010101}),
-		"dns-data":     dbus.MakeVariant([]string{"1.1.1.1"}),
+type jm = map[string]any
+
+// assertKeys checks "section.key" values in settings sent to NM; a nil value means the key is absent.
+func assertKeys(t *testing.T, s any, want jm) {
+	t.Helper()
+	for k, w := range want {
+		i := strings.LastIndex(k, ".")
+		got := reflect.ValueOf(s).MapIndex(reflect.ValueOf(k[:i]))
+		if got.IsValid() {
+			got = got.MapIndex(reflect.ValueOf(k[i+1:]))
+		}
+		if !got.IsValid() {
+			assert.Nil(t, w, k)
+			continue
+		}
+		g := got.Interface()
+		if v, ok := g.(dbus.Variant); ok {
+			g = v.Value()
+		}
+		assert.Equal(t, w, g, k)
 	}
-	s["ipv6"] = map[string]dbus.Variant{
-		"method":       dbus.MakeVariant("manual"),
-		"addresses":    dbus.MakeVariant([]legacyIP6Addr{{Addr: make([]byte, 16), Prefix: 64, Gateway: make([]byte, 16)}}),
-		"address-data": dbus.MakeVariant([]map[string]dbus.Variant{{"address": dbus.MakeVariant("fd00::1"), "prefix": dbus.MakeVariant(uint32(64))}}),
-		"dns-data":     dbus.MakeVariant([]string{"2001:db8::53"}),
-	}
-	for k, v := range extra {
-		s[k] = v
-	}
+}
+
+func storedWireGuard() nmSettings {
+	v := dbus.MakeVariant
+	s := connSection("u1", "wg", "wireguard", nil)
+	s["wireguard"] = map[string]dbus.Variant{"peers": v([]map[string]dbus.Variant{{
+		"public-key": v("PEER"), "endpoint": v("192.0.2.1:51820"), "allowed-ips": v([]string{"10.99.0.0/24"}),
+	}})}
+	s["ipv4"] = map[string]dbus.Variant{"method": v("auto"), "dns-data": v([]string{"192.0.2.53"})}
 	return s
 }
 
-func TestE2E_ConnectionUpdate_KeepsDNSGatewayAndSecrets(t *testing.T) {
-	f := newEditorFixture(t)
-	obj := f.profile(t, "u1", "/s/1")
-	expectGetSettings(obj, manualIPProfile("802-11-wireless", nmSettings{
-		"802-11-wireless-security": {"key-mgmt": dbus.MakeVariant("wpa-psk")},
-	}))
-	expectPSKSecret(obj)
-	got := captureUpdate2(obj, 0, nil)
+var wgSecrets = nmSettings{"wireguard": {"private-key": dbus.MakeVariant("PRIV"), "peers": dbus.MakeVariant(
+	[]map[string]dbus.Variant{{"public-key": dbus.MakeVariant("PEER"), "preshared-key": dbus.MakeVariant("stored-psk")}})}}
 
-	resp := e2eRequest(t, f.backend, "network.connection.update", map[string]any{
-		"uuid":     "u1",
-		"settings": map[string]any{"connection": map[string]any{"autoconnect": false}},
-	})
+func TestE2E_EditorWrites(t *testing.T) {
+	v := dbus.MakeVariant
+	eth := connSection("u1", "Corp", "802-3-ethernet", nil)
+	eth["ipv4"] = map[string]dbus.Variant{"method": v("auto"), "dns-data": v([]string{"192.0.2.53"})}
+	eth["802-1x"] = map[string]dbus.Variant{"eap": v([]string{"ttls"}), "phase2-auth": v("pap"), "identity": v("old"), "ca-cert": v([]byte("der"))}
+	eth["proxy"] = map[string]dbus.Variant{"method": v(int32(1)), "pac-url": v("http://192.0.2.1/p.pac")}
+	ovpn := connSection("u1", "ovpn", "vpn", nil)
+	ovpn["vpn"] = map[string]dbus.Variant{"service-type": v("org.freedesktop.NetworkManager.openvpn"), "data": v(map[string]string{"remote": "vpn.example.com"})}
+	allowed := v([]string{"10.99.0.0/24"})
 
-	require.Empty(t, resp.Error)
-	s := *got
-	assert.Equal(t, false, s["connection"]["autoconnect"].Value())
-	assert.Equal(t, "hunter22", s["802-11-wireless-security"]["psk"].Value())
-	assert.Equal(t, "192.168.1.1", s["ipv4"]["gateway"].Value())
-	assert.Equal(t, []string{"1.1.1.1"}, s["ipv4"]["dns-data"].Value())
-	assert.Contains(t, s["ipv4"], "address-data")
-	assert.Contains(t, s["ipv6"], "address-data")
-	for _, key := range []string{"addresses", "dns"} {
-		assert.NotContains(t, s["ipv4"], key)
+	for _, tc := range []struct {
+		name, wantErr   string
+		stored, secrets nmSettings
+		nmErr           error
+		req             jm
+		want            jm
+	}{
+		{name: "nm rejection is surfaced", stored: eth, secrets: nmSettings{"802-1x": {}}, wantErr: "ipv4.method: property is invalid",
+			nmErr: dbus.Error{Name: "org.freedesktop.NetworkManager.Settings.Connection.InvalidProperty", Body: []any{"ipv4.method: property is invalid"}},
+			req:   jm{"settings": jm{"ipv4": jm{"method": "bogus"}}}},
+		{name: "enterprise edit keeps stored certificate and proxy", stored: eth, secrets: nmSettings{"802-1x": {}},
+			req:  jm{"settings": jm{"802-3-ethernet": jm{"mtu": float64(1400)}}, "enterprise": jm{"eap": "ttls", "phase2": "pap", "identity": "new", "ca": "file"}},
+			want: jm{"802-1x.ca-cert": []byte("der"), "802-1x.identity": "new", "802-3-ethernet.mtu": uint32(1400), "ipv4.dns-data": []string{"192.0.2.53"}, "proxy.pac-url": "http://192.0.2.1/p.pac", "proxy.method": int32(1)}},
+		{name: "null removes only that vpn secret", stored: ovpn, secrets: nmSettings{"vpn": {"secrets": v(map[string]string{"password": "pw", "cert-pass": "cp"})}},
+			req:  jm{"settings": jm{"vpn": jm{"secrets": jm{"password": nil}}}},
+			want: jm{"vpn.secrets": map[string]string{"cert-pass": "cp"}}},
+		{name: "wireguard peer edit keeps psk and private key", stored: storedWireGuard(), secrets: wgSecrets,
+			req:  jm{"settings": jm{"wireguard": jm{"peers": []any{jm{"public-key": "PEER", "allowed-ips": []any{"10.99.0.0/24"}, "endpoint": "198.51.100.7:51820"}}}}},
+			want: jm{"wireguard.private-key": "PRIV", "ipv4.dns-data": []string{"192.0.2.53"}, "wireguard.peers": []map[string]dbus.Variant{{"public-key": v("PEER"), "allowed-ips": allowed, "endpoint": v("198.51.100.7:51820"), "preshared-key": v("stored-psk")}}}},
+		{name: "wireguard added",
+			req: jm{"settings": jm{"connection": jm{"id": "wg", "type": "wireguard", "interface-name": "dmstest0"}, "wireguard": jm{"private-key": "PRIV", "listen-port": float64(51820),
+				"peers": []any{jm{"public-key": "PEER", "allowed-ips": []any{"10.99.0.0/24"}, "persistent-keepalive": float64(25)}}}, "ipv6": jm{"method": "ignore"}}},
+			want: jm{"wireguard.private-key": "PRIV", "wireguard.listen-port": uint32(51820), "ipv6.method": "ignore",
+				"wireguard.peers": []map[string]dbus.Variant{{"public-key": v("PEER"), "allowed-ips": allowed, "persistent-keepalive": v(uint32(25))}}}},
+		{name: "gsm added",
+			req:  jm{"settings": jm{"connection": jm{"id": "gsm", "type": "gsm"}, "gsm": jm{"apn": "internet.example", "auto-config": false, "password-flags": float64(2)}}},
+			want: jm{"gsm.apn": "internet.example", "gsm.auto-config": false, "gsm.password-flags": uint32(2), "gsm.password": nil}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newEditorFixture(t)
+			method := "network.connection.add"
+			var got *nmSettings
+			if tc.stored == nil {
+				got = captureAddConnection(f.object(t, nmSettingsPath), nmSettingsAddConnection)
+			} else {
+				method = "network.connection.update"
+				tc.req["uuid"] = "u1"
+				obj := f.profile(t, "u1", "/s/1")
+				expectGetSettings(obj, tc.stored)
+				for sec, x := range tc.secrets {
+					expectGetSecrets(obj, sec, nmSettings{sec: x})
+				}
+				got = captureUpdate2(obj, 0, tc.nmErr)
+			}
+
+			resp := e2eRequest(t, f.backend, method, tc.req)
+
+			if tc.wantErr != "" {
+				assert.Contains(t, resp.Error, tc.wantErr)
+				return
+			}
+			require.Empty(t, resp.Error)
+			assertKeys(t, *got, tc.want)
+		})
 	}
-	assert.NotContains(t, s["ipv6"], "addresses")
 }
 
-func TestE2E_ConnectionUpdate_NMRejectionSurfacesVerbatim(t *testing.T) {
-	f := newEditorFixture(t)
-	obj := f.profile(t, "u1", "/s/1")
-	pskProfile(obj)
-	expectPSKSecret(obj)
-	// captureUpdate2 expects exactly one call, so a retry would fail the test.
-	captureUpdate2(obj, 0, dbus.Error{
-		Name: "org.freedesktop.NetworkManager.Settings.Connection.InvalidProperty",
-		Body: []any{"ipv4.method: property is invalid"},
-	})
-
-	resp := e2eRequest(t, f.backend, "network.connection.update", map[string]any{
-		"uuid":     "u1",
-		"settings": map[string]any{"ipv4": map[string]any{"method": "bogus"}},
-	})
-
-	assert.Contains(t, resp.Error, "ipv4.method: property is invalid")
-}
-
-func TestE2E_ConnectionDuplicateThenDelete(t *testing.T) {
-	f := newEditorFixture(t)
-	obj := f.profile(t, "u1", "/s/1")
-	expectFlags(obj, 0)
-	pskProfile(obj)
-	expectPSKSecret(obj)
-	added := captureAddConnection(f.object(t, nmSettingsPath), nmSettingsAddConnection)
-
-	resp := e2eRequest(t, f.backend, "network.connection.duplicate", map[string]any{"uuid": "u1", "name": "Copy"})
+func TestE2E_EAPConfigImportToNewProfile(t *testing.T) {
+	resp := e2eRequest(t, newEditorFixture(t).backend, "network.eapconfig.parse", jm{"file": "testdata/uhh.eap-config"})
 	require.Empty(t, resp.Error)
-	var res struct{ UUID string }
-	require.NoError(t, json.Unmarshal(*resp.Result, &res))
-
-	s := *added
-	assert.NotEqual(t, "u1", res.UUID)
-	assert.Equal(t, res.UUID, s["connection"]["uuid"].Value())
-	assert.Equal(t, "Copy", s["connection"]["id"].Value())
-
-	conn := mock_gonetworkmanager.NewMockConnection(t)
-	conn.EXPECT().Delete().Return(nil).Once()
-	f.settings.EXPECT().GetConnectionByUUID(res.UUID).Return(conn, nil).Once()
-
-	resp = e2eRequest(t, f.backend, "network.connection.delete", map[string]any{"uuid": res.UUID})
-	assert.Empty(t, resp.Error)
+	var parsed struct{ Enterprise jm }
+	require.NoError(t, json.Unmarshal(*resp.Result, &parsed))
+	block, _ := pem.Decode([]byte(parsed.Enterprise["caCertPem"].(string)))
+	require.NotNil(t, block)
+	parsed.Enterprise["identity"], parsed.Enterprise["password"] = "stine@uni-hamburg.de", "s3cret"
+	eduroam := jm{"ssid": "eduroam", "security": "wpa-eap", "saveOnly": true, "enterprise": parsed.Enterprise}
+	f := newEditorFixture(t)
+	f.settings.EXPECT().ListConnections().Return(nil, nil).Once()
+	var added gonetworkmanager.ConnectionSettings
+	f.settings.EXPECT().AddConnection(mock.Anything).Run(func(s gonetworkmanager.ConnectionSettings) { added = s }).Return(nil, nil).Once()
+	require.Empty(t, e2eRequest(t, f.backend, "network.wifi.connect", eduroam).Error)
+	assertKeys(t, added, jm{"802-1x.eap": []string{"ttls"}, "802-1x.phase2-auth": "pap", "802-1x.domain-match": "roamrad.rrz.uni-hamburg.de",
+		"802-1x.ca-cert": block.Bytes, "802-1x.identity": "stine@uni-hamburg.de", "802-1x.system-ca-certs": nil,
+		"802-11-wireless.ssid": []byte("eduroam"), "802-1x.password": "s3cret"})
 }
 
-func TestE2E_EthernetConnectAndDisconnectPerDevice(t *testing.T) {
-	f := newEthernetFixture(t, mockWiredProfile(t, "wired-a", "enp6s0", nil))
-	ac := activeConnection(t, "wired-a")
-	dev := f.addDevice(t, "enp6s0", hwEnp6s0, gonetworkmanager.NmDeviceStateActivated, ac)
-	f.nm.EXPECT().ActivateConnection(mock.MatchedBy(isAutoConnection), dev, (*dbus.Object)(nil)).Return(nil, nil).Once()
+func TestE2E_EthernetDisconnectUsesDevice(t *testing.T) {
+	e := newEthernetFixture(t, mockWiredProfile(t, "wired-a", "enp6s0", nil))
+	dev := e.addDevice(t, "enp6s0", hwEnp6s0, gonetworkmanager.NmDeviceStateActivated, activeConnection(t, "wired-a"))
+	e.nm.EXPECT().ActivateConnection(mock.MatchedBy(isAutoConnection), dev, (*dbus.Object)(nil)).Return(nil, nil).Once()
 	dev.EXPECT().Disconnect().Return(nil).Once()
-
-	resp := e2eRequest(t, f.backend, "network.ethernet.connect", map[string]any{"device": "enp6s0"})
-	assert.Empty(t, resp.Error)
-	resp = e2eRequest(t, f.backend, "network.ethernet.disconnect", map[string]any{"device": "enp6s0"})
-	assert.Empty(t, resp.Error)
+	assert.Empty(t, e2eRequest(t, e.backend, "network.ethernet.connect", map[string]any{"device": "enp6s0"}).Error)
+	assert.Empty(t, e2eRequest(t, e.backend, "network.ethernet.disconnect", map[string]any{"device": "enp6s0"}).Error)
 }
 
-func TestE2E_VPNAutoconnectToggle_KeepsDNSAndAddresses(t *testing.T) {
+func TestE2E_HotspotCardOwnsProfileAndQRCode(t *testing.T) {
 	f := newEditorFixture(t)
-	const path = dbus.ObjectPath("/s/wg")
-	obj := f.object(t, path)
-
+	hotspotActive := false
+	current := storedHotspotSettings()
 	conn := mock_gonetworkmanager.NewMockConnection(t)
-	conn.EXPECT().GetPath().Return(path).Maybe()
-	conn.EXPECT().GetSettings().Return(gonetworkmanager.ConnectionSettings{
-		"connection": {"id": "wg0", "uuid": "wg-uuid", "type": "wireguard"},
-	}, nil)
-	f.settings.EXPECT().ListConnections().Return([]gonetworkmanager.Connection{conn}, nil)
+	conn.EXPECT().GetSettings().RunAndReturn(func() (gonetworkmanager.ConnectionSettings, error) { return current, nil }).Maybe()
+	conn.EXPECT().Update(mock.Anything).RunAndReturn(func(s gonetworkmanager.ConnectionSettings) error { current = s; return nil }).Once()
+	conn.EXPECT().GetSecrets("802-11-wireless-security").Return(gonetworkmanager.ConnectionSettings{"802-11-wireless-security": {"psk": testHotspotPSK}}, nil).Maybe()
+	client := mock_gonetworkmanager.NewMockConnection(t)
+	client.EXPECT().GetSettings().Return(gonetworkmanager.ConnectionSettings{"connection": {"uuid": "client-uuid", "type": "802-11-wireless"}, "802-11-wireless": {"ssid": []byte("dms-ap"), "mode": "infrastructure"}, "802-11-wireless-security": {"key-mgmt": "wpa-psk"}}, nil).Maybe()
+	client.EXPECT().GetSecrets("802-11-wireless-security").Return(gonetworkmanager.ConnectionSettings{"802-11-wireless-security": {"psk": "client-psk"}}, nil).Maybe()
+	f.settings.EXPECT().ListConnections().Return([]gonetworkmanager.Connection{conn, client}, nil).Maybe()
+	ac := mock_gonetworkmanager.NewMockActiveConnection(t)
+	ac.EXPECT().GetPropertyType().Return("802-11-wireless", nil).Maybe()
+	ac.EXPECT().GetPropertyConnection().Return(conn, nil).Maybe()
+	ac.EXPECT().GetPropertyState().Return(gonetworkmanager.NmActiveConnectionStateActivated, nil).Maybe()
+	f.nm.EXPECT().GetPropertyActiveConnections().RunAndReturn(func() ([]gonetworkmanager.ActiveConnection, error) {
+		if hotspotActive {
+			return []gonetworkmanager.ActiveConnection{ac}, nil
+		}
+		return nil, nil
+	}).Maybe()
 
-	s := manualIPProfile("wireguard", nmSettings{
-		"wireguard": {"private-key-flags": dbus.MakeVariant(uint32(0))},
-	})
-	s["connection"]["uuid"] = dbus.MakeVariant("wg-uuid")
-	expectGetSettings(obj, s)
-	expectGetSecrets(obj, "wireguard", nmSettings{"wireguard": {"private-key": dbus.MakeVariant("KEY")}})
-	got := captureUpdate2(obj, nmUpdate2FlagToDisk, nil)
-
-	resp := e2eRequest(t, f.backend, "network.vpn.updateConfig", map[string]any{"uuid": "wg-uuid", "autoconnect": false})
-
+	resp := e2eRequest(t, f.backend, "network.hotspot.configure", jm{"ssid": "dms-ap", "password": testHotspotPSK, "security": "sae", "hidden": true})
 	require.Empty(t, resp.Error)
-	p := *got
-	assert.Equal(t, false, p["connection"]["autoconnect"].Value())
-	assert.Equal(t, []string{"1.1.1.1"}, p["ipv4"]["dns-data"].Value())
-	assert.Equal(t, []string{"2001:db8::53"}, p["ipv6"]["dns-data"].Value())
-	assert.Contains(t, p["ipv6"], "address-data")
-	assert.Equal(t, "KEY", p["wireguard"]["private-key"].Value())
+	assertKeys(t, current, jm{"connection.uuid": "hotspot-uuid", "802-11-wireless-security.key-mgmt": "sae", "connection.metered": nil})
+	resp = e2eRequest(t, f.backend, "network.qrcode-content", map[string]any{"ssid": "dms-ap"})
+	require.Empty(t, resp.Error)
+	assert.JSONEq(t, `"WIFI:T:WPA;S:dms-ap;P:client-psk;;"`, string(*resp.Result), "the client profile answers while the hotspot is off")
+
+	hotspotActive = true
+	resp = e2eRequest(t, f.backend, "network.qrcode-content", map[string]any{"ssid": "dms-ap"})
+	require.Empty(t, resp.Error)
+	assert.JSONEq(t, `"WIFI:T:WPA;S:dms-ap;P:`+testHotspotPSK+`;H:true;;"`, string(*resp.Result))
+}
+
+func TestE2E_ReadOnlyListWithoutFirewalld(t *testing.T) {
+	f := newEditorFixture(t)
+	system := listedConnection(t, f, "/s/1", 0, connSection("u-sys", "Corp", "802-3-ethernet", nil))
+	f.settings.EXPECT().ListConnections().Return([]gonetworkmanager.Connection{system}, nil).Once()
+	f.nm.EXPECT().GetPropertyActiveConnections().Return(nil, nil).Once()
+	f.object(t, dbusNMPath).EXPECT().Call(gonetworkmanager.NetworkManagerGetPermissions, dbus.Flags(0)).
+		Return(&dbus.Call{Body: []any{map[string]string{"org.freedesktop.NetworkManager.settings.modify.system": "no"}}}).Once()
+	fw := mock_dbus.NewMockBusObject(t)
+	f.backend.firewalldObjectFn = func() dbus.BusObject { return fw }
+	fw.EXPECT().Call(firewalldGetZones, dbus.Flags(0)).Return(&dbus.Call{Err: dbus.Error{Name: "org.freedesktop.DBus.Error.ServiceUnknown"}}).Once()
+	resp := e2eRequest(t, f.backend, "network.connection.list", nil)
+	require.Empty(t, resp.Error)
+	assert.Contains(t, string(*resp.Result), `"canModify":false`)
+	resp = e2eRequest(t, f.backend, "network.connection.firewallZones", nil)
+	assert.JSONEq(t, `[]`, string(*resp.Result))
 }
