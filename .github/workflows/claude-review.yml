@@ -65,7 +65,6 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
-      id-token: write
     steps:
       - name: Announce start
         id: start
@@ -97,6 +96,7 @@ jobs:
         id: claude
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             Review pull request #${{ needs.gate.outputs.pr }} in ${{ github.repository }}, requested by @${{ needs.gate.outputs.actor }}:
 
