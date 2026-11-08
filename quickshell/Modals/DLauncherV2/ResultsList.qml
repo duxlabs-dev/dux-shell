@@ -23,6 +23,7 @@ Item {
             height: 0
         })
     readonly property var _visualRows: _visualModel.rows
+    readonly property bool _dmenuMode: controller?.searchMode === "dmenu"
     readonly property var _flatIndexToRowMap: _visualModel.indexMap
     readonly property var _cumulativeHeights: _visualModel.heights
     property int _lastSelectedFlatIndex: -1
@@ -119,7 +120,7 @@ Item {
                     rows.push({
                         _rowId: rowId,
                         type: "list_item",
-                        item: items[i],
+                        item: isDmenuSection ? Object.assign({}, items[i]) : items[i],
                         flatIndex: flatIdx,
                         sectionId: sectionId,
                         firstInGroup: i === 0,
@@ -346,8 +347,12 @@ Item {
             clip: true
             scrollBarTopMargin: (root.controller?.sections?.length > 0) ? LauncherMetrics.sectionBand : 0
 
-            model: ScriptModel {
-                values: root._visualRows
+            // Dmenu can contain thousands of rows; diffing their identities is quadratic.
+            model: root._dmenuMode ? root._visualRows.length : rowModel
+
+            ScriptModel {
+                id: rowModel
+                values: root._dmenuMode ? [] : root._visualRows
                 objectProp: "_rowId"
             }
 
@@ -373,11 +378,12 @@ Item {
                 required property var modelData
                 required property int index
 
-                readonly property string rowType: modelData?.type ?? ""
+                readonly property var rowData: root._dmenuMode ? root._visualRows[index] : modelData
+                readonly property string rowType: rowData?.type ?? ""
 
                 z: 1
                 width: mainListView.width
-                height: modelData?.height ?? LauncherMetrics.rowHeight
+                height: rowData?.height ?? LauncherMetrics.rowHeight
 
                 Component.onCompleted: mainListView.fadeIn(delegateRoot, index)
 
@@ -396,9 +402,9 @@ Item {
                         border.width: Theme.layerOutlineWidth
                         border.color: Theme.outlineMedium
                         radius: Theme.groupedListInnerRadius
-                        topLeftRadius: delegateRoot.modelData?.firstInGroup ? Theme.groupedListOuterRadius : radius
+                        topLeftRadius: delegateRoot.rowData?.firstInGroup ? Theme.groupedListOuterRadius : radius
                         topRightRadius: topLeftRadius
-                        bottomLeftRadius: delegateRoot.modelData?.lastInGroup ? Theme.groupedListOuterRadius : radius
+                        bottomLeftRadius: delegateRoot.rowData?.lastInGroup ? Theme.groupedListOuterRadius : radius
                         bottomRightRadius: bottomLeftRadius
                     }
                 }
@@ -410,19 +416,19 @@ Item {
                     visible: active
                     sourceComponent: SectionHeader {
                         focusReturnTarget: root.focusReturnTarget
-                        section: delegateRoot.modelData?.section ?? null
+                        section: delegateRoot.rowData?.section ?? null
                         controller: root.controller
                         viewMode: {
                             var vt = root.controller?.viewModeVersion ?? 0;
                             void (vt);
-                            return root.controller?.getSectionViewMode(delegateRoot.modelData?.sectionId ?? "") ?? "list";
+                            return root.controller?.getSectionViewMode(delegateRoot.rowData?.sectionId ?? "") ?? "list";
                         }
                         canChangeViewMode: {
                             var vt = root.controller?.viewModeVersion ?? 0;
                             void (vt);
-                            return root.controller?.canChangeSectionViewMode(delegateRoot.modelData?.sectionId ?? "") ?? false;
+                            return root.controller?.canChangeSectionViewMode(delegateRoot.rowData?.sectionId ?? "") ?? false;
                         }
-                        canCollapse: root.controller?.canCollapseSection(delegateRoot.modelData?.sectionId ?? "") ?? false
+                        canCollapse: root.controller?.canCollapseSection(delegateRoot.rowData?.sectionId ?? "") ?? false
                         transientSurfaceTracker: root.transientSurfaceTracker
                     }
                 }
@@ -435,22 +441,22 @@ Item {
                     visible: active
                     sourceComponent: LauncherRow {
                         keyForwardTargets: root.keyForwardTargets
-                        firstInGroup: delegateRoot.modelData?.firstInGroup ?? true
-                        lastInGroup: delegateRoot.modelData?.lastInGroup ?? true
+                        firstInGroup: delegateRoot.rowData?.firstInGroup ?? true
+                        lastInGroup: delegateRoot.rowData?.lastInGroup ?? true
                         externalHighlight: true
-                        item: delegateRoot.modelData?.item ?? null
-                        isSelected: (delegateRoot.modelData?.flatIndex ?? -1) === root.controller?.selectedFlatIndex
+                        item: delegateRoot.rowData?.item ?? null
+                        isSelected: (delegateRoot.rowData?.flatIndex ?? -1) === root.controller?.selectedFlatIndex
                         controller: root.controller
-                        flatIndex: delegateRoot.modelData?.flatIndex ?? -1
+                        flatIndex: delegateRoot.rowData?.flatIndex ?? -1
 
                         onClicked: {
-                            if (root.controller && delegateRoot.modelData?.item) {
-                                root.controller.executeItem(delegateRoot.modelData.item);
+                            if (root.controller && delegateRoot.rowData?.item) {
+                                root.controller.executeItem(delegateRoot.rowData.item);
                             }
                         }
 
                         onRightClicked: (mouseX, mouseY) => {
-                            root.itemRightClicked(delegateRoot.modelData?.flatIndex ?? -1, delegateRoot.modelData?.item ?? null, mouseX, mouseY);
+                            root.itemRightClicked(delegateRoot.rowData?.flatIndex ?? -1, delegateRoot.rowData?.item ?? null, mouseX, mouseY);
                         }
                     }
                 }
@@ -461,15 +467,15 @@ Item {
                     visible: active
                     sourceComponent: Row {
                         Repeater {
-                            model: delegateRoot.modelData?.items ?? []
+                            model: delegateRoot.rowData?.items ?? []
 
                             Item {
                                 id: gridCellDelegate
                                 required property var modelData
                                 required property int index
 
-                                readonly property bool isTile: delegateRoot.modelData?.viewMode === "tile"
-                                readonly property real cellWidth: Math.floor(delegateRoot.width / (delegateRoot.modelData?.cols ?? root.gridColumns))
+                                readonly property bool isTile: delegateRoot.rowData?.viewMode === "tile"
+                                readonly property real cellWidth: Math.floor(delegateRoot.width / (delegateRoot.rowData?.cols ?? root.gridColumns))
 
                                 width: cellWidth
                                 height: delegateRoot.height
