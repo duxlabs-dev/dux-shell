@@ -32,6 +32,7 @@ type Zone struct {
 	Name       string   `json:"name"`
 	Active     bool     `json:"active"`
 	ReadOnly   bool     `json:"readOnly"`
+	Builtin    bool     `json:"builtin"`
 	Interfaces []string `json:"interfaces"`
 	Rules      []Rule   `json:"rules"`
 }
@@ -75,6 +76,9 @@ type Backend interface {
 	RemoveRule(zone, id string) error
 	SetDefaults(change DefaultsChange) error
 	SetInterfaceZone(iface, zone string) error
+	AddZone(name string) error
+	RenameZone(name, newName string) error
+	RemoveZone(name string) error
 	ListServices() ([]Service, error)
 	Start(notify func()) error
 	Close()

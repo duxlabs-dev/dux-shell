@@ -200,6 +200,18 @@ func (m *Manager) SetInterfaceZone(iface, zone string) error {
 	return m.write(func(b Backend) error { return b.SetInterfaceZone(iface, zone) })
 }
 
+func (m *Manager) AddZone(name string) error {
+	return m.write(func(b Backend) error { return b.AddZone(name) })
+}
+
+func (m *Manager) RenameZone(name, newName string) error {
+	return m.write(func(b Backend) error { return b.RenameZone(name, newName) })
+}
+
+func (m *Manager) RemoveZone(name string) error {
+	return m.write(func(b Backend) error { return b.RemoveZone(name) })
+}
+
 func (m *Manager) ListServices() ([]Service, error) {
 	return m.active().ListServices()
 }

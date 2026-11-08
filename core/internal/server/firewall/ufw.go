@@ -221,6 +221,18 @@ func (b *ufwBackend) SetInterfaceZone(_, _ string) error {
 	return errors.New("ufw has no zones")
 }
 
+func (b *ufwBackend) AddZone(_ string) error {
+	return errors.New("ufw has no zones")
+}
+
+func (b *ufwBackend) RenameZone(_, _ string) error {
+	return errors.New("ufw has no zones")
+}
+
+func (b *ufwBackend) RemoveZone(_ string) error {
+	return errors.New("ufw has no zones")
+}
+
 func (b *ufwBackend) ListServices() ([]Service, error) {
 	raw, err := b.readRaw()
 	if err != nil {

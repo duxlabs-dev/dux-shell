@@ -191,6 +191,7 @@ type fakeBus struct {
 	interactive []string
 	calls       []string
 	failOn      map[string]error
+	inUse       string
 }
 
 func (f *fakeBus) Running() bool { return f.running }
@@ -216,8 +217,14 @@ func (f *fakeBus) Call(path, method string, args []any, ret ...any) error {
 		*out = []string{"home", "docker"}
 	case *map[string]map[string][]string:
 		*out = map[string]map[string][]string{"home": {"interfaces": {"eno1"}}}
+		if f.inUse != "" {
+			(*out)[f.inUse] = map[string][]string{"interfaces": {"eno2"}}
+		}
 	case *string:
 		*out = "home"
+		if method == firewalldName+".getDefaultZone" && f.inUse == "dflt" {
+			*out = f.inUse
+		}
 	case *dbus.ObjectPath:
 		*out = "/org/fedoraproject/FirewallD1/config/zone/1"
 	case *map[string]dbus.Variant:
@@ -692,4 +699,68 @@ func TestUFWUnlockFinishingAfterClose(t *testing.T) {
 	assert.ErrorIs(t, <-result, ErrAuthDismissed)
 	assert.Equal(t, int32(1), helper.closed.Load())
 	assert.ErrorIs(t, b.call("state", nil, nil), errHelperLocked)
+}
+
+func TestZoneManagement(t *testing.T) {
+	const (
+		add    = firewalldConfig + ".addZone2"
+		rename = firewalldConfigZone + ".rename"
+		remove = firewalldConfigZone + ".remove"
+		reload = firewalldName + ".reload"
+	)
+	newBackend := func() (*firewalldBackend, *fakeBus) {
+		bus := &fakeBus{running: true, authorized: true}
+		return &firewalldBackend{bus: bus}, bus
+	}
+
+	t.Run("add creates the zone and reloads", func(t *testing.T) {
+		b, bus := newBackend()
+		require.NoError(t, b.AddZone("lab"))
+		assert.Equal(t, []string{add, reload}, bus.calls[len(bus.calls)-2:])
+	})
+	t.Run("add rejects bad, managed and existing names before writing", func(t *testing.T) {
+		for _, name := range []string{"", "has space", "bad/name", "waytoolongzonenameforfirewalld", "docker", "libvirt-x", "home"} {
+			b, bus := newBackend()
+			assert.Error(t, b.AddZone(name), name)
+			assert.NotContains(t, bus.calls, add, name)
+		}
+	})
+	t.Run("rename and remove touch only free custom zones", func(t *testing.T) {
+		b, bus := newBackend()
+		require.NoError(t, b.RenameZone("lab", "lab2"))
+		require.NoError(t, b.RemoveZone("lab"))
+		assert.Contains(t, bus.calls, rename)
+		assert.Contains(t, bus.calls, remove)
+		assert.Equal(t, reload, bus.calls[len(bus.calls)-1])
+	})
+	t.Run("built in, managed, default and active zones are refused", func(t *testing.T) {
+		for _, name := range []string{"public", "docker", "home"} {
+			b, bus := newBackend()
+			assert.Error(t, b.RenameZone(name, "lab2"), name)
+			assert.Error(t, b.RemoveZone(name), name)
+			assert.NotContains(t, bus.calls, rename)
+			assert.NotContains(t, bus.calls, remove)
+		}
+	})
+	t.Run("default and active custom zones are refused", func(t *testing.T) {
+		for _, inUse := range []string{"dflt", "lab"} {
+			bus := &fakeBus{running: true, authorized: true, inUse: inUse}
+			b := &firewalldBackend{bus: bus}
+			assert.Error(t, b.RenameZone(inUse, "lab2"), inUse)
+			assert.Error(t, b.RemoveZone(inUse), inUse)
+			assert.NotContains(t, bus.calls, rename)
+			assert.NotContains(t, bus.calls, remove)
+		}
+	})
+	t.Run("rename onto an existing zone is refused", func(t *testing.T) {
+		b, bus := newBackend()
+		assert.Error(t, b.RenameZone("lab", "home"))
+		assert.NotContains(t, bus.calls, rename)
+	})
+	t.Run("ufw has no zones", func(t *testing.T) {
+		u := &ufwBackend{}
+		assert.Error(t, u.AddZone("lab"))
+		assert.Error(t, u.RenameZone("lab", "lab2"))
+		assert.Error(t, u.RemoveZone("lab"))
+	})
 }

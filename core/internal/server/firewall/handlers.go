@@ -49,6 +49,32 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 			return
 		}
 		respondAction(conn, req, manager.SetInterfaceZone(iface, zone))
+	case "firewall.addZone":
+		name, err := params.StringNonEmpty(req.Params, "name")
+		if err != nil {
+			conn.RespondError(req.ID, err.Error())
+			return
+		}
+		respondAction(conn, req, manager.AddZone(name))
+	case "firewall.renameZone":
+		name, err := params.StringNonEmpty(req.Params, "name")
+		if err != nil {
+			conn.RespondError(req.ID, err.Error())
+			return
+		}
+		newName, err := params.StringNonEmpty(req.Params, "newName")
+		if err != nil {
+			conn.RespondError(req.ID, err.Error())
+			return
+		}
+		respondAction(conn, req, manager.RenameZone(name, newName))
+	case "firewall.removeZone":
+		name, err := params.StringNonEmpty(req.Params, "name")
+		if err != nil {
+			conn.RespondError(req.ID, err.Error())
+			return
+		}
+		respondAction(conn, req, manager.RemoveZone(name))
 	case "firewall.listServices":
 		services, err := manager.ListServices()
 		if err != nil {

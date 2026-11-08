@@ -42,6 +42,26 @@ func isManagedZone(name string) bool {
 	return name == "docker" || name == "nm-shared" || strings.HasPrefix(name, "libvirt")
 }
 
+var builtinZones = []string{"block", "dmz", "drop", "external", "home", "internal", "public", "trusted", "work"}
+
+func isBuiltinZone(name string) bool {
+	return slices.Contains(builtinZones, name)
+}
+
+// firewalld caps zone names at 17 characters.
+func validateZoneName(name string) error {
+	if name == "" || len(name) > 17 {
+		return errors.New("zone name must be 1 to 17 characters")
+	}
+	for _, r := range name {
+		valid := r == '-' || r == '_' || r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z'
+		if !valid {
+			return fmt.Errorf("invalid character %q in zone name", r)
+		}
+	}
+	return nil
+}
+
 type firewalldBus interface {
 	Running() bool
 	Authorized(ctx context.Context, action string, interactive bool) (bool, error)
@@ -202,6 +222,7 @@ func (b *firewalldBackend) Snapshot() (State, error) {
 			Name:       name,
 			Active:     isActive,
 			ReadOnly:   isManagedZone(name),
+			Builtin:    isBuiltinZone(name),
 			Interfaces: append([]string{}, binding["interfaces"]...),
 			Rules:      []Rule{},
 		}
@@ -512,6 +533,124 @@ func (b *firewalldBackend) SetDefaults(change DefaultsChange) error {
 		return err
 	}
 	return b.bus.Call(firewalldPath, firewalldName+".setDefaultZone", []any{change.Zone})
+}
+
+func (b *firewalldBackend) zoneNames() ([]string, error) {
+	var names []string
+	err := b.bus.Call(firewalldConfigPath, firewalldConfig+".getZoneNames", nil, &names)
+	return names, err
+}
+
+// Permanent zone changes only reach the runtime through a reload, so a new zone could
+// not be used otherwise. Runtime-only state of other tools is lost, as with any reload.
+func (b *firewalldBackend) reload() error {
+	return b.bus.Call(firewalldPath, firewalldName+".reload", nil)
+}
+
+func (b *firewalldBackend) AddZone(name string) error {
+	if err := validateZoneName(name); err != nil {
+		return err
+	}
+	if isManagedZone(name) {
+		return fmt.Errorf("zone %s is managed by another program", name)
+	}
+	if err := b.authorizeWrite(); err != nil {
+		return err
+	}
+	names, err := b.zoneNames()
+	if err != nil {
+		return err
+	}
+	if slices.Contains(names, name) {
+		return fmt.Errorf("zone %s already exists", name)
+	}
+	var path dbus.ObjectPath
+	if err := b.bus.Call(firewalldConfigPath, firewalldConfig+".addZone2", []any{name, map[string]dbus.Variant{}}, &path); err != nil {
+		return err
+	}
+	return b.reload()
+}
+
+// Only custom, inactive zones may change, and never the default one.
+func (b *firewalldBackend) checkCustomZone(name string) error {
+	if isManagedZone(name) {
+		return fmt.Errorf("zone %s is managed by another program", name)
+	}
+	if isBuiltinZone(name) {
+		return fmt.Errorf("zone %s is built in", name)
+	}
+	return nil
+}
+
+func (b *firewalldBackend) checkZoneFree(name string) error {
+	var defaultZone string
+	if err := b.bus.Call(firewalldPath, firewalldName+".getDefaultZone", nil, &defaultZone); err != nil {
+		return err
+	}
+	if defaultZone == name {
+		return fmt.Errorf("zone %s is the default zone", name)
+	}
+	var active map[string]map[string][]string
+	if err := b.bus.Call(firewalldPath, firewalldZoneIface+".getActiveZones", nil, &active); err != nil {
+		return err
+	}
+	if _, ok := active[name]; ok {
+		return fmt.Errorf("zone %s still has interfaces", name)
+	}
+	return nil
+}
+
+func (b *firewalldBackend) RenameZone(name, newName string) error {
+	if err := validateZoneName(newName); err != nil {
+		return err
+	}
+	if isManagedZone(newName) {
+		return fmt.Errorf("zone %s is managed by another program", newName)
+	}
+	if err := b.checkCustomZone(name); err != nil {
+		return err
+	}
+	if err := b.authorizeWrite(); err != nil {
+		return err
+	}
+	names, err := b.zoneNames()
+	if err != nil {
+		return err
+	}
+	if slices.Contains(names, newName) {
+		return fmt.Errorf("zone %s already exists", newName)
+	}
+	if err := b.checkZoneFree(name); err != nil {
+		return err
+	}
+	path, err := b.configZonePath(name)
+	if err != nil {
+		return err
+	}
+	if err := b.bus.Call(path, firewalldConfigZone+".rename", []any{newName}); err != nil {
+		return err
+	}
+	return b.reload()
+}
+
+func (b *firewalldBackend) RemoveZone(name string) error {
+	if err := b.checkCustomZone(name); err != nil {
+		return err
+	}
+	if err := b.authorizeWrite(); err != nil {
+		return err
+	}
+	if err := b.checkZoneFree(name); err != nil {
+		return err
+	}
+	path, err := b.configZonePath(name)
+	if err != nil {
+		return err
+	}
+	if err := b.bus.Call(path, firewalldConfigZone+".remove", nil); err != nil {
+		return err
+	}
+	return b.reload()
 }
 
 func (b *firewalldBackend) ListServices() ([]Service, error) {
