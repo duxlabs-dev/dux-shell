@@ -773,15 +773,66 @@ Item {
 
     readonly property real barSurfaceThickness: Theme.px(effectiveBarThickness + surfaceSpacing + ((renderBarConfig?.gothCornersEnabled ?? false) && !hasMaximizedToplevel && spansEdge ? _wingR : 0), _dpr) + _shadowBuffer
     readonly property bool islandSheetOut: islandHost?.sheetOut ?? false
+    property bool islandRoomHeld: false
+    property bool islandRoomShrinking: false
     readonly property real islandSatelliteShadowBuffer: isIsland && islandSatellitesEnabled && !islandSatelliteBackground ? _shadowBuffer : 0
     // A grown layer surface jumps to its new origin before the client draws at the new size, so a far-edge host never grows for the sheet.
     readonly property bool islandReservesSheet: !!islandHost && (axis.edge === "bottom" || axis.edge === "right")
-    readonly property real hostThickness: isIsland ? Math.max(islandHost?.hostThickness ?? 0, islandStripThickness + islandSatelliteShadowBuffer) : Math.max(barSurfaceThickness, islandSheetOut || islandReservesSheet ? islandHost.hostThickness : 0)
+    readonly property real hostThickness: isIsland ? Math.max(islandHost?.hostThickness ?? 0, islandStripThickness + islandSatelliteShadowBuffer) : Math.max(barSurfaceThickness, islandRoomHeld || islandReservesSheet ? islandHost?.hostThickness ?? 0 : 0)
     // The host reserves the expanded island's height, so sliding by it would move a compact island off-screen within a frame.
     readonly property real islandCompactThickness: Math.max(islandStripThickness + islandSatelliteShadowBuffer, (islandHost?.outerGap ?? 0) + (islandHost?.compactThickness ?? 0) + (islandHost?.shadowPadding ?? 0))
     readonly property real hideSlideThickness: isIsland ? islandCompactThickness : barSurfaceThickness
     readonly property real surfaceImplicitHeight: !isVertical ? hostThickness : 0
     readonly property real surfaceImplicitWidth: isVertical ? hostThickness : 0
+
+    function _setWindowThickness(thickness) {
+        const win = barWindow.Window.window;
+        if (isVertical)
+            win.width = thickness;
+        else
+            win.height = thickness;
+    }
+
+    onIslandSheetOutChanged: {
+        if (islandSheetOut) {
+            islandRoomHeld = true;
+            return;
+        }
+        if (CompositorService.isHyprland && !isIsland && !frameHosted && !islandReservesSheet)
+            islandRoomRelease.restart();
+        else
+            islandRoomHeld = false;
+    }
+
+    // Hyprland squeezes the old buffer into a shrunken layer surface until the next commit, which blanks the bar for a frame.
+    // A plain commit resizes the surface to its buffer, so the buffer goes small first, once the collapse's last frame is out.
+    Timer {
+        id: islandRoomRelease
+        interval: 150
+        onTriggered: {
+            if (barWindow.islandSheetOut)
+                return;
+            if (!barWindow.Window.window?.visible) {
+                barWindow.islandRoomHeld = false;
+                return;
+            }
+            barWindow.islandRoomShrinking = true;
+            barWindow._setWindowThickness(barWindow.barSurfaceThickness);
+        }
+    }
+
+    Connections {
+        target: barWindow.Window.window
+        enabled: barWindow.islandRoomShrinking
+
+        function onFrameSwapped() {
+            barWindow.islandRoomShrinking = false;
+            if (barWindow.islandSheetOut)
+                barWindow._setWindowThickness(barWindow.hostThickness);
+            else
+                barWindow.islandRoomHeld = false;
+        }
+    }
 
     Component.onCompleted: {
         _updateHasMaximizedToplevel();
@@ -1343,7 +1394,8 @@ Item {
                         anchorItem: topBarContainer
                         slotItem: barWindow.islandSlot
                         barBody: barWindow
-                        bandThickness: barWindow.isVertical ? topBarMouseArea.width : topBarMouseArea.height
+                        bandThickness: barWindow.isVertical ? barUnitInset.width : barUnitInset.height
+                        bandInset: barUnitInset.spacingPx
                         bandAlongStart: barWindow.isVertical ? barUnitInset.y : barUnitInset.x
                         bandAlongEnd: barWindow.isVertical ? barUnitInset.y + barUnitInset.height : barUnitInset.x + barUnitInset.width
                         bandColor: barWindow._bgColor

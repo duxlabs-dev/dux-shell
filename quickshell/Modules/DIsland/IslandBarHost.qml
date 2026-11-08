@@ -26,6 +26,7 @@ Item {
     readonly property bool embedded: root.chrome !== "own"
     readonly property bool connectedChrome: root.chrome === "none"
     property real bandThickness: 0
+    property real bandInset: 0
     // The visible band along the bar, in host coordinates; a percent-length or padded bar is shorter than its window.
     property real bandAlongStart: 0
     property real bandAlongEnd: root.isVertical ? root.height : root.width
@@ -152,9 +153,9 @@ Item {
     // Screen position of the host window's origin; section rects and mapToItem(null) are window-relative.
     readonly property real sectionOriginX: root.hostOriginX - root.originOffsetX - root.hostOffsetX
     readonly property real sectionOriginY: root.hostOriginY - root.originOffsetY - root.hostOffsetY
-    readonly property int outerGap: root.freeMode ? 0 : root.embedded ? root.bandFit.gap : root.islandMetrics.gap
+    readonly property int outerGap: root.freeMode ? 0 : root.embedded ? root.bandInset + root.bandFit.gap : root.islandMetrics.gap
     // An embedded sheet starts inside the band; its content begins past the fold so nothing sits on the bar.
-    readonly property int nearInset: root.embedded ? Math.max(0, Math.round(root.bandThickness) - root.outerGap) : 0
+    readonly property int nearInset: root.embedded ? Math.max(0, Math.round(root.bandThickness + root.bandInset) - root.outerGap) : 0
     readonly property real crossInsetStart: root.freeMode ? 0 : root.frameHosted ? ShellLayout.frameReservation(root.screen, root.isVertical ? "left" : "top") : root.isVertical ? root.windowMarginLeft : root.windowMarginTop
     readonly property real crossInsetEnd: root.freeMode ? 0 : root.frameHosted ? ShellLayout.frameReservation(root.screen, root.isVertical ? "right" : "bottom") : root.isVertical ? root.windowMarginRight : root.windowMarginBottom
     readonly property real alongInset: root.freeMode ? 0 : root.isVertical ? root.windowMarginTop + root.windowMarginBottom : root.windowMarginLeft + root.windowMarginRight
