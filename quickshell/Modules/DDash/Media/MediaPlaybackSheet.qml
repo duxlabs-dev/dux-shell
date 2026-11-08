@@ -226,6 +226,7 @@ FocusScope {
                         focusTargets: (clickable ? [playerRow] : []).concat(pinButton)
 
                         TapHandler {
+                            parent: playerRow
                             acceptedButtons: Qt.RightButton
                             onTapped: {
                                 if (playerRow.modelData?.identity)
