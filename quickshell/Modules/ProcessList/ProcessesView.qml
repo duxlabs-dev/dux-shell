@@ -177,9 +177,10 @@ Rectangle {
         Row {
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: sh.alignLeft ? parent.left : undefined
+            anchors.leftMargin: sh.alignLeft ? Theme.spacingS : 0
             anchors.right: sh.alignLeft ? undefined : parent.right
-            anchors.rightMargin: sh.alignLeft ? 0 : Theme.spacingXS
-            width: Math.min(implicitWidth, sh.width)
+            anchors.rightMargin: sh.alignLeft ? 0 : Theme.spacingS
+            width: Math.min(implicitWidth, sh.width - Theme.spacingS)
             spacing: Theme.spacingXXS
 
             StyledText {
