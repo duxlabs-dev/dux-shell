@@ -997,7 +997,7 @@ Item {
             itemExecuted();
             return;
         }
-        if (searchQuery && !dmenuOnlyMatch && !dmenuNoCustom) {
+        if (!dmenuOnlyMatch && !dmenuNoCustom) {
             _sendDmenuFreeText(searchQuery);
             itemExecuted();
         }
@@ -1011,7 +1011,7 @@ Item {
             itemExecuted();
             return;
         }
-        if (searchQuery && !dmenuOnlyMatch && !dmenuNoCustom) {
+        if (!dmenuOnlyMatch && !dmenuNoCustom) {
             _sendDmenuFreeText(searchQuery, n);
             itemExecuted();
         }
@@ -2687,7 +2687,7 @@ Item {
             return;
         }
         if (!selectedItem) {
-            if (searchMode === "dmenu" && searchQuery) {
+            if (searchMode === "dmenu") {
                 if (dmenuOnlyMatch || dmenuNoCustom)
                     return;
                 _sendDmenuFreeText(searchQuery);
