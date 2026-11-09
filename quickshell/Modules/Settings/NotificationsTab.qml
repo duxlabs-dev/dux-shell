@@ -463,4 +463,21 @@ Column {
             onSliderValueChanged: newValue => SettingsData.set("notificationAnimationDuration", newValue)
         }
     }
+
+    SettingsCard {
+        tags: ["notification", "external", "daemon", "server", "mako", "dunst", "swaync", "disable"]
+        title: I18n.tr("Advanced")
+        settingKey: "notificationAdvanced"
+        collapsible: true
+        expanded: false
+
+        SettingsToggleRow {
+            tags: ["notification", "external", "daemon", "server", "mako", "dunst", "swaync", "disable"]
+            settingKey: "notificationServerEnabled"
+            text: I18n.tr("Use external manager")
+            description: I18n.tr("DMS leaves notifications to another daemon such as mako or dunst. Takes effect after restarting DMS", "use external notification daemon toggle description")
+            checked: !SettingsData.notificationServerEnabled
+            onToggled: checked => SettingsData.set("notificationServerEnabled", !checked)
+        }
+    }
 }
