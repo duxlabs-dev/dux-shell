@@ -1,16 +1,20 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
 import qs.Common
 import qs.Modules.Network
 import qs.Modules.Settings.Widgets
 import qs.Modals.Common
+import qs.Modals.FileBrowser
 import qs.Services
 import qs.DCommon.Widgets
 import "../../Common/QmlUtils.js" as QmlUtils
 
 Item {
     id: networkWifiTab
+
+    property var parentModal
 
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
@@ -22,6 +26,27 @@ Item {
 
     Component.onDestruction: {
         NetworkService.removeRef();
+    }
+
+    NetworkWifiDialogs {
+        id: wifiDialogs
+        parentModal: networkWifiTab.parentModal
+    }
+
+    function openConnectPage(mode, ssid, profile, fileName) {
+        SettingsUiState.selectWifiConnect(mode, ssid, profile, fileName);
+        parentModal?.navigateTo("network_wifi_connect");
+    }
+
+    function configureWifiProfile(ssid) {
+        NetworkService.findWifiProfile(ssid, profile => {
+            if (!profile) {
+                parentModal?.navigateTo("network_connections");
+                return;
+            }
+            SettingsUiState.selectConnection(profile.uuid, ssid, "");
+            parentModal?.navigateTo("network_connection");
+        });
     }
 
     function wifiDetailFields(net) {
@@ -144,31 +169,7 @@ Item {
             }
 
             function sortedSavedWifiNetworks() {
-                const ssid = NetworkService.currentWifiSSID;
-                const pinnedList = root.getPinnedWifiNetworks();
-                let sorted = root.mergedSavedWifiNetworks();
-
-                sorted.sort((a, b) => {
-                    const aPinnedIndex = pinnedList.indexOf(a.ssid);
-                    const bPinnedIndex = pinnedList.indexOf(b.ssid);
-                    if (aPinnedIndex !== -1 || bPinnedIndex !== -1) {
-                        if (aPinnedIndex === -1)
-                            return 1;
-                        if (bPinnedIndex === -1)
-                            return -1;
-                        return aPinnedIndex - bPinnedIndex;
-                    }
-                    if (a.ssid === ssid)
-                        return -1;
-                    if (b.ssid === ssid)
-                        return 1;
-                    if ((a.outOfRange || false) !== (b.outOfRange || false))
-                        return (a.outOfRange || false) ? 1 : -1;
-                    if ((a.signal || 0) !== (b.signal || 0))
-                        return (b.signal || 0) - (a.signal || 0);
-                    return (a.ssid || "").localeCompare(b.ssid || "");
-                });
-                return sorted;
+                return WifiConnectionActions.sortNetworks(root.mergedSavedWifiNetworks(), NetworkService.currentWifiSSID, root.getPinnedWifiNetworks(), network => network.outOfRange ? 1 : 0);
             }
 
             function showForgetNetworkConfirm(ssid) {
@@ -204,6 +205,7 @@ Item {
             SettingsDropdownRow {
                 visible: NetworkService.wifiEnabled && (NetworkService.wifiDevices?.length ?? 0) > 1
                 text: I18n.tr("Device")
+                description: NetworkService.wifiDeviceOverride || NetworkService.wifiToggling ? "" : NetworkService.wifiInterface
                 dropdownWidth: 150
                 popupWidth: 180
                 currentValue: NetworkService.wifiDeviceOverride || I18n.tr("Auto")
@@ -220,7 +222,7 @@ Item {
             }
 
             SettingsRow {
-                visible: NetworkService.wifiEnabled && !NetworkService.wifiToggling && NetworkService.wifiInterface.length > 0
+                visible: NetworkService.wifiEnabled && !NetworkService.wifiToggling && NetworkService.wifiInterface.length > 0 && (NetworkService.wifiDevices?.length ?? 0) <= 1
                 title: I18n.tr("Interface", "noun, wifi network interface name label") + ":"
                 trailingBadge: NetworkService.wifiInterface || "-"
             }
@@ -255,34 +257,7 @@ Item {
         SettingsCard {
             id: availableWifiCard
 
-            readonly property var sortedNetworks: {
-                const ssid = NetworkService.currentWifiSSID;
-                const networks = NetworkService.wifiNetworks || [];
-                const pinnedList = root.getPinnedWifiNetworks();
-
-                let sorted = [...networks];
-                sorted.sort((a, b) => {
-                    const aPinnedIndex = pinnedList.indexOf(a.ssid);
-                    const bPinnedIndex = pinnedList.indexOf(b.ssid);
-                    if (aPinnedIndex !== -1 || bPinnedIndex !== -1) {
-                        if (aPinnedIndex === -1)
-                            return 1;
-                        if (bPinnedIndex === -1)
-                            return -1;
-                        return aPinnedIndex - bPinnedIndex;
-                    }
-                    if (a.ssid === ssid)
-                        return -1;
-                    if (b.ssid === ssid)
-                        return 1;
-                    const aKnown = !!a.saved && (a.signal || 0) > 0;
-                    const bKnown = !!b.saved && (b.signal || 0) > 0;
-                    if (aKnown !== bKnown)
-                        return aKnown ? -1 : 1;
-                    return b.signal - a.signal;
-                });
-                return sorted;
-            }
+            readonly property var sortedNetworks: WifiConnectionActions.sortNetworks(NetworkService.wifiNetworks, NetworkService.currentWifiSSID, root.getPinnedWifiNetworks(), network => !!network.saved && (network.signal || 0) > 0 ? 0 : 1)
 
             width: parent.width
             title: I18n.tr("Available networks")
@@ -290,6 +265,33 @@ Item {
             settingKey: "networkAvailableWifi"
             tags: ["wifi", "wi-fi", "wireless", "network", "scan", "hidden", "connect"]
             visible: NetworkService.wifiEnabled && !NetworkService.wifiToggling
+
+            function openEapFileBrowser() {
+                eapFileBrowserLoader.active = true;
+                if (eapFileBrowserLoader.item)
+                    eapFileBrowserLoader.item.open();
+            }
+
+            function importEapConfig(path) {
+                NetworkService.parseEapConfig(path, r => {
+                    if (r.error || !r.result) {
+                        ToastService.showError(I18n.tr("Failed to import profile", "toast title when importing a WiFi profile file fails"), r.error || "");
+                        return;
+                    }
+                    networkWifiTab.openConnectPage("import", "", r.result, path.split("/").pop());
+                });
+            }
+
+            property var eapFileBrowserLoader: LazyLoader {
+                active: false
+
+                FileBrowserModal {
+                    browserTitle: I18n.tr("Import", "verb, button that imports a vpn profile file")
+                    bucket: "eapconfig"
+                    filters: ["*.eap-config", "*"]
+                    onAccepted: paths => availableWifiCard.importEapConfig(paths[0])
+                }
+            }
 
             headerActions: [
                 StyledText {
@@ -303,7 +305,14 @@ Item {
                     tooltipText: I18n.tr("Connect to Hidden Network")
                     buttonSize: Theme.buttonHeightXS
                     visible: NetworkService.backend === "networkmanager"
-                    onClicked: PopoutService.showHiddenNetworkModal()
+                    onClicked: networkWifiTab.openConnectPage("hidden", "", null, "")
+                },
+                DActionButton {
+                    iconName: "upload_file"
+                    tooltipText: I18n.tr("Import", "verb, button that imports a vpn profile file")
+                    buttonSize: Theme.buttonHeightXS
+                    visible: NetworkService.connectionEditorSupported
+                    onClicked: availableWifiCard.openEapFileBrowser()
                 },
                 DRefreshButton {
                     tooltipText: I18n.tr("Scan")
@@ -314,7 +323,7 @@ Item {
             ]
 
             SettingsRow {
-                visible: NetworkService.isScanning && (NetworkService.wifiNetworks?.length ?? 0) === 0
+                visible: NetworkService.isScanning && !NetworkService.wifiScannedOnce && (NetworkService.wifiNetworks?.length ?? 0) === 0
                 body: Column {
                     width: parent.width
                     spacing: Theme.spacingS
@@ -333,7 +342,10 @@ Item {
             }
 
             Repeater {
-                model: availableWifiCard.sortedNetworks
+                model: ScriptModel {
+                    objectProp: "ssid"
+                    values: availableWifiCard.sortedNetworks
+                }
 
                 delegate: Column {
                     id: wifiNetworkDelegate
@@ -365,7 +377,8 @@ Item {
                         onClicked: {
                             WifiConnectionActions.connectToNetwork(wifiNetworkDelegate.modelData, {
                                 connected: wifiNetworkDelegate.isConnected,
-                                disconnectWhenConnected: true
+                                disconnectWhenConnected: true,
+                                promptCredentials: ssid => networkWifiTab.openConnectPage("password", ssid, null, "")
                             });
                         }
 
@@ -410,11 +423,18 @@ Item {
                         }
 
                         DActionButton {
+                            iconName: "edit"
+                            tooltipText: I18n.tr("Edit")
+                            visible: NetworkService.connectionEditorSupported && wifiNetworkDelegate.modelData.saved
+                            onClicked: networkWifiTab.configureWifiProfile(wifiNetworkDelegate.modelData.ssid)
+                        }
+
+                        DActionButton {
                             iconName: "qr_code"
                             tooltipText: I18n.tr("Show QR Code")
                             visible: wifiNetworkDelegate.modelData.secured && wifiNetworkDelegate.modelData.saved && !(wifiNetworkDelegate.modelData.enterprise || false)
                             onClicked: {
-                                PopoutService.showWifiQRCodeModal(wifiNetworkDelegate.modelData.ssid);
+                                wifiDialogs.openQRCode(wifiNetworkDelegate.modelData.ssid);
                             }
                         }
 
@@ -509,7 +529,10 @@ Item {
             ]
 
             Repeater {
-                model: savedWifiCard.expanded ? savedWifiCard.savedNetworks : []
+                model: ScriptModel {
+                    objectProp: "ssid"
+                    values: savedWifiCard.expanded ? savedWifiCard.savedNetworks : []
+                }
 
                 delegate: Column {
                     id: savedWifiDelegate
@@ -545,7 +568,8 @@ Item {
                         onClicked: {
                             WifiConnectionActions.connectToNetwork(savedWifiDelegate.modelData, {
                                 connected: savedWifiDelegate.isConnected,
-                                disconnectWhenConnected: true
+                                disconnectWhenConnected: true,
+                                promptCredentials: ssid => networkWifiTab.openConnectPage("password", ssid, null, "")
                             });
                         }
 
@@ -590,11 +614,18 @@ Item {
                         }
 
                         DActionButton {
+                            iconName: "edit"
+                            tooltipText: I18n.tr("Edit")
+                            visible: NetworkService.connectionEditorSupported
+                            onClicked: networkWifiTab.configureWifiProfile(savedWifiDelegate.modelData.ssid)
+                        }
+
+                        DActionButton {
                             iconName: "qr_code"
                             tooltipText: I18n.tr("Show QR Code")
                             visible: savedWifiDelegate.modelData.secured && !(savedWifiDelegate.modelData.enterprise || false)
                             onClicked: {
-                                PopoutService.showWifiQRCodeModal(savedWifiDelegate.modelData.ssid);
+                                wifiDialogs.openQRCode(savedWifiDelegate.modelData.ssid);
                             }
                         }
 
@@ -644,324 +675,8 @@ Item {
             }
         }
 
-        SettingsCard {
-            id: hotspotCard
-
-            width: parent.width
-            title: I18n.tr("Hotspot", "hotspot settings card title")
-            iconName: "wifi_tethering"
-            settingKey: "networkHotspot"
-            tags: ["wifi", "wi-fi", "wireless", "network", "hotspot", "access point", "sharing", "ssid"]
-            visible: NetworkService.hotspotAvailable
-
-            property string ssid: NetworkService.hotspotSSID || ""
-            property string password: ""
-            property string device: NetworkService.hotspotDevice || ""
-            property string band: NetworkService.hotspotBand || ""
-            property bool editing: false
-            property bool passwordLoading: false
-            property bool passwordResolved: true
-            property int passwordRequestId: 0
-            property int passwordEditRevision: 0
-            readonly property bool showForm: !NetworkService.hotspotConfigured || editing
-            readonly property bool passwordValid: password.length === 0 || (password.length >= 8 && password.length <= 63) || /^[0-9a-fA-F]{64}$/.test(password)
-            readonly property bool starting: NetworkService.hotspotBusy || NetworkService.hotspotActivating
-            property var startConfirm: ConfirmModal {}
-
-            function confirmThenStart(targetDevice, targetBand, startFn) {
-                if (!NetworkService.hotspotTargetWouldDisconnectWifi(targetDevice, targetBand)) {
-                    startFn();
-                    return;
-                }
-                startConfirm.showWithOptions({
-                    title: I18n.tr("Start Hotspot?", "hotspot start confirmation title"),
-                    message: I18n.tr("Starting the hotspot disconnects Wi-Fi from \"%1\". The radio can\'t do both at once, so sharing internet needs another connection such as Ethernet.", "hotspot WiFi disconnection warning, %1 is the network name").arg(NetworkService.currentWifiSSID),
-                    confirmText: I18n.tr("Start", "hotspot start confirmation action"),
-                    onConfirm: startFn
-                });
-            }
-
-            function bandLabel(value) {
-                switch (value) {
-                case "bg":
-                    return I18n.tr("2.4 GHz", "hotspot WiFi band option");
-                case "a":
-                    return I18n.tr("5 GHz", "hotspot WiFi band option");
-                default:
-                    return I18n.tr("Auto", "hotspot device or band option");
-                }
-            }
-
-            function bandValue(label) {
-                if (label === I18n.tr("2.4 GHz", "hotspot WiFi band option"))
-                    return "bg";
-                if (label === I18n.tr("5 GHz", "hotspot WiFi band option"))
-                    return "a";
-                return "";
-            }
-
-            function syncFromService() {
-                ssid = NetworkService.hotspotSSID || ssid || "";
-                device = NetworkService.hotspotDevice || "";
-                band = NetworkService.hotspotBand || "";
-            }
-
-            function beginEditing() {
-                syncFromService();
-                password = "";
-                editing = true;
-                passwordRequestId++;
-                const requestId = passwordRequestId;
-                const editRevision = passwordEditRevision;
-                passwordLoading = NetworkService.hotspotSecured;
-                passwordResolved = !NetworkService.hotspotSecured;
-                if (NetworkService.hotspotSecured) {
-                    NetworkService.getHotspotSecrets(response => {
-                        if (!editing || requestId !== passwordRequestId)
-                            return;
-                        passwordLoading = false;
-                        if (response.error) {
-                            ToastService.showError(I18n.tr("Couldn't load hotspot password", "hotspot password error title"), I18n.tr("Re-enter the password before saving.", "hotspot password recovery message"));
-                        } else {
-                            const storedPassword = response.result?.password ?? response.password ?? "";
-                            if (!storedPassword) {
-                                ToastService.showError(I18n.tr("Couldn't load hotspot password", "hotspot password error title"), I18n.tr("Re-enter the password before saving.", "hotspot password recovery message"));
-                            } else {
-                                passwordResolved = true;
-                                if (editRevision === passwordEditRevision) {
-                                    password = storedPassword;
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-
-            function stopEditing() {
-                passwordRequestId++;
-                editing = false;
-                password = "";
-                passwordLoading = false;
-                passwordResolved = true;
-            }
-
-            function buildCanConfigure() {
-                return ssid.trim().length > 0 && passwordValid && passwordResolved && !passwordLoading && !NetworkService.hotspotBusy && !NetworkService.hotspotEnabled && !NetworkService.hotspotActivating;
-            }
-
-            function explainWiFiDisabled() {
-                ToastService.showError(I18n.tr("Wi-Fi is disabled", "hotspot start error title"), I18n.tr("Enable Wi-Fi before starting the hotspot.", "hotspot WiFi requirement message"));
-            }
-
-            function saveOnly() {
-                if (!buildCanConfigure())
-                    return;
-                NetworkService.configureHotspot(ssid.trim(), password, device, band, response => {
-                    if (!response.error) {
-                        stopEditing();
-                        ToastService.showInfo(I18n.tr("Hotspot saved", "hotspot configuration success message"));
-                    }
-                });
-            }
-
-            function startOrStop() {
-                if (NetworkService.hotspotEnabled) {
-                    NetworkService.stopHotspot(response => {
-                        if (!response.error)
-                            ToastService.showInfo(I18n.tr("Hotspot stopped", "hotspot stop success message"));
-                    });
-                    return;
-                }
-
-                if (!NetworkService.wifiEnabled) {
-                    explainWiFiDisabled();
-                    return;
-                }
-
-                if (showForm) {
-                    if (!buildCanConfigure())
-                        return;
-                    confirmThenStart(device, band, () => {
-                        NetworkService.configureAndStartHotspot(ssid.trim(), password, device, band, response => {
-                            if (!response.error)
-                                stopEditing();
-                        });
-                    });
-                    return;
-                }
-
-                confirmThenStart(NetworkService.hotspotDevice, NetworkService.hotspotBand, () => NetworkService.startHotspot());
-            }
-
-            onVisibleChanged: if (visible)
-                syncFromService()
-
-            SettingsRow {
-                body: StyledText {
-                    width: parent.width
-                    text: {
-                        if (NetworkService.hotspotEnabled)
-                            return I18n.tr("Your hotspot is running.", "hotspot active status message");
-                        if (hotspotCard.starting)
-                            return I18n.tr("Starting hotspot...", "hotspot activation status message");
-                        if (NetworkService.hotspotConfigured)
-                            return I18n.tr("Your hotspot profile is saved and ready to start.", "configured hotspot status message");
-                        return I18n.tr("Set up a Wi-Fi hotspot for sharing this connection.", "unconfigured hotspot description");
-                    }
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: NetworkService.hotspotEnabled ? Theme.primary : Theme.surfaceVariantText
-                    wrapMode: Text.WordWrap
-                }
-            }
-
-            SettingsRow {
-                visible: !NetworkService.wifiEnabled
-                body: StyledText {
-                    width: parent.width
-                    text: I18n.tr("Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.", "hotspot WiFi requirement explanation")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.warning
-                    wrapMode: Text.WordWrap
-                }
-            }
-
-            SettingsRow {
-                visible: NetworkService.wifiEnabled && !NetworkService.hotspotEnabled && !hotspotCard.starting && (hotspotCard.showForm ? NetworkService.hotspotTargetWouldDisconnectWifi(hotspotCard.device, hotspotCard.band) : NetworkService.hotspotWouldDisconnectWifi)
-                body: StyledText {
-                    width: parent.width
-                    text: I18n.tr("Starting the hotspot disconnects Wi-Fi from \"%1\". The radio can\'t do both at once, so sharing internet needs another connection such as Ethernet.", "hotspot WiFi disconnection warning, %1 is the network name").arg(NetworkService.currentWifiSSID)
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.warning
-                    wrapMode: Text.WordWrap
-                }
-            }
-
-            SettingsRow {
-                visible: !hotspotCard.showForm
-                iconName: NetworkService.hotspotEnabled ? "wifi_tethering" : "wifi_tethering_off"
-                iconColor: NetworkService.hotspotEnabled ? Theme.primary : Theme.surfaceVariantText
-                title: NetworkService.hotspotSSID
-                subtitle: {
-                    const parts = [NetworkService.hotspotSecured ? I18n.tr("WPA2 password", "hotspot security summary") : I18n.tr("Open network", "hotspot security summary"), hotspotCard.bandLabel(NetworkService.hotspotBand)];
-                    if (NetworkService.hotspotDevice)
-                        parts.push(NetworkService.hotspotDevice);
-                    return parts.join(" • ");
-                }
-            }
-
-            SettingsRow {
-                visible: hotspotCard.showForm
-                body: DTextField {
-                    outlined: true
-                    width: parent.width
-                    labelText: I18n.tr("Hotspot name", "hotspot SSID field label")
-                    placeholderText: I18n.tr("SSID", "hotspot network name placeholder")
-                    text: hotspotCard.ssid
-                    leftIconName: "badge"
-                    showClearButton: true
-                    onTextEdited: hotspotCard.ssid = text
-                    onAccepted: hotspotCard.saveOnly()
-                }
-            }
-
-            SettingsRow {
-                visible: hotspotCard.showForm
-                body: DTextField {
-                    outlined: true
-                    width: parent.width
-                    labelText: I18n.tr("Password", "hotspot password field label")
-                    placeholderText: I18n.tr("Optional; leave blank for open hotspot", "hotspot password field placeholder")
-                    text: hotspotCard.password
-                    leftIconName: "key"
-                    showPasswordToggle: true
-                    echoMode: passwordVisible ? TextInput.Normal : TextInput.Password
-                    onTextEdited: {
-                        hotspotCard.password = text;
-                        hotspotCard.passwordEditRevision++;
-                        if (text.length > 0)
-                            hotspotCard.passwordResolved = true;
-                    }
-                    onAccepted: hotspotCard.saveOnly()
-                }
-            }
-
-            SettingsRow {
-                visible: hotspotCard.showForm && !hotspotCard.passwordValid
-                body: StyledText {
-                    width: parent.width
-                    text: I18n.tr("Password must be 8 to 63 characters, or a 64-digit hex key.", "hotspot password length requirement")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.error
-                    wrapMode: Text.WordWrap
-                }
-            }
-
-            SettingsDropdownRow {
-                visible: hotspotCard.showForm
-                text: I18n.tr("Device", "hotspot WiFi device field label")
-                currentValue: hotspotCard.device || I18n.tr("Auto", "hotspot device or band option")
-                options: {
-                    const devices = NetworkService.wifiDevices || [];
-                    return [I18n.tr("Auto", "hotspot device or band option")].concat(devices.filter(d => d.apCapable).map(d => d.name));
-                }
-                onValueChanged: value => hotspotCard.device = value === I18n.tr("Auto", "hotspot device or band option") ? "" : value
-            }
-
-            SettingsDropdownRow {
-                visible: hotspotCard.showForm
-                text: I18n.tr("Band", "hotspot WiFi band field label")
-                currentValue: hotspotCard.bandLabel(hotspotCard.band)
-                options: [I18n.tr("Auto", "hotspot device or band option"), I18n.tr("2.4 GHz", "hotspot WiFi band option"), I18n.tr("5 GHz", "hotspot WiFi band option")]
-                onValueChanged: value => hotspotCard.band = hotspotCard.bandValue(value)
-            }
-
-            SettingsRow {
-                DButton {
-                    visible: hotspotCard.editing
-                    text: I18n.tr("Cancel", "cancel hotspot editing action")
-                    buttonHeight: 36
-                    backgroundColor: SettingsMetrics.controlSurface
-                    textColor: Theme.surfaceText
-                    onClicked: hotspotCard.stopEditing()
-                }
-
-                DButton {
-                    visible: !hotspotCard.showForm
-                    text: I18n.tr("Edit", "edit hotspot action")
-                    iconName: "edit"
-                    buttonHeight: 36
-                    enabled: !NetworkService.hotspotEnabled && !hotspotCard.starting
-                    backgroundColor: SettingsMetrics.controlSurface
-                    textColor: Theme.surfaceText
-                    onClicked: hotspotCard.beginEditing()
-                }
-
-                DButton {
-                    visible: hotspotCard.showForm
-                    text: hotspotCard.passwordLoading ? I18n.tr("Loading...", "hotspot password loading status") : (NetworkService.hotspotBusy ? I18n.tr("Saving...", "hotspot configuration saving status") : I18n.tr("Save", "save hotspot configuration action"))
-                    iconName: "save"
-                    buttonHeight: 36
-                    enabled: hotspotCard.buildCanConfigure()
-                    backgroundColor: SettingsMetrics.controlSurface
-                    textColor: Theme.surfaceText
-                    onClicked: hotspotCard.saveOnly()
-                }
-
-                DButton {
-                    text: {
-                        if (NetworkService.hotspotEnabled)
-                            return I18n.tr("Stop", "stop hotspot action");
-                        if (hotspotCard.starting)
-                            return I18n.tr("Starting...", "hotspot activation status");
-                        return hotspotCard.showForm ? I18n.tr("Save & Start", "save and start hotspot action") : I18n.tr("Start", "start hotspot action");
-                    }
-                    iconName: NetworkService.hotspotEnabled ? "stop" : "wifi_tethering"
-                    buttonHeight: 36
-                    enabled: !hotspotCard.starting && (NetworkService.hotspotEnabled || hotspotCard.buildCanConfigure())
-                    danger: NetworkService.hotspotEnabled
-                    onClicked: hotspotCard.startOrStop()
-                }
-            }
+        NetworkConnectionsNavRow {
+            parentModal: networkWifiTab.parentModal
         }
     }
 }

@@ -420,7 +420,24 @@ Singleton {
                     "text": I18n.tr("Wi-Fi", "wireless network, page and section title"),
                     "icon": "wifi",
                     "tabIndex": 40,
-                    "hint": I18n.tr("Networks, saved networks, hotspot")
+                    "wifiOnly": true,
+                    "hint": I18n.tr("Saved networks")
+                },
+                {
+                    "id": "network_hotspot",
+                    "text": I18n.tr("Hotspot", "settings page title for the Wi-Fi hotspot"),
+                    "icon": "wifi_tethering",
+                    "tabIndex": 75,
+                    "hotspotOnly": true
+                },
+                {
+                    "id": "network_wifi_connect",
+                    "hidden": true,
+                    "searchable": false,
+                    "titleFrom": "wifiConnectTitle",
+                    "text": I18n.tr("Connect to Wi-Fi"),
+                    "icon": "wifi",
+                    "tabIndex": 74
                 },
                 {
                     "id": "network_ethernet",
@@ -437,12 +454,48 @@ Singleton {
                     "hint": I18n.tr("Connections and autoconnect")
                 },
                 {
+                    "id": "network_tailscale",
+                    "text": I18n.tr("Tailscale", "Tailscale mesh VPN widget title"),
+                    "icon": "hub",
+                    "tabIndex": 73,
+                    "tailscaleOnly": true,
+                    "hint": I18n.tr("Tailscale Network")
+                },
+                {
+                    "id": "network_tailscale_add",
+                    "hidden": true,
+                    "searchable": false,
+                    "tailscaleOnly": true,
+                    "text": I18n.tr("Add account", "Tailscale: add another account"),
+                    "icon": "person_add",
+                    "tabIndex": 76
+                },
+                {
                     "id": "network_cellular",
                     "text": I18n.tr("Cellular"),
                     "icon": "network_cell",
                     "tabIndex": 47,
                     "cellularOnly": true,
                     "hint": I18n.tr("Modem and mobile data")
+                },
+                {
+                    "id": "network_connections",
+                    "text": I18n.tr("Connections", "settings page listing saved network connection profiles"),
+                    "icon": "network_manage",
+                    "tabIndex": 71,
+                    "connectionEditorOnly": true,
+                    "hint": I18n.tr("Saved configurations"),
+                    "hubFooter": I18n.tr("Manage all connections", "settings link on the network overview to the list of every saved network connection")
+                },
+                {
+                    "id": "network_connection",
+                    "hidden": true,
+                    "searchable": false,
+                    "connectionEditorOnly": true,
+                    "titleFrom": "selectedConnectionTitle",
+                    "text": I18n.tr("Profile"),
+                    "icon": "tune",
+                    "tabIndex": 72
                 },
                 {
                     "id": "network_status",
@@ -821,6 +874,14 @@ Singleton {
             return false;
         if (entry.cellularOnly && (NetworkService.cellularDevices?.length ?? 0) === 0)
             return false;
+        if (entry.wifiOnly && !NetworkService.wifiDevicePresent)
+            return false;
+        if (entry.hotspotOnly && !NetworkService.hotspotAvailable)
+            return false;
+        if (entry.connectionEditorOnly && !NetworkService.connectionEditorSupported)
+            return false;
+        if (entry.tailscaleOnly && !TailscaleService.available)
+            return false;
         if (entry.kind === "hub" && !entry.hubHeader && visibleLeaves(entry.id).length === 0)
             return false;
         return true;
@@ -860,14 +921,21 @@ Singleton {
         const hub = pageMap[hubId];
         if (!hub?.children)
             return [];
-        return hub.children.filter(child => !child.advanced && !child.hidden && isVisible(child));
+        return hub.children.filter(child => !child.advanced && !child.hidden && !child.hubFooter && isVisible(child));
     }
 
     function hubMoreRows(hubId) {
         const hub = pageMap[hubId];
         if (!hub?.children)
             return [];
-        return hub.children.filter(child => child.advanced && !child.hidden && isVisible(child));
+        return hub.children.filter(child => child.advanced && !child.hidden && !child.hubFooter && isVisible(child));
+    }
+
+    function hubFooterRows(hubId) {
+        const hub = pageMap[hubId];
+        if (!hub?.children)
+            return [];
+        return hub.children.filter(child => child.hubFooter && isVisible(child));
     }
 
     function hubRows(hubId) {

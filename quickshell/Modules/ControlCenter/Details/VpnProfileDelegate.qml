@@ -10,12 +10,14 @@ CcListRow {
 
     required property var profile
     property bool isExpanded: false
+    property bool showsEditButton: false
     readonly property bool isTransient: !!profile?.transient
     readonly property bool canExpand: profile?.canExpand !== false
     readonly property bool canDelete: profile?.canDelete !== false
 
     signal toggleExpand
     signal deleteRequested
+    signal editRequested
 
     readonly property bool isActive: DMSNetworkService.vpnStateForUuid(profile?.uuid) === "activated"
     readonly property bool isConnecting: DMSNetworkService.isVpnConnectingUuid(profile?.uuid)
@@ -86,11 +88,12 @@ CcListRow {
 
     DActionButton {
         anchors.verticalCenter: parent.verticalCenter
-        visible: root.isActive
+        visible: root.isActive || root.isConnecting
         buttonSize: Theme.buttonHeightXS
         iconSize: Theme.iconSizeMedium
         iconName: "link_off"
         Accessible.name: I18n.tr("Disconnect")
+        tooltipText: I18n.tr("Disconnect")
         iconColor: root.contentColor
         enabled: !DMSNetworkService.isBusy
         onClicked: DMSNetworkService.toggle(root.profile.uuid)
@@ -98,7 +101,19 @@ CcListRow {
 
     DActionButton {
         anchors.verticalCenter: parent.verticalCenter
-        visible: root.canExpand
+        visible: root.showsEditButton && !root.isTransient
+        buttonSize: Theme.buttonHeightXS
+        iconSize: Theme.iconSizeMedium
+        iconName: "edit"
+        tooltipText: I18n.tr("Edit")
+        Accessible.name: I18n.tr("Edit")
+        iconColor: root.contentColor
+        onClicked: root.editRequested()
+    }
+
+    DActionButton {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.canExpand && !(root.showsEditButton && !root.isTransient)
         buttonSize: Theme.buttonHeightXS
         iconSize: Theme.iconSizeMedium
         iconName: root.isExpanded ? "expand_less" : "expand_more"

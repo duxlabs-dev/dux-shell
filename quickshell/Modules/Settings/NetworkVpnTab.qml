@@ -1,17 +1,18 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell
 import qs.Common
 import qs.Modules.ControlCenter.Details
+import qs.Modules.Network
 import qs.Modules.Settings.Widgets
 import qs.Modals.Common
-import qs.Modals.FileBrowser
 import qs.Services
 import qs.DCommon.Widgets
 
 Item {
     id: networkVpnTab
+
+    property var parentModal
 
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
@@ -35,24 +36,8 @@ Item {
             settingKey: "networkVpn"
             tags: ["vpn", "network", "profiles", "import", "openvpn", "wireguard"]
 
-            function openVpnFileBrowser() {
-                vpnFileBrowserLoader.active = true;
-                if (vpnFileBrowserLoader.item)
-                    vpnFileBrowserLoader.item.open();
-            }
-
-            property var vpnFileBrowserLoader: LazyLoader {
-                active: false
-
-                FileBrowserModal {
-                    browserTitle: I18n.tr("Import VPN")
-                    bucket: "vpn"
-                    filters: VPNService.getFileFilter()
-                    onAccepted: paths => VPNService.importVpn(paths[0])
-                }
-            }
-
             property var deleteVpnConfirm: ConfirmModal {}
+            property var importBrowser: VpnImportBrowser {}
 
             width: parent.width
 
@@ -86,6 +71,7 @@ Item {
                         }
 
                         StyledText {
+                            visible: !NetworkService.connectionEditorSupported
                             text: I18n.tr("Click Import to add a %1 or %2 file", "VPN import hint, %1 and %2 are file extensions").arg(".ovpn").arg(".conf")
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
@@ -102,6 +88,11 @@ Item {
                     required property var modelData
 
                     profile: modelData
+                    showsEditButton: NetworkService.connectionEditorSupported
+                    onEditRequested: {
+                        SettingsUiState.selectConnection(modelData.uuid, modelData.name, "");
+                        networkVpnTab.parentModal?.navigateTo("network_connection");
+                    }
                     isExpanded: root.expandedVpnUuid === modelData.uuid
                     onToggleExpand: {
                         if (root.expandedVpnUuid === modelData.uuid) {
@@ -122,15 +113,30 @@ Item {
             }
         }
 
+        NetworkConnectionsNavRow {
+            parentModal: networkVpnTab.parentModal
+        }
+
         SettingsFabBar {
             shown: DMSNetworkService.vpnAvailable
 
             DFab {
-                text: I18n.tr("Import VPN")
+                visible: NetworkService.connectionEditorSupported
+                text: I18n.tr("Add")
                 iconName: "add"
+                onClicked: {
+                    SettingsUiState.selectConnection("", I18n.tr("Add connection", "settings page title while creating a new network connection profile"), "wireguard");
+                    networkVpnTab.parentModal?.navigateTo("network_connection");
+                }
+            }
+
+            DFab {
+                text: I18n.tr("Import VPN")
+                iconName: "upload_file"
+                colorRole: "secondaryContainer"
                 busy: VPNService.importing
                 enabled: !VPNService.importing
-                onClicked: root.openVpnFileBrowser()
+                onClicked: root.importBrowser.open()
             }
         }
     }

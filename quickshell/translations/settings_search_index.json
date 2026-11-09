@@ -1785,10 +1785,12 @@
       "connection",
       "connectivity",
       "ethernet",
+      "hotspot",
       "internet",
       "network",
       "online",
       "status",
+      "tailscale",
       "vpn",
       "wi-fi",
       "wifi",
@@ -6334,6 +6336,30 @@
     "conditionKey": "islandDocked"
   },
   {
+    "section": "networkConnectivityCheck",
+    "label": "Connectivity checking",
+    "tabIndex": 7,
+    "category": "Status",
+    "keywords": [
+      "captive portal",
+      "checking",
+      "connection",
+      "connectivity",
+      "ethernet",
+      "internet",
+      "login",
+      "network",
+      "online",
+      "portal",
+      "status",
+      "wi-fi",
+      "wifi",
+      "wireless"
+    ],
+    "parentLabel": "Network",
+    "conditionKey": "networkAvailable"
+  },
+  {
     "section": "networkStatus",
     "label": "Status",
     "tabIndex": 7,
@@ -6351,6 +6377,7 @@
       "wireless"
     ],
     "parentLabel": "Network",
+    "icon": "login",
     "conditionKey": "networkAvailable"
   },
   {
@@ -14250,31 +14277,7 @@
     ],
     "parentLabel": "Network",
     "icon": "wifi",
-    "conditionKey": "networkAvailable"
-  },
-  {
-    "section": "networkHotspot",
-    "label": "Hotspot",
-    "tabIndex": 40,
-    "category": "Wi-Fi",
-    "keywords": [
-      "access point",
-      "connection",
-      "connectivity",
-      "ethernet",
-      "hotspot",
-      "internet",
-      "network",
-      "online",
-      "sharing",
-      "ssid",
-      "wi-fi",
-      "wifi",
-      "wireless"
-    ],
-    "parentLabel": "Network",
-    "icon": "wifi_tethering",
-    "conditionKey": "networkAvailable"
+    "conditionKey": "wifiDeviceAvailable"
   },
   {
     "section": "networkSavedWifi",
@@ -14300,7 +14303,7 @@
     ],
     "parentLabel": "Network",
     "icon": "bookmark",
-    "conditionKey": "networkAvailable"
+    "conditionKey": "wifiDeviceAvailable"
   },
   {
     "section": "networkWifi",
@@ -14322,7 +14325,7 @@
       "wireless"
     ],
     "parentLabel": "Network",
-    "conditionKey": "networkAvailable"
+    "conditionKey": "wifiDeviceAvailable"
   },
   {
     "section": "networkVpn",
@@ -19499,5 +19502,106 @@
     "parentLabel": "Input",
     "icon": "extension",
     "conditionKey": "fcitx5Available"
+  },
+  {
+    "section": "networkConnections",
+    "label": "Connections",
+    "tabIndex": 71,
+    "category": "Connections",
+    "keywords": [
+      "802.1x",
+      "apn",
+      "bluetooth",
+      "bond",
+      "bridge",
+      "connection",
+      "connections",
+      "connectivity",
+      "dns",
+      "dsl",
+      "ethernet",
+      "firewall",
+      "gateway",
+      "internet",
+      "ipv4",
+      "ipv6",
+      "mac",
+      "metered",
+      "mobile broadband",
+      "mtu",
+      "network",
+      "online",
+      "ports",
+      "pppoe",
+      "profiles",
+      "routes",
+      "static ip",
+      "vlan",
+      "wi-fi",
+      "wifi",
+      "wired",
+      "wireless",
+      "zone"
+    ],
+    "parentLabel": "Network",
+    "conditionKey": "connectionEditorAvailable"
+  },
+  {
+    "section": "networkTailscale",
+    "label": "Tailscale",
+    "tabIndex": 73,
+    "category": "Tailscale",
+    "keywords": [
+      "account",
+      "connection",
+      "connectivity",
+      "ethernet",
+      "exit node",
+      "internet",
+      "login",
+      "magicdns",
+      "network",
+      "online",
+      "ssh",
+      "subnet",
+      "tailnet",
+      "tailscale",
+      "vpn",
+      "wi-fi",
+      "wifi",
+      "wireless"
+    ],
+    "parentLabel": "Network",
+    "icon": "hub",
+    "conditionKey": "tailscaleAvailable"
+  },
+  {
+    "section": "networkHotspot",
+    "label": "Hotspot",
+    "tabIndex": 75,
+    "category": "Hotspot",
+    "keywords": [
+      "access point",
+      "channel",
+      "connection",
+      "connectivity",
+      "ethernet",
+      "hidden",
+      "hotspot",
+      "internet",
+      "network",
+      "online",
+      "qr code",
+      "security",
+      "sharing",
+      "ssid",
+      "wi-fi",
+      "wifi",
+      "wireless",
+      "wpa3"
+    ],
+    "parentLabel": "Network",
+    "icon": "wifi_tethering",
+    "conditionKey": "hotspotAvailable"
   }
 ]

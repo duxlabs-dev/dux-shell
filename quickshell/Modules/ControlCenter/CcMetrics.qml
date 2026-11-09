@@ -134,7 +134,6 @@ Singleton {
     readonly property real rowDropdownWidth: 160
     readonly property real headerPopupWidth: 200
     readonly property real brightnessLowMax: 33
-    readonly property int wifiSignalBucket: 25
     readonly property real diskWarnPercent: 75
     readonly property real diskCriticalPercent: 90
     readonly property int dndRefreshInterval: 1000

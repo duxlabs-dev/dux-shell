@@ -58,7 +58,7 @@ FocusScope {
             const remembered = _validRemembered();
             if (remembered) {
                 remembered.forceActiveFocus(Qt.TabFocusReason);
-                _reveal(remembered);
+                reveal(remembered);
                 return;
             }
             let item = currentPageItem;
@@ -110,7 +110,7 @@ FocusScope {
             const remembered = _validRemembered();
             if (remembered) {
                 remembered.forceActiveFocus(Qt.TabFocusReason);
-                _reveal(remembered);
+                reveal(remembered);
                 return true;
             }
             start = page;
@@ -122,7 +122,7 @@ FocusScope {
                 return false;
         } while (!item.visible || !item.enabled)
         item.forceActiveFocus(forward ? Qt.TabFocusReason : Qt.BacktabFocusReason);
-        _reveal(item);
+        reveal(item);
         return true;
     }
 
@@ -139,7 +139,7 @@ FocusScope {
         return true;
     }
 
-    function _reveal(item) {
+    function reveal(item) {
         for (let f = item.parent; f; f = f.parent) {
             if (typeof f.flick !== "function" || f.contentHeight <= f.height)
                 continue;
@@ -514,6 +514,9 @@ FocusScope {
             "dankbar_appearance": "DBarAppearanceTab.qml",
             "dankbar_dot": "DDotTab.qml",
             "bar_widget": "BarWidgetTab.qml",
+            "network_connections": "NetworkConnectionsTab.qml",
+            "network_connection": "NetworkConnectionTab.qml",
+            "network_wifi_connect": "NetworkWifiConnectTab.qml",
             "compositor_layout": "CompositorLayoutTab.qml",
             "dock_general": "DockGeneralTab.qml",
             "dock_widgets": "DockWidgetsTab.qml",
@@ -525,7 +528,10 @@ FocusScope {
             "network_status": "NetworkStatusTab.qml",
             "network_ethernet": "NetworkEthernetTab.qml",
             "network_wifi": "NetworkWifiTab.qml",
+            "network_hotspot": "NetworkHotspotTab.qml",
             "network_vpn": "NetworkVpnTab.qml",
+            "network_tailscale": "NetworkTailscaleTab.qml",
+            "network_tailscale_add": "NetworkTailscaleAddTab.qml",
             "network_cellular": "NetworkCellularTab.qml",
             "printers": "PrinterTab.qml",
             "launcher": "LauncherTab.qml",
@@ -566,7 +572,7 @@ FocusScope {
             "plugins_manage": "PluginsManageTab.qml"
         })
 
-    readonly property var pagesWithParentModal: ["dankbar_widgets", "window_rules", "notification_rules", "display_config", "users", "time_weather", "weather", "lock_screen", "greeter", "dank_dash", "wallpaper_cycling", "theme_schedule", "surface_shadows", "keybinds", "dankbar_settings", "dankbar_appearance", "bar_widget", "dock_general", "dock_widgets", "dock_appearance", "dock_advanced", "fcitx5", "launcher", "theme", "theme_apps", "media_player", "desktop_widgets", "desktop_widget", "autostart", "compositor_layout", "updater", "display_gamma", "about"]
+    readonly property var pagesWithParentModal: ["dankbar_widgets", "window_rules", "notification_rules", "display_config", "users", "time_weather", "weather", "lock_screen", "greeter", "dank_dash", "wallpaper_cycling", "theme_schedule", "surface_shadows", "keybinds", "dankbar_settings", "dankbar_appearance", "bar_widget", "dock_general", "dock_widgets", "dock_appearance", "dock_advanced", "fcitx5", "launcher", "theme", "theme_apps", "media_player", "desktop_widgets", "desktop_widget", "autostart", "compositor_layout", "updater", "display_gamma", "about", "network_connections", "network_connection", "network_ethernet", "network_wifi", "network_hotspot", "network_wifi_connect", "network_vpn", "network_cellular", "network_tailscale", "network_tailscale_add"]
 
     // The page scroller stops at the Loader edges; wheel over the header and gutters lands here instead
     WheelHandler {

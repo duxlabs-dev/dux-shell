@@ -95,6 +95,10 @@ Singleton {
             "islandDocked": () => root.islandBarFor("islandDocked") !== null,
             "dotEnabled": () => SettingsData.dotBarConfig?.enabled ?? false,
             "cellularAvailable": () => NetworkService.cellularAvailable,
+            "connectionEditorAvailable": () => NetworkService.connectionEditorSupported,
+            "wifiDeviceAvailable": () => NetworkService.wifiDevicePresent,
+            "hotspotAvailable": () => NetworkService.hotspotAvailable,
+            "tailscaleAvailable": () => TailscaleService.available,
             "fcitx5Available": () => Fcitx5Service.available,
             "dockEnabled": () => (SettingsData.dockConfigs ?? []).some(dock => dock.enabled)
         })

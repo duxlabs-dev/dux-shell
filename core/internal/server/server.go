@@ -43,7 +43,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-const APIVersion = 40
+const APIVersion = 41
 
 var CLIVersion = "dev"
 
@@ -1011,7 +1011,8 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info(" network.getState            - Get current network state")
 		log.Info(" network.wifi.scan           - Scan for WiFi networks (params: device?)")
 		log.Info(" network.wifi.networks       - Get WiFi network list")
-		log.Info(" network.wifi.connect        - Connect to WiFi (params: ssid, password?, username?, device?, eapMethod?, phase2Auth?, caCertPath?, clientCertPath?, privateKeyPath?, useSystemCACerts?)")
+		log.Info(" network.wifi.connect        - Connect to WiFi (params: ssid, password?, device?, hidden?, interactive?, security?, enterprise?, saveOnly?)")
+		log.Info(" network.eapconfig.parse     - Parse an eduroam .eap-config file (params: file)")
 		log.Info(" network.wifi.disconnect     - Disconnect WiFi (params: device?)")
 		log.Info(" network.wifi.forget         - Forget network (params: ssid)")
 		log.Info(" network.wifi.toggle         - Toggle WiFi radio")
@@ -1021,6 +1022,21 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info(" network.ethernet.connect    - Connect Ethernet")
 		log.Info(" network.ethernet.connect.config - Connect Ethernet to a specific configuration")
 		log.Info(" network.ethernet.disconnect - Disconnect Ethernet")
+		log.Info(" network.connection.list     - List saved connection profiles")
+		log.Info(" network.connection.get      - Get a profile's settings (params: uuid, secrets?)")
+		log.Info(" network.connection.update   - Patch a profile's settings (params: uuid, settings, persist?, enterprise?)")
+		log.Info(" network.connection.add      - Create a profile (params: settings, persist?, enterprise?)")
+		log.Info(" network.connection.activate - Activate a saved profile (params: uuid, device?)")
+		log.Info(" network.connection.deactivate - Deactivate a profile (params: uuid)")
+		log.Info(" network.connection.getEnterprise - Get a profile's 802.1X config, without secrets (params: uuid)")
+		log.Info(" network.connection.firewallZones - List firewalld zones")
+		log.Info(" network.connection.delete   - Delete a saved profile (params: uuid)")
+		log.Info(" network.connection.duplicate - Duplicate a profile (params: uuid, name)")
+		log.Info(" network.connection.export   - Export a WireGuard or VPN profile to a file (params: uuid, file)")
+		log.Info(" network.wireguard.keys      - Generate a WireGuard key pair, or derive the public key (params: privateKey?)")
+		log.Info(" network.connectivity.check - Probe connectivity now (NetworkManager)")
+		log.Info(" network.connectivity.setCheckEnabled - Enable or disable connectivity checking (params: enabled)")
+		log.Info(" network.hotspot.configure - Configure the hotspot (params: ssid, password?, device?, band?, channel?, address?)")
 		log.Info(" network.cellular.connect    - Connect Cellular")
 		log.Info(" network.cellular.connect.config - Connect Cellular to a specific configuration (params: uuid)")
 		log.Info(" network.cellular.disconnect - Disconnect Cellular (params: device?)")

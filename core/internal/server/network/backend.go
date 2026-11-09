@@ -26,9 +26,11 @@ type Backend interface {
 	GetWiredConnections() ([]WiredConnection, error)
 	GetWiredNetworkDetails(uuid string) (*WiredNetworkInfoResponse, error)
 	ConnectEthernet() error
+	ConnectEthernetDevice(device string) error
 	DisconnectEthernet() error
 	DisconnectEthernetDevice(device string) error
-	ActivateWiredConnection(uuid string) error
+	// ActivateWiredConnection lets NM pick the device when device is "".
+	ActivateWiredConnection(uuid, device string) error
 
 	GetCellularDevices() []CellularDevice
 	GetCellularConnections() ([]WiredConnection, error)
@@ -69,50 +71,60 @@ type HotspotBackend interface {
 }
 
 type BackendState struct {
-	Backend                 string
-	NetworkStatus           NetworkStatus
-	EthernetIP              string
-	EthernetDevice          string
-	EthernetConnected       bool
-	EthernetConnectionUuid  string
-	EthernetDevices         []EthernetDevice
-	CellularIP              string
-	CellularDevice          string
-	CellularConnected       bool
-	CellularEnabled         bool
-	CellularHardwareEnabled bool
-	CellularConnectionUuid  string
-	CellularDevices         []CellularDevice
-	CellularConnections     []WiredConnection
-	WiFiIP                  string
-	WiFiDevice              string
-	WiFiConnected           bool
-	WiFiEnabled             bool
-	WiFiSSID                string
-	WiFiBSSID               string
-	WiFiSignal              uint8
-	WiFiNetworks            []WiFiNetwork
-	SavedWiFiNetworks       []WiFiNetwork
-	WiFiDevices             []WiFiDevice
-	HotspotAvailable        bool
-	HotspotConfigured       bool
-	HotspotEnabled          bool
-	HotspotActivating       bool
-	HotspotSecured          bool
-	HotspotSSID             string
-	HotspotDevice           string
-	HotspotBand             string
-	HotspotLastError        string
-	WiredConnections        []WiredConnection
-	VPNProfiles             []VPNProfile
-	VPNActive               []VPNActive
-	IsConnecting            bool
-	ConnectingSSID          string
-	ConnectingDevice        string
-	ConnectingPreExisting   bool
-	IsConnectingVPN         bool
-	ConnectingVPNUUID       string
-	LastError               string
-	VPNError                string
-	VPNErrorUuid            string
+	Backend                    string
+	ConnectionProfilesRevision uint64
+	NetworkStatus              NetworkStatus
+	EthernetIP                 string
+	EthernetDevice             string
+	EthernetConnected          bool
+	EthernetConnectionUuid     string
+	EthernetDevices            []EthernetDevice
+	CellularIP                 string
+	CellularDevice             string
+	CellularConnected          bool
+	CellularEnabled            bool
+	CellularHardwareEnabled    bool
+	CellularConnectionUuid     string
+	CellularDevices            []CellularDevice
+	CellularConnections        []WiredConnection
+	WiFiIP                     string
+	WiFiDevice                 string
+	WiFiConnected              bool
+	WiFiEnabled                bool
+	WiFiSSID                   string
+	WiFiBSSID                  string
+	WiFiSignal                 uint8
+	WiFiNetworks               []WiFiNetwork
+	SavedWiFiNetworks          []WiFiNetwork
+	WiFiDevices                []WiFiDevice
+	HotspotAvailable           bool
+	HotspotConfigured          bool
+	HotspotEnabled             bool
+	HotspotActivating          bool
+	HotspotSecured             bool
+	HotspotSSID                string
+	HotspotDevice              string
+	HotspotBand                string
+	HotspotLastError           string
+	HotspotChannel             uint32
+	HotspotAddress             string
+	HotspotUUID                string
+	HotspotSecurity            string
+	HotspotHidden              bool
+	Connectivity               string
+	ConnectivityCheckEnabled   bool
+	ConnectivityCheckAvailable bool
+	ConnectivityCheckURI       string
+	WiredConnections           []WiredConnection
+	VPNProfiles                []VPNProfile
+	VPNActive                  []VPNActive
+	IsConnecting               bool
+	ConnectingSSID             string
+	ConnectingDevice           string
+	ConnectingPreExisting      bool
+	IsConnectingVPN            bool
+	ConnectingVPNUUID          string
+	LastError                  string
+	VPNError                   string
+	VPNErrorUuid               string
 }

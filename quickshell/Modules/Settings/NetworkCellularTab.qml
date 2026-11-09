@@ -9,6 +9,8 @@ import qs.DCommon.Widgets
 Item {
     id: networkCellularTab
 
+    property var parentModal
+
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
@@ -219,7 +221,7 @@ Item {
                             Row {
                                 anchors.left: parent.left
                                 anchors.leftMargin: Theme.spacingM
-                                anchors.right: profileAction.left
+                                anchors.right: profileConfigure.visible ? profileConfigure.left : profileAction.left
                                 anchors.rightMargin: Theme.spacingS
                                 anchors.verticalCenter: parent.verticalCenter
                                 spacing: Theme.spacingS
@@ -257,6 +259,21 @@ Item {
                             }
 
                             DActionButton {
+                                id: profileConfigure
+                                anchors.right: profileAction.left
+                                anchors.rightMargin: Theme.spacingXS
+                                anchors.verticalCenter: parent.verticalCenter
+                                iconName: "edit"
+                                tooltipText: I18n.tr("Edit")
+                                iconSize: Theme.iconSizeSmall
+                                visible: NetworkService.connectionEditorSupported
+                                onClicked: {
+                                    SettingsUiState.selectConnection(profileDelegate.modelData.uuid, profileDelegate.modelData.id, "");
+                                    networkCellularTab.parentModal?.navigateTo("network_connection");
+                                }
+                            }
+
+                            DActionButton {
                                 id: profileAction
                                 anchors.right: parent.right
                                 anchors.rightMargin: Theme.spacingS
@@ -276,7 +293,7 @@ Item {
                             MouseArea {
                                 id: profileMouseArea
                                 anchors.fill: parent
-                                anchors.rightMargin: profileAction.width + Theme.spacingS
+                                anchors.rightMargin: profileAction.width + Theme.spacingS + (profileConfigure.visible ? profileConfigure.width + Theme.spacingXS : 0)
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
@@ -288,6 +305,10 @@ Item {
                     }
                 }
             }
+        }
+
+        NetworkConnectionsNavRow {
+            parentModal: networkCellularTab.parentModal
         }
     }
 }

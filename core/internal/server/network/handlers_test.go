@@ -131,6 +131,36 @@ func TestHandleHotspotRequests(t *testing.T) {
 		}, backend.configureReq)
 	})
 
+	t.Run("configure passes the whole request and rejects bad values", func(t *testing.T) {
+		iwdBackend, err := NewIWDBackend()
+		require.NoError(t, err)
+		backend := &testHotspotBackend{IWDBackend: iwdBackend}
+		manager := NewTestManager(backend, &NetworkState{})
+		run := func(p map[string]any) ipc.Response[any] {
+			mc := newMockNetConn()
+			HandleRequest(ipc.NewConnWriter(mc), ipc.Request{ID: 5, Method: "network.hotspot.configure", Params: p}, manager)
+			var resp ipc.Response[any]
+			require.NoError(t, json.NewDecoder(mc.writeBuf).Decode(&resp))
+			return resp
+		}
+		for _, bad := range []map[string]any{
+			{"channel": 1.5}, {"channel": float64(-1)}, {"channel": float64(197)}, {"channel": "36"},
+			{"hidden": "true"},
+		} {
+			bad["ssid"] = "x"
+			assert.Contains(t, run(bad).Error, "parameter", bad)
+			assert.False(t, backend.configureCalled)
+		}
+		assert.Empty(t, run(map[string]any{
+			"ssid": "DMS Hotspot", "band": "a", "channel": float64(36), "address": "10.43.0.1/24",
+			"password": "hunter2-password", "security": "sae", "hidden": true,
+		}).Error)
+		assert.Equal(t, HotspotRequest{
+			SSID: "DMS Hotspot", Band: "a", Channel: 36, Address: "10.43.0.1/24",
+			Password: "hunter2-password", Security: "sae", Hidden: true,
+		}, backend.configureReq)
+	})
+
 	t.Run("start dispatches without payload", func(t *testing.T) {
 		iwdBackend, err := NewIWDBackend()
 		require.NoError(t, err)

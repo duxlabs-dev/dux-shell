@@ -117,6 +117,53 @@ Item {
                             elide: Text.ElideRight
                             visible: NetworkService.primaryConnection.length > 0
                         }
+
+                        StyledText {
+                            text: I18n.tr("Internet")
+                            font.pixelSize: Theme.fontSizeMedium
+                            color: Theme.surfaceVariantText
+                            visible: internetRow.visible
+                        }
+                        Row {
+                            id: internetRow
+
+                            spacing: Theme.spacingS
+                            visible: NetworkService.connectivitySupported && NetworkService.connectivityCheckEnabled
+
+                            StyledText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: NetworkService.connectivity !== "portal"
+                                font.pixelSize: Theme.fontSizeMedium
+                                font.weight: Theme.fontWeightMedium
+                                color: NetworkService.connectivity === "limited" ? Theme.warning : Theme.surfaceText
+                                text: {
+                                    switch (NetworkService.connectivity) {
+                                    case "full":
+                                        return I18n.tr("Connected");
+                                    case "limited":
+                                        return I18n.tr("Limited connectivity", "connected to a network without internet access");
+                                    case "none":
+                                        return I18n.tr("Disconnected");
+                                    default:
+                                        return I18n.tr("Unknown");
+                                    }
+                                }
+                            }
+                            DButton {
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: NetworkService.connectivity === "portal"
+                                text: I18n.tr("Log in to network", "captive portal: open the login page")
+                                iconName: "login"
+                                onClicked: NetworkService.openCaptivePortal()
+                            }
+                            DActionButton {
+                                anchors.verticalCenter: parent.verticalCenter
+                                iconName: "refresh"
+                                tooltipText: I18n.tr("Refresh")
+                                buttonSize: Theme.buttonHeightXS
+                                onClicked: NetworkService.checkConnectivity()
+                            }
+                        }
                     }
 
                     Row {
@@ -141,9 +188,16 @@ Item {
                             arrowKeysSelect: false
 
                             readonly property var preferenceValues: {
-                                const values = ["auto", "ethernet", "wifi"];
+                                const values = ["auto"];
+                                if ((NetworkService.ethernetDevices?.length ?? 0) > 0)
+                                    values.push("ethernet");
+                                if ((NetworkService.wifiDevices?.length ?? 0) > 0)
+                                    values.push("wifi");
                                 if ((NetworkService.cellularDevices?.length ?? 0) > 0)
                                     values.push("cellular");
+                                const stored = NetworkService.userPreference;
+                                if (stored && !values.includes(stored))
+                                    values.push(stored);
                                 return values;
                             }
                             readonly property var labelsByValue: ({
@@ -169,6 +223,15 @@ Item {
                         text: I18n.tr("Preference")
                     }
                 }
+            }
+
+            SettingsToggleRow {
+                settingKey: "networkConnectivityCheck"
+                tags: ["connectivity", "captive portal", "portal", "internet", "login"]
+                text: I18n.tr("Connectivity checking", "NetworkManager periodically checks internet access and captive portals")
+                visible: NetworkService.connectivitySupported && NetworkService.connectivityCheckAvailable
+                checked: NetworkService.connectivityCheckEnabled
+                onToggled: checked => NetworkService.setConnectivityCheckEnabled(checked)
             }
         }
     }

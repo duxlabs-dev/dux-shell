@@ -17,6 +17,10 @@ func (b *IWDBackend) ConnectEthernet() error {
 	return fmt.Errorf("wired connections not supported by iwd")
 }
 
+func (b *IWDBackend) ConnectEthernetDevice(device string) error {
+	return fmt.Errorf("wired connections not supported by iwd")
+}
+
 func (b *IWDBackend) DisconnectEthernet() error {
 	return fmt.Errorf("wired connections not supported by iwd")
 }
@@ -29,7 +33,7 @@ func (b *IWDBackend) GetEthernetDevices() []EthernetDevice {
 	return []EthernetDevice{}
 }
 
-func (b *IWDBackend) ActivateWiredConnection(uuid string) error {
+func (b *IWDBackend) ActivateWiredConnection(uuid, device string) error {
 	return fmt.Errorf("wired connections not supported by iwd")
 }
 

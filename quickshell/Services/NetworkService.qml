@@ -43,6 +43,7 @@ Singleton {
     property string wifiDevicePath: activeService?.wifiDevicePath ?? ""
     property string activeAccessPointPath: activeService?.activeAccessPointPath ?? ""
     property var wifiDevices: activeService?.wifiDevices ?? []
+    readonly property bool wifiDevicePresent: (wifiDevices?.length ?? 0) > 0
     property string wifiDeviceOverride: activeService?.wifiDeviceOverride ?? ""
     property string connectingDevice: activeService?.connectingDevice ?? ""
 
@@ -60,6 +61,7 @@ Singleton {
     property string connectionError: activeService?.connectionError ?? ""
 
     property bool isScanning: activeService?.isScanning ?? false
+    property bool wifiScannedOnce: activeService?.wifiScannedOnce ?? false
     property bool autoScan: activeService?.autoScan ?? false
 
     property bool wifiAvailable: activeService?.wifiAvailable ?? true
@@ -70,6 +72,22 @@ Singleton {
     property var savedWifiNetworks: activeService?.savedWifiNetworks ?? []
     readonly property int savedWifiStateApiVersion: activeService?.savedWifiStateApiVersion ?? 26
     readonly property int hotspotApiVersion: activeService?.hotspotApiVersion ?? 28
+    property bool connectionEditorSupported: activeService?.connectionEditorSupported ?? false
+    property bool connectivitySupported: activeService?.connectivitySupported ?? false
+    property string connectivity: activeService?.connectivity ?? "unknown"
+    property bool connectivityCheckEnabled: activeService?.connectivityCheckEnabled ?? false
+    property bool connectivityCheckAvailable: activeService?.connectivityCheckAvailable ?? false
+    property string connectivityCheckUri: activeService?.connectivityCheckUri ?? ""
+    property bool connectivityPortal: activeService?.connectivityPortal ?? false
+    property int hotspotChannel: activeService?.hotspotChannel ?? 0
+    property string hotspotAddress: activeService?.hotspotAddress ?? ""
+    property string hotspotUuid: activeService?.hotspotUuid ?? ""
+    property string hotspotSecurity: activeService?.hotspotSecurity ?? ""
+    property bool hotspotHidden: activeService?.hotspotHidden ?? false
+    property bool hotspotExtendedSupported: activeService?.hotspotExtendedSupported ?? false
+    property string externalConnectionEditor: activeService?.externalConnectionEditor ?? ""
+    property int connectionProfilesRevision: activeService?.connectionProfilesRevision ?? 0
+    property bool ethernetDeviceConnectSupported: activeService?.ethernetDeviceConnectSupported ?? false
     property bool hotspotSupported: activeService?.hotspotSupported ?? false
     property bool hotspotAvailable: activeService?.hotspotAvailable ?? false
     property bool hotspotConfigured: activeService?.hotspotConfigured ?? false
@@ -211,10 +229,28 @@ Singleton {
         }
     }
 
-    function connectToWifi(ssid, password = "", username = "", anonymousIdentity = "", domainSuffixMatch = "", hidden = false, eapMethod = "", phase2Auth = "") {
+    function connectToWifi(ssid, password = "", options = ({})) {
         if (activeService && activeService.connectToWifi) {
-            activeService.connectToWifi(ssid, password, username, anonymousIdentity, domainSuffixMatch, hidden, eapMethod, phase2Auth);
+            activeService.connectToWifi(ssid, password, options);
         }
+    }
+
+    function forward(name, args, callback) {
+        if (activeService && activeService[name])
+            return activeService[name](...args);
+        if (callback)
+            callback({
+                error: "not supported"
+            });
+        return false;
+    }
+
+    function saveWifiProfile(ssid, options, callback) {
+        return forward("saveWifiProfile", [ssid, options, callback], callback);
+    }
+
+    function parseEapConfig(path, callback) {
+        return forward("parseEapConfig", [path, callback], callback);
     }
 
     function disconnectWifi() {
@@ -256,6 +292,12 @@ Singleton {
     function toggleNetworkConnection(type) {
         if (activeService && activeService.toggleNetworkConnection) {
             activeService.toggleNetworkConnection(type);
+        }
+    }
+
+    function connectEthernetDevice(deviceName) {
+        if (activeService && activeService.connectEthernetDevice) {
+            activeService.connectEthernetDevice(deviceName);
         }
     }
 
@@ -327,9 +369,9 @@ Singleton {
         }
     }
 
-    function connectToSpecificWiredConfig(uuid) {
+    function connectToSpecificWiredConfig(uuid, deviceName = "") {
         if (activeService && activeService.connectToSpecificWiredConfig) {
-            activeService.connectToSpecificWiredConfig(uuid);
+            activeService.connectToSpecificWiredConfig(uuid, deviceName);
         }
     }
 
@@ -351,9 +393,9 @@ Singleton {
         }
     }
 
-    function configureHotspot(ssid, password = "", device = "", band = "", callback = null) {
+    function configureHotspot(ssid, password = "", device = "", band = "", callback = null, options = ({})) {
         if (activeService && activeService.configureHotspot) {
-            return activeService.configureHotspot(ssid, password, device, band, callback);
+            return activeService.configureHotspot(ssid, password, device, band, callback, options);
         }
         return false;
     }
@@ -372,9 +414,9 @@ Singleton {
         return false;
     }
 
-    function configureAndStartHotspot(ssid, password = "", device = "", band = "", callback = null) {
+    function configureAndStartHotspot(ssid, password = "", device = "", band = "", callback = null, options = ({})) {
         if (activeService && activeService.configureAndStartHotspot) {
-            return activeService.configureAndStartHotspot(ssid, password, device, band, callback);
+            return activeService.configureAndStartHotspot(ssid, password, device, band, callback, options);
         }
         return false;
     }
@@ -391,6 +433,84 @@ Singleton {
             return activeService.hotspotTargetWouldDisconnectWifi(device, band);
         }
         return false;
+    }
+
+    function listConnections(callback) {
+        return forward("listConnections", [callback], callback);
+    }
+
+    function findWifiProfile(ssid, callback) {
+        listConnections(response => {
+            const matches = (response.result || []).filter(p => p.ssid === ssid && p.uuid !== hotspotUuid);
+            callback(matches.length === 0 ? null : matches.reduce((a, b) => b.timestamp > a.timestamp ? b : a));
+        });
+    }
+
+    function getConnection(uuid, withSecrets, callback) {
+        return forward("getConnection", [uuid, withSecrets, callback], callback);
+    }
+
+    function updateConnection(uuid, settings, persist, callback, enterprise) {
+        return forward("updateConnection", [uuid, settings, persist, callback, enterprise], callback);
+    }
+
+    function addConnection(settings, persist, callback, enterprise) {
+        return forward("addConnection", [settings, persist, callback, enterprise], callback);
+    }
+
+    function deleteConnection(uuid, callback) {
+        return forward("deleteConnection", [uuid, callback], callback);
+    }
+
+    function duplicateConnection(uuid, name, callback) {
+        return forward("duplicateConnection", [uuid, name, callback], callback);
+    }
+
+    function checkConnectivity(callback = null) {
+        return forward("checkConnectivity", [callback], callback);
+    }
+
+    function setConnectivityCheckEnabled(enabled, callback = null) {
+        return forward("setConnectivityCheckEnabled", [enabled, callback], callback);
+    }
+
+    function openCaptivePortal() {
+        if (activeService && activeService.openCaptivePortal) {
+            return activeService.openCaptivePortal();
+        }
+        return false;
+    }
+
+    function exportConnection(uuid, path, callback) {
+        return forward("exportConnection", [uuid, path, callback], callback);
+    }
+
+    function wireguardKeys(privateKey, callback) {
+        return forward("wireguardKeys", [privateKey, callback], callback);
+    }
+
+    function probeExternalConnectionEditor() {
+        forward("probeExternalConnectionEditor", []);
+    }
+
+    function openExternalConnectionEditor(uuid) {
+        forward("openExternalConnectionEditor", [uuid]);
+    }
+
+    function activateConnection(uuid, device, callback) {
+        return forward("activateConnection", [uuid, device, callback], callback);
+    }
+
+    function deactivateConnection(uuid, callback) {
+        return forward("deactivateConnection", [uuid, callback], callback);
+    }
+
+    function getConnectionEnterprise(uuid, callback) {
+        return forward("getConnectionEnterprise", [uuid, callback], callback);
+    }
+
+    function listFirewallZones(callback) {
+        return forward("listFirewallZones", [callback], callback);
     }
 
     function setWifiDeviceOverride(deviceName) {

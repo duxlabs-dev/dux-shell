@@ -8,8 +8,10 @@ import (
 
 	"github.com/Wifx/gonetworkmanager/v2"
 	mock_gonetworkmanager "github.com/duxlabs-dev/dux-shell/core/internal/mocks/github.com/Wifx/gonetworkmanager/v2"
+	mock_dbus "github.com/duxlabs-dev/dux-shell/core/internal/mocks/github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNetworkManagerBackend_ConnectVPN_NotFound(t *testing.T) {
@@ -177,6 +179,100 @@ exit 1
 	assert.Empty(t, backend.pendingVPNSave.Secrets)
 }
 
+func TestParseNmcliAddedUUID(t *testing.T) {
+	const uuid = "0e1f2a3b-4c5d-6e7f-8091-a2b3c4d5e6f7"
+	name, got := parseNmcliAddedUUID("Connection 'old' (11111111-1111-1111-1111-111111111111) successfully added.\nConnection 'my vpn (work)' (" + uuid + ") successfully added.\n")
+	assert.Equal(t, "my vpn (work)", name)
+	assert.Equal(t, uuid, got)
+	name, got = parseNmcliAddedUUID("Error: failed to import\n")
+	assert.Empty(t, name+got)
+}
+
+func storedVPNProfile() nmSettings {
+	return nmSettings{
+		"connection": {"id": dbus.MakeVariant("office"), "uuid": dbus.MakeVariant("vpn-uuid"), "type": dbus.MakeVariant("vpn")},
+		"vpn":        {"data": dbus.MakeVariant(map[string]string{"remote": "vpn.example.com"})},
+		"ipv4":       {"dns-data": dbus.MakeVariant([]string{"10.0.0.53"})},
+		"ipv6":       {"method": dbus.MakeVariant("auto")},
+	}
+}
+
+func TestVPNProfileWritesKeepIPSectionsAndSecrets(t *testing.T) {
+	const path = dbus.ObjectPath("/org/freedesktop/NetworkManager/Settings/7")
+	tests := []struct {
+		name    string
+		run     func(b *NetworkManagerBackend) error
+		secrets map[string]string
+		data    map[string]string
+		noWrite bool // a wireguard profile has no stored credentials to clear
+	}{
+		{"config update", func(b *NetworkManagerBackend) error {
+			return b.UpdateVPNConfig("vpn-uuid", map[string]any{"data": map[string]any{"remote": "vpn2.example.com"}})
+		}, map[string]string{"cert-pass": "b", "password": "hunter2"}, map[string]string{"remote": "vpn2.example.com"}, false},
+		{"save credentials", func(b *NetworkManagerBackend) error {
+			b.saveVPNCredentials(&pendingVPNCredentials{ConnectionPath: string(path), Username: "alice", Password: "pw", SavePassword: true})
+			return nil
+		}, map[string]string{"cert-pass": "b", "password": "pw"}, map[string]string{"remote": "vpn.example.com", "username": "alice", "password-flags": "0"}, false},
+		{"clear credentials", func(b *NetworkManagerBackend) error { return b.ClearVPNCredentials("vpn-uuid") },
+			nil, map[string]string{"remote": "vpn.example.com", "password-flags": "1"}, false},
+		{"clear wireguard credentials", func(b *NetworkManagerBackend) error { return b.ClearVPNCredentials("vpn-uuid") },
+			nil, nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			obj := mock_dbus.NewMockBusObject(t)
+			backend, err := NewNetworkManagerBackend(mock_gonetworkmanager.NewMockNetworkManager(t))
+			require.NoError(t, err)
+			backend.nmObjectFn = func(dbus.ObjectPath) dbus.BusObject { return obj }
+			conn := mock_gonetworkmanager.NewMockConnection(t)
+			conn.EXPECT().GetPath().Return(path).Maybe()
+			conn.EXPECT().ClearSecrets().Return(nil).Maybe()
+			conn.EXPECT().GetSettings().Return(gonetworkmanager.ConnectionSettings{"connection": {"id": "office", "uuid": "vpn-uuid", "type": map[bool]string{false: "vpn", true: "wireguard"}[tt.noWrite]}}, nil).Maybe()
+			settings := mock_gonetworkmanager.NewMockSettings(t)
+			settings.EXPECT().ListConnections().Return([]gonetworkmanager.Connection{conn}, nil).Maybe()
+			backend.settings = settings
+			if tt.noWrite {
+				require.NoError(t, tt.run(backend))
+				return
+			}
+			expectGetSettings(obj, storedVPNProfile())
+			expectGetSecrets(obj, "vpn", nmSettings{"vpn": {"secrets": dbus.MakeVariant(map[string]string{"cert-pass": "b", "password": "hunter2"})}})
+			got := captureUpdate2(obj, nmUpdate2FlagToDisk, nil)
+
+			require.NoError(t, tt.run(backend))
+
+			s := *got
+			assert.Equal(t, []string{"10.0.0.53"}, s["ipv4"]["dns-data"].Value())
+			assert.Contains(t, s, "ipv6")
+			assert.Equal(t, tt.data, s["vpn"]["data"].Value())
+			if tt.secrets == nil {
+				assert.NotContains(t, s["vpn"], "secrets")
+			} else {
+				assert.Equal(t, tt.secrets, s["vpn"]["secrets"].Value())
+			}
+		})
+	}
+}
+
+func TestWireGuardImport(t *testing.T) {
+	name, cp := wireGuardImportName("/x/protonvpn-DE-523.conf")
+	assert.Equal(t, "protonvpn-DE-52", name)
+	assert.True(t, cp)
+	_, cp = wireGuardImportName("/x/wg0.conf")
+	assert.False(t, cp)
+	assert.True(t, looksLikeWireGuardConfig([]byte("[Interface]\nprivatekey = abc\n[Peer]\n")))
+	assert.False(t, looksLikeWireGuardConfig([]byte("client\ndev tun\n")))
+
+	src := filepath.Join(t.TempDir(), "My VPN.conf")
+	require.NoError(t, os.WriteFile(src, []byte("[Interface]\nPrivateKey=abc\n"), 0o600))
+	staged, cleanup, err := stageWireGuardImport(src)
+	require.NoError(t, err)
+	assert.Equal(t, "MyVPN.conf", filepath.Base(staged))
+	cleanup()
+	_, err = os.Stat(staged)
+	assert.True(t, os.IsNotExist(err))
+}
+
 // A FortiGate HA cluster answers from either node; once both pins are trusted, neither may prompt.
 func TestOpenConnectTrustedPinsForEveryNode(t *testing.T) {
 	binDir := t.TempDir()
@@ -238,6 +334,27 @@ func TestAppendServerCertPin(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.want, appendServerCertPin(tt.trusted, tt.pin))
+		})
+	}
+}
+
+func TestParseVPNPluginFile_CanCreate(t *testing.T) {
+	tests := []struct {
+		name, body string
+		want       bool
+	}{
+		{"libnm editor plugin", "[VPN Connection]\nname=OpenVPN\nservice=org.freedesktop.NetworkManager.openvpn\n[libnm]\nplugin=libnm-vpn-plugin-openvpn.so\n", true},
+		{"gnome properties", "[VPN Connection]\nname=X\nservice=org.x\n[GNOME]\nproperties=libnm-gtk-vpn-plugin-x.so\n", true},
+		{"no editor plugin", "[VPN Connection]\nname=Proton VPN\nservice=org.freedesktop.NetworkManager.protun\nprogram=/usr/bin/protun\n[libnm]\nplugin=\n", false},
+		{"key in wrong section", "[VPN Connection]\nname=X\nservice=org.x\nplugin=foo.so\n", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "x.name")
+			require.NoError(t, os.WriteFile(path, []byte(tt.body), 0o600))
+			p, err := parseVPNPluginFile(path)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, p.CanCreate)
 		})
 	}
 }

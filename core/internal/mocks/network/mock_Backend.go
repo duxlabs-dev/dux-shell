@@ -88,16 +88,16 @@ func (_c *MockBackend_ActivateCellularConnection_Call) RunAndReturn(run func(uui
 }
 
 // ActivateWiredConnection provides a mock function for the type MockBackend
-func (_mock *MockBackend) ActivateWiredConnection(uuid string) error {
-	ret := _mock.Called(uuid)
+func (_mock *MockBackend) ActivateWiredConnection(uuid string, device string) error {
+	ret := _mock.Called(uuid, device)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ActivateWiredConnection")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
-		r0 = returnFunc(uuid)
+	if returnFunc, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = returnFunc(uuid, device)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -111,18 +111,24 @@ type MockBackend_ActivateWiredConnection_Call struct {
 
 // ActivateWiredConnection is a helper method to define mock.On call
 //   - uuid string
-func (_e *MockBackend_Expecter) ActivateWiredConnection(uuid any) *MockBackend_ActivateWiredConnection_Call {
-	return &MockBackend_ActivateWiredConnection_Call{Call: _e.mock.On("ActivateWiredConnection", uuid)}
+//   - device string
+func (_e *MockBackend_Expecter) ActivateWiredConnection(uuid any, device any) *MockBackend_ActivateWiredConnection_Call {
+	return &MockBackend_ActivateWiredConnection_Call{Call: _e.mock.On("ActivateWiredConnection", uuid, device)}
 }
 
-func (_c *MockBackend_ActivateWiredConnection_Call) Run(run func(uuid string)) *MockBackend_ActivateWiredConnection_Call {
+func (_c *MockBackend_ActivateWiredConnection_Call) Run(run func(uuid string, device string)) *MockBackend_ActivateWiredConnection_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -133,7 +139,7 @@ func (_c *MockBackend_ActivateWiredConnection_Call) Return(err error) *MockBacke
 	return _c
 }
 
-func (_c *MockBackend_ActivateWiredConnection_Call) RunAndReturn(run func(uuid string) error) *MockBackend_ActivateWiredConnection_Call {
+func (_c *MockBackend_ActivateWiredConnection_Call) RunAndReturn(run func(uuid string, device string) error) *MockBackend_ActivateWiredConnection_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -357,6 +363,57 @@ func (_c *MockBackend_ConnectEthernet_Call) Return(err error) *MockBackend_Conne
 }
 
 func (_c *MockBackend_ConnectEthernet_Call) RunAndReturn(run func() error) *MockBackend_ConnectEthernet_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ConnectEthernetDevice provides a mock function for the type MockBackend
+func (_mock *MockBackend) ConnectEthernetDevice(device string) error {
+	ret := _mock.Called(device)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ConnectEthernetDevice")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
+		r0 = returnFunc(device)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockBackend_ConnectEthernetDevice_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ConnectEthernetDevice'
+type MockBackend_ConnectEthernetDevice_Call struct {
+	*mock.Call
+}
+
+// ConnectEthernetDevice is a helper method to define mock.On call
+//   - device string
+func (_e *MockBackend_Expecter) ConnectEthernetDevice(device any) *MockBackend_ConnectEthernetDevice_Call {
+	return &MockBackend_ConnectEthernetDevice_Call{Call: _e.mock.On("ConnectEthernetDevice", device)}
+}
+
+func (_c *MockBackend_ConnectEthernetDevice_Call) Run(run func(device string)) *MockBackend_ConnectEthernetDevice_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockBackend_ConnectEthernetDevice_Call) Return(err error) *MockBackend_ConnectEthernetDevice_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockBackend_ConnectEthernetDevice_Call) RunAndReturn(run func(device string) error) *MockBackend_ConnectEthernetDevice_Call {
 	_c.Call.Return(run)
 	return _c
 }

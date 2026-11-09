@@ -208,7 +208,11 @@ func (b *WpaSupplicantBackend) DisconnectEthernetDevice(device string) error {
 	return nil
 }
 
-func (b *WpaSupplicantBackend) ActivateWiredConnection(uuid string) error {
+func (b *WpaSupplicantBackend) ConnectEthernetDevice(device string) error {
+	return b.connectEthernetDevice(device)
+}
+
+func (b *WpaSupplicantBackend) ActivateWiredConnection(uuid, _ string) error {
 	device := strings.TrimPrefix(uuid, "wired:")
 	if device == "" {
 		return fmt.Errorf("invalid wired connection: %s", uuid)

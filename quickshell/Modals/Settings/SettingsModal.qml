@@ -105,6 +105,10 @@ DFloatingWindow {
         return setPage(name);
     }
 
+    function revealItem(item) {
+        content.reveal(item);
+    }
+
     function goBack(keyboard = contentFocusScope.keyboardDriven()) {
         if (pageHistory.length > 0) {
             const history = pageHistory.slice();
