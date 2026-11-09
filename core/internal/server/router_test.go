@@ -31,6 +31,7 @@ func TestRouteRequestUnavailableManagers(t *testing.T) {
 		{"browser.open", "apppicker manager not initialized"},
 		{"apppicker.open", "apppicker manager not initialized"},
 		{"tailscale.getState", "Tailscale not available"},
+		{"firewall.getState", "firewall not available"},
 		{"brightness.getState", "brightness manager not initialized"},
 		{"wlroutput.getState", "wlroutput manager not initialized"},
 		{"evdev.getState", "evdev manager not initialized"},

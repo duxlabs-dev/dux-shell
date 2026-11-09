@@ -24,6 +24,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
 	"github.com/duxlabs-dev/dux-shell/core/internal/matugen"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/brightness"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/firewall"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/network"
 	"github.com/duxlabs-dev/dux-shell/core/internal/site"
 	"github.com/duxlabs-dev/dux-shell/core/internal/tui"
@@ -1638,6 +1639,7 @@ func checkOptionalDependencies() []checkResult {
 
 	results = append(results, checkAdwGtk3())
 	results = append(results, checkFcitx5(optionalFeaturesURL))
+	results = append(results, checkFirewall()...)
 
 	return results
 }
@@ -1930,6 +1932,37 @@ func checkSettingsPortal() []checkResult {
 	}
 	hint := "Apps cannot follow light/dark mode. The portal is D-Bus activated and needs graphical-session.target; without systemd, or a compositor that never starts that target (Mango before 0.17.1), exec the portal backend and xdg-desktop-portal at session start."
 	return []checkResult{{catServices, "xdg-desktop-portal", statusWarn, "Settings portal unreachable", hint, doctorDocsURL + "#services"}}
+}
+
+func checkFirewall() []checkResult {
+	url := doctorDocsURL + "#optional-features"
+	installed := firewall.Installed()
+	if len(installed) == 0 {
+		return []checkResult{{catOptionalFeatures, "Firewall", statusInfo, "No firewalld or ufw installed", "Install firewalld or ufw to filter incoming connections", url}}
+	}
+
+	var running []string
+	for _, name := range installed {
+		if systemServiceActive(name) {
+			running = append(running, name)
+		}
+	}
+
+	switch len(running) {
+	case 0:
+		return []checkResult{{catOptionalFeatures, "Firewall", statusWarn, strings.Join(installed, ", ") + " installed but not running", "Enable it with 'systemctl enable --now " + installed[0] + "'", url}}
+	case 1:
+		return []checkResult{{catOptionalFeatures, "Firewall", statusOK, running[0], "", url}}
+	default:
+		return []checkResult{{catOptionalFeatures, "Firewall", statusWarn, "Both " + strings.Join(running, " and ") + " running", "Run only one firewall manager; they overwrite each other's rules", url}}
+	}
+}
+
+func systemServiceActive(name string) bool {
+	if !utils.CommandExists("systemctl") {
+		return false
+	}
+	return exec.Command("systemctl", "is-active", "--quiet", name).Run() == nil
 }
 
 type serviceState struct {

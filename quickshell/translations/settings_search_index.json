@@ -1785,9 +1785,11 @@
       "connection",
       "connectivity",
       "ethernet",
+      "firewall",
       "internet",
       "network",
       "online",
+      "rule",
       "status",
       "vpn",
       "wi-fi",
@@ -1795,7 +1797,7 @@
       "wireless"
     ],
     "icon": "wifi",
-    "description": "Wi-Fi, Ethernet, VPN",
+    "description": "Wi-Fi, Ethernet, VPN, Firewall",
     "conditionKey": "networkAvailable"
   },
   {
@@ -19499,5 +19501,57 @@
     "parentLabel": "Input",
     "icon": "extension",
     "conditionKey": "fcitx5Available"
+  },
+  {
+    "section": "_tab_71",
+    "label": "Firewall",
+    "tabIndex": 71,
+    "category": "Firewall",
+    "keywords": [
+      "connection",
+      "connectivity",
+      "ethernet",
+      "firewall",
+      "internet",
+      "network",
+      "online",
+      "rules",
+      "status",
+      "wi-fi",
+      "wifi",
+      "wireless",
+      "zones"
+    ],
+    "icon": "shield",
+    "parentLabel": "Network",
+    "description": "Status, zones and rules",
+    "conditionKey": "firewallAvailable"
+  },
+  {
+    "section": "networkFirewall",
+    "label": "Status",
+    "tabIndex": 71,
+    "category": "Firewall",
+    "keywords": [
+      "connection",
+      "connectivity",
+      "ethernet",
+      "firewall",
+      "firewalld",
+      "internet",
+      "network",
+      "online",
+      "ports",
+      "rules",
+      "security",
+      "status",
+      "ufw",
+      "wi-fi",
+      "wifi",
+      "wireless",
+      "zone"
+    ],
+    "parentLabel": "Network",
+    "conditionKey": "firewallAvailable"
   }
 ]

@@ -412,7 +412,7 @@ Singleton {
             "id": "network",
             "text": I18n.tr("Network", "noun, settings page and widget title"),
             "icon": "wifi",
-            "hint": I18n.tr("Wi-Fi, Ethernet, VPN", "settings sidebar hint for the network page"),
+            "hint": I18n.tr("Wi-Fi, Ethernet, VPN, Firewall", "settings sidebar hint for the network page"),
             "dmsOnly": true,
             "children": [
                 {
@@ -443,6 +443,24 @@ Singleton {
                     "tabIndex": 47,
                     "cellularOnly": true,
                     "hint": I18n.tr("Modem and mobile data")
+                },
+                {
+                    "id": "network_firewall",
+                    "text": I18n.tr("Firewall"),
+                    "icon": "shield",
+                    "tabIndex": 71,
+                    "firewallOnly": true,
+                    "hint": I18n.tr("Status, zones and rules")
+                },
+                {
+                    "id": "network_firewall_rule",
+                    "hidden": true,
+                    "titleFrom": "selectedFirewallRuleTitle",
+                    "text": I18n.tr("Rule"),
+                    "icon": "shield",
+                    "tabIndex": 72,
+                    "firewallOnly": true,
+                    "hint": I18n.tr("Service or port, action and source", "settings hint for the firewall rule editor page")
                 },
                 {
                     "id": "network_status",
@@ -820,6 +838,8 @@ Singleton {
         if (entry.fcitx5Only && !Fcitx5Service.available)
             return false;
         if (entry.cellularOnly && (NetworkService.cellularDevices?.length ?? 0) === 0)
+            return false;
+        if (entry.firewallOnly && !FirewallService.available)
             return false;
         if (entry.kind === "hub" && !entry.hubHeader && visibleLeaves(entry.id).length === 0)
             return false;

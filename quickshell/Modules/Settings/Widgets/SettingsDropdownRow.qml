@@ -30,6 +30,11 @@ SettingsRow {
 
     signal valueChanged(string value)
 
+    // The dropdown moves itself on selection, so a change that didn't apply must undo that.
+    function resync() {
+        dropdown.currentValue = currentValue;
+    }
+
     function openDropdownMenu() {
         dropdown.openDropdownMenu();
     }

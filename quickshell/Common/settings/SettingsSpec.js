@@ -739,6 +739,9 @@ var LOCAL_SPEC = {
     workspaceNameIcons: {
         def: {}
     },
+    firewallInterfaceNames: {
+        def: {}
+    },
     scrollTitleEnabled: {
         def: true
     },

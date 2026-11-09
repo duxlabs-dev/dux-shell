@@ -96,6 +96,7 @@ Singleton {
             "dotEnabled": () => SettingsData.dotBarConfig?.enabled ?? false,
             "cellularAvailable": () => NetworkService.cellularAvailable,
             "fcitx5Available": () => Fcitx5Service.available,
+            "firewallAvailable": () => FirewallService.available,
             "dockEnabled": () => (SettingsData.dockConfigs ?? []).some(dock => dock.enabled)
         })
 

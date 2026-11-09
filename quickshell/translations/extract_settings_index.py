@@ -115,6 +115,8 @@ TAB_INDEX_MAP = {
     "NetworkWifiTab.qml": 40,
     "NetworkVpnTab.qml": 41,
     "NetworkCellularTab.qml": 47,
+    "NetworkFirewallTab.qml": 71,
+    "NetworkFirewallRuleTab.qml": 72,
     "PrinterTab.qml": 8,
     "LauncherTab.qml": 9,
     "ThemeColorsTab.qml": 10,
@@ -176,6 +178,7 @@ SIDEBAR_GATE_CONDITIONS = [
     ("layoutCapable", "layoutCapable"),
     ("cellularOnly", "cellularAvailable"),
     ("fcitx5Only", "fcitx5Available"),
+    ("firewallOnly", "firewallAvailable"),
 ]
 
 FILE_PAGE_MAP = {

@@ -458,6 +458,7 @@ Singleton {
     property var controlCenterWidgets: Spec.SPEC.controlCenterWidgets.def
 
     property var workspaceNameIcons: Spec.SPEC.workspaceNameIcons.def
+    property var firewallInterfaceNames: Spec.SPEC.firewallInterfaceNames.def
     property bool scrollTitleEnabled: Spec.SPEC.scrollTitleEnabled.def
     property bool audioVisualizerEnabled: Spec.SPEC.audioVisualizerEnabled.def
     property int audioWheelScrollAmount: Spec.SPEC.audioWheelScrollAmount.def

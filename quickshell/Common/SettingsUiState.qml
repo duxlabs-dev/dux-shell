@@ -24,6 +24,9 @@ Singleton {
     property string selectedFcitx5AddonTitle: ""
     property string selectedFcitx5SubAddon: ""
     property string selectedFcitx5SubAddonTitle: ""
+    property string selectedFirewallZone: ""
+    property string selectedFirewallRuleId: ""
+    property string selectedFirewallRuleTitle: ""
 
     // The dot has its own page, so bar selection never lands on it.
     function normalizeSelectedBar() {
