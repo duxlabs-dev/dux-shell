@@ -12,6 +12,8 @@ DOSD {
 
     osdKind: "mediaPlayback"
 
+    readonly property int artDecodeSize: Math.max(1, Math.ceil(Math.max(alignedWidth, alignedHeight) * (screen?.devicePixelRatio ?? 1)))
+
     readonly property bool useVertical: isVerticalLayout
     readonly property bool playing: player?.isPlaying ?? false
     readonly property var player: MprisController.activePlayer
@@ -104,6 +106,7 @@ DOSD {
 
     Image {
         id: artPreloader
+        sourceSize: Qt.size(root.artDecodeSize, root.artDecodeSize)
         source: SettingsData.osdMediaPlaybackEnabled ? TrackArtService.resolvedArtUrl : ""
         visible: false
         asynchronous: true
@@ -231,6 +234,7 @@ DOSD {
 
                 Image {
                     id: bgImage
+                    sourceSize: Qt.size(root.artDecodeSize, root.artDecodeSize)
                     anchors.centerIn: parent
                     width: Math.max(parent.width, parent.height)
                     height: width

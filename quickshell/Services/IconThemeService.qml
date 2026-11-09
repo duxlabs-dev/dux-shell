@@ -23,7 +23,7 @@ Singleton {
     property string systemProbedTheme: ""
     readonly property string managedTheme: settingsTheme || systemProbedTheme
     property bool ready: false
-    property var _iconPaths: Object.create(null)
+    property var _iconPaths: IconIndex.createMap()
     property bool _initialized: false
     property bool _probing: false
     property bool _building: false
@@ -118,7 +118,7 @@ printf '%s' "$v" | tr -d "'\\""`;
         _rebuildPending = false;
         const theme = managedTheme;
         if (!theme) {
-            _publishIndex(theme, Object.create(null));
+            _publishIndex(theme, IconIndex.createMap());
             return;
         }
         const script = `theme=$1
@@ -170,17 +170,17 @@ for t in $order; do for b; do d="$b/$t"; [ -d "$d" ] && echo "$d"; done; done`;
             required property string theme
             required property var searchDirs
             required property var looseDirs
-            property var themeIndex: IconIndex.create()
-            property var looseIndex: IconIndex.create()
+            property var themeIndex: root.createIndex()
+            property var looseIndex: root.createIndex()
             property int remaining: searchDirs.length ? 2 : 1
             property bool finished: false
 
             function complete() {
                 if (finished || --remaining > 0)
                     return;
-                for (const name in looseIndex.paths) {
-                    if (!themeIndex.paths[name])
-                        themeIndex.paths[name] = looseIndex.paths[name];
+                for (const name of looseIndex.paths.keys()) {
+                    if (!themeIndex.paths.has(name))
+                        themeIndex.paths.set(name, looseIndex.paths.get(name));
                 }
                 publish();
             }
@@ -189,6 +189,11 @@ for t in $order; do for b; do d="$b/$t"; [ -d "$d" ] && echo "$d"; done; done`;
                 if (finished)
                     return;
                 finished = true;
+                themeIndex.scores.clear();
+                themeIndex.directories.clear();
+                looseIndex.paths.clear();
+                looseIndex.scores.clear();
+                looseIndex.directories.clear();
                 root._publishIndex(theme, themeIndex.paths);
                 destroy();
             }
@@ -228,10 +233,15 @@ for t in $order; do for b; do d="$b/$t"; [ -d "$d" ] && echo "$d"; done; done`;
         }
     }
 
+    function createIndex() {
+        const factory = typeof Quickshell.createStringMap === "function" ? () => Quickshell.createStringMap() : IconIndex.createMap;
+        return IconIndex.create(factory);
+    }
+
     function resolve(name) {
         if (!name || !/^[\w.+-]+$/.test(name))
             return "";
-        const path = _iconPaths[name];
+        const path = _iconPaths.get(name);
         return path ? Paths.toFileUrl(path) : "";
     }
 }

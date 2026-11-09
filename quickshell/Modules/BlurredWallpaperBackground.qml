@@ -120,7 +120,6 @@ Variants {
                     return;
                 frozenLayer.scheduleUpdate();
                 _freezeWaitFrames = 3;
-                // An occluded surface may never produce frames, so the freeze just waits
                 backingWindow?.update();
             }
 
@@ -147,8 +146,13 @@ Variants {
             Connections {
                 target: root.backingWindow
                 function onFrameSwapped() {
-                    if (root._freezeWaitFrames > 0 && --root._freezeWaitFrames === 0)
+                    if (root._freezeWaitFrames <= 0)
+                        return;
+                    if (--root._freezeWaitFrames === 0) {
                         root.completeFreeze();
+                        return;
+                    }
+                    root.invalidate();
                 }
                 function onVisibleChanged() {
                     root.invalidate();
