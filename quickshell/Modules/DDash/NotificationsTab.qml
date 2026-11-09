@@ -27,7 +27,7 @@ FocusScope {
         let listHeight = NotificationMetrics.emptyHeight;
         if (currentTab === 0) {
             if (NotificationService.groupedNotifications.length > 0)
-                listHeight = live && list.stableContentHeight > 0 ? list.stableContentHeight : list.listContentHeight;
+                listHeight = sizeToContent && list.stableContentHeight > 0 ? list.stableContentHeight : list.listContentHeight;
         } else if (NotificationService.historyList.length > 0) {
             listHeight = Math.max(NotificationMetrics.emptyHeight, NotificationService.historyList.length * NotificationMetrics.estimatedCardHeight);
         }
@@ -40,7 +40,7 @@ FocusScope {
     signal settingsRequested
 
     function forceLayout() {
-        list.forceLayout();
+        list.forceContentLayout();
     }
 
     function slotAction(action) {
@@ -235,6 +235,7 @@ FocusScope {
         focusAllowed: root.activeFocus
         transientSurfaceTracker: root.surfaces
         trackStableContentHeight: root.sizeToContent
+        cardAnimateExpansion: root.live
     }
 
     Loader {

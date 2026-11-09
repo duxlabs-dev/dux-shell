@@ -369,16 +369,10 @@ Item {
 
     Region {
         id: contentInputMask
-        item: contentMaskRect
-    }
-
-    Item {
-        id: contentMaskRect
-        visible: false
-        x: content.x
-        y: win.contentTop
-        width: alignedWidth
-        height: win.cardShown && !win.exiting && !content.chromeOnlyExit ? alignedHeight : 0
+        x: Math.floor(win.x + content.x - (win.surface?.bandX ?? 0))
+        y: Math.floor(win.y + win.contentTop - (win.surface?.bandY ?? 0))
+        width: Math.ceil(alignedWidth)
+        height: win.cardShown && !win.exiting && !content.chromeOnlyExit ? Math.ceil(alignedHeight) : 0
     }
 
     function getBarInfo() {

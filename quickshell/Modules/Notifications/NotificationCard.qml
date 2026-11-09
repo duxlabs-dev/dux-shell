@@ -53,6 +53,12 @@ Rectangle {
     signal bodyClicked
     signal contextMenuRequested(real x, real y)
 
+    function forceLayout() {
+        messageText.forceLayout();
+        actions.forceLayout();
+        content.forceLayout();
+    }
+
     function saveDisplayImage() {
         const data = root.notificationData;
         if (!root.persistImage || !data?.notification || !data.hasDisplayImage || data.persistedImagePath)

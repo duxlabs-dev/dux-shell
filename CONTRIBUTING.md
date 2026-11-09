@@ -60,7 +60,7 @@ The UI config dir resolves in order: `-c <dir>`, `DMS_SHELL_DIR`, the dir a runn
 
 1. the copy embedded in `dms`, if it was built with `QTBASE=1`
 2. `libdux-qt-base.so.0` next to `dms`, or in `../lib/dms/` relative to it
-3. the system library dirs (`LD_LIBRARY_PATH`, `ld.so.conf`, `/usr/lib64`, `/usr/lib`, `/lib64`, `/lib`, `/usr/local/lib64`, `/usr/local/lib`)
+3. the dynamic linker search path: `LD_LIBRARY_PATH`, the dirs in `ld.so.conf`, then `/usr/lib` and `/lib` (or their `lib64` variants)
 
 Without one, `dms run` refuses to start. `dms run --qs-child`, or `DMS_QS_CHILD=1`, runs the UI on upstream `qs` from `PATH` instead. That path is unsupported: fork-only features degrade to warnings.
 
@@ -70,7 +70,10 @@ To build and install the library from the submodule:
 cd dux-qt-base
 just release        # configures RelWithDebInfo into build/, prefix /usr/local
 sudo just install
+sudo ldconfig
 ```
+
+`/usr/local/lib` is only searched if `ld.so.conf` lists it, which not every distro does.
 
 Pass cmake flags through `just configure`, for example `just configure release -DCMAKE_INSTALL_PREFIX=/usr`, then `just build`. Rebuild and reinstall after every Qt update, the library uses private Qt APIs. See `dux-qt-base/BUILD.md` for options and dependencies.
 
