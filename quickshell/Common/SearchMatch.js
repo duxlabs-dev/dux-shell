@@ -22,6 +22,7 @@ function prepareText(text) {
         text: str,
         lower: str.toLowerCase(),
         words: tokenize(str),
+        ascii: !/[^\x00-\x7f]/.test(str),
         runes: null,
         bonus: null
     };
@@ -37,6 +38,7 @@ function prepareQuery(query) {
         const pattern = Fzf.strToRunes(word).map(r => Fzf.normalizeRune(r));
         return {
             pattern: pattern,
+            text: Fzf.runesToStr(pattern),
             self: fzfMatch(Fzf.strToRunes(word), pattern, false)[0].score
         };
     });
@@ -110,15 +112,72 @@ function coherent(item, positions) {
     return true;
 }
 
+function isSubsequence(text, pattern) {
+    let from = 0;
+    for (let i = 0; i < pattern.length; i++) {
+        const at = text.indexOf(pattern[i], from);
+        if (at < 0)
+            return false;
+        from = at + 1;
+    }
+    return true;
+}
+
+// A coherent alignment stays between boundaries or starts its first run at one.
+function mayBeCoherent(item, pattern) {
+    const bonus = bonusOf(item);
+    let withinWord = 0;
+    let fromBoundary = 0;
+    for (let i = 0; i < item.lower.length; i++) {
+        const boundary = bonus[i] > 0;
+        if (boundary)
+            withinWord = 0;
+        if (item.lower[i] === pattern[withinWord] && ++withinWord === pattern.length)
+            return true;
+        if ((fromBoundary > 0 || boundary) && item.lower[i] === pattern[fromBoundary] && ++fromBoundary === pattern.length)
+            return true;
+    }
+    return false;
+}
+
+// fzf scores a single character by its best-placed occurrence: 16 + 2 * bonus.
+function singleCharQuality(item, word) {
+    const bonus = bonusOf(item);
+    let best = -1;
+    for (let i = item.lower.indexOf(word.text); i >= 0; i = item.lower.indexOf(word.text, i + 1))
+        best = Math.max(best, bonus[i]);
+    return best < 0 ? 0 : (16 + 2 * best) / word.self;
+}
+
+// fzf ignores everything after the last occurrence of the final pattern character, except when
+// the full input is too large for its slab and it falls back to the V1 algorithm.
+function matchRunes(item, word) {
+    const runes = runesOf(item);
+    if (!item.ascii || runes.length * word.pattern.length > Fzf.slab.i16.length)
+        return runes;
+    const end = item.lower.lastIndexOf(word.text[word.text.length - 1]) + 1;
+    return end === runes.length ? runes : runes.slice(0, end);
+}
+
+function wordQuality(item, word) {
+    if (item.ascii && word.text.length === 1)
+        return singleCharQuality(item, word);
+    const [match, positions] = fzfMatch(matchRunes(item, word), word.pattern, true);
+    if (match.start < 0)
+        return 0;
+    const quality = match.score / word.self;
+    return quality < minQuality || !coherent(item, positions) ? 0 : quality;
+}
+
 function fuzzyScore(item, query) {
     if (query.lower.length < 2)
         return 0;
+    // Non-ASCII input must keep fzf's rune-specific case folding and normalization.
+    if (item.ascii && query.fuzzyWords.some(word => !isSubsequence(item.lower, word.text) || !mayBeCoherent(item, word.text)))
+        return 0;
     let sum = 0;
     for (const word of query.fuzzyWords) {
-        const [match, positions] = fzfMatch(runesOf(item), word.pattern, true);
-        if (match.start < 0 || !coherent(item, positions))
-            return 0;
-        const quality = match.score / word.self;
+        const quality = wordQuality(item, word);
         if (quality < minQuality)
             return 0;
         sum += Math.min(1, quality);
@@ -126,43 +185,63 @@ function fuzzyScore(item, query) {
     return Math.round(Tier.fuzzy * sum / query.fuzzyWords.length);
 }
 
-function levenshtein(s1, s2) {
-    let prev = new Array(s2.length + 1);
-    let curr = new Array(s2.length + 1);
+// Distances above limit are reported as limit + 1; row minimums never decrease.
+function boundedLevenshtein(s1, s2, limit, prev, curr) {
     for (let j = 0; j <= s2.length; j++)
         prev[j] = j;
     for (let i = 1; i <= s1.length; i++) {
         curr[0] = i;
+        let rowMin = i;
         for (let j = 1; j <= s2.length; j++) {
             const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
             curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+            rowMin = Math.min(rowMin, curr[j]);
         }
+        if (rowMin > limit)
+            return limit + 1;
         [prev, curr] = [curr, prev];
     }
     return prev[s2.length];
+}
+
+// Characters absent from the other string each cost at least one edit.
+function exceedsEdits(candidate, q, maxEdits) {
+    let missing = 0;
+    for (let i = 0; i < candidate.length; i++) {
+        if (q.indexOf(candidate[i]) < 0 && ++missing > maxEdits)
+            return true;
+    }
+    missing = 0;
+    for (let i = 0; i < q.length; i++) {
+        if (candidate.indexOf(q[i]) < 0 && ++missing > maxEdits)
+            return true;
+    }
+    return false;
+}
+
+function typoCandidateScore(candidate, q, prev, curr) {
+    const len = Math.max(candidate.length, q.length);
+    const maxEdits = Math.floor(len * (1 - minQuality) + 1e-9);
+    if (Math.abs(candidate.length - q.length) > maxEdits || exceedsEdits(candidate, q, maxEdits))
+        return 0;
+    const edits = boundedLevenshtein(candidate, q, maxEdits, prev, curr);
+    return edits > maxEdits ? 0 : 1 - edits / len;
 }
 
 function typoScore(item, query) {
     const q = query.lower;
     if (q.length < 3 || query.words.length !== 1)
         return 0;
-    const candidates = [item.lower].concat(item.words);
+    const prev = new Array(q.length + 1);
+    const curr = new Array(q.length + 1);
+    let best = typoCandidateScore(item.lower, q, prev, curr);
+    for (const word of item.words)
+        best = Math.max(best, typoCandidateScore(word, q, prev, curr));
     if (q.length >= 4) {
         for (const word of item.words) {
             if (word.length > q.length)
-                candidates.push(word.slice(0, q.length));
+                best = Math.max(best, typoCandidateScore(word.slice(0, q.length), q, prev, curr));
         }
-    }
-    let best = 0;
-    for (const candidate of candidates) {
-        const len = Math.max(candidate.length, q.length);
-        const maxEdits = Math.floor(len * (1 - minQuality) + 1e-9);
-        if (Math.abs(candidate.length - q.length) > maxEdits)
-            continue;
-        const edits = levenshtein(candidate, q);
-        if (edits > maxEdits)
-            continue;
-        best = Math.max(best, 1 - edits / len);
     }
     return Math.round(Tier.typo * best);
 }
