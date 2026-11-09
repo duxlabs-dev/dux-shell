@@ -189,6 +189,8 @@ Item {
         selectedFlatIndex = -1;
         selectedItem = null;
         keyboardNavigationActive = false;
+        // The scorer is a library singleton; drop prepared names (often piped dmenu input) once the launcher closes.
+        Scorer.clearPreparedNames();
         if (retainResultsOnClose && searchMode !== "dmenu")
             return;
         sections = [];

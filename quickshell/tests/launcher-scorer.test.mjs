@@ -33,5 +33,8 @@ test("prepared name retention is bounded for both many short names and long name
     assert.notEqual(scorer.preparedName(first), prepared);
     const oversized = item("y".repeat(1024 * 1024));
     assert.notEqual(scorer.preparedName(oversized), scorer.preparedName(oversized));
+    prepared = scorer.preparedName(first);
+    scorer.clearPreparedNames();
+    assert.notEqual(scorer.preparedName(first), prepared);
     assert.deepEqual(results(scorer, [first], "first"), [["first", 10000, 0]]);
 });

@@ -22,6 +22,12 @@ const maxPreparedNames = 8192;
 const maxPreparedCharacters = 256 * 1024;
 let preparedCharacters = 0;
 
+function clearPreparedNames() {
+    preparedNames = Object.create(null);
+    preparedNameCount = 0;
+    preparedCharacters = 0;
+}
+
 function preparedName(item) {
     const name = String(item.name || "");
     let prepared = preparedNames[name];
@@ -30,11 +36,8 @@ function preparedName(item) {
     prepared = SearchMatch.prepareText(name);
     if (name.length > maxPreparedCharacters)
         return prepared;
-    if (preparedNameCount >= maxPreparedNames || preparedCharacters + name.length > maxPreparedCharacters) {
-        preparedNames = Object.create(null);
-        preparedNameCount = 0;
-        preparedCharacters = 0;
-    }
+    if (preparedNameCount >= maxPreparedNames || preparedCharacters + name.length > maxPreparedCharacters)
+        clearPreparedNames();
     preparedNames[name] = prepared;
     preparedNameCount++;
     preparedCharacters += name.length;
