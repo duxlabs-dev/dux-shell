@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.Common
+import qs.Modules.DDash
 import "../Common/suncalc.js" as SunCalc
 import "../Common/WeatherData.js" as WeatherData
 
@@ -120,6 +121,15 @@ Singleton {
     onPrimaryProviderChanged: {
         root.cancelFetch();
         root.lastFetchTime = 0;
+        root.forceRefresh();
+    }
+
+    // Only asked for while the dash shows it; turning it on fetches it right away.
+    readonly property bool airQuality: DashRegistry.isSelectable("weather") && WeatherData.wantsAirQuality(SettingsData.dashOptions)
+    onAirQualityChanged: {
+        if (!airQuality)
+            return;
+        root.cancelFetch();
         root.forceRefresh();
     }
 
@@ -749,7 +759,8 @@ Singleton {
         root._weatherRequestId = DMSService.sendRequest("weather.get", {
             "latitude": lat,
             "longitude": lon,
-            "providers": root.enabledProviders
+            "providers": root.enabledProviders,
+            "air_quality": root.airQuality
         }, response => root.receiveWeather(token, response), root._requestTimeout) ?? null;
     }
 
@@ -773,7 +784,9 @@ Singleton {
                 formatTime: root.formatTime,
                 formatDay: root.formatForecastDay,
                 city: root.location?.city || I18n.tr("Unknown"),
-                country: root.location?.country || I18n.tr("Unknown")
+                country: root.location?.country || I18n.tr("Unknown"),
+                latitude: root._weatherCoords?.latitude,
+                longitude: root._weatherCoords?.longitude
             });
         } catch (e) {
             root.handleWeatherFailure(e.message);

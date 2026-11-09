@@ -48,6 +48,24 @@ Item {
             }
         ])]
     readonly property var metricOptions: [DashRegistry.toggle("graphics", I18n.tr("Show graphics", "Dashboard widget option for decorative data graphics"), true), DashRegistry.toneOption()]
+    readonly property var airQualityOptions: [DashRegistry.choice("scale", I18n.tr("Index scale", "weather air quality widget option label for the air quality index scale"), "auto", [
+            {
+                "value": "auto",
+                "text": I18n.tr("Auto")
+            },
+            {
+                "value": "european",
+                "text": I18n.tr("European (EAQI)", "air quality index scale option")
+            },
+            {
+                "value": "us",
+                "text": I18n.tr("US (AQI)", "air quality index scale option")
+            },
+            {
+                "value": "who",
+                "text": I18n.tr("WHO guideline", "air quality scale option, the World Health Organization's PM2.5 guideline")
+            }
+        ])].concat(metricOptions)
 
     implicitWidth: DashMetrics.contentWidthFor(SettingsData.showWeekNumber, DashMetrics.panelColumnsFor(entryId))
     implicitHeight: widgets.implicitHeight
@@ -248,6 +266,19 @@ Item {
                 maxW: 2,
                 maxH: 3,
                 options: root.metricOptions,
+                enabled: false
+            },
+            {
+                id: "airQuality",
+                text: I18n.tr("Air Quality", "weather air quality index metric label"),
+                icon: "aq",
+                component: metric,
+                w: 1,
+                h: 2,
+                minH: 2,
+                maxW: 2,
+                maxH: 3,
+                options: root.airQualityOptions,
                 enabled: false
             }
         ]
