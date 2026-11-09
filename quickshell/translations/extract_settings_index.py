@@ -116,6 +116,7 @@ TAB_INDEX_MAP = {
     "NetworkVpnTab.qml": 41,
     "NetworkCellularTab.qml": 47,
     "NetworkFirewallTab.qml": 71,
+    "NetworkFirewallRuleTab.qml": 72,
     "PrinterTab.qml": 8,
     "LauncherTab.qml": 9,
     "ThemeColorsTab.qml": 10,

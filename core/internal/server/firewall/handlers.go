@@ -16,14 +16,14 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	case "firewall.unlock":
 		respondAction(conn, req, manager.Unlock())
 	case "firewall.addRule":
-		spec := RuleSpec{
-			Kind:   params.StringOpt(req.Params, "kind", ""),
-			Action: params.StringOpt(req.Params, "action", ""),
-			Target: params.StringOpt(req.Params, "target", ""),
-			Proto:  params.StringOpt(req.Params, "proto", ""),
-			Source: params.StringOpt(req.Params, "source", ""),
+		respondAction(conn, req, manager.AddRule(params.StringOpt(req.Params, "zone", ""), ruleSpec(req.Params)))
+	case "firewall.updateRule":
+		id, err := params.StringNonEmpty(req.Params, "id")
+		if err != nil {
+			conn.RespondError(req.ID, err.Error())
+			return
 		}
-		respondAction(conn, req, manager.AddRule(params.StringOpt(req.Params, "zone", ""), spec))
+		respondAction(conn, req, manager.UpdateRule(params.StringOpt(req.Params, "zone", ""), id, ruleSpec(req.Params)))
 	case "firewall.removeRule":
 		id, err := params.StringNonEmpty(req.Params, "id")
 		if err != nil {
@@ -84,6 +84,17 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 		conn.Respond(req.ID, services)
 	default:
 		conn.RespondError(req.ID, fmt.Sprintf("unknown method: %s", req.Method))
+	}
+}
+
+func ruleSpec(p map[string]any) RuleSpec {
+	return RuleSpec{
+		Kind:   params.StringOpt(p, "kind", ""),
+		Action: params.StringOpt(p, "action", ""),
+		Target: params.StringOpt(p, "target", ""),
+		Proto:  params.StringOpt(p, "proto", ""),
+		Source: params.StringOpt(p, "source", ""),
+		Name:   params.StringOpt(p, "name", ""),
 	}
 }
 

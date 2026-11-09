@@ -227,11 +227,9 @@ func (b *firewalldBackend) Snapshot() (State, error) {
 			Rules:      []Rule{},
 		}
 		if authorized {
-			rules, err := b.readZoneRules(name)
-			if err != nil {
+			if err := b.readZone(&zone); err != nil {
 				return state, err
 			}
-			zone.Rules = rules
 		}
 		state.Zones = append(state.Zones, zone)
 	}
@@ -243,17 +241,16 @@ type firewalldPort struct {
 	Proto string
 }
 
-func (b *firewalldBackend) readZoneRules(zone string) ([]Rule, error) {
+func (b *firewalldBackend) readZone(zone *Zone) error {
 	var settings map[string]dbus.Variant
-	if err := b.bus.Call(firewalldPath, firewalldZoneIface+".getZoneSettings2", []any{zone}, &settings); err != nil {
-		return nil, err
+	if err := b.bus.Call(firewalldPath, firewalldZoneIface+".getZoneSettings2", []any{zone.Name}, &settings); err != nil {
+		return err
 	}
-
 	rules := []Rule{}
 	var services []string
 	if value, ok := settings["services"]; ok {
 		if err := value.Store(&services); err != nil {
-			return nil, err
+			return err
 		}
 	}
 	for _, service := range services {
@@ -263,7 +260,7 @@ func (b *firewalldBackend) readZoneRules(zone string) ([]Rule, error) {
 	var ports []firewalldPort
 	if value, ok := settings["ports"]; ok {
 		if err := value.Store(&ports); err != nil {
-			return nil, err
+			return err
 		}
 	}
 	for _, port := range ports {
@@ -273,13 +270,14 @@ func (b *firewalldBackend) readZoneRules(zone string) ([]Rule, error) {
 	var richRules []string
 	if value, ok := settings["rules_str"]; ok {
 		if err := value.Store(&richRules); err != nil {
-			return nil, err
+			return err
 		}
 	}
 	for _, rich := range richRules {
-		rules = append(rules, Rule{ID: KindRaw + ":" + rich, Kind: KindRaw, Raw: rich})
+		rules = append(rules, parseRichRule(rich))
 	}
-	return rules, nil
+	zone.Rules = rules
+	return nil
 }
 
 func (b *firewalldBackend) Unlock() error {
@@ -497,6 +495,9 @@ func (b *firewalldBackend) AddRule(zone string, spec RuleSpec) error {
 	if isManagedZone(zone) {
 		return fmt.Errorf("zone %s is managed by another program", zone)
 	}
+	if spec.Name != "" {
+		return errors.New("firewalld rules have no names")
+	}
 	if err := b.authorizeWrite(); err != nil {
 		return err
 	}
@@ -562,7 +563,14 @@ func (b *firewalldBackend) AddZone(name string) error {
 		return err
 	}
 	if slices.Contains(names, name) {
-		return fmt.Errorf("zone %s already exists", name)
+		var loaded []string
+		if err := b.bus.Call(firewalldPath, firewalldZoneIface+".getZones", nil, &loaded); err != nil {
+			return err
+		}
+		if slices.Contains(loaded, name) {
+			return fmt.Errorf("zone %s already exists", name)
+		}
+		return b.reload()
 	}
 	var path dbus.ObjectPath
 	if err := b.bus.Call(firewalldConfigPath, firewalldConfig+".addZone2", []any{name, map[string]dbus.Variant{}}, &path); err != nil {

@@ -25,6 +25,7 @@ type Rule struct {
 	Target string `json:"target,omitempty"`
 	Proto  string `json:"proto,omitempty"`
 	Source string `json:"source,omitempty"`
+	Name   string `json:"name,omitempty"`
 	Raw    string `json:"raw,omitempty"`
 }
 

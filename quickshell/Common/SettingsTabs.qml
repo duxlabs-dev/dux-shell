@@ -453,6 +453,16 @@ Singleton {
                     "hint": I18n.tr("Status, zones and rules")
                 },
                 {
+                    "id": "network_firewall_rule",
+                    "hidden": true,
+                    "titleFrom": "selectedFirewallRuleTitle",
+                    "text": I18n.tr("Rule"),
+                    "icon": "shield",
+                    "tabIndex": 72,
+                    "firewallOnly": true,
+                    "hint": I18n.tr("Service or port, action and source", "settings hint for the firewall rule editor page")
+                },
+                {
                     "id": "network_status",
                     "advanced": true,
                     "text": I18n.tr("Status"),

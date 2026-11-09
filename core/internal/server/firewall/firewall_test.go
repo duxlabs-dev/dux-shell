@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"testing/synctest"
@@ -21,7 +22,7 @@ import (
 
 func TestRuleSpecValidate(t *testing.T) {
 	valid := []RuleSpec{
-		{Kind: KindService, Action: ActionDeny, Target: "Apache Full", Source: "10.0.0.0/8"},
+		{Kind: KindService, Action: ActionDrop, Target: "Apache Full", Source: "10.0.0.0/8"},
 		{Kind: KindPort, Action: ActionAllow, Target: "6000-6007", Proto: ProtoTCP, Source: "fd00::1"},
 	}
 	for _, spec := range valid {
@@ -38,6 +39,9 @@ func TestRuleSpecValidate(t *testing.T) {
 		{Kind: KindPort, Action: ActionAllow, Target: "22-30", Proto: ProtoBoth},
 		{Kind: KindPort, Action: ActionAllow, Target: "22", Proto: ProtoTCP, Source: `1.2.3.4" drop`},
 		{Kind: KindPort, Action: ActionAllow, Target: "22", Proto: ProtoTCP, Source: "fe80::1%eth0"},
+		{Kind: KindPort, Action: ActionAllow, Target: "22", Proto: ProtoTCP, Name: "it's mine"},
+		{Kind: KindPort, Action: ActionAllow, Target: "22", Proto: ProtoTCP, Name: "two\nlines"},
+		{Kind: KindPort, Action: ActionAllow, Target: "22", Proto: ProtoTCP, Name: strings.Repeat("a", maxRuleNameLength+1)},
 	}
 	for _, spec := range invalid {
 		assert.Error(t, spec.Validate(), "%+v", spec)
@@ -53,7 +57,7 @@ func TestSpecItems(t *testing.T) {
 			[]firewalldItem{{kind: KindService, value: "ssh"}}},
 		{RuleSpec{Kind: KindPort, Action: ActionAllow, Target: "53", Proto: ProtoBoth},
 			[]firewalldItem{{kind: KindPort, value: "53", proto: "tcp"}, {kind: KindPort, value: "53", proto: "udp"}}},
-		{RuleSpec{Kind: KindService, Action: ActionDeny, Target: "ssh"},
+		{RuleSpec{Kind: KindService, Action: ActionDrop, Target: "ssh"},
 			[]firewalldItem{{kind: KindRaw, value: `rule service name="ssh" drop`}}},
 		{RuleSpec{Kind: KindPort, Action: ActionAllow, Target: "80", Proto: ProtoTCP, Source: "10.0.0.0/8"},
 			[]firewalldItem{{kind: KindRaw, value: `rule family="ipv4" source address="10.0.0.0/8" port port="80" protocol="tcp" accept`}}},
@@ -70,12 +74,14 @@ func TestUFWArgs(t *testing.T) {
 		spec RuleSpec
 		want []string
 	}{
-		{RuleSpec{Kind: KindPort, Action: ActionDeny, Target: "53", Proto: ProtoBoth}, []string{"deny", "53"}},
+		{RuleSpec{Kind: KindPort, Action: ActionDrop, Target: "53", Proto: ProtoBoth}, []string{"deny", "53"}},
 		{RuleSpec{Kind: KindPort, Action: ActionAllow, Target: "6000-6007", Proto: ProtoUDP}, []string{"allow", "6000:6007/udp"}},
 		{RuleSpec{Kind: KindPort, Action: ActionAllow, Target: "22", Proto: ProtoTCP, Source: "10.0.0.1"},
 			[]string{"allow", "from", "10.0.0.1", "to", "any", "port", "22", "proto", "tcp"}},
 		{RuleSpec{Kind: KindService, Action: ActionReject, Target: "OpenSSH", Source: "10.0.0.0/8"},
 			[]string{"reject", "from", "10.0.0.0/8", "to", "any", "app", "OpenSSH"}},
+		{RuleSpec{Kind: KindPort, Action: ActionAllow, Target: "22", Proto: ProtoTCP, Name: "my ssh"},
+			[]string{"allow", "22/tcp", "comment", "my ssh"}},
 	}
 	for _, tt := range tests {
 		assert.Equal(t, tt.want, tt.spec.ufwArgs())
@@ -89,6 +95,12 @@ ufw allow 53
 ufw allow OpenSSH
 ufw reject 'Apache Full'
 ufw allow from 10.0.0.0/8 to any port 80 proto tcp
+ufw deny from fd00::/8 to any port 6000:6007
+ufw allow from 192.168.1.0/24 to any app 'Apache Full'
+ufw allow 8080/tcp comment 'web dev'
+ufw allow from 10.0.0.1 to any port 22 proto tcp comment 'jump host'
+ufw allow from bogus to any port 22
+ufw limit 22/tcp comment 'brute force'
 ufw limit 22/tcp
 ufw allow out 443/tcp
 ufw route allow in on eth0 out on eth1
@@ -97,11 +109,17 @@ ufw route allow in on eth0 out on eth1
 func TestParseUFWAdded(t *testing.T) {
 	assert.Equal(t, []Rule{
 		{ID: "allow 22/tcp", Kind: KindPort, Action: "allow", Target: "22", Proto: "tcp"},
-		{ID: "deny 6000:6007/udp", Kind: KindPort, Action: "deny", Target: "6000-6007", Proto: "udp"},
+		{ID: "deny 6000:6007/udp", Kind: KindPort, Action: "drop", Target: "6000-6007", Proto: "udp"},
 		{ID: "allow 53", Kind: KindPort, Action: "allow", Target: "53"},
 		{ID: "allow OpenSSH", Kind: KindService, Action: "allow", Target: "OpenSSH"},
 		{ID: "reject 'Apache Full'", Kind: KindService, Action: "reject", Target: "Apache Full"},
-		{ID: "allow from 10.0.0.0/8 to any port 80 proto tcp", Kind: KindRaw, Raw: "allow from 10.0.0.0/8 to any port 80 proto tcp"},
+		{ID: "allow from 10.0.0.0/8 to any port 80 proto tcp", Kind: KindPort, Action: "allow", Target: "80", Proto: "tcp", Source: "10.0.0.0/8"},
+		{ID: "deny from fd00::/8 to any port 6000:6007", Kind: KindPort, Action: "drop", Target: "6000-6007", Source: "fd00::/8"},
+		{ID: "allow from 192.168.1.0/24 to any app 'Apache Full'", Kind: KindService, Action: "allow", Target: "Apache Full", Source: "192.168.1.0/24"},
+		{ID: "allow 8080/tcp comment 'web dev'", Kind: KindPort, Action: "allow", Target: "8080", Proto: "tcp", Name: "web dev"},
+		{ID: "allow from 10.0.0.1 to any port 22 proto tcp comment 'jump host'", Kind: KindPort, Action: "allow", Target: "22", Proto: "tcp", Source: "10.0.0.1", Name: "jump host"},
+		{ID: "allow from bogus to any port 22", Kind: KindRaw, Raw: "allow from bogus to any port 22"},
+		{ID: "limit 22/tcp comment 'brute force'", Kind: KindRaw, Raw: "limit 22/tcp", Name: "brute force"},
 		{ID: "limit 22/tcp", Kind: KindRaw, Raw: "limit 22/tcp"},
 		{ID: "allow out 443/tcp", Kind: KindRaw, Raw: "allow out 443/tcp"},
 		{ID: "route allow in on eth0 out on eth1", Kind: KindRaw, Raw: "route allow in on eth0 out on eth1"},
@@ -112,7 +130,7 @@ func TestParseUFWAdded(t *testing.T) {
 
 func TestParseUFWFiles(t *testing.T) {
 	assert.Equal(t, []string{"Apache Full", "OpenSSH"}, parseUFWApps("Available applications:\n  Apache Full\n  OpenSSH\n"))
-	assert.Equal(t, &Defaults{Incoming: "deny", Outgoing: "allow"},
+	assert.Equal(t, &Defaults{Incoming: "drop", Outgoing: "allow"},
 		parseUFWDefaults("IPV6=yes\nDEFAULT_INPUT_POLICY=\"DROP\"\nDEFAULT_OUTPUT_POLICY=\"ACCEPT\"\n"))
 	assert.True(t, parseUFWEnabled("# comment\nENABLED=yes\nLOGLEVEL=low\n"))
 	assert.False(t, parseUFWEnabled("ENABLED=no\n"))
@@ -184,6 +202,47 @@ func TestHelperRejectsAnythingUnlisted(t *testing.T) {
 	assert.Equal(t, [][]string{{"--force", "delete", "allow", "22/tcp"}, {"allow", "Apache Full"}}, calls)
 }
 
+func TestHelperUpdateRuleKeepsPosition(t *testing.T) {
+	tests := []struct {
+		name       string
+		id         string
+		params     map[string]any
+		failDelete bool
+		want       [][]string
+	}{
+		{"an action change on a service rewrites it in place", "allow OpenSSH",
+			map[string]any{"kind": "service", "action": "drop", "target": "OpenSSH", "proto": "tcp"}, false,
+			[][]string{{"deny", "OpenSSH"}}},
+		{"a new target is inserted where the old rule was", "allow 53",
+			map[string]any{"kind": "port", "action": "allow", "target": "54", "proto": "udp"}, false,
+			[][]string{{"insert", "3", "allow", "54/udp"}, {"--force", "delete", "allow", "53"}}},
+		{"an IPv6-only rule is outside the IPv4 numbering", "deny from fd00::/8 to any port 6000:6007",
+			map[string]any{"kind": "port", "action": "drop", "target": "6000-6007", "proto": "udp", "source": "fd00::/8"}, false,
+			[][]string{{"deny", "from", "fd00::/8", "to", "any", "port", "6000:6007", "proto", "udp"}, {"--force", "delete", "deny", "from", "fd00::/8", "to", "any", "port", "6000:6007"}}},
+		{"a failed delete takes the new rule out again", "allow 53",
+			map[string]any{"kind": "port", "action": "allow", "target": "54", "proto": "udp", "name": "dns"}, true,
+			[][]string{{"insert", "3", "allow", "54/udp", "comment", "dns"}, {"--force", "delete", "allow", "53"}, {"--force", "delete", "allow", "54/udp"}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var calls [][]string
+			helper := newTestHelper(&calls)
+			run := helper.run
+			helper.run = func(args ...string) (string, error) {
+				out, err := run(args...)
+				if tt.failDelete && fmt.Sprint(args) == "[--force delete allow 53]" {
+					return "", errors.New("boom")
+				}
+				return out, err
+			}
+			tt.params["id"] = tt.id
+			_, err := helper.Call("rule.update", tt.params)
+			assert.Equal(t, tt.failDelete, err != nil, "%v", err)
+			assert.Equal(t, tt.want, calls)
+		})
+	}
+}
+
 type fakeBus struct {
 	running     bool
 	authorized  bool
@@ -192,6 +251,7 @@ type fakeBus struct {
 	calls       []string
 	failOn      map[string]error
 	inUse       string
+	unloaded    []string
 }
 
 func (f *fakeBus) Running() bool { return f.running }
@@ -215,6 +275,9 @@ func (f *fakeBus) Call(path, method string, args []any, ret ...any) error {
 	switch out := ret[0].(type) {
 	case *[]string:
 		*out = []string{"home", "docker"}
+		if method == firewalldConfig+".getZoneNames" {
+			*out = append(*out, f.unloaded...)
+		}
 	case *map[string]map[string][]string:
 		*out = map[string]map[string][]string{"home": {"interfaces": {"eno1"}}}
 		if f.inUse != "" {
@@ -265,8 +328,46 @@ func TestSnapshotReadsRulesWhenAuthorized(t *testing.T) {
 	assert.Equal(t, []Rule{
 		{ID: "service:ssh", Kind: KindService, Action: ActionAllow, Target: "ssh"},
 		{ID: "port:80/tcp", Kind: KindPort, Action: ActionAllow, Target: "80", Proto: "tcp"},
-		{ID: `raw:rule service name="ftp" drop`, Kind: KindRaw, Raw: `rule service name="ftp" drop`},
+		{ID: `raw:rule service name="ftp" drop`, Kind: KindService, Action: ActionDrop, Target: "ftp"},
 	}, state.Zones[0].Rules)
+}
+
+func TestParseRichRule(t *testing.T) {
+	tests := []struct {
+		rich string
+		want Rule
+	}{
+		{`rule family="ipv4" source address="10.0.0.0/8" port port="80" protocol="tcp" accept`,
+			Rule{Kind: KindPort, Action: ActionAllow, Target: "80", Proto: "tcp", Source: "10.0.0.0/8"}},
+		{`rule port port="6000-6007" protocol="udp" reject`,
+			Rule{Kind: KindPort, Action: ActionReject, Target: "6000-6007", Proto: "udp"}},
+		{`rule family="ipv6" source address="fd00::/8" service name="ssh" drop`,
+			Rule{Kind: KindService, Action: ActionDrop, Target: "ssh", Source: "fd00::/8"}},
+		{`rule family="ipv4" source NOT address="10.0.0.0/8" service name="ssh" accept`,
+			Rule{Kind: KindRaw, Raw: `rule family="ipv4" source NOT address="10.0.0.0/8" service name="ssh" accept`}},
+		{`rule priority="-10" service name="ssh" accept`,
+			Rule{Kind: KindRaw, Raw: `rule priority="-10" service name="ssh" accept`}},
+		{`rule service name="ssh" log prefix="ssh" accept`,
+			Rule{Kind: KindRaw, Raw: `rule service name="ssh" log prefix="ssh" accept`}},
+		{`rule family="ipv4" source address="not-an-ip" service name="ssh" accept`,
+			Rule{Kind: KindRaw, Raw: `rule family="ipv4" source address="not-an-ip" service name="ssh" accept`}},
+	}
+	for _, tt := range tests {
+		tt.want.ID = KindRaw + ":" + tt.rich
+		assert.Equal(t, tt.want, parseRichRule(tt.rich), tt.rich)
+	}
+
+	// What AddRule writes must read back as the same rule, or editing it would change it.
+	for _, spec := range []RuleSpec{
+		{Kind: KindPort, Action: ActionDrop, Target: "22", Proto: ProtoTCP, Source: "192.168.1.0/24"},
+		{Kind: KindService, Action: ActionReject, Target: "ssh"},
+	} {
+		item := specItems(spec)[0]
+		rule := parseRichRule(item.value)
+		back, err := rule.spec()
+		require.NoError(t, err)
+		assert.Equal(t, spec, back)
+	}
 }
 
 func TestFirewalldWrites(t *testing.T) {
@@ -718,6 +819,13 @@ func TestZoneManagement(t *testing.T) {
 		require.NoError(t, b.AddZone("lab"))
 		assert.Equal(t, []string{add, reload}, bus.calls[len(bus.calls)-2:])
 	})
+	t.Run("add loads a saved zone that was never loaded", func(t *testing.T) {
+		bus := &fakeBus{running: true, authorized: true, unloaded: []string{"myzone"}}
+		b := &firewalldBackend{bus: bus}
+		require.NoError(t, b.AddZone("myzone"))
+		assert.NotContains(t, bus.calls, add)
+		assert.Equal(t, reload, bus.calls[len(bus.calls)-1])
+	})
 	t.Run("add rejects bad, managed and existing names before writing", func(t *testing.T) {
 		for _, name := range []string{"", "has space", "bad/name", "waytoolongzonenameforfirewalld", "docker", "libvirt-x", "home"} {
 			b, bus := newBackend()
@@ -763,4 +871,61 @@ func TestZoneManagement(t *testing.T) {
 		assert.Error(t, u.RenameZone("lab", "lab2"))
 		assert.Error(t, u.RemoveZone("lab"))
 	})
+}
+
+type ruleBackend struct {
+	fakeBackend
+	rules   []Rule
+	failNew bool
+	calls   []string
+}
+
+func (b *ruleBackend) Snapshot() (State, error) {
+	return State{Backend: BackendUFW, Active: true, Rules: b.rules}, nil
+}
+
+func (b *ruleBackend) RemoveRule(_, id string) error {
+	b.calls = append(b.calls, "remove "+id)
+	return nil
+}
+
+func (b *ruleBackend) AddRule(_ string, spec RuleSpec) error {
+	args := strings.Join(spec.ufwArgs(), " ")
+	b.calls = append(b.calls, "add "+args)
+	if b.failNew && spec.Target != "53" {
+		return errors.New("rejected")
+	}
+	return nil
+}
+
+func TestUpdateRule(t *testing.T) {
+	rules := []Rule{
+		{ID: "allow 53 comment 'dns'", Kind: KindPort, Action: ActionAllow, Target: "53", Name: "dns"},
+		{ID: "limit 22/tcp", Kind: KindRaw, Raw: "limit 22/tcp"},
+	}
+	edited := RuleSpec{Kind: KindPort, Action: ActionDrop, Target: "54", Proto: ProtoUDP}
+
+	tests := []struct {
+		name    string
+		id      string
+		spec    RuleSpec
+		failNew bool
+		wantErr bool
+		want    []string
+	}{
+		{"replaces the rule", rules[0].ID, edited, false, false,
+			[]string{"remove allow 53 comment 'dns'", "add deny 54/udp"}},
+		{"restores the old rule when the new one fails", rules[0].ID, edited, true, true,
+			[]string{"remove allow 53 comment 'dns'", "add deny 54/udp", "add allow 53 comment dns"}},
+		{"leaves raw rules alone", rules[1].ID, edited, false, true, nil},
+		{"leaves unknown rules alone", "allow 9/tcp", edited, false, true, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			backend := &ruleBackend{fakeBackend: fakeBackend{name: BackendUFW, running: true}, rules: rules, failNew: tt.failNew}
+			err := newManager(nil, backend).UpdateRule("", tt.id, tt.spec)
+			assert.Equal(t, tt.wantErr, err != nil, "%v", err)
+			assert.Equal(t, tt.want, backend.calls)
+		})
+	}
 }

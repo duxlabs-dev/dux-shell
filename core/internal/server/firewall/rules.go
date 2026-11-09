@@ -11,7 +11,7 @@ import (
 
 const (
 	ActionAllow  = "allow"
-	ActionDeny   = "deny"
+	ActionDrop   = "drop"
 	ActionReject = "reject"
 
 	KindService = "service"
@@ -23,7 +23,13 @@ const (
 	ProtoBoth = "both"
 )
 
-var serviceNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 _.+-]*$`)
+var (
+	serviceNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 _.+-]*$`)
+	// Only the shapes richRule writes. Anything else firewalld holds stays raw.
+	richRulePattern = regexp.MustCompile(`^rule(?: family="ipv[46]" source address="([^"]+)")? (?:service name="([^"]+)"|port port="([0-9]+(?:-[0-9]+)?)" protocol="(tcp|udp)") (accept|drop|reject)$`)
+)
+
+const maxRuleNameLength = 64
 
 type RuleSpec struct {
 	Kind   string
@@ -31,12 +37,13 @@ type RuleSpec struct {
 	Target string
 	Proto  string
 	Source string
+	Name   string
 }
 
 // Rules must follow spec before reaching firewalld/ufw
 func (s RuleSpec) Validate() error {
 	switch s.Action {
-	case ActionAllow, ActionDeny, ActionReject:
+	case ActionAllow, ActionDrop, ActionReject:
 	default:
 		return fmt.Errorf("invalid action: %q", s.Action)
 	}
@@ -62,6 +69,9 @@ func (s RuleSpec) Validate() error {
 		return fmt.Errorf("invalid rule kind: %q", s.Kind)
 	}
 
+	if err := validateRuleName(s.Name); err != nil {
+		return err
+	}
 	if s.Source == "" {
 		return nil
 	}
@@ -69,6 +79,71 @@ func (s RuleSpec) Validate() error {
 		return fmt.Errorf("invalid source: %q", s.Source)
 	}
 	return nil
+}
+
+func validateRuleName(name string) error {
+	if len(name) > maxRuleNameLength {
+		return fmt.Errorf("rule name is longer than %d characters", maxRuleNameLength)
+	}
+	for _, r := range name {
+		if r == '\'' || r < ' ' || r == 0x7f {
+			return fmt.Errorf("invalid character %q in rule name", r)
+		}
+	}
+	return nil
+}
+
+// spec rebuilds what created the rule, so an edit can put it back when the new one fails.
+func (r Rule) spec() (RuleSpec, error) {
+	if r.Kind != KindService && r.Kind != KindPort {
+		return RuleSpec{}, errors.New("this rule can only be removed")
+	}
+	spec := RuleSpec{Kind: r.Kind, Action: r.Action, Target: r.Target, Proto: r.Proto, Source: r.Source, Name: r.Name}
+	if spec.Kind == KindPort && spec.Proto == "" {
+		spec.Proto = ProtoBoth
+	}
+	return spec, nil
+}
+
+func (s RuleSpec) sameMatch(other RuleSpec) bool {
+	proto := func(spec RuleSpec) string {
+		if spec.Kind == KindService {
+			return ""
+		}
+		if spec.Proto == "" {
+			return ProtoBoth
+		}
+		return spec.Proto
+	}
+	return s.Kind == other.Kind && s.Target == other.Target && s.Source == other.Source && proto(s) == proto(other)
+}
+
+func parseRichRule(rich string) Rule {
+	rule := Rule{ID: KindRaw + ":" + rich, Kind: KindRaw, Raw: rich}
+	m := richRulePattern.FindStringSubmatch(rich)
+	if m == nil {
+		return rule
+	}
+	if m[1] != "" {
+		if _, err := parseSource(m[1]); err != nil {
+			return rule
+		}
+	}
+	rule.Raw, rule.Source = "", m[1]
+	switch m[5] {
+	case "drop":
+		rule.Action = ActionDrop
+	case "reject":
+		rule.Action = ActionReject
+	default:
+		rule.Action = ActionAllow
+	}
+	if m[2] != "" {
+		rule.Kind, rule.Target = KindService, m[2]
+		return rule
+	}
+	rule.Kind, rule.Target, rule.Proto = KindPort, m[3], m[4]
+	return rule
 }
 
 func validatePort(port string) error {
@@ -142,7 +217,7 @@ func (s RuleSpec) richRule(proto string) string {
 		parts = append(parts, fmt.Sprintf(`port port="%s" protocol="%s"`, s.Target, proto))
 	}
 	switch s.Action {
-	case ActionDeny:
+	case ActionDrop:
 		parts = append(parts, "drop")
 	case ActionReject:
 		parts = append(parts, "reject")
@@ -153,16 +228,40 @@ func (s RuleSpec) richRule(proto string) string {
 }
 
 func (s RuleSpec) ufwArgs() []string {
+	args := s.ufwRuleArgs()
+	if s.Name != "" {
+		args = append(args, "comment", s.Name)
+	}
+	return args
+}
+
+func ufwAction(verb string) string {
+	if verb == "deny" {
+		return ActionDrop
+	}
+	return verb
+}
+
+// ufw has no "drop" verb; its equivalent is "deny".
+func ufwVerb(action string) string {
+	if action == ActionDrop {
+		return "deny"
+	}
+	return action
+}
+
+func (s RuleSpec) ufwRuleArgs() []string {
+	verb := ufwVerb(s.Action)
 	if s.Kind == KindService {
 		if s.Source == "" {
-			return []string{s.Action, s.Target}
+			return []string{verb, s.Target}
 		}
-		return []string{s.Action, "from", s.Source, "to", "any", "app", s.Target}
+		return []string{verb, "from", s.Source, "to", "any", "app", s.Target}
 	}
 
 	port := strings.ReplaceAll(s.Target, "-", ":")
 	if s.Source != "" {
-		args := []string{s.Action, "from", s.Source, "to", "any", "port", port}
+		args := []string{verb, "from", s.Source, "to", "any", "port", port}
 		if s.Proto != ProtoBoth {
 			args = append(args, "proto", s.Proto)
 		}
@@ -171,5 +270,5 @@ func (s RuleSpec) ufwArgs() []string {
 	if s.Proto != ProtoBoth {
 		port += "/" + s.Proto
 	}
-	return []string{s.Action, port}
+	return []string{verb, port}
 }

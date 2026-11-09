@@ -2,6 +2,7 @@ package firewall
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"slices"
 	"sync"
@@ -186,6 +187,53 @@ func (m *Manager) AddRule(zone string, spec RuleSpec) error {
 		return err
 	}
 	return m.write(func(b Backend) error { return b.AddRule(zone, spec) })
+}
+
+type ruleUpdater interface {
+	UpdateRule(zone, id string, spec RuleSpec) error
+}
+
+func (m *Manager) UpdateRule(zone, id string, spec RuleSpec) error {
+	if err := spec.Validate(); err != nil {
+		return err
+	}
+	return m.write(func(b Backend) error {
+		if updater, ok := b.(ruleUpdater); ok {
+			return updater.UpdateRule(zone, id, spec)
+		}
+		old, err := m.findRule(zone, id)
+		if err != nil {
+			return err
+		}
+		if err := b.RemoveRule(zone, id); err != nil {
+			return err
+		}
+		err = b.AddRule(zone, spec)
+		if err == nil {
+			return nil
+		}
+		if restoreErr := b.AddRule(zone, old); restoreErr != nil {
+			return fmt.Errorf("%w, and the old rule could not be restored: %v", err, restoreErr)
+		}
+		return err
+	})
+}
+
+func (m *Manager) findRule(zone, id string) (RuleSpec, error) {
+	state := m.GetState()
+	rules := state.Rules
+	if state.Backend == BackendFirewalld {
+		index := slices.IndexFunc(state.Zones, func(z Zone) bool { return z.Name == zone })
+		if index < 0 {
+			return RuleSpec{}, fmt.Errorf("no zone %s", zone)
+		}
+		rules = state.Zones[index].Rules
+	}
+	index := slices.IndexFunc(rules, func(r Rule) bool { return r.ID == id })
+	if index < 0 {
+		return RuleSpec{}, errors.New("no such rule")
+	}
+	return rules[index].spec()
 }
 
 func (m *Manager) RemoveRule(zone, id string) error {

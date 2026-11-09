@@ -23,8 +23,10 @@ const (
 )
 
 var (
-	simpleUFWRule = regexp.MustCompile(`^(allow|deny|reject) ([0-9]+(?::[0-9]+)?)(?:/(tcp|udp))?$`)
-	appUFWRule    = regexp.MustCompile(`^(allow|deny|reject) ('[^']+'|[A-Za-z][A-Za-z0-9_.+-]*)$`)
+	simpleUFWRule  = regexp.MustCompile(`^(allow|deny|reject) ([0-9]+(?::[0-9]+)?)(?:/(tcp|udp))?$`)
+	appUFWRule     = regexp.MustCompile(`^(allow|deny|reject) ('[^']+'|[A-Za-z][A-Za-z0-9_.+-]*)$`)
+	sourceUFWRule  = regexp.MustCompile(`^(allow|deny|reject) from (\S+) to any (?:port ([0-9]+(?::[0-9]+)?)(?: proto (tcp|udp))?|app ('[^']+'|[A-Za-z][A-Za-z0-9_.+-]*))$`)
+	commentUFWRule = regexp.MustCompile(`^(.*) comment '([^']*)'$`)
 )
 
 type ufwHelper interface {
@@ -195,10 +197,20 @@ func (b *ufwBackend) Unlock() error {
 	return nil
 }
 
+func ufwSpecParams(spec RuleSpec) map[string]any {
+	return map[string]any{
+		"kind": spec.Kind, "action": spec.Action, "target": spec.Target, "proto": spec.Proto, "source": spec.Source, "name": spec.Name,
+	}
+}
+
 func (b *ufwBackend) AddRule(_ string, spec RuleSpec) error {
-	return b.call("rule.add", map[string]any{
-		"kind": spec.Kind, "action": spec.Action, "target": spec.Target, "proto": spec.Proto, "source": spec.Source,
-	}, nil)
+	return b.call("rule.add", ufwSpecParams(spec), nil)
+}
+
+func (b *ufwBackend) UpdateRule(_, id string, spec RuleSpec) error {
+	params := ufwSpecParams(spec)
+	params["id"] = id
+	return b.call("rule.update", params, nil)
 }
 
 func (b *ufwBackend) RemoveRule(_, id string) error {
@@ -309,13 +321,33 @@ func parseUFWAdded(output string) []Rule {
 }
 
 func parseUFWRule(spec string) Rule {
-	if m := simpleUFWRule.FindStringSubmatch(spec); m != nil {
-		return Rule{ID: spec, Kind: KindPort, Action: m[1], Target: strings.ReplaceAll(m[2], ":", "-"), Proto: m[3]}
+	body, name := spec, ""
+	if m := commentUFWRule.FindStringSubmatch(spec); m != nil {
+		body, name = m[1], m[2]
 	}
-	if m := appUFWRule.FindStringSubmatch(spec); m != nil {
-		return Rule{ID: spec, Kind: KindService, Action: m[1], Target: strings.Trim(m[2], "'")}
+	rule := Rule{ID: spec, Kind: KindRaw, Raw: body, Name: name}
+	if m := simpleUFWRule.FindStringSubmatch(body); m != nil {
+		rule.Kind, rule.Raw, rule.Action, rule.Target, rule.Proto = KindPort, "", ufwAction(m[1]), strings.ReplaceAll(m[2], ":", "-"), m[3]
+		return rule
 	}
-	return Rule{ID: spec, Kind: KindRaw, Raw: spec}
+	if m := appUFWRule.FindStringSubmatch(body); m != nil {
+		rule.Kind, rule.Raw, rule.Action, rule.Target = KindService, "", ufwAction(m[1]), strings.Trim(m[2], "'")
+		return rule
+	}
+	m := sourceUFWRule.FindStringSubmatch(body)
+	if m == nil {
+		return rule
+	}
+	if _, err := parseSource(m[2]); err != nil {
+		return rule
+	}
+	rule.Raw, rule.Action, rule.Source = "", ufwAction(m[1]), m[2]
+	if m[5] != "" {
+		rule.Kind, rule.Target = KindService, strings.Trim(m[5], "'")
+		return rule
+	}
+	rule.Kind, rule.Target, rule.Proto = KindPort, strings.ReplaceAll(m[3], ":", "-"), m[4]
+	return rule
 }
 
 func parseUFWApps(output string) []string {
@@ -356,7 +388,7 @@ func ufwPolicyName(value string) string {
 	case "REJECT":
 		return ActionReject
 	case "DROP":
-		return ActionDeny
+		return ActionDrop
 	}
 	return ""
 }

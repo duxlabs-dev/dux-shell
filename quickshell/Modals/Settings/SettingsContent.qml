@@ -208,6 +208,11 @@ FocusScope {
             properties.parentModal = Qt.binding(() => root.parentModal);
             properties.addon = sub ? SettingsUiState.selectedFcitx5SubAddon : SettingsUiState.selectedFcitx5Addon;
         }
+        if (page === "network_firewall_rule") {
+            properties.parentModal = Qt.binding(() => root.parentModal);
+            properties.zone = SettingsUiState.selectedFirewallZone;
+            properties.ruleId = SettingsUiState.selectedFirewallRuleId;
+        }
         if (page === "keybinds")
             properties.requestedSearchQuery = Qt.binding(() => root.parentModal?.keybindSearchQuery ?? "");
         return properties;
@@ -528,6 +533,7 @@ FocusScope {
             "network_vpn": "NetworkVpnTab.qml",
             "network_cellular": "NetworkCellularTab.qml",
             "network_firewall": "NetworkFirewallTab.qml",
+            "network_firewall_rule": "NetworkFirewallRuleTab.qml",
             "printers": "PrinterTab.qml",
             "launcher": "LauncherTab.qml",
             "theme": "ThemeColorsTab.qml",
@@ -567,7 +573,7 @@ FocusScope {
             "plugins_manage": "PluginsManageTab.qml"
         })
 
-    readonly property var pagesWithParentModal: ["dankbar_widgets", "window_rules", "notification_rules", "display_config", "users", "time_weather", "weather", "lock_screen", "greeter", "dank_dash", "wallpaper_cycling", "theme_schedule", "surface_shadows", "keybinds", "dankbar_settings", "dankbar_appearance", "bar_widget", "dock_general", "dock_widgets", "dock_appearance", "dock_advanced", "fcitx5", "launcher", "theme", "theme_apps", "media_player", "desktop_widgets", "desktop_widget", "autostart", "compositor_layout", "updater", "display_gamma", "about"]
+    readonly property var pagesWithParentModal: ["dankbar_widgets", "window_rules", "notification_rules", "display_config", "users", "time_weather", "weather", "lock_screen", "greeter", "dank_dash", "wallpaper_cycling", "theme_schedule", "surface_shadows", "keybinds", "dankbar_settings", "dankbar_appearance", "bar_widget", "dock_general", "dock_widgets", "dock_appearance", "dock_advanced", "fcitx5", "launcher", "theme", "theme_apps", "media_player", "desktop_widgets", "desktop_widget", "autostart", "compositor_layout", "updater", "display_gamma", "about", "network_firewall"]
 
     // The page scroller stops at the Loader edges; wheel over the header and gutters lands here instead
     WheelHandler {

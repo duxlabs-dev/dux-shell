@@ -10,132 +10,188 @@ import qs.DCommon.Widgets
 Item {
     id: root
 
+    property var parentModal: null
+
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
-    readonly property bool isFirewalld: FirewallService.backend === "firewalld"
+    readonly property bool isFirewalld: FirewallService.isFirewalld
     readonly property bool canUnlock: FirewallService.locked && (!isFirewalld || FirewallService.active)
     readonly property bool showRules: !FirewallService.locked && (!isFirewalld || FirewallService.active) && FirewallService.stateError === ""
+    readonly property bool showZones: isFirewalld && showRules
+    readonly property color statusColor: {
+        if (FirewallService.stateError !== "" || FirewallService.conflict || (FirewallService.active && FirewallService.locked && !isFirewalld))
+            return Theme.warning;
+        return FirewallService.active ? Theme.success : Theme.error;
+    }
 
-    property string selectedZoneName: ""
+    readonly property string selectedZoneName: SettingsUiState.selectedFirewallZone
+    readonly property string internetInterface: {
+        switch (NetworkService.networkStatus) {
+        case "ethernet":
+            return NetworkService.ethernetInterface;
+        case "wifi":
+            return NetworkService.wifiInterface;
+        case "cellular":
+            return NetworkService.cellularInterface;
+        }
+        return "";
+    }
+    readonly property string internetZone: FirewallService.zones.find(z => z.interfaces.includes(internetInterface))?.name ?? FirewallService.defaultZone
+    readonly property string zoneName: FirewallService.zones.some(z => z.name === selectedZoneName) ? selectedZoneName : internetZone
     property bool showAllZones: false
-    property bool adding: false
-    property var services: []
-    readonly property var serviceNames: services.map(s => s.name)
-    readonly property var serviceLabels: services.map(s => portsSuffix(s.name, s.name))
-
-    readonly property var networks: {
+    // Only unused zones firewalld ships with are hidden, custom zones and the default zone always show.
+    readonly property var listedZones: FirewallService.zones.filter(z => showAllZones || z.interfaces.length > 0 || (!z.builtin && !z.readOnly) || z.name === zoneName || z.name === FirewallService.defaultZone).sort((a, b) => isCustomZone(a) - isCustomZone(b) || a.name.localeCompare(b.name))
+    readonly property var movableInterfaces: {
         const list = [];
         for (const z of FirewallService.zones) {
-            if (z.readOnly)
+            if (z.readOnly || z.name === zoneName)
                 continue;
             for (const name of z.interfaces)
-                list.push({
-                    "name": name,
-                    "zone": z.name
-                });
+                list.push(name);
         }
-        return list.sort((a, b) => a.name.localeCompare(b.name));
+        return list;
     }
-    readonly property var selectableZones: FirewallService.zones.filter(z => isSelectable(z))
-    readonly property var assignableZones: selectableZones.filter(z => !z.readOnly).map(z => z.name)
-    readonly property var defaultZoneChoices: selectableZones.filter(z => !z.readOnly || z.name === FirewallService.defaultZone).map(z => z.name)
-    readonly property string zoneName: selectedZoneName !== "" ? selectedZoneName : (networks[0]?.zone ?? FirewallService.defaultZone)
     readonly property var zone: FirewallService.zones.find(z => z.name === zoneName) ?? null
-    readonly property var zoneChoices: selectableZones.filter(z => showAllZones || z.active || z.name === FirewallService.defaultZone || z.name === zoneName).map(z => z.name)
     readonly property var visibleRules: isFirewalld ? (zone?.rules ?? []) : FirewallService.rules
     readonly property bool readOnly: zone?.readOnly ?? false
+    readonly property var assignableZones: FirewallService.zones.filter(z => !z.readOnly).map(z => z.name)
 
     onShowRulesChanged: {
-        if (showRules && isFirewalld && services.length === 0)
-            loadServices();
+        if (showRules && isFirewalld)
+            FirewallService.loadServices();
     }
 
     Component.onCompleted: {
         FirewallService.refCount++;
         if (showRules && isFirewalld)
-            loadServices();
+            FirewallService.loadServices();
     }
     Component.onDestruction: FirewallService.refCount--
 
     property var confirm: ConfirmModal {}
 
-    function isSelectable(z) {
-        // external and dmz zones are only relevant on servers and routers
-        if (z.name !== "external" && z.name !== "dmz")
-            return true;
-        return z.active || z.name === FirewallService.defaultZone || z.name === selectedZoneName;
+    function isCustomZone(z) {
+        return !!z && !z.builtin && !z.readOnly;
     }
 
-    function zoneChoiceLabel(name) {
-        const interfaces = FirewallService.zones.find(z => z.name === name)?.interfaces ?? [];
-        if (interfaces.length === 0)
-            return name;
-        if (interfaces.length > 3)
-            return name + " (" + I18n.tr("%1 and %2 more", "%1 is a list of network interfaces, %2 is the number of interfaces that dont fit (e.g. and 12 more)").arg(interfaces.slice(0, 3).join(", ")).arg(interfaces.length - 3) + ")";
-        return name + " (" + interfaces.join(", ") + ")";
+    // Mirrors the backend checks, so the controls only enable where the change can succeed.
+    function canChangeZone(z) {
+        return isCustomZone(z) && z.name !== FirewallService.defaultZone && z.interfaces.length === 0;
     }
 
-    function portsSuffix(name, label) {
-        const ports = services.find(s => s.name === name)?.ports ?? [];
-        return ports.length > 0 ? label + " (" + ports.join(", ") + ")" : label;
+    function zoneSummary(z) {
+        const parts = [];
+        if (z.name === FirewallService.defaultZone)
+            parts.push(I18n.tr("Default"));
+        const count = z.interfaces.length;
+        if (count > 0)
+            parts.push(count === 1 ? I18n.tr("%1 interface", "singular, firewall zone summary, %1 is 1").arg(count) : I18n.tr("%1 interfaces", "plural, firewall zone summary, %1 is a count").arg(count));
+        return parts.join(" • ");
     }
 
-    function ruleTitle(rule) {
-        if (rule.kind === "raw")
-            return rule.raw;
-        if (rule.kind === "port" && rule.proto)
-            return rule.target + "/" + rule.proto;
-        if (rule.kind === "service")
-            return portsSuffix(rule.target, rule.target);
-        return rule.target;
-    }
-
-    function actionLabel(action) {
-        switch (action) {
+    function actionIcon(rule) {
+        switch (rule.action) {
         case "allow":
-            return I18n.tr("Allow", "firewall rule action");
-        case "deny":
-            return I18n.tr("Deny", "firewall rule action");
+            return "check";
+        case "drop":
+            return "block";
         case "reject":
-            return I18n.tr("Reject", "firewall rule action");
+            return "close";
         }
-        return "";
+        return "code";
+    }
+
+    function actionColor(rule) {
+        switch (rule.action) {
+        case "allow":
+            return Theme.success;
+        case "drop":
+            return Theme.warning;
+        case "reject":
+            return Theme.error;
+        }
+        return Theme.surfaceVariantText;
     }
 
     function restoreDropdowns() {
         incomingRow.resync();
         outgoingRow.resync();
-        defaultZoneRow.resync();
-        // Looked up here because a state update can replace the delegates at any time.
-        for (let i = 0; i < networkRepeater.count; i++)
-            networkRepeater.itemAt(i)?.resync();
     }
 
     function restoreIfFailed(response) {
-        if (response.error || response.result?.success === false)
+        if (!FirewallService.succeeded(response))
             restoreDropdowns();
     }
 
-    function confirmDefaults(message, params) {
+    function confirmDefaults(message, params, onCancel) {
         confirm.showWithOptions({
             title: I18n.tr("Change firewall default?", "confirm dialog title"),
             message: message,
             confirmText: I18n.tr("Confirm"),
             danger: true,
             onConfirm: () => FirewallService.setDefaults(params, root.restoreIfFailed),
-            onCancel: root.restoreDropdowns
+            onCancel: onCancel
         });
     }
 
-    function loadServices() {
-        FirewallService.listServices(list => root.services = list);
+    function moveInterface(iface, zone) {
+        if (zone !== "trusted") {
+            FirewallService.setInterfaceZone(iface, zone);
+            return;
+        }
+        confirm.showWithOptions({
+            title: I18n.tr("Trust this network?", "confirm dialog title"),
+            message: I18n.tr("Everything on \"%1\" will be able to reach this computer.", "%1 is a network interface name").arg(FirewallService.interfaceTitle(iface)),
+            confirmText: I18n.tr("Confirm"),
+            danger: true,
+            onConfirm: () => FirewallService.setInterfaceZone(iface, zone)
+        });
     }
 
-    function startAdding() {
-        adding = true;
-        if (services.length === 0)
-            loadServices();
+    function saveZoneName(name) {
+        const previous = zoneDialog.renaming;
+        zoneDialog.hide();
+        // The polkit prompt can outlast the page, so the answer lands in shared state.
+        const done = response => {
+            if (FirewallService.succeeded(response))
+                SettingsUiState.selectedFirewallZone = name;
+        };
+        if (previous)
+            FirewallService.renameZone(previous, name, done);
+        else
+            FirewallService.addZone(name, done);
+    }
+
+    function openRule(rule, keyboard) {
+        SettingsUiState.selectedFirewallZone = zoneName;
+        SettingsUiState.selectedFirewallRuleId = rule?.id ?? "";
+        SettingsUiState.selectedFirewallRuleTitle = rule ? FirewallService.ruleTitle(rule) : I18n.tr("Add rule", "firewall rule add button");
+        parentModal?.navigateTo("network_firewall_rule", keyboard);
+    }
+
+    SettingsRenameDialog {
+        id: zoneDialog
+
+        property string renaming: ""
+
+        parent: root.parentModal?.modalFocusScope ?? root
+        title: renaming ? I18n.tr("Rename") : I18n.tr("Add zone", "firewalld dialog title")
+        supportingText: I18n.tr("Up to 17 letters, digits, dashes or underscores", "firewalld zone name rules")
+        onAccepted: name => root.saveZoneName(name)
+    }
+
+    SettingsRenameDialog {
+        id: interfaceDialog
+
+        property string iface: ""
+
+        parent: root.parentModal?.modalFocusScope ?? root
+        supportingText: iface
+        onAccepted: name => {
+            FirewallService.setInterfaceLabel(iface, name);
+            hide();
+        }
     }
 
     SettingsPage {
@@ -145,15 +201,25 @@ Item {
             tags: ["firewall", "firewalld", "ufw", "network", "security", "ports", "rules", "zone"]
 
             SettingsRow {
-                iconName: "shield"
-                title: FirewallService.backend
-                subtitle: {
-                    if (FirewallService.active && FirewallService.locked && !root.isFirewalld)
-                        return I18n.tr("Enabled, unlock to confirm it is running", "firewall status");
-                    if (FirewallService.active)
-                        return I18n.tr("Active", "firewall status");
-                    return root.isFirewalld ? I18n.tr("Not running", "firewall status") : I18n.tr("Inactive", "firewall status");
+                iconName: FirewallService.active ? "shield" : "remove_moderator"
+                iconBox: true
+                iconColor: root.statusColor
+                title: I18n.tr("Firewall")
+                subtitle: FirewallService.active ? I18n.tr("%1 is active", "firewall status, %1 is the backend name").arg(FirewallService.backend) : I18n.tr("%1 is inactive", "firewall status, %1 is the backend name").arg(FirewallService.backend)
+
+                Rectangle {
+                    width: Theme.iconSizeSmall / 2
+                    height: width
+                    radius: width / 2
+                    color: root.statusColor
                 }
+            }
+
+            SettingsRow {
+                visible: root.canUnlock || root.showRules
+                iconName: FirewallService.locked ? "lock" : "lock_open"
+                title: FirewallService.locked ? I18n.tr("Rules are locked", "firewall status, a password is needed to see rules") : I18n.tr("Rules are unlocked", "firewall status, rules can be changed")
+                subtitle: root.canUnlock ? I18n.tr("Unlock to view and change rules.", "firewall info message") : ""
 
                 DButton {
                     visible: root.canUnlock
@@ -190,14 +256,6 @@ Item {
                 visible: FirewallService.warnings.includes("dockerBypass")
                 text: I18n.tr("Docker is present. Ports published by containers bypass ufw rules.", "firewall info message")
             }
-
-            SettingsNoteRow {
-                visible: root.canUnlock
-                noteIconName: "lock"
-                tint: Theme.surfaceVariantText
-                tintBackground: SettingsMetrics.controlSurface
-                text: I18n.tr("Unlock to view and change rules.", "firewall info message")
-            }
         }
 
         SettingsCard {
@@ -206,10 +264,9 @@ Item {
 
             SettingsDropdownRow {
                 id: incomingRow
-                visible: FirewallService.defaults !== null
                 text: I18n.tr("Incoming traffic", "firewall tab, incoming traffic coming into the local network")
-                options: [root.actionLabel("allow"), root.actionLabel("deny"), root.actionLabel("reject")]
-                optionValues: ["allow", "deny", "reject"]
+                options: [FirewallService.actionLabel("allow"), FirewallService.actionLabel("drop"), FirewallService.actionLabel("reject")]
+                optionValues: ["allow", "drop", "reject"]
                 enabled: !FirewallService.busy && !FirewallService.locked
                 currentValue: FirewallService.defaults?.incoming ?? ""
                 onValueChanged: value => {
@@ -217,16 +274,15 @@ Item {
                         return;
                     root.confirmDefaults(I18n.tr("Apply this to all incoming traffic that no rule matches?"), {
                         "incoming": value
-                    });
+                    }, root.restoreDropdowns);
                 }
             }
 
             SettingsDropdownRow {
                 id: outgoingRow
-                visible: FirewallService.defaults !== null
                 text: I18n.tr("Outgoing traffic", "firewall tab, traffic going out from the pc to the internet")
-                options: [root.actionLabel("allow"), root.actionLabel("deny"), root.actionLabel("reject")]
-                optionValues: ["allow", "deny", "reject"]
+                options: [FirewallService.actionLabel("allow"), FirewallService.actionLabel("drop"), FirewallService.actionLabel("reject")]
+                optionValues: ["allow", "drop", "reject"]
                 enabled: !FirewallService.busy && !FirewallService.locked
                 currentValue: FirewallService.defaults?.outgoing ?? ""
                 onValueChanged: value => {
@@ -234,175 +290,163 @@ Item {
                         return;
                     root.confirmDefaults(I18n.tr("Apply this to all outgoing traffic that no rule matches?"), {
                         "outgoing": value
-                    });
+                    }, root.restoreDropdowns);
                 }
             }
         }
 
         SettingsCard {
-            title: I18n.tr("Networks", "firewalld network interfaces section")
-            visible: root.isFirewalld && FirewallService.active && root.networks.length > 0
+            title: I18n.tr("Zones", "firewalld zones section")
+            visible: root.showZones
+            headerActions: DButton {
+                text: I18n.tr("Add")
+                iconName: "add"
+                buttonHeight: Theme.buttonHeightXS
+                enabled: !FirewallService.busy
+                onClicked: {
+                    zoneDialog.renaming = "";
+                    zoneDialog.show("");
+                }
+            }
 
             Repeater {
-                id: networkRepeater
-                model: root.networks
+                model: root.listedZones
 
-                SettingsDropdownRow {
+                delegate: SettingsInstanceRow {
                     required property var modelData
 
-                    text: modelData.name
-                    enabled: !FirewallService.busy && !FirewallService.locked
-                    options: root.assignableZones
-                    optionValues: root.assignableZones
-                    currentValue: modelData.zone
-                    onValueChanged: value => {
-                        if (value === modelData.zone)
-                            return;
-                        const iface = modelData.name;
-                        if (value !== "trusted") {
-                            FirewallService.setInterfaceZone(iface, value, root.restoreIfFailed);
-                            return;
-                        }
-                        root.confirm.showWithOptions({
-                            title: I18n.tr("Trust this network?", "confirm dialog title"),
-                            message: I18n.tr("Everything on \"%1\" will be able to reach this computer.", "%1 is a network interface name").arg(iface),
-                            confirmText: I18n.tr("Confirm"),
-                            danger: true,
-                            onConfirm: () => FirewallService.setInterfaceZone(iface, value, root.restoreIfFailed),
-                            onCancel: root.restoreDropdowns
-                        });
+                    title: modelData.name
+                    summary: root.zoneSummary(modelData)
+                    selected: root.zoneName === modelData.name
+                    toggleVisible: false
+                    deletable: root.isCustomZone(modelData)
+                    deleteEnabled: root.canChangeZone(modelData) && !FirewallService.busy
+                    onClicked: SettingsUiState.selectedFirewallZone = modelData.name
+                    onDeleteRequested: FirewallService.removeZone(modelData.name)
+                    renameVisible: root.isCustomZone(modelData)
+                    renameEnabled: root.canChangeZone(modelData) && !FirewallService.busy
+                    onRenameRequested: {
+                        zoneDialog.renaming = modelData.name;
+                        zoneDialog.show(modelData.name);
                     }
+                    defaultVisible: !modelData.readOnly
+                    defaultEnabled: modelData.name !== FirewallService.defaultZone && !FirewallService.busy
+                    onDefaultRequested: root.confirmDefaults(I18n.tr("Interfaces without their own zone will move to \"%1\".", "%1 is a firewall zone name").arg(modelData.name), {
+                        "zone": modelData.name
+                    })
                 }
+            }
+
+            SettingsToggleRow {
+                text: I18n.tr("Show all zones", "firewall tab visibility setting")
+                description: I18n.tr("Also list zones no interface uses", "firewall tab visibility setting")
+                checked: root.showAllZones
+                onToggled: value => root.showAllZones = value
             }
         }
 
-
         SettingsCard {
-            id: addCard
-            title: I18n.tr("Add rule")
-            visible: root.adding && root.showRules && !root.readOnly
+            title: I18n.tr("Interfaces", "firewalld network interfaces section")
+            visible: root.showZones && root.zone !== null
+            headerActions: DButton {
+                id: moveHereHeaderButton
+                visible: !root.readOnly && root.movableInterfaces.length > 0 && (root.zone?.interfaces.length ?? 0) > 0
+                enabled: !FirewallService.busy
+                text: I18n.tr("Move here", "firewalld button on a zone that already has interfaces")
+                iconName: "swap_horiz"
+                buttonHeight: Theme.buttonHeightXS
+                onClicked: moveHereHeaderMenu.openDropdownMenu()
 
-            property bool isService: true
-            property string service: ""
-            property string port: ""
-            property string proto: "tcp"
-            property string action: "allow"
-            property string source: ""
-
-            function resetAddRuleForm() {
-                service = "";
-                port = "";
-                proto = "tcp";
-                action = "allow";
-                source = "";
-            }
-
-            readonly property bool portValid: /^[0-9]{1,5}(-[0-9]{1,5})?$/.test(port)
-            readonly property bool canSubmit: !FirewallService.busy && (isService ? service !== "" : portValid)
-
-            function submit() {
-                FirewallService.addRule({
-                    "zone": root.zoneName,
-                    "kind": isService ? "service" : "port",
-                    "action": action,
-                    "target": isService ? service : port,
-                    "proto": proto,
-                    "source": source.trim()
-                }, response => {
-                    if (response.error || response.result?.success === false)
-                        return;
-                    root.adding = false;
-                    addCard.resetAddRuleForm()
-                });
-            }
-
-            SettingsRow {
-                iconName: "add_circle"
-                title: I18n.tr("Configure a new rule", "button to create a new firewall rule")
-
-                DActionButton {
-                    iconName: "close"
-                    Accessible.name: I18n.tr("Cancel")
-                    onClicked: {
-                        root.adding = false;
-                        addCard.resetAddRuleForm();
+                DDropdown {
+                    id: moveHereHeaderMenu
+                    showTrigger: false
+                    popupAnchorItem: moveHereHeaderButton
+                    focusReturnTarget: moveHereHeaderButton
+                    alignPopupRight: !I18n.isRtl
+                    options: root.movableInterfaces.map(name => FirewallService.interfaceTitle(name))
+                    optionValues: root.movableInterfaces
+                    onValueChanged: value => {
+                        currentValue = "";
+                        root.moveInterface(value, root.zoneName);
                     }
                 }
             }
 
-            SettingsButtonGroupRow {
-                text: I18n.tr("Type", "firewall rule target type")
-                model: [I18n.tr("Service", "firewall rule target type"), I18n.tr("Port", "firewall rule target type")]
-                currentIndex: addCard.isService ? 0 : 1
-                onSelectionChanged: (index, selected) => {
-                    if (selected)
-                        addCard.isService = index === 0;
-                }
-            }
-
-            SettingsDropdownRow {
-                visible: addCard.isService
-                text: I18n.tr("Service", "firewall rule target type")
-                enableFuzzySearch: true
-                popupWidth: Math.round(root.width * 0.6)
-                options: root.serviceLabels
-                optionValues: root.serviceNames
-                currentValue: addCard.service
-                onValueChanged: value => addCard.service = value
-            }
-
             SettingsRow {
-                visible: !addCard.isService
-                body: DTextField {
-                    outlined: true
-                    width: parent.width
-                    labelText: I18n.tr("Port or range", "firewall rule field")
-                    placeholderText: "8080, 6000-6007"
-                    text: addCard.port
-                    isError: addCard.port !== "" && !addCard.portValid
-                    onTextEdited: addCard.port = text
-                }
-            }
+                visible: (root.zone?.interfaces.length ?? 0) === 0
+                subtitle: I18n.tr("No interfaces use this zone", "firewalld zone status message")
 
-            SettingsButtonGroupRow {
-                visible: !addCard.isService
-                text: I18n.tr("Protocol", "firewall rule field")
-                model: ["TCP", "UDP", I18n.tr("Both", "firewall rule protocol")]
-                currentIndex: ["tcp", "udp", "both"].indexOf(addCard.proto)
-                onSelectionChanged: (index, selected) => {
-                    if (selected)
-                        addCard.proto = ["tcp", "udp", "both"][index];
-                }
-            }
-
-            SettingsButtonGroupRow {
-                text: I18n.tr("Action", "firewall rule field")
-                model: [root.actionLabel("allow"), root.actionLabel("deny"), root.actionLabel("reject")]
-                currentIndex: ["allow", "deny", "reject"].indexOf(addCard.action)
-                onSelectionChanged: (index, selected) => {
-                    if (selected)
-                        addCard.action = ["allow", "deny", "reject"][index];
-                }
-            }
-
-            SettingsRow {
-                body: DTextField {
-                    outlined: true
-                    width: parent.width
-                    labelText: I18n.tr("Source (optional)", "firewall rule field")
-                    placeholderText: "192.168.1.0/24"
-                    text: addCard.source
-                    onTextEdited: addCard.source = text
-                }
-            }
-
-            SettingsRow {
                 DButton {
-                    text: I18n.tr("Add rule", "firewall rule add button")
+                    id: moveHereButton
+                    visible: !root.readOnly && root.movableInterfaces.length > 0
+                    enabled: !FirewallService.busy
+                    text: I18n.tr("Move an interface here", "firewalld button on a zone with no interfaces")
+                    iconName: "swap_horiz"
                     buttonHeight: Theme.buttonHeightS
-                    busy: FirewallService.busy
-                    enabled: addCard.canSubmit
-                    onClicked: addCard.submit()
+                    onClicked: moveHereMenu.openDropdownMenu()
+
+                    DDropdown {
+                        id: moveHereMenu
+                        showTrigger: false
+                        popupAnchorItem: moveHereButton
+                        focusReturnTarget: moveHereButton
+                        alignPopupRight: !I18n.isRtl
+                        options: root.movableInterfaces.map(name => FirewallService.interfaceTitle(name))
+                        optionValues: root.movableInterfaces
+                        onValueChanged: value => {
+                            currentValue = "";
+                            root.moveInterface(value, root.zoneName);
+                        }
+                    }
+                }
+            }
+
+            Repeater {
+                model: root.zone?.interfaces ?? []
+
+                delegate: SettingsRow {
+                    id: interfaceRow
+
+                    required property string modelData
+
+                    readonly property var moveTargets: root.assignableZones.filter(name => name !== root.zoneName)
+
+                    iconName: "lan"
+                    title: FirewallService.interfaceTitle(modelData)
+                    modified: !!SettingsData.firewallInterfaceNames[modelData]
+                    onResetRequested: FirewallService.setInterfaceLabel(modelData, "")
+
+                    DActionButton {
+                        iconName: "edit"
+                        tooltipText: I18n.tr("Rename")
+                        onClicked: {
+                            interfaceDialog.iface = interfaceRow.modelData;
+                            interfaceDialog.show(FirewallService.interfaceLabel(interfaceRow.modelData));
+                        }
+                    }
+
+                    DActionButton {
+                        id: moveButton
+                        visible: !root.readOnly && interfaceRow.moveTargets.length > 0
+                        enabled: !FirewallService.busy
+                        iconName: "swap_horiz"
+                        tooltipText: I18n.tr("Move to another zone", "firewalld interface button")
+                        onClicked: moveMenu.openDropdownMenu()
+
+                        DDropdown {
+                            id: moveMenu
+                            showTrigger: false
+                            popupAnchorItem: moveButton
+                            focusReturnTarget: moveButton
+                            alignPopupRight: !I18n.isRtl
+                            options: interfaceRow.moveTargets
+                            onValueChanged: value => {
+                                // A cancelled or failed move must still let the same zone be picked again.
+                                currentValue = "";
+                                root.moveInterface(interfaceRow.modelData, value);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -410,15 +454,12 @@ Item {
         SettingsCard {
             title: I18n.tr("Rules", "firewall rules section")
             visible: root.showRules
-
-            SettingsDropdownRow {
-                visible: root.isFirewalld && (root.zoneChoices.length > 1 || root.showAllZones)
-                text: I18n.tr("Zone", "text for a firewalld zone")
-                enableFuzzySearch: true
-                options: root.zoneChoices.map(name => root.zoneChoiceLabel(name))
-                optionValues: root.zoneChoices
-                currentValue: root.zoneName
-                onValueChanged: value => root.selectedZoneName = value
+            headerActions: DButton {
+                visible: !root.readOnly
+                text: I18n.tr("Add")
+                iconName: "add"
+                buttonHeight: Theme.buttonHeightXS
+                onClicked: root.openRule(null, false)
             }
 
             SettingsNoteRow {
@@ -437,75 +478,43 @@ Item {
             Repeater {
                 model: root.visibleRules
 
-                SettingsRow {
+                delegate: SettingsRow {
                     id: ruleRow
+
                     required property var modelData
 
-                    title: root.ruleTitle(modelData)
-                    subtitle: modelData.kind === "raw" ? I18n.tr("Custom rule", "info message when a firewall rule is custom") : root.actionLabel(modelData.action) + " · " + (modelData.source ? I18n.tr("From %1", "firewall rule source, %1 is an address").arg(modelData.source) : I18n.tr("From anywhere"))
+                    readonly property bool editable: modelData.kind !== "raw" && !root.readOnly
 
-                    DActionButton {
+                    iconBox: true
+                    iconName: root.actionIcon(modelData)
+                    iconColor: root.actionColor(modelData)
+                    title: FirewallService.ruleTitle(modelData)
+                    subtitle: deleteButton.confirming ? I18n.tr("Confirm Delete") : FirewallService.ruleSource(modelData)
+                    subtitleColor: deleteButton.confirming ? Theme.error : Theme.surfaceVariantText
+                    clickable: editable
+                    onClicked: keyboard => root.openRule(modelData, keyboard)
+
+                    DIcon {
+                        name: "chevron_right"
+                        size: Theme.iconSize
+                        color: Theme.surfaceVariantText
+                        rotation: I18n.isRtl ? 180 : 0
+                        visible: ruleRow.editable
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    SettingsDivider {
+                        vertical: true
+                        visible: ruleRow.editable
+                    }
+
+                    SettingsDeleteButton {
+                        id: deleteButton
                         visible: !root.readOnly
                         enabled: !FirewallService.busy
-                        buttonSize: Theme.buttonHeightXXS
-                        iconName: "delete"
-                        iconColor: Theme.surfaceVariantText
-                        stateColor: Theme.error
-                        tooltipText: I18n.tr("Delete")
-                        onClicked: {
-                            // Copied because a state update can destroy this delegate while the dialog is open.
-                            const zoneName = root.zoneName;
-                            const ruleId = ruleRow.modelData.id;
-                            root.confirm.showWithOptions({
-                                title: I18n.tr("Delete rule", "firewall rule delete button"),
-                                message: I18n.tr("Delete \"%1\"?", "delete confirmation, %1 is a vpn profile or printer name").arg(root.ruleTitle(ruleRow.modelData)),
-                                confirmText: I18n.tr("Delete"),
-                                danger: true,
-                                onConfirm: () => FirewallService.removeRule(zoneName, ruleId)
-                            });
-                        }
+                        onDeleteRequested: FirewallService.removeRule(root.zoneName, ruleRow.modelData.id)
                     }
                 }
-            }
-        }
-
-        SettingsCard {
-            title: I18n.tr("Advanced", "firewalld advanced section")
-            visible: root.isFirewalld && FirewallService.active
-            collapsible: true
-            expanded: false
-
-            SettingsDropdownRow {
-                id: defaultZoneRow
-                text: I18n.tr("Default zone", "firewall default zone selector")
-                description: I18n.tr("Used by interfaces with no zone of their own", "firewall default zone selector")
-                enabled: !FirewallService.busy && !FirewallService.locked
-                options: root.defaultZoneChoices
-                optionValues: root.defaultZoneChoices
-                currentValue: FirewallService.defaultZone
-                onValueChanged: value => {
-                    if (value === FirewallService.defaultZone)
-                        return;
-                    root.confirmDefaults(I18n.tr("Interfaces without their own zone will move to \"%1\".", "%1 is a firewall zone name").arg(value), {
-                        "zone": value
-                    });
-                }
-            }
-
-            SettingsToggleRow {
-                text: I18n.tr("Show all zones", "firewall tab visibility setting")
-                checked: root.showAllZones
-                onToggled: value => root.showAllZones = value
-            }
-        }
-
-        SettingsFabBar {
-            shown: root.showRules && !root.readOnly && !root.adding
-
-            DFab {
-                text: I18n.tr("Add rule", "firewall rule add button")
-                iconName: "add"
-                onClicked: root.startAdding()
             }
         }
     }

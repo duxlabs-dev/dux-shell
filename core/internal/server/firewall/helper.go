@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -61,6 +62,8 @@ func (h *Helper) Call(method string, params map[string]any) (any, error) {
 		return h.run("status")
 	case "rule.add":
 		return h.addRule(params)
+	case "rule.update":
+		return h.updateRule(stringParam(params, "id"), params)
 	case "rule.delete":
 		return h.deleteRule(stringParam(params, "spec"))
 	case "default.set":
@@ -85,27 +88,82 @@ func (h *Helper) state() (any, error) {
 	return ufwRawState{Added: added, Apps: apps, Defaults: defaults}, nil
 }
 
-func (h *Helper) addRule(params map[string]any) (any, error) {
+func (h *Helper) checkedSpec(params map[string]any) (RuleSpec, error) {
 	spec := RuleSpec{
 		Kind:   stringParam(params, "kind"),
 		Action: stringParam(params, "action"),
 		Target: stringParam(params, "target"),
 		Proto:  stringParam(params, "proto"),
 		Source: stringParam(params, "source"),
+		Name:   stringParam(params, "name"),
 	}
 	if err := spec.Validate(); err != nil {
+		return RuleSpec{}, err
+	}
+	if spec.Kind != KindService {
+		return spec, nil
+	}
+	apps, err := h.run("app", "list")
+	if err != nil {
+		return RuleSpec{}, err
+	}
+	if !slices.Contains(parseUFWApps(apps), spec.Target) {
+		return RuleSpec{}, fmt.Errorf("unknown application: %q", spec.Target)
+	}
+	return spec, nil
+}
+
+func (h *Helper) addRule(params map[string]any) (any, error) {
+	spec, err := h.checkedSpec(params)
+	if err != nil {
 		return nil, err
 	}
-	if spec.Kind == KindService {
-		apps, err := h.run("app", "list")
-		if err != nil {
+	if _, err := h.run(spec.ufwArgs()...); err != nil {
+		return nil, err
+	}
+	return true, nil
+}
+
+// ufw uses the first matching rule and appends new ones, so an edit must keep the rule's position.
+func (h *Helper) updateRule(id string, params map[string]any) (any, error) {
+	spec, err := h.checkedSpec(params)
+	if err != nil {
+		return nil, err
+	}
+	added, err := h.run("show", "added")
+	if err != nil {
+		return nil, err
+	}
+	rules := parseUFWAdded(added)
+	index := slices.IndexFunc(rules, func(rule Rule) bool { return rule.ID == id })
+	if index < 0 {
+		return nil, errors.New("no such rule")
+	}
+	old, err := rules[index].spec()
+	if err != nil {
+		return nil, err
+	}
+	// ufw rewrites a rule in place when only its action or comment differ.
+	if old.sameMatch(spec) {
+		if _, err := h.run(spec.ufwArgs()...); err != nil {
 			return nil, err
 		}
-		if !slices.Contains(parseUFWApps(apps), spec.Target) {
-			return nil, fmt.Errorf("unknown application: %q", spec.Target)
-		}
+		return true, nil
 	}
-	if _, err := h.run(spec.ufwArgs()...); err != nil {
+
+	args := spec.ufwArgs()
+	if addr, err := parseSource(old.Source); err != nil || !addr.Is6() {
+		args = append([]string{"insert", strconv.Itoa(index + 1)}, args...)
+	}
+	if _, err := h.run(args...); err != nil {
+		return nil, err
+	}
+	deleteArgs, err := ufwDeleteArgs(id)
+	if err == nil {
+		_, err = h.run(deleteArgs...)
+	}
+	if err != nil {
+		_, _ = h.run(append([]string{"--force", "delete"}, spec.ufwRuleArgs()...)...)
 		return nil, err
 	}
 	return true, nil
@@ -148,10 +206,10 @@ func (h *Helper) setDefault(direction, policy string) (any, error) {
 	if direction != "incoming" && direction != "outgoing" {
 		return nil, fmt.Errorf("invalid direction: %q", direction)
 	}
-	if policy != ActionAllow && policy != ActionDeny && policy != ActionReject {
+	if policy != ActionAllow && policy != ActionDrop && policy != ActionReject {
 		return nil, fmt.Errorf("invalid policy: %q", policy)
 	}
-	if _, err := h.run("default", policy, direction); err != nil {
+	if _, err := h.run("default", ufwVerb(policy), direction); err != nil {
 		return nil, err
 	}
 	return true, nil

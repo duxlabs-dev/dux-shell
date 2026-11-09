@@ -1789,6 +1789,7 @@
       "internet",
       "network",
       "online",
+      "rule",
       "status",
       "vpn",
       "wi-fi",
@@ -19543,7 +19544,6 @@
       "zone"
     ],
     "parentLabel": "Network",
-    "icon": "shield",
     "conditionKey": "firewallAvailable"
   }
 ]
