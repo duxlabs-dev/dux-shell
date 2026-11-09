@@ -80,7 +80,32 @@ DOSD {
 
         root.lastActiveWorkspaceId = ws.id;
         root.updateWorkspaceInfo(ws);
+        if (SessionData.suppressOSD)
+            return;
+        if (root.publishToIsland())
+            return;
         root.show();
+    }
+
+    function publishToIsland() {
+        const hosts = SettingsData.activeIslandConfigsForScreen(root.screen).filter(cfg => SettingsData.islandSetting(cfg, "islandWorkspaceOsd"));
+        const host = hosts.find(cfg => !SettingsData.isDotBarConfig(cfg)) ?? hosts[0];
+        if (!host)
+            return false;
+        const screenName = root.screen?.name ?? "";
+        const session = IslandActivityService.sessions.find(s => s.screenName === screenName && s.barId === host.id);
+        if (!session?.accepts({"source": "workspace", "screen": screenName, "barId": host.id}))
+            return false;
+        // announce restarts the preview so each switch in a burst gets the full duration.
+        return IslandActivityService.publish("workspace", `switch-${screenName.replace(/[^a-zA-Z0-9_.:-]/g, "-")}`, {
+            "title": root.workspaceLabel,
+            "icon": "view_module",
+            "duration": root.autoHideInterval,
+            "announce": true,
+            "priority": 60,
+            "screen": screenName,
+            "barId": host.id
+        });
     }
 
     function updateWorkspaceInfo(ws) {

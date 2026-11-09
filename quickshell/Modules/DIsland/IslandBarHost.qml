@@ -433,7 +433,7 @@ Item {
         outerGap: root.outerGap
         compactThickness: root.compactThickness
         cornerRadius: root.connectedChrome ? Theme.connectedSurfaceRadius : Theme.windowRadius
-        pillRadius: BarMetrics.pillRadius(root.compactThickness, root.barConfig?.widgetStyle ?? "pills")
+        pillRadius: root.setting("islandPillShape") ? root.compactThickness / 2 : BarMetrics.pillRadius(root.compactThickness, root.barConfig?.widgetStyle ?? "pills")
         homeCompactTight: root.setting("islandHomeCompactTight")
         homeStatusContent: SettingsData.islandHomeStatusContent(root.barConfig)
         homeClockDisplay: SettingsData.islandClockDisplay(root.barConfig)
@@ -443,8 +443,15 @@ Item {
         mediaClockVisible: root.setting("islandMediaClockVisible")
         mediaLyrics: root.setting("islandMediaLyrics")
         dashTabs: root.setting("islandDashTabs")
+        dashDefaultTab: root.setting("islandDashDefaultTab")
         // Home and media share the dot face; see mediaFaceToggleAvailable.
         mediaAutoSwitch: !root.dotMode && root.setting("islandMediaAutoSwitch")
+        liveIconAnimationMode: root.setting("islandActivityIconMotion")
+        liveIconAnimationDuration: root.setting("islandActivityIconMotionDuration")
+        liveIconAnimationIntensity: root.setting("islandActivityIconMotionIntensity")
+        presentationSession: activitySession
+        widgetHost: root.barBody ?? root
+        liveCandidate: activitySession.current?.kind === "activity" ? activitySession.current : null
         launcherCycleEnabled: SettingsData.launcherStyle === "island"
         dashboardAvailableWidth: Math.max(0, (root.screen?.width ?? root.referenceScreenWidth) - (root.isVertical ? root.crossInsetStart + root.crossInsetEnd + root.outerGap + root.nearInset : root.alongInset) - Theme.spacingL * 2)
         dashboardAvailableHeight: Math.max(0, (root.screen?.height ?? root.referenceScreenHeight) - (root.isVertical ? root.alongInset : root.crossInsetStart + root.crossInsetEnd + root.outerGap + root.nearInset) - Theme.spacingL * 2)
@@ -479,6 +486,23 @@ Item {
         controller: controller
         enabled: SettingsData.islandSystemOsdHost(root.screen)?.id === root.barId
         chargingPulseEnabled: root.setting("islandChargingPulse")
+    }
+
+    IslandActivitySession {
+        id: activitySession
+        screenName: root.screen?.name ?? ""
+        barId: root.barId
+        enabled: root.setting("islandActivitiesEnabled") && root.barConfig?.visible !== false
+        systemsEnabled: SettingsData.islandSystemOsdHost(root.screen)?.id === root.barId
+        notificationsEnabled: SettingsData.islandNotificationHost(root.screen)?.id === root.barId
+        excludedSources: root.setting("islandExcludedSources")
+        sourceOverrides: root.setting("islandActivitySourceOverrides")
+        slotLimit: root.setting("islandActivitySlotLimit")
+        defaultDuration: root.setting("islandActivityDuration")
+        // Built-in notifications, OSDs and open sheets keep the island; a preview waits, and an interrupted one resumes.
+        blocked: controller.inputSuspended || controller.systemActivityActive || controller.notificationActive || (controller.expanded && !controller.liveActive)
+        held: !controller.liveActive || controller.timeoutSuspended
+        onOpenRequested: entry => controller.openStableEntry(entry)
     }
 
     IslandNotificationSource {
@@ -525,7 +549,7 @@ Item {
         springMass: Math.max(root.springMassRange[0], Math.min(root.springMassRange[1], root.setting("islandSpringMass")))
         palette: root.setting("islandPalette")
         highContrast: !root.embedded && root.setting("islandHighContrast")
-        transparency: SettingsData.barTransparency(root.barConfig)
+        transparency: controller.expanded && root.setting("islandExpandedOpacity") >= 0 ? root.setting("islandExpandedOpacity") : SettingsData.barTransparency(root.barConfig)
         surfaceBase: SettingsData.barSurfaceColor(root.barConfig)
         onScrollWheel: wheel => root.scrollWheel(wheel)
 

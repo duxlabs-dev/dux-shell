@@ -543,6 +543,28 @@ test("a saved keyboard layout slot keeps its position and visibility when editin
     ]);
 });
 
+test("an island bar keeps its bar widgets through group edits and a removed group stays removed", () => {
+    const groupIds = JSON.parse(settingsSource.match(/_islandHomeGroupIds: (\[.*\])/)[1]);
+    const layoutDefault = JSON.parse(settingsSource.match(/_islandHomeLayoutDefault: (\[[\s\S]*?\n    \])/)[1]);
+    const settings = functions(settingsSource, "    ", vm.createContext({ _islandHomeGroupIds: groupIds, _islandHomeLayoutDefault: layoutDefault }));
+    const config = { id: "main", island: true, islandHomeLayout: [{ id: "media" }, { id: "dankKDEConnect", background: true }, { id: "clock" }] };
+    settings.islandSettings = bar => bar;
+    settings.isIslandBarConfig = bar => bar.island === true || bar.dot === true;
+    settings.isDotBarConfig = bar => bar.dot === true;
+    settings.getBarConfig = () => config;
+    settings.setIslandSettings = (id, changes) => Object.assign(config, changes);
+    const ids = () => plain(settings.islandWidgetEntries(config).map(entry => entry.id));
+
+    assert.deepEqual(ids(), ["media", "dankKDEConnect", "clock"]);
+    assert.equal(settings.islandHomeGroupEnabled(config, "notifications"), false, "a group missing from a saved list reads hidden");
+    settings.setIslandHomeGroupEnabled("main", "media", false);
+    settings.setIslandHomeLayoutOrder("main", ["clock", "media"]);
+    assert.deepEqual(ids(), ["clock", "media", "dankKDEConnect"]);
+    assert.equal(settings.islandWidgetEntries(config)[2].background, true, "widget options survive group edits");
+    config.dot = true;
+    assert.deepEqual(ids(), ["clock", "media"], "a dot shows only island groups");
+});
+
 test("power menu shortcuts open in the island before the modal", () => {
     const popoutSource = readFileSync(new URL("../Services/PopoutService.qml", import.meta.url), "utf8");
     const ipcSource = readFileSync(new URL("../DMSShellIPC.qml", import.meta.url), "utf8");

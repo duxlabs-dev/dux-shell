@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -139,6 +140,10 @@ func runShellIPCCommand(args []string) {
 	if args[0] != "call" {
 		args = append([]string{"call"}, args...)
 	}
+	args, err := readIslandActivityInput(args, os.Stdin)
+	if err != nil {
+		log.Fatalf("Error reading island activity: %v", err)
+	}
 	args = fillOptionalIPCArgs(args)
 	if tryDirectIPCCall(args) {
 		return
@@ -157,6 +162,31 @@ func runShellIPCCommand(args []string) {
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("Error running IPC command: %v", err)
 	}
+}
+
+func readIslandActivityInput(args []string, input io.Reader) ([]string, error) {
+	if len(args) != 6 || args[0] != "call" || args[1] != "islandActivity" || args[2] != "publish" || args[5] != "-" {
+		return args, nil
+	}
+	if f, ok := input.(*os.File); ok {
+		if fi, err := f.Stat(); err == nil && fi.Mode()&os.ModeCharDevice != 0 {
+			return nil, fmt.Errorf("no JSON payload piped to stdin")
+		}
+	}
+	const limit = 64 * 1024
+	data, err := io.ReadAll(io.LimitReader(input, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > limit {
+		return nil, fmt.Errorf("stdin payload exceeds %d bytes", limit)
+	}
+	if strings.TrimSpace(string(data)) == "" {
+		return nil, fmt.Errorf("stdin payload is empty")
+	}
+	resolved := slices.Clone(args)
+	resolved[5] = string(data)
+	return resolved, nil
 }
 
 // fillOptionalIPCArgs adds the empty device argument the brightness IPC handlers
@@ -202,6 +232,7 @@ func tryDirectIPCCall(args []string) bool {
 
 func printIPCHelp() {
 	fmt.Println("Usage: dms ipc call <target> <function> [args...]")
+	fmt.Println("Island payload from stdin: producer | dms ipc call islandActivity publish <source> <id> -")
 	fmt.Println()
 
 	baseArgs, err := buildQsIPCBaseArgs()

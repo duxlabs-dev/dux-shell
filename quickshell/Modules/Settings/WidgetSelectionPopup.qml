@@ -22,6 +22,8 @@ WidgetPickerWindow {
             return I18n.tr("Center section");
         case "right":
             return I18n.tr("Right section");
+        case "island":
+            return I18n.tr("Island widgets", "bar widget settings: widgets in the collapsed island");
         default:
             return section;
         }

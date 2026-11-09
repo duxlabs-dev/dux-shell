@@ -331,6 +331,7 @@ Item {
         case Qt.Key_Space:
             if (!activePlayer.canTogglePlaying)
                 return false;
+            SessionData.suppressOSDTemporarily();
             activePlayer.togglePlaying();
             return true;
         case Qt.Key_M:

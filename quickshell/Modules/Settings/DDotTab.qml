@@ -304,6 +304,16 @@ Item {
             isDot: true
         }
 
+        IslandAppearanceCard {
+            store: dot
+            keyPrefix: "dot"
+        }
+
+        IslandActivitiesCard {
+            store: dot
+            keyPrefix: "dot"
+        }
+
         IslandNotificationsCard {
             store: dot
             keyPrefix: "dot"
