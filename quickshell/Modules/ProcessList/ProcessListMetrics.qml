@@ -12,6 +12,7 @@ Singleton {
     readonly property real rowHeight: Theme.buttonHeightXS + Theme.spacingXS
     readonly property real headerHeight: Theme.buttonHeightXS + Theme.spacingXS
     readonly property real appIconSize: Theme.iconSizeMedium
+    readonly property real expanderWidth: Theme.spacingM
     readonly property real windowHeight: SettingsMetrics.windowHeight
     readonly property real menuRowHeight: DCommon.Style.menuRowHeight
     readonly property real menuPadding: DCommon.Style.menuPadding
