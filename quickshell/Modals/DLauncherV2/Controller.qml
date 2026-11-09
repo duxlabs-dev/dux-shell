@@ -585,6 +585,16 @@ Item {
         }
     }
 
+    // Each search rescans every item received so far, so searching per socket read is quadratic.
+    Timer {
+        id: dmenuStreamSearch
+        interval: 100
+        onTriggered: {
+            if (root.searchMode === "dmenu")
+                root.performSearch();
+        }
+    }
+
     Timer {
         id: pluginPhaseTimer
         interval: 16
@@ -798,6 +808,7 @@ Item {
     }
 
     function _endDmenuSession() {
+        dmenuStreamSearch.stop();
         dmenuSocketLoader.active = false;
         dmenuSocketPath = "";
     }
@@ -848,9 +859,11 @@ Item {
                 markup: dmenuMarkupRows,
                 row: msg.row || null
             }));
-            Qt.callLater(performSearch);
+            if (!dmenuStreamSearch.running)
+                dmenuStreamSearch.start();
             break;
         case "end":
+            dmenuStreamSearch.stop();
             performSearch();
             _applyDmenuSelect();
             break;
