@@ -27,6 +27,11 @@ Column {
         keyPrefix: "islandWidget"
     }
 
+    IslandActivitiesCard {
+        store: widgetStore
+        keyPrefix: "islandWidget"
+    }
+
     IslandNotificationsCard {
         store: widgetStore
         keyPrefix: "islandWidget"

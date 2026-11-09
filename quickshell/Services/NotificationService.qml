@@ -485,9 +485,31 @@ Singleton {
         return bypassDnd || (SettingsData.notificationDndAllowCritical && urgency === NotificationUrgency.Critical);
     }
 
+    function _applyPluginInterceptor(decision, notif, policy) {
+        if (!decision)
+            return;
+        const result = decision.result;
+        const pluginPolicy = result.policy;
+        if (pluginPolicy && typeof pluginPolicy === "object") {
+            for (const key of ["drop", "disablePopup", "hideFromCenter", "disableHistory", "bypassDnd"])
+                if (typeof pluginPolicy[key] === "boolean")
+                    policy[key] = pluginPolicy[key];
+            if (pluginPolicy.urgency !== undefined)
+                policy.urgency = _coerceRuleUrgency(pluginPolicy.urgency, policy.urgency);
+        }
+        if (result.presentation && typeof result.presentation === "object")
+            policy.islandPresentation = result.presentation;
+        if (result.consume !== true || !result.activity || typeof result.activity !== "object" || !IslandActivityService.canPresentSource(decision.source))
+            return;
+        const id = `notification-${++NotificationInterceptorService.activitySequence}`;
+        if (IslandActivityService.publish(decision.source, id, result.activity))
+            policy.drop = true;
+    }
+
     function _evaluateNotificationPolicy(notif) {
         const baseUrgency = typeof notif.urgency === "number" ? notif.urgency : NotificationUrgency.Normal;
         const policy = {
+            "islandPresentation": null,
             "drop": false,
             "disablePopup": false,
             "hideFromCenter": false,
@@ -496,16 +518,14 @@ Singleton {
             "urgency": baseUrgency
         };
 
-        const rules = SettingsData.notificationRules || [];
-        if (!rules.length)
-            return policy;
-
         const info = {
             "appName": _resolveAppNameForRule(notif),
             "desktopEntry": notif.desktopEntry || "",
             "summary": notif.summary || "",
             "body": notif.body || ""
         };
+        const rules = SettingsData.notificationRules || [];
+        const pluginDecision = NotificationInterceptorService.evaluate(info);
 
         policy.bypassDnd = rules.some(rule => rule.bypassDnd === true && _matchesNotificationRule(rule, info));
         policy.disablePopup = rules.some(rule => (rule.action || "default").toString().toLowerCase() === "mute" && !SettingsData.isNotificationRuleExpired(rule) && _matchesNotificationRule(rule, info));
@@ -530,10 +550,15 @@ Singleton {
                 break;
             }
 
+            policy.islandPresentation = rule.islandPresentation || null;
             policy.urgency = _coerceRuleUrgency(rule.urgency, policy.urgency);
+            if (action === "ignore")
+                return policy;
+            _applyPluginInterceptor(pluginDecision, notif, policy);
             return policy;
         }
 
+        _applyPluginInterceptor(pluginDecision, notif, policy);
         return policy;
     }
 
@@ -771,7 +796,8 @@ Singleton {
                 "popup": shouldShowPopup,
                 "notification": notif,
                 "urgencyOverride": policy.urgency,
-                "bypassDnd": policy.bypassDnd
+                "bypassDnd": policy.bypassDnd,
+                "islandPresentation": policy.islandPresentation
             });
 
             if (wrapper) {
@@ -890,6 +916,7 @@ Singleton {
         property bool removedByLimit: false
         property bool isPersistent: true
         property bool bypassDnd: false
+        property var islandPresentation: null
         property int seq: 0
         property string persistedImagePath: ""
 
@@ -1197,7 +1224,7 @@ Singleton {
 
         const activePopups = visibleNotifications.filter(n => n && n.popup);
         let evicted = null;
-        if (activePopups.length >= maxVisibleNotifications) {
+        if (activePopups.length >= (IslandActivityService.notificationsQueued() ? maxQueueSize : maxVisibleNotifications)) {
             const unhovered = activePopups.filter(n => n.timer?.running);
             const pool = unhovered.length > 0 ? unhovered : activePopups;
             evicted = pool.reduce((min, n) => (n.seq < min.seq) ? n : min, pool[0]);

@@ -15,11 +15,19 @@ Item {
     required property var mediaModel
 
     property bool dense: false
+    property bool titleVisible: true
+    property bool visualizerIdle: false
+    property bool artworkCircular: true
+    property bool artworkVisible: true
+    property bool visualizerEnabled: true
+    property real titleMaxWidth: 220
+    readonly property bool visualizerVisible: root.visualizerEnabled && (root.mediaModel.playing || root.visualizerIdle)
     property real contentScale: 1
     property bool isVertical: false
     property real artworkSize: Theme.iconSizeLarge
     readonly property real textGutter: Theme.spacingXS
     readonly property real cavaWidth: 20
+    readonly property real artworkWaveGap: Theme.spacingM
     readonly property real minTextWidth: 48
     readonly property real clockLeadPad: Theme.spacingXS / 2
     readonly property real clockTrailPad: Theme.spacingS
@@ -38,7 +46,7 @@ Item {
     property bool clockVisible: false
     property bool lyricsEnabled: false
     readonly property bool lyricsWanted: lyricsEnabled && LyricsService.allowed && !isVertical
-    readonly property bool lyricsLive: lyricsWanted && enabled
+    readonly property bool lyricsLive: lyricsWanted && enabled && titleVisible
     readonly property bool lyricActive: {
         if (!lyricsLive)
             return false;
@@ -53,14 +61,15 @@ Item {
     property real lyricWordWidth: 0
     readonly property real titleFontSize: Theme.fontSizeSmall * root.contentScale
     readonly property real chromeWidth: {
-        let width = Theme.spacingS + root.artworkSize + Theme.spacingXS + root.cavaWidth + Theme.spacingXS + root.textGutter * 2 + Theme.spacingXS;
+        let width = Theme.spacingS + (root.artworkVisible ? root.artworkSize + root.artworkWaveGap : 0) + (horizontalWave.retained ? root.cavaWidth + Theme.spacingXS : 0) + (titleSlot.retained ? root.textGutter * 2 + Theme.spacingXS : 0);
+
         if (root.clockVisible)
             width += clockText.width + Theme.spacingXS * 2 + Theme.spacingS;
         return width;
     }
     readonly property real lyricWidth: LyricsService.controller.synced ? LyricLayout.pageWidth(root.lyricWidths, root.maxLength - root.chromeWidth, root.minTextWidth, root.lyricWordWidth / 2) : 0
-    readonly property real naturalTextWidth: root.lyricWidth > 0 ? root.lyricWidth : Math.max(root.minTextWidth, titleMetrics.width, root.dense ? 0 : artistMetrics.width)
-    readonly property real measuredWidth: root.chromeWidth + root.naturalTextWidth
+    readonly property real naturalTextWidth: root.lyricWidth > 0 ? root.lyricWidth : Math.min(Math.max(root.minTextWidth, root.titleMaxWidth), Math.max(root.minTextWidth, titleMetrics.width, root.dense ? 0 : artistMetrics.width))
+    readonly property real measuredWidth: root.chromeWidth + (titleSlot.retained ? root.naturalTextWidth : 0)
 
     onLyricsWantedChanged: measureLyrics()
 
@@ -87,6 +96,14 @@ Item {
     implicitHeight: isVertical ? verticalFace.implicitHeight + verticalPad * 2 : artworkSize
     readonly property bool clockHovered: enabled && visible && ((clockArea.visible && clockArea.containsMouse) || (verticalClockArea.visible && verticalClockArea.containsMouse))
     signal clockClicked
+    signal mediaClicked
+
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.mediaClicked()
+    }
 
     StyledTextMetrics {
         id: titleMetrics
@@ -138,9 +155,10 @@ Item {
             leftMargin: Theme.spacingS
             verticalCenter: parent.verticalCenter
         }
-        visible: !root.isVertical
-        width: root.artworkSize
+        visible: !root.isVertical && root.artworkVisible
+        width: root.artworkVisible ? root.artworkSize : 0
         height: width
+        cornerRadius: root.artworkCircular ? Math.min(width, height) / 2 : 0
         artUrl: root.mediaModel.artUrl
     }
 
@@ -148,7 +166,7 @@ Item {
         visible: !root.isVertical
         anchors {
             left: artwork.right
-            leftMargin: Theme.spacingXS
+            leftMargin: root.artworkVisible ? root.artworkWaveGap : 0
             right: root.clockVisible ? rightActivity.left : parent.right
             rightMargin: Theme.spacingXS
             verticalCenter: parent.verticalCenter
@@ -156,19 +174,36 @@ Item {
         height: root.artworkSize
         spacing: Theme.spacingXS
 
-        AudioVisualization {
+        FadePresence {
+            id: horizontalWave
             anchors.verticalCenter: parent.verticalCenter
+            shown: root.visualizerVisible
             width: root.cavaWidth
             height: parent.height
-            maxBarHeight: Math.max(3, height - 2)
-            idleIconName: "graphic_eq"
+
+            AudioVisualization {
+                anchors.fill: parent
+                maxBarHeight: Math.max(3, height - 2)
+                idleIconName: "graphic_eq"
+            }
         }
 
-        Column {
-            width: parent.width - root.cavaWidth - parent.spacing
+        FadePresence {
+            id: titleSlot
+            duration: Theme.mediumDuration
+            clip: true
+            shown: root.titleVisible
+            width: Math.max(0, parent.width - (horizontalWave.retained ? root.cavaWidth + parent.spacing : 0))
+            height: trackText.implicitHeight
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 0
 
+            Column {
+                id: trackText
+                width: parent.width
+                spacing: 0
+                Item {
+                    width: parent.width
+                    height: titleText.implicitHeight
             ScrollingText {
                 id: titleText
 
@@ -179,7 +214,7 @@ Item {
                 color: Theme.surfaceText
                 font.pixelSize: Theme.fontSizeSmall * root.contentScale
                 font.weight: Theme.fontWeightMedium
-                active: root.enabled && root.mediaModel.playing
+                active: root.enabled && root.mediaModel.playing && titleSlot.shown
                 holdStartMs: 1600
                 holdEndMs: 1200
                 pxPerMs: 1 / 62.5
@@ -198,6 +233,7 @@ Item {
                 live: root.enabled
             }
 
+                }
             StyledText {
                 x: root.textGutter
                 width: parent.width - root.textGutter * 2
@@ -207,6 +243,8 @@ Item {
                 font.pixelSize: Theme.fontSizeXSmall * root.contentScale
                 wrapMode: Text.NoWrap
                 elide: Text.ElideRight
+            }
+
             }
         }
     }
@@ -258,21 +296,28 @@ Item {
 
         anchors.centerIn: parent
         visible: root.isVertical
-        spacing: Theme.spacingXS
+        spacing: root.artworkWaveGap
 
         MediaArtwork {
             anchors.horizontalCenter: parent.horizontalCenter
+            visible: root.artworkVisible
             width: root.verticalArtworkSize
             height: width
+            cornerRadius: root.artworkCircular ? Math.min(width, height) / 2 : 0
             artUrl: root.mediaModel.artUrl
         }
 
-        AudioVisualization {
+        FadePresence {
             anchors.horizontalCenter: parent.horizontalCenter
+            shown: root.visualizerVisible
             width: root.verticalArtworkSize
             height: root.cavaWidth
-            maxBarHeight: Math.max(3, height - 2)
-            idleIconName: "graphic_eq"
+
+            AudioVisualization {
+                anchors.fill: parent
+                maxBarHeight: Math.max(3, height - 2)
+                idleIconName: "graphic_eq"
+            }
         }
 
         Item {

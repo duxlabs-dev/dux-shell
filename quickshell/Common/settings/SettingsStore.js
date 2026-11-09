@@ -6,6 +6,7 @@
 .import "./DockConfig.js" as DockConfig
 .import "./DensityPresets.js" as DensityPresets
 .import "../GridLayout.js" as GridLayout
+.import "../IslandLayout.js" as IslandLayout
 
 var PIN_KEYS = ["brightnessDevicePins", "wifiNetworkPins", "bluetoothDevicePins", "audioInputDevicePins", "audioOutputDevicePins"];
 
@@ -787,6 +788,12 @@ function migrateToVersion(obj, targetVersion) {
     if (currentVersion < 43 && targetVersion >= 43) {
         migrateFocusedWindowCompactMode(settings);
         settings.configVersion = 43;
+    }
+
+    if (currentVersion < 44 && targetVersion >= 44) {
+        for (const config of settings.barConfigs || [])
+            IslandLayout.migrate(config, true);
+        settings.configVersion = 44;
     }
 
     return settings;

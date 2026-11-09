@@ -19,12 +19,14 @@ import "../DCommon/Common/settings/SpecUtil.js" as SpecUtil
 import "settings/BarWidgetDefaults.js" as WidgetDefaults
 import "settings/DockConfig.js" as DockConfig
 import "settings/DensityPresets.js" as DensityPresets
+import "IslandLayout.js" as IslandLayout
+
 
 Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 43
+    readonly property int settingsConfigVersion: 44
 
     enum Position {
         Top,
@@ -1036,52 +1038,8 @@ Singleton {
         return LayoutResolver.islandReserve(islandSettings(bc), islandDefaultsFor(bc));
     }
     readonly property var _islandHomeGroupIds: ["workspaces", "media", "clock", "weather", "status", "volume", "brightness", "notifications", "privacy", "keyboardLayout", "tray"]
-    readonly property var _islandHomeLayoutDefault: [
-        {
-            "id": "workspaces",
-            "enabled": false
-        },
-        {
-            "id": "media",
-            "enabled": true
-        },
-        {
-            "id": "clock",
-            "enabled": true
-        },
-        {
-            "id": "weather",
-            "enabled": false
-        },
-        {
-            "id": "status",
-            "enabled": false
-        },
-        {
-            "id": "volume",
-            "enabled": false
-        },
-        {
-            "id": "brightness",
-            "enabled": false
-        },
-        {
-            "id": "notifications",
-            "enabled": true
-        },
-        {
-            "id": "privacy",
-            "enabled": true
-        },
-        {
-            "id": "keyboardLayout",
-            "enabled": false
-        },
-        {
-            "id": "tray",
-            "enabled": false
-        }
-    ]
+    readonly property var _islandHomeLayoutDefault: IslandLayout.DEFAULT_HOME_LAYOUT
+
     function getIslandHomeLayout(bc) {
         const layout = islandSettings(bc).islandHomeLayout;
         const stored = Array.isArray(layout) ? layout : [];
@@ -1110,6 +1068,10 @@ Singleton {
     function islandHomeGroupEnabled(bc, id) {
         const entry = getIslandHomeLayout(bc).find(g => g.id === id);
         return entry ? entry.enabled : false;
+    }
+
+    function islandCollapsedWidgets(bc) {
+        return IslandLayout.widgets(bc);
     }
 
     function setIslandHomeLayoutOrder(barId, ids) {
@@ -3771,6 +3733,18 @@ Singleton {
         updated[pluginId][key] = value;
         pluginSettings = updated;
         savePluginSettings();
+    }
+
+    function removePluginSetting(pluginId, key) {
+        if (!pluginSettings[pluginId] || !(key in pluginSettings[pluginId]))
+            return false;
+        const updated = JSON.parse(JSON.stringify(pluginSettings));
+        delete updated[pluginId][key];
+        if (Object.keys(updated[pluginId]).length === 0)
+            delete updated[pluginId];
+        pluginSettings = updated;
+        savePluginSettings();
+        return true;
     }
 
     function getPluginSettingsForPlugin(pluginId) {

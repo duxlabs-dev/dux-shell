@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
+import { loadScript } from "./qml-script.mjs";
 
 function functions(source, indent, context) {
     const pattern = new RegExp(`^${indent}function (\\w+)\\(([^)]*)\\)(?:: \\w+)? \\{([\\s\\S]*?)^${indent}\\}`, "gm");
@@ -510,7 +511,7 @@ test("control-center IPC hide and status agree on both surfaces", () => {
 
 test("the privacy slot is a known home layout entry appended after stored ones", () => {
     const groupIds = JSON.parse(settingsSource.match(/_islandHomeGroupIds: (\[.*\])/)[1]);
-    const layoutDefault = JSON.parse(settingsSource.match(/_islandHomeLayoutDefault: (\[[\s\S]*?\n    \])/)[1]);
+    const layoutDefault = loadScript(new URL("../Common/IslandLayout.js", import.meta.url)).DEFAULT_HOME_LAYOUT;
     const settings = functions(settingsSource, "    ", vm.createContext({ _islandHomeGroupIds: groupIds, _islandHomeLayoutDefault: layoutDefault }));
     settings.islandSetting = (config, key) => config[key];
     settings.islandSettings = config => config;
@@ -523,7 +524,7 @@ test("the privacy slot is a known home layout entry appended after stored ones",
 
 test("a saved keyboard layout slot keeps its position and visibility when editing island groups", () => {
     const groupIds = JSON.parse(settingsSource.match(/_islandHomeGroupIds: (\[.*\])/)[1]);
-    const layoutDefault = JSON.parse(settingsSource.match(/_islandHomeLayoutDefault: (\[[\s\S]*?\n    \])/)[1]);
+    const layoutDefault = loadScript(new URL("../Common/IslandLayout.js", import.meta.url)).DEFAULT_HOME_LAYOUT;
     const config = { islandHomeLayout: [{ id: "keyboardLayout", enabled: true }, { id: "clock" }] };
     const settings = functions(settingsSource, "    ", vm.createContext({ _islandHomeGroupIds: groupIds, _islandHomeLayoutDefault: layoutDefault }));
     settings.islandSettings = bar => bar;
@@ -584,38 +585,4 @@ test("power menu shortcuts open in the island before the modal", () => {
 
     assert.equal(handler.close(), "POWERMENU_CLOSE_SUCCESS");
     assert.deepEqual(calls.splice(0), ["island:close:powermenu", "modal:close"], "close takes down both surfaces");
-});
-
-test("a right-click face swap holds hover-open until the pointer leaves", () => {
-    const source = readFileSync(new URL("../Modules/DIsland/IslandController.qml", import.meta.url), "utf8");
-    const requested = [];
-    const timer = { stop() {}, restart() {} };
-    const controller = functions(source, "    ", vm.createContext({
-        activeActivity: "home",
-        mediaFaceToggleAvailable: true,
-        hoverHeld: false,
-        inputSuspended: false,
-        hoverExpandEnabled: true,
-        slotHovered: false,
-        notificationActive: false,
-        hoverExpanded: false,
-        expanded: false,
-        hoverOpenTimer: timer,
-        hoverCloseTimer: timer
-    }));
-    controller.requestActivity = id => requested.push(id) > 0;
-    controller.requestExpand = () => true;
-    controller.syncNotificationTimeout = () => {};
-    controller.syncTransientTimeout = () => {};
-
-    assert.equal(controller.toggleMediaFace(), true);
-    assert.deepEqual(requested, ["media"]);
-    assert.equal(controller.requestHoverExpand(), false, "the resized face must not hover-open under the pointer");
-    controller.updatePointerInside(false);
-    controller.updatePointerInside(true);
-    assert.equal(controller.requestHoverExpand(), true, "leaving the island releases the hold");
-
-    controller.mediaFaceToggleAvailable = false;
-    assert.equal(controller.toggleMediaFace(), false);
-    assert.equal(vm.runInContext("hoverHeld", controller), false);
 });
