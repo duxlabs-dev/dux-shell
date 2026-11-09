@@ -141,7 +141,7 @@ QtObject {
 
         if (rawFrameTime <= 0)
             return;
-        const matrix = DC.SpringSolver.coefficients(stiffness, damping, mass, rawFrameTime);
+        const matrix = DC.SpringSolver.frameCoefficients(stiffness, damping, mass, rawFrameTime);
         const target = [targetWidth, targetHeight, targetOffsetAlong, targetOffsetCross, targetTopLeftRadius, targetTopRightRadius, targetBottomLeftRadius, targetBottomRightRadius];
         const current = [currentWidth, currentHeight, currentOffsetAlong, currentOffsetCross, currentTopLeftRadius, currentTopRightRadius, currentBottomLeftRadius, currentBottomRightRadius];
         const velocity = [velocityWidth, velocityHeight, velocityOffsetAlong, velocityOffsetCross, velocityTopLeftRadius, velocityTopRightRadius, velocityBottomLeftRadius, velocityBottomRightRadius];

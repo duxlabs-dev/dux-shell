@@ -55,7 +55,7 @@ QtObject {
             return;
         if (rawFrameTime <= 0)
             return;
-        const matrix = DC.SpringSolver.coefficients(stiffness, damping, mass, rawFrameTime);
+        const matrix = DC.SpringSolver.frameCoefficients(stiffness, damping, mass, rawFrameTime);
         const dx = value.x - target.x;
         const dy = value.y - target.y;
         const dw = value.width - target.width;
