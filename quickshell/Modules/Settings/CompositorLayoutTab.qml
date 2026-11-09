@@ -225,11 +225,11 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                 },
                 {
                     offset: 4,
-                    labels: [I18n.tr("Monocle", "Hyprland tiling layout name"), I18n.tr("Tile", "Hyprland tiling layout name"), I18n.tr("Right Tile", "Hyprland tiling layout name")]
+                    labels: [I18n.tr("Monocle", "window tiling layout name in layout picker"), I18n.tr("Tile", "Hyprland tiling layout name"), I18n.tr("Right Tile", "Hyprland tiling layout name")]
                 },
                 {
                     offset: 7,
-                    labels: [I18n.tr("Vertical Tile", "Hyprland tiling layout name"), I18n.tr("Center Tile", "Hyprland tiling layout name"), I18n.tr("Deck", "Hyprland tiling layout name")]
+                    labels: [I18n.tr("Vertical Tile", "Hyprland tiling layout name"), I18n.tr("Center Tile", "Hyprland tiling layout name"), I18n.tr("Deck", "window tiling layout name in layout picker")]
                 }
             ]
             readonly property var masterSizeLayouts: ["master", "tile", "right_tile", "vertical_tile", "center_tile", "deck"]
