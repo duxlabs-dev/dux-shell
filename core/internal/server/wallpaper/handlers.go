@@ -31,6 +31,8 @@ func HandleRequest(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, m
 		conn.Respond(req.ID, SuggestFolders(params.StringSlice(req.Params, "folders")))
 	case "wallpaper.folderListed":
 		handleFolderListed(conn, req)
+	case "wallpaper.folderOf":
+		handleFolderOf(conn, req)
 	default:
 		conn.RespondError(req.ID, fmt.Sprintf("unknown method: %s", req.Method))
 	}
@@ -76,6 +78,20 @@ func handleFolderListed(conn *ipc.ConnWriter, req ipc.Request) {
 		return
 	}
 	conn.Respond(req.ID, FolderListed(path, params.StringSlice(req.Params, "folders")))
+}
+
+func handleFolderOf(conn *ipc.ConnWriter, req ipc.Request) {
+	path, err := params.StringNonEmpty(req.Params, "path")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	var folders []Folder
+	if err := decodeParam(req.Params, "folders", &folders); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, FolderOf(path, folders))
 }
 
 func decodeParam(reqParams map[string]any, key string, out any) error {

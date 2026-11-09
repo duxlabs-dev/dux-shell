@@ -15,7 +15,8 @@ Singleton {
     property int refCount: 0
     readonly property bool held: refCount > 0
 
-    readonly property bool connected: DMSService.capabilities.includes("wallpaper") && DMSService.apiVersion >= 41
+    readonly property int requiredApiVersion: 41
+    readonly property bool connected: DMSService.capabilities.includes("wallpaper") && DMSService.apiVersion >= requiredApiVersion
     readonly property var folders: SessionData.wallpaperFolders
     readonly property bool enabled: folders.length > 0 && connected
     readonly property var visibleFolders: folders.filter(folder => !folder.hidden)
@@ -132,23 +133,21 @@ Singleton {
         return itemsIn(items, [path]);
     }
 
-    function ownerFolder(filePath) {
-        let owner = null;
-        for (const folder of folders) {
-            const prefix = folder.path === "/" ? "/" : folder.path + "/";
-            if (!filePath.startsWith(prefix))
-                continue;
-            if (!folder.recursive && filePath.indexOf("/", prefix.length) !== -1)
-                continue;
-            if (!owner || folder.path.length > owner.path.length)
-                owner = folder;
-        }
-        return owner;
+    // callback gets the listed folder that owns filePath, or "" when none does.
+    function folderOf(filePath, callback) {
+        DMSService.sendRequest("wallpaper.folderOf", {
+            "path": filePath,
+            "folders": requestFolders()
+        }, response => {
+            if (response.error)
+                log.warn("Failed to find the wallpaper folder:", response.error);
+            callback(response.result ?? "");
+        });
     }
 
-    function inPool(filePath) {
-        const owner = ownerFolder(filePath);
-        return !!owner && !owner.hidden && (!filtering || selection.includes(owner.path));
+    function inPool(ownerPath) {
+        const owner = folders.find(folder => folder.path === ownerPath);
+        return !!owner && !owner.hidden && (!filtering || selection.includes(ownerPath));
     }
 
     function listedPath(path) {

@@ -311,7 +311,6 @@ Singleton {
     readonly property real carouselSideAlpha: 0.45
     readonly property real carouselAngle: 32
     readonly property real carouselBackdropAlpha: 0.16
-    readonly property real wallpaperThumbRadius: Theme.cornerRadiusM
     readonly property int wallpaperThumbCache: 256
     readonly property real wallpaperControlSize: Theme.buttonHeightXS
     readonly property real wallpaperControlIconSize: Theme.iconSizeMedium

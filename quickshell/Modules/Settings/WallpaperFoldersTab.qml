@@ -17,6 +17,7 @@ Item {
     property var suggestions: []
     property int suggestRequest: 0
     readonly property bool connected: WallpaperLibraryService.connected
+    readonly property bool outdated: DMSService.isConnected && DMSService.apiVersion > 0 && DMSService.apiVersion < WallpaperLibraryService.requiredApiVersion
     readonly property int folderCount: WallpaperLibraryService.folders.length
 
     function loadSuggestions() {
@@ -41,7 +42,7 @@ Item {
     SettingsPage {
         SettingsNoteRow {
             visible: !root.connected
-            text: I18n.tr("DMS service is not connected", "wallpaper folders page, shown when the DMS background process is unavailable")
+            text: root.outdated ? I18n.tr("DMS server is outdated (API v%1, expected v%2)", "error toast, %1 is current api version, %2 is required version").arg(DMSService.apiVersion).arg(WallpaperLibraryService.requiredApiVersion) : I18n.tr("%1 not available", "%1 is a folder name").arg("DMS")
         }
 
         SettingsCard {

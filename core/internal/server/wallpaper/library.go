@@ -30,9 +30,8 @@ type Variant struct {
 	Height int    `json:"height"`
 }
 
-// Item is one wallpaper. A KDE package has its sizes in Variants, largest first, and Path is the largest.
-// Folder is the listed folder that owns the file, spelled as the caller sent it. Size and Mtime
-// (Unix seconds) come from the largest variant for a package.
+// Item is one wallpaper. A KDE package lists its sizes in Variants, largest first, and Path is the largest.
+// Folder is the listed folder that owns it, as the caller spelled it. Size and Mtime come from the largest variant.
 type Item struct {
 	Path     string    `json:"path"`
 	Variants []Variant `json:"variants,omitempty"`
@@ -51,46 +50,94 @@ type lister struct {
 	ctx        context.Context
 	extensions map[string]bool
 	seen       map[string]bool
-	folder     string
+	set        folderSet
+	cur        int
 	items      []Item
 	truncated  bool
+	owners     map[ownerKey]int
+}
+
+type ownerKey struct {
+	dir string
+	pkg bool
+}
+
+// folderSet resolves each listed folder once. A folder that can't be resolved owns nothing.
+type folderSet struct {
+	folders []Folder
+	real    []string
+}
+
+func newFolderSet(folders []Folder) folderSet {
+	set := folderSet{folders: folders, real: make([]string, len(folders))}
+	for i, folder := range folders {
+		set.real[i], _ = filepath.EvalSymlinks(folder.Path)
+	}
+	return set
+}
+
+// owner returns the folder with the deepest real path that holds realDir, or -1. A non-recursive folder holds only
+// its own files, a recursive one skips dot-directories, and a package needs a recursive folder.
+func (s folderSet) owner(realDir string, pkg bool) int {
+	best := -1
+	for i, folder := range s.folders {
+		if s.real[i] == "" || (pkg && !folder.Recursive) || (best >= 0 && len(s.real[i]) <= len(s.real[best])) {
+			continue
+		}
+		rel, err := filepath.Rel(s.real[i], realDir)
+		if err == nil && (rel == "." ||
+			(folder.Recursive && !strings.HasPrefix(rel, ".") && !strings.Contains(rel, "/."))) {
+			best = i
+		}
+	}
+	return best
+}
+
+// dirOwner is owner for a spelled directory. A directory reached through a symlink to somewhere no folder holds
+// belongs to the folder holding the nearest ancestor of its spelled path.
+func (s folderSet) dirOwner(dir, realDir string, pkg bool) int {
+	if i := s.owner(realDir, pkg); i >= 0 {
+		return i
+	}
+	for d := dir; ; d = filepath.Dir(d) {
+		if real, err := filepath.EvalSymlinks(d); err == nil {
+			rest, _ := filepath.Rel(d, dir)
+			if i := s.owner(filepath.Join(real, rest), pkg); i >= 0 {
+				return i
+			}
+		}
+		if filepath.Dir(d) == d {
+			return -1
+		}
+	}
+}
+
+// FolderOf returns the listed folder that owns the file at path, as the caller spelled it, or "".
+func FolderOf(path string, folders []Folder) string {
+	realPath, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return ""
+	}
+	set := newFolderSet(folders)
+	if i := set.dirOwner(filepath.Dir(path), filepath.Dir(realPath), false); i >= 0 {
+		return folders[i].Path
+	}
+	return ""
 }
 
 // ListWallpapers walks folders and returns the files with one of the extensions, sorted by path.
-// A file belongs to the deepest listed folder that reaches it.
-// Paths keep the folder's spelling, so symlinks in it stay unresolved. The result is cut short
-// when it reaches maxListedItems or ctx ends.
+// Each file belongs to one folder, and paths are spelled through it.
+// The result is cut short when it reaches maxListedItems or ctx ends.
 func ListWallpapers(ctx context.Context, folders []Folder, extensions []string) Library {
-	l := &lister{ctx: ctx, extensions: map[string]bool{}, seen: map[string]bool{}, items: []Item{}}
+	l := &lister{ctx: ctx, extensions: map[string]bool{}, seen: map[string]bool{}, set: newFolderSet(folders), owners: map[ownerKey]int{}, items: []Item{}}
 	for _, ext := range extensions {
 		l.extensions[strings.ToLower(ext)] = true
 	}
 
-	realPaths := make([]string, len(folders))
-	failed := make([]bool, len(folders))
-	order := make([]int, len(folders))
-	for i, folder := range folders {
-		order[i] = i
-		var err error
-		if realPaths[i], err = filepath.EvalSymlinks(folder.Path); err != nil {
-			failed[i] = true
-		}
-	}
-	slices.SortStableFunc(order, func(a, b int) int { return cmp.Compare(len(realPaths[b]), len(realPaths[a])) })
-
-	for _, i := range order {
-		if failed[i] {
-			continue
-		}
-		l.folder = folders[i].Path
-		if l.walk(folders[i].Path, realPaths[i], folders[i].Recursive, map[string]bool{}) != nil {
-			failed[i] = true
-		}
-	}
-
 	missing := []string{}
 	for i, folder := range folders {
-		if failed[i] {
+		l.cur = i
+		if l.set.real[i] == "" || l.walk(folder.Path, l.set.real[i], folder.Recursive, map[string]bool{}) != nil {
 			missing = append(missing, folder.Path)
 		}
 	}
@@ -147,7 +194,7 @@ func (l *lister) walk(dir, realDir string, recursive bool, visited map[string]bo
 					continue
 				}
 			}
-			l.add(Item{Path: path}, realPath, info)
+			l.add(Item{Path: path}, path, realPath, info, false)
 		}
 	}
 	return nil
@@ -186,17 +233,30 @@ func (l *lister) addPackage(dir, realDir string, entries []os.DirEntry) bool {
 	if len(variants) == 0 {
 		return false
 	}
+	// A folder added inside the package's images folder lists those files itself.
+	realImages, err := filepath.EvalSymlinks(imagesDir)
+	if err != nil || l.dirOwner(imagesDir, realImages, false) != l.dirOwner(dir, realDir, true) {
+		return false
+	}
 
 	slices.SortStableFunc(variants, func(a, b Variant) int {
 		return cmp.Compare(b.Width*b.Height, a.Width*a.Height)
 	})
-	l.add(Item{Path: variants[0].Path, Variants: variants}, realDir, infos[variants[0].Path])
+	l.add(Item{Path: variants[0].Path, Variants: variants}, dir, realDir, infos[variants[0].Path], true)
 	return true
 }
 
-func (l *lister) add(item Item, realPath string, info fs.FileInfo) {
+// add lists a file, or a package whose folder is path, unless another folder owns it.
+func (l *lister) add(item Item, path, realPath string, info fs.FileInfo, pkg bool) {
+	dir, realDir := path, realPath
+	if !pkg {
+		dir, realDir = filepath.Dir(path), filepath.Dir(realPath)
+	}
 	// JSON can't carry a name that isn't valid UTF-8.
 	if l.seen[realPath] || !utf8.ValidString(item.Path) {
+		return
+	}
+	if owner := l.dirOwner(dir, realDir, pkg); owner >= 0 && owner != l.cur {
 		return
 	}
 	if len(l.items) >= maxListedItems {
@@ -204,8 +264,18 @@ func (l *lister) add(item Item, realPath string, info fs.FileInfo) {
 		return
 	}
 	l.seen[realPath] = true
-	item.Folder, item.Size, item.Mtime = l.folder, info.Size(), info.ModTime().Unix()
+	item.Folder, item.Size, item.Mtime = l.set.folders[l.cur].Path, info.Size(), info.ModTime().Unix()
 	l.items = append(l.items, item)
+}
+
+func (l *lister) dirOwner(dir, realDir string, pkg bool) int {
+	key := ownerKey{dir, pkg}
+	owner, ok := l.owners[key]
+	if !ok {
+		owner = l.set.dirOwner(dir, realDir, pkg)
+		l.owners[key] = owner
+	}
+	return owner
 }
 
 func (l *lister) wanted(name string) bool {

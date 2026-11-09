@@ -195,11 +195,11 @@ DContextMenu {
 
     Ref {
         service: WallpaperLibraryService
-        active: root.renderActive && WallpaperLibraryService.enabled && root.wallpaperDir !== ""
+        active: root.renderActive && root.listMode && root.wallpaperDir !== ""
     }
 
     Loader {
-        active: root.renderActive && root.wallpaperDir !== "" && !WallpaperLibraryService.enabled
+        active: root.renderActive && root.wallpaperDir !== "" && !root.listMode
 
         sourceComponent: Item {
             FolderListModel {

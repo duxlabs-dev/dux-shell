@@ -6,8 +6,8 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.ControlCenter.Widgets
-import qs.Modules.DDash
 import qs.Modules.Settings.Widgets
+import qs.Widgets
 
 Item {
     id: root
@@ -16,12 +16,22 @@ Item {
 
     readonly property var folder: WallpaperLibraryService.folders.find(entry => entry.path === SettingsUiState.selectedWallpaperFolder) ?? null
     readonly property var paths: folder ? WallpaperLibraryService.folderItems(folder.path).map(item => item.path) : []
+    readonly property bool missing: folder !== null && WallpaperLibraryService.missing.includes(folder.path)
     readonly property string selectedScreen: SettingsUiState.selectedWallpaperScreen || (Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "")
     readonly property string currentWallpaper: SessionData.getMonitorWallpaper(selectedScreen)
     readonly property string listedCurrent: WallpaperLibraryService.listedPath(currentWallpaper)
-    readonly property int thumbColumns: 5
-    readonly property real thumbCellWidth: SettingsMetrics.contentMaxWidth / thumbColumns
+    readonly property real thumbCellWidth: SettingsMetrics.contentMaxWidth / SettingsMetrics.wallpaperGridColumns
     readonly property real columnWidth: Math.min(SettingsMetrics.contentMaxWidth, width)
+
+    function focusCurrent() {
+        const index = root.paths.indexOf(root.listedCurrent);
+        if (index >= 0)
+            grid.currentIndex = index;
+    }
+
+    onPathsChanged: Qt.callLater(focusCurrent)
+    onListedCurrentChanged: Qt.callLater(focusCurrent)
+    Component.onCompleted: Qt.callLater(focusCurrent)
 
     function pick(path) {
         if (path)
@@ -84,7 +94,6 @@ Item {
         footer: Item {
             height: SettingsMetrics.pagePaddingV
         }
-        opacity: root.folder?.hidden ? SettingsMetrics.disabledOpacity : 1
         model: ScriptModel {
             values: root.paths
         }
@@ -93,24 +102,26 @@ Item {
         Keys.onEnterPressed: root.pick(root.paths[currentIndex])
         Keys.onReturnPressed: root.pick(root.paths[currentIndex])
 
-        delegate: WallpaperThumbCell {
-            id: cell
-
+        delegate: WallpaperThumbTile {
             required property string modelData
+            required property int index
 
             path: modelData
-            isSelected: root.listedCurrent === modelData
-            Accessible.role: Accessible.Button
-            Accessible.name: modelData.substring(modelData.lastIndexOf("/") + 1)
-            Accessible.onPressAction: root.pick(modelData)
-            onClicked: root.pick(modelData)
+            selected: root.listedCurrent === modelData
+            opacity: root.folder?.hidden ? SettingsMetrics.disabledOpacity : 1
+            onClicked: {
+                grid.currentIndex = index;
+                root.pick(modelData);
+            }
         }
     }
 
     CcEmptyState {
-        anchors.centerIn: parent
-        visible: root.folder === null || (WallpaperLibraryService.loaded && root.paths.length === 0)
+        anchors.top: card.bottom
+        anchors.topMargin: SettingsMetrics.cardGap
+        anchors.horizontalCenter: parent.horizontalCenter
+        visible: root.folder === null || root.missing || (WallpaperLibraryService.loaded && root.paths.length === 0)
         iconName: "folder_off"
-        title: I18n.tr("No wallpapers", "empty wallpaper folder")
+        title: root.missing ? I18n.tr("%1 not available", "%1 is a folder name").arg(WallpaperLibraryService.folderName(root.folder.path)) : I18n.tr("No wallpapers", "empty wallpaper folder")
     }
 }

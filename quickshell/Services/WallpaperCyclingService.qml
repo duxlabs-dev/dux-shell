@@ -162,11 +162,22 @@ Singleton {
 
         const explicit = screenName ? SessionData.getMonitorCyclingSettings(screenName).folderPath : SessionData.wallpaperCyclingFolderPath;
         const explicitHolds = explicit && currentWallpaper.startsWith(explicit + "/");
-        if (!explicitHolds && WallpaperLibraryService.enabled && WallpaperLibraryService.inPool(currentWallpaper)) {
-            listWallpapers(WallpaperLibraryService.requestFolders(), currentWallpaper, screenName || "", goToPrevious, items => WallpaperLibraryService.selected(items));
+        if (explicitHolds || !WallpaperLibraryService.enabled) {
+            cycleDirectory(currentWallpaper, screenName, goToPrevious);
             return;
         }
+        const revision = SessionData.wallpaperRequestRevision(screenName || "");
+        WallpaperLibraryService.folderOf(currentWallpaper, owner => {
+            if (revision !== SessionData.wallpaperRequestRevision(screenName || ""))
+                return;
+            if (WallpaperLibraryService.inPool(owner))
+                listWallpapers(WallpaperLibraryService.requestFolders(), currentWallpaper, screenName || "", goToPrevious, items => WallpaperLibraryService.selected(items));
+            else
+                cycleDirectory(currentWallpaper, screenName, goToPrevious);
+        });
+    }
 
+    function cycleDirectory(currentWallpaper, screenName, goToPrevious) {
         let wallpaperDir;
         let recursive = false;
 
@@ -302,6 +313,9 @@ Singleton {
     function updateFolderFromIpc(path, change, doneMessage) {
         if (!path) {
             return "ERROR: No path provided";
+        }
+        if (!path.startsWith("/")) {
+            return "ERROR: Path must be absolute";
         }
         if (!change(WallpaperLibraryService.normalizeFolder(path))) {
             return "ERROR: Folder not found: " + path;
@@ -524,13 +538,17 @@ Singleton {
                 return "ERROR: DMS service is not connected";
             }
 
+            if (!path.startsWith("/")) {
+                return "ERROR: Path must be absolute";
+            }
+
             const normalized = WallpaperLibraryService.normalizeFolder(path);
             if (WallpaperLibraryService.isListed(normalized)) {
                 return "ERROR: Folder already added";
             }
 
             WallpaperLibraryService.addFolder(normalized);
-            return "SUCCESS: Adding folder " + normalized;
+            return "SUCCESS: Adding folder " + normalized + "...";
         }
 
         function folderRemove(path: string): string {

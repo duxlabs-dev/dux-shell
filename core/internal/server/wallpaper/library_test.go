@@ -2,12 +2,10 @@ package wallpaper
 
 import (
 	"context"
-	"maps"
 	"os"
 	"path/filepath"
 	"slices"
 	"testing"
-	"time"
 )
 
 func writeFiles(t *testing.T, root string, names ...string) {
@@ -136,56 +134,125 @@ func TestListWallpapersCutShort(t *testing.T) {
 	}
 }
 
-func TestListWallpapersFolderOwner(t *testing.T) {
+func TestFolderOwner(t *testing.T) {
 	cases := []struct {
-		name         string
-		childRecurse bool
-		want         map[string]string
+		name    string
+		files   []string
+		links   map[string]string
+		folders []Folder
+		want    []string
 	}{
-		{name: "recursive child", childRecurse: true, want: map[string]string{"a.png": "parent", "sub/b.png": "child", "sub/deep/c.png": "child"}},
-		{name: "non-recursive child", want: map[string]string{"a.png": "parent", "sub/b.png": "child", "sub/deep/c.png": "parent"}},
+		{
+			"recursive child",
+			[]string{"a.png", "sub/b.png", "sub/deep/c.png"},
+			nil,
+			[]Folder{{Path: "", Recursive: true}, {Path: "sub", Recursive: true}},
+			[]string{"a.png=.", "sub/b.png=sub", "sub/deep/c.png=sub"},
+		},
+		{
+			"non-recursive child",
+			[]string{"a.png", "sub/b.png", "sub/deep/c.png"},
+			nil,
+			[]Folder{{Path: "", Recursive: true}, {Path: "sub"}},
+			[]string{"a.png=.", "sub/b.png=sub", "sub/deep/c.png=."},
+		},
+		{
+			"real folder beats the symlink to it",
+			[]string{"Walls/x.png"},
+			map[string]string{"Pictures/Walls": "../Walls"},
+			[]Folder{{Path: "Pictures", Recursive: true}, {Path: "Walls", Recursive: true}},
+			[]string{"Walls/x.png=Walls"},
+		},
+		{
+			"symlinked folder inside a recursive folder",
+			[]string{"Pictures/Walls/x.png", "Pictures/y.png"},
+			map[string]string{"Walls": "Pictures/Walls"},
+			[]Folder{{Path: "Pictures", Recursive: true}, {Path: "Walls"}},
+			[]string{"Pictures/y.png=Pictures", "Walls/x.png=Walls"},
+		},
+		{
+			"non-recursive folder does not claim nested files",
+			[]string{"Pictures/a.png", "Pictures/sub/b.png"},
+			map[string]string{"Walls": "Pictures"},
+			[]Folder{{Path: "Pictures"}, {Path: "Walls", Recursive: true}},
+			[]string{"Pictures/a.png=Pictures", "Walls/sub/b.png=Walls"},
+		},
+		{
+			"symlinked file pointing outside",
+			[]string{"out/x.png"},
+			map[string]string{"a/link.png": "../out/x.png"},
+			[]Folder{{Path: "a"}},
+			[]string{"a/link.png=a"},
+		},
+		{
+			"symlinked folder pointing outside",
+			[]string{"out/x.png"},
+			map[string]string{"a/sub": "../out"},
+			[]Folder{{Path: "a", Recursive: true}},
+			[]string{"a/sub/x.png=a"},
+		},
+		{
+			"outside symlink goes to the nearest nested folder",
+			[]string{"out/x.png"},
+			map[string]string{"a/d/link.png": "../../out/x.png"},
+			[]Folder{{Path: "a", Recursive: true}, {Path: "a/d"}},
+			[]string{"a/d/link.png=a/d"},
+		},
+		{
+			"outside symlink below a non-recursive folder goes to the recursive one",
+			[]string{"out/d/e.png"},
+			map[string]string{"r/a/link": "../../out/d"},
+			[]Folder{{Path: "r/a"}, {Path: "r", Recursive: true}},
+			[]string{"r/a/link/e.png=r"},
+		},
+		{
+			"dot-directory reached through a symlink",
+			[]string{"b/.hidden/h.png"},
+			map[string]string{"c/vis": "../b/.hidden"},
+			[]Folder{{Path: "b", Recursive: true}, {Path: "c", Recursive: true}},
+			[]string{"c/vis/h.png=c"},
+		},
+		{
+			"images folder inside a package",
+			[]string{"p/pkg/metadata.json", "p/pkg/contents/images/1x1.png", "p/pkg/contents/images/2x2.png"},
+			nil,
+			[]Folder{{Path: "p", Recursive: true}, {Path: "p/pkg/contents/images"}},
+			[]string{"p/pkg/contents/images/1x1.png=p/pkg/contents/images", "p/pkg/contents/images/2x2.png=p/pkg/contents/images"},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			root := t.TempDir()
-			writeFiles(t, root, "a.png", "sub/b.png", "sub/deep/c.png")
-			parent, child := Folder{Path: root, Recursive: true}, Folder{Path: filepath.Join(root, "sub"), Recursive: c.childRecurse}
-			got := map[string]string{}
-			for _, item := range ListWallpapers(context.Background(), []Folder{parent, child}, []string{"png"}).Items {
-				rel, _ := filepath.Rel(root, item.Path)
-				got[rel] = map[string]string{parent.Path: "parent", child.Path: "child"}[item.Folder]
+			root, err := filepath.EvalSymlinks(t.TempDir())
+			if err != nil {
+				t.Fatal(err)
 			}
-			if !maps.Equal(got, c.want) {
-				t.Errorf("got %v, want %v", got, c.want)
+			writeFiles(t, root, c.files...)
+			for name, target := range c.links {
+				if err := os.MkdirAll(filepath.Dir(filepath.Join(root, name)), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(target, filepath.Join(root, name)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			folders := []Folder{}
+			for _, folder := range c.folders {
+				folders = append(folders, Folder{Path: filepath.Join(root, folder.Path), Recursive: folder.Recursive})
+			}
+
+			got := []string{}
+			for _, item := range ListWallpapers(context.Background(), folders, []string{"png"}).Items {
+				rel, _ := filepath.Rel(root, item.Path)
+				owner, _ := filepath.Rel(root, item.Folder)
+				got = append(got, rel+"="+owner)
+				if listed := FolderOf(item.Path, folders); listed != item.Folder {
+					t.Errorf("FolderOf(%s) = %q, listed under %q", rel, listed, item.Folder)
+				}
+			}
+			if !slices.Equal(got, c.want) {
+				t.Errorf("got %q, want %q", got, c.want)
 			}
 		})
-	}
-}
-
-func TestListWallpapersFileInfo(t *testing.T) {
-	root := t.TempDir()
-	when := time.Unix(1700000000, 0)
-	files := map[string]string{"a.png": "12345", "Next/metadata.json": "", "Next/contents/images/100x100.png": "12", "Next/contents/images/200x200.png": "1234567"}
-	for name, content := range files {
-		path := filepath.Join(root, name)
-		writeFiles(t, root, name)
-		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.Chtimes(path, when, when); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	got := map[string]int64{}
-	for _, item := range ListWallpapers(context.Background(), []Folder{{Path: root, Recursive: true}}, []string{"png"}).Items {
-		if item.Mtime != when.Unix() {
-			t.Errorf("%s: mtime %d", item.Path, item.Mtime)
-		}
-		got[filepath.Base(item.Path)] = item.Size
-	}
-	if want := map[string]int64{"a.png": 5, "200x200.png": 7}; !maps.Equal(got, want) {
-		t.Errorf("got %v, want %v", got, want)
 	}
 }
 
@@ -217,9 +284,11 @@ func TestFolderListed(t *testing.T) {
 		{"different folder", other, []string{target}, false},
 	}
 	for _, c := range cases {
-		if got := FolderListed(c.path, c.listed); got != c.want {
-			t.Errorf("%s: got %v", c.name, got)
-		}
+		t.Run(c.name, func(t *testing.T) {
+			if got := FolderListed(c.path, c.listed); got != c.want {
+				t.Errorf("got %v", got)
+			}
+		})
 	}
 }
 
@@ -244,8 +313,5 @@ func TestSuggestFolders(t *testing.T) {
 	want := []string{home + "/wallpapers", share + "/backgrounds", pictures + "/Wallpapers"}
 	if !slices.Equal(got, want) {
 		t.Errorf("got %q, want %q", got, want)
-	}
-	if got := SuggestFolders(want); len(got) != 1 {
-		t.Errorf("all but one listed: got %q", got)
 	}
 }

@@ -117,11 +117,9 @@ Item {
     }
 
     // Matches FolderListModel: case-sensitive, ascending Size is largest first, ascending Modified is newest first.
-    function libraryPaths() {
+    function libraryPaths(selected) {
         const terms = searchTerms();
         const rows = [];
-        const selected = WallpaperLibraryService.selected(WallpaperLibraryService.items);
-        selectedCount = selected.length;
         for (const item of selected) {
             const name = item.path.substring(item.path.lastIndexOf('/') + 1);
             if (!matchesTerms(terms, name, item.path))
@@ -147,7 +145,10 @@ Item {
     }
 
     function rebuildWallpaperList(preferCurrentWallpaper) {
-        const paths = useLibrary ? libraryPaths() : [];
+        const selected = useLibrary ? WallpaperLibraryService.selected(WallpaperLibraryService.items) : [];
+        if (useLibrary)
+            selectedCount = selected.length;
+        const paths = useLibrary ? libraryPaths(selected) : [];
         if (!useLibrary && wallpaperFolderModel.status === FolderListModel.Ready) {
             const terms = searchTerms();
             const rowCount = wallpaperFolderModel.count;
@@ -212,6 +213,48 @@ Item {
     function openFolderSettings() {
         PopoutService.closeDankDash();
         PopoutService.openSettingsWithTab("wallpaper_folders");
+    }
+
+    function folderMenuItems() {
+        const actions = [
+            {
+                "iconName": "image_search",
+                "label": I18n.tr("Browse", "wallpaper folder menu option"),
+                "action": () => root.openFolderBrowser()
+            },
+            {
+                "iconName": "settings",
+                "label": I18n.tr("Settings", "wallpaper folder menu option"),
+                "action": () => root.openFolderSettings()
+            }
+        ];
+        if (!WallpaperLibraryService.enabled)
+            return actions;
+
+        const names = WallpaperLibraryService.folders.map(folder => WallpaperLibraryService.folderName(folder.path));
+        const folderRows = WallpaperLibraryService.visibleFolders.map(folder => {
+            const name = WallpaperLibraryService.folderName(folder.path);
+            return {
+                "iconName": "folder",
+                "label": names.indexOf(name) === names.lastIndexOf(name) ? name : Paths.shortenHome(folder.path),
+                "trailingIcon": WallpaperLibraryService.selection.includes(folder.path) ? "check" : "",
+                "keepOpen": true,
+                "action": () => WallpaperLibraryService.toggleSelected(folder.path)
+            };
+        });
+        const separator = {
+            "type": "separator"
+        };
+        return [
+            {
+                "iconName": "wallpaper",
+                "label": I18n.tr("All", "wallpaper folder menu option"),
+                "trailingIcon": WallpaperLibraryService.filtering ? "" : "check",
+                "keepOpen": true,
+                "action": () => WallpaperLibraryService.clearSelection()
+            },
+            separator
+        ].concat(folderRows, folderRows.length > 0 ? [separator] : [], actions);
     }
 
     function openFolderMenu(fromKeyboard) {
@@ -652,12 +695,12 @@ Item {
         }
     }
 
-    WallpaperFolderMenu {
+    CcMenu {
         id: folderMenu
 
+        forwardKeys: true
         transientSurfaceTracker: root.transientSurfaceTracker
-        onBrowseRequested: root.openFolderBrowser()
-        onSettingsRequested: root.openFolderSettings()
+        items: root.folderMenuItems()
     }
 
     Column {
@@ -679,9 +722,9 @@ Item {
             Component {
                 id: wallpaperCell
 
-                WallpaperThumbCell {
+                WallpaperThumbTile {
                     path: modelData || ""
-                    isSelected: root.listedCurrentWallpaper() === modelData
+                    selected: root.listedCurrentWallpaper() === modelData
                     onClicked: {
                         root.gridIndex = index;
                         if (modelData)

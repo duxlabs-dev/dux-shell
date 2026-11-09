@@ -2,19 +2,25 @@ import QtQuick
 import Quickshell.Widgets
 import qs.Common
 import qs.Services
-import qs.Modules.DDash
 import qs.Widgets
 
 Item {
     id: root
 
     property string path: ""
-    property bool isSelected: false
+    property bool selected: false
+    readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
 
     signal clicked
 
     width: GridView.view.cellWidth
     height: GridView.view.cellHeight
+
+    Accessible.role: Accessible.Button
+    Accessible.name: path.substring(path.lastIndexOf("/") + 1)
+    Accessible.checkable: true
+    Accessible.checked: selected
+    Accessible.onPressAction: root.clicked()
 
     Rectangle {
         id: thumbCard
@@ -24,7 +30,7 @@ Item {
         color: Theme.foregroundColor(Theme.cardSurface, Theme.isFloatingWindow(root))
         border.width: Theme.layerOutlineWidth
         border.color: Theme.outlineMedium
-        radius: DashMetrics.wallpaperThumbRadius
+        radius: Theme.cornerRadiusM
 
         ClippingRectangle {
             anchors.fill: parent
@@ -34,14 +40,14 @@ Item {
             CachingImage {
                 anchors.fill: parent
                 imagePath: VideoWallpaperService.imageFor(root.path)
-                maxCacheSize: DashMetrics.wallpaperThumbCache
+                maxCacheSize: 256
                 animate: false
                 opacity: status === Image.Ready ? 1 : 0
 
                 Behavior on opacity {
-                    enabled: DashMetrics.animationsEnabled
+                    enabled: root.animationsEnabled
                     NumberAnimation {
-                        duration: DashMetrics.fadeDuration
+                        duration: Theme.expressiveDurations.expressiveEffects
                         easing.type: Easing.BezierSpline
                         easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                     }
@@ -52,14 +58,14 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: parent.radius
-            color: Theme.withAlpha(Theme.primary, root.isSelected ? Theme.stateLayerFocus : 0)
-            border.width: root.isSelected ? Theme.outlineWidthFocused : 0
+            color: Theme.withAlpha(Theme.primary, root.selected ? Theme.stateLayerFocus : 0)
+            border.width: root.selected ? Theme.outlineWidthFocused : 0
             border.color: Theme.primary
 
             Behavior on color {
-                enabled: DashMetrics.animationsEnabled
+                enabled: root.animationsEnabled
                 ColorAnimation {
-                    duration: DashMetrics.fadeDuration
+                    duration: Theme.expressiveDurations.expressiveEffects
                     easing.type: Easing.BezierSpline
                     easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                 }

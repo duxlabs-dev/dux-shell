@@ -1,9 +1,9 @@
 import QtQuick
 import qs.Common
-import qs.Modules.DDash
 
+// GridView highlight for WallpaperThumbTile; z puts it above the delegates (z 1).
 Item {
-    z: DashMetrics.overlayZ
+    z: 2
 
     Rectangle {
         anchors.fill: parent
@@ -11,6 +11,6 @@ Item {
         color: "transparent"
         border.width: Theme.focusRingWidth
         border.color: Theme.focusRingColor
-        radius: DashMetrics.wallpaperThumbRadius + Theme.focusRingOffset / 2
+        radius: Theme.cornerRadiusM + Theme.focusRingOffset / 2
     }
 }
