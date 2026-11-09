@@ -53,7 +53,10 @@ function startsWords(textWords, queryWords) {
     if (queryWords.length === 0)
         return false;
     for (let i = 0; i + queryWords.length <= textWords.length; i++) {
-        if (queryWords.every((word, j) => textWords[i + j].startsWith(word)))
+        let j = 0;
+        while (j < queryWords.length && textWords[i + j].startsWith(queryWords[j]))
+            j++;
+        if (j === queryWords.length)
             return true;
     }
     return false;
@@ -126,15 +129,17 @@ function isSubsequence(text, pattern) {
 // A coherent alignment stays between boundaries or starts its first run at one.
 function mayBeCoherent(item, pattern) {
     const bonus = bonusOf(item);
+    const text = item.lower;
     let withinWord = 0;
     let fromBoundary = 0;
-    for (let i = 0; i < item.lower.length; i++) {
+    for (let i = 0; i < text.length; i++) {
         const boundary = bonus[i] > 0;
         if (boundary)
             withinWord = 0;
-        if (item.lower[i] === pattern[withinWord] && ++withinWord === pattern.length)
+        const c = text.charCodeAt(i);
+        if (c === pattern.charCodeAt(withinWord) && ++withinWord === pattern.length)
             return true;
-        if ((fromBoundary > 0 || boundary) && item.lower[i] === pattern[fromBoundary] && ++fromBoundary === pattern.length)
+        if ((fromBoundary > 0 || boundary) && c === pattern.charCodeAt(fromBoundary) && ++fromBoundary === pattern.length)
             return true;
     }
     return false;
@@ -173,11 +178,16 @@ function fuzzyScore(item, query) {
     if (query.lower.length < 2)
         return 0;
     // Non-ASCII input must keep fzf's rune-specific case folding and normalization.
-    if (item.ascii && query.fuzzyWords.some(word => !isSubsequence(item.lower, word.text) || !mayBeCoherent(item, word.text)))
-        return 0;
+    const words = query.fuzzyWords;
+    if (item.ascii) {
+        for (let i = 0; i < words.length; i++) {
+            if (!isSubsequence(item.lower, words[i].text) || !mayBeCoherent(item, words[i].text))
+                return 0;
+        }
+    }
     let sum = 0;
-    for (const word of query.fuzzyWords) {
-        const quality = wordQuality(item, word);
+    for (let i = 0; i < words.length; i++) {
+        const quality = wordQuality(item, words[i]);
         if (quality < minQuality)
             return 0;
         sum += Math.min(1, quality);
@@ -234,13 +244,14 @@ function typoScore(item, query) {
         return 0;
     const prev = new Array(q.length + 1);
     const curr = new Array(q.length + 1);
+    const words = item.words;
     let best = typoCandidateScore(item.lower, q, prev, curr);
-    for (const word of item.words)
-        best = Math.max(best, typoCandidateScore(word, q, prev, curr));
+    for (let i = 0; i < words.length; i++)
+        best = Math.max(best, typoCandidateScore(words[i], q, prev, curr));
     if (q.length >= 4) {
-        for (const word of item.words) {
-            if (word.length > q.length)
-                best = Math.max(best, typoCandidateScore(word.slice(0, q.length), q, prev, curr));
+        for (let i = 0; i < words.length; i++) {
+            if (words[i].length > q.length)
+                best = Math.max(best, typoCandidateScore(words[i].slice(0, q.length), q, prev, curr));
         }
     }
     return Math.round(Tier.typo * best);
