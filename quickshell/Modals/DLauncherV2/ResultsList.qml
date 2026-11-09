@@ -255,7 +255,7 @@ Item {
     function resetScroll() {
         root._selectionMotionReady = false;
         root._lastSelectedFlatIndex = root.controller?.selectedFlatIndex ?? -1;
-        mainListView.contentY = mainListView.originY;
+        mainListView.resetScroll();
     }
 
     function revealExpandedSection(sectionId) {
