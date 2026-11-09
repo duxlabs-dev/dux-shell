@@ -4,16 +4,38 @@ var IPC_ACTIVITY_TTL = 8 * 60 * 60 * 1000;
 var MAX_ACTIVITY_TTL = 24 * 60 * 60 * 1000;
 
 var CLICK_ACTIVITIES = ["live", "home", "media", "clipboard", "controlcenter", "notificationcenter", "weather", "launcher", "wallpaper"];
-var HOVER_ACTIVITIES = ["none", "live", "home", "media", "controlcenter", "notificationcenter", "weather"];
 
-function hoverActivityFor(activeActivity, expanded, entry, held = false, moving = false) {
-    if (expanded || held || moving)
-        return "";
-    if (activeActivity === "home" || activeActivity === "media")
-        return "home";
-    if (activeActivity !== "live" || !entry || HOVER_ACTIVITIES.indexOf(entry.hoverActivity) < 0 || entry.hoverActivity === "none")
-        return "";
-    return entry.hoverActivity;
+// Island colours are Theme roles, never free colours: fill and on are Theme property names.
+var ROLE_COLORS = {
+    "hostSurface": {fill: "hostSurface", on: "surfaceText"},
+    "cardSurface": {fill: "cardSurface", on: "surfaceText"},
+    "chipSurface": {fill: "chipSurface", on: "surfaceText"},
+    "chipSurfaceNested": {fill: "chipSurfaceNested", on: "surfaceText"},
+    "primaryContainer": {fill: "primaryContainer", on: "onPrimaryContainer"},
+    "secondaryContainer": {fill: "secondaryContainer", on: "onSecondaryContainer"},
+    "tertiaryContainer": {fill: "tertiaryContainer", on: "onTertiaryContainer"},
+    "error": {fill: "errorContainer", on: "onErrorContainer"},
+    // Theme has no warning container; tint a chip the way Theme derives missing containers.
+    "warning": {fill: "chipSurface", tint: "warning", tintRatio: 0.35, on: "surfaceText"}
+};
+// "" keeps the island's own surface; the settings dropdown offers these in order.
+var SURFACE_ROLES = ["", "hostSurface", "cardSurface", "chipSurface", "chipSurfaceNested", "primaryContainer", "secondaryContainer", "tertiaryContainer"];
+var ACTIVITY_ROLES = SURFACE_ROLES.slice(1).concat(["error", "warning"]);
+
+function surfaceRole(value) {
+    return SURFACE_ROLES.indexOf(value) >= 0 ? value : "";
+}
+
+function activityRole(value) {
+    return ACTIVITY_ROLES.indexOf(value) >= 0 ? value : "";
+}
+
+function roleColors(role) {
+    return ROLE_COLORS[role] || null;
+}
+
+function severityRole(severity) {
+    return severity === "error" || severity === "warning" ? severity : "";
 }
 
 function validId(value) {
@@ -22,10 +44,6 @@ function validId(value) {
 
 function text(value, limit) {
     return typeof value === "string" ? value.slice(0, limit) : "";
-}
-
-function color(value) {
-    return typeof value === "string" && /^#(?:[0-9a-f]{6}|[0-9a-f]{8})$/i.test(value) ? value : "";
 }
 
 function priorityFor(priorityClass, priority) {
@@ -82,10 +100,9 @@ function normalize(source, id, payload, now) {
         icon: text(payload.icon, 128) || "notifications",
         iconAnimation: ["wiggle", "pulse", "spin"].indexOf(payload.iconAnimation) >= 0 ? payload.iconAnimation : "",
         image: text(payload.image, 2048),
-        background: color(payload.background),
-        expandedBackground: color(payload.expandedBackground),
-        foreground: color(payload.foreground),
-        hoverActivity: HOVER_ACTIVITIES.indexOf(payload.hoverActivity) >= 0 ? payload.hoverActivity : "",
+        background: activityRole(payload.background),
+        expandedBackground: activityRole(payload.expandedBackground),
+        foreground: activityRole(payload.foreground),
         severity: ["error", "warning"].indexOf(payload.severity) >= 0 ? payload.severity : "",
         progress: typeof payload.progress === "number" && isFinite(payload.progress) ? Math.max(0, Math.min(1, payload.progress)) : -1,
         priorityClass: ["low", "normal", "high", "urgent", "critical"].indexOf(payload.priorityClass) >= 0 ? payload.priorityClass : "normal",
@@ -163,10 +180,6 @@ function notificationTitle(template, info) {
     }).slice(0, 512);
 }
 
-function idleActivity(mediaAvailable, mediaAlwaysVisible) {
-    return "home";
-}
-
 function canInvoke(entry, action) {
     if (!entry)
         return false;
@@ -175,7 +188,6 @@ function canInvoke(entry, action) {
         return button.enabled !== false && !button.pending;
     return entry.clickAction === action;
 }
-
 
 function validPayloadSize(payload) {
     const limit = 64 * 1024;

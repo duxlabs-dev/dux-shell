@@ -25,7 +25,7 @@ function settings(rules) {
 
 function policy(rules, notif) {
     const functions = ["_resolveAppNameForRule", "_ruleFieldValue", "_coerceRuleUrgency", "_matchesNotificationRule", "_applyPluginInterceptor", "_evaluateNotificationPolicy"];
-    const context = load(serviceSource, { SettingsData: { notificationRules: rules, isNotificationRuleExpired: ruleExpiry.isRuleExpired }, NotificationInterceptorService: { evaluate: () => null }, IslandActivityService: { canPresentSource: () => false, publish: () => false }, NotificationUrgency: { Low: 0, Normal: 1, Critical: 2 } }, functions);
+    const context = load(serviceSource, { SettingsData: { notificationRules: rules, isNotificationRuleExpired: ruleExpiry.isRuleExpired }, NotificationInterceptorService: { entries: [], evaluate: () => null }, NotificationUrgency: { Low: 0, Normal: 1, Critical: 2 } }, functions);
     return plain(context._evaluateNotificationPolicy(notif));
 }
 

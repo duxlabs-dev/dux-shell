@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell.Services.Notifications
 import qs.Common
 import "../Common/IslandActivities.js" as Activities
 
@@ -11,6 +10,7 @@ QtObject {
     required property string screenName
     required property string barId
     property bool enabled: true
+    // Built-in notifications and OSDs never queue here; these only report which host shows them.
     property bool notificationsEnabled: true
     property bool systemsEnabled: true
     property bool blocked: false
@@ -29,11 +29,15 @@ QtObject {
     signal openRequested(var entry)
 
     function accepts(entry) {
-        if (entry.kind === "system")
-            return systemsEnabled;
-        if (entry.kind === "notification")
-            return notificationsEnabled;
         return enabled && Activities.matches(entry, screenName, barId, excludedSources);
+    }
+
+    // Ignores the slot limit, so an open activity stays open after losing its slot.
+    function persistentEntry(entry) {
+        if (!enabled || !entry)
+            return null;
+        const key = Activities.identity(entry);
+        return Activities.stableEntries(IslandActivityService.entries.filter(item => Activities.identity(item) === key), screenName, barId, excludedSources, sourceOverrides, 1)[0] ?? null;
     }
 
     function contains(entry) {
@@ -50,8 +54,6 @@ QtObject {
             return false;
         if (!entry.durationSpecified)
             entry = Object.assign({}, entry, {duration: defaultDuration});
-        if (entry.kind === "notification")
-            holdNotification(entry);
         if (Activities.identity(current) === Activities.identity(entry)) {
             current = entry.restartPreview ? entry : Object.assign({}, entry, {duration: current.duration});
             if (entry.announce && entry.restartPreview) {
@@ -66,23 +68,6 @@ QtObject {
             suspendCurrent();
         advance();
         return true;
-    }
-
-    function enqueueSystem(activityId, duration) {
-        if (!Activities.validId(activityId))
-            return false;
-        const entry = Activities.normalize("system", activityId, {
-            title: activityId,
-            priorityClass: "high",
-            preemption: "higher",
-            duration: duration
-        }, Date.now());
-        if (!entry)
-            return false;
-        entry.kind = "system";
-        entry.systemActivity = activityId;
-        entry.restartPreview = true;
-        return enqueue(entry);
     }
 
     function shouldPreempt(entry) {
@@ -102,23 +87,6 @@ QtObject {
         takeCurrent();
     }
 
-    function enqueueNotification(wrapper) {
-        if (!wrapper || contains({source: "notifications", id: String(wrapper.seq)}))
-            return;
-        const critical = wrapper.urgency === NotificationUrgency.Critical;
-        const entry = {source: "notifications", id: String(wrapper.seq), kind: "notification", wrapper: wrapper, title: wrapper.summary, duration: wrapper.timer?.interval ?? 5000, durationSpecified: true, priorityClass: critical ? "critical" : "normal", priority: critical ? 100 : 0, preemption: critical ? "higher" : "never", announce: true};
-        enqueue(entry);
-    }
-
-    function holdNotification(entry) {
-        entry.wrapper?.timer?.stop();
-        // NotificationService starts the wrapper timer after emitting its visible-list update.
-        Qt.callLater(() => {
-            if (root.contains(entry))
-                entry.wrapper?.timer?.stop();
-        });
-    }
-
     function advance() {
         if (current)
             return;
@@ -130,18 +98,6 @@ QtObject {
         deadline = 0;
         current = next;
         syncTimer();
-    }
-
-    function cancelMissingNotifications(visible) {
-        queue = queue.filter(entry => entry.kind !== "notification" || visible.indexOf(entry.wrapper) >= 0);
-        if (current?.kind === "notification" && visible.indexOf(current.wrapper) < 0)
-            finishCurrent(current);
-    }
-
-    function refreshNotification(wrapper) {
-        const entry = [current].concat(queue).find(entry => entry?.kind === "notification" && entry.wrapper === wrapper);
-        if (entry)
-            enqueue(Object.assign({}, entry, {duration: wrapper.timer?.interval ?? 5000, restartPreview: true}));
     }
 
     function syncTimer() {
@@ -173,13 +129,7 @@ QtObject {
     function finishCurrent(expected) {
         if (!current || (expected && Activities.identity(expected) !== Activities.identity(current)))
             return false;
-        const finished = takeCurrent();
-        if (finished.kind === "notification") {
-            if (finished.wrapper)
-                finished.wrapper.popup = false;
-        } else {
-            IslandActivityService.acknowledge(finished, hostKey);
-        }
+        IslandActivityService.acknowledge(takeCurrent(), hostKey);
         Qt.callLater(advance);
         return true;
     }
@@ -197,22 +147,12 @@ QtObject {
             if (accepts(entry))
                 continue;
             queue = queue.filter(item => item !== entry);
-            release(entry);
-        }
-        if (current && !accepts(current)) {
-            release(takeCurrent());
-        }
-        IslandActivityService.seedSession(root);
-        advance();
-    }
-
-    function release(entry) {
-        if (entry.kind === "notification") {
-            if (entry.wrapper?.popup && entry.wrapper.timer?.interval > 0)
-                entry.wrapper.timer.restart();
-        } else if (entry.kind === "activity") {
             IslandActivityService.acknowledge(entry, hostKey);
         }
+        if (current && !accepts(current))
+            IslandActivityService.acknowledge(takeCurrent(), hostKey);
+        IslandActivityService.seedSession(root);
+        advance();
     }
 
     onBlockedChanged: {
@@ -222,8 +162,6 @@ QtObject {
     onHeldChanged: syncTimer()
     onEnabledChanged: reconfigure()
     onExcludedSourcesChanged: reconfigure()
-    onNotificationsEnabledChanged: reconfigure()
-    onSystemsEnabledChanged: reconfigure()
 
     property Timer timeout: Timer {
         onTriggered: root.finishCurrent(root.current)
@@ -236,7 +174,7 @@ QtObject {
     Component.onDestruction: {
         registered = false;
         for (const entry of queue.concat(current ? [current] : []))
-            release(entry);
+            IslandActivityService.acknowledge(entry, hostKey);
         IslandActivityService.unregisterSession(root);
     }
 }

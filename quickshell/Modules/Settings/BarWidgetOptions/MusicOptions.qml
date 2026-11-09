@@ -10,8 +10,7 @@ Column {
     readonly property var scrollModes: ["volume", "song", "nothing"]
     readonly property var scrollLabels: [I18n.tr("Change Volume", "media scroll wheel option"), I18n.tr("Change Song", "media scroll wheel option"), I18n.tr("Nothing", "media scroll wheel option")]
     readonly property var styles: ["controls", "activity"]
-    readonly property bool island: !root.page.dockHosted && root.page.section === "center" && SettingsData.isIslandBarConfig(SettingsData.getBarConfig(root.page.barId))
-    readonly property bool controls: !root.island && root.page.value("mediaStyle") !== "activity"
+    readonly property bool controls: root.page.value("mediaStyle") !== "activity"
 
     width: parent?.width ?? 0
     spacing: Theme.spacingL
@@ -22,8 +21,7 @@ Column {
         SettingsButtonGroupRow {
             resetStore: root.page
             resetKeys: ["mediaStyle"]
-            visible: !root.island
-            text: I18n.tr("Style", "media widget settings")
+            text: I18n.tr("Style")
             model: [I18n.tr("Controls", "media widget style with play, previous and next buttons"), I18n.tr("Now playing", "media widget style showing only the cover, visualizer and title")]
             currentIndex: Math.max(0, root.styles.indexOf(root.page.value("mediaStyle")))
             onSelectionChanged: (index, selected) => {
@@ -36,8 +34,8 @@ Column {
             visible: root.controls
             resetStore: root.page
             resetKeys: ["mediaSize"]
-            text: I18n.tr("Size", "media widget settings")
-            model: [I18n.tr("Small", "media widget settings"), I18n.tr("Medium", "media widget settings"), I18n.tr("Large", "media widget settings"), I18n.tr("Largest", "media widget settings")]
+            text: I18n.tr("Size")
+            model: [I18n.tr("Small"), I18n.tr("Medium"), I18n.tr("Large"), I18n.tr("Largest")]
             currentIndex: Math.max(0, Math.min(3, root.page.value("mediaSize")))
             onSelectionChanged: (index, selected) => {
                 if (selected)
@@ -47,7 +45,7 @@ Column {
 
         SettingsToggleRow {
             visible: root.controls
-            text: I18n.tr("Adaptive width", "media widget settings")
+            text: I18n.tr("Adaptive width")
             description: I18n.tr("Fits the song title instead of keeping a fixed width", "media widget adaptive width toggle description")
             checked: root.page.value("mediaAdaptiveWidthEnabled")
             onToggled: checked => root.page.set("mediaAdaptiveWidthEnabled", checked)
@@ -70,67 +68,64 @@ Column {
 
         SettingsToggleRow {
             visible: root.controls
-
             text: I18n.tr("Cover art", "media widget option showing the album cover in the pill")
             checked: root.page.value("mediaShowCoverArt")
             onToggled: checked => root.page.set("mediaShowCoverArt", checked)
         }
 
-        SettingsToggleRow {
+        SettingsButtonGroupRow {
             visible: !root.controls
-            text: I18n.tr("Circular media artwork", "media settings: circular album cover shape")
-            checked: root.page.value("mediaArtworkCircular")
-            onToggled: checked => root.page.set("mediaArtworkCircular", checked)
-        }
-
-        SettingsToggleRow {
-            visible: !root.controls
-            text: I18n.tr("Visualizer", "media widget settings")
-            checked: root.page.value("mediaVisualizerEnabled")
-            onToggled: checked => root.page.set("mediaVisualizerEnabled", checked)
-        }
-
-        SettingsToggleRow {
-            visible: !root.controls && root.page.value("mediaVisualizerEnabled")
-            text: I18n.tr("Show visualizer while idle", "media settings: keep audio bars visible while paused")
-            checked: root.page.value("mediaVisualizerIdle")
-            onToggled: checked => root.page.set("mediaVisualizerIdle", checked)
-        }
-
-        SettingsToggleRow {
-            visible: !root.controls
-            text: I18n.tr("Keep widget visible", "media widget settings")
-            description: I18n.tr("Keep a media shortcut when no player is available", "media widget settings")
-            checked: root.page.value("mediaAlwaysVisible")
-            onToggled: checked => root.page.set("mediaAlwaysVisible", checked)
+            settingKey: "barWidgetMusicArtworkShape"
+            tags: ["media", "music", "artwork", "album", "cover", "shape", "rounded", "circle", "square"]
+            resetStore: root.page
+            resetKeys: ["mediaArtworkShape"]
+            text: I18n.tr("Artwork")
+            description: I18n.tr("Shape of the album cover in the pill", "media widget artwork shape description")
+            model: [I18n.tr("Rounded"), I18n.tr("Circle"), I18n.tr("Square")]
+            values: ["rounded", "circle", "square"]
+            value: root.page.value("mediaArtworkShape")
+            fallbackValue: "rounded"
+            onValueSelected: value => root.page.set("mediaArtworkShape", value)
         }
 
         SettingsButtonGroupRow {
             visible: !root.controls
-            text: I18n.tr("Song title", "media widget settings")
-            readonly property var modes: ["changes", "always", "never"]
-            model: [I18n.tr("On change", "media widget settings"), I18n.tr("Always", "media widget settings"), I18n.tr("Never", "media widget settings")]
-            currentIndex: Math.max(0, modes.indexOf(root.page.value("mediaTitleMode")))
-            onSelectionChanged: (index, selected) => {
-                if (selected)
-                    root.page.set("mediaTitleMode", modes[index]);
-            }
+            settingKey: "barWidgetMusicVisualizer"
+            tags: ["media", "music", "visualizer", "cava", "bars", "paused", "idle"]
+            resetStore: root.page
+            resetKeys: ["mediaVisualizerMode"]
+            text: I18n.tr("Audio visualizer")
+            description: I18n.tr("While playing hides the meter when paused, so the pill narrows", "media widget visualizer mode description")
+            model: [I18n.tr("Always show"), I18n.tr("While playing", "media widget visualizer option"), I18n.tr("Off")]
+            values: ["always", "playing", "never"]
+            value: root.page.value("mediaVisualizerMode")
+            fallbackValue: "always"
+            onValueSelected: value => root.page.set("mediaVisualizerMode", value)
         }
 
-        SettingsSliderRow {
+        SettingsButtonGroupRow {
             visible: !root.controls
-            text: I18n.tr("Maximum title width", "media widget settings")
-            minimum: 100
-            maximum: 400
-            step: 10
-            unit: "px"
-            value: root.page.value("mediaTitleMaxWidth")
-            onSliderValueChanged: value => root.page.set("mediaTitleMaxWidth", value)
+            settingKey: "barWidgetMusicTitle"
+            tags: ["media", "music", "song", "title", "track", "hide", "change"]
+            resetStore: root.page
+            resetKeys: ["mediaTitleMode"]
+            text: I18n.tr("Title")
+            description: I18n.tr("On change shows the song title for a moment when the track changes", "media widget title mode description")
+            model: [I18n.tr("Always show"), I18n.tr("On change", "media widget title option"), I18n.tr("Never")]
+            values: ["always", "changes", "never"]
+            value: root.page.value("mediaTitleMode")
+            fallbackValue: "always"
+            onValueSelected: value => root.page.set("mediaTitleMode", value)
         }
 
         SettingsSliderRow {
             visible: !root.controls && root.page.value("mediaTitleMode") === "changes"
-            text: I18n.tr("Title duration", "media widget settings")
+            settingKey: "barWidgetMusicTitleDuration"
+            tags: ["media", "music", "song", "title", "duration", "timeout"]
+            resetStore: root.page
+            resetKeys: ["mediaTitleDuration"]
+            text: I18n.tr("Duration")
+            description: I18n.tr("How long the title stays after a track change", "media widget title duration description")
             minimum: 500
             maximum: 15000
             step: 100
@@ -139,11 +134,28 @@ Column {
             onSliderValueChanged: value => root.page.set("mediaTitleDuration", value)
         }
 
+        SettingsSliderRow {
+            visible: !root.controls && root.page.value("mediaTitleMode") !== "never"
+            settingKey: "barWidgetMusicTitleWidth"
+            tags: ["media", "music", "song", "title", "width", "maximum", "limit", "truncate"]
+            resetStore: root.page
+            resetKeys: ["mediaTitleMaxWidth"]
+            text: I18n.tr("Maximum title width", "media widget settings")
+            description: I18n.tr("Longer titles scroll inside this width", "media widget title width description")
+            minimumLabel: I18n.tr("Off")
+            minimum: 0
+            maximum: 480
+            step: 20
+            unit: "px"
+            value: root.page.value("mediaTitleMaxWidth")
+            onSliderValueChanged: value => root.page.set("mediaTitleMaxWidth", value)
+        }
+
         SettingsDropdownRow {
             visible: root.controls
             resetStore: root.page
             resetKeys: ["audioScrollMode"]
-            text: I18n.tr("Scroll wheel", "media widget settings")
+            text: I18n.tr("Scroll wheel")
             options: root.scrollLabels
             currentValue: {
                 const idx = root.scrollModes.indexOf(root.page.value("audioScrollMode"));
@@ -158,8 +170,8 @@ Column {
 
         SettingsNavRow {
             iconName: "music_note"
-            title: I18n.tr("Media player", "media widget settings")
-            hint: I18n.tr("Visualizer, album art, excluded players", "media widget settings")
+            title: I18n.tr("Media player")
+            hint: I18n.tr("Visualizer, album art, excluded players")
             onClicked: keyboard => root.page.parentModal?.navigateTo("media_player", keyboard)
         }
     }

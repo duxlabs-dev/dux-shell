@@ -3,24 +3,19 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Services.SystemTray
 import qs.Common
+import qs.Modules.DBar
 import qs.Modules.DBar.Widgets
+import qs.Modules.SurfaceWidgets
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 import "../../../DCommon/Common/LayoutCodes.js" as LayoutCodes
-import qs.Modules.SurfaceWidgets
-import "../../../Common/IslandLayout.js" as IslandLayout
 
 Item {
     id: root
 
     required property var controller
     required property var systemModel
-    property var mediaModel: null
-    property var widgetEntries: null
-    property var widgetFactory: null
-    property var widgetContext: null
-    readonly property var configuredWidgets: widgetEntries ? widgetEntries.filter(entry => entry.enabled !== false) : []
 
     readonly property bool tight: root.controller.homeCompactTight
     readonly property real slotSize: root.tight ? Theme.iconSize : Theme.iconSizeLarge
@@ -35,8 +30,8 @@ Item {
     readonly property bool isVertical: root.controller.isVertical
     readonly property string clockDisplay: root.controller.homeClockDisplay
     readonly property real edgePad: Math.max(root.groupSpacing, ((root.isVertical ? root.height - compactColumn.height : root.width - compactRow.width)) / 2)
-    readonly property bool weatherSlotEnabled: widgetEntries ? configuredWidgets.some(entry => entry.id === "weather") : root.controller.homeWeatherEnabled
-    readonly property bool keyboardLayoutSlotEnabled: !widgetEntries && (root.controller.homeLeftGroups.indexOf("keyboardLayout") !== -1 || root.controller.homeRightGroups.indexOf("keyboardLayout") !== -1)
+    readonly property bool weatherSlotEnabled: root.controller.homeWeatherEnabled
+    readonly property bool keyboardLayoutSlotEnabled: root.controller.homeLeftGroups.indexOf("keyboardLayout") !== -1 || root.controller.homeRightGroups.indexOf("keyboardLayout") !== -1
     readonly property string keyboardLayoutLabel: KeyboardLayoutService.layoutKnown ? LayoutCodes.layoutCode(KeyboardLayoutService.currentLayout) : ""
     readonly property string brightnessDeviceId: BrightnessService.screenLeadDevice(root.controller.screen)
     readonly property var brightnessDevice: BrightnessService.getCurrentDeviceInfoByName(root.brightnessDeviceId)
@@ -47,13 +42,14 @@ Item {
     readonly property real brightnessMaximum: BrightnessService.brightnessMaximum(root.brightnessDevice)
     readonly property int brightnessPercent: root.brightnessMaximum > 0 ? Math.round(root.brightnessLevel / root.brightnessMaximum * 100) : 0
     readonly property int volumePercent: AudioService.sinkVolumePercent
-    readonly property var groupIds: widgetEntries ? configuredWidgets.map(entry => IslandLayout.groupForWidget(entry.id)) : root.groupsForSide("left").concat(["clock"]).concat(root.groupsForSide("right"))
+    readonly property var slots: root.controller.homeEntries.filter(entry => !SettingsData.isIslandHomeGroup(entry.id) || root.groupShown(entry.id))
+    readonly property bool hasBarWidgets: root.slots.some(entry => !SettingsData.isIslandHomeGroup(entry.id))
     readonly property real touchpadThreshold: 100
     property real wheelAccumulator: 0
     property bool weatherRefHeld: false
     property bool keyboardLayoutRefHeld: false
     // Same options as the bar's switcher widget
-    readonly property var workspaceWidgetData: root.widgetEntries ? root.configuredWidgets.find(entry => entry.id === "workspaceSwitcher") ?? null : SettingsData.barWidgetEntry(root.controller.barConfig, "workspaceSwitcher")
+    readonly property var workspaceWidgetData: SettingsData.barWidgetEntry(root.controller.barConfig, "workspaceSwitcher")
 
     function workspaceOption(key) {
         return SettingsData.widgetOption("workspaceSwitcher", root.workspaceWidgetData, key);
@@ -209,11 +205,6 @@ Item {
 
     function trayIconSourceFor(trayItem) {
         return TrayMenuManager.iconSourceFor(trayItem);
-    }
-
-    function groupsForSide(side) {
-        const groups = side === "left" ? root.controller.homeLeftGroups : root.controller.homeRightGroups;
-        return groups.filter(id => root.groupShown(id));
     }
 
     function groupShown(id) {
@@ -376,7 +367,7 @@ Item {
     }
 
     function pushMeasuredLength() {
-        root.controller.setHomeContentLength(Math.min(root.isVertical ? compactColumn.implicitHeight : compactRow.implicitWidth, root.isVertical ? root.controller.dashboardAvailableHeight : root.controller.dashboardAvailableWidth));
+        root.controller.setHomeContentLength(root.isVertical ? compactColumn.implicitHeight : compactRow.implicitWidth);
     }
 
     function syncKeyboardLayoutRef(wanted) {
@@ -447,9 +438,9 @@ Item {
 
         required property var group
 
-        enabled: !group.isClock && !group.isCustom
+        enabled: !group.isClock
+        controller: root.controller
         acceptedButtons: group.isTray ? Qt.NoButton : (Qt.LeftButton | Qt.MiddleButton)
-
 
         function connectivityTypeAt(event) {
             const clickPos = group.vertical ? event.y : event.x;
@@ -465,8 +456,10 @@ Item {
                     SessionData.suppressOSDTemporarily();
                     AudioService.toggleMicMute();
                 }
-                if (group.isMedia && root.controller.mediaAvailable && MprisController.activePlayer?.canTogglePlaying)
+                if (group.isMedia && root.controller.mediaAvailable && MprisController.activePlayer?.canTogglePlaying) {
+                    SessionData.suppressOSDTemporarily();
                     MprisController.activePlayer.togglePlaying();
+                }
                 if (group.isVolume && AudioService.sink?.audio) {
                     SessionData.suppressOSDTemporarily();
                     AudioService.toggleMute();
@@ -491,8 +484,11 @@ Item {
                 wheel.accepted = true;
                 return;
             }
-            if (!group.isVolume && !group.isBrightness)
+            // A connected onWheel accepts by default; hand the rest to the bar's workspace scroll.
+            if (!group.isVolume && !group.isBrightness) {
+                wheel.accepted = false;
                 return;
+            }
             root.adjustSystemLevel(group.groupId, wheel.angleDelta.y || wheel.angleDelta.x);
             wheel.accepted = true;
         }
@@ -506,9 +502,7 @@ Item {
 
         readonly property bool vertical: root.isVertical
         readonly property real leadPad: group.slotIndex === 0 ? root.edgePad : root.groupSpacing / 2
-        readonly property real trailPad: group.slotIndex === root.groupIds.length - 1 ? root.edgePad : root.groupSpacing / 2
-        readonly property var widgetData: root.widgetEntries ? root.configuredWidgets[group.slotIndex] : null
-        readonly property bool isCustom: !Object.keys(IslandLayout.GROUP_WIDGETS).includes(group.groupId)
+        readonly property real trailPad: group.slotIndex === root.slots.length - 1 ? root.edgePad : root.groupSpacing / 2
         readonly property bool isClock: group.groupId === "clock"
         readonly property bool isMedia: group.groupId === "media"
         readonly property bool isWeather: group.groupId === "weather"
@@ -525,12 +519,11 @@ Item {
         readonly property bool usesConnectivity: group.isStatus && root.controller.homeStatusContent === "connectivity"
         readonly property bool usesBattery: group.isStatus && !group.usesConnectivity && BatteryService.batteryAvailable
         readonly property bool iconOnly: group.isMedia || (group.isStatus && !group.usesBattery && !group.usesConnectivity)
-        readonly property bool outlineEnabled: group.widgetData?.outline ?? root.controller.barConfig?.widgetOutlineEnabled ?? false
         readonly property string levelDisplay: group.isVolume ? root.controller.homeVolumeDisplay : root.controller.homeBrightnessDisplay
         readonly property int levelPercent: group.isVolume ? root.volumePercent : root.brightnessPercent
         readonly property string levelReserve: group.isVolume ? String(AudioService.sinkMaxVolume) : "100"
 
-        width: group.vertical ? root.width : (group.isMedia ? content.implicitWidth : group.iconOnly ? root.iconSize : content.implicitWidth)
+        width: group.vertical ? root.width : (group.iconOnly ? root.iconSize : content.implicitWidth)
         height: group.vertical ? content.implicitHeight : root.slotSize
 
         GroupHoverArea {
@@ -550,11 +543,8 @@ Item {
             width: group.vertical ? root.slotSize : parent.width + Theme.spacingS
             height: group.vertical ? parent.height + Theme.spacingXS : root.slotSize
             radius: group.vertical ? Theme.cornerRadius : Theme.fullRadius(width, height)
-            border.width: group.outlineEnabled ? Theme.outlineWidth : 0
-            border.color: Theme.withAlpha(Theme.primary, root.controller.barConfig?.widgetOutlineOpacity ?? 1)
             color: groupArea.containsMouse ? Theme.surfaceTextHover : "transparent"
-            visible: group.outlineEnabled || !group.isClock && !group.isTray && (group.vertical || !group.usesBattery)
-
+            visible: !group.isClock && !group.isTray && (group.vertical || !group.usesBattery)
         }
 
         Grid {
@@ -584,41 +574,19 @@ Item {
                 }
             }
 
-            Loader {
-                active: group.isMedia
-                visible: active
-                sourceComponent: MediaActivityFace {
-                    mediaModel: root.mediaModel
-                    dense: true
-                    artworkSize: root.iconSize
-                    titleMaxWidth: group.widgetData ? SettingsData.widgetOption("music", group.widgetData, "mediaTitleMaxWidth") : 220
-                    isVertical: group.vertical
-                    artworkVisible: group.widgetData ? SettingsData.widgetOption("music", group.widgetData, "mediaShowCoverArt") : root.controller.mediaAlwaysVisible
-                    artworkCircular: group.widgetData ? SettingsData.widgetOption("music", group.widgetData, "mediaArtworkCircular") : root.controller.mediaArtworkCircular
-                    visualizerEnabled: group.widgetData ? SettingsData.widgetOption("music", group.widgetData, "mediaVisualizerEnabled") : true
-                    visualizerIdle: group.widgetData ? SettingsData.widgetOption("music", group.widgetData, "mediaVisualizerIdle") : root.controller.mediaVisualizerIdle
-                    titleVisible: root.controller.mediaAvailable && (group.widgetData?.mediaTitleMode === "always" || group.widgetData?.mediaTitleMode !== "never" && root.controller.mediaTitleVisible)
-                    enabled: root.visible && root.enabled
-                    onMediaClicked: root.activateGroup("media")
-                }
+            AudioVisualization {
+                width: root.iconSize + Theme.spacingXS
+                height: width
+                maxBarHeight: Math.max(3, height - 2)
+                idleIconName: "graphic_eq"
+                visible: group.isMedia && root.controller.mediaAvailable
             }
 
-            SurfaceWidgetHost {
-                visible: active
-                widgetId: group.isCustom ? group.widgetData?.id ?? "" : ""
-                widgetData: group.widgetData
-                components: root.widgetFactory?.componentMap ?? null
-                axis: root.widgetContext?.axis ?? null
-                surfaceContext: root.widgetContext
-                section: "center"
-                occurrenceOrder: group.slotIndex
-                parentScreen: root.controller.screen
-                barConfig: root.controller.barConfig
-                barThickness: root.controller.compactFaceThickness
-                widgetThickness: root.controller.compactIconSize
-                sectionAvailablePrimarySize: root.widgetContext?.availableSize ?? 0
-                isInColumn: root.isVertical
-                live: root.visible && root.enabled
+            DIcon {
+                visible: group.isMedia && !root.controller.mediaAvailable
+                name: "search"
+                size: root.iconSize
+                color: Theme.surfaceTextMedium
             }
 
             DIcon {
@@ -1030,6 +998,140 @@ Item {
         }
     }
 
+    // Bar widgets share one context, built only while the list holds any.
+    Loader {
+        id: barWidgetSupport
+
+        active: root.hasBarWidgets
+        sourceComponent: Item {
+            readonly property AxisContext axis: AxisContext {
+                id: supportAxis
+
+                edge: root.controller.edge
+            }
+            readonly property SurfaceContext context: SurfaceContext {
+                id: supportContext
+
+                host: root.controller.widgetHost
+                config: root.controller.barConfig
+                axis: supportAxis
+                screen: root.controller.screen
+                islandController: root.controller
+                thickness: root.controller.compactFaceThickness
+                widgetThickness: root.controller.compactIconSize
+                availableSize: root.isVertical ? root.controller.dashboardAvailableHeight : root.controller.dashboardAvailableWidth
+            }
+            readonly property SurfaceWidgetFactory factory: SurfaceWidgetFactory {
+                surfaceContext: supportContext
+            }
+        }
+    }
+
+    component IslandBarWidget: Item {
+        id: barWidget
+
+        required property var entry
+        required property int slotIndex
+        readonly property var support: barWidgetSupport.item
+        readonly property bool shown: widgetHost.active && widgetHost.width > 0
+        readonly property bool vertical: root.isVertical
+        readonly property real leadPad: barWidget.slotIndex === 0 ? root.edgePad : root.groupSpacing / 2
+        readonly property real trailPad: barWidget.slotIndex === root.slots.length - 1 ? root.edgePad : root.groupSpacing / 2
+
+        width: widgetHost.width
+        height: widgetHost.height
+        onVisibleChanged: slotHover.sync()
+
+        // The widget's MouseArea hides hover from siblings behind it, so the guard is a HoverHandler on its parent.
+        Item {
+            id: hoverZone
+
+            x: barWidget.vertical ? (barWidget.width - hoverZone.width) / 2 : -barWidget.leadPad
+            y: barWidget.vertical ? -barWidget.leadPad : (barWidget.height - hoverZone.height) / 2
+            width: barWidget.vertical ? root.width : barWidget.width + barWidget.leadPad + barWidget.trailPad
+            height: barWidget.vertical ? barWidget.height + barWidget.leadPad + barWidget.trailPad : root.height
+
+            HoverHandler {
+                id: slotHover
+
+                property bool counted: false
+
+                function sync() {
+                    const wanted = slotHover.hovered && barWidget.visible;
+                    if (wanted === slotHover.counted)
+                        return;
+                    slotHover.counted = wanted;
+                    if (wanted) {
+                        root.controller.slotHoverEntered();
+                        return;
+                    }
+                    root.controller.slotHoverExited();
+                }
+
+                onHoveredChanged: sync()
+                Component.onDestruction: {
+                    if (slotHover.counted)
+                        root.controller.slotHoverExited();
+                }
+            }
+
+            SurfaceWidgetHost {
+                id: widgetHost
+
+                x: barWidget.vertical ? (hoverZone.width - widgetHost.width) / 2 : barWidget.leadPad
+                y: barWidget.vertical ? barWidget.leadPad : (hoverZone.height - widgetHost.height) / 2
+                widgetId: barWidget.entry.id
+                // Island groups draw no pill, so bar widgets follow unless the entry says otherwise.
+                widgetData: Object.assign({
+                    "background": false
+                }, barWidget.entry)
+                spacerSize: barWidget.entry.size ?? 20
+                occurrenceOrder: barWidget.slotIndex
+                components: barWidget.support?.factory.componentMap ?? null
+                axis: barWidget.support?.axis ?? null
+                surfaceContext: barWidget.support?.context ?? null
+                section: "center"
+                parentScreen: root.controller.screen
+                barConfig: root.controller.barConfig
+                barThickness: root.controller.compactFaceThickness
+                widgetThickness: root.controller.compactIconSize
+                sectionAvailablePrimarySize: barWidget.support?.context.availableSize ?? 0
+                isInColumn: root.isVertical
+                live: root.visible && root.enabled
+            }
+        }
+    }
+
+    component HomeSlot: Loader {
+        id: slot
+
+        required property var modelData
+        required property int index
+
+        visible: slot.item?.shown ?? false
+        sourceComponent: SettingsData.isIslandHomeGroup(slot.modelData.id) ? groupSlot : widgetSlot
+
+        Component {
+            id: groupSlot
+
+            HomeGroup {
+                readonly property bool shown: true
+
+                groupId: String(slot.modelData.id)
+                slotIndex: slot.index
+            }
+        }
+
+        Component {
+            id: widgetSlot
+
+            IslandBarWidget {
+                entry: slot.modelData
+                slotIndex: slot.index
+            }
+        }
+    }
+
     Row {
         id: compactRow
 
@@ -1040,13 +1142,10 @@ Item {
         spacing: root.groupSpacing
 
         Repeater {
-            model: root.isVertical ? [] : root.groupIds
+            model: root.isVertical ? [] : root.slots
 
-            HomeGroup {
-                required property var modelData
-                required property int index
-                groupId: String(modelData)
-                slotIndex: index
+            HomeSlot {
+                anchors.verticalCenter: parent?.verticalCenter
             }
         }
     }
@@ -1061,13 +1160,10 @@ Item {
         spacing: root.groupSpacing
 
         Repeater {
-            model: root.isVertical ? root.groupIds : []
+            model: root.isVertical ? root.slots : []
 
-            HomeGroup {
-                required property var modelData
-                required property int index
-                groupId: String(modelData)
-                slotIndex: index
+            HomeSlot {
+                anchors.horizontalCenter: parent?.horizontalCenter
             }
         }
     }

@@ -15,6 +15,8 @@ Singleton {
     property var renderers: ({})
     property var sessions: []
     property var pendingHosts: ({})
+    // Hosts handed this revision's preview, so re-seeding a host never replays one it already showed.
+    property var announcedHosts: ({})
     property var actionQueue: []
     readonly property bool islandAvailable: sessions.length > 0
     readonly property bool activitiesAvailable: sessions.some(session => session.enabled)
@@ -49,8 +51,12 @@ Singleton {
         entries = next;
         const key = Activities.identity(entry);
         pendingHosts = Object.assign({}, pendingHosts, {[key]: hosts.map(session => session.hostKey)});
+        announcedHosts = Object.assign({}, announcedHosts, {[key]: hosts.map(session => session.hostKey)});
         for (const session of hosts)
             session.enqueue(entry);
+        // A host the new routing excludes would keep showing the old revision.
+        for (const session of sessions.filter(session => !session.accepts(entry) && session.contains(entry)))
+            session.remove(source, id);
         return true;
     }
 
@@ -64,12 +70,13 @@ Singleton {
             if (!entry.announce || !session.accepts(entry) || !session.canEnqueue(entry) || session.contains(entry))
                 continue;
             const key = Activities.identity(entry);
-            const hosts = pendingHosts[key] || [];
-            if (hosts.indexOf(session.hostKey) >= 0)
+            const announced = announcedHosts[key] || [];
+            if (announced.indexOf(session.hostKey) >= 0)
                 continue;
             if (!entry.persistent)
                 entry.expiresAt = 0;
-            pendingHosts = Object.assign({}, pendingHosts, {[key]: hosts.concat([session.hostKey])});
+            pendingHosts = Object.assign({}, pendingHosts, {[key]: (pendingHosts[key] || []).concat([session.hostKey])});
+            announcedHosts = Object.assign({}, announcedHosts, {[key]: announced.concat([session.hostKey])});
             session.enqueue(entry);
         }
         scheduleExpiry();
@@ -104,9 +111,13 @@ Singleton {
         if (next.length === entries.length)
             return false;
         entries = next;
+        const key = Activities.identity({source: source, id: id});
         const pending = Object.assign({}, pendingHosts);
-        delete pending[Activities.identity({source: source, id: id})];
+        delete pending[key];
         pendingHosts = pending;
+        const announced = Object.assign({}, announcedHosts);
+        delete announced[key];
+        announcedHosts = announced;
         for (const session of sessions)
             session.remove(source, id);
         return true;
@@ -138,9 +149,9 @@ Singleton {
         return Activities.select(entries, screen, barId, excludedSources || []);
     }
 
-    function canPresentSource(source, screen = null) {
+    function canPresentSource(source, screen = null, barId = "") {
         const screenName = typeof screen === "string" ? screen : screen?.name ?? "";
-        return sessions.some(session => session.enabled && (!screenName || session.screenName === screenName) && (session.excludedSources || []).indexOf(source) < 0);
+        return sessions.some(session => session.enabled && (!screenName || session.screenName === screenName) && (!barId || session.barId === barId) && (session.excludedSources || []).indexOf(source) < 0);
     }
 
     function availabilityOn(screenName) {
@@ -193,10 +204,6 @@ Singleton {
         const events = actionQueue.filter(event => event.source === source);
         actionQueue = actionQueue.filter(event => event.source !== source);
         return JSON.stringify(events);
-    }
-
-    function notificationsQueued() {
-        return sessions.some(session => session.notificationsEnabled && NotificationService.isFocusedScreen({name: session.screenName}));
     }
 
     function open(source, id) {

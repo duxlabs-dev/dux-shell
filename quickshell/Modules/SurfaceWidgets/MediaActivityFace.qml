@@ -15,19 +15,23 @@ Item {
     required property var mediaModel
 
     property bool dense: false
-    property bool titleVisible: true
-    property bool visualizerIdle: false
-    property bool artworkCircular: true
+    property var widgetData: null
     property bool artworkVisible: true
-    property bool visualizerEnabled: true
-    property real titleMaxWidth: 220
-    readonly property bool visualizerVisible: root.visualizerEnabled && (root.mediaModel.playing || root.visualizerIdle)
+    property string artworkShape: SettingsData.widgetOption("music", widgetData, "mediaArtworkShape")
+    property string visualizerMode: SettingsData.widgetOption("music", widgetData, "mediaVisualizerMode")
+    property string titleMode: SettingsData.widgetOption("music", widgetData, "mediaTitleMode")
+    property int titleDuration: SettingsData.widgetOption("music", widgetData, "mediaTitleDuration")
+    property real titleMaxWidth: SettingsData.widgetOption("music", widgetData, "mediaTitleMaxWidth")
+    readonly property bool visualizerShown: visualizerMode === "always" || (visualizerMode === "playing" && mediaModel.playing)
+    readonly property bool titleShown: titleMode === "always" || (titleMode === "changes" && titleFlashing)
+    property bool titleFlashing: false
+    readonly property string trackTitle: mediaModel.title
+    readonly property bool trackAvailable: mediaModel.available
     property real contentScale: 1
     property bool isVertical: false
     property real artworkSize: Theme.iconSizeLarge
     readonly property real textGutter: Theme.spacingXS
     readonly property real cavaWidth: 20
-    readonly property real artworkWaveGap: Theme.spacingM
     readonly property real minTextWidth: 48
     readonly property real clockLeadPad: Theme.spacingXS / 2
     readonly property real clockTrailPad: Theme.spacingS
@@ -46,7 +50,7 @@ Item {
     property bool clockVisible: false
     property bool lyricsEnabled: false
     readonly property bool lyricsWanted: lyricsEnabled && LyricsService.allowed && !isVertical
-    readonly property bool lyricsLive: lyricsWanted && enabled && titleVisible
+    readonly property bool lyricsLive: lyricsWanted && enabled && titleShown
     readonly property bool lyricActive: {
         if (!lyricsLive)
             return false;
@@ -61,17 +65,38 @@ Item {
     property real lyricWordWidth: 0
     readonly property real titleFontSize: Theme.fontSizeSmall * root.contentScale
     readonly property real chromeWidth: {
-        let width = Theme.spacingS + (root.artworkVisible ? root.artworkSize + root.artworkWaveGap : 0) + (horizontalWave.retained ? root.cavaWidth + Theme.spacingXS : 0) + (titleSlot.retained ? root.textGutter * 2 + Theme.spacingXS : 0);
-
+        let width = Theme.spacingS + Theme.spacingXS;
+        if (root.artworkVisible)
+            width += root.artworkSize + Theme.spacingXS;
+        if (wave.retained)
+            width += root.cavaWidth + (titleSlot.retained ? Theme.spacingXS : 0);
+        if (titleSlot.retained)
+            width += root.textGutter * 2;
         if (root.clockVisible)
             width += clockText.width + Theme.spacingXS * 2 + Theme.spacingS;
         return width;
     }
     readonly property real lyricWidth: LyricsService.controller.synced ? LyricLayout.pageWidth(root.lyricWidths, root.maxLength - root.chromeWidth, root.minTextWidth, root.lyricWordWidth / 2) : 0
-    readonly property real naturalTextWidth: root.lyricWidth > 0 ? root.lyricWidth : Math.min(Math.max(root.minTextWidth, root.titleMaxWidth), Math.max(root.minTextWidth, titleMetrics.width, root.dense ? 0 : artistMetrics.width))
+    readonly property real titleWidth: {
+        const natural = Math.max(root.minTextWidth, titleMetrics.width, root.dense ? 0 : artistMetrics.width);
+        return root.titleMaxWidth > 0 ? Math.min(natural, Math.max(root.minTextWidth, root.titleMaxWidth * root.contentScale)) : natural;
+    }
+    readonly property real naturalTextWidth: root.lyricWidth > 0 ? root.lyricWidth : root.titleWidth
     readonly property real measuredWidth: root.chromeWidth + (titleSlot.retained ? root.naturalTextWidth : 0)
 
     onLyricsWantedChanged: measureLyrics()
+    onTrackTitleChanged: flashTitle()
+    onTrackAvailableChanged: flashTitle()
+    onTitleModeChanged: titleFlashing = false
+    Component.onCompleted: flashTitle()
+
+    function flashTitle() {
+        if (root.titleMode !== "changes" || !root.trackAvailable)
+            return;
+        root.titleFlashing = true;
+        if (titleTimer.running)
+            titleTimer.restart();
+    }
 
     function measureLyrics() {
         if (!root.lyricsWanted && root.lyricWidths.length === 0)
@@ -96,14 +121,6 @@ Item {
     implicitHeight: isVertical ? verticalFace.implicitHeight + verticalPad * 2 : artworkSize
     readonly property bool clockHovered: enabled && visible && ((clockArea.visible && clockArea.containsMouse) || (verticalClockArea.visible && verticalClockArea.containsMouse))
     signal clockClicked
-    signal mediaClicked
-
-    MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.LeftButton
-        cursorShape: Qt.PointingHandCursor
-        onClicked: root.mediaClicked()
-    }
 
     StyledTextMetrics {
         id: titleMetrics
@@ -147,6 +164,14 @@ Item {
         precision: SettingsData.showSeconds ? SystemClock.Seconds : SystemClock.Minutes
     }
 
+    Timer {
+        id: titleTimer
+
+        interval: Math.max(500, Math.min(15000, root.titleDuration))
+        running: root.titleFlashing && root.enabled
+        onTriggered: root.titleFlashing = false
+    }
+
     MediaArtwork {
         id: artwork
 
@@ -158,15 +183,19 @@ Item {
         visible: !root.isVertical && root.artworkVisible
         width: root.artworkVisible ? root.artworkSize : 0
         height: width
-        cornerRadius: root.artworkCircular ? Math.min(width, height) / 2 : 0
         artUrl: root.mediaModel.artUrl
+
+        Binding on cornerRadius {
+            when: root.artworkShape !== "rounded"
+            value: root.artworkShape === "circle" ? artwork.width / 2 : 0
+        }
     }
 
     Row {
         visible: !root.isVertical
         anchors {
             left: artwork.right
-            leftMargin: root.artworkVisible ? root.artworkWaveGap : 0
+            leftMargin: root.artworkVisible ? Theme.spacingXS : 0
             right: root.clockVisible ? rightActivity.left : parent.right
             rightMargin: Theme.spacingXS
             verticalCenter: parent.verticalCenter
@@ -175,9 +204,11 @@ Item {
         spacing: Theme.spacingXS
 
         FadePresence {
-            id: horizontalWave
+            id: wave
+
             anchors.verticalCenter: parent.verticalCenter
-            shown: root.visualizerVisible
+            ready: true
+            shown: root.visualizerShown
             width: root.cavaWidth
             height: parent.height
 
@@ -190,61 +221,58 @@ Item {
 
         FadePresence {
             id: titleSlot
-            duration: Theme.mediumDuration
-            clip: true
-            shown: root.titleVisible
-            width: Math.max(0, parent.width - (horizontalWave.retained ? root.cavaWidth + parent.spacing : 0))
-            height: trackText.implicitHeight
+
             anchors.verticalCenter: parent.verticalCenter
+            ready: true
+            shown: root.titleShown
+            width: parent.width - (wave.retained ? root.cavaWidth + parent.spacing : 0)
+            height: trackText.implicitHeight
 
             Column {
                 id: trackText
+
                 width: parent.width
                 spacing: 0
-                Item {
-                    width: parent.width
-                    height: titleText.implicitHeight
-            ScrollingText {
-                id: titleText
 
-                x: root.textGutter
-                width: parent.width - root.textGutter * 2
-                visible: !root.lyricActive
-                text: root.mediaModel.title
-                color: Theme.surfaceText
-                font.pixelSize: Theme.fontSizeSmall * root.contentScale
-                font.weight: Theme.fontWeightMedium
-                active: root.enabled && root.mediaModel.playing && titleSlot.shown
-                holdStartMs: 1600
-                holdEndMs: 1200
-                pxPerMs: 1 / 62.5
-                overscroll: root.textGutter
-            }
+                ScrollingText {
+                    id: titleText
 
-            MediaLyricLine {
-                x: root.textGutter
-                width: parent.width - root.textGutter * 2
-                height: titleText.height
-                visible: root.lyricActive
-                controller: LyricsService.controller
-                color: Theme.surfaceText
-                font.pixelSize: titleText.font.pixelSize
-                font.weight: titleText.font.weight
-                live: root.enabled
-            }
-
+                    x: root.textGutter
+                    width: parent.width - root.textGutter * 2
+                    visible: !root.lyricActive
+                    text: root.mediaModel.title
+                    color: Theme.surfaceText
+                    font.pixelSize: Theme.fontSizeSmall * root.contentScale
+                    font.weight: Theme.fontWeightMedium
+                    active: root.enabled && root.mediaModel.playing && root.titleShown
+                    holdStartMs: 1600
+                    holdEndMs: 1200
+                    pxPerMs: 1 / 62.5
+                    overscroll: root.textGutter
                 }
-            StyledText {
-                x: root.textGutter
-                width: parent.width - root.textGutter * 2
-                visible: !root.dense
-                text: root.mediaModel.artist
-                color: Theme.surfaceTextSecondary
-                font.pixelSize: Theme.fontSizeXSmall * root.contentScale
-                wrapMode: Text.NoWrap
-                elide: Text.ElideRight
-            }
 
+                MediaLyricLine {
+                    x: root.textGutter
+                    width: parent.width - root.textGutter * 2
+                    height: titleText.height
+                    visible: root.lyricActive
+                    controller: LyricsService.controller
+                    color: Theme.surfaceText
+                    font.pixelSize: titleText.font.pixelSize
+                    font.weight: titleText.font.weight
+                    live: root.enabled
+                }
+
+                StyledText {
+                    x: root.textGutter
+                    width: parent.width - root.textGutter * 2
+                    visible: !root.dense
+                    text: root.mediaModel.artist
+                    color: Theme.surfaceTextSecondary
+                    font.pixelSize: Theme.fontSizeXSmall * root.contentScale
+                    wrapMode: Text.NoWrap
+                    elide: Text.ElideRight
+                }
             }
         }
     }
@@ -296,28 +324,30 @@ Item {
 
         anchors.centerIn: parent
         visible: root.isVertical
-        spacing: root.artworkWaveGap
+        spacing: Theme.spacingXS
 
         MediaArtwork {
+            id: verticalArtwork
+
             anchors.horizontalCenter: parent.horizontalCenter
             visible: root.artworkVisible
             width: root.verticalArtworkSize
             height: width
-            cornerRadius: root.artworkCircular ? Math.min(width, height) / 2 : 0
             artUrl: root.mediaModel.artUrl
+
+            Binding on cornerRadius {
+                when: root.artworkShape !== "rounded"
+                value: root.artworkShape === "circle" ? verticalArtwork.width / 2 : 0
+            }
         }
 
-        FadePresence {
+        AudioVisualization {
             anchors.horizontalCenter: parent.horizontalCenter
-            shown: root.visualizerVisible
+            visible: root.visualizerShown
             width: root.verticalArtworkSize
             height: root.cavaWidth
-
-            AudioVisualization {
-                anchors.fill: parent
-                maxBarHeight: Math.max(3, height - 2)
-                idleIconName: "graphic_eq"
-            }
+            maxBarHeight: Math.max(3, height - 2)
+            idleIconName: "graphic_eq"
         }
 
         Item {

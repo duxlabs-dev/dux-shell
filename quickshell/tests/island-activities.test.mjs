@@ -71,27 +71,20 @@ test("notification templates substitute literal text without interpreting it", (
     assert.equal(activities.notificationTitle("{unknown}", info), "{unknown}");
 });
 
-test("idle always restores the complete configured widget face", () => {
-    assert.equal(activities.idleActivity(true, true), "home");
-    assert.equal(activities.idleActivity(false, true), "home");
-    assert.equal(activities.idleActivity(true, false), "home");
-});
-
-test("dashboard hover is confined to collapsed idle content and active previews opt in", () => {
-    for (const activity of ["home", "media", "launcher", "clipboard", "controlcenter", "notification", "volume", "capslock", "live"])
-        assert.equal(activities.hoverActivityFor(activity, true, { hoverActivity: "home" }), "");
-    for (const activity of ["launcher", "clipboard", "controlcenter", "notification", "volume", "capslock"])
-        assert.equal(activities.hoverActivityFor(activity, false, { hoverActivity: "home" }), "");
-    assert.equal(activities.hoverActivityFor("home", false, null), "home");
-    assert.equal(activities.hoverActivityFor("media", false, null), "home");
-    assert.equal(activities.hoverActivityFor("media", false, null, true), "");
-    assert.equal(activities.hoverActivityFor("home", false, null, false, true), "");
-    assert.equal(activities.hoverActivityFor("live", false, { hoverActivity: "live" }, false, true), "");
-    for (const hoverActivity of ["", "none", "invalid"])
-        assert.equal(activities.hoverActivityFor("live", false, { hoverActivity }), "");
-    assert.equal(activities.hoverActivityFor("live", false, { hoverActivity: "live" }), "live");
-    assert.equal(activities.hoverActivityFor("live", false, { hoverActivity: "home" }), "home");
-    assert.equal(entry("plugin", "preview", { hoverActivity: "live" }).hoverActivity, "live");
+test("island colours accept Theme roles only, and every role resolves to Theme properties", () => {
+    const theme = readFileSync(new URL("../Common/Theme.qml", import.meta.url), "utf8");
+    for (const colors of Object.values(activities.ROLE_COLORS)) {
+        for (const name of [colors.fill, colors.on, colors.tint].filter(Boolean))
+            assert.match(theme, new RegExp(`property color ${name}\\b`), name);
+    }
+    for (const role of activities.SURFACE_ROLES.filter(Boolean))
+        assert.ok(activities.roleColors(role), role);
+    assert.equal(activities.surfaceRole("error"), "");
+    assert.equal(activities.surfaceRole("#ff0000"), "");
+    const colored = entry("plugin", "preview", { background: "#ff0000", expandedBackground: "tertiaryContainer", foreground: "warning" });
+    assert.equal(colored.background, "");
+    assert.equal(colored.expandedBackground, "tertiaryContainer");
+    assert.equal(colored.foreground, "warning");
 });
 
 function serviceFunctions(file, context, names) {
@@ -109,7 +102,7 @@ test("source cleanup, action dispatch and expiry scheduling share the activity r
     const invoked = [];
     const expiry = { interval: 0, running: false, stop() { this.running = false; }, start() { this.running = true; } };
     const service = serviceFunctions("../Services/IslandActivityService.qml", {
-        Activities: activities, entries: [], renderers: {}, publicationRevision: 0, sessions: [], pendingHosts: {}, actionQueue: [],
+        Activities: activities, entries: [], renderers: {}, publicationRevision: 0, sessions: [], pendingHosts: {}, announcedHosts: {}, actionQueue: [],
         Date: { now: () => 1000 }, expiry,
         actionInvoked: (...args) => invoked.push(args)
     });
@@ -157,7 +150,7 @@ test("persistent activities retain their slot after their preview and accept pla
 function registry() {
     const expiry = { interval: 0, running: false, stop() { this.running = false; }, start() { this.running = true; } };
     return serviceFunctions("../Services/IslandActivityService.qml", {
-        Activities: activities, entries: [], renderers: {}, publicationRevision: 0, sessions: [], pendingHosts: {}, actionQueue: [],
+        Activities: activities, entries: [], renderers: {}, publicationRevision: 0, sessions: [], pendingHosts: {}, announcedHosts: {}, actionQueue: [],
         Date: { now: () => 1000 }, expiry, actionInvoked() {}, Quickshell: { execDetached() {} }
     });
 }
@@ -188,28 +181,24 @@ function session(service) {
     const timeout = { interval: 0, running: false, start() { this.running = true; }, stop() { this.running = false; } };
     const instance = serviceFunctions("../Services/IslandActivitySession.qml", {
         Activities: activities, IslandActivityService: service,
-        enabled: true, notificationsEnabled: true, systemsEnabled: true, blocked: false, held: false, registered: true,
+        enabled: true, blocked: false, held: false, registered: true,
         screenName: "DP-1", barId: "bar", hostKey: "host", excludedSources: [], defaultDuration: 5000,
         queue: [], current: null, remaining: 0, deadline: 0, timeout,
-        Date: { now: () => clock.now }, Qt: { callLater: fn => deferred.push(fn) }, NotificationUrgency: { Critical: 2 }
+        Date: { now: () => clock.now }, Qt: { callLater: fn => deferred.push(fn) }
     });
     return { instance, clock, timeout, flush() { while (deferred.length) deferred.shift()(); } };
 }
 
-test("recording preview completes before queued notifications get their full display time", () => {
+test("a held recording preview resumes its remaining time before the queued preview", () => {
     const service = registry();
     const host = session(service);
     const state = host.instance;
     service.registerSession(state);
     service.publish("recorder", "status", { title: "Recording", persistent: true, category: "status", duration: 1000 });
-    const notificationTimer = { interval: 2000, running: true, stop() { this.running = false; } };
-    const wrapper = { seq: 1, summary: "Message", popup: true, urgency: 1, timer: notificationTimer };
-    state.enqueueNotification(wrapper);
     service.publish("calendar", "reminder", { title: "Meeting", duration: 3000 });
     host.flush();
     assert.equal(state.current.source, "recorder");
-    assert.equal(state.queue.length, 2);
-    assert.equal(notificationTimer.running, false);
+    assert.equal(state.queue.length, 1);
     assert.equal(service.entries.find(entry => entry.source === "calendar").expiresAt, 0);
 
     host.clock.now = 1400;
@@ -223,14 +212,8 @@ test("recording preview completes before queued notifications get their full dis
     assert.equal(host.timeout.interval, 600);
     state.finishCurrent(state.current);
     host.flush();
-    assert.equal(state.current.wrapper, wrapper);
-    assert.equal(host.timeout.interval, 2000);
     assert.equal(service.entries.find(entry => entry.source === "recorder").persistent, true);
     assert.equal(service.entries.find(entry => entry.source === "recorder").announce, false);
-
-    state.finishCurrent(state.current);
-    host.flush();
-    assert.equal(wrapper.popup, false);
     assert.equal(state.current.source, "calendar");
     assert.equal(host.timeout.interval, 3000);
     state.finishCurrent(state.current);
@@ -320,31 +303,6 @@ test("queue saturation cannot retain an unqueued transient forever", () => {
     assert.equal(service.entries[0].persistent, true);
 });
 
-test("notification replacements refresh the full display interval without restarting the preceding preview", () => {
-    const service = registry();
-    const host = session(service);
-    const state = host.instance;
-    service.registerSession(state);
-    service.publish("recorder", "status", {title: "Recording", persistent: true, duration: 1000});
-    const wrapper = {seq: 1, popup: true, timer: {interval: 2000, stop() {}}};
-    state.enqueueNotification(wrapper);
-    host.clock.now = 1400;
-    wrapper.timer.interval = 4000;
-    state.refreshNotification(wrapper);
-    assert.equal(state.current.source, "recorder");
-    assert.equal(state.deadline, 2000);
-    state.finishCurrent(state.current);
-    host.flush();
-    assert.equal(host.timeout.interval, 4000);
-    host.clock.now = 2000;
-    state.refreshNotification(wrapper);
-    assert.equal(state.deadline, 6000);
-    state.finishCurrent(state.current);
-    host.flush();
-    assert.equal(state.remaining, 0);
-    assert.equal(host.timeout.running, false);
-});
-
 test("one host completing a queued activity does not drop it from another host", () => {
     const service = registry();
     const first = session(service);
@@ -361,6 +319,39 @@ test("one host completing a queued activity does not drop it from another host",
     second.instance.advance();
     second.instance.finishCurrent(second.instance.current);
     assert.equal(service.entries.length, 0);
+});
+
+test("republishing to another screen clears the preview from islands it left", () => {
+    const service = registry();
+    const first = session(service);
+    const second = session(service);
+    second.instance.screenName = "DP-2";
+    second.instance.hostKey = "other";
+    service.registerSession(first.instance);
+    service.registerSession(second.instance);
+    service.publish("download", "file", { title: "Download", screen: "DP-1", duration: 5000 });
+    assert.equal(first.instance.current.id, "file");
+    service.publish("download", "file", { title: "Download", screen: "DP-2", duration: 5000 });
+    assert.equal(first.instance.current, null);
+    assert.equal(second.instance.current.id, "file");
+    assert.equal(service.entries.length, 1, "the stale host's acknowledgement must not remove the new revision");
+});
+
+test("re-seeding a host never replays a preview it already finished", () => {
+    const service = registry();
+    const first = session(service);
+    const second = session(service);
+    second.instance.hostKey = "other";
+    second.instance.blocked = true;
+    service.registerSession(first.instance);
+    service.registerSession(second.instance);
+    service.publish("calendar", "event", { title: "Meeting", duration: 1000 });
+    first.instance.finishCurrent(first.instance.current);
+    first.flush();
+    first.instance.reconfigure();
+    assert.equal(first.instance.current, null);
+    assert.equal(first.instance.queue.length, 0);
+    assert.equal(second.instance.queue.length, 1);
 });
 
 test("higher-priority preemptible events interrupt, then resume the active preview", () => {
@@ -383,52 +374,6 @@ test("higher-priority preemptible events interrupt, then resume the active previ
     host.flush();
     assert.equal(host.instance.current.source, "a");
     assert.equal(host.timeout.interval, 800);
-});
-
-test("system events share the queue and critical notifications can preempt them", () => {
-    const service = registry();
-    const host = session(service);
-    const state = host.instance;
-    service.registerSession(state);
-    assert.equal(state.enqueueSystem("volume", 2200), true);
-    assert.equal(state.current.kind, "system");
-    assert.equal(state.current.priority, 60);
-    const normal = { seq: 1, summary: "Message", popup: true, urgency: 1, timer: { interval: 1000, stop() {} } };
-    state.enqueueNotification(normal);
-    assert.equal(state.current.kind, "system");
-    assert.equal(state.queue[0].kind, "notification");
-    const critical = { seq: 2, summary: "Urgent", popup: true, urgency: 2, timer: { interval: 1000, stop() {} } };
-    state.enqueueNotification(critical);
-    assert.equal(state.current.wrapper, critical);
-    assert.equal(state.current.priority, 100);
-    assert.equal(state.queue.some(event => event.kind === "system"), true);
-    host.clock.now = 2000;
-    state.finishCurrent(state.current);
-    host.flush();
-    assert.equal(state.current.kind, "system");
-    assert.equal(state.current.systemActivity, "volume");
-});
-
-test("system events respect the bounded queue when all preview slots are occupied", () => {
-    const service = registry();
-    const host = session(service);
-    const state = host.instance;
-    state.queue = Array.from({ length: 64 }, (_, index) => activities.normalize("queued", String(index), { title: "Queued", duration: 1000 }, 1000));
-    assert.equal(state.enqueueSystem("volume", 2200), false);
-    assert.equal(state.queue.length, 64);
-    assert.equal(state.current, null);
-});
-
-test("ordinary notifications wait behind a recording start preview", () => {
-    const service = registry();
-    const host = session(service);
-    const state = host.instance;
-    service.registerSession(state);
-    service.publish("recorder", "start", { title: "Recording started", priorityClass: "urgent", preemption: "higher", duration: 1000 });
-    const wrapper = { seq: 1, summary: "Message", popup: true, urgency: 1, timer: { interval: 1000, stop() {} } };
-    state.enqueueNotification(wrapper);
-    assert.equal(host.instance.current.source, "recorder");
-    assert.equal(host.instance.queue[0].kind, "notification");
 });
 
 test("IPC action polling drains only the requested source and stays bounded", () => {
@@ -493,15 +438,37 @@ test("plugin notification interceptors can consume into a live activity", () => 
     const service = serviceFunctions("../Services/NotificationService.qml", {
         SettingsData: { notificationRules: [], isNotificationRuleExpired: () => false },
         NotificationUrgency: { Low: 0, Normal: 1, Critical: 2 },
-        NotificationInterceptorService: { evaluate: () => ({ source: "dankCalendar", result: { consume: true, activity: { title: "Design review", icon: "event" } } }) },
+        NotificationInterceptorService: { entries: [{}], activitySequence: 0, evaluate: () => ({ source: "dankCalendar", result: { consume: true, activity: { title: "Design review", icon: "event" } } }) },
         IslandActivityService: { canPresentSource: source => source === "dankCalendar", publish: (source, id, activity) => (published = { source, id, activity }, true) },
+        Activities: activities,
         log: { warn() {} }
-    }, ["_ruleFieldValue", "_coerceRuleUrgency", "_matchesNotificationRule", "_applyPluginInterceptor", "_evaluateNotificationPolicy"]);
+    }, ["_ruleFieldValue", "_coerceRuleUrgency", "_matchesNotificationRule", "_applyPluginInterceptor", "_publishInterceptedActivity", "_evaluateNotificationPolicy"]);
     service._resolveAppNameForRule = notification => notification.appName;
     const policy = service._evaluateNotificationPolicy({ appName: "Dank Calendar", summary: "Design review" });
-    assert.equal(policy.drop, true);
+    assert.equal(policy.drop, false);
+    assert.deepEqual(JSON.parse(JSON.stringify(policy.activity)), { source: "dankCalendar", payload: { title: "Design review", icon: "event" } });
+    assert.equal(published, null);
+    assert.equal(service._publishInterceptedActivity(policy.activity), true);
     assert.equal(published.source, "dankCalendar");
     assert.equal(published.activity.title, "Design review");
+    assert.equal(published.id, "notification-1");
+    service._publishInterceptedActivity({ source: "dankCalendar", payload: { id: "review-42", title: "Design review" } });
+    assert.equal(published.id, "review-42", "a plugin id lets the plugin update or remove it later");
+});
+
+test("consuming a notification needs an island on the activity's own screen and bar", () => {
+    const islands = serviceFunctions("../Services/IslandActivityService.qml", {
+        sessions: [{ screenName: "DP-1", barId: "bar", enabled: true, excludedSources: [] }]
+    }, ["canPresentSource"]);
+    let published = 0;
+    const service = serviceFunctions("../Services/NotificationService.qml", {
+        NotificationInterceptorService: { activitySequence: 0 },
+        IslandActivityService: { canPresentSource: islands.canPresentSource, publish: () => (++published, true) },
+        Activities: activities
+    }, ["_publishInterceptedActivity"]);
+    for (const [payload, expected] of [[{}, true], [{ screen: "DP-1", barId: "bar" }, true], [{ screen: "DP-2" }, false], [{ screen: "DP-1", barId: "other" }, false]])
+        assert.equal(service._publishInterceptedActivity({ source: "calendar", payload: Object.assign({ title: "Review" }, payload) }), expected, JSON.stringify(payload));
+    assert.equal(published, 2);
 });
 
 test("blocked sheets defer preemption without losing the running preview", () => {
@@ -510,17 +477,9 @@ test("blocked sheets defer preemption without losing the running preview", () =>
     service.registerSession(host.instance);
     service.publish("download", "one", { title: "Download", duration: 3000 });
     host.instance.blocked = true;
-    host.instance.enqueueSystem("volume", 2200);
+    host.instance.enqueue(entry("urgent", "one", { priorityClass: "urgent", preemption: "higher", duration: 500 }));
     assert.equal(host.instance.current.source, "download");
-    assert.equal(host.instance.queue[0].kind, "system");
-});
-
-test("system feedback stays available when plugin activities are disabled", () => {
-    const host = session(registry());
-    host.instance.enabled = false;
-    assert.equal(host.instance.enqueueSystem("volume", 2200), true);
-    host.instance.reconfigure();
-    assert.equal(host.instance.current.kind, "system");
+    assert.equal(host.instance.queue[0].source, "urgent");
 });
 
 test("a full queue never drops the interrupted preview", () => {
@@ -529,20 +488,9 @@ test("a full queue never drops the interrupted preview", () => {
     service.registerSession(host.instance);
     service.publish("download", "one", { title: "Download", duration: 3000 });
     host.instance.queue = Array.from({ length: 63 }, (_, i) => entry("queued", String(i), { title: "Queued" }));
-    host.instance.enqueueSystem("volume", 2200);
+    host.instance.enqueue(entry("urgent", "one", { priorityClass: "urgent", preemption: "higher", duration: 500 }));
     assert.equal(host.instance.current.source, "download");
     assert.equal(host.instance.queue.length, 64);
-});
-
-test("preempted notifications without a timeout remain untimed on resumption", () => {
-    const host = session(registry());
-    host.instance.enqueueNotification({ seq: 1, summary: "Message", popup: true, urgency: 1, timer: { interval: 0, stop() {} } });
-    host.instance.enqueueSystem("volume", 2200);
-    host.instance.finishCurrent(host.instance.current);
-    host.flush();
-    assert.equal(host.instance.current.kind, "notification");
-    assert.equal(host.instance.current.duration, 0);
-    assert.equal(host.timeout.running, false);
 });
 
 test("external persistent activities expire and renew through the existing registry timer", () => {
@@ -579,46 +527,19 @@ test("external publishers get a bounded lifetime while plugin lifetime follows u
         assert.equal(service.publish("external", "bad", { title: "Bad", persistent: true, ttl }, true), false);
 });
 
-test("disabling island notifications releases the current popup back to its existing timer", () => {
-    const host = session(registry());
-    let restarts = 0;
-    const wrapper = { seq: 1, summary: "Message", popup: true, urgency: 1, timer: { interval: 1000, stop() {}, restart() { restarts++; } } };
-    host.instance.enqueueNotification(wrapper);
-    host.instance.notificationsEnabled = false;
-    host.instance.reconfigure();
-    assert.equal(wrapper.popup, true);
-    assert.equal(restarts, 1);
-    assert.equal(host.instance.current, null);
-    assert.equal(host.timeout.running, false);
-});
-
 test("silent updates do not prevent an interrupted preview from resuming", () => {
     const service = registry();
     const host = session(service);
     service.registerSession(host.instance);
     service.publish("download", "job", { title: "Download", persistent: true });
     service.publish("download", "job", { title: "Halfway", persistent: true });
-    host.instance.enqueueSystem("volume", 2200);
+    host.instance.enqueue(entry("urgent", "one", { priorityClass: "urgent", preemption: "higher", duration: 500 }));
+    assert.equal(host.instance.current.source, "urgent");
     host.instance.finishCurrent(host.instance.current);
     host.flush();
     assert.equal(host.instance.current.source, "download");
     assert.equal(host.instance.current.title, "Halfway");
 });
-
-test("replacement notifications keep their popup timers held by the session", () => {
-    const host = session(registry());
-    const timer = { interval: 1000, running: true, stop() { this.running = false; } };
-    const wrapper = { seq: 1, summary: "Message", popup: true, urgency: 1, timer };
-    host.instance.enqueueNotification(wrapper);
-    host.flush();
-    timer.running = true;
-    host.instance.refreshNotification(wrapper);
-    assert.equal(timer.running, false);
-    timer.running = true;
-    host.flush();
-    assert.equal(timer.running, false);
-});
-
 
 test("silent updates retain slot order and visibility even for simultaneous publications", () => {
     for (const secondTime of [1000, 1100]) {
@@ -643,7 +564,6 @@ test("action availability is enforced for both button and click dispatch", () =>
     assert.equal(payload.status.length, 256);
     assert.equal(payload.actions[0].role, "destructive");
 });
-
 
 test("IPC payloads share the CLI's 64 KiB UTF-8 boundary", () => {
     for (const [text, count] of [["x", 65536], ["é", 32768], ["界", 21845], ["😀", 16384]]) {

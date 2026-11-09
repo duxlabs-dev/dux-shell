@@ -23,8 +23,7 @@ Item {
             return SettingsData.getDockConfig(dockId)?.widgets.find(item => item.id === SettingsUiState.selectedDockWidgetId) ?? null;
         SettingsData.barConfigs;
         const config = SettingsData.getBarConfig(barId);
-        const entries = config?.[section + "Widgets"] ?? [];
-        const raw = entries[index];
+        const raw = SettingsData.barSectionWidgets(config, section)[index];
         if (raw === undefined)
             return null;
         return typeof raw === "string" ? ({
@@ -35,8 +34,9 @@ Item {
     readonly property string widgetType: entry?.widgetId ?? entry?.id ?? ""
     readonly property bool sectionAutoOverflow: SettingsData.getBarConfig(barId)?.[section + "OverflowMode"] !== "bar"
     readonly property bool hasPill: !dockHosted && !["spacer", "separator", "island"].includes(widgetType)
-    readonly property bool barOutline: SettingsData.getBarConfig(barId)?.widgetOutlineEnabled ?? false
-    readonly property bool barBackground: !(SettingsData.barConfigs.find(config => config.id === barId)?.noBackground ?? false)
+    // Widgets inside the island never overflow and draw no pill unless asked.
+    readonly property bool islandHosted: section === "island"
+    readonly property bool barBackground: !islandHosted && !(SettingsData.barConfigs.find(config => config.id === barId)?.noBackground ?? false)
     readonly property var store: ({
             "get": key => root.value(key),
             "set": (key, value) => root.set(key, value),
@@ -166,7 +166,7 @@ Item {
                 readonly property var placementLabels: [sectionMode].concat(placementValues.slice(1)).map(mode => mode === "auto" ? I18n.tr("Auto") : mode === "bar" ? I18n.tr("Keep in Bar") : I18n.tr("Always in overflow", "bar widget placement option, the widget always lives in the overflow menu"))
                 readonly property string placementValue: root.value("overflowMode") === sectionMode ? "section" : root.value("overflowMode")
 
-                visible: !root.dockHosted && !OverflowLayout.pinned(root.widgetType)
+                visible: !root.dockHosted && !root.islandHosted && !OverflowLayout.pinned(root.widgetType)
                 resetStore: root.store
                 resetKeys: ["overflowMode"]
                 text: I18n.tr("Placement")
@@ -177,7 +177,7 @@ Item {
             }
 
             SettingsSliderRow {
-                visible: !root.dockHosted && !OverflowLayout.pinned(root.widgetType) && OverflowLayout.placement(root.entry, root.sectionAutoOverflow ? "auto" : "bar") === "auto"
+                visible: !root.dockHosted && !root.islandHosted && !OverflowLayout.pinned(root.widgetType) && OverflowLayout.placement(root.entry, root.sectionAutoOverflow ? "auto" : "bar") === "auto"
                 resetStore: root.store
                 resetKeys: ["overflowPriority"]
                 text: I18n.tr("Overflow priority", "bar widget setting, how early an auto widget moves into overflow")
@@ -194,12 +194,6 @@ Item {
                 text: I18n.tr("Background")
                 checked: root.entry?.background ?? root.barBackground
                 onToggled: checked => root.set("background", checked === root.barBackground ? undefined : checked)
-            }
-            SettingsToggleRow {
-                visible: root.hasPill
-                text: I18n.tr("Border", "bar widget settings: widget border toggle")
-                checked: root.entry?.outline ?? root.barOutline
-                onToggled: checked => root.set("outline", checked === root.barOutline ? undefined : checked)
             }
         }
 

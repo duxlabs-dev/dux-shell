@@ -15,7 +15,9 @@ DashTabFace {
             editMode: root.editMode
             rowBudget: root.controller.dashboardRowBudget
             transientSurfaceTracker: root.controller.transientSurfaces
+            preferredFocusId: root.controller.overviewFocusId
             onTabRequested: id => root.controller.requestDashTab(id)
+            onCardFocusChanged: id => root.controller.overviewFocusId = id
         }
     }
 }

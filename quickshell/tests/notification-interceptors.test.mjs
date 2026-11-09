@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
+import vm from "node:vm";
 import { loadScript } from "./qml-script.mjs";
 
 const interceptors = loadScript(new URL("../Common/NotificationInterceptors.js", import.meta.url));
+const serviceSource = readFileSync(new URL("../Services/NotificationService.qml", import.meta.url), "utf8");
 const matcher = info => info.desktopEntry === "dank-calendar";
 const handled = info => ({ consume: true, activity: { title: info.summary, icon: "event" } });
 
@@ -37,4 +40,55 @@ test("nonmatches and failing plugin callbacks do not block later interceptors", 
     const calendar = { source: "calendar", id: "events", priority: 10, matcher, interceptor: handled };
     assert.equal(interceptors.evaluate([broken, calendar], { desktopEntry: "dank-calendar", summary: "Event" }, entry => entry.priority, () => true).source, "calendar");
     assert.equal(interceptors.evaluate([calendar], { desktopEntry: "mail", summary: "Message" }, entry => entry.priority, () => true), null);
+});
+
+function policyService(rules, decision) {
+    const calls = { evaluate: 0 };
+    const service = serviceFunctions({
+        SettingsData: { notificationRules: rules, isNotificationRuleExpired: () => false },
+        NotificationInterceptorService: { entries: decision ? [{}] : [], evaluate: () => (calls.evaluate++, decision) },
+        IslandActivityService: { canPresentSource: () => true, publish: () => true },
+        NotificationUrgency: { Low: 0, Normal: 1, Critical: 2 }
+    });
+    service._resolveAppNameForRule = notification => notification.appName;
+    return { calls, evaluate: notification => JSON.parse(JSON.stringify(service._evaluateNotificationPolicy(notification))) };
+}
+
+function serviceFunctions(context) {
+    const scope = vm.createContext(context);
+    const names = ["_ruleFieldValue", "_coerceRuleUrgency", "_matchesNotificationRule", "_applyPluginInterceptor", "_evaluateNotificationPolicy"];
+    for (const match of serviceSource.matchAll(/^    function (\w+)\([^\n]*\) \{\n[\s\S]*?^    \}/gm))
+        if (names.includes(match[1]))
+            vm.runInContext(match[0], scope);
+    return scope;
+}
+
+test("a matching user rule wins over every interceptor outcome", () => {
+    const overriding = { source: "plugin", result: {
+        consume: true, activity: { title: "Swallowed" },
+        policy: { drop: true, disablePopup: false, hideFromCenter: true, disableHistory: true, bypassDnd: false, urgency: "low" }
+    } };
+    const calendar = { appName: "Calendar", desktopEntry: "calendar" };
+    const rule = overrides => ({ field: "appName", matchType: "exact", pattern: "Calendar", action: "default", ...overrides });
+    const cases = [
+        [rule({ action: "mute" }), { drop: false, disablePopup: true, hideFromCenter: false, disableHistory: false }],
+        [rule({ bypassDnd: true, urgency: "critical" }), { drop: false, bypassDnd: true, urgency: 2, hideFromCenter: false }],
+        [rule({ action: "popup_only" }), { drop: false, disablePopup: false, hideFromCenter: true, disableHistory: true }],
+        [rule({ action: "ignore" }), { drop: true }]
+    ];
+    for (const [userRule, expected] of cases) {
+        const result = policyService([userRule], overriding).evaluate(calendar);
+        for (const [key, value] of Object.entries(expected))
+            assert.equal(result[key], value, `${userRule.action}: ${key}`);
+        assert.equal(result.activity, null, `${userRule.action}: consume`);
+    }
+    const unmatched = policyService([rule({ pattern: "Mail" })], overriding).evaluate(calendar);
+    assert.equal(unmatched.hideFromCenter, true);
+    assert.deepEqual(unmatched.activity, { source: "plugin", payload: { title: "Swallowed" } });
+});
+
+test("no rules and no interceptors skips matching entirely", () => {
+    const { calls, evaluate } = policyService([], null);
+    assert.equal(evaluate({ appName: "Calendar" }).drop, false);
+    assert.equal(calls.evaluate, 0);
 });

@@ -168,6 +168,11 @@ func readIslandActivityInput(args []string, input io.Reader) ([]string, error) {
 	if len(args) != 6 || args[0] != "call" || args[1] != "islandActivity" || args[2] != "publish" || args[5] != "-" {
 		return args, nil
 	}
+	if f, ok := input.(*os.File); ok {
+		if fi, err := f.Stat(); err == nil && fi.Mode()&os.ModeCharDevice != 0 {
+			return nil, fmt.Errorf("no JSON payload piped to stdin")
+		}
+	}
 	const limit = 64 * 1024
 	data, err := io.ReadAll(io.LimitReader(input, limit+1))
 	if err != nil {

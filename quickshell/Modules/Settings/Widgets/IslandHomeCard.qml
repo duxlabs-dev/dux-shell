@@ -29,7 +29,7 @@ SettingsCard {
         onClicked: keyboard => {
             if (!root.parentModal)
                 return;
-            SettingsSearchService.navigateToSection("barWidgets");
+            SettingsSearchService.navigateToSection("islandHomeLayout");
             root.parentModal.navigateTo("dankbar_widgets", keyboard);
         }
     }
@@ -48,7 +48,6 @@ SettingsCard {
     }
 
     SettingsButtonGroupRow {
-        visible: root.hosted
         settingKey: root.keyPrefix + "HomeClockDisplay"
         tags: ["island", "home", "compact", "clock", "time", "date"]
         resetStore: root.store
@@ -67,7 +66,7 @@ SettingsCard {
         resetStore: root.store
         resetKeys: ["islandHomeVolumeDisplay"]
         text: I18n.tr("Volume style", "island settings: volume display mode row")
-        visible: root.hosted && SettingsData.islandHomeGroupEnabled(root.store.config, "volume")
+        visible: SettingsData.islandHomeGroupEnabled(root.store.config, "volume")
         model: [I18n.tr("Icon", "island settings: level shown as icon only"), I18n.tr("Percentage", "island settings: level shown as percentage only"), I18n.tr("Both", "island settings: level shown as icon and percentage")]
         values: root.systemLevelDisplayValues
         value: root.store.setting("islandHomeVolumeDisplay")
@@ -81,7 +80,7 @@ SettingsCard {
         resetStore: root.store
         resetKeys: ["islandHomeBrightnessDisplay"]
         text: I18n.tr("Brightness style", "island settings: brightness display mode row")
-        visible: root.hosted && SettingsData.islandHomeGroupEnabled(root.store.config, "brightness")
+        visible: SettingsData.islandHomeGroupEnabled(root.store.config, "brightness")
         model: [I18n.tr("Icon", "island settings: level shown as icon only"), I18n.tr("Percentage", "island settings: level shown as percentage only"), I18n.tr("Both", "island settings: level shown as icon and percentage")]
         values: root.systemLevelDisplayValues
         value: root.store.setting("islandHomeBrightnessDisplay")
@@ -93,7 +92,7 @@ SettingsCard {
         settingKey: root.keyPrefix + "HomeStatusContent"
         tags: ["island", "home", "compact", "status", "battery", "gauge", "solid", "outline", "ring", "circle", "duo", "wifi", "bluetooth", "connectivity"]
         title: I18n.tr("Status")
-        visible: root.hosted && SettingsData.islandHomeGroupEnabled(root.store.config, "status")
+        visible: SettingsData.islandHomeGroupEnabled(root.store.config, "status")
         resetStore: root.store
         resetKeys: ["islandHomeStatusContent", "islandBatteryStyle"]
 
@@ -144,7 +143,7 @@ SettingsCard {
         resetStore: root.store
         resetKeys: ["batteryColorMode"]
         text: I18n.tr("Color")
-        visible: !root.hosted && root.batteryShown
+        visible: root.batteryShown && !root.hosted
         model: [I18n.tr("Theme", "battery settings: theme accent indicator colors"), I18n.tr("Level", "battery settings: charge level indicator colors")]
         currentIndex: (root.store.config?.batteryColorMode ?? "theme") === "level" ? 1 : 0
         onSelectionChanged: (index, selected) => {

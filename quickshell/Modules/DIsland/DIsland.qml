@@ -289,7 +289,6 @@ Item {
             "hoverEnabled": host.islandController.hoverExpandEnabled,
             "hoverOpenDelay": host.islandController.hoverOpenDelay,
             "inputSuspended": host.islandController.inputSuspended,
-            "configuredWidgets": SettingsData.islandCollapsedWidgets(host.islandController.barConfig).filter(entry => entry.enabled !== false).map(entry => entry.id),
             "liveActivity": host.islandController.liveActive ? {source: host.islandController.liveEntry?.source, id: host.islandController.liveEntry?.id} : null,
             "stableActivities": host.islandController.stableActivities.map(entry => ({source: entry.source, id: entry.id, position: entry.position})),
             "queuedEvents": host.islandController.presentationSession?.queue.length ?? 0,

@@ -17,6 +17,7 @@ DestinationCompact {
 
     IslandSlotHoverArea {
         anchors.fill: parent
+        controller: root.controller
         cursorShape: root.linksControlCenter ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: {
             if (root.linksControlCenter) {

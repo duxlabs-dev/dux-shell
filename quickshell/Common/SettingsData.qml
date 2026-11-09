@@ -19,14 +19,12 @@ import "../DCommon/Common/settings/SpecUtil.js" as SpecUtil
 import "settings/BarWidgetDefaults.js" as WidgetDefaults
 import "settings/DockConfig.js" as DockConfig
 import "settings/DensityPresets.js" as DensityPresets
-import "IslandLayout.js" as IslandLayout
-
 
 Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 44
+    readonly property int settingsConfigVersion: 43
 
     enum Position {
         Top,
@@ -1038,16 +1036,78 @@ Singleton {
         return LayoutResolver.islandReserve(islandSettings(bc), islandDefaultsFor(bc));
     }
     readonly property var _islandHomeGroupIds: ["workspaces", "media", "clock", "weather", "status", "volume", "brightness", "notifications", "privacy", "keyboardLayout", "tray"]
-    readonly property var _islandHomeLayoutDefault: IslandLayout.DEFAULT_HOME_LAYOUT
+    readonly property var _islandHomeLayoutDefault: [
+        {
+            "id": "workspaces",
+            "enabled": false
+        },
+        {
+            "id": "media",
+            "enabled": true
+        },
+        {
+            "id": "clock",
+            "enabled": true
+        },
+        {
+            "id": "weather",
+            "enabled": false
+        },
+        {
+            "id": "status",
+            "enabled": false
+        },
+        {
+            "id": "volume",
+            "enabled": false
+        },
+        {
+            "id": "brightness",
+            "enabled": false
+        },
+        {
+            "id": "notifications",
+            "enabled": true
+        },
+        {
+            "id": "privacy",
+            "enabled": true
+        },
+        {
+            "id": "keyboardLayout",
+            "enabled": false
+        },
+        {
+            "id": "tray",
+            "enabled": false
+        }
+    ]
+    function isIslandHomeGroup(id) {
+        return _islandHomeGroupIds.indexOf(id) >= 0;
+    }
 
-    function getIslandHomeLayout(bc) {
+    // A removed group stays removed; only the clock anchor comes back.
+    function islandWidgetEntries(bc) {
         const layout = islandSettings(bc).islandHomeLayout;
-        const stored = Array.isArray(layout) ? layout : [];
+        const source = Array.isArray(layout) ? layout : _islandHomeLayoutDefault;
+        const barWidgets = isIslandBarConfig(bc) && !isDotBarConfig(bc);
         const result = [];
         const seen = {};
-        for (const entry of stored) {
-            const id = entry && entry.id;
-            if (_islandHomeGroupIds.indexOf(id) < 0 || seen[id])
+        for (const raw of source) {
+            const entry = typeof raw === "string" ? {
+                "id": raw
+            } : raw;
+            const id = entry?.id;
+            if (!id)
+                continue;
+            if (!isIslandHomeGroup(id)) {
+                if (barWidgets)
+                    result.push(Object.assign({}, entry, {
+                        "enabled": entry.enabled !== false
+                    }));
+                continue;
+            }
+            if (seen[id])
                 continue;
             seen[id] = true;
             result.push({
@@ -1055,11 +1115,32 @@ Singleton {
                 "enabled": id === "clock" || entry.enabled !== false
             });
         }
+        if (!seen.clock)
+            result.push({
+                "id": "clock",
+                "enabled": true
+            });
+        return result;
+    }
+
+    function islandHomeLayoutDefault() {
+        return _islandHomeLayoutDefault.map(entry => Object.assign({}, entry));
+    }
+
+    function setIslandWidgetEntries(barId, entries) {
+        setIslandSettings(barId, {
+            islandHomeLayout: entries
+        });
+    }
+
+    // Groups only, every group present; a missing one reads as hidden.
+    function getIslandHomeLayout(bc) {
+        const result = islandWidgetEntries(bc).filter(entry => isIslandHomeGroup(entry.id));
         for (const fallback of _islandHomeLayoutDefault) {
-            if (!seen[fallback.id])
+            if (!result.some(group => group.id === fallback.id))
                 result.push({
                     "id": fallback.id,
-                    "enabled": fallback.enabled
+                    "enabled": false
                 });
         }
         return result;
@@ -1070,31 +1151,25 @@ Singleton {
         return entry ? entry.enabled : false;
     }
 
-    function islandCollapsedWidgets(bc) {
-        return IslandLayout.widgets(bc);
-    }
-
     function setIslandHomeLayoutOrder(barId, ids) {
-        const current = getIslandHomeLayout(getBarConfig(barId));
+        const config = getBarConfig(barId);
+        const current = getIslandHomeLayout(config);
         const ordered = ids.map(id => current.find(g => g.id === id)).filter(g => g);
-        for (const entry of current) {
-            if (ids.indexOf(entry.id) < 0)
-                ordered.push(entry);
-        }
-        setIslandSettings(barId, {
-            islandHomeLayout: ordered
-        });
+        setIslandWidgetEntries(barId, ordered.concat(islandWidgetEntries(config).filter(entry => ids.indexOf(entry.id) < 0)));
     }
 
     function setIslandHomeGroupEnabled(barId, id, on) {
         if (id === "clock")
             return;
-        setIslandSettings(barId, {
-            islandHomeLayout: getIslandHomeLayout(getBarConfig(barId)).map(g => g.id === id ? {
-                    "id": g.id,
-                    "enabled": on
-                } : g)
-        });
+        const entries = islandWidgetEntries(getBarConfig(barId));
+        if (!entries.some(entry => entry.id === id))
+            entries.push({
+                "id": id,
+                "enabled": on
+            });
+        setIslandWidgetEntries(barId, entries.map(entry => entry.id === id ? Object.assign({}, entry, {
+                "enabled": on
+            }) : entry));
     }
 
     property bool osdAlwaysShowValue: Spec.SPEC.osdAlwaysShowValue.def
@@ -2583,8 +2658,10 @@ Singleton {
             break;
         }
         const listKey = sectionId + "Widgets";
-        const list = (config[listKey] ?? []).slice();
+        const list = barSectionWidgets(config, sectionId).slice();
         if (widgetId === "island") {
+            if (sectionId === "island")
+                return -1;
             if (isIslandBarConfig(config) || islandWidgetBlocked(config) || _islandWidgetLocation(config))
                 return -1;
             const configs = JSON.parse(JSON.stringify(barConfigs));
@@ -2595,10 +2672,22 @@ Singleton {
             return list.length - 1;
         }
         list.push(entry);
-        const patch = {};
-        patch[listKey] = list;
-        updateBarConfig(barId, patch);
+        _commitBarSection(barId, sectionId, list);
         return list.length - 1;
+    }
+
+    function barSectionWidgets(config, sectionId) {
+        return sectionId === "island" ? islandWidgetEntries(config) : (config?.[sectionId + "Widgets"] ?? []);
+    }
+
+    function _commitBarSection(barId, sectionId, list) {
+        if (sectionId === "island") {
+            setIslandWidgetEntries(barId, list);
+            return;
+        }
+        updateBarConfig(barId, {
+            [sectionId + "Widgets"]: list
+        });
     }
 
     function locateBarWidget(widgetId, preferredBarId) {
@@ -2622,8 +2711,7 @@ Singleton {
 
     function updateBarWidget(barId, sectionId, index, updates) {
         const config = getBarConfig(barId);
-        const listKey = sectionId + "Widgets";
-        const list = (config?.[listKey] ?? []).slice();
+        const list = barSectionWidgets(config, sectionId).slice();
         if (index < 0 || index >= list.length)
             return;
         const entry = typeof list[index] === "string" ? {
@@ -2632,9 +2720,7 @@ Singleton {
         } : Object.assign({}, list[index]);
         Object.assign(entry, updates);
         list[index] = entry;
-        const patch = {};
-        patch[listKey] = list;
-        updateBarConfig(barId, patch);
+        _commitBarSection(barId, sectionId, list);
     }
 
     function setBarIsland(barId, on, dot) {

@@ -18,7 +18,6 @@ Item {
     property real barSpacing: 4
     property var barConfig: null
     property bool widgetBackground: !(barConfig?.noBackground ?? false)
-    property bool widgetOutlineEnabled: barConfig?.widgetOutlineEnabled ?? false
     property bool noBackground: !widgetBackground
     property var blurBarWindow: null
     property alias content: contentLoader.sourceComponent
@@ -72,7 +71,7 @@ Item {
     property real pressProgress: pressed && enableBackgroundHover ? 1 : 0
     readonly property real blurRadius: segmentRole === "solo" ? outerRadius : innerRadius
     readonly property bool radiusMotion: !SettingsData.reduceMotion && !Theme.springMotionDisabled
-    readonly property real outlineThickness: widgetOutlineEnabled ? (barConfig?.widgetOutlineThickness ?? Theme.outlineWidth) : 0
+    readonly property real outlineThickness: (barConfig?.widgetOutlineEnabled ?? false) ? (barConfig?.widgetOutlineThickness ?? Theme.outlineWidth) : 0
     readonly property color outlineColor: {
         if (outlineThickness <= 0)
             return "transparent";

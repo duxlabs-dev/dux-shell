@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
-import { loadScript } from "./qml-script.mjs";
 
 function functions(source, indent, context) {
     const pattern = new RegExp(`^${indent}function (\\w+)\\(([^)]*)\\)(?:: \\w+)? \\{([\\s\\S]*?)^${indent}\\}`, "gm");
@@ -511,7 +510,7 @@ test("control-center IPC hide and status agree on both surfaces", () => {
 
 test("the privacy slot is a known home layout entry appended after stored ones", () => {
     const groupIds = JSON.parse(settingsSource.match(/_islandHomeGroupIds: (\[.*\])/)[1]);
-    const layoutDefault = loadScript(new URL("../Common/IslandLayout.js", import.meta.url)).DEFAULT_HOME_LAYOUT;
+    const layoutDefault = JSON.parse(settingsSource.match(/_islandHomeLayoutDefault: (\[[\s\S]*?\n    \])/)[1]);
     const settings = functions(settingsSource, "    ", vm.createContext({ _islandHomeGroupIds: groupIds, _islandHomeLayoutDefault: layoutDefault }));
     settings.islandSetting = (config, key) => config[key];
     settings.islandSettings = config => config;
@@ -524,7 +523,7 @@ test("the privacy slot is a known home layout entry appended after stored ones",
 
 test("a saved keyboard layout slot keeps its position and visibility when editing island groups", () => {
     const groupIds = JSON.parse(settingsSource.match(/_islandHomeGroupIds: (\[.*\])/)[1]);
-    const layoutDefault = loadScript(new URL("../Common/IslandLayout.js", import.meta.url)).DEFAULT_HOME_LAYOUT;
+    const layoutDefault = JSON.parse(settingsSource.match(/_islandHomeLayoutDefault: (\[[\s\S]*?\n    \])/)[1]);
     const config = { islandHomeLayout: [{ id: "keyboardLayout", enabled: true }, { id: "clock" }] };
     const settings = functions(settingsSource, "    ", vm.createContext({ _islandHomeGroupIds: groupIds, _islandHomeLayoutDefault: layoutDefault }));
     settings.islandSettings = bar => bar;
@@ -542,6 +541,28 @@ test("a saved keyboard layout slot keeps its position and visibility when editin
     assert.deepEqual(plain(settings.getIslandHomeLayout(config).slice(0, 2)), [
         { id: "clock", enabled: true }, { id: "keyboardLayout", enabled: false }
     ]);
+});
+
+test("an island bar keeps its bar widgets through group edits and a removed group stays removed", () => {
+    const groupIds = JSON.parse(settingsSource.match(/_islandHomeGroupIds: (\[.*\])/)[1]);
+    const layoutDefault = JSON.parse(settingsSource.match(/_islandHomeLayoutDefault: (\[[\s\S]*?\n    \])/)[1]);
+    const settings = functions(settingsSource, "    ", vm.createContext({ _islandHomeGroupIds: groupIds, _islandHomeLayoutDefault: layoutDefault }));
+    const config = { id: "main", island: true, islandHomeLayout: [{ id: "media" }, { id: "dankKDEConnect", background: true }, { id: "clock" }] };
+    settings.islandSettings = bar => bar;
+    settings.isIslandBarConfig = bar => bar.island === true || bar.dot === true;
+    settings.isDotBarConfig = bar => bar.dot === true;
+    settings.getBarConfig = () => config;
+    settings.setIslandSettings = (id, changes) => Object.assign(config, changes);
+    const ids = () => plain(settings.islandWidgetEntries(config).map(entry => entry.id));
+
+    assert.deepEqual(ids(), ["media", "dankKDEConnect", "clock"]);
+    assert.equal(settings.islandHomeGroupEnabled(config, "notifications"), false, "a group missing from a saved list reads hidden");
+    settings.setIslandHomeGroupEnabled("main", "media", false);
+    settings.setIslandHomeLayoutOrder("main", ["clock", "media"]);
+    assert.deepEqual(ids(), ["clock", "media", "dankKDEConnect"]);
+    assert.equal(settings.islandWidgetEntries(config)[2].background, true, "widget options survive group edits");
+    config.dot = true;
+    assert.deepEqual(ids(), ["clock", "media"], "a dot shows only island groups");
 });
 
 test("power menu shortcuts open in the island before the modal", () => {
@@ -585,4 +606,38 @@ test("power menu shortcuts open in the island before the modal", () => {
 
     assert.equal(handler.close(), "POWERMENU_CLOSE_SUCCESS");
     assert.deepEqual(calls.splice(0), ["island:close:powermenu", "modal:close"], "close takes down both surfaces");
+});
+
+test("a right-click face swap holds hover-open until the pointer leaves", () => {
+    const source = readFileSync(new URL("../Modules/DIsland/IslandController.qml", import.meta.url), "utf8");
+    const requested = [];
+    const timer = { stop() {}, restart() {} };
+    const controller = functions(source, "    ", vm.createContext({
+        activeActivity: "home",
+        mediaFaceToggleAvailable: true,
+        hoverHeld: false,
+        inputSuspended: false,
+        hoverExpandEnabled: true,
+        slotHovered: false,
+        notificationActive: false,
+        hoverExpanded: false,
+        expanded: false,
+        hoverOpenTimer: timer,
+        hoverCloseTimer: timer
+    }));
+    controller.requestActivity = id => requested.push(id) > 0;
+    controller.requestExpand = () => true;
+    controller.syncNotificationTimeout = () => {};
+    controller.syncTransientTimeout = () => {};
+
+    assert.equal(controller.toggleMediaFace(), true);
+    assert.deepEqual(requested, ["media"]);
+    assert.equal(controller.requestHoverExpand(), false, "the resized face must not hover-open under the pointer");
+    controller.updatePointerInside(false);
+    controller.updatePointerInside(true);
+    assert.equal(controller.requestHoverExpand(), true, "leaving the island releases the hold");
+
+    controller.mediaFaceToggleAvailable = false;
+    assert.equal(controller.toggleMediaFace(), false);
+    assert.equal(vm.runInContext("hoverHeld", controller), false);
 });

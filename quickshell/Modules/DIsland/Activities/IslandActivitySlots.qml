@@ -89,6 +89,13 @@ Item {
                         Qt.callLater(() => root.removeRetiredSlot(key));
                     }
                 }
+                // Like the home slots: aiming at a click target must not peek the dashboard.
+                readonly property bool hoverCounted: slotButton.hovered && enabled
+                onHoverCountedChanged: hoverCounted ? root.controller.slotHoverEntered() : root.controller.slotHoverExited()
+                Component.onDestruction: {
+                    if (hoverCounted)
+                        root.controller.slotHoverExited();
+                }
                 width: root.vertical ? root.controller.compactFaceThickness : Math.min(root.controller.stableSlotMaxLength, face.measuredLength)
                 height: root.controller.compactFaceThickness
                 Behavior on x {
@@ -113,8 +120,8 @@ Item {
                     Accessible.name: face.activity?.title ?? ""
                     Accessible.description: face.activity?.subtitle ?? ""
                     onPressed: root.controller.hoverOpenTimer.stop()
-                    onClicked: root.controller.openStableEntry(face.activity, visualFocus)
-                    onPressAndHold: root.controller.expandLiveEntry(face.activity, visualFocus)
+                    onClicked: root.controller.openStableEntry(face.activity, true)
+                    onPressAndHold: root.controller.expandLiveEntry(face.activity, true)
 
                     FocusRing {
                         visible: slotButton.visualFocus
@@ -124,7 +131,7 @@ Item {
                         id: face
                         controller: root.controller
                         activity: root.entries.find(entry => Activities.identity(entry) === slot.entryKey) ?? JSON.parse(slot.payload)
-                        foreground: root.activityColors && activity?.foreground ? activity.foreground : root.foreground
+                        foreground: root.activityColors && activity?.foreground ? root.controller.roleForeground(activity.foreground) : root.foreground
                         stable: true
                         trackSize: false
                     }

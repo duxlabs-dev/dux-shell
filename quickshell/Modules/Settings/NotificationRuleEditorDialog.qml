@@ -80,7 +80,8 @@ DDialog {
             action: ruleAction,
             urgency: ruleUrgency,
             bypassDnd: ruleBypassDnd,
-            islandPresentation: ruleIslandSummary ? {icon: islandIcon.value, title: islandTitle.value} : null
+            // undefined clears a summary on update and is never written to settings.json.
+            islandPresentation: ruleIslandSummary ? {icon: islandIcon.value, title: islandTitle.value} : undefined
         };
         if (isEditMode)
             SettingsData.updateNotificationRule(editingIndex, rule);
@@ -253,6 +254,7 @@ DDialog {
 
     SettingsCard {
         title: I18n.tr("Island summary", "notification rule island summary settings")
+        visible: SettingsData.dankIslandEnabled || root.ruleIslandSummary
 
         SettingsToggleRow {
             text: I18n.tr("Summarize matching notifications", "notification rule island summary settings")
@@ -264,15 +266,14 @@ DDialog {
         SettingsTextFieldRow {
             id: islandIcon
             text: I18n.tr("Icon", "notification rule island summary settings")
-            enabled: root.ruleIslandSummary
+            visible: root.ruleIslandSummary
         }
 
         SettingsTextFieldRow {
             id: islandTitle
             text: I18n.tr("Title template", "notification rule island summary settings")
             description: I18n.tr("Use {summary}, {body}, or {appName} to insert notification text", "notification rule island summary settings")
-            enabled: root.ruleIslandSummary
+            visible: root.ruleIslandSummary
         }
     }
-
 }
