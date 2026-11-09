@@ -7,6 +7,7 @@ export function loadScript(url) {
         context[name] = loadScript(new URL(path, url));
         return "";
     }).replace(/^\.pragma.*$/gm, "");
-    vm.runInContext(source, context);
+    const bindings = Array.from(source.matchAll(/^(?:const|let|class)\s+(\w+)/gm), match => match[1]);
+    vm.runInContext(source + "\nObject.assign(globalThis, {" + bindings.join(",") + "});", context);
     return context;
 }
