@@ -222,7 +222,6 @@ Rectangle {
         updateProcesses();
     }
 
-    // While paused the order stays put (an open row must not move), but the values keep updating.
     // The root's own row stays first.
     function memberRows(root) {
         const members = root.children ?? [];
@@ -239,10 +238,11 @@ Rectangle {
         return rows;
     }
 
-    // Also applies group toggles, in place.
+    // While paused the order stays put (an open row must not move), but the values keep updating.
     function refreshValues() {
         if (!active)
             return;
+        const selected = cachedProcesses[selectedIndex];
         const fresh = new Map(filteredProcesses.map(p => [p.key, p]));
         const rows = [];
         const emptied = [];
@@ -266,12 +266,23 @@ Rectangle {
                 emptied.push(p.key);
         }
         cachedProcesses = rows;
+        if (selected) {
+            const index = rows.findIndex(p => p.key === selected.key);
+            selectedIndex = index >= 0 ? index : rows.findIndex(p => p.key === String(selected.memberOf));
+        }
         if (emptied.length > 0) {
             const next = Object.assign({}, openGroups);
             for (const key of emptied)
                 delete next[key];
             openGroups = next;
         }
+        dropMissingDetails();
+    }
+
+    // A member row can leave the list (exited, group closed), which would otherwise hold the order forever.
+    function dropMissingDetails() {
+        if (expandedPid.includes("/") && !cachedProcesses.some(p => p.key === expandedPid))
+            expandedPid = "";
     }
 
     function updateProcesses() {
@@ -282,6 +293,7 @@ Rectangle {
         selectedIndex = key === undefined ? -1 : cachedProcesses.findIndex(p => p.key === key);
         if (selectedIndex < 0 && keyboardNavigationActive && cachedProcesses.length > 0)
             selectedIndex = 0;
+        dropMissingDetails();
     }
 
     function requestAction(index, action) {
@@ -359,8 +371,6 @@ Rectangle {
         if (!open) {
             if (expandedPid.startsWith(key + "/"))
                 expandedPid = "";
-            if (String(cachedProcesses[selectedIndex]?.memberOf) === key)
-                selectedIndex = cachedProcesses.findIndex(p => p.key === key);
         }
         const next = Object.assign({}, openGroups);
         if (open)
@@ -368,10 +378,7 @@ Rectangle {
         else
             delete next[key];
         openGroups = next;
-        const selected = cachedProcesses[selectedIndex]?.key;
         refreshValues();
-        if (selected !== undefined)
-            selectedIndex = cachedProcesses.findIndex(p => p.key === selected);
     }
 
     function openContextMenu() {
