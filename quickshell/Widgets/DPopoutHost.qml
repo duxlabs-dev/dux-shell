@@ -67,7 +67,7 @@ Item {
             width: alignedWidth,
             height: alignedHeight + topOverflow + bottomOverflow
         };
-        const area = PopoutBounds.strip(screenWidth, screenHeight, contentContainer.barLeft || contentContainer.barRight, body, _surfaceMotionOrigin, padding);
+        const area = PopoutBounds.motion(screenWidth, screenHeight, body, _surfaceMotionOrigin, _fluidMotionActive ? 0 : contentContainer.offsetX, _fluidMotionActive ? 0 : contentContainer.offsetY, _fluidMotionActive ? 1 : animationScaleCollapsed, padding, _geometrySpringParams);
         return Qt.rect(area.x, area.y, area.width, area.height);
     }
     property bool _retainedContent: false
@@ -782,7 +782,8 @@ Item {
         _finishClose();
     }
 
-    readonly property var _geometrySpringParams: Theme.springPreset("defaultSpatial", root.animationDuration)
+    readonly property bool _standardMotion: !connected && !Theme.isDirectionalEffect && !Theme.isDepthEffect && !_fluidMotionActive
+    readonly property var _geometrySpringParams: Theme.springPreset(_standardMotion ? "fastSpatial" : "defaultSpatial", _standardMotion ? root.animationDuration * 2 : root.animationDuration)
 
     readonly property real renderedAlignedX: alignedXFor(renderedAlignedWidth)
     property real renderedAlignedY: alignedY
@@ -1330,9 +1331,11 @@ Item {
 
         Item {
             id: contentContainer
+            readonly property real surfaceOriginX: root.surface?.bandX ?? 0
+            readonly property real surfaceOriginY: root.surface?.bandY ?? 0
             clip: root.morphTravelEnabled
-            x: root.morphTravelEnabled ? Theme.snap(root.pubBodyX, root.dpr) : root.renderedAlignedX
-            y: root.morphTravelEnabled ? Theme.snap(root.pubBodyY, root.dpr) : root.renderedAlignedY
+            x: root.morphTravelEnabled ? Theme.snap(root.pubBodyX, root.dpr) : root._standardMotion ? surfaceOriginX + Theme.snap(root.renderedAlignedX - surfaceOriginX, root.dpr) : root.renderedAlignedX
+            y: root.morphTravelEnabled ? Theme.snap(root.pubBodyY, root.dpr) : root._standardMotion ? surfaceOriginY + Theme.snap(root.renderedAlignedY - surfaceOriginY, root.dpr) : root.renderedAlignedY
             width: root.morphTravelEnabled ? Theme.snap(root.pubBodyW, root.dpr) : root.renderedAlignedWidth
             height: root.morphTravelEnabled ? Theme.snap(root.pubBodyH, root.dpr) : root.renderedAlignedHeight
 
@@ -1412,17 +1415,15 @@ Item {
                 }
                 enabled: root.animationsEnabled && !(root.connected && root._fluidMotionActive)
                 reducedMotion: root.animationDuration <= 0
-                positionEpsilon: Math.max(0.001, 0.25 / root.dpr / contentContainer.morphTravelPx)
+                positionEpsilon: root._standardMotion ? 0.001 : Math.max(0.001, 0.25 / root.dpr / contentContainer.morphTravelPx)
                 velocityEpsilon: positionEpsilon * damping / Math.max(0.001, 2 * mass)
                 stiffness: root._geometrySpringParams.stiffness
                 damping: root._geometrySpringParams.damping
 
                 Component.onCompleted: snapTo(root.shouldBeVisible ? 1 : 0)
             }
-            readonly property bool morphSettled: !morph.running || Math.abs(morph.value - morph.target) < Theme.morphLayerEpsilon
-            readonly property real morphProgress: root.connected || !morphSettled ? morph.value : morph.target
-            readonly property real animX: root._fluidMotionActive ? 0 : contentContainer.offsetX * (1 - morphProgress)
-            readonly property real animY: root._fluidMotionActive ? 0 : contentContainer.offsetY * (1 - morphProgress)
+            readonly property real animX: root._fluidMotionActive ? 0 : contentContainer.offsetX * (1 - morph.value)
+            readonly property real animY: root._fluidMotionActive ? 0 : contentContainer.offsetY * (1 - morph.value)
             onAnimXChanged: {
                 if (!root.connected)
                     return;
@@ -1433,7 +1434,7 @@ Item {
                     return;
                 root._syncPopoutAnim("y");
             }
-            readonly property real scaleValue: root._fluidMotionActive ? 1 : contentContainer.computedScaleCollapsed + (1.0 - contentContainer.computedScaleCollapsed) * morphProgress
+            readonly property real scaleValue: root._fluidMotionActive ? 1 : contentContainer.computedScaleCollapsed + (1.0 - contentContainer.computedScaleCollapsed) * morph.value
 
             Component.onCompleted: root._captureChromeAnimTravel()
 
@@ -1761,8 +1762,8 @@ Item {
                     height: (root._fluidMotionActive ? chrome.fluidBody.height : chrome.height) + root.topOverflow + root.bottomOverflow
                     opacity: root._fluidMotionActive ? FluidGeometry.chromeOpacity(morph.value) : contentWrapper.publishedOpacity
                     scale: root.directionalRevealActive ? 1 : contentWrapper.scale
-                    x: root._fluidMotionActive ? chrome.fluidBody.x : (root.directionalRevealActive ? 0 : contentWrapper.x)
-                    y: (root._fluidMotionActive ? chrome.fluidBody.y : (root.directionalRevealActive ? 0 : contentWrapper.y)) - root.topOverflow
+                    x: root._fluidMotionActive ? chrome.fluidBody.x : (root.directionalRevealActive ? 0 : contentTranslation.x)
+                    y: (root._fluidMotionActive ? chrome.fluidBody.y : (root.directionalRevealActive ? 0 : contentTranslation.y)) - root.topOverflow
                     level: root.shadowLevel
                     direction: root.effectiveShadowDirection
                     fallbackOffset: root.shadowFallbackOffset
@@ -1782,10 +1783,13 @@ Item {
                     visible: root._contentRenderActive
                     scale: contentContainer.scaleValue
                     transformOrigin: Item.Center
-                    x: root._fluidMotionActive ? 0 : contentContainer.animX + (chrome.width - width) * (1 - contentContainer.scaleValue) * 0.5
-                    y: root._fluidMotionActive ? 0 : contentContainer.animY + (chrome.height - height) * (1 - contentContainer.scaleValue) * 0.5
+                    transform: Translate {
+                        id: contentTranslation
+                        x: contentContainer.animX
+                        y: contentContainer.animY
+                    }
 
-                    layer.enabled: !Theme.isDirectionalEffect && !root._fluidMotionActive && root._contentRenderActive && (!contentContainer.morphSettled || opacity < 1)
+                    layer.enabled: !Theme.isDirectionalEffect && !root._fluidMotionActive && root._contentRenderActive && (morph.running || contentFade.running || opacity < 1)
                     layer.smooth: true
                     fallbackDevicePixelRatio: root.dpr
 
@@ -1803,8 +1807,8 @@ Item {
                     parent: root._fluidMotionActive ? chrome : contentClip.contentItem
                     width: root._fluidMotionActive ? chrome.fluidBody.width : chrome.width
                     height: (root._fluidMotionActive ? chrome.fluidBody.height : chrome.height) + root.topOverflow + root.bottomOverflow
-                    x: root._fluidMotionActive ? chrome.fluidBody.x : (root.directionalRevealActive ? 0 : contentWrapper.x)
-                    y: (root._fluidMotionActive ? chrome.fluidBody.y : (root.directionalRevealActive ? 0 : contentWrapper.y)) - root.topOverflow
+                    x: root._fluidMotionActive ? chrome.fluidBody.x : (root.directionalRevealActive ? 0 : contentTranslation.x)
+                    y: (root._fluidMotionActive ? chrome.fluidBody.y : (root.directionalRevealActive ? 0 : contentTranslation.y)) - root.topOverflow
                     opacity: root._fluidMotionActive ? FluidGeometry.chromeOpacity(morph.value) : contentWrapper.publishedOpacity
                     scale: root.directionalRevealActive ? 1 : contentWrapper.scale
                     visible: contentWrapper.visible
