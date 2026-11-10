@@ -2805,6 +2805,12 @@ const SCREENSHOT_FLAGS = [
         inverted: true
     },
     {
+        name: "clipboard-file",
+        type: "flag",
+        flag: "--clipboard-file",
+        label: "Copy path"
+    },
+    {
         name: "cursor",
         type: "flag",
         flag: "--cursor=on",

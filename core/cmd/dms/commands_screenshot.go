@@ -27,6 +27,7 @@ var (
 	ssFilename    string
 	ssNoClipboard bool
 	ssNoFile      bool
+	ssClipFile    bool
 	ssNoNotify    bool
 	ssNoConfirm   bool
 	ssReset       bool
@@ -78,6 +79,7 @@ Examples:
   dms screenshot --reset             # Reset last region pre-selection
   dms screenshot --no-clipboard      # Save file only
   dms screenshot --no-file           # Clipboard only
+  dms screenshot --clipboard-file    # Copy the saved file, so terminals paste its path
   dms screenshot --no-confirm        # Region capture on mouse release
   dms screenshot --cursor=on         # Include cursor
   dms screenshot -f jpg -q 85        # JPEG with quality 85
@@ -173,6 +175,7 @@ func init() {
 	screenshotCmd.PersistentFlags().StringVar(&ssFilename, "filename", "", "Output filename (auto-generated if empty)")
 	screenshotCmd.PersistentFlags().BoolVar(&ssNoClipboard, "no-clipboard", false, "Don't copy to clipboard")
 	screenshotCmd.PersistentFlags().BoolVar(&ssNoFile, "no-file", false, "Don't save to file")
+	screenshotCmd.PersistentFlags().BoolVar(&ssClipFile, "clipboard-file", false, "Copy the saved file (path, URI and image) instead of only the image")
 	screenshotCmd.PersistentFlags().BoolVar(&ssNoNotify, "no-notify", false, "Don't show notification")
 	screenshotCmd.PersistentFlags().BoolVar(&ssNoConfirm, "no-confirm", false, "Region mode: capture on mouse release without Enter/Space confirmation")
 	screenshotCmd.PersistentFlags().BoolVar(&ssReset, "reset", false, "Reset saved last-region preselection before capturing")
@@ -412,7 +415,7 @@ func runScreenshot(config screenshot.Config) {
 
 	if config.Clipboard {
 		var err error
-		if filePath != "" && config.Format != screenshot.FormatPPM {
+		if ssClipFile && filePath != "" && config.Format != screenshot.FormatPPM {
 			err = copyFileToClipboard(filePath)
 		} else {
 			err = copyImageToClipboard(result.Buffer, config.Format, config.Quality, result.Format, result.CICP)
