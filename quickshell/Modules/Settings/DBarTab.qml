@@ -345,6 +345,11 @@ Item {
             visible: dankBarTab.selectedIslandEnabled
         }
 
+        IslandActivitiesCard {
+            store: bar.islandStore
+            visible: dankBarTab.selectedIslandEnabled
+        }
+
         IslandNotificationsCard {
             store: bar.islandStore
             visible: dankBarTab.selectedIslandEnabled

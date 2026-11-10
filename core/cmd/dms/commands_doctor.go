@@ -1907,7 +1907,7 @@ func retiredGreeterPackagesInstalled(pacmanQuery string) []string {
 	var installed []string
 	for line := range strings.SplitSeq(strings.TrimSpace(pacmanQuery), "\n") {
 		name, _, _ := strings.Cut(line, " ")
-		if slices.Contains(retiredGreeterPackages, name) {
+		if slices.Contains(retiredGreeterPackages, name) && !slices.Contains(installed, name) {
 			installed = append(installed, name)
 		}
 	}

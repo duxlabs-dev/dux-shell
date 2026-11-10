@@ -222,6 +222,8 @@ Singleton {
     property string wallpaperCyclingTime: "06:00"
     property string wallpaperCyclingFolderPath: ""
     property bool wallpaperCyclingVideoEnd: false
+    property var wallpaperFolders: []
+    property var wallpaperFolderSelection: []
     property var monitorCyclingSettings: ({})
 
     property bool nightModeEnabled: false
@@ -918,6 +920,17 @@ Singleton {
         if (typeof Theme !== "undefined") {
             Theme.generateSystemThemesFromCurrentTheme();
         }
+    }
+
+    function applyWallpaperPick(screenName, path) {
+        if (perMonitorWallpaper && screenName) {
+            setMonitorWallpaper(screenName, path);
+            setMonitorCyclingFolderPath(screenName, "");
+            return;
+        }
+        setWallpaper(path);
+        wallpaperCyclingFolderPath = "";
+        saveSettings();
     }
 
     function setWallpaperColor(color) {

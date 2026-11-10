@@ -1,6 +1,6 @@
 {
   " (%1 left)": {
-    " (%1 left)": ""
+    " (%1 left)": " (còn %1)"
   },
   "%1 (+%2 more)": {
     "%1 (+%2 more)": "%1 (còn +%2)"
@@ -12,7 +12,7 @@
     "%1 DMS binds may be overridden by config binds that come after the include.": "%1 Các liên kết DMS có thể bị ghi đè bởi các liên kết cấu hình xuất hiện sau phần bao gồm."
   },
   "%1 Flatpak": {
-    "%1 Flatpak": ""
+    "%1 Flatpak": "%1 Flatpak"
   },
   "%1 KB": {
     "%1 KB": "%1 KB"
@@ -23,11 +23,8 @@
   "%1 Startup Failed": {
     "%1 Startup Failed": "%1 Khởi động Thất bại"
   },
-  "%1 VRAM": {
-    "%1 VRAM": ""
-  },
   "%1 active": {
-    "%1 active": ""
+    "%1 active": "%1 đang hoạt động"
   },
   "%1 active session": {
     "%1 active session": "%1 phiên đang hoạt động"
@@ -48,10 +45,10 @@
     "%1 before": "%1 trước đây"
   },
   "%1 behind": {
-    "%1 behind": ""
+    "%1 behind": "Chậm %1 commit"
   },
   "%1 breaking": {
-    "%1 breaking": ""
+    "%1 breaking": "%1 thay đổi không tương thích"
   },
   "%1 character": {
     "%1 character": "%1 ký tự"
@@ -69,7 +66,7 @@
     "%1 connected": "%1 đã kết nối"
   },
   "%1 cores, %2 threads": {
-    "%1 cores, %2 threads": ""
+    "%1 cores, %2 threads": "%1 nhân, %2 luồng"
   },
   "%1 day": {
     "%1 day": "%1 ngày"
@@ -90,22 +87,22 @@
     "%1 displays": "%1 màn hình"
   },
   "%1 errors, %2 warnings": {
-    "%1 errors, %2 warnings": ""
+    "%1 errors, %2 warnings": "%1 lỗi, %2 cảnh báo"
   },
   "%1 features": {
-    "%1 features": ""
+    "%1 features": "%1 tính năng"
   },
   "%1 filtered": {
     "%1 filtered": "%1 đã được lọc"
   },
   "%1 fixes": {
-    "%1 fixes": ""
+    "%1 fixes": "%1 bản sửa lỗi"
   },
   "%1 h": {
-    "%1 h": ""
+    "%1 h": "%1 giờ"
   },
   "%1 h %2 m": {
-    "%1 h %2 m": ""
+    "%1 h %2 m": "%1 giờ %2 phút"
   },
   "%1 h %2 m left": {
     "%1 h %2 m left": "Còn %1 giờ %2 phút"
@@ -126,13 +123,13 @@
     "%1 is %2 and may use a lot of memory.": "%1 là %2 và có thể sử dụng nhiều bộ nhớ."
   },
   "%1 is not installed. Install the package to manage the greeter.": {
-    "%1 is not installed. Install the package to manage the greeter.": ""
+    "%1 is not installed. Install the package to manage the greeter.": "%1 chưa được cài đặt. Hãy cài gói này để quản lý greeter."
   },
   "%1 is now included in config": {
     "%1 is now included in config": "%1 hiện đã được bao gồm trong cấu hình"
   },
   "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": {
-    "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": ""
+    "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": "%1 đang chạy và sẽ tạo trình phát Bluetooth trùng lặp. Hãy tắt nó bằng: %2"
   },
   "%1 issue found": {
     "%1 issue found": "Tìm thấy %1 vấn đề"
@@ -147,10 +144,10 @@
     "%1 jobs": "%1 việc làm"
   },
   "%1 keeps your desktop running. Ending it will likely break your session. If it misbehaves, restarting it is the safer fix.": {
-    "%1 keeps your desktop running. Ending it will likely break your session. If it misbehaves, restarting it is the safer fix.": ""
+    "%1 keeps your desktop running. Ending it will likely break your session. If it misbehaves, restarting it is the safer fix.": "%1 giữ cho desktop của bạn hoạt động. Kết thúc nó có thể làm hỏng phiên làm việc. Nếu nó chạy bất thường, khởi động lại sẽ là cách an toàn hơn."
   },
   "%1 limit reached": {
-    "%1 limit reached": ""
+    "%1 limit reached": "Đã đạt giới hạn %1"
   },
   "%1 min": {
     "%1 min": "%1 phút"
@@ -168,37 +165,37 @@
     "%1 ms": "%1 mili giây"
   },
   "%1 not available": {
-    "%1 not available": ""
+    "%1 not available": "%1 không khả dụng"
   },
   "%1 not available - lock integration requires the DMS socket connection": {
-    "%1 not available - lock integration requires the DMS socket connection": ""
+    "%1 not available - lock integration requires the DMS socket connection": "%1 không khả dụng - tích hợp khóa màn hình cần kết nối socket DMS"
   },
   "%1 not available or disabled - cannot apply %2 colors": {
-    "%1 not available or disabled - cannot apply %2 colors": ""
+    "%1 not available or disabled - cannot apply %2 colors": "%1 không khả dụng hoặc bị tắt - không thể áp dụng màu %2"
   },
   "%1 not found": {
-    "%1 not found": ""
+    "%1 not found": "Không tìm thấy %1"
   },
   "%1 notifications": {
     "%1 notifications": "%1 thông báo"
   },
   "%1 of %2 used": {
-    "%1 of %2 used": ""
+    "%1 of %2 used": "Đã dùng %1/%2"
   },
   "%1 online": {
     "%1 online": "%1 trực tuyến"
   },
   "%1 only": {
-    "%1 only": ""
+    "%1 only": "Chỉ %1"
   },
   "%1 other": {
-    "%1 other": ""
+    "%1 other": "%1 thay đổi khác"
   },
   "%1 package will be installed via %2.": {
-    "%1 package will be installed via %2.": ""
+    "%1 package will be installed via %2.": "%1 gói sẽ được cài đặt qua %2."
   },
   "%1 packages will be installed via %2.": {
-    "%1 packages will be installed via %2.": ""
+    "%1 packages will be installed via %2.": "%1 gói sẽ được cài đặt qua %2."
   },
   "%1 position": {
     "%1 position": "%1 vị trí"
@@ -210,13 +207,13 @@
     "%1 printers": "%1 máy in"
   },
   "%1 process": {
-    "%1 process": ""
+    "%1 process": "%1 tiến trình"
   },
   "%1 processes": {
-    "%1 processes": ""
+    "%1 processes": "%1 tiến trình"
   },
   "%1 procs": {
-    "%1 procs": ""
+    "%1 procs": "%1 tiến trình"
   },
   "%1 second": {
     "%1 second": "%1 giây"
@@ -228,7 +225,7 @@
     "%1 tasks": "%1 nhiệm vụ"
   },
   "%1 uninstalled": {
-    "%1 uninstalled": ""
+    "%1 uninstalled": "Đã gỡ cài đặt %1"
   },
   "%1 update": {
     "%1 update": "%1 cập nhật"
@@ -237,7 +234,7 @@
     "%1 updates": "%1 cập nhật"
   },
   "%1 used": {
-    "%1 used": ""
+    "%1 used": "Đã dùng %1"
   },
   "%1 variants": {
     "%1 variants": "%1 biến thể"
@@ -249,7 +246,7 @@
     "%1 wallpapers  •  %2 / %3": "Hình nền %1  •  %2 / %3"
   },
   "%1 will be downloaded and installed via %2.": {
-    "%1 will be downloaded and installed via %2.": ""
+    "%1 will be downloaded and installed via %2.": "%1 sẽ được tải xuống và cài đặt qua %2."
   },
   "%1 will be removed from your system.": {
     "%1 will be removed from your system.": "%1 sẽ bị xóa khỏi hệ thống của bạn."
@@ -261,22 +258,22 @@
     "%1 windows": "%1 cửa sổ"
   },
   "%1 years": {
-    "%1 years": ""
+    "%1 years": "%1 năm"
   },
   "%1: %2": {
     "%1: %2": "%1: %2"
   },
   "%1d ago": {
-    "%1d ago": ""
+    "%1d ago": "%1 ngày trước"
   },
   "%1h": {
-    "%1h": ""
+    "%1h": "%1 giờ"
   },
   "%1h %2m": {
     "%1h %2m": "%1 giờ %2 phút"
   },
   "%1h ago": {
-    "%1h ago": ""
+    "%1h ago": "%1 giờ trước"
   },
   "%1m": {
     "%1m": "%1 phút"
@@ -291,19 +288,19 @@
     "(Unnamed)": "(Chưa có tên)"
   },
   "(exit %1)": {
-    "(exit %1)": ""
+    "(exit %1)": "(thoát %1)"
   },
   "+ %1 more": {
     "+ %1 more": "+ %1 thêm"
   },
   "+%1 conditions": {
-    "+%1 conditions": ""
+    "+%1 conditions": "+%1 điều kiện"
   },
   "0 stops the animation and saves GPU": {
-    "0 stops the animation and saves GPU": ""
+    "0 stops the animation and saves GPU": "0 sẽ dừng hoạt ảnh và tiết kiệm GPU"
   },
   "1 hour before": {
-    "1 hour before": ""
+    "1 hour before": "Trước 1 giờ"
   },
   "1 notification": {
     "1 notification": "1 thông báo"
@@ -327,22 +324,25 @@
     "50 uses Material shapes. Lower values reduce rounding; higher values increase it.": "50 sử dụng hình dạng Vật liệu. Giá trị thấp hơn làm giảm làm tròn; giá trị cao hơn làm tăng nó."
   },
   "A custom seed color overrides this": {
-    "A custom seed color overrides this": ""
+    "A custom seed color overrides this": "Màu gốc tùy chỉnh sẽ ghi đè mục này"
   },
   "A floating companion that works alongside any bar layout": {
     "A floating companion that works alongside any bar layout": "Một người bạn đồng hành nổi hoạt động cùng với mọi bố cục thanh"
   },
   "A modern desktop shell for Wayland": {
-    "A modern desktop shell for Wayland": ""
+    "A modern desktop shell for Wayland": "Một desktop shell hiện đại cho Wayland"
   },
   "A newer dms binary is installed.": {
-    "A newer dms binary is installed.": ""
+    "A newer dms binary is installed.": "Đã cài đặt bản nhị phân dms mới hơn."
   },
   "A notification must match every condition": {
-    "A notification must match every condition": ""
+    "A notification must match every condition": "Thông báo phải khớp với mọi điều kiện"
+  },
+  "A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.": {
+    "A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.": ""
   },
   "A tiled or fullscreen window dragged into floating centers on the cursor": {
-    "A tiled or fullscreen window dragged into floating centers on the cursor": ""
+    "A tiled or fullscreen window dragged into floating centers on the cursor": "Cửa sổ xếp lát hoặc toàn màn hình khi kéo sang chế độ nổi sẽ được căn giữa tại con trỏ"
   },
   "A user with that name already exists.": {
     "A user with that name already exists.": "Người dùng với tên đó đã tồn tại."
@@ -366,19 +366,16 @@
     "About": "Giới thiệu"
   },
   "Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.": {
-    "Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.": ""
+    "Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.": "Đường dẫn tuyệt đối hoặc bắt đầu bằng ~/ tới tệp keymap .xkb. Ghi đè bố cục/biến thể ở trên."
   },
   "Acceleration profile": {
     "Acceleration profile": "Hồ sơ Gia tốc"
   },
   "Accent minutes": {
-    "Accent minutes": ""
+    "Accent minutes": "Màu nhấn của phút"
   },
   "Accept jobs": {
     "Accept jobs": "Chấp nhận công việc"
-  },
-  "Accept reviewed changes": {
-    "Accept reviewed changes": "Chấp nhận những thay đổi đã được xem xét"
   },
   "Accepting": {
     "Accepting": "Đang chấp nhận"
@@ -396,7 +393,7 @@
     "Accounts": "Tài khoản"
   },
   "Acrylic": {
-    "Acrylic": ""
+    "Acrylic": "Acrylic"
   },
   "Action": {
     "Action": "Thao tác"
@@ -410,6 +407,9 @@
   "Activate Greeter": {
     "Activate Greeter": "Kích hoạt Màn hình chào"
   },
+  "Activate input method": {
+    "Activate input method": ""
+  },
   "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.": {
     "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.": "Kích hoạt DMS màn hình chào? Một cửa sổ dòng lệnh sẽ mở ra để xác thực sudo. Hãy chạy Đồng bộ sau khi kích hoạt để áp dụng các cài đặt của bạn."
   },
@@ -421,6 +421,9 @@
   },
   "Active VPN": {
     "Active VPN": "VPN đang hoạt động"
+  },
+  "Active by default": {
+    "Active by default": ""
   },
   "Active color": {
     "Active color": "Màu sắc đang hoạt động"
@@ -456,7 +459,7 @@
     "Add \"%1\" to the %2 group?": "Thêm \"%1\" vào nhóm %2?"
   },
   "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": {
-    "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": ""
+    "Add \"%1\" to the %2 group? They must log out and back in, then run %3 to publish their login-screen theme.": "Thêm \"%1\" vào nhóm %2? Họ phải đăng xuất rồi đăng nhập lại, sau đó chạy %3 để xuất bản giao diện màn hình đăng nhập của mình."
   },
   "Add Desktop Widget": {
     "Add Desktop Widget": "Thêm tiện ích máy tính"
@@ -471,10 +474,13 @@
     "Add by address": "Thêm theo địa chỉ"
   },
   "Add condition": {
-    "Add condition": ""
+    "Add condition": "Thêm điều kiện"
   },
   "Add entry": {
     "Add entry": "Thêm mục"
+  },
+  "Add input method": {
+    "Add input method": ""
   },
   "Add location": {
     "Add location": "Thêm địa điểm"
@@ -486,25 +492,25 @@
     "Add notes": "Thêm ghi chú"
   },
   "Add palette": {
-    "Add palette": ""
+    "Add palette": "Thêm bảng màu"
   },
   "Add printer": {
     "Add printer": "Thêm máy in"
   },
   "Add rule": {
-    "Add rule": ""
+    "Add rule": "Thêm quy tắc"
   },
   "Add shortcut": {
-    "Add shortcut": ""
+    "Add shortcut": "Thêm phím tắt"
   },
   "Add substitution": {
-    "Add substitution": ""
+    "Add substitution": "Thêm quy tắc thay thế"
   },
   "Add to autostart": {
     "Add to autostart": "Thêm vào tự động khởi động"
   },
   "Add user": {
-    "Add user": ""
+    "Add user": "Thêm người dùng"
   },
   "Add widget": {
     "Add widget": "Thêm tiện ích"
@@ -519,43 +525,43 @@
     "Add, remove and configure dock items": "Thêm, xóa và định cấu hình các mục trên đế"
   },
   "Add, reorder, configure": {
-    "Add, reorder, configure": ""
+    "Add, reorder, configure": "Thêm, sắp xếp lại, cấu hình"
   },
   "Added in front of every app launch command": {
     "Added in front of every app launch command": "Đã thêm vào trước mỗi lệnh khởi chạy ứng dụng"
   },
   "Adds a compositor window rule so DMS windows such as Settings open floating": {
-    "Adds a compositor window rule so DMS windows such as Settings open floating": ""
+    "Adds a compositor window rule so DMS windows such as Settings open floating": "Thêm quy tắc cửa sổ cho compositor để các cửa sổ DMS như Cài đặt mở ở chế độ nổi"
   },
   "Adds concave curves where the bar meets the screen edge": {
     "Adds concave curves where the bar meets the screen edge": "Thêm các đường cong lõm nơi thanh gặp cạnh màn hình"
   },
   "Adds them to the %1 group so they can run %2": {
-    "Adds them to the %1 group so they can run %2": ""
+    "Adds them to the %1 group so they can run %2": "Thêm họ vào nhóm %1 để họ có thể chạy %2"
   },
   "Adds them to the %1 group so they can use sudo": {
     "Adds them to the %1 group so they can use sudo": "Thêm họ vào nhóm %1 để họ có thể sử dụng sudo"
   },
   "Adjustment": {
-    "Adjustment": ""
+    "Adjustment": "Điều chỉnh"
   },
   "Administrator access is required. Press Apply changes in Settings → Greeter.": {
-    "Administrator access is required. Press Apply changes in Settings → Greeter.": ""
+    "Administrator access is required. Press Apply changes in Settings → Greeter.": "Cần quyền quản trị viên. Hãy nhấn Áp dụng thay đổi trong Cài đặt → Greeter."
   },
   "Advance when a video ends": {
-    "Advance when a video ends": ""
+    "Advance when a video ends": "Chuyển tiếp khi video kết thúc"
   },
   "Advanced": {
     "Advanced": "Nâng cao"
   },
   "Advanced Matching": {
-    "Advanced Matching": ""
+    "Advanced Matching": "Khớp nâng cao"
   },
   "Advanced comma-separated libxkbcommon options.": {
     "Advanced comma-separated libxkbcommon options.": "Tùy chọn libxkbcommon nâng cao được phân tách bằng dấu phẩy."
   },
   "After %1": {
-    "After %1": ""
+    "After %1": "Sau %1"
   },
   "Afternoon": {
     "Afternoon": "Buổi chiều"
@@ -585,13 +591,13 @@
     "All displays": "Tất cả màn hình"
   },
   "All plugins": {
-    "All plugins": ""
+    "All plugins": "Tất cả plugin"
   },
   "All settings": {
-    "All settings": ""
+    "All settings": "Tất cả cài đặt"
   },
   "All submaps": {
-    "All submaps": ""
+    "All submaps": "Tất cả submap"
   },
   "Allow": {
     "Allow": "Cho phép"
@@ -615,28 +621,28 @@
     "Allow in Do Not Disturb": "Cho phép ở chế độ Không làm phiền"
   },
   "Allowed cores": {
-    "Allowed cores": ""
+    "Allowed cores": "Nhân được phép"
   },
   "Already on that session": {
     "Already on that session": "Đã ở trong phiên đó"
   },
   "Already upvoted, click again to remove": {
-    "Already upvoted, click again to remove": ""
+    "Already upvoted, click again to remove": "Đã bình chọn, nhấp lần nữa để gỡ"
   },
   "Also runs the templates in your %1": {
-    "Also runs the templates in your %1": ""
+    "Also runs the templates in your %1": "Đồng thời chạy các template trong %1 của bạn"
   },
   "Also saves the screenshot to disk": {
-    "Also saves the screenshot to disk": ""
+    "Also saves the screenshot to disk": "Đồng thời lưu ảnh chụp màn hình vào ổ đĩa"
   },
   "Also works on the lock screen": {
-    "Also works on the lock screen": ""
+    "Also works on the lock screen": "Cũng hoạt động trên màn hình khóa"
   },
   "Alt + Shift": {
     "Alt + Shift": "Alt + Shift"
   },
   "Alt + Shift shortcuts in apps and keybinds stop working.": {
-    "Alt + Shift shortcuts in apps and keybinds stop working.": ""
+    "Alt + Shift shortcuts in apps and keybinds stop working.": "Các phím tắt Alt + Shift trong ứng dụng và keybind sẽ ngừng hoạt động."
   },
   "Alternative (OR)": {
     "Alternative (OR)": "Thay thế (HOẶC)"
@@ -645,16 +651,16 @@
     "Always here": "Luôn ở đây"
   },
   "Always in overflow": {
-    "Always in overflow": ""
+    "Always in overflow": "Luôn nằm trong overflow"
   },
   "Always on icons": {
     "Always on icons": "Biểu tượng luôn hiển thị"
   },
   "Always open here": {
-    "Always open here": ""
+    "Always open here": "Luôn mở tại đây"
   },
   "Always show": {
-    "Always show": ""
+    "Always show": "Luôn hiện"
   },
   "Always show percentage": {
     "Always show percentage": "Luôn hiển thị phần trăm"
@@ -666,7 +672,7 @@
     "Amount": "Số lượng"
   },
   "An Island bar already covers a display this bar is on": {
-    "An Island bar already covers a display this bar is on": ""
+    "An Island bar already covers a display this bar is on": "Một thanh Island đã bao phủ màn hình mà thanh này đang nằm trên"
   },
   "An uninstallation is already in progress": {
     "An uninstallation is already in progress": "Quá trình gỡ cài đặt đang được tiến hành"
@@ -678,7 +684,7 @@
     "Analog": "Kim (Đồng hồ)"
   },
   "Analog, digital, stacked, expressive, or overlapping clock": {
-    "Analog, digital, stacked, expressive, or overlapping clock": ""
+    "Analog, digital, stacked, expressive, or overlapping clock": "Đồng hồ kim, số, xếp chồng, biểu cảm hoặc chồng lấn"
   },
   "Analyzing configuration...": {
     "Analyzing configuration...": "Đang phân tích cấu hình..."
@@ -690,22 +696,19 @@
     "Animation duration": "Thời lượng ảnh động"
   },
   "Animation style": {
-    "Animation style": ""
+    "Animation style": "Kiểu hoạt ảnh"
   },
   "Animations": {
     "Animations": "Hoạt hình"
   },
   "Anonymous": {
-    "Anonymous": ""
+    "Anonymous": "Ẩn danh"
   },
   "Anonymous Identity": {
     "Anonymous Identity": "ID ẩn danh"
   },
   "Anonymous Identity (optional)": {
     "Anonymous Identity (optional)": "ID ẩn danh (tùy chọn)"
-  },
-  "Another Aqueous operation is in progress.": {
-    "Another Aqueous operation is in progress.": "Một hoạt động sử dụng nước khác đang được tiến hành."
   },
   "Any window": {
     "Any window": "Bất kỳ cửa sổ nào"
@@ -738,10 +741,10 @@
     "App launcher": "Trình khởi chạy app"
   },
   "App limits": {
-    "App limits": ""
+    "App limits": "Giới hạn ứng dụng"
   },
   "App name": {
-    "App name": ""
+    "App name": "Tên ứng dụng"
   },
   "App name or identity (e.g., firefox)": {
     "App name or identity (e.g., firefox)": "Tên ứng dụng hoặc danh tính (ví dụ: firefox)"
@@ -810,22 +813,16 @@
     "Apps dock": "Thanh dock ứng dụng"
   },
   "Apps that capture the keyboard can block it": {
-    "Apps that capture the keyboard can block it": ""
+    "Apps that capture the keyboard can block it": "Các ứng dụng chiếm quyền bàn phím có thể chặn nó"
   },
   "Apps with notification popups muted. Unmute or delete to remove.": {
     "Apps with notification popups muted. Unmute or delete to remove.": "Các ứng dụng đã tắt thông báo nổi. Bật lại hoặc xóa để gỡ bỏ."
-  },
-  "Aqueous cursor": {
-    "Aqueous cursor": "Con trỏ nước"
-  },
-  "Aqueous typography": {
-    "Aqueous typography": "Kiểu chữ nước"
   },
   "Arc extender": {
     "Arc extender": "Bộ mở rộng Arc"
   },
   "Archive manager": {
-    "Archive manager": ""
+    "Archive manager": "Trình quản lý tệp nén"
   },
   "Are you sure you want to kill session \"%1\"?": {
     "Are you sure you want to kill session \"%1\"?": "Bạn có chắc chắn muốn dừng phiên \"%1\" không?"
@@ -843,7 +840,7 @@
     "Artwork": "tác phẩm nghệ thuật"
   },
   "Asleep": {
-    "Asleep": ""
+    "Asleep": "Đang ngủ"
   },
   "At least one output must remain enabled": {
     "At least one output must remain enabled": "Phải có ít nhất một đầu ra được bật"
@@ -888,7 +885,7 @@
     "Audio volume control": "Điều khiển âm lượng âm thanh"
   },
   "Aurora": {
-    "Aurora": ""
+    "Aurora": "Aurora"
   },
   "Auth": {
     "Auth": "Xác thực"
@@ -924,10 +921,10 @@
     "Authorize": "Ủy quyền"
   },
   "Authorize pairing with %1": {
-    "Authorize pairing with %1": ""
+    "Authorize pairing with %1": "Cho phép ghép nối với %1"
   },
   "Authorize service for %1": {
-    "Authorize service for %1": ""
+    "Authorize service for %1": "Cho phép dịch vụ cho %1"
   },
   "Auto": {
     "Auto": "Tự động"
@@ -957,7 +954,7 @@
     "Auto mode is on. Manual profile selection is disabled.": "Chế độ tự động đang bật. Lựa chọn cấu hình thủ công đã bị tắt."
   },
   "Auto moves this widget into overflow when the bar runs out of space": {
-    "Auto moves this widget into overflow when the bar runs out of space": ""
+    "Auto moves this widget into overflow when the bar runs out of space": "Tự chuyển widget này vào overflow khi thanh hết chỗ"
   },
   "Auto overflow": {
     "Auto overflow": "Tự động tràn"
@@ -972,7 +969,7 @@
     "Auto saved": "Đã tự động lưu"
   },
   "Auto turns it off on compositors that use clicks on the empty desktop themselves": {
-    "Auto turns it off on compositors that use clicks on the empty desktop themselves": ""
+    "Auto turns it off on compositors that use clicks on the empty desktop themselves": "Chế độ Tự động sẽ tắt tính năng này trên các compositor tự dùng thao tác nhấp vào màn hình nền trống"
   },
   "Auto uses an installed or bundled key-only service.": {
     "Auto uses an installed or bundled key-only service.": "Auto sử dụng một dịch vụ chỉ khóa đã cài đặt hoặc đi kèm."
@@ -981,7 +978,7 @@
     "Auto-clear after": "Tự động xóa sau"
   },
   "Auto-consuming": {
-    "Auto-consuming": ""
+    "Auto-consuming": "Tự tiêu thụ"
   },
   "Auto-hide": {
     "Auto-hide": "Tự động ẩn"
@@ -1017,7 +1014,7 @@
     "Automatic cycling": "Luân phiên tự động"
   },
   "Automatic placement": {
-    "Automatic placement": ""
+    "Automatic placement": "Đặt vị trí tự động"
   },
   "Automatically enable while screen sharing": {
     "Automatically enable while screen sharing": "Tự động bật khi chia sẻ màn hình"
@@ -1035,7 +1032,7 @@
     "Autostart apps": "Tự động khởi động ứng dụng"
   },
   "Autostart entries will not run at login because %1 is not active.": {
-    "Autostart entries will not run at login because %1 is not active.": ""
+    "Autostart entries will not run at login because %1 is not active.": "Các mục tự khởi động sẽ không chạy khi đăng nhập vì %1 không hoạt động."
   },
   "Available": {
     "Available": "Khả dụng"
@@ -1053,10 +1050,10 @@
     "Available networks": "Các mạng có sẵn"
   },
   "Avatar ring": {
-    "Avatar ring": ""
+    "Avatar ring": "Viền ảnh đại diện"
   },
   "BIOS": {
-    "BIOS": ""
+    "BIOS": "BIOS"
   },
   "Backend": {
     "Backend": "Backend"
@@ -1119,7 +1116,7 @@
     "Bar visibility": "Khả năng hiển thị thanh"
   },
   "Bar widget background behind the compact face": {
-    "Bar widget background behind the compact face": ""
+    "Bar widget background behind the compact face": "Nền widget trên thanh phía sau mặt thu gọn"
   },
   "Bar widgets": {
     "Bar widgets": "Tiện ích thanh"
@@ -1131,7 +1128,7 @@
     "Bars": "Thanh"
   },
   "Base clock": {
-    "Base clock": ""
+    "Base clock": "Xung nhịp cơ bản"
   },
   "Battery": {
     "Battery": "Pin"
@@ -1160,11 +1157,14 @@
   "Behavior": {
     "Behavior": "Hành vi"
   },
+  "Bento style only": {
+    "Bento style only": ""
+  },
   "Bind the %1 IPC action in your compositor config.": {
     "Bind the %1 IPC action in your compositor config.": "Liên kết hành động IPC %1 trong cấu hình bộ soạn thảo của bạn."
   },
   "Binds a mouse button, such as mouse:272": {
-    "Binds a mouse button, such as mouse:272": ""
+    "Binds a mouse button, such as mouse:272": "Gán một nút chuột, ví dụ mouse:272"
   },
   "Binds include added": {
     "Binds include added": "Bao gồm các phím tắt đã thêm"
@@ -1191,10 +1191,10 @@
     "Blocked": "Đã chặn"
   },
   "Bloom": {
-    "Bloom": ""
+    "Bloom": "Bloom"
   },
   "Blue": {
-    "Blue": ""
+    "Blue": "Xanh dương"
   },
   "Blue light filter": {
     "Blue light filter": "Bộ lọc ánh sáng xanh"
@@ -1215,7 +1215,7 @@
     "Blur against the wallpaper even with xray off": "Làm mờ hình nền ngay cả khi tắt xray"
   },
   "Blur follows opacity": {
-    "Blur follows opacity": ""
+    "Blur follows opacity": "Độ mờ theo độ trong suốt"
   },
   "Blur layer": {
     "Blur layer": "Lớp mờ"
@@ -1224,13 +1224,13 @@
     "Blur on overview": "Làm mờ trên Tổng quan"
   },
   "Blur, shadows, corners": {
-    "Blur, shadows, corners": ""
+    "Blur, shadows, corners": "Làm mờ, bóng đổ, bo góc"
   },
   "Blurred surfaces show the wallpaper, not the windows beneath": {
     "Blurred surfaces show the wallpaper, not the windows beneath": "Bề mặt mờ hiển thị hình nền chứ không phải cửa sổ bên dưới"
   },
   "Board": {
-    "Board": ""
+    "Board": "Bo mạch chủ"
   },
   "Body": {
     "Body": "Thân"
@@ -1241,11 +1241,17 @@
   "Body font size": {
     "Body font size": "Kích thước phông chữ cơ thể"
   },
+  "Bold": {
+    "Bold": ""
+  },
+  "Bold Italic": {
+    "Bold Italic": ""
+  },
   "Boot": {
-    "Boot": ""
+    "Boot": "Khởi động"
   },
   "Boot entry changed. Remove it and add it again.": {
-    "Boot entry changed. Remove it and add it again.": ""
+    "Boot entry changed. Remove it and add it again.": "Mục khởi động đã thay đổi. Hãy xóa rồi thêm lại."
   },
   "Border": {
     "Border": "Viền"
@@ -1266,7 +1272,7 @@
     "Both": "Cả hai"
   },
   "Both Shift keys": {
-    "Both Shift keys": ""
+    "Both Shift keys": "Cả hai phím Shift"
   },
   "Bottom": {
     "Bottom": "Nút"
@@ -1335,7 +1341,7 @@
     "Built-in plugins": "Các plugin tích hợp"
   },
   "Busy": {
-    "Busy": ""
+    "Busy": "Bận"
   },
   "Button areas": {
     "Button areas": "Khu vực nút"
@@ -1356,7 +1362,7 @@
     "CPU temperature display": "Nhiệt độ CPU"
   },
   "CPU time": {
-    "CPU time": ""
+    "CPU time": "Thời gian CPU"
   },
   "CPU usage": {
     "CPU usage": "Mức sử dụng CPU"
@@ -1383,10 +1389,10 @@
     "CUPS printers, jobs and classes": "Máy in CUPS, công việc và lớp học"
   },
   "Cable errors": {
-    "Cable errors": ""
+    "Cable errors": "Lỗi cáp"
   },
   "Cached": {
-    "Cached": ""
+    "Cached": "Đã cache"
   },
   "Calendar": {
     "Calendar": "Lịch"
@@ -1405,6 +1411,12 @@
   },
   "Canceled": {
     "Canceled": "Đã hủy"
+  },
+  "Candidate list": {
+    "Candidate list": ""
+  },
+  "Candidates per page": {
+    "Candidates per page": ""
   },
   "Cannot delete the only administrator": {
     "Cannot delete the only administrator": "Không thể xóa quản trị viên duy nhất"
@@ -1439,6 +1451,9 @@
   "Caps lock": {
     "Caps lock": "Caps Lock"
   },
+  "Card backgrounds": {
+    "Card backgrounds": ""
+  },
   "Cards": {
     "Cards": "Thẻ"
   },
@@ -1467,7 +1482,7 @@
     "Center Tiling": "Ốp lát trung tâm"
   },
   "Center dragged windows": {
-    "Center dragged windows": ""
+    "Center dragged windows": "Căn giữa cửa sổ khi kéo"
   },
   "Center section": {
     "Center section": "Phần trung tâm"
@@ -1485,16 +1500,16 @@
     "Change Volume": "Thay đổi âm lượng"
   },
   "Changes save to %1": {
-    "Changes save to %1": ""
+    "Changes save to %1": "Thay đổi được lưu vào %1"
   },
   "Changes volume and audio devices": {
-    "Changes volume and audio devices": ""
+    "Changes volume and audio devices": "Thay đổi âm lượng và thiết bị âm thanh"
   },
   "Channel": {
     "Channel": "Kênh"
   },
   "Channels": {
-    "Channels": ""
+    "Channels": "Kênh"
   },
   "Charge Limit Reached": {
     "Charge Limit Reached": "Đạt Giới Hạn Sạc"
@@ -1518,10 +1533,10 @@
     "Chart": "Biểu đồ"
   },
   "Chassis": {
-    "Chassis": ""
+    "Chassis": "Kiểu máy"
   },
   "Cheatsheet": {
-    "Cheatsheet": ""
+    "Cheatsheet": "Bảng tra cứu nhanh"
   },
   "Check for system updates": {
     "Check for system updates": "Kiểm tra cập nhật hệ thống"
@@ -1536,7 +1551,7 @@
     "Check on startup": "Kiểm tra khi khởi động"
   },
   "Check status": {
-    "Check status": ""
+    "Check status": "Kiểm tra trạng thái"
   },
   "Check your custom command in Settings → Dock → Trash.": {
     "Check your custom command in Settings → Dock → Trash.": "Kiểm tra lệnh tùy chỉnh của bạn trong Cài đặt → Dock → Thùng rác."
@@ -1551,7 +1566,7 @@
     "Checking...": "Đang kiểm tra..."
   },
   "Checks in the background at the check interval. Notifies only when the count grows.": {
-    "Checks in the background at the check interval. Notifies only when the count grows.": ""
+    "Checks in the background at the check interval. Notifies only when the count grows.": "Kiểm tra ngầm theo chu kỳ kiểm tra. Chỉ thông báo khi số lượng tăng lên."
   },
   "Chip": {
     "Chip": "chip"
@@ -1563,7 +1578,7 @@
     "Choose Wallpaper Color": "Chọn màu hình nền"
   },
   "Choose a clear area of the background. Drag the clock to place it yourself.": {
-    "Choose a clear area of the background. Drag the clock to place it yourself.": ""
+    "Choose a clear area of the background. Drag the clock to place it yourself.": "Chọn một vùng trống trên hình nền. Kéo đồng hồ để tự đặt vị trí."
   },
   "Choose a power profile": {
     "Choose a power profile": "Chọn hồ sơ năng lượng"
@@ -1578,10 +1593,10 @@
     "Choose wallpaper folder": "Chọn thư mục hình nền"
   },
   "Choose what middle-clicking empty bar space does": {
-    "Choose what middle-clicking empty bar space does": ""
+    "Choose what middle-clicking empty bar space does": "Chọn hành động khi nhấp chuột giữa vào vùng trống của thanh"
   },
   "Choose what right-clicking empty bar space does": {
-    "Choose what right-clicking empty bar space does": ""
+    "Choose what right-clicking empty bar space does": "Chọn hành động khi nhấp chuột phải vào vùng trống của thanh"
   },
   "Choose which displays show this widget": {
     "Choose which displays show this widget": "Chọn màn hình hiển thị tiện ích này"
@@ -1593,7 +1608,7 @@
     "Circle": "Hình tròn"
   },
   "Clarity": {
-    "Clarity": ""
+    "Clarity": "Độ nét"
   },
   "Class": {
     "Class": "Lớp học"
@@ -1605,7 +1620,7 @@
     "Classes": "Lớp học"
   },
   "Classic": {
-    "Classic": ""
+    "Classic": "Cổ điển"
   },
   "Clear All": {
     "Clear All": "Xóa hết"
@@ -1635,13 +1650,13 @@
     "Click 'Setup' to create %1 and add include to your compositor config.": "Nhấp 'Thiết lập' để tạo %1 và thêm phần bao gồm vào cấu hình compositor của bạn."
   },
   "Click Import to add a %1 or %2 file": {
-    "Click Import to add a %1 or %2 file": ""
+    "Click Import to add a %1 or %2 file": "Nhấn Nhập để thêm tệp %1 hoặc %2"
   },
   "Click action": {
-    "Click action": ""
+    "Click action": "Hành động khi nhấp"
   },
   "Click actions": {
-    "Click actions": ""
+    "Click actions": "Hành động nhấp chuột"
   },
   "Click method": {
     "Click method": "Phương pháp nhấp chuột"
@@ -1670,11 +1685,14 @@
   "Clicking a window in a special workspace opens that workspace": {
     "Clicking a window in a special workspace opens that workspace": "Nhấp vào một cửa sổ trong workspace đặc biệt sẽ mở workspace đó"
   },
+  "Clicking a workspace from another display moves it to the display of the bar you clicked": {
+    "Clicking a workspace from another display moves it to the display of the bar you clicked": ""
+  },
   "Clicks on empty bar space reach the windows below": {
     "Clicks on empty bar space reach the windows below": "Nhấp chuột vào không gian thanh trống sẽ đến các cửa sổ bên dưới"
   },
   "Client fullscreen state": {
-    "Client fullscreen state": ""
+    "Client fullscreen state": "Trạng thái toàn màn hình của client"
   },
   "Clip": {
     "Clip": "Cắt"
@@ -1707,13 +1725,13 @@
     "Clock, calendar, system info and profile": "Đồng hồ, lịch, thông tin hệ thống và hồ sơ"
   },
   "Clock, weather, locale": {
-    "Clock, weather, locale": ""
+    "Clock, weather, locale": "Đồng hồ, thời tiết, vùng"
   },
   "Clocks, monitors, plugins": {
-    "Clocks, monitors, plugins": ""
+    "Clocks, monitors, plugins": "Đồng hồ, bộ giám sát, plugin"
   },
   "Close Active Window": {
-    "Close Active Window": ""
+    "Close Active Window": "Đóng cửa sổ đang hoạt động"
   },
   "Close All Windows": {
     "Close All Windows": "Đóng tất cả cửa sổ"
@@ -1731,7 +1749,7 @@
     "Codec switching is unavailable. WirePlumber wpexec was not found.": "Chuyển đổi codec không khả dụng. WirePlumber wpexec không được tìm thấy."
   },
   "Codename": {
-    "Codename": ""
+    "Codename": "Tên mã"
   },
   "Collapse": {
     "Collapse": "Sụp đổ"
@@ -1761,7 +1779,7 @@
     "Color override": "Ghi đè màu"
   },
   "Color previews unavailable": {
-    "Color previews unavailable": ""
+    "Color previews unavailable": "Không có bản xem trước màu"
   },
   "Color space": {
     "Color space": "Không gian màu"
@@ -1794,7 +1812,7 @@
     "Columns": "Cột"
   },
   "Comfortable": {
-    "Comfortable": ""
+    "Comfortable": "Thoải mái"
   },
   "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": {
     "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": "Danh sách tên bố cục được phân tách bằng dấu phẩy. Để trống để sử dụng cài đặt bàn phím hệ thống."
@@ -1812,10 +1830,10 @@
     "Commands": "Các lệnh"
   },
   "Committed": {
-    "Committed": ""
+    "Committed": "Đã cam kết"
   },
   "Community": {
-    "Community": ""
+    "Community": "Cộng đồng"
   },
   "Community favorites to get you started": {
     "Community favorites to get you started": "Mục yêu thích của cộng đồng để giúp bạn bắt đầu"
@@ -1839,7 +1857,7 @@
     "Compositor and shell key bindings": "Các ràng buộc phím tổng hợp và shell"
   },
   "Compression": {
-    "Compression": ""
+    "Compression": "Nén"
   },
   "Config Format": {
     "Config Format": "Định dạng cấu hình"
@@ -1855,9 +1873,6 @@
   },
   "Configuration activated": {
     "Configuration activated": "Đã kích hoạt cấu hình"
-  },
-  "Configuration changed. Refresh to continue.": {
-    "Configuration changed. Refresh to continue.": "Cấu hình đã thay đổi. Hãy làm mới để tiếp tục."
   },
   "Configuration will be preserved when this display reconnects": {
     "Configuration will be preserved when this display reconnects": "Cấu hình sẽ được giữ lại khi màn hình này kết nối lại"
@@ -1875,7 +1890,7 @@
     "Configure one in Settings → Dock → Trash.": "Cấu hình một cái trong Cài đặt → Dock → Thùng rác."
   },
   "Confine pointer": {
-    "Confine pointer": ""
+    "Confine pointer": "Giam con trỏ trong cửa sổ"
   },
   "Confirm Delete": {
     "Confirm Delete": "Xác nhận xóa"
@@ -1884,7 +1899,7 @@
     "Confirm Display Changes": "Xác nhận thay đổi hiển thị"
   },
   "Confirm passkey for %1": {
-    "Confirm passkey for %1": ""
+    "Confirm passkey for %1": "Xác nhận passkey cho %1"
   },
   "Confirm password": {
     "Confirm password": "Xác nhận mật khẩu"
@@ -1926,28 +1941,28 @@
     "Connecting...": "Đang kết nối..."
   },
   "Connection": {
-    "Connection": ""
+    "Connection": "Kết nối"
   },
   "Connection failed": {
     "Connection failed": "Kết nối thất bại"
   },
   "Connections": {
-    "Connections": ""
+    "Connections": "Kết nối"
   },
   "Connections and autoconnect": {
     "Connections and autoconnect": "Kết nối và tự động kết nối"
   },
   "Connects to the internet": {
-    "Connects to the internet": ""
+    "Connects to the internet": "Kết nối internet"
   },
   "Consumes the key only when a dispatcher runs": {
-    "Consumes the key only when a dispatcher runs": ""
+    "Consumes the key only when a dispatcher runs": "Chỉ tiêu thụ phím khi một dispatcher chạy"
   },
   "Container": {
-    "Container": ""
+    "Container": "Container"
   },
   "Container saturation": {
-    "Container saturation": ""
+    "Container saturation": "Độ bão hòa của container"
   },
   "Contains": {
     "Contains": "Chứa"
@@ -1956,7 +1971,7 @@
     "Content": "Nội dung"
   },
   "Context switches": {
-    "Context switches": ""
+    "Context switches": "Chuyển ngữ cảnh"
   },
   "Contrast": {
     "Contrast": "Độ tương phản"
@@ -1968,19 +1983,19 @@
     "Control Center": "Trung tâm điều khiển"
   },
   "Control group": {
-    "Control group": ""
+    "Control group": "Control group"
   },
   "Controls": {
-    "Controls": ""
+    "Controls": "Điều khiển"
   },
   "Controls media players": {
-    "Controls media players": ""
+    "Controls media players": "Điều khiển trình phát media"
   },
   "Convert to DMS": {
     "Convert to DMS": "Chuyển đổi sang DMS"
   },
   "Convertible": {
-    "Convertible": ""
+    "Convertible": "2-trong-1"
   },
   "Cooldown": {
     "Cooldown": "Thời gian hồi"
@@ -1992,13 +2007,13 @@
     "Copied!": "Đã sao chép!"
   },
   "Copies the screenshot to the clipboard": {
-    "Copies the screenshot to the clipboard": ""
+    "Copies the screenshot to the clipboard": "Sao chép ảnh chụp màn hình vào clipboard"
   },
   "Copy": {
     "Copy": "Sao chép"
   },
   "Copy %1": {
-    "Copy %1": ""
+    "Copy %1": "Sao chép %1"
   },
   "Copy Full Command": {
     "Copy Full Command": "Sao chép lệnh đầy đủ"
@@ -2016,19 +2031,19 @@
     "Copy Text": "Sao chép văn bản"
   },
   "Copy report": {
-    "Copy report": ""
+    "Copy report": "Sao chép báo cáo"
   },
   "Copy summary": {
-    "Copy summary": ""
+    "Copy summary": "Sao chép tóm tắt"
   },
   "Copy target (%1)": {
     "Copy target (%1)": "Sao chép mục tiêu ( %1 )"
   },
   "Core clock": {
-    "Core clock": ""
+    "Core clock": "Xung nhịp nhân"
   },
   "Cores": {
-    "Cores": ""
+    "Cores": "Nhân"
   },
   "Corner radius": {
     "Corner radius": "Bán kính góc"
@@ -2037,10 +2052,10 @@
     "Corner style": "Kiểu góc"
   },
   "Corners": {
-    "Corners": ""
+    "Corners": "Góc"
   },
   "Cosine": {
-    "Cosine": ""
+    "Cosine": "Cosine"
   },
   "Couldn't load hotspot password": {
     "Couldn't load hotspot password": "Không thể tải mật khẩu điểm nóng"
@@ -2052,13 +2067,13 @@
     "Count only": "Chỉ đếm"
   },
   "Counts time in the focused app while the session is active. Stays on this device.": {
-    "Counts time in the focused app while the session is active. Stays on this device.": ""
+    "Counts time in the focused app while the session is active. Stays on this device.": "Tính thời gian ở ứng dụng đang focus khi phiên đang hoạt động. Dữ liệu chỉ lưu trên thiết bị này."
   },
   "Cover Open": {
     "Cover Open": "Bìa mở"
   },
   "Cover art": {
-    "Cover art": ""
+    "Cover art": "Ảnh bìa"
   },
   "Create a new %1 session (^N)": {
     "Create a new %1 session (^N)": "Tạo phiên %1 mới (^N)"
@@ -2097,7 +2112,7 @@
     "Critical threshold": "Ngưỡng Tới Hạn"
   },
   "Critical warning": {
-    "Critical warning": ""
+    "Critical warning": "Cảnh báo nghiêm trọng"
   },
   "Ctrl+%1 is used for password editing": {
     "Ctrl+%1 is used for password editing": "Ctrl+ %1 được sử dụng để chỉnh sửa mật khẩu"
@@ -2118,7 +2133,7 @@
     "Current display": "hiển thị hiện tại"
   },
   "Current pending sectors": {
-    "Current pending sectors": ""
+    "Current pending sectors": "Sector đang chờ xử lý"
   },
   "Current period": {
     "Current period": "Giai đoạn hiện tại"
@@ -2143,12 +2158,6 @@
   },
   "Cursor": {
     "Cursor": "Con trỏ"
-  },
-  "Cursor Size": {
-    "Cursor Size": "Kích thước con trỏ"
-  },
-  "Cursor Theme": {
-    "Cursor Theme": "Chủ đề con trỏ"
   },
   "Cursor auto-hide timeout": {
     "Cursor auto-hide timeout": "Hết thời gian chờ tự động ẩn con trỏ"
@@ -2211,7 +2220,7 @@
     "DDC/CI monitor": "Màn hình DDC/CI"
   },
   "DMS %1 available": {
-    "DMS %1 available": ""
+    "DMS %1 available": "Đã có DMS %1"
   },
   "DMS Settings": {
     "DMS Settings": "Cài đặt DMS"
@@ -2223,19 +2232,19 @@
     "DMS Shortcuts": "Phím tắt DMS"
   },
   "DMS and system updates": {
-    "DMS and system updates": ""
+    "DMS and system updates": "Cập nhật DMS và hệ thống"
   },
   "DMS chooser": {
     "DMS chooser": "Trình chọn DMS"
   },
   "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.": {
-    "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.": ""
+    "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.": "DMS là một desktop shell hiện đại, dễ tùy biến sâu, trông đẹp ngay từ đầu mà vẫn giữ nguyên quyền tự do biến nó thành của riêng bạn.<br/><br/>Được xây dựng bằng %1 và %2, nó gộp các panel, widget, điều khiển hệ thống và nhiều thứ khác thành một trải nghiệm desktop liền mạch."
   },
   "DMS out of date": {
     "DMS out of date": "DMS đã lỗi thời"
   },
   "DMS removes its managed block from %1 and stops write services": {
-    "DMS removes its managed block from %1 and stops write services": ""
+    "DMS removes its managed block from %1 and stops write services": "DMS sẽ xóa khối do nó quản lý khỏi %1 và dừng các dịch vụ ghi"
   },
   "DMS server is outdated (API v%1, expected v%2)": {
     "DMS server is outdated (API v%1, expected v%2)": "Máy chủ DMS đã cũ (API v%1, mong đợi v%2)"
@@ -2249,23 +2258,20 @@
   "DMS stops drawing wallpapers on every display": {
     "DMS stops drawing wallpapers on every display": "DMS ngừng vẽ hình nền trên mọi màn hình"
   },
-  "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": {
-    "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": "DMS sử dụng họ phông chữ, trọng lượng và tỷ lệ. Mặt chính xác, độ nghiêng, chiều rộng và các thanh có tỷ lệ riêng biệt có thể khác nhau."
-  },
   "Daemon": {
-    "Daemon": ""
+    "Daemon": "Daemon"
   },
   "Daily": {
     "Daily": "Hàng ngày"
   },
   "Daily limit": {
-    "Daily limit": ""
+    "Daily limit": "Giới hạn hằng ngày"
   },
   "Daily screen time limit reached": {
-    "Daily screen time limit reached": ""
+    "Daily screen time limit reached": "Đã đạt giới hạn thời gian sử dụng hằng ngày"
   },
   "Dank": {
-    "Dank": ""
+    "Dank": "Dank"
   },
   "DankBar": {
     "DankBar": "DankBar"
@@ -2295,16 +2301,16 @@
     "Darkest": "Tối nhất"
   },
   "Dash card": {
-    "Dash card": ""
+    "Dash card": "Thẻ Dash"
   },
   "Dash tab": {
-    "Dash tab": ""
+    "Dash tab": "Tab Dash"
   },
   "Dashboard": {
     "Dashboard": "Trang tổng quan"
   },
   "Dashboard tabs": {
-    "Dashboard tabs": ""
+    "Dashboard tabs": "Tab dashboard"
   },
   "Date": {
     "Date": "Ngày"
@@ -2313,7 +2319,7 @@
     "Date first": "Ngày đầu tiên"
   },
   "Date format": {
-    "Date format": ""
+    "Date format": "Định dạng ngày"
   },
   "Date, time & region": {
     "Date, time & region": "Ngày, giờ và khu vực"
@@ -2328,7 +2334,7 @@
     "Dawn (Nautical Twilight)": "Bình minh (Hàng hải)"
   },
   "Day": {
-    "Day": ""
+    "Day": "Ngày"
   },
   "Day date": {
     "Day date": "Ngày trong tuần và ngày tháng"
@@ -2342,11 +2348,14 @@
   "Daytime": {
     "Daytime": "Ban ngày"
   },
+  "Deactivate input method": {
+    "Deactivate input method": ""
+  },
   "Deck": {
     "Deck": "Xếp chồng"
   },
   "Declared by the author, not enforced": {
-    "Declared by the author, not enforced": ""
+    "Declared by the author, not enforced": "Do tác giả khai báo, không được cưỡng chế"
   },
   "Default": {
     "Default": "Mặc định"
@@ -2367,7 +2376,7 @@
     "Default apps": "Ứng dụng mặc định"
   },
   "Default leaves it to niri, which floats dialogs and fixed-size windows and tiles the rest": {
-    "Default leaves it to niri, which floats dialogs and fixed-size windows and tiles the rest": ""
+    "Default leaves it to niri, which floats dialogs and fixed-size windows and tiles the rest": "Mặc định giao cho niri quyết định: nó cho hộp thoại và cửa sổ cố định kích thước nổi, còn lại thì xếp lát"
   },
   "Default selected action": {
     "Default selected action": "Hành động mặc định được chọn"
@@ -2379,7 +2388,7 @@
     "Default width (%)": "Chiều rộng mặc định (%)"
   },
   "Defaults, autostart, rules": {
-    "Defaults, autostart, rules": ""
+    "Defaults, autostart, rules": "Mặc định, tự khởi động, quy tắc"
   },
   "Define rules for window behavior. Saves to %1": {
     "Define rules for window behavior. Saves to %1": "Định nghĩa các quy tắc cho hành vi cửa sổ. Lưu vào %1"
@@ -2421,13 +2430,13 @@
     "Delete user": "Xóa người dùng"
   },
   "Delete wallpaper '%1'?": {
-    "Delete wallpaper '%1'?": ""
+    "Delete wallpaper '%1'?": "Xóa hình nền '%1'?"
   },
   "Deletes all stored screen time": {
-    "Deletes all stored screen time": ""
+    "Deletes all stored screen time": "Xóa toàn bộ dữ liệu thời gian sử dụng đã lưu"
   },
   "Dense": {
-    "Dense": ""
+    "Dense": "Dày đặc"
   },
   "Dependencies & documentation": {
     "Dependencies & documentation": "Các phụ thuộc & tài liệu"
@@ -2445,7 +2454,7 @@
     "Description": "Mô tả"
   },
   "Desktop": {
-    "Desktop": ""
+    "Desktop": "Desktop"
   },
   "Desktop Entry": {
     "Desktop Entry": "Mục máy tính"
@@ -2460,7 +2469,7 @@
     "Desktop widgets": "Tiện ích máy tính"
   },
   "Details": {
-    "Details": ""
+    "Details": "Chi tiết"
   },
   "Details for \"%1": {
     "Details for \"%1\"": "Chi tiết cho \"%1\""
@@ -2487,13 +2496,13 @@
     "Dew point %1": "Điểm sương %1"
   },
   "Did you mean": {
-    "Did you mean": ""
+    "Did you mean": "Có phải bạn muốn tìm"
   },
   "Digital": {
     "Digital": "Kỹ thuật số (Số)"
   },
   "Digital wellbeing": {
-    "Digital wellbeing": ""
+    "Digital wellbeing": "Sức khỏe số"
   },
   "Dim": {
     "Dim": "mờ"
@@ -2511,16 +2520,16 @@
     "Directory": "Thư mục"
   },
   "Disable": {
-    "Disable": ""
+    "Disable": "Tắt"
   },
   "Disable %1?": {
-    "Disable %1?": ""
+    "Disable %1?": "Tắt %1?"
   },
   "Disable autoconnect": {
     "Disable autoconnect": "Tắt Tự động kết nối"
   },
   "Disable card": {
-    "Disable card": ""
+    "Disable card": "Tắt card"
   },
   "Disable output": {
     "Disable output": "Tắt đầu ra"
@@ -2538,13 +2547,13 @@
     "Disabled": "Đã tắt"
   },
   "Disabled (%1)": {
-    "Disabled (%1)": ""
+    "Disabled (%1)": "Đã tắt (%1)"
   },
   "Disabled by Auto": {
-    "Disabled by Auto": ""
+    "Disabled by Auto": "Bị tắt bởi Tự động"
   },
   "Disabled by Click through": {
-    "Disabled by Click through": ""
+    "Disabled by Click through": "Bị tắt bởi Click through"
   },
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "Đã bị tắt bởi Chế độ khung"
@@ -2563,9 +2572,6 @@
   },
   "Discard": {
     "Discard": "Hủy bỏ"
-  },
-  "Discard draft and reload": {
-    "Discard draft and reload": "Hủy bản nháp và tải lại"
   },
   "Discharging": {
     "Discharging": "Đang xả pin"
@@ -2589,7 +2595,7 @@
     "Disk": "Ổ đĩa"
   },
   "Disk read": {
-    "Disk read": ""
+    "Disk read": "Đọc đĩa"
   },
   "Disk usage": {
     "Disk usage": "Mức sử dụng ổ đĩa"
@@ -2598,7 +2604,7 @@
     "Disk usage format": "Định dạng sử dụng đĩa"
   },
   "Disk write": {
-    "Disk write": ""
+    "Disk write": "Ghi đĩa"
   },
   "Disks": {
     "Disks": "Ổ đĩa"
@@ -2685,7 +2691,7 @@
     "Dock": "Thanh dock"
   },
   "Dock %1": {
-    "Dock %1": ""
+    "Dock %1": "Dock %1"
   },
   "Dock margin, opacity, and border": {
     "Dock margin, opacity, and border": "Căn lề, độ mờ và viền thanh Dock"
@@ -2721,7 +2727,7 @@
     "Don't change": "Không thay đổi"
   },
   "Don't dim unfocused apps": {
-    "Don't dim unfocused apps": ""
+    "Don't dim unfocused apps": "Không làm mờ ứng dụng không focus"
   },
   "Door Open": {
     "Door Open": "Cửa mở"
@@ -2730,16 +2736,16 @@
     "Dot": "chấm"
   },
   "Dots": {
-    "Dots": ""
+    "Dots": "Chấm"
   },
   "Down": {
     "Down": "Xuống"
   },
   "Download": {
-    "Download": ""
+    "Download": "Tải xuống"
   },
   "Drag": {
-    "Drag": ""
+    "Drag": "Kéo"
   },
   "Drag a widget by its handle here to reorder it or drop it into another group": {
     "Drag a widget by its handle here to reorder it or drop it into another group": "Kéo một widget bằng tay cầm của nó tại đây để sắp xếp lại hoặc thả nó vào một nhóm khác"
@@ -2751,7 +2757,7 @@
     "Drag lock": "Khóa Kéo"
   },
   "Drag small tiles in to group them": {
-    "Drag small tiles in to group them": ""
+    "Drag small tiles in to group them": "Kéo các ô nhỏ vào để nhóm lại"
   },
   "Drag the handle to reorder. Tap a widget for its settings, use the switch to hide it without changing spacing, or X to remove it.": {
     "Drag the handle to reorder. Tap a widget for its settings, use the switch to hide it without changing spacing, or X to remove it.": "Kéo tay cầm để sắp xếp lại. Nhấn vào một tiện ích để xem cài đặt của tiện ích đó, sử dụng công tắc để ẩn tiện ích đó mà không thay đổi khoảng cách hoặc X để xóa tiện ích đó."
@@ -2775,16 +2781,16 @@
     "Drop your override for %1 so the DMS default action re-applies?": "Bỏ ghi đè cho %1 để hành động mặc định của DMS được áp dụng lại?"
   },
   "Drops": {
-    "Drops": ""
+    "Drops": "Drops"
   },
   "Drops bar gaps and rounding while a window is maximized": {
     "Drops bar gaps and rounding while a window is maximized": "Giảm khoảng trống thanh và làm tròn trong khi cửa sổ được phóng to"
   },
   "Dune": {
-    "Dune": ""
+    "Dune": "Dune"
   },
   "Duo": {
-    "Duo": ""
+    "Duo": "Duo"
   },
   "Duplicate": {
     "Duplicate": "Nhân bản"
@@ -2802,16 +2808,16 @@
     "Dusk (Nautical Twilight)": "Hoàng hôn (Hàng hải)"
   },
   "Dux Calendar": {
-    "Dux Calendar": ""
+    "Dux Calendar": "Dux Calendar"
   },
   "Dux Calendar isn't installed": {
-    "Dux Calendar isn't installed": ""
+    "Dux Calendar isn't installed": "Dux Calendar chưa được cài đặt"
   },
   "Dux Calendar isn't running": {
-    "Dux Calendar isn't running": ""
+    "Dux Calendar isn't running": "Dux Calendar chưa chạy"
   },
   "Dux Greeter docs": {
-    "Dux Greeter docs": ""
+    "Dux Greeter docs": "Tài liệu Dux Greeter"
   },
   "Dwindle": {
     "Dwindle": "Giảm dần"
@@ -2835,7 +2841,7 @@
     "Dynamic colors, presets": "Màu động, các bộ đặt trước"
   },
   "Dynamic theme is off": {
-    "Dynamic theme is off": ""
+    "Dynamic theme is off": "Giao diện động đang tắt"
   },
   "Dynamic width": {
     "Dynamic width": "Chiều rộng động"
@@ -2847,7 +2853,7 @@
     "Edge": "Cạnh"
   },
   "Edge around popups and modals": {
-    "Edge around popups and modals": ""
+    "Edge around popups and modals": "Viền quanh popup và modal"
   },
   "Edge hover reveal": {
     "Edge hover reveal": "Tiết lộ Khi Di chuột Qua Cạnh"
@@ -2886,28 +2892,28 @@
     "Edit rule": "Chỉnh sửa quy tắc"
   },
   "Edit shortcut": {
-    "Edit shortcut": ""
+    "Edit shortcut": "Chỉnh sửa phím tắt"
   },
   "Edit widgets": {
     "Edit widgets": "Chỉnh sửa tiện ích"
   },
   "Editing the lock screen": {
-    "Editing the lock screen": ""
+    "Editing the lock screen": "Đang chỉnh sửa màn hình khóa"
   },
   "Editing the lock screen, the login screen follows it": {
-    "Editing the lock screen, the login screen follows it": ""
+    "Editing the lock screen, the login screen follows it": "Đang chỉnh sửa màn hình khóa, màn hình đăng nhập sẽ theo đó"
   },
   "Editing the login screen": {
-    "Editing the login screen": ""
+    "Editing the login screen": "Đang chỉnh sửa màn hình đăng nhập"
   },
   "Editing the login screen, shared with the lock screen": {
-    "Editing the login screen, shared with the lock screen": ""
+    "Editing the login screen, shared with the lock screen": "Đang chỉnh sửa màn hình đăng nhập, dùng chung với màn hình khóa"
   },
   "Education": {
     "Education": "Giáo dục"
   },
   "Elevated": {
-    "Elevated": ""
+    "Elevated": "Nâng quyền"
   },
   "Empty": {
     "Empty": "Trống"
@@ -2928,7 +2934,7 @@
     "Enable autoconnect": "Bật Tự động kết nối"
   },
   "Enable card": {
-    "Enable card": ""
+    "Enable card": "Bật card"
   },
   "Enable plugin to access settings": {
     "Enable plugin to access settings": "Kích hoạt plugin để truy cập cài đặt"
@@ -2952,7 +2958,7 @@
     "End must be after start": "Thời gian kết thúc phải sau thời gian bắt đầu"
   },
   "End process tree": {
-    "End process tree": ""
+    "End process tree": "Kết thúc cây tiến trình"
   },
   "Enter 6-digit passkey": {
     "Enter 6-digit passkey": "Nhập mật khẩu gồm 6 chữ số"
@@ -2961,7 +2967,7 @@
     "Enter PIN": "Nhập mã PIN"
   },
   "Enter PIN for %1": {
-    "Enter PIN for %1": ""
+    "Enter PIN for %1": "Nhập mã PIN cho %1"
   },
   "Enter a new name for session \"%1": {
     "Enter a new name for session \"%1\"": "Nhập tên mới cho phiên \"%1\""
@@ -2970,7 +2976,7 @@
     "Enter a new name for this workspace": "Nhập tên mới cho không gian làm việc này"
   },
   "Enter credentials for %1": {
-    "Enter credentials for %1": ""
+    "Enter credentials for %1": "Nhập thông tin xác thực cho %1"
   },
   "Enter custom lock screen format (e.g., dddd, MMMM d)": {
     "Enter custom lock screen format (e.g., dddd, MMMM d)": "Nhập định dạng màn hình khóa (vd: dddd, MMMM d)"
@@ -2985,16 +2991,16 @@
     "Enter network name and password": "Nhập tên và mk mạng ẩn"
   },
   "Enter passkey for %1": {
-    "Enter passkey for %1": ""
+    "Enter passkey for %1": "Nhập passkey cho %1"
   },
   "Enter password for %1": {
-    "Enter password for %1": ""
+    "Enter password for %1": "Nhập mật khẩu cho %1"
   },
   "Enter text to encode": {
     "Enter text to encode": "Nhập văn bản để mã hóa"
   },
   "Enter this passkey on %1": {
-    "Enter this passkey on %1": ""
+    "Enter this passkey on %1": "Nhập passkey này trên %1"
   },
   "Enter to paste": {
     "Enter to paste": "Nhấn Enter để dán"
@@ -3036,7 +3042,7 @@
     "Every %1": "Mọi %1"
   },
   "Every check": {
-    "Every check": ""
+    "Every check": "Mỗi lần kiểm tra"
   },
   "Every edge of this display is already taken": {
     "Every edge of this display is already taken": "Mọi cạnh của màn hình này đều đã được chụp"
@@ -3045,13 +3051,13 @@
     "Every hour": "Mỗi giờ"
   },
   "Every output and input of this sound card turns off until you enable it again": {
-    "Every output and input of this sound card turns off until you enable it again": ""
+    "Every output and input of this sound card turns off until you enable it again": "Mọi đầu ra và đầu vào của card âm thanh này sẽ bị tắt cho đến khi bạn bật lại"
   },
   "Exact": {
     "Exact": "Chính xác"
   },
   "Excluded apps": {
-    "Excluded apps": ""
+    "Excluded apps": "Ứng dụng loại trừ"
   },
   "Excluded players": {
     "Excluded players": "Trình phát Bị loại trừ"
@@ -3060,7 +3066,7 @@
     "Exclusive zone offset": "Độ lệch vùng độc quyền"
   },
   "Executable": {
-    "Executable": ""
+    "Executable": "Tệp thực thi"
   },
   "Exit node": {
     "Exit node": "Nút Thoát"
@@ -3093,7 +3099,7 @@
     "Expressive": "Biểu cảm"
   },
   "Extend %1 with powerful plugins for widgets, launchers, and more": {
-    "Extend %1 with powerful plugins for widgets, launchers, and more": ""
+    "Extend %1 with powerful plugins for widgets, launchers, and more": "Mở rộng %1 với các plugin mạnh mẽ cho widget, launcher và nhiều thứ khác"
   },
   "Extend battery life": {
     "Extend battery life": "Kéo dài thời lượng pin"
@@ -3148,6 +3154,9 @@
   },
   "Failed to change display power": {
     "Failed to change display power": "Không thể thay đổi nguồn hiển thị"
+  },
+  "Failed to change priority of %1": {
+    "Failed to change priority of %1": ""
   },
   "Failed to configure hotspot": {
     "Failed to configure hotspot": "Không thể cấu hình điểm nóng"
@@ -3236,9 +3245,6 @@
   "Failed to load clipboard entry": {
     "Failed to load clipboard entry": "Không thể tải mục nhập vào clipboard"
   },
-  "Failed to load keybinds": {
-    "Failed to load keybinds": "Không thể tải tổ hợp phím"
-  },
   "Failed to load settings": {
     "Failed to load settings": "Không tải được cài đặt"
   },
@@ -3247,6 +3253,9 @@
   },
   "Failed to parse %1": {
     "Failed to parse %1": "Không thể phân tích cú pháp %1"
+  },
+  "Failed to pause %1": {
+    "Failed to pause %1": ""
   },
   "Failed to pause printer": {
     "Failed to pause printer": "Không thể tạm dừng máy in"
@@ -3261,7 +3270,7 @@
     "Failed to read theme file: %1": "Đọc tệp chủ đề thất bại: %1"
   },
   "Failed to reboot to firmware setup": {
-    "Failed to reboot to firmware setup": ""
+    "Failed to reboot to firmware setup": "Không thể khởi động lại vào cài đặt firmware"
   },
   "Failed to reload plugin: %1": {
     "Failed to reload plugin: %1": "Tải lại plugin thất bại: %1"
@@ -3276,7 +3285,7 @@
     "Failed to remove keybind": "Xóa phím tắt thất bại"
   },
   "Failed to restart %1": {
-    "Failed to restart %1": ""
+    "Failed to restart %1": "Không thể khởi động lại %1"
   },
   "Failed to restart audio system": {
     "Failed to restart audio system": "Khởi động lại hệ thống âm thanh thất bại"
@@ -3284,11 +3293,14 @@
   "Failed to restart job": {
     "Failed to restart job": "Khởi động lại công việc thất bại"
   },
+  "Failed to resume %1": {
+    "Failed to resume %1": ""
+  },
   "Failed to resume printer": {
     "Failed to resume printer": "Không thể tiếp tục lại máy in"
   },
   "Failed to run '%1'. Ensure the %2 package is installed.": {
-    "Failed to run '%1'. Ensure the %2 package is installed.": ""
+    "Failed to run '%1'. Ensure the %2 package is installed.": "Không thể chạy '%1'. Hãy đảm bảo gói %2 đã được cài đặt."
   },
   "Failed to save VPN credentials": {
     "Failed to save VPN credentials": "Không thể lưu thông tin đăng nhập VPN"
@@ -3315,7 +3327,7 @@
     "Failed to set brightness": "Đặt độ sáng thất bại"
   },
   "Failed to set next boot entry": {
-    "Failed to set next boot entry": ""
+    "Failed to set next boot entry": "Không thể đặt mục khởi động kế tiếp"
   },
   "Failed to set night mode location": {
     "Failed to set night mode location": "Đặt vị trí chế độ ban đêm thất bại"
@@ -3357,7 +3369,7 @@
     "Failed to toggle cellular": "Không thể chuyển đổi di động"
   },
   "Failed to unlock": {
-    "Failed to unlock": ""
+    "Failed to unlock": "Không thể mở khóa"
   },
   "Failed to unpin entry": {
     "Failed to unpin entry": "Bỏ ghim mục thất bại"
@@ -3387,16 +3399,16 @@
     "Failed: %1": "Thất bại: %1"
   },
   "Faint edge on cards, pills and widgets": {
-    "Faint edge on cards, pills and widgets": ""
+    "Faint edge on cards, pills and widgets": "Viền mờ trên thẻ, pill và widget"
   },
   "Family": {
     "Family": "Gia đình"
   },
   "Fan": {
-    "Fan": ""
+    "Fan": "Quạt"
   },
   "Featured plugin": {
-    "Featured plugin": ""
+    "Featured plugin": "Plugin nổi bật"
   },
   "Feels Like %1°": {
     "Feels Like %1°": "Cảm giác như %1°"
@@ -3417,13 +3429,13 @@
     "File manager": "Trình quản lý tệp"
   },
   "File search requires %1\nInstall from %2": {
-    "File search requires %1\nInstall from %2": ""
+    "File search requires %1\nInstall from %2": "Tìm kiếm tệp yêu cầu %1\nCài đặt từ %2"
   },
   "File the command writes; leave empty to read stdout": {
     "File the command writes; leave empty to read stdout": "Gửi lệnh ghi; để trống để đọc thiết bị xuất chuẩn"
   },
   "File-backed": {
-    "File-backed": ""
+    "File-backed": "Có tệp hỗ trợ"
   },
   "Files": {
     "Files": "Tệp"
@@ -3450,7 +3462,7 @@
     "Find in note...": "Tìm trong ghi chú..."
   },
   "Fine-tune the seed around the color wheel": {
-    "Fine-tune the seed around the color wheel": ""
+    "Fine-tune the seed around the color wheel": "Tinh chỉnh màu gốc quanh vòng tròn màu"
   },
   "Fingerprint at login": {
     "Fingerprint at login": "Dấu vân tay khi đăng nhập"
@@ -3474,19 +3486,19 @@
     "Finish": "Hoàn tất"
   },
   "Fires even when an app inhibits shortcuts": {
-    "Fires even when an app inhibits shortcuts": ""
+    "Fires even when an app inhibits shortcuts": "Kích hoạt kể cả khi ứng dụng chặn phím tắt"
   },
   "Fires even while an input capture session is active": {
-    "Fires even while an input capture session is active": ""
+    "Fires even while an input capture session is active": "Kích hoạt kể cả khi phiên chiếm quyền nhập đang hoạt động"
   },
   "Fires with any modifiers held": {
-    "Fires with any modifiers held": ""
+    "Fires with any modifiers held": "Kích hoạt với bất kỳ phím bổ trợ nào đang giữ"
   },
   "Firmware": {
-    "Firmware": ""
+    "Firmware": "Firmware"
   },
   "Firmware setup": {
-    "Firmware setup": ""
+    "Firmware setup": "Cài đặt firmware"
   },
   "First Time Setup": {
     "First Time Setup": "Thiết lập lần đầu"
@@ -3501,13 +3513,16 @@
     "Fits the song title instead of keeping a fixed width": "Phù hợp với tiêu đề bài hát thay vì giữ chiều rộng cố định"
   },
   "Fits your setup": {
-    "Fits your setup": ""
+    "Fits your setup": "Phù hợp với thiết lập của bạn"
   },
   "Fixed": {
     "Fixed": "Đã sửa"
   },
   "Flat": {
     "Flat": "Phẳng"
+  },
+  "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.": {
+    "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.": ""
   },
   "Flipped": {
     "Flipped": "Bị lật"
@@ -3549,7 +3564,7 @@
     "Fluid": "Dịch"
   },
   "Fluid jar": {
-    "Fluid jar": ""
+    "Fluid jar": "Fluid jar"
   },
   "Flush": {
     "Flush": "Tuôn ra"
@@ -3561,10 +3576,10 @@
     "Focus at startup": "Tập trung khi khởi động"
   },
   "Focus follows mouse": {
-    "Focus follows mouse": ""
+    "Focus follows mouse": "Focus theo chuột"
   },
   "Focus on activate": {
-    "Focus on activate": ""
+    "Focus on activate": "Focus khi kích hoạt"
   },
   "Focus ring": {
     "Focus ring": "Vòng lấy nét"
@@ -3576,10 +3591,10 @@
     "Focus ring off": "Tắt vòng lấy nét"
   },
   "Focus the window when it asks to be activated": {
-    "Focus the window when it asks to be activated": ""
+    "Focus the window when it asks to be activated": "Focus cửa sổ khi nó yêu cầu được kích hoạt"
   },
   "Focus window": {
-    "Focus window": ""
+    "Focus window": "Focus cửa sổ"
   },
   "Focused": {
     "Focused": "Tập trung"
@@ -3618,7 +3633,7 @@
     "Follow focus": "Theo tiêu điểm"
   },
   "Follow lock screen": {
-    "Follow lock screen": ""
+    "Follow lock screen": "Theo màn hình khóa"
   },
   "Follow mouse": {
     "Follow mouse": "Theo dõi chuột"
@@ -3642,19 +3657,19 @@
     "Fonts & motion": "Phông chữ & chuyển động"
   },
   "Fonts, scale, animations": {
-    "Fonts, scale, animations": ""
+    "Fonts, scale, animations": "Phông chữ, tỷ lệ, hoạt ảnh"
   },
   "For %1": {
     "For %1": "Đối với %1"
   },
   "For 1 hour": {
-    "For 1 hour": ""
+    "For 1 hour": "Trong 1 giờ"
   },
   "For you": {
-    "For you": ""
+    "For you": "Dành cho bạn"
   },
   "Force": {
-    "Force": ""
+    "Force": "Bắt buộc"
   },
   "Force HDR": {
     "Force HDR": "Bắt buộc HDR"
@@ -3669,7 +3684,7 @@
     "Force padding": "Lực đệm"
   },
   "Force quit": {
-    "Force quit": ""
+    "Force quit": "Buộc thoát"
   },
   "Force split": {
     "Force split": "Buộc chia tách"
@@ -3705,7 +3720,7 @@
     "Forgot network %1": "Đã quên mạng %1"
   },
   "Form factor": {
-    "Form factor": ""
+    "Form factor": "Kiểu dáng"
   },
   "Format": {
     "Format": "Định dạng"
@@ -3735,7 +3750,7 @@
     "From wallpaper": "Từ hình nền"
   },
   "Frost": {
-    "Frost": ""
+    "Frost": "Frost"
   },
   "Fruit Salad": {
     "Fruit Salad": "Salad trái cây (Bảng màu)"
@@ -3744,7 +3759,7 @@
     "Full": "Đầy đủ"
   },
   "Full SMART report": {
-    "Full SMART report": ""
+    "Full SMART report": "Báo cáo SMART đầy đủ"
   },
   "Full content": {
     "Full content": "Nội dung đầy đủ"
@@ -3765,10 +3780,10 @@
     "Fullscreen single column": "Cột đơn toàn màn hình"
   },
   "Fullscreen state": {
-    "Fullscreen state": ""
+    "Fullscreen state": "Trạng thái toàn màn hình"
   },
   "Fullscreen windows": {
-    "Fullscreen windows": ""
+    "Fullscreen windows": "Cửa sổ toàn màn hình"
   },
   "Fully Charged": {
     "Fully Charged": "Đã sạc đầy"
@@ -3777,13 +3792,13 @@
     "GPU": "GPU"
   },
   "GPU %1": {
-    "GPU %1": ""
+    "GPU %1": "GPU %1"
   },
   "GPU Monitoring": {
     "GPU Monitoring": "Giám sát GPU"
   },
   "GPU hotspot temperature": {
-    "Hotspot": ""
+    "Hotspot": "Điểm nóng"
   },
   "GPU temperature": {
     "GPU temperature": "Nhiệt độ GPU"
@@ -3798,7 +3813,7 @@
     "GTK colors applied successfully": "Màu GTK đã được áp dụng thành công"
   },
   "GTK theme": {
-    "GTK theme": ""
+    "GTK theme": "Giao diện GTK"
   },
   "GTK, Qt, portal, matugen templates": {
     "GTK, Qt, portal, matugen templates": "Mẫu GTK, Qt, cổng thông tin, matugen"
@@ -3810,7 +3825,7 @@
     "Gamma": "Gamma"
   },
   "Gamma %1": {
-    "Gamma %1": ""
+    "Gamma %1": "Gamma %1"
   },
   "Gamma control": {
     "Gamma control": "Điều chỉnh gamma"
@@ -3837,10 +3852,10 @@
     "Gaps, window borders, corner radius": "Khoảng trống, viền cửa sổ, bán kính góc"
   },
   "Garden": {
-    "Garden": ""
+    "Garden": "Garden"
   },
   "Gaussian": {
-    "Gaussian": ""
+    "Gaussian": "Gaussian"
   },
   "General": {
     "General": "Tổng quát"
@@ -3864,7 +3879,7 @@
     "Get Started": "Bắt đầu"
   },
   "Git": {
-    "Git": ""
+    "Git": "Git"
   },
   "Global fonts can be configured in Settings → Personalization": {
     "Global fonts can be configured in Settings → Personalization": "Các phông chữ toàn cầu có thể được cấu hình trong Cài đặt → Cá nhân hóa"
@@ -3873,10 +3888,10 @@
     "Globally": "Trên toàn cầu"
   },
   "Glow": {
-    "Glow": ""
+    "Glow": "Phát sáng"
   },
   "Glow falloff": {
-    "Glow falloff": ""
+    "Glow falloff": "Độ tắt dần của ánh sáng"
   },
   "Golden Hour": {
     "Golden Hour": "Giờ vàng"
@@ -3885,7 +3900,7 @@
     "Goth corners": "Bo góc Gothic"
   },
   "Governor": {
-    "Governor": ""
+    "Governor": "Governor"
   },
   "Grant": {
     "Grant": "Cấp quyền"
@@ -3906,10 +3921,10 @@
     "Graphics": "Đồ họa"
   },
   "Graphics driver": {
-    "Graphics driver": ""
+    "Graphics driver": "Trình điều khiển đồ họa"
   },
   "Green": {
-    "Green": ""
+    "Green": "Xanh lá"
   },
   "Greeter": {
     "Greeter": "Màn hình chào"
@@ -3972,25 +3987,25 @@
     "HTML copied to clipboard": "HTML đã được sao chép vào bảng nhớ tạm"
   },
   "Hardware": {
-    "Hardware": ""
+    "Hardware": "Phần cứng"
   },
   "Haze": {
-    "Haze": ""
+    "Haze": "Haze"
   },
   "Head load cycles": {
-    "Head load cycles": ""
+    "Head load cycles": "Số chu kỳ tải đầu đọc"
   },
   "Health": {
     "Health": "Sức khỏe"
   },
   "Health %1": {
-    "Health %1": ""
+    "Health %1": "Sức khỏe %1"
   },
   "Healthy": {
-    "Healthy": ""
+    "Healthy": "Tốt"
   },
   "Heat shimmer": {
-    "Heat shimmer": ""
+    "Heat shimmer": "Heat shimmer"
   },
   "Heavy Rain": {
     "Heavy Rain": "Mưa lớn"
@@ -4029,7 +4044,7 @@
     "Hidden icons expand in place instead of in a popup": "Các biểu tượng ẩn mở rộng tại chỗ thay vì trong cửa sổ pop-up"
   },
   "Hidden until screen time tracking is enabled": {
-    "Hidden until screen time tracking is enabled": ""
+    "Hidden until screen time tracking is enabled": "Ẩn cho đến khi bật theo dõi thời gian sử dụng"
   },
   "Hidden until weather is enabled": {
     "Hidden until weather is enabled": "Ẩn cho đến khi bật thời tiết"
@@ -4041,7 +4056,7 @@
     "Hide App": "Ẩn ứng dụng"
   },
   "Hide bar on fullscreen": {
-    "Hide bar on fullscreen": ""
+    "Hide bar on fullscreen": "Ẩn thanh khi toàn màn hình"
   },
   "Hide cursor on touch": {
     "Hide cursor on touch": "Ẩn con trỏ khi chạm"
@@ -4059,13 +4074,13 @@
     "Hide installed": "Ẩn đã cài đặt"
   },
   "Hide on last display": {
-    "Hide on last display": ""
+    "Hide on last display": "Ẩn trên màn hình cuối cùng"
   },
   "Hide until typing": {
-    "Hide until typing": ""
+    "Hide until typing": "Ẩn cho đến khi gõ"
   },
   "Hide when idle": {
-    "Hide when idle": ""
+    "Hide when idle": "Ẩn khi nhàn rỗi"
   },
   "Hide when no updates": {
     "Hide when no updates": "Ẩn khi không có cập nhật"
@@ -4074,7 +4089,7 @@
     "Hide when windows open": "Ẩn khi các cửa sổ đang mở"
   },
   "Hide with one window": {
-    "Hide with one window": ""
+    "Hide with one window": "Ẩn khi chỉ có một cửa sổ"
   },
   "Hides even while a bar popout or menu is open": {
     "Hides even while a bar popout or menu is open": "Ẩn ngay cả khi thanh bật ra hoặc menu đang mở"
@@ -4098,7 +4113,10 @@
     "Higher providers take priority. Turn all off to use local lyrics only.": "Các nhà cung cấp cao hơn được ưu tiên. Tắt tất cả để chỉ sử dụng lời bài hát địa phương."
   },
   "Higher values flex more smoothly and cost more GPU": {
-    "Higher values flex more smoothly and cost more GPU": ""
+    "Higher values flex more smoothly and cost more GPU": "Giá trị cao hơn uốn mượt hơn nhưng tốn GPU hơn"
+  },
+  "Highest": {
+    "Highest": ""
   },
   "Highlight focused app": {
     "Highlight focused app": "Làm nổi bật ứng dụng tập trung"
@@ -4116,7 +4134,7 @@
     "History size, retention, paste behavior": "Kích thước lịch sử, lưu giữ, hành vi dán"
   },
   "Hold Ctrl, Alt or Super and press a key. Esc cancels.": {
-    "Hold Ctrl, Alt or Super and press a key. Esc cancels.": ""
+    "Hold Ctrl, Alt or Super and press a key. Esc cancels.": "Giữ Ctrl, Alt hoặc Super rồi nhấn một phím. Nhấn Esc để hủy."
   },
   "Hold duration": {
     "Hold duration": "Thời lượng giữ"
@@ -4170,7 +4188,7 @@
     "Hover popouts": "Pop-out Khi Di chuột"
   },
   "How far terminal colors shift toward the wallpaper color": {
-    "How far terminal colors shift toward the wallpaper color": ""
+    "How far terminal colors shift toward the wallpaper color": "Mức độ màu terminal dịch về phía màu hình nền"
   },
   "Hue": {
     "Hue": "Huế"
@@ -4203,10 +4221,10 @@
     "I Understand": "Đã hiểu"
   },
   "I/O priority": {
-    "I/O priority": ""
+    "I/O priority": "Ưu tiên I/O"
   },
   "I/O scheduler": {
-    "I/O scheduler": ""
+    "I/O scheduler": "Bộ lập lịch I/O"
   },
   "ICC Error": {
     "ICC Error": "Lỗi ICC"
@@ -4224,10 +4242,10 @@
     "IP address or hostname": "Địa chỉ IP hoặc tên máy chủ"
   },
   "IP sharing setup failed. Check that %1 is installed.": {
-    "IP sharing setup failed. Check that %1 is installed.": ""
+    "IP sharing setup failed. Check that %1 is installed.": "Thiết lập chia sẻ IP thất bại. Hãy kiểm tra %1 đã được cài đặt chưa."
   },
   "IPv6": {
-    "IPv6": ""
+    "IPv6": "IPv6"
   },
   "ISO date": {
     "ISO date": "Ngày ISO"
@@ -4278,7 +4296,7 @@
     "If autostart app icons don't appear in the system tray, generate a systemd override to ensure DMS starts before autostart apps": "Nếu biểu tượng ứng dụng autostart không xuất hiện trong system tray, hãy tạo systemd override để đảm bảo DMS khởi động trước các ứng dụng autostart"
   },
   "Ignore": {
-    "Ignore": ""
+    "Ignore": "Bỏ qua"
   },
   "Ignore Completely": {
     "Ignore Completely": "Bỏ qua hoàn toàn"
@@ -4287,7 +4305,7 @@
     "Ignore app-requested timeout": "Bỏ qua Thời gian chờ do Ứng dụng Yêu cầu"
   },
   "Ignore mods": {
-    "Ignore mods": ""
+    "Ignore mods": "Bỏ qua phím bổ trợ"
   },
   "Ignore package": {
     "Ignore package": "Bỏ qua gói"
@@ -4305,7 +4323,7 @@
     "Ignored packages only apply to the built-in updater. Your custom command controls its own exclusions.": "Các gói bị bỏ qua chỉ áp dụng cho trình cập nhật tích hợp. Lệnh tùy chỉnh của bạn kiểm soát các loại trừ của riêng nó."
   },
   "Ignores drag and drop started by the window": {
-    "Ignores drag and drop started by the window": ""
+    "Ignores drag and drop started by the window": "Bỏ qua thao tác kéo thả do cửa sổ khởi tạo"
   },
   "Image": {
     "Image": "Hình ảnh"
@@ -4341,13 +4359,13 @@
     "Include folders in All tab": "Bao gồm các thư mục trong tab 'Tất cả'"
   },
   "Include subfolders": {
-    "Include subfolders": ""
+    "Include subfolders": "Bao gồm thư mục con"
   },
   "Include transitions": {
     "Include transitions": "Hiệu ứng chuyển cảnh"
   },
   "Includes the mouse pointer": {
-    "Includes the mouse pointer": ""
+    "Includes the mouse pointer": "Bao gồm con trỏ chuột"
   },
   "Incompatible plugins loaded": {
     "Incompatible plugins loaded": "Các plugin không tương thích đã được tải"
@@ -4386,16 +4404,16 @@
     "Inhibitable": "Có thể ngăn chặn"
   },
   "Init": {
-    "Init": ""
+    "Init": "Init"
   },
   "Initial class": {
-    "Initial class": ""
+    "Initial class": "Class ban đầu"
   },
   "Initial position for floating windows. Set both X and Y; anchor controls which corner/edge they're relative to.": {
     "Initial position for floating windows. Set both X and Y; anchor controls which corner/edge they're relative to.": "Vị trí ban đầu của cửa sổ nổi. Đặt cả X và Y; điểm neo xác định góc hoặc cạnh mà các tọa độ này được tính từ đó."
   },
   "Initial title": {
-    "Initial title": ""
+    "Initial title": "Tiêu đề ban đầu"
   },
   "Initialised": {
     "Initialised": "Đã khởi tạo"
@@ -4415,6 +4433,9 @@
   "Input": {
     "Input": "đầu vào"
   },
+  "Input Method Framework": {
+    "Input Method Framework": ""
+  },
   "Input Volume": {
     "Input Volume": "Âm lượng đầu vào"
   },
@@ -4422,13 +4443,13 @@
     "Input Volume Slider": "Thanh trượt âm lượng đầu vào"
   },
   "Input capture": {
-    "Input capture": ""
+    "Input capture": "Chiếm quyền nhập"
   },
   "Input devices": {
     "Input devices": "Thiết bị đầu vào"
   },
   "Input method": {
-    "Input method": ""
+    "Input method": "Bộ gõ"
   },
   "Insert your security key...": {
     "Insert your security key...": "Chèn khóa bảo mật của bạn..."
@@ -4458,31 +4479,31 @@
     "Install plugin '%1' from the DMS registry?": "Cài đặt plugin '%1' từ kho lưu trữ DMS?"
   },
   "Install smartmontools": {
-    "Install smartmontools": ""
+    "Install smartmontools": "Cài đặt smartmontools"
   },
   "Install system updates?": {
-    "Install system updates?": ""
+    "Install system updates?": "Cài đặt bản cập nhật hệ thống?"
   },
   "Install the %1 package for dynamic theming": {
-    "Install the %1 package for dynamic theming": ""
+    "Install the %1 package for dynamic theming": "Cài gói %1 để dùng giao diện động"
   },
   "Install theme '%1' from the DMS registry?": {
     "Install theme '%1' from the DMS registry?": "Cài đặt chủ đề '%1' từ kho lưu trữ DMS?"
   },
   "Install wallpaper": {
-    "Install wallpaper": ""
+    "Install wallpaper": "Cài đặt hình nền"
   },
   "Install wallpaper '%1'?": {
-    "Install wallpaper '%1'?": ""
+    "Install wallpaper '%1'?": "Cài đặt hình nền '%1'?"
   },
   "Installation and PAM setup are documented in the %1.": {
-    "Installation and PAM setup are documented in the %1.": ""
+    "Installation and PAM setup are documented in the %1.": "Cách cài đặt và thiết lập PAM được hướng dẫn trong %1."
   },
   "Installed": {
     "Installed": "Đã cài đặt"
   },
   "Installed %1, still running %2": {
-    "Installed %1, still running %2": ""
+    "Installed %1, still running %2": "Đã cài %1, vẫn đang chạy %2"
   },
   "Installed first": {
     "Installed first": "Cài đặt trước"
@@ -4509,7 +4530,7 @@
     "Interface": "Giao diện"
   },
   "Interface density": {
-    "Interface density": ""
+    "Interface density": "Mật độ giao diện"
   },
   "Interface style": {
     "Interface style": "Kiểu giao diện"
@@ -4530,19 +4551,19 @@
     "Invalid configuration": "Cấu hình không hợp lệ"
   },
   "Invalid package name — letters, digits and @._+:/- only.": {
-    "Invalid package name — letters, digits and @._+:/- only.": ""
+    "Invalid package name — letters, digits and @._+:/- only.": "Tên gói không hợp lệ — chỉ được dùng chữ cái, chữ số và @._+:/-."
   },
   "Invalid username": {
     "Invalid username": "Tên người dùng không hợp lệ"
   },
   "Invalid wallpaper layout": {
-    "Invalid wallpaper layout": ""
+    "Invalid wallpaper layout": "Bố cục hình nền không hợp lệ"
   },
   "Inverse Surface": {
-    "Inverse Surface": ""
+    "Inverse Surface": "Inverse Surface"
   },
   "Iridescence": {
-    "Iridescence": ""
+    "Iridescence": "Ánh ngũ sắc"
   },
   "Iris Bloom": {
     "Iris Bloom": "Iris Bloom (Hiệu ứng/Bảng màu)"
@@ -4554,10 +4575,10 @@
     "Isolate displays": "Cách ly các màn hình"
   },
   "It runs in a terminal; restart it from there.": {
-    "It runs in a terminal; restart it from there.": ""
+    "It runs in a terminal; restart it from there.": "Nó chạy trong terminal; hãy khởi động lại từ đó."
   },
   "Italic": {
-    "Italic": ""
+    "Italic": "In nghiêng"
   },
   "JSON output path": {
     "JSON output path": "Đường dẫn đầu ra JSON"
@@ -4584,7 +4605,7 @@
     "Keep clock with media": "Giữ đồng hồ với phương tiện truyền thông"
   },
   "Keep fullscreen on close": {
-    "Keep fullscreen on close": ""
+    "Keep fullscreen on close": "Giữ toàn màn hình khi đóng"
   },
   "Keep in Bar": {
     "Keep in Bar": "Giữ trong thanh"
@@ -4593,19 +4614,19 @@
     "Keeping Awake": "Đang giữ thức"
   },
   "Keeps focus while the window is open": {
-    "Keeps focus while the window is open": ""
+    "Keeps focus while the window is open": "Giữ focus khi cửa sổ đang mở"
   },
   "Keeps the dock showing over fullscreen windows": {
     "Keeps the dock showing over fullscreen windows": "Giữ dock hiển thị trên các cửa sổ toàn màn hình"
   },
   "Keeps the pointer inside the window": {
-    "Keeps the pointer inside the window": ""
+    "Keeps the pointer inside the window": "Giữ con trỏ chuột bên trong cửa sổ"
   },
   "Keeps the widget above windows instead of below them": {
     "Keeps the widget above windows instead of below them": "Giữ tiện ích phía trên cửa sổ thay vì bên dưới chúng"
   },
   "Kept for %1 days on this device": {
-    "Kept for %1 days on this device": ""
+    "Kept for %1 days on this device": "Lưu %1 ngày trên thiết bị này"
   },
   "Kernel": {
     "Kernel": "Nhân (Kernel)"
@@ -4615,9 +4636,6 @@
   },
   "Key combination": {
     "Key combination": "Tổ hợp phím"
-  },
-  "Keybindings changed. Refresh and review your edit before saving.": {
-    "Keybindings changed. Refresh and review your edit before saving.": "Các tổ hợp phím đã thay đổi. Làm mới và xem lại chỉnh sửa của bạn trước khi lưu."
   },
   "Keybinds": {
     "Keybinds": "Phím tắt"
@@ -4641,13 +4659,13 @@
     "Kill Session": "Dừng phiên làm việc"
   },
   "L1 cache": {
-    "L1 cache": ""
+    "L1 cache": "Cache L1"
   },
   "L2 cache": {
-    "L2 cache": ""
+    "L2 cache": "Cache L2"
   },
   "L3 cache": {
-    "L3 cache": ""
+    "L3 cache": "Cache L3"
   },
   "LED device": {
     "LED device": "Thiết bị LED"
@@ -4671,7 +4689,7 @@
     "Lap detected": "Đã phát hiện vòng chạy"
   },
   "Laptop": {
-    "Laptop": ""
+    "Laptop": "Laptop"
   },
   "Large": {
     "Large": "Lớn"
@@ -4680,10 +4698,10 @@
     "Largest": "Lớn nhất"
   },
   "Last commit %1": {
-    "Last commit %1": ""
+    "Last commit %1": "Commit gần nhất %1"
   },
   "Last core": {
-    "Last core": ""
+    "Last core": "Nhân gần nhất"
   },
   "Last hour": {
     "Last hour": "Giờ vừa qua"
@@ -4716,7 +4734,7 @@
     "Last modified": "Sửa đổi lần cuối"
   },
   "Last self-test": {
-    "Last self-test": ""
+    "Last self-test": "Tự kiểm tra gần nhất"
   },
   "Last used on this screen": {
     "Last used on this screen": "Được sử dụng lần cuối trên màn hình này"
@@ -4726,6 +4744,9 @@
   },
   "Launch": {
     "Launch": "Khởi chạy"
+  },
+  "Launch new instance": {
+    "Launch new instance": ""
   },
   "Launch on dGPU": {
     "Launch on dGPU": "Chạy bằng GPU rời"
@@ -4746,10 +4767,10 @@
     "Launching": "Ra mắt"
   },
   "Layer namespace %1, needs a niri blur rule": {
-    "Layer namespace %1, needs a niri blur rule": ""
+    "Layer namespace %1, needs a niri blur rule": "Layer namespace %1, cần quy tắc làm mờ của niri"
   },
   "Layer outline": {
-    "Layer outline": ""
+    "Layer outline": "Viền lớp"
   },
   "Layers": {
     "Layers": "Lớp"
@@ -4770,7 +4791,7 @@
     "Layout, position, appearance": "Bố cục, vị trí, diện mạo"
   },
   "Layout, scale, night mode": {
-    "Layout, scale, night mode": ""
+    "Layout, scale, night mode": "Bố cục, tỷ lệ, chế độ ban đêm"
   },
   "Layouts": {
     "Layouts": "Bố cục"
@@ -4839,10 +4860,10 @@
     "Lightest": "Nhẹ nhất"
   },
   "Like your plugins": {
-    "Like your plugins": ""
+    "Like your plugins": "Giống các plugin của bạn"
   },
   "Limit": {
-    "Limit": ""
+    "Limit": "Giới hạn"
   },
   "Limit set to %1%": {
     "Limit set to %1%": "Giới hạn được đặt thành %1%"
@@ -4860,25 +4881,25 @@
     "Lines: %1": "Dòng: %1"
   },
   "Link copied": {
-    "Link copied": ""
+    "Link copied": "Đã sao chép liên kết"
   },
   "Link your DMS settings so the login screen follows them.": {
-    "Link your DMS settings so the login screen follows them.": ""
+    "Link your DMS settings so the login screen follows them.": "Liên kết cài đặt DMS để màn hình đăng nhập theo cài đặt đó."
   },
   "Link your DMS settings so the login screen follows them. Administrator access is required.": {
-    "Link your DMS settings so the login screen follows them. Administrator access is required.": ""
+    "Link your DMS settings so the login screen follows them. Administrator access is required.": "Liên kết cài đặt DMS để màn hình đăng nhập theo cài đặt đó. Cần quyền quản trị viên."
   },
   "Linked": {
-    "Linked": ""
+    "Linked": "Đã liên kết"
   },
   "Linked as a snapshot": {
-    "Linked as a snapshot": ""
+    "Linked as a snapshot": "Đã liên kết dạng ảnh chụp nhanh"
   },
   "List": {
     "List": "Danh sách"
   },
   "Listening": {
-    "Listening": ""
+    "Listening": "Đang lắng nghe"
   },
   "Listening from": {
     "Listening from": "Nghe từ"
@@ -4887,7 +4908,7 @@
     "Lists workspaces from whichever display has focus": "Liệt kê các workspace từ bất kỳ màn hình nào có tiêu điểm"
   },
   "Live activities that grow out of the bar": {
-    "Live activities that grow out of the bar": ""
+    "Live activities that grow out of the bar": "Các hoạt động trực tiếp mở rộng ra từ thanh"
   },
   "Lively palette with saturated accents.": {
     "Lively palette with saturated accents.": "Bảng màu sống động với các điểm nhấn bão hòa."
@@ -4917,7 +4938,7 @@
     "Local Weather": "Thời tiết Địa phương"
   },
   "Local network": {
-    "Local network": ""
+    "Local network": "Mạng nội bộ"
   },
   "Locale": {
     "Locale": "Ngôn ngữ"
@@ -4956,10 +4977,10 @@
     "Login screen appearance and authentication": "Giao diện và xác thực màn hình đăng nhập"
   },
   "Login screen unlinked.": {
-    "Login screen unlinked.": ""
+    "Login screen unlinked.": "Đã hủy liên kết màn hình đăng nhập."
   },
   "Long": {
-    "Long": ""
+    "Long": "Dài"
   },
   "Long Text": {
     "Long Text": "Văn bản dài"
@@ -4989,10 +5010,13 @@
     "Lower display refresh rate on battery": "Giảm tốc độ làm mới màn hình trên pin"
   },
   "Lower only if a mode fails for lack of bandwidth": {
-    "Lower only if a mode fails for lack of bandwidth": ""
+    "Lower only if a mode fails for lack of bandwidth": "Chỉ giảm nếu một chế độ bị lỗi do thiếu băng thông"
   },
   "Lower priorities move into overflow first": {
-    "Lower priorities move into overflow first": ""
+    "Lower priorities move into overflow first": "Mức ưu tiên thấp hơn sẽ vào overflow trước"
+  },
+  "Lowest": {
+    "Lowest": ""
   },
   "Lyrics": {
     "Lyrics": "Lời bài hát"
@@ -5001,22 +5025,22 @@
     "Lyrics providers": "Nhà cung cấp lời bài hát"
   },
   "MAC address": {
-    "MAC address": ""
+    "MAC address": "Địa chỉ MAC"
   },
   "MIT License": {
     "MIT License": "Giấy phép MIT"
   },
   "MTU": {
-    "MTU": ""
+    "MTU": "MTU"
   },
   "Magnification": {
-    "Magnification": ""
+    "Magnification": "Phóng đại"
   },
   "Mail": {
     "Mail": "Thư điện tử"
   },
   "Major page faults": {
-    "Major page faults": ""
+    "Major page faults": "Lỗi trang nghiêm trọng"
   },
   "Make admin": {
     "Make admin": "Cấp quyền quản trị"
@@ -5028,10 +5052,10 @@
     "Managed by Frame in Connected Mode": "Được quản lý bởi Khung trong Chế độ kết nối"
   },
   "Managed by Nix": {
-    "Managed by Nix": ""
+    "Managed by Nix": "Do Nix quản lý"
   },
   "Managed by administrator policy": {
-    "Managed by administrator policy": ""
+    "Managed by administrator policy": "Do chính sách quản trị viên quản lý"
   },
   "Managed by the primary PAM source": {
     "Managed by the primary PAM source": "Được quản lý bởi nguồn PAM chính"
@@ -5073,7 +5097,7 @@
     "Mark incomplete": "Đánh dấu là chưa hoàn thành"
   },
   "Mark urgent": {
-    "Mark urgent": ""
+    "Mark urgent": "Đánh dấu khẩn cấp"
   },
   "Marker Supply Empty": {
     "Marker Supply Empty": "Hết mực"
@@ -5091,7 +5115,7 @@
     "Master": "Bậc thầy"
   },
   "Master branch": {
-    "Master branch": ""
+    "Master branch": "Nhánh master"
   },
   "Master position": {
     "Master position": "Vị trí chủ"
@@ -5109,13 +5133,13 @@
     "Match Criteria": "Tiêu chí khớp"
   },
   "Match type": {
-    "Match type": ""
+    "Match type": "Kiểu khớp"
   },
   "Matches player identity or desktop file name, case-insensitive": {
     "Matches player identity or desktop file name, case-insensitive": "Khớp với danh tính người chơi hoặc tên tệp trên máy tính để bàn, không phân biệt chữ hoa chữ thường"
   },
   "Material": {
-    "Material": ""
+    "Material": "Material"
   },
   "Material Design inspired color themes": {
     "Material Design inspired color themes": "Các chủ đề màu lấy cảm hứng từ Material Design"
@@ -5139,7 +5163,7 @@
     "Matugen templates": "Các mẫu Matugen"
   },
   "Max %1": {
-    "Max %1": ""
+    "Max %1": "Tối đa %1"
   },
   "Max H": {
     "Max H": "Chiều cao tối đa"
@@ -5151,10 +5175,10 @@
     "Max apps to show": "Giới hạn ứng dụng hiển thị"
   },
   "Max bits per channel": {
-    "Max bits per channel": ""
+    "Max bits per channel": "Số bit tối đa mỗi kênh"
   },
   "Max clock": {
-    "Max clock": ""
+    "Max clock": "Xung nhịp tối đa"
   },
   "Max edges": {
     "Max edges": "Các cạnh tối đa"
@@ -5181,10 +5205,10 @@
     "Maximize widget text": "Phóng to tối đa văn bản tiện ích"
   },
   "Maximized": {
-    "Maximized": ""
+    "Maximized": "Phóng to"
   },
   "Maximized and fullscreen": {
-    "Maximized and fullscreen": ""
+    "Maximized and fullscreen": "Phóng to và toàn màn hình"
   },
   "Maximum entries": {
     "Maximum entries": "Mục nhập tối đa"
@@ -5217,7 +5241,7 @@
     "Media Needed": "Cần thêm giấy"
   },
   "Media errors": {
-    "Media errors": ""
+    "Media errors": "Lỗi media"
   },
   "Media playback": {
     "Media playback": "Phát lại phương tiện"
@@ -5235,10 +5259,10 @@
     "Memory": "Bộ nhớ"
   },
   "Memory clock": {
-    "Memory clock": ""
+    "Memory clock": "Xung nhịp bộ nhớ"
   },
   "Memory controller": {
-    "Memory controller": ""
+    "Memory controller": "Bộ điều khiển bộ nhớ"
   },
   "Memory graph": {
     "Memory graph": "Đồ thị bộ nhớ"
@@ -5268,16 +5292,19 @@
     "Microphone volume control": "Điều khiển âm lượng micro"
   },
   "Middle click": {
-    "Middle click": ""
+    "Middle click": "Nhấp chuột giữa"
   },
   "Middle click closes": {
-    "Middle click closes": ""
+    "Middle click closes": "Nhấp chuột giữa để đóng"
   },
   "Middle click emulation": {
     "Middle click emulation": "Mô phỏng Nhấp Giữa"
   },
   "Middle section": {
     "Middle section": "Mục giữa"
+  },
+  "Middle-click action": {
+    "Middle-click action": ""
   },
   "Min H": {
     "Min H": "Chiều cao tối thiểu"
@@ -5286,10 +5313,10 @@
     "Min W": "Chiều rộng tối thiểu"
   },
   "Mini PC": {
-    "Mini PC": ""
+    "Mini PC": "Mini PC"
   },
   "Minimal": {
-    "Minimal": ""
+    "Minimal": "Tối giản"
   },
   "Minimal palette built around a single hue.": {
     "Minimal palette built around a single hue.": "Bảng màu tối thiểu được xây dựng xung quanh một màu sắc duy nhất."
@@ -5304,13 +5331,13 @@
     "Missing Environment Variables": "Thiếu các biến môi trường"
   },
   "Mix all stereo content into a single channel": {
-    "Mix all stereo content into a single channel": ""
+    "Mix all stereo content into a single channel": "Trộn toàn bộ âm thanh stereo vào một kênh duy nhất"
   },
   "Mixed": {
     "Mixed": "Hỗn hợp"
   },
   "Modal": {
-    "Modal": ""
+    "Modal": "Modal"
   },
   "Modals": {
     "Modals": "Các bảng thông báo (Modals)"
@@ -5328,7 +5355,7 @@
     "Moderate": "Vừa phải"
   },
   "Modes this display does not report support for are hidden": {
-    "Modes this display does not report support for are hidden": ""
+    "Modes this display does not report support for are hidden": "Các chế độ mà màn hình này không báo là hỗ trợ sẽ bị ẩn"
   },
   "Modular widget bar": {
     "Modular widget bar": "Thanh tiện ích mô-đun"
@@ -5337,10 +5364,10 @@
     "Monitor": "Màn hình"
   },
   "Monitoring off": {
-    "Monitoring off": ""
+    "Monitoring off": "Đã tắt giám sát"
   },
   "Mono Audio": {
-    "Mono Audio": ""
+    "Mono Audio": "Âm thanh mono"
   },
   "Monochrome": {
     "Monochrome": "Đơn sắc"
@@ -5352,10 +5379,10 @@
     "Monospace family": "Gia đình đơn không gian"
   },
   "Monospace font": {
-    "Monospace font": ""
+    "Monospace font": "Phông chữ đơn cách"
   },
   "Month": {
-    "Month": ""
+    "Month": "Tháng"
   },
   "Month date": {
     "Month date": "Ngày tháng"
@@ -5373,16 +5400,16 @@
     "More": "Hơn"
   },
   "More in %1": {
-    "More in %1": ""
+    "More in %1": "Xem thêm trong %1"
   },
   "More samples look smoother and cost more GPU": {
-    "More samples look smoother and cost more GPU": ""
+    "More samples look smoother and cost more GPU": "Nhiều mẫu hơn trông mượt hơn nhưng tốn GPU hơn"
   },
   "More transparent areas get less blur": {
-    "More transparent areas get less blur": ""
+    "More transparent areas get less blur": "Vùng càng trong suốt thì càng ít bị làm mờ"
   },
   "More widgets": {
-    "More widgets": ""
+    "More widgets": "Thêm widget"
   },
   "Morning": {
     "Morning": "Buổi sáng"
@@ -5394,13 +5421,13 @@
     "Most Vivid": "Sống động nhất"
   },
   "Most used apps": {
-    "Most used apps": ""
+    "Most used apps": "Ứng dụng dùng nhiều nhất"
   },
   "Motion": {
-    "Motion": ""
+    "Motion": "Chuyển động"
   },
   "Motion blur": {
-    "Motion blur": ""
+    "Motion blur": "Làm mờ chuyển động"
   },
   "Mount": {
     "Mount": "Gắn kết"
@@ -5414,6 +5441,9 @@
   "Mouse & touchpad": {
     "Mouse & touchpad": "Chuột & Touchpad"
   },
+  "Mouse behavior": {
+    "Mouse behavior": ""
+  },
   "Move out of scratchpad": {
     "Move out of scratchpad": "Di chuyển ra khỏi bàn di chuột"
   },
@@ -5423,8 +5453,11 @@
   "Move to scratchpad: %1": {
     "Move to scratchpad: %1": "Di chuyển tới bảng ghi nhớ: %1"
   },
+  "Move workspace to this display": {
+    "Move workspace to this display": ""
+  },
   "Moves focus along with the column": {
-    "Moves focus along with the column": ""
+    "Moves focus along with the column": "Focus di chuyển theo cột"
   },
   "Moving to Paused": {
     "Moving to Paused": "Đang chuyển sang tạm dừng"
@@ -5434,9 +5467,6 @@
   },
   "Multimedia": {
     "Multimedia": "Đa phương tiện"
-  },
-  "Multiple bindings use the original shortcut. Resolve the duplicate bindings first.": {
-    "Multiple bindings use the original shortcut. Resolve the duplicate bindings first.": "Nhiều ràng buộc sử dụng phím tắt ban đầu. Trước tiên hãy giải quyết các ràng buộc trùng lặp."
   },
   "Multiplexers": {
     "Multiplexers": "Các bộ ghép kênh"
@@ -5457,10 +5487,10 @@
     "Mute popups for %1": "Tắt thông báo nổi cho %1"
   },
   "Mute popups for %1 (1 hour)": {
-    "Mute popups for %1 (1 hour)": ""
+    "Mute popups for %1 (1 hour)": "Tắt popup của %1 (1 giờ)"
   },
   "Mute popups for %1 (4 hours)": {
-    "Mute popups for %1 (4 hours)": ""
+    "Mute popups for %1 (4 hours)": "Tắt popup của %1 (4 giờ)"
   },
   "Mute, ignore and priority rules per app": {
     "Mute, ignore and priority rules per app": "Quy tắc tắt tiếng, bỏ qua và ưu tiên cho mỗi ứng dụng"
@@ -5508,7 +5538,7 @@
     "Near island": "Gần đảo"
   },
   "Needs": {
-    "Needs": ""
+    "Needs": "Cần"
   },
   "Nested chip": {
     "Nested chip": "Khối lồng nhau"
@@ -5544,7 +5574,7 @@
     "Never": "Không bao giờ"
   },
   "Never switches the monitor to HDR for this window": {
-    "Never switches the monitor to HDR for this window": ""
+    "Never switches the monitor to HDR for this window": "Không bao giờ chuyển màn hình sang HDR cho cửa sổ này"
   },
   "Never used": {
     "Never used": "Chưa từng sử dụng"
@@ -5553,7 +5583,7 @@
     "New": "Mới"
   },
   "New & updated": {
-    "New & updated": ""
+    "New & updated": "Mới & cập nhật"
   },
   "New Session": {
     "New Session": "Phiên làm việc mới"
@@ -5594,14 +5624,23 @@
   "Next Transition": {
     "Next Transition": "Hiệu ứng chuyển cảnh tiếp theo"
   },
+  "Next candidate": {
+    "Next candidate": ""
+  },
   "Next category": {
-    "Next category": ""
+    "Next category": "Danh mục tiếp theo"
+  },
+  "Next group": {
+    "Next group": ""
+  },
+  "Next input method": {
+    "Next input method": ""
   },
   "Next page": {
     "Next page": "Trang tiếp theo"
   },
   "Nice": {
-    "Nice": ""
+    "Nice": "Nice"
   },
   "Night": {
     "Night": "Ban đêm"
@@ -5613,7 +5652,7 @@
     "Night mode & gamma": "Chế độ ban đêm & gamma"
   },
   "Night mode exceptions": {
-    "Night mode exceptions": ""
+    "Night mode exceptions": "Ngoại lệ chế độ ban đêm"
   },
   "Night mode failed: DMS gamma control not available": {
     "Night mode failed: DMS gamma control not available": "Chế độ ban đêm thất bại: Điều khiển gamma DMS không khả dụng"
@@ -5655,7 +5694,7 @@
     "No Weather": "Không có thời tiết"
   },
   "No XDG drags": {
-    "No XDG drags": ""
+    "No XDG drags": "Không kéo XDG"
   },
   "No action": {
     "No action": "Không có hành động"
@@ -5679,7 +5718,7 @@
     "No app customizations.": "Không có tùy chỉnh ứng dụng nào."
   },
   "No app limits": {
-    "No app limits": ""
+    "No app limits": "Chưa có giới hạn ứng dụng"
   },
   "No application selected": {
     "No application selected": "Chưa chọn ứng dụng"
@@ -5694,7 +5733,7 @@
     "No apps muted. Right-click a notification and choose \"Mute popups\" to add one here.": "Không có ứng dụng nào bị tắt tiếng thông báo. Nhấp chuột phải vào một thông báo và chọn \"Tắt thông báo nổi\" để thêm vào đây."
   },
   "No auto HDR": {
-    "No auto HDR": ""
+    "No auto HDR": "Không tự động HDR"
   },
   "No autostart entries": {
     "No autostart entries": "Không có mục autostart"
@@ -5751,7 +5790,7 @@
     "No errors": "Không có lỗi"
   },
   "No excluded apps configured": {
-    "No excluded apps configured": ""
+    "No excluded apps configured": "Chưa cấu hình ứng dụng loại trừ nào"
   },
   "No excluded players configured": {
     "No excluded players configured": "Không có trình phát bị loại trừ nào được cấu hình"
@@ -5769,7 +5808,7 @@
     "No folders found": "Không tìm thấy thư mục nào"
   },
   "No glow": {
-    "No glow": ""
+    "No glow": "Không phát sáng"
   },
   "No hidden apps.": {
     "No hidden apps.": "Không có ứng dụng bị ẩn."
@@ -5784,7 +5823,7 @@
     "No information available": "Không có thông tin khả dụng"
   },
   "No initial focus": {
-    "No initial focus": ""
+    "No initial focus": "Không focus ban đầu"
   },
   "No input device": {
     "No input device": "Không có thiết bị đầu vào"
@@ -5952,7 +5991,7 @@
     "No window rules configured": "Chưa có quy tắc cửa sổ nào được cấu hình"
   },
   "No wobble": {
-    "No wobble": ""
+    "No wobble": "Không lung lay"
   },
   "No writable calendar available": {
     "No writable calendar available": "Không có lịch ghi khả dụng"
@@ -5964,7 +6003,7 @@
     "Noise": "Nhiễu"
   },
   "Non-consuming": {
-    "Non-consuming": ""
+    "Non-consuming": "Không tiêu thụ phím"
   },
   "None": {
     "None": "Không"
@@ -5975,9 +6014,6 @@
   "Normal": {
     "Normal": "Bình thường"
   },
-  "Normal Font": {
-    "Normal Font": "Phông chữ bình thường"
-  },
   "Normal Priority": {
     "Normal Priority": "Ưu tiên thường"
   },
@@ -5985,22 +6021,22 @@
     "Normal routing": "Định tuyến bình thường"
   },
   "Not active": {
-    "Not active": ""
+    "Not active": "Không hoạt động"
   },
   "Not available": {
     "Not available": "Không khả dụng"
   },
   "Not available - install %1 and %2": {
-    "Not available - install %1 and %2": ""
+    "Not available - install %1 and %2": "Không khả dụng - hãy cài %1 và %2"
   },
   "Not available - install %1 and %2, or configure %3 PAM": {
-    "Not available - install %1 and %2, or configure %3 PAM": ""
+    "Not available - install %1 and %2, or configure %3 PAM": "Không khả dụng - hãy cài %1 và %2, hoặc cấu hình PAM cho %3"
   },
   "Not available - install or configure %1": {
-    "Not available - install or configure %1": ""
+    "Not available - install or configure %1": "Không khả dụng - hãy cài đặt hoặc cấu hình %1"
   },
   "Not available - install or configure %1, or configure %2 PAM": {
-    "Not available - install or configure %1, or configure %2 PAM": ""
+    "Not available - install or configure %1, or configure %2 PAM": "Không khả dụng - hãy cài đặt hoặc cấu hình %1, hoặc cấu hình PAM cho %2"
   },
   "Not bound": {
     "Not bound": "Chưa được gán"
@@ -6012,31 +6048,28 @@
     "Not detected": "Không phát hiện được"
   },
   "Not inhibitable": {
-    "Not inhibitable": ""
+    "Not inhibitable": "Không thể bị chặn"
   },
   "Not installed": {
-    "Not installed": ""
+    "Not installed": "Chưa cài đặt"
   },
   "Not linked": {
-    "Not linked": ""
+    "Not linked": "Chưa liên kết"
   },
   "Not on click": {
-    "Not on click": ""
+    "Not on click": "Không khi nhấp"
   },
   "Not readable without privileges": {
-    "Not readable without privileges": ""
+    "Not readable without privileges": "Không đọc được nếu không có đặc quyền"
   },
   "Not set": {
     "Not set": "Chưa đặt"
   },
   "Not shown on this bar, so its section widgets stay hidden": {
-    "Not shown on this bar, so its section widgets stay hidden": ""
-  },
-  "Not synchronized": {
-    "Not synchronized": "Không được đồng bộ hóa"
+    "Not shown on this bar, so its section widgets stay hidden": "Không hiển thị trên thanh này nên các widget trong phần của nó vẫn bị ẩn"
   },
   "Notch": {
-    "Notch": ""
+    "Notch": "Notch"
   },
   "Notepad": {
     "Notepad": "Ghi chú"
@@ -6051,7 +6084,7 @@
     "Nothing": "Không có gì"
   },
   "Nothing tracked yet": {
-    "Nothing tracked yet": ""
+    "Nothing tracked yet": "Chưa theo dõi gì"
   },
   "Notification": {
     "Notification": "Thông báo"
@@ -6066,28 +6099,28 @@
     "Notification popups": "Thông báo nổi"
   },
   "Notification rules": {
-    "Notification rules": ""
+    "Notification rules": "Quy tắc thông báo"
   },
   "Notifications": {
     "Notifications": "Thông báo"
   },
   "Notifies when today's screen time passes the limit": {
-    "Notifies when today's screen time passes the limit": ""
+    "Notifies when today's screen time passes the limit": "Thông báo khi thời gian sử dụng hôm nay vượt giới hạn"
   },
   "Notifies when today's use of this app passes the limit": {
-    "Notifies when today's use of this app passes the limit": ""
+    "Notifies when today's use of this app passes the limit": "Thông báo khi thời gian dùng ứng dụng này hôm nay vượt giới hạn"
   },
   "Notify at most": {
-    "Notify at most": ""
+    "Notify at most": "Thông báo tối đa"
   },
   "Notify me on new updates": {
-    "Notify me on new updates": ""
+    "Notify me on new updates": "Thông báo khi có bản cập nhật mới"
   },
   "Notify when limit is reached": {
     "Notify when limit is reached": "Thông báo khi đạt giới hạn"
   },
   "Now playing": {
-    "Now playing": ""
+    "Now playing": "Đang phát"
   },
   "Now playing and media controls": {
     "Now playing and media controls": "Đang phát ngay bây giờ và kiểm soát phương tiện"
@@ -6096,7 +6129,7 @@
     "Num Lock at startup": "Num Lock khi khởi động"
   },
   "Num lock": {
-    "Num lock": ""
+    "Num lock": "Num Lock"
   },
   "Numeric (D/M)": {
     "Numeric (D/M)": "Số (N/T)"
@@ -6120,19 +6153,19 @@
     "Off keeps the bar hidden until turned back on or shown over IPC": "Tắt giữ thanh ẩn cho đến khi bật lại hoặc hiển thị trên IPC"
   },
   "Off lets the compositor decorate DMS windows. Open windows update when reopened.": {
-    "Off lets the compositor decorate DMS windows. Open windows update when reopened.": ""
+    "Off lets the compositor decorate DMS windows. Open windows update when reopened.": "Khi tắt, compositor sẽ tự trang trí các cửa sổ DMS. Các cửa sổ đang mở sẽ cập nhật khi mở lại."
   },
   "Office": {
     "Office": "Văn phòng"
   },
   "Official only": {
-    "Official only": ""
+    "Official only": "Chỉ chính thức"
   },
   "Offline Report": {
     "Offline Report": "Báo cáo ngoại tuyến"
   },
   "Offline uncorrectable": {
-    "Offline uncorrectable": ""
+    "Offline uncorrectable": "Lỗi không sửa được ngoại tuyến"
   },
   "Older": {
     "Older": "Cũ hơn"
@@ -6141,7 +6174,7 @@
     "On": "Bật"
   },
   "On activation": {
-    "On activation": ""
+    "On activation": "Khi kích hoạt"
   },
   "On button down": {
     "On button down": "Khi Nhấn Nút"
@@ -6162,7 +6195,7 @@
     "Once a day": "Mỗi ngày một lần"
   },
   "Once a week": {
-    "Once a week": ""
+    "Once a week": "Mỗi tuần một lần"
   },
   "Online": {
     "Online": "Trực tuyến"
@@ -6171,16 +6204,16 @@
     "Only continue if you recognize this server certificate fingerprint.": "Chỉ tiếp tục nếu bạn nhận ra dấu vân tay chứng chỉ máy chủ này."
   },
   "Only in groups": {
-    "Only in groups": ""
+    "Only in groups": "Chỉ trong nhóm"
   },
   "Only on battery": {
     "Only on battery": "Chỉ Trên Pin"
   },
   "Only outside groups": {
-    "Only outside groups": ""
+    "Only outside groups": "Chỉ ngoài nhóm"
   },
   "Only the main process of a system service can be restarted.": {
-    "Only the main process of a system service can be restarted.": ""
+    "Only the main process of a system service can be restarted.": "Chỉ có thể khởi động lại tiến trình chính của một dịch vụ hệ thống."
   },
   "Opacity": {
     "Opacity": "Độ mờ"
@@ -6210,7 +6243,7 @@
     "Open delay": "Độ trễ Mở"
   },
   "Open files": {
-    "Open files": ""
+    "Open files": "Tệp đang mở"
   },
   "Open floating": {
     "Open floating": "Mở nổi"
@@ -6222,7 +6255,7 @@
     "Open in terminal": "Mở trong cửa sổ dòng lệnh"
   },
   "Open in the Island": {
-    "Open in the Island": ""
+    "Open in the Island": "Mở trong Island"
   },
   "Open large file?": {
     "Open large file?": "Mở tập tin lớn?"
@@ -6240,28 +6273,28 @@
     "Open with": "Mở bằng"
   },
   "Opening GitHub to remove the upvote": {
-    "Opening GitHub to remove the upvote": ""
+    "Opening GitHub to remove the upvote": "Đang mở GitHub để gỡ bình chọn"
   },
   "Opening GitHub to upvote": {
-    "Opening GitHub to upvote": ""
+    "Opening GitHub to upvote": "Đang mở GitHub để bình chọn"
   },
   "Opening terminal: %1": {
-    "Opening terminal: %1": ""
+    "Opening terminal: %1": "Đang mở terminal: %1"
   },
   "Opens": {
     "Opens": "Mở ra"
   },
   "Opens %1": {
-    "Opens %1": ""
+    "Opens %1": "Mở %1"
   },
   "Opens a floating window with the live output": {
-    "Opens a floating window with the live output": ""
+    "Opens a floating window with the live output": "Mở cửa sổ nổi hiển thị đầu ra trực tiếp"
   },
   "Opens without taking keyboard focus": {
-    "Opens without taking keyboard focus": ""
+    "Opens without taking keyboard focus": "Mở mà không chiếm focus bàn phím"
   },
   "Operating system": {
-    "Operating system": ""
+    "Operating system": "Hệ điều hành"
   },
   "Optional description": {
     "Optional description": "Mô tả tùy chọn"
@@ -6278,14 +6311,17 @@
   "Options": {
     "Options": "Tùy chọn"
   },
+  "Options of a fcitx5 plugin": {
+    "Options of a fcitx5 plugin": ""
+  },
   "Options of one widget instance": {
     "Options of one widget instance": "Tùy chọn của một phiên bản widget"
   },
   "Orange": {
-    "Orange": ""
+    "Orange": "Cam"
   },
   "Orbit": {
-    "Orbit": ""
+    "Orbit": "Orbit"
   },
   "Order": {
     "Order": "Thứ tự"
@@ -6296,20 +6332,17 @@
   "Original: %1": {
     "Original: %1": "Gốc: %1"
   },
-  "Original: %1\nCurrent: %2\nProposed: %3\nCurrent destination: %4": {
-    "Original: %1\nCurrent: %2\nProposed: %3\nCurrent destination: %4": "Bản gốc: %1 Hiện tại: %2 Đề xuất: %3 Điểm đến hiện tại: %4"
-  },
   "Other": {
     "Other": "Khác"
   },
   "Other binds cannot shadow it": {
-    "Other binds cannot shadow it": ""
+    "Other binds cannot shadow it": "Các bind khác không thể che nó"
   },
   "Other displays show a solid color for OLED burn-in protection": {
     "Other displays show a solid color for OLED burn-in protection": "Các màn hình khác hiển thị một màu đồng nhất để bảo vệ chống cháy nổ OLED"
   },
   "Out-of-memory score": {
-    "Out-of-memory score": ""
+    "Out-of-memory score": "Điểm hết bộ nhớ (OOM)"
   },
   "Outer gap": {
     "Outer gap": "Khoảng trống bên ngoài"
@@ -6339,7 +6372,7 @@
     "Output devices": "Các thiết bị đầu ra"
   },
   "Output profile switching is not available with the FreeBSD native audio backend": {
-    "Output profile switching is not available with the FreeBSD native audio backend": ""
+    "Output profile switching is not available with the FreeBSD native audio backend": "Không thể chuyển hồ sơ đầu ra với backend âm thanh gốc của FreeBSD"
   },
   "Output switched": {
     "Output switched": "Đầu ra chuyển đổi"
@@ -6348,7 +6381,7 @@
     "Over fullscreen": "Trên toàn màn hình"
   },
   "Overall": {
-    "Overall": ""
+    "Overall": "Tổng thể"
   },
   "Overcast": {
     "Overcast": "U ám"
@@ -6357,13 +6390,13 @@
     "Overflow": "Tràn"
   },
   "Overflow button position": {
-    "Overflow button position": ""
+    "Overflow button position": "Vị trí nút overflow"
   },
   "Overflow priority": {
-    "Overflow priority": ""
+    "Overflow priority": "Mức ưu tiên overflow"
   },
   "Overlapping": {
-    "Overlapping": ""
+    "Overlapping": "Chồng lấn"
   },
   "Overlay": {
     "Overlay": "Lớp Phủ"
@@ -6381,7 +6414,7 @@
     "Override floating window transparency for Notepad": "Ghi đè độ trong suốt của cửa sổ nổi cho Notepad"
   },
   "Override window radius": {
-    "Override window radius": ""
+    "Override window radius": "Ghi đè bán kính bo góc cửa sổ"
   },
   "Overrides": {
     "Overrides": "Các ghi đè"
@@ -6390,7 +6423,7 @@
     "Overview": "Tổng quan"
   },
   "Own share": {
-    "Own share": ""
+    "Own share": "Phần riêng"
   },
   "Owner: %1": {
     "Owner: %1": "Chủ sở hữu: %1"
@@ -6408,7 +6441,7 @@
     "PID": "PID"
   },
   "PID %1": {
-    "PID %1": ""
+    "PID %1": "PID %1"
   },
   "PIN": {
     "PIN": "PIN"
@@ -6417,10 +6450,10 @@
     "Package name (e.g., docker)": "Tên gói (ví dụ: docker)"
   },
   "Package repositories moved": {
-    "Package repositories moved": ""
+    "Package repositories moved": "Kho gói đã được chuyển"
   },
   "Packages": {
-    "Packages": ""
+    "Packages": "Gói"
   },
   "Pad": {
     "Pad": "Đệm (Padding)"
@@ -6429,7 +6462,10 @@
     "Padding": "Lề trong"
   },
   "Page faults": {
-    "Page faults": ""
+    "Page faults": "Lỗi trang"
+  },
+  "Paged grid": {
+    "Paged grid": ""
   },
   "Pair": {
     "Pair": "Ghép nối"
@@ -6456,7 +6492,7 @@
     "Palette name": "Tên bảng màu"
   },
   "Palette style": {
-    "Palette style": ""
+    "Palette style": "Kiểu bảng màu"
   },
   "Panel height (rows)": {
     "Panel height (rows)": "Chiều cao của bảng (hàng)"
@@ -6468,19 +6504,16 @@
     "Panel width (columns)": "Chiều rộng bảng điều khiển (cột)"
   },
   "Parabolic": {
-    "Parabolic": ""
+    "Parabolic": "Parabolic"
   },
   "Parent": {
-    "Parent": ""
+    "Parent": "Tiến trình cha"
   },
   "Parents": {
-    "Parents": ""
-  },
-  "Partially synchronized": {
-    "Partially synchronized": "Đồng bộ một phần"
+    "Parents": "Chuỗi tiến trình cha"
   },
   "Partition table": {
-    "Partition table": ""
+    "Partition table": "Bảng phân vùng"
   },
   "Partly Cloudy": {
     "Partly Cloudy": "Có mây rải rác"
@@ -6498,7 +6531,7 @@
     "Password change failed (exit %1)": "Thay đổi mật khẩu thất bại (thoát %1)"
   },
   "Password field": {
-    "Password field": ""
+    "Password field": "Ô mật khẩu"
   },
   "Password must be 8 to 63 characters, or a 64-digit hex key.": {
     "Password must be 8 to 63 characters, or a 64-digit hex key.": "Mật khẩu phải có từ 8 đến 63 ký tự hoặc khóa hex gồm 64 chữ số."
@@ -6531,19 +6564,19 @@
     "Pause": "Tạm dừng"
   },
   "Pause checks on battery": {
-    "Pause checks on battery": ""
+    "Pause checks on battery": "Tạm dừng kiểm tra khi dùng pin"
   },
   "Pause night mode while a fullscreen window has focus": {
-    "Pause night mode while a fullscreen window has focus": ""
+    "Pause night mode while a fullscreen window has focus": "Tạm dừng chế độ ban đêm khi cửa sổ toàn màn hình đang được focus"
   },
   "Pause night mode while one of these apps has focus": {
-    "Pause night mode while one of these apps has focus": ""
+    "Pause night mode while one of these apps has focus": "Tạm dừng chế độ ban đêm khi một trong các ứng dụng này đang được focus"
   },
   "Paused": {
     "Paused": "Đã tạm dừng"
   },
   "Peak": {
-    "Peak": ""
+    "Peak": "Đỉnh"
   },
   "Pending": {
     "Pending": "Đang chờ"
@@ -6555,10 +6588,10 @@
     "Pending Discharge": "Đang chờ xả"
   },
   "Per display": {
-    "Per display": ""
+    "Per display": "Theo từng màn hình"
   },
   "Per thread": {
-    "Per thread": ""
+    "Per thread": "Theo từng luồng"
   },
   "Per window": {
     "Per window": "Mỗi cửa sổ"
@@ -6579,7 +6612,7 @@
     "Permission denied to set profile image.": "Quyền bị từ chối để đặt hình ảnh hồ sơ."
   },
   "Petal": {
-    "Petal": ""
+    "Petal": "Petal"
   },
   "Pick Color": {
     "Pick Color": "Chọn màu"
@@ -6588,7 +6621,7 @@
     "Pick a different file manager in Settings → Dock → Trash.": "Chọn một trình quản lý tệp khác trong Cài đặt → Dock → Thùng rác."
   },
   "Pick an app from the list above or the dashboard tab": {
-    "Pick an app from the list above or the dashboard tab": ""
+    "Pick an app from the list above or the dashboard tab": "Chọn một ứng dụng từ danh sách phía trên hoặc từ tab dashboard"
   },
   "Pick how long to pause notifications": {
     "Pick how long to pause notifications": "Chọn thời gian tạm dừng thông báo"
@@ -6597,13 +6630,13 @@
     "Pick how long to stay awake": "Chọn thời gian để thức"
   },
   "Pick of the day": {
-    "Pick of the day": ""
+    "Pick of the day": "Lựa chọn của ngày"
   },
   "Pick of the week": {
-    "Pick of the week": ""
+    "Pick of the week": "Lựa chọn của tuần"
   },
   "Pill": {
-    "Pill": ""
+    "Pill": "Pill"
   },
   "Pills": {
     "Pills": "thuốc"
@@ -6615,13 +6648,13 @@
     "Pin to Dock": "Ghim thanh Dock"
   },
   "Pinch": {
-    "Pinch": ""
+    "Pinch": "Chụm"
   },
   "Pinch sensitivity": {
-    "Pinch sensitivity": ""
+    "Pinch sensitivity": "Độ nhạy chụm"
   },
   "Pink": {
-    "Pink": ""
+    "Pink": "Hồng"
   },
   "Pinned": {
     "Pinned": "Đã ghim"
@@ -6633,7 +6666,7 @@
     "Pixelate": "Làm mờ điểm ảnh (Pixelate)"
   },
   "Place plugin directories here. Each plugin should have a %1 manifest file.": {
-    "Place plugin directories here. Each plugin should have a %1 manifest file.": ""
+    "Place plugin directories here. Each plugin should have a %1 manifest file.": "Đặt các thư mục plugin tại đây. Mỗi plugin cần có một tệp manifest %1."
   },
   "Placement": {
     "Placement": "Vị trí"
@@ -6651,7 +6684,7 @@
     "Playback": "Phát lại"
   },
   "Playback error: %1": {
-    "Playback error: %1": ""
+    "Playback error: %1": "Lỗi phát: %1"
   },
   "Playback position": {
     "Playback position": "Vị trí phát lại"
@@ -6669,7 +6702,7 @@
     "Playing": "Đang chơi"
   },
   "Playing audio": {
-    "Playing audio": ""
+    "Playing audio": "Đang phát âm thanh"
   },
   "Please wait...": {
     "Please wait...": "Vui lòng chờ..."
@@ -6684,10 +6717,7 @@
     "Plugin": "Plugin"
   },
   "Plugin Source Code": {
-    "Plugin Source Code": ""
-  },
-  "Plugin authors": {
-    "Plugin authors": ""
+    "Plugin Source Code": "Mã nguồn plugin"
   },
   "Plugin dependency missing": {
     "Plugin dependency missing": "Thiếu phụ thuộc plugin"
@@ -6720,7 +6750,7 @@
     "Plugins": "Plugin"
   },
   "Plugins by %1": {
-    "Plugins by %1": ""
+    "Plugins by %1": "Plugin của %1"
   },
   "Plugins shown in All mode without a trigger. Drag to reorder": {
     "Plugins shown in All mode without a trigger. Drag to reorder": "Các plugin được hiển thị ở chế độ Tất cả mà không cần kích hoạt. Kéo để sắp xếp lại"
@@ -6747,7 +6777,7 @@
     "Popouts and modals use the main animation duration": "Cửa sổ pop-up và phương thức sử dụng thời lượng hoạt ảnh chính"
   },
   "Popular": {
-    "Popular": ""
+    "Popular": "Phổ biến"
   },
   "Popular Plugins": {
     "Popular Plugins": "Plugin phổ biến"
@@ -6777,7 +6807,7 @@
     "Port switched": "Cổng chuyển đổi"
   },
   "Port switching is not available with the FreeBSD native audio backend": {
-    "Port switching is not available with the FreeBSD native audio backend": ""
+    "Port switching is not available with the FreeBSD native audio backend": "Không thể chuyển cổng với backend âm thanh gốc của FreeBSD"
   },
   "Portal": {
     "Portal": "Cổng thông tin (Portal)"
@@ -6795,7 +6825,7 @@
     "Position, pinned apps": "Vị trí, các ứng dụng đã ghim"
   },
   "Position, pinned apps, trash": {
-    "Position, pinned apps, trash": ""
+    "Position, pinned apps, trash": "Vị trí, ứng dụng ghim, thùng rác"
   },
   "Possible override conflicts": {
     "Possible override conflicts": "Các xung đột ghi đè có thể xảy ra"
@@ -6819,7 +6849,7 @@
     "Power Saver": "Tiết kiệm điện"
   },
   "Power limit": {
-    "Power limit": ""
+    "Power limit": "Giới hạn công suất"
   },
   "Power menu": {
     "Power menu": "Trình đơn nguồn"
@@ -6843,25 +6873,25 @@
     "Power source": "Nguồn điện"
   },
   "Power-on time": {
-    "Power-on time": ""
+    "Power-on time": "Thời gian bật nguồn"
   },
   "Pre-release": {
-    "Pre-release": ""
+    "Pre-release": "Bản phát hành thử"
   },
   "Precipitation": {
     "Precipitation": "Lượng kết tủa"
   },
   "Preempted": {
-    "Preempted": ""
+    "Preempted": "Bị chiếm quyền"
   },
   "Preference": {
     "Preference": "Ưu tiên"
   },
   "Prefix a tag with negative: to match windows without it.": {
-    "Prefix a tag with negative: to match windows without it.": ""
+    "Prefix a tag with negative: to match windows without it.": "Thêm tiền tố negative: vào tag để khớp các cửa sổ không có tag đó."
   },
   "Presentation": {
-    "Presentation": ""
+    "Presentation": "Trình chiếu"
   },
   "Preserve split": {
     "Preserve split": "Giữ nguyên phần chia"
@@ -6870,7 +6900,7 @@
     "Preset widths (%)": "Các chiều rộng đặt trước (%)"
   },
   "Press Apply changes to update the login screen": {
-    "Press Apply changes to update the login screen": ""
+    "Press Apply changes to update the login screen": "Nhấn Áp dụng thay đổi để cập nhật màn hình đăng nhập"
   },
   "Press Ctrl+N or click 'New Session' to create one": {
     "Press Ctrl+N or click 'New Session' to create one": "Nhấn Ctrl+N hoặc nhấp vào 'Phiên Mới' để tạo một phiên"
@@ -6899,14 +6929,20 @@
   "Previous": {
     "Previous": "Trước"
   },
+  "Previous candidate": {
+    "Previous candidate": ""
+  },
   "Previous category": {
-    "Previous category": ""
+    "Previous category": "Danh mục trước"
+  },
+  "Previous group": {
+    "Previous group": ""
+  },
+  "Previous input method": {
+    "Previous input method": ""
   },
   "Previous page": {
     "Previous page": "Trang trước"
-  },
-  "Previous: %1\nCurrent: %2": {
-    "Previous: %1\nCurrent: %2": "Trước: %1 Hiện tại: %2"
   },
   "Primary": {
     "Primary": "Chính"
@@ -6945,7 +6981,7 @@
     "Priority": "Ưu tiên"
   },
   "Prism": {
-    "Prism": ""
+    "Prism": "Prism"
   },
   "Privacy": {
     "Privacy": "Sự riêng tư"
@@ -6960,7 +6996,7 @@
     "Private Key Password": "Mật khẩu khóa riêng tư"
   },
   "Process": {
-    "Process": ""
+    "Process": "Tiến trình"
   },
   "Process count": {
     "Process count": "Số lượng tiến trình"
@@ -6975,7 +7011,7 @@
     "Processing": "Xử lý"
   },
   "Processor": {
-    "Processor": ""
+    "Processor": "Bộ xử lý"
   },
   "Profile": {
     "Profile": "Hồ sơ"
@@ -6993,7 +7029,7 @@
     "Profile error": "Lỗi cấu hình"
   },
   "Profile image": {
-    "Profile image": ""
+    "Profile image": "Ảnh đại diện"
   },
   "Profile image is too large. Please use a smaller image.": {
     "Profile image is too large. Please use a smaller image.": "Hình ảnh hồ sơ quá lớn. Vui lòng sử dụng hình ảnh nhỏ hơn."
@@ -7005,7 +7041,7 @@
     "Profile not found": "Không tìm thấy cấu hình"
   },
   "Profile not found in %1": {
-    "Profile not found in %1": ""
+    "Profile not found in %1": "Không tìm thấy hồ sơ trong %1"
   },
   "Profile on AC": {
     "Profile on AC": "Hồ sơ trên AC"
@@ -7017,7 +7053,7 @@
     "Profile saved: %1": "Đã lưu cấu hình: %1"
   },
   "Profile sync failed.": {
-    "Profile sync failed.": ""
+    "Profile sync failed.": "Đồng bộ hồ sơ thất bại."
   },
   "Profiles": {
     "Profiles": "Hồ sơ"
@@ -7029,13 +7065,13 @@
     "Protocol": "Giao thức"
   },
   "Pulse animation": {
-    "Pulse animation": ""
+    "Pulse animation": "Hoạt ảnh nhấp nháy"
   },
   "Purple": {
-    "Purple": ""
+    "Purple": "Tím"
   },
   "Push neighboring icons": {
-    "Push neighboring icons": ""
+    "Push neighboring icons": "Đẩy các biểu tượng bên cạnh"
   },
   "QR Generator": {
     "QR Generator": "Trình tạo Mã QR"
@@ -7044,7 +7080,7 @@
     "Qt colors applied successfully": "Màu Qt đã được áp dụng thành công"
   },
   "Qt theme": {
-    "Qt theme": ""
+    "Qt theme": "Giao diện Qt"
   },
   "QtMultimedia is not available": {
     "QtMultimedia is not available": "QtMultimedia không khả dụng"
@@ -7056,7 +7092,7 @@
     "Quality": "Chất lượng"
   },
   "Queue depth": {
-    "Queue depth": ""
+    "Queue depth": "Độ sâu hàng đợi"
   },
   "Quick access to application launcher": {
     "Quick access to application launcher": "Truy cập nhanh vào trình khởi chạy app"
@@ -7071,16 +7107,16 @@
     "Quick system toggles": "Các phím bật tắt hệ thống nhanh"
   },
   "Quick tiles": {
-    "Quick tiles": ""
+    "Quick tiles": "Ô nhanh"
   },
   "Quit": {
-    "Quit": ""
+    "Quit": "Thoát"
   },
   "Quit or reload": {
-    "Quit or reload": ""
+    "Quit or reload": "Thoát hoặc tải lại"
   },
   "Quit or restart": {
-    "Quit or restart": ""
+    "Quit or restart": "Thoát hoặc khởi động lại"
   },
   "Radius": {
     "Radius": "Bán kính"
@@ -7104,7 +7140,7 @@
     "Rate": "Tỷ lệ / Tần số"
   },
   "Re-applies the greetd command, permissions and PAM authentication. Needs administrator access.": {
-    "Re-applies the greetd command, permissions and PAM authentication. Needs administrator access.": ""
+    "Re-applies the greetd command, permissions and PAM authentication. Needs administrator access.": "Áp dụng lại lệnh greetd, quyền và xác thực PAM. Cần quyền quản trị viên."
   },
   "Re-enter the password before saving.": {
     "Re-enter the password before saving.": "Nhập lại mật khẩu trước khi lưu."
@@ -7113,58 +7149,58 @@
     "Reach local network devices while using an exit node": "Truy cập các thiết bị mạng cục bộ trong khi sử dụng nút thoát"
   },
   "Read the blog post": {
-    "Read the blog post": ""
+    "Read the blog post": "Đọc bài đăng trên blog"
   },
   "Read total": {
-    "Read total": ""
+    "Read total": "Tổng đã đọc"
   },
   "Readings": {
-    "Readings": ""
+    "Readings": "Số liệu"
   },
   "Reads audio devices and volume": {
-    "Reads audio devices and volume": ""
+    "Reads audio devices and volume": "Đọc thiết bị âm thanh và âm lượng"
   },
   "Reads its own settings": {
-    "Reads its own settings": ""
+    "Reads its own settings": "Đọc cài đặt của chính nó"
   },
   "Reads its saved state": {
-    "Reads its saved state": ""
+    "Reads its saved state": "Đọc trạng thái đã lưu của nó"
   },
   "Reads the clipboard": {
-    "Reads the clipboard": ""
+    "Reads the clipboard": "Đọc clipboard"
   },
   "Reads the list of running programs": {
-    "Reads the list of running programs": ""
+    "Reads the list of running programs": "Đọc danh sách chương trình đang chạy"
   },
   "Reads your files": {
-    "Reads your files": ""
+    "Reads your files": "Đọc các tệp của bạn"
   },
   "Ready": {
     "Ready": "Sẵn sàng"
   },
   "Reallocated sectors": {
-    "Reallocated sectors": ""
+    "Reallocated sectors": "Sector đã cấp phát lại"
   },
   "Reason": {
     "Reason": "Lý do"
   },
   "Reboot now?": {
-    "Reboot now?": ""
+    "Reboot now?": "Khởi động lại ngay?"
   },
   "Reboot recommended": {
-    "Reboot recommended": ""
+    "Reboot recommended": "Nên khởi động lại"
   },
   "Reboot targets": {
-    "Reboot targets": ""
+    "Reboot targets": "Đích khởi động lại"
   },
   "Reboot to %1": {
-    "Reboot to %1": ""
+    "Reboot to %1": "Khởi động lại vào %1"
   },
   "Reboot to firmware setup": {
-    "Reboot to firmware setup": ""
+    "Reboot to firmware setup": "Khởi động lại vào cài đặt firmware"
   },
   "Received since boot": {
-    "Received since boot": ""
+    "Received since boot": "Đã nhận từ lúc khởi động"
   },
   "Recent": {
     "Recent": "Gần đây"
@@ -7182,16 +7218,16 @@
     "Record": "Ghi"
   },
   "Record app usage and past queries. Turning this off clears what is stored.": {
-    "Record app usage and past queries. Turning this off clears what is stored.": ""
+    "Record app usage and past queries. Turning this off clears what is stored.": "Ghi lại việc dùng ứng dụng và các truy vấn trước đó. Tắt mục này sẽ xóa dữ liệu đã lưu."
   },
   "Red": {
-    "Red": ""
+    "Red": "Đỏ"
   },
   "Reduce motion": {
     "Reduce motion": "Giảm chuyển động"
   },
   "Refraction": {
-    "Refraction": ""
+    "Refraction": "Khúc xạ"
   },
   "Refresh Weather": {
     "Refresh Weather": "Làm mới thời tiết"
@@ -7208,6 +7244,9 @@
   "Registries": {
     "Registries": "Đăng ký"
   },
+  "Regular": {
+    "Regular": ""
+  },
   "Reject jobs": {
     "Reject jobs": "Từ chối công việc"
   },
@@ -7218,19 +7257,19 @@
     "Release": "Bản phát hành"
   },
   "Release notes": {
-    "Release notes": ""
+    "Release notes": "Ghi chú phát hành"
   },
   "Release notes are unavailable": {
-    "Release notes are unavailable": ""
+    "Release notes are unavailable": "Không có ghi chú phát hành"
   },
   "Release to confirm": {
     "Release to confirm": "Nhả để xác nhận"
   },
   "Reliability": {
-    "Reliability": ""
+    "Reliability": "Độ tin cậy"
   },
   "Reload": {
-    "Reload": ""
+    "Reload": "Tải lại"
   },
   "Reload From Disk": {
     "Reload From Disk": "Tải lại từ ổ đĩa"
@@ -7266,7 +7305,7 @@
     "Reminder": "Nhắc nhở"
   },
   "Removable": {
-    "Removable": ""
+    "Removable": "Tháo rời được"
   },
   "Remove": {
     "Remove": "Xóa"
@@ -7281,10 +7320,10 @@
     "Remove admin": "Gỡ quyền quản trị"
   },
   "Remove condition": {
-    "Remove condition": ""
+    "Remove condition": "Xóa điều kiện"
   },
   "Remove from recent colors": {
-    "Remove from recent colors": ""
+    "Remove from recent colors": "Xóa khỏi màu gần đây"
   },
   "Remove greeter access?": {
     "Remove greeter access?": "Gỡ quyền truy cập màn hình chào?"
@@ -7296,16 +7335,16 @@
     "Remove match": "Xóa điều kiện khớp"
   },
   "Remove override": {
-    "Remove override": ""
+    "Remove override": "Xóa phần ghi đè"
   },
   "Remove the shortcut %1?": {
     "Remove the shortcut %1?": "Gỡ phím tắt %1?"
   },
   "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": {
-    "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": ""
+    "Remove the shortcut %1? An unbind entry will be saved to %2 so it stays removed across DMS updates.": "Xóa phím tắt %1? Một mục unbind sẽ được lưu vào %2 để phím tắt này vẫn bị xóa sau các lần cập nhật DMS."
   },
   "Remove upvote": {
-    "Remove upvote": ""
+    "Remove upvote": "Gỡ bình chọn"
   },
   "Removed administrator privileges": {
     "Removed administrator privileges": "Đã gỡ quyền quản trị viên"
@@ -7323,7 +7362,7 @@
     "Renderer": "Trình kết xuất"
   },
   "Rendering": {
-    "Rendering": ""
+    "Rendering": "Kết xuất"
   },
   "Reopen panel after update": {
     "Reopen panel after update": "Mở lại bảng điều khiển sau khi cập nhật"
@@ -7341,7 +7380,7 @@
     "Repeat rate": "Tỷ lệ lặp lại"
   },
   "Repeats while the key is held": {
-    "Repeats while the key is held": ""
+    "Repeats while the key is held": "Lặp lại khi giữ phím"
   },
   "Replace a displayed layout label with custom text, e.g. \"am-phonetic-alt\" → \"am": {
     "Replace a displayed layout label with custom text, e.g. \"am-phonetic-alt\" → \"am\"": "Thay thế nhãn bố cục được hiển thị bằng văn bản tùy chỉnh, ví dụ: \"am-phonetic-alt\" → \"am\""
@@ -7353,13 +7392,13 @@
     "Report": "Báo cáo"
   },
   "Required plugin: %1": {
-    "Required plugin: %1": ""
+    "Required plugin: %1": "Plugin bắt buộc: %1"
   },
   "Requires %1": {
     "Requires %1": "Yêu cầu %1"
   },
   "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": {
-    "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": ""
+    "Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).": "Yêu cầu %1, %2 và người dùng của bạn thuộc nhóm %3 (thêm %4 cho vân tay, %5 cho khóa bảo mật)."
   },
   "Requires DMS %1": {
     "Requires DMS %1": "Yêu cầu DMS %1"
@@ -7401,7 +7440,7 @@
     "Reset to default": "Đặt lại về mặc định"
   },
   "Resident": {
-    "Resident": ""
+    "Resident": "Thường trú"
   },
   "Resize on border": {
     "Resize on border": "Thay đổi kích thước trên đường viền"
@@ -7413,13 +7452,13 @@
     "Resolution, position, scale": "Độ phân giải, vị trí, tỷ lệ"
   },
   "Resources": {
-    "Resources": ""
+    "Resources": "Tài nguyên"
   },
   "Response time": {
-    "Response time": ""
+    "Response time": "Thời gian phản hồi"
   },
   "Restart": {
-    "Restart": ""
+    "Restart": "Khởi động lại"
   },
   "Restart DMS": {
     "Restart DMS": "Khởi động lại DMS"
@@ -7445,9 +7484,6 @@
   "Revert": {
     "Revert": "Hoàn tác"
   },
-  "Review the current bindings before saving this edit.": {
-    "Review the current bindings before saving this edit.": "Xem lại các ràng buộc hiện tại trước khi lưu bản chỉnh sửa này."
-  },
   "Right": {
     "Right": "Phải"
   },
@@ -7458,7 +7494,7 @@
     "Right Tiling": "Ốp lát phải"
   },
   "Right click": {
-    "Right click": ""
+    "Right click": "Nhấp chuột phải"
   },
   "Right section": {
     "Right section": "Phần bên phải"
@@ -7479,13 +7515,13 @@
     "Right-click empty space to edit": "Nhấp chuột phải vào khoảng trống để chỉnh sửa"
   },
   "Right-click menu": {
-    "Right-click menu": ""
+    "Right-click menu": "Menu chuột phải"
   },
   "Ring": {
     "Ring": "Đổ chuông"
   },
   "Ripple": {
-    "Ripple": ""
+    "Ripple": "Ripple"
   },
   "Ripple effects": {
     "Ripple effects": "Hiệu ứng gợn sóng"
@@ -7494,7 +7530,7 @@
     "Root Filesystem": "Hệ thống tệp gốc"
   },
   "Rotating Cookie": {
-    "Rotating Cookie": ""
+    "Rotating Cookie": "Rotating Cookie"
   },
   "Rounded": {
     "Rounded": "làm tròn"
@@ -7503,7 +7539,7 @@
     "Route Bluetooth headset controls to the active DMS media player": "Định tuyến các điều khiển tai nghe Bluetooth tới trình phát đa phương tiện DMS đang hoạt động"
   },
   "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": {
-    "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": ""
+    "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": "Định tuyến phím tắt của launcher, dash, trung tâm điều khiển và thông báo. Nhấp vào widget trên thanh luôn mở popout riêng của nó"
   },
   "Rows": {
     "Rows": "Hàng"
@@ -7527,10 +7563,10 @@
     "Rules found in your compositor config. These are read-only here, use Convert to DMS to make an editable copy.": "Các quy tắc được tìm thấy trong cấu hình compositor. Chúng chỉ đọc tại đây, dùng Chuyển sang DMS để tạo bản có thể chỉnh sửa."
   },
   "Run %1 in a terminal.": {
-    "Run %1 in a terminal.": ""
+    "Run %1 in a terminal.": "Hãy chạy %1 trong terminal."
   },
   "Run %1 to create it before changing these settings.": {
-    "Run %1 to create it before changing these settings.": ""
+    "Run %1 to create it before changing these settings.": "Hãy chạy %1 để tạo nó trước khi thay đổi các cài đặt này."
   },
   "Run Again": {
     "Run Again": "Chạy lại"
@@ -7545,10 +7581,10 @@
     "Run a shell command (e.g., notify-send)": "Chạy một lệnh shell (vd: notify-send)"
   },
   "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": {
-    "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": ""
+    "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": "Chạy một lệnh bên ngoài mỗi khi đổi hình nền và gộp bảng màu JSON của nó vào %1 dưới một namespace, để template có thể dùng, ví dụ %2. Lệnh nhận hình nền qua %3 và chế độ qua %4."
   },
   "Run full sync": {
-    "Run full sync": ""
+    "Run full sync": "Chạy đồng bộ đầy đủ"
   },
   "Run user templates": {
     "Run user templates": "Chạy mẫu người dùng"
@@ -7560,7 +7596,7 @@
     "Running apps": "Ứng dụng đang chạy"
   },
   "Running for": {
-    "Running for": ""
+    "Running for": "Đã chạy được"
   },
   "Running greeter sync...": {
     "Running greeter sync...": "Đang đồng bộ màn hình chào..."
@@ -7569,13 +7605,13 @@
     "Running in terminal": "Đang chạy trong cửa sổ dòng lệnh"
   },
   "Runs in a terminal.": {
-    "Runs in a terminal.": ""
+    "Runs in a terminal.": "Chạy trong terminal."
   },
   "Runs programs on your computer": {
-    "Runs programs on your computer": ""
+    "Runs programs on your computer": "Chạy chương trình trên máy tính của bạn"
   },
   "Runs shell commands": {
-    "Runs shell commands": ""
+    "Runs shell commands": "Chạy lệnh shell"
   },
   "S": {
     "S": "S"
@@ -7587,7 +7623,7 @@
     "SDR saturation": "Độ bão hòa SDR"
   },
   "SDR transfer function": {
-    "SDR transfer function": ""
+    "SDR transfer function": "Hàm truyền SDR"
   },
   "SE": {
     "SE": "SE"
@@ -7599,7 +7635,7 @@
     "SW": "SW"
   },
   "Same as workspace change": {
-    "Same as workspace change": ""
+    "Same as workspace change": "Giống khi đổi workspace"
   },
   "Satellites": {
     "Satellites": "Vệ tinh"
@@ -7628,14 +7664,11 @@
   "Save credentials": {
     "Save credentials": "Lưu thông tin đăng nhập"
   },
-  "Save or discard the current edit before editing another shortcut.": {
-    "Save or discard the current edit before editing another shortcut.": "Lưu hoặc loại bỏ chỉnh sửa hiện tại trước khi chỉnh sửa phím tắt khác."
-  },
   "Save password": {
     "Save password": "Lưu mật khẩu"
   },
   "Save your work first. Open apps will close.": {
-    "Save your work first. Open apps will close.": ""
+    "Save your work first. Open apps will close.": "Hãy lưu công việc trước. Các ứng dụng đang mở sẽ bị đóng."
   },
   "Saved": {
     "Saved": "Đã lưu"
@@ -7653,10 +7686,10 @@
     "Saved networks": "Mạng Đã lưu"
   },
   "Saves its own settings": {
-    "Saves its own settings": ""
+    "Saves its own settings": "Lưu cài đặt của chính nó"
   },
   "Saves its state": {
-    "Saves its state": ""
+    "Saves its state": "Lưu trạng thái của nó"
   },
   "Saving...": {
     "Saving...": "Đang lưu..."
@@ -7665,13 +7698,13 @@
     "Scale": "Tỷ lệ"
   },
   "Scale battery level to charge limit": {
-    "Scale battery level to charge limit": ""
+    "Scale battery level to charge limit": "Co giãn mức pin theo giới hạn sạc"
   },
   "Scale low and critical alert thresholds": {
-    "Scale low and critical alert thresholds": ""
+    "Scale low and critical alert thresholds": "Co giãn ngưỡng cảnh báo pin yếu và nguy cấp"
   },
   "Scale the displayed battery level to the configured charge limit": {
-    "Scale the displayed battery level to the configured charge limit": ""
+    "Scale the displayed battery level to the configured charge limit": "Co giãn mức pin hiển thị theo giới hạn sạc đã cấu hình"
   },
   "Scan": {
     "Scan": "Quét"
@@ -7686,7 +7719,7 @@
     "Schedule, sunset, wallpaper brightness": "Lịch trình, hoàng hôn, độ sáng hình nền"
   },
   "Scheduling": {
-    "Scheduling": ""
+    "Scheduling": "Lập lịch"
   },
   "Science": {
     "Science": "Khoa học"
@@ -7698,13 +7731,13 @@
     "Screen sharing": "Chia sẻ màn hình"
   },
   "Screen time": {
-    "Screen time": ""
+    "Screen time": "Thời gian sử dụng"
   },
   "Screen time and app limits": {
-    "Screen time and app limits": ""
+    "Screen time and app limits": "Thời gian sử dụng và giới hạn ứng dụng"
   },
   "Screen time history": {
-    "Screen time history": ""
+    "Screen time history": "Lịch sử thời gian sử dụng"
   },
   "Screenshot unavailable": {
     "Screenshot unavailable": "Ảnh chụp màn hình không khả dụng"
@@ -7731,7 +7764,7 @@
     "Scroll wheel": "Bánh xe chuột"
   },
   "Scrollbars": {
-    "Scrollbars": ""
+    "Scrollbars": "Thanh cuộn"
   },
   "Scrolling": {
     "Scrolling": "Cuộn"
@@ -7749,7 +7782,7 @@
     "Search devices...": "Tìm kiếm thiết bị..."
   },
   "Search or press a shortcut...": {
-    "Search or press a shortcut...": ""
+    "Search or press a shortcut...": "Tìm kiếm hoặc nhấn một phím tắt..."
   },
   "Search plugins...": {
     "Search plugins...": "Tìm plugin..."
@@ -7782,16 +7815,16 @@
     "Secondary Container": "Thùng chứa Thứ cấp"
   },
   "Section dividers": {
-    "Section dividers": ""
+    "Section dividers": "Đường phân cách phần"
   },
   "Sections": {
     "Sections": "Phần"
   },
   "Sector size": {
-    "Sector size": ""
+    "Sector size": "Kích thước sector"
   },
   "Secure Boot": {
-    "Secure Boot": ""
+    "Secure Boot": "Secure Boot"
   },
   "Secured": {
     "Secured": "Được bảo mật"
@@ -7839,7 +7872,7 @@
     "Select Dock Launcher Logo": "Chọn logo trình khởi chạy dock"
   },
   "Select Dot Icon": {
-    "Select Dot Icon": ""
+    "Select Dot Icon": "Chọn biểu tượng Dot"
   },
   "Select ICC Profile": {
     "Select ICC Profile": "Chọn hồ sơ ICC"
@@ -7893,10 +7926,10 @@
     "Sends the playing track, artist and album name to enabled lyrics providers": "Gửi bản nhạc, nghệ sĩ và tên album đang phát tới các nhà cung cấp lời bài hát đã bật"
   },
   "Sensors": {
-    "Sensors": ""
+    "Sensors": "Cảm biến"
   },
   "Sent since boot": {
-    "Sent since boot": ""
+    "Sent since boot": "Đã gửi từ lúc khởi động"
   },
   "Separate": {
     "Separate": "Riêng biệt"
@@ -7923,22 +7956,22 @@
     "Separator": "Dấu phân cách"
   },
   "Serial number": {
-    "Serial number": ""
+    "Serial number": "Số sê-ri"
   },
   "Server": {
     "Server": "Máy chủ"
   },
   "Service": {
-    "Service": ""
+    "Service": "Dịch vụ"
   },
   "Session": {
-    "Session": ""
+    "Session": "Phiên"
   },
   "Session filter": {
     "Session filter": "Bộ lọc phiên"
   },
   "Session switching requires loginctl/elogind": {
-    "Session switching requires loginctl/elogind": ""
+    "Session switching requires loginctl/elogind": "Chuyển phiên yêu cầu loginctl/elogind"
   },
   "Set custom device name": {
     "Set custom device name": "Đặt tên thiết bị tùy chỉnh"
@@ -7953,19 +7986,19 @@
     "Set custom names for your audio output devices": "Đặt tên tùy chỉnh cho các thiết bị đầu ra âm thanh"
   },
   "Set limit": {
-    "Set limit": ""
+    "Set limit": "Đặt giới hạn"
   },
   "Set notification rules": {
     "Set notification rules": "Đặt các quy tắc thông báo"
   },
   "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": {
-    "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": ""
+    "Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.": "Hãy đặt một trong các biến môi trường sau, rồi khởi động lại shell:\n%1\n\nChỉ %2 yêu cầu cài đặt %3."
   },
   "Set under Theme & colors, Derived color": {
-    "Set under Theme & colors, Derived color": ""
+    "Set under Theme & colors, Derived color": "Đặt tại Giao diện & màu sắc, mục Màu dẫn xuất"
   },
   "Set up": {
-    "Set up": ""
+    "Set up": "Thiết lập"
   },
   "Set up a Wi-Fi hotspot for sharing this connection.": {
     "Set up a Wi-Fi hotspot for sharing this connection.": "Thiết lập điểm phát sóng Wi-Fi để chia sẻ kết nối này."
@@ -7983,10 +8016,10 @@
     "Settings are read-only. Changes will not persist.": "Cài đặt ở chế độ chỉ đọc. Thay đổi sẽ không được lưu lại."
   },
   "Settings version": {
-    "Settings version": ""
+    "Settings version": "Phiên bản cài đặt"
   },
   "Setuid": {
-    "Setuid": ""
+    "Setuid": "Setuid"
   },
   "Setup": {
     "Setup": "Thiết lập"
@@ -8001,16 +8034,19 @@
     "Shadows": "Đổ bóng"
   },
   "Shapes use the %1 theme's colors": {
-    "Shapes use the %1 theme's colors": ""
+    "Shapes use the %1 theme's colors": "Các hình khối dùng màu của giao diện %1"
   },
   "Share gamma control settings": {
     "Share gamma control settings": "Chia sẻ cài đặt điều khiển Gamma"
   },
+  "Share input state": {
+    "Share input state": ""
+  },
   "Shared": {
-    "Shared": ""
+    "Shared": "Chia sẻ"
   },
   "Shared memory": {
-    "Shared memory": ""
+    "Shared memory": "Bộ nhớ dùng chung"
   },
   "Shared shortcuts": {
     "Shared shortcuts": "Phím tắt được chia sẻ"
@@ -8025,7 +8061,7 @@
     "Shift+Enter to paste": "Shift+Enter để dán"
   },
   "Short": {
-    "Short": ""
+    "Short": "Ngắn"
   },
   "Shortcut": {
     "Shortcut": "Phím tắt"
@@ -8040,7 +8076,7 @@
     "Shortcuts (%1)": "Phím tắt (%1)"
   },
   "Shortcuts, keyboard, mouse": {
-    "Shortcuts, keyboard, mouse": ""
+    "Shortcuts, keyboard, mouse": "Phím tắt, bàn phím, chuột"
   },
   "Shortens the bar at both ends": {
     "Shortens the bar at both ends": "Rút ngắn thanh ở cả hai đầu"
@@ -8052,7 +8088,7 @@
     "Show \"config reloaded\" toast": "Hiển thị Toast \"cấu hình được tải lại\""
   },
   "Show AM/PM": {
-    "Show AM/PM": ""
+    "Show AM/PM": "Hiện SA/CH"
   },
   "Show I/O": {
     "Show I/O": "Hiển thị I/O"
@@ -8094,7 +8130,7 @@
     "Show discharge rate": "Hiển thị tốc độ xả"
   },
   "Show every author": {
-    "Show every author": ""
+    "Show every author": "Hiện mọi tác giả"
   },
   "Show filename": {
     "Show filename": "Hiển thị tên tệp"
@@ -8135,6 +8171,9 @@
   "Show in dock": {
     "Show in dock": "Hiển thị trong bến tàu"
   },
+  "Show input method info on switch": {
+    "Show input method info on switch": ""
+  },
   "Show lock": {
     "Show lock": "Hiển thị Khóa"
   },
@@ -8174,6 +8213,9 @@
   "Show power off": {
     "Show power off": "Hiển thị Tắt nguồn"
   },
+  "Show preedit in application": {
+    "Show preedit in application": ""
+  },
   "Show readings": {
     "Show readings": "Hiển thị bài đọc"
   },
@@ -8211,13 +8253,16 @@
     "Show temperature": "Hiển thị nhiệt độ"
   },
   "Show the battery briefly when power is connected or removed": {
-    "Show the battery briefly when power is connected or removed": ""
+    "Show the battery briefly when power is connected or removed": "Hiện pin trong giây lát khi cắm hoặc rút nguồn điện"
+  },
+  "Show the text being composed inside the app instead of the candidate window": {
+    "Show the text being composed inside the app instead of the candidate window": ""
   },
   "Show trend": {
     "Show trend": "Hiển thị xu hướng"
   },
   "Show upgrade in a window": {
-    "Show upgrade in a window": ""
+    "Show upgrade in a window": "Hiện quá trình nâng cấp trong cửa sổ"
   },
   "Show uptime": {
     "Show uptime": "Hiển thị thời gian hoạt động"
@@ -8232,13 +8277,13 @@
     "Show welcome": "Hiển thị lời chào"
   },
   "Show window": {
-    "Show window": ""
+    "Show window": "Hiện cửa sổ"
   },
   "Shown only while the microphone, camera or screen sharing is in use": {
-    "Shown only while the microphone, camera or screen sharing is in use": ""
+    "Shown only while the microphone, camera or screen sharing is in use": "Chỉ hiện khi micro, camera hoặc chia sẻ màn hình đang được sử dụng"
   },
   "Shown while no image or color is set": {
-    "Shown while no image or color is set": ""
+    "Shown while no image or color is set": "Hiển thị khi chưa đặt ảnh hoặc màu nào"
   },
   "Shows all running applications with focus indication": {
     "Shows all running applications with focus indication": "Hiển thị tất cả ứng dụng đang chạy kèm chỉ báo ứng dụng đang chọn"
@@ -8250,10 +8295,10 @@
     "Shows only windows from the dock's own display": "Chỉ hiển thị các cửa sổ từ màn hình riêng của dock"
   },
   "Shows the dashboard tab bar instead of the sheet handle": {
-    "Shows the dashboard tab bar instead of the sheet handle": ""
+    "Shows the dashboard tab bar instead of the sheet handle": "Hiện thanh tab dashboard thay cho tay nắm của bảng"
   },
   "Shows the line being sung instead of the title and artist while synced lyrics are available": {
-    "Shows the line being sung instead of the title and artist while synced lyrics are available": ""
+    "Shows the line being sung instead of the title and artist while synced lyrics are available": "Hiện dòng đang hát thay cho tiêu đề và nghệ sĩ khi có lời bài hát đồng bộ"
   },
   "Shows when caps lock is active": {
     "Shows when caps lock is active": "Hiển thị khi Caps Lock đang bật"
@@ -8304,16 +8349,16 @@
     "Slanted": "Nghiêng"
   },
   "Sleeping": {
-    "Sleeping": ""
+    "Sleeping": "Đang ngủ"
   },
   "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": {
-    "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": ""
+    "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": "Trượt thanh ra khỏi các ứng dụng toàn màn hình. Di chuyển con trỏ tới cạnh màn hình để hiện lại."
   },
   "Slideout": {
     "Slideout": "Slideout"
   },
   "Slots used": {
-    "Slots used": ""
+    "Slots used": "Khe đã dùng"
   },
   "Small": {
     "Small": "Nhỏ"
@@ -8343,7 +8388,7 @@
     "Snow": "Tuyết"
   },
   "Sockets": {
-    "Sockets": ""
+    "Sockets": "Socket"
   },
   "Soft reboot": {
     "Soft reboot": "Khởi động lại mềm"
@@ -8352,16 +8397,19 @@
     "Soft square": "Hình vuông mềm"
   },
   "Software dimming": {
-    "Software dimming": ""
+    "Software dimming": "Giảm sáng bằng phần mềm"
   },
   "Software updates": {
-    "Software updates": ""
+    "Software updates": "Cập nhật phần mềm"
   },
   "Software updates are ready to install.": {
-    "Software updates are ready to install.": ""
+    "Software updates are ready to install.": "Các bản cập nhật phần mềm đã sẵn sàng để cài đặt."
   },
   "Solid": {
     "Solid": "Chất rắn"
+  },
+  "Some options are only available in fcitx5-configtool: %1": {
+    "Some options are only available in fcitx5-configtool: %1": ""
   },
   "Some plugins require a newer version of DMS:": {
     "Some plugins require a newer version of DMS:": "Một số plugin yêu cầu phiên bản DMS mới hơn:"
@@ -8403,10 +8451,10 @@
     "Spacing": "Khoảng cách"
   },
   "Spacious": {
-    "Spacious": ""
+    "Spacious": "Rộng rãi"
   },
   "Spare blocks left": {
-    "Spare blocks left": ""
+    "Spare blocks left": "Khối dự phòng còn lại"
   },
   "Speaker settings": {
     "Speaker settings": "Cài đặt loa"
@@ -8421,7 +8469,10 @@
     "Speed, scrolling, tap to click": "Tốc độ, cuộn, nhấn để nhấp"
   },
   "Spin-up time": {
-    "Spin-up time": ""
+    "Spin-up time": "Thời gian khởi động quay"
+  },
+  "Spinning Record": {
+    "Spinning Record": ""
   },
   "Split direction follows the cursor position in the window": {
     "Split direction follows the cursor position in the window": "Hướng chia theo vị trí con trỏ trong cửa sổ"
@@ -8442,7 +8493,7 @@
     "Spotlight bar": "Thanh tìm kiếm nhanh"
   },
   "Spreadsheet": {
-    "Spreadsheet": ""
+    "Spreadsheet": "Bảng tính"
   },
   "Spring": {
     "Spring": "Mùa xuân"
@@ -8460,7 +8511,7 @@
     "Square": "Quảng trường"
   },
   "Stable": {
-    "Stable": ""
+    "Stable": "Ổn định"
   },
   "Stack": {
     "Stack": "ngăn xếp"
@@ -8480,11 +8531,14 @@
   "Start typing your notes here...": {
     "Start typing your notes here...": "Bắt đầu nhập ghi chú tại đây..."
   },
+  "Start with the input method on instead of the plain keyboard": {
+    "Start with the input method on instead of the plain keyboard": ""
+  },
   "Start/stop count": {
-    "Start/stop count": ""
+    "Start/stop count": "Số lần khởi động/dừng"
   },
   "Started": {
-    "Started": ""
+    "Started": "Thời điểm bắt đầu"
   },
   "Starting hotspot...": {
     "Starting hotspot...": "Đang bắt đầu điểm nóng..."
@@ -8501,8 +8555,11 @@
   "State": {
     "State": "Trạng thái"
   },
+  "Stay awake with the lid closed": {
+    "Stay awake with the lid closed": ""
+  },
   "Stay focused": {
-    "Stay focused": ""
+    "Stay focused": "Giữ focus"
   },
   "Stays visible while the workspace has no windows": {
     "Stays visible while the workspace has no windows": "Vẫn hiển thị trong khi workspace không có cửa sổ"
@@ -8523,10 +8580,10 @@
     "Stopping": "Đang dừng"
   },
   "Stops syncing your DMS settings to the greeter. Set up links them again.": {
-    "Stops syncing your DMS settings to the greeter. Set up links them again.": ""
+    "Stops syncing your DMS settings to the greeter. Set up links them again.": "Ngừng đồng bộ cài đặt DMS sang greeter. Nhấn Thiết lập để liên kết lại."
   },
   "Storage": {
-    "Storage": ""
+    "Storage": "Lưu trữ"
   },
   "Stretch": {
     "Stretch": "Kéo giãn"
@@ -8541,10 +8598,10 @@
     "Style": "Kiểu dáng"
   },
   "Style, search, hidden apps": {
-    "Style, search, hidden apps": ""
+    "Style, search, hidden apps": "Kiểu dáng, tìm kiếm, ứng dụng ẩn"
   },
   "Styles outside of Default use more GPU": {
-    "Styles outside of Default use more GPU": ""
+    "Styles outside of Default use more GPU": "Các kiểu khác ngoài Mặc định tốn GPU hơn"
   },
   "Success": {
     "Success": "Thành công"
@@ -8556,7 +8613,7 @@
     "Summary font size": "Cỡ chữ tóm tắt"
   },
   "Summary, highlights, links": {
-    "Summary, highlights, links": ""
+    "Summary, highlights, links": "Tóm tắt, điểm nổi bật, liên kết"
   },
   "Sun": {
     "Sun": "Mặt trời"
@@ -8568,13 +8625,13 @@
     "Sunset": "Hoàng hôn"
   },
   "Support DMS": {
-    "Support DMS": ""
+    "Support DMS": "Ủng hộ DMS"
   },
   "Suppress duplicates": {
     "Suppress duplicates": "Ngăn chặn trùng lặp"
   },
   "Suppress events": {
-    "Suppress events": ""
+    "Suppress events": "Chặn sự kiện"
   },
   "Surface": {
     "Surface": "Bề mặt"
@@ -8613,43 +8670,46 @@
     "Suspend then hibernate": "Ngủ rồi Ngủ đông"
   },
   "Swallow focus click": {
-    "Swallow focus click": ""
+    "Swallow focus click": "Nuốt cú nhấp focus"
   },
   "Swap": {
     "Swap": "Tráo đổi"
   },
   "Swatches show the seed color itself": {
-    "Swatches show the seed color itself": ""
+    "Swatches show the seed color itself": "Các ô màu mẫu hiển thị chính màu gốc"
   },
   "Sway website": {
     "Sway website": "Trang web Sway"
   },
+  "Swaying Square": {
+    "Swaying Square": ""
+  },
   "Switch between display configurations": {
     "Switch between display configurations": "Chuyển đổi giữa các cấu hình hiển thị"
+  },
+  "Switch between the first input method and the active one": {
+    "Switch between the first input method and the active one": ""
   },
   "Switch layout shortcut": {
     "Switch layout shortcut": "Chuyển đổi phím tắt bố cục"
   },
   "Switch to media when playback starts": {
-    "Switch to media when playback starts": ""
+    "Switch to media when playback starts": "Chuyển sang media khi bắt đầu phát"
   },
   "Switches to power saver at the low battery threshold": {
     "Switches to power saver at the low battery threshold": "Chuyển sang chế độ tiết kiệm năng lượng ở ngưỡng pin yếu"
   },
   "Switching to the current workspace returns to the previous one": {
-    "Switching to the current workspace returns to the previous one": ""
+    "Switching to the current workspace returns to the previous one": "Chuyển sang workspace hiện tại sẽ quay về workspace trước đó"
   },
   "Symbol": {
-    "Symbol": ""
+    "Symbol": "Ký hiệu"
   },
   "Sync": {
     "Sync": "Đồng bộ"
   },
   "Sync completed successfully.": {
     "Sync completed successfully.": "Đồng bộ hoàn tất thành công."
-  },
-  "Sync failed": {
-    "Sync failed": "Đồng bộ hóa không thành công"
   },
   "Sync failed in background mode. Trying terminal mode so you can authenticate interactively.": {
     "Sync failed in background mode. Trying terminal mode so you can authenticate interactively.": "Đồng bộ thất bại ở chế độ nền. Đang thử chế độ dòng lệnh để bạn có thể xác thực tương tác."
@@ -8669,9 +8729,6 @@
   "Sync with portal": {
     "Sync with portal": "Đồng bộ hóa với cổng thông tin"
   },
-  "Synchronized": {
-    "Synchronized": "Đã đồng bộ hóa"
-  },
   "Syncing...": {
     "Syncing...": "Đang đồng bộ hóa..."
   },
@@ -8685,7 +8742,7 @@
     "System Monitor Unavailable": "Trình giám sát hệ thống không khả dụng"
   },
   "System bell": {
-    "System bell": ""
+    "System bell": "Chuông hệ thống"
   },
   "System check": {
     "System check": "Kiểm tra hệ thống"
@@ -8697,10 +8754,10 @@
     "System notification area icons": "Biểu tượng khu vực thông báo hệ thống"
   },
   "System packages": {
-    "System packages": ""
+    "System packages": "Gói hệ thống"
   },
   "System report": {
-    "System report": ""
+    "System report": "Báo cáo hệ thống"
   },
   "System sound theme and events": {
     "System sound theme and events": "Chủ đề và sự kiện âm thanh hệ thống"
@@ -8715,7 +8772,7 @@
     "System theme toggle": "Bật tắt chủ đề hệ thống"
   },
   "System time": {
-    "System time": ""
+    "System time": "Thời gian hệ thống"
   },
   "System tray": {
     "System tray": "Bảng hệ thống"
@@ -8727,10 +8784,10 @@
     "Systemd override generated": "Đã tạo ghi đè Systemd"
   },
   "Systemd unit": {
-    "Systemd unit": ""
+    "Systemd unit": "Unit systemd"
   },
   "TRIM": {
-    "TRIM": ""
+    "TRIM": "TRIM"
   },
   "Tab": {
     "Tab": "Tab"
@@ -8739,10 +8796,10 @@
     "Table": "Bàn"
   },
   "Tablet": {
-    "Tablet": ""
+    "Tablet": "Tablet"
   },
   "Tablet input": {
-    "Tablet input": ""
+    "Tablet input": "Đầu vào từ bảng vẽ"
   },
   "Tabs": {
     "Tabs": "Tab"
@@ -8751,7 +8808,7 @@
     "Tabs and weather": "Tab và thời tiết"
   },
   "Tag": {
-    "Tag": ""
+    "Tag": "Tag"
   },
   "Tags": {
     "Tags": "Thẻ"
@@ -8784,7 +8841,7 @@
     "Taskbar": "Thanh tác vụ"
   },
   "Teal": {
-    "Teal": ""
+    "Teal": "Xanh mòng két"
   },
   "Temperature": {
     "Temperature": "Nhiệt độ"
@@ -8796,7 +8853,7 @@
     "Terminal additional parameters": "Các tham số bổ sung cho cửa sổ dòng lệnh"
   },
   "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": {
-    "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": ""
+    "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": "Dự phòng bằng terminal thất bại. Hãy cài một trong các trình giả lập terminal được hỗ trợ hoặc tự chạy '%1'."
   },
   "Terminal fallback opened. Complete authentication there; it will close automatically when done.": {
     "Terminal fallback opened. Complete authentication there; it will close automatically when done.": "Fallback Terminal đã mở. Hoàn tất xác thực ở đó; nó sẽ đóng tự động khi hoàn thành."
@@ -8838,13 +8895,10 @@
     "Text style": "Kiểu văn bản"
   },
   "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": {
-    "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": ""
-  },
-  "The Aqueous operation failed.": {
-    "The Aqueous operation failed.": "Hoạt động của nước không thành công."
+    "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": "Biến môi trường %1 chưa được đặt hoặc socket không khả dụng. Việc quản lý plugin tự động cần có nó."
   },
   "The Control Center opens at the cursor instead of its widget": {
-    "The Control Center opens at the cursor instead of its widget": ""
+    "The Control Center opens at the cursor instead of its widget": "Trung tâm điều khiển mở tại vị trí con trỏ thay vì tại widget của nó"
   },
   "The Default action only overrides priority": {
     "The Default action only overrides priority": "Hành động mặc định chỉ ghi đè mức độ ưu tiên"
@@ -8853,7 +8907,7 @@
     "The Island holds this edge on a display this bar covers, so the bar stays hidden there": "Đảo giữ cạnh này trên một màn hình bao gồm thanh này, vì vậy thanh vẫn ẩn ở đó"
   },
   "The Island takes its place on this bar": {
-    "The Island takes its place on this bar": ""
+    "The Island takes its place on this bar": "Island sẽ thế chỗ ở thanh này"
   },
   "The WiFi adapter could not start access point mode.": {
     "The WiFi adapter could not start access point mode.": "Bộ điều hợp WiFi không thể bắt đầu chế độ điểm truy cập."
@@ -8862,19 +8916,19 @@
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "Mũi tên chỉ hướng gió thổi. Nhãn cho thấy nó đến từ đâu."
   },
   "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": {
-    "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": ""
+    "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": "Các cài đặt bên dưới sẽ thay đổi cài đặt GTK và Qt của bạn. Nếu muốn giữ cấu hình hiện tại, hãy sao lưu chúng (%1 và %2)."
   },
   "The click that focuses a window does not reach the app": {
-    "The click that focuses a window does not reach the app": ""
-  },
-  "The compositor session changed. Discard this edit before starting a new one.": {
-    "The compositor session changed. Discard this edit before starting a new one.": "Phiên tổng hợp đã thay đổi. Hãy hủy chỉnh sửa này trước khi bắt đầu chỉnh sửa mới."
+    "The click that focuses a window does not reach the app": "Cú nhấp để focus cửa sổ không được chuyển tới ứng dụng"
   },
   "The custom command used when attaching to sessions (receives the session name as the first argument)": {
     "The custom command used when attaching to sessions (receives the session name as the first argument)": "Lệnh tùy chỉnh được sử dụng khi đính kèm vào các phiên (nhận tên phiên làm đối số đầu tiên)"
   },
   "The direction label shows where the wind comes from.": {
     "The direction label shows where the wind comes from.": "Nhãn hướng cho biết gió đến từ đâu."
+  },
+  "The fcitx5 popup. The shell's OSD toggle is in the OSD settings.": {
+    "The fcitx5 popup. The shell's OSD toggle is in the OSD settings.": ""
   },
   "The fill shows relative humidity. The badge shows the dew point temperature.": {
     "The fill shows relative humidity. The badge shows the dew point temperature.": "Chất làm đầy cho thấy độ ẩm tương đối. Huy hiệu hiển thị nhiệt độ điểm sương."
@@ -8889,55 +8943,40 @@
     "The job queue of this printer is empty": "Hàng đợi công việc của máy in này trống"
   },
   "The key also reaches the focused window": {
-    "The key also reaches the focused window": ""
+    "The key also reaches the focused window": "Phím cũng được gửi tới cửa sổ đang focus"
   },
   "The login screen follows your theme, wallpaper, widgets and behavior live. Only authentication changes need applying.": {
-    "The login screen follows your theme, wallpaper, widgets and behavior live. Only authentication changes need applying.": ""
+    "The login screen follows your theme, wallpaper, widgets and behavior live. Only authentication changes need applying.": "Màn hình đăng nhập theo giao diện, hình nền, widget và hành vi của bạn theo thời gian thực. Chỉ các thay đổi về xác thực mới cần áp dụng."
   },
   "The login screen shows the lock screen widgets it supports and its own session picker. Turn off to arrange it separately.": {
-    "The login screen shows the lock screen widgets it supports and its own session picker. Turn off to arrange it separately.": ""
+    "The login screen shows the lock screen widgets it supports and its own session picker. Turn off to arrange it separately.": "Màn hình đăng nhập hiển thị các widget màn hình khóa mà nó hỗ trợ cùng bộ chọn phiên riêng. Tắt để sắp xếp riêng."
   },
   "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": {
-    "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": ""
+    "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": "Màn hình đăng nhập sẽ không còn theo giao diện, hình nền, widget và cài đặt DMS của bạn. greetd, xác thực và những người dùng khác không bị ảnh hưởng."
   },
-  "The new shortcut is already in use. Choose another shortcut.": {
-    "The new shortcut is already in use. Choose another shortcut.": "Phím tắt mới đã được sử dụng. Chọn một phím tắt khác."
-  },
-  "The original shortcut changed. Refresh and review your edit.": {
-    "The original shortcut changed. Refresh and review your edit.": "Phím tắt ban đầu đã thay đổi. Làm mới và xem lại chỉnh sửa của bạn."
-  },
-  "The original shortcut was removed. Discard this edit or add a new shortcut.": {
-    "The original shortcut was removed. Discard this edit or add a new shortcut.": "Phím tắt ban đầu đã bị xóa. Hủy chỉnh sửa này hoặc thêm lối tắt mới."
+  "The next enabled provider is used when one fails.": {
+    "The next enabled provider is used when one fails.": ""
   },
   "The quick brown fox jumps over the lazy dog": {
     "The quick brown fox jumps over the lazy dog": "Cáo nâu nhanh nhẹn nhảy qua chó lười"
   },
   "The rest follow the shared rule": {
-    "The rest follow the shared rule": ""
+    "The rest follow the shared rule": "Phần còn lại theo quy tắc chung"
   },
   "The rest open the bar's own popouts": {
-    "The rest open the bar's own popouts": ""
-  },
-  "The result is unknown. Refresh before trying again.": {
-    "The result is unknown. Refresh before trying again.": "Kết quả là không rõ. Hãy làm mới trước khi thử lại."
+    "The rest open the bar's own popouts": "Phần còn lại mở popout riêng của thanh"
   },
   "The rule applies to any window matching one of these.": {
     "The rule applies to any window matching one of these.": "Quy tắc áp dụng cho bất kỳ cửa sổ nào khớp với một trong các điều kiện này."
-  },
-  "The save result is unknown. Refresh and check the current bindings.": {
-    "The save result is unknown. Refresh and check the current bindings.": "Kết quả lưu không xác định. Làm mới và kiểm tra các ràng buộc hiện tại."
-  },
-  "The selected action is no longer available.": {
-    "The selected action is no longer available.": "Hành động đã chọn không còn khả dụng nữa."
   },
   "The server certificate has changed since it was last trusted. Only continue if you recognize the new fingerprint.": {
     "The server certificate has changed since it was last trusted. Only continue if you recognize the new fingerprint.": "Chứng chỉ máy chủ đã thay đổi kể từ lần cuối nó được tin tưởng. Chỉ tiếp tục nếu bạn nhận ra dấu vân tay mới."
   },
   "The shell palette is built from this color. Shapes take their colors from that palette.": {
-    "The shell palette is built from this color. Shapes take their colors from that palette.": ""
+    "The shell palette is built from this color. Shapes take their colors from that palette.": "Bảng màu của shell được tạo từ màu này. Các hình khối lấy màu từ bảng màu đó."
   },
   "The state the app believes it is in": {
-    "The state the app believes it is in": ""
+    "The state the app believes it is in": "Trạng thái mà ứng dụng cho rằng nó đang ở"
   },
   "Theme": {
     "Theme": "chủ đề"
@@ -8946,7 +8985,7 @@
     "Theme & colors": "Chủ đề & Màu"
   },
   "Theme color": {
-    "Theme color": ""
+    "Theme color": "Màu giao diện"
   },
   "Theme colors come from this display's wallpaper": {
     "Theme colors come from this display's wallpaper": "Màu chủ đề lấy từ hình nền của màn hình này"
@@ -8958,22 +8997,22 @@
     "Theme worker failed (%1)": "Theme worker thất bại (%1)"
   },
   "Theme worker failed to start": {
-    "Theme worker failed to start": ""
+    "Theme worker failed to start": "Không thể khởi chạy tiến trình xử lý giao diện"
   },
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": "Chủ đề, ánh sáng và bóng tối, matugen"
   },
   "Theme, palette, dark mode": {
-    "Theme, palette, dark mode": ""
+    "Theme, palette, dark mode": "Giao diện, bảng màu, chế độ tối"
   },
   "Themes": {
     "Themes": "Các chủ đề"
   },
   "These add entries to the XDG autostart directory (%1)": {
-    "These add entries to the XDG autostart directory (%1)": ""
+    "These add entries to the XDG autostart directory (%1)": "Các mục này sẽ được thêm vào thư mục tự khởi động XDG (%1)"
   },
   "They load with the next update check. Release notes are also published on GitHub.": {
-    "They load with the next update check. Release notes are also published on GitHub.": ""
+    "They load with the next update check. Release notes are also published on GitHub.": "Chúng sẽ được tải ở lần kiểm tra cập nhật tiếp theo. Ghi chú phát hành cũng được đăng trên GitHub."
   },
   "Thickness": {
     "Thickness": "Độ dày"
@@ -8985,40 +9024,37 @@
     "Third-party plugins": "Plugin của bên thứ ba"
   },
   "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.": {
-    "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.": ""
+    "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.": "Plugin bên thứ ba do cộng đồng tạo ra và không được %1 chính thức hỗ trợ.\n\nCác plugin này có thể gây rủi ro về bảo mật và quyền riêng tư - hãy tự chịu rủi ro khi cài đặt."
   },
   "This bar is the Island": {
-    "This bar is the Island": ""
+    "This bar is the Island": "Thanh này là Island"
   },
   "This bind is overridden by %1": {
-    "This bind is overridden by %1": ""
+    "This bind is overridden by %1": "Bind này bị %1 ghi đè"
   },
   "This device": {
     "This device": "Thiết bị này"
   },
   "This display does not report HDR support, so Hyprland falls back to sRGB.": {
-    "This display does not report HDR support, so Hyprland falls back to sRGB.": ""
+    "This display does not report HDR support, so Hyprland falls back to sRGB.": "Màn hình này không báo cáo hỗ trợ HDR nên Hyprland sẽ quay về sRGB."
   },
   "This display does not report VRR support": {
-    "This display does not report VRR support": ""
+    "This display does not report VRR support": "Màn hình này không báo cáo hỗ trợ VRR"
   },
   "This may take a few seconds": {
     "This may take a few seconds": "Việc này có thể mất vài giây"
-  },
-  "This operation is not supported by the installed Aqueous version.": {
-    "This operation is not supported by the installed Aqueous version.": "Hoạt động này không được hỗ trợ bởi phiên bản Aqueous đã cài đặt."
   },
   "This output is disabled in the current profile": {
     "This output is disabled in the current profile": "Đầu ra này đã bị tắt trong cấu hình hiện tại"
   },
   "This plugin does not have '%1' permission.\n\nAdd %2 to %3": {
-    "This plugin does not have '%1' permission.\n\nAdd %2 to %3": ""
+    "This plugin does not have '%1' permission.\n\nAdd %2 to %3": "Plugin này không có quyền '%1'.\n\nHãy thêm %2 vào %3"
   },
   "This system cannot link settings live. Sync again after changing them.": {
-    "This system cannot link settings live. Sync again after changing them.": ""
+    "This system cannot link settings live. Sync again after changing them.": "Hệ thống này không thể liên kết cài đặt theo thời gian thực. Hãy đồng bộ lại sau khi thay đổi."
   },
   "This system was not started in UEFI mode": {
-    "This system was not started in UEFI mode": ""
+    "This system was not started in UEFI mode": "Hệ thống này không khởi động ở chế độ UEFI"
   },
   "This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.": {
     "This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.": "Widget này ngăn GPU tắt nguồn, có thể làm giảm đáng kể thời lượng pin. Không khuyến nghị dùng trên laptop có card hybrid."
@@ -9036,7 +9072,7 @@
     "This will permanently remove this saved clipboard item. This action cannot be undone.": "Việc này sẽ xóa vĩnh viễn mục bảng nhớ tạm đã lưu này. Hành động này không thể hoàn tác."
   },
   "Threads": {
-    "Threads": ""
+    "Threads": "Luồng"
   },
   "Thunderstorm": {
     "Thunderstorm": "Giông bão"
@@ -9096,7 +9132,7 @@
     "Tint strength": "Mức độ màu nhuộm"
   },
   "Tinted cards and badges across the shell": {
-    "Tinted cards and badges across the shell": ""
+    "Tinted cards and badges across the shell": "Thẻ và huy hiệu được pha màu trên toàn shell"
   },
   "Title": {
     "Title": "Tiêu đề"
@@ -9105,7 +9141,7 @@
     "Title (optional)": "Tiêu đề (tùy chọn)"
   },
   "Title bars": {
-    "Title bars": ""
+    "Title bars": "Thanh tiêu đề"
   },
   "Title font": {
     "Title font": "Phông chữ tiêu đề"
@@ -9114,7 +9150,7 @@
     "Title is required": "Bắt buộc nhập tiêu đề"
   },
   "Title padding": {
-    "Title padding": ""
+    "Title padding": "Đệm tiêu đề"
   },
   "Title regex (optional)": {
     "Title regex (optional)": "Regex tiêu đề (tùy chọn)"
@@ -9123,10 +9159,10 @@
     "To Full": "Toàn bộ"
   },
   "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": {
-    "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": ""
+    "To sign in as a different user, log out and pick the account from the greeter. Creating a fresh session in parallel needs a multi-session greeter (%1).": "Để đăng nhập bằng người dùng khác, hãy đăng xuất rồi chọn tài khoản từ greeter. Tạo một phiên mới song song cần greeter đa phiên (%1)."
   },
   "To use this DMS bind, remove or change the keybind in your %1": {
-    "To use this DMS bind, remove or change the keybind in your %1": ""
+    "To use this DMS bind, remove or change the keybind in your %1": "Để dùng bind DMS này, hãy xóa hoặc đổi keybind trong %1 của bạn"
   },
   "Toast": {
     "Toast": "Thông báo nhỏ"
@@ -9144,16 +9180,22 @@
     "Today's pressure forecast is steady. The gauge stays at the midpoint.": "Dự báo áp lực hôm nay là ổn định. Máy đo vẫn ở điểm giữa."
   },
   "Toggle Control Center": {
-    "Toggle Control Center": ""
+    "Toggle Control Center": "Bật/tắt Trung tâm điều khiển"
   },
   "Toggle Launcher": {
-    "Toggle Launcher": ""
+    "Toggle Launcher": "Bật/tắt Launcher"
   },
   "Toggle Settings": {
-    "Toggle Settings": ""
+    "Toggle Settings": "Bật/tắt Cài đặt"
   },
   "Toggle fonts": {
     "Toggle fonts": "Bật tắt phông chữ"
+  },
+  "Toggle input method": {
+    "Toggle input method": ""
+  },
+  "Toggle preedit in application": {
+    "Toggle preedit in application": ""
   },
   "Toggling...": {
     "Toggling...": "Đang bật tắt..."
@@ -9168,7 +9210,7 @@
     "Tone curve": "Đường cong giai điệu"
   },
   "Tone mapping": {
-    "Tone mapping": ""
+    "Tone mapping": "Tone mapping"
   },
   "Toner Empty": {
     "Toner Empty": "Hết mực"
@@ -9183,7 +9225,7 @@
     "Tools": "Công cụ"
   },
   "Tooltip": {
-    "Tooltip": ""
+    "Tooltip": "Tooltip"
   },
   "Top": {
     "Top": "Trên"
@@ -9201,7 +9243,7 @@
     "Top Right": "Trên cùng bên phải"
   },
   "Top process": {
-    "Top process": ""
+    "Top process": "Tiến trình dùng nhiều nhất"
   },
   "Top processes": {
     "Top processes": "Các tiến trình hàng đầu"
@@ -9222,7 +9264,7 @@
     "Touchpad": "Bàn di chuột"
   },
   "Track screen time": {
-    "Track screen time": ""
+    "Track screen time": "Theo dõi thời gian sử dụng"
   },
   "Transform": {
     "Transform": "Biến đổi"
@@ -9234,7 +9276,7 @@
     "Transition duration": "Thời gian chuyển tiếp"
   },
   "Transparent": {
-    "Transparent": ""
+    "Transparent": "Trong suốt"
   },
   "Trash": {
     "Trash": "Thùng rác"
@@ -9249,7 +9291,7 @@
     "Tray icon tint": "Màu biểu tượng khay"
   },
   "Trending": {
-    "Trending": ""
+    "Trending": "Đang thịnh hành"
   },
   "Trigger": {
     "Trigger": "Bộ kích hoạt"
@@ -9258,16 +9300,16 @@
     "Trigger: %1": "Bộ kích hoạt: %1"
   },
   "Triggers after holding the key": {
-    "Triggers after holding the key": ""
+    "Triggers after holding the key": "Kích hoạt sau khi giữ phím"
   },
   "Triggers on release after the pointer moved": {
-    "Triggers on release after the pointer moved": ""
+    "Triggers on release after the pointer moved": "Kích hoạt khi nhả sau khi con trỏ đã di chuyển"
   },
   "Triggers on release if the pointer stayed put": {
-    "Triggers on release if the pointer stayed put": ""
+    "Triggers on release if the pointer stayed put": "Kích hoạt khi nhả nếu con trỏ đứng yên"
   },
   "Triggers when the key is released": {
-    "Triggers when the key is released": ""
+    "Triggers when the key is released": "Kích hoạt khi nhả phím"
   },
   "Trust": {
     "Trust": "Tin cậy"
@@ -9297,7 +9339,7 @@
     "Typing in the overview opens the launcher": "Nhập phần tổng quan sẽ mở trình khởi chạy"
   },
   "Typing reveals the field. Escape hides it again. The editor always shows it.": {
-    "Typing reveals the field. Escape hides it again. The editor always shows it.": ""
+    "Typing reveals the field. Escape hides it again. The editor always shows it.": "Gõ phím sẽ hiện ô này. Nhấn Escape để ẩn lại. Trình chỉnh sửa luôn hiển thị nó."
   },
   "URL": {
     "URL": "URL"
@@ -9312,7 +9354,7 @@
     "Uncategorized": "Chưa phân loại"
   },
   "Undo": {
-    "Undo": ""
+    "Undo": "Hoàn tác"
   },
   "Unfocused color": {
     "Unfocused color": "Màu cửa sổ đang không chọn"
@@ -9366,16 +9408,16 @@
     "Unknown Track": "Bài hát không xác định"
   },
   "Unlink": {
-    "Unlink": ""
+    "Unlink": "Hủy liên kết"
   },
   "Unlink login screen": {
-    "Unlink login screen": ""
+    "Unlink login screen": "Hủy liên kết màn hình đăng nhập"
   },
   "Unlink needs sudo authentication. Opening terminal so you can use password or fingerprint.": {
-    "Unlink needs sudo authentication. Opening terminal so you can use password or fingerprint.": ""
+    "Unlink needs sudo authentication. Opening terminal so you can use password or fingerprint.": "Hủy liên kết cần xác thực sudo. Đang mở terminal để bạn dùng mật khẩu hoặc vân tay."
   },
   "Unlink now?": {
-    "Unlink now?": ""
+    "Unlink now?": "Hủy liên kết ngay?"
   },
   "Unload on close": {
     "Unload on close": "Giải phóng khi đóng"
@@ -9402,7 +9444,7 @@
     "Unpin from Dock": "Bỏ ghim khỏi dock"
   },
   "Unsafe shutdowns": {
-    "Unsafe shutdowns": ""
+    "Unsafe shutdowns": "Số lần tắt máy không an toàn"
   },
   "Unsaved changes": {
     "Unsaved changes": "Thay đổi chưa lưu"
@@ -9438,7 +9480,7 @@
     "Up": "lên"
   },
   "Up %1": {
-    "Up %1": ""
+    "Up %1": "Hoạt động %1"
   },
   "Up to date": {
     "Up to date": "Đã cập nhật"
@@ -9452,6 +9494,9 @@
   "Update All": {
     "Update All": "Cập nhật tất cả"
   },
+  "Update DMS to configure fcitx5 from here": {
+    "Update DMS to configure fcitx5 from here": ""
+  },
   "Update available": {
     "Update available": "Đã có bản cập nhật"
   },
@@ -9462,10 +9507,10 @@
     "Update plugin": "Cập nhật plugin"
   },
   "Update the dms package with your package manager, then restart the shell.": {
-    "Update the dms package with your package manager, then restart the shell.": ""
+    "Update the dms package with your package manager, then restart the shell.": "Hãy cập nhật gói dms bằng trình quản lý gói của bạn, sau đó khởi động lại shell."
   },
   "Updates, clipboard, %1": {
-    "Updates, clipboard, %1": ""
+    "Updates, clipboard, %1": "Cập nhật, clipboard, %1"
   },
   "Updating %1...": {
     "Updating %1...": "Đang cập nhật %1..."
@@ -9480,19 +9525,19 @@
     "Upgrading...": "Đang nâng cấp..."
   },
   "Upload": {
-    "Upload": ""
+    "Upload": "Tải lên"
   },
   "Uptime": {
     "Uptime": "Thời gian hoạt động"
   },
   "Upvote on GitHub": {
-    "Upvote on GitHub": ""
+    "Upvote on GitHub": "Bình chọn trên GitHub"
   },
   "Upvote removed": {
-    "Upvote removed": ""
+    "Upvote removed": "Đã gỡ bình chọn"
   },
   "Upvoted on GitHub": {
-    "Upvoted on GitHub": ""
+    "Upvoted on GitHub": "Đã bình chọn trên GitHub"
   },
   "Urgent": {
     "Urgent": "Khẩn cấp"
@@ -9501,10 +9546,10 @@
     "Urgent color": "Màu khẩn cấp"
   },
   "Usage": {
-    "Usage": ""
+    "Usage": "Mức sử dụng"
   },
   "Use Dynamic": {
-    "Use Dynamic": ""
+    "Use Dynamic": "Dùng giao diện động"
   },
   "Use IP Location": {
     "Use IP Location": "Sử dụng vị trí IP"
@@ -9522,7 +9567,7 @@
     "Use custom command": "Sử dụng lệnh tùy chỉnh"
   },
   "Use default wallpaper": {
-    "Use default wallpaper": ""
+    "Use default wallpaper": "Dùng hình nền mặc định"
   },
   "Use desktop wallpaper": {
     "Use desktop wallpaper": "Sử dụng hình nền máy tính"
@@ -9543,7 +9588,7 @@
     "Use overlay layer": "Sử dụng lớp phủ"
   },
   "Use standard OSDs": {
-    "Use standard OSDs": ""
+    "Use standard OSDs": "Dùng OSD chuẩn"
   },
   "Use standard popups": {
     "Use standard popups": "Sử dụng cửa sổ pop-up tiêu chuẩn"
@@ -9552,10 +9597,10 @@
     "Use system PAM authentication": "Sử dụng xác thực PAM hệ thống"
   },
   "Use the scaled battery level for alert thresholds and percentages": {
-    "Use the scaled battery level for alert thresholds and percentages": ""
+    "Use the scaled battery level for alert thresholds and percentages": "Dùng mức pin đã co giãn cho ngưỡng cảnh báo và phần trăm"
   },
   "Used": {
-    "Used": ""
+    "Used": "Đã dùng"
   },
   "User": {
     "User": "Người dùng"
@@ -9582,7 +9627,7 @@
     "User not found": "Không tìm thấy người dùng"
   },
   "User time": {
-    "User time": ""
+    "User time": "Thời gian người dùng"
   },
   "User window rules (%1)": {
     "User window rules (%1)": "Quy tắc cửa sổ người dùng ( %1 )"
@@ -9639,10 +9684,10 @@
     "VPN status and quick connect": "Trạng thái VPN và kết nối nhanh"
   },
   "VRAM": {
-    "VRAM": ""
+    "VRAM": "VRAM"
   },
   "VRR Fullscreen Only": {
-    "VRR Fullscreen Only": ""
+    "VRR Fullscreen Only": "VRR chỉ khi toàn màn hình"
   },
   "VRR On-Demand": {
     "VRR On-Demand": "VRR theo yêu cầu"
@@ -9690,16 +9735,16 @@
     "Vibrant palette with playful saturation.": "Bảng màu sống động với độ bão hòa vui tươi."
   },
   "Video": {
-    "Video": ""
+    "Video": "Video"
   },
   "Video card gamma table": {
     "Video card gamma table": "Bảng gamma card màn hình"
   },
   "Video decode": {
-    "Video decode": ""
+    "Video decode": "Giải mã video"
   },
   "Video encode": {
-    "Video encode": ""
+    "Video encode": "Mã hóa video"
   },
   "Video player": {
     "Video player": "Trình phát video"
@@ -9708,19 +9753,19 @@
     "Video screensaver": "Trình bảo vệ màn hình video"
   },
   "Video wallpapers play once, then the next wallpaper is shown": {
-    "Video wallpapers play once, then the next wallpaper is shown": ""
+    "Video wallpapers play once, then the next wallpaper is shown": "Hình nền video phát một lần rồi chuyển sang hình nền tiếp theo"
   },
   "View Changes": {
     "View Changes": "Xem thay đổi"
   },
   "View on GitHub": {
-    "View on GitHub": ""
+    "View on GitHub": "Xem trên GitHub"
   },
   "Virtual": {
-    "Virtual": ""
+    "Virtual": "Ảo"
   },
   "Virtualization": {
-    "Virtualization": ""
+    "Virtualization": "Ảo hóa"
   },
   "Visibility": {
     "Visibility": "Hiển thị"
@@ -9753,7 +9798,7 @@
     "Volume style": "Kiểu âm lượng"
   },
   "Volume, brightness, caps lock": {
-    "Volume, brightness, caps lock": ""
+    "Volume, brightness, caps lock": "Âm lượng, độ sáng, caps lock"
   },
   "Votes": {
     "Votes": "Phiếu bầu"
@@ -9765,10 +9810,10 @@
     "WPA2 password": "Mật khẩu WPA2"
   },
   "WWN": {
-    "WWN": ""
+    "WWN": "WWN"
   },
   "Waiting": {
-    "Waiting": ""
+    "Waiting": "Đang chờ"
   },
   "Wallpaper": {
     "Wallpaper": "Hình nền"
@@ -9798,28 +9843,31 @@
     "Warnings": "Cảnh báo"
   },
   "Warp on display change": {
-    "Warp on display change": ""
+    "Warp on display change": "Dịch chuyển con trỏ khi đổi màn hình"
   },
   "Water": {
-    "Water": ""
+    "Water": "Water"
   },
   "Wave progress bars": {
     "Wave progress bars": "Thanh tiến trình"
   },
   "Wear": {
-    "Wear": ""
+    "Wear": "Độ mòn"
   },
   "Weather": {
     "Weather": "Thời tiết"
+  },
+  "Weather providers": {
+    "Weather providers": ""
   },
   "Web browser": {
     "Web browser": "Trình duyệt web"
   },
   "Week": {
-    "Week": ""
+    "Week": "Tuần"
   },
   "Weekly screen time": {
-    "Weekly screen time": ""
+    "Weekly screen time": "Thời gian sử dụng theo tuần"
   },
   "Weight": {
     "Weight": "Cân nặng"
@@ -9828,13 +9876,13 @@
     "Welcome": "Chào mừng"
   },
   "Welcome to %1": {
-    "Welcome to %1": ""
+    "Welcome to %1": "Chào mừng đến với %1"
   },
   "What changed": {
-    "What changed": ""
+    "What changed": "Có gì thay đổi"
   },
   "What's New": {
-    "What's New": ""
+    "What's New": "Có gì mới"
   },
   "When locked": {
     "When locked": "Khi đã khóa"
@@ -9849,7 +9897,7 @@
     "Which wallpaper color the palette is built from": "Bảng màu hình nền nào được xây dựng từ"
   },
   "While download and upload are both under 1 KB/s": {
-    "While download and upload are both under 1 KB/s": ""
+    "While download and upload are both under 1 KB/s": "Khi cả tải xuống và tải lên đều dưới 1 KB/s"
   },
   "White": {
     "White": "Trắng"
@@ -9858,7 +9906,7 @@
     "White point": "Điểm trắng"
   },
   "Whole numbers, at most three digits": {
-    "Whole numbers, at most three digits": ""
+    "Whole numbers, at most three digits": "Số nguyên, tối đa ba chữ số"
   },
   "Wi-Fi": {
     "Wi-Fi": "Wi-Fi"
@@ -9876,16 +9924,16 @@
     "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": "Wi-Fi bị tắt. Bạn vẫn có thể chỉnh sửa và lưu cài đặt điểm phát sóng nhưng việc khởi động điểm phát sóng yêu cầu phải bật Wi-Fi."
   },
   "Wi-Fi network": {
-    "Wi-Fi network": ""
+    "Wi-Fi network": "Mạng Wi-Fi"
   },
   "Wi-Fi not available": {
     "Wi-Fi not available": "Wi-Fi không khả dụng"
   },
   "Wi-Fi, Ethernet, VPN": {
-    "Wi-Fi, Ethernet, VPN": ""
+    "Wi-Fi, Ethernet, VPN": "Wi-Fi, Ethernet, VPN"
   },
   "WiFi QR code for %1": {
-    "WiFi QR code for %1": ""
+    "WiFi QR code for %1": "Mã QR WiFi cho %1"
   },
   "WiFi disabled": {
     "WiFi disabled": "Đã tắt WiFi"
@@ -9900,7 +9948,7 @@
     "Wide (BT2020)": "Rộng (BT2020)"
   },
   "Widget": {
-    "Widget": ""
+    "Widget": "Widget"
   },
   "Widget Background Color": {
     "Widget Background Color": "Màu nền tiện ích"
@@ -9927,7 +9975,7 @@
     "Widgets": "Các tiện ích"
   },
   "Widgets in this section move into overflow when space runs out": {
-    "Widgets in this section move into overflow when space runs out": ""
+    "Widgets in this section move into overflow when space runs out": "Các widget trong phần này sẽ chuyển vào overflow khi hết chỗ"
   },
   "Widgets, layout, style": {
     "Widgets, layout, style": "Các tiện ích, bố cục, kiểu dáng"
@@ -9957,10 +10005,10 @@
     "Window gaps (px)": "Khoảng cách cửa sổ (px)"
   },
   "Window groups": {
-    "Window groups": ""
+    "Window groups": "Nhóm cửa sổ"
   },
   "Window opacity": {
-    "Window opacity": ""
+    "Window opacity": "Độ mờ cửa sổ"
   },
   "Window radius": {
     "Window radius": "Bán kính cửa sổ"
@@ -9969,7 +10017,7 @@
     "Window rules": "Các quy tắc cửa sổ"
   },
   "Windows": {
-    "Windows": ""
+    "Windows": "Cửa sổ"
   },
   "Wipe": {
     "Wipe": "Xóa sạch"
@@ -9978,37 +10026,37 @@
     "With Shelly, only Flatpak packages in the current update list can be ignored.": "Với Shelly, chỉ có thể bỏ qua các gói Flatpak trong danh sách cập nhật hiện tại."
   },
   "With no bar, Dot or dock launcher on, shortcuts are the only way back to settings": {
-    "With no bar, Dot or dock launcher on, shortcuts are the only way back to settings": ""
+    "With no bar, Dot or dock launcher on, shortcuts are the only way back to settings": "Khi không bật thanh, Dot hay launcher trên dock, phím tắt là cách duy nhất để quay lại cài đặt"
   },
   "Wobble damping": {
-    "Wobble damping": ""
+    "Wobble damping": "Độ giảm chấn lung lay"
   },
   "Wobble mass": {
-    "Wobble mass": ""
+    "Wobble mass": "Khối lượng lung lay"
   },
   "Wobble mesh": {
-    "Wobble mesh": ""
+    "Wobble mesh": "Lưới lung lay"
   },
   "Wobble stiffness": {
-    "Wobble stiffness": ""
+    "Wobble stiffness": "Độ cứng lung lay"
   },
   "Wobbly windows": {
-    "Wobbly windows": ""
+    "Wobbly windows": "Cửa sổ lung lay"
   },
   "Word processor": {
-    "Word processor": ""
+    "Word processor": "Trình soạn thảo văn bản"
   },
   "Working directory": {
-    "Working directory": ""
+    "Working directory": "Thư mục làm việc"
   },
   "Working...": {
     "Working...": "Đang xử lý..."
   },
   "Works here": {
-    "Works here": ""
+    "Works here": "Chạy được ở đây"
   },
   "Works in every submap": {
-    "Works in every submap": ""
+    "Works in every submap": "Hoạt động trong mọi submap"
   },
   "Workspace %1": {
     "Workspace %1": "workspace %1"
@@ -10020,7 +10068,7 @@
     "Workspace Switch": "Chuyển đổi workspace"
   },
   "Workspace back and forth": {
-    "Workspace back and forth": ""
+    "Workspace back and forth": "Workspace qua lại"
   },
   "Workspace name": {
     "Workspace name": "Tên không gian làm việc"
@@ -10035,13 +10083,13 @@
     "Wrap the app command. %command% is replaced with the actual executable": "Bọc lệnh ứng dụng. %command% được thay bằng tệp thực thi thực tế"
   },
   "Write cache": {
-    "Write cache": ""
+    "Write cache": "Cache ghi"
   },
   "Writes to your files": {
-    "Writes to your files": ""
+    "Writes to your files": "Ghi vào các tệp của bạn"
   },
   "Written total": {
-    "Written total": ""
+    "Written total": "Tổng đã ghi"
   },
   "X axis": {
     "X axis": "Trục X"
@@ -10050,7 +10098,7 @@
     "X-Ray": "X-Ray"
   },
   "XDG tag": {
-    "XDG tag": ""
+    "XDG tag": "Tag XDG"
   },
   "XKB options": {
     "XKB options": "Tùy chọn XKB"
@@ -10068,7 +10116,7 @@
     "Y axis": "Trục Y"
   },
   "Yellow": {
-    "Yellow": ""
+    "Yellow": "Vàng"
   },
   "Yes": {
     "Yes": "Có"
@@ -10092,10 +10140,10 @@
     "You're all caught up": "Bạn đã bắt kịp tất cả"
   },
   "Your compositor does not support ext-background blur": {
-    "Your compositor does not support ext-background blur": ""
+    "Your compositor does not support ext-background blur": "Compositor của bạn không hỗ trợ làm mờ ext-background"
   },
   "Your greeter slot and any cache links to your home are removed. Administrator access may be required. Set up links them again.": {
-    "Your greeter slot and any cache links to your home are removed. Administrator access may be required. Set up links them again.": ""
+    "Your greeter slot and any cache links to your home are removed. Administrator access may be required. Set up links them again.": "Slot greeter của bạn và mọi liên kết cache tới thư mục home sẽ bị xóa. Có thể cần quyền quản trị viên. Nhấn Thiết lập để liên kết lại."
   },
   "Your hotspot is running.": {
     "Your hotspot is running.": "Điểm nóng của bạn đang chạy."
@@ -10104,13 +10152,13 @@
     "Your hotspot profile is saved and ready to start.": "Hồ sơ điểm nóng của bạn đã được lưu và sẵn sàng bắt đầu."
   },
   "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": {
-    "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": ""
+    "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": "Bố cục bàn phím của bạn đặt %1 ở trên mức đầu tiên nên bind này sẽ không bao giờ kích hoạt. Hãy chọn phím mà bố cục có thể gõ được mà không cần lớp phụ."
   },
   "Your system is up to date!": {
     "Your system is up to date!": "Hệ thống của bạn đã được cập nhật!"
   },
   "Zombie": {
-    "Zombie": ""
+    "Zombie": "Zombie"
   },
   "adjective, printer state": {
     "Idle": "Nghỉ chạy"
@@ -10122,7 +10170,7 @@
     "Daily": "Hàng ngày"
   },
   "and %1 more": {
-    "and %1 more": ""
+    "and %1 more": "và %1 mục nữa"
   },
   "attached": {
     "attached": "đã đính kèm"
@@ -10152,7 +10200,7 @@
     "checked just now": "kiểm tra vừa xong"
   },
   "copy link": {
-    "copy link": ""
+    "copy link": "sao chép liên kết"
   },
   "deprecated": {
     "deprecated": "không dùng nữa"
@@ -10170,10 +10218,10 @@
     "Normal": "Bình thường"
   },
   "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural": {
-    "%1 days": "",
-    "%1 hours": "",
-    "%1 minutes": "",
-    "%1 seconds": ""
+    "%1 days": "%1 ngày",
+    "%1 hours": "%1 giờ",
+    "%1 minutes": "%1 phút",
+    "%1 seconds": "%1 giây"
   },
   "e.g. /usr/bin/my-script --flag": {
     "e.g. /usr/bin/my-script --flag": "vd. /usr/bin/my-script --flag"
@@ -10200,19 +10248,22 @@
     "e.g., scratch, /^tmp_.*/, build": "vd: scratch, /^tmp_.*/, build"
   },
   "efibootmgr failed": {
-    "efibootmgr failed": ""
+    "efibootmgr failed": "efibootmgr thất bại"
   },
   "expires in %1": {
-    "expires in %1": ""
+    "expires in %1": "hết hạn sau %1"
   },
   "ext": {
     "ext": "ext"
+  },
+  "fcitx5 input methods, keybinds, behavior": {
+    "fcitx5 input methods, keybinds, behavior": ""
   },
   "featured": {
     "featured": "đặc sắc"
   },
   "greetd is not using the DMS greeter yet.": {
-    "greetd is not using the DMS greeter yet.": ""
+    "greetd is not using the DMS greeter yet.": "greetd chưa dùng greeter của DMS."
   },
   "keyboard tab key name": {
     "Tab": "Tab"
@@ -10245,7 +10296,7 @@
     "mangowc GitHub": "GitHub mangowc"
   },
   "missing program": {
-    "Requires %1": ""
+    "Requires %1": "Yêu cầu %1"
   },
   "ms": {
     "ms": "ms"
@@ -10257,7 +10308,7 @@
     "Open": "Mở"
   },
   "new": {
-    "new": ""
+    "new": "mới"
   },
   "niri GitHub": {
     "niri GitHub": "GitHub niri"
@@ -10281,7 +10332,7 @@
     "Override": "Ghi đè"
   },
   "noun, overflow button position before the first widget": {
-    "Start": ""
+    "Start": "Đầu"
   },
   "now": {
     "now": "bây giờ"
@@ -10290,16 +10341,13 @@
     "official": "chính tức"
   },
   "on %1": {
-    "on %1": ""
+    "on %1": "trên %1"
   },
   "power-profiles-daemon not available": {
     "power-profiles-daemon not available": "power-profiles-daemon không khả dụng"
   },
   "primary network connection label": {
     "Primary": "Chính"
-  },
-  "pt": {
-    "pt": "điểm"
   },
   "px": {
     "px": "px"
@@ -10314,7 +10362,7 @@
     "remote": "từ xa"
   },
   "report a problem": {
-    "report a problem": ""
+    "report a problem": "báo cáo sự cố"
   },
   "reviewed": {
     "reviewed": "đã xem xét"
@@ -10344,7 +10392,7 @@
     "up": "lên"
   },
   "updated": {
-    "updated": ""
+    "updated": "đã cập nhật"
   },
   "useradd failed (exit %1)": {
     "useradd failed (exit %1)": "useradd thất bại (thoát %1)"

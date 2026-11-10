@@ -23,11 +23,8 @@
   "%1 Startup Failed": {
     "%1 Startup Failed": "הפעלת %1 נכשלה"
   },
-  "%1 VRAM": {
-    "%1 VRAM": ""
-  },
   "%1 active": {
-    "%1 active": ""
+    "%1 active": "%1 פעילים"
   },
   "%1 active session": {
     "%1 active session": "%1 הפעלה פעילה"
@@ -69,7 +66,7 @@
     "%1 connected": "%1 מחובר/ים"
   },
   "%1 cores, %2 threads": {
-    "%1 cores, %2 threads": ""
+    "%1 cores, %2 threads": "%1 ליבות, %2 תהליכונים"
   },
   "%1 day": {
     "%1 day": "יום אחד"
@@ -90,7 +87,7 @@
     "%1 displays": "%1 מסכים"
   },
   "%1 errors, %2 warnings": {
-    "%1 errors, %2 warnings": ""
+    "%1 errors, %2 warnings": "%1 שגיאות, %2 אזהרות"
   },
   "%1 features": {
     "%1 features": "%1 תכונות"
@@ -147,7 +144,7 @@
     "%1 jobs": "%1 עבודות"
   },
   "%1 keeps your desktop running. Ending it will likely break your session. If it misbehaves, restarting it is the safer fix.": {
-    "%1 keeps your desktop running. Ending it will likely break your session. If it misbehaves, restarting it is the safer fix.": ""
+    "%1 keeps your desktop running. Ending it will likely break your session. If it misbehaves, restarting it is the safer fix.": "%1 שומר על שולחן העבודה שלך פעיל. סיום שלו כנראה ישבש את ההפעלה שלך. אם הוא אינו פועל כראוי, הפעלה שלו מחדש היא הפתרון הבטוח יותר."
   },
   "%1 limit reached": {
     "%1 limit reached": "הגעת למגבלה של %1"
@@ -183,7 +180,7 @@
     "%1 notifications": "%1 התראות"
   },
   "%1 of %2 used": {
-    "%1 of %2 used": ""
+    "%1 of %2 used": "נעשה שימוש ב%1 מתוך %2"
   },
   "%1 online": {
     "%1 online": "%1 מקוונים"
@@ -210,10 +207,10 @@
     "%1 printers": "%1 מדפסות"
   },
   "%1 process": {
-    "%1 process": ""
+    "%1 process": "תהליך %1"
   },
   "%1 processes": {
-    "%1 processes": ""
+    "%1 processes": "%1 תהליכים"
   },
   "%1 procs": {
     "%1 procs": "%1 תהליכים"
@@ -237,7 +234,7 @@
     "%1 updates": "%1 עדכונים"
   },
   "%1 used": {
-    "%1 used": ""
+    "%1 used": "%1 בשימוש"
   },
   "%1 variants": {
     "%1 variants": "%1 גרסאות"
@@ -261,13 +258,13 @@
     "%1 windows": "%1 חלונות"
   },
   "%1 years": {
-    "%1 years": ""
+    "%1 years": "%1 שנים"
   },
   "%1: %2": {
     "%1: %2": "%1: %2"
   },
   "%1d ago": {
-    "%1d ago": ""
+    "%1d ago": "לפני %1 ימים"
   },
   "%1h": {
     "%1h": "%1 ש׳"
@@ -276,7 +273,7 @@
     "%1h %2m": "%1 שעות ו-%2 דקות"
   },
   "%1h ago": {
-    "%1h ago": ""
+    "%1h ago": "לפני %1 שעות"
   },
   "%1m": {
     "%1m": "%1 דקות"
@@ -300,10 +297,10 @@
     "+%1 conditions": "+%1 תנאים"
   },
   "0 stops the animation and saves GPU": {
-    "0 stops the animation and saves GPU": ""
+    "0 stops the animation and saves GPU": "0 עוצר את ההנפשה וחוסך שימוש בGPU"
   },
   "1 hour before": {
-    "1 hour before": ""
+    "1 hour before": "שעה אחת לפני"
   },
   "1 notification": {
     "1 notification": "התראה אחת"
@@ -341,8 +338,11 @@
   "A notification must match every condition": {
     "A notification must match every condition": "התראה חייבת להתאים לכל התנאים"
   },
+  "A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.": {
+    "A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.": ""
+  },
   "A tiled or fullscreen window dragged into floating centers on the cursor": {
-    "A tiled or fullscreen window dragged into floating centers on the cursor": ""
+    "A tiled or fullscreen window dragged into floating centers on the cursor": "חלון באריחים או במסך מלא שנגרר למצב צף ממורכז על הסמן"
   },
   "A user with that name already exists.": {
     "A user with that name already exists.": "כבר קיים משתמש/ת עם השם זה."
@@ -366,7 +366,7 @@
     "About": "אודות"
   },
   "Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.": {
-    "Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.": ""
+    "Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.": "נתיב מוחלט או נתיב ~/ לקובץ מפת מקשים בפורמט .xkb. דורס את הפריסות והווריאציות שלמעלה."
   },
   "Acceleration profile": {
     "Acceleration profile": "פרופיל האצה"
@@ -376,9 +376,6 @@
   },
   "Accept jobs": {
     "Accept jobs": "קבל/י עבודות"
-  },
-  "Accept reviewed changes": {
-    "Accept reviewed changes": "קבל/י את השינויים שנבדקו"
   },
   "Accepting": {
     "Accepting": "מקבלת עבודות"
@@ -410,6 +407,9 @@
   "Activate Greeter": {
     "Activate Greeter": "הפעל/י את מסך ההתחברות"
   },
+  "Activate input method": {
+    "Activate input method": ""
+  },
   "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.": {
     "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.": "האם להפעיל את מסך ההתחברות של DMS? מסוף ייפתח לאימות עם sudo. הרץ/י את הסנכרון לאחר ההפעלה כדי להחיל את ההגדרות שלך."
   },
@@ -421,6 +421,9 @@
   },
   "Active VPN": {
     "Active VPN": "VPN פעיל"
+  },
+  "Active by default": {
+    "Active by default": ""
   },
   "Active color": {
     "Active color": "צבע פעיל"
@@ -475,6 +478,9 @@
   },
   "Add entry": {
     "Add entry": "הוסף/י רשומה"
+  },
+  "Add input method": {
+    "Add input method": ""
   },
   "Add location": {
     "Add location": "הוסף/י מיקום"
@@ -537,13 +543,13 @@
     "Adds them to the %1 group so they can use sudo": "מוסיף את המשתמש/ת לקבוצה %1 כדי לאפשר שימוש בsudo"
   },
   "Adjustment": {
-    "Adjustment": ""
+    "Adjustment": "התאמה"
   },
   "Administrator access is required. Press Apply changes in Settings → Greeter.": {
     "Administrator access is required. Press Apply changes in Settings → Greeter.": "נדרשות הרשאות של מנהל מערכת. לחץ/י על ״החלת שינויים״ בהגדרות ← מסך ההתחברות."
   },
   "Advance when a video ends": {
-    "Advance when a video ends": ""
+    "Advance when a video ends": "מעבר כשהסרטון מסתיים"
   },
   "Advanced": {
     "Advanced": "מתקדם"
@@ -615,7 +621,7 @@
     "Allow in Do Not Disturb": "אפשר/י במצב ״נא לא להפריע״"
   },
   "Allowed cores": {
-    "Allowed cores": ""
+    "Allowed cores": "ליבות מותרות"
   },
   "Already on that session": {
     "Already on that session": "כבר בהפעלה זו"
@@ -636,7 +642,7 @@
     "Alt + Shift": "Alt + Shift"
   },
   "Alt + Shift shortcuts in apps and keybinds stop working.": {
-    "Alt + Shift shortcuts in apps and keybinds stop working.": ""
+    "Alt + Shift shortcuts in apps and keybinds stop working.": "קיצורי Alt + Shift באפליקציות ובקיצורי מקלדת מפסיקים לעבוד."
   },
   "Alternative (OR)": {
     "Alternative (OR)": "חלופי (OR)"
@@ -696,16 +702,13 @@
     "Animations": "אנימציות"
   },
   "Anonymous": {
-    "Anonymous": ""
+    "Anonymous": "אנונימי"
   },
   "Anonymous Identity": {
     "Anonymous Identity": "זהות אנונימית"
   },
   "Anonymous Identity (optional)": {
     "Anonymous Identity (optional)": "זהות אנונימית (אופציונלי)"
-  },
-  "Another Aqueous operation is in progress.": {
-    "Another Aqueous operation is in progress.": "פעולת Aqueous אחרת כבר מתבצעת."
   },
   "Any window": {
     "Any window": "כל חלון שהוא"
@@ -815,12 +818,6 @@
   "Apps with notification popups muted. Unmute or delete to remove.": {
     "Apps with notification popups muted. Unmute or delete to remove.": "אפליקציות עם חלונות קופצים של התראות מושתקות. בטל/י השתקה או מחק/י להסרה."
   },
-  "Aqueous cursor": {
-    "Aqueous cursor": "סמן Aqueous"
-  },
-  "Aqueous typography": {
-    "Aqueous typography": "טיפוגרפיית Aqueous"
-  },
   "Arc extender": {
     "Arc extender": "מרחיב הקשתות"
   },
@@ -843,7 +840,7 @@
     "Artwork": "עטיפת אלבום"
   },
   "Asleep": {
-    "Asleep": ""
+    "Asleep": "במצב שינה"
   },
   "At least one output must remain enabled": {
     "At least one output must remain enabled": "לפחות פלט אחד חייב להישאר מופעל"
@@ -1056,7 +1053,7 @@
     "Avatar ring": "טבעת תמונת הפרופיל"
   },
   "BIOS": {
-    "BIOS": ""
+    "BIOS": "BIOS"
   },
   "Backend": {
     "Backend": "Backend"
@@ -1131,7 +1128,7 @@
     "Bars": "סרגלים"
   },
   "Base clock": {
-    "Base clock": ""
+    "Base clock": "תדר בסיס"
   },
   "Battery": {
     "Battery": "סוללה"
@@ -1159,6 +1156,9 @@
   },
   "Behavior": {
     "Behavior": "התנהגות"
+  },
+  "Bento style only": {
+    "Bento style only": ""
   },
   "Bind the %1 IPC action in your compositor config.": {
     "Bind the %1 IPC action in your compositor config.": "קשר/י את פעולת הIPC %1 בהגדרת הקומפוזיטור שלך."
@@ -1215,7 +1215,7 @@
     "Blur against the wallpaper even with xray off": "טשטוש מול תמונת הרקע גם כאשר הרנטגן (xray) כבוי"
   },
   "Blur follows opacity": {
-    "Blur follows opacity": ""
+    "Blur follows opacity": "הטשטוש עוקב אחר השקיפות"
   },
   "Blur layer": {
     "Blur layer": "שכבת טשטוש"
@@ -1230,7 +1230,7 @@
     "Blurred surfaces show the wallpaper, not the windows beneath": "משטחים מטושטשים מציגים את תמונת הרקע, ולא את החלונות שמתחתיהם"
   },
   "Board": {
-    "Board": ""
+    "Board": "לוח אם"
   },
   "Body": {
     "Body": "גוף"
@@ -1241,8 +1241,14 @@
   "Body font size": {
     "Body font size": "גודל גופן של גוף ההודעה"
   },
+  "Bold": {
+    "Bold": ""
+  },
+  "Bold Italic": {
+    "Bold Italic": ""
+  },
   "Boot": {
-    "Boot": ""
+    "Boot": "אתחול"
   },
   "Boot entry changed. Remove it and add it again.": {
     "Boot entry changed. Remove it and add it again.": "רשומת האתחול השתנתה. הסר/י אותה והוסף/י אותה מחדש."
@@ -1266,7 +1272,7 @@
     "Both": "שניהם"
   },
   "Both Shift keys": {
-    "Both Shift keys": ""
+    "Both Shift keys": "שני מקשי Shift"
   },
   "Bottom": {
     "Bottom": "למטה"
@@ -1335,7 +1341,7 @@
     "Built-in plugins": "תוספים מובנים"
   },
   "Busy": {
-    "Busy": ""
+    "Busy": "עסוק"
   },
   "Button areas": {
     "Button areas": "אזורי כפתורים"
@@ -1356,7 +1362,7 @@
     "CPU temperature display": "תצוגת טמפרטורת CPU"
   },
   "CPU time": {
-    "CPU time": ""
+    "CPU time": "זמן CPU"
   },
   "CPU usage": {
     "CPU usage": "שימוש בCPU"
@@ -1383,10 +1389,10 @@
     "CUPS printers, jobs and classes": "מדפסות, עבודות ומחלקות של CUPS"
   },
   "Cable errors": {
-    "Cable errors": ""
+    "Cable errors": "שגיאות כבל"
   },
   "Cached": {
-    "Cached": ""
+    "Cached": "במטמון"
   },
   "Calendar": {
     "Calendar": "יומן"
@@ -1405,6 +1411,12 @@
   },
   "Canceled": {
     "Canceled": "בוטל"
+  },
+  "Candidate list": {
+    "Candidate list": ""
+  },
+  "Candidates per page": {
+    "Candidates per page": ""
   },
   "Cannot delete the only administrator": {
     "Cannot delete the only administrator": "לא ניתן למחוק את מנהל/ת המערכת היחיד/ה"
@@ -1439,6 +1451,9 @@
   "Caps lock": {
     "Caps lock": "Caps Lock"
   },
+  "Card backgrounds": {
+    "Card backgrounds": ""
+  },
   "Cards": {
     "Cards": "כרטיסים"
   },
@@ -1467,7 +1482,7 @@
     "Center Tiling": "ריצוף מרכזי"
   },
   "Center dragged windows": {
-    "Center dragged windows": ""
+    "Center dragged windows": "מרכוז חלונות שנגררים"
   },
   "Center section": {
     "Center section": "קטע אמצעי"
@@ -1494,7 +1509,7 @@
     "Channel": "ערוץ"
   },
   "Channels": {
-    "Channels": ""
+    "Channels": "ערוצים"
   },
   "Charge Limit Reached": {
     "Charge Limit Reached": "הגעה למגבלת הטעינה"
@@ -1518,7 +1533,7 @@
     "Chart": "תרשים"
   },
   "Chassis": {
-    "Chassis": ""
+    "Chassis": "מארז"
   },
   "Cheatsheet": {
     "Cheatsheet": "רשימת קיצורים"
@@ -1605,7 +1620,7 @@
     "Classes": "מחלקות"
   },
   "Classic": {
-    "Classic": ""
+    "Classic": "קלאסי"
   },
   "Clear All": {
     "Clear All": "ניקוי הכל"
@@ -1638,7 +1653,7 @@
     "Click Import to add a %1 or %2 file": "לחץ/י על ״ייבוא״ כדי להוסיף קובץ %1 או %2"
   },
   "Click action": {
-    "Click action": ""
+    "Click action": "פעולת לחיצה"
   },
   "Click actions": {
     "Click actions": "פעולות לחיצה"
@@ -1669,6 +1684,9 @@
   },
   "Clicking a window in a special workspace opens that workspace": {
     "Clicking a window in a special workspace opens that workspace": "לחיצה על חלון בסביבת עבודה מיוחדת פותחת את סביבת העבודה הזו"
+  },
+  "Clicking a workspace from another display moves it to the display of the bar you clicked": {
+    "Clicking a workspace from another display moves it to the display of the bar you clicked": ""
   },
   "Clicks on empty bar space reach the windows below": {
     "Clicks on empty bar space reach the windows below": "לחיצות על שטח ריק בסרגל מגיעות לחלונות שמתחתיו"
@@ -1731,7 +1749,7 @@
     "Codec switching is unavailable. WirePlumber wpexec was not found.": "החלפת קודק אינה זמינה. לא ניתן היה למצוא את WirePlumber wpexec."
   },
   "Codename": {
-    "Codename": ""
+    "Codename": "שם קוד"
   },
   "Collapse": {
     "Collapse": "כווץ/י"
@@ -1794,7 +1812,7 @@
     "Columns": "עמודות"
   },
   "Comfortable": {
-    "Comfortable": ""
+    "Comfortable": "נוח"
   },
   "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": {
     "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": "רשימה מופרדת בפסיקים של שמות פריסות. השאר/י ריק כדי להשתמש בהגדרות המקלדת של המערכת."
@@ -1812,7 +1830,7 @@
     "Commands": "פקודות"
   },
   "Committed": {
-    "Committed": ""
+    "Committed": "מוקצה"
   },
   "Community": {
     "Community": "קהילה"
@@ -1839,7 +1857,7 @@
     "Compositor and shell key bindings": "קיצורי מקשים של הקומפוזיטור והמעטפת"
   },
   "Compression": {
-    "Compression": ""
+    "Compression": "דחיסה"
   },
   "Config Format": {
     "Config Format": "פורמט ההגדרות"
@@ -1855,9 +1873,6 @@
   },
   "Configuration activated": {
     "Configuration activated": "התצורה הופעלה"
-  },
-  "Configuration changed. Refresh to continue.": {
-    "Configuration changed. Refresh to continue.": "התצורה השתנתה. רענן/י כדי להמשיך."
   },
   "Configuration will be preserved when this display reconnects": {
     "Configuration will be preserved when this display reconnects": "ההגדרות יישמרו כאשר מסך זה יתחבר מחדש"
@@ -1926,13 +1941,13 @@
     "Connecting...": "מתחבר..."
   },
   "Connection": {
-    "Connection": ""
+    "Connection": "חיבור"
   },
   "Connection failed": {
     "Connection failed": "החיבור נכשל"
   },
   "Connections": {
-    "Connections": ""
+    "Connections": "חיבורים"
   },
   "Connections and autoconnect": {
     "Connections and autoconnect": "חיבורים והתחברות אוטומטית"
@@ -1944,7 +1959,7 @@
     "Consumes the key only when a dispatcher runs": "המקש נצרך רק כאשר פעולת הקיצור מתבצעת"
   },
   "Container": {
-    "Container": ""
+    "Container": "מיכל"
   },
   "Container saturation": {
     "Container saturation": "רוויית המיכל"
@@ -1956,7 +1971,7 @@
     "Content": "תוכן"
   },
   "Context switches": {
-    "Context switches": ""
+    "Context switches": "החלפות הקשר"
   },
   "Contrast": {
     "Contrast": "ניגודיות"
@@ -1968,7 +1983,7 @@
     "Control Center": "מרכז הבקרה"
   },
   "Control group": {
-    "Control group": ""
+    "Control group": "קבוצת בקרה"
   },
   "Controls": {
     "Controls": "פקדי ניגון"
@@ -1980,7 +1995,7 @@
     "Convert to DMS": "המר/י לDMS"
   },
   "Convertible": {
-    "Convertible": ""
+    "Convertible": "מחשב נייד מתקפל"
   },
   "Cooldown": {
     "Cooldown": "זמן המתנה"
@@ -2016,19 +2031,19 @@
     "Copy Text": "העתק/י טקסט"
   },
   "Copy report": {
-    "Copy report": ""
+    "Copy report": "העתק/י דוח"
   },
   "Copy summary": {
-    "Copy summary": ""
+    "Copy summary": "העתק/י סיכום"
   },
   "Copy target (%1)": {
     "Copy target (%1)": "העתק/י יעד (%1)"
   },
   "Core clock": {
-    "Core clock": ""
+    "Core clock": "תדר ליבה"
   },
   "Cores": {
-    "Cores": ""
+    "Cores": "ליבות"
   },
   "Corner radius": {
     "Corner radius": "רדיוס פינות"
@@ -2097,7 +2112,7 @@
     "Critical threshold": "סף קריטי"
   },
   "Critical warning": {
-    "Critical warning": ""
+    "Critical warning": "אזהרה קריטית"
   },
   "Ctrl+%1 is used for password editing": {
     "Ctrl+%1 is used for password editing": "הקיצור Ctrl+%1 משמש לעריכת סיסמה"
@@ -2118,7 +2133,7 @@
     "Current display": "המסך הנוכחי"
   },
   "Current pending sectors": {
-    "Current pending sectors": ""
+    "Current pending sectors": "סקטורים ממתינים נוכחיים"
   },
   "Current period": {
     "Current period": "הזמן הנוכחי"
@@ -2143,12 +2158,6 @@
   },
   "Cursor": {
     "Cursor": "סמן"
-  },
-  "Cursor Size": {
-    "Cursor Size": "גודל סמן העכבר"
-  },
-  "Cursor Theme": {
-    "Cursor Theme": "ערכת נושא לסמן העכבר"
   },
   "Cursor auto-hide timeout": {
     "Cursor auto-hide timeout": "זמן קצוב להסתרה אוטומטית של הסמן"
@@ -2229,7 +2238,7 @@
     "DMS chooser": "הבוחר של DMS"
   },
   "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.": {
-    "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.": "Dux Shell היא מעטפת שולחן עבודה מודרנית הניתנת להתאמה אישית נרחבת, שנראית נהדר כברירת מחדל בלי לוותר על החופש להתאים אותה לטעמך.<br/><br/>היא נבנתה באמצעות %1 ו%2 ומשלבת סרגלים, ווידג׳טים, בקרי מערכת ועוד לחוויית שולחן עבודה אחידה."
+    "DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.": "הפרויקט Dux Shell הוא מעטפת שולחן עבודה מודרנית הניתנת להתאמה אישית נרחבת, שנראית נהדר כברירת מחדל בלי לוותר על החופש להתאים אותה לטעמך.<br/><br/>היא נבנתה באמצעות %1 ו%2 ומשלבת סרגלים, ווידג׳טים, בקרי מערכת ועוד לחוויית שולחן עבודה אחידה."
   },
   "DMS out of date": {
     "DMS out of date": "הDMS לא מעודכן"
@@ -2249,11 +2258,8 @@
   "DMS stops drawing wallpapers on every display": {
     "DMS stops drawing wallpapers on every display": "DMS מפסיק להציג תמונות רקע בכל מסך"
   },
-  "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": {
-    "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": "DMS משתמש במשפחת הגופן, במשקל ובקנה המידה. צורת הגופן המדויקת, הנטייה, הרוחב וסרגלים עם קנה מידה נפרד עשויים להיות שונים."
-  },
   "Daemon": {
-    "Daemon": ""
+    "Daemon": "Daemon"
   },
   "Daily": {
     "Daily": "יומי"
@@ -2295,16 +2301,16 @@
     "Darkest": "הכי כהה"
   },
   "Dash card": {
-    "Dash card": ""
+    "Dash card": "כרטיס Dash"
   },
   "Dash tab": {
-    "Dash tab": ""
+    "Dash tab": "לשונית Dash"
   },
   "Dashboard": {
     "Dashboard": "לוח בקרה"
   },
   "Dashboard tabs": {
-    "Dashboard tabs": ""
+    "Dashboard tabs": "לשוניות לוח הבקרה"
   },
   "Date": {
     "Date": "תאריך"
@@ -2341,6 +2347,9 @@
   },
   "Daytime": {
     "Daytime": "יום"
+  },
+  "Deactivate input method": {
+    "Deactivate input method": ""
   },
   "Deck": {
     "Deck": "חפיסה"
@@ -2427,7 +2436,7 @@
     "Deletes all stored screen time": "מוחק את כל נתוני זמן המסך שנשמרו"
   },
   "Dense": {
-    "Dense": ""
+    "Dense": "צפוף"
   },
   "Dependencies & documentation": {
     "Dependencies & documentation": "חבילות נדרשות ודוקיומנטציה"
@@ -2445,7 +2454,7 @@
     "Description": "תיאור"
   },
   "Desktop": {
-    "Desktop": ""
+    "Desktop": "שולחן עבודה"
   },
   "Desktop Entry": {
     "Desktop Entry": "רשומה של שולחן העבודה"
@@ -2460,7 +2469,7 @@
     "Desktop widgets": "ווידג׳טים לשולחן העבודה"
   },
   "Details": {
-    "Details": ""
+    "Details": "פרטים"
   },
   "Details for \"%1": {
     "Details for \"%1\"": "פרטים עבור \"%1\""
@@ -2511,16 +2520,16 @@
     "Directory": "תיקייה"
   },
   "Disable": {
-    "Disable": ""
+    "Disable": "השבתה"
   },
   "Disable %1?": {
-    "Disable %1?": ""
+    "Disable %1?": "להשבית את %1?"
   },
   "Disable autoconnect": {
     "Disable autoconnect": "השבת/י התחברות אוטומטית"
   },
   "Disable card": {
-    "Disable card": ""
+    "Disable card": "השבתת כרטיס"
   },
   "Disable output": {
     "Disable output": "השבתת פלט תצוגה"
@@ -2538,10 +2547,10 @@
     "Disabled": "מושבת"
   },
   "Disabled (%1)": {
-    "Disabled (%1)": ""
+    "Disabled (%1)": "מושבתים (%1)"
   },
   "Disabled by Auto": {
-    "Disabled by Auto": ""
+    "Disabled by Auto": "מושבת על ידי מצב אוטומטי"
   },
   "Disabled by Click through": {
     "Disabled by Click through": "מושבת עקב לחיצה מבעד לווידג׳ט"
@@ -2563,9 +2572,6 @@
   },
   "Discard": {
     "Discard": "השלך/י"
-  },
-  "Discard draft and reload": {
-    "Discard draft and reload": "בטל/י את הטיוטה וטען/י מחדש"
   },
   "Discharging": {
     "Discharging": "מתרוקן"
@@ -2589,7 +2595,7 @@
     "Disk": "דיסק"
   },
   "Disk read": {
-    "Disk read": ""
+    "Disk read": "קריאת דיסק"
   },
   "Disk usage": {
     "Disk usage": "שימוש בדיסק"
@@ -2598,7 +2604,7 @@
     "Disk usage format": "תבנית שימוש בדיסק"
   },
   "Disk write": {
-    "Disk write": ""
+    "Disk write": "כתיבת דיסק"
   },
   "Disks": {
     "Disks": "דיסקים"
@@ -2721,7 +2727,7 @@
     "Don't change": "ללא שינוי"
   },
   "Don't dim unfocused apps": {
-    "Don't dim unfocused apps": ""
+    "Don't dim unfocused apps": "אין לעמעם אפליקציות שאינן ממוקדות"
   },
   "Door Open": {
     "Door Open": "דלת פתוחה"
@@ -2736,7 +2742,7 @@
     "Down": "למטה"
   },
   "Download": {
-    "Download": ""
+    "Download": "הורדה"
   },
   "Drag": {
     "Drag": "גרירה"
@@ -2907,7 +2913,7 @@
     "Education": "חינוך"
   },
   "Elevated": {
-    "Elevated": ""
+    "Elevated": "עם הרשאות מוגברות"
   },
   "Empty": {
     "Empty": "ריק"
@@ -2928,7 +2934,7 @@
     "Enable autoconnect": "הפעל/י התחברות אוטומטית"
   },
   "Enable card": {
-    "Enable card": ""
+    "Enable card": "הפעלת כרטיס"
   },
   "Enable plugin to access settings": {
     "Enable plugin to access settings": "הפעל/י את התוסף כדי לגשת להגדרות"
@@ -2952,7 +2958,7 @@
     "End must be after start": "זמן הסיום חייב להיות אחרי זמן ההתחלה"
   },
   "End process tree": {
-    "End process tree": ""
+    "End process tree": "סיום עץ התהליכים"
   },
   "Enter 6-digit passkey": {
     "Enter 6-digit passkey": "הזן/י מפתח גישה בן 6 ספרות"
@@ -3045,7 +3051,7 @@
     "Every hour": "כל שעה"
   },
   "Every output and input of this sound card turns off until you enable it again": {
-    "Every output and input of this sound card turns off until you enable it again": ""
+    "Every output and input of this sound card turns off until you enable it again": "כל פלט וקלט של כרטיס השמע הזה יכובו עד שתפעיל/י אותו מחדש"
   },
   "Exact": {
     "Exact": "מדויק"
@@ -3060,7 +3066,7 @@
     "Exclusive zone offset": "היסט האזור הבלעדי"
   },
   "Executable": {
-    "Executable": ""
+    "Executable": "קובץ הפעלה"
   },
   "Exit node": {
     "Exit node": "נקודת יציאה"
@@ -3149,6 +3155,9 @@
   "Failed to change display power": {
     "Failed to change display power": "שינוי מצב החשמל של המסך נכשל"
   },
+  "Failed to change priority of %1": {
+    "Failed to change priority of %1": ""
+  },
   "Failed to configure hotspot": {
     "Failed to configure hotspot": "הגדרת הנקודה החמה נכשלה"
   },
@@ -3236,9 +3245,6 @@
   "Failed to load clipboard entry": {
     "Failed to load clipboard entry": "טעינת הרשומה מלוח ההעתקה נכשלה"
   },
-  "Failed to load keybinds": {
-    "Failed to load keybinds": "טעינת קיצורי המקשים נכשלה"
-  },
   "Failed to load settings": {
     "Failed to load settings": "טעינת ההגדרות נכשלה"
   },
@@ -3247,6 +3253,9 @@
   },
   "Failed to parse %1": {
     "Failed to parse %1": "פענוח %1 נכשל"
+  },
+  "Failed to pause %1": {
+    "Failed to pause %1": ""
   },
   "Failed to pause printer": {
     "Failed to pause printer": "השהיית המדפסת נכשלה"
@@ -3261,7 +3270,7 @@
     "Failed to read theme file: %1": "קריאת קובץ ערכת הנושא נכשלה: %1"
   },
   "Failed to reboot to firmware setup": {
-    "Failed to reboot to firmware setup": ""
+    "Failed to reboot to firmware setup": "ההפעלה מחדש להגדרות הקושחה נכשלה"
   },
   "Failed to reload plugin: %1": {
     "Failed to reload plugin: %1": "טעינת התוסף מחדש נכשלה: %1"
@@ -3276,13 +3285,16 @@
     "Failed to remove keybind": "הסרת קיצור המקלדת נכשלה"
   },
   "Failed to restart %1": {
-    "Failed to restart %1": ""
+    "Failed to restart %1": "ההפעלה מחדש של %1 נכשלה"
   },
   "Failed to restart audio system": {
     "Failed to restart audio system": "הפעלת מערכת השמע מחדש נכשלה"
   },
   "Failed to restart job": {
     "Failed to restart job": "הפעלת העבודה מחדש נכשלה"
+  },
+  "Failed to resume %1": {
+    "Failed to resume %1": ""
   },
   "Failed to resume printer": {
     "Failed to resume printer": "המשך פעולת המדפסת נכשל"
@@ -3357,7 +3369,7 @@
     "Failed to toggle cellular": "הפעלת/השבתת הסלולר נכשלה"
   },
   "Failed to unlock": {
-    "Failed to unlock": ""
+    "Failed to unlock": "פתיחת הנעילה נכשלה"
   },
   "Failed to unpin entry": {
     "Failed to unpin entry": "ביטול הצמדת הרשומה נכשל"
@@ -3393,7 +3405,7 @@
     "Family": "משפחת הגופן"
   },
   "Fan": {
-    "Fan": ""
+    "Fan": "מאוורר"
   },
   "Featured plugin": {
     "Featured plugin": "תוסף מומלץ"
@@ -3423,7 +3435,7 @@
     "File the command writes; leave empty to read stdout": "הקובץ שאליו הפקודה כותבת; השאר/י ריק כדי לקרוא מstdout"
   },
   "File-backed": {
-    "File-backed": ""
+    "File-backed": "מגובה בקובץ"
   },
   "Files": {
     "Files": "קבצים"
@@ -3483,10 +3495,10 @@
     "Fires with any modifiers held": "מופעל עם כל צירוף של מקשי שינוי לחוצים"
   },
   "Firmware": {
-    "Firmware": ""
+    "Firmware": "קושחה"
   },
   "Firmware setup": {
-    "Firmware setup": ""
+    "Firmware setup": "הגדרות קושחה"
   },
   "First Time Setup": {
     "First Time Setup": "התקנה ראשונית"
@@ -3508,6 +3520,9 @@
   },
   "Flat": {
     "Flat": "שטוח"
+  },
+  "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.": {
+    "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.": ""
   },
   "Flipped": {
     "Flipped": "הפוך"
@@ -3648,13 +3663,13 @@
     "For %1": "למשך %1"
   },
   "For 1 hour": {
-    "For 1 hour": ""
+    "For 1 hour": "למשך שעה אחת"
   },
   "For you": {
     "For you": "בשבילך"
   },
   "Force": {
-    "Force": ""
+    "Force": "כפייה"
   },
   "Force HDR": {
     "Force HDR": "אלץ/י HDR"
@@ -3669,7 +3684,7 @@
     "Force padding": "כפיית ריווח פנימי"
   },
   "Force quit": {
-    "Force quit": ""
+    "Force quit": "סגירה כפויה"
   },
   "Force split": {
     "Force split": "כפה/י פיצול"
@@ -3705,7 +3720,7 @@
     "Forgot network %1": "נשכחה הרשת %1"
   },
   "Form factor": {
-    "Form factor": ""
+    "Form factor": "תצורה פיזית"
   },
   "Format": {
     "Format": "תבנית"
@@ -3744,7 +3759,7 @@
     "Full": "מלא"
   },
   "Full SMART report": {
-    "Full SMART report": ""
+    "Full SMART report": "דוח SMART מלא"
   },
   "Full content": {
     "Full content": "תוכן מלא"
@@ -3783,7 +3798,7 @@
     "GPU Monitoring": "ניטור GPU"
   },
   "GPU hotspot temperature": {
-    "Hotspot": ""
+    "Hotspot": "נקודה חמה"
   },
   "GPU temperature": {
     "GPU temperature": "טמפרטורת GPU"
@@ -3798,7 +3813,7 @@
     "GTK colors applied successfully": "צבעי GTK הוחלו בהצלחה"
   },
   "GTK theme": {
-    "GTK theme": ""
+    "GTK theme": "ערכת נושא GTK"
   },
   "GTK, Qt, portal, matugen templates": {
     "GTK, Qt, portal, matugen templates": "GTK, Qt, פורטל ותבניות matugen"
@@ -3885,7 +3900,7 @@
     "Goth corners": "פינות גות׳יות"
   },
   "Governor": {
-    "Governor": ""
+    "Governor": "Governor"
   },
   "Grant": {
     "Grant": "הענק/י"
@@ -3906,7 +3921,7 @@
     "Graphics": "גרפיקה"
   },
   "Graphics driver": {
-    "Graphics driver": ""
+    "Graphics driver": "מנהל התקן גרפי"
   },
   "Green": {
     "Green": "ירוק"
@@ -3972,13 +3987,13 @@
     "HTML copied to clipboard": "HTML הועתק ללוח ההעתקה"
   },
   "Hardware": {
-    "Hardware": ""
+    "Hardware": "חומרה"
   },
   "Haze": {
     "Haze": "אובך"
   },
   "Head load cycles": {
-    "Head load cycles": ""
+    "Head load cycles": "מחזורי טעינת ראש"
   },
   "Health": {
     "Health": "בריאות"
@@ -3987,7 +4002,7 @@
     "Health %1": "בריאות הסוללה %1"
   },
   "Healthy": {
-    "Healthy": ""
+    "Healthy": "תקין"
   },
   "Heat shimmer": {
     "Heat shimmer": "ריצוד חום"
@@ -4041,7 +4056,7 @@
     "Hide App": "הסתר/י אפליקציה"
   },
   "Hide bar on fullscreen": {
-    "Hide bar on fullscreen": ""
+    "Hide bar on fullscreen": "הסתרת הסרגל במסך מלא"
   },
   "Hide cursor on touch": {
     "Hide cursor on touch": "הסתרת הסמן במגע"
@@ -4098,7 +4113,10 @@
     "Higher providers take priority. Turn all off to use local lyrics only.": "ספקים שמופיעים גבוה יותר מקבלים עדיפות. כבה/י את כולם כדי להשתמש רק במילות שירים מקומיות."
   },
   "Higher values flex more smoothly and cost more GPU": {
-    "Higher values flex more smoothly and cost more GPU": ""
+    "Higher values flex more smoothly and cost more GPU": "ערכים גבוהים יותר יוצרים גמישות חלקה יותר וצורכים יותר GPU"
+  },
+  "Highest": {
+    "Highest": ""
   },
   "Highlight focused app": {
     "Highlight focused app": "הדגשת האפליקציה הממוקדת"
@@ -4203,10 +4221,10 @@
     "I Understand": "הבנתי"
   },
   "I/O priority": {
-    "I/O priority": ""
+    "I/O priority": "עדיפות I/O"
   },
   "I/O scheduler": {
-    "I/O scheduler": ""
+    "I/O scheduler": "מתזמן I/O"
   },
   "ICC Error": {
     "ICC Error": "שגיאת ICC"
@@ -4227,7 +4245,7 @@
     "IP sharing setup failed. Check that %1 is installed.": "הגדרת שיתוף IP נכשלה. ודא/י שהחבילה %1 מותקנת."
   },
   "IPv6": {
-    "IPv6": ""
+    "IPv6": "IPv6"
   },
   "ISO date": {
     "ISO date": "תאריך ISO"
@@ -4278,7 +4296,7 @@
     "If autostart app icons don't appear in the system tray, generate a systemd override to ensure DMS starts before autostart apps": "אם סמלי אפליקציות בהפעלה אוטומטית אינם מופיעים במגש המערכת, צור/צרי דריסת systemd כדי להבטיח שDMS מופעל לפני אפליקציות אלו"
   },
   "Ignore": {
-    "Ignore": ""
+    "Ignore": "התעלמות"
   },
   "Ignore Completely": {
     "Ignore Completely": "התעלם/י לחלוטין"
@@ -4386,7 +4404,7 @@
     "Inhibitable": "ניתן לעיכוב"
   },
   "Init": {
-    "Init": ""
+    "Init": "Init"
   },
   "Initial class": {
     "Initial class": "מחלקה התחלתית"
@@ -4415,6 +4433,9 @@
   "Input": {
     "Input": "קלט"
   },
+  "Input Method Framework": {
+    "Input Method Framework": ""
+  },
   "Input Volume": {
     "Input Volume": "עוצמת קלט"
   },
@@ -4428,7 +4449,7 @@
     "Input devices": "התקני קלט"
   },
   "Input method": {
-    "Input method": ""
+    "Input method": "שיטת קלט"
   },
   "Insert your security key...": {
     "Insert your security key...": "הכנס/י את מפתח האבטחה שלך..."
@@ -4458,7 +4479,7 @@
     "Install plugin '%1' from the DMS registry?": "להתקין את התוסף '%1' מהמאגר של DMS?"
   },
   "Install smartmontools": {
-    "Install smartmontools": ""
+    "Install smartmontools": "התקנת smartmontools"
   },
   "Install system updates?": {
     "Install system updates?": "להתקין עדכוני מערכת?"
@@ -4509,7 +4530,7 @@
     "Interface": "ממשק"
   },
   "Interface density": {
-    "Interface density": ""
+    "Interface density": "צפיפות הממשק"
   },
   "Interface style": {
     "Interface style": "סגנון ממשק"
@@ -4539,7 +4560,7 @@
     "Invalid wallpaper layout": "פריסת תמונת רקע לא תקינה"
   },
   "Inverse Surface": {
-    "Inverse Surface": ""
+    "Inverse Surface": "משטח הפוך"
   },
   "Iridescence": {
     "Iridescence": "ססגוניות"
@@ -4554,7 +4575,7 @@
     "Isolate displays": "בידוד מסכים"
   },
   "It runs in a terminal; restart it from there.": {
-    "It runs in a terminal; restart it from there.": ""
+    "It runs in a terminal; restart it from there.": "הוא פועל במסוף; הפעל/י אותו מחדש משם."
   },
   "Italic": {
     "Italic": "נטוי"
@@ -4584,7 +4605,7 @@
     "Keep clock with media": "שמור/י את השעון עם המדיה"
   },
   "Keep fullscreen on close": {
-    "Keep fullscreen on close": ""
+    "Keep fullscreen on close": "שמירת מסך מלא בסגירה"
   },
   "Keep in Bar": {
     "Keep in Bar": "השאר/י בסרגל"
@@ -4616,9 +4637,6 @@
   "Key combination": {
     "Key combination": "שילוב מקשים"
   },
-  "Keybindings changed. Refresh and review your edit before saving.": {
-    "Keybindings changed. Refresh and review your edit before saving.": "קיצורי המקשים השתנו. רענן/י ובדוק/בדקי את העריכה שלך לפני השמירה."
-  },
   "Keybinds": {
     "Keybinds": "קיצורי מקלדת"
   },
@@ -4641,13 +4659,13 @@
     "Kill Session": "סיום הפעלה"
   },
   "L1 cache": {
-    "L1 cache": ""
+    "L1 cache": "מטמון L1"
   },
   "L2 cache": {
-    "L2 cache": ""
+    "L2 cache": "מטמון L2"
   },
   "L3 cache": {
-    "L3 cache": ""
+    "L3 cache": "מטמון L3"
   },
   "LED device": {
     "LED device": "התקן LED"
@@ -4671,7 +4689,7 @@
     "Lap detected": "זוהה שימוש על הברכיים"
   },
   "Laptop": {
-    "Laptop": ""
+    "Laptop": "מחשב נייד"
   },
   "Large": {
     "Large": "גדול"
@@ -4683,7 +4701,7 @@
     "Last commit %1": "הקומיט האחרון %1"
   },
   "Last core": {
-    "Last core": ""
+    "Last core": "ליבה אחרונה"
   },
   "Last hour": {
     "Last hour": "בשעה האחרונה"
@@ -4716,7 +4734,7 @@
     "Last modified": "שונה לאחרונה"
   },
   "Last self-test": {
-    "Last self-test": ""
+    "Last self-test": "בדיקה עצמית אחרונה"
   },
   "Last used on this screen": {
     "Last used on this screen": "האחרון שהיה בשימוש במסך זה"
@@ -4726,6 +4744,9 @@
   },
   "Launch": {
     "Launch": "הפעל/י"
+  },
+  "Launch new instance": {
+    "Launch new instance": ""
   },
   "Launch on dGPU": {
     "Launch on dGPU": "הפעל/י על dGPU"
@@ -4878,7 +4899,7 @@
     "List": "רשימה"
   },
   "Listening": {
-    "Listening": ""
+    "Listening": "בהאזנה"
   },
   "Listening from": {
     "Listening from": "מושמע מתוך"
@@ -4917,7 +4938,7 @@
     "Local Weather": "מזג אוויר מקומי"
   },
   "Local network": {
-    "Local network": ""
+    "Local network": "רשת מקומית"
   },
   "Locale": {
     "Locale": "שפה ואזור"
@@ -4989,10 +5010,13 @@
     "Lower display refresh rate on battery": "הפחתת קצב הרענון של התצוגה בעת שימוש בסוללה"
   },
   "Lower only if a mode fails for lack of bandwidth": {
-    "Lower only if a mode fails for lack of bandwidth": ""
+    "Lower only if a mode fails for lack of bandwidth": "הנמך/הנמיכי רק אם מצב נכשל בגלל חוסר ברוחב פס"
   },
   "Lower priorities move into overflow first": {
-    "Lower priorities move into overflow first": ""
+    "Lower priorities move into overflow first": "עדיפויות נמוכות עוברות לגלישה תחילה"
+  },
+  "Lowest": {
+    "Lowest": ""
   },
   "Lyrics": {
     "Lyrics": "מילות שיר"
@@ -5001,13 +5025,13 @@
     "Lyrics providers": "ספקי מילות שירים"
   },
   "MAC address": {
-    "MAC address": ""
+    "MAC address": "כתובת MAC"
   },
   "MIT License": {
     "MIT License": "רישיון MIT"
   },
   "MTU": {
-    "MTU": ""
+    "MTU": "MTU"
   },
   "Magnification": {
     "Magnification": "הגדלה"
@@ -5016,7 +5040,7 @@
     "Mail": "דואר"
   },
   "Major page faults": {
-    "Major page faults": ""
+    "Major page faults": "תקלות דף משמעותיות"
   },
   "Make admin": {
     "Make admin": "הפוך/הפכי למנהל/ת"
@@ -5031,7 +5055,7 @@
     "Managed by Nix": "מנוהל על ידי Nix"
   },
   "Managed by administrator policy": {
-    "Managed by administrator policy": ""
+    "Managed by administrator policy": "מנוהל על ידי מדיניות מנהל המערכת"
   },
   "Managed by the primary PAM source": {
     "Managed by the primary PAM source": "מנוהל על ידי מקור הPAM הראשי"
@@ -5073,7 +5097,7 @@
     "Mark incomplete": "סמן/י כלא הושלם"
   },
   "Mark urgent": {
-    "Mark urgent": ""
+    "Mark urgent": "סימון כדחוף"
   },
   "Marker Supply Empty": {
     "Marker Supply Empty": "אספקת צבע/טונר ריקה"
@@ -5139,7 +5163,7 @@
     "Matugen templates": "תבניות Matugen"
   },
   "Max %1": {
-    "Max %1": ""
+    "Max %1": "מקסימום %1"
   },
   "Max H": {
     "Max H": "גובה מקסימלי"
@@ -5151,10 +5175,10 @@
     "Max apps to show": "מספר מקסימלי של אפליקציות להצגה"
   },
   "Max bits per channel": {
-    "Max bits per channel": ""
+    "Max bits per channel": "מספר סיביות מרבי לערוץ"
   },
   "Max clock": {
-    "Max clock": ""
+    "Max clock": "תדר מרבי"
   },
   "Max edges": {
     "Max edges": "קצוות מקסימליים"
@@ -5217,7 +5241,7 @@
     "Media Needed": "נדרש נייר/מדיה"
   },
   "Media errors": {
-    "Media errors": ""
+    "Media errors": "שגיאות מדיה"
   },
   "Media playback": {
     "Media playback": "השמעת מדיה"
@@ -5235,10 +5259,10 @@
     "Memory": "זיכרון"
   },
   "Memory clock": {
-    "Memory clock": ""
+    "Memory clock": "תדר זיכרון"
   },
   "Memory controller": {
-    "Memory controller": ""
+    "Memory controller": "בקר זיכרון"
   },
   "Memory graph": {
     "Memory graph": "גרף לזיכרון"
@@ -5279,6 +5303,9 @@
   "Middle section": {
     "Middle section": "קטע אמצעי"
   },
+  "Middle-click action": {
+    "Middle-click action": ""
+  },
   "Min H": {
     "Min H": "גובה מינימלי"
   },
@@ -5286,7 +5313,7 @@
     "Min W": "רוחב מינימלי"
   },
   "Mini PC": {
-    "Mini PC": ""
+    "Mini PC": "מחשב Mini PC"
   },
   "Minimal": {
     "Minimal": "מינימלי"
@@ -5337,7 +5364,7 @@
     "Monitor": "מסך"
   },
   "Monitoring off": {
-    "Monitoring off": ""
+    "Monitoring off": "הניטור כבוי"
   },
   "Mono Audio": {
     "Mono Audio": "שמע מונו"
@@ -5352,7 +5379,7 @@
     "Monospace family": "משפחת גופן ברוחב קבוע"
   },
   "Monospace font": {
-    "Monospace font": ""
+    "Monospace font": "גופן ברוחב אחיד"
   },
   "Month": {
     "Month": "חודש"
@@ -5379,7 +5406,7 @@
     "More samples look smoother and cost more GPU": "יותר דגימות יוצרות תנועה חלקה יותר אך צורכות יותר משאבי GPU"
   },
   "More transparent areas get less blur": {
-    "More transparent areas get less blur": ""
+    "More transparent areas get less blur": "אזורים שקופים יותר מקבלים פחות טשטוש"
   },
   "More widgets": {
     "More widgets": "ווידג׳טים נוספים"
@@ -5414,6 +5441,9 @@
   "Mouse & touchpad": {
     "Mouse & touchpad": "עכבר ומשטח מגע"
   },
+  "Mouse behavior": {
+    "Mouse behavior": ""
+  },
   "Move out of scratchpad": {
     "Move out of scratchpad": "העבר/י אל מחוץ לScratchpad"
   },
@@ -5422,6 +5452,9 @@
   },
   "Move to scratchpad: %1": {
     "Move to scratchpad: %1": "העבר/י לScratchpad: %1"
+  },
+  "Move workspace to this display": {
+    "Move workspace to this display": ""
   },
   "Moves focus along with the column": {
     "Moves focus along with the column": "מעביר את המיקוד יחד עם העמודה"
@@ -5434,9 +5467,6 @@
   },
   "Multimedia": {
     "Multimedia": "מולטימדיה"
-  },
-  "Multiple bindings use the original shortcut. Resolve the duplicate bindings first.": {
-    "Multiple bindings use the original shortcut. Resolve the duplicate bindings first.": "מספר קיצורי מקשים משתמשים בקיצור המקורי. פתור/פתרי תחילה את הכפילויות."
   },
   "Multiplexers": {
     "Multiplexers": "מרבבי מסוף"
@@ -5594,14 +5624,23 @@
   "Next Transition": {
     "Next Transition": "המעבר הבא"
   },
+  "Next candidate": {
+    "Next candidate": ""
+  },
   "Next category": {
     "Next category": "הקטגוריה הבאה"
+  },
+  "Next group": {
+    "Next group": ""
+  },
+  "Next input method": {
+    "Next input method": ""
   },
   "Next page": {
     "Next page": "העמוד הבא"
   },
   "Nice": {
-    "Nice": ""
+    "Nice": "Nice"
   },
   "Night": {
     "Night": "לילה"
@@ -5975,9 +6014,6 @@
   "Normal": {
     "Normal": "רגיל"
   },
-  "Normal Font": {
-    "Normal Font": "גופן רגיל"
-  },
   "Normal Priority": {
     "Normal Priority": "עדיפות רגילה"
   },
@@ -6021,19 +6057,16 @@
     "Not linked": "לא מקושר"
   },
   "Not on click": {
-    "Not on click": ""
+    "Not on click": "לא בלחיצה"
   },
   "Not readable without privileges": {
-    "Not readable without privileges": ""
+    "Not readable without privileges": "לא ניתן לקריאה ללא הרשאות"
   },
   "Not set": {
     "Not set": "לא מוגדר"
   },
   "Not shown on this bar, so its section widgets stay hidden": {
     "Not shown on this bar, so its section widgets stay hidden": "אינו מוצג בסרגל זה, ולכן הווידג׳טים של המקטע שלו יישארו מוסתרים"
-  },
-  "Not synchronized": {
-    "Not synchronized": "לא מסונכרן"
   },
   "Notch": {
     "Notch": "מגרעת"
@@ -6096,7 +6129,7 @@
     "Num Lock at startup": "Num Lock בהפעלה"
   },
   "Num lock": {
-    "Num lock": ""
+    "Num lock": "Num Lock"
   },
   "Numeric (D/M)": {
     "Numeric (D/M)": "מספרי (D/M)"
@@ -6132,7 +6165,7 @@
     "Offline Report": "דו\"ח לא מקוון"
   },
   "Offline uncorrectable": {
-    "Offline uncorrectable": ""
+    "Offline uncorrectable": "שגיאות בלתי ניתנות לתיקון במצב לא מקוון"
   },
   "Older": {
     "Older": "ישן יותר"
@@ -6141,7 +6174,7 @@
     "On": "פועל"
   },
   "On activation": {
-    "On activation": ""
+    "On activation": "בעת הפעלה"
   },
   "On button down": {
     "On button down": "בלחיצה על כפתור"
@@ -6171,16 +6204,16 @@
     "Only continue if you recognize this server certificate fingerprint.": "המשך/י רק אם טביעת האצבע של אישור השרת הזה מוכרת לך."
   },
   "Only in groups": {
-    "Only in groups": ""
+    "Only in groups": "רק בקבוצות"
   },
   "Only on battery": {
     "Only on battery": "רק בעת שימוש בסוללה"
   },
   "Only outside groups": {
-    "Only outside groups": ""
+    "Only outside groups": "רק מחוץ לקבוצות"
   },
   "Only the main process of a system service can be restarted.": {
-    "Only the main process of a system service can be restarted.": ""
+    "Only the main process of a system service can be restarted.": "ניתן להפעיל מחדש רק את התהליך הראשי של שירות מערכת."
   },
   "Opacity": {
     "Opacity": "שקיפות"
@@ -6210,7 +6243,7 @@
     "Open delay": "עיכוב פתיחה"
   },
   "Open files": {
-    "Open files": ""
+    "Open files": "קבצים פתוחים"
   },
   "Open floating": {
     "Open floating": "פתיחה כחלון צף"
@@ -6261,7 +6294,7 @@
     "Opens without taking keyboard focus": "פתיחה ללא העברת המיקוד מהמקלדת"
   },
   "Operating system": {
-    "Operating system": ""
+    "Operating system": "מערכת הפעלה"
   },
   "Optional description": {
     "Optional description": "תיאור אופציונלי"
@@ -6277,6 +6310,9 @@
   },
   "Options": {
     "Options": "אפשרויות"
+  },
+  "Options of a fcitx5 plugin": {
+    "Options of a fcitx5 plugin": ""
   },
   "Options of one widget instance": {
     "Options of one widget instance": "אפשרויות של מופע ווידג׳ט אחד"
@@ -6296,9 +6332,6 @@
   "Original: %1": {
     "Original: %1": "מקורי: %1"
   },
-  "Original: %1\nCurrent: %2\nProposed: %3\nCurrent destination: %4": {
-    "Original: %1\nCurrent: %2\nProposed: %3\nCurrent destination: %4": "מקורי: %1\nנוכחי: %2\nמוצע: %3\nיעד נוכחי: %4"
-  },
   "Other": {
     "Other": "אחר"
   },
@@ -6309,7 +6342,7 @@
     "Other displays show a solid color for OLED burn-in protection": "מסכים אחרים מציגים צבע אחיד להגנה מפני צריבה ב-OLED"
   },
   "Out-of-memory score": {
-    "Out-of-memory score": ""
+    "Out-of-memory score": "ציון מחסור בזיכרון"
   },
   "Outer gap": {
     "Outer gap": "מרווח חיצוני"
@@ -6348,7 +6381,7 @@
     "Over fullscreen": "מעל מסך מלא"
   },
   "Overall": {
-    "Overall": ""
+    "Overall": "כולל"
   },
   "Overcast": {
     "Overcast": "מעונן"
@@ -6360,7 +6393,7 @@
     "Overflow button position": "מיקום כפתור הגלישה"
   },
   "Overflow priority": {
-    "Overflow priority": ""
+    "Overflow priority": "עדיפות גלישה"
   },
   "Overlapping": {
     "Overlapping": "חופף"
@@ -6390,7 +6423,7 @@
     "Overview": "סקירה כללית"
   },
   "Own share": {
-    "Own share": ""
+    "Own share": "חלק עצמי"
   },
   "Owner: %1": {
     "Owner: %1": "בעלים: %1"
@@ -6417,10 +6450,10 @@
     "Package name (e.g., docker)": "שם החבילה (לדוגמה docker)"
   },
   "Package repositories moved": {
-    "Package repositories moved": ""
+    "Package repositories moved": "מאגרי החבילות הועברו"
   },
   "Packages": {
-    "Packages": ""
+    "Packages": "חבילות"
   },
   "Pad": {
     "Pad": "ריפוד"
@@ -6429,7 +6462,10 @@
     "Padding": "ריווח פנימי"
   },
   "Page faults": {
-    "Page faults": ""
+    "Page faults": "תקלות דף"
+  },
+  "Paged grid": {
+    "Paged grid": ""
   },
   "Pair": {
     "Pair": "צימוד"
@@ -6471,16 +6507,13 @@
     "Parabolic": "פרבולי"
   },
   "Parent": {
-    "Parent": ""
+    "Parent": "תהליך אב"
   },
   "Parents": {
-    "Parents": ""
-  },
-  "Partially synchronized": {
-    "Partially synchronized": "מסונכרן חלקית"
+    "Parents": "תהליכי אב"
   },
   "Partition table": {
-    "Partition table": ""
+    "Partition table": "טבלת מחיצות"
   },
   "Partly Cloudy": {
     "Partly Cloudy": "מעונן חלקית"
@@ -6543,7 +6576,7 @@
     "Paused": "מושהה"
   },
   "Peak": {
-    "Peak": ""
+    "Peak": "שיא"
   },
   "Pending": {
     "Pending": "ממתין"
@@ -6555,10 +6588,10 @@
     "Pending Discharge": "ריקון ממתין"
   },
   "Per display": {
-    "Per display": ""
+    "Per display": "לכל מסך"
   },
   "Per thread": {
-    "Per thread": ""
+    "Per thread": "לכל תהליכון"
   },
   "Per window": {
     "Per window": "לכל חלון"
@@ -6615,10 +6648,10 @@
     "Pin to Dock": "נעץ/י בDock"
   },
   "Pinch": {
-    "Pinch": ""
+    "Pinch": "צביטה"
   },
   "Pinch sensitivity": {
-    "Pinch sensitivity": ""
+    "Pinch sensitivity": "רגישות צביטה"
   },
   "Pink": {
     "Pink": "ורוד"
@@ -6669,7 +6702,7 @@
     "Playing": "מתנגן"
   },
   "Playing audio": {
-    "Playing audio": ""
+    "Playing audio": "מנגן שמע"
   },
   "Please wait...": {
     "Please wait...": "אנא המתן/י..."
@@ -6685,9 +6718,6 @@
   },
   "Plugin Source Code": {
     "Plugin Source Code": "קוד המקור של התוסף"
-  },
-  "Plugin authors": {
-    "Plugin authors": "יוצרי התוספים"
   },
   "Plugin dependency missing": {
     "Plugin dependency missing": "חסרה חבילה נדרשת לתוסף"
@@ -6819,7 +6849,7 @@
     "Power Saver": "חיסכון בחשמל"
   },
   "Power limit": {
-    "Power limit": ""
+    "Power limit": "מגבלת הספק"
   },
   "Power menu": {
     "Power menu": "תפריט חשמל"
@@ -6843,7 +6873,7 @@
     "Power source": "מקור חשמל"
   },
   "Power-on time": {
-    "Power-on time": ""
+    "Power-on time": "זמן הפעלה מצטבר"
   },
   "Pre-release": {
     "Pre-release": "גרסה מקדימה"
@@ -6852,7 +6882,7 @@
     "Precipitation": "משקעים"
   },
   "Preempted": {
-    "Preempted": ""
+    "Preempted": "הופסק בכפייה"
   },
   "Preference": {
     "Preference": "העדפה"
@@ -6899,14 +6929,20 @@
   "Previous": {
     "Previous": "הקודם"
   },
+  "Previous candidate": {
+    "Previous candidate": ""
+  },
   "Previous category": {
     "Previous category": "הקטגוריה הקודמת"
   },
+  "Previous group": {
+    "Previous group": ""
+  },
+  "Previous input method": {
+    "Previous input method": ""
+  },
   "Previous page": {
     "Previous page": "העמוד הקודם"
-  },
-  "Previous: %1\nCurrent: %2": {
-    "Previous: %1\nCurrent: %2": "קודם: %1\nנוכחי: %2"
   },
   "Primary": {
     "Primary": "ראשי"
@@ -6960,7 +6996,7 @@
     "Private Key Password": "סיסמת מפתח פרטי"
   },
   "Process": {
-    "Process": ""
+    "Process": "תהליך"
   },
   "Process count": {
     "Process count": "מספר תהליכים"
@@ -6975,7 +7011,7 @@
     "Processing": "מעבד"
   },
   "Processor": {
-    "Processor": ""
+    "Processor": "מעבד"
   },
   "Profile": {
     "Profile": "פרופיל"
@@ -7044,7 +7080,7 @@
     "Qt colors applied successfully": "צבעי Qt הוחלו בהצלחה"
   },
   "Qt theme": {
-    "Qt theme": ""
+    "Qt theme": "ערכת נושא Qt"
   },
   "QtMultimedia is not available": {
     "QtMultimedia is not available": "QtMultimedia אינו זמין"
@@ -7056,7 +7092,7 @@
     "Quality": "איכות"
   },
   "Queue depth": {
-    "Queue depth": ""
+    "Queue depth": "עומק תור"
   },
   "Quick access to application launcher": {
     "Quick access to application launcher": "גישה מהירה למשגר האפליקציות"
@@ -7074,13 +7110,13 @@
     "Quick tiles": "אריחים מהירים"
   },
   "Quit": {
-    "Quit": ""
+    "Quit": "יציאה"
   },
   "Quit or reload": {
-    "Quit or reload": ""
+    "Quit or reload": "יציאה או טעינה מחדש"
   },
   "Quit or restart": {
-    "Quit or restart": ""
+    "Quit or restart": "יציאה או הפעלה מחדש"
   },
   "Radius": {
     "Radius": "רדיוס"
@@ -7116,10 +7152,10 @@
     "Read the blog post": "קריאת הפוסט בבלוג"
   },
   "Read total": {
-    "Read total": ""
+    "Read total": "סך הכל נקרא"
   },
   "Readings": {
-    "Readings": ""
+    "Readings": "מדידות"
   },
   "Reads audio devices and volume": {
     "Reads audio devices and volume": "קריאת התקני השמע ועוצמת השמע"
@@ -7143,7 +7179,7 @@
     "Ready": "מוכנה"
   },
   "Reallocated sectors": {
-    "Reallocated sectors": ""
+    "Reallocated sectors": "סקטורים שהוקצו מחדש"
   },
   "Reason": {
     "Reason": "סיבה"
@@ -7155,16 +7191,16 @@
     "Reboot recommended": "מומלץ להפעיל מחדש"
   },
   "Reboot targets": {
-    "Reboot targets": ""
+    "Reboot targets": "יעדי הפעלה מחדש"
   },
   "Reboot to %1": {
     "Reboot to %1": "הפעלה מחדש אל %1"
   },
   "Reboot to firmware setup": {
-    "Reboot to firmware setup": ""
+    "Reboot to firmware setup": "הפעלה מחדש להגדרות הקושחה"
   },
   "Received since boot": {
-    "Received since boot": ""
+    "Received since boot": "התקבל מאז האתחול"
   },
   "Recent": {
     "Recent": "אחרונים"
@@ -7208,6 +7244,9 @@
   "Registries": {
     "Registries": "מאגרים"
   },
+  "Regular": {
+    "Regular": ""
+  },
   "Reject jobs": {
     "Reject jobs": "דחה/י עבודות"
   },
@@ -7227,10 +7266,10 @@
     "Release to confirm": "שחרר/י כדי לאשר"
   },
   "Reliability": {
-    "Reliability": ""
+    "Reliability": "אמינות"
   },
   "Reload": {
-    "Reload": ""
+    "Reload": "טעינה מחדש"
   },
   "Reload From Disk": {
     "Reload From Disk": "טען/י מחדש מהדיסק"
@@ -7266,7 +7305,7 @@
     "Reminder": "תזכורת"
   },
   "Removable": {
-    "Removable": ""
+    "Removable": "ניתן להסרה"
   },
   "Remove": {
     "Remove": "הסרה"
@@ -7401,7 +7440,7 @@
     "Reset to default": "איפוס לברירת מחדל"
   },
   "Resident": {
-    "Resident": ""
+    "Resident": "בזיכרון"
   },
   "Resize on border": {
     "Resize on border": "שינוי גודל במסגרת"
@@ -7413,13 +7452,13 @@
     "Resolution, position, scale": "רזולוציה, מיקום, קנה מידה"
   },
   "Resources": {
-    "Resources": ""
+    "Resources": "משאבים"
   },
   "Response time": {
-    "Response time": ""
+    "Response time": "זמן תגובה"
   },
   "Restart": {
-    "Restart": ""
+    "Restart": "הפעלה מחדש"
   },
   "Restart DMS": {
     "Restart DMS": "הפעלה מחדש של DMS"
@@ -7444,9 +7483,6 @@
   },
   "Revert": {
     "Revert": "חזור/חזרי"
-  },
-  "Review the current bindings before saving this edit.": {
-    "Review the current bindings before saving this edit.": "בדוק/בדקי את קיצורי המקשים הנוכחיים לפני שמירת העריכה."
   },
   "Right": {
     "Right": "ימין"
@@ -7503,7 +7539,7 @@
     "Route Bluetooth headset controls to the active DMS media player": "נתב/י את בקרי אוזניות הBluetooth לנגן המדיה הפעיל של DMS"
   },
   "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": {
-    "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": ""
+    "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": "מנתב קיצורים למפעיל, לDash, למרכז הבקרה ולהתראות. לחיצות על ווידג׳טים בסרגל תמיד פותחות את החלון הקופץ שלהם"
   },
   "Rows": {
     "Rows": "שורות"
@@ -7527,10 +7563,10 @@
     "Rules found in your compositor config. These are read-only here, use Convert to DMS to make an editable copy.": "נמצאו חוקים בהגדרות הקומפוזיטור שלך. הם לקריאה בלבד כאן, השתמש/י ב'המר/י לDMS' כדי ליצור עותק הניתן לעריכה."
   },
   "Run %1 in a terminal.": {
-    "Run %1 in a terminal.": ""
+    "Run %1 in a terminal.": "הרץ/י %1 במסוף."
   },
   "Run %1 to create it before changing these settings.": {
-    "Run %1 to create it before changing these settings.": ""
+    "Run %1 to create it before changing these settings.": "הרץ/י את הפקודה %1 כדי ליצור אותו לפני שינוי ההגדרות האלה."
   },
   "Run Again": {
     "Run Again": "הרץ/י שוב"
@@ -7560,7 +7596,7 @@
     "Running apps": "אפליקציות פעילות"
   },
   "Running for": {
-    "Running for": ""
+    "Running for": "פועל במשך"
   },
   "Running greeter sync...": {
     "Running greeter sync...": "מריץ סנכרון greeter..."
@@ -7599,7 +7635,7 @@
     "SW": "דמע"
   },
   "Same as workspace change": {
-    "Same as workspace change": ""
+    "Same as workspace change": "כמו בשינוי סביבת עבודה"
   },
   "Satellites": {
     "Satellites": "לוויינים"
@@ -7627,9 +7663,6 @@
   },
   "Save credentials": {
     "Save credentials": "שמור/שמרי אישורי גישה"
-  },
-  "Save or discard the current edit before editing another shortcut.": {
-    "Save or discard the current edit before editing another shortcut.": "שמור/שמרי או בטל/י את העריכה הנוכחית לפני עריכת קיצור דרך אחר."
   },
   "Save password": {
     "Save password": "שמור/י סיסמה"
@@ -7665,13 +7698,13 @@
     "Scale": "קנה מידה"
   },
   "Scale battery level to charge limit": {
-    "Scale battery level to charge limit": ""
+    "Scale battery level to charge limit": "התאמת רמת הסוללה למגבלת הטעינה"
   },
   "Scale low and critical alert thresholds": {
-    "Scale low and critical alert thresholds": ""
+    "Scale low and critical alert thresholds": "התאמת ספי ההתראה לנמוך ולקריטי"
   },
   "Scale the displayed battery level to the configured charge limit": {
-    "Scale the displayed battery level to the configured charge limit": ""
+    "Scale the displayed battery level to the configured charge limit": "התאם/התאימי את רמת הסוללה המוצגת למגבלת הטעינה שהוגדרה"
   },
   "Scan": {
     "Scan": "סריקה"
@@ -7686,7 +7719,7 @@
     "Schedule, sunset, wallpaper brightness": "לוח זמנים, שקיעה ובהירות תמונת הרקע"
   },
   "Scheduling": {
-    "Scheduling": ""
+    "Scheduling": "תזמון"
   },
   "Science": {
     "Science": "מדע"
@@ -7782,16 +7815,16 @@
     "Secondary Container": "מיכל משני"
   },
   "Section dividers": {
-    "Section dividers": ""
+    "Section dividers": "מפרידי מקטעים"
   },
   "Sections": {
     "Sections": "מקטעים"
   },
   "Sector size": {
-    "Sector size": ""
+    "Sector size": "גודל סקטור"
   },
   "Secure Boot": {
-    "Secure Boot": ""
+    "Secure Boot": "Secure Boot"
   },
   "Secured": {
     "Secured": "מאובטח"
@@ -7839,7 +7872,7 @@
     "Select Dock Launcher Logo": "בחר/י לוגו למשגר בDock"
   },
   "Select Dot Icon": {
-    "Select Dot Icon": ""
+    "Select Dot Icon": "בחר/י סמל נקודה"
   },
   "Select ICC Profile": {
     "Select ICC Profile": "בחר/י פרופיל ICC"
@@ -7893,10 +7926,10 @@
     "Sends the playing track, artist and album name to enabled lyrics providers": "שולח את שם השיר, האמן והאלבום המתנגנים לספקי מילות השירים המופעלים"
   },
   "Sensors": {
-    "Sensors": ""
+    "Sensors": "חיישנים"
   },
   "Sent since boot": {
-    "Sent since boot": ""
+    "Sent since boot": "נשלח מאז האתחול"
   },
   "Separate": {
     "Separate": "נפרד"
@@ -7923,13 +7956,13 @@
     "Separator": "מפריד"
   },
   "Serial number": {
-    "Serial number": ""
+    "Serial number": "מספר סידורי"
   },
   "Server": {
     "Server": "שרת"
   },
   "Service": {
-    "Service": ""
+    "Service": "שירות"
   },
   "Session": {
     "Session": "הפעלה"
@@ -7983,10 +8016,10 @@
     "Settings are read-only. Changes will not persist.": "ההגדרות הן לקריאה בלבד. שינויים לא יישמרו."
   },
   "Settings version": {
-    "Settings version": ""
+    "Settings version": "גרסת הגדרות"
   },
   "Setuid": {
-    "Setuid": ""
+    "Setuid": "Setuid"
   },
   "Setup": {
     "Setup": "התקנה"
@@ -8006,11 +8039,14 @@
   "Share gamma control settings": {
     "Share gamma control settings": "שיתוף ההגדרות עם בקרת גאמה"
   },
+  "Share input state": {
+    "Share input state": ""
+  },
   "Shared": {
-    "Shared": ""
+    "Shared": "משותף"
   },
   "Shared memory": {
-    "Shared memory": ""
+    "Shared memory": "זיכרון משותף"
   },
   "Shared shortcuts": {
     "Shared shortcuts": "קיצורי דרך משותפים"
@@ -8052,7 +8088,7 @@
     "Show \"config reloaded\" toast": "הצג/י התראה קופצת של \"config reloaded\""
   },
   "Show AM/PM": {
-    "Show AM/PM": ""
+    "Show AM/PM": "הצגת AM/PM"
   },
   "Show I/O": {
     "Show I/O": "הצג/י I/O"
@@ -8135,6 +8171,9 @@
   "Show in dock": {
     "Show in dock": "הצג/י בDock"
   },
+  "Show input method info on switch": {
+    "Show input method info on switch": ""
+  },
   "Show lock": {
     "Show lock": "הצגה של \"נעילה\""
   },
@@ -8173,6 +8212,9 @@
   },
   "Show power off": {
     "Show power off": "הצגה של \"כיבוי\""
+  },
+  "Show preedit in application": {
+    "Show preedit in application": ""
   },
   "Show readings": {
     "Show readings": "הצג/י קריאות"
@@ -8213,6 +8255,9 @@
   "Show the battery briefly when power is connected or removed": {
     "Show the battery briefly when power is connected or removed": "הצגת הסוללה לזמן קצר כאשר מקור מתח מחובר או מנותק"
   },
+  "Show the text being composed inside the app instead of the candidate window": {
+    "Show the text being composed inside the app instead of the candidate window": ""
+  },
   "Show trend": {
     "Show trend": "הצג/י מגמה"
   },
@@ -8250,7 +8295,7 @@
     "Shows only windows from the dock's own display": "מציג רק חלונות מהמסך של הDock עצמו"
   },
   "Shows the dashboard tab bar instead of the sheet handle": {
-    "Shows the dashboard tab bar instead of the sheet handle": ""
+    "Shows the dashboard tab bar instead of the sheet handle": "מציג את סרגל הלשוניות של לוח הבקרה במקום ידית הגיליון"
   },
   "Shows the line being sung instead of the title and artist while synced lyrics are available": {
     "Shows the line being sung instead of the title and artist while synced lyrics are available": "מציג את השורה המושרת במקום את שם השיר והאמן כאשר זמינות מילים מסונכרנות"
@@ -8304,16 +8349,16 @@
     "Slanted": "משופע"
   },
   "Sleeping": {
-    "Sleeping": ""
+    "Sleeping": "במצב שינה"
   },
   "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": {
-    "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": ""
+    "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": "החלק/החליקי את הסרגל החוצה מעל אפליקציות במסך מלא. הזז/הזיזי את הסמן לקצה המסך כדי לחשוף אותו."
   },
   "Slideout": {
     "Slideout": "חלונית מחליקה"
   },
   "Slots used": {
-    "Slots used": ""
+    "Slots used": "חריצים בשימוש"
   },
   "Small": {
     "Small": "קטן"
@@ -8343,7 +8388,7 @@
     "Snow": "שלג"
   },
   "Sockets": {
-    "Sockets": ""
+    "Sockets": "שקעים"
   },
   "Soft reboot": {
     "Soft reboot": "הפעלה מחדש רכה"
@@ -8362,6 +8407,9 @@
   },
   "Solid": {
     "Solid": "מלא"
+  },
+  "Some options are only available in fcitx5-configtool: %1": {
+    "Some options are only available in fcitx5-configtool: %1": ""
   },
   "Some plugins require a newer version of DMS:": {
     "Some plugins require a newer version of DMS:": "תוספים מסוימים דורשים גרסה חדשה יותר של DMS:"
@@ -8403,10 +8451,10 @@
     "Spacing": "ריווח"
   },
   "Spacious": {
-    "Spacious": ""
+    "Spacious": "מרווח"
   },
   "Spare blocks left": {
-    "Spare blocks left": ""
+    "Spare blocks left": "בלוקים חלופיים שנותרו"
   },
   "Speaker settings": {
     "Speaker settings": "הגדרות רמקול"
@@ -8421,7 +8469,10 @@
     "Speed, scrolling, tap to click": "מהירות, גלילה והקשה ללחיצה"
   },
   "Spin-up time": {
-    "Spin-up time": ""
+    "Spin-up time": "זמן האצה"
+  },
+  "Spinning Record": {
+    "Spinning Record": ""
   },
   "Split direction follows the cursor position in the window": {
     "Split direction follows the cursor position in the window": "כיוון הפיצול עוקב אחר מיקום הסמן בחלון"
@@ -8480,11 +8531,14 @@
   "Start typing your notes here...": {
     "Start typing your notes here...": "התחל/י להקליד את ההערות שלך כאן..."
   },
+  "Start with the input method on instead of the plain keyboard": {
+    "Start with the input method on instead of the plain keyboard": ""
+  },
   "Start/stop count": {
-    "Start/stop count": ""
+    "Start/stop count": "מספר התחלות ועצירות"
   },
   "Started": {
-    "Started": ""
+    "Started": "הופעל"
   },
   "Starting hotspot...": {
     "Starting hotspot...": "מפעיל את הנקודה החמה..."
@@ -8500,6 +8554,9 @@
   },
   "State": {
     "State": "מצב"
+  },
+  "Stay awake with the lid closed": {
+    "Stay awake with the lid closed": ""
   },
   "Stay focused": {
     "Stay focused": "שמירת מיקוד"
@@ -8526,7 +8583,7 @@
     "Stops syncing your DMS settings to the greeter. Set up links them again.": "מפסיק לסנכרן את הגדרות DMS שלך למסך ההתחברות. ההגדרה מקשרת אותן מחדש."
   },
   "Storage": {
-    "Storage": ""
+    "Storage": "אחסון"
   },
   "Stretch": {
     "Stretch": "מתיחה"
@@ -8613,7 +8670,7 @@
     "Suspend then hibernate": "השהיה ואחריה שינה עמוקה"
   },
   "Swallow focus click": {
-    "Swallow focus click": ""
+    "Swallow focus click": "בליעת לחיצה להתמקדות"
   },
   "Swap": {
     "Swap": "Swap"
@@ -8624,8 +8681,14 @@
   "Sway website": {
     "Sway website": "האתר של Sway"
   },
+  "Swaying Square": {
+    "Swaying Square": ""
+  },
   "Switch between display configurations": {
     "Switch between display configurations": "החלף/י בין הגדרות תצוגה"
+  },
+  "Switch between the first input method and the active one": {
+    "Switch between the first input method and the active one": ""
   },
   "Switch layout shortcut": {
     "Switch layout shortcut": "קיצור מקלדת להחלפת פריסה"
@@ -8637,19 +8700,16 @@
     "Switches to power saver at the low battery threshold": "עובר למצב חיסכון בחשמל בסף הסוללה החלשה"
   },
   "Switching to the current workspace returns to the previous one": {
-    "Switching to the current workspace returns to the previous one": ""
+    "Switching to the current workspace returns to the previous one": "מעבר לסביבת העבודה הנוכחית מחזיר לסביבת העבודה הקודמת"
   },
   "Symbol": {
-    "Symbol": ""
+    "Symbol": "סמל"
   },
   "Sync": {
     "Sync": "סנכרון"
   },
   "Sync completed successfully.": {
     "Sync completed successfully.": "הסנכרון הושלם בהצלחה."
-  },
-  "Sync failed": {
-    "Sync failed": "הסנכרון נכשל"
   },
   "Sync failed in background mode. Trying terminal mode so you can authenticate interactively.": {
     "Sync failed in background mode. Trying terminal mode so you can authenticate interactively.": "הסנכרון נכשל במצב רקע. מנסה במצב מסוף כדי שתוכל/י להזדהות באופן אינטראקטיבי."
@@ -8669,9 +8729,6 @@
   "Sync with portal": {
     "Sync with portal": "סנכרון עם הפורטל"
   },
-  "Synchronized": {
-    "Synchronized": "מסונכרן"
-  },
   "Syncing...": {
     "Syncing...": "מסנכרן..."
   },
@@ -8685,7 +8742,7 @@
     "System Monitor Unavailable": "מנטר המערכת אינו זמין"
   },
   "System bell": {
-    "System bell": ""
+    "System bell": "פעמון מערכת"
   },
   "System check": {
     "System check": "בדיקת מערכת"
@@ -8700,7 +8757,7 @@
     "System packages": "חבילות מערכת"
   },
   "System report": {
-    "System report": ""
+    "System report": "דוח מערכת"
   },
   "System sound theme and events": {
     "System sound theme and events": "ערכת צלילי מערכת ואירועים"
@@ -8715,7 +8772,7 @@
     "System theme toggle": "מתג ערכת נושא של המערכת"
   },
   "System time": {
-    "System time": ""
+    "System time": "זמן מערכת"
   },
   "System tray": {
     "System tray": "מגש המערכת"
@@ -8727,22 +8784,22 @@
     "Systemd override generated": "נוצרה דריסת systemd"
   },
   "Systemd unit": {
-    "Systemd unit": ""
+    "Systemd unit": "יחידת systemd"
   },
   "TRIM": {
-    "TRIM": ""
+    "TRIM": "TRIM"
   },
   "Tab": {
-    "Tab": "טאב"
+    "Tab": "Tab"
   },
   "Table": {
     "Table": "טבלה"
   },
   "Tablet": {
-    "Tablet": ""
+    "Tablet": "טאבלט"
   },
   "Tablet input": {
-    "Tablet input": ""
+    "Tablet input": "קלט מטאבלט"
   },
   "Tabs": {
     "Tabs": "כרטיסיות"
@@ -8840,11 +8897,8 @@
   "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": {
     "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": "משתנה הסביבה %1 אינו מוגדר או ששקע התקשורת אינו זמין. החיבור נדרש כדי לאפשר ניהול תוספים אוטומטי."
   },
-  "The Aqueous operation failed.": {
-    "The Aqueous operation failed.": "פעולת Aqueous נכשלה."
-  },
   "The Control Center opens at the cursor instead of its widget": {
-    "The Control Center opens at the cursor instead of its widget": ""
+    "The Control Center opens at the cursor instead of its widget": "מרכז הבקרה נפתח ליד הסמן במקום ליד הווידג׳ט שלו"
   },
   "The Default action only overrides priority": {
     "The Default action only overrides priority": "פעולת ברירת המחדל דורסת רק את העדיפות"
@@ -8865,16 +8919,16 @@
     "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": "ההגדרות הבאות ישנו את הגדרות הGTK וQt שלך. אם ברצונך לשמור על התצורות הנוכחיות, יש לגבות אותן (מתוך %1 ו%2)."
   },
   "The click that focuses a window does not reach the app": {
-    "The click that focuses a window does not reach the app": ""
-  },
-  "The compositor session changed. Discard this edit before starting a new one.": {
-    "The compositor session changed. Discard this edit before starting a new one.": "הפעלת הקומפוזיטור השתנתה. בטל/י את העריכה הזו לפני התחלת עריכה חדשה."
+    "The click that focuses a window does not reach the app": "הלחיצה שממקדת חלון אינה מועברת לאפליקציה"
   },
   "The custom command used when attaching to sessions (receives the session name as the first argument)": {
     "The custom command used when attaching to sessions (receives the session name as the first argument)": "הפקודה המותאמת אישית שנמצאת בשימוש בעת חיבור להפעלות (מקבלת את שם ההפעלה כארגומנט הראשון)"
   },
   "The direction label shows where the wind comes from.": {
     "The direction label shows where the wind comes from.": "תווית הכיוון מציגה מהיכן הרוח מגיעה."
+  },
+  "The fcitx5 popup. The shell's OSD toggle is in the OSD settings.": {
+    "The fcitx5 popup. The shell's OSD toggle is in the OSD settings.": ""
   },
   "The fill shows relative humidity. The badge shows the dew point temperature.": {
     "The fill shows relative humidity. The badge shows the dew point temperature.": "המילוי מציג לחות יחסית. התג מציג את טמפרטורת נקודת הטל."
@@ -8900,14 +8954,8 @@
   "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": {
     "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": "מסך ההתחברות מפסיק לעקוב אחר ערכת הנושא, תמונת הרקע, הווידג׳טים וההגדרות של DMS. ‏greetd, האימות ומשתמשים אחרים אינם מושפעים."
   },
-  "The new shortcut is already in use. Choose another shortcut.": {
-    "The new shortcut is already in use. Choose another shortcut.": "קיצור הדרך החדש כבר נמצא בשימוש. בחר/י קיצור דרך אחר."
-  },
-  "The original shortcut changed. Refresh and review your edit.": {
-    "The original shortcut changed. Refresh and review your edit.": "קיצור הדרך המקורי השתנה. רענן/י ובדוק/בדקי את העריכה שלך."
-  },
-  "The original shortcut was removed. Discard this edit or add a new shortcut.": {
-    "The original shortcut was removed. Discard this edit or add a new shortcut.": "קיצור הדרך המקורי הוסר. בטל/י את העריכה הזו או הוסף/י קיצור דרך חדש."
+  "The next enabled provider is used when one fails.": {
+    "The next enabled provider is used when one fails.": ""
   },
   "The quick brown fox jumps over the lazy dog": {
     "The quick brown fox jumps over the lazy dog": "דג סקרן שט לו בים זך ולפתע מצא חבורה נחמדה"
@@ -8918,17 +8966,8 @@
   "The rest open the bar's own popouts": {
     "The rest open the bar's own popouts": "השאר פותחים את החלונות הקופצים של הסרגל"
   },
-  "The result is unknown. Refresh before trying again.": {
-    "The result is unknown. Refresh before trying again.": "התוצאה אינה ידועה. רענן/י לפני ניסיון נוסף."
-  },
   "The rule applies to any window matching one of these.": {
     "The rule applies to any window matching one of these.": "החוק חל על כל חלון שתואם לאחד מאלה."
-  },
-  "The save result is unknown. Refresh and check the current bindings.": {
-    "The save result is unknown. Refresh and check the current bindings.": "תוצאת השמירה אינה ידועה. רענן/י ובדוק/בדקי את קיצורי המקשים הנוכחיים."
-  },
-  "The selected action is no longer available.": {
-    "The selected action is no longer available.": "הפעולה שנבחרה אינה זמינה עוד."
   },
   "The server certificate has changed since it was last trusted. Only continue if you recognize the new fingerprint.": {
     "The server certificate has changed since it was last trusted. Only continue if you recognize the new fingerprint.": "אישור השרת השתנה מאז הפעם האחרונה שסמכת עליו. המשך/י רק אם טביעת האצבע החדשה מוכרת לך."
@@ -9005,9 +9044,6 @@
   "This may take a few seconds": {
     "This may take a few seconds": "זה עשוי לקחת מספר שניות"
   },
-  "This operation is not supported by the installed Aqueous version.": {
-    "This operation is not supported by the installed Aqueous version.": "פעולה זו אינה נתמכת בגרסת Aqueous המותקנת."
-  },
   "This output is disabled in the current profile": {
     "This output is disabled in the current profile": "פלט זה מושבת בפרופיל הנוכחי"
   },
@@ -9036,7 +9072,7 @@
     "This will permanently remove this saved clipboard item. This action cannot be undone.": "זה יסיר לצמיתות את פריט לוח ההעתקה השמור הזה. לא ניתן לבטל פעולה זו."
   },
   "Threads": {
-    "Threads": ""
+    "Threads": "תהליכונים"
   },
   "Thunderstorm": {
     "Thunderstorm": "סערת ברקים"
@@ -9155,6 +9191,12 @@
   "Toggle fonts": {
     "Toggle fonts": "החלף/י גופנים"
   },
+  "Toggle input method": {
+    "Toggle input method": ""
+  },
+  "Toggle preedit in application": {
+    "Toggle preedit in application": ""
+  },
   "Toggling...": {
     "Toggling...": "משנה מצב..."
   },
@@ -9183,7 +9225,7 @@
     "Tools": "כלים"
   },
   "Tooltip": {
-    "Tooltip": ""
+    "Tooltip": "תיאור צץ"
   },
   "Top": {
     "Top": "למעלה"
@@ -9201,7 +9243,7 @@
     "Top Right": "ימין למעלה"
   },
   "Top process": {
-    "Top process": ""
+    "Top process": "התהליך המוביל"
   },
   "Top processes": {
     "Top processes": "תהליכים מובילים"
@@ -9402,7 +9444,7 @@
     "Unpin from Dock": "בטל/י נעיצה על הDock"
   },
   "Unsafe shutdowns": {
-    "Unsafe shutdowns": ""
+    "Unsafe shutdowns": "כיבויים לא בטוחים"
   },
   "Unsaved changes": {
     "Unsaved changes": "שינויים שלא נשמרו"
@@ -9438,7 +9480,7 @@
     "Up": "למעלה"
   },
   "Up %1": {
-    "Up %1": ""
+    "Up %1": "פעיל במשך %1"
   },
   "Up to date": {
     "Up to date": "מעודכן"
@@ -9451,6 +9493,9 @@
   },
   "Update All": {
     "Update All": "עדכן/י הכל"
+  },
+  "Update DMS to configure fcitx5 from here": {
+    "Update DMS to configure fcitx5 from here": ""
   },
   "Update available": {
     "Update available": "עדכון זמין"
@@ -9480,7 +9525,7 @@
     "Upgrading...": "משדרג..."
   },
   "Upload": {
-    "Upload": ""
+    "Upload": "העלאה"
   },
   "Uptime": {
     "Uptime": "זמן פעילות"
@@ -9501,7 +9546,7 @@
     "Urgent color": "צבע דחוף"
   },
   "Usage": {
-    "Usage": ""
+    "Usage": "שימוש"
   },
   "Use Dynamic": {
     "Use Dynamic": "שימוש בעיצוב דינמי"
@@ -9552,10 +9597,10 @@
     "Use system PAM authentication": "השתמש/י באימות PAM של המערכת"
   },
   "Use the scaled battery level for alert thresholds and percentages": {
-    "Use the scaled battery level for alert thresholds and percentages": ""
+    "Use the scaled battery level for alert thresholds and percentages": "השתמש/י ברמת הסוללה המותאמת עבור ספי התראות ואחוזים"
   },
   "Used": {
-    "Used": ""
+    "Used": "בשימוש"
   },
   "User": {
     "User": "משתמש"
@@ -9582,7 +9627,7 @@
     "User not found": "המשתמש לא נמצא"
   },
   "User time": {
-    "User time": ""
+    "User time": "זמן משתמש"
   },
   "User window rules (%1)": {
     "User window rules (%1)": "חוקי חלון של משתמש (%1)"
@@ -9639,10 +9684,10 @@
     "VPN status and quick connect": "מצב הVPN וחיבור מהיר"
   },
   "VRAM": {
-    "VRAM": ""
+    "VRAM": "VRAM"
   },
   "VRR Fullscreen Only": {
-    "VRR Fullscreen Only": ""
+    "VRR Fullscreen Only": "VRR במסך מלא בלבד"
   },
   "VRR On-Demand": {
     "VRR On-Demand": "לפי דרישה VRR"
@@ -9690,16 +9735,16 @@
     "Vibrant palette with playful saturation.": "פלטת צבעים עשירה עם רוויה משחקית."
   },
   "Video": {
-    "Video": ""
+    "Video": "וידאו"
   },
   "Video card gamma table": {
     "Video card gamma table": "טבלת גאמה של כרטיס המסך"
   },
   "Video decode": {
-    "Video decode": ""
+    "Video decode": "פענוח וידאו"
   },
   "Video encode": {
-    "Video encode": ""
+    "Video encode": "קידוד וידאו"
   },
   "Video player": {
     "Video player": "נגן וידאו"
@@ -9708,7 +9753,7 @@
     "Video screensaver": "שומר מסך עם וידאו"
   },
   "Video wallpapers play once, then the next wallpaper is shown": {
-    "Video wallpapers play once, then the next wallpaper is shown": ""
+    "Video wallpapers play once, then the next wallpaper is shown": "טפטי וידאו מתנגנים פעם אחת ואז מוצג הטפט הבא"
   },
   "View Changes": {
     "View Changes": "הצג/י שינויים"
@@ -9717,10 +9762,10 @@
     "View on GitHub": "צפייה בGitHub"
   },
   "Virtual": {
-    "Virtual": ""
+    "Virtual": "וירטואלי"
   },
   "Virtualization": {
-    "Virtualization": ""
+    "Virtualization": "וירטואליזציה"
   },
   "Visibility": {
     "Visibility": "נראות"
@@ -9765,10 +9810,10 @@
     "WPA2 password": "סיסמת WPA2"
   },
   "WWN": {
-    "WWN": ""
+    "WWN": "WWN"
   },
   "Waiting": {
-    "Waiting": ""
+    "Waiting": "ממתין"
   },
   "Wallpaper": {
     "Wallpaper": "תמונת רקע"
@@ -9798,7 +9843,7 @@
     "Warnings": "אזהרות"
   },
   "Warp on display change": {
-    "Warp on display change": ""
+    "Warp on display change": "הזזת הסמן בשינוי מסך"
   },
   "Water": {
     "Water": "מים"
@@ -9807,10 +9852,13 @@
     "Wave progress bars": "סרגלי התקדמות בצורת גל"
   },
   "Wear": {
-    "Wear": ""
+    "Wear": "שחיקה"
   },
   "Weather": {
     "Weather": "מזג אוויר"
+  },
+  "Weather providers": {
+    "Weather providers": ""
   },
   "Web browser": {
     "Web browser": "דפדפן לגלישה באינטרנט"
@@ -9876,7 +9924,7 @@
     "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": "הWiFi מושבת. עדיין ניתן לערוך ולשמור את הגדרות הנקודה החמה, אך הפעלת הנקודה החמה דורשת שהWiFi יהיה פעיל."
   },
   "Wi-Fi network": {
-    "Wi-Fi network": ""
+    "Wi-Fi network": "רשת Wi-Fi"
   },
   "Wi-Fi not available": {
     "Wi-Fi not available": "Wi-Fi אינו זמין"
@@ -9969,7 +10017,7 @@
     "Window rules": "חוקי חלון"
   },
   "Windows": {
-    "Windows": ""
+    "Windows": "חלונות"
   },
   "Wipe": {
     "Wipe": "ניגוב"
@@ -9981,13 +10029,13 @@
     "With no bar, Dot or dock launcher on, shortcuts are the only way back to settings": "כאשר כל הסרגלים, הDot וכפתורי המשגר של הDock כבויים, הדרך היחידה לחזור להגדרות היא באמצעות קיצורי מקלדת"
   },
   "Wobble damping": {
-    "Wobble damping": ""
+    "Wobble damping": "שיכוך תנודה"
   },
   "Wobble mass": {
-    "Wobble mass": ""
+    "Wobble mass": "מסת תנודה"
   },
   "Wobble mesh": {
-    "Wobble mesh": ""
+    "Wobble mesh": "רשת תנודה"
   },
   "Wobble stiffness": {
     "Wobble stiffness": "קשיחות התנודה"
@@ -9999,7 +10047,7 @@
     "Word processor": "מעבד תמלילים"
   },
   "Working directory": {
-    "Working directory": ""
+    "Working directory": "תיקיית עבודה"
   },
   "Working...": {
     "Working...": "עובד..."
@@ -10020,7 +10068,7 @@
     "Workspace Switch": "החלפת סביבת עבודה"
   },
   "Workspace back and forth": {
-    "Workspace back and forth": ""
+    "Workspace back and forth": "מעבר הלוך ושוב בין סביבות עבודה"
   },
   "Workspace name": {
     "Workspace name": "שם סביבת העבודה"
@@ -10035,13 +10083,13 @@
     "Wrap the app command. %command% is replaced with the actual executable": "עטוף/עטפי את פקודת האפליקציה. %command% יוחלף בקובץ ההרצה בפועל"
   },
   "Write cache": {
-    "Write cache": ""
+    "Write cache": "מטמון כתיבה"
   },
   "Writes to your files": {
     "Writes to your files": "כתיבה לקבצים שלך"
   },
   "Written total": {
-    "Written total": ""
+    "Written total": "סך הכל נכתב"
   },
   "X axis": {
     "X axis": "ציר X"
@@ -10110,7 +10158,7 @@
     "Your system is up to date!": "המערכת שלך מעודכנת!"
   },
   "Zombie": {
-    "Zombie": ""
+    "Zombie": "זומבי"
   },
   "adjective, printer state": {
     "Idle": "בהמתנה"
@@ -10170,10 +10218,10 @@
     "Normal": "רגיל"
   },
   "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural": {
-    "%1 days": "",
-    "%1 hours": "",
-    "%1 minutes": "",
-    "%1 seconds": ""
+    "%1 days": "%1 ימים",
+    "%1 hours": "%1 שעות",
+    "%1 minutes": "%1 דקות",
+    "%1 seconds": "%1 שניות"
   },
   "e.g. /usr/bin/my-script --flag": {
     "e.g. /usr/bin/my-script --flag": "לדוגמה /usr/bin/my-script --flag"
@@ -10208,6 +10256,9 @@
   "ext": {
     "ext": "ext"
   },
+  "fcitx5 input methods, keybinds, behavior": {
+    "fcitx5 input methods, keybinds, behavior": ""
+  },
   "featured": {
     "featured": "מומלץ"
   },
@@ -10215,7 +10266,7 @@
     "greetd is not using the DMS greeter yet.": "greetd עדיין אינו משתמש במסך ההתחברות של DMS."
   },
   "keyboard tab key name": {
-    "Tab": "טאב"
+    "Tab": "Tab"
   },
   "khal": {
     "khal": "khal"
@@ -10290,16 +10341,13 @@
     "official": "רשמי"
   },
   "on %1": {
-    "on %1": ""
+    "on %1": "על %1"
   },
   "power-profiles-daemon not available": {
     "power-profiles-daemon not available": "power-profiles-daemon אינו זמין"
   },
   "primary network connection label": {
     "Primary": "ראשי"
-  },
-  "pt": {
-    "pt": "pt"
   },
   "px": {
     "px": "px"

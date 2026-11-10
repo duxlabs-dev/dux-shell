@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
+import qs.Modules.DDash
 
 SettingsCard {
     id: root
@@ -14,6 +15,9 @@ SettingsCard {
 
     readonly property var routingValues: ["normal", "always", "last-used"]
     readonly property var interactionModeValues: ["click", "hybrid"]
+    // Dash tabs that have an island face; see IslandController.dashActivityFor.
+    readonly property var dashTabValues: ["overview", "media", "weather", "wellbeing", "wallpaper", "notifications"]
+    readonly property var dashTabLabels: dashTabValues.map(id => DashRegistry.entry(id)?.text ?? id)
     readonly property var routeActivities: ["launcher", "controlcenter", "notificationcenter", "clipboard", "powermenu", "home", "media", "weather", "wallpaper"]
     readonly property var routeKeys: routeActivities.map(activity => SettingsData.islandRouteKey(activity))
     readonly property string sharedRouting: SettingsData.islandSharedRoutingMode(root.store.config)
@@ -181,6 +185,19 @@ SettingsCard {
         description: I18n.tr("Shows the dashboard tab bar instead of the sheet handle", "island settings: dashboard tab bar toggle description")
         checked: root.store.setting("islandDashTabs")
         onToggled: checked => root.store.apply("islandDashTabs", checked)
+    }
+
+    SettingsDropdownRow {
+        settingKey: root.keyPrefix + "DashDefaultTab"
+        tags: ["island", "dashboard", "dash", "tabs", "default", "favorite", "open", "hover"]
+        resetStore: root.store
+        resetKeys: ["islandDashDefaultTab"]
+        text: I18n.tr("Dashboard opens to", "island settings: dash tab the home face expands into")
+        description: I18n.tr("Clicking or hovering the home face opens this tab", "island settings: default dashboard tab description")
+        options: root.dashTabLabels
+        dropdownWidth: Theme.smallBreakpoint / 2
+        currentValue: options[Math.max(0, root.dashTabValues.indexOf(root.store.setting("islandDashDefaultTab")))]
+        onValueChanged: value => root.store.apply("islandDashDefaultTab", root.dashTabValues[options.indexOf(value)] ?? "overview")
     }
 
     SettingsToggleRow {

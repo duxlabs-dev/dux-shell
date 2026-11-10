@@ -555,9 +555,9 @@ func TestGeneratePaletteWithDPS(t *testing.T) {
 
 			bgColor := result.Color0.Hex
 			for i := 1; i < 8; i++ {
-				// Color5 is the container and Color6 the exact primary: they pair
+				// Dark Color5 is the container and Color6 the exact primary: they pair
 				// with each other, not with the background
-				if i == 5 || i == 6 {
+				if i == 6 || (i == 5 && !tt.opts.IsLight) {
 					continue
 				}
 				lc := DeltaPhiStarContrast(colors[i].Hex, bgColor, tt.opts.IsLight)
@@ -741,10 +741,7 @@ func TestGeneratePaletteColor5PairsWithColor6(t *testing.T) {
 		isLight   bool
 	}{
 		{"violet dark", "#cdbdff", "#4b3e76", "#141318", false},
-		{"violet light", "#63568f", "#e8deff", "#fdf7ff", true},
 		{"green dark", "#9ed49d", "#1f5027", "#101510", false},
-		{"green light", "#38693c", "#b9f0b8", "#f7fbf2", true},
-		{"amber light", "#805610", "#ffddb3", "#fff8f4", true},
 	}
 
 	for _, tt := range tests {
@@ -780,6 +777,42 @@ func TestGeneratePaletteColor5PairsWithColor6(t *testing.T) {
 	}
 }
 
+func TestGeneratePaletteLightColor5ReadsAsText(t *testing.T) {
+	tests := []struct {
+		name      string
+		primary   string
+		container string
+		bg        string
+	}{
+		{"violet", "#63568f", "#e8deff", "#fdf7ff"},
+		{"green", "#38693c", "#b9f0b8", "#f7fbf2"},
+		{"amber", "#805610", "#ffddb3", "#fff8f4"},
+		{"blue", "#415f91", "#d6e3ff", "#f9f9ff"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			palette := GeneratePalette(tt.primary, PaletteOptions{
+				IsLight:    true,
+				Background: tt.bg,
+				Container:  tt.container,
+				UseDPS:     true,
+			})
+
+			if ratio := ContrastRatio(palette.Color5.Hex, tt.bg); ratio < 4.5 {
+				t.Errorf("Color5 %s on %s ratio %.2f, expected >= 4.5 (git grep filenames and other ANSI 5 text must read on a light terminal)",
+					palette.Color5.Hex, tt.bg, ratio)
+			}
+			if palette.Color6.Hex != tt.primary {
+				t.Errorf("Color6 = %s, expected the primary %s", palette.Color6.Hex, tt.primary)
+			}
+			if palette.Color5.Hex == palette.Color13.Hex {
+				t.Errorf("Color5 and Color13 are both %s, expected a distinct bright variant", palette.Color5.Hex)
+			}
+		})
+	}
+}
+
 func TestGeneratePaletteFallsBackToDerivedContainer(t *testing.T) {
 	const primary = "#cdbdff"
 
@@ -809,7 +842,7 @@ func TestDefaultProfileUnchanged(t *testing.T) {
 		want  [16]string
 	}{
 		{"dark", false, [16]string{"#1a1a1a", "#ff72a0", "#77ee84", "#fff672", "#70bfe2", "#19546e", "#8ad0ee", "#eaf5f9", "#444b4d", "#ff9fbe", "#a5ffaf", "#fff9a5", "#a3e3ff", "#b3e8ff", "#cef0ff", "#f8fdff"}},
-		{"light", true, [16]string{"#f8f8f8", "#c23c6c", "#00811d", "#727300", "#1a7895", "#dcf4ff", "#8ad0ee", "#3f4142", "#b8bbbc", "#dc608a", "#009f29", "#8f8e00", "#3993b4", "#5c90a6", "#c9eeff", "#f9fdff"}},
+		{"light", true, [16]string{"#f8f8f8", "#c23c6c", "#00811d", "#727300", "#1a7895", "#2a7792", "#8ad0ee", "#3f4142", "#b8bbbc", "#dc608a", "#009f29", "#8f8e00", "#3993b4", "#5c90a6", "#c9eeff", "#f9fdff"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -832,9 +865,9 @@ func TestProfileGoldens(t *testing.T) {
 		{ProfileLow, false, "#1a1a1a #ea77d9 #31f2a9 #d6ffa0 #70bfe2 #19546e #8ad0ee #eaf5f9 #444b4d #eca4e1 #98ffce #e4ffbf #a3e3ff #b3e8ff #cef0ff #f8fdff"},
 		{ProfileMedium, false, "#1a1a1a #c684ff #00f0ce #c8ffd2 #6fbfe1 #19546e #8ad0ee #eaf5f9 #444b4d #d2abf8 #89ffe6 #daffdf #a3e3ff #b4e8ff #cff0ff #f8fdff"},
 		{ProfileHigh, false, "#1a1a1a #879bff #00ecf6 #b8fff6 #6fbfe1 #19546e #8ad0ee #eaf5f9 #444b4d #a7b8ff #a1f9ff #d0fff8 #a3e3ff #b4e8ff #cff0ff #f8fdff"},
-		{ProfileLow, true, "#f8f8f8 #b240a4 #007f51 #507a2b #1a7895 #dcf4ff #8ad0ee #3f4142 #b8bbbc #c964bb #009d65 #669737 #3993b4 #5c90a6 #c9eeff #f9fdff"},
-		{ProfileMedium, true, "#f8f8f8 #944bcf #007d68 #1d7f4c #1a7895 #dcf4ff #8ad0ee #3f4142 #b8bbbc #ab6fe0 #009b82 #2a9c5f #3993b4 #5c90a6 #c9eeff #f9fdff"},
-		{ProfileHigh, true, "#f8f8f8 #4562e9 #007b7f #007d76 #1b7895 #dcf4ff #8ad0ee #3f4142 #b8bbbc #6882f3 #00989d #009a91 #3993b4 #5c90a6 #caeeff #f9fdff"},
+		{ProfileLow, true, "#f8f8f8 #b240a4 #007f51 #507a2b #1a7895 #2a7792 #8ad0ee #3f4142 #b8bbbc #c964bb #009d65 #669737 #3993b4 #5c90a6 #c9eeff #f9fdff"},
+		{ProfileMedium, true, "#f8f8f8 #944bcf #007d68 #1d7f4c #1a7895 #2a7792 #8ad0ee #3f4142 #b8bbbc #ab6fe0 #009b82 #2a9c5f #3993b4 #5c90a6 #c9eeff #f9fdff"},
+		{ProfileHigh, true, "#f8f8f8 #4562e9 #007b7f #007d76 #1b7895 #2a7792 #8ad0ee #3f4142 #b8bbbc #6882f3 #00989d #009a91 #3993b4 #5c90a6 #caeeff #f9fdff"},
 	}
 	for _, tt := range tests {
 		got := paletteHexes(GeneratePalette("#8ad0ee", PaletteOptions{UseDPS: true, IsLight: tt.light, Profile: tt.profile}))

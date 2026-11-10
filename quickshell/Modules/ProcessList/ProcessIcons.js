@@ -6,6 +6,7 @@
 const PROGRAM_ICONS = [
     {
         programs: ["dms", "dsearch"],
+        passesIcon: true,
         logo: "danklogo.svg"
     },
     {

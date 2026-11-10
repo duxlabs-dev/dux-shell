@@ -198,7 +198,7 @@ func (g *GentooDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 }
 
 func (g *GentooDistribution) getQuickshellMapping(_ deps.PackageVariant) PackageMapping {
-	return PackageMapping{Name: "gui-apps/quickshell", Repository: RepoTypeGURU, UseFlags: "breakpad jemalloc sockets wayland layer-shell session-lock toplevel-management screencopy X pipewire tray mpris pam hyprland hyprland-global-shortcuts hyprland-focus-grab i3 i3-ipc bluetooth", AcceptKeywords: "**"}
+	return PackageMapping{Name: "gui-apps/quickshell", Repository: RepoTypeGURU, UseFlags: "crash-handler jemalloc sockets wayland layer-shell session-lock toplevel-management screencopy X pipewire tray mpris pam policykit upower notifications hyprland i3 bluetooth", AcceptKeywords: "**"}
 }
 
 func (g *GentooDistribution) getDmsMapping() PackageMapping {

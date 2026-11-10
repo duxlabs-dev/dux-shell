@@ -19,6 +19,7 @@ DCard {
     property bool showTitle: true
     property int hoverPage: -1
     property int hoverIndex: -1
+    property string selectedDate: ""
     property real wheelDistance: 0
     property real dragStartX: 0
 
@@ -29,6 +30,9 @@ DCard {
     readonly property int weekOffset: page - (pageCount - 1)
     readonly property var week: weeks[page] ?? []
     readonly property var hoverDay: hoverIndex >= 0 ? (weeks[hoverPage] ?? [])[hoverIndex] ?? null : null
+    readonly property var selectedDay: selectedDate !== "" ? week.find(day => day.date === selectedDate) ?? null : null
+    readonly property var shownDay: hoverDay ?? selectedDay
+    readonly property string focusDate: shownDay ? shownDay.date : ""
     readonly property real total: Wellbeing.totalSeconds(week)
     readonly property real peak: Math.max(limitSeconds, ...week.map(day => day.active))
     readonly property var axis: Wellbeing.axis(peak)
@@ -58,6 +62,12 @@ DCard {
         return I18n.locale().dayName(day.weekday === 0 ? Wellbeing.weekLength : day.weekday, Locale.ShortFormat);
     }
 
+    function toggleDay(day) {
+        if (!day || day.future)
+            return;
+        selectedDate = selectedDate === day.date ? "" : day.date;
+    }
+
     function snapTo(index, animate) {
         snapAnim.stop();
         page = Math.max(0, Math.min(pageCount - 1, index));
@@ -75,6 +85,14 @@ DCard {
     }
 
     onPageCountChanged: showCurrentWeek()
+    // keep the same weekday selected while paging, like the app list's day filter
+    onPageChanged: {
+        if (selectedDate === "")
+            return;
+        const weekday = Wellbeing.parseKey(selectedDate).getDay();
+        const day = (weeks[page] ?? []).find(entry => entry.weekday === weekday);
+        selectedDate = day && !day.future ? day.date : "";
+    }
 
     restRadius: DashMetrics.cardRadius
     pad: Theme.spacingL
@@ -120,7 +138,7 @@ DCard {
             StyledText {
                 id: totalLabel
                 anchors.baseline: caption.baseline
-                text: WellbeingService.formatDuration(root.hoverDay ? root.hoverDay.active : root.total)
+                text: WellbeingService.formatDuration(root.shownDay ? root.shownDay.active : root.total)
                 font.pixelSize: Theme.fontSizeXLarge
                 font.weight: Theme.fontWeightBold
                 color: root.accentColor
@@ -130,7 +148,7 @@ DCard {
                 id: caption
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: Theme.spacingXXS
-                text: root.hoverDay ? root.dayLabel(root.hoverDay) : I18n.tr("Total")
+                text: root.shownDay ? root.dayLabel(root.shownDay) : I18n.tr("Total")
                 font.pixelSize: Theme.fontSizeSmall
                 font.weight: Theme.fontWeightMedium
                 font.capitalization: Font.AllUppercase
@@ -267,7 +285,7 @@ DCard {
                                 topLeftRadius: Theme.cornerRadiusS
                                 topRightRadius: Theme.cornerRadiusS
                                 color: root.barColor(modelData)
-                                opacity: root.hoverIndex === -1 || (root.hoverPage === page.index && root.hoverIndex === index) ? 1 : WellbeingMetrics.dimmedBarOpacity
+                                opacity: root.focusDate === "" || root.focusDate === modelData.date ? 1 : WellbeingMetrics.dimmedBarOpacity
 
                                 Behavior on height {
                                     enabled: DashMetrics.animationsEnabled
@@ -295,8 +313,8 @@ DCard {
                                     horizontalAlignment: Text.AlignHCenter
                                     text: root.dayLabel(modelData)
                                     font.pixelSize: Theme.fontSizeSmall
-                                    font.weight: modelData.today ? Theme.fontWeightBold : Theme.fontWeightMedium
-                                    color: modelData.today ? root.accentColor : root.mutedColor
+                                    font.weight: modelData.today || modelData.date === root.selectedDate ? Theme.fontWeightBold : Theme.fontWeightMedium
+                                    color: modelData.today ? root.accentColor : modelData.date === root.selectedDate ? root.contentColor : root.mutedColor
                                 }
                             }
                         }
@@ -305,6 +323,7 @@ DCard {
                             anchors.fill: parent
                             acceptedButtons: Qt.NoButton
                             hoverEnabled: true
+                            cursorShape: root.hoverDay && !root.hoverDay.future ? Qt.PointingHandCursor : Qt.ArrowCursor
                             onPositionChanged: mouse => {
                                 if (page.index !== root.page || root.columnWidth <= 0)
                                     return;
@@ -312,6 +331,11 @@ DCard {
                                 root.hoverIndex = Math.floor(mouse.x / root.columnWidth);
                             }
                             onExited: root.hoverIndex = -1
+                        }
+
+                        TapHandler {
+                            enabled: page.index === root.page && root.columnWidth > 0
+                            onTapped: eventPoint => root.toggleDay(page.modelData[Math.floor(eventPoint.position.x / root.columnWidth)])
                         }
                     }
                 }

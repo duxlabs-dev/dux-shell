@@ -23,13 +23,7 @@ Item {
 
     readonly property bool barRevealed: inputMask.showing
     readonly property bool autoHideActive: topBarCore.autoHide
-    readonly property bool fullscreenAutoHide: !barWindow.isIsland
-        && !usesFrameBarChrome
-        && (barConfig?.hideOnFullscreen ?? false)
-        && hostWindow?.dBarLayer === WlrLayer.Overlay
-        && CompositorService.isNiri
-        && !CompositorService.overviewActiveOnScreen(screenName)
-        && CompositorService.visibleNiriFullscreenToplevelOnScreen(screen)
+    readonly property bool fullscreenAutoHide: !barWindow.isIsland && !usesFrameBarChrome && (barConfig?.hideOnFullscreen ?? false) && hostWindow?.dBarLayer === WlrLayer.Overlay && CompositorService.isNiri && !CompositorService.overviewActiveOnScreen(screenName) && CompositorService.visibleNiriFullscreenToplevelOnScreen(screen)
 
     readonly property bool isIsland: barConfig?.island === true
     // Resolver-owned so the body, the frame and the dismiss window agree during the frame latch.
@@ -734,7 +728,7 @@ Item {
     readonly property color _bgColor: (FrameTransitionState.effectiveFrameEnabled && usesFrameBarChrome) ? Theme.frameSurfaceColor : Theme.withAlpha(_hostSurface, _backgroundAlpha)
     readonly property real _dpr: CompositorService.getScreenScale(barWindow.screen)
 
-    property string screenName: modelData.name
+    property string screenName: modelData?.name ?? ""
 
     readonly property bool usesConnectedFrameChrome: CompositorService.usesConnectedFrameChromeForScreen(screenName)
     readonly property bool usesFrameBarChrome: CompositorService.frameWindowVisibleForScreen(screenName)
@@ -851,6 +845,7 @@ Item {
 
     readonly property real barSurfaceThickness: Theme.px(effectiveBarThickness + surfaceSpacing + ((renderBarConfig?.gothCornersEnabled ?? false) && !hasMaximizedToplevel && spansEdge ? _wingR : 0), _dpr) + _shadowBuffer
     readonly property bool islandSheetOut: islandHost?.sheetOut ?? false
+    property bool islandRoomHeld: false
     readonly property real islandSatelliteShadowBuffer: isIsland && islandSatellitesEnabled && !islandSatelliteBackground ? _shadowBuffer : 0
     // A grown layer surface jumps to its new origin before the client draws at the new size, so a far-edge host never grows for the sheet.
     readonly property bool islandReservesSheet: !!islandHost && axis.isFar
@@ -858,12 +853,15 @@ Item {
     readonly property string popoutRoomKey: ConnectedModeState.barRoomKey(screenName, _barId)
     readonly property string popoutRoomState: ConnectedModeState.barRooms[popoutRoomKey] ?? ""
     readonly property bool popoutOut: barChromeLoader.item?.popoutActive ?? false
-    // A far-edge window would jump while growing, as for the sheet above, so it keeps the room.
+    // A far-edge window would jump while growing, above, so it keeps room.
     readonly property bool popoutRoomAlwaysHeld: axis.isFar
-    property bool popoutRoomShrinking: false
-    readonly property bool popoutRoomHeld: barPaintsPopouts && (popoutRoomAlwaysHeld || popoutOut || popoutRoomState !== "" || popoutRoomShrinking)
+    // The window sits below hostThickness until the small buffer is out, so the rooms stay held meanwhile.
+    property bool roomShrinking: false
+    readonly property bool popoutRoomHeld: barPaintsPopouts && (popoutRoomAlwaysHeld || popoutOut || popoutRoomState !== "" || roomShrinking)
     readonly property real popoutHostThickness: !popoutRoomHeld ? 0 : ((isVertical ? modelData?.width : modelData?.height) ?? 0) - (layoutInstance?.manualPlacement ? layoutInstance.rowOffset : 0)
     readonly property bool popoutRoomFits: popoutRoomHeld && (isVertical ? hostWindow.width : hostWindow.height) >= popoutHostThickness - 1
+    readonly property real idleHostThickness: isIsland ? Math.max(islandHost?.hostThickness ?? 0, islandStripThickness + islandSatelliteShadowBuffer) : Math.max(barSurfaceThickness, islandRoomHeld || islandReservesSheet ? islandHost?.hostThickness ?? 0 : 0)
+    readonly property real hostThickness: Math.max(idleHostThickness, popoutHostThickness)
 
     function _setWindowThickness(thickness) {
         const win = barWindow.Window.window;
@@ -874,13 +872,37 @@ Item {
     }
 
     // Hyprland squeezes the old buffer into a shrunken layer surface until the next commit, which blanks the bar for a frame.
-    // A plain commit resizes the surface to its buffer, so the buffer goes small first.
-    function _releasePopoutRoom() {
-        const current = isVertical ? barWindow.Window.window.width : barWindow.Window.window.height;
-        popoutRoomShrinking = barPaintsPopouts && CompositorService.isHyprland && !popoutRoomAlwaysHeld && current > idleHostThickness;
-        ConnectedModeState.setBarRoom(popoutRoomKey, "");
-        if (popoutRoomShrinking)
-            _setWindowThickness(idleHostThickness);
+    // A plain commit resizes the surface to its buffer, so the buffer goes small first. False when nothing has to shrink.
+    function _shrinkWindow(thickness) {
+        const win = barWindow.Window.window;
+        if (!CompositorService.isHyprland || !win?.visible || (isVertical ? win.width : win.height) <= thickness)
+            return false;
+        roomShrinking = true;
+        _setWindowThickness(thickness);
+        return true;
+    }
+
+    onIslandSheetOutChanged: {
+        if (islandSheetOut) {
+            islandRoomHeld = true;
+            return;
+        }
+        if (CompositorService.isHyprland && !isIsland && !frameHosted && !islandReservesSheet)
+            islandRoomRelease.restart();
+        else
+            islandRoomHeld = false;
+    }
+
+    // Waits out the collapse's last frame.
+    Timer {
+        id: islandRoomRelease
+        interval: 150
+        onTriggered: {
+            if (barWindow.islandSheetOut)
+                return;
+            if (!barWindow._shrinkWindow(Math.max(barWindow.barSurfaceThickness, barWindow.popoutHostThickness)))
+                barWindow.islandRoomHeld = false;
+        }
     }
 
     // A window that already has the room draws nothing on its own, and the grant below waits for a frame.
@@ -901,12 +923,15 @@ Item {
 
     Connections {
         target: barWindow.Window.window
-        enabled: barWindow.popoutRoomShrinking
+        enabled: barWindow.roomShrinking
 
         function onFrameSwapped() {
-            barWindow.popoutRoomShrinking = false;
-            if (barWindow.popoutRoomHeld)
-                barWindow._setWindowThickness(barWindow.popoutHostThickness);
+            barWindow.roomShrinking = false;
+            if (!barWindow.islandSheetOut && !islandRoomRelease.running)
+                barWindow.islandRoomHeld = false;
+            const win = barWindow.Window.window;
+            if (barWindow.hostThickness > (barWindow.isVertical ? win.width : win.height))
+                barWindow._setWindowThickness(barWindow.hostThickness);
         }
     }
 
@@ -914,11 +939,12 @@ Item {
     Timer {
         interval: 1000
         running: barWindow.popoutRoomState !== "" && !barWindow.popoutOut
-        onTriggered: barWindow._releasePopoutRoom()
+        onTriggered: {
+            if (!barWindow.popoutRoomAlwaysHeld)
+                barWindow._shrinkWindow(barWindow.idleHostThickness);
+            ConnectedModeState.setBarRoom(barWindow.popoutRoomKey, "");
+        }
     }
-
-    readonly property real idleHostThickness: isIsland ? Math.max(islandHost?.hostThickness ?? 0, islandStripThickness + islandSatelliteShadowBuffer) : Math.max(barSurfaceThickness, islandSheetOut || islandReservesSheet ? islandHost.hostThickness : 0)
-    readonly property real hostThickness: Math.max(idleHostThickness, popoutHostThickness)
     // The host reserves the expanded island's height, so sliding by it would move a compact island off-screen within a frame.
     readonly property real islandCompactThickness: Math.max(islandStripThickness + islandSatelliteShadowBuffer, (islandHost?.outerGap ?? 0) + (islandHost?.compactThickness ?? 0) + (islandHost?.shadowPadding ?? 0))
     readonly property real hideSlideThickness: isIsland ? islandCompactThickness : barSurfaceThickness
@@ -1527,7 +1553,8 @@ Item {
                         anchorItem: topBarContainer
                         slotItem: barWindow.islandSlot
                         barBody: barWindow
-                        bandThickness: barWindow.isVertical ? topBarMouseArea.width : topBarMouseArea.height
+                        bandThickness: barWindow.isVertical ? barUnitInset.width : barUnitInset.height
+                        bandInset: barUnitInset.spacingPx
                         bandAlongStart: barWindow.isVertical ? barUnitInset.y : barUnitInset.x
                         bandAlongEnd: barWindow.isVertical ? barUnitInset.y + barUnitInset.height : barUnitInset.x + barUnitInset.width
                         bandColor: barWindow._bgColor

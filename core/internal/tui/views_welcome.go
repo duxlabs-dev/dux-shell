@@ -103,6 +103,8 @@ func unsupportedDistroMessage(info *distros.OSInfo) string {
 		return fmt.Sprintf("Ubuntu %s is not supported.\n\nOnly Ubuntu 25.04+ is supported.\n\nPlease upgrade to Ubuntu 25.04 or later.", info.VersionID)
 	case "debian":
 		return fmt.Sprintf("Debian %s is not supported.\n\nOnly Debian 13+ (Trixie) is supported.\n\nPlease upgrade to Debian 13 or later.", info.VersionID)
+	case "lmde":
+		return fmt.Sprintf("LMDE %s is not supported.\n\nOnly LMDE 7+ is supported.\n\nPlease upgrade to LMDE 7 or later.", info.VersionID)
 	case "nixos":
 		return "See the NixOS documentation for installation instructions: " + site.Docs + "/dms/nixos."
 	case "rhel", "centos", "rocky", "almalinux":

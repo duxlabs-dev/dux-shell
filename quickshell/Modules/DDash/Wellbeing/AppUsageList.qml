@@ -16,6 +16,8 @@ DCard {
     property date anchor: new Date()
     property date today: anchor
     property string period: "week"
+    property string selectedDate: ""
+    property string periodBeforeSelection: ""
     property bool showTitle: true
     property bool fillHeight: true
 
@@ -33,11 +35,24 @@ DCard {
             "text": I18n.tr("Month", "screen time range filter")
         }
     ]
-    readonly property var apps: Wellbeing.topApps(Wellbeing.periodDays(days, anchor, firstDayOfWeek, period, today), WellbeingMetrics.listedApps)
+    readonly property date periodAnchor: selectedDate !== "" ? Wellbeing.parseKey(selectedDate) : anchor
+    readonly property var apps: Wellbeing.topApps(Wellbeing.periodDays(days, periodAnchor, firstDayOfWeek, period, today), WellbeingMetrics.listedApps)
     readonly property real longest: apps.length > 0 ? apps[0].seconds : 0
     readonly property real listHeight: Math.max(1, apps.length) * WellbeingMetrics.appRowHeight + Math.max(0, apps.length - 1) * Theme.groupedListGap
 
     signal limitRequested(string appId)
+    signal selectionCleared
+
+    onSelectedDateChanged: {
+        if (selectedDate !== "") {
+            if (periodBeforeSelection === "")
+                periodBeforeSelection = period;
+            period = "day";
+        } else if (periodBeforeSelection !== "") {
+            period = periodBeforeSelection;
+            periodBeforeSelection = "";
+        }
+    }
 
     restRadius: DashMetrics.cardRadius
     pad: Theme.spacingL
@@ -72,8 +87,13 @@ DCard {
             model: root.periods.map(p => p.text)
             currentIndex: root.periods.findIndex(p => p.value === root.period)
             onSelectionChanged: (index, selected) => {
-                if (selected)
-                    root.period = root.periods[index].value;
+                if (!selected)
+                    return;
+                root.period = root.periods[index].value;
+                if (root.period === "day" || root.selectedDate === "")
+                    return;
+                root.periodBeforeSelection = "";
+                root.selectionCleared();
             }
         }
     }

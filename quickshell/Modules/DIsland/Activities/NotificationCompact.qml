@@ -7,6 +7,8 @@ import qs.DCommon.Widgets
 Item {
     id: root
 
+    property color foreground: Theme.surfaceText
+    property color secondaryForeground: Theme.surfaceTextSecondary
     required property var notificationModel
     required property var controller
     property bool dense: false
@@ -14,8 +16,8 @@ Item {
 
     readonly property bool isVertical: root.controller.isVertical
     readonly property string headerText: root.notificationModel.appName + (root.notificationModel.timeText ? " · " + root.notificationModel.timeText : "")
-    readonly property string summaryText: root.dense && root.notificationModel.appName ? root.notificationModel.appName + " · " + root.notificationModel.summary : root.notificationModel.summary
-    readonly property real measuredWidth: Theme.spacingS * 3 + root.iconSize + Theme.spacingXS + Math.max(root.dense ? 0 : headerLabel.implicitWidth, summaryLabel.implicitWidth)
+    readonly property string summaryText: root.dense && !root.notificationModel.summarized && root.notificationModel.appName ? root.notificationModel.appName + " · " + root.notificationModel.summary : root.notificationModel.summary
+    readonly property real measuredWidth: Theme.spacingS * 3 + root.iconSize + Theme.spacingXS + Math.max(root.dense || root.notificationModel.summarized ? 0 : headerLabel.implicitWidth, summaryLabel.implicitWidth)
 
     function pushMeasuredLength() {
         root.controller.setNotificationContentLength(root.isVertical ? root.iconSize + Theme.spacingS * 2 : root.measuredWidth);
@@ -65,9 +67,9 @@ Item {
                 id: headerLabel
 
                 width: parent.width
-                visible: !root.dense
+                visible: !root.dense && !root.notificationModel.summarized
                 text: root.headerText
-                color: Theme.surfaceTextSecondary
+                color: root.secondaryForeground
                 font.pixelSize: Theme.fontSizeSmall
                 font.weight: Theme.fontWeightMedium
                 wrapMode: Text.NoWrap
@@ -79,7 +81,7 @@ Item {
 
                 width: parent.width
                 text: root.summaryText
-                color: Theme.surfaceText
+                color: root.foreground
                 font.pixelSize: root.dense ? Theme.fontSizeSmall : Theme.fontSizeMedium
                 font.weight: Theme.fontWeightMedium
                 wrapMode: Text.NoWrap

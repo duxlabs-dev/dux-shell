@@ -83,6 +83,8 @@ Item {
                 days: root.days
                 firstDayOfWeek: root.firstDayOfWeek
                 anchor: root.anchor
+                selectedDate: chart.selectedDate
+                onSelectionCleared: chart.selectedDate = ""
                 today: root.today
                 onLimitRequested: appId => root.toggleLimit(appId)
             }

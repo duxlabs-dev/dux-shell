@@ -15,12 +15,13 @@ Rectangle {
 
     property string searchText: ""
     property string expandedPid: ""
+    property var openGroups: ({})
     property var contextMenu: null
     property var columns: ProcessColumns.DEFAULT_COLUMNS
     readonly property var processFilterTypes: CacheData.processFilterTypes
     readonly property bool onlineOnly: ProcessListMetrics.onlineOnly
     readonly property bool filtered: searchText.length > 0 || processFilterTypes.length === 1 || onlineOnly
-    readonly property int processCount: filtered ? cachedProcesses.length : Math.max(DgopService.processCount, cachedProcesses.length)
+    readonly property int processCount: filtered ? cachedProcesses.filter(p => p.memberOf === undefined).length : Math.max(DgopService.processCount, cachedProcesses.length)
     readonly property string processCountText: processCount === 1 ? I18n.tr("%1 process", "process count, singular, %1 is 1").arg(1) : I18n.tr("%1 processes", "process count, plural, %1 is a number").arg(processCount)
     readonly property real rowHeight: ProcessListMetrics.rowHeight
     property bool active: visible
@@ -30,8 +31,10 @@ Rectangle {
             selectionScroll.schedule();
     }
     onActiveChanged: {
-        if (!active)
+        if (!active) {
+            openGroups = ({});
             return;
+        }
         reconcileSort();
         updateProcesses();
     }
@@ -68,7 +71,7 @@ Rectangle {
     property bool keyboardNavigationActive: false
     property int forceRefreshCount: 0
 
-    readonly property bool holdOrder: (contextMenu?.visible ?? false) || (contextMenu?.confirmationOpen ?? false) || expandedPid.length > 0
+    readonly property bool holdOrder: (contextMenu?.visible ?? false) || (contextMenu?.confirmationOpen ?? false) || expandedPid.length > 0 || Object.keys(openGroups).length > 0
     // The order stays put for one more sample after a row or menu closes, so the list does not re-sort under the pointer.
     readonly property bool pauseUpdates: holdOrder || resumeHold.running
     readonly property bool shouldUpdate: !pauseUpdates || forceRefreshCount > 0
@@ -137,7 +140,7 @@ Rectangle {
     // Wider than the card when many columns are on: the whole table then scrolls sideways, the name keeps its minimum.
     readonly property real tableWidth: Math.max(root.width, Theme.spacingL * 2 + root.leadWidth + root.nameMinWidth + visibleColumns.reduce((sum, c) => sum + root.columnWidth(c) + Theme.spacingXS * 2, 0))
     readonly property var visibleColumnIds: visibleColumns.map(c => c.id)
-    readonly property real leadWidth: ProcessListMetrics.appIconSize + Theme.spacingS
+    readonly property real leadWidth: ProcessListMetrics.expanderWidth + ProcessListMetrics.appIconSize + Theme.spacingS
 
     function columnWidth(c) {
         return Theme.fontSizeSmall * (c.width ?? 6);
@@ -149,6 +152,7 @@ Rectangle {
         property string sortKey: ""
         property string label: ""
         property bool alignLeft: false
+        property real contentLeftOffset: 0
         readonly property bool sorted: DgopService.currentSort === sortKey
         readonly property bool ascending: DgopService.sortAscending !== ["name", "pid", "nice"].includes(sortKey)
 
@@ -168,12 +172,19 @@ Rectangle {
             radius: Theme.cornerRadiusXS + Theme.focusRingOffset
         }
 
+        StateLayer {
+            id: headerHover
+            cornerRadius: Theme.cornerRadiusXS
+            onClicked: DgopService.toggleSort(sh.sortKey)
+        }
+
         Row {
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: sh.alignLeft ? parent.left : undefined
+            anchors.leftMargin: sh.alignLeft ? sh.contentLeftOffset : 0
             anchors.right: sh.alignLeft ? undefined : parent.right
-            anchors.rightMargin: sh.alignLeft ? 0 : Theme.spacingXS
-            width: Math.min(implicitWidth, sh.width)
+            anchors.rightMargin: sh.alignLeft ? 0 : Theme.spacingS
+            width: Math.min(implicitWidth, sh.width - (sh.alignLeft ? sh.contentLeftOffset : Theme.spacingS))
             spacing: Theme.spacingXXS
 
             StyledText {
@@ -181,7 +192,7 @@ Rectangle {
                 text: sh.label
                 font.pixelSize: Theme.fontSizeSmall
                 font.weight: Theme.fontWeightMedium
-                color: sh.sorted ? Theme.primary : Theme.surfaceVariantText
+                color: sh.sorted ? Theme.primary : headerHover.hovered ? Theme.surfaceText : Theme.surfaceVariantText
                 wrapMode: Text.NoWrap
                 elide: Text.ElideRight
             }
@@ -193,12 +204,6 @@ Rectangle {
                 size: Theme.fontSizeSmall
                 color: Theme.primary
             }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: DgopService.toggleSort(sh.sortKey)
         }
     }
 
@@ -213,25 +218,82 @@ Rectangle {
 
     function refreshFilter() {
         expandedPid = "";
+        openGroups = ({});
         updateProcesses();
+    }
+
+    // The root's own row stays first.
+    function memberRows(root) {
+        const members = root.children ?? [];
+        return members.slice(0, 1).concat(members.slice(1).sort(DgopService.processComparator()));
+    }
+
+    function withMembers(procs) {
+        const rows = [];
+        for (const p of procs) {
+            rows.push(p);
+            if (openGroups[p.key])
+                rows.push(...memberRows(p));
+        }
+        return rows;
     }
 
     // While paused the order stays put (an open row must not move), but the values keep updating.
     function refreshValues() {
         if (!active)
             return;
-        const fresh = new Map(filteredProcesses.map(p => [p.pid, p]));
-        cachedProcesses = cachedProcesses.map(p => fresh.get(p.pid) ?? p);
+        const selected = cachedProcesses[selectedIndex];
+        const fresh = new Map(filteredProcesses.map(p => [p.key, p]));
+        const rows = [];
+        const emptied = [];
+        for (const p of cachedProcesses) {
+            if (p.memberOf !== undefined)
+                continue;
+            const row = fresh.get(p.key) ?? p;
+            rows.push(row);
+            if (!openGroups[p.key])
+                continue;
+            // Exited members leave and new ones join at the end, without moving the rest.
+            const members = new Map(memberRows(row).map(m => [m.key, m]));
+            for (const m of cachedProcesses) {
+                if (String(m.memberOf) === p.key && members.has(m.key)) {
+                    rows.push(members.get(m.key));
+                    members.delete(m.key);
+                }
+            }
+            rows.push(...members.values());
+            if ((row.children?.length ?? 0) === 0)
+                emptied.push(p.key);
+        }
+        cachedProcesses = rows;
+        if (selected) {
+            const index = rows.findIndex(p => p.key === selected.key);
+            selectedIndex = index >= 0 ? index : rows.findIndex(p => p.key === String(selected.memberOf));
+        }
+        if (emptied.length > 0) {
+            const next = Object.assign({}, openGroups);
+            for (const key of emptied)
+                delete next[key];
+            openGroups = next;
+        }
+        dropMissingDetails();
+    }
+
+    // A member row can leave the list (exited, group closed), which would otherwise hold the order forever.
+    function dropMissingDetails() {
+        if (expandedPid.includes("/") && !cachedProcesses.some(p => p.key === expandedPid))
+            expandedPid = "";
     }
 
     function updateProcesses() {
         if (!active || DgopService.allProcesses.length === 0)
             return;
-        const pid = cachedProcesses[selectedIndex]?.pid;
-        cachedProcesses = filteredProcesses;
-        selectedIndex = pid === undefined ? -1 : cachedProcesses.findIndex(p => p.pid === pid);
+        const key = cachedProcesses[selectedIndex]?.key;
+        cachedProcesses = withMembers(filteredProcesses);
+        selectedIndex = key === undefined ? -1 : cachedProcesses.findIndex(p => p.key === key);
         if (selectedIndex < 0 && keyboardNavigationActive && cachedProcesses.length > 0)
             selectedIndex = 0;
+        dropMissingDetails();
     }
 
     function requestAction(index, action) {
@@ -286,8 +348,8 @@ Rectangle {
         if (selectedIndex < 0 || selectedIndex >= cachedProcesses.length)
             return;
         const process = cachedProcesses[selectedIndex];
-        const pidStr = (process?.pid ?? -1).toString();
-        expandedPid = (expandedPid === pidStr) ? "" : pidStr;
+        const key = process?.key ?? "";
+        expandedPid = (expandedPid === key) ? "" : key;
         if (expandedPid !== "")
             revealExpanded.restart();
     }
@@ -297,10 +359,26 @@ Rectangle {
         id: revealExpanded
         interval: Theme.expressiveDurations.expressiveDefaultSpatial
         onTriggered: {
-            const index = root.cachedProcesses.findIndex(p => String(p.pid) === root.expandedPid);
+            const index = root.cachedProcesses.findIndex(p => p.key === root.expandedPid);
             if (index >= 0)
                 processListView.positionViewAtIndex(index, ListView.Contain);
         }
+    }
+
+    function setGroupOpen(key, open) {
+        if (!!openGroups[key] === open)
+            return;
+        if (!open) {
+            if (expandedPid.startsWith(key + "/"))
+                expandedPid = "";
+        }
+        const next = Object.assign({}, openGroups);
+        if (open)
+            next[key] = true;
+        else
+            delete next[key];
+        openGroups = next;
+        refreshValues();
     }
 
     function openContextMenu() {
@@ -318,9 +396,13 @@ Rectangle {
         contextMenu.show(itemPos.x, itemPos.y, true);
     }
 
-    function reset() {
+    function clearSelection() {
         selectedIndex = -1;
         keyboardNavigationActive = false;
+    }
+
+    function reset() {
+        clearSelection();
         expandedPid = "";
     }
 
@@ -362,11 +444,25 @@ Rectangle {
             }
             return;
         case Qt.Key_Delete:
-            if (!keyboardNavigationActive)
+            if (!keyboardNavigationActive || !processListView.activeFocus)
                 return;
             requestAction(selectedIndex, "quit");
             event.accepted = true;
             return;
+        case Qt.Key_Right:
+        case Qt.Key_Left:
+            {
+                const process = keyboardNavigationActive && processListView.activeFocus ? cachedProcesses[selectedIndex] : null;
+                if (!process)
+                    return;
+                const open = (event.key === Qt.Key_Right) !== I18n.isRtl;
+                const key = process.memberOf !== undefined ? (open ? "" : String(process.memberOf)) : process.children.length > 0 ? process.key : "";
+                if (key === "")
+                    return;
+                setGroupOpen(key, open);
+                event.accepted = true;
+                return;
+            }
         case Qt.Key_Home:
             selectFirst();
             event.accepted = true;
@@ -376,7 +472,7 @@ Rectangle {
             event.accepted = true;
             return;
         case Qt.Key_Space:
-            if (keyboardNavigationActive) {
+            if (keyboardNavigationActive && processListView.activeFocus) {
                 toggleExpand();
                 event.accepted = true;
             }
@@ -405,7 +501,7 @@ Rectangle {
 
     Ref {
         service: DgopService
-        modules: ["processes", "cpu", "memory", "system", "gpu"].concat(ProcessColumns.modulesFor(root.columns), root.onlineOnly || root.expandedPid !== "" ? ["process-net"] : [])
+        modules: ["processes", "process-members", "cpu", "memory", "system", "gpu"].concat(ProcessColumns.modulesFor(root.columns), root.onlineOnly || root.expandedPid !== "" ? ["process-net"] : [])
         active: root.active
     }
 
@@ -477,10 +573,6 @@ Rectangle {
                     anchors.rightMargin: Theme.spacingL
                     spacing: Theme.spacingXS
 
-                    Item {
-                        Layout.minimumWidth: root.leadWidth
-                    }
-
                     SortHeader {
                         id: nameHeader
                         Layout.fillWidth: true
@@ -488,6 +580,7 @@ Rectangle {
                         sortKey: "name"
                         label: I18n.tr("Name")
                         alignLeft: true
+                        contentLeftOffset: root.leadWidth + header.spacing
                     }
 
                     Repeater {
@@ -529,7 +622,7 @@ Rectangle {
 
                 model: ScriptModel {
                     values: root.cachedProcesses
-                    objectProp: "pid"
+                    objectProp: "key"
                 }
 
                 delegate: ProcessRow {
@@ -545,12 +638,18 @@ Rectangle {
                     KeyNavigation.backtab: nameHeader
                     columns: root.visibleColumnIds
                     process: modelData
-                    isExpanded: root.expandedPid === (modelData?.pid ?? -1).toString()
+                    isExpanded: root.expandedPid === (modelData?.key ?? "")
+                    groupOpen: !!root.openGroups[modelData?.key]
+                    onGroupToggled: root.setGroupOpen(modelData.key, !groupOpen)
                     isSelected: root.keyboardNavigationActive && root.selectedIndex === index
                     onClicked: {
                         // A click that opens or dismisses the context menu is not meant for the row.
                         if (root.contextMenu?.visible || Date.now() - root.menuClosedAt < 400)
                             return;
+                        if (isExpanded) {
+                            root.reset();
+                            return;
+                        }
                         processListView.forceActiveFocus(Qt.MouseFocusReason);
                         root.keyboardNavigationActive = true;
                         root.selectedIndex = index;

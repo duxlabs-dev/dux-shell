@@ -537,6 +537,11 @@ Item {
             visible: root.selectedIslandEnabled
         }
 
+        IslandAppearanceCard {
+            store: bar.islandStore
+            visible: root.selectedIslandEnabled
+        }
+
         SettingsCard {
             iconName: "widgets"
             title: I18n.tr("Satellites", "island settings: satellite widgets card title")

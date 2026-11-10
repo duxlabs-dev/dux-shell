@@ -45,6 +45,22 @@ Singleton {
                     "hint": I18n.tr("Folder, interval, daily time")
                 },
                 {
+                    "id": "wallpaper_folders",
+                    "hidden": true,
+                    "text": I18n.tr("Wallpapers", "wallpaper folders settings tab"),
+                    "icon": "wallpaper",
+                    "tabIndex": 71,
+                    "hint": I18n.tr("Folders", "wallpaper folders settings tab hint")
+                },
+                {
+                    "id": "wallpaper_folder",
+                    "hidden": true,
+                    "text": I18n.tr("Folder", "wallpaper folder settings tab"),
+                    "icon": "folder",
+                    "tabIndex": 72,
+                    "titleFrom": "selectedWallpaperFolderTitle"
+                },
+                {
                     "id": "theme_apps",
                     "advanced": true,
                     "text": I18n.tr("App theming"),

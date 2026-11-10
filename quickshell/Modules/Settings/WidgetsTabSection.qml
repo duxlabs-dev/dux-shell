@@ -19,6 +19,7 @@ Column {
     property string sectionId: ""
     property string barId: ""
     property bool overflowSettingsExpanded: false
+    property bool overflowAvailable: true
     readonly property var barConfig: SettingsData.getBarConfig(barId)
     readonly property bool autoOverflow: barConfig?.[sectionId + "OverflowMode"] !== "bar"
     readonly property int overflowPosition: barConfig?.[sectionId + "OverflowPosition"] ?? OverflowLayout.defaultPosition(sectionId, items.length)
@@ -63,6 +64,7 @@ Column {
     spacing: Theme.spacingM
 
     SettingsSectionLabel {
+        visible: root.title !== ""
         text: root.title
         actions: [
             DActionButton {
@@ -72,7 +74,7 @@ Column {
                 Accessible.name: root.title + ": " + I18n.tr("Overflow")
                 iconSize: Theme.iconSizeSmall
                 iconColor: root.overflowSettingsExpanded ? Theme.primary : Theme.outline
-                visible: root.barId !== ""
+                visible: root.barId !== "" && root.overflowAvailable
                 onClicked: root.overflowSettingsExpanded = !root.overflowSettingsExpanded
             },
             DActionButton {
@@ -212,9 +214,17 @@ Column {
                 onIncrement: () => root.spacerSizeChanged(root.sectionId, widgetRow.index, Math.min(5000, (widgetRow.modelData.size || 20) + 5))
             }
 
+            DIcon {
+                anchors.verticalCenter: parent.verticalCenter
+                name: "lock"
+                size: Theme.iconSizeMedium
+                color: Theme.onSurfaceVariant
+                visible: widgetRow.modelData.locked === true
+            }
+
             DToggle {
                 hideText: true
-                visible: widgetRow.modelData.id !== "spacer"
+                visible: widgetRow.modelData.id !== "spacer" && widgetRow.modelData.locked !== true
                 checked: widgetRow.modelData.enabled
                 anchors.verticalCenter: parent.verticalCenter
                 onToggled: value => root.itemEnabledChanged(root.sectionId, widgetRow.modelData.id, value)
@@ -223,6 +233,7 @@ Column {
             DActionButton {
                 iconName: "close"
                 iconColor: Theme.error
+                visible: widgetRow.modelData.locked !== true
                 Accessible.name: I18n.tr("Remove")
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: root.removeWidget(root.sectionId, widgetRow.index)

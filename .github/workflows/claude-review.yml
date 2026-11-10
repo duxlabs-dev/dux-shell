@@ -65,7 +65,6 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
-      id-token: write
     steps:
       - name: Announce start
         id: start
@@ -81,6 +80,8 @@ jobs:
           ref: refs/pull/${{ needs.gate.outputs.pr }}/head
           fetch-depth: 0
           submodules: recursive
+          persist-credentials: false
+          allow-unsafe-pr-checkout: true
 
       - name: Resolve base branch
         id: pr
@@ -95,6 +96,7 @@ jobs:
         id: claude
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             Review pull request #${{ needs.gate.outputs.pr }} in ${{ github.repository }}, requested by @${{ needs.gate.outputs.actor }}:
 
@@ -107,7 +109,7 @@ jobs:
             Get the diff from git, never `gh pr diff` (GitHub refuses diffs over 20000 lines): `git diff --stat origin/${{ steps.pr.outputs.base }}...HEAD`, then `git diff origin/${{ steps.pr.outputs.base }}...HEAD -- <path>` per file or directory. Read surrounding code as needed. Split a large PR across Task agents by area.
 
             Steps:
-            1. Read CONTRIBUTING.md.
+            1. Read AGENTS.md and CONTRIBUTING.md. AGENTS.md rules are review criteria, not style.
             2. Read the PR title, description and diff.
             3. Check existing comments so you don't repeat them: `gh api --method GET repos/${{ github.repository }}/pulls/${{ needs.gate.outputs.pr }}/comments` and `gh pr view ${{ needs.gate.outputs.pr }} --comments`. Skip findings already covered by a comment that still applies.
             4. Verify each candidate finding against the code. Drop anything you can't confirm.
@@ -117,6 +119,7 @@ jobs:
                ## Claude review
                <one line verdict>
                - <finding, file:line> per inline comment posted this run
+               Docs pending: <items>, only when the PR adds or changes an IPC function, CLI flag or setting and links no dux-docs PR
                Checked: <one line>. Model: claude-opus-5-5.
 
                No findings: "No issues found." plus what was checked.
@@ -126,9 +129,12 @@ jobs:
             - QML: undefined refs, missing imports, binding loops, bindings that never update, handlers on the wrong object, raw Flickable/ListView/ScrollView instead of the D* wrappers (DFlickable, DListView, DGridView).
             - Deprecated shims: added code that uses a deprecated type or imports a deprecated module. Every shim calls `Deprecation.type(` or `Deprecation.module(`; list them with `git grep -h -e "Deprecation.type(" -e "Deprecation.module(" origin/${{ steps.pr.outputs.base }} -- quickshell`, which gives the old and new name. Grep the base, not HEAD, since a PR branched before the rename has no shims. Flag it even when the rest of the file still uses old names on the PR's base; suggest the new name and a rebase if the base predates it.
             - Security: command injection, path traversal, unsafe file permissions, secrets in code.
-            - CONTRIBUTING.md rules: user-facing strings in `I18n.tr()` with translator context, reuse existing terms from quickshell/translations/en.json; en.json and template.json must not be touched in a PR; mocks under core/internal/mocks/ are regenerated not hand-edited; new dux-qml-common contract properties need the matching library change.
+            - Reuse: a new component or delegate that near-duplicates an existing one. Before accepting a new .qml file, grep quickshell/Widgets, quickshell/Modules/Settings/Widgets and dux-qml-common/DCommon/Widgets for a similar name or role, and suggest extending the existing one.
+            - Tokens: a literal number for spacing, size, radius, column count or duration in QML where Theme, SettingsMetrics or DashMetrics already names one.
+            - Contract drift: the same rule implemented in Go and QML (path matching, ownership, ordering) that can disagree, and IPC/CLI functions that report success before an async step decides the outcome.
+            - CONTRIBUTING.md rules: user-facing strings in `I18n.tr()` with translator context, reuse existing terms from quickshell/translations/en.json; en.json and template.json must not be touched in a PR; mocks under core/internal/mocks/ are regenerated not hand-edited; new dux-qml-common contract properties need the matching library change. The second `I18n.tr()` argument is a translator comment, not a catalog key; only a third `true` argument makes a separate entry.
 
-            Don't flag style or naming (deprecated shims are not naming), pre-existing issues, anything a linter or compiler catches, speculative input-dependent problems, missing tests or docs, or refactor ideas. Not sure it's real: don't post it.
+            Don't flag naming (deprecated shims are not naming), pre-existing issues, anything a linter or compiler catches, problems that need unusual input to trigger, or missing tests. Deterministic mismatches are not speculative. Not sure it's real: don't post it.
 
             Review only. Never edit files, commit, push, approve or request changes. Do not build, vet, format or run tests; CI already does that and the tools are not available here. Post each finding once. Keep comments short.
           claude_args: |

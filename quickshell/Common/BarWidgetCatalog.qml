@@ -272,7 +272,111 @@ Singleton {
     }
 
     // Every widget reaches the general options page (placement); spacers and separators configure inline on their row.
+    readonly property var islandGroups: [
+        {
+            "id": "workspaces",
+            "icon": "view_module",
+            "text": I18n.tr("Workspace switcher"),
+            "description": ""
+        },
+        {
+            "id": "media",
+            "icon": "music_note",
+            "text": I18n.tr("Media / Launcher", "island settings: media or launcher slot row"),
+            "description": "",
+            "settings": {
+                "tab": "dankbar_settings",
+                "section": "islandMediaLyrics"
+            }
+        },
+        {
+            "id": "clock",
+            "icon": "schedule",
+            "text": I18n.tr("Clock", "island settings: pinned clock row in the home layout"),
+            "description": I18n.tr("Current time and date display"),
+            "locked": true,
+            "settings": {
+                "tab": "dankbar_appearance",
+                "section": "islandHomeClockDisplay"
+            }
+        },
+        {
+            "id": "weather",
+            "icon": "wb_sunny",
+            "text": I18n.tr("Weather", "island settings: weather slot row"),
+            "description": SettingsData.weatherEnabled ? "" : I18n.tr("Enable weather in Time & Weather to show this shortcut", "island settings: weather slot disabled hint"),
+            "settings": {
+                "tab": "time_weather",
+                "section": "weatherEnabled"
+            }
+        },
+        {
+            "id": "status",
+            "icon": "settings",
+            "text": I18n.tr("Control Center", "island settings: battery or control center slot row"),
+            "description": "",
+            "settings": {
+                "tab": "dankbar_appearance",
+                "section": "islandHomeStatusContent"
+            }
+        },
+        {
+            "id": "volume",
+            "icon": "volume_up",
+            "text": I18n.tr("Volume", "island settings: volume slot row"),
+            "description": "",
+            "settings": {
+                "tab": "dankbar_appearance",
+                "section": "islandHomeVolumeDisplay"
+            }
+        },
+        {
+            "id": "brightness",
+            "icon": "brightness_6",
+            "text": I18n.tr("Brightness", "island settings: brightness slot row"),
+            "description": "",
+            "settings": {
+                "tab": "dankbar_appearance",
+                "section": "islandHomeBrightnessDisplay"
+            }
+        },
+        {
+            "id": "notifications",
+            "icon": "notifications",
+            "text": I18n.tr("Notifications", "island settings: notification badge slot row"),
+            "description": "",
+            "settings": {
+                "tab": "dankbar_settings",
+                "section": "islandNotifications"
+            }
+        },
+        {
+            "id": "privacy",
+            "icon": "privacy_tip",
+            "text": I18n.tr("Privacy", "island settings: microphone, camera and screen share indicator slot row"),
+            "description": I18n.tr("Shown only while the microphone, camera or screen sharing is in use", "island settings: privacy slot hint")
+        },
+        {
+            "id": "keyboardLayout",
+            "icon": "keyboard",
+            "text": I18n.tr("Keyboard layout"),
+            "description": I18n.tr("Displays the active keyboard layout and allows switching")
+        },
+        {
+            "id": "tray",
+            "icon": "density_medium",
+            "text": I18n.tr("System tray"),
+            "description": ""
+        }
+    ]
+
+    function islandGroup(id) {
+        return root.islandGroups.find(group => group.id === id) ?? null;
+    }
+
     function configurable(item) {
+        if (item?.islandGroup)
+            return !!item.settings;
         return !!item?.pluginId || !["spacer", "separator"].includes(item?.id);
     }
 }

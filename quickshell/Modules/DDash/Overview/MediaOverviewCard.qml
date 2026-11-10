@@ -256,7 +256,10 @@ Card {
                 enabled: !!root.activePlayer?.canTogglePlaying
                 contentColor: root.bento ? MediaAccentService.onAccentSecondaryContainer : MediaAccentService.onAccentContainer
                 containerColor: root.bento ? MediaAccentService.accentSecondaryContainer : MediaAccentService.accentContainer
-                onClicked: root.activePlayer.togglePlaying()
+                onClicked: {
+                    SessionData.suppressOSDTemporarily();
+                    root.activePlayer.togglePlaying();
+                }
             }
 
             DIconButton {

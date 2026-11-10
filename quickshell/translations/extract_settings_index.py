@@ -121,6 +121,8 @@ TAB_INDEX_MAP = {
     "ThemeAppsTab.qml": 50,
     "ThemeScheduleTab.qml": 51,
     "WallpaperCyclingTab.qml": 52,
+    "WallpaperFoldersTab.qml": 71,
+    "WallpaperFolderTab.qml": 72,
     "ShadowsTab.qml": 53,
     "BarWidgetTab.qml": 54,
     "LockScreenTab.qml": 11,
@@ -843,24 +845,22 @@ def extract_settings_index(root_dir, tab_meta, hub_meta):
             }
         )
 
+    # The island bar's widget list is a section on the Bar widgets page, not a card.
     if "islandHomeLayout" not in seen_keys:
-        category, parent_label, _ = tab_meta.get(3, TAB_META_DEFAULT)
         all_entries.append(
             {
                 "section": "islandHomeLayout",
-                "label": "Home Layout",
-                "tabIndex": 3,
-                "category": category,
-                "parentLabel": parent_label,
+                "label": "Island widgets",
+                "tabIndex": -1,
+                "category": "Bar widgets",
                 "keywords": enrich_keywords(
-                    "Home Layout",
-                    "Order and hide the groups around the island clock",
-                    category,
-                    ["media", "launcher", "weather", "battery", "volume", "brightness", "notifications", "badge", "left", "right", "hidden", "reorder"],
-                    parent_label,
+                    "Island widgets",
+                    "",
+                    "Bar widgets",
+                    ["home", "compact", "layout", "groups", "order", "activities", "media", "launcher", "weather", "battery", "volume", "brightness", "notifications", "clock"],
                 ),
-                "icon": "home",
-                "description": "Order and hide the groups around the island clock",
+                "page": "dankbar_widgets",
+                "icon": "view_in_ar",
                 "conditionKey": "islandEnabled",
             }
         )

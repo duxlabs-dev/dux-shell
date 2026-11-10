@@ -252,8 +252,9 @@ DModal {
                         iconName: "content_copy"
                         onClicked: {
                             if (root.normalQrCodePath.length > 0)
-                                DMSService.sendRequest("clipboard.copyFile", {
-                                    filePath: root.normalQrCodePath
+                                DMSService.sendRequest("clipboard.copyFileContents", {
+                                    filePath: root.normalQrCodePath,
+                                    mimeType: "image/png"
                                 });
                         }
                     }
