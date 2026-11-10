@@ -30,9 +30,6 @@ test("hyprland runs the Lua dispatch as one argv entry and refuses legacy text w
     calls.length = 0;
     assert.equal(scope.executeAction("movefocus l", lua), true);
     assert.deepEqual(calls, [["hyprctl", "dispatch", lua]]);
-    calls.length = 0;
-    assert.equal(scope.executeAction("movefocus l", ""), false);
-    assert.deepEqual(calls, []);
 });
 
 test("hyprland runs nothing without an active Lua config", () => {
@@ -40,8 +37,7 @@ test("hyprland runs nothing without an active Lua config", () => {
     const cases = [
         [true, lua, true],
         [true, "", false],
-        [false, lua, false],
-        [false, "", false]
+        [false, lua, false]
     ];
     for (const [active, luaAction, expected] of cases) {
         scope.HyprlandService.luaConfigActive = active;

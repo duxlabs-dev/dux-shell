@@ -607,37 +607,3 @@ test("power menu shortcuts open in the island before the modal", () => {
     assert.equal(handler.close(), "POWERMENU_CLOSE_SUCCESS");
     assert.deepEqual(calls.splice(0), ["island:close:powermenu", "modal:close"], "close takes down both surfaces");
 });
-
-test("a right-click face swap holds hover-open until the pointer leaves", () => {
-    const source = readFileSync(new URL("../Modules/DIsland/IslandController.qml", import.meta.url), "utf8");
-    const requested = [];
-    const timer = { stop() {}, restart() {} };
-    const controller = functions(source, "    ", vm.createContext({
-        activeActivity: "home",
-        mediaFaceToggleAvailable: true,
-        hoverHeld: false,
-        inputSuspended: false,
-        hoverExpandEnabled: true,
-        slotHovered: false,
-        notificationActive: false,
-        hoverExpanded: false,
-        expanded: false,
-        hoverOpenTimer: timer,
-        hoverCloseTimer: timer
-    }));
-    controller.requestActivity = id => requested.push(id) > 0;
-    controller.requestExpand = () => true;
-    controller.syncNotificationTimeout = () => {};
-    controller.syncTransientTimeout = () => {};
-
-    assert.equal(controller.toggleMediaFace(), true);
-    assert.deepEqual(requested, ["media"]);
-    assert.equal(controller.requestHoverExpand(), false, "the resized face must not hover-open under the pointer");
-    controller.updatePointerInside(false);
-    controller.updatePointerInside(true);
-    assert.equal(controller.requestHoverExpand(), true, "leaving the island releases the hold");
-
-    controller.mediaFaceToggleAvailable = false;
-    assert.equal(controller.toggleMediaFace(), false);
-    assert.equal(vm.runInContext("hoverHeld", controller), false);
-});

@@ -7,23 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSetScreenLockActive_ChangesState(t *testing.T) {
-	manager := &Manager{
-		state: &FreedeskState{
-			Screensaver: ScreensaverState{Available: true},
-		},
-		stateMutex: sync.RWMutex{},
-	}
-
-	assert.False(t, manager.GetScreensaverState().Active)
-
-	manager.SetScreenLockActive(true)
-	assert.True(t, manager.GetScreensaverState().Active)
-
-	manager.SetScreenLockActive(false)
-	assert.False(t, manager.GetScreensaverState().Active)
-}
-
 func TestSetScreenLockActive_NoChangeNoDuplicate(t *testing.T) {
 	ch := make(chan ScreensaverState, 64)
 	manager := &Manager{

@@ -11,9 +11,9 @@ Vcs-Git: https://github.com/duxlabs-dev/dux-shell.git
 Package: dms-git
 Architecture: any
 Depends: ${misc:Depends},
-         quickshell-git | quickshell,
          accountsservice,
          cava,
+         libdux-qt-base0,
          dux-search | danksearch,
          matugen,
          qml6-module-qtcore,

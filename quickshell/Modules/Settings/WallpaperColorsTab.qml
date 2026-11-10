@@ -918,7 +918,6 @@ Column {
             resetByKeys: false
             onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeDark"), false)
             text: I18n.tr("Theme")
-            description: I18n.tr("Requires restart")
             currentValue: SettingsData.iconThemeDark
             enableFuzzySearch: true
             popupWidthOffset: 100
@@ -938,7 +937,6 @@ Column {
             resetByKeys: false
             onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeDark"), false)
             text: I18n.tr("Dark mode theme")
-            description: I18n.tr("Requires restart")
             currentValue: SettingsData.iconThemeDark
             enableFuzzySearch: true
             popupWidthOffset: 100
@@ -958,7 +956,6 @@ Column {
             resetByKeys: false
             onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeLight"), true)
             text: I18n.tr("Light mode theme")
-            description: I18n.tr("Requires restart")
             currentValue: SettingsData.iconThemeLight
             enableFuzzySearch: true
             popupWidthOffset: 100

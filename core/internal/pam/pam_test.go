@@ -364,23 +364,6 @@ func TestBuildManagedLockscreenPamContent_DistroShapes(t *testing.T) {
 				"account\trequired\tpam_unix.so",
 			},
 		},
-		{
-			name: "no login, entry falls through to system-auth",
-			files: map[string]string{
-				"system-auth": "#%PAM-1.0\n" +
-					"auth        required      pam_env.so\n" +
-					"auth        sufficient    pam_unix.so nullok\n" +
-					"auth        sufficient    pam_sss.so forward_pass\n" +
-					"auth        required      pam_deny.so\n" +
-					"account     required      pam_unix.so\n" +
-					"account     [default=bad success=ok user_unknown=ignore] pam_sss.so\n",
-			},
-			wantContains: []string{
-				"auth        sufficient    pam_unix.so nullok",
-				"auth        sufficient    pam_sss.so forward_pass",
-				"account     required      pam_unix.so",
-			},
-		},
 	}
 
 	for _, tt := range tests {

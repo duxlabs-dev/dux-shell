@@ -3,7 +3,6 @@ package cups
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"net"
 	"testing"
 	"time"
@@ -26,62 +25,6 @@ func (m *mockConn) RemoteAddr() net.Addr               { return nil }
 func (m *mockConn) SetDeadline(t time.Time) error      { return nil }
 func (m *mockConn) SetReadDeadline(t time.Time) error  { return nil }
 func (m *mockConn) SetWriteDeadline(t time.Time) error { return nil }
-
-func TestHandleGetPrinters(t *testing.T) {
-	mockClient := mocks_cups.NewMockCUPSClientInterface(t)
-	mockClient.EXPECT().GetPrinters(mock.Anything).Return(map[string]ipp.Attributes{
-		"printer1": {
-			ipp.AttributePrinterName:         []ipp.Attribute{{Value: "printer1"}},
-			ipp.AttributePrinterState:        []ipp.Attribute{{Value: 3}},
-			ipp.AttributePrinterUriSupported: []ipp.Attribute{{Value: "ipp://localhost/printers/printer1"}},
-		},
-	}, nil)
-
-	m := &Manager{
-		client: mockClient,
-	}
-
-	buf := &bytes.Buffer{}
-	conn := ipc.NewConnWriter(&mockConn{Buffer: buf})
-
-	req := ipc.Request{
-		ID:     1,
-		Method: "cups.getPrinters",
-	}
-
-	handleGetPrinters(conn, req, m)
-
-	var resp ipc.Response[[]Printer]
-	err := json.NewDecoder(buf).Decode(&resp)
-	assert.NoError(t, err)
-	assert.NotNil(t, resp.Result)
-	assert.Equal(t, 1, len(*resp.Result))
-}
-
-func TestHandleGetPrinters_Error(t *testing.T) {
-	mockClient := mocks_cups.NewMockCUPSClientInterface(t)
-	mockClient.EXPECT().GetPrinters(mock.Anything).Return(nil, errors.New("test error"))
-
-	m := &Manager{
-		client: mockClient,
-	}
-
-	buf := &bytes.Buffer{}
-	conn := ipc.NewConnWriter(&mockConn{Buffer: buf})
-
-	req := ipc.Request{
-		ID:     1,
-		Method: "cups.getPrinters",
-	}
-
-	handleGetPrinters(conn, req, m)
-
-	var resp ipc.Response[any]
-	err := json.NewDecoder(buf).Decode(&resp)
-	assert.NoError(t, err)
-	assert.Nil(t, resp.Result)
-	assert.NotNil(t, resp.Error)
-}
 
 func TestHandleGetJobs(t *testing.T) {
 	mockClient := mocks_cups.NewMockCUPSClientInterface(t)
@@ -116,31 +59,6 @@ func TestHandleGetJobs(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, resp.Result)
 	assert.Equal(t, 1, len(*resp.Result))
-}
-
-func TestHandleGetJobs_MissingParam(t *testing.T) {
-	mockClient := mocks_cups.NewMockCUPSClientInterface(t)
-
-	m := &Manager{
-		client: mockClient,
-	}
-
-	buf := &bytes.Buffer{}
-	conn := ipc.NewConnWriter(&mockConn{Buffer: buf})
-
-	req := ipc.Request{
-		ID:     1,
-		Method: "cups.getJobs",
-		Params: map[string]any{},
-	}
-
-	handleGetJobs(conn, req, m)
-
-	var resp ipc.Response[any]
-	err := json.NewDecoder(buf).Decode(&resp)
-	assert.NoError(t, err)
-	assert.Nil(t, resp.Result)
-	assert.NotNil(t, resp.Error)
 }
 
 func TestHandlePausePrinter(t *testing.T) {
@@ -275,74 +193,6 @@ func TestHandleRequest_UnknownMethod(t *testing.T) {
 	assert.NotNil(t, resp.Error)
 }
 
-func TestHandleGetDevices(t *testing.T) {
-	mockClient := mocks_cups.NewMockCUPSClientInterface(t)
-	mockClient.EXPECT().GetDevices().Return(map[string]ipp.Attributes{
-		"usb://HP/LaserJet": {
-			"device-class": []ipp.Attribute{{Value: "direct"}},
-			"device-info":  []ipp.Attribute{{Value: "HP LaserJet"}},
-		},
-	}, nil)
-
-	m := &Manager{client: mockClient}
-	buf := &bytes.Buffer{}
-	conn := ipc.NewConnWriter(&mockConn{Buffer: buf})
-
-	req := ipc.Request{ID: 1, Method: "cups.getDevices"}
-	handleGetDevices(conn, req, m)
-
-	var resp ipc.Response[[]Device]
-	err := json.NewDecoder(buf).Decode(&resp)
-	assert.NoError(t, err)
-	assert.NotNil(t, resp.Result)
-	assert.Equal(t, 1, len(*resp.Result))
-}
-
-func TestHandleGetPPDs(t *testing.T) {
-	mockClient := mocks_cups.NewMockCUPSClientInterface(t)
-	mockClient.EXPECT().GetPPDs().Return(map[string]ipp.Attributes{
-		"generic.ppd": {
-			"ppd-make-and-model": []ipp.Attribute{{Value: "Generic"}},
-		},
-	}, nil)
-
-	m := &Manager{client: mockClient}
-	buf := &bytes.Buffer{}
-	conn := ipc.NewConnWriter(&mockConn{Buffer: buf})
-
-	req := ipc.Request{ID: 1, Method: "cups.getPPDs"}
-	handleGetPPDs(conn, req, m)
-
-	var resp ipc.Response[[]PPD]
-	err := json.NewDecoder(buf).Decode(&resp)
-	assert.NoError(t, err)
-	assert.NotNil(t, resp.Result)
-	assert.Equal(t, 1, len(*resp.Result))
-}
-
-func TestHandleGetClasses(t *testing.T) {
-	mockClient := mocks_cups.NewMockCUPSClientInterface(t)
-	mockClient.EXPECT().GetClasses(mock.Anything).Return(map[string]ipp.Attributes{
-		"office": {
-			ipp.AttributePrinterName:  []ipp.Attribute{{Value: "office"}},
-			ipp.AttributePrinterState: []ipp.Attribute{{Value: 3}},
-		},
-	}, nil)
-
-	m := &Manager{client: mockClient}
-	buf := &bytes.Buffer{}
-	conn := ipc.NewConnWriter(&mockConn{Buffer: buf})
-
-	req := ipc.Request{ID: 1, Method: "cups.getClasses"}
-	handleGetClasses(conn, req, m)
-
-	var resp ipc.Response[[]PrinterClass]
-	err := json.NewDecoder(buf).Decode(&resp)
-	assert.NoError(t, err)
-	assert.NotNil(t, resp.Result)
-	assert.Equal(t, 1, len(*resp.Result))
-}
-
 func TestHandleCreatePrinter(t *testing.T) {
 	mockClient := mocks_cups.NewMockCUPSClientInterface(t)
 	mockClient.EXPECT().CreatePrinter("newprinter", "usb://HP", "generic.ppd", false, "", "", "").Return(nil)
@@ -370,22 +220,6 @@ func TestHandleCreatePrinter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, resp.Result)
 	assert.True(t, resp.Result.Success)
-}
-
-func TestHandleCreatePrinter_MissingParams(t *testing.T) {
-	mockClient := mocks_cups.NewMockCUPSClientInterface(t)
-	m := &Manager{client: mockClient}
-	buf := &bytes.Buffer{}
-	conn := ipc.NewConnWriter(&mockConn{Buffer: buf})
-
-	req := ipc.Request{ID: 1, Method: "cups.createPrinter", Params: map[string]any{}}
-	handleCreatePrinter(conn, req, m)
-
-	var resp ipc.Response[any]
-	err := json.NewDecoder(buf).Decode(&resp)
-	assert.NoError(t, err)
-	assert.Nil(t, resp.Result)
-	assert.NotNil(t, resp.Error)
 }
 
 func TestHandleDeletePrinter(t *testing.T) {

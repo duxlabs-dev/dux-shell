@@ -2,11 +2,12 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/duxlabs-dev/dux-go/qtbase"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
@@ -288,7 +289,7 @@ func setPopoutScreenshotMode(begin bool) {
 	}
 	cmdArgs = append(cmdArgs, "-p", shellApp.ConfigPath())
 	cmdArgs = append(cmdArgs, "call", "screenshot", fn)
-	_ = exec.Command("qs", cmdArgs...).Start()
+	_ = qtbase.Command(context.Background(), cmdArgs...).Start()
 }
 
 func writeScreenshotJSON(meta screenshotMetadata) {

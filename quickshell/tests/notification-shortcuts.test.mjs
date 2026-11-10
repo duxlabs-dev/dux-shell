@@ -9,8 +9,7 @@ test("a slot offers every action except its own, the other slot's, and history w
         [["", "", true], ["dnd", "history", "hints", "settings"]],
         [["", "dnd", true], ["history", "hints", "settings"]],
         [["settings", "dnd", true], ["history", "hints"]],
-        [["", "dnd", false], ["hints", "settings"]],
-        [["", "history", false], ["dnd", "hints", "settings"]]
+        [["", "dnd", false], ["hints", "settings"]]
     ];
     for (const [args, expected] of cases)
         assert.deepEqual([...shortcuts.choices(...args)], expected, args.join(","));

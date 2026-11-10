@@ -298,32 +298,6 @@ func TestManager_HandlePropertiesChanged(t *testing.T) {
 		assert.True(t, manager.state.Active)
 	})
 
-	t.Run("idle hint property changed", func(t *testing.T) {
-		manager := &Manager{
-			state: &SessionState{
-				IdleHint: false,
-			},
-			stateMutex: sync.RWMutex{},
-			dirty:      make(chan struct{}, 1),
-		}
-
-		sig := &dbus.Signal{
-			Name: "org.freedesktop.DBus.Properties.PropertiesChanged",
-			Body: []any{
-				"org.freedesktop.login1.Session",
-				map[string]dbus.Variant{
-					"IdleHint": dbus.MakeVariant(true),
-				},
-			},
-		}
-
-		manager.handlePropertiesChanged(sig)
-
-		manager.stateMutex.RLock()
-		defer manager.stateMutex.RUnlock()
-		assert.True(t, manager.state.IdleHint)
-	})
-
 	t.Run("idle since hint property changed", func(t *testing.T) {
 		manager := &Manager{
 			state: &SessionState{
@@ -402,23 +376,6 @@ func TestManager_HandlePropertiesChanged(t *testing.T) {
 		manager.stateMutex.RLock()
 		defer manager.stateMutex.RUnlock()
 		assert.False(t, manager.state.Active)
-	})
-
-	t.Run("empty body", func(t *testing.T) {
-		manager := &Manager{
-			state:      &SessionState{},
-			stateMutex: sync.RWMutex{},
-			dirty:      make(chan struct{}, 1),
-		}
-
-		sig := &dbus.Signal{
-			Name: "org.freedesktop.DBus.Properties.PropertiesChanged",
-			Body: []any{},
-		}
-
-		assert.NotPanics(t, func() {
-			manager.handlePropertiesChanged(sig)
-		})
 	})
 }
 

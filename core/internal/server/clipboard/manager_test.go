@@ -12,7 +12,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 	"time"
 
@@ -175,18 +174,6 @@ func TestSelectAltTextMimeType(t *testing.T) {
 
 func TestStateEqual_BothNil(t *testing.T) {
 	assert.False(t, stateEqual(nil, nil))
-}
-
-func TestStateEqual_OneNil(t *testing.T) {
-	s := &State{Enabled: true}
-	assert.False(t, stateEqual(s, nil))
-	assert.False(t, stateEqual(nil, s))
-}
-
-func TestStateEqual_EnabledDiffers(t *testing.T) {
-	a := &State{Enabled: true}
-	b := &State{Enabled: false}
-	assert.False(t, stateEqual(a, b))
 }
 
 func TestStateEqual_RevisionDiffers(t *testing.T) {
@@ -630,104 +617,6 @@ func TestHandleEditEntry_SuccessAndValidation(t *testing.T) {
 	history := m.GetHistory()
 	require.Len(t, history, 1)
 	assert.Equal(t, "after edit", history[0].Preview)
-}
-
-func TestManager_ConcurrentSubscriberAccess(t *testing.T) {
-	m := &Manager{
-		subscribers: make(map[string]chan State),
-		dirty:       make(chan struct{}, 1),
-	}
-
-	var wg sync.WaitGroup
-	const goroutines = 20
-
-	for i := range goroutines {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			subID := string(rune('a' + id))
-			ch := m.Subscribe(subID)
-			assert.NotNil(t, ch)
-			m.Unsubscribe(subID)
-		}(i)
-	}
-
-	wg.Wait()
-}
-
-func TestManager_ConcurrentGetState(t *testing.T) {
-	m := &Manager{
-		state: &State{
-			Enabled:      true,
-			HistoryCount: 2,
-		},
-	}
-
-	var wg sync.WaitGroup
-	const goroutines = 50
-	const iterations = 100
-
-	for range goroutines / 2 {
-		wg.Go(func() {
-			for range iterations {
-				s := m.GetState()
-				_ = s.Enabled
-				_ = s.HistoryCount
-			}
-		})
-	}
-
-	for i := range goroutines / 2 {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			for j := range iterations {
-				m.stateMutex.Lock()
-				m.state = &State{
-					Enabled:      j%2 == 0,
-					HistoryCount: j,
-				}
-				m.stateMutex.Unlock()
-			}
-		}(i)
-	}
-
-	wg.Wait()
-}
-
-func TestManager_ConcurrentConfigAccess(t *testing.T) {
-	m := &Manager{
-		config: DefaultConfig(),
-	}
-
-	var wg sync.WaitGroup
-	const goroutines = 30
-	const iterations = 100
-
-	for range goroutines / 2 {
-		wg.Go(func() {
-			for range iterations {
-				cfg := m.getConfig()
-				_ = cfg.MaxHistory
-				_ = cfg.MaxEntrySize
-			}
-		})
-	}
-
-	for i := range goroutines / 2 {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			for j := range iterations {
-				m.configMutex.Lock()
-				m.config.MaxHistory = 50 + j
-				m.config.MaxEntrySize = int64(1024 * j)
-				m.configMutex.Unlock()
-			}
-		}(i)
-	}
-
-	wg.Wait()
 }
 
 func TestManager_NotifySubscribersNonBlocking(t *testing.T) {

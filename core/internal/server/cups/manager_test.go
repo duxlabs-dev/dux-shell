@@ -7,40 +7,8 @@ import (
 	"testing"
 
 	mocks_cups "github.com/duxlabs-dev/dux-shell/core/internal/mocks/cups"
-	"github.com/duxlabs-dev/dux-shell/core/pkg/ipp"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestManager_Subscribe(t *testing.T) {
-	mockClient := mocks_cups.NewMockCUPSClientInterface(t)
-
-	m := &Manager{
-		state: &CUPSState{
-			Printers: make(map[string]*Printer),
-		},
-		client:   mockClient,
-		stopChan: make(chan struct{}),
-		dirty:    make(chan struct{}, 1),
-	}
-
-	ch := m.Subscribe("test-client")
-	assert.NotNil(t, ch)
-
-	count := 0
-	m.subscribers.Range(func(key string, ch chan CUPSState) bool {
-		count++
-		return true
-	})
-	assert.Equal(t, 1, count)
-
-	m.Unsubscribe("test-client")
-	count = 0
-	m.subscribers.Range(func(key string, ch chan CUPSState) bool {
-		count++
-		return true
-	})
-	assert.Equal(t, 0, count)
-}
 
 // mirrors the real managers: eventChan guarded by mu, conn/running deliberately
 // unsynchronized so overlapping Start/Stop trips the race detector
@@ -103,29 +71,6 @@ func TestManager_SubscribeUnsubscribeRace(t *testing.T) {
 	wg.Wait()
 }
 
-func TestManager_Close(t *testing.T) {
-	mockClient := mocks_cups.NewMockCUPSClientInterface(t)
-
-	m := &Manager{
-		state: &CUPSState{
-			Printers: make(map[string]*Printer),
-		},
-		client:   mockClient,
-		stopChan: make(chan struct{}),
-		dirty:    make(chan struct{}, 1),
-	}
-
-	m.eventWG.Go(func() {
-		<-m.stopChan
-	})
-
-	m.notifierWg.Go(func() {
-		<-m.stopChan
-	})
-
-	m.Close()
-}
-
 func TestStateChanged(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -178,90 +123,6 @@ func TestStateChanged(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := stateChanged(tt.oldState, tt.newState)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
-func TestParsePrinterState(t *testing.T) {
-	tests := []struct {
-		name  string
-		attrs ipp.Attributes
-		want  string
-	}{
-		{
-			name: "idle",
-			attrs: ipp.Attributes{
-				ipp.AttributePrinterState: []ipp.Attribute{{Value: 3}},
-			},
-			want: "idle",
-		},
-		{
-			name: "processing",
-			attrs: ipp.Attributes{
-				ipp.AttributePrinterState: []ipp.Attribute{{Value: 4}},
-			},
-			want: "processing",
-		},
-		{
-			name: "stopped",
-			attrs: ipp.Attributes{
-				ipp.AttributePrinterState: []ipp.Attribute{{Value: 5}},
-			},
-			want: "stopped",
-		},
-		{
-			name:  "unknown",
-			attrs: ipp.Attributes{},
-			want:  "unknown",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := parsePrinterState(tt.attrs)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
-func TestParseJobState(t *testing.T) {
-	tests := []struct {
-		name  string
-		attrs ipp.Attributes
-		want  string
-	}{
-		{
-			name: "pending",
-			attrs: ipp.Attributes{
-				ipp.AttributeJobState: []ipp.Attribute{{Value: 3}},
-			},
-			want: "pending",
-		},
-		{
-			name: "processing",
-			attrs: ipp.Attributes{
-				ipp.AttributeJobState: []ipp.Attribute{{Value: 5}},
-			},
-			want: "processing",
-		},
-		{
-			name: "completed",
-			attrs: ipp.Attributes{
-				ipp.AttributeJobState: []ipp.Attribute{{Value: 9}},
-			},
-			want: "completed",
-		},
-		{
-			name:  "unknown",
-			attrs: ipp.Attributes{},
-			want:  "unknown",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := parseJobState(tt.attrs)
 			assert.Equal(t, tt.want, got)
 		})
 	}

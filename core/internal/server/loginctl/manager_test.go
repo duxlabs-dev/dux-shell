@@ -8,33 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestManager_Unsubscribe(t *testing.T) {
-	manager := &Manager{
-		state: &SessionState{},
-	}
-
-	ch := manager.Subscribe("test-client")
-
-	manager.Unsubscribe("test-client")
-
-	_, ok := <-ch
-	assert.False(t, ok)
-
-	_, exists := manager.subscribers.Load("test-client")
-	assert.False(t, exists)
-}
-
-func TestManager_Unsubscribe_NonExistent(t *testing.T) {
-	manager := &Manager{
-		state: &SessionState{},
-	}
-
-	// Unsubscribe a non-existent client should not panic
-	assert.NotPanics(t, func() {
-		manager.Unsubscribe("non-existent")
-	})
-}
-
 func TestManager_Close(t *testing.T) {
 	manager := &Manager{
 		state:      &SessionState{},

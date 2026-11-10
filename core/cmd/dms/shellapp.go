@@ -13,6 +13,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
 	"github.com/duxlabs-dev/dux-shell/core/internal/gpu"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/qtbaseembed"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server"
 	"github.com/duxlabs-dev/dux-shell/core/internal/shellembed"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
@@ -26,6 +27,7 @@ var shellApp = shellapp.New(shellapp.Config{
 	QSAppID:                "dev.duxlabs.shell",
 	Version:                Version,
 	Embedded:               embeddedShell{},
+	QtBase:                 qtbaseembed.Extract,
 	Boot:                   bootBackend,
 	PreLaunch:              preLaunch,
 	ExtraEnv:               dmsExtraEnv,

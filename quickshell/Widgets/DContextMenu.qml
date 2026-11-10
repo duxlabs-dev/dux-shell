@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
@@ -41,7 +40,17 @@ Item {
     property bool renderActive: false
     property int selectedMenuIndex: -1
     property bool keyboardNavigation: false
-    readonly property alias contextWindow: menuWindow
+    readonly property var surface: IdleSurfaces.surfaceFor("context-menu", targetScreen?.name ?? "")
+    readonly property bool attached: renderActive && !!surface
+    readonly property var contextWindow: attached ? surface : null
+    readonly property var blurRegion: menuBlur.effectiveRegion
+    readonly property int surfaceKeyboardFocus: {
+        if (!keyboardNavigable || !renderActive)
+            return WlrKeyboardFocus.None;
+        if (PopoutManager.screenshotActive || CompositorService.useHyprlandFocusGrab)
+            return WlrKeyboardFocus.None;
+        return WlrKeyboardFocus.Exclusive;
+    }
     readonly property alias customContentItem: customContentLoader.item
     readonly property bool blurActive: renderActive && openState && BlurService.enabled
 
@@ -65,9 +74,6 @@ Item {
     readonly property int visibleItemCount: menuItems.filter(menuItem => isSelectable(menuItem)).length
 
     signal backdropRightClicked(real x, real y)
-
-    onRenderActiveChanged: transientSurfaceTracker?.setActive(root, renderActive, contextWindow)
-    Component.onDestruction: transientSurfaceTracker?.unregister(root)
 
     Connections {
         target: root.transientSurfaceTracker
@@ -222,34 +228,20 @@ Item {
             activate(menuItems[index]);
     }
 
-    PanelWindow {
+    onRenderActiveChanged: transientSurfaceTracker?.setActive(root, renderActive, contextWindow)
+    Component.onDestruction: transientSurfaceTracker?.unregister(root)
+
+    Item {
         id: menuWindow
 
-        screen: root.targetScreen
-        visible: root.renderActive
-        color: "transparent"
-
-        WlrLayershell.namespace: root.layerNamespace
-        WlrLayershell.layer: WlrLayershell.Overlay
-        WlrLayershell.exclusiveZone: -1
-
-        WlrLayershell.keyboardFocus: {
-            if (!root.keyboardNavigable || !root.renderActive)
-                return WlrKeyboardFocus.None;
-            if (PopoutManager.screenshotActive || CompositorService.useHyprlandFocusGrab)
-                return WlrKeyboardFocus.None;
-            return WlrKeyboardFocus.Exclusive;
-        }
-
-        anchors {
-            top: true
-            left: true
-            right: true
-            bottom: true
-        }
+        readonly property var host: root
+        parent: root.attached ? root.surface.hostItem : root
+        anchors.fill: parent
 
         WindowBlur {
-            targetWindow: menuWindow
+            id: menuBlur
+            targetWindow: root.surface
+            applyToWindow: false
             surfaceColor: menuContainer.color
             blurX: root.blurActive ? menuContainer.x + openScaleTransform.origin.x * (1 - menuContainer.openScale) : 0
             blurY: root.blurActive ? menuContainer.y + openScaleTransform.origin.y * (1 - menuContainer.openScale) : 0

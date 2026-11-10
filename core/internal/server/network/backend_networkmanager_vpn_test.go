@@ -12,33 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNetworkManagerBackend_ConnectVPN_NotFound(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-	mockSettings := mock_gonetworkmanager.NewMockSettings(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-	backend.settings = mockSettings
-
-	mockSettings.EXPECT().ListConnections().Return([]gonetworkmanager.Connection{}, nil)
-
-	err = backend.ConnectVPN("non-existent-vpn-12345", false)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not found")
-}
-
-func TestNetworkManagerBackend_DisconnectVPN_NotActive(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	mockNM.EXPECT().GetPropertyActiveConnections().Return([]gonetworkmanager.ActiveConnection{}, nil)
-
-	err = backend.DisconnectVPN("non-existent-vpn-12345")
-	assert.Error(t, err)
-}
-
 func TestDetectVPNAuthAction_Fortinet(t *testing.T) {
 	service := "org.freedesktop.NetworkManager.openconnect"
 

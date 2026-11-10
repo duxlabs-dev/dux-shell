@@ -42,7 +42,7 @@ Rectangle {
 
     // The window lists every process; the popout shows dgop's top rows.
     property bool fullList: false
-    readonly property bool needsFullProcessList: active && (fullList || searchText.length > 0 || onlineOnly || DgopService.dgopSort() === "")
+    readonly property bool needsFullProcessList: active && (fullList || searchText.length > 0 || onlineOnly || processFilterTypes.length === 1 || DgopService.dgopSort() === "")
     property bool holdsFullProcessList: false
     onNeedsFullProcessListChanged: {
         if (needsFullProcessList === holdsFullProcessList)

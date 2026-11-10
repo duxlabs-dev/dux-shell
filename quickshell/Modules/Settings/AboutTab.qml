@@ -230,6 +230,35 @@ Item {
         }
 
         SettingsCard {
+            iconName: "memory"
+            title: I18n.tr("Runtime")
+
+            SettingsRow {
+                title: ShellVersionService.runtimeName
+                trailingBadge: ShellVersionService.runtimeVersion
+            }
+
+            SettingsRow {
+                visible: ShellVersionService.runtimeRevision !== ""
+                title: I18n.tr("Revision", "about page runtime build revision")
+                subtitle: ShellVersionService.runtimeRevision
+            }
+
+            SettingsRow {
+                visible: ShellVersionService.runtimeLibrary !== ""
+                title: I18n.tr("Library")
+                body: StyledText {
+                    width: parent.width
+                    text: ShellVersionService.runtimeLibrary
+                    textFormat: Text.PlainText
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.surfaceVariantText
+                    wrapMode: Text.WrapAnywhere
+                }
+            }
+        }
+
+        SettingsCard {
             visible: DMSService.isConnected
             iconName: "dns"
             title: I18n.tr("Backend", "noun, settings label for the backend service in use")

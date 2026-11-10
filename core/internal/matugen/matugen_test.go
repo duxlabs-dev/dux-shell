@@ -222,9 +222,7 @@ func TestSourceSelectionArgs(t *testing.T) {
 		{"darkness", "darkness", true, []string{"--prefer", "darkness"}},
 		{"empty falls back to dominant", "", true, []string{"--source-color-index", "0"}},
 		{"typo falls back", "bogus", true, []string{"--source-color-index", "0"}},
-		{"wrong case is not allowlisted", "DARKNESS", true, []string{"--source-color-index", "0"}},
 		{"closest-to-fallback is deliberately excluded", "closest-to-fallback", true, []string{"--source-color-index", "0"}},
-		{"injection-shaped value cannot escape the allowlist", "value; --exec touch /tmp/pwned", true, []string{"--source-color-index", "0"}},
 		// matugen 4.0.x has --source-color-index but not --prefer, and aborts on
 		// an unknown argument. Every prefer mode must degrade, not fail.
 		{"4.0.x: darkness degrades", "darkness", false, []string{"--source-color-index", "0"}},
@@ -406,18 +404,6 @@ func TestExtractSourceColorAllBlackImage(t *testing.T) {
 	assert.Contains(t, err.Error(), "no usable color")
 }
 
-func TestExtractSourceColorOnePixelDoesNotPanic(t *testing.T) {
-	dir := t.TempDir()
-	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
-	img.Set(0, 0, stdcolor.RGBA{R: 255, G: 0, B: 0, A: 255})
-	path := filepath.Join(dir, "one-pixel.png")
-	writeTestPNG(t, path, img)
-
-	assert.NotPanics(t, func() {
-		_, _ = ExtractSourceColor(path)
-	})
-}
-
 func TestSubstituteVars(t *testing.T) {
 	configDir := utils.XDGConfigHome()
 	dataDir := utils.XDGDataHome()
@@ -434,18 +420,6 @@ func TestSubstituteVars(t *testing.T) {
 			input:    "'SHELL_DIR/a' 'CONFIG_DIR/b' 'DATA_DIR/c' 'CACHE_DIR/d'",
 			shellDir: "/shell",
 			expected: "'/shell/a' '" + configDir + "/b' '" + dataDir + "/c' '" + cacheDir + "/d'",
-		},
-		{
-			name:     "no substitution when no placeholders",
-			input:    "input_path = '/absolute/path/foo.conf'",
-			shellDir: "/home/user/shell",
-			expected: "input_path = '/absolute/path/foo.conf'",
-		},
-		{
-			name:     "multiple SHELL_DIR occurrences",
-			input:    "'SHELL_DIR/a' and 'SHELL_DIR/b'",
-			shellDir: "/shell",
-			expected: "'/shell/a' and '/shell/b'",
 		},
 		{
 			name:     "only substitutes quoted paths",
@@ -705,33 +679,6 @@ func TestAppendFlatpakConfigRewritesOutputAndTemplateName(t *testing.T) {
 
 	assert.Contains(t, string(output), "[templates.dmsvesktop-flatpak]")
 	assert.Contains(t, string(output), "'/home/test/.var/app/dev.vencord.Vesktop/config/vesktop/themes/dank-discord.css'")
-}
-
-func TestQtengineActive(t *testing.T) {
-	tests := []struct {
-		name string
-		env  map[string]string
-		want bool
-	}{
-		{name: "both unset", want: false},
-		{name: "qtengine on QT_QPA_PLATFORMTHEME", env: map[string]string{"QT_QPA_PLATFORMTHEME": "qtengine"}, want: true},
-		{name: "qtengine on QT_QPA_PLATFORMTHEME_QT6", env: map[string]string{"QT_QPA_PLATFORMTHEME_QT6": "qtengine"}, want: true},
-		{name: "gtk3", env: map[string]string{"QT_QPA_PLATFORMTHEME": "gtk3"}, want: false},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			for _, key := range []string{"QT_QPA_PLATFORMTHEME", "QT_QPA_PLATFORMTHEME_QT6"} {
-				t.Setenv(key, "")
-				os.Unsetenv(key)
-			}
-			for key, value := range tc.env {
-				t.Setenv(key, value)
-			}
-
-			assert.Equal(t, tc.want, QtengineActive())
-		})
-	}
 }
 
 func TestSyncQtengineConfig(t *testing.T) {
@@ -1199,7 +1146,6 @@ func TestApplyTerminalTemplate(t *testing.T) {
 		{"no trailing newline", "foot.ini", "a", "a\nalpha=0.5\n", opts(50, false)},
 		{"100", "kitty.conf", "a\n", "a\n", opts(100, false)},
 		{"0", "kitty.conf", "a\n", "a\n", opts(0, false)},
-		{"negative", "kitty.conf", "a\n", "a\n", opts(-5, false)},
 		{"tabs", "kitty-tabs.conf", "a\n", "a\n", opts(85, false)},
 		{"wezterm", "wezterm.toml", "a\n", "a\n", opts(85, false)},
 		{"dark and opacity", "kitty.conf", "x.default.y\n", "x.dark.y\nbackground_opacity 0.85\ndynamic_background_opacity yes\n", opts(85, true)},

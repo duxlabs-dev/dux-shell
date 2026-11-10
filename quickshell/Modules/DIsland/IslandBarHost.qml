@@ -69,9 +69,7 @@ Item {
     // Held from expand until the collapse spring settles, so compact-to-compact morphs never resize the bar window.
     property bool sheetOut: false
     readonly property bool surfaceFits: (root.isVertical ? root.windowWidth : root.windowHeight) >= root.hostThickness - 1
-    // A free host lifts to the whole output for the sheet; the expand waits for that size so no frame of the morph is clipped.
-    property bool hostLifted: true
-    readonly property bool hostReady: root.freeMode ? root.hostLifted : (!root.embedded || root.frameHosted || root.surfaceFits)
+    readonly property bool hostReady: root.freeMode || !root.embedded || root.frameHosted || root.surfaceFits
     // Layer surfaces glitch when they resize under a moving sheet: edit room waits for a frame at the grown size, and the grown size outlives the shrink spring.
     readonly property bool surfaceResizes: !root.freeMode && !root.frameHosted
     readonly property int editSurfaceHeight: controller.editSurfaceHeight

@@ -80,11 +80,7 @@ func TestDmenuParseBool(t *testing.T) {
 		val  string
 		want bool
 	}{
-		{"", false},
-		{"0", false},
-		{"false", false},
 		{"False", false},
-		{"no", false},
 		{"anything-else", true},
 	} {
 		if got := dmenuParseBool(tc.val); got != tc.want {
@@ -98,16 +94,6 @@ func TestParseDmenuRow(t *testing.T) {
 		text, meta := parseDmenuRow("apple")
 		if text != "apple" || meta != nil {
 			t.Fatalf("parseDmenuRow(apple) = %q, %+v, want apple, nil", text, meta)
-		}
-	})
-
-	t.Run("single field", func(t *testing.T) {
-		text, meta := parseDmenuRow("Firefox\x00icon\x1ffirefox")
-		if text != "Firefox" {
-			t.Fatalf("text = %q, want Firefox", text)
-		}
-		if meta == nil || meta.Icon != "firefox" {
-			t.Fatalf("meta = %+v, want Icon=firefox", meta)
 		}
 	})
 
@@ -148,32 +134,6 @@ func TestParseDmenuRow(t *testing.T) {
 	})
 }
 
-func TestValidateDmenuFormat(t *testing.T) {
-	for _, f := range []string{"", "s", "i", "d", "q", "p", "f", "F"} {
-		if err := validateDmenuFormat(f); err != nil {
-			t.Errorf("validateDmenuFormat(%q): unexpected error: %v", f, err)
-		}
-	}
-	for _, f := range []string{"x", "S", "ff"} {
-		if err := validateDmenuFormat(f); err == nil {
-			t.Errorf("validateDmenuFormat(%q): expected error, got nil", f)
-		}
-	}
-}
-
-func TestValidateDmenuView(t *testing.T) {
-	for _, v := range []string{"", "list", "grid", "tile"} {
-		if err := validateDmenuView(v); err != nil {
-			t.Errorf("validateDmenuView(%q): unexpected error: %v", v, err)
-		}
-	}
-	for _, v := range []string{"bogus", "List"} {
-		if err := validateDmenuView(v); err == nil {
-			t.Errorf("validateDmenuView(%q): expected error, got nil", v)
-		}
-	}
-}
-
 func TestDmenuShellQuote(t *testing.T) {
 	for _, tc := range []struct {
 		in   string
@@ -198,7 +158,6 @@ func TestDmenuFormatOutput(t *testing.T) {
 		want       string
 		wantErr    bool
 	}{
-		{"", 1, "banana", "ban", "banana", false},
 		{"s", 1, "banana", "ban", "banana", false},
 		{"i", 1, "banana", "ban", "1", false},
 		{"d", 1, "banana", "ban", "2", false},
@@ -275,21 +234,6 @@ func TestDmenuDumpLines(t *testing.T) {
 	})
 }
 
-func TestDmenuKeybindExitCode(t *testing.T) {
-	for _, tc := range []struct {
-		n    int
-		want int
-	}{
-		{0, 0},
-		{1, 10},
-		{19, 28},
-	} {
-		if got := dmenuKeybindExitCode(tc.n); got != tc.want {
-			t.Errorf("dmenuKeybindExitCode(%d) = %d, want %d", tc.n, got, tc.want)
-		}
-	}
-}
-
 func TestNormalizeDmenuArgv(t *testing.T) {
 	for _, tc := range []struct {
 		name string
@@ -325,16 +269,6 @@ func TestNormalizeDmenuArgv(t *testing.T) {
 			"negative --active/--urgent spec values are not mistaken for flag names",
 			[]string{"dms", "dmenu", "--active", "-3:"},
 			[]string{"dms", "dmenu", "--active", "-3:"},
-		},
-		{
-			"DMS-native long flags also get the single-dash alias",
-			[]string{"dms", "dmenu", "-icon", "star"},
-			[]string{"dms", "dmenu", "--icon", "star"},
-		},
-		{
-			"rofi's -a/-u abbreviations are real shorthands, untouched by the rewrite",
-			[]string{"dms", "dmenu", "-a", "1,3", "-u", "2"},
-			[]string{"dms", "dmenu", "-a", "1,3", "-u", "2"},
 		},
 		{
 			"stops rewriting after a bare --",

@@ -13,14 +13,12 @@ DPopout {
     id: root
 
     layerNamespace: "dms:dash"
-    fullHeightSurface: true
     contentHandlesKeys: true
     closesWithSource: false
     resizeCurve: Theme.expressiveCurves.standard
     resizeDuration: Theme.expressiveDurations.expressiveFastSpatial
     resizeMotion: true
     resizing: contentLoader.item?.panelResizing ?? false
-    surfacePadding: PopoutMetrics.editOverflow * 2
     inputMargin: editGutter * 2
     hoverDismissSuspended: editMode
     onOpened: contentFocusTimer.restart()
@@ -84,7 +82,6 @@ DPopout {
     readonly property real editGutter: editMode ? PopoutMetrics.editOverflow : 0
 
     popupWidth: panelWidthFor(DashMetrics.panelColumnsFor(activeTabId))
-    minimumSurfaceWidth: panelWidthFor(editMode ? columnCap : DashRegistry.widestPanelColumns)
     popupHeight: contentLoader.item?.implicitHeight ?? (DashMetrics.tabDefaultHeight + Theme.navigationHeight + DashMetrics.contentGap + DashMetrics.contentPadding * 2)
     triggerWidth: DashMetrics.triggerWidth
     screen: triggerScreen
@@ -268,6 +265,9 @@ DPopout {
             readonly property real horizontalChromeHeight: root.verticalNavigation || !root.showHeader ? 0 : (root.showTabs ? tabBar.implicitHeight : Theme.minimumTouchTargetSize) + DashMetrics.contentGap
             readonly property bool ready: pages.ready
             readonly property bool navigationFocused: tabBar.activeFocus
+            readonly property bool optionsShown: tabOptions.item?.shown ?? false
+            readonly property bool actionsMenuOpen: pageActions.item?.menuOpen ?? false
+            readonly property var actionFocusTargets: pageActions.item?.focusTargets ?? []
             focus: true
 
             readonly property bool panelResizing: panelResizer.resizing
@@ -319,12 +319,12 @@ DPopout {
 
             function focusInitial() {
                 if (root.activeTabId === "") {
-                    emptySettings.forceActiveFocus(Qt.OtherFocusReason);
+                    emptyContent.item?.focusTarget.forceActiveFocus(Qt.OtherFocusReason);
                     return;
                 }
                 for (const target of [tabBar, pageTitle.focusTarget])
                     target.focus = false;
-                pageActions.clearFocus();
+                pageActions.item?.clearFocus();
                 if (pages.currentHost)
                     pages.currentHost.focus = false;
                 mainContainer.forceActiveFocus(Qt.OtherFocusReason);
@@ -352,9 +352,21 @@ DPopout {
             readonly property Item windowFocusItem: Window.activeFocusItem
             onWindowFocusItemChanged: revealFocusedItem()
 
+            function presentOptions() {
+                tabOptions.active = true;
+                tabOptions.item.presentFor(root.activeTabId);
+            }
+
             function dismissOptions() {
-                tabOptions.dismiss();
-                pageActions.closeMenu();
+                tabOptions.item?.dismiss();
+                pageActions.item?.closeMenu();
+            }
+
+            function releaseSheet(loader) {
+                Qt.callLater(() => {
+                    if (loader.item && !loader.item.shown)
+                        loader.active = false;
+                });
             }
 
             Component.onCompleted: {
@@ -378,12 +390,12 @@ DPopout {
                 active: root.shouldBeVisible
                 editable: root.activeTabId !== ""
                 editMode: root.editMode
-                optionsShown: tabOptions.shown
-                menuOpen: pageActions.menuOpen
+                optionsShown: mainContainer.optionsShown
+                menuOpen: mainContainer.actionsMenuOpen
                 tabItem: pages.currentItem
                 contentScope: pages.currentHost
                 contentTarget: pages.focusTarget
-                headerTargets: root.editMode ? pageActions.focusTargets : [tabBar, pageTitle.focusTarget]
+                headerTargets: root.editMode ? mainContainer.actionFocusTargets : [tabBar, pageTitle.focusTarget]
                 tabsShown: root.showTabs
                 headerEdge: root.verticalNavigation ? (root.navigationEdge === SettingsData.Right ? "right" : "left") : (root.navigationEdge === SettingsData.Bottom ? "down" : "up")
                 onTabCycleRequested: direction => {
@@ -393,7 +405,7 @@ DPopout {
                 }
                 onEditModeRequested: on => root.editMode = on
                 onLeaveRequested: mainContainer.focusInitial()
-                onOptionsDismissRequested: tabOptions.dismiss()
+                onOptionsDismissRequested: tabOptions.item?.dismiss()
                 onCloseRequested: {
                     if (root.detailTabId !== "")
                         root.closeDetail();
@@ -402,34 +414,46 @@ DPopout {
                 }
             }
 
-            DashOptionsSheet {
+            Loader {
                 id: tabOptions
-                backdrop: contentColumn
-                tabScope: true
-                onDismissed: mainContainer.focusInitial()
+                anchors.fill: parent
+                z: DashMetrics.overlayZ
+                active: false
+
+                sourceComponent: DashOptionsSheet {
+                    backdrop: contentColumn
+                    tabScope: true
+                    onDismissed: {
+                        mainContainer.focusInitial();
+                        mainContainer.releaseSheet(tabOptions);
+                    }
+                }
             }
 
-            DGridEditChrome {
+            Loader {
                 id: panelChrome
 
                 anchors.fill: parent
-                anchors.margins: -(contentInset + Theme.spacingS)
+                anchors.margins: -((panelChrome.item?.contentInset ?? 0) + Theme.spacingS)
                 z: 2
-                visible: root.editMode
-                edgeResize: mainContainer.panelResizing || mainContainer.panelResizer.sideMovable(-1, mainContainer.panelColumns)
-                cornerResize: mainContainer.panelResizing || mainContainer.panelResizer.sideMovable(1, mainContainer.panelColumns)
-                removable: false
-                cornerRadius: Theme.windowRadius + Theme.spacingS
-                handleOverhang: contentInset
-                buttonSize: PopoutMetrics.chromeButtonSize
-                iconSize: PopoutMetrics.chromeIconSize
-                resizing: mainContainer.panelResizing || mainContainer.panelShifted
-                atDefault: mainContainer.panelAtDefault
-                sizeText: mainContainer.panelColumns + "×" + mainContainer.panelRows
-                onResizeStarted: (px, py, signX) => mainContainer.panelResizer.begin(px, py, signX)
-                onResizeMoved: (px, py) => mainContainer.panelResizer.move(px, py)
-                onResizeEnded: mainContainer.panelResizer.end()
-                onResizeCanceled: mainContainer.panelResizer.cancel()
+                active: root.editMode
+
+                sourceComponent: DGridEditChrome {
+                    edgeResize: mainContainer.panelResizing || mainContainer.panelResizer.sideMovable(-1, mainContainer.panelColumns)
+                    cornerResize: mainContainer.panelResizing || mainContainer.panelResizer.sideMovable(1, mainContainer.panelColumns)
+                    removable: false
+                    cornerRadius: Theme.windowRadius + Theme.spacingS
+                    handleOverhang: contentInset
+                    buttonSize: PopoutMetrics.chromeButtonSize
+                    iconSize: PopoutMetrics.chromeIconSize
+                    resizing: mainContainer.panelResizing || mainContainer.panelShifted
+                    atDefault: mainContainer.panelAtDefault
+                    sizeText: mainContainer.panelColumns + "×" + mainContainer.panelRows
+                    onResizeStarted: (px, py, signX) => mainContainer.panelResizer.begin(px, py, signX)
+                    onResizeMoved: (px, py) => mainContainer.panelResizer.move(px, py)
+                    onResizeEnded: mainContainer.panelResizer.end()
+                    onResizeCanceled: mainContainer.panelResizer.cancel()
+                }
             }
 
             Item {
@@ -454,7 +478,7 @@ DPopout {
                     Item {
                         id: headerRow
                         visible: root.showHeader
-                        enabled: !tabOptions.shown && !pageActions.menuOpen
+                        enabled: !mainContainer.optionsShown && !mainContainer.actionsMenuOpen
 
                         x: root.verticalNavigation && root.navigationEdge === SettingsData.Right ? parent.width - width : 0
                         y: !root.verticalNavigation && root.navigationEdge === SettingsData.Bottom ? parent.height - height : 0
@@ -472,7 +496,7 @@ DPopout {
                             visible: root.showTabs && !root.editMode
                             orientation: root.verticalNavigation ? Qt.Vertical : Qt.Horizontal
                             currentIndex: root.currentTabIndex
-                            nextFocusTarget: pageActions.focusTargets[0] ?? pages.focusTarget
+                            nextFocusTarget: mainContainer.actionFocusTargets[0] ?? pages.focusTarget
                             previousFocusTarget: pages.currentItem?.previousFocusTarget ?? pages.focusTarget
                             model: DashRegistry.tabBarModel
                             onActivated: index => {
@@ -497,34 +521,37 @@ DPopout {
                             onEditRequested: root.editMode = true
                         }
 
-                        DashPageActions {
+                        Loader {
                             id: pageActions
                             x: root.verticalNavigation ? 0 : (parent.width - width) / 2
                             y: (parent.height - height) / 2
                             width: Math.min(parent.width, implicitWidth)
                             height: Math.min(parent.height, implicitHeight)
-                            availableWidth: parent.width
-                            visible: root.editMode
-                            vertical: root.verticalNavigation
-                            transientSurfaceTracker: root.transientSurfaceTracker
-                            entryId: root.activeTabId
-                            tabItem: pages.currentItem
-                            editMode: root.editMode
-                            panelResizable: true
-                            onOptionsRequested: tabOptions.presentFor(root.activeTabId)
-                            onFinished: root.editMode = false
+                            active: root.editMode
+
+                            sourceComponent: DashPageActions {
+                                availableWidth: headerRow.width
+                                vertical: root.verticalNavigation
+                                transientSurfaceTracker: root.transientSurfaceTracker
+                                entryId: root.activeTabId
+                                tabItem: pages.currentItem
+                                editMode: root.editMode
+                                panelResizable: true
+                                onOptionsRequested: mainContainer.presentOptions()
+                                onFinished: root.editMode = false
+                            }
                         }
                     }
 
                     DFlickable {
                         id: pages
-                        enabled: !tabOptions.shown && !pageActions.menuOpen
+                        enabled: !mainContainer.optionsShown && !mainContainer.actionsMenuOpen
                         showScrollBar: false
 
                         property var currentHost: null
                         property real settledHeight: DashMetrics.tabDefaultHeight
                         readonly property var currentItem: root.activeTabId !== "" ? currentHost?.item ?? null : null
-                        readonly property Item focusTarget: root.activeTabId === "" ? emptySettings : currentHost?.focusTarget ?? null
+                        readonly property Item focusTarget: root.activeTabId === "" ? emptyContent.item?.focusTarget ?? null : currentHost?.focusTarget ?? null
                         readonly property bool currentSettled: !!currentHost && (!!currentHost.item || currentHost.failed)
                         readonly property real currentHostImplicitHeight: currentHost?.implicitHeight ?? 0
                         readonly property real targetHeight: root.activeTabId === "" ? emptyContent.implicitHeight : currentSettled && currentHost.isCurrent ? DashMetrics.panelHeightFor(root.activeTabId, currentHostImplicitHeight) : -1
@@ -553,26 +580,31 @@ DPopout {
                         onTargetHeightChanged: Qt.callLater(updateContentHeight)
                         onHeightHeldChanged: Qt.callLater(updateContentHeight)
 
-                        Column {
+                        Loader {
                             id: emptyContent
                             width: parent.width
-                            spacing: Theme.spacingM
-                            visible: root.activeTabId === ""
+                            active: root.activeTabId === ""
 
-                            CcEmptyState {
-                                iconName: "dashboard"
-                                title: I18n.tr("No tabs enabled", "Dashboard empty state when all navigation tabs are hidden")
-                            }
+                            sourceComponent: Column {
+                                readonly property Item focusTarget: emptySettings
 
-                            DButton {
-                                id: emptySettings
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: I18n.tr("Settings")
-                                iconName: "settings"
-                                onClicked: {
-                                    root.dashVisible = false;
-                                    root.instantClose();
-                                    PopoutService.openSettingsWithTab("dank_dash");
+                                spacing: Theme.spacingM
+
+                                CcEmptyState {
+                                    iconName: "dashboard"
+                                    title: I18n.tr("No tabs enabled", "Dashboard empty state when all navigation tabs are hidden")
+                                }
+
+                                DButton {
+                                    id: emptySettings
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: I18n.tr("Settings")
+                                    iconName: "settings"
+                                    onClicked: {
+                                        root.dashVisible = false;
+                                        root.instantClose();
+                                        PopoutService.openSettingsWithTab("dank_dash");
+                                    }
                                 }
                             }
                         }

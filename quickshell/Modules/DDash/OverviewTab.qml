@@ -27,7 +27,9 @@ FocusScope {
     readonly property int usedColumns: grid.usedColumns
     readonly property bool cardResizing: grid.sizePreview !== null
     readonly property bool cardInteracting: grid.interacting
-    readonly property bool blocksTabNavigation: grid.blocksTabNavigation || detailSheet.shown || editorSheet.shown || optionsSheet.shown || addMenu.open
+    readonly property bool sheetShown: (detailSheet.item?.shown ?? false) || (editorSheet.item?.shown ?? false) || (optionsSheet.item?.shown ?? false)
+    readonly property bool addMenuOpen: addMenu.item?.open ?? false
+    readonly property bool blocksTabNavigation: grid.blocksTabNavigation || sheetShown || addMenuOpen
 
     implicitWidth: DashMetrics.contentWidthFor(SettingsData.showWeekNumber)
     implicitHeight: grid.implicitHeight
@@ -36,28 +38,55 @@ FocusScope {
     signal navFocusRequested(bool backwards)
 
     onEditModeChanged: {
-        if (!editMode) {
-            optionsSheet.dismiss();
-            addMenu.close();
-        }
+        if (!editMode)
+            optionsSheet.item?.dismiss();
     }
 
     function handleKeyEvent(event) {
-        if (detailSheet.shown || editorSheet.shown || optionsSheet.shown) {
+        if (sheetShown) {
             if (event.key !== Qt.Key_Escape)
                 return false;
-            detailSheet.dismiss();
-            editorSheet.dismiss();
-            optionsSheet.dismiss();
+            dismissSheets();
             return true;
         }
-        if (addMenu.open) {
+        if (addMenuOpen) {
             if (event.key !== Qt.Key_Escape)
                 return false;
-            addMenu.close();
+            addMenu.item.close();
             return true;
         }
         return grid.handleKeyEvent(event);
+    }
+
+    function dismissSheets() {
+        detailSheet.item?.dismiss();
+        editorSheet.item?.dismiss();
+        optionsSheet.item?.dismiss();
+    }
+
+    function releaseSheet(loader) {
+        Qt.callLater(() => {
+            if (loader.item && !loader.item.shown)
+                loader.active = false;
+        });
+    }
+
+    function presentOptions(cardId) {
+        optionsSheet.active = true;
+        optionsSheet.item.presentFor(cardId);
+    }
+
+    function presentDetail(eventData) {
+        detailSheet.active = true;
+        detailSheet.item.eventData = eventData;
+        detailSheet.item.present();
+    }
+
+    function presentEditor(eventData, initialDate) {
+        editorSheet.active = true;
+        editorSheet.item.eventData = eventData;
+        editorSheet.item.initialDate = initialDate;
+        editorSheet.item.present();
     }
 
     function restoreFocus() {
@@ -77,7 +106,7 @@ FocusScope {
     }
 
     function openAddMenu(anchor) {
-        addMenu.openAt(anchor);
+        addMenu.item?.openAt(anchor);
     }
 
     DashCardGrid {
@@ -97,110 +126,131 @@ FocusScope {
                 root.tabRequested(cardId);
         }
         onNavFocusRequested: backwards => root.navFocusRequested(backwards)
-        onOptionsRequested: cardId => optionsSheet.presentFor(cardId)
-        onDetailRequested: eventData => {
-            detailSheet.eventData = eventData;
-            detailSheet.present();
-        }
-        onEditorRequested: (eventData, initialDate) => {
-            editorSheet.eventData = eventData;
-            editorSheet.initialDate = initialDate;
-            editorSheet.present();
-        }
+        onOptionsRequested: cardId => root.presentOptions(cardId)
+        onDetailRequested: eventData => root.presentDetail(eventData)
+        onEditorRequested: (eventData, initialDate) => root.presentEditor(eventData, initialDate)
     }
 
-    CcMenu {
+    Loader {
         id: addMenu
-        transientSurfaceTracker: root.transientSurfaceTracker
+        active: root.editMode
 
-        items: root.addable.map(candidate => ({
-                    "label": candidate.entry.card.text,
-                    "iconName": candidate.entry.card.icon,
-                    "action": () => CardUtils.addCard(candidate.entry.id, candidate.size.w, candidate.size.h)
-                }))
-    }
+        sourceComponent: CcMenu {
+            transientSurfaceTracker: root.transientSurfaceTracker
 
-    DashOptionsSheet {
-        id: optionsSheet
-        backdrop: grid
-        onDismissed: root.navFocusRequested(false)
-    }
-
-    CcSheetDialog {
-        id: detailSheet
-        backdrop: grid
-        showScrollBar: false
-
-        property var eventData: null
-
-        readonly property bool canEdit: CalendarService.canCreateEvents && !!eventData && !eventData.readOnly && !(eventData.id && eventData.id.startsWith("task_"))
-
-        panelWidth: DashMetrics.sheetWidth
-        iconName: "event"
-        title: eventData?.title ?? ""
-        subtitle: detailLoader.item?.timeText ?? ""
-
-        onDismissed: {
-            eventData = null;
-            root.navFocusRequested(false);
+            items: root.addable.map(candidate => ({
+                        "label": candidate.entry.card.text,
+                        "iconName": candidate.entry.card.icon,
+                        "action": () => CardUtils.addCard(candidate.entry.id, candidate.size.w, candidate.size.h)
+                    }))
         }
+    }
 
-        Loader {
-            id: detailLoader
+    Loader {
+        id: optionsSheet
+        anchors.fill: parent
+        z: DashMetrics.overlayZ
+        active: false
 
-            width: parent.width
-            active: detailSheet.visible
+        sourceComponent: DashOptionsSheet {
+            backdrop: grid
+            onDismissed: {
+                root.navFocusRequested(false);
+                root.releaseSheet(optionsSheet);
+            }
+        }
+    }
 
-            sourceComponent: CalendarEventDetail {
-                eventData: detailSheet.eventData
-                canEdit: detailSheet.canEdit
-                onCloseRequested: detailSheet.dismiss()
-                onEditRequested: {
-                    editorSheet.eventData = detailSheet.eventData;
-                    editorSheet.initialDate = detailSheet.eventData?.start ?? new Date();
-                    detailSheet.dismiss();
-                    editorSheet.present();
-                }
-                onDeleteRequested: {
-                    if (detailSheet.eventData?.id)
-                        CalendarService.deleteEvent(detailSheet.eventData.id, null);
-                    detailSheet.dismiss();
+    Loader {
+        id: detailSheet
+        anchors.fill: parent
+        z: DashMetrics.overlayZ
+        active: false
+
+        sourceComponent: CcSheetDialog {
+            id: detail
+            backdrop: grid
+            showScrollBar: false
+
+            property var eventData: null
+
+            readonly property bool canEdit: CalendarService.canCreateEvents && !!eventData && !eventData.readOnly && !(eventData.id && eventData.id.startsWith("task_"))
+
+            panelWidth: DashMetrics.sheetWidth
+            iconName: "event"
+            title: eventData?.title ?? ""
+            subtitle: detailLoader.item?.timeText ?? ""
+
+            onDismissed: {
+                eventData = null;
+                root.navFocusRequested(false);
+                root.releaseSheet(detailSheet);
+            }
+
+            Loader {
+                id: detailLoader
+
+                width: parent.width
+                active: detail.visible
+
+                sourceComponent: CalendarEventDetail {
+                    eventData: detail.eventData
+                    canEdit: detail.canEdit
+                    onCloseRequested: detail.dismiss()
+                    onEditRequested: {
+                        const eventData = detail.eventData;
+                        detail.dismiss();
+                        root.presentEditor(eventData, eventData?.start ?? new Date());
+                    }
+                    onDeleteRequested: {
+                        if (detail.eventData?.id)
+                            CalendarService.deleteEvent(detail.eventData.id, null);
+                        detail.dismiss();
+                    }
                 }
             }
         }
     }
 
-    CcSheetDialog {
+    Loader {
         id: editorSheet
-        backdrop: grid
-        showScrollBar: false
+        anchors.fill: parent
+        z: DashMetrics.overlayZ
+        active: false
 
-        property var eventData: null
-        property date initialDate: new Date()
+        sourceComponent: CcSheetDialog {
+            id: editor
+            backdrop: grid
+            showScrollBar: false
 
-        panelWidth: DashMetrics.sheetWidth
-        iconName: "edit_calendar"
-        title: eventData ? I18n.tr("Edit event") : I18n.tr("New event")
-        statusText: editorLoader.item?.errorText ?? ""
-        statusColor: Theme.error
+            property var eventData: null
+            property date initialDate: new Date()
 
-        onDismissed: {
-            eventData = null;
-            root.navFocusRequested(false);
-        }
+            panelWidth: DashMetrics.sheetWidth
+            iconName: "edit_calendar"
+            title: eventData ? I18n.tr("Edit event") : I18n.tr("New event")
+            statusText: editorLoader.item?.errorText ?? ""
+            statusColor: Theme.error
 
-        Loader {
-            id: editorLoader
+            onDismissed: {
+                eventData = null;
+                root.navFocusRequested(false);
+                root.releaseSheet(editorSheet);
+            }
 
-            width: parent.width
-            active: editorSheet.visible
+            Loader {
+                id: editorLoader
 
-            sourceComponent: CalendarEventEditor {
-                eventData: editorSheet.eventData
-                initialDate: editorSheet.initialDate
-                transientSurfaceTracker: root.transientSurfaceTracker
-                onSaved: editorSheet.dismiss()
-                onCloseRequested: editorSheet.dismiss()
+                width: parent.width
+                active: editor.visible
+
+                sourceComponent: CalendarEventEditor {
+                    eventData: editor.eventData
+                    initialDate: editor.initialDate
+                    transientSurfaceTracker: root.transientSurfaceTracker
+                    onSaved: editor.dismiss()
+                    onCloseRequested: editor.dismiss()
+                }
             }
         }
     }

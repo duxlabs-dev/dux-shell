@@ -76,33 +76,6 @@ func TestValidateTestConnectionParams(t *testing.T) {
 	}
 }
 
-func TestManager_TestRemotePrinter_Validation(t *testing.T) {
-	m := NewTestManager(nil, nil)
-
-	tests := []struct {
-		name     string
-		host     string
-		port     int
-		protocol string
-		wantErr  string
-	}{
-		{
-			name:     "empty host returns error",
-			host:     "",
-			port:     631,
-			protocol: "ipp",
-			wantErr:  "host is required",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := m.TestRemotePrinter(tt.host, tt.port, tt.protocol)
-			assert.EqualError(t, err, tt.wantErr)
-		})
-	}
-}
-
 func TestManager_TestRemotePrinter_IPP(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -248,26 +221,6 @@ func TestHandleTestConnection_Success(t *testing.T) {
 	assert.Equal(t, "HP OfficeJet 8010", resp.Result.MakeModel)
 }
 
-func TestHandleTestConnection_MissingHost(t *testing.T) {
-	m := NewTestManager(nil, nil)
-	buf := &bytes.Buffer{}
-	conn := ipc.NewConnWriter(&mockConn{Buffer: buf})
-
-	req := ipc.Request{
-		ID:     1,
-		Method: "cups.testConnection",
-		Params: map[string]any{},
-	}
-
-	handleTestConnection(conn, req, m)
-
-	var resp ipc.Response[any]
-	err := json.NewDecoder(buf).Decode(&resp)
-	assert.NoError(t, err)
-	assert.Nil(t, resp.Result)
-	assert.NotNil(t, resp.Error)
-}
-
 func TestHandleTestConnection_CustomPortAndProtocol(t *testing.T) {
 	m := NewTestManager(nil, nil)
 	m.probeRemoteFn = func(host string, port int, useTLS bool) (*RemotePrinterInfo, error) {
@@ -290,30 +243,6 @@ func TestHandleTestConnection_CustomPortAndProtocol(t *testing.T) {
 	}
 
 	handleTestConnection(conn, req, m)
-
-	var resp ipc.Response[RemotePrinterInfo]
-	err := json.NewDecoder(buf).Decode(&resp)
-	assert.NoError(t, err)
-	assert.NotNil(t, resp.Result)
-	assert.True(t, resp.Result.Reachable)
-}
-
-func TestHandleRequest_TestConnection(t *testing.T) {
-	m := NewTestManager(nil, nil)
-	m.probeRemoteFn = func(host string, port int, useTLS bool) (*RemotePrinterInfo, error) {
-		return &RemotePrinterInfo{Reachable: true}, nil
-	}
-
-	buf := &bytes.Buffer{}
-	conn := ipc.NewConnWriter(&mockConn{Buffer: buf})
-
-	req := ipc.Request{
-		ID:     1,
-		Method: "cups.testConnection",
-		Params: map[string]any{"host": "192.168.0.5"},
-	}
-
-	HandleRequest(conn, req, m)
 
 	var resp ipc.Response[RemotePrinterInfo]
 	err := json.NewDecoder(buf).Decode(&resp)

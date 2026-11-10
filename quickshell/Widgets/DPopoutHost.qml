@@ -9,6 +9,7 @@ import qs.DCommon.Widgets
 import qs.Widgets
 import "../Common/ConnectedSurfaceGeometry.js" as SurfaceGeometry
 import "../Common/FluidGeometry.js" as FluidGeometry
+import "../Common/PopoutBounds.js" as PopoutBounds
 
 Item {
     id: root
@@ -23,8 +24,13 @@ Item {
     property alias contentLoader: contentLoader
     property Component overlayContent: popoutHandle.overlayContent
     property alias overlayLoader: overlayLoader
-    readonly property var backgroundWindow: connected ? contentWindow : (backgroundLayer.item?.window ?? null)
-    readonly property alias contentWindow: contentWindow
+    property string _attachedScreenName: ""
+    readonly property var surface: IdleSurfaces.surfaceFor("popout", _attachedScreenName)
+    readonly property bool attached: _attachedScreenName !== ""
+    readonly property var contentWindow: attached ? surface : null
+    readonly property Item maskItem: (shouldBeVisible && backgroundInteractive) ? backgroundDismissalMask : contentMaskRect
+    readonly property int surfaceKeyboardFocus: KeyboardFocus.keyboardFocus(shouldBeVisible && (_keyboardReady || !connected), customKeyboardFocus)
+    readonly property var blurRegion: chromeLoader.item?.blur?.effectiveRegion ?? null
     property real popupWidth: popoutHandle.popupWidth
     property real popupHeight: popoutHandle.popupHeight
     property list<real> resizeCurve: popoutHandle.resizeCurve
@@ -47,15 +53,25 @@ Item {
     property bool suspendShadowWhileResizing: popoutHandle.suspendShadowWhileResizing
     property bool shouldBeVisible: false
     property bool _presentPending: false
-    property bool _surfaceFrameReady: false
     property var customKeyboardFocus: popoutHandle.customKeyboardFocus
     property bool backgroundInteractive: popoutHandle.backgroundInteractive
     property bool contentHandlesKeys: popoutHandle.contentHandlesKeys
-    property bool fullHeightSurface: popoutHandle.fullHeightSurface
-    property real minimumSurfaceWidth: popoutHandle.minimumSurfaceWidth
+    property rect _surfaceMotionOrigin: Qt.rect(0, 0, 0, 0)
+    readonly property rect renderBounds: {
+        if (_travelFromHandoff)
+            return Qt.rect(0, 0, screenWidth, screenHeight);
+        const padding = Theme.elevationRenderPadding(shadowLevel, effectiveShadowDirection, shadowFallbackOffset, Theme.connectedCornerRadius + inputMargin, Theme.spacingL) + Theme.fluidOvershootLimit;
+        const body = {
+            x: alignedX,
+            y: alignedY - topOverflow,
+            width: alignedWidth,
+            height: alignedHeight + topOverflow + bottomOverflow
+        };
+        const area = PopoutBounds.motion(screenWidth, screenHeight, body, _surfaceMotionOrigin, _fluidMotionActive ? 0 : contentContainer.offsetX, _fluidMotionActive ? 0 : contentContainer.offsetY, _fluidMotionActive ? 1 : animationScaleCollapsed, padding, _geometrySpringParams);
+        return Qt.rect(area.x, area.y, area.width, area.height);
+    }
+    property bool _retainedContent: false
     property bool _primeContent: false
-    property bool _contentWarm: false
-    property bool _backgroundWarm: false
     property bool _contentRenderActive: root.directionalRevealActive || shouldBeVisible
     // Keyboard focus grabbed one tick after emerge starts, to avoid stalling first frames.
     property bool _keyboardReady: false
@@ -69,18 +85,6 @@ Item {
     property real _publishedBodyY: 0
     property real _publishedBodyW: 0
     property real _publishedBodyH: 0
-    property real _surfaceX: 0
-    property real _surfaceY: 0
-    property real _surfaceW: 0
-    property real _surfaceH: 0
-    property bool _anchorEndX: false
-    property bool _anchorEndY: false
-    property var _pendingSurfaceX: null
-    property var _pendingSurfaceY: null
-    property real _surfaceBodyX: 0
-    property real _surfaceBodyY: 0
-    property real _surfaceBodyW: 0
-    property real _surfaceBodyH: 0
 
     property real storedBarThickness: popoutHandle.storedBarThickness
     property real storedBarSpacing: popoutHandle.storedBarSpacing
@@ -150,8 +154,8 @@ Item {
         claimPrefix: root.layerNamespace
         screenName: root.screen ? root.screen.name : ""
         enabled: root.frameOwnsConnectedChrome
-        active: contentWindow.visible || root.shouldBeVisible
-        presented: contentWindow.visible || root.shouldBeVisible
+        active: root.attached || root.shouldBeVisible
+        presented: root.attached || root.shouldBeVisible
         renewTokenOnRecovery: false
         slot: "popout"
         exclusive: true
@@ -211,11 +215,6 @@ Item {
         _primeContent = false;
     }
 
-    function warmContent() {
-        _backgroundWarm = true;
-        _contentWarm = true;
-    }
-
     function _captureChromeAnimTravel() {
         _chromeAnimTravelX = Math.max(1, Math.abs(contentContainer.offsetX));
         _chromeAnimTravelY = Math.max(1, Math.abs(contentContainer.offsetY));
@@ -245,9 +244,9 @@ Item {
 
     function _connectedChromeState(visibleOverride) {
         // Track intent rather than the transient wl_surface state during remap.
-        const visible = visibleOverride !== undefined ? !!visibleOverride : (contentWindow.visible || root.shouldBeVisible);
-        const presented = contentWindow.visible || root.shouldBeVisible;
-        const phase = root.isClosing ? "closing" : (!presented ? "hidden" : (!contentWindow.visible && root.shouldBeVisible ? "opening" : "open"));
+        const visible = visibleOverride !== undefined ? !!visibleOverride : (root.attached || root.shouldBeVisible);
+        const presented = root.attached || root.shouldBeVisible;
+        const phase = root.isClosing ? "closing" : (!presented ? "hidden" : (!root.attached && root.shouldBeVisible ? "opening" : "open"));
         const bodyX = Theme.snap(root.pubBodyX, root.dpr);
         const bodyY = Theme.snap(root.pubBodyY, root.dpr);
         const bodyW = Theme.snap(root.pubBodyW, root.dpr);
@@ -322,7 +321,7 @@ Item {
             _releaseConnectedChromeState();
             return;
         }
-        if (!contentWindow.visible && !shouldBeVisible)
+        if (!root.attached && !shouldBeVisible)
             return;
         _publishConnectedChromeState(false);
     }
@@ -330,7 +329,7 @@ Item {
     function _syncPopoutAnim(axis) {
         if (!root.frameOwnsConnectedChrome || !chromeLease.claimId)
             return;
-        if (!contentWindow.visible && !shouldBeVisible)
+        if (!root.attached && !shouldBeVisible)
             return;
         const barSide = contentContainer.connectedBarSide;
         const syncX = axis === "x" && (barSide === "left" || barSide === "right");
@@ -343,7 +342,7 @@ Item {
     function _syncPopoutBody() {
         if (!root.frameOwnsConnectedChrome || !chromeLease.claimId)
             return;
-        if (!contentWindow.visible && !shouldBeVisible)
+        if (!root.attached && !shouldBeVisible)
             return;
         const body = root.morphTravelEnabled ? root._boundTravel(travelSpring.value) : root.travelTarget;
         const bodyX = Theme.snap(body.x, root.dpr);
@@ -388,39 +387,14 @@ Item {
     readonly property bool settingsFrameCloseGaps: SettingsData.frameCloseGaps
     readonly property var connectedSurfaceDescriptors: ConnectedModeState.surfaceDescriptors
 
-    function _syncAlignedGeometry() {
-        if (connected) {
-            _queueFullSync();
-            return;
-        }
-        _setAnimatedSurfaceEnvelope();
-    }
-
-    onAlignedXChanged: _syncAlignedGeometry()
+    onAlignedXChanged: _queueFullSync()
     onAlignedYChanged: {
         _retargetBody();
-        _syncAlignedGeometry();
+        _queueFullSync();
     }
     onAlignedWidthChanged: {
         _retargetBody();
-        _syncAlignedGeometry();
-    }
-    onConnectedChanged: {
-        if (!connected)
-            _setAnimatedSurfaceEnvelope();
-        _surfaceSwitching = contentWindow.visible && Math.abs(contentWindow.width - (connected ? screenWidth : _surfaceW)) > 1;
-    }
-    property bool _surfaceSwitching: false
-    readonly property real _contentWindowWidth: contentWindow.width
-    readonly property real _contentWindowHeight: contentWindow.height
-    on_ContentWindowWidthChanged: {
-        _surfaceSwitching = false;
-        _flushPendingSurface("x", false);
-    }
-    on_ContentWindowHeightChanged: _flushPendingSurface("y", false)
-    onResizingChanged: {
-        if (!resizing)
-            backgroundLayer.item?.surfaceMoved();
+        _queueFullSync();
     }
     onScreenChanged: {
         if (!connected)
@@ -439,29 +413,11 @@ Item {
         _syncPopoutChromeState();
     }
 
-    onSurfaceBodyWidthChanged: {
-        if (connected)
-            return;
-        _setAnimatedSurfaceEnvelope();
-    }
-
-    Timer {
-        id: surfaceStepTimerX
-        interval: 100
-        onTriggered: root._flushPendingSurface("x", true)
-    }
-
-    Timer {
-        id: surfaceStepTimerY
-        interval: 100
-        onTriggered: root._flushPendingSurface("y", true)
-    }
-
     onSettingsConnectedFrameModeActiveChanged: {
         if (!connected)
             return;
         if (frameOwnsConnectedChrome) {
-            if ((contentWindow.visible || shouldBeVisible) && screen && PopoutManager.isCurrentPopout(popoutHandle, screen.name))
+            if ((root.attached || shouldBeVisible) && screen && PopoutManager.isCurrentPopout(popoutHandle, screen.name))
                 _publishConnectedChromeState(true);
         } else {
             _releaseConnectedChromeState();
@@ -528,17 +484,12 @@ Item {
         onTriggered: {
             if (!root.screen || !(root.shouldBeVisible || root._presentPending))
                 return;
-            root.surfaceScreen = root.screen;
-            if (backgroundLayer.item)
-                backgroundLayer.item.show();
-            contentWindow.visible = true;
-            chromeLoader.item.blur.kick();
-            root._setSettledSurfaceGeometry();
+            root._attach(root.screen);
         }
     }
 
     function _canPreserveMotion() {
-        if (!contentWindow.visible || _openScreen !== screen || _supersededClose)
+        if (!root.attached || _openScreen !== screen || _supersededClose)
             return false;
         return !frameOwnsConnectedChrome || ConnectedModeState.hasSurfaceOwner(root.screen.name, "popout", chromeLease.claimId);
     }
@@ -563,7 +514,7 @@ Item {
     function open() {
         if (!screen)
             return;
-        if (!contentWindow.visible || _openScreen !== screen)
+        if (!root.attached || _openScreen !== screen)
             _overStackedModal = ModalManager.hasStackedModal(screen.name);
         if (barRoomWait.running)
             return;
@@ -588,16 +539,13 @@ Item {
             animationsEnabled = false;
             _fluidMotionActive = fluidMotionEnabled;
         }
+        contentRetention.stop();
+        _retainedContent = true;
         _primeContent = true;
-        _contentWarm = true;
         _supersededClose = false;
 
         if (_openScreen !== null && _openScreen !== screen)
-            contentWindow.visible = false;
-        if (!contentWindow.visible) {
-            _anchorEndX = surfaceBodyX + surfaceBodyWidth / 2 > screenWidth / 2;
-            _anchorEndY = !fullHeightSurface && alignedY + alignedHeight / 2 > screenHeight / 2;
-        }
+            root._detach();
         _lastOpenedScreen = screen;
         if (connected)
             PopoutManager.showPopout(popoutHandle);
@@ -612,14 +560,14 @@ Item {
         if (morphTravelEnabled && !preserveMotion)
             morph.retarget(1);
 
+        _surfaceMotionOrigin = morphTravelEnabled ? travelSpring.value : Qt.rect(alignedX, alignedY, alignedWidth, alignedHeight);
         _claimConnectedChrome();
-        _setSurfaceGeometry(surfaceBodyX, alignedY, surfaceBodyWidth, alignedHeight);
 
-        if (!contentWindow.visible)
+        if (!root.attached || surface?.activeHost !== root)
             showSurfaceAction.schedule();
 
         animationsEnabled = true;
-        if (!connected && !_surfaceFrameReady) {
+        if (!connected && !frameGate.ready && !(surface?.idleSupported ?? false)) {
             _presentPending = true;
             return;
         }
@@ -629,7 +577,6 @@ Item {
     function _present() {
         _presentPending = false;
         shouldBeVisible = true;
-        _setSettledSurfaceGeometry();
         if (morphTravelEnabled)
             _retargetMorphTravel();
         Qt.callLater(() => {
@@ -644,15 +591,10 @@ Item {
         opened();
     }
 
-    on_SurfaceFrameReadyChanged: {
-        if (_surfaceFrameReady && _presentPending)
-            _present();
-    }
-
     function close() {
         barRoomWait.stop();
         showSurfaceAction.cancel();
-        if (!contentWindow.visible || _presentPending) {
+        if (!root.attached || _presentPending) {
             instantClose();
             return;
         }
@@ -678,13 +620,14 @@ Item {
         if (shouldBeVisible || !isClosing)
             return;
         closeTimer.stop();
-        contentWindow.visible = false;
+        root._detach();
         morph.snapTo(0);
         _endMorphTravel();
         _fluidMotionActive = false;
         isClosing = false;
         _snapBody();
         PopoutManager.hidePopout(popoutHandle);
+        contentRetention.restart();
         popoutClosed();
     }
 
@@ -700,12 +643,22 @@ Item {
         shouldBeVisible = false;
         _keyboardReady = false;
         _primeContent = false;
-        contentWindow.visible = false;
+        root._detach();
         _fluidMotionActive = false;
         _snapBody();
         PopoutManager.hidePopout(popoutHandle);
+        contentRetention.restart();
         popoutClosed();
         Qt.callLater(() => animationsEnabled = true);
+    }
+
+    Timer {
+        id: contentRetention
+        interval: 3000
+        onTriggered: {
+            if (!root.shouldBeVisible && !root.attached)
+                root._retainedContent = false;
+        }
     }
 
     function toggle() {
@@ -857,16 +810,28 @@ Item {
 
     readonly property var shadowLevel: Theme.elevationLevel2
     readonly property real shadowFallbackOffset: Theme.spacingXS
-    readonly property real shadowRenderPadding: (Theme.elevationEnabled && SettingsData.popoutElevationEnabled) ? Theme.elevationRenderPadding(shadowLevel, effectiveShadowDirection, shadowFallbackOffset, 8, 16) : 0
-    readonly property real shadowMotionPadding: directionalRevealActive ? 0 : Math.max(0, animationOffset)
-    readonly property real shadowBuffer: Theme.snap(Math.max(popoutHandle.surfacePadding, shadowRenderPadding + shadowMotionPadding), dpr)
     readonly property real alignedWidth: Theme.px(popupWidth, dpr)
     readonly property real alignedHeight: Theme.pxCeil(popupHeight, dpr)
-    readonly property real surfaceBodyWidth: Math.max(alignedWidth, Theme.px(Math.min(minimumSurfaceWidth, screenWidth), dpr))
-    readonly property real surfaceBodyX: Theme.snap(_standaloneAlignedXFor(surfaceBodyWidth), dpr)
-    readonly property real _surfaceOriginX: connected ? 0 : _surfaceX
-    readonly property real _surfaceOriginY: connected || fullHeightSurface ? 0 : _surfaceY
-    readonly property var _geometrySpringParams: Theme.springPreset("default", root.animationDuration)
+    readonly property bool _fadeWithOpacity: (!root._fluidMotionActive && !root.directionalRevealActive) || root._supersededClose
+
+    OpacityMotion {
+        id: contentFade
+        enabled: root.animationsEnabled && root._fadeWithOpacity
+        duration: root._supersededClose && !root.shouldBeVisible ? Theme.shorterDuration : root.animationDuration
+        target: root.shouldBeVisible ? 1 : 0
+        onRunningChanged: root._finishContentFade()
+        onValueChanged: root._finishContentFade()
+    }
+
+    function _finishContentFade() {
+        if (!_fadeWithOpacity || contentFade.running || contentFade.value > 0 || shouldBeVisible)
+            return;
+        _contentRenderActive = false;
+        _finishClose();
+    }
+
+    readonly property bool _standardMotion: !connected && !root.directionalRevealActive && !Theme.isDepthEffect && !_fluidMotionActive
+    readonly property var _geometrySpringParams: Theme.springPreset(_standardMotion ? "fastSpatial" : "defaultSpatial", _standardMotion ? root.animationDuration * 2 : root.animationDuration)
 
     readonly property real renderedAlignedX: alignedXFor(renderedAlignedWidth)
     property real renderedAlignedY: alignedY
@@ -874,25 +839,22 @@ Item {
     property real renderedAlignedHeight: alignedHeight
     // Snap rendered geometry while the entrance morph runs so it doesn't ride a second animation.
     readonly property bool _settlingToOpen: shouldBeVisible && (morph.running || travelSpring.running)
-    readonly property bool _geometryMotion: animationsEnabled && !SettingsData.reduceMotion && resizeDuration > 0 && contentWindow.visible && shouldBeVisible && !_settlingToOpen && !resizing
-    property real _bodyGlide: 1
+    readonly property bool _geometryMotion: animationsEnabled && !SettingsData.reduceMotion && resizeDuration > 0 && root.attached && shouldBeVisible && !_settlingToOpen && !resizing
     property bool _bodyBatch: false
-    property real _bodyFromY: 0
-    property real _bodyFromWidth: 0
-    property real _bodyFromHeight: 0
+    readonly property var _resizeSpringParams: Theme.springPreset("defaultSpatial", root.resizeDuration)
 
-    NumberAnimation {
-        id: bodyGlide
-        target: root
-        property: "_bodyGlide"
-        from: 0
-        to: 1
-        duration: root.resizeDuration
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: root.resizeCurve
+    RectSpringMotion {
+        id: bodySpring
+        reducedMotion: SettingsData.reduceMotion || root.resizeDuration <= 0
+        stiffness: root._resizeSpringParams.stiffness
+        damping: root._resizeSpringParams.damping
+        positionEpsilon: 0.25 / root.dpr
+        velocityEpsilon: positionEpsilon * damping / (2 * mass)
+        onValueChanged: {
+            if (root._geometryMotion)
+                root._setBody(value.y, root.resizeMotion ? value.width : root.alignedWidth, value.height);
+        }
     }
-
-    on_BodyGlideChanged: _setBody(_bodyFromY + (alignedY - _bodyFromY) * _bodyGlide, resizeMotion ? _bodyFromWidth + (alignedWidth - _bodyFromWidth) * _bodyGlide : renderedAlignedWidth, _bodyFromHeight + (alignedHeight - _bodyFromHeight) * _bodyGlide)
 
     // One notification per body change: travelTarget would otherwise fire once per component write.
     function _setBody(y, width, height) {
@@ -919,14 +881,14 @@ Item {
         if (_geometryMotion)
             return;
         if (isClosing) {
-            bodyGlide.stop();
+            bodySpring.running = false;
             return;
         }
         _snapBody();
     }
 
     function _snapBody() {
-        bodyGlide.stop();
+        bodySpring.running = false;
         _setBody(alignedY, alignedWidth, alignedHeight);
     }
 
@@ -939,19 +901,14 @@ Item {
             _snapBody();
             return;
         }
-        if (renderedAlignedY === alignedY && renderedAlignedWidth === alignedWidth && renderedAlignedHeight === alignedHeight) {
-            bodyGlide.stop();
-            return;
-        }
-        _bodyFromY = renderedAlignedY;
-        _bodyFromWidth = renderedAlignedWidth;
-        _bodyFromHeight = renderedAlignedHeight;
-        bodyGlide.restart();
+        if (!bodySpring.running)
+            bodySpring.snapTo(Qt.rect(0, renderedAlignedY, renderedAlignedWidth, renderedAlignedHeight));
+        bodySpring.retarget(Qt.rect(0, alignedY, alignedWidth, alignedHeight));
     }
 
     property bool morphTravelEnabled: false
     property bool _travelFromHandoff: false
-    readonly property string _travelSpringPreset: _travelFromHandoff ? "fast" : "default"
+    readonly property string _travelSpringPreset: _travelFromHandoff ? "fastSpatial" : "defaultSpatial"
     readonly property rect travelTarget: Qt.rect(renderedAlignedX, renderedAlignedY, renderedAlignedWidth, renderedAlignedHeight)
     readonly property point _fluidOrigin: connected ? Qt.point(0, 0) : Qt.point(renderedAlignedX, renderedAlignedY)
     readonly property rect fluidTarget: Qt.rect(renderedAlignedX - _fluidOrigin.x, renderedAlignedY - _fluidOrigin.y, renderedAlignedWidth, renderedAlignedHeight)
@@ -1039,7 +996,7 @@ Item {
     property real _supersededContentScale: 1
 
     function beginSupersededClose() {
-        if (!frameOwnsConnectedChrome || _supersededClose || !contentWindow.visible || !root.screen)
+        if (!frameOwnsConnectedChrome || _supersededClose || !root.attached || !root.screen)
             return;
         if ((!hoverDismissEnabled && !isClosing) || !ConnectedModeState.hasSurfaceOwner(root.screen.name, "popout", chromeLease.claimId))
             return;
@@ -1103,7 +1060,7 @@ Item {
             _resizeActive = true;
             resizeSettleTimer.restart();
         }
-        _syncAlignedGeometry();
+        _queueFullSync();
     }
     onShouldBeVisibleChanged: {
         if (shouldBeVisible) {
@@ -1123,118 +1080,6 @@ Item {
         interval: 80
         repeat: false
         onTriggered: root._resizeActive = false
-    }
-
-    Timer {
-        id: surfaceSettleTimer
-        interval: Math.max(0, root.resizeDuration + 32)
-        repeat: false
-        onTriggered: root._setSettledSurfaceGeometry()
-    }
-
-    function _setSurfaceGeometry(bodyX, bodyY, bodyW, bodyH) {
-        if (connected)
-            return;
-        const newX = Theme.snap(bodyX, dpr);
-        const newY = Theme.snap(bodyY, dpr);
-        const newW = Theme.snap(bodyW, dpr);
-        const newH = Theme.snap(bodyH, dpr);
-        const changed = newX !== _surfaceBodyX || newY !== _surfaceBodyY || newW !== _surfaceBodyW || newH !== _surfaceBodyH;
-        _surfaceBodyX = newX;
-        _surfaceBodyY = newY;
-        _surfaceBodyW = newW;
-        _surfaceBodyH = newH;
-        _requestSurfaceAxis("x", newX - shadowBuffer, newW + shadowBuffer * 2);
-        if (!fullHeightSurface)
-            _requestSurfaceAxis("y", newY - shadowBuffer, newH + shadowBuffer * 2);
-        if (changed && !resizing && backgroundLayer.item)
-            backgroundLayer.item.surfaceMoved();
-    }
-
-    // Compositors place the old buffer at the new origin until the configure round trip lands, and niri
-    // clamps sizes to the output. Anchoring the far edge lets the surface grow with its origin fixed, so
-    // the origin only moves once the buffer already spans the target; shrinks keep the body covered anyway.
-    function _requestSurfaceAxis(axis, start, size) {
-        const x = axis === "x";
-        const pendingProp = x ? "_pendingSurfaceX" : "_pendingSurfaceY";
-        const timer = x ? surfaceStepTimerX : surfaceStepTimerY;
-        root[pendingProp] = null;
-        timer.stop();
-        const currentStart = x ? _surfaceX : _surfaceY;
-        const actualSize = x ? contentWindow.width : contentWindow.height;
-        const growSize = (x ? _anchorEndX : _anchorEndY) ? size : Math.min(size, (x ? screenWidth : screenHeight) - currentStart);
-        if (!contentWindow.visible || start >= currentStart || growSize === actualSize) {
-            _applySurfaceAxis(axis, start, size);
-            return;
-        }
-        root[pendingProp] = {
-            "start": start,
-            "size": size
-        };
-        _applySurfaceAxis(axis, currentStart, size);
-        timer.restart();
-    }
-
-    function _applySurfaceAxis(axis, start, size) {
-        if (axis === "x") {
-            _surfaceX = start;
-            _surfaceW = size;
-            return;
-        }
-        _surfaceY = start;
-        _surfaceH = size;
-    }
-
-    function _flushPendingSurface(axis, timedOut) {
-        const x = axis === "x";
-        const pendingProp = x ? "_pendingSurfaceX" : "_pendingSurfaceY";
-        const pending = root[pendingProp];
-        if (!pending)
-            return;
-        const actualSize = x ? contentWindow.width : contentWindow.height;
-        const reachedEdge = (x ? _surfaceX : _surfaceY) + actualSize >= (x ? screenWidth : screenHeight);
-        if (!timedOut && pending.size !== actualSize && !reachedEdge)
-            return;
-        root[pendingProp] = null;
-        (x ? surfaceStepTimerX : surfaceStepTimerY).stop();
-        _applySurfaceAxis(axis, pending.start, pending.size);
-    }
-
-    function _setSettledSurfaceGeometry() {
-        if (connected || !shouldBeVisible || surfaceScreen !== screen)
-            return;
-        _setSurfaceGeometry(surfaceBodyX, alignedY, surfaceBodyWidth, alignedHeight);
-    }
-
-    function _setAnimatedSurfaceEnvelope() {
-        if (connected || !shouldBeVisible || surfaceScreen !== screen)
-            return;
-        const currentX = renderedAlignedX;
-        const currentRight = renderedAlignedX + renderedAlignedWidth;
-        // Handlers run before sibling bindings settle, so derive the target from the inputs.
-        const targetWidth = Math.max(Theme.px(popupWidth, dpr), Theme.px(Math.min(minimumSurfaceWidth, screenWidth), dpr));
-        const targetX = Theme.snap(_standaloneAlignedXFor(targetWidth), dpr);
-        const targetRight = targetX + targetWidth;
-        const envelopeX = Math.min(currentX, targetX);
-        const envelopeWidth = Math.max(0, Math.max(currentRight, targetRight) - envelopeX);
-        if (fullHeightSurface) {
-            _setSurfaceGeometry(envelopeX, alignedY, envelopeWidth, alignedHeight);
-            surfaceSettleTimer.restart();
-            return;
-        }
-
-        const currentY = renderedAlignedY;
-        const currentBottom = renderedAlignedY + renderedAlignedHeight;
-        const targetY = alignedY;
-        const targetBottom = alignedY + alignedHeight;
-        const envelopeY = Math.min(currentY, targetY);
-        const envelopeBottom = Math.max(currentBottom, targetBottom);
-        _setSurfaceGeometry(envelopeX, envelopeY, envelopeWidth, Math.max(0, envelopeBottom - envelopeY));
-        surfaceSettleTimer.restart();
-    }
-
-    function updateSurfacePosition() {
-        _setSettledSurfaceGeometry();
     }
 
     function _connectedAlignedXFor(width) {
@@ -1401,254 +1246,70 @@ Item {
         adjacentBarInfo: root.adjacentBarInfo
     }
 
-    Loader {
-        id: backgroundLayer
-        active: !root.connected
-        sourceComponent: Item {
-            id: background
-
-            readonly property alias window: backgroundWindow
-            readonly property bool dismissRequired: root.backgroundInteractive
-            readonly property bool required: dismissRequired || root.overlayContent !== null
-            readonly property bool overlayActive: overlayLoader.item?.visible ?? false
-            // Snapshot mask geometry to prevent background damage on bar updates
-            property real frozenMaskX: 0
-            property real frozenMaskY: 0
-            property real frozenMaskWidth: 0
-            property real frozenMaskHeight: 0
-            // Keeps the contentHoleRect carve-out tracking the body so clicks in newly grown areas do not dismiss.
-            property bool commitWindow: false
-            // An idle layer surface won't commit the cleared blur region on auto-close; pulse updatesEnabled to force it.
-            property bool blurCommitSuppress: false
-
-            readonly property bool popoutShown: root.shouldBeVisible
-            // The idle surface never commits the emptied input region on close without a frame.
-            onPopoutShownChanged: {
-                if (popoutShown || !backgroundWindow.visible)
-                    return;
-                holdCommits();
-            }
-
-            function show() {
-                if (required)
-                    backgroundWindow.visible = true;
-                holdCommits();
-            }
-
-            function holdCommits() {
-                commitWindow = true;
-                commitSettleTimer.restart();
-            }
-
-            function surfaceMoved() {
-                if (!backgroundWindow.visible)
-                    return;
-                holdCommits();
-                if (typeof backgroundWindow.update === "function")
-                    backgroundWindow.update();
-            }
-
-            function pulseBlurCommit() {
-                if (!backgroundWindow.visible)
-                    return;
-                blurCommitSuppress = true;
-                blurCommitPulseTimer.restart();
-                // Land the off->on toggle on a commit even after overlayActive has dropped.
-                holdCommits();
-            }
-
-            onRequiredChanged: {
-                if (root.shouldBeVisible)
-                    backgroundWindow.visible = required;
-            }
-
-            Timer {
-                id: commitSettleTimer
-                interval: 250
-                onTriggered: background.commitWindow = false
-            }
-
-            Timer {
-                id: blurCommitPulseTimer
-                interval: 16
-                onTriggered: background.blurCommitSuppress = false
-            }
-
-            Connections {
-                target: overlayLoader.item
-                ignoreUnknownSignals: true
-                function onOverlayBlurActiveChanged() {
-                    background.pulseBlurCommit();
-                }
-            }
-
-            Connections {
-                target: root
-                function onOpened() {
-                    background.frozenMaskX = root.maskX;
-                    background.frozenMaskY = root.maskY;
-                    background.frozenMaskWidth = root.maskWidth;
-                    background.frozenMaskHeight = root.maskHeight;
-                    if (contentWindow.visible && background.required)
-                        backgroundWindow.visible = true;
-                    background.holdCommits();
-                }
-            }
-
-            readonly property bool contentWindowVisible: contentWindow.visible
-
-            onContentWindowVisibleChanged: {
-                if (!contentWindowVisible)
-                    backgroundWindow.visible = false;
-            }
-
-            PanelWindow {
-                id: backgroundWindow
-                screen: root.surfaceScreen
-                visible: false
-                color: "transparent"
-                // Idle full-screen surface skips buffer updates, else it damages the whole screen every frame.
-                updatesEnabled: !background.blurCommitSuppress && (background.overlayActive || background.commitWindow)
-
-                WlrLayershell.namespace: root.layerNamespace + ":background"
-                WlrLayershell.layer: root.effectivePopoutLayer
-                WlrLayershell.exclusiveZone: -1
-                WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-
-                anchors {
-                    top: true
-                    left: true
-                    right: true
-                    bottom: true
-                }
-
-                mask: Region {
-                    item: maskRect
-                    Region {
-                        item: contentHoleRect
-                        intersection: Intersection.Subtract
-                    }
-                }
-
-                Rectangle {
-                    id: maskRect
-                    visible: false
-                    color: "transparent"
-                    x: background.dismissRequired ? background.frozenMaskX : 0
-                    y: background.dismissRequired ? background.frozenMaskY : 0
-                    width: (background.dismissRequired && root.shouldBeVisible && root.backgroundInteractive) ? background.frozenMaskWidth : 0
-                    height: (background.dismissRequired && root.shouldBeVisible && root.backgroundInteractive) ? background.frozenMaskHeight : 0
-                }
-
-                Rectangle {
-                    id: contentHoleRect
-                    visible: false
-                    color: "transparent"
-                    x: background.dismissRequired ? root.renderedAlignedX - root.inputMargin : 0
-                    y: background.dismissRequired ? root._surfaceBodyY - root.inputMargin : 0
-                    width: (background.dismissRequired && root.shouldBeVisible) ? root.renderedAlignedWidth + root.inputMargin * 2 : 0
-                    height: (background.dismissRequired && root.shouldBeVisible) ? root._surfaceBodyH + root.inputMargin * 2 : 0
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    hoverEnabled: false
-                    enabled: background.dismissRequired && root.shouldBeVisible && root.backgroundInteractive
-                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-                    onClicked: root.backgroundClicked()
-                }
-
-                HoverHandler {
-                    enabled: root.hoverDismissEnabled && root.shouldBeVisible
-
-                    function notePointer() {
-                        if (!hovered)
-                            return;
-                        PopoutManager.updateHoverCursor(point.position.x, point.position.y);
-                        hoverDismissController.notePointerMoved();
-                    }
-
-                    onHoveredChanged: notePointer()
-                    onPointChanged: notePointer()
-                }
-            }
+    function _attach(targetScreen) {
+        const name = targetScreen?.name ?? "";
+        if (!name) {
+            _detach();
+            return;
         }
+        const target = IdleSurfaces.surfaceFor("popout", name);
+        if (!target)
+            return;
+        if (_attachedScreenName !== name)
+            _detach();
+        surfaceRoot.parent = null;
+        surfaceRoot.parent = target.hostItem;
+        _attachedScreenName = name;
+        surfaceScreen = targetScreen;
     }
 
-    PanelWindow {
-        id: contentWindow
-        screen: root.surfaceScreen
-        visible: false
-        color: "transparent"
-        onVisibleChanged: {
-            if (!visible) {
-                root._surfaceFrameReady = false;
-                root._pendingSurfaceX = null;
-                root._pendingSurfaceY = null;
-                surfaceStepTimerX.stop();
-                surfaceStepTimerY.stop();
-                if (!root.shouldBeVisible)
-                    root._contentRenderActive = false;
-                if (Qt.inputMethod) {
-                    Qt.inputMethod.hide();
-                    Qt.inputMethod.reset();
-                }
+    function _detach() {
+        surfaceRoot.parent = root;
+        _attachedScreenName = "";
+        surfaceScreen = null;
+    }
+
+    onAttachedChanged: {
+        if (!attached) {
+            surfaceRoot.parent = root;
+            if (!shouldBeVisible)
+                _contentRenderActive = false;
+            if (Qt.inputMethod) {
+                Qt.inputMethod.hide();
+                Qt.inputMethod.reset();
             }
-            if (!root.connected)
-                return;
-            if (visible)
-                root._publishConnectedChromeState(true);
-            else
-                root._releaseConnectedChromeState();
         }
+        if (!connected)
+            return;
+        if (attached)
+            _publishConnectedChromeState(true);
+        else
+            _releaseConnectedChromeState();
+    }
 
-        Connections {
-            target: contentContainer.Window.window
-            enabled: contentWindow.visible && !root._surfaceFrameReady
+    Item {
+        id: surfaceRoot
+        readonly property var host: root
+        anchors.fill: parent
 
-            function onFrameSwapped() {
-                root._surfaceFrameReady = true;
+        SurfaceFrameGate {
+            id: frameGate
+            surfaceVisible: root.attached
+            onReadyChanged: {
+                if (ready && root._presentPending)
+                    root._present();
             }
         }
 
         PopoutHoverDismiss {
             id: hoverDismissController
+            globalOffsetX: root.surface?.bandX ?? 0
+            globalOffsetY: root.surface?.bandY ?? 0
             anchors.fill: parent
             dismissEnabled: root.hoverDismissEnabled
             dismissSuspended: root.hoverDismissSuspended
             surfaceVisible: root.shouldBeVisible
-            globalOffsetX: root._surfaceOriginX
-            globalOffsetY: root._surfaceOriginY
             onDismissRequested: root.closeFromHoverDismiss()
-        }
-
-        WlrLayershell.namespace: root.layerNamespace
-        WlrLayershell.layer: root.effectivePopoutLayer
-        WlrLayershell.exclusiveZone: -1
-        WlrLayershell.keyboardFocus: KeyboardFocus.keyboardFocus(root.shouldBeVisible && (root._keyboardReady || !root.connected), root.customKeyboardFocus)
-
-        anchors {
-            left: root.connected || !root._anchorEndX
-            top: root.connected || root.fullHeightSurface || !root._anchorEndY
-            right: root.connected || root._anchorEndX
-            bottom: root.connected || root.fullHeightSurface || root._anchorEndY
-        }
-
-        WlrLayershell.margins {
-            left: root.connected || root._anchorEndX ? 0 : root._surfaceX
-            top: root.connected || root.fullHeightSurface || root._anchorEndY ? 0 : root._surfaceY
-            right: !root.connected && root._anchorEndX ? root.screenWidth - root._surfaceX - root._surfaceW : 0
-            bottom: !root.connected && !root.fullHeightSurface && root._anchorEndY ? root.screenHeight - root._surfaceY - root._surfaceH : 0
-        }
-
-        implicitWidth: root.connected ? 0 : root._surfaceW
-        implicitHeight: root.connected || root.fullHeightSurface ? 0 : root._surfaceH
-
-        mask: contentInputMask
-
-        Region {
-            id: contentInputMask
-            item: (root.connected && root.shouldBeVisible && root.backgroundInteractive) ? backgroundDismissalMask : contentMaskRect
         }
 
         Item {
@@ -1673,10 +1334,9 @@ Item {
         Loader {
             z: -1
             anchors.fill: parent
-            active: root.connected
+            active: root.backgroundInteractive
             sourceComponent: Item {
-                id: backgroundClickCatcher
-                enabled: root.shouldBeVisible && root.backgroundInteractive
+                enabled: root.shouldBeVisible
 
                 // Four edge strips that exclude the popup body, so cursor shapes
                 // inside the content propagate correctly (full-screen MouseAreas
@@ -1722,9 +1382,11 @@ Item {
 
         Item {
             id: contentContainer
+            readonly property real surfaceOriginX: root.surface?.bandX ?? 0
+            readonly property real surfaceOriginY: root.surface?.bandY ?? 0
             clip: root.morphTravelEnabled
-            x: (root.morphTravelEnabled ? Theme.snap(root.pubBodyX, root.dpr) : root.renderedAlignedX) - root._surfaceOriginX
-            y: (root.morphTravelEnabled ? Theme.snap(root.pubBodyY, root.dpr) : root.renderedAlignedY) - root._surfaceOriginY
+            x: root.morphTravelEnabled ? Theme.snap(root.pubBodyX, root.dpr) : root._standardMotion ? surfaceOriginX + Theme.snap(root.renderedAlignedX - surfaceOriginX, root.dpr) : root.renderedAlignedX
+            y: root.morphTravelEnabled ? Theme.snap(root.pubBodyY, root.dpr) : root._standardMotion ? surfaceOriginY + Theme.snap(root.renderedAlignedY - surfaceOriginY, root.dpr) : root.renderedAlignedY
             width: root.morphTravelEnabled ? Theme.snap(root.pubBodyW, root.dpr) : root.renderedAlignedWidth
             height: root.morphTravelEnabled ? Theme.snap(root.pubBodyH, root.dpr) : root.renderedAlignedHeight
 
@@ -1796,22 +1458,23 @@ Item {
             SpringMotion {
                 id: morph
                 onRunningChanged: {
-                    if (!running && (root.directionalRevealActive || root._fluidMotionActive) && root.isClosing && !root.shouldBeVisible)
-                        root.closeAnimationFinished();
+                    if (running || (!root.directionalRevealActive && !root._fluidMotionActive) || !root.isClosing || root.shouldBeVisible)
+                        return;
+                    root.closeAnimationFinished();
+                    if (!root.morphTravelEnabled)
+                        root._finishClose();
                 }
                 enabled: root.animationsEnabled && !(root.connected && root._fluidMotionActive)
                 reducedMotion: root.animationDuration <= 0
-                positionEpsilon: Math.max(0.001, 0.25 / root.dpr / contentContainer.morphTravelPx)
+                positionEpsilon: root._standardMotion ? 0.001 : Math.max(0.001, 0.25 / root.dpr / contentContainer.morphTravelPx)
                 velocityEpsilon: positionEpsilon * damping / Math.max(0.001, 2 * mass)
                 stiffness: root._geometrySpringParams.stiffness
                 damping: root._geometrySpringParams.damping
 
                 Component.onCompleted: snapTo(root.shouldBeVisible ? 1 : 0)
             }
-            readonly property bool morphSettled: !morph.running || Math.abs(morph.value - morph.target) < Theme.morphLayerEpsilon
-            readonly property real morphProgress: root.connected || !morphSettled ? morph.value : morph.target
-            readonly property real animX: root._fluidMotionActive ? 0 : contentContainer.offsetX * (1 - morphProgress)
-            readonly property real animY: root._fluidMotionActive ? 0 : contentContainer.offsetY * (1 - morphProgress)
+            readonly property real animX: root._fluidMotionActive ? 0 : contentContainer.offsetX * (1 - morph.value)
+            readonly property real animY: root._fluidMotionActive ? 0 : contentContainer.offsetY * (1 - morph.value)
             onAnimXChanged: {
                 if (!root.connected)
                     return;
@@ -1822,7 +1485,7 @@ Item {
                     return;
                 root._syncPopoutAnim("y");
             }
-            readonly property real scaleValue: root._fluidMotionActive ? 1 : contentContainer.computedScaleCollapsed + (1.0 - contentContainer.computedScaleCollapsed) * morphProgress
+            readonly property real scaleValue: root._fluidMotionActive ? 1 : contentContainer.computedScaleCollapsed + (1.0 - contentContainer.computedScaleCollapsed) * morph.value
 
             Component.onCompleted: root._captureChromeAnimTravel()
             // Content that loads during the open changes the travel.
@@ -1848,9 +1511,9 @@ Item {
                 parent: chromeLoader.item ? chromeLoader.item.contentWrapper : contentContainer
                 anchors.fill: parent
                 sourceComponent: root.popoutHandle.content
-                // _contentWarm keeps the tree loaded across close for fast re-open; reclaimed by PopoutService on lock/idle.
-                active: root._primeContent || root.shouldBeVisible || contentWindow.visible || root._contentWarm
-                asynchronous: root._backgroundWarm && !root._primeContent && !root.shouldBeVisible && !contentWindow.visible
+                active: root._retainedContent || root._primeContent || root.shouldBeVisible || root.attached
+                visible: root.attached && root._contentRenderActive
+                enabled: root.shouldBeVisible
             }
         }
 
@@ -1874,10 +1537,10 @@ Item {
 
     Loader {
         id: overlayLoader
-        parent: root.backgroundWindow ? root.backgroundWindow.contentItem : root
+        parent: surfaceRoot
         z: 1
         anchors.fill: parent
-        active: root.overlayContent !== null && (root.backgroundWindow?.visible ?? false)
+        active: root.overlayContent !== null && root.attached
         sourceComponent: root.overlayContent
     }
 
@@ -1901,7 +1564,8 @@ Item {
 
             WindowBlur {
                 id: popoutBlur
-                targetWindow: contentWindow
+                targetWindow: root.surface
+                applyToWindow: false
                 blurEnabled: !root.frameOwnsConnectedChrome && (!root.usesConnectedSurfaceChrome || Theme.connectedSurfaceBlurEnabled)
                 surfaceColor: chrome.surfaceColor
 
@@ -1912,8 +1576,8 @@ Item {
                 readonly property real _dyClamp: (contentContainer.barTop || contentContainer.barBottom) ? Math.max(-contentContainer.height - _overflowExtent, Math.min(contentContainer.animY, contentContainer.height + _overflowExtent)) : 0
                 readonly property real _dxClamp: (contentContainer.barLeft || contentContainer.barRight) ? Math.max(-contentContainer.width, Math.min(contentContainer.animX, contentContainer.width)) : 0
 
-                blurX: trackBlurFromBarEdge ? contentContainer.x + (contentContainer.barRight ? _dxClamp : 0) : contentContainer.x + contentContainer.width * (1 - s) * 0.5 + Theme.snap(contentContainer.animX, root.dpr) - contentContainer.horizontalConnectorExtent * s
-                blurY: (trackBlurFromBarEdge ? contentContainer.y + (contentContainer.barBottom ? _dyClamp : 0) : contentContainer.y + contentContainer.height * (1 - s) * 0.5 + Theme.snap(contentContainer.animY, root.dpr) - contentContainer.verticalConnectorExtent * s) - root.topOverflow
+                blurX: (trackBlurFromBarEdge ? contentContainer.x + (contentContainer.barRight ? _dxClamp : 0) : contentContainer.x + contentContainer.width * (1 - s) * 0.5 + Theme.snap(contentContainer.animX, root.dpr) - contentContainer.horizontalConnectorExtent * s) - (root.surface?.bandX ?? 0)
+                blurY: ((trackBlurFromBarEdge ? contentContainer.y + (contentContainer.barBottom ? _dyClamp : 0) : contentContainer.y + contentContainer.height * (1 - s) * 0.5 + Theme.snap(contentContainer.animY, root.dpr) - contentContainer.verticalConnectorExtent * s) - root.topOverflow) - (root.surface?.bandY ?? 0)
                 blurWidth: root.shouldBeVisible ? (trackBlurFromBarEdge ? Math.max(0, contentContainer.width - Math.abs(_dxClamp)) : (contentContainer.width + contentContainer.horizontalConnectorExtent * 2) * s) : 0
                 blurHeight: root.shouldBeVisible ? (trackBlurFromBarEdge ? Math.max(0, contentContainer.height + _overflowExtent - Math.abs(_dyClamp)) : (contentContainer.height + contentContainer.verticalConnectorExtent * 2) * s + _overflowExtent) : 0
                 blurRadius: root.usesConnectedSurfaceChrome ? Theme.connectedCornerRadius : Theme.windowRadius
@@ -1922,7 +1586,6 @@ Item {
             Item {
                 id: directionalClipMask
 
-                visible: !root._surfaceSwitching
                 readonly property bool shouldClip: root.directionalRevealActive || root.usesConnectedSurfaceChrome
                 readonly property real clipOversize: 1000
                 // inputMargin is only non-zero while a grid is being edited; let its chrome cross the connected edge instead of clipping it.
@@ -2039,10 +1702,7 @@ Item {
                         width: rollOutAdjuster.baseWidth
                         height: rollOutAdjuster.baseHeight
 
-                        property bool _animating: false
-                        readonly property bool _fadeWithOpacity: (!root._fluidMotionActive && !root.directionalRevealActive) || root._supersededClose
-                        readonly property bool _supersededFade: root._supersededClose && !root.shouldBeVisible
-                        readonly property real _targetOpacity: root._supersededClose ? (root.shouldBeVisible ? 1 : 0) : (root._fluidMotionActive ? root.fluidContentOpacity : (root.directionalRevealActive ? 1 : (root.shouldBeVisible ? 1 : 0)))
+                        readonly property real _targetOpacity: root._fadeWithOpacity ? contentFade.value : (root._fluidMotionActive ? root.fluidContentOpacity : 1)
                         readonly property real publishedOpacity: opacity
 
                         opacity: _targetOpacity
@@ -2052,22 +1712,8 @@ Item {
                         x: root._supersededClose ? root._supersededContentX : (root._fluidMotionActive ? root.renderedAlignedX - contentContainer.x : Theme.snap(contentContainer.animX, root.dpr))
                         y: root._supersededClose ? root._supersededContentY : (root._fluidMotionActive ? root.renderedAlignedY - contentContainer.y : Theme.snap(contentContainer.animY, root.dpr))
 
-                        layer.enabled: _animating || (_fadeWithOpacity && publishedOpacity < 1)
+                        layer.enabled: root._fadeWithOpacity && (contentFade.running || publishedOpacity < 1)
                         fallbackDevicePixelRatio: root.dpr
-
-                        Behavior on opacity {
-                            enabled: contentWrapper._fadeWithOpacity
-                            NumberAnimation {
-                                duration: contentWrapper._supersededFade ? Theme.shorterDuration : Math.round(Theme.variantDuration(root.animationDuration, root.shouldBeVisible) * Theme.variantOpacityDurationScale)
-                                easing.type: Easing.BezierSpline
-                                easing.bezierCurve: root.shouldBeVisible ? root.animationEnterCurve : root.animationExitCurve
-                                onRunningChanged: {
-                                    contentWrapper._animating = running;
-                                    if (!running && !root.shouldBeVisible)
-                                        root._contentRenderActive = false;
-                                }
-                            }
-                        }
 
                         Item {
                             anchors.fill: parent
@@ -2126,43 +1772,24 @@ Item {
             readonly property real revealX: root.directionalRevealActive && contentContainer.barRight ? Theme.snap(width - revealWidth, root.dpr) : 0
             readonly property real revealY: root.directionalRevealActive && contentContainer.barBottom ? Theme.snap(height - revealHeight, root.dpr) : 0
 
-            // WindowBlur property updates don't dirty the scene graph, so render a frame to ship the new region.
-            function kickBlurCommit() {
-                if (typeof contentWindow.update === "function")
-                    contentWindow.update();
-            }
-
-            readonly property real morphValue: morph.value
-            readonly property real rootAlignedX: root.alignedX
-            readonly property real rootAlignedY: root.alignedY
-            readonly property real rootAlignedWidth: root.alignedWidth
-            readonly property real rootAlignedHeight: root.alignedHeight
-            readonly property bool rootShouldBeVisible: root.shouldBeVisible
-
-            onMorphValueChanged: kickBlurCommit()
-            onRootAlignedXChanged: kickBlurCommit()
-            onRootAlignedYChanged: kickBlurCommit()
-            onRootAlignedWidthChanged: kickBlurCommit()
-            onRootAlignedHeightChanged: kickBlurCommit()
-            onRootShouldBeVisibleChanged: kickBlurCommit()
-
             WindowBlur {
                 id: popoutBlur
-                targetWindow: contentWindow
+                targetWindow: root.surface
+                applyToWindow: false
                 surfaceColor: Theme.readableSurface
                 readonly property real s: Math.min(1, contentContainer.scaleValue)
                 readonly property real op: Math.max(0, Math.min(1, (morph.value - 0.08) * 1.6))
                 readonly property real visibleScale: s * op
                 readonly property bool revealClipActive: root.directionalRevealActive || root._fluidMotionActive
 
-                blurX: revealClipActive ? contentContainer.x : contentContainer.x + contentContainer.width * (1 - visibleScale) * 0.5 + Theme.snap(contentContainer.animX, root.dpr)
-                blurY: (revealClipActive ? contentContainer.y : contentContainer.y + contentContainer.height * (1 - visibleScale) * 0.5 + Theme.snap(contentContainer.animY, root.dpr)) - root.topOverflow
+                blurX: (revealClipActive ? contentContainer.x : contentContainer.x + contentContainer.width * (1 - visibleScale) * 0.5 + Theme.snap(contentContainer.animX, root.dpr)) - (root.surface?.bandX ?? 0)
+                blurY: ((revealClipActive ? contentContainer.y : contentContainer.y + contentContainer.height * (1 - visibleScale) * 0.5 + Theme.snap(contentContainer.animY, root.dpr)) - root.topOverflow) - (root.surface?.bandY ?? 0)
                 blurWidth: root.shouldBeVisible ? (revealClipActive ? contentContainer.width : contentContainer.width * visibleScale) : 0
                 blurHeight: root.shouldBeVisible ? (revealClipActive ? contentContainer.height : contentContainer.height * visibleScale) + root.topOverflow + root.bottomOverflow : 0
                 blurRadius: Theme.windowRadius
                 clipEnabled: revealClipActive
-                clipX: contentContainer.x + (root._fluidMotionActive ? chrome.fluidBody.x : chrome.revealX)
-                clipY: contentContainer.y + (root._fluidMotionActive ? chrome.fluidBody.y : chrome.revealY) - root.topOverflow
+                clipX: (contentContainer.x + (root._fluidMotionActive ? chrome.fluidBody.x : chrome.revealX)) - (root.surface?.bandX ?? 0)
+                clipY: (contentContainer.y + (root._fluidMotionActive ? chrome.fluidBody.y : chrome.revealY) - root.topOverflow) - (root.surface?.bandY ?? 0)
                 clipWidth: root.shouldBeVisible ? (root._fluidMotionActive ? chrome.fluidBody.width : chrome.revealWidth) : 0
                 clipHeight: root.shouldBeVisible ? (root._fluidMotionActive ? chrome.fluidBody.height : chrome.revealHeight) + root.topOverflow + root.bottomOverflow : 0
             }
@@ -2189,8 +1816,8 @@ Item {
                     height: (root._fluidMotionActive ? chrome.fluidBody.height : chrome.height) + root.topOverflow + root.bottomOverflow
                     opacity: root._fluidMotionActive ? FluidGeometry.chromeOpacity(morph.value) : contentWrapper.publishedOpacity
                     scale: root.directionalRevealActive ? 1 : contentWrapper.scale
-                    x: root._fluidMotionActive ? chrome.fluidBody.x : (root.directionalRevealActive ? 0 : contentWrapper.x)
-                    y: (root._fluidMotionActive ? chrome.fluidBody.y : (root.directionalRevealActive ? 0 : contentWrapper.y)) - root.topOverflow
+                    x: root._fluidMotionActive ? chrome.fluidBody.x : (root.directionalRevealActive ? 0 : contentTranslation.x)
+                    y: (root._fluidMotionActive ? chrome.fluidBody.y : (root.directionalRevealActive ? 0 : contentTranslation.y)) - root.topOverflow
                     level: root.shadowLevel
                     direction: root.effectiveShadowDirection
                     fallbackOffset: root.shadowFallbackOffset
@@ -2204,32 +1831,21 @@ Item {
                     width: chrome.width
                     height: chrome.height
 
-                    property real publishedOpacity: root.directionalRevealActive || root._fluidMotionActive ? 1 : (root.shouldBeVisible ? 1 : 0)
-                    readonly property real settledOpacity: publishedOpacity >= 1 - Theme.morphSettleEpsilon ? 1 : Math.max(0, publishedOpacity)
+                    readonly property real publishedOpacity: root.directionalRevealActive || root._fluidMotionActive ? 1 : contentFade.value
 
-                    opacity: root._fluidMotionActive || root.directionalRevealActive ? 1 : settledOpacity
+                    opacity: publishedOpacity
                     visible: root._contentRenderActive
                     scale: contentContainer.scaleValue
                     transformOrigin: Item.Center
-                    x: root._fluidMotionActive ? 0 : contentContainer.animX + (chrome.width - width) * (1 - contentContainer.scaleValue) * 0.5
-                    y: root._fluidMotionActive ? 0 : contentContainer.animY + (chrome.height - height) * (1 - contentContainer.scaleValue) * 0.5
+                    transform: Translate {
+                        id: contentTranslation
+                        x: contentContainer.animX
+                        y: contentContainer.animY
+                    }
 
-                    layer.enabled: !root.directionalRevealActive && !root._fluidMotionActive && root._contentRenderActive && (!contentContainer.morphSettled || opacity < 1)
+                    layer.enabled: !root.directionalRevealActive && !root._fluidMotionActive && root._contentRenderActive && (morph.running || contentFade.running || opacity < 1)
                     layer.smooth: true
                     fallbackDevicePixelRatio: root.dpr
-
-                    Behavior on publishedOpacity {
-                        enabled: !root.directionalRevealActive && !root._fluidMotionActive
-                        NumberAnimation {
-                            duration: Math.round(Theme.variantDuration(root.animationDuration, root.shouldBeVisible) * Theme.variantOpacityDurationScale)
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: root.shouldBeVisible ? root.animationEnterCurve : root.animationExitCurve
-                            onRunningChanged: {
-                                if (!running && !root.shouldBeVisible)
-                                    root._contentRenderActive = false;
-                            }
-                        }
-                    }
 
                     Rectangle {
                         y: -root.topOverflow
@@ -2245,8 +1861,8 @@ Item {
                     parent: root._fluidMotionActive ? chrome : contentClip.contentItem
                     width: root._fluidMotionActive ? chrome.fluidBody.width : chrome.width
                     height: (root._fluidMotionActive ? chrome.fluidBody.height : chrome.height) + root.topOverflow + root.bottomOverflow
-                    x: root._fluidMotionActive ? chrome.fluidBody.x : (root.directionalRevealActive ? 0 : contentWrapper.x)
-                    y: (root._fluidMotionActive ? chrome.fluidBody.y : (root.directionalRevealActive ? 0 : contentWrapper.y)) - root.topOverflow
+                    x: root._fluidMotionActive ? chrome.fluidBody.x : (root.directionalRevealActive ? 0 : contentTranslation.x)
+                    y: (root._fluidMotionActive ? chrome.fluidBody.y : (root.directionalRevealActive ? 0 : contentTranslation.y)) - root.topOverflow
                     opacity: root._fluidMotionActive ? FluidGeometry.chromeOpacity(morph.value) : contentWrapper.publishedOpacity
                     scale: root.directionalRevealActive ? 1 : contentWrapper.scale
                     visible: contentWrapper.visible

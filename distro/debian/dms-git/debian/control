@@ -2,7 +2,7 @@ Source: dms-git
 Section: x11
 Priority: optional
 Maintainer: Avenge Media <AvengeMedia.US@gmail.com>
-Build-Depends: debhelper-compat (= 13),
+Build-Depends: debhelper-compat (= 13)
 Standards-Version: 4.6.2
 Homepage: https://github.com/duxlabs-dev/dux-shell
 Vcs-Browser: https://github.com/duxlabs-dev/dux-shell
@@ -11,9 +11,9 @@ Vcs-Git: https://github.com/duxlabs-dev/dux-shell.git
 Package: dms-git
 Architecture: amd64 arm64
 Depends: ${misc:Depends},
-         quickshell-git | quickshell,
          accountsservice,
          cava,
+         libdux-qt-base0,
          dux-search | danksearch,
          matugen,
          qml6-module-qtcore,

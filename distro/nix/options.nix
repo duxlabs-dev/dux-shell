@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   dmsPkgs,
   pkgs,
@@ -21,13 +22,19 @@ in
     (lib.mkRemovedOptionModule (
       path ++ [ "enableSystemSound" ]
     ) "qtmultimedia is now included on dms-shell package.")
+    (lib.mkRemovedOptionModule (
+      path ++ [ "quickshell" "package" ]
+    ) "The Quickshell runtime is embedded in dms as dux-qt-base; set programs.dank-material-shell.duxQtBase.package instead.")
     ./dms-rename.nix
   ];
 
   options.programs.dank-material-shell = {
     enable = lib.mkEnableOption "Dux Modular Shell";
-    package = lib.mkPackageOption dmsPkgs "dms-shell" {
-      extraDescription = "The Dux Modular Shell package to use (defaults to be built from source)";
+    package = lib.mkOption {
+      type = types.package;
+      default = dmsPkgs.dms-shell.override { duxQtBase = config.programs.dank-material-shell.duxQtBase.package; };
+      defaultText = lib.literalExpression "dmsPkgs.dms-shell.override { duxQtBase = config.programs.dank-material-shell.duxQtBase.package; }";
+      description = "The Dux Modular Shell package to use (defaults to be built from source against duxQtBase.package)";
     };
 
     systemd = {
@@ -75,9 +82,9 @@ in
       description = "Deprecated: paste is built into dms; no extra dependencies needed. Kept as a no-op for compatibility.";
     };
 
-    quickshell = {
-      package = lib.mkPackageOption pkgs "quickshell" {
-        extraDescription = "(we recommend at least 0.3.0, currently available in nixos-unstable)";
+    duxQtBase = {
+      package = lib.mkPackageOption dmsPkgs "dux-qt-base" {
+        extraDescription = "The Quickshell runtime library embedded in the dms package (defaults to the pinned dux-qt-base flake input, built against this system's nixpkgs).";
       };
     };
 
