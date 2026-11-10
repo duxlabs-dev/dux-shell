@@ -798,7 +798,7 @@ func getQuickshellVersionInfo(missingFeatures bool) (display string, st status, 
 
 func quickshellVersionFailureDetails(stderr string) string {
 	if strings.Contains(stderr, "undefined symbol:") && strings.Contains(stderr, "Qt_6_PRIVATE_API") {
-		return "Quickshell is incompatible with the installed Qt libraries. Rebuild or reinstall Quickshell against the current Qt version."
+		return "dux-qt-base is incompatible with the installed Qt libraries. Update or rebuild dux-qt-base against the current Qt version."
 	}
 
 	return "Run 'dms qs --version' to inspect the failure."
@@ -2065,7 +2065,7 @@ func printSummary(results []checkResult, qsMissingFeatures bool) {
 
 		if qsMissingFeatures {
 			fmt.Println()
-			fmt.Printf("  %s\n", styles.Subtle.Render("→ Consider using quickshell-git for full feature support"))
+			fmt.Printf("  %s\n", styles.Subtle.Render("→ Update dux-qt-base for full feature support"))
 		}
 	}
 	fmt.Println()

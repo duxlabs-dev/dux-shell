@@ -77,7 +77,7 @@ sudo ldconfig
 
 Pass cmake flags through `just configure`, for example `just configure release -DCMAKE_INSTALL_PREFIX=/usr`, then `just build`. Rebuild and reinstall after every Qt update, the library uses private Qt APIs. See `dux-qt-base/BUILD.md` for options and dependencies.
 
-To embed the runtime in `dms` instead, which is what the distro packages do:
+To embed the runtime in `dms` instead (distro packages depend on the dux-qt-base package rather than embedding):
 
 ```bash
 cd core

@@ -15,44 +15,9 @@ Source2:        go%{go_toolchain_version}.linux-arm64.tar.gz
 
 BuildRequires:  git-core
 BuildRequires:  systemd-rpm-macros
-# dux-qt-base (quickshell runtime, built from the submodule and embedded in dms)
-BuildRequires:  cmake
-BuildRequires:  gcc-c++
-BuildRequires:  ninja
-BuildRequires:  pkgconfig
-BuildRequires:  cmake(Qt6Core) >= 6.8.0
-BuildRequires:  cmake(Qt6DBus)
-BuildRequires:  cmake(Qt6Network)
-BuildRequires:  cmake(Qt6Qml)
-BuildRequires:  cmake(Qt6Quick)
-BuildRequires:  cmake(Qt6QuickControls2)
-BuildRequires:  cmake(Qt6ShaderTools)
-BuildRequires:  cmake(Qt6WaylandClient)
-BuildRequires:  cmake(Qt6Widgets)
-BuildRequires:  qt6-base-private-devel
-BuildRequires:  qt6-declarative-private-devel
-BuildRequires:  qt6-waylandclient-private-devel
-BuildRequires:  cli11-devel
-BuildRequires:  spirv-tools
-BuildRequires:  vulkan-headers
-BuildRequires:  wayland-devel
-BuildRequires:  wayland-protocols-devel >= 1.41
-BuildRequires:  Mesa-libEGL-devel
-BuildRequires:  libgbm-devel
-BuildRequires:  pkgconfig(glib-2.0)
-BuildRequires:  pkgconfig(gobject-2.0)
-BuildRequires:  pkgconfig(libdrm)
-BuildRequires:  pkgconfig(libpipewire-0.3)
-BuildRequires:  pkgconfig(pam)
-BuildRequires:  pkgconfig(polkit-agent-1)
-BuildRequires:  pkgconfig(polkit-gobject-1)
-BuildRequires:  pkgconfig(wayland-client)
-BuildRequires:  pkgconfig(xcb)
-BuildRequires:  pkgconfig(xkbcommon)
 
 Requires:       accountsservice
-# the embedded libdux-qt-base.so is invisible to find-requires, so its runtime deps are explicit
-Requires:       qt6-wayland
+Requires:       libdux-qt-base0
 
 Recommends:     cava
 Recommends:     (dux-search or danksearch)
@@ -125,7 +90,7 @@ COMMIT=$(echo "%{version}" | grep -oP '(?<=git)[0-9]+\.[a-f0-9]+' | cut -d. -f2 
 
 # Build dms-cli from source using vendored dependencies
 cd core
-make GOFLAGS="-mod=vendor" QTBASE=1 build-distro VERSION="$VERSION" COMMIT="$COMMIT"
+make GOFLAGS="-mod=vendor" build-distro VERSION="$VERSION" COMMIT="$COMMIT"
 mv bin/dms ../dms
 cd ..
 chmod +x dms

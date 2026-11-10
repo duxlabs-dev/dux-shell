@@ -48,7 +48,7 @@ override_dh_auto_build:
 	VERSION="$(UPSTREAM_VERSION)"; \
 	COMMIT=$$(echo "$(UPSTREAM_VERSION)" | grep -oP '(?<=git)[0-9]+\.[a-f0-9]+' | cut -d. -f2 | head -c8 || echo "unknown"); \
 	echo "Building with VERSION=$$VERSION COMMIT=$$COMMIT ARCH=$(DEB_HOST_ARCH)"; \
-	cd core && $(MAKE) GOFLAGS="-mod=vendor" QTBASE=1 build-distro VERSION="$$VERSION" COMMIT="$$COMMIT"
+	cd core && $(MAKE) GOFLAGS="-mod=vendor" build-distro VERSION="$$VERSION" COMMIT="$$COMMIT"
 
 	cp core/bin/dms dms
 	chmod +x dms
@@ -62,14 +62,10 @@ override_dh_auto_install:
 	install -Dm644 assets/dev.duxlabs.shell.notepad.desktop debian/dms-git/usr/share/applications/dev.duxlabs.shell.notepad.desktop
 	install -Dm644 assets/dev.duxlabs.shell.svg debian/dms-git/usr/share/icons/hicolor/scalable/apps/dev.duxlabs.shell.svg
 
-# the embedded libdux-qt-base.so is invisible to dpkg-shlibdeps, so scan the built copy
-override_dh_shlibdeps:
-	dh_shlibdeps -- -e $(CURDIR)/core/build/dux-qt-base/src/libdux-qt-base.so.0
-
 override_dh_auto_clean:
 	# Clean up build artifacts
 	rm -f dms
-	rm -rf core/bin core/build core/internal/qtbaseembed/lib
+	rm -rf core/bin
 	rm -rf debian/tmp-home
 	rm -rf go-bootstrap .go-toolchain
 	dh_auto_clean

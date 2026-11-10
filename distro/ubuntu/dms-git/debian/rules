@@ -42,10 +42,10 @@ override_dh_auto_build:
 	if [ -f dms-git-repo/.dms-version ]; then \
 		. dms-git-repo/.dms-version; \
 		echo "Building with VERSION=$$VERSION COMMIT=$$COMMIT ARCH=$(DEB_HOST_ARCH)"; \
-		cd dms-git-repo/core && $(MAKE) GOFLAGS="-mod=vendor" QTBASE=1 build-distro VERSION="$$VERSION" COMMIT="$$COMMIT"; \
+		cd dms-git-repo/core && $(MAKE) GOFLAGS="-mod=vendor" build-distro VERSION="$$VERSION" COMMIT="$$COMMIT"; \
 	else \
 		echo "Warning: .dms-version not found, building without version info"; \
-		cd dms-git-repo/core && $(MAKE) GOFLAGS="-mod=vendor" QTBASE=1 build-distro; \
+		cd dms-git-repo/core && $(MAKE) GOFLAGS="-mod=vendor" build-distro; \
 	fi
 	cp dms-git-repo/core/bin/dms dms
 	chmod +x dms
@@ -67,10 +67,6 @@ override_dh_auto_install:
 		debian/dms-git/usr/share/applications/dev.duxlabs.shell.notepad.desktop
 	install -Dm644 dms-git-repo/assets/dev.duxlabs.shell.svg \
 		debian/dms-git/usr/share/icons/hicolor/scalable/apps/dev.duxlabs.shell.svg
-
-# the embedded libdux-qt-base.so is invisible to dpkg-shlibdeps, so scan the built copy
-override_dh_shlibdeps:
-	dh_shlibdeps -- -e $(CURDIR)/dms-git-repo/core/build/dux-qt-base/src/libdux-qt-base.so.0
 
 override_dh_auto_clean:
 	# Don't delete dms-git-repo directory - it's part of the source package (native format)

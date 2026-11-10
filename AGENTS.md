@@ -7,7 +7,7 @@ DMS is an open-source desktop shell for Wayland compositors on linux, built to w
 - core/ - Go. `cmd/dms` runs quickshell, CLI utilities, and the unix socket server the UI depends on. `cmd/duxinstall` is a separate installer TUI.
 - quickshell/ - the entire UI: Common/ (singletons, Theme, settings), Services/ (system and core access), Modules/ (bar, dock, lock, ...), Modals/, Widgets/ (shell-specific widgets and deprecated Dank* shims), PLUGINS/, translations/
 - dux-qml-common/ - submodule of shared QML widgets
-- dux-qt-base/ - submodule, the quickshell runtime fork. By default `dms qs` dlopens an installed libdux-qt-base.so.0, next to `dms` or in the system library dirs (a dux-qt-base package), and fails without one; `dms run --qs-child` (DMS_QS_CHILD=1) runs the UI on upstream `qs` instead. QTBASE=1 makes core/Makefile build it with cmake into core/build and embed it in `dms` (withqtbase tag); distro packages build that way. The QML must keep loading on upstream quickshell: fork-only pragmas and window properties are warnings or guarded assignments, never bindings.
+- dux-qt-base/ - submodule, the quickshell runtime fork. By default `dms qs` dlopens an installed libdux-qt-base.so.0, next to `dms` or in the system library dirs (a dux-qt-base package), and fails without one; `dms run --qs-child` (DMS_QS_CHILD=1) runs the UI on upstream `qs` instead. QTBASE=1 makes core/Makefile build it with cmake into core/build and embed it in `dms` (withqtbase tag); distro packages instead depend on the dux-qt-base package. The QML must keep loading on upstream quickshell: fork-only pragmas and window properties are warnings or guarded assignments, never bindings.
 - docs/, distro/ - IPC and theme docs, packaging
 
 ## Rules

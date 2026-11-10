@@ -20,7 +20,7 @@ func TestQuickshellVersionFailureDetails(t *testing.T) {
 		{
 			name:   "Qt private API symbol mismatch",
 			stderr: "qs: symbol lookup error: qs: undefined symbol: _ZN23QUntypedPropertyBindingC1EP23QPropertyBindingPrivate, version Qt_6_PRIVATE_API",
-			want:   "Quickshell is incompatible with the installed Qt libraries. Rebuild or reinstall Quickshell against the current Qt version.",
+			want:   "dux-qt-base is incompatible with the installed Qt libraries. Update or rebuild dux-qt-base against the current Qt version.",
 		},
 		{
 			name:   "other failure",

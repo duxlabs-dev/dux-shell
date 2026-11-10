@@ -31,53 +31,15 @@ Source1:        https://go.dev/dl/go%{go_toolchain_version}.linux-amd64.tar.gz
 Source2:        https://go.dev/dl/go%{go_toolchain_version}.linux-arm64.tar.gz
 # git_repo_pack archives skip submodule content, so pack dux-qml-common separately
 Source3:        {{{ git_pack path=$GIT_ROOT/dux-qml-common dir_name=dux-qml-common source_name=dux-qml-common.tar.gz }}}
-Source4:        {{{ git_pack path=$GIT_ROOT/dux-qt-base dir_name=dux-qt-base source_name=dux-qt-base.tar.gz }}}
 
 BuildRequires:  git-core
 BuildRequires:  gzip
 BuildRequires:  make
 BuildRequires:  systemd-rpm-macros
-# dux-qt-base (quickshell runtime, built from the submodule and embedded in dms)
-BuildRequires:  cmake
-BuildRequires:  gcc-c++
-BuildRequires:  ninja-build
-BuildRequires:  pkgconfig
-BuildRequires:  cmake(Qt6Core) >= 6.8.0
-BuildRequires:  cmake(Qt6DBus)
-BuildRequires:  cmake(Qt6Network)
-BuildRequires:  cmake(Qt6Qml)
-BuildRequires:  cmake(Qt6Quick)
-BuildRequires:  cmake(Qt6QuickControls2)
-BuildRequires:  cmake(Qt6ShaderTools)
-BuildRequires:  cmake(Qt6WaylandClient)
-BuildRequires:  cmake(Qt6Widgets)
-BuildRequires:  qt6-qtbase-private-devel
-BuildRequires:  pkgconfig(CLI11)
-BuildRequires:  pkgconfig(egl)
-BuildRequires:  pkgconfig(gbm)
-BuildRequires:  pkgconfig(glib-2.0)
-BuildRequires:  pkgconfig(gobject-2.0)
-BuildRequires:  pkgconfig(libdrm)
-BuildRequires:  pkgconfig(libpipewire-0.3)
-BuildRequires:  pkgconfig(pam)
-BuildRequires:  pkgconfig(polkit-agent-1)
-BuildRequires:  pkgconfig(polkit-gobject-1)
-BuildRequires:  pkgconfig(wayland-client)
-BuildRequires:  pkgconfig(wayland-protocols) >= 1.41
-BuildRequires:  pkgconfig(xcb)
-BuildRequires:  pkgconfig(xkbcommon)
-BuildRequires:  spirv-tools
-BuildRequires:  vulkan-headers
-BuildRequires:  wayland-devel
 
 # Core requirements
 Requires:       accountsservice
-# the embedded libdux-qt-base.so is invisible to find-requires, so its runtime deps are explicit
-Requires:       qt6-qtdeclarative%{?_isa}
-Requires:       qt6-qtwayland%{?_isa}
-Requires:       pipewire-libs%{?_isa}
-Requires:       polkit-libs%{?_isa}
-Requires:       pam%{?_isa}
+Requires:       dux-qt-base
 Requires:       dms-cli = %{epoch}:%{version}-%{release}
 
 # Core utilities (Recommended for DMS functionality)
@@ -115,9 +77,6 @@ Provides native DBus bindings, NetworkManager integration, and system utilities.
 rm -rf dux-qml-common
 tar -xzf %{SOURCE3}
 test -e quickshell/DCommon/Widgets/DIcon.qml || { echo "DCommon missing after submodule unpack"; exit 1; }
-rm -rf dux-qt-base
-tar -xzf %{SOURCE4}
-test -e dux-qt-base/CMakeLists.txt || { echo "dux-qt-base missing after submodule unpack"; exit 1; }
 
 %build
 # Build DMS CLI from source (core/subdirectory)
@@ -147,7 +106,7 @@ export GOTOOLCHAIN=local
 go version
 
 cd core
-make QTBASE=1 build-distro VERSION="$VERSION" COMMIT="$COMMIT"
+make build-distro VERSION="$VERSION" COMMIT="$COMMIT"
 
 %install
 install -Dm755 core/bin/dms %{buildroot}%{_bindir}/dms
