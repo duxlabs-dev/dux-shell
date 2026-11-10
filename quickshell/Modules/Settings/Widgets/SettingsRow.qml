@@ -61,6 +61,10 @@ T.Control {
     property bool dividerBefore: inGroup && !isFirstInGroup
     property real topRadius: isFirstInGroup ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
     property real bottomRadius: isLastInGroup ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+    property real topLeftRadius: topRadius
+    property real topRightRadius: topRadius
+    property real bottomLeftRadius: bottomRadius
+    property real bottomRightRadius: bottomRadius
     property real minHeight: subtitle !== "" ? SettingsMetrics.rowMinHeightTwoLine : SettingsMetrics.rowMinHeight
     // Keyboard focus on the row or any control inside it tints the row, so navigation reads without a focus ring
     readonly property Item activeItem: Window.activeFocusItem
@@ -155,20 +159,20 @@ T.Control {
             visible: SettingsMetrics.continuousGroups && root.dividerBefore
             color: SettingsMetrics.groupDividerColor
         }
-        topLeftRadius: root.topRadius
-        topRightRadius: root.topRadius
-        bottomLeftRadius: root.bottomRadius
-        bottomRightRadius: root.bottomRadius
+        topLeftRadius: root.topLeftRadius
+        topRightRadius: root.topRightRadius
+        bottomLeftRadius: root.bottomLeftRadius
+        bottomRightRadius: root.bottomRightRadius
     }
 
     Rectangle {
         anchors.fill: parent
         visible: !root.paintBackground && (root.active || root.highlighted)
         color: root.active ? root.selectedRowColor : SettingsMetrics.rowHighlightColor
-        topLeftRadius: root.topRadius
-        topRightRadius: root.topRadius
-        bottomLeftRadius: root.bottomRadius
-        bottomRightRadius: root.bottomRadius
+        topLeftRadius: root.topLeftRadius
+        topRightRadius: root.topRightRadius
+        bottomLeftRadius: root.bottomLeftRadius
+        bottomRightRadius: root.bottomRightRadius
     }
 
     Rectangle {
@@ -180,10 +184,10 @@ T.Control {
         visible: root.clickable || root.focusWithin
         color: root.contentColor
         opacity: !root.enabled ? 0 : (clickControl.down ? Theme.stateLayerPressed : root.focusWithin ? Theme.stateLayerFocus : (root.headerHovered ? Theme.stateLayerHover : 0))
-        topLeftRadius: root.topRadius
-        topRightRadius: root.topRadius
-        bottomLeftRadius: height < root.height ? 0 : root.bottomRadius
-        bottomRightRadius: bottomLeftRadius
+        topLeftRadius: root.topLeftRadius
+        topRightRadius: root.topRightRadius
+        bottomLeftRadius: height < root.height ? 0 : root.bottomLeftRadius
+        bottomRightRadius: height < root.height ? 0 : root.bottomRightRadius
 
         Behavior on opacity {
             enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
@@ -206,10 +210,10 @@ T.Control {
             id: ripple
             visible: root.clickable
             rippleColor: root.contentColor
-            topLeftRadius: root.topRadius
-            topRightRadius: root.topRadius
-            bottomLeftRadius: root.hasBody ? 0 : root.bottomRadius
-            bottomRightRadius: bottomLeftRadius
+            topLeftRadius: root.topLeftRadius
+            topRightRadius: root.topRightRadius
+            bottomLeftRadius: root.hasBody ? 0 : root.bottomLeftRadius
+            bottomRightRadius: root.hasBody ? 0 : root.bottomRightRadius
         }
 
         StyledButton {
@@ -233,10 +237,10 @@ T.Control {
     Rectangle {
         anchors.fill: parent
         anchors.margins: Theme.focusRingWidth / 2
-        topLeftRadius: Math.max(0, root.topRadius - Theme.focusRingWidth / 2)
-        topRightRadius: topLeftRadius
-        bottomLeftRadius: Math.max(0, root.bottomRadius - Theme.focusRingWidth / 2)
-        bottomRightRadius: bottomLeftRadius
+        topLeftRadius: Math.max(0, root.topLeftRadius - Theme.focusRingWidth / 2)
+        topRightRadius: Math.max(0, root.topRightRadius - Theme.focusRingWidth / 2)
+        bottomLeftRadius: Math.max(0, root.bottomLeftRadius - Theme.focusRingWidth / 2)
+        bottomRightRadius: Math.max(0, root.bottomRightRadius - Theme.focusRingWidth / 2)
         color: "transparent"
         border.width: Theme.focusRingWidth
         border.color: Theme.focusRingColor
