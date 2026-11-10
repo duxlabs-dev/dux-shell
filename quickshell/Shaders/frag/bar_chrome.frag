@@ -10,11 +10,15 @@ layout(std140, binding = 0) uniform buf {
     float qt_Opacity;
     float widthPx;
     float heightPx;
+    float borderWidth;  // px; 0 disables the stroke
+    vec4 viewPx;        // x, y = item origin in window px; z, w = window size px
     vec4 surfaceColor;  // straight (non-premultiplied) rgba
+    vec4 borderColor;   // straight rgba
     vec4 shadowColor;   // straight rgba; a = 0 disables both shadow terms
     vec4 shadowParam;   // key: x = blur px, y = spread px, z,w = offset px
     vec4 ambientParam;  // ambient: x = blur px, y = spread px, z = alpha
-    vec4 edgeParam;     // x = bar side (0 top, 1 bottom, 2 left, 3 right), y = edge fillet k, z,w = popout fillet k at its start and end
+    vec4 edgeParam;     // x = bar side (0 top, 1 bottom, 2 left, 3 right), y = screen edge fillet k, z,w = popout fillet k at its start and end
+    vec4 endParam;      // x, y = where the bar unit starts and ends along the edge, z, w = fillet k into each end
     vec4 leadRect;      // x, y, w, h px; w = 0 disables a shape
     vec4 leadCorner;    // topLeft, topRight, bottomRight, bottomLeft
     vec4 trailRect;
@@ -62,16 +66,19 @@ float shapesDist(vec2 px, float band) {
 // and they cast no shadow.
 float sceneDist(vec2 px, float shapes, float band) {
     float side = ubuf.edgeParam.x;
-    float dEdge = 1.0 + (side < 0.5 ? px.y : side < 1.5 ? (ubuf.heightPx - px.y) : side < 2.5 ? px.x : (ubuf.widthPx - px.x));
-    float dEnds = 1.0 + (side < 1.5 ? min(px.x, ubuf.widthPx - px.x) : min(px.y, ubuf.heightPx - px.y));
-    float k = ubuf.edgeParam.y;
-    float d = smin(shapes, dEdge, k);
-    // Only the bar or satellite rounds into the screen end: elsewhere the two edges would fill the corner.
-    return band > k ? d : smin(d, dEnds, k);
+    float dEdge = 1.0 + (side < 0.5 ? px.y : side < 1.5 ? (ubuf.viewPx.w - px.y) : side < 2.5 ? px.x : (ubuf.viewPx.z - px.x));
+    float along = side < 1.5 ? px.x : px.y;
+    float d = smin(shapes, dEdge, ubuf.edgeParam.y);
+    // Only the bar or satellite rounds into an end: elsewhere the two edges would fill the corner.
+    if (band <= ubuf.endParam.z)
+        d = smin(d, 1.0 + along - ubuf.endParam.x, ubuf.endParam.z);
+    if (band <= ubuf.endParam.w)
+        d = smin(d, 1.0 + ubuf.endParam.y - along, ubuf.endParam.w);
+    return d;
 }
 
 void main() {
-    vec2 px = qt_TexCoord0 * vec2(ubuf.widthPx, ubuf.heightPx);
+    vec2 px = ubuf.viewPx.xy + qt_TexCoord0 * vec2(ubuf.widthPx, ubuf.heightPx);
     float band = bandDist(px);
     float shapes = shapesDist(px, band);
     float d = sceneDist(px, shapes, band);
@@ -82,7 +89,13 @@ void main() {
         return;
     }
     float cov = 1.0 - smoothstep(-fw, fw, d);
-    vec4 col = vec4(ubuf.surfaceColor.rgb, 1.0) * cov;
+    vec4 col = vec4(ubuf.surfaceColor.rgb, 1.0) * (cov * ubuf.surfaceColor.a);
+    if (ubuf.borderWidth > 0.0 && ubuf.borderColor.a > 0.0) {
+        // The eroded shape still rounds into the screen edges, so no stroke runs along them.
+        float inner = 1.0 - smoothstep(-fw, fw, sceneDist(px, shapes + ubuf.borderWidth, band));
+        float stroke = max(cov - inner, 0.0) * ubuf.borderColor.a;
+        col = vec4(ubuf.borderColor.rgb, 1.0) * stroke + col * (1.0 - stroke);
+    }
     if (ubuf.shadowColor.a > 0.0) {
         vec2 shadowPx = px - ubuf.shadowParam.zw;
         float dk = shapesDist(shadowPx, bandDist(shadowPx)) - ubuf.shadowParam.y;
@@ -91,7 +104,7 @@ void main() {
         float ba = max(ubuf.ambientParam.x, fw);
         float covA = 1.0 - smoothstep(-ba, ba, shapes - ubuf.ambientParam.y);
         float sh = 1.0 - (1.0 - covK * ubuf.shadowColor.a) * (1.0 - covA * ubuf.ambientParam.z);
-        col += vec4(ubuf.shadowColor.rgb, 1.0) * (sh * (1.0 - col.a));
+        col += vec4(ubuf.shadowColor.rgb, 1.0) * (sh * (1.0 - cov) * ubuf.surfaceColor.a);
     }
-    fragColor = col * (ubuf.surfaceColor.a * ubuf.qt_Opacity);
+    fragColor = col * ubuf.qt_Opacity;
 }

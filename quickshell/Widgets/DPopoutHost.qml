@@ -98,11 +98,13 @@ Item {
     })
 
     readonly property real effectiveBarThickness: {
-        if (root.joinsBar && !root.joinsNormalBar)
+        if (root.joinsNormalBar)
+            return Theme.barThickness(storedBarConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault, dpr) + joinedBarSpacing;
+        if (root.joinsBar)
             return SettingsData.islandStripThickness(storedBarConfig);
-        if (root.usesConnectedSurfaceChrome && !root.joinsNormalBar)
+        if (root.usesConnectedSurfaceChrome)
             return Math.max(0, storedBarThickness);
-        return Theme.barThickness(storedBarConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault, dpr) + (root.joinsNormalBar ? joinedBarSpacing : storedBarSpacing);
+        return Theme.barThickness(storedBarConfig?.innerPadding ?? SettingsData.barInnerPaddingDefault, dpr) + storedBarSpacing;
     }
 
     readonly property var barBounds: {
@@ -498,9 +500,10 @@ Item {
     // Without a frame, the window of the bar this popout opened from paints its chrome.
     readonly property bool joinsBar: connected && !Theme.isConnectedEffect && SettingsData.barConnectsPopouts(storedBarConfig)
     readonly property bool joinsNormalBar: joinsBar && !SettingsData.isIslandBarConfig(storedBarConfig)
-    readonly property real joinedBarSpacing: joinsNormalBar ? (ShellLayout.forConfig(screen, storedBarConfig?.id)?.spacing ?? storedBarSpacing) : 0
+    readonly property real satelliteLean: 0.25
+    readonly property real joinedBarSpacing: joinsNormalBar ? Theme.px(ShellLayout.forConfig(screen, storedBarConfig?.id)?.spacing ?? storedBarSpacing, dpr) : 0
     readonly property bool frameOwnsConnectedChrome: connected && !_overStackedModal && effectivePopoutLayer === WlrLayer.Top && (joinsBar ? !CompositorService.fullscreenCoversTopLayer(root.screen) : CompositorService.canShareConnectedFrameChromeForScreen(root.screen))
-    readonly property bool usesConnectedSurfaceChrome: connected
+    readonly property bool usesConnectedSurfaceChrome: connected && (Theme.isConnectedEffect || joinsBar)
     readonly property bool usesLocalConnectedSurfaceChrome: usesConnectedSurfaceChrome && !frameOwnsConnectedChrome
 
     property bool animationsEnabled: true
@@ -540,14 +543,14 @@ Item {
         return !frameOwnsConnectedChrome || ConnectedModeState.hasSurfaceOwner(root.screen.name, "popout", chromeLease.claimId);
     }
 
-    readonly property string _barRoomKey: ConnectedModeState.barRoomKey(screen?.name ?? "", storedBarConfig?.id ?? "")
+    readonly property string _barRoomKey: ConnectedModeState.barRoomKey(screen?.name ?? "", storedBarConfig?.id ?? "default")
     readonly property bool _barRoomReady: ConnectedModeState.barRooms[_barRoomKey] === "ready"
 
     on_BarRoomReadyChanged: {
-        if (_barRoomReady && barRoomWait.running) {
-            barRoomWait.stop();
-            _open();
-        }
+        if (!_barRoomReady || !barRoomWait.running)
+            return;
+        barRoomWait.stop();
+        _open();
     }
 
     // A bar that can't answer must not cost the popout its open.
@@ -560,6 +563,10 @@ Item {
     function open() {
         if (!screen)
             return;
+        if (!contentWindow.visible || _openScreen !== screen)
+            _overStackedModal = ModalManager.hasStackedModal(screen.name);
+        if (barRoomWait.running)
+            return;
         if (!joinsBar || !frameOwnsConnectedChrome || _barRoomReady) {
             _open();
             return;
@@ -570,8 +577,8 @@ Item {
     }
 
     function _open() {
-        if (!contentWindow.visible || _openScreen !== screen)
-            _overStackedModal = ModalManager.hasStackedModal(screen.name);
+        if (!screen)
+            return;
         const preserveMotion = _canPreserveMotion();
         _resetPublishedBody();
         closeTimer.stop();
@@ -629,6 +636,7 @@ Item {
             if (root.shouldBeVisible)
                 root._keyboardReady = true;
         });
+        // A connected popout registered itself in _open() before shouldBeVisible flipped.
         if (connected)
             PopoutManager.popoutChanged();
         else
@@ -1055,7 +1063,7 @@ Item {
         _syncPopoutBody();
     }
 
-    readonly property real joinedBarWing: joinsNormalBar ? barWingSize : 0
+    readonly property real joinedBarWing: joinsBar ? barWingSize : 0
     readonly property real connectedAnchorX: {
         if (!root.usesConnectedSurfaceChrome)
             return triggerX;
@@ -1241,9 +1249,9 @@ Item {
         case SettingsData.Position.Right:
             return Math.max(edgeGapLeft, Math.min(screenWidth - width - popupGap, anchorX - width));
         default:
-            // Lean toward the nearer screen edge, where the satellite is.
-            const edgeBias = !joinsBar || joinsNormalBar ? 0 : (triggerX + triggerWidth / 2 > screenWidth / 2 ? width : -width) / 4;
-            const rawX = triggerX + (triggerWidth / 2) - (width / 2) + edgeBias;
+            // A satellite popout leans outward so the join clears the island.
+            const lean = !joinsBar || joinsNormalBar ? 0 : (triggerSection === "right" ? 1 : triggerSection === "left" ? -1 : 0) * width * satelliteLean;
+            const rawX = triggerX + (triggerWidth / 2) - (width / 2) + lean;
             const clearLeft = adjacentBarClearance(adjacentBarInfo.leftBar);
             const clearRight = adjacentBarClearance(adjacentBarInfo.rightBar);
             const minX = Math.max(edgeGapLeft, clearLeft);

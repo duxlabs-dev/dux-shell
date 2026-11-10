@@ -9,7 +9,7 @@ Singleton {
     id: root
 
     property var surfaceDescriptors: ({})
-    // "wanted" or "ready" per bar window that paints popouts; absent while it keeps its idle size.
+    // "wanted" or "ready" per bar window that paints popouts; cleared a second after its last popout closes.
     property var barRooms: ({})
     property var surfaceMotion: ({})
     property var surfaceRevisions: ({})

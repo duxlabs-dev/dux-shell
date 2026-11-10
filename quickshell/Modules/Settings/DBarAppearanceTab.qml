@@ -277,7 +277,8 @@ Item {
                 settingKey: "connectedPopouts"
                 tags: ["connected", "popout", "popup", "gaps"]
                 text: I18n.tr("Connected popouts", "bar settings: popouts join the bar or satellite background")
-                visible: !bar.selectedBarIsIsland && !bar.selectedBarFrameSanitized && !SettingsData.frameEnabled && !(bar.selectedBarConfig?.useOverlayLayer ?? false)
+                visible: !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
+                enabled: SettingsData.barCanConnectPopouts(bar.selectedBarConfig)
                 checked: bar.selectedBarConfig?.connectedPopouts ?? false
                 onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
                         connectedPopouts: checked
@@ -609,10 +610,8 @@ Item {
                 text: I18n.tr("Connected popouts", "bar settings: popouts join the bar or satellite background")
                 checked: bar.selectedBarConfig?.connectedPopouts ?? false
                 visible: bar.islandSetting("islandSatellitesEnabled")
-                enabled: bar.islandSetting("islandSatelliteBackground") && !SettingsData.frameEnabled && !bar.islandSetting("islandUseOverlayLayer")
-                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        connectedPopouts: checked
-                    })
+                enabled: SettingsData.barCanConnectPopouts(bar.selectedBarConfig)
+                onToggled: checked => bar.apply("connectedPopouts", checked)
             }
 
             SettingsToggleSliderRow {

@@ -8,6 +8,7 @@ QtObject {
     readonly property string orientation: isVertical ? "vertical" : "horizontal"
     readonly property bool isVertical: edge === "left" || edge === "right"
     readonly property bool isHorizontal: !isVertical
+    readonly property bool isFar: edge === "bottom" || edge === "right"
 
     function primarySize(item) {
         return isVertical ? item.height : item.width;
