@@ -69,8 +69,6 @@ DListItem {
     }
     Accessible.name: paused ? command + ", " + I18n.tr("Paused", "process state: stopped by the user") : command
     Accessible.description: fullCommand
-    Accessible.expandable: childCount > 0 && (process?.children?.length ?? 0) > 0
-    Accessible.expanded: groupOpen
 
     Rectangle {
         width: parent.width
