@@ -94,8 +94,8 @@ func FileOffers(uriPath, path string, data []byte) []wlclipboard.Offer {
 	offers := []wlclipboard.Offer{
 		{MimeType: "x-special/gnome-copied-files", Data: []byte("copy\n" + fileURI)},
 		{MimeType: "text/uri-list", Data: []byte(fileURI + "\r\n")},
-		{MimeType: "text/plain", Data: []byte(path)},
 	}
+	offers = append(offers, wlclipboard.TextOffers(path)...)
 	if _, imgFormat, err := image.DecodeConfig(bytes.NewReader(data)); err == nil {
 		offers = append(offers, wlclipboard.Offer{MimeType: "image/" + imgFormat, Data: data})
 	}

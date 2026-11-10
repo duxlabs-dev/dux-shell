@@ -418,10 +418,10 @@ func runScreenshot(config screenshot.Config) {
 		switch {
 		case savedImage && ssClipFile:
 			err = copyFileToClipboard(filePath)
-		case savedImage:
-			err = copyFileContentsToClipboard(filePath, formatMime(config.Format))
+		case savedImage && config.Format == screenshot.FormatPNG:
+			err = copyFileContentsToClipboard(filePath, "image/png")
 		default:
-			err = copyImageToClipboard(result.Buffer, config.Format, config.Quality, result.Format, result.CICP)
+			err = copyPNGToClipboard(result.Buffer, result.Format, result.CICP)
 		}
 		if err != nil {
 			exitScreenshotError(" copying to clipboard", err)
@@ -470,24 +470,13 @@ func runScreenshot(config screenshot.Config) {
 	}
 }
 
-func copyImageToClipboard(buf *screenshot.ShmBuffer, format screenshot.Format, quality int, pixelFormat uint32, cicp *screenshot.CICP) error {
-	var mimeType string
+// Chromium pastes nothing from an image/jpeg-only clipboard, so the copy is PNG whatever the file format.
+func copyPNGToClipboard(buf *screenshot.ShmBuffer, pixelFormat uint32, cicp *screenshot.CICP) error {
 	var data bytes.Buffer
-
-	switch format {
-	case screenshot.FormatJPEG:
-		mimeType = "image/jpeg"
-		if err := screenshot.EncodeBufferJPEG(&data, buf, pixelFormat, quality); err != nil {
-			return err
-		}
-	default:
-		mimeType = "image/png"
-		if err := screenshot.EncodeBufferPNG(&data, buf, pixelFormat, cicp); err != nil {
-			return err
-		}
+	if err := screenshot.EncodeBufferPNG(&data, buf, pixelFormat, cicp); err != nil {
+		return err
 	}
-
-	return copyDataToClipboard(data.Bytes(), mimeType)
+	return copyDataToClipboard(data.Bytes(), "image/png")
 }
 
 func writeImageToStdout(buf *screenshot.ShmBuffer, format screenshot.Format, quality int, pixelFormat uint32, cicp *screenshot.CICP) error {

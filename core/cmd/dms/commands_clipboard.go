@@ -1146,12 +1146,12 @@ func downloadToTempFile(rawURL string) (string, error) {
 		cacheDir = "/tmp"
 	}
 	clipDir := filepath.Join(cacheDir, "dms", "clipboard")
-	if err := os.MkdirAll(clipDir, 0o755); err != nil {
+	if err := os.MkdirAll(clipDir, 0o700); err != nil {
 		return "", fmt.Errorf("create cache dir: %w", err)
 	}
 
 	filePath := filepath.Join(clipDir, fmt.Sprintf("%d%s", time.Now().UnixNano(), ext))
-	if err := os.WriteFile(filePath, data, 0o644); err != nil {
+	if err := os.WriteFile(filePath, data, 0o600); err != nil {
 		return "", fmt.Errorf("write file: %w", err)
 	}
 

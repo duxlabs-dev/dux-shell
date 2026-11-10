@@ -94,11 +94,13 @@ func NewManager(wlCtx wlcontext.WaylandContext, config Config) (*Manager, error)
 		log.Errorf("Failed to migrate hashes: %v", err)
 	}
 
+	strayMaxAge := strayFileMaxAge
 	if !config.Disabled {
 		if config.ClearAtStartup {
 			if err := m.clearHistoryInternal(); err != nil {
 				log.Errorf("Failed to clear history at startup: %v", err)
 			}
+			strayMaxAge = 0
 		}
 
 		if config.AutoClearDays > 0 {
@@ -107,6 +109,7 @@ func NewManager(wlCtx wlcontext.WaylandContext, config Config) (*Manager, error)
 			}
 		}
 	}
+	m.pruneStore(strayMaxAge)
 
 	m.alive = true
 	m.updateState()
@@ -141,6 +144,11 @@ func openDB(path string) (*bolt.DB, error) {
 	if renameErr := os.Rename(path, corruptPath); renameErr != nil {
 		os.Remove(salvagePath)
 		return nil, err
+	}
+	// pruneStore ages it out from the salvage, not from the db's last write
+	salvagedAt := time.Now()
+	if err := os.Chtimes(corruptPath, salvagedAt, salvagedAt); err != nil {
+		log.Warnf("Failed to timestamp corrupt clipboard db: %v", err)
 	}
 
 	os.Rename(salvagePath, path)
@@ -183,7 +191,7 @@ func tryOpenDB(path string) (db *bolt.DB, err error) {
 	}()
 	defer armDBFaultPanics()()
 
-	db, err = bolt.Open(path, 0o644, &bolt.Options{
+	db, err = bolt.Open(path, 0o600, &bolt.Options{
 		Timeout: 1 * time.Second,
 	})
 	if err != nil {
@@ -1177,9 +1185,67 @@ func (m *Manager) ClearHistory() {
 			log.Errorf("Failed to compact database: %v", err)
 		}
 	}
+	m.pruneStore(0)
 
 	m.updateState()
 	m.notifySubscribers()
+}
+
+const strayFileMaxAge = 7 * 24 * time.Hour
+
+// pruneStore keeps the store owner-only and deletes files beside the db that
+// are older than maxAge and that no history entry points at.
+func (m *Manager) pruneStore(maxAge time.Duration) {
+	if m.dbPath == "" {
+		return
+	}
+	dir := filepath.Dir(m.dbPath)
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	if err := os.Chmod(dir, 0o700); err != nil {
+		log.Warnf("Failed to restrict clipboard store: %v", err)
+	}
+
+	inHistory := m.historyFiles()
+	cutoff := time.Now().Add(-maxAge)
+	for _, file := range files {
+		info, err := file.Info()
+		if err != nil || !info.Mode().IsRegular() {
+			continue
+		}
+		path := filepath.Join(dir, file.Name())
+		if path != m.dbPath && !inHistory[path] && !info.ModTime().After(cutoff) {
+			os.Remove(path)
+			continue
+		}
+		if err := os.Chmod(path, 0o600); err != nil {
+			log.Warnf("Failed to restrict clipboard store: %v", err)
+		}
+	}
+}
+
+func (m *Manager) historyFiles() map[string]bool {
+	var ids []uint64
+	m.readHistory(func(h *historyIndex) {
+		h.eachNewest(nil, func(e *entryMeta) bool {
+			if e.mime == "text/uri-list" {
+				ids = append(ids, e.id)
+			}
+			return true
+		})
+	})
+
+	files := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		entry, err := m.GetEntry(id)
+		if err != nil {
+			continue
+		}
+		files[m.EntryToFile(entry)] = true
+	}
+	return files
 }
 
 func (m *Manager) compactDB() error {
@@ -1210,13 +1276,13 @@ func compactInto(srcPath, dstPath string, txMaxSize int64) (err error) {
 	defer recoverDBPanic(&err)
 	defer armDBFaultPanics()()
 
-	srcDB, err := bolt.Open(srcPath, 0o644, &bolt.Options{ReadOnly: true, Timeout: time.Second})
+	srcDB, err := bolt.Open(srcPath, 0o600, &bolt.Options{ReadOnly: true, Timeout: time.Second})
 	if err != nil {
 		return fmt.Errorf("open source: %w", err)
 	}
 	defer srcDB.Close()
 
-	dstDB, err := bolt.Open(dstPath, 0o644, &bolt.Options{Timeout: time.Second})
+	dstDB, err := bolt.Open(dstPath, 0o600, &bolt.Options{Timeout: time.Second})
 	if err != nil {
 		return fmt.Errorf("open destination: %w", err)
 	}
@@ -2086,12 +2152,7 @@ func (m *Manager) CopyFile(ctx context.Context, filePath string) error {
 			log.Errorf("Failed to store file entry: %v", err)
 		}
 	} else {
-		entryData := fileData
-		if entryData == nil {
-			// Oversized: store the encoded URI instead of the body so the
-			// entry can be restored through EntryToFile later.
-			entryData = []byte(encodeFileURI(filePath) + "\r\n")
-		}
+		entryData := []byte(encodeFileURI(filePath) + "\r\n")
 		entry := Entry{
 			Data:      entryData,
 			MimeType:  "text/uri-list",
@@ -2111,37 +2172,15 @@ func (m *Manager) CopyFile(ctx context.Context, filePath string) error {
 }
 
 func (m *Manager) EntryToFile(entry *Entry) string {
-	switch {
-	case entry.MimeType == "text/uri-list":
-		data := strings.TrimSpace(string(entry.Data))
-		lines := strings.Split(data, "\n")
-		if len(lines) == 0 {
-			return ""
-		}
-		uri := strings.TrimSuffix(strings.TrimSpace(lines[0]), "\r")
-		if strings.HasPrefix(uri, "file://") {
-			return pathFromFileURI(uri)
-		}
-	case entry.IsImage:
-		ext := ".png"
-		if suffix, ok := strings.CutPrefix(entry.MimeType, "image/"); ok {
-			ext = "." + suffix
-		}
-		cacheDir, err := os.UserCacheDir()
-		if err != nil {
-			return ""
-		}
-		clipDir := filepath.Join(cacheDir, "dms", "clipboard")
-		if err := os.MkdirAll(clipDir, 0o755); err != nil {
-			return ""
-		}
-		filePath := filepath.Join(clipDir, fmt.Sprintf("%d%s", time.Now().UnixNano(), ext))
-		if os.WriteFile(filePath, entry.Data, 0o644) != nil {
-			return ""
-		}
-		return filePath
+	if entry.MimeType != "text/uri-list" {
+		return ""
 	}
-	return ""
+	firstLine, _, _ := strings.Cut(strings.TrimSpace(string(entry.Data)), "\n")
+	uri := strings.TrimSpace(firstLine)
+	if !strings.HasPrefix(uri, "file://") {
+		return ""
+	}
+	return pathFromFileURI(uri)
 }
 
 func (m *Manager) dbusConnForFlatpak() (*dbus.Conn, error) {
