@@ -396,6 +396,8 @@ FocusScope {
                 displaced: null
                 move: null
                 onCountChanged: root.requestFollow(false)
+                // A row still incubating when a loader drops the overlay logs a failed delegate.
+                Component.onDestruction: model = null
                 header: Item {
                     width: transcript.width
                     height: root.endPadding
