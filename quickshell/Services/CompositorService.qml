@@ -1243,8 +1243,6 @@ Singleton {
         case "hyprland":
             return filterCurrentWorkspace(sortedToplevels, screenName).some(t => t?.maximized);
         case "niri":
-            if (NiriService.inOverview)
-                return false;
             return WindowModel.niriMaximizedOnScreen(NiriService.windows, NiriService.allWorkspaces, filterCurrentWorkspace(sortedToplevels, screenName), screenName);
         default:
             return false;

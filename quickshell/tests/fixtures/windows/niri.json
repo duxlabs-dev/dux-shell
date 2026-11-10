@@ -143,83 +143,24 @@
             { "niriWindowId": 11, "niriWorkspaceId": 1, "toplevel": 2 }
         ]
     },
-    "maximizedScrolledOffscreen": {
-        "currentOutput": "DP-1",
-        "lastFocusedWindowId": 100,
+    "maximized": {
         "allWorkspaces": [
-            { "id": 1, "idx": 1, "name": null, "output": "DP-1", "is_active": true, "is_focused": true, "active_window_id": 100 }
+            { "id": 1, "idx": 1, "name": null, "output": "DP-1", "is_active": true, "is_focused": true }
         ],
         "windows": [
             { "id": 10, "pid": 100, "app_id": "firefox", "title": "Mozilla Firefox", "workspace_id": 1, "is_focused": false, "is_floating": false, "layout": { "tile_pos_in_workspace_view": null, "window_size": [1920, 1080], "tile_size": [1920, 1080] }},
-            { "id": 100, "pid": 101, "app_id": "alacritty", "title": "terminal", "workspace_id": 1, "is_focused": true, "is_floating": false, "layout": { "tile_pos_in_workspace_view": [0, 0], "window_size": [800, 1080], "tile_size": [800, 1080] }},
-            { "id": 101, "pid": 102, "app_id": "steam", "title": "Steam", "workspace_id": 1, "is_focused": false, "is_floating": false, "layout": { "tile_pos_in_workspace_view": [800, 0], "window_size": [1000, 1080], "tile_size": [1000, 1080] }}
+            { "id": 11, "pid": 101, "app_id": "alacritty", "title": "terminal", "workspace_id": 1, "is_focused": false, "is_floating": false, "layout": { "tile_pos_in_workspace_view": null, "window_size": [800, 1080], "tile_size": [800, 1080] }},
+            { "id": 12, "pid": 102, "app_id": "pavucontrol", "title": "Volume Control", "workspace_id": 1, "is_focused": false, "is_floating": true, "layout": { "tile_pos_in_workspace_view": [600, 300], "window_size": [700, 500], "tile_size": [700, 500] }}
         ],
         "toplevels": [
-            { "appId": "firefox", "title": "Mozilla Firefox", "maximized": true, "activated": false, "screens": ["DP-1"] },
-            { "appId": "alacritty", "title": "terminal", "maximized": false, "activated": true, "screens": ["DP-1"] },
-            { "appId": "steam", "title": "Steam", "maximized": false, "activated": false, "screens": ["DP-1"] }
+            { "appId": "firefox", "title": "Mozilla Firefox", "maximized": true, "screens": ["DP-1"] },
+            { "appId": "alacritty", "title": "terminal", "maximized": false, "screens": ["DP-1"] },
+            { "appId": "pavucontrol", "title": "Volume Control", "maximized": false, "screens": ["DP-1"] }
         ],
         "sortedToplevels": [
             { "niriWindowId": 10, "niriWorkspaceId": 1, "toplevel": 0 },
-            { "niriWindowId": 100, "niriWorkspaceId": 1, "toplevel": 1 },
-            { "niriWindowId": 101, "niriWorkspaceId": 1, "toplevel": 2 }
-        ]
-    },
-    "maximizedInView": {
-        "currentOutput": "DP-1",
-        "lastFocusedWindowId": 10,
-        "allWorkspaces": [
-            { "id": 1, "idx": 1, "name": null, "output": "DP-1", "is_active": true, "is_focused": true, "active_window_id": 10 }
-        ],
-        "windows": [
-            { "id": 10, "pid": 100, "app_id": "firefox", "title": "Mozilla Firefox", "workspace_id": 1, "is_focused": true, "is_floating": false, "layout": { "tile_pos_in_workspace_view": [0, 0], "window_size": [1920, 1080], "tile_size": [1920, 1080] }},
-            { "id": 100, "pid": 101, "app_id": "alacritty", "title": "terminal", "workspace_id": 1, "is_focused": false, "is_floating": false, "layout": { "tile_pos_in_workspace_view": null, "window_size": [800, 1080], "tile_size": [800, 1080] }}
-        ],
-        "toplevels": [
-            { "appId": "firefox", "title": "Mozilla Firefox", "maximized": true, "activated": true, "screens": ["DP-1"] },
-            { "appId": "alacritty", "title": "terminal", "maximized": false, "activated": false, "screens": ["DP-1"] }
-        ],
-        "sortedToplevels": [
-            { "niriWindowId": 10, "niriWorkspaceId": 1, "toplevel": 0 },
-            { "niriWindowId": 100, "niriWorkspaceId": 1, "toplevel": 1 }
-        ]
-    },
-    "maximizedScrolledOffscreenLegacy": {
-        "currentOutput": "DP-1",
-        "lastFocusedWindowId": 100,
-        "allWorkspaces": [
-            { "id": 1, "idx": 1, "name": null, "output": "DP-1", "is_active": true, "is_focused": true, "active_window_id": 100 }
-        ],
-        "windows": [
-            { "id": 10, "pid": 100, "app_id": "firefox", "title": "Mozilla Firefox", "workspace_id": 1, "is_focused": false, "is_floating": false, "layout": { "tile_pos_in_workspace_view": null, "window_size": [1920, 1080], "tile_size": [1920, 1080] }},
-            { "id": 100, "pid": 101, "app_id": "alacritty", "title": "terminal", "workspace_id": 1, "is_focused": true, "is_floating": false, "layout": { "tile_pos_in_workspace_view": null, "window_size": [800, 1080], "tile_size": [800, 1080] }}
-        ],
-        "toplevels": [
-            { "appId": "firefox", "title": "Mozilla Firefox", "maximized": true, "activated": false, "screens": ["DP-1"] },
-            { "appId": "alacritty", "title": "terminal", "maximized": false, "activated": true, "screens": ["DP-1"] }
-        ],
-        "sortedToplevels": [
-            { "niriWindowId": 10, "niriWorkspaceId": 1, "toplevel": 0 },
-            { "niriWindowId": 100, "niriWorkspaceId": 1, "toplevel": 1 }
-        ]
-    },
-    "maximizedInViewLegacy": {
-        "currentOutput": "DP-1",
-        "lastFocusedWindowId": 10,
-        "allWorkspaces": [
-            { "id": 1, "idx": 1, "name": null, "output": "DP-1", "is_active": true, "is_focused": true, "active_window_id": 10 }
-        ],
-        "windows": [
-            { "id": 10, "pid": 100, "app_id": "firefox", "title": "Mozilla Firefox", "workspace_id": 1, "is_focused": true, "is_floating": false, "layout": { "tile_pos_in_workspace_view": null, "window_size": [1920, 1080], "tile_size": [1920, 1080] }},
-            { "id": 100, "pid": 101, "app_id": "alacritty", "title": "terminal", "workspace_id": 1, "is_focused": false, "is_floating": false, "layout": { "tile_pos_in_workspace_view": null, "window_size": [800, 1080], "tile_size": [800, 1080] }}
-        ],
-        "toplevels": [
-            { "appId": "firefox", "title": "Mozilla Firefox", "maximized": true, "activated": true, "screens": ["DP-1"] },
-            { "appId": "alacritty", "title": "terminal", "maximized": false, "activated": false, "screens": ["DP-1"] }
-        ],
-        "sortedToplevels": [
-            { "niriWindowId": 10, "niriWorkspaceId": 1, "toplevel": 0 },
-            { "niriWindowId": 100, "niriWorkspaceId": 1, "toplevel": 1 }
+            { "niriWindowId": 11, "niriWorkspaceId": 1, "toplevel": 1 },
+            { "niriWindowId": 12, "niriWorkspaceId": 1, "toplevel": 2 }
         ]
     }
 }

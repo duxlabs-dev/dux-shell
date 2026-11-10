@@ -31,26 +31,12 @@ function niriState(scenario) {
     const s = fixture("niri")[scenario];
     const toplevels = s.toplevels.map(t => ({ ...t }));
     const window = id => s.windows.find(w => w.id === id);
-    const sorted = s.sortedToplevels.map(st => {
-        const top = st.toplevel === undefined ? undefined : toplevels[st.toplevel];
-        return {
-            ...(top || {}),
-            niriWindowId: st.niriWindowId,
-            niriWorkspaceId: st.niriWorkspaceId,
-            appId: window(st.niriWindowId).app_id,
-            title: window(st.niriWindowId).title,
-            sourceToplevel: top
-        };
-    });
+    const sorted = s.sortedToplevels.map(st => ({ niriWindowId: st.niriWindowId, niriWorkspaceId: st.niriWorkspaceId, appId: window(st.niriWindowId).app_id, title: window(st.niriWindowId).title, maximized: toplevels[st.toplevel]?.maximized, sourceToplevel: st.toplevel === undefined ? undefined : toplevels[st.toplevel] }));
     return { ...s, toplevels, sorted, screens: fixture("niri").screens };
 }
 
 function filterCurrentDisplay(list, name) {
     return list.filter(t => !t.screens || t.screens.includes(name));
-}
-
-function filterCurrentWorkspace(list) {
-    return list;
 }
 
 function facade(compositor, globals) {
@@ -64,7 +50,6 @@ function facade(compositor, globals) {
         Hyprland: {},
         MangoService: {},
         filterCurrentDisplay,
-        filterCurrentWorkspace,
         ...globals
     });
     for (const name of ["_windowAlive", "_fallbackActiveWindow", "_retainedWindow", "activeWindowForScreen", "windowPid", "windowOnActiveWorkspace", "windowsHideBar", "windowsOverlapDock", "maximizedWindowOnScreen", "specialWorkspaceName"])
@@ -129,16 +114,14 @@ function mangoMaximized(s, screenName) {
     return facade("mango", { MangoService: { windows: s.windows, outputs: s.outputs } }).maximizedWindowOnScreen(screenName);
 }
 
-function niriMaximized(state, screenName) {
+function niriMaximized(s, activeWindowId) {
+    const allWorkspaces = s.allWorkspaces.map(ws => ({ ...ws, active_window_id: activeWindowId }));
     const context = facade("niri", {
-        sortedToplevels: state.sorted,
-        NiriService: { windows: state.windows, allWorkspaces: state.allWorkspaces, inOverview: state.inOverview ?? false },
-        filterCurrentWorkspace: (toplevels, screen) => {
-            const ws = state.allWorkspaces.find(w => w.output === screen && w.is_active);
-            return ws ? toplevels.filter(t => t.niriWorkspaceId === ws.id) : toplevels;
-        }
+        sortedToplevels: s.sorted,
+        NiriService: { windows: s.windows, allWorkspaces },
+        filterCurrentWorkspace: (list, screenName) => list.filter(t => allWorkspaces.some(ws => ws.id === t.niriWorkspaceId && ws.output === screenName && ws.is_active))
     });
-    return context.maximizedWindowOnScreen(screenName);
+    return context.maximizedWindowOnScreen("DP-1");
 }
 
 test("niri active window: focused window on the bar's screen wins, foreign active toplevels keep an alive previous window", () => {
@@ -231,27 +214,9 @@ test("mango: pid by window id, overlap and maximized only count visible windows 
     assert.deepEqual(positions.map(p => mangoOverlap(m.maximizedActive, "DP-1", p)), [true, true, true, true]);
 });
 
-test("niri maximized detection: only expands for maximized windows actually visible in the viewport", () => {
-    // 1. Maximized window scrolled offscreen (Alacritty + Steam visible) -> false
-    const offscreen = niriState("maximizedScrolledOffscreen");
-    assert.equal(niriMaximized(offscreen, "DP-1"), false);
-
-    // 2. User scrolled to the maximized window (Firefox on-screen) -> true
-    const inView = niriState("maximizedInView");
-    assert.equal(niriMaximized(inView, "DP-1"), true);
-
-    // 3. Legacy Niri (tile_pos_in_workspace_view is null for all tiled windows):
-    //    Offscreen (Alacritty is focused/active) -> false
-    const offscreenLegacy = niriState("maximizedScrolledOffscreenLegacy");
-    assert.equal(niriMaximized(offscreenLegacy, "DP-1"), false);
-
-    // 4. Legacy Niri: in-view (maximized window is focused/active) -> true
-    const inViewLegacy = niriState("maximizedInViewLegacy");
-    assert.equal(niriMaximized(inViewLegacy, "DP-1"), true);
-
-    // 5. In overview: should not be considered maximized on screen -> false
-    assert.equal(niriMaximized({ ...inView, inOverview: true }, "DP-1"), false);
-
-    // 6. Non-existent output -> false
-    assert.equal(niriMaximized(inView, "NON_EXISTENT"), false);
+test("niri maximized: counts while its column is viewed or a floating window is focused over it", () => {
+    const s = niriState("maximized");
+    assert.equal(niriMaximized(s, 10), true);
+    assert.equal(niriMaximized(s, 11), false);
+    assert.equal(niriMaximized(s, 12), true);
 });

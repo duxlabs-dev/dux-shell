@@ -122,44 +122,19 @@ function niriDockOverlap(windows, allWorkspaces, screenName, position, thickness
     return false;
 }
 
-function niriMaximizedOnScreen(windows, allWorkspaces, toplevels, screenName) {
-    if (!windows || !allWorkspaces || !toplevels || !screenName)
+function niriMaximizedOnScreen(windows, allWorkspaces, workspaceToplevels, screenName) {
+    if (!workspaceToplevels.some(t => t.maximized))
         return false;
-
-    const workspaceId = niriActiveWorkspaceId(allWorkspaces, screenName);
-    if (workspaceId === null)
+    const workspace = allWorkspaces.find(ws => ws.output === screenName && ws.is_active);
+    if (!workspace)
         return false;
-
-    const workspace = allWorkspaces.find(ws => ws.id === workspaceId);
-    const workspaceWindows = windows.filter(w => w.workspace_id === workspaceId);
-    const anyTiledHasGeometry = workspaceWindows.some(w => !w.is_floating && w.layout?.tile_pos_in_workspace_view != null);
-
-    for (const toplevel of toplevels) {
-        if (!toplevel || (!toplevel.maximized && !toplevel.fullscreen))
-            continue;
-        if (toplevel.niriWorkspaceId !== undefined && toplevel.niriWorkspaceId !== workspaceId)
-            continue;
-
-        const win = workspaceWindows.find(w => w.id === toplevel.niriWindowId)
-            || workspaceWindows.find(w => w.app_id === toplevel.appId && (!w.title || w.title === toplevel.title));
-
-        if (!win) {
-            if (toplevel.activated)
-                return true;
-            continue;
-        }
-
-        if (win.layout?.tile_pos_in_workspace_view != null)
-            return true;
-
-        if (anyTiledHasGeometry)
-            continue;
-
-        if (win.is_focused || (workspace && workspace.active_window_id === win.id) || toplevel.activated)
-            return true;
-    }
-
-    return false;
+    if (windows.find(w => w.id === workspace.active_window_id)?.is_floating)
+        return true;
+    const viewed = workspaceToplevels.find(t => t.niriWindowId === workspace.active_window_id);
+    if (!viewed)
+        return false;
+    // sortToplevels pairs windows sharing an app id and title arbitrarily
+    return workspaceToplevels.some(t => t.maximized && t.appId === viewed.appId && t.title === viewed.title);
 }
 
 function hyprlandToplevelFor(hyprToplevels, toplevel) {
