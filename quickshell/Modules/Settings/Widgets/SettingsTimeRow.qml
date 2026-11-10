@@ -60,10 +60,20 @@ Item {
         color: SettingsMetrics.groupDividerColor
     }
 
+    Rectangle {
+        x: (parent.width - width) / 2
+        y: SettingsMetrics.rowPaddingV
+        z: 1
+        width: Theme.dividerWidth
+        height: parent.height - SettingsMetrics.rowPaddingV * 2
+        visible: SettingsMetrics.continuousGroups && root.showEnd
+        color: SettingsMetrics.groupDividerColor
+    }
+
     Row {
         id: halves
         width: parent.width
-        spacing: Theme.groupedListGap
+        spacing: SettingsMetrics.groupGap
 
         Repeater {
             model: root.showEnd ? 2 : 1
@@ -74,7 +84,7 @@ Item {
                 readonly property bool leftEdge: !root.showEnd || isStart !== (halves.effectiveLayoutDirection === Qt.RightToLeft)
                 readonly property bool rightEdge: !root.showEnd || !leftEdge
 
-                width: root.showEnd ? (root.width - Theme.groupedListGap) / 2 : root.width
+                width: root.showEnd ? (root.width - halves.spacing) / 2 : root.width
                 paintBackground: true
                 inGroup: root.inGroup
                 dividerBefore: false
