@@ -64,7 +64,7 @@ Item {
     readonly property real islandPillFace: islandSatellitesTrackPill ? islandHost.islandController.compactFaceThickness : 0
     readonly property real islandSatelliteDepth: islandSatellitesTrackPill ? Theme.px(Math.min(islandStripThickness, islandHost.outerGap + islandPillFace), _dpr) : islandStripThickness
     readonly property real islandSatelliteCrossCenter: !islandSatellitesTrackPill || islandSatelliteBackground ? islandSatelliteDepth / 2 : islandHost.outerGap + islandPillFace / 2
-    readonly property real islandSatelliteCrossShift: Theme.px(islandSatelliteCrossCenter - islandStripThickness / 2, _dpr) * (axis.edge === "bottom" || axis.edge === "right" ? -1 : 1)
+    readonly property real islandSatelliteCrossShift: Theme.px(islandSatelliteCrossCenter - islandStripThickness / 2, _dpr) * (axis.isFar ? -1 : 1)
     readonly property bool islandSatellitesClipToIsland: islandSatelliteBackground && !islandSatellitesHugIsland && !!islandHost
     readonly property bool islandMotionRunning: islandHost?.motionRunning ?? false
     onIslandMotionRunningChanged: {
@@ -406,6 +406,59 @@ Item {
     }
 
     Component {
+        id: blurChromeRegionComp
+
+        Region {
+            property Item chrome
+            property string rectKey
+            property string cornerKey
+
+            // Before the popout emerges the satellites' own rounded regions cover them.
+            readonly property vector4d rect: chrome?.emerged > 0 ? chrome[rectKey] : Qt.vector4d(0, 0, 0, 0)
+            readonly property vector4d corner: chrome?.[cornerKey] ?? Qt.vector4d(0, 0, 0, 0)
+
+            x: Math.round(rect.x + topBarSlide.x)
+            y: Math.round(rect.y + topBarSlide.y)
+            width: Math.round(rect.x + rect.z + topBarSlide.x) - x
+            height: Math.round(rect.y + rect.w + topBarSlide.y) - y
+            // The shader rounds a corner no further than half the rect's short side.
+            readonly property real cap: Math.min(width, height) / 2
+
+            topLeftRadius: Math.round(Math.min(corner.x, cap))
+            topRightRadius: Math.round(Math.min(corner.y, cap))
+            bottomRightRadius: Math.round(Math.min(corner.z, cap))
+            bottomLeftRadius: Math.round(Math.min(corner.w, cap))
+        }
+    }
+
+    Component {
+        id: blurChromeFilletComp
+
+        Region {
+            property Item chrome
+            property string filletKey
+
+            readonly property var fillet: chrome?.[filletKey]
+            readonly property vector4d square: fillet?.square ?? Qt.vector4d(0, 0, 0, 0)
+            readonly property vector4d disc: fillet?.disc ?? Qt.vector4d(0, 0, 0, 0)
+
+            x: Math.round(square.x + topBarSlide.x)
+            y: Math.round(square.y + topBarSlide.y)
+            width: Math.round(square.x + square.z + topBarSlide.x) - x
+            height: Math.round(square.y + square.w + topBarSlide.y) - y
+
+            Region {
+                intersection: Intersection.Subtract
+                shape: RegionShape.Ellipse
+                x: Math.round(disc.x + topBarSlide.x)
+                y: Math.round(disc.y + topBarSlide.y)
+                width: Math.round(disc.x + disc.z + topBarSlide.x) - x
+                height: Math.round(disc.y + disc.w + topBarSlide.y) - y
+            }
+        }
+    }
+
+    Component {
         id: blurSatelliteRegionComp
 
         // Sweeps hang off the body's integer bounds; converting each rect on its own could open a seam between them.
@@ -567,6 +620,25 @@ Item {
                         subRegions.push(sub);
                 }
             }
+            if ((satelliteTranslucent || hasBar) && barChromeLoader.item) {
+                for (const key of ["startFillet", "endFillet", "startWing", "endWing"]) {
+                    const sub = blurChromeFilletComp.createObject(region, {
+                        chrome: barChromeLoader.item,
+                        filletKey: key
+                    });
+                    if (sub)
+                        subRegions.push(sub);
+                }
+                for (const key of ["lead", "trail", "body"]) {
+                    const sub = blurChromeRegionComp.createObject(region, {
+                        chrome: barChromeLoader.item,
+                        rectKey: key + "Rect",
+                        cornerKey: key + "Corner"
+                    });
+                    if (sub)
+                        subRegions.push(sub);
+                }
+            }
             for (let i = 0; i < widgets.length; i++) {
                 const sub = blurSubRegionComp.createObject(region, {
                     w: widgets[i]
@@ -577,7 +649,7 @@ Item {
 
             if (hasBar && barBackground.gothEnabled && barWindow._wingR > 0) {
                 for (const wingItem of [barBackground.leadingWing, barBackground.trailingWing]) {
-                    if (!wingItem.visible)
+                    if (!wingItem.shaped)
                         continue;
                     const wing = blurWingRegionComp.createObject(region, {
                         wing: wingItem
@@ -774,16 +846,23 @@ Item {
     readonly property real barSurfaceThickness: Theme.px(effectiveBarThickness + surfaceSpacing + ((renderBarConfig?.gothCornersEnabled ?? false) && !hasMaximizedToplevel && spansEdge ? _wingR : 0), _dpr) + _shadowBuffer
     readonly property bool islandSheetOut: islandHost?.sheetOut ?? false
     property bool islandRoomHeld: false
-    property bool islandRoomShrinking: false
     readonly property real islandSatelliteShadowBuffer: isIsland && islandSatellitesEnabled && !islandSatelliteBackground ? _shadowBuffer : 0
     // A grown layer surface jumps to its new origin before the client draws at the new size, so a far-edge host never grows for the sheet.
-    readonly property bool islandReservesSheet: !!islandHost && (axis.edge === "bottom" || axis.edge === "right")
-    readonly property real hostThickness: isIsland ? Math.max(islandHost?.hostThickness ?? 0, islandStripThickness + islandSatelliteShadowBuffer) : Math.max(barSurfaceThickness, islandRoomHeld || islandReservesSheet ? islandHost?.hostThickness ?? 0 : 0)
-    // The host reserves the expanded island's height, so sliding by it would move a compact island off-screen within a frame.
-    readonly property real islandCompactThickness: Math.max(islandStripThickness + islandSatelliteShadowBuffer, (islandHost?.outerGap ?? 0) + (islandHost?.compactThickness ?? 0) + (islandHost?.shadowPadding ?? 0))
-    readonly property real hideSlideThickness: isIsland ? islandCompactThickness : barSurfaceThickness
-    readonly property real surfaceImplicitHeight: !isVertical ? hostThickness : 0
-    readonly property real surfaceImplicitWidth: isVertical ? hostThickness : 0
+    readonly property bool islandReservesSheet: !!islandHost && axis.isFar
+    readonly property bool barPaintsPopouts: SettingsData.barConnectsPopouts(barConfig)
+    readonly property string popoutRoomKey: ConnectedModeState.barRoomKey(screenName, _barId)
+    readonly property string popoutRoomState: ConnectedModeState.barRooms[popoutRoomKey] ?? ""
+    readonly property bool popoutOut: barChromeLoader.item?.popoutActive ?? false
+    // A far-edge window would jump while growing, above, so it keeps room.
+    readonly property bool popoutRoomAlwaysHeld: axis.isFar
+    // The window sits below hostThickness until the small buffer is out, so the room being released stays held meanwhile.
+    property bool roomShrinking: false
+    property bool popoutRoomShrinking: false
+    readonly property bool popoutRoomHeld: barPaintsPopouts && (popoutRoomAlwaysHeld || popoutOut || popoutRoomState !== "" || popoutRoomShrinking)
+    readonly property real popoutHostThickness: !popoutRoomHeld ? 0 : ((isVertical ? modelData?.width : modelData?.height) ?? 0) - (layoutInstance?.manualPlacement ? layoutInstance.rowOffset : 0)
+    readonly property bool popoutRoomFits: popoutRoomHeld && (isVertical ? hostWindow.width : hostWindow.height) >= popoutHostThickness - 1
+    readonly property real idleHostThickness: isIsland ? Math.max(islandHost?.hostThickness ?? 0, islandStripThickness + islandSatelliteShadowBuffer) : Math.max(barSurfaceThickness, islandRoomHeld || islandReservesSheet ? islandHost?.hostThickness ?? 0 : 0)
+    readonly property real hostThickness: Math.max(idleHostThickness, popoutHostThickness)
 
     function _setWindowThickness(thickness) {
         const win = barWindow.Window.window;
@@ -791,6 +870,17 @@ Item {
             win.width = thickness;
         else
             win.height = thickness;
+    }
+
+    // Hyprland squeezes the old buffer into a shrunken layer surface until the next commit, which blanks the bar for a frame.
+    // A plain commit resizes the surface to its buffer, so the buffer goes small first. False when nothing has to shrink.
+    function _shrinkWindow(thickness) {
+        const win = barWindow.Window.window;
+        if (!CompositorService.isHyprland || !win?.visible || (isVertical ? win.width : win.height) <= thickness)
+            return false;
+        roomShrinking = true;
+        _setWindowThickness(thickness);
+        return true;
     }
 
     onIslandSheetOutChanged: {
@@ -804,35 +894,64 @@ Item {
             islandRoomHeld = false;
     }
 
-    // Hyprland squeezes the old buffer into a shrunken layer surface until the next commit, which blanks the bar for a frame.
-    // A plain commit resizes the surface to its buffer, so the buffer goes small first, once the collapse's last frame is out.
+    // Waits out the collapse's last frame.
     Timer {
         id: islandRoomRelease
         interval: 150
         onTriggered: {
             if (barWindow.islandSheetOut)
                 return;
-            if (!barWindow.Window.window?.visible) {
+            if (!barWindow._shrinkWindow(Math.max(barWindow.barSurfaceThickness, barWindow.popoutHostThickness)))
                 barWindow.islandRoomHeld = false;
-                return;
-            }
-            barWindow.islandRoomShrinking = true;
-            barWindow._setWindowThickness(barWindow.barSurfaceThickness);
+        }
+    }
+
+    // A window that already has the room draws nothing on its own, and the grant below waits for a frame.
+    onPopoutRoomStateChanged: {
+        if (barPaintsPopouts && popoutRoomState === "wanted")
+            barWindow.Window.window?.update();
+    }
+    Component.onDestruction: ConnectedModeState.setBarRoom(popoutRoomKey, "")
+
+    Connections {
+        target: barWindow.Window.window
+        enabled: barWindow.popoutRoomState === "wanted" && barWindow.popoutRoomFits
+
+        function onFrameSwapped() {
+            ConnectedModeState.setBarRoom(barWindow.popoutRoomKey, "ready");
         }
     }
 
     Connections {
         target: barWindow.Window.window
-        enabled: barWindow.islandRoomShrinking
+        enabled: barWindow.roomShrinking
 
         function onFrameSwapped() {
-            barWindow.islandRoomShrinking = false;
-            if (barWindow.islandSheetOut)
-                barWindow._setWindowThickness(barWindow.hostThickness);
-            else
+            barWindow.roomShrinking = false;
+            barWindow.popoutRoomShrinking = false;
+            if (!barWindow.islandSheetOut && !islandRoomRelease.running)
                 barWindow.islandRoomHeld = false;
+            const win = barWindow.Window.window;
+            if (barWindow.hostThickness > (barWindow.isVertical ? win.width : win.height))
+                barWindow._setWindowThickness(barWindow.hostThickness);
         }
     }
+
+    // Outlives the close so moving between popouts doesn't resize the window.
+    Timer {
+        interval: 1000
+        running: barWindow.popoutRoomState !== "" && !barWindow.popoutOut
+        onTriggered: {
+            if (!barWindow.popoutRoomAlwaysHeld)
+                barWindow.popoutRoomShrinking = barWindow._shrinkWindow(barWindow.idleHostThickness);
+            ConnectedModeState.setBarRoom(barWindow.popoutRoomKey, "");
+        }
+    }
+    // The host reserves the expanded island's height, so sliding by it would move a compact island off-screen within a frame.
+    readonly property real islandCompactThickness: Math.max(islandStripThickness + islandSatelliteShadowBuffer, (islandHost?.outerGap ?? 0) + (islandHost?.compactThickness ?? 0) + (islandHost?.shadowPadding ?? 0))
+    readonly property real hideSlideThickness: isIsland ? islandCompactThickness : barSurfaceThickness
+    readonly property real surfaceImplicitHeight: !isVertical ? hostThickness : 0
+    readonly property real surfaceImplicitWidth: isVertical ? hostThickness : 0
 
     Component.onCompleted: {
         _updateHasMaximizedToplevel();
@@ -1197,9 +1316,46 @@ Item {
                     }
                 }
 
+                // The chrome sizes itself to what it paints; the loader only fixes the window origin.
+                Loader {
+                    id: barChromeLoader
+                    readonly property bool joined: !barWindow.isIsland && barWindow.popoutOut
+                    readonly property bool touchesEdge: barWindow.renderedSpacing <= 0
+                    readonly property real satelliteEdgeRadius: barWindow.isIsland && SettingsData.islandSetting(barConfig, "islandSatelliteGothCorners") ? barWindow.islandGothRadius : 0
+                    readonly property var windowOrigin: active ? ShellLayout.surfaceOrigin(barWindow.screen, barWindow.width, barWindow.height, barWindow.hostWindow.anchors, barWindow.hostWindow.margins) : Qt.point(0, 0)
+                    active: barWindow.barPaintsPopouts
+                    x: -topBarMouseArea.x
+                    y: -topBarMouseArea.y
+                    onItemChanged: _blurRebuildTimer.restart()
+                    sourceComponent: BarChrome {
+                        leading: barWindow.isIsland ? leadingSatelliteSurface : barBackground
+                        trailing: barWindow.isIsland ? trailingSatelliteSurface : null
+                        alwaysPainted: barWindow.isIsland
+                        screenName: barWindow.screenName
+                        barSide: axis.edge
+                        barId: barWindow._barId
+                        originX: topBarMouseArea.x + barUnitInset.x
+                        originY: topBarMouseArea.y + barUnitInset.y
+                        windowX: barChromeLoader.windowOrigin.x + topBarSlide.x
+                        windowY: barChromeLoader.windowOrigin.y + topBarSlide.y
+                        windowWidth: barWindow.width
+                        windowHeight: barWindow.height
+                        alongExtent: barWindow.isVertical ? barUnitInset.height : barUnitInset.width
+                        dpr: barWindow._dpr
+                        fillColor: barWindow.isIsland ? Theme.withAlpha(barWindow.islandSurfaceColor, barWindow.islandSatelliteOpacity) : barWindow._bgColor
+                        edgeRadius: barWindow.isIsland ? barChromeLoader.satelliteEdgeRadius : (barChromeLoader.touchesEdge ? barBackground.wing : 0)
+                        endRadiusStart: barWindow.isIsland ? barChromeLoader.satelliteEdgeRadius : (!barBackground.alongWings && barBackground.leadingWing.shaped ? barBackground.wing : 0)
+                        endRadiusEnd: barWindow.isIsland ? barChromeLoader.satelliteEdgeRadius : (!barBackground.alongWings && barBackground.trailingWing.shaped ? barBackground.wing : 0)
+                        cornerRadius: barWindow.isIsland ? leadingSatelliteSurface.cornerR : barBackground.farRadius
+                        nearRadius: barWindow.isIsland ? 0 : barBackground.nearRadius
+                        outlineColor: barWindow.isIsland ? "transparent" : barBackground.borderColor
+                        borderWidth: barWindow.isIsland ? 0 : barBackground.borderWidth
+                    }
+                }
+
                 Item {
                     id: barUnitInset
-                    property int spacingPx: Theme.px(barWindow.renderedSpacing, barWindow._dpr)
+                    property real spacingPx: Theme.px(barWindow.renderedSpacing, barWindow._dpr)
                     readonly property int islandBandPx: Theme.px(barWindow.islandStripThickness, barWindow._dpr)
                     anchors.fill: parent
                     anchors.leftMargin: barWindow.isIsland ? (barWindow.isVertical ? (axis.edge === "left" ? 0 : parent.width - islandBandPx) : barWindow.taskbarStartInset) : !barWindow.isVertical ? spacingPx + barWindow.lengthPaddingStartPx : (axis.edge === "left" ? spacingPx : 0)
@@ -1217,6 +1373,9 @@ Item {
                         axis: axis
                         barConfig: barWindow.renderBarConfig
                         visible: !frameShapesBar && !barWindow.isIsland
+                        paintedElsewhere: barChromeLoader.joined
+                        wingsPaintedElsewhere: barChromeLoader.joined && barChromeLoader.touchesEdge
+                        shadowFade: barChromeLoader.joined ? barChromeLoader.item.emerged : 0
                         onGothEnabledChanged: _blurRebuildTimer.restart()
                         onWingChanged: barWindow.refreshBlurRegion()
                         onMotionRunningChanged: {
@@ -1234,8 +1393,9 @@ Item {
                         crossSize: barWindow.islandSatelliteDepth
                         crossExtent: barWindow.isVertical ? barUnitInset.width : barUnitInset.height
                         isVertical: barWindow.isVertical
-                        crossFar: axis.edge === "bottom" || axis.edge === "right"
+                        crossFar: axis.isFar
                         edgeAligned: !barWindow.islandSatellitesHugIsland
+                        paintedElsewhere: barWindow.barPaintsPopouts
                         pad: barWindow.islandChromePad
                         sweep: barWindow.islandGothRadius
                         gothEnabled: barWindow.isIsland && SettingsData.islandSetting(barConfig, "islandSatelliteGothCorners")
@@ -1254,8 +1414,9 @@ Item {
                         crossSize: barWindow.islandSatelliteDepth
                         crossExtent: barWindow.isVertical ? barUnitInset.width : barUnitInset.height
                         isVertical: barWindow.isVertical
-                        crossFar: axis.edge === "bottom" || axis.edge === "right"
+                        crossFar: axis.isFar
                         edgeAligned: !barWindow.islandSatellitesHugIsland
+                        paintedElsewhere: barWindow.barPaintsPopouts
                         pad: barWindow.islandChromePad
                         sweep: barWindow.islandGothRadius
                         gothEnabled: barWindow.isIsland && SettingsData.islandSetting(barConfig, "islandSatelliteGothCorners")

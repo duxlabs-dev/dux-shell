@@ -1039,18 +1039,20 @@ Singleton {
     }
 
     function canShareConnectedFrameChromeForScreen(screenOrName) {
-        if (!usesConnectedFrameChromeForScreen(screenOrName))
-            return false;
+        return usesConnectedFrameChromeForScreen(screenOrName) && !fullscreenCoversTopLayer(screenOrName);
+    }
+
+    function fullscreenCoversTopLayer(screenOrName) {
         if (!isHyprland)
-            return true;
+            return false;
 
         const screenName = _screenName(screenOrName);
         const monitor = Hyprland.monitors.values.find(m => m.name === screenName);
         const specialWorkspace = monitor?.lastIpcObject?.specialWorkspace?.name;
         const workspace = specialWorkspace ? Hyprland.workspaces.values.find(w => w.name === specialWorkspace) : monitor?.activeWorkspace;
         if (!workspace)
-            return true;
-        return !workspace.toplevels.values.some(t => t.lastIpcObject?.fullscreen === 2);
+            return false;
+        return workspace.toplevels.values.some(t => t.lastIpcObject?.fullscreen === 2);
     }
 
     // Connected mode renders the bar inside the frame surface.
