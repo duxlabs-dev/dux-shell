@@ -32,7 +32,9 @@ T.Control {
     property bool paintBackground: !(parent?.isSettingsGroupHost ?? false)
     property real paddingH: SettingsMetrics.rowPaddingH
     property real paddingV: SettingsMetrics.rowPaddingV
-    property color rowColor: SettingsMetrics.rowColor
+    readonly property Item groupHost: groupItem.parent?.isSettingsGroupHost ? groupItem.parent : groupItem.parent?.parent?.isSettingsGroupHost ? groupItem.parent.parent : null
+    readonly property color slotColor: groupHost?.slotColor ?? SettingsMetrics.rowColor
+    property color rowColor: slotColor
     property bool active: false
     property color selectedRowColor: Theme.selectedContainer
     property color selectedContentColor: Theme.onSelectedContainer
@@ -55,7 +57,7 @@ T.Control {
     readonly property bool hasText: title !== "" || subtitle !== ""
     readonly property bool isHighlighted: settingKey !== "" && SettingsSearchService.highlightSection === settingKey
     property bool highlighted: isHighlighted
-    property bool inGroup: (groupItem.parent?.isSettingsGroupHost ?? false) || (groupItem.parent?.parent?.isSettingsGroupHost ?? false)
+    property bool inGroup: groupHost !== null
     readonly property bool isFirstInGroup: _edge(true)
     readonly property bool isLastInGroup: _edge(false)
     property bool dividerBefore: inGroup && !isFirstInGroup
@@ -111,13 +113,12 @@ T.Control {
     }
 
     function _edge(first) {
-        const container = groupItem.parent;
-        if (container?.isSettingsGroupHost)
-            return container.isEdge(groupItem, first);
-        const host = container?.parent;
-        if (!host?.isSettingsGroupHost)
+        if (!groupHost)
             return true;
-        return host.isEdge(container, first) && _edgeInContainer(first);
+        const container = groupItem.parent;
+        if (container === groupHost)
+            return groupHost.isEdge(groupItem, first);
+        return groupHost.isEdge(container, first) && _edgeInContainer(first);
     }
 
     function _edgeInContainer(first) {

@@ -86,6 +86,7 @@ Item {
 
                 width: root.showEnd ? (root.width - halves.spacing) / 2 : root.width
                 paintBackground: true
+                rowColor: root.inGroup ? root.parent.slotColor : SettingsMetrics.rowColor
                 inGroup: root.inGroup
                 dividerBefore: false
                 topLeftRadius: root.isFirstInGroup && leftEdge ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
