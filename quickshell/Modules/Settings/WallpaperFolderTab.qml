@@ -29,9 +29,8 @@ Item {
             grid.currentIndex = index;
     }
 
-    onPathsChanged: Qt.callLater(focusCurrent)
-    onListedCurrentChanged: Qt.callLater(focusCurrent)
-    Component.onCompleted: Qt.callLater(focusCurrent)
+    onListedCurrentChanged: focusCurrent()
+    Component.onCompleted: focusCurrent()
 
     function pick(path) {
         if (path)
@@ -96,6 +95,8 @@ Item {
         }
         model: ScriptModel {
             values: root.paths
+            // Emitted after the model applies the new paths, so the index lands on the updated grid.
+            onValuesChanged: root.focusCurrent()
         }
 
         Keys.onSpacePressed: root.pick(root.paths[currentIndex])
