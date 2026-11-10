@@ -176,7 +176,7 @@ Singleton {
 
     function ownIcon(process, entry) {
         const memo = _appMemo;
-        const iconIndex = IconThemeService._iconPaths;
+        const iconIndex = IconThemeService.revision;
         const substitutions = SettingsData.appIdSubstitutions;
         if (memo.iconIndex !== iconIndex || memo.substitutions !== substitutions) {
             memo.iconIndex = iconIndex;

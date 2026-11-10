@@ -870,16 +870,13 @@
       "night",
       "palette",
       "picture",
-      "requires",
-      "restart",
       "style",
       "system",
       "theme",
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "description": "Requires restart"
+    "page": "personalization"
   },
   {
     "section": "_hub_date_time_region",
@@ -1419,15 +1416,12 @@
       "image",
       "palette",
       "picture",
-      "requires",
-      "restart",
       "system",
       "theme",
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "description": "Requires restart"
+    "page": "personalization"
   },
   {
     "section": "notificationIgnoreAppTimeout",
@@ -1589,16 +1583,13 @@
       "mode",
       "palette",
       "picture",
-      "requires",
-      "restart",
       "style",
       "system",
       "theme",
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "description": "Requires restart"
+    "page": "personalization"
   },
   {
     "section": "lockNotificationsMode",
