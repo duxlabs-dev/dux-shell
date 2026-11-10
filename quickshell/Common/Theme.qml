@@ -1400,11 +1400,11 @@ Singleton {
     readonly property real scrollbarGap: spacingXS
     readonly property int scrollbarHideDelay: 1200
     readonly property real menuMaxHeight: 400
-    readonly property real clockFaceSize: 250
+    readonly property real clockFaceSize: 256
     readonly property real clockOuterRingRatio: 101 / clockFaceSize
     readonly property real clockInnerRingRatio: 69 / clockFaceSize
     readonly property real clockHandWidth: 2
-    readonly property real clockHandleSize: 40
+    readonly property real clockHandleSize: 48
     readonly property real clockCenterSize: 8
     readonly property int clockSwitchDelay: 100
     readonly property real chipIconSize: 18
