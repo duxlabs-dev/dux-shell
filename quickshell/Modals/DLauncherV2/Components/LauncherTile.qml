@@ -24,6 +24,7 @@ Rectangle {
     property bool externalHighlight: false
     readonly property color contentColor: isSelected ? Theme.onSelectedContainer : Theme.onSurface
     property var item: null
+    readonly property bool usesDmenuMarkup: item?.type === "dmenu" && !!item?._hRich
     property bool isSelected: false
     property bool isHovered: itemArea.containsMouse
     property var controller: null
@@ -133,8 +134,12 @@ Rectangle {
                     width: parent.width
                     height: LauncherMetrics.tileLabelBlockHeight
                     verticalAlignment: Text.AlignTop
-                    text: root.item?._hName ?? root.item?.name ?? ""
-                    textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
+                    text: {
+                        const title = root.item?._hName ?? root.item?.name ?? "";
+                        return root.usesDmenuMarkup ? title : String(title).replace(/[\r\n\u2028\u2029]/g, " ");
+                    }
+                    // Generated highlights need native line limits and elision.
+                    textFormat: root.usesDmenuMarkup ? Text.RichText : root.item?._hRich ? Text.StyledText : Text.PlainText
                     font.pixelSize: Theme.fontSizeSmall
                     font.weight: Theme.fontWeightMedium
                     font.family: Theme.fontFamily

@@ -103,8 +103,13 @@ LauncherTile {
                     id: labelText
                     anchors.fill: parent
                     anchors.margins: Theme.spacingXS
-                    text: root.item?._hName ?? root.item?.name ?? ""
-                    textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
+                    text: {
+                        const title = root.item?._hName ?? root.item?.name ?? "";
+                        return root.usesDmenuMarkup ? title : String(title).replace(/[\r\n\u2028\u2029]/g, " ");
+                    }
+                    textFormat: root.usesDmenuMarkup ? Text.RichText : root.item?._hRich ? Text.StyledText : Text.PlainText
+                    wrapMode: Text.NoWrap
+                    maximumLineCount: 1
                     font.pixelSize: Theme.fontSizeSmall
                     font.family: Theme.fontFamily
                     color: root.contentColor

@@ -4,7 +4,6 @@ import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2
-import "../../../Common/htmlElide.js" as HtmlElide
 
 DListItem {
     id: root
@@ -24,6 +23,7 @@ DListItem {
     property var item: null
     property var controller: null
     property int flatIndex: -1
+    readonly property bool usesDmenuMarkup: item?.type === "dmenu" && !!item?._hRich
 
     signal rightClicked(real mouseX, real mouseY)
 
@@ -104,31 +104,20 @@ DListItem {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            text: root.item?._hName ?? root.item?.name ?? ""
-            textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
+            text: {
+                const title = root.item?._hName ?? root.item?.name ?? "";
+                return root.usesDmenuMarkup ? title : String(title).replace(/[\r\n\u2028\u2029]/g, " ");
+            }
+            // Keep explicit dmenu HTML; generated highlights support native elision.
+            textFormat: root.usesDmenuMarkup ? Text.RichText : root.item?._hRich ? Text.StyledText : Text.PlainText
             font.pixelSize: Theme.fontSizeLarge
             font.weight: (root.item?.type === "dmenu" && root.item?.data?.urgent) ? Theme.fontWeightBold : Theme.fontWeightMedium
             font.family: Theme.fontFamily
             color: (root.item?.type === "dmenu" && root.item?.data?.urgent) ? Theme.error : root.item?.data?.active ? Theme.primary : root.contentColor
-            wrapMode: Text.WordWrap
+            wrapMode: root.usesDmenuMarkup ? Text.WordWrap : Text.NoWrap
             maximumLineCount: 1
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignLeft
-        }
-
-        StyledTextMetrics {
-            id: subProbe
-            font.pixelSize: Theme.fontSizeSmall
-            elide: Qt.ElideRight
-            elideWidth: textColumn.width
-            text: root.item?._hRich ? HtmlElide.stripHtmlTags(root.item?._hSub ?? "") : ""
-        }
-
-        readonly property int _richBudget: {
-            if (!subProbe.text)
-                return 0;
-            var e = subProbe.elidedText;
-            return e.endsWith("…") ? e.length - 1 : e.length;
         }
 
         StyledText {
@@ -137,12 +126,13 @@ DListItem {
             anchors.right: parent.right
             anchors.top: nameText.bottom
             anchors.topMargin: Theme.spacingXXS
-            text: root.item?._hRich ? HtmlElide.elideRichText(root.item._hSub ?? "", textColumn._richBudget) : (root.item?.subtitle ?? "")
-            textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
+            text: String(root.item?._hRich ? (root.item._hSub ?? "") : (root.item?.subtitle ?? "")).replace(/[\r\n\u2028\u2029]/g, " ")
+            // StyledText preserves search emphasis and supports native elision.
+            textFormat: root.item?._hRich ? Text.StyledText : Text.PlainText
             font.pixelSize: Theme.fontSizeSmall
             font.family: Theme.fontFamily
             color: root.supportingContentColor
-            wrapMode: Text.WordWrap
+            wrapMode: Text.NoWrap
             maximumLineCount: 1
             elide: Text.ElideRight
             visible: root.showDescription && (root.item?.subtitle ?? "").length > 0
