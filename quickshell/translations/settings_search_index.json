@@ -5893,6 +5893,49 @@
     "conditionKey": "islandEnabled"
   },
   {
+    "section": "connectedPopouts",
+    "label": "Connected popouts",
+    "tabIndex": 6,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "bar",
+      "connected",
+      "gaps",
+      "panel",
+      "popout",
+      "popouts",
+      "popup",
+      "statusbar",
+      "taskbar",
+      "topbar"
+    ],
+    "parentLabel": "Bar"
+  },
+  {
+    "section": "connectedPopoutsSatellites",
+    "label": "Connected popouts",
+    "tabIndex": 6,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "bar",
+      "connected",
+      "island",
+      "panel",
+      "popout",
+      "popouts",
+      "popup",
+      "satellite",
+      "statusbar",
+      "taskbar",
+      "topbar",
+      "widgets"
+    ],
+    "parentLabel": "Bar",
+    "conditionKey": "islandEnabled"
+  },
+  {
     "section": "barCornerStyle",
     "label": "Corner style",
     "tabIndex": 6,

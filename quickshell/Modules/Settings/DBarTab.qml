@@ -21,7 +21,8 @@ Item {
     readonly property bool selectedIslandFree: bar.selectedBarIsIsland && SettingsData.islandFreePlacement(bar.selectedBarConfig)
     readonly property bool selectedIslandOverlay: bar.selectedBarIsIsland && bar.islandSetting("islandFloating") && !selectedIslandFree
     readonly property bool selectedIslandDocked: bar.selectedBarIsIsland && !selectedIslandFree
-    readonly property bool popupGapsZeroed: SettingsData.barUsesConnectedFrameStyle(bar.selectedBarConfig) && !(bar.selectedBarConfig?.useOverlayLayer ?? false)
+    readonly property bool popupGapsFramed: SettingsData.barUsesConnectedFrameStyle(bar.selectedBarConfig) && !(bar.selectedBarConfig?.useOverlayLayer ?? false)
+    readonly property bool popupGapsZeroed: popupGapsFramed || SettingsData.barConnectsPopouts(bar.selectedBarConfig)
     readonly property int placementIndex: !bar.islandSetting("islandFloating") ? 0 : (bar.islandSetting("islandPlacement") === "free" ? 2 : 1)
 
     function setBarScreenPreferences(barId, prefs) {
@@ -731,6 +732,15 @@ Item {
                 onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
                         popupGapsManual: finalValue
                     })
+            }
+
+            SettingsControlledBy {
+                visible: dankBarTab.popupGapsZeroed
+                target: dankBarTab.popupGapsFramed ? "" : "appearance"
+                parentModal: dankBarTab.parentModal
+                section: dankBarTab.popupGapsFramed ? "frameBorder" : (bar.selectedBarIsIsland ? "islandSatellites" : "barCorners")
+                settingLabel: I18n.tr("Auto popup gaps")
+                reason: dankBarTab.popupGapsFramed ? I18n.tr("Disabled by Frame Mode") : I18n.tr("Disabled by Connected popouts", "bar popouts card, Connected popouts is the Appearance toggle name")
             }
         }
 

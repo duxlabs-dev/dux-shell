@@ -1663,6 +1663,7 @@ var LOCAL_SPEC = {
                 gothCornersEnabled: false,
                 gothCornerRadiusOverride: false,
                 gothCornerRadiusValue: 12,
+                connectedPopouts: false,
                 borderEnabled: false,
                 borderColor: "surfaceText",
                 borderOpacity: 1.0,

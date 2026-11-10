@@ -255,3 +255,17 @@ test("a bar hosting the island widget keeps its band and joins the islands witho
     assert.equal(overlay.instances[0].kind, "bar");
     assert.equal(overlay.instances[0].hostsIsland, true);
 });
+
+const descriptor = vm.createContext({});
+vm.runInContext(readFileSync(new URL("../Common/ConnectedSurfaceDescriptor.js", import.meta.url), "utf8").replace(/^\.pragma.*$/m, ""), descriptor);
+
+test("each bar reports the spacing it floats off its edge by", () => {
+    const configs = [bar("float", 0, { spacing: 6 }), bar("flush", 2, { spacing: 6, attachToScreenEdge: true })];
+    assert.deepEqual(plain(resolve(configs).instances.map(instance => instance.spacing)), [6, 0]);
+    assert.deepEqual(plain(resolve(configs, { effectiveFrameEnabled: true }).instances.map(instance => instance.spacing)), [0, 0]);
+});
+
+test("a popout on another bar is a different descriptor", () => {
+    const body = { kind: "popout", screenName: "DP-1", visible: true, bodyRect: { x: 10, y: 40, width: 300, height: 200 } };
+    assert.equal(descriptor.same(descriptor.normalize({ ...body, barId: "a" }), descriptor.normalize({ ...body, barId: "b" })), false);
+});

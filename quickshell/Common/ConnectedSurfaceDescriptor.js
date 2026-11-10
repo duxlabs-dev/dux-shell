@@ -96,6 +96,7 @@ function normalize(input, defaults) {
         "presented": presented,
         "layer": _layer(source.layer, _layer(base.layer, "top")),
         "barSide": _barSide(source.barSide, _barSide(base.barSide, defaultSide)),
+        "barId": String(source.barId !== undefined ? source.barId : (base.barId || "")),
         "bodyRect": bodyRect,
         "animationOffset": animationOffset,
         "surfaceRadius": Math.max(-1, _number(source.surfaceRadius, _number(base.surfaceRadius, -1))),
@@ -139,6 +140,7 @@ function same(a, b, threshold) {
         && a.presented === b.presented
         && a.layer === b.layer
         && a.barSide === b.barSide
+        && a.barId === b.barId
         && Math.abs(a.bodyRect.x - b.bodyRect.x) < epsilon
         && Math.abs(a.bodyRect.y - b.bodyRect.y) < epsilon
         && Math.abs(a.bodyRect.width - b.bodyRect.width) < epsilon
