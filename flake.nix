@@ -56,8 +56,7 @@
           system: fn system nixpkgs.legacyPackages.${system}
         );
 
-      duxQtBaseFor =
-        pkgs: pkgs.dux-qt-base or dux-qt-base.packages.${pkgs.stdenv.hostPlatform.system}.dux-qt-base;
+      duxQtBaseFor = pkgs: (dux-qt-base.overlays.default pkgs pkgs).dux-qt-base;
 
       mkModuleWithDmsPkgs =
         modulePath:
@@ -122,7 +121,7 @@
               inherit version;
               pname = "dms-shell";
               src = ./core;
-              vendorHash = "sha256-Nf2sMlF8pcnRpG9gQ155z1DedeDebZLnlHA8COrszZ8=";
+              vendorHash = "sha256-rjclt1guZdJTXOuvK8Q3Efl/CjmqlMlflmY8OKIi0Bg=";
 
               subPackages = [ "cmd/dms" ];
 

@@ -84,7 +84,7 @@ in
 
     duxQtBase = {
       package = lib.mkPackageOption dmsPkgs "dux-qt-base" {
-        extraDescription = "The Quickshell runtime library embedded in the dms package (pkgs.dux-qt-base when the overlay provides it, else the dux-qt-base flake input).";
+        extraDescription = "The Quickshell runtime library embedded in the dms package (defaults to the pinned dux-qt-base flake input, built against this system's nixpkgs).";
       };
     };
 
