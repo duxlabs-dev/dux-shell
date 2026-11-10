@@ -11,7 +11,6 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
 	"github.com/duxlabs-dev/dux-shell/core/internal/notify"
 	"github.com/duxlabs-dev/dux-shell/core/internal/qsipc"
 	"github.com/duxlabs-dev/dux-shell/core/internal/screenshot"
@@ -415,9 +414,13 @@ func runScreenshot(config screenshot.Config) {
 
 	if config.Clipboard {
 		var err error
-		if ssClipFile && filePath != "" && config.Format != screenshot.FormatPPM {
+		savedImage := filePath != "" && config.Format != screenshot.FormatPPM
+		switch {
+		case savedImage && ssClipFile:
 			err = copyFileToClipboard(filePath)
-		} else {
+		case savedImage:
+			err = copyFileContentsToClipboard(filePath, formatMime(config.Format))
+		default:
 			err = copyImageToClipboard(result.Buffer, config.Format, config.Quality, result.Format, result.CICP)
 		}
 		if err != nil {
@@ -484,7 +487,7 @@ func copyImageToClipboard(buf *screenshot.ShmBuffer, format screenshot.Format, q
 		}
 	}
 
-	return clipboard.Copy(data.Bytes(), mimeType)
+	return copyDataToClipboard(data.Bytes(), mimeType)
 }
 
 func writeImageToStdout(buf *screenshot.ShmBuffer, format screenshot.Format, quality int, pixelFormat uint32, cicp *screenshot.CICP) error {

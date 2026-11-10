@@ -1,10 +1,12 @@
 package clipboard
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/duxlabs-dev/dux-go/ipc"
 	"github.com/duxlabs-dev/dux-go/ipc/params"
@@ -13,6 +15,15 @@ import (
 )
 
 const maxSearchLimit = 5000
+
+// copyCommitDeadline bounds when a copy request may still take the
+// selection. It must stay below the CLI's serverCopyReplyTimeout, so a CLI
+// that gave up and served the copy itself is never overwritten afterwards.
+const copyCommitDeadline = 8 * time.Second
+
+func copyContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), copyCommitDeadline)
+}
 
 func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	switch req.Method {
@@ -62,6 +73,8 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		handleGetPinnedCount(conn, req, m)
 	case "clipboard.copyFile":
 		handleCopyFile(conn, req, m)
+	case "clipboard.copyFileContents":
+		handleCopyFileContents(conn, req, m)
 	default:
 		conn.RespondError(req.ID, "unknown method: "+req.Method)
 	}
@@ -246,7 +259,9 @@ func handleCopy(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		return
 	}
 
-	if err := m.CopyText(text); err != nil {
+	ctx, cancel := copyContext()
+	defer cancel()
+	if err := m.CopyText(ctx, text); err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return
 	}
@@ -267,12 +282,14 @@ func handleCopyEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		return
 	}
 
+	ctx, cancel := copyContext()
+	defer cancel()
 	textOnly := params.BoolOpt(req.Params, "textOnly", false) && entry.AltMimeType != ""
 
 	if entry.AltMimeType == "" {
 		filePath := m.EntryToFile(entry)
 		if filePath != "" {
-			if err := m.CopyFile(filePath); err != nil {
+			if err := m.CopyFile(ctx, filePath); err != nil {
 				conn.RespondError(req.ID, err.Error())
 				return
 			}
@@ -287,9 +304,9 @@ func handleCopyEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	var setErr error
 	switch {
 	case textOnly:
-		setErr = m.SetClipboard(entry.AltData, entry.AltMimeType)
+		setErr = m.SetClipboard(ctx, entry.AltData, entry.AltMimeType)
 	default:
-		setErr = m.SetClipboardEntry(entry)
+		setErr = m.SetClipboardEntry(ctx, entry)
 	}
 	if setErr != nil {
 		conn.RespondError(req.ID, setErr.Error())
@@ -455,7 +472,31 @@ func handleCopyFile(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		return
 	}
 
-	if err := m.CopyFile(filePath); err != nil {
+	ctx, cancel := copyContext()
+	defer cancel()
+	if err := m.CopyFile(ctx, filePath); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "copied"})
+}
+
+func handleCopyFileContents(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
+	filePath, err := params.String(req.Params, "filePath")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	mimeType, err := params.String(req.Params, "mimeType")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	ctx, cancel := copyContext()
+	defer cancel()
+	if err := m.CopyFileContents(ctx, filePath, mimeType); err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return
 	}
@@ -476,7 +517,9 @@ func handleEditEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		return
 	}
 
-	if err := m.EditEntry(uint64(id), text); err != nil {
+	ctx, cancel := copyContext()
+	defer cancel()
+	if err := m.EditEntry(ctx, uint64(id), text); err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return
 	}

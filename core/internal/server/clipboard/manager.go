@@ -3,6 +3,7 @@ package clipboard
 import (
 	"bytes"
 	"cmp"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"runtime/debug"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -379,6 +381,7 @@ func (m *Manager) bindDataDevice() bool {
 		m.ownerLock.Unlock()
 
 		if wasOwner {
+			m.releaseOffer(offer)
 			return
 		}
 
@@ -1248,7 +1251,7 @@ func (m *Manager) canTakeSelection() bool {
 	return m.deviceBound.Load() && !m.getConfig().Disabled
 }
 
-func (m *Manager) SetClipboard(data []byte, mimeType string) error {
+func (m *Manager) SetClipboard(ctx context.Context, data []byte, mimeType string) error {
 	if !m.canTakeSelection() {
 		return errSelectionUnavailable
 	}
@@ -1259,14 +1262,13 @@ func (m *Manager) SetClipboard(data []byte, mimeType string) error {
 	dataCopy := make([]byte, len(data))
 	copy(dataCopy, data)
 
-	m.takeSelection(wlclipboard.ExpandOffers(dataCopy, mimeType))
-	return nil
+	return m.takeSelection(ctx, wlclipboard.ExpandOffers(dataCopy, mimeType))
 }
 
 // SetClipboardEntry takes the selection serving the entry's primary
 // representation plus its stored alternate, so history restores keep
 // both the text and image sides pasteable.
-func (m *Manager) SetClipboardEntry(entry *Entry) error {
+func (m *Manager) SetClipboardEntry(ctx context.Context, entry *Entry) error {
 	if !m.canTakeSelection() {
 		return errSelectionUnavailable
 	}
@@ -1279,8 +1281,7 @@ func (m *Manager) SetClipboardEntry(entry *Entry) error {
 		offers = append(offers, wlclipboard.ExpandOffers(slices.Clone(entry.AltData), entry.AltMimeType)...)
 	}
 
-	m.takeSelection(offers)
-	return nil
+	return m.takeSelection(ctx, offers)
 }
 
 const selectionWriteTimeout = 30 * time.Second
@@ -1298,83 +1299,161 @@ func writeSelection(fd int, data []byte, timeout time.Duration) {
 	}
 }
 
+var selectionTakeTimeout = 2 * time.Second
+
+var errDispatcherTimeout = errors.New("clipboard dispatcher did not respond")
+
+const (
+	selectionPending int32 = iota
+	selectionRunning
+	selectionCancelled
+)
+
 // takeSelection makes the daemon the selection owner, serving the given
-// offers until another client claims the clipboard.
-func (m *Manager) takeSelection(offers []wlclipboard.Offer) {
+// offers until another client claims the clipboard. It returns a definite
+// outcome: a timeout or an expired ctx cancels only work that has not
+// started, so once the caller sees an error the selection can never be taken
+// later, and a CLI copy may safely serve the selection itself.
+func (m *Manager) takeSelection(ctx context.Context, offers []wlclipboard.Offer) error {
+	done := make(chan error, 1)
+	var state atomic.Int32
 	m.post(func() {
-		if m.dataControlMgr == nil || m.dataDevice == nil {
-			log.Error("Data control manager or device not initialized")
+		if !state.CompareAndSwap(selectionPending, selectionRunning) {
 			return
 		}
-
-		dataMgr := m.dataControlMgr.(*ext_data_control.ExtDataControlManagerV1)
-
-		source, err := dataMgr.CreateDataSource()
-		if err != nil {
-			log.Errorf("Failed to create data source: %v", err)
+		if err := ctx.Err(); err != nil {
+			done <- err
 			return
 		}
-
-		offerData := make(map[string][]byte, len(offers))
-		for _, offer := range offers {
-			if err := source.Offer(offer.MimeType); err != nil {
-				log.Errorf("Failed to offer %s: %v", offer.MimeType, err)
-				return
-			}
-			offerData[offer.MimeType] = offer.Data
-		}
-
-		source.SetSendHandler(func(e ext_data_control.ExtDataControlSourceV1SendEvent) {
-			data, ok := offerData[e.MimeType]
-			if !ok {
-				syscall.Close(e.Fd)
-				return
-			}
-			go writeSelection(e.Fd, data, selectionWriteTimeout)
-		})
-
-		source.SetCancelledHandler(func(e ext_data_control.ExtDataControlSourceV1CancelledEvent) {
-			m.ownerLock.Lock()
-			m.isOwner = false
-			m.ownerLock.Unlock()
-		})
-
-		m.releaseCurrentSource()
-		m.currentSource = source
-
-		m.ownerLock.Lock()
-		m.isOwner = true
-		m.ownerLock.Unlock()
-
-		device := m.dataDevice.(*ext_data_control.ExtDataControlDeviceV1)
-		if err := device.SetSelection(source); err != nil {
-			log.Errorf("Failed to set selection: %v", err)
-		}
+		done <- m.setSelection(offers)
 	})
+
+	timer := time.NewTimer(selectionTakeTimeout)
+	defer timer.Stop()
+	select {
+	case err := <-done:
+		return err
+	case <-timer.C:
+	case <-ctx.Done():
+	}
+	if state.CompareAndSwap(selectionPending, selectionCancelled) {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		return errDispatcherTimeout
+	}
+	return <-done
 }
 
-func (m *Manager) CopyText(text string) error {
-	if err := m.SetClipboard([]byte(text), "text/plain;charset=utf-8"); err != nil {
+// setSelection runs on the dispatcher.
+func (m *Manager) setSelection(offers []wlclipboard.Offer) error {
+	if !m.canTakeSelection() {
+		return errSelectionUnavailable
+	}
+	if m.dataControlMgr == nil || m.dataDevice == nil {
+		return errSelectionUnavailable
+	}
+
+	dataMgr := m.dataControlMgr.(*ext_data_control.ExtDataControlManagerV1)
+
+	source, err := dataMgr.CreateDataSource()
+	if err != nil {
+		return fmt.Errorf("create data source: %w", err)
+	}
+
+	offerData := make(map[string][]byte, len(offers))
+	for _, offer := range offers {
+		if err := source.Offer(offer.MimeType); err != nil {
+			source.Destroy()
+			return fmt.Errorf("offer %s: %w", offer.MimeType, err)
+		}
+		offerData[offer.MimeType] = offer.Data
+	}
+
+	source.SetSendHandler(func(e ext_data_control.ExtDataControlSourceV1SendEvent) {
+		data, ok := offerData[e.MimeType]
+		if !ok {
+			syscall.Close(e.Fd)
+			return
+		}
+		go writeSelection(e.Fd, data, selectionWriteTimeout)
+	})
+
+	// Only the live source may clear ownership, and releasing it here frees
+	// the offered data instead of holding it until the next copy.
+	source.SetCancelledHandler(func(e ext_data_control.ExtDataControlSourceV1CancelledEvent) {
+		if m.currentSource != source {
+			return
+		}
+		m.releaseCurrentSource()
+		m.ownerLock.Lock()
+		m.isOwner = false
+		m.ownerLock.Unlock()
+	})
+
+	m.releaseCurrentSource()
+	m.currentSource = source
+
+	m.ownerLock.Lock()
+	m.isOwner = true
+	m.ownerLock.Unlock()
+
+	device := m.dataDevice.(*ext_data_control.ExtDataControlDeviceV1)
+	if err := device.SetSelection(source); err != nil {
+		m.releaseCurrentSource()
+		m.ownerLock.Lock()
+		m.isOwner = false
+		m.ownerLock.Unlock()
+		return fmt.Errorf("set selection: %w", err)
+	}
+	return nil
+}
+
+func (m *Manager) CopyText(ctx context.Context, text string) error {
+	return m.CopyData(ctx, []byte(text), "text/plain;charset=utf-8")
+}
+
+// CopyData serves the selection from the daemon so the client can exit
+// instead of staying alive as the owner.
+func (m *Manager) CopyData(ctx context.Context, data []byte, mimeType string) error {
+	if err := m.SetClipboard(ctx, data, mimeType); err != nil {
 		return err
 	}
 
-	entry := Entry{
-		Data:      []byte(text),
-		MimeType:  "text/plain;charset=utf-8",
-		Size:      len(text),
-		Timestamp: time.Now(),
-		IsImage:   false,
-		Preview:   m.textPreview([]byte(text)),
-	}
-
-	if err := m.storeEntry(entry); err != nil {
-		log.Errorf("Failed to store clipboard entry: %v", err)
+	if m.db != nil && len(bytes.TrimSpace(data)) > 0 && !m.hasSensitiveMimeType([]string{mimeType}) {
+		m.storeClipboardEntry(data, mimeType, nil, "")
 	}
 
 	m.updateState()
 	m.notifySubscribers()
 
+	if len(data) >= largeEntryBytes {
+		debug.FreeOSMemory()
+	}
 	return nil
+}
+
+// CopyFileContents copies the file's bytes as mimeType, unlike CopyFile,
+// which copies the file itself.
+func (m *Manager) CopyFileContents(ctx context.Context, filePath, mimeType string) error {
+	if !m.canTakeSelection() {
+		return errSelectionUnavailable
+	}
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return fmt.Errorf("file not found: %w", err)
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("not a regular file")
+	}
+	if info.Size() > m.getConfig().MaxEntrySize {
+		return fmt.Errorf("data too large")
+	}
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("read file: %w", err)
+	}
+	return m.CopyData(ctx, data, mimeType)
 }
 
 func (m *Manager) PasteText() (string, error) {
@@ -1875,7 +1954,7 @@ func (m *Manager) UnpinEntry(id uint64) error {
 	return err
 }
 
-func (m *Manager) EditEntry(id uint64, text string) error {
+func (m *Manager) EditEntry(ctx context.Context, id uint64, text string) error {
 	data := []byte(text)
 	mimeType := "text/plain;charset=utf-8"
 
@@ -1938,15 +2017,16 @@ func (m *Manager) EditEntry(id uint64, text string) error {
 		return w.trim(cfg)
 	})
 
-	if err == nil {
-		if clipErr := m.SetClipboard(data, mimeType); clipErr != nil {
-			log.Errorf("Failed to set clipboard selection: %v", clipErr)
-		}
-		m.updateState()
-		m.notifySubscribers()
+	if err != nil {
+		return err
 	}
 
-	return err
+	// The edit is saved either way; the error stops the editor pasting the
+	// previous clipboard.
+	clipErr := m.SetClipboard(ctx, data, mimeType)
+	m.updateState()
+	m.notifySubscribers()
+	return clipErr
 }
 
 func (m *Manager) GetPinnedEntries() []Entry {
@@ -1962,7 +2042,7 @@ func (m *Manager) GetPinnedCount() int {
 	return count
 }
 
-func (m *Manager) CopyFile(filePath string) error {
+func (m *Manager) CopyFile(ctx context.Context, filePath string) error {
 	if !m.canTakeSelection() {
 		return errSelectionUnavailable
 	}
@@ -1987,6 +2067,10 @@ func (m *Manager) CopyFile(filePath string) error {
 	exportedPath, err := m.ExportFileForFlatpak(filePath)
 	if err != nil {
 		exportedPath = filePath
+	}
+
+	if err := m.takeSelection(ctx, clipboardstore.FileOffers(exportedPath, filePath, fileData)); err != nil {
+		return err
 	}
 
 	if imgData, imgMime, ok := m.tryReadImageFromURI([]byte(encodeFileURI(filePath))); ok {
@@ -2023,8 +2107,6 @@ func (m *Manager) CopyFile(filePath string) error {
 
 	m.updateState()
 	m.notifySubscribers()
-
-	m.takeSelection(clipboardstore.FileOffers(exportedPath, filePath, fileData))
 	return nil
 }
 

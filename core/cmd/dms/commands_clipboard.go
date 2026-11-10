@@ -35,6 +35,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	serverclipboard "github.com/duxlabs-dev/dux-shell/core/internal/server/clipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -275,14 +276,27 @@ func runClipCopy(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if copyFromStdin {
-		if err := clipboard.CopyReader(os.Stdin, clipCopyType, clipCopyForeground, clipCopyPasteOnce); err != nil {
+	if clipCopyForeground || clipCopyPasteOnce {
+		if copyFromStdin {
+			if err := clipboard.CopyReader(os.Stdin, clipCopyType, clipCopyForeground, clipCopyPasteOnce); err != nil {
+				log.Fatalf("copy: %v", err)
+			}
+			return
+		}
+		if err := clipboard.CopyOpts(data, clipCopyType, clipCopyForeground, clipCopyPasteOnce); err != nil {
 			log.Fatalf("copy: %v", err)
 		}
 		return
 	}
 
-	if err := clipboard.CopyOpts(data, clipCopyType, clipCopyForeground, clipCopyPasteOnce); err != nil {
+	if copyFromStdin {
+		var err error
+		data, err = io.ReadAll(os.Stdin)
+		if err != nil {
+			log.Fatalf("read stdin: %v", err)
+		}
+	}
+	if err := copyDataToClipboard(data, clipCopyType); err != nil {
 		log.Fatalf("copy: %v", err)
 	}
 }
@@ -1151,12 +1165,12 @@ func copyFileToClipboard(filePath string) error {
 	if abs, err := filepath.Abs(filePath); err == nil {
 		filePath = abs
 	}
-	resp, ok := tryServerRequest(ipc.Request{
+	resp, err := sendServerRequestWithin(ipc.Request{
 		ID:     1,
 		Method: "clipboard.copyFile",
 		Params: map[string]any{"filePath": filePath},
-	})
-	if ok && resp.Error == "" {
+	}, serverCopyReplyTimeout)
+	if err == nil && resp.Error == "" {
 		return nil
 	}
 
@@ -1165,4 +1179,48 @@ func copyFileToClipboard(filePath string) error {
 		return fmt.Errorf("read file: %w", err)
 	}
 	return clipboard.CopyMulti(clipboard.FileOffers(filePath, filePath, data), false, false)
+}
+
+// copyDataToClipboard lets the server own the selection so no child process
+// stays alive holding it. A child is forked only when the server is down or
+// refuses (tracking disabled, over the history size limit).
+func copyDataToClipboard(data []byte, mimeType string) error {
+	if f, err := os.CreateTemp(utils.RuntimeDir(), "dms-clipboard-*"); err == nil {
+		_, err = f.Write(data)
+		f.Close()
+		served := err == nil && serverCopyFileContents(f.Name(), mimeType)
+		os.Remove(f.Name())
+		if served {
+			return nil
+		}
+	}
+	return clipboard.Copy(data, mimeType)
+}
+
+func copyFileContentsToClipboard(filePath, mimeType string) error {
+	if abs, err := filepath.Abs(filePath); err == nil {
+		filePath = abs
+	}
+	if serverCopyFileContents(filePath, mimeType) {
+		return nil
+	}
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("read file: %w", err)
+	}
+	return clipboard.Copy(data, mimeType)
+}
+
+// serverCopyReplyTimeout must exceed the server's copyCommitDeadline: past
+// it the server can no longer take the selection, so the CLI serves the copy
+// itself without racing it.
+var serverCopyReplyTimeout = 10 * time.Second
+
+func serverCopyFileContents(filePath, mimeType string) bool {
+	resp, err := sendServerRequestWithin(ipc.Request{
+		ID:     1,
+		Method: "clipboard.copyFileContents",
+		Params: map[string]any{"filePath": filePath, "mimeType": mimeType},
+	}, serverCopyReplyTimeout)
+	return err == nil && resp.Error == ""
 }
