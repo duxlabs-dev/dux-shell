@@ -43,7 +43,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-const APIVersion = 40
+const APIVersion = 41
 
 var CLIVersion = "dev"
 

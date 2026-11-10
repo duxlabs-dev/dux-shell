@@ -133,3 +133,185 @@ func TestListWallpapersCutShort(t *testing.T) {
 		t.Errorf("timed out: got %+v", library)
 	}
 }
+
+func TestFolderOwner(t *testing.T) {
+	cases := []struct {
+		name    string
+		files   []string
+		links   map[string]string
+		folders []Folder
+		want    []string
+	}{
+		{
+			"recursive child",
+			[]string{"a.png", "sub/b.png", "sub/deep/c.png"},
+			nil,
+			[]Folder{{Path: "", Recursive: true}, {Path: "sub", Recursive: true}},
+			[]string{"a.png=.", "sub/b.png=sub", "sub/deep/c.png=sub"},
+		},
+		{
+			"non-recursive child",
+			[]string{"a.png", "sub/b.png", "sub/deep/c.png"},
+			nil,
+			[]Folder{{Path: "", Recursive: true}, {Path: "sub"}},
+			[]string{"a.png=.", "sub/b.png=sub", "sub/deep/c.png=."},
+		},
+		{
+			"real folder beats the symlink to it",
+			[]string{"Walls/x.png"},
+			map[string]string{"Pictures/Walls": "../Walls"},
+			[]Folder{{Path: "Pictures", Recursive: true}, {Path: "Walls", Recursive: true}},
+			[]string{"Walls/x.png=Walls"},
+		},
+		{
+			"symlinked folder inside a recursive folder",
+			[]string{"Pictures/Walls/x.png", "Pictures/y.png"},
+			map[string]string{"Walls": "Pictures/Walls"},
+			[]Folder{{Path: "Pictures", Recursive: true}, {Path: "Walls"}},
+			[]string{"Pictures/y.png=Pictures", "Walls/x.png=Walls"},
+		},
+		{
+			"non-recursive folder does not claim nested files",
+			[]string{"Pictures/a.png", "Pictures/sub/b.png"},
+			map[string]string{"Walls": "Pictures"},
+			[]Folder{{Path: "Pictures"}, {Path: "Walls", Recursive: true}},
+			[]string{"Pictures/a.png=Pictures", "Walls/sub/b.png=Walls"},
+		},
+		{
+			"symlinked file pointing outside",
+			[]string{"out/x.png"},
+			map[string]string{"a/link.png": "../out/x.png"},
+			[]Folder{{Path: "a"}},
+			[]string{"a/link.png=a"},
+		},
+		{
+			"symlinked folder pointing outside",
+			[]string{"out/x.png"},
+			map[string]string{"a/sub": "../out"},
+			[]Folder{{Path: "a", Recursive: true}},
+			[]string{"a/sub/x.png=a"},
+		},
+		{
+			"outside symlink goes to the nearest nested folder",
+			[]string{"out/x.png"},
+			map[string]string{"a/d/link.png": "../../out/x.png"},
+			[]Folder{{Path: "a", Recursive: true}, {Path: "a/d"}},
+			[]string{"a/d/link.png=a/d"},
+		},
+		{
+			"outside symlink below a non-recursive folder goes to the recursive one",
+			[]string{"out/d/e.png"},
+			map[string]string{"r/a/link": "../../out/d"},
+			[]Folder{{Path: "r/a"}, {Path: "r", Recursive: true}},
+			[]string{"r/a/link/e.png=r"},
+		},
+		{
+			"dot-directory reached through a symlink",
+			[]string{"b/.hidden/h.png"},
+			map[string]string{"c/vis": "../b/.hidden"},
+			[]Folder{{Path: "b", Recursive: true}, {Path: "c", Recursive: true}},
+			[]string{"c/vis/h.png=c"},
+		},
+		{
+			"images folder inside a package",
+			[]string{"p/pkg/metadata.json", "p/pkg/contents/images/1x1.png", "p/pkg/contents/images/2x2.png"},
+			nil,
+			[]Folder{{Path: "p", Recursive: true}, {Path: "p/pkg/contents/images"}},
+			[]string{"p/pkg/contents/images/1x1.png=p/pkg/contents/images", "p/pkg/contents/images/2x2.png=p/pkg/contents/images"},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			root, err := filepath.EvalSymlinks(t.TempDir())
+			if err != nil {
+				t.Fatal(err)
+			}
+			writeFiles(t, root, c.files...)
+			for name, target := range c.links {
+				if err := os.MkdirAll(filepath.Dir(filepath.Join(root, name)), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(target, filepath.Join(root, name)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			folders := []Folder{}
+			for _, folder := range c.folders {
+				folders = append(folders, Folder{Path: filepath.Join(root, folder.Path), Recursive: folder.Recursive})
+			}
+
+			got := []string{}
+			for _, item := range ListWallpapers(context.Background(), folders, []string{"png"}).Items {
+				rel, _ := filepath.Rel(root, item.Path)
+				owner, _ := filepath.Rel(root, item.Folder)
+				got = append(got, rel+"="+owner)
+				if listed := FolderOf(item.Path, folders); listed != item.Folder {
+					t.Errorf("FolderOf(%s) = %q, listed under %q", rel, listed, item.Folder)
+				}
+			}
+			if !slices.Equal(got, c.want) {
+				t.Errorf("got %q, want %q", got, c.want)
+			}
+		})
+	}
+}
+
+func TestFolderListed(t *testing.T) {
+	root := t.TempDir()
+	target := filepath.Join(root, "target")
+	other := filepath.Join(root, "other")
+	link := filepath.Join(root, "link")
+	gone := filepath.Join(root, "gone")
+	for _, dir := range []string{target, other} {
+		if err := os.Mkdir(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Symlink(target, link); err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		name   string
+		path   string
+		listed []string
+		want   bool
+	}{
+		{"through a symlink", link, []string{target}, true},
+		{"listed through a symlink", target, []string{link}, true},
+		{"trailing slash", target + "/", []string{target}, true},
+		{"missing but identical", gone, []string{gone + "/"}, true},
+		{"different folder", other, []string{target}, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := FolderListed(c.path, c.listed); got != c.want {
+				t.Errorf("got %v", got)
+			}
+		})
+	}
+}
+
+func TestSuggestFolders(t *testing.T) {
+	root := t.TempDir()
+	home, share, pictures := filepath.Join(root, "home"), filepath.Join(root, "share"), filepath.Join(root, "pics")
+	for _, dir := range []string{home + "/wallpapers", share + "/backgrounds", share + "/wallpapers", pictures + "/Wallpapers"} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeFiles(t, home, "backgrounds")
+	link := filepath.Join(root, "link")
+	if err := os.Symlink(share+"/wallpapers", link); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("XDG_DATA_HOME", home)
+	t.Setenv("XDG_DATA_DIRS", share+":"+share+"/../share:"+filepath.Join(root, "missing"))
+	t.Setenv("XDG_PICTURES_DIR", pictures)
+
+	got := SuggestFolders([]string{link})
+	want := []string{home + "/wallpapers", share + "/backgrounds", pictures + "/Wallpapers"}
+	if !slices.Equal(got, want) {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
