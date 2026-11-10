@@ -522,7 +522,7 @@ Item {
         _surfaceMotionOrigin = morphTravelEnabled ? travelSpring.value : Qt.rect(alignedX, alignedY, alignedWidth, alignedHeight);
         _claimConnectedChrome();
 
-        if (!root.attached)
+        if (!root.attached || surface?.activeHost !== root)
             showSurfaceAction.schedule();
 
         animationsEnabled = true;

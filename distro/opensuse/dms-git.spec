@@ -39,6 +39,16 @@ BuildRequires:  wayland-devel
 BuildRequires:  wayland-protocols-devel >= 1.41
 BuildRequires:  Mesa-libEGL-devel
 BuildRequires:  libgbm-devel
+BuildRequires:  pkgconfig(glib-2.0)
+BuildRequires:  pkgconfig(gobject-2.0)
+BuildRequires:  pkgconfig(libdrm)
+BuildRequires:  pkgconfig(libpipewire-0.3)
+BuildRequires:  pkgconfig(pam)
+BuildRequires:  pkgconfig(polkit-agent-1)
+BuildRequires:  pkgconfig(polkit-gobject-1)
+BuildRequires:  pkgconfig(wayland-client)
+BuildRequires:  pkgconfig(xcb)
+BuildRequires:  pkgconfig(xkbcommon)
 
 Requires:       accountsservice
 # the embedded libdux-qt-base.so is invisible to find-requires, so its runtime deps are explicit

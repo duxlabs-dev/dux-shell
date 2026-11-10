@@ -70,13 +70,13 @@ override_dh_auto_install:
 
 # the embedded libdux-qt-base.so is invisible to dpkg-shlibdeps, so scan the built copy
 override_dh_shlibdeps:
-	dh_shlibdeps -- -e $(CURDIR)/core/build/dux-qt-base/src/libdux-qt-base.so.0
+	dh_shlibdeps -- -e $(CURDIR)/dms-git-repo/core/build/dux-qt-base/src/libdux-qt-base.so.0
 
 override_dh_auto_clean:
 	# Don't delete dms-git-repo directory - it's part of the source package (native format)
 	# Clean up build artifacts
 	rm -f dms
-	rm -rf dms-git-repo/core/bin
+	rm -rf dms-git-repo/core/bin dms-git-repo/core/build dms-git-repo/core/internal/qtbaseembed/lib
 	rm -rf debian/tmp-home
 	rm -rf go-bootstrap .go-toolchain
 	dh_auto_clean

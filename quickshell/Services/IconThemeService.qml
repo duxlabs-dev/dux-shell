@@ -21,7 +21,7 @@ Singleton {
     // Upstream quickshell has no icon index; icons then come from Qt's own theme lookup.
     readonly property bool indexed: "iconIndexRevision" in Quickshell
     readonly property int revision: indexed ? Quickshell.iconIndexRevision : 0
-    readonly property bool _settled: !_probing && (!indexed || !managedTheme || revision > 0)
+    readonly property bool _settled: _initialized && !_probing && (!indexed || !managedTheme || revision > 0)
     property bool ready: false
     property bool _initialized: false
     property bool _probing: false
@@ -38,10 +38,10 @@ Singleton {
     onManagedThemeChanged: _applyTheme()
 
     Component.onCompleted: {
-        _initialized = true;
         Paths.iconResolver = name => resolve(name);
         if (!settingsTheme)
             _probeSystemTheme();
+        _initialized = true;
         _applyTheme();
     }
 

@@ -40,7 +40,7 @@ DOSD {
         tip.text = endIconLabel;
         switch (alignY) {
         case 1:
-            tip.show(endIconLabel, left + item.width / 2, top - gap - tip.implicitHeight, screen);
+            tip.show(endIconLabel, left + item.width / 2, top - gap - tip.tooltipHeight, screen);
             return;
         case -1:
             tip.show(endIconLabel, left + item.width / 2, top + item.height + gap, screen);

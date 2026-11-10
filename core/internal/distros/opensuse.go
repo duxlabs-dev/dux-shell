@@ -286,7 +286,7 @@ func (o *OpenSUSEDistribution) GetPackageMappingWithVariants(wm deps.WindowManag
 
 		// DMS packages from OBS
 		"dms (Dux Shell)": o.getDmsMapping(variants["dms (Dux Shell)"]),
-		"dux-qt-base":     {Name: "dux-qt-base", Repository: RepoTypeOBS, RepoURL: obsDeps},
+		"dux-qt-base":     {Name: "libdux-qt-base0", Repository: RepoTypeOBS, RepoURL: obsDeps},
 		"dux-greeter":     variantMapping("dux-greeter", variants["dux-greeter"], RepoTypeOBS, obsDeps),
 		"ghostty":         {Name: "ghostty", Repository: RepoTypeOBS, RepoURL: obsDeps},
 		"matugen":         {Name: "matugen", Repository: RepoTypeOBS, RepoURL: obsDeps},

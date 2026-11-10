@@ -28,14 +28,16 @@ Item {
         readonly property real s: Math.min(1, content.scale) * Math.max(0, content.opacity)
         readonly property real innerW: Math.max(0, content.width - content.cardInset * 2)
         readonly property real innerH: Math.max(0, content.height - content.cardInset * 2)
-        blurX: win.x + content.x + content.cardInset + swipeTx.x + tx.x + innerW * (1 - s) * 0.5
-        blurY: win.y + win.contentTop + content.cardInset + swipeTx.y + tx.y + innerH * (1 - s) * 0.5
+        readonly property real surfaceX: win.x - (win.surface?.bandX ?? 0)
+        readonly property real surfaceY: win.y - (win.surface?.bandY ?? 0)
+        blurX: surfaceX + content.x + content.cardInset + swipeTx.x + tx.x + innerW * (1 - s) * 0.5
+        blurY: surfaceY + win.contentTop + content.cardInset + swipeTx.y + tx.y + innerH * (1 - s) * 0.5
         blurWidth: win.cardShown && !win.connectedFrameMode ? innerW * s : 0
         blurHeight: win.cardShown && !win.connectedFrameMode ? innerH * s : 0
         blurRadius: win.connectedFrameMode ? Theme.connectedSurfaceRadius : NotificationMetrics.popupRadius
         clipEnabled: true
-        clipX: win.x + content.x + content.cardInset
-        clipY: win.y + win.contentTop + content.cardInset
+        clipX: surfaceX + content.x + content.cardInset
+        clipY: surfaceY + win.contentTop + content.cardInset
         clipWidth: innerW
         clipHeight: innerH
     }
@@ -732,7 +734,7 @@ Item {
                             if (!menu)
                                 return;
                             const point = mapToItem(null, x, y);
-                            menu.showAt(point.x, point.y, win.screen);
+                            menu.showAt(point.x + (win.surface?.bandX ?? 0), point.y + (win.surface?.bandY ?? 0), win.screen);
                         }
                     }
                 }

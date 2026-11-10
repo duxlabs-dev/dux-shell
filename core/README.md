@@ -162,7 +162,7 @@ Headless mode requires cached credentials or a passwordless rule for your privil
 ```bash
 sudo -v && curl -fsSL https://install.duxlabs.dev | sh -s -- -c niri -t ghostty -y
 sudo -v && curl -fsSL https://install.duxlabs.dev | sh -s -- -c hyprland -t kitty --dux-greeter -y
-sudo -v && curl -fsSL https://install.duxlabs.dev | sh -s -- -c niri -t ghostty --git-deps niri,quickshell --all-features -y
+sudo -v && curl -fsSL https://install.duxlabs.dev | sh -s -- -c niri -t ghostty --git-deps niri --all-features -y
 ```
 
 | Flag | Short | Description |
@@ -171,7 +171,7 @@ sudo -v && curl -fsSL https://install.duxlabs.dev | sh -s -- -c niri -t ghostty 
 | `--term <ghostty\|kitty\|alacritty>` | `-t` | Terminal emulator (required for headless) |
 | `--privesc <sudo\|doas\|run0>` | | Privilege escalation tool (default: autodetect) |
 | `--git` | | Install the git version of every dependency that has one |
-| `--git-deps <name,...>` | | Install the git version of specific dependencies (e.g. `niri,quickshell`) |
+| `--git-deps <name,...>` | | Install the git version of specific dependencies (e.g. `niri,hyprland`) |
 | `--all-features` | | Enable all optional dependencies (`dux-greeter`, `dux-search`, `dux-calendar`, `dux-files`) |
 | `--dux-greeter` | | Install dux-greeter |
 | `--dux-search` | | Install dux-search and enable its user indexing service |
@@ -218,7 +218,7 @@ Uses COPR repositories (`duxlabs/dux-repo`, plus `duxlabs/dms` or `duxlabs/dms-g
 Requires PPA support. Most packages built from source (slow first install).
 
 **Debian**
-Debian 13+ (Trixie), testing, and sid. Stable quickshell from Debian (trixie-backports on 13). Other companions via OBS.
+Debian 13+ (Trixie), testing, and sid. dux-qt-base and other companions via OBS.
 
 **openSUSE**
 Most packages available in standard repos. Minimal building required.
