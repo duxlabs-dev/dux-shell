@@ -113,6 +113,11 @@ FocusScope {
     }
 
     function _handleKey(event) {
+        if (root.parentModal && !root.parentModal.spotlightOpen) {
+            event.accepted = false;
+            return;
+        }
+
         if (root.editMode) {
             if (event.key === Qt.Key_Escape) {
                 root.closeEditMode();
