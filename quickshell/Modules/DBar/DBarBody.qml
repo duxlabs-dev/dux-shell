@@ -855,9 +855,10 @@ Item {
     readonly property bool popoutOut: barChromeLoader.item?.popoutActive ?? false
     // A far-edge window would jump while growing, above, so it keeps room.
     readonly property bool popoutRoomAlwaysHeld: axis.isFar
-    // The window sits below hostThickness until the small buffer is out, so the rooms stay held meanwhile.
+    // The window sits below hostThickness until the small buffer is out, so the room being released stays held meanwhile.
     property bool roomShrinking: false
-    readonly property bool popoutRoomHeld: barPaintsPopouts && (popoutRoomAlwaysHeld || popoutOut || popoutRoomState !== "" || roomShrinking)
+    property bool popoutRoomShrinking: false
+    readonly property bool popoutRoomHeld: barPaintsPopouts && (popoutRoomAlwaysHeld || popoutOut || popoutRoomState !== "" || popoutRoomShrinking)
     readonly property real popoutHostThickness: !popoutRoomHeld ? 0 : ((isVertical ? modelData?.width : modelData?.height) ?? 0) - (layoutInstance?.manualPlacement ? layoutInstance.rowOffset : 0)
     readonly property bool popoutRoomFits: popoutRoomHeld && (isVertical ? hostWindow.width : hostWindow.height) >= popoutHostThickness - 1
     readonly property real idleHostThickness: isIsland ? Math.max(islandHost?.hostThickness ?? 0, islandStripThickness + islandSatelliteShadowBuffer) : Math.max(barSurfaceThickness, islandRoomHeld || islandReservesSheet ? islandHost?.hostThickness ?? 0 : 0)
@@ -927,6 +928,7 @@ Item {
 
         function onFrameSwapped() {
             barWindow.roomShrinking = false;
+            barWindow.popoutRoomShrinking = false;
             if (!barWindow.islandSheetOut && !islandRoomRelease.running)
                 barWindow.islandRoomHeld = false;
             const win = barWindow.Window.window;
@@ -941,7 +943,7 @@ Item {
         running: barWindow.popoutRoomState !== "" && !barWindow.popoutOut
         onTriggered: {
             if (!barWindow.popoutRoomAlwaysHeld)
-                barWindow._shrinkWindow(barWindow.idleHostThickness);
+                barWindow.popoutRoomShrinking = barWindow._shrinkWindow(barWindow.idleHostThickness);
             ConnectedModeState.setBarRoom(barWindow.popoutRoomKey, "");
         }
     }
