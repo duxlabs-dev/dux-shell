@@ -312,6 +312,8 @@ Singleton {
     property int animationDuration: Spec.SPEC.animationDuration.def
     property bool syncComponentAnimationSpeeds: Spec.SPEC.syncComponentAnimationSpeeds.def
     onSyncComponentAnimationSpeedsChanged: saveSettings()
+    property bool qmlCacheEnabled: Spec.SPEC.qmlCacheEnabled.def
+    property bool renderControlEnabled: Spec.SPEC.renderControlEnabled.def
     property int popoutAnimationDuration: Spec.SPEC.popoutAnimationDuration.def
     property int modalAnimationDuration: Spec.SPEC.modalAnimationDuration.def
     property bool reduceMotion: Spec.SPEC.reduceMotion.def

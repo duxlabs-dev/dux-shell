@@ -8916,6 +8916,28 @@
     ]
   },
   {
+    "section": "renderControlEnabled",
+    "label": "Render control",
+    "tabIndex": 14,
+    "category": "Fonts & motion",
+    "keywords": [
+      "animation",
+      "control",
+      "damage",
+      "fonts",
+      "gpu",
+      "memory",
+      "motion",
+      "performance",
+      "render",
+      "requires",
+      "restart",
+      "text",
+      "vram"
+    ],
+    "description": "Requires restart"
+  },
+  {
     "section": "textRenderType",
     "label": "Renderer",
     "tabIndex": 14,
@@ -8985,6 +9007,27 @@
       "spring",
       "text"
     ]
+  },
+  {
+    "section": "qmlCacheEnabled",
+    "label": "Startup cache",
+    "tabIndex": 14,
+    "category": "Fonts & motion",
+    "keywords": [
+      "animation",
+      "cache",
+      "disk",
+      "fonts",
+      "motion",
+      "performance",
+      "qml",
+      "requires",
+      "restart",
+      "start",
+      "startup",
+      "text"
+    ],
+    "description": "Requires restart"
   },
   {
     "section": "syncComponentAnimationSpeeds",

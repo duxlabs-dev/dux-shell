@@ -515,6 +515,12 @@ var LOCAL_SPEC = {
     syncComponentAnimationSpeeds: {
         def: true
     },
+    qmlCacheEnabled: {
+        def: true
+    },
+    renderControlEnabled: {
+        def: true
+    },
     popoutAnimationDuration: {
         def: 150
     },

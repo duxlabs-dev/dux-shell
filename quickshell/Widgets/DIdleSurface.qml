@@ -21,7 +21,8 @@ PanelWindow {
     readonly property real bandX: bounded ? renderBounds.x : band === "right" ? screenWidth - bandExtent : band === "column" ? Math.round((screenWidth - bandExtent) / 2) : 0
     readonly property real bandY: bounded ? renderBounds.y : band === "bottom" ? screenHeight - bandExtent : band === "row" ? Math.round((screenHeight - bandExtent) / 2) : 0
     property string _registeredName: ""
-    readonly property bool idleSupported: "inputOnly" in root
+    // Without render control an inputOnly window still renders, on its own thread and buffers.
+    readonly property bool idleSupported: "inputOnly" in root && Quickshell.renderControl === true
 
     property bool _mapped: true
 
