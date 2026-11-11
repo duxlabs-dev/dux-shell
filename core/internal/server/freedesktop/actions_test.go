@@ -1,6 +1,8 @@
 package freedesktop
 
 import (
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
 	"testing"
@@ -39,4 +41,24 @@ func TestStageIconFile(t *testing.T) {
 		_, err = os.Stat(staged)
 		assert.True(t, os.IsNotExist(err))
 	})
+}
+
+func TestStageIconFileDownscalesLargeImages(t *testing.T) {
+	src := filepath.Join(t.TempDir(), "big.png")
+	f, err := os.Create(src)
+	require.NoError(t, err)
+	require.NoError(t, png.Encode(f, image.NewRGBA(image.Rect(0, 0, 1200, 800))))
+	require.NoError(t, f.Close())
+
+	staged, cleanup, err := stageIconFile(src)
+	require.NoError(t, err)
+	defer cleanup()
+
+	out, err := os.Open(staged)
+	require.NoError(t, err)
+	defer out.Close()
+	cfg, _, err := image.DecodeConfig(out)
+	require.NoError(t, err)
+	assert.Equal(t, 384, cfg.Width)
+	assert.Equal(t, iconSize, cfg.Height)
 }
