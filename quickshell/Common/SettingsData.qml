@@ -818,6 +818,7 @@ Singleton {
     property bool notificationPopupShadowEnabled: Spec.SPEC.notificationPopupShadowEnabled.def
     property bool notificationPopupPrivacyMode: Spec.SPEC.notificationPopupPrivacyMode.def
     property bool notificationPopupBodyInvokesAction: Spec.SPEC.notificationPopupBodyInvokesAction.def
+    property bool notificationPopupAvoidPopouts: Spec.SPEC.notificationPopupAvoidPopouts.def
     property bool notificationForegroundLayers: Spec.SPEC.notificationForegroundLayers.def
     property int overviewRows: Spec.SPEC.overviewRows.def
     property int overviewColumns: Spec.SPEC.overviewColumns.def

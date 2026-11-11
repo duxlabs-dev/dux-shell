@@ -13,6 +13,13 @@ DIdleSurface {
 
     property var modelData
     property int topMargin: 0
+    property DPopout _activePopout: null
+    readonly property rect popoutAvoidRect: {
+        const p = _activePopout;
+        if (!p?.shouldBeVisible || !SettingsData.notificationPopupAvoidPopouts || notificationConnectedMode || !_stackAnchorsTop())
+            return Qt.rect(0, 0, 0, 0);
+        return Qt.rect(p.alignedX, p.alignedY, p.alignedWidth, p.alignedHeight);
+    }
     readonly property bool overlayWanted: popupWindows.some(p => p?.wantsOverlay ?? false)
     readonly property list<var> blurRegions: popupWindows.map(p => p?.blurRegion ?? null).filter(r => r !== null)
 
@@ -94,6 +101,14 @@ DIdleSurface {
         }
 
         target: NotificationService
+    }
+
+    Connections {
+        function onPopoutChanged() {
+            manager._syncActivePopout();
+        }
+
+        target: PopoutManager
     }
 
     mask: Region {
@@ -306,7 +321,7 @@ DIdleSurface {
     }
 
     function _stackPositionFor(target) {
-        let currentY = topMargin;
+        let currentY = _stackTop();
         for (const p of popupWindows) {
             if (p === target)
                 return currentY;
@@ -318,8 +333,31 @@ DIdleSurface {
         return currentY;
     }
 
+    function _stackTop() {
+        return topMargin + _popoutAvoidOffset();
+    }
+
+    function _popoutAvoidOffset() {
+        const r = popoutAvoidRect;
+        if (r.height <= 0)
+            return 0;
+        const p = popupWindows.find(_isValidWindow);
+        if (!p)
+            return 0;
+        const x = p.getContentX();
+        const base = p.getTopMargin() - p.screenY;
+        if (r.x >= x + p.alignedWidth || r.x + r.width <= x || r.y >= base + p.layoutHeight)
+            return 0;
+        const offset = Math.max(0, Math.round(r.y + r.height + Theme.popupDistance - base));
+        return base + offset + p.layoutHeight > modelData.height ? 0 : offset;
+    }
+
+    function _syncActivePopout() {
+        _activePopout = PopoutManager.getActivePopout(modelData);
+    }
+
     function _repositionAll() {
-        let currentY = topMargin;
+        let currentY = _stackTop();
         for (const win of _layoutWindows()) {
             const gap = win.layoutPinned ? Math.max(0, win.stackTarget - currentY) : 0;
             const position = currentY + gap;
@@ -607,7 +645,10 @@ DIdleSurface {
         _syncNotificationChromeState();
     }
 
-    Component.onCompleted: _sync(NotificationService.visibleNotifications)
+    Component.onCompleted: {
+        _syncActivePopout();
+        _sync(NotificationService.visibleNotifications);
+    }
     Component.onDestruction: {
         for (const p of popupWindows)
             p?.destroy();
@@ -621,6 +662,7 @@ DIdleSurface {
     onNotifBarSideChanged: _scheduleNotificationChromeSync()
     onModelDataChanged: _scheduleNotificationChromeSync()
     onTopMarginChanged: _repositionAll()
+    onPopoutAvoidRectChanged: _repositionAll()
 
     onPopupWindowsChanged: {
         if (popupWindows.length > 0 && !sweeper.running) {
