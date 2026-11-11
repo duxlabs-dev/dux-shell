@@ -1,4 +1,4 @@
-# Dux Shell — MangoWM configuration (managed by `dms setup`)
+# Dux Modular Shell — MangoWM configuration (managed by `dms setup`)
 # Keybinds, colors, layout, outputs, cursor and window rules are pulled from the
 # ./dms fragments below. Add your own binds/rules here; they sit alongside DMS's.
 

@@ -23,15 +23,22 @@ function service({ enabled = true, type = "widget" } = {}) {
         pluginSurfaceKeys: ["widget", "desktop", "daemon", "launcher", "dash", "dashCard"],
         log: { error() {}, warn() {} },
         Paths: { toFileUrl: path => path.startsWith("file://") ? path : "file://" + path },
-        SettingsData: { getPluginSetting: () => enabled },
+        SettingsData: { getPluginSetting: () => enabled, setPluginSetting() {} },
         DMSService: { update: (id, callback) => requests.push(callback), installedPlugins: [] },
         ShellVersionService: { checkVersionRequirement: requirement => !requirement.startsWith(">=99"), getParsedShellVersion: () => ({}) },
         Component: { Error: 3, PreferSynchronous: 0 },
-        I18n: { tr: text => ({ arg: value => text.replace("%1", value) }) },
+        I18n: { tr: text => Object.assign(new String(text), { arg: value => text.replace("%1", value) }) },
         ToastService: { showError() {} },
+        IslandActivityService: { clearSource: id => destroyed.push("island:" + id) },
+        NotificationInterceptorService: { clearSource: id => destroyed.push("notification-interceptors:" + id) },
+        // Like Qt's type loader, a URL keeps whatever it first compiled to, errors included.
         Qt: { createComponent(url) {
-            if (!compiled.has(url))
-                compiled.set(url, { value: files.get(url.split("?")[0]), createObject() { return this.value; }, destroy() { destroyed.push(url); } });
+            if (!compiled.has(url)) {
+                const value = files.get(url.split("?")[0]);
+                compiled.set(url, value instanceof Error
+                    ? { status: 3, errorString: () => value.message, destroy() {} }
+                    : { value, createObject() { return this.value; }, destroy() { destroyed.push(url); } });
+            }
             return compiled.get(url);
         } },
         pluginLoaded() {}, pluginUnloaded() {}, pluginListUpdated() {},
@@ -140,10 +147,10 @@ test("single component dash plugins load onto their dash surface", () => {
     }
 });
 
-test("unloading destroys the plugin's components", () => {
+test("unloading clears island activities and destroys the plugin's components", () => {
     const { context, destroyed } = service();
     assert.equal(context.unloadPlugin("fixture"), true);
-    assert.deepEqual(destroyed, ["file:///plugins/fixture/Widget.qml"]);
+    assert.deepEqual(destroyed, ["island:fixture", "notification-interceptors:fixture", "file:///plugins/fixture/Widget.qml"]);
     assert.equal(context.pluginWidgetComponents.fixture, undefined);
 });
 
@@ -231,5 +238,42 @@ test("composite updates refresh every surface without creating daemons synchrono
         for (const key of ["pluginWidgetComponents", "pluginDesktopComponents", "pluginDaemonComponents", "pluginLauncherComponents", "pluginDashComponents", "pluginDashCardComponents"])
             assert.equal(context[key].fixture.value, value);
         assert.equal(context.pluginDaemonInstances.fixture, undefined);
+    }
+});
+
+test("enabling again after a failed load compiles the fixed files", () => {
+    const cases = [
+        ["Widget.qml", {}, "pluginWidgetComponents"],
+        ["Check.qml", { startupCheck: "./Check.qml" }, "pluginWidgetComponents"]
+    ];
+    for (const [file, extra, key] of cases) {
+        const { context, files, pending, manifest, failures } = service({ enabled: false });
+        Object.assign(manifest, extra);
+        context.forceRescanPlugin("fixture");
+        pending.shift()();
+        files.set("file:///plugins/fixture/" + file, new Error("Script unavailable"));
+        assert.equal(context.enablePlugin("fixture") && context.isPluginLoaded("fixture"), false, file);
+        assert.match(failures.at(-1), /Script unavailable/, file);
+        files.set("file:///plugins/fixture/Widget.qml", 30);
+        files.set("file:///plugins/fixture/Check.qml", { check: () => null, destroy() {} });
+        context.enablePlugin("fixture");
+        assert.equal(context.isPluginLoaded("fixture"), true, file);
+        assert.equal(context[key].fixture.value, 30, file);
+    }
+});
+
+test("a stale directory listing explains that the shell needs a restart", () => {
+    const cases = [
+        ["Script file:///plugins/fixture/Helper.js unavailable\nfile:///plugins/fixture/Helper.js: File name case mismatch", /Restart DMS/],
+        ["Widget.qml:3:1: Type Helper unavailable", /^$/]
+    ];
+    for (const [message, details] of cases) {
+        const { context, files } = service({ enabled: false });
+        const errors = [];
+        context._setLoadError = (id, error) => errors.push(error);
+        files.set("file:///plugins/fixture/Widget.qml", new Error(message));
+        assert.equal(context.loadPlugin("fixture"), false);
+        assert.equal(errors.at(-1).title, message);
+        assert.match(String(errors.at(-1).details), details);
     }
 });

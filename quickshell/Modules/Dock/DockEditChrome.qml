@@ -50,8 +50,7 @@ Rectangle {
             buttonHeight: Theme.buttonHeightS
             iconName: "add"
             text: I18n.tr("Add widget")
-            backgroundColor: Theme.secondaryContainer
-            textColor: Theme.onSecondaryContainer
+            variant: "tonal"
             enabled: root.canAdd
             KeyNavigation.tab: settingsButton
             KeyNavigation.backtab: finishButton
@@ -75,8 +74,6 @@ Rectangle {
             buttonHeight: Theme.buttonHeightS
             iconName: "check"
             text: I18n.tr("Finish")
-            backgroundColor: Theme.primary
-            textColor: Theme.onPrimary
             KeyNavigation.tab: addButton
             KeyNavigation.backtab: settingsButton
             onClicked: root.finished()

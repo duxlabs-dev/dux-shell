@@ -228,7 +228,9 @@ FocusScope {
         case Qt.Key_P:
             if (!hasCtrl)
                 break;
-            if (event.key === Qt.Key_N)
+            if (root.controller.searchMode === "dmenu")
+                event.key === Qt.Key_N ? root.controller.selectNext() : root.controller.selectPrevious();
+            else if (event.key === Qt.Key_N)
                 root.controller.selectNextSection();
             else
                 root.controller.selectPreviousSection();

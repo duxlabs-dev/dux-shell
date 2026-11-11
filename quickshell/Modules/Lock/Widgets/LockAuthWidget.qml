@@ -202,6 +202,8 @@ Item {
                             return Theme.withAlpha(Theme.error, Theme.pendingOpacity);
                         if (root.authenticating || root.passwordBuffer.length === 0)
                             return Theme.withAlpha(root.plainColor, Theme.stateLayerDrag);
+                        if (passwordField.allSelected)
+                            return root.accentColor;
                         return Theme.withAlpha(root.accentColor, Theme.pendingOpacity);
                     }
                     strokeWidth: root.ringStroke
@@ -410,16 +412,26 @@ Item {
                 Item {
                     id: dotViewport
                     anchors.left: parent.left
-                    anchors.leftMargin: Theme.spacingM
+                    anchors.leftMargin: Theme.spacingM - Theme.spacingXS
                     anchors.right: passwordViewport.right
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
                     clip: true
                     visible: root.dots && !passwordBox.showPassword
 
+                    Rectangle {
+                        x: dotRow.x - Theme.spacingXS
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: dotRow.width + Theme.spacingXS * 2
+                        height: dotRow.height + Theme.spacingXS * 2
+                        radius: Theme.fullRadius(width, height)
+                        color: root.accentColor
+                        visible: passwordField.allSelected
+                    }
+
                     Row {
                         id: dotRow
-                        x: Math.min(0, dotViewport.width - width)
+                        x: Math.min(Theme.spacingXS, dotViewport.width - width - Theme.spacingXS)
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: Theme.spacingS
 
@@ -429,7 +441,11 @@ Item {
                             Rectangle {
                                 required property int index
                                 readonly property bool filled: root.demoMode || index < root.passwordBuffer.length
-                                readonly property color tone: root.pamState !== "" ? Theme.error : root.accentColor
+                                readonly property color tone: {
+                                    if (root.pamState !== "")
+                                        return Theme.error;
+                                    return passwordField.allSelected ? Theme.onPrimary : root.accentColor;
+                                }
 
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: Theme.iconSizeSmall
@@ -562,11 +578,29 @@ Item {
 
                     readonly property string text: root.passwordBuffer
                     property int cursorPosition: text.length
+                    property bool allSelected: false
 
                     signal accepted
 
                     function clampCursorPosition() {
                         cursorPosition = Math.max(0, Math.min(cursorPosition, text.length));
+                    }
+
+                    function moveCursor(pos) {
+                        allSelected = false;
+                        cursorPosition = Math.max(0, Math.min(pos, text.length));
+                    }
+
+                    function selectAll() {
+                        cursorPosition = text.length;
+                        allSelected = text.length > 0;
+                    }
+
+                    function deleteSelection() {
+                        if (!allSelected)
+                            return false;
+                        clear();
+                        return true;
                     }
 
                     function clear() {
@@ -577,6 +611,7 @@ Item {
                     function insertText(value) {
                         if (value.length === 0)
                             return;
+                        deleteSelection();
                         clampCursorPosition();
                         const pos = cursorPosition;
                         root.lockHost.passwordEdited(text.slice(0, pos) + value + text.slice(pos));
@@ -584,6 +619,8 @@ Item {
                     }
 
                     function backspace() {
+                        if (deleteSelection())
+                            return;
                         clampCursorPosition();
                         if (cursorPosition === 0)
                             return;
@@ -593,6 +630,8 @@ Item {
                     }
 
                     function deleteForward() {
+                        if (deleteSelection())
+                            return;
                         clampCursorPosition();
                         if (cursorPosition === text.length)
                             return;
@@ -602,6 +641,8 @@ Item {
                     }
 
                     function deleteToLineStart() {
+                        if (deleteSelection())
+                            return;
                         clampCursorPosition();
                         if (cursorPosition === 0)
                             return;
@@ -610,6 +651,8 @@ Item {
                     }
 
                     function deleteToLineEnd() {
+                        if (deleteSelection())
+                            return;
                         clampCursorPosition();
                         if (cursorPosition === text.length)
                             return;
@@ -617,6 +660,8 @@ Item {
                     }
 
                     function deleteWordBackward() {
+                        if (deleteSelection())
+                            return;
                         clampCursorPosition();
                         if (cursorPosition === 0)
                             return;
@@ -656,7 +701,11 @@ Item {
                     focus: true
                     enabled: !root.demoMode
                     activeFocusOnTab: !root.demoMode
-                    onTextChanged: cursorPosition = text.length
+                    onTextChanged: {
+                        allSelected = false;
+                        cursorPosition = text.length;
+                    }
+                    onAllSelectedChanged: allSelected ? passwordDisplay.selectAll() : passwordDisplay.deselect()
                     onAccepted: {
                         if (!root.demoMode && !root.unlocking && !root.pam.authBusy && !root.pam.u2fPending)
                             root.pam.submitPassword();
@@ -707,21 +756,19 @@ Item {
 
                             switch (event.key) {
                             case Qt.Key_A:
-                                cursorPosition = 0;
+                                selectAll();
                                 event.accepted = true;
                                 return;
                             case Qt.Key_E:
-                                cursorPosition = text.length;
+                                moveCursor(text.length);
                                 event.accepted = true;
                                 return;
                             case Qt.Key_B:
-                                clampCursorPosition();
-                                cursorPosition = Math.max(0, cursorPosition - 1);
+                                moveCursor(cursorPosition - 1);
                                 event.accepted = true;
                                 return;
                             case Qt.Key_F:
-                                clampCursorPosition();
-                                cursorPosition = Math.min(text.length, cursorPosition + 1);
+                                moveCursor(cursorPosition + 1);
                                 event.accepted = true;
                                 return;
                             case Qt.Key_U:
@@ -763,21 +810,19 @@ Item {
                             event.accepted = true;
                             return;
                         case Qt.Key_Left:
-                            clampCursorPosition();
-                            cursorPosition = Math.max(0, cursorPosition - 1);
+                            moveCursor(cursorPosition - 1);
                             event.accepted = true;
                             return;
                         case Qt.Key_Right:
-                            clampCursorPosition();
-                            cursorPosition = Math.min(text.length, cursorPosition + 1);
+                            moveCursor(cursorPosition + 1);
                             event.accepted = true;
                             return;
                         case Qt.Key_Home:
-                            cursorPosition = 0;
+                            moveCursor(0);
                             event.accepted = true;
                             return;
                         case Qt.Key_End:
-                            cursorPosition = text.length;
+                            moveCursor(text.length);
                             event.accepted = true;
                             return;
                         }
@@ -953,12 +998,18 @@ Item {
                             return "•".repeat(root.passwordBuffer.length);
                         }
                         color: root.contained ? Theme.surfaceText : root.plainColor
+                        selectionColor: root.accentColor
+                        selectedTextColor: Theme.onPrimary
                         font.family: Theme.fontFamily
                         font.weight: Theme.fontWeight
                         font.pixelSize: passwordBox.showPassword ? Theme.fontSizeMedium : (root.contained ? Theme.fontSizeLarge : Theme.fontSizeXLarge)
                         opacity: (root.demoMode || root.passwordBuffer.length > 0) ? 1 : 0
 
-                        onTextChanged: cursorPosition = passwordField.cursorPosition
+                        onTextChanged: {
+                            cursorPosition = passwordField.cursorPosition;
+                            if (passwordField.allSelected)
+                                selectAll();
+                        }
                         onCursorRectangleChanged: passwordViewport.followCursor()
                         onContentWidthChanged: passwordViewport.followCursor()
                         onContentHeightChanged: passwordViewport.followCursor()

@@ -77,79 +77,23 @@ Singleton {
     property string pendingPluginInstall: ""
     property string pendingWallpaperInstall: ""
 
-    // Deferred unload: keep popouts warm while the session is active and reclaim them on lock/monitors-off.
+    // Closed surfaces unload after a short grace, so a quick reopen keeps its tree.
     property var _pendingUnloads: ({})
 
-    property var _rewarmKeys: []
-
-    Connections {
-        target: SessionService
-        function onSessionLocked() {
-            root._flushPendingUnloads();
-        }
-        function onSessionUnlocked() {
-            root._scheduleRewarm();
-        }
-    }
-
-    Connections {
-        target: IdleService
-        function onMonitorsOffChanged() {
-            if (IdleService.monitorsOff) {
-                root._flushPendingUnloads();
-                return;
-            }
-            root._scheduleRewarm();
-        }
-    }
-
-    function _rewarmBlocked() {
-        return IdleService.isShellLocked || IdleService.monitorsOff;
-    }
-
-    function _scheduleRewarm() {
-        if (!_rewarmKeys.length || _rewarmBlocked())
-            return;
-        rewarmTimer.restart();
-    }
-
-    function _rewarmPopout(key, popoutName, loaderName) {
-        const loader = root[loaderName];
-        if (!loader)
-            return;
-        loader.active = true;
-        const popout = root[popoutName];
-        if (!popout)
-            return;
-        if (!popout.triggerScreen)
-            popout.triggerScreen = CompositorService.getFocusedScreen() ?? Quickshell.screens[0] ?? null;
-        popout.warmContent();
-        _scheduleUnload(key);
-    }
-
     Timer {
-        id: rewarmTimer
-        interval: 1500
-        onTriggered: {
-            if (root._rewarmBlocked())
-                return;
-            const key = root._rewarmKeys[0];
-            root._rewarmKeys = root._rewarmKeys.slice(1);
-            root._rewarmers[key]();
-            if (root._rewarmKeys.length)
-                restart();
-        }
+        id: unloadTimer
+        interval: 3000
+        onTriggered: root._flushPendingUnloads()
     }
 
     function _scheduleUnload(key) {
         _pendingUnloads[key] = true;
+        unloadTimer.restart();
     }
 
     function _flushPendingUnloads() {
         const keys = Object.keys(_pendingUnloads);
         _pendingUnloads = ({});
-        rewarmTimer.stop();
-        _rewarmKeys = _rewarmKeys.concat(keys.filter(key => _rewarmers[key] && !_rewarmKeys.includes(key)));
         for (let i = 0; i < keys.length; i++) {
             const unload = _deferredUnloaders[keys[i]];
             if (unload)
@@ -170,12 +114,6 @@ Singleton {
         root[popoutName] = null;
         loader.active = false;
     }
-
-    readonly property var _rewarmers: ({
-            "dankDash": () => _rewarmPopout("dankDash", "dankDashPopout", "dankDashPopoutLoader"),
-            "controlCenter": () => _rewarmPopout("controlCenter", "controlCenterPopout", "controlCenterLoader"),
-            "notificationCenter": () => _rewarmPopout("notificationCenter", "notificationCenterPopout", "notificationCenterLoader")
-        })
 
     readonly property var _deferredUnloaders: ({
             "dankDash": () => _unloadPopoutNow("dankDashPopout", "dankDashPopoutLoader"),
@@ -1171,7 +1109,7 @@ Singleton {
     }
 
     function showNotificationModal() {
-        notificationModal?.show();
+        notificationModal?.open();
     }
 
     function hideNotificationModal() {

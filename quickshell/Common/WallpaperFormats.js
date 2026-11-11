@@ -22,7 +22,3 @@ function extensions(withVideo) {
 function nameFilters(withVideo) {
     return extensions(withVideo).map(ext => "*." + ext);
 }
-
-function findPredicate(withVideo) {
-    return "\\( " + extensions(withVideo).map(ext => `-iname "*.${ext}"`).join(" -o ") + " \\)";
-}

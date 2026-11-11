@@ -12,6 +12,7 @@ Item {
     readonly property bool transparentSlot: true
     readonly property bool inGroup: parent?.isSettingsGroupHost ?? false
     readonly property bool isFirstInGroup: inGroup ? parent.isEdge(root, true) : true
+    readonly property bool isLastInGroup: inGroup ? parent.isEdge(root, false) : true
 
     property string startTitle: ""
     property int startHour: 7
@@ -59,10 +60,20 @@ Item {
         color: SettingsMetrics.groupDividerColor
     }
 
+    Rectangle {
+        x: (parent.width - width) / 2
+        y: SettingsMetrics.rowPaddingV
+        z: 1
+        width: Theme.dividerWidth
+        height: parent.height - SettingsMetrics.rowPaddingV * 2
+        visible: SettingsMetrics.continuousGroups && root.showEnd
+        color: SettingsMetrics.groupDividerColor
+    }
+
     Row {
         id: halves
         width: parent.width
-        spacing: Theme.groupedListGap
+        spacing: SettingsMetrics.groupGap
 
         Repeater {
             model: root.showEnd ? 2 : 1
@@ -70,13 +81,18 @@ Item {
             SettingsRow {
                 required property int index
                 readonly property bool isStart: index === 0
+                readonly property bool leftEdge: !root.showEnd || isStart !== (halves.effectiveLayoutDirection === Qt.RightToLeft)
+                readonly property bool rightEdge: !root.showEnd || !leftEdge
 
-                width: root.showEnd ? (root.width - Theme.groupedListGap) / 2 : root.width
+                width: root.showEnd ? (root.width - halves.spacing) / 2 : root.width
                 paintBackground: true
+                rowColor: root.inGroup ? root.parent.slotColor : SettingsMetrics.rowColor
                 inGroup: root.inGroup
                 dividerBefore: false
-                topRadius: Theme.groupedListOuterRadius
-                bottomRadius: Theme.groupedListOuterRadius
+                topLeftRadius: root.isFirstInGroup && leftEdge ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+                topRightRadius: root.isFirstInGroup && rightEdge ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+                bottomLeftRadius: root.isLastInGroup && leftEdge ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+                bottomRightRadius: root.isLastInGroup && rightEdge ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
                 title: isStart ? root.startTitle : root.endTitle
                 subtitle: root.formatTime(isStart ? root.startHour : root.endHour, isStart ? root.startMinute : root.endMinute)
                 subtitleColor: Theme.surfaceText

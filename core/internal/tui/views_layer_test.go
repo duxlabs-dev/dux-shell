@@ -1,10 +1,12 @@
 package tui
 
 import (
+	"os"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
 	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
 )
@@ -17,17 +19,35 @@ func immutableFedoraModel(dependencies []deps.Dependency) Model {
 }
 
 func TestImmutableHostStopsAtLayerScreen(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("XDG_STATE_HOME", "")
 	m := immutableFedoraModel([]deps.Dependency{
 		{Name: dmsDepName, Status: deps.StatusMissing, Required: true},
 		{Name: "niri", Status: deps.StatusInstalled, Required: true},
 	})
+	m.width = 80
 	next, _ := m.continueOnImmutable()
-	if got := next.(Model).state; got != StateLayerPackages {
-		t.Fatalf("state = %v, want StateLayerPackages", got)
+	layered := next.(Model)
+	if layered.state != StateLayerPackages {
+		t.Fatalf("state = %v, want StateLayerPackages", layered.state)
 	}
-	view := next.(Model).viewLayerPackages()
-	if !strings.Contains(view, "sudo rpm-ostree install dms") || !strings.Contains(view, "bootc switch") {
+	script, err := os.ReadFile(layered.layerScript)
+	if err != nil {
+		t.Fatalf("layer script not written: %v", err)
+	}
+	for _, cmd := range layered.layerCommands() {
+		if !strings.Contains(string(script), "\n"+cmd+"\n") {
+			t.Fatalf("layer script missing %q:\n%s", cmd, script)
+		}
+	}
+	view := layered.viewLayerPackages()
+	if !strings.Contains(view, "sh ~/.local/state/duxinstall/layer.sh") {
 		t.Fatalf("layer screen missing commands:\n%s", view)
+	}
+	for line := range strings.SplitSeq(view, "\n") {
+		if w := lipgloss.Width(line); w > m.width {
+			t.Fatalf("line is %d wide on an %d column terminal and gets cut: %q", w, m.width, line)
+		}
 	}
 }
 

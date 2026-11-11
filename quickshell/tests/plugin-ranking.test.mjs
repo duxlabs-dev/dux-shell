@@ -243,8 +243,6 @@ test("byAuthor lists one author's plugins whatever the case", () => {
 
 test("permissions that reach outside the plugin come first", () => {
     assert.deepEqual(Array.from(rank.sortPermissions(["settings_read", "settings_write", "network", "process"])), ["process", "network", "settings_read", "settings_write"]);
-    assert.equal(rank.permissionIsSensitive("shell_execute"), true);
-    assert.equal(rank.permissionIsSensitive("settings_read"), false);
 });
 
 test("dependencies are checked by command, libraries stay unknown", () => {

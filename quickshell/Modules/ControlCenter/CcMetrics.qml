@@ -8,7 +8,8 @@ import qs.Services
 Singleton {
     readonly property real sheetWidthDefault: sheetWidthFor(defaultColumns)
     readonly property int defaultColumns: 8
-    readonly property int minimumColumns: 6
+    readonly property int minimumColumns: 4
+    readonly property int osdSheetColumns: 6
     readonly property real sheetPadding: PopoutMetrics.contentPadding
     readonly property real columnWidth: tileHeight
     readonly property real gridStep: 0.5
@@ -41,7 +42,7 @@ Singleton {
     }
     readonly property real maxHeightInset: 100
     // Short-grid floors scale with the row unit, or compact would pad small layouts back out.
-    readonly property int minimumRows: 4
+    readonly property int minimumRows: 2
     readonly property real minHeight: sheetPadding * 2 + gridRowUnit * minimumRows
     readonly property real islandInset: Theme.spacingXS
     readonly property real fallbackScreenHeight: 1080

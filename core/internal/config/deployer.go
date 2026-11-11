@@ -129,12 +129,6 @@ func (cd *ConfigDeployer) deployConfigurationsInternal(_ context.Context, wm dep
 			}
 			stockBinds := strings.ReplaceAll(NiriBindsConfig, "{{TERMINAL_COMMAND}}", terminalCommand)
 			err := cd.deployBindsFile(bindsPath, stockBinds)
-			if err == nil {
-				err = cd.deployNiriBindsNext(filepath.Dir(bindsPath))
-			}
-			if err == nil && NiriConfigMissingBindsNext(filepath.Dir(bindsPath)) {
-				cd.log(NiriBindsNextIncludeHint)
-			}
 			results = append(results, DeploymentResult{
 				ConfigType: BindsConfigType,
 				Path:       bindsPath,
@@ -156,6 +150,11 @@ func (cd *ConfigDeployer) deployConfigurationsInternal(_ context.Context, wm dep
 			results = append(results, result)
 			if err != nil {
 				return results, fmt.Errorf("failed to deploy Hyprland config: %w", err)
+			}
+		} else if result, ok := cd.RefreshHyprlandDMSBinds(terminalCommand); ok {
+			results = append(results, result)
+			if result.Error != nil {
+				return results, fmt.Errorf("failed to deploy Hyprland keybinds: %w", result.Error)
 			}
 		}
 	case deps.WindowManagerMango:
@@ -330,23 +329,9 @@ func (cd *ConfigDeployer) deployBindsFile(path, stock string) error {
 	return nil
 }
 
-func (cd *ConfigDeployer) deployNiriBindsNext(dmsDir string) error {
-	written, err := WriteNiriBindsNext(dmsDir, niriCapabilityProbe())
-	if err != nil {
-		return fmt.Errorf("failed to write %s: %w", NiriBindsNextFile, err)
-	}
-	if written {
-		cd.log("Deployed " + NiriBindsNextFile)
-	}
-	return nil
-}
-
 func (cd *ConfigDeployer) deployNiriDmsConfigs(dmsDir, terminalCommand string) error {
 	stockBinds := strings.ReplaceAll(NiriBindsConfig, "{{TERMINAL_COMMAND}}", terminalCommand)
 	if err := cd.deployBindsFile(filepath.Join(dmsDir, "binds.kdl"), stockBinds); err != nil {
-		return err
-	}
-	if err := cd.deployNiriBindsNext(dmsDir); err != nil {
 		return err
 	}
 	configs := []struct {
@@ -713,15 +698,75 @@ func backupHyprlandConfigFile(dst string, data []byte) (string, error) {
 	return dst, nil
 }
 
+// Keeping hyprland.lua must not leave the DMS-owned binds.lua stale; the user's
+// binds live in binds-user.lua, which is never overwritten.
+func (cd *ConfigDeployer) RefreshHyprlandDMSBinds(terminalCommand string) (DeploymentResult, bool) {
+	bindsPath := filepath.Join(HyprlandConfigDir(), "dms", "binds.lua")
+	result := DeploymentResult{ConfigType: BindsConfigType, Path: bindsPath}
+	if _, err := os.Stat(bindsPath); err != nil {
+		if os.IsNotExist(err) {
+			return result, false
+		}
+		result.Error = err
+		return result, true
+	}
+	if err := hyprlandLuaUnsupported(cd.hyprlandVersion); err != nil {
+		cd.log(fmt.Sprintf("Not refreshing %s: %v", bindsPath, err))
+		return result, false
+	}
+	result.BackupPath, result.Deployed, result.Error = WriteHyprlandStockBinds(HyprlandConfigDir(), terminalCommand)
+	cd.logStockBinds(result.BackupPath, result.Deployed)
+	return result, true
+}
+
+// WriteHyprlandStockBinds replaces dms/binds.lua with the stock set. Hand edits are
+// never lost: a copy that differs from stock goes to .dms-backups first.
+func WriteHyprlandStockBinds(configDir, terminalCommand string) (backupPath string, written bool, err error) {
+	path := filepath.Join(configDir, "dms", "binds.lua")
+	stock := strings.ReplaceAll(DMSBindsLuaConfig, "{{TERMINAL_COMMAND}}", terminalCommand)
+	existing, err := os.ReadFile(path)
+	if err != nil && !os.IsNotExist(err) {
+		return "", false, err
+	}
+	if string(existing) == stock {
+		return "", false, nil
+	}
+	if len(existing) > 0 {
+		dst := filepath.Join(configDir, hyprlandBackupDirName, time.Now().Format("2006-01-02_15-04-05"), "dms", "binds.lua")
+		if backupPath, err = backupHyprlandConfigFile(dst, existing); err != nil {
+			return "", false, fmt.Errorf("failed to back up binds.lua: %w", err)
+		}
+	}
+	if err := os.WriteFile(path, []byte(stock), 0o644); err != nil {
+		return backupPath, false, fmt.Errorf("failed to write binds.lua: %w", err)
+	}
+	return backupPath, true, nil
+}
+
+func (cd *ConfigDeployer) logStockBinds(backupPath string, written bool) {
+	if backupPath != "" {
+		cd.log(fmt.Sprintf("Backed up previous binds.lua to %s", backupPath))
+	}
+	if !written {
+		cd.log("binds.lua is already the stock set")
+		return
+	}
+	cd.log("Updated binds.lua")
+}
+
 func (cd *ConfigDeployer) deployHyprlandDmsConfigs(dmsDir string, terminalCommand string) error {
+	backupPath, written, err := WriteHyprlandStockBinds(filepath.Dir(dmsDir), terminalCommand)
+	if err != nil {
+		return err
+	}
+	cd.logStockBinds(backupPath, written)
+
 	configs := []struct {
-		name      string
-		content   string
-		overwrite bool
+		name    string
+		content string
 	}{
 		{name: "colors.lua", content: DMSColorsLuaConfig},
 		{name: "layout.lua", content: DMSLayoutLuaConfig},
-		{name: "binds.lua", content: strings.ReplaceAll(DMSBindsLuaConfig, "{{TERMINAL_COMMAND}}", terminalCommand), overwrite: true},
 		{name: "binds-user.lua", content: DMSBindsUserLuaConfig},
 		{name: "outputs.lua", content: DMSOutputsLuaConfig},
 		{name: "cursor.lua", content: DMSCursorLuaConfig},
@@ -731,20 +776,12 @@ func (cd *ConfigDeployer) deployHyprlandDmsConfigs(dmsDir string, terminalComman
 
 	for _, cfg := range configs {
 		path := filepath.Join(dmsDir, cfg.name)
-		existed := false
 		if info, err := os.Stat(path); err == nil && info.Size() > 0 {
-			existed = true
-		}
-		if existed && !cfg.overwrite {
 			cd.log(fmt.Sprintf("Skipping %s (already exists)", cfg.name))
 			continue
 		}
 		if err := os.WriteFile(path, []byte(cfg.content), 0o644); err != nil {
 			return fmt.Errorf("failed to write %s: %w", cfg.name, err)
-		}
-		if existed {
-			cd.log(fmt.Sprintf("Updated %s", cfg.name))
-			continue
 		}
 		cd.log(fmt.Sprintf("Deployed %s", cfg.name))
 	}

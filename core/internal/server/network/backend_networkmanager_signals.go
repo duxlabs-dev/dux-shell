@@ -111,6 +111,11 @@ func (b *NetworkManagerBackend) startSignalPump() error {
 		return err
 	}
 
+	if err := conn.AddMatchSignal(nameOwnerMatchOptions()...); err != nil {
+		conn.RemoveSignal(signals)
+		return err
+	}
+
 	for _, info := range b.wifiDevicesSnapshot() {
 		if err := conn.AddMatchSignal(
 			dbus.WithMatchObjectPath(dbus.ObjectPath(info.device.GetPath())),
@@ -240,6 +245,7 @@ func (b *NetworkManagerBackend) stopSignalPump() {
 		dbus.WithMatchInterface(dbusNMInterface),
 		dbus.WithMatchMember("DeviceRemoved"),
 	)
+	b.dbusConn.RemoveMatchSignal(nameOwnerMatchOptions()...)
 	b.dbusConn.RemoveMatchSignal(
 		dbus.WithMatchPathNamespace(dbus.ObjectPath(dbusNMActiveConnPath)),
 		dbus.WithMatchInterface(dbusNMVPNConnInterface),
@@ -332,6 +338,17 @@ func (b *NetworkManagerBackend) handleDBusSignal(sig *dbus.Signal) {
 		if len(sig.Body) >= 1 {
 			if devicePath, ok := sig.Body[0].(dbus.ObjectPath); ok {
 				b.handleDeviceAdded(devicePath)
+			}
+		}
+		return
+	}
+
+	if sig.Name == "org.freedesktop.DBus.NameOwnerChanged" {
+		if len(sig.Body) >= 3 {
+			name, _ := sig.Body[0].(string)
+			newOwner, _ := sig.Body[2].(string)
+			if name == dbusNMInterface && newOwner != "" {
+				b.resyncDevices()
 			}
 		}
 		return
@@ -623,8 +640,60 @@ func (b *NetworkManagerBackend) handleAccessPointChange(changes map[string]dbus.
 	}
 }
 
+func nameOwnerMatchOptions() []dbus.MatchOption {
+	return []dbus.MatchOption{
+		dbus.WithMatchSender("org.freedesktop.DBus"),
+		dbus.WithMatchObjectPath("/org/freedesktop/DBus"),
+		dbus.WithMatchInterface("org.freedesktop.DBus"),
+		dbus.WithMatchMember("NameOwnerChanged"),
+		dbus.WithMatchArg(0, dbusNMInterface),
+	}
+}
+
+// resyncDevices reconciles tracked devices with the restarted NetworkManager.
+// DeviceAdded fires before the daemon owns its bus name, so those lookups fail;
+// the dead instance never emits DeviceRemoved, so its paths must be dropped here.
+func (b *NetworkManagerBackend) resyncDevices() {
+	devices, err := b.nmConn.(gonetworkmanager.NetworkManager).GetDevices()
+	if err != nil {
+		log.Warnf("Failed to list devices after NetworkManager restart: %v", err)
+		return
+	}
+	live := make(map[dbus.ObjectPath]struct{}, len(devices))
+	for _, dev := range devices {
+		live[dev.GetPath()] = struct{}{}
+	}
+	tracked := b.trackedDevicePaths()
+	for path := range tracked {
+		if _, ok := live[path]; !ok {
+			b.handleDeviceRemoved(path)
+		}
+	}
+	for path := range live {
+		if _, ok := tracked[path]; !ok {
+			b.handleDeviceAdded(path)
+		}
+	}
+}
+
+func (b *NetworkManagerBackend) trackedDevicePaths() map[dbus.ObjectPath]struct{} {
+	b.devMutex.RLock()
+	defer b.devMutex.RUnlock()
+	paths := make(map[dbus.ObjectPath]struct{})
+	for _, info := range b.ethernetDevices {
+		paths[info.device.GetPath()] = struct{}{}
+	}
+	for _, info := range b.wifiDevices {
+		paths[info.device.GetPath()] = struct{}{}
+	}
+	for _, info := range b.cellularDevices {
+		paths[info.device.GetPath()] = struct{}{}
+	}
+	return paths
+}
+
 func (b *NetworkManagerBackend) handleDeviceAdded(devicePath dbus.ObjectPath) {
-	dev, err := gonetworkmanager.NewDevice(devicePath)
+	dev, err := b.newDevice(devicePath)
 	if err != nil {
 		return
 	}
@@ -658,7 +727,7 @@ func (b *NetworkManagerBackend) handleDeviceAdded(devicePath dbus.ObjectPath) {
 
 	switch devType {
 	case gonetworkmanager.NmDeviceTypeEthernet:
-		w, err := gonetworkmanager.NewDeviceWired(devicePath)
+		w, err := b.newDeviceWired(devicePath)
 		if err != nil {
 			return
 		}

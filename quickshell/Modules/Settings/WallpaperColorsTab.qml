@@ -109,14 +109,7 @@ Column {
     }
 
     function applyWallpaper(path) {
-        if (perMonitor) {
-            SessionData.setMonitorWallpaper(selectedScreen, path);
-            SessionData.setMonitorCyclingFolderPath(selectedScreen, "");
-            return;
-        }
-        SessionData.setWallpaper(path);
-        SessionData.wallpaperCyclingFolderPath = "";
-        SessionData.saveSettings();
+        SessionData.applyWallpaperPick(selectedScreen, path);
     }
 
     function pickColor() {
@@ -183,7 +176,7 @@ Column {
             "message": I18n.tr("Delete wallpaper '%1'?", "material wallpaper delete confirmation").arg(label),
             "confirmText": I18n.tr("Delete"),
             "cancelText": I18n.tr("Cancel"),
-            "confirmColor": Theme.error,
+            "danger": true,
             "onConfirm": () => SessionData.removeMaterialWallpaperProfile(id)
         });
     }
@@ -525,6 +518,16 @@ Column {
                 if (screen)
                     SettingsData.setMatugenTargetMonitor(screen);
             }
+        }
+
+        SettingsNavRow {
+            tab: "wallpaper"
+            tags: ["folders", "directories", "library"]
+            settingKey: "wallpaperFolders"
+            iconName: "folder"
+            title: I18n.tr("Wallpapers", "wallpaper folders settings row")
+            hint: SettingsTabs.page("wallpaper_folders")?.hint ?? ""
+            onClicked: keyboard => root.parentModal?.navigateTo("wallpaper_folders", keyboard)
         }
 
         SettingsSplitRow {
@@ -915,7 +918,6 @@ Column {
             resetByKeys: false
             onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeDark"), false)
             text: I18n.tr("Theme")
-            description: I18n.tr("Requires restart")
             currentValue: SettingsData.iconThemeDark
             enableFuzzySearch: true
             popupWidthOffset: 100
@@ -935,7 +937,6 @@ Column {
             resetByKeys: false
             onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeDark"), false)
             text: I18n.tr("Dark mode theme")
-            description: I18n.tr("Requires restart")
             currentValue: SettingsData.iconThemeDark
             enableFuzzySearch: true
             popupWidthOffset: 100
@@ -955,7 +956,6 @@ Column {
             resetByKeys: false
             onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeLight"), true)
             text: I18n.tr("Light mode theme")
-            description: I18n.tr("Requires restart")
             currentValue: SettingsData.iconThemeLight
             enableFuzzySearch: true
             popupWidthOffset: 100
@@ -965,17 +965,6 @@ Column {
                 SettingsData.setIconThemeForMode(value, true);
                 root.warnIfMissingQtTheme();
             }
-        }
-    }
-
-    Loader {
-        width: parent.width
-        active: CompositorService.isAqueous
-        sourceComponent: AqueousAppearanceSettings {
-            cursor: true
-            settingKey: "aqueousCursor"
-            title: I18n.tr("Aqueous cursor", "Aqueous compositor cursor synchronization settings")
-            visible: CompositorService.isAqueous
         }
     }
 

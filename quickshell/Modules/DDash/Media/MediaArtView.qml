@@ -64,6 +64,19 @@ Item {
             placeholderIconSize: DashMetrics.mediaArtPlaceholderIcon
             artUrl: root.holdArt ? "" : root.player.presentation?.artUrl ?? ""
         }
+
+        Loader {
+            readonly property bool wantsAnimatedArt: surface.visible && surface.playing && root.player.live && AppleMusicArtService.animatedArtUrl !== ""
+
+            anchors.fill: parent
+            active: wantsAnimatedArt && MultimediaService.available
+            source: "../../../Widgets/DAnimatedAlbumArt.qml"
+
+            onWantsAnimatedArtChanged: {
+                if (wantsAnimatedArt)
+                    MultimediaService.ensureProbed();
+            }
+        }
     }
 
     Loader {

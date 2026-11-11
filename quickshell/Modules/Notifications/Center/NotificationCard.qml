@@ -42,6 +42,15 @@ Item {
     height: targetHeight
     clip: isAnimating
 
+    function forceLayout() {
+        collapsedCard.forceLayout();
+        if (!expanded)
+            return;
+        for (let i = 0; i < notificationRepeater.count; i++)
+            notificationRepeater.itemAt(i)?.forceLayout();
+        expandedContent.forceLayout();
+    }
+
     function toggleGroup() {
         NotificationService.toggleGroupExpansion(notificationGroup?.key || "");
     }
@@ -152,8 +161,7 @@ Item {
                     text: I18n.tr("Dismiss")
                     buttonHeight: NotificationMetrics.controlSize
                     horizontalPadding: NotificationMetrics.actionPadding
-                    backgroundColor: "transparent"
-                    textColor: Theme.primary
+                    variant: "text"
                     onClicked: NotificationService.dismissGroup(root.notificationGroup?.key || "")
                 }
                 DButton {
@@ -183,6 +191,11 @@ Item {
                 property bool collapsing: false
                 property var notificationToDismiss: null
                 readonly property real targetHeight: collapsing ? 0 : message.targetHeight
+
+                function forceLayout() {
+                    message.forceLayout();
+                }
+
                 group: rowSwipe
                 bleed: root.swipeBleed
                 width: expandedContent.width

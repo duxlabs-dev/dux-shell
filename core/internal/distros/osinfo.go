@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -70,7 +71,7 @@ func getOSInfo(fs afero.Fs, arch string) (*OSInfo, error) {
 	info.Immutable, info.ImmutableReason = detectImmutable(fs, values)
 
 	info.ID = values["ID"]
-	id := info.ID
+	id := registryID(info)
 	config, exists := Registry[id]
 	if !exists && !info.Immutable {
 		return nil, errdefs.NewCustomError(errdefs.ErrTypeUnsupportedDistribution, fmt.Sprintf("Unsupported distribution: %s", id))
@@ -86,6 +87,14 @@ func getOSInfo(fs afero.Fs, arch string) (*OSInfo, error) {
 	info.Distribution = DistroInfo{ID: id, HexColorCode: config.ColorHex}
 
 	return info, nil
+}
+
+// LMDE and Ubuntu-based Mint share ID=linuxmint; only Mint lists ubuntu in ID_LIKE.
+func registryID(info *OSInfo) string {
+	if info.ID == "linuxmint" && !slices.Contains(info.IDLike, "ubuntu") {
+		return "lmde"
+	}
+	return info.ID
 }
 
 func readOSRelease(fs afero.Fs) map[string]string {
@@ -136,6 +145,11 @@ func IsUnsupportedDistro(distroID, versionID string) bool {
 	if IsEnterpriseLinux(distroID) {
 		major, err := strconv.Atoi(strings.SplitN(versionID, ".", 2)[0])
 		return err != nil || major < 10
+	}
+
+	if distroID == "lmde" {
+		major, err := strconv.Atoi(versionID)
+		return err != nil || major < 7
 	}
 
 	if distroID == "debian" {

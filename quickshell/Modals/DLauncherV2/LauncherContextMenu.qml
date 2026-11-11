@@ -161,7 +161,8 @@ DContextMenu {
         pinDockId = SettingsData.dockConfigForAction(screenRef)?.id ?? "";
         if (parentHandler)
             parentHandler.enabled = false;
-        open(screenRef, screenRelativeX + Theme.spacingXS, screenRelativeY + Theme.spacingXS, fromKeyboard);
+        IdleSurfaces.surfaceFor("context-menu", screenRef?.name ?? "")?.remap();
+        Qt.callLater(open, screenRef, screenRelativeX + Theme.spacingXS, screenRelativeY + Theme.spacingXS, fromKeyboard);
     }
 
     function executePluginAction(actionOrObj) {

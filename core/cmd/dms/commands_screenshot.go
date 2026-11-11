@@ -2,16 +2,16 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/duxlabs-dev/dux-go/qtbase"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
 
-	"github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
 	"github.com/duxlabs-dev/dux-shell/core/internal/notify"
 	"github.com/duxlabs-dev/dux-shell/core/internal/qsipc"
 	"github.com/duxlabs-dev/dux-shell/core/internal/screenshot"
@@ -20,7 +20,6 @@ import (
 
 var (
 	ssOutputName  string
-	ssSeat        string
 	ssCursor      string
 	ssFormat      string
 	ssQuality     int
@@ -28,6 +27,7 @@ var (
 	ssFilename    string
 	ssNoClipboard bool
 	ssNoFile      bool
+	ssClipFile    bool
 	ssNoNotify    bool
 	ssNoConfirm   bool
 	ssReset       bool
@@ -60,7 +60,7 @@ Modes:
   full        - Capture the focused output
   all         - Capture all outputs combined
   output      - Capture a specific output by name
-  window      - Capture the focused window (Hyprland/Mango/niri/Aqueous)
+  window      - Capture the focused window (Hyprland/Mango/niri)
   last        - Capture the last selected region
   scroll      - Select a region, then scroll to capture a stitched tall image
 
@@ -79,6 +79,7 @@ Examples:
   dms screenshot --reset             # Reset last region pre-selection
   dms screenshot --no-clipboard      # Save file only
   dms screenshot --no-file           # Clipboard only
+  dms screenshot --clipboard-file    # Copy the saved file, so terminals paste its path
   dms screenshot --no-confirm        # Region capture on mouse release
   dms screenshot --cursor=on         # Include cursor
   dms screenshot -f jpg -q 85        # JPEG with quality 85
@@ -124,7 +125,7 @@ If no previous region exists, falls back to interactive selection.`,
 var ssWindowCmd = &cobra.Command{
 	Use:   "window",
 	Short: "Capture the focused window",
-	Long:  `Capture the currently focused window. Supported on Hyprland, Mango, niri, and Aqueous. Aqueous requires a running DMS shell and crops the output including borders and overlapping windows.`,
+	Long:  `Capture the currently focused window. Supported on Hyprland, Mango, and niri.`,
 	Run:   runScreenshotWindow,
 }
 
@@ -167,7 +168,6 @@ var notifyActionCmd = &cobra.Command{
 
 func init() {
 	screenshotCmd.PersistentFlags().StringVarP(&ssOutputName, "output", "o", "", "Output name for 'output' mode")
-	screenshotCmd.PersistentFlags().StringVar(&ssSeat, "seat", "", "Seat for Aqueous capture (required with multiple seats)")
 	screenshotCmd.PersistentFlags().StringVar(&ssCursor, "cursor", "off", "Include cursor in screenshot (on/off)")
 	screenshotCmd.PersistentFlags().StringVarP(&ssFormat, "format", "f", "png", "Output format (png, jpg, ppm)")
 	screenshotCmd.PersistentFlags().IntVarP(&ssQuality, "quality", "q", 90, "JPEG quality (1-100)")
@@ -175,6 +175,7 @@ func init() {
 	screenshotCmd.PersistentFlags().StringVar(&ssFilename, "filename", "", "Output filename (auto-generated if empty)")
 	screenshotCmd.PersistentFlags().BoolVar(&ssNoClipboard, "no-clipboard", false, "Don't copy to clipboard")
 	screenshotCmd.PersistentFlags().BoolVar(&ssNoFile, "no-file", false, "Don't save to file")
+	screenshotCmd.PersistentFlags().BoolVar(&ssClipFile, "clipboard-file", false, "Copy the saved file (path, URI and image) instead of only the image")
 	screenshotCmd.PersistentFlags().BoolVar(&ssNoNotify, "no-notify", false, "Don't show notification")
 	screenshotCmd.PersistentFlags().BoolVar(&ssNoConfirm, "no-confirm", false, "Region mode: capture on mouse release without Enter/Space confirmation")
 	screenshotCmd.PersistentFlags().BoolVar(&ssReset, "reset", false, "Reset saved last-region preselection before capturing")
@@ -202,7 +203,6 @@ func getScreenshotConfig(mode screenshot.Mode) screenshot.Config {
 	config := screenshot.DefaultConfig()
 	config.Mode = mode
 	config.OutputName = ssOutputName
-	config.Seat = ssSeat
 	if strings.EqualFold(ssCursor, "on") {
 		config.Cursor = screenshot.CursorOn
 	}
@@ -289,7 +289,7 @@ func setPopoutScreenshotMode(begin bool) {
 	}
 	cmdArgs = append(cmdArgs, "-p", shellApp.ConfigPath())
 	cmdArgs = append(cmdArgs, "call", "screenshot", fn)
-	_ = exec.Command("qs", cmdArgs...).Start()
+	_ = qtbase.Command(context.Background(), cmdArgs...).Start()
 }
 
 func writeScreenshotJSON(meta screenshotMetadata) {
@@ -415,10 +415,14 @@ func runScreenshot(config screenshot.Config) {
 
 	if config.Clipboard {
 		var err error
-		if filePath != "" && config.Format != screenshot.FormatPPM {
+		savedImage := filePath != "" && config.Format != screenshot.FormatPPM
+		switch {
+		case savedImage && ssClipFile:
 			err = copyFileToClipboard(filePath)
-		} else {
-			err = copyImageToClipboard(result.Buffer, config.Format, config.Quality, result.Format, result.CICP)
+		case savedImage && config.Format == screenshot.FormatPNG:
+			err = copyFileContentsToClipboard(filePath, "image/png")
+		default:
+			err = copyPNGToClipboard(result.Buffer, result.Format, result.CICP)
 		}
 		if err != nil {
 			exitScreenshotError(" copying to clipboard", err)
@@ -467,24 +471,13 @@ func runScreenshot(config screenshot.Config) {
 	}
 }
 
-func copyImageToClipboard(buf *screenshot.ShmBuffer, format screenshot.Format, quality int, pixelFormat uint32, cicp *screenshot.CICP) error {
-	var mimeType string
+// Chromium pastes nothing from an image/jpeg-only clipboard, so the copy is PNG whatever the file format.
+func copyPNGToClipboard(buf *screenshot.ShmBuffer, pixelFormat uint32, cicp *screenshot.CICP) error {
 	var data bytes.Buffer
-
-	switch format {
-	case screenshot.FormatJPEG:
-		mimeType = "image/jpeg"
-		if err := screenshot.EncodeBufferJPEG(&data, buf, pixelFormat, quality); err != nil {
-			return err
-		}
-	default:
-		mimeType = "image/png"
-		if err := screenshot.EncodeBufferPNG(&data, buf, pixelFormat, cicp); err != nil {
-			return err
-		}
+	if err := screenshot.EncodeBufferPNG(&data, buf, pixelFormat, cicp); err != nil {
+		return err
 	}
-
-	return clipboard.Copy(data.Bytes(), mimeType)
+	return copyDataToClipboard(data.Bytes(), "image/png")
 }
 
 func writeImageToStdout(buf *screenshot.ShmBuffer, format screenshot.Format, quality int, pixelFormat uint32, cicp *screenshot.CICP) error {

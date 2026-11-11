@@ -3,10 +3,11 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.Common
 import qs.Services
 
 Variants {
-    model: Quickshell.screens
+    model: ShellLayout.realScreens
 
     Scope {
         id: scope

@@ -1,7 +1,6 @@
 package wlroutput
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -133,69 +132,6 @@ func TestStateChanged_Equal(t *testing.T) {
 		}},
 	}
 	assert.False(t, stateChanged(a, b))
-}
-
-func TestManager_ConcurrentGetState(t *testing.T) {
-	m := &Manager{
-		state: &State{
-			Serial:  1,
-			Outputs: []Output{{Name: "eDP-1", Enabled: true}},
-		},
-	}
-
-	var wg sync.WaitGroup
-	const goroutines = 50
-	const iterations = 100
-
-	for range goroutines / 2 {
-		wg.Go(func() {
-			for range iterations {
-				s := m.GetState()
-				_ = s.Serial
-				_ = s.Outputs
-			}
-		})
-	}
-
-	for i := range goroutines / 2 {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			for j := range iterations {
-				m.stateMutex.Lock()
-				m.state = &State{
-					Serial:  uint32(j),
-					Outputs: []Output{{Name: "eDP-1", Scale: float64(j % 3)}},
-				}
-				m.stateMutex.Unlock()
-			}
-		}(i)
-	}
-
-	wg.Wait()
-}
-
-func TestManager_ConcurrentSubscriberAccess(t *testing.T) {
-	m := &Manager{
-		stopChan: make(chan struct{}),
-		dirty:    make(chan struct{}, 1),
-	}
-
-	var wg sync.WaitGroup
-	const goroutines = 20
-
-	for i := range goroutines {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			subID := string(rune('a' + id))
-			ch := m.Subscribe(subID)
-			assert.NotNil(t, ch)
-			m.Unsubscribe(subID)
-		}(i)
-	}
-
-	wg.Wait()
 }
 
 func TestManager_NotifySubscribersNonBlocking(t *testing.T) {

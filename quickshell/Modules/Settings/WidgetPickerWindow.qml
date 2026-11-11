@@ -15,9 +15,10 @@ DFloatingWindow {
     property var parentModal: null
     property string headerTitle: title
     property string intro: ""
+    property string searchPlaceholder: I18n.tr("Search widgets...")
     property bool featuredFirst: false
     property bool showEmptyState: false
-    property Component widgetDelegate: null
+    property Component widgetDelegate: rowDelegate
     parentWindow: parentModal
 
     signal widgetChosen(var widget)
@@ -35,7 +36,9 @@ DFloatingWindow {
         const filtered = query ? source.filter(widget => widgetMatches(widget, query)) : source.slice();
         if (featuredFirst)
             filtered.sort((a, b) => a.featured === b.featured ? 0 : (a.featured ? -1 : 1));
-        filteredWidgets = filtered;
+        filteredWidgets = filtered.map((widget, i) => widget.category && widget.category !== filtered[i - 1]?.category ? Object.assign({}, widget, {
+                "categoryStart": true
+            }) : widget);
         selectedIndex = -1;
         keyboardNavigationActive = false;
     }
@@ -197,7 +200,7 @@ DFloatingWindow {
                         width: parent.width
                         textColor: Theme.surfaceText
                         font.pixelSize: Theme.fontSizeMedium
-                        placeholderText: I18n.tr("Search widgets...")
+                        placeholderText: root.searchPlaceholder
                         text: root.searchQuery
                         focus: true
                         ignoreLeftRightKeys: true
@@ -227,6 +230,81 @@ DFloatingWindow {
                         clip: true
                         delegate: root.widgetDelegate
                         footer: root.showEmptyState ? emptyState : null
+                    }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: rowDelegate
+
+        Column {
+            width: ListView.view.width
+            spacing: Theme.spacingS
+
+            StyledText {
+                visible: modelData.categoryStart === true
+                topPadding: index > 0 ? Theme.spacingM : 0
+                text: modelData.category ?? ""
+                font.pixelSize: Theme.fontSizeSmall
+                font.weight: Theme.fontWeightMedium
+                color: Theme.primary
+                width: parent.width
+            }
+
+            DListItem {
+                width: parent.width
+                implicitHeight: Math.max(SettingsMetrics.rowMinHeight, textColumn.implicitHeight + Theme.spacingM * 2)
+                isSelected: root.keyboardNavigationActive && index === root.selectedIndex && !modelData.disabled
+                enabled: !modelData.disabled
+                Accessible.name: modelData.text
+                onClicked: root.widgetChosen(modelData)
+
+                Row {
+                    anchors.fill: parent
+                    anchors.margins: Theme.spacingM
+                    spacing: Theme.spacingM
+
+                    DIcon {
+                        name: modelData.icon
+                        size: Theme.iconSize
+                        color: modelData.disabled ? Theme.onSurface_38 : Theme.primary
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Column {
+                        id: textColumn
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: Theme.spacingXXS
+                        width: parent.width - Theme.iconSize * 2 - Theme.spacingM * 4 + 4
+
+                        StyledText {
+                            text: modelData.text
+                            font.pixelSize: Theme.fontSizeMedium
+                            font.weight: Theme.fontWeightMedium
+                            color: modelData.disabled ? Theme.onSurface_38 : Theme.surfaceText
+                            elide: Text.ElideRight
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                        }
+
+                        StyledText {
+                            visible: text !== ""
+                            text: modelData.description ?? ""
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: modelData.disabled ? Theme.onSurface_38 : Theme.outline
+                            elide: Text.ElideRight
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+
+                    DIcon {
+                        name: "add"
+                        size: Theme.iconSizeMedium
+                        color: modelData.disabled ? Theme.onSurface_38 : Theme.primary
+                        anchors.verticalCenter: parent.verticalCenter
                     }
                 }
             }

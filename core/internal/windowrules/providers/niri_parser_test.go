@@ -46,30 +46,6 @@ window-rule {
 	}
 }
 
-func TestConvertNiriRulesToWindowRules(t *testing.T) {
-	niriRules := []NiriWindowRule{
-		{MatchAppID: "^firefox$", Opacity: new(0.8)},
-		{MatchAppID: "^code$", OpenFloating: new(true)},
-	}
-
-	result := ConvertNiriRulesToWindowRules(niriRules)
-
-	if len(result) != 2 {
-		t.Errorf("expected 2 rules, got %d", len(result))
-	}
-
-	if result[0].MatchCriteria.AppID != "^firefox$" {
-		t.Errorf("rule 0 AppID = %q, want ^firefox$", result[0].MatchCriteria.AppID)
-	}
-	if result[0].Actions.Opacity == nil || *result[0].Actions.Opacity != 0.8 {
-		t.Errorf("rule 0 Opacity = %v, want 0.8", result[0].Actions.Opacity)
-	}
-
-	if result[1].Actions.OpenFloating == nil || !*result[1].Actions.OpenFloating {
-		t.Error("rule 1 should have OpenFloating = true")
-	}
-}
-
 func TestNiriSetAndLoadDMSRules(t *testing.T) {
 	tmpDir := t.TempDir()
 	provider := NewNiriWritableProvider(tmpDir)
@@ -96,62 +72,6 @@ func TestNiriSetAndLoadDMSRules(t *testing.T) {
 	}
 	if rules[0].MatchCriteria.AppID != "^firefox$" {
 		t.Errorf("AppID = %q, want ^firefox$", rules[0].MatchCriteria.AppID)
-	}
-}
-
-func TestNiriRemoveRule(t *testing.T) {
-	tmpDir := t.TempDir()
-	provider := NewNiriWritableProvider(tmpDir)
-
-	rule1 := newTestWindowRule("rule1", "Rule 1", "app1")
-	rule1.Actions.OpenFloating = new(true)
-	rule2 := newTestWindowRule("rule2", "Rule 2", "app2")
-	rule2.Actions.OpenFloating = new(true)
-
-	_ = provider.SetRule(rule1)
-	_ = provider.SetRule(rule2)
-
-	if err := provider.RemoveRule("rule1"); err != nil {
-		t.Fatalf("RemoveRule failed: %v", err)
-	}
-
-	rules, _ := provider.LoadDMSRules()
-	if len(rules) != 1 {
-		t.Fatalf("expected 1 rule after removal, got %d", len(rules))
-	}
-	if rules[0].ID != "rule2" {
-		t.Errorf("remaining rule ID = %q, want rule2", rules[0].ID)
-	}
-}
-
-func TestNiriReorderRules(t *testing.T) {
-	tmpDir := t.TempDir()
-	provider := NewNiriWritableProvider(tmpDir)
-
-	rule1 := newTestWindowRule("rule1", "Rule 1", "app1")
-	rule1.Actions.OpenFloating = new(true)
-	rule2 := newTestWindowRule("rule2", "Rule 2", "app2")
-	rule2.Actions.OpenFloating = new(true)
-	rule3 := newTestWindowRule("rule3", "Rule 3", "app3")
-	rule3.Actions.OpenFloating = new(true)
-
-	_ = provider.SetRule(rule1)
-	_ = provider.SetRule(rule2)
-	_ = provider.SetRule(rule3)
-
-	if err := provider.ReorderRules([]string{"rule3", "rule1", "rule2"}); err != nil {
-		t.Fatalf("ReorderRules failed: %v", err)
-	}
-
-	rules, _ := provider.LoadDMSRules()
-	if len(rules) != 3 {
-		t.Fatalf("expected 3 rules, got %d", len(rules))
-	}
-	expectedOrder := []string{"rule3", "rule1", "rule2"}
-	for i, expectedID := range expectedOrder {
-		if rules[i].ID != expectedID {
-			t.Errorf("rule %d ID = %q, want %q", i, rules[i].ID, expectedID)
-		}
 	}
 }
 

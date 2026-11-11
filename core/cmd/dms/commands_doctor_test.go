@@ -20,12 +20,12 @@ func TestQuickshellVersionFailureDetails(t *testing.T) {
 		{
 			name:   "Qt private API symbol mismatch",
 			stderr: "qs: symbol lookup error: qs: undefined symbol: _ZN23QUntypedPropertyBindingC1EP23QPropertyBindingPrivate, version Qt_6_PRIVATE_API",
-			want:   "Quickshell is incompatible with the installed Qt libraries. Rebuild or reinstall Quickshell against the current Qt version.",
+			want:   "dux-qt-base is incompatible with the installed Qt libraries. Update or rebuild dux-qt-base against the current Qt version.",
 		},
 		{
 			name:   "other failure",
 			stderr: "qs: unsupported option --version",
-			want:   "Run 'qs --version' to inspect the failure.",
+			want:   "Run 'dms qs --version' to inspect the failure.",
 		},
 	}
 
@@ -384,6 +384,50 @@ func TestCheckXDGMenuFile(t *testing.T) {
 	}
 }
 
+func TestXDGMenuPrefixUnderSystemd(t *testing.T) {
+	configHome, binDir := t.TempDir(), t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", configHome)
+	t.Setenv("XDG_CONFIG_DIRS", t.TempDir())
+	t.Setenv("PATH", binDir)
+	if err := os.MkdirAll(filepath.Join(configHome, "menus"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(configHome, "menus", "plasma-applications.menu"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(binDir, "keditfiletype"), []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sessionHas := func(string) string { return "plasma-" }
+	sessionLacks := func(string) string { return "" }
+
+	cases := []struct {
+		name       string
+		prefix     string
+		systemd    bool
+		sessionEnv func(string) string
+		want       status
+		wantHint   string
+	}{
+		{"compositor block only, shell under systemd", "plasma-", true, sessionLacks, statusWarn, "environment.d"},
+		{"session env has it", "plasma-", true, sessionHas, statusInfo, ""},
+		{"compositor block only, shell spawned by compositor", "plasma-", false, sessionLacks, statusInfo, ""},
+		{"unset under systemd", "", true, sessionLacks, statusWarn, "environment.d"},
+		{"unset without systemd", "", false, sessionLacks, statusWarn, "environment block"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := xdgMenuPrefixResult(c.prefix, c.systemd, c.sessionEnv)
+			if len(got) != 1 || got[0].status != c.want {
+				t.Fatalf("got %+v, want status %v", got, c.want)
+			}
+			if !strings.Contains(got[0].details, c.wantHint) {
+				t.Fatalf("details %q should mention %q", got[0].details, c.wantHint)
+			}
+		})
+	}
+}
+
 func TestCheckMangoConfigReportsUnknownKeysAndOverviewBinds(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(dir, "dms"), 0o755); err != nil {
@@ -431,57 +475,28 @@ func TestCheckNiriConfig(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("config.kdl", "debug {\n    keep-max-bpc-unchanged\n}\ninclude optional=true \"dms/binds.kdl\"\n")
-	write("dms/binds.kdl", "binds {\n    Mod+O { toggle-overview; }\n    Mod+Shift+Slash { spawn \"dms\"; }\n}\n")
-	write("dms/binds-next.kdl", "binds { Mod { release { toggle-overview; } } }\n")
-	rejectAll := func(string) bool { return false }
+	write("config.kdl", `debug {
+    keep-max-bpc-unchanged
+}
+/-debug {
+    keep-max-bpc-unchanged
+}
+// keep-max-bpc-unchanged
+/* debug {
+    keep-max-bpc-unchanged
+} */
+debug { /-keep-max-bpc-unchanged; render-drm-device r#"/dev/dri/renderD128"# }
+include optional=true "dms/binds.kdl"
+`)
+	write("dms/binds.kdl", "binds {\n    Mod+O { toggle-overview; }\n}\n")
 
-	messages := func(results []checkResult) []string {
-		var out []string
-		for _, r := range results {
-			out = append(out, r.message)
-		}
-		return out
+	var got []string
+	for _, r := range checkNiriConfig(dir) {
+		got = append(got, r.message)
 	}
-	want := []string{
-		"config.kdl does not include dms/binds-next.kdl",
-		"config.kdl:2 sets keep-max-bpc-unchanged",
-		"dms/binds-next.kdl is rejected by the installed niri",
-		"dms/binds.kdl:3 binds Mod+Shift+Slash",
-	}
-	if got := messages(checkNiriConfig(dir, []string{"niri.binds-next"}, rejectAll)); !slices.Equal(got, want) {
+	want := []string{"config.kdl:2 sets keep-max-bpc-unchanged"}
+	if !slices.Equal(got, want) {
 		t.Fatalf("got %q", got)
-	}
-
-	write("config.kdl", "include optional=true \"dms/binds.kdl\"\ninclude optional=true \"dms/binds-next.kdl\"\n")
-	got := messages(checkNiriConfig(dir, nil, func(string) bool { return true }))
-	if !slices.Equal(got, []string{"config.kdl:2 includes dms/binds-next.kdl after dms/binds.kdl"}) {
-		t.Fatalf("on niri 26.04 only the include order should warn, got %q", got)
-	}
-}
-
-func TestMangoLacksSnakeCase(t *testing.T) {
-	for ver, want := range map[string]bool{
-		"0.17.5": true,
-		"0.18.0": false,
-		"0.18.2": false,
-		"":       false,
-	} {
-		if got := mangoLacksSnakeCase(ver); got != want {
-			t.Errorf("mangoLacksSnakeCase(%q) = %v, want %v", ver, got, want)
-		}
-	}
-}
-
-func TestHyprlandLacksLua(t *testing.T) {
-	for ver, want := range map[string]bool{
-		"0.54.9": true,
-		"0.55.0": false,
-		"":       false,
-	} {
-		if got := hyprlandLacksLua(ver); got != want {
-			t.Errorf("hyprlandLacksLua(%q) = %v, want %v", ver, got, want)
-		}
 	}
 }
 
@@ -556,7 +571,7 @@ func TestRetiredGreeterPackagesInstalled(t *testing.T) {
 		want  []string
 	}{
 		"dux successor satisfying the retired names": {"dux-greeter-git 2.0.0.r165.g7cf13f1-1\ndux-greeter-git 2.0.0.r165.g7cf13f1-1\ndux-greeter-git 2.0.0.r165.g7cf13f1-1\n", nil},
-		"retired package still installed":            {"greetd-dms-greeter-git 1:1.6.2.r0.g0175be5-1\ngreetd-dms-greeter-git 1:1.6.2.r0.g0175be5-1\n", []string{"greetd-dms-greeter-git", "greetd-dms-greeter-git"}},
+		"retired package still installed":            {"greetd-dms-greeter-git 1:1.6.2.r0.g0175be5-1\ngreetd-dms-greeter-git 1:1.6.2.r0.g0175be5-1\n", []string{"greetd-dms-greeter-git"}},
 		"nothing installed":                          {"", nil},
 	}
 	for name, tc := range tests {

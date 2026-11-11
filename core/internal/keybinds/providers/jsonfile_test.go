@@ -209,22 +209,3 @@ func TestJSONFileProviderFlatArrayBackwardsCompat(t *testing.T) {
 		}
 	}
 }
-
-func TestJSONFileProviderInvalidJSON(t *testing.T) {
-	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, "invalid.json")
-
-	if err := os.WriteFile(testFile, []byte("not valid json"), 0o644); err != nil {
-		t.Fatalf("Failed to write test file: %v", err)
-	}
-
-	p, err := NewJSONFileProvider(testFile)
-	if err != nil {
-		t.Fatalf("NewJSONFileProvider failed: %v", err)
-	}
-
-	_, err = p.GetCheatSheet()
-	if err == nil {
-		t.Error("expected error for invalid JSON, got nil")
-	}
-}

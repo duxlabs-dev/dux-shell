@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import "../Common/suncalc.js" as SunCalc
+import "../Common/WeatherData.js" as WeatherData
 
 Singleton {
     id: root
@@ -49,6 +50,98 @@ Singleton {
     property int persistentRetryCount: 0
     property int _geocodeReqId: 0
     property var _pendingCoords: null
+    property int _requestTimeout: 30000
+    property int _weatherSerial: 0
+    property var _weatherRequestId: null
+    property var _weatherCoords: null
+    readonly property bool _backendReady: DMSService.capabilities.includes("weather")
+    // The first fetch, or a retry after a reconnect, can run before the socket is up.
+    on_BackendReadyChanged: {
+        if (root._backendReady && (!root.weather.available || root.retryAttempts > 0 || persistentRetryTimer.running))
+            root.forceRefresh();
+    }
+
+    readonly property string userAgent: "Dux Modular Shell Weather Widget (+https://github.com/duxlabs-dev/dux-shell)"
+    readonly property var builtinProviders: [
+        {
+            id: "openmeteo",
+            text: "Open-Meteo"
+        },
+        {
+            id: "metno",
+            text: "MET Norway"
+        }
+    ]
+    readonly property var pluginProviders: {
+        if (!DMSService.capabilities.includes("weather.plugins"))
+            return [];
+        const loaded = PluginService.loadedPlugins;
+        const providers = [];
+        for (const pluginId in loaded) {
+            const plugin = loaded[pluginId];
+            if (!plugin.weather?.command)
+                continue;
+            providers.push({
+                id: "plugin_" + pluginId,
+                text: I18n.trFor(pluginId, plugin.weather.name ?? plugin.name)
+            });
+        }
+        return providers;
+    }
+    readonly property var providerCatalog: builtinProviders.concat(pluginProviders)
+    readonly property var providers: {
+        const saved = Array.isArray(SettingsData.weatherProviders) ? SettingsData.weatherProviders : [];
+        const rows = [];
+        for (const entry of saved) {
+            const provider = root.providerCatalog.find(provider => provider.id === entry?.id);
+            if (!provider || rows.some(row => row.id === provider.id))
+                continue;
+            rows.push({
+                id: provider.id,
+                text: provider.text,
+                enabled: entry.enabled === true
+            });
+        }
+        for (const provider of root.providerCatalog) {
+            if (!rows.some(row => row.id === provider.id))
+                rows.push({
+                    id: provider.id,
+                    text: provider.text,
+                    enabled: false
+                });
+        }
+        return rows;
+    }
+    readonly property var enabledProviders: providers.filter(provider => provider.enabled).map(provider => provider.id)
+    readonly property string providerOrder: providers.map(provider => provider.id).join(",")
+    // Only a new first provider changes what is shown; the others apply on the next
+    // refresh. This also refetches when a plugin provider loads after the first fetch.
+    readonly property string primaryProvider: enabledProviders[0] ?? "openmeteo"
+    onPrimaryProviderChanged: {
+        root.cancelFetch();
+        root.lastFetchTime = 0;
+        root.forceRefresh();
+    }
+
+    // Keep saved entries of plugins that are not loaded right now.
+    function saveProviders(rows) {
+        const saved = Array.isArray(SettingsData.weatherProviders) ? SettingsData.weatherProviders : [];
+        SettingsData.set("weatherProviders", rows.concat(saved.filter(entry => entry?.id && !rows.some(row => row.id === entry.id))));
+    }
+
+    function setProviderEnabled(id, enabled) {
+        saveProviders(providers.map(provider => ({
+                    id: provider.id,
+                    enabled: provider.id === id ? enabled : provider.enabled
+                })));
+    }
+
+    function reorderProviders(indices) {
+        saveProviders(indices.map(index => ({
+                    id: providers[index].id,
+                    enabled: providers[index].enabled
+                })));
+    }
 
     // ionice is util-linux only; the BSDs get plain nice
     readonly property var lowPriorityCmd: Qt.platform.os === "linux" ? ["nice", "-n", "19", "ionice", "-c3"] : ["nice", "-n", "19"]
@@ -450,13 +543,6 @@ Singleton {
         return locale.dayName(date.getDay(), Locale.ShortFormat);
     }
 
-    function getWeatherApiUrl() {
-        if (!location) {
-            return null;
-        }
-        return getWeatherApiUrlForCoords(location.latitude, location.longitude);
-    }
-
     function getGeocodingUrl(query) {
         return "https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(query) + "&count=1&language=en&format=json";
     }
@@ -491,15 +577,6 @@ Singleton {
                 country: country || root.weather.country
             });
         }
-    }
-
-    function getWeatherApiUrlForCoords(lat, lon) {
-        if (lat == null || lon == null)
-            return null;
-
-        const params = ["latitude=" + lat, "longitude=" + lon, "current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m", "daily=sunrise,sunset,moonrise,moonset,temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max", "hourly=temperature_2m,weather_code,precipitation_probability,wind_speed_10m,apparent_temperature,relative_humidity_2m,surface_pressure,visibility,cloud_cover,uv_index,dew_point_2m", "timezone=auto", "forecast_days=7"];
-
-        return "https://api.open-meteo.com/v1/forecast?" + params.join('&');
     }
 
     function addRef() {
@@ -549,7 +626,16 @@ Singleton {
         }
     }
 
+    // About a kilometre, so GeoClue jitter neither refetches nor relabels.
+    function movedFrom(coords, lat, lon) {
+        if (!coords)
+            return true;
+        return Math.abs(coords.latitude - lat) > 0.01 || Math.abs(coords.longitude - lon) * Math.cos(lat * Math.PI / 180) > 0.01;
+    }
+
     function getLocationFromCoords(lat, lon) {
+        if (root.location && !root.movedFrom(root.location, lat, lon))
+            return;
         // Use coordinates immediately for weather; resolve city name in parallel with fallbacks
         setLocation(lat, lon, I18n.tr("Local Weather"), "");
         fetchWeather(lat, lon);
@@ -603,7 +689,7 @@ Singleton {
 
     function tryNominatim(lat, lon, reqId) {
         const url = "https://nominatim.openstreetmap.org/reverse?lat=" + lat + "&lon=" + lon + "&format=json&addressdetails=1&accept-language=en";
-        nominatimFetcher.command = lowPriorityCmd.concat(fetchCmd, ["--user-agent", "Dux Shell Weather Widget", url]);
+        nominatimFetcher.command = lowPriorityCmd.concat(fetchCmd, ["--user-agent", root.userAgent, url]);
         nominatimFetcher.reqId = reqId;
         nominatimFetcher.running = true;
     }
@@ -636,24 +722,74 @@ Singleton {
             lon = location.longitude;
         }
 
-        if (weatherFetcher.running) {
+        if (lat == null || lon == null || !root._backendReady) {
             return;
+        }
+
+        // A reply for the old coordinates would be labelled with the new location.
+        const moved = root.movedFrom(root._weatherCoords, lat, lon);
+        if (root._weatherRequestId !== null) {
+            if (!moved)
+                return;
+            root.cancelFetch();
         }
 
         const now = Date.now();
-        if (now - root.lastFetchTime < root.minFetchInterval) {
-            return;
-        }
-
-        const apiUrl = getWeatherApiUrlForCoords(lat, lon);
-        if (!apiUrl) {
+        if (!moved && now - root.lastFetchTime < root.minFetchInterval) {
             return;
         }
 
         root.lastFetchTime = now;
+        root._weatherCoords = {
+            latitude: lat,
+            longitude: lon
+        };
         root.weather.loading = true;
-        weatherFetcher.command = lowPriorityCmd.concat(root.fetchCmd, [apiUrl]);
-        weatherFetcher.running = true;
+        const token = ++root._weatherSerial;
+        root._weatherRequestId = DMSService.sendRequest("weather.get", {
+            "latitude": lat,
+            "longitude": lon,
+            "providers": root.enabledProviders
+        }, response => root.receiveWeather(token, response), root._requestTimeout) ?? null;
+    }
+
+    function receiveWeather(token, response) {
+        if (token !== root._weatherSerial)
+            return;
+        root._weatherRequestId = null;
+        if (root.refCount === 0 || !SettingsData.weatherEnabled)
+            return;
+        if (response.error) {
+            root.handleWeatherFailure(response.error);
+            return;
+        }
+        const result = response.result;
+        if (result?.source && result.source !== root.primaryProvider)
+            log.info("Weather provider", root.primaryProvider, "failed, using", result.source);
+        if (result?.filled?.length)
+            log.debug("Weather readings from", result.source, "filled from", result.filled.join(", "));
+        try {
+            root.weather = WeatherData.fromOpenMeteo(result?.forecast, {
+                formatTime: root.formatTime,
+                formatDay: root.formatForecastDay,
+                city: root.location?.city || I18n.tr("Unknown"),
+                country: root.location?.country || I18n.tr("Unknown")
+            });
+        } catch (e) {
+            root.handleWeatherFailure(e.message);
+            return;
+        }
+        root.lastFetchError = "";
+        root.handleWeatherSuccess();
+    }
+
+    // A reply for the old location would be labelled with the new one.
+    function cancelFetch() {
+        root._weatherSerial++;
+        if (root._weatherRequestId === null)
+            return;
+        DMSService.cancelRequest(root._weatherRequestId);
+        root._weatherRequestId = null;
     }
 
     function forceRefresh() {
@@ -898,150 +1034,6 @@ Singleton {
         }
     }
 
-    Process {
-        id: weatherFetcher
-        running: false
-
-        stderr: StdioCollector {
-            id: weatherFetchErr
-        }
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const raw = text.trim();
-                if (!raw || raw[0] !== "{") {
-                    root.handleWeatherFailure(weatherFetchErr.text.trim());
-                    return;
-                }
-
-                try {
-                    const data = JSON.parse(raw);
-
-                    if (!data.current || !data.daily || !data.hourly) {
-                        throw new Error("Required weather data fields missing");
-                    }
-
-                    const hourly = data.hourly;
-                    const hourly_forecast = [];
-                    if (hourly.time && hourly.time.length > 0) {
-                        for (let i = 0; i < hourly.time.length; i++) {
-                            const tempMinC = hourly.temperature_2m_min?.[i] || 0;
-                            const tempMaxC = hourly.temperature_2m_max?.[i] || 0;
-                            const tempMinF = tempMinC * 9 / 5 + 32;
-                            const tempMaxF = tempMaxC * 9 / 5 + 32;
-
-                            const tempC = hourly.temperature_2m?.[i] || 0;
-                            const tempF = tempC * 9 / 5 + 32;
-                            const feelsLikeC = hourly.apparent_temperature?.[i] || tempC;
-                            const feelsLikeF = feelsLikeC * 9 / 5 + 32;
-
-                            const sunrise = new Date(data.daily.sunrise?.[Math.floor(i / 24)]);
-                            const sunset = new Date(data.daily.sunset?.[Math.floor(i / 24)]);
-                            const time = new Date(hourly.time[i]);
-                            const isDay = sunrise < time && time < sunset;
-
-                            hourly_forecast.push({
-                                "time": formatTime(hourly.time[i]),
-                                "rawTime": hourly.time[i],
-                                "temp": Math.round(tempC),
-                                "tempF": Math.round(tempF),
-                                "feelsLike": Math.round(feelsLikeC),
-                                "feelsLikeF": Math.round(feelsLikeF),
-                                "wCode": hourly.weather_code?.[i] || 0,
-                                "humidity": Math.round(hourly.relative_humidity_2m?.[i] || 0),
-                                "wind": Math.round(hourly.wind_speed_10m?.[i] || 0),
-                                "pressure": Math.round(hourly.surface_pressure?.[i] || 0),
-                                "precipitationProbability": Math.round(hourly.precipitation_probability?.[i] || 0),
-                                "visibility": Math.round(hourly.visibility?.[i] || 0),
-                                "isDay": isDay
-                            });
-                        }
-                    }
-
-                    const daily = data.daily;
-                    const forecast = [];
-                    if (daily.time && daily.time.length > 0) {
-                        for (let i = 0; i < daily.time.length; i++) {
-                            const tempMinC = daily.temperature_2m_min?.[i] || 0;
-                            const tempMaxC = daily.temperature_2m_max?.[i] || 0;
-                            const tempMinF = (tempMinC * 9 / 5 + 32);
-                            const tempMaxF = (tempMaxC * 9 / 5 + 32);
-
-                            forecast.push({
-                                "rawDate": daily.time[i],
-                                "day": formatForecastDay(daily.time[i], i),
-                                "wCode": daily.weather_code?.[i] || 0,
-                                "tempMin": Math.round(tempMinC),
-                                "tempMax": Math.round(tempMaxC),
-                                "tempMinF": Math.round(tempMinF),
-                                "tempMaxF": Math.round(tempMaxF),
-                                "precipitationProbability": Math.round(daily.precipitation_probability_max?.[i] || 0),
-                                "sunrise": daily.sunrise?.[i] ? formatTime(daily.sunrise[i]) : "",
-                                "sunset": daily.sunset?.[i] ? formatTime(daily.sunset[i]) : "",
-                                "rawSunrise": daily.sunrise?.[i] || "",
-                                "rawSunset": daily.sunset?.[i] || ""
-                            });
-                        }
-                    }
-
-                    const current = data.current;
-                    const currentUnits = data.current_units || {};
-
-                    const tempC = current.temperature_2m || 0;
-                    const tempF = tempC * 9 / 5 + 32;
-                    const feelsLikeC = current.apparent_temperature || tempC;
-                    const feelsLikeF = feelsLikeC * 9 / 5 + 32;
-
-                    const currentHour = hourly.time?.findIndex(time => time.slice(0, 13) === current.time?.slice(0, 13)) ?? -1;
-                    const hourlyValue = key => {
-                        const value = hourly[key]?.[currentHour];
-                        return Number.isFinite(value) ? value : null;
-                    };
-                    root.lastFetchError = "";
-                    root.weather = {
-                        "available": true,
-                        "loading": false,
-                        "temp": Math.round(tempC),
-                        "tempF": Math.round(tempF),
-                        "feelsLike": Math.round(feelsLikeC),
-                        "feelsLikeF": Math.round(feelsLikeF),
-                        "city": root.location?.city || I18n.tr("Unknown"),
-                        "country": root.location?.country || I18n.tr("Unknown"),
-                        "wCode": current.weather_code || 0,
-                        "humidity": Math.round(current.relative_humidity_2m || 0),
-                        "wind": Math.round(current.wind_speed_10m || 0),
-                        "sunrise": formatTime(daily.sunrise?.[0]) || "06:00",
-                        "sunset": formatTime(daily.sunset?.[0]) || "18:00",
-                        "rawSunrise": daily.sunrise?.[0] || "",
-                        "rawSunset": daily.sunset?.[0] || "",
-                        "moonrise": daily.moonrise?.[0] ?? "",
-                        "moonset": daily.moonset?.[0] ?? "",
-                        "utcOffsetSeconds": data.utc_offset_seconds ?? null,
-                        "currentHourIndex": currentHour >= 0 ? currentHour : null,
-                        "uv": hourlyValue("uv_index"),
-                        "visibility": hourlyValue("visibility"),
-                        "dewPoint": hourlyValue("dew_point_2m"),
-                        "windDirection": Number.isFinite(current.wind_direction_10m) ? current.wind_direction_10m : null,
-                        "pressure": Math.round(current.surface_pressure || 0),
-                        "precipitationProbability": Math.round(daily.precipitation_probability_max?.[0] || 0),
-                        "isDay": Boolean(current.is_day),
-                        "forecast": forecast,
-                        "hourlyForecast": hourly_forecast
-                    };
-                    root.handleWeatherSuccess();
-                } catch (e) {
-                    root.handleWeatherFailure();
-                }
-            }
-        }
-
-        onExited: exitCode => {
-            if (exitCode !== 0) {
-                root.handleWeatherFailure();
-            }
-        }
-    }
-
     Timer {
         id: updateTimer
         interval: nextInterval()
@@ -1094,6 +1086,7 @@ Singleton {
 
     Component.onCompleted: {
         SettingsData.weatherCoordinatesChanged.connect(() => {
+            root.cancelFetch();
             root.location = null;
             root.weather = emptyWeather();
             root.lastFetchTime = 0;
@@ -1101,12 +1094,14 @@ Singleton {
         });
 
         SettingsData.weatherLocationChanged.connect(() => {
+            root.cancelFetch();
             root.location = null;
             root.lastFetchTime = 0;
             root.forceRefresh();
         });
 
         SettingsData.useAutoLocationChanged.connect(() => {
+            root.cancelFetch();
             root.location = null;
             root.weather = emptyWeather();
             root.lastFetchTime = 0;
@@ -1120,9 +1115,7 @@ Singleton {
                 updateTimer.stop();
                 retryTimer.stop();
                 persistentRetryTimer.stop();
-                if (weatherFetcher.running) {
-                    weatherFetcher.running = false;
-                }
+                root.cancelFetch();
             }
         });
     }

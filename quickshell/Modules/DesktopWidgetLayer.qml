@@ -6,7 +6,7 @@ import qs.Modules.Plugins
 
 Variants {
     id: root
-    model: Quickshell.screens
+    model: ShellLayout.realScreens
 
     Component.onCompleted: Qt.callLater(autoEnablePluginsForInstances)
 

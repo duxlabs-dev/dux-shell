@@ -15,6 +15,11 @@ Item {
     property string currentKey: "cpu"
     property bool showHidden: false
 
+    function scrollToTop() {
+        if (pane.item)
+            pane.item.contentY = 0;
+    }
+
     readonly property var netKindOrder: ["ethernet", "wifi", "vpn", "other", "virtual", "loopback"]
     readonly property var netKindNames: ({
             ethernet: I18n.tr("Ethernet"),
@@ -89,7 +94,12 @@ Item {
             });
         }
 
-        const disks = (DgopService.diskRates ?? []).filter(d => Devices.isWholeDisk(d.device)).slice().sort((a, b) => Devices.naturalCompare(a.device, b.device));
+        const drives = DriveService.drives ?? [];
+        const driveRank = name => {
+            const i = drives.indexOf(Drives.driveFor(name, drives));
+            return i < 0 ? drives.length : i;
+        };
+        const disks = (DgopService.diskRates ?? []).filter(d => Devices.isWholeDisk(d.device)).slice().sort((a, b) => driveRank(a.device) - driveRank(b.device) || Devices.naturalCompare(a.device, b.device));
         for (const d of disks) {
             const key = Devices.deviceKey("disk", d.device);
             items.push({
@@ -139,6 +149,7 @@ Item {
 
     readonly property var activeEntry: railModel.find(e => e.key === currentKey) ?? railModel[0]
     readonly property string activeKey: activeEntry.key
+    onActiveKeyChanged: scrollToTop()
 
     Ref {
         service: DgopService

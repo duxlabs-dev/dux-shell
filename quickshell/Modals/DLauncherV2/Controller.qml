@@ -189,6 +189,8 @@ Item {
         selectedFlatIndex = -1;
         selectedItem = null;
         keyboardNavigationActive = false;
+        // The scorer is a library singleton; drop prepared names (often piped dmenu input) once the launcher closes.
+        Scorer.clearPreparedNames();
         if (retainResultsOnClose && searchMode !== "dmenu")
             return;
         sections = [];
@@ -585,6 +587,16 @@ Item {
         }
     }
 
+    // Each search rescans every item received so far, so searching per socket read is quadratic.
+    Timer {
+        id: dmenuStreamSearch
+        interval: 100
+        onTriggered: {
+            if (root.searchMode === "dmenu")
+                root.performSearch();
+        }
+    }
+
     Timer {
         id: pluginPhaseTimer
         interval: 16
@@ -661,6 +673,7 @@ Item {
         }
         searchMode = mode;
         if (mode === "files") {
+            DSearchService.recheck();
             fileSearchType = fileTypeOverride !== undefined ? fileTypeOverride : (SessionData.launcherLastFileSearchType || "all");
         }
         modeChanged(mode, !isAutoSwitch && notPersist !== true);
@@ -724,7 +737,10 @@ Item {
             _startDmenuSession(mode.slice("dmenu:".length));
             return;
         }
-        DSearchService.ensureChecked();
+        if (mode === "files")
+            DSearchService.recheck();
+        else
+            DSearchService.ensureChecked();
         if (appCategory !== "" || Object.keys(collapsedSections).length > 0)
             _clearModeCache();
         appCategory = "";
@@ -794,6 +810,7 @@ Item {
     }
 
     function _endDmenuSession() {
+        dmenuStreamSearch.stop();
         dmenuSocketLoader.active = false;
         dmenuSocketPath = "";
     }
@@ -844,9 +861,11 @@ Item {
                 markup: dmenuMarkupRows,
                 row: msg.row || null
             }));
-            Qt.callLater(performSearch);
+            if (!dmenuStreamSearch.running)
+                dmenuStreamSearch.start();
             break;
         case "end":
+            dmenuStreamSearch.stop();
             performSearch();
             _applyDmenuSelect();
             break;

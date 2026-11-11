@@ -47,7 +47,7 @@ function hyprlandIdentifier(output, name, displayNameMode) {
     return ("desc:" + [output.make, output.model, output.serial].filter(p => p).join(" ")).replace(/,/g, "");
 }
 
-// monitors.json keys Hyprland profiles by bare "Make Model", which hl.monitor ignores; only a connector or desc: matches
+// monitors.json keys Hyprland profiles by bare "Make Model Serial", which hl.monitor ignores; only a connector or desc: matches
 function hyprlandProfileOutputIdentifier(output, key, isConnector) {
     if (isConnector || key.startsWith("desc:") || !output?.make || !output?.model)
         return key;
@@ -64,9 +64,33 @@ function profileIdentifier(output, name, displayNameMode, compositor) {
     switch (compositor) {
     case "niri":
         return niriIdentifier(output, name, displayNameMode);
+    case "hyprland":
+        return [output.make, output.model, output.serial].filter(p => p).join(" ");
     default:
         return modelIdentifier(output);
     }
+}
+
+// Hyprland profiles were keyed by bare "Make Model" before the serial was added; only a profile of exactly the connected models says which unit a key meant
+function migrateHyprlandProfileKeys(configEntry, outputs, displayNameMode) {
+    const cfgOutputs = configEntry.outputs;
+    if (displayNameMode !== "model" || !cfgOutputs)
+        return false;
+    if (configFingerprint(configEntry) !== outputSetFingerprint(currentOutputSet(outputs || {}, displayNameMode, "")))
+        return false;
+    let changed = false;
+    for (const key of Object.keys(cfgOutputs)) {
+        const claimed = Object.values(outputs || {}).filter(o => o?.make && o?.model && modelIdentifier(o) === key);
+        if (claimed.length !== 1)
+            continue;
+        const newKey = profileIdentifier(claimed[0], key, displayNameMode, "hyprland");
+        if (newKey === key || newKey in cfgOutputs)
+            continue;
+        cfgOutputs[newKey] = cfgOutputs[key];
+        delete cfgOutputs[key];
+        changed = true;
+    }
+    return changed;
 }
 
 // index just past the string starting at i, or -1; raw strings (r#"…"#, #"…"#) have no escapes
@@ -772,49 +796,6 @@ function ensureEnabledOutput(configEntry, outputs, displayNameMode, compositor) 
         return false;
     delete configEntry.outputs[firstReal].disabled;
     return true;
-}
-
-function outputFingerprint(outputs) {
-    return JSON.stringify(outputs.map(o => ({
-                name: o.name,
-                id: o.id,
-                enabled: o.enabled,
-                x: o.x,
-                y: o.y,
-                scale: o.scale,
-                transform: o.transform,
-                mode: o.currentMode ? [o.currentMode.width, o.currentMode.height, o.currentMode.refresh] : null,
-                adaptiveSync: o.adaptiveSync
-            })).sort((a, b) => a.name.localeCompare(b.name)));
-}
-
-function outputHeads(outputs) {
-    return outputs.map(o => ({
-                name: o.name,
-                enabled: o.enabled,
-                modeId: o.currentMode?.id,
-                position: {
-                    x: o.x,
-                    y: o.y
-                },
-                scale: o.scale,
-                transform: o.transform,
-                adaptiveSync: o.adaptiveSync
-            }));
-}
-
-function outputHeadsMatch(candidate, actual, original) {
-    if (candidate.length !== actual.length || original.length !== actual.length || original.some(o => !actual.some(a => a.id === o.id && a.name === o.name)))
-        return false;
-    return candidate.every(h => {
-        const output = actual.find(o => o.name === h.name);
-        if (!output || output.enabled !== h.enabled)
-            return false;
-        if (!h.enabled)
-            return true;
-        const mode = h.customMode || original.find(o => o.name === h.name)?.modes?.find(m => m.id === h.modeId);
-        return output.x === h.position.x && output.y === h.position.y && Math.abs(output.scale - h.scale) < 0.0001 && output.transform === h.transform && (h.adaptiveSync === undefined || output.adaptiveSync === h.adaptiveSync) && !!mode && output.currentMode?.width === mode.width && output.currentMode?.height === mode.height && output.currentMode?.refresh === mode.refresh;
-    });
 }
 
 function configEntryMatchesLiveLayout(configEntry, outputs, displayNameMode, compositor) {

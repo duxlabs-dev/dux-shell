@@ -2,6 +2,9 @@ binds {
     // === System & Overview ===
     Mod+O repeat=false { toggle-overview; }
     Mod+Tab repeat=false { toggle-overview; }
+    Mod+Shift+Slash hotkey-overlay-title="Keyboard Shortcuts" {
+        spawn "dms" "ipc" "call" "keybinds" "toggle" "niri";
+    }
 
     // === Application Launchers ===
     Mod+T hotkey-overlay-title="Open Terminal" { spawn "{{TERMINAL_COMMAND}}"; }

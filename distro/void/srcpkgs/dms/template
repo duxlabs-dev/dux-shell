@@ -1,6 +1,6 @@
 # Template file for 'dms'
 #
-# Dux Shell stable release
+# Dux Modular Shell stable release
 #
 # NOTE: the binary is built with the `distro_binary` build tag (drops the
 # in-app self-update command) and `withshell` (embeds the Quickshell UI; the
@@ -16,7 +16,7 @@ go_import_path="github.com/duxlabs-dev/dux-shell/core"
 go_package="${go_import_path}/cmd/dms"
 go_build_tags="distro_binary withshell"
 go_ldflags="-X main.Version=${version}"
-short_desc="Dux Shell — Material 3 desktop shell for Wayland"
+short_desc="Dux Modular Shell — Material 3 desktop shell for Wayland"
 maintainer="AvengeMedia <AvengeMedia.US@gmail.com>"
 license="MIT"
 homepage="https://duxlabs.dev"

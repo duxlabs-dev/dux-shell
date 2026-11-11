@@ -5,6 +5,7 @@ import Quickshell.Services.Notifications
 import qs.Common
 import qs.Services
 import "../../Common/htmlElide.js" as HtmlElide
+import "../../Common/IslandActivities.js" as Activities
 
 QtObject {
     id: root
@@ -22,6 +23,7 @@ QtObject {
     property string fallbackIcon: "material:notifications"
     property string fallbackText: ""
     property string actionLabel: ""
+    property bool summarized: false
     property bool critical: false
     property bool important: false
 
@@ -43,6 +45,7 @@ QtObject {
         fallbackIcon = "material:notifications";
         fallbackText = "";
         actionLabel = "";
+        summarized = false;
         critical = false;
         important = false;
     }
@@ -89,6 +92,16 @@ QtObject {
         imageSource = wrapper.displayImage;
         fallbackIcon = wrapper.fallbackIconName || "material:notifications";
         fallbackText = appName.charAt(0).toUpperCase();
+        summarized = !!wrapper.islandPresentation;
+        if (summarized) {
+            summary = Activities.notificationTitle(wrapper.islandPresentation.title || "{summary}", {
+                summary: summary,
+                body: body,
+                appName: appName
+            }) || summary;
+            fallbackIcon = "material:" + (wrapper.islandPresentation.icon || "event");
+            imageSource = "";
+        }
         critical = isCritical;
         important = !isCritical && wrapper.urgency === NotificationUrgency.Normal && fallbackIcon.startsWith("material:battery");
         const actions = wrapper.actions || [];

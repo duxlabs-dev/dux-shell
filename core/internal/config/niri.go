@@ -19,9 +19,3 @@ var NiriBindsConfig string
 
 //go:embed embedded/niri-input.kdl
 var NiriInputConfig string
-
-//go:embed embedded/niri-binds-next.kdl
-var NiriBindsNextConfig string
-
-//go:embed embedded/niri-binds-next-2604.kdl
-var NiriBindsNext2604Config string

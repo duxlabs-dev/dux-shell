@@ -1,13 +1,13 @@
-# Dux Shell
+# Dux Modular Shell
 
 <div align="center">
   <a href="https://duxlabs.dev">
-    <img src="assets/danklogo.svg" alt="Dux Shell" width="200">
+    <img src="assets/danklogo.svg" alt="Dux Modular Shell" width="200">
   </a>
 
 ### A modern desktop shell for Wayland
 
-Built with [Quickshell](https://quickshell.org/) and [Go](https://go.dev/)
+Built with [Quickshell](https://quickshell.org/) and [Go](https://go.dev/), running on [dux-qt-base](https://github.com/duxlabs-dev/dux-qt-base)
 
 [![Documentation](https://img.shields.io/badge/docs-duxlabs.dev-9ccbfb?style=for-the-badge&labelColor=101418)](https://duxlabs.dev/docs)
 [![GitHub stars](https://img.shields.io/github/stars/duxlabs-dev/dux-shell?style=for-the-badge&labelColor=101418&color=ffd700)](https://github.com/duxlabs-dev/dux-shell/stargazers)
@@ -20,7 +20,7 @@ Built with [Quickshell](https://quickshell.org/) and [Go](https://go.dev/)
 
 </div>
 
-Dux Shell is a complete desktop shell for [niri](https://github.com/YaLTeR/niri), [Hyprland](https://hyprland.org/), [MangoWC](https://github.com/DreamMaoMao/mangowc), [Sway](https://swaywm.org), [labwc](https://labwc.github.io/), [Scroll](https://github.com/dawsers/scroll), [Miracle WM](https://github.com/miracle-wm-org/miracle-wm), and other Wayland compositors. It replaces waybar, swaylock, swayidle, mako, fuzzel, polkit, and everything else you'd normally stitch together to make a desktop.
+Dux Modular Shell (DMS) is a complete desktop shell for [niri](https://github.com/YaLTeR/niri), [Hyprland](https://hyprland.org/), [MangoWC](https://github.com/DreamMaoMao/mangowc), [Sway](https://swaywm.org), [labwc](https://labwc.github.io/), [Scroll](https://github.com/dawsers/scroll), [Miracle WM](https://github.com/miracle-wm-org/miracle-wm), and other Wayland compositors. It replaces waybar, swaylock, swayidle, mako, fuzzel, polkit, and everything else you'd normally stitch together to make a desktop.
 
 ## Repository Structure
 
@@ -143,7 +143,7 @@ dms plugins restore ~/plugins.lock.json
 
 DMS is one piece of the suite. The rest lives in its own repos:
 
-- [dux-greeter](https://github.com/duxlabs-dev/dux-greeter) - greetd login screen with the Dux Shell aesthetic. The Greeter tab in DMS settings is the front-end for it.
+- [dux-greeter](https://github.com/duxlabs-dev/dux-greeter) - greetd login screen with the DMS aesthetic. The Greeter tab in DMS settings is the front-end for it.
 - [dux-calendar](https://github.com/duxlabs-dev/dux-calendar) - Local, Google, Microsoft, and CalDAV calendars for the Dux desktop.
 - [dux-files](https://github.com/duxlabs-dev/dux-files) - File manager for the Dux desktop; also serves the FileManager1 and portal file chooser D-Bus services.
 - [dgop](https://github.com/duxlabs-dev/dux-gop) - System monitoring TUI and Go library; its library powers the process list and dashboard widgets inside the dms daemon.
@@ -208,7 +208,7 @@ Contributions welcome. Bug fixes, widgets, features, translation, documentation 
 
 ## Star History
 
-[![Star History Chart](https://star-history.dera.page/svg?repos=duxlabs-dev/dux-shell&type=date&legend=top-left)](https://star-history.dera.page/#duxlabs-dev/dux-shell&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=duxlabs-dev/dux-shell&type=Date&legend=top-left)](https://www.star-history.com/#duxlabs-dev/dux-shell&Date)
 
 ## License
 

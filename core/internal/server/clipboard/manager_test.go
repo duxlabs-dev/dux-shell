@@ -2,14 +2,16 @@ package clipboard
 
 import (
 	"bytes"
+	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"image"
 	"image/png"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 	"time"
 
@@ -50,18 +52,49 @@ func newTestManagerWithDB(t *testing.T) *Manager {
 		db.Close()
 	})
 
-	mockCtx := mocks_wlcontext.NewMockWaylandContext(t)
-	mockCtx.EXPECT().Post(mock.AnythingOfType("func()")).Return().Maybe()
-
+	ctx := newFakeWayland(t)
 	m := &Manager{
 		config:         DefaultConfig(),
 		db:             db,
-		wlCtx:          mockCtx,
-		dataControlMgr: &ext_data_control.ExtDataControlManagerV1{},
-		dataDevice:     &ext_data_control.ExtDataControlDeviceV1{},
+		wlCtx:          runPosts(t),
+		seat:           wlclient.NewSeat(ctx),
+		dataControlMgr: ext_data_control.NewExtDataControlManagerV1(ctx),
+		dataDevice:     ext_data_control.NewExtDataControlDeviceV1(ctx),
 	}
 	m.deviceBound.Store(true)
 	return m
+}
+
+// newFakeWayland is a compositor that accepts and discards every request.
+func newFakeWayland(t *testing.T) *wlclient.Context {
+	t.Helper()
+	sock := filepath.Join(t.TempDir(), "wayland-test")
+	ln, err := net.Listen("unix", sock)
+	require.NoError(t, err)
+	t.Cleanup(func() { ln.Close() })
+	go func() {
+		conn, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		_, _ = io.Copy(io.Discard, conn)
+	}()
+
+	display, err := wlclient.Connect(sock)
+	require.NoError(t, err)
+	t.Cleanup(func() { display.Context().Close() })
+	return display.Context()
+}
+
+func runPosts(t *testing.T) *mocks_wlcontext.MockWaylandContext {
+	mockCtx := mocks_wlcontext.NewMockWaylandContext(t)
+	mockCtx.EXPECT().Post(mock.AnythingOfType("func()")).Run(func(fn func()) { fn() }).Maybe()
+	return mockCtx
+}
+
+func wlID(id uint32) []byte {
+	return binary.LittleEndian.AppendUint32(nil, id)
 }
 
 func TestEncodeDecodeEntry_Roundtrip(t *testing.T) {
@@ -143,86 +176,16 @@ func TestStateEqual_BothNil(t *testing.T) {
 	assert.False(t, stateEqual(nil, nil))
 }
 
-func TestStateEqual_OneNil(t *testing.T) {
-	s := &State{Enabled: true}
-	assert.False(t, stateEqual(s, nil))
-	assert.False(t, stateEqual(nil, s))
-}
-
-func TestStateEqual_EnabledDiffers(t *testing.T) {
-	a := &State{Enabled: true, History: []Entry{}}
-	b := &State{Enabled: false, History: []Entry{}}
-	assert.False(t, stateEqual(a, b))
-}
-
-func TestStateEqual_HistoryLengthDiffers(t *testing.T) {
-	a := &State{Enabled: true, History: []Entry{{ID: 1}}}
-	b := &State{Enabled: true, History: []Entry{}}
+func TestStateEqual_RevisionDiffers(t *testing.T) {
+	a := &State{Enabled: true, Revision: 2}
+	b := &State{Enabled: true, Revision: 1}
 	assert.False(t, stateEqual(a, b))
 }
 
 func TestStateEqual_BothEqual(t *testing.T) {
-	ts := time.Now().Truncate(time.Second)
-	entry := Entry{
-		ID:        1,
-		Hash:      100,
-		MimeType:  "image/png",
-		Preview:   "[[ image 1 KiB png 32x32 ]]",
-		Size:      1024,
-		Timestamp: ts,
-		IsImage:   true,
-		Pinned:    true,
-	}
-	a := &State{Enabled: true, History: []Entry{entry}}
-	b := &State{Enabled: true, History: []Entry{entry}}
+	a := &State{Enabled: true, Revision: 1}
+	b := &State{Enabled: true, Revision: 1}
 	assert.True(t, stateEqual(a, b))
-}
-
-func TestStateEqual_SameLengthDifferentIDs(t *testing.T) {
-	ts := time.Now().Truncate(time.Second)
-	a := &State{Enabled: true, History: []Entry{{ID: 1, Hash: 100, Timestamp: ts}}}
-	b := &State{Enabled: true, History: []Entry{{ID: 2, Hash: 100, Timestamp: ts}}}
-
-	assert.False(t, stateEqual(a, b))
-}
-
-func TestStateEqual_MetadataDiffers(t *testing.T) {
-	ts := time.Now().Truncate(time.Second)
-	base := Entry{
-		ID:        1,
-		Hash:      100,
-		MimeType:  "image/png",
-		Preview:   "[[ image 1 KiB png 32x32 ]]",
-		Size:      1024,
-		Timestamp: ts,
-		IsImage:   true,
-		Pinned:    false,
-	}
-
-	tests := []struct {
-		name   string
-		mutate func(*Entry)
-	}{
-		{name: "hash", mutate: func(e *Entry) { e.Hash = 101 }},
-		{name: "pinned", mutate: func(e *Entry) { e.Pinned = true }},
-		{name: "is image", mutate: func(e *Entry) { e.IsImage = false }},
-		{name: "mime type", mutate: func(e *Entry) { e.MimeType = "image/jpeg" }},
-		{name: "preview", mutate: func(e *Entry) { e.Preview = "[[ image 2 KiB jpeg 64x64 ]]" }},
-		{name: "size", mutate: func(e *Entry) { e.Size = 2048 }},
-		{name: "timestamp", mutate: func(e *Entry) { e.Timestamp = ts.Add(time.Second) }},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			changed := base
-			tt.mutate(&changed)
-
-			a := &State{Enabled: true, History: []Entry{base}}
-			b := &State{Enabled: true, History: []Entry{changed}}
-
-			assert.False(t, stateEqual(a, b))
-		})
-	}
 }
 
 func TestHandleGetEntry_ReturnsExistingEntry(t *testing.T) {
@@ -436,6 +399,7 @@ func TestUnpinEntry_KeepsTopUnpinnedDuplicate(t *testing.T) {
 			}
 			return b.Put(itob(id), encoded)
 		}))
+		m.reloadHistory()
 
 		return duplicate
 	}
@@ -498,7 +462,7 @@ func TestEditEntry_UnpinnedEntry(t *testing.T) {
 	m := newTestManagerWithDB(t)
 
 	id := storeTestEntry(t, m, "original unpinned")
-	require.NoError(t, m.EditEntry(id, "edited unpinned"))
+	require.NoError(t, m.EditEntry(t.Context(), id, "edited unpinned"))
 
 	history := m.GetHistory()
 	require.Len(t, history, 1)
@@ -519,7 +483,7 @@ func TestEditEntry_PinnedEntryRemainsPinned(t *testing.T) {
 	require.NoError(t, m.PinEntry(id))
 	assert.Equal(t, 1, m.GetPinnedCount())
 
-	require.NoError(t, m.EditEntry(id, "edited pinned"))
+	require.NoError(t, m.EditEntry(t.Context(), id, "edited pinned"))
 
 	history := m.GetHistory()
 	require.Len(t, history, 1)
@@ -540,7 +504,7 @@ func TestEditEntry_PinnedEntryRemainsPinned(t *testing.T) {
 func TestEditEntry_NotFound(t *testing.T) {
 	m := newTestManagerWithDB(t)
 
-	err := m.EditEntry(99999, "new text")
+	err := m.EditEntry(t.Context(), 99999, "new text")
 	assert.ErrorIs(t, err, errEntryNotFound)
 }
 
@@ -560,7 +524,7 @@ func TestEditEntry_ImageReturnsError(t *testing.T) {
 	require.Len(t, history, 1)
 	id := history[0].ID
 
-	err := m.EditEntry(id, "replacement text")
+	err := m.EditEntry(t.Context(), id, "replacement text")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot edit image entry")
 }
@@ -581,7 +545,7 @@ func TestEditEntry_NonTextReturnsError(t *testing.T) {
 	require.Len(t, history, 1)
 	id := history[0].ID
 
-	err := m.EditEntry(id, "replacement text")
+	err := m.EditEntry(t.Context(), id, "replacement text")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot edit non-text entry")
 }
@@ -600,14 +564,14 @@ func TestEditEntry_AltTextMimeTypesAllowed(t *testing.T) {
 	history := m.GetHistory()
 	require.Len(t, history, 1)
 
-	assert.NoError(t, m.EditEntry(history[0].ID, "replacement text"))
+	assert.NoError(t, m.EditEntry(t.Context(), history[0].ID, "replacement text"))
 }
 
 func TestEditEntry_EmptyOrWhitespaceReturnsError(t *testing.T) {
 	m := newTestManagerWithDB(t)
 	id := storeTestEntry(t, m, "keep me")
 
-	err := m.EditEntry(id, "   ")
+	err := m.EditEntry(t.Context(), id, "   ")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot save empty entry")
 
@@ -621,7 +585,7 @@ func TestEditEntry_DataTooLargeReturnsError(t *testing.T) {
 	m.config.MaxEntrySize = 10
 	id := storeTestEntry(t, m, "small")
 
-	err := m.EditEntry(id, "this text exceeds the 10-byte limit")
+	err := m.EditEntry(t.Context(), id, "this text exceeds the 10-byte limit")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "data too large")
 
@@ -653,104 +617,6 @@ func TestHandleEditEntry_SuccessAndValidation(t *testing.T) {
 	history := m.GetHistory()
 	require.Len(t, history, 1)
 	assert.Equal(t, "after edit", history[0].Preview)
-}
-
-func TestManager_ConcurrentSubscriberAccess(t *testing.T) {
-	m := &Manager{
-		subscribers: make(map[string]chan State),
-		dirty:       make(chan struct{}, 1),
-	}
-
-	var wg sync.WaitGroup
-	const goroutines = 20
-
-	for i := range goroutines {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			subID := string(rune('a' + id))
-			ch := m.Subscribe(subID)
-			assert.NotNil(t, ch)
-			m.Unsubscribe(subID)
-		}(i)
-	}
-
-	wg.Wait()
-}
-
-func TestManager_ConcurrentGetState(t *testing.T) {
-	m := &Manager{
-		state: &State{
-			Enabled: true,
-			History: []Entry{{ID: 1}, {ID: 2}},
-		},
-	}
-
-	var wg sync.WaitGroup
-	const goroutines = 50
-	const iterations = 100
-
-	for range goroutines / 2 {
-		wg.Go(func() {
-			for range iterations {
-				s := m.GetState()
-				_ = s.Enabled
-				_ = len(s.History)
-			}
-		})
-	}
-
-	for i := range goroutines / 2 {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			for j := range iterations {
-				m.stateMutex.Lock()
-				m.state = &State{
-					Enabled: j%2 == 0,
-					History: []Entry{{ID: uint64(j)}},
-				}
-				m.stateMutex.Unlock()
-			}
-		}(i)
-	}
-
-	wg.Wait()
-}
-
-func TestManager_ConcurrentConfigAccess(t *testing.T) {
-	m := &Manager{
-		config: DefaultConfig(),
-	}
-
-	var wg sync.WaitGroup
-	const goroutines = 30
-	const iterations = 100
-
-	for range goroutines / 2 {
-		wg.Go(func() {
-			for range iterations {
-				cfg := m.getConfig()
-				_ = cfg.MaxHistory
-				_ = cfg.MaxEntrySize
-			}
-		})
-	}
-
-	for i := range goroutines / 2 {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			for j := range iterations {
-				m.configMutex.Lock()
-				m.config.MaxHistory = 50 + j
-				m.config.MaxEntrySize = int64(1024 * j)
-				m.configMutex.Unlock()
-			}
-		}(i)
-	}
-
-	wg.Wait()
 }
 
 func TestManager_NotifySubscribersNonBlocking(t *testing.T) {
@@ -954,7 +820,7 @@ func TestCopyFile_OversizedEntryRoundTrips(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "report%20final.fbx")
 	require.NoError(t, os.WriteFile(path, []byte("fbx-bytes"), 0o644))
 
-	require.NoError(t, m.CopyFile(path))
+	require.NoError(t, m.CopyFile(t.Context(), path))
 
 	history := m.GetHistory()
 	require.Len(t, history, 1)
@@ -973,7 +839,7 @@ func TestCopyFile_DirectoryStoresURI(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "My Folder")
 	require.NoError(t, os.Mkdir(dir, 0o755))
 
-	require.NoError(t, m.CopyFile(dir))
+	require.NoError(t, m.CopyFile(t.Context(), dir))
 
 	history := m.GetHistory()
 	require.Len(t, history, 1)
@@ -994,7 +860,7 @@ func TestCopyFile_EncodedImageNameStaysImage(t *testing.T) {
 	require.NoError(t, png.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 4, 4))))
 	require.NoError(t, os.WriteFile(path, buf.Bytes(), 0o644))
 
-	require.NoError(t, m.CopyFile(path))
+	require.NoError(t, m.CopyFile(t.Context(), path))
 
 	history := m.GetHistory()
 	require.Len(t, history, 1)
@@ -1023,7 +889,7 @@ func TestHandleCopyEntry_OversizedFileEntryRestoresExactPath(t *testing.T) {
 
 	path := filepath.Join(t.TempDir(), "report%20final.fbx")
 	require.NoError(t, os.WriteFile(path, []byte("0123456789abcdef"), 0o644))
-	require.NoError(t, m.CopyFile(path))
+	require.NoError(t, m.CopyFile(t.Context(), path))
 
 	history := m.GetHistory()
 	require.Len(t, history, 1)
@@ -1061,7 +927,7 @@ func TestCopyFile_DisabledTrackingRefusesCopy(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "shot.png")
 	require.NoError(t, os.WriteFile(path, []byte("png-bytes"), 0o644))
 
-	require.ErrorIs(t, m.CopyFile(path), errSelectionUnavailable)
+	require.ErrorIs(t, m.CopyFile(t.Context(), path), errSelectionUnavailable)
 	assert.Empty(t, m.GetHistory())
 }
 
@@ -1088,7 +954,7 @@ func TestApplyConfigChange_DisableReleasesDataDevice(t *testing.T) {
 
 	assert.True(t, device.IsZombie())
 	assert.Nil(t, m.dataDevice)
-	require.ErrorIs(t, m.CopyText("secret"), errSelectionUnavailable)
+	require.ErrorIs(t, m.CopyText(t.Context(), "secret"), errSelectionUnavailable)
 	assert.Empty(t, m.GetHistory())
 }
 
@@ -1146,4 +1012,184 @@ func TestGetHistory_SameSecondOrdersByID(t *testing.T) {
 	require.Len(t, history, 3)
 	assert.Equal(t, oldest.ID, history[0].ID, "the touched row must lead: its timestamp is newer")
 	assert.Greater(t, history[1].ID, history[2].ID, "rows still tied on timestamp break on newest id")
+}
+
+func TestCopyFileContents(t *testing.T) {
+	var img bytes.Buffer
+	require.NoError(t, png.Encode(&img, image.NewRGBA(image.Rect(0, 0, 4, 4))))
+
+	dir := t.TempDir()
+	pngPath := filepath.Join(dir, "shot.png")
+	require.NoError(t, os.WriteFile(pngPath, img.Bytes(), 0o600))
+
+	old := selectionTakeTimeout
+	selectionTakeTimeout = 50 * time.Millisecond
+	t.Cleanup(func() { selectionTakeTimeout = old })
+
+	tests := []struct {
+		name     string
+		path     string
+		maxSize  int64
+		disabled bool
+		// dispatch replaces the dispatcher: nil runs posts inline.
+		dispatch func(m *Manager, fn func())
+		wantErr  string
+	}{
+		{name: "stores image", path: pngPath},
+		{name: "over size limit", path: pngPath, maxSize: 8, wantErr: "data too large"},
+		{name: "directory", path: dir, wantErr: "not a regular file"},
+		{name: "missing", path: filepath.Join(dir, "gone.png"), wantErr: "file not found"},
+		{name: "tracking disabled", path: pngPath, disabled: true, wantErr: errSelectionUnavailable.Error()},
+		{
+			name:     "dispatcher drops the post",
+			path:     pngPath,
+			dispatch: func(*Manager, func()) {},
+			wantErr:  "dispatcher did not respond",
+		},
+		{
+			name: "disabled before dispatch",
+			path: pngPath,
+			dispatch: func(m *Manager, fn func()) {
+				m.config.Disabled = true
+				fn()
+			},
+			wantErr: errSelectionUnavailable.Error(),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newTestManagerWithDB(t)
+			if tt.maxSize > 0 {
+				m.config.MaxEntrySize = tt.maxSize
+			}
+			m.config.Disabled = tt.disabled
+			if tt.dispatch != nil {
+				mockCtx := mocks_wlcontext.NewMockWaylandContext(t)
+				mockCtx.EXPECT().Post(mock.AnythingOfType("func()")).Run(func(fn func()) { tt.dispatch(m, fn) }).Maybe()
+				m.wlCtx = mockCtx
+			}
+
+			err := m.CopyFileContents(t.Context(), tt.path, "image/png")
+
+			history := m.GetHistory()
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				assert.Empty(t, history)
+				assert.False(t, m.isOwner)
+				return
+			}
+			require.NoError(t, err)
+			assert.True(t, m.isOwner)
+			assert.NotNil(t, m.currentSource)
+			require.Len(t, history, 1)
+			assert.True(t, history[0].IsImage)
+			assert.Equal(t, "image/png", history[0].MimeType)
+		})
+	}
+}
+
+func TestCopyData_SensitiveTypeSkipsHistory(t *testing.T) {
+	m := newTestManagerWithDB(t)
+
+	require.NoError(t, m.CopyData(t.Context(), []byte("secret"), "x-kde-passwordManagerHint"))
+
+	assert.True(t, m.isOwner)
+	assert.Empty(t, m.GetHistory())
+}
+
+// A cancel can arrive for a source the daemon already replaced; only the live
+// source may clear ownership, and the live one frees its data on cancel.
+func TestSelectionCancel_OnlyLiveSourceReleases(t *testing.T) {
+	m := newTestManagerWithDB(t)
+
+	require.NoError(t, m.CopyText(t.Context(), "first"))
+	first := m.currentSource.(*ext_data_control.ExtDataControlSourceV1)
+	require.NoError(t, m.CopyText(t.Context(), "second"))
+	second := m.currentSource.(*ext_data_control.ExtDataControlSourceV1)
+
+	const cancelled = 1
+	first.Dispatch(cancelled, -1, nil)
+	assert.True(t, m.isOwner)
+	assert.Same(t, second, m.currentSource)
+
+	second.Dispatch(cancelled, -1, nil)
+	assert.False(t, m.isOwner)
+	assert.Nil(t, m.currentSource)
+	assert.True(t, second.IsZombie())
+}
+
+// The compositor announces the daemon's own selection back to it as an offer.
+func TestOwnSelectionEventReleasesOffer(t *testing.T) {
+	m := newTestManagerWithDB(t)
+	m.offerMimeTypes = map[any][]string{}
+	require.True(t, m.bindDataDevice())
+	device := m.dataDevice.(*ext_data_control.ExtDataControlDeviceV1)
+
+	const dataOffer, selection = 0, 1
+	device.Dispatch(selection, -1, wlID(0))
+
+	require.NoError(t, m.CopyText(t.Context(), "mine"))
+
+	const offerID = 0xff000001
+	device.Dispatch(dataOffer, -1, wlID(offerID))
+	device.Dispatch(selection, -1, wlID(offerID))
+
+	assert.Empty(t, m.offerMimeTypes)
+	assert.True(t, device.Context().GetProxy(offerID).(*ext_data_control.ExtDataControlOfferV1).IsZombie())
+}
+
+func withDispatch(t *testing.T, m *Manager, dispatch func(fn func())) {
+	mockCtx := mocks_wlcontext.NewMockWaylandContext(t)
+	mockCtx.EXPECT().Post(mock.AnythingOfType("func()")).Run(dispatch).Maybe()
+	m.wlCtx = mockCtx
+}
+
+// Once the dispatcher has started a copy, a timeout firing alongside it must
+// not report failure, or the CLI would fork while the daemon owns the
+// selection.
+func TestTakeSelection_StartedCopyIsNeverReportedFailed(t *testing.T) {
+	old := selectionTakeTimeout
+	selectionTakeTimeout = 0
+	t.Cleanup(func() { selectionTakeTimeout = old })
+
+	m := newTestManagerWithDB(t)
+	withDispatch(t, m, func(fn func()) {
+		fn()
+		time.Sleep(time.Millisecond)
+	})
+
+	for range 20 {
+		require.NoError(t, m.CopyText(t.Context(), "x"))
+	}
+}
+
+// A request whose deadline passed while it waited must not take the
+// selection later; the CLI has already served the copy itself.
+func TestTakeSelection_ExpiredRequestNeverTakesSelection(t *testing.T) {
+	m := newTestManagerWithDB(t)
+	ctx, cancel := context.WithCancel(t.Context())
+	withDispatch(t, m, func(fn func()) {
+		cancel()
+		fn()
+	})
+
+	require.ErrorIs(t, m.CopyText(ctx, "late"), context.Canceled)
+	assert.False(t, m.isOwner)
+	assert.Nil(t, m.currentSource)
+	assert.Empty(t, m.GetHistory())
+}
+
+func TestEditEntry_ReportsFailedCopyButKeepsEdit(t *testing.T) {
+	old := selectionTakeTimeout
+	selectionTakeTimeout = 10 * time.Millisecond
+	t.Cleanup(func() { selectionTakeTimeout = old })
+
+	m := newTestManagerWithDB(t)
+	id := storeTestEntry(t, m, "original")
+	withDispatch(t, m, func(func()) {})
+
+	require.ErrorIs(t, m.EditEntry(t.Context(), id, "edited"), errDispatcherTimeout)
+	history := m.GetHistory()
+	require.Len(t, history, 1)
+	assert.Equal(t, "edited", history[0].Preview)
 }

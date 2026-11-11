@@ -28,7 +28,7 @@ type linkInfo struct {
 }
 
 func (l *linkInfo) isWired() bool {
-	if looksVirtual(l.name) {
+	if looksVirtual(l.name) || looksWirelessName(l.name) {
 		return false
 	}
 	if l.linkType == "bridge" {
@@ -37,7 +37,7 @@ func (l *linkInfo) isWired() bool {
 	if l.linkType != "" {
 		return isWiredLinkType(l.linkType)
 	}
-	return !strings.HasPrefix(l.name, "wlan") && !strings.HasPrefix(l.name, "wlp")
+	return true
 }
 
 // isWiredLinkType reports whether a networkd link Type can carry the wired
@@ -83,10 +83,10 @@ func (l *linkInfo) isWireless() bool {
 	if looksVirtual(l.name) {
 		return false
 	}
-	if l.linkType != "" {
-		return l.linkType == "wlan"
+	if looksWirelessName(l.name) {
+		return true
 	}
-	return strings.HasPrefix(l.name, "wlan") || strings.HasPrefix(l.name, "wlp")
+	return l.linkType == "wlan"
 }
 
 func looksVirtual(name string) bool {

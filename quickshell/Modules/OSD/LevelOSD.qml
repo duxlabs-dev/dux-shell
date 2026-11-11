@@ -34,13 +34,13 @@ DOSD {
         if (!tip)
             return;
         const pos = item.mapToItem(null, 0, 0);
-        const left = windowX + pos.x;
-        const top = windowY + pos.y;
+        const left = pos.x;
+        const top = pos.y;
         const gap = Theme.spacingS;
         tip.text = endIconLabel;
         switch (alignY) {
         case 1:
-            tip.show(endIconLabel, left + item.width / 2, top - gap - tip.implicitHeight, screen);
+            tip.show(endIconLabel, left + item.width / 2, top - gap - tip.tooltipHeight, screen);
             return;
         case -1:
             tip.show(endIconLabel, left + item.width / 2, top + item.height + gap, screen);
@@ -57,8 +57,8 @@ DOSD {
         endIconTooltip.active = false;
     }
 
-    onVisibleChanged: {
-        if (!visible)
+    onAttachedChanged: {
+        if (!attached)
             hideEndIconTooltip();
     }
 
@@ -72,7 +72,7 @@ DOSD {
     osdWidth: isVerticalLayout ? Theme.osdHeight : Math.min(Theme.osdLevelWidth + osdValueReserve, screenWidth - Theme.spacingM * 2)
     osdHeight: isVerticalLayout ? Math.min(Theme.osdLevelVerticalHeight, screenHeight - Theme.spacingM * 2) : Theme.buttonHeightS + Theme.spacingS * 2
     autoHideInterval: 3000
-    sheetWidth: CcMetrics.sheetWidthFor(CcMetrics.minimumColumns)
+    sheetWidth: CcMetrics.sheetWidthFor(CcMetrics.osdSheetColumns)
     enableMouseInteraction: true
 
     Loader {

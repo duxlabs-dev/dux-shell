@@ -506,7 +506,7 @@ func (p *HyprlandWritableProvider) WriteDMSRules(rules []windowrules.WindowRule)
 	}
 
 	var lines []string
-	lines = append(lines, "-- DMS Window Rules — managed by Dux Shell")
+	lines = append(lines, "-- DMS Window Rules — managed by Dux Modular Shell")
 	lines = append(lines, "-- Do not edit manually; changes may be overwritten")
 	lines = append(lines, "")
 

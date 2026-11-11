@@ -11,13 +11,15 @@ function buildItems(lines, breakGap) {
                 kind: "break",
                 line: i,
                 t: previousEnd,
-                e: line.t
+                e: line.t,
+                move: line.move
             });
         items.push({
             kind: "line",
             line: i,
             t: line.t,
             e: line.e,
+            move: line.move,
             group: line
         });
         if (Number.isFinite(line.e))
@@ -167,26 +169,33 @@ function rowHeight(item, layouts, breakSize, padding, gap) {
 }
 
 // Where the fill's edge sits: each started cue sweeps across its own span over its own time, and
-// without the sweep it fills at once.
-function fillEdge(segments, at, sweep) {
-    let edge = 0;
+// without the sweep it fills at once. The soft lead runs ahead of the edge, so the row's first cue
+// starts a lead's width before its glyphs and nothing is lit before it begins.
+function fillEdge(segments, at, sweep, lead) {
+    let edge = -lead;
     for (const segment of segments) {
         if (segment.t > at)
             continue;
         const progress = sweep && segment.e > segment.t ? Math.min(1, (at - segment.t) / (segment.e - segment.t)) : 1;
-        edge = Math.max(edge, segment.x0 + (segment.x1 - segment.x0) * progress);
+        const from = segment.x0 > 0 ? segment.x0 : -lead;
+        edge = Math.max(edge, from + (segment.x1 - from) * progress);
     }
     return edge;
 }
 
-// The cue started most recently.
-function latestSegment(segments, at) {
-    let latest = null;
-    for (const segment of segments) {
-        if (segment.t <= at && (!latest || segment.t >= latest.t))
-            latest = segment;
+// The timing edge jumps across a word sung in a few frames and snaps to the end of one cut short.
+// Averaging it over a window centred on the clock turns every jump into a glide of the window's
+// length that starts half a window early, since the cue times are known ahead.
+function smoothEdge(segments, at, lead, window) {
+    const taps = 7;
+    let edge = 0;
+    let total = 0;
+    for (let i = 0; i < taps; i++) {
+        const weight = Math.min(i + 1, taps - i);
+        edge += weight * fillEdge(segments, at + window * (i / (taps - 1) - 0.5), true, lead);
+        total += weight;
     }
-    return latest;
+    return edge / total;
 }
 
 // The first strong character decides, so digits and punctuation do not count.

@@ -89,6 +89,8 @@ Singleton {
     property string currentSort: "cpu"
     property bool sortAscending: false
     property var availableGpus: []
+    // availableGpus plus the cards bound to a VM, which only the system info lists.
+    property var detectedGpus: []
 
     property string kernelVersion: ""
     property string distribution: ""
@@ -269,10 +271,11 @@ Singleton {
             procCursor = "";
             allProcesses = [];
             processes = [];
-        } else if (!hasModule("process-gpu") || !hasModule("process-io") || !hasModule("process-net")) {
+        } else if (!hasModule("process-gpu") || !hasModule("process-io") || !hasModule("process-net") || !hasModule("process-members")) {
             const noGpu = !hasModule("process-gpu");
             const noIo = !hasModule("process-io");
             const noNet = !hasModule("process-net");
+            const noMembers = !hasModule("process-members");
             allProcesses = allProcesses.map(p => Object.assign({}, p, noGpu ? {
                     "gpu": null,
                     "gpuVideo": null,
@@ -289,6 +292,8 @@ Singleton {
                     "netRx": null,
                     "netTx": null,
                     "netPartial": false
+                } : {}, noMembers ? {
+                    "children": []
                 } : {}));
             applySorting();
         }
@@ -344,6 +349,12 @@ Singleton {
         SessionData.setEnabledGpuPciIds(ids);
         if (refCount > 0)
             updateAllStats();
+    }
+
+    // The saved index shifts when a card leaves availableGpus, so the id wins; identical cards share one.
+    function widgetGpu(index, pciId) {
+        const gpu = availableGpus[index];
+        return !pciId || gpu?.pciId === pciId ? gpu : availableGpus.find(g => g.pciId === pciId);
     }
 
     function gpuHeldByWidget(pciId) {
@@ -438,6 +449,12 @@ Singleton {
                     primeTimer.restart();
             }
         });
+    }
+
+    // After a user action. Waits so CPU deltas aren't noise.
+    function refreshSoon() {
+        if (pollingActive)
+            primeTimer.restart();
     }
 
     function initializeGpuMetadata() {
@@ -575,7 +592,7 @@ Singleton {
     function isModuleAvailable(module) {
         if (availableModules.length > 0)
             return availableModules.includes(module);
-        return !["sensors", "memory-modules", "process-gpu", "process-io", "process-net"].includes(module);
+        return !["sensors", "memory-modules", "process-gpu", "process-io", "process-net", "process-members"].includes(module);
     }
 
     function initializeSystemMetadata() {
@@ -862,11 +879,12 @@ Singleton {
 
         const gpuData = data.gpu?.gpus ?? data.gpus;
         if (Array.isArray(gpuData)) {
-            availableGpus = gpuData.map(gpu => Object.assign({}, gpu, {
+            detectedGpus = gpuData.map(gpu => Object.assign({}, gpu, {
                     "displayName": gpu.displayName || gpu.name || "Unknown GPU",
                     "fullName": gpu.fullName || gpu.name || "Unknown GPU",
                     "temperature": gpu.temperature || 0
                 }));
+            availableGpus = SysmonDevices.hostGpus(detectedGpus);
         }
 
         // dgop fills state and stats only for the GPUs in gpuPciIds.
@@ -901,42 +919,7 @@ Singleton {
                 procCursor = data.cursor;
             }
 
-            const newProcesses = [];
-            for (const proc of data.processes) {
-                newProcesses.push({
-                    "pid": proc.pid || 0,
-                    "ppid": proc.ppid || 0,
-                    "cpu": proc.cpu || 0,
-                    "memoryPercent": proc.memoryPercent || proc.pssPercent || 0,
-                    "memoryKB": proc.memoryKB || proc.pssKB || 0,
-                    "rssKB": proc.rssKB ?? null,
-                    "command": proc.command || "",
-                    "fullCommand": proc.fullCommand || "",
-                    "executablePath": proc.executablePath || "",
-                    "username": proc.username || "",
-                    "childCount": proc.childCount || 0,
-                    "pticks": proc.pticks || 0,
-                    "status": proc.status || "",
-                    "threads": proc.threads ?? null,
-                    "nice": proc.nice ?? null,
-                    "startTime": proc.startTime ?? null,
-                    "gpu": gpuPciIds.length > 0 ? (proc.gpu ?? null) : null,
-                    "gpuVideo": gpuPciIds.length > 0 ? (proc.gpuVideo ?? null) : null,
-                    "vramKB": gpuPciIds.length > 0 ? (proc.vramKB ?? null) : null,
-                    "gpuGttKB": gpuPciIds.length > 0 ? (proc.gpuGttKB ?? null) : null,
-                    "gpuUnmonitored": gpuPciIds.length > 0 ? (proc.gpuUnmonitored ?? false) : true,
-                    "diskRead": proc.diskRead ?? null,
-                    "diskWrite": proc.diskWrite ?? null,
-                    "connections": proc.connections ?? null,
-                    "localConnections": proc.localConnections ?? null,
-                    "remotes": proc.remotes ?? [],
-                    "netRx": proc.netRx ?? null,
-                    "netTx": proc.netTx ?? null,
-                    "netPartial": proc.netPartial ?? false,
-                    "displayName": (proc.command && proc.command.length > 15) ? proc.command.substring(0, 15) + "..." : (proc.command || "")
-                });
-            }
-            allProcesses = newProcesses;
+            allProcesses = data.processes.map(proc => toProcess(proc));
             applySorting();
         }
 
@@ -966,6 +949,50 @@ Singleton {
         }
 
         statsUpdated();
+    }
+
+    // A merged row's members carry their root's pid, so the root's own row has a key apart from the merged one.
+    function toProcess(proc, memberOf) {
+        return {
+            "pid": proc.pid || 0,
+            "ppid": proc.ppid || 0,
+            "cpu": proc.cpu || 0,
+            "memoryPercent": proc.memoryPercent || proc.pssPercent || 0,
+            "memoryKB": proc.memoryKB || proc.pssKB || 0,
+            "rssKB": proc.rssKB ?? null,
+            "command": proc.command || "",
+            "fullCommand": proc.fullCommand || "",
+            "executablePath": proc.executablePath || "",
+            "username": proc.username || "",
+            "childCount": proc.childCount || 0,
+            "pticks": proc.pticks || 0,
+            "status": proc.status || "",
+            "threads": proc.threads ?? null,
+            "nice": proc.nice ?? null,
+            "startTime": proc.startTime ?? null,
+            "gpu": gpuPciIds.length > 0 ? (proc.gpu ?? null) : null,
+            "gpuVideo": gpuPciIds.length > 0 ? (proc.gpuVideo ?? null) : null,
+            "vramKB": gpuPciIds.length > 0 ? (proc.vramKB ?? null) : null,
+            "gpuGttKB": gpuPciIds.length > 0 ? (proc.gpuGttKB ?? null) : null,
+            "gpuUnmonitored": gpuPciIds.length > 0 ? (proc.gpuUnmonitored ?? false) : true,
+            "diskRead": proc.diskRead ?? null,
+            "diskWrite": proc.diskWrite ?? null,
+            "connections": proc.connections ?? null,
+            "localConnections": proc.localConnections ?? null,
+            "remotes": proc.remotes ?? [],
+            "netRx": proc.netRx ?? null,
+            "netTx": proc.netTx ?? null,
+            "netPartial": proc.netPartial ?? false,
+            "displayName": (proc.command && proc.command.length > 15) ? proc.command.substring(0, 15) + "..." : (proc.command || ""),
+            "key": memberOf === undefined ? String(proc.pid || 0) : memberOf + "/" + (proc.pid || 0),
+            "memberOf": memberOf,
+            "children": hasModule("process-members") ? (proc.children ?? []).map(c => toProcess(c, proc.pid || 0)) : []
+        };
+    }
+
+    function findProcess(pid, memberOf) {
+        const row = allProcesses.find(p => p.pid === (memberOf ?? pid));
+        return memberOf === undefined ? row : row?.children.find(c => c.pid === pid);
     }
 
     function formatSystemMemory(memoryKB) {
@@ -1039,9 +1066,9 @@ Singleton {
             updateAllStats();
     }
 
-    // Name and PID read ascending by default, so sortAscending inverts for them.
+    // Name, PID and priority read ascending by default, so sortAscending inverts for them.
     function processComparator() {
-        const naturallyAscending = currentSort === "name" || currentSort === "pid";
+        const naturallyAscending = currentSort === "name" || currentSort === "pid" || currentSort === "nice";
         return ProcessSort.compare(currentSort, sortAscending !== naturallyAscending);
     }
 

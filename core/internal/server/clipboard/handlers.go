@@ -1,16 +1,29 @@
 package clipboard
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/duxlabs-dev/dux-go/ipc"
 	"github.com/duxlabs-dev/dux-go/ipc/params"
 	clipboardstore "github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 )
+
+const maxSearchLimit = 5000
+
+// copyCommitDeadline bounds when a copy request may still take the
+// selection. It must stay below the CLI's serverCopyReplyTimeout, so a CLI
+// that gave up and served the copy itself is never overwritten afterwards.
+const copyCommitDeadline = 8 * time.Second
+
+func copyContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), copyCommitDeadline)
+}
 
 func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	switch req.Method {
@@ -20,10 +33,16 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		handleGetHistory(conn, req, m)
 	case "clipboard.getEntry":
 		handleGetEntry(conn, req, m)
+	case "clipboard.getEntries":
+		handleGetEntries(conn, req, m)
+	case "clipboard.import":
+		handleImport(conn, req, m)
 	case "clipboard.deleteEntry":
 		handleDeleteEntry(conn, req, m)
 	case "clipboard.deleteEntries":
 		handleDeleteEntries(conn, req, m)
+	case "clipboard.deleteMatching":
+		handleDeleteMatching(conn, req, m)
 	case "clipboard.clearHistory":
 		handleClearHistory(conn, req, m)
 	case "clipboard.copy":
@@ -54,6 +73,8 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		handleGetPinnedCount(conn, req, m)
 	case "clipboard.copyFile":
 		handleCopyFile(conn, req, m)
+	case "clipboard.copyFileContents":
+		handleCopyFileContents(conn, req, m)
 	default:
 		conn.RespondError(req.ID, "unknown method: "+req.Method)
 	}
@@ -64,11 +85,7 @@ func handleGetState(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 }
 
 func handleGetHistory(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
-	history := m.GetHistory()
-	for i := range history {
-		history[i].Data = nil
-	}
-	conn.Respond(req.ID, history)
+	conn.Respond(req.ID, m.GetHistory())
 }
 
 func handleGetEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
@@ -89,6 +106,55 @@ func handleGetEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	}
 
 	conn.Respond(req.ID, entry)
+}
+
+func handleGetEntries(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
+	var ids []uint64
+	if err := decodeParam(req, "ids", &ids); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	entries, err := m.GetEntries(ids)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	conn.Respond(req.ID, entries)
+}
+
+func handleImport(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
+	var entries []ImportEntry
+	if err := decodeParam(req, "entries", &entries); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	imported, err := m.Import(entries)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	conn.Respond(req.ID, map[string]int{"imported": imported})
+}
+
+func decodeParam(req ipc.Request, name string, out any) error {
+	raw, ok := params.Any(req.Params, name)
+	if !ok {
+		return fmt.Errorf("missing '%s' parameter", name)
+	}
+
+	encoded, err := json.Marshal(raw)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(encoded, out); err != nil {
+		return fmt.Errorf("invalid '%s' parameter: %w", name, err)
+	}
+	return nil
 }
 
 func handleDeleteEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
@@ -171,6 +237,16 @@ func toEntryID(value any) (uint64, error) {
 	}
 }
 
+func handleDeleteMatching(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
+	deleted, err := m.DeleteMatching(searchParams(req))
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	conn.Respond(req.ID, map[string]int{"deleted": deleted})
+}
+
 func handleClearHistory(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	m.ClearHistory()
 	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "history cleared"})
@@ -183,7 +259,9 @@ func handleCopy(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		return
 	}
 
-	if err := m.CopyText(text); err != nil {
+	ctx, cancel := copyContext()
+	defer cancel()
+	if err := m.CopyText(ctx, text); err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return
 	}
@@ -204,12 +282,14 @@ func handleCopyEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		return
 	}
 
+	ctx, cancel := copyContext()
+	defer cancel()
 	textOnly := params.BoolOpt(req.Params, "textOnly", false) && entry.AltMimeType != ""
 
 	if entry.AltMimeType == "" {
 		filePath := m.EntryToFile(entry)
 		if filePath != "" {
-			if err := m.CopyFile(filePath); err != nil {
+			if err := m.CopyFile(ctx, filePath); err != nil {
 				conn.RespondError(req.ID, err.Error())
 				return
 			}
@@ -224,9 +304,9 @@ func handleCopyEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	var setErr error
 	switch {
 	case textOnly:
-		setErr = m.SetClipboard(entry.AltData, entry.AltMimeType)
+		setErr = m.SetClipboard(ctx, entry.AltData, entry.AltMimeType)
 	default:
-		setErr = m.SetClipboardEntry(entry)
+		setErr = m.SetClipboardEntry(ctx, entry)
 	}
 	if setErr != nil {
 		conn.RespondError(req.ID, setErr.Error())
@@ -294,15 +374,27 @@ func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 }
 
 func handleSearch(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
+	conn.Respond(req.ID, m.Search(searchParams(req)))
+}
+
+func searchParams(req ipc.Request) SearchParams {
 	p := SearchParams{
 		Query:    params.StringOpt(req.Params, "query", ""),
 		MimeType: params.StringOpt(req.Params, "mimeType", ""),
+		Type:     params.StringOpt(req.Params, "type", ""),
 		Limit:    params.IntOpt(req.Params, "limit", 50),
 		Offset:   params.IntOpt(req.Params, "offset", 0),
 	}
+	if p.Limit <= 0 {
+		p.Limit = 50
+	}
+	p.Limit = min(p.Limit, maxSearchLimit)
 
 	if img, ok := req.Get[bool]("isImage"); ok {
 		p.IsImage = &img
+	}
+	if pinned, ok := req.Get[bool]("pinned"); ok {
+		p.Pinned = &pinned
 	}
 	if b, ok := req.Get[float64]("before"); ok {
 		v := int64(b)
@@ -313,7 +405,7 @@ func handleSearch(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		p.After = &v
 	}
 
-	conn.Respond(req.ID, m.Search(p))
+	return p
 }
 
 func handleStore(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
@@ -380,7 +472,31 @@ func handleCopyFile(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		return
 	}
 
-	if err := m.CopyFile(filePath); err != nil {
+	ctx, cancel := copyContext()
+	defer cancel()
+	if err := m.CopyFile(ctx, filePath); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "copied"})
+}
+
+func handleCopyFileContents(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
+	filePath, err := params.String(req.Params, "filePath")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	mimeType, err := params.String(req.Params, "mimeType")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	ctx, cancel := copyContext()
+	defer cancel()
+	if err := m.CopyFileContents(ctx, filePath, mimeType); err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return
 	}
@@ -401,7 +517,9 @@ func handleEditEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		return
 	}
 
-	if err := m.EditEntry(uint64(id), text); err != nil {
+	ctx, cancel := copyContext()
+	defer cancel()
+	if err := m.EditEntry(ctx, uint64(id), text); err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return
 	}

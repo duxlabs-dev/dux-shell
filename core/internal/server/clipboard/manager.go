@@ -3,6 +3,7 @@ package clipboard
 import (
 	"bytes"
 	"cmp"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"math"
 	"net/url"
 	"os"
 	"os/exec"
@@ -18,6 +20,7 @@ import (
 	"runtime/debug"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -91,11 +94,13 @@ func NewManager(wlCtx wlcontext.WaylandContext, config Config) (*Manager, error)
 		log.Errorf("Failed to migrate hashes: %v", err)
 	}
 
+	strayMaxAge := strayFileMaxAge
 	if !config.Disabled {
 		if config.ClearAtStartup {
 			if err := m.clearHistoryInternal(); err != nil {
 				log.Errorf("Failed to clear history at startup: %v", err)
 			}
+			strayMaxAge = 0
 		}
 
 		if config.AutoClearDays > 0 {
@@ -104,6 +109,7 @@ func NewManager(wlCtx wlcontext.WaylandContext, config Config) (*Manager, error)
 			}
 		}
 	}
+	m.pruneStore(strayMaxAge)
 
 	m.alive = true
 	m.updateState()
@@ -138,6 +144,11 @@ func openDB(path string) (*bolt.DB, error) {
 	if renameErr := os.Rename(path, corruptPath); renameErr != nil {
 		os.Remove(salvagePath)
 		return nil, err
+	}
+	// pruneStore ages it out from the salvage, not from the db's last write
+	salvagedAt := time.Now()
+	if err := os.Chtimes(corruptPath, salvagedAt, salvagedAt); err != nil {
+		log.Warnf("Failed to timestamp corrupt clipboard db: %v", err)
 	}
 
 	os.Rename(salvagePath, path)
@@ -180,7 +191,7 @@ func tryOpenDB(path string) (db *bolt.DB, err error) {
 	}()
 	defer armDBFaultPanics()()
 
-	db, err = bolt.Open(path, 0o644, &bolt.Options{
+	db, err = bolt.Open(path, 0o600, &bolt.Options{
 		Timeout: 1 * time.Second,
 	})
 	if err != nil {
@@ -378,6 +389,7 @@ func (m *Manager) bindDataDevice() bool {
 		m.ownerLock.Unlock()
 
 		if wasOwner {
+			m.releaseOffer(offer)
 			return
 		}
 
@@ -552,14 +564,22 @@ func (m *Manager) storeClipboardEntry(data []byte, mimeType string, altData []by
 		}
 	}
 
+	entry := m.buildEntry(data, mimeType)
+	entry.AltData = altData
+	entry.AltMimeType = altMime
+
+	if err := m.storeEntry(entry); err != nil {
+		log.Errorf("Failed to store clipboard entry: %v", err)
+	}
+}
+
+func (m *Manager) buildEntry(data []byte, mimeType string) Entry {
 	entry := Entry{
-		Data:        data,
-		MimeType:    mimeType,
-		Size:        len(data),
-		Timestamp:   time.Now(),
-		IsImage:     m.isImageMimeType(mimeType),
-		AltData:     altData,
-		AltMimeType: altMime,
+		Data:      data,
+		MimeType:  mimeType,
+		Size:      len(data),
+		Timestamp: time.Now(),
+		IsImage:   m.isImageMimeType(mimeType),
 	}
 
 	switch {
@@ -571,98 +591,33 @@ func (m *Manager) storeClipboardEntry(data []byte, mimeType string, altData []by
 		entry.Preview = m.textPreview(data)
 	}
 
-	if err := m.storeEntry(entry); err != nil {
-		log.Errorf("Failed to store clipboard entry: %v", err)
-	}
+	return entry
 }
 
 func (m *Manager) storeEntry(entry Entry) error {
-	if m.getConfig().Disabled {
+	cfg := m.getConfig()
+	if cfg.Disabled {
 		return errTrackingDisabled
-	}
-	if m.db == nil {
-		return fmt.Errorf("database not available")
 	}
 
 	entry.Hash = computeHash(entry.Data)
 
-	return m.dbUpdate(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
-			return fmt.Errorf("clipboard bucket missing")
-		}
-
-		if err := m.deduplicateInTx(b, entry.Hash); err != nil {
+	return m.writeHistory(func(w *historyWriter) error {
+		if err := w.deleteUnpinnedWithHash(entry.Hash); err != nil {
 			return err
 		}
 
-		id, err := b.NextSequence()
+		id, err := w.b.NextSequence()
 		if err != nil {
 			return err
 		}
-
 		entry.ID = id
 
-		encoded, err := encodeEntry(entry)
-		if err != nil {
+		if err := w.put(entry); err != nil {
 			return err
 		}
-
-		if err := b.Put(itob(id), encoded); err != nil {
-			return err
-		}
-
-		return m.trimLengthInTx(b)
+		return w.trim(cfg)
 	})
-}
-
-func (m *Manager) deduplicateInTx(b *bolt.Bucket, hash uint64) error {
-	c := b.Cursor()
-	for k, v := c.Last(); k != nil; k, v = c.Prev() {
-		if extractHash(v) != hash {
-			continue
-		}
-		entry, err := decodeEntryMeta(v)
-		if err == nil && entry.Pinned {
-			continue
-		}
-		if err := b.Delete(k); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (m *Manager) trimLengthInTx(b *bolt.Bucket) error {
-	maxHistory := m.getConfig().MaxHistory
-	if maxHistory < 0 {
-		return nil
-	}
-
-	type row struct {
-		key   []byte
-		entry Entry
-	}
-	var rows []row
-	c := b.Cursor()
-	for k, v := c.First(); k != nil; k, v = c.Next() {
-		entry, err := decodeEntryMeta(v)
-		if err != nil || entry.Pinned {
-			continue
-		}
-		rows = append(rows, row{slices.Clone(k), entry})
-	}
-
-	slices.SortFunc(rows, func(a, b row) int {
-		return compareEntriesNewestFirst(a.entry, b.entry)
-	})
-
-	for _, r := range rows[min(maxHistory, len(rows)):] {
-		if err := b.Delete(r.key); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func encodeEntry(e Entry) ([]byte, error) {
@@ -706,42 +661,65 @@ func decodeEntryMeta(data []byte) (Entry, error) {
 	return decodeEntryFields(data, false)
 }
 
+type entryReader struct {
+	data []byte
+	off  int
+}
+
+func (r *entryReader) remaining() int {
+	return len(r.data) - r.off
+}
+
+func (r *entryReader) next(n uint32) []byte {
+	size := min(int(n), r.remaining())
+	b := r.data[r.off : r.off+size]
+	r.off += size
+	return b
+}
+
+func (r *entryReader) uint32() uint32 {
+	b := r.next(4)
+	if len(b) < 4 {
+		return 0
+	}
+	return binary.BigEndian.Uint32(b)
+}
+
+func (r *entryReader) uint64() uint64 {
+	b := r.next(8)
+	if len(b) < 8 {
+		return 0
+	}
+	return binary.BigEndian.Uint64(b)
+}
+
+func (r *entryReader) byte() byte {
+	b := r.next(1)
+	if len(b) < 1 {
+		return 0
+	}
+	return b[0]
+}
+
+func (r *entryReader) bytes(withData bool) []byte {
+	b := r.next(r.uint32())
+	if !withData {
+		return nil
+	}
+	return slices.Clone(b)
+}
+
 func decodeEntryFields(data []byte, withData bool) (Entry, error) {
-	buf := bytes.NewReader(data)
+	r := &entryReader{data: data}
 	var e Entry
 
-	binary.Read(buf, binary.BigEndian, &e.ID)
+	e.ID = r.uint64()
+	e.Data = r.bytes(withData)
+	e.MimeType = string(r.next(r.uint32()))
+	e.Preview = string(r.next(r.uint32()))
+	e.Size = int(int32(r.uint32()))
 
-	var dataLen uint32
-	binary.Read(buf, binary.BigEndian, &dataLen)
-	switch {
-	case withData:
-		e.Data = make([]byte, dataLen)
-		buf.Read(e.Data)
-	default:
-		if _, err := buf.Seek(int64(dataLen), io.SeekCurrent); err != nil {
-			return e, err
-		}
-	}
-
-	var mimeLen uint32
-	binary.Read(buf, binary.BigEndian, &mimeLen)
-	mimeBytes := make([]byte, mimeLen)
-	buf.Read(mimeBytes)
-	e.MimeType = string(mimeBytes)
-
-	var prevLen uint32
-	binary.Read(buf, binary.BigEndian, &prevLen)
-	prevBytes := make([]byte, prevLen)
-	buf.Read(prevBytes)
-	e.Preview = string(prevBytes)
-
-	var size int32
-	binary.Read(buf, binary.BigEndian, &size)
-	e.Size = int(size)
-
-	var timestamp int64
-	binary.Read(buf, binary.BigEndian, &timestamp)
+	timestamp := int64(r.uint64())
 	// Rows written before the switch to nanosecond precision hold seconds;
 	// no second-resolution stamp reaches 1e12 until the year 33658.
 	if timestamp < 1e12 {
@@ -750,33 +728,19 @@ func decodeEntryFields(data []byte, withData bool) (Entry, error) {
 		e.Timestamp = time.Unix(0, timestamp)
 	}
 
-	var isImage byte
-	binary.Read(buf, binary.BigEndian, &isImage)
-	e.IsImage = isImage == 1
+	e.IsImage = r.byte() == 1
 
-	if buf.Len() >= 8 {
-		binary.Read(buf, binary.BigEndian, &e.Hash)
+	if r.remaining() >= 8 {
+		e.Hash = r.uint64()
 	}
 
-	if buf.Len() >= 1 {
-		var pinnedByte byte
-		binary.Read(buf, binary.BigEndian, &pinnedByte)
-		e.Pinned = pinnedByte == 1
+	if r.remaining() >= 1 {
+		e.Pinned = r.byte() == 1
 	}
 
-	if buf.Len() >= 4 {
-		var altMimeLen uint32
-		binary.Read(buf, binary.BigEndian, &altMimeLen)
-		altMimeBytes := make([]byte, altMimeLen)
-		buf.Read(altMimeBytes)
-		e.AltMimeType = string(altMimeBytes)
-
-		var altDataLen uint32
-		binary.Read(buf, binary.BigEndian, &altDataLen)
-		if withData {
-			e.AltData = make([]byte, altDataLen)
-			buf.Read(e.AltData)
-		}
+	if r.remaining() >= 4 {
+		e.AltMimeType = string(r.next(r.uint32()))
+		e.AltData = r.bytes(withData)
 	}
 
 	return e, nil
@@ -1007,19 +971,16 @@ func sizeStr(size int) string {
 }
 
 func (m *Manager) updateState() {
-	history := m.GetHistory()
-
-	var current *Entry
-	if len(history) > 0 {
-		c := history[0]
-		current = &c
-	}
-
-	newState := &State{
-		Enabled: m.alive,
-		History: history,
-		Current: current,
-	}
+	newState := &State{Enabled: m.alive}
+	m.readHistory(func(h *historyIndex) {
+		newState.Revision = h.revision
+		newState.HistoryCount = len(h.recent)
+		newState.PinnedCount = len(h.pinned)
+		if newest := h.newest(); newest != nil {
+			current := newest.entry()
+			newState.Current = &current
+		}
+	})
 
 	m.stateMutex.Lock()
 	m.state = newState
@@ -1058,110 +1019,11 @@ func stateEqual(a, b *State) bool {
 	if a == nil || b == nil {
 		return false
 	}
-	if a.Enabled != b.Enabled {
-		return false
-	}
-	if len(a.History) != len(b.History) {
-		return false
-	}
-	for i := range a.History {
-		if !entryStateEqual(a.History[i], b.History[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func entryStateEqual(a, b Entry) bool {
-	return a.ID == b.ID &&
-		a.Hash == b.Hash &&
-		a.Pinned == b.Pinned &&
-		a.IsImage == b.IsImage &&
-		a.MimeType == b.MimeType &&
-		a.Preview == b.Preview &&
-		a.Size == b.Size &&
-		a.Timestamp.Equal(b.Timestamp)
+	return a.Enabled == b.Enabled && a.Revision == b.Revision
 }
 
 func (m *Manager) GetHistory() []Entry {
-	if m.db == nil {
-		return nil
-	}
-
-	cfg := m.getConfig()
-	var cutoff time.Time
-	if cfg.AutoClearDays > 0 {
-		cutoff = time.Now().AddDate(0, 0, -cfg.AutoClearDays)
-	}
-
-	var history []Entry
-	var stale []uint64
-
-	if err := m.dbView(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
-			return nil
-		}
-		c := b.Cursor()
-
-		for k, v := c.Last(); k != nil; k, v = c.Prev() {
-			entry, err := decodeEntryMeta(v)
-			if err != nil {
-				continue
-			}
-			if !cutoff.IsZero() && entry.Timestamp.Before(cutoff) {
-				stale = append(stale, entry.ID)
-				continue
-			}
-			history = append(history, entry)
-		}
-		return nil
-	}); err != nil {
-		log.Errorf("Failed to read clipboard history: %v", err)
-	}
-
-	if len(stale) > 0 {
-		go m.deleteStaleEntries(stale)
-	}
-
-	sortEntriesNewestFirst(history)
-
-	return history
-}
-
-// sortEntriesNewestFirst orders by timestamp, falling back to id: TouchEntry
-// rewrites a row in place to keep its id stable, so bucket key order stops
-// tracking recency.
-func sortEntriesNewestFirst(entries []Entry) {
-	slices.SortFunc(entries, compareEntriesNewestFirst)
-}
-
-func compareEntriesNewestFirst(a, b Entry) int {
-	if c := b.Timestamp.Compare(a.Timestamp); c != 0 {
-		return c
-	}
-	return cmp.Compare(b.ID, a.ID)
-}
-
-func (m *Manager) deleteStaleEntries(ids []uint64) {
-	if m.db == nil {
-		return
-	}
-
-	if err := m.dbUpdate(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
-			return nil
-		}
-		for _, id := range ids {
-			if err := b.Delete(itob(id)); err != nil {
-				log.Errorf("Failed to delete stale entry %d: %v", id, err)
-			}
-		}
-		return nil
-	}); err != nil {
-		log.Errorf("Failed to delete stale entries: %v", err)
-	}
+	return m.Search(SearchParams{Limit: -1}).Entries
 }
 
 func (m *Manager) GetEntry(id uint64) (*Entry, error) {
@@ -1202,16 +1064,8 @@ func (m *Manager) GetEntry(id uint64) (*Entry, error) {
 }
 
 func (m *Manager) DeleteEntry(id uint64) error {
-	if m.db == nil {
-		return fmt.Errorf("database not available")
-	}
-
-	err := m.dbUpdate(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
-			return nil
-		}
-		return b.Delete(itob(id))
+	err := m.writeHistory(func(w *historyWriter) error {
+		return w.delete(id)
 	})
 
 	if err == nil {
@@ -1226,36 +1080,34 @@ func (m *Manager) DeleteEntry(id uint64) error {
 // were actually deleted. Pinned entries are skipped: a bulk delete must never be
 // able to take out saved items.
 func (m *Manager) DeleteEntries(ids []uint64) (int, error) {
-	if m.db == nil {
-		return 0, fmt.Errorf("database not available")
-	}
 	if len(ids) == 0 {
 		return 0, nil
 	}
 
-	deleted := 0
-	err := m.dbUpdate(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
-			return nil
-		}
-		for _, id := range ids {
-			key := itob(id)
-			v := b.Get(key)
-			if v == nil {
-				continue
-			}
-			if entry, err := decodeEntryMeta(v); err == nil && entry.Pinned {
-				continue
-			}
-			if err := b.Delete(key); err != nil {
-				return err
-			}
-			deleted++
-		}
-		return nil
-	})
+	wanted := make(map[uint64]struct{}, len(ids))
+	for _, id := range ids {
+		wanted[id] = struct{}{}
+	}
 
+	return m.deleteUnpinnedWhere(func(e *entryMeta, _ *bolt.Bucket) bool {
+		_, ok := wanted[e.id]
+		return ok
+	})
+}
+
+func (m *Manager) DeleteMatching(params SearchParams) (int, error) {
+	return m.deleteUnpinnedWhere(params.matcher(m.getConfig().AutoClearDays))
+}
+
+func (m *Manager) deleteUnpinnedWhere(pred entryMatcher) (int, error) {
+	deleted := 0
+	err := m.writeHistory(func(w *historyWriter) error {
+		var err error
+		deleted, err = w.deleteWhere(func(e *entryMeta) bool {
+			return !e.pinned && pred(e, w.b)
+		})
+		return err
+	})
 	if err != nil {
 		return 0, err
 	}
@@ -1269,31 +1121,15 @@ func (m *Manager) DeleteEntries(ids []uint64) (int, error) {
 }
 
 func (m *Manager) TouchEntry(id uint64) error {
-	if m.db == nil {
-		return fmt.Errorf("database not available")
-	}
-
-	entry, err := m.GetEntry(id)
-	if err != nil {
-		return err
-	}
-
-	// Round(0) drops the monotonic reading so the in-memory stamp compares the
-	// same way as the one decoded back from the bucket.
-	entry.Timestamp = time.Now().Round(0)
-
 	// storeEntry would dedupe the row against itself and hand out a fresh
 	// sequence number, invalidating the id the UI is still holding.
-	err = m.dbUpdate(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
-			return fmt.Errorf("clipboard bucket missing")
-		}
-		encoded, err := encodeEntry(*entry)
+	err := m.writeHistory(func(w *historyWriter) error {
+		entry, err := w.get(id)
 		if err != nil {
 			return err
 		}
-		return b.Put(itob(id), encoded)
+		entry.Timestamp = time.Now()
+		return w.put(entry)
 	})
 	if err != nil {
 		return err
@@ -1334,52 +1170,14 @@ func (m *Manager) CreateHistoryEntryFromPinned(pinnedEntry *Entry) error {
 }
 
 func (m *Manager) ClearHistory() {
-	if m.db == nil {
-		return
-	}
-
-	// Delete only non-pinned entries
-	if err := m.dbUpdate(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
-			return nil
-		}
-
-		var toDelete [][]byte
-		c := b.Cursor()
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			entry, err := decodeEntryMeta(v)
-			if err != nil || !entry.Pinned {
-				toDelete = append(toDelete, k)
-			}
-		}
-
-		for _, k := range toDelete {
-			if err := b.Delete(k); err != nil {
-				return err
-			}
-		}
-		return nil
+	pinnedCount := 0
+	if err := m.writeHistory(func(w *historyWriter) error {
+		_, err := w.deleteWhere(func(e *entryMeta) bool { return !e.pinned })
+		pinnedCount = len(w.h.pinned)
+		return err
 	}); err != nil {
 		log.Errorf("Failed to clear clipboard history: %v", err)
 		return
-	}
-
-	pinnedCount := 0
-	if err := m.dbView(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b != nil {
-			c := b.Cursor()
-			for k, v := c.First(); k != nil; k, v = c.Next() {
-				entry, _ := decodeEntryMeta(v)
-				if entry.Pinned {
-					pinnedCount++
-				}
-			}
-		}
-		return nil
-	}); err != nil {
-		log.Errorf("Failed to count pinned entries: %v", err)
 	}
 
 	if pinnedCount == 0 {
@@ -1387,9 +1185,67 @@ func (m *Manager) ClearHistory() {
 			log.Errorf("Failed to compact database: %v", err)
 		}
 	}
+	m.pruneStore(0)
 
 	m.updateState()
 	m.notifySubscribers()
+}
+
+const strayFileMaxAge = 7 * 24 * time.Hour
+
+// pruneStore keeps the store owner-only and deletes files beside the db that
+// are older than maxAge and that no history entry points at.
+func (m *Manager) pruneStore(maxAge time.Duration) {
+	if m.dbPath == "" {
+		return
+	}
+	dir := filepath.Dir(m.dbPath)
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	if err := os.Chmod(dir, 0o700); err != nil {
+		log.Warnf("Failed to restrict clipboard store: %v", err)
+	}
+
+	inHistory := m.historyFiles()
+	cutoff := time.Now().Add(-maxAge)
+	for _, file := range files {
+		info, err := file.Info()
+		if err != nil || !info.Mode().IsRegular() {
+			continue
+		}
+		path := filepath.Join(dir, file.Name())
+		if path != m.dbPath && !inHistory[path] && !info.ModTime().After(cutoff) {
+			os.Remove(path)
+			continue
+		}
+		if err := os.Chmod(path, 0o600); err != nil {
+			log.Warnf("Failed to restrict clipboard store: %v", err)
+		}
+	}
+}
+
+func (m *Manager) historyFiles() map[string]bool {
+	var ids []uint64
+	m.readHistory(func(h *historyIndex) {
+		h.eachNewest(nil, func(e *entryMeta) bool {
+			if e.mime == "text/uri-list" {
+				ids = append(ids, e.id)
+			}
+			return true
+		})
+	})
+
+	files := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		entry, err := m.GetEntry(id)
+		if err != nil {
+			continue
+		}
+		files[m.EntryToFile(entry)] = true
+	}
+	return files
 }
 
 func (m *Manager) compactDB() error {
@@ -1420,13 +1276,13 @@ func compactInto(srcPath, dstPath string, txMaxSize int64) (err error) {
 	defer recoverDBPanic(&err)
 	defer armDBFaultPanics()()
 
-	srcDB, err := bolt.Open(srcPath, 0o644, &bolt.Options{ReadOnly: true, Timeout: time.Second})
+	srcDB, err := bolt.Open(srcPath, 0o600, &bolt.Options{ReadOnly: true, Timeout: time.Second})
 	if err != nil {
 		return fmt.Errorf("open source: %w", err)
 	}
 	defer srcDB.Close()
 
-	dstDB, err := bolt.Open(dstPath, 0o644, &bolt.Options{Timeout: time.Second})
+	dstDB, err := bolt.Open(dstPath, 0o600, &bolt.Options{Timeout: time.Second})
 	if err != nil {
 		return fmt.Errorf("open destination: %w", err)
 	}
@@ -1439,6 +1295,8 @@ func compactInto(srcPath, dstPath string, txMaxSize int64) (err error) {
 }
 
 func (m *Manager) reopenDB() {
+	defer m.reloadHistory()
+
 	db, err := openDB(m.dbPath)
 	if err != nil {
 		log.Errorf("Failed to reopen clipboard db: %v", err)
@@ -1459,7 +1317,7 @@ func (m *Manager) canTakeSelection() bool {
 	return m.deviceBound.Load() && !m.getConfig().Disabled
 }
 
-func (m *Manager) SetClipboard(data []byte, mimeType string) error {
+func (m *Manager) SetClipboard(ctx context.Context, data []byte, mimeType string) error {
 	if !m.canTakeSelection() {
 		return errSelectionUnavailable
 	}
@@ -1470,14 +1328,13 @@ func (m *Manager) SetClipboard(data []byte, mimeType string) error {
 	dataCopy := make([]byte, len(data))
 	copy(dataCopy, data)
 
-	m.takeSelection(wlclipboard.ExpandOffers(dataCopy, mimeType))
-	return nil
+	return m.takeSelection(ctx, wlclipboard.ExpandOffers(dataCopy, mimeType))
 }
 
 // SetClipboardEntry takes the selection serving the entry's primary
 // representation plus its stored alternate, so history restores keep
 // both the text and image sides pasteable.
-func (m *Manager) SetClipboardEntry(entry *Entry) error {
+func (m *Manager) SetClipboardEntry(ctx context.Context, entry *Entry) error {
 	if !m.canTakeSelection() {
 		return errSelectionUnavailable
 	}
@@ -1490,8 +1347,7 @@ func (m *Manager) SetClipboardEntry(entry *Entry) error {
 		offers = append(offers, wlclipboard.ExpandOffers(slices.Clone(entry.AltData), entry.AltMimeType)...)
 	}
 
-	m.takeSelection(offers)
-	return nil
+	return m.takeSelection(ctx, offers)
 }
 
 const selectionWriteTimeout = 30 * time.Second
@@ -1509,83 +1365,161 @@ func writeSelection(fd int, data []byte, timeout time.Duration) {
 	}
 }
 
+var selectionTakeTimeout = 2 * time.Second
+
+var errDispatcherTimeout = errors.New("clipboard dispatcher did not respond")
+
+const (
+	selectionPending int32 = iota
+	selectionRunning
+	selectionCancelled
+)
+
 // takeSelection makes the daemon the selection owner, serving the given
-// offers until another client claims the clipboard.
-func (m *Manager) takeSelection(offers []wlclipboard.Offer) {
+// offers until another client claims the clipboard. It returns a definite
+// outcome: a timeout or an expired ctx cancels only work that has not
+// started, so once the caller sees an error the selection can never be taken
+// later, and a CLI copy may safely serve the selection itself.
+func (m *Manager) takeSelection(ctx context.Context, offers []wlclipboard.Offer) error {
+	done := make(chan error, 1)
+	var state atomic.Int32
 	m.post(func() {
-		if m.dataControlMgr == nil || m.dataDevice == nil {
-			log.Error("Data control manager or device not initialized")
+		if !state.CompareAndSwap(selectionPending, selectionRunning) {
 			return
 		}
-
-		dataMgr := m.dataControlMgr.(*ext_data_control.ExtDataControlManagerV1)
-
-		source, err := dataMgr.CreateDataSource()
-		if err != nil {
-			log.Errorf("Failed to create data source: %v", err)
+		if err := ctx.Err(); err != nil {
+			done <- err
 			return
 		}
-
-		offerData := make(map[string][]byte, len(offers))
-		for _, offer := range offers {
-			if err := source.Offer(offer.MimeType); err != nil {
-				log.Errorf("Failed to offer %s: %v", offer.MimeType, err)
-				return
-			}
-			offerData[offer.MimeType] = offer.Data
-		}
-
-		source.SetSendHandler(func(e ext_data_control.ExtDataControlSourceV1SendEvent) {
-			data, ok := offerData[e.MimeType]
-			if !ok {
-				syscall.Close(e.Fd)
-				return
-			}
-			go writeSelection(e.Fd, data, selectionWriteTimeout)
-		})
-
-		source.SetCancelledHandler(func(e ext_data_control.ExtDataControlSourceV1CancelledEvent) {
-			m.ownerLock.Lock()
-			m.isOwner = false
-			m.ownerLock.Unlock()
-		})
-
-		m.releaseCurrentSource()
-		m.currentSource = source
-
-		m.ownerLock.Lock()
-		m.isOwner = true
-		m.ownerLock.Unlock()
-
-		device := m.dataDevice.(*ext_data_control.ExtDataControlDeviceV1)
-		if err := device.SetSelection(source); err != nil {
-			log.Errorf("Failed to set selection: %v", err)
-		}
+		done <- m.setSelection(offers)
 	})
+
+	timer := time.NewTimer(selectionTakeTimeout)
+	defer timer.Stop()
+	select {
+	case err := <-done:
+		return err
+	case <-timer.C:
+	case <-ctx.Done():
+	}
+	if state.CompareAndSwap(selectionPending, selectionCancelled) {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		return errDispatcherTimeout
+	}
+	return <-done
 }
 
-func (m *Manager) CopyText(text string) error {
-	if err := m.SetClipboard([]byte(text), "text/plain;charset=utf-8"); err != nil {
+// setSelection runs on the dispatcher.
+func (m *Manager) setSelection(offers []wlclipboard.Offer) error {
+	if !m.canTakeSelection() {
+		return errSelectionUnavailable
+	}
+	if m.dataControlMgr == nil || m.dataDevice == nil {
+		return errSelectionUnavailable
+	}
+
+	dataMgr := m.dataControlMgr.(*ext_data_control.ExtDataControlManagerV1)
+
+	source, err := dataMgr.CreateDataSource()
+	if err != nil {
+		return fmt.Errorf("create data source: %w", err)
+	}
+
+	offerData := make(map[string][]byte, len(offers))
+	for _, offer := range offers {
+		if err := source.Offer(offer.MimeType); err != nil {
+			source.Destroy()
+			return fmt.Errorf("offer %s: %w", offer.MimeType, err)
+		}
+		offerData[offer.MimeType] = offer.Data
+	}
+
+	source.SetSendHandler(func(e ext_data_control.ExtDataControlSourceV1SendEvent) {
+		data, ok := offerData[e.MimeType]
+		if !ok {
+			syscall.Close(e.Fd)
+			return
+		}
+		go writeSelection(e.Fd, data, selectionWriteTimeout)
+	})
+
+	// Only the live source may clear ownership, and releasing it here frees
+	// the offered data instead of holding it until the next copy.
+	source.SetCancelledHandler(func(e ext_data_control.ExtDataControlSourceV1CancelledEvent) {
+		if m.currentSource != source {
+			return
+		}
+		m.releaseCurrentSource()
+		m.ownerLock.Lock()
+		m.isOwner = false
+		m.ownerLock.Unlock()
+	})
+
+	m.releaseCurrentSource()
+	m.currentSource = source
+
+	m.ownerLock.Lock()
+	m.isOwner = true
+	m.ownerLock.Unlock()
+
+	device := m.dataDevice.(*ext_data_control.ExtDataControlDeviceV1)
+	if err := device.SetSelection(source); err != nil {
+		m.releaseCurrentSource()
+		m.ownerLock.Lock()
+		m.isOwner = false
+		m.ownerLock.Unlock()
+		return fmt.Errorf("set selection: %w", err)
+	}
+	return nil
+}
+
+func (m *Manager) CopyText(ctx context.Context, text string) error {
+	return m.CopyData(ctx, []byte(text), "text/plain;charset=utf-8")
+}
+
+// CopyData serves the selection from the daemon so the client can exit
+// instead of staying alive as the owner.
+func (m *Manager) CopyData(ctx context.Context, data []byte, mimeType string) error {
+	if err := m.SetClipboard(ctx, data, mimeType); err != nil {
 		return err
 	}
 
-	entry := Entry{
-		Data:      []byte(text),
-		MimeType:  "text/plain;charset=utf-8",
-		Size:      len(text),
-		Timestamp: time.Now(),
-		IsImage:   false,
-		Preview:   m.textPreview([]byte(text)),
-	}
-
-	if err := m.storeEntry(entry); err != nil {
-		log.Errorf("Failed to store clipboard entry: %v", err)
+	if m.db != nil && len(bytes.TrimSpace(data)) > 0 && !m.hasSensitiveMimeType([]string{mimeType}) {
+		m.storeClipboardEntry(data, mimeType, nil, "")
 	}
 
 	m.updateState()
 	m.notifySubscribers()
 
+	if len(data) >= largeEntryBytes {
+		debug.FreeOSMemory()
+	}
 	return nil
+}
+
+// CopyFileContents copies the file's bytes as mimeType, unlike CopyFile,
+// which copies the file itself.
+func (m *Manager) CopyFileContents(ctx context.Context, filePath, mimeType string) error {
+	if !m.canTakeSelection() {
+		return errSelectionUnavailable
+	}
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return fmt.Errorf("file not found: %w", err)
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("not a regular file")
+	}
+	if info.Size() > m.getConfig().MaxEntrySize {
+		return fmt.Errorf("data too large")
+	}
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("read file: %w", err)
+	}
+	return m.CopyData(ctx, data, mimeType)
 }
 
 func (m *Manager) PasteText() (string, error) {
@@ -1647,45 +1581,25 @@ func (m *Manager) Close() {
 }
 
 func (m *Manager) clearHistoryInternal() error {
+	defer m.reloadHistory()
+
 	return m.dbUpdate(func(tx *bolt.Tx) error {
-		if err := tx.DeleteBucket([]byte("clipboard")); err != nil {
+		if err := tx.DeleteBucket(bucketName); err != nil {
 			return err
 		}
-		_, err := tx.CreateBucket([]byte("clipboard"))
+		_, err := tx.CreateBucket(bucketName)
 		return err
 	})
 }
 
 func (m *Manager) clearOldEntries(days int) error {
-	cutoff := time.Now().AddDate(0, 0, -days)
+	cutoff := time.Now().AddDate(0, 0, -days).UnixNano()
 
-	return m.dbUpdate(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
-			return nil
-		}
-
-		var toDelete [][]byte
-		c := b.Cursor()
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			entry, err := decodeEntryMeta(v)
-			if err != nil {
-				continue
-			}
-			if entry.Pinned {
-				continue
-			}
-			if entry.Timestamp.Before(cutoff) {
-				toDelete = append(toDelete, k)
-			}
-		}
-
-		for _, k := range toDelete {
-			if err := b.Delete(k); err != nil {
-				return err
-			}
-		}
-		return nil
+	return m.writeHistory(func(w *historyWriter) error {
+		_, err := w.deleteWhere(func(e *entryMeta) bool {
+			return !e.pinned && e.ts < cutoff
+		})
+		return err
 	})
 }
 
@@ -1763,71 +1677,45 @@ func (m *Manager) migrateHashes() error {
 }
 
 func (m *Manager) Search(params SearchParams) SearchResult {
-	if m.db == nil {
-		return SearchResult{}
-	}
-
-	if params.Limit <= 0 {
+	switch {
+	case params.Limit == 0:
 		params.Limit = 50
+	case params.Limit < 0:
+		params.Limit = math.MaxInt
 	}
-	if params.Limit > 500 {
-		params.Limit = 500
-	}
+	params.Offset = max(params.Offset, 0)
 
-	query := strings.ToLower(params.Query)
-	mimeFilter := strings.ToLower(params.MimeType)
+	match := params.matcher(m.getConfig().AutoClearDays)
+	result := SearchResult{Entries: []Entry{}}
 
-	var all []Entry
-	if err := m.dbView(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
+	m.readHistory(func(h *historyIndex) {
+		collect := func(b *bolt.Bucket) {
+			h.eachNewest(params.Pinned, func(e *entryMeta) bool {
+				if !match(e, b) {
+					return true
+				}
+				if result.Total >= params.Offset && len(result.Entries) < params.Limit {
+					result.Entries = append(result.Entries, e.entry())
+				}
+				result.Total++
+				return true
+			})
+		}
+
+		if m.db == nil || params.Query == "" {
+			collect(nil)
+			return
+		}
+		if err := m.dbView(func(tx *bolt.Tx) error {
+			collect(tx.Bucket(bucketName))
 			return nil
+		}); err != nil {
+			log.Errorf("Clipboard search failed: %v", err)
 		}
+	})
 
-		c := b.Cursor()
-		for k, v := c.Last(); k != nil; k, v = c.Prev() {
-			entry, err := decodeEntryMeta(v)
-			if err != nil {
-				continue
-			}
-
-			if params.IsImage != nil && entry.IsImage != *params.IsImage {
-				continue
-			}
-
-			if mimeFilter != "" && !strings.Contains(strings.ToLower(entry.MimeType), mimeFilter) {
-				continue
-			}
-
-			if params.Before != nil && entry.Timestamp.Unix() >= *params.Before {
-				continue
-			}
-
-			if params.After != nil && entry.Timestamp.Unix() <= *params.After {
-				continue
-			}
-
-			if query != "" && !strings.Contains(strings.ToLower(entry.Preview), query) {
-				continue
-			}
-
-			all = append(all, entry)
-		}
-		return nil
-	}); err != nil {
-		log.Errorf("Search failed: %v", err)
-	}
-
-	total := len(all)
-
-	start := min(params.Offset, total)
-	end := min(start+params.Limit, total)
-
-	return SearchResult{
-		Entries: all[start:end],
-		Total:   total,
-		HasMore: end < total,
-	}
+	result.HasMore = params.Offset+len(result.Entries) < result.Total
+	return result
 }
 
 func (m *Manager) SetConfig(cfg Config) error {
@@ -1930,24 +1818,7 @@ func (m *Manager) StoreData(data []byte, mimeType string) error {
 		return nil
 	}
 
-	entry := Entry{
-		Data:      data,
-		MimeType:  mimeType,
-		Size:      len(data),
-		Timestamp: time.Now(),
-		IsImage:   m.isImageMimeType(mimeType),
-	}
-
-	switch {
-	case entry.IsImage:
-		entry.Preview = m.imagePreview(data, mimeType)
-	case mimeType == "text/uri-list":
-		entry.Preview, entry.IsImage = m.uriListPreview(data)
-	default:
-		entry.Preview = m.textPreview(data)
-	}
-
-	if err := m.storeEntry(entry); err != nil {
+	if err := m.storeEntry(m.buildEntry(data, mimeType)); err != nil {
 		return err
 	}
 
@@ -1957,87 +1828,151 @@ func (m *Manager) StoreData(data []byte, mimeType string) error {
 	return nil
 }
 
-func (m *Manager) PinEntry(id uint64) error {
-	if m.db == nil {
-		return fmt.Errorf("database not available")
+// Import stores many entries in one transaction. An entry keeps its timestamp
+// and pin when given; a duplicate of a newer unpinned row is skipped.
+func (m *Manager) Import(items []ImportEntry) (int, error) {
+	cfg := m.getConfig()
+	if cfg.Disabled {
+		return 0, errTrackingDisabled
 	}
 
-	entryToPin, err := m.GetEntry(id)
-	if err != nil {
-		return err
-	}
-
-	var hashExists bool
-	if err := m.dbView(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
-			return nil
+	imported := 0
+	err := m.writeHistory(func(w *historyWriter) error {
+		newestByHash := make(map[uint64]int64, len(w.h.recent))
+		for _, e := range w.h.recent {
+			newestByHash[e.hash] = max(newestByHash[e.hash], e.ts)
 		}
-		c := b.Cursor()
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			entry, err := decodeEntryMeta(v)
-			if err != nil || !entry.Pinned {
+		keepByHash := make(map[uint64]uint64)
+
+		for _, item := range items {
+			if len(bytes.TrimSpace(item.Data)) == 0 || int64(len(item.Data)) > cfg.MaxEntrySize {
 				continue
 			}
-			if entry.Hash == entryToPin.Hash {
-				hashExists = true
-				return nil
+
+			entry := m.buildEntry(item.Data, cmp.Or(item.MimeType, "text/plain;charset=utf-8"))
+			entry.Hash = computeHash(entry.Data)
+			if !item.Timestamp.IsZero() {
+				entry.Timestamp = item.Timestamp
+			}
+
+			switch {
+			case item.Pinned && w.h.hasPinnedHash(entry.Hash):
+				continue
+			case item.Pinned && len(w.h.pinned) < cfg.MaxPinned:
+				entry.Pinned = true
+			}
+
+			ts := entry.Timestamp.UnixNano()
+			if !entry.Pinned {
+				if newest, ok := newestByHash[entry.Hash]; ok && newest >= ts {
+					continue
+				}
+				newestByHash[entry.Hash] = ts
+			}
+
+			id, err := w.b.NextSequence()
+			if err != nil {
+				return err
+			}
+			entry.ID = id
+
+			if err := w.appendUnordered(entry); err != nil {
+				return err
+			}
+			if !entry.Pinned {
+				keepByHash[entry.Hash] = id
+			}
+			imported++
+		}
+
+		if len(keepByHash) > 0 {
+			if _, err := w.deleteWhere(func(e *entryMeta) bool {
+				keep, ok := keepByHash[e.hash]
+				return ok && !e.pinned && e.id != keep
+			}); err != nil {
+				return err
 			}
 		}
-		return nil
-	}); err != nil {
-		return err
+
+		w.h.sort()
+		return w.trim(cfg)
+	})
+	if err != nil {
+		return 0, err
 	}
 
-	if hashExists {
-		return nil
+	if imported > 0 {
+		m.updateState()
+		m.notifySubscribers()
 	}
 
-	cfg := m.getConfig()
-	pinnedCount := 0
-	if err := m.dbView(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
+	return imported, nil
+}
+
+func (m *Manager) GetEntries(ids []uint64) ([]Entry, error) {
+	entries := make([]Entry, 0, len(ids))
+	err := m.dbView(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucketName)
 		if b == nil {
 			return nil
 		}
-		c := b.Cursor()
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			entry, err := decodeEntryMeta(v)
-			if err == nil && entry.Pinned {
-				pinnedCount++
+		for _, id := range ids {
+			v := b.Get(itob(id))
+			if v == nil {
+				continue
 			}
+			entry, err := decodeEntry(v)
+			if err != nil {
+				return err
+			}
+			entries = append(entries, entry)
 		}
 		return nil
-	}); err != nil {
-		log.Errorf("Failed to count pinned entries: %v", err)
+	})
+	return entries, err
+}
+
+// OpenStore opens the history without a Wayland connection, for CLI writes
+// while no daemon holds the database lock.
+func OpenStore() (*Manager, error) {
+	dbPath, err := clipboardstore.GetDBPath()
+	if err != nil {
+		return nil, err
 	}
 
-	if pinnedCount >= cfg.MaxPinned {
-		return fmt.Errorf("maximum pinned entries reached (%d)", cfg.MaxPinned)
+	db, err := openDB(dbPath)
+	if err != nil {
+		return nil, err
 	}
 
-	err = m.dbUpdate(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
-			return fmt.Errorf("entry not found")
-		}
-		v := b.Get(itob(id))
-		if v == nil {
-			return fmt.Errorf("entry not found")
-		}
+	return &Manager{config: LoadConfig(), db: db, dbPath: dbPath}, nil
+}
 
-		entry, err := decodeEntry(v)
+func (m *Manager) CloseStore() {
+	if m.db != nil {
+		m.db.Close()
+	}
+}
+
+func (m *Manager) PinEntry(id uint64) error {
+	maxPinned := m.getConfig().MaxPinned
+
+	err := m.writeHistory(func(w *historyWriter) error {
+		entry, err := w.get(id)
 		if err != nil {
 			return err
+		}
+
+		if w.h.hasPinnedHash(entry.Hash) {
+			return nil
+		}
+
+		if len(w.h.pinned) >= maxPinned {
+			return fmt.Errorf("maximum pinned entries reached (%d)", maxPinned)
 		}
 
 		entry.Pinned = true
-		encoded, err := encodeEntry(entry)
-		if err != nil {
-			return err
-		}
-
-		return b.Put(itob(id), encoded)
+		return w.put(entry)
 	})
 
 	if err == nil {
@@ -2049,63 +1984,32 @@ func (m *Manager) PinEntry(id uint64) error {
 }
 
 func (m *Manager) UnpinEntry(id uint64) error {
-	if m.db == nil {
-		return fmt.Errorf("database not available")
-	}
-
-	err := m.dbUpdate(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
-			return fmt.Errorf("entry not found")
-		}
-		v := b.Get(itob(id))
-		if v == nil {
-			return fmt.Errorf("entry not found")
-		}
-
-		entry, err := decodeEntry(v)
+	err := m.writeHistory(func(w *historyWriter) error {
+		entry, err := w.get(id)
 		if err != nil {
-			return err
+			return fmt.Errorf("entry not found")
 		}
 
 		if entry.Pinned {
-			currentKey := itob(id)
-			var keepKey []byte
-			var deleteKeys [][]byte
-
-			c := b.Cursor()
-			for k, v := c.Last(); k != nil; k, v = c.Prev() {
-				if bytes.Equal(k, currentKey) || extractHash(v) != entry.Hash {
-					continue
-				}
-				duplicate, err := decodeEntryMeta(v)
-				if err == nil && !duplicate.Pinned {
-					key := append([]byte(nil), k...)
-					if keepKey == nil {
-						keepKey = key
-					} else {
-						deleteKeys = append(deleteKeys, key)
-					}
+			var keepID uint64
+			for _, e := range w.h.recent {
+				if e.hash == entry.Hash {
+					keepID = max(keepID, e.id)
 				}
 			}
 
-			if keepKey != nil {
-				for _, key := range deleteKeys {
-					if err := b.Delete(key); err != nil {
-						return err
-					}
+			if keepID != 0 {
+				if _, err := w.deleteWhere(func(e *entryMeta) bool {
+					return !e.pinned && e.hash == entry.Hash && e.id != keepID
+				}); err != nil {
+					return err
 				}
-				return b.Delete(currentKey)
+				return w.delete(id)
 			}
 		}
 
 		entry.Pinned = false
-		encoded, err := encodeEntry(entry)
-		if err != nil {
-			return err
-		}
-
-		return b.Put(itob(id), encoded)
+		return w.put(entry)
 	})
 
 	if err == nil {
@@ -2116,11 +2020,7 @@ func (m *Manager) UnpinEntry(id uint64) error {
 	return err
 }
 
-func (m *Manager) EditEntry(id uint64, text string) error {
-	if m.db == nil {
-		return fmt.Errorf("database not available")
-	}
-
+func (m *Manager) EditEntry(ctx context.Context, id uint64, text string) error {
 	data := []byte(text)
 	mimeType := "text/plain;charset=utf-8"
 
@@ -2136,19 +2036,8 @@ func (m *Manager) EditEntry(id uint64, text string) error {
 	newHash := computeHash(data)
 	preview := m.textPreview(data)
 
-	err := m.dbUpdate(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
-			return fmt.Errorf("clipboard bucket missing")
-		}
-
-		oldKey := itob(id)
-		v := b.Get(oldKey)
-		if v == nil {
-			return errEntryNotFound
-		}
-
-		existing, err := decodeEntry(v)
+	err := m.writeHistory(func(w *historyWriter) error {
+		existing, err := w.get(id)
 		if err != nil {
 			return err
 		}
@@ -2161,128 +2050,65 @@ func (m *Manager) EditEntry(id uint64, text string) error {
 			return errors.New("cannot edit non-text entry")
 		}
 
-		wasPinned := existing.Pinned
-
-		if err := b.Delete(oldKey); err != nil {
+		if err := w.delete(id); err != nil {
 			return err
 		}
 
-		if err := m.deduplicateInTx(b, newHash); err != nil {
+		if err := w.deleteUnpinnedWithHash(newHash); err != nil {
 			return err
 		}
 
-		if wasPinned {
-			c := b.Cursor()
-			for k, val := c.First(); k != nil; k, val = c.Next() {
-				if extractHash(val) == newHash {
-					meta, err := decodeEntryMeta(val)
-					if err == nil && meta.Pinned {
-						return nil
-					}
-				}
-			}
+		if existing.Pinned && w.h.hasPinnedHash(newHash) {
+			return nil
 		}
 
-		newID, err := b.NextSequence()
+		newID, err := w.b.NextSequence()
 		if err != nil {
 			return err
 		}
 
-		newEntry := Entry{
+		if err := w.put(Entry{
 			ID:        newID,
 			Data:      data,
 			MimeType:  mimeType,
 			Preview:   preview,
 			Size:      len(data),
 			Timestamp: time.Now(),
-			IsImage:   false,
 			Hash:      newHash,
-			Pinned:    wasPinned,
-		}
-
-		encoded, err := encodeEntry(newEntry)
-		if err != nil {
+			Pinned:    existing.Pinned,
+		}); err != nil {
 			return err
 		}
 
-		if err := b.Put(itob(newID), encoded); err != nil {
-			return err
-		}
-
-		return m.trimLengthInTx(b)
+		return w.trim(cfg)
 	})
 
-	if err == nil {
-		if clipErr := m.SetClipboard(data, mimeType); clipErr != nil {
-			log.Errorf("Failed to set clipboard selection: %v", clipErr)
-		}
-		m.updateState()
-		m.notifySubscribers()
+	if err != nil {
+		return err
 	}
 
-	return err
+	// The edit is saved either way; the error stops the editor pasting the
+	// previous clipboard.
+	clipErr := m.SetClipboard(ctx, data, mimeType)
+	m.updateState()
+	m.notifySubscribers()
+	return clipErr
 }
 
 func (m *Manager) GetPinnedEntries() []Entry {
-	if m.db == nil {
-		return nil
-	}
-
-	var pinned []Entry
-	if err := m.dbView(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
-			return nil
-		}
-
-		c := b.Cursor()
-		for k, v := c.Last(); k != nil; k, v = c.Prev() {
-			entry, err := decodeEntryMeta(v)
-			if err != nil {
-				continue
-			}
-			if entry.Pinned {
-				pinned = append(pinned, entry)
-			}
-		}
-		return nil
-	}); err != nil {
-		log.Errorf("Failed to get pinned entries: %v", err)
-	}
-
-	sortEntriesNewestFirst(pinned)
-
-	return pinned
+	pinned := true
+	return m.Search(SearchParams{Pinned: &pinned, Limit: -1}).Entries
 }
 
 func (m *Manager) GetPinnedCount() int {
-	if m.db == nil {
-		return 0
-	}
-
 	count := 0
-	if err := m.dbView(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("clipboard"))
-		if b == nil {
-			return nil
-		}
-
-		c := b.Cursor()
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			entry, err := decodeEntryMeta(v)
-			if err == nil && entry.Pinned {
-				count++
-			}
-		}
-		return nil
-	}); err != nil {
-		log.Errorf("Failed to count pinned entries: %v", err)
-	}
-
+	m.readHistory(func(h *historyIndex) {
+		count = len(h.pinned)
+	})
 	return count
 }
 
-func (m *Manager) CopyFile(filePath string) error {
+func (m *Manager) CopyFile(ctx context.Context, filePath string) error {
 	if !m.canTakeSelection() {
 		return errSelectionUnavailable
 	}
@@ -2309,6 +2135,10 @@ func (m *Manager) CopyFile(filePath string) error {
 		exportedPath = filePath
 	}
 
+	if err := m.takeSelection(ctx, clipboardstore.FileOffers(exportedPath, filePath, fileData)); err != nil {
+		return err
+	}
+
 	if imgData, imgMime, ok := m.tryReadImageFromURI([]byte(encodeFileURI(filePath))); ok {
 		entry := Entry{
 			Data:      imgData,
@@ -2322,12 +2152,7 @@ func (m *Manager) CopyFile(filePath string) error {
 			log.Errorf("Failed to store file entry: %v", err)
 		}
 	} else {
-		entryData := fileData
-		if entryData == nil {
-			// Oversized: store the encoded URI instead of the body so the
-			// entry can be restored through EntryToFile later.
-			entryData = []byte(encodeFileURI(filePath) + "\r\n")
-		}
+		entryData := []byte(encodeFileURI(filePath) + "\r\n")
 		entry := Entry{
 			Data:      entryData,
 			MimeType:  "text/uri-list",
@@ -2343,43 +2168,19 @@ func (m *Manager) CopyFile(filePath string) error {
 
 	m.updateState()
 	m.notifySubscribers()
-
-	m.takeSelection(clipboardstore.FileOffers(exportedPath, filePath, fileData))
 	return nil
 }
 
 func (m *Manager) EntryToFile(entry *Entry) string {
-	switch {
-	case entry.MimeType == "text/uri-list":
-		data := strings.TrimSpace(string(entry.Data))
-		lines := strings.Split(data, "\n")
-		if len(lines) == 0 {
-			return ""
-		}
-		uri := strings.TrimSuffix(strings.TrimSpace(lines[0]), "\r")
-		if strings.HasPrefix(uri, "file://") {
-			return pathFromFileURI(uri)
-		}
-	case entry.IsImage:
-		ext := ".png"
-		if suffix, ok := strings.CutPrefix(entry.MimeType, "image/"); ok {
-			ext = "." + suffix
-		}
-		cacheDir, err := os.UserCacheDir()
-		if err != nil {
-			return ""
-		}
-		clipDir := filepath.Join(cacheDir, "dms", "clipboard")
-		if err := os.MkdirAll(clipDir, 0o755); err != nil {
-			return ""
-		}
-		filePath := filepath.Join(clipDir, fmt.Sprintf("%d%s", time.Now().UnixNano(), ext))
-		if os.WriteFile(filePath, entry.Data, 0o644) != nil {
-			return ""
-		}
-		return filePath
+	if entry.MimeType != "text/uri-list" {
+		return ""
 	}
-	return ""
+	firstLine, _, _ := strings.Cut(strings.TrimSpace(string(entry.Data)), "\n")
+	uri := strings.TrimSpace(firstLine)
+	if !strings.HasPrefix(uri, "file://") {
+		return ""
+	}
+	return pathFromFileURI(uri)
 }
 
 func (m *Manager) dbusConnForFlatpak() (*dbus.Conn, error) {

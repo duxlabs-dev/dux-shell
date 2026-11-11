@@ -39,6 +39,9 @@ Item {
     function openWidgetPopout(spec) {
         if (!spec)
             return false;
+        // A widget inside the island opens the island's own activity rather than a bar popout.
+        if (surfaceContext.islandController && spec.islandActivity)
+            return surfaceContext.islandController.requestActivity(spec.islandActivity, true, spec.mode !== "hover");
         spec.registration = BarWidgetService.registrationForItem(spec.widgetItem);
         surfaceContext.ensureVisible(spec.widgetItem);
         // A bar widget always opens its own popout where it was clicked; routing is for shortcuts, IPC and the dock.
@@ -408,10 +411,8 @@ Item {
                         Quickshell.execDetached(["sh", "-c", command]);
                     return;
                 }
-                // requestTab would still show a disabled Overview as a detail page.
-                const tabId = DashRegistry.isSelectable(DashRegistry.overviewId) ? DashRegistry.overviewId : DashRegistry.defaultTabId;
-                if (!tabId)
-                    return;
+                // A disabled Overview opens as a tabless detail page, so it only wins when no tab is enabled.
+                const tabId = DashRegistry.isSelectable(DashRegistry.overviewId) ? DashRegistry.overviewId : DashRegistry.defaultTabId || DashRegistry.overviewId;
                 const section = root.getWidgetSection(parent) || "center";
                 root.openWidgetPopout({
                     loader: PopoutService.dankDashPopoutLoader,
@@ -454,12 +455,12 @@ Item {
 
         Media {
             id: mediaWidget
-            axis: surfaceContext.axis
+            axis: root.surfaceContext.axis
             compactMode: root.spacingTight || root.overlapping
-            barThickness: surfaceContext.thickness
-            widgetThickness: surfaceContext.widgetThickness
+            barThickness: root.surfaceContext.thickness
+            widgetThickness: root.surfaceContext.widgetThickness
             section: root.getWidgetSection(parent) || "center"
-            parentScreen: surfaceContext.screen
+            parentScreen: root.surfaceContext.screen
             onClicked: {
                 const section = root.getWidgetSection(parent) || "center";
                 root.openWidgetPopout({

@@ -98,6 +98,7 @@ DFloatingWindow {
     onClosed: hide()
 
     onCurrentTabChanged: {
+        [processesTabLoader, performanceTabLoader, disksTabLoader, systemTabLoader][currentTab].item?.scrollToTop();
         if (visible && currentTab === 0 && searchField.visible && !viewNavigation.activeFocus)
             searchField.forceActiveFocus();
     }
@@ -278,6 +279,10 @@ DFloatingWindow {
                             ignoreUpDownKeys: true
                             keyForwardTargets: [contentFocusScope]
                             KeyNavigation.backtab: viewNavigation
+                            onInputFocusedChanged: {
+                                if (inputFocused)
+                                    processesTabLoader.item?.clearSelection();
+                            }
                         }
 
                         ProcessFilterChips {

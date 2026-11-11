@@ -267,9 +267,7 @@ DFloatingWindow {
             showHiddenFiles: true
             filters: WallpaperFormats.nameFilters(true)
             onAccepted: paths => {
-                SessionData.setWallpaper(paths[0]);
-                SessionData.wallpaperCyclingFolderPath = "";
-                SessionData.saveSettings();
+                SessionData.applyWallpaperPick("", paths[0]);
             }
             onDialogClosed: () => {
                 allowStacking = true;
@@ -372,8 +370,6 @@ DFloatingWindow {
                         visible: SettingsData.isReadOnly && SettingsData.unsavedUserChanges
                         text: "settings.json"
                         iconName: "content_copy"
-                        backgroundColor: Theme.primary
-                        textColor: Theme.primaryText
                         buttonHeight: Theme.buttonHeightXS
                         horizontalPadding: Theme.spacingM
                         anchors.verticalCenter: parent.verticalCenter
@@ -389,8 +385,6 @@ DFloatingWindow {
                         visible: SessionData._isReadOnly && SessionData._hasUnsavedChanges
                         text: "session.json"
                         iconName: "content_copy"
-                        backgroundColor: Theme.primary
-                        textColor: Theme.primaryText
                         buttonHeight: Theme.buttonHeightXS
                         horizontalPadding: Theme.spacingM
                         anchors.verticalCenter: parent.verticalCenter

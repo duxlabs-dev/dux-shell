@@ -2,9 +2,11 @@ package tui
 
 import (
 	"context"
+	"os"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/duxlabs-dev/dux-shell/core/internal/distros"
 )
 
@@ -13,6 +15,15 @@ func (m Model) continueOnImmutable() (tea.Model, tea.Cmd) {
 	if len(distros.PendingDependencies(m.dependencies, m.reinstallItems, m.disabledItems)) > 0 {
 		if err := saveLayerResume(m.currentLayerResume()); err != nil {
 			m.logChan <- "could not save resume state: " + err.Error()
+		}
+		m.layerScript = ""
+		if commands := m.layerCommands(); len(commands) > 0 {
+			path, err := saveLayerScript(commands)
+			if err != nil {
+				m.logChan <- "could not save layer script: " + err.Error()
+			} else {
+				m.layerScript = path
+			}
 		}
 		m.state = StateLayerPackages
 		return m, nil
@@ -80,25 +91,53 @@ func (m Model) viewLayerPackages() string {
 	if len(commands) == 0 {
 		b.WriteString(m.styles.Normal.Render(wrapText("This image has no known way to add these packages. Install them from the image's own tooling, reboot, and run duxinstall again.", 70)))
 		b.WriteString("\n\n")
+	} else if m.layerScript != "" {
+		b.WriteString(m.styles.Normal.Render(m.wrapToWidth("Run this to layer the packages and reboot, then run duxinstall again. It picks up from here and deploys configuration:")))
+		b.WriteString("\n\n")
+		b.WriteString("  " + m.styles.Accent.Render("sh "+homeRelative(m.layerScript)))
+		b.WriteString("\n\n")
+		b.WriteString(m.styles.Subtle.Render(m.wrapToWidth("It runs these commands. You can also run them yourself instead:")))
+		b.WriteByte('\n')
+		for _, cmd := range commands {
+			b.WriteString(m.commandBlock(m.styles.Subtle, cmd))
+			b.WriteByte('\n')
+		}
+		b.WriteByte('\n')
 	} else {
-		b.WriteString(m.styles.Normal.Render("Run these, reboot, then run duxinstall again. It picks up from here and deploys configuration:"))
+		b.WriteString(m.styles.Normal.Render(m.wrapToWidth("Run these, reboot, then run duxinstall again. It picks up from here and deploys configuration:")))
 		b.WriteString("\n\n")
 		for _, cmd := range commands {
-			b.WriteString("  " + m.styles.Accent.Render(cmd))
+			b.WriteString(m.commandBlock(m.styles.Accent, cmd))
 			b.WriteByte('\n')
 		}
 		b.WriteByte('\n')
 	}
 
-	if m.osInfo != nil && distros.Registry[m.osInfo.Distribution.ID].Family == distros.FamilyFedora {
-		b.WriteString(m.styles.Subtle.Render("Prefer a ready-made image? Zirconium ships niri and Dux Shell:"))
-		b.WriteByte('\n')
-		b.WriteString("  " + m.styles.Subtle.Render(distros.ZirconiumSwitchCommand))
-		b.WriteString("\n\n")
-	}
-
 	b.WriteString(m.styles.Subtle.Render("Esc: Back, Ctrl+C: Quit"))
 	return b.String()
+}
+
+func homeRelative(path string) string {
+	home := os.Getenv("HOME")
+	if rest, ok := strings.CutPrefix(path, home+"/"); ok && home != "" {
+		return "~/" + rest
+	}
+	return path
+}
+
+func (m Model) wrapToWidth(text string) string {
+	if m.width <= 0 {
+		return text
+	}
+	return lipgloss.NewStyle().Width(m.width - 1).Render(text)
+}
+
+// The renderer drops whatever runs past the terminal width, so long commands wrap with a hanging indent.
+func (m Model) commandBlock(style lipgloss.Style, cmd string) string {
+	if m.width > 5 {
+		cmd = strings.ReplaceAll(lipgloss.NewStyle().Width(m.width-5).Render(cmd), "\n", "\n  ")
+	}
+	return style.PaddingLeft(2).Render(cmd)
 }
 
 func (m Model) updateLayerPackagesState(msg tea.Msg) (tea.Model, tea.Cmd) {

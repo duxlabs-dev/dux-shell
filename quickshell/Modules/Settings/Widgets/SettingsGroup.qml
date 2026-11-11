@@ -12,7 +12,7 @@ Item {
     property real customPaddingH: SettingsMetrics.rowPaddingH
     property real customPaddingV: SettingsMetrics.rowPaddingV
     property bool highlighted: false
-    property color slotColor: SettingsMetrics.rowColor
+    property color slotColor: parent?.isSettingsGroupHost ? parent.slotColor : SettingsMetrics.rowColor
     property var slots: []
     property bool layingOut: false
     property bool layoutReady: false
@@ -161,6 +161,7 @@ Item {
         id: host
 
         readonly property bool isSettingsGroupHost: true
+        readonly property color slotColor: root.slotColor
 
         function isEdge(item, first) {
             const slot = root.slots[first ? 0 : root.slots.length - 1];

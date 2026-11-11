@@ -23,6 +23,9 @@
   "%1 Startup Failed": {
     "%1 Startup Failed": "%1 помилок при запуску"
   },
+  "%1 active": {
+    "%1 active": "%1 активно"
+  },
   "%1 active session": {
     "%1 active session": "%1 активна сесія"
   },
@@ -62,6 +65,9 @@
   "%1 connected": {
     "%1 connected": "%1 підключено"
   },
+  "%1 cores, %2 threads": {
+    "%1 cores, %2 threads": "%1 ядер, %2 потоків"
+  },
   "%1 day": {
     "%1 day": "%1 день"
   },
@@ -79,6 +85,9 @@
   },
   "%1 displays": {
     "%1 displays": "%1 дисплеїв"
+  },
+  "%1 errors, %2 warnings": {
+    "%1 errors, %2 warnings": "%1 помилок, %2 попереджень"
   },
   "%1 features": {
     "%1 features": "%1 можливості"
@@ -134,6 +143,9 @@
   "%1 jobs": {
     "%1 jobs": "%1 завдань"
   },
+  "%1 keeps your desktop running. Ending it will likely break your session. If it misbehaves, restarting it is the safer fix.": {
+    "%1 keeps your desktop running. Ending it will likely break your session. If it misbehaves, restarting it is the safer fix.": "%1 відповідає за роботу стільниці. Якщо завершити процес, це може зламати сесію. Якщо він працює неналежно, краще його перезапустити."
+  },
   "%1 limit reached": {
     "%1 limit reached": "%1 досягнуто ліміту"
   },
@@ -167,6 +179,9 @@
   "%1 notifications": {
     "%1 notifications": "%1 сповіщень"
   },
+  "%1 of %2 used": {
+    "%1 of %2 used": "%1 з %2 використано"
+  },
   "%1 online": {
     "%1 online": "%1 онлайн"
   },
@@ -191,6 +206,12 @@
   "%1 printers": {
     "%1 printers": "%1 принтерів"
   },
+  "%1 process": {
+    "%1 process": "%1 процес"
+  },
+  "%1 processes": {
+    "%1 processes": "%1 процесів"
+  },
   "%1 procs": {
     "%1 procs": "%1 проц."
   },
@@ -212,6 +233,9 @@
   "%1 updates": {
     "%1 updates": "%1 оновлень"
   },
+  "%1 used": {
+    "%1 used": "%1 використано"
+  },
   "%1 variants": {
     "%1 variants": "%1 варіантів"
   },
@@ -232,6 +256,9 @@
   },
   "%1 windows": {
     "%1 windows": "%1 вікон"
+  },
+  "%1 years": {
+    "%1 years": "%1 років"
   },
   "%1: %2": {
     "%1: %2": "%1: %2"
@@ -268,6 +295,9 @@
   },
   "+%1 conditions": {
     "+%1 conditions": "+%1 умови"
+  },
+  "0 stops the animation and saves GPU": {
+    "0 stops the animation and saves GPU": "0 зупиняє анімацію та економить ресурси GPU"
   },
   "1 hour before": {
     "1 hour before": "1 годину тому"
@@ -308,6 +338,12 @@
   "A notification must match every condition": {
     "A notification must match every condition": "Сповіщення має відповідати кожній умові"
   },
+  "A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.": {
+    "A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.": ""
+  },
+  "A tiled or fullscreen window dragged into floating centers on the cursor": {
+    "A tiled or fullscreen window dragged into floating centers on the cursor": "Вікно в режимі плитки або на весь екран, перетягнуте в плаваючий режим, центрується за курсором"
+  },
   "A user with that name already exists.": {
     "A user with that name already exists.": "Користувач з таким ім'ям вже існує"
   },
@@ -329,6 +365,9 @@
   "About": {
     "About": "Про DMS"
   },
+  "Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.": {
+    "Absolute or ~/ path to a .xkb keymap file. Overrides layouts/variants above.": "Абсолютний шлях або шлях від ~/ до файлу карти клавіш .xkb. Перевизначає розкладки/варіанти вище"
+  },
   "Acceleration profile": {
     "Acceleration profile": "Профіль прискорення"
   },
@@ -337,9 +376,6 @@
   },
   "Accept jobs": {
     "Accept jobs": "Приймати завдання"
-  },
-  "Accept reviewed changes": {
-    "Accept reviewed changes": "Прийняти переглянуті зміни"
   },
   "Accepting": {
     "Accepting": "Прийняття"
@@ -371,6 +407,9 @@
   "Activate Greeter": {
     "Activate Greeter": "Активувати екран входу"
   },
+  "Activate input method": {
+    "Activate input method": ""
+  },
   "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.": {
     "Activate the DMS greeter? A terminal will open for sudo authentication. Run Sync after activation to apply your settings.": "Активувати екран входу DMS? Відкриється термінал для sudo-автентифікації. Після активації запустіть синхронізацію, щоб застосувати налаштування"
   },
@@ -382,6 +421,9 @@
   },
   "Active VPN": {
     "Active VPN": "Активний VPN"
+  },
+  "Active by default": {
+    "Active by default": ""
   },
   "Active color": {
     "Active color": "Активний колір"
@@ -436,6 +478,9 @@
   },
   "Add entry": {
     "Add entry": "Додати запис"
+  },
+  "Add input method": {
+    "Add input method": ""
   },
   "Add location": {
     "Add location": "Додати місцеположення"
@@ -497,8 +542,14 @@
   "Adds them to the %1 group so they can use sudo": {
     "Adds them to the %1 group so they can use sudo": "Додає їх до групи %1, щоб вони могли використовувати sudo"
   },
+  "Adjustment": {
+    "Adjustment": "Регулювання"
+  },
   "Administrator access is required. Press Apply changes in Settings → Greeter.": {
     "Administrator access is required. Press Apply changes in Settings → Greeter.": "Потрібен доступ адміністратора. Натисніть «Застосувати зміни» в Налаштування → Привітання"
+  },
+  "Advance when a video ends": {
+    "Advance when a video ends": "Переходити далі після завершення відео"
   },
   "Advanced": {
     "Advanced": "Додатково"
@@ -569,6 +620,9 @@
   "Allow in Do Not Disturb": {
     "Allow in Do Not Disturb": "Дозволити в режимі «Не турбувати»"
   },
+  "Allowed cores": {
+    "Allowed cores": "Дозволені ядра"
+  },
   "Already on that session": {
     "Already on that session": "Вже в цій сесії"
   },
@@ -586,6 +640,9 @@
   },
   "Alt + Shift": {
     "Alt + Shift": "Alt + Shift"
+  },
+  "Alt + Shift shortcuts in apps and keybinds stop working.": {
+    "Alt + Shift shortcuts in apps and keybinds stop working.": "Гарячі клавіші Alt + Shift у програмах та прив'язках клавіш перестають працювати"
   },
   "Alternative (OR)": {
     "Alternative (OR)": "Альтернатива (АБО)"
@@ -644,14 +701,14 @@
   "Animations": {
     "Animations": "Анімації"
   },
+  "Anonymous": {
+    "Anonymous": "Анонімний"
+  },
   "Anonymous Identity": {
     "Anonymous Identity": "Анонімна особа"
   },
   "Anonymous Identity (optional)": {
     "Anonymous Identity (optional)": "Анонімна особа (опціонально)"
-  },
-  "Another Aqueous operation is in progress.": {
-    "Another Aqueous operation is in progress.": "Триває інша операція Aqueous"
   },
   "Any window": {
     "Any window": "Будь-яке вікно"
@@ -761,17 +818,8 @@
   "Apps with notification popups muted. Unmute or delete to remove.": {
     "Apps with notification popups muted. Unmute or delete to remove.": "Програми з вимкненими спливаючими сповіщеннями. Увімкніть звук або видаліть, щоб прибрати їх"
   },
-  "Aqueous cursor": {
-    "Aqueous cursor": "Курсор Aqueous"
-  },
-  "Aqueous typography": {
-    "Aqueous typography": "Типографіка Aqueous"
-  },
   "Arc extender": {
     "Arc extender": "Розширювач Arc"
-  },
-  "Architecture": {
-    "Architecture": "Архітектура"
   },
   "Archive manager": {
     "Archive manager": "Менеджер архівів"
@@ -790,6 +838,9 @@
   },
   "Artwork": {
     "Artwork": "Художнє оформлення"
+  },
+  "Asleep": {
+    "Asleep": "Спить"
   },
   "At least one output must remain enabled": {
     "At least one output must remain enabled": "Принаймні один вихід має залишатися увімкненим"
@@ -1001,6 +1052,9 @@
   "Avatar ring": {
     "Avatar ring": "Кільце аватара"
   },
+  "BIOS": {
+    "BIOS": "BIOS"
+  },
   "Backend": {
     "Backend": "Бекенд"
   },
@@ -1073,6 +1127,9 @@
   "Bars": {
     "Bars": "Панелі"
   },
+  "Base clock": {
+    "Base clock": "Базова частота"
+  },
   "Battery": {
     "Battery": "Батарея"
   },
@@ -1099,6 +1156,9 @@
   },
   "Behavior": {
     "Behavior": "Поведінка"
+  },
+  "Bento style only": {
+    "Bento style only": ""
   },
   "Bind the %1 IPC action in your compositor config.": {
     "Bind the %1 IPC action in your compositor config.": "Призначте дію IPC %1 у конфігурації вашого композитора"
@@ -1154,6 +1214,9 @@
   "Blur against the wallpaper even with xray off": {
     "Blur against the wallpaper even with xray off": "Розмиття на фоні шпалер навіть при вимкненому рентгені"
   },
+  "Blur follows opacity": {
+    "Blur follows opacity": "Розмиття залежить від непрозорості"
+  },
   "Blur layer": {
     "Blur layer": "Шар розмиття"
   },
@@ -1166,6 +1229,9 @@
   "Blurred surfaces show the wallpaper, not the windows beneath": {
     "Blurred surfaces show the wallpaper, not the windows beneath": "Розмиті поверхні показують шпалери, а не вікна під ними"
   },
+  "Board": {
+    "Board": "Мат. плата"
+  },
   "Body": {
     "Body": "Тло"
   },
@@ -1174,6 +1240,15 @@
   },
   "Body font size": {
     "Body font size": "Розмір шрифту тіла"
+  },
+  "Bold": {
+    "Bold": ""
+  },
+  "Bold Italic": {
+    "Bold Italic": ""
+  },
+  "Boot": {
+    "Boot": "Завантажувач"
   },
   "Boot entry changed. Remove it and add it again.": {
     "Boot entry changed. Remove it and add it again.": "Запис завантаження змінено. Видаліть його та додайте знову"
@@ -1195,6 +1270,9 @@
   },
   "Both": {
     "Both": "Обидва"
+  },
+  "Both Shift keys": {
+    "Both Shift keys": "Обидві клавіші Shift"
   },
   "Bottom": {
     "Bottom": "Знизу"
@@ -1262,6 +1340,9 @@
   "Built-in plugins": {
     "Built-in plugins": "Вбудовані розширення"
   },
+  "Busy": {
+    "Busy": "Зайнято"
+  },
   "Button areas": {
     "Button areas": "Області кнопок"
   },
@@ -1279,6 +1360,9 @@
   },
   "CPU temperature display": {
     "CPU temperature display": "Відображення температури ЦП"
+  },
+  "CPU time": {
+    "CPU time": "Час ЦП"
   },
   "CPU usage": {
     "CPU usage": "Завантаження ЦП"
@@ -1304,6 +1388,12 @@
   "CUPS printers, jobs and classes": {
     "CUPS printers, jobs and classes": "Принтери CUPS, завдання та класи"
   },
+  "Cable errors": {
+    "Cable errors": "Помилки кабелю"
+  },
+  "Cached": {
+    "Cached": "Кешовано"
+  },
   "Calendar": {
     "Calendar": "Календар"
   },
@@ -1321,6 +1411,12 @@
   },
   "Canceled": {
     "Canceled": "Скасовано"
+  },
+  "Candidate list": {
+    "Candidate list": ""
+  },
+  "Candidates per page": {
+    "Candidates per page": ""
   },
   "Cannot delete the only administrator": {
     "Cannot delete the only administrator": "Неможливо видалити єдиного адміністратора"
@@ -1355,6 +1451,9 @@
   "Caps lock": {
     "Caps lock": "Caps lock"
   },
+  "Card backgrounds": {
+    "Card backgrounds": ""
+  },
   "Cards": {
     "Cards": "Картки"
   },
@@ -1382,6 +1481,9 @@
   "Center Tiling": {
     "Center Tiling": "Плиткове розміщення по центру"
   },
+  "Center dragged windows": {
+    "Center dragged windows": "Центрувати перетягнуті вікна"
+  },
   "Center section": {
     "Center section": "Центральна секція"
   },
@@ -1406,6 +1508,9 @@
   "Channel": {
     "Channel": "Канал"
   },
+  "Channels": {
+    "Channels": "Каналів"
+  },
   "Charge Limit Reached": {
     "Charge Limit Reached": "Досягнуто ліміту заряду"
   },
@@ -1426,6 +1531,9 @@
   },
   "Chart": {
     "Chart": "Графік"
+  },
+  "Chassis": {
+    "Chassis": "Каркас"
   },
   "Cheatsheet": {
     "Cheatsheet": "Шпаргалка"
@@ -1544,6 +1652,9 @@
   "Click Import to add a %1 or %2 file": {
     "Click Import to add a %1 or %2 file": "Натисніть «Імпортувати», щоб додати файл %1 або %2"
   },
+  "Click action": {
+    "Click action": "Дія при натиску"
+  },
   "Click actions": {
     "Click actions": "Дії при кліку"
   },
@@ -1573,6 +1684,9 @@
   },
   "Clicking a window in a special workspace opens that workspace": {
     "Clicking a window in a special workspace opens that workspace": "Натискання на вікно в спеціальному робочому просторі відкриває цей простір"
+  },
+  "Clicking a workspace from another display moves it to the display of the bar you clicked": {
+    "Clicking a workspace from another display moves it to the display of the bar you clicked": ""
   },
   "Clicks on empty bar space reach the windows below": {
     "Clicks on empty bar space reach the windows below": "Натискання на порожній простір панелі діють на вікна під нею"
@@ -1633,6 +1747,9 @@
   },
   "Codec switching is unavailable. WirePlumber wpexec was not found.": {
     "Codec switching is unavailable. WirePlumber wpexec was not found.": "Зміна кодека недоступна, оскільки wpexec не знайдено"
+  },
+  "Codename": {
+    "Codename": "Кодове ім'я"
   },
   "Collapse": {
     "Collapse": "Згорнути"
@@ -1712,6 +1829,9 @@
   "Commands": {
     "Commands": "Команди"
   },
+  "Committed": {
+    "Committed": "Затверджено"
+  },
   "Community": {
     "Community": "Спільнота"
   },
@@ -1736,6 +1856,9 @@
   "Compositor and shell key bindings": {
     "Compositor and shell key bindings": "Гарячі клавіші композитора та оболонки"
   },
+  "Compression": {
+    "Compression": "Стиснення"
+  },
   "Config Format": {
     "Config Format": "Формат конфігурації"
   },
@@ -1750,9 +1873,6 @@
   },
   "Configuration activated": {
     "Configuration activated": "Конфігурацію активовано"
-  },
-  "Configuration changed. Refresh to continue.": {
-    "Configuration changed. Refresh to continue.": "Конфігурацію змінено. Оновіть, щоб продовжити"
   },
   "Configuration will be preserved when this display reconnects": {
     "Configuration will be preserved when this display reconnects": "Конфігурація буде збережена при повторному підключенні цього дисплея"
@@ -1820,8 +1940,14 @@
   "Connecting...": {
     "Connecting...": "Підключення..."
   },
+  "Connection": {
+    "Connection": "З'єднання"
+  },
   "Connection failed": {
     "Connection failed": "Помилка підключення"
+  },
+  "Connections": {
+    "Connections": "З'єднання"
   },
   "Connections and autoconnect": {
     "Connections and autoconnect": "Підключення та автопідключення"
@@ -1832,6 +1958,9 @@
   "Consumes the key only when a dispatcher runs": {
     "Consumes the key only when a dispatcher runs": "Використовує клавішу лише тоді, коли працює диспетчер"
   },
+  "Container": {
+    "Container": "Контейнер"
+  },
   "Container saturation": {
     "Container saturation": "Насиченість контейнера"
   },
@@ -1840,6 +1969,9 @@
   },
   "Content": {
     "Content": "Вміст"
+  },
+  "Context switches": {
+    "Context switches": "Перемикання контексту"
   },
   "Contrast": {
     "Contrast": "Контраст"
@@ -1850,6 +1982,9 @@
   "Control Center": {
     "Control Center": "Центр керування"
   },
+  "Control group": {
+    "Control group": "Група керування"
+  },
   "Controls": {
     "Controls": "Елементи керування"
   },
@@ -1858,6 +1993,9 @@
   },
   "Convert to DMS": {
     "Convert to DMS": "Конвертувати в DMS"
+  },
+  "Convertible": {
+    "Convertible": "Трансформер"
   },
   "Cooldown": {
     "Cooldown": "Затримка"
@@ -1892,8 +2030,20 @@
   "Copy Text": {
     "Copy Text": "Копіювати текст"
   },
+  "Copy report": {
+    "Copy report": "Скопіювати звіт"
+  },
+  "Copy summary": {
+    "Copy summary": "Скопіювати підсумок"
+  },
   "Copy target (%1)": {
     "Copy target (%1)": "Скопіювати ціль (%1)"
+  },
+  "Core clock": {
+    "Core clock": "Частота ядра"
+  },
+  "Cores": {
+    "Cores": "Ядра"
   },
   "Corner radius": {
     "Corner radius": "Радіус кута"
@@ -1961,17 +2111,14 @@
   "Critical threshold": {
     "Critical threshold": "Критичний поріг"
   },
-  "Ctrl + Shift": {
-    "Ctrl + Shift": "Ctrl + Shift"
+  "Critical warning": {
+    "Critical warning": "Критичне попередження"
   },
   "Ctrl+%1 is used for password editing": {
     "Ctrl+%1 is used for password editing": "Ctrl+%1 використовується для редагування пароля"
   },
   "Current": {
     "Current": "Поточний"
-  },
-  "Current (%1)": {
-    "Current (%1)": "Поточний (%1)"
   },
   "Current Items": {
     "Current Items": "Поточні елементи"
@@ -1984,6 +2131,9 @@
   },
   "Current display": {
     "Current display": "Поточний дисплей"
+  },
+  "Current pending sectors": {
+    "Current pending sectors": "Поточні незавершені сектори"
   },
   "Current period": {
     "Current period": "Поточний період"
@@ -2008,12 +2158,6 @@
   },
   "Cursor": {
     "Cursor": "Курсор"
-  },
-  "Cursor Size": {
-    "Cursor Size": "Розмір курсора"
-  },
-  "Cursor Theme": {
-    "Cursor Theme": "Тема курсора"
   },
   "Cursor auto-hide timeout": {
     "Cursor auto-hide timeout": "Таймаут автоприховування курсора"
@@ -2114,8 +2258,8 @@
   "DMS stops drawing wallpapers on every display": {
     "DMS stops drawing wallpapers on every display": "DMS припиняє малювання шпалер на кожному дисплеї"
   },
-  "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": {
-    "DMS uses the font family, weight and scale. Exact face, slant, width and separately scaled bars may differ.": "DMS використовує сімейство шрифтів, накреслення та масштаб. Точний шрифт, нахил, ширина та окремо масштабовані лінії можуть відрізнятися"
+  "Daemon": {
+    "Daemon": "Демон"
   },
   "Daily": {
     "Daily": "Щодня"
@@ -2156,8 +2300,17 @@
   "Darkest": {
     "Darkest": "Найтемніший"
   },
+  "Dash card": {
+    "Dash card": "Картка Dash"
+  },
+  "Dash tab": {
+    "Dash tab": "Вкладка Dash"
+  },
   "Dashboard": {
     "Dashboard": "Панель керування"
+  },
+  "Dashboard tabs": {
+    "Dashboard tabs": "Вкладки панелі керування"
   },
   "Date": {
     "Date": "Дата"
@@ -2194,6 +2347,9 @@
   },
   "Daytime": {
     "Daytime": "Денний час"
+  },
+  "Deactivate input method": {
+    "Deactivate input method": ""
   },
   "Deck": {
     "Deck": "Колода"
@@ -2297,6 +2453,9 @@
   "Description": {
     "Description": "Опис"
   },
+  "Desktop": {
+    "Desktop": "Комп'ютер"
+  },
   "Desktop Entry": {
     "Desktop Entry": "Запис робочого столу"
   },
@@ -2308,6 +2467,9 @@
   },
   "Desktop widgets": {
     "Desktop widgets": "Пристосунки робочого стола"
+  },
+  "Details": {
+    "Details": "Деталі"
   },
   "Details for \"%1": {
     "Details for \"%1\"": "Деталі для «%1»"
@@ -2345,9 +2507,6 @@
   "Dim": {
     "Dim": "Приглушений"
   },
-  "Direct path to a .xkb keymap file. Overrides layouts/variants above.": {
-    "Direct path to a .xkb keymap file. Overrides layouts/variants above.": "Прямий шлях до файлу карти клавіш .xkb. Перевизначає розкладки/варіанти, вказані вище"
-  },
   "Direction": {
     "Direction": "Напрямок"
   },
@@ -2360,8 +2519,17 @@
   "Directory": {
     "Directory": "Каталог"
   },
+  "Disable": {
+    "Disable": "Вимкнути"
+  },
+  "Disable %1?": {
+    "Disable %1?": "Вимкнути %1?"
+  },
   "Disable autoconnect": {
     "Disable autoconnect": "Вимкнути автопідключення"
+  },
+  "Disable card": {
+    "Disable card": "Вимкнути карту"
   },
   "Disable output": {
     "Disable output": "Вимкнути вивід"
@@ -2377,6 +2545,9 @@
   },
   "Disabled": {
     "Disabled": "Вимкнено"
+  },
+  "Disabled (%1)": {
+    "Disabled (%1)": "Вимкнено (%1)"
   },
   "Disabled by Auto": {
     "Disabled by Auto": "Вимкнено автоматично"
@@ -2402,9 +2573,6 @@
   "Discard": {
     "Discard": "Відмовитися"
   },
-  "Discard draft and reload": {
-    "Discard draft and reload": "Відмовитися від чернетки та перезавантажити"
-  },
   "Discharging": {
     "Discharging": "Розряджається"
   },
@@ -2426,14 +2594,17 @@
   "Disk": {
     "Disk": "Диск"
   },
-  "Disk I/O": {
-    "Disk I/O": "Ввід/вивід диска"
+  "Disk read": {
+    "Disk read": "Читання диску"
   },
   "Disk usage": {
     "Disk usage": "Використання диска"
   },
   "Disk usage format": {
     "Disk usage format": "Формат використання диска"
+  },
+  "Disk write": {
+    "Disk write": "Запис на диск"
   },
   "Disks": {
     "Disks": "Диски"
@@ -2569,6 +2740,9 @@
   },
   "Down": {
     "Down": "Вниз"
+  },
+  "Download": {
+    "Download": "Завантаження"
   },
   "Drag": {
     "Drag": "Перетягування"
@@ -2738,6 +2912,9 @@
   "Education": {
     "Education": "Освіта"
   },
+  "Elevated": {
+    "Elevated": "Підвищений"
+  },
   "Empty": {
     "Empty": "Порожньо"
   },
@@ -2755,6 +2932,9 @@
   },
   "Enable autoconnect": {
     "Enable autoconnect": "Увімкнути автопідключення"
+  },
+  "Enable card": {
+    "Enable card": "Увімкнути карту"
   },
   "Enable plugin to access settings": {
     "Enable plugin to access settings": "Дозволити розширенню доступ до налаштувань"
@@ -2776,6 +2956,9 @@
   },
   "End must be after start": {
     "End must be after start": "Кінець має бути після початку"
+  },
+  "End process tree": {
+    "End process tree": "Завершити дерево процесів"
   },
   "Enter 6-digit passkey": {
     "Enter 6-digit passkey": "Введіть 6-значний ключ доступу"
@@ -2867,6 +3050,9 @@
   "Every hour": {
     "Every hour": "Щогодини"
   },
+  "Every output and input of this sound card turns off until you enable it again": {
+    "Every output and input of this sound card turns off until you enable it again": "Кожен ввід та вивід цієї аудіо-карти буде вимкнено, поки ви не ввімкнете її знову"
+  },
   "Exact": {
     "Exact": "Точний"
   },
@@ -2878,6 +3064,9 @@
   },
   "Exclusive zone offset": {
     "Exclusive zone offset": "Зміщення ексклюзивної зони"
+  },
+  "Executable": {
+    "Executable": "Виконуваний файл"
   },
   "Exit node": {
     "Exit node": "Вихідний вузол"
@@ -2966,6 +3155,9 @@
   "Failed to change display power": {
     "Failed to change display power": "Не вдалося змінити живлення дисплея"
   },
+  "Failed to change priority of %1": {
+    "Failed to change priority of %1": ""
+  },
   "Failed to configure hotspot": {
     "Failed to configure hotspot": "Не вдалося налаштувати точку доступу"
   },
@@ -3053,9 +3245,6 @@
   "Failed to load clipboard entry": {
     "Failed to load clipboard entry": "Не вдалося завантажити запис буфера обміну"
   },
-  "Failed to load keybinds": {
-    "Failed to load keybinds": "Не вдалося завантажити гарячі клавіші"
-  },
   "Failed to load settings": {
     "Failed to load settings": "Не вдалося завантажити налаштування"
   },
@@ -3064,6 +3253,9 @@
   },
   "Failed to parse %1": {
     "Failed to parse %1": "Не вдалося розібрати %1"
+  },
+  "Failed to pause %1": {
+    "Failed to pause %1": ""
   },
   "Failed to pause printer": {
     "Failed to pause printer": "Не вдалося призупинити принтер"
@@ -3092,11 +3284,17 @@
   "Failed to remove keybind": {
     "Failed to remove keybind": "Не вдалося видалити комбінацію клавіш"
   },
+  "Failed to restart %1": {
+    "Failed to restart %1": "Не вдалося перезапустити %1"
+  },
   "Failed to restart audio system": {
     "Failed to restart audio system": "Не вдалося перезапустити аудіосистему"
   },
   "Failed to restart job": {
     "Failed to restart job": "Не вдалося перезапустити завдання"
+  },
+  "Failed to resume %1": {
+    "Failed to resume %1": ""
   },
   "Failed to resume printer": {
     "Failed to resume printer": "Не вдалося відновити роботу принтера"
@@ -3170,6 +3368,9 @@
   "Failed to toggle cellular": {
     "Failed to toggle cellular": "Не вдалося перемкнути стільниковий зв'язок"
   },
+  "Failed to unlock": {
+    "Failed to unlock": "Не вдалося авторизуватись"
+  },
   "Failed to unpin entry": {
     "Failed to unpin entry": "Не вдалося відкріпити запис"
   },
@@ -3203,6 +3404,9 @@
   "Family": {
     "Family": "Сімейство"
   },
+  "Fan": {
+    "Fan": "Вентилятор"
+  },
   "Featured plugin": {
     "Featured plugin": "Вибране розширення"
   },
@@ -3229,6 +3433,9 @@
   },
   "File the command writes; leave empty to read stdout": {
     "File the command writes; leave empty to read stdout": "Файл, у який записується команда; залиште порожнім, щоб прочитати stdout"
+  },
+  "File-backed": {
+    "File-backed": "З підтримкою файлів"
   },
   "Files": {
     "Files": "Файли"
@@ -3287,6 +3494,9 @@
   "Fires with any modifiers held": {
     "Fires with any modifiers held": "Спрацьовує при затисканні будь-яких модифікаторів"
   },
+  "Firmware": {
+    "Firmware": "Прошивка"
+  },
   "Firmware setup": {
     "Firmware setup": "Налаштування прошивки"
   },
@@ -3310,6 +3520,9 @@
   },
   "Flat": {
     "Flat": "Лінійний"
+  },
+  "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.": {
+    "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.": ""
   },
   "Flipped": {
     "Flipped": "Перевернуто"
@@ -3455,11 +3668,11 @@
   "For you": {
     "For you": "Для вас"
   },
+  "Force": {
+    "Force": "Примусово"
+  },
   "Force HDR": {
     "Force HDR": "Примусовий HDR"
-  },
-  "Force Kill (SIGKILL)": {
-    "Force Kill (SIGKILL)": "Примусово завершити (SIGKILL)"
   },
   "Force RGBX": {
     "Force RGBX": "Примусовий RGBX"
@@ -3469,6 +3682,9 @@
   },
   "Force padding": {
     "Force padding": "Примусовий відступ"
+  },
+  "Force quit": {
+    "Force quit": "Примусово завершити"
   },
   "Force split": {
     "Force split": "Примусовий поділ"
@@ -3502,6 +3718,9 @@
   },
   "Forgot network %1": {
     "Forgot network %1": "Мережу %1 забуто"
+  },
+  "Form factor": {
+    "Form factor": "Форм-фактор"
   },
   "Format": {
     "Format": "Формат"
@@ -3539,6 +3758,9 @@
   "Full": {
     "Full": "Повний"
   },
+  "Full SMART report": {
+    "Full SMART report": "Повний звіт SMART"
+  },
   "Full content": {
     "Full content": "Повний вміст"
   },
@@ -3575,6 +3797,9 @@
   "GPU Monitoring": {
     "GPU Monitoring": "Моніторинг ГП"
   },
+  "GPU hotspot temperature": {
+    "Hotspot": "Гаряча точка"
+  },
   "GPU temperature": {
     "GPU temperature": "Температура ГП"
   },
@@ -3586,6 +3811,9 @@
   },
   "GTK colors applied successfully": {
     "GTK colors applied successfully": "Кольори GTK успішно застосовано"
+  },
+  "GTK theme": {
+    "GTK theme": "Тема GTK"
   },
   "GTK, Qt, portal, matugen templates": {
     "GTK, Qt, portal, matugen templates": "Шаблони GTK, Qt, portal, matugen"
@@ -3671,6 +3899,9 @@
   "Goth corners": {
     "Goth corners": "Готичні кути"
   },
+  "Governor": {
+    "Governor": "Регулятор"
+  },
   "Grant": {
     "Grant": "Надати"
   },
@@ -3688,6 +3919,9 @@
   },
   "Graphics": {
     "Graphics": "Графіка"
+  },
+  "Graphics driver": {
+    "Graphics driver": "Графічний драйвер"
   },
   "Green": {
     "Green": "Зелений"
@@ -3752,14 +3986,23 @@
   "HTML copied to clipboard": {
     "HTML copied to clipboard": "HTML скопійовано в буфер обміну"
   },
+  "Hardware": {
+    "Hardware": "Апаратне забезпечення"
+  },
   "Haze": {
     "Haze": "Серпанок"
+  },
+  "Head load cycles": {
+    "Head load cycles": "Цикли завантаження головок"
   },
   "Health": {
     "Health": "Здоров'я"
   },
   "Health %1": {
     "Health %1": "Стан %1"
+  },
+  "Healthy": {
+    "Healthy": "Здоровий"
   },
   "Heat shimmer": {
     "Heat shimmer": "Мерехтіння від тепла"
@@ -3813,7 +4056,7 @@
     "Hide App": "Приховати програму"
   },
   "Hide bar on fullscreen": {
-    "Hide bar on fullscreen": ""
+    "Hide bar on fullscreen": "Приховати панель у повноекранному режимі"
   },
   "Hide cursor on touch": {
     "Hide cursor on touch": "Приховувати курсор при дотику"
@@ -3869,6 +4112,12 @@
   "Higher providers take priority. Turn all off to use local lyrics only.": {
     "Higher providers take priority. Turn all off to use local lyrics only.": "Провайдери з вищим пріоритетом мають перевагу. Вимкніть усе, щоб використовувати лише локальні тексти пісень"
   },
+  "Higher values flex more smoothly and cost more GPU": {
+    "Higher values flex more smoothly and cost more GPU": "Вищі значення забезпечують плавніший вигин, але потребують більше ресурсів GPU"
+  },
+  "Highest": {
+    "Highest": ""
+  },
   "Highlight focused app": {
     "Highlight focused app": "Підсвітити активну програму"
   },
@@ -3877,9 +4126,6 @@
   },
   "History": {
     "History": "Історія"
-  },
-  "History (%1)": {
-    "History (%1)": "Історія (%1)"
   },
   "History cleared. %1 pinned entries kept.": {
     "History cleared. %1 pinned entries kept.": "Історію очищено. %1 закріплених записів збережено"
@@ -3962,9 +4208,6 @@
   "Hyprland Options": {
     "Hyprland Options": "Опції Hyprland"
   },
-  "Hyprland conf mode": {
-    "Hyprland conf mode": "Режим конфігурації Hyprland"
-  },
   "Hyprland conf mode is read-only in Settings": {
     "Hyprland conf mode is read-only in Settings": "Режим конфігурації Hyprland у налаштуваннях доступний лише для читання"
   },
@@ -3976,6 +4219,12 @@
   },
   "I Understand": {
     "I Understand": "Зрозуміло"
+  },
+  "I/O priority": {
+    "I/O priority": "Пріоритет введення/виведення"
+  },
+  "I/O scheduler": {
+    "I/O scheduler": "Планувальник введення/виведення"
   },
   "ICC Error": {
     "ICC Error": "Помилка ICC"
@@ -3994,6 +4243,9 @@
   },
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": "Налаштування спільного використання IP-адреси не вдалося. Перевірте, чи встановлено %1"
+  },
+  "IPv6": {
+    "IPv6": "IPv6"
   },
   "ISO date": {
     "ISO date": "ISO дата"
@@ -4042,6 +4294,9 @@
   },
   "If autostart app icons don't appear in the system tray, generate a systemd override to ensure DMS starts before autostart apps": {
     "If autostart app icons don't appear in the system tray, generate a systemd override to ensure DMS starts before autostart apps": "Якщо іконки автозапуску не з'являються в системному лотку, створіть systemd override, щоб DMS запускався перед ними"
+  },
+  "Ignore": {
+    "Ignore": "Ігнорувати"
   },
   "Ignore Completely": {
     "Ignore Completely": "Повністю ігнорувати"
@@ -4148,6 +4403,9 @@
   "Inhibitable": {
     "Inhibitable": "Може бути заблоковано"
   },
+  "Init": {
+    "Init": "Ініт-система"
+  },
   "Initial class": {
     "Initial class": "Початковий клас"
   },
@@ -4175,6 +4433,9 @@
   "Input": {
     "Input": "Ввід"
   },
+  "Input Method Framework": {
+    "Input Method Framework": ""
+  },
   "Input Volume": {
     "Input Volume": "Гучність вводу"
   },
@@ -4186,6 +4447,9 @@
   },
   "Input devices": {
     "Input devices": "Пристрої вводу"
+  },
+  "Input method": {
+    "Input method": "Метод вводу"
   },
   "Insert your security key...": {
     "Insert your security key...": "Вставте свій ключ безпеки..."
@@ -4213,6 +4477,9 @@
   },
   "Install plugin '%1' from the DMS registry?": {
     "Install plugin '%1' from the DMS registry?": "Встановити розширення '%1' з реєстру DMS?"
+  },
+  "Install smartmontools": {
+    "Install smartmontools": "Встановити smartmontools"
   },
   "Install system updates?": {
     "Install system updates?": "Встановити системні оновлення?"
@@ -4307,6 +4574,9 @@
   "Isolate displays": {
     "Isolate displays": "Ізолювати дисплеї"
   },
+  "It runs in a terminal; restart it from there.": {
+    "It runs in a terminal; restart it from there.": "Він запускається в терміналі; перезапустіть його звідти"
+  },
   "Italic": {
     "Italic": "Курсив"
   },
@@ -4333,6 +4603,9 @@
   },
   "Keep clock with media": {
     "Keep clock with media": "Залишити годинник з медіа"
+  },
+  "Keep fullscreen on close": {
+    "Keep fullscreen on close": "Зберігати повноекранний режим при закритті"
   },
   "Keep in Bar": {
     "Keep in Bar": "Залишити в панелі"
@@ -4364,9 +4637,6 @@
   "Key combination": {
     "Key combination": "Комбінація клавіш"
   },
-  "Keybindings changed. Refresh and review your edit before saving.": {
-    "Keybindings changed. Refresh and review your edit before saving.": "Гарячі клавіші змінено. Оновіть і перевірте правки перед збереженням"
-  },
   "Keybinds": {
     "Keybinds": "Гарячі клавіші"
   },
@@ -4387,6 +4657,15 @@
   },
   "Kill Session": {
     "Kill Session": "Завершити сесію"
+  },
+  "L1 cache": {
+    "L1 cache": "Кеш L1"
+  },
+  "L2 cache": {
+    "L2 cache": "Кеш L2"
+  },
+  "L3 cache": {
+    "L3 cache": "Кеш L3"
   },
   "LED device": {
     "LED device": "LED-пристрій"
@@ -4409,6 +4688,9 @@
   "Lap detected": {
     "Lap detected": "Виявлено зациклювання"
   },
+  "Laptop": {
+    "Laptop": "Ноутбук"
+  },
   "Large": {
     "Large": "Великий"
   },
@@ -4417,6 +4699,9 @@
   },
   "Last commit %1": {
     "Last commit %1": "Останній коміт %1"
+  },
+  "Last core": {
+    "Last core": "Останнє ядро"
   },
   "Last hour": {
     "Last hour": "Остання година"
@@ -4448,6 +4733,9 @@
   "Last modified": {
     "Last modified": "Останні зміни"
   },
+  "Last self-test": {
+    "Last self-test": "Останній тест самодіагностики"
+  },
   "Last used on this screen": {
     "Last used on this screen": "Останній раз використовувалося на цьому екрані"
   },
@@ -4456,6 +4744,9 @@
   },
   "Launch": {
     "Launch": "Запустити"
+  },
+  "Launch new instance": {
+    "Launch new instance": ""
   },
   "Launch on dGPU": {
     "Launch on dGPU": "Запустити на окремому ГП"
@@ -4607,6 +4898,9 @@
   "List": {
     "List": "Список"
   },
+  "Listening": {
+    "Listening": "Слухає"
+  },
   "Listening from": {
     "Listening from": "Слухання з"
   },
@@ -4642,6 +4936,9 @@
   },
   "Local Weather": {
     "Local Weather": "Місцева погода"
+  },
+  "Local network": {
+    "Local network": "Локальна мережа"
   },
   "Locale": {
     "Locale": "Локаль"
@@ -4712,20 +5009,38 @@
   "Lower display refresh rate on battery": {
     "Lower display refresh rate on battery": "Знизити частоту оновлення дисплея при роботі від батареї"
   },
+  "Lower only if a mode fails for lack of bandwidth": {
+    "Lower only if a mode fails for lack of bandwidth": "Зменшуйте лише якщо режим не працює через брак пропускної здатності"
+  },
+  "Lower priorities move into overflow first": {
+    "Lower priorities move into overflow first": "Низькі пріоритети першими переміщуються в переповнення"
+  },
+  "Lowest": {
+    "Lowest": ""
+  },
   "Lyrics": {
     "Lyrics": "Тексти пісень"
   },
   "Lyrics providers": {
     "Lyrics providers": "Провайдери текстів пісень"
   },
+  "MAC address": {
+    "MAC address": "MAC-адреса"
+  },
   "MIT License": {
     "MIT License": "Ліцензія MIT"
+  },
+  "MTU": {
+    "MTU": "MTU"
   },
   "Magnification": {
     "Magnification": "Збільшення"
   },
   "Mail": {
     "Mail": "Пошта"
+  },
+  "Major page faults": {
+    "Major page faults": "Серйозні помилки сторінок"
   },
   "Make admin": {
     "Make admin": "Зробити адміністратором"
@@ -4780,6 +5095,9 @@
   },
   "Mark incomplete": {
     "Mark incomplete": "Позначити як незавершене"
+  },
+  "Mark urgent": {
+    "Mark urgent": "Позначити як термінове"
   },
   "Marker Supply Empty": {
     "Marker Supply Empty": "Тонер/чорнило вичерпано"
@@ -4844,6 +5162,9 @@
   "Matugen templates": {
     "Matugen templates": "Шаблони Matugen"
   },
+  "Max %1": {
+    "Max %1": "Макс. %1"
+  },
   "Max H": {
     "Max H": "Макс. В"
   },
@@ -4852,6 +5173,12 @@
   },
   "Max apps to show": {
     "Max apps to show": "Максимальна кількість програм"
+  },
+  "Max bits per channel": {
+    "Max bits per channel": "Макс. кількість бітів на канал"
+  },
+  "Max clock": {
+    "Max clock": "Макс. частота"
   },
   "Max edges": {
     "Max edges": "Макс. кількість країв"
@@ -4913,6 +5240,9 @@
   "Media Needed": {
     "Media Needed": "Потрібен папір"
   },
+  "Media errors": {
+    "Media errors": "Помилки медіа"
+  },
   "Media playback": {
     "Media playback": "Відтворення медіа"
   },
@@ -4927,6 +5257,12 @@
   },
   "Memory": {
     "Memory": "Пам'ять"
+  },
+  "Memory clock": {
+    "Memory clock": "Частота пам'яті"
+  },
+  "Memory controller": {
+    "Memory controller": "Контролер пам'ятіі"
   },
   "Memory graph": {
     "Memory graph": "Графік пам'яті"
@@ -4967,11 +5303,17 @@
   "Middle section": {
     "Middle section": "Центральна секція"
   },
+  "Middle-click action": {
+    "Middle-click action": ""
+  },
   "Min H": {
     "Min H": "Мін. В"
   },
   "Min W": {
     "Min W": "Мін. Ш"
+  },
+  "Mini PC": {
+    "Mini PC": "Міні-ПК"
   },
   "Minimal": {
     "Minimal": "Мінімальний"
@@ -5021,6 +5363,9 @@
   "Monitor": {
     "Monitor": "Монітор"
   },
+  "Monitoring off": {
+    "Monitoring off": "Моніторинг вимкнено"
+  },
   "Mono Audio": {
     "Mono Audio": "Моно"
   },
@@ -5032,6 +5377,9 @@
   },
   "Monospace family": {
     "Monospace family": "Моноширинний шрифт"
+  },
+  "Monospace font": {
+    "Monospace font": "Моноширинний шрифт"
   },
   "Month": {
     "Month": "Місяць"
@@ -5056,6 +5404,9 @@
   },
   "More samples look smoother and cost more GPU": {
     "More samples look smoother and cost more GPU": "Більше зразків виглядають плавніше і потребують більше ресурсів GPU"
+  },
+  "More transparent areas get less blur": {
+    "More transparent areas get less blur": "Більш прозорі області мають менше розмиття"
   },
   "More widgets": {
     "More widgets": "Більше пристосунків"
@@ -5090,6 +5441,9 @@
   "Mouse & touchpad": {
     "Mouse & touchpad": "Миша і тачпад"
   },
+  "Mouse behavior": {
+    "Mouse behavior": ""
+  },
   "Move out of scratchpad": {
     "Move out of scratchpad": "Винести з чернеток"
   },
@@ -5098,6 +5452,9 @@
   },
   "Move to scratchpad: %1": {
     "Move to scratchpad: %1": "Перемістити до чернеток: %1"
+  },
+  "Move workspace to this display": {
+    "Move workspace to this display": ""
   },
   "Moves focus along with the column": {
     "Moves focus along with the column": "Переміщує фокус разом із колонкою"
@@ -5110,9 +5467,6 @@
   },
   "Multimedia": {
     "Multimedia": "Мультимедіа"
-  },
-  "Multiple bindings use the original shortcut. Resolve the duplicate bindings first.": {
-    "Multiple bindings use the original shortcut. Resolve the duplicate bindings first.": "Кілька прив'язок використовують оригінальну комбінацію. Спочатку усуньте дублікати прив'язок"
   },
   "Multiplexers": {
     "Multiplexers": "Мультиплексори"
@@ -5270,11 +5624,23 @@
   "Next Transition": {
     "Next Transition": "Наступний перехід"
   },
+  "Next candidate": {
+    "Next candidate": ""
+  },
   "Next category": {
     "Next category": "Наступна категорія"
   },
+  "Next group": {
+    "Next group": ""
+  },
+  "Next input method": {
+    "Next input method": ""
+  },
   "Next page": {
     "Next page": "Наступна сторінка"
+  },
+  "Nice": {
+    "Nice": "Nice"
   },
   "Night": {
     "Night": "Ніч"
@@ -5648,9 +6014,6 @@
   "Normal": {
     "Normal": "Нормальний"
   },
-  "Normal Font": {
-    "Normal Font": "Звичайний шрифт"
-  },
   "Normal Priority": {
     "Normal Priority": "Нормальний пріоритет"
   },
@@ -5693,14 +6056,17 @@
   "Not linked": {
     "Not linked": "Не прив'язано"
   },
+  "Not on click": {
+    "Not on click": "Не за кліком"
+  },
+  "Not readable without privileges": {
+    "Not readable without privileges": "Недоступно для читання без відповідних прав"
+  },
   "Not set": {
     "Not set": "Не встановлено"
   },
   "Not shown on this bar, so its section widgets stay hidden": {
     "Not shown on this bar, so its section widgets stay hidden": "Не відображається на цій панелі, тому пристосунки її розділу залишаються прихованими"
-  },
-  "Not synchronized": {
-    "Not synchronized": "Не синхронізовано"
   },
   "Notch": {
     "Notch": "Виріз"
@@ -5762,6 +6128,9 @@
   "Num Lock at startup": {
     "Num Lock at startup": "Num Lock при запуску"
   },
+  "Num lock": {
+    "Num lock": "Num lock"
+  },
   "Numeric (D/M)": {
     "Numeric (D/M)": "Числовий (Д/М)"
   },
@@ -5795,11 +6164,17 @@
   "Offline Report": {
     "Offline Report": "Звіт про автономну роботу"
   },
+  "Offline uncorrectable": {
+    "Offline uncorrectable": "Офлайн невідновлювані"
+  },
   "Older": {
     "Older": "Старіше"
   },
   "On": {
     "On": "УВІМ."
+  },
+  "On activation": {
+    "On activation": "При активації"
   },
   "On button down": {
     "On button down": "При натисканні кнопки"
@@ -5828,8 +6203,17 @@
   "Only continue if you recognize this server certificate fingerprint.": {
     "Only continue if you recognize this server certificate fingerprint.": "Продовжуйте лише в тому випадку, якщо ви впізнаєте відбиток цього сертифіката сервера"
   },
+  "Only in groups": {
+    "Only in groups": "Тільки в групах"
+  },
   "Only on battery": {
     "Only on battery": "Тільки від батареї"
+  },
+  "Only outside groups": {
+    "Only outside groups": "Тільки поза групами"
+  },
+  "Only the main process of a system service can be restarted.": {
+    "Only the main process of a system service can be restarted.": "Перезапустити можна лише основний процес системної служби"
   },
   "Opacity": {
     "Opacity": "Непрозорість"
@@ -5857,6 +6241,9 @@
   },
   "Open delay": {
     "Open delay": "Затримка відкриття"
+  },
+  "Open files": {
+    "Open files": "Відкриті файли"
   },
   "Open floating": {
     "Open floating": "Відкрити плаваючим"
@@ -5906,6 +6293,9 @@
   "Opens without taking keyboard focus": {
     "Opens without taking keyboard focus": "Відкривається без перехоплення фокусу клавіатури"
   },
+  "Operating system": {
+    "Operating system": "Операційна система"
+  },
   "Optional description": {
     "Optional description": "Необов'язковий опис"
   },
@@ -5920,6 +6310,9 @@
   },
   "Options": {
     "Options": "Параметри"
+  },
+  "Options of a fcitx5 plugin": {
+    "Options of a fcitx5 plugin": ""
   },
   "Options of one widget instance": {
     "Options of one widget instance": "Опції одного екземпляра пристосунка"
@@ -5939,9 +6332,6 @@
   "Original: %1": {
     "Original: %1": "Оригінал: %1"
   },
-  "Original: %1\nCurrent: %2\nProposed: %3\nCurrent destination: %4": {
-    "Original: %1\nCurrent: %2\nProposed: %3\nCurrent destination: %4": "Оригінал: %1\nПоточний: %2\nЗапропоновано: %3\nПоточний пункт призначення: %4"
-  },
   "Other": {
     "Other": "Інше"
   },
@@ -5950,6 +6340,9 @@
   },
   "Other displays show a solid color for OLED burn-in protection": {
     "Other displays show a solid color for OLED burn-in protection": "Інші дисплеї показують суцільний колір для захисту OLED від вигоряння"
+  },
+  "Out-of-memory score": {
+    "Out-of-memory score": "Показник нестачі пам'яті"
   },
   "Outer gap": {
     "Outer gap": "Зовнішній відступ"
@@ -5987,6 +6380,9 @@
   "Over fullscreen": {
     "Over fullscreen": "Понад повним екраном"
   },
+  "Overall": {
+    "Overall": "Загалом"
+  },
   "Overcast": {
     "Overcast": "Похмуро"
   },
@@ -5995,6 +6391,9 @@
   },
   "Overflow button position": {
     "Overflow button position": "Позиція кнопки переповнення"
+  },
+  "Overflow priority": {
+    "Overflow priority": "Пріоритет переповнення"
   },
   "Overlapping": {
     "Overlapping": "Накладання"
@@ -6023,6 +6422,9 @@
   "Overview": {
     "Overview": "Огляд"
   },
+  "Own share": {
+    "Own share": "Власна частка"
+  },
   "Owner: %1": {
     "Owner: %1": "Власник: %1"
   },
@@ -6047,11 +6449,23 @@
   "Package name (e.g., docker)": {
     "Package name (e.g., docker)": "Назва пакета (наприклад, docker)"
   },
+  "Package repositories moved": {
+    "Package repositories moved": "Репозиторії пакунків змінено"
+  },
+  "Packages": {
+    "Packages": "Пакунки"
+  },
   "Pad": {
     "Pad": "Внутрішній відступ"
   },
   "Padding": {
     "Padding": "Внутрішній відступ"
+  },
+  "Page faults": {
+    "Page faults": "Помилки сторінок"
+  },
+  "Paged grid": {
+    "Paged grid": ""
   },
   "Pair": {
     "Pair": "Створити пару"
@@ -6092,8 +6506,14 @@
   "Parabolic": {
     "Parabolic": "Параболічний"
   },
-  "Partially synchronized": {
-    "Partially synchronized": "Частково синхронізовано"
+  "Parent": {
+    "Parent": "Батьківський"
+  },
+  "Parents": {
+    "Parents": "Батьківські"
+  },
+  "Partition table": {
+    "Partition table": "Таблиця розділів"
   },
   "Partly Cloudy": {
     "Partly Cloudy": "Частково хмарно"
@@ -6155,6 +6575,9 @@
   "Paused": {
     "Paused": "Призупинено"
   },
+  "Peak": {
+    "Peak": "Пік"
+  },
   "Pending": {
     "Pending": "Очікує"
   },
@@ -6163,6 +6586,12 @@
   },
   "Pending Discharge": {
     "Pending Discharge": "Очікування розрядки"
+  },
+  "Per display": {
+    "Per display": "Для кожного дисплея"
+  },
+  "Per thread": {
+    "Per thread": "На потік"
   },
   "Per window": {
     "Per window": "Для кожного вікна"
@@ -6218,6 +6647,12 @@
   "Pin to Dock": {
     "Pin to Dock": "Закріпити у Доці"
   },
+  "Pinch": {
+    "Pinch": "Щипок"
+  },
+  "Pinch sensitivity": {
+    "Pinch sensitivity": "Чутливість щипка"
+  },
   "Pink": {
     "Pink": "Рожевий"
   },
@@ -6266,6 +6701,9 @@
   "Playing": {
     "Playing": "Відтворюється"
   },
+  "Playing audio": {
+    "Playing audio": "Грає аудіо"
+  },
   "Please wait...": {
     "Please wait...": "Будь ласка, зачекайте..."
   },
@@ -6280,9 +6718,6 @@
   },
   "Plugin Source Code": {
     "Plugin Source Code": "Вихідний код розширення"
-  },
-  "Plugin authors": {
-    "Plugin authors": "Автори розширення"
   },
   "Plugin dependency missing": {
     "Plugin dependency missing": "Відсутня залежність розширення"
@@ -6413,6 +6848,9 @@
   "Power Saver": {
     "Power Saver": "Енергозбереження"
   },
+  "Power limit": {
+    "Power limit": "Ліміт потужності"
+  },
   "Power menu": {
     "Power menu": "Меню живлення"
   },
@@ -6434,11 +6872,17 @@
   "Power source": {
     "Power source": "Джерело живлення"
   },
+  "Power-on time": {
+    "Power-on time": "Час роботи"
+  },
   "Pre-release": {
     "Pre-release": "Попередній реліз"
   },
   "Precipitation": {
     "Precipitation": "Опади"
+  },
+  "Preempted": {
+    "Preempted": "Витіснений"
   },
   "Preference": {
     "Preference": "Пріоритет"
@@ -6485,14 +6929,20 @@
   "Previous": {
     "Previous": "Попередній"
   },
+  "Previous candidate": {
+    "Previous candidate": ""
+  },
   "Previous category": {
     "Previous category": "Попередня категорія"
   },
+  "Previous group": {
+    "Previous group": ""
+  },
+  "Previous input method": {
+    "Previous input method": ""
+  },
   "Previous page": {
     "Previous page": "Попередня сторінка"
-  },
-  "Previous: %1\nCurrent: %2": {
-    "Previous: %1\nCurrent: %2": "Попередній: %1\nПоточний: %2"
   },
   "Primary": {
     "Primary": "Основний"
@@ -6545,6 +6995,9 @@
   "Private Key Password": {
     "Private Key Password": "Пароль приватного ключа"
   },
+  "Process": {
+    "Process": "Процес"
+  },
   "Process count": {
     "Process count": "Кількість процесів"
   },
@@ -6556,6 +7009,9 @@
   },
   "Processing": {
     "Processing": "Обробка"
+  },
+  "Processor": {
+    "Processor": "Процесор"
   },
   "Profile": {
     "Profile": "Профіль"
@@ -6623,6 +7079,9 @@
   "Qt colors applied successfully": {
     "Qt colors applied successfully": "Кольори Qt успішно застосовано"
   },
+  "Qt theme": {
+    "Qt theme": "Тема Qt"
+  },
   "QtMultimedia is not available": {
     "QtMultimedia is not available": "QtMultimedia недоступний"
   },
@@ -6631,6 +7090,9 @@
   },
   "Quality": {
     "Quality": "Якість"
+  },
+  "Queue depth": {
+    "Queue depth": "Глибина черги"
   },
   "Quick access to application launcher": {
     "Quick access to application launcher": "Швидкий доступ до запускача програм"
@@ -6646,6 +7108,15 @@
   },
   "Quick tiles": {
     "Quick tiles": "Швидкі плитки"
+  },
+  "Quit": {
+    "Quit": "Завершити"
+  },
+  "Quit or reload": {
+    "Quit or reload": "Завершити або перезавантажити"
+  },
+  "Quit or restart": {
+    "Quit or restart": "Завершити або перезапустити"
   },
   "Radius": {
     "Radius": "Радіус"
@@ -6680,8 +7151,8 @@
   "Read the blog post": {
     "Read the blog post": "Прочитати допис у блозі"
   },
-  "Read:": {
-    "Read:": "Читати:"
+  "Read total": {
+    "Read total": "Загальний обсяг читання"
   },
   "Readings": {
     "Readings": "Показники"
@@ -6707,6 +7178,9 @@
   "Ready": {
     "Ready": "Готово"
   },
+  "Reallocated sectors": {
+    "Reallocated sectors": "Перепризначені сектори"
+  },
   "Reason": {
     "Reason": "Причина"
   },
@@ -6724,6 +7198,9 @@
   },
   "Reboot to firmware setup": {
     "Reboot to firmware setup": "Перезавантажити для налаштування прошивки"
+  },
+  "Received since boot": {
+    "Received since boot": "Отримано з моменту завантаження"
   },
   "Recent": {
     "Recent": "Нещодавні"
@@ -6767,6 +7244,9 @@
   "Registries": {
     "Registries": "Реєстри"
   },
+  "Regular": {
+    "Regular": ""
+  },
   "Reject jobs": {
     "Reject jobs": "Відхилити завдання"
   },
@@ -6784,6 +7264,12 @@
   },
   "Release to confirm": {
     "Release to confirm": "Відпустіть для підтвердження"
+  },
+  "Reliability": {
+    "Reliability": "Надійність"
+  },
+  "Reload": {
+    "Reload": "Перезавантажити"
   },
   "Reload From Disk": {
     "Reload From Disk": "Перезавантажити з диска"
@@ -6817,6 +7303,9 @@
   },
   "Reminder": {
     "Reminder": "Нагадування"
+  },
+  "Removable": {
+    "Removable": "Знімний"
   },
   "Remove": {
     "Remove": "Вилучити"
@@ -6950,6 +7439,9 @@
   "Reset to default": {
     "Reset to default": "Скинути до типових"
   },
+  "Resident": {
+    "Resident": "Резидентний"
+  },
   "Resize on border": {
     "Resize on border": "Змінити розмір за межею"
   },
@@ -6958,6 +7450,15 @@
   },
   "Resolution, position, scale": {
     "Resolution, position, scale": "Роздільна здатність, позиція, масштаб"
+  },
+  "Resources": {
+    "Resources": "Ресурси"
+  },
+  "Response time": {
+    "Response time": "Час відгуку"
+  },
+  "Restart": {
+    "Restart": "Перезапустити"
   },
   "Restart DMS": {
     "Restart DMS": "Перезапустити DMS"
@@ -6982,9 +7483,6 @@
   },
   "Revert": {
     "Revert": "Скасувати зміни"
-  },
-  "Review the current bindings before saving this edit.": {
-    "Review the current bindings before saving this edit.": "Перегляньте поточні прив'язки перед збереженням цієї правки"
   },
   "Right": {
     "Right": "Праворуч"
@@ -7064,6 +7562,12 @@
   "Rules found in your compositor config. These are read-only here, use Convert to DMS to make an editable copy.": {
     "Rules found in your compositor config. These are read-only here, use Convert to DMS to make an editable copy.": "Правила знайдено в конфігурації вашого композитора. Тут вони доступні лише для читання; використовуйте «Convert to DMS», щоб створити копію, яку можна редагувати"
   },
+  "Run %1 in a terminal.": {
+    "Run %1 in a terminal.": "Запустити %1 в терміналі."
+  },
+  "Run %1 to create it before changing these settings.": {
+    "Run %1 to create it before changing these settings.": "Запустіть %1 для його створення перед зміною цих налаштувань"
+  },
   "Run Again": {
     "Run Again": "Запустити знову"
   },
@@ -7090,6 +7594,9 @@
   },
   "Running apps": {
     "Running apps": "Запущені програми"
+  },
+  "Running for": {
+    "Running for": "Запущено вже"
   },
   "Running greeter sync...": {
     "Running greeter sync...": "Синхронізація екрану входу..."
@@ -7127,6 +7634,9 @@
   "SW": {
     "SW": "Пд-Зх"
   },
+  "Same as workspace change": {
+    "Same as workspace change": "Так само, як і зміна робочого простору"
+  },
   "Satellites": {
     "Satellites": "Супутники"
   },
@@ -7153,9 +7663,6 @@
   },
   "Save credentials": {
     "Save credentials": "Зберегти облікові дані"
-  },
-  "Save or discard the current edit before editing another shortcut.": {
-    "Save or discard the current edit before editing another shortcut.": "Збережіть або відмініть поточну правку перед редагуванням іншої комбінації"
   },
   "Save password": {
     "Save password": "Зберегти пароль"
@@ -7191,13 +7698,13 @@
     "Scale": "Масштаб"
   },
   "Scale battery level to charge limit": {
-    "Scale battery level to charge limit": ""
+    "Scale battery level to charge limit": "Масштабувати рівень заряду батареї до ліміту зарядки"
   },
   "Scale low and critical alert thresholds": {
-    "Scale low and critical alert thresholds": ""
+    "Scale low and critical alert thresholds": "Масштабувати пороги низького та критичного рівнів сповіщення"
   },
   "Scale the displayed battery level to the configured charge limit": {
-    "Scale the displayed battery level to the configured charge limit": ""
+    "Scale the displayed battery level to the configured charge limit": "Масштабувати відображуваний рівень заряду батареї до налаштованого ліміту зарядки"
   },
   "Scan": {
     "Scan": "Сканувати"
@@ -7210,6 +7717,9 @@
   },
   "Schedule, sunset, wallpaper brightness": {
     "Schedule, sunset, wallpaper brightness": "Розклад, захід сонця, яскравість шпалер"
+  },
+  "Scheduling": {
+    "Scheduling": "Планування"
   },
   "Science": {
     "Science": "Наука"
@@ -7310,6 +7820,12 @@
   "Sections": {
     "Sections": "Секції"
   },
+  "Sector size": {
+    "Sector size": "Розмір сектора"
+  },
+  "Secure Boot": {
+    "Secure Boot": "Secure Boot"
+  },
   "Secured": {
     "Secured": "Захищено"
   },
@@ -7409,6 +7925,12 @@
   "Sends the playing track, artist and album name to enabled lyrics providers": {
     "Sends the playing track, artist and album name to enabled lyrics providers": "Надсилає назву треку, виконавця та альбома увімкненим провайдерам текстів пісень"
   },
+  "Sensors": {
+    "Sensors": "Сенсори"
+  },
+  "Sent since boot": {
+    "Sent since boot": "Надіслано з моменту завантаження"
+  },
   "Separate": {
     "Separate": "Окремий"
   },
@@ -7433,8 +7955,14 @@
   "Separator": {
     "Separator": "Роздільник"
   },
+  "Serial number": {
+    "Serial number": "Серійний номер"
+  },
   "Server": {
     "Server": "Сервер"
+  },
+  "Service": {
+    "Service": "Сервіс"
   },
   "Session": {
     "Session": "Сесія"
@@ -7487,6 +8015,12 @@
   "Settings are read-only. Changes will not persist.": {
     "Settings are read-only. Changes will not persist.": "Налаштування доступні лише для читання. Зміни не будуть збережені"
   },
+  "Settings version": {
+    "Settings version": "Версія налаштувань"
+  },
+  "Setuid": {
+    "Setuid": "Setuid"
+  },
   "Setup": {
     "Setup": "Налаштування"
   },
@@ -7504,6 +8038,15 @@
   },
   "Share gamma control settings": {
     "Share gamma control settings": "Спільне керування гаммою"
+  },
+  "Share input state": {
+    "Share input state": ""
+  },
+  "Shared": {
+    "Shared": "Спільний"
+  },
+  "Shared memory": {
+    "Shared memory": "Спільна пам'ять"
   },
   "Shared shortcuts": {
     "Shared shortcuts": "Спільні ярлики"
@@ -7544,6 +8087,9 @@
   "Show \"config reloaded\" toast": {
     "Show \"config reloaded\" toast": "Показати сповіщення «конфігурацію перезавантажено»"
   },
+  "Show AM/PM": {
+    "Show AM/PM": "Показувати AM/PM"
+  },
   "Show I/O": {
     "Show I/O": "Показати ввід/вивід"
   },
@@ -7579,9 +8125,6 @@
   },
   "Show device": {
     "Show device": "Показувати пристрій"
-  },
-  "Show device name": {
-    "Show device name": "Показати назву пристрою"
   },
   "Show discharge rate": {
     "Show discharge rate": "Показати швидкість розряду"
@@ -7628,6 +8171,9 @@
   "Show in dock": {
     "Show in dock": "Показати в доці"
   },
+  "Show input method info on switch": {
+    "Show input method info on switch": ""
+  },
   "Show lock": {
     "Show lock": "Показати блокування"
   },
@@ -7666,6 +8212,9 @@
   },
   "Show power off": {
     "Show power off": "Показати вимкнення"
+  },
+  "Show preedit in application": {
+    "Show preedit in application": ""
   },
   "Show readings": {
     "Show readings": "Показати показники"
@@ -7706,6 +8255,9 @@
   "Show the battery briefly when power is connected or removed": {
     "Show the battery briefly when power is connected or removed": "Коротко показувати батарею при підключенні або відключенні живлення"
   },
+  "Show the text being composed inside the app instead of the candidate window": {
+    "Show the text being composed inside the app instead of the candidate window": ""
+  },
   "Show trend": {
     "Show trend": "Показати тренд"
   },
@@ -7741,6 +8293,9 @@
   },
   "Shows only windows from the dock's own display": {
     "Shows only windows from the dock's own display": "Показує лише вікна з дисплея, до якого належить док"
+  },
+  "Shows the dashboard tab bar instead of the sheet handle": {
+    "Shows the dashboard tab bar instead of the sheet handle": "Показує панель вкладок панелі керування замість ручки листа"
   },
   "Shows the line being sung instead of the title and artist while synced lyrics are available": {
     "Shows the line being sung instead of the title and artist while synced lyrics are available": "Показує рядок, що співається, замість назви та виконавця, якщо доступні синхронізовані тексти пісень"
@@ -7793,11 +8348,17 @@
   "Slanted": {
     "Slanted": "Похило"
   },
+  "Sleeping": {
+    "Sleeping": "Спить"
+  },
   "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": {
-    "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": ""
+    "Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.": "Зсуньте панель за межі повноекранних програм. Перемістіть покажчик до краю екрана, щоб відобразити її"
   },
   "Slideout": {
     "Slideout": "Висувна панель"
+  },
+  "Slots used": {
+    "Slots used": "Зайнято слотів"
   },
   "Small": {
     "Small": "Малий"
@@ -7826,6 +8387,9 @@
   "Snow": {
     "Snow": "Сніг"
   },
+  "Sockets": {
+    "Sockets": "Сокети"
+  },
   "Soft reboot": {
     "Soft reboot": "М'яке перезавантаження"
   },
@@ -7843,6 +8407,9 @@
   },
   "Solid": {
     "Solid": "Суцільний"
+  },
+  "Some options are only available in fcitx5-configtool: %1": {
+    "Some options are only available in fcitx5-configtool: %1": ""
   },
   "Some plugins require a newer version of DMS:": {
     "Some plugins require a newer version of DMS:": "Деяким розширенням потрібна новіша версія DMS:"
@@ -7886,6 +8453,9 @@
   "Spacious": {
     "Spacious": "Просторий"
   },
+  "Spare blocks left": {
+    "Spare blocks left": "Залишилося резервних блоків"
+  },
   "Speaker settings": {
     "Speaker settings": "Налаштування динаміків"
   },
@@ -7897,6 +8467,12 @@
   },
   "Speed, scrolling, tap to click": {
     "Speed, scrolling, tap to click": "Швидкість, прокручування, клік при дотику"
+  },
+  "Spin-up time": {
+    "Spin-up time": "Час розкрутки"
+  },
+  "Spinning Record": {
+    "Spinning Record": ""
   },
   "Split direction follows the cursor position in the window": {
     "Split direction follows the cursor position in the window": "Напрямок поділу слідує за позицією курсора у вікні"
@@ -7955,6 +8531,15 @@
   "Start typing your notes here...": {
     "Start typing your notes here...": "Почніть вводити свої нотатки тут..."
   },
+  "Start with the input method on instead of the plain keyboard": {
+    "Start with the input method on instead of the plain keyboard": ""
+  },
+  "Start/stop count": {
+    "Start/stop count": "Кількість запусків/зупинок"
+  },
+  "Started": {
+    "Started": "Запущено"
+  },
   "Starting hotspot...": {
     "Starting hotspot...": "Запуск точки доступу..."
   },
@@ -7969,6 +8554,9 @@
   },
   "State": {
     "State": "Стан"
+  },
+  "Stay awake with the lid closed": {
+    "Stay awake with the lid closed": ""
   },
   "Stay focused": {
     "Stay focused": "Залишатися у фокусі"
@@ -7993,6 +8581,9 @@
   },
   "Stops syncing your DMS settings to the greeter. Set up links them again.": {
     "Stops syncing your DMS settings to the greeter. Set up links them again.": "Припиняє синхронізацію налаштувань DMS з привітанням. «Налаштувати» прив'яже їх знову"
+  },
+  "Storage": {
+    "Storage": "Сховище"
   },
   "Stretch": {
     "Stretch": "Розтягнути"
@@ -8032,9 +8623,6 @@
   },
   "Sunset": {
     "Sunset": "Захід сонця"
-  },
-  "Super + Space": {
-    "Super + Space": "Super + Пробіл"
   },
   "Support DMS": {
     "Support DMS": "Підтримка DMS"
@@ -8081,6 +8669,9 @@
   "Suspend then hibernate": {
     "Suspend then hibernate": "Призупинити, потім приспати"
   },
+  "Swallow focus click": {
+    "Swallow focus click": "Поглинати клік фокусування"
+  },
   "Swap": {
     "Swap": "Поміняти"
   },
@@ -8090,8 +8681,14 @@
   "Sway website": {
     "Sway website": "Вебсайт Sway"
   },
+  "Swaying Square": {
+    "Swaying Square": ""
+  },
   "Switch between display configurations": {
     "Switch between display configurations": "Перемикатися між конфігураціями дисплеїв"
+  },
+  "Switch between the first input method and the active one": {
+    "Switch between the first input method and the active one": ""
   },
   "Switch layout shortcut": {
     "Switch layout shortcut": "Комбінація перемикання розкладки"
@@ -8102,6 +8699,9 @@
   "Switches to power saver at the low battery threshold": {
     "Switches to power saver at the low battery threshold": "Перемикається в режим енергозбереження при досягненні порогу низького заряду батареї"
   },
+  "Switching to the current workspace returns to the previous one": {
+    "Switching to the current workspace returns to the previous one": "Перемикання на поточний робочий простір повертає до попереднього"
+  },
   "Symbol": {
     "Symbol": "Символ"
   },
@@ -8110,9 +8710,6 @@
   },
   "Sync completed successfully.": {
     "Sync completed successfully.": "Синхронізацію успішно завершено"
-  },
-  "Sync failed": {
-    "Sync failed": "Синхронізація не вдалася"
   },
   "Sync failed in background mode. Trying terminal mode so you can authenticate interactively.": {
     "Sync failed in background mode. Trying terminal mode so you can authenticate interactively.": "Синхронізація у фоновому режимі не вдалася. Спроба запустити через термінал для інтерактивної автентифікації"
@@ -8132,23 +8729,20 @@
   "Sync with portal": {
     "Sync with portal": "Синхронізувати з порталом"
   },
-  "Synchronized": {
-    "Synchronized": "Синхронізовано"
-  },
   "Syncing...": {
     "Syncing...": "Синхронізація..."
   },
   "System & integrations": {
     "System & integrations": "Система та інтеграції"
   },
-  "System Information": {
-    "System Information": "Інформація про систему"
-  },
   "System Monitor": {
     "System Monitor": "Системний монітор"
   },
   "System Monitor Unavailable": {
     "System Monitor Unavailable": "Системний монітор недоступний"
+  },
+  "System bell": {
+    "System bell": "Системний сигнал"
   },
   "System check": {
     "System check": "Перевірка системи"
@@ -8162,6 +8756,9 @@
   "System packages": {
     "System packages": "Системні пакети"
   },
+  "System report": {
+    "System report": "Звіт щодо системи"
+  },
   "System sound theme and events": {
     "System sound theme and events": "Системна тема звуків та події"
   },
@@ -8174,6 +8771,9 @@
   "System theme toggle": {
     "System theme toggle": "Перемикач системної теми"
   },
+  "System time": {
+    "System time": "Системний час"
+  },
   "System tray": {
     "System tray": "Системний лоток"
   },
@@ -8183,11 +8783,23 @@
   "Systemd override generated": {
     "Systemd override generated": "Згенеровано заміну systemd"
   },
+  "Systemd unit": {
+    "Systemd unit": "Одиниця systemd"
+  },
+  "TRIM": {
+    "TRIM": "TRIM"
+  },
   "Tab": {
     "Tab": "Вкладка"
   },
   "Table": {
     "Table": "Таблиця"
+  },
+  "Tablet": {
+    "Tablet": "Планшет"
+  },
+  "Tablet input": {
+    "Tablet input": "Введення планшета"
   },
   "Tabs": {
     "Tabs": "Вкладки"
@@ -8285,9 +8897,6 @@
   "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": {
     "The %1 environment variable is not set or the socket is unavailable. Automated plugin management requires it.": "Змінна середовища %1 не задана або сокет не доступний. Це потрібно для автоматизованого керування плагінами."
   },
-  "The Aqueous operation failed.": {
-    "The Aqueous operation failed.": "Операція Aqueous не вдалася"
-  },
   "The Control Center opens at the cursor instead of its widget": {
     "The Control Center opens at the cursor instead of its widget": "Центр керування відкривається біля курсора замість свого пристосунку"
   },
@@ -8309,14 +8918,17 @@
   "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": {
     "The below settings will modify your GTK and Qt settings. If you wish to preserve your current configurations, please back them up (%1 and %2).": "Наведені нижче налаштування змінять ваші параметри GTK та Qt. Якщо ви бажаєте зберегти поточну конфігурацію, будь ласка, зробіть резервну копію (%1 та %2)"
   },
-  "The compositor session changed. Discard this edit before starting a new one.": {
-    "The compositor session changed. Discard this edit before starting a new one.": "Сесія композитора змінилася. Відмініть цю правку перед початком нової"
+  "The click that focuses a window does not reach the app": {
+    "The click that focuses a window does not reach the app": "Клік, що фокусує вікно, не передається в програму"
   },
   "The custom command used when attaching to sessions (receives the session name as the first argument)": {
     "The custom command used when attaching to sessions (receives the session name as the first argument)": "Спеціальна команда, що використовується при підключенні до сесій (отримує назву сесії як перший аргумент)"
   },
   "The direction label shows where the wind comes from.": {
     "The direction label shows where the wind comes from.": "Мітка напрямку показує, звідки дме вітер"
+  },
+  "The fcitx5 popup. The shell's OSD toggle is in the OSD settings.": {
+    "The fcitx5 popup. The shell's OSD toggle is in the OSD settings.": ""
   },
   "The fill shows relative humidity. The badge shows the dew point temperature.": {
     "The fill shows relative humidity. The badge shows the dew point temperature.": "Заповнення показує відносну вологість. Значок показує температуру точки роси"
@@ -8342,14 +8954,8 @@
   "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": {
     "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": "Екран входу припиняє слідувати за вашою темою DMS, шпалерами, пристосунками та налаштуваннями. greetd, автентифікація та інші користувачі не зачіпаються"
   },
-  "The new shortcut is already in use. Choose another shortcut.": {
-    "The new shortcut is already in use. Choose another shortcut.": "Нова комбінація вже використовується. Виберіть іншу комбінацію"
-  },
-  "The original shortcut changed. Refresh and review your edit.": {
-    "The original shortcut changed. Refresh and review your edit.": "Оригінальна комбінація змінилася. Оновіть і перевірте вашу правку"
-  },
-  "The original shortcut was removed. Discard this edit or add a new shortcut.": {
-    "The original shortcut was removed. Discard this edit or add a new shortcut.": "Оригінальна комбінація була видалена. Відмініть цю правку або додайте нову комбінацію"
+  "The next enabled provider is used when one fails.": {
+    "The next enabled provider is used when one fails.": ""
   },
   "The quick brown fox jumps over the lazy dog": {
     "The quick brown fox jumps over the lazy dog": "Здійнявши ґвалт поміж тієї юрби процентщиків аферист чухнув геть"
@@ -8360,17 +8966,8 @@
   "The rest open the bar's own popouts": {
     "The rest open the bar's own popouts": "Решта відкривають власні спливаючі вікна панелі"
   },
-  "The result is unknown. Refresh before trying again.": {
-    "The result is unknown. Refresh before trying again.": "Результат невідомий. Оновіть перед повторною спробою"
-  },
   "The rule applies to any window matching one of these.": {
     "The rule applies to any window matching one of these.": "Правило застосовується до будь-якого вікна, що відповідає одному з цих критеріїв"
-  },
-  "The save result is unknown. Refresh and check the current bindings.": {
-    "The save result is unknown. Refresh and check the current bindings.": "Результат збереження невідомий. Оновіть і перевірте поточні прив'язки"
-  },
-  "The selected action is no longer available.": {
-    "The selected action is no longer available.": "Вибрана дія більше недоступна"
   },
   "The server certificate has changed since it was last trusted. Only continue if you recognize the new fingerprint.": {
     "The server certificate has changed since it was last trusted. Only continue if you recognize the new fingerprint.": "Сертифікат сервера змінився з моменту останнього підтвердження довіри. Продовжуйте лише в тому випадку, якщо ви впізнаєте новий відбиток пальця"
@@ -8444,14 +9041,8 @@
   "This display does not report VRR support": {
     "This display does not report VRR support": "Цей дисплей не повідомляє про підтримку VRR"
   },
-  "This install is still using %1. Run %2 to migrate before changing these settings.": {
-    "This install is still using %1. Run %2 to migrate before changing these settings.": "Ця інсталяція все ще використовує %1. Запустіть %2 для міграції перед зміною цих налаштувань"
-  },
   "This may take a few seconds": {
     "This may take a few seconds": "Це може зайняти кілька секунд"
-  },
-  "This operation is not supported by the installed Aqueous version.": {
-    "This operation is not supported by the installed Aqueous version.": "Ця операція не підтримується встановленою версією Aqueous"
   },
   "This output is disabled in the current profile": {
     "This output is disabled in the current profile": "Цей вивід вимкнено в поточному профілі"
@@ -8479,6 +9070,9 @@
   },
   "This will permanently remove this saved clipboard item. This action cannot be undone.": {
     "This will permanently remove this saved clipboard item. This action cannot be undone.": "Це назавжди видалить цей збережений елемент буфера обміну. Цю дію неможливо скасувати"
+  },
+  "Threads": {
+    "Threads": "Потоки"
   },
   "Thunderstorm": {
     "Thunderstorm": "Гроза"
@@ -8597,6 +9191,12 @@
   "Toggle fonts": {
     "Toggle fonts": "Перемкнути шрифти"
   },
+  "Toggle input method": {
+    "Toggle input method": ""
+  },
+  "Toggle preedit in application": {
+    "Toggle preedit in application": ""
+  },
   "Toggling...": {
     "Toggling...": "Перемикання..."
   },
@@ -8641,6 +9241,9 @@
   },
   "Top Right": {
     "Top Right": "Згори справа"
+  },
+  "Top process": {
+    "Top process": "Головний процес"
   },
   "Top processes": {
     "Top processes": "Топ-процеси"
@@ -8792,9 +9395,6 @@
   "Unknown Device": {
     "Unknown Device": "Невідомий пристрій"
   },
-  "Unknown GPU": {
-    "Unknown GPU": "Невідомий ГП"
-  },
   "Unknown Model": {
     "Unknown Model": "Невідома модель"
   },
@@ -8843,6 +9443,9 @@
   "Unpin from Dock": {
     "Unpin from Dock": "Відкріпити від доку"
   },
+  "Unsafe shutdowns": {
+    "Unsafe shutdowns": "Небезпечні вимкнення"
+  },
   "Unsaved changes": {
     "Unsaved changes": "Незбережені зміни"
   },
@@ -8876,6 +9479,9 @@
   "Up": {
     "Up": "Вгору"
   },
+  "Up %1": {
+    "Up %1": "Працює %1"
+  },
   "Up to date": {
     "Up to date": "Оновлено"
   },
@@ -8887,6 +9493,9 @@
   },
   "Update All": {
     "Update All": "Оновити все"
+  },
+  "Update DMS to configure fcitx5 from here": {
+    "Update DMS to configure fcitx5 from here": ""
   },
   "Update available": {
     "Update available": "Доступне оновлення"
@@ -8915,6 +9524,9 @@
   "Upgrading...": {
     "Upgrading...": "Оновлення версії..."
   },
+  "Upload": {
+    "Upload": "Вивантаження"
+  },
   "Uptime": {
     "Uptime": "Час роботи"
   },
@@ -8932,6 +9544,9 @@
   },
   "Urgent color": {
     "Urgent color": "Колір терміновості"
+  },
+  "Usage": {
+    "Usage": "Використання"
   },
   "Use Dynamic": {
     "Use Dynamic": "Використовувати динамічні"
@@ -8982,7 +9597,10 @@
     "Use system PAM authentication": "Використовувати системну PAM-автентифікацію"
   },
   "Use the scaled battery level for alert thresholds and percentages": {
-    "Use the scaled battery level for alert thresholds and percentages": ""
+    "Use the scaled battery level for alert thresholds and percentages": "Використовувати масштабований рівень заряду батареї для порогів сповіщень та відсотків"
+  },
+  "Used": {
+    "Used": "Використано"
   },
   "User": {
     "User": "Користувач"
@@ -9007,6 +9625,9 @@
   },
   "User not found": {
     "User not found": "Користувача не знайдено"
+  },
+  "User time": {
+    "User time": "Час користувача"
   },
   "User window rules (%1)": {
     "User window rules (%1)": "Правила вікон користувача (%1)"
@@ -9062,6 +9683,12 @@
   "VPN status and quick connect": {
     "VPN status and quick connect": "Стан VPN та швидке підключення"
   },
+  "VRAM": {
+    "VRAM": "Відеопам'ять"
+  },
+  "VRR Fullscreen Only": {
+    "VRR Fullscreen Only": "VRR тільки на весь екран"
+  },
   "VRR On-Demand": {
     "VRR On-Demand": "VRR за запитом"
   },
@@ -9107,8 +9734,17 @@
   "Vibrant palette with playful saturation.": {
     "Vibrant palette with playful saturation.": "Яскрава палітра з грайливою насиченістю"
   },
+  "Video": {
+    "Video": "Відео"
+  },
   "Video card gamma table": {
     "Video card gamma table": "Таблиця гамми відеокарти"
+  },
+  "Video decode": {
+    "Video decode": "Декодування відео"
+  },
+  "Video encode": {
+    "Video encode": "Кодування відео"
   },
   "Video player": {
     "Video player": "Відео-програвач"
@@ -9116,11 +9752,20 @@
   "Video screensaver": {
     "Video screensaver": "Відеозаставка"
   },
+  "Video wallpapers play once, then the next wallpaper is shown": {
+    "Video wallpapers play once, then the next wallpaper is shown": "Відеошпалери відтворюються один раз, потім відображаються наступні шпалери"
+  },
   "View Changes": {
     "View Changes": "Переглянути зміни"
   },
   "View on GitHub": {
     "View on GitHub": "Переглянути на GitHub"
+  },
+  "Virtual": {
+    "Virtual": "Віртуальний"
+  },
+  "Virtualization": {
+    "Virtualization": "Віртуалізація"
   },
   "Visibility": {
     "Visibility": "Видимість"
@@ -9164,6 +9809,12 @@
   "WPA2 password": {
     "WPA2 password": "Пароль WPA2"
   },
+  "WWN": {
+    "WWN": "WWN"
+  },
+  "Waiting": {
+    "Waiting": "Очікування"
+  },
   "Wallpaper": {
     "Wallpaper": "Шпалери"
   },
@@ -9191,14 +9842,23 @@
   "Warnings": {
     "Warnings": "Попередження"
   },
+  "Warp on display change": {
+    "Warp on display change": "Деформація при зміні дисплея"
+  },
   "Water": {
     "Water": "Вода"
   },
   "Wave progress bars": {
     "Wave progress bars": "Хвилеподібні індикатори прогресу"
   },
+  "Wear": {
+    "Wear": "Знос"
+  },
   "Weather": {
     "Weather": "Погода"
+  },
+  "Weather providers": {
+    "Weather providers": ""
   },
   "Web browser": {
     "Web browser": "Веб-переглядач"
@@ -9262,6 +9922,9 @@
   },
   "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": {
     "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": "Wi-Fi вимкнено. Ви все ще можете редагувати та зберігати налаштування точки доступу, але для її запуску потрібно увімкнути Wi-Fi"
+  },
+  "Wi-Fi network": {
+    "Wi-Fi network": "Мережа Wi-Fi"
   },
   "Wi-Fi not available": {
     "Wi-Fi not available": "Wi-Fi недоступний"
@@ -9353,6 +10016,9 @@
   "Window rules": {
     "Window rules": "Правила вікон"
   },
+  "Windows": {
+    "Windows": "Вікна"
+  },
   "Wipe": {
     "Wipe": "Очистити"
   },
@@ -9362,6 +10028,15 @@
   "With no bar, Dot or dock launcher on, shortcuts are the only way back to settings": {
     "With no bar, Dot or dock launcher on, shortcuts are the only way back to settings": "Якщо панель, Dot або запускач dock вимкнені, гарячі клавіші є єдиним способом повернутися до налаштувань"
   },
+  "Wobble damping": {
+    "Wobble damping": "Демпфування коливання"
+  },
+  "Wobble mass": {
+    "Wobble mass": "Маса коливання"
+  },
+  "Wobble mesh": {
+    "Wobble mesh": "Сітка коливання"
+  },
   "Wobble stiffness": {
     "Wobble stiffness": "Жорсткість хитання"
   },
@@ -9370,6 +10045,9 @@
   },
   "Word processor": {
     "Word processor": "Текстовий процесор"
+  },
+  "Working directory": {
+    "Working directory": "Робоча директорія"
   },
   "Working...": {
     "Working...": "Працюю..."
@@ -9389,6 +10067,9 @@
   "Workspace Switch": {
     "Workspace Switch": "Перемикач робочого простору"
   },
+  "Workspace back and forth": {
+    "Workspace back and forth": "Вперед і назад по робочих просторах"
+  },
   "Workspace name": {
     "Workspace name": "Назва робочого простору"
   },
@@ -9401,11 +10082,14 @@
   "Wrap the app command. %command% is replaced with the actual executable": {
     "Wrap the app command. %command% is replaced with the actual executable": "Обгортка команди запуску програми. %command% замінюється на фактичний виконуваний файл"
   },
-  "Write:": {
-    "Write:": "Записати:"
+  "Write cache": {
+    "Write cache": "Кеш запису"
   },
   "Writes to your files": {
     "Writes to your files": "Записує у ваші файли"
+  },
+  "Written total": {
+    "Written total": "Загалом записано"
   },
   "X axis": {
     "X axis": "Вісь X"
@@ -9472,6 +10156,9 @@
   },
   "Your system is up to date!": {
     "Your system is up to date!": "Вашу систему оновлено!"
+  },
+  "Zombie": {
+    "Zombie": "Зомбі"
   },
   "adjective, printer state": {
     "Idle": "Бездіяльність"
@@ -9569,6 +10256,9 @@
   "ext": {
     "ext": "розш."
   },
+  "fcitx5 input methods, keybinds, behavior": {
+    "fcitx5 input methods, keybinds, behavior": ""
+  },
   "featured": {
     "featured": "рекомендоване"
   },
@@ -9650,14 +10340,14 @@
   "official": {
     "official": "офіційно"
   },
+  "on %1": {
+    "on %1": "на %1"
+  },
   "power-profiles-daemon not available": {
     "power-profiles-daemon not available": "Недоступний 'power-profiles-daemon'"
   },
   "primary network connection label": {
     "Primary": "Основний"
-  },
-  "pt": {
-    "pt": "pt"
   },
   "px": {
     "px": "px"

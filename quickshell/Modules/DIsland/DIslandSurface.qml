@@ -7,6 +7,7 @@ import qs.Modules.DDash
 import qs.Modules.DIsland.Activities
 import qs.Services
 import qs.Widgets
+import "../../Common/IslandActivities.js" as Activities
 
 Item {
     id: root
@@ -19,8 +20,8 @@ Item {
     property var launcherTransientSurfaceTracker: null
     property var effectiveScreen: null
     property bool reducedMotion: false
-    property real springStiffness: 560
-    property real springDamping: 37
+    property real springStiffness: 600
+    property real springDamping: 49
     property real springMass: 1
     property real hostOriginX: 0
     property real hostOriginY: 0
@@ -74,7 +75,28 @@ Item {
     }
     readonly property bool popupStyled: root.controller.expanded
     readonly property real islandOpacity: Math.max(0, Math.min(1, root.transparency))
-    readonly property color effectiveSurfaceColor: root.embedded ? root.bandColor : root.highContrast ? Theme.surfaceContainerHighest : Theme.withAlpha(root.surfaceColor, root.islandOpacity)
+    readonly property bool activityColors: SettingsData.islandSetting(root.controller.barConfig, "islandActivityColors")
+    readonly property var liveActivity: root.controller.liveActive ? root.controller.liveEntry : null
+    readonly property string activityRole: {
+        if (!root.activityColors)
+            return "";
+        const override = root.controller.expanded ? (root.liveActivity?.expandedBackground || root.liveActivity?.background) : root.liveActivity?.background;
+        if (override)
+            return override;
+        if (root.controller.notificationActive && root.notificationModel.critical)
+            return "error";
+        return Activities.severityRole(root.liveActivity?.severity);
+    }
+    readonly property string configuredRole: Activities.surfaceRole(SettingsData.islandSetting(root.controller.barConfig, root.controller.expanded ? "islandExpandedColor" : "islandCompactColor"))
+    readonly property string surfaceRole: root.highContrast ? "" : (root.activityRole || root.configuredRole)
+    readonly property bool ownColor: root.surfaceRole !== ""
+    readonly property color surfaceForeground: root.ownColor ? root.controller.roleForeground(root.surfaceRole) : Theme.surfaceText
+    readonly property color activityForeground: !root.highContrast && root.activityColors && root.liveActivity?.foreground ? root.controller.roleForeground(root.liveActivity.foreground) : root.surfaceForeground
+    readonly property color effectiveSurfaceColor: {
+        if (root.ownColor)
+            return Theme.withAlpha(root.controller.roleFill(root.surfaceRole), root.islandOpacity);
+        return root.embedded ? root.bandColor : root.highContrast ? Theme.surfaceContainerHighest : Theme.withAlpha(root.surfaceColor, root.islandOpacity);
+    }
     readonly property real surfaceOpacity: root.effectiveSurfaceColor.a
     readonly property bool shadowEnabled: !root.chromeless && root.surfaceOpacity > 0 && Theme.elevationEnabled && SettingsData.barElevationEnabled
     readonly property string autoBarShadowDirection: root.controller.edge
@@ -385,7 +407,7 @@ Item {
         width: root.currentVisualWidth
         height: root.currentVisualHeight
         // Embedded, the band already paints the in-band strip; overhangFill draws the rest, so a translucent band never double-alphas.
-        color: root.embedded ? "transparent" : root.effectiveSurfaceColor
+        color: root.embedded && !root.ownColor ? "transparent" : root.effectiveSurfaceColor
         border.width: root.notificationAccentColor !== "transparent" ? 1.5 : root.embedded ? 0 : (root.highContrast ? 2 : (root.popupStyled && !root.notch ? BlurService.borderWidth : 0))
         border.color: root.notificationAccentColor !== "transparent" ? root.notificationAccentColor : (root.highContrast ? Theme.outlineStrong : (root.popupStyled && !root.notch ? BlurService.borderColor : "transparent"))
 
@@ -405,7 +427,7 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            visible: root.compactBackground && opacity > 0
+            visible: root.compactBackground && !root.ownColor && opacity > 0
             opacity: 1 - root.morphProgress
             color: root.compactBackgroundColor
             topLeftRadius: parent.topLeftRadius
@@ -448,6 +470,9 @@ Item {
             expanded: root.controller.expanded
             pointerInside: root.controller.pointerInside
             activityId: root.controller.activeActivity
+            foreground: root.surfaceForeground
+            liveCompactComponent: compactLiveComponent
+            liveExpandedComponent: expandedLiveComponent
             homeCompactComponent: compactHomeComponent
             homeExpandedComponent: expandedHomeComponent
             mediaCompactComponent: compactMediaComponent
@@ -646,6 +671,25 @@ Item {
     }
 
     Component {
+        id: compactLiveComponent
+        LiveActivityFace {
+            controller: root.controller
+            activity: root.controller.liveEntry
+            foreground: root.activityForeground
+        }
+    }
+
+    Component {
+        id: expandedLiveComponent
+        LiveActivityFace {
+            controller: root.controller
+            activity: root.controller.liveEntry
+            foreground: root.activityForeground
+            expanded: true
+        }
+    }
+
+    Component {
         id: compactMediaComponent
 
         MediaCompact {
@@ -836,6 +880,8 @@ Item {
         id: compactNotificationComponent
 
         NotificationCompact {
+            foreground: root.activityForeground
+            secondaryForeground: Theme.withAlpha(root.activityForeground, Theme.surfaceTextSecondary.a)
             notificationModel: root.notificationModel
             controller: root.controller
             dense: root.controller.compactDense
@@ -914,6 +960,9 @@ Item {
         id: expandedNotificationComponent
 
         NotificationExpanded {
+            foreground: root.activityForeground
+            secondaryForeground: Theme.withAlpha(root.activityForeground, Theme.surfaceTextSecondary.a)
+            bodyForeground: Theme.withAlpha(root.activityForeground, Theme.surfaceTextMedium.a)
             notificationModel: root.notificationModel
         }
     }

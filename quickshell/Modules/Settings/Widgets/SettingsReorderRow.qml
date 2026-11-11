@@ -13,7 +13,7 @@ SettingsRow {
     readonly property int position: reorderList.order.indexOf(index)
 
     paintBackground: true
-    rowColor: dragging ? Theme.blend(SettingsMetrics.rowColor, Theme.onSurface, Theme.stateLayerDrag) : SettingsMetrics.rowColor
+    rowColor: dragging ? Theme.blend(slotColor, Theme.onSurface, Theme.stateLayerDrag) : slotColor
     topRadius: dragging || (position === 0 && reorderList.firstInGroup) ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
     bottomRadius: dragging || (position === reorderList.count - 1 && reorderList.lastInGroup) ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
     z: dragging ? 100 : 0

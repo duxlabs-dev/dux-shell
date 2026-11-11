@@ -54,6 +54,7 @@ Singleton {
     readonly property real positionPickerMaxWidth: 360
     readonly property real wallpaperThumbRatio: 10 / 16
     readonly property int wallpaperThumbCache: 1024
+    readonly property int wallpaperGridColumns: 5
     readonly property real wallpaperHeroStackWidth: 520
     readonly property real wallpaperHeroSplit: 0.5
     readonly property real disabledOpacity: 0.38
@@ -77,4 +78,9 @@ Singleton {
     readonly property int pageSettleFrames: 2
     readonly property int pageSettleDeadline: 250
     readonly property int pageSpinnerDelay: 500
+    readonly property real fieldWidthXS: Theme.iconButtonSize * 1.5
+    readonly property real fieldWidthS: Theme.iconButtonSize * 2
+    readonly property real fieldWidthM: Theme.iconButtonSize * 5
+    readonly property real fieldWidthL: Theme.iconButtonSize * 8
+    readonly property real fieldWidthXL: Theme.iconButtonSize * 10
 }

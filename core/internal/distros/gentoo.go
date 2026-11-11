@@ -99,7 +99,6 @@ func (g *GentooDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 
 	dependencies = append(dependencies, g.detectGit())
 	dependencies = append(dependencies, g.detectWindowManager(wm))
-	dependencies = append(dependencies, g.detectQuickshell())
 	dependencies = append(dependencies, g.detectXDGPortal())
 	dependencies = append(dependencies, g.detectAccountsService())
 
@@ -173,7 +172,6 @@ func (g *GentooDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 		"qtwayland":     {Name: "dev-qt/qtwayland", Repository: RepoTypeSystem},
 		"mesa":          {Name: "media-libs/mesa", Repository: RepoTypeSystem, UseFlags: "opengl vulkan"},
 
-		"quickshell":      g.getQuickshellMapping(variants["quickshell"]),
 		"matugen":         {Name: "x11-misc/matugen", Repository: RepoTypeGURU, AcceptKeywords: archKeyword},
 		"dms (Dux Shell)": g.getDmsMapping(),
 		"dux-search":      {Name: "dux-desktop/dux-search", Repository: RepoTypeGURU, AcceptKeywords: archKeyword},
@@ -195,10 +193,6 @@ func (g *GentooDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 	}
 
 	return packages
-}
-
-func (g *GentooDistribution) getQuickshellMapping(_ deps.PackageVariant) PackageMapping {
-	return PackageMapping{Name: "gui-apps/quickshell", Repository: RepoTypeGURU, UseFlags: "breakpad jemalloc sockets wayland layer-shell session-lock toplevel-management screencopy X pipewire tray mpris pam hyprland hyprland-global-shortcuts hyprland-focus-grab i3 i3-ipc bluetooth", AcceptKeywords: "**"}
 }
 
 func (g *GentooDistribution) getDmsMapping() PackageMapping {

@@ -83,6 +83,8 @@ Item {
                 days: root.days
                 firstDayOfWeek: root.firstDayOfWeek
                 anchor: root.anchor
+                selectedDate: chart.selectedDate
+                onSelectionCleared: chart.selectedDate = ""
                 today: root.today
                 onLimitRequested: appId => root.toggleLimit(appId)
             }
@@ -185,14 +187,14 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     buttonHeight: Theme.buttonHeightXS
                     text: I18n.tr("Clear")
-                    backgroundColor: Theme.errorContainer
-                    textColor: Theme.error
+                    variant: "tonal"
+                    danger: true
                     enabled: root.available
                     onClicked: clearConfirm.showWithOptions({
                         "title": I18n.tr("Clear History?"),
                         "message": I18n.tr("Deletes all stored screen time", "confirmation message before clearing screen time history"),
                         "confirmText": I18n.tr("Clear"),
-                        "confirmColor": Theme.error,
+                        "danger": true,
                         "onConfirm": () => {
                             WellbeingService.clearHistory();
                             root.days = [];

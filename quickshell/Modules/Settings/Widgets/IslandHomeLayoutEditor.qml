@@ -20,58 +20,6 @@ Column {
     }
     readonly property bool isHighlighted: settingKey !== "" && SettingsSearchService.highlightSection === settingKey
 
-    readonly property var presentation: ({
-            "workspaces": {
-                "icon": "view_module",
-                "text": I18n.tr("Workspace switcher")
-            },
-            "media": {
-                "icon": "music_note",
-                "text": I18n.tr("Media / Launcher", "island settings: media or launcher slot row"),
-                "description": ""
-            },
-            "clock": {
-                "icon": "schedule",
-                "text": I18n.tr("Clock", "island settings: pinned clock row in the home layout"),
-                "description": I18n.tr("Current time and date display")
-            },
-            "weather": {
-                "icon": "wb_sunny",
-                "text": I18n.tr("Weather", "island settings: weather slot row"),
-                "description": SettingsData.weatherEnabled ? "" : I18n.tr("Enable weather in Time & Weather to show this shortcut", "island settings: weather slot disabled hint")
-            },
-            "status": {
-                "icon": "settings",
-                "text": I18n.tr("Control Center", "island settings: battery or control center slot row"),
-                "description": ""
-            },
-            "volume": {
-                "icon": "volume_up",
-                "text": I18n.tr("Volume", "island settings: volume slot row"),
-                "description": ""
-            },
-            "brightness": {
-                "icon": "brightness_6",
-                "text": I18n.tr("Brightness", "island settings: brightness slot row"),
-                "description": ""
-            },
-            "notifications": {
-                "icon": "notifications",
-                "text": I18n.tr("Notifications", "island settings: notification badge slot row"),
-                "description": ""
-            },
-            "privacy": {
-                "icon": "privacy_tip",
-                "text": I18n.tr("Privacy", "island settings: microphone, camera and screen share indicator slot row"),
-                "description": I18n.tr("Shown only while the microphone, camera or screen sharing is in use", "island settings: privacy slot hint")
-            },
-            "tray": {
-                "icon": "density_medium",
-                "text": I18n.tr("System tray"),
-                "description": ""
-            }
-        })
-
     readonly property var enabledGroups: layout.filter(group => group.enabled)
     readonly property var disabledGroups: layout.filter(group => !group.enabled)
     readonly property bool hasHidden: disabledGroups.length > 0
@@ -123,9 +71,9 @@ Column {
             dividerBefore: root.inGroup && !dragging
             topRadius: dragging ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
             bottomRadius: dragging ? Theme.groupedListOuterRadius : (position === enabledList.count - 1 && !root.hasHidden ? root.bottomRadius : SettingsMetrics.groupInnerRadius)
-            title: root.presentation[modelData.id].text
-            subtitle: root.presentation[modelData.id].description
-            iconName: root.presentation[modelData.id].icon
+            title: BarWidgetCatalog.islandGroup(modelData.id).text
+            subtitle: BarWidgetCatalog.islandGroup(modelData.id).description
+            iconName: BarWidgetCatalog.islandGroup(modelData.id).icon
 
             DIcon {
                 anchors.verticalCenter: parent.verticalCenter
@@ -182,9 +130,9 @@ Column {
                 dividerBefore: root.inGroup
                 topRadius: SettingsMetrics.groupInnerRadius
                 bottomRadius: index === root.disabledGroups.length - 1 ? root.bottomRadius : SettingsMetrics.groupInnerRadius
-                title: root.presentation[modelData.id].text
-                subtitle: root.presentation[modelData.id].description
-                iconName: root.presentation[modelData.id].icon
+                title: BarWidgetCatalog.islandGroup(modelData.id).text
+                subtitle: BarWidgetCatalog.islandGroup(modelData.id).description
+                iconName: BarWidgetCatalog.islandGroup(modelData.id).icon
                 iconColor: Theme.onSurfaceVariant
 
                 DActionButton {

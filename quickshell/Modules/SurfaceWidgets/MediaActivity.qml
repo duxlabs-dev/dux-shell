@@ -13,6 +13,7 @@ BasePill {
     content: Component {
         MediaActivityFace {
             mediaModel: source
+            widgetData: root.widgetData
             dense: true
             isVertical: root.isVerticalOrientation
             contentScale: root.surfaceContext?.kind === "dock" ? root.widgetThickness / 40 : 1

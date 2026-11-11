@@ -83,7 +83,6 @@ func (s SnapTarget) DisplayName() string {
 }
 
 type Config struct {
-	Seat          string
 	Mode          Mode
 	OutputName    string
 	Cursor        CursorMode

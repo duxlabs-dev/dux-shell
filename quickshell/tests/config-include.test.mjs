@@ -9,20 +9,6 @@ import test from "node:test";
 
 const resolve = vm.createContext({});
 vm.runInContext(readFileSync(new URL("../Common/ConfigIncludeResolve.js", import.meta.url), "utf8").replace(/^\.pragma.*$/m, ""), resolve);
-const plain = value => JSON.parse(JSON.stringify(value));
-
-test("includePaths joins the compositor directory, with hypr for hyprland", () => {
-    const hyprland = resolve.includePaths("layout", "hyprland", "/home/u/.config");
-    assert.equal(hyprland.configFile, "/home/u/.config/hypr/hyprland.lua");
-    assert.deepEqual(plain(hyprland.fragmentFiles), ["/home/u/.config/hypr/dms/layout.lua"]);
-    assert.equal(resolve.includePaths("colors", "mango", "/home/u/.config"), null, "no spec, no paths");
-});
-
-test("resolveIncludeArgs spells mango as mangowc and names the fragment", () => {
-    assert.deepEqual(plain(resolve.resolveIncludeArgs("outputs", "niri")), ["niri", "outputs.kdl"]);
-    assert.deepEqual(plain(resolve.resolveIncludeArgs("windowrules", "mango")), ["mangowc", "windowrules.conf"]);
-    assert.equal(resolve.resolveIncludeArgs("colors", "mango"), null, "no spec, no args");
-});
 
 test("repair preserves config and fragments, backs up, and adds live includes only once", t => {
     const directory = mkdtempSync(join(tmpdir(), "dms-includes-"));

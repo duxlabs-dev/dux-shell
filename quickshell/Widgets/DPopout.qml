@@ -25,7 +25,6 @@ Item {
     property int resizeDuration: animationDuration
     property bool resizeMotion: false
     property bool resizing: false
-    property real surfacePadding: 0
     // Content hung outside the surface, kept on screen, blurred and clickable.
     property real bottomOverflow: 0
     property real topOverflow: 0
@@ -39,10 +38,7 @@ Item {
     readonly property bool effectiveHoverDismissSuspended: hoverDismissSuspended || (transientSurfaceTracker?.active ?? false)
     property bool backgroundInteractive: true
     property bool contentHandlesKeys: false
-    property bool fullHeightSurface: false
-    property real minimumSurfaceWidth: 0
     property bool _primeContent: false
-    property bool _warmContent: false
 
     property real storedBarThickness: Theme.barThickness(SettingsData.getPrimaryBarConfig()?.innerPadding ?? SettingsData.barInnerPaddingDefault, 1)
     property real storedBarSpacing: 4
@@ -72,7 +68,6 @@ Item {
 
     readonly property var contentLoader: impl.item ? impl.item.contentLoader : _fallbackContentLoader
     readonly property var overlayLoader: impl.item ? impl.item.overlayLoader : _fallbackOverlayLoader
-    readonly property var backgroundWindow: impl.item ? impl.item.backgroundWindow : null
     readonly property var contentWindow: impl.item ? impl.item.contentWindow : null
 
     TransientSurfaceTracker {
@@ -82,12 +77,10 @@ Item {
     // Hyprland OnDemand grab: whitelist popout surfaces and bars so dismiss clicks still land.
     DFocusGrab {
         windows: {
-            const list = root.contentWindow ? [root.contentWindow] : [];
+            const list = root.contentWindow?.focusWindows ?? (root.contentWindow ? [root.contentWindow] : []);
             const transientWindows = root.transientSurfaceTracker?.focusWindows ?? [];
             if (!(impl.item?.contentActive ?? false) && !root.transientSurfaceTracker?.active)
                 return list.concat(transientWindows);
-            if (root.backgroundWindow && root.backgroundWindow !== root.contentWindow)
-                list.push(root.backgroundWindow);
             return list.concat(transientWindows).concat(KeyboardFocus.barWindows);
         }
         wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible, root.customKeyboardFocus)
@@ -171,7 +164,7 @@ Item {
     }
 
     function _usesConnectedBackendForScreen(targetScreen) {
-        return CompositorService.usesConnectedFrameChromeForScreen(targetScreen);
+        return CompositorService.usesConnectedFrameChromeForScreen(targetScreen) || (!sourceDock && SettingsData.barConnectsPopouts(storedBarConfig) && SettingsData.barConfigCoversScreen(storedBarConfig, targetScreen));
     }
 
     function _maybeResolveBackend() {
@@ -357,11 +350,6 @@ Item {
         _resolveBackendForScreen(targetScreen);
     }
 
-    function updateSurfacePosition() {
-        if (impl.item)
-            impl.item.updateSurfacePosition();
-    }
-
     function containsGlobalPoint(gx, gy) {
         if (!screen)
             return false;
@@ -410,8 +398,6 @@ Item {
             root.shouldBeVisible = false;
         if (root._primeContent)
             it.primeContent();
-        if (root._warmContent)
-            it.warmContent();
         if (_pendingOpen)
             _pendingOpenTimer.restart();
     }
@@ -426,12 +412,6 @@ Item {
         _primeContent = false;
         if (impl.item)
             impl.item.clearPrimedContent();
-    }
-
-    function warmContent() {
-        _warmContent = true;
-        if (impl.item)
-            impl.item.warmContent();
     }
 
     onShouldBeVisibleChanged: {

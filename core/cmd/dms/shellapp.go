@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/duxlabs-dev/dux-go/shellapp"
 	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
 	"github.com/duxlabs-dev/dux-shell/core/internal/gpu"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/qtbaseembed"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server"
 	"github.com/duxlabs-dev/dux-shell/core/internal/shellembed"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
@@ -25,6 +27,7 @@ var shellApp = shellapp.New(shellapp.Config{
 	QSAppID:                "dev.duxlabs.shell",
 	Version:                Version,
 	Embedded:               embeddedShell{},
+	QtBase:                 qtbaseembed.Extract,
 	Boot:                   bootBackend,
 	PreLaunch:              preLaunch,
 	ExtraEnv:               dmsExtraEnv,
@@ -109,6 +112,10 @@ func wantsSimpleAnimationDriver(settings []byte) bool {
 	return parsed.WallpaperFillMode == "Scrolling"
 }
 
+// Qt < 6.10 reserves a JS stack slot per object of the shell's whole type tree while
+// creating it, which overflows the 4 MiB default and breaks early handlers (#4175).
+const qmlJSStackSize = 16 << 20
+
 func dmsExtraEnv(string) []string {
 	var env []string
 	if selfPath, err := os.Executable(); err == nil {
@@ -120,7 +127,10 @@ func dmsExtraEnv(string) []string {
 	if _, set := os.LookupEnv("MALLOC_CONF"); !set {
 		env = append(env, "MALLOC_CONF=thp:never,narenas:4,dirty_decay_ms:3000")
 	}
-	env = append(env, gpu.EGLVendorEnv()...)
+	if os.Getenv("QV4_JS_MAX_STACK_SIZE") == "" {
+		env = append(env, "QV4_JS_MAX_STACK_SIZE="+strconv.Itoa(qmlJSStackSize))
+	}
+	env = append(env, gpu.ShellEnv()...)
 	policyEnv, err := clipolicy.ShellEnv(afero.NewOsFs())
 	if err != nil {
 		log.Errorf("CLI policy unreadable, enforcing every shell switch and ignoring its lock settings: %v", err)

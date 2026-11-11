@@ -182,21 +182,7 @@ func (s *Screenshoter) captureLastRegion() (*CaptureResult, error) {
 	}
 
 	if s.config.Geometry {
-		scale := output.effectiveScale()
-		if scale <= 0 {
-			scale = 1.0
-		}
-		localX := float64(lastRegion.X-output.x) / scale
-		localY := float64(lastRegion.Y-output.y) / scale
-		logicalW := float64(lastRegion.Width) / scale
-		logicalH := float64(lastRegion.Height) / scale
-		return geometryResult(Region{
-			X:      int32(math.Round(float64(output.x) + localX)),
-			Y:      int32(math.Round(float64(output.y) + localY)),
-			Width:  int32(math.Round(logicalW)),
-			Height: int32(math.Round(logicalH)),
-			Output: output.name,
-		}), nil
+		return geometryResult(lastRegion), nil
 	}
 
 	return s.captureRegionOnOutput(output, lastRegion)
@@ -253,9 +239,6 @@ func (s *Screenshoter) captureRegion() (*CaptureResult, error) {
 }
 
 func (s *Screenshoter) captureWindow() (*CaptureResult, error) {
-	if DetectCompositor() == CompositorAqueous {
-		return s.captureAqueousWindow()
-	}
 	if DetectCompositor() == CompositorNiri {
 		if s.config.Geometry {
 			return nil, fmt.Errorf("window geometry mode is not supported on niri")
@@ -398,13 +381,6 @@ func (s *Screenshoter) captureMangoWindow(output *WaylandOutput, region Region, 
 }
 
 func (s *Screenshoter) captureFullScreen() (*CaptureResult, error) {
-	if DetectCompositor() == CompositorAqueous {
-		name, err := aqueousFocusedOutput(s.config.Seat)
-		if err != nil {
-			return nil, err
-		}
-		return s.captureOutput(name)
-	}
 	output := s.findFocusedOutput()
 	if output == nil {
 		s.outputsMu.Lock()
@@ -805,16 +781,15 @@ func (s *Screenshoter) captureRegionOnOutput(output *WaylandOutput, region Regio
 		return s.captureRegionOnTransformedOutput(output, region)
 	}
 
-	scale := output.effectiveScale()
-
-	localX := int32(float64(region.X-output.x) * scale)
-	localY := int32(float64(region.Y-output.y) * scale)
-	w := int32(float64(region.Width) * scale)
-	h := int32(float64(region.Height) * scale)
+	captureScale, resultScale := regionCaptureScales(DetectCompositor(), output.effectiveScale())
+	localX := int32(float64(region.X-output.x) * captureScale)
+	localY := int32(float64(region.Y-output.y) * captureScale)
+	w := int32(float64(region.Width) * captureScale)
+	h := int32(float64(region.Height) * captureScale)
 
 	if DetectCompositor() == CompositorMango {
-		scaledOutW := int32(float64(output.width) * scale)
-		scaledOutH := int32(float64(output.height) * scale)
+		scaledOutW := int32(float64(output.width) * resultScale)
+		scaledOutH := int32(float64(output.height) * resultScale)
 		if localX >= scaledOutW {
 			localX = localX % scaledOutW
 		}
@@ -848,9 +823,17 @@ func (s *Screenshoter) captureRegionOnOutput(output *WaylandOutput, region Regio
 	if err != nil {
 		return nil, err
 	}
-	result.Scale = scale
+	result.Scale = resultScale
 	result.CICP = s.outputCICP(output)
 	return result, nil
+}
+
+func regionCaptureScales(compositor Compositor, outputScale float64) (captureScale, resultScale float64) {
+	resultScale = outputScale
+	if compositor != CompositorMango {
+		return 1, resultScale
+	}
+	return outputScale, resultScale
 }
 
 func (s *Screenshoter) captureRegionOnTransformedOutput(output *WaylandOutput, region Region) (*CaptureResult, error) {

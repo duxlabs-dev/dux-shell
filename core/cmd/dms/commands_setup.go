@@ -317,7 +317,9 @@ func runSetupDmsConfig(name string) error {
 	}
 
 	path := filepath.Join(dmsDir, filename)
-	if info, err := os.Stat(path); err == nil && info.Size() > 0 {
+	// Hyprland's binds.lua is DMS-owned (user binds sit in binds-user.lua), so it is refreshed, not kept
+	dmsOwned := compositor == "hyprland" && name == "binds"
+	if info, err := os.Stat(path); err == nil && info.Size() > 0 && !dmsOwned {
 		return fmt.Errorf("%s already exists and is not empty: %s", name, path)
 	}
 
@@ -329,22 +331,28 @@ func runSetupDmsConfig(name string) error {
 		}
 	}
 
+	if dmsOwned {
+		backupPath, written, err := config.WriteHyprlandStockBinds(filepath.Dir(dmsDir), terminal)
+		if backupPath != "" {
+			fmt.Printf("Backed up previous binds to %s\n", backupPath)
+		}
+		if err != nil {
+			return err
+		}
+		if !written {
+			fmt.Printf("binds is already the DMS stock set: %s\n", path)
+			return nil
+		}
+		fmt.Printf("Deployed binds to %s\n", path)
+		return nil
+	}
+
 	content := contentFn(terminal)
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("failed to write %s: %w", filename, err)
 	}
 
 	fmt.Printf("Deployed %s to %s\n", name, path)
-
-	// Stock binds leave the version-dependent ones to binds-next.kdl.
-	if compositor == "niri" && name == "binds" {
-		if _, err := config.WriteNiriBindsNext(dmsDir, config.ProbeNiriCapabilities()); err != nil {
-			return fmt.Errorf("failed to write %s: %w", config.NiriBindsNextFile, err)
-		}
-		if config.NiriConfigMissingBindsNext(dmsDir) {
-			fmt.Println(config.NiriBindsNextIncludeHint)
-		}
-	}
 	return nil
 }
 

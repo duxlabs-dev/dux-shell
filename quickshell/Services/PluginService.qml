@@ -353,6 +353,11 @@ Singleton {
                     continue;
                 paths[surface] = path;
             }
+            // A desktop card's root can't also be a bar pill; in a bar or dock it renders at card size and overflows.
+            if (paths.widget && paths.widget === paths.desktop) {
+                log.warn("widget surface reuses the desktop component, ignoring it in", dir);
+                delete paths.widget;
+            }
             return paths;
         }
         const legacyPath = _pluginFilePath(dir, manifest.component);
@@ -378,7 +383,7 @@ Singleton {
 
         const componentPaths = _resolveComponentPaths(manifest, dir);
         const surfaces = Object.keys(componentPaths);
-        if (surfaces.length === 0 && !manifest.lyrics?.command) {
+        if (surfaces.length === 0 && !manifest.lyrics?.command && !manifest.weather?.command) {
             log.error("no valid component surfaces in manifest:", absPath);
             knownManifests[absPath] = {
                 mtime: mtimeEpochMs,
@@ -510,7 +515,7 @@ Singleton {
 
         const componentPaths = plugin.componentPaths || {};
         const surfaces = Object.keys(componentPaths);
-        if (surfaces.length === 0 && !plugin.lyrics?.command) {
+        if (surfaces.length === 0 && !plugin.lyrics?.command && !plugin.weather?.command) {
             log.error("Plugin has no component surfaces:", pluginId);
             pluginLoadFailed(pluginId, "No component surfaces");
             return false;
@@ -550,9 +555,12 @@ Singleton {
                     const error = comp.errorString();
                     log.error("component error", pluginId, surface, error);
                     _destroyComponents(Object.values(comps));
+                    // Qt caches the failure per URL, so the next attempt needs a new revision.
+                    _invalidatePluginComponents(pluginId);
+                    // Qt also says this when a file was added after the running shell first listed the plugin directory.
                     _setLoadError(pluginId, {
                         title: error,
-                        details: ""
+                        details: error.includes("File name case mismatch") ? I18n.tr("A plugin file was added or renamed while the shell was running. Restart DMS to load it. If the plugin was not updated, check that its imports match the file name capitalization.", "plugin load error hint shown under Qt's 'File name case mismatch' error") : ""
                     });
                     pluginLoadFailed(pluginId, error);
                     return false;
@@ -642,6 +650,8 @@ Singleton {
             return false;
         }
 
+        IslandActivityService.clearSource(pluginId);
+        NotificationInterceptorService.clearSource(pluginId);
         try {
             const components = [pluginDaemonComponents, pluginLauncherComponents, pluginDesktopComponents, pluginWidgetComponents, pluginDashComponents, pluginDashCardComponents].map(map => map[pluginId]).filter(comp => !!comp);
             const instance = pluginInstances[pluginId];
@@ -912,8 +922,10 @@ Singleton {
 
     function _makeStartupCheckObject(pluginId, plugin) {
         const comp = Qt.createComponent(pluginComponentUrl(pluginId, plugin.startupCheckPath), Component.PreferSynchronous);
-        if (comp.status === Component.Error)
+        if (comp.status === Component.Error) {
+            _invalidatePluginComponents(pluginId);
             throw new Error(comp.errorString());
+        }
         return comp.createObject(root);
     }
 
@@ -1282,13 +1294,19 @@ Singleton {
         globalVarChanged(pluginId, varName);
     }
 
+    // The directory ignores the query; it keys the on-disk thumbnail cache so an updated plugin gets a fresh render.
+    function previewVersion(plugin) {
+        var stamp = plugin.updated_at || plugin.version || "";
+        return stamp ? "?v=" + encodeURIComponent(stamp) : "";
+    }
+
     function previewUrl(plugin) {
         if (!plugin)
             return "";
         if (plugin.previewUrl)
             return plugin.previewUrl;
         if (plugin.id)
-            return previewApiBase + plugin.id;
+            return previewApiBase + plugin.id + previewVersion(plugin);
         return plugin.screenshot || "";
     }
 
@@ -1299,7 +1317,7 @@ Singleton {
         if (plugin.thumbUrl)
             return plugin.thumbUrl;
         if (plugin.id)
-            return previewApiBase + plugin.id + "/thumb";
+            return previewApiBase + plugin.id + "/thumb" + previewVersion(plugin);
         return "";
     }
 

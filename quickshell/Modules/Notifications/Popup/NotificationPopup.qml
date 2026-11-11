@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Wayland
 import Quickshell.Widgets
 import Quickshell.Services.Notifications
 import qs.Common
@@ -10,43 +9,50 @@ import qs.DCommon.Widgets
 import qs.Widgets
 import qs.DCommon.Common as DCommon
 
-PanelWindow {
+Item {
     id: win
 
+    required property var screen
+    required property var surface
+    readonly property alias maskRegion: contentInputMask
+    readonly property var blurRegion: blur.effectiveRegion
+    readonly property bool wantsOverlay: CompositorService.framePeerSurfacesUseOverlayForScreen(win.screen) || (!!notificationData && (SettingsData.notificationOverlayEnabled || notificationData.urgency === NotificationUrgency.Critical))
     readonly property bool connectedFrameMode: CompositorService.usesConnectedFrameChromeForScreen(win.screen)
     readonly property bool inlineHeightAnimating: heightMotion.running
 
     WindowBlur {
-        targetWindow: win
+        id: blur
+        targetWindow: win.surface
+        applyToWindow: false
         surfaceColor: Theme.notificationFloatingSurface
         readonly property real s: Math.min(1, content.scale) * Math.max(0, content.opacity)
         readonly property real innerW: Math.max(0, content.width - content.cardInset * 2)
         readonly property real innerH: Math.max(0, content.height - content.cardInset * 2)
-        blurX: content.x + content.cardInset + swipeTx.x + tx.x + innerW * (1 - s) * 0.5
-        blurY: win.contentTop + content.cardInset + swipeTx.y + tx.y + innerH * (1 - s) * 0.5
+        readonly property real surfaceX: win.x - (win.surface?.bandX ?? 0)
+        readonly property real surfaceY: win.y - (win.surface?.bandY ?? 0)
+        blurX: surfaceX + content.x + content.cardInset + swipeTx.x + tx.x + innerW * (1 - s) * 0.5
+        blurY: surfaceY + win.contentTop + content.cardInset + swipeTx.y + tx.y + innerH * (1 - s) * 0.5
         blurWidth: win.cardShown && !win.connectedFrameMode ? innerW * s : 0
         blurHeight: win.cardShown && !win.connectedFrameMode ? innerH * s : 0
         blurRadius: win.connectedFrameMode ? Theme.connectedSurfaceRadius : NotificationMetrics.popupRadius
         clipEnabled: true
-        clipX: content.x + content.cardInset
-        clipY: win.contentTop + content.cardInset
+        clipX: surfaceX + content.x + content.cardInset
+        clipY: surfaceY + win.contentTop + content.cardInset
         clipWidth: innerW
         clipHeight: innerH
     }
-
-    WlrLayershell.namespace: "dms:notification-popup"
 
     required property var notificationData
     required property string notificationId
     readonly property bool hasValidData: notificationData && notificationData.notification
     readonly property alias hovered: cardHoverHandler.hovered
-    readonly property alias swipeActive: content.swipeActive
-    readonly property alias swipeDismissing: content.swipeDismissing
+    readonly property bool swipeActive: swipe.magnetActive
+    readonly property bool swipeDismissing: swipe.dismissing
     readonly property bool swipeDismissTowardEdge: {
-        if (content.swipeDismissing)
-            return _swipeDismissesTowardFrameEdge();
-        if (content.swipeActive)
-            return content.swipeOffset * _frameEdgeSwipeDirection() > 0;
+        if (swipe.dismissing)
+            return swipe.dismissDirection === _frameEdgeSwipeDirection();
+        if (swipe.magnetActive)
+            return swipe.offset * _frameEdgeSwipeDirection() > 0;
         return false;
     }
     readonly property real screenY: stackMotion.value
@@ -166,7 +172,6 @@ PanelWindow {
         _isDestroying = true;
         enterAnimation.stop();
         exitAnim.stop();
-        swipeDismissAnim.stop();
         enterDelay.stop();
         exitWatchdog.stop();
         wrapperConn.enabled = false;
@@ -224,14 +229,6 @@ PanelWindow {
     }
 
     visible: !_finalized
-    WlrLayershell.layer: {
-        const shouldUseOverlay = CompositorService.framePeerSurfacesUseOverlayForScreen(win.screen) || (notificationData && (SettingsData.notificationOverlayEnabled || notificationData.urgency === NotificationUrgency.Critical));
-        const fallback = shouldUseOverlay ? WlrLayer.Overlay : WlrLayer.Top;
-        return LayerShell.fromEnv("DMS_NOTIFICATION_LAYER", fallback);
-    }
-    WlrLayershell.exclusiveZone: -1
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-    color: "transparent"
     readonly property real contentImplicitWidth: screen ? Math.min(NotificationMetrics.popupWidth, Math.max(NotificationMetrics.popupMinWidth, screen.width * NotificationMetrics.popupScreenRatio)) : NotificationMetrics.popupWidth
     readonly property real timeoutRailClearance: SettingsData.notificationShowTimeoutBar && notificationData?.timer?.interval > 0 ? Theme.spacingS : 0
     readonly property real contentImplicitHeight: Math.min(notificationCard.targetHeight + content.cardInset * 2 + timeoutRailClearance, (screen?.height ?? NotificationMetrics.centerMaxHeight) * NotificationMetrics.screenHeightRatio)
@@ -326,6 +323,8 @@ PanelWindow {
             descriptionExpanded = false;
         if (!hasValidData)
             forceExit();
+        if (surface?.idleSupported ?? false)
+            surfaceReady = true;
     }
     onNotificationDataChanged: {
         if (!_isDestroying) {
@@ -353,11 +352,8 @@ PanelWindow {
     property bool isTopCenter: SettingsData.notificationPopupPosition === -1
     property bool isBottomCenter: SettingsData.notificationPopupPosition === SettingsData.Position.BottomCenter
     property bool isCenterPosition: isTopCenter || isBottomCenter
-    readonly property real maxPopupShadowBlurPx: Math.max((Theme.elevationLevel3 && Theme.elevationLevel3.blurPx !== undefined) ? Theme.elevationLevel3.blurPx : 12, (Theme.elevationLevel4 && Theme.elevationLevel4.blurPx !== undefined) ? Theme.elevationLevel4.blurPx : 16)
-    readonly property real maxPopupShadowOffsetXPx: Math.max(Math.abs(Theme.elevationOffsetX(Theme.elevationLevel3)), Math.abs(Theme.elevationOffsetX(Theme.elevationLevel4)))
-    readonly property real maxPopupShadowOffsetYPx: Math.max(Math.abs(Theme.elevationOffsetY(Theme.elevationLevel3, 6)), Math.abs(Theme.elevationOffsetY(Theme.elevationLevel4, 8)))
     readonly property bool popupWindowShadowActive: Theme.elevationEnabled && SettingsData.notificationPopupShadowEnabled && !connectedFrameMode
-    readonly property real windowShadowPad: popupWindowShadowActive ? Theme.snap(Math.max(16, maxPopupShadowBlurPx + Math.max(maxPopupShadowOffsetXPx, maxPopupShadowOffsetYPx) + 8), dpr) : 0
+    readonly property real windowShadowPad: popupWindowShadowActive ? Theme.snap(NotificationMetrics.popupShadowPad, dpr) : 0
     readonly property bool bleedsLeft: _frameEdgeSwipeDirection() < 0
     readonly property real edgeBleed: {
         if (isCenterPosition || !CompositorService.frameWindowVisibleForScreen(screen))
@@ -367,32 +363,18 @@ PanelWindow {
     }
     readonly property real contentWindowX: Theme.snap(windowShadowPad + (bleedsLeft ? edgeBleed : 0), dpr)
 
-    anchors.top: true
-    anchors.left: true
-    anchors.bottom: false
-    anchors.right: false
-
-    mask: contentInputMask
+    x: getWindowLeftMargin()
+    y: getWindowTopMargin()
+    width: implicitWidth
+    height: implicitHeight
+    clip: true
 
     Region {
         id: contentInputMask
-        item: contentMaskRect
-    }
-
-    Item {
-        id: contentMaskRect
-        visible: false
-        x: content.x
-        y: win.contentTop
-        width: alignedWidth
-        height: win.cardShown && !win.exiting && !content.chromeOnlyExit ? alignedHeight : 0
-    }
-
-    margins {
-        top: getWindowTopMargin()
-        bottom: 0
-        left: getWindowLeftMargin()
-        right: 0
+        x: Math.floor(win.x + content.x - (win.surface?.bandX ?? 0))
+        y: Math.floor(win.y + win.contentTop - (win.surface?.bandY ?? 0))
+        width: Math.ceil(alignedWidth)
+        height: win.cardShown && !win.exiting && !content.chromeOnlyExit ? Math.ceil(alignedHeight) : 0
     }
 
     function getBarInfo() {
@@ -537,26 +519,18 @@ PanelWindow {
         return Theme.snap(getAllocatedContentY() - windowShadowPad, dpr);
     }
 
-    function _swipeDismissTarget() {
-        return (content.swipeDismissDirection < 0 ? -1 : 1) * content.width;
-    }
-
     function _frameEdgeSwipeDirection() {
         const popupPos = SettingsData.notificationPopupPosition;
         return (popupPos === SettingsData.Position.Left || popupPos === SettingsData.Position.Bottom) ? -1 : 1;
     }
 
-    function _swipeDismissesTowardFrameEdge() {
-        return content.swipeDismissDirection === _frameEdgeSwipeDirection();
-    }
-
     function popupChromeMotionActive() {
-        return presentationProgress < 1 || exiting || content.swipeActive || content.swipeDismissing || Math.abs(content.swipeOffset) > 0.5;
+        return presentationProgress < 1 || exiting || swipe.magnetActive || swipe.dismissing || Math.abs(swipe.offset) > 0.5;
     }
 
     function swipeReleaseProgress() {
-        if (content.swipeDismissing || (content.swipeActive && content.swipeOffset * _frameEdgeSwipeDirection() > 0))
-            return Math.max(0, Math.min(1, Math.abs(content.swipeOffset) / Math.max(1, content.swipeTravelDistance)));
+        if (swipe.dismissing || (swipe.magnetActive && swipe.offset * _frameEdgeSwipeDirection() > 0))
+            return Math.max(0, Math.min(1, Math.abs(swipe.offset) / Math.max(1, content.width)));
         return 0;
     }
 
@@ -607,40 +581,8 @@ PanelWindow {
         visible: win.cardShown && !chromeOnlyExit
         transformOrigin: Item.Center
 
-        property real swipeOffset: 0
-        property real swipeDismissDirection: 1
         property bool chromeOnlyExit: false
-        readonly property real dismissThreshold: width * NotificationMetrics.swipeThreshold
-        readonly property real swipeFadeStartRatio: NotificationMetrics.swipeFadeStart
-        readonly property real swipeTravelDistance: width
-        readonly property real swipeFadeStartOffset: swipeTravelDistance * swipeFadeStartRatio
-        readonly property real swipeFadeDistance: Math.max(1, swipeTravelDistance - swipeFadeStartOffset)
-        property bool swipeWheelActive: false
-        readonly property bool swipeActive: swipeDragHandler.active || swipeWheelActive
-        property bool swipeDismissing: false
-        onSwipeDismissingChanged: {
-            if (!win.connectedFrameMode)
-                return;
-            win.popupHeightChanged();
-            win.popupChromeGeometryChanged();
-        }
-        onSwipeOffsetChanged: {
-            if (win.connectedFrameMode)
-                win.popupChromeGeometryChanged();
-        }
-
-        function releaseSwipe(velocity = 0) {
-            if (win.exiting || swipeDismissing)
-                return;
-            const projected = swipeOffset + velocity * NotificationMetrics.swipeFlingProjectionMs / 1000;
-            if (Math.abs(projected) <= dismissThreshold) {
-                swipeOffset = 0;
-                return;
-            }
-            swipeDismissDirection = projected < 0 ? -1 : 1;
-            swipeDismissing = true;
-            swipeDismissAnim.start();
-        }
+        readonly property real swipeFadeStart: width * NotificationMetrics.swipeFadeStart
 
         readonly property bool shadowsAllowed: win.popupWindowShadowActive
         readonly property var elevLevel: Theme.elevationLevel2
@@ -751,6 +693,7 @@ PanelWindow {
                         persistImage: true
                         showClose: true
                         revealControls: win.hovered || win.contextMenuActive
+                        contentOpacity: swipe.contentOpacity
                         dismissText: I18n.tr("Clear")
                         animateHeight: false
                         outerRadius: win.connectedFrameMode ? Theme.connectedSurfaceRadius : NotificationMetrics.popupRadius
@@ -791,7 +734,7 @@ PanelWindow {
                             if (!menu)
                                 return;
                             const point = mapToItem(null, x, y);
-                            menu.showAt(win.margins.left + point.x, win.margins.top + point.y, win.screen);
+                            menu.showAt(point.x + (win.surface?.bandX ?? 0), point.y + (win.surface?.bandY ?? 0), win.screen);
                         }
                     }
                 }
@@ -850,64 +793,21 @@ PanelWindow {
             }
         }
 
-        DragHandler {
-            id: swipeDragHandler
-            target: null
-            xAxis.enabled: true
-            yAxis.enabled: false
-
-            onActiveChanged: {
-                if (active)
-                    return;
-                content.releaseSwipe();
-            }
-
-            onTranslationChanged: {
-                if (win.exiting || content.swipeDismissing)
-                    return;
-
-                content.swipeOffset = translation.x;
-            }
-        }
-
         opacity: {
-            const swipeAmount = Math.abs(content.swipeOffset);
+            const swipeAmount = Math.abs(swipe.offset);
             const revealOpacity = win.directionalEffect ? 1 : win.presentationProgress;
-            if (swipeAmount <= content.swipeFadeStartOffset)
+            if (swipeAmount <= content.swipeFadeStart)
                 return revealOpacity;
-            const fadeProgress = (swipeAmount - content.swipeFadeStartOffset) / content.swipeFadeDistance;
+            const fadeProgress = (swipeAmount - content.swipeFadeStart) / Math.max(1, content.width - content.swipeFadeStart);
             return Math.max(0, 1 - fadeProgress) * revealOpacity;
         }
 
         scale: win.directionalEffect ? 1 : Theme.effectScaleCollapsed + (1 - Theme.effectScaleCollapsed) * win.presentationProgress
 
-        Behavior on swipeOffset {
-            enabled: !content.swipeActive && !content.swipeDismissing
-            NumberAnimation {
-                duration: NotificationMetrics.animationsEnabled ? Theme.notificationExitDuration : 0
-                easing.type: Theme.standardEasing
-            }
-        }
-
-        NumberAnimation {
-            id: swipeDismissAnim
-            target: content
-            property: "swipeOffset"
-            to: win._swipeDismissTarget()
-            duration: NotificationMetrics.animationsEnabled ? Theme.notificationExitDuration : 0
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: NotificationMetrics.dismissCurve
-            onFinished: {
-                content.chromeOnlyExit = true;
-                win.startExit();
-                NotificationService.dismissNotification(notificationData);
-            }
-        }
-
         transform: [
             Translate {
                 id: swipeTx
-                x: content.swipeOffset
+                x: swipe.offset
                 y: 0
             },
             Translate {
@@ -926,24 +826,36 @@ PanelWindow {
         ]
     }
 
-    // Sits on the untranslated card footprint: inside content the handler would lose the pointer once the card slides past it,
-    // and above content so it sees the gesture before DFlickable's blocking vertical handler
-    Item {
+    NotificationSwipeGroup {
+        id: swipeGroup
+    }
+
+    // Sits on the untranslated card footprint: inside content the handlers would lose the pointer once the card slides past them,
+    // and above content so they see the gesture before DFlickable's blocking vertical handler
+    NotificationSwipeRow {
+        id: swipe
         parent: slideClip
+        index: 0
         x: content.x
         y: content.y
         width: content.width
         height: content.height
         visible: content.visible
-
-        NotificationSwipeWheel {
-            enabled: !win.exiting && !content.swipeDismissing
-            onBegan: content.swipeWheelActive = true
-            onMoved: travel => content.swipeOffset = travel
-            onEnded: velocity => {
-                content.swipeWheelActive = false;
-                content.releaseSwipe(velocity);
-            }
+        group: win.exiting ? null : swipeGroup
+        onOffsetChanged: {
+            if (win.connectedFrameMode)
+                win.popupChromeGeometryChanged();
+        }
+        onDismissingChanged: {
+            if (!win.connectedFrameMode)
+                return;
+            win.popupHeightChanged();
+            win.popupChromeGeometryChanged();
+        }
+        onDismissed: {
+            content.chromeOnlyExit = true;
+            win.startExit();
+            NotificationService.dismissNotification(win.notificationData);
         }
     }
 

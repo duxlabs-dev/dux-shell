@@ -129,7 +129,7 @@ FocusScope {
         focus: true
         active: root.isCurrent || root.animatingOut
         asynchronous: root.entry?.tab?.async === true
-        sourceComponent: DashRegistry.tabComponentFor(root.entry?.id ?? "")
+        source: DashRegistry.tabSourceFor(root.entry?.id ?? "")
 
         onLoaded: {
             root.inject(item);

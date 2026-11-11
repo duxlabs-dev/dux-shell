@@ -2,11 +2,13 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
+import qs.Services
 import qs.Modals.Clipboard
 import qs.Modals.DLauncherV2.Components
 import qs.Modules.ControlCenter
 import qs.Modules.DBar
 import qs.Modules.DDash
+import "../../Common/IslandActivities.js" as Activities
 
 QtObject {
     id: root
@@ -25,6 +27,115 @@ QtObject {
     property bool mediaAvailable: false
     property bool mediaPreferred: false
     property bool mediaAutoSwitch: false
+    property string liveIconAnimationMode: "activity"
+    property int liveIconAnimationDuration: 650
+    property int liveIconAnimationIntensity: 65
+    // Only plugin activities (kind "activity") reach the controller through the session.
+    property var liveCandidate: null
+    property var liveEntry: null
+    property var selectedLiveEntry: null
+    required property IslandActivitySession presentationSession
+    readonly property var stableActivities: dotMode ? [] : (presentationSession?.stableEntries ?? []).filter(entry => !liveActive || Activities.identity(entry) !== Activities.identity(liveEntry))
+    property var stableSlotLengths: ({
+            left: 0,
+            center: 0,
+            right: 0
+        })
+    readonly property real stableLeadingLength: stableSlotLengths.left + stableSlotLengths.center
+    readonly property real stableSlotsLength: stableLeadingLength + stableSlotLengths.right
+    readonly property string stableVersion: (presentationSession?.stableEntries ?? []).map(entry => liveVersion(entry)).join(";")
+    onStableVersionChanged: Qt.callLater(syncLiveActivity)
+    // An open activity may have no slot, so stableVersion misses its updates and removal.
+    readonly property string selectedLiveVersion: selectedLiveEntry ? liveVersion(presentationSession?.persistentEntry(selectedLiveEntry)) : ""
+    onSelectedLiveVersionChanged: Qt.callLater(syncLiveActivity)
+    readonly property real stableSlotMaxLength: Math.min(mediaCompactMaxLength / 2, Math.max(compactFaceThickness, (isVertical ? dashboardAvailableHeight : dashboardAvailableWidth) * 0.45 / Math.max(1, stableActivities.length)))
+    property real liveContentLength: mediaCompactMaxLength
+    property real liveExpandedWidth: mediaCompactMaxLength
+    property real liveExpandedHeight: compactFaceThickness + Theme.spacingL * 2
+    property string liveReturnActivity: "home"
+    property string dismissedLiveVersion: ""
+    readonly property bool liveActive: activeActivity === "live"
+
+    function setStableSlotLength(position, length) {
+        if (stableSlotLengths[position] === length)
+            return;
+        stableSlotLengths = Object.assign({}, stableSlotLengths, {
+            [position]: length
+        });
+    }
+
+    function openStableEntry(entry, requestKeyboardFocus) {
+        if (inputSuspended || !entry)
+            return false;
+        hoverOpenTimer.stop();
+        if (IslandActivityService.activate(entry))
+            return true;
+        if (entry.clickActivity !== "live")
+            return requestActivity(entry.clickActivity, true, requestKeyboardFocus === true);
+        return expandLiveEntry(entry, requestKeyboardFocus);
+    }
+
+    function expandLiveEntry(entry, requestKeyboardFocus) {
+        if (inputSuspended || !entry)
+            return false;
+        hoverOpenTimer.stop();
+        hoverCloseTimer.stop();
+        selectedLiveEntry = entry;
+        if (!liveActive)
+            liveReturnActivity = idleActivity();
+        liveEntry = entry;
+        activeActivity = "live";
+        hoverExpanded = false;
+        keyboardDismissRequested = requestKeyboardFocus === true;
+        expanded = true;
+        return true;
+    }
+
+    function roleFill(role) {
+        const colors = Activities.roleColors(role);
+        if (!colors)
+            return Theme.hostSurface;
+        return colors.tint ? Theme.blend(Theme[colors.fill], Theme[colors.tint], colors.tintRatio) : Theme[colors.fill];
+    }
+
+    function roleForeground(role) {
+        const colors = Activities.roleColors(role);
+        return colors ? Theme[colors.on] : Theme.surfaceText;
+    }
+
+    function liveVersion(entry) {
+        return entry ? JSON.stringify([entry.source, entry.id, entry.revision]) : "";
+    }
+
+    function syncLiveActivity() {
+        if (selectedLiveEntry && expanded && liveActive) {
+            const current = presentationSession?.persistentEntry(selectedLiveEntry);
+            if (current) {
+                liveEntry = current;
+                return;
+            }
+            selectedLiveEntry = null;
+        }
+        if (liveActive && !liveCandidate) {
+            selectedLiveEntry = null;
+            expanded = false;
+            hoverExpanded = false;
+            keyboardDismissRequested = false;
+            activeActivity = resolvedReturnActivity(liveReturnActivity);
+            return;
+        }
+        if (!liveCandidate || inputSuspended || systemActivityActive || notificationActive || (expanded && !liveActive))
+            return;
+        if (liveVersion(liveCandidate) === dismissedLiveVersion)
+            return;
+        if (!liveActive)
+            liveReturnActivity = activeActivity;
+        liveEntry = liveCandidate;
+        activeActivity = "live";
+    }
+
+    onLiveCandidateChanged: syncLiveActivity()
+    onActiveActivityChanged: Qt.callLater(syncLiveActivity)
     property bool launcherCycleEnabled: false
     property bool launcherSessionActive: false
     property bool launcherInputFocused: false
@@ -48,6 +159,7 @@ QtObject {
     property real alongOffset: 0
     property real outerGap: 8
     property var barConfig: null
+    property var widgetHost: null
     property var screen: null
     property string edge: "top"
     // Screen position of the host window origin; item coordinates inside the island are window-relative.
@@ -69,12 +181,19 @@ QtObject {
     property bool mediaClockVisible: true
     property bool mediaLyrics: false
     property bool dashTabs: false
+    property string dashDefaultTab: "overview"
     // Carries tab-bar focus across a face switch.
     property bool dashNavigationFocused: false
+    // Shared with the dash popout; written on collapse, not per focus move.
+    property string overviewFocusId: CacheData.dashFocusCardId || "calendar"
 
     onExpandedChanged: {
-        if (!expanded)
-            dashNavigationFocused = false;
+        Qt.callLater(syncLiveActivity);
+        if (expanded)
+            return;
+        dashNavigationFocused = false;
+        if (CacheData.dashFocusCardId !== overviewFocusId)
+            CacheData.set("dashFocusCardId", overviewFocusId);
     }
     property int transientTimeout: 2200
     property int notificationTimeout: 5000
@@ -191,6 +310,12 @@ QtObject {
         return activityId !== "" && requestActivity(activityId, true, true);
     }
 
+    function dashDefaultActivity() {
+        if (dashDefaultTab === DashRegistry.overviewId || !DashRegistry.isSelectable(dashDefaultTab))
+            return "";
+        return dashActivityFor(dashDefaultTab);
+    }
+
     function cycleDashTab(direction, fromNavigation) {
         const ids = DashRegistry.visibleTabIds.filter(id => dashActivityFor(id) !== "");
         if (ids.length === 0)
@@ -236,7 +361,7 @@ QtObject {
     }
 
     readonly property var destinations: ["launcher", "controlcenter", "wallpaper", "weather", "wellbeing", "notificationcenter", "clipboard", "powermenu"]
-    readonly property var blankClickOwners: ["launcher", "controlcenter", "wallpaper", "notificationcenter", "clipboard", "powermenu"]
+    readonly property var blankClickOwners: ["live", "launcher", "controlcenter", "wallpaper", "notificationcenter", "clipboard", "powermenu"]
     readonly property var destinationDefaults: ({
             "launcher": {
                 "contentLength": 160,
@@ -446,11 +571,12 @@ QtObject {
         return Math.ceil(Math.max(root.compactFaceThickness, destinationContentLength(activityId) + root.destinationCompactEndPad * 2));
     }
 
+    readonly property var homeEntries: SettingsData.islandWidgetEntries(root.barConfig).filter(entry => entry.enabled)
+
     function homeGroups(side) {
-        const layout = SettingsData.getIslandHomeLayout(root.barConfig);
-        const clock = layout.findIndex(g => g.id === "clock");
-        const groups = side === "left" ? layout.slice(0, clock) : layout.slice(clock + 1);
-        return groups.filter(g => g.enabled).map(g => g.id);
+        const clock = root.homeEntries.findIndex(entry => entry.id === "clock");
+        const entries = side === "left" ? root.homeEntries.slice(0, clock) : root.homeEntries.slice(clock + 1);
+        return entries.filter(entry => SettingsData.isIslandHomeGroup(entry.id)).map(entry => entry.id);
     }
 
     readonly property var homeLeftGroups: homeGroups("left")
@@ -526,7 +652,7 @@ QtObject {
     readonly property var systemLevelActivities: ["volume", "brightness", "mic"]
     readonly property var systemStateActivities: ["capslock", "powerprofile", "idleinhibitor", "charging"]
     readonly property var systemActivities: systemLevelActivities.concat(systemStateActivities)
-    readonly property var dotTransientActivities: ["notification"].concat(systemActivities)
+    readonly property var dotTransientActivities: ["notification", "live"].concat(systemActivities)
     function isSystemActivity(activityId) {
         return root.systemActivities.indexOf(activityId) !== -1;
     }
@@ -556,14 +682,16 @@ QtObject {
     readonly property bool notificationActive: activeActivity === "notification"
     readonly property bool outsideClickCollapses: expanded && !notificationActive
     readonly property bool notificationHeldForSystem: root.systemActivityActive && root.transientReturnActivity === "notification"
-    readonly property bool transientActive: systemActivityActive || notificationActive
+    readonly property bool transientActive: systemActivityActive || notificationActive || liveActive
     readonly property bool timeoutSuspended: pointerInside || (expanded && !notificationActive)
     readonly property bool activityOwnsBlankClicks: blankClickOwners.indexOf(activeActivity) !== -1
     readonly property bool hoverExpandEnabled: root.interactionMode === "hybrid" && !root.systemActivityActive
-    function compactTargetFor(activityId) {
+    function compactBodyTargetFor(activityId) {
         if (root.usesDotFace(activityId))
             return dotCompactTarget;
         switch (activityId) {
+        case "live":
+            return pillTarget(isVertical ? compactFaceThickness : Math.min(dashboardAvailableWidth, mediaCompactMaxLength, Math.max(compactFaceThickness, liveContentLength)), compactFaceThickness);
         case "notification":
             return notificationCompactTarget;
         case "media":
@@ -578,11 +706,25 @@ QtObject {
         return isDestination(activityId) ? pillTarget(destinationCompactLength(activityId), compactFaceThickness) : homeCompactTarget;
     }
 
+    // Stable slots sit beside the face, so every compact face grows by their length.
+    function compactTargetFor(activityId) {
+        const target = compactBodyTargetFor(activityId);
+        if (!stableSlotsLength || usesDotFace(activityId))
+            return target;
+        return Object.assign({}, target, isVertical ? {
+            height: Math.min(dashboardAvailableHeight, target.height + stableSlotsLength)
+        } : {
+            width: Math.min(dashboardAvailableWidth, target.width + stableSlotsLength)
+        });
+    }
+
     readonly property var compactTarget: compactTargetFor(activeActivity)
     function expandedTargetFor(activityId) {
         switch (activityId) {
         case "home":
             return homeExpandedTarget;
+        case "live":
+            return sheetTarget(Math.min(dashboardAvailableWidth, liveExpandedWidth), Math.min(dashboardAvailableHeight, liveExpandedHeight));
         case "notification":
             return notificationExpandedTarget;
         case "launcher":
@@ -658,8 +800,10 @@ QtObject {
     }
 
     onInputSuspendedChanged: {
-        if (!inputSuspended)
+        if (!inputSuspended) {
+            syncLiveActivity();
             return;
+        }
         hoverExpanded = false;
         hoverOpenTimer.stop();
         hoverCloseTimer.stop();
@@ -715,6 +859,12 @@ QtObject {
             syncNotificationTimeout(true);
             return true;
         }
+        if (liveActive && !selectedLiveEntry) {
+            hoverExpanded = false;
+            expanded = false;
+            keyboardDismissRequested = false;
+            return true;
+        }
         return requestCollapse();
     }
 
@@ -739,6 +889,9 @@ QtObject {
             return requestActivity(activeActivity, true, requestKeyboardFocus);
         if (notificationActive && !notificationExpandAllowed)
             return requestNotificationCenter(false);
+        const favourite = activeActivity === "home" ? dashDefaultActivity() : "";
+        if (favourite && requestActivity(favourite, true, requestKeyboardFocus))
+            return true;
         hoverExpanded = false;
         clearPendingRequests("");
         hoverCloseTimer.stop();
@@ -750,6 +903,12 @@ QtObject {
     }
 
     function requestCollapse() {
+        if (liveActive) {
+            if (liveEntry)
+                presentationSession?.finishCurrent(liveEntry);
+            selectedLiveEntry = null;
+            dismissedLiveVersion = liveVersion(liveEntry);
+        }
         hoverExpanded = false;
         hoverOpenTimer.stop();
         transientTimer.stop();
@@ -778,6 +937,8 @@ QtObject {
             return activityId;
         case "media":
             return mediaAvailable ? "media" : "home";
+        case "live":
+            return liveCandidate || selectedLiveEntry ? "live" : idleActivity();
         }
         if (isDestination(activityId))
             return activityId;
@@ -785,6 +946,15 @@ QtObject {
     }
 
     function requestActivity(activityId, shouldExpand, requestKeyboardFocus) {
+        if (activityId === "live") {
+            if (!liveCandidate && shouldExpand === true)
+                return openStableEntry(presentationSession.stableEntries[0], requestKeyboardFocus);
+            if (!liveCandidate || inputSuspended || (transientActive && !liveActive))
+                return false;
+            dismissedLiveVersion = "";
+            syncLiveActivity();
+            return liveActive && (shouldExpand !== true || requestExpand(requestKeyboardFocus));
+        }
         const destination = isDestination(activityId);
         if (activityId !== "home" && activityId !== "media" && !destination)
             return false;
@@ -797,6 +967,7 @@ QtObject {
         if (activityId === "wellbeing" && !SettingsData.wellbeingEnabled)
             return false;
 
+        selectedLiveEntry = null;
         if (activityId !== "launcher")
             launcherSessionActive = false;
         clearPendingRequests(activityId);
@@ -1018,7 +1189,7 @@ QtObject {
         notificationTimer.stop();
         const nextExpanded = restoreExpanded === true && suspendedExpanded;
         const suspendedFace = suspendedActivity === "home" || suspendedActivity === "media";
-        const nextActivity = !suspendedActivity || (suspendedFace && !nextExpanded) ? idleActivity() : suspendedActivity === "media" && !mediaAvailable ? "home" : suspendedActivity;
+        const nextActivity = !suspendedActivity || (suspendedFace && !nextExpanded) ? idleActivity() : suspendedActivity === "media" || suspendedActivity === "live" ? resolvedReturnActivity(suspendedActivity) : suspendedActivity;
         const nextKeyboardDismissRequested = nextExpanded && suspendedKeyboardDismissRequested;
         suspendedActivity = "";
         suspendedExpanded = false;

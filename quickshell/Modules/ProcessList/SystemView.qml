@@ -18,6 +18,10 @@ Item {
     // The page's actions sit in a FAB bar, like Settings pages; SettingsFabBar finds this property.
     property var fabBar: null
 
+    function scrollToTop() {
+        scroll.contentY = 0;
+    }
+
     Ref {
         service: DgopService
         modules: ["system", "cpu", "memory", "memory-modules", "sensors", "diskmounts"]
@@ -45,7 +49,7 @@ Item {
 
     readonly property var f: facts.facts
     readonly property var cpuInfo: DgopService.cpuInfo
-    readonly property var gpus: DgopService.availableGpus ?? []
+    readonly property var gpus: DgopService.detectedGpus
     readonly property string mesa: SystemInfo.mesaVersion(f)
     readonly property string compositorVersion: {
         const raw = f["wm." + CompositorService.compositor];
@@ -185,7 +189,7 @@ Item {
 
     readonly property var sections: [
         {
-            "title": "Dux Shell",
+            "title": "Dux Modular Shell",
             "icon": "deployed_code",
             "rows": dmsRows
         },

@@ -17,7 +17,7 @@ Rectangle {
     required property var process
 
     readonly property int pid: process?.pid ?? 0
-    readonly property var live: (DgopService.allProcesses ?? []).find(p => p.pid === pid) ?? process
+    readonly property var live: DgopService.findProcess(pid, process?.memberOf) ?? process
     readonly property string command: live?.command ?? ""
     readonly property string fullCommand: live?.fullCommand || command
     readonly property var desktopEntry: ProcessListMetrics.appEntry(live, [sandbox?.id])
@@ -25,7 +25,7 @@ Rectangle {
     readonly property var startTime: live?.startTime ?? null
     readonly property var started: startTime !== null ? new Date(startTime * 1000) : null
     readonly property bool startedToday: started !== null && started.toDateString() === new Date().toDateString()
-    readonly property var parentProcess: (live?.ppid ?? 0) > 0 ? (DgopService.allProcesses ?? []).find(p => p.pid === live.ppid) ?? null : null
+    readonly property var parentProcess: lookup(live?.ppid ?? 0)
 
     property var detail: null
     readonly property string unit: Remotes.unescapeUnit(detail?.unit ?? "")
@@ -75,13 +75,18 @@ Rectangle {
         while (p && names.length < 6) {
             names.push(p.command);
             const ppid = p.ppid;
-            p = ppid > 0 ? (DgopService.allProcesses ?? []).find(x => x.pid === ppid) ?? null : null;
+            p = lookup(ppid);
         }
         return names.join(" › ");
     }
     readonly property string currentTab: tabIds.includes(ProcessListMetrics.processTab) ? ProcessListMetrics.processTab : "overview"
 
     signal actionRequested(string action)
+
+    // A member's parent is usually another member of the same merged row.
+    function lookup(ppid) {
+        return ppid > 0 ? DgopService.findProcess(ppid, process?.memberOf) ?? DgopService.findProcess(ppid) ?? null : null;
+    }
 
     function cell(id) {
         return ProcessColumns.formatCell(id, live ?? ({})) ?? "—";
@@ -305,7 +310,7 @@ Rectangle {
                 IconImage {
                     id: appIcon
                     anchors.fill: parent
-                    source: root.command ? Paths.getAppIcon(root.desktopEntry?.id ?? root.command, root.desktopEntry) : ""
+                    source: ProcessListMetrics.appIcon(root.live, root.desktopEntry)
                     smooth: true
                     mipmap: true
                     asynchronous: true
@@ -401,6 +406,12 @@ Rectangle {
                 iconName: "account_tree"
                 text: root.parentProcess ? root.parentProcess.command : (root.live?.ppid ?? 0) > 0 ? String(root.live.ppid) : ""
                 tip: I18n.tr("Parent", "the process that started this one") + (root.parentProcess ? ", " + I18n.tr("PID %1", "%1 is a process id").arg(root.parentProcess.pid) : "")
+            }
+
+            InfoChip {
+                iconName: "speed"
+                text: ProcessActions.priorityPreset(root.live?.nice)?.label ?? ""
+                tip: I18n.tr("Priority", "process priority level")
             }
 
             // App launch scopes and login sessions say nothing the app name doesn't; only real services get a chip.
@@ -638,11 +649,47 @@ Rectangle {
             }
 
             DButton {
+                id: priorityButton
+                text: I18n.tr("Priority", "process action: opens the priority presets")
+                iconName: "speed"
+                visible: ProcessActions.canSetPriority(root.live)
+                backgroundColor: Theme.secondaryContainer
+                textColor: Theme.onSecondaryContainer
+                tooltipText: root.authTip || null
+                onClicked: {
+                    priorityMenu.currentValue = String(ProcessActions.priorityPreset(root.live?.nice)?.nice ?? "");
+                    priorityMenu.openDropdownMenu();
+                }
+
+                DDropdown {
+                    id: priorityMenu
+                    showTrigger: false
+                    popupAnchorItem: priorityButton
+                    focusReturnTarget: priorityButton
+                    alignPopupRight: !I18n.isRtl
+                    popupWidth: Theme.fontSizeMedium * 10
+                    options: ProcessActions.priorities.map(p => p.label)
+                    optionValues: ProcessActions.priorities.map(p => String(p.nice))
+                    onValueChanged: value => ProcessActions.setPriority(root.live, Number(value))
+                }
+            }
+
+            DButton {
+                readonly property bool paused: ProcessActions.isPaused(root.live)
+                text: paused ? I18n.tr("Resume", "process action: continue a paused process (SIGCONT)") : I18n.tr("Pause", "process action: freeze the process and everything it started (SIGSTOP)")
+                iconName: paused ? "play_arrow" : "pause"
+                visible: ProcessActions.canPause(root.live)
+                backgroundColor: Theme.secondaryContainer
+                textColor: Theme.onSecondaryContainer
+                tooltipText: root.authTip || null
+                onClicked: ProcessActions.setPaused(root.live, !paused)
+            }
+
+            DButton {
                 text: root.restartKind === "reload" ? I18n.tr("Reload", "process action: reload a compositor's configuration") : I18n.tr("Restart", "process action: start the process again")
                 iconName: "restart_alt"
                 visible: root.restartKind !== "" && !(root.restartKind === "relaunch" && (root.detail?.terminal ?? false))
-                backgroundColor: Theme.secondaryContainer
-                textColor: Theme.onSecondaryContainer
+                variant: "tonal"
                 tooltipText: root.authTip || null
                 onClicked: root.actionRequested("restart")
             }

@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
+import "../Common/SearchMatch.js" as SearchMatch
 
 Singleton {
     id: root
@@ -124,8 +125,7 @@ Singleton {
             apps: apps,
             entries: apps.map(app => ({
                         app: app,
-                        name: (app.name || "").toLowerCase(),
-                        nameWords: tokenize(app.name || ""),
+                        name: SearchMatch.prepareText(app.name),
                         genericName: (app.genericName || "").toLowerCase(),
                         comment: (app.comment || "").toLowerCase(),
                         id: (app.id || "").toLowerCase(),
@@ -528,7 +528,8 @@ Singleton {
         if (!query || query.length === 0)
             return coreApps;
         const lowerQuery = query.toLowerCase();
-        return coreApps.filter(app => app.name.toLowerCase().includes(lowerQuery) || app.comment.toLowerCase().includes(lowerQuery));
+        const prepared = SearchMatch.prepareQuery(query);
+        return coreApps.filter(app => SearchMatch.textScore(SearchMatch.prepareText(app.name), prepared) > 0 || app.comment.toLowerCase().includes(lowerQuery));
     }
 
     function executeCoreApp(app) {
@@ -581,83 +582,6 @@ Singleton {
         refreshApplications();
     }
 
-    function tokenize(text) {
-        return text.toLowerCase().trim().split(/[\s\-_]+/).filter(w => w.length > 0);
-    }
-
-    function wordBoundaryMatch(text, query) {
-        return wordBoundaryMatchWords(tokenize(text), tokenize(query));
-    }
-
-    function wordBoundaryMatchWords(textWords, queryWords) {
-        if (queryWords.length === 0)
-            return false;
-        if (queryWords.length > textWords.length)
-            return false;
-
-        for (var i = 0; i <= textWords.length - queryWords.length; i++) {
-            let allMatch = true;
-            for (var j = 0; j < queryWords.length; j++) {
-                if (!textWords[i + j].startsWith(queryWords[j])) {
-                    allMatch = false;
-                    break;
-                }
-            }
-            if (allMatch)
-                return true;
-        }
-        return false;
-    }
-
-    function levenshteinDistance(s1, s2) {
-        const len1 = s1.length;
-        const len2 = s2.length;
-        const matrix = [];
-
-        for (var i = 0; i <= len1; i++) {
-            matrix[i] = [i];
-        }
-        for (var j = 0; j <= len2; j++) {
-            matrix[0][j] = j;
-        }
-
-        for (var i = 1; i <= len1; i++) {
-            for (var j = 1; j <= len2; j++) {
-                const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
-                matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
-            }
-        }
-        return matrix[len1][len2];
-    }
-
-    function fuzzyMatchScore(text, query, words) {
-        const queryLower = query.toLowerCase();
-        const maxDistance = query.length <= 2 ? 0 : query.length === 3 ? 1 : query.length <= 6 ? 2 : 3;
-
-        let bestScore = 0;
-
-        if (Math.abs(text.length - query.length) <= maxDistance) {
-            const distance = levenshteinDistance(text.toLowerCase(), queryLower);
-            if (distance <= maxDistance) {
-                const maxLen = Math.max(text.length, query.length);
-                bestScore = 1 - (distance / maxLen);
-            }
-        }
-
-        for (const word of words || tokenize(text)) {
-            if (Math.abs(word.length - query.length) > maxDistance)
-                continue;
-            const wordDistance = levenshteinDistance(word, queryLower);
-            if (wordDistance <= maxDistance) {
-                const maxLen = Math.max(word.length, query.length);
-                const score = 1 - (wordDistance / maxLen);
-                bestScore = Math.max(bestScore, score);
-            }
-        }
-
-        return bestScore;
-    }
-
     function calculateFrecency(app) {
         const usageRanking = AppUsageHistoryData.appUsageRanking || {};
         const appId = app.id || (app.execString || app.exec || "");
@@ -708,84 +632,23 @@ Singleton {
             return [];
 
         const queryLower = query.toLowerCase().trim();
-        const queryWords = tokenize(queryLower);
+        const preparedQuery = SearchMatch.prepareQuery(queryLower);
         const scoredApps = [];
         const results = [];
         const index = _visibleSearchIndex();
         const visibleApps = index.apps;
 
         for (const entry of index.entries) {
-            const app = entry.app;
-            const name = entry.name;
-            const genericName = entry.genericName;
-            const comment = entry.comment;
-            const id = entry.id;
-            const keywords = entry.keywords;
-
-            let textScore = 0;
-            let matchType = "none";
-
-            if (name === queryLower) {
-                textScore = 10000;
-                matchType = "exact";
-            } else if (name.startsWith(queryLower)) {
-                textScore = 5000;
-                matchType = "prefix";
-            } else if (wordBoundaryMatchWords(entry.nameWords, queryWords)) {
-                textScore = 3000;
-                matchType = "word_boundary";
-            } else if (name.includes(queryLower)) {
-                textScore = 500;
-                matchType = "substring";
-            } else if (genericName && genericName.startsWith(queryLower)) {
-                textScore = 800;
-                matchType = "generic_prefix";
-            } else if (genericName && genericName.includes(queryLower)) {
-                textScore = 400;
-                matchType = "generic";
-            } else if (id && id.includes(queryLower)) {
-                textScore = 350;
-                matchType = "id";
-            }
-
-            if (matchType === "none" && keywords.length > 0) {
-                for (const keyword of keywords) {
-                    if (keyword.startsWith(queryLower)) {
-                        textScore = 300;
-                        matchType = "keyword_prefix";
-                        break;
-                    } else if (keyword.includes(queryLower)) {
-                        textScore = 150;
-                        matchType = "keyword";
-                        break;
-                    }
-                }
-            }
-
-            if (matchType === "none" && comment && comment.includes(queryLower)) {
-                textScore = 50;
-                matchType = "comment";
-            }
-
-            if (matchType === "none") {
-                const fuzzyScore = fuzzyMatchScore(name, queryLower, entry.nameWords);
-                if (fuzzyScore > 0) {
-                    textScore = fuzzyScore * 100;
-                    matchType = "fuzzy";
-                }
-            }
-
-            if (matchType !== "none") {
-                const frecencyData = calculateFrecency(app);
-
-                results.push({
-                    "app": app,
-                    "textScore": textScore,
-                    "frecency": frecencyData.frecency,
-                    "daysSinceUsed": frecencyData.daysSinceUsed,
-                    "matchType": matchType
-                });
-            }
+            const textScore = scoreAppEntry(entry, queryLower, preparedQuery);
+            if (textScore === 0)
+                continue;
+            const frecencyData = calculateFrecency(entry.app);
+            results.push({
+                "app": entry.app,
+                "textScore": textScore,
+                "frecency": frecencyData.frecency,
+                "daysSinceUsed": frecencyData.daysSinceUsed
+            });
         }
 
         for (const result of results) {
@@ -812,6 +675,27 @@ Singleton {
 
         scoredApps.sort((a, b) => b.score - a.score);
         return scoredApps.slice(0, maxResults).map(item => item.app);
+    }
+
+    function scoreAppEntry(entry, queryLower, preparedQuery) {
+        const lexical = SearchMatch.lexicalScore(entry.name, preparedQuery);
+        if (lexical > 0)
+            return lexical;
+        if (entry.genericName.startsWith(queryLower))
+            return 800;
+        if (entry.genericName.includes(queryLower))
+            return 400;
+        if (entry.id.includes(queryLower))
+            return 350;
+        for (const keyword of entry.keywords) {
+            if (keyword.startsWith(queryLower))
+                return 300;
+            if (keyword.includes(queryLower))
+                return 150;
+        }
+        if (entry.comment.includes(queryLower))
+            return 50;
+        return SearchMatch.fuzzyScore(entry.name, preparedQuery) || SearchMatch.typoScore(entry.name, preparedQuery);
     }
 
     function searchAppActions(query, apps) {

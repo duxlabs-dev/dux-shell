@@ -8,6 +8,7 @@ import Quickshell.Services.Notifications
 import qs.Common
 import qs.Services
 import "../Common/Format.js" as Format
+import "../Common/IslandActivities.js" as Activities
 import "../Common/markdown2html.js" as Markdown2Html
 
 Singleton {
@@ -485,9 +486,41 @@ Singleton {
         return bypassDnd || (SettingsData.notificationDndAllowCritical && urgency === NotificationUrgency.Critical);
     }
 
+    function _applyPluginInterceptor(decision, policy) {
+        if (!decision)
+            return;
+        const result = decision.result;
+        const pluginPolicy = result.policy;
+        if (pluginPolicy && typeof pluginPolicy === "object") {
+            for (const key of ["drop", "disablePopup", "hideFromCenter", "disableHistory", "bypassDnd"])
+                if (typeof pluginPolicy[key] === "boolean")
+                    policy[key] = pluginPolicy[key];
+            if (pluginPolicy.urgency !== undefined)
+                policy.urgency = _coerceRuleUrgency(pluginPolicy.urgency, policy.urgency);
+        }
+        if (result.presentation && typeof result.presentation === "object")
+            policy.islandPresentation = result.presentation;
+        if (result.consume === true && result.activity && typeof result.activity === "object")
+            policy.activity = {
+                "source": decision.source,
+                "payload": result.activity
+            };
+    }
+
+    function _publishInterceptedActivity(activity) {
+        // Consuming dismisses the notification, so an island on the payload's own screen and bar must take it.
+        if (!activity || !IslandActivityService.canPresentSource(activity.source, Activities.text(activity.payload.screen, 128), Activities.text(activity.payload.barId, 128)))
+            return false;
+        // A plugin-chosen id lets it update or remove the activity later.
+        const id = Activities.validId(activity.payload.id) ? activity.payload.id : `notification-${++NotificationInterceptorService.activitySequence}`;
+        return IslandActivityService.publish(activity.source, id, activity.payload);
+    }
+
     function _evaluateNotificationPolicy(notif) {
         const baseUrgency = typeof notif.urgency === "number" ? notif.urgency : NotificationUrgency.Normal;
         const policy = {
+            "islandPresentation": null,
+            "activity": null,
             "drop": false,
             "disablePopup": false,
             "hideFromCenter": false,
@@ -497,7 +530,7 @@ Singleton {
         };
 
         const rules = SettingsData.notificationRules || [];
-        if (!rules.length)
+        if (!rules.length && !NotificationInterceptorService.entries.length)
             return policy;
 
         const info = {
@@ -530,10 +563,13 @@ Singleton {
                 break;
             }
 
+            policy.islandPresentation = rule.islandPresentation || null;
             policy.urgency = _coerceRuleUrgency(rule.urgency, policy.urgency);
             return policy;
         }
 
+        // A matching user rule owns the notification; interceptors only shape notifications no rule matches.
+        _applyPluginInterceptor(NotificationInterceptorService.evaluate(info), policy);
         return policy;
     }
 
@@ -744,6 +780,14 @@ Singleton {
             const isTransient = notif.transient;
             const shouldKeepInCenter = !isTransient && !policy.hideFromCenter;
 
+            // consume only replaces a popup that would show; under DND, mute or ingress limits the notification stays as is.
+            if (shouldShowPopup && _publishInterceptedActivity(policy.activity)) {
+                try {
+                    notif.dismiss();
+                } catch (e) {}
+                return;
+            }
+
             if (!shouldShowPopup && !shouldKeepInCenter) {
                 try {
                     notif.dismiss();
@@ -771,7 +815,8 @@ Singleton {
                 "popup": shouldShowPopup,
                 "notification": notif,
                 "urgencyOverride": policy.urgency,
-                "bypassDnd": policy.bypassDnd
+                "bypassDnd": policy.bypassDnd,
+                "islandPresentation": policy.islandPresentation
             });
 
             if (wrapper) {
@@ -878,7 +923,9 @@ Singleton {
         const themed = notificationThemedAppIcon(appIcon);
         if (themed)
             return themed;
-        return appIcon || fromImage || "";
+        if (appIcon)
+            return appIcon;
+        return notificationHasImage(image) ? "" : fromImage;
     }
 
     component NotifWrapper: QtObject {
@@ -888,6 +935,7 @@ Singleton {
         property bool removedByLimit: false
         property bool isPersistent: true
         property bool bypassDnd: false
+        property var islandPresentation: null
         property int seq: 0
         property string persistedImagePath: ""
 

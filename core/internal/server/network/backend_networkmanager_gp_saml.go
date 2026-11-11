@@ -146,7 +146,7 @@ func convertGPPreloginCookie(ctx context.Context, gateway, preloginCookie, user 
 func runOpenConnectPasswordAuth(
 	ctx context.Context,
 	data map[string]string,
-	username, password, serverCert string,
+	username, password, trustedCerts string,
 ) (*openConnectAuthResult, error) {
 	if data["protocol"] != "fortinet" {
 		return nil, fmt.Errorf("only Fortinet password authentication is supported")
@@ -168,19 +168,22 @@ func runOpenConnectPasswordAuth(
 	if usergroup := data["usergroup"]; usergroup != "" {
 		args = append(args, "--usergroup="+usergroup)
 	}
-	if serverCert != "" {
-		args = append(args, "--servercert="+serverCert)
+	pins := serverCertPins(trustedCerts)
+	for _, pin := range pins {
+		args = append(args, "--servercert="+pin)
 	}
 	args = append(args, "--authenticate", gateway)
 
 	result, err := runOpenConnectAuthenticate(ctx, args, password)
-	if err == nil {
-		result.Host = gateway
-		if result.Fingerprint == "" {
-			result.Fingerprint = serverCert
-		}
+	if err != nil {
+		return result, err
 	}
-	return result, err
+	result.Host = gateway
+	// With several pins only openconnect's FINGERPRINT says which node answered.
+	if result.Fingerprint == "" && len(pins) == 1 {
+		result.Fingerprint = pins[0]
+	}
+	return result, nil
 }
 
 func runOpenConnectAuthenticate(ctx context.Context, args []string, secret string) (*openConnectAuthResult, error) {

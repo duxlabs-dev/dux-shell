@@ -27,7 +27,13 @@ DContextMenu {
     readonly property bool materialWallpaper: currentWallpaper === ""
     readonly property var materialTarget: SessionData.materialWallpaperTarget(targetScreen?.name ?? "")
     readonly property var materialEntry: SessionData.materialWallpaperEntry(materialTarget)
-    readonly property string currentKey: materialWallpaper ? Art.resolvePreset(materialEntry.preset, SessionData.materialWallpaperProfiles) : currentWallpaper
+    readonly property bool listMode: WallpaperLibraryService.enabled
+    readonly property int libraryRevision: WallpaperLibraryService.revision
+    readonly property string currentKey: {
+        if (materialWallpaper)
+            return Art.resolvePreset(materialEntry.preset, SessionData.materialWallpaperProfiles);
+        return listMode ? WallpaperLibraryService.listedPath(currentWallpaper) : currentWallpaper;
+    }
 
     layerNamespace: "dms:desktop-context-menu"
     keyboardNavigable: true
@@ -123,10 +129,15 @@ DContextMenu {
     onRenderActiveChanged: {
         settingsExpanded = false;
         stripItems = renderActive && materialWallpaper ? leadWithCurrent(presetItems()) : [];
+        fillFromLibrary();
         if (!renderActive)
             widgetInstanceId = "";
     }
-    onWallpaperDirChanged: stripItems = []
+    onLibraryRevisionChanged: fillFromLibrary()
+    onWallpaperDirChanged: {
+        if (!listMode)
+            stripItems = [];
+    }
 
     function openForWidget(screen, x, y, instanceId) {
         widgetInstanceId = instanceId;
@@ -142,14 +153,7 @@ DContextMenu {
     }
 
     function setWallpaper(path) {
-        if (SessionData.perMonitorWallpaper && targetScreen) {
-            SessionData.setMonitorWallpaper(targetScreen.name, path);
-            SessionData.setMonitorCyclingFolderPath(targetScreen.name, "");
-            return;
-        }
-        SessionData.setWallpaper(path);
-        SessionData.wallpaperCyclingFolderPath = "";
-        SessionData.saveSettings();
+        SessionData.applyWallpaperPick(targetScreen?.name ?? "", path);
     }
 
     // Order is fixed per open so a pick moves the check, not the list.
@@ -170,20 +174,32 @@ DContextMenu {
                 }));
     }
 
-    function loadStrip(model) {
-        const items = [];
-        for (let i = 0; i < model.count; i++) {
-            const path = model.get(i, "filePath");
-            items.push({
-                key: path,
-                path
-            });
-        }
-        stripItems = leadWithCurrent(items);
+    function loadStrip(paths) {
+        stripItems = leadWithCurrent(paths.map(path => ({
+                    key: path,
+                    path
+                })));
+    }
+
+    function loadFolderStrip(model) {
+        const paths = [];
+        for (let i = 0; i < model.count; i++)
+            paths.push(model.get(i, "filePath"));
+        loadStrip(paths);
+    }
+
+    function fillFromLibrary() {
+        if (renderActive && listMode && !materialWallpaper && stripItems.length === 0 && WallpaperLibraryService.loaded)
+            loadStrip(WallpaperLibraryService.selected(WallpaperLibraryService.items).map(item => item.path));
+    }
+
+    Ref {
+        service: WallpaperLibraryService
+        active: root.renderActive && root.listMode && root.wallpaperDir !== ""
     }
 
     Loader {
-        active: root.renderActive && root.wallpaperDir !== ""
+        active: root.renderActive && root.wallpaperDir !== "" && !root.listMode
 
         sourceComponent: Item {
             FolderListModel {
@@ -195,7 +211,7 @@ DContextMenu {
                 folder: "file://" + root.wallpaperDir.split("/").map(s => encodeURIComponent(s)).join("/")
                 onStatusChanged: {
                     if (folderModel.status === FolderListModel.Ready)
-                        root.loadStrip(folderModel);
+                        root.loadFolderStrip(folderModel);
                 }
             }
         }

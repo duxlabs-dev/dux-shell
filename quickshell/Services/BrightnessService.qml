@@ -384,10 +384,29 @@ Singleton {
         return pinned.filter(id => devices.some(d => d.id === id));
     }
 
+    function screenPinnedDevices(screen) {
+        return screen ? pinnedDevices(SettingsData.getScreenDisplayName(screen)) : [];
+    }
+
     function getPreferredDevices() {
-        const focusedScreen = CompositorService.getFocusedScreen();
-        const pinned = focusedScreen ? pinnedDevices(SettingsData.getScreenDisplayName(focusedScreen)) : [];
+        const pinned = screenPinnedDevices(CompositorService.getFocusedScreen());
         return pinned.length > 0 ? pinned : [getDefaultDevice()];
+    }
+
+    function screenTargets(screen) {
+        const pinned = screenPinnedDevices(screen);
+        return pinned.length > 0 ? pinned : lastIpcTargets();
+    }
+
+    function screenTargetsLastDevice(screen) {
+        return screenTargets(screen).includes(lastIpcDevice);
+    }
+
+    function screenLeadDevice(screen) {
+        const pinned = screenPinnedDevices(screen);
+        if (pinned.length > 0)
+            return pinned[0];
+        return lastIpcDevice === "" ? getDefaultDevice() : (lastIpcDevice || currentDevice);
     }
 
     function getCurrentDeviceInfo() {

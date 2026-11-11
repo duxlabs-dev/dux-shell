@@ -119,6 +119,10 @@ type Manager struct {
 	controlsInitialized bool
 	connectionDead      atomic.Bool
 
+	fade      *fadeState
+	fadeTimer *time.Timer
+	fading    atomic.Bool
+
 	// The per-output ICC fields (iccPath, iccProfile, outputTemp) are only
 	// touched by the wayland actor goroutine. The published snapshot below is
 	// what the IPC handlers, the CLI and the scheduler read, so they never

@@ -1,11 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	_ "image/gif"
@@ -18,6 +19,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -32,6 +34,8 @@ import (
 	"github.com/duxlabs-dev/dux-go/wlclipboard"
 	"github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	serverclipboard "github.com/duxlabs-dev/dux-shell/core/internal/server/clipboard"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -272,14 +276,27 @@ func runClipCopy(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if copyFromStdin {
-		if err := clipboard.CopyReader(os.Stdin, clipCopyType, clipCopyForeground, clipCopyPasteOnce); err != nil {
+	if clipCopyForeground || clipCopyPasteOnce {
+		if copyFromStdin {
+			if err := clipboard.CopyReader(os.Stdin, clipCopyType, clipCopyForeground, clipCopyPasteOnce); err != nil {
+				log.Fatalf("copy: %v", err)
+			}
+			return
+		}
+		if err := clipboard.CopyOpts(data, clipCopyType, clipCopyForeground, clipCopyPasteOnce); err != nil {
 			log.Fatalf("copy: %v", err)
 		}
 		return
 	}
 
-	if err := clipboard.CopyOpts(data, clipCopyType, clipCopyForeground, clipCopyPasteOnce); err != nil {
+	if copyFromStdin {
+		var err error
+		data, err = io.ReadAll(os.Stdin)
+		if err != nil {
+			log.Fatalf("read stdin: %v", err)
+		}
+	}
+	if err := copyDataToClipboard(data, clipCopyType); err != nil {
 		log.Fatalf("copy: %v", err)
 	}
 }
@@ -352,7 +369,7 @@ func runClipWatch(cmd *cobra.Command, args []string) {
 		}
 	case clipWatchStore:
 		if err := wlclipboard.Watch(ctx, func(data []byte, mimeType string) {
-			if err := clipboard.Store(data, mimeType); err != nil {
+			if err := storeClipboardEntry(data, mimeType); err != nil {
 				log.Errorf("store: %v", err)
 			}
 		}); err != nil && err != context.Canceled {
@@ -761,12 +778,7 @@ func runClipConfigSet(cmd *cobra.Command, args []string) {
 }
 
 func runClipExport(cmd *cobra.Command, args []string) {
-	req := ipc.Request{
-		ID:     1,
-		Method: "clipboard.getHistory",
-	}
-
-	resp, err := sendServerRequest(req)
+	resp, err := sendServerRequest(ipc.Request{ID: 1, Method: "clipboard.getHistory"})
 	if err != nil {
 		log.Fatalf("Failed to get clipboard history: %v", err)
 	}
@@ -776,60 +788,201 @@ func runClipExport(cmd *cobra.Command, args []string) {
 	if resp.Result == nil {
 		log.Fatal("No clipboard history")
 	}
+	history, _ := (*resp.Result).([]any)
 
-	out, err := json.MarshalIndent(resp.Result, "", "  ")
-	if err != nil {
-		log.Fatalf("Failed to marshal: %v", err)
+	out := os.Stdout
+	if len(args) > 0 {
+		out, err = os.Create(args[0])
+		if err != nil {
+			log.Fatalf("Failed to create file: %v", err)
+		}
+	}
+	w := bufio.NewWriter(out)
+
+	written := 0
+	writeEntries := func(ids []uint64) {
+		resp, err := sendServerRequest(ipc.Request{ID: 1, Method: "clipboard.getEntries", Params: map[string]any{"ids": ids}})
+		if err != nil {
+			log.Fatalf("Failed to get clipboard entries: %v", err)
+		}
+		if resp.Error != "" {
+			log.Fatalf("Error: %s", resp.Error)
+		}
+		entries, _ := (*resp.Result).([]any)
+		for _, entry := range entries {
+			encoded, err := json.MarshalIndent(entry, "  ", "  ")
+			if err != nil {
+				log.Fatalf("Failed to marshal: %v", err)
+			}
+			if written > 0 {
+				_, _ = w.WriteString(",\n")
+			}
+			_, _ = w.WriteString("  ")
+			_, _ = w.Write(encoded)
+			written++
+		}
 	}
 
-	if len(args) == 0 {
-		fmt.Println(string(out))
+	_, _ = w.WriteString("[\n")
+	var ids []uint64
+	batchBytes := 0
+	for _, item := range history {
+		entry, _ := item.(map[string]any)
+		id, _ := entry["id"].(float64)
+		size, _ := entry["size"].(float64)
+		ids = append(ids, uint64(id))
+		batchBytes += int(size)
+		if len(ids) < clipBatchEntries && batchBytes < clipBatchBytes {
+			continue
+		}
+		writeEntries(ids)
+		ids, batchBytes = nil, 0
+	}
+	if len(ids) > 0 {
+		writeEntries(ids)
+	}
+	_, _ = w.WriteString("\n]\n")
+
+	if err := w.Flush(); err != nil {
+		log.Fatalf("Failed to write export: %v", err)
+	}
+	if out == os.Stdout {
 		return
 	}
-
-	if err := os.WriteFile(args[0], out, 0o644); err != nil {
+	if err := out.Close(); err != nil {
 		log.Fatalf("Failed to write file: %v", err)
 	}
-	fmt.Printf("Exported to %s\n", args[0])
+	fmt.Printf("Exported %d entries to %s\n", written, args[0])
 }
 
 func runClipImport(cmd *cobra.Command, args []string) {
-	data, err := os.ReadFile(args[0])
+	f, err := os.Open(args[0])
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
 	}
+	defer f.Close()
 
-	var entries []map[string]any
-	if err := json.Unmarshal(data, &entries); err != nil {
-		log.Fatalf("Failed to parse JSON: %v", err)
+	dec := json.NewDecoder(bufio.NewReader(f))
+	if tok, err := dec.Token(); err != nil || tok != json.Delim('[') {
+		log.Fatalf("Failed to parse JSON: expected an array of entries")
 	}
 
-	var imported int
-	for _, entry := range entries {
-		dataStr, ok := entry["data"].(string)
-		if !ok {
+	importer, err := newClipImporter()
+	if err != nil {
+		log.Fatalf("Failed to open clipboard history: %v", err)
+	}
+
+	for dec.More() {
+		var item struct {
+			Data      *string `json:"data"`
+			MimeType  string  `json:"mimeType"`
+			Timestamp string  `json:"timestamp"`
+			Pinned    bool    `json:"pinned"`
+		}
+		if err := dec.Decode(&item); err != nil {
+			log.Fatalf("Failed to parse JSON: %v", err)
+		}
+		if item.Data == nil {
 			continue
 		}
-		mimeType, _ := entry["mimeType"].(string)
-		if mimeType == "" {
-			mimeType = "text/plain"
-		}
 
-		var entryData []byte
-		if decoded, err := base64.StdEncoding.DecodeString(dataStr); err == nil {
-			entryData = decoded
+		entry := serverclipboard.ImportEntry{MimeType: item.MimeType, Pinned: item.Pinned}
+		if decoded, err := base64.StdEncoding.DecodeString(*item.Data); err == nil {
+			entry.Data = decoded
 		} else {
-			entryData = []byte(dataStr)
+			entry.Data = []byte(*item.Data)
+		}
+		if ts, err := time.Parse(time.RFC3339Nano, item.Timestamp); err == nil {
+			entry.Timestamp = ts
 		}
 
-		if err := clipboard.Store(entryData, mimeType); err != nil {
-			log.Errorf("Failed to store entry: %v", err)
-			continue
+		if err := importer.add(entry); err != nil {
+			log.Fatalf("Failed to import entries: %v", err)
 		}
-		imported++
 	}
 
-	fmt.Printf("Imported %d entries\n", imported)
+	if err := importer.close(); err != nil {
+		log.Fatalf("Failed to import entries: %v", err)
+	}
+	fmt.Printf("Imported %d entries\n", importer.imported)
+}
+
+const (
+	clipBatchEntries = 500
+	clipBatchBytes   = 16 << 20
+)
+
+// clipImporter writes through the daemon when it runs, since it holds the
+// database lock, and opens the database directly otherwise.
+type clipImporter struct {
+	store    *serverclipboard.Manager
+	batch    []serverclipboard.ImportEntry
+	size     int
+	imported int
+}
+
+func newClipImporter() (*clipImporter, error) {
+	if resp, ok := tryServerRequest(ipc.Request{ID: 1, Method: "clipboard.getState"}); ok && resp.Error == "" {
+		return &clipImporter{}, nil
+	}
+
+	store, err := serverclipboard.OpenStore()
+	if err != nil {
+		return nil, err
+	}
+	return &clipImporter{store: store}, nil
+}
+
+func (c *clipImporter) add(entry serverclipboard.ImportEntry) error {
+	c.batch = append(c.batch, entry)
+	c.size += len(entry.Data)
+	if len(c.batch) < clipBatchEntries && c.size < clipBatchBytes {
+		return nil
+	}
+	return c.flush()
+}
+
+func (c *clipImporter) flush() error {
+	if len(c.batch) == 0 {
+		return nil
+	}
+	batch := c.batch
+	c.batch, c.size = nil, 0
+
+	if c.store != nil {
+		imported, err := c.store.Import(batch)
+		c.imported += imported
+		return err
+	}
+
+	resp, err := sendServerRequest(ipc.Request{ID: 1, Method: "clipboard.import", Params: map[string]any{"entries": batch}})
+	if err != nil {
+		return err
+	}
+	if resp.Error != "" {
+		return errors.New(resp.Error)
+	}
+	if result, ok := (*resp.Result).(map[string]any); ok {
+		imported, _ := result["imported"].(float64)
+		c.imported += int(imported)
+	}
+	return nil
+}
+
+func (c *clipImporter) close() error {
+	err := c.flush()
+	if c.store != nil {
+		c.store.CloseStore()
+	}
+	return err
+}
+
+func storeClipboardEntry(data []byte, mimeType string) error {
+	importer, err := newClipImporter()
+	if err != nil {
+		return err
+	}
+	return errors.Join(importer.add(serverclipboard.ImportEntry{Data: data, MimeType: mimeType}), importer.close())
 }
 
 func runClipMigrate(cmd *cobra.Command, args []string) {
@@ -851,7 +1004,11 @@ func runClipMigrate(cmd *cobra.Command, args []string) {
 	}
 	defer db.Close()
 
-	var migrated int
+	importer, err := newClipImporter()
+	if err != nil {
+		log.Fatalf("Failed to open clipboard history: %v", err)
+	}
+
 	err = db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("b"))
 		if b == nil {
@@ -864,20 +1021,21 @@ func runClipMigrate(cmd *cobra.Command, args []string) {
 				continue
 			}
 
-			mimeType := detectMimeType(v)
-			if err := clipboard.Store(v, mimeType); err != nil {
-				log.Errorf("Failed to store entry %d: %v", btoi(k), err)
-				continue
+			// v lives in the cliphist mmap, which closes with this transaction
+			if err := importer.add(serverclipboard.ImportEntry{Data: slices.Clone(v), MimeType: detectMimeType(v)}); err != nil {
+				return err
 			}
-			migrated++
 		}
 		return nil
 	})
+	if err == nil {
+		err = importer.close()
+	}
 	if err != nil {
 		log.Fatalf("Migration failed: %v", err)
 	}
 
-	fmt.Printf("Migrated %d entries from cliphist\n", migrated)
+	fmt.Printf("Migrated %d entries from cliphist\n", importer.imported)
 
 	if !clipMigrateDelete {
 		return
@@ -901,14 +1059,10 @@ func getCliphistPath() string {
 }
 
 func detectMimeType(data []byte) string {
-	if _, _, err := image.DecodeConfig(bytes.NewReader(data)); err == nil {
-		return "image/png"
+	if _, format, err := image.DecodeConfig(bytes.NewReader(data)); err == nil {
+		return "image/" + format
 	}
 	return "text/plain"
-}
-
-func btoi(v []byte) uint64 {
-	return binary.BigEndian.Uint64(v)
 }
 
 func downloadToTempFile(rawURL string) (string, error) {
@@ -992,12 +1146,12 @@ func downloadToTempFile(rawURL string) (string, error) {
 		cacheDir = "/tmp"
 	}
 	clipDir := filepath.Join(cacheDir, "dms", "clipboard")
-	if err := os.MkdirAll(clipDir, 0o755); err != nil {
+	if err := os.MkdirAll(clipDir, 0o700); err != nil {
 		return "", fmt.Errorf("create cache dir: %w", err)
 	}
 
 	filePath := filepath.Join(clipDir, fmt.Sprintf("%d%s", time.Now().UnixNano(), ext))
-	if err := os.WriteFile(filePath, data, 0o644); err != nil {
+	if err := os.WriteFile(filePath, data, 0o600); err != nil {
 		return "", fmt.Errorf("write file: %w", err)
 	}
 
@@ -1011,12 +1165,12 @@ func copyFileToClipboard(filePath string) error {
 	if abs, err := filepath.Abs(filePath); err == nil {
 		filePath = abs
 	}
-	resp, ok := tryServerRequest(ipc.Request{
+	resp, err := sendServerRequestWithin(ipc.Request{
 		ID:     1,
 		Method: "clipboard.copyFile",
 		Params: map[string]any{"filePath": filePath},
-	})
-	if ok && resp.Error == "" {
+	}, serverCopyReplyTimeout)
+	if err == nil && resp.Error == "" {
 		return nil
 	}
 
@@ -1025,4 +1179,48 @@ func copyFileToClipboard(filePath string) error {
 		return fmt.Errorf("read file: %w", err)
 	}
 	return clipboard.CopyMulti(clipboard.FileOffers(filePath, filePath, data), false, false)
+}
+
+// copyDataToClipboard lets the server own the selection so no child process
+// stays alive holding it. A child is forked only when the server is down or
+// refuses (tracking disabled, over the history size limit).
+func copyDataToClipboard(data []byte, mimeType string) error {
+	if f, err := os.CreateTemp(utils.RuntimeDir(), "dms-clipboard-*"); err == nil {
+		_, err = f.Write(data)
+		f.Close()
+		served := err == nil && serverCopyFileContents(f.Name(), mimeType)
+		os.Remove(f.Name())
+		if served {
+			return nil
+		}
+	}
+	return clipboard.Copy(data, mimeType)
+}
+
+func copyFileContentsToClipboard(filePath, mimeType string) error {
+	if abs, err := filepath.Abs(filePath); err == nil {
+		filePath = abs
+	}
+	if serverCopyFileContents(filePath, mimeType) {
+		return nil
+	}
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("read file: %w", err)
+	}
+	return clipboard.Copy(data, mimeType)
+}
+
+// serverCopyReplyTimeout must exceed the server's copyCommitDeadline: past
+// it the server can no longer take the selection, so the CLI serves the copy
+// itself without racing it.
+var serverCopyReplyTimeout = 10 * time.Second
+
+func serverCopyFileContents(filePath, mimeType string) bool {
+	resp, err := sendServerRequestWithin(ipc.Request{
+		ID:     1,
+		Method: "clipboard.copyFileContents",
+		Params: map[string]any{"filePath": filePath, "mimeType": mimeType},
+	}, serverCopyReplyTimeout)
+	return err == nil && resp.Error == ""
 }

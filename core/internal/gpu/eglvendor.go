@@ -26,24 +26,49 @@ const (
 	sysDevCharDir              = "/sys/dev/char"
 )
 
-func EGLVendorEnv() []string {
-	if os.Getenv("__EGL_VENDOR_LIBRARY_FILENAMES") != "" || os.Getenv("__EGL_VENDOR_LIBRARY_DIRS") != "" {
-		return nil
-	}
+const decodeDeviceTypesVar = "QT_FFMPEG_DECODING_HW_DEVICE_TYPES"
+
+// ShellEnv picks GPU driver env for the shell from the device the compositor renders on.
+func ShellEnv() []string {
 	mesa, nvidia := findEGLVendorICDs(eglVendorDirs)
-	if mesa == "" || nvidia == "" {
-		return nil
+	driver := ""
+	if nvidia != "" {
+		probed, err := compositorRenderDriver()
+		if err != nil {
+			log.Debugf("gpu: keeping driver defaults: %v", err)
+		}
+		driver = probed
 	}
-	driver, err := compositorRenderDriver()
-	if err != nil {
-		log.Debugf("egl: keeping glvnd vendor defaults: %v", err)
+	return shellEnvFor(driver, mesa, os.LookupEnv)
+}
+
+func shellEnvFor(driver, mesaICD string, lookupEnv func(string) (string, bool)) []string {
+	env := decodeEnv(driver, lookupEnv)
+	if driver == "" || driver == "nvidia" || mesaICD == "" {
+		return env
+	}
+	if envSet(lookupEnv, "__EGL_VENDOR_LIBRARY_FILENAMES") || envSet(lookupEnv, "__EGL_VENDOR_LIBRARY_DIRS") {
+		return env
+	}
+	log.Infof("egl: compositor renders on %s, loading mesa vendor only", driver)
+	return append(env, "__EGL_VENDOR_LIBRARY_FILENAMES="+mesaICD)
+}
+
+// nvidia-vaapi-driver rejects the composed-layer export Qt's VAAPI path asks for (#4133).
+func decodeEnv(driver string, lookupEnv func(string) (string, bool)) []string {
+	if envSet(lookupEnv, decodeDeviceTypesVar) {
 		return nil
 	}
 	if driver == "nvidia" {
-		return nil
+		log.Infof("gpu: compositor renders on nvidia, decoding video on cuda")
+		return []string{decodeDeviceTypesVar + "=cuda"}
 	}
-	log.Infof("egl: compositor renders on %s, loading mesa vendor only", driver)
-	return []string{"__EGL_VENDOR_LIBRARY_FILENAMES=" + mesa}
+	return []string{decodeDeviceTypesVar + "=vaapi"}
+}
+
+func envSet(lookupEnv func(string) (string, bool), name string) bool {
+	_, set := lookupEnv(name)
+	return set
 }
 
 type eglVendorICD struct {

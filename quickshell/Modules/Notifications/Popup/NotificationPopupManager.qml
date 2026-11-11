@@ -1,16 +1,50 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
+import Quickshell.Wayland
 import qs.Common
 import qs.Modules.Notifications
 import qs.Services
+import qs.Widgets
 
-QtObject {
+DIdleSurface {
     id: manager
 
     property var modelData
     property int topMargin: 0
+    readonly property bool overlayWanted: popupWindows.some(p => p?.wantsOverlay ?? false)
+    readonly property list<var> blurRegions: popupWindows.map(p => p?.blurRegion ?? null).filter(r => r !== null)
+
+    screen: modelData
+    active: popupWindows.length > 0
+    band: stackCentered ? "column" : stackLeft ? "left" : "right"
+    bandSize: stackCentered ? cardWidth + 2 * (shadowPad + NotificationMetrics.swipeAttachDistance) : cardWidth + 2 * shadowPad + stackEdgeMargin + NotificationMetrics.swipeAttachDistance
+    WlrLayershell.namespace: "dms:notification-popup"
+    WlrLayershell.layer: LayerShell.fromEnv("DMS_NOTIFICATION_LAYER", overlayWanted ? WlrLayer.Overlay : WlrLayer.Top)
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    BackgroundEffect.blurRegion: blurRegions.length > 0 ? blurUnion : null
     readonly property bool notificationConnectedMode: CompositorService.usesConnectedFrameChromeForScreen(manager.modelData)
+    readonly property real dpr: modelData ? CompositorService.getScreenScale(modelData) : 1
+    readonly property int popupPosition: SettingsData.notificationPopupPosition
+    readonly property bool stackCentered: popupPosition === -1 || popupPosition === SettingsData.Position.BottomCenter
+    readonly property bool stackLeft: popupPosition === SettingsData.Position.Left || popupPosition === SettingsData.Position.Bottom
+    readonly property real cardWidth: modelData ? Math.min(NotificationMetrics.popupWidth, Math.max(NotificationMetrics.popupMinWidth, modelData.width * NotificationMetrics.popupScreenRatio)) : NotificationMetrics.popupWidth
+    readonly property real shadowPad: Theme.elevationEnabled && SettingsData.notificationPopupShadowEnabled ? Theme.snap(NotificationMetrics.popupShadowPad, dpr) : 0
+    // Covers every side margin NotificationPopup can pick: frame inset plus corner clearance, frame gap, or the adjacent bar.
+    readonly property real stackEdgeMargin: {
+        if (stackCentered || !modelData)
+            return 0;
+        const side = stackLeft ? "left" : "right";
+        const inset = Math.max(0, Math.round(Theme.px(SettingsData.frameEdgeInsetForSide(modelData, side), dpr)));
+        const cornerClear = Theme.px(SettingsData.frameRounding, dpr) + Theme.px(Theme.connectedCornerRadius, dpr);
+        const bars = SettingsData.getAdjacentBarInfo(modelData, popupPosition, {
+            id: "notification-popup",
+            screenPreferences: [modelData.name],
+            autoHide: false
+        }, true);
+        return Math.max(inset + cornerClear, inset + Theme.popupDistance, stackLeft ? bars.leftBar : bars.rightBar);
+    }
     readonly property bool closeGapNotifications: notificationConnectedMode && SettingsData.frameCloseGaps
     readonly property string notifBarSide: {
         const pos = SettingsData.notificationPopupPosition;
@@ -44,9 +78,7 @@ QtObject {
     property real _lastEnterMs: 0
     property real _lastExitMs: 0
     readonly property real chromeReleaseTailStart: 0.90
-    property Component popupComponent
-
-    popupComponent: Component {
+    property Component popupComponent: Component {
         NotificationPopup {
             onExitFinished: manager._onPopupExitFinished(this)
             onExitRequested: manager._onPopupExitRequested(this)
@@ -56,9 +88,7 @@ QtObject {
         }
     }
 
-    property Connections notificationConnections
-
-    notificationConnections: Connections {
+    Connections {
         function onVisibleNotificationsChanged() {
             manager._sync(NotificationService.visibleNotifications);
         }
@@ -66,16 +96,34 @@ QtObject {
         target: NotificationService
     }
 
-    property Timer sweeper
+    mask: Region {
+        regions: manager.popupWindows.map(p => p?.maskRegion ?? null).filter(r => r !== null)
+    }
 
-    property Timer motionTimer: Timer {
+    Region {
+        id: blurUnion
+        regions: manager.blurRegions
+    }
+
+    // Screen sized and shifted by the band origin, so popups keep their screen coordinates.
+    Item {
+        id: cardHost
+        x: -manager.bandX
+        y: -manager.bandY
+        width: manager.screenWidth
+        height: manager.screenHeight
+    }
+
+    Timer {
+        id: motionTimer
         running: false
         repeat: false
         onTriggered: manager._pumpMotion()
     }
 
-    property Timer destroyTimer: Timer {
-        interval: destroyDelayMs
+    Timer {
+        id: destroyTimer
+        interval: manager.destroyDelayMs
         running: false
         repeat: false
         onTriggered: manager._processDestroyQueue()
@@ -102,13 +150,14 @@ QtObject {
             destroyTimer.restart();
     }
 
-    sweeper: Timer {
+    Timer {
+        id: sweeper
         interval: 500
         running: false
         repeat: true
         onTriggered: {
             const toRemove = [];
-            for (const p of popupWindows) {
+            for (const p of manager.popupWindows) {
                 if (!p) {
                     toRemove.push(p);
                     continue;
@@ -127,11 +176,11 @@ QtObject {
                 }
             }
             if (toRemove.length) {
-                popupWindows = popupWindows.filter(p => toRemove.indexOf(p) === -1);
-                _forgetQueued(toRemove);
-                _repositionAll();
+                manager.popupWindows = manager.popupWindows.filter(p => toRemove.indexOf(p) === -1);
+                manager._forgetQueued(toRemove);
+                manager._repositionAll();
             }
-            if (popupWindows.length === 0)
+            if (manager.popupWindows.length === 0)
                 sweeper.stop();
         }
     }
@@ -182,10 +231,11 @@ QtObject {
         if (!wrapper)
             return;
         const notificationId = wrapper?.notification ? wrapper.notification.id : "";
-        const win = popupComponent.createObject(null, {
+        const win = popupComponent.createObject(cardHost, {
             "notificationData": wrapper,
             "notificationId": notificationId,
-            "screen": manager.modelData
+            "screen": manager.modelData,
+            "surface": manager
         });
         if (!win)
             return;
@@ -199,6 +249,7 @@ QtObject {
                 insertIndex = i + 1;
         }
         popupWindows.splice(insertIndex, 0, win);
+        popupWindows = popupWindows.slice();
         win.setStackPosition(_stackPositionFor(win));
         _enterQueue.push(win);
         if (!sweeper.running)

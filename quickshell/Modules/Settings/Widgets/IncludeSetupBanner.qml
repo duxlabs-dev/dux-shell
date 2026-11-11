@@ -60,8 +60,6 @@ StyledRect {
             id: fixButton
             visible: root.showSetup
             text: root.include.fixing ? I18n.tr("Setting up...") : I18n.tr("Setup")
-            backgroundColor: Theme.primary
-            textColor: Theme.primaryText
             enabled: !root.include.fixing && !root.include.readOnly
             anchors.verticalCenter: parent.verticalCenter
             onClicked: root.include.fix()

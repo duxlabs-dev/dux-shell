@@ -44,6 +44,11 @@ Item {
         return SettingsData.isIslandBarConfig(SettingsData.getBarConfig(selectedBarId));
     }
 
+    // A dot only has room for the island's own groups.
+    readonly property bool islandTakesBarWidgets: dankIslandOwnsSelectedBarCenter && !SettingsData.isDotBarConfig(selectedBarConfig)
+    // Bar widgets the island already rebuilds as its own groups.
+    readonly property var islandActivityWidgetIds: ["music", "clock", "workspaceSwitcher", "weather", "battery", "notificationButton", "privacyIndicator", "keyboard_layout_name", "systemTray", "controlCenterButton"]
+
     readonly property bool islandSatellitesHidden: {
         SettingsData.barConfigs;
         selectedBarId;
@@ -265,6 +270,8 @@ Item {
             return selectedBarConfig?.centerWidgets || [];
         case "right":
             return selectedBarConfig?.rightWidgets || [];
+        case "island":
+            return SettingsData.islandWidgetEntries(selectedBarConfig);
         default:
             return [];
         }
@@ -289,10 +296,32 @@ Item {
                 rightWidgets: widgets
             });
             break;
+        case "island":
+            SettingsData.setIslandWidgetEntries(selectedBarId, widgets);
+            break;
         }
     }
 
-    function getWidgetsForPopup() {
+    function getIslandWidgetsForPopup() {
+        const present = SettingsData.islandWidgetEntries(selectedBarConfig).map(entry => entry.id);
+        const groups = BarWidgetCatalog.islandGroups.filter(group => !present.includes(group.id)).map(group => Object.assign({
+                "category": I18n.tr("Island activities", "island widgets settings: category of widgets rebuilt for the island")
+            }, group));
+        if (!islandTakesBarWidgets)
+            return groups;
+        const barWidgets = baseWidgetDefinitions.filter(widget => {
+            if (widget.enabled === false || widget.id === "island" || islandActivityWidgetIds.includes(widget.id))
+                return false;
+            return !(widget.single && present.includes(widget.id));
+        }).map(widget => Object.assign({
+                "category": I18n.tr("Bar widgets")
+            }, widget));
+        return groups.concat(barWidgets);
+    }
+
+    function getWidgetsForPopup(sectionId) {
+        if (sectionId === "island")
+            return getIslandWidgetsForPopup();
         const config = SettingsData.getBarConfig(selectedBarId);
         return baseWidgetDefinitions.filter(widget => {
             if (widget.warning && widget.warning.includes("Plugin is disabled"))
@@ -419,7 +448,8 @@ Item {
 
     function flatList() {
         var out = [];
-        ["left", "center", "right"].forEach(s => {
+        const sections = dankIslandOwnsSelectedBarCenter ? ["left", "island", "right"] : ["left", "center", "right"];
+        sections.forEach(s => {
             getWidgetsForSection(s).forEach(w => {
                 out.push({
                     "section": s,
@@ -456,7 +486,7 @@ Item {
         if (highlightedId === "" || highlightedSection === "")
             return;
         var w = getWidgetsForSection(highlightedSection).find(x => (typeof x === "string" ? x : x.id) === highlightedId);
-        if (w === undefined)
+        if (w === undefined || BarWidgetCatalog.islandGroup(highlightedId)?.locked)
             return;
         var en = (typeof w === "string") ? true : (w.enabled !== false);
         handleItemEnabledChanged(highlightedSection, highlightedId, !en);
@@ -494,6 +524,13 @@ Item {
             parentModal?.navigateTo(SettingsTabs.pluginPrefix + item.pluginId);
             return;
         }
+        if (item.islandGroup) {
+            if (!item.settings || !parentModal)
+                return;
+            SettingsSearchService.navigateToSection(item.settings.section);
+            parentModal.navigateTo(item.settings.tab);
+            return;
+        }
         SettingsUiState.selectedWidgetSection = sectionId;
         SettingsUiState.selectedWidgetIndex = widgetIndex;
         SettingsUiState.selectedWidgetTitle = item.text;
@@ -502,13 +539,23 @@ Item {
         parentModal?.navigateTo("bar_widget");
     }
 
+    // A dot has no home face, so its groups have no settings to open.
+    function islandGroupDefinition(id) {
+        const definition = Object.assign({
+            "islandGroup": true
+        }, BarWidgetCatalog.islandGroup(id));
+        if (SettingsData.isDotBarConfig(selectedBarConfig))
+            delete definition.settings;
+        return definition;
+    }
+
     function getItemsForSection(sectionId) {
         var widgets = [];
         var widgetData = getWidgetsForSection(sectionId);
         widgetData.forEach(widget => {
             var isString = typeof widget === "string";
             var widgetId = isString ? widget : widget.id;
-            var widgetDef = baseWidgetDefinitions.find(w => w.id === widgetId);
+            var widgetDef = sectionId === "island" && SettingsData.isIslandHomeGroup(widgetId) ? islandGroupDefinition(widgetId) : baseWidgetDefinitions.find(w => w.id === widgetId);
             if (!widgetDef) {
                 // Skipping entries would desync row indices from the config array (issue #2844)
                 widgetDef = {
@@ -575,7 +622,7 @@ Item {
         if (!widgetSelectionPopupLoader.item)
             return;
         widgetSelectionPopupLoader.item.targetSection = sectionId;
-        widgetSelectionPopupLoader.item.widgets = widgetsTab.getWidgetsForPopup();
+        widgetSelectionPopupLoader.item.widgets = widgetsTab.getWidgetsForPopup(sectionId);
         widgetSelectionPopupLoader.item.show();
     }
 
@@ -620,12 +667,13 @@ Item {
                 text: I18n.tr("Reset")
                 iconName: "refresh"
                 buttonHeight: Theme.buttonHeightXS
-                backgroundColor: Theme.secondaryContainer
-                textColor: Theme.onSecondaryContainer
+                variant: "tonal"
                 onClicked: {
                     setWidgetsForSection("left", defaultLeftWidgets);
                     setWidgetsForSection("center", defaultCenterWidgets);
                     setWidgetsForSection("right", defaultRightWidgets);
+                    if (widgetsTab.dankIslandOwnsSelectedBarCenter)
+                        setWidgetsForSection("island", SettingsData.islandHomeLayoutDefault());
                 }
             }
 
@@ -637,6 +685,14 @@ Item {
                     color: Theme.surfaceVariantText
                     wrapMode: Text.WordWrap
                 }
+            }
+
+            SettingsRow {
+                iconName: "view_in_ar"
+                iconColor: Theme.surfaceVariantText
+                visible: widgetsTab.dankIslandOwnsSelectedBarCenter
+                title: I18n.tr("The Island takes its place on this bar", "widgets settings: the island replaces the bar's center section")
+                subtitle: I18n.tr("Island widgets above the clock sit before it, the rest after it", "widgets settings: island widget order hint")
             }
 
             SettingsRow {
@@ -686,60 +742,35 @@ Item {
                 onConfigureWidget: (sectionId, index) => widgetsTab.configureWidget(sectionId, index)
             }
 
-            SettingsCard {
+            WidgetsTabSection {
+                id: islandSection
                 width: parent.width
-                iconName: "view_in_ar"
-                title: I18n.tr("Home compact", "island settings: home face card title")
-                settingKey: "islandHomeLayout"
-                tags: ["island", "home", "compact", "layout", "groups", "order"]
                 visible: widgetsTab.dankIslandOwnsSelectedBarCenter
-
-                SettingsRow {
-                    iconName: "info"
-                    iconColor: Theme.surfaceVariantText
-                    title: selectedBarIsVertical ? I18n.tr("Middle section", "widgets settings: bar section replaced by the island") : I18n.tr("Center section", "widgets settings: bar section replaced by the island")
-                    subtitle: I18n.tr("The Island takes its place on this bar", "widgets settings: the island replaces the bar's center section")
+                title: I18n.tr("Island widgets", "bar widget settings: widgets in the collapsed island")
+                sectionId: "island"
+                overflowAvailable: false
+                barId: widgetsTab.selectedBarId
+                allWidgets: widgetsTab.baseWidgetDefinitions
+                items: widgetsTab.dankIslandOwnsSelectedBarCenter ? widgetsTab.getItemsForSection("island") : []
+                highlightedId: widgetsTab.highlightedId
+                highlightedSection: widgetsTab.highlightedSection
+                onItemEnabledChanged: (sectionId, itemId, enabled) => widgetsTab.handleItemEnabledChanged(sectionId, itemId, enabled)
+                onItemOrderChanged: (sectionId, indices) => {
+                    const items = widgetsTab.getWidgetsForSection(sectionId);
+                    widgetsTab.setWidgetsForSection(sectionId, indices.map(i => items[i]));
                 }
-
-                Loader {
-                    width: parent.width
-                    readonly property bool isSettingsRow: true
-                    readonly property bool transparentSlot: true
-                    height: item?.implicitHeight ?? 0
-                    active: widgetsTab.dankIslandOwnsSelectedBarCenter
-                    sourceComponent: IslandHomeLayoutEditor {
-                        settingKey: ""
-                        barId: widgetsTab.selectedBarId
-                    }
+                onDragStarted: {
+                    widgetsTab.highlightedSection = "";
+                    widgetsTab.highlightedId = "";
                 }
+                onAddWidget: sectionId => widgetsTab.showWidgetSelectionPopup(sectionId)
+                onRemoveWidget: (sectionId, index) => widgetsTab.removeWidgetFromSection(sectionId, index)
+                onSpacerSizeChanged: (sectionId, index, size) => widgetsTab.handleSpacerSizeChanged(sectionId, index, size)
+                onConfigureWidget: (sectionId, index) => widgetsTab.configureWidget(sectionId, index)
 
-                SettingsRow {
-                    body: Flow {
-                        width: parent.width
-                        spacing: Theme.spacingS
-
-                        DButton {
-                            text: I18n.tr("Launcher", "island settings: button to launcher tab")
-                            iconName: "grid_view"
-                            onClicked: {
-                                if (!widgetsTab.parentModal)
-                                    return;
-                                SettingsSearchService.navigateToSection("launcherStyle");
-                                widgetsTab.parentModal.navigateTo("launcher");
-                            }
-                        }
-
-                        DButton {
-                            text: I18n.tr("Time & weather", "island settings: button to weather tab")
-                            iconName: "cloud"
-                            onClicked: {
-                                if (!widgetsTab.parentModal)
-                                    return;
-                                SettingsSearchService.navigateToSection("weatherEnabled");
-                                widgetsTab.parentModal.navigateTo("time_weather");
-                            }
-                        }
-                    }
+                SettingsSearchRegistration {
+                    target: islandSection
+                    settingKey: "islandHomeLayout"
                 }
             }
 

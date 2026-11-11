@@ -5,7 +5,7 @@ Name:           dms-git
 Version:        1.4.0+git2528.d336866f
 Release:        1%{?dist}
 Epoch:          2
-Summary:        Dux Shell - Material 3 inspired shell (git nightly)
+Summary:        Dux Modular Shell - Material 3 inspired shell (git nightly)
 
 License:        MIT
 URL:            https://github.com/duxlabs-dev/dux-shell
@@ -16,13 +16,12 @@ Source2:        go%{go_toolchain_version}.linux-arm64.tar.gz
 BuildRequires:  git-core
 BuildRequires:  systemd-rpm-macros
 
-Requires:       (quickshell-git or quickshell)
 Requires:       accountsservice
+Requires:       libdux-qt-base0
 
 Recommends:     cava
 Recommends:     (dux-search or danksearch)
 Recommends:     matugen
-Recommends:     quickshell-git
 Recommends:     NetworkManager
 Recommends:     qt6-multimedia-imports
 Suggests:       cups-pk-helper
@@ -34,7 +33,7 @@ Conflicts:      dms
 Obsoletes:      dms
 
 %description
-Dux Shell (DMS) is a modern Wayland desktop shell built with Quickshell
+Dux Modular Shell (DMS) is a modern Wayland desktop shell built with Quickshell
 and optimized for niri, Hyprland, Sway, and other wlroots compositors.
 
 This git version tracks the master branch and includes the latest features
@@ -90,16 +89,9 @@ VERSION="%{version}"
 COMMIT=$(echo "%{version}" | grep -oP '(?<=git)[0-9]+\.[a-f0-9]+' | cut -d. -f2 | head -c8 || echo "unknown")
 
 # Build dms-cli from source using vendored dependencies
-# Architecture mapping: RPM x86_64/aarch64 -> Makefile amd64/arm64
 cd core
-%ifarch x86_64
-make GOFLAGS="-mod=vendor" dist ARCH=amd64 VERSION="$VERSION" COMMIT="$COMMIT"
-mv bin/dms-linux-amd64 ../dms
-%endif
-%ifarch aarch64
-make GOFLAGS="-mod=vendor" dist ARCH=arm64 VERSION="$VERSION" COMMIT="$COMMIT"
-mv bin/dms-linux-arm64 ../dms
-%endif
+make GOFLAGS="-mod=vendor" build-distro VERSION="$VERSION" COMMIT="$COMMIT"
+mv bin/dms ../dms
 cd ..
 chmod +x dms
 

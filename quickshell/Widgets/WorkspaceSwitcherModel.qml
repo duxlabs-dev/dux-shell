@@ -13,6 +13,7 @@ QtObject {
     property string screenName: ""
     property var screen: null
     property bool followFocus: false
+    property bool moveToOutput: false
     property bool occupiedOnly: false
     property bool showAllTags: false
     property bool showPadding: false
@@ -20,18 +21,15 @@ QtObject {
     property bool showSpecial: false
     property bool reverseScrolling: false
 
-    readonly property bool useAqueous: CompositorService.isAqueous && AqueousService.available && Quickshell.env("DMS_FORCE_EXTWS") !== "1"
     readonly property bool useExtWorkspace: {
-        if (useAqueous)
-            return false;
         if (Quickshell.env("DMS_FORCE_EXTWS") === "1")
             return (WindowManager.windowsets?.length ?? 0) > 0;
         if (!CompositorService.compositorDetected || CompositorService.hasWorkspaceIpc)
             return false;
         return (WindowManager.windowsets?.length ?? 0) > 0;
     }
-    readonly property bool useNativeWorkspaces: useAqueous || (!useExtWorkspace && CompositorService.hasWorkspaceIpc)
-    readonly property var extProjection: (useExtWorkspace && screen) ? WindowManager.screenProjection(CompositorService.isAqueous ? Quickshell.screens.find(s => s.name === effectiveScreenName) || screen : screen) : null
+    readonly property bool useNativeWorkspaces: !useExtWorkspace && CompositorService.hasWorkspaceIpc
+    readonly property var extProjection: (useExtWorkspace && screen) ? WindowManager.screenProjection(screen) : null
 
     readonly property string effectiveScreenName: followFocus ? (BarWidgetService.getFocusedScreenName() || screenName) : screenName
     readonly property bool hiddenByOverview: CompositorService.workspacesHiddenByOverview(effectiveScreenName)
@@ -62,7 +60,7 @@ QtObject {
             "showSpecial": showSpecial
         });
         const slots = slotList(baseList);
-        if (CompositorService.ephemeralWorkspaces || !showPadding || CompositorService.supportsPersistentWorkspaces || (useAqueous && baseList.length === 0))
+        if (CompositorService.ephemeralWorkspaces || !showPadding || CompositorService.supportsPersistentWorkspaces)
             return slots;
         return padWorkspaces(slots);
     }
@@ -177,7 +175,7 @@ QtObject {
         if (!data || data.placeholder)
             return;
         if (useNativeWorkspaces) {
-            CompositorService.switchToWorkspace(data, effectiveScreenName);
+            CompositorService.switchToWorkspace(data, effectiveScreenName, moveToOutput ? screenName : "");
             return;
         }
         if (useExtWorkspace && typeof data.activate === "function")
@@ -185,13 +183,6 @@ QtObject {
     }
 
     function step(direction) {
-        if (useAqueous) {
-            const index = realWorkspaces.findIndex(w => w.id === currentWorkspace);
-            const next = Math.max(0, Math.min(realWorkspaces.length - 1, index + (direction > 0 ? 1 : -1)));
-            if (next !== index)
-                CompositorService.switchToWorkspace(realWorkspaces[next]);
-            return;
-        }
         if (useExtWorkspace) {
             if (realWorkspaces.length < 2)
                 return;

@@ -10,7 +10,7 @@ Item {
 
     property string appId: ""
     property real iconSize: Theme.iconSize
-    readonly property int iconRequestSize: DCommon.Style.iconRasterSize(iconSize)
+    readonly property int iconRequestSize: DCommon.Style.iconRasterSize(iconSize * Screen.devicePixelRatio)
     property int _desktopEntriesRevision: 0
 
     implicitWidth: iconSize

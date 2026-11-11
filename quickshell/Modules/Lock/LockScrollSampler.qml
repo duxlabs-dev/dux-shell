@@ -11,17 +11,19 @@ Item {
 
     required property var screen
 
-    readonly property string screenName: screen.name
+    readonly property string screenName: screen?.name ?? ""
+    readonly property int screenWidth: screen?.width ?? 0
+    readonly property int screenHeight: screen?.height ?? 0
     readonly property string source: {
         const path = SessionData.getMonitorWallpaperImage(screenName);
         return path && !path.startsWith("#") ? "file://" + path.split('/').map(s => encodeURIComponent(s)).join('/') : "";
     }
-    readonly property string backgroundKey: LockPlacementService.backgroundKey(screenName, screen.width, screen.height)
-    readonly property bool needed: !IdleService.isShellLocked && LockPlacementService.usesScrollAtlas(screenName) && LockPlacementService.neededFor(screen) && !LockPlacementService.hasSample(screenName, backgroundKey)
-    readonly property real sampleScale: LockPlacementService.sampleSize / Math.max(1, screen.width, screen.height)
-    readonly property int sampleWidth: Math.max(1, Math.round(screen.width * sampleScale))
-    readonly property int sampleHeight: Math.max(1, Math.round(screen.height * sampleScale))
-    readonly property string atlasKey: JSON.stringify([source, screen.width, screen.height, Theme.lockScreenScrimAlpha, Theme.screenOffColor.toString(), SettingsData.effectiveWallpaperBackgroundColor.toString()])
+    readonly property string backgroundKey: LockPlacementService.backgroundKey(screenName, screenWidth, screenHeight)
+    readonly property bool needed: screen !== null && !IdleService.isShellLocked && LockPlacementService.usesScrollAtlas(screenName) && LockPlacementService.neededFor(screen) && !LockPlacementService.hasSample(screenName, backgroundKey)
+    readonly property real sampleScale: LockPlacementService.sampleSize / Math.max(1, screenWidth, screenHeight)
+    readonly property int sampleWidth: Math.max(1, Math.round(screenWidth * sampleScale))
+    readonly property int sampleHeight: Math.max(1, Math.round(screenHeight * sampleScale))
+    readonly property string atlasKey: JSON.stringify([source, screenWidth, screenHeight, Theme.lockScreenScrimAlpha, Theme.screenOffColor.toString(), SettingsData.effectiveWallpaperBackgroundColor.toString()])
     property var atlas: null
     readonly property bool busy: builder.active
 
@@ -40,7 +42,7 @@ Item {
         if (atlas.failed)
             return;
         const scroll = SessionData.getMonitorScrollPosition(screenName);
-        const view = Atlas.scrollWindow(atlas.imageWidth, atlas.imageHeight, screen.width, screen.height, scroll.scrollX, scroll.scrollY);
+        const view = Atlas.scrollWindow(atlas.imageWidth, atlas.imageHeight, screenWidth, screenHeight, scroll.scrollX, scroll.scrollY);
         LockPlacementService.storeSample(screenName, backgroundKey, Atlas.crop(atlas.luminances, atlas.width, atlas.height, view, sampleWidth, sampleHeight), sampleWidth, sampleHeight);
     }
 
@@ -83,7 +85,7 @@ Item {
                     }
                     if (status !== Image.Ready)
                         return;
-                    const size = Atlas.atlasSize(implicitWidth, implicitHeight, root.screen.width, root.screen.height, root.sampleWidth, root.sampleHeight);
+                    const size = Atlas.atlasSize(implicitWidth, implicitHeight, root.screenWidth, root.screenHeight, root.sampleWidth, root.sampleHeight);
                     canvas.width = size.width;
                     canvas.height = size.height;
                     canvas.load();

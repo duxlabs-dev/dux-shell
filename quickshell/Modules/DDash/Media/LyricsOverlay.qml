@@ -184,7 +184,7 @@ FocusScope {
             if (!row.push || row.index < 0)
                 continue;
             const lag = Math.abs(centre - row.index);
-            row.push(delta, jump ? 0 : Math.min(lag, DashMetrics.lyricsTrackMaxPush) * DashMetrics.lyricsTrackPushStep);
+            row.push(delta, jump ? 0 : Math.min(lag, DashMetrics.lyricsTrackMaxPush) * row.moveDuration * DashMetrics.lyricsTrackPushShare);
         }
     }
 
@@ -396,6 +396,8 @@ FocusScope {
                 displaced: null
                 move: null
                 onCountChanged: root.requestFollow(false)
+                // A row still incubating when a loader drops the overlay logs a failed delegate.
+                Component.onDestruction: model = null
                 header: Item {
                     width: transcript.width
                     height: root.endPadding

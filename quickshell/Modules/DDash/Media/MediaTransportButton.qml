@@ -99,7 +99,10 @@ DIconButton {
         return false;
     }
 
+    // The player state change would pop the media OSD over controls the user is already looking at.
     onClicked: {
+        if (root.mediaAction === "play" || root.mediaAction === "previous" || root.mediaAction === "next")
+            SessionData.suppressOSDTemporarily();
         switch (root.mediaAction) {
         case "shuffle":
             root.activePlayer.shuffle = !root.activePlayer.shuffle;

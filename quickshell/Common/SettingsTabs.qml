@@ -45,6 +45,22 @@ Singleton {
                     "hint": I18n.tr("Folder, interval, daily time")
                 },
                 {
+                    "id": "wallpaper_folders",
+                    "hidden": true,
+                    "text": I18n.tr("Wallpapers", "wallpaper folders settings tab"),
+                    "icon": "wallpaper",
+                    "tabIndex": 71,
+                    "hint": I18n.tr("Folders", "wallpaper folders settings tab hint")
+                },
+                {
+                    "id": "wallpaper_folder",
+                    "hidden": true,
+                    "text": I18n.tr("Folder", "wallpaper folder settings tab"),
+                    "icon": "folder",
+                    "tabIndex": 72,
+                    "titleFrom": "selectedWallpaperFolderTitle"
+                },
+                {
                     "id": "theme_apps",
                     "advanced": true,
                     "text": I18n.tr("App theming"),
@@ -347,6 +363,34 @@ Singleton {
                     "tabIndex": 45,
                     "inputCapable": true,
                     "hint": I18n.tr("Layouts, repeat rate, num lock")
+                },
+                {
+                    "id": "fcitx5",
+                    "text": I18n.tr("Input Method Framework", "Name of settings tab for fcitx5 configuration"),
+                    "icon": "language",
+                    "tabIndex": 68,
+                    "fcitx5Only": true,
+                    "hint": I18n.tr("fcitx5 input methods, keybinds, behavior", "Description for fcitx5 settings config page")
+                },
+                {
+                    "id": "fcitx5_addon",
+                    "hidden": true,
+                    "titleFrom": "selectedFcitx5AddonTitle",
+                    "text": I18n.tr("Plugins"),
+                    "icon": "extension",
+                    "tabIndex": 69,
+                    "fcitx5Only": true,
+                    "hint": I18n.tr("Options of a fcitx5 plugin", "Tab name for fcitx5 addon config page")
+                },
+                {
+                    "id": "fcitx5_addon_sub",
+                    "hidden": true,
+                    "titleFrom": "selectedFcitx5SubAddonTitle",
+                    "text": I18n.tr("Plugins"),
+                    "icon": "extension",
+                    "tabIndex": 70,
+                    "fcitx5Only": true,
+                    "hint": I18n.tr("Options of a fcitx5 plugin", "Tab name for fcitx5 addon config page")
                 },
                 {
                     "id": "mouse_touchpad",
@@ -788,6 +832,8 @@ Singleton {
         if (entry.autostartOnly)
             DesktopService.ensureProbed();
         if (entry.autostartOnly && !DesktopService.autostartAvailable)
+            return false;
+        if (entry.fcitx5Only && !Fcitx5Service.available)
             return false;
         if (entry.cellularOnly && (NetworkService.cellularDevices?.length ?? 0) === 0)
             return false;

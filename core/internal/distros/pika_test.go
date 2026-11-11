@@ -9,7 +9,6 @@ import (
 func TestPikaPackageMapping_SystemRepoOnly(t *testing.T) {
 	d := NewDebianDistribution(Registry["pika"], nil)
 	variants := map[string]deps.PackageVariant{
-		"quickshell":      deps.VariantGit,
 		"dms (Dux Shell)": deps.VariantGit,
 	}
 	for _, wm := range []deps.WindowManager{deps.WindowManagerNiri, deps.WindowManagerHyprland} {

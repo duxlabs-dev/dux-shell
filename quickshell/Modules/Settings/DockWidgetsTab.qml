@@ -5,6 +5,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 import qs.Modules.Settings.BarWidgetOptions
+import "../../Common/settings/DockConfig.js" as DockConfig
 
 Item {
     id: root
@@ -101,6 +102,18 @@ Item {
         }
     }
 
+    readonly property var orderedWidgets: {
+        const widgets = dock.config?.widgets ?? [];
+        const byId = new Map(widgets.map(item => [item.id, item]));
+        return DockConfig.widgetOrder(widgets, dock.config?.order).map(id => byId.get(id));
+    }
+
+    function reorderWidgets(indices) {
+        if (!dock.hasConfig)
+            return;
+        SettingsData.updateDockConfig(dock.selectedDockId, DockConfig.reorderWidgets(dock.config.widgets, dock.config.order, indices.map(i => root.orderedWidgets[i].id)));
+    }
+
     function updateWidgets(widgets) {
         if (!dock.hasConfig)
             return;
@@ -141,13 +154,18 @@ Item {
                 }
             }
 
-            Repeater {
-                model: dock.config?.widgets ?? []
+            SettingsReorderList {
+                id: widgetList
 
-                delegate: SettingsRow {
+                model: root.orderedWidgets
+                onReordered: indices => root.reorderWidgets(indices)
+
+                delegate: SettingsReorderRow {
                     id: widgetRow
 
                     required property var modelData
+
+                    reorderList: widgetList
                     readonly property string slotOption: root.slotOptions[modelData.widgetId] ?? ""
                     readonly property bool shown: slotOption ? dock.config[slotOption] === true : modelData.enabled !== false
 

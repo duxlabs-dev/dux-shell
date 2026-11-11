@@ -42,6 +42,7 @@ Item {
         backgroundColor: root.round ? Theme.secondaryContainer : "transparent"
         radius: pressed && Theme.shapeMorph ? Theme.cornerRadiusS : (Theme.pillControls ? Theme.fullRadius(width, height) : Math.min(Theme.cornerRadiusL, width / 2, height / 2))
         buttonSize: Theme.buttonHeightM
+        focusPolicy: (root.lockHost?.demoMode ?? false) ? Qt.NoFocus : Qt.StrongFocus
         onClicked: root.lockHost?.showPowerMenu()
     }
 }

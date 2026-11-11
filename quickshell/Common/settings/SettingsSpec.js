@@ -246,6 +246,18 @@ var LOCAL_SPEC = {
         def: 200,
         onChange: "updateCompositorLayout"
     },
+    hyprlandWobbleDamping: {
+        def: 12,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWobbleMass: {
+        def: 100,
+        onChange: "updateCompositorLayout"
+    },
+    hyprlandWobbleMesh: {
+        def: 12,
+        onChange: "updateCompositorLayout"
+    },
     hyprlandMotionBlurEnabled: {
         def: false,
         onChange: "updateCompositorLayout"
@@ -770,6 +782,18 @@ var LOCAL_SPEC = {
             }
         ]
     },
+    weatherProviders: {
+        def: [
+            {
+                id: "openmeteo",
+                enabled: true
+            },
+            {
+                id: "metno",
+                enabled: false
+            }
+        ]
+    },
     appIdSubstitutions: {
         def: [
             {
@@ -1172,6 +1196,9 @@ var LOCAL_SPEC = {
     lockBeforeSuspend: {
         def: false
     },
+    keepAwakeBlocksSleep: {
+        def: false
+    },
     loginctlLockIntegration: {
         def: true
     },
@@ -1426,6 +1453,12 @@ var LOCAL_SPEC = {
     notificationHistoryEnabled: {
         def: true
     },
+    notificationLeadingShortcut: {
+        def: "dnd"
+    },
+    notificationTrailingShortcut: {
+        def: "history"
+    },
     notificationHistoryMaxCount: {
         def: 50
     },
@@ -1491,6 +1524,9 @@ var LOCAL_SPEC = {
     },
     osdKeyboardLayoutEnabled: {
         def: false
+    },
+    osdInputMethodEnabled: {
+        def: true
     },
     osdTouchpadEnabled: {
         def: true
@@ -1631,6 +1667,7 @@ var LOCAL_SPEC = {
                 gothCornersEnabled: false,
                 gothCornerRadiusOverride: false,
                 gothCornerRadiusValue: 12,
+                connectedPopouts: false,
                 borderEnabled: false,
                 borderColor: "surfaceText",
                 borderOpacity: 1.0,

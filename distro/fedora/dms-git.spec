@@ -14,7 +14,7 @@ printf '0.0.git.%s.%s\n' \
     "$(git rev-list --count HEAD)" \
     "$(git rev-parse --short=8 HEAD)"
 }}}
-%global pkg_summary Dux Shell - Material 3 inspired shell for Wayland compositors
+%global pkg_summary Dux Modular Shell - Material 3 inspired shell for Wayland compositors
 %global go_toolchain_version 1.27.3
 
 Name:           dms
@@ -38,15 +38,14 @@ BuildRequires:  make
 BuildRequires:  systemd-rpm-macros
 
 # Core requirements
-Requires:       (quickshell-git or quickshell)
 Requires:       accountsservice
+Requires:       dux-qt-base
 Requires:       dms-cli = %{epoch}:%{version}-%{release}
 
 # Core utilities (Recommended for DMS functionality)
 Recommends:     cava
 Recommends:     (dux-search or danksearch)
 Recommends:     matugen
-Recommends:     quickshell-git
 
 # Recommended system packages
 Recommends:     NetworkManager
@@ -56,7 +55,7 @@ Suggests:       qt6ct
 Suggests:       (dux-gop or dgop)
 
 %description
-Dux Shell (DMS) is a modern Wayland desktop shell built with Quickshell
+Dux Modular Shell (DMS) is a modern Wayland desktop shell built with Quickshell
 and optimized for the niri, hyprland, sway, and dwl (MangoWC) compositors. Features notifications,
 app launcher, wallpaper customization, and fully customizable with plugins.
 
@@ -65,12 +64,12 @@ process monitoring, notification center, clipboard history, dock, control center
 lock screen, and comprehensive plugin system.
 
 %package -n dms-cli
-Summary:        Dux Shell CLI tool
+Summary:        Dux Modular Shell CLI tool
 License:        MIT
 URL:            https://github.com/duxlabs-dev/dux-shell
 
 %description -n dms-cli
-Command-line interface for Dux Shell configuration and management.
+Command-line interface for Dux Modular Shell configuration and management.
 Provides native DBus bindings, NetworkManager integration, and system utilities.
 
 %prep
@@ -107,32 +106,18 @@ export GOTOOLCHAIN=local
 go version
 
 cd core
-make dist VERSION="$VERSION" COMMIT="$COMMIT"
+make build-distro VERSION="$VERSION" COMMIT="$COMMIT"
 
 %install
-# Install dms-cli binary (built from source)
-case "%{_arch}" in
-  x86_64)
-    DMS_BINARY="dms-linux-amd64"
-    ;;
-  aarch64)
-    DMS_BINARY="dms-linux-arm64"
-    ;;
-  *)
-    echo "Unsupported architecture: %{_arch}"
-    exit 1
-    ;;
-esac
-
-install -Dm755 core/bin/${DMS_BINARY} %{buildroot}%{_bindir}/dms
+install -Dm755 core/bin/dms %{buildroot}%{_bindir}/dms
 
 # Shell completions
 install -d %{buildroot}%{_datadir}/bash-completion/completions
 install -d %{buildroot}%{_datadir}/zsh/site-functions
 install -d %{buildroot}%{_datadir}/fish/vendor_completions.d
-core/bin/${DMS_BINARY} completion bash > %{buildroot}%{_datadir}/bash-completion/completions/dms || :
-core/bin/${DMS_BINARY} completion zsh > %{buildroot}%{_datadir}/zsh/site-functions/_dms || :
-core/bin/${DMS_BINARY} completion fish > %{buildroot}%{_datadir}/fish/vendor_completions.d/dms.fish || :
+core/bin/dms completion bash > %{buildroot}%{_datadir}/bash-completion/completions/dms || :
+core/bin/dms completion zsh > %{buildroot}%{_datadir}/zsh/site-functions/_dms || :
+core/bin/dms completion fish > %{buildroot}%{_datadir}/fish/vendor_completions.d/dms.fish || :
 
 # Install systemd user service
 install -Dm644 assets/systemd/dms.service %{buildroot}%{_userunitdir}/dms.service

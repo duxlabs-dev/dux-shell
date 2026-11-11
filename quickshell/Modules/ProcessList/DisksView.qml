@@ -17,6 +17,10 @@ Item {
     // With drive data, only mounts outside every drive; without it (old core, no UDisks), all of them
     readonly property var looseMounts: hasDrives ? mounts.filter(m => !Drives.driveByMount(m.mount, drives)) : mounts
 
+    function scrollToTop() {
+        scroll.contentY = 0;
+    }
+
     Ref {
         service: DgopService
         modules: ["diskmounts"]

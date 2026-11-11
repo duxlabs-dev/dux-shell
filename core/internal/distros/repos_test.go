@@ -8,15 +8,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
 )
-
-func TestOBSZypperAlias(t *testing.T) {
-	if got := obsZypperAlias("home:AvengeMedia:dms"); got != "home_AvengeMedia_dms" {
-		t.Fatalf("alias = %q, want the section header spelling home_AvengeMedia_dms", got)
-	}
-}
 
 func TestCOPRFromRepoMatches(t *testing.T) {
 	cases := []struct {
@@ -220,27 +212,6 @@ func TestVoidRepoMoves(t *testing.T) {
 				t.Fatalf("commands %q for moves %q", commands, tc.wantMoves)
 			}
 		})
-	}
-}
-
-func TestVoidMappingsUseNewHost(t *testing.T) {
-	v := NewVoidDistribution(Registry["void"], nil)
-	for _, variants := range []map[string]deps.PackageVariant{
-		{"dms (Dux Shell)": deps.VariantStable, "dux-greeter": deps.VariantStable},
-		{"dms (Dux Shell)": deps.VariantGit, "dux-greeter": deps.VariantGit},
-	} {
-		packages := v.GetPackageMappingWithVariants(deps.WindowManagerNiri, variants)
-		want := map[string]string{
-			"dms (Dux Shell)": "https://void.duxlabs.dev/dms/current",
-			"dux-greeter":     "https://void.duxlabs.dev/dux-repo/current",
-			"dux-search":      "https://void.duxlabs.dev/dux-repo/current",
-			"dux-calendar":    "https://void.duxlabs.dev/dux-repo/current",
-		}
-		for dep, url := range want {
-			if got := packages[dep].RepoURL; got != url {
-				t.Errorf("%s (%s) RepoURL = %q, want %q", dep, packages[dep].Name, got, url)
-			}
-		}
 	}
 }
 
@@ -475,17 +446,6 @@ func TestDebianOBSRemovalsKeepUnrelatedSources(t *testing.T) {
 				t.Fatalf("removals = %q, want %q", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestOpenSUSEOBSDist(t *testing.T) {
-	cases := map[string]string{"opensuse-leap": "16.0", "opensuse-slowroll": "openSUSE_Slowroll", "opensuse-tumbleweed": "openSUSE_Tumbleweed"}
-	for id, want := range cases {
-		info := &OSInfo{VersionID: "16.0"}
-		info.Distribution.ID = id
-		if got := opensuseOBSDist(info); got != want {
-			t.Errorf("%s: %q, want the OBS repository name %q", id, got, want)
-		}
 	}
 }
 

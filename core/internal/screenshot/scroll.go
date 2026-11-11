@@ -652,14 +652,8 @@ func (r *RegionSelector) finishScroll() {
 		Height: int32(s.holeH),
 		Output: s.output.name,
 	}
-	// same convention as finishSelection or preselect breaks on scaled outputs
-	r.result = Region{
-		X:      int32(s.holeX) + s.output.x,
-		Y:      int32(s.holeY) + s.output.y,
-		Width:  int32(s.holeW),
-		Height: int32(s.holeH),
-		Output: s.output.name,
-	}
+	// same convention as finishSelection: keep the saved region in logical coords.
+	r.result = logicalRegionFromDevicePixels(s.output, s.holeX, s.holeY, s.holeW, s.holeH)
 	r.running = false
 }
 

@@ -36,7 +36,7 @@ func (m Model) windowManagerChoices() []wmChoice {
 	if m.isEL() {
 		return choices
 	}
-	if m.osInfo == nil || m.osInfo.Distribution.ID != "debian" {
+	if m.osInfo == nil || m.osInfo.Distribution.ID == "pika" || distros.Registry[m.osInfo.Distribution.ID].Family != distros.FamilyDebian {
 		choices = append(choices, wmChoice{deps.WindowManagerHyprland, "Hyprland", "Dynamic tiling Wayland compositor."})
 	}
 	if m.isImmutable() {

@@ -15,6 +15,7 @@ type Model struct {
 
 	osInfo       *distros.OSInfo
 	resume       *layerResume
+	layerScript  string
 	dependencies []deps.Dependency
 	err          error
 

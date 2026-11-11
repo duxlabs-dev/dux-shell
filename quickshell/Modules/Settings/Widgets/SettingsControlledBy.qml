@@ -24,6 +24,8 @@ StyledRect {
             return "layers";
         case "shadows":
             return "tonality";
+        case "appearance":
+            return "rounded_corner";
         default:
             return "frame_source";
         }
@@ -34,6 +36,8 @@ StyledRect {
             return I18n.tr("Interface style");
         case "shadows":
             return I18n.tr("Shadows");
+        case "appearance":
+            return I18n.tr("Open Appearance", "settings: button that opens the bar Appearance tab");
         default:
             return I18n.tr("Open Frame", "settings: button that opens the Frame tab");
         }
@@ -44,6 +48,8 @@ StyledRect {
             return "theme_surfaces";
         case "shadows":
             return "surface_shadows";
+        case "appearance":
+            return "dankbar_appearance";
         default:
             return section === "frameConnectedOptions" ? "dankbar_settings" : "dankbar_appearance";
         }
@@ -100,8 +106,6 @@ StyledRect {
             id: openButton
             anchors.verticalCenter: parent.verticalCenter
             text: root.buttonText
-            backgroundColor: Theme.primary
-            textColor: Theme.primaryText
             buttonHeight: Theme.buttonHeightXS
             horizontalPadding: Theme.spacingM
             onClicked: {

@@ -93,13 +93,10 @@ DModal {
     ConfirmModal {
         id: clearConfirmDialog
         confirmButtonText: I18n.tr("Clear All")
-        confirmButtonColor: Theme.primary
         useOverlayLayer: true
         onShouldBeVisibleChanged: {
             if (shouldBeVisible) {
                 clipboardHistoryModal.shouldHaveFocus = false;
-                selectedButton = 0;
-                keyboardNavigation = true;
                 return;
             }
             Qt.callLater(function () {
@@ -116,11 +113,13 @@ DModal {
         Connections {
             target: clearConfirmDialog.modalFocusScope.Keys
             function onPressed(event) {
-                if (!clearConfirmDialog.shouldBeVisible || event.key !== Qt.Key_Backtab) {
+                const dialog = clearConfirmDialog.contentLoader.item?.dialog;
+                if (!clearConfirmDialog.shouldBeVisible || event.key !== Qt.Key_Backtab || !dialog) {
                     return;
                 }
-                clearConfirmDialog.selectedButton = clearConfirmDialog.selectedButton === -1 ? 1 : (clearConfirmDialog.selectedButton - 1 + 2) % 2;
-                clearConfirmDialog.keyboardNavigation = true;
+                dialog.selectedButton = 1 - dialog.selectedButton;
+                dialog.keyboardNavigation = true;
+                dialog.focusSelection();
                 event.accepted = true;
             }
         }

@@ -75,8 +75,7 @@ Item {
                         width: (parent.width - Theme.spacingM) / 2
                         iconName: "settings"
                         text: I18n.tr("Apply GTK colors")
-                        backgroundColor: Theme.secondaryContainer
-                        textColor: Theme.onSecondaryContainer
+                        variant: "tonal"
                         onClicked: Theme.applyGtkColors()
                     }
 
@@ -84,8 +83,7 @@ Item {
                         width: (parent.width - Theme.spacingM) / 2
                         iconName: "settings"
                         text: I18n.tr("Apply Qt colors")
-                        backgroundColor: Theme.secondaryContainer
-                        textColor: Theme.onSecondaryContainer
+                        variant: "tonal"
                         onClicked: Theme.applyQtColors()
                     }
                 }

@@ -7,15 +7,14 @@ import qs.DCommon.Widgets
 import qs.Widgets
 import "../Common/Format.js" as Format
 
-PanelWindow {
+DIdleSurface {
     id: root
 
     WlrLayershell.namespace: "dms:toast"
 
     property var modelData
     property bool shouldBeVisible: false
-    property bool _surfaceFrameReady: false
-    readonly property bool presented: shouldBeVisible && _surfaceFrameReady
+    readonly property bool presented: shouldBeVisible && (idleSupported || frameGate.ready)
     property real frozenWidth: 0
     readonly property string copiedText: I18n.tr("Copied!", "toast feedback after copying text to clipboard")
 
@@ -30,59 +29,34 @@ PanelWindow {
     onServiceToastVisibleChanged: {
         if (serviceToastVisible) {
             shouldBeVisible = true;
-            visible = true;
-        } else {
-            frozenWidth = toast.width;
-            shouldBeVisible = false;
-            closeTimer.restart();
+            return;
         }
+        frozenWidth = toast.width;
+        shouldBeVisible = false;
+        closeTimer.restart();
     }
 
     Timer {
         id: closeTimer
         interval: Theme.mediumDuration + 50
-        onTriggered: {
-            if (!shouldBeVisible) {
-                visible = false;
-            }
-        }
     }
 
     screen: modelData
-    visible: shouldBeVisible
-    onVisibleChanged: {
-        if (!visible)
-            _surfaceFrameReady = false;
-    }
+    active: shouldBeVisible || closeTimer.running
+    maskItem: toast
 
-    Connections {
-        target: toast.Window.window
-        enabled: root.visible && !root._surfaceFrameReady
-
-        function onFrameSwapped() {
-            root._surfaceFrameReady = true;
-        }
+    SurfaceFrameGate {
+        id: frameGate
+        surfaceVisible: root.active
     }
     WlrLayershell.layer: WlrLayershell.Overlay
-    WlrLayershell.exclusiveZone: -1
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-    color: "transparent"
 
     readonly property real toastWidth: shouldBeVisible ? Theme.px(Math.min(900, messageText.implicitWidth + statusIcon.width + Theme.spacingM + ((ToastService.hasDetails || ToastService.isStickyCategory(ToastService.currentCategory)) ? (expandButton.width + closeButton.width + 4) : (ToastService.currentLevel === ToastService.levelError ? closeButton.width + Theme.spacingS : 0)) + Theme.spacingL * 2 + Theme.spacingM * 2), dpr) : frozenWidth
     readonly property real toastHeight: Theme.px(toastContent.height + Theme.spacingL * 2, dpr)
 
-    anchors {
-        top: true
-        left: true
-    }
-
-    WlrLayershell.margins {
-        left: Math.max(0, Theme.snap((modelData?.width ?? 1920) / 2 - toastWidth / 2 - shadowBuffer, dpr))
-        top: Math.max(0, Theme.snap(toastY - shadowBuffer, dpr))
-    }
-
-    implicitWidth: Theme.px(toastWidth + (shadowBuffer * 2), dpr)
-    implicitHeight: Theme.px(toastHeight + (shadowBuffer * 2), dpr)
+    readonly property real surfaceX: Math.max(0, Theme.snap((modelData?.width ?? 1920) / 2 - toastWidth / 2 - shadowBuffer, dpr))
+    readonly property real surfaceY: Math.max(0, Theme.snap(toastY - shadowBuffer, dpr))
 
     Rectangle {
         id: toast
@@ -104,8 +78,8 @@ PanelWindow {
             }
         }
 
-        x: shadowBuffer
-        y: shadowBuffer
+        x: root.surfaceX + root.shadowBuffer
+        y: root.surfaceY + root.shadowBuffer
         width: root.toastWidth
         height: root.toastHeight
         readonly property color surfaceColor: {
@@ -473,10 +447,6 @@ PanelWindow {
         Behavior on width {
             enabled: false
         }
-    }
-
-    mask: Region {
-        item: toast
     }
 
     WindowBlur {

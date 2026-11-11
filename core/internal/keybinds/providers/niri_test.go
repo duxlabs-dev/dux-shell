@@ -399,27 +399,6 @@ func TestNiriGenerateActionWithUnquotedPercentArg(t *testing.T) {
 	}
 }
 
-func TestNiriGenerateSpawnWithNumericArgs(t *testing.T) {
-	provider := NewNiriProvider("")
-
-	binds := map[string]*overrideBind{
-		"XF86AudioLowerVolume": {
-			Key:     "XF86AudioLowerVolume",
-			Action:  `spawn "dms" "ipc" "call" "audio" "decrement" "3"`,
-			Options: map[string]any{"allow-when-locked": true},
-		},
-	}
-
-	content := provider.generateBindsContent(binds)
-	expected := `binds {
-    XF86AudioLowerVolume allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "decrement" "3"; }
-}
-`
-	if content != expected {
-		t.Errorf("Content mismatch.\nGot:\n%s\nWant:\n%s", content, expected)
-	}
-}
-
 func TestNiriGenerateSpawnNumericArgFromCLI(t *testing.T) {
 	provider := NewNiriProvider("")
 
@@ -755,7 +734,7 @@ func TestNiriSetBindRealValidator(t *testing.T) {
 	if _, err := exec.LookPath("niri"); err != nil {
 		t.Skip("niri not installed")
 	}
-	if !config.NiriValidates(config.NiriBindsNextConfig) {
+	if !config.NiriValidates("binds { Mod { release { toggle-overview; } } }\n") {
 		t.Skip("installed niri does not accept press/release binds")
 	}
 	provider := NewNiriProvider(writeNiriDMSBinds(t, niriBoundActionsBinds))

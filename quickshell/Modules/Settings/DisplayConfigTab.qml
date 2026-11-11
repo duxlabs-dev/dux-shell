@@ -97,22 +97,6 @@ Item {
 
         SettingsCard {
             width: parent.width
-            visible: CompositorService.isAqueous && DisplayConfigState.validationError !== ""
-
-            SettingsRow {
-                subtitle: DisplayConfigState.validationError
-                subtitleColor: Theme.error
-
-                DButton {
-                    text: I18n.tr("Discard draft and reload", "Discard unsaved Aqueous display settings and refresh the current display state")
-                    enabled: !DisplayConfigState.validatingConfig
-                    onClicked: DisplayConfigState.discardAqueousPreview()
-                }
-            }
-        }
-
-        SettingsCard {
-            width: parent.width
             iconName: "tune"
             title: I18n.tr("Profiles", "card title for display configuration profiles")
             visible: DisplayConfigState.hasOutputBackend
@@ -252,8 +236,7 @@ Item {
 
                 DButton {
                     text: I18n.tr("Delete")
-                    backgroundColor: Theme.error
-                    textColor: Theme.primaryText
+                    danger: true
                     onClicked: {
                         DisplayConfigState.deleteProfile(root.selectedProfileId);
                         root.showDeleteConfirmDialog = false;
@@ -377,8 +360,7 @@ Item {
 
                 DButton {
                     text: SettingsData.displayShowDisconnected ? I18n.tr("Hide") : I18n.tr("Show")
-                    backgroundColor: "transparent"
-                    textColor: Theme.primary
+                    variant: "text"
                     onClicked: {
                         SettingsData.displayShowDisconnected = !SettingsData.displayShowDisconnected;
                         SettingsData.saveSettings();

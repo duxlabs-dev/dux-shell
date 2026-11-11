@@ -5,6 +5,7 @@ import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Notifications
 import qs.Modules.Notifications.Center
+import "../Notifications/NotificationShortcuts.js" as Shortcuts
 
 FocusScope {
     id: root
@@ -16,14 +17,92 @@ FocusScope {
     property int currentTab: 0
     property var transientSurfaceTracker: null
     property real swipeBleed: 0
+    property bool sizeToContent: false
+    property bool settingsAction: false
     readonly property var surfaces: transientSurfaceTracker ?? localSurfaces
     readonly property bool hasNotifications: list.count > 0
     readonly property Item focusTarget: root
-    property bool blocksTabNavigation: false
+    readonly property bool showKeyboardHints: currentTab === 1 ? (historyLoader.item?.showKeyboardHints ?? false) : keyboard.showKeyboardHints
+    readonly property real contentHeight: {
+        let listHeight = NotificationMetrics.emptyHeight;
+        if (currentTab === 0) {
+            if (NotificationService.groupedNotifications.length > 0)
+                listHeight = sizeToContent && list.stableContentHeight > 0 ? list.stableContentHeight : list.listContentHeight;
+        } else if (NotificationService.historyList.length > 0) {
+            listHeight = Math.max(NotificationMetrics.emptyHeight, NotificationService.historyList.length * NotificationMetrics.estimatedCardHeight);
+        }
+        return listHeight + footer.height + Theme.spacingM;
+    }
+    readonly property bool shortcutSheetOpened: shortcutSheet.item?.opened ?? false
+    readonly property bool blocksTabNavigation: shortcutSheetOpened
     activeFocusOnTab: interactive
+
+    signal settingsRequested
+
+    function forceLayout() {
+        list.forceContentLayout();
+    }
+
+    function slotAction(action) {
+        return Shortcuts.isAvailable(action, SettingsData.notificationHistoryEnabled) ? action : "";
+    }
+
+    function triggerShortcut(slot) {
+        switch (slot.shortcut) {
+        case "dnd":
+            duration.active = true;
+            duration.item.popupAnchorItem = slot;
+            duration.item.showDropdownMenu();
+            return;
+        case "history":
+            currentTab = currentTab === 0 ? 1 : 0;
+            return;
+        case "hints":
+            if (currentTab === 1) {
+                if (historyLoader.item)
+                    historyLoader.item.showKeyboardHints = !historyLoader.item.showKeyboardHints;
+                return;
+            }
+            keyboard.showKeyboardHints = !keyboard.showKeyboardHints;
+            return;
+        case "settings":
+            if (settingsAction) {
+                settingsRequested();
+                return;
+            }
+            PopoutService.openSettingsWithTab("notifications");
+            return;
+        }
+        editShortcut(slot, slot.visualFocus);
+    }
+
+    function editShortcut(slot, keyboardOpened) {
+        const other = slot === leadingSlot ? trailingSlot : leadingSlot;
+        const choices = Shortcuts.choices(slot.shortcut, other.shortcut, SettingsData.notificationHistoryEnabled);
+        shortcutSheet.active = true;
+        shortcutSheet.item.open(slot, choices, !slot.empty, slot === trailingSlot, keyboardOpened);
+    }
+
+    function releaseShortcutSheet() {
+        Qt.callLater(() => {
+            if (shortcutSheet.item && !shortcutSheet.item.opened)
+                shortcutSheet.active = false;
+        });
+    }
+
+    function assignShortcut(action) {
+        const slot = shortcutSheet.item?.slot ?? null;
+        shortcutSheet.item?.close();
+        if (slot)
+            SettingsData.set(slot.settingKey, action === "remove" ? "" : action);
+        if (leadingSlot.shortcut !== "history" && trailingSlot.shortcut !== "history")
+            currentTab = 0;
+    }
 
     function handleKeyEvent(event) {
         event.accepted = false;
+        if (shortcutSheetOpened)
+            return shortcutSheet.item.handleKeyEvent(event);
         if (!interactive || !enabled || !activeFocus)
             return false;
         if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab)
@@ -103,10 +182,16 @@ FocusScope {
         if (!live) {
             keyboard.reset();
             surfaces.closeAll();
+            shortcutSheet.item?.close();
             return;
         }
         NotificationService.markNotificationsSeen();
         keyboard.rebuildFlatNavigation();
+    }
+
+    onVisibleChanged: {
+        if (!visible)
+            shortcutSheet.item?.close();
     }
 
     readonly property bool settingsNotificationHistoryEnabled: SettingsData.notificationHistoryEnabled
@@ -129,6 +214,7 @@ FocusScope {
     Keys.onPressed: event => event.accepted = handleKeyEvent(event)
 
     TapHandler {
+        enabled: !root.shortcutSheetOpened
         onPressedChanged: {
             if (pressed)
                 root.forceActiveFocus(Qt.MouseFocusReason);
@@ -148,7 +234,8 @@ FocusScope {
         keyboardController: keyboard
         focusAllowed: root.activeFocus
         transientSurfaceTracker: root.surfaces
-        trackStableContentHeight: false
+        trackStableContentHeight: root.sizeToContent
+        cardAnimateExpansion: root.live
     }
 
     Loader {
@@ -173,23 +260,25 @@ FocusScope {
         spacing: Theme.spacingS
         height: Theme.iconButtonSize
 
-        DActionButton {
-            id: historyButton
-            visible: SettingsData.notificationHistoryEnabled
-            buttonSize: Theme.iconButtonSize
-            iconName: root.currentTab === 1 ? "inbox" : "history"
-            backgroundColor: Theme.secondaryContainer
-            iconColor: Theme.onSecondaryContainer
-            tooltipText: root.currentTab === 1 ? I18n.tr("Current", "notification center tab") : I18n.tr("History", "notification center tab")
-            onClicked: root.currentTab = root.currentTab === 0 ? 1 : 0
+        NotificationShortcutSlot {
+            id: leadingSlot
+            settingKey: "notificationLeadingShortcut"
+            shortcut: root.slotAction(SettingsData.notificationLeadingShortcut)
+            live: root.live
+            squeezed: clearButton.pressed
+            historyActive: root.currentTab === 1
+            hintsActive: root.showKeyboardHints
+            restColor: Theme.foregroundColor(root.nested ? Theme.chipSurface : Theme.cardSurface, Theme.isFloatingWindow(root))
+            onClicked: root.triggerShortcut(leadingSlot)
+            onEditRequested: root.editShortcut(leadingSlot, leadingSlot.visualFocus)
         }
 
         DButton {
-            width: Math.max(0, footer.width - dndButton.width - (historyButton.visible ? historyButton.width + footer.spacing : 0) - footer.spacing)
+            id: clearButton
+            width: Math.max(0, footer.width - leadingSlot.width - trailingSlot.width - footer.spacing * 2)
             text: I18n.tr("Clear All")
             buttonHeight: Theme.iconButtonSize
-            backgroundColor: Theme.secondaryContainer
-            textColor: Theme.onSecondaryContainer
+            variant: "tonal"
             enabled: root.currentTab === 0 ? NotificationService.notifications.length > 0 : NotificationService.historyList.length > 0
             onClicked: {
                 if (root.currentTab === 0) {
@@ -200,33 +289,64 @@ FocusScope {
             }
         }
 
-        DActionButton {
-            id: dndButton
-            buttonSize: Theme.iconButtonSize
-            iconName: SessionData.doNotDisturb ? "notifications_off" : "notifications"
-            backgroundColor: SessionData.doNotDisturb ? Theme.primaryContainer : Theme.secondaryContainer
-            iconColor: SessionData.doNotDisturb ? Theme.onPrimaryContainer : Theme.onSecondaryContainer
-            tooltipText: I18n.tr("Do not disturb")
-            onClicked: duration.showDropdownMenu()
+        NotificationShortcutSlot {
+            id: trailingSlot
+            settingKey: "notificationTrailingShortcut"
+            shortcut: root.slotAction(SettingsData.notificationTrailingShortcut)
+            live: root.live
+            squeezed: clearButton.pressed
+            historyActive: root.currentTab === 1
+            hintsActive: root.showKeyboardHints
+            restColor: Theme.foregroundColor(root.nested ? Theme.chipSurface : Theme.cardSurface, Theme.isFloatingWindow(root))
+            onClicked: root.triggerShortcut(trailingSlot)
+            onEditRequested: root.editShortcut(trailingSlot, trailingSlot.visualFocus)
         }
     }
 
-    DDropdown {
-        id: duration
-        showTrigger: false
-        popupAnchorItem: dndButton
-        popupWidth: NotificationMetrics.menuWidth
-        openUpwards: true
-        transientSurfaceTracker: root.surfaces
-        options: [I18n.tr("Off")].concat(DndPresets.presetOptions.map(option => option.label))
-        onValueChanged: value => {
-            if (value === I18n.tr("Off")) {
-                SessionData.setDoNotDisturb(false);
-                return;
+    NotificationKeyboardHints {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: footer.top
+        anchors.bottomMargin: Theme.spacingM
+        showHints: root.showKeyboardHints
+        historyTab: root.currentTab === 1
+    }
+
+    Loader {
+        id: shortcutSheet
+        anchors.fill: parent
+        active: false
+
+        sourceComponent: NotificationShortcutSheet {
+            bottomInset: footer.height + Theme.spacingS
+            onChosen: action => root.assignShortcut(action)
+            onVisibleChanged: {
+                if (!visible)
+                    root.releaseShortcutSheet();
             }
-            const option = DndPresets.presetOptions.find(option => option.label === value);
-            if (option)
-                DndPresets.selectPreset(option);
+        }
+    }
+
+    Loader {
+        id: duration
+        active: false
+
+        sourceComponent: DDropdown {
+            showTrigger: false
+            popupAnchorItem: leadingSlot
+            popupWidth: NotificationMetrics.menuWidth
+            openUpwards: true
+            transientSurfaceTracker: root.surfaces
+            options: [I18n.tr("Off")].concat(DndPresets.presetOptions.map(option => option.label))
+            onValueChanged: value => {
+                if (value === I18n.tr("Off")) {
+                    SessionData.setDoNotDisturb(false);
+                    return;
+                }
+                const option = DndPresets.presetOptions.find(option => option.label === value);
+                if (option)
+                    DndPresets.selectPreset(option);
+            }
         }
     }
 }

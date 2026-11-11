@@ -383,7 +383,7 @@ func (m *Manager) acquireSleepInhibitor() error {
 		return fmt.Errorf("manager object not available")
 	}
 
-	file, err := m.inhibit("sleep", "Dux Shell", "Lock before suspend", "delay")
+	file, err := m.inhibit("sleep", "Dux Modular Shell", "Lock before suspend", "delay")
 	if err != nil {
 		return err
 	}
@@ -710,6 +710,7 @@ func (m *Manager) Close() {
 	m.stopSignalPump()
 
 	m.releaseSleepInhibitor()
+	m.releaseKeepAwake()
 
 	m.subscribers.Range(func(key string, ch chan SessionState) bool {
 		close(ch)

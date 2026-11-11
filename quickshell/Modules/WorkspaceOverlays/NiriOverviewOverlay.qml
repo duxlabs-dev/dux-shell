@@ -89,7 +89,7 @@ Scope {
         asynchronous: false
         sourceComponent: Variants {
             id: overlayVariants
-            model: Quickshell.screens
+            model: ShellLayout.realScreens
 
             PanelWindow {
                 id: overlayWindow
@@ -106,6 +106,7 @@ Scope {
                 readonly property var launcherContent: useSpotlightStyle ? spotlightLauncherLoader.item : fullLauncherLoader.item
 
                 readonly property QtObject fakeParentModal: QtObject {
+                    readonly property var effectiveScreen: overlayWindow.screen
                     readonly property bool spotlightOpen: spotlightContainer.visible
                     readonly property bool isClosing: niriOverviewScope.isClosing
                     readonly property real alignedX: spotlightContainer.x

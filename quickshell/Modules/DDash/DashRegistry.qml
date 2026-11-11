@@ -4,7 +4,6 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Services
-import qs.Modules.DDash.Overview
 import "utils/options.js" as Options
 
 Singleton {
@@ -99,7 +98,7 @@ Singleton {
             "icon": "dashboard",
             "description": I18n.tr("Clock, calendar, system info and profile"),
             "tab": {
-                "component": overviewTab
+                "source": Qt.resolvedUrl("OverviewTab.qml")
             }
         },
         {
@@ -108,12 +107,12 @@ Singleton {
             "icon": "music_note",
             "description": I18n.tr("Now playing and media controls"),
             "tab": {
-                "component": mediaTab,
+                "source": Qt.resolvedUrl("MediaPlayerTab.qml"),
                 "async": true,
                 "sizeToContent": true
             },
             "card": {
-                "component": mediaCard,
+                "source": Qt.resolvedUrl("Overview/MediaOverviewCard.qml"),
                 "w": 2,
                 "h": 1,
                 "minW": 1,
@@ -123,6 +122,14 @@ Singleton {
                     {
                         "value": "cookie",
                         "text": I18n.tr("Rotating Cookie", "Album artwork shape")
+                    },
+                    {
+                        "value": "squircle",
+                        "text": I18n.tr("Swaying Square", "Album artwork shape")
+                    },
+                    {
+                        "value": "disc",
+                        "text": I18n.tr("Spinning Record", "Album artwork shape that turns like a vinyl record")
                     },
                     {
                         "value": "rounded",
@@ -140,7 +147,7 @@ Singleton {
                         "value": "slanted",
                         "text": I18n.tr("Slanted", "Album artwork shape")
                     }
-                ]), choice("titleFont", I18n.tr("Title font"), MediaOptions.defaultTitleFont, Theme.fontChoices), toggle("seekbar", I18n.tr("Show seekbar"), MediaOptions.defaults.seekbar), toggle("waveProgress", I18n.tr("Wave progress bars"), MediaOptions.defaults.waveProgress), toggle("albumArtBackdrop", I18n.tr("Album art backdrop"), MediaOptions.defaults.albumArtBackdrop), toggle("albumArtAccent", I18n.tr("Use album art accent"), MediaOptions.defaults.albumArtAccent), toggle("animatedArt", I18n.tr("Apple Music animated covers"), MediaOptions.defaults.animatedArt, I18n.tr("Sends the playing artist and album name to Apple")), toggle("lyrics", I18n.tr("Lyrics", "Media player lyrics button"), MediaOptions.defaults.lyrics, I18n.tr("Sends the playing track, artist and album name to enabled lyrics providers")), toggle("smoothLyrics", I18n.tr("Smooth lyrics highlight", "Media player option that fills each sung word gradually instead of highlighting it at once"), MediaOptions.defaults.smoothLyrics)]
+                ]), choice("titleFont", I18n.tr("Title font"), MediaOptions.defaultTitleFont, Theme.fontChoices), toggle("cardBackgrounds", I18n.tr("Card backgrounds", "Media player option that draws the title and controls on filled cards"), MediaOptions.defaults.cardBackgrounds, I18n.tr("Bento style only", "Hint under a media player option that only affects the Bento player style")), toggle("seekbar", I18n.tr("Show seekbar"), MediaOptions.defaults.seekbar), toggle("waveProgress", I18n.tr("Wave progress bars"), MediaOptions.defaults.waveProgress), toggle("albumArtBackdrop", I18n.tr("Album art backdrop"), MediaOptions.defaults.albumArtBackdrop), toggle("albumArtAccent", I18n.tr("Use album art accent"), MediaOptions.defaults.albumArtAccent), toggle("animatedArt", I18n.tr("Apple Music animated covers"), MediaOptions.defaults.animatedArt, I18n.tr("Sends the playing artist and album name to Apple")), toggle("lyrics", I18n.tr("Lyrics", "Media player lyrics button"), MediaOptions.defaults.lyrics, I18n.tr("Sends the playing track, artist and album name to enabled lyrics providers")), toggle("smoothLyrics", I18n.tr("Smooth lyrics highlight", "Media player option that fills each sung word gradually instead of highlighting it at once"), MediaOptions.defaults.smoothLyrics)]
         },
         {
             "id": "wallpaper",
@@ -148,7 +155,7 @@ Singleton {
             "icon": "wallpaper",
             "description": I18n.tr("Browse and set wallpapers"),
             "tab": {
-                "component": wallpaperTab,
+                "source": Qt.resolvedUrl("WallpaperTab.qml"),
                 "async": true,
                 "sizeToContent": true
             },
@@ -156,6 +163,10 @@ Singleton {
                     {
                         "value": "grid",
                         "text": I18n.tr("Grid")
+                    },
+                    {
+                        "value": "paged",
+                        "text": I18n.tr("Paged grid", "wallpaper tab layout option")
                     },
                     {
                         "value": "carousel",
@@ -170,12 +181,12 @@ Singleton {
             "description": SettingsData.weatherEnabled ? I18n.tr("Forecast and conditions") : I18n.tr("Hidden until weather is enabled"),
             "available": SettingsData.weatherEnabled,
             "tab": {
-                "component": weatherTab,
+                "source": Qt.resolvedUrl("WeatherTab.qml"),
                 "async": true,
                 "sizeToContent": true
             },
             "card": {
-                "component": weatherCard,
+                "source": Qt.resolvedUrl("Overview/WeatherOverviewCard.qml"),
                 "w": 1,
                 "h": 2,
                 "minW": 1,
@@ -190,12 +201,12 @@ Singleton {
             "description": SettingsData.wellbeingEnabled ? I18n.tr("Screen time and app limits", "settings sidebar hint and dashboard tab description for digital wellbeing") : I18n.tr("Hidden until screen time tracking is enabled", "dashboard tab description while digital wellbeing is off"),
             "available": SettingsData.wellbeingEnabled,
             "tab": {
-                "component": wellbeingTab,
+                "source": Qt.resolvedUrl("WellbeingTab.qml"),
                 "async": true,
                 "sizeToContent": true
             },
             "card": {
-                "component": wellbeingCard,
+                "source": Qt.resolvedUrl("Overview/WellbeingOverviewCard.qml"),
                 "w": 2,
                 "h": 1,
                 "minW": 1,
@@ -208,10 +219,10 @@ Singleton {
             "text": I18n.tr("Notifications"),
             "icon": "notifications",
             "tab": {
-                "component": notificationsTab
+                "source": Qt.resolvedUrl("NotificationsTab.qml")
             },
             "card": {
-                "component": notificationsCard,
+                "source": Qt.resolvedUrl("Overview/NotificationsOverviewCard.qml"),
                 "w": 3,
                 "h": 5,
                 "minW": 3,
@@ -230,7 +241,7 @@ Singleton {
             "text": I18n.tr("Clock"),
             "icon": "schedule",
             "card": {
-                "component": clockCard,
+                "source": Qt.resolvedUrl("Overview/ClockCard.qml"),
                 "w": 2,
                 "h": 2,
                 "minW": 1,
@@ -252,7 +263,7 @@ Singleton {
             "text": I18n.tr("Calendar"),
             "icon": "calendar_month",
             "card": {
-                "component": calendarCard,
+                "source": Qt.resolvedUrl("Overview/CalendarOverviewCard.qml"),
                 "w": 3,
                 "h": 3,
                 "minW": 3,
@@ -266,7 +277,7 @@ Singleton {
             "text": I18n.tr("User"),
             "icon": "person",
             "card": {
-                "component": userCard,
+                "source": Qt.resolvedUrl("Overview/UserInfoCard.qml"),
                 "w": 3,
                 "h": 1,
                 "minW": 1,
@@ -280,7 +291,7 @@ Singleton {
             "text": I18n.tr("System Monitor"),
             "icon": "monitoring",
             "card": {
-                "component": sysmonCard,
+                "source": Qt.resolvedUrl("Overview/SystemMonitorCard.qml"),
                 "w": 2,
                 "h": 1,
                 "minW": 1,
@@ -293,7 +304,7 @@ Singleton {
             "text": I18n.tr("CPU"),
             "icon": "memory",
             "card": {
-                "component": cpuCard,
+                "source": Qt.resolvedUrl("Overview/CpuCard.qml"),
                 "w": 1,
                 "h": 1,
                 "minW": 1,
@@ -307,7 +318,7 @@ Singleton {
             "text": I18n.tr("Memory"),
             "icon": "developer_board",
             "card": {
-                "component": memoryCard,
+                "source": Qt.resolvedUrl("Overview/MemoryCard.qml"),
                 "w": 1,
                 "h": 1,
                 "minW": 1,
@@ -321,7 +332,7 @@ Singleton {
             "text": I18n.tr("Network"),
             "icon": "swap_vert",
             "card": {
-                "component": networkCard,
+                "source": Qt.resolvedUrl("Overview/NetworkCard.qml"),
                 "w": 2,
                 "h": 1,
                 "minW": 1,
@@ -335,7 +346,7 @@ Singleton {
             "text": I18n.tr("Disk"),
             "icon": "hard_drive",
             "card": {
-                "component": diskCard,
+                "source": Qt.resolvedUrl("Overview/DiskCard.qml"),
                 "w": 1,
                 "h": 1,
                 "minW": 1,
@@ -351,7 +362,7 @@ Singleton {
             "description": BatteryService.batteryAvailable ? "" : I18n.tr("No battery", "battery status"),
             "available": BatteryService.batteryAvailable,
             "card": {
-                "component": batteryCard,
+                "source": Qt.resolvedUrl("Overview/BatteryCard.qml"),
                 "w": 1,
                 "h": 1,
                 "minW": 1,
@@ -662,13 +673,14 @@ Singleton {
         return visibleTabIds.includes(id);
     }
 
-    function tabComponentFor(id) {
+    // Loading by URL parents the object's context to the Loader, so unloading the dash clears its handlers.
+    function tabSourceFor(id) {
         const e = entry(id);
         if (!e?.tab)
-            return null;
+            return "";
         if (!e.isPlugin)
-            return e.tab.component;
-        return PluginService.pluginDashComponents[e.pluginId] ?? null;
+            return e.tab.source;
+        return PluginService.pluginDashComponents[e.pluginId]?.url ?? "";
     }
 
     function indexId(index) {
@@ -698,13 +710,13 @@ Singleton {
         return !!e?.card && e.available !== false;
     }
 
-    function cardComponentFor(id) {
+    function cardSourceFor(id) {
         const e = entry(id);
         if (!e?.card)
-            return null;
+            return "";
         if (!e.isPlugin)
-            return e.card.component;
-        return PluginService.pluginDashCardComponents[e.pluginId] ?? null;
+            return e.card.source;
+        return PluginService.pluginDashCardComponents[e.pluginId]?.url ?? "";
     }
 
     function clampSize(id, w, h) {
@@ -737,100 +749,5 @@ Singleton {
             "w": 1,
             "h": 1
         };
-    }
-
-    Component {
-        id: overviewTab
-        OverviewTab {}
-    }
-
-    Component {
-        id: mediaTab
-        MediaPlayerTab {}
-    }
-
-    Component {
-        id: wallpaperTab
-        WallpaperTab {}
-    }
-
-    Component {
-        id: weatherTab
-        WeatherTab {}
-    }
-
-    Component {
-        id: notificationsTab
-        NotificationsTab {}
-    }
-
-    Component {
-        id: notificationsCard
-        NotificationsOverviewCard {}
-    }
-
-    Component {
-        id: wellbeingTab
-        WellbeingTab {}
-    }
-
-    Component {
-        id: wellbeingCard
-        WellbeingOverviewCard {}
-    }
-
-    Component {
-        id: clockCard
-        ClockCard {}
-    }
-
-    Component {
-        id: weatherCard
-        WeatherOverviewCard {}
-    }
-
-    Component {
-        id: userCard
-        UserInfoCard {}
-    }
-
-    Component {
-        id: calendarCard
-        CalendarOverviewCard {}
-    }
-
-    Component {
-        id: mediaCard
-        MediaOverviewCard {}
-    }
-
-    Component {
-        id: sysmonCard
-        SystemMonitorCard {}
-    }
-
-    Component {
-        id: cpuCard
-        CpuCard {}
-    }
-
-    Component {
-        id: memoryCard
-        MemoryCard {}
-    }
-
-    Component {
-        id: networkCard
-        NetworkCard {}
-    }
-
-    Component {
-        id: diskCard
-        DiskCard {}
-    }
-
-    Component {
-        id: batteryCard
-        BatteryCard {}
     }
 }

@@ -451,8 +451,10 @@ Singleton {
         }
     }
 
-    function listPlugins(callback) {
-        sendRequest("plugins.list", null, response => {
+    function listPlugins(callback, refresh = false) {
+        sendRequest("plugins.list", refresh ? {
+            "refresh": true
+        } : null, response => {
             if (response.result) {
                 availablePlugins = response.result;
                 pluginsListReceived(response.result);

@@ -381,8 +381,6 @@ Item {
             if (position && bar.positionDash)
                 bar.positionDash(dash, position);
             dash.requestTab(tabId);
-            if (dash.updateSurfacePosition)
-                dash.updateSurfacePosition();
             return true;
         }
 
@@ -1863,8 +1861,6 @@ Item {
         function open(): string {
             root.workspaceRenameModalLoaderRef.active = true;
             if (root.workspaceRenameModalLoaderRef.item) {
-                if (CompositorService.isAqueous)
-                    return root.workspaceRenameModalLoaderRef.item.show("") ? "WORKSPACE_RENAME_MODAL_OPENED" : "WORKSPACE_RENAME_UNAVAILABLE";
                 root.workspaceRenameModalLoaderRef.item.show(root.workspaceRenameModalLoaderRef.item.focusedWorkspaceName());
                 return "WORKSPACE_RENAME_MODAL_OPENED";
             }
@@ -1886,8 +1882,6 @@ Item {
                     root.workspaceRenameModalLoaderRef.item.hide();
                     return "WORKSPACE_RENAME_MODAL_CLOSED";
                 }
-                if (CompositorService.isAqueous)
-                    return root.workspaceRenameModalLoaderRef.item.show("") ? "WORKSPACE_RENAME_MODAL_OPENED" : "WORKSPACE_RENAME_UNAVAILABLE";
                 root.workspaceRenameModalLoaderRef.item.show(root.workspaceRenameModalLoaderRef.item.focusedWorkspaceName());
                 return "WORKSPACE_RENAME_MODAL_OPENED";
             }

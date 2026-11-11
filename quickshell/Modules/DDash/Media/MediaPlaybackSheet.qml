@@ -210,7 +210,10 @@ FocusScope {
                     model: root.players
 
                     ListRow {
+                        id: playerRow
+
                         required property var modelData
+                        readonly property bool isPinned: !!modelData?.identity && MprisController.pinnedIdentity === modelData.identity
 
                         iconName: "music_note"
                         title: modelData?.identity ?? ""
@@ -219,6 +222,25 @@ FocusScope {
                         onClicked: MprisController.setActivePlayer(modelData)
                         Keys.onTabPressed: root.cycleFocus(false)
                         Keys.onBacktabPressed: root.cycleFocus(true)
+
+                        focusTargets: (clickable ? [playerRow] : []).concat(pinButton)
+
+                        DActionButton {
+                            id: pinButton
+
+                            iconName: "push_pin"
+                            iconFilled: playerRow.isPinned
+                            iconColor: playerRow.isPinned ? playerRow.iconColor : playerRow.supportingContentColor
+                            focusRingColor: MediaAccentService.focusRing
+                            tooltipText: playerRow.isPinned ? I18n.tr("Unpin") : I18n.tr("Pin", "verb, keep an item pinned in place")
+                            Accessible.name: tooltipText
+                            Keys.onTabPressed: root.cycleFocus(false)
+                            Keys.onBacktabPressed: root.cycleFocus(true)
+                            onClicked: {
+                                if (playerRow.modelData?.identity)
+                                    MprisController.setPinned(playerRow.isPinned ? "" : playerRow.modelData.identity);
+                            }
+                        }
                     }
                 }
             }
@@ -316,6 +338,9 @@ FocusScope {
         paddingH: Theme.spacingL
         paddingV: Theme.spacingM
         rowColor: Theme.surfaceContainerHigh
+        selectedRowColor: MediaAccentService.artAccent ? MediaAccentService.accentContainer : Theme.selectedContainer
+        selectedContentColor: MediaAccentService.artAccent ? MediaAccentService.onAccentContainer : Theme.onSelectedContainer
+        iconColor: active ? (MediaAccentService.artAccent ? MediaAccentService.onAccentContainer : Theme.accentOnSelectedContainer) : MediaAccentService.accent
         clickable: !active
         Accessible.selected: active
     }

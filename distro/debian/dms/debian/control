@@ -30,8 +30,8 @@ Depends: ${misc:Depends},
 Suggests: cups-pk-helper, dux-gop | dgop
 Conflicts: dms-git
 Replaces: dms-git
-Description: Dux Shell - Modern Wayland Desktop Shell
- DMS (Dux Shell) is a feature-rich desktop shell built on
+Description: Dux Modular Shell - Modern Wayland Desktop Shell
+ DMS (Dux Modular Shell) is a feature-rich desktop shell built on
  Quickshell, providing a modern and customizable user interface for
  Wayland compositors like niri, hyprland, and sway.
  .

@@ -14,10 +14,8 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("KeybindsService")
 
-    property bool available: CompositorService.isAqueous || CompositorService.isNiri || CompositorService.isHyprland || CompositorService.isMango
+    property bool available: CompositorService.isNiri || CompositorService.isHyprland || CompositorService.isMango
     property string currentProvider: {
-        if (CompositorService.isAqueous)
-            return "aqueous";
         if (CompositorService.isNiri)
             return "niri";
         if (CompositorService.isHyprland)
@@ -28,8 +26,6 @@ Singleton {
     }
 
     readonly property string cheatsheetProvider: {
-        if (CompositorService.isAqueous)
-            return "aqueous";
         if (CompositorService.isNiri)
             return "niri";
         if (CompositorService.isHyprland)
@@ -74,23 +70,7 @@ Singleton {
     property var displayList: []
     property int _dataVersion: 0
     property string _pendingSavedKey: ""
-    readonly property bool requiresBindReview: currentProvider === "aqueous"
-    readonly property string bindEditSession: requiresBindReview ? aqueousSession : currentProvider
-    readonly property bool bindMutationBusy: aqueousBusy || saving || removeProcess.running
-    property bool aqueousBusy: false
-    property bool _aqueousLoading: false
-    property bool _loadPending: false
-    property int _aqueousRequest: 0
-    readonly property string aqueousSession: currentProvider === "aqueous" ? AqueousService.session : ""
     onCurrentProviderChanged: _pendingSavedKey = ""
-
-    onAqueousSessionChanged: {
-        _aqueousRequest++;
-        aqueousBusy = false;
-        _pendingSavedKey = "";
-        if (aqueousSession)
-            Qt.callLater(root.loadBinds, false);
-    }
 
     readonly property var categoryOrder: Actions.getCategoryOrder()
     readonly property string configDir: Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation))
@@ -112,7 +92,6 @@ Singleton {
     readonly property string dmsBindsPath: includePaths?.fragmentFiles[0] ?? ""
     readonly property string mainConfigPath: includePaths?.configFile ?? ""
     readonly property bool readOnly: currentProvider === "hyprland" && CompositorService.isHyprland && !HyprlandService.luaConfigActive
-    readonly property bool niriBindsNext: currentProvider === "niri" && DMSService.capabilities.includes("niri.binds-next")
     readonly property var actionTypes: Actions.getActionTypes()
     readonly property var dmsActions: getDmsActions()
 
@@ -126,7 +105,7 @@ Singleton {
     Connections {
         target: CompositorService
         function onCompositorChanged() {
-            if (!CompositorService.isNiri && !CompositorService.isMango && !CompositorService.isAqueous)
+            if (!CompositorService.isNiri && !CompositorService.isMango)
                 return;
             Qt.callLater(root.loadBinds);
         }
@@ -458,31 +437,6 @@ Singleton {
     }
 
     function loadBinds(showLoading) {
-        if (currentProvider === "aqueous") {
-            _loadPending = true;
-            if (_aqueousLoading || aqueousBusy)
-                return;
-            _loadPending = false;
-            _aqueousLoading = true;
-            loading = true;
-            readAqueousBinds((snapshot, error) => {
-                root._aqueousLoading = false;
-                root.loading = false;
-                if (snapshot) {
-                    root.lastError = "";
-                    root._rawData = snapshot;
-                    root._processData();
-                } else {
-                    root.lastError = error;
-                    root._pendingSavedKey = "";
-                }
-                if (root._loadPending) {
-                    root._loadPending = false;
-                    Qt.callLater(root.loadBinds, false);
-                }
-            });
-            return;
-        }
         if (loadProcess.running || !available)
             return;
         const hasData = Object.keys(_allBinds).length > 0;
@@ -490,279 +444,6 @@ Singleton {
         loadProcess.command = ["dms", "keybinds", "show", currentProvider];
         loadProcess.provider = currentProvider;
         loadProcess.running = true;
-    }
-
-    function readAqueousBinds(callback) {
-        const session = aqueousSession;
-        if (!session) {
-            callback(null, I18n.tr("Unavailable"));
-            return;
-        }
-        AqueousService.runJson(["dms", "keybinds", "show", "aqueous"], null, (snapshot, error) => {
-            if (session !== root.aqueousSession) {
-                callback(null, I18n.tr("Configuration changed. Refresh to continue.", "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings"));
-                return;
-            }
-            try {
-                if (error)
-                    throw new Error(error);
-                bindInventory(snapshot);
-            } catch (e) {
-                log.warn("Failed to read Aqueous keybindings:", e);
-                callback(null, AqueousService.errorMessage(String(e)));
-                return;
-            }
-            callback(snapshot, "");
-        });
-    }
-
-    function bindInventory(snapshot) {
-        if (snapshot?.provider !== "aqueous" || typeof snapshot.generation !== "string" || !snapshot.generation || !snapshot.binds || Array.isArray(snapshot.binds))
-            throw new Error("invalid Aqueous keybind snapshot");
-        if (!Array.isArray(snapshot.binds.Compositor) || !Array.isArray(snapshot.binds.Custom))
-            throw new Error("missing Aqueous keybind inventory");
-        return Object.keys(snapshot.binds).sort().map(category => {
-            if (!Array.isArray(snapshot.binds[category]))
-                throw new Error("invalid Aqueous keybind category");
-            return [category, snapshot.binds[category].map(bind => {
-                    if (typeof bind.key !== "string" || typeof bind.action !== "string")
-                        throw new Error("invalid Aqueous binding");
-                    return [bind.key, bind.action, bind.source || ""];
-                })];
-        });
-    }
-
-    function bindInventoryChanges(baseline, current) {
-        const flatten = snapshot => bindInventory(snapshot).reduce((all, group) => all.concat(group[1].map(bind => [group[0], bind])), []);
-        const before = flatten(baseline);
-        const after = flatten(current);
-        const differences = [];
-        for (let i = 0; i < Math.max(before.length, after.length); i++) {
-            if (JSON.stringify(before[i]) === JSON.stringify(after[i]))
-                continue;
-            differences.push({
-                before: before[i]?.[1] || null,
-                after: after[i]?.[1] || null
-            });
-        }
-        return differences;
-    }
-
-    function bindingsForKey(snapshot, key) {
-        if (!key)
-            return [];
-        bindInventory(snapshot);
-        return Object.values(snapshot.binds).reduce((matches, category) => matches.concat(category.filter(bind => bind.key === key)), []);
-    }
-
-    function bindEditIssue(draft, current, reviewing) {
-        bindInventory(current);
-        if (!["set", "remove", "reset"].includes(draft.operation))
-            return "invalid_binding";
-        const original = bindingsForKey(current, draft.originalKey);
-        if (draft.originalKey && original.length !== 1)
-            return original.length ? "ambiguous_target" : "target_removed";
-        if (!reviewing && draft.originalKey && original[0].action !== draft.originalAction)
-            return "target_changed";
-        if (draft.operation !== "set")
-            return draft.originalKey ? "" : "target_removed";
-        const data = draft.data;
-        if (!data?.key || !data.action)
-            return "invalid_binding";
-        if (data.key !== draft.originalKey && bindingsForKey(current, data.key).length)
-            return "destination_occupied";
-        if (!data.action.startsWith("spawn ") && !current.binds.Compositor.some(bind => bind.action === data.action))
-            return "invalid_action";
-        return "";
-    }
-
-    function captureBindEdit(binding, key) {
-        if (!requiresBindReview)
-            return null;
-        bindInventory(_rawData);
-        if (!bindEditSession)
-            throw new Error(I18n.tr("Unavailable"));
-        return {
-            provider: currentProvider,
-            session: bindEditSession,
-            action: binding.action || "",
-            binding: JSON.parse(JSON.stringify(binding)),
-            baseline: JSON.parse(JSON.stringify(_rawData)),
-            originalKey: key || "",
-            originalAction: binding.action || "",
-            operation: "set",
-            data: {
-                key: key || "",
-                action: binding.action || "",
-                desc: binding.desc || ""
-            }
-        };
-    }
-
-    function updateBindEdit(draft, key, data, operation) {
-        const originals = bindingsForKey(draft.baseline, key);
-        return Object.assign({}, draft, {
-            operation: operation || draft.operation,
-            originalKey: key,
-            originalAction: originals.length ? originals[0].action : "",
-            data: JSON.parse(JSON.stringify(data || draft.data))
-        });
-    }
-
-    function loadBindReview(callback) {
-        if (requiresBindReview) {
-            readAqueousBinds(callback);
-            return;
-        }
-        callback(null, I18n.tr("Unavailable"));
-    }
-
-    function reconcileBindEdit(draft, snapshot) {
-        const issue = bindEditIssue(draft, snapshot, true);
-        if (issue)
-            return {
-                code: issue
-            };
-        const originals = bindingsForKey(snapshot, draft.originalKey);
-        return {
-            draft: Object.assign({}, draft, {
-                baseline: JSON.parse(JSON.stringify(snapshot)),
-                originalAction: originals.length ? originals[0].action : ""
-            })
-        };
-    }
-
-    function bindEditError(code) {
-        switch (code) {
-        case "external_change":
-            return I18n.tr("Keybindings changed. Refresh and review your edit before saving.", "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings");
-        case "target_removed":
-            return I18n.tr("The original shortcut was removed. Discard this edit or add a new shortcut.", "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings");
-        case "ambiguous_target":
-            return I18n.tr("Multiple bindings use the original shortcut. Resolve the duplicate bindings first.", "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings");
-        case "destination_occupied":
-            return I18n.tr("The new shortcut is already in use. Choose another shortcut.", "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings");
-        case "target_changed":
-            return I18n.tr("The original shortcut changed. Refresh and review your edit.", "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings");
-        case "invalidated":
-            return I18n.tr("The compositor session changed. Discard this edit before starting a new one.", "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings");
-        case "uncertain":
-            return I18n.tr("The save result is unknown. Refresh and check the current bindings.", "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings");
-        case "invalid_action":
-            return I18n.tr("The selected action is no longer available.", "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings");
-        default:
-            return I18n.tr("Failed to save keybind");
-        }
-    }
-
-    function describeBindReview(draft, current) {
-        if (!draft || !current)
-            return "";
-        const describe = (snapshot, key) => {
-            const matches = bindingsForKey(snapshot, key);
-            return matches.length ? matches.map(bind => bind.key + " → " + bind.action).join("\n") : I18n.tr("None");
-        };
-        const original = describe(draft.baseline, draft.originalKey);
-        const currentBind = describe(current, draft.originalKey);
-        const proposed = draft.operation === "set" ? draft.data.key + " → " + draft.data.action : I18n.tr("Remove");
-        const destination = draft.operation === "set" ? describe(current, draft.data.key) : I18n.tr("None");
-        const describeChange = bind => bind ? (bind[0] || I18n.tr("Not bound")) + " → " + bind[1] : I18n.tr("None");
-        const changes = bindInventoryChanges(draft.baseline, current).map(change => I18n.tr("Previous: %1\nCurrent: %2", "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings").arg(describeChange(change.before)).arg(describeChange(change.after))).join("\n\n");
-        return I18n.tr("Original: %1\nCurrent: %2\nProposed: %3\nCurrent destination: %4", "Aqueous keyboard shortcut editor, explaining a conflict or comparing an unsaved edit with current bindings").arg(original).arg(currentBind).arg(proposed).arg(destination) + (changes ? "\n\n" + changes : "");
-    }
-
-    function _mutateAqueous(draft, callback) {
-        if (aqueousBusy || saving || removeProcess.running) {
-            callback({
-                success: false,
-                code: "busy"
-            });
-            return;
-        }
-        if (!draft?.baseline || !aqueousSession || draft.session !== aqueousSession) {
-            callback({
-                success: false,
-                code: "invalidated"
-            });
-            return;
-        }
-        const edit = JSON.parse(JSON.stringify(draft));
-        const request = ++_aqueousRequest;
-        aqueousBusy = true;
-        const complete = result => {
-            if (request !== root._aqueousRequest)
-                return;
-            root.aqueousBusy = false;
-            callback(result);
-            if (result.success || root._loadPending) {
-                root._loadPending = false;
-                Qt.callLater(root.loadBinds, false);
-            }
-        };
-        readAqueousBinds((snapshot, error) => {
-            if (request !== root._aqueousRequest)
-                return;
-            if (error) {
-                complete({
-                    success: false,
-                    code: "load_failed",
-                    message: error
-                });
-                return;
-            }
-            try {
-                if (JSON.stringify(bindInventory(edit.baseline)) !== JSON.stringify(bindInventory(snapshot))) {
-                    complete({
-                        success: false,
-                        code: "external_change",
-                        snapshot: snapshot
-                    });
-                    return;
-                }
-                const issue = bindEditIssue(edit, snapshot, false);
-                if (issue) {
-                    complete({
-                        success: false,
-                        code: issue,
-                        snapshot: snapshot
-                    });
-                    return;
-                }
-            } catch (e) {
-                complete({
-                    success: false,
-                    code: "invalid_snapshot",
-                    message: String(e)
-                });
-                return;
-            }
-            const args = ["dms", "keybinds", edit.operation, currentProvider, edit.operation === "set" ? edit.data.key : edit.originalKey];
-            if (edit.operation === "set") {
-                args.push(edit.data.action);
-                if (edit.originalKey && edit.originalKey !== edit.data.key)
-                    args.push("--replace-key", edit.originalKey);
-            }
-            args.push("--expected-generation", snapshot.generation, "--json");
-            AqueousService.runJson(args, null, (result, error) => {
-                if (request !== root._aqueousRequest)
-                    return;
-                if (error || result?.success !== true || !result.generation) {
-                    complete({
-                        success: false,
-                        code: result?.success === false && result.code ? result.code : "uncertain",
-                        message: result?.message || error
-                    });
-                    return;
-                }
-                if (edit.operation === "set")
-                    root._pendingSavedKey = edit.data.key;
-                complete(result);
-                if (edit.operation === "set")
-                    root.bindSaveCompleted(true);
-                else
-                    root.bindRemoved(edit.originalKey);
-            });
-        });
     }
 
     function _processData() {
@@ -928,11 +609,7 @@ Singleton {
         return [];
     }
 
-    function saveBind(originalKey, bindData, draft, callback) {
-        if (currentProvider === "aqueous") {
-            _mutateAqueous(draft, callback || (() => {}));
-            return;
-        }
+    function saveBind(originalKey, bindData) {
         if (readOnly) {
             showHyprlandReadOnlyWarning();
             return;
@@ -990,11 +667,7 @@ Singleton {
         ToastService.showWarning(I18n.tr("%1 not found").arg("hyprland.lua"), I18n.tr("Run %1 to create it before changing these settings.", "hyprland.lua missing warning, %1 is a command").arg("dms setup"), "dms setup", "hyprland-migration");
     }
 
-    function removeBind(key, draft, callback) {
-        if (currentProvider === "aqueous") {
-            _mutateAqueous(draft, callback || (() => {}));
-            return;
-        }
+    function removeBind(key) {
         if (readOnly) {
             showHyprlandReadOnlyWarning();
             return;
@@ -1007,11 +680,7 @@ Singleton {
         bindRemoved(key);
     }
 
-    function resetBind(key, draft, callback) {
-        if (currentProvider === "aqueous") {
-            _mutateAqueous(draft, callback || (() => {}));
-            return;
-        }
+    function resetBind(key) {
         if (readOnly) {
             showHyprlandReadOnlyWarning();
             return;
@@ -1025,36 +694,18 @@ Singleton {
     }
 
     function getActionLabel(action) {
-        if (currentProvider === "aqueous")
-            return (_rawData?.binds?.Compositor || []).find(b => b.action === action)?.desc || Actions.getActionLabel(action, currentProvider);
         return Actions.getActionLabel(action, currentProvider);
     }
 
     function isKnownCompositorAction(action) {
-        if (currentProvider === "aqueous")
-            return (_rawData?.binds?.Compositor || []).some(b => b.action === action);
         return Actions.isKnownCompositorAction(currentProvider, action);
     }
 
     function getCompositorCategories() {
-        if (currentProvider === "aqueous")
-            return ["Compositor"];
         return Actions.getCompositorCategories(currentProvider);
     }
 
     function getCompositorActions(category) {
-        if (currentProvider === "aqueous") {
-            const seen = new Set();
-            return (_rawData?.binds?.Compositor || []).filter(b => {
-                if (seen.has(b.action))
-                    return false;
-                seen.add(b.action);
-                return true;
-            }).map(b => ({
-                        id: b.action,
-                        label: b.desc
-                    }));
-        }
         return Actions.getCompositorActions(currentProvider, category);
     }
 
