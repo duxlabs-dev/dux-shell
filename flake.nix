@@ -222,7 +222,6 @@
         system: pkgs: {
           dms-shell = mkDmsShell pkgs;
           default = self.packages.${system}.dms-shell;
-          quickshell = builtins.warn "dank-material-shell: the package Quickshell is not included in the DMS flake anymore. We recommend you to use the one from nixos-unstable branch of Nixpkgs or the upstream flake." pkgs.quickshell;
         }
       );
 
@@ -249,6 +248,7 @@
       devShells = forEachSystem (
         system: pkgs:
         let
+          duxQtBase = duxQtBaseFor pkgs;
           devQmlPkgs = with pkgs;
           [
             quickshell
@@ -289,6 +289,7 @@
 
             QML2_IMPORT_PATH = mkQmlImportPath pkgs devQmlPkgs;
             QT_PLUGIN_PATH = mkQtPluginPath pkgs devQmlPkgs;
+            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ duxQtBase ];
           };
         }
       );
