@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import qs.Common
+import qs.Services
 
 PanelWindow {
     id: root
@@ -22,7 +23,8 @@ PanelWindow {
     readonly property real bandY: bounded ? renderBounds.y : band === "bottom" ? screenHeight - bandExtent : band === "row" ? Math.round((screenHeight - bandExtent) / 2) : 0
     property string _registeredName: ""
     // Without render control an inputOnly window still renders, on its own thread and buffers.
-    readonly property bool idleSupported: "inputOnly" in root && Quickshell.renderControl === true
+    // Hyprland focuses an OnDemand layer only as it maps, and shows its old geometry for a frame.
+    readonly property bool idleSupported: "inputOnly" in root && Quickshell.renderControl === true && !CompositorService.isHyprland
 
     property bool _mapped: true
 
