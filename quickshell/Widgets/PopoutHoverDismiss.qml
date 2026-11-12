@@ -82,7 +82,7 @@ Item {
         id: hoverTracker
         enabled: root.dismissEnabled && !root.dismissSuspended && root.surfaceVisible
         shouldDismiss: function () {
-            return !PopoutManager.cursorOverBar(PopoutManager.hoverCursorGlobalX, PopoutManager.hoverCursorGlobalY);
+            return !root.bodyHovered && !PopoutManager.cursorOverBar(PopoutManager.hoverCursorGlobalX, PopoutManager.hoverCursorGlobalY);
         }
         onDismissRequested: root.dismissRequested()
         onHoveredChanged: {
