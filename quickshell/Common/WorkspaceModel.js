@@ -66,20 +66,92 @@ function niriCurrentIdx(raw, screenName, followFocus) {
     return active ? active.idx : 1;
 }
 
-function niriWorkspacesForScreen(raw, screenName, followFocus, occupiedOnly, cache) {
+// "special" names the default pad, as on Hyprland, so menus and IPC treat both compositors alike
+function niriScratchpadName(wsName) {
+    const name = String(wsName ?? "");
+    const lower = name.toLowerCase();
+    if (lower === "scratchpad")
+        return "special";
+    return lower.startsWith("scratchpad:") ? name.slice(11) : "";
+}
+
+function niriScratchpad(ws) {
+    return niriScratchpadName(ws?.name) !== "";
+}
+
+function niriScratchpadWorkspaceName(ipcName) {
+    const bare = String(ipcName ?? "").replace(/^(special|scratchpad):/i, "");
+    const lower = bare.toLowerCase();
+    return !bare || lower === "special" || lower === "scratchpad" ? "scratchpad" : "scratchpad:" + bare;
+}
+
+function niriSameName(a, b) {
+    return String(a ?? "").toLowerCase() === String(b ?? "").toLowerCase();
+}
+
+// shown maps a niri window id to the pad it was brought out of
+function niriScratchpadToggle(windows, workspaces, shown, padName, focusedWorkspaceId) {
+    const pad = workspaces.find(ws => niriSameName(ws.name, padName));
+    if (pad && pad.id === focusedWorkspaceId)
+        return {
+            action: "leave",
+            ids: []
+        };
+    const out = windows.filter(win => niriSameName(shown[win.id], padName));
+    if (out.some(win => win.workspace_id === focusedWorkspaceId))
+        return {
+            action: "hide",
+            ids: out.map(win => win.id)
+        };
+    const ids = windows.filter(win => (pad && win.workspace_id === pad.id) || out.includes(win)).map(win => win.id);
+    return {
+        action: ids.length > 0 ? "show" : "empty",
+        ids
+    };
+}
+
+function niriScratchpadExit(workspaces, pad) {
+    const candidates = workspaces.filter(ws => ws.output === pad.output && !niriScratchpad(ws)).sort((a, b) => a.idx - b.idx);
+    return candidates.reduce((best, ws) => !best || Math.abs(ws.idx - pad.idx) < Math.abs(best.idx - pad.idx) ? ws : best, null);
+}
+
+// a pad is listed while it has parked or shown windows, and is active while shown
+function niriScratchpadWorkspaces(raw) {
+    const live = new Set((raw.windows ?? []).map(win => String(win.id)));
+    const shown = Object.entries(raw.shownScratchpads ?? {}).filter(([id]) => live.has(id)).map(([, pad]) => niriScratchpadName(pad));
+    const parked = raw.allWorkspaces.filter(ws => niriScratchpad(ws) && (raw.windows ?? []).some(win => win.workspace_id === ws.id)).map(ws => niriScratchpadName(ws.name));
+    const names = [];
+    for (const name of parked.concat(shown)) {
+        if (!names.some(n => niriSameName(n, name)))
+            names.push(name);
+    }
+    return names.sort((a, b) => a.localeCompare(b)).map(name => ({
+        id: null,
+        idx: null,
+        name,
+        output: "",
+        active: shown.some(n => niriSameName(n, name)),
+        placeholder: false,
+        urgent: false,
+        special: true
+    }));
+}
+
+function niriWorkspacesForScreen(raw, screenName, followFocus, occupiedOnly, cache, showSpecial) {
     const all = raw.allWorkspaces;
     if (all.length === 0)
         return niriFallback().map(niriRecord);
     dropStale(cache, new Set(all.map(ws => String(ws.id))));
-    const onScreen = !screenName || followFocus ? raw.currentOutputWorkspaces : all.filter(ws => ws.output === screenName);
+    const onScreen = (!screenName || followFocus ? raw.currentOutputWorkspaces : all.filter(ws => ws.output === screenName)).filter(ws => !niriScratchpad(ws));
     const sorted = (onScreen.length > 0 ? onScreen : niriFallback()).slice().sort((a, b) => a.idx - b.idx);
     const workspaces = occupiedOnly ? sorted.filter(ws => ws.is_active || (raw.windows?.some(win => win.workspace_id === ws.id) ?? false)) : sorted;
-    return workspaces.map(ws => reuse(cache, ws.id, niriRecord(ws)));
+    const records = workspaces.map(ws => reuse(cache, ws.id, niriRecord(ws)));
+    return showSpecial ? records.concat(niriScratchpadWorkspaces(raw)) : records;
 }
 
 function niriActiveWorkspace(raw, screenName) {
     const ws = raw.allWorkspaces.find(w => (!screenName || w.output === screenName) && w.is_active);
-    return ws ? niriRecord(ws) : null;
+    return ws && !niriScratchpad(ws) ? niriRecord(ws) : null;
 }
 
 function niriWorkspaceActive(allWorkspaces, workspace) {

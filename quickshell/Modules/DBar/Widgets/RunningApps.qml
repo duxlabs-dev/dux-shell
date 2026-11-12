@@ -475,6 +475,7 @@ BasePill {
         id: windowContextMenu
 
         property var currentWindow: null
+        readonly property string scratchpadName: CompositorService.windowScratchpadName(currentWindow)
 
         layerNamespace: "dms:running-apps-context-menu"
         menuItems: {
@@ -494,7 +495,7 @@ BasePill {
                             targetWindow.minimized = true;
                     }
                 });
-            const scratchpad = CompositorService.windowScratchpadName(currentWindow);
+            const scratchpad = scratchpadName;
             if (scratchpad)
                 items.push({
                     type: "item",

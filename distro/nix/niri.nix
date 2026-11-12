@@ -170,6 +170,18 @@ in {
               action = dms-ipc "clipboard" "toggle";
               hotkey-overlay.title = "Toggle Clipboard Manager";
             };
+            "Mod+S" = {
+              action = dms-ipc "scratchpad" "toggle" "";
+              hotkey-overlay.title = "Toggle Scratchpad";
+            };
+            "Mod+Shift+S" = {
+              action = dms-ipc "scratchpad" "move" "";
+              hotkey-overlay.title = "Move Window to Scratchpad";
+            };
+            "Mod+Ctrl+S" = {
+              action = dms-ipc "scratchpad" "restore";
+              hotkey-overlay.title = "Restore Window from Scratchpad";
+            };
           }
           // lib.attrsets.optionalAttrs cfg.enableSystemMonitoring {
             "Mod+M" = {

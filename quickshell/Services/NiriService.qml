@@ -1733,7 +1733,7 @@ window-rule {
             return send({
                 "Action": {
                     "UnsetWorkspaceName": {
-                        "workspace": null
+                        "reference": null
                     }
                 }
             });

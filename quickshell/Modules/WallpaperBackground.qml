@@ -410,11 +410,12 @@ Variants {
                 let newTargetY = 50.0;
 
                 if (CompositorService.isNiri) {
-                    const outputWorkspaces = NiriService.allWorkspaces.filter(ws => ws.output === modelData.name);
+                    const outputWorkspaces = NiriService.allWorkspaces.filter(ws => ws.output === modelData.name && !WorkspaceModel.niriScratchpad(ws));
+                    const activeIndex = outputWorkspaces.findIndex(ws => ws.is_active);
+                    if (activeIndex < 0)
+                        return;
                     totalWorkspaces = outputWorkspaces.length;
-
-                    const activeWs = outputWorkspaces.find(ws => ws.is_active);
-                    currentWorkspaceIndex = activeWs ? activeWs.idx : 0;
+                    currentWorkspaceIndex = activeIndex + 1;
 
                     const scrollPercent = totalWorkspaces > 1 ? ((currentWorkspaceIndex - 1) / (totalWorkspaces - 1)) * 100.0 : 0.0;
 

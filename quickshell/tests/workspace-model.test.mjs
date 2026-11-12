@@ -116,6 +116,41 @@ test("niri active workspace, windows, occupancy and urgency", () => {
     assert.equal(model.niriWorkspaceActive(raw.allWorkspaces, { id: 6 }), false);
 });
 
+test("niri hides scratchpad workspaces from lists and the active workspace", () => {
+    const raw = niri("scratchpad");
+    assert.deepEqual(pick(model.niriWorkspacesForScreen(raw, "DP-1", false, false, {}), "id"), [1, 4]);
+    assert.deepEqual(pick(model.niriWorkspacesForScreen(raw, "HDMI-A-1", true, false, {}), "id"), [1, 4]);
+    assert.deepEqual(pick(model.niriWorkspacesForScreen(raw, "HDMI-A-1", false, false, {}), "id"), [5, 7]);
+    assert.deepEqual(pick(model.niriWorkspacesForScreen(raw, "HDMI-A-1", false, true, {}), "id"), []);
+    assert.equal(model.niriActiveWorkspace(raw, "HDMI-A-1"), null);
+});
+
+test("niri scratchpad pills list each pad once, active while shown", () => {
+    const raw = { ...niri("scratchpad"), shownScratchpads: { 20: "scratchpad:MUSIC", 99: "Scratchpad" } };
+    const pads = model.niriWorkspacesForScreen(raw, "DP-1", false, false, {}, true).filter(ws => ws.special);
+    assert.deepEqual(pads.map(ws => [ws.name, ws.active]), [["music", true], ["notes", false], ["special", false]]);
+});
+
+test("niri scratchpad names map IPC names to workspaces and back", () => {
+    for (const [ipc, ws] of [["", "scratchpad"], ["special", "scratchpad"], ["Scratchpad", "scratchpad"], ["special:Foo", "scratchpad:Foo"], ["Foo", "scratchpad:Foo"]])
+        assert.equal(model.niriScratchpadWorkspaceName(ipc), ws, ipc);
+    for (const [ws, name] of [["SCRATCHPAD", "special"], ["Scratchpad:Foo", "Foo"], ["scratchpads", ""], ["web", ""], [null, ""]])
+        assert.equal(model.niriScratchpadName(ws), name, String(ws));
+});
+
+test("niri scratchpad toggle leaves the pad, hides shown windows on the focused workspace, else shows the pad", () => {
+    const raw = niri("scratchpad");
+    const plan = (windows, shown, pad, focused = 1) => plain(model.niriScratchpadToggle(windows, raw.allWorkspaces, shown, pad, focused));
+    const at = (id, workspace) => raw.windows.map(win => win.id === id ? { ...win, workspace_id: workspace } : win);
+    assert.deepEqual(plan(raw.windows, {}, "scratchpad"), { action: "show", ids: [21] });
+    assert.deepEqual(plan(at(21, 1), { 21: "scratchpad" }, "scratchpad"), { action: "hide", ids: [21] });
+    assert.deepEqual(plan(at(21, 5), { 21: "scratchpad" }, "scratchpad"), { action: "show", ids: [21] });
+    assert.deepEqual(plan(at(22, 1), { 22: "scratchpad:notes" }, "scratchpad"), { action: "show", ids: [21] });
+    assert.deepEqual(plan(raw.windows, {}, "scratchpad:none"), { action: "empty", ids: [] });
+    assert.deepEqual(plan(raw.windows, {}, "SCRATCHPAD", 2), { action: "leave", ids: [] });
+    assert.equal(model.niriScratchpadExit(raw.allWorkspaces, raw.allWorkspaces[2]).id, 4);
+});
+
 test("hyprland lists skip special workspaces and fall back per monitor", () => {
     const raw = hyprland("twoScreens");
     const screen = model.hyprlandWorkspacesForScreen(raw, "HDMI-A-1", false, false);

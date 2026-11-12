@@ -1893,6 +1893,16 @@ Item {
 
     IpcHandler {
         function toggle(name: string): string {
+            if (CompositorService.isNiri) {
+                const results = {
+                    "hide": "SCRATCHPAD_HIDDEN",
+                    "leave": "SCRATCHPAD_HIDDEN",
+                    "show": "SCRATCHPAD_SHOWN",
+                    "empty": "SCRATCHPAD_EMPTY",
+                    "failed": "SCRATCHPAD_MOVE_FAILED"
+                };
+                return results[CompositorService.toggleSpecialWorkspace(name)];
+            }
             if (!CompositorService.isHyprland)
                 return "SCRATCHPAD_UNSUPPORTED_COMPOSITOR";
             CompositorService.toggleSpecialWorkspace(name);
@@ -1900,19 +1910,20 @@ Item {
         }
 
         function move(name: string): string {
-            if (!CompositorService.isHyprland)
+            if (!CompositorService.isHyprland && !CompositorService.isNiri)
                 return "SCRATCHPAD_UNSUPPORTED_COMPOSITOR";
-            const active = ToplevelManager.activeToplevel;
+            const active = CompositorService.scratchpadFocusedWindow();
             if (!active)
                 return "SCRATCHPAD_NO_FOCUSED_WINDOW";
-            CompositorService.moveWindowToSpecial(active, name || "special");
+            if (CompositorService.moveWindowToSpecial(active, name || "special") === false)
+                return "SCRATCHPAD_MOVE_FAILED";
             return "SCRATCHPAD_MOVED";
         }
 
         function restore(): string {
-            if (!CompositorService.isHyprland)
+            if (!CompositorService.isHyprland && !CompositorService.isNiri)
                 return "SCRATCHPAD_UNSUPPORTED_COMPOSITOR";
-            const active = ToplevelManager.activeToplevel;
+            const active = CompositorService.scratchpadFocusedWindow();
             if (!active)
                 return "SCRATCHPAD_NO_FOCUSED_WINDOW";
             if (!CompositorService.windowScratchpadName(active))

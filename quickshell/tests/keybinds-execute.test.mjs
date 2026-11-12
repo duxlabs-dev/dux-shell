@@ -88,3 +88,9 @@ test("niri argument fields keep quoted workspace names and land edits in the fie
     assert.equal(edit("set-column-width -10%", {}), "set-column-width -10%");
     assert.deepEqual(Object.assign({}, Actions.parseCompositorActionArgs("niri", 'move-column-to-workspace "focus=false"').args), { index: "focus=false" });
 });
+
+test("dms actions gated on a list of compositors show on each of them only", () => {
+    const Actions = loadScript(new URL("../Common/KeybindActions.js", import.meta.url));
+    const offered = (isNiri, isHyprland) => Actions.getDmsActions(isNiri, isHyprland).some(action => action.id === 'spawn dms ipc call scratchpad toggle ""');
+    assert.deepEqual([offered(true, false), offered(false, true), offered(false, false)], [true, true, false]);
+});

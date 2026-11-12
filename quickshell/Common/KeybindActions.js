@@ -331,6 +331,21 @@ const DMS_ACTIONS = [
         label: "Keybinds Cheatsheet: Close"
     },
     {
+        id: "spawn dms ipc call scratchpad toggle \"\"",
+        label: "Scratchpad: Toggle",
+        compositor: ["niri", "hyprland"]
+    },
+    {
+        id: "spawn dms ipc call scratchpad move \"\"",
+        label: "Scratchpad: Move Window",
+        compositor: ["niri", "hyprland"]
+    },
+    {
+        id: "spawn dms ipc call scratchpad restore",
+        label: "Scratchpad: Restore Window",
+        compositor: ["niri", "hyprland"]
+    },
+    {
         id: "spawn dms ipc call lock lock",
         label: "Lock Screen"
     },
@@ -2979,20 +2994,9 @@ function getDmsActions(isNiri, isHyprland) {
     const result = [];
     for (let i = 0; i < DMS_ACTIONS.length; i++) {
         const action = DMS_ACTIONS[i];
-        if (!action.compositor) {
+        const compositors = [].concat(action.compositor ?? []);
+        if (compositors.length === 0 || (isNiri && compositors.includes("niri")) || (isHyprland && compositors.includes("hyprland")))
             result.push(action);
-            continue;
-        }
-        switch (action.compositor) {
-        case "niri":
-            if (isNiri)
-                result.push(action);
-            break;
-        case "hyprland":
-            if (isHyprland)
-                result.push(action);
-            break;
-        }
     }
     return result;
 }

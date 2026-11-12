@@ -134,7 +134,7 @@ Column {
         SettingsToggleRow {
             text: I18n.tr("Show scratchpads", "workspace switcher toggle, special workspaces as entries")
             description: I18n.tr("Special workspaces appear last; click to show or hide", "workspace switcher show scratchpads toggle description")
-            visible: CompositorService.isHyprland
+            visible: CompositorService.isHyprland || CompositorService.isNiri
             checked: root.page.value("showSpecialWorkspaces")
             onToggled: checked => root.page.set("showSpecialWorkspaces", checked)
         }
