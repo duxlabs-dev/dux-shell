@@ -28,6 +28,10 @@ Column {
         {
             "key": "cards",
             "label": I18n.tr("Cards", "workspace indicator style")
+        },
+        {
+            "key": "expressive",
+            "label": I18n.tr("Expressive")
         }
     ]
     property real draftRoundness: -1
@@ -46,7 +50,7 @@ Column {
         SettingsRow {
             resetStore: root.page
             resetKeys: ["workspaceIndicatorStyle"]
-            tags: ["workspace", "style", "pills", "dots", "circles", "lines", "cards"]
+            tags: ["workspace", "style", "pills", "dots", "circles", "lines", "cards", "expressive", "shapes"]
             title: I18n.tr("Style")
 
             body: SettingsLayoutPicker {
