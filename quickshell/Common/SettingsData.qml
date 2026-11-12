@@ -1200,6 +1200,7 @@ Singleton {
     property bool osdMediaPlaybackEnabled: Spec.SPEC.osdMediaPlaybackEnabled.def
     property bool osdBrightnessEnabled: Spec.SPEC.osdBrightnessEnabled.def
     property bool osdIdleInhibitorEnabled: Spec.SPEC.osdIdleInhibitorEnabled.def
+    property bool osdDoNotDisturbEnabled: Spec.SPEC.osdDoNotDisturbEnabled.def
     property bool osdMicMuteEnabled: Spec.SPEC.osdMicMuteEnabled.def
     property bool osdMicVolumeEnabled: Spec.SPEC.osdMicVolumeEnabled.def
     property bool osdCapsLockEnabled: Spec.SPEC.osdCapsLockEnabled.def
