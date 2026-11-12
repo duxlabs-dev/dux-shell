@@ -216,6 +216,7 @@ Singleton {
     readonly property int mediaArtDiscRotationDuration: 20000
     readonly property real mediaArtSwayAngle: 10
     readonly property int mediaArtSwayDuration: 8000
+    readonly property int mediaArtSpinInterval: 16
     readonly property real mediaSeekbarHeight: 22
     readonly property real mediaSeekbarHandleSize: 16
     readonly property real mediaSeekbarHandleDragWidth: 5
