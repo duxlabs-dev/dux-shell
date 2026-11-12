@@ -813,12 +813,17 @@ Singleton {
         }
     }
 
+    // niri reports the shell's own window previews as casts once they request a second frame.
+    function isOwnCast(cast) {
+        return cast.pid === Quickshell.processId;
+    }
+
     function handleCastsChanged(data) {
-        casts = data.casts || [];
+        casts = (data.casts || []).filter(cast => !isOwnCast(cast));
     }
 
     function handleCastStartedOrChanged(data) {
-        if (!data.cast)
+        if (!data.cast || isOwnCast(data.cast))
             return;
         const cast = data.cast;
         const existingIndex = casts.findIndex(c => c.stream_id === cast.stream_id);

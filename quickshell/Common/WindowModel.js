@@ -23,6 +23,14 @@ function sortedWindowFor(sortedToplevels, toplevel) {
     return titleMatches.length === 1 ? titleMatches[0] : null;
 }
 
+// Neither protocol links the two handles, so same-titled windows pair by list order.
+function extToplevelFor(extToplevels, toplevels, toplevel, identifier) {
+    if (identifier)
+        return extToplevels.find(ext => ext.identifier === identifier) ?? null;
+    const isTwin = other => other.appId === toplevel.appId && other.title === toplevel.title;
+    return extToplevels.filter(isTwin)[toplevels.filter(isTwin).indexOf(toplevel)] ?? null;
+}
+
 function niriActiveWorkspaceId(allWorkspaces, screenName) {
     const active = allWorkspaces.find(ws => ws.output === screenName && ws.is_active);
     return active ? active.id : null;

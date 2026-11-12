@@ -144,6 +144,26 @@ Item {
         return appData?.allWindows?.map(w => w.toplevel).filter(t => t !== null) || [];
     }
 
+    readonly property var previewToplevels: {
+        if (!WindowCaptureService.available || !appData)
+            return [];
+        switch (appData.type) {
+        case "window":
+            return appData.toplevel ? [appData.toplevel] : [];
+        case "grouped":
+            return getGroupedToplevels();
+        default:
+            return [];
+        }
+    }
+    readonly property bool showsWindowPreview: previewToplevels.length > 0
+
+    function activateWindow(toplevel) {
+        if (restoreSpecialWorkspaceWindow(toplevel))
+            return;
+        CompositorService.activateToplevel(toplevel);
+    }
+
     function isToplevelFocused(toplevel) {
         if (!toplevel)
             return false;

@@ -404,7 +404,8 @@ FocusScope {
     }
 
     readonly property bool overviewReveal: dock.config.openOnOverview && CompositorService.overviewActiveForScreen(dock._dockScreenName)
-    readonly property bool hoverOrActive: dockMouseArea.containsMouse || dock.interactionActive || contextMenuOpen || revealSticky
+    readonly property bool windowPreviewOpen: appProvider.item?.stripItem?.previewOpen ?? false
+    readonly property bool hoverOrActive: dockMouseArea.containsMouse || dock.interactionActive || contextMenuOpen || revealSticky || windowPreviewOpen
 
     onOverviewRevealChanged: {
         if (overviewReveal && usesConnectedFrameChrome) {
@@ -435,6 +436,13 @@ FocusScope {
 
     onContextMenuOpenChanged: {
         if (!contextMenuOpen && autoHide && !dockMouseArea.containsMouse) {
+            revealSticky = true;
+            revealHold.restart();
+        }
+    }
+
+    onWindowPreviewOpenChanged: {
+        if (!windowPreviewOpen && autoHide && !dockMouseArea.containsMouse) {
             revealSticky = true;
             revealHold.restart();
         }
@@ -593,7 +601,7 @@ FocusScope {
 
     function showTooltipForHoveredButton() {
         dockTooltip.hide();
-        if (dock.editMode || !dock.hoveredButton || !dock.reveal || slideXSpring.running || slideYSpring.running)
+        if (dock.editMode || !dock.hoveredButton || dock.hoveredButton.showsWindowPreview || !dock.reveal || slideXSpring.running || slideYSpring.running)
             return;
 
         const buttonLocalPos = dock.hoveredButton.mapToItem(null, 0, 0);

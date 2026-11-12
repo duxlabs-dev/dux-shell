@@ -105,7 +105,8 @@ DListItem {
             anchors.right: parent.right
             anchors.top: parent.top
             text: root.item?._hName ?? root.item?.name ?? ""
-            textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
+            // RichText ignores elide and maximumLineCount, so only dmenu markup rows get it.
+            textFormat: !root.item?._hRich ? Text.PlainText : root.item.data?.markup ? Text.RichText : Text.StyledText
             font.pixelSize: Theme.fontSizeLarge
             font.weight: (root.item?.type === "dmenu" && root.item?.data?.urgent) ? Theme.fontWeightBold : Theme.fontWeightMedium
             font.family: Theme.fontFamily
@@ -138,7 +139,7 @@ DListItem {
             anchors.top: nameText.bottom
             anchors.topMargin: Theme.spacingXXS
             text: root.item?._hRich ? HtmlElide.elideRichText(root.item._hSub ?? "", textColumn._richBudget) : (root.item?.subtitle ?? "")
-            textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
+            textFormat: !root.item?._hRich ? Text.PlainText : root.item.data?.markup ? Text.RichText : Text.StyledText
             font.pixelSize: Theme.fontSizeSmall
             font.family: Theme.fontFamily
             color: root.supportingContentColor
