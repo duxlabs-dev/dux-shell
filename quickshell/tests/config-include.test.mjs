@@ -40,6 +40,19 @@ test("repair preserves config and fragments, backs up, and adds live includes on
     }
 });
 
+test("animations include resolves for every compositor that writes a fragment", () => {
+    for (const [compositor, configName, fragment, includeLine] of [
+        ["hyprland", undefined, "/c/hypr/dms/animations.lua", 'require("dms.animations")'],
+        ["mango", undefined, "/c/mango/dms/animations.conf", "source=./dms/animations.conf"],
+        ["mango", "config.toml", "/c/mango/dms/animations.conf", '[global]\nsource = "./dms/animations.conf"']
+    ]) {
+        const paths = resolve.includePaths("animations", compositor, "/c", configName);
+        assert.ok(paths, compositor);
+        assert.equal(paths.fragmentFiles.join(), fragment);
+        assert.equal(paths.includes.map(entry => entry.includeLine).join(), includeLine);
+    }
+});
+
 test("mango toml repair sources the fragment from config.toml under its own [global]", t => {
     const configDir = mkdtempSync(join(tmpdir(), "dms-includes-toml-"));
     t.after(() => rmSync(configDir, { recursive: true, force: true }));

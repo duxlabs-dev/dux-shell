@@ -103,6 +103,7 @@ TAB_INDEX_MAP = {
     "DDashTab.qml": 43,
     "DigitalWellbeingTab.qml": 67,
     "CompositorLayoutTab.qml": 37,
+    "CompositorAnimationsTab.qml": 73,
     "WindowRulesTab.qml": 38,
     "DockGeneralTab.qml": 5,
     "DockWidgetsTab.qml": 57,
@@ -176,6 +177,7 @@ SIDEBAR_GATE_CONDITIONS = [
     ("pointerCapable", "pointerCapable"),
     ("windowRulesCapable", "windowRulesCapable"),
     ("layoutCapable", "layoutCapable"),
+    ("animationsCapable", "animationsCapable"),
     ("cellularOnly", "cellularAvailable"),
     ("fcitx5Only", "fcitx5Available"),
 ]
@@ -470,8 +472,20 @@ def inline_shared_cards(root_dir, content):
     return content
 
 
+def local_components(content):
+    """File-local `component Name: SettingsRow { ... }` declarations, indexed like wrapper files."""
+    local = {}
+    for match in re.finditer(r"^\s*component\s+(\w+)\s*:\s*(\w+)\s*\{", content, re.MULTILINE):
+        if match.group(2) not in SEARCHABLE_COMPONENTS:
+            continue
+        own = own_scope(parse_component_block(content, match.start(), match.group(1)))
+        local[match.group(1)] = {prop: extract_property(own, prop) for prop in ("settingKey", "title", "text", "description", "iconName", "tags")}
+    return local
+
+
 def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
     results = []
+    wrappers = {**wrappers, **local_components(content)}
     file_tab_index = TAB_INDEX_MAP.get(filename, -1)
     file_page = FILE_PAGE_MAP.get(filename)
 
@@ -548,6 +562,8 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                     condition_key = "windowRulesCapable"
                 elif "CompositorService.supportsLayoutConfig" in visible_raw:
                     condition_key = "layoutCapable"
+                elif "CompositorService.supportsAnimationsConfig" in visible_raw:
+                    condition_key = "animationsCapable"
                 elif "CompositorService.supportsPointerConfig" in visible_raw:
                     condition_key = "pointerCapable"
                 elif "CompositorService.supportsInputConfig" in visible_raw:
@@ -587,6 +603,9 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                     condition_key = "frameEnabled"
                 elif setting_key.startswith("island"):
                     condition_key = "islandEnabled"
+            # Mango has no Popups row
+            if filename == "CompositorAnimationsTab.qml" and setting_key == "compositorAnimationPopups":
+                condition_key = "animationsPopupsCapable"
             if filename == "DDotTab.qml" and not condition_key and setting_key != "dotEnabled":
                 condition_key = "dotEnabled"
             if component == "SettingsCard":

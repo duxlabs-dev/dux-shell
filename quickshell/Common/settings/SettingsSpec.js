@@ -150,6 +150,18 @@ var LOCAL_SPEC = {
         def: -1,
         onChange: "updateCompositorLayout"
     },
+    compositorAnimationPreset: {
+        def: "dms",
+        onChange: "updateCompositorAnimations"
+    },
+    compositorAnimationSlowdown: {
+        def: 1.0,
+        onChange: "updateCompositorAnimations"
+    },
+    compositorAnimationOverrides: {
+        def: {},
+        onChange: "updateCompositorAnimations"
+    },
     hyprlandLayoutGapsOverride: {
         def: -1,
         onChange: "updateCompositorLayout"

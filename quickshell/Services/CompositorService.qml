@@ -136,6 +136,7 @@ Singleton {
     property bool dmsWindowFloatingActive: false
     readonly property string dmsOpaqueRuleId: "dms-window-opaque"
     readonly property bool supportsLayoutConfig: isNiri || isHyprland || isMango
+    readonly property bool supportsAnimationsConfig: isNiri || isHyprland || isMango
     readonly property bool supportsCursorConfig: isNiri || isHyprland || isMango
     readonly property bool supportsDisplayConfig: isNiri || isHyprland || isMango
     readonly property bool supportsBarAutoHideReveal: isNiri || isHyprland || isMango
@@ -2153,6 +2154,21 @@ Singleton {
             }
             if (root.isMango && typeof MangoService !== "undefined") {
                 MangoService.generateCursorConfig();
+                return;
+            }
+        }
+
+        function onCompositorAnimationsRefreshNeeded() {
+            if (root.isNiri && typeof NiriService !== "undefined") {
+                NiriService.generateNiriAnimationsConfig();
+                return;
+            }
+            if (root.isHyprland && typeof HyprlandService !== "undefined") {
+                HyprlandService.generateAnimationsConfig();
+                return;
+            }
+            if (root.isMango && typeof MangoService !== "undefined") {
+                MangoService.generateAnimationsConfig();
                 return;
             }
         }

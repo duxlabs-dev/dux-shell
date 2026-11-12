@@ -9,6 +9,7 @@ import qs.Common
 import qs.Services
 import "../Common/OutputModel.js" as OutputModel
 import "../Common/BlurStrength.js" as BlurStrength
+import "../Common/CompositorAnimations.js" as CompositorAnimations
 import "../Common/WorkspaceModel.js" as WorkspaceModel // qmllint disable unused-imports
 
 Singleton {
@@ -21,6 +22,7 @@ Singleton {
     readonly property string layoutPath: hyprDmsDir + "/layout.lua"
     readonly property string cursorPath: hyprDmsDir + "/cursor.lua"
     readonly property string inputPath: hyprDmsDir + "/input.lua"
+    readonly property string animationsPath: hyprDmsDir + "/animations.lua"
     readonly property string windowrulesPath: hyprDmsDir + "/windowrules.lua"
     readonly property bool luaConfigActive: CompositorService.isHyprland && (Hyprland.usingLua === true || luaConfigDetected)
 
@@ -41,6 +43,7 @@ Singleton {
     property bool inputGenerationPending: false
     property bool inputGenerationRunning: false
     property bool cursorGenerationPending: false
+    property bool animationsGenerationPending: false
     property int followMouseMode: -1
     // Hyprland only has per-device touchpad speed; probed once per compositor, a hotplugged touchpad waits for the next shell start
     property var hyprTouchpadNames: []
@@ -74,6 +77,8 @@ Singleton {
             layoutGenerationAction.schedule();
         if (inputGenerationPending)
             inputGenerationAction.schedule();
+        if (animationsGenerationPending)
+            generateAnimationsConfig();
     }
 
     onLuaConfigActiveChanged: {
@@ -867,6 +872,29 @@ hl.layer_rule({
                 return;
             }
             reloadConfig(finish);
+        });
+    }
+
+    function generateAnimationsConfig() {
+        if (!CompositorService.isHyprland)
+            return;
+        animationsGenerationPending = false;
+        if (!canWriteLuaConfig("animations")) {
+            animationsGenerationPending = luaConfigStatusLoading || !luaConfigStatusReady;
+            return;
+        }
+        const content = CompositorAnimations.generate("hyprland", SettingsData);
+        if (!content)
+            return;
+        const script = `mkdir -p "${hyprDmsDir}" && cat > "${animationsPath}.tmp" << 'EOF'\n${content}EOF\nif cmp -s "${animationsPath}.tmp" "${animationsPath}"; then rm -f "${animationsPath}.tmp"; exit 3; fi\nmv -f "${animationsPath}.tmp" "${animationsPath}"`;
+        Proc.runCommand("hypr-write-animations", ["sh", "-c", script], (output, exitCode) => {
+            if (exitCode === 3)
+                return;
+            if (exitCode !== 0) {
+                log.warn("Failed to write animations config:", output);
+                return;
+            }
+            reloadConfig();
         });
     }
 

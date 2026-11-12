@@ -7,6 +7,7 @@ import Quickshell.Io
 import qs.Common
 import qs.Services
 import qs.Modules.DDash
+import "../Common/CompositorAnimations.js" as CompositorAnimations
 
 Singleton {
     id: root
@@ -82,6 +83,8 @@ Singleton {
             "isNiriOrMango": () => CompositorService.isNiri || CompositorService.isMango,
             "windowRulesCapable": () => CompositorService.supportsWindowRules,
             "layoutCapable": () => CompositorService.supportsLayoutConfig,
+            "animationsCapable": () => CompositorService.supportsAnimationsConfig,
+            "animationsPopupsCapable": () => CompositorAnimations.groups(CompositorService.compositor).includes("popups"),
             "keybindsAvailable": () => KeybindsService.available,
             "soundsAvailable": () => !MultimediaService.unavailable,
             "cupsAvailable": () => CupsService.cupsAvailable,

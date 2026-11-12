@@ -38,6 +38,8 @@ var resolveIncludeCmd = &cobra.Command{
 				"cursor.lua",
 				"input.lua",
 				"windowrules.lua",
+				"animations.lua",
+				"animations.kdl",
 				"cursor.kdl",
 				"layout.kdl",
 				"outputs.kdl",
@@ -48,6 +50,7 @@ var resolveIncludeCmd = &cobra.Command{
 				"layout.conf",
 				"outputs.conf",
 				"binds.conf",
+				"animations.conf",
 			}, cobra.ShellCompDirectiveNoFileComp
 		}
 		return nil, cobra.ShellCompDirectiveNoFileComp

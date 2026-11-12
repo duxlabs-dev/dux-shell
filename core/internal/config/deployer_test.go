@@ -567,6 +567,40 @@ func TestDeployNiriConfigSystemdAutostart(t *testing.T) {
 	}
 }
 
+func TestDeployNiriConfigAnimationsInclude(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	stubAddWants(t, nil)
+	result, err := NewConfigDeployer(nil).deployNiriConfig("kitty", true)
+	require.NoError(t, err)
+
+	preset, err := os.ReadFile(filepath.Join(home, ".config", "niri", "dms", "animations.kdl"))
+	require.NoError(t, err)
+	assert.Equal(t, NiriAnimationsConfig, string(preset))
+
+	content, err := os.ReadFile(result.Path)
+	require.NoError(t, err)
+	assert.Contains(t, string(content), `include optional=true "dms/animations.kdl"`)
+	assert.NotContains(t, string(content), "animations {")
+}
+
+func TestDeployHyprlandConfigAnimationsInclude(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	stubAddWants(t, nil)
+	result, err := NewConfigDeployer(nil).deployHyprlandConfig("kitty", true)
+	require.NoError(t, err)
+
+	preset, err := os.ReadFile(filepath.Join(home, ".config", "hypr", "dms", "animations.lua"))
+	require.NoError(t, err)
+	assert.Equal(t, DMSAnimationsLuaConfig, string(preset))
+
+	content, err := os.ReadFile(result.Path)
+	require.NoError(t, err)
+	assert.Contains(t, string(content), `require("dms.animations")`)
+	assert.NotContains(t, string(content), "hl.animation(")
+}
+
 func TestNiriDeployBindsChoiceAlwaysBacksUp(t *testing.T) {
 	for _, replace := range []bool{false, true} {
 		home := t.TempDir()

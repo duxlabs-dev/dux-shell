@@ -8,6 +8,7 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Common as DCommon
 import "../Common/OutputModel.js" as OutputModel
+import "../Common/CompositorAnimations.js" as CompositorAnimations
 
 // Native MangoWM IPC client. mango advertises a JSON-over-Unix-socket protocol
 // via MANGO_INSTANCE_SIGNATURE; each connection issues one `watch <target>` verb
@@ -33,6 +34,7 @@ Singleton {
     readonly property string layoutPath: mangoDmsDir + "/layout.conf"
     readonly property string cursorPath: mangoDmsDir + "/cursor.conf"
     readonly property string inputPath: mangoDmsDir + "/input.conf"
+    readonly property string animationsPath: mangoDmsDir + "/animations.conf"
     readonly property string windowRulesPath: mangoDmsDir + "/windowrules.conf"
 
     property bool inputGenerationPending: false
@@ -762,6 +764,25 @@ cursor_size=${size}`;
             }
             if (inputGenerationPending)
                 inputGenerationAction.schedule();
+        });
+    }
+
+    function generateAnimationsConfig() {
+        if (!CompositorService.isMango)
+            return;
+        const content = CompositorAnimations.generate("mango", SettingsData);
+        if (!content)
+            return;
+        const script = `mkdir -p "${mangoDmsDir}" && cat > "${animationsPath}.tmp" << 'EOF'\n${content}EOF\nif cmp -s "${animationsPath}.tmp" "${animationsPath}"; then rm -f "${animationsPath}.tmp"; exit 3; fi\nmv -f "${animationsPath}.tmp" "${animationsPath}"`;
+        suppressWatchedConfigReloads(1500);
+        Proc.runCommand("mango-write-animations", ["sh", "-c", script], (output, exitCode) => {
+            if (exitCode === 3)
+                return;
+            if (exitCode !== 0) {
+                log.warn("Failed to write animations config:", output);
+                return;
+            }
+            reloadConfig(false);
         });
     }
 

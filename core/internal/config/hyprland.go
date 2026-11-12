@@ -28,3 +28,6 @@ var DMSWindowRulesLuaConfig string
 
 //go:embed embedded/hypr-binds-user.lua
 var DMSBindsUserLuaConfig string
+
+//go:embed embedded/hypr-animations.lua
+var DMSAnimationsLuaConfig string

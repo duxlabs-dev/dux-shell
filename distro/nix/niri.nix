@@ -42,6 +42,7 @@ in {
           '';
           default = [
             "alttab"
+            "animations"
             "binds"
             "colors"
             "cursor"

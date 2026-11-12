@@ -8,6 +8,8 @@ import qs.Modules.Settings.Widgets
 Item {
     id: root
 
+    property var parentModal: null
+
     SettingsPage {
         id: mainColumn
 
@@ -259,6 +261,17 @@ Item {
                 text: I18n.tr("Reduce motion")
                 checked: SettingsData.reduceMotion
                 onToggled: checked => SettingsData.set("reduceMotion", checked)
+            }
+
+            SettingsNavRow {
+                tab: "typography"
+                tags: ["niri", "hyprland", "mango", "window", "animations", "compositor", "spring", "bounce"]
+                settingKey: "compositorAnimationsLink"
+                visible: CompositorService.supportsAnimationsConfig
+                iconName: "animation"
+                title: I18n.tr("Window animations", "settings link to the compositor animations page")
+                hint: SettingsTabs.page("compositor_animations")?.hint ?? ""
+                onClicked: keyboard => root.parentModal?.navigateTo("compositor_animations", keyboard)
             }
         }
 

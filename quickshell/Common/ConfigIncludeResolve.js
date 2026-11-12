@@ -137,6 +137,11 @@ const includeTable = {
         hyprland: [luaInclude("cursor")],
         mango: [confInclude("cursor")]
     },
+    animations: {
+        niri: [kdlInclude("animations")],
+        hyprland: [luaInclude("animations")],
+        mango: [confInclude("animations")]
+    },
     binds: {
         niri: [kdlInclude("binds")],
         hyprland: [luaInclude("binds"), luaInclude("binds-user")],

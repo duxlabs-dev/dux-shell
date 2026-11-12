@@ -205,6 +205,9 @@ Singleton {
     property int niriLayoutGapsOverride: Spec.SPEC.niriLayoutGapsOverride.def
     property int niriLayoutRadiusOverride: Spec.SPEC.niriLayoutRadiusOverride.def
     property int niriLayoutBorderSize: Spec.SPEC.niriLayoutBorderSize.def
+    property string compositorAnimationPreset: Spec.SPEC.compositorAnimationPreset.def
+    property real compositorAnimationSlowdown: Spec.SPEC.compositorAnimationSlowdown.def
+    property var compositorAnimationOverrides: Spec.SPEC.compositorAnimationOverrides.def
     property int hyprlandLayoutGapsOverride: Spec.SPEC.hyprlandLayoutGapsOverride.def
     property int hyprlandLayoutGapsOutOverride: Spec.SPEC.hyprlandLayoutGapsOutOverride.def
     property int hyprlandLayoutRadiusOverride: Spec.SPEC.hyprlandLayoutRadiusOverride.def
@@ -1525,6 +1528,7 @@ Singleton {
     signal blurStrengthRefreshNeeded
     signal compositorInputRefreshNeeded
     signal compositorCursorRefreshNeeded
+    signal compositorAnimationsRefreshNeeded
     signal notificationPopupsInvalidated
 
     function refreshAuthAvailability() {
@@ -1564,6 +1568,10 @@ Singleton {
 
     function updateCompositorInput() {
         compositorInputRefreshNeeded();
+    }
+
+    function updateCompositorAnimations() {
+        compositorAnimationsRefreshNeeded();
     }
 
     function updateBlurStrength() {
@@ -1884,6 +1892,7 @@ Singleton {
             "applyStoredIconTheme": applyStoredIconTheme,
             "updateBarConfigs": updateBarConfigs,
             "updateCompositorCursor": updateCompositorCursor,
+            "updateCompositorAnimations": updateCompositorAnimations,
             "scheduleAuthApply": scheduleAuthApply,
             "scheduleGreeterAutoLoginSync": scheduleGreeterAutoLoginSync,
             "markGreeterSyncPending": markGreeterSyncPending,

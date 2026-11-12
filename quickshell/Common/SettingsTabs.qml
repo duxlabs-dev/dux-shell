@@ -639,6 +639,14 @@ Singleton {
                     "hint": I18n.tr("Gaps, window borders, corner radius")
                 },
                 {
+                    "id": "compositor_animations",
+                    "text": I18n.tr("Animations"),
+                    "icon": "animation",
+                    "tabIndex": 73,
+                    "animationsCapable": true,
+                    "hint": I18n.tr("Style, speed, bounce", "settings sidebar hint for the compositor animations page")
+                },
+                {
                     "id": "multiplexers",
                     "advanced": true,
                     "text": I18n.tr("Multiplexers", "settings page name for terminal multiplexers like tmux"),
@@ -814,6 +822,8 @@ Singleton {
         if (entry.soundsOnly && MultimediaService.unavailable)
             return false;
         if (entry.hyprlandNiriOnly && !CompositorService.isNiri && !CompositorService.isHyprland && !CompositorService.isMango)
+            return false;
+        if (entry.animationsCapable && !CompositorService.supportsAnimationsConfig)
             return false;
         if (entry.windowRulesCapable && !CompositorService.supportsWindowRules)
             return false;
