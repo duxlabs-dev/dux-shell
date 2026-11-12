@@ -561,6 +561,34 @@ func buildOnce(opts *Options) (bool, error) {
 	return true, nil
 }
 
+// persistColorsStateCopy writes the committed colors file to the XDG state dir
+// as a durable copy for greeters, which read it before any user session exists
+// (see dux-greeter issue #48: user caches can be volatile, e.g. tmpfs mounts).
+func persistColorsStateCopy(data []byte) {
+	stateHome := os.Getenv("XDG_STATE_HOME")
+	if stateHome == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return
+		}
+		stateHome = filepath.Join(home, ".local", "state")
+	}
+	stateDir := filepath.Join(stateHome, "dms")
+	if err := os.MkdirAll(stateDir, 0o755); err != nil {
+		log.Warnf("matugen: failed to create state dir for colors copy: %v", err)
+		return
+	}
+	target := filepath.Join(stateDir, "dms-colors.json")
+	tmp := target + ".tmp"
+	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+		log.Warnf("matugen: failed to write colors state copy: %v", err)
+		return
+	}
+	if err := os.Rename(tmp, target); err != nil {
+		log.Warnf("matugen: failed to commit colors state copy: %v", err)
+	}
+}
+
 // The shell only needs dms-colors.json, so it is rendered and committed on its own before the template pass.
 func renderColors(opts *Options, args []string, tmpDir string, oldColors []byte) (bool, error) {
 	colorsOpts := *opts
@@ -582,6 +610,7 @@ func renderColors(opts *Options, args []string, tmpDir string, oldColors []byte)
 	if err := os.Rename(opts.colorsStaging(), opts.ColorsOutput()); err != nil {
 		return false, fmt.Errorf("failed to commit colors output: %w", err)
 	}
+	persistColorsStateCopy(newColors)
 	return true, nil
 }
 
