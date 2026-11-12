@@ -123,7 +123,7 @@ Item {
         SettingsCard {
             tab: "typography"
             tags: ["animation", "motion", "speed", "duration", "spring", "physics", "bounce", "accessibility", "ripple", "fluid"]
-            title: I18n.tr("Animations", "settings card title")
+            title: I18n.tr("Shell animations", "settings card title, motion of DMS surfaces")
             settingKey: "animations"
             iconName: "auto_awesome_motion"
 
@@ -269,7 +269,7 @@ Item {
                 settingKey: "compositorAnimationsLink"
                 visible: CompositorService.supportsAnimationsConfig
                 iconName: "animation"
-                title: I18n.tr("Window animations", "settings link to the compositor animations page")
+                title: I18n.tr("Compositor animations", "settings link to the compositor animations page")
                 hint: SettingsTabs.page("compositor_animations")?.hint ?? ""
                 onClicked: keyboard => root.parentModal?.navigateTo("compositor_animations", keyboard)
             }

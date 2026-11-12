@@ -104,6 +104,7 @@ TAB_INDEX_MAP = {
     "DigitalWellbeingTab.qml": 67,
     "CompositorLayoutTab.qml": 37,
     "CompositorAnimationsTab.qml": 73,
+    "CompositorIncludesTab.qml": 74,
     "WindowRulesTab.qml": 38,
     "DockGeneralTab.qml": 5,
     "DockWidgetsTab.qml": 57,

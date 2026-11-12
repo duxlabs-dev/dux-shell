@@ -2573,8 +2573,10 @@
       "cliphist",
       "copy",
       "cups",
+      "files",
       "history",
       "integrations",
+      "managed",
       "motion",
       "multiplexers",
       "notes",
@@ -8708,28 +8710,28 @@
     ]
   },
   {
-    "section": "animations",
-    "label": "Animations",
+    "section": "compositorAnimationsLink",
+    "label": "Compositor animations",
     "tabIndex": 14,
     "category": "Fonts & motion",
     "keywords": [
-      "accessibility",
       "animate",
       "animation",
       "animations",
       "bounce",
-      "duration",
-      "fluid",
+      "compositor",
       "fonts",
+      "hyprland",
+      "mango",
       "motion",
-      "physics",
-      "ripple",
-      "speed",
+      "niri",
       "spring",
       "text",
-      "transition"
+      "transition",
+      "window"
     ],
-    "icon": "auto_awesome_motion"
+    "icon": "animation",
+    "conditionKey": "animationsCapable"
   },
   {
     "section": "displayFontFamily",
@@ -8997,6 +8999,31 @@
     ]
   },
   {
+    "section": "animations",
+    "label": "Shell animations",
+    "tabIndex": 14,
+    "category": "Fonts & motion",
+    "keywords": [
+      "accessibility",
+      "animate",
+      "animation",
+      "animations",
+      "bounce",
+      "duration",
+      "fluid",
+      "fonts",
+      "motion",
+      "physics",
+      "ripple",
+      "shell",
+      "speed",
+      "spring",
+      "text",
+      "transition"
+    ],
+    "icon": "auto_awesome_motion"
+  },
+  {
     "section": "springBounce",
     "label": "Spring",
     "tabIndex": 14,
@@ -9072,30 +9099,6 @@
       "text",
       "weight"
     ]
-  },
-  {
-    "section": "compositorAnimationsLink",
-    "label": "Window animations",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animate",
-      "animation",
-      "animations",
-      "bounce",
-      "compositor",
-      "fonts",
-      "hyprland",
-      "mango",
-      "motion",
-      "niri",
-      "spring",
-      "text",
-      "transition",
-      "window"
-    ],
-    "icon": "animation",
-    "conditionKey": "animationsCapable"
   },
   {
     "section": "soundLogin",
@@ -21099,5 +21102,31 @@
     "parentLabel": "System & integrations",
     "icon": "overview",
     "conditionKey": "animationsCapable"
+  },
+  {
+    "section": "compositorIncludes",
+    "label": "Managed files",
+    "tabIndex": 74,
+    "category": "Managed files",
+    "keywords": [
+      "compositor",
+      "config",
+      "files",
+      "hyprland",
+      "include",
+      "integrations",
+      "manage",
+      "managed",
+      "mango",
+      "manual",
+      "niri",
+      "opt out",
+      "restore",
+      "system",
+      "unmanage"
+    ],
+    "parentLabel": "System & integrations",
+    "icon": "description",
+    "conditionKey": "isHyprlandOrNiri"
   }
 ]

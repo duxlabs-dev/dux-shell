@@ -647,6 +647,15 @@ Singleton {
                     "hint": I18n.tr("Style, speed, bounce", "settings sidebar hint for the compositor animations page")
                 },
                 {
+                    "id": "compositor_includes",
+                    "advanced": true,
+                    "text": I18n.tr("Managed files", "settings page name, compositor config files dms writes"),
+                    "icon": "description",
+                    "tabIndex": 74,
+                    "hyprlandNiriOnly": true,
+                    "hint": I18n.tr("Config files DMS writes, stop managing", "settings sidebar hint for the managed compositor files page")
+                },
+                {
                     "id": "multiplexers",
                     "advanced": true,
                     "text": I18n.tr("Multiplexers", "settings page name for terminal multiplexers like tmux"),

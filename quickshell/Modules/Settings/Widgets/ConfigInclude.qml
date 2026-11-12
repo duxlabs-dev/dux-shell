@@ -14,6 +14,7 @@ QtObject {
     property var status: defaultStatus()
     property bool checking: false
     property bool fixing: false
+    property bool disabling: false
 
     readonly property bool compositorSupported: ConfigIncludeResolve.includeSpec(includeKind, CompositorService.compositor) !== null
     readonly property bool included: status.included === true
@@ -21,6 +22,7 @@ QtObject {
     readonly property string fragmentLabel: "dms/" + includeKind
 
     signal fixed
+    signal disabled
 
     function defaultStatus() {
         return {
@@ -42,7 +44,7 @@ QtObject {
         return Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation));
     }
 
-    function check() {
+    function check(done) {
         const args = ConfigIncludeResolve.resolveIncludeArgs(includeKind, CompositorService.compositor);
         if (!args) {
             status = defaultStatus();
@@ -51,20 +53,50 @@ QtObject {
         checking = true;
         Proc.runCommand("check-" + procTag, [Proc.dmsBin, "config", "resolve-include", ...args], (output, exitCode) => {
             checking = false;
-            if (exitCode !== 0) {
-                status = defaultStatus();
-                return;
+            status = defaultStatus();
+            if (exitCode === 0) {
+                try {
+                    status = JSON.parse(output.trim());
+                } catch (e) {}
             }
-            try {
-                status = JSON.parse(output.trim());
-            } catch (e) {
-                status = defaultStatus();
-            }
+            done?.();
         });
     }
 
     function showReadOnlyWarning() {
         ToastService.showWarning(I18n.tr("%1 not found").arg("hyprland.lua"), I18n.tr("Run %1 to create it before changing these settings.", "hyprland.lua missing warning, %1 is a command").arg("dms setup"), "dms setup", warningCategory);
+    }
+
+    function configPaths() {
+        const mango = CompositorService.compositor === "mango";
+        return {
+            "dir": mango ? MangoService.configDir : configDir(),
+            "configName": mango ? MangoService.configName : ""
+        };
+    }
+
+    function disable() {
+        if (readOnly || disabling)
+            return;
+        const { dir, configName } = configPaths();
+        const paths = ConfigIncludeResolve.includePaths(includeKind, CompositorService.compositor, dir, configName);
+        if (!paths)
+            return;
+        const unixTime = Math.floor(Date.now() / 1000);
+        const script = ConfigIncludeResolve.disableScriptFor(includeKind, CompositorService.compositor, dir, paths.configFile + ".backup" + unixTime, configName);
+        disabling = true;
+        Proc.runCommand("disable-" + procTag, ["sh", "-c", script], () => {
+            if (CompositorService.isHyprland)
+                HyprlandService.reloadConfig();
+            else if (CompositorService.isMango)
+                MangoService.reloadConfig(false);
+            check(() => {
+                disabling = false;
+                if (included)
+                    ToastService.showWarning(I18n.tr("%1 is still included", "stop managing failed, %1 is a dms config file").arg(fragmentLabel), I18n.tr("Remove its include from your compositor config by hand.", "stop managing failed toast body"), "", warningCategory);
+                disabled();
+            });
+        });
     }
 
     function fix() {
@@ -73,9 +105,7 @@ QtObject {
             return;
         }
         const compositor = CompositorService.compositor;
-        const mango = compositor === "mango";
-        const dir = mango ? MangoService.configDir : configDir();
-        const configName = mango ? MangoService.configName : "";
+        const { dir, configName } = configPaths();
         const paths = ConfigIncludeResolve.includePaths(includeKind, compositor, dir, configName);
         if (!paths)
             return;
