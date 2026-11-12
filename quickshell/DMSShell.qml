@@ -1340,6 +1340,12 @@ Item {
                 }
 
                 Variants {
+                    model: SettingsData.osdDoNotDisturbEnabled ? root.legacySystemLevelOsdScreens : []
+
+                    delegate: DoNotDisturbOSD {}
+                }
+
+                Variants {
                     model: SettingsData.osdPowerProfileEnabled ? root.legacySystemLevelOsdScreens : []
 
                     delegate: PowerProfileOSD {}

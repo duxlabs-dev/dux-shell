@@ -1527,6 +1527,9 @@ var LOCAL_SPEC = {
     osdIdleInhibitorEnabled: {
         def: true
     },
+    osdDoNotDisturbEnabled: {
+        def: false
+    },
     osdMicMuteEnabled: {
         def: true
     },

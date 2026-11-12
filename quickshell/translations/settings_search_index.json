@@ -9612,6 +9612,22 @@
     ]
   },
   {
+    "section": "osdDoNotDisturbEnabled",
+    "label": "Do not disturb",
+    "tabIndex": 18,
+    "category": "On-screen displays",
+    "keywords": [
+      "displays",
+      "disturb",
+      "dnd",
+      "indicator",
+      "not",
+      "osd",
+      "popup",
+      "screen"
+    ]
+  },
+  {
     "section": "osdIdleInhibitorEnabled",
     "label": "Idle inhibitor",
     "tabIndex": 18,

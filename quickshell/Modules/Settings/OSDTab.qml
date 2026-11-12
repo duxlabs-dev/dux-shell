@@ -40,6 +40,11 @@ Item {
             "shown": SettingsData.osdIdleInhibitorEnabled
         },
         {
+            "value": "doNotDisturb",
+            "label": I18n.tr("Do not disturb"),
+            "shown": SettingsData.osdDoNotDisturbEnabled
+        },
+        {
             "value": "mic",
             "label": I18n.tr("Microphone"),
             "shown": SettingsData.osdMicMuteEnabled || SettingsData.osdMicVolumeEnabled
@@ -182,6 +187,13 @@ Item {
                 text: I18n.tr("Idle inhibitor", "feature that keeps the session from going idle")
                 checked: SettingsData.osdIdleInhibitorEnabled
                 onToggled: checked => SettingsData.set("osdIdleInhibitorEnabled", checked)
+            }
+
+            SettingsToggleRow {
+                settingKey: "osdDoNotDisturbEnabled"
+                text: I18n.tr("Do not disturb")
+                checked: SettingsData.osdDoNotDisturbEnabled
+                onToggled: checked => SettingsData.set("osdDoNotDisturbEnabled", checked)
             }
 
             SettingsToggleRow {
