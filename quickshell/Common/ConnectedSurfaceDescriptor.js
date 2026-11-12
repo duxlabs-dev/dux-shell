@@ -86,6 +86,7 @@ function normalize(input, defaults) {
     };
     var screenName = source.screenName !== undefined ? source.screenName : (source.screen !== undefined ? source.screen : (base.screenName !== undefined ? base.screenName : base.screen));
     var opacity = Math.max(0, Math.min(1, _number(source.opacity, _number(base.opacity, 1))));
+    var side = source.sideRect || base.sideRect || {};
 
     return {
         "ownerId": String(source.ownerId !== undefined ? source.ownerId : (base.ownerId || "")),
@@ -108,6 +109,13 @@ function normalize(input, defaults) {
         // Chrome hung off the body; only the blur covers it.
         "overflowTop": Math.max(0, _number(source.overflowTop, _number(base.overflowTop, 0))),
         "overflowBottom": Math.max(0, _number(source.overflowBottom, _number(base.overflowBottom, 0))),
+        // A surface beside the body, relative to its origin; also only the blur covers it.
+        "sideRect": {
+            "x": _number(side.x, 0),
+            "y": _number(side.y, 0),
+            "width": Math.max(0, _number(side.width, 0)),
+            "height": Math.max(0, _number(side.height, 0))
+        },
         "revision": Math.max(0, Math.floor(_number(source.revision, _number(base.revision, 0))))
     };
 }
@@ -154,5 +162,9 @@ function same(a, b, threshold) {
         && a.omitEndConnector === b.omitEndConnector
         && Math.abs(a.overflowTop - b.overflowTop) < epsilon
         && Math.abs(a.overflowBottom - b.overflowBottom) < epsilon
+        && Math.abs(a.sideRect.x - b.sideRect.x) < epsilon
+        && Math.abs(a.sideRect.y - b.sideRect.y) < epsilon
+        && Math.abs(a.sideRect.width - b.sideRect.width) < epsilon
+        && Math.abs(a.sideRect.height - b.sideRect.height) < epsilon
         && a.dockRetractSide === b.dockRetractSide;
 }

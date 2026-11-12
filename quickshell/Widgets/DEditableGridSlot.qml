@@ -161,11 +161,17 @@ Item {
         visible: root.grid.editMode
         enabled: visible && (root.dragOrigin !== null || !root.grid.interacting)
         hoverEnabled: enabled
-        acceptedButtons: Qt.LeftButton
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: root.dragging ? Qt.ClosedHandCursor : root.restCursor
         containmentMask: root.passthrough ? passthroughMask : null
         onPressAndHold: root.pressAndHold()
-        onClicked: root.clicked()
+        onClicked: mouse => {
+            if (mouse.button === Qt.RightButton) {
+                root.pressAndHold();
+                return;
+            }
+            root.clicked();
+        }
         onWheel: wheel => wheel.accepted = true
     }
 

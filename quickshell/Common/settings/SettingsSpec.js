@@ -26,6 +26,10 @@ function followFocusMode(v) {
     return Number.isInteger(v) && v >= 0 && v <= 2 ? v : undefined;
 }
 
+function controlCenterEditLayout(v) {
+    return v === "docked" || v === "sheet" ? v : undefined;
+}
+
 var LOCAL_SPEC = {
     dockConfigs: {
         def: [DockConfig.create("dock", "Dock")]
@@ -634,6 +638,10 @@ var LOCAL_SPEC = {
     },
     controlCenterIconScale: {
         def: 1.0
+    },
+    controlCenterEditLayout: {
+        def: "docked",
+        coerce: controlCenterEditLayout
     },
     controlCenterWidgets: {
         def: [

@@ -228,6 +228,76 @@ function cellAt(layout, x, y, cols, rows) {
     };
 }
 
+function bandTop(layout, band) {
+    const pitch = (layout.rowUnit + layout.gap) * layout.step;
+    const tops = layout.bandTops;
+    if (!tops)
+        return band * pitch;
+    if (band < tops.length)
+        return tops[band];
+    return layout.totalHeight + layout.gap + (band - tops.length) * pitch;
+}
+
+function freeCellAt(layout, x, y, bottom) {
+    const step = layout.step;
+    const pitchX = layout.colW + layout.gap;
+    const col = Math.floor((layout.mirror ? layout.width - x : x) / pitchX);
+    if (!(pitchX > 0) || !(layout.rowUnit + layout.gap > 0) || col < 0 || col >= layout.columns || y < 0)
+        return null;
+    const span = Math.round(1 / step);
+    let band = 0;
+    while (bandTop(layout, band + 1) <= y)
+        band++;
+    const busy = b => b < 0 || layout.slots.some(slot => slot && col < slot.col + slot.cols && slot.col < col + 1 && b * step < slot.row + slot.rows && slot.row < (b + 1) * step);
+    const free = first => first <= Math.round(layout.rows / step) && !Array.from({
+            "length": span
+        }, (_, k) => first + k).some(busy);
+    let first = Array.from({
+        "length": span
+    }, (_, k) => band - k).find(free);
+    if (first === undefined)
+        return null;
+    // Gravity lifts the added tile until it rests, so the spot rises with it.
+    while (first > 0 && !busy(first - 1))
+        first--;
+    const top = bandTop(layout, first);
+    const height = bandTop(layout, first + span) - layout.gap - top;
+    if (top + height > bottom)
+        return null;
+    const rect = slotRect(layout, col, 0, 1, 1);
+    return {
+        "col": col,
+        "row": first * step,
+        "x": rect.x,
+        "y": top,
+        "w": rect.w,
+        "h": height
+    };
+}
+
+function freeRun(layout, col, row) {
+    const step = layout.step;
+    const free = c => c >= 0 && c + step <= layout.columns && !layout.slots.some(slot => slot && c < slot.col + slot.cols && slot.col < c + step && row < slot.row + slot.rows && slot.row < row + 1);
+    let from = col;
+    while (free(from - step))
+        from -= step;
+    let to = col;
+    while (free(to))
+        to += step;
+    return {
+        "from": from,
+        "to": to
+    };
+}
+
+function fitInRun(run, col, w) {
+    const width = Math.min(w, run.to - run.from);
+    return {
+        "col": Math.max(run.from, Math.min(col, run.to - width)),
+        "w": width
+    };
+}
+
 // With gravity, a tile dropped onto the stack it came from rises back toward the hole it left. So the drop tries
 // the target row and the rows below it, packing each, and keeps the one that settles nearest the target.
 function dropInto(items, cells, index, target, pack, step = 1) {

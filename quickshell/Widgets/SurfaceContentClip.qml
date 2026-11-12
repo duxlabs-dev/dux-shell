@@ -19,10 +19,12 @@ Item {
     property real revealHeight: 0
     property real topOverflow: 0
     property real bottomOverflow: 0
+    property real leftOverflow: 0
+    property real rightOverflow: 0
 
-    x: active ? body.x : (revealActive ? revealX : 0)
+    x: (active ? body.x : (revealActive ? revealX : 0)) - leftOverflow
     y: (active ? body.y : (revealActive ? revealY : 0)) - topOverflow
-    width: active ? body.width : (revealActive ? revealWidth : targetRect.width)
+    width: (active ? body.width : (revealActive ? revealWidth : targetRect.width)) + leftOverflow + rightOverflow
     height: (active ? body.height : (revealActive ? revealHeight : targetRect.height)) + topOverflow + bottomOverflow
     clip: active ? (body.width < targetRect.width || body.height < targetRect.height) : revealActive
 

@@ -212,6 +212,8 @@ QtObject {
     readonly property real controlCenterSheetInset: CcMetrics.islandInset * 2
     readonly property int controlCenterColumnCap: CcMetrics.columnCapFor(dashboardAvailableWidth - controlCenterSheetInset - PopoutMetrics.editOverflow * 2)
     readonly property int controlCenterColumns: Math.min(CcMetrics.gridColumns, controlCenterColumnCap)
+    // Here, not in the activity, because the expanded visuals unload soon after the island collapses.
+    property int controlCenterPage: 0
     readonly property real controlCenterSheetWidth: CcMetrics.sheetWidthFor(controlCenterColumns)
     readonly property real controlCenterMaxWidth: CcMetrics.sheetWidthFor(editingActivity === "controlcenter" ? controlCenterColumnCap : controlCenterColumns) + controlCenterSheetInset
     readonly property real controlCenterHeight: controlCenterHeightFor(editRoomGranted && editingActivity === "controlcenter")

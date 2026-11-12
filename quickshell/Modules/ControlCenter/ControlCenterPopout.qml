@@ -15,15 +15,80 @@ DPopout {
     // Hangs above wherever a strip below would push the panel off its resting spot (bottom bar, low side-bar trigger).
     readonly property bool stripAbove: alignedYFor(0, CcMetrics.editActionsHeight) !== alignedYFor(0, 0)
     readonly property bool growsFromTop: effectiveBarPosition === SettingsData.Position.Top
-    bottomOverflow: editMode && !stripAbove ? CcMetrics.editActionsHeight : 0
-    topOverflow: editMode && stripAbove ? CcMetrics.editActionsHeight : 0
+    bottomOverflow: _stripEdit && !stripAbove ? CcMetrics.editActionsHeight : 0
+    topOverflow: _stripEdit && stripAbove ? CcMetrics.editActionsHeight : 0
+    leftOverflow: dockFits && dockSide === "left" ? _dockReserve : 0
+    rightOverflow: dockFits && dockSide === "right" ? _dockReserve : 0
+    sideBlurItem: contentLoader.item?.dockedBlurItem ?? null
+    sideBlurRadius: contentLoader.item?.surfaceRadius ?? 0
     inputMargin: editMode ? CcMetrics.editOverflow : 0
 
     property string expandedSection: ""
     property string pendingSection: ""
+    // Outlives the content, which unloads a while after closing.
+    property int currentPage: 0
     property var triggerScreen: null
     property bool editMode: false
-    readonly property int gridColumnCap: CcMetrics.columnCapFor(maxBodyWidth > 0 ? maxBodyWidth - PopoutMetrics.editOverflow * 2 : CcMetrics.sheetWidthDefault)
+    // Latched on entering edit mode ("" until decided, then "strip", "left" or "right") so a width change cannot move the body mid-edit.
+    property string _editLayout: ""
+    // Drops to the strip if the screen loses the room mid-edit (output change, bar resize) instead of squeezing the panel.
+    readonly property string dockSide: (_editLayout === "left" || _editLayout === "right") && _dockRoomFor(_editLayout) ? _editLayout : ""
+    readonly property bool _stripEdit: editMode && editLayoutDecided && dockSide === ""
+    // Connected, the body's flares run along the bar, so the panel keeps clear of them and of the bar itself.
+    readonly property real dockGap: usesConnectedSurfaceChrome ? CcMetrics.dockedPanelConnectedGap : CcMetrics.dockedPanelGap
+    readonly property real dockInset: usesConnectedSurfaceChrome && (effectiveBarPosition === SettingsData.Position.Top || effectiveBarPosition === SettingsData.Position.Bottom) ? dockGap : 0
+    readonly property real _dockMinHeight: CcMetrics.dockedPanelMinHeight + dockInset
+    readonly property real _dockReserve: CcMetrics.dockedPanelWidth + dockGap
+    // Docked was wanted but did not fit: Add widget opens the list as a popover over the body instead of the sheet.
+    readonly property bool editPopover: _stripEdit && SettingsData.controlCenterEditLayout === "docked"
+    readonly property bool dockFits: editMode && dockSide !== ""
+    readonly property bool editLayoutDecided: _editLayout !== ""
+    readonly property int _baseColumnCap: CcMetrics.columnCapFor(maxBodyWidth > 0 ? maxBodyWidth - PopoutMetrics.editOverflow * 2 : CcMetrics.sheetWidthDefault)
+
+    function _dockedCap(side) {
+        for (let columns = _baseColumnCap; columns >= 1; columns--) {
+            const width = CcMetrics.sheetWidthFor(columns);
+            if ((side === "left" ? roomLeftFor(width) : roomRightFor(width)) >= _dockReserve)
+                return columns;
+        }
+        return 0;
+    }
+
+    function _dockRoomFor(side) {
+        return _maxPopupHeight(0) >= _dockMinHeight && _dockedCap(side) >= CcMetrics.minimumColumns;
+    }
+
+    // Small or short screens keep the strip, with the list in a popover.
+    function _pickDockSide() {
+        if (SettingsData.controlCenterEditLayout !== "docked")
+            return "strip";
+        // Docking never grows the body, so a short one keeps the strip.
+        if (popupHeight < _dockMinHeight)
+            return "strip";
+        let preferLeft;
+        switch (effectiveBarPosition) {
+        case SettingsData.Position.Right:
+            preferLeft = true;
+            break;
+        case SettingsData.Position.Left:
+            preferLeft = false;
+            break;
+        default:
+            preferLeft = alignedX + alignedWidth / 2 >= screenWidth / 2;
+        }
+        const first = preferLeft ? "left" : "right";
+        const second = preferLeft ? "right" : "left";
+        const need = Math.max(gridColumns, CcMetrics.minimumColumns);
+        if (_dockedCap(first) >= need)
+            return first;
+        if (_dockedCap(second) >= need)
+            return second;
+        return "strip";
+    }
+
+    onEditModeChanged: _editLayout = editMode ? _pickDockSide() : ""
+    // While docked the cap keeps the panel's room free, so widening the body can never squeeze it out.
+    readonly property int gridColumnCap: dockSide !== "" ? Math.min(_baseColumnCap, _dockedCap(dockSide)) : _baseColumnCap
     readonly property int gridColumns: Math.min(CcMetrics.gridColumns, gridColumnCap)
     readonly property real sheetContentWidth: CcMetrics.sheetWidthFor(gridColumns)
     readonly property real availableHeight: _maxPopupHeight(0)
@@ -102,7 +167,9 @@ DPopout {
     }
 
     popupWidth: sheetContentWidth
-    popupHeight: Math.min(_maxPopupHeight(editMode ? CcMetrics.editOverflow : 0), Math.max(CcMetrics.minHeight, contentLoader.item?.targetImplicitHeight ?? CcMetrics.minHeight))
+    // With the panel or popover up, removing tiles stops shrinking the body at its minimum.
+    readonly property real _editFloor: dockFits ? _dockMinHeight : (contentLoader.item?.widgetPopoverOpen ?? false) ? CcMetrics.widgetPopoverMinHeight + CcMetrics.sheetPadding * 2 : CcMetrics.minHeight
+    popupHeight: Math.min(_maxPopupHeight(_stripEdit ? CcMetrics.editOverflow : 0), Math.max(_editFloor, contentLoader.item?.targetImplicitHeight ?? CcMetrics.minHeight))
     triggerWidth: CcMetrics.triggerWidth
     positioning: ""
     screen: triggerScreen

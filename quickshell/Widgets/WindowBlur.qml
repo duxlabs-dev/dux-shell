@@ -24,6 +24,11 @@ Item {
     property real clipY: blurY
     property real clipWidth: blurWidth
     property real clipHeight: blurHeight
+    // A second surface beside the body, blurred on its own so the gap between them stays clear.
+    property Item sideItem: null
+    property real sideRadius: 0
+    // Where the side item's ancestors sit: a Region follows only its item's own geometry, so a change here rebuilds it.
+    property point sideOrigin: Qt.point(blurX, blurY)
 
     readonly property bool _active: blurEnabled && surfaceColor.a < 1 && BlurService.enabled && !!targetWindow
     readonly property var effectiveRegion: _active ? blurRegion : null
@@ -51,6 +56,13 @@ Item {
             y: root.clipEnabled ? root.clipY : root.blurY
             width: root.clipEnabled ? root.clipWidth : root.blurWidth
             height: root.clipEnabled ? root.clipHeight : root.blurHeight
+        }
+
+        Region {
+            item: root.sideItem
+            radius: root.sideRadius
+            x: root.sideOrigin.x
+            y: root.sideOrigin.y
         }
 
         // Hyprland blurs the whole surface when the region lies entirely outside it

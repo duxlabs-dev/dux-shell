@@ -31,6 +31,10 @@ Item {
     readonly property Item maskItem: (shouldBeVisible && backgroundInteractive) ? backgroundDismissalMask : contentMaskRect
     readonly property int surfaceKeyboardFocus: KeyboardFocus.keyboardFocus(shouldBeVisible && (_keyboardReady || !connected), customKeyboardFocus)
     readonly property var blurRegion: chromeLoader.item?.blur?.effectiveRegion ?? null
+    // The frame blurs what it owns from below; this window's own blur does not show above the frame.
+    readonly property bool frameBlursSide: frameOwnsConnectedChrome && !joinsBar
+    readonly property Item sideBlurShown: shouldBeVisible && !frameBlursSide ? sideBlurItem : null
+    readonly property rect sideBodyRect: sideBlurItem ? Qt.rect(sideBlurItem.x, sideBlurItem.y, sideBlurItem.width, sideBlurItem.height) : Qt.rect(0, 0, 0, 0)
     property real popupWidth: popoutHandle.popupWidth
     property real popupHeight: popoutHandle.popupHeight
     property list<real> resizeCurve: popoutHandle.resizeCurve
@@ -39,6 +43,10 @@ Item {
     property bool resizing: popoutHandle.resizing
     property real bottomOverflow: popoutHandle.bottomOverflow
     property real topOverflow: popoutHandle.topOverflow
+    property real leftOverflow: popoutHandle.leftOverflow
+    property real rightOverflow: popoutHandle.rightOverflow
+    property Item sideBlurItem: popoutHandle.sideBlurItem
+    property real sideBlurRadius: popoutHandle.sideBlurRadius
     property real inputMargin: popoutHandle.inputMargin
     property real triggerX: popoutHandle.triggerX
     property real triggerY: popoutHandle.triggerY
@@ -62,9 +70,9 @@ Item {
             return Qt.rect(0, 0, screenWidth, screenHeight);
         const padding = Theme.elevationRenderPadding(shadowLevel, effectiveShadowDirection, shadowFallbackOffset, Theme.connectedCornerRadius + inputMargin, Theme.spacingL) + Theme.fluidOvershootLimit;
         const body = {
-            x: alignedX,
+            x: alignedX - leftOverflow,
             y: alignedY - topOverflow,
-            width: alignedWidth,
+            width: alignedWidth + leftOverflow + rightOverflow,
             height: alignedHeight + topOverflow + bottomOverflow
         };
         const area = PopoutBounds.motion(screenWidth, screenHeight, body, _surfaceMotionOrigin, _fluidMotionActive ? 0 : contentContainer.offsetX, _fluidMotionActive ? 0 : contentContainer.offsetY, _fluidMotionActive ? 1 : animationScaleCollapsed, padding, _geometrySpringParams);
@@ -284,6 +292,12 @@ Item {
             "omitEndConnector": root._closeGapOmitEndConnector(),
             "overflowTop": Theme.snap(root.topOverflow, root.dpr),
             "overflowBottom": Theme.snap(root.bottomOverflow, root.dpr),
+            "sideRect": {
+                "x": root.sideBodyRect.x,
+                "y": root.sideBodyRect.y,
+                "width": root.sideBodyRect.width,
+                "height": root.sideBodyRect.height
+            },
             "barId": root.storedBarConfig?.id ?? ""
         };
     }
@@ -406,6 +420,10 @@ Item {
         if (!connected)
             return;
         _queueFullSync();
+    }
+    onSideBodyRectChanged: {
+        if (frameOwnsConnectedChrome)
+            _syncPopoutChromeState();
     }
     onFrameOwnsConnectedChromeChanged: {
         if (!connected)
@@ -1202,17 +1220,27 @@ Item {
         }
     }
 
-    readonly property real maxBodyWidth: {
-        if (connected) {
-            const popupGap = _popupGapValue();
-            const startGap = Math.max(_edgeGapFor("left", popupGap), adjacentBarClearance(adjacentBarInfo.leftBar));
-            const endGap = Math.max(_edgeGapFor("right", popupGap), adjacentBarClearance(adjacentBarInfo.rightBar));
-            return Math.max(0, _maxBodyWidthFor(startGap, endGap, usesConnectedSurfaceChrome ? connectedAnchorX : triggerX));
-        }
-        const popupGap = _standalonePopupGap();
-        const startGap = _edgeClearance("left", popupGap, Math.max(0, adjacentBarInfo.leftBar));
-        const endGap = _edgeClearance("right", popupGap, Math.max(0, adjacentBarInfo.rightBar));
-        return Math.max(0, _maxBodyWidthFor(startGap, endGap, triggerX));
+    readonly property real _startGapX: {
+        if (!connected)
+            return _edgeClearance("left", _standalonePopupGap(), Math.max(0, adjacentBarInfo.leftBar));
+        return Math.max(_edgeGapFor("left", _popupGapValue()), adjacentBarClearance(adjacentBarInfo.leftBar));
+    }
+
+    readonly property real _endGapX: {
+        if (!connected)
+            return _edgeClearance("right", _standalonePopupGap(), Math.max(0, adjacentBarInfo.rightBar));
+        return Math.max(_edgeGapFor("right", _popupGapValue()), adjacentBarClearance(adjacentBarInfo.rightBar));
+    }
+
+    readonly property real maxBodyWidth: Math.max(0, _maxBodyWidthFor(_startGapX, _endGapX, connected && usesConnectedSurfaceChrome ? connectedAnchorX : triggerX))
+
+
+    function roomLeftFor(width) {
+        return Math.max(0, alignedXFor(width) - _startGapX);
+    }
+
+    function roomRightFor(width) {
+        return Math.max(0, screenWidth - alignedXFor(width) - width - _endGapX);
     }
 
     readonly property real maxBodyHeight: {
@@ -1325,9 +1353,9 @@ Item {
         Item {
             id: contentMaskRect
             visible: false
-            x: contentContainer.x - contentContainer.horizontalConnectorExtent - root.inputMargin
+            x: contentContainer.x - contentContainer.horizontalConnectorExtent - root.inputMargin - root.leftOverflow
             y: contentContainer.y - contentContainer.verticalConnectorExtent - root.inputMargin
-            width: root.shouldBeVisible ? root.renderedAlignedWidth + contentContainer.horizontalConnectorExtent * 2 + root.inputMargin * 2 : 0
+            width: root.shouldBeVisible ? root.renderedAlignedWidth + contentContainer.horizontalConnectorExtent * 2 + root.inputMargin * 2 + root.leftOverflow + root.rightOverflow : 0
             height: root.shouldBeVisible ? root.renderedAlignedHeight + contentContainer.verticalConnectorExtent * 2 + root.inputMargin * 2 : 0
         }
 
@@ -1362,16 +1390,16 @@ Item {
                 MouseArea {
                     x: 0
                     y: root.renderedAlignedY - root.topOverflow
-                    width: root.renderedAlignedX
+                    width: Math.max(0, root.renderedAlignedX - root.leftOverflow)
                     height: root.renderedAlignedHeight + root.topOverflow + root.bottomOverflow
                     enabled: parent.enabled
                     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
                     onClicked: root.backgroundClicked()
                 }
                 MouseArea {
-                    x: root.renderedAlignedX + root.renderedAlignedWidth
+                    x: root.renderedAlignedX + root.renderedAlignedWidth + root.rightOverflow
                     y: root.renderedAlignedY - root.topOverflow
-                    width: Math.max(0, parent.width - root.renderedAlignedX - root.renderedAlignedWidth)
+                    width: Math.max(0, parent.width - x)
                     height: root.renderedAlignedHeight + root.topOverflow + root.bottomOverflow
                     enabled: parent.enabled
                     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
@@ -1566,7 +1594,9 @@ Item {
                 id: popoutBlur
                 targetWindow: root.surface
                 applyToWindow: false
-                blurEnabled: !root.frameOwnsConnectedChrome && (!root.usesConnectedSurfaceChrome || Theme.connectedSurfaceBlurEnabled)
+                // The frame or bar blurs a connected body it owns; a side surface lives in this window and still needs its own.
+                readonly property bool bodyBlurred: !root.frameOwnsConnectedChrome
+                blurEnabled: (bodyBlurred || root.sideBlurShown !== null) && (!root.usesConnectedSurfaceChrome || Theme.connectedSurfaceBlurEnabled)
                 surfaceColor: chrome.surfaceColor
 
                 readonly property real s: Math.min(1, contentContainer.scaleValue)
@@ -1578,9 +1608,12 @@ Item {
 
                 blurX: (trackBlurFromBarEdge ? contentContainer.x + (contentContainer.barRight ? _dxClamp : 0) : contentContainer.x + contentContainer.width * (1 - s) * 0.5 + Theme.snap(contentContainer.animX, root.dpr) - contentContainer.horizontalConnectorExtent * s) - (root.surface?.bandX ?? 0)
                 blurY: ((trackBlurFromBarEdge ? contentContainer.y + (contentContainer.barBottom ? _dyClamp : 0) : contentContainer.y + contentContainer.height * (1 - s) * 0.5 + Theme.snap(contentContainer.animY, root.dpr) - contentContainer.verticalConnectorExtent * s) - root.topOverflow) - (root.surface?.bandY ?? 0)
-                blurWidth: root.shouldBeVisible ? (trackBlurFromBarEdge ? Math.max(0, contentContainer.width - Math.abs(_dxClamp)) : (contentContainer.width + contentContainer.horizontalConnectorExtent * 2) * s) : 0
-                blurHeight: root.shouldBeVisible ? (trackBlurFromBarEdge ? Math.max(0, contentContainer.height + _overflowExtent - Math.abs(_dyClamp)) : (contentContainer.height + contentContainer.verticalConnectorExtent * 2) * s + _overflowExtent) : 0
+                blurWidth: root.shouldBeVisible && bodyBlurred ? (trackBlurFromBarEdge ? Math.max(0, contentContainer.width - Math.abs(_dxClamp)) : (contentContainer.width + contentContainer.horizontalConnectorExtent * 2) * s) : 0
+                blurHeight: root.shouldBeVisible && bodyBlurred ? (trackBlurFromBarEdge ? Math.max(0, contentContainer.height + _overflowExtent - Math.abs(_dyClamp)) : (contentContainer.height + contentContainer.verticalConnectorExtent * 2) * s + _overflowExtent) : 0
                 blurRadius: root.usesConnectedSurfaceChrome ? Theme.connectedCornerRadius : Theme.windowRadius
+                sideItem: root.sideBlurShown
+                sideRadius: root.sideBlurRadius
+                sideOrigin: Qt.point(contentContainer.x + contentWrapper.x - (root.surface?.bandX ?? 0), contentContainer.y + contentWrapper.y - (root.surface?.bandY ?? 0))
             }
 
             Item {
@@ -1787,6 +1820,8 @@ Item {
                 blurWidth: root.shouldBeVisible ? (revealClipActive ? contentContainer.width : contentContainer.width * visibleScale) : 0
                 blurHeight: root.shouldBeVisible ? (revealClipActive ? contentContainer.height : contentContainer.height * visibleScale) + root.topOverflow + root.bottomOverflow : 0
                 blurRadius: Theme.windowRadius
+                sideItem: root.sideBlurShown
+                sideRadius: root.sideBlurRadius
                 clipEnabled: revealClipActive
                 clipX: (contentContainer.x + (root._fluidMotionActive ? chrome.fluidBody.x : chrome.revealX)) - (root.surface?.bandX ?? 0)
                 clipY: (contentContainer.y + (root._fluidMotionActive ? chrome.fluidBody.y : chrome.revealY) - root.topOverflow) - (root.surface?.bandY ?? 0)
@@ -1807,6 +1842,8 @@ Item {
                 revealHeight: chrome.revealHeight
                 topOverflow: root.topOverflow
                 bottomOverflow: root.bottomOverflow
+                leftOverflow: root.leftOverflow
+                rightOverflow: root.rightOverflow
 
                 // Covers overflow chrome so the shadow and border don't cross the seam.
                 ElevationShadow {

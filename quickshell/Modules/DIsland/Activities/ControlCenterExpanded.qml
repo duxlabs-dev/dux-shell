@@ -52,7 +52,9 @@ FocusScope {
 
         property bool editMode: false
         property string expandedSection: ""
+        property int currentPage: root.controller.controlCenterPage
 
+        onCurrentPageChanged: root.controller.controlCenterPage = currentPage
         onEditModeChanged: root.controller.setEditing("controlcenter", editMode, CcMetrics.islandEditRoom)
 
         readonly property int gridColumnCap: root.controller.controlCenterColumnCap

@@ -6,12 +6,14 @@ import qs.Widgets
 import qs.Modules.ControlCenter
 import "../utils/sections.js" as Sections
 import "../utils/widgets.js" as WidgetUtils
+import "../utils/pages.js" as Pages
 import "../../../Common/GridLayout.js" as GridUtils
 
 DEditableGrid {
     id: root
 
     property var model: null
+    property int page: 0
     property bool live: true
     property string screenName: ""
     property int columns: CcMetrics.gridColumns
@@ -49,11 +51,14 @@ DEditableGrid {
     readonly property real cellWidth: (width + CcMetrics.gridGap) / columns
     readonly property bool dragging: draggingSourceIndex >= 0 || externalItem !== null
     readonly property CcTileSlot draggingSlot: tileRepeater.itemAt(draggingSourceIndex) as CcTileSlot
-    readonly property string hoverGroup: heldOutside && draggingSourceIndex >= 0 ? (groupAt(dragScenePoint, draggingSourceIndex)?.groupId ?? "") : ""
+    // Carried to another page, the dragged tile is that page's to drop; this grid only keeps the pointer grab.
+    property bool carried: false
+    property string carryGroup: ""
+    readonly property string hoverGroup: carryGroup !== "" ? carryGroup : heldOutside && !carried && draggingSourceIndex >= 0 ? (groupAt(dragScenePoint, draggingSourceIndex)?.groupId ?? "") : ""
 
     readonly property var savedWidgets: SettingsData.controlCenterWidgets || []
     readonly property var groupIds: WidgetUtils.groupIds(savedWidgets)
-    readonly property var shownIndices: savedWidgets.reduce((indices, widget, i) => !WidgetUtils.inGroup(widget, groupIds) && WidgetUtils.isShown(widget) && model?.componentForWidget(widget) ? indices.concat([i]) : indices, [])
+    readonly property var shownIndices: savedWidgets.reduce((indices, widget, i) => Pages.pageOf(widget) === page && !WidgetUtils.inGroup(widget, groupIds) && WidgetUtils.isShown(widget) && model?.componentForWidget(widget) ? indices.concat([i]) : indices, [])
 
     sourceItems: shownIndices.map(i => Object.assign({}, savedWidgets[i], sizeWithHiddenTwin(i)))
     readonly property var baseLayout: {
@@ -97,7 +102,7 @@ DEditableGrid {
             return size;
         for (const neighbor of [index + 1, index - 1]) {
             const twin = savedWidgets[neighbor];
-            if (!twin || WidgetUtils.isShown(twin) || !WidgetUtils.isUnplaced(twin))
+            if (!twin || Pages.pageOf(twin) !== page || WidgetUtils.isShown(twin) || !WidgetUtils.isUnplaced(twin))
                 continue;
             const twinSize = WidgetUtils.clampSize(twin, Infinity);
             if (twinSize.w !== size.w || twinSize.h !== size.h)
@@ -121,6 +126,47 @@ DEditableGrid {
 
     function savedIndex(index) {
         return shownIndices[index] ?? -1;
+    }
+
+    function externalSpec(widgetId) {
+        const widget = WidgetUtils.newWidget(widgetId, columns);
+        return {
+            "id": widgetId,
+            "w": widget.w,
+            "h": widget.h,
+            "small": widget.small === true
+        };
+    }
+
+    function externalGhostSize(widgetId) {
+        const spec = externalSpec(widgetId);
+        const rowUnit = cellWidth - CcMetrics.gridGap;
+        const height = WidgetUtils.isSmall(spec, spec.h) ? CcMetrics.smallRowHeight : spec.h * rowUnit + (spec.h - 1) * CcMetrics.gridGap;
+        return Qt.size(spec.w * cellWidth - CcMetrics.gridGap, height);
+    }
+
+    function hoverNew(widgetId, scenePoint) {
+        const point = mapFromItem(null, scenePoint.x, scenePoint.y);
+        if (!editMode || !contains(point)) {
+            clearExternal();
+            return false;
+        }
+        const spec = externalSpec(widgetId);
+        previewExternal(spec, point.x - cellWidth * spec.w / 2, point.y - slotLayout.rowUnit * spec.h / 2);
+        return true;
+    }
+
+    function dropNew(widgetId) {
+        if (!externalItem || externalItem.id !== widgetId)
+            return false;
+        const placed = committedItems();
+        const cell = placed.pop();
+        const widgets = withHidden(placed);
+        Qt.callLater(() => {
+            model.addWidgetAt(widgetId, cell.col, cell.row, widgets, page);
+            cancelInteraction();
+        });
+        return true;
     }
 
     function withHidden(items) {

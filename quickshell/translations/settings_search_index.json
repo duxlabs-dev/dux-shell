@@ -1103,6 +1103,34 @@
     "icon": "blur_on"
   },
   {
+    "section": "controlCenterEditLayout",
+    "label": "Edit layout",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "add",
+      "center",
+      "control",
+      "docked",
+      "edit",
+      "editing",
+      "interface",
+      "layout",
+      "list",
+      "mode",
+      "panel",
+      "sheet",
+      "sits",
+      "style",
+      "where",
+      "while",
+      "widget",
+      "widgets"
+    ],
+    "page": "theme_surfaces",
+    "description": "Where the widget list sits while editing the Control Center"
+  },
+  {
     "section": "wallpaperFillMode",
     "label": "Fill mode",
     "tabIndex": -1,
