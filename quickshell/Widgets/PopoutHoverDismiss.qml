@@ -81,13 +81,11 @@ Item {
     HoverDismissTracker {
         id: hoverTracker
         enabled: root.dismissEnabled && !root.dismissSuspended && root.surfaceVisible
-        shouldDismiss: function () {
-            return !root.bodyHovered && !PopoutManager.cursorOverBar(PopoutManager.hoverCursorGlobalX, PopoutManager.hoverCursorGlobalY);
-        }
-        onDismissRequested: root.dismissRequested()
         onHoveredChanged: {
             if (hovered)
                 root.notePointerMoved();
+            else if (enabled)
+                graceTimer.restart();
         }
         onHoverMoved: (gx, gy) => {
             root.updateCursor(gx, gy);
