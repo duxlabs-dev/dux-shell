@@ -41,7 +41,10 @@ Rectangle {
     readonly property string contentImageSource: notificationData?.hasDisplayImage ? notificationData?.displayImage || "" : ""
     readonly property bool hasContentImage: contentImageSource.length > 0 && contentImage.status !== Image.Error
     readonly property bool contentVisible: !headerOnly && (!privacyMode || descriptionExpanded)
-    readonly property bool canExpand: !headerOnly && (hasMoreText || hasContentImage || descriptionExpanded || (hasBody && privacyMode))
+    // A screenshot is the one case where the full image is the content; others keep the thumbnail
+    readonly property bool isScreenshot: notificationData?.summary === "Screenshot captured" && (notificationData?.appName === "DMS" || notificationData?.appName === "niri")
+    readonly property bool largeImage: descriptionExpanded && isScreenshot
+    readonly property bool canExpand: !headerOnly && (hasMoreText || (hasContentImage && (isScreenshot || privacyMode)) || descriptionExpanded || (hasBody && privacyMode))
     readonly property real targetHeight: Math.max(NotificationMetrics.appIconSize, content.implicitHeight) + NotificationMetrics.cardPadding * 2
     readonly property bool isAnimating: heightAnimation.running
 
@@ -202,11 +205,11 @@ Rectangle {
 
         Item {
             id: messageBlock
-            readonly property real thumbnailReserve: !root.descriptionExpanded && imagePreview.visible ? imagePreview.width + Theme.spacingM : 0
+            readonly property real thumbnailReserve: !root.largeImage && imagePreview.visible ? imagePreview.width + Theme.spacingM : 0
             readonly property real thumbnailTop: header.height + Theme.spacingS
             readonly property real textHeight: header.height + (root.headerOnly ? 0 : NotificationMetrics.contentSpacing + messageText.implicitHeight)
             width: parent.width
-            height: root.descriptionExpanded ? textHeight + (imagePreview.visible ? NotificationMetrics.contentSpacing + imagePreview.height : 0) : Math.max(textHeight, imagePreview.visible ? thumbnailTop + imagePreview.height : 0)
+            height: root.largeImage ? textHeight + (imagePreview.visible ? NotificationMetrics.contentSpacing + imagePreview.height : 0) : Math.max(textHeight, imagePreview.visible ? thumbnailTop + imagePreview.height : 0)
 
             Item {
                 id: header
@@ -363,10 +366,10 @@ Rectangle {
 
             ClippingRectangle {
                 id: imagePreview
-                readonly property bool alignRight: root.descriptionExpanded ? I18n.isRtl : !I18n.isRtl
+                readonly property bool alignRight: root.largeImage ? I18n.isRtl : !I18n.isRtl
                 x: alignRight ? parent.width - width : 0
-                y: root.descriptionExpanded ? messageBlock.textHeight + NotificationMetrics.contentSpacing : messageBlock.thumbnailTop
-                width: root.descriptionExpanded ? Math.min(parent.width, NotificationMetrics.imageMaxHeight * contentImage.aspectRatio) : Math.min(NotificationMetrics.thumbnailSize, NotificationMetrics.thumbnailSize * contentImage.aspectRatio)
+                y: root.largeImage ? messageBlock.textHeight + NotificationMetrics.contentSpacing : messageBlock.thumbnailTop
+                width: root.largeImage ? Math.min(parent.width, NotificationMetrics.imageMaxHeight * contentImage.aspectRatio) : Math.min(NotificationMetrics.thumbnailSize, NotificationMetrics.thumbnailSize * contentImage.aspectRatio)
                 height: width / contentImage.aspectRatio
                 radius: Theme.cornerRadiusM
                 color: "transparent"
@@ -375,7 +378,7 @@ Rectangle {
                 Image {
                     id: contentImage
                     readonly property real aspectRatio: implicitWidth > 0 && implicitHeight > 0 ? implicitWidth / implicitHeight : 1
-                    readonly property real decodeSize: root.persistImage || root.descriptionExpanded ? NotificationMetrics.imageDecodeSize : NotificationMetrics.thumbnailSize * 2
+                    readonly property real decodeSize: root.persistImage || root.largeImage ? NotificationMetrics.imageDecodeSize : NotificationMetrics.thumbnailSize * 2
                     anchors.fill: parent
                     source: root.contentVisible || root.persistImage ? root.contentImageSource : ""
                     sourceSize: Qt.size(decodeSize, decodeSize)
