@@ -27,7 +27,7 @@ func debianOBSRepoVersion(info *OSInfo, aptSuites []string) string {
 	if hasSuite["sid"] || hasSuite["unstable"] {
 		return obsRepoDebianUnstable
 	}
-	if hasSuite["testing"] || hasSuite["forky"] {
+	if hasSuite["testing"] || hasSuite["forky"] || hasSuite["kali-rolling"] {
 		return obsRepoDebianTesting
 	}
 	if hasSuite["trixie"] || hasSuite["stable"] {
@@ -43,6 +43,10 @@ func debianOBSRepoVersion(info *OSInfo, aptSuites []string) string {
 
 	if code == "sid" || id == "sid" {
 		return obsRepoDebianUnstable
+	}
+	// Kali Rolling tracks Debian testing, but its VERSION_ID is a release date that would map to Debian 13.
+	if code == "kali-rolling" {
+		return obsRepoDebianTesting
 	}
 	if id == "13" || code == "trixie" {
 		return obsRepoDebian13

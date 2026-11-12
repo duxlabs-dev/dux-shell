@@ -32,6 +32,7 @@ func TestGetOSInfo_DebianDerivatives(t *testing.T) {
 	}{
 		{"lmde", "ID=linuxmint\nID_LIKE=debian\nNAME=LMDE\nVERSION_ID=\"7\"\nVERSION_CODENAME=gigi\nDEBIAN_CODENAME=trixie\n", "lmde"},
 		{"soplos", "ID=soplos\nID_LIKE=debian\nVERSION_ID=\"2026.11\"\nVERSION_CODENAME=tyron\n", "soplos"},
+		{"kali", "ID=kali\nID_LIKE=debian\nVERSION_ID=\"2026.3\"\nVERSION_CODENAME=kali-rolling\nPRETTY_NAME=\"Kali GNU/Linux Rolling\"\n", "kali"},
 		{"ubuntu mint", "ID=linuxmint\nID_LIKE=\"ubuntu debian\"\nVERSION_ID=\"22.3\"\nUBUNTU_CODENAME=noble\n", ""},
 	}
 	for _, c := range cases {
