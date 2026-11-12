@@ -17,6 +17,7 @@ Item {
 
     readonly property var surface: IdleSurfaces.surfaceFor("tooltip", targetScreen?.name ?? "")
     readonly property bool attached: shown && !!surface
+    readonly property Item hostItem: attached ? surface.hostItem : null
     readonly property real tooltipWidth: Math.min(Theme.tooltipMaxWidth, textContent.implicitWidth) + Theme.spacingM * 2
     readonly property real tooltipHeight: textContent.implicitHeight + Theme.spacingS * 2
 
@@ -34,11 +35,16 @@ Item {
         shown = false;
     }
 
+    // A host maps its window from childrenChanged, which Qt emits before the item leaves its old window.
+    onHostItemChanged: {
+        body.parent = null;
+        body.parent = hostItem ?? root;
+    }
+
     Rectangle {
         id: body
 
         readonly property var host: root
-        parent: root.attached ? root.surface.hostItem : root
         visible: root.attached
         width: root.tooltipWidth
         height: root.tooltipHeight

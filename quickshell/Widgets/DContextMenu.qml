@@ -42,6 +42,7 @@ Item {
     property bool keyboardNavigation: false
     readonly property var surface: IdleSurfaces.surfaceFor("context-menu", targetScreen?.name ?? "")
     readonly property bool attached: renderActive && !!surface
+    readonly property Item hostItem: attached ? surface.hostItem : null
     readonly property var contextWindow: attached ? surface : null
     readonly property var blurRegion: menuBlur.effectiveRegion
     readonly property int surfaceKeyboardFocus: {
@@ -229,13 +230,17 @@ Item {
     }
 
     onRenderActiveChanged: transientSurfaceTracker?.setActive(root, renderActive, contextWindow)
+    // A host maps its window from childrenChanged, which Qt emits before the item leaves its old window.
+    onHostItemChanged: {
+        menuWindow.parent = null;
+        menuWindow.parent = hostItem ?? root;
+    }
     Component.onDestruction: transientSurfaceTracker?.unregister(root)
 
     Item {
         id: menuWindow
 
         readonly property var host: root
-        parent: root.attached ? root.surface.hostItem : root
         anchors.fill: parent
 
         WindowBlur {
