@@ -1367,6 +1367,9 @@ var LOCAL_SPEC = {
     notificationPopupBodyInvokesAction: {
         def: false
     },
+    notificationPopupAvoidPopouts: {
+        def: true
+    },
     notificationForegroundLayers: {
         def: true
     },

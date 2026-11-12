@@ -153,6 +153,15 @@ Column {
         }
 
         SettingsToggleRow {
+            settingKey: "notificationPopupAvoidPopouts"
+            tags: ["notification", "popup", "popout", "overlap", "position"]
+            text: I18n.tr("Avoid open popouts", "notification setting")
+            description: I18n.tr("Move notification popups below an open bar popout instead of covering it", "notification setting description")
+            checked: SettingsData.notificationPopupAvoidPopouts
+            onToggled: checked => SettingsData.set("notificationPopupAvoidPopouts", checked)
+        }
+
+        SettingsToggleRow {
             settingKey: "notificationFocusedMonitor"
             tags: ["notification", "popup", "focused", "monitor", "display", "screen", "active"]
             text: I18n.tr("Focused display only")
