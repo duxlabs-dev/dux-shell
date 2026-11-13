@@ -22,13 +22,35 @@ PanelWindow {
     readonly property bool isVertical: options.position === SettingsData.Position.Left || options.position === SettingsData.Position.Right
     readonly property real screenWidth: screen?.width ?? 0
     readonly property real screenHeight: screen?.height ?? 0
-    readonly property real thumbnailWidth: Math.round(screenWidth / 8)
-    readonly property real thumbnailHeight: Math.round(screenHeight / 8)
+    readonly property real screenShape: screenHeight > 0 ? screenWidth / screenHeight : 1
+    readonly property real narrowestShape: 3 / 4
+    readonly property real widestShape: screenShape * 4 / 3
+    readonly property real compactExtent: screenHeight / 8
+    readonly property real largestExtent: screenHeight / 6
     readonly property real titleHeight: Theme.iconSizeSmall + Theme.spacingS
-    readonly property real tileHeight: titleHeight + Theme.spacingXS + thumbnailHeight
-    readonly property real tileStride: (isVertical ? tileHeight : thumbnailWidth) + Theme.spacingS
-    readonly property int tileLimit: Math.max(1, Math.floor(((isVertical ? screenHeight : screenWidth) - Theme.spacingXL * 2) / tileStride))
+    readonly property real flowLength: (isVertical ? screenHeight : screenWidth) - Theme.spacingXL * 2
+    readonly property real typicalStride: (isVertical ? titleHeight + Theme.spacingXS + compactExtent : compactExtent * screenShape) + Theme.spacingS
+    readonly property int tileLimit: Math.max(1, Math.floor(flowLength / typicalStride))
     readonly property var toplevels: anchorButton?.previewToplevels ?? []
+    readonly property int tileCount: Math.min(toplevels.length, tileLimit)
+    readonly property real shapeSum: {
+        let sum = 0;
+        for (let i = 0; i < tiles.count; i++)
+            sum += tiles.itemAt(i)?.shape ?? screenShape;
+        return sum;
+    }
+    readonly property real tileSpace: flowLength - Theme.spacingS * (tileCount + 1)
+    readonly property real fittedExtent: isVertical ? tileSpace / Math.max(1, tileCount) - titleHeight - Theme.spacingXS : tileSpace / Math.max(1, shapeSum)
+    readonly property real extent: Math.round(Math.min(largestExtent, fittedExtent))
+    readonly property real tileHeight: titleHeight + Theme.spacingXS + extent
+    readonly property bool shaped: {
+        for (let i = 0; i < tiles.count; i++) {
+            if (!tiles.itemAt(i)?.shaped)
+                return false;
+        }
+        return tiles.count > 0;
+    }
+    property bool revealed: false
     readonly property point anchorPoint: (anchorButton ? surfaceContext.screenPoint(anchorButton, anchorButton.width / 2, anchorButton.height / 2) : null) ?? Qt.point(0, 0)
     readonly property real edgeOffset: surfaceContext.thickness / 2 + Theme.spacingS
     readonly property real cardX: {
@@ -58,6 +80,14 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
     visible: toplevels.length > 0
+    onVisibleChanged: {
+        if (!visible)
+            revealed = false;
+    }
+    onShapedChanged: {
+        if (shaped)
+            revealed = true;
+    }
     color: "transparent"
     anchors {
         top: true
@@ -71,13 +101,27 @@ PanelWindow {
     WindowBlur {
         targetWindow: root
         surfaceColor: card.color
+        blurEnabled: root.revealed
         blurWidth: card.width
         blurHeight: card.height
         blurRadius: Theme.windowRadius
     }
 
+    Timer {
+        interval: Theme.tooltipDelay / 2
+        running: root.visible && !root.revealed
+        onTriggered: root.revealed = true
+    }
+
     Rectangle {
         id: card
+
+        opacity: root.revealed ? 1 : 0
+        Behavior on opacity {
+            NumberAnimation {
+                duration: Theme.shorterDuration
+            }
+        }
 
         width: tileFlow.width + Theme.spacingS * 2
         height: tileFlow.height + Theme.spacingXS + Theme.spacingS
@@ -99,7 +143,9 @@ PanelWindow {
             spacing: Theme.spacingS
 
             Repeater {
-                model: Math.min(root.toplevels.length, root.tileLimit)
+                id: tiles
+
+                model: root.tileCount
 
                 delegate: Item {
                     id: tile
@@ -114,7 +160,11 @@ PanelWindow {
                         return [placement.workspace, output].filter(text => text !== "").join(" · ");
                     }
 
-                    width: root.thumbnailWidth
+                    // Latched: a capture drops its content while it switches windows.
+                    property real shape: root.screenShape
+                    property bool shaped: false
+
+                    width: Math.round(root.extent * (root.isVertical ? root.screenShape : shape))
                     height: root.tileHeight
 
                     MouseArea {
@@ -168,11 +218,16 @@ PanelWindow {
                     ClippingRectangle {
                         id: thumbnail
 
-                        anchors.bottom: parent.bottom
-                        width: parent.width
-                        height: root.thumbnailHeight
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.verticalCenterOffset: (root.tileHeight - root.extent) / 2
+                        width: capture.hasContent ? capture.width : parent.width
+                        height: capture.hasContent ? capture.height : root.extent
                         radius: Theme.cornerRadiusS
-                        color: Theme.surfaceContainerHigh
+                        color: "transparent"
+                        border.color: Theme.outlineHeavy
+                        border.width: Theme.outlineWidth
+                        contentUnderBorder: true
 
                         Image {
                             id: placeholder
@@ -213,10 +268,19 @@ PanelWindow {
                             // A stopped view only captures again once its source is reassigned.
                             property bool stream: true
 
+                            function latchShape() {
+                                if (!hasContent || sourceSize.height <= 0)
+                                    return;
+                                tile.shape = Math.max(root.narrowestShape, Math.min(root.widestShape, sourceSize.width / sourceSize.height));
+                                tile.shaped = true;
+                            }
+
                             anchors.centerIn: parent
-                            constraintSize: Qt.size(thumbnail.width, thumbnail.height)
+                            constraintSize: Qt.size(tile.width, root.extent)
                             captureSource: stream ? WindowCaptureService.captureSource(tile.toplevel) : null
                             live: true
+                            onHasContentChanged: latchShape()
+                            onSourceSizeChanged: latchShape()
                             onStopped: {
                                 stream = false;
                                 streamRetry.restart();
@@ -270,7 +334,7 @@ PanelWindow {
 
             StyledText {
                 visible: root.toplevels.length > root.tileLimit
-                width: root.isVertical ? root.thumbnailWidth : implicitWidth
+                width: root.isVertical ? Math.round(root.extent * root.screenShape) : implicitWidth
                 height: root.isVertical ? implicitHeight : root.tileHeight
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
