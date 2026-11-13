@@ -1,4 +1,5 @@
 import QtQuick
+import qs.Common
 import qs.Services
 
 IconOSD {
