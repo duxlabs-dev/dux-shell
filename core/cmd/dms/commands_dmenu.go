@@ -46,6 +46,7 @@ var (
 	dmenuIcon         string
 	dmenuCaseInsens   bool
 	dmenuDisableHist  bool
+	dmenuFreqKey      string
 )
 
 var dmenuCmd = &cobra.Command{
@@ -95,6 +96,7 @@ func init() {
 	dmenuCmd.Flags().StringArrayVar(&dmenuKeybindSpecs, "keybind", nil, "Bind a custom accept key (repeatable): N=keyspec, e.g. --keybind 1=ctrl+e (N is 1-19); exits 9+N (10-28) instead of 0 when accepted that way")
 	dmenuCmd.Flags().BoolVar(&dmenuPrintInfo, "print-info", false, "Also print an accepted row's info metadata (the per-row \\0info\\x1f... field, see the per-row metadata protocol) on a second line")
 	dmenuCmd.Flags().BoolVar(&dmenuDisableHist, "disable-history", false, "Don't add this session's search query to the launcher's persistent history (default: recorded, like other launcher modes)")
+	dmenuCmd.Flags().StringVar(&dmenuFreqKey, "freq-key", "", "Track selection frequency for this invocation, scoped to this key, and sort results accordingly (default: no frequency tracking)")
 
 	dmenuCmd.Flags().StringVar(&dmenuView, "view", "", "Override the result view mode for this invocation: list, grid, or tile (default: list)")
 	dmenuCmd.Flags().StringVar(&dmenuSize, "size", "", "Override the popup size preset for this invocation: 1-4, matching the Appearance settings size buttons (default: the shell's own launcher size setting)")
@@ -347,6 +349,9 @@ func dmenuOpenInput() *os.File {
 		}
 		return f
 	}
+	if stdinIsTTY() {
+		return nil
+	}
 	return os.Stdin
 }
 
@@ -549,6 +554,7 @@ func dmenuSession() int {
 		Size:           dmenuSizePresetName,
 		Icon:           dmenuIcon,
 		DisableHistory: dmenuDisableHist,
+		FreqKey:        dmenuFreqKey,
 	}
 	if err := conn.SendHeader(header); err != nil {
 		log.Debugf("dmenu: failed to send header: %v", err)

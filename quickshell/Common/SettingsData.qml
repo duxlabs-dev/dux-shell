@@ -1813,6 +1813,7 @@ Singleton {
         if (who[key])
             return;
         AppUsageHistoryData.clear();
+        DmenuFrequencyData.clear();
         SessionData.clearLauncherHistory();
     }
 
