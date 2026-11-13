@@ -33,6 +33,9 @@ func SendNotification(result NotifyResult) uint32 {
 	var actions []string
 	if result.FilePath != "" {
 		actions = []string{"default", "Open"}
+		if HasOCR() {
+			actions = append(actions, "ocr", "Extract Text")
+		}
 	}
 
 	hints := map[string]dbus.Variant{
