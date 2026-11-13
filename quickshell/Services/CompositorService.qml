@@ -1682,19 +1682,29 @@ Singleton {
                     log.warn("failed to list window rules:", exitCode, output);
                 return;
             }
-            let rules;
+            let rules, status;
             try {
-                rules = JSON.parse(output.trim()).rules || [];
+                const parsed = JSON.parse(output.trim());
+                rules = parsed.rules || [];
+                status = parsed.dmsStatus;
             } catch (e) {
                 log.warn("failed to parse window rules", e);
                 return;
             }
+            if (ensureOpaque)
+                warnOverviewRuleMissing(status);
             // Each rule write rewrites the whole rules file, so writes must not overlap.
             syncDmsWindowFloatingRule(rules, () => {
                 if (ensureOpaque)
                     ensureDmsOpaqueRule(rules);
             });
         });
+    }
+
+    function warnOverviewRuleMissing(status) {
+        if (!isNiri || !NiriService.configNextSupported || !status || status.included)
+            return;
+        ToastService.showWarning(I18n.tr("Typing in the niri overview needs window rules"), I18n.tr("Set up Window Rules in settings so dms/windowrules.kdl is included in your niri config."), "", "niri-overview-rule");
     }
 
     function dmsRuleMatchesCurrentAppId(rule) {
