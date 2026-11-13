@@ -261,6 +261,8 @@ Item {
                     font.pixelSize: titleText.font.pixelSize
                     font.weight: titleText.font.weight
                     live: root.enabled
+                    playing: root.enabled && root.mediaModel.playing
+                    scroll: SettingsData.widgetOption("music", root.widgetData, "mediaScrollLyrics")
                 }
 
                 StyledText {

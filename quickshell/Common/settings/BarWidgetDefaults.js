@@ -158,6 +158,7 @@ var DEFAULTS = {
         mediaAdaptiveWidthEnabled: true,
         mediaShowLyrics: true,
         mediaSmoothLyrics: false,
+        mediaScrollLyrics: true,
         mediaShowCoverArt: true,
         mediaArtworkShape: "rounded",
         mediaVisualizerMode: "always",

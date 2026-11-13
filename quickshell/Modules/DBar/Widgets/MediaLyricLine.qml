@@ -13,6 +13,8 @@ Item {
     property alias font: measure.font
     property color color: Theme.surfaceText
     property bool live: true
+    property bool scroll: true
+    property bool playing: true
     // Fills each word across its sung time instead of at once, like the dash's smooth highlight.
     property bool sweep: false
 
@@ -23,6 +25,18 @@ Item {
     property var pages: []
     property bool snapping: false
     property real shift: 0
+    property real pageWidth: 0
+    property real scrollOffset: 0
+    property real scrollHoldMs: 0
+    property real lastStepMs: 0
+    property real holdStartMs: 1200
+    property real pxPerMs: 1 / 20
+    property real overscroll: 5
+    property int stepInterval: 60
+
+    readonly property real maxScrollOffset: Math.max(0, pageWidth - width + overscroll)
+    readonly property bool scrollable: scroll && width > 0 && maxScrollOffset > 0 && current.text !== ""
+    readonly property bool scrollActive: scrollable && playing && live && visible && (Window.window?.visible ?? false) && !SettingsData.reduceMotion
 
     clip: true
 
@@ -32,6 +46,12 @@ Item {
     onFontKeyChanged: place()
     onLiveChanged: place()
     onSweepChanged: place()
+    onScrollChanged: place()
+    onScrollActiveChanged: {
+        lastStepMs = Date.now();
+        if (scrollActive)
+            scrollHoldMs = holdStartMs;
+    }
     Component.onCompleted: place()
 
     function flat(value) {
@@ -53,10 +73,15 @@ Item {
             return;
         }
         const key = controller.activeIndex + "/" + next.t + "/" + next.voice;
-        const paged = key + "/" + width + "/" + fontKey;
+        const paged = key + "/" + width + "/" + fontKey + "/" + scroll;
         if (paged !== pagedKey) {
             pagedKey = paged;
-            pages = paginate(next.w.length > 0 ? next.w.map(word => word.x) : (flat(next.x).match(/\S+\s*/g) ?? [flat(next.x)]));
+            const chunks = next.w.length > 0 ? next.w.map(word => word.x) : (flat(next.x).match(/\S+\s*/g) ?? [flat(next.x)]);
+            pages = scroll ? [{
+                first: 0,
+                last: chunks.length - 1,
+                text: flat(next.x)
+            }] : paginate(chunks);
         }
         if (next.w.length > 0) {
             placeWords(key, next, at);
@@ -152,19 +177,41 @@ Item {
     }
 
     function turnTo(key, text, sung) {
+        pageWidth = widthOf(text);
         if (key === pageKey) {
             current.fill = sung;
             return;
         }
         pageKey = key;
         slide.stop();
+        const previousOffset = current.offset;
+        resetScroll();
+        scrollHoldMs = holdStartMs;
         const animate = live && !SettingsData.reduceMotion && current.text !== "";
         outgoing.text = animate ? current.text : "";
         outgoing.fill = current.fill;
+        outgoing.offset = animate ? previousOffset : 0;
         snap(text, sung);
         shift = animate ? 1 : 0;
         if (animate)
             slide.start();
+    }
+
+    function resetScroll() {
+        scrollOffset = 0;
+        scrollHoldMs = 0;
+        lastStepMs = Date.now();
+    }
+
+    function stepScroll() {
+        const now = Date.now();
+        const delta = Math.max(0, Math.min(now - lastStepMs, stepInterval * 4));
+        lastStepMs = now;
+        if (scrollHoldMs > 0) {
+            scrollHoldMs = Math.max(0, scrollHoldMs - delta);
+            return;
+        }
+        scrollOffset = Math.min(maxScrollOffset, scrollOffset + delta * pxPerMs);
     }
 
     function clearLine() {
@@ -174,6 +221,8 @@ Item {
         pagedKey = "";
         pageKey = "";
         pages = [];
+        pageWidth = 0;
+        resetScroll();
         outgoing.text = "";
         snap("", 0);
         shift = 0;
@@ -189,6 +238,13 @@ Item {
     Timer {
         id: nextPage
         onTriggered: root.place()
+    }
+
+    Timer {
+        interval: root.stepInterval
+        repeat: true
+        running: root.scrollActive && root.scrollOffset < root.maxScrollOffset
+        onTriggered: root.stepScroll()
     }
 
     NumberAnimation {
@@ -219,6 +275,7 @@ Item {
         id: face
         property string text: ""
         property real fill: 0
+        property real offset: 0
 
         width: root.width
         height: root.height
@@ -234,6 +291,7 @@ Item {
 
         StyledText {
             id: dim
+            x: -face.offset
             anchors.verticalCenter: parent.verticalCenter
             text: face.text
             font: measure.font
@@ -244,11 +302,12 @@ Item {
         }
 
         Item {
-            width: face.fill
+            width: Math.max(0, face.fill - face.offset)
             height: parent.height
             clip: true
 
             StyledText {
+                x: -face.offset
                 anchors.verticalCenter: parent.verticalCenter
                 text: face.text
                 font: measure.font
@@ -271,5 +330,6 @@ Item {
         id: current
         y: root.shift * root.height
         opacity: 1 - root.shift
+        offset: Math.min(root.scrollOffset, root.maxScrollOffset)
     }
 }
