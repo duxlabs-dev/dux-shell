@@ -235,6 +235,16 @@ Scope {
                     Qt.callLater(() => launcherContent?.searchField?.forceActiveFocus());
                 }
 
+                onHasActiveModalChanged: {
+                    if (hasActiveModal && shouldShowSpotlight)
+                        niriOverviewScope.hideSpotlight();
+                }
+
+                onHasActivePopoutChanged: {
+                    if (hasActivePopout && shouldShowSpotlight)
+                        niriOverviewScope.hideSpotlight();
+                }
+
                 onSpotlightShownChanged: {
                     if (!spotlightShown && searchText)
                         launcherContent.searchField.text = "";

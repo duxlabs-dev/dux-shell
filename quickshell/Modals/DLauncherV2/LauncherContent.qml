@@ -411,6 +411,10 @@ FocusScope {
                 }
 
                 Keys.onPressed: event => {
+                    if (root.parentModal && !root.parentModal.spotlightOpen) {
+                        event.accepted = false;
+                        return;
+                    }
                     if (controller.searchMode === "dmenu") {
                         var kbN = controller.matchDmenuKeybind(event);
                         if (kbN > 0) {
