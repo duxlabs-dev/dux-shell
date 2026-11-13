@@ -1,24 +1,19 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
 import Quickshell.WindowManager
 import qs.Common
 import qs.Services
-import qs.DCommon.Widgets
-import qs.Widgets
 
-DOSD {
+LabelOSD {
     id: root
 
     osdKind: "workspace"
+    iconName: "view_module"
+    label: workspaceLabel
 
     property string workspaceLabel: ""
     property var lastActiveWorkspaceId: null
 
-    readonly property real horizontalPadding: Theme.spacingL
-    readonly property real itemSpacing: Theme.spacingM
-    readonly property real textWidth: Math.ceil(textMetrics.width)
-    readonly property real digitReserve: Math.ceil(digitMetrics.width)
     readonly property var activeWorkspace: root.getActiveWorkspace()
     readonly property bool useNativeWorkspace: CompositorService.hasWorkspaceIpc
     readonly property bool useExtWorkspace: {
@@ -28,11 +23,6 @@ DOSD {
             return false;
         return (WindowManager.windowsets?.length ?? 0) > 0;
     }
-
-    osdWidth: Math.min(Math.max(140, horizontalPadding * 2 + Theme.buttonHeightS + itemSpacing + textWidth + digitReserve), screenWidth - Theme.spacingM * 2)
-    osdHeight: Theme.osdHeight
-    autoHideInterval: 1500
-    enableMouseInteraction: false
 
     function inOverview() {
         return root.useNativeWorkspace && CompositorService.overviewActiveForScreen(root.screen?.name);
@@ -62,9 +52,6 @@ DOSD {
     }
 
     function handleWorkspaceChange() {
-        if (!SettingsData.osdWorkspaceEnabled)
-            return;
-
         const ws = root.activeWorkspace;
         if (!ws || ws.id === undefined || ws.id === null)
             return;
@@ -130,47 +117,4 @@ DOSD {
     onActiveWorkspaceChanged: root.handleWorkspaceChange()
 
     Component.onCompleted: root.handleWorkspaceChange()
-
-    StyledTextMetrics {
-        id: textMetrics
-        font.pixelSize: Theme.fontSizeMedium
-        font.weight: Theme.fontWeightMedium
-        text: root.workspaceLabel
-    }
-
-    StyledTextMetrics {
-        id: digitMetrics
-        font.pixelSize: Theme.fontSizeMedium
-        font.weight: Theme.fontWeightMedium
-        text: "0"
-    }
-
-    content: Item {
-        anchors.fill: parent
-
-        RowLayout {
-            anchors {
-                fill: parent
-                leftMargin: root.horizontalPadding
-                rightMargin: root.horizontalPadding
-            }
-            spacing: root.itemSpacing
-
-            OsdIcon {
-                Layout.alignment: Qt.AlignVCenter
-                iconName: "view_module"
-            }
-
-            StyledText {
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
-                text: root.workspaceLabel
-                font.pixelSize: Theme.fontSizeMedium
-                font.weight: Theme.fontWeightMedium
-                color: Theme.surfaceText
-                wrapMode: Text.NoWrap
-                elide: Text.ElideRight
-            }
-        }
-    }
 }
