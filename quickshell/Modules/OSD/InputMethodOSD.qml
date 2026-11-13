@@ -8,7 +8,6 @@ LabelOSD {
     osdKind: "inputMethod"
     iconName: "language"
     label: currentIM
-    extraWidthReserve: Theme.spacingM * 2
 
     property string lastIM: ""
     property bool imInitialized: false

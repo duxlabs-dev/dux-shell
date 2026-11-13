@@ -8,10 +8,6 @@ LabelOSD {
     osdKind: "audioOutput"
     iconName: deviceIcon
     label: deviceName
-    minWidth: 120
-    horizontalPadding: Theme.spacingS * 2
-    itemSpacing: Theme.spacingS
-    autoHideInterval: 2500
 
     property string deviceName: ""
     property string deviceIcon: "speaker"

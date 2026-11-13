@@ -8,7 +8,6 @@ LabelOSD {
     osdKind: "keyboardLayout"
     iconName: "keyboard"
     label: currentLayout
-    extraWidthReserve: Theme.spacingM * 2
 
     property string lastLayout: ""
     property bool layoutInitialized: false

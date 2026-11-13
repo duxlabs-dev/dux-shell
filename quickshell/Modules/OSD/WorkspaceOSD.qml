@@ -3,7 +3,6 @@ import Quickshell
 import Quickshell.WindowManager
 import qs.Common
 import qs.Services
-import qs.DCommon.Widgets
 
 LabelOSD {
     id: root
@@ -11,9 +10,6 @@ LabelOSD {
     osdKind: "workspace"
     iconName: "view_module"
     label: workspaceLabel
-    minWidth: 140
-    extraWidthReserve: Math.ceil(digitMetrics.width)
-    autoHideInterval: 1500
 
     property string workspaceLabel: ""
     property var lastActiveWorkspaceId: null
@@ -124,11 +120,4 @@ LabelOSD {
     onActiveWorkspaceChanged: root.handleWorkspaceChange()
 
     Component.onCompleted: root.handleWorkspaceChange()
-
-    StyledTextMetrics {
-        id: digitMetrics
-        font.pixelSize: Theme.fontSizeMedium
-        font.weight: Theme.fontWeightMedium
-        text: "0"
-    }
 }

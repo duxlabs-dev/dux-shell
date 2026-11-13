@@ -13,7 +13,6 @@ DOSD {
 
     osdWidth: Theme.osdHeight
     osdHeight: Theme.osdHeight
-    autoHideInterval: 2000
     enableMouseInteraction: false
 
     content: Item {

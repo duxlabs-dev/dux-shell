@@ -11,15 +11,12 @@ DOSD {
 
     property string iconName: ""
     property string label: ""
-    property real minWidth: 180
-    property real horizontalPadding: Theme.spacingL
-    property real itemSpacing: Theme.spacingM
-    property real extraWidthReserve: 0
+    readonly property real horizontalPadding: Theme.spacingL
+    readonly property real itemSpacing: Theme.spacingM
     readonly property real labelWidth: Math.ceil(labelMetrics.width)
 
-    osdWidth: Math.min(screenWidth - Theme.spacingM * 2, Math.max(minWidth, horizontalPadding * 2 + Theme.buttonHeightS + itemSpacing + labelWidth + extraWidthReserve))
+    osdWidth: Math.min(screenWidth - Theme.spacingM * 2, Math.max(140, horizontalPadding * 2 + Theme.buttonHeightS + itemSpacing + labelWidth))
     osdHeight: Theme.osdHeight
-    autoHideInterval: 2000
     enableMouseInteraction: false
 
     StyledTextMetrics {
