@@ -1,17 +1,13 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
 
-DOSD {
+IconOSD {
     id: root
 
     osdKind: "numLock"
-
-    osdWidth: Theme.osdHeight
-    osdHeight: Theme.osdHeight
-    autoHideInterval: 2000
-    enableMouseInteraction: false
+    iconName: "dialpad"
+    iconColor: currentNumLockState ? Theme.primary : Theme.outline
 
     readonly property bool currentNumLockState: DMSService.numLockState
     property bool lastNumLockState: false
@@ -26,14 +22,5 @@ DOSD {
     Component.onCompleted: {
         lastNumLockState = currentNumLockState;
         stateInitialized = true;
-    }
-
-    content: Item {
-        OsdIcon {
-            tonal: false
-            anchors.centerIn: parent
-            iconName: "dialpad"
-            iconColor: root.currentNumLockState ? Theme.primary : Theme.outline
-        }
     }
 }

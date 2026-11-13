@@ -1,20 +1,15 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
 
-DOSD {
+IconOSD {
     id: root
 
     osdKind: "powerProfile"
+    iconName: profileIcon
 
     property int currentProfile: 0
     property string profileIcon: "settings"
-
-    osdWidth: Theme.osdHeight
-    osdHeight: Theme.osdHeight
-    autoHideInterval: 2000
-    enableMouseInteraction: false
 
     Connections {
         target: PowerProfileWatcher
@@ -32,15 +27,6 @@ DOSD {
         if (SettingsData.osdPowerProfileEnabled && typeof PowerProfileWatcher !== "undefined") {
             root.currentProfile = PowerProfileWatcher.currentProfile;
             root.profileIcon = Theme.getPowerProfileIcon(PowerProfileWatcher.currentProfile);
-        }
-    }
-
-    content: Item {
-        OsdIcon {
-            tonal: false
-            anchors.centerIn: parent
-            iconName: root.profileIcon
-            iconColor: Theme.primary
         }
     }
 }

@@ -1,17 +1,12 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Widgets
 
-DOSD {
+IconOSD {
     id: root
 
     osdKind: "capsLock"
-
-    osdWidth: Theme.osdHeight
-    osdHeight: Theme.osdHeight
-    autoHideInterval: 2000
-    enableMouseInteraction: false
+    iconName: DMSService.capsLockState ? "shift_lock" : "shift_lock_off"
 
     property bool lastCapsLockState: false
 
@@ -28,14 +23,5 @@ DOSD {
 
     Component.onCompleted: {
         lastCapsLockState = DMSService.capsLockState;
-    }
-
-    content: Item {
-        OsdIcon {
-            tonal: false
-            anchors.centerIn: parent
-            iconName: DMSService.capsLockState ? "shift_lock" : "shift_lock_off"
-            iconColor: Theme.primary
-        }
     }
 }
