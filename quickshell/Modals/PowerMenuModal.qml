@@ -10,6 +10,7 @@ DModal {
 
     layerNamespace: "dms:power-menu"
     keepPopoutsOpen: true
+    keepContentLoaded: true
     useOverlayLayer: true
     animationType: "fade"
     animationDuration: LockMetrics.effectsDuration
