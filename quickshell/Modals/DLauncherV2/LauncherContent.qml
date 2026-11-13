@@ -109,6 +109,11 @@ FocusScope {
     }
 
     Keys.onPressed: event => {
+        if (parentModal && !parentModal.spotlightOpen) {
+            event.accepted = false;
+            return;
+        }
+
         if (editMode) {
             if (event.key === Qt.Key_Escape) {
                 closeEditMode();
@@ -391,7 +396,7 @@ FocusScope {
                 width: parent.width
                 textColor: Theme.onSurface
                 font.pixelSize: Theme.fontSizeLarge
-                enabled: root.parentModal ? (root.parentModal.spotlightOpen || root.parentModal.isClosing) : true
+                enabled: root.parentModal ? (root.parentModal.spotlightOpen || root.parentModal.isClosing || !!root.parentModal.searchAlwaysEnabled) : true
                 placeholderText: _isDmenu ? controller.dmenuPlaceholder : (I18n.tr("Search", "search field placeholder") + "…")
                 echoMode: (_isDmenu && controller.dmenuPassword) ? TextInput.Password : TextInput.Normal
                 ignoreUpDownKeys: true
@@ -406,6 +411,10 @@ FocusScope {
                 }
 
                 Keys.onPressed: event => {
+                    if (root.parentModal && !root.parentModal.spotlightOpen) {
+                        event.accepted = false;
+                        return;
+                    }
                     if (controller.searchMode === "dmenu") {
                         var kbN = controller.matchDmenuKeybind(event);
                         if (kbN > 0) {
