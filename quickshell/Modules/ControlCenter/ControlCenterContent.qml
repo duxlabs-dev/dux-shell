@@ -36,8 +36,7 @@ FocusScope {
     // The band stays with the page it opened on while it collapses, so switching page never moves it across.
     property int bandPage: 0
     readonly property CcTileGrid bandGrid: pageGrids[bandPage] as CcTileGrid
-    // A tile held at a page edge moves to the neighbor page. Its own grid keeps the pointer grab, held still with the
-    // tile drawn as a ghost under the pointer, while the page shown previews the tile and takes the drop.
+    // A tile held at a page edge carries to the neighbor page: its grid keeps the grab, the shown page takes the drop.
     property CcTileGrid carrySource: null
     property point carryOffset
     // "group" or "trash" while either claims the carried tile, "" over the page.
@@ -223,10 +222,6 @@ FocusScope {
     }
 
     function openConfigOverlay(index, widgetData, anchor) {
-        if (widgetData.id === "brightnessSlider") {
-            openWidgetPage(widgetData);
-            return;
-        }
         configOverlayLoader.active = true;
         const overlay = configOverlayLoader.item;
         if (!overlay)
@@ -1036,8 +1031,7 @@ FocusScope {
             fadeOut: root.gridDragWidget !== null
             canUndo: root.canUndo
             removeTarget: root.docked && root.overTrash
-            // Docked, it matches the body beside it, frame color and rounding included, and is opaque where the
-            // blur cannot reach it; floating, it sits a tier above and hides the tiles under it.
+            // Docked it matches the body, opaque where blur can't reach; floating it sits a tier up and hides the tiles.
             surfaceColor: {
                 const base = root.docked ? (root.host.surfaceColor ?? CcMetrics.dialogColor) : Theme.foregroundColor(Theme.cardSurface);
                 return root.docked && (root.host.surfaceBlurred ?? false) ? base : Theme.withAlpha(base, 1);

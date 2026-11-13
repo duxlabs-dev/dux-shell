@@ -58,12 +58,11 @@ DPopout {
         return _maxPopupHeight(0) >= _dockMinHeight && _dockedCap(side) >= CcMetrics.minimumColumns;
     }
 
-    // Small or short screens keep the strip, with the list in a popover.
+    // Short screens keep the strip, with the list in a popover; a short body still docks, as the edit floor grows it.
     function _pickDockSide() {
         if (SettingsData.controlCenterEditLayout !== "docked")
             return "strip";
-        // Docking never grows the body, so a short one keeps the strip.
-        if (popupHeight < _dockMinHeight)
+        if (_maxPopupHeight(0) < _dockMinHeight)
             return "strip";
         let preferLeft;
         switch (effectiveBarPosition) {

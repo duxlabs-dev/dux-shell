@@ -59,7 +59,8 @@ DEditableGridSlot {
     // Matches the chrome's hitOverflow, so reaching for a button never hides it.
     hoverMargin: CcMetrics.gridGap / 2
     readonly property bool editing: grid.editMode
-    readonly property bool chromeShown: dragging || resizing || activeFocus || (hovered && !grid.interacting)
+    // The origins lead the grid's interacting, so the grip never hides under its own press.
+    readonly property bool chromeShown: resizeOrigin !== null || dragOrigin !== null || dragging || resizing || activeFocus || (hovered && !grid.interacting)
 
     activeFocusOnTab: editing
     onEditingChanged: {
