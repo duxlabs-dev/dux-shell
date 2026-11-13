@@ -17,9 +17,9 @@ DOSD {
     property bool _labelInitialized: false
     readonly property real horizontalPadding: Theme.spacingL
     readonly property real itemSpacing: Theme.spacingM
-    readonly property real labelWidth: Math.ceil(labelMetrics.width)
+    readonly property real labelWidth: Theme.pxCeil(labelMeasurer.implicitWidth, dpr)
 
-    osdWidth: Math.min(screenWidth - Theme.spacingM * 2, Math.max(140, horizontalPadding * 2 + Theme.buttonHeightS + itemSpacing + labelWidth))
+    osdWidth: Math.min(screenWidth - Theme.spacingM * 2, Theme.pxCeil(Math.max(140, horizontalPadding * 2 + Theme.buttonHeightS + itemSpacing + labelWidth + 1), dpr))
     osdHeight: Theme.osdHeight
     enableMouseInteraction: false
 
@@ -46,10 +46,13 @@ DOSD {
     onLabelReadyChanged: _observeLabel()
     Component.onCompleted: _observeLabel()
 
-    StyledTextMetrics {
-        id: labelMetrics
+    StyledText {
+        id: labelMeasurer
+        visible: false
         font.pixelSize: Theme.fontSizeMedium
         font.weight: Theme.fontWeightMedium
+        wrapMode: Text.NoWrap
+        elide: Text.ElideNone
         text: root.label
     }
 
@@ -66,6 +69,8 @@ DOSD {
 
             OsdIcon {
                 Layout.alignment: Qt.AlignVCenter
+                Layout.preferredWidth: Theme.buttonHeightS
+                Layout.preferredHeight: Theme.buttonHeightS
                 iconName: root.iconName
             }
 
