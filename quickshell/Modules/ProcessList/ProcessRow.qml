@@ -20,7 +20,7 @@ DListItem {
     readonly property int childCount: process?.childCount ?? 0
     readonly property bool member: process?.memberOf !== undefined
     readonly property var appEntry: ProcessListMetrics.appEntry(process)
-    readonly property string displayName: appEntry?.name || command
+    readonly property string displayName: ProcessListMetrics.displayName(process, appEntry)
 
     // The part of a sideways-scrolling table that is on screen; the details stay inside it.
     property real detailX: 0
@@ -156,7 +156,7 @@ DListItem {
             width: root.nameWidth
             height: root.rowHeight
             verticalAlignment: Text.AlignVCenter
-            text: root.childCount > 0 ? root.displayName + " (" + root.childCount + ")" : root.displayName
+            text: root.childCount > 0 ? root.displayName + " (" + (root.childCount + 1) + ")" : root.displayName
             font.pixelSize: Theme.fontSizeMedium
             color: root.contentColor
             textFormat: Text.PlainText
