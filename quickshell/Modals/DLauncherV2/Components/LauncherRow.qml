@@ -74,7 +74,7 @@ DListItem {
         anchors.left: parent.left
         anchors.leftMargin: LauncherMetrics.rowPadding
         anchors.verticalCenter: parent.verticalCenter
-        visible: !(root.item?.type === "dmenu" && root.item?.data?.nonSelectable && !root.item?.icon)
+        visible: (SettingsData.dankLauncherV2ShowAppIcons || root.item?.type !== "app") && !(root.item?.type === "dmenu" && root.item?.data?.nonSelectable && !root.item?.icon)
         iconValue: root.iconValue
         iconMargins: root.iconMargins
         fallbackLeftMargin: root.iconFallbackLeftMargin
@@ -92,7 +92,7 @@ DListItem {
 
     Item {
         id: textColumn
-        anchors.left: iconRenderer.right
+        anchors.left: iconRenderer.visible ? iconRenderer.right : parent.left
         anchors.leftMargin: LauncherMetrics.rowPadding
         anchors.right: rightContent.left
         anchors.rightMargin: rightContent.width > 0 ? Theme.spacingM : 0
