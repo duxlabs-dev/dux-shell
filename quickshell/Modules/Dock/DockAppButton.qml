@@ -26,6 +26,7 @@ Item {
     property bool isHovered: mouseArea.containsMouse && !dragging
     property bool showTooltip: mouseArea.containsMouse && !dragging
     property var cachedDesktopEntry: dockApps?.desktopEntries[appData?.appId] ?? null
+    readonly property string customIcon: appData?.type === "window" ? DockIconService.iconFor(appData.appId, appData.toplevel) : ""
     property real actualIconSize: 40
     readonly property real iconLoadScale: {
         const config = dockApps?.surfaceContext?.config;
@@ -519,6 +520,8 @@ Item {
                     if (appData.isCoreApp && appData.coreAppData) {
                         return "";
                     }
+                    if (root.customIcon !== "")
+                        return Paths.toFileUrl(root.customIcon);
                     return Paths.getAppIcon(appData.appId, cachedDesktopEntry);
                 }
                 mipmap: true

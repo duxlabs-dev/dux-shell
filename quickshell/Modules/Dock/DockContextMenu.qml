@@ -13,6 +13,9 @@ DockContextMenuBase {
     property var dockApps: null
     readonly property bool isDmsWindow: Paths.isDmsAppId(appData?.appId)
     readonly property var settingsJumpGroups: visible && appData?.appId === "dms_settings" ? buildSettingsJumpGroups() : []
+    readonly property var iconToplevel: appData?.type === "window" ? appData.toplevel ?? null : null
+    readonly property bool hasCustomIcon: DockIconService.iconFor(appData?.appId ?? "", iconToplevel) !== ""
+    readonly property bool iconRemembered: DockIconService.isRemembered(appData?.appId ?? "", iconToplevel)
 
     layerNamespace: "dms:dock-context-menu"
 
@@ -418,6 +421,36 @@ DockContextMenuBase {
                 }
                 root.close();
             }
+        }
+    }
+
+    DockTrashMenuItem {
+        visible: root.iconToplevel !== null
+        width: parent.width
+        text: I18n.tr("Change Icon", "dock menu action giving one window its own dock icon from an image file")
+        iconName: "image"
+        onTriggered: {
+            DockIconService.chooseImage(root.appData?.appId ?? "", root.iconToplevel);
+            root.close();
+        }
+    }
+
+    DockTrashMenuItem {
+        visible: root.iconToplevel !== null && root.hasCustomIcon
+        width: parent.width
+        text: I18n.tr("Remember Icon", "dock menu toggle: windows of this app with the same title get this icon again")
+        iconName: root.iconRemembered ? "check_box" : "check_box_outline_blank"
+        onTriggered: DockIconService.setRemembered(root.appData?.appId ?? "", root.iconToplevel, !root.iconRemembered)
+    }
+
+    DockTrashMenuItem {
+        visible: root.iconToplevel !== null && root.hasCustomIcon
+        width: parent.width
+        text: I18n.tr("Reset Icon", "dock menu action: go back to the app's own icon")
+        iconName: "restart_alt"
+        onTriggered: {
+            DockIconService.reset(root.appData?.appId ?? "", root.iconToplevel);
+            root.close();
         }
     }
 
