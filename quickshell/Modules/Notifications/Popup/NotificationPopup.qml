@@ -58,6 +58,8 @@ Item {
     readonly property real screenY: stackMotion.value
     readonly property real stackTarget: stackMotion.target
     readonly property bool stackMoving: stackMotion.running
+    readonly property real stackOriginTop: Theme.snap(_topEdgeBase() - windowShadowPad, dpr)
+    readonly property real slotBottom: Theme.snap(_topEdgeBase() + stackTarget - windowShadowPad, dpr) + layoutHeight + windowShadowPad * 2
     property real presentationProgress: 0
     property real chromeRelease: 0
     property real layoutHeight: targetAlignedHeight
@@ -417,13 +419,16 @@ Item {
         if (!isTop)
             return 0;
 
+        return _topEdgeBase() + screenY;
+    }
+
+    function _topEdgeBase() {
         if (connectedFrameMode)
-            return _frameEdgeInset("top") + _connectedCornerClear() + screenY;
+            return _frameEdgeInset("top") + _connectedCornerClear();
         if (frameVisibleWithoutConnectedChrome)
-            return _frameGapMargin("top") + screenY;
+            return _frameGapMargin("top");
         const barInfo = getBarInfo();
-        const base = barInfo.topBar > 0 ? barInfo.topBar : Theme.popupDistance;
-        return base + screenY;
+        return barInfo.topBar > 0 ? barInfo.topBar : Theme.popupDistance;
     }
 
     function getBottomMargin() {

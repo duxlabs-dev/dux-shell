@@ -14,8 +14,7 @@ DIdleSurface {
     readonly property alias hostItem: hostItem
     readonly property var focusWindows: dismissalLoader.item ? [root, dismissalLoader.item] : [root]
 
-    property rect _envelope: Qt.rect(0, 0, 0, 0)
-    readonly property rect requestedBounds: {
+    requestedBounds: {
         if (!idleSupported || !active)
             return Qt.rect(0, 0, 0, 0);
         let bounds = {
@@ -33,21 +32,9 @@ DIdleSurface {
         return Qt.rect(bounds.x, bounds.y, bounds.width, bounds.height);
     }
 
-    onRequestedBoundsChanged: {
-        if (!active)
-            return;
-        const bounds = PopoutBounds.clip(PopoutBounds.unite(_envelope, requestedBounds), screenWidth, screenHeight);
-        _envelope = Qt.rect(bounds.x, bounds.y, bounds.width, bounds.height);
-    }
-    onActiveChanged: {
-        if (active)
-            _envelope = requestedBounds;
-        else
-            _envelope = Qt.rect(0, 0, 0, 0);
-    }
-
-    renderBounds: idleSupported && active ? _envelope : Qt.rect(0, 0, 0, 0)
     kind: "popout"
+    // A full-screen idle surface is blacked out whole by compositor capture rules matching this namespace.
+    compactWhenIdle: true
     active: hostCount > 0
     maskItem: activeHost?.maskItem ?? null
 
