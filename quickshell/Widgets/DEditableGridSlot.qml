@@ -15,6 +15,8 @@ Item {
     property var dragOrigin: null
     property Item passthrough: null
     property int restCursor: Qt.OpenHandCursor
+    property real hoverMargin: 0
+    readonly property bool hovered: hoverTracker.hovered
     property bool raised: dragging || resizing
     readonly property bool interactionEnabled: resizeOrigin !== null || dragOrigin !== null || !grid.interacting
 
@@ -151,6 +153,7 @@ Item {
     HoverHandler {
         id: hoverTracker
         enabled: root.grid.editMode
+        margin: root.hoverMargin
     }
 
     MouseArea {
