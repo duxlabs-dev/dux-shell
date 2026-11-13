@@ -1,41 +1,13 @@
 import QtQuick
-import qs.Common
 import qs.Services
 
 LabelOSD {
-    id: root
-
     osdKind: "keyboardLayout"
     iconName: "keyboard"
-    label: currentLayout
+    label: KeyboardLayoutService.currentLayout
+    autoShowOnLabelChange: true
+    labelReady: KeyboardLayoutService.layoutKnown
 
-    property string lastLayout: ""
-    property bool layoutInitialized: false
-    readonly property string currentLayout: KeyboardLayoutService.currentLayout
-
-    function observeLayout() {
-        if (!KeyboardLayoutService.layoutKnown) {
-            layoutInitialized = false;
-            lastLayout = "";
-            return;
-        }
-        if (!layoutInitialized) {
-            lastLayout = currentLayout;
-            layoutInitialized = true;
-            return;
-        }
-        if (lastLayout === currentLayout)
-            return;
-        lastLayout = currentLayout;
-        if (SettingsData.osdKeyboardLayoutEnabled)
-            show();
-    }
-
-    onCurrentLayoutChanged: observeLayout()
-
-    Component.onCompleted: {
-        KeyboardLayoutService.consumers++;
-        observeLayout();
-    }
+    Component.onCompleted: KeyboardLayoutService.consumers++
     Component.onDestruction: KeyboardLayoutService.consumers--
 }

@@ -14,7 +14,7 @@ IconOSD {
     property bool stateInitialized: false
 
     onCurrentNumLockStateChanged: {
-        if (stateInitialized && DMSService.evdevStateInitialized && lastNumLockState !== currentNumLockState && SettingsData.osdNumLockEnabled)
+        if (stateInitialized && DMSService.evdevStateInitialized && lastNumLockState !== currentNumLockState)
             root.show();
         lastNumLockState = currentNumLockState;
     }

@@ -1,5 +1,4 @@
 import QtQuick
-import qs.Common
 import qs.Services
 
 LabelOSD {
@@ -16,8 +15,6 @@ LabelOSD {
         target: AudioService
 
         function onAudioOutputCycled(name, icon) {
-            if (!SettingsData.osdAudioOutputEnabled)
-                return;
             root.deviceName = name;
             root.deviceIcon = icon;
             root.show();

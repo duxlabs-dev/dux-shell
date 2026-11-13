@@ -1,5 +1,4 @@
 import QtQuick
-import qs.Common
 import qs.Services
 
 IconOSD {
@@ -13,8 +12,6 @@ IconOSD {
         target: NiriService
 
         function onTouchpadToggled() {
-            if (!SettingsData.osdTouchpadEnabled)
-                return;
             root.show();
         }
     }

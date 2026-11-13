@@ -52,9 +52,6 @@ LabelOSD {
     }
 
     function handleWorkspaceChange() {
-        if (!SettingsData.osdWorkspaceEnabled)
-            return;
-
         const ws = root.activeWorkspace;
         if (!ws || ws.id === undefined || ws.id === null)
             return;

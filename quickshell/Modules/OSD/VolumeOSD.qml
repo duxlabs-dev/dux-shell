@@ -37,20 +37,18 @@ LevelOSD {
         target: root.audio
 
         function onVolumeChanged() {
-            if (SettingsData.osdVolumeEnabled)
-                root.show();
+            root.show();
         }
 
         function onMutedChanged() {
-            if (SettingsData.osdVolumeEnabled)
-                root.show();
+            root.show();
         }
     }
 
     readonly property var audioSink: AudioService.sink
 
     onAudioSinkChanged: {
-        if (shouldBeVisible && SettingsData.osdVolumeEnabled)
+        if (shouldBeVisible)
             show();
     }
 }

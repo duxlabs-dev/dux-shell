@@ -15,16 +15,14 @@ IconOSD {
         target: PowerProfileWatcher
 
         function onProfileChanged(profile) {
-            if (SettingsData.osdPowerProfileEnabled) {
-                root.currentProfile = profile;
-                root.profileIcon = Theme.getPowerProfileIcon(profile);
-                root.show();
-            }
+            root.currentProfile = profile;
+            root.profileIcon = Theme.getPowerProfileIcon(profile);
+            root.show();
         }
     }
 
     Component.onCompleted: {
-        if (SettingsData.osdPowerProfileEnabled && typeof PowerProfileWatcher !== "undefined") {
+        if (typeof PowerProfileWatcher !== "undefined") {
             root.currentProfile = PowerProfileWatcher.currentProfile;
             root.profileIcon = Theme.getPowerProfileIcon(PowerProfileWatcher.currentProfile);
         }

@@ -1,5 +1,4 @@
 import QtQuick
-import qs.Common
 import qs.Services
 
 IconOSD {
@@ -13,9 +12,7 @@ IconOSD {
     Connections {
         target: SessionService
         function onInhibitorChanged() {
-            if (SettingsData.osdIdleInhibitorEnabled) {
-                root.show();
-            }
+            root.show();
         }
     }
 }

@@ -1,5 +1,4 @@
 import QtQuick
-import qs.Common
 import qs.Services
 
 IconOSD {
@@ -14,7 +13,7 @@ IconOSD {
         target: DMSService
 
         function onCapsLockStateChanged() {
-            if (lastCapsLockState !== DMSService.capsLockState && SettingsData.osdCapsLockEnabled) {
+            if (lastCapsLockState !== DMSService.capsLockState) {
                 root.show();
             }
             lastCapsLockState = DMSService.capsLockState;
