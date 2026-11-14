@@ -18,6 +18,17 @@ Singleton {
     property string selectedDockId: ""
     property string selectedDockWidgetId: ""
     property string selectedDesktopWidgetId: ""
+    // "" = new profile
+    property string selectedConfigProfileId: ""
+    // Kept editor form per profile id ("" = new profile)
+    property var configProfileEdits: ({})
+    property bool selectedConfigProfileImported: false
+
+    function dropConfigProfileEdits(id) {
+        const rest = Object.assign({}, configProfileEdits);
+        delete rest[id];
+        configProfileEdits = rest;
+    }
     property string selectedWidgetSection: ""
     property int selectedWidgetIndex: -1
     property string selectedWidgetTitle: ""

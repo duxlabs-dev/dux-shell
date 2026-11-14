@@ -51,4 +51,16 @@ Singleton {
         next.splice(idx, 1);
         barWindows = next;
     }
+
+    // Popout and island focus grabs admit these, so clicking one doesn't dismiss them.
+    property list<var> grabPeerWindows: []
+
+    function registerGrabPeerWindow(window) {
+        if (window && grabPeerWindows.indexOf(window) === -1)
+            grabPeerWindows = grabPeerWindows.concat([window]);
+    }
+
+    function unregisterGrabPeerWindow(window) {
+        grabPeerWindows = grabPeerWindows.filter(w => w !== window);
+    }
 }

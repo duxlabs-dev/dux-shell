@@ -1287,6 +1287,23 @@ Item {
         delegate: Toast {}
     }
 
+    LazyLoader {
+        active: ConfigProfileService.screenshotPending
+
+        ProfileCaptureBar {}
+    }
+
+    // The user closed Settings to set up the screen, so bring back the profile being edited.
+    Connections {
+        target: ConfigProfileService
+        function onScreenshotEnded(id) {
+            if (PopoutService.settingsModal?.shouldBeVisible ?? false)
+                return;
+            ConfigProfileService.selectForSettings(id, false);
+            PopoutService.openSettingsWithTab("profile_edit");
+        }
+    }
+
     Loader {
         id: osdSurfacesLoader
         active: root.osdSurfacesLoaded

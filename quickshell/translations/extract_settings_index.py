@@ -93,6 +93,7 @@ CATEGORY_KEYWORDS = {
     "Default apps": ["browser", "terminal", "handlers", "mime"],
     "Users": ["accounts", "user", "profile"],
     "Autostart": ["startup", "launch", "boot"],
+    "Profiles": ["setup", "preset", "snapshot"],
 }
 
 TAB_INDEX_MAP = {
@@ -129,6 +130,9 @@ TAB_INDEX_MAP = {
     "BarWidgetTab.qml": 54,
     "LockScreenTab.qml": 11,
     "PluginsManageTab.qml": 28,
+    "ProfilesTab.qml": 75,
+    "ProfileEditTab.qml": 76,
+    "ProfileInspectTab.qml": 77,
     "AboutTab.qml": 13,
     "TypographyMotionTab.qml": 14,
     "SoundsTab.qml": 15,
@@ -165,6 +169,9 @@ TAB_INDEX_MAP = {
 
 # Extra sidebar tabIndexes that reuse a file already in TAB_INDEX_MAP.
 TAB_INDEX_ALIASES = {70}
+
+# Pages that only work for a profile picked on the Profiles page, so search never opens them directly.
+UNSEARCHABLE_TABS = {76, 77}
 
 SIDEBAR_GATE_CONDITIONS = [
     ("shortcutsOnly", "keybindsAvailable"),
@@ -791,7 +798,7 @@ def generate_tab_entries(leaves, settings_entries):
     entries = []
     for leaf in leaves:
         base_label = leaf["label"] or ""
-        if leaf["children"] or leaf["dynamicTitle"] or not (base_label or leaf["runtimeLabel"]):
+        if leaf["children"] or leaf["dynamicTitle"] or not (base_label or leaf["runtimeLabel"]) or leaf["tabIndex"] in UNSEARCHABLE_TABS:
             continue
         label = (
             f"{leaf['parentLabel']}: {base_label}"

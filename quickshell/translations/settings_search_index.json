@@ -2219,6 +2219,34 @@
     "description": "Popups hide the message until expanded"
   },
   {
+    "section": "configProfiles",
+    "label": "Profiles",
+    "tabIndex": -1,
+    "category": "Wallpaper & colors",
+    "keywords": [
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "hue",
+      "image",
+      "palette",
+      "picture",
+      "preset",
+      "profile",
+      "profiles",
+      "setup",
+      "snapshot",
+      "switch",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization",
+    "icon": "style"
+  },
+  {
     "section": "radiusStrength",
     "label": "Radius strength",
     "tabIndex": -1,
@@ -3036,6 +3064,7 @@
       "colors",
       "colour",
       "colours",
+      "compare",
       "cycling",
       "dark",
       "dark mode",
@@ -3050,6 +3079,8 @@
       "palette",
       "palettes",
       "picture",
+      "profile",
+      "profiles",
       "style",
       "theme",
       "theming",
@@ -21237,5 +21268,31 @@
     "parentLabel": "System & integrations",
     "icon": "description",
     "conditionKey": "isHyprlandOrNiri"
+  },
+  {
+    "section": "_tab_75",
+    "label": "Profiles",
+    "tabIndex": 75,
+    "category": "Profiles",
+    "keywords": [
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "hue",
+      "image",
+      "palette",
+      "picture",
+      "preset",
+      "profiles",
+      "setup",
+      "snapshot",
+      "tint",
+      "wallpaper"
+    ],
+    "icon": "style",
+    "parentLabel": "Wallpaper & colors"
   }
 ]

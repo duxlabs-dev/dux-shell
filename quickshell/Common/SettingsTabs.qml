@@ -75,6 +75,29 @@ Singleton {
                     "icon": "colorize",
                     "tabIndex": 64,
                     "hint": I18n.tr("External palette commands, namespaces", "settings sidebar hint for the injected palettes page")
+                },
+                {
+                    "id": "profiles",
+                    "hidden": true,
+                    "text": I18n.tr("Profiles", "settings page for saved setups of DMS settings"),
+                    "icon": "style",
+                    "tabIndex": 75
+                },
+                {
+                    "id": "profile_edit",
+                    "hidden": true,
+                    "backPage": "profiles",
+                    "titleFrom": "selectedWidgetTitle",
+                    "text": I18n.tr("Profile"),
+                    "icon": "edit",
+                    "tabIndex": 76
+                },
+                {
+                    "id": "profile_inspect",
+                    "hidden": true,
+                    "text": I18n.tr("Compare", "config profile: page and link row showing what applying the profile would change"),
+                    "icon": "compare_arrows",
+                    "tabIndex": 77
                 }
             ]
         },
