@@ -56,14 +56,6 @@ Notifications.NotificationCard {
         const timeStr = SettingsData.use24HourClock ? date.toLocaleTimeString(Qt.locale(), "HH:mm") : date.toLocaleTimeString(Qt.locale(), "h:mm AP");
         if (daysDiff === 0)
             return timeStr;
-        try {
-            const localeName = (typeof I18n !== "undefined" && I18n.locale) ? I18n.locale().name : "en-US";
-            const weekday = date.toLocaleDateString(localeName, {
-                weekday: "long"
-            });
-            return weekday + ", " + timeStr;
-        } catch (e) {
-            return timeStr;
-        }
+        return date.toLocaleDateString(I18n.locale(), "dddd") + ", " + timeStr;
     }
 }
